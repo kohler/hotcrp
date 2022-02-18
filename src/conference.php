@@ -2202,14 +2202,14 @@ class Conf {
     }
 
     /** @param int $id */
-    function preload_user_by_id($id) {
+    function prefetch_user_by_id($id) {
         if ($id > 0) {
             $this->_user_cache_missing[] = $id;
         }
     }
 
     /** @param string $email */
-    function preload_user_by_email($email) {
+    function prefetch_user_by_email($email) {
         if ($email !== "") {
             $this->_user_cache_missing[] = strtolower($email);
         }
@@ -2346,14 +2346,14 @@ class Conf {
 
         // load local sliced users
         foreach ($emails as $email) {
-            $this->preload_user_by_email($email);
+            $this->prefetch_user_by_email($email);
         }
         $missing = $redirect = $oemails = [];
         foreach ($emails as $i => $email) {
             $u = $this->cached_user_by_email($email);
             if (!$u && $cdb) {
                 $missing[] = $i;
-                $this->preload_cdb_user_by_email($email);
+                $this->prefetch_cdb_user_by_email($email);
             } else if ($u && !$u->is_stored_disabled() && $u->primaryContactId > 0) {
                 $redirect[$i] = $u;
             }
@@ -2375,9 +2375,9 @@ class Conf {
             $needc = [];
             foreach ($redirect as $u) {
                 if ($u->cdb_confid) {
-                    $this->preload_cdb_user_by_id($u->primaryContactId);
+                    $this->prefetch_cdb_user_by_id($u->primaryContactId);
                 } else {
-                    $this->preload_user_by_id($u->primaryContactId);
+                    $this->prefetch_user_by_id($u->primaryContactId);
                 }
             }
 
@@ -2667,17 +2667,23 @@ class Conf {
     }
 
     /** @param int $id */
-    function preload_cdb_user_by_id($id) {
+    function prefetch_cdb_user_by_id($id) {
         if ($id > 0) {
             $this->_cdb_user_cache_missing[] = $id;
         }
     }
 
     /** @param string $email */
-    function preload_cdb_user_by_email($email) {
+    function prefetch_cdb_user_by_email($email) {
         if ($email !== "") {
             $this->_cdb_user_cache_missing[] = strtolower($email);
         }
+    }
+
+    /** @param string $email
+     * @deprecated */
+    function preload_cdb_user_by_email($email) {
+        $this->prefetch_cdb_user_by_email($email);
     }
 
     /** @param int $id

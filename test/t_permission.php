@@ -167,7 +167,9 @@ class Permission_Tester {
         xassert_eq($this->conf->setting("paperacc") ?? 0, 0);
         xassert_assign($user_chair, "paper,action,decision\n1,decision,yes\n");
         xassert_eq($this->conf->setting("paperacc") ?? 0, 1);
+        MailChecker::check0();
         xassert_assign($user_chair, "paper,action\n1,withdraw\n");
+        MailChecker::check_db("withdraw-1-admin");
         xassert_eq($this->conf->setting("paperacc") ?? 0, 0);
         xassert_assign($user_chair, "paper,action\n1,revive\n");
         xassert_eq($this->conf->setting("paperacc") ?? 0, 1);
@@ -1311,7 +1313,9 @@ class Permission_Tester {
         xassert($paper16->timeSubmitted > 0);
         xassert_eq($paper16->timeWithdrawn, 0);
         xassert_eqq($paper16->withdrawReason, null);
-        xassert_assign($this->u_chair, "paper,action,reason\n16,withdraw,Paper is bad\n");
+        MailChecker::check0();
+        xassert_assign($this->u_chair, "paper,action,reason,notify\n16,withdraw,Paper is bad,no\n");
+        MailChecker::check0();
         $paper16b = $this->u_chair->checked_paper_by_id(16);
         xassert_eqq($paper16b->timeSubmitted, -$paper16->timeSubmitted);
         xassert($paper16b->timeWithdrawn > 0);
@@ -1359,6 +1363,18 @@ class Permission_Tester {
         $this->conf->qe("update Paper set outcome=0 where paperId=?", 16);
         xassert_assign($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
         xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
+
+        // notification checks
+        MailChecker::clear();
+        xassert_assign($this->u_chair, "paper,action,reason\n16,withdraw,Suckola\n");
+        MailChecker::check_db("withdraw-16-admin-notify");
+        xassert_assign($this->u_chair, "paper,action,reason\n16,revive,Suckola\n");
+        xassert_assign($this->u_chair, "paper,action,reason,notify\n16,withdraw,Suckola,no\n");
+        MailChecker::check0();
+        xassert_assign($this->u_chair, "paper,action,reason\n16,revive,Suckola\n");
+        xassert_assign($this->u_chair, "paper,action,reason,notify\n16,withdraw,Suckola,yes\n");
+        MailChecker::check_db("withdraw-16-admin-notify");
+        xassert_assign($this->u_chair, "paper,action,reason\n16,revive,Suckola\n");
 
         // more tags
         $this->conf->save_refresh_setting("tag_vote", 1, "vote#10 crap#3");

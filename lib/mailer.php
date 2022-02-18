@@ -2,7 +2,7 @@
 // mailer.php -- HotCRP mail template manager
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-class MailPreparation {
+class MailPreparation implements JsonSerializable {
     /** @var Conf */
     public $conf;
     /** @var string */
@@ -160,6 +160,22 @@ class MailPreparation {
         }
 
         return $sent;
+    }
+    #[\ReturnTypeWillChange]
+    function jsonSerialize() {
+        $j = [];
+        $h = ["headers"];
+        if (!isset($this->headers["to"])) {
+            $h[] = "to";
+        }
+        if (!isset($this->headers["subject"])) {
+            $h[] = "subject";
+        }
+        foreach (array_merge($h, ["body", "sensitive", "errors", "unique_preparation", "reset_capability", "landmark"]) as $k) {
+            if (!empty($this->$k))
+                $j[$k] = $this->$k;
+        }
+        return $j;
     }
 }
 

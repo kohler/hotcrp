@@ -556,7 +556,7 @@ class Profile_Page {
         }
 
         // check $use_req
-        $use_req = (!$this->user->has_account_here() && isset($this->qreq->watchreview))
+        $use_req = (!$this->user->has_account_here() && isset($this->qreq->follow_review))
             || $this->ustatus->has_error();
 
         // maybe prepare & crosscheck

@@ -269,7 +269,7 @@
 		"name": "authorwithdraw",
 		"subject": "[%CONFSHORTNAME%] Withdrawn submission #%NUMBER% %TITLEHINT%",
 		"body": [
-			"Dear %NAME%,\n\n",
+			"Greetings,\n\n",
 			"An author of %CONFNAME% submission #%NUMBER% has withdrawn the submission from consideration. It will not be reviewed.%IF(REASON)% They gave the following reason: %REASON%%ENDIF%\n\n",
 			"* Title: %TITLE%\n",
 			"* %_(Authors)%: %OPT(AUTHORS)%\n",
@@ -283,9 +283,9 @@
 		"name": "adminwithdraw",
 		"subject": "[%CONFSHORTNAME%] Withdrawn submission #%NUMBER% %TITLEHINT%",
 		"body": [
-			"Dear %NAME%,\n\n",
+			"Greetings,\n\n",
 			"%CONFNAME% submission #%NUMBER% has been withdrawn from consideration and will not be reviewed.\n\n",
-			"%IF(REASON)%The submission was withdrawn by an administrator, who provided the following reason: %REASON%%ELSE%The submission was withdrawn by an administrator.%ENDIF%\n\n",
+			"%IF(REASON)%An administrator withdrew the submission. They provided this reason: %REASON%%ELSE%An administrator withdrew the submission.%ENDIF%\n\n",
 			"* Title: %TITLE%\n",
 			"* %_(Authors)%: %OPT(AUTHORS)%\n",
 			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
@@ -298,9 +298,9 @@
 		"name": "withdrawreviewer",
 		"subject": "[%CONFSHORTNAME%] Withdrawn submission #%NUMBER% %TITLEHINT%",
 		"body": [
-			"Dear %NAME%,\n\n",
-			"%CONFSHORTNAME% submission #%NUMBER%, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.\n\n",
-			"Authors and administrators can withdraw submissions during the review process.%IF(REASON)% The following reason was provided: %REASON%%ENDIF%\n\n",
+			"Greetings,\n\n",
+			"%CONFSHORTNAME% submission #%NUMBER%, which you reviewed or were assigned to review, has been withdrawn from consideration for the conference.\n\n",
+			"%IF(ADMINUPDATE)%An administrator withdrew the submission.%ELSE%Authors can withdraw submissions during the review process.%ENDIF%%IF(REASON)% They provided this reason: %REASON%%ENDIF%\n\n",
 			"* Title: %TITLE%\n",
 			"* %_(Authors)%: %OPT(AUTHORS)%\n",
 			"* Site: %URL(paper, p=%NUMBER%)%\n\n",

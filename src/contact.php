@@ -103,6 +103,7 @@ class Contact {
     const WATCH_PAPER_NEWSUBMIT_ALL = 16;
     const WATCH_FINAL_UPDATE_ALL = 32;
     const WATCH_PAPER_REGISTER_ALL = 64;
+    const WATCH_LATE_WITHDRAWAL_ALL = 128;
     /** @var int */
     public $defaultWatch = self::WATCH_REVIEW;
 
@@ -1066,7 +1067,7 @@ class Contact {
     function ksort_cid_array(&$array) {
         $pcm = $this->conf->pc_members();
         foreach ($array as $cid => $x) {
-            $this->conf->preload_user_by_id($cid);
+            $this->conf->prefetch_user_by_id($cid);
         }
         uksort($array, function ($a, $b) {
             $au = $this->conf->cached_user_by_id($a);
@@ -4892,15 +4893,17 @@ class Contact {
     }
 
     /** @return bool */
-    function following_paper_register(PaperInfo $prow) {
-        $fl = $this->allow_administer($prow) ? self::WATCH_PAPER_REGISTER_ALL | ($prow->timeSubmitted > 0 ? self::WATCH_PAPER_NEWSUBMIT_ALL : 0) : 0;
-        return ($this->defaultWatch & $fl) !== 0;
+    function following_submission(PaperInfo $prow) {
+        $fl = ($prow->anno["is_new"] ?? false ? self::WATCH_PAPER_REGISTER_ALL : 0)
+            | ($prow->timeSubmitted > 0 ? self::WATCH_PAPER_NEWSUBMIT_ALL : 0);
+        return $this->allow_administer($prow)
+            && ($this->defaultWatch & $fl) !== 0;
     }
 
     /** @return bool */
-    function following_paper_newsubmit(PaperInfo $prow) {
+    function following_late_withdrawal(PaperInfo $prow) {
         return $this->allow_administer($prow)
-            && ($this->defaultWatch & self::WATCH_PAPER_NEWSUBMIT_ALL) !== 0;
+            && ($this->defaultWatch & self::WATCH_LATE_WITHDRAWAL_ALL) !== 0;
     }
 
     /** @return bool */

@@ -9,16 +9,20 @@ class Status_Assignable extends Assignable {
     public $_withdrawn;
     /** @var ?string */
     public $_withdraw_reason;
+    /** @var ?bool */
+    public $_notify;
     /** @param int $pid
      * @param ?int $submitted
      * @param ?int $withdrawn
-     * @param ?string $withdraw_reason */
-    function __construct($pid, $submitted = null, $withdrawn = null, $withdraw_reason = null) {
+     * @param ?string $withdraw_reason
+     * @param ?bool $notify */
+    function __construct($pid, $submitted = null, $withdrawn = null, $withdraw_reason = null, $notify = null) {
         $this->type = "status";
         $this->pid = $pid;
         $this->_submitted = $submitted;
         $this->_withdrawn = $withdrawn;
         $this->_withdraw_reason = $withdraw_reason;
+        $this->_notify = $notify;
     }
     /** @return self */
     function fresh() {
@@ -111,6 +115,11 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
                 && $state->user->can_withdraw_paper($prow)) {
                 $res->_withdraw_reason = $r;
             }
+            if (isset($req["notify"])
+                && ($notify = friendly_boolean($req["notify"])) !== null
+                && $state->user->can_administer($prow)) {
+                $res->_notify = $notify;
+            }
         } else if ($this->xtype === "revive") {
             if ($res->_withdrawn !== 0) {
                 assert($res->_submitted <= 0);
@@ -188,5 +197,53 @@ class Status_Assigner extends Assigner {
                 $aset->conf->update_paperacc_setting(min($vals));
             }, 0);
         }
+        if ($withdrawn > 0 && $old_withdrawn <= 0 && ($this->item["_notify"] ?? true)) {
+            $aset->register_cleanup_function("withdraw {$this->pid}", function () use ($aset) {
+                $this->notify_for_withdraw($aset);
+            });
+        }
+    }
+
+    function notify_for_withdraw(AssignmentSet $aset) {
+        $prow = $aset->conf->paper_by_id($this->pid);
+        $reason = $this->item["_withdraw_reason"];
+        $tmpl = $prow->has_author($aset->user) ? "@authorwithdraw" : "@adminwithdraw";
+        $preps = [];
+        $sent = [$aset->user->contactId];
+        $rest = [
+            "prow" => $prow,
+            "reason" => $reason,
+            "adminupdate" => $tmpl === "@adminwithdraw",
+            "combination_type" => 1
+        ];
+
+        // email contact authors
+        HotCRPMailer::send_contacts($tmpl, $prow, $rest + ["infoNames" => 1]);
+
+        // email reviewers
+        foreach ($prow->reviewers_as_display() as $minic) {
+            if (!in_array($minic->contactId, $sent)
+                && $minic->following_reviews($prow)
+                && ($p = HotCRPMailer::prepare_to($minic, "@withdrawreviewer", $rest))) {
+                if (!$minic->can_view_review_identity($prow, null)) {
+                    $p->unique_preparation = true;
+                }
+                $preps[] = $p;
+                $sent[] = $minic->contactId;
+            }
+        }
+
+        // if after submission deadline, email administrators
+        if (!$aset->conf->time_finalize_paper($prow)) {
+            foreach ($prow->late_withdrawal_followers() as $minic) {
+                if (!in_array($minic->contactId, $sent)
+                    && ($p = HotCRPMailer::prepare_to($minic, $tmpl, $rest))) {
+                    $preps[] = $p;
+                    $sent[] = $minic->contactId;
+                }
+            }
+        }
+
+        HotCRPMailer::send_combined_preparations($preps);
     }
 }

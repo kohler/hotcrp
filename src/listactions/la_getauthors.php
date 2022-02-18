@@ -26,7 +26,7 @@ class GetAuthors_ListAction extends ListAction {
             if ($users === null) {
                 $users = self::contact_map($user->conf, $ssel);
                 foreach ($users as $u) {
-                    $user->conf->preload_cdb_user_by_email($u->email);
+                    $user->conf->prefetch_cdb_user_by_email($u->email);
                 }
             }
             $admin = $user->allow_administer($prow);

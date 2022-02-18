@@ -51,6 +51,14 @@ class UserStatus extends MessageSet {
     private $_cs;
 
     public static $watch_keywords = [
+        "register" => Contact::WATCH_PAPER_REGISTER_ALL,
+        "submit" => Contact::WATCH_PAPER_NEWSUBMIT_ALL,
+        "latewithdraw" => Contact::WATCH_LATE_WITHDRAWAL_ALL,
+        "review" => Contact::WATCH_REVIEW,
+        "anyreview" => Contact::WATCH_REVIEW_ALL,
+        "adminreview" => Contact::WATCH_REVIEW_MANAGED,
+        "finalupdate" => Contact::WATCH_FINAL_UPDATE_ALL,
+
         "allregister" => Contact::WATCH_PAPER_REGISTER_ALL,
         "allnewsubmit" => Contact::WATCH_PAPER_NEWSUBMIT_ALL,
         "reviews" => Contact::WATCH_REVIEW,
@@ -1135,28 +1143,32 @@ class UserStatus extends MessageSet {
         }
 
         $follow = [];
-        if ($qreq->has_watchallregister
+        if ($qreq->has_follow_register
             && ($us->viewer->privChair || $us->user->is_track_manager())) {
-            $follow["allregister"] = !!$qreq->watchallregister;
+            $follow["register"] = !!$qreq->follow_register;
         }
-        if ($qreq->has_watchallnewsubmit
+        if ($qreq->has_follow_submit
             && ($us->viewer->privChair || $us->user->is_track_manager())) {
-            $follow["allnewsubmit"] = !!$qreq->watchallnewsubmit;
+            $follow["submit"] = !!$qreq->follow_submit;
         }
-        if ($qreq->has_watchreview) {
-            $follow["reviews"] = !!$qreq->watchreview;
+        if ($qreq->has_follow_latewithdraw
+            && ($us->viewer->privChair || $us->user->is_track_manager())) {
+            $follow["latewithdraw"] = !!$qreq->follow_latewithdraw;
         }
-        if ($qreq->has_watchallreviews
+        if ($qreq->has_follow_review) {
+            $follow["review"] = !!$qreq->follow_review;
+        }
+        if ($qreq->has_follow_anyreview
             && ($us->viewer->privChair || $us->user->isPC)) {
-            $follow["allreviews"] = !!$qreq->watchallreviews;
+            $follow["anyreview"] = !!$qreq->follow_anyreview;
         }
-        if ($qreq->has_watchadminreviews
+        if ($qreq->has_follow_adminreview
             && ($us->viewer->privChair || $us->user->is_manager())) {
-            $follow["adminreviews"] = !!$qreq->watchadminreviews;
+            $follow["adminreview"] = !!$qreq->follow_adminreview;
         }
-        if ($qreq->has_watchallfinal
+        if ($qreq->has_follow_finalupdate
             && ($us->viewer->privChair || $us->user->is_manager())) {
-            $follow["allfinal"] = !!$qreq->watchallfinal;
+            $follow["finalupdate"] = !!$qreq->follow_finalupdate;
         }
         if (!empty($follow) && $roles_pc) {
             $follow["partial"] = true;
@@ -1451,10 +1463,10 @@ class UserStatus extends MessageSet {
      * @param int $wbit
      * @param string $wname
      * @param string $wlabel */
-    private static function print_watch_checkbox(UserStatus $us, $reqwatch, $iwatch, $wbit, $wname, $wlabel) {
+    private static function print_follow_checkbox(UserStatus $us, $reqwatch, $iwatch, $wbit, $wname, $wlabel) {
         echo '<label class="checki"><span class="checkc">',
-            Ht::hidden("has_watch{$wname}", 1),
-            Ht::checkbox("watch{$wname}", 1, ($reqwatch & $wbit) !== 0, ["data-default-checked" => ($iwatch & $wbit) !== 0]),
+            Ht::hidden("has_follow_{$wname}", 1),
+            Ht::checkbox("follow_{$wname}", 1, ($reqwatch & $wbit) !== 0, ["data-default-checked" => ($iwatch & $wbit) !== 0]),
             '</span>', $us->conf->_($wlabel), "</label>\n";
     }
 
@@ -1462,33 +1474,37 @@ class UserStatus extends MessageSet {
         $qreq = $us->qreq;
         $reqwatch = $iwatch = $us->user->defaultWatch;
         foreach (self::$watch_keywords as $kw => $bit) {
-            if ($qreq["has_watch$kw"] || $qreq["watch$kw"]) {
-                $reqwatch = ($reqwatch & ~$bit) | ($qreq["watch$kw"] ? $bit : 0);
+            if ($qreq["has_follow_{$kw}"] || $qreq["follow_{$kw}"]) {
+                $reqwatch = ($reqwatch & ~$bit) | ($qreq["follow_{$kw}"] ? $bit : 0);
             }
         }
         if ($us->user->is_empty() ? $us->viewer->privChair : $us->user->isPC) {
             echo "<table class=\"w-text\"><tr><td>Send mail for:</td><td><span class=\"sep\"></span></td><td>";
             if (!$us->user->is_empty() && $us->user->is_track_manager()) {
-                self::print_watch_checkbox($us, $reqwatch, $iwatch,
-                    Contact::WATCH_PAPER_REGISTER_ALL, "allregister", "Newly registered submissions, including draft submissions");
-                self::print_watch_checkbox($us, $reqwatch, $iwatch,
-                    Contact::WATCH_PAPER_NEWSUBMIT_ALL, "allnewsubmit", "Newly ready submissions");
+                self::print_follow_checkbox($us, $reqwatch, $iwatch,
+                    Contact::WATCH_PAPER_REGISTER_ALL, "register", "Newly registered submissions, including draft submissions");
+                self::print_follow_checkbox($us, $reqwatch, $iwatch,
+                    Contact::WATCH_PAPER_NEWSUBMIT_ALL, "submit", "Newly ready submissions");
             }
-            self::print_watch_checkbox($us, $reqwatch, $iwatch,
+            if (!$us->user->is_empty() && $us->user->is_manager()) {
+                self::print_follow_checkbox($us, $reqwatch, $iwatch,
+                    Contact::WATCH_LATE_WITHDRAWAL_ALL, "latewithdraw", "Submissions withdrawn after the deadline");
+            }
+            self::print_follow_checkbox($us, $reqwatch, $iwatch,
                 Contact::WATCH_REVIEW, "review", "Reviews and comments on authored or reviewed submissions");
             if (!$us->user->is_empty() && $us->user->is_manager()) {
-                self::print_watch_checkbox($us, $reqwatch, $iwatch,
-                    Contact::WATCH_REVIEW_MANAGED, "adminreviews", "Reviews and comments on submissions you administer");
+                self::print_follow_checkbox($us, $reqwatch, $iwatch,
+                    Contact::WATCH_REVIEW_MANAGED, "adminreview", "Reviews and comments on submissions you administer");
             }
-            self::print_watch_checkbox($us, $reqwatch, $iwatch,
-                Contact::WATCH_REVIEW_ALL, "allreviews", "Reviews and comments on <em>all</em> submissions");
+            self::print_follow_checkbox($us, $reqwatch, $iwatch,
+                Contact::WATCH_REVIEW_ALL, "anyreview", "Reviews and comments on <em>all</em> submissions");
             if (!$us->user->is_empty() && $us->user->is_manager()) {
-                self::print_watch_checkbox($us, $reqwatch, $iwatch,
-                    Contact::WATCH_FINAL_UPDATE_ALL, "allfinal", "Updates to final versions for submissions you administer");
+                self::print_follow_checkbox($us, $reqwatch, $iwatch,
+                    Contact::WATCH_FINAL_UPDATE_ALL, "finalupdate", "Updates to final versions for submissions you administer");
             }
             echo "</td></tr></table>";
         } else {
-            self::print_watch_checkbox($us, $reqwatch, $iwatch,
+            self::print_follow_checkbox($us, $reqwatch, $iwatch,
                 Contact::WATCH_REVIEW, "review", "Send mail for new reviews and comments on authored or reviewed submissions");
         }
         echo "</div>\n";

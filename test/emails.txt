@@ -1102,6 +1102,105 @@ Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
 
 - Testconf I Submissions
+******** withdraw-1-admin
+To: Deborah Estrin <estrin@usc.edu>, Sally Floyd <floyd@ee.lbl.gov>, Van Jacobson <van@ee.lbl.gov>
+Subject: [Testconf I] Withdrawn submission #1 "Scalable Timers for Soft State
+ Protocols"
+
+Greetings,
+
+Test Conference I (Testconf I) submission #1 has been withdrawn from
+consideration and will not be reviewed.
+
+An administrator withdrew the submission.
+
+* Title: Scalable Timers for Soft State Protocols
+* Authors: Puneet Sharma (Information Sciences Institute, University of
+  Southern California);
+  Deborah Estrin (Information Sciences Institute, University of Southern
+  California);
+  Sally Floyd (Lawrence Berkeley National Laboratory);
+  Van Jacobson (Lawrence Berkeley National Laboratory)
+* Site: http://hotcrp.lcdf.org/test/paper/1
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** withdraw-1-admin
+To: Mary Baker <mgbaker@cs.stanford.edu>, Lixia Zhang <lixia@cs.ucla.edu>, George Varghese <varghese@ccrc.wustl.edu>
+Subject: [Testconf I] Withdrawn submission #1 "Scalable Timers for Soft State
+ Protocols"
+
+Greetings,
+
+Testconf I submission #1, which you reviewed or were assigned to review,
+has been withdrawn from consideration for the conference.
+
+An administrator withdrew the submission.
+
+* Title: Scalable Timers for Soft State Protocols
+* Site: http://hotcrp.lcdf.org/test/paper/1
+
+You are not expected to complete your review (and the system will not
+allow it unless the submission is revived).
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** withdraw-16-admin-notify
+To: "Jeffrey C. Mogul" <mogul@wrl.dec.com>, "A. Feldmann" <anja@research.att.com>, Balachander Krishnamurthy <bala@research.att.com>
+Subject: [Testconf I] Withdrawn submission #16 "Potential Benefits of Delta
+ Encoding and..."
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+Test Conference I (Testconf I) submission #16 has been withdrawn from
+consideration and will not be reviewed.
+
+An administrator withdrew the submission. They provided this reason:
+Suckola
+
+* Title: Potential Benefits of Delta Encoding and Data Compression for
+  HTTP
+* Authors: Jeffrey C. Mogul (Digital Equipment Corporation Western
+  Research Laboratory);
+  Fred Douglis (AT&T Labs - Research);
+  Anja Feldmann (AT&T Labs - Research);
+  Balachander Krishnamurthy (AT&T Labs - Research)
+* Site: http://hotcrp.lcdf.org/test/paper/16
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** withdraw-16-admin-notify
+To: Mary Baker <mgbaker@cs.stanford.edu>, Sally Floyd <floyd@ee.lbl.gov>, Jon Crowcroft <jon@cs.ucl.ac.uk>
+Subject: [Testconf I] Withdrawn submission #16 "Potential Benefits of Delta
+ Encoding and..."
+X-Landmark: test/test01.php:8
+
+Greetings,
+
+Testconf I submission #16, which you reviewed or were assigned to
+review, has been withdrawn from consideration for the conference.
+
+An administrator withdrew the submission. They provided this reason:
+Suckola
+
+* Title: Potential Benefits of Delta Encoding and Data Compression for
+  HTTP
+* Site: http://hotcrp.lcdf.org/test/paper/16
+
+You are not expected to complete your review (and the system will not
+allow it unless the submission is revived).
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
 ******** test01-save-review1B
 To: Mary Baker <mgbaker@cs.stanford.edu>
 Subject: [Testconf I] Submitted review #1B "Scalable Timers for Soft State

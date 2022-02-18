@@ -571,6 +571,9 @@ class PaperInfo {
     /** @var ?int */
     private $_pause_mark_inactive_documents;
 
+    /** @var ?array */
+    public $anno;
+
     const REVIEW_HAS_FULL = 1;
     const REVIEW_HAS_NAMES = 2;
     const REVIEW_HAS_LASTLOGIN = 4;
@@ -2425,7 +2428,7 @@ class PaperInfo {
     private function ensure_reviewer_names_set($row_set) {
         foreach ($row_set as $prow) {
             foreach ($prow->all_reviews() as $rrow) {
-                $this->conf->preload_user_by_id($rrow->contactId);
+                $this->conf->prefetch_user_by_id($rrow->contactId);
             }
         }
         foreach ($row_set as $prow) {
@@ -2615,6 +2618,22 @@ class PaperInfo {
             }
         }
         return false;
+    }
+
+
+    /** @return list<Contact> */
+    function reviewers_as_display() {
+        $cids = [];
+        foreach ($this->reviews_as_display() as $rrow) {
+            $cids[$rrow->contactId] = true;
+            $this->conf->prefetch_user_by_id($rrow->contactId);
+        }
+        $us = [];
+        foreach (array_keys($cids) as $cid) {
+            if (($u = $this->conf->cached_user_by_id($cid)))
+                $us[] = $u;
+        }
+        return $us;
     }
 
 
@@ -2980,14 +2999,20 @@ class PaperInfo {
     }
 
     /** @return list<Contact> */
-    function register_followers() {
-        $fl = Contact::WATCH_PAPER_REGISTER_ALL | ($this->timeSubmitted > 0 ? Contact::WATCH_PAPER_NEWSUBMIT_ALL : 0);
-        return $this->generic_followers([], "(defaultWatch&{$fl})!=0 and roles!=0", "following_paper_register");
+    function submission_followers() {
+        $fl = ($this->anno["is_new"] ?? false ? Contact::WATCH_PAPER_REGISTER_ALL : 0)
+            | ($this->timeSubmitted > 0 ? Contact::WATCH_PAPER_NEWSUBMIT_ALL : 0);
+        return $this->generic_followers([], "(defaultWatch&{$fl})!=0 and roles!=0", "following_submission");
     }
 
     /** @return list<Contact> */
-    function newsubmit_followers() {
-        return $this->generic_followers([], "(defaultWatch&" . Contact::WATCH_PAPER_NEWSUBMIT_ALL . ")!=0 and roles!=0", "following_paper_newsubmit");
+    function late_withdrawal_followers() {
+        return $this->generic_followers([], "(defaultWatch&" . Contact::WATCH_LATE_WITHDRAWAL_ALL . ")!=0 and roles!=0", "following_late_withdrawal");
+    }
+
+    /** @return list<Contact> */
+    function final_update_followers() {
+        return $this->generic_followers([], "(defaultWatch&" . Contact::WATCH_FINAL_UPDATE_ALL . ")!=0 and roles!=0", "following_final_update");
     }
 
     /** @return list<Contact> */
@@ -3007,11 +3032,6 @@ class PaperInfo {
                 $cids[] = $cid;
         }
         return $this->generic_followers($cids, "(defaultWatch&" . (Contact::WATCH_REVIEW_ALL | Contact::WATCH_REVIEW_MANAGED) . ")!=0 and roles!=0", "following_reviews");
-    }
-
-    /** @return list<Contact> */
-    function final_update_followers() {
-        return $this->generic_followers([], "(defaultWatch&" . Contact::WATCH_FINAL_UPDATE_ALL . ")!=0 and roles!=0", "following_final_update");
     }
 
     function delete_from_database(Contact $user = null) {

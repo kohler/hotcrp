@@ -77,29 +77,6 @@ class Paper_Page {
         if (!$aset->execute()) {
             error_log("{$this->conf->dbname}: withdraw #{$this->prow->paperId} failure: " . json_encode($aset->json_result()));
         }
-        $this->load_prow();
-
-        // email contact authors themselves
-        if (!$this->user->can_administer($this->prow) || $this->qreq->doemail) {
-            $tmpl = $this->prow->has_author($this->user) ? "@authorwithdraw" : "@adminwithdraw";
-            HotCRPMailer::send_contacts($tmpl, $this->prow, ["reason" => $reason, "infoNames" => 1]);
-        }
-
-        // email reviewers
-        if ($this->prow->all_reviews()) {
-            $preps = [];
-            foreach ($this->prow->review_followers() as $minic) {
-                if ($minic->contactId !== $this->user->contactId
-                    && ($p = HotCRPMailer::prepare_to($minic, "@withdrawreviewer", ["prow" => $this->prow, "reason" => $reason]))) {
-                    if (!$minic->can_view_review_identity($this->prow, null)) {
-                        $p->unique_preparation = true;
-                    }
-                    $preps[] = $p;
-                }
-            }
-            HotCRPMailer::send_combined_preparations($preps);
-        }
-
         $this->conf->redirect_self($this->qreq);
     }
 
@@ -230,6 +207,9 @@ class Paper_Page {
             $submitkey = "timeSubmitted";
             $storekey = "paperStorageId";
         }
+        if ($is_new) {
+            $new_prow->anno["is_new"] = true;
+        }
         $newsubmit = $new_prow->timeSubmitted > 0 && !$was_submitted;
 
         // confirmation message
@@ -321,12 +301,9 @@ class Paper_Page {
             if ($action === "final" && $new_prow->timeFinalSubmitted > 0) {
                 $followers = $new_prow->final_update_followers();
                 $template = "@finalsubmitnotify";
-            } else if ($is_new) {
-                $followers = $new_prow->register_followers();
+            } else if ($is_new || $newsubmit) {
+                $followers = $new_prow->submission_followers();
                 $template = $newsubmit ? "@newsubmitnotify" : "@registernotify";
-            } else if ($newsubmit) {
-                $followers = $new_prow->newsubmit_followers();
-                $template = "@newsubmitnotify";
             } else {
                 $followers = [];
                 $template = "@none";
