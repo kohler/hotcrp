@@ -785,7 +785,9 @@ class Permission_Tester {
         assert_search_papers($this->u_chair, "re:R3", "12");
         assert_search_papers($this->u_chair, "round:none", "6 7 8 9 10 11 12 13 14 15 16 17 18");
         ConfInvariants::test_all($this->conf);
+    }
 
+    function test_assign_external_review() {
         xassert(!$this->conf->user_by_email("newexternal@_.com"));
         assert_search_papers($this->u_chair, "re:newexternal@_.com", "");
         xassert_assign($this->u_chair, "action,paper,email\nreview,3,newexternal@_.com");
@@ -795,8 +797,9 @@ class Permission_Tester {
         assert_search_papers($this->u_chair, "re:external@_.com", "2");
         xassert_assign($this->u_chair, "action,paper,email\nreview,3,external@_.com");
         assert_search_papers($this->u_chair, "re:external@_.com", "2 3");
+    }
 
-        // paper administrators
+    function test_assign_administrator() {
         assert_search_papers($this->u_chair, "has:admin", "");
         assert_search_papers($this->u_chair, "conflict:me", "");
         assert_search_papers($this->u_chair, "admin:me", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
@@ -810,8 +813,9 @@ class Permission_Tester {
         assert_search_papers($this->u_chair, "admin:marina", "4");
         assert_search_papers($this->u_marina, "admin:me", "4");
         xassert($this->u_marina->is_manager());
+    }
 
-        // conflict overrides
+    function test_override_conflicts() {
         xassert_assign($this->conf->root_user(), "action,paper,user,tag\nconflict,4 5,chair@_.com\ntag,4 5,,testtag");
         $paper4 = $this->u_chair->checked_paper_by_id(4);
         $paper5 = $this->u_chair->checked_paper_by_id(5);
@@ -821,6 +825,7 @@ class Permission_Tester {
         assert($this->u_chair->allow_administer($paper5));
         xassert_eqq($paper4->viewable_tags($this->u_chair), "");
         xassert_eqq($paper5->viewable_tags($this->u_chair), "");
+
         $overrides = $this->u_chair->add_overrides(Contact::OVERRIDE_CONFLICT);
         assert(!$this->u_chair->can_administer($paper4));
         assert(!$this->u_chair->allow_administer($paper4));
@@ -829,14 +834,16 @@ class Permission_Tester {
         xassert_eqq($paper4->viewable_tags($this->u_chair), "");
         xassert_match($paper5->viewable_tags($this->u_chair), '/\A fart#\d+ testtag#0\z/');
         $this->u_chair->set_overrides($overrides);
-        xassert_assign($this->conf->site_contact(), "action,paper,user\nclearconflict,4 5,chair@_.com");
+        xassert_assign($this->conf->site_contact(), "action,paper,user,tag\nclearconflict,4 5,chair@_.com\ncleartag,4 5,,testtag");
+    }
 
-        // preference assignments
+    function test_assign_preference() {
         xassert_assign($this->u_chair, "paper,user,pref\n1,marina,10\n");
         xassert_assign($this->u_chair, "paper,user,pref\n1,chair@_.com,10\n");
         xassert_assign($this->u_chair, "paper,user,pref\n4,marina,10\n");
         xassert_assign($this->u_chair, "paper,user,pref\n4,chair@_.com,10\n");
 
+        xassert_eqq($this->u_marina->contactId, $this->conf->checked_paper_by_id(4)->managerContactId);
         xassert_assign($this->u_marina, "paper,user,action\n4,chair@_.com,conflict\n");
 
         xassert_assign($this->u_chair, "paper,user,pref\n1,marina,11\n");
@@ -857,26 +864,33 @@ class Permission_Tester {
         xassert_assign($this->u_marina, "paper,pref\n1,13\n");
         $paper1->load_preferences();
         xassert_eqq($paper1->preference($this->u_marina), [13, null]);
+    }
 
-        // remove paper administrators
+    function test_assign_clear_administrator() {
         xassert($this->u_marina->is_manager());
         assert_search_papers($this->u_chair, "admin:marina", "4");
+
+        // cannot remove self as administrator
         xassert_assign_fail($this->u_marina, "paper,action\n4,clearadministrator\n");
         xassert($this->u_marina->is_manager());
         assert_search_papers($this->u_chair, "admin:marina", "4");
+
         xassert_assign($this->u_chair, "paper,action\n4,clearadministrator\n");
         xassert(!$this->u_marina->is_manager());
         assert_search_papers($this->u_chair, "admin:marina", "");
+    }
 
-        // conflicts and contacts
+    function test_assign_conflicts() {
         $paper3 = $this->u_chair->checked_paper_by_id(3);
         xassert_eqq($this->sorted_conflicts($paper3, true), "sclin@leland.stanford.edu");
         xassert_eqq($this->sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
 
+        // reopen submissions: author can update conflicts
         $user_sclin = $this->conf->checked_user_by_email("sclin@leland.stanford.edu");
         $this->conf->save_setting("sub_update", Conf::$now + 10);
         $this->conf->save_refresh_setting("sub_sub", Conf::$now + 10);
         xassert($user_sclin->can_edit_paper($paper3));
+
         xassert_assign($user_sclin, "paper,action,user\n3,conflict,rguerin@ibm.com\n");
         $paper3 = $this->u_chair->checked_paper_by_id(3);
         xassert_eqq($this->sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu rguerin@ibm.com sclin@leland.stanford.edu");
@@ -974,7 +988,9 @@ class Permission_Tester {
         xassert_eqq($paper3->conflict_type($user_sclin), 0);
         xassert_eqq($this->sorted_conflicts($paper3, true), "mgbaker@cs.stanford.edu");
         xassert_eqq($this->sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu");
+    }
 
+    function test_tracks() {
         $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
         $user_randy = $this->conf->checked_user_by_email("randy@cs.berkeley.edu"); // author
 

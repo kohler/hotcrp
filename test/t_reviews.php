@@ -12,6 +12,12 @@ class Reviews_Tester {
     /** @var Contact
      * @readonly */
     public $u_mgbaker;
+    /** @var Contact
+     * @readonly */
+    public $u_lixia;
+    /** @var Contact
+     * @readonly */
+    public $u_mjh; // pc
     /** @var string */
     private $review1A;
 
@@ -19,6 +25,8 @@ class Reviews_Tester {
         $this->conf = $conf;
         $this->u_chair = $conf->checked_user_by_email("chair@_.com");
         $this->u_mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $this->u_lixia = $conf->checked_user_by_email("lixia@cs.ucla.edu");
+        $this->u_mjh = $conf->checked_user_by_email("mjh@isi.edu");
     }
 
     function save_round_settings($map) {
@@ -577,7 +585,7 @@ class Reviews_Tester {
         $user_mgbaker = $this->u_mgbaker;
         $user_diot = $conf->checked_user_by_email("christophe.diot@sophia.inria.fr"); // pc, red
         $user_pdruschel = $conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
-        $user_mjh = $conf->checked_user_by_email("mjh@isi.edu"); // pc
+        $user_mjh = $this->u_mjh;
 
         // saving a JSON review defaults to ready
         xassert_assign($user_chair, "paper,lead\n17,pdruschel\n");
@@ -772,12 +780,11 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($user_external->can_view_review_identity($paper17, $rrow17m));
 
         // per-round review visibility
-        $user_lixia = $conf->checked_user_by_email("lixia@cs.ucla.edu");
         $tf = new ReviewValues($conf->review_form());
         xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "Radical", "comaut" => "Nonradical"]));
-        xassert($tf->check_and_save($user_lixia, $paper17));
+        xassert($tf->check_and_save($this->u_lixia, $paper17));
         MailChecker::check_db("test06-17lixia");
-        $rrow17h = fetch_review($paper17, $user_lixia);
+        $rrow17h = fetch_review($paper17, $this->u_lixia);
         $rrow17x = fetch_review($paper17, $user_external);
         xassert_eqq($rrow17m->reviewRound, $conf->round_number("R2", false));
         xassert_eqq($rrow17h->reviewRound, $conf->round_number("R1", false));
@@ -787,18 +794,18 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($user_mgbaker->can_view_review($paper17, $rrow17m));
         xassert($user_mgbaker->can_view_review($paper17, $rrow17h));
         xassert($user_mgbaker->can_view_review($paper17, $rrow17x));
-        xassert($user_lixia->can_view_review($paper17, $rrow17m));
-        xassert($user_lixia->can_view_review($paper17, $rrow17h));
-        xassert($user_lixia->can_view_review($paper17, $rrow17x));
+        xassert($this->u_lixia->can_view_review($paper17, $rrow17m));
+        xassert($this->u_lixia->can_view_review($paper17, $rrow17h));
+        xassert($this->u_lixia->can_view_review($paper17, $rrow17x));
         xassert($user_external->can_view_review($paper17, $rrow17m));
         xassert($user_external->can_view_review($paper17, $rrow17h));
         xassert($user_external->can_view_review($paper17, $rrow17x));
         xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17m));
         xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17h));
         xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17x));
-        xassert($user_lixia->can_view_review_identity($paper17, $rrow17m));
-        xassert($user_lixia->can_view_review_identity($paper17, $rrow17h));
-        xassert($user_lixia->can_view_review_identity($paper17, $rrow17x));
+        xassert($this->u_lixia->can_view_review_identity($paper17, $rrow17m));
+        xassert($this->u_lixia->can_view_review_identity($paper17, $rrow17h));
+        xassert($this->u_lixia->can_view_review_identity($paper17, $rrow17x));
         xassert($user_external->can_view_review_identity($paper17, $rrow17m));
         xassert($user_external->can_view_review_identity($paper17, $rrow17h));
         xassert($user_external->can_view_review_identity($paper17, $rrow17x));
@@ -849,23 +856,23 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($user_mgbaker->can_view_review($paper17, $rrow17m));
         xassert($user_mgbaker->can_view_review($paper17, $rrow17h));
         xassert($user_mgbaker->can_view_review($paper17, $rrow17x));
-        xassert($user_lixia->can_view_review($paper17, $rrow17m));
-        xassert($user_lixia->can_view_review($paper17, $rrow17h));
-        xassert($user_lixia->can_view_review($paper17, $rrow17x));
+        xassert($this->u_lixia->can_view_review($paper17, $rrow17m));
+        xassert($this->u_lixia->can_view_review($paper17, $rrow17h));
+        xassert($this->u_lixia->can_view_review($paper17, $rrow17x));
         xassert($user_external->can_view_review($paper17, $rrow17m));
         xassert(!$user_external->can_view_review($paper17, $rrow17h));
         xassert($user_external->can_view_review($paper17, $rrow17x));
         xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17m));
         xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17h));
         xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17x));
-        xassert($user_lixia->can_view_review_identity($paper17, $rrow17m));
-        xassert($user_lixia->can_view_review_identity($paper17, $rrow17h));
-        xassert($user_lixia->can_view_review_identity($paper17, $rrow17x));
+        xassert($this->u_lixia->can_view_review_identity($paper17, $rrow17m));
+        xassert($this->u_lixia->can_view_review_identity($paper17, $rrow17h));
+        xassert($this->u_lixia->can_view_review_identity($paper17, $rrow17x));
         xassert($user_external->can_view_review_identity($paper17, $rrow17m));
         xassert(!$user_external->can_view_review_identity($paper17, $rrow17h));
         xassert($user_external->can_view_review_identity($paper17, $rrow17x));
         assert_search_papers($user_chair, "re:mgbaker", "1 13 17");
-        assert_search_papers($user_lixia, "re:mgbaker", "1 13 17");
+        assert_search_papers($this->u_lixia, "re:mgbaker", "1 13 17");
 
         // Extrev cannot view R1; PC cannot view R2
         $this->save_round_settings(["R1" => ["extrev_view" => 0], "R2" => ["pc_seeallrev" => -1]]);
@@ -874,23 +881,23 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($user_mgbaker->can_view_review($paper17, $rrow17m));
         xassert($user_mgbaker->can_view_review($paper17, $rrow17h));
         xassert(!$user_mgbaker->can_view_review($paper17, $rrow17x));
-        xassert(!$user_lixia->can_view_review($paper17, $rrow17m));
-        xassert($user_lixia->can_view_review($paper17, $rrow17h));
-        xassert(!$user_lixia->can_view_review($paper17, $rrow17x));
+        xassert(!$this->u_lixia->can_view_review($paper17, $rrow17m));
+        xassert($this->u_lixia->can_view_review($paper17, $rrow17h));
+        xassert(!$this->u_lixia->can_view_review($paper17, $rrow17x));
         xassert($user_external->can_view_review($paper17, $rrow17m));
         xassert(!$user_external->can_view_review($paper17, $rrow17h));
         xassert($user_external->can_view_review($paper17, $rrow17x));
         xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17m));
         xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17h));
         xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17x));
-        xassert($user_lixia->can_view_review_identity($paper17, $rrow17m));
-        xassert($user_lixia->can_view_review_identity($paper17, $rrow17h));
-        xassert($user_lixia->can_view_review_identity($paper17, $rrow17x));
+        xassert($this->u_lixia->can_view_review_identity($paper17, $rrow17m));
+        xassert($this->u_lixia->can_view_review_identity($paper17, $rrow17h));
+        xassert($this->u_lixia->can_view_review_identity($paper17, $rrow17x));
         xassert($user_external->can_view_review_identity($paper17, $rrow17m));
         xassert(!$user_external->can_view_review_identity($paper17, $rrow17h));
         xassert($user_external->can_view_review_identity($paper17, $rrow17x));
         assert_search_papers($user_chair, "re:mgbaker", "1 13 17");
-        assert_search_papers($user_lixia, "re:mgbaker", "1 13 17");
+        assert_search_papers($this->u_lixia, "re:mgbaker", "1 13 17");
 
         // Extrev cannot view R1; PC cannot view R2 identity
         $this->save_round_settings(["R1" => ["extrev_view" => 0], "R2" => ["pc_seeblindrev" => -1]]);
@@ -899,23 +906,23 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($user_mgbaker->can_view_review($paper17, $rrow17m));
         xassert($user_mgbaker->can_view_review($paper17, $rrow17h));
         xassert($user_mgbaker->can_view_review($paper17, $rrow17x));
-        xassert($user_lixia->can_view_review($paper17, $rrow17m));
-        xassert($user_lixia->can_view_review($paper17, $rrow17h));
-        xassert($user_lixia->can_view_review($paper17, $rrow17x));
+        xassert($this->u_lixia->can_view_review($paper17, $rrow17m));
+        xassert($this->u_lixia->can_view_review($paper17, $rrow17h));
+        xassert($this->u_lixia->can_view_review($paper17, $rrow17x));
         xassert($user_external->can_view_review($paper17, $rrow17m));
         xassert(!$user_external->can_view_review($paper17, $rrow17h));
         xassert($user_external->can_view_review($paper17, $rrow17x));
         xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17m));
         xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17h));
         xassert($user_mgbaker->can_view_review_identity($paper17, $rrow17x));
-        xassert(!$user_lixia->can_view_review_identity($paper17, $rrow17m));
-        xassert($user_lixia->can_view_review_identity($paper17, $rrow17h));
-        xassert(!$user_lixia->can_view_review_identity($paper17, $rrow17x));
+        xassert(!$this->u_lixia->can_view_review_identity($paper17, $rrow17m));
+        xassert($this->u_lixia->can_view_review_identity($paper17, $rrow17h));
+        xassert(!$this->u_lixia->can_view_review_identity($paper17, $rrow17x));
         xassert($user_external->can_view_review_identity($paper17, $rrow17m));
         xassert(!$user_external->can_view_review_identity($paper17, $rrow17h));
         xassert($user_external->can_view_review_identity($paper17, $rrow17x));
         assert_search_papers($user_chair, "re:mgbaker", "1 13 17");
-        assert_search_papers($user_lixia, "re:mgbaker", "1");
+        assert_search_papers($this->u_lixia, "re:mgbaker", "1");
 
         save_review(17, $user_external, [
             "ovemer" => 1
@@ -948,7 +955,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         MailChecker::clear();
 
         $xqreq = new Qrequest("POST", ["email" => "external2@_.com", "name" => "Jo March", "affiliation" => "Concord"]);
-        $result = RequestReview_API::requestreview($user_lixia, $xqreq, $paper17);
+        $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
         $result = JsonResult::make($result);
         MailChecker::check_db("test06-external2-request17");
         xassert($result->content["ok"]);
@@ -959,72 +966,77 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         ]);
         MailChecker::check_db("test06-external2-approval17");
 
-        save_review(17, $user_lixia, ["ready" => true], fetch_review(17, $user_external2));
+        save_review(17, $this->u_lixia, ["ready" => true], fetch_review(17, $user_external2));
         MailChecker::check_db("test06-external2-submit17");
+    }
 
-        // review requests
-        assert_search_papers($user_chair, "has:proposal", "");
-        assert_search_papers($user_lixia, "has:proposal", "");
-        assert_search_papers($user_mgbaker, "has:proposal", "");
-        assert_search_papers($user_mjh, "has:proposal", "");
-        assert_search_papers($user_chair, "re:proposal", "");
-        assert_search_papers($user_lixia, "re:proposal", "");
-        assert_search_papers($user_mgbaker, "re:proposal", "");
-        assert_search_papers($user_mjh, "re:proposal", "");
+    function test_review_proposal() {
+        assert_search_papers($this->u_chair, "has:proposal", "");
+        assert_search_papers($this->u_lixia, "has:proposal", "");
+        assert_search_papers($this->u_mgbaker, "has:proposal", "");
+        assert_search_papers($this->u_mjh, "has:proposal", "");
+        assert_search_papers($this->u_chair, "re:proposal", "");
+        assert_search_papers($this->u_lixia, "re:proposal", "");
+        assert_search_papers($this->u_mgbaker, "re:proposal", "");
+        assert_search_papers($this->u_mjh, "re:proposal", "");
 
-        $conf->save_refresh_setting("extrev_chairreq", 1);
+        $this->conf->save_refresh_setting("extrev_chairreq", 1);
         Contact::update_rights();
 
         $xqreq = new Qrequest("POST", ["email" => "external3@_.com", "name" => "Amy March", "affiliation" => "Transcendent"]);
-        $result = RequestReview_API::requestreview($user_lixia, $xqreq, $paper17);
+        $paper17 = $this->conf->checked_paper_by_id(17);
+        $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
         $result = JsonResult::make($result);
         MailChecker::check_db("test06-external3-request17");
 
-        assert_search_papers($user_chair, "has:proposal", "17");
-        assert_search_papers($user_lixia, "has:proposal", "17");
-        assert_search_papers($user_mgbaker, "has:proposal", "17");
-        assert_search_papers($user_mjh, "has:proposal", "");
-        assert_search_papers($user_chair, "re:proposal", "17");
-        assert_search_papers($user_lixia, "re:proposal", "17");
-        assert_search_papers($user_mgbaker, "re:proposal", "17");
-        assert_search_papers($user_mjh, "re:proposal", "");
+        assert_search_papers($this->u_chair, "has:proposal", "17");
+        assert_search_papers($this->u_lixia, "has:proposal", "17");
+        assert_search_papers($this->u_mgbaker, "has:proposal", "17");
+        assert_search_papers($this->u_mjh, "has:proposal", "");
+        assert_search_papers($this->u_chair, "re:proposal", "17");
+        assert_search_papers($this->u_lixia, "re:proposal", "17");
+        assert_search_papers($this->u_mgbaker, "re:proposal", "17");
+        assert_search_papers($this->u_mjh, "re:proposal", "");
 
-        assert_search_papers($user_chair, "has:proposal admin:me", "17");
-        assert_search_papers($user_lixia, "has:proposal admin:me", "");
-        assert_search_papers($user_mgbaker, "has:proposal", "17");
+        assert_search_papers($this->u_chair, "has:proposal admin:me", "17");
+        assert_search_papers($this->u_lixia, "has:proposal admin:me", "");
+        assert_search_papers($this->u_mgbaker, "has:proposal", "17");
+    }
 
-        // `r` vs. `rout`
-        assert_search_papers($user_mgbaker, ["t" => "r", "q" => ""], "1 13 17");
-        assert_search_papers($user_mgbaker, ["t" => "rout", "q" => ""], "13");
-        assert_search_papers($user_mgbaker, ["t" => "r", "q" => "internet OR datagram"], "13");
-        assert_search_papers($user_mgbaker, ["t" => "rout", "q" => "internet OR datagram"], "13");
+    function test_search_routstanding() {
+        assert_search_papers($this->u_mgbaker, ["t" => "r", "q" => ""], "1 13 17");
+        assert_search_papers($this->u_mgbaker, ["t" => "rout", "q" => ""], "13");
+        assert_search_papers($this->u_mgbaker, ["t" => "r", "q" => "internet OR datagram"], "13");
+        assert_search_papers($this->u_mgbaker, ["t" => "rout", "q" => "internet OR datagram"], "13");
 
-        xassert_assign($user_chair, "paper,action,user\n19,review,new-anonymous");
-        $user_mgbaker->change_review_token($conf->fetch_ivalue("select reviewToken from PaperReview where paperId=19 and reviewToken!=0"), true);
-        assert_search_papers($user_mgbaker, ["t" => "r", "q" => ""], "1 13 17 19");
-        assert_search_papers($user_mgbaker, ["t" => "rout", "q" => ""], "13 19");
-        assert_search_papers($user_mgbaker, ["t" => "r", "q" => "internet"], "13");
-        assert_search_papers($user_mgbaker, ["t" => "rout", "q" => "internet"], "13");
-        assert_search_papers($user_mgbaker, ["t" => "r", "q" => "internet OR datagram"], "13 19");
-        assert_search_papers($user_mgbaker, ["t" => "rout", "q" => "internet OR datagram"], "13 19");
-        assert_search_papers($user_mgbaker, "(internet OR datagram) 13 19", "13 19");
+        xassert_assign($this->u_chair, "paper,action,user\n19,review,new-anonymous");
+        $this->u_mgbaker->change_review_token($this->conf->fetch_ivalue("select reviewToken from PaperReview where paperId=19 and reviewToken!=0"), true);
+        assert_search_papers($this->u_mgbaker, ["t" => "r", "q" => ""], "1 13 17 19");
+        assert_search_papers($this->u_mgbaker, ["t" => "rout", "q" => ""], "13 19");
+        assert_search_papers($this->u_mgbaker, ["t" => "r", "q" => "internet"], "13");
+        assert_search_papers($this->u_mgbaker, ["t" => "rout", "q" => "internet"], "13");
+        assert_search_papers($this->u_mgbaker, ["t" => "r", "q" => "internet OR datagram"], "13 19");
+        assert_search_papers($this->u_mgbaker, ["t" => "rout", "q" => "internet OR datagram"], "13 19");
+        assert_search_papers($this->u_mgbaker, "(internet OR datagram) 13 19", "13 19");
 
         // author review visibility
-        xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
-        $conf->save_refresh_setting("au_seerev", 2);
-        xassert($user_mjh->can_view_review($paper17, $rrow17m));
-        xassert_assign_fail($user_mgbaker, "paper,tag\n17,perm:author-read-review\n");
-        xassert_assign_fail($user_mjh, "paper,tag\n17,perm:author-read-review\n");
-        xassert_assign($user_chair, "paper,tag\n17,perm:author-read-review#-1\n");
-        $paper17 = $conf->checked_paper_by_id(17);
-        xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
-        $conf->save_refresh_setting("au_seerev", null);
-        xassert_assign($user_chair, "paper,tag\n17,perm:author-read-review#1\n");
-        $paper17 = $conf->checked_paper_by_id(17);
-        xassert($user_mjh->can_view_review($paper17, $rrow17m));
-        xassert_assign($user_chair, "paper,tag\n17,perm:author-read-review#clear\n");
-        $paper17 = $conf->checked_paper_by_id(17);
-        xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
+        $paper17 = $this->conf->checked_paper_by_id(17);
+        $rrow17m = fetch_review($paper17, $this->u_mgbaker);
+        xassert(!$this->u_mjh->can_view_review($paper17, $rrow17m));
+        $this->conf->save_refresh_setting("au_seerev", 2);
+        xassert($this->u_mjh->can_view_review($paper17, $rrow17m));
+        xassert_assign_fail($this->u_mgbaker, "paper,tag\n17,perm:author-read-review\n");
+        xassert_assign_fail($this->u_mjh, "paper,tag\n17,perm:author-read-review\n");
+        xassert_assign($this->u_chair, "paper,tag\n17,perm:author-read-review#-1\n");
+        $paper17 = $this->conf->checked_paper_by_id(17);
+        xassert(!$this->u_mjh->can_view_review($paper17, $rrow17m));
+        $this->conf->save_refresh_setting("au_seerev", null);
+        xassert_assign($this->u_chair, "paper,tag\n17,perm:author-read-review#1\n");
+        $paper17 = $this->conf->checked_paper_by_id(17);
+        xassert($this->u_mjh->can_view_review($paper17, $rrow17m));
+        xassert_assign($this->u_chair, "paper,tag\n17,perm:author-read-review#clear\n");
+        $paper17 = $this->conf->checked_paper_by_id(17);
+        xassert(!$this->u_mjh->can_view_review($paper17, $rrow17m));
     }
 
     function test_submission_fields() {
