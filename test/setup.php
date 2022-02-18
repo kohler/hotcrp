@@ -50,8 +50,43 @@ class MailChecker {
     }
 
     static function check0() {
-        xassert_eqq(count(self::$preps), 0);
-        self::$preps = [];
+        self::check_match([]);
+    }
+
+    /** @param string $want
+     * @param list<string> $haves */
+    static function find_best_mail_match($want, $haves) {
+        $len0 = strlen($want);
+        $best = [false, false, false];
+        $best_nbad = 1000000;
+        foreach ($haves as $i => $have) {
+            $len1 = strlen($have);
+            $pos0 = $pos1 = $line = $nbad = 0;
+            $badline = null;
+            while ($pos0 !== $len0 || $pos1 !== $len1) {
+                ++$line;
+                $epos0 = strpos($want, "\n", $pos0);
+                $epos0 = $epos0 !== false ? $epos0 + 1 : $len0;
+                $epos1 = strpos($have, "\n", $pos1);
+                $epos1 = $epos1 !== false ? $epos1 + 1 : $len1;
+                $line0 = substr($want, $pos0, $epos0 - $pos0);
+                $line1 = substr($have, $pos1, $epos1 - $pos1);
+                if (strpos($line0, "{{}}") !== false
+                    ? !preg_match('{\A' . str_replace('\\{\\{\\}\\}', ".*", preg_quote($line0)) . '\z}', $line1)
+                    : $line0 !== $line1) {
+                    $badline = $badline ?? $line;
+                    ++$nbad;
+                }
+                $pos0 = $epos0;
+                $pos1 = $epos1;
+            }
+            if ($nbad === 0) {
+                return [true, $i, false];
+            } else if ($nbad < $best_nbad && $nbad < 12) {
+                $best = [false, $i, $badline];
+            }
+        }
+        return $best;
     }
 
     /** @param ?string $name */
@@ -83,6 +118,11 @@ class MailChecker {
                 }
             }
         }
+        self::check_match($mdb);
+    }
+
+    /** @param list<string> $mdb */
+    static function check_match($mdb) {
         $haves = [];
         foreach (self::$preps as $prep) {
             $haves[] = "To: " . join(", ", $prep->to) . "\n"
@@ -92,29 +132,34 @@ class MailChecker {
         sort($haves);
         $wants = [];
         foreach ($mdb as $m) {
-            $wants[] = preg_replace('/^X-Landmark:.*?\n/m', "", $m[0]) . $m[1];
+            if (is_string($m)) {
+                $wants[] = $m;
+            } else {
+                $wants[] = preg_replace('/^X-Landmark:.*?\n/m', "", $m[0]) . $m[1];
+            }
         }
         sort($wants);
-        foreach ($wants as $i => $want) {
+        foreach ($wants as $want) {
             ++Xassert::$n;
-            $have = isset($haves[$i]) ? $haves[$i] : "";
-            if ($have === $want
-                || preg_match("=\\A" . str_replace('\\{\\{\\}\\}', ".*", preg_quote($want)) . "\\z=", $have)) {
+            list($match, $index, $badline) = self::find_best_mail_match($want, $haves);
+            if ($match) {
                 ++Xassert::$nsuccess;
-            } else {
-                error_log(assert_location() . ": Mail failure: " . var_export($have, true) . " !== " . var_export($want, true));
+            } else if ($index !== false) {
+                $have = $haves[$index];
+                error_log(assert_location() . ": Mail mismatch: " . var_export($have, true) . " !== " . var_export($want, true));
                 $havel = explode("\n", $have);
-                foreach (explode("\n", $want) as $j => $wantl) {
-                    if (!isset($havel[$j])
-                        || ($havel[$j] !== $wantl
-                            && !preg_match("=\\A" . str_replace('\\{\\{\\}\\}', ".*", preg_quote($wantl, "#\"")) . "\\z=", $havel[$j]))) {
-                        fwrite(STDERR, "... line " . ($j + 1) . " differs near " . $havel[$j] . "\n"
-                               . "... expected " . $wantl . "\n");
-                        break;
-                    }
-                }
-                error_log("... at " . assert_location());
+                $wantl = explode("\n", $want);
+                fwrite(STDERR, "... line {$badline} differs near {$havel[$badline-1]}\n... expected {$wantl[$badline-1]}\n");
+            } else {
+                error_log(assert_location() . ": Mail not found: " . var_export($want, true));
             }
+            if ($index !== false) {
+                array_splice($haves, $index, 1);
+            }
+        }
+        foreach ($haves as $have) {
+            ++Xassert::$n;
+            error_log(assert_location() . ": Unexpected mail: " . var_export($have, true));
         }
         self::$preps = [];
     }

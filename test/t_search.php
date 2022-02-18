@@ -31,4 +31,16 @@ class Search_Tester {
         xassert_eqq(PaperSearch::canonical_query("foo OR abstract:bar", "", "", "tag", $this->conf, "s"),
                     "(#foo OR abstract:bar) in:submitted");
     }
+
+    function test_sort_etag() {
+        $u_shenker = $this->conf->checked_user_by_email("shenker@parc.xerox.com");
+        $pl = new PaperList("empty", new PaperSearch($this->u_shenker, "editsort:#f"));
+        xassert_eqq($pl->sort_etag(), "f");
+        $pl = new PaperList("empty", new PaperSearch($this->u_shenker, "editsort:#~f"));
+        xassert_eqq($pl->sort_etag(), $this->u_shenker->contactId . "~f");
+        $pl = new PaperList("empty", new PaperSearch($this->u_shenker, "sort:#me~f edit:tagval:~f"));
+        xassert_eqq($pl->sort_etag(), $this->u_shenker->contactId . "~f");
+        $pl = new PaperList("empty", new PaperSearch($this->u_shenker, "sort:[#me~f reverse] edit:tagval:~f"));
+        xassert_eqq($pl->sort_etag(), "");
+    }
 }

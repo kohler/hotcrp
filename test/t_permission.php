@@ -19,6 +19,10 @@ class Permission_Tester {
     /** @var Contact */
     public $u_mgbaker; // pc
     /** @var Contact */
+    public $u_shenker; // pc, chair
+    /** @var Contact */
+    public $u_mogul;
+    /** @var Contact */
     public $u_nobody;
 
     function __construct(Conf $conf) {
@@ -29,7 +33,27 @@ class Permission_Tester {
         $this->u_marina = $conf->checked_user_by_email("marina@poema.ru");
         $this->u_van = $conf->checked_user_by_email("van@ee.lbl.gov");
         $this->u_mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        $this->u_shenker = $conf->checked_user_by_email("shenker@parc.xerox.com");
+        $this->u_mogul = $conf->checked_user_by_email("mogul@wrl.dec.com");
         $this->u_nobody = Contact::make($conf);
+    }
+
+    function test_search_basics() {
+        assert_search_papers($this->u_chair, "timers", "1 21");
+        assert_search_papers($this->u_chair, "ti:timers", "1");
+        assert_search_papers($this->u_chair, "routing", "2 3 4 11 19 21 27");
+        assert_search_papers($this->u_chair, "routing scalable", "4 19");
+        assert_search_papers($this->u_chair, "ti:routing ti:scalable", "4");
+        assert_search_papers($this->u_chair, "ti:(routing scalable)", "4");
+        assert_search_papers($this->u_chair, "ab:routing ab:scalable", "19");
+        assert_search_papers($this->u_chair, "ab:routing scalable", "4 19");
+        assert_search_papers($this->u_chair, "ab:(routing scalable)", "19");
+        assert_search_papers($this->u_chair, "many", "8 16 25 29");
+        assert_search_papers($this->u_chair, "many applications", "8 25");
+        assert_search_papers($this->u_chair, "\"many applications\"", "8");
+        assert_search_papers($this->u_chair, "“many applications”", "8");
+        assert_search_papers($this->u_chair, "“many applications“", "8");
+        assert_search_papers($this->u_chair, "status:mis[take", "");
     }
 
     // check permissions on paper
@@ -121,7 +145,7 @@ class Permission_Tester {
         $user_marina = $this->u_marina;
         $user_van = $this->u_van;
         $user_mgbaker = $this->u_mgbaker;
-        $user_shenker = $this->conf->checked_user_by_email("shenker@parc.xerox.com"); // pc, chair
+        $user_shenker = $this->u_shenker;
         $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
         $user_varghese = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu"); // pc
         $user_wilma = $this->conf->checked_user_by_email("ojuelegba@gmail.com"); // pc
@@ -189,43 +213,12 @@ class Permission_Tester {
 
         // role assignment works
         $paper18 = $user_mgbaker->checked_paper_by_id(18);
-        xassert($user_shenker->can_administer($paper18));
+        xassert($this->u_shenker->can_administer($paper18));
         xassert(!$user_mgbaker->can_administer($paper1));
         xassert(!$user_mgbaker->can_administer($paper18));
 
         // author derivation works
         xassert($user_mgbaker->act_author_view($paper18));
-
-        // simple search
-        $j = search_json($user_shenker, "au:berkeley", "id title");
-        xassert_eqq(join(";", array_keys($j)), "1;6;13;15;24");
-
-        // "and"
-        assert_search_papers($user_shenker, "au:berkeley fountain", "24");
-        assert_search_papers($user_shenker, "au:berkeley (fountain)", "24");
-        assert_search_papers($user_shenker, "au:berkeley (fountain", "24");
-        assert_search_papers($user_shenker, "au:berkeley fountain)", "24");
-
-        // sorting works
-        assert_search_papers($user_shenker, "au:berkeley sort:title", "24 15 13 1 6");
-        assert_search_papers($user_shenker, "au:berkeley sort:[title]", "24 15 13 1 6");
-        assert_search_papers($user_shenker, "au:berkeley sort:[title reverse]", "6 1 13 15 24");
-        assert_search_papers($user_shenker, "au:berkeley sort:[title down]", "6 1 13 15 24");
-        assert_search_papers($user_shenker, "au:berkeley sort:[title down forward]", "24 15 13 1 6");
-        assert_search_papers($user_shenker, "au:berkeley sort:title[down forward]", "24 15 13 1 6");
-        assert_search_papers($user_shenker, "au:berkeley sort:title[down,forward]", "24 15 13 1 6");
-        assert_search_papers($user_shenker, "au:berkeley sort:[-title]", "6 1 13 15 24");
-        assert_search_papers($user_shenker, "au:berkeley sort:-title", "6 1 13 15 24");
-        assert_search_papers($user_shenker, "au:berkeley sort:title[reverse]", "6 1 13 15 24");
-
-        $pl = new PaperList("empty", new PaperSearch($user_shenker, "editsort:#f"));
-        xassert_eqq($pl->sort_etag(), "f");
-        $pl = new PaperList("empty", new PaperSearch($user_shenker, "editsort:#~f"));
-        xassert_eqq($pl->sort_etag(), $user_shenker->contactId . "~f");
-        $pl = new PaperList("empty", new PaperSearch($user_shenker, "sort:#me~f edit:tagval:~f"));
-        xassert_eqq($pl->sort_etag(), $user_shenker->contactId . "~f");
-        $pl = new PaperList("empty", new PaperSearch($user_shenker, "sort:[#me~f reverse] edit:tagval:~f"));
-        xassert_eqq($pl->sort_etag(), "");
 
         // limits are obeyed: all searches return subsets of `viewable`
         assert_search_papers($user_chair, ["q" => "", "t" => "s"], "1-30");
@@ -241,13 +234,6 @@ class Permission_Tester {
         assert_search_ids($user_chair, ["q" => "", "t" => "a"], "");
         assert_search_ids($user_shenker, ["q" => "", "t" => "a"], "20 29 30");
         assert_search_ids($user_randy, ["q" => "", "t" => "a"], "6");
-
-        // more complex author searches
-        assert_search_papers($user_shenker, "au:estrin@usc.edu", "1");
-        assert_search_papers($user_shenker, "au:usc.edu", "1");
-        assert_search_papers($user_shenker, "au:stanford.edu", "3 18 19");
-        assert_search_papers($user_shenker, "au:*@*.stanford.edu", "3 18 19");
-        assert_search_papers($user_shenker, "au:n*@*u", "3 10");
 
         // correct conflict information returned
         $j = search_json($user_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_mgbaker], "id conf");
@@ -267,12 +253,6 @@ class Permission_Tester {
 
         assert_search_papers($user_chair, "re:estrin", "4 8 18");
         assert_search_papers($user_shenker, "re:estrin", "4 8 18");
-
-        assert_search_papers($user_chair, "1-5 15-18", "1 2 3 4 5 15 16 17 18");
-        assert_search_papers($user_chair, "#1-5 15-#18", "1 2 3 4 5 15 16 17 18");
-        assert_search_papers($user_chair, "#1-#5 #15-18", "1 2 3 4 5 15 16 17 18");
-        assert_search_papers($user_chair, "5–1 15—18", "5 4 3 2 1 15 16 17 18");
-        assert_search_papers($user_chair, "5–1,#15—17,#20", "5 4 3 2 1 15 16 17 20");
 
         // normals don't see conflicted reviews
         assert_search_papers($user_mgbaker, "re:estrin", "4 8");
@@ -382,18 +362,6 @@ class Permission_Tester {
         xassert(!$user_jon->can_accept_review_assignment_ignore_conflict($paper13));
         xassert(!$user_jon->can_accept_review_assignment($paper13));
 
-        // check shepherd search visibility
-        $paper11 = $user_chair->checked_paper_by_id(11);
-        $paper12 = $user_chair->checked_paper_by_id(12);
-        $j = call_api("shepherd", $user_chair, ["shepherd" => $user_estrin->email], $paper11);
-        xassert_eqq($j["ok"], true);
-        $j = call_api("shepherd", $user_chair, ["shepherd" => $user_estrin->email], $paper12);
-        xassert_eqq($j["ok"], true);
-        assert_search_papers($user_chair, "shep:any", "11 12");
-        assert_search_papers($user_chair, "shep:estrin", "11 12");
-        assert_search_papers($user_shenker, "shep:any", "11 12");
-        assert_search_papers($user_shenker, "has:shepherd", "11 12");
-
         // tag searches
         assert_search_papers($user_chair, "#green", "3 9 13 17");
         Dbl::qe("insert into PaperTag (paperId,tag,tagIndex) values (1,?,10), (1,?,5), (2,?,3)",
@@ -415,8 +383,8 @@ class Permission_Tester {
         // assign some tags using AssignmentSet interface
         $assignset = new AssignmentSet($user_chair, true);
         $assignset->parse("paper,action,tag,index
-        1-9,tag,g*#clear
-        2,tag,green,1\n");
+1-9,tag,g*#clear
+2,tag,green,1\n");
         assert_search_papers($user_chair, "#green", "3 9 13 17");
         $assignset->execute();
         assert_search_papers($user_chair, "#green", "13 17 2");
@@ -426,8 +394,8 @@ class Permission_Tester {
 
         $assignset = new AssignmentSet($user_chair, true);
         $assignset->parse("paper,action,tag,index
-        1,tag,~vote,clear
-        2,tag,marina~vote,clear\n");
+1,tag,~vote,clear
+2,tag,marina~vote,clear\n");
         xassert_eqq($assignset->full_feedback_text(), "");
         $assignset->execute();
         assert_search_papers($user_chair, "#any~vote", "1");
@@ -585,9 +553,6 @@ class Permission_Tester {
         xassert_assign($user_chair, "paper,tag\n1,:poop:\n", true);
         xassert(!!$this->conf->setting("has_colontag"));
 
-        // numeric order sort
-        assert_search_papers($user_chair, "13 10 8 9 12", "13 10 8 9 12");
-
         // round searches
         assert_search_papers($user_chair, "re:huitema", "8 10 13");
         assert_search_papers($user_chair, "re:huitema round:R1", "13");
@@ -629,40 +594,12 @@ class Permission_Tester {
         assert_search_papers($user_chair, "re:huitema", "8 10 13");
         assert_search_papers($user_chair, "8 10 13 re:huitema", "8 10 13");
 
-        // THEN searches
-        assert_search_papers($user_chair, "10-12 THEN re:huitema", "10 11 12 8 13");
-        assert_search_papers($user_chair, "10-12 HIGHLIGHT re:huitema", "10 11 12");
-        assert_search_papers($user_chair, "10-12 THEN re:huitema THEN 5-6", "10 11 12 8 13 5 6");
-        assert_search_papers($user_chair, "(10-12 THEN re:huitema) THEN 5-6", "10 11 12 8 13 5 6");
-
-        // THEN searches and sorting
-        assert_search_papers($user_chair, "10-12 THEN 3-1", "10 11 12 3 2 1");
-        assert_search_papers($user_chair, "10-12 THEN 3-1 sort:title", "10 11 12 3 1 2");
-        assert_search_papers($user_chair, "(10-12 THEN 3-1) sort:title", "10 12 11 3 2 1");
-
         // NOT searches
         assert_search_papers($user_chair, "#fart", "7 8 1 2 3 6 5 4");
         assert_search_papers($user_chair, "tag:#fart", "1 2 3 4 5 6 7 8");
         assert_search_papers($user_chair, "tag:fart", "1 2 3 4 5 6 7 8");
         assert_search_papers($user_chair, "NOT #fart", "9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
         assert_search_papers($user_chair, "-#fart", "9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
-
-        // option searches
-        assert_search_papers($user_chair, "has:calories", "1 2 3 4 5");
-        assert_search_papers($user_chair, "opt:calories", "1 2 3 4 5");
-        assert_search_papers($user_chair, "-opt:calories", "6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
-        assert_search_papers($user_chair, "calories:any", "1 2 3 4 5");
-        assert_search_papers($user_chair, "calories:none", "6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
-        assert_search_papers($user_chair, "calories>200", "1 3 4");
-        assert_search_papers($user_chair, "calories:<1000", "2 5");
-        assert_search_papers($user_chair, "calories:1040", "3 4");
-        assert_search_papers($user_chair, "calories≥200", "1 2 3 4");
-
-        // option searches with edit condition
-        $this->conf->save_refresh_setting("options", 1, '[{"id":1,"name":"Calories","abbr":"calories","type":"numeric","position":1,"display":"default"},{"id":2,"name":"Fattening","type":"numeric","position":2,"display":"default","exists_if":"calories>200"}]');
-        $this->conf->invalidate_caches(["options" => true]);
-        $this->conf->qe("insert into PaperOption (paperId,optionId,value) values (1,2,1),(2,2,1),(3,2,1),(4,2,1),(5,2,1)");
-        assert_search_papers($user_chair, "has:fattening", "1 3 4");
 
         // Check all tags
         assert_search_papers($user_chair, "#none", "9 10 11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
@@ -1275,107 +1212,6 @@ class Permission_Tester {
         $this->conf->save_refresh_setting("resp_active", null);
         xassert(!$user_author2->can_view_review($paper2, $review2b));
 
-        // check token assignment
-        assert_search_papers($this->u_chair, "re:any 19", "");
-        xassert_assign($this->u_chair, "paper,action,user\n19,review,anonymous\n");
-        assert_search_papers($this->u_chair, "re:any 19", "19");
-        assert_search_papers($this->u_chair, "re:1 19", "19");
-
-        // check rev_tokens setting
-        ConfInvariants::test_all($this->conf);
-        xassert_assign($this->u_chair, "paper,action,user\n19,clearreview,anonymous\n");
-        assert_search_papers($this->u_chair, "re:any 19", "");
-        ConfInvariants::test_all($this->conf);
-        xassert_assign($this->u_chair, "paper,action,user\n19,review,anonymous\n");
-
-        xassert_assign($this->u_chair, "paper,action,user\n19,review,anonymous\n");
-        assert_search_papers($this->u_chair, "re:1 19", "19");
-        assert_search_papers($this->u_chair, "re:2 19", "");
-        xassert_assign($this->u_chair, "paper,action,user\n19,review,new-anonymous\n");
-        assert_search_papers($this->u_chair, "re:1 19", "");
-        assert_search_papers($this->u_chair, "re:2 19", "19");
-        xassert_assign($this->u_chair, "paper,action,user\n19,review,new-anonymous\n19,review,new-anonymous\n");
-        assert_search_papers($this->u_chair, "re:1 19", "");
-        assert_search_papers($this->u_chair, "re:4 19", "19");
-
-        // check that there actually are tokens
-        $paper19 = $this->u_chair->checked_paper_by_id(19);
-        xassert_eqq(count($paper19->all_reviews()), 4);
-        $revs = $paper19->reviews_as_list();
-        for ($i = 0; $i < 4; ++$i) {
-            xassert($revs[$i]->reviewToken);
-            for ($j = $i + 1; $j < 4; ++$j)
-                xassert($revs[$i]->reviewToken != $revs[$j]->reviewToken);
-        }
-
-        // withdraw a paper
-        $paper16 = $this->u_chair->checked_paper_by_id(16);
-        xassert($paper16->timeSubmitted > 0);
-        xassert_eq($paper16->timeWithdrawn, 0);
-        xassert_eqq($paper16->withdrawReason, null);
-        MailChecker::check0();
-        xassert_assign($this->u_chair, "paper,action,reason,notify\n16,withdraw,Paper is bad,no\n");
-        MailChecker::check0();
-        $paper16b = $this->u_chair->checked_paper_by_id(16);
-        xassert_eqq($paper16b->timeSubmitted, -$paper16->timeSubmitted);
-        xassert($paper16b->timeWithdrawn > 0);
-        xassert_eqq($paper16b->withdrawReason, "Paper is bad");
-        xassert_eqq($paper16b->all_tags_text(), "");
-        xassert_assign($this->u_chair, "paper,action,reason\n16,revive\n");
-
-        // author can also withdraw
-        $user_mogul = $this->conf->checked_user_by_email("mogul@wrl.dec.com");
-        $paper16 = $user_mogul->checked_paper_by_id(16);
-        xassert($paper16->timeSubmitted > 0);
-        xassert($paper16->timeWithdrawn <= 0);
-        xassert_assign($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
-        $paper16 = $user_mogul->checked_paper_by_id(16);
-        xassert($paper16->timeSubmitted < 0);
-        xassert($paper16->timeWithdrawn > 0);
-        xassert_eqq($paper16->withdrawReason, "Sucky");
-        xassert_assign_fail($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
-        $this->conf->save_refresh_setting("sub_sub", Conf::$now + 5);
-        xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
-        $paper16 = $user_mogul->checked_paper_by_id(16);
-        xassert($paper16->timeSubmitted > 0);
-        xassert($paper16->timeWithdrawn <= 0);
-
-        // non-author cannot withdraw
-        xassert_assign_fail($this->u_estrin, "paper,action,reason\n16,withdraw,Fucker\n");
-
-        // check other withdraw possibilities: give a review
-        $this->u_chair->assign_review(16, $this->u_mgbaker->contactId, REVIEW_PC, []);
-        xassert_assign($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
-        xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
-        save_review(16, $this->u_mgbaker, ["ovemer" => 2, "revexp" => 1, "ready" => false]);
-        xassert_assign($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
-        xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
-        save_review(16, $this->u_mgbaker, ["ovemer" => 2, "revexp" => 1, "ready" => true]);
-        xassert_assign($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
-        xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
-        $this->conf->qe("update PaperReview set reviewAuthorSeen=1 where paperId=? and contactId=?", 16, $this->u_mgbaker->contactId);
-        xassert_assign_fail($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
-        $this->conf->save_setting("sub_withdraw", 1);
-        xassert_assign($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
-        xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
-        $this->conf->qe("update Paper set outcome=1 where paperId=?", 16);
-        xassert_assign_fail($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
-        $this->conf->qe("update Paper set outcome=0 where paperId=?", 16);
-        xassert_assign($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
-        xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
-
-        // notification checks
-        MailChecker::clear();
-        xassert_assign($this->u_chair, "paper,action,reason\n16,withdraw,Suckola\n");
-        MailChecker::check_db("withdraw-16-admin-notify");
-        xassert_assign($this->u_chair, "paper,action,reason\n16,revive,Suckola\n");
-        xassert_assign($this->u_chair, "paper,action,reason,notify\n16,withdraw,Suckola,no\n");
-        MailChecker::check0();
-        xassert_assign($this->u_chair, "paper,action,reason\n16,revive,Suckola\n");
-        xassert_assign($this->u_chair, "paper,action,reason,notify\n16,withdraw,Suckola,yes\n");
-        MailChecker::check_db("withdraw-16-admin-notify");
-        xassert_assign($this->u_chair, "paper,action,reason\n16,revive,Suckola\n");
-
         // more tags
         $this->conf->save_refresh_setting("tag_vote", 1, "vote#10 crap#3");
         $this->conf->save_refresh_setting("tag_approval", 1, "app#0");
@@ -1420,14 +1256,17 @@ class Permission_Tester {
         xassert_eqq($paper16->sorted_searchable_tags($this->u_chair), " 2~vote#5 4~app#0 4~bar#0 4~crap#1 8~crap#2 8~vote#1 17~app#0 app#2 crap#3 vote#6");
 
         $this->conf->save_refresh_setting("tag_approval", null);
-        xassert_assign($this->u_chair, "paper,action\n16,withdraw\n");
+        xassert_assign($this->u_chair, "paper,action,notify\n16,withdraw,no\n");
         $paper16 = $this->u_chair->checked_paper_by_id(16);
         xassert_eqq($paper16->sorted_searchable_tags($this->u_marina), " app#2");
         xassert_eqq($paper16->sorted_searchable_tags($this->u_estrin), " 4~app#0 4~bar#0 app#2");
+        xassert_assign($this->u_chair, "paper,action\n16,revive\n");
+        MailChecker::check0();
 
         ConfInvariants::test_all($this->conf);
 
         // author view capabilities and multiple blank users
+        $paper19 = $this->u_chair->checked_paper_by_id(19);
         $blank1 = Contact::make($this->conf);
         $blank1->set_capability("@av19", true);
         $blank2 = Contact::make($this->conf);
@@ -1445,10 +1284,10 @@ class Permission_Tester {
         // author view capabilities and "author" paper_set
         $pset = $blank1->paper_set(["author" => true]);
         xassert_array_eqq($pset->paper_ids(), [19]);
-        $pset = $user_mogul->paper_set(["author" => true]);
+        $pset = $this->u_mogul->paper_set(["author" => true]);
         xassert_array_eqq($pset->paper_ids(), [16]);
-        $user_mogul->set_capability("@av12", true);
-        $pset = $user_mogul->paper_set(["author" => true]);
+        $this->u_mogul->set_capability("@av12", true);
+        $pset = $this->u_mogul->paper_set(["author" => true]);
         xassert_array_eqq($pset->paper_ids(), [12, 16]);
 
         // assignment synonyms
@@ -1463,25 +1302,10 @@ class Permission_Tester {
         $paper16 = $this->u_chair->checked_paper_by_id(16);
         xassert_eq($paper16->leadContactId, $user_varghese->contactId);
 
-        // search types
-        assert_search_papers($this->u_chair, "timers", "1 21");
-        assert_search_papers($this->u_chair, "ti:timers", "1");
-        assert_search_papers($this->u_chair, "routing", "2 3 4 11 19 21 27");
-        assert_search_papers($this->u_chair, "routing scalable", "4 19");
-        assert_search_papers($this->u_chair, "ti:routing ti:scalable", "4");
-        assert_search_papers($this->u_chair, "ti:(routing scalable)", "4");
-        assert_search_papers($this->u_chair, "ab:routing ab:scalable", "19");
-        assert_search_papers($this->u_chair, "ab:routing scalable", "4 19");
-        assert_search_papers($this->u_chair, "ab:(routing scalable)", "19");
-        assert_search_papers($this->u_chair, "many", "8 25 29"); // 16 withdrawn
-        assert_search_papers($this->u_chair, "many applications", "8 25");
-        assert_search_papers($this->u_chair, "\"many applications\"", "8");
-        assert_search_papers($this->u_chair, "“many applications”", "8");
-        assert_search_papers($this->u_chair, "“many applications“", "8");
-        assert_search_papers($this->u_chair, "status:mis[take", "");
-
         xassert(!maybe_user("anonymous10"));
-        $u = Contact::make_email($this->conf, "anonymous10")->store(Contact::SAVE_ANY_EMAIL);
+        $u = Contact::make_keyed($this->conf, [
+            "email" => "anonymous10", "disabled" => true
+        ])->store(Contact::SAVE_ANY_EMAIL);
         xassert($u->contactId > 0);
         xassert_eqq($this->conf->fetch_value("select password from ContactInfo where email='anonymous10'"), " nologin");
     }
@@ -1569,5 +1393,217 @@ class Permission_Tester {
         xassert(!$user_pdruschel->can_view_authors($paper17));
 
         $this->conf->save_setting("sub_blind", Conf::BLIND_ALWAYS);
+    }
+
+    function test_search_authors() {
+        // simple search
+        $j = search_json($this->u_shenker, "au:berkeley", "id title");
+        xassert_eqq(join(";", array_keys($j)), "1;6;13;15;24");
+
+        // "and"
+        assert_search_papers($this->u_shenker, "au:berkeley fountain", "24");
+        assert_search_papers($this->u_shenker, "au:berkeley (fountain)", "24");
+        assert_search_papers($this->u_shenker, "au:berkeley (fountain", "24");
+        assert_search_papers($this->u_shenker, "au:berkeley fountain)", "24");
+
+        // more complex author searches
+        assert_search_papers($this->u_shenker, "au:estrin@usc.edu", "1");
+        assert_search_papers($this->u_shenker, "au:usc.edu", "1");
+        assert_search_papers($this->u_shenker, "au:stanford.edu", "3 18 19");
+        assert_search_papers($this->u_shenker, "au:*@*.stanford.edu", "3 18 19");
+        assert_search_papers($this->u_shenker, "au:n*@*u", "3 10");
+    }
+
+    function test_search_sort() {
+        assert_search_papers($this->u_shenker, "au:berkeley sort:title", "24 15 13 1 6");
+        assert_search_papers($this->u_shenker, "au:berkeley sort:[title]", "24 15 13 1 6");
+        assert_search_papers($this->u_shenker, "au:berkeley sort:title[down forward]", "24 15 13 1 6");
+        assert_search_papers($this->u_shenker, "au:berkeley sort:title[down,forward]", "24 15 13 1 6");
+        assert_search_papers($this->u_shenker, "au:berkeley sort:-title", "6 1 13 15 24");
+        assert_search_papers($this->u_shenker, "au:berkeley sort:title[reverse]", "6 1 13 15 24");
+        assert_search_papers($this->u_shenker, "au:berkeley sort:[title reverse]", "6 1 13 15 24");
+        assert_search_papers($this->u_shenker, "au:berkeley sort:[title down]", "6 1 13 15 24");
+        assert_search_papers($this->u_shenker, "au:berkeley sort:[title down forward]", "24 15 13 1 6");
+        assert_search_papers($this->u_shenker, "au:berkeley sort:[-title]", "6 1 13 15 24");
+    }
+
+    function test_search_shepherd() {
+        $paper11 = $this->u_chair->checked_paper_by_id(11);
+        $paper12 = $this->u_chair->checked_paper_by_id(12);
+        $j = call_api("shepherd", $this->u_chair, ["shepherd" => $this->u_estrin->email], $paper11);
+        xassert_eqq($j["ok"], true);
+        $j = call_api("shepherd", $this->u_chair, ["shepherd" => $this->u_estrin->email], $paper12);
+        xassert_eqq($j["ok"], true);
+        assert_search_papers($this->u_chair, "shep:any", "11 12");
+        assert_search_papers($this->u_chair, "shep:estrin", "11 12");
+        assert_search_papers($this->u_shenker, "shep:any", "11 12");
+        assert_search_papers($this->u_shenker, "has:shepherd", "11 12");
+    }
+
+    function test_search_numeric_order() {
+        assert_search_papers($this->u_chair, "1-5 15-18", "1 2 3 4 5 15 16 17 18");
+        assert_search_papers($this->u_chair, "#1-5 15-#18", "1 2 3 4 5 15 16 17 18");
+        assert_search_papers($this->u_chair, "#1-#5 #15-18", "1 2 3 4 5 15 16 17 18");
+        assert_search_papers($this->u_chair, "5–1 15—18", "5 4 3 2 1 15 16 17 18");
+        assert_search_papers($this->u_chair, "5–1,#15—17,#20", "5 4 3 2 1 15 16 17 20");
+        assert_search_papers($this->u_chair, "13 10 8 9 12", "13 10 8 9 12");
+    }
+
+    function test_search_then() {
+        assert_search_papers($this->u_chair, "10-12 THEN re:huitema", "10 11 12 8 13");
+        assert_search_papers($this->u_chair, "10-12 HIGHLIGHT re:huitema", "10 11 12");
+        assert_search_papers($this->u_chair, "10-12 THEN re:huitema THEN 5-6", "10 11 12 8 13 5 6");
+        assert_search_papers($this->u_chair, "(10-12 THEN re:huitema) THEN 5-6", "10 11 12 8 13 5 6");
+    }
+
+    function test_search_then_sort() {
+        assert_search_papers($this->u_chair, "10-12 THEN 3-1", "10 11 12 3 2 1");
+        assert_search_papers($this->u_chair, "10-12 THEN 3-1 sort:title", "10 11 12 3 1 2");
+        assert_search_papers($this->u_chair, "(10-12 THEN 3-1) sort:title", "10 12 11 3 2 1");
+    }
+
+    function test_search_submission_field() {
+        assert_search_papers($this->u_chair, "has:calories", "1 2 3 4 5");
+        assert_search_papers($this->u_chair, "opt:calories", "1 2 3 4 5");
+        assert_search_papers($this->u_chair, "-opt:calories", "6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
+        assert_search_papers($this->u_chair, "calories:any", "1 2 3 4 5");
+        assert_search_papers($this->u_chair, "calories:none", "6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
+        assert_search_papers($this->u_chair, "calories>200", "1 3 4");
+        assert_search_papers($this->u_chair, "calories:<1000", "2 5");
+        assert_search_papers($this->u_chair, "calories:1040", "3 4");
+        assert_search_papers($this->u_chair, "calories≥200", "1 2 3 4");
+    }
+
+    function test_search_submission_field_edit_condition() {
+        $this->conf->save_refresh_setting("options", 1, '[{"id":1,"name":"Calories","abbr":"calories","type":"numeric","position":1,"display":"default"},{"id":2,"name":"Fattening","type":"numeric","position":2,"display":"default","exists_if":"calories>200"}]');
+        $this->conf->invalidate_caches(["options" => true]);
+        $this->conf->qe("insert into PaperOption (paperId,optionId,value) values (1,2,1),(2,2,1),(3,2,1),(4,2,1),(5,2,1)");
+        assert_search_papers($this->u_chair, "has:fattening", "1 3 4");
+    }
+
+    function test_withdraw_admin() {
+        $paper16 = $this->u_chair->checked_paper_by_id(16);
+        xassert($paper16->timeSubmitted > 0);
+        xassert_eq($paper16->timeWithdrawn, 0);
+        xassert_eqq($paper16->withdrawReason, null);
+        MailChecker::clear();
+        xassert_assign($this->u_chair, "paper,action,reason,notify\n16,withdraw,Paper is bad,no\n");
+        MailChecker::check0();
+
+        $paper16b = $this->u_chair->checked_paper_by_id(16);
+        xassert_eqq($paper16b->timeSubmitted, -$paper16->timeSubmitted);
+        xassert($paper16b->timeWithdrawn > 0);
+        xassert_eqq($paper16b->withdrawReason, "Paper is bad");
+        xassert_assign($this->u_chair, "paper,action,reason\n16,revive\n");
+    }
+
+    function test_withdraw_author() {
+        $paper16 = $this->u_mogul->checked_paper_by_id(16);
+        xassert($paper16->timeSubmitted > 0);
+        xassert($paper16->timeWithdrawn <= 0);
+
+        xassert_assign($this->u_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+        $paper16 = $this->u_mogul->checked_paper_by_id(16);
+        xassert($paper16->timeSubmitted < 0);
+        xassert($paper16->timeWithdrawn > 0);
+        xassert_eqq($paper16->withdrawReason, "Sucky");
+
+        xassert_assign_fail($this->u_mogul, "paper,action,reason\n16,revive,Sucky\n");
+
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now + 5);
+        xassert_assign($this->u_mogul, "paper,action,reason\n16,revive,Sucky\n");
+        $paper16 = $this->u_mogul->checked_paper_by_id(16);
+        xassert($paper16->timeSubmitted > 0);
+        xassert($paper16->timeWithdrawn <= 0);
+    }
+
+    function test_withdraw_nonauthor() {
+        xassert_assign_fail($this->u_estrin, "paper,action,reason\n16,withdraw,Fucker\n");
+    }
+
+    function test_withdraw_review_interaction() {
+        $this->u_chair->assign_review(16, $this->u_mgbaker->contactId, REVIEW_PC, []);
+        // can withdraw because review not started
+        xassert_assign($this->u_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+        xassert_assign($this->u_mogul, "paper,action,reason\n16,revive,Sucky\n");
+
+        save_review(16, $this->u_mgbaker, ["ovemer" => 2, "revexp" => 1, "ready" => false]);
+        // can withdraw because review not ready
+        xassert_assign($this->u_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+        xassert_assign($this->u_mogul, "paper,action,reason\n16,revive,Sucky\n");
+
+        save_review(16, $this->u_mgbaker, ["ovemer" => 2, "revexp" => 1, "ready" => true]);
+        // can withdraw because review not seen
+        xassert_assign($this->u_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+        xassert_assign($this->u_mogul, "paper,action,reason\n16,revive,Sucky\n");
+
+        $this->conf->qe("update PaperReview set reviewAuthorSeen=1 where paperId=? and contactId=?", 16, $this->u_mgbaker->contactId);
+        // cannot withdraw because review seen
+        xassert_assign_fail($this->u_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+        assert_search_papers($this->u_chair, "16", "16");
+
+        $this->conf->save_setting("sub_withdraw", 1);
+        // can withdraw because setting allows it
+        xassert_assign($this->u_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+        xassert_assign($this->u_mogul, "paper,action,reason\n16,revive,Sucky\n");
+
+        $this->conf->qe("update Paper set outcome=1 where paperId=?", 16);
+        // cannot withdraw because decision set
+        xassert_assign_fail($this->u_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+
+        $this->conf->qe("update Paper set outcome=0 where paperId=?", 16);
+        // can withdraw without decision set
+        xassert_assign($this->u_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
+        xassert_assign($this->u_mogul, "paper,action,reason\n16,revive,Sucky\n");
+
+        $this->conf->save_setting("sub_withdraw", null);
+    }
+
+    function test_withdraw_notification() {
+        MailChecker::clear();
+        xassert_assign($this->u_chair, "paper,action,reason\n16,withdraw,Suckola\n");
+        MailChecker::check_db("withdraw-16-admin-notify");
+        xassert_assign($this->u_chair, "paper,action,reason\n16,revive,Suckola\n");
+        xassert_assign($this->u_chair, "paper,action,reason,notify\n16,withdraw,Suckola,no\n");
+        MailChecker::check0();
+        xassert_assign($this->u_chair, "paper,action,reason\n16,revive,Suckola\n");
+        xassert_assign($this->u_chair, "paper,action,reason,notify\n16,withdraw,Suckola,yes\n");
+        MailChecker::check_db("withdraw-16-admin-notify");
+        xassert_assign($this->u_chair, "paper,action,reason\n16,revive,Suckola\n");
+    }
+
+    function test_review_tokens() {
+        assert_search_papers($this->u_chair, "re:any 19", "");
+        xassert_assign($this->u_chair, "paper,action,user\n19,review,anonymous\n");
+        assert_search_papers($this->u_chair, "re:any 19", "19");
+        assert_search_papers($this->u_chair, "re:1 19", "19");
+
+        // check rev_tokens setting
+        ConfInvariants::test_all($this->conf);
+        xassert_assign($this->u_chair, "paper,action,user\n19,clearreview,anonymous\n");
+        assert_search_papers($this->u_chair, "re:any 19", "");
+        ConfInvariants::test_all($this->conf);
+        xassert_assign($this->u_chair, "paper,action,user\n19,review,anonymous\n");
+
+        xassert_assign($this->u_chair, "paper,action,user\n19,review,anonymous\n");
+        assert_search_papers($this->u_chair, "re:1 19", "19");
+        assert_search_papers($this->u_chair, "re:2 19", "");
+        xassert_assign($this->u_chair, "paper,action,user\n19,review,new-anonymous\n");
+        assert_search_papers($this->u_chair, "re:1 19", "");
+        assert_search_papers($this->u_chair, "re:2 19", "19");
+        xassert_assign($this->u_chair, "paper,action,user\n19,review,new-anonymous\n19,review,new-anonymous\n");
+        assert_search_papers($this->u_chair, "re:1 19", "");
+        assert_search_papers($this->u_chair, "re:4 19", "19");
+
+        // check that there actually are tokens
+        $paper19 = $this->u_chair->checked_paper_by_id(19);
+        xassert_eqq(count($paper19->all_reviews()), 4);
+        $revs = $paper19->reviews_as_list();
+        for ($i = 0; $i < 4; ++$i) {
+            xassert($revs[$i]->reviewToken);
+            for ($j = $i + 1; $j < 4; ++$j) {
+                xassert($revs[$i]->reviewToken != $revs[$j]->reviewToken);
+            }
+        }
     }
 }
