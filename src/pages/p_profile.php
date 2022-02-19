@@ -475,7 +475,7 @@ class Profile_Page {
         if ($this->qreq->cancel) {
             $this->conf->redirect_self($this->qreq);
         } else if ($this->qreq->savebulk
-                   && $this->qreq->page_type
+                   && $this->page_type !== 0
                    && $this->qreq->valid_post()) {
             $this->handle_save_bulk();
         } else if ($this->qreq->save
