@@ -31,9 +31,9 @@ class Review_Page {
         return $this->conf->review_form();
     }
 
-    /** @param bool $error */
-    function print_header($mode) {
-        PaperTable::print_header($this->pt, $this->qreq, $mode);
+    /** @param bool $is_error */
+    function print_header($is_error) {
+        PaperTable::print_header($this->pt, $this->qreq, $is_error);
     }
 
     /** @param MessageItem ...$mls */

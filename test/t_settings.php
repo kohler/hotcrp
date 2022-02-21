@@ -44,10 +44,14 @@ class Settings_Tester {
     }
 
     function test_message_defaults() {
+        xassert(!$this->conf->setting("has_topics"));
+        ConfInvariants::test_all($this->conf);
+
         $sv = SettingValues::make_request($this->u_chair, []);
         $s = $this->conf->si("preference_instructions")->default_value($sv);
         xassert(strpos($s, "review preference") !== false);
         xassert(strpos($s, "topic") === false);
+
         $sv = SettingValues::make_request($this->u_chair, [
             "has_topics" => 1,
             "topic__newlist" => "Whatever\n"
@@ -56,14 +60,28 @@ class Settings_Tester {
         $s = $this->conf->si("preference_instructions")->default_value($sv);
         xassert(strpos($s, "review preference") !== false);
         xassert(strpos($s, "topic") !== false);
+        ConfInvariants::test_all($this->conf);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_topics" => 1,
+            "topic__1__name" => "Whatever",
+            "topic__1__delete" => 1
+        ]);
+        xassert($sv->execute());
+
+        xassert_eqq($this->conf->setting("has_topics"), null);
     }
 
-    function test_topics() {
+    function delete_topics() {
         $this->conf->qe("delete from TopicInterest");
         $this->conf->qe("truncate table TopicArea");
         $this->conf->qe("alter table TopicArea auto_increment=0");
         $this->conf->qe("delete from PaperTopic");
+        $this->conf->qe("delete from Settings where name='has_topics'");
+    }
 
+    function test_topics() {
+        $this->delete_topics();
         xassert_eqq(json_encode($this->conf->topic_set()->as_array()), '[]');
         $sv = SettingValues::make_request($this->u_chair, [
             "has_topics" => 1,
@@ -102,6 +120,26 @@ class Settings_Tester {
         ]);
         xassert($sv->execute());
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Fart","3":"Fart2","6":"Fart3","2":"Fért","4":"Festival Fartal","5":"Fet"}');
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_topics" => 1,
+            "topic__1__id" => "1",
+            "topic__1__delete" => "1",
+            "topic__2__id" => "2",
+            "topic__2__delete" => "1",
+            "topic__3__id" => "3",
+            "topic__3__delete" => "1",
+            "topic__4__id" => "4",
+            "topic__4__delete" => "1",
+            "topic__5__id" => "5",
+            "topic__5__delete" => "1",
+            "topic__6__id" => "6",
+            "topic__6__delete" => "1"
+        ]);
+        xassert($sv->execute());
+
+        xassert_eqq(json_encode($this->conf->topic_set()->as_array()), '[]');
+        ConfInvariants::test_all($this->conf);
     }
 
     function test_decision_types() {

@@ -13,6 +13,8 @@ class LogEntry {
     public $destContactId;
     /** @var ?non-empty-string */
     public $trueContactId;
+    /** @var ?string */
+    public $ipaddr;
     /** @var string */
     public $action;
     /** @var ?non-empty-string */
