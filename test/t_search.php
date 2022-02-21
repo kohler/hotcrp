@@ -43,4 +43,21 @@ class Search_Tester {
         $pl = new PaperList("empty", new PaperSearch($u_shenker, "sort:[#me~f reverse] edit:tagval:~f"));
         xassert_eqq($pl->sort_etag(), "");
     }
+
+    function test_multihighlight() {
+        $srch = new PaperSearch($this->conf->root_user(), "1-10 HIGHLIGHT:pink 1-2 HIGHLIGHT:yellow 1-5 HIGHLIGHT:green 1-8");
+        $h = $srch->highlights_by_paper_id();
+        assert($h !== null);
+        xassert_eqq($h[1], ["pink", "yellow", "green"]);
+        xassert_eqq($h[2], ["pink", "yellow", "green"]);
+        xassert_eqq($h[3], ["yellow", "green"]);
+        xassert_eqq($h[4], ["yellow", "green"]);
+        xassert_eqq($h[5], ["yellow", "green"]);
+        xassert_eqq($h[6], ["green"]);
+        xassert_eqq($h[7], ["green"]);
+        xassert_eqq($h[8], ["green"]);
+        xassert_eqq($h[9] ?? [], []);
+        xassert_eqq($h[10] ?? [], []);
+        xassert(!array_key_exists(11, $h));
+    }
 }

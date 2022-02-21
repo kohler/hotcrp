@@ -321,8 +321,8 @@ class PaperList implements XtContext {
             for ($i = 0; $i < $qe->nthen; ++$i) {
                 $this->apply_view_search($qe->child[$i], $i);
             }
-            $this->_then_map = $qe->then_map;
-            $this->_highlight_map = $qe->highlight_map;
+            $this->_then_map = $this->search->groups_by_paper_id();
+            $this->_highlight_map = $this->search->highlights_by_paper_id();
         }
         $this->apply_view_search($qe, -1);
 
@@ -1425,7 +1425,8 @@ class PaperList implements XtContext {
         if (!$cc || !$rstate->hascolors) {
             $trclass[] = "k" . $rstate->colorindex;
         }
-        if (($highlightclass = $this->_highlight_map[$row->paperId] ?? null)) {
+        if ($this->_highlight_map !== null
+            && ($highlightclass = $this->_highlight_map[$row->paperId])) {
             $trclass[] = $highlightclass[0] . "highlightmark";
         }
         $want_plx = $tt !== "" || $this->table_id();

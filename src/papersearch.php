@@ -836,14 +836,10 @@ class Then_SearchTerm extends Op_SearchTerm {
     private $opinfo;
     /** @var int */
     public $nthen = 0;
-    /** @var bool */
-    public $track = false;
-    /** @var array<int,int> */
-    public $then_map = [];
-    /** @var array<int,list<string>> */
-    public $highlight_map = [];
     /** @var list<Highlight_SearchInfo> */
     private $hlinfo = [];
+    /** @var ?int */
+    private $_last_group;
 
     function __construct(SearchOperator $op) {
         assert($op->op === "then" || $op->op === "highlight");
@@ -899,27 +895,37 @@ class Then_SearchTerm extends Op_SearchTerm {
         return self::orjoin_sqlexpr(array_slice($ff, 0, $this->nthen), "true");
     }
     function test(PaperInfo $row, $rrow) {
-        $x = -1;
         for ($i = 0; $i !== $this->nthen; ++$i) {
             if ($this->child[$i]->test($row, $rrow)) {
-                $x = $i;
-                break;
+                $this->_last_group = $i;
+                return true;
             }
         }
-        if ($this->track && $x >= 0) {
-            $this->then_map[$row->paperId] = $x;
-            foreach ($this->hlinfo as $i => $hl) {
-                if ($x >= $hl->pos
-                    && $x < $hl->pos + $hl->count
-                    && $this->child[$this->nthen + $i]->test($row, $rrow)) {
-                    $this->highlight_map[$row->paperId][] = $hl->color;
-                }
-            }
-        }
-        return $x >= 0;
+        return false;
     }
     function script_expression(PaperInfo $row) {
         return Or_SearchTerm::make_script_expression(array_slice($this->child, 0, $this->nthen), $row);
+    }
+
+    /** @return bool */
+    function has_highlight() {
+        return $this->nthen < count($this->child);
+    }
+    /** @return int */
+    function _last_group() {
+        return $this->_last_group;
+    }
+    /** @return list<string> */
+    function _last_highlights(PaperInfo $row) {
+        $hls = [];
+        foreach ($this->hlinfo as $i => $hl) {
+            if ($this->_last_group >= $hl->pos
+                && $this->_last_group < $hl->pos + $hl->count
+                && $this->child[$this->nthen + $i]->test($row, null)) {
+                $hls[] = $hl->color;
+            }
+        }
+        return $hls;
     }
 
     function debug_json() {
@@ -1714,6 +1720,10 @@ class PaperSearch extends MessageSet {
     private $_contact_searches;
     /** @var list<int> */
     private $_matches;
+    /** @var ?array<int,int> */
+    private $_then_map;
+    /** @var ?array<int,list<string>> */
+    private $_highlight_map;
 
     /** @var ?ReviewInfo */
     public $test_review;
@@ -2691,20 +2701,22 @@ class PaperSearch extends MessageSet {
         Dbl::free($result);
 
         // filter papers
-        $thqe = null;
-        if ($qe instanceof Then_SearchTerm) {
-            $thqe = $qe;
-            $thqe->track = true;
+        $thqe = $qe instanceof Then_SearchTerm ? $qe : null;
+        $this->_then_map = [];
+        if ($thqe && $thqe->has_highlight()) {
+            $this->_highlight_map = [];
         }
         foreach ($rowset as $row) {
             if ($this->user->can_view_paper($row)
                 && $this->_limit_qe->test($row, null)
                 && $qe->test($row, null)) {
                 $this->_matches[] = $row->paperId;
+                $this->_then_map[$row->paperId] = $thqe ? $thqe->_last_group() : 0;
+                if ($this->_highlight_map !== null
+                    && ($hls = $thqe->_last_highlights($row)) !== []) {
+                    $this->_highlight_map[$row->paperId] = $hls;
+                }
             }
-        }
-        if ($thqe) {
-            $thqe->track = false;
         }
 
         // add deleted papers explicitly listed by number (e.g. action log)
@@ -2769,21 +2781,19 @@ class PaperSearch extends MessageSet {
      * @return ?int */
     function paper_group_index($pid) {
         $this->_prepare();
-        if ($this->_qe instanceof Then_SearchTerm) {
-            return $this->_qe->then_map[$pid] ?? null;
-        } else {
-            return in_array($pid, $this->_matches, true) ? 0 : null;
-        }
+        return $this->_then_map[$pid] ?? null;
     }
 
-    /** @return array<int,list<string>> */
+    /** @return array<int,int> */
+    function groups_by_paper_id() {
+        $this->_prepare();
+        return $this->_then_map;
+    }
+
+    /** @return ?array<int,list<string>> */
     function highlights_by_paper_id() {
         $this->_prepare();
-        if ($this->_qe instanceof Then_SearchTerm) {
-            return $this->_qe->highlight_map;
-        } else {
-            return [];
-        }
+        return $this->_highlight_map;
     }
 
     /** @param iterable<string>|iterable<array{string,?int,?int,?int}> $words
