@@ -470,7 +470,7 @@ class Home_Page {
                 '">Reviews pending approval</a> <span class="barsep">·</span> ';
         }
         if ($user->has_proposal_pending()) {
-            echo '<a href="', $conf->hoturl("assign", "p=re%3Aproposal"),
+            echo '<a href="', $conf->hoturl("assign", "q=re%3Aproposal"),
                 '" class="attention">Review proposals</a> <span class="barsep">·</span> ';
         }
         echo '<a href="', $conf->hoturl("mail", "monreq=1"), '">Monitor requested reviews</a></div>', "\n";

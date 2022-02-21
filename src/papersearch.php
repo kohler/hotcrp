@@ -832,6 +832,8 @@ class Highlight_SearchInfo {
 class Then_SearchTerm extends Op_SearchTerm {
     /** @var bool */
     private $is_highlight;
+    /** @var ?string */
+    private $opinfo;
     /** @var int */
     public $nthen = 0;
     /** @var bool */
@@ -847,12 +849,10 @@ class Then_SearchTerm extends Op_SearchTerm {
         assert($op->op === "then" || $op->op === "highlight");
         parent::__construct("then");
         $this->is_highlight = $op->op === "highlight";
-        if (isset($op->opinfo)) {
-            $this->set_float("opinfo", $op->opinfo);
-        }
+        $this->opinfo = $op->opinfo ?? null;
     }
     protected function _finish() {
-        $opinfo = strtolower($this->get_float("opinfo") ?? "");
+        $opinfo = strtolower($this->opinfo ?? "");
         $newvalues = $newhvalues = $newhinfo = [];
 
         foreach ($this->child as $qvidx => $qv) {
@@ -920,6 +920,29 @@ class Then_SearchTerm extends Op_SearchTerm {
     }
     function script_expression(PaperInfo $row) {
         return Or_SearchTerm::make_script_expression(array_slice($this->child, 0, $this->nthen), $row);
+    }
+
+    function debug_json() {
+        $a = [];
+        foreach ($this->child as $qv) {
+            $a[] = $qv->debug_json();
+        }
+        if ($this->nthen === count($this->child)) {
+            return ["type" => $this->type, "child" => $a];
+        } else {
+            assert(count($this->child) === $this->nthen + count($this->hlinfo));
+            $j = [
+                "type" => $this->type,
+                "child" => array_slice($a, 0, $this->nthen),
+                "highlights" => []
+            ];
+            foreach ($this->hlinfo as $i => $hl) {
+                $h = get_object_vars($hl);
+                $h["search"] = $a[$this->nthen + $i];
+                $j["highlights"][] = $h;
+            }
+            return $j;
+        }
     }
 }
 
