@@ -140,7 +140,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return new ArrayIterator($this->as_array());
     }
     /** @param string $name
-     * @param int|float|string $value */
+     * @param int|float|string $value
+     * @return void */
     function __set($name, $value) {
         if (is_array($value)) {
             error_log("array __set at " . debug_string_backtrace());
@@ -148,11 +149,13 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         $this->_v[$name] = $value;
         unset($this->_a[$name]);
     }
-    /** @param string $name */
+    /** @param string $name
+     * @return ?string */
     function __get($name) {
         return $this->_v[$name] ?? null;
     }
-    /** @param string $name */
+    /** @param string $name
+     * @return bool */
     function __isset($name) {
         return isset($this->_v[$name]);
     }

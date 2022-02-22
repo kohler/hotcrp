@@ -1919,6 +1919,8 @@ class ReviewValues extends MessageSet {
         "approvesubreview" => true, "default" => true
     ];
 
+    /** @param bool $override
+     * @return bool */
     function parse_qreq(Qrequest $qreq, $override) {
         assert($this->text === null && $this->finished === 0);
         $this->req = [];
@@ -1933,7 +1935,7 @@ class ReviewValues extends MessageSet {
                 $this->req[$k] = is_bool($v) ? (int) $v : cvtint($v);
             } else if ($k === "format") {
                 $this->req["reviewFormat"] = cvtint($v);
-            } else if (isset($this->rf->fmap[$k])) {
+            } else if (array_key_exists($k, $this->rf->fmap)) {
                 $this->req[$k] = $v;
             } else if (($f = $this->conf->find_review_field($k))
                        && !isset($this->req[$f->id])) {

@@ -139,6 +139,7 @@ class Settings_Tester {
         xassert($sv->execute());
 
         xassert_eqq(json_encode($this->conf->topic_set()->as_array()), '[]');
+        xassert_eqq($this->conf->setting("has_topics"), null);
         ConfInvariants::test_all($this->conf);
     }
 

@@ -1281,7 +1281,21 @@ class Permission_Tester {
 
         ConfInvariants::test_all($this->conf);
 
-        // author view capabilities and multiple blank users
+        // assignment synonyms
+        $user_varghese = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu"); // pc
+        xassert_eqq($paper16->preference($user_varghese), [0, null]);
+        xassert_assign($user_varghese, "ID,Title,Preference\n16,Potential Benefits of Delta Encoding and Data Compression for HTTP,1X\n");
+        $paper16->load_preferences();
+        xassert_eqq($paper16->preference($user_varghese), [1, 1]);
+
+        xassert_eq($paper16->leadContactId, 0);
+        xassert_assign($this->u_chair, "paperID,lead\n16,varghese\n", true);
+        $paper16 = $this->u_chair->checked_paper_by_id(16);
+        xassert_eq($paper16->leadContactId, $user_varghese->contactId);
+    }
+
+    function test_author_view_capability_users() {
+        $paper16 = $this->u_chair->checked_paper_by_id(16);
         $paper19 = $this->u_chair->checked_paper_by_id(19);
         $blank1 = Contact::make($this->conf);
         $blank1->set_capability("@av19", true);
@@ -1297,7 +1311,6 @@ class Permission_Tester {
         xassert(!$blank2->can_view_paper($paper19));
         xassert(!$blank2->can_view_paper($paper16));
 
-        // author view capabilities and "author" paper_set
         $pset = $blank1->paper_set(["author" => true]);
         xassert_array_eqq($pset->paper_ids(), [19]);
         $pset = $this->u_mogul->paper_set(["author" => true]);
@@ -1305,19 +1318,9 @@ class Permission_Tester {
         $this->u_mogul->set_capability("@av12", true);
         $pset = $this->u_mogul->paper_set(["author" => true]);
         xassert_array_eqq($pset->paper_ids(), [12, 16]);
+    }
 
-        // assignment synonyms
-        $user_varghese = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu"); // pc
-        xassert_eqq($paper16->preference($user_varghese), [0, null]);
-        xassert_assign($user_varghese, "ID,Title,Preference\n16,Potential Benefits of Delta Encoding and Data Compression for HTTP,1X\n");
-        $paper16->load_preferences();
-        xassert_eqq($paper16->preference($user_varghese), [1, 1]);
-
-        xassert_eq($paper16->leadContactId, 0);
-        xassert_assign($this->u_chair, "paperID,lead\n16,varghese\n", true);
-        $paper16 = $this->u_chair->checked_paper_by_id(16);
-        xassert_eq($paper16->leadContactId, $user_varghese->contactId);
-
+    function test_make_anonymous_user_nologin() {
         xassert(!maybe_user("anonymous10"));
         $u = Contact::make_keyed($this->conf, [
             "email" => "anonymous10", "disabled" => true
