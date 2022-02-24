@@ -139,6 +139,32 @@ if (!Element.prototype.replaceChildren) {
         }
     };
 }
+if (!HTMLInputElement.prototype.setRangeText) {
+    HTMLInputElement.prototype.setRangeText = HTMLTextAreaElement.prototype.setRangeText = function (t, s, e, m) {
+        var ss = this.selectionStart, se = this.selectionEnd;
+        if (arguments.length < 3) {
+            s = ss, e = se;
+        }
+        if (s <= e) {
+            s = Math.min(s, this.value.length);
+            e = Math.min(e, this.value.length);
+            this.value = this.value.substring(0, s) + t + this.value.substring(e);
+            if (m === "select") {
+                ss = s;
+                se = s + t.length;
+            } else if (m === "start")
+                ss = se = s;
+            else if (m === "end")
+                ss = se = s + t.length;
+            else {
+                var delta = t.length - (e - s);
+                ss = ss > e ? ss + delta : (ss > s ? s : ss);
+                se = se > e ? se + delta : (se > s ? s + t.length : se);
+            }
+            this.setSelectionRange(ss, se);
+        }
+    }
+}
 
 
 function lower_bound_index(a, v) {
@@ -6012,7 +6038,8 @@ var builders = {};
 
 function suggest() {
     var elt = this, hintdiv, suggdata, hintlist,
-        blurring = false, hiding = false, lastkey = false, lastpos = false, wasnav = 0;
+        blurring = false, hiding = false, lastkey = false, lastpos = false,
+        wasnav = 0, spacestate = -1;
 
     function kill() {
         hintdiv && hintdiv.remove();
@@ -6098,9 +6125,10 @@ function suggest() {
             div = hintdiv.content_node();
             $(div).find(".s9y").removeClass("s9y");
         }
-        if (cinfo.best !== null) {
+        if (cinfo.best !== null)
             addClass(div.childNodes[cinfo.best], "s9y");
-        }
+        if (cinfo.smart_punctuation)
+            addClass(div, "s9smartpunc");
 
         var $elt = jQuery(elt),
             shadow = textarea_shadow($elt, elt.tagName === "INPUT" ? 2000 : 0),
@@ -6161,12 +6189,16 @@ function suggest() {
             while (space < text.length && val.charCodeAt(endPos) === text.charCodeAt(space))
                 ++space, ++endPos;
         }
-        var outPos = startPos + text.length + 1, space;
-        if ((endPos === val.length || /\S/.test(val.charAt(endPos)))
-            && !hasClass(complete_elt, "s9nsp"))
-            text += " ";
-        $(elt).val(val.substring(0, startPos) + text + val.substring(endPos));
-        elt.selectionStart = elt.selectionEnd = outPos;
+        var outPos = startPos + text.length;
+        if (hasClass(complete_elt, "s9nsp")) {
+            spacestate = -1;
+        } else {
+            ++outPos;
+            if (endPos === val.length || /\S/.test(val.charAt(endPos)))
+                text += " ";
+            spacestate = complete_elt.closest(".s9smartpunc") ? outPos : -1;
+        }
+        elt.setRangeText(text, startPos, endPos, "end");
         $(elt).trigger("input");
     }
 
@@ -6203,7 +6235,7 @@ function suggest() {
                     nextady = ady;
                 }
             }
-            if (pos === null && elt.selectionStart == (isleft ? 0 : elt.value.length)) {
+            if (pos === null && elt.selectionStart === (isleft ? 0 : elt.value.length)) {
                 wasnav = 2;
                 return true;
             }
@@ -6222,7 +6254,8 @@ function suggest() {
     }
 
     function kp(evt) {
-        var k = event_key(evt), m = event_modkey(evt), result = true;
+        var k = event_key(evt), m = event_modkey(evt), result = true,
+            pspacestate = spacestate;
         if (k === "Escape" && !m) {
             if (hintdiv) {
                 var poss = hintdiv.self().data("autocompletePos");
@@ -6243,8 +6276,22 @@ function suggest() {
         } else if (k.substring(0, 5) === "Arrow" && !m && hintdiv && move_active(k)) {
             evt.preventDefault();
             result = false;
-        } else if (hintdiv || event_key.printable(evt) || k === "Backspace")
-            setTimeout(display, 1);
+        } else {
+            if (pspacestate > 0
+                && event_key.printable(evt)
+                && elt.selectionStart === elt.selectionEnd
+                && elt.selectionStart === pspacestate
+                && /^(?!@)[\p{Po}\p{Pd}\p{Pe}\p{Pf}]$/u.test(k)
+                && elt.value[pspacestate - 1] === " ") {
+                elt.setRangeText(k, pspacestate - 1, pspacestate, "end");
+                evt.preventDefault();
+                result = false;
+            }
+            if (hintdiv || event_key.printable(evt) || k === "Backspace") {
+                spacestate = 0;
+                setTimeout(display, 1);
+            }
+        }
         lastkey = k;
         wasnav = Math.max(wasnav - 1, 0);
         return result;
@@ -6354,7 +6401,7 @@ suggest.add_builder("mentions", function (elt) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/(?:^|[-+,;\s–—])@(|\p{L}(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*)$/u))) {
         n = x[1].match(/^(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*/u);
-        return demand_load.mentions().then(make_suggestions(m[1], n[0], {prefix: "@", reqlen: Math.min(2, m[1].length)}));
+        return demand_load.mentions().then(make_suggestions(m[1], n[0], {prefix: "@", reqlen: Math.min(2, m[1].length), smart_punctuation: true}));
     } else
         return null;
 });

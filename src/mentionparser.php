@@ -15,7 +15,7 @@ class MentionParser {
             if (($pos > 0
                  && !ctype_space($s[$pos - 1])
                  /** @phan-suppress-next-line PhanParamSuspiciousOrder */
-                 && strpos("([-+,;", $s[$pos - 1]) === false
+                 && strpos("([{-+,;/", $s[$pos - 1]) === false
                  && (/* not en- or em-dash */ $pos < 4
                      || $s[$pos - 3] !== "\xe2"
                      || $s[$pos - 2] !== "\x80"
@@ -170,13 +170,10 @@ class MentionParser {
      * @param int $pos
      * @return bool */
     static function mention_ends_at($s, $pos) {
-        if ($pos === strlen($s)
+        return $pos === strlen($s)
             /** @phan-suppress-next-line PhanParamSuspiciousOrder */
-            || strpos(".,;:?!)]}- \t\r\n\f\v", $s[$pos]) !== false) {
-            return true;
-        } else {
-            return !!preg_match('/\G[\p{Pd}\p{Pe}\p{Pf}\pS\pZ]/u', $s, $m, 0, $pos);
-        }
+            || strpos(".,;:?!)]}-/ \t\r\n\f\v", $s[$pos]) !== false
+            || preg_match('/\G(?!@)[\p{Po}\p{Pd}\p{Pe}\p{Pf}\pS\pZ]/u', $s, $m, 0, $pos);
     }
 
     /** @param array{Contact|Author,string,int,int,int} &$ux
