@@ -226,6 +226,7 @@ class Completion_API {
                     $rlist[] = $au;
                 }
                 if ($viewid
+                    && $rrow->contactId !== $user->contactId
                     && ($cvis >= CommentInfo::CT_REVIEWER || $rrow->reviewType >= REVIEW_PC)
                     && !$rrow->disablement) {
                     $au = new Author($rrow);
