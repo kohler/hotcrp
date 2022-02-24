@@ -275,7 +275,7 @@ class MinCostMaxFlow {
     /** @param string $klass
      * @return list<MinCostMaxFlow_Node> */
     function nodes($klass) {
-        $a = array();
+        $a = [];
         foreach ($this->v as $v) {
             if ($v->klass === $klass)
                 $a[] = $v;
@@ -619,7 +619,7 @@ class MinCostMaxFlow {
         $excess = 0;
 
         // initialize $b[0] with negative-excess nodes
-        $b = array(array());
+        $b = [[]];
         foreach ($this->v as $v) {
             if ($v->excess < 0) {
                 $v->distance = 0;
@@ -654,7 +654,7 @@ class MinCostMaxFlow {
                     if ($nd < $dst->distance) {
                         $dst->distance = $nd;
                         while (count($b) <= $nd) {
-                            $b[] = array();
+                            $b[] = [];
                         }
                         $b[$nd][] = $dst;
                     }
@@ -910,7 +910,7 @@ class MinCostMaxFlow {
             }
         }
         natsort($ex);
-        $vx = array();
+        $vx = [];
         foreach ($this->v as $v) {
             if ($v->excess)
                 $vx[] = "E {$v->name} {$v->excess}\n";
@@ -932,8 +932,8 @@ class MinCostMaxFlow {
      * @return string */
     private function dimacs_input($flags) {
         $mincost = ($flags & self::DIMACS_MINCOST) !== 0;
-        $x = array("p " . ($mincost ? "min" : "max") . " "
-                   . count($this->v) . " " . count($this->e) . "\n");
+        $x = ["p " . ($mincost ? "min" : "max") . " "
+              . count($this->v) . " " . count($this->e) . "\n"];
         foreach ($this->v as $i => $v) {
             $v->vindex = $i + 1;
         }
@@ -981,8 +981,8 @@ class MinCostMaxFlow {
      * @return string */
     private function dimacs_output($flags) {
         $mincost = ($flags & self::DIMACS_MINCOST) !== 0;
-        $x = array("c p " . ($mincost ? "min" : "max") . " "
-                   . count($this->v) . " " . count($this->e) . "\n");
+        $x = ["c p " . ($mincost ? "min" : "max") . " "
+              . count($this->v) . " " . count($this->e) . "\n"];
         foreach ($this->v as $i => $v) {
             $v->vindex = $i + 1;
         }

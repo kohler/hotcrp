@@ -235,6 +235,7 @@ class Completion_API {
                 }
             }
             // XXX todo: list previous commentees in privileged position?
+            // XXX todo: list lead and shepherd?
             if (!empty($rlist)) {
                 $lists[] = $rlist;
             }
