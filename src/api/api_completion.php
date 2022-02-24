@@ -244,7 +244,8 @@ class Completion_API {
             } else {
                 $pclist = [];
                 foreach ($user->conf->pc_members() as $p) {
-                    if ($p->disablement === 0 && $p->can_view_paper_ignore_conflict($prow))
+                    if ($p->disablement === 0
+                        && $p->can_view_paper_ignore_conflict_and_review($prow))
                         $pclist[] = $p;
                 }
             }
