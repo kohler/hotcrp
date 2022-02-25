@@ -23,6 +23,8 @@ class NavigationState {
     /** @var string */
     public $page;               // "PAGE" or "index" (.php suffix stripped)
     /** @var string */
+    public $raw_page;           // "PAGE" or "", with .php suffix if given
+    /** @var string */
     public $path;               // "/PATH" or ""
     /** @var string */
     public $shifted_path;
@@ -108,13 +110,13 @@ class NavigationState {
         }, $uri_suffix);
         preg_match('/\A(\/[^\/\?\#]*|)([^\?\#]*)(.*)\z/', $uri_suffix, $m);
         if ($m[1] !== "" && $m[1] !== "/") {
-            $this->page = substr($m[1], 1);
+            $this->raw_page = $this->page = substr($m[1], 1);
         } else {
+            $this->raw_page = "";
             $this->page = $index_name;
         }
-        if (($pagelen = strlen($this->page)) > 4
-            && substr($this->page, $pagelen - 4) === ".php") {
-            $this->page = substr($this->page, 0, $pagelen - 4);
+        if (str_ends_with($this->page, ".php")) {
+            $this->page = substr($this->page, 0, -4);
         }
         $this->path = $m[2];
         $this->shifted_path = "";
@@ -146,7 +148,7 @@ class NavigationState {
 
     /** @return string */
     function self() {
-        return "{$this->server}{$this->site_path}{$this->page}{$this->path}{$this->query}";
+        return "{$this->server}{$this->site_path}{$this->raw_page}{$this->path}{$this->query}";
     }
 
     /** @param bool $downcase_host
@@ -198,6 +200,22 @@ class NavigationState {
         return ($this->site_path_relative = $url);
     }
 
+    /** @param string $page
+     * @return string */
+    function set_page($page) {
+        $this->raw_page = $page;
+        if (str_ends_with($page, ".php")) {
+            $page = substr($page, 0, -4);
+        }
+        return ($this->page = $page);
+    }
+
+    /** @param string $path
+     * @return string */
+    function set_path($path) {
+        return ($this->path = $path);
+    }
+
     /** @param int $n
      * @param bool $decoded
      * @return ?string */
@@ -232,7 +250,7 @@ class NavigationState {
     function shift_path_components($n) {
         $nx = $n;
         $pos = 0;
-        $path = $this->page . $this->path;
+        $path = $this->raw_page . $this->path;
         while ($n > 0 && $pos < strlen($path)) {
             if (($pos = strpos($path, "/", $pos)) !== false) {
                 ++$pos;
@@ -255,10 +273,14 @@ class NavigationState {
         if ($pos < strlen($path) && ($spos = strpos($path, "/", $pos)) === false) {
             $spos = strlen($path);
         }
-        $this->page = ($pos === $spos ? "index" : substr($path, $pos, $spos - $pos));
-        if (($pagelen = strlen($this->page)) > 4
-            && substr($this->page, $pagelen - 4) === ".php") {
-            $this->page = substr($this->page, 0, $pagelen - 4);
+        if ($pos !== $spos) {
+            $this->raw_page = $this->page = substr($path, $pos, $spos - $pos);
+        } else {
+            $this->raw_page = "";
+            $this->page = "index";
+        }
+        if (str_ends_with($this->page, ".php")) {
+            $this->page = substr($this->page, 0, -4);
         }
         $this->path = (string) substr($path, $spos);
         return $this->page;
@@ -405,7 +427,7 @@ class Navigation {
     /** @param string $page
      * @return string */
     static function set_page($page) {
-        return (self::$s->page = $page);
+        return self::$s->set_page($page);
     }
 
     /** @param string $path
