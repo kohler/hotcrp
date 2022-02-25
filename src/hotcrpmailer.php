@@ -292,8 +292,8 @@ class HotCRPMailer extends Mailer {
         } else if ($uf->is_review) {
             $args = $this->guess_reviewdeadline();
         }
-        if ($args && $isbool) {
-            return $this->conf->setting($args) > 0;
+        if ($isbool) {
+            return $args && $this->conf->setting($args) > 0;
         } else if ($args) {
             return $this->conf->unparse_setting_time($args);
         } else {
