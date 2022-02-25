@@ -304,8 +304,6 @@ class NavigationState {
 class Navigation {
     /** @var ?NavigationState */
     static private $s;
-    /** @var ?list<callable> */
-    static public $redirect_callbacks;
 
     static function analyze($index_name = "index") {
         if (PHP_SAPI !== "cli") {
@@ -426,17 +424,6 @@ class Navigation {
      * @return string */
     static function make_absolute($url, $siteref = null) {
         return self::$s->make_absolute($url, $siteref);
-    }
-
-    /** @param ?string $url
-     * @return void
-     * @deprecated */
-    static function redirect($url = null) {
-        $url = self::make_absolute($url ?? self::site_absolute());
-        foreach (self::$redirect_callbacks ?? [] as $cb) {
-            call_user_func($cb);
-        }
-        self::redirect_absolute($url);
     }
 
     /** @param string $url
