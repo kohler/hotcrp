@@ -819,16 +819,17 @@ class Mailer {
 
     /** @param string $ref */
     function unexpanded_warning_at($ref) {
+        $xref = str_starts_with($ref, "%") ? $ref : "%{$ref}%";
         if (preg_match('/\A(?:RESET|)PASSWORDLINK/', $ref)) {
             if ($this->conf->external_login()) {
-                $this->warning_at($ref, "<0>This site does not use password links");
+                $this->warning_at($xref, "<0>This site does not use password links");
             } else if ($this->censor === self::CENSOR_ALL) {
-                $this->warning_at($ref, "<0>Password links cannot appear in mails with Cc or Bcc");
+                $this->warning_at($xref, "<0>Password links cannot appear in mails with Cc or Bcc");
             } else {
-                $this->warning_at($ref, "<0>Reference not expanded");
+                $this->warning_at($xref, "<0>Keyword not found");
             }
         } else {
-            $this->warning_at($ref, "<0>Reference not expanded");
+            $this->warning_at($xref, "<0>Keyword not found");
         }
     }
 }

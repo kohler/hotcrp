@@ -18,7 +18,9 @@ class MailSender {
 
     /** @var array */
     private $mailer_options;
+    /** @var bool */
     private $started = false;
+    /** @var bool */
     private $group;
     /** @var string */
     private $recipients;
@@ -162,7 +164,7 @@ class MailSender {
             if (!preg_match('/\A(?:pc\z|pc:|all\z)/', $this->recipients)
                 && $this->qreq->plimit
                 && (string) $this->qreq->q !== "") {
-                echo "<br />Paper selection:&nbsp;", htmlspecialchars($this->qreq->q);
+                echo "<br>Paper selection:&nbsp;", htmlspecialchars($this->qreq->q);
             }
             echo "</div>";
             $this->print_actions(" fx");
@@ -391,17 +393,14 @@ class MailSender {
             if ($nwarnings !== $mailer->message_count()) {
                 $this->print_prologue();
                 $nwarnings = $mailer->message_count();
-                echo "<div id=\"foldmailwarn$nwarnings\" class=\"hidden\"><div class=\"warning\">";
+                echo "<div id=\"foldmailwarn$nwarnings\" class=\"hidden\"><div class=\"msg msg-warning\"><ul class=\"feedback-list\">";
                 foreach ($mailer->message_list() as $mx) {
-                    echo "<div class=\"mmm\">";
-                    if ($mx->field && str_starts_with($mx->field, "%")) {
-                        echo "<code>", htmlspecialchars($mx->field), "</code>: ";
-                    } else if ($mx->field) {
-                        echo htmlspecialchars($mx->field), ": ";
+                    if ($mx->field) {
+                        $mx = $mx->with_prefix("{$mx->field}: ");
                     }
-                    echo $mx->message, "</div>";
+                    echo '<li>', join("", MessageSet::feedback_html_items([$mx])), '</li>';
                 }
-                echo "</div></div>", Ht::unstash_script("document.getElementById('mailwarnings').innerHTML = document.getElementById('foldmailwarn$nwarnings').innerHTML;");
+                echo "</ul></div></div>", Ht::unstash_script("document.getElementById('mailwarnings').innerHTML = document.getElementById('foldmailwarn$nwarnings').innerHTML;");
             }
 
             if ($this->sending && $revinform !== null && $prow) {
