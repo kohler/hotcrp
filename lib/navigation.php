@@ -115,8 +115,10 @@ class NavigationState {
             $this->raw_page = "";
             $this->page = $index_name;
         }
-        if (str_ends_with($this->page, ".php")) {
-            $this->page = substr($this->page, 0, -4);
+        // NB: str_ends_with is not available in this file in older PHPs
+        if (($pagelen = strlen($this->page)) > 4
+            && substr($this->page, $pagelen - 4) === ".php") {
+            $this->page = substr($this->page, 0, $pagelen - 4);
         }
         $this->path = $m[2];
         $this->shifted_path = "";
@@ -279,8 +281,10 @@ class NavigationState {
             $this->raw_page = "";
             $this->page = "index";
         }
-        if (str_ends_with($this->page, ".php")) {
-            $this->page = substr($this->page, 0, -4);
+        // NB: str_ends_with is not available in this file in older PHPs
+        if (($pagelen = strlen($this->page)) > 4
+            && substr($this->page, $pagelen - 4) === ".php") {
+            $this->page = substr($this->page, 0, $pagelen - 4);
         }
         $this->path = (string) substr($path, $spos);
         return $this->page;
