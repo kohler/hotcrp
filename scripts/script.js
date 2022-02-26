@@ -5539,20 +5539,20 @@ function comment_shortcut() {
 }
 
 function nextprev_shortcut(evt, key) {
-    var hash = (location.hash || "#").replace(/^#/, ""), $j, walk;
-    var siblingdir = (key == "n" ? "nextSibling" : "previousSibling");
-    var jdir = (key == "n" ? "first" : "last");
-    if (hash && ($j = $("#" + hash)).length
-        && ($j.hasClass("cmtcard") || $j.hasClass("revcard") || $j.hasClass("cmtg"))) {
-        walk = $j[0];
-        if (!walk[siblingdir] && $j.hasClass("cmtg"))
-            walk = $j.closest(".cmtcard")[0];
+    var hash = (location.hash || "#").replace(/^#/, ""), ctr, walk,
+        siblingdir = key === "n" ? "nextElementSibling" : "previousElementSibling",
+        jqdir = key === "n" ? "first" : "last";
+    if (hash
+        && (ctr = document.getElementById(hash))
+        && (hasClass(ctr, "cmtcard") || hasClass(ctr, "revcard") || hasClass(ctr, "cmtg"))) {
+        walk = ctr;
+        if (!walk[siblingdir] && hasClass(ctr, "cmtg"))
+            walk = ctr.closest(".cmtcard");
         walk = walk[siblingdir];
-        if (walk && !walk.hasAttribute("id") && $(walk).hasClass("cmtcard"))
-            walk = $(walk).find(".cmtid")[jdir]()[0];
+        if (walk && !walk.hasAttribute("id") && !hasClass(walk, "cmtcard"))
+            walk = $(walk).find(".cmtid")[jqdir]()[0];
     } else {
-        $j = $(".cmtid, .revcard[id]");
-        walk = $j[jdir]()[0];
+        walk = $(".revcard[id], .cmtid")[jqdir]()[0];
     }
     if (walk && walk.hasAttribute("id"))
         location.hash = "#" + walk.getAttribute("id");
