@@ -391,14 +391,14 @@ function pid_renderer(ps, cc) {
         }
         if (cx) {
             make_pattern_fill(cx);
-            p = '<span class="' + cx + '">#' + p + '</span>';
+            p = '<span class="'.concat(cx, '">#', p, '</span>');
         } else
             p = '#' + p;
         var comma = i === ps.length - 1 ? "" : ","
         if (rest)
-            a.push('<span class="nw">' + p + rest + comma + '</span>');
+            a.push('<span class="nw">'.concat(p, rest, comma, '</span>'));
         else if (cx && comma)
-            a.push('<span class="nw">' + p + comma + '</span>');
+            a.push('<span class="nw">'.concat(p, comma, '</span>'));
         else
             a.push(p + comma);
     }
@@ -430,6 +430,12 @@ function clicker(pids, event) {
         x.sort(pid_sorter);
         clicker_go(hoturl("search", {q: x.join(" ")}), event);
     }
+}
+
+function make_reviewer_clicker(email) {
+    return function (event) {
+        clicker_go(hoturl("search", {q: "re:" + email}), event);
+    };
 }
 
 function clicker_go(url, event) {
@@ -564,37 +570,41 @@ function graph_cdf(selector, args) {
         .style("pointer-events", "all")
         .on("mouseover", mousemoved)
         .on("mousemove", mousemoved)
-        .on("mouseout", mouseout);
+        .on("mouseout", mouseout)
+        .on("click", mouseclick);
 
-    var hovered_path, hubble;
+    var hovered_path, hovered_series, hubble;
     function mousemoved(event) {
         var m = d3.pointer(event), p = {distance: 16};
         m.clientX = event.clientX;
         m.clientY = event.clientY;
-        for (var i in data)
+        for (var i in data) {
             if (series[i].label || args.cdf_tooltip_position)
                 p = closestPoint(svg.select("[data-index='" + i + "']").node(), m, p);
-        if (p.pathNode != hovered_path) {
-            if (p.pathNode)
-                hovers.datum(data[p.pathNode.getAttribute("data-index")])
-                    .attr("d", line).style("display", null);
-            else
+        }
+        if (p.pathNode !== hovered_path) {
+            if (p.pathNode) {
+                i = p.pathNode.getAttribute("data-index");
+                hovered_series = series[i];
+                hovers.datum(data[i]).attr("d", line).style("display", null);
+            } else {
+                hovered_series = null;
                 hovers.style("display", "none");
+            }
             hovered_path = p.pathNode;
         }
-        var u = p.pathNode ? series[p.pathNode.getAttribute("data-index")] : null;
-        if (u && (u.label || args.cdf_tooltip_position)) {
+        if (hovered_series && (hovered_series.label || args.cdf_tooltip_position)) {
             hubble = hubble || make_bubble("", {color: args.tooltip_class || "graphtip", "pointer-events": "none"});
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
             if (args.cdf_tooltip_position) {
                 var xp = x.invert(p[0]), yp = y.invert(p[1]);
-                var label = (u.label ? text_to_html(u.label) + " " : "") +
+                var label = (hovered_series.label ? text_to_html(hovered_series.label) + " " : "") +
                     args.x.ticks.unparse_html.call(xAxis, x.invert(p[0]), true) +
                     ", " +
                     args.y.ticks.unparse_html.call(yAxis, y.invert(p[1]), true);
                 hubble.html(label);
             } else
-                hubble.text(u.label);
+                hubble.text(hovered_series.label);
             hubble.anchor(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "e" : "s")
                 .at(p[0] + args.left, p[1], this);
         } else if (hubble) {
@@ -605,7 +615,12 @@ function graph_cdf(selector, args) {
     function mouseout() {
         hovers.style("display", "none");
         hubble && hubble.remove();
-        hovered_path = hubble = null;
+        hovered_path = hovered_series = hubble = null;
+    }
+
+    function mouseclick(evt) {
+        if (hovered_series && hovered_series.click)
+            hovered_series.click.call(this, evt);
     }
 };
 
@@ -617,8 +632,12 @@ function procrastination_filter(revdata) {
     var alldata = [], d, i, l, cid, u;
     for (cid in revdata.reviews) {
         var d = {d: revdata.reviews[cid], className: "gcdf-many"};
-        if ((u = revdata.users[cid]) && u.name)
-            d.label = u.name;
+        if ((u = revdata.users[cid])) {
+            if (u.name)
+                d.label = u.name;
+            if (u.email)
+                d.click = make_reviewer_clicker(u.email);
+        }
         if (cid && cid == siteinfo.user.cid) {
             d.className = "gcdf-highlight";
             d.priority = 1;
