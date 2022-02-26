@@ -48,4 +48,13 @@ class ReviewerMatch_Fexpr extends Fexpr {
     function matches_at_most_once() {
         return count($this->csearch->user_ids()) <= 1;
     }
+    #[\ReturnTypeWillChange]
+    function jsonSerialize() {
+        $x = parent::jsonSerialize();
+        $x["match"] = $this->arg;
+        if ($this->csearch->is_empty()) {
+            $x["empty"] = true;
+        }
+        return $x;
+    }
 }

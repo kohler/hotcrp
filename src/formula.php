@@ -833,8 +833,8 @@ class Aggregate_Fexpr extends Fexpr {
             return ["null", "(~l~ !== null || ~r~ !== null ? ~l~ || ~r~ : ~r~)", self::cast_bool("~x~")];
         } else if ($this->op === "some") {
             return ["null", "~r~ = ~l~;
-  if (~r~ !== null && ~r~ !== false)
-    break;"];
+if (~r~ !== null && ~r~ !== false)
+  break;"];
         } else if ($this->op === "min" || $this->op === "max") {
             $cmp = $this->compiled_comparator($this->op === "min" ? "<" : ">", $state->conf);
             return ["null", "(~l~ !== null && (~r~ === null || ~l~ $cmp ~r~) ? ~l~ : ~r~)"];
@@ -1606,6 +1606,7 @@ class Formula implements JsonSerializable {
                 && !$this->_allow_indexed
                 && $e->matches_at_most_once()) {
                 $e = new Aggregate_Fexpr("some", [$e], 0);
+                $e->typecheck($this);
                 $state = new FormulaCompiler($this->user);
                 $e->compile($state);
             }
@@ -1908,7 +1909,7 @@ class Formula implements JsonSerializable {
         if ($e0 && $e1) {
             return new Ternary_Fexpr($e1, $e0, Constant_Fexpr::cnull());
         } else {
-            return $e0 ? : $e1;
+            return $e0 ?? $e1;
         }
     }
 
