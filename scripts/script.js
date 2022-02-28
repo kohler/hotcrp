@@ -4858,13 +4858,7 @@ function render_editing(hc, cj) {
         hc.push('<div class="entryi"><label for="' + cid + '-visibility">Visibility</label><div class="entry">', '</div></div>');
         hc.push('<span class="select"><select id="' + cid + '-visibility" name="visibility">', '</select></span>');
         if (!cj.by_author) {
-            var au_option;
-            if (hotcrp_status.myperm.some_author_can_view_review) {
-                au_option = 'Author discussion';
-            } else {
-                au_option = 'Author discussion*';
-            }
-            hc.push('<option value="au">' + au_option + '</option>');
+            hc.push('<option value="au">Author discussion</option>');
             hc.push('<option value="rev">Reviewer discussion</option>');
             hc.push('<option value="pc">PC discussion</option>');
             hc.push_pop('<option value="admin">Administrators only</option>');
@@ -4936,25 +4930,40 @@ function visibility_change() {
         entryi = vis.closest(".entryi"),
         hint = entryi.querySelector(".visibility-hint"),
         blind = entryi.querySelector(".visibility-au-blind"),
-        topicspan = entryi.querySelector(".visibility-topic");
+        topicspan = entryi.querySelector(".visibility-topic"),
+        is_paper = topic && topic.value === "paper" && vis.value !== "admin",
+        would_auvis = is_paper || hotcrp_status.myperm.some_author_can_view_review;
+    if (would_auvis) {
+        vis.firstChild.textContent = "Author discussion";
+    } else {
+        vis.firstChild.textContent = "Author discussion*";
+    }
     if (hint) {
         var m = [];
         if (vis.value === "au" && !form.elements.by_author) {
-            if (hotcrp_status.myperm.some_author_can_view_review) {
-                m.push('Authors will be notified immediately.');
+            if (would_auvis) {
+                m.length && m.push("\n");
+                elt = document.createElement("span");
+                elt.className = "is-diagnostic is-warning";
+                elt.textContent = "Authors will be notified immediately.";
+                m.push(elt);
             } else {
-                m.push('Authors cannot view comments at the moment.');
+                m.length && m.push("\n");
+                m.push('Authors cannot currently view reviews or comments about reviews.');
             }
             if (hotcrp_status.rev.blind === true) {
-                m.push('The comment will be anonymous to authors.');
+                m.length && m.push("\n");
+                m.push(would_auvis ? 'The comment will be anonymous to authors.' : 'When visible, the comment will be anonymous to authors.');
             }
         } else if (vis.value === "pc") {
+            m.length && m.push("\n");
             m.push('The comment will be hidden from authors and external reviewers.');
         }
-        if (topic && topic.value === "paper" && vis.value !== "admin") {
+        if (is_paper) {
+            m.length && m.push("\n");
             m.push('The comment will be visible independent of the reviews.');
         }
-        hint.textContent = m.join("\n");
+        hint.replaceChildren.apply(hint, m);
         toggleClass(hint, "hidden", m.length === 0);
         topicspan && toggleClass(topicspan, "hidden", vis.value === "admin");
     }
@@ -4991,14 +5000,16 @@ function activate_editing($c, cj) {
         || (cj.by_author ? "au" : "rev");
     $(form.elements.visibility).val(vis)
         .attr("data-default-value", vis)
-        .on("change", visibility_change)
-        .change();
+        .on("change", visibility_change);
 
     var topic = (cj.is_new ? cj.topic || hotcrp_status.myperm.default_comment_topic : cj.topic) || "rev";
     $(form.elements.topic).val(topic)
         .attr("data-default-value", topic)
-        .on("change", visibility_change)
-        .change();
+        .on("change", visibility_change);
+
+    if ((elt = form.elements.visibility || form.elements.topic)) {
+        visibility_change.call(elt);
+    }
 
     for (i in cj.tags || []) {
         tags.push(unparse_tag(cj.tags[i]));
