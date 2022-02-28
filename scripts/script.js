@@ -4850,7 +4850,7 @@ function render_editing(hc, cj) {
     hc.push('<div class="cmteditinfo fold3c">', '</div>');
 
     // attachments
-    hc.push('<div class="entryi has-editable-attachments hidden" id="' + cid + '-attachments" data-document-prefix="cmtdoc"><label for="' + cid + '-attachments">Attachments</label></div>');
+    hc.push('<div class="entryi has-editable-attachments hidden" id="' + cid + '-attachments" data-dtype="-2" data-document-prefix="cmtdoc"><label for="' + cid + '-attachments">Attachments</label></div>');
     btnbox.push('<button type="button" name="attach" class="btn-licon need-tooltip ui js-add-attachment" aria-label="Attach file" data-editable-attachments="' + cid + '-attachments">' + $("#licon-attachment").html() + '</button>');
 
     // visibility
