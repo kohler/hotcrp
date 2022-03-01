@@ -16,6 +16,12 @@ body.paper {
 	margin-left: 24px;
 	margin-right: 24px;
 }
+.cmtadminvis, .cmtcolor {
+    width: auto;
+}
+.cmtadminvis > .cmttext, .cmtcolor > .cmttext {
+    min-width: initial;
+}
 }
 @media screen and (max-width: 1024px) {
 .paperinfo, .paperinfo-c {

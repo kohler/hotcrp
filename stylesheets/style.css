@@ -3748,6 +3748,10 @@ a:hover .t-editor,
 .cmtadminvis, .cmtcolor {
 	margin: -2px -8px;
 	padding: 4px 8px;
+	width: fit-content;
+}
+.cmtadminvis > .cmttext, .cmtcolor > .cmttext {
+	min-width: 720px;
 }
 .cmtauvis .cmtnum {
 	background: #e6e1cf;
