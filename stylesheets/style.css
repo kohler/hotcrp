@@ -3699,27 +3699,39 @@ a:hover .t-editor,
 /* comments */
 .cmtcard {
 	border-top: 5px solid #e6e1cf;
-	border-bottom: 1px solid transparent;
-	margin-bottom: -1px;
 	background: #f8f8f6;
 	position: relative;
+	padding-top: 1.25rem;
+	padding-bottom: 2.25rem;
 }
 .cmtcard.response {
 	border-top: 5px solid #ffddc1;
 	background: #fcfcfb;
+	padding-bottom: 3rem;
+}
+.cmtcard.comment.is-editing {
+	background: #fdfdfa;
+}
+.cmtcard.comment + .cmtcard.comment {
+	border-top: 0 none;
+	padding-top: 0;
+	margin-top: -0.5rem;
+}
+.cmtcard-head {
+	margin-top: 0.75rem;
+}
+.cmtcard.comment.is-editing, .cmtcard.is-editing + .cmtcard.comment {
+	border-top: 5px solid #e6e1cf !important;
+	padding-top: 1.25rem !important;
 }
 #ccactions {
 	background: white;
 	padding-top: 16px;
 }
-.cmtcard-head {
-	padding-top: 32px;
-	padding-top: 2rem;
-}
-.cmtcard-head h2 {
+.cmtcard h2 {
 	display: inline-block;
-	margin-right: 1.5em;
-	margin-bottom: 0;
+	margin-right: 1.5rem;
+	margin-bottom: 0.5rem;
 	font-size: 1.17em;
 	color: #c77634;
 }
@@ -3729,16 +3741,6 @@ a:hover .t-editor,
 }
 .cmtcard-head .cmtfn {
 	font-size: smaller;
-}
-.cmtcard-body {
-	margin-bottom: 36px;
-}
-.response > .cmtcard-body {
-	margin-bottom: 48px;
-}
-.cmtg {
-	margin-top: 20px;
-	margin-bottom: 32px;
 }
 .cmtfn > .barsep {
 	color: #eadeb7;
@@ -3763,7 +3765,7 @@ a:hover .t-editor,
 }
 .cmtt {
 	font-size: smaller;
-	margin: 2px 0 6px;
+	margin-bottom: 0.5rem;
 	color: #777777;
 }
 .cmtt::after {
@@ -3792,12 +3794,6 @@ a:hover .t-editor,
 }
 .format0 {
 	white-space: pre-wrap;
-}
-.cmttext {
-	margin-top: 0.5rem;
-}
-textarea.cmttext {
-	margin-top: 0;
 }
 .revtext.format0, .cmttext.format0, .revtext .format0, .cmttext .format0 {
 	max-width: 720px;
