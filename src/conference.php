@@ -144,6 +144,8 @@ class Conf {
     private $_s3_client = false;
     /** @var ?IntlMsgSet */
     private $_ims;
+    /** @var ?list<string> */
+    private $_ims_override_names;
     private $_format_info;
     /** @var bool */
     private $_updating_automatic_tags = false;
@@ -288,6 +290,10 @@ class Conf {
             }
         }
         $this->opt_override = [];
+        if ($this->_ims) {
+            $this->_ims->remove_overrides();
+        }
+        $this->_ims_override_names = null;
 
         $result = $this->q_raw("select name, value, data from Settings");
         while (($row = $result->fetch_row())) {
@@ -295,10 +301,12 @@ class Conf {
             if ($row[2] !== null) {
                 $this->settingTexts[$row[0]] = $row[2];
             }
-            if (substr($row[0], 0, 4) == "opt.") {
+            if (str_starts_with($row[0], "opt.")) {
                 $okey = substr($row[0], 4);
                 $this->opt_override[$okey] = $this->opt[$okey] ?? null;
                 $this->opt[$okey] = ($row[2] === null ? (int) $row[1] : $row[2]);
+            } else if (str_starts_with($row[0], "msg.")) {
+                $this->_ims_override_names[] = $row[0];
             }
         }
         Dbl::free($result);
@@ -5060,6 +5068,12 @@ class Conf {
                 expand_json_includes_callback($mlist, [$this->_ims, "addj"]);
             }
         }
+        if ($this->_ims_override_names !== null) {
+            foreach ($this->_ims_override_names as $id) {
+                $this->_ims->add_override(substr($id, 4), $this->settingTexts[$id]);
+            }
+            $this->_ims_override_names = null;
+        }
         return $this->_ims;
     }
 
@@ -5079,22 +5093,14 @@ class Conf {
     /** @param string $id
      * @return string */
     function _i($id, ...$args) {
-        $ims = $this->ims();
-        if (isset($this->settingTexts["msg.{$id}"]) && !$ims->has_override($id)) {
-            $ims->add_override($id, $this->settingTexts["msg.{$id}"]);
-        }
-        return $ims->_i($id, ...$args);
+        return $this->ims()->_i($id, ...$args);
     }
 
     /** @param string $context
      * @param string $id
      * @return string */
     function _ci($context, $id, ...$args) {
-        $ims = $this->ims();
-        if (isset($this->settingTexts["msg.{$id}"]) && !$ims->has_override($id)) {
-            $ims->add_override($id, $this->settingTexts["msg.{$id}"]);
-        }
-        return $ims->_ci($context, $id, ...$args);
+        return $this->ims()->_ci($context, $id, ...$args);
     }
 
     /** @param string $s

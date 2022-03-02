@@ -126,9 +126,11 @@ class IntlMsgSet {
 
     const PRIO_OVERRIDE = 1000.0;
 
+    /** @param int|float $p */
     function set_default_priority($p) {
         $this->_default_priority = (float) $p;
     }
+
     function clear_default_priority() {
         $this->_default_priority = null;
     }
@@ -281,10 +283,27 @@ class IntlMsgSet {
         return $this->addj(["id" => $id, "otext" => $otext, "priority" => self::PRIO_OVERRIDE, "no_conversions" => true, "template" => $im && $im->template]);
     }
 
+    function remove_overrides() {
+        $ids = [];
+        foreach ($this->ims as $id => $im) {
+            if ($im->priority >= self::PRIO_OVERRIDE)
+                $ids[] = $id;
+        }
+        foreach ($ids as $id) {
+            while (($im = $this->ims[$id]) && $im->priority >= self::PRIO_OVERRIDE) {
+                $this->ims[$id] = $im->next;
+            }
+            if (!$im) {
+                unset($this->ims[$id]);
+            }
+        }
+    }
+
     /** @param callable(string):(false|array{true,mixed}) $function */
     function add_requirement_resolver($function) {
         $this->require_resolvers[] = $function;
     }
+
     /** @param string $s */
     function resolve_requirement_argument($s) {
         foreach ($this->require_resolvers as $fn) {

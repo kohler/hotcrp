@@ -64,7 +64,8 @@ class ResponseRound {
     /** @return string */
     function instructions(Conf $conf) {
         $ims = $conf->ims();
-        if ($this->instructions !== null && !$ims->has_override("resp_instrux_{$this->number}")) {
+        if ($this->instructions !== null
+            && !$ims->has_override("resp_instrux_{$this->number}")) {
             $ims->add_override("resp_instrux_{$this->number}", $this->instructions);
         }
         $m = $ims->_ci("resp_instrux", "resp_instrux_{$this->number}", null, $this->words);
