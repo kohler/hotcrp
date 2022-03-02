@@ -286,7 +286,7 @@ class Options_SettingParser extends SettingParser {
             "id" => $f->id,
             "type" => $f->type,
             "name" => $f->name,
-            "description" => $f->description,
+            "description" => $f->configured_description(),
             "display" => $f->display_name(),
             "order" => $f->order,
             "visibility" => $f->unparse_visibility(),

@@ -669,8 +669,9 @@ class PaperOption implements JsonSerializable {
     /** @var null|string|false */
     public $_search_keyword;
     /** @var string */
-    public $description;
-    public $description_format;
+    private $description;
+    /** @var ?int */
+    private $description_format;
     public $order;
     /** @var bool
      * @readonly */
@@ -922,6 +923,17 @@ class PaperOption implements JsonSerializable {
     /** @return string */
     function missing_title() {
         return $this->title ?? $this->conf->_ci("field/missing", $this->formid);
+    }
+
+    /** @return string */
+    function configured_description() {
+        return $this->description;
+    }
+    /** @param FieldRender $fr */
+    function render_description($fr, ...$context_args) {
+        $fr->value_format = $this->description_format ?? 5;
+        $this->conf->ims()->render_ci($fr, "field_description/edit",
+                                      $this->formid, $this->description, ...$context_args);
     }
 
     /** @return AbbreviationMatcher */

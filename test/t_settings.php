@@ -364,4 +364,16 @@ class Settings_Tester {
         xassert(!$sv->execute());
         xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
     }
+
+    function test_conflictdef() {
+        $fr = new FieldRender(FieldRender::CFHTML);
+        $this->conf->option_by_id(PaperOption::PCCONFID)->render_description($fr);
+        xassert_eqq($fr->value, "Select the PC members who have conflicts of interest with this submission. This includes past advisors and students, people with the same affiliation, and any recent (~2 years) coauthors and collaborators.");
+        $this->conf->save_setting("msg.conflictdef", 1, "FART");
+        $this->conf->load_settings();
+        $this->conf->option_by_id(PaperOption::PCCONFID)->render_description($fr);
+        xassert_eqq($fr->value, "Select the PC members who have conflicts of interest with this submission. FART");
+        $this->conf->save_setting("msg.conflictdef", null);
+        $this->conf->load_settings();
+    }
 }
