@@ -40,7 +40,6 @@ if (typeof Object.assign !== "function") {
         }, writable: true, configurable: true
     });
 }
-
 if (!String.prototype.trimStart) {
     Object.defineProperty(String.prototype, "trimStart", {
         value: function () {
@@ -131,23 +130,36 @@ if ("classList" in document.createElement("span")
         return k === "" ? [] : k.split(/\s+/);
     };
 }
+
 if (!Element.prototype.closest) {
     Element.prototype.closest = function (s) {
         return $(this).closest(s)[0];
     };
 }
+if (!Element.prototype.append) {
+    Element.prototype.append = function () {
+        for (var i = 0; i !== arguments.length; ++i) {
+            var e = arguments[i];
+            if (typeof e === "string")
+                e = document.createTextNode(e);
+            this.appendChild(e);
+        }
+    };
+}
 if (!Element.prototype.replaceChildren) {
     Element.prototype.replaceChildren = function () {
+        var i;
         while (this.lastChild) {
             this.removeChild(this.lastChild);
         }
-        for (let i = 0; i !== arguments.length; ++i) {
+        for (i = 0; i !== arguments.length; ++i) {
             this.append(arguments[i]);
         }
     };
 }
 if (!HTMLInputElement.prototype.setRangeText) {
-    HTMLInputElement.prototype.setRangeText = HTMLTextAreaElement.prototype.setRangeText = function (t, s, e, m) {
+    HTMLInputElement.prototype.setRangeText =
+    HTMLTextAreaElement.prototype.setRangeText = function (t, s, e, m) {
         var ss = this.selectionStart, se = this.selectionEnd;
         if (arguments.length < 3) {
             s = ss, e = se;
@@ -170,7 +182,7 @@ if (!HTMLInputElement.prototype.setRangeText) {
             }
             this.setSelectionRange(ss, se);
         }
-    }
+    };
 }
 
 
@@ -2129,8 +2141,7 @@ return function (content, bubopt) {
             if (typeof content === "string")
                 n.innerHTML = content;
             else {
-                while (n.childNodes.length)
-                    n.removeChild(n.childNodes[0]);
+                n.replaceChildren();
                 if (content && content.jquery)
                     content.appendTo(n);
                 else
@@ -5493,10 +5504,10 @@ function add_new_comment(cj, cid, editing) {
             h2span = document.createElement("span");
         h2span.className = "cmtcard-header-name";
         h2span.textContent = cj_name(cj);
-        h2.append(h2span);
+        h2.appendChild(h2span);
         header.className = "cmtcard-head";
-        header.append(h2);
-        article.append(header);
+        header.appendChild(h2);
+        article.appendChild(header);
     }
     $(".pcontainer")[0].insertBefore(article, $$("ccactions"));
 }
@@ -9042,8 +9053,7 @@ return {
             throw new Error("bad DIV");
         }
         pfe.className = elt.className;
-        while (pfe.firstChild)
-            pfe.removeChild(pfe.firstChild);
+        pfe.replaceChildren();
         while (elt.firstChild)
             pfe.appendChild(elt.firstChild);
         add_pslitem_pfe.call(pfe);
@@ -10327,8 +10337,7 @@ function scorechart1() {
     if (this.firstChild
         && this.firstChild.getAttribute("data-scorechart") === sc)
         return;
-    while (this.firstChild)
-        this.removeChild(this.firstChild);
+    this.replaceChildren();
     if (/.*&s=1$/.test(sc) && has_canvas)
         e = scorechart1_s1(sc, this);
     else if (/.*&s=2$/.test(sc) && has_canvas)
