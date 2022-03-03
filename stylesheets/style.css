@@ -1694,6 +1694,9 @@ label.f-c, .f-i > label {
 	list-style-type: none;
 	font-size: 92%;
 }
+.f-h .feedback-list {
+	font-size: 100%;
+}
 .feedback, .feedback-list, .field-d {
 	max-width: 720px;
 	margin-bottom: 0.3rem;

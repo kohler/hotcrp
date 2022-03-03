@@ -1367,9 +1367,8 @@ function message_list_status(ml) {
 }
 
 function render_message_list(ml) {
-    var i, status = message_list_status(ml),
-        div = document.createElement("div"),
-        ul = document.createElement("ul");
+    var status = message_list_status(ml),
+        div = document.createElement("div");
     if (status === -3) {
         div.className = "msg msg-success";
     } else if (status >= 2) {
@@ -1379,12 +1378,17 @@ function render_message_list(ml) {
     } else {
         div.className = "msg msg-info";
     }
+    div.appendChild(render_feedback_list(ml));
+    return div;
+}
+
+function render_feedback_list(ml) {
+    var ul = document.createElement("ul"), i;
     ul.className = "feedback-list";
-    div.appendChild(ul);
     for (i = 0; i !== (ml || []).length; ++i) {
         append_feedback_to(ul, ml[i]);
     }
-    return div;
+    return ul;
 }
 
 function append_feedback_to(ul, mi) {
@@ -1431,18 +1435,18 @@ function append_feedback_near(elt, mi) {
         addClass(elt, "has-error");
     }
     if (mi.message != null && mi.message !== "") {
-        var c, ul, owner = hasClass(elt, "entryi") ? elt.querySelector(".entry") : elt;
+        var c, owner = hasClass(elt, "entryi") ? elt.querySelector(".entry") : elt;
         if (!owner)
             return false;
         c = owner.firstChild;
-        while (c && c.nodeType === 1 && (c.tagName === "LABEL" || hasClass(c, "feedback")))
+        while (c && c.nodeType === 1 && (c.tagName === "LABEL" || hasClass(c, "feedback"))) {
             c = c.nextSibling;
-        if (!c || !hasClass(c, "feedback-list")) {
-            ul = document.createElement("ul");
-            ul.className = "feedback-list";
-            owner.insertBefore(ul, c);
         }
-        append_feedback_to(ul || c, mi);
+        if (c && hasClass(c, "feedback-list")) {
+            append_feedback_to(c, mi);
+        } else {
+            owner.insertBefore(render_feedback_list([mi]), c);
+        }
     }
     return true;
 }

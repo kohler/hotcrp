@@ -1,12 +1,6 @@
 // settings.js -- HotCRP JavaScript library for settings
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-handle_ui.on("js-settings-resp-active", function (event) {
-    $(".if-response-active").toggleClass("hidden", !this.checked);
-});
-
-$(function () { $(".js-settings-resp-active").trigger("change"); });
-
 handle_ui.on("js-settings-au-seerev-tag", function (event) {
     $("#au_seerev_3").click(); // AUSEEREV_TAGS
 });
@@ -678,6 +672,12 @@ return rfs;
 })();
 
 
+handle_ui.on("js-settings-resp-active", function (event) {
+    $(".if-response-active").toggleClass("hidden", !this.checked);
+});
+
+$(function () { $(".js-settings-resp-active").trigger("change"); });
+
 handle_ui.on("js-settings-response-new", function () {
     var i, $rx, $rt = $("#response__new"), t;
     for (i = 1; jQuery("#response__" + i).length; ++i) {
@@ -696,6 +696,27 @@ handle_ui.on("js-settings-response-delete", function () {
     settings_delete(rr, "This response will be deleted.");
     form_highlight(this.form);
     return false;
+});
+
+handle_ui.on("input.js-settings-response-name", function () {
+    if (this.closest(".has-error")) {
+        return;
+    }
+    var helt = this.parentElement.lastChild, s = this.value.trim();
+    if (helt.nodeType !== 1 || helt.className !== "f-h") {
+        helt = document.createElement("div");
+        helt.className = "f-h";
+        this.parentElement.appendChild(helt);
+    }
+    if (s === "") {
+        helt.replaceChildren("Example display: ‘Response’; example search: ‘has:response’");
+    } else if (!/^[A-Za-z][-_A-Za-z0-9]*$/.test(s)) {
+        helt.replaceChildren(render_feedback_list([{status: 2, message: "<0>Round names must start with a letter and can contain only letters, numbers, and dashes"}]));
+    } else if (/^(?:none|any|all|default|unnamed|.*response|response.*|draft.*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc(?:review)|ext(?:ernal)|meta(?:review))$/i.test(s)) {
+        helt.replaceChildren(render_feedback_list([{status: 2, message: "<0>Round name ‘".concat(s, "’ is reserved")}]));
+    } else {
+        helt.replaceChildren("Example display: ‘", s, " Response’; example search: ‘has:", s, "response’");
+    }
 });
 
 handle_ui.on("js-settings-decision-new-name", function () {

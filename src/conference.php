@@ -710,7 +710,7 @@ class Conf {
         $change = false;
         if ($value === null && $data === null) {
             $result = $this->qe("delete from Settings where name=?", $name);
-            if (!Dbl::is_error($result)) {
+            if ($result->affected_rows !== 0) {
                 unset($this->settings[$name], $this->settingTexts[$name]);
                 $change = true;
             }
@@ -721,7 +721,7 @@ class Conf {
                 $dval = json_encode_db($dval);
             }
             $result = $this->qe("insert into Settings (name, value, data) values (?, ?, ?) ?U on duplicate key update value=?U(value), data=?U(data)", $name, $value, $dval);
-            if (!Dbl::is_error($result)) {
+            if ($result->affected_rows !== 0) {
                 $this->settings[$name] = $value;
                 $this->settingTexts[$name] = $dval;
                 $change = true;
@@ -1864,10 +1864,13 @@ class Conf {
      * @return string|false */
     static function round_name_error($rname) {
         // Must return HTML-safe plaintext
+        // Also see `settings.js`
         if ((string) $rname === "") {
             return "Round name required";
-        } else if (!preg_match('/\A[a-zA-Z](?:|[-_a-zA-Z0-9]*[a-zA-Z0-9])\z/', $rname)) {
+        } else if (!preg_match('/\A[a-zA-Z][-_a-zA-Z0-9]*\z/', $rname)) {
             return "Round names must start with a letter and contain only letters, numbers, and dashes";
+        } else if (str_ends_with($rname, "_") || str_ends_with($rname, "-")) {
+            return "Round names must not end in a dash";
         } else if (preg_match('/\A(?:none|any|all|default|unnamed|.*response|response.*|draft.*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc(?:review)|ext(?:ernal)|meta(?:review))\z/i', $rname)) {
             return "Round name ‘{$rname}’ is reserved";
         } else {

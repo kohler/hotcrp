@@ -1144,10 +1144,10 @@ class SettingValues extends MessageSet {
     function type_hint($type) {
         if ($type && str_ends_with($type, "date") && !isset($this->_hint_status["date"])) {
             $this->_hint_status["date"] = true;
-            return "Date examples: “now”, “10 Dec 2006 11:59:59pm PST”, “2019-10-31 UTC-1100”, “Dec 31 AoE” <a href=\"http://php.net/manual/en/datetime.formats.php\">(more examples)</a>";
+            return "Date examples: ‘now’, ‘10 Dec 2006 11:59:59pm PST’, ‘2019-10-31 UTC-1100’, ‘Dec 31 AoE’ <a href=\"http://php.net/manual/en/datetime.formats.php\">(more examples)</a>";
         } else if ($type === "grace" && !isset($this->_hint_status["grace"])) {
             $this->_hint_status["grace"] = true;
-            return "Example: “15 min”";
+            return "Example: ‘15 min’";
         } else {
             return "";
         }

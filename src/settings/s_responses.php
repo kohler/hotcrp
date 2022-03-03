@@ -60,8 +60,9 @@ class Responses_SettingParser extends SettingParser {
             }
         }
         $sv->print_entry_group("response__{$this->ctr}__name", "Response name", [
+            "class" => "uii js-settings-response-name",
             "horizontal" => true, "control_after" => $t
-        ]);
+        ], is_int($this->ctr) && $this->ctr > 1 ? null : "Use no name or a short name like ‘Rebuttal’.");
     }
 
     function print_deadline(SettingValues $sv) {
