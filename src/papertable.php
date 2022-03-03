@@ -1247,47 +1247,47 @@ class PaperTable {
         echo '">';
     }
 
-    private function papstripCollaborators() {
+    private function _print_ps_collaborators() {
         if (!$this->conf->setting("sub_collab")
             || !$this->prow->collaborators
             || strcasecmp(trim($this->prow->collaborators), "None") == 0) {
             return;
         }
-        $fold = $this->user->session("foldpscollab", 1) ? 1 : 0;
-
         $data = $this->highlight($this->prow->collaborators(), "co", $match);
-        $data = nl2br($data);
-        if ($match || !$this->allow_folds) {
-            $fold = 0;
-        }
-
         $option = $this->conf->option_by_id(PaperOption::COLLABORATORSID);
-        $this->_papstripBegin("pscollab", $fold, ["data-fold-storage" => "p.collab", "class" => "need-fold-storage"]);
+        $this->_papstripBegin("pscollab", false, ["data-fold-storage" => "-p.collab", "class" => "need-fold-storage"]);
         echo $this->papt("collaborators", $option->title_html(),
-                         ["type" => "ps", "fold" => "pscollab", "folded" => $fold]),
-            '<div class="psv"><div class="fx">', $data,
-            "</div></div></div>\n\n";
+                         ["type" => "ps", "fold" => "pscollab"]),
+            '<ul class="fx x namelist-columns">';
+        foreach (explode("\n", $data) as $line) {
+            echo '<li class="od">', $line, '</li>';
+        }
+        echo '</ul></div>', "\n";
     }
 
-    private function papstripPCConflicts() {
+    private function _print_ps_pc_conflicts() {
         assert(!$this->editable && $this->prow->paperId);
         $pcconf = [];
         $pcm = $this->conf->pc_members();
         foreach ($this->prow->pc_conflicts() as $id => $cflt) {
             if (Conflict::is_conflicted($cflt->conflictType)) {
                 $p = $pcm[$id];
-                $pcconf[$p->pc_index] = '<li class="odname">'
-                    . $this->user->reviewer_html_for($p) . '</li>';
+                $pcconf[$p->pc_index] = $this->user->reviewer_html_for($p);
             }
         }
         ksort($pcconf);
         if (empty($pcconf)) {
-            $pcconf[] = '<li class="odname">None</li>';
+            $pcconf[] = 'None';
         }
-        $this->_papstripBegin();
         $option = $this->conf->option_by_id(PaperOption::PCCONFID);
-        echo $this->papt("pc_conflicts", $option->title_html(), ["type" => "ps"]),
-            '<div class="psv"><ul class="x namelist-columns">', join("", $pcconf), "</ul></div></div>\n";
+        $this->_papstripBegin("pspcconf", $this->allow_folds, ["data-fold-storage" => "-p.pcconf", "class" => "need-fold-storage"]);
+        echo $this->papt("pc_conflicts", $option->title_html(),
+                         ["type" => "ps", "fold" => "pspcconf"]),
+            '<ul class="fx x namelist-columns">';
+        foreach ($pcconf as $n) {
+            echo '<li class="od">', $n, '</li>';
+        }
+        echo '</ul></div>', "\n";
     }
 
     private function _papstripLeadShepherd($type, $name, $showedit) {
@@ -1303,8 +1303,7 @@ class PaperTable {
 
         $this->_papstripBegin($type, true, $editable ? ["class" => "ui-unfold js-unfold-pcselector js-unfold-focus need-paper-select-api"] : "");
         echo $this->papt($type, $editable ? Ht::label($name, $id) : $name,
-            ["type" => "ps", "fold" => $editable ? $type : false, "folded" => true]),
-            '<div class="psv">';
+            ["type" => "ps", "fold" => $editable ? $type : false]);
         if (!$value) {
             $n = "";
         } else if (($p = $this->conf->cached_user_by_id($value))
@@ -1328,7 +1327,7 @@ class PaperTable {
                 '</form>';
         }
 
-        echo "</div></div>\n";
+        echo "</div>\n";
     }
 
     private function papstripLead($showedit) {
@@ -1370,8 +1369,7 @@ class PaperTable {
         }
 
         echo $this->papt("tags", $editable ? Ht::label("Tags", $id) : "Tags",
-            ["type" => "ps", "fold" => $editable ? "tags" : false, "foldopen" => true]),
-            '<div class="psv">';
+            ["type" => "ps", "fold" => $editable ? "tags" : false, "foldopen" => true]);
         if ($editable) {
             $treport = Tags_API::tagmessages($this->user, $this->prow, null);
             $treport_warn = array_filter($treport->message_list, function ($mi) {
@@ -1417,7 +1415,6 @@ class PaperTable {
         } else {
             echo '<div class="js-tag-result">', ($tx === "" ? "None" : $tx), '</div>';
         }
-        echo "</div>";
 
         if ($editable) {
             echo "</form>";
@@ -1433,7 +1430,7 @@ class PaperTable {
         $this->_papstripBegin("decision", $this->qreq->atab !== "decision", ["class" => "need-paper-select-api js-unfold-focus"]);
         echo $this->papt("decision", Ht::label("Decision", $id),
                 ["type" => "ps", "fold" => "decision"]),
-            '<div class="psv"><form class="ui-submit uin fx">';
+            '<form class="ui-submit uin fx">';
         if (isset($this->qreq->forceShow)) {
             echo Ht::hidden("forceShow", $this->qreq->forceShow ? 1 : 0);
         }
@@ -1442,18 +1439,18 @@ class PaperTable {
                         ["class" => "w-99 want-focus", "id" => $id]),
             '</form><p class="fn odname js-psedit-result">',
             htmlspecialchars($this->conf->decision_name($this->prow->outcome)),
-            "</p></div></div>\n";
+            "</p></div>\n";
     }
 
     function papstripReviewPreference() {
         $this->_papstripBegin("revpref");
         echo $this->papt("revpref", "Review preference", ["type" => "ps"]),
-            "<div class=\"psv\"><form class=\"ui\">";
+            "<form class=\"ui\">";
         $rp = unparse_preference($this->prow->preference($this->user));
         $rp = ($rp == "0" ? "" : $rp);
         echo "<input id=\"revprefform_d\" type=\"text\" name=\"revpref", $this->prow->paperId,
             "\" size=\"4\" value=\"$rp\" class=\"revpref want-focus want-select\">",
-            "</form></div></div>\n";
+            "</form></div>\n";
         Ht::stash_script("hotcrp.add_preference_ajax(\"#revprefform_d\",true);hotcrp.shortcut(\"revprefform_d\").add()");
     }
 
@@ -1506,7 +1503,7 @@ class PaperTable {
         }
         echo $this->papt($id, $this->papstrip_tag_entry_title("{{}} rank", $tag, $myval, true),
                          ["type" => "ps", "fold" => $id, "float" => $totmark, "fnclass" => "mf"]),
-            '<div class="psv"><div class="fx">',
+            '<div class="fx">',
             Ht::entry("tagindex", $myval,
                 ["size" => 4, "class" => "is-tag-index want-focus mf-label-success",
                  "data-tag-base" => "~{$tag}", "inputmode" => "decimal",
@@ -1514,7 +1511,7 @@ class PaperTable {
             ' <span class="barsep">·</span> ',
             '<a href="', $this->conf->hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">Edit all</a>',
             ' <div class="hint" style="margin-top:4px"><strong>Tip:</strong> <a href="', $this->conf->hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">Search “editsort:#~', $tag, '”</a> to drag and drop your ranking, or <a href="', $this->conf->hoturl("offline"), '">use offline reviewing</a> to rank many papers at once.</div>',
-            "</div></div></form></div>\n";
+            "</div></form></div>\n";
     }
 
     private function papstrip_allotment($tag, $allotment) {
@@ -1529,7 +1526,7 @@ class PaperTable {
         }
         echo $this->papt($id, $this->papstrip_tag_entry_title("{{}} votes", $tag, $myval, true),
                          ["type" => "ps", "fold" => $id, "float" => $totmark]),
-            '<div class="psv"><div class="fx">',
+            '<div class="fx">',
             Ht::entry("tagindex", $myval,
                 ["size" => 4, "class" => "is-tag-index want-focus mf-label-success",
                  "data-tag-base" => "~{$tag}", "inputmode" => "decimal",
@@ -1537,7 +1534,7 @@ class PaperTable {
             " &nbsp;of $allotment",
             ' <span class="barsep">·</span> ',
             '<a href="', $this->conf->hoturl("search", "q=" . urlencode("editsort:-#~$tag")), '">Edit all</a>',
-            "</div></div></form></div>\n";
+            "</div></form></div>\n";
     }
 
     private function papstrip_approval($tag) {
@@ -1898,10 +1895,10 @@ class PaperTable {
         }
         $this->papstripWatch();
         if ($this->user->can_view_conflicts($this->prow) && !$this->editable) {
-            $this->papstripPCConflicts();
+            $this->_print_ps_pc_conflicts();
         }
         if ($this->user->allow_view_authors($this->prow) && !$this->editable) {
-            $this->papstripCollaborators();
+            $this->_print_ps_collaborators();
         }
         if ($this->user->can_set_decision($this->prow)) {
             $this->papstripOutcomeSelector();

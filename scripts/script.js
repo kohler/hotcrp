@@ -3332,8 +3332,12 @@ function fold_storage() {
         $(".need-fold-storage").each(fold_storage);
     } else {
         removeClass(this, "need-fold-storage");
-        var sn = this.getAttribute("data-fold-storage"), smap, k, v,
+        var sn = this.getAttribute("data-fold-storage"), smap, k, v, flip = false,
             spfx = this.getAttribute("data-fold-storage-prefix") || "";
+        if (sn.charAt(0) === "-") {
+            sn = sn.substring(1);
+            flip = true;
+        }
         if (sn.charAt(0) === "{" || sn.charAt(0) === "[") {
             smap = JSON.parse(sn) || {};
         } else {
@@ -3346,24 +3350,30 @@ function fold_storage() {
         for (k in smap) {
             if (sn[spfx + smap[k]]) {
                 foldup.call(this, null, {f: false, n: +k});
+            } else if (sn[spfx + smap[k]] != null) {
+                foldup.call(this, null, {f: true, n: +k});
             }
         }
     }
 }
 
 function fold_session_for(foldnum, type) {
-    var s = this.getAttribute("data-fold-" + type);
+    var s = this.getAttribute("data-fold-" + type), flip = false;
+    if (s && s.charAt(0) === "-") {
+        s = s.substring(1);
+        flip = true;
+    }
     if (s && (s.charAt(0) === "{" || s.charAt(0) === "[")) {
         s = (JSON.parse(s) || {})[foldnum];
     }
     if (s && this.hasAttribute("data-fold-" + type + "-prefix")) {
         s = this.getAttribute("data-fold-" + type + "-prefix") + s;
     }
-    return s;
+    return [s, flip];
 }
 
 function fold(elt, dofold, foldnum) {
-    var i, foldname, opentxt, closetxt, isopen, foldnumid, s;
+    var i, foldname, opentxt, closetxt, wasopen, foldnumid, s;
 
     // find element
     if (elt && ($.isArray(elt) || elt.jquery)) {
@@ -3385,10 +3395,10 @@ function fold(elt, dofold, foldnum) {
     closetxt = "fold" + foldnumid + "c";
 
     // check current fold state
-    isopen = hasClass(elt, opentxt);
-    if (dofold == null || !dofold != isopen) {
+    wasopen = hasClass(elt, opentxt);
+    if (dofold == null || !dofold != wasopen) {
         // perform fold
-        if (isopen) {
+        if (wasopen) {
             elt.className = elt.className.replace(opentxt, closetxt);
         } else {
             elt.className = elt.className.replace(closetxt, opentxt);
@@ -3397,13 +3407,13 @@ function fold(elt, dofold, foldnum) {
         // check for session
         if ((s = fold_session_for.call(elt, foldnum, "storage"))) {
             var sj = wstorage.json(true, "fold") || {};
-            isopen ? delete sj[s] : sj[s] = 1;
+            wasopen === !s[1] ? delete sj[s[0]] : sj[s[0]] = wasopen ? 0 : 1;
             wstorage(true, "fold", $.isEmptyObject(sj) ? null : sj);
             var sj = wstorage.json(false, "fold") || {};
-            isopen ? delete sj[s] : sj[s] = 1;
+            wasopen === !s[1] ? delete sj[s[0]] : sj[s[0]] = wasopen ? 0 : 1;
             wstorage(false, "fold", $.isEmptyObject(sj) ? null : sj);
         } else if ((s = fold_session_for.call(elt, foldnum, "session"))) {
-            $.post(hoturl("=api/session", {v: s + (isopen ? "=1" : "=0")}));
+            $.post(hoturl("=api/session", {v: s[0] + (wasopen ? "=1" : "=0")}));
         }
     }
 
