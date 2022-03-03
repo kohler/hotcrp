@@ -446,7 +446,7 @@ class Conf {
 
         $this->any_response_open = 0;
         if (($this->settings["resp_active"] ?? 0) > 0) {
-            foreach ($this->resp_rounds() as $rrd) {
+            foreach ($this->response_rounds() as $rrd) {
                 if ($rrd->time_allowed(true)) {
                     if ($rrd->search) {
                         $this->any_response_open = 1;
@@ -1964,19 +1964,25 @@ class Conf {
 
 
     /** @return list<ResponseRound> */
-    function resp_rounds() {
+    function response_rounds() {
         if ($this->_resp_rounds === null) {
             if ($this->sversion >= 257) {
-                $this->_resp_rounds = $this->_new_resp_rounds();
+                $this->_resp_rounds = $this->_new_response_rounds();
             } else {
-                $this->_resp_rounds = $this->_old_resp_rounds();
+                $this->_resp_rounds = $this->_old_response_rounds();
             }
         }
         return $this->_resp_rounds;
     }
 
+    /** @return list<ResponseRound>
+     * @deprecated */
+    function resp_rounds() {
+        return $this->response_rounds();
+    }
+
     /** @return list<ResponseRound> */
-    private function _new_resp_rounds() {
+    private function _new_response_rounds() {
         $rrds = [];
         $active = ($this->settings["resp_active"] ?? 0) > 0;
         $jresp = json_decode($this->settingTexts["responses"] ?? "[{}]");
@@ -2000,7 +2006,7 @@ class Conf {
     }
 
     /** @return list<ResponseRound> */
-    private function _old_resp_rounds() {
+    private function _old_response_rounds() {
         $rrds = [];
         $x = $this->settingTexts["resp_rounds"] ?? "1";
         $active = ($this->settings["resp_active"] ?? 0) > 0;
@@ -2027,14 +2033,14 @@ class Conf {
 
     /** @param string $rname
      * @return string|false */
-    static function resp_round_name_error($rname) {
+    static function response_round_name_error($rname) {
         return self::round_name_error($rname);
     }
 
     /** @param string $rname
      * @return ?ResponseRound */
-    function resp_round($rname) {
-        $rrds = $this->resp_rounds();
+    function response_round($rname) {
+        $rrds = $this->response_rounds();
         if (!$rname
             || $rname === 1
             || $rname === "1"

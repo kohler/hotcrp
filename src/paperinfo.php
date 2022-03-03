@@ -1130,7 +1130,7 @@ class PaperInfo {
         if ($this->conf->any_response_open === 2) {
             return true;
         } else if ($this->conf->any_response_open) {
-            foreach ($this->conf->resp_rounds() as $rrd) {
+            foreach ($this->conf->response_rounds() as $rrd) {
                 if ($rrd->time_allowed(true)
                     && (!$rrd->search || $rrd->search->test($this))) {
                     return true;

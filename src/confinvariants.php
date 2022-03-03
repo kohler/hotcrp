@@ -228,6 +228,12 @@ class ConfInvariants {
             $this->invariant_error("empty comment #{0}/{1}");
         }
 
+        // responses have author visibility
+        $any = $this->invariantq("select paperId, commentId from PaperComment where (commentType&" . CommentInfo::CT_RESPONSE  . ")!=0 and (commentType&" . CommentInfo::CT_AUTHOR . ")=0 limit 1");
+        if ($any) {
+            $this->invariant_error("submitted response #{0}/{1} is not author-visible");
+        }
+
         // non-draft comments are displayed
         $any = $this->invariantq("select paperId, commentId from PaperComment where timeDisplayed=0 and (commentType&" . CommentInfo::CT_DRAFT . ")=0 limit 1");
         if ($any) {

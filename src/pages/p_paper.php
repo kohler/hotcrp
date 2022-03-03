@@ -408,10 +408,10 @@ class Paper_Page {
                 $cid = $this->qreq->c;
                 $preferred_resp_round = null;
                 if (($x = $this->qreq->response)) {
-                    $preferred_resp_round = $this->conf->resp_round($x);
+                    $preferred_resp_round = $this->conf->response_round($x);
                 }
                 if ($preferred_resp_round === null) {
-                    $preferred_resp_round = $this->user->preferred_resp_round($this->prow);
+                    $preferred_resp_round = $this->user->preferred_response_round($this->prow);
                 }
                 $j = null;
                 foreach ($this->prow->viewable_comments($this->user) as $crow) {

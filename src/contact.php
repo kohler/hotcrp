@@ -3665,9 +3665,9 @@ class Contact {
     }
 
     /** @return list<ResponseRound> */
-    function relevant_resp_rounds() {
+    function relevant_response_rounds() {
         $rrds = [];
-        foreach ($this->conf->resp_rounds() as $rrd) {
+        foreach ($this->conf->response_rounds() as $rrd) {
             if ($rrd->relevant($this))
                 $rrds[] = $rrd;
         }
@@ -3694,7 +3694,7 @@ class Contact {
                 && ($this->conf->au_seerev !== 0
                     || $this->conf->any_response_open === 2
                     || ($this->conf->any_response_open === 1
-                        && !empty($this->relevant_resp_rounds()))
+                        && !empty($this->relevant_response_rounds()))
                     || ($this->conf->has_perm_tags()
                         && $this->some_author_perm_tag_allows("author-read-review"))));
     }
@@ -4336,7 +4336,7 @@ class Contact {
     function can_respond(PaperInfo $prow, CommentInfo $crow, $submit = false) {
         if ($prow->timeSubmitted <= 0
             || !($crow->commentType & CommentInfo::CT_RESPONSE)
-            || !($rrd = ($prow->conf->resp_rounds())[$crow->commentRound] ?? null)) {
+            || !($rrd = ($prow->conf->response_rounds())[$crow->commentRound] ?? null)) {
             return false;
         }
         $rights = $this->rights($prow);
@@ -4384,10 +4384,10 @@ class Contact {
     }
 
     /** @return ?ResponseRound */
-    function preferred_resp_round(PaperInfo $prow) {
+    function preferred_response_round(PaperInfo $prow) {
         $rights = $this->rights($prow);
         if ($rights->conflictType >= CONFLICT_AUTHOR) {
-            foreach ($prow->conf->resp_rounds() as $rrd) {
+            foreach ($prow->conf->response_rounds() as $rrd) {
                 if ($rrd->time_allowed(true))
                     return $rrd;
             }
@@ -4980,7 +4980,7 @@ class Contact {
         if ($this->conf->setting("resp_active") > 0
             && ($this->isPC || $this->is_author())) {
             $dlresps = [];
-            foreach ($this->relevant_resp_rounds() as $rrd) {
+            foreach ($this->relevant_response_rounds() as $rrd) {
                 $dlresp = (object) ["open" => $rrd->open, "done" => $rrd->done];
                 $dlresps[$rrd->name] = $dlresp;
                 if ($rrd->grace) {
@@ -5094,7 +5094,7 @@ class Contact {
                     $perm->can_comment = "override";
                 }
                 if (isset($dl->resps)) {
-                    foreach ($this->conf->resp_rounds() as $rrd) {
+                    foreach ($this->conf->response_rounds() as $rrd) {
                         $crow = CommentInfo::make_response_template($rrd, $prow);
                         $v = false;
                         if ($this->can_respond($prow, $crow, true)) {

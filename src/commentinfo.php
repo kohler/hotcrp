@@ -10,9 +10,9 @@ class CommentInfo {
      * @readonly */
     public $prow;
     /** @var int */
-    public $commentId = 0;
-    /** @var int */
     public $paperId = 0;
+    /** @var int */
+    public $commentId = 0;
     /** @var int */
     public $contactId = 0;
     /** @var int */
@@ -157,7 +157,7 @@ class CommentInfo {
             $t = [];
             $crow = new CommentInfo($prow);
             $crow->commentType = self::CT_RESPONSE;
-            foreach ($prow->conf->resp_rounds() as $rrd) {
+            foreach ($prow->conf->response_rounds() as $rrd) {
                 $j = ["words" => $rrd->words];
                 $crow->commentRound = $rrd->number;
                 if (Contact::$main_user->can_respond($prow, $crow)) {
@@ -184,13 +184,19 @@ class CommentInfo {
     }
 
     /** @return ?ResponseRound */
-    function resp_round() {
+    function response_round() {
         if ($this->commentType & self::CT_RESPONSE) {
-            $rrds = $this->conf->resp_rounds();
+            $rrds = $this->conf->response_rounds();
             return $rrds[$this->commentRound] ?? $rrds[0];
         } else {
             return null;
         }
+    }
+
+    /** @return ?ResponseRound
+     * @deprecated */
+    function resp_round() {
+        return $this->response_round();
     }
 
     /** @param int $ctype
@@ -225,7 +231,7 @@ class CommentInfo {
         if (self::commenttype_needs_ordinal($this->commentType) && $o) {
             return ($is_author ? "cA" : "c") . $o;
         } else if ($this->commentType & self::CT_RESPONSE) {
-            return $this->resp_round()->tag_name();
+            return $this->response_round()->tag_name();
         } else {
             return "cx" . $this->commentId;
         }
@@ -270,7 +276,7 @@ class CommentInfo {
 
     /** @return ?string */
     function unparse_response_text() {
-        if (($rrd = $this->resp_round())) {
+        if (($rrd = $this->response_round())) {
             $t = $rrd->unnamed ? "Response" : "{$rrd->name} Response";
             if ($this->commentType & self::CT_DRAFT) {
                 $t = "Draft $t";
@@ -452,7 +458,7 @@ class CommentInfo {
             return null;
         }
 
-        $rrd = $this->resp_round();
+        $rrd = $this->response_round();
         assert(!$rrd === !($this->commentType & self::CT_RESPONSE));
 
         if ($this->commentId) {
@@ -577,7 +583,7 @@ class CommentInfo {
     /** @param int $flags
      * @return string */
     function unparse_text(Contact $contact, $flags = 0) {
-        if (($rrd = $this->resp_round())) {
+        if (($rrd = $this->response_round())) {
             $x = $rrd->unnamed ? "Response" : "{$rrd->name} Response";
         } else {
             $ordinal = $this->unparse_ordinal();
@@ -680,7 +686,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             if (!($req["submit"] ?? null)) {
                 $ctype |= self::CT_DRAFT;
             }
-            $response_name = $this->resp_round()->name;
+            $response_name = $this->response_round()->name;
         } else if ($user->act_author_view($this->prow)) {
             $ctype = ($req_visibility ?? self::CT_AUTHOR) | self::CT_BYAUTHOR;
         } else {

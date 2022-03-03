@@ -11,7 +11,7 @@ class Responses_SettingParser extends SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
         if ($si->part0 !== null) {
             if ($si->part2 === "") {
-                $rrd = $sv->unmap_enumeration_member($si->name, $sv->conf->resp_rounds());
+                $rrd = $sv->unmap_enumeration_member($si->name, $sv->conf->response_rounds());
                 $sv->set_oldv($si->name, $rrd ? clone $rrd : new ResponseRound);
             } else {
                 $rrd = $sv->oldv($si->part0 . $si->part1);
@@ -30,9 +30,9 @@ class Responses_SettingParser extends SettingParser {
     }
 
     function prepare_enumeration(SettingValues $sv, Si $si) {
-        $sv->map_enumeration("response__", $sv->conf->resp_rounds());
+        $sv->map_enumeration("response__", $sv->conf->response_rounds());
         // set placeholder for unnamed round
-        $rrd = ($sv->conf->resp_rounds())[0] ?? null;
+        $rrd = ($sv->conf->response_rounds())[0] ?? null;
         if ($rrd && $rrd->unnamed) {
             $ctr = $sv->search_enumeration("response__", "__id", "0");
             assert($ctr !== null);
@@ -114,7 +114,7 @@ class Responses_SettingParser extends SettingParser {
             if (in_array($lname, ["1", "unnamed", "none", ""], true)) {
                 $rrd->name = $lname = "";
                 $sv->set_req($si->name, $lname);
-            } else if (($error = Conf::resp_round_name_error($rrd->name))) {
+            } else if (($error = Conf::response_round_name_error($rrd->name))) {
                 $sv->error_at($si->name, "<0>{$error}");
             }
             return true;
@@ -134,7 +134,8 @@ class Responses_SettingParser extends SettingParser {
     }
 
     function apply_response_req(SettingValues $sv, Si $si) {
-        if (!$sv->newv("response_active")) {
+        // ignore changes to response settings if active checkbox is off
+        if ($sv->has_req("response_active") && !$sv->newv("response_active")) {
             return true;
         }
 
@@ -182,12 +183,12 @@ class Responses_SettingParser extends SettingParser {
     }
 
     function store_value(SettingValues $sv, Si $si) {
-        $sv->conf->qe("update PaperComment set commentRound=case " . join(" ", $this->round_transform) . " else commentRound end where (commentType&" . CommentInfo::CT_RESPONSE . ")!=0");
+        $sv->conf->qe("update PaperComment set commentRound=case " . join(" ", $this->round_transform) . " else commentRound end where commentType>=" . CommentInfo::CT_AUTHOR . " and (commentType&" . CommentInfo::CT_RESPONSE . ")!=0");
     }
 
     static function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("responses")) {
-            foreach ($sv->conf->resp_rounds() as $i => $rrd) {
+            foreach ($sv->conf->response_rounds() as $i => $rrd) {
                 if ($rrd->search) {
                     foreach ($rrd->search->message_list() as $mi) {
                         $sv->append_item_at("response__" . ($i + 1) . "__condition", $mi);

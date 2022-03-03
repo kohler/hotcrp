@@ -62,7 +62,7 @@ class Completion_API {
         if ($user->is_manager()) {
             array_push($comp, "has:proposal");
         }
-        foreach ($conf->resp_rounds() as $rrd) {
+        foreach ($conf->response_rounds() as $rrd) {
             if (!in_array("has:response", $comp, true)) {
                 $comp[] = "has:response";
             }
@@ -71,7 +71,7 @@ class Completion_API {
             }
         }
         if ($user->can_view_some_draft_response()) {
-            foreach ($conf->resp_rounds() as $rrd) {
+            foreach ($conf->response_rounds() as $rrd) {
                 if (!in_array("has:draftresponse", $comp, true)) {
                     $comp[] = "has:draftresponse";
                 }

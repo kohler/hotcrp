@@ -2455,7 +2455,7 @@ class PaperTable {
         if (!$nocmt
             && ($prow->has_author($this->user) || $this->allow_admin)
             && $this->conf->any_response_open) {
-            foreach ($this->conf->resp_rounds() as $rrd) {
+            foreach ($this->conf->response_rounds() as $rrd) {
                 $cr = null;
                 foreach ($this->mycrows ? : [] as $crow) {
                     if (($crow->commentType & CommentInfo::CT_RESPONSE)
@@ -2623,7 +2623,7 @@ class PaperTable {
                 $cs[] = $crow;
             }
             if ($this->admin || $this->prow->has_author($this->user)) {
-                foreach ($this->conf->resp_rounds() as $rrd) {
+                foreach ($this->conf->response_rounds() as $rrd) {
                     if (!$this->has_response($rrd->number)
                         && $rrd->relevant($this->user, $this->prow)) {
                         $crow = CommentInfo::make_response_template($rrd, $this->prow);

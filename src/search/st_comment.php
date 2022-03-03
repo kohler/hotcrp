@@ -49,13 +49,13 @@ class Comment_SearchTerm extends SearchTerm {
         ];
     }
     static function response_factory($keyword, Contact $user, $kwfj, $m) {
-        $rrd = $user->conf->resp_round($m[2]);
+        $rrd = $user->conf->response_round($m[2]);
         if (!$rrd
             && $m[1] === ""
             && preg_match('/\A(draft-?)(.*)\z/si', $m[2], $mm)) {
             $m[1] = $mm[1];
             $m[2] = $mm[2];
-            $rrd = $user->conf->resp_round($m[2]);
+            $rrd = $user->conf->response_round($m[2]);
         }
         if (!$rrd || ($m[1] && $m[3])) {
             return null;

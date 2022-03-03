@@ -17,7 +17,7 @@ class Comment_API {
     /** @return MessageItem */
     static private function save_success_message(CommentInfo $xcrow) {
         $action = $xcrow->commentId ? "saved" : "deleted";
-        if (($rrd = $xcrow->resp_round())) {
+        if (($rrd = $xcrow->response_round())) {
             $cname = $rrd->unnamed ? "Response" : "{$rrd->name} response";
             if ($xcrow->commentId && !($xcrow->commentType & CommentInfo::CT_DRAFT)) {
                 $action = "submitted";
@@ -34,7 +34,7 @@ class Comment_API {
         // check response
         $rrd = null;
         if ($qreq->response) {
-            $rrd = $prow->conf->resp_round($qreq->response);
+            $rrd = $prow->conf->response_round($qreq->response);
             if (!$rrd) {
                 $mis[] = MessageItem::error("<0>No such response round");
                 return [null, 404];
@@ -180,7 +180,7 @@ class Comment_API {
         } else {
             $rname = false;
         }
-        $rrd = $rname === false ? null : $prow->conf->resp_round($rname);
+        $rrd = $rname === false ? null : $prow->conf->response_round($rname);
         if ($rname !== false && !$rrd) {
             $mis[] = new MessageItem(null, "<0>No such response round", MessageSet::ERROR);
             return null;

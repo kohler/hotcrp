@@ -365,6 +365,60 @@ class Settings_Tester {
         xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
     }
 
+    function test_responses() {
+        if ($this->conf->setting_data("responses")) {
+            $this->conf->save_refresh_setting("responses", null);
+        }
+
+        $rrds = $this->conf->response_rounds();
+        xassert_eqq(count($rrds), 1);
+        xassert_eqq($rrds[0]->number, 0);
+        xassert_eqq($rrds[0]->name, "1");
+        xassert($rrds[0]->unnamed);
+
+        // rename unnamed response round
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_responses" => 1,
+            "response__1__id" => "0",
+            "response__1__name" => "Butt",
+            "response__1__open" => "@" . (Conf::$now - 1),
+            "response__1__done" => "@" . (Conf::$now + 10000)
+        ]);
+        xassert($sv->execute());
+        xassert_array_eqq($sv->updated_fields(), ["responses"]);
+
+        $rrds = $this->conf->response_rounds();
+        xassert_eqq(count($rrds), 1);
+        xassert_eqq($rrds[0]->number, 0);
+        xassert_eqq($rrds[0]->name, "Butt");
+        xassert(!$rrds[0]->unnamed);
+
+        // add a response
+        assert_search_papers($this->u_chair, "has:response", "");
+        assert_search_papers($this->u_chair, "has:Buttresponse", "");
+
+        $result = $this->conf->qe("insert into PaperComment (paperId,contactId,timeModified,timeDisplayed,comment,commentType,replyTo,commentRound) values (1,?,?,?,'Hi',?,0,?)", $this->u_chair->contactId, Conf::$now, Conf::$now, CommentInfo::CT_AUTHOR | CommentInfo::CT_RESPONSE, 0);
+        $new_commentId = $result->insert_id;
+
+        assert_search_papers($this->u_chair, "has:response", "1");
+        assert_search_papers($this->u_chair, "has:Buttresponse", "1");
+
+        // changes ignored if response_active checkbox off
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_response_active" => 1,
+            "has_responses" => 1,
+            "response__1__id" => "0",
+            "response__1__name" => "ButtJRIOQOIFNINF",
+            "response__1__open" => "@" . (Conf::$now - 1),
+            "response__1__done" => "@" . (Conf::$now + 10000)
+        ]);
+        xassert($sv->execute());
+        xassert_array_eqq($sv->updated_fields(), []);
+
+        $this->conf->save_refresh_setting("responses", null);
+        $this->conf->qe("delete from PaperComment where paperId=1 and commentId=?", $new_commentId);
+    }
+
     function test_conflictdef() {
         $fr = new FieldRender(FieldRender::CFHTML);
         $this->conf->option_by_id(PaperOption::PCCONFID)->render_description($fr);
