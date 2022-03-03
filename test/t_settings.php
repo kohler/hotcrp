@@ -415,6 +415,29 @@ class Settings_Tester {
         xassert($sv->execute());
         xassert_array_eqq($sv->updated_fields(), []);
 
+        // add an unnamed response round
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_responses" => 1,
+            "response__1__id" => '$',
+            "response__1__name" => "",
+            "response__1__open" => "@" . (Conf::$now - 1),
+            "response__1__done" => "@" . (Conf::$now + 10000)
+        ]);
+        xassert($sv->execute());
+        xassert_array_eqq($sv->updated_fields(), ["responses"]);
+
+        $rrds = $this->conf->response_rounds();
+        xassert_eqq(count($rrds), 2);
+        xassert_eqq($rrds[0]->number, 0);
+        xassert_eqq($rrds[0]->name, "1");
+        xassert($rrds[0]->unnamed);
+        xassert_eqq($rrds[1]->number, 1);
+        xassert_eqq($rrds[1]->name, "Butt");
+        xassert(!$rrds[1]->unnamed);
+
+        assert_search_papers($this->u_chair, "has:response", "1");
+        assert_search_papers($this->u_chair, "has:Buttresponse", "1");
+
         $this->conf->save_refresh_setting("responses", null);
         $this->conf->qe("delete from PaperComment where paperId=1 and commentId=?", $new_commentId);
     }
