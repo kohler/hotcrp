@@ -5,6 +5,10 @@
 class Responses_SettingParser extends SettingParser {
     /** @var int|'$' */
     public $ctr;
+    /** @var ?int */
+    public $ctrid;
+    /** @var array<int,int> */
+    private $round_counts;
     /** @var list<string> */
     private $round_transform = [];
 
@@ -41,10 +45,22 @@ class Responses_SettingParser extends SettingParser {
         }
     }
 
+    private function ensure_round_counts(Conf $conf) {
+        if ($this->round_counts === null) {
+            $this->round_counts = Dbl::fetch_iimap($conf->dblink, "select commentRound, count(*) from PaperComment where commentType>=" . CommentInfo::CT_AUTHOR . " and (commentType&" . CommentInfo::CT_RESPONSE . ")!=0 group by commentRound");
+        }
+    }
+
     function print_name(SettingValues $sv) {
+        $t = Ht::button(Icons::ui_use("trash"), ["class" => "ui js-settings-response-delete ml-2 need-tooltip", "aria-label" => "Delete response", "tabindex" => -1]);
+        if ($this->ctrid !== null) {
+            $this->ensure_round_counts($sv->conf);
+            if (($n = $this->round_counts[$this->ctrid] ?? null)) {
+                $t .= '<span class="ml-2 d-inline-block">' . plural($n, "response") . '</span>';
+            }
+        }
         $sv->print_entry_group("response__{$this->ctr}__name", "Response name", [
-            "horizontal" => true,
-            "control_after" => Ht::button(Icons::ui_use("trash"), ["class" => "ui js-settings-response-delete ml-2 need-tooltip", "aria-label" => "Delete response", "tabindex" => "-1"])
+            "horizontal" => true, "control_after" => $t
         ]);
     }
 
@@ -68,10 +84,14 @@ class Responses_SettingParser extends SettingParser {
 
     function print_one(SettingValues $sv, $ctr) {
         $this->ctr = $ctr;
-        $id = $ctr !== '$' ? $sv->vstr("response__{$ctr}__id") : "\$";
+        if ($ctr !== '$' && ($id = $sv->vstr("response__{$ctr}__id")) !== '$') {
+            $this->ctrid = intval($id);
+        } else {
+            $this->ctrid = null;
+        }
         echo '<div id="response__', $ctr, '" class="form-g settings-response',
-            $id === "\$" ? " is-new" : "", '">',
-            Ht::hidden("response__{$ctr}__id", $id, ["data-default-value" => $id === "\$" ? "" : null]);
+            $this->ctrid === null ? " is-new" : "", '">',
+            Ht::hidden("response__{$ctr}__id", $this->ctrid ?? '$', ["data-default-value" => $this->ctrid === null ? "" : null]);
         if ($sv->has_req("response__{$ctr}__delete")) {
             Ht::hidden("response__{$ctr}__delete", "1", ["data-default-value" => ""]);
         }
