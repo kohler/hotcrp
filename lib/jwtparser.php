@@ -45,7 +45,7 @@ class JWTParser extends MessageSet {
         } else if ($l < 16777216) {
             $s .= "\x83" . chr($l >> 16) . chr(($l >> 8) & 255) . chr($l & 255);
         } else {
-            throw new Error("der_encode_tlv too long");
+            throw new InvalidArgumentException("der_encode_tlv too long");
         }
         return $s . $v;
     }

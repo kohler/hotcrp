@@ -55,7 +55,7 @@ class Sitype {
 
     /** @param string $vstr */
     function parse_vstr($vstr, Si $si, SettingValues $sv) {
-        throw new Error("Don't know how to parse {$si->name}");
+        throw new ErrorException("Don't know how to parse {$si->name}");
     }
 
     /** @return string */

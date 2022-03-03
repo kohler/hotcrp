@@ -349,7 +349,7 @@ class Si {
             }
             return $this->_tclass->parse_vstr($v, $this, $sv);
         } else {
-            throw new Error("Don't know how to parse_vstr {$this->name}.");
+            throw new ErrorException("Don't know how to parse_vstr {$this->name}.");
         }
     }
 

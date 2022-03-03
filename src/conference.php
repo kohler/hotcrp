@@ -1048,7 +1048,7 @@ class Conf {
         } else if (strcspn($s, " !&|()") !== strlen($s)) {
             $e = $this->xt_check_complex_string($s, $xt, $user, 0);
             if ($e === null) {
-                throw new Error("xt_check syntax error in `$s`");
+                throw new UnexpectedValueException("xt_check syntax error in `$s`");
             }
             return $e;
         } else if (strpos($s, "::") !== false) {

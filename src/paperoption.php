@@ -271,7 +271,7 @@ class PaperOptionList implements IteratorAggregate {
 
     function _add_json($oj, $k, $landmark) {
         if (!isset($oj->id) && $k === 0) {
-            throw new Exception("This conference could not be upgraded from an old database schema. A system administrator must fix this problem.");
+            throw new ErrorException("This conference could not be upgraded from an old database schema. A system administrator must fix this problem.");
         }
         if (is_string($oj->id) && is_numeric($oj->id)) { // XXX backwards compat
             $oj->id = intval($oj->id);
@@ -425,7 +425,7 @@ class PaperOptionList implements IteratorAggregate {
     function checked_option_by_id($id) {
         $o = $this->option_by_id($id);
         if (!$o) {
-            throw new Exception("PaperOptionList::checked_option_by_id($id) failed");
+            throw new ErrorException("PaperOptionList::checked_option_by_id($id) failed");
         }
         return $o;
     }

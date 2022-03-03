@@ -339,10 +339,10 @@ abstract class SearchTerm {
     abstract function test(PaperInfo $row, $rrow);
 
 
-    /** @param callable(SearchTerm,?list<mixed>):mixed $visitor
+    /** @param callable(SearchTerm,...):mixed $visitor
      * @return mixed */
     function visit($visitor) {
-        return $visitor($this, null);
+        return $visitor($this);
     }
 
     /** @return Generator<SearchTerm> */
@@ -527,7 +527,7 @@ abstract class Op_SearchTerm extends SearchTerm {
         foreach ($this->child as $ch) {
             $x[] = $ch->visit($visitor);
         }
-        return $visitor($this, $x);
+        return $visitor($this, ...$x);
     }
     function preorder() {
         yield $this;

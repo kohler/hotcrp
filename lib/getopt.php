@@ -34,7 +34,7 @@ class Getopt {
                 }
                 $this->po[$opt] = [$opt, $type, null];
             } else {
-                throw new Error("Getopt \$options");
+                throw new ErrorException("Getopt \$options");
             }
         }
         return $this;
@@ -67,12 +67,12 @@ class Getopt {
                     $t = 3;
                 }
                 if ($p + $d >= $co) {
-                    throw new Error("Getopt \$longopts");
+                    throw new ErrorException("Getopt \$longopts");
                 }
                 $n = substr($s, $p, $co - $p - $d);
                 $po = $po ?? [$n, $t, $help];
                 if ($t !== $po[1]) {
-                    throw new Error("Getopt \$longopts");
+                    throw new ErrorException("Getopt \$longopts");
                 }
                 $this->po[$n] = $po;
                 $p = $co + 1;
