@@ -63,8 +63,6 @@ class PaperTable {
     /** @var int */
     private $npapstrip = 0;
     /** @var bool */
-    private $require_folds;
-    /** @var bool */
     private $allow_folds;
     /** @var ?ReviewValues */
     private $review_values;
@@ -127,8 +125,6 @@ class PaperTable {
                 $this->mode = "p";
             }
         }
-        $this->require_folds = $this->allow_folds =
-            $this->mode === "re" || $this->mode === "assign";
     }
 
     /** @param 'p'|'edit'|'re'|'assign' $mode
@@ -346,11 +342,18 @@ class PaperTable {
         return $this->can_view_reviews;
     }
 
+    /** @param string $abstract
+     * @return bool */
     private function abstract_foldable($abstract) {
         return strlen($abstract) > 190;
     }
 
-    private function echoDivEnter() {
+    private function _print_foldpaper_div() {
+        $require_folds = $this->mode === "re" || $this->mode === "assign";
+        $this->allow_folds = $require_folds
+            || ($this->mode === "p" && $this->can_view_reviews && !empty($this->all_rrows))
+            || ($this->mode === "edit" && !$this->editable);
+
         // 4="t": topics, 6="b": abstract, 7: [JavaScript abstract expansion],
         // 8="a": blind authors, 9="p": full authors
         $foldstorage = [4 => "t", 6 => "b", 9 => "p"];
@@ -409,7 +412,7 @@ class PaperTable {
             }
         }
         echo '<div id="foldpaper" class="', join(" ", $folders);
-        if ($this->require_folds) {
+        if ($require_folds) {
             echo '">';
         } else {
             echo (empty($folders) ? "" : " "),
@@ -419,9 +422,11 @@ class PaperTable {
         }
     }
 
-    private function problem_status_at($f) {
+    /** @param string $field
+     * @return int */
+    private function problem_status_at($field) {
         if ($this->edit_status) {
-            return $this->edit_status->problem_status_at($f);
+            return $this->edit_status->problem_status_at($field);
         } else {
             return 0;
         }
@@ -688,6 +693,8 @@ class PaperTable {
         }
     }
 
+    /** @param bool $checkbox
+     * @return bool */
     private function is_ready($checkbox) {
         if ($this->useRequest) {
             return !!$this->qreq->submitpaper
@@ -764,6 +771,10 @@ class PaperTable {
         }
     }
 
+    /** @param list<Author> $table
+     * @param string $type
+     * @param ?Contact $viewAs
+     * @return string */
     private function authorData($table, $type, $viewAs = null) {
         if ($this->matchPreg && isset($this->matchPreg["au"])) {
             $highpreg = $this->matchPreg["au"];
@@ -813,6 +824,7 @@ class PaperTable {
         }
     }
 
+    /** @return array{list<Author>,list<Author>} */
     private function _analyze_authors() {
         // clean author information
         $aulist = $this->prow->author_list();
@@ -822,7 +834,7 @@ class PaperTable {
 
         // find contact author information, combine with author table
         $result = $this->conf->qe("select contactId, firstName, lastName, '' affiliation, email from ContactInfo where contactId?a", array_keys($this->prow->contacts()));
-        $contacts = array();
+        $contacts = [];
         while ($result && ($row = $result->fetch_object("Author"))) {
             $match = -1;
             for ($i = 0; $match < 0 && $i < count($aulist); ++$i) {
@@ -857,8 +869,8 @@ class PaperTable {
         }
         Dbl::free($result);
 
-        uasort($contacts, $this->conf->user_comparator());
-        return array($aulist, $contacts);
+        usort($contacts, $this->conf->user_comparator());
+        return [$aulist, $contacts];
     }
 
     function render_authors(FieldRender $fr, PaperOption $o) {
@@ -1005,7 +1017,8 @@ class PaperTable {
     /** @param list<PaperTableFieldRender> $renders
      * @param int $first
      * @param int $last
-     * @param int $vos */
+     * @param int $vos
+     * @return string */
     private function _group_name_html($renders, $first, $last, $vos) {
         $group_names = [];
         $group_flags = 0;
@@ -2867,8 +2880,6 @@ class PaperTable {
                 || $this->prow->timeSubmitted <= 0)) {
             $this->mode = "edit";
         }
-        $this->allow_folds = $this->require_folds
-            || ($this->mode === "p" && $this->can_view_reviews && !empty($this->all_rrows));
     }
 
     function resolve_comments() {
