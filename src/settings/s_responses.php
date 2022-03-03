@@ -183,7 +183,7 @@ class Responses_SettingParser extends SettingParser {
     }
 
     function store_value(SettingValues $sv, Si $si) {
-        $sv->conf->qe("update PaperComment set commentRound=case " . join(" ", $this->round_transform) . " else commentRound end where commentType>=" . CommentInfo::CT_AUTHOR . " and (commentType&" . CommentInfo::CT_RESPONSE . ")!=0");
+        $sv->conf->qe("update PaperComment set commentRound=case commentRound " . join(" ", $this->round_transform) . " else commentRound end where commentType>=" . CommentInfo::CT_AUTHOR . " and (commentType&" . CommentInfo::CT_RESPONSE . ")!=0");
     }
 
     static function crosscheck(SettingValues $sv) {
