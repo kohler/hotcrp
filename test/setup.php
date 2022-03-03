@@ -697,6 +697,11 @@ class TestRunner {
         }
     }
 
+    static function reset_options($first = false) {
+        Conf::$main->qe("insert into Settings set name='options', value=1, data='[{\"id\":1,\"name\":\"Calories\",\"abbr\":\"calories\",\"type\":\"numeric\",\"order\":1,\"display\":\"default\"}]' on duplicate key update data=?U(data)");
+        Conf::$main->load_settings();
+    }
+
     static function reset_db() {
         $conf = Conf::$main;
         $timer = new ProfileTimer;
@@ -708,8 +713,7 @@ class TestRunner {
 
         // No setup phase.
         $conf->qe_raw("delete from Settings where name='setupPhase'");
-        $conf->qe_raw("insert into Settings set name='options', value=1, data='[{\"id\":1,\"name\":\"Calories\",\"abbr\":\"calories\",\"type\":\"numeric\",\"order\":1,\"display\":\"default\"}]'");
-        $conf->load_settings();
+        self::reset_options(true);
         $timer->mark("settings");
 
         // Contactdb.

@@ -276,6 +276,8 @@ class Options_SettingParser extends SettingParser {
     private $_new_options = [];
     /** @var list<array{int,string}> */
     private $_choice_renumberings = [];
+    /** @var array<int,int> */
+    public $option_id_to_ctr = [];
 
     /** @param PaperOption $f
      * @return object */
@@ -471,10 +473,12 @@ class Options_SettingParser extends SettingParser {
                 $this->_fix_req_condition($sv, $sfj);
                 $this->_new_options[$sfj->id] = $opt = PaperOption::make($sv->conf, $sfj);
                 $nsfj[] = $opt->jsonSerialize();
+                $this->option_id_to_ctr[$opt->id] = $ctr;
             }
         }
         usort($nsfj, "Conf::xt_order_compare");
         if ($sv->update("options", empty($nsfj) ? "" : json_encode_db($nsfj))) {
+            $this->_validate_consistency($sv);
             $sv->update("options_version", (int) $sv->conf->setting("options") + 1);
             $sv->request_store_value($si);
             $sv->mark_invalidate_caches(["options" => true]);
@@ -485,6 +489,24 @@ class Options_SettingParser extends SettingParser {
             }
         }
         return true;
+    }
+
+    private function _validate_consistency(SettingValues $sv) {
+        $old_oval = $sv->conf->setting("options");
+        $old_options = $sv->conf->setting_data("options");
+        if (($new_options = $sv->savedv("options") ?? "") === "") {
+            $sv->conf->change_setting("options", null);
+        } else {
+            $sv->conf->change_setting("options", $old_oval + 1, $new_options);
+        }
+        $sv->conf->refresh_settings();
+
+        foreach ($sv->cs()->members("__validate/submissionfields", "validate_function") as $gj) {
+            $sv->cs()->call_function($gj, $gj->validate_function, $gj);
+        }
+
+        $sv->conf->change_setting("options", $old_oval, $old_options);
+        $sv->conf->refresh_settings();
     }
 
     function apply_req(SettingValues $sv, Si $si) {

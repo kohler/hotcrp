@@ -707,6 +707,8 @@ class PaperOption implements JsonSerializable {
     private $editable_if;
     /** @var ?PaperSearch */
     private $_editable_search;
+    /** @var int */
+    private $_recursion = 0;
     public $max_size;
 
     const VIS_SUB = 0;         // visible if paper is visible (= all)
@@ -1017,7 +1019,15 @@ class PaperOption implements JsonSerializable {
 
     /** @return bool */
     function test_exists(PaperInfo $prow) {
-        return !$this->_exists_search || $this->_exists_search->test($prow);
+        if (!$this->_exists_search) {
+            return true;
+        } else if (++$this->_recursion > 5) {
+            throw new ErrorException("Recursion in {$this->name}::test_exists");
+        } else {
+            $x = $this->_exists_search->test($prow);
+            --$this->_recursion;
+            return $x;
+        }
     }
     /** @return ?string */
     function exists_condition() {
@@ -1048,7 +1058,15 @@ class PaperOption implements JsonSerializable {
 
     /** @return bool */
     function test_editable(PaperInfo $prow) {
-        return !$this->_editable_search || $this->_editable_search->test($prow);
+        if (!$this->_editable_search) {
+            return true;
+        } else if (++$this->_recursion > 5) {
+            throw new ErrorException("Recursion in {$this->name}::test_editable");
+        } else {
+            $x = $this->_editable_search->test($prow);
+            --$this->_recursion;
+            return $x;
+        }
     }
     /** @return ?string */
     function editable_condition() {

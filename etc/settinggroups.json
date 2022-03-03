@@ -102,6 +102,10 @@
         "name": "__crosscheck/submissionfieldconditions", "order": 600,
         "crosscheck_function": "SubFieldCondition_SettingParser::crosscheck"
     },
+    {
+        "name": "__validate/submissionfields/conditions", "order": 1,
+        "validate_function": "SubFieldCondition_SettingParser::validate"
+    },
     [   "submissionfield/properties/name", 1, "*Options_SettingRenderer::print_name"   ],
     [   "submissionfield/properties/type", 10, "*Options_SettingRenderer::print_type"   ],
     [   "submissionfield/properties/description", 20, "*Options_SettingRenderer::print_description"   ],

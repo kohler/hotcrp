@@ -1523,9 +1523,12 @@ class Formula implements JsonSerializable {
 
 
     function assign_search_keyword(AbbreviationMatcher $am) {
-        assert($this->_abbreviation === null);
-        $e = new AbbreviationEntry($this->name, $this, Conf::MFLAG_FORMULA);
-        $this->_abbreviation = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL);
+        if ($this->_abbreviation === null) {
+            $e = new AbbreviationEntry($this->name, $this, Conf::MFLAG_FORMULA);
+            $this->_abbreviation = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL);
+        } else {
+            $am->add_keyword($this->_abbreviation, $this, Conf::MFLAG_FORMULA);
+        }
     }
 
     function abbreviation() {

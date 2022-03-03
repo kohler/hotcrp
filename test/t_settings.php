@@ -453,4 +453,39 @@ class Settings_Tester {
         $this->conf->save_setting("msg.conflictdef", null);
         $this->conf->load_settings();
     }
+
+    function test_subform_condition() {
+        TestRunner::reset_options();
+
+        // recursive condition not allowed
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_options" => 1,
+            "sf__1__name" => "Program",
+            "sf__1__id" => "\$",
+            "sf__1__order" => 100,
+            "sf__1__choices" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
+            "sf__1__type" => "radio",
+            "sf__1__presence" => "custom",
+            "sf__1__condition" => "Program:Honors"
+        ]);
+        xassert(!$sv->execute());
+
+        // newly-added field conditions can refer to other newly-added fields
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_options" => 1,
+            "sf__1__name" => "Program",
+            "sf__1__id" => "\$",
+            "sf__1__order" => 100,
+            "sf__1__choices" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
+            "sf__1__type" => "radio",
+            "sf__2__name" => "Joint concentration",
+            "sf__2__id" => "\$",
+            "sf__2__order" => 101,
+            "sf__2__type" => "text",
+            "sf__2__presence" => "custom",
+            "sf__2__condition" => "Program:Joint*"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq(trim($sv->full_feedback_text()), "");
+    }
 }

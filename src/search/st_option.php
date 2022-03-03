@@ -15,6 +15,11 @@ abstract class Option_SearchTerm extends SearchTerm {
         $this->option = $option;
     }
 
+    /** @return PaperOption */
+    function option() {
+        return $this->option;
+    }
+
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_options_columns();
         if (!$this->option->include_empty) {

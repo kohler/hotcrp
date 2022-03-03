@@ -706,25 +706,18 @@ class Conf {
      * @param ?int $value
      * @param null|string|array|object $data
      * @return bool */
-    function save_setting($name, $value, $data = null) {
-        $change = false;
+    function change_setting($name, $value, $data = null) {
         if ($value === null && $data === null) {
-            $result = $this->qe("delete from Settings where name=?", $name);
-            if ($result->affected_rows !== 0) {
+            if (($change = isset($this->settings[$name]))) {
                 unset($this->settings[$name], $this->settingTexts[$name]);
-                $change = true;
             }
         } else {
             $value = (int) $value;
-            $dval = $data;
-            if (is_array($dval) || is_object($dval)) {
-                $dval = json_encode_db($dval);
-            }
-            $result = $this->qe("insert into Settings (name, value, data) values (?, ?, ?) ?U on duplicate key update value=?U(value), data=?U(data)", $name, $value, $dval);
-            if ($result->affected_rows !== 0) {
+            $dval = is_array($data) || is_object($data) ? json_encode_db($data) : $data;
+            if (($change = ($this->settings[$name] ?? null) !== $value
+                           || $this->settingTexts[$name] !== $dval)) {
                 $this->settings[$name] = $value;
                 $this->settingTexts[$name] = $dval;
-                $change = true;
             }
         }
         if ($change && str_starts_with($name, "opt.")) {
@@ -732,10 +725,29 @@ class Conf {
             if ($value === null && $data === null) {
                 $this->opt[$oname] = $this->opt_override[$oname] ?? null;
             } else {
+                $this->opt_override[$oname] = $this->opt[$oname] ?? null;
                 $this->opt[$oname] = $data === null ? $value : $data;
             }
         }
         return $change;
+    }
+
+    /** @param string $name
+     * @param ?int $value
+     * @param null|string|array|object $data
+     * @return bool */
+    function save_setting($name, $value, $data = null) {
+        if ($value === null && $data === null) {
+            $result = $this->qe("delete from Settings where name=?", $name);
+            $change = $result->affected_rows !== 0;
+        } else {
+            $value = (int) $value;
+            $dval = is_array($data) || is_object($data) ? json_encode_db($data) : $data;
+            $result = $this->qe("insert into Settings (name, value, data) values (?, ?, ?) ?U on duplicate key update value=?U(value), data=?U(data)", $name, $value, $dval);
+            $change = $result->affected_rows !== 0;
+        }
+        // return if changed EITHER in database OR in this instance
+        return $this->change_setting($name, $value, $data) || $change;
     }
 
     /** @param string $name
