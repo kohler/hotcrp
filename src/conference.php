@@ -306,6 +306,7 @@ class Conf {
                 $this->opt_override[$okey] = $this->opt[$okey] ?? null;
                 $this->opt[$okey] = ($row[2] === null ? (int) $row[1] : $row[2]);
             } else if (str_starts_with($row[0], "msg.")) {
+                $this->_ims_override_names = $this->_ims_override_names ?? [];
                 $this->_ims_override_names[] = $row[0];
             }
         }

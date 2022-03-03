@@ -113,7 +113,7 @@ h2.paptitle {
 .pspcard-open {
 	padding-bottom: 4px;
 }
-.pslcard {
+.pslcard-nav {
 	display: none;
 }
 .leftmenu-menu {
@@ -189,9 +189,8 @@ table.pltable {
 td.pl.pl_title, td.pl.pl_text {
 	min-width: 20rem;
 }
-.reviewersdiv {
+.reinfotable {
 	font-size: smaller;
-	overflow-x: scroll;
 	margin-top: -0.25em;
 }
 .rfd1, .rfd2 {

@@ -2072,55 +2072,53 @@ class PaperTable {
             echo "#", $this->prow->paperId, " review";
         }
         echo '</a>', $close, '</h4><ul class="pslcard"></ul></nav></div>';
-        echo '<div class="pcard papcard"><div class="',
-            ($this->editable ? "pedcard" : "papcard"), '-body">';
 
-        if ($this->editable) {
-            $need_clickthrough = !$this->user->can_clickthrough("submit");
-            if ($need_clickthrough) {
-                echo '<div id="foldpaper js-clickthrough-container">',
-                    '<div class="js-clickthrough-terms">',
-                    '<h2>Submission terms</h2>',
-                    Ht::msg("You must agree to these terms to register a submission.", 2);
-                self::_print_clickthrough("submit");
-                echo '</div><div class="need-clickthrough-show hidden">';
-            } else {
-                echo '<div id="foldpaper">';
-            }
+        echo '<div class="pcard papcard">';
+        if ($this->editable && !$this->user->can_clickthrough("submit")) {
+            echo '<div id="foldpaper js-clickthrough-container">',
+                '<div class="js-clickthrough-terms">',
+                '<h2>Submission terms</h2>',
+                Ht::msg("You must agree to these terms to register a submission.", 2);
+            self::_print_clickthrough("submit");
+            echo '</div><div class="need-clickthrough-show hidden">';
             $this->_print_editable_body();
-            echo ($need_clickthrough ? "</div>" : ""), '</div>';
-        } else {
-            $this->echoDivEnter();
-            $this->_print_normal_body();
+            echo '</div></div>';
+        } else if ($this->editable) {
+            echo '<div id="foldpaper">';
+            $this->_print_editable_body();
             echo '</div>';
-
-            if ($this->mode === "edit") {
-                echo '</div></div><div class="pcard notecard"><div class="papcard-body">';
-                $this->_print_edit_messages(false);
-                $this->_print_editable_form();
-                $o = $this->conf->option_by_id(PaperOption::CONTACTSID);
-                assert($o instanceof Contacts_PaperOption);
-                $ov = $reqov = $this->prow->force_option($o);
-                if ($this->useRequest
-                    && $this->qreq["has_{$o->formid}"]
-                    && ($x = $o->parse_qreq($this->prow, $this->qreq))) {
-                    $reqov = $x;
-                }
-                $o->print_web_edit($this, $ov, $reqov);
-                $this->print_actions();
-                echo "</form>";
-            }
+        } else {
+            $this->_print_foldpaper_div();
+            $this->_print_normal_body();
+            echo '</div>'; // foldpaper div
         }
+        echo '</div>';
 
-        echo '</div></div>';
+        if (!$this->editable && $this->mode === "edit") {
+            echo '<div class="pcard papcard">',
+                '<div class="pedcard-head"><h2><span class="pedcard-header-name">Edit Contacts</span></h2></div>';
+            $this->_print_edit_messages(false);
+            $this->_print_editable_form();
+            $o = $this->conf->option_by_id(PaperOption::CONTACTSID);
+            assert($o instanceof Contacts_PaperOption);
+            $ov = $reqov = $this->prow->force_option($o);
+            if ($this->useRequest
+                && $this->qreq["has_{$o->formid}"]
+                && ($x = $o->parse_qreq($this->prow, $this->qreq))) {
+                $reqov = $x;
+            }
+            $o->print_web_edit($this, $ov, $reqov);
+            $this->print_actions();
+            echo '</form></div>';
+        }
 
         if (!$this->editable
             && $this->mode !== "edit"
             && $this->user->act_author_view($this->prow)
             && !$this->user->contactId) {
-            echo '<div class="pcard papcard">',
+            echo '<div class="pcard notecard"><p class="sd">',
                 "To edit this submission, <a href=\"", $this->conf->hoturl("signin"), "\">sign in using your email and password</a>.",
-                '</div>';
+                '</p></div>';
         }
 
         Ht::stash_script("hotcrp.shortcut().add()");
@@ -2128,7 +2126,7 @@ class PaperTable {
 
     private function _paptabSepContaining($t) {
         if ($t !== "") {
-            echo '<div class="pcard notcard"><div class="papcard-body">', $t, '</div></div>';
+            echo '<div class="pcard notecard"><p class="sd">', $t, '</p></div>';
         }
     }
 
@@ -2309,7 +2307,7 @@ class PaperTable {
                 array_unshift($score_header, '<th class="rl"></th>');
             }
             $score_header_text = join("", $score_header);
-            $t = "<div class=\"reviewersdiv\"><table class=\"reviewers";
+            $t = "<div class=\"reinfotable-container demargin\"><div class=\"reinfotable remargin-left remargin-right relative\"><table class=\"reviewers nw";
             if ($score_header_text) {
                 $t .= " has-scores";
             }
@@ -2340,12 +2338,13 @@ class PaperTable {
                 }
                 $t .= "</tr>";
             }
-            return $t . "</tbody></table></div>\n";
+            return $t . "</tbody></table></div></div>\n";
         } else {
             return "";
         }
     }
 
+    /** @return string */
     private function _review_links() {
         $prow = $this->prow;
         $cflttype = $this->user->view_conflict_type($prow);
@@ -2523,8 +2522,7 @@ class PaperTable {
             $t .= join("", $msgs);
         }
         if ($t) {
-            echo '<div class="pcard notecard"><div class="papcard-body">',
-                $t, '</div></div>';
+            echo '<div class="pcard notecard">', $t, '</div>';
         }
         return $empty;
     }
@@ -2572,7 +2570,7 @@ class PaperTable {
                 . " in plain text</u></a></p>";
         }
 
-        if (!$this->_review_overview_card(true, '<p>There are no reviews or comments for you to view.</p>', $m)) {
+        if (!$this->_review_overview_card(true, '<p class="sd">There are no reviews or comments for you to view.</p>', $m)) {
             $this->print_rc($this->viewable_rrows, $this->include_comments());
         }
     }
@@ -2758,8 +2756,8 @@ class PaperTable {
             }
         }
         if (!empty($msgs)) {
-            echo '<div class="pcard notecard"><div class="papcard-body"><p class="sd">',
-                join("</p><p class=\"sd\">", $msgs), '</p></div></div>';
+            echo '<div class="pcard notecard"><p class="sd">',
+                join("</p><p class=\"sd\">", $msgs), '</p></div>';
 
         }
 
@@ -2791,8 +2789,7 @@ class PaperTable {
                 . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a>";
         }
 
-        echo '<div class="pcard notecard"><div class="papcard-body"><p class="sd">',
-            join("", $t), "</div></div>\n";
+        echo '<div class="pcard notecard"><p class="sd">', join("", $t), "</p></div>\n";
     }
 
 

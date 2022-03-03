@@ -503,6 +503,10 @@ label.checki {
 	margin-right: 1em !important;
 	margin-right: 1rem !important;
 }
+.mr-4 {
+	margin-right: 1.5em !important;
+	margin-right: 1.5rem !important;
+}
 .mb-0-last-child > *:last-child {
 	margin-bottom: 0 !important;
 }
@@ -3424,6 +3428,12 @@ h3.pavfn, h3.psfn, h3.revfn {
 	padding-left: 24px;
 	padding-right: 24px;
 }
+.reinfotable-container {
+	overflow-x: auto;
+}
+.reinfotable {
+	min-width: fit-content;
+}
 @media screen and (min-width: 1152px) {
 .pcard {
 	padding-left: calc((100vw - 1056px) / 4);
@@ -3431,6 +3441,12 @@ h3.pavfn, h3.psfn, h3.revfn {
 }
 .paperinfo-c {
 	padding-right: calc((100vw - 1008px) / 6);
+}
+.pcard > .demargin {
+	margin-left: calc((100vw - 1056px) / -4);
+}
+.pcard > .demargin > .remargin-left {
+	padding-left: calc((100vw - 1056px) / 4);
 }
 }
 @media screen and (min-width: 1344px) {
@@ -3440,28 +3456,28 @@ h3.pavfn, h3.psfn, h3.revfn {
 .paperinfo-c {
 	padding-right: 56px;
 }
+.pcard > .demargin {
+	margin-left: -72px;
 }
-.papcard {
+.pcard > .demargin > .remargin-left {
+	padding-left: 72px;
+	padding-right: 72px;
+}
+}
+.papcard, .notecard {
 	position: relative;
-	margin-bottom: 16px;
-}
-.papcard-body, .pedcard-body {
-	background: #ffffff;
 	padding-top: 16px;
-}
-.papcard-body {
 	margin-bottom: 40px;
+}
+.notecard {
+	margin-bottom: 24px;
+}
+.papcard + .papcard, .notecard {
+	border-top: 5px solid #fad5d5;
 }
 .papcard h2, .notecard h2 {
 	font-size: 1.17em;
 	color: #d41743;
-}
-
-/* paper notes */
-.notecard {
-	border-top: 5px solid #fad5d5;
-	margin-bottom: 24px;
-	position: relative;
 }
 
 /* reviews */
