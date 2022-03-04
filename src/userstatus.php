@@ -1433,7 +1433,7 @@ class UserStatus extends MessageSet {
             $pws = $us->_req_passwords ?? ["", ""];
             $open = $pws[0] !== "" || $pws[1] !== ""
                 || $us->has_problem_at("upassword") || $us->has_problem_at("upassword2");
-            echo '<div class="has-fold foldc js-unfold-focus">';
+            echo '<div class="has-fold foldc ui-unfold js-unfold-focus">';
             if (!$open) {
                 echo '<div class="fn">',
                     Ht::button("Change password", ["class" => "ui js-foldup need-profile-current-password", "disabled" => true]),

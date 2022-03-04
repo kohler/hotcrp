@@ -62,6 +62,7 @@ function settings_field_unfold() {
     }
     $(this).find("textarea").css("height", "auto").autogrow();
     $(this).find("input[type=text]").autogrow();
+    $(this).scrollIntoView();
 }
 
 
@@ -177,7 +178,7 @@ $(document).on("hotcrpsettingssf", ".settings-sf", function (evt) {
     settings_sf_order();
 });
 
-$(document).on("unfold", ".settings-sf", settings_field_unfold);
+handle_ui.on("unfold.settings-sf", settings_field_unfold, -1);
 
 })();
 // END SUBMISSION FIELD SETTINGS
@@ -463,7 +464,7 @@ function option_value_html(fieldj, value) {
         return [make_score_info(fieldj.options.length, fieldj.option_letter, fieldj.scheme).unparse_revnum(value), escape_html(fieldj.options[value - 1] || "Unknown")];
 }
 
-handle_ui.on("js-settings-field-unfold", function (event) {
+handle_ui.on("unfold.js-settings-field-unfold", function (event) {
     var f = event.target.closest(".has-fold");
     if ((hasClass(f, "fold2c") || !form_differs(f))
         && !hasClass(f, "deleted"))

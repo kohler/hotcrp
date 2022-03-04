@@ -1459,9 +1459,9 @@ function collect_callbacks(cbs, c, etype) {
     var j, k;
     for (j = 0; j !== c.length; j += 3) {
         if (!c[j] || c[j] === etype) {
-            for (k = 0; k !== cbs.length && c[j+1] <= cbs[k]; k += 2) {
+            for (k = cbs.length - 3; k >= 0 && c[j+1] > cbs[k]; k -= 2) {
             }
-            cbs.splice(k, 0, c[j+1], c[j+2]);
+            cbs.splice(k + 3, 0, c[j+1], c[j+2]);
         }
     }
 }
@@ -1511,6 +1511,7 @@ $(document).on("click", ".ui, .uic", handle_ui);
 $(document).on("change", ".uich", handle_ui);
 $(document).on("keydown", ".uikd", handle_ui);
 $(document).on("input", ".uii", handle_ui);
+$(document).on("fold", ".ui-fold", handle_ui);
 $(document).on("unfold", ".ui-unfold", handle_ui);
 
 
@@ -3492,7 +3493,7 @@ function foldup(event, opts) {
     if (!("f" in opts) || !opts.f !== dofold) {
         opts.f = dofold;
         fold(e, dofold, opts.n || 0);
-        $(e).trigger(opts.f ? "fold" : "unfold", opts);
+        $(e).trigger($.Event(opts.f ? "fold" : "unfold", {which: opts}));
     }
     if (this.hasAttribute("aria-expanded")) {
         this.setAttribute("aria-expanded", dofold ? "false" : "true");
@@ -3507,12 +3508,15 @@ function foldup(event, opts) {
 }
 
 handle_ui.on("js-foldup", foldup);
-$(document).on("unfold", ".js-unfold-focus", function (event, opts) {
-    opts.nofocus || focus_within(this, ".fx" + (opts.n || "") + " *");
+handle_ui.on("unfold.js-unfold-focus", function (event) {
+    console.log(event);
+    if (!event.which.nofocus)
+        focus_within(this, ".fx" + (event.which.n || "") + " *");
 });
-$(document).on("fold", ".js-fold-focus", function (event, opts) {
-    opts.nofocus || focus_within(this, ".fn" + (opts.n || "") + " *");
-});
+handle_ui.on("fold.js-fold-focus", function (event) {
+    if (!event.which.nofocus)
+        focus_within(this, ".fn" + (event.which.n || "") + " *");
+})
 $(function () {
     $(".uich.js-foldup").each(function () { foldup.call(this, null, {nofocus: true}); });
 });
@@ -8725,7 +8729,7 @@ function prepare_pstags() {
         foldup.call($ta[0], evt, {f: true});
     });
     $f.on("submit", save_pstags);
-    $f.closest(".foldc, .foldo").on("unfold", function (evt, opts) {
+    $f.closest(".foldc, .foldo").on("unfold", function (evt) {
         $f.data("everOpened", true);
         $f.find("input").prop("disabled", false);
         if (!$f.data("noTagReport")) {
@@ -9465,7 +9469,7 @@ handle_ui.on("js-select-all", function () {
 
 
 handle_ui.on("js-tag-list-action", function () {
-    removeClass(this, "ui-unfold");
+    removeClass(this, "js-tag-list-action");
     $("select.js-submit-action-info-tag").on("change", function () {
         var $t = $(this).closest(".linelink"),
             $ty = $t.find("select[name=tagfn]");
@@ -9479,7 +9483,7 @@ handle_ui.on("js-tag-list-action", function () {
 
 handle_ui.on("js-assign-list-action", function () {
     var self = this;
-    removeClass(self, "ui-unfold");
+    removeClass(self, "js-assign-list-action");
     demand_load.pc().then(function (pcs) {
         $(self).find("select[name=markpc]").each(function () {
             populate_pcselector.call(this, pcs);
@@ -9594,7 +9598,7 @@ handle_ui.on("js-submit-list", function (event) {
 
 
 handle_ui.on("js-unfold-pcselector", function () {
-    removeClass(this, "ui-unfold");
+    removeClass(this, "js-unfold-pcselector");
     var $pc = $(this).find("select[data-pcselector-options]");
     if ($pc.length)
         demand_load.pc().then(function (pcs) {
@@ -10407,7 +10411,7 @@ function render_events(e, rows) {
 }
 
 handle_ui.on("js-open-activity", function () {
-    removeClass(this, "ui-unfold");
+    removeClass(this, "js-open-activity");
     $("<div class=\"fx20 has-events\"></div>").appendTo(this);
     events ? render_events(this, events) : load_more_events();
 });

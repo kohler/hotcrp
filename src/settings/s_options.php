@@ -42,8 +42,10 @@ class Options_SettingRenderer {
             '<div class="entry">',
             $sv->feedback_at("sf__{$this->ctr}__name");
         $sv->print_entry("sf__{$this->ctr}__name", [
-            "class" => "need-tooltip font-weight-bold", "aria-label" => "Field name",
-            "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus"
+            "class" => "need-tooltip font-weight-bold want-focus",
+            "aria-label" => "Field name",
+            "data-tooltip-info" => "settings-sf",
+            "data-tooltip-type" => "focus"
         ]);
         echo '</div></div>';
     }
@@ -81,8 +83,10 @@ class Options_SettingRenderer {
         $type = $sv->vstr("sf__{$this->ctr}__type");
         $wanted = ["selector", "radio"];
         $sv->print_textarea_group("sf__{$this->ctr}__choices", "Choices", [
-            "horizontal" => true, "class" => "w-entry-text need-tooltip",
-            "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus",
+            "horizontal" => true,
+            "class" => "w-entry-text need-tooltip",
+            "data-tooltip-info" => "settings-sf",
+            "data-tooltip-type" => "focus",
             "group_class" => "has-type-condition" . (in_array($type, $wanted) ? "" : " hidden"),
             "group_attr" => ["data-type-condition" => join(" ", $wanted)]
         ]);
@@ -90,8 +94,10 @@ class Options_SettingRenderer {
 
     function print_description(SettingValues $sv) {
         $sv->print_textarea_group("sf__{$this->ctr}__description", "Description", [
-            "horizontal" => true, "class" => "w-entry-text settings-sf-description need-tooltip",
-            "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus",
+            "horizontal" => true,
+            "class" => "w-entry-text settings-sf-description need-tooltip",
+            "data-tooltip-info" => "settings-sf",
+            "data-tooltip-type" => "focus",
             "group_class" => "is-property-description"
         ]);
     }
@@ -178,7 +184,7 @@ class Options_SettingRenderer {
 
         echo '<div id="sf__', $ctr, '" class="settings-sf ',
             $this->io ? '' : 'is-new ',
-            'has-fold fold2o hidden">';
+            'has-fold fold2o ui-unfold js-unfold-focus hidden">';
 
         if ($this->io) {
             $this->print_one_option_view($this->io, $ctr);
