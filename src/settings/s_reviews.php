@@ -266,8 +266,8 @@ class Reviews_SettingRenderer {
         foreach ($conf->round_list() as $i => $rname) {
             foreach (Conf::$review_deadlines as $deadline) {
                 if ($sv->has_interest("{$deadline}_{$i}")
-                    && $sv->vstr("{$deadline}_{$i}") > Conf::$now
-                    && $sv->vstr("rev_open") <= 0
+                    && intval($sv->vstr("{$deadline}_{$i}")) > Conf::$now
+                    && intval($sv->vstr("rev_open")) <= 0
                     && !$errored) {
                     $sv->warning_at("rev_open", "<0>A review deadline is set in the future, but reviews cannot be edited now. This is sometimes unintentional.");
                     $errored = true;
@@ -279,8 +279,8 @@ class Reviews_SettingRenderer {
         if (($sv->has_interest("au_seerev") || $sv->has_interest("pcrev_soft_0"))
             && $conf->setting("au_seerev") != Conf::AUSEEREV_NO
             && $conf->setting("au_seerev") != Conf::AUSEEREV_TAGS
-            && $sv->vstr("pcrev_soft_0") > 0
-            && Conf::$now < $sv->vstr("pcrev_soft_0")
+            && intval($sv->vstr("pcrev_soft_0")) > 0
+            && Conf::$now < intval($sv->vstr("pcrev_soft_0"))
             && !$sv->has_error()) {
             $sv->warning_at(null, "<5>" . $sv->setting_link("Authors can see reviews and comments", "au_seerev") . " although it is before the " . $sv->setting_link("review deadline", "pcrev_soft_0") . ". This is sometimes unintentional.");
         }
