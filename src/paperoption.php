@@ -1585,7 +1585,9 @@ class Selector_PaperOption extends PaperOption {
                 $ts = array_map(function ($x) { return "‘" . $this->selector[$x-1] . "’"; }, $vs2);
                 $srch->msg_at(null, "<0>Try " . commajoin($ts, " or ") . ", or use ‘{$sword->cword}*’ to match them all.", MessageSet::INFORM);
             } else {
-                $srch->lwarning($sword, "<0>No choices match ‘{$sword->cword}’");
+                $srch->lwarning($sword, "<0>No " . $this->title() . " choices match ‘{$sword->cword}’");
+                $ts = array_map(function ($t) { return "‘{$t}’"; }, $this->selector);
+                $srch->msg_at(null, "<0>Choices are " . commajoin($ts, " and ") . ".", MessageSet::INFORM);
             }
             return null;
         } else if (in_array($sword->compar, ["", "=", "!="], true)) {
