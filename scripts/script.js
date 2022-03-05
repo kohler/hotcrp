@@ -9638,7 +9638,7 @@ handle_ui.on("js-assign-review", function (event) {
 function decode_session_list_ids(str) {
     if ($.isArray(str))
         return str;
-    var a = [], l = str.length, next = null, sign = 1;
+    var a = [], l = str.length, next = null, sign = 1, include_after = false;
     for (var i = 0; i < l; ) {
         var ch = str.charCodeAt(i);
         if (ch >= 48 && ch <= 57) {
@@ -9670,38 +9670,54 @@ function decode_session_list_ids(str) {
             continue;
         }
 
-        var include = true, n = 0, skip = 0;
-        if (ch >= 97 && ch <= 104)
-            n = ch - 96;
-        else if (ch >= 105 && ch <= 112) {
-            include = false;
-            n = ch - 104;
-        } else if (ch === 113 || ch === 114) {
-            include = ch === 113;
-            while (i + 1 < l && (ch = str.charCodeAt(i + 1)) >= 48 && ch <= 57) {
-                n = 10 * n + ch - 48;
+        ++i;
+        var add0 = 0, skip = 0;
+        if (ch >= 97 && ch <= 104) {
+            add0 = ch - 96;
+        } else if (ch >= 105 && ch <= 112) {
+            skip = ch - 104;
+        } else if (ch >= 117 && ch <= 120) {
+            next += (ch - 116) * 8 * sign;
+            continue;
+        } else if (ch === 113 || ch === 114 || ch === 116) {
+            var j = 0, ch2;
+            while (i !== l && (ch2 = str.charCodeAt(i)) >= 48 && ch2 <= 57) {
+                j = 10 * j + ch2 - 48;
                 ++i;
             }
+            if (ch === 113) {
+                add0 = j;
+            } else if (ch === 114) {
+                skip = j;
+            } else {
+                skip = -j;
+            }
         } else if (ch >= 65 && ch <= 72) {
-            n = ch - 64;
+            add0 = ch - 64;
             skip = 1;
         } else if (ch >= 73 && ch <= 80) {
-            n = ch - 72;
+            add0 = ch - 72;
             skip = 2;
         } else if (ch === 122) {
             sign = -sign;
         } else if (ch === 90) {
             sign = -sign;
             skip = 2;
+        } else if (ch === 81 && i === 1) {
+            include_after = true;
+            continue;
         }
 
-        while (n > 0 && include) {
+        while (add0 !== 0) {
             a.push(next);
             next += sign;
-            --n;
+            --add0;
         }
-        next += sign * (n + skip);
-        ++i;
+        next += skip * sign;
+        if (skip !== 0 && include_after) {
+            a.push(next);
+            next += sign;
+        }
     }
     return a;
 }

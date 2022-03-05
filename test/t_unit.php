@@ -304,19 +304,26 @@ class Unit_Tester {
         xassert_eqq(Json::decode("[1,2,3-4,5,6-10,11]"), null);
         xassert_eqq(json_decode("[1,2,3-4,5,6-10,11]"), null);
 
-        xassert_eqq(json_encode(SessionList::decode_ids("[1-2]")), "[1,2]");
-        xassert_eqq(json_encode(SessionList::decode_ids("[1,2,3-4,5,6-10,11]")), "[1,2,3,4,5,6,7,8,9,10,11]");
-        xassert_eqq(json_encode(SessionList::decode_ids(SessionList::encode_ids([1,2]))), "[1,2]");
-        xassert_eqq(json_encode(SessionList::decode_ids(SessionList::encode_ids([1,2,3,4,5,6,7,8,9,10,11]))), "[1,2,3,4,5,6,7,8,9,10,11]");
-        xassert_eqq(json_encode(SessionList::decode_ids(SessionList::encode_ids([1,3,5,7,9,10,11]))), "[1,3,5,7,9,10,11]");
-        xassert_eqq(json_encode(SessionList::decode_ids(SessionList::encode_ids([11,10,9,8,7,6,5,4,3,2,1]))), "[11,10,9,8,7,6,5,4,3,2,1]");
-        xassert_eqq(json_encode(SessionList::decode_ids(SessionList::encode_ids([10,9,7,1,3,5,5]))), "[10,9,7,1,3,5,5]");
+        xassert_eqq(SessionList::decode_ids("[1-2]"), [1,2]);
+        xassert_eqq(SessionList::decode_ids("[1,2,3-4,5,6-10,11]"), [1,2,3,4,5,6,7,8,9,10,11]);
+        xassert_eqq(SessionList::decode_ids(SessionList::encode_ids([1,2])), [1,2]);
+        xassert_eqq(SessionList::decode_ids(SessionList::encode_ids([1,2,3,4,5,6,7,8,9,10,11])), [1,2,3,4,5,6,7,8,9,10,11]);
+        xassert_eqq(SessionList::decode_ids(SessionList::encode_ids([1,3,5,7,9,10,11])), [1,3,5,7,9,10,11]);
+        xassert_eqq(SessionList::decode_ids(SessionList::encode_ids([11,10,9,8,7,6,5,4,3,2,1])), [11,10,9,8,7,6,5,4,3,2,1]);
+        xassert_eqq(SessionList::decode_ids(SessionList::encode_ids([10,9,7,1,3,5,5])), [10,9,7,1,3,5,5]);
 
-        xassert_eqq(json_encode(SessionList::decode_ids("1z20zz34")), "[1,20,34]");
-        xassert_eqq(json_encode(SessionList::decode_ids("10zjh")), "[10,9,8,7,6,5,4,3,2]");
-        xassert_eqq(json_encode(SessionList::decode_ids("10Zh")), "[10,9,8,7,6,5,4,3,2]");
-        xassert_eqq(SessionList::encode_ids([10,9,8,7]), "10Zc");
-        xassert_eqq(SessionList::encode_ids([10,9,8,7,5,4,1]), "10ZCJa");
+        // check some old-style decodings
+        xassert_eqq(SessionList::decode_ids("1z20zz34"), [1,20,34]);
+        xassert_eqq(SessionList::decode_ids("10zjh"), [10,9,8,7,6,5,4,3,2]);
+        xassert_eqq(SessionList::decode_ids("10Zh"), [10,9,8,7,6,5,4,3,2]);
+        xassert_eqq(SessionList::decode_ids("10Zc"), [10,9,8,7]);
+        xassert_eqq(SessionList::decode_ids("10ZCJa"), [10,9,8,7,5,4,1]);
+        xassert_eqq(SessionList::decode_ids("45b"), [45,46,47]);
+        xassert_eqq(SessionList::decode_ids("68q11Zzbzib99g74Zzf11Za33"), SessionList::decode_ids("[68-79,78-79,79,78,99-106,74,73-78,11,10,33]"));
+
+        // check for short encodings
+        xassert(strlen(SessionList::encode_ids([10,9,8,7])) <= 5);
+        xassert(strlen(SessionList::encode_ids([10,9,8,7,5,4,1])) <= 7);
     }
 
     /** @return list<int> */
@@ -345,7 +352,12 @@ class Unit_Tester {
         for ($i = 0; $i < 1000; ++$i) {
             $ids = $this->random_paper_ids();
             //file_put_contents("/tmp/x", "if (JSON.stringify(decode_ids(" . json_encode(SessionList::encode_ids($ids)) . ")) !== " . json_encode(json_encode($ids)) . ") throw new Error;\n", FILE_APPEND);
-            xassert_eqq(SessionList::decode_ids(SessionList::encode_ids($ids)), $ids);
+            $encoded_ids = SessionList::encode_ids($ids);
+            $decoded_ids = SessionList::decode_ids($encoded_ids);
+            if ($ids !== $decoded_ids) {
+                xassert_eqq(json_encode($ids), json_encode($decoded_ids));
+                error_log("! Encoded version: $encoded_ids");
+            }
         }
     }
 

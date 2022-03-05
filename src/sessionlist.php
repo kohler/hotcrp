@@ -52,24 +52,25 @@ class SessionList {
         $l = strlen($s);
         $next = null;
         $sign = 1;
-        for ($i = 0; $i < $l; ) {
-            $ch = $s[$i];
-            if (ctype_digit($ch)) {
+        $include_after = false;
+        for ($i = 0; $i !== $l; ) {
+            $ch = ord($s[$i]);
+            if ($ch >= 48 && $ch <= 57) {
                 $n1 = 0;
-                while (ctype_digit($ch)) {
-                    $n1 = 10 * $n1 + ord($ch) - 48;
+                while ($ch >= 48 && $ch <= 57) {
+                    $n1 = 10 * $n1 + $ch - 48;
                     ++$i;
-                    $ch = $i < $l ? $s[$i] : "s";
+                    $ch = $i !== $l ? ord($s[$i]) : 0;
                 }
                 $n2 = $n1;
-                if ($ch === "-" && $i + 1 < $l && ctype_digit($s[$i + 1])) {
+                if ($ch === 45 && $i + 1 < $l && ctype_digit($s[$i + 1])) {
                     ++$i;
-                    $ch = $s[$i];
+                    $ch = ord($s[$i]);
                     $n2 = 0;
-                    while (ctype_digit($ch)) {
-                        $n2 = 10 * $n2 + ord($ch) - 48;
+                    while ($ch >= 48 && $ch <= 57) {
+                        $n2 = 10 * $n2 + $ch - 48;
                         ++$i;
-                        $ch = $i < $l ? $s[$i] : "s";
+                        $ch = $i !== $l ? ord($s[$i]) : 0;
                     }
                 }
                 while ($n1 <= $n2) {
@@ -81,41 +82,57 @@ class SessionList {
                 continue;
             }
 
-            $include = true;
-            $n = $skip = 0;
-            if ($ch >= "a" && $ch <= "h") {
-                $n = ord($ch) - 96;
-            } else if ($ch >= "i" && $ch <= "p") {
-                $n = ord($ch) - 104;
-                $include = false;
-            } else if ($ch === "q" || $ch === "r") {
-                while ($i + 1 < $l && ctype_digit($s[$i + 1])) {
-                    $n = 10 * $n + ord($s[$i + 1]) - 48;
+            ++$i;
+            $add0 = $skip = 0;
+            if ($ch >= 97 && $ch <= 104) { // a-h
+                $add0 = $ch - 96;
+            } else if ($ch >= 105 && $ch <= 112) { // i-p
+                $skip = $ch - 104;
+            } else if ($ch >= 117 && $ch <= 120) { // u-x
+                $next += ($ch - 116) * 8 * $sign;
+                continue;
+            } else if ($ch === 113 || $ch === 114 || $ch === 116) {
+                $j = 0;
+                while ($i !== $l && ctype_digit($s[$i])) {
+                    $j = 10 * $j + ord($s[$i]) - 48;
                     ++$i;
                 }
-                $include = $ch === "q";
-            } else if ($ch >= "A" && $ch <= "H") {
-                $n = ord($ch) - 64;
+                if ($ch === 113) {
+                    $add0 = $j;
+                } else if ($ch === 114) {
+                    $skip = $j;
+                } else {
+                    $skip = -$j;
+                }
+            } else if ($ch >= 65 && $ch <= 72) { // A-H
+                $add0 = $ch - 64;
                 $skip = 1;
-            } else if ($ch >= "I" && $ch <= "P") {
-                $n = ord($ch) - 72;
+            } else if ($ch >= 73 && $ch <= 80) { // I-P
+                $add0 = $ch - 72;
                 $skip = 2;
-            } else if ($ch === "z") {
+            } else if ($ch === 122) { // z
                 $sign = -$sign;
-            } else if ($ch === "Z") {
+            } else if ($ch === 90) { // Z
                 $sign = -$sign;
                 $skip = 2;
-            } else if (strspn($ch, "s[],0123456789'#") !== 1) {
+            } else if ($ch === 81 && $i === 1) { // Q
+                $include_after = true;
+                continue;
+            } else if (($ch < 48 || $ch > 57) && $ch !== 115 && $ch !== 91 && $ch !== 93
+                       && $ch !== 35 && $ch !== 39 && $ch !== 44) {
                 return null;
             }
 
-            while ($n > 0 && $include) {
+            while ($add0 !== 0) {
                 $a[] = $next;
                 $next += $sign;
-                --$n;
+                --$add0;
             }
-            $next += $sign * ($n + $skip);
-            ++$i;
+            $next += $skip * $sign;
+            if ($skip !== 0 && $include_after) {
+                $a[] = $next;
+                $next += $sign;
+            }
         }
         return $a;
     }
@@ -140,10 +157,13 @@ class SessionList {
         if (empty($ids)) {
             return "";
         }
+        // Q at start: i-p, r, Z, A-P are followed by implicit `a` (1 present paper)
         // a-h: range of 1-8 sequential present papers
         // i-p: range of 1-8 sequential missing papers
+        // u, v, w, x: 8, 16, 24, 32 sequential missing papers
         // q<N>: range of <N> sequential present papers
         // r<N>: range of <N> sequential missing papers
+        // t<N>: range of -<N> sequential missing papers
         // <N>[-<N>]: include <N>, set direction forwards
         // z: switch direction
         // Z: like z + j
@@ -151,65 +171,68 @@ class SessionList {
         // I-P: like a-h + j
         // [#s\[\],']: ignored
         $n = count($ids);
-        $a = [(string) $ids[0]];
+        $a = ["Q", (string) $ids[0]];
         '@phan-var list<string> $a';
         $sign = 1;
         $next = $ids[0] + 1;
-        for ($i = 1; $i < $n; ) {
-            $delta = ($ids[$i] - $next) * $sign;
-            if (($delta === 1 || $delta === 2)
-                && ($ch = $a[count($a) - 1]) >= "a"
-                && $ch <= "h") {
-                $a[count($a) - 1] = chr(ord($ch) - 40 + 8 * $delta);
-            } else if ($delta > 0 && $delta <= 8) {
-                $a[] = chr(104 + $delta);
-            } else if ($delta === -2) {
-                $sign = -$sign;
-                $a[] = "Z";
-            } else if ($delta < 0 && $delta >= -8) {
-                $sign = -$sign;
-                $a[] = "z" . chr(104 - $delta);
-            } else if ($delta >= 9) {
-                $a[] = "r" . $delta;
-            } else if ($delta !== 0) {
-                if (self::encoding_ends_numerically($a)) {
-                    $a[] = "s";
-                }
-                $a[] = (string) $ids[$i];
-                $sign = 1;
-                $next = $ids[$i] + 1;
-                ++$i;
-                continue;
+        for ($i = 1; $i !== $n; ) {
+            // maybe switch direction
+            if ($ids[$i] < $next
+                && ($sign === -1 || ($i + 1 !== $n && $ids[$i + 1] < $ids[$i]))) {
+                $want_sign = -1;
+            } else {
+                $want_sign = 1;
             }
-
-            $d = 1;
-            $step = 1;
-            if (($i + 1 < $n && $ids[$i + 1] === $ids[$i] - 1)
-                || ($sign < 0 && ($i + 1 === $n || $ids[$i + 1] !== $ids[$i] + 1))) {
-                $step = -1;
-            }
-            if (($sign > 0) !== ($step > 0)) {
+            if (($sign > 0) !== ($want_sign > 0)) {
                 $sign = -$sign;
                 $a[] = "z";
             }
-            while ($i + $d < $n && $ids[$i + $d] === $ids[$i] + $sign * $d) {
-                ++$d;
+
+            $skip = ($ids[$i] - $next) * $sign;
+            $include = 1;
+            while ($i + 1 !== $n && $ids[$i + 1] === $ids[$i] + $sign) {
+                ++$i;
+                ++$include;
             }
-            if ($d === 1 && self::encoding_ends_with_r($a)) {
-                array_pop($a);
-                if (self::encoding_ends_numerically($a)) {
-                    $a[] = "s";
+            $last = $a[count($a) - 1];
+            if ($skip < 0) {
+                if ($sign === 1 && $skip <= -100) {
+                    $a[] = "s" . ($next + $skip);
+                } else {
+                    $a[] = "t" . -$skip;
                 }
-                $a[] = (string) $ids[$i];
-                $sign = 1;
-            } else if ($d >= 1 && $d <= 8) {
-                $a[] = chr(96 + $d);
-            } else {
-                $a[] = "q" . $d;
+                --$include;
+            } else if ($skip === 2 && $last === "z") {
+                $a[count($a) - 1] = "Z";
+                --$include;
+            } else if ($skip === 1 && $last >= "a" && $last <= "h") {
+                $a[count($a) - 1] = chr(ord($last) - 32);
+                --$include;
+            } else if ($skip === 2 && $last >= "a" && $last <= "h") {
+                $a[count($a) - 1] = chr(ord($last) - 32 + 8);
+                --$include;
+            } else if ($skip >= 1 && $skip <= 8) {
+                $a[] = chr(104 + $skip);
+                --$include;
+            } else if ($skip >= 9 && $skip <= 40) {
+                $a[] = chr(116 + (($skip - 1) >> 3)) . chr(105 + (($skip - 1) & 7));
+                --$include;
+            } else if ($skip >= 41) {
+                $a[] = "r" . $skip;
+                --$include;
+            }
+            if ($include !== 0) {
+                if ($include <= 8) {
+                    $a[] = chr(96 + $include);
+                } else if ($include <= 16) {
+                    $a[] = "h" . chr(88 + $include);
+                } else {
+                    $a[] = "q" . $include;
+                }
             }
 
-            $i += $d;
-            $next = $ids[$i - 1] + $sign;
+            $next = $ids[$i] + $sign;
+            ++$i;
         }
         return join("", $a);
     }
