@@ -9639,14 +9639,14 @@ function decode_session_list_ids(str) {
     if ($.isArray(str))
         return str;
     var a = [], l = str.length, next = null, sign = 1, include_after = false;
-    for (var i = 0; i < l; ) {
+    for (var i = 0; i !== l; ) {
         var ch = str.charCodeAt(i);
         if (ch >= 48 && ch <= 57) {
             var n1 = 0;
             while (ch >= 48 && ch <= 57) {
                 n1 = 10 * n1 + ch - 48;
                 ++i;
-                ch = i < l ? str.charCodeAt(i) : 0;
+                ch = i !== l ? str.charCodeAt(i) : 0;
             }
             var n2 = n1;
             if (ch === 45
@@ -9658,7 +9658,7 @@ function decode_session_list_ids(str) {
                 while (ch >= 48 && ch <= 57) {
                     n2 = 10 * n2 + ch - 48;
                     ++i;
-                    ch = i < l ? str.charCodeAt(i) : 0;
+                    ch = i !== l ? str.charCodeAt(i) : 0;
                 }
             }
             while (n1 <= n2) {

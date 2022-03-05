@@ -157,7 +157,7 @@ class SessionList {
         if (empty($ids)) {
             return "";
         }
-        // Q at start: i-p, r, Z, A-P are followed by implicit `a` (1 present paper)
+        // Q at start: i-p, r, t, Z, A-P are followed by implicit `a` (1 present paper)
         // a-h: range of 1-8 sequential present papers
         // i-p: range of 1-8 sequential missing papers
         // u, v, w, x: 8, 16, 24, 32 sequential missing papers
