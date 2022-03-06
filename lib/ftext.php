@@ -66,4 +66,44 @@ class Ftext {
             return $s;
         }
     }
+
+    /** @param string ...$ftexts
+     * @return string */
+    static function concat(...$ftexts) {
+        $parses = [];
+        $format = null;
+        foreach ($ftexts as $ftext) {
+            $parses[] = $parse = self::parse($ftext);
+            if ($format === null || $parse[0] === 5) {
+                $format = $parse[0];
+            }
+        }
+        $ts = [];
+        foreach ($parses as $parse) {
+            if ($parse[0] !== 5 && $format === 5) {
+                $ts[] = htmlspecialchars($parse[1]);
+            } else {
+                $ts[] = $parse[1];
+            }
+        }
+        if ($format !== null) {
+            return "<{$format}>" . join("", $ts);
+        } else {
+            return join("", $ts);
+        }
+    }
+
+    /** @param string $separator
+     * @param iterable<string> $ftexts
+     * @return string */
+    static function join($separator, $ftexts) {
+        $nftexts = [];
+        foreach ($ftexts as $ftext) {
+            if (!empty($nftexts)) {
+                $nftexts[] = $separator;
+            }
+            $nftexts[] = $ftext;
+        }
+        return self::concat(...$nftexts);
+    }
 }

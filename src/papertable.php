@@ -248,7 +248,8 @@ class PaperTable {
             "action_bar" => actionBar($amode, $qreq),
             "title_div" => $t,
             "body_class" => $body_class,
-            "paperId" => $qreq->paperId
+            "paperId" => $qreq->paperId,
+            "save_messages" => !$error
         ]);
         if ($format) {
             echo Ht::unstash_script("hotcrp.render_text_page()");
@@ -1704,6 +1705,17 @@ class PaperTable {
         }
     }
 
+    /** @param iterable<PaperOption> $fields
+     * @param 'title'|'edit_title'|'missing_title' $title_method
+     * @return list<string> */
+    static function field_title_links($fields, $title_method) {
+        $x = [];
+        foreach ($fields as $o) {
+            $x[] = Ht::link(htmlspecialchars($o->$title_method()), "#" . $o->readable_formid());
+        }
+        return $x;
+    }
+
     private function _edit_message_existing_paper() {
         $has_author = $this->prow->has_author($this->user);
         $can_view_decision = $this->prow->outcome != 0 && $this->user->can_view_decision($this->prow);
@@ -1725,13 +1737,11 @@ class PaperTable {
         }
         if ($this->edit_status->has_problem()
             && ($this->edit_status->has_problem_at("contacts") || $this->editable)) {
-            $fields = [];
-            foreach ($this->edit_fields ?? [] as $o) {
-                if ($this->edit_status->has_problem_at($o->formid))
-                    $fields[] = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
-            }
+            $fields = array_filter($this->edit_fields ?? [], function ($o) {
+                return $this->edit_status->has_problem_at($o->formid);
+            });
             if (!empty($fields)) {
-                $this->_main_message("<5>" . $this->conf->_c("paper_edit", "Please check %s before completing the submission.", commajoin($fields)), $this->edit_status->problem_status());
+                $this->_main_message($this->conf->_c("paper_edit", "<5>Please check %s before completing the submission.", commajoin(self::field_title_links($fields, "edit_title"))), $this->edit_status->problem_status());
             }
         }
     }
@@ -2071,6 +2081,7 @@ class PaperTable {
         echo '</a>', $close, '</h4><ul class="pslcard"></ul></nav></div>';
 
         echo '<div class="pcard papcard">';
+        $this->conf->report_saved_messages();
         if ($this->editable && !$this->user->can_clickthrough("submit")) {
             echo '<div id="foldpaper js-clickthrough-container">',
                 '<div class="js-clickthrough-terms">',

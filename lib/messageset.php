@@ -72,15 +72,7 @@ class MessageItem implements JsonSerializable {
     function with_prefix($text) {
         if ($this->message !== "" && $text !== "") {
             $mi = clone $this;
-            list($fmt, $s) = Ftext::parse($this->message);
-            if ($fmt === 5) {
-                $text = htmlspecialchars($text);
-            }
-            if ($fmt !== null) {
-                $mi->message = "<{$fmt}>{$text}{$s}";
-            } else {
-                $mi->message = "{$text}{$s}";
-            }
+            $mi->message = Ftext::concat($text, $mi->message);
             return $mi;
         } else {
             return $this;

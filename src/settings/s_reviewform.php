@@ -501,7 +501,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
     static function print(SettingValues $sv) {
         echo Ht::hidden("has_review_form", 1);
         echo '<div class="mb-4">',
-            '<div class="feedback is-note">Click on a field for more information.</div>';
+            '<div class="feedback is-note">Click on a field to edit it.</div>';
         if (!$sv->conf->time_some_author_view_review()) {
             echo '<div class="feedback is-note">Authors cannot see reviews at the moment.</div>';
         }

@@ -507,6 +507,10 @@ label.checki {
 	margin-right: 1.5em !important;
 	margin-right: 1.5rem !important;
 }
+.mx-auto {
+	margin-left: auto !important;
+	margin-right: auto !important;
+}
 .mb-0-last-child > *:last-child {
 	margin-bottom: 0 !important;
 }
@@ -656,6 +660,10 @@ body.paper > #body {
 	margin-left: 24px;
 	margin-right: 24px;
 }
+#msgs-initial > .msg {
+	margin-left: auto;
+	margin-right: auto;
+}
 
 
 /* footer */
@@ -727,20 +735,25 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 	border-color: #eecccc;
 }
 
-.msg, .msgs-reset > .msg {
-	margin: 0.5rem 0 1rem;
+.msg {
+	margin-top: 0.5rem;
+	margin-bottom: 1rem;
 	font-weight: normal;
 	font-style: normal;
 	border-width: 1px;
 	border-style: solid;
 	border-radius: 4px;
 	padding: 0.5em 1.5em;
+	max-width: 800px;
+}
+.msg.mx-auto,
+body.paper-error .msg {
+	width: fit-content;
+	margin-left: auto;
+	margin-right: auto;
 }
 .msg + .msg {
 	margin-top: -0.5rem;
-}
-.msg > div, .msg > p, .msg > form {
-	max-width: 800px;
 }
 .msg > p {
 	margin-bottom: 0.3em;
