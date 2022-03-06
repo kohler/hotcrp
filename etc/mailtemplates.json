@@ -185,7 +185,7 @@
 		"name": "updatepaper",
 		"subject": "[%CONFSHORTNAME%] Updated #%NUMBER% %TITLEHINT%",
 		"body": [
-			"Submission #%PAPER% has been updated on the %CONFNAME% site.\n\n",
+			"Submission #%PAPER% has been updated on the %CONFNAME% site.%IF(CHANGE)% %CHANGE%%ENDIF%\n\n",
 			"* Title: %TITLE%\n",
 			"* %_(Authors)%: %OPT(AUTHORS)%\n",
 			"* Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
@@ -200,7 +200,7 @@
 		"name": "submitpaper",
 		"subject": "[%CONFSHORTNAME%] Submitted #%NUMBER% %TITLEHINT%",
 		"body": [
-			"Submission #%PAPER% is now ready for review on the %CONFNAME% site.\n\n",
+			"Submission #%PAPER% is now ready for review on the %CONFNAME% site.%IF(CHANGE)% %CHANGE%%ENDIF%\n\n",
 			"* Title: %TITLE%\n",
 			"* %_(Authors)%: %OPT(AUTHORS)%\n",
 			"* Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
@@ -215,7 +215,7 @@
 		"name": "submitfinalpaper",
 		"subject": "[%CONFSHORTNAME%] Updated accepted #%NUMBER% %TITLEHINT%",
 		"body": [
-			"Accepted submission #%PAPER% has been updated on the %CONFNAME% submission site.\n\n",
+			"Accepted submission #%PAPER% has been updated on the %CONFNAME% submission site.%IF(CHANGE)% %CHANGE%%ENDIF%\n\n",
 			"* Title: %TITLE%\n",
 			"* %_(Authors)%: %OPT(AUTHORS)%\n",
 			"* Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
@@ -256,7 +256,7 @@
 		"name": "finalsubmitnotify",
 		"subject": "[%CONFSHORTNAME%] Updated final version #%NUMBER% %TITLEHINT%",
 		"body": [
-			"The final version for %CONFNAME% submission #%NUMBER% has been updated. The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
+			"The final version for %CONFNAME% submission #%NUMBER% has been updated.%IF(CHANGE)% %CHANGE%%ENDIF% The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
 			"* Title: %TITLE%\n",
 			"* %_(Authors)%: %OPT(AUTHORS)%\n",
 			"* Site: %URL(paper, p=%NUMBER%)%\n\n",

@@ -18,6 +18,7 @@
     {"name": "ADMINUPDATE", "function": "Mailer::kw_adminupdate", "global": true},
     {"name": "REASON", "function": "Mailer::kw_notes", "global": true},
     {"name": "NOTES", "function": "Mailer::kw_notes", "global": true},
+    {"name": "CHANGE", "function": "Mailer::kw_notes", "global": true},
     {"name": "INTERNALLOGIN", "function": "Mailer::kw_internallogin", "global": true},
     {"name": "EXTERNALLOGIN", "function": "Mailer::kw_externallogin", "global": true},
 

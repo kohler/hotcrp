@@ -650,6 +650,11 @@ class PaperStatus extends MessageSet {
         return $s;
     }
 
+    /** @return list<PaperOption> */
+    function change_fields() {
+        return $this->_fdiffs;
+    }
+
     private function _check_status($pj) {
         $pj_withdrawn = $pj->status->withdrawn;
         $pj_submitted = $pj->status->submitted;

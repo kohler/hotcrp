@@ -25,6 +25,8 @@
     ["%s external review deadline", "External review deadline", ["!$1"]],
     ["%s external review hard deadline", "External review hard deadline", ["!$1"]],
 
+    ["<0>Updated submission %#s", "<0>Updated submission", ["#$1=0"]],
+    ["%#s were changed.", "%#s was changed.", ["#$1=1"]],
     ["<0>Unknown topics ignored (%#s)", "<0>Unknown topic ignored (%#s)", ["#$1=1"]],
     ["<0>You must select at least %d topics", "<0>You must select at least 1 topic", ["$1=1"]],
     ["<0>You may select at most %d topics", "<0>You may select at most 1 topic", ["$1=1"]],

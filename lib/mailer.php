@@ -206,6 +206,8 @@ class Mailer {
     protected $censor;
     /** @var ?string */
     protected $reason;
+    /** @var ?string */
+    protected $change_message;
     /** @var bool */
     protected $adminupdate = false;
     /** @var ?string */
@@ -242,6 +244,7 @@ class Mailer {
         $this->flowed = !!$this->conf->opt("mailFormatFlowed");
         $this->censor = $settings["censor"] ?? self::CENSOR_NONE;
         $this->reason = $settings["reason"] ?? null;
+        $this->change_message = $settings["change"] ?? null;
         $this->adminupdate = $settings["adminupdate"] ?? false;
         $this->notes = $settings["notes"] ?? null;
         $this->capability_token = $settings["capability_token"] ?? null;
@@ -390,8 +393,13 @@ class Mailer {
     }
 
     static function kw_notes($args, $isbool, $m, $uf) {
-        $which = strtolower($uf->name);
-        $value = $m->$which;
+        if (strcasecmp($uf->name, "reason") === 0) {
+            $value = $m->reason;
+        } else if (strcasecmp($uf->name, "change") === 0) {
+            $value = $m->change_message;
+        } else {
+            $value = $m->notes;
+        }
         if ($value !== null || $m->recipient) {
             return (string) $value;
         } else {

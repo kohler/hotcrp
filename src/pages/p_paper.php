@@ -272,8 +272,9 @@ class Paper_Page {
         } else if ($is_new) {
             $this->ps->splice_msg($msgpos++, $conf->_("<0>Registered submission as #%d", $new_prow->paperId), MessageSet::SUCCESS);
         } else {
-            $t = $action === "final" ? "<0>Updated final version" : "<0>Updated submission";
-            $this->ps->splice_msg($msgpos++, $conf->_($t), MessageSet::SUCCESS);
+            $t = $action === "final" ? "<0>Updated final version %#s" : "<0>Updated submission %#s";
+            $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->change_fields());
+            $this->ps->splice_msg($msgpos++, $conf->_($t, $chf), MessageSet::SUCCESS);
         }
         if ($this->ps->has_error()) {
             if (!$this->ps->has_change()) {
@@ -304,6 +305,12 @@ class Paper_Page {
                 }
                 if (!empty($notes)) {
                     $options["notes"] = Ftext::unparse_as(Ftext::join(" ", $notes), 0) . "\n\n";
+                }
+                if (!$is_new) {
+                    $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->change_fields());
+                    if (!empty($chf)) {
+                        $options["change"] = $conf->_("%#s were changed.", $chf);
+                    }
                 }
                 HotCRPMailer::send_contacts($template, $new_prow, $options);
             }
