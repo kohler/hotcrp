@@ -83,7 +83,7 @@ class Topics_PaperOption extends PaperOption {
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        $ps->mark_diff("topics");
+        $ps->change_at($this);
         $ps->_topic_ins = $ov->value_list();
         return true;
     }

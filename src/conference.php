@@ -4215,50 +4215,6 @@ class Conf {
         self::msg_on(self::$main, $text, $minimal ? "xinfo" : "info");
     }
 
-    /** @param string|list<string> $text
-     * @deprecated */
-    function warnMsg($text, $minimal = false) {
-        self::msg_on($this, $text, $minimal ? "xwarning" : "warning");
-    }
-
-    /** @param string|list<string> $text
-     * @deprecated */
-    static function msg_warning($text, $minimal = false) {
-        self::msg_on(self::$main, $text, $minimal ? "xwarning" : "warning");
-    }
-
-    /** @param string|list<string> $text
-     * @deprecated */
-    function confirmMsg($text, $minimal = false) {
-        self::msg_on($this, $text, $minimal ? "xconfirm" : "confirm");
-    }
-
-    /** @param string|list<string> $text
-     * @deprecated */
-    static function msg_confirm($text, $minimal = false) {
-        self::msg_on(self::$main, $text, $minimal ? "xconfirm" : "confirm");
-    }
-
-    /** @param string|list<string> $text
-     * @deprecated */
-    static function msg_success($text) {
-        self::msg_on(self::$main, $text, "xconfirm");
-    }
-
-    /** @param string|list<string> $text
-     * @deprecated */
-    function errorMsg($text, $minimal = false) {
-        self::msg_on($this, $text, $minimal ? "xmerror" : "merror");
-        return false;
-    }
-
-    /** @param string|list<string> $text
-     * @deprecated */
-    static function msg_error($text, $minimal = false) {
-        self::msg_on(self::$main, $text, $minimal ? "xmerror" : "merror");
-        return false;
-    }
-
     /** @param mixed $text */
     static function msg_debugt($text) {
         if (is_object($text) || is_array($text) || $text === null || $text === false || $text === true) {

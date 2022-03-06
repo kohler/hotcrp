@@ -82,7 +82,7 @@ class Authors_PaperOption extends PaperOption {
                 $v .= ($v === "" ? "" : "\n") . $auth->unparse_tabbed();
         }
         if ($v !== $ov->prow->authorInformation) {
-            $ps->mark_diff("authors");
+            $ps->change_at($this);
             $ps->save_paperf("authorInformation", $v);
             $ps->clear_conflict_values(CONFLICT_AUTHOR);
             foreach ($authlist as $auth) {

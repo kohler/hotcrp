@@ -21,7 +21,7 @@ class Abstract_PaperOption extends PaperOption {
         return (string) $ov->data();
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        $ps->mark_diff("abstract");
+        $ps->change_at($this);
         $ab = $ov->data();
         if ($ab === null || strlen($ab) < 16383) {
             $ps->save_paperf("abstract", $ab === "" ? null : $ab);

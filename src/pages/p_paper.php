@@ -179,7 +179,7 @@ class Paper_Page {
             $whynot = $this->user->perm_edit_paper($this->prow);
             if ($whynot
                 && $action === "update"
-                && !count(array_diff($this->ps->diffs, ["contacts", "status"]))) {
+                && !count(array_diff($this->ps->change_keys(), ["contacts", "status"]))) {
                 $whynot = $this->user->perm_finalize_paper($this->prow);
             }
         }
@@ -265,7 +265,7 @@ class Paper_Page {
 
         // HTML confirmation
         $msgpos = 0;
-        if (empty($this->ps->diffs)) {
+        if (!$this->ps->has_change()) {
             if (!$this->ps->has_error()) {
                 $this->ps->splice_msg($msgpos++, $conf->_("<0>No changes"), MessageSet::MARKED_NOTE);
             }
@@ -276,7 +276,7 @@ class Paper_Page {
             $this->ps->splice_msg($msgpos++, $conf->_($t), MessageSet::SUCCESS);
         }
         if ($this->ps->has_error()) {
-            if (empty($this->ps->diffs)) {
+            if (!$this->ps->has_change()) {
                 $this->ps->splice_msg($msgpos++, $conf->_("<0>Changes not saved. Please correct these issues and save again:"), MessageSet::ERROR);
             } else {
                 $this->ps->splice_msg($msgpos++, $conf->_("<0>Please correct these issues and save again:"), MessageSet::URGENT_NOTE);
@@ -291,7 +291,7 @@ class Paper_Page {
         $conf->feedback_msg($this->ps->decorated_message_list());
 
         // mail confirmation to all contact authors if changed
-        if (!empty($this->ps->diffs)) {
+        if ($this->ps->has_change()) {
             if (!$this->user->can_administer($new_prow) || $this->qreq->doemail) {
                 $options = ["infoNames" => 1];
                 if ($this->user->can_administer($new_prow)) {
@@ -347,7 +347,7 @@ class Paper_Page {
             return;
         }
 
-        if (!$this->ps->diffs) {
+        if (!$this->ps->has_change()) {
             $this->ps->prepend_msg($conf->_("<0>No changes", $this->prow->paperId), MessageSet::MARKED_NOTE);
             $this->ps->warning_at(null, "");
             $conf->feedback_msg($this->ps);

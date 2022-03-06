@@ -34,10 +34,12 @@ class PaperStatus extends MessageSet {
     /** @var ?CheckFormat */
     private $_cf;
 
-    /** @var associative-array<string,true> */
-    public $diffs;
     /** @var PaperInfo */
     private $_nnprow;
+    /** @var list<PaperOption> */
+    private $_fdiffs;
+    /** @var list<string> */
+    private $_xdiffs;
     /** @var array<string,null|int|string> */
     private $_paper_upd;
     /** @var array<string,null|int|string> */
@@ -101,7 +103,7 @@ class PaperStatus extends MessageSet {
         parent::clear();
         $this->set_ignore_duplicates(true);
         $this->prow = null;
-        $this->diffs = [];
+        $this->_fdiffs = $this->_xdiffs = [];
         $this->_paper_upd = $this->_paper_overflow_upd = [];
         $this->_topic_ins = null;
         $this->_field_values = $this->_option_delid = $this->_option_ins = [];
@@ -600,9 +602,52 @@ class PaperStatus extends MessageSet {
         $this->_paper_overflow_upd[$f] = $v;
     }
 
-    /** @param string $diff */
-    function mark_diff($diff) {
-        $this->diffs[$diff] = true;
+    /** @param PaperOption $field */
+    function change_at($field) {
+        if (!in_array($field, $this->_fdiffs)) {
+            $this->_fdiffs[] = $field;
+        }
+    }
+
+    /** @param 'status'|'final_status'|'decision' $field */
+    private function status_change_at($field) {
+        if (!in_array($field, $this->_xdiffs)) {
+            $this->_xdiffs[] = $field;
+        }
+    }
+
+    /** @return bool */
+    function has_change() {
+        return !empty($this->_fdiffs) || !empty($this->_xdiffs);
+    }
+
+    /** @param string|PaperOption $field
+     * @return bool */
+    function has_change_at($field) {
+        if (is_string($field)) {
+            if (in_array($field, $this->_xdiffs)) {
+                return true;
+            }
+            foreach ($this->conf->find_all_fields($field, Conf::MFLAG_OPTION) as $f) {
+                if (in_array($f, $this->_fdiffs))
+                    return true;
+            }
+            return false;
+        } else {
+            return in_array($field, $this->_fdiffs);
+        }
+    }
+
+    /** @return list<string> */
+    function change_keys() {
+        $s = [];
+        foreach ($this->_fdiffs as $field) {
+            $s[] = $field->json_key();
+        }
+        foreach ($this->_xdiffs as $field) {
+            $s[] = $field;
+        }
+        return $s;
     }
 
     private function _check_status($pj) {
@@ -637,10 +682,10 @@ class PaperStatus extends MessageSet {
             if (!$this->prow || $this->prow->timeWithdrawn <= 0) {
                 $this->save_paperf("timeWithdrawn", ($pj->status->withdrawn_at ?? null) ? : Conf::$now);
                 $this->save_paperf("timeSubmitted", $submitted_at);
-                $this->mark_diff("status");
+                $this->status_change_at("status");
             } else if (($this->prow->submitted_at() > 0) !== $pj_submitted) {
                 $this->save_paperf("timeSubmitted", $submitted_at);
-                $this->mark_diff("status");
+                $this->status_change_at("status");
             }
         } else if ($pj_submitted) {
             if (!$this->prow || $this->prow->timeSubmitted <= 0) {
@@ -649,16 +694,16 @@ class PaperStatus extends MessageSet {
                     $submitted_at = Conf::$now;
                 }
                 $this->save_paperf("timeSubmitted", $submitted_at);
-                $this->mark_diff("status");
+                $this->status_change_at("status");
             }
             if ($this->prow && $this->prow->timeWithdrawn != 0) {
                 $this->save_paperf("timeWithdrawn", 0);
-                $this->mark_diff("status");
+                $this->status_change_at("status");
             }
         } else if ($this->prow && ($this->prow->timeWithdrawn > 0 || $this->prow->timeSubmitted > 0)) {
             $this->save_paperf("timeSubmitted", 0);
             $this->save_paperf("timeWithdrawn", 0);
-            $this->mark_diff("status");
+            $this->status_change_at("status");
         }
 
         $this->_paper_submitted = $pj_submitted && !$pj_withdrawn;
@@ -673,7 +718,7 @@ class PaperStatus extends MessageSet {
             }
             if (!$this->prow || $this->prow->timeFinalSubmitted != $time) {
                 $this->save_paperf("timeFinalSubmitted", $time);
-                $this->mark_diff("final_status");
+                $this->status_change_at("final_status");
             }
         }
     }
@@ -682,7 +727,7 @@ class PaperStatus extends MessageSet {
         if (isset($pj->decision)) {
             if (($this->prow ? $this->prow->outcome : 0) !== $pj->decision) {
                 $this->save_paperf("outcome", $pj->decision);
-                $this->mark_diff("decision");
+                $this->status_change_at("decision");
             }
         }
     }
@@ -730,7 +775,7 @@ class PaperStatus extends MessageSet {
             if ($v1 !== $oldv->value_list() || $d1 !== $oldv->data_list()) {
                 if (!$ov->option->value_save($ov, $this)) {
                     // normal option
-                    $this->mark_diff($ov->option->json_key());
+                    $this->change_at($ov->option);
                     $this->_option_delid[] = $ov->id;
                     for ($i = 0; $i < count($v1); ++$i) {
                         $qv0 = [-1, $ov->id, $v1[$i], null, null];
@@ -877,17 +922,24 @@ class PaperStatus extends MessageSet {
         // save diffs if change
         if ($this->has_conflict_diff($lemail_to_cid)) {
             $this->_conflict_ins = [];
+            $ds = 0;
             foreach ($this->_conflict_values as $lemail => $cv) {
                 if (($cid = $lemail_to_cid[$lemail] ?? null)) {
                     $ncv = self::new_conflict_value($cv);
                     if (($cv[0] ^ $ncv) & CONFLICT_PCMASK) {
-                        $this->diffs["pc_conflicts"] = true;
+                        $ds |= 1;
                     }
                     if (($cv[0] >= CONFLICT_AUTHOR) !== ($ncv >= CONFLICT_AUTHOR)) {
-                        $this->diffs["contacts"] = true;
+                        $ds |= 2;
                     }
                     $this->_conflict_ins[] = [$cid, $cv[1], $cv[2]];
                 }
+            }
+            if ($ds & 2) {
+                $this->change_at($this->conf->option_by_id(PaperOption::CONTACTSID));
+            }
+            if ($ds & 1) {
+                $this->change_at($this->conf->option_by_id(PaperOption::PCCONFID));
             }
         }
     }
@@ -899,7 +951,7 @@ class PaperStatus extends MessageSet {
             // NB ok to have multiple inserters for same user
             $this->_conflict_ins = $this->_conflict_ins ?? [];
             $this->_conflict_ins[] = [$this->user->contactId, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR];
-            $this->diffs["contacts"] = true;
+            $this->change_at($this->conf->option_by_id(PaperOption::CONTACTSID));
         }
     }
 
@@ -994,7 +1046,7 @@ class PaperStatus extends MessageSet {
             if (!$this->prow || $this->prow->blind !== $want_blind) {
                 $this->save_paperf("blind", $want_blind ? 1 : 0);
                 if ($this->prow) {
-                    $this->mark_diff("blind");
+                    $this->change_at($this->conf->option_by_id(PaperOption::ANONYMITYID));
                 }
             }
         }
@@ -1288,8 +1340,12 @@ class PaperStatus extends MessageSet {
         }
         if (($this->_save_status & self::SAVE_STATUS_NEWSUBMIT) !== 0) {
             $actions[] = "submitted";
-        } else if (($this->_save_status & self::SAVE_STATUS_NEW) === 0 && $this->diffs) {
+        } else if (($this->_save_status & self::SAVE_STATUS_NEW) === 0
+                   && !empty($this->_xdiffs)) {
             $actions[] = "edited";
+        }
+        if (empty($actions)) {
+            $actions[] = "saved";
         }
         $logtext = "Paper " . join(", ", $actions);
         if ($action === "final") {
@@ -1303,8 +1359,8 @@ class PaperStatus extends MessageSet {
         if ($via) {
             $logtext .= " " . trim($via);
         }
-        if ($this->diffs) {
-            $logtext .= ": " . join(", ", array_keys($this->diffs));
+        if (!empty($this->_fdiffs) || !empty($this->_xdiffs)) {
+            $logtext .= ": " . join(", ", $this->change_keys());
         }
         $user->log_activity($logtext, $this->paperId);
     }

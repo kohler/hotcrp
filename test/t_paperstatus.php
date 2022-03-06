@@ -217,10 +217,10 @@ class PaperStatus_Tester {
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com"]), null, "update"));
         xassert_paper_status($ps);
-        xassert($ps->diffs["title"]);
-        xassert($ps->diffs["abstract"]);
-        xassert($ps->diffs["authors"]);
-        xassert($ps->diffs["contacts"]);
+        xassert($ps->has_change_at("title"));
+        xassert($ps->has_change_at("abstract"));
+        xassert($ps->has_change_at("authors"));
+        xassert($ps->has_change_at("contacts"));
         xassert($ps->execute_save());
         xassert_paper_status($ps);
 
@@ -240,7 +240,7 @@ class PaperStatus_Tester {
 
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         xassert($ps->prepare_save_paper_web(new Qrequest("POST", []), $newpaper, "submit"));
-        xassert_array_eqq(array_keys($ps->diffs), ["status"], true);
+        xassert_array_eqq($ps->change_keys(), ["status"], true);
         xassert($ps->execute_save());
         xassert_paper_status_saved_nonrequired($ps, MessageSet::WARNING);
 
@@ -263,10 +263,10 @@ class PaperStatus_Tester {
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         xassert($ps->prepare_save_paper_web((new Qrequest("POST", ["submitpaper" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com", "has_submission" => 1]))->set_file_content("submission", "%PDF-2", null, "application/pdf"), null, "update"));
         xassert_paper_status($ps);
-        xassert($ps->diffs["title"]);
-        xassert($ps->diffs["abstract"]);
-        xassert($ps->diffs["authors"]);
-        xassert($ps->diffs["contacts"]);
+        xassert($ps->has_change_at("title"));
+        xassert($ps->has_change_at("abstract"));
+        xassert($ps->has_change_at("authors"));
+        xassert($ps->has_change_at("contacts"));
         xassert($ps->execute_save());
         xassert_paper_status_saved_nonrequired($ps);
 
@@ -289,10 +289,10 @@ class PaperStatus_Tester {
     function test_save_submit_new_paper_empty_contacts() {
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com", "has_contacts" => 1]), null, "update"));
-        xassert($ps->diffs["title"]);
-        xassert($ps->diffs["abstract"]);
-        xassert($ps->diffs["authors"]);
-        xassert($ps->diffs["contacts"]);
+        xassert($ps->has_change_at("title"));
+        xassert($ps->has_change_at("abstract"));
+        xassert($ps->has_change_at("authors"));
+        xassert($ps->has_change_at("contacts"));
         xassert($ps->execute_save());
         xassert_paper_status($ps);
 
@@ -315,10 +315,10 @@ class PaperStatus_Tester {
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com", "has_submission" => 1]), null, "update"));
         xassert_paper_status($ps);
-        xassert($ps->diffs["title"]);
-        xassert($ps->diffs["abstract"]);
-        xassert($ps->diffs["authors"]);
-        xassert($ps->diffs["contacts"]);
+        xassert($ps->has_change_at("title"));
+        xassert($ps->has_change_at("abstract"));
+        xassert($ps->has_change_at("authors"));
+        xassert($ps->has_change_at("contacts"));
         xassert($ps->execute_save());
         xassert_paper_status_saved_nonrequired($ps);
 
@@ -330,18 +330,18 @@ class PaperStatus_Tester {
     function test_save_options() {
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "10", "has_opt1" => "1"]), $this->newpaper1, "update"));
-        xassert_array_eqq(array_keys($ps->diffs), ["calories", "status"], true);
+        xassert_array_eqq($ps->change_keys(), ["calories", "status"], true);
         xassert($ps->execute_save());
         xassert_paper_status($ps);
 
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "10xxxxx", "has_opt1" => "1"]), $this->newpaper1, "update"));
-        xassert_array_eqq(array_keys($ps->diffs), [], true);
+        xassert_array_eqq($ps->change_keys(), [], true);
         xassert($ps->has_error_at("opt1"));
 
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "none", "has_opt1" => "1"]), $this->newpaper1, "update"));
-        xassert_array_eqq(array_keys($ps->diffs), ["calories"], true);
+        xassert_array_eqq($ps->change_keys(), ["calories"], true);
         xassert_paper_status($ps);
 
         $newpaper = $this->u_estrin->checked_paper_by_id($ps->paperId);
@@ -362,7 +362,7 @@ class PaperStatus_Tester {
     function test_save_old_authors() {
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["has_authors" => "1", "auname1" => "Robert Flay", "auemail1" => "flay@_.com"]), $this->newpaper1, "update"));
-        xassert($ps->diffs["authors"]);
+        xassert($ps->has_change_at("authors"));
         xassert($ps->execute_save());
         xassert_paper_status($ps);
 
@@ -387,10 +387,10 @@ class PaperStatus_Tester {
         $qreq->set_file("opt2_new_1", ["name" => "attachment1.pdf", "type" => "application/pdf", "content" => "%PDF-whatever\n", "error" => UPLOAD_ERR_OK]);
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         xassert($ps->prepare_save_paper_web($qreq, null, "update"));
-        xassert($ps->diffs["title"]);
-        xassert($ps->diffs["abstract"]);
-        xassert($ps->diffs["authors"]);
-        xassert($ps->diffs["submission"]);
+        xassert($ps->has_change_at("title"));
+        xassert($ps->has_change_at("abstract"));
+        xassert($ps->has_change_at("authors"));
+        xassert($ps->has_change_at("submission"));
         xassert($ps->execute_save());
         xassert_paper_status($ps);
         $this->pid2 = $ps->paperId;
@@ -462,7 +462,7 @@ class PaperStatus_Tester {
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "abstract" => " They\nsee\r\nlots of\n\n\ncolors. \n\n\n"]), $nprow1, "update");
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["abstract"], true);
+        xassert_array_eqq($ps->change_keys(), ["abstract"], true);
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert_eqq($nprow1->abstract, "They\nsee\r\nlots of\n\n\ncolors.");
     }
@@ -475,7 +475,7 @@ class PaperStatus_Tester {
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "collaborators" => "  John Fart\rMIT\n\nButt Man (UCLA)"]), $nprow1, "update");
         xassert_paper_status($ps, MessageSet::WARNING);
-        xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
+        xassert_array_eqq($ps->change_keys(), ["collaborators"], true);
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert_eqq($nprow1->collaborators(), "John Fart\nAll (MIT)\n\nButt Man (UCLA)");
     }
@@ -485,7 +485,7 @@ class PaperStatus_Tester {
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "collaborators" => "Sal Stolfo, Guofei Gu, Manos Antonakakis, Roberto Perdisci, Weidong Cui, Xiapu Luo, Rocky Chang, Kapil Singh, Helen Wang, Zhichun Li, Junjie Zhang, David Dagon, Nick Feamster, Phil Porras."]), $nprow1, "update");
         xassert_paper_status($ps, MessageSet::WARNING);
-        xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
+        xassert_array_eqq($ps->change_keys(), ["collaborators"], true);
 
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert_eqq($nprow1->collaborators(), "Sal Stolfo
@@ -513,7 +513,7 @@ Phil Porras.");
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "collaborators" => $long_collab]), $this->u_estrin->checked_paper_by_id($this->pid2), "update");
         xassert_paper_status($ps);
-        xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
+        xassert_array_eqq($ps->change_keys(), ["collaborators"], true);
 
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert_eqq($nprow1->collaborators, null);
@@ -524,7 +524,7 @@ Phil Porras.");
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "collaborators" => "One guy (MIT)"]), $nprow1, "update");
         xassert_paper_status($ps);
-        xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
+        xassert_array_eqq($ps->change_keys(), ["collaborators"], true);
 
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert_eqq($nprow1->collaborators(), "One guy (MIT)");
@@ -553,7 +553,7 @@ Phil Porras.");
             "topics" => ["Cloud computing"]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["topics"]);
+        xassert_array_eqq($ps->change_keys(), ["topics"]);
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), [1]);
 
@@ -562,7 +562,7 @@ Phil Porras.");
             "topics" => (object) ["Cloud computing" => true, "Security" => true]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["topics"]);
+        xassert_array_eqq($ps->change_keys(), ["topics"]);
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), [1, 3]);
 
@@ -571,7 +571,7 @@ Phil Porras.");
             "topics" => [2, 4]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["topics"]);
+        xassert_array_eqq($ps->change_keys(), ["topics"]);
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), [2, 4]);
 
@@ -581,7 +581,7 @@ Phil Porras.");
             "topics" => ["architecture", "security"]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["topics"]);
+        xassert_array_eqq($ps->change_keys(), ["topics"]);
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), [2, 3]);
 
@@ -601,7 +601,7 @@ Phil Porras.");
             "topics" => ["fartchitecture", "architecture"]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["topics"]);
+        xassert_array_eqq($ps->change_keys(), ["topics"]);
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), [2, 5]);
 
@@ -642,7 +642,7 @@ Phil Porras.");
             "id" => $this->pid2, "pc_conflicts" => []
         ]);
         xassert(!$ps->has_problem());
-        xassert_eqq(count($ps->diffs), 0);
+        xassert(!$ps->has_change());
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId]);
 
@@ -650,7 +650,7 @@ Phil Porras.");
             "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email => true, $this->u_sally->email => true]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["pc_conflicts"], true);
+        xassert_array_eqq($ps->change_keys(), ["pc_conflicts"], true);
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1),
             [$this->u_estrin->contactId, $this->u_varghese->contactId, $this->u_sally->contactId]);
@@ -659,7 +659,7 @@ Phil Porras.");
             "id" => $this->pid2, "pc_conflicts" => []
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["pc_conflicts"], true);
+        xassert_array_eqq($ps->change_keys(), ["pc_conflicts"], true);
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId]);
 
@@ -667,7 +667,7 @@ Phil Porras.");
             "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["pc_conflicts"], true);
+        xassert_array_eqq($ps->change_keys(), ["pc_conflicts"], true);
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId]);
 
@@ -676,7 +676,7 @@ Phil Porras.");
         ]);
         xassert($ps->has_problem());
         xassert_paper_status($ps, MessageSet::WARNING);
-        xassert_array_eqq(array_keys($ps->diffs), [], true);
+        xassert_array_eqq($ps->change_keys(), [], true);
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId]);
         xassert_eqq($nprow1->conflict_type($this->u_estrin), CONFLICT_CONTACTAUTHOR);
@@ -686,7 +686,7 @@ Phil Porras.");
             "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email => "advisor"]
         ]);
         xassert(!$ps->has_problem()); // XXX should have problem
-        xassert_array_eqq(array_keys($ps->diffs), ["pc_conflicts"], true);
+        xassert_array_eqq($ps->change_keys(), ["pc_conflicts"], true);
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId]);
         xassert_eqq($nprow1->conflict_type($this->u_estrin), CONFLICT_CONTACTAUTHOR);
@@ -696,7 +696,7 @@ Phil Porras.");
             "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email => "advisor", $this->u_estrin->email => false, $this->u_chair->email => false]
         ]);
         xassert(!$ps->has_problem()); // XXX should have problem
-        xassert_array_eqq(array_keys($ps->diffs), [], true);
+        xassert_array_eqq($ps->change_keys(), [], true);
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId]);
         xassert_eqq($nprow1->conflict_type($this->u_estrin), CONFLICT_CONTACTAUTHOR);
@@ -763,7 +763,7 @@ You can’t remove yourself from the submission’s contacts
             "id" => $this->pid2, "contacts" => ["estrin@usc.edu"]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), [], true);
+        xassert_array_eqq($ps->change_keys(), [], true);
     }
 
     function test_save_contacts_ignore_empty() {
@@ -771,7 +771,7 @@ You can’t remove yourself from the submission’s contacts
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu", "contacts:active_1" => 1, "contacts:email_2" => "", "contacts:active_2" => 1]), $nprow1, "update");
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), [], true);
+        xassert_array_eqq($ps->change_keys(), [], true);
     }
 
     function test_save_contacts_creates_user() {
@@ -781,7 +781,7 @@ You can’t remove yourself from the submission’s contacts
             "id" => $this->pid2, "contacts" => ["estrin@usc.edu", (object) ["email" => "festrin@fusc.fedu", "name" => "Feborah Festrin"]]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
+        xassert_array_eqq($ps->change_keys(), ["contacts"], true);
 
         $new_user = $this->conf->user_by_email("festrin@fusc.fedu");
         xassert(!!$new_user);
@@ -798,7 +798,7 @@ You can’t remove yourself from the submission’s contacts
         xassert(!$this->conf->user_by_email("gestrin@gusc.gedu"));
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu", "contacts:active_1" => 1, "contacts:email_2" => "festrin@fusc.fedu", "contacts:email_3" => "gestrin@gusc.gedu", "contacts:name_3" => "Geborah Gestrin", "contacts:active_3" => 1]), $nprow1, "update");
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
+        xassert_array_eqq($ps->change_keys(), ["contacts"], true);
 
         $new_user2 = $this->conf->user_by_email("gestrin@gusc.gedu");
         xassert(!!$new_user2);
@@ -816,14 +816,14 @@ You can’t remove yourself from the submission’s contacts
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1]), $nprow1, "update");
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), [], true);
+        xassert_array_eqq($ps->change_keys(), [], true);
 
         $nprow1->invalidate_conflicts();
         xassert_array_eqq(self::contact_emails($nprow1), ["estrin@usc.edu", "gestrin@gusc.gedu"], true);
 
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1, "contacts:email_1" => "atten@_.com", "contacts:active_1" => 1]), $nprow1, "update");
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
+        xassert_array_eqq($ps->change_keys(), ["contacts"], true);
 
         $nprow1->invalidate_conflicts();
         xassert_array_eqq(self::contact_emails($nprow1), ["atten@_.com", "estrin@usc.edu", "gestrin@gusc.gedu"], true);
@@ -832,7 +832,7 @@ You can’t remove yourself from the submission’s contacts
 
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1, "contacts:email_1" => "gestrin@gusc.gedu", "contacts:email_2" => "atten@_.com"]), $nprow1, "update");
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
+        xassert_array_eqq($ps->change_keys(), ["contacts"], true);
         $nprow1->invalidate_conflicts();
         xassert_array_eqq(self::contact_emails($nprow1), ["atten@_.com", "estrin@usc.edu"], true);
         xassert_eqq($nprow1->conflict_type($this->u_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
@@ -848,7 +848,7 @@ You can’t remove yourself from the submission’s contacts
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:name_2" => "Geborah Gestrin", "authors:email_2" => "gestrin@gusc.gedu"]), $nprow1, "update");
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["authors", "contacts"], true);
+        xassert_array_eqq($ps->change_keys(), ["authors", "contacts"], true);
 
         $nprow1 = $this->conf->checked_paper_by_id($this->pid2);
         xassert_array_eqq(self::contact_emails($nprow1), ["atten@_.com", "estrin@usc.edu", "festrin@fusc.fedu", "gestrin@gusc.gedu"], true);
@@ -859,7 +859,7 @@ You can’t remove yourself from the submission’s contacts
 
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com"]), $nprow1, "update");
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["authors", "contacts"], true);
+        xassert_array_eqq($ps->change_keys(), ["authors", "contacts"], true);
         $nprow1 = $this->conf->checked_paper_by_id($this->pid2);
         xassert_array_eqq(self::contact_emails($nprow1), ["atten@_.com", "estrin@usc.edu"], true);
         xassert_eqq($nprow1->conflict_type($this->u_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
@@ -871,7 +871,7 @@ You can’t remove yourself from the submission’s contacts
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => "1", "contacts:email_1" => "gestrin@gusc.gedu", "contacts:active_1" => "1"]), $nprow1, "update");
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
+        xassert_array_eqq($ps->change_keys(), ["contacts"], true);
 
         $nprow1->invalidate_conflicts();
         xassert_array_eqq(self::contact_emails($nprow1), ["atten@_.com", "estrin@usc.edu", "festrin@fusc.fedu"], true);
@@ -881,7 +881,7 @@ You can’t remove yourself from the submission’s contacts
 
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => "1", "contacts:email_1" => "gestrin@gusc.gedu"]), $nprow1, "update");
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), [], true);
+        xassert_array_eqq($ps->change_keys(), [], true);
 
         $nprow1->invalidate_conflicts();
         xassert_array_eqq(self::contact_emails($nprow1), ["atten@_.com", "estrin@usc.edu", "festrin@fusc.fedu"], true);
@@ -902,7 +902,7 @@ You can’t remove yourself from the submission’s contacts
             "id" => $this->pid2, "pc_conflicts" => ["gestrin@gusc.gedu" => true]
         ]);
         xassert(!$ps->has_problem());
-        xassert_array_eqq(array_keys($ps->diffs), ["pc_conflicts"], true);
+        xassert_array_eqq($ps->change_keys(), ["pc_conflicts"], true);
 
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId, $this->festrin_cid]);

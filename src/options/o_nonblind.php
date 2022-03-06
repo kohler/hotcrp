@@ -16,7 +16,7 @@ class Nonblind_PaperOption extends PaperOption {
         return !!$ov->value;
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        $ps->mark_diff("nonblind");
+        $ps->change_at($this);
         $ps->save_paperf("blind", $ov->value ? 0 : 1);
         return true;
     }

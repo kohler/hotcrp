@@ -20,7 +20,7 @@ class Title_PaperOption extends PaperOption {
         return (string) $ov->data();
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        $ps->mark_diff("title");
+        $ps->change_at($this);
         $ps->save_paperf("title", $ov->data());
         return true;
     }

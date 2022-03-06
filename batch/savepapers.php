@@ -252,7 +252,7 @@ class BatchSavePapers {
             $pidtext = "#$pid";
         }
         if (!$this->quiet) {
-            fwrite(STDERR, $pid ? ($ps->diffs ? "saved\n" : "unchanged\n") : "failed\n");
+            fwrite(STDERR, $pid ? ($ps->has_change() ? "saved\n" : "unchanged\n") : "failed\n");
         }
         // XXX does not change decision
         $prefix = $pidtext . ": ";
@@ -292,7 +292,7 @@ class BatchSavePapers {
             $this->tf->clear_messages();
         }
 
-        if ($ps->diffs && $this->log) {
+        if ($ps->has_change() && $this->log) {
             $ps->log_save_activity($this->user, "save", "via CLI");
         }
         ++$this->nsuccesses;
