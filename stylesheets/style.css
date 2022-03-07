@@ -950,9 +950,10 @@ span.hastitle {
 
 /* topics */
 .topic-2::before {
-	content: "\2b07";
+	content: "↓↓"; /* "\2b07"; */
 	color: #bb5555;
-	padding-right: 0.125em;
+	padding-right: 0.325em;
+	letter-spacing: -0.2em;
 }
 .topic-1::before {
 	content: "↓";
@@ -970,9 +971,10 @@ span.hastitle {
 	padding-right: 0.125em;
 }
 .topic2::before, .topic3::before, .topic4::before {
-	content: "\2b06";
+	content: "↑↑"; /* "\2b06"; */
 	color: #00aa00;
-	padding-right: 0.125em;
+	padding-right: 0.325em;
+	letter-spacing: -0.2em;
 }
 .topic-2::before, .topic-1::before, .topic0::before, .topic1::before,
 .topic2::before, .topic3::before, .topic4::before {
@@ -1015,8 +1017,15 @@ span.hastitle {
 	margin-bottom: 2px;
 }
 .pl_topicti {
-	display: block;
-	margin-right: 1.5em;
+	display: inline-block;
+}
+.pl_topicti::after {
+	content: "; ";
+	padding-right: 0.35em;
+}
+.pl_topicti:last-child::after {
+	content: "";
+	padding-right: 0;
 }
 .topicg {
 	font-weight: 500;
