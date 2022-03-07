@@ -23,8 +23,8 @@ class OAuthInstance {
      * @return ?OAuthInstance */
     static function find($conf, $authtype) {
         $instance = new OAuthInstance;
-        $instance->authtype = $authtype ?? $conf->opt("defaultOAuthType") ?? "";
-        $authinfo = $conf->opt("OAuthTypes") ?? [];
+        $instance->authtype = $authtype ?? $conf->opt("defaultOauthType") ?? "";
+        $authinfo = $conf->opt("oAuthTypes") ?? [];
         $authdata = $authinfo[$instance->authtype] ?? [];
         foreach (["client_id", "client_secret", "auth_uri", "redirect_uri", "token_uri"] as $k) {
             if (isset($authdata[$k]) && is_string($authdata[$k])) {
