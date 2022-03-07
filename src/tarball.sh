@@ -146,8 +146,10 @@ lib/jwtparser.php
 lib/ldaplogin.php
 lib/login.php
 lib/mailer.php
+lib/mailpreparation.php
 lib/messageset.php
 lib/mime.types
+lib/mimetext.php
 lib/mimetype.php
 lib/mincostmaxflow.php
 lib/navigation.php
