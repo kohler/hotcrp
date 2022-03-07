@@ -322,8 +322,8 @@ class Search_Page {
                 $this->pl->set_selection($this->ssel);
             }
             $this->pl->qopts["options"] = true; // get efficient access to `has(OPTION)`
-            $this->prepare_display_options();
             $pl_text = $this->pl->table_html();
+            $this->prepare_display_options();
             unset($qreq->atab);
         } else {
             $pl_text = null;

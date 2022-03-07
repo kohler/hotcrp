@@ -1195,7 +1195,7 @@ class Limit_SearchTerm extends SearchTerm {
             } else if ($sqi->depth === 0) {
                 $r = "MyReviews.reviewType is not null";
             } else {
-                $r = "exists (select * from PaperReview where paperId=Paper.paperId and $act_reviewer_sql)";
+                $r = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and $act_reviewer_sql)";
             }
             $ff[] = "(" . $this->user->act_author_view_sql($sqi->conflict_table($this->user)) . " or (Paper.timeWithdrawn<=0 and $r))";
             break;
@@ -1206,7 +1206,7 @@ class Limit_SearchTerm extends SearchTerm {
             } else if ($sqi->depth === 0) {
                 // the `join` with MyReviews suffices
             } else {
-                $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and $act_reviewer_sql)";
+                $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and $act_reviewer_sql)";
             }
             break;
         case "rout":
@@ -1215,7 +1215,7 @@ class Limit_SearchTerm extends SearchTerm {
             } else if ($sqi->depth === 0) {
                 $ff[] = "MyReviews.reviewNeedsSubmit!=0";
             } else {
-                $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and $act_reviewer_sql and reviewNeedsSubmit!=0)";
+                $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and $act_reviewer_sql and reviewNeedsSubmit!=0)";
             }
             break;
         case "acc":
@@ -1246,7 +1246,7 @@ class Limit_SearchTerm extends SearchTerm {
             }
             break;
         case "req":
-            $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy={$this->user->contactXid})";
+            $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy={$this->user->contactXid})";
             break;
         default:
             $ff[] = "false";
@@ -1625,7 +1625,7 @@ class SearchQueryInfo {
         }
     }
     function add_options_columns() {
-        $this->columns["optionIds"] = "coalesce((select group_concat(PaperOption.optionId, '#', value) from PaperOption where paperId=Paper.paperId), '')";
+        $this->columns["optionIds"] = "coalesce((select group_concat(PaperOption.optionId, '#', value) from PaperOption force index (primary) where paperId=Paper.paperId), '')";
     }
     function add_reviewer_columns() {
         $this->_has_my_review = true;
@@ -1640,7 +1640,7 @@ class SearchQueryInfo {
             $this->add_column("conflictType", $ct ? "{$ct}.conflictType" : "null");
         }
         if ($this->_has_review_signatures) {
-            $this->add_column("reviewSignatures", "coalesce((select " . ReviewInfo::review_signature_sql($user->conf, $this->_review_scores) . " from PaperReview r where r.paperId=Paper.paperId), '')");
+            $this->add_column("reviewSignatures", "coalesce((select " . ReviewInfo::review_signature_sql($user->conf, $this->_review_scores) . " from PaperReview r force index (primary) where r.paperId=Paper.paperId), '')");
         } else if ($this->_has_my_review) {
             $act_reviewer_sql = $user->act_reviewer_sql("PaperReview");
             if ($act_reviewer_sql === "false") {
@@ -1648,7 +1648,7 @@ class SearchQueryInfo {
             } else if (isset($this->tables["MyReviews"])) {
                 $this->add_column("myReviewPermissions", "coalesce(" . PaperInfo::my_review_permissions_sql("MyReviews.") . ", '')");
             } else {
-                $this->add_column("myReviewPermissions", "coalesce((select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and $act_reviewer_sql group by paperId), '')");
+                $this->add_column("myReviewPermissions", "coalesce((select " . PaperInfo::my_review_permissions_sql() . " from PaperReview force index (primary) where PaperReview.paperId=Paper.paperId and $act_reviewer_sql group by paperId), '')");
             }
         }
     }
@@ -1666,12 +1666,12 @@ class SearchQueryInfo {
     function add_review_word_count_columns() {
         $this->add_review_signature_columns();
         if (!isset($this->columns["reviewWordCountSignature"])) {
-            $this->add_column("reviewWordCountSignature", "coalesce((select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId), '')");
+            $this->add_column("reviewWordCountSignature", "coalesce((select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview force index (primary) where PaperReview.paperId=Paper.paperId), '')");
         }
     }
     function add_allConflictType_column() {
         if (!isset($this->columns["allConflictType"])) {
-            $this->add_column("allConflictType", "coalesce((select group_concat(contactId, ' ', conflictType) from PaperConflict where PaperConflict.paperId=Paper.paperId), '')");
+            $this->add_column("allConflictType", "coalesce((select group_concat(contactId, ' ', conflictType) from PaperConflict force index (paperId) where PaperConflict.paperId=Paper.paperId), '')");
         }
     }
 }
@@ -2523,22 +2523,22 @@ class PaperSearch extends MessageSet {
         if ($user->privChair || $user->conf->setting("pc_seeallrev")) {
             return [];
         }
-        $noratings = [];
+        // This query should return those reviewIds whose ratings
+        // are not visible to the current querier:
+        // reviews by `$user` on papers with <=2 reviews and <=2 ratings
         $rateset = $user->conf->setting("rev_rating");
         if ($rateset == REV_RATINGS_PC) {
             $npr_constraint = "reviewType>" . REVIEW_EXTERNAL;
         } else {
             $npr_constraint = "true";
         }
-        // This query supposedly returns those reviewIds whose ratings
-        // are not visible to the current querier
-        $result = $user->conf->qe("select MPR.reviewId
-        from PaperReview as MPR
-        left join (select paperId, count(reviewId) as numReviews from PaperReview where $npr_constraint and reviewNeedsSubmit=0 group by paperId) as NPR on (NPR.paperId=MPR.paperId)
-        left join (select paperId, count(rating) as numRatings from PaperReview join ReviewRating using (paperId,reviewId) group by paperId) as NRR on (NRR.paperId=MPR.paperId)
-        where MPR.contactId={$user->contactId}
-        and numReviews<=2
-        and numRatings<=2");
+        $result = $user->conf->qe("select r.reviewId,
+            coalesce((select count(*) from ReviewRating force index (primary) where paperId=r.paperId),0) numRatings,
+            coalesce((select count(*) from PaperReview r force index (primary) where paperId=r.paperId and reviewNeedsSubmit=0 and {$npr_constraint}),0) numReviews
+            from PaperReview r
+            join ReviewRating rr on (rr.paperId=r.paperId and rr.reviewId=r.reviewId)
+            where r.contactId={$user->contactId}
+            having numReviews<=2 and numRatings<=2");
         return Dbl::fetch_first_columns($result);
     }
 
@@ -2632,7 +2632,7 @@ class PaperSearch extends MessageSet {
             || ($this->user->privChair
                 && $this->conf->has_any_manager()
                 && $this->conf->tags()->has_sitewide)) {
-            $sqi->add_column("paperTags", "coalesce((select group_concat(' ', tag, '#', tagIndex separator '') from PaperTag where PaperTag.paperId=Paper.paperId), '')");
+            $sqi->add_column("paperTags", "coalesce((select group_concat(' ', tag, '#', tagIndex separator '') from PaperTag force index (primary) where PaperTag.paperId=Paper.paperId), '')");
         }
         if ($sqi->query_options["reviewSignatures"] ?? false) {
             $sqi->add_review_signature_columns();
