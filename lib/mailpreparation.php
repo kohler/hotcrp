@@ -43,12 +43,14 @@ class MailPreparation implements JsonSerializable {
             }
         }
     }
+
     /** @param string $email */
     static function valid_email($email) {
         return ($at = strpos($email, "@")) !== false
             && ((($ch = $email[$at + 1]) !== "_" && $ch !== "e" && $ch !== "E")
                 || !preg_match('/\G(?:_.*|example\.(?:com|net|org))\z/i', $email, $m, 0, $at + 1));
     }
+
     /** @param MailPreparation $p
      * @return bool */
     function can_merge($p) {
@@ -62,6 +64,7 @@ class MailPreparation implements JsonSerializable {
             && empty($this->errors)
             && empty($p->errors);
     }
+
     /** @param MailPreparation $p
      * @return bool */
     function contains_all_recipients($p) {
@@ -71,6 +74,7 @@ class MailPreparation implements JsonSerializable {
         }
         return true;
     }
+
     /** @param MailPreparation $p */
     function merge($p) {
         foreach ($p->to as $dest) {
@@ -83,18 +87,22 @@ class MailPreparation implements JsonSerializable {
         }
         $this->_valid_recipient = $this->_valid_recipient && $p->_valid_recipient;
     }
+
     /** @return bool */
     function can_send_external() {
         return $this->conf->opt("sendEmail")
             && empty($this->errors)
             && $this->_valid_recipient;
     }
+
     /** @return bool */
     function can_send() {
         return $this->can_send_external()
             || (empty($this->errors) && !$this->sensitive)
             || $this->conf->opt("debugShowSensitiveEmail");
     }
+
+    /** @return bool */
     function send() {
         if ($this->conf->call_hooks("send_mail", null, $this) === false) {
             return false;
@@ -122,6 +130,11 @@ class MailPreparation implements JsonSerializable {
             if ($extra === null) {
                 $extra = "-f" . escapeshellarg($sender);
             }
+        }
+
+        // sign with DKIM
+        if (($dkim = $this->conf->dkim_signer())) {
+            $headers["dkim-signature"] = $dkim->signature($headers, $qpe_body, $eol);
         }
 
         if ($this->can_send_external()
@@ -163,6 +176,7 @@ class MailPreparation implements JsonSerializable {
 
         return $sent;
     }
+
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $j = [];

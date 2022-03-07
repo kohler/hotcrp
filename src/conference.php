@@ -186,12 +186,14 @@ class Conf {
     private $_mail_keyword_map;
     private $_mail_keyword_factories;
     private $_mail_template_map;
+    /** @var DKIMSigner|null|false */
+    private $_dkim_signer = false;
     /** @var ?ComponentSet */
     private $_page_components;
 
     /** @var ?PaperInfo */
     public $paper; // current paper row
-    /** @var null|false|SessionList */
+    /** @var SessionList|null|false */
     private $_active_list = false;
 
     /** @var Conf */
@@ -639,6 +641,7 @@ class Conf {
         if (($eol = $this->opt["postfixMailer"] ?? $this->opt["postfixEOL"] ?? false)) {
             $this->opt["postfixEOL"] = is_string($eol) ? $eol : PHP_EOL;
         }
+        $this->_dkim_signer = false;
 
         // other caches
         $sort_by_last = !!($this->opt["sortByLastName"] ?? false);
@@ -5443,7 +5446,7 @@ class Conf {
     }
 
 
-    // mail keywords
+    // mail: keywords, templates, DKIM
 
     function _add_mail_keyword_json($fj) {
         if (isset($fj->name) && is_string($fj->name)) {
@@ -5455,6 +5458,7 @@ class Conf {
             return false;
         }
     }
+
     private function mail_keyword_map() {
         if ($this->_mail_keyword_map === null) {
             $this->_mail_keyword_map = $this->_mail_keyword_factories = [];
@@ -5466,6 +5470,7 @@ class Conf {
         }
         return $this->_mail_keyword_map;
     }
+
     /** @return list<object> */
     function mail_keywords($name) {
         $uf = $this->xt_search_name($this->mail_keyword_map(), $name, null);
@@ -5473,8 +5478,6 @@ class Conf {
         return array_values(array_filter($ufs, "Conf::xt_resolve_require"));
     }
 
-
-    // mail templates
 
     function _add_mail_template_json($fj) {
         if (isset($fj->name) && is_string($fj->name)) {
@@ -5486,6 +5489,7 @@ class Conf {
             return false;
         }
     }
+
     /** @return array<string,list<object>> */
     function mail_template_map() {
         if ($this->_mail_template_map === null) {
@@ -5500,6 +5504,7 @@ class Conf {
         }
         return $this->_mail_template_map;
     }
+
     /** @param string $name
      * @param bool $default_only
      * @param ?Contact $user
@@ -5526,6 +5531,18 @@ class Conf {
             }
         }
         return $uf;
+    }
+
+    /** @return ?DKIMSigner */
+    function dkim_signer() {
+        if ($this->_dkim_signer === false) {
+            if (($dkim = $this->opt("dkimConfig"))) {
+                $this->_dkim_signer = DKIMSigner::make($dkim);
+            } else {
+                $this->_dkim_signer = null;
+            }
+        }
+        return $this->_dkim_signer;
     }
 
 

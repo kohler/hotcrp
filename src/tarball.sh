@@ -135,6 +135,7 @@ lib/csv.php
 lib/curls3result.php
 lib/dbhelper.sh
 lib/dbl.php
+lib/dkimsigner.php
 lib/filer.php
 lib/getopt.php
 lib/gmpshim.php

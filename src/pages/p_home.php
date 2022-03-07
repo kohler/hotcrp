@@ -460,8 +460,9 @@ class Home_Page {
         $conf = $user->conf;
         if (!$user->is_requester()
             && !$user->has_review_pending_approval()
-            && !$user->has_proposal_pending())
+            && !$user->has_proposal_pending()) {
             return;
+        }
 
         echo '<div class="homegrp">', $this->print_h2_home("Requested Reviews");
         if ($user->has_review_pending_approval()) {
@@ -481,8 +482,9 @@ class Home_Page {
         if (!$user->is_author()
             && $conf->time_start_paper() <= 0
             && !$user->privChair
-            && $user->is_reviewer())
+            && $user->is_reviewer()) {
             return;
+        }
 
         echo '<div class="homegrp" id="homeau">',
             $this->print_h2_home($user->is_author() ? "Your Submissions" : "Submissions");
