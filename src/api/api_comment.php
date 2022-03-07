@@ -156,6 +156,15 @@ class Comment_API {
             // generate save response
             if ($ok) {
                 $mis[] = self::save_success_message($xcrow);
+                if ($xcrow
+                    && $xcrow->notified_authors
+                    && !$prow->has_author($suser)) {
+                    if ($user->allow_view_authors($prow)) {
+                        $mis[] = MessageItem::success($user->conf->_("<0>Notified submission authors", count($prow->author_list())));
+                    } else {
+                        $mis[] = MessageItem::success($user->conf->_("<0>Notified submission author(s)"));
+                    }
+                }
                 if ($xcrow && $xcrow->saved_mentions) {
                     $mis[] = MessageItem::success($user->conf->_("<5>Notified mentioned users %#s", array_values($xcrow->saved_mentions)));
                 }

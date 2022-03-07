@@ -964,7 +964,8 @@ class Contact {
         return $items;
     }
 
-    /** @param ReviewInfo|Author|Contact $user */
+    /** @param ''|'t'|'u'|'r' $pfx
+     * @param ReviewInfo|Author|Contact $user */
     private function calculate_name_for($pfx, $user) {
         if ($pfx === "u") {
             return $user;
@@ -994,7 +995,8 @@ class Contact {
         return $n;
     }
 
-    /** @param Contact|ReviewInfo|int $x
+    /** @param ''|'t'|'u'|'r' $pfx
+     * @param Contact|ReviewInfo|int $x
      * @return mixed */
     private function name_for($pfx, $x) {
         $cid = is_object($x) ? (int) $x->contactId : (int) $x;

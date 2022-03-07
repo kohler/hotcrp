@@ -218,7 +218,9 @@ class Status_Assigner extends Assigner {
         ];
 
         // email contact authors
-        HotCRPMailer::send_contacts($tmpl, $prow, $rest + ["infoNames" => 1]);
+        HotCRPMailer::send_contacts($tmpl, $prow, $rest + [
+            "confirm_message_for" => $tmpl === "@adminwithdraw" ? $aset->user : null
+        ]);
 
         // email reviewers
         foreach ($prow->reviewers_as_display() as $minic) {

@@ -539,16 +539,19 @@ class HotCRPMailer extends Mailer {
         return $answer;
     }
 
-    /** @param Contact $recipient */
+    /** @param Contact $recipient
+     * @return bool */
     static function send_to($recipient, $template, $rest = []) {
         if (($prep = self::prepare_to($recipient, $template, $rest))) {
             $prep->send();
         }
+        return !!$prep;
     }
 
-    /** @param PaperInfo $row */
+    /** @param string $template
+     * @param PaperInfo $row
+     * @return bool */
     static function send_contacts($template, $row, $rest = []) {
-        global $Me;
         $preps = $contacts = [];
         $rest["prow"] = $row;
         $rest["combination_type"] = 1;
@@ -561,25 +564,23 @@ class HotCRPMailer extends Mailer {
             }
         }
         self::send_combined_preparations($preps);
-
-        if ($Me
-            && $Me->allow_administer($row)
-            && !$row->has_author($Me)
-            && !empty($contacts)) {
-            $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");
-            if (isset($rest["infoNames"]) && $Me->allow_administer($row)) {
-                $contactsmsg = pluralx($contacts, "contact") . ", " . commajoin($contacts);
+        if (!empty($contacts) && ($user = $rest["confirm_message_for"] ?? null)) {
+            '@phan-var-force Contact $user';
+            if ($user->allow_view_authors($row)) {
+                $m = $row->conf->_("<5>Notified submission contacts %#s", array_map(function ($u) {
+                    return "<span class=\"nb\">{$u}</span>";
+                }, $contacts));
             } else {
-                $contactsmsg = "contact(s)";
+                $m = $row->conf->_("<0>Notified submission contact(s)");
             }
-            $row->conf->infoMsg("Sent email to paper #{$row->paperId}’s $contactsmsg$endmsg");
+            $row->conf->success_msg($m);
         }
         return !empty($contacts);
     }
 
     /** @param PaperInfo $row */
     static function send_administrators($template, $row, $rest = []) {
-        $preps = array();
+        $preps = [];
         $rest["prow"] = $row;
         $rest["combination_type"] = 1;
         foreach ($row->administrators() as $u) {

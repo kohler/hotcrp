@@ -31,7 +31,9 @@
     ["<0>You must select at least %d topics", "<0>You must select at least 1 topic", ["$1=1"]],
     ["<0>You may select at most %d topics", "<0>You may select at most 1 topic", ["$1=1"]],
     ["<0>Unknown options ignored (%#s)", "<0>Unknown option ignored (%#s)", ["#$1=1"]],
+    ["<0>Notified submission authors", "<0>Notified submission author", ["$1=1"]],
     ["<5>Notified mentioned users %#s", "<5>Notified mentioned user %#s", ["#$1=1"]],
+    ["<5>Notified submission contacts %#s", "<5>Notified submission contact %#s", ["#$1=1"]],
 
     ["field", "title", "Title"],
     ["field", "submission", "Submission"],

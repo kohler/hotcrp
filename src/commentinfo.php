@@ -52,10 +52,13 @@ class CommentInfo {
     public $affiliation;
     /** @var ?string */
     public $email;
+
     /** @var ?array<int,string> */
     public $saved_mentions;
     /** @var ?bool */
     public $saved_mentions_missing;
+    /** @var ?bool */
+    public $notified_authors;
 
     const CT_DRAFT = 1;
     const CT_BLIND = 2;
@@ -659,6 +662,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
     function save_comment($req, Contact $acting_user) {
         $this->saved_mentions = [];
         $this->saved_mentions_missing = false;
+        $this->notified_authors = false;
 
         $user = $acting_user;
         if (!$user->contactId) {
@@ -947,7 +951,12 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             foreach ($this->followers() as $minic) {
                 if ($minic->contactId !== $user->contactId
                     && !isset($this->saved_mentions[$minic->contactId])) {
-                    HotCRPMailer::send_to($minic, $tmpl, ["prow" => $this->prow, "comment_row" => $this]);
+                    $sent = HotCRPMailer::send_to($minic, $tmpl, [
+                        "prow" => $this->prow, "comment_row" => $this
+                    ]);
+                    if ($this->prow->has_author($minic) && $sent) {
+                        $this->notified_authors = true;
+                    }
                 }
             }
         }

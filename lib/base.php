@@ -111,9 +111,17 @@ function commajoin($what, $joinword = "and") {
     } else if ($c === 1) {
         return $what[0];
     } else if ($c === 2) {
-        return $what[0] . " " . $joinword . " " . $what[1];
+        return "{$what[0]} {$joinword} {$what[1]}";
     } else {
-        return join(", ", array_slice($what, 0, -1)) . ", " . $joinword . " " . $what[$c - 1];
+        $last = array_pop($what);
+        foreach ($what as &$w) {
+            if (str_ends_with($w, "</span>")) {
+                $w = substr($w, 0, -7) . ",</span>";
+            } else {
+                $w .= ",";
+            }
+        }
+        return join(" ", $what) . " {$joinword} {$last}";
     }
 }
 

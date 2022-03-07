@@ -106,7 +106,10 @@ class Paper_Page {
         } else {
             // mail first, before contact info goes away
             if ($this->qreq->doemail) {
-                HotCRPMailer::send_contacts("@deletepaper", $this->prow, ["reason" => (string) $this->qreq->emailNote, "infoNames" => 1]);
+                HotCRPMailer::send_contacts("@deletepaper", $this->prow, [
+                    "reason" => (string) $this->qreq->emailNote,
+                    "confirm_message_for" => $this->user
+                ]);
             }
             if ($this->prow->delete_from_database($this->user)) {
                 $this->conf->success_msg("<0>Submission #{$this->prow->paperId} deleted");
@@ -294,9 +297,10 @@ class Paper_Page {
         // mail confirmation to all contact authors if changed
         if ($this->ps->has_change()) {
             if (!$this->user->can_administer($new_prow) || $this->qreq->doemail) {
-                $options = ["infoNames" => 1];
+                $options = [];
                 if ($this->user->can_administer($new_prow)) {
                     if (!$new_prow->has_author($this->user)) {
+                        $options["confirm_message_for"] = $this->user;
                         $options["adminupdate"] = true;
                     }
                     if (isset($this->qreq->emailNote)) {

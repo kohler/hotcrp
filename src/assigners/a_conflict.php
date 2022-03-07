@@ -174,9 +174,9 @@ class Conflict_Assigner extends Assigner {
             $uname = $state->user_by_id($cid)->name(NAME_E);
             if (isset($item["_override"])
                 && $state->user->can_administer($state->prow($pid))) {
-                $state->msg_near($item->landmark, "<0>Overriding {$uname} conflict with #{$pid}.", 1);
+                $state->msg_near($item->landmark, "<0>Overriding {$uname} conflict with #{$pid}", 1);
             } else {
-                $state->msg_near($item->landmark, "<0>{$uname} has a conflict with #{$pid}.", 2);
+                $state->msg_near($item->landmark, "<0>{$uname} has a conflict with #{$pid}", 2);
                 if (($state->flags & AssignmentState::FLAG_CSV_CONTEXT) !== 0
                     && $state->user->allow_administer($state->prow($pid))) {
                     $state->msg_near($item->landmark, "<0>Set an “override” column to “yes” to assign the " . $item["type"] . " anyway.", MessageSet::INFORM);
@@ -187,7 +187,7 @@ class Conflict_Assigner extends Assigner {
                    && ($u = $state->user_by_id($cid))
                    && ($potconf = $state->prow($pid)->potential_conflict_html($u))) {
             $uname = $u->name(NAME_E);
-            $state->msg_near($item->landmark, "<0>{$uname} has a potential conflict with #{$pid}.", 1);
+            $state->msg_near($item->landmark, "<0>{$uname} has a potential conflict with #{$pid}", 1);
             foreach ($potconf[1] as $confhtml) {
                 $state->msg_near($item->landmark, "<5>{$confhtml}", MessageSet::INFORM);
             }
