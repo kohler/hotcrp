@@ -111,7 +111,9 @@ class BulkAssign_Page {
 
         $atype = $aset->type_description();
         echo '<h3>Proposed ', $atype ? $atype . " " : "", 'assignment</h3>';
-        $this->conf->infoMsg("Select “Apply changes” if this looks OK. (You can always alter the assignment afterwards.)");
+        $this->conf->feedback_msg(
+            new MessageItem(null, "Select “Apply changes” to make the checked assignments.", MessageSet::MARKED_NOTE)
+        );
 
         $atypes = $aset->assigned_types();
         $apids = $aset->numjoin_assigned_pids(" ");

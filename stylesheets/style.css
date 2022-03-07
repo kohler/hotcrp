@@ -660,7 +660,8 @@ body.paper > #body {
 	margin-left: 24px;
 	margin-right: 24px;
 }
-#msgs-initial > .msg {
+#msgs-initial > .msg,
+.msgs-wide > .msg {
 	margin-left: auto;
 	margin-right: auto;
 }
@@ -1121,6 +1122,15 @@ a.closebtn {
 	border-radius: 0;
 }
 
+fieldset {
+	border: 1px solid #9999cc;
+	border-radius: 4px;
+}
+legend {
+	font-weight: 500;
+	padding-left: 4px;
+	padding-right: 4px;
+}
 .select {
 	display: inline-block;
 	text-indent: 0;
@@ -1740,13 +1750,17 @@ label.f-c, .f-i > label {
 .entry > .f-h:last-child {
 	margin-bottom: 0;
 }
-.f-mcol {
+.f-mcol, .f-eqcol {
 	display: flex;
 	flex-wrap: wrap;
 	column-gap: 24px;
 }
 .f-mcol > * {
 	flex-grow: 1;
+}
+.f-eqcol > * {
+	flex-grow: 1;
+	flex-basis: 0;
 }
 
 

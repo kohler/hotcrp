@@ -235,7 +235,10 @@ class AutoassignerInterface extends MessageSet {
 
         $atype = $assignset->type_description();
         echo "<h3 class=\"form-h\">Proposed " . ($atype ? $atype . " " : "") . "assignment</h3>";
-        Conf::msg_info("Select “Apply changes” if this looks OK. (You can always alter the assignment afterwards.) Reviewer preferences, if any, are shown as “P#”.");
+        $this->conf->feedback_msg(
+            new MessageItem(null, "Select “Apply changes” to make the checked assignments.", MessageSet::MARKED_NOTE),
+            MessageItem::inform("Reviewer preferences, if any, are shown as “P#”.")
+        );
         $assignset->report_errors();
 
         return $assignset->unparse_paper_column();

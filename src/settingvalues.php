@@ -1441,11 +1441,11 @@ class SettingValues extends MessageSet {
             }
             if (!empty($dv)) {
                 $this->conf->qe("delete from Settings where name?a", $dv);
-                //Conf::msg_info(Ht::pre_text_wrap(Dbl::format_query("delete from Settings where name?a", $dv)));
+                //Conf::msg_debugt(Dbl::format_query("delete from Settings where name?a", $dv));
             }
             if (!empty($av)) {
                 $this->conf->qe("insert into Settings (name, value, data) values ?v ?U on duplicate key update value=?U(value), data=?U(data)", $av);
-                //Conf::msg_info(Ht::pre_text_wrap(Dbl::format_query("insert into Settings (name, value, data) values ?v ?U on duplicate key update value=?U(value), data=?U(data)", $av)));
+                //Conf::msg_debugt(Dbl::format_query("insert into Settings (name, value, data) values ?v ?U on duplicate key update value=?U(value), data=?U(data)", $av));
             }
 
             $this->conf->qe_raw("unlock tables");

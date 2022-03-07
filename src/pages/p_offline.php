@@ -97,72 +97,66 @@ class Offline_Page {
 
     function print() {
         $conf = $this->conf;
-
         $conf->header("Offline reviewing", "offline");
 
-        $conf->infoMsg("Use this page to download a blank review form, or to upload review forms you’ve already filled out.");
+        echo '<p>Use this page to download review forms, or to upload review forms you’ve already filled out.</p>';
         if (!$this->user->can_clickthrough("review")) {
             echo '<div class="js-clickthrough-container">';
             PaperTable::print_review_clickthrough();
             echo '</div>';
         }
 
-
-        echo '<table id="offlineform">';
-
         // Review forms
-        echo "<tr><td><h3>Download forms</h3>\n<div>";
-        echo '<a href="', $conf->hoturl("search", "fn=get&amp;getfn=revform&amp;q=&amp;t=r&amp;p=all"), '">Your reviews</a><br>', "\n";
+        echo '<div class="f-eqcol">';
+        echo '<fieldset class="f-i"><legend>Download forms</legend>',
+            '<ul class="x mb-2">',
+            '<li><a href="', $conf->hoturl("search", "fn=get&amp;getfn=revform&amp;q=&amp;t=r&amp;p=all"), '">Your reviews</a></li>';
         if ($this->user->has_outstanding_review()) {
-            echo '<a href="', $conf->hoturl("search", "fn=get&amp;getfn=revform&amp;q=&amp;t=rout&amp;p=all"), '">Your incomplete reviews</a><br>', "\n";
+            echo '<li><a href="', $conf->hoturl("search", "fn=get&amp;getfn=revform&amp;q=&amp;t=rout&amp;p=all"), '">Your incomplete reviews</a></li>';
         }
-        echo '<a href="', $conf->hoturl("offline", "download=1"), '">Blank form</a></div>
-<hr class="g">
-<span class="hint"><strong>Tip:</strong> Use <a href="', $conf->hoturl("search", "q="), '">Search</a> &gt; Download to choose individual papers.</span>', "\n";
-        echo "</td>\n";
+        echo '<li><a href="', $conf->hoturl("offline", "download=1"), '">Blank form</a></li>',
+            '</ul>
+<div class="f-h"><strong>Tip:</strong> Use <a href="', $conf->hoturl("search", "q="), '">Search</a> &gt; Download to choose individual papers.</div>',
+            "</fieldset>";
 
         $pastDeadline = !$conf->time_review(null, $this->user->isPC, true);
         $dldisabled = $pastDeadline && !$this->user->privChair ? " disabled" : "";
 
-        echo "<td><h3>Upload filled-out forms</h3>\n",
-            Ht::form($conf->hoturl("=offline", "upload=1")),
+        echo '<fieldset class="f-i" form="offlineform"><legend><label for="uploader">Upload filled-out forms</label></legend>',
+            Ht::form($conf->hoturl("=offline", "upload=1"), ["id" => "offlineform"]),
             Ht::hidden("postnonempty", 1),
-            '<input type="file" name="file" accept="text/plain" size="30"', $dldisabled, '>&nbsp; ',
+            '<input id="uploader" type="file" name="file" accept="text/plain" size="30"', $dldisabled, '>&nbsp; ',
             Ht::submit("Go", ["disabled" => !!$dldisabled]);
         if ($pastDeadline && $this->user->privChair) {
             echo '<label class="checki"><span class="checkc">', Ht::checkbox("override"), '</span>Override deadlines</label>';
         }
-        echo '<br><span class="hint"><strong>Tip:</strong> You may upload a file containing several forms.</span>';
-        echo "</form></td>\n";
-        echo "</tr>\n";
-
+        echo '<div class="f-h"><strong>Tip:</strong> You may upload a file containing several forms.</div>';
+        echo "</form></fieldset></div>";
 
         // Ranks
         if ($conf->setting("tag_rank")) {
             $ranktag = $conf->setting_data("tag_rank");
-            echo '<tr><td><hr class="g"></td></tr>', "\n",
-                "<tr><td><h3>Download ranking file</h3>\n<div>";
-            echo "<a href=\"", $conf->hoturl("search", "fn=get&amp;getfn=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=r&amp;p=all"), "\">Your reviews</a>";
+            echo '<div class="f-eqcol">',
+                '<fieldset class="f-i"><legend>Download ranking file</legend>',
+                '<ul class="x mb-2">',
+                '<li><a href="', $conf->hoturl("search", "fn=get&amp;getfn=rank&amp;tag=%7E{$ranktag}&amp;q=&amp;t=r&amp;p=all"), '">Your reviews</a></li>';
             if ($this->user->isPC) {
-                echo "<br />\n<a href=\"", $conf->hoturl("search", "fn=get&amp;getfn=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=s&amp;p=all"), "\">All submitted papers</a>";
+                echo "<li><a href=\"", $conf->hoturl("search", "fn=get&amp;getfn=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=s&amp;p=all"), "\">All submitted papers</a></li>";
             }
-            echo "</div></td>\n";
+            echo '</ul></fieldset>', "\n";
 
-            echo "<td><h3>Upload ranking file</h3>\n",
-                Ht::form($conf->hoturl("=offline", "setrank=1&amp;tag=%7E$ranktag")),
+            echo '<fieldset class="f-i" form="upload', $ranktag, 'form"><legend><label for="rank', $ranktag, 'uploader">Upload ranking file</label></legend>',
+                Ht::form($conf->hoturl("=offline", "setrank=1&amp;tag=%7E$ranktag"), ["id" => "upload{$ranktag}form"]),
                 Ht::hidden("upload", 1),
-                '<input type="file" name="file" accept="text/plain" size="30"', $dldisabled, '>&nbsp; ',
+                '<input id="rank', $ranktag, 'uploader" type="file" name="file" accept="text/plain" size="30"', $dldisabled, '>&nbsp; ',
                 Ht::submit("Go", array("disabled" => !!$dldisabled));
             if ($pastDeadline && $this->user->privChair) {
-            echo '<label class="checki"><span class="checkc">', Ht::checkbox("override"), '</span>Override deadlines</label>';
+                echo '<label class="checki"><span class="checkc">', Ht::checkbox("override"), '</span>Override deadlines</label>';
             }
-            echo '<br><span class="hint"><strong>Tip:</strong> Use “<a href="', $conf->hoturl("search", "q=" . urlencode("editsort:#~$ranktag")), '">editsort:#~', $ranktag, '</a>” to drag and drop your ranking.</span>';
-            echo '<br><span class="hint"><strong>Tip:</strong> “<a href="', $conf->hoturl("search", "q=order:%7E$ranktag"), '">order:~', $ranktag, '</a>” searches by your ranking.</span>';
-            echo "</form></td>\n";
-            echo "</tr>\n";
+            echo '<div class="f-h"><strong>Tip:</strong> Search “<a href="', $conf->hoturl("search", "q=" . urlencode("editsort:#~$ranktag")), '">editsort:#~', $ranktag, '</a>” to drag and drop your ranking.</span><br>',
+                '“<a href="', $conf->hoturl("search", "q=order:%23%7E$ranktag"), '">order:#~', $ranktag, '</a>” searches by your ranking.</div>',
+                '</form></fieldset></div>';
         }
-
-        echo "</table>\n";
 
         $conf->footer();
     }

@@ -374,7 +374,7 @@ class Users_Page {
     }
 
     private function print_query_form(ContactList $pl) {
-        echo '<table id="contactsform">
+        echo '<table id="contactsform" class="mb-2">
 <tr><td><div class="tlx"><div class="tld is-tla active" id="tla-default">';
 
         echo Ht::form($this->conf->hoturl("users"), ["method" => "get"]);
