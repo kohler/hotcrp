@@ -304,9 +304,6 @@ class PaperList implements XtContext {
 
         $this->_report_id = $report;
         $this->parse_view($this->_list_columns(), self::VIEWORIGIN_REPORT);
-        if ($this->viewable_author_types() === 1) {
-            $this->set_view("anonau", true, self::VIEWORIGIN_REPORT);
-        }
 
         if ($this->_sortable) {
             if (is_string($sortarg)) {
