@@ -299,7 +299,6 @@ a.attention {
 a.btn {
 	cursor: default;
 }
-.nou, .nou:hover, /* XXX */
 .noul, .noul:hover,
 a.ulh, a.q, a.qo, a.btn, a.btn:hover,
 .papmode.active > a, .papmode.active:hover > a.noul, .leftmenu-item > a,
