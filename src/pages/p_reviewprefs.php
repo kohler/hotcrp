@@ -52,7 +52,11 @@ class ReviewPrefs_Page {
         $conf = $user->conf;
 
         $conf->header("Review preferences", "revpref");
-        $conf->infoMsg($conf->_i("revprefdescription", null, $conf->has_topics()));
+
+        if (($prefdesc = $conf->_i("revprefdescription", null, $conf->has_topics()))) {
+            echo '<div class="msg demargin remargin">',
+                $prefdesc, '</div>';
+        }
 
         $search = (new PaperSearch($user, [
             "t" => $qreq->t, "q" => $qreq->q, "reviewer" => $reviewer

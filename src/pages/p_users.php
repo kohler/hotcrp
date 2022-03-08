@@ -374,14 +374,14 @@ class Users_Page {
     }
 
     private function print_query_form(ContactList $pl) {
-        echo '<table id="contactsform" class="mb-2">
+        echo '<table id="contactsform" class="mb-3">
 <tr><td><div class="tlx"><div class="tld is-tla active" id="tla-default">';
 
         echo Ht::form($this->conf->hoturl("users"), ["method" => "get"]);
         if (isset($this->qreq->sort)) {
             echo Ht::hidden("sort", $this->qreq->sort);
         }
-        echo Ht::select("t", $this->limits, $this->qreq->t, ["class" => "want-focus"]),
+        echo Ht::select("t", $this->limits, $this->qreq->t, ["class" => "want-focus uich js-users-selection"]),
             " &nbsp;", Ht::submit("Go"), "</form>";
 
         echo '</div><div class="tld is-tla" id="tla-view">';
@@ -453,6 +453,14 @@ class Users_Page {
     }
 
 
+    private function print_pre_list_links(...$msgs) {
+        echo '<div class="msg demargin remargin"><div class="mx-auto"><ul class="inline">';
+        foreach ($msgs as $m) {
+            echo '<li>', $m, '</li>';
+        }
+        echo '</ul></div></div>';
+    }
+
     private function print() {
         if ($this->qreq->t === "pc") {
             $title = "Program committee";
@@ -474,10 +482,18 @@ class Users_Page {
             $this->print_query_form($pl);
         }
 
-        if ($this->viewer->privChair && $this->qreq->t == "pc") {
-            $this->conf->infoMsg('<p><a href="' . $this->conf->hoturl("profile", "u=new&amp;role=pc") . '" class="btn">Create accounts</a></p>Select a PC member’s name to edit their profile or remove them from the PC.');
-        } else if ($this->viewer->privChair && $this->qreq->t == "all") {
-            $this->conf->infoMsg('<p><a href="' . $this->conf->hoturl("profile", "u=new") . '" class="btn">Create accounts</a></p>Select a user to edit their profile.  Select ' . Ht::img("viewas.png", "[Act as]") . ' to view the site as that user would see it.');
+        if ($this->viewer->privChair) {
+            if ($this->qreq->t === "pc") {
+                $this->print_pre_list_links('<a href="' . $this->conf->hoturl("profile", "u=new&amp;role=pc") . '" class="btn">Add accounts</a>',
+                    'Select a user to edit their profile or remove them from the PC.');
+            } else if (str_starts_with($this->qreq->t, "#")) {
+                $this->print_pre_list_links('<a href="' . $this->conf->hoturl("profile", "u=new&amp;role=pc&amp;tags=" . urlencode(substr($this->qreq->t, 1))) . '" class="btn">Add accounts</a>',
+                    'Select a user to edit their profile or remove them from the PC.');
+            } else if ($this->qreq->t === "all") {
+                $this->print_pre_list_links('<a href="' . $this->conf->hoturl("profile", "u=new") . '" class="btn">Add accounts</a>',
+                    'Select a user to edit their profile.',
+                    'Select ' . Ht::img("viewas.png", "[Act as]") . ' to view the site as that user.');
+            }
         }
 
         if ($pl->any->sel) {

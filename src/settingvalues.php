@@ -1077,7 +1077,7 @@ class SettingValues extends MessageSet {
             $this->label($name, $description),
             ' <span class="n fx">(HTML allowed)</span></div>',
             $this->feedback_at($name),
-            $this->textarea($name, ["class" => "fx"]),
+            $this->textarea($name, ["class" => "fx w-text"]),
             $hint, "</div>\n";
     }
 

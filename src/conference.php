@@ -4208,12 +4208,14 @@ class Conf {
         $this->feedback_msg(MessageItem::success($msg));
     }
 
-    /** @param string|list<string> $text */
+    /** @param string|list<string> $text
+     * @deprecated */
     function infoMsg($text, $minimal = false) {
         self::msg_on($this, $text, $minimal ? "xinfo" : "info");
     }
 
-    /** @param string|list<string> $text */
+    /** @param string|list<string> $text
+     * @deprecated */
     static function msg_info($text, $minimal = false) {
         self::msg_on(self::$main, $text, $minimal ? "xinfo" : "info");
     }
@@ -4223,7 +4225,7 @@ class Conf {
         if (is_object($text) || is_array($text) || $text === null || $text === false || $text === true) {
             $text = json_encode_browser($text);
         }
-        self::msg_on(self::$main, Ht::pre_text_wrap($text), "merror");
+        self::msg_on(self::$main, Ht::pre_text_wrap($text), 2);
         return false;
     }
 

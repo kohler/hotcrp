@@ -519,9 +519,12 @@ class Profile_Page {
         }
         if ($this->viewer->privChair
             && $this->page_type !== 0
-            && empty($this->ustatus->jval->roles)
-            && in_array($this->qreq->role, ["pc", "chair"])) {
-            $this->ustatus->jval->roles = [$this->qreq->role];
+            && empty($this->ustatus->jval->roles)) {
+            if (in_array($this->qreq->role, ["pc", "chair"])) {
+                $this->qreq->pctype = $this->qreq->role;
+            } else if ($this->qreq->role === "sysadmin") {
+                $this->qreq->ass = "1";
+            }
         }
 
         // crosscheck

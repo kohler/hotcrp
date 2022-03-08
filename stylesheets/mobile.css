@@ -70,6 +70,9 @@ body.paper > #top {
 	display: flex;
 	flex-direction: column;
 }
+.avoid-home-sidebar {
+	max-width: initial;
+}
 .home-sidebar {
 	float: none;
 	margin-left: 0;

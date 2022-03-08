@@ -5,6 +5,8 @@
 class Home_Page {
     /** @var int */
     private $_nh2 = 0;
+    /** @var bool */
+    private $_has_sidebar = false;
     private $_in_reviews;
     /** @var ?list<ReviewField> */
     private $_rfs;
@@ -88,10 +90,15 @@ class Home_Page {
         }
     }
 
-    static function print_content(Contact $user, Qrequest $qreq, $gx) {
-        echo '<div class="home-content"><div class="home-sidebar">';
+    function print_content(Contact $user, Qrequest $qreq, $gx) {
+        echo '<div class="home-content">';
+        ob_start();
         $gx->print_group("home/sidebar");
-        echo '</div><div class="home-main">';
+        if (($t = ob_get_clean()) !== "") {
+            echo '<div class="home-sidebar">', $t, '</div>';
+            $this->_has_sidebar = true;
+        }
+        echo '<div class="home-main">';
         $gx->print_group("home/main");
         echo "</div></div>\n";
     }
@@ -157,7 +164,9 @@ class Home_Page {
 
     function print_message(Contact $user) {
         if (($t = $user->conf->_i("home"))) {
-            Conf::msg_on($user->conf, $t, 0);
+            echo '<div class="msg ',
+                $this->_has_sidebar ? 'avoid-home-sidebar' : 'maxw-auto',
+                ' mb-5">', $t, '</div>';
         }
     }
 

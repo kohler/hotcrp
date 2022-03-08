@@ -87,16 +87,11 @@ class MergeAccounts_Page {
     private function print() {
         $this->conf->header("Merge accounts", "mergeaccounts");
 
-        $this->conf->infoMsg(
-    "You may have multiple accounts registered with the "
-    . htmlspecialchars($this->conf->short_name) . " conference; perhaps "
-    . "multiple people asked you to review a paper using "
-    . "different email addresses. "
-    . "If you have been informed of multiple accounts, "
-    . "enter the email address and the password "
-    . "of the secondary account. This will merge all the information from "
-    . "that account into this one. "
-        );
+        echo '<div class="w-text"><p>',
+            'You may have multiple accounts registered; perhaps you were asked to review
+papers using different email addresses. This form will allow you to transfer information
+between accounts, including authorship, reviews, and PC status. (Note that the
+transfer will only affect information currently stored in this conference.)</p></div>';
 
         echo Ht::form($this->conf->hoturl("=mergeaccounts")),
             '<div class="', Ht::control_class("email", "f-i"), '">',

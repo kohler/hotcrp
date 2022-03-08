@@ -445,6 +445,10 @@ label.checki {
 	margin-bottom: 2.25em !important;
 	margin-bottom: 2.25rem !important;
 }
+.mb-7 {
+	margin-bottom: 5em !important;
+	margin-bottom: 5rem !important;
+}
 .mt-0 {
 	margin-top: 0 !important;
 }
@@ -509,6 +513,7 @@ label.checki {
 .mx-auto {
 	margin-left: auto !important;
 	margin-right: auto !important;
+	width: fit-content;
 }
 .mb-0-last-child > *:last-child {
 	margin-bottom: 0 !important;
@@ -663,6 +668,8 @@ body.paper > #body {
 .msgs-wide > .msg {
 	margin-left: auto;
 	margin-right: auto;
+	max-width: 80%;
+	width: fit-content;
 }
 
 
@@ -747,7 +754,11 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 	padding: 0.5em 0.85em;
 	max-width: 720px;
 }
+.msgx {
+	max-width: 720px;
+}
 .msg.mx-auto,
+.msgx.mx-auto,
 body.paper-error .msg {
 	width: fit-content;
 	margin-left: auto;
@@ -756,14 +767,15 @@ body.paper-error .msg {
 .msg + .msg {
 	margin-top: -0.5rem;
 }
-.msg > p {
+.msg > p, .msgx > p {
 	margin-bottom: 0.3em;
 }
-.msg > p:last-child, .msg > ul:last-child, .msg > ol:last-child, .msg > dl:last-child {
+.msg > p:last-child, .msg > ul:last-child, .msg > ol:last-child, .msg > dl:last-child,
+.msgx > p:last-child, .msgx > ul:last-child, .msgx > ol:last-child, .msgx > dl:last-child {
 	margin-bottom: 0;
 }
 .msg {
-	background: padding-box linear-gradient(#fbfdff, #fbfdff),
+	background: padding-box linear-gradient(#f2f9ff, #f2f9ff),
 		border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNkMmRhZGQiIC8+PHBvbHlsaW5lIHBvaW50cz0iLTEuNzkyOTcsNSwzLjIwNzAzLDAsNSwwLC0wLDUiIGZpbGw9IiM5MDlhYTUiIC8+PHBvbHlsaW5lIHBvaW50cz0iMy4yMDcwMyw1LDguMjA3MDMsMCwxMCwwLDUsNSIgZmlsbD0iIzkwOWFhNSIgLz48L3N2Zz4K) repeat;
 }
 .msg.msg-confirm, .msg.msg-success {
@@ -772,7 +784,7 @@ body.paper-error .msg {
 		border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNjOWZjYzkiIC8+PHBvbHlsaW5lIHBvaW50cz0iLTEuNzkyOTcsNSwzLjIwNzAzLDAsNSwwLC0wLDUiIGZpbGw9IiM1NWE4NTUiIC8+PHBvbHlsaW5lIHBvaW50cz0iMy4yMDcwMyw1LDguMjA3MDMsMCwxMCwwLDUsNSIgZmlsbD0iIzU1YTg1NSIgLz48L3N2Zz4K) repeat;
 }
 .msg.msg-warning {
-	border-width: 4px;
+	border-width: 3px;
 	background: padding-box linear-gradient(#ffffdd, #ffffdd),
 		border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2IiBoZWlnaHQ9IjYiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmZjAiIC8+PHBvbHlsaW5lIHBvaW50cz0iLTMsNiwzLDAsNiwwLDAsNiIgZmlsbD0iIzY5NjkwMyIgLz48cG9seWxpbmUgcG9pbnRzPSIzLDYsOSwwLDEyLDAsNiw2IiBmaWxsPSIjNjk2OTAzIiAvPjwvc3ZnPg==) repeat;
 }
@@ -780,6 +792,14 @@ body.paper-error .msg {
 	border-width: 6px;
 	background: padding-box linear-gradient(#ffeeee, #ffeeee),
 		border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiI+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YwMCIgLz48cG9seWxpbmUgcG9pbnRzPSItNiwxMiw2LDAsMTIsMCwwLDEyIiBmaWxsPSIjNDAwIiAvPjxwb2x5bGluZSBwb2ludHM9IjYsMTIsMTIsNiwxOCw2LDEyLDEyIiBmaWxsPSIjNDAwIiAvPjwvc3ZnPg==) repeat;
+}
+.msg.demargin, .msg.demargined {
+	border-left-width: 0;
+	border-right-width: 0;
+	border-radius: 0;
+	max-width: initial;
+	margin-top: 1rem;
+	margin-bottom: 1.5rem;
 }
 .msgs-small-inline {
 	margin: 0.25rem 0 0;
@@ -1042,12 +1062,15 @@ h2.home, h4.home {
 	font-size: 1.15rem;
 }
 .homegrp {
-	margin-bottom: 2.5rem;
+	margin-bottom: 2.25rem;
+}
+.avoid-home-sidebar {
+	max-width: calc(100% - 22rem);
 }
 .home-sidebar {
 	float: right;
 	position: relative;
-	width: 18em;
+	width: 18rem;
 	z-index: 1;
 	margin-bottom: 0.5rem;
 	margin-left: 2rem;
@@ -1733,6 +1756,9 @@ label.f-c, .f-i > label {
 	max-width: 720px;
 	margin-bottom: 0.3rem;
 }
+.msg .feedback-list {
+	max-width: initial;
+}
 .feedback-list > li {
 	margin-bottom: 0.3rem;
 }
@@ -1936,6 +1962,12 @@ img.check {
 }
 .w-entry-text {
 	max-width: 560px;
+}
+.w-fit-content {
+	width: fit-content;
+}
+.maxw-auto {
+	max-width: initial !important;
 }
 .maxw-480 {
 	max-width: 480px;

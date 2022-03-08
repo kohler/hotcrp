@@ -1175,8 +1175,8 @@ class UserStatus extends MessageSet {
             $cj->follow = (object) $follow;
         }
 
-        if (isset($qreq->contactTags) && $roles_pc && $us->viewer->privChair) {
-            $cj->tags = explode(" ", simplify_whitespace($qreq->contactTags));
+        if (isset($qreq->tags) && $roles_pc && $us->viewer->privChair) {
+            $cj->tags = explode(" ", simplify_whitespace($qreq->tags));
         }
 
         if (isset($qreq->has_ti) && $roles_pc && $us->viewer->isPC) {
@@ -1624,7 +1624,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         if ($us->viewer->privChair) {
             echo '<div class="', $us->control_class("tags", "f-i"), '">',
                 $us->feedback_html_at("tags"),
-                Ht::entry("contactTags", $us->qreq->contactTags ?? $itags, ["data-default-value" => $itags, "class" => "fullw"]),
+                Ht::entry("tags", $us->qreq->tags ?? $itags, ["data-default-value" => $itags, "class" => "fullw"]),
                 "</div>
   <p class=\"f-h\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href=\"", $us->conf->hoturl("settings", "group=tags"), "\">tag colors</a> to highlight subgroups in review lists.</p>\n";
         } else {

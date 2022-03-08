@@ -33,16 +33,8 @@
         "print_function": "*Home_Page::print_head"
     },
     {
-        "name": "home/message", "order": 1100,
-        "print_function": "*Home_Page::print_message"
-    },
-    {
-        "name": "home/welcome", "order": 1200, "allow_if": "!pc",
-        "print_function": "*Home_Page::print_welcome"
-    },
-    {
         "name": "home/content", "order": 1500,
-        "print_function": "Home_Page::print_content"
+        "print_function": "*Home_Page::print_content"
     },
 
     {
@@ -83,6 +75,11 @@
     },
 
 
+    [   "home/main/message", 1100, "*Home_Page::print_message"   ],
+    {
+        "name": "home/main/welcome", "order": 1200, "allow_if": "!pc",
+        "print_function": "*Home_Page::print_welcome"
+    },
     [   "home/main/signin", 3000, "*Home_Page::print_signin"   ],
     {
         "name": "home/main/search", "order": 4000,

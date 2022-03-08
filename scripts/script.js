@@ -9133,6 +9133,10 @@ if (siteinfo.paperid) {
 
 
 // profile UI
+handle_ui.on("js-users-selection", function () {
+    this.form.submit();
+});
+
 handle_ui.on("js-cannot-delete-user", function (event) {
     var hc = popup_skeleton({near: this});
     hc.push('<p><strong>This account cannot be deleted</strong> because they are the sole contact for ' + $(this).data("soleAuthor") + '. To delete the account, first remove those submissions from the database or give them more contacts.</p>');

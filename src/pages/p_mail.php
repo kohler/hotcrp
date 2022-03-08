@@ -191,7 +191,7 @@ class Mail_Page {
         $plist = new PaperList("reqrevs", new PaperSearch($this->viewer, ["t" => "req", "q" => ""]));
         $plist->set_table_id_class("foldpl", "fullw");
         if ($plist->is_empty()) {
-            $this->conf->infoMsg('You have not requested any external reviews. ' . Ht::link("Return home", $this->conf->hoturl("index")));
+            $this->conf->warning_msg("<5>You have not requested any external reviews. " . Ht::link("Return home", $this->conf->hoturl("index")));
         } else {
             echo "<h2>Requested reviews</h2>\n\n";
             $plist->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST);
