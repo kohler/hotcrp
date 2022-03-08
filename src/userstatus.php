@@ -1564,7 +1564,7 @@ class UserStatus extends MessageSet {
         }
         echo $us->feedback_html_at("collaborators"),
             '<textarea name="collaborators" rows="5" cols="80" class="',
-            $us->control_class("collaborators", "need-autogrow"),
+            $us->control_class("collaborators", "need-autogrow w-text"),
             "\" data-default-value=\"", htmlspecialchars($us->user->collaborators()), "\">",
             htmlspecialchars($us->qreq->collaborators ?? $us->user->collaborators()),
             "</textarea>\n";
@@ -1624,7 +1624,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         if ($us->viewer->privChair) {
             echo '<div class="', $us->control_class("tags", "f-i"), '">',
                 $us->feedback_html_at("tags"),
-                Ht::entry("contactTags", $us->qreq->contactTags ?? $itags, ["size" => 60, "data-default-value" => $itags]),
+                Ht::entry("contactTags", $us->qreq->contactTags ?? $itags, ["data-default-value" => $itags, "class" => "fullw"]),
                 "</div>
   <p class=\"f-h\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href=\"", $us->conf->hoturl("settings", "group=tags"), "\">tag colors</a> to highlight subgroups in review lists.</p>\n";
         } else {

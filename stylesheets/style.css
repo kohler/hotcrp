@@ -740,11 +740,12 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 	margin-bottom: 1rem;
 	font-weight: normal;
 	font-style: normal;
-	border-width: 1px;
+	border-width: 2px;
 	border-style: solid;
+	border-color: transparent;
 	border-radius: 4px;
-	padding: 0.5em 1.5em;
-	max-width: 800px;
+	padding: 0.5em 0.85em;
+	max-width: 720px;
 }
 .msg.mx-auto,
 body.paper-error .msg {
@@ -762,24 +763,23 @@ body.paper-error .msg {
 	margin-bottom: 0;
 }
 .msg {
-	border-color: #ccccee;
-	background: border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNkMmRhZGQiIC8+PHBvbHlsaW5lIHBvaW50cz0iLTEuNzkyOTcsNSwzLjIwNzAzLDAsNSwwLC0wLDUiIGZpbGw9IiM5MDlhYTUiIC8+PHBvbHlsaW5lIHBvaW50cz0iMy4yMDcwMyw1LDguMjA3MDMsMCwxMCwwLDUsNSIgZmlsbD0iIzkwOWFhNSIgLz48L3N2Zz4K) left repeat-y,
-		border-box #fbfbff;
+	background: padding-box linear-gradient(#fbfdff, #fbfdff),
+		border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNkMmRhZGQiIC8+PHBvbHlsaW5lIHBvaW50cz0iLTEuNzkyOTcsNSwzLjIwNzAzLDAsNSwwLC0wLDUiIGZpbGw9IiM5MDlhYTUiIC8+PHBvbHlsaW5lIHBvaW50cz0iMy4yMDcwMyw1LDguMjA3MDMsMCwxMCwwLDUsNSIgZmlsbD0iIzkwOWFhNSIgLz48L3N2Zz4K) repeat;
 }
 .msg.msg-confirm, .msg.msg-success {
-	border-color: #cceecc;
-	background: border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNjOWZjYzkiIC8+PHBvbHlsaW5lIHBvaW50cz0iLTEuNzkyOTcsNSwzLjIwNzAzLDAsNSwwLC0wLDUiIGZpbGw9IiM1NWE4NTUiIC8+PHBvbHlsaW5lIHBvaW50cz0iMy4yMDcwMyw1LDguMjA3MDMsMCwxMCwwLDUsNSIgZmlsbD0iIzU1YTg1NSIgLz48L3N2Zz4K) left repeat-y,
-		border-box #eeffee;
+	border-width: 4px;
+	background: padding-box linear-gradient(#eeffee, #eeffee),
+		border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNjOWZjYzkiIC8+PHBvbHlsaW5lIHBvaW50cz0iLTEuNzkyOTcsNSwzLjIwNzAzLDAsNSwwLC0wLDUiIGZpbGw9IiM1NWE4NTUiIC8+PHBvbHlsaW5lIHBvaW50cz0iMy4yMDcwMyw1LDguMjA3MDMsMCwxMCwwLDUsNSIgZmlsbD0iIzU1YTg1NSIgLz48L3N2Zz4K) repeat;
 }
 .msg.msg-warning {
-	border-color: #ddddcc;
-	background: border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2IiBoZWlnaHQ9IjYiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmZjAiIC8+PHBvbHlsaW5lIHBvaW50cz0iLTMsNiwzLDAsNiwwLDAsNiIgZmlsbD0iIzY5NjkwMyIgLz48cG9seWxpbmUgcG9pbnRzPSIzLDYsOSwwLDEyLDAsNiw2IiBmaWxsPSIjNjk2OTAzIiAvPjwvc3ZnPg==) left repeat-y,
-		border-box #ffffdd;
+	border-width: 4px;
+	background: padding-box linear-gradient(#ffffdd, #ffffdd),
+		border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2IiBoZWlnaHQ9IjYiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmZjAiIC8+PHBvbHlsaW5lIHBvaW50cz0iLTMsNiwzLDAsNiwwLDAsNiIgZmlsbD0iIzY5NjkwMyIgLz48cG9seWxpbmUgcG9pbnRzPSIzLDYsOSwwLDEyLDAsNiw2IiBmaWxsPSIjNjk2OTAzIiAvPjwvc3ZnPg==) repeat;
 }
 .msg.msg-error {
-	border-color: #ee0000;
-	background: border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2IiBoZWlnaHQ9IjEyIj48cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjAwIiAvPjxwb2x5bGluZSBwb2ludHM9Ii02LDEyLDYsMCwxMiwwLDAsMTIiIGZpbGw9IiM0MDAiIC8+PHBvbHlsaW5lIHBvaW50cz0iNiwxMiwxOCwwLDI0LDAsMTIsMTIiIGZpbGw9IiM0MDAiIC8+PC9zdmc+) left repeat-y,
-		border-box #ffeeee;
+	border-width: 6px;
+	background: padding-box linear-gradient(#ffeeee, #ffeeee),
+		border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiI+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YwMCIgLz48cG9seWxpbmUgcG9pbnRzPSItNiwxMiw2LDAsMTIsMCwwLDEyIiBmaWxsPSIjNDAwIiAvPjxwb2x5bGluZSBwb2ludHM9IjYsMTIsMTIsNiwxOCw2LDEyLDEyIiBmaWxsPSIjNDAwIiAvPjwvc3ZnPg==) repeat;
 }
 .msgs-small-inline {
 	margin: 0.25rem 0 0;
@@ -788,6 +788,7 @@ body.paper-error .msg {
 	width: fit-content;
 	margin: 0 1rem 0.25rem 0;
 	padding: 0.25em 0.5em 0.25em 1em;
+	border-width: 2px;
 }
 
 
