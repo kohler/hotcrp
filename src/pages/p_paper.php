@@ -137,7 +137,7 @@ class Paper_Page {
             $msg = $this->conf->_($msg, $deadline);
         }
         if ($msg !== "" && $strong) {
-            $msg = "<strong>{$msg}</strong>";
+            $msg = "<5><strong>" . Ftext::unparse_as($msg, 5) . "</strong>";
         }
         return $msg;
     }
