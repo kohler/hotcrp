@@ -3791,10 +3791,16 @@ a:hover .t-editor,
 	padding-top: 1.25rem;
 	padding-bottom: 2.25rem;
 }
+.cmtcard.comment:last-child {
+	border-bottom: 5px solid #e6e1cf;
+}
 .cmtcard.response {
 	border-top: 5px solid #ffddc1;
 	background: #fcfcfb;
 	padding-bottom: 3rem;
+}
+.cmtcard.response:last-child {
+	border-bottom: 5px solid #ffddc1;
 }
 .cmtcard.comment.is-editing {
 	background: #fdfdfa;

@@ -4268,45 +4268,91 @@ class Contact {
         return false;
     }
 
-    /** @param ?CommentInfo $crow
+    /** @return int */
+    function add_comment_state(PaperInfo $prow) {
+        $rights = $this->rights($prow);
+        $time = $this->conf->setting("cmt_always") > 0
+            || $this->conf->time_review_open();
+        $ctype = 0;
+        if ($rights->allow_review
+            && ($prow->timeSubmitted > 0
+                || $rights->review_status > 0
+                || ($rights->allow_administer && $rights->rights_forced))
+            && ($time || $rights->allow_administer)) {
+            $ctype |= CommentInfo::CT_TOPIC_PAPER | CommentInfo::CT_TOPIC_REVIEW;
+        }
+        if ($rights->conflictType >= CONFLICT_AUTHOR
+            && $this->conf->setting("cmt_author") > 0
+            && $time) {
+            if ($this->can_view_submitted_review_as_author($prow)) {
+                $ctype |= CommentInfo::CT_TOPIC_PAPER | CommentInfo::CT_TOPIC_REVIEW;
+            } else if ($this->can_view_author_comment_topic_paper($prow)) {
+                $ctype |= CommentInfo::CT_TOPIC_PAPER;
+            }
+        }
+        if ($ctype !== 0) {
+            if ($time) {
+                $ctype |= CommentInfo::CT_SUBMIT;
+            }
+            if ($prow->has_author($this)) {
+                $ctype |= CommentInfo::CT_BYAUTHOR;
+            } else if ($prow->shepherdContactId > 0) {
+                if ($this->contactId === $prow->shepherdContactId
+                    || ($this->contactId === 0
+                        && ($reviewer = $this->reviewer_capability_user($prow->paperId))
+                        && $reviewer->contactId === $prow->shepherdContactId)) {
+                    $ctype |= CommentInfo::CT_BYSHEPHERD;
+                }
+            }
+        }
+        return $ctype;
+    }
+
+    /** @param ?int $newctype
      * @return bool */
-    function can_comment(PaperInfo $prow, $crow, $submit = false) {
-        if ($crow && ($crow->commentType & CommentInfo::CT_RESPONSE)) {
-            return $this->can_respond($prow, $crow, $submit);
+    function can_edit_comment(PaperInfo $prow, CommentInfo $crow, $newctype = null) {
+        if (($crow->commentType & CommentInfo::CT_RESPONSE) !== 0) {
+            return $this->can_edit_response($prow, $crow, $newctype);
         }
         $rights = $this->rights($prow);
         $author = $rights->conflictType >= CONFLICT_AUTHOR
-            && $this->conf->setting("cmt_author") > 0
-            && $this->can_view_submitted_review_as_author($prow);
-        return ($author
-                || ($rights->allow_review
-                    && ($prow->timeSubmitted > 0
-                        || $rights->review_status > 0
-                        || ($rights->allow_administer && $rights->rights_forced))
-                    && ($this->conf->setting("cmt_always") > 0
-                        || $this->conf->time_review(null, $rights->allow_pc, true)
-                        || ($rights->allow_administer
-                            && (!$submit || $this->override_deadlines($rights))))))
-            && (!$crow
-                || !$crow->contactId
-                || $rights->allow_administer
-                || $this->is_my_comment($prow, $crow)
-                || ($author
-                    && ($crow->commentType & CommentInfo::CT_BYAUTHOR) !== 0));
+            && $this->conf->setting("cmt_author") > 0;
+        // only admins can edit other peoples' comments, but authors can edit each others'
+        if ($crow->contactId !== 0
+            && !$rights->allow_administer
+            && !$this->is_my_comment($prow, $crow)
+            && (!$author || ($crow->commentType & CommentInfo::CT_BYAUTHOR) === 0)) {
+            return false;
+        } else if ($author) {
+            if ((($newctype ?? $crow->commentType) & CommentInfo::CT_TOPIC_PAPER) !== 0) {
+                return $crow->commentId !== 0
+                    || $this->can_view_author_comment_topic_paper($prow);
+            } else {
+                return $this->can_view_submitted_review_as_author($prow);
+            }
+        } else {
+            return $rights->allow_review
+                && ($prow->timeSubmitted > 0
+                    || $rights->review_status > 0
+                    || ($rights->allow_administer && $rights->rights_forced))
+                && ($this->conf->setting("cmt_always") > 0
+                    || $this->conf->time_review(null, $rights->allow_pc, true)
+                    || ($rights->allow_administer
+                        && ($newctype === null || $this->override_deadlines($rights))));
+        }
     }
 
-    /** @param ?CommentInfo $crow
+    /** @param ?int $newctype
      * @return ?PermissionProblem */
-    function perm_comment(PaperInfo $prow, $crow, $submit = false) {
-        if ($crow && ($crow->commentType & CommentInfo::CT_RESPONSE)) {
-            return $this->perm_respond($prow, $crow, $submit);
-        } else if ($this->can_comment($prow, $crow, $submit)) {
+    function perm_edit_comment(PaperInfo $prow, CommentInfo $crow, $newctype = null) {
+        if (($crow->commentType & CommentInfo::CT_RESPONSE) !== 0) {
+            return $this->perm_edit_response($prow, $crow, $newctype);
+        } else if ($this->can_edit_comment($prow, $crow, $newctype)) {
             return null;
         }
         $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
-        if ($crow
-            && $crow->contactId !== $this->contactXid
+        if ($crow->contactId !== $this->contactXid
             && !$rights->allow_administer) {
             $whyNot["differentReviewer"] = true;
         } else if (!$rights->allow_pc
@@ -4334,8 +4380,9 @@ class Contact {
         return $whyNot;
     }
 
-    /** @return bool */
-    function can_respond(PaperInfo $prow, CommentInfo $crow, $submit = false) {
+    /** @param ?int $newctype
+     * @return bool */
+    function can_edit_response(PaperInfo $prow, CommentInfo $crow, $newctype = null) {
         if ($prow->timeSubmitted <= 0
             || !($crow->commentType & CommentInfo::CT_RESPONSE)
             || !($rrd = ($prow->conf->response_rounds())[$crow->commentRound] ?? null)) {
@@ -4345,15 +4392,16 @@ class Contact {
         return ($rights->can_administer
                 || $rights->conflictType >= CONFLICT_AUTHOR)
             && (($rights->allow_administer
-                 && (!$submit || $this->override_deadlines($rights)))
+                 && ($newctype === null || $this->override_deadlines($rights)))
                 || $rrd->time_allowed(true))
             && (!$rrd->search
                 || $rrd->search->test($prow));
     }
 
-    /** @return ?PermissionProblem */
-    function perm_respond(PaperInfo $prow, CommentInfo $crow, $submit = false) {
-        if ($this->can_respond($prow, $crow, $submit)) {
+    /** @param ?int $newctype
+     * @return ?PermissionProblem */
+    function perm_edit_response(PaperInfo $prow, CommentInfo $crow, $newctype = null) {
+        if ($this->can_edit_response($prow, $crow, $newctype)) {
             return null;
         }
         $rights = $this->rights($prow);
@@ -4378,11 +4426,6 @@ class Contact {
             }
         }
         return $whyNot;
-    }
-
-    /** @return bool */
-    function can_finalize_comment(PaperInfo $prow, CommentInfo $crow) {
-        return $this->can_comment($prow, $crow, true);
     }
 
     /** @return ?ResponseRound */
@@ -4480,6 +4523,14 @@ class Contact {
     /** @return bool */
     function can_view_some_draft_response() {
         return $this->is_manager() || $this->is_author();
+    }
+
+    /** @return bool */
+    function can_view_author_comment_topic_paper(PaperInfo $prow) {
+        return $prow->has_viewable_comment_type($this,
+            CommentInfo::CT_BYAUTHOR | CommentInfo::CT_RESPONSE
+             | CommentInfo::CT_TOPIC_PAPER | CommentInfo::CT_VISIBILITY,
+            CommentInfo::CT_TOPIC_PAPER | CommentInfo::CT_AUTHOR);
     }
 
 
@@ -5038,10 +5089,10 @@ class Contact {
             }
             // blindness
             $rb = $this->conf->review_blindness();
-            if ($rb === Conf::BLIND_ALWAYS) {
-                $dl->rev->blind = true;
-            } else if ($rb === Conf::BLIND_OPTIONAL) {
+            if ($rb === Conf::BLIND_OPTIONAL) {
                 $dl->rev->blind = "optional";
+            } else if ($rb !== Conf::BLIND_NEVER) {
+                $dl->rev->blind = true;
             }
             if ($this->conf->time_some_author_view_review()) {
                 $dl->rev->some_author_can_view = true;
@@ -5090,18 +5141,20 @@ class Contact {
                 if ($this->can_edit_review($prow, null, false)) {
                     $perm->can_review = true;
                 }
-                if ($this->can_comment($prow, null, true)) {
-                    $perm->can_comment = true;
-                } else if ($admin && $this->can_comment($prow, null, false)) {
-                    $perm->can_comment = "override";
+                if (($caddf = $this->add_comment_state($prow)) !== 0) {
+                    if (($caddf & CommentInfo::CT_SUBMIT) !== 0) {
+                        $perm->can_comment = true;
+                    } else {
+                        $perm->can_comment = "override";
+                    }
                 }
                 if (isset($dl->resps)) {
                     foreach ($this->conf->response_rounds() as $rrd) {
                         $crow = CommentInfo::make_response_template($rrd, $prow);
                         $v = false;
-                        if ($this->can_respond($prow, $crow, true)) {
+                        if ($this->can_edit_response($prow, $crow, CommentInfo::CT_SUBMIT)) {
                             $v = true;
-                        } else if ($admin && $this->can_respond($prow, $crow, false)) {
+                        } else if ($admin && $this->can_edit_response($prow, $crow)) {
                             $v = "override";
                         }
                         if ($v && !isset($perm->can_responds)) {
@@ -5150,6 +5203,7 @@ class Contact {
         return $dl;
     }
 
+    /** @return bool */
     function has_reportable_deadline() {
         $dl = $this->my_deadlines();
         if (isset($dl->sub->reg) || isset($dl->sub->update) || isset($dl->sub->sub)) {
@@ -5208,6 +5262,7 @@ class Contact {
     }
 
 
+    /** @return string */
     private function unassigned_review_token() {
         while (true) {
             $token = mt_rand(1, 2000000000);

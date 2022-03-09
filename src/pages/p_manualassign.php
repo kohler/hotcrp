@@ -323,7 +323,7 @@ class ManualAssign_Page {
                 ? $this->conf->cached_user_by_id(intval($this->qreq->reviewer))
                 : $this->conf->cached_user_by_email($this->qreq->reviewer);
         }
-        if (($reviewer->roles & Contact::ROLE_PC) === 0) {
+        if ($reviewer && ($reviewer->roles & Contact::ROLE_PC) === 0) {
             $reviewer = null;
         }
 

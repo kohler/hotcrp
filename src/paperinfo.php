@@ -548,7 +548,7 @@ class PaperInfo {
     private $_full_review_key;
     /** @var ?array<int,CommentInfo> */
     private $_comment_array;
-    /** @var ?array<int,CommentInfo> */
+    /** @var ?list<CommentInfo> */
     private $_comment_skeleton_array;
     /** @var ?list<array{string,string}> */
     private $_potential_conflicts;
@@ -2765,12 +2765,12 @@ class PaperInfo {
         while (($c = CommentInfo::fetch($result, null, $this->conf))) {
             $prow = $row_set->checked_paper_by_id($c->paperId);
             $c->set_prow($prow);
-            $prow->_comment_array[$c->commentId] = $c;
+            $prow->_comment_array[] = $c;
         }
         Dbl::free($result);
     }
 
-    /** @return array<int,CommentInfo> */
+    /** @return list<CommentInfo> */
     function all_comments() {
         if ($this->_comment_array === null) {
             $this->load_comments();
@@ -2781,21 +2781,24 @@ class PaperInfo {
     /** @param int $cid
      * @return ?CommentInfo */
     function comment_by_id($cid) {
-        return ($this->all_comments())[$cid] ?? null;
+        foreach ($this->all_comments() as $crow) {
+            if ($crow->commentId === $cid)
+                return $crow;
+        }
+        return null;
     }
 
-    /** @return array<int,CommentInfo> */
+    /** @return list<CommentInfo> */
     function viewable_comments(Contact $user, $textless = false) {
         $crows = [];
-        foreach ($this->all_comments() as $cid => $crow) {
-            if ($user->can_view_comment($this, $crow, $textless)) {
-                $crows[$cid] = $crow;
-            }
+        foreach ($this->all_comments() as $crow) {
+            if ($user->can_view_comment($this, $crow, $textless))
+                $crows[] = $crow;
         }
         return $crows;
     }
 
-    /** @return array<int,CommentInfo> */
+    /** @return list<CommentInfo> */
     function all_comment_skeletons() {
         if ($this->_comment_skeleton_array === null) {
             if ($this->_comment_array !== null
@@ -2812,19 +2815,18 @@ class PaperInfo {
                 $c->commentType = (int) $m[3];
                 $c->commentRound = (int) $m[4];
                 $c->commentTags = $m[5];
-                $this->_comment_skeleton_array[$c->commentId] = $c;
+                $this->_comment_skeleton_array[] = $c;
             }
         }
         return $this->_comment_skeleton_array;
     }
 
-    /** @return array<int,CommentInfo> */
+    /** @return list<CommentInfo> */
     function viewable_comment_skeletons(Contact $user, $textless = false) {
         $crows = [];
-        foreach ($this->all_comment_skeletons() as $cid => $crow) {
-            if ($user->can_view_comment($this, $crow, $textless)) {
-                $crows[$cid] = $crow;
-            }
+        foreach ($this->all_comment_skeletons() as $crow) {
+            if ($user->can_view_comment($this, $crow, $textless))
+                $crows[] = $crow;
         }
         return $crows;
     }
@@ -2837,6 +2839,18 @@ class PaperInfo {
             if ($crow->contactId == $cid) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    /** @param int $checkflags
+     * @param int $wantflags
+     * @return bool */
+    function has_viewable_comment_type(Contact $user, $checkflags, $wantflags) {
+        foreach ($this->all_comment_skeletons() as $crow) {
+            if (($crow->commentType & $checkflags) === $wantflags
+                && $user->can_view_comment($this, $crow))
+                return true;
         }
         return false;
     }

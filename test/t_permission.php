@@ -273,19 +273,20 @@ class Permission_Tester {
         assert_search_papers($user_marina, "re:varghese", "1");
 
         // check comment identity
-        xassert($this->conf->setting("au_seerev") == Conf::AUSEEREV_NO);
+        xassert($this->conf->setting("au_seerev") == Conf::AUSEEREV_NO); // NB null
+        xassert($this->conf->setting("rev_blind") === Conf::BLIND_ALWAYS);
         $comment1 = new CommentInfo($paper1);
         $c1ok = $comment1->save_comment(["text" => "test", "visibility" => "a", "blind" => false], $user_mgbaker);
         xassert($c1ok);
         xassert(!$user_van->can_view_comment($paper1, $comment1));
         xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
-        xassert(!$user_van->can_comment($paper1, null));
+        xassert($user_van->add_comment_state($paper1) === 0);
         $this->conf->save_refresh_setting("cmt_author", 1);
-        xassert(!$user_van->can_comment($paper1, null));
+        xassert($user_van->add_comment_state($paper1) === 0);
         $this->conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_YES);
-        xassert($user_van->can_comment($paper1, null));
+        xassert($user_van->add_comment_state($paper1) !== 0);
         $this->conf->save_refresh_setting("cmt_author", null);
-        xassert(!$user_van->can_comment($paper1, null));
+        xassert($user_van->add_comment_state($paper1) === 0);
         xassert($user_van->can_view_comment($paper1, $comment1));
         xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
         $this->conf->save_refresh_setting("rev_blind", Conf::BLIND_OPTIONAL);
@@ -609,10 +610,10 @@ class Permission_Tester {
 
         // comment searches
         $paper2 = $user_chair->checked_paper_by_id(2);
-        xassert($user_mgbaker->can_comment($paper2, null));
-        xassert(!$user_mgbaker->can_comment($paper18, null));
-        xassert($user_marina->can_comment($paper1, null));
-        xassert($user_marina->can_comment($paper18, null));
+        xassert($user_mgbaker->add_comment_state($paper2) !== 0);
+        xassert($user_mgbaker->add_comment_state($paper18) === 0);
+        xassert($user_marina->add_comment_state($paper1) !== 0);
+        xassert($user_marina->add_comment_state($paper18) !== 0);
         assert_search_papers($user_chair, "cmt:any", "1");
         assert_search_papers($user_chair, "has:comment", "1");
         assert_search_papers($user_chair, "has:response", "");

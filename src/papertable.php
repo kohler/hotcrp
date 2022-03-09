@@ -2456,7 +2456,7 @@ class PaperTable {
         $nocmt = in_array($this->mode, ["assign", "contact", "edit", "re"]);
         if (!$this->allreviewslink
             && !$nocmt
-            && $this->user->can_comment($prow, null)) {
+            && $this->user->add_comment_state($prow) !== 0) {
             $img = Ht::img("comment48.png", "[Add comment]", $dlimgjs);
             $t[] = "<a class=\"uic js-edit-comment noul revlink\" href=\"#cnew\">{$img} <u>Add comment</u></a>";
             $any_comments = true;
@@ -2474,8 +2474,8 @@ class PaperTable {
                         $cr = $crow;
                     }
                 }
-                $cr = $cr ? : CommentInfo::make_response_template($rrd, $prow);
-                if ($this->user->can_respond($prow, $cr)) {
+                $cr = $cr ?? CommentInfo::make_response_template($rrd, $prow);
+                if ($this->user->can_edit_response($prow, $cr)) {
                     $cid = $rrd->tag_name();
                     if ($cr->commentId) {
                         $what = $cr->commentType & CommentInfo::CT_DRAFT ? "Edit draft" : "Edit";
@@ -2544,7 +2544,7 @@ class PaperTable {
     private function include_comments() {
         return !$this->allreviewslink
             && (!empty($this->mycrows)
-                || $this->user->can_comment($this->prow, null)
+                || $this->user->add_comment_state($this->prow) !== 0
                 || $this->conf->any_response_open);
     }
 
@@ -2628,9 +2628,8 @@ class PaperTable {
 
         if ($comments) {
             $cs = [];
-            if ($this->user->can_comment($this->prow, null)) {
-                $crow = new CommentInfo($this->prow);
-                $crow->commentType = $this->prow->has_author($this->user) ? CommentInfo::CT_BYAUTHOR : 0;
+            if (($crow = CommentInfo::make_new_template($this->user, $this->prow))
+                && $crow->commentType !== 0) {
                 $cs[] = $crow;
             }
             if ($this->admin || $this->prow->has_author($this->user)) {
@@ -2638,7 +2637,7 @@ class PaperTable {
                     if (!$this->has_response($rrd->number)
                         && $rrd->relevant($this->user, $this->prow)) {
                         $crow = CommentInfo::make_response_template($rrd, $this->prow);
-                        if ($this->user->can_respond($this->prow, $crow)) {
+                        if ($this->user->can_edit_response($this->prow, $crow)) {
                             $cs[] = $crow;
                         }
                     }

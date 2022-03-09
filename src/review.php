@@ -1039,7 +1039,7 @@ class ReviewForm implements JsonSerializable {
 ==-== Enter \"Ready\" if the review is ready for others to see:
 
 Ready\n";
-            if ($this->conf->review_blindness() == Conf::BLIND_OPTIONAL) {
+            if ($this->conf->review_blindness() === Conf::BLIND_OPTIONAL) {
                 $blind = $rrow->reviewBlind ? "Anonymous" : "Open";
                 $x .= "\n==+== Review Anonymity
 ==-== " . $this->conf->short_name . " allows either anonymous or open review.
@@ -1382,7 +1382,7 @@ $blind\n";
         }
 
         // blind?
-        if ($this->conf->review_blindness() == Conf::BLIND_OPTIONAL) {
+        if ($this->conf->review_blindness() === Conf::BLIND_OPTIONAL) {
             echo '<div class="rge"><h3 class="rfehead checki"><label class="revfn">',
                 Ht::hidden("has_blind", 1),
                 '<span class="checkc">', Ht::checkbox("blind", 1, ($rvalues ? !!($rvalues->req["blind"] ?? null) : $rrow->reviewBlind)), '</span>',

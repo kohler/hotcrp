@@ -3395,10 +3395,10 @@ class Conf {
      * @return bool */
     function is_review_blind($rrow_blind) {
         $rb = $this->settings["rev_blind"];
-        if ($rb == self::BLIND_ALWAYS) {
-            return true;
-        } else if ($rb != self::BLIND_OPTIONAL) {
+        if ($rb === self::BLIND_NEVER) {
             return false;
+        } else if ($rb !== self::BLIND_OPTIONAL) {
+            return true;
         } else {
             return $rrow_blind !== false;
         }

@@ -51,7 +51,7 @@ class Comment_API {
         if ($crow) {
             $xcrow = $crow;
         } else if (!$rrd) {
-            $xcrow = new CommentInfo($prow);
+            $xcrow = CommentInfo::make_new_template($user, $prow);
         } else {
             $xcrow = CommentInfo::make_response_template($rrd, $prow);
         }
@@ -71,7 +71,7 @@ class Comment_API {
         // check if response changed
         $changed = true;
         if ($response
-            && $req["text"] === rtrim(cleannl((string) ($xcrow->commentOverflow ? : $xcrow->comment)))) {
+            && $req["text"] === rtrim(cleannl((string) ($xcrow->commentOverflow ?? $xcrow->comment)))) {
             $changed = false;
         }
 
@@ -114,8 +114,9 @@ class Comment_API {
         }
 
         // check permission, other errors
-        $whyNot = $user->perm_comment($prow, $xcrow, true);
-        if ($whyNot && ($changed || !$user->can_finalize_comment($prow, $xcrow))) {
+        $newctype = $xcrow->requested_type($req);
+        $whyNot = $user->perm_edit_comment($prow, $xcrow, $newctype);
+        if ($whyNot) {
             $mis[] = MessageItem::error("<5>" . $whyNot->unparse_html());
             return [null, 403];
         }
