@@ -5016,6 +5016,12 @@ function visibility_change() {
         } else if (vis.value === "pc") {
             m.length && m.push("\n");
             m.push('The comment will be hidden from authors and external reviewers.');
+        } else if (vis.value === "rev" && hotcrp_status.myperm.default_comment_visibility === "pc") {
+            m.length && m.push("\n");
+            elt = document.createElement("span");
+            elt.className = "is-diagnostic is-warning";
+            elt.textContent = "External reviewers cannot view comments at this time.";
+            m.push(elt);
         }
         if (is_paper) {
             m.length && m.push("\n");

@@ -145,7 +145,7 @@ class CommentInfo {
     /** @return CommentInfo */
     static function make_new_template(Contact $user, PaperInfo $prow) {
         $cinfo = new CommentInfo($prow);
-        if (($ct = $user->add_comment_state($prow))) {
+        if (($ct = $user->add_comment_state($prow)) !== 0) {
             $ct |= $ct & self::CT_BYAUTHOR ? self::CT_AUTHOR : self::CT_REVIEWER;
             if ($ct & self::CT_TOPIC_REVIEW) {
                 $ct &= ~self::CT_TOPIC_PAPER;

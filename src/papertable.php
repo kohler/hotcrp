@@ -2643,9 +2643,9 @@ class PaperTable {
                     }
                 }
             }
-            foreach ($cs as $c) {
+            foreach ($cs as $crow) {
                 ++$ncmt;
-                $s .= "hotcrp.add_comment(" . json_encode_browser($c->unparse_json($this->user)) . ");\n";
+                $s .= "hotcrp.add_comment(" . json_encode_browser($crow->unparse_json($this->user)) . ");\n";
             }
         }
 

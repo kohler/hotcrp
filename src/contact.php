@@ -4326,13 +4326,22 @@ class Contact {
         $rights = $this->rights($prow);
         $author = $rights->conflictType >= CONFLICT_AUTHOR
             && $this->conf->setting("cmt_author") > 0;
-        // only admins can edit other peoples' comments, but authors can edit each others'
+        $time = $this->conf->setting("cmt_always") > 0
+            || $this->conf->time_review_open();
         if ($crow->contactId !== 0
             && !$rights->allow_administer
             && !$this->is_my_comment($prow, $crow)
             && (!$author || ($crow->commentType & CommentInfo::CT_BYAUTHOR) === 0)) {
+            // cannot edit someone else's comment
             return false;
-        } else if ($author) {
+        } else if ($rights->allow_review) {
+            return ($prow->timeSubmitted > 0
+                    || $rights->review_status > 0
+                    || ($rights->allow_administer && $rights->rights_forced))
+                && ($time
+                    || ($rights->allow_administer
+                        && ($newctype === null || $this->override_deadlines($rights))));
+        } else if ($author && $time) {
             if ((($newctype ?? $crow->commentType) & CommentInfo::CT_TOPIC_PAPER) !== 0) {
                 return $crow->commentId !== 0
                     || $this->can_view_author_comment_topic_paper($prow);
@@ -4340,14 +4349,7 @@ class Contact {
                 return $this->can_view_submitted_review_as_author($prow);
             }
         } else {
-            return $rights->allow_review
-                && ($prow->timeSubmitted > 0
-                    || $rights->review_status > 0
-                    || ($rights->allow_administer && $rights->rights_forced))
-                && ($this->conf->setting("cmt_always") > 0
-                    || $this->conf->time_review(null, $rights->allow_pc, true)
-                    || ($rights->allow_administer
-                        && ($newctype === null || $this->override_deadlines($rights))));
+            return false;
         }
     }
 
