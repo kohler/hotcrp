@@ -209,8 +209,7 @@ class Selector_PaperColumn extends PaperColumn {
         if ($this->checked($pl, $row)) {
             $c .= ' checked';
         }
-        return '<span class="pl_rownum fx6">' . $pl->count . '. </span>'
-            . '<input type="checkbox" class="uic uikd js-range-click js-selector ignore-diff" name="pap[]" value="' . $row->paperId . '"' . $c . ' aria-label="#' . $row->paperId . '">';
+        return "<span class=\"pl_rownum fx6\">{$pl->count}. </span><input type=\"checkbox\" class=\"uic uikd js-range-click js-selector ignore-diff\" name=\"pap[]\" value=\"{$row->paperId}\"{$c} aria-label=\"#{$row->paperId}\">";
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $this->checked($pl, $row) ? "Y" : "N";
@@ -229,7 +228,7 @@ class Title_PaperColumn extends PaperColumn {
         if ($this->has_decoration) {
             $pl->qopts["tags"] = 1;
         }
-        $this->highlight = $pl->search->field_highlighter("title");
+        $this->highlight = $pl->search->field_highlighter("ti");
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
@@ -432,7 +431,7 @@ class Authors_PaperColumn extends PaperColumn {
     function prepare(PaperList $pl, $visible) {
         $this->aufull = $this->aufull ?? $pl->viewing("aufull");
         $this->anonau = $this->anonau ?? $pl->viewing("anonau");
-        $this->highlight = $pl->search->field_highlighter("authorInformation");
+        $this->highlight = $pl->search->field_highlighter("au");
         return $pl->user->can_view_some_authors();
     }
     function field_json(PaperList $pl) {
@@ -526,7 +525,7 @@ class Authors_PaperColumn extends PaperColumn {
         }
         if ($pl->conf->submission_blindness() !== Conf::BLIND_NEVER
             && !$pl->user->can_view_authors($row)) {
-            $t = '<div class="fx2">' . $t . '</div>';
+            $t = "<div class=\"fx2\">{$t}</div>";
         }
         return $t;
     }
@@ -575,7 +574,7 @@ class Collab_PaperColumn extends PaperColumn {
                 $x .= ($x === "" ? "" : "; ") . trim($c);
             }
         }
-        return Text::highlight($x, $pl->search->field_highlighter("collaborators"));
+        return Text::highlight($x, $pl->search->field_highlighter("co"));
     }
     function text(PaperList $pl, PaperInfo $row) {
         $x = "";
@@ -595,7 +594,7 @@ class Abstract_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $ab = $row->abstract_text();
-        $t = Text::highlight($ab, $pl->search->field_highlighter("abstract"), $highlight_count);
+        $t = Text::highlight($ab, $pl->search->field_highlighter("ab"), $highlight_count);
         $klass = strlen($t) > 190 ? "pl_longtext" : "pl_shorttext";
         if (!$highlight_count && ($format = $row->abstract_format())) {
             $pl->need_render = true;
