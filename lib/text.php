@@ -33,12 +33,12 @@ class TextPregexes {
      * @param string|false $deaccented_text
      * @return bool */
     function match($text, $deaccented_text) {
-        if (!isset($this->preg_raw)) {
-            return !!preg_match('{' . $this->preg_utf8 . '}ui', $text);
+        if ($this->preg_raw === null) {
+            return !!preg_match("{{$this->preg_utf8}}ui", $text);
         } else if ($deaccented_text && $deaccented_text !== $text) {
-            return !!preg_match('{' . $this->preg_utf8 . '}ui', $deaccented_text);
+            return !!preg_match("{{$this->preg_utf8}}ui", $deaccented_text);
         } else {
-            return !!preg_match('{' . $this->preg_raw . '}i', $text);
+            return !!preg_match("{{$this->preg_raw}}i", $text);
         }
     }
 
@@ -304,16 +304,19 @@ class Text {
 
 
     /** @param string $word
+     * @param bool $literal
      * @return string */
-    static function word_regex($word) {
-        if ($word === "") {
+    static function word_regex($word, $literal = false) {
+        if ($word !== "") {
+            $aw = ctype_alnum($word[0]);
+            $zw = ctype_alnum($word[strlen($word) - 1]);
+            $sp = $literal ? '\s+' : '(?=\s).*\s';
+            return ($aw ? '\b' : '')
+                . str_replace(" ", $sp, preg_quote($word))
+                . ($zw ? '\b' : '');
+        } else {
             return "";
         }
-        $aw = ctype_alnum($word[0]);
-        $zw = ctype_alnum($word[strlen($word) - 1]);
-        return ($aw ? '\b' : '')
-            . str_replace(" ", '\s+', preg_quote($word))
-            . ($zw ? '\b' : '');
     }
 
     const UTF8_INITIAL_NONLETTERDIGIT = '(?:\A|(?!\pL|\pN)\X)';
@@ -322,25 +325,30 @@ class Text {
     const UTF8_FINAL_NONLETTER = '(?:\z|(?!\pL)(?=\PM))';
 
     /** @param string $word
+     * @param bool $literal
      * @return string */
-    static function utf8_word_regex($word) {
-        if ($word === "") {
+    static function utf8_word_regex($word, $literal = false) {
+        if ($word !== "") {
+            $aw = preg_match('/\A(?:\pL|\pN)/u', $word);
+            $zw = preg_match('/(?:\pL|\pN)\z/u', $word);
+            // Maybe `$word` is not valid UTF-8. Avoid warnings later.
+            if ($aw || $zw || is_valid_utf8($word)) {
+                $sp = $literal ? '(?:\s|\p{Zs})+' : '(?=\s|\p{Zs}).*(?:\s|\p{Zs})';
+                return ($aw ? self::UTF8_INITIAL_NONLETTERDIGIT : '')
+                    . str_replace(" ", $sp, preg_quote($word))
+                    . ($zw ? self::UTF8_FINAL_NONLETTERDIGIT : '');
+            } else {
+                return self::utf8_word_regex(convert_to_utf8($word));
+            }
+        } else {
             return "";
         }
-        list($aw, $zw) = array(preg_match('/\A(?:\pL|\pN)/u', $word),
-                               preg_match('/(?:\pL|\pN)\z/u', $word));
-        // Maybe `$word` is not valid UTF-8. Avoid warnings later.
-        if (!$aw && !$zw && !is_valid_utf8($word)) {
-            return self::utf8_word_regex(convert_to_utf8($word));
-        }
-        return ($aw ? self::UTF8_INITIAL_NONLETTERDIGIT : '')
-            . str_replace(" ", '(?:\s|\p{Zs})+', preg_quote($word))
-            . ($zw ? self::UTF8_FINAL_NONLETTERDIGIT : '');
     }
 
     /** @param string $word
+     * @param bool $literal
      * @return TextPregexes */
-    static function star_text_pregexes($word, $literal_star = false) {
+    static function star_text_pregexes($word, $literal = false) {
         if (is_object($word)) {
             $reg = $word;
         } else {
@@ -350,12 +358,12 @@ class Text {
 
         $word = preg_replace('/\s+/', " ", $reg->value);
         if (is_usascii($word)) {
-            $reg->preg_raw = Text::word_regex($word);
+            $reg->preg_raw = Text::word_regex($word, $literal);
         }
-        $reg->preg_utf8 = Text::utf8_word_regex($word);
+        $reg->preg_utf8 = Text::utf8_word_regex($word, $literal);
 
-        if (!$literal_star && strpos($word, "*") !== false) {
-            if ($reg->preg_raw) {
+        if (!$literal && strpos($word, "*") !== false) {
+            if ($reg->preg_raw !== null) {
                 $reg->preg_raw = str_replace('\\\\\S*', '\*', str_replace('\*', '\S*', $reg->preg_raw));
             }
             $reg->preg_utf8 = str_replace('\\\\\S*', '\*', str_replace('\*', '\S*', $reg->preg_utf8));
@@ -387,7 +395,7 @@ class Text {
         $offsetmap = null;
         $flags = "";
         if (is_object($match)) {
-            if (!isset($match->preg_raw)) {
+            if ($match->preg_raw === null) {
                 $match = $match->preg_utf8;
                 $flags = "u";
             } else if (is_usascii($text)) {

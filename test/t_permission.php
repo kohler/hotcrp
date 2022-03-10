@@ -271,6 +271,8 @@ class Permission_Tester {
         assert_search_papers($user_marina, "re:varghese", "");
         xassert_assign($user_chair, "paper,lead\n1,marina\n", true);
         assert_search_papers($user_marina, "re:varghese", "1");
+        assert_search_papers($user_marina, "re:\"washington\"", "1");
+        assert_search_papers($user_marina, "re:\"washington louis\"", "1");
 
         // check comment identity
         xassert($this->conf->setting("au_seerev") == Conf::AUSEEREV_NO); // NB null
