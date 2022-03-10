@@ -213,7 +213,11 @@ class Completion_API {
         if ($prow && $user->can_view_review_assignment($prow, null)) {
             $rlist = [];
             $prow->ensure_reviewer_names();
+            $xview = $user->conf->time_some_external_reviewer_view_comment();
             foreach ($prow->reviews_as_display() as $rrow) {
+                if ($rrow->reviewType < REVIEW_PC && !$xview) {
+                    continue;
+                }
                 $viewid = $user->can_view_review_identity($prow, $rrow);
                 if ($rrow->reviewOrdinal
                     && $user->can_view_review($prow, $rrow)) {
