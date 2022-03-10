@@ -34,9 +34,9 @@ class UpdateSchema {
         if (Dbl::is_error($result)) {
             return false;
         }
-        $rfj = (object) array();
-        while (($row = $result->fetch_object())) {
-            $field = (object) array();
+        $rfj = (object) [];
+        while ($result && ($row = $result->fetch_object())) {
+            $field = (object) [];
             $field->name = $row->shortName;
             if (trim($row->description) != "") {
                 $field->description = trim($row->description);
@@ -52,7 +52,7 @@ class UpdateSchema {
                                     "grammar", "reviewerQualification", "potential",
                                     "fixability", "interestToCommunity", "longevity",
                                     "likelyPresentation", "suitableForShort"])) {
-                $field->options = array();
+                $field->options = [];
                 if ((int) $row->levelChar > 1) {
                     $field->option_letter = (int) $row->levelChar;
                 }
@@ -175,9 +175,9 @@ class UpdateSchema {
         $result = $this->conf->ql("select * from ContactAddress");
         while (($row = $result->fetch_object())) {
             if (($c = $this->conf->user_by_id($row->contactId))) {
-                $x = (object) array();
+                $x = (object) [];
                 if ($row->addressLine1 || $row->addressLine2) {
-                    $x->address = array();
+                    $x->address = [];
                 }
                 foreach (["addressLine1", "addressLine2"] as $k) {
                     if ($row->$k)
@@ -204,7 +204,7 @@ class UpdateSchema {
             return false;
         }
 
-        $qs = $qv = array();
+        $qs = $qv = [];
         while (($x = $result->fetch_row())) {
             $qs[] = "update ContactInfo set unaccentedName=? where contactId=$x[0]";
             $qv[] = Text::name($x[1], $x[2], "", NAME_U);
@@ -1144,10 +1144,11 @@ class UpdateSchema {
             && $conf->ql_ok("alter table Capability modify `data` varbinary(4096) DEFAULT NULL")) {
             $conf->update_schema_version(62);
         }
-        if (!isset($conf->settings["outcome_map"])) {
+        if (!isset($conf->settings["outcome_map"])
+            && $conf->sversion < 65) {
             $ojson = array();
             $result = $conf->ql_ok("select * from ReviewFormOptions where fieldName='outcome'");
-            while (($row = $result->fetch_object())) {
+            while ($result && ($row = $result->fetch_object())) {
                 $ojson[$row->level] = $row->description;
             }
             $conf->save_setting("outcome_map", 1, $ojson);
