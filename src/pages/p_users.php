@@ -282,7 +282,8 @@ class Users_Page {
             foreach ($t1 as $t) {
                 list($tag, $index) = Tagger::unpack($t);
                 $removes[] = $t;
-                $likes[] = "contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like($tag) . "#%'");
+                $x = sqlq(Dbl::escape_like($tag));
+                $likes[] = "contactTags like " . Dbl::utf8ci("'% {$x}#%'");
             }
             foreach (Dbl::fetch_first_columns(Dbl::qe("select contactId from ContactInfo where " . join(" or ", $likes))) as $cid) {
                 $users[(int) $cid] = (object) ["id" => (int) $cid, "add_tags" => [], "remove_tags" => $removes];

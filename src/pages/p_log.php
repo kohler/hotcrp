@@ -75,7 +75,8 @@ class Log_Page {
             while (($row = $result->fetch_row())) {
                 $w[] = "contactId=$row[0]";
                 $w[] = "destContactId=$row[0]";
-                $w[] = "action like " . Dbl::utf8ci("'% " . sqlq_for_like($row[1]) . "%'");
+                $x = sqlq(Dbl::escape_like($row[1]));
+                $w[] = "action like " . Dbl::utf8ci("'% {$x}%'");
             }
         }
         if (!empty($w)) {
@@ -97,7 +98,8 @@ class Log_Page {
             }
             $str = (string) substr($str, strlen($m[0]));
             if ($m[1] !== "") {
-                $w[] = "action like " . Dbl::utf8ci("'%" . sqlq_for_like($m[1]) . "%'");
+                $x = sqlq(Dbl::escape_like($m[1]));
+                $w[] = "action like " . Dbl::utf8ci("'%{$x}%'");
             }
         }
         $this->lef_clauses[] = "(" . join(" or ", $w) . ")";

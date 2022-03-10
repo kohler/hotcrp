@@ -1510,8 +1510,8 @@ class Contact {
     }
 
     static function email_authored_papers(Conf $conf, $email, $reg) {
-        $aupapers = array();
-        $result = $conf->q("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t" . sqlq_for_like($email) . "\t%'"));
+        $aupapers = [];
+        $result = $conf->q("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t?ls\t%'"), $email);
         while (($row = PaperInfo::fetch($result, null, $conf))) {
             foreach ($row->author_list() as $au) {
                 if (strcasecmp($au->email, $email) == 0) {

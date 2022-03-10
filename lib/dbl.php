@@ -385,12 +385,12 @@ class Dbl {
                 }
                 ++$nextpos;
             } else if ($nextch === "s") {
-                $arg = $dblink->real_escape_string($arg ?? "");
+                $arg = $dblink->real_escape_string((string) $arg);
                 ++$nextpos;
             } else if ($nextch === "l") {
-                $arg = sqlq_for_like($arg);
+                $arg = $dblink->real_escape_string(self::escape_like((string) $arg));
                 ++$nextpos;
-                if (substr($qstr, $nextpos + 1, 1) === "s") {
+                if (substr($qstr, $nextpos, 1) === "s") {
                     ++$nextpos;
                 } else {
                     $arg = "'{$arg}'";
@@ -897,15 +897,21 @@ class Dbl {
         $utf8 = $dblink->server_version >= 50503 ? "utf8mb4" : "utf8";
         return "convert($qstr using $utf8)";
     }
+
+    /** @param string $str
+     * @return string
+     *
+     * The return value of this function must be quoted by `sqlq` before
+     * being passed to SQL, for instance by `?` in `Dbl::format_query`. */
+    static function escape_like($str) {
+        return preg_replace("/(?=[%_\\\\'\"\\x00\\n\\r\\x1a])/", "\\", $str);
+    }
 }
 
-// quoting for SQL
+/** @param string $value
+ * @return string */
 function sqlq($value) {
     return Dbl::$default_dblink->escape_string($value);
-}
-
-function sqlq_for_like($value) {
-    return preg_replace("/(?=[%_\\\\'\"\\x00\\n\\r\\x1a])/", "\\", $value);
 }
 
 /** @param list<int> $set

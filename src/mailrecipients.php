@@ -397,7 +397,8 @@ class MailRecipients extends MessageSet {
             $needpaper = false;
             $where[] = "(ContactInfo.roles&" . Contact::ROLE_PC . ")!=0";
             if ($this->type != "pc") {
-                $where[] = "ContactInfo.contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like(substr($this->type, 3)) . "#%'");
+                $x = sqlq(Dbl::escape_like(substr($this->type, 3)));
+                $where[] = "ContactInfo.contactTags like " . Dbl::utf8ci("'% {$x}#%'");
             }
         } else if ($revmatch) {
             $needpaper = true;

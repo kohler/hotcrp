@@ -946,9 +946,10 @@ class ContactList {
     function table_html($listname, $url, $listtitle = "", $foldsession = null) {
         // PC tags
         $listquery = $listname;
-        $this->qopt = array();
+        $this->qopt = [];
         if (str_starts_with($listname, "#")) {
-            $this->qopt["where"] = "(contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like(substr($listname, 1)) . "#%'") . ")";
+            $x = sqlq(Dbl::escape_like(substr($listname, 1)));
+            $this->qopt["where"] = "(contactTags like " . Dbl::utf8ci("'% {$x}#%'") . ")";
             $listquery = "pcadmin";
         }
 
@@ -1168,9 +1169,10 @@ class ContactList {
 
     function rows($listname) {
         // PC tags
-        $this->qopt = array();
+        $this->qopt = [];
         if (str_starts_with($listname, "#")) {
-            $this->qopt["where"] = "(contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like(substr($listname, 1)) . "#%'") . ")";
+            $x = sqlq(Dbl::escape_like(substr($listname, 1)));
+            $this->qopt["where"] = "(contactTags like " . Dbl::utf8ci("'% {$x}#%'") . ")";
             $listname = "pc";
         }
 

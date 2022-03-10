@@ -196,11 +196,11 @@ class ContactSearch {
         } else {
             $where = [];
             if ($n !== "") {
-                $x = sqlq_for_like(strtolower(UnicodeHelper::deaccent($n)));
+                $x = sqlq(Dbl::escape_like(strtolower(UnicodeHelper::deaccent($n))));
                 $where[] = "unaccentedName like binary '%" . preg_replace('/[\s*]+/', "%", $x) . "%'";
             }
             if ($e !== "") {
-                $x = sqlq_for_like($e);
+                $x = sqlq(Dbl::escape_like($e));
                 $where[] = "email like " . Dbl::utf8ci("'" . preg_replace('/[\s*]+/', "%", $x) . "'");
             }
             $q = "select contactId, firstName, lastName, affiliation, email, roles, primaryContactId from ContactInfo where " . join(" or ", $where);
