@@ -33,8 +33,8 @@ class Contact {
     public $firstName = "";
     /** @var string */
     public $lastName = "";
-    /** @var string */
-    public $unaccentedName = "";
+    /** @var ?string */
+    public $unaccentedName;
     /** @var ?bool */
     public $name_usascii;
     /** @var string */
@@ -270,7 +270,6 @@ class Contact {
         if (isset($args["name"]) && $u->firstName === "" && $u->lastName === "") {
             list($u->firstName, $u->lastName, $crap) = Text::split_name($args["name"]);
         }
-        $u->unaccentedName = Text::name($u->firstName, $u->lastName, "", NAME_U);
         $u->affiliation = simplify_whitespace($args["affiliation"] ?? "");
         $u->disabled = !!($args["disabled"] ?? false);
         $u->disablement = $args["disablement"] ?? 0;
@@ -287,7 +286,6 @@ class Contact {
         $u->email = $args["email"] ?? "";
         $u->firstName = $args["firstName"] ?? "";
         $u->lastName = $args["lastName"] ?? "";
-        $u->unaccentedName = Text::name($u->firstName, $u->lastName, "", NAME_U);
         $u->roles = self::ROLE_PC | self::ROLE_CHAIR;
         $u->is_site_contact = true;
         $u->set_roles_properties();
@@ -314,9 +312,6 @@ class Contact {
         assert($this->contactId > 0 || ($this->contactId === 0 && $this->contactDbId > 0));
 
         // handle slice properties
-        if ($this->unaccentedName === "") {
-            $this->unaccentedName = Text::name($this->firstName, $this->lastName, "", NAME_U);
-        }
         $this->role_mask = (int) ($this->role_mask ?? self::ROLE_DBMASK);
         $this->roles = (int) $this->roles;
         $this->disabled = !!$this->disabled;
@@ -382,7 +377,6 @@ class Contact {
         if ($all) {
             $this->contactId = $this->contactXid = $x->contactId;
             $this->cdb_confid = $this->contactDbId = 0;
-            $this->unaccentedName = Text::name($this->firstName, $this->lastName, "", NAME_U);
         }
         $this->activity_at = $this->lastLogin;
         $this->data = $x->data;
@@ -522,32 +516,26 @@ class Contact {
         $first = $c->firstName;
         $von = "";
         while ($sortspec !== 0) {
-            if (($sortspec & 077) === 021 && isset($c->unaccentedName)) {
-                $r[] = $c->unaccentedName;
-                $sortspec >>= 6;
-                $first = "";
+            $bit = $sortspec & 7;
+            $sortspec >>= 3;
+            if ($bit === 1) {
+                $s = $first . $von;
+                $first = $von = "";
+            } else if ($bit === 2) {
+                $s = $c->lastName;
+                if ($first !== "" && ($m = Text::analyze_von($s))) {
+                    $s = $m[1];
+                    $von = " " . $m[0];
+                }
+            } else if ($bit === 3) {
+                $s = $c->email;
+            } else if ($bit === 4) {
+                $s = $c->affiliation;
             } else {
-                $bit = $sortspec & 7;
-                $sortspec >>= 3;
-                if ($bit === 1) {
-                    $s = $first . $von;
-                    $first = $von = "";
-                } else if ($bit === 2) {
-                    $s = $c->lastName;
-                    if ($first !== "" && ($m = Text::analyze_von($s))) {
-                        $s = $m[1];
-                        $von = " " . $m[0];
-                    }
-                } else if ($bit === 3) {
-                    $s = $c->email;
-                } else if ($bit === 4) {
-                    $s = $c->affiliation;
-                } else {
-                    $s = "";
-                }
-                if ($s !== "") {
-                    $r[] = $s;
-                }
+                $s = "";
+            }
+            if ($s !== "") {
+                $r[] = $s;
             }
         }
         if ($von !== "") {
@@ -933,6 +921,26 @@ class Contact {
             $name = Text::add_affiliation_h($name, $this->affiliation, $flags);
         }
         return $name;
+    }
+
+    /** @return string */
+    function searchable_name() {
+        if ($this->firstName !== "" && $this->lastName !== "") {
+            $name = "{$this->firstName} {$this->lastName}";
+        } else {
+            $name = $this->firstName . $this->lastName;
+        }
+        if ($name !== "" && $this->affiliation !== "") {
+            $name = "{$name} ({$this->affiliation})";
+        } else if ($this->affiliation !== "") {
+            $name = "({$this->affiliation})";
+        }
+        return $name;
+    }
+
+    /** @return string */
+    function db_searchable_name() {
+        return substr(strtolower(UnicodeHelper::deaccent($this->searchable_name())), 0, 2048);
     }
 
     /** @return object */
@@ -1719,10 +1727,11 @@ class Contact {
             $qv[] = $this->data = $this->encode_data();
         }
         if ((array_key_exists("firstName", $this->_mod_undo)
-             || array_key_exists("lastName", $this->_mod_undo))
+             || array_key_exists("lastName", $this->_mod_undo)
+             || array_key_exists("affiliation", $this->_mod_undo))
             && $this->cdb_confid === 0) {
             $qf[] = "unaccentedName=?";
-            $qv[] = Text::name($this->firstName, $this->lastName, "", NAME_U);
+            $qv[] = $this->db_searchable_name();
         }
         if ($this->$idk > 0) {
             $qv[] = $this->$idk;

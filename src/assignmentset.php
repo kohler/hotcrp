@@ -542,7 +542,7 @@ class AssignerContacts {
     private $has_pc = false;
     /** @var string
      * @readonly */
-    static public $query = "ContactInfo.contactId, firstName, lastName, unaccentedName, email, affiliation, collaborators, roles, contactTags, primaryContactId";
+    static public $query = "ContactInfo.contactId, firstName, lastName, email, affiliation, collaborators, roles, contactTags, primaryContactId";
     /** @var string
      * @readonly */
     static public $cdb_query = "contactDbId, firstName, lastName, email, affiliation, collaborators, 0 roles, '' contactTags, 0 primaryContactId";

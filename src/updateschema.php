@@ -697,6 +697,26 @@ class UpdateSchema {
         return json_encode_db($rfj);
     }
 
+    /** @param string $table
+     * @return true */
+    private function v259_add_affiliation_to_unaccented_name($table) {
+        $this->conf->qe("lock tables {$table} write");
+        $users = [];
+        $result = $this->conf->qe("select * from {$table}");
+        while (($u = Contact::fetch($result, $this->conf))) {
+            $users[] = $u;
+        }
+        Dbl::free($result);
+
+        $cleanf = Dbl::make_multi_ql_stager($this->conf->dblink);
+        foreach ($users as $u) {
+            $cleanf("update {$table} set unaccentedName=? where contactId=?", [strtolower(UnicodeHelper::deaccent($u->searchable_name())), $u->contactId]);
+        }
+        $cleanf(true);
+        $this->conf->qe("unlock tables");
+        return true;
+    }
+
     function run() {
         $conf = $this->conf;
 
@@ -2315,6 +2335,13 @@ class UpdateSchema {
         }
         if ($conf->sversion === 257) {
             $conf->update_schema_version(258);
+        }
+        if ($conf->sversion === 258
+            && $conf->ql_ok("alter table ContactInfo change `unaccentedName` `unaccentedName` varbinary(2048) NOT NULL DEFAULT ''")
+            && $conf->ql_ok("alter table DeletedContactInfo change `unaccentedName` `unaccentedName` varbinary(2048) NOT NULL DEFAULT ''")
+            && $this->v259_add_affiliation_to_unaccented_name("ContactInfo")
+            && $this->v259_add_affiliation_to_unaccented_name("DeletedContactInfo")) {
+            $conf->update_schema_version(259);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

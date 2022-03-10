@@ -319,7 +319,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 258) {
+        if ($this->sversion < 259) {
             $old_nerrors = Dbl::$nerrors;
             (new UpdateSchema($this))->run();
             Dbl::$nerrors = $old_nerrors;
@@ -2324,9 +2324,9 @@ class Conf {
     private function cached_user_query() {
         if ($this->_slice === 3) {
             // see also MailRecipients
-            return "contactId, firstName, lastName, unaccentedName, affiliation, email, roles, contactTags, disabled, primaryContactId, 3 _slice";
+            return "contactId, firstName, lastName, affiliation, email, roles, contactTags, disabled, primaryContactId, 3 _slice";
         } else if ($this->_slice === 2) {
-            return "contactId, firstName, lastName, unaccentedName, affiliation, email, roles, contactTags, disabled, primaryContactId, collaborators, 2 _slice";
+            return "contactId, firstName, lastName, affiliation, email, roles, contactTags, disabled, primaryContactId, collaborators, 2 _slice";
         } else {
             return "*";
         }

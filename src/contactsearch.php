@@ -13,17 +13,21 @@ class ContactSearch {
     public $conf;
     /** @var int */
     public $type;
+    /** @var string */
     public $text;
     /** @var Contact */
     private $user;
-    private $cset = null;
+    /** @var ?array<int,Contact> */
+    private $cset;
     /** @var list<int> */
     private $ids;
     /** @var bool */
     private $ok;
+    /** @var bool */
     private $only_pc = false;
     /** @var ?list<Contact> */
     private $contacts = null;
+    /** @var false|string */
     public $warn_html = false;
 
     /** @param int $type
@@ -53,15 +57,27 @@ class ContactSearch {
         $this->ids = $ids ?? [];
         $this->ok = $ids !== null;
     }
+
+    /** @param string $text
+     * @return ContactSearch */
     static function make_pc($text, Contact $user) {
         return new ContactSearch(self::F_PC | self::F_TAG | self::F_USER, $text, $user);
     }
+
+    /** @param string $text
+     * @return ContactSearch */
     static function make_special($text, Contact $user) {
         return new ContactSearch(self::F_PC | self::F_TAG, $text, $user);
     }
+
+    /** @param string $text
+     * @param array<int,Contact> $cset
+     * @return ContactSearch */
     static function make_cset($text, Contact $user, $cset) {
         return new ContactSearch(self::F_USER, $text, $user, $cset);
     }
+
+    /** @return ?list<int> */
     private function check_simple() {
         if (strcasecmp($this->text, "me") == 0
             && (!($this->type & self::F_PC)
@@ -93,6 +109,10 @@ class ContactSearch {
         }
         return null;
     }
+
+    /** @param string $q
+     * @param list $args
+     * @return ?list<int> */
     private function select_ids($q, $args) {
         $result = $this->conf->qe_apply($q, $args);
         $a = [];
@@ -102,6 +122,8 @@ class ContactSearch {
         Dbl::free($result);
         return $a;
     }
+
+    /** @return ?list<int> */
     private function check_pc_tag() {
         $need = $neg = false;
         $x = strtolower($this->text);
@@ -134,8 +156,10 @@ class ContactSearch {
             return null;
         }
     }
+
+    /** @return list<int> */
     private function check_user() {
-        if (strcasecmp($this->text, "anonymous") == 0
+        if (strcasecmp($this->text, "anonymous") === 0
             && !$this->cset
             && !($this->type & self::F_PC)) {
             $regex = Dbl::utf8ci($this->conf->dblink, "'^anonymous[0-9]*\$'");
@@ -144,7 +168,11 @@ class ContactSearch {
 
         // split name components
         list($f, $l, $e) = Text::split_name($this->text, true);
-        $n = trim($f . " " . $l);
+        if ($f !== "" && $l !== "") {
+            $n = "$f $l";
+        } else {
+            $n = $f . $l;
+        }
         if ($e === "" && strpos($n, " ") === false) {
             $e = $n;
         }
@@ -155,7 +183,7 @@ class ContactSearch {
             if (preg_match('/\A(.*)@(.*?)((?:[.](?:com|net|edu|org|us|uk|fr|be|jp|cn))?)\z/', $e, $m)) {
                 $e = ($m[1] === "" ? "*" : $m[1]) . "@*" . $m[2] . ($m[3] ? : "*");
             } else {
-                $e = "*$e*";
+                $e = "*{$e}*";
             }
         }
 
@@ -166,18 +194,19 @@ class ContactSearch {
         } else if ($this->type & self::F_PC) {
             $cs = $this->conf->pc_members();
         } else {
-            $where = array();
+            $where = [];
             if ($n !== "") {
-                $x = sqlq_for_like(UnicodeHelper::deaccent($n));
-                $where[] = "unaccentedName like " . Dbl::utf8ci("'%" . preg_replace('/[\s*]+/', "%", $x) . "%'");
+                $x = sqlq_for_like(strtolower(UnicodeHelper::deaccent($n)));
+                $where[] = "unaccentedName like '%" . preg_replace('/[\s*]+/', "%", $x) . "%'";
             }
             if ($e !== "") {
                 $x = sqlq_for_like($e);
                 $where[] = "email like " . Dbl::utf8ci("'" . preg_replace('/[\s*]+/', "%", $x) . "'");
             }
-            $q = "select contactId, firstName, lastName, unaccentedName, email, roles, primaryContactId from ContactInfo where " . join(" or ", $where);
-            if ($this->type & self::F_ALLOW_DELETED)
-                $q .= " union select contactId, firstName, lastName, unaccentedName, email, 0 roles, 0 primaryContactId from DeletedContactInfo where " . join(" or ", $where);
+            $q = "select contactId, firstName, lastName, affiliation, email, roles, primaryContactId from ContactInfo where " . join(" or ", $where);
+            if ($this->type & self::F_ALLOW_DELETED) {
+                $q .= " union select contactId, firstName, lastName, affiliation, email, 0 roles, 0 primaryContactId from DeletedContactInfo where " . join(" or ", $where);
+            }
             $result = $this->conf->qe_raw($q);
             $cs = [];
             while (($row = Contact::fetch($result, $this->conf))) {
@@ -208,9 +237,8 @@ class ContactSearch {
                 }
                 $ids[] = $id;
             } else if ($nreg) {
-                $n = $acct->firstName === "" || $acct->lastName === "" ? "" : " ";
-                $n = $acct->firstName . $n . $acct->lastName;
-                if (Text::match_pregexes($nreg, $n, $acct->unaccentedName)) {
+                $n = $acct->searchable_name();
+                if (Text::match_pregexes($nreg, $n, UnicodeHelper::deaccent($n))) {
                     $ids[] = $id;
                 }
             }
@@ -231,37 +259,30 @@ class ContactSearch {
     function has_error() {
         return !$this->ok;
     }
+
     /** @return bool */
     function is_empty() {
         return empty($this->ids);
     }
+
     /** @return list<int> */
     function user_ids() {
         return $this->ids;
     }
+
     /** @return list<Contact> */
     function users() {
-        global $Me;
         if ($this->contacts === null) {
-            $this->contacts = [];
-            $pcm = $this->conf->pc_users();
             foreach ($this->ids as $cid) {
-                if ($this->cset && ($p = $this->cset[$cid] ?? null)) {
+                if ($this->cset === null || !isset($this->cset[$cid]))
+                    $this->conf->prefetch_user_by_id($cid);
+            }
+            $this->contacts = [];
+            foreach ($this->ids as $cid) {
+                if (($p = $this->cset[$cid] ?? $this->conf->cached_user_by_id($cid)))
                     $this->contacts[] = $p;
-                } else if (($p = $pcm[$cid] ?? null)) {
-                    $this->contacts[] = $p;
-                } else if ($Me->contactId == $cid && $Me->conf === $this->conf) {
-                    $this->contacts[] = $Me;
-                } else {
-                    $this->contacts[] = $this->conf->cached_user_by_id($cid);
-                }
             }
         }
         return $this->contacts;
-    }
-    /** @param int $i
-     * @return ?Contact */
-    function user_by_index($i) {
-        return ($this->users())[$i] ?? null;
     }
 }
