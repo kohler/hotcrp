@@ -1049,9 +1049,6 @@ class AssignmentSet {
         } else if ($overrides === true) {
             $overrides = $this->user->overrides() | Contact::OVERRIDE_CONFLICT;
         }
-        if (!$this->user->privChair) {
-            $overrides &= ~Contact::OVERRIDE_CONFLICT;
-        }
         $this->astate->overrides = (int) $overrides;
         return $this;
     }
@@ -2007,15 +2004,12 @@ class Assignment_PaperColumn extends PaperColumn {
         return "Assignment";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return (!$pl->user->can_administer($row)
-                && !($pl->user->overrides() & Contact::OVERRIDE_CONFLICT))
+        return !$pl->user->allow_administer($row)
             || !isset($this->content[$row->paperId]);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $t = $this->content[$row->paperId];
-        if ($t !== ""
-            && ($pl->user->overrides() & Contact::OVERRIDE_CONFLICT)
-            && !$pl->user->can_administer($row)) {
+        if ($t !== "" && !$pl->user->can_administer($row)) {
             $t = '<em>Hidden for conflict</em>';
         }
         return $t;
