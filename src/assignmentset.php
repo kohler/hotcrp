@@ -1041,7 +1041,7 @@ class AssignmentSet {
         $this->astate->reviewer = $reviewer;
         return $this;
     }
-    /** @param ?int|true $overrides
+    /** @param null|int|true $overrides
      * @return $this */
     function set_overrides($overrides) {
         if ($overrides === null) {

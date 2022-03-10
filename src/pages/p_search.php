@@ -92,7 +92,7 @@ class Search_Page {
         }
 
         // Reviewers group
-        if ($user->privChair) {
+        if ($user->is_manager()) {
             $this->checkbox_item(20, "pcconf", "PC conflicts");
             $this->checkbox_item(20, "allpref", "Review preferences");
         }
@@ -233,7 +233,7 @@ class Search_Page {
         echo '<div style="padding-top:2ex"><table style="margin:0 0 0 auto"><tr>';
 
         // Conflict display
-        if ($this->user->privChair) {
+        if ($this->user->is_manager()) {
             echo '<td class="padlb">',
                 Ht::checkbox("showforce", 1, $this->pl->viewing("force"),
                              ["id" => "showforce", "class" => "uich js-plinfo"]),
