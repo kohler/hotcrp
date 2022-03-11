@@ -3961,18 +3961,15 @@ class Contact {
     /** @return bool */
     function time_review(PaperInfo $prow, ReviewInfo $rrow = null) {
         $rights = $this->rights($prow);
-        if ($rights->reviewType > 0
-            || ($rrow
-                && $this->is_owned_review($rrow))
-            || ($rrow
-                && $rrow->contactId != $this->contactId
-                && $rights->allow_administer)) {
-            return $this->conf->time_review($rrow, $rights->allow_pc, true);
-        } else if ($rights->allow_review
-                   && $this->conf->setting("pcrev_any") > 0) {
-            return $this->conf->time_review(null, true, true);
+        if ($rrow) {
+            return ($rights->allow_administer || $this->is_owned_review($rrow))
+                && $this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true);
+        } else if ($rights->reviewType > 0) {
+            return $this->conf->time_review($rights->reviewRound, $rights->reviewType, true);
         } else {
-            return false;
+            return $rights->allow_review
+                && $this->conf->setting("pcrev_any") > 0
+                && $this->conf->time_review(null, true, true);
         }
     }
 
@@ -4068,85 +4065,149 @@ class Contact {
         return $whynot;
     }
 
-    /** @param PaperContactInfo $rights
-     * @param ?ReviewInfo $rrow
-     * @return bool */
-    private function rights_owned_review($rights, $rrow) {
-        if ($rrow) {
-            return $rights->can_administer || $this->is_owned_review($rrow);
-        } else {
-            return $rights->reviewType > 0;
-        }
-    }
-
     /** @return bool */
-    function can_edit_review(PaperInfo $prow, ReviewInfo $rrow = null, $submit = false) {
-        assert(!$rrow || $rrow->paperId == $prow->paperId);
+    function can_edit_some_review(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        if ($submit && !$this->can_clickthrough("review", $prow)) {
-            return false;
-        }
-        return ($this->rights_owned_review($rights, $rrow)
-                && $this->conf->time_review($rrow, $rights->allow_pc, true))
-            || (!$rrow
-                && $prow->timeSubmitted > 0
+        return $rights->can_administer
+            || ($rights->reviewType > 0
+                && $this->conf->time_review($rights->reviewRound, $rights->reviewType, true))
+            || ($rights->reviewType === 0
                 && $rights->allow_review
                 && $this->conf->setting("pcrev_any") > 0
-                && $this->conf->time_review(null, true, true))
-            || ($rights->can_administer
-                && $rights->potential_reviewer /* true unless track perm */
-                && (($prow->timeSubmitted > 0 && !$submit)
-                    || $this->override_deadlines($rights)));
+                && $this->conf->time_review(null, true, true));
     }
 
-    /** @param ?ReviewInfo $rrow
-     * @return ?PermissionProblem */
-    function perm_edit_review(PaperInfo $prow, $rrow, $submit = false) {
-        if ($this->can_edit_review($prow, $rrow, $submit)) {
+    /** @return ?PermissionProblem */
+    function perm_edit_some_review(PaperInfo $prow) {
+        if ($this->can_edit_some_review($prow)) {
             return null;
         }
         $rights = $this->rights($prow);
-        $rrow_cid = $rrow ? $rrow->contactId : 0;
         // The "reviewNotAssigned" and "deadline" failure reasons are special.
         // If either is set, the system will still allow review form download.
         $whyNot = $prow->make_whynot();
-        if ($rrow && $rrow_cid != $this->contactId
-            && !$rights->allow_administer) {
-            $whyNot["differentReviewer"] = true;
-        } else if (!$rights->allow_pc && !$this->rights_owned_review($rights, $rrow)) {
+        if ($rights->allow_administer && !$rights->can_administer) {
+            $whyNot["conflict"] = true;
+            $whyNot["forceShow"] = true;
+        } else if ($rights->conflictType > CONFLICT_MAXUNCONFLICTED) {
+            $whyNot["conflict"] = true;
+        } else if ($rights->reviewType === 0 && !$rights->allow_pc) {
             $whyNot["permission"] = "review";
         } else if ($prow->timeWithdrawn > 0) {
             $whyNot["withdrawn"] = true;
         } else if ($prow->timeSubmitted <= 0) {
             $whyNot["notSubmitted"] = true;
+        } else if ($rights->allow_review && $rights->reviewType === 0) {
+            $whyNot["reviewNotAssigned"] = true;
         } else {
-            if ($rights->conflictType > CONFLICT_MAXUNCONFLICTED && !$rights->can_administer) {
+            $whyNot["deadline"] = $rights->allow_pc ? "pcrev_hard" : "extrev_hard";
+        }
+        return $whyNot;
+    }
+
+    /** @param ?int $round
+     * @return bool */
+    function can_create_review(PaperInfo $prow, Contact $reviewer = null, $round = null) {
+        $reviewer = $reviewer ?? $this;
+        $rights = $this->rights($prow);
+        if ($rights->can_administer) {
+            return (!$reviewer->isPC
+                    || $reviewer->can_accept_review_assignment($prow)
+                    || ($this->override_deadlines($rights)
+                        && $reviewer->can_accept_review_assignment_ignore_conflict($prow)))
+                && (($prow->timeSubmitted > 0
+                     && $this->conf->time_review($round, $reviewer->isPC, true))
+                    || $this->override_deadlines($rights));
+        } else {
+            return $rights->reviewType === 0
+                && $rights->allow_review
+                && $reviewer->contactId === $this->contactId
+                && $this->conf->setting("pcrev_any") > 0
+                && $this->conf->time_review($round, $rights->allow_pc, true);
+        }
+    }
+
+    /** @param ?int $round
+     * @return ?PermissionProblem */
+    function perm_create_review(PaperInfo $prow, Contact $reviewer = null, $round = null) {
+        $reviewer = $reviewer ?? $this;
+        if ($this->can_create_review($prow, $reviewer, $round)) {
+            return null;
+        }
+        $rights = $this->rights($prow);
+        $whyNot = $prow->make_whynot();
+        if ($rights->can_administer) {
+            if ($reviewer->isPC && !$reviewer->can_accept_review_assignment($prow)) {
+                $whyNot["unacceptableReviewer"] = true;
+                if ($reviewer->can_accept_review_assignment_ignore_conflict($prow)) {
+                    $whyNot["override"] = true;
+                }
+            }
+        } else if ($rights->allow_administer) {
+            $whyNot["conflict"] = true;
+            $whyNot["forceShow"] = true;
+        } else {
+            if ($reviewer->contactId !== $this->contactId) {
+                $whyNot["differentReviewer"] = true;
+            } else if ($rights->reviewType > 0) {
+                $whyNot["alreadyReviewed"] = true;
+            } else if (!$rights->potential_reviewer) {
+                $whyNot["permission"] = "review";
+            } else if (!$rights->allow_review) {
+                $whyNot["permission"] = "review";
                 $whyNot["conflict"] = true;
-            } else if ($rights->allow_review
-                       && !$this->rights_owned_review($rights, $rrow)
-                       && (!$rrow || $rrow_cid == $this->contactId)) {
+            } else if ($this->conf->setting("pcrev_any") <= 0) {
                 $whyNot["reviewNotAssigned"] = true;
-            } else if ($this->can_edit_review($prow, $rrow, false)
-                       && !$this->can_clickthrough("review", $prow)) {
-                $whyNot["clickthrough"] = true;
-            } else {
-                $whyNot["deadline"] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
             }
-            if ($rights->allow_administer
-                && ($rights->conflictType > CONFLICT_MAXUNCONFLICTED || $prow->timeSubmitted <= 0)) {
-                $whyNot["forceShow"] = true;
+        }
+        if (count($whyNot) === 0) {
+            if ($prow->timeWithdrawn > 0) {
+                $whyNot["withdrawn"] = true;
+            } else if ($prow->timeSubmitted <= 0) {
+                $whyNot["notSubmitted"] = true;
+            } else if (!$this->conf->time_review($round, $reviewer->isPC, true)) {
+                $whyNot["deadline"] = $reviewer->isPC ? "pcrev_hard" : "extrev_hard";
             }
-            if ($rights->allow_administer && isset($whyNot["deadline"])) {
+            if ($rights->can_administer
+                && ($prow->timeSubmitted <= 0 || isset($whyNot["deadline"]))) {
                 $whyNot["override"] = true;
             }
         }
         return $whyNot;
     }
 
-    /** @param ?ReviewInfo $rrow
+    /** @return bool */
+    function can_edit_review(PaperInfo $prow, ReviewInfo $rrow, $submit = false) {
+        $rights = $this->rights($prow);
+        return (!$submit
+                || $this->can_clickthrough("review", $prow))
+            && ($rights->can_administer
+                || $this->is_owned_review($rrow))
+            && ($this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)
+                || ($rights->can_administer && (!$submit || $this->override_deadlines($rights))));
+    }
+
+    /** @param bool $submit
      * @return ?PermissionProblem */
-    function perm_submit_review(PaperInfo $prow, $rrow) {
-        return $this->perm_edit_review($prow, $rrow, true);
+    function perm_edit_review(PaperInfo $prow, ReviewInfo $rrow, $submit = false) {
+        if ($this->can_edit_review($prow, $rrow, $submit)) {
+            return null;
+        }
+        $rights = $this->rights($prow);
+        $whyNot = $prow->make_whynot();
+        if (!$this->can_clickthrough("review", $prow)
+            && $this->can_edit_review($prow, $rrow, false)) {
+            $whyNot["clickthrough"] = true;
+        } else if (!$rights->can_administer
+                   && !$this->is_owned_review($rrow)) {
+            $whyNot["differentReviewer"] = true;
+        } else if (!$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
+            $whyNot["deadline"] = $rrow->reviewType >= REVIEW_PC ? "pcrev_hard" : "extrev_hard";
+            if ($rights->allow_administer) {
+                $whyNot["override"] = true;
+            }
+        }
+        return $whyNot;
     }
 
     /** @return bool */
@@ -4158,46 +4219,6 @@ class Contact {
             && ($rights->can_administer
                 || ($this->isPC && $rrow->requestedBy === $this->contactXid))
             && ($this->conf->time_review(null, true, true) || $this->override_deadlines($rights));
-    }
-
-    /** @return bool */
-    function can_create_review_from(PaperInfo $prow, Contact $user) {
-        $rights = $this->rights($prow);
-        return $rights->can_administer
-            && ($prow->timeSubmitted > 0 || $this->override_deadlines($rights))
-            && (!$user->isPC || $user->can_accept_review_assignment($prow))
-            && ($this->conf->time_review(null, true, true) || $this->override_deadlines($rights));
-    }
-
-    /** @return ?PermissionProblem */
-    function perm_create_review_from(PaperInfo $prow, Contact $user) {
-        if ($this->can_create_review_from($prow, $user)) {
-            return null;
-        }
-        $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
-        if (!$rights->allow_administer) {
-            $whyNot["administer"] = true;
-        } else if ($prow->timeWithdrawn > 0) {
-            $whyNot["withdrawn"] = true;
-        } else if ($prow->timeSubmitted <= 0) {
-            $whyNot["notSubmitted"] = true;
-        } else {
-            if ($user->isPC && !$user->can_accept_review_assignment($prow)) {
-                $whyNot["unacceptableReviewer"] = true;
-            }
-            if (!$this->conf->time_review(null, true, true)) {
-                $whyNot["deadline"] = ($user->isPC ? "pcrev_hard" : "extrev_hard");
-            }
-            if ($rights->allow_administer
-                && ($rights->conflictType > CONFLICT_MAXUNCONFLICTED || $prow->timeSubmitted <= 0)) {
-                $whyNot["forceShow"] = true;
-            }
-            if ($rights->allow_administer && isset($whyNot["deadline"])) {
-                $whyNot["override"] = true;
-            }
-        }
-        return $whyNot;
     }
 
     /** @return bool */
@@ -5149,7 +5170,7 @@ class Contact {
                 if ($rights->act_author_view) {
                     $perm->act_author_view = true;
                 }
-                if ($this->can_edit_review($prow, null, false)) {
+                if ($this->can_edit_some_review($prow)) {
                     $perm->can_review = true;
                 }
                 if (($caddf = $this->add_comment_state($prow)) !== 0) {

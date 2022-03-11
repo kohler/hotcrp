@@ -401,7 +401,7 @@ class Paper_Page {
         $this->pt = $pt = new PaperTable($this->user, $this->qreq, $this->prow);
         if ($pt->can_view_reviews()
             || $pt->mode === "re"
-            || ($this->prow->paperId > 0 && $this->user->can_edit_review($this->prow))) {
+            || ($this->prow->paperId > 0 && $this->user->can_edit_some_review($this->prow))) {
             $pt->resolve_review(false);
         }
         $pt->resolve_comments();

@@ -22,12 +22,8 @@ class PermissionProblem extends Exception
     }
     #[\ReturnTypeWillChange]
     /** @param string $offset */
-    function& offsetGet($offset) {
-        $x = null;
-        if (array_key_exists($offset, $this->_a)) {
-            $x =& $this->_a[$offset];
-        }
-        return $x;
+    function offsetGet($offset) {
+        return $this->_a[$offset] ?? null;
     }
     #[\ReturnTypeWillChange]
     /** @param string $offset
@@ -69,7 +65,12 @@ class PermissionProblem extends Exception
     #[\ReturnTypeWillChange]
     /** @return int */
     function count() {
-        return count($this->_a);
+        $n = 0;
+        foreach ($this->_a as $k => $v) {
+            if (!in_array($k, ["paperId", "reviewId", "option", "override", "forceShow", "listViewable"]))
+                ++$n;
+        }
+        return $n;
     }
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
@@ -229,6 +230,9 @@ class PermissionProblem extends Exception
         }
         if (isset($this->_a["unacceptableReviewer"])) {
             $ms[] = $this->conf->_("That user can’t be assigned to review #%d.", $paperId);
+        }
+        if (isset($this->_a["alreadyReviewed"])) {
+            $ms[] = $this->conf->_("You already have a review assignment for #%d.", $paperId);
         }
         if (isset($this->_a["clickthrough"])) {
             $ms[] = $this->conf->_("You can’t do that until you agree to the terms.");

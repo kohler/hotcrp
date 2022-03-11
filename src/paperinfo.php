@@ -16,6 +16,8 @@ class PaperContactInfo {
     /** @var int */
     public $reviewSubmitted = 0;
     /** @var int */
+    public $reviewRound = 0;
+    /** @var int */
     public $review_status = 0;    // 0 means no review
     const RS_DECLINED = 1;        // declined assigned review
     const RS_UNSUBMITTED = 2;     // review not submitted, needs submit
@@ -102,9 +104,14 @@ class PaperContactInfo {
         $this->conflictType = max($ct, $this->conflictType);
     }
 
-    private function mark_review_type($rt, $rs, $rns) {
+    /** @param int $rt
+     * @param int $rs
+     * @param int $rns
+     * @param int $rround */
+    private function mark_review_type($rt, $rs, $rns, $rround) {
         $this->reviewType = max($rt, $this->reviewType);
         $this->reviewSubmitted = max($rs, $this->reviewSubmitted);
+        $this->reviewRound = $rround;
         if ($rt > 0) {
             if ($rs > 0 || $rns == 0) {
                 $this->review_status = PaperContactInfo::RS_SUBMITTED;
@@ -115,14 +122,15 @@ class PaperContactInfo {
     }
 
     function mark_review(ReviewInfo $rrow) {
-        $this->mark_review_type($rrow->reviewType, (int) $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit);
+        $this->mark_review_type($rrow->reviewType, (int) $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit, $rrow->reviewRound);
     }
 
+    /** @param ?string $sig */
     private function mark_my_review_permissions($sig) {
         if ((string) $sig !== "") {
             foreach (explode(",", $sig) as $r) {
-                list($rt, $rs, $rns) = explode(" ", $r);
-                $this->mark_review_type((int) $rt, (int) $rs, (int) $rns);
+                list($rt, $rs, $rns, $rround) = explode(" ", $r);
+                $this->mark_review_type((int) $rt, (int) $rs, (int) $rns, (int) $rround);
             }
         }
     }
@@ -131,7 +139,7 @@ class PaperContactInfo {
     static function load_into(PaperInfo $prow, $user) {
         $conf = $prow->conf;
         $pid = $prow->paperId;
-        $q = "select conflictType, reviewType, reviewSubmitted, reviewNeedsSubmit";
+        $q = "select conflictType, reviewType, reviewSubmitted, reviewNeedsSubmit, reviewRound";
         $cid = $user->contactXid;
         $rev_tokens = $user->review_tokens();
         if ($cid > 0
@@ -148,10 +156,10 @@ class PaperContactInfo {
                 $row->_clear_contact_info($user);
             }
             while (($local = $result->fetch_row())) {
-                $row = $row_set->get((int) $local[4]);
-                $ci = $row->_get_contact_info((int) $local[5]);
+                $row = $row_set->get((int) $local[5]);
+                $ci = $row->_get_contact_info((int) $local[6]);
                 $ci->mark_conflict((int) $local[0]);
-                $ci->mark_review_type((int) $local[1], (int) $local[2], (int) $local[3]);
+                $ci->mark_review_type((int) $local[1], (int) $local[2], (int) $local[3], (int) $local[4]);
             }
             Dbl::free($result);
             return;
@@ -190,9 +198,9 @@ class PaperContactInfo {
             }
         }
         while ($result && ($local = $result->fetch_row())) {
-            $ci = $prow->_get_contact_info((int) $local[4]);
+            $ci = $prow->_get_contact_info((int) $local[5]);
             $ci->mark_conflict((int) $local[0]);
-            $ci->mark_review_type((int) $local[1], (int) $local[2], (int) $local[3]);
+            $ci->mark_review_type((int) $local[1], (int) $local[2], (int) $local[3], (int) $local[4]);
         }
         Dbl::free($result);
     }
@@ -693,7 +701,7 @@ class PaperInfo {
         $prow->paperTags = $tags;
         $prow->outcome = 1;
         $prow->conflictType = "0";
-        $prow->myReviewPermissions = "{$rtype} 1 0";
+        $prow->myReviewPermissions = "{$rtype} 1 0 0";
         $prow->incorporate_user($user);
         return $prow;
     }
@@ -701,7 +709,7 @@ class PaperInfo {
     /** @param string $prefix
      * @return string */
     static function my_review_permissions_sql($prefix = "") {
-        return "group_concat({$prefix}reviewType, ' ', coalesce({$prefix}reviewSubmitted,0), ' ', reviewNeedsSubmit)";
+        return "group_concat({$prefix}reviewType, ' ', coalesce({$prefix}reviewSubmitted,0), ' ', reviewNeedsSubmit, ' ', reviewRound)";
     }
 
     /** @return PermissionProblem */

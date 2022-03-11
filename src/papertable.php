@@ -138,7 +138,7 @@ class PaperTable {
             return ($this->allow_admin || $this->user->can_request_review($this->prow, null, true))
                 && (!$check_page || $this->qreq->page() === "assign");
         } else if ($mode === "re") {
-            return $this->user->can_edit_review($this->prow, null)
+            return $this->user->can_edit_some_review($this->prow)
                 && (!$check_page || $this->qreq->page() === "review");
         } else {
             return true;
@@ -2439,7 +2439,7 @@ class PaperTable {
                 $x = $a . Ht::img("review48.png", "[Your review]", $dlimgjs) . "&nbsp;<u><b>Your review</b></u></a>";
             }
             $t[] = $x;
-        } else if ($this->user->can_edit_review($prow, null)) {
+        } else if ($this->user->can_edit_some_review($prow)) {
             $t[] = '<a href="' . $prow->reviewurl(["m" => "re"]) . '" class="noul revlink">'
                 . Ht::img("review48.png", "[Write review]", $dlimgjs) . "&nbsp;<u><b>Write review</b></u></a>";
         }
@@ -2689,7 +2689,7 @@ class PaperTable {
      * @return bool */
     private function _mark_review_messages($editable, ReviewInfo $rrow) {
         if (($this->user->is_owned_review($rrow) || $this->admin)
-            && !$this->conf->time_review($rrow, $this->user->act_pc($this->prow), true)) {
+            && !$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
             if ($this->admin) {
                 $override = " As an administrator, you can override this deadline.";
             } else {
@@ -2706,7 +2706,7 @@ class PaperTable {
             } else {
                 $rrow->message_list[] = new MessageItem(null, "{$t} As an administrator, you can override this deadline.", MessageSet::WARNING);
             }
-        } else if (!$this->user->can_edit_review($this->prow, $this->editrrow)) {
+        } else if (!$this->user->can_edit_review($this->prow, $rrow)) {
             return false;
         }
 
@@ -2857,7 +2857,9 @@ class PaperTable {
         }
 
         if ($want_review
-            && $this->user->can_edit_review($this->prow, $this->editrrow, false)) {
+            && ($this->editrrow
+                ? $this->user->can_edit_review($this->prow, $this->editrrow, false)
+                : $this->user->can_create_review($this->prow))) {
             $this->mode = "re";
         }
 

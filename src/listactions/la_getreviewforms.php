@@ -23,7 +23,7 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
         $texts = [];
         $ms = (new MessageSet)->set_ignore_duplicates(true)->set_want_ftext(true, 0);
         foreach ($ssel->paper_set($user) as $prow) {
-            $whyNot = $user->perm_edit_review($prow, null);
+            $whyNot = $user->perm_edit_some_review($prow);
             if ($whyNot
                 && !isset($whyNot["deadline"])
                 && !isset($whyNot["reviewNotAssigned"])) {

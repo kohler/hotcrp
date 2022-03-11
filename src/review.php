@@ -1208,7 +1208,7 @@ $blind\n";
         $disabled = !$user->can_clickthrough("review", $prow);
         $my_review = !$rrow || $user->is_my_review($rrow);
         $pc_deadline = $user->act_pc($prow) || $user->allow_administer($prow);
-        if (!$this->conf->time_review($rrow, $pc_deadline, true)) {
+        if (!$this->conf->time_review($rrow ? $rrow->reviewRound : null, $rrow ? $rrow->reviewType : $pc_deadline, true)) {
             $whyNot = new PermissionProblem($this->conf, ["deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard")]);
             $override_text = $whyNot->unparse_html() . " Are you sure you want to override the deadline?";
             if (!$submitted) {
@@ -2018,26 +2018,28 @@ class ReviewValues extends MessageSet {
 
         // maybe create review
         $new_rrid = false;
-        if (!$rrow && $user !== $reviewer) {
-            if (($whyNot = $user->perm_create_review_from($prow, $reviewer))) {
-                $this->reviewer_error(null);
-                $this->reviewer_error($whyNot->unparse_html());
-                return false;
-            }
+        if (!$rrow) {
             $extra = [];
             if (isset($this->req["round"])) {
                 $extra["round_number"] = (int) $this->conf->round_number($this->req["round"], false);
             }
+            if (($whyNot = $user->perm_create_review($prow, $reviewer, $extra["round_number"] ?? null))) {
+                if ($user !== $reviewer) {
+                    $this->reviewer_error(null);
+                }
+                $this->reviewer_error($whyNot->unparse_html());
+                return false;
+            }
             $new_rrid = $user->assign_review($prow->paperId, $reviewer->contactId, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL, $extra);
             if (!$new_rrid) {
-                $this->rmsg(null, "<0>Internal error while creating review.", self::ERROR);
+                $this->rmsg(null, "<0>Internal error while creating review", self::ERROR);
                 return false;
             }
             $rrow = $prow->fresh_review_by_id($new_rrid);
         }
 
         // check permission
-        $whyNot = $user->perm_submit_review($prow, $rrow);
+        $whyNot = $user->perm_edit_review($prow, $rrow, true);
         if ($whyNot) {
             if ($user === $reviewer || $user->can_view_review_identity($prow, $rrow)) {
                 $this->rmsg(null, "<5>" . $whyNot->unparse_html(), self::ERROR);
@@ -2048,7 +2050,6 @@ class ReviewValues extends MessageSet {
         }
 
         // actually check review and save
-        $rrow = $rrow ?? ReviewInfo::make_blank($prow, $user);
         if ($this->check($rrow)) {
             return $this->do_save($user, $prow, $rrow);
         } else {
