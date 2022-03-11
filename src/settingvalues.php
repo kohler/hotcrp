@@ -243,16 +243,10 @@ class SettingValues extends MessageSet {
         $this->cs()->print_group($g, $top);
     }
 
-    /** @param ?string $classes
-     * @param ?string $id */
-    function print_open_section($classes = null, $id = null) {
-        $this->cs()->print_open_section($classes, $id);
-    }
-
     /** @param string $title
-     * @param ?string $id */
-    function print_section($title, $id = null) {
-        $this->cs()->print_section($title, $id);
+     * @param ?string $hashid */
+    function print_section($title, $hashid = null) {
+        $this->cs()->print_section($title, $hashid);
     }
 
 

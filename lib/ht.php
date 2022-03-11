@@ -16,14 +16,14 @@ class Ht {
     const ATTR_BOOL = 2;
     const ATTR_BOOLTEXT = 3;
     const ATTR_NOEMPTY = 4;
-    const ATTR_SPACESEP = 16;
+    const ATTR_TOKENLIST = 16;
     private static $_attr_type = [
         "accept-charset" => self::ATTR_SKIP,
         "action" => self::ATTR_SKIP,
         "async" => self::ATTR_BOOL,
         "autofocus" => self::ATTR_BOOL,
         "checked" => self::ATTR_BOOL,
-        "class" => self::ATTR_NOEMPTY | self::ATTR_SPACESEP,
+        "class" => self::ATTR_NOEMPTY | self::ATTR_TOKENLIST,
         "data-default-checked" => self::ATTR_BOOLTEXT,
         "defer" => self::ATTR_BOOL,
         "disabled" => self::ATTR_BOOL,
@@ -39,6 +39,17 @@ class Ht {
         "type" => self::ATTR_SKIP
     ];
 
+    /** @param ?string ...$tokens
+     * @return string */
+    static function add_tokens(...$tokens) {
+        $x = "";
+        foreach ($tokens as $t) {
+            if (($t ?? "") !== "")
+                $x = $x === "" ? $t : "$x $t";
+        }
+        return $x;
+    }
+
     /** @param ?array<string,mixed> $js
      * @return string */
     static function extra($js) {
@@ -47,8 +58,8 @@ class Ht {
             foreach ($js as $k => $v) {
                 $tf = self::$_attr_type[$k] ?? 0;
                 $t = $tf & 15;
-                if (is_array($v) && ($tf & self::ATTR_SPACESEP) !== 0) {
-                    $v = join(" ", $v);
+                if (is_array($v) && ($tf & self::ATTR_TOKENLIST) !== 0) {
+                    $v = self::add_tokens(...$v);
                 }
                 if ($v === null
                     || $t === self::ATTR_SKIP
@@ -123,7 +134,7 @@ class Ht {
             && ($qpos = strpos($action, "?")) !== false) {
             $pos = $qpos + 1;
             while ($pos < strlen($action)
-                   && preg_match('{\G([^#=&;]*)=([^#&;]*)([#&;]|\z)}', $action, $m, 0, $pos)) {
+                   && preg_match('/\G([^#=&;]*)=([^#&;]*)([#&;]|\z)/', $action, $m, 0, $pos)) {
                 $suffix .= self::hidden(urldecode($m[1]), urldecode($m[2]));
                 $pos += strlen($m[0]);
                 if ($m[3] === "#") {
@@ -136,14 +147,14 @@ class Ht {
 
         $x = '<form';
         if ((string) $action !== "") {
-            $x .= ' method="' . $method . '" action="' . $action . '"';
+            $x .= " method=\"{$method}\" action=\"{$action}\"";
         }
         $enctype = $extra["enctype"] ?? null;
         if (!$enctype && $method !== "get") {
             $enctype = "multipart/form-data";
         }
         if ($enctype) {
-            $x .= ' enctype="' . $enctype . '"';
+            $x .= " enctype=\"{$enctype}\"";
         }
         return $x . ' accept-charset="UTF-8"' . self::extra($extra) . $suffix;
     }
@@ -205,7 +216,7 @@ class Ht {
             } else {
                 $x .= '<option';
                 if ($info->id ?? null) {
-                    $x .= ' id="' . $info->id . '"';
+                    $x .= " id=\"{$info->id}\"";
                 }
                 $x .= ' value="' . htmlspecialchars((string) $value) . '"';
                 if ($first_value === false) {
@@ -221,7 +232,7 @@ class Ht {
                     $x .= ' disabled';
                 }
                 if ($info->class ?? false) {
-                    $x .= ' class="' . $info->class . '"';
+                    $x .= " class=\"{$info->class}\"";
                 }
                 if ($info->style ?? false) {
                     $x .= ' style="' . htmlspecialchars($info->style) . '"';
@@ -237,7 +248,7 @@ class Ht {
         if (!isset($js["data-default-value"])) {
             $t .= ' data-default-value="' . htmlspecialchars($has_selected ? $selected : $first_value) . '"';
         }
-        return $t . '>' . $x . $optgroup . "</select></span>";
+        return "{$t}>{$x}{$optgroup}</select></span>";
     }
 
     /** @param string $name
@@ -293,7 +304,7 @@ class Ht {
             $id = self::$_lastcontrolid;
         }
         return '<label' . ($id ? ' for="' . $id . '"' : '')
-            . self::extra($js) . '>' . $html . "</label>";
+            . self::extra($js) . ">{$html}</label>";
     }
 
     /** @param string $html
@@ -310,7 +321,7 @@ class Ht {
         if (!isset($js["value"]) && isset($js["name"]) && $type !== "button") {
             $js["value"] = "1";
         }
-        return "<button type=\"$type\"" . self::extra($js) . ">" . $html . "</button>";
+        return "<button type=\"$type\"" . self::extra($js) . ">{$html}</button>";
     }
 
     /** @param string $name
@@ -411,11 +422,11 @@ class Ht {
                     $t .= " aabutsp";
                 }
                 if (is_array($a) && count($a) > 2 && (string) $a[2] !== "") {
-                    $t .= " " . $a[2];
+                    $t .= " {$a[2]}";
                 }
                 $t .= '">' . (is_array($a) ? $a[0] : $a);
                 if (is_array($a) && count($a) > 1 && (string) $a[1] !== "") {
-                    $t .= '<div class="hint">' . $a[1] . '</div>';
+                    $t .= "<div class=\"hint\">{$a[1]}</div>";
                 }
                 $t .= '</div>';
             }
@@ -429,7 +440,7 @@ class Ht {
         if (is_array($html)) {
             $html = join("\n", $html);
         }
-        return "<pre>" . $html . "</pre>";
+        return "<pre>{$html}</pre>";
     }
 
     /** @param string|list<string> $text
@@ -489,7 +500,7 @@ class Ht {
             && (!isset($js["class"]) || !preg_match('/(?:\A|\s)(?:ui|btn|lla|tla)(?=\s|\z)/', $js["class"]))) {
             error_log(caller_landmark(2) . ": JS Ht::link lacks class");
         }
-        return "<a" . self::extra($js) . ">" . $html . "</a>";
+        return "<a" . self::extra($js) . ">{$html}</a>";
     }
 
     /** @return string */

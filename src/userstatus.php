@@ -1554,7 +1554,7 @@ class UserStatus extends MessageSet {
             return;
         }
         $cd = $us->conf->_i("conflictdef");
-        $us->cs()->print_open_section("w-text");
+        $us->cs()->add_section_class("w-text")->print_section();
         echo '<h3 class="', $us->control_class("collaborators", "form-h"), '">Collaborators and other affiliations</h3>', "\n",
             "<p>List potential conflicts of interest one per line, using parentheses for affiliations and institutions. We may use this information when assigning reviews.<br>Examples: “Ping Yen Zhang (INRIA)”, “All (University College London)”</p>";
         if ($cd !== "" && preg_match('/<(?:p|div)[ >]/', $cd)) {
@@ -1575,8 +1575,7 @@ class UserStatus extends MessageSet {
             && !$us->viewer->privChair) {
             return;
         }
-        $us->cs()->print_open_section("w-text fx1", "topicinterest");
-        $us->cs()->print_title("Topic interests");
+        $us->cs()->add_section_class("w-text fx1")->print_section("Topic interests");
         echo '<p>Please indicate your interest in reviewing papers on these conference
 topics. We use this information to help match papers to reviewers.</p>',
             Ht::hidden("has_ti", 1),
@@ -1619,8 +1618,7 @@ topics. We use this information to help match papers to reviewers.</p>',
             && (!$us->user->isPC || $itags === "")) {
             return;
         }
-        $us->cs()->print_open_section("w-text fx2");
-        $us->cs()->print_title("Tags");
+        $us->cs()->add_section_class("w-text fx2")->print_section("Tags");
         if ($us->viewer->privChair) {
             echo '<div class="', $us->control_class("tags", "f-i"), '">',
                 $us->feedback_html_at("tags"),
@@ -1663,10 +1661,7 @@ topics. We use this information to help match papers to reviewers.</p>',
     static function print_main_actions(UserStatus $us) {
         if ($us->viewer->privChair
             && !$us->is_new_user()) {
-            $us->cs()->print_open_section();
-            echo '<div class="form-outline-section">';
-            $us->cs()->push_close_section('</div>');
-            $us->cs()->print_title("User administration");
+            $us->cs()->add_section_class("form-outline-section")->print_section("User administration");
             $disablement = $us->user->disablement;
             echo '<div class="btngrid"><div class="d-flex mf mf-absolute">',
                 Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $disablement !== 0]), '</div><p></p>';

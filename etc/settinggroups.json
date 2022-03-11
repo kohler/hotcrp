@@ -148,7 +148,7 @@
     {
         "name": "reviews/external", "order": 40,
         "title": "External reviews",
-        "print_function": "Reviews_SettingRenderer::print_external"
+        "print_group": true
     },
     [   "reviews/external/editdelegate", 10, "Reviews_SettingRenderer::print_extrev_editdelegate"   ],
     [   "reviews/external/requestmail", 15, "Reviews_SettingRenderer::print_extrev_requestmail"   ],

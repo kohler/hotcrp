@@ -200,9 +200,6 @@ class Reviews_SettingRenderer {
     }
 
 
-    static function print_external(SettingValues $sv) {
-        $sv->print_group("reviews/external");
-    }
     static function print_extrev_view(SettingValues $sv) {
         $sv->print_radio_table("extrev_view", [
                 0 => "No",

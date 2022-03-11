@@ -71,7 +71,6 @@ class Graph_Page {
         echo Ht::unstash(),
             $user->conf->make_script_file("scripts/d3-hotcrp.min.js", true),
             $user->conf->make_script_file("scripts/graph.js");
-        $gx->set_section_class(false);
         $gx->print_group($gj->name, true);
 
         $user->conf->footer();
