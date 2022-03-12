@@ -28,18 +28,14 @@ class Tags_SettingRenderer {
     }
     static function print(SettingValues $sv) {
         // Tags
-        echo '<div class="form-g">';
+        echo '<hr class="form-sep">';
         $sv->print_group("tags/main");
-        echo "</div>\n";
 
-        echo '<div class="form-g">';
+        echo '<hr class="form-sep">';
         $sv->print_group("tags/visibility");
-        echo "</div>\n";
     }
     static function print_tag_seeall(SettingValues $sv) {
-        echo '<div class="form-g-2">';
         $sv->print_checkbox('tag_seeall', "PC can see tags for conflicted submissions");
-        echo '</div>';
     }
     static function print_styles(SettingValues $sv) {
         $skip_colors = [];

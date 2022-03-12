@@ -887,7 +887,8 @@ class SettingValues extends MessageSet {
             assert(is_array($fold_values));
         }
 
-        $this->print_group_open($name, "form-g settings-radio", $rest + ["id" => $name]);
+        echo '<hr class="form-sep">';
+        $this->print_group_open($name, "settings-radio", $rest + ["id" => $name]);
         if ($heading) {
             echo '<div class="settings-itemheading">', $heading, '</div>';
         }

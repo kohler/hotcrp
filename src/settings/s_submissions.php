@@ -4,12 +4,11 @@
 
 class Submissions_SettingRenderer {
     static function print_open(SettingValues $sv) {
-        echo '<div class="form-g">';
+        echo '<hr class="form-sep">';
         $sv->print_checkbox('sub_open', '<b>Open site for submissions</b>');
-        echo "</div>\n";
     }
     static function print_deadlines(SettingValues $sv) {
-        echo '<div class="form-g">';
+        echo '<hr class="form-sep">';
         // maybe sub_reg was overridden
         if (($sub_reg = $sv->conf->setting("__sub_reg")) !== null) {
             $sv->set_oldv("sub_reg", $sub_reg);
@@ -19,7 +18,6 @@ class Submissions_SettingRenderer {
         $sv->print_entry_group("sub_reg", "Registration deadline", null, "New submissions can be started until this deadline.");
         $sv->print_entry_group("sub_sub", "Submission deadline", null, "Submissions must be complete by this deadline.");
         $sv->print_entry_group("sub_grace", "Grace period");
-        echo "</div>\n";
     }
     static function print_updates(SettingValues $sv) {
         $sv->print_radio_table("sub_freeze", [0 => "Allow updates until the submission deadline (usually the best choice)", 1 => "Authors must freeze the final version of each submission"]);
@@ -32,10 +30,9 @@ class Submissions_SettingRenderer {
             '<strong>Blind submission:</strong> Are author names hidden from reviewers?');
     }
     static function print_pcseeall(SettingValues $sv) {
-        echo '<div class="form-g">';
+        echo '<hr class="form-sep">';
         $sv->print_checkbox("pc_seeall", "PC can view incomplete submissions before submission deadline", null, "Check this box to collect review preferences before the submission deadline. After the submission deadline, PC members can only see completed submissions.");
         $sv->print_checkbox("pc_seeallpdf", "PC can view submitted PDFs before submission deadline");
-        echo "</div>\n";
     }
     static function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("sub_open")

@@ -117,9 +117,8 @@ class Responses_SettingParser extends SettingParser {
         $this->print_one($sv, '$');
         echo '</template>';
         if ($sv->editable("response__0__name")) {
-            echo '<div class="form-g">',
-                Ht::button("Add response", ["class" => "ui js-settings-response-new"]),
-                '</div>';
+            echo '<hr class="form-sep">',
+                Ht::button("Add response", ["class" => "ui js-settings-response-new"]);
         }
 
         echo '</div></div></div>';

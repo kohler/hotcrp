@@ -1605,14 +1605,29 @@ th.settings-simplehead {
 .settings-rf-view > .rfehead {
 	margin-top: 0;
 }
+.form-sep {
+	margin-top: 2.25rem;
+	margin-bottom: 0;
+}
+.form-sep-2 {
+	margin-top: 0.5rem;
+	margin-bottom: 0;
+}
+.form-sep.form-nearby {
+	margin-top: 1.25rem;
+}
+hr.form-sep, hr.form-sep-2 {
+	border: 0 none;
+	height: 0;
+}
+.form-h + .form-sep, .form-h + .form-sep-2 {
+	margin-top: 0;
+}
 .form-g, .form-g-5 {
 	margin-bottom: 2.25em;
 }
 .form-g-3 {
 	margin-bottom: 1em;
-}
-.form-g-2 {
-	margin-bottom: 0.5em;
 }
 .form-g + .form-nearby {
 	margin-top: -1em;
@@ -1624,6 +1639,9 @@ th.settings-simplehead {
 }
 .fold2o > .js-settings-field-unfold {
 	margin-top: 0.25em;
+}
+.settings-radio {
+	margin-bottom: 0.5rem;
 }
 .settings-revfn {
 	font-weight: bold;

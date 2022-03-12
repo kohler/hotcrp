@@ -71,7 +71,7 @@ class Decisions_SettingParser extends SettingParser {
             $decs_pcount[(int) $row[0]] = (int) $row[1];
         }
 
-        echo '<div class="form-g">',
+        echo '<hr class="form-sep">',
             Ht::hidden("has_decisions", 1),
             '<div id="settings-decision-types">';
         foreach ($sv->enumerate("decision__") as $ctr) {
@@ -91,7 +91,6 @@ class Decisions_SettingParser extends SettingParser {
                 Ht::button("Add decision type", ["class" => "ui js-settings-decision-add"]),
                 '</div>';
         }
-        echo "</div>\n";
     }
 
     /** @param SettingValues $sv

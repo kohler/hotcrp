@@ -9,13 +9,12 @@ class FinalVersions_SettingParser extends SettingParser {
         }
         echo '<div class="has-fold fold2o">';
         $sv->print_checkbox('final_open', '<strong>Collect final versions of accepted submissions</strong>', ["class" => "uich js-foldup", "group_class" => "form-g", "group_open" => true]);
-        echo '<div class="fx2 mt-3"><div class="form-g">';
+        echo '<div class="fx2 mt-3">';
         $sv->print_entry_group("final_soft", "Deadline", ["horizontal" => true]);
         $sv->print_entry_group("final_done", "Hard deadline", ["horizontal" => true]);
         $sv->print_entry_group("final_grace", "Grace period", ["horizontal" => true]);
-        echo '</div><div class="form-g">';
+        echo '<hr class="form-sep">';
         $sv->print_message_minor("final_edit_message", "Instructions");
-        echo '</div>';
         Banal_SettingRenderer::print("m1", $sv);
         echo "</div></div></div>\n\n";
     }

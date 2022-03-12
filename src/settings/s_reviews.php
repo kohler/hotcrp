@@ -58,10 +58,9 @@ class Reviews_SettingRenderer {
     }
 
     static function print(SettingValues $sv) {
-        echo '<div class="form-g">';
+        echo '<hr class="form-sep">';
         $sv->print_checkbox("rev_open", "<b>Enable review editing</b>");
         $sv->print_checkbox("cmt_always", "Allow comments even if reviewing is closed");
-        echo "</div>\n";
 
         $sv->print_radio_table("rev_blind", [Conf::BLIND_ALWAYS => "Yes, reviews are anonymous",
                    Conf::BLIND_NEVER => "No, reviewer names are visible to authors",
@@ -189,14 +188,13 @@ class Reviews_SettingRenderer {
             ], 'Can PC members see <strong>review contents<span class="fx2"> and comments</span></strong> except for conflicts?',
             ["after" => $hint]);
 
-        echo '<div class="form-nearby form-g">';
+        echo '<hr class="form-nearby form-sep">';
         $sv->print_checkbox("lead_seerev", "Discussion leads can always see submitted reviews and reviewer names");
-        echo '</div>';
 
 
-        echo '<div class="form-g">';
+        echo '<hr class="form-sep">';
         $sv->print_checkbox('cmt_revid', "PC can see comments when reviews are anonymous", ["class" => "uich js-foldup", "data-fold-target" => "2", "hint_class" => "fx2"], "Commenter names are hidden when reviews are anonymous.");
-        echo "</div></div>\n";
+        echo "</div>\n";
     }
 
 
