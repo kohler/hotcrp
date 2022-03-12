@@ -290,23 +290,6 @@ class CheckFormat extends MessageSet {
             return CheckFormat::banal_page_is_body($pg);
         }));
 
-        // body pages exist
-        if (($spec->columns || $spec->bodyfontsize || $spec->bodylineheight)
-            && $this->body_pages < 0.5 * $this->npages) {
-            if ($this->body_pages == 0) {
-                $this->warning_at(null, "<0>Warning: No pages seemed to contain body text; results may be off");
-            } else {
-                $this->warning_at(null, "<0>Warning: Only " . plural($this->body_pages, "page") . " seemed to contain body text; results may be off");
-            }
-            $nd0_pages = count(array_filter($bj->pages, function ($pg) {
-                return ($pg->type ?? $pg->pagetype ?? "body") === "blank";
-            }));
-            if ($nd0_pages == $this->npages) {
-                $this->problem_at("notext", "<0>This document appears to contain no text", 2);
-                $this->msg_at("notext", "<0>The PDF software used renders pages as images. PDFs like this are less efficient to transfer and harder to search.", MessageSet::INFORM);
-            }
-        }
-
         // number of columns
         if ($spec->columns) {
             $px = array();
@@ -445,6 +428,23 @@ class CheckFormat extends MessageSet {
             }
             if ($words > $spec->wordlimit[1]) {
                 $this->problem_at("wordlimit", "<0>Too many words: the limit is " . plural($spec->wordlimit[1], "non-reference word") . ", found {$words}", 2);
+            }
+        }
+
+        // body pages exist
+        if (($spec->columns || $spec->bodyfontsize || $spec->bodylineheight)
+            && $this->body_pages < 0.5 * $this->npages) {
+            if ($this->body_pages == 0) {
+                $this->warning_at(null, "<0>Warning: No pages containing body text; results may be off");
+            } else if ($this->body_pages < 10) {
+                $this->warning_at(null, "<0>Warning: Only {$this->body_pages} of " . plural($this->npages, "page") . " contain body text; results may be off");
+            }
+            $nd0_pages = count(array_filter($bj->pages, function ($pg) {
+                return ($pg->type ?? $pg->pagetype ?? "body") === "blank";
+            }));
+            if ($nd0_pages == $this->npages) {
+                $this->problem_at("notext", "<0>This document appears to contain no text", 2);
+                $this->msg_at("notext", "<0>The PDF software used renders pages as images. PDFs like this are less efficient to transfer and harder to search.", MessageSet::INFORM);
             }
         }
     }
