@@ -4319,6 +4319,7 @@ return {
         item.href = href;
         item.content_function = typeof content === "function" ? content : default_content_fn;
         item.content_function(item);
+        return item;
     },
     merge: function (idelt, item) {
         var elt = fe(idelt);
@@ -9005,9 +9006,10 @@ function add_pslitem_header() {
     }
     if (id) {
         var xt = header_text(l),
-            e = xt ? navsidebar.set(this.parentElement, escape_html(xt), "#" + id) : null;
-        if (e) {
-            var ise = hasClass(this, "has-error"), isw = hasClass(this, "has-warning");
+            item = xt ? navsidebar.set(this.parentElement, escape_html(xt), "#" + id) : null;
+        if (item) {
+            var e = item.element, ise = hasClass(this, "has-error"),
+                isw = hasClass(this, "has-warning");
             toggleClass(e.firstChild, "is-diagnostic", ise || isw);
             toggleClass(e.firstChild, "is-error", ise);
             toggleClass(e.firstChild, "is-warning", isw);
