@@ -57,6 +57,7 @@ banal has three modes of operation:
 
 -json     print JSON output
 -pagenum  include page numbers and headings
+-debug-words debug words
 
 -zoom=N   passed to pdftohtml
 
@@ -74,13 +75,16 @@ my($banal_version) = 1.2;
 # parse args
 my ($banal_mode) = "report";
 my (%banal_param, $json_pagenum);
-my ($debug_pdftohtml);
+my ($debug_pdftohtml, $debug_words);
 for (my $i = 0; $i < @ARGV; ) {
     if ($ARGV[$i] =~ /\A--?(stats|json|report|version)\z/) {
         $banal_mode = $1;
         splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A--?debug[-_]pdftohtml\z/) {
         $debug_pdftohtml = 1;
+        splice @ARGV, $i, 1;
+    } elsif ($ARGV[$i] =~ /\A--?debug[-_]words\z/) {
+        $debug_words = 1;
         splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A--?(?:pagen(?:um|o)|headings|headers)\z/) {
         $json_pagenum = 1;
@@ -245,7 +249,7 @@ sub bodyfontsize (\%\%) {
     $asize;
 }
 
-sub calc_page_leading ($$$) {
+sub calc_page_leading ($\@$) {
     my ($page, $texts, $bodyfontsize) = @_;
     my ($minlead) = in2pdf(1/16);
 
@@ -402,7 +406,7 @@ sub calc_page_text_region ($$$) {
     }
 }
 
-sub calc_page_nchars ($$$) {
+sub calc_page_nchars ($\%$) {
     my ($page, $tlen_bysize, $bodyfontsize) = @_;
 
     my ($nc) = 0;
@@ -411,6 +415,67 @@ sub calc_page_nchars ($$$) {
         $nc += $tlen_bysize->{$size};
     }
     $page->{nchars} = $nc;
+}
+
+sub calc_page_nwords ($\@$) {
+    my ($page, $texts, $bodyfontsize) = @_;
+    my ($colpos) = $page->{colpos};
+    my ($slack) = in2pdf(1/8);
+    $bodyfontsize *= 0.95;
+
+    my ($nw) = 0;
+    my ($prehyphen) = undef;
+    for (my $tpos = 0; $tpos < @$texts; ++$tpos) {
+        my ($text) = $texts->[$tpos];
+        last if $text->{is_references};
+        next if $text->{sz} < $bodyfontsize;
+
+        my ($content) = $text->{content};
+        $content = $prehyphen . $content if defined($prehyphen);
+        $prehyphen = undef;
+
+        my ($tt) = $text->{t};
+        my ($th) = $text->{h};
+        my ($tr) = $text->{l} + $text->{w};
+        while ($tpos + 1 < @$texts) {
+            my $ntext = $texts->[$tpos + 1];
+            if ($ntext->{l} >= $tr - $slack
+                && $ntext->{l} < $tr + 3 * $slack
+                && interval_overlap($tt, $th, $ntext->{t}, $ntext->{h})) {
+                $content .= " " if $ntext->{l} - $tr > $text->{sz} / 6;
+                $content .= $ntext->{content};
+                $tr = $ntext->{l} + $ntext->{w};
+                ++$tpos;
+            } else {
+                last;
+            }
+        }
+
+        # remove references
+        $content =~ s/\[[\s\d,-]+\]//g;
+
+        if (substr($content, -1) eq "-") {
+            my ($i, $r) = (1, $text->{l} + $text->{w});
+            while ($i < @$colpos && $colpos->[$i] + $slack < $r) {
+                $i += 2;
+            }
+            if ($i < @$colpos && abs($r - $colpos->[$i]) < 2 * $slack) {
+                $content =~ s/([\w()\[\]\{\}\200-\377]+)-\z//;
+                $prehyphen = $1;
+            }
+        }
+        while ($content =~ /[\w\200-\377][\w\[\]\{\},.\200-\377]+(?:\(s\))?/g) {
+            # print STDERR $&, "\n" if $debug_words;
+            ++$nw;
+        }
+    }
+    if (defined($prehyphen)) {
+        while ($prehyphen =~ /[\w\200-\377][\w\[\]\{\},.\200-\377]+(?:\(s\))?/g) {
+            # print STDERR $&, "\n" if $debug_words;
+            ++$nw;
+        }
+    }
+    $page->{nwords} = $nw;
 }
 
 sub interval_overlap ($$$$) {
@@ -496,8 +561,10 @@ sub calc_page_headings ($$$$) {
         my ($colr) = $colpos->[$colri + 1];
 
         # skip if not left-aligned or centered
+        # (“References” is a special case b/c of some fancy formats)
         if (($coll < $tl - 2 * $slack
-             && abs(($tl - $coll) - ($colr - $tr)) > in2pdf(1/4))
+             && abs(($tl - $coll) - ($colr - $tr)) > in2pdf(1/4)
+             && (length($content) != 10 || lc($content) ne "references"))
             || ($tr >= $colr - $slack && $text->{sz} <= $bodyfontsize)) {
             next;
         }
@@ -663,7 +730,6 @@ sub calc_doc_page_types ($) {
 
     foreach my $i (1..$doc->{npages}) {
         my ($page) = $doc->{pages}->{$i};
-        my ($type) = 'body';
 
         my ($see_acks_refs) = $saw_acks_refs;
         my ($see_appendix) = $saw_appendix;
@@ -694,17 +760,18 @@ sub calc_doc_page_types ($) {
             }
         }
 
-        if (!exists $page->{nchars}) {
-            $type = 'blank';
+        my ($type) = "body";
+        if (!exists $page->{nchars} || $page->{nchars} == 0) {
+            $type = "blank";
         } elsif ($i == 1 && $page->{nchars} < 800) {
-            $type = 'cover';
+            $type = "cover";
         } elsif ($saw_appendix) {
-            $type = 'appendix';
+            $type = "appendix";
         } elsif ($saw_acks_refs) {
-            $type = 'bib';
+            $type = "bib";
         } elsif ($page->{nchars} < $banal_min_nchars
                  || $page->{ncols} == 0) {
-            $type = 'figure';
+            $type = "figure";
         }
 
         $page->{type} = $type;
@@ -780,8 +847,10 @@ sub report_json ($) {
     my $dx = {"pw" => {}, "ph" => {}, "tw" => {}, "th" => {}, "mt" => {}, "ml" => {}, "mr" => {}, "mb" => {}};
     my $px = {};
     my $nummargin = 10000;
+    my $nwords = 0;
     for my $i (1 .. $doc->{npages}) {
         my $page = $doc->{pages}->{$i};
+        $nwords += $page->{nwords} if exists($page->{nwords});
 
         my($pbb) = $page->{pagebb};
         my($pw) = POSIX::floor(pdf2pt($pbb->{width}) + 0.5);
@@ -837,6 +906,7 @@ sub report_json ($) {
     if (exists $banal_param{max_pages} && $doc->{npages} > $banal_param{max_pages}) {
         printf "  \"npages\": %d,\n", $doc->{npages};
     }
+    printf "  \"w\": %d,\n", $nwords;
     print "  \"pages\": [";
     my ($sep) = "\n";
 
@@ -857,7 +927,7 @@ sub report_json ($) {
         push @val, $page_ps if $page_ps ne $doc_ps;
 
         if ($page->{type} eq "blank") {
-            push @val, sprintf "\"pagetype\": \"blank\"";
+            push @val, sprintf "\"type\": \"blank\"";
         } else {
             my($page_margin) = sprintf "\"margin\": [%.0f,%.0f,%.0f,%.0f]", $pd->{mt}, $pd->{pw} - ($pd->{ml} + $pd->{tw}), $pd->{ph} - ($pd->{mt} + $pd->{th}), $pd->{ml};
             push @val, $page_margin if $page_margin ne $doc_margin;
@@ -877,7 +947,10 @@ sub report_json ($) {
                 $page->{type} ne "figure" &&
                 $page->{type} ne "appendix";
             push @val, sprintf "\"c\": %d", $page->{nchars};
-            push @val, sprintf "\"pagetype\": %s", json_quote($page->{type})
+            if (exists($page->{nwords}) && $page->{nwords} > 0) {
+                push @val, sprintf "\"w\": %d", $page->{nwords};
+            }
+            push @val, sprintf "\"type\": %s", json_quote($page->{type})
                 if $page->{type} ne "body";
             if (exists $page->{headings} && $json_pagenum) {
                 my (@ht);
@@ -945,7 +1018,7 @@ sub report_verbose ($) {
         printf "  body font: %gpt\n", $page->{bodyfont_pt};
         printf "  leading: %gpt\n", $page->{lead_pt};
         printf "  columns: %d\n", $page->{ncols};
-        print   "  type: ", $page->{type}, "\n";
+        print  "  type: ", $page->{type}, "\n";
 
         my ($nchars) = $page->{nchars};
         printf "  nchars: %d\n", $nchars;
@@ -1203,7 +1276,8 @@ sub unxml ($) {
 
 sub account_text_sizes ($\%\%) {
     my($text, $alens, $tlens) = @_;
-    my($size, $len) = ($text->{sz}, length($text->{content}) + 1);
+    my($content) = $text->{content};
+    my($size, $len) = ($text->{sz}, length($content) + 1);
     $alens->{$size} = 0 if !exists $alens->{$size};
     $alens->{$size} += $len;
     if (!$text->{num}) {
@@ -1380,10 +1454,15 @@ sub parse_p2h_text ($$$) {
     my($fontsize) = $bodyfontsize ? $bodyfontsize : $reffontsize;
 
     # compute leading using bodyfontsize and column specs
-    calc_page_leading($page, \@texts, $fontsize);
+    calc_page_leading($page, @texts, $fontsize);
 
     # compute page character count using content lengths
-    calc_page_nchars($page, \%alens, $fontsize);
+    calc_page_nchars($page, %alens, $fontsize);
+
+    # compute page word count using body font size only
+    if ($bodyfontsize) {
+        calc_page_nwords($page, @texts, $bodyfontsize);
+    }
 }
 
 sub parse_p2h_page ($) {

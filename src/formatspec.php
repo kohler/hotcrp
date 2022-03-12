@@ -7,6 +7,8 @@ class FormatSpec {
     public $papersize = []; // [DIMEN, ...]
     /** @var ?array{int,int} */
     public $pagelimit;      // [MIN, MAX]
+    /** @var ?array{int,int} */
+    public $wordlimit;      // [MIN, MAX]
     /** @var ?bool */
     public $unlimitedref;
     /** @var ?int */
@@ -22,40 +24,55 @@ class FormatSpec {
     public $checkers = [];
     /** @var int */
     public $timestamp = 0;
+    /** @var bool */
     private $_is_banal_empty = true;
 
-    function __construct(/* ... */) {
-        foreach (func_get_args() as $str) {
-            $this->merge($str);
+    static private $props1 = [
+        "papersize", "pagelimit", "columns", "textblock",
+        "bodyfontsize", "bodylineheight", "unlimitedref"
+    ];
+    static private $props2 = [
+        "wordlimit"
+    ];
+
+
+    function __construct(...$args) {
+        foreach ($args as $x) {
+            $this->merge($x);
         }
     }
 
     function merge($x, $timestamp = 0) {
-        if (is_string($x) && substr($x, 0, 1) === "{") {
-            $x = json_decode($x);
-        }
-        if ($x && is_string($x)) {
-            if (($gt = strpos($x, ">")) !== false) {
-                $x = substr($x, 0, $gt);
+        if (is_string($x)) {
+            if (str_ends_with($x, ">-zoom=1")) { // XXX old settings
+                $x = substr($x, 0, -8);
             }
-            $x = explode(";", $x);
-            $this->merge1("papersize", $x[0] ?? "");
-            $this->merge1("pagelimit", $x[1] ?? "");
-            $this->merge1("columns", $x[2] ?? null);
-            $this->merge1("textblock", $x[3] ?? null);
-            $this->merge1("bodyfontsize", $x[4] ?? null);
-            $this->merge1("bodylineheight", $x[5] ?? null);
-            $this->merge1("unlimitedref", $x[6] ?? null);
-        } else if ($x && (is_object($x) || is_array($x))) {
+            $i = $p = 0;
+            $l = strlen($x);
+            while ($p !== $l && $x[$p] !== "{") {
+                $n = strpos($x, ";", $p);
+                $n = $n !== false ? $n : $l;
+                if ($i !== count(self::$props1)) {
+                    $this->merge1(self::$props1[$i], substr($x, $p, $n - $p));
+                    ++$i;
+                }
+                $p = $n !== $l ? $n + 1 : $n;
+            }
+            if ($p !== $l) {
+                $x = json_decode(substr($x, $p), true);
+            }
+        }
+        if ($x && (is_object($x) || is_array($x))) {
             foreach ($x as $k => $v) {
                 $this->merge1($k, $v);
             }
         }
         $this->_is_banal_empty = empty($this->papersize) && !$this->pagelimit
-            && !$this->columns && !$this->textblock && !$this->bodyfontsize
-            && !$this->bodylineheight;
+            && !$this->wordlimit && !$this->columns && !$this->textblock
+            && !$this->bodyfontsize && !$this->bodylineheight;
         $this->timestamp = max($this->timestamp, $timestamp);
     }
+
     private function merge1($k, $v) {
         if ($k === "bodyleading") {
             $k = "bodylineheight";
@@ -73,6 +90,14 @@ class FormatSpec {
                     $this->pagelimit = [(int) $m[1], (int) $m[2]];
                 } else {
                     $this->pagelimit = [0, (int) $m[1]];
+                }
+            }
+        } else if ($k === "wordlimit" && (is_string($v) || is_numeric($v))) {
+            if (preg_match('/\A(\d+)(?:\s*(?:-|–)\s*(\d+))?\z/', $v, $m)) {
+                if (isset($m[2]) && $m[2] !== "") {
+                    $this->wordlimit = [(int) $m[1], (int) $m[2]];
+                } else {
+                    $this->wordlimit = [0, (int) $m[1]];
                 }
             }
         } else if ($k === "unlimitedref" && (is_string($v) || is_bool($v))) {
@@ -99,7 +124,8 @@ class FormatSpec {
 
     function clear_banal() {
         $this->papersize = [];
-        $this->pagelimit = $this->unlimitedref = $this->columns = $this->textblock =
+        $this->pagelimit = $this->wordlimit = $this->unlimitedref =
+            $this->columns = $this->textblock =
             $this->bodyfontsize = $this->bodylineheight = null;
         $this->_is_banal_empty = true;
     }
@@ -144,6 +170,8 @@ class FormatSpec {
             return join(" OR ", array_map(function ($x) { return self::unparse_dimen($x, "basic"); }, $this->papersize));
         } else if ($k === "pagelimit" && $this->pagelimit) {
             return $this->pagelimit[0] ? $this->pagelimit[0] . "-" . $this->pagelimit[1] : (string) $this->pagelimit[1];
+        } else if ($k === "wordlimit" && $this->wordlimit) {
+            return $this->wordlimit[0] ? $this->wordlimit[0] . "-" . $this->wordlimit[1] : (string) $this->wordlimit[1];
         } else if ($k === "columns" && $this->columns) {
             return (string) $this->columns;
         } else if ($k === "textblock" && $this->textblock) {
@@ -177,11 +205,19 @@ class FormatSpec {
     /** @return string */
     function unparse_banal() {
         $x = array_fill(0, 7, "");
-        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight", "unlimitedref"] as $i => $k) {
+        foreach (self::$props1 as $i => $k) {
             $x[$i] = $this->unparse_key($k);
         }
         while (!empty($x) && !$x[count($x) - 1]) {
             array_pop($x);
+        }
+        $j = [];
+        foreach (self::$props2 as $k) {
+            if ($this->$k)
+                $j[$k] = $this->unparse_key($k);
+        }
+        if (!empty($j)) {
+            $x[] = json_encode($j);
         }
         return join(";", $x);
     }

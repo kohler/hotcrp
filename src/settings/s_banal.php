@@ -8,7 +8,7 @@ class Banal_SettingRenderer {
     static function print($suffix, $sv) {
         $cfs = new FormatSpec($sv->oldv("sub_banal_opt_{$suffix}"),
                               $sv->oldv("sub_banal_data_{$suffix}"));
-        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight", "unlimitedref"] as $k) {
+        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight", "unlimitedref", "wordlimit"] as $k) {
             $sv->set_oldv("sub_banal_{$k}_{$suffix}", $cfs->unparse_key($k));
         }
 

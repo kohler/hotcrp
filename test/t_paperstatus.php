@@ -924,7 +924,7 @@ You can’t remove yourself from the submission’s contacts
     }
 
     function test_banal() {
-        $spects = max(Conf::$now - 100, @filemtime(SiteLoader::find("src/banal")));
+        $spects = max(Conf::$now - 10, @filemtime(SiteLoader::find("src/banal")));
         $this->conf->save_setting("sub_banal", $spects, "letter;30;;6.5x9in");
         $this->conf->invalidate_caches(["options" => true]);
         xassert_eq($this->conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);

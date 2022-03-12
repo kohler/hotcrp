@@ -32,6 +32,8 @@ class CheckFormat extends MessageSet {
     /** @var ?int */
     public $npages;
     /** @var ?int */
+    public $nwords;
+    /** @var ?int */
     private $body_pages;
     /** @var int */
     public $run_flags = 0;
@@ -128,11 +130,12 @@ class CheckFormat extends MessageSet {
         if (($m = $doc->metadata()) && isset($m->banal)) {
             $bj = $m->banal;
             $this->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
+            $this->nwords = is_int($bj->w ?? null) ? $bj->w : null;
         }
         $bj_ok = $bj
             && $bj->at >= @filemtime(SiteLoader::find("src/banal"))
             && ($bj->args ?? null) == self::$banal_args
-            && (!isset($bj->cfmsg)
+            && (!isset($bj->npages)
                 || ($spec->timestamp && $spec->timestamp === ($bj->spects ?? null)));
         $flags = $bj_ok ? 0 : CheckFormat::RUN_DESIRED;
         if (!$bj_ok || $bj->at < Conf::$now - 86400) {
@@ -165,6 +168,7 @@ class CheckFormat extends MessageSet {
             $bj = $this->run_banal($path);
             if ($bj && is_object($bj) && isset($bj->pages) && is_array($bj->pages)) {
                 $this->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
+                $this->nwords = is_int($bj->w ?? null) ? $bj->w : null;
                 $this->metadata_updates["npages"] = $this->npages;
                 $this->metadata_updates["banal"] = $bj;
                 $flags &= ~(CheckFormat::RUN_ALLOWED | CheckFormat::RUN_DESIRED);
@@ -201,10 +205,8 @@ class CheckFormat extends MessageSet {
 
     /** @return bool */
     static function banal_page_is_body($pg) {
-        return ($pg->pagetype ?? "body") === "body"
-            && (isset($pg->c)
-                ? $pg->c >= 800
-                : (!isset($pg->d) || $pg->d >= 16000 || !isset($pg->columns) || $pg->columns <= 2));
+        // Modern banal already includes the `pg->c` test
+        return ($pg->type ?? $pg->pagetype ?? "body") === "body"; /* XXX pagetype obsolete */
     }
 
     /** @return string */
@@ -219,7 +221,10 @@ class CheckFormat extends MessageSet {
     }
 
     function check_banal_json($bj, FormatSpec $spec) {
-        if ($bj && isset($bj->cfmsg) && is_array($bj->cfmsg)) {
+        if ($bj
+            && isset($bj->cfmsg)
+            && is_array($bj->cfmsg)
+            && $spec->timestamp === ($bj->spects ?? null)) {
             foreach ($bj->cfmsg as $m) {
                 if ($m[1] === "" || str_starts_with($m[1], "<")) {
                     $this->msg_at($m[0], $m[1], $m[2]);
@@ -242,6 +247,9 @@ class CheckFormat extends MessageSet {
 
         if (!isset($this->npages)) {
             $this->npages = $bj->npages ?? count($bj->pages);
+        }
+        if (!isset($this->nwords)) {
+            $this->nwords = $bj->w ?? null;
         }
 
         // paper size
@@ -293,9 +301,7 @@ class CheckFormat extends MessageSet {
                 $this->warning_at(null, "<0>Warning: Only " . plural($this->body_pages, "page") . " seemed to contain body text; results may be off");
             }
             $nd0_pages = count(array_filter($bj->pages, function ($pg) {
-                return (isset($pg->pagetype) && $pg->pagetype === "blank")
-                    || (isset($pg->c) && $pg->c === 0)
-                    || (isset($pg->d) && $pg->d === 0);
+                return ($pg->type ?? $pg->pagetype ?? "body") === "blank";
             }));
             if ($nd0_pages == $this->npages) {
                 $this->problem_at("notext", "<0>This document appears to contain no text", 2);
@@ -323,15 +329,15 @@ class CheckFormat extends MessageSet {
 
         // text block
         if ($spec->textblock) {
-            $px = array();
-            $py = array();
+            $px = [];
+            $py = [];
             $maxx = $maxy = $nbadx = $nbady = 0;
             $docpsiz = $bj->papersize ?? null;
-            $docmarg = $bj->margin ?? null;
+            $docmarg = $bj->m ?? $bj->margin ?? null;
             foreach ($bj->pages as $i => $pg)
                 if (($psiz = $pg->papersize ?? $docpsiz)
                     && is_array($psiz)
-                    && ($marg = $pg->margin ?? $docmarg)
+                    && ($marg = $pg->m ?? $pg->margin ?? $docmarg)
                     && is_array($marg)
                     && $spec->is_checkable($i + 1, "textblock")) {
                     $pwidth = $psiz[1] - $marg[1] - $marg[3];
@@ -430,6 +436,19 @@ class CheckFormat extends MessageSet {
                 $this->problem_at("bodylineheight", "<0>Line height too large: minimum {$spec->bodylineheight[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx));
             }
         }
+
+        // number of words
+        if ($spec->wordlimit && $this->nwords === null) {
+            $this->problem_at("wordlimit", "<0>Unable to count words in this PDF");
+        } else if ($spec->wordlimit) {
+            $words = $this->nwords;
+            if ($words < $spec->wordlimit[0]) {
+                $this->problem_at("wordlimit", "<0>Too few words: expected " . plural($spec->wordlimit[0], "or more word") . ", found {$words}", 1);
+            }
+            if ($words > $spec->wordlimit[1]) {
+                $this->problem_at("wordlimit", "<0>Too many words: the limit is " . plural($spec->wordlimit[1], "non-reference word") . ", found {$words}", 2);
+            }
+        }
     }
 
 
@@ -437,7 +456,7 @@ class CheckFormat extends MessageSet {
 
     function clear() {
         $this->clear_messages();
-        $this->npages = null;
+        $this->npages = $this->nwords = null;
         $this->metadata_updates = [];
         $this->run_flags = 0;
     }
@@ -464,6 +483,8 @@ class CheckFormat extends MessageSet {
         return $chk;
     }
 
+    /** @param string $filename
+     * @param string|FormatSpec $spec */
     function check_file($filename, $spec) {
         if (is_string($spec)) {
             $spec = new FormatSpec($spec);
@@ -474,18 +495,48 @@ class CheckFormat extends MessageSet {
         $this->check_banal_json($bj, $spec);
     }
 
+    /** @param object $bj
+     * @return object */
     private function truncate_banal_json($bj, FormatSpec $spec) {
-        $bj = clone $bj;
-        $bj->npages = count($bj->pages);
-        $bj->pages = array_slice($bj->pages, 0, 50);
-        $bj->cfmsg = [];
-        foreach ($this->message_list() as $mx) {
-            $bj->cfmsg[] = [$mx->field, $mx->message, $mx->status];
+        $xj = clone $bj;
+        if (isset($xj->npages) ? $xj->npages < count($bj->pages) : count($bj->pages) > 48) {
+            $xj->npages = count($bj->pages);
+        }
+        $xj->pages = [];
+        $bjpages = $bj->pages ?? [];
+        for ($i = 0; $i !== 48 && $i !== count($bjpages); ++$i) {
+            $pg = $bjpages[$i];
+            $xg = [];
+            if (isset($pg->papersize)) {
+                $xg["papersize"] = $pg->papersize;
+            }
+            if (isset($pg->m) || isset($pg->margin)) {
+                $xg["m"] = $pg->m ?? $pg->margin;
+            }
+            if (isset($pg->bodyfontsize)) {
+                $xg["bodyfontsize"] = $pg->bodyfontsize;
+            }
+            if (isset($pg->leading)) {
+                $xg["leading"] = $pg->leading;
+            }
+            if (isset($pg->columns)) {
+                $xg["columns"] = $pg->columns;
+            }
+            if (isset($pg->type) || isset($pg->pagetype)) {
+                $xg["type"] = $pg->type ?? $pg->pagetype;
+            }
+            $xj->pages[] = (object) $xg;
+        }
+        if ($this->has_message()) {
+            $xj->cfmsg = [];
+            foreach ($this->message_list() as $mx) {
+                $xj->cfmsg[] = [$mx->field, $mx->message, $mx->status];
+            }
         }
         if ($spec->timestamp) {
-            $bj->spects = $spec->timestamp;
+            $xj->spects = $spec->timestamp;
         }
-        return $bj;
+        return $xj;
     }
 
     function check_document(DocumentInfo $doc) {
@@ -512,7 +563,7 @@ class CheckFormat extends MessageSet {
 
         // save information about the run
         if (!empty($this->metadata_updates)) {
-            if (isset($this->metadata_updates["banal"]) && $this->npages > 40) {
+            if (isset($this->metadata_updates["banal"])) {
                 $this->metadata_updates["banal"] = $this->truncate_banal_json($this->metadata_updates["banal"], $spec);
             }
             $doc->update_metadata($this->metadata_updates);
@@ -591,7 +642,7 @@ class Default_FormatChecker implements FormatChecker {
     /** @return list<string> */
     function known_fields(FormatSpec $spec) {
         $ks = [];
-        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight"] as $k) {
+        foreach (["papersize", "pagelimit", "wordlimit", "columns", "textblock", "bodyfontsize", "bodylineheight"] as $k) {
             if ($spec->unparse_key($k) !== "")
                 $ks[] = $k;
         }
