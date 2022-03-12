@@ -5084,6 +5084,10 @@ function activate_editing_messages(cj, form) {
             append_feedback_to(ul, {message: "<0>The response deadline has passed and this draft response will not be shown to reviewers.", status: 2});
         }
     }
+    if (siteinfo.user
+        && (siteinfo.user.is_actas || (siteinfo.user.session_users || []).length > 1)) {
+        append_feedback_to(ul, {message: "<0>Commenting as " + siteinfo.user.email, status: -4});
+    }
     if (ul.firstChild) {
         form.parentElement.insertBefore(ul, form);
     }

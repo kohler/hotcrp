@@ -677,7 +677,7 @@ class Ht {
             && preg_match('/\A<(?:p|div|form|ul|ol|dl|blockquote|hr)\b/i', $s);
     }
 
-    /** @param list<string>|string $msg
+    /** @param string $msg
      * @param int|string $status */
     static function msg($msg, $status) {
         if (is_int($status)) {

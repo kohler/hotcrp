@@ -4166,8 +4166,8 @@ class Conf {
     // Message routines
     //
 
-    /** @param string|list<string> $text
-     * @param int|string $type */
+    /** @param string $text
+     * @param int $type */
     static function msg_on(Conf $conf = null, $text, $type) {
         if (PHP_SAPI === "cli") {
             if (is_array($text)) {
@@ -4191,8 +4191,8 @@ class Conf {
         }
     }
 
-    /** @param string|list<string> $text
-     * @deprecated */
+    /** @param string $text
+     * @param int $type */
     function msg($text, $type) {
         self::msg_on($this, $text, $type);
     }
@@ -4216,18 +4216,6 @@ class Conf {
     /** @param string $msg */
     function success_msg($msg) {
         $this->feedback_msg(MessageItem::success($msg));
-    }
-
-    /** @param string|list<string> $text
-     * @deprecated */
-    function infoMsg($text, $minimal = false) {
-        self::msg_on($this, $text, $minimal ? "xinfo" : "info");
-    }
-
-    /** @param string|list<string> $text
-     * @deprecated */
-    static function msg_info($text, $minimal = false) {
-        self::msg_on(self::$main, $text, $minimal ? "xinfo" : "info");
     }
 
     /** @param mixed $text */
@@ -4516,6 +4504,11 @@ class Conf {
             }
             if ($user->has_account_here()) {
                 $siteinfo["user"]["cid"] = $user->contactId;
+            }
+            if ($user->is_actas_user()) {
+                $siteinfo["user"]["is_actas"] = true;
+            } else if (count(Contact::session_users()) > 1) {
+                $siteinfo["user"]["session_users"] = Contact::session_users();
             }
         }
 
