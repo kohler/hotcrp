@@ -502,7 +502,7 @@ class Home_Page {
         if ($startable && !$user->has_email()) {
             echo '<em class="deadline">', $conf->unparse_setting_deadline_span("sub_reg"), "</em><br />\n<small>You must sign in to start a submission.</small>";
         } else if ($startable || $user->privChair) {
-            echo '<strong><a href="', $conf->hoturl("paper", "p=new"), '">New submission</a></strong> <em class="deadline">(', $conf->unparse_setting_deadline_span("sub_reg"), ")</em>";
+            echo '<a class="btn" href="', $conf->hoturl("paper", "p=new"), '">New submission</a> <em class="deadline">(', $conf->unparse_setting_deadline_span("sub_reg"), ")</em>";
             if ($user->privChair) {
                 echo '<br><span class="hint">As an administrator, you can start a submission regardless of deadlines and on behalf of others.</span>';
             }
