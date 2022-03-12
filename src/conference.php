@@ -63,7 +63,7 @@ class Conf {
     /** @var bool */
     public $_header_printed = false;
     public $_session_handler;
-    /** @var ?list<array{string,string}> */
+    /** @var ?list<array{string,int}> */
     private $_save_msgs;
     /** @var ?array<string,array<int,true>> */
     private $_save_logs;

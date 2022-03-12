@@ -23,18 +23,18 @@ class Mail_Page {
 
         // set list of searchable paper collections
         if ($viewer->privChair) {
-            $this->search_topt["s"] = "Submitted papers";
+            $this->search_topt["s"] = PaperSearch::$search_type_names["s"];
             if ($this->conf->time_pc_view_decision(false)
                 && $this->conf->has_any_accepted()) {
-                $this->search_topt["acc"] = "Accepted papers";
+                $this->search_topt["acc"] = PaperSearch::$search_type_names["acc"];
             }
-            $this->search_topt["unsub"] = "Unsubmitted papers";
-            $this->search_topt["all"] = "All papers";
+            $this->search_topt["unsub"] = "Unsubmitted";
+            $this->search_topt["all"] = PaperSearch::$search_type_names["all"];
         }
         if ($viewer->privChair ? $this->conf->has_any_manager() : $viewer->is_manager()) {
-            $this->search_topt["admin"] = "Papers you administer";
+            $this->search_topt["admin"] = PaperSearch::$search_type_names["admin"];
         }
-        $this->search_topt["req"] = "Your review requests";
+        $this->search_topt["req"] = PaperSearch::$search_type_names["req"];
 
         $this->recip = new MailRecipients($viewer);
     }
