@@ -19,6 +19,7 @@ class FormatCheck_API {
             return [
                 "ok" => $cf->check_ok(),
                 "npages" => $cf->npages,
+                "nwords" => $cf->nwords,
                 "result" => $cf->document_report($doc),
                 "problem_fields" => $cf->problem_fields(),
                 "has_error" => $cf->has_error()

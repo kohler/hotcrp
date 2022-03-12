@@ -45,8 +45,6 @@ class CheckFormat extends MessageSet {
     static private $banal_args;
     /** @var int */
     static public $runcount = 0;
-    /** @var float */
-    static public $runtime = 0.0;
 
     /** @param ?int $allow_run */
     function __construct(Conf $conf, $allow_run = null) {
@@ -111,16 +109,16 @@ class CheckFormat extends MessageSet {
             self::run_command_safely($banal_run, SiteLoader::$root, $env);
         ++self::$runcount;
         $banal_time = microtime(true) - $tstart;
-        self::$runtime += $banal_time;
-        if (self::DEBUG && $banal_time > 0.1) {
-            error_log(sprintf("%.6f: %s", $banal_time, $banal_run));
+        Conf::$blocked_time += $banal_time;
+        if (self::DEBUG && Conf::$blocked_time > 0.1) {
+            error_log(sprintf("%.6f: +%.6f %s", Conf::$blocked_time, $banal_time, $banal_run));
         }
         return json_decode($this->banal_stdout);
     }
 
     function banal_json(DocumentInfo $doc, FormatSpec $spec) {
         if ($this->allow_run === CheckFormat::RUN_IF_NECESSARY_TIMEOUT
-            && CheckFormat::$runtime >= CheckFormat::TIMEOUT) {
+            && Conf::$blocked_time >= CheckFormat::TIMEOUT) {
             $allow_run = CheckFormat::RUN_NEVER;
         } else {
             $allow_run = $this->allow_run;
@@ -504,6 +502,7 @@ class CheckFormat extends MessageSet {
         }
         $xj->pages = [];
         $bjpages = $bj->pages ?? [];
+        '@phan-var-force list<object> $bjpages';
         for ($i = 0; $i !== 48 && $i !== count($bjpages); ++$i) {
             $pg = $bjpages[$i];
             $xg = [];

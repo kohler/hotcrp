@@ -130,6 +130,12 @@
     },
     {   "name": "pages", "alias": "pagecount"   },
     {
+        "name": "wordcount", "title": "Word count",
+        "sort": true, "completion": true, "className": "plr", "function": "+WordCount_PaperColumn",
+        "order": 1000
+    },
+    {   "name": "words", "alias": "wordcount"   },
+    {
         "match": ".*", "priority": -2100,
         "sort": true, "completion": true,
         "className": "pl_score",

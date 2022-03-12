@@ -8383,10 +8383,25 @@ handle_ui.on("js-check-format", function () {
 $(function () {
 var failures = 0;
 function background_format_check() {
-    var needed = $(".need-format-check"), pid, m, tstart;
-    if (!needed.length)
+    var allneeded = [], needed, pid, m, tstart, i, wg = $(window).geometry();
+    $(".need-format-check").each(function () {
+        var ng = $(this).geometry(),
+            d = wg.bottom < ng.top ? ng.top - wg.bottom : wg.top - ng.bottom;
+        allneeded.push([Math.sqrt(1 + Math.max(d, 0)), this]);
+    });
+    if (!allneeded.length)
         return;
-    needed = needed[Math.floor(Math.random() * needed.length)];
+    allneeded.sort(function (a, b) {
+        return a[0] > b[0] ? 1 : (a[0] < b[0] ? -1 : 0);
+    });
+    for (i = m = 0; i !== 8 && i !== allneeded.length; ++i) {
+        m += 1 / allneeded[i][0];
+        allneeded[i][0] = m;
+    }
+    m *= Math.random();
+    for (i = 0; i !== allneeded.length - 1 && m >= allneeded[i][0]; ++i) {
+    }
+    needed = allneeded[i][1];
     removeClass(needed, "need-format-check");
     tstart = now_msec();
     function next(ok) {
@@ -8415,6 +8430,15 @@ function background_format_check() {
             success: function (data) {
                 if (data && data.ok)
                     needed.parentNode.replaceChild(document.createTextNode(data.npages), needed);
+                next(data && data.ok);
+            }
+        });
+    } else if (hasClass(needed, "is-nwords")
+               && (pid = needed.closest("[data-pid]"))) {
+        $.ajax(hoturl("api/formatcheck", {p: pid.getAttribute("data-pid"), dtype: needed.getAttribute("data-dtype") || "0", soft: 1}), {
+            success: function (data) {
+                if (data && data.ok)
+                    needed.parentNode.replaceChild(document.createTextNode(data.nwords), needed);
                 next(data && data.ok);
             }
         });

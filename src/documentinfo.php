@@ -1401,12 +1401,22 @@ class DocumentInfo implements JsonSerializable {
             return null;
         } else if (($m = $this->metadata()) && isset($m->npages)) {
             return $m->npages;
-        } else if ($this->content_file()) {
+        } else {
             $cf = $cf ?? new CheckFormat($this->conf);
             $cf->check_document($this);
             return $cf->npages;
-        } else {
+        }
+    }
+
+    /** @param ?CheckFormat $cf
+     * @return ?int */
+    function nwords(CheckFormat $cf = null) {
+        if ($this->mimetype && $this->mimetype !== "application/pdf") {
             return null;
+        } else {
+            $cf = $cf ?? new CheckFormat($this->conf);
+            $cf->check_document($this);
+            return $cf->nwords;
         }
     }
 

@@ -202,6 +202,8 @@ class Conf {
     static public $now;
     /** @var int|float */
     static public $unow;
+    /** @var float */
+    static public $blocked_time = 0.0;
     /** @var false|null|\mysqli */
     static private $_cdb = false;
 

@@ -358,6 +358,7 @@ src/papercolumns/pc_tagreport.php
 src/papercolumns/pc_timestamp.php
 src/papercolumns/pc_topics.php
 src/papercolumns/pc_topicscore.php
+src/papercolumns/pc_wordcount.php
 src/paperevents.php
 src/paperinfo.php
 src/paperlist.php
