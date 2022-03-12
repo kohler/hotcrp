@@ -571,7 +571,7 @@ sub calc_page_headings ($$$$) {
 
         # check for expected headings
         $content =~ s/\s+\z//;
-        if ($content !~ /\A(?:(?:X*(?:I?[XV]|V?I+))\.? +[^,;()]*|\d\d?\d?(?:\.\d+)*\.? +[A-Za-z_][^,;()]*|[ABCDEFGH](?:\.\d+)*\.? +[A-Z_][^,;()]*|(?:(?i)Abstract|Acknowledge?ments?|Contents|References?|Bibliography|Introduction|Appendix(?:es)?[^,;()]*))\z/
+        if ($content !~ /\A(?:(?:X*(?:I?[XV]|V?I+))\.? +[^,;()]*|\d\d?\d?(?:\.\d+)*\.? +[A-Za-z_][^,;()]*|[ABCDEFGH](?:\.\d+)*\.? +[A-Z_][^,;()]*|(?:(?i)Abstract|Acknowledge?ments?|Contents|References?|Bibliography|Introduction|Appendices|Appendix(?:es)?[^,;()]*))\z/
             || $content =~ /[.,:]\z/) {
             next;
         }
@@ -736,13 +736,13 @@ sub calc_doc_page_types ($) {
         if (exists $page->{headings}) {
             my ($is_first) = exists $page->{heading1};
             foreach my $h (@{$page->{headings}}) {
-                if ($h =~ /\A(?:[\dIVX]+\.? *|[ABCDE]\.? *|)(?:Acknowledge?ments?|References?|Bibliography|\AAppendix(?:es)?)\z/i) {
+                if ($h =~ /\A(?:[\dIVX]+\.? *|[ABCDE]\.? *|)(?:Acknowledge?ments?|References?|Bibliography|\AAppendices|\AAppendix(?:es)?)\z/i) {
                     $see_acks_refs = 1;
                     $saw_acks_refs = 1 if $is_first;
                     $see_appendix = 0;
                 } elsif ($h =~ /\A[\dIVX]+\.? *Conclusions?(?: and future work|)\z/i) {
                     $saw_conclusion = 1;
-                } elsif ($h =~ /\A(Appendix\s* |)((?:[A-F]|\d+)(?:\.\d+)*)\.?\s+(Appendix(?:es)?\z|)(.*)\z/i
+                } elsif ($h =~ /\A(Appendix\s* |)((?:[A-F]|\d+)(?:\.\d+)*)\.?\s+(Appendices\z|Appendix(?:es|)\z|)(.*)\z/i
                          && ($see_acks_refs || $saw_conclusion)
                          && ($see_appendix
                              ? version_compare($2, $see_appendix) == 1
@@ -926,9 +926,10 @@ sub report_json ($) {
         my($page_ps) = sprintf "\"papersize\": [%.0f,%.0f]", $pd->{ph}, $pd->{pw};
         push @val, $page_ps if $page_ps ne $doc_ps;
 
-        if ($page->{type} eq "blank") {
-            push @val, sprintf "\"type\": \"blank\"";
-        } else {
+        push @val, sprintf "\"type\": %s", json_quote($page->{type})
+            if $page->{type} ne "body";
+
+        if ($page->{type} ne "blank") {
             my($page_margin) = sprintf "\"margin\": [%.0f,%.0f,%.0f,%.0f]", $pd->{mt}, $pd->{pw} - ($pd->{ml} + $pd->{tw}), $pd->{ph} - ($pd->{mt} + $pd->{th}), $pd->{ml};
             push @val, $page_margin if $page_margin ne $doc_margin;
             if (exists($page->{bodyfont_pt})) {
@@ -950,8 +951,6 @@ sub report_json ($) {
             if (exists($page->{nwords}) && $page->{nwords} > 0) {
                 push @val, sprintf "\"w\": %d", $page->{nwords};
             }
-            push @val, sprintf "\"type\": %s", json_quote($page->{type})
-                if $page->{type} ne "body";
             if (exists $page->{headings} && $json_pagenum) {
                 my (@ht);
                 foreach my $heading (@{$page->{headings}}) {
