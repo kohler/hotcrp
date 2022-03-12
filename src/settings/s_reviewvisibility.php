@@ -24,9 +24,9 @@ class ReviewVisibility_SettingParser extends SettingParser {
         }
         $hint .= '</div>';
 
-        echo Ht::hidden("has_tag_au_seerev", 1);
         $sv->print_radio_table("au_seerev", $opts,
             'Can <strong>authors see reviews</strong> for their submissions?' . $hint);
+        echo Ht::hidden("has_tag_au_seerev", 1);
     }
 
     static function print_author_exchange_comments(SettingValues $sv) {

@@ -62,6 +62,7 @@ class Reviews_SettingRenderer {
         $sv->print_checkbox("rev_open", "<b>Enable review editing</b>");
         $sv->print_checkbox("cmt_always", "Allow comments even if reviewing is closed");
 
+        echo '<hr class="form-sep">';
         $sv->print_radio_table("rev_blind", [Conf::BLIND_ALWAYS => "Yes, reviews are anonymous",
                    Conf::BLIND_NEVER => "No, reviewer names are visible to authors",
                    Conf::BLIND_OPTIONAL => "Depends: reviewers decide whether to expose their names"],
@@ -180,6 +181,7 @@ class Reviews_SettingRenderer {
         if ($hint !== "") {
             $hint = '<p class="settings-ag f-h">' . ltrim($hint) . '</p>';
         }
+        echo '<hr class="form-sep">';
         $sv->print_radio_table("pc_seeallrev", [
                 Conf::PCSEEREV_YES => "Yes",
                 Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same submission",
@@ -215,9 +217,10 @@ class Reviews_SettingRenderer {
                 0 => "Yes"
             ], "Can PC reviewers request external reviews?",
             ["item_class" => "uich js-foldup"]);
-        echo '<div class="fx1">';
         // echo '<p>Secondary PC reviews can be delegated to external reviewers. When the external review is complete, the secondary PC reviewer need not complete a review of their own.</p>', "\n";
 
+        echo '<div class="fx1">';
+        echo '<hr class="form-sep">';
         $label3 = "Yes, and external reviews are visible only to their requesters";
         if ($sv->conf->fetch_ivalue("select exists (select * from PaperReview where reviewType=" . REVIEW_EXTERNAL . " and reviewSubmitted>0)")) {
             $label3 = '<label for="pcrev_editdelegate_3">' . $label3 . '</label><div class="settings-ap f-hx fx">Existing ' . Ht::link("submitted external reviews", $sv->conf->hoturl("search", ["q" => "re:ext:submitted"]), ["target" => "_new"]) . ' will remain visible to others.</div>';
