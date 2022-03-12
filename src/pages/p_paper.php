@@ -275,7 +275,7 @@ class Paper_Page {
         } else if ($is_new) {
             $this->ps->splice_msg($msgpos++, $conf->_("<0>Registered submission as #%d", $new_prow->paperId), MessageSet::SUCCESS);
         } else {
-            $t = $action === "final" ? "<0>Updated final version %#s" : "<0>Updated submission %#s";
+            $t = $action === "final" ? "<0>Updated final version (changed %#s)" : "<0>Updated submission (changed %#s)";
             $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->change_fields());
             $this->ps->splice_msg($msgpos++, $conf->_($t, $chf), MessageSet::SUCCESS);
         }
