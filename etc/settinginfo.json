@@ -577,6 +577,11 @@
         "type": "checkbox"
     },
     {
+        "name_pattern": "sub_banal_wordlimit_$", "internal": true,
+        "title": "PDF format checker word limit",
+        "type": "string", "size": 8, "placeholder": "any"
+    },
+    {
         "name": "sub_blind", "group": "submissions",
         "title": "Submission anonymity",
         "type": "radio",
