@@ -543,8 +543,12 @@ function xassert_assign_fail($who, $what, $override = false) {
 /** @param int $maxstatus */
 function xassert_paper_status(PaperStatus $ps, $maxstatus = MessageSet::PLAIN) {
     if (!xassert($ps->problem_status() <= $maxstatus)) {
-        foreach ($ps->problem_list() as $mx) {
-            error_log("! {$mx->field}" . ($mx->message ? ": {$mx->message}" : ""));
+        foreach ($ps->message_list() as $mx) {
+            if ($mx->status === MessageSet::INFORM && $mx->message) {
+                error_log("!     {$mx->message}");
+            } else {
+                error_log("! {$mx->field}" . ($mx->message ? ": {$mx->message}" : ""));
+            }
         }
     }
 }

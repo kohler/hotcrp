@@ -25,6 +25,8 @@ class PaperValue implements JsonSerializable {
     /** @var ?MessageSet */
     private $_ms;
 
+    const NEWDOC_VALUE = -142398;
+
     /** @param PaperInfo $prow */
     function __construct($prow, PaperOption $o) { // XXX should be private
         $this->prow = $prow;
@@ -1645,13 +1647,14 @@ class Document_PaperOption extends PaperOption {
         }
     }
     function value_present(PaperValue $ov) {
-        return $ov->value !== null && $ov->value > 1;
+        return ($ov->value ?? 0) > 1 || $ov->value === PaperValue::NEWDOC_VALUE;
     }
     function value_compare($av, $bv) {
-        return ($av && $av->value > 1 ? 1 : 0) - ($bv && $bv->value > 1 ? 1 : 0);
+        return (int) ($bv && $this->value_present($bv))
+            <=> (int) ($av && $this->value_present($av));
     }
     function value_dids(PaperValue $ov) {
-        if ($ov->value > 1) {
+        if (($ov->value ?? 0) > 1) {
             /** @phan-suppress-next-line ParamTypeMismatchReturn */
             return [$ov->value];
         } else {
@@ -1670,11 +1673,11 @@ class Document_PaperOption extends PaperOption {
     function value_check(PaperValue $ov, Contact $user) {
         if ($this->id === DTYPE_SUBMISSION
             && !$this->conf->opt("noPapers")
-            && ($ov->value ?? 0) <= 1
+            && !$this->value_present($ov)
             && !$ov->prow->allow_absent()) {
             $ov->msg($this->conf->_("<0>Entry required to complete submission"), MessageSet::WARNING_NOTE);
         }
-        if (($ov->value ?? 0) > 1
+        if ($this->value_present($ov)
             && ($doc = $ov->document(0))
             && $doc->mimetype === "application/pdf"
             && ($spec = $this->conf->format_spec($this->id))
@@ -1687,8 +1690,9 @@ class Document_PaperOption extends PaperOption {
         }
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {
-        if (($fup = $ov->anno("document"))) {
-            if (($doc = $ps->upload_document($fup, $this))) {
+        if ($ov->value === PaperValue::NEWDOC_VALUE) {
+            if (($fup = $ov->anno("document"))
+                && ($doc = $ps->upload_document($fup, $this))) {
                 $ov->set_value_data([$doc->paperStorageId], [null]);
             } else {
                 $ov->estop(null);
@@ -1711,7 +1715,7 @@ class Document_PaperOption extends PaperOption {
         if (($doc = DocumentInfo::make_request($qreq, $fk, $prow->paperId, $this->id, $this->conf))
             || // backward compat
                ($fk !== $fk2 && ($doc = DocumentInfo::make_request($qreq, $fk2, $prow->paperId, $this->id, $this->conf)))) {
-            $ov = PaperValue::make($prow, $this, -1);
+            $ov = PaperValue::make($prow, $this, PaperValue::NEWDOC_VALUE);
             $ov->set_anno("document", $doc);
             if ($doc->has_error()) {
                 foreach ($doc->message_list() as $mi) {
@@ -1731,7 +1735,7 @@ class Document_PaperOption extends PaperOption {
         } else if ($j === null) {
             return null;
         } else if (DocumentInfo::check_json_upload($j)) {
-            $ov = PaperValue::make($prow, $this, -1);
+            $ov = PaperValue::make($prow, $this, PaperValue::NEWDOC_VALUE);
             $ov->set_anno("document", $j);
             if (isset($j->error_html)) {
                 $ov->error("<5>" . $j->error_html);
