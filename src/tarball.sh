@@ -420,6 +420,7 @@ src/settings/s_reviewfieldcondition.php
 src/settings/s_reviewform.php
 src/settings/s_reviews.php
 src/settings/s_reviewvisibility.php
+src/settings/s_shepherds.php
 src/settings/s_sitecontact.php
 src/settings/s_subfieldcondition.php
 src/settings/s_subform.php

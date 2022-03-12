@@ -71,8 +71,7 @@ class Decisions_SettingParser extends SettingParser {
             $decs_pcount[(int) $row[0]] = (int) $row[1];
         }
 
-        echo '<hr class="form-sep">',
-            Ht::hidden("has_decisions", 1),
+        echo Ht::hidden("has_decisions", 1),
             '<div id="settings-decision-types">';
         foreach ($sv->enumerate("decision__") as $ctr) {
             self::print_decrow($sv, $ctr, $decs_pcount);

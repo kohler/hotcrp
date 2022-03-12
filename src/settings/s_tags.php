@@ -26,14 +26,6 @@ class Tags_SettingRenderer {
     static function print_tag_rank(SettingValues $sv) {
         $sv->print_entry_group("tag_rank", null, null, 'The <a href="' . $sv->conf->hoturl("offline") . '">offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href="' . $sv->conf->hoturl("help", "t=ranking") . '">Help</a>)');
     }
-    static function print(SettingValues $sv) {
-        // Tags
-        echo '<hr class="form-sep">';
-        $sv->print_group("tags/main");
-
-        echo '<hr class="form-sep">';
-        $sv->print_group("tags/visibility");
-    }
     static function print_tag_seeall(SettingValues $sv) {
         $sv->print_checkbox('tag_seeall', "PC can see tags for conflicted submissions");
     }

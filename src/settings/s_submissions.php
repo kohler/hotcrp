@@ -4,11 +4,9 @@
 
 class Submissions_SettingRenderer {
     static function print_open(SettingValues $sv) {
-        echo '<hr class="form-sep">';
         $sv->print_checkbox('sub_open', '<b>Open site for submissions</b>');
     }
     static function print_deadlines(SettingValues $sv) {
-        echo '<hr class="form-sep">';
         // maybe sub_reg was overridden
         if (($sub_reg = $sv->conf->setting("__sub_reg")) !== null) {
             $sv->set_oldv("sub_reg", $sub_reg);
@@ -30,7 +28,6 @@ class Submissions_SettingRenderer {
             '<strong>Blind submission:</strong> Are author names hidden from reviewers?');
     }
     static function print_pcseeall(SettingValues $sv) {
-        echo '<hr class="form-sep">';
         $sv->print_checkbox("pc_seeall", "PC can view incomplete submissions before submission deadline", null, "Check this box to collect review preferences before the submission deadline. After the submission deadline, PC members can only see completed submissions.");
         $sv->print_checkbox("pc_seeallpdf", "PC can view submitted PDFs before submission deadline");
     }

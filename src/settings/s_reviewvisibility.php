@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ReviewVisibility_SettingParser extends SettingParser {
-    static function print(SettingValues $sv) {
+    static function print_review_author_visibility(SettingValues $sv) {
         $opts = [Conf::AUSEEREV_NO => "No, unless authors can edit responses",
                  Conf::AUSEEREV_YES => "Yes"];
         $opts[Conf::AUSEEREV_TAGS] = '<div class="d-inline-flex flex-wrap">'
@@ -24,13 +24,19 @@ class ReviewVisibility_SettingParser extends SettingParser {
         }
         $hint .= '</div>';
 
+        echo Ht::hidden("has_tag_au_seerev", 1);
         $sv->print_radio_table("au_seerev", $opts,
             'Can <strong>authors see reviews</strong> for their submissions?' . $hint);
-        echo Ht::hidden("has_tag_au_seerev", 1);
+    }
 
-        echo '<hr class="form-sep">',
-            '<div class="has-fold fold', $sv->vstr("cmt_author") ? "o" : "c", '">';
-        $sv->print_checkbox("cmt_author", "Authors can <strong>exchange comments</strong> with reviewers", ["class" => "uich js-foldup", "hint_class" => "fx"], "Visible reviewer comments will be identified by “Reviewer A”, “Reviewer B”, etc.");
+    static function print_author_exchange_comments(SettingValues $sv) {
+        echo '<div class="has-fold fold', $sv->vstr("cmt_author") ? "o" : "c", '">';
+        if ((int) $sv->vstr("rev_blind") === Conf::BLIND_NEVER) {
+            $hint = "";
+        } else {
+            $hint = "Visible reviewer comments will be identified by “Reviewer A”, “Reviewer B”, etc.";
+        }
+        $sv->print_checkbox("cmt_author", "Authors can <strong>exchange comments</strong> with reviewers", ["class" => "uich js-foldup", "hint_class" => "fx"], $hint);
         echo "</div>\n";
     }
 

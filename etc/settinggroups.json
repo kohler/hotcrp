@@ -54,10 +54,12 @@
     },
     {
         "name": "submissions/open", "order": 10,
+        "print_separator": true,
         "print_function": "Submissions_SettingRenderer::print_open"
     },
     {
         "name": "submissions/deadlines", "order": 20,
+        "print_separator": true,
         "print_function": "Submissions_SettingRenderer::print_deadlines"
     },
     {
@@ -71,6 +73,7 @@
     },
     {
         "name": "submissions/pcseeall", "order": 50,
+        "print_separator": true,
         "print_function": "Submissions_SettingRenderer::print_pcseeall"
     },
 
@@ -186,8 +189,7 @@
     },
     {
         "name": "tags/main", "order": 10,
-        "title": "Tags",
-        "print_function": "Tags_SettingRenderer::print"
+        "title": "Tags", "print_group": true
     },
     {
         "name": "__crosscheck/tags", "order": 700,
@@ -198,6 +200,10 @@
     [   "tags/main/approval", 30, "Tags_SettingRenderer::print_tag_approval"   ],
     [   "tags/main/vote", 40, "Tags_SettingRenderer::print_tag_vote"   ],
     [   "tags/main/rank", 50, "Tags_SettingRenderer::print_tag_rank"   ],
+    {
+        "name": "tags/visibility", "order": 100,
+        "print_separator": true, "print_group": true
+    },
     [   "tags/visibility/seeall", 10, "Tags_SettingRenderer::print_tag_seeall"   ],
     {
         "name": "tagstyles", "group": "tags", "order": 720,
@@ -244,16 +250,29 @@
         "crosscheck_function": "Responses_SettingParser::crosscheck"
     },
     {
-        "name": "decisions/review-visibility", "order": 20,
+        "name": "decisions/review-visibility", "order": 100,
         "title": "Review visibility",
-        "print_function": "ReviewVisibility_SettingParser::print"
+        "print_function": "ReviewVisibility_SettingParser::print_review_author_visibility"
+    },
+    {
+        "name": "decisions/author-exchange-comments", "order": 120,
+        "print_separator": true,
+        "print_function": "ReviewVisibility_SettingParser::print_author_exchange_comments"
     },
     {
         "name": "__crosscheck/review-visibility", "order": 800,
         "crosscheck_function": "ReviewVisibility_SettingParser::crosscheck"
     },
     {
-        "name": "decisions/decision-visibility", "order": 25,
+        "name": "shepherds", "group": "decisions", "order": 200,
+        "title": "Shepherds", "print_group": true
+    },
+    {
+        "name": "shepherds/identity", "order": 10,
+        "print_function": "Shepherds_SettingParser::print_identity"
+    },
+    {
+        "name": "decisions/decision-visibility", "order": 300,
         "title": "Decision visibility",
         "print_function": "DecisionVisibility_SettingParser::print"
     },
@@ -262,16 +281,16 @@
         "crosscheck_function": "DecisionVisibility_SettingParser::crosscheck"
     },
     {
-        "name": "decisions/decision-types", "order": 30,
+        "name": "decisions/decision-types", "order": 400,
         "title": "Decision types",
         "print_function": "Decisions_SettingParser::print"
     },
     {
-        "name": "decisions/final-versions", "order": 100,
+        "name": "decisions/final-versions", "order": 500,
         "title": "Final versions"
     },
     {
-        "name": "decisions/final-versions-body", "order": 105,
+        "name": "decisions/final-versions-body", "order": 505,
         "print_function": "FinalVersions_SettingParser::print"
     },
     {

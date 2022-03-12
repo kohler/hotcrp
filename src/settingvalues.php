@@ -193,7 +193,9 @@ class SettingValues extends MessageSet {
     function cs() {
         if ($this->_cs === null) {
             $this->_cs = new ComponentSet($this->user, ["etc/settinggroups.json"], $this->conf->opt("settingGroups"));
-            $this->_cs->set_title_class("form-h")->set_section_class("form-section")
+            $this->_cs->set_title_class("form-h")
+                ->set_section_class("form-section")
+                ->set_separator('<hr class="form-sep">')
                 ->set_context_args([$this]);
         }
         return $this->_cs;

@@ -102,7 +102,6 @@ class Responses_SettingParser extends SettingParser {
 
     function print(SettingValues $sv) {
         // Authors' response
-        echo '<div class="form-g">';
         $sv->print_checkbox("response_active", '<strong>Collect authors’ responses to the reviews<span class="if-response-active">:</span></strong>', ["group_open" => true, "class" => "uich js-settings-resp-active"]);
         Icons::stash_defs("trash");
         echo Ht::unstash(), '<div class="if-response-active',
@@ -121,7 +120,7 @@ class Responses_SettingParser extends SettingParser {
                 Ht::button("Add response", ["class" => "ui js-settings-response-new"]);
         }
 
-        echo '</div></div></div>';
+        echo '</div></div>';
     }
 
     function apply_req(SettingValues $sv, Si $si) {

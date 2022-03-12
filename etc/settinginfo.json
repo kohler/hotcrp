@@ -520,6 +520,11 @@
         "type": "checkbox"
     },
     {
+        "name": "shepherd_show", "group": "shepherds",
+        "title": "Shepherd visibility",
+        "type": "checkbox", "storage": "negval.shepherd_hide"
+    },
+    {
         "name_pattern": "sub_banal_$", "group": "subform",
         "parser_class": "Banal_SettingParser"
     },

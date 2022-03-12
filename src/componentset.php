@@ -28,6 +28,8 @@ class ComponentSet implements XtContext {
     private $_next_section_class = "";
     /** @var string */
     private $_title_class = "";
+    /** @var string */
+    private $_separator = "";
     /** @var ?string */
     private $_section_closer;
     /** @var ComponentContext */
@@ -99,6 +101,7 @@ class ComponentSet implements XtContext {
         $this->_ctx = new ComponentContext;
         $this->reset_context();
     }
+
     function reset_context() {
         assert(empty($this->_ctxstack) && empty($this->_ctx->cleanup));
         $this->root = null;
@@ -107,19 +110,23 @@ class ComponentSet implements XtContext {
         $this->_next_section_class = $this->_section_class;
         $this->_section_closer = null;
     }
+
     /** @return Contact */
     function viewer() {
         return $this->viewer;
     }
+
     /** @return ?string */
     function root() {
         return $this->root;
     }
 
+
     /** @param callable(string,object,?Contact,Conf):(?bool) $checker */
     function add_xt_checker($checker) {
         $this->_xt_checkers[] = $checker;
     }
+
     function xt_check_element($str, $xt, $user, Conf $conf) {
         foreach ($this->_xt_checkers as $cf) {
             if (($x = $cf($str, $xt, $user, $conf)) !== null)
@@ -127,6 +134,7 @@ class ComponentSet implements XtContext {
         }
         return null;
     }
+
 
     /** @param callable(object,ComponentSet):bool $f */
     function apply_filter($f) {
@@ -153,6 +161,7 @@ class ComponentSet implements XtContext {
         $this->conf->xt_context = $old_context;
     }
 
+
     /** @param string $name
      * @return ?object */
     function get_raw($name) {
@@ -168,6 +177,7 @@ class ComponentSet implements XtContext {
         }
         return $this->_raw[$name];
     }
+
     /** @param string $name
      * @return ?object */
     function get($name) {
@@ -177,6 +187,7 @@ class ComponentSet implements XtContext {
         }
         return $gj;
     }
+
     /** @param string $name
      * @return ?string */
     function canonical_group($name) {
@@ -187,6 +198,7 @@ class ComponentSet implements XtContext {
             return null;
         }
     }
+
     /** @param string $name
      * @param ?string $require_key
      * @return list<object> */
@@ -223,10 +235,12 @@ class ComponentSet implements XtContext {
             return $r;
         }
     }
+
     /** @return list<object> */
     function groups() {
         return $this->members("");
     }
+
 
     /** @return bool */
     function allowed($allowed, $gj) {
@@ -239,6 +253,7 @@ class ComponentSet implements XtContext {
             return true;
         }
     }
+
     /** @template T
      * @param class-string<T> $name
      * @return ?T */
@@ -249,6 +264,7 @@ class ComponentSet implements XtContext {
         }
         return $this->_callables[$name] ?? null;
     }
+
     /** @param string $name
      * @param callable|mixed $callable
      * @return $this */
@@ -257,6 +273,7 @@ class ComponentSet implements XtContext {
         $this->_callables[$name] = $callable;
         return $this;
     }
+
     /** @param ?object $gj
      * @param callable $cb */
     function call_function($gj, $cb, ...$args) {
@@ -268,39 +285,53 @@ class ComponentSet implements XtContext {
         return $cb(...$this->_ctx->args, ...$args);
     }
 
+
     /** @param ?string $root
      * @return $this */
     function set_root($root) {
         $this->root = $root;
         return $this;
     }
+
     /** @param string $s
      * @return $this */
     function set_section_class($s) {
         $this->_section_class = $this->_next_section_class = $s;
         return $this;
     }
+
     /** @param string $s
      * @return $this */
     function set_title_class($s) {
         $this->_title_class = $s;
         return $this;
     }
+
+    /** @param string $separator
+     * @return $this */
+    function set_separator($separator) {
+        $this->_separator = $separator;
+        return $this;
+    }
+
     /** @param list<mixed> $args
      * @return $this */
     function set_context_args($args) {
         $this->_ctx->args = $args;
         return $this;
     }
+
     /** @return list<mixed> */
     function args() {
         return $this->_ctx->args;
     }
+
     /** @param int $i
      * @return mixed */
     function arg($i) {
         return $this->_ctx->args[$i] ?? null;
     }
+
 
     private function start_print() {
         $this->_ctxstack[] = $this->_ctx;
@@ -398,6 +429,10 @@ class ComponentSet implements XtContext {
             $title = ($gj->show_title ?? true) ? $gj->title ?? "" : "";
             if ($title !== "" || $this->_section_closer === null) {
                 $this->print_section($title, $gj->hashid ?? null);
+            }
+            $separator = $gj->print_separator ?? false;
+            if ($separator) {
+                echo is_string($separator) ? $separator : $this->_separator;
             }
             return $this->_print_body($gj);
         } else {
