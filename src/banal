@@ -571,7 +571,7 @@ sub calc_page_headings ($$$$) {
 
         # check for expected headings
         $content =~ s/\s+\z//;
-        if ($content !~ /\A(?:(?:X*(?:I?[XV]|V?I+))\.? +[^,;()]*|\d\d?\d?(?:\.\d+)*\.? +[A-Za-z_][^,;()]*|[ABCDEFGH](?:\.\d+)*\.? +[A-Z_][^,;()]*|(?:(?i)Abstract|Acknowledge?ments?|Contents|References?|Bibliography|Introduction|Appendices|Appendix(?:es)?[^,;()]*))\z/
+        if ($content !~ /\A(?:(?:X*(?:I?[XV]|V?I+))\.? +[^,;()]*|\d\d?\d?(?:\.\d+)*\.? +[A-Za-z_][^,;()]*|[ABCDEFGHJKLM](?:\.\d+)*\.? +[A-Z_][^,;()]*|(?:(?i)Abstract|Acknowledge?ments?|Contents|References?|Bibliography|Introduction|Appendices|Appendix(?:es)?[^,;()]*))\z/
             || $content =~ /[.,:]\z/) {
             next;
         }
@@ -702,6 +702,13 @@ sub version_compare ($$) {
         my ($al) = scalar($a[$i] =~ /\A[A-Z]\z/);
         my ($bl) = scalar($b[$i] =~ /\A[A-Z]\z/);
         if ($al != $bl) {
+            if ($i == 0) {
+                if (substr($a[0], 0, 1) eq "A") {
+                    return 1;
+                } elsif (substr($b[0], 0, 1) eq "A") {
+                    return -1;
+                }
+            }
             return -100;
         } elsif ($al ? $a[$i] lt $b[$i] : +$a[$i] < +$b[$i]) {
             return -1;
@@ -742,7 +749,7 @@ sub calc_doc_page_types ($) {
                     $see_appendix = 0;
                 } elsif ($h =~ /\A[\dIVX]+\.? *Conclusions?(?: and future work|)\z/i) {
                     $saw_conclusion = 1;
-                } elsif ($h =~ /\A(Appendix\s* |)((?:[A-F]|\d+)(?:\.\d+)*)\.?\s+(Appendices\z|Appendix(?:es|)\z|)(.*)\z/i
+                } elsif ($h =~ /\A(Appendix\s* |)((?:[A-M]|\d+)(?:\.\d+)*)\.?\s+(Appendices\z|Appendix(?:es|)\z|)(.*)\z/i
                          && ($see_acks_refs || $saw_conclusion)
                          && ($see_appendix
                              ? version_compare($2, $see_appendix) == 1
