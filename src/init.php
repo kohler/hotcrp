@@ -66,7 +66,7 @@ const TAG_REGEX = '~?~?' . TAG_REGEX_NOTWIDDLE;
 const TAG_MAXLEN = 80;
 const TAG_INDEXBOUND = 2147483646;
 
-global $Conf, $Now;
+global $Conf;
 
 require_once("siteloader.php");
 require_once(SiteLoader::find("lib/navigation.php"));
@@ -81,6 +81,9 @@ require_once(SiteLoader::find("src/contact.php"));
 Conf::set_current_time(microtime(true));
 if (defined("HOTCRP_TESTHARNESS")) {
     Conf::$test_mode = true;
+}
+if (PHP_SAPI === "cli") {
+    set_exception_handler("Multiconference::batch_exception_handler");
 }
 
 
@@ -145,27 +148,29 @@ function expand_json_includes_callback($includelist, $callback) {
 }
 
 
-function initialize_conf() {
+/** @param ?string $config_file
+ * @param ?string $confid
+ * @return Conf */
+function initialize_conf($config_file = null, $confid = null) {
     global $Opt;
     $Opt = $Opt ?? [];
     if (!($Opt["loaded"] ?? null)) {
-        SiteLoader::read_main_options();
+        SiteLoader::read_main_options($config_file);
         if ($Opt["multiconference"] ?? null) {
-            Multiconference::init();
+            Multiconference::init($confid);
         }
         if ($Opt["include"] ?? null) {
             SiteLoader::read_included_options();
         }
     }
-    if (!($Opt["loaded"] ?? null) || ($Opt["missing"] ?? null)) {
+    if ($Opt["missing"] ?? null) {
         Multiconference::fail_bad_options();
     }
     if ($Opt["dbLogQueries"] ?? null) {
         Dbl::log_queries($Opt["dbLogQueries"], $Opt["dbLogQueryFile"] ?? null);
     }
 
-
-    // Allow lots of memory
+    // allow lots of memory
     if (!($Opt["memoryLimit"] ?? null) && ini_get_bytes("memory_limit") < (128 << 20)) {
         $Opt["memoryLimit"] = "128M";
     }
@@ -173,8 +178,7 @@ function initialize_conf() {
         ini_set("memory_limit", $Opt["memoryLimit"]);
     }
 
-
-    // Create the conference
+    // create the conference
     if (!($Opt["__no_main"] ?? false)) {
         if (!Conf::$main) {
             Conf::set_main_instance(new Conf($Opt, true));
@@ -183,6 +187,8 @@ function initialize_conf() {
             Multiconference::fail_bad_database();
         }
     }
+
+    return Conf::$main;
 }
 
 
@@ -379,4 +385,6 @@ function initialize_request() {
 }
 
 
-initialize_conf();
+if (!defined("HOTCRP_NOINIT")) {
+    initialize_conf();
+}

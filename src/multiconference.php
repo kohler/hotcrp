@@ -8,14 +8,15 @@ class Multiconference {
     /** @var array<string,?Conf> */
     static private $conf_cache;
 
-    static function init() {
+    /** @param ?string $confid */
+    static function init($confid = null) {
         global $Opt, $argv;
         assert(self::$original_opt === null);
         self::$original_opt = $Opt;
 
-        $confid = $Opt["confid"] ?? null;
-        if (!$confid && PHP_SAPI == "cli") {
-            for ($i = 1; $i != count($argv); ++$i) {
+        $confid = $confid ?? $Opt["confid"] ?? null;
+        if (!$confid && PHP_SAPI === "cli") {
+            for ($i = 1; $i !== count($argv); ++$i) {
                 if ($argv[$i] === "-n" || $argv[$i] === "--name") {
                     if (isset($argv[$i + 1]))
                         $confid = $argv[$i + 1];
@@ -180,7 +181,7 @@ class Multiconference {
     /** @return string */
     static private function nonexistence_error() {
         if (PHP_SAPI === "cli") {
-            return "This is a multiconference installation. Use `-n CONFID` to specify a conference.";
+            return "Conference not specified. Use `-n CONFID` to specify a conference.";
         } else {
             return "Conference not specified.";
         }
@@ -191,31 +192,48 @@ class Multiconference {
         if (isset($Opt["multiconferenceFailureCallback"])) {
             call_user_func($Opt["multiconferenceFailureCallback"], "options");
         }
+
         $errors = [];
         $confid = $Opt["confid"] ?? null;
         $multiconference = $Opt["multiconference"] ?? null;
-        if ($multiconference && $confid === "__nonexistent__") {
-            $errors[] = self::nonexistence_error();
-        } else if ($multiconference) {
-            $errors[] = "The “{$confid}” conference does not exist. Check your URL to make sure you spelled it correctly.";
-        } else if (!($Opt["loaded"] ?? false)) {
-            $errors[] = "HotCRP has been installed, but not yet configured. You must run `lib/createdb.sh` to create a database for your conference. See `README.md` for further guidance.";
+        $missing = array_filter($Opt["missing"] ?? [], function ($x) {
+            return strpos($x, "__nonexistent__") === false;
+        });
+
+        if (PHP_SAPI === "cli") {
+            if ($missing) {
+                array_push($errors, ...array_map(function ($s) {
+                    if (!file_exists($s)) {
+                        return "{$s}: Configuration file not found";
+                    } else {
+                        return "{$s}: Unable to load configuration file";
+                    }
+                }, $missing));
+            } else if ($multiconference && $confid === "__nonexistent__") {
+                $errors[] = self::nonexistence_error();
+            } else {
+                $errors[] = "Unable to load HotCRP";
+            }
         } else {
-            $errors[] = "HotCRP was unable to load. A system administrator must fix this problem.";
-        }
-        if (!($Opt["loaded"] ?? false) && defined("HOTCRP_OPTIONS")) {
-            $errors[] = "Unable to load options file `" . HOTCRP_OPTIONS . "`.";
-        } else if (!($Opt["loaded"] ?? false)) {
-            $errors[] = "Unable to load options file.";
-        }
-        if (isset($Opt["missing"]) && $Opt["missing"]) {
-            $missing = array_filter($Opt["missing"], function ($x) {
-                return strpos($x, "__nonexistent__") === false;
-            });
-            if (!empty($missing)) {
-                $errors[] = "Unable to load options from " . commajoin($missing) . ".";
+            if (!($Opt["loaded"] ?? null)) {
+                $main_options = defined("HOTCRP_OPTIONS") ? HOTCRP_OPTIONS : SiteLoader::$root . "/conf/options.php";
+                if (!file_exists($main_options)) {
+                    $errors[] = "HotCRP has been installed, but not yet configured. You must run `lib/createdb.sh` to create a database for your conference. See `README.md` for further guidance.";
+                } else {
+                    $errors[] = "HotCRP was unable to load. A system administrator must fix this problem.";
+                }
+            } else if ($multiconference && $confid === "__nonexistent__") {
+                $errors[] = self::nonexistence_error();
+            } else {
+                if ($multiconference) {
+                    $errors[] = "The “{$confid}” conference does not exist. Check your URL to make sure you spelled it correctly.";
+                }
+                if (!empty($missing)) {
+                    $errors[] = "Unable to load " . plural(count($missing), "configuration") . " " . commajoin($missing) . ".";
+                }
             }
         }
+
         self::fail(["nolink" => true], ...$errors);
     }
 
@@ -239,5 +257,25 @@ class Multiconference {
             error_log("Unable to connect to database " . Dbl::sanitize_dsn(Conf::$main->dsn));
         }
         self::fail(["nolink" => true], ...$errors);
+    }
+
+    /** @param Throwable $ex */
+    static function batch_exception_handler($ex) {
+        global $argv;
+        $s = $ex->getMessage();
+        if (strpos($s, ":") === false) {
+            $script = $argv[0] ?? "";
+            if (($slash = strrpos($script, "/")) !== false) {
+                $script = substr($script, $slash + 1);
+            }
+            if ($script !== "") {
+                $s = "{$script}: {$s}";
+            }
+        }
+        if (substr($s, -1) !== "\n") {
+            $s = "{$s}\n";
+        }
+        fwrite(STDERR, $s);
+        exit(1);
     }
 }

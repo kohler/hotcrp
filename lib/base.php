@@ -561,6 +561,16 @@ function tempdir($mode = 0700) {
     return false;
 }
 
+/** @return string */
+function file_get_contents_throw($filename) {
+    $s = @file_get_contents($filename);
+    if ($s === false) {
+        $msg = preg_replace('/.*: /', "", error_get_last()["message"]);
+        throw new Error("{$filename}: {$m}");
+    }
+    return $s;
+}
+
 
 // setcookie helper
 

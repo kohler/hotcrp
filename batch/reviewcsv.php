@@ -2,46 +2,36 @@
 // reviewcsv.php -- HotCRP review export script
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-require_once(dirname(__DIR__) . "/src/siteloader.php");
-
-$arg = Getopt::rest($argv, "hn:t:xwarcfN", ["help", "name:", "type:", "narrow", "wide", "all", "no-header", "reviews", "comments", "fields", "sitename", "no-text", "no-score", "format:"]);
-if (isset($arg["h"]) || isset($arg["help"])) {
-    fwrite(STDOUT, "Usage: php batch/reviewcsv.php [-n CONFID] [-t COLLECTION] [-acx] [QUERY...]
-Output a CSV file containing all reviews for the papers matching QUERY.
-
-Options include:
-  -t, --type COLLECTION  Search COLLECTION “s” (submitted) or “all” [s].
-  -x, --narrow           Narrow output.
-  -a, --all              Include all reviews, not just submitted reviews.
-  -r, --reviews          Include reviews (default unless -c or -f).
-  -c, --comments         Include comments.
-  -f, --fields           Include paper fields.
-  -N, --sitename         Include site name and class in CSV.
-  --no-text              Omit text fields.
-  --no-score             Omit score fields.
-  --no-header            Omit CSV header.
-  --format=FMT           Only output text fields with format FMT.
-  QUERY...               A search term.\n");
-    exit(0);
+if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
+    define("HOTCRP_NOINIT", 1);
+    require_once(dirname(__DIR__) . "/src/init.php");
+    exit(ReviewCSV_Batch::run_args($argv));
 }
 
-require_once(SiteLoader::find("src/init.php"));
-
-class FieldCSVOutput {
+class ReviewCSV_Batch {
     /** @var Conf */
     public $conf;
     /** @var Contact */
     public $user;
     /** @var FieldRender */
     public $fr;
+    /** @var bool */
     public $wide = false;
+    /** @var bool */
     public $narrow = false;
+    /** @var bool */
     public $fields = false;
+    /** @var bool */
     public $reviews = false;
+    /** @var bool */
     public $comments = false;
+    /** @var bool */
     public $all_status = false;
+    /** @var bool */
     public $no_header = false;
+    /** @var bool */
     public $no_score = false;
+    /** @var bool */
     public $no_text = false;
     /** @var string */
     public $t;
@@ -66,45 +56,25 @@ class FieldCSVOutput {
     }
 
     function parse_arg($arg) {
-        if (isset($arg["w"]) || isset($arg["wide"])) {
-            $this->wide = true;
-        }
-        if (isset($arg["x"]) || isset($arg["narrow"])) {
-            $this->narrow = true;
-        }
-        if (isset($arg["f"]) || isset($arg["fields"])) {
-            $this->fields = true;
-        }
-        if (isset($arg["r"]) || isset($arg["reviews"])) {
-            $this->reviews = true;
-        }
-        if (isset($arg["c"]) || isset($arg["comments"])) {
-            $this->comments = true;
-        }
-        if (isset($arg["a"]) || isset($arg["all"])) {
-            $this->all_status = true;
-        }
-        if (isset($arg["no-header"])) {
-            $this->no_header = true;
-        }
-        if (isset($arg["no-score"])) {
-            $this->no_score = true;
-        }
-        if (isset($arg["no-text"])) {
-            $this->no_text = true;
-        }
+        $this->wide = isset($arg["wide"]);
+        $this->narrow = isset($arg["narrow"]);
+        $this->fields = isset($arg["fields"]);
+        $this->reviews = isset($arg["reviews"]);
+        $this->comments = isset($arg["comments"]);
+        $this->all_status = isset($arg["all"]);
+        $this->no_header = isset($arg["no-header"]);
+        $this->no_score = isset($arg["no-score"]);
+        $this->no_text = isset($arg["no-text"]);
         if (isset($arg["format"])) {
             if (ctype_digit($arg["format"])) {
                 $this->format = intval($arg["format"]);
             } else {
-                fwrite(STDERR, "batch/reviewcsv.php: ‘--format’ should be an integer.\n");
-                exit(1);
+                throw new Error("‘--format’ should be an integer");
             }
         }
         $this->t = $arg["t"] ?? "s";
         if (!in_array($this->t, PaperSearch::viewable_limits($this->user, $this->t))) {
-            fwrite(STDERR, "batch/reviewcsv.php: No search collection ‘{$this->t}’.\n");
-            exit(1);
+            throw new Error("No search collection ‘{$this->t}’");
         }
     }
 
@@ -113,19 +83,16 @@ class FieldCSVOutput {
             $this->reviews = true;
         }
         if ($this->wide && $this->narrow) {
-            fwrite(STDERR, "batch/reviewcsv.php: ‘--wide’ and ‘--narrow’ contradict.\n");
-            exit(1);
+            throw new Error("‘--wide’ and ‘--narrow’ contradict");
         } else if (!$this->wide && !$this->narrow) {
             $this->wide = !$this->fields && !$this->comments && $this->format === null;
             $this->narrow = !$this->wide;
         }
         if ($this->no_text && ($this->fields || $this->comments)) {
-            fwrite(STDERR, "batch/reviewcsv.php: These options prohibit ‘--no-text’.\n");
-            exit(1);
+            throw new Error("These options prohibit ‘--no-text’");
         }
         if (!$this->narrow && ($this->fields || $this->comments || $this->format !== null)) {
-            fwrite(STDERR, "batch/reviewcsv.php: These options require ‘-x/--narrow’.\n");
-            exit(1);
+            throw new Error("These options require ‘-x/--narrow’");
         }
 
         $this->header = [];
@@ -296,10 +263,52 @@ class FieldCSVOutput {
             }
         }
     }
-}
 
-$fcsv = new FieldCSVOutput($Conf);
-$fcsv->parse_arg($arg);
-$fcsv->prepare($arg);
-$fcsv->run(join(" ", $arg["_"]));
-$fcsv->output(STDOUT);
+    /** @return int */
+    static function run_args($argv) {
+        $arg = (new Getopt)->long(
+            "name:,n:",
+            "config:",
+            "help,h",
+            "type:,t:",
+            "narrow,x",
+            "wide,w",
+            "all,a",
+            "reviews,r",
+            "comments,c",
+            "fields,f",
+            "sitename,N",
+            "no-header",
+            "no-text",
+            "no-score",
+            "format:"
+        )->parse($argv);
+
+        if (isset($arg["help"])) {
+            fwrite(STDOUT, "Usage: php batch/reviewcsv.php [-n CONFID] [-t COLLECTION] [-acx] [QUERY...]
+Output a CSV file containing all reviews for the papers matching QUERY.
+
+Options include:
+  -t, --type COLLECTION  Search COLLECTION “s” (submitted) or “all” [s].
+  -x, --narrow           Narrow output.
+  -a, --all              Include all reviews, not just submitted reviews.
+  -r, --reviews          Include reviews (default unless -c or -f).
+  -c, --comments         Include comments.
+  -f, --fields           Include paper fields.
+  -N, --sitename         Include site name and class in CSV.
+  --no-text              Omit text fields.
+  --no-score             Omit score fields.
+  --no-header            Omit CSV header.
+  --format=FMT           Only output text fields with format FMT.
+  QUERY...               A search term.\n");
+            exit(0);
+        }
+
+        $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
+        $fcsv = new ReviewCSV_Batch($conf);
+        $fcsv->parse_arg($arg);
+        $fcsv->prepare($arg);
+        $fcsv->run(join(" ", $arg["_"]));
+        $fcsv->output(STDOUT);
+    }
+}

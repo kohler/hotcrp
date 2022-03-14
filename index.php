@@ -69,7 +69,7 @@ if ($nav->page === "u") {
     }
 }
 
-// handle special pages
+// handle pages
 if ($nav->page === "api") {
     require_once("src/init.php");
     API_Page::go_nav($nav, Conf::$main);

@@ -177,8 +177,12 @@ class SiteLoader {
         }
     }
 
-    static function read_main_options() {
-        $file = defined("HOTCRP_OPTIONS") ? HOTCRP_OPTIONS : self::$root . "/conf/options.php";
+    /** @param ?string $file */
+    static function read_main_options($file = null) {
+        $file = $file ?? (defined("HOTCRP_OPTIONS") ? HOTCRP_OPTIONS : "conf/options.php");
+        if (!str_starts_with($file, "/")) {
+            $file = self::$root . "/{$file}";
+        }
         self::read_options_file($file);
     }
 

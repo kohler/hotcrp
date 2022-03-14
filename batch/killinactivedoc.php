@@ -15,9 +15,10 @@ $result = $Conf->qe_raw("select paperStorageId, paperId, timestamp, mimetype,
         from PaperStorage where paperStorageId not in (" . join(",", array_keys($didmap)) . ")
         and paper is not null and paperStorageId>1 order by timestamp");
 $killable = array();
-while (($doc = DocumentInfo::fetch($result, $Conf)))
+while (($doc = DocumentInfo::fetch($result, $Conf))) {
     $killable[$doc->paperStorageId] = "[" . $Conf->unparse_time_log($doc->timestamp)
         . "] " . $doc->export_filename() . " ($doc->paperStorageId)";
+}
 
 if (count($killable)) {
     fwrite(STDOUT, join("\n", $killable) . "\n");

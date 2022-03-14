@@ -1,45 +1,74 @@
 <?php
-require_once(dirname(__DIR__) . "/src/siteloader.php");
+// assign.php -- HotCRP assignment script
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-$arg = Getopt::rest($argv, "hn:d", ["help", "name:", "dry-run"]);
-if (isset($arg["h"]) || isset($arg["help"]) || count($arg["_"]) > 1) {
-    fwrite(STDOUT, "Usage: php batch/assign.php [-n CONFID] [-d|--dry-run] [FILE]
+if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
+    define("HOTCRP_NOINIT", 1);
+    require_once(dirname(__DIR__) . "/src/init.php");
+    Assign_Batch::make_args($argv)->run();
+}
+
+class Assign_Batch {
+    /** @var Contact */
+    public $user;
+    /** @var string */
+    public $filename;
+    /** @var string */
+    public $text;
+    /** @var bool */
+    public $dry_run;
+
+    function __construct(Contact $user, $arg) {
+        $this->user = $user;
+        $this->dry_run = isset($arg["dry-run"]);
+        if (empty($arg["_"])) {
+            $this->filename = "<stdin>";
+            $this->text = stream_get_contents(STDIN);
+        } else {
+            $this->filename = $arg["_"][0];
+            $this->text = file_get_contents_throw($this->filename);
+        }
+        $this->text = convert_to_utf8($this->text);
+    }
+
+    function run() {
+        $assignset = new AssignmentSet($this->user, true);
+        $assignset->parse($this->text, $this->filename);
+        if ($assignset->has_error()) {
+            fwrite(STDERR, $assignset->full_feedback_text());
+        } else if ($assignset->is_empty()) {
+            fwrite(STDERR, "{$this->filename}: Assignment makes no changes\n");
+        } else if ($this->dry_run) {
+            fwrite(STDOUT, $assignset->make_acsv()->unparse());
+        } else {
+            $assignset->execute();
+            $pids = $assignset->assigned_pids();
+            $pidt = $assignset->numjoin_assigned_pids(", #");
+            fwrite(STDERR, "{$this->filename}: Assigned "
+                . join(", ", $assignset->assigned_types())
+                . " to " . pluralx($pids, "paper") . " #" . $pidt . "\n");
+        }
+    }
+
+    /** @return Assign_Batch */
+    static function make_args($argv) {
+        $arg = (new Getopt)->long(
+            "name:,n:",
+            "config:,c:",
+            "dry-run,d",
+            "help,h"
+        )->parse($argv);
+
+        if (isset($arg["help"]) || count($arg["_"]) > 1) {
+            fwrite(STDOUT, "Usage: php batch/assign.php [-n CONFID] [-d|--dry-run] [FILE]
 Perform a CSV bulk assignment.
 
 Options include:
   -d, --dry-run          Output CSV describing assignment.\n");
-    exit(0);
-}
+            exit(isset($arg["help"]) ? 0 : 1);
+        }
 
-require_once(SiteLoader::find("src/init.php"));
-
-if (empty($arg["_"])) {
-    $filename = "<stdin>";
-    $text = stream_get_contents(STDIN);
-} else {
-    $filename = $arg["_"][0];
-    $text = @file_get_contents($filename);
-    if ($text === false) {
-        $m = preg_replace('{.*: }', "", error_get_last()["message"]);
-        fwrite(STDERR, "$filename: $m\n");
-        exit(1);
+        $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
+        return new Assign_Batch($conf->root_user(), $arg);
     }
-}
-
-$text = convert_to_utf8($text);
-$assignset = new AssignmentSet($Conf->root_user(), true);
-$assignset->parse($text, $filename);
-if ($assignset->has_error()) {
-    fwrite(STDERR, $assignset->full_feedback_text());
-} else if ($assignset->is_empty()) {
-    fwrite(STDERR, "$filename: Assignment makes no changes.\n");
-} else if (isset($arg["d"]) || isset($arg["dry-run"])) {
-    fwrite(STDOUT, $assignset->make_acsv()->unparse());
-} else {
-    $assignset->execute();
-    $pids = $assignset->assigned_pids();
-    $pidt = $assignset->numjoin_assigned_pids(", #");
-    fwrite(STDERR, "$filename: Assigned "
-        . join(", ", $assignset->assigned_types())
-        . " to " . pluralx($pids, "paper") . " #" . $pidt . ".\n");
 }
