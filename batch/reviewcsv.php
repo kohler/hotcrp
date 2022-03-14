@@ -69,12 +69,12 @@ class ReviewCSV_Batch {
             if (ctype_digit($arg["format"])) {
                 $this->format = intval($arg["format"]);
             } else {
-                throw new Error("‘--format’ should be an integer");
+                throw new CommandLineException("‘--format’ should be an integer");
             }
         }
         $this->t = $arg["t"] ?? "s";
         if (!in_array($this->t, PaperSearch::viewable_limits($this->user, $this->t))) {
-            throw new Error("No search collection ‘{$this->t}’");
+            throw new CommandLineException("No search collection ‘{$this->t}’");
         }
     }
 
@@ -83,16 +83,16 @@ class ReviewCSV_Batch {
             $this->reviews = true;
         }
         if ($this->wide && $this->narrow) {
-            throw new Error("‘--wide’ and ‘--narrow’ contradict");
+            throw new CommandLineException("‘--wide’ and ‘--narrow’ contradict");
         } else if (!$this->wide && !$this->narrow) {
             $this->wide = !$this->fields && !$this->comments && $this->format === null;
             $this->narrow = !$this->wide;
         }
         if ($this->no_text && ($this->fields || $this->comments)) {
-            throw new Error("These options prohibit ‘--no-text’");
+            throw new CommandLineException("These options prohibit ‘--no-text’");
         }
         if (!$this->narrow && ($this->fields || $this->comments || $this->format !== null)) {
-            throw new Error("These options require ‘-x/--narrow’");
+            throw new CommandLineException("These options require ‘-x/--narrow’");
         }
 
         $this->header = [];
@@ -301,7 +301,7 @@ Options include:
   --no-header            Omit CSV header.
   --format=FMT           Only output text fields with format FMT.
   QUERY...               A search term.\n");
-            exit(0);
+            return 0;
         }
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
@@ -310,5 +310,6 @@ Options include:
         $fcsv->prepare($arg);
         $fcsv->run(join(" ", $arg["_"]));
         $fcsv->output(STDOUT);
+        return 0;
     }
 }

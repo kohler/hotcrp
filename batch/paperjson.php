@@ -5,7 +5,7 @@
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     define("HOTCRP_NOINIT", 1);
     require_once(dirname(__DIR__) . "/src/init.php");
-    (new PaperJson_Batch::make_args($argv))->run();
+    PaperJson_Batch::make_args($argv)->run();
 }
 
 class PaperJson_Batch {
@@ -21,7 +21,7 @@ class PaperJson_Batch {
     function __construct(Contact $user, $arg) {
         $t = $arg["t"] ?? "s";
         if (!in_array($t, PaperSearch::viewable_limits($user, $t))) {
-            throw new Error("No search collection ‘{$t}’");
+            throw new CommandLineException("No search collection ‘{$t}’");
         }
 
         $this->user = $user;

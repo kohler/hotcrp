@@ -59,7 +59,7 @@ class DocumentFileTree implements JsonSerializable {
         $preg = $this->_pregs[$pos];
         $n = 0;
         $isdir = $pos + 1 < $this->_n;
-        foreach (scandir($dir, SCANDIR_SORT_NONE) as $x) {
+        foreach (is_dir($dir) ? scandir($dir, SCANDIR_SORT_NONE) : [] as $x) {
             $x = "/$x";
             if ($x !== "/." && $x !== "/.." && preg_match($preg, $x)) {
                 $c = $isdir ? $this->populate_dirinfo("$dir$x", $pos + 1) : 1;
@@ -82,6 +82,9 @@ class DocumentFileTree implements JsonSerializable {
         $this->_need_hash = false;
     }
 
+    /** @param string $text
+     * @param int $i
+     * @return string|false */
     function match_component($text, $i) {
         $match = $this->_components[$i];
         $xalgo = $this->_algo;
@@ -223,6 +226,7 @@ class DocumentFileTree implements JsonSerializable {
         return $build . $text;
     }
 
+    /** @return bool */
     function match_complete() {
         return !$this->_need_hash
             || ($this->_algo === "" && strlen($this->_hash) === 40)
@@ -302,6 +306,7 @@ class DocumentFileTree implements JsonSerializable {
         --$this->_filecount;
     }
 
+    /** @return bool */
     function is_empty() {
         return $this->_filecount === 0;
     }
@@ -325,10 +330,15 @@ class DocumentFileTreeMatch {
     public $bdirs = [];
     /** @var list<int> */
     public $idxes = [];
+    /** @var string */
     public $fname = "";
+    /** @var ?string */
     public $algohash;
+    /** @var ?string */
     public $extension;
+    /** @var null|int|false */
     private $_atime;
+    /** @var null|int|false */
     private $_mtime;
 
     /** @param int $treeid */
@@ -342,15 +352,18 @@ class DocumentFileTreeMatch {
         $this->idxes[] = $idx;
         $this->fname .= $suffix;
     }
+    /** @return bool */
     function is_complete() {
         return $this->algohash !== null;
     }
+    /** @return int|false */
     function atime() {
         if ($this->_atime === null) {
             $this->_atime = fileatime($this->fname);
         }
         return $this->_atime;
     }
+    /** @return int|false */
     function mtime() {
         if ($this->_mtime === null) {
             $this->_mtime = filemtime($this->fname);
@@ -513,6 +526,7 @@ class DocumentFileTreeDir implements JsonSerializable {
         $this->_used[$i] = true;
     }
 
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         return $this->_di;
     }

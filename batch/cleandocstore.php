@@ -2,54 +2,56 @@
 // cleandocstore.php -- HotCRP maintenance script
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-require_once(dirname(__DIR__) . "/src/siteloader.php");
-
-$arg = Getopt::rest($argv, "hn:c:Vm:du:U:q", ["help", "name:", "count:", "verbose", "match:",
-    "dry-run", "max-usage:", "min-usage:", "quiet", "silent", "keep-temp", "docstore"]);
-foreach (["c" => "count", "V" => "verbose", "m" => "match", "d" => "dry-run",
-          "u" => "max-usage", "U" => "min-usage", "q" => "quiet"] as $s => $l) {
-    if (isset($arg[$s]) && !isset($arg[$l]))
-        $arg[$l] = $arg[$s];
-}
-if (isset($arg["silent"])) {
-    $arg["quiet"] = false;
-}
-if (isset($arg["h"]) || isset($arg["help"])) {
-    fwrite(STDOUT, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH] [-d|--dry-run]
-             [-u USAGEHI] [-U USAGELOW] [--keep-temp] [--docstore] [DOCSTORES...]\n");
-    exit(0);
-}
-if (isset($arg["count"])) {
-    if (ctype_digit($arg["count"])) {
-        $arg["count"] = intval($arg["count"]);
-    } else {
-        fwrite(STDERR, "batch/cleandocstore.php: `-c` expects integer\n");
-        exit(1);
-    }
-}
-foreach (["max-usage", "min-usage"] as $k) {
-    if (isset($arg[$k])) {
-        if (is_numeric($arg[$k])
-            && ($f = floatval($arg[$k])) >= 0
-            && $f <= 1) {
-            $arg[$k] = $f;
-        } else {
-            fwrite(STDERR, "batch/cleandocstore.php: `--{$k}` expects fraction between 0 and 1\n");
-            exit(1);
-        }
-    }
-}
-if (($arg["max-usage"] ?? 1) < ($arg["min-usage"] ?? 0)) {
-    fwrite(STDERR, "batch/cleandocstore.php: `--max-usage` cannot be less than `--min-usage`\n");
-    exit(1);
+if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
+    define("HOTCRP_NOINIT", 1);
+    require_once(dirname(__DIR__) . "/src/init.php");
+    exit(CleanDocstore_Batch::make_args($argv)->run());
 }
 
-require_once(SiteLoader::find("src/init.php"));
-
-class Batch_CleanDocstore {
+class CleanDocstore_Batch {
+    /** @var Conf */
+    public $conf;
+    /** @var list<string> */
+    public $docstores;
+    /** @var int */
+    public $mode = 0;
+    /** @var ?int */
+    public $count;
+    /** @var ?float */
+    public $min_usage;
+    /** @var ?float */
+    public $max_usage;
+    /** @var ?int */
+    public $bytes;
+    /** @var bool */
+    public $quiet;
+    /** @var bool */
+    public $verbose;
+    /** @var bool */
+    public $dry_run;
+    /** @var bool */
+    public $keep_temp;
+    /** @var DocumentHashMatcher */
+    public $hash_matcher;
     /** @var list<?DocumentFileTree> */
     public $ftrees = [];
 
+    /** @param list<string> $docstores */
+    function __construct(Conf $conf, $docstores, $arg) {
+        $this->conf = $conf;
+        $this->docstores = $docstores;
+        $this->mode = isset($arg["docstore"]) ? 1 : 0;
+        $this->count = $arg["count"] ?? null;
+        $this->min_usage = $arg["min-usage"] ?? null;
+        $this->max_usage = $arg["max-usage"] ?? null;
+        $this->quiet = isset($arg["quiet"]);
+        $this->verbose = isset($arg["verbose"]);
+        $this->dry_run = isset($arg["dry-run"]);
+        $this->keep_temp = isset($arg["keep-temp"]);
+        $this->hash_matcher = new DocumentHashMatcher($arg["match"] ?? null);
+    }
+
+    /** @return ?DocumentFileTreeMatch */
     function fparts_random_match() {
         $fmatches = [];
         for ($i = 0; $i !== count($this->ftrees); ++$i) {
@@ -101,18 +103,18 @@ class Batch_CleanDocstore {
     }
 
     /** @param DocumentFileTreeMatch $fm
-     * @param bool $dry_run */
-    private function check_match(Conf $conf, $fm, $dry_run) {
+     * @return bool */
+    private function check_match($fm) {
         $doc = new DocumentInfo([
             "sha1" => $fm->algohash,
             "mimetype" => Mimetype::type($fm->extension)
-        ], $conf);
+        ], $this->conf);
         $hashalg = $doc->hash_algorithm();
         if ($hashalg === false) {
             fwrite(STDERR, "{$fm->fname}: unknown hash\n");
             return false;
         }
-        if (!$dry_run) {
+        if (!$this->dry_run) {
             $chash = hash_file($hashalg, $fm->fname, true);
             if ($chash === false) {
                 fwrite(STDERR, "{$fm->fname}: is unreadable\n");
@@ -131,52 +133,49 @@ class Batch_CleanDocstore {
         }
     }
 
-    function run(Conf $conf, $arg) {
-        // argument parsing
-        $confdp = $conf->docstore();
-        if (isset($arg["docstore"])) {
-            echo $confdp ? $confdp . "\n" : "";
+    /** @return int */
+    function run() {
+        if ($this->mode === 1) {
+            foreach ($this->docstores as $dp) {
+                fwrite(STDOUT, "{$dp}\n");
+            }
             return 0;
-        } else if (!$confdp) {
-            fwrite(STDERR, "batch/cleandocstore.php: Conference doesn't use docstore\n");
-            return 1;
         }
 
-        preg_match('{\A((?:/[^/%]*(?=/|\z))+)}', $confdp, $m);
+        if (empty($this->docstores) || !$this->conf->docstore()) {
+            throw new RuntimeException("No docstore to clean");
+        }
+
+        preg_match('/\A((?:\/[^\/%]*(?=\/|\z))+)/', $this->docstores[0], $m);
         $usage_directory = $m[1];
 
-        $count = $arg["count"] ?? 10;
-        $verbose = isset($arg["verbose"]);
-        $dry_run = isset($arg["dry-run"]);
-        $keep_temp = isset($arg["keep-temp"]);
         $usage_threshold = null;
-        $hash_matcher = new DocumentHashMatcher($arg["match"] ?? null);
-
-        if (isset($arg["max-usage"]) || isset($arg["min-usage"])) {
+        if ($this->min_usage !== null || $this->max_usage !== null) {
             $ts = disk_total_space($usage_directory);
             $fs = disk_free_space($usage_directory);
             if ($ts === false || $fs === false) {
-                fwrite(STDERR, "$usage_directory: cannot evaluate free space\n");
-                return 1;
-            } else if ($fs >= $ts * (1 - ($arg["max-usage"] ?? $arg["min-usage"]))) {
-                if (!isset($arg["quiet"])) {
-                    fwrite(STDOUT, $usage_directory . ": free space sufficient\n");
+                throw new RuntimeException("{$usage_directory}: Cannot evaluate free space");
+            } else if ($fs >= $ts * (1 - ($this->max_usage ?? $this->min_usage))) {
+                if (!$this->quiet) {
+                    fwrite(STDOUT, "{$usage_directory}: free space sufficient\n");
                 }
                 return 0;
             }
-            $want_fs = $ts * (1 - ($arg["min-usage"] ?? $arg["max-usage"]));
+            $want_fs = $ts * (1 - ($this->min_usage ?? $this->max_usage));
             $usage_threshold = $want_fs - $fs;
-            $count = $arg["count"] ?? 5000;
+            $count = $this->count ?? 5000;
+        } else {
+            $usage_threshold = null;
+            $count = $this->count ?? 10;
         }
 
-        foreach (array_merge([$confdp], $arg["_"] ?? []) as $i => $dp) {
+        foreach ($this->docstores as $i => $dp) {
             if (!str_starts_with($dp, "/") || strpos($dp, "%") === false) {
-                fwrite(STDERR, "batch/cleandocstore.php: Bad docstore pattern.\n");
-                return 1;
+                throw new RuntimeException("{$dp}: Bad docstore pattern");
             }
-            $this->ftrees[] = new DocumentFileTree($dp, $hash_matcher, count($this->ftrees));
-            if (!$keep_temp) {
-                $this->ftrees[] = new DocumentFileTree(Filer::docstore_fixed_prefix($dp) . "tmp/%w", $hash_matcher, count($this->ftrees));
+            $this->ftrees[] = new DocumentFileTree($dp, $this->hash_matcher, count($this->ftrees));
+            if (!$this->keep_temp) {
+                $this->ftrees[] = new DocumentFileTree(Filer::docstore_fixed_prefix($dp) . "tmp/%w", $this->hash_matcher, count($this->ftrees));
             } else {
                 $this->ftrees[] = null;
             }
@@ -188,11 +187,11 @@ class Batch_CleanDocstore {
                && ($usage_threshold === null || $bytesremoved < $usage_threshold)
                && ($fm = $this->fparts_random_match())) {
             if (($fm->treeid & 1) !== 0
-                || $this->check_match($conf, $fm, $dry_run)) {
+                || $this->check_match($fm)) {
                 $size = filesize($fm->fname);
-                if ($dry_run || unlink($fm->fname)) {
-                    if ($verbose) {
-                        fwrite(STDOUT, "{$fm->fname}: " . ($dry_run ? "would remove\n" : "removed\n"));
+                if ($this->dry_run || unlink($fm->fname)) {
+                    if ($this->verbose) {
+                        fwrite(STDOUT, "{$fm->fname}: " . ($this->dry_run ? "would remove\n" : "removed\n"));
                     }
                     ++$nsuccess;
                     $bytesremoved += $size;
@@ -204,14 +203,52 @@ class Batch_CleanDocstore {
             ++$ndone;
         }
 
-        if (!isset($arg["quiet"])) {
-            fwrite(STDOUT, $usage_directory . ": " . ($dry_run ? "would remove " : "removed ") . plural($nsuccess, "file") . ", " . plural($bytesremoved, "byte") . "\n");
+        if (!$this->quiet) {
+            fwrite(STDOUT, $usage_directory . ": " . ($this->dry_run ? "would remove " : "removed ") . plural($nsuccess, "file") . ", " . plural($bytesremoved, "byte") . "\n");
         }
         if ($nsuccess == 0) {
             fwrite(STDERR, "Nothing to delete\n");
         }
         return $nsuccess && $nsuccess == $ndone ? 0 : 1;
     }
-}
 
-exit((new Batch_CleanDocstore)->run($Conf, $arg));
+    /** @return CleanDocstore_Batch */
+    static function make_args($argv) {
+        $arg = (new Getopt)->long(
+            "name:,n: !",
+            "config: !",
+            "help,h",
+            "count:,c: {n} =COUNT Clean up to COUNT files",
+            "match:,m: =MATCH Clean files matching MATCH",
+            "verbose,V",
+            "dry-run,d Do not remove files",
+            "max-usage:,u: {f} =FRAC Clean until usage is below FRAC",
+            "min-usage:,U: {f} =FRAC Do not clean if usage is below FRAC",
+            "quiet,silent,q",
+            "keep-temp",
+            "docstore"
+        )->helpopt("help")
+         ->description("Remove files from HotCRP docstore that are on S3.
+Usage: php batch/cleandocstore.php [-c COUNT|-u FRAC] [-V] [-d] [DOCSTORES...]\n")
+         ->parse($argv);
+
+        if (isset($arg["max-usage"]) && ($arg["max-usage"] < 0 || $arg["max-usage"] > 1)) {
+            throw new CommandLineException("`--max-usage` must be between 0 and 1");
+        }
+        if (isset($arg["min-usage"]) && ($arg["min-usage"] < 0 || $arg["min-usage"] > 1)) {
+            throw new CommandLineException("`--min-usage` must be between 0 and 1");
+        }
+        if (($arg["max-usage"] ?? 1) < ($arg["min-usage"] ?? 0)) {
+            throw new CommandLineException("`--max-usage` cannot be less than `--min-usage`");
+        }
+
+        $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
+        $confdp = $conf->docstore();
+        if ($confdp) {
+            $confdps = array_merge([$confdp], $arg["_"]);
+        } else {
+            $confdps = $arg["_"];
+        }
+        return new CleanDocstore_Batch($conf, $confdps, $arg);
+    }
+}

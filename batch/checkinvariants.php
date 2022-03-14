@@ -27,7 +27,7 @@ class CheckInvariants_Batch {
         }
     }
 
-    /** @return Assign_Batch */
+    /** @return CheckInvariants_Batch */
     static function make_args($argv) {
         $arg = (new Getopt)->long(
             "name:,n:",

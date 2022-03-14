@@ -3,7 +3,7 @@
 // Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
 
 class Getopt {
-    /** @var array<string,array{string,0|1|2,?string}> */
+    /** @var array<string,array{string,0|1|2,?string,?string}> */
     private $po = [];
     /** @var ?string */
     private $helpopt;
@@ -32,7 +32,7 @@ class Getopt {
                     $i += 2;
                     $type = 3;
                 }
-                $this->po[$opt] = [$opt, $type, null];
+                $this->po[$opt] = [$opt, $type, null, null];
             } else {
                 throw new ErrorException("Getopt \$options");
             }
@@ -47,10 +47,14 @@ class Getopt {
                 $this->long(...$s);
                 continue;
             }
-            $help = null;
+            $help = $type = null;
             if (($sp = strpos($s, " ")) !== false) {
                 $help = substr($s, $sp + 1);
                 $s = substr($s, 0, $sp);
+                if ($help !== "" && $help[0] === "{" && ($rbr = strpos($help, "}")) !== false) {
+                    $type = substr($help, 1, $rbr - 1);
+                    $help = $rbr === strlen($help) - 1 ? "" : ltrim(substr($help, $rbr + 1));
+                }
             }
             $po = null;
             $p = 0;
@@ -70,7 +74,7 @@ class Getopt {
                     throw new ErrorException("Getopt \$longopts");
                 }
                 $n = substr($s, $p, $co - $p - $d);
-                $po = $po ?? [$n, $t, $help];
+                $po = $po ?? [$n, $t, $type, $help];
                 if ($t !== $po[1]) {
                     throw new ErrorException("Getopt \$longopts");
                 }
@@ -111,42 +115,59 @@ class Getopt {
         }
         $od = [];
         foreach ($this->po as $t => $po) {
-            $n = strlen($t) === 1 ? "-{$t}" : "--{$t}";
-            if ($po[1] === 1 || $po[1] === 3) {
-                $n .= " ARG";
-            } else if ($po[1] === 2) {
-                $n .= "[=ARG]";
-            }
-            if (!isset($od[$po[0]])) {
-                $help = $po[2];
-                if ($help === null && $this->helpopt === $po[0]) {
+            $maint = $po[0];
+            if (!isset($od[$maint])) {
+                $help = $po[3];
+                if (($help ?? "") !== ""
+                    && $help[0] === "="
+                    && preg_match('/\A=([A-Z]\S*)\s*/', $help, $m)) {
+                    $argname = $m[1];
+                    $help = substr($help, strlen($m[0]));
+                } else {
+                    $argname = "ARG";
+                }
+                if ($po[1] === 1 || $po[1] === 3) {
+                    $arg = " {$argname}";
+                } else if ($po[1] === 2) {
+                    $arg = "[={$argname}]";
+                } else {
+                    $arg = "";
+                }
+                if ($help === null
+                    && $this->helpopt === $maint) {
                     $help = "Print this message";
                 }
-                $od[$po[0]] = ["  " . $n, $help];
-            } else {
-                $od[$po[0]][0] .= ", $n";
+                $od[$maint] = [null, null, $arg, $help];
             }
+            $offset = strlen($t) === 1 ? 0 : 1;
+            $od[$maint][$offset] = $od[$maint][$offset] ?? ($offset === 0 ? "-{$t}" : "--{$t}");
         }
         $s[] = "Options:\n";
         foreach ($od as $tx) {
-            if (($tx[1] ?? "") !== "") {
-                $s[] = $tx[0];
-                if (strlen($tx[0]) <= 22) {
-                    $s[] = str_repeat(" ", 24 - strlen($tx[0]));
+            $help = $tx[3] ?? "";
+            if ($help !== "!") {
+                if ($tx[0] !== null && $tx[1] !== null) {
+                    $s[] = $oax = "{$tx[0]}, {$tx[1]}{$tx[2]}";
                 } else {
-                    $s[] = "\n" . str_repeat(" ", 24);
+                    $oa = $tx[0] ?? $tx[1];
+                    $s[] = $oax = "{$oa}{$tx[2]}";
                 }
-                $s[] = $tx[1];
-            } else {
-                $s[] = $tx[0];
+                if ($help !== "") {
+                    if (strlen($oax) <= 24) {
+                        $s[] = str_repeat(" ", 26 - strlen($oax));
+                    } else {
+                        $s[] = "\n" . str_repeat(" ", 26);
+                    }
+                    $s[] = $help;
+                }
+                $s[] = "\n";
             }
-            $s[] = "\n";
         }
         return join("", $s);
     }
 
     /** @param list<string> $argv
-     * @return array<string,string|list<string>> */
+     * @return array<string,string|int|float|list<string>> */
     function parse($argv) {
         $res = [];
         $pot = 0;
@@ -163,6 +184,7 @@ class Getopt {
                 if (!($po = $this->po[$name] ?? null)) {
                     break;
                 }
+                $oname = "--{$name}";
                 $name = $po[0];
                 $pot = $po[1];
                 if (($eq !== false && $pot === 0)
@@ -178,6 +200,7 @@ class Getopt {
                     $value = false;
                 }
             } else if (ctype_alnum($arg[1])) {
+                $oname = "-{$arg[1]}";
                 if (!($po = $this->po[$arg[1]] ?? null)) {
                     break;
                 }
@@ -201,6 +224,25 @@ class Getopt {
                 }
             } else {
                 break;
+            }
+            $poty = $po[2];
+            if ($poty === "n" || $poty === "i") {
+                if (!ctype_digit($value)) {
+                    throw new CommandLineException("`{$oname}` requires integer");
+                } else if (($v = intval($value)) != $value
+                           || ($poty === "n" && $v < 0)) {
+                    throw new CommandLineException("`{$oname}` out of range");
+                } else {
+                    $value = $v;
+                }
+            } else if ($poty === "f") {
+                if (!is_numeric($value)) {
+                    throw new CommandLineException("`{$oname}` requires decimal number");
+                } else {
+                    $value = floatval($value);
+                }
+            } else if ($poty !== null && $poty !== "s") {
+                throw new ErrorException("Bad Getopt type `{$poty}` for `{$oname}`");
             }
             if (!array_key_exists($name, $res)) {
                 $res[$name] = $pot === 3 ? [$value] : $value;
@@ -234,5 +276,12 @@ class Getopt {
      * @return array<string,string|list<string>> */
     static function rest($argv, $options, $longopts) {
         return (new Getopt)->short($options)->long($longopts)->parse($argv);
+    }
+}
+
+class CommandLineException extends Exception {
+    /** @param string $message */
+    function __construct($message) {
+        parent::__construct($message);
     }
 }

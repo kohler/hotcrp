@@ -196,9 +196,9 @@ class Multiconference {
         $errors = [];
         $confid = $Opt["confid"] ?? null;
         $multiconference = $Opt["multiconference"] ?? null;
-        $missing = array_filter($Opt["missing"] ?? [], function ($x) {
+        $missing = array_values(array_filter($Opt["missing"] ?? [], function ($x) {
             return strpos($x, "__nonexistent__") === false;
-        });
+        }));
 
         if (PHP_SAPI === "cli") {
             if ($missing) {

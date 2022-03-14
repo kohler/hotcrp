@@ -100,9 +100,9 @@ class SavePapers_Batch {
         if (!$this->ziparchive
             && str_starts_with($content, "\x50\x4B\x03\x04")) {
             if (!($tmpdir = tempdir())) {
-                throw new Error("{$this->errprefix}Cannot create temporary directory");
+                throw new CommandLineException("{$this->errprefix}Cannot create temporary directory");
             } else if (file_put_contents("{$tmpdir}/data.zip", $content) !== strlen($content)) {
-                throw new Error("{$this->errprefix}{$tmpdir}/data.zip: Cannot write file");
+                throw new CommandLineException("{$this->errprefix}{$tmpdir}/data.zip: Cannot write file");
             }
             $this->ziparchive = new ZipArchive;
             $zipfile = "{$tmpdir}/data.zip";
@@ -111,9 +111,9 @@ class SavePapers_Batch {
 
         if ($this->ziparchive) {
             if ($this->ziparchive->open($zipfile) !== true) {
-                throw new Error("{$this->errprefix}Invalid zip");
+                throw new CommandLineException("{$this->errprefix}Invalid zip");
             } else if ($this->ziparchive->numFiles == 0) {
-                throw new Error("{$this->errprefix}Empty zipfile");
+                throw new CommandLineException("{$this->errprefix}Empty zipfile");
             }
             // find common directory prefix
             $slashpos = strrpos($this->ziparchive->getNameIndex(0), "/");
@@ -152,7 +152,7 @@ class SavePapers_Batch {
             if (count($data_filename) === 0 && count($json_filename) === 1) {
                 $data_filename = $json_filename;
             } else if (count($data_filename) !== 1) {
-                throw new Error("{$this->errprefix}Should contain exactly one `*-data.json` file");
+                throw new CommandLineException("{$this->errprefix}Should contain exactly one `*-data.json` file");
             }
             $content = $this->ziparchive->getFromName($data_filename[0]);
             $this->errprefix = ($this->errprefix ? $file : "<stdin>") . "/" . $data_filename[0] . ": ";
@@ -161,7 +161,7 @@ class SavePapers_Batch {
         if (is_string($content)) {
             return $content;
         } else {
-            throw new Error("{$this->errprefix}Read error");
+            throw new CommandLineException("{$this->errprefix}Read error");
         }
     }
 
