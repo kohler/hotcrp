@@ -259,7 +259,8 @@ class Multiconference {
         self::fail(["nolink" => true], ...$errors);
     }
 
-    /** @param Throwable $ex */
+    /** @param Throwable $ex
+     * @suppress PhanUndeclaredProperty */
     static function batch_exception_handler($ex) {
         global $argv;
         $s = $ex->getMessage();

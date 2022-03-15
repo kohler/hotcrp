@@ -202,7 +202,7 @@ function initialize_user_redirect($nav, $uindex, $nusers) {
         } else {
             json_exit(["ok" => false, "error" => "Bad user specification"]);
         }
-    } else if ($_SERVER["REQUEST_METHOD"] === "GET") {
+    } else if ($_SERVER["REQUEST_METHOD"] === "GET" || $_SERVER["REQUEST_METHOD"] === "HEAD") {
         $page = $nav->base_absolute();
         if ($nusers > 0) {
             $page = "{$page}u/$uindex/";

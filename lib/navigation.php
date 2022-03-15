@@ -13,13 +13,13 @@ class NavigationState {
     /** @var string */
     public $server;             // "PROTOCOL://HOST[:PORT]"
     /** @var string */
-    public $site_path;          // "/SITEPATH/"; always ends in /
-    /** @var string */
-    public $site_path_relative; // "/SITEPATH/", "../"+, or ""
-    /** @var string */
-    public $base_path;          // "/BASEPATH/"; always ends in /; prefix of $site_path
+    public $base_path;          // "/BASEPATH/"; always ends in /
     /** @var string */
     public $base_path_relative; // "/BASEPATH/", "../"+, or ""
+    /** @var string */
+    public $site_path;          // "/SITEPATH/"; always ends in /; suffix of $site_path
+    /** @var string */
+    public $site_path_relative; // "/SITEPATH/", "../"+, or ""
     /** @var string */
     public $page;               // "PAGE" or "index" (.php suffix stripped)
     /** @var string */

@@ -42,12 +42,12 @@ class SaveUsers_Batch {
             }
             $this->jexpr[] = json_encode($j);
             $this->filename = "<user>";
-        } else if ($file === "-") {
+        } else if (($arg["_"][0] ?? "-") === "-") {
             $this->filename = "<stdin>";
             $this->content = stream_get_contents(STDIN);
         } else {
-            $this->filename = $file;
-            $this->content = file_get_contents_throw($file);
+            $this->filename = $arg["_"][0];
+            $this->content = file_get_contents_throw($this->filename);
         }
     }
 
@@ -100,8 +100,8 @@ class SaveUsers_Batch {
         $csv = new CsvParser(cleannl(convert_to_utf8($str)));
         $csv->set_comment_chars("#%");
         $line = $csv->next_list();
-        if ($line !== null && preg_grep('/\Aemail\z/i', $str)) {
-            $csv->set_header($str);
+        if ($line !== null && preg_grep('/\Aemail\z/i', $line)) {
+            $csv->set_header($line);
         } else {
             throw new CommandLineException("{$this->filename}: email field missing from CSV header");
         }
@@ -112,7 +112,7 @@ class SaveUsers_Batch {
             $this->ustatus->csvreq = $line;
             $this->ustatus->jval = (object) ["id" => null];
             $this->ustatus->parse_csv_group("");
-            $this->save_contact(null, $ustatus->jval);
+            $this->save_contact(null, $this->ustatus->jval);
         }
     }
 

@@ -78,7 +78,7 @@ class PaperRequest {
             throw new PermissionProblem($conf, ["invalidId" => "paper", "paperId" => $qreq->paperId]);
         } else if (isset($qreq->reviewId)
                    && !preg_match('/\A\d+(?:|[A-Z]+|r[1-9]\d*|rnew)\z/', $qreq->reviewId)) {
-            throw new PermissionProblem($conf, ["invalidId" => "review", "reviewId" => $qreq->review_by_id]);
+            throw new PermissionProblem($conf, ["invalidId" => "review", "reviewId" => $qreq->reviewId]);
         }
     }
 

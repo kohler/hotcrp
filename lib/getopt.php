@@ -253,10 +253,13 @@ class Getopt {
             }
             $poty = $po[2];
             if ($poty === "n" || $poty === "i") {
-                if (!ctype_digit($value)) {
+                if (!ctype_digit($value) && !preg_match('/\A[-+]\d+\z/', $value)) {
                     throw new CommandLineException("`{$oname}` requires integer", $this);
-                } else if (($v = intval($value)) != $value
-                           || ($poty === "n" && $v < 0)) {
+                }
+                $v = intval($value);
+                if (("{$v}" !== $value
+                     && "{$v}" !== preg_replace('/\A(|-)\+?0*(?=\d)/', '$1', $value))
+                    || ($poty === "n" && $v < 0)) {
                     throw new CommandLineException("`{$oname}` out of range", $this);
                 } else {
                     $value = $v;
