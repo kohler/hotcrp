@@ -91,15 +91,14 @@ class PaperRequest {
         if (($pid = $qreq->paperId) !== null) {
             if ($pid === "new") {
                 return 0;
-            } else if (($p = intval($pid)) > 0) {
-                if ((string) $p === $pid) {
+            } else if (ctype_digit($pid) && ($p = intval($pid)) > 0) {
+                if ("{$p}" === $pid) {
                     return $p;
-                } else {
+                } else if (str_pad("{$p}", strlen($pid), "0", STR_PAD_LEFT) === $pid) {
                     throw new Redirection($conf->selfurl($qreq, ["p" => $p]));
                 }
-            } else {
-                throw new PermissionProblem($conf, ["invalidId" => "paper"]);
             }
+            throw new PermissionProblem($conf, ["invalidId" => "paper", "paperId" => $pid]);
         }
         // check reviewId
         if (($rid = $qreq->reviewId) !== null) {
@@ -107,7 +106,7 @@ class PaperRequest {
             if (($p = $conf->fetch_ivalue("select paperId from PaperReview where reviewId=?", $rid)) > 0) {
                 return $p;
             } else {
-                throw new PermissionProblem($conf, ["invalidId" => "review"]);
+                throw new PermissionProblem($conf, ["invalidId" => "review", "reviewId" => $qreq->reviewId]);
             }
         }
         // give up on POST, empty user
@@ -151,6 +150,52 @@ class PaperRequest {
         return new Redirection($conf->hoturl("signin", ["redirect" => $conf->selfurl($qreq, ["p" => $pid ? : "new"], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW)]));
     }
 
+    /** @param ?PaperInfo $prow
+     * @param Contact $user
+     * @param Qrequest $qreq
+     * @return bool */
+    static private function check_prow($prow, $user, $qreq) {
+        return $prow
+            && $user->can_view_paper($prow, false)
+            && (isset($qreq->paperId)
+                || !isset($qreq->reviewId)
+                || $user->privChair
+                || (($rrow = $prow->review_by_ordinal_id($qreq->reviewId))
+                    && $user->can_view_review_assignment($prow, $rrow)));
+    }
+
+    /** @param ?PaperInfo $prow
+     * @param Contact $user
+     * @param Qrequest $qreq */
+    static private function try_other_user($prow, $user, $qreq) {
+        if ($prow
+            && ($qreq->method() === "GET" || $qreq->method() === "HEAD")
+            && count(Contact::session_users()) > 1
+            && self::other_user_redirectable()) {
+            foreach (Contact::session_users() as $email) {
+                $user->conf->prefetch_user_by_email($email);
+            }
+            foreach (Contact::session_users() as $i => $email) {
+                if (strcasecmp($user->email, $email) !== 0
+                    && ($u = $user->conf->cached_user_by_email($email))
+                    && self::check_prow($prow, $u, $qreq)) {
+                    $nav = Navigation::get();
+                    throw new Redirection($user->conf->make_absolute_site("u/{$i}/{$nav->raw_page}{$nav->path}{$nav->query}"));
+                }
+            }
+        }
+    }
+
+    /** @return bool */
+    static private function other_user_redirectable() {
+        $page = Navigation::self();
+        foreach ($_COOKIE as $k => $v) {
+            if (str_starts_with($k, "hc-uredirect-") && $v === $page)
+                return true;
+        }
+        return false;
+    }
+
     /** @param Conf $conf
      * @param Contact $user
      * @param Qrequest $qreq
@@ -170,22 +215,17 @@ class PaperRequest {
                 $options["reviewerPreference"] = true;
             }
             $prow = $user->paper_by_id($pid, $options);
-            if (!isset($qreq->paperId) && isset($qreq->reviewId)) {
-                if ($prow
-                    && $user->can_view_paper($prow, false)
-                    && ($user->privChair
-                        || (($rrow = $prow->review_by_ordinal_id($qreq->reviewId))
-                            && $user->can_view_review_assignment($prow, $rrow)))) {
-                    throw new Redirection($conf->selfurl($qreq, ["p" => $prow->paperId]));
-                } else {
+            if (!self::check_prow($prow, $user, $qreq)) {
+                self::try_other_user($prow, $user, $qreq);
+                if (!isset($qreq->paperId) && isset($qreq->reviewId)) {
                     throw new PermissionProblem($conf, ["missingId" => "paper"]);
-                }
-            } else if (($whynot = $user->perm_view_paper($prow, false, $pid))) {
-                if ($user->has_email()) {
-                    throw $whynot;
-                } else {
+                } else if (!$user->has_email()) {
                     throw $this->signin_redirection($conf, $qreq, $pid);
+                } else {
+                    throw $user->perm_view_paper($prow, false, $pid);
                 }
+            } else if (!isset($qreq->paperId) && isset($qreq->reviewId)) {
+                throw new Redirection($conf->selfurl($qreq, ["p" => $prow->paperId]));
             }
             return $prow;
         }

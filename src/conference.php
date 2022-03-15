@@ -4373,7 +4373,8 @@ class Conf {
     function header_head($title, $extra = []) {
         // clear session list cookies
         foreach ($_COOKIE as $k => $v) {
-            if (str_starts_with($k, "hotlist-info"))
+            if (str_starts_with($k, "hotlist-info")
+                || str_starts_with($k, "hc-uredirect-"))
                 $this->set_cookie($k, "", Conf::$now - 86400);
         }
 

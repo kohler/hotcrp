@@ -194,8 +194,9 @@ function initialize_conf($config_file = null, $confid = null) {
 
 /** @param NavigationState $nav
  * @param int $uindex
- * @param int $nusers */
-function initialize_user_redirect($nav, $uindex, $nusers) {
+ * @param int $nusers
+ * @param bool $cookie */
+function initialize_user_redirect($nav, $uindex, $nusers, $cookie) {
     if ($nav->page === "api") {
         if ($nusers === 0) {
             json_exit(["ok" => false, "error" => "You have been signed out"]);
@@ -210,7 +211,11 @@ function initialize_user_redirect($nav, $uindex, $nusers) {
         if ($nav->page !== "index" || $nav->path !== "") {
             $page = "{$page}{$nav->page}{$nav->php_suffix}{$nav->path}";
         }
-        Navigation::redirect_absolute($page . $nav->query);
+        $page .= $nav->query;
+        if ($cookie) {
+            Conf::$main->set_cookie("hc-uredirect-" . Conf::$now, $page, Conf::$now + 20);
+        }
+        Navigation::redirect_absolute($page);
     } else {
         Conf::$main->error_msg("<0>You have been signed out from this account");
     }
@@ -303,7 +308,7 @@ function initialize_request() {
             if (str_starts_with($nav->query, "&")) {
                 $nav->query = "?" . substr($nav->query, 1);
             }
-            initialize_user_redirect($nav, $uindex, count($userset));
+            initialize_user_redirect($nav, $uindex, count($userset), !isset($_GET["i"]));
         }
     } else if (str_starts_with($nav->shifted_path, "u/")) {
         $uindex = $usercount === 0 ? -1 : (int) substr($nav->shifted_path, 2);
@@ -311,7 +316,7 @@ function initialize_request() {
     if ($uindex >= 0 && $uindex < $usercount) {
         $trueemail = $userset[$uindex];
     } else if ($uindex !== 0) {
-        initialize_user_redirect($nav, 0, $usercount);
+        initialize_user_redirect($nav, 0, $usercount, false);
     }
 
     if (isset($_GET["i"])
