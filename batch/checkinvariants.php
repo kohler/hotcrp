@@ -30,15 +30,15 @@ class CheckInvariants_Batch {
     /** @return CheckInvariants_Batch */
     static function make_args($argv) {
         $arg = (new Getopt)->long(
-            "name:,n:",
-            "config:,c:",
-            "fix-autosearch"
-        )->parse($argv);
-
-        if (isset($arg["help"]) || count($arg["_"]) > 0) {
-            fwrite(STDOUT, "Usage: php batch/checkinvariants.php [-n CONFID] [--fix-autosearch]\n");
-            exit(isset($arg["help"]) ? 0 : 1);
-        }
+            "name:,n: !",
+            "config:,c: !",
+            "help,h !",
+            "fix-autosearch Repair any incorrect autosearch tags"
+        )->helpopt("help")
+         ->description("Check invariants in a HotCRP database.
+Usage: php batch/checkinvariants.php [-n CONFID] [--fix-autosearch]\n")
+         ->maxarg(0)
+         ->parse($argv);
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
         return new CheckInvariants_Batch($conf, $arg);

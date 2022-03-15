@@ -266,6 +266,10 @@ class Multiconference {
         if (strpos($s, ":") === false) {
             $script = $argv[0] ?? "";
             if (($slash = strrpos($script, "/")) !== false) {
+                if (($slash === 5 && str_starts_with($script, "batch"))
+                    || ($slash > 5 && substr_compare($script, "/batch", $slash - 6, 6) === 0)) {
+                    $slash -= 6;
+                }
                 $script = substr($script, $slash + 1);
             }
             if ($script !== "") {
@@ -274,6 +278,10 @@ class Multiconference {
         }
         if (substr($s, -1) !== "\n") {
             $s = "{$s}\n";
+        }
+        if (property_exists($ex, "getopt")
+            && $ex->getopt instanceof Getopt) {
+            $s .= $ex->getopt->short_usage();
         }
         fwrite(STDERR, $s);
         exit(1);

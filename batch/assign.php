@@ -53,20 +53,15 @@ class Assign_Batch {
     /** @return Assign_Batch */
     static function make_args($argv) {
         $arg = (new Getopt)->long(
-            "name:,n:",
-            "config:,c:",
-            "dry-run,d",
-            "help,h"
-        )->parse($argv);
-
-        if (isset($arg["help"]) || count($arg["_"]) > 1) {
-            fwrite(STDOUT, "Usage: php batch/assign.php [-n CONFID] [-d|--dry-run] [FILE]
-Perform a CSV bulk assignment.
-
-Options include:
-  -d, --dry-run          Output CSV describing assignment.\n");
-            exit(isset($arg["help"]) ? 0 : 1);
-        }
+            "name:,n: !",
+            "config:,c: !",
+            "dry-run,d Do not perform assignment; output CSV instead.",
+            "help,h !"
+        )->description("Perform HotCRP bulk assignments specified in the input CSV file.
+Usage: php batch/assign.php [--dry-run] [FILE]")
+         ->maxarg(1)
+         ->helpopt("help")
+         ->parse($argv);
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
         return new Assign_Batch($conf->root_user(), $arg);

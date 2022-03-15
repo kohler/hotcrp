@@ -11,6 +11,10 @@ class Getopt {
     private $description;
     /** @var bool */
     private $allmulti = false;
+    /** @var ?int */
+    private $minarg;
+    /** @var ?int */
+    private $maxarg;
 
     /** @param string $options
      * @return $this */
@@ -92,6 +96,20 @@ class Getopt {
         return $this;
     }
 
+    /** @param ?int $n
+     * @return $this */
+    function minarg($n) {
+        $this->minarg = $n;
+        return $this;
+    }
+
+    /** @param ?int $n
+     * @return $this */
+    function maxarg($n) {
+        $this->maxarg = $n;
+        return $this;
+    }
+
     /** @param string $d
      * @return $this */
     function description($d) {
@@ -111,7 +129,11 @@ class Getopt {
         $s = [];
         if ($this->description) {
             $s[] = $this->description;
-            $s[] = "\n";
+            if (!str_ends_with($this->description, "\n")) {
+                $s[] = "\n\n";
+            } else {
+                $s[] = "\n";
+            }
         }
         $od = [];
         foreach ($this->po as $t => $po) {
@@ -142,26 +164,29 @@ class Getopt {
             $offset = strlen($t) === 1 ? 0 : 1;
             $od[$maint][$offset] = $od[$maint][$offset] ?? ($offset === 0 ? "-{$t}" : "--{$t}");
         }
-        $s[] = "Options:\n";
-        foreach ($od as $tx) {
-            $help = $tx[3] ?? "";
-            if ($help !== "!") {
-                if ($tx[0] !== null && $tx[1] !== null) {
-                    $s[] = $oax = "{$tx[0]}, {$tx[1]}{$tx[2]}";
-                } else {
-                    $oa = $tx[0] ?? $tx[1];
-                    $s[] = $oax = "{$oa}{$tx[2]}";
-                }
-                if ($help !== "") {
-                    if (strlen($oax) <= 24) {
-                        $s[] = str_repeat(" ", 26 - strlen($oax));
+        if (!empty($od)) {
+            $s[] = "Options:\n";
+            foreach ($od as $tx) {
+                $help = $tx[3] ?? "";
+                if ($help !== "!") {
+                    if ($tx[0] !== null && $tx[1] !== null) {
+                        $s[] = $oax = "  {$tx[0]}, {$tx[1]}{$tx[2]}";
                     } else {
-                        $s[] = "\n" . str_repeat(" ", 26);
+                        $oa = $tx[0] ?? $tx[1];
+                        $s[] = $oax = "  {$oa}{$tx[2]}";
                     }
-                    $s[] = $help;
+                    if ($help !== "") {
+                        if (strlen($oax) <= 24) {
+                            $s[] = str_repeat(" ", 26 - strlen($oax));
+                        } else {
+                            $s[] = "\n" . str_repeat(" ", 26);
+                        }
+                        $s[] = $help;
+                    }
+                    $s[] = "\n";
                 }
-                $s[] = "\n";
             }
+            $s[] = "\n";
         }
         return join("", $s);
     }
@@ -187,9 +212,10 @@ class Getopt {
                 $oname = "--{$name}";
                 $name = $po[0];
                 $pot = $po[1];
-                if (($eq !== false && $pot === 0)
-                    || ($eq === false && $i === count($argv) - 1 && ($pot === 1 || $pot === 3))) {
-                    break;
+                if ($eq !== false && $pot === 0) {
+                    throw new CommandLineException("`{$oname}` takes no arguments");
+                } else if ($eq === false && $i === count($argv) - 1 && ($pot & 1) === 1) {
+                    throw new CommandLineException("missing argument for `{$oname}`");
                 }
                 if ($eq !== false) {
                     $value = substr($arg, $eq + 1);
@@ -206,8 +232,8 @@ class Getopt {
                 }
                 $name = $po[0];
                 $pot = $po[1];
-                if (strlen($arg) == 2 && $pot === 1 && $i === count($argv) - 1) {
-                    break;
+                if (strlen($arg) == 2 && ($pot & 1) === 1 && $i === count($argv) - 1) {
+                    throw new CommandLineException("missing argument for `{$oname}`");
                 } else if ($pot === 0 || ($pot === 2 && strlen($arg) == 2)) {
                     $value = false;
                 } else if (strlen($arg) > 2 && $arg[2] === "=") {
@@ -228,16 +254,16 @@ class Getopt {
             $poty = $po[2];
             if ($poty === "n" || $poty === "i") {
                 if (!ctype_digit($value)) {
-                    throw new CommandLineException("`{$oname}` requires integer");
+                    throw new CommandLineException("`{$oname}` requires integer", $this);
                 } else if (($v = intval($value)) != $value
                            || ($poty === "n" && $v < 0)) {
-                    throw new CommandLineException("`{$oname}` out of range");
+                    throw new CommandLineException("`{$oname}` out of range", $this);
                 } else {
                     $value = $v;
                 }
             } else if ($poty === "f") {
                 if (!is_numeric($value)) {
-                    throw new CommandLineException("`{$oname}` requires decimal number");
+                    throw new CommandLineException("`{$oname}` requires decimal number", $this);
                 } else {
                     $value = floatval($value);
                 }
@@ -254,19 +280,30 @@ class Getopt {
                 $res[$name] = [$res[$name], $value];
             }
         }
-        $res["_"] = array_slice($argv, $i);
         if ($this->helpopt !== null && isset($res[$this->helpopt])) {
             fwrite(STDOUT, $this->help());
             exit(0);
         }
+        $res["_"] = array_slice($argv, $i);
+        if ($this->maxarg !== null && count($res["_"]) > $this->maxarg) {
+            throw new CommandLineException("Too many arguments", $this);
+        } else if ($this->minarg !== null && count($res["_"]) < $this->minarg) {
+            throw new CommandLineException("Too few arguments", $this);
+        }
         return $res;
     }
 
-    /** @param ?int $exit_status */
-    function usage($exit_status = null) {
-        fwrite($exit_status ? STDERR : STDOUT, $this->help());
-        if ($exit_status !== null) {
-            exit($exit_status);
+    /** @return string */
+    function short_usage() {
+        $s = $this->description ?? "";
+        if (($pos = strpos($s, "Usage: ")) === false) {
+            return "";
+        }
+        $s = substr($s, $pos);
+        if (($pos = strpos($s, "\n\n")) !== false) {
+            return substr($s, 0, $pos + 1);
+        } else {
+            return rtrim($s) . "\n";
         }
     }
 
@@ -280,8 +317,12 @@ class Getopt {
 }
 
 class CommandLineException extends Exception {
-    /** @param string $message */
-    function __construct($message) {
+    /** @var ?Getopt */
+    public $getopt;
+    /** @param string $message
+     * @param ?Getopt $getopt */
+    function __construct($message, $getopt = null) {
         parent::__construct($message);
+        $this->getopt = $getopt;
     }
 }
