@@ -2973,8 +2973,7 @@ class PaperSearch extends MessageSet {
         $url = $this->urlbase();
         $q = $q ?? $this->q;
         if ($q !== "" || substr($url, 0, 6) === "search") {
-            $url .= (strpos($url, "?") === false ? "?" : "&")
-                . "q=" . urlencode($q);
+            $url .= (strpos($url, "?") === false ? "?q=" : "&q=") . urlencode($q);
         }
         return $url;
     }
@@ -2997,10 +2996,10 @@ class PaperSearch extends MessageSet {
         } else if (str_starts_with($this->q, "au:")
                    && strlen($this->q) <= 36
                    && $this->term() instanceof Author_SearchTerm) {
-            return "$lx by " . htmlspecialchars(ltrim(substr($this->q, 3)));
+            return "$lx by " . ltrim(substr($this->q, 3));
         } else if (strlen($this->q) <= 24
                    || $this->term() instanceof Tag_SearchTerm) {
-            return htmlspecialchars($this->q) . " in $lx";
+            return "{$this->q} in $lx";
         } else {
             return "$lx search";
         }
@@ -3048,8 +3047,8 @@ class PaperSearch extends MessageSet {
      * @return SessionList */
     function create_session_list_object($ids, $listname, $sort = null) {
         $sort = $sort !== null ? $sort : $this->_default_sort;
-        $l = new SessionList($this->listid($sort), $ids,
-                             $this->description($listname), $this->urlbase());
+        $l = (new SessionList($this->listid($sort), $ids, $this->description($listname)))
+            ->set_urlbase($this->urlbase());
         if ($this->field_highlighters()) {
             $l->highlight = $this->_match_preg_query ? : true;
         }

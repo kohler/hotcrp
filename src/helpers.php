@@ -504,11 +504,12 @@ function actionBar($mode = null, $qreq = null) {
             $x .= _one_quicklink($prev, $goBase, $xmode, $listtype, true) . " ";
         }
         if ($list->description) {
+            $d = htmlspecialchars($list->description);
             $url = $list->full_site_relative_url();
             if ($url) {
-                $x .= '<a id="quicklink-list" class="ulh" href="' . htmlspecialchars(Navigation::siteurl() . $url) . "\">{$list->description}</a>";
+                $x .= '<a id="quicklink-list" class="ulh" href="' . htmlspecialchars(Navigation::siteurl() . $url) . "\">{$d}</a>";
             } else {
-                $x .= "<span id=\"quicklink-list\">{$list->description}</span>";
+                $x .= "<span id=\"quicklink-list\">{$d}</span>";
             }
         }
         if (($next = $list->neighbor_id(1)) !== false) {

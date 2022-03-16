@@ -10,6 +10,8 @@ class SessionList {
     /** @var ?string */
     public $description;
     /** @var ?string */
+    public $url;
+    /** @var ?string */
     public $urlbase;
     public $highlight;
     /** @var ?string */
@@ -25,13 +27,26 @@ class SessionList {
 
     /** @param string $listid
      * @param list<int> $ids
-     * @param ?string $description
-     * @param ?string $urlbase */
-    function __construct($listid, $ids, $description = null, $urlbase = null) {
+     * @param ?string $description */
+    function __construct($listid, $ids, $description = null) {
         $this->listid = $listid;
         $this->ids = $ids;
         $this->description = $description;
+    }
+
+    /** @param string $urlbase
+     * @return $this */
+    function set_urlbase($urlbase) {
         $this->urlbase = $urlbase;
+        return $this;
+    }
+
+    /** @param string $url
+     * @return $this */
+    function set_url($url) {
+        $this->url = $url;
+        $this->urlbase = null;
+        return $this;
     }
 
     /** @return string */
@@ -266,7 +281,9 @@ class SessionList {
                 if (isset($j->description) && is_string($j->description)) {
                     $list->description = $j->description;
                 }
-                if (isset($j->urlbase) && is_string($j->urlbase)) {
+                if (isset($j->url) && is_string($j->url)) {
+                    $list->url = $j->url;
+                } else if (isset($j->urlbase) && is_string($j->urlbase)) {
                     $list->urlbase = $j->urlbase;
                 }
                 if (isset($j->highlight)) {
@@ -300,24 +317,27 @@ class SessionList {
 
     /** @return ?string */
     function full_site_relative_url() {
-        if (!$this->urlbase) {
-            return null;
-        }
         $args = Conf::$hoturl_defaults ? : [];
-        $url = $this->urlbase;
-        if (preg_match('/\Ap\/[^\/]*\/([^\/]*)(?:|\/([^\/]*))\z/', $this->listid, $m)) {
-            if ($m[1] !== "" || str_starts_with($url, "search")) {
-                $url .= (strpos($url, "?") ? "&" : "?") . "q=" . $m[1];
-            }
-            if (isset($m[2]) && $m[2] !== "") {
-                foreach (explode("&", $m[2]) as $kv) {
-                    $eq = strpos($kv, "=");
-                    $args[substr($kv, 0, $eq)] = substr($kv, $eq + 1);
+        if ($this->url !== null) {
+            $url = $this->url;
+        } else if ($this->urlbase !== null) {
+            $url = $this->urlbase;
+            if (preg_match('/\Ap\/[^\/]*\/([^\/]*)(?:|\/([^\/]*))\z/', $this->listid, $m)) {
+                if ($m[1] !== "" || str_starts_with($url, "search")) {
+                    $url .= (strpos($url, "?") ? "&" : "?") . "q=" . $m[1];
+                }
+                if (isset($m[2]) && $m[2] !== "") {
+                    foreach (explode("&", $m[2]) as $kv) {
+                        $eq = strpos($kv, "=");
+                        $args[substr($kv, 0, $eq)] = substr($kv, $eq + 1);
+                    }
                 }
             }
+        } else {
+            return null;
         }
         foreach ($args as $k => $v) {
-            if (!preg_match('{[&?]' . preg_quote($k) . '=}', $url)) {
+            if (!preg_match('/[&?]' . preg_quote($k) . '=/', $url)) {
                 $sep = strpos($url, "?") === false ? "?" : "&";
                 $url = "{$url}{$sep}{$k}={$v}";
             }
@@ -328,19 +348,21 @@ class SessionList {
     /** @return string */
     function info_string() {
         $j = [];
-        if (isset($this->listid)) {
+        if ($this->listid !== null) {
             $j["listid"] = $this->listid;
         }
-        if (isset($this->description)) {
+        if ($this->description !== null) {
             $j["description"] = $this->description;
         }
-        if (isset($this->urlbase)) {
+        if ($this->url !== null) {
+            $j["url"] = $this->url;
+        } else if ($this->urlbase !== null) {
             $j["urlbase"] = $this->urlbase;
         }
-        if (isset($this->highlight)) {
+        if ($this->highlight !== null) {
             $j["highlight"] = $this->highlight;
         }
-        if (isset($this->digest)) {
+        if ($this->digest !== null) {
             $j["digest"] = $this->digest;
         }
         if ($this->ids !== null) {

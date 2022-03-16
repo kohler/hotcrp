@@ -1795,7 +1795,7 @@ class PaperList implements XtContext {
     }
 
     /** @return ?string */
-    private function _listDescription() {
+    private function _list_description() {
         switch ($this->_report_id) {
         case "reviewAssignment":
             return "Review assignments";
@@ -1812,7 +1812,7 @@ class PaperList implements XtContext {
     /** @return SessionList */
     function session_list_object() {
         assert($this->_groups !== null);
-        return $this->search->create_session_list_object($this->paper_ids(), $this->_listDescription(), $this->sortdef());
+        return $this->search->create_session_list_object($this->paper_ids(), $this->_list_description(), $this->sortdef());
     }
 
     /** @return PaperListTableRender */
