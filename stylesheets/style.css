@@ -3048,7 +3048,8 @@ a.badge:active {
 	background: #e2e9ec;
 }
 .pspcard {
-	position: relative;
+	-webkit-position: sticky;
+	position: sticky;
 	z-index: 2;
 	background: #edf3f5;
 	color: #2b2b2b;
