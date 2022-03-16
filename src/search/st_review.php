@@ -705,7 +705,7 @@ class Review_SearchTerm extends SearchTerm {
             $contactword .= $m[1] . ":";
         }
 
-        if ($f->has_options) {
+        if ($f instanceof Score_ReviewField) {
             return self::parse_score_field($rsm, $word, $sword, $f, $srch);
         } else {
             if ($word === "any" && !$sword->quoted) {
@@ -729,7 +729,7 @@ class Review_SearchTerm extends SearchTerm {
         return $ft;
     }
     /** @return int|false */
-    private static function parse_score(ReviewField $f, $str) {
+    private static function parse_score(Score_ReviewField $f, $str) {
         if (strcasecmp($str, "none") === 0) {
             return 0;
         } else if ($f->option_letter != (ctype_digit($str) === false)) { // `!=` matters
@@ -743,7 +743,7 @@ class Review_SearchTerm extends SearchTerm {
         }
     }
     /** @return SearchTerm */
-    private static function parse_score_field(ReviewSearchMatcher $rsm, $word, SearchWord $sword, ReviewField $f, PaperSearch $srch) {
+    private static function parse_score_field(ReviewSearchMatcher $rsm, $word, SearchWord $sword, Score_ReviewField $f, PaperSearch $srch) {
         if ($word === "any") {
             $rsm->apply_score_field($f, 0, 0, 4);
         } else if ($word === "none" && $rsm->can_test_review()) {

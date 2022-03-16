@@ -241,12 +241,14 @@ class Settings_Tester {
         xassert($sv->execute());
 
         $rf = $this->conf->find_review_field("B5");
+        assert($rf instanceof Score_ReviewField);
         xassert_eqq($rf->value_class(1), "sv sv9");
         xassert_eqq($rf->value_class(2), "sv sv7");
         xassert_eqq($rf->value_class(3), "sv sv5");
         xassert_eqq($rf->value_class(4), "sv sv3");
         xassert_eqq($rf->value_class(5), "sv sv1");
         $rf = $this->conf->find_review_field("B9");
+        assert($rf instanceof Score_ReviewField);
         xassert_eqq($rf->value_class(1), "sv sv1");
         xassert_eqq($rf->value_class(2), "sv sv2");
         xassert_eqq($rf->value_class(3), "sv sv3");
@@ -257,6 +259,7 @@ class Settings_Tester {
         xassert_eqq($rf->value_class(8), "sv sv8");
         xassert_eqq($rf->value_class(9), "sv sv9");
         $rf = $this->conf->find_review_field("B15");
+        assert($rf instanceof Score_ReviewField);
         xassert_eqq($rf->value_class(1), "sv sv1");
         xassert_eqq($rf->value_class(2), "sv sv2");
         xassert_eqq($rf->value_class(3), "sv sv2");
@@ -273,6 +276,7 @@ class Settings_Tester {
         xassert_eqq($rf->value_class(14), "sv sv8");
         xassert_eqq($rf->value_class(15), "sv sv9");
         $rf = $this->conf->find_review_field("B10");
+        assert($rf instanceof Score_ReviewField);
         xassert_eqq($rf->value_class(1), "sv sv1");
         xassert_eqq($rf->value_class(2), "sv sv2");
         xassert_eqq($rf->value_class(3), "sv sv3");
@@ -297,12 +301,14 @@ class Settings_Tester {
         ]);
         xassert($sv->execute());
         $rf = $this->conf->find_review_field("B5");
+        assert($rf instanceof Score_ReviewField);
         xassert_eqq($rf->value_class(1), "sv sv1");
         xassert_eqq($rf->value_class(2), "sv sv3");
         xassert_eqq($rf->value_class(3), "sv sv5");
         xassert_eqq($rf->value_class(4), "sv sv7");
         xassert_eqq($rf->value_class(5), "sv sv9");
         $rf = $this->conf->find_review_field("B9");
+        assert($rf instanceof Score_ReviewField);
         xassert_eqq($rf->value_class(1), "sv sv9");
         xassert_eqq($rf->value_class(2), "sv sv8");
         xassert_eqq($rf->value_class(3), "sv sv7");
@@ -313,6 +319,7 @@ class Settings_Tester {
         xassert_eqq($rf->value_class(8), "sv sv2");
         xassert_eqq($rf->value_class(9), "sv sv1");
         $rf = $this->conf->find_review_field("B15");
+        assert($rf instanceof Score_ReviewField);
         xassert_eqq($rf->value_class(15), "sv sv1");
         xassert_eqq($rf->value_class(14), "sv sv2");
         xassert_eqq($rf->value_class(13), "sv sv2");
@@ -329,6 +336,7 @@ class Settings_Tester {
         xassert_eqq($rf->value_class(2), "sv sv8");
         xassert_eqq($rf->value_class(1), "sv sv9");
         $rf = $this->conf->find_review_field("B10");
+        assert($rf instanceof Score_ReviewField);
         xassert_eqq($rf->value_class(10), "sv sv1");
         xassert_eqq($rf->value_class(9), "sv sv2");
         xassert_eqq($rf->value_class(8), "sv sv3");

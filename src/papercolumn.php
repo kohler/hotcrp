@@ -808,7 +808,7 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
     protected $contact;
     protected $not_me;
     protected $score_sort;
-    /** @var ReviewField */
+    /** @var Score_ReviewField */
     protected $format_field;
     /** @var array<int,null|int|float|list<int>> */
     private $sortmap;
@@ -890,6 +890,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         $this->format_field = $conf->checked_review_field($cj->review_field_id);
+        assert($this->format_field instanceof Score_ReviewField);
     }
     function prepare(PaperList $pl, $visible) {
         $bound = $pl->user->permissive_view_score_bound($pl->search->limit_author());

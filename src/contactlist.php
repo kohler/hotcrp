@@ -63,7 +63,7 @@ class ContactList {
     private $_lead_data;
     /** @var array<int,int> */
     private $_shepherd_data;
-    /** @var list<ReviewField> */
+    /** @var list<Score_ReviewField> */
     private $_rfields = [];
     /** @var list<array<int,list<int>>> */
     private $_score_data;
@@ -84,7 +84,7 @@ class ContactList {
 
         $this->tagger = new Tagger($this->user);
         foreach ($this->conf->review_form()->viewable_fields($this->user) as $f) {
-            if ($f->has_options)
+            if ($f instanceof Score_ReviewField)
                 $this->_rfields[] = $f;
         }
 

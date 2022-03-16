@@ -209,7 +209,7 @@ class Home_Page {
     }
 
     /** @param Conf $conf
-     * @return list<ReviewField> */
+     * @return list<Score_ReviewField> */
     private function default_review_fields($conf) {
         $this->_rfs = $this->_rfs ?? $conf->review_form()->highlighted_main_scores();
         return $this->_rfs;

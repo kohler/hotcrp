@@ -42,11 +42,11 @@ class ReviewForm_SettingParser extends SettingParser {
             "required" => $f->required,
             "exists_if" => $exists_if,
             "presence" => $presence,
-            "scheme" => $f->scheme,
+            "scheme" => null,
             "options" => [],
             "option_letter" => null
         ];
-        if ($f->has_options) {
+        if ($f instanceof Score_ReviewField) {
             $j->options = array_values($f->options ?? []);
             if ($f->option_letter) {
                 $j->options = array_reverse($j->options);
@@ -64,7 +64,7 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($si->part2 === "") {
             $fid = $si->part1 === '$' ? 's99' : $sv->vstr("{$si->name}__id");
             if (($finfo = ReviewInfo::field_info($fid))) {
-                $f = $sv->conf->review_field($finfo->id) ?? new ReviewField($sv->conf, $finfo);
+                $f = $sv->conf->review_field($finfo->id) ?? ReviewField::make($sv->conf, $finfo);
                 $sv->set_oldv($si->name, self::unparse_json($f));
             }
         } else if ($si->part2 === "__choices" && $si->part1 === '$') {
@@ -356,7 +356,8 @@ class ReviewForm_SettingParser extends SettingParser {
             $of = $oform->fmap[$nf->id] ?? null;
             if (!$of || !$of->order) {
                 $clear_fields[] = $nf;
-            } else if ($nf->has_options) {
+            } else if ($nf instanceof Score_ReviewField) {
+                assert($of instanceof Score_ReviewField);
                 $map = [];
                 foreach ($sv->unambiguous_renumbering($of->unparse_json_options(), $nf->unparse_json_options()) as $i => $j) {
                     $map[$i + 1] = $j + 1;

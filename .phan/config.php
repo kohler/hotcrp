@@ -99,6 +99,7 @@ $config = [
 
     "exclude_file_list" => [
         Config::projectPath(".phan/config.php"),
+        Config::projectPath("batch/downgradedb.php"),
         Config::projectPath("lib/collatorshim.php"),
         Config::projectPath("lib/polyfills.php")
     ],
