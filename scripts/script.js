@@ -2738,7 +2738,7 @@ function tracker_paper_columns(tr, idx, wwidth) {
         t += ' colspan="2"';
     t += '>';
     if (paper.title) {
-        var f = paper.format ? ' ptitle need-format" data-format="' + paper.format : "";
+        var f = paper.format ? ' need-format" data-format="' + paper.format : "";
         var title = paper.title;
         if (wwidth <= 500 && title.length > 40)
             title = title.replace(/^(\S+\s+\S+\s+\S+).*$/, "$1").substring(0, 50) + "…";
@@ -2799,7 +2799,8 @@ function tracker_html(tr) {
 }
 
 function display_tracker() {
-    var mne = $$("tracker"), mnspace = $$("tracker-space"), t, i, e;
+    var mne = $$("tracker"), mnspace = $$("tracker-space"),
+        mnpl = $("nav.pslcard-nav")[0], t, i, e;
 
     // tracker button
     if ((e = $$("tracker-connect-btn"))) {
@@ -2826,6 +2827,9 @@ function display_tracker() {
         }
         if (mnspace)
             mnspace.parentNode.removeChild(mnspace);
+        if (mnpl)
+            mnpl.style.top = null;
+        removeClass(document.body, "has-tracker");
         return;
     }
 
@@ -2845,6 +2849,7 @@ function display_tracker() {
         $(window).on("resize", display_tracker);
         had_tracker_display = true;
     }
+    addClass(document.body, "has-tracker");
 
     tracker_has_format = false;
     if (dl.tracker.ts) {
@@ -2864,6 +2869,8 @@ function display_tracker() {
             render_text.on_page();
     }
     mnspace.style.height = mne.offsetHeight + "px";
+    if (mnpl)
+        mnpl.style.top = (mne.offsetHeight + 104) + "px";
     if (dl.tracker)
         tracker_show_elapsed();
 }
@@ -3509,7 +3516,6 @@ function foldup(event, opts) {
 
 handle_ui.on("js-foldup", foldup);
 handle_ui.on("unfold.js-unfold-focus", function (event) {
-    console.log(event);
     if (!event.which.nofocus)
         focus_within(this, ".fx" + (event.which.n || "") + " *");
 });

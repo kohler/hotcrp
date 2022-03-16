@@ -299,7 +299,7 @@ class Review_Page {
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
 <meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />
 <title>Redirection</title>
-<body>\n",
+<body>",
             Ht::form($this->conf->hoturl("=api/" . ($isaccept ? "acceptreview" : "declinereview"), ["p" => $this->prow->paperId, "r" => $rrid, "verbose" => 1, "redirect" => 1]), ["id" => "redirectform"]),
             Ht::submit("Press to continue"),
             "</form>",

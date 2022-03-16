@@ -3065,7 +3065,7 @@ a.badge:active {
 	-webkit-position: sticky;
 	position: sticky;
 	z-index: 1;
-	top: 104px;
+	top: 104px; /* see also display_tracker */
 	margin: 20px 20px 0 24px;
 }
 .pslcard {

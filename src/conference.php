@@ -4591,19 +4591,7 @@ class Conf {
         if (($s = $this->opt("uploadMaxFilesize"))) {
             echo '" data-document-max-size="', (int) $s;
         }
-        echo "\">\n";
-
-        // initial load (JS's timezone offsets are negative of PHP's)
-        Ht::stash_script("hotcrp.onload.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
-
-        // deadlines settings
-        $my_deadlines = null;
-        if ($user) {
-            $my_deadlines = $user->my_deadlines($this->paper ? [$this->paper] : []);
-            Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
-        }
-
-        echo '<div id="top">';
+        echo '"><div id="top">';
 
         // site header
         if ($id === "home") {
@@ -4615,6 +4603,16 @@ class Conf {
                 . '<a class="q" href="' . $this->hoturl("index", ["cap" => null])
                 . '"><span class="header-site-name">' . htmlspecialchars($this->short_name)
                 . '</span> Home</a></div>';
+        }
+
+        // initial load (JS's timezone offsets are negative of PHP's)
+        Ht::stash_script("hotcrp.onload.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
+
+        // deadlines settings
+        $my_deadlines = null;
+        if ($user) {
+            $my_deadlines = $user->my_deadlines($this->paper ? [$this->paper] : []);
+            Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
         }
 
         // $header_profile
