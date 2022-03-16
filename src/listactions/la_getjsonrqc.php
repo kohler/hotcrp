@@ -15,7 +15,7 @@ class GetJsonRQC_ListAction extends ListAction {
         $rf = $user->conf->review_form();
         $fj = [];
         foreach ($rf->bound_viewable_fields(VIEWSCORE_REVIEWERONLY) as $f) {
-            $fj[$f->uid()] = $f->unparse_json(0);
+            $fj[$f->uid()] = $f->unparse_json(ReviewField::UJ_EXPORT);
         }
         $results["reviewform"] = $fj;
         $pj = [];

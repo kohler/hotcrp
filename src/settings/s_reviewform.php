@@ -20,42 +20,6 @@ class ReviewForm_SettingParser extends SettingParser {
         return $ecsel;
     }
 
-    /** @param ReviewField $f
-     * @return object */
-    static function unparse_json($f) {
-        if (!$f->exists_if && !$f->round_mask) {
-            $presence = "all";
-            $exists_if = "";
-        } else if (!$f->exists_if && ($f->round_mask & ($f->round_mask - 1)) === 0) {
-            $presence = $exists_if = $f->unparse_round_mask();
-        } else {
-            $presence = "custom";
-            $exists_if = $f->exists_if ?? $f->unparse_round_mask();
-        }
-        $j = (object) [
-            "id" => $f->short_id,
-            "name" => $f->name,
-            "description" => $f->description,
-            "display_space" => $f->display_space,
-            "order" => $f->order,
-            "visibility" => $f->unparse_visibility(),
-            "required" => $f->required,
-            "exists_if" => $exists_if,
-            "presence" => $presence,
-            "scheme" => null,
-            "options" => [],
-            "option_letter" => null
-        ];
-        if ($f instanceof Score_ReviewField) {
-            $j->options = array_values($f->options ?? []);
-            if ($f->option_letter) {
-                $j->options = array_reverse($j->options);
-                $j->option_letter = chr($f->option_letter - count($f->options));
-            }
-        }
-        return $j;
-    }
-
     function set_oldv(SettingValues $sv, Si $si) {
         if ($si->name === "review_form") {
             return;
@@ -65,7 +29,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $fid = $si->part1 === '$' ? 's99' : $sv->vstr("{$si->name}__id");
             if (($finfo = ReviewInfo::field_info($fid))) {
                 $f = $sv->conf->review_field($finfo->id) ?? ReviewField::make($sv->conf, $finfo);
-                $sv->set_oldv($si->name, self::unparse_json($f));
+                $sv->set_oldv($si->name, $f->unparse_json(ReviewField::UJ_SI));
             }
         } else if ($si->part2 === "__choices" && $si->part1 === '$') {
             $sv->set_oldv($si->name, "");
@@ -523,7 +487,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
         $rfj = [];
         foreach ($sv->conf->review_form()->all_fields() as $f) {
-            $rfj[] = $fj = $f->unparse_json(1);
+            $rfj[] = $fj = $f->unparse_json(ReviewField::UJ_TEMPLATE);
             $fj->search_keyword = $f->search_keyword();
         }
         $sj["fields"] = $rfj;
@@ -540,8 +504,8 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         }
         $sj["req"] = $req;
 
-        $sj["stemplate"] = ReviewField::make_template($sv->conf, true)->unparse_json(1);
-        $sj["ttemplate"] = ReviewField::make_template($sv->conf, false)->unparse_json(1);
+        $sj["stemplate"] = ReviewField::make_template($sv->conf, true)->unparse_json(ReviewField::UJ_TEMPLATE);
+        $sj["ttemplate"] = ReviewField::make_template($sv->conf, false)->unparse_json(ReviewField::UJ_TEMPLATE);
         Ht::stash_script("hotcrp.settings.review_form(" . json_encode_browser($sj) . ")");
     }
 }

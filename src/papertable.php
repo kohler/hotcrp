@@ -2826,7 +2826,7 @@ class PaperTable {
         }
         $fj = [];
         foreach (array_diff_key($rf->all_fields(), $unresolved_fields) as $f) {
-            $fj[] = $f->unparse_json(0);
+            $fj[] = $f->unparse_json(ReviewField::UJ_EXPORT);
         }
         Ht::stash_script("hotcrp.set_review_form(" . json_encode_browser($fj) . ")");
 

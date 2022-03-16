@@ -38,7 +38,7 @@ class ReviewFieldInfo {
     }
 }
 
-class ReviewField implements JsonSerializable {
+abstract class ReviewField implements JsonSerializable {
     const VALUE_NONE = 0;
     const VALUE_SC = 1;
     const VALUE_REV_NUM = 2;
@@ -61,8 +61,6 @@ class ReviewField implements JsonSerializable {
     public $_search_keyword;
     /** @var bool */
     public $has_options;
-    /** @var int */
-    public $display_space;
     /** @var int */
     public $view_score;
     /** @var ?int */
@@ -125,7 +123,7 @@ class ReviewField implements JsonSerializable {
         if ($rfi->has_options) {
             return new Score_ReviewField($conf, $rfi);
         } else {
-            return new ReviewField($conf, $rfi);
+            return new Text_ReviewField($conf, $rfi);
         }
     }
 
@@ -141,10 +139,6 @@ class ReviewField implements JsonSerializable {
         $this->name = $j->name ?? "Field name";
         $this->name_html = htmlspecialchars($this->name);
         $this->description = $j->description ?? "";
-        $this->display_space = $j->display_space ?? 0;
-        if (!$this->has_options && $this->display_space < 3) {
-            $this->display_space = 3;
-        }
         $vis = $j->visibility ?? null;
         if ($vis === null /* XXX backward compat */) {
             $vis = $j->view_score ?? null;
@@ -209,42 +203,62 @@ class ReviewField implements JsonSerializable {
         }
     }
 
-    /** @param 0|1|2 $for_settings
+    const UJ_EXPORT = 0;
+    const UJ_TEMPLATE = 1;
+    const UJ_STORAGE = 2;
+    const UJ_SI = 3;
+
+    /** @param 0|1|2|3 $style
      * @return object */
-    function unparse_json($for_settings) {
+    function unparse_json($style) {
         $j = (object) [];
-        if ($for_settings > 0) {
+        if ($style > 0) {
             $j->id = $this->short_id;
         } else {
             $j->uid = $this->uid();
         }
         $j->name = $this->name;
-        if ($this->description) {
+        if ($this->description || $style === self::UJ_SI) {
             $j->description = $this->description;
         }
-        if (!$this->has_options && $this->display_space > 3) {
-            $j->display_space = $this->display_space;
-        }
-        if ($this->order) {
+        if ($this->order || $style === self::UJ_SI) {
             $j->order = $this->order;
         }
         $j->visibility = $this->unparse_visibility();
-        if ($this->required) {
+        if ($this->required || $style === self::UJ_SI) {
             $j->required = true;
         }
-        if ($this->exists_if) {
+        if ($style === self::UJ_SI) {
+            $this->_unparse_json_presence_si($j);
+        } else if ($this->exists_if) {
             $j->exists_if = $this->exists_if;
-        } else if ($this->round_mask && $for_settings > 1) {
-            $j->round_mask = $this->round_mask;
         } else if ($this->round_mask) {
-            $j->exists_if = $this->unparse_round_mask();
+            if ($style === self::UJ_STORAGE) {
+                $j->round_mask = $this->round_mask;
+            } else if ($this->round_mask) {
+                $j->exists_if = $this->unparse_round_mask();
+            }
         }
         return $j;
     }
 
+    /** @param object $j */
+    private function _unparse_json_presence_si($j) {
+        $rm = $this->round_mask;
+        if ($this->exists_if || ($rm !== 0 && ($rm & ($rm - 1)) === 0)) {
+            $j->presence = "custom";
+            $j->exists_if = $this->exists_if ?? $this->unparse_round_mask();
+        } else if ($rm !== 0) {
+            $j->presence = $j->exists_if = $this->unparse_round_mask();
+        } else {
+            $j->presence = "all";
+            $j->exists_if = "";
+        }
+    }
+
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
-        return $this->unparse_json(0);
+        return $this->unparse_json(self::UJ_EXPORT);
     }
 
     /** @return string */
@@ -266,16 +280,11 @@ class ReviewField implements JsonSerializable {
 
     /** @param ?int|string $value
      * @return bool */
-    function value_empty($value) {
-        // see also ReviewInfo::has_nonempty_field
-        return $value === null || $value === "";
-    }
+    abstract function value_empty($value);
 
     /** @return bool */
     function include_word_count() {
-        return $this->order
-            && !$this->has_options
-            && $this->view_score >= VIEWSCORE_AUTHORDEC;
+        return false;
     }
 
     /** @return ?string */
@@ -323,23 +332,11 @@ class ReviewField implements JsonSerializable {
      * @param int $flags
      * @param ?string $real_format
      * @return ?string */
-    function unparse_value($value, $flags = 0, $real_format = null) {
-        assert(!is_object($value));
-        if ($flags & self::VALUE_TRIM) {
-            $value = rtrim($value ?? "");
-        }
-        return $value;
-    }
+    abstract function unparse_value($value, $flags = 0, $real_format = null);
 
     /** @param string $text
      * @return int|string|false */
-    function parse_value($text) {
-        $text = rtrim($text);
-        if ($text !== "") {
-            $text .= "\n";
-        }
-        return $text;
-    }
+    abstract function parse_value($text);
 
     /** @param string $text
      * @return bool */
@@ -388,15 +385,7 @@ class ReviewField implements JsonSerializable {
     /** @param string $control_class
      * @param int|string $fv
      * @param int|string $reqv */
-    function print_web_edit($control_class, $fv, $reqv) {
-        $this->print_web_edit_open($control_class, null, $this->id);
-        echo '<div class="revev">';
-        $opt = ["class" => "w-text need-autogrow need-suggest suggest-emoji", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->id];
-        if ($fv !== $reqv) {
-            $opt["data-default-value"] = (string) $reqv;
-        }
-        echo Ht::textarea($this->id, (string) $fv, $opt), '</div></div>';
-    }
+    abstract function print_web_edit($control_class, $fv, $reqv);
 
     /** @param list<string> &$t */
     protected function unparse_text_field_header(&$t, $args) {
@@ -415,11 +404,7 @@ class ReviewField implements JsonSerializable {
     /** @param list<string> &$t
      * @param string $fv
      * @param array{flowed:bool} $args */
-    function unparse_text_field(&$t, $fv, $args) {
-        $this->unparse_text_field_header($t, $args);
-        $t[] = $fv;
-        $t[] = "\n";
-    }
+    abstract function unparse_text_field(&$t, $fv, $args);
 
     /** @param list<string> &$t */
     protected function unparse_offline_field_header(&$t, $args) {
@@ -454,15 +439,7 @@ class ReviewField implements JsonSerializable {
     /** @param list<string> &$t
      * @param string $fv
      * @param array{format_description:string,include_presence:bool} $args */
-    function unparse_offline_field(&$t, $fv, $args) {
-        $this->unparse_offline_field_header($t, $args);
-        if (($args["format_description"] ?? "") !== "") {
-            $t[] = prefix_word_wrap("==-== ", $args["format_description"], "==-== ");
-        }
-        $t[] = "\n";
-        $t[] = preg_replace('/^(?===[-+*]==)/m', '\\', $fv ?? "");
-        $t[] = "\n";
-    }
+    abstract function unparse_offline_field(&$t, $fv, $args);
 }
 
 class Score_ReviewField extends ReviewField {
@@ -544,15 +521,15 @@ class Score_ReviewField extends ReviewField {
         return $this->option_letter ? array_reverse($options) : $options;
     }
 
-    /** @param 0|1|2 $for_settings
-     * @return object */
-    function unparse_json($for_settings) {
-        $j = parent::unparse_json($for_settings);
+    function unparse_json($style) {
+        $j = parent::unparse_json($style);
         $j->options = $this->unparse_json_options();
         if ($this->option_letter) {
             $j->option_letter = chr($this->option_letter - count($j->options));
+        } else if ($style === self::UJ_SI) {
+            $j->option_letter = null;
         }
-        if ($this->scheme !== "sv") {
+        if ($this->scheme !== "sv" || $style === self::UJ_SI) {
             $j->scheme = $this->scheme;
         }
         $j->required = $this->required;
@@ -833,6 +810,99 @@ class Score_ReviewField extends ReviewField {
     }
 }
 
+class Text_ReviewField extends ReviewField {
+    /** @var int */
+    public $display_space;
+
+    function __construct(Conf $conf, ReviewFieldInfo $finfo) {
+        parent::__construct($conf, $finfo);
+        $this->has_options = false;
+    }
+
+    /** @param object $j */
+    function assign_json($j) {
+        parent::assign_json($j);
+        $this->display_space = max($this->display_space ?? 0, 3);
+    }
+
+    function unparse_json($style) {
+        $j = parent::unparse_json($style);
+        if ($this->display_space > 3 || $style === self::UJ_SI) {
+            $j->display_space = $this->display_space;
+        }
+        return $j;
+    }
+
+    /** @param ?int|string $value
+     * @return bool */
+    function value_empty($value) {
+        // see also ReviewInfo::has_nonempty_field
+        return $value === null || $value === "";
+    }
+
+    /** @return bool */
+    function include_word_count() {
+        return $this->order && $this->view_score >= VIEWSCORE_AUTHORDEC;
+    }
+
+    /** @param int|float|string $value
+     * @param int $flags
+     * @param ?string $real_format
+     * @return ?string */
+    function unparse_value($value, $flags = 0, $real_format = null) {
+        assert(!is_object($value));
+        if ($flags & self::VALUE_TRIM) {
+            $value = rtrim($value ?? "");
+        }
+        return $value;
+    }
+
+    /** @param string $text
+     * @return int|string|false */
+    function parse_value($text) {
+        $text = rtrim($text);
+        if ($text !== "") {
+            $text .= "\n";
+        }
+        return $text;
+    }
+
+    /** @param string $control_class
+     * @param int|string $fv
+     * @param int|string $reqv */
+    function print_web_edit($control_class, $fv, $reqv) {
+        $this->print_web_edit_open($control_class, null, $this->id);
+        echo '<div class="revev">';
+        $opt = ["class" => "w-text need-autogrow need-suggest suggest-emoji", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->id];
+        if ($fv !== $reqv) {
+            $opt["data-default-value"] = (string) $reqv;
+        }
+        echo Ht::textarea($this->id, (string) $fv, $opt), '</div></div>';
+    }
+
+    /** @param list<string> &$t
+     * @param string $fv
+     * @param array{flowed:bool} $args */
+    function unparse_text_field(&$t, $fv, $args) {
+        $this->unparse_text_field_header($t, $args);
+        $t[] = $fv;
+        $t[] = "\n";
+    }
+
+    /** @param list<string> &$t
+     * @param string $fv
+     * @param array{format_description:string,include_presence:bool} $args */
+    function unparse_offline_field(&$t, $fv, $args) {
+        $this->unparse_offline_field_header($t, $args);
+        if (($args["format_description"] ?? "") !== "") {
+            $t[] = prefix_word_wrap("==-== ", $args["format_description"], "==-== ");
+        }
+        $t[] = "\n";
+        $t[] = preg_replace('/^(?===[-+*]==)/m', '\\', $fv ?? "");
+        $t[] = "\n";
+    }
+}
+
 
 class ReviewForm implements JsonSerializable {
     /** @var Conf
@@ -1017,7 +1087,7 @@ class ReviewForm implements JsonSerializable {
     function jsonSerialize() {
         $rj = [];
         foreach ($this->fmap as $f) {
-            $rj[] = $f->unparse_json(2);
+            $rj[] = $f->unparse_json(ReviewField::UJ_STORAGE);
         }
         return $rj;
     }
