@@ -683,7 +683,7 @@ class Contact {
         }
 
         // Maybe set up the shared contacts database
-        if ($this->conf->opt("contactdb_dsn")
+        if (($this->conf->opt("contactdbDsn") || $this->conf->opt("contactdb_dsn"))
             && $this->has_account_here()
             && $this->session("contactdb_roles", 0) != $this->cdb_roles()) {
             if ($this->contactdb_update())

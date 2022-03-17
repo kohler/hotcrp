@@ -243,14 +243,14 @@ class Conf {
     function __construct($options, $connect) {
         // unpack dsn, connect to database, load current settings
         $this->dsn = Dbl::make_dsn($options);
-        list($this->dblink, $this->dbname) = Dbl::connect_dsn($this->dsn, !$connect);
+        list($this->dblink, $this->dbname) = Dbl::connect($options, !$connect);
         $this->opt = $options;
         $this->opt["dbName"] = $this->dbname;
         $this->opt["confid"] = $this->opt["confid"] ?? $this->dbname;
         $this->_paper_opts = new PaperOptionList($this);
         if ($this->dblink && !Dbl::$default_dblink) {
             Dbl::set_default_dblink($this->dblink);
-            Dbl::set_error_handler(array($this, "query_error_handler"));
+            Dbl::set_error_handler([$this, "query_error_handler"]);
         }
         if ($this->dblink) {
             Dbl::$landmark_sanitizer = "/^(?:Dbl::|Conf::q|Conf::fetch|call_user_func)/";
@@ -2628,9 +2628,12 @@ class Conf {
         global $Opt;
         if (self::$_cdb === false) {
             self::$_cdb = null;
-            $dsn = Conf::$main ? Conf::$main->opt("contactdb_dsn") : $Opt["contactdb_dsn"] ?? null;
-            if ($dsn) {
-                list(self::$_cdb, $dbname) = Dbl::connect_dsn($dsn);
+            $opt = Conf::$main ? Conf::$main->opt : $Opt;
+            if (isset($opt["contactdbDsn"]) || isset($opt["contactdb_dsn"])) {
+                list(self::$_cdb, $dbname) = Dbl::connect([
+                    "dsn" => $opt["contactdbDsn"] ?? $opt["contactdb_dsn"],
+                    "dbSocket" => $opt["contactdbSocket"] ?? $opt["dbSocket"] ?? null
+                ]);
             }
         }
         return self::$_cdb;

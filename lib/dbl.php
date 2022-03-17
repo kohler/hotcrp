@@ -99,6 +99,21 @@ class Dbl_MultiResult {
     }
 }
 
+class Dbl_ConnectionParams {
+    /** @var string */
+    public $host;
+    /** @var ?int */
+    public $port;
+    /** @var ?string */
+    public $user;
+    /** @var ?string */
+    public $password;
+    /** @var ?string */
+    public $socket;
+    /** @var ?string */
+    public $name;
+}
+
 class Dbl {
     const F_RAW = 1;
     const F_APPLY = 2;
@@ -159,58 +174,86 @@ class Dbl {
         return preg_replace('/\A(\w+:\/\/[^\/:]*:)[^\@\/]+([\@\/])/', '$1PASSWORD$2', $dsn);
     }
 
-    /** @param string $dsn
-     * @return array{?\mysqli,?string} */
-    static function connect_dsn($dsn, $noconnect = false) {
-        global $Opt;
-
-        $dbhost = $dbuser = $dbpass = $dbname = $dbport = null;
-        if ($dsn && preg_match('/^mysql:\/\/([^:@\/]*)\/(.*)/', $dsn, $m)) {
-            $dbhost = urldecode($m[1]);
-            $dbname = urldecode($m[2]);
-        } else if ($dsn && preg_match('/^mysql:\/\/([^:@\/]*)@([^\/]*)\/(.*)/', $dsn, $m)) {
-            $dbhost = urldecode($m[2]);
-            $dbuser = urldecode($m[1]);
-            $dbname = urldecode($m[3]);
-        } else if ($dsn && preg_match('/^mysql:\/\/([^:@\/]*):([^@\/]*)@([^\/]*)\/(.*)/', $dsn, $m)) {
-            $dbhost = urldecode($m[3]);
-            $dbuser = urldecode($m[1]);
-            $dbpass = urldecode($m[2]);
-            $dbname = urldecode($m[4]);
+    /** @param array $opt
+     * @return ?Dbl_ConnectionParams */
+    static function parse_connection_params($opt) {
+        $cp = new Dbl_ConnectionParams;
+        if (isset($opt["confid"]) && !isset($opt["dbName"]) && !isset($opt["dsn"])) {
+            $opt["dbName"] = $opt["confid"];
         }
-        if (!$dbname || $dbname === "mysql" || substr($dbname, -7) === "_schema") {
+        if (isset($opt["dsn"])) {
+            $dsn = is_string($opt["dsn"]) ? $opt["dsn"] : "";
+            if (preg_match('/^mysql:\/\/([^:@\/]*)\/(.*)/', $dsn, $m)) {
+                $cp->host = urldecode($m[1]);
+                $cp->name = urldecode($m[2]);
+            } else if (preg_match('/^mysql:\/\/([^:@\/]*)@([^\/]*)\/(.*)/', $dsn, $m)) {
+                $cp->user = urldecode($m[1]);
+                $cp->host = urldecode($m[2]);
+                $cp->name = urldecode($m[3]);
+            } else if (preg_match('/^mysql:\/\/([^:@\/]*):([^@\/]*)@([^\/]*)\/(.*)/', $dsn, $m)) {
+                $cp->user = urldecode($m[1]);
+                $cp->password = urldecode($m[2]);
+                $cp->host = urldecode($m[3]);
+                $cp->name = urldecode($m[4]);
+            } else {
+                return null;
+            }
+        } else if (isset($opt["dbName"])
+                   && is_string($opt["dbName"])
+                   && !(isset($opt["dbUser"]) && !is_string($opt["dbUser"]))
+                   && !(isset($opt["dbPassword"]) && !is_string($opt["dbPassword"]))
+                   && !(isset($opt["dbHost"]) && !is_string($opt["dbHost"]))) {
+            $cp->name = $opt["dbName"];
+            $cp->user = $opt["dbUser"] ?? $cp->name;
+            $cp->password = $opt["dbPassword"] ?? $cp->name;
+            $cp->host = $opt["dbHost"] ?? "localhost";
+        } else {
+            return null;
+        }
+        if (isset($opt["confid"]) && is_string($opt["confid"])) {
+            $cp->name = str_replace('${confid}', $opt["confid"], $cp->name);
+            if ($cp->user !== null) {
+                $cp->user = str_replace('${confid}', $opt["confid"], $cp->user);
+            }
+            if ($cp->password !== null) {
+                $cp->password = str_replace('${confid}', $opt["confid"], $cp->password);
+            }
+        }
+        if (isset($opt["dbSocket"]) && is_string($opt["dbSocket"])) {
+            $cp->socket = $opt["dbSocket"];
+        }
+        if ($cp->port === null) {
+            $cp->port = $cp->socket ? (int) ini_get("mysqli.default_port") : 0;
+        }
+        $cp->host = $cp->host ?? ini_get("mysqli.default_host");
+        $cp->user = $cp->user ?? ini_get("mysqli.default_user");
+        $cp->password = $cp->password ?? ini_get("mysqli.default_pw");
+        return $cp;
+    }
+
+    /** @param array<string,mixed>|Dbl_ConnectionParams $opt
+     * @return array{?\mysqli,?string} */
+    static function connect($opt, $noconnect = false) {
+        $cp = is_array($opt) ? self::parse_connection_params($opt) : $opt;
+        if (!$cp || !$cp->name || $cp->name === "mysql" || substr($cp->name, -7) === "_schema") {
             return [null, null];
         } else if ($noconnect) {
-            return [null, $dbname];
+            return [null, $cp->name];
         }
 
-        $dbsock = $Opt["dbSocket"] ?? null;
-        if ($dbport === null) {
-            $dbport = $dbsock ? (int) ini_get("mysqli.default_port") : 0;
-        }
-        if ($dbpass === null) {
-            $dbpass = ini_get("mysqli.default_pw");
-        }
-        if ($dbuser === null) {
-            $dbuser = ini_get("mysqli.default_user");
-        }
-        if ($dbhost === null) {
-            $dbhost = ini_get("mysqli.default_host");
-        }
-
-        if ($dbsock) {
-            $dblink = new mysqli($dbhost, $dbuser, $dbpass, "", $dbport, $dbsock);
-        } else if ($dbport !== null) {
-            $dblink = new mysqli($dbhost, $dbuser, $dbpass, "", $dbport);
+        if ($cp->socket) {
+            $dblink = new mysqli($cp->host, $cp->user, $cp->password, "", $cp->port, $cp->socket);
+        } else if ($cp->port !== null) {
+            $dblink = new mysqli($cp->host, $cp->user, $cp->password, "", $cp->port);
         } else {
-            $dblink = new mysqli($dbhost, $dbuser, $dbpass);
+            $dblink = new mysqli($cp->host, $cp->user, $cp->password);
         }
 
         if ($dblink->connect_errno || mysqli_connect_errno()) {
-            return [null, $dbname];
-        } else if (!$dblink->select_db($dbname)) {
+            return [null, $cp->name];
+        } else if (!$dblink->select_db($cp->name)) {
             $dblink->close();
-            return [null, $dbname];
+            return [null, $cp->name];
         } else {
             // We send binary strings to MySQL, so we don't want warnings
             // about non-UTF-8 data
@@ -218,8 +261,15 @@ class Dbl {
             // The necessity of the following line is explosively terrible
             // (the default is 1024/!?))(U#*@$%&!U
             $dblink->query("set group_concat_max_len=4294967295");
-            return [$dblink, $dbname];
+            return [$dblink, $cp->name];
         }
+    }
+
+    /** @param string $dsn
+     * @return array{?\mysqli,?string}
+     * @deprecated */
+    static function connect_dsn($dsn, $noconnect = false) {
+        return self::connect(self::parse_connection_params(["dsn" => $dsn]), $noconnect);
     }
 
     /** @param \mysqli $dblink */

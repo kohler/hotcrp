@@ -21,8 +21,8 @@ if (!$users && !$papers && !$collaborators) {
 }
 
 require_once(SiteLoader::find("src/init.php"));
-if (!$Conf->opt("contactdb_dsn")) {
-    fwrite(STDERR, "Conference has no contactdb_dsn\n");
+if (!$Conf->opt("contactdbDsn") && !$Conf->opt("contactdb_dsn")) {
+    fwrite(STDERR, "Conference has no contactdbDsn\n");
     exit(1);
 }
 

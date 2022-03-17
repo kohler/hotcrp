@@ -50,26 +50,13 @@ class Multiconference {
         }
 
         if (!$confid) {
-            $confid = "__nonexistent__";
-        } else if (!preg_match('/\A[-a-zA-Z0-9_][-a-zA-Z0-9_.]*\z/', $confid)) {
+            $Opt["confid"] = "__nonexistent__";
+        } else if (preg_match('/\A[-a-zA-Z0-9_][-a-zA-Z0-9_.]*\z/', $confid)) {
+            $Opt["confid"] = $confid;
+        } else {
             $Opt["__original_confid"] = $confid;
-            $confid = "__invalid__";
+            $Opt["confid"] = "__invalid__";
         }
-
-        self::assign_confid($Opt, $confid);
-    }
-
-    /** @param array<string,mixed> &$opt
-     * @param string $confid */
-    static function assign_confid(&$opt, $confid) {
-        foreach (["dbName", "dbUser", "dbPassword", "dsn"] as $k) {
-            if (isset($opt[$k]) && is_string($opt[$k]))
-                $opt[$k] = str_replace('${confid}', $confid, $opt[$k]);
-        }
-        if (!($opt["dbName"] ?? null) && !($opt["dsn"] ?? null)) {
-            $opt["dbName"] = $confid;
-        }
-        $opt["confid"] = $confid;
     }
 
     /** @param ?string $root
@@ -104,7 +91,7 @@ class Multiconference {
             $Opt = [];
             SiteLoader::read_options_file("{$root}/conf/options.php");
         }
-        self::assign_confid($Opt, $confid);
+        $Opt["confid"] = $confid;
         if ($Opt["include"] ?? null) {
             SiteLoader::read_included_options();
         }

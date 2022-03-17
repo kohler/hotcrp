@@ -9,8 +9,8 @@ if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
 }
 
 class BackupDB_Batch {
-    /** @var Conf */
-    public $conf;
+    /** @var Dbl_ConnectionParams */
+    public $connp;
     /** @var bool */
     public $schema;
     /** @var bool */
@@ -19,25 +19,31 @@ class BackupDB_Batch {
     public $in;
     /** @var resource */
     public $out = STDOUT;
-    /** @var ?resource */
-    private $pwtmp;
-    /** @var ?string */
-    private $pwfile;
-    /** @var int */
-    private $mode;
-    /** @var ?string */
-    private $inserting;
+    /** @var ?\mysqli */
+    private $_dblink;
     /** @var bool */
-    private $creating;
+    private $_has_dblink = false;
+    /** @var ?int */
+    private $_sversion;
+    /** @var ?resource */
+    private $_pwtmp;
     /** @var ?string */
-    private $created;
+    private $_pwfile;
+    /** @var int */
+    private $_mode;
+    /** @var ?string */
+    private $_inserting;
+    /** @var bool */
+    private $_creating;
+    /** @var ?string */
+    private $_created;
     /** @var list<string> */
-    private $fields;
+    private $_fields;
     /** @var string */
-    private $separator;
+    private $_separator;
 
-    function __construct(Conf $conf, $arg) {
-        $this->conf = $conf;
+    function __construct(Dbl_ConnectionParams $cp, $arg) {
+        $this->connp = $cp;
         $this->schema = isset($arg["schema"]);
         $this->skip_ephemeral = isset($arg["no-ephemeral"]);
     }
@@ -56,49 +62,69 @@ class BackupDB_Batch {
         return $this;
     }
 
+    /** @param ?int $sversion
+     * @return $this */
+    function set_sversion($sversion) {
+        $this->_sversion = $sversion;
+        return $this;
+    }
+
+    /** @return ?\mysqli */
+    function dblink() {
+        if (!$this->_has_dblink) {
+            $this->_has_dblink = true;
+            list($this->_dblink, $dbname) = Dbl::connect($this->connp);
+        }
+        return $this->_dblink;
+    }
+
+    /** @return string */
     function mysqlcmd($cmd, $args) {
-        if (($pass = $this->conf->opt("dbPassword") ?? "") !== "") {
-            if ($this->pwfile === null) {
-                $this->pwtmp = tmpfile();
-                $md = stream_get_meta_data($this->pwtmp);
+        if (($this->connp->password ?? "") !== "") {
+            if ($this->_pwfile === null) {
+                $this->_pwtmp = tmpfile();
+                $md = stream_get_meta_data($this->_pwtmp);
                 if (is_file($md["uri"] ?? "/nonexistent")) {
-                    $this->pwfile = $md["uri"];
-                    fwrite($this->pwtmp, "[client]\npassword={$pass}\n");
-                    fflush($this->pwtmp);
+                    $this->_pwfile = $md["uri"];
+                    fwrite($this->_pwtmp, "[client]\npassword={$this->connp->password}\n");
+                    fflush($this->_pwtmp);
                 } else if (($fn = tempnam("/tmp", "hcpx")) !== false) {
-                    $this->pwfile = $fn;
-                    file_put_contents($fn, "[client]\npassword={$pass}\n");
+                    $this->_pwfile = $fn;
+                    file_put_contents($fn, "[client]\npassword={$this->connp->password}\n");
                     register_shutdown_function("unlink", $fn);
                 } else {
                     throw new RuntimeException("Cannot create temporary file");
                 }
             }
-            $cmd .= " --defaults-extra-file=" . escapeshellarg($this->pwfile);
+            $cmd .= " --defaults-extra-file=" . escapeshellarg($this->_pwfile);
         }
-        if (($host = $this->conf->opt("dbHost") ?? "localhost") !== "localhost"
-            && $host !== "") {
-            $cmd .= " -h " . escapeshellarg($host);
+        if (($this->connp->host ?? "localhost") !== "localhost"
+            && $this->connp->host !== "") {
+            $cmd .= " -h " . escapeshellarg($this->connp->host);
         }
-        if (($user = $this->conf->opt("dbUser") ?? "") !== "") {
-            $cmd .= " -u " . escapeshellarg($user);
+        if (($this->connp->user ?? "") !== "") {
+            $cmd .= " -u " . escapeshellarg($this->connp->user);
+        }
+        if (($this->connp->socket ?? "") !== "") {
+            $cmd .= " -S " . escapeshellarg($this->connp->socket);
         }
         if ($args !== "") {
             $cmd .= " " . $args;
         }
-        return $cmd . " " . $this->conf->opt("dbName");
+        return $cmd . " " . escapeshellarg($this->connp->name);
     }
 
     /** @param string $m
      * @return bool */
     private function should_include($m) {
-        return ($this->inserting !== "Settings"
+        return ($this->_inserting !== "Settings"
                 || !str_starts_with($m, "('__")
-                || $this->created !== "Settings"
-                || $this->fields[0] !== "name")
-            && ($this->inserting !== "Capability"
+                || $this->_created !== "Settings"
+                || $this->_fields[0] !== "name")
+            && ($this->_inserting !== "Capability"
                 || !str_starts_with($m, "(1,")
-                || $this->created !== "Capability"
-                || $this->fields[0] !== "capabilityType");
+                || $this->_created !== "Capability"
+                || $this->_fields[0] !== "capabilityType");
     }
 
     private function process_line($s, $line) {
@@ -111,15 +137,15 @@ class BackupDB_Batch {
                 }
                 $s = $line;
             }
-            if ($this->mode === 1) {
-                $this->mode = str_ends_with($s, ";\n") ? 0 : 1;
+            if ($this->_mode === 1) {
+                $this->_mode = str_ends_with($s, ";\n") ? 0 : 1;
                 return "";
             }
             if (str_starts_with($line, "/*")
                 || str_starts_with($line, "LOCK")
                 || str_starts_with($line, "UNLOCK")
                 || str_starts_with($line, "INSERT")) {
-                $this->mode = str_ends_with($s, ";\n") ? 0 : 1;
+                $this->_mode = str_ends_with($s, ";\n") ? 0 : 1;
                 return "";
             }
             if (!str_ends_with($s, "\n")) {
@@ -132,27 +158,27 @@ class BackupDB_Batch {
 
         if (str_starts_with($s, "CREATE")
             && preg_match('/\ACREATE TABLE `?([^`\s]*)/', $s, $m)) {
-            $this->created = $m[1];
-            $this->fields = [];
-            $this->creating = true;
-        } else if ($this->creating) {
+            $this->_created = $m[1];
+            $this->_fields = [];
+            $this->_creating = true;
+        } else if ($this->_creating) {
             if (str_ends_with($s, ";\n")) {
-                $this->creating = false;
+                $this->_creating = false;
             } else if (preg_match('/\A\s*`(.*?)`/', $s, $m)) {
-                $this->fields[] = $m[1];
+                $this->_fields[] = $m[1];
             }
         }
 
         $p = 0;
         $l = strlen($s);
-        if ($this->inserting === null
+        if ($this->_inserting === null
             && str_starts_with($s, "INSERT")
             && preg_match('/\G(INSERT INTO `?([^`\s]*)`? VALUES)\s*(?=\(|$)/', $s, $m, 0, $p)) {
             $p = strlen($m[0]);
-            $this->inserting = $m[2];
-            $this->separator = "{$m[1]}\n";
+            $this->_inserting = $m[2];
+            $this->_separator = "{$m[1]}\n";
         }
-        if ($this->inserting !== null) {
+        if ($this->_inserting !== null) {
             while (true) {
                 while ($p !== $l && ctype_space($s[$p])) {
                     ++$p;
@@ -163,26 +189,26 @@ class BackupDB_Batch {
                            && preg_match('/\G(\((?:[^)\']|\'(?:\\\\.|[^\\\\\'])*\')*\))\s*/', $s, $m, 0, $p)) {
                     if (!$this->skip_ephemeral
                         || $this->should_include($m[1])) {
-                        fwrite($this->out, $this->separator . $m[1]);
-                        $this->separator = "";
+                        fwrite($this->out, $this->_separator . $m[1]);
+                        $this->_separator = "";
                     }
                     $p += strlen($m[0]);
                 } else if ($s[$p] === "(") {
                     break;
                 } else if ($s[$p] === ",") {
-                    if ($this->separator === "") {
-                        $this->separator = ",\n";
+                    if ($this->_separator === "") {
+                        $this->_separator = ",\n";
                     }
                     ++$p;
                 } else if ($s[$p] === ";") {
-                    if ($this->separator === "") {
+                    if ($this->_separator === "") {
                         fwrite($this->out, ";");
                     }
-                    $this->inserting = null;
+                    $this->_inserting = null;
                     ++$p;
                     break;
                 } else {
-                    $this->inserting = null;
+                    $this->_inserting = null;
                     break;
                 }
             }
@@ -202,6 +228,8 @@ class BackupDB_Batch {
             $pipes = null;
             $proc = proc_open($cmd, $descriptors, $pipes, SiteLoader::$root, ["PATH" => getenv("PATH")]);
             $this->in = $pipes[1];
+        } else {
+            $proc = null;
         }
 
         $s = "";
@@ -215,9 +243,15 @@ class BackupDB_Batch {
         $this->process_line($s, "\n");
 
         if ($this->schema) {
-            fwrite($this->out, "INSERT INTO `Settings` (`name`,`value`,`data`) VALUES\n('allowPaperOption',{$this->conf->sversion},NULL);\n");
+            $this->_sversion = $this->_sversion ?? Dbl::fetch_ivalue($this->dblink(), "select value from Settings where name='allowPaperOption'");
+            if ($this->_sversion !== null) {
+                fwrite($this->out, "INSERT INTO `Settings` (`name`,`value`,`data`) VALUES ('allowPaperOption',{$this->_sversion},NULL);\n");
+            }
         } else {
             fwrite($this->out, "\n--\n-- Force HotCRP to invalidate server caches\n--\nINSERT INTO `Settings` (`name`,`value`,`data`) VALUES\n('frombackup',UNIX_TIMESTAMP(),NULL)\nON DUPLICATE KEY UPDATE value=greatest(value,UNIX_TIMESTAMP());\n");
+        }
+        if ($proc) {
+            proc_close($proc);
         }
     }
 
@@ -238,7 +272,8 @@ Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
          ->parse($argv);
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
-        $bdb = new BackupDB_Batch($conf, $arg);
+        $bdb = new BackupDB_Batch(Dbl::parse_connection_params($conf->opt), $arg);
+        $bdb->set_sversion($conf->sversion);
 
         if (isset($arg["input"])) {
             if ($arg["input"] === "-") {
