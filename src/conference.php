@@ -2775,7 +2775,7 @@ class Conf {
 
     /** @param string $name */
     function session($name, $defval = null) {
-        return $_SESSION[$this->dsn][$name] ?? $defval;
+        return $_SESSION[$this->dbname][$name] ?? $defval;
     }
 
     /** @param string $name */
@@ -2784,11 +2784,11 @@ class Conf {
             if (empty($_SESSION)) {
                 ensure_session();
             }
-            $_SESSION[$this->dsn][$name] = $value;
-        } else if (isset($_SESSION[$this->dsn])) {
-            unset($_SESSION[$this->dsn][$name]);
-            if (empty($_SESSION[$this->dsn])) {
-                unset($_SESSION[$this->dsn]);
+            $_SESSION[$this->dbname][$name] = $value;
+        } else if (isset($_SESSION[$this->dbname])) {
+            unset($_SESSION[$this->dbname][$name]);
+            if (empty($_SESSION[$this->dbname])) {
+                unset($_SESSION[$this->dbname]);
             }
         }
     }
@@ -3790,7 +3790,7 @@ class Conf {
         if ($this->_save_msgs) {
             ensure_session();
             foreach ($this->_save_msgs as $m) {
-                $_SESSION[$this->dsn]["msgs"][] = $m;
+                $_SESSION[$this->dbname]["msgs"][] = $m;
             }
             $this->_save_msgs = null;
         }

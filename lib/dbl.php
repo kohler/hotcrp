@@ -112,6 +112,32 @@ class Dbl_ConnectionParams {
     public $socket;
     /** @var ?string */
     public $name;
+
+    /** @return ?\mysqli */
+    function connect() {
+        assert($this->name);
+        if ($this->socket) {
+            $dblink = new mysqli($this->host, $this->user, $this->password, "", $this->port, $this->socket);
+        } else if ($this->port !== null) {
+            $dblink = new mysqli($this->host, $this->user, $this->password, "", $this->port);
+        } else {
+            $dblink = new mysqli($this->host, $this->user, $this->password);
+        }
+        if ($dblink->connect_errno || mysqli_connect_errno()) {
+            return null;
+        } else if (!$dblink->select_db($this->name)) {
+            $dblink->close();
+            return null;
+        } else {
+            // We send binary strings to MySQL, so we don't want warnings
+            // about non-UTF-8 data
+            $dblink->set_charset("binary");
+            // The necessity of the following line is explosively terrible
+            // (the default is 1024/!?))(U#*@$%&!U
+            $dblink->query("set group_concat_max_len=4294967295");
+            return $dblink;
+        }
+    }
 }
 
 class Dbl {
@@ -222,6 +248,12 @@ class Dbl {
                 $cp->password = str_replace('${confid}', $opt["confid"], $cp->password);
             }
         }
+        if (($cp->name ?? "") === ""
+            || $cp->name === "0"
+            || $cp->name === "mysql"
+            || substr($cp->name, -7) === "_schema") {
+            return null;
+        }
         if (isset($opt["dbSocket"]) && is_string($opt["dbSocket"])) {
             $cp->socket = $opt["dbSocket"];
         }
@@ -238,33 +270,12 @@ class Dbl {
      * @return array{?\mysqli,?string} */
     static function connect($opt, $noconnect = false) {
         $cp = is_array($opt) ? self::parse_connection_params($opt) : $opt;
-        if (!$cp || !$cp->name || $cp->name === "mysql" || substr($cp->name, -7) === "_schema") {
+        if (!$cp) {
             return [null, null];
         } else if ($noconnect) {
             return [null, $cp->name];
-        }
-
-        if ($cp->socket) {
-            $dblink = new mysqli($cp->host, $cp->user, $cp->password, "", $cp->port, $cp->socket);
-        } else if ($cp->port !== null) {
-            $dblink = new mysqli($cp->host, $cp->user, $cp->password, "", $cp->port);
         } else {
-            $dblink = new mysqli($cp->host, $cp->user, $cp->password);
-        }
-
-        if ($dblink->connect_errno || mysqli_connect_errno()) {
-            return [null, $cp->name];
-        } else if (!$dblink->select_db($cp->name)) {
-            $dblink->close();
-            return [null, $cp->name];
-        } else {
-            // We send binary strings to MySQL, so we don't want warnings
-            // about non-UTF-8 data
-            $dblink->set_charset("binary");
-            // The necessity of the following line is explosively terrible
-            // (the default is 1024/!?))(U#*@$%&!U
-            $dblink->query("set group_concat_max_len=4294967295");
-            return [$dblink, $cp->name];
+            return [$cp->connect(), $cp->name];
         }
     }
 

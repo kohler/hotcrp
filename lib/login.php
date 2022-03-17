@@ -216,7 +216,7 @@ class LoginHelper {
         if (isset($qreq->redirect)) {
             $where = $qreq->redirect;
         } else if (isset($_SESSION["login_bounce"])
-                   && $_SESSION["login_bounce"][0] == $user->conf->dsn) {
+                   && $_SESSION["login_bounce"][0] == $user->conf->dbname) {
             $where = $_SESSION["login_bounce"][1];
         } else {
             $user->save_session("freshlogin", true);

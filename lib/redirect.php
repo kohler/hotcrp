@@ -129,12 +129,32 @@ function ensure_session($flags = 0) {
         $_SESSION[$k] = $v;
     }
 
+    // maybe update session format
+    if (!empty($_SESSION) && ($_SESSION["v"] ?? 0) < 1) {
+        $keys = array_keys($_SESSION);
+        foreach ($keys as $key) {
+            if (substr_compare($key, "mysql://", 0, 8) === 0
+                && ($slash = strrpos($key, "/")) !== false) {
+                $_SESSION[urldecode(substr($key, $slash + 1))] = $_SESSION[$key];
+                unset($_SESSION[$key]);
+            } else if ($key === "login_bounce"
+                       && is_array($_SESSION[$key])
+                       && is_string($_SESSION[$key][0] ?? null)
+                       && substr_compare($_SESSION[$key][0] ?? "", "mysql://", 0, 8) === 0
+                       && ($slash = strrpos($_SESSION[$key][0], "/")) !== false) {
+                $_SESSION[$key][0] = urldecode(substr($_SESSION[$key][0], $slash + 1));
+            }
+        }
+        $_SESSION["v"] = 1;
+    }
+
     // avoid session fixation
     if (empty($_SESSION)) {
         if ($has_cookie && !($flags & ENSURE_SESSION_REGENERATE_ID)) {
             session_regenerate_id();
         }
         $_SESSION["testsession"] = false;
+        $_SESSION["v"] = 1;
     } else if (Conf::$main->_session_handler
                && is_callable([Conf::$main->_session_handler, "refresh_cookie"])) {
         call_user_func([Conf::$main->_session_handler, "refresh_cookie"], $sn, session_id());

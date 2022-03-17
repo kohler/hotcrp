@@ -1475,7 +1475,7 @@ class Contact {
                 $x["__PATH__"] = preg_replace('/^\/+/', "", $path);
             }
             $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
-            $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST, Conf::$now + 120];
+            $_SESSION["login_bounce"] = [$this->conf->dbname, $url, Navigation::page(), $_POST, Conf::$now + 120];
             $ml = [MessageItem::error("<0>You must sign in to access that page")];
             if ($qreq->valid_token()) {
                 $ml[] = MessageItem::inform("<0>Your changes were not saved. After signing in, you may try to submit them again");

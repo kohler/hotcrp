@@ -358,9 +358,9 @@ function initialize_request() {
         && isset($_SESSION["login_bounce"])
         && !isset($_SESSION["testsession"])) {
         $lb = $_SESSION["login_bounce"];
-        if ($lb[0] == $conf->dsn
+        if ($lb[0] === $conf->dbname
             && $lb[2] !== "index"
-            && $lb[2] == Navigation::page()) {
+            && $lb[2] === Navigation::page()) {
             assert($qreq instanceof Qrequest);
             foreach ($lb[3] as $k => $v) {
                 if (!isset($qreq[$k]))
