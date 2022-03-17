@@ -14,7 +14,6 @@ class SiteLoader {
         "Fexpr" => "src/formula.php",
         "FormulaCall" => "src/formula.php",
         "FormatChecker" => "src/formatspec.php",
-        "GroupedExtensions" => "src/componentset.php", /* XXX backward compat */
         "HashAnalysis" => "lib/filer.php",
         "JsonSerializable" => "lib/json.php",
         "LogEntryGenerator" => "src/logentry.php",
@@ -23,8 +22,7 @@ class SiteLoader {
         "PaperInfoSet" => "src/paperinfo.php",
         "PaperOptionList" => "src/paperoption.php",
         "PaperValue" => "src/paperoption.php",
-        "ReviewField" => "src/review.php",
-        "ReviewFieldInfo" => "src/review.php",
+        "ReviewFieldInfo" => "src/reviewfield.php",
         "ReviewForm" => "src/review.php",
         "ReviewSearchMatcher" => "src/search/st_review.php",
         "ReviewValues" => "src/review.php",
