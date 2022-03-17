@@ -7,25 +7,27 @@ const JSON_HOTCRP = 1;
 const JSON_ERROR_EMPTY_KEY = 100;
 
 class Json {
-    static $string_map =
-        array("\\" => "\\\\", "\"" => "\\\"", "/" => "\\/",
-              "\000" => "\\u0000", "\001" => "\\u0001", "\002" => "\\u0002",
-              "\003" => "\\u0003", "\004" => "\\u0004", "\005" => "\\u0005",
-              "\006" => "\\u0006", "\007" => "\\u0007", "\010" => "\\b",
-              "\011" => "\\t", "\012" => "\\n", "\013" => "\\u000B",
-              "\014" => "\\f", "\015" => "\\r", "\016" => "\\u000E",
-              "\017" => "\\u000F", "\020" => "\\u0010", "\021" => "\\u0011",
-              "\022" => "\\u0012", "\023" => "\\u0013", "\024" => "\\u0014",
-              "\025" => "\\u0015", "\026" => "\\u0016", "\027" => "\\u0017",
-              "\030" => "\\u0018", "\031" => "\\u0019", "\032" => "\\u001A",
-              "\033" => "\\u001B", "\034" => "\\u001C", "\035" => "\\u001D",
-              "\036" => "\\u001E", "\037" => "\\u001F",
-              "\xE2\x80\xA8" => "\\u2028", "\xE2\x80\xA9" => "\\u2029");
+    static $string_map = [
+        "\\" => "\\\\", "\"" => "\\\"", "/" => "\\/",
+        "\000" => "\\u0000", "\001" => "\\u0001", "\002" => "\\u0002",
+        "\003" => "\\u0003", "\004" => "\\u0004", "\005" => "\\u0005",
+        "\006" => "\\u0006", "\007" => "\\u0007", "\010" => "\\b",
+        "\011" => "\\t", "\012" => "\\n", "\013" => "\\u000B",
+        "\014" => "\\f", "\015" => "\\r", "\016" => "\\u000E",
+        "\017" => "\\u000F", "\020" => "\\u0010", "\021" => "\\u0011",
+        "\022" => "\\u0012", "\023" => "\\u0013", "\024" => "\\u0014",
+        "\025" => "\\u0015", "\026" => "\\u0016", "\027" => "\\u0017",
+        "\030" => "\\u0018", "\031" => "\\u0019", "\032" => "\\u001A",
+        "\033" => "\\u001B", "\034" => "\\u001C", "\035" => "\\u001D",
+        "\036" => "\\u001E", "\037" => "\\u001F",
+        "\xE2\x80\xA8" => "\\u2028", "\xE2\x80\xA9" => "\\u2029"
+    ];
 
-    static private $string_unmap =
-        array("\\\"" => "\"", "\\\\" => "\\", "\\/" => "/",
-              "\\b" => "\010", "\\t" => "\011", "\\n" => "\012",
-              "\\f" => "\014", "\\r" => "\015");
+    static private $string_unmap = [
+        "\\\"" => "\"", "\\\\" => "\\", "\\/" => "/",
+        "\\b" => "\010", "\\t" => "\011", "\\n" => "\012",
+        "\\f" => "\014", "\\r" => "\015"
+    ];
 
     static private $error_type;
     /** @var ?string */
@@ -114,7 +116,7 @@ class Json {
             if ($depth < 0) {
                 return self::set_error($x, JSON_ERROR_DEPTH);
             }
-            $arr = $assoc ? array() : (object) array();
+            $arr = $assoc ? [] : (object) [];
             $x = substr($x, 1);
             $n = 0;
             while (true) {
@@ -154,7 +156,7 @@ class Json {
             if ($depth < 0) {
                 return self::set_error($x, JSON_ERROR_DEPTH);
             }
-            $arr = array();
+            $arr = [];
             $x = substr($x, 1);
             while (true) {
                 if (!is_string($x)) {
@@ -220,7 +222,7 @@ class Json {
             return "\"" . preg_replace_callback($pat, "Json::encode_escape", $x) . "\"";
         } else if (is_object($x) || is_array($x)) {
             $as_object = null;
-            $as_array = array();
+            $as_array = [];
             $nextkey = 0;
             foreach ($x as $k => $v) {
                 if ((!is_int($k) && !is_string($k))
@@ -228,7 +230,7 @@ class Json {
                     continue;
                 }
                 if ($as_array !== null && $k !== $nextkey) {
-                    $as_object = array();
+                    $as_object = [];
                     foreach ($as_array as $kk => $vv) {
                         $as_object[] = "\"$kk\":$vv";
                     }
@@ -293,7 +295,7 @@ class Json {
             if ($depth < 0) {
                 return self::set_error($x, JSON_ERROR_DEPTH);
             }
-            $arr = $assoc ? array() : (object) array();
+            $arr = $assoc ? [] : (object) [];
             $x = substr($x, 1);
             $n = 0;
             while (true) {
@@ -335,7 +337,7 @@ class Json {
             if ($depth < 0) {
                 return self::set_error($x, JSON_ERROR_DEPTH);
             }
-            $arr = array();
+            $arr = [];
             $x = substr($x, 1);
             while (true) {
                 if (!is_string($x)) {
@@ -389,14 +391,15 @@ class Json {
 
     /** @return ?string */
     static function last_error_msg() {
-        static $errors =
-            array(JSON_ERROR_NONE => null,
-                  JSON_ERROR_DEPTH => "Maximum stack depth exceeded",
-                  JSON_ERROR_STATE_MISMATCH => "Underflow or the modes mismatch",
-                  JSON_ERROR_CTRL_CHAR => "Unexpected control character found",
-                  JSON_ERROR_SYNTAX => "Syntax error, malformed JSON",
-                  JSON_ERROR_UTF8 => "Malformed UTF-8 characters, possibly incorrectly encoded",
-                  JSON_ERROR_EMPTY_KEY => "Empty keys are not supported");
+        static $errors = [
+            JSON_ERROR_NONE => null,
+            JSON_ERROR_DEPTH => "Maximum stack depth exceeded",
+            JSON_ERROR_STATE_MISMATCH => "Underflow or the modes mismatch",
+            JSON_ERROR_CTRL_CHAR => "Unexpected control character found",
+            JSON_ERROR_SYNTAX => "Syntax error, malformed JSON",
+            JSON_ERROR_UTF8 => "Malformed UTF-8 characters, possibly incorrectly encoded",
+            JSON_ERROR_EMPTY_KEY => "Empty keys are not supported"
+        ];
         $error = self::last_error();
         $error = array_key_exists($error, $errors) ? $errors[$error] : "Unknown error ({$error})";
         if ($error) {

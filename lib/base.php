@@ -412,7 +412,7 @@ function get($var, $idx, $default = null) {
 /** @param mixed $a */
 function array_to_object_recursive($a) {
     if (is_array($a) && is_associative_array($a)) {
-        $o = (object) array();
+        $o = (object) [];
         foreach ($a as $k => $v) {
             if ($k !== "")
                 $o->$k = array_to_object_recursive($v);
@@ -468,7 +468,8 @@ function json_object_replace($j, $updates, $nullable = false) {
 
 function caller_landmark($position = 1, $skipfunction_re = null) {
     if (is_string($position)) {
-        list($position, $skipfunction_re) = array(1, $position);
+        $position = 1;
+        $skipfunction_re = $position;
     }
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
     $fname = null;

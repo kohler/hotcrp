@@ -733,7 +733,7 @@ class CsvGenerator {
                 && count($row) <= count($this->selection))) {
             return $row;
         }
-        $selected = array();
+        $selected = [];
         $i = 0;
         foreach ($this->selection as $key) {
             if (isset($row[$key])) {

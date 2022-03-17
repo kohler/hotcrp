@@ -148,7 +148,7 @@ class StreamS3Result extends S3Result {
             fclose($stream);
         }
         if (S3Client::$verbose) {
-            error_log($this->method . " " . $this->url . " -> " . $this->status . " " . $this->status_text);
+            error_log("{$this->method} {$this->url} -> {$this->status} {$this->status_text}");
             if ($this->status > 299 && ($this->body ?? "") !== "") {
                 error_log(substr($this->body, 0, 1024));
             }

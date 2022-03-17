@@ -234,7 +234,7 @@ class Conf {
     const PCSEEREV_UNLESSINCOMPLETE = 3;
     const PCSEEREV_UNLESSANYINCOMPLETE = 4;
 
-    static public $review_deadlines = array("pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard");
+    static public $review_deadlines = ["pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard"];
 
     static public $hoturl_defaults = null;
 
@@ -2643,9 +2643,9 @@ class Conf {
 
     /** @return int */
     function cdb_confid() {
-        $confid = $this->opt["contactdb_confid"] ?? null;
+        $confid = $this->opt["contactdbConfid"] ?? null;
         if ($confid === null && ($cdb = $this->contactdb())) {
-            $confid = $this->opt["contactdb_confid"] = Dbl::fetch_ivalue($cdb, "select confid from Conferences where `dbname`=?", $this->dbname) ?? -1;
+            $confid = $this->opt["contactdbConfid"] = Dbl::fetch_ivalue($cdb, "select confid from Conferences where `dbname`=?", $this->dbname) ?? -1;
         }
         return $confid ?? -1;
     }
@@ -2668,7 +2668,7 @@ class Conf {
         $this->_cdb_user_cache_missing = null;
         if (!empty($reqids) || !empty($reqemails)) {
             $q = "select ContactInfo.*, roles, activity_at";
-            if (($confid = $this->opt("contactdb_confid") ?? 0) > 0) {
+            if (($confid = $this->opt("contactdbConfid") ?? 0) > 0) {
                 $q .= ", ? cdb_confid from ContactInfo left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=?)";
                 $qv = [$confid, $confid];
             } else {
@@ -2689,7 +2689,7 @@ class Conf {
             $result = Dbl::qe_apply($cdb, $q, $qv);
             while (($u = Contact::fetch($result, $this))) {
                 if ($confid <= 0 && $u->cdb_confid > 0) {
-                    $confid = $this->opt["contactdb_confid"] = $u->cdb_confid;
+                    $confid = $this->opt["contactdbConfid"] = $u->cdb_confid;
                 }
                 $this->_cdb_user_cache[$u->contactDbId] = $u;
                 $this->_cdb_user_cache[strtolower($u->email)] = $u;
@@ -2935,7 +2935,7 @@ class Conf {
                 $this->_cdb_user_cache = null;
             }
             if (isset($caches["cdb"])) {
-                unset($this->opt["contactdb_confid"]);
+                unset($this->opt["contactdbConfid"]);
             }
             // NB All setting-related caches cleared here should also be cleared
             // in refresh_settings().
@@ -3070,7 +3070,7 @@ class Conf {
     function parse_time($d, $reference = null) {
         $reference = $reference ?? Conf::$now;
         if (!isset($this->opt["dateFormatTimezoneRemover"])) {
-            $x = array();
+            $x = [];
             if (function_exists("timezone_abbreviations_list")) {
                 $mytz = date_default_timezone_get();
                 foreach (timezone_abbreviations_list() as $tzname => $tzinfo) {
@@ -4735,7 +4735,7 @@ class Conf {
                 . "&version=" . HOTCRP_VERSION;
             $v = HOTCRP_VERSION;
             if (is_dir(SiteLoader::find(".git"))) {
-                $args = array();
+                $args = [];
                 exec("export GIT_DIR=" . escapeshellarg(SiteLoader::$root) . "/.git; git rev-parse HEAD 2>/dev/null; git merge-base origin/master HEAD 2>/dev/null", $args);
                 if (count($args) >= 1) {
                     $m .= "&git-head=" . urlencode($args[0]);
@@ -4759,7 +4759,7 @@ class Conf {
     }
 
     static function git_status() {
-        $args = array();
+        $args = [];
         if (is_dir(SiteLoader::find(".git"))) {
             exec("export GIT_DIR=" . escapeshellarg(SiteLoader::$root) . "/.git; git rev-parse HEAD 2>/dev/null; git rev-parse v" . HOTCRP_VERSION . " 2>/dev/null", $args);
         }
@@ -5502,9 +5502,6 @@ class Conf {
     function mail_template_map() {
         if ($this->_mail_template_map === null) {
             $this->_mail_template_map = [];
-            if ($this->opt("mailtemplate_include")) { // XXX backwards compatibility
-                error_log("Warning: Ignoring obsolete \$[\"mailtemplate_include\"]");
-            }
             expand_json_includes_callback(["etc/mailtemplates.json"], [$this, "_add_mail_template_json"]);
             if (($mts = $this->opt("mailTemplates"))) {
                 expand_json_includes_callback($mts, [$this, "_add_mail_template_json"]);

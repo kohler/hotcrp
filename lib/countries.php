@@ -3,7 +3,7 @@
 // This list of countries taken from Amazon.com's address entries, 2007.
 class Countries {
 
-    public static $list = array("Afghanistan",
+    public static $list = ["Afghanistan",
 "Albania",
 "Algeria",
 "Andorra",
@@ -201,12 +201,13 @@ class Countries {
 "Yemen",
 "Zambia",
 "Zimbabwe",
-		       "Other");
+		       "Other"];
 
-    public static $synonyms = array(
+    public static $synonyms = [
         "united states" => "united states of america",
         "us" => "united states of america",
-        "usa" => "united states of america");
+        "usa" => "united states of america"
+    ];
 
     static function selector($name, $country, $extra = []) {
         $sel_country = "";

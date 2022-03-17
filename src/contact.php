@@ -801,7 +801,7 @@ class Contact {
         if (($cdbu = $cdbu ?? $this->cdb_user())
             && (($roles = $this->cdb_roles()) !== $cdbu->roles
                 || ($roles && (int) $cdbu->activity_at <= Conf::$now - 604800))) {
-            assert($cdbu->cdb_confid < 0 || $cdbu->cdb_confid == $this->conf->opt["contactdb_confid"]);
+            assert($cdbu->cdb_confid < 0 || $cdbu->cdb_confid == $this->conf->opt["contactdbConfid"]);
             if ($roles !== 0) {
                 Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=?, activity_at=?", $cdbu->contactDbId, $this->conf->cdb_confid(), $roles, Conf::$now, $roles, Conf::$now);
             } else {

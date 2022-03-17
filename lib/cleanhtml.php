@@ -39,7 +39,7 @@ class CleanHTML {
     /** @param string $t
      * @return string|false */
     function clean($t) {
-        $tagstack = array();
+        $tagstack = [];
         $this->last_error = null;
 
         $x = "";

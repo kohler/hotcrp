@@ -421,10 +421,10 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 $this->error("<0>Cannot create temporary directory");
                 return null;
             }
-            $this->_filestore = $tmpdir . "/_hotcrp.zip";
+            $this->_filestore = "{$tmpdir}/_hotcrp.zip";
         }
 
-        if (!($out = fopen($this->_filestore . "~", "wb"))) {
+        if (!($out = fopen("{$this->_filestore}~", "wb"))) {
             $this->error("<0>Cannot create temporary file");
             return null;
         }

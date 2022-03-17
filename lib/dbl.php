@@ -358,7 +358,7 @@ class Dbl {
                 if ($arg === null) {
                     $arg = [];
                 } else if (is_int($arg) || is_float($arg) || is_string($arg)) {
-                    $arg = array($arg);
+                    $arg = [$arg];
                 }
                 foreach ($arg as $x) {
                     if (!is_int($x) && !is_float($x)) {
@@ -758,7 +758,7 @@ class Dbl {
     /** @return list<mixed> */
     static function fetch_first_columns(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
-        $x = array();
+        $x = [];
         while ($result && ($row = $result->fetch_row())) {
             $x[] = $row[0];
         }
@@ -769,7 +769,7 @@ class Dbl {
     /** @return array<string,mixed> */
     static function fetch_map(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
-        $x = array();
+        $x = [];
         while ($result && ($row = $result->fetch_row())) {
             $x[$row[0]] = count($row) == 2 ? $row[1] : array_slice($row, 1);
         }
@@ -780,7 +780,7 @@ class Dbl {
     /** @return array<int,?int> */
     static function fetch_iimap(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
-        $x = array();
+        $x = [];
         while ($result && ($row = $result->fetch_row())) {
             assert(count($row) == 2);
             $x[(int) $row[0]] = ($row[1] === null ? null : (int) $row[1]);

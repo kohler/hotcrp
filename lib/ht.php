@@ -405,12 +405,15 @@ class Ht {
         return "<textarea name=\"{$name}\"{$jst}>{$vt}</textarea>";
     }
 
-    static function actions($actions, $js = []) {
+    /** @param list<string|list<string>> $actions
+     * @param ?array<string,mixed> $js
+     * @return string */
+    static function actions($actions, $js = null) {
         if (empty($actions)) {
             return "";
         }
         $actions = array_values($actions);
-        $js = $js ? : array();
+        $js = $js ?? [];
         if (!isset($js["class"])) {
             $js["class"] = "aab";
         }

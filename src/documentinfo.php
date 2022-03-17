@@ -551,11 +551,11 @@ class DocumentInfo implements JsonSerializable {
                 $ok = true;
             } else {
                 $content = $this->content();
-                if (file_put_contents($dspath . "~", $content) === strlen($content)
-                    && rename($dspath . "~", $dspath))
+                if (file_put_contents("{$dspath}~", $content) === strlen($content)
+                    && rename("{$dspath}~", $dspath))
                     $ok = true;
                 else {
-                    @unlink($dspath . "~");
+                    @unlink("{$dspath}~");
                     $ok = false;
                 }
             }
@@ -938,7 +938,7 @@ class DocumentInfo implements JsonSerializable {
                 $s3 = $doc->conf->s3_docstore();
                 if (($s3k = $doc->s3_key())
                     && ($dspath = Filer::docstore_path($doc, Filer::FPATH_MKDIR))
-                    && ($stream = @fopen($dspath . "~", "x+b"))) {
+                    && ($stream = @fopen("{$dspath}~", "x+b"))) {
                     $s3l = $s3->start_curl_get($s3k)->set_response_body_stream($stream)->set_expected_size($doc->size());
                     $adocs[] = [$doc, $s3l, 0, $dspath];
                 }
