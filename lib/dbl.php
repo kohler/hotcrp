@@ -156,7 +156,7 @@ class Dbl {
     /** @param string $dsn
      * @return string */
     static function sanitize_dsn($dsn) {
-        return preg_replace('{\A(\w+://[^/:]*:)[^\@/]+([\@/])}', '$1PASSWORD$2', $dsn);
+        return preg_replace('/\A(\w+:\/\/[^\/:]*:)[^\@\/]+([\@\/])/', '$1PASSWORD$2', $dsn);
     }
 
     /** @param string $dsn

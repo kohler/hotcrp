@@ -81,6 +81,7 @@ users.php
 
 batch/.htaccess
 batch/assign.php
+batch/backupdb.php
 batch/checkinvariants.php
 batch/deletepapers.php
 batch/fixdelegation.php

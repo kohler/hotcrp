@@ -1,0 +1,268 @@
+<?php
+// backupdb.php -- HotCRP database backup script
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+
+if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
+    define("HOTCRP_NOINIT", 1);
+    require_once(dirname(__DIR__) . "/src/init.php");
+    BackupDB_Batch::make_args($argv)->run();
+}
+
+class BackupDB_Batch {
+    /** @var Conf */
+    public $conf;
+    /** @var bool */
+    public $schema;
+    /** @var bool */
+    public $skip_ephemeral;
+    /** @var ?resource */
+    public $in;
+    /** @var resource */
+    public $out = STDOUT;
+    /** @var ?resource */
+    private $pwtmp;
+    /** @var ?string */
+    private $pwfile;
+    /** @var int */
+    private $mode;
+    /** @var ?string */
+    private $inserting;
+    /** @var bool */
+    private $creating;
+    /** @var ?string */
+    private $created;
+    /** @var list<string> */
+    private $fields;
+    /** @var string */
+    private $separator;
+
+    function __construct(Conf $conf, $arg) {
+        $this->conf = $conf;
+        $this->schema = isset($arg["schema"]);
+        $this->skip_ephemeral = isset($arg["no-ephemeral"]);
+    }
+
+    /** @param ?resource $input
+     * @return $this */
+    function set_input($input) {
+        $this->in = $input;
+        return $this;
+    }
+
+    /** @param resource $output
+     * @return $this */
+    function set_output($output) {
+        $this->out = $output;
+        return $this;
+    }
+
+    function mysqlcmd($cmd, $args) {
+        if (($pass = $this->conf->opt("dbPassword") ?? "") !== "") {
+            if ($this->pwfile === null) {
+                $this->pwtmp = tmpfile();
+                $md = stream_get_meta_data($this->pwtmp);
+                if (is_file($md["uri"] ?? "/nonexistent")) {
+                    $this->pwfile = $md["uri"];
+                    fwrite($this->pwtmp, "[client]\npassword={$pass}\n");
+                    fflush($this->pwtmp);
+                } else if (($fn = tempnam("/tmp", "hcpx")) !== false) {
+                    $this->pwfile = $fn;
+                    file_put_contents($fn, "[client]\npassword={$pass}\n");
+                    register_shutdown_function("unlink", $fn);
+                } else {
+                    throw new RuntimeException("Cannot create temporary file");
+                }
+            }
+            $cmd .= " --defaults-extra-file=" . escapeshellarg($this->pwfile);
+        }
+        if (($host = $this->conf->opt("dbHost") ?? "localhost") !== "localhost"
+            && $host !== "") {
+            $cmd .= " -h " . escapeshellarg($host);
+        }
+        if (($user = $this->conf->opt("dbUser") ?? "") !== "") {
+            $cmd .= " -u " . escapeshellarg($user);
+        }
+        if ($args !== "") {
+            $cmd .= " " . $args;
+        }
+        return $cmd . " " . $this->conf->opt("dbName");
+    }
+
+    /** @param string $m
+     * @return bool */
+    private function should_include($m) {
+        return ($this->inserting !== "Settings"
+                || !str_starts_with($m, "('__")
+                || $this->created !== "Settings"
+                || $this->fields[0] !== "name")
+            && ($this->inserting !== "Capability"
+                || !str_starts_with($m, "(1,")
+                || $this->created !== "Capability"
+                || $this->fields[0] !== "capabilityType");
+    }
+
+    private function process_line($s, $line) {
+        if ($this->schema) {
+            if (str_starts_with($line, "--")) {
+                return $s;
+            } else if (str_starts_with($s, "--") && str_ends_with($line, "\n")) {
+                if (strpos($s, "Dump") === false) {
+                    fwrite($this->out, substr($s, 0, -strlen($line)));
+                }
+                $s = $line;
+            }
+            if ($this->mode === 1) {
+                $this->mode = str_ends_with($s, ";\n") ? 0 : 1;
+                return "";
+            }
+            if (str_starts_with($line, "/*")
+                || str_starts_with($line, "LOCK")
+                || str_starts_with($line, "UNLOCK")
+                || str_starts_with($line, "INSERT")) {
+                $this->mode = str_ends_with($s, ";\n") ? 0 : 1;
+                return "";
+            }
+            if (!str_ends_with($s, "\n")) {
+                return $s;
+            }
+            if (str_starts_with($s, ")")) {
+                $s = preg_replace('/ AUTO_INCREMENT=\d+/', "", $s);
+            }
+        }
+
+        if (str_starts_with($s, "CREATE")
+            && preg_match('/\ACREATE TABLE `?([^`\s]*)/', $s, $m)) {
+            $this->created = $m[1];
+            $this->fields = [];
+            $this->creating = true;
+        } else if ($this->creating) {
+            if (str_ends_with($s, ";\n")) {
+                $this->creating = false;
+            } else if (preg_match('/\A\s*`(.*?)`/', $s, $m)) {
+                $this->fields[] = $m[1];
+            }
+        }
+
+        $p = 0;
+        $l = strlen($s);
+        if ($this->inserting === null
+            && str_starts_with($s, "INSERT")
+            && preg_match('/\G(INSERT INTO `?([^`\s]*)`? VALUES)\s*(?=\(|$)/', $s, $m, 0, $p)) {
+            $p = strlen($m[0]);
+            $this->inserting = $m[2];
+            $this->separator = "{$m[1]}\n";
+        }
+        if ($this->inserting !== null) {
+            while (true) {
+                while ($p !== $l && ctype_space($s[$p])) {
+                    ++$p;
+                }
+                if ($p === $l) {
+                    break;
+                } else if ($s[$p] === "("
+                           && preg_match('/\G(\((?:[^)\']|\'(?:\\\\.|[^\\\\\'])*\')*\))\s*/', $s, $m, 0, $p)) {
+                    if (!$this->skip_ephemeral
+                        || $this->should_include($m[1])) {
+                        fwrite($this->out, $this->separator . $m[1]);
+                        $this->separator = "";
+                    }
+                    $p += strlen($m[0]);
+                } else if ($s[$p] === "(") {
+                    break;
+                } else if ($s[$p] === ",") {
+                    if ($this->separator === "") {
+                        $this->separator = ",\n";
+                    }
+                    ++$p;
+                } else if ($s[$p] === ";") {
+                    if ($this->separator === "") {
+                        fwrite($this->out, ";");
+                    }
+                    $this->inserting = null;
+                    ++$p;
+                    break;
+                } else {
+                    $this->inserting = null;
+                    break;
+                }
+            }
+        }
+        if (str_ends_with($s, "\n")) {
+            fwrite($this->out, $p === 0 ? $s : substr($s, $p));
+            return "";
+        } else {
+            return substr($s, $p);
+        }
+    }
+
+    function run() {
+        if (!$this->in) {
+            $cmd = $this->mysqlcmd("mysqldump", "");
+            $descriptors = [0 => ["file", "/dev/null", "r"], 1 => ["pipe", "wb"]];
+            $pipes = null;
+            $proc = proc_open($cmd, $descriptors, $pipes, SiteLoader::$root, ["PATH" => getenv("PATH")]);
+            $this->in = $pipes[1];
+        }
+
+        $s = "";
+        while (!feof($this->in)) {
+            $line = fgets($this->in, 32768);
+            if ($line === false) {
+                break;
+            }
+            $s = $this->process_line($s === "" ? $line : $s . $line, $line);
+        }
+        $this->process_line($s, "\n");
+
+        if ($this->schema) {
+            fwrite($this->out, "INSERT INTO `Settings` (`name`,`value`,`data`) VALUES\n('allowPaperOption',{$this->conf->sversion},NULL);\n");
+        } else {
+            fwrite($this->out, "\n--\n-- Force HotCRP to invalidate server caches\n--\nINSERT INTO `Settings` (`name`,`value`,`data`) VALUES\n('frombackup',UNIX_TIMESTAMP(),NULL)\nON DUPLICATE KEY UPDATE value=greatest(value,UNIX_TIMESTAMP());\n");
+        }
+    }
+
+    /** @return BackupDB_Batch */
+    static function make_args($argv) {
+        $arg = (new Getopt)->long(
+            "name:,n: =CONFID Set conference ID",
+            "config:,c: =FILE Set configuration file [conf/options.php]",
+            "input:,in:,i: =FILE Read (and fix) backup FILE",
+            "output:,out:,o: =FILE Set output file [stdout]",
+            "z,compress Compress output",
+            "schema Output schema only",
+            "no-ephemeral Omit ephemeral settings and values",
+            "help,h"
+        )->description("Back up HotCRP database.
+Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
+         ->helpopt("help")
+         ->parse($argv);
+
+        $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
+        $bdb = new BackupDB_Batch($conf, $arg);
+
+        if (isset($arg["input"])) {
+            if ($arg["input"] === "-") {
+                $bdb->set_input(STDIN);
+            } else if (($inf = gzopen($arg["input"], "rb")) !== false) {
+                $bdb->set_input($inf);
+            } else {
+                throw error_get_last_as_exception($arg["input"] . ": ");
+            }
+        }
+
+        if (isset($arg["z"])) {
+            if (($arg["output"] ?? "-") === "-") {
+                $f = fopen("compress.zlib://php://stdout", "wb");
+            } else {
+                $f = gzopen($arg["output"], "wb");
+            }
+            if ($f !== false) {
+                $bdb->set_output($f);
+            } else {
+                throw error_get_last_as_exception((($arg["output"] ?? "-") === "-" ? "<stdout>" : $arg["output"]) . ": ");
+            }
+        }
+
+        return $bdb;
+    }
+}

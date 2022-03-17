@@ -561,12 +561,17 @@ function tempdir($mode = 0700) {
     return false;
 }
 
+
+function error_get_last_as_exception($prefix) {
+    $msg = preg_replace('/.*: /', "", error_get_last()["message"]);
+    return new RuntimeException($prefix . $msg);
+}
+
 /** @return string */
 function file_get_contents_throw($filename) {
     $s = @file_get_contents($filename);
     if ($s === false) {
-        $msg = preg_replace('/.*: /', "", error_get_last()["message"]);
-        throw new RuntimeException("{$filename}: {$msg}");
+        throw error_get_last_as_exception("{$filename}: ");
     }
     return $s;
 }

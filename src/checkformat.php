@@ -70,7 +70,7 @@ class CheckFormat extends MessageSet {
      * @param array<string,string> $env
      * @return array{int,string,string} */
     static function run_command_safely($cmd, $dir, $env) {
-        $descriptors = [["file", "/dev/null", "r"], ["pipe", "w"], ["pipe", "w"]];
+        $descriptors = [["file", "/dev/null", "r"], ["pipe", "wb"], ["pipe", "wb"]];
         $pipes = null;
         $proc = proc_open($cmd, $descriptors, $pipes, $dir, $env);
         stream_set_blocking($pipes[1], false);
