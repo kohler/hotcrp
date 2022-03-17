@@ -1472,7 +1472,7 @@ $blind\n";
                 $revname = "[{$revname}]";
             }
             if (!Contact::is_anonymous_email($rrow->email)) {
-                $revname = '<span title="' . $rrow->email . '">' . $revname . '</span>';
+                $revname = "<span title=\"{$rrow->email}\">{$revname}</span>";
             }
         }
         if ($viewer->can_view_review_meta($prow, $rrow)) {
