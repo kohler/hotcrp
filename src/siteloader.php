@@ -46,6 +46,7 @@ class SiteLoader {
         "_assignable.php" => ["a_", "src/assigners"],
         "_assigner.php" => ["a_", "src/assigners"],
         "_assignmentparser.php" => ["a_", "src/assigners"],
+        "_batch.php" => ["", "batch"],
         "_capability.php" => ["cap_", "src/capabilities"],
         "_fexpr.php" =>  ["f_", "src/formulas"],
         "_helptopic.php" => ["h_", "src/help"],

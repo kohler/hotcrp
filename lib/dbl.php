@@ -102,7 +102,7 @@ class Dbl_MultiResult {
 class Dbl_ConnectionParams {
     /** @var string */
     public $host;
-    /** @var ?int */
+    /** @var int */
     public $port;
     /** @var ?string */
     public $user;
@@ -127,6 +127,7 @@ class Dbl {
 
     /** @var int */
     static public $nerrors = 0;
+    /** @var ?\mysqli */
     static public $default_dblink;
     /** @var callable(\mysqli,string) */
     static private $error_handler = "Dbl::default_error_handler";
@@ -134,11 +135,13 @@ class Dbl {
     static private $query_log = false;
     /** @var false|string */
     static private $query_log_key = false;
-    static private $query_log_file = null;
+    /** @var ?string */
+    static private $query_log_file;
     /** @var bool */
     static public $check_warnings = true;
     /** @var bool */
     static public $verbose = false;
+    /** @var string */
     static public $landmark_sanitizer = "/^Dbl::/";
 
     /** @return bool */
@@ -865,7 +868,9 @@ class Dbl {
         throw new Exception("Dbl::compare_and_swap failure on query `" . Dbl::format_query_args($dblink, $value_query, $value_query_args) . "`");
     }
 
-    static function log_queries($limit, $file = false) {
+    /** @param null|bool|float $limit
+     * @param ?string $file */
+    static function log_queries($limit, $file = null) {
         if (is_float($limit)) {
             $limit = $limit >= 1 || ($limit > 0 && mt_rand() < $limit * mt_getrandmax());
         }

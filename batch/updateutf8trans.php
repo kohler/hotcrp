@@ -1,43 +1,70 @@
 <?php
-require_once(dirname(__DIR__) . "/src/siteloader.php");
+// updateutf8trans.php -- HotCRP maintenance script
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-$arg = Getopt::rest($argv, "hn:f:Vuto:",
-    ["help", "name:", "file:", "verbose", "unparse", "time", "output:"]);
-if (isset($arg["h"]) || isset($arg["help"])) {
-    fwrite(STDOUT, "Usage: php batch/updateutf8trans.php CODEPOINT STRING...\n");
-    fwrite(STDOUT, "       php batch/updateutf8trans.php -f UnicodeData.txt\n");
-    fwrite(STDOUT, "       php batch/updateutf8trans.php -t [STRING...] [-o OUTPUTFILE]\n");
-    exit(0);
+if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
+    define("HOTCRP_NOINIT", 1);
+    require_once(dirname(__DIR__) . "/src/init.php");
+    require_once(dirname(__DIR__) . "/lib/unicodehelper.php");
+    exit(UpdateUTF8Trans_Batch::make_args($argv)->run());
 }
 
-require_once(SiteLoader::$root . "/lib/unicodehelper.php");
-
-function quote_key($k) {
-    if (strlen($k) == 2) {
-        return sprintf("\\x%02X\\x%02X", ord($k[0]), ord($k[1]));
-    } else {
-        return sprintf("\\x%02X\\x%02X\\x%02X", ord($k[0]), ord($k[1]), ord($k[2]));;
-    }
-}
-
-function numeric_to_utf8($x, $base = 10) {
-    $x = is_int($x) ? $x : intval($x, $base);
-    if ($x < 0x110000) {
-        return UnicodeHelper::utf8_chr($x);
-    } else {
-        return "";
-    }
-}
-
-
-class Batch_UpdateUTF8Trans {
-    const OUTL2 = 2;
-    const OUTL3 = 3;
+class UpdateUTF8Trans_Batch {
+    /** @var bool */
+    public $verbose;
+    /** @var bool */
+    public $unparse;
+    /** @var bool */
+    public $time;
+    /** @var ?string */
+    public $file;
+    /** @var list<string> */
+    public $arg;
+    /** @var ?string */
+    public $output;
 
     /** @var array<2|3,array<string,string>> */
     public $trans = [2 => [], 3 => []];
 
-    function assign_it($sin, $sout, $override, $description = false) {
+    const OUTL2 = 2;
+    const OUTL3 = 3;
+
+    function __construct($arg) {
+        $this->verbose = isset($arg["verbose"]);
+        $this->unparse = isset($arg["unparse"]);
+        $this->time = isset($arg["time"]);
+        $this->file = $arg["file"] ?? null;
+        $this->output = $arg["output"] ?? null;
+        $this->arg = $arg["_"];
+    }
+
+    /** @param string $k
+     * @return string */
+    static function quote_key($k) {
+        if (strlen($k) == 2) {
+            return sprintf("\\x%02X\\x%02X", ord($k[0]), ord($k[1]));
+        } else {
+            return sprintf("\\x%02X\\x%02X\\x%02X", ord($k[0]), ord($k[1]), ord($k[2]));;
+        }
+    }
+
+    /** @param int|string $x
+     * @param int $base
+     * @return string */
+    static function numeric_to_utf8($x, $base = 10) {
+        $x = is_int($x) ? $x : intval($x, $base);
+        if ($x < 0x110000) {
+            return UnicodeHelper::utf8_chr($x);
+        } else {
+            return "";
+        }
+    }
+
+    /** @param int|string $sin
+     * @param int|string $sout
+     * @param bool $override
+     * @param ?string $description */
+    function assign_it($sin, $sout, $override, $description = null) {
         if (is_int($sin)) {
             $sin = UnicodeHelper::utf8_chr($sin);
         }
@@ -70,20 +97,19 @@ class Batch_UpdateUTF8Trans {
         }
     }
 
-    function run_time($arg) {
-        if (isset($arg["f"]) || isset($arg["file"])) {
-            $filename = $arg["f"] ?? $arg["file"] ?? "";
-            if ($filename === "-") {
+    /** @return int */
+    function run_time() {
+        if ($this->file !== null) {
+            if ($this->file === "-") {
                 $text = stream_get_contents(STDIN);
             } else {
-                $text = file_get_contents($filename);
+                $text = file_get_contents($this->file);
             }
             if ($text === false) {
-                fwrite(STDERR, "$filename: Cannot read\n");
-                exit(1);
+                throw error_get_last_as_exception($this->file);
             }
-        } else if (!empty($arg["_"])) {
-            $text = join(" ", $arg["_"]) . "\n";
+        } else if (!empty($this->arg)) {
+            $text = join(" ", $this->arg) . "\n";
         } else {
             $text = stream_get_contents(STDIN);
         }
@@ -96,15 +122,14 @@ class Batch_UpdateUTF8Trans {
         }
         $endt = microtime(true);
 
-        if (isset($arg["o"]) || isset($arg["output"])) {
+        if ($this->output !== null) {
             if (str_starts_with($textlet, "\xEF\xBB\xBF")) {
                 $textlet = substr($textlet, 3);
             }
-            $filename = $arg["o"] ?? $arg["output"] ?? null;
-            if ($filename === "-") {
+            if ($this->output === "-") {
                 fwrite(STDOUT, $textlet);
             } else {
-                file_put_contents($filename, $textlet);
+                file_put_contents($this->output, $textlet);
             }
         }
 
@@ -129,16 +154,16 @@ class Batch_UpdateUTF8Trans {
         }
     }
 
-    function parse_file($filename, $unparse, $verbose) {
+    /** @return int */
+    function parse_file() {
         $ignore_latin = [0x212B /* ANGSTROM SIGN */ => true];
-        if ($filename === "-") {
+        if ($this->file === "-") {
             $unidata = stream_get_contents(STDIN);
         } else {
-            $unidata = file_get_contents($filename);
+            $unidata = file_get_contents($this->file);
         }
         if ($unidata === false) {
-            fwrite(STDERR, "$filename: Cannot read\n");
-            return 1;
+            throw error_get_last_as_exception($this->file);
         }
         foreach (explode("\n", $unidata) as $line) {
             $line = rtrim($line);
@@ -150,10 +175,10 @@ class Batch_UpdateUTF8Trans {
                 continue;
             }
             $c = intval($uc[0], 16);
-            $ch = numeric_to_utf8($c);
-            if ($unparse) {
+            $ch = self::numeric_to_utf8($c);
+            if ($this->unparse) {
                 if (isset($this->trans[strlen($ch)][$ch])) {
-                    fwrite(STDOUT, "U+$uc[0];" . quote_key($ch) . ";$uc[1] -> " . $this->trans[strlen($ch)][$ch] . "\n");
+                    fwrite(STDOUT, "U+$uc[0];" . self::quote_key($ch) . ";$uc[1] -> " . $this->trans[strlen($ch)][$ch] . "\n");
                 }
             } else if ($uc[2][0] === "M") {
                 if ($c < 0x363) {
@@ -182,13 +207,13 @@ class Batch_UpdateUTF8Trans {
                     && !empty($latin)
                     && count($latinmark) === count($all)) {
                     $this->assign_it($c, join("", $latin), false, $uc[1]);
-                } else if ($verbose) {
+                } else if ($this->verbose) {
                     fwrite(STDERR, "ignoring $ch U+{$uc[0]};{$uc[1]};{$uc[2]};{$uc[5]}\n");
                 }
             } else if (str_starts_with($uc[1], "LATIN ") && $c > 127) {
                 if (preg_match('{\ALATIN (SMALL CAPITAL|CAPITAL|SMALL) LETTER ([A-Z])(?:| WITH HOOK| WITH STROKE)\z}', $uc[1], $m) && $c <= 0x181) {
                     $this->assign_it($c, $m[1] === "SMALL" ? strtolower($m[2]) : $m[2], false, $uc[1]);
-                } else if ($verbose && !isset($this->trans[strlen($ch)][$ch])) {
+                } else if ($this->verbose && !isset($this->trans[strlen($ch)][$ch])) {
                     fwrite(STDERR, "ignoring $ch U+{$uc[0]};{$uc[1]};{$uc[2]};{$uc[5]}\n");
                 }
             }
@@ -196,28 +221,25 @@ class Batch_UpdateUTF8Trans {
         return 0;
     }
 
-    function run($arg) {
-        $verbose = isset($arg["V"]) || isset($arg["verbose"]);
-        $unparse = isset($arg["u"]) || isset($arg["unparse"]);
-        if (isset($arg["t"]) || isset($arg["time"])) {
-            return $this->run_time($arg);
+    /** @return int */
+    function run() {
+        if ($this->time) {
+            return $this->run_time();
         }
 
         $this->parse_utf8_alpha_trans();
-
-        if (isset($arg["f"]) || isset($arg["file"])) {
-            $filename = $arg["f"] ?? $arg["file"] ?? null;
-            if (($status = $this->parse_file($filename, $unparse, $verbose))
-                || $unparse) {
+        if ($this->file !== null) {
+            if (($status = $this->parse_file())
+                || $this->unparse) {
                 return $status;
             }
         }
 
-        for ($i = 0; $i < count($arg["_"]); $i += 2) {
-            $sin = $arg["_"][$i];
-            $sout = trim($arg["_"][$i + 1] ?? "");
+        for ($i = 0; $i < count($this->arg); $i += 2) {
+            $sin = $this->arg[$i];
+            $sout = trim($this->arg[$i + 1] ?? "");
             if ($sin !== "" && is_numeric($sin)) {
-                $sin = numeric_to_utf8($sin, 0);
+                $sin = self::numeric_to_utf8($sin, 0);
             }
             $this->assign_it($sin, $sout, true);
         }
@@ -230,20 +252,38 @@ class Batch_UpdateUTF8Trans {
 
         $m = $n = "";
         foreach ($this->trans[2] as $k => $v) {
-            $m .= quote_key($k);
+            $m .= self::quote_key($k);
             $n .= addcslashes(substr($v . "   ", 0, self::OUTL2), "\\\"");
         }
         fwrite(STDOUT, "const UTF8_ALPHA_TRANS_2 = \"$m\";\n\nconst UTF8_ALPHA_TRANS_2_OUT = \"$n\";\n\n");
 
         $m = $n = "";
         foreach ($this->trans[3] as $k => $v) {
-            $m .= quote_key($k);
+            $m .= self::quote_key($k);
             $n .= addcslashes(substr($v . "   ", 0, self::OUTL3), "\\\"");
         }
         fwrite(STDOUT, "const UTF8_ALPHA_TRANS_3 = \"$m\";\n\nconst UTF8_ALPHA_TRANS_3_OUT = \"$n\";\n\n");
 
         return 0;
     }
-}
 
-exit((new Batch_UpdateUTF8Trans)->run($arg));
+    /** @param list<string> $argv
+     * @return UpdateUTF8Trans_Batch */
+    static function make_args($argv) {
+        $arg = (new Getopt)->long(
+            "help,h !",
+            "file:,f: =FILE Read UnicodeData.txt from FILE",
+            "time,t",
+            "output,o =OUTPUTFILE",
+            "unparse,u",
+            "verbose,V Be verbose"
+        )->description("Update or query HotCRP’s built-in UTF8 translations.
+Usage: php batch/updateutf8trans.php {CODEPOINT STRING}...
+       php batch/updateutf8trans.php [-u] -f UnicodeData.txt
+       php batch/updateutf8trans.php -t [STRING...] [-o OUTPUTFILE]")
+         ->helpopt("help")
+         ->parse($argv);
+
+        return new UpdateUTF8Trans_Batch($arg);
+    }
+}

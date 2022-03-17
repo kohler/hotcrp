@@ -90,8 +90,11 @@ class Contact {
     /** @var false|null|Contact */
     private $_cdb_user = false;
 
-    public $activity_at = false;
+    /** @var ?int */
+    public $activity_at;
+    /** @var int */
     private $lastLogin = 0;
+    /** @var int */
     private $updateTime = 0;
     private $data;
     /** @var ?object */
@@ -334,11 +337,11 @@ class Contact {
                     }
                 }
             }
-            if (!$this->activity_at && $this->lastLogin) {
-                $this->activity_at = $this->lastLogin;
-            }
         }
 
+        if ($this->activity_at === null && $this->lastLogin !== 0) {
+            $this->activity_at = (int) $this->lastLogin;
+        }
         $this->_cdb_user = false;
     }
 

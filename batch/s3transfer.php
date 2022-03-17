@@ -1,83 +1,118 @@
 <?php
+// s3transfer.php -- HotCRP maintenance script
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-$arg = getopt("hakm:n:", array("help", "active", "kill", "name:", "match:"));
-if (isset($arg["h"]) || isset($arg["help"])) {
-    fwrite(STDOUT, "Usage: php batch/s3transfer.php [--active] [--kill] [-m MATCH]\n");
-    exit(0);
+if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
+    define("HOTCRP_NOINIT", 1);
+    require_once(dirname(__DIR__) . "/src/init.php");
+    exit(S3Transfer_Batch::make_args($argv)->run());
 }
 
-require_once(dirname(__DIR__) . "/src/init.php");
+class S3Transfer_Batch {
+    /** @var Conf */
+    public $conf;
+    /** @var bool */
+    public $active;
+    /** @var bool */
+    public $kill;
+    /** @var string */
+    public $match;
 
-$active = false;
-if (isset($arg["a"]) || isset($arg["active"])) {
-    $active = DocumentInfo::active_document_map($Conf);
-}
-$kill = isset($arg["k"]) || isset($arg["kill"]);
-$match = false;
-if (isset($arg["m"]) || isset($arg["match"])) {
-    $match = new DocumentHashMatcher(isset($arg["m"]) ? $arg["m"] : $arg["match"]);
-}
-
-if (!$Conf->setting_data("s3_bucket")) {
-    fwrite(STDERR, "* S3 is not configured for this conference\n");
-    exit(1);
-}
-
-$result = $Conf->qe_raw("select paperStorageId, sha1 from PaperStorage where paperStorageId>1");
-$sids = array();
-while (($row = $result->fetch_row())) {
-    if (!$match || $match->test_hash(Filer::hash_as_text($row[1])))
-        $sids[] = (int) $row[0];
-}
-Dbl::free($result);
-
-Filer::$no_touch = true;
-$failures = 0;
-foreach ($sids as $sid) {
-    if ($active !== false && !isset($active[$sid])) {
-        continue;
+    function __construct(Conf $conf, $arg) {
+        $this->conf = $conf;
+        $this->active = isset($arg["active"]);
+        $this->kill = isset($arg["kill"]);
+        $this->match = $arg["match"] ?? "";
     }
 
-    $result = $Conf->qe_raw("select paperStorageId, paperId, timestamp, mimetype,
-        compression, sha1, documentType, filename, infoJson, paper
-        from PaperStorage where paperStorageId=$sid");
-    $doc = DocumentInfo::fetch($result, $Conf);
-    Dbl::free($result);
-    if ($doc->content === null && !$doc->load_docstore()) {
-        continue;
-    }
-    $front = "[" . $Conf->unparse_time_log($doc->timestamp) . "] "
-        . $doc->export_filename(DocumentInfo::ANY_MEMBER_FILENAME) . " ($sid)";
+    /** @return int */
+    function run() {
+        $activedocs = $this->active ? DocumentInfo::active_document_map($this->conf) : null;
+        $matcher = $this->match !== "" ? new DocumentHashMatcher($this->match) : null;
 
-    $chash = $doc->content_binary_hash($doc->binary_hash());
-    if ($chash !== $doc->binary_hash()) {
-        $saved = $checked = false;
-        error_log("$front: S3 upload cancelled: data claims checksum " . $doc->text_hash()
-                  . ", has checksum " . Filer::hash_as_text($chash));
-    } else {
-        $saved = $checked = $doc->check_s3();
-        if (!$saved) {
-            $saved = $doc->store_s3();
+        $result = $this->conf->qe_raw("select paperStorageId, sha1 from PaperStorage where paperStorageId>1");
+        $dids = [];
+        while (($row = $result->fetch_row())) {
+            if (!$matcher || $matcher->test_hash(Filer::hash_as_text($row[1])))
+                $dids[] = (int) $row[0];
         }
-        if (!$saved) {
-            usleep(500000);
-            $saved = $doc->store_s3();
+        Dbl::free($result);
+
+        Filer::$no_touch = true;
+        $failures = 0;
+        foreach ($dids as $did) {
+            if ($activedocs !== null && !isset($activedocs[$did])) {
+                continue;
+            }
+
+            $result = $this->conf->qe_raw("select paperStorageId, paperId, timestamp, mimetype,
+                compression, sha1, documentType, filename, infoJson, paper
+                from PaperStorage where paperStorageId={$did}");
+            $doc = DocumentInfo::fetch($result, $this->conf);
+            Dbl::free($result);
+            if ($doc->content === null && !$doc->load_docstore()) {
+                continue;
+            }
+
+            $front = "[" . $this->conf->unparse_time_log($doc->timestamp) . "] "
+                . $doc->export_filename(DocumentInfo::ANY_MEMBER_FILENAME) . " ({$did})";
+
+            $chash = $doc->content_binary_hash($doc->binary_hash());
+            if ($chash !== $doc->binary_hash()) {
+                $saved = $checked = false;
+                error_log("$front: S3 upload cancelled: data claims checksum " . $doc->text_hash()
+                          . ", has checksum " . Filer::hash_as_text($chash));
+            } else {
+                $saved = $checked = $doc->check_s3();
+                if (!$saved) {
+                    $saved = $doc->store_s3();
+                }
+                if (!$saved) {
+                    usleep(500000);
+                    $saved = $doc->store_s3();
+                }
+            }
+
+            if ($checked) {
+                fwrite(STDOUT, "$front: " . $doc->s3_key() . " exists\n");
+            } else if ($saved) {
+                fwrite(STDOUT, "$front: " . $doc->s3_key() . " saved\n");
+            } else {
+                fwrite(STDOUT, "$front: SAVE FAILED\n");
+                ++$failures;
+            }
+            if ($saved && $this->kill) {
+                $this->conf->qe_raw("update PaperStorage set paper=null where paperStorageId={$did}");
+            }
+        }
+        if ($failures) {
+            fwrite(STDERR, "Failed to save " . plural($failures, "document") . ".\n");
+            return 1;
+        } else {
+            return 0;
         }
     }
 
-    if ($checked) {
-        fwrite(STDOUT, "$front: " . $doc->s3_key() . " exists\n");
-    } else if ($saved) {
-        fwrite(STDOUT, "$front: " . $doc->s3_key() . " saved\n");
-    } else {
-        fwrite(STDOUT, "$front: SAVE FAILED\n");
-        ++$failures;
+    /** @param list<string> $argv
+     * @return S3Transfer_Batch */
+    static function make_args($argv) {
+        $arg = (new Getopt)->long(
+            "help,h !",
+            "name:,n: !",
+            "config: !",
+            "active,a Only transfer active documents (current versions)",
+            "kill,k Remove transferred documents from database",
+            "match:,m: =MATCH Transfer documents matching MATCH"
+        )->description("Transfer submissions from local HotCRP storage to S3.
+Usage: php batch/s3transfer.php [--active] [--kill] [-m MATCH]")
+         ->helpopt("help")
+         ->maxarg(0)
+         ->parse($argv);
+
+        $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
+        if (!$conf->setting_data("s3_bucket")) {
+            throw new RuntimeException("S3 is not configured for this conference");
+        }
+        return new S3Transfer_Batch($conf, $arg);
     }
-    if ($saved && $kill) {
-        $Conf->qe_raw("update PaperStorage set paper=null where paperStorageId=$sid");
-    }
-}
-if ($failures) {
-    fwrite(STDERR, "Failed to save " . plural($failures, "document") . ".\n");
-    exit(1);
 }

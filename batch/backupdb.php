@@ -5,7 +5,7 @@
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     define("HOTCRP_NOINIT", 1);
     require_once(dirname(__DIR__) . "/src/init.php");
-    BackupDB_Batch::make_args($argv)->run();
+    exit(BackupDB_Batch::make_args($argv)->run());
 }
 
 class BackupDB_Batch {
@@ -221,6 +221,7 @@ class BackupDB_Batch {
         }
     }
 
+    /** @return int */
     function run() {
         if (!$this->in) {
             $cmd = $this->mysqlcmd("mysqldump", "");
@@ -253,6 +254,7 @@ class BackupDB_Batch {
         if ($proc) {
             proc_close($proc);
         }
+        return 0;
     }
 
     /** @return BackupDB_Batch */

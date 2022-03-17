@@ -1540,6 +1540,7 @@ class DocumentInfo implements JsonSerializable {
         }
     }
 
+    /** @return array<int,true> */
     static function active_document_map(Conf $conf) {
         $q = ["select paperStorageId from Paper where paperStorageId>1",
             "select finalPaperStorageId from Paper where finalPaperStorageId>1",

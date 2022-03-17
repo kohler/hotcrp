@@ -5,7 +5,7 @@
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     define("HOTCRP_NOINIT", 1);
     require_once(dirname(__DIR__) . "/src/init.php");
-    Assign_Batch::make_args($argv)->run();
+    exit(Assign_Batch::make_args($argv)->run());
 }
 
 class Assign_Batch {
@@ -31,6 +31,7 @@ class Assign_Batch {
         $this->text = convert_to_utf8($this->text);
     }
 
+    /** @return int */
     function run() {
         $assignset = new AssignmentSet($this->user, true);
         $assignset->parse($this->text, $this->filename);
@@ -48,13 +49,14 @@ class Assign_Batch {
                 . join(", ", $assignset->assigned_types())
                 . " to " . pluralx($pids, "paper") . " #" . $pidt . "\n");
         }
+        return 0;
     }
 
     /** @return Assign_Batch */
     static function make_args($argv) {
         $arg = (new Getopt)->long(
             "name:,n: !",
-            "config:,c: !",
+            "config: !",
             "dry-run,d Do not perform assignment; output CSV instead.",
             "help,h !"
         )->description("Perform HotCRP bulk assignments specified in the input CSV file.

@@ -1,37 +1,71 @@
 <?php
-require_once(dirname(__DIR__) . "/src/init.php");
+// killinactivedoc.php -- HotCRP paper export script
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-$arg = getopt("hfn:", array("help", "force", "name:"));
-if (isset($arg["h"]) || isset($arg["help"])) {
-    fwrite(STDOUT, "Usage: php batch/killinactivedoc.php [--force]\n");
-    exit(0);
+if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
+    define("HOTCRP_NOINIT", 1);
+    require_once(dirname(__DIR__) . "/src/init.php");
+    exit(KillInactiveDoc_Batch::make_args($argv)->run());
 }
 
-$didmap = DocumentInfo::active_document_map($Conf);
-$force = isset($arg["f"]) || isset($arg["force"]);
+class KillInactiveDoc_Batch {
+    /** @var Conf */
+    public $conf;
+    /** @var bool */
+    public $force;
 
-$result = $Conf->qe_raw("select paperStorageId, paperId, timestamp, mimetype,
-        compression, sha1, documentType, filename, infoJson
-        from PaperStorage where paperStorageId not in (" . join(",", array_keys($didmap)) . ")
-        and paper is not null and paperStorageId>1 order by timestamp");
-$killable = array();
-while (($doc = DocumentInfo::fetch($result, $Conf))) {
-    $killable[$doc->paperStorageId] = "[" . $Conf->unparse_time_log($doc->timestamp)
-        . "] " . $doc->export_filename() . " ($doc->paperStorageId)";
-}
-
-if (count($killable)) {
-    fwrite(STDOUT, join("\n", $killable) . "\n");
-    if (!$force) {
-        fwrite(STDOUT, "\nKill " . plural(count($killable), "document") . "? (y/n) ");
-        $x = fread(STDIN, 100);
-        if (!preg_match('/\A[yY]/', $x)) {
-            die("* Exiting\n");
-        }
+    function __construct(Conf $conf, $arg) {
+        $this->conf = $conf;
+        $this->force = isset($arg["force"]);
     }
-    $Conf->qe_raw("update PaperStorage set paper=NULL where paperStorageId in ("
-        . join(",", array_keys($killable)) . ")");
-    fwrite(STDOUT, count($killable) . " documents killed.\n");
-} else {
-    fwrite(STDOUT, "Nothing to do\n");
+
+    /** @return int */
+    function run() {
+        $didmap = DocumentInfo::active_document_map($this->conf);
+        $result = $this->conf->qe_raw("select paperStorageId, paperId, timestamp, mimetype,
+                compression, sha1, documentType, filename, infoJson
+                from PaperStorage where paperStorageId not in (" . join(",", array_keys($didmap)) . ")
+                and paper is not null and paperStorageId>1 order by timestamp");
+        $killable = [];
+        while (($doc = DocumentInfo::fetch($result, $this->conf))) {
+            $killable[$doc->paperStorageId] = "[" . $this->conf->unparse_time_log($doc->timestamp)
+                . "] " . $doc->export_filename() . " ({$doc->paperStorageId})";
+        }
+
+        if (count($killable)) {
+            fwrite(STDOUT, join("\n", $killable) . "\n");
+            if (!$this->force) {
+                fwrite(STDERR, "\nKill " . plural(count($killable), "document") . "? (y/n) ");
+                $x = fread(STDIN, 100);
+                if (!preg_match('/\A[yY]/', $x)) {
+                    fwrite(STDERR, "Exiting\n");
+                    return 1;
+                }
+            }
+            $this->conf->qe_raw("update PaperStorage set paper=NULL where paperStorageId in ("
+                . join(",", array_keys($killable)) . ")");
+            fwrite(STDOUT, plural(count($killable), "document") . " killed.\n");
+        } else {
+            fwrite(STDOUT, "Nothing to do\n");
+        }
+        return 0;
+    }
+
+    /** @param list<string> $argv
+     * @return KillInactiveDoc_Batch */
+    static function make_args($argv) {
+        $arg = (new Getopt)->long(
+            "name:,n: !",
+            "config: !",
+            "help,h !",
+            "force,f"
+        )->description("Remove inactive documents from HotCRP database.
+Usage: php batch/killinactivedoc.php [-f]")
+         ->helpopt("help")
+         ->maxarg(0)
+         ->parse($argv);
+
+        $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
+        return new KillInactiveDoc_Batch($conf, $arg);
+    }
 }

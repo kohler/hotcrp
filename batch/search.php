@@ -1,11 +1,11 @@
 <?php
-// search.php -- HotCRP batch search script
+// search.php -- HotCRP command-line search script
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     define("HOTCRP_NOINIT", 1);
     require_once(dirname(__DIR__) . "/src/init.php");
-    Search_Batch::make_args($argv)->run();
+    exit(Search_Batch::make_args($argv)->run());
 }
 
 class Search_Batch {
@@ -37,6 +37,7 @@ class Search_Batch {
         }
     }
 
+    /** @return int */
     function run() {
         $pl = new PaperList("empty", $this->search);
         $pl->set_view("pid", true);
@@ -63,6 +64,7 @@ class Search_Batch {
             }
             fwrite(STDOUT, $csv->unparse());
         }
+        return 0;
     }
 
     static function help() {
@@ -81,8 +83,8 @@ Options include:
     /** @return Search_Batch */
     static function make_args($argv) {
         $arg = (new Getopt)->long(
-            "config:,c:",
             "name:,n:",
+            "config:",
             "t:,type:",
             "f[],field[],show[]",
             "N,sitename",

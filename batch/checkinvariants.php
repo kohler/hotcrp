@@ -5,7 +5,7 @@
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     define("HOTCRP_NOINIT", 1);
     require_once(dirname(__DIR__) . "/src/init.php");
-    CheckInvariants_Batch::make_args($argv)->run();
+    exit(CheckInvariants_Batch::make_args($argv)->run());
 }
 
 class CheckInvariants_Batch {
@@ -19,12 +19,14 @@ class CheckInvariants_Batch {
         $this->fix_autosearch = isset($arg["fix-autosearch"]);
     }
 
+    /** @return int */
     function run() {
         $ic = new ConfInvariants($this->conf);
         $ic->exec_all();
         if (isset($ic->problems["autosearch"]) && $this->fix_autosearch) {
             $this->conf->update_automatic_tags();
         }
+        return 0;
     }
 
     /** @return CheckInvariants_Batch */

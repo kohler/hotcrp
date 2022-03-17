@@ -5,7 +5,7 @@
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     define("HOTCRP_NOINIT", 1);
     require_once(dirname(__DIR__) . "/src/init.php");
-    PaperJson_Batch::make_args($argv)->run();
+    exit(PaperJson_Batch::make_args($argv)->run());
 }
 
 class PaperJson_Batch {
@@ -30,6 +30,7 @@ class PaperJson_Batch {
         $this->single = isset($arg["1"]);
     }
 
+    /** @return int */
     function run() {
         $conf = $this->search->conf;
         if ($this->search->has_problem()) {
@@ -71,6 +72,7 @@ class PaperJson_Batch {
         } else {
             fwrite(STDOUT, json_encode($apj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n");
         }
+        return 0;
     }
 
     static function help() {

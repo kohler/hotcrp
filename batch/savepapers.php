@@ -1,5 +1,5 @@
 <?php
-// savepapers.php -- HotCRP paper modification script
+// savepapers.php -- HotCRP command-line paper modification script
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {

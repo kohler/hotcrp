@@ -1,5 +1,5 @@
 <?php
-// saveusers.php -- HotCRP maintenance script
+// saveusers.php -- HotCRP command-line user modification script
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
@@ -133,7 +133,7 @@ class SaveUsers_Batch {
     static function make_args($argv) {
         $go = (new Getopt)->long(
             "name:,n: !",
-            "config:,c: !",
+            "config: !",
             "help,h !",
             "user:,u: =EMAIL Create or modify user EMAIL.",
             "roles:,r: Set roles (`-u` only).",
