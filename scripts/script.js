@@ -5001,7 +5001,7 @@ function visibility_change() {
     if (would_auvis) {
         vis.firstChild.textContent = "Author discussion";
     } else {
-        vis.firstChild.textContent = "Author discussion*";
+        vis.firstChild.textContent = "Future author discussion";
     }
     if (hint) {
         var m = [], elt;
