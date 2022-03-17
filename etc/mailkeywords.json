@@ -39,7 +39,6 @@
     {"name": "REVIEWDEADLINE", "function": "*kw_deadline", "global": true, "is_review": true},
     {"name": "NUMSUBMITTED", "function": "*kw_statistic", "global": true, "statindex": 0},
     {"name": "NUMACCEPTED", "function": "*kw_statistic", "global": true, "statindex": 1},
-    {"name": "CONTACTDBDESCRIPTION", "function": "*kw_contactdbdescription", "global": true},
 
     {"name": "TITLE", "function": "*kw_title", "expand_if": "*kw_haspaper"},
     {"name": "TITLEHINT", "function": "*kw_titlehint", "expand_if": "*kw_haspaper"},

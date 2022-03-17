@@ -306,9 +306,6 @@ class HotCRPMailer extends Mailer {
         }
         return $this->_statistics[$uf->statindex];
     }
-    function kw_contactdbdescription() {
-        return $this->conf->opt("contactdb_description") ? : "HotCRP";
-    }
     function kw_reviewercontact($args, $isbool, $uf) {
         if ($uf->match_data[1] === "REVIEWER") {
             if (($x = $this->_expand_reviewer($uf->match_data[2], $isbool)) !== false) {
