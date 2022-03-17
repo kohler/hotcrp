@@ -146,6 +146,7 @@ class Conf {
     private $_ims;
     /** @var ?list<string> */
     private $_ims_override_names;
+    /** @var ?array<int,TextFormat> */
     private $_format_info;
     /** @var bool */
     private $_updating_automatic_tags = false;
@@ -2076,7 +2077,8 @@ class Conf {
     }
 
 
-    /** @return ?TextFormat */
+    /** @param ?int $format
+     * @return ?TextFormat */
     function format_info($format) {
         if ($this->_format_info === null) {
             $this->_format_info = [];
@@ -2091,10 +2093,7 @@ class Conf {
                 $fi = new TextFormat($format, $fi);
             }
         }
-        if ($format === null) {
-            $format = $this->default_format;
-        }
-        return $this->_format_info[$format] ?? null;
+        return $this->_format_info[$format ?? $this->default_format] ?? null;
     }
 
     /** @param ?int $format

@@ -350,11 +350,12 @@ abstract class ReviewField implements JsonSerializable {
         return $fval;
     }
 
-    /** @param string $control_class
-     * @param ?string $id
-     * @param string $label_for */
-    protected function print_web_edit_open($control_class, $id, $label_for) {
-        echo '<div class="rf rfe" data-rf="', $this->uid(), '"><h3 class="', $control_class;
+    /** @param ?string $id
+     * @param string $label_for
+     * @param int $status */
+    protected function print_web_edit_open($id, $label_for, $status) {
+        echo '<div class="rf rfe" data-rf="', $this->uid(),
+            '"><h3 class="', MessageSet::status_class($status, "rfehead");
         if ($id !== null) {
             echo '" id="', $id;
         }
@@ -382,10 +383,10 @@ abstract class ReviewField implements JsonSerializable {
         }
     }
 
-    /** @param string $control_class
-     * @param int|string $fv
-     * @param int|string $reqv */
-    abstract function print_web_edit($control_class, $fv, $reqv);
+    /** @param int|string $fv
+     * @param int|string $reqv
+     * @param array{format:?TextFormat,status:int} $args */
+    abstract function print_web_edit($fv, $reqv, $args);
 
     /** @param list<string> &$t */
     protected function unparse_text_field_header(&$t, $args) {
@@ -438,7 +439,7 @@ abstract class ReviewField implements JsonSerializable {
 
     /** @param list<string> &$t
      * @param string $fv
-     * @param array{format_description:string,include_presence:bool} $args */
+     * @param array{format:?TextFormat,include_presence:bool} $args */
     abstract function unparse_offline_field(&$t, $fv, $args);
 }
 
@@ -780,9 +781,9 @@ class Score_ReviewField extends ReviewField {
         echo '</label>';
     }
 
-    function print_web_edit($control_class, $fv, $reqv) {
+    function print_web_edit($fv, $reqv, $args) {
         $for = $reqv || !$this->required ? "{$this->id}_{$reqv}" : "{$this->id}_" . key($this->options);
-        $this->print_web_edit_open($control_class, $this->id, $for);
+        $this->print_web_edit_open($this->id, $for, $args["status"]);
         echo '<div class="revev">';
         foreach ($this->options as $num => $text) {
             $this->print_option($num, $fv, $reqv);
@@ -867,12 +868,12 @@ class Text_ReviewField extends ReviewField {
         return $text;
     }
 
-    /** @param string $control_class
-     * @param int|string $fv
-     * @param int|string $reqv */
-    function print_web_edit($control_class, $fv, $reqv) {
-        $this->print_web_edit_open($control_class, null, $this->id);
+    function print_web_edit($fv, $reqv, $args) {
+        $this->print_web_edit_open(null, $this->id, $args["status"]);
         echo '<div class="revev">';
+        if (($fi = $args["format"])) {
+            echo $fi->description_preview_html();
+        }
         $opt = ["class" => "w-text need-autogrow need-suggest suggest-emoji", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->id];
         if ($fv !== $reqv) {
             $opt["data-default-value"] = (string) $reqv;
@@ -880,22 +881,17 @@ class Text_ReviewField extends ReviewField {
         echo Ht::textarea($this->id, (string) $fv, $opt), '</div></div>';
     }
 
-    /** @param list<string> &$t
-     * @param string $fv
-     * @param array{flowed:bool} $args */
     function unparse_text_field(&$t, $fv, $args) {
         $this->unparse_text_field_header($t, $args);
         $t[] = $fv;
         $t[] = "\n";
     }
 
-    /** @param list<string> &$t
-     * @param string $fv
-     * @param array{format_description:string,include_presence:bool} $args */
     function unparse_offline_field(&$t, $fv, $args) {
         $this->unparse_offline_field_header($t, $args);
-        if (($args["format_description"] ?? "") !== "") {
-            $t[] = prefix_word_wrap("==-== ", $args["format_description"], "==-== ");
+        if (($fi = $args["format"])
+            && ($desc = $fi->description_text()) !== "") {
+            $t[] = prefix_word_wrap("==-== ", $desc, "==-== ");
         }
         $t[] = "\n";
         $t[] = preg_replace('/^(?===[-+*]==)/m', '\\', $fv ?? "");
@@ -1093,20 +1089,9 @@ class ReviewForm implements JsonSerializable {
     }
 
 
-    private function format_info($rrow) {
-        $format = $rrow ? $rrow->reviewFormat : null;
-        if ($format === null) {
-            $format = $this->conf->default_format;
-        }
-        return $format ? $this->conf->format_info($format) : null;
-    }
-
     private function print_web_edit(PaperInfo $prow, ReviewInfo $rrow, Contact $contact,
                                     ReviewValues $rvalues = null) {
-        $format_description = "";
-        if (($fi = $this->format_info($rrow))) {
-            $format_description = $fi->description_preview_html();
-        }
+        $fi = $this->conf->format_info($rrow ? $rrow->reviewFormat : null);
         echo '<div class="rve">';
         foreach ($rrow->viewable_fields($contact) as $f) {
             $rval = $f->normalize_value($f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_STRING));
@@ -1115,8 +1100,9 @@ class ReviewForm implements JsonSerializable {
             } else {
                 $fval = $rval;
             }
-            $cclass = $rvalues ? $rvalues->control_class($f->id, "rfehead") : "rfehead";
-            $f->print_web_edit($cclass, $fval, $rval);
+            $f->print_web_edit($fval, $rval, [
+                "format" => $fi, "status" => $rvalues ? $rvalues->problem_status_at($f->id) : 0
+            ]);
         }
         echo "</div>\n";
     }
@@ -1269,10 +1255,9 @@ $blind\n";
             }
         }
 
-        $fi = $this->format_info($rrow);
         $args = [
             "include_presence" => $prow->paperId <= 0,
-            "format_description" => $fi ? $fi->description_text() : ""
+            "format" => $this->conf->format_info($rrow ? $rrow->reviewFormat : null)
         ];
         foreach ($this->forder as $fid => $f) {
             if ($f->view_score > $revViewScore
