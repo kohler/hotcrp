@@ -3,7 +3,6 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
-    define("HOTCRP_NOINIT", 1);
     require_once(dirname(__DIR__) . "/src/init.php");
     require_once(dirname(__DIR__) . "/lib/unicodehelper.php");
     exit(UpdateUTF8Trans_Batch::make_args($argv)->run());

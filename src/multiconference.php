@@ -3,43 +3,23 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Multiconference {
-    /** @var ?array<string,mixed> */
-    static private $original_opt;
     /** @var array<string,?Conf> */
     static private $conf_cache;
 
     /** @param ?string $confid */
     static function init($confid = null) {
-        global $Opt, $argv;
-        assert(self::$original_opt === null);
-        self::$original_opt = $Opt;
+        global $Opt;
 
         $confid = $confid ?? $Opt["confid"] ?? null;
-        if (!$confid && PHP_SAPI === "cli") {
-            for ($i = 1; $i !== count($argv); ++$i) {
-                if ($argv[$i] === "-n" || $argv[$i] === "--name") {
-                    if (isset($argv[$i + 1]))
-                        $confid = $argv[$i + 1];
-                    break;
-                } else if (substr($argv[$i], 0, 2) === "-n") {
-                    $confid = substr($argv[$i], 2);
-                    break;
-                } else if (substr($argv[$i], 0, 7) === "--name=") {
-                    $confid = substr($argv[$i], 7);
-                    break;
-                } else if ($argv[$i] === "--") {
-                    break;
-                }
-            }
-        } else if (!$confid) {
+        if ($confid === null && PHP_SAPI !== "cli") {
             $base = Navigation::base_absolute(true);
             if (($multis = $Opt["multiconferenceAnalyzer"] ?? null)) {
                 foreach (is_array($multis) ? $multis : [$multis] as $multi) {
                     list($match, $replace) = explode(" ", $multi);
-                    if (preg_match("`\\A$match`", $base, $m)) {
+                    if (preg_match("`\\A{$match}`", $base, $m)) {
                         $confid = $replace;
                         for ($i = 1; $i < count($m); ++$i) {
-                            $confid = str_replace("\$$i", $m[$i], $confid);
+                            $confid = str_replace("\${$i}", $m[$i], $confid);
                         }
                         break;
                     }
@@ -85,12 +65,8 @@ class Multiconference {
         $save_opt = $Opt;
         '@phan-var array<string,mixed> $save_opt';
         $root = $root ?? SiteLoader::$root;
-        if ($root === SiteLoader::$root && self::$original_opt !== null) {
-            $Opt = self::$original_opt;
-        } else {
-            $Opt = [];
-            SiteLoader::read_options_file("{$root}/conf/options.php");
-        }
+        $Opt = [];
+        SiteLoader::read_options_file("{$root}/conf/options.php");
         $Opt["confid"] = $confid;
         if ($Opt["include"] ?? null) {
             SiteLoader::read_included_options();
@@ -216,7 +192,7 @@ class Multiconference {
                     $errors[] = "The “{$confid}” conference does not exist. Check your URL to make sure you spelled it correctly.";
                 }
                 if (!empty($missing)) {
-                    $errors[] = "Unable to load " . plural(count($missing), "configuration") . " " . commajoin($missing) . ".";
+                    $errors[] = "Unable to load " . pluralx(count($missing), "configuration file") . " " . commajoin($missing) . ".";
                 }
             }
         }
@@ -241,7 +217,11 @@ class Multiconference {
             if (defined("HOTCRP_TESTHARNESS")) {
                 $errors[] = "You may need to run `lib/createdb.sh -c test/options.php` to create the database.";
             }
-            error_log("Unable to connect to database " . Dbl::sanitize_dsn(Conf::$main->dsn));
+            if (($cp = Dbl::parse_connection_params($Opt))) {
+                error_log("Unable to connect to database " . $cp->sanitized_dsn());
+            } else {
+                error_log("Unable to connect to database");
+            }
         }
         self::fail(["nolink" => true], ...$errors);
     }

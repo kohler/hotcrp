@@ -113,6 +113,15 @@ class Dbl_ConnectionParams {
     /** @var ?string */
     public $name;
 
+    /** @return string */
+    function sanitized_dsn() {
+        $t = "mysql://";
+        if ($this->user || $this->password) {
+            $t .= urlencode($this->user ?? "NOUSER") . ($this->password ? ":PASSWORD@" : "@");
+        }
+        return $t . urlencode($this->host ?? "localhost") . "/" . urlencode($this->name);
+    }
+
     /** @return ?\mysqli */
     function connect() {
         assert($this->name);
@@ -173,34 +182,6 @@ class Dbl {
     /** @return bool */
     static function has_error() {
         return self::$nerrors > 0;
-    }
-
-    /** @param array $opt
-     * @return ?string */
-    static function make_dsn($opt) {
-        if (isset($opt["dsn"])) {
-            if (is_string($opt["dsn"])) {
-                return $opt["dsn"];
-            }
-        } else {
-            $name = $opt["dbName"] ?? null;
-            $user = $opt["dbUser"] ?? $name;
-            $password = $opt["dbPassword"] ?? $name;
-            $host = $opt["dbHost"] ?? "localhost";
-            if (is_string($user)
-                && is_string($password)
-                && is_string($host)
-                && is_string($name)) {
-                return "mysql://" . urlencode($user) . ":" . urlencode($password) . "@" . urlencode($host) . "/" . urlencode($name);
-            }
-        }
-        return null;
-    }
-
-    /** @param string $dsn
-     * @return string */
-    static function sanitize_dsn($dsn) {
-        return preg_replace('/\A(\w+:\/\/[^\/:]*:)[^\@\/]+([\@\/])/', '$1PASSWORD$2', $dsn);
     }
 
     /** @param array $opt
@@ -267,7 +248,8 @@ class Dbl {
     }
 
     /** @param array<string,mixed>|Dbl_ConnectionParams $opt
-     * @return array{?\mysqli,?string} */
+     * @return array{?\mysqli,?string}
+     * @deprecated */
     static function connect($opt, $noconnect = false) {
         $cp = is_array($opt) ? self::parse_connection_params($opt) : $opt;
         if (!$cp) {

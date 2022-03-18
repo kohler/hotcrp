@@ -3,7 +3,6 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
-    define("HOTCRP_NOINIT", 1);
     require_once(dirname(__DIR__) . "/src/init.php");
     exit(BackupDB_Batch::make_args($argv)->run());
 }
@@ -73,7 +72,7 @@ class BackupDB_Batch {
     function dblink() {
         if (!$this->_has_dblink) {
             $this->_has_dblink = true;
-            list($this->_dblink, $dbname) = Dbl::connect($this->connp);
+            $this->_dblink = $this->connp->connect();
         }
         return $this->_dblink;
     }
@@ -259,6 +258,7 @@ class BackupDB_Batch {
 
     /** @return BackupDB_Batch */
     static function make_args($argv) {
+        global $Opt;
         $arg = (new Getopt)->long(
             "name:,n: =CONFID Set conference ID",
             "config:,c: =FILE Set configuration file [conf/options.php]",
@@ -273,9 +273,9 @@ Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
          ->helpopt("help")
          ->parse($argv);
 
-        $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
-        $bdb = new BackupDB_Batch(Dbl::parse_connection_params($conf->opt), $arg);
-        $bdb->set_sversion($conf->sversion);
+        $Opt["__no_main"] = true;
+        initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
+        $bdb = new BackupDB_Batch(Dbl::parse_connection_params($Opt), $arg);
 
         if (isset($arg["input"])) {
             if ($arg["input"] === "-") {

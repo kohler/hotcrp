@@ -202,6 +202,7 @@ class Scorechart_Page {
         // fail if no GD support so the browser displays alt text
         if (!function_exists("imagecreate")) {
             require_once("src/init.php");
+            initialize_conf();
             Dbl::q("insert into Settings set name='__gd_required', value=1 on duplicate key update value=1");
             self::fail("503 Service Unavailable", "PHP gd support required", false);
             return;

@@ -100,7 +100,32 @@ class SiteLoader {
         return [];
     }
 
+    /** @param string $s
+     * @param array<string,string> $expansions
+     * @param int $pos
+     * @return string */
+    static function substitute($s, $expansions, $pos = 0) {
+        while (($pos = strpos($s, '${', $pos)) !== false) {
+            $rbrace = strpos($s, '}', $pos + 2);
+            if ($rbrace !== false
+                && ($key = substr($s, $pos + 2, $rbrace - $pos - 2)) !== ""
+                && array_key_exists($key, $expansions)) {
+                $value = $expansions[$key];
+                if ($value !== false && $value !== null) {
+                    $s = substr($s, 0, $pos) . $value . substr($s, $rbrace + 1);
+                    $pos += strlen($value);
+                } else {
+                    return "";
+                }
+            } else {
+                $pos += 2;
+            }
+        }
+        return $s;
+    }
+
     /** @param string|list<string> $files
+     * @param array<string,string> $expansions
      * @return list<string> */
     static function expand_includes($files, $expansions = []) {
         global $Opt;
@@ -128,17 +153,11 @@ class SiteLoader {
 
         $results = [];
         foreach ($files as $f) {
-            if (strpos((string) $f, '$') !== false) {
-                foreach ($expansions as $k => $v) {
-                    if ($v !== false && $v !== null) {
-                        $f = preg_replace("/\\\$\\{{$k}\\}|\\\${$k}\\b/", $v, $f);
-                    } else if (preg_match("/\\\$\\{{$k}\\}|\\\${$k}\\b/", $f)) {
-                        $f = "";
-                        break;
-                    }
-                }
+            $f = (string) $f;
+            if ($f !== "" && ($pos = strpos($f, '${')) !== false) {
+                $f = self::substitute($f, $expansions, $pos);
             }
-            if ((string) $f === "") {
+            if ($f === "") {
                 continue;
             }
             $matches = [];
@@ -147,7 +166,7 @@ class SiteLoader {
                 $ignore_not_found = true;
                 $f = substr($f, 1);
             }
-            if (preg_match('/[\[\]\*\?\{\}]/', $f)) {
+            if (strpbrk($f, "[]*?{}") !== false) {
                 $ignore_not_found = $globby = true;
             }
             $matches = self::expand_includes_once($f, $includepath, $globby);

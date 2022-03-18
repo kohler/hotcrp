@@ -4,12 +4,17 @@
 
 /** @return string */
 function make_session_name(Conf $conf, $n) {
-    if (($n === "" || $n === null || $n === true)
-        && ($x = $conf->opt("dbName"))) {
-        $n = $x;
+    if ($n === "" || $n === null || $n === true) {
+        $n = $conf->dbname;
     }
-    if (($x = $conf->opt("confid"))) {
-        $n = preg_replace('/\*|\$\{confid\}|\$confid\b/', $x, $n);
+    if (ctype_lower($n)) {
+        return $n;
+    }
+    if (($pos = strpos($n, '${')) !== false) {
+        $n = SiteLoader::substitute($n, [
+            "confid" => $conf->opt("confid") ?? null,
+            "siteclass" => $conf->opt("siteclass") ?? null
+        ]);
     }
     return preg_replace_callback('/[^-_A-Ya-z0-9]/', function ($m) {
         return "Z" . dechex(ord($m[0]));

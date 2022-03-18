@@ -11,6 +11,7 @@ ini_set("display_errors", "stderr");
 ini_set("assert.exception", "1");
 
 require_once(SiteLoader::find("src/init.php"));
+initialize_conf();
 
 
 // Record mail in MailChecker.

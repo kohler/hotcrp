@@ -156,7 +156,9 @@ function initialize_conf($config_file = null, $confid = null) {
     $Opt = $Opt ?? [];
     if (!($Opt["loaded"] ?? null)) {
         SiteLoader::read_main_options($config_file);
-        if ($Opt["multiconference"] ?? null) {
+        if ($confid !== null) {
+            $Opt["confid"] = $confid;
+        } else if ($Opt["multiconference"] ?? null) {
             Multiconference::init($confid);
         }
         if ($Opt["include"] ?? null) {
@@ -387,9 +389,4 @@ function initialize_request() {
         }
         $_SESSION["addrs"] = $as;
     }
-}
-
-
-if (!defined("HOTCRP_NOINIT")) {
-    initialize_conf();
 }

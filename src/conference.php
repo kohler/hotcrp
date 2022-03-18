@@ -18,9 +18,6 @@ class Conf {
     /** @var string
      * @readonly */
     public $dbname;
-    /** @var string
-     * @readonly */
-    public $dsn;
 
     /** @var array<string,int> */
     public $settings;
@@ -243,10 +240,11 @@ class Conf {
      * @param bool $connect */
     function __construct($options, $connect) {
         // unpack dsn, connect to database, load current settings
-        $this->dsn = Dbl::make_dsn($options);
-        list($this->dblink, $this->dbname) = Dbl::connect($options, !$connect);
+        if (($cp = Dbl::parse_connection_params($options))) {
+            $this->dblink = $connect ? $cp->connect() : null;
+            $this->dbname = $cp->name;
+        }
         $this->opt = $options;
-        $this->opt["dbName"] = $this->dbname;
         $this->opt["confid"] = $this->opt["confid"] ?? $this->dbname;
         $this->_paper_opts = new PaperOptionList($this);
         if ($this->dblink && !Dbl::$default_dblink) {
@@ -2628,11 +2626,12 @@ class Conf {
         if (self::$_cdb === false) {
             self::$_cdb = null;
             $opt = Conf::$main ? Conf::$main->opt : $Opt;
-            if (isset($opt["contactdbDsn"]) || isset($opt["contactdb_dsn"])) {
-                list(self::$_cdb, $dbname) = Dbl::connect([
-                    "dsn" => $opt["contactdbDsn"] ?? $opt["contactdb_dsn"],
-                    "dbSocket" => $opt["contactdbSocket"] ?? $opt["dbSocket"] ?? null
-                ]);
+            if (($dsn = $opt["contactdbDsn"] ?? null)
+                && ($cp = Dbl::parse_connection_params([
+                        "dsn" => $dsn,
+                        "dbSocket" => $opt["contactdbSocket"] ?? $opt["dbSocket"] ?? null
+                    ]))) {
+                self::$_cdb = $cp->connect();
             }
         }
         return self::$_cdb;
