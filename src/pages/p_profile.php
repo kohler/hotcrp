@@ -690,7 +690,7 @@ class Profile_Page {
             echo '</h2>';
         }
 
-        if (($this->conf->report_saved_messages() < 1 || $use_req)
+        if (($this->conf->report_saved_messages() < 1 || !$use_req)
             && $this->ustatus->has_message()) {
             $this->conf->feedback_msg($this->ustatus);
         }
