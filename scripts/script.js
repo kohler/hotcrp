@@ -24,6 +24,12 @@ if (!window.JSON || !window.JSON.parse) {
     window.JSON = {parse: $.parseJSON};
 }
 
+var __last_json_parse;
+function parse_json(s) {
+    __last_json_parse = s;
+    return JSON.parse(s);
+}
+
 if (typeof Object.assign !== "function") {
     Object.defineProperty(Object, "assign", {
         value: function assign(target, rest) {
@@ -302,6 +308,8 @@ function log_jserror(errormsg, error, noconsole) {
         errormsg = {"error": error.toString()};
     } else if (typeof errormsg === "string")
         errormsg = {"error": errormsg};
+    if (errormsg.error && /JSON/.test(errormsg.error) && __last_json_parse)
+        errormsg.detail = __last_json_parse.substring(0, 200);
     if (error && error.fileName && !errormsg.url)
         errormsg.url = error.fileName;
     if (error && error.lineNumber && !errormsg.lineno)
@@ -366,7 +374,7 @@ $(document).ajaxError(function (event, jqxhr, options, httperror) {
     var data;
     if (jqxhr.responseText && jqxhr.responseText.charAt(0) === "{") {
         try {
-            data = JSON.parse(jqxhr.responseText);
+            data = parse_json(jqxhr.responseText);
         } catch (e) {
         }
     }
@@ -418,7 +426,7 @@ $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
         if (/application\/json/.test(jqxhr.getResponseHeader("Content-Type") || "")
             && jqxhr.responseText) {
             try {
-                rjson = JSON.parse(jqxhr.responseText);
+                rjson = parse_json(jqxhr.responseText);
             } catch (e) {
             }
         }
@@ -1009,7 +1017,7 @@ try {
 }
 wstorage.json = function (is_session, key) {
     var x = wstorage(is_session, key);
-    return x ? JSON.parse(x) : false;
+    return x ? parse_json(x) : false;
 };
 wstorage.site = function (is_session, key, value) {
     if (siteinfo.base !== "/")
@@ -1561,7 +1569,7 @@ function input_set_default_value(elt, val) {
     // 2021 Chrome workaround
     if (elt.name && elt.form && (upd = elt.form.elements.____updates____)) {
         try {
-            j = JSON.parse(upd.value || "{}");
+            j = parse_json(upd.value || "{}");
         } catch (e) {
             j = {};
         }
@@ -1626,7 +1634,7 @@ $(function () {
         var upd = this.elements.____updates____, j, n, e, e2, i;
         if (upd && upd.value) {
             try {
-                j = JSON.parse(upd.value);
+                j = parse_json(upd.value);
                 for (n in j)
                     if ((e = this.elements[n])) {
                         if (e.type === "checkbox")
@@ -2196,7 +2204,7 @@ function prepare_info(elt, info) {
     var xinfo = elt.getAttribute("data-tooltip-info");
     if (xinfo) {
         if (typeof xinfo === "string" && xinfo.charAt(0) === "{")
-            xinfo = JSON.parse(xinfo);
+            xinfo = parse_json(xinfo);
         else if (typeof xinfo === "string")
             xinfo = {builder: xinfo};
         info = $.extend(xinfo, info);
@@ -2927,7 +2935,7 @@ handle_ui.on("js-tracker", function (event) {
         if (tr.start_at)
             hc.push('<div class="entryi"><label>Elapsed time</label><span class="trackerdialog-elapsed" data-start-at="' + tr.start_at + '"></span></div>');
         try {
-            var j = JSON.parse(tr.listinfo || "null"), ids, pos;
+            var j = parse_json(tr.listinfo || "null"), ids, pos;
             if (j && j.ids && (ids = decode_session_list_ids(j.ids))) {
                 if (tr.papers
                     && tr.papers[tr.paper_offset]
@@ -3105,7 +3113,7 @@ var comet_store = (function () {
         return function () { return false; };
 
     function make_site_status(v) {
-        var x = v && JSON.parse(v);
+        var x = v && parse_json(v);
         if (!x || typeof x !== "object")
             x = {};
         if (!x.updated_at
@@ -3351,7 +3359,7 @@ function fold_storage() {
             flip = true;
         }
         if (sn.charAt(0) === "{" || sn.charAt(0) === "[") {
-            smap = JSON.parse(sn) || {};
+            smap = parse_json(sn) || {};
         } else {
             var m = this.className.match(/\bfold(\d*)[oc]\b/),
                 n = m[1] === "" ? 0 : +m[1];
@@ -3376,7 +3384,7 @@ function fold_session_for(foldnum, type) {
         flip = true;
     }
     if (s && (s.charAt(0) === "{" || s.charAt(0) === "[")) {
-        s = (JSON.parse(s) || {})[foldnum];
+        s = (parse_json(s) || {})[foldnum];
     }
     if (s && this.hasAttribute("data-fold-" + type + "-prefix")) {
         s = this.getAttribute("data-fold-" + type + "-prefix") + s;
@@ -3730,7 +3738,7 @@ function make_radio(name, value, html, revtype) {
 function make_round_selector(name, revtype, $a) {
     var $as = $a.closest(".has-assignment-set"), rounds;
     try {
-        rounds = JSON.parse($as.attr("data-review-rounds") || "[]");
+        rounds = parse_json($as.attr("data-review-rounds") || "[]");
     } catch (e) {
         rounds = [];
     }
@@ -6841,7 +6849,7 @@ $(document).on("collectState", function (event, state) {
         return;
     var data = state.sortpl = {hotlist: tbl.getAttribute("data-hotlist")};
     var groups = tbl.getAttribute("data-groups");
-    if (groups && (groups = JSON.parse(groups)) && groups.length)
+    if (groups && (groups = parse_json(groups)) && groups.length)
         data.groups = groups;
     if (!href_sorter(state.href)) {
         var active_href = $(tbl).children("thead").find("a.pl_sorting_fwd").attr("href");
@@ -8138,7 +8146,7 @@ function initialize() {
     self = $("table.pltable")[0];
     if (!self)
         return false;
-    var fs = JSON.parse(self.getAttribute("data-columns"));
+    var fs = parse_json(self.getAttribute("data-columns"));
     for (var i = 0; i !== fs.length; ++i)
         add_field(fs[i]);
 };
@@ -8990,7 +8998,7 @@ edit_conditions.pc_conflict = function (ec, form) {
 
 function run_edit_conditions() {
     var f = this.closest("form"),
-        ec = JSON.parse(this.getAttribute("data-edit-condition")),
+        ec = parse_json(this.getAttribute("data-edit-condition")),
         off = !evaluate_edit_condition(ec, f),
         link = navsidebar.get(this);
     toggleClass(this, "hidden", off);
@@ -9063,7 +9071,7 @@ return {
             .find(".has-edit-condition").each(run_edit_conditions);
     },
     evaluate_edit_condition: function (ec) {
-        return evaluate_edit_condition(typeof ec === "string" ? JSON.parse(ec) : ec, $("#form-paper")[0]);
+        return evaluate_edit_condition(typeof ec === "string" ? parse_json(ec) : ec, $("#form-paper")[0]);
     },
     load: function () {
         var f = document.getElementById("form-paper");
@@ -9801,8 +9809,9 @@ window.Hotlist = function (s) {
     this.obj = null;
     if (this.str && this.str.charAt(0) === "{") {
         try {
-            this.obj = JSON.parse(this.str);
-        } catch (e) {}
+            this.obj = parse_json(this.str);
+        } catch (e) {
+        }
     }
 };
 Hotlist.at = function (elt) {
@@ -9986,7 +9995,7 @@ $(function () {
         $(".quicklinks").each(function () {
             var info = Hotlist.at(this.closest(".has-hotlist")), ids, pos, page, mode;
             try {
-                mode = JSON.parse(this.getAttribute("data-link-params") || "{}");
+                mode = parse_json(this.getAttribute("data-link-params") || "{}");
             } catch (e) {
                 mode = {};
             }
@@ -10052,7 +10061,7 @@ function populate_pcselector(pcs) {
     removeClass(this, "need-pcselector");
     var optids = this.getAttribute("data-pcselector-options") || "*";
     if (optids.charAt(0) === "[")
-        optids = JSON.parse(optids);
+        optids = parse_json(optids);
     else
         optids = optids.split(/[\s,]+/);
     var selected = this.getAttribute("data-pcselector-selected"), selindex = -1;
