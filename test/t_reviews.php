@@ -156,15 +156,15 @@ class Reviews_Tester {
         xassert($tf->parse_text(false));
         xassert($tf->check_and_save($this->u_mgbaker));
         xassert_eqq(join(" ", $tf->unchanged), "#1A");
-        xassert($tf->has_problem_at("overAllMerit"));
+        xassert($tf->has_problem_at("s01"));
 
         // invalid “No entry” fails
         $tf = ReviewValues::make_text($this->conf->review_form(), preg_replace('/^4/m', 'No entry', $this->review1A), "review1A-3.txt");
         xassert($tf->parse_text(false));
         xassert($tf->check_and_save($this->u_mgbaker));
         xassert_eqq(join(" ", $tf->unchanged), "#1A");
-        xassert($tf->has_problem_at("overAllMerit"));
-        xassert(strpos($tf->feedback_text_at("overAllMerit"), "Entry required") !== false);
+        xassert($tf->has_problem_at("s01"));
+        xassert(strpos($tf->feedback_text_at("s01"), "Entry required") !== false);
         //error_log(var_export($tf->message_list(), true));
     }
 

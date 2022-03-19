@@ -832,8 +832,9 @@ class ContactList {
         if ($this->user->isPC) {
             $uldisplay = self::uldisplay($this->user);
             foreach ($this->_rfields as $i => $f) {
-                if (strpos($uldisplay, " {$f->id} ") !== false
-                    || strpos($uldisplay, " {$f->short_id} ") !== false)
+                if (strpos($uldisplay, " {$f->short_id} ") !== false
+                    || ($f->main_storage !== null
+                        && strpos($uldisplay, " {$f->main_storage} ") !== false))
                     $a[] = self::FIELD_SCORE + $i;
             }
         }

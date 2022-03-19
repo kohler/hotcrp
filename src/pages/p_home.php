@@ -271,7 +271,7 @@ class Home_Page {
             $q = "select count(reviewId) num_submitted";
             $scores = [];
             foreach ($rfs as $rf) {
-                $q .= ", group_concat(coalesce({$rf->main_storage},'')) {$rf->id}Scores";
+                $q .= ", group_concat(coalesce({$rf->main_storage},'')) {$rf->short_id}Scores";
                 $scores[] = [];
             }
             $result = Dbl::qe_raw("$q from ContactInfo left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewSubmitted is not null)

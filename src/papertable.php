@@ -2295,10 +2295,10 @@ class PaperTable {
                     if ($f->has_options
                         && $f->view_score > $view_score
                         && $rr->has_nonempty_field($f)) {
-                        if ($score_header[$f->id] === "") {
-                            $score_header[$f->id] = '<th class="rlscore">' . $f->web_abbreviation() . "</th>";
+                        if ($score_header[$f->short_id] === "") {
+                            $score_header[$f->short_id] = '<th class="rlscore">' . $f->web_abbreviation() . "</th>";
                         }
-                        $scores[$f->id] = '<td class="rlscore need-tooltip" data-rf="' . $f->uid() . '" data-tooltip-info="rf-score">'
+                        $scores[$f->short_id] = '<td class="rlscore need-tooltip" data-rf="' . $f->uid() . '" data-tooltip-info="rf-score">'
                             . $f->unparse_value($rr->fields[$f->order], ReviewField::VALUE_SC)
                             . '</td>';
                     }
@@ -2819,7 +2819,7 @@ class PaperTable {
                             $this_resolved_fields[] = $f;
                     }
                     foreach ($this_resolved_fields as $f) {
-                        unset($unresolved_fields[$f->id]);
+                        unset($unresolved_fields[$f->short_id]);
                     }
                 }
             }

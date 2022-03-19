@@ -124,15 +124,15 @@ class Autoassign_Page {
     }
 
     function scoreselector_options() {
-        $opt = ["+overAllMerit" => "", "-overAllMerit" => ""];
+        $opt = ["+s01" => "", "-s01" => ""];
         foreach ($this->conf->all_review_fields() as $f) {
             if ($f->has_options) {
-                $opt["+" . $f->id] = "high $f->name_html scores";
-                $opt["-" . $f->id] = "low $f->name_html scores";
+                $opt["+" . $f->short_id] = "high $f->name_html scores";
+                $opt["-" . $f->short_id] = "low $f->name_html scores";
             }
         }
-        if ($opt["+overAllMerit"] === "") {
-            unset($opt["+overAllMerit"], $opt["-overAllMerit"]);
+        if ($opt["+s01"] === "") {
+            unset($opt["+s01"], $opt["-s01"]);
         }
         $opt["__break"] = null;
         $opt["x"] = "random submitted reviews";

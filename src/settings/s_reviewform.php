@@ -28,7 +28,7 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($si->part2 === "") {
             $fid = $si->part1 === '$' ? 's99' : $sv->vstr("{$si->name}__id");
             if (($finfo = ReviewInfo::field_info($fid))) {
-                $f = $sv->conf->review_field($finfo->id) ?? ReviewField::make($sv->conf, $finfo);
+                $f = $sv->conf->review_field($finfo->short_id) ?? ReviewField::make($sv->conf, $finfo);
                 $sv->set_oldv($si->name, $f->unparse_json(ReviewField::UJ_SI));
             }
         } else if ($si->part2 === "__choices" && $si->part1 === '$') {
@@ -317,7 +317,7 @@ class ReviewForm_SettingParser extends SettingParser {
         $reset_wordcount = $assign_ordinal = $reset_view_score = false;
         foreach ($nform->all_fields() as $nf) {
             assert($nf->order > 0);
-            $of = $oform->fmap[$nf->id] ?? null;
+            $of = $oform->fmap[$nf->short_id] ?? null;
             if (!$of || !$of->order) {
                 $clear_fields[] = $nf;
             } else if ($nf instanceof Score_ReviewField) {

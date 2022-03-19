@@ -3,14 +3,11 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 // JSON schema for settings["review_form"]:
-// {FIELD:{"name":NAME,"description":DESCRIPTION,"order":ORDER,
-//         "display_space":ROWS,"visibility":VISIBILITY,
-//         "options":[DESCRIPTION,...],"option_letter":LEVELCHAR}}
+// [{"id":FIELDID,"name":NAME,"description":DESCRIPTION,"order":ORDER,
+//   "display_space":ROWS,"visibility":VISIBILITY,
+//   "options":[DESCRIPTION,...],"option_letter":LEVELCHAR},...]
 
 class ReviewFieldInfo {
-    /** @var non-empty-string
-     * @readonly */
-    public $id;
     /** @var non-empty-string
      * @readonly */
     public $short_id;
@@ -27,10 +24,8 @@ class ReviewFieldInfo {
     /** @param bool $has_options
      * @param ?non-empty-string $main_storage
      * @param ?non-empty-string $json_storage
-     * @phan-assert non-empty-string $id
      * @phan-assert non-empty-string $short_id */
-    function __construct($id, $short_id, $has_options, $main_storage, $json_storage) {
-        $this->id = $id;
+    function __construct($short_id, $has_options, $main_storage, $json_storage) {
         $this->short_id = $short_id;
         $this->has_options = $has_options;
         $this->main_storage = $main_storage;
@@ -45,11 +40,11 @@ abstract class ReviewField implements JsonSerializable {
     const VALUE_STRING = 4;
     const VALUE_TRIM = 8;
 
-    /** @var non-empty-string */
-    public $id;
-    /** @var non-empty-string */
+    /** @var non-empty-string
+     * @readonly */
     public $short_id;
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
     /** @var string */
     public $name;
@@ -97,7 +92,8 @@ abstract class ReviewField implements JsonSerializable {
     ];
 
     // colors
-    /** @var array<string,list> */
+    /** @var array<string,list>
+     * @readonly */
     static public $scheme_info = [
         "sv" => [0, 9, "svr"], "svr" => [1, 9, "sv"],
         "blpu" => [0, 9, "publ"], "publ" => [1, 9, "blpu"],
@@ -109,7 +105,6 @@ abstract class ReviewField implements JsonSerializable {
     ];
 
     function __construct(Conf $conf, ReviewFieldInfo $finfo) {
-        $this->id = $finfo->id;
         $this->short_id = $finfo->short_id;
         $this->has_options = $finfo->has_options;
         $this->main_storage = $finfo->main_storage;
@@ -131,7 +126,7 @@ abstract class ReviewField implements JsonSerializable {
      * @return ReviewField */
     static function make_template(Conf $conf, $has_options) {
         $id = $has_options ? "s00" : "t00";
-        return self::make($conf, new ReviewFieldInfo($id, $id, $has_options, null, null));
+        return self::make($conf, new ReviewFieldInfo($id, $has_options, null, null));
     }
 
     /** @param object $j */
@@ -172,7 +167,7 @@ abstract class ReviewField implements JsonSerializable {
         } else if ($a->order !== $b->order) {
             return $a->order < $b->order ? -1 : 1;
         } else {
-            return strcmp($a->short_id ?? $a->id, $b->short_id ?? $b->id);
+            return strcmp($a->short_id, $b->short_id);
         }
     }
 
@@ -766,12 +761,12 @@ class Score_ReviewField extends ReviewField {
      * @param int $fv
      * @param int $reqv */
     private function print_option($num, $fv, $reqv) {
-        $opt = ["id" => "{$this->id}_{$num}"];
+        $opt = ["id" => "{$this->short_id}_{$num}"];
         if ($fv !== $reqv) {
             $opt["data-default-checked"] = $reqv === $num;
         }
         echo '<label class="checki', ($num ? "" : " g"), '"><span class="checkc">',
-            Ht::radio($this->id, $num, $fv === $num, $opt), '</span>';
+            Ht::radio($this->short_id, $num, $fv === $num, $opt), '</span>';
         if ($num) {
             echo $this->unparse_value($num, self::VALUE_REV_NUM),
                 ' ', htmlspecialchars($this->options[$num]);
@@ -782,8 +777,8 @@ class Score_ReviewField extends ReviewField {
     }
 
     function print_web_edit($fv, $reqv, $args) {
-        $for = $reqv || !$this->required ? "{$this->id}_{$reqv}" : "{$this->id}_" . key($this->options);
-        $this->print_web_edit_open($this->id, $for, $args["status"]);
+        $for = $reqv || !$this->required ? "{$this->short_id}_{$reqv}" : "{$this->short_id}_" . key($this->options);
+        $this->print_web_edit_open($this->short_id, $for, $args["status"]);
         echo '<div class="revev">';
         foreach ($this->options as $num => $text) {
             $this->print_option($num, $fv, $reqv);
@@ -869,16 +864,16 @@ class Text_ReviewField extends ReviewField {
     }
 
     function print_web_edit($fv, $reqv, $args) {
-        $this->print_web_edit_open(null, $this->id, $args["status"]);
+        $this->print_web_edit_open(null, $this->short_id, $args["status"]);
         echo '<div class="revev">';
         if (($fi = $args["format"])) {
             echo $fi->description_preview_html();
         }
-        $opt = ["class" => "w-text need-autogrow need-suggest suggest-emoji", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->id];
+        $opt = ["class" => "w-text need-autogrow need-suggest suggest-emoji", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->short_id];
         if ($fv !== $reqv) {
             $opt["data-default-value"] = (string) $reqv;
         }
-        echo Ht::textarea($this->id, (string) $fv, $opt), '</div></div>';
+        echo Ht::textarea($this->short_id, (string) $fv, $opt), '</div></div>';
     }
 
     function unparse_text_field(&$t, $fv, $args) {

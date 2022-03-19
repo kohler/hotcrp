@@ -18,7 +18,7 @@ class ReviewForm implements JsonSerializable {
      * @readonly */
     public $fmap;      // all fields, whether or not displayed, key id
     /** @var array<string,ReviewField> */
-    private $_by_short_id;
+    private $_by_main_storage;
     /** @var int
      * @readonly */
     private $_order_bound; // more than the max `ReviewField::$order`
@@ -67,7 +67,7 @@ class ReviewForm implements JsonSerializable {
             }
             if (($finfo = ReviewInfo::field_info($fid))) {
                 $f = ReviewField::make($conf, $finfo);
-                $this->fmap[$f->id] = $f;
+                $this->fmap[$f->short_id] = $f;
                 $f->assign_json($j);
             }
         }
@@ -78,9 +78,9 @@ class ReviewForm implements JsonSerializable {
         foreach ($this->fmap as $f) {
             if ($f->order) {
                 $f->order = ++$do;
-                $this->forder[$f->id] = $f;
-                if ($f->id !== $f->short_id) {
-                    $this->_by_short_id[$f->short_id] = $f;
+                $this->forder[$f->short_id] = $f;
+                if ($f->main_storage !== null) {
+                    $this->_by_main_storage[$f->main_storage] = $f;
                 }
             }
         }
@@ -97,7 +97,7 @@ class ReviewForm implements JsonSerializable {
     /** @param string $fid
      * @return ?ReviewField */
     function field($fid) {
-        return $this->forder[$fid] ?? $this->_by_short_id[$fid] ?? null;
+        return $this->forder[$fid] ?? $this->_by_main_storage[$fid] ?? null;
     }
     /** @param int $order
      * @return ?ReviewField */
@@ -202,13 +202,13 @@ class ReviewForm implements JsonSerializable {
         echo '<div class="rve">';
         foreach ($rrow->viewable_fields($contact) as $f) {
             $rval = $f->normalize_value($f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_STRING));
-            if ($rvalues && isset($rvalues->req[$f->id])) {
-                $fval = $f->normalize_value($rvalues->req[$f->id]);
+            if ($rvalues && isset($rvalues->req[$f->short_id])) {
+                $fval = $f->normalize_value($rvalues->req[$f->short_id]);
             } else {
                 $fval = $rval;
             }
             $f->print_web_edit($fval, $rval, [
-                "format" => $fi, "status" => $rvalues ? $rvalues->problem_status_at($f->id) : 0
+                "format" => $fi, "status" => $rvalues ? $rvalues->problem_status_at($f->short_id) : 0
             ]);
         }
         echo "</div>\n";
@@ -1039,7 +1039,7 @@ class ReviewValues extends MessageSet {
                         $line .= $xline;
                     }
                     if (($f = $this->conf->find_review_field($match[1]))) {
-                        $field = $f->id;
+                        $field = $f->short_id;
                         $this->field_lineno[$field] = $this->lineno;
                         $nfields++;
                     } else {
@@ -1151,8 +1151,8 @@ class ReviewValues extends MessageSet {
                     $this->req["version"] = $v;
             } else if (($f = $this->conf->find_review_field($k))) {
                 if ((is_string($v) || is_int($v) || $v === null)
-                    && !isset($this->req[$f->id]))
-                    $this->req[$f->id] = $v;
+                    && !isset($this->req[$f->short_id]))
+                    $this->req[$f->short_id] = $v;
             }
         }
         if (!empty($this->req) && !isset($this->req["ready"])) {
@@ -1174,6 +1174,7 @@ class ReviewValues extends MessageSet {
      * @return bool */
     function parse_qreq(Qrequest $qreq, $override) {
         assert($this->text === null && $this->finished === 0);
+        $rf = $this->conf->review_form();
         $this->req = [];
         foreach ($qreq as $k => $v) {
             if (isset(self::$ignore_web_keys[$k]) || !is_scalar($v)) {
@@ -1188,9 +1189,9 @@ class ReviewValues extends MessageSet {
                 $this->req["reviewFormat"] = cvtint($v);
             } else if (array_key_exists($k, $this->rf->fmap)) {
                 $this->req[$k] = $v;
-            } else if (($f = $this->conf->find_review_field($k))
-                       && !isset($this->req[$f->id])) {
-                $this->req[$f->id] = $v;
+            } else if (($f = $rf->field($k) ?? $this->conf->find_review_field($k))
+                       && !isset($this->req[$f->short_id])) {
+                $this->req[$f->short_id] = $v;
             }
         }
         if (!empty($this->req)) {
@@ -1319,8 +1320,8 @@ class ReviewValues extends MessageSet {
         if ($f->has_options) {
             $oldval = (int) $oldval;
         }
-        if (isset($this->req[$f->id])) {
-            return [$oldval, $f->parse_value($this->req[$f->id])];
+        if (isset($this->req[$f->short_id])) {
+            return [$oldval, $f->parse_value($this->req[$f->short_id])];
         } else {
             return [$oldval, $oldval];
         }
@@ -1330,8 +1331,8 @@ class ReviewValues extends MessageSet {
     private function fvalue_nonempty(ReviewField $f, $fval) {
         return $fval !== ""
             && ($fval !== 0
-                || (isset($this->req[$f->id])
-                    && $f->parse_is_explicit_empty($this->req[$f->id])));
+                || (isset($this->req[$f->short_id])
+                    && $f->parse_is_explicit_empty($this->req[$f->short_id])));
     }
 
     private function check(ReviewInfo $rrow) {
@@ -1358,8 +1359,8 @@ class ReviewValues extends MessageSet {
                 }
                 if (!$f->value_empty($fval)
                     || ($fval === 0
-                        && isset($this->req[$f->id])
-                        && $f->parse_is_explicit_empty($this->req[$f->id]))) {
+                        && isset($this->req[$f->short_id])
+                        && $f->parse_is_explicit_empty($this->req[$f->short_id]))) {
                     $anynonempty = true;
                 } else if ($f->required && $f->view_score >= VIEWSCORE_PC) {
                     $missingfields[] = $f;
@@ -1370,7 +1371,7 @@ class ReviewValues extends MessageSet {
 
         if ($missingfields && $submit && $anynonempty) {
             foreach ($missingfields as $f) {
-                $this->rmsg($f->id, $this->conf->_("<0>%s: Entry required.", $f->name), self::WARNING);
+                $this->rmsg($f->short_id, $this->conf->_("<0>%s: Entry required.", $f->name), self::WARNING);
             }
         }
 

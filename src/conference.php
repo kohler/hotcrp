@@ -181,8 +181,11 @@ class Conf {
     public $_file_filters; // maintained externally
     /** @var ?SettingInfoSet */
     public $_setting_info; // maintained externally
+    /** @var ?array<string,list<object>> */
     private $_mail_keyword_map;
+    /** @var ?list<object> */
     private $_mail_keyword_factories;
+    /** @var ?array<string,list<object>> */
     private $_mail_template_map;
     /** @var DKIMSigner|null|false */
     private $_dkim_signer = false;
@@ -5468,6 +5471,7 @@ class Conf {
         }
     }
 
+    /** @return array<string,list<object>> */
     private function mail_keyword_map() {
         if ($this->_mail_keyword_map === null) {
             $this->_mail_keyword_map = $this->_mail_keyword_factories = [];

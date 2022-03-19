@@ -265,6 +265,7 @@ class Dbl {
      * @return array{?\mysqli,?string}
      * @deprecated */
     static function connect_dsn($dsn, $noconnect = false) {
+        /** @phan-suppress-next-line PhanDeprecatedFunction */
         return self::connect(self::parse_connection_params(["dsn" => $dsn]), $noconnect);
     }
 

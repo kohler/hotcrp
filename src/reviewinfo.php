@@ -638,17 +638,16 @@ class ReviewInfo implements JsonSerializable {
                 $json_storage = $id;
                 if ($id[0] === "s" && isset(self::$new_score_fields[$n])) {
                     $fid = self::$new_score_fields[$n];
-                    $m = new ReviewFieldInfo($fid, $id, true, $fid, null);
+                    $m = new ReviewFieldInfo($id, true, $fid, null);
                 } else if ($id[0] === "s" || $id[0] === "t") {
-                    $m = new ReviewFieldInfo($id, $id, $id[0] === "s", null, $id);
+                    $m = new ReviewFieldInfo($id, $id[0] === "s", null, $id);
                 }
             } else if (($short_id = self::$score_field_map[$id] ?? null)) {
-                $m = new ReviewFieldInfo($id, $short_id, true, $id, null);
+                $m = new ReviewFieldInfo($short_id, true, $id, null);
             }
-            if ($m) {
-                self::$field_info_map[$m->id] = self::$field_info_map[$m->short_id] = $m;
-            } else {
-                self::$field_info_map[$id] = $m;
+            self::$field_info_map[$m->short_id] = $m;
+            if ($m && $m->main_storage !== null) {
+                self::$field_info_map[$m->main_storage] = $m;
             }
         }
         return $m;

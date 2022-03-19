@@ -925,6 +925,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         return !$row->may_have_viewable_scores($this->format_field, $pl->user);
     }
 
+    /** @return array<ReviewField> */
     static function user_viewable_fields($name, Contact $user) {
         if ($name === "scores") {
             $fs = $user->conf->all_review_fields();
@@ -936,11 +937,12 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
             return $f && $f->has_options && $f->order && $f->view_score > $vsbound;
         });
     }
+    /** @return array<ReviewField> */
     static function expand($name, Contact $user, $xfj, $m) {
         return array_map(function ($f) use ($xfj) {
             $cj = (array) $xfj;
             $cj["name"] = $f->search_keyword();
-            $cj["review_field_id"] = $f->id;
+            $cj["review_field_id"] = $f->short_id;
             $cj["title"] = $f->search_keyword();
             $cj["title_html"] = $f->web_abbreviation();
             return (object) $cj;

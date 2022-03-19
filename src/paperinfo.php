@@ -476,27 +476,27 @@ class PaperInfo {
     /** @var ?string */
     public $reviewWordCountSignature;
     /** @var ?string */
-    public $overAllMeritSignature;
+    public $s01Signature;
     /** @var ?string */
-    public $reviewerQualificationSignature;
+    public $s02Signature;
     /** @var ?string */
-    public $noveltySignature;
+    public $s03Signature;
     /** @var ?string */
-    public $technicalMeritSignature;
+    public $s04Signature;
     /** @var ?string */
-    public $interestToCommunitySignature;
+    public $s05Signature;
     /** @var ?string */
-    public $longevitySignature;
+    public $s06Signature;
     /** @var ?string */
-    public $grammarSignature;
+    public $s07Signature;
     /** @var ?string */
-    public $likelyPresentationSignature;
+    public $s08Signature;
     /** @var ?string */
-    public $suitableForShortSignature;
+    public $s09Signature;
     /** @var ?string */
-    public $potentialSignature;
+    public $s10Signature;
     /** @var ?string */
-    public $fixabilitySignature;
+    public $s11Signature;
 
     /** @var ?string */
     public $commentSkeletonInfo;
@@ -2485,14 +2485,16 @@ class PaperInfo {
         }
     }
 
-    /** @param string $fid */
-    private function load_review_fields($fid, $maybe_null = false) {
+    /** @param string $fid
+     * @param string $main_storage
+     * @param bool $maybe_null */
+    private function load_review_fields($fid, $main_storage, $maybe_null) {
         $k = $fid . "Signature";
         $row_set = $this->_row_set ?? new PaperInfoSet($this);
         foreach ($row_set as $prow) {
             $prow->$k = "";
         }
-        $select = $maybe_null ? "coalesce($fid,'.')" : $fid;
+        $select = $maybe_null ? "coalesce($main_storage,'.')" : $main_storage;
         $result = $this->conf->qe("select paperId, group_concat($select order by reviewId) from PaperReview where paperId?a group by paperId", $row_set->paper_ids());
         while ($result && ($row = $result->fetch_row())) {
             $prow = $row_set->get((int) $row[0]);
@@ -2516,9 +2518,9 @@ class PaperInfo {
                 $this->ensure_full_reviews();
             } else {
                 $this->_reviews_have[$order] = true;
-                $k = $f->main_storage . "Signature";
+                $k = $f->short_id . "Signature";
                 if ($this->$k === null) {
-                    $this->load_review_fields($f->main_storage);
+                    $this->load_review_fields($f->short_id, $f->main_storage, false);
                 }
                 $x = explode(",", $this->$k);
                 foreach ($this->reviews_as_list() as $i => $rrow) {
@@ -2571,7 +2573,7 @@ class PaperInfo {
         if (!($this->_reviews_flags & self::REVIEW_HAS_WORDCOUNT)) {
             $this->_reviews_flags |= self::REVIEW_HAS_WORDCOUNT;
             if ($this->reviewWordCountSignature === null) {
-                $this->load_review_fields("reviewWordCount", true);
+                $this->load_review_fields("reviewWordCount", "reviewWordCount", true);
             }
             $x = explode(",", $this->reviewWordCountSignature);
             $bad_ids = [];

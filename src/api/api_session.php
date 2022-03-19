@@ -95,7 +95,10 @@ class Session_API {
         $curl = explode(" ", trim(ContactList::uldisplay($user)));
         foreach ($settings as $name => $setting) {
             if (($f = $user->conf->review_field($name))) {
-                $terms = [$f->short_id, $f->id];
+                $terms = [$f->short_id];
+                if ($f->main_storage !== null) {
+                    $terms[] = $f->main_storage;
+                }
             } else {
                 $terms = [$name];
             }

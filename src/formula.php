@@ -1251,7 +1251,7 @@ class FormulaCompiler {
         if (!in_array($f, $this->queryOptions["scores"] ?? [])) {
             $this->queryOptions["scores"][] = $f;
         }
-        if ($this->check_gvar('$ensure_score_' . $f->id)) {
+        if ($this->check_gvar('$ensure_score_' . $f->short_id)) {
             $this->g0stmt[] = $this->_prow() . '->ensure_review_field_order(' . $f->order . ');';
         }
     }
