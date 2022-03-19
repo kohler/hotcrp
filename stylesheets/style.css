@@ -3186,7 +3186,7 @@ a.badge:active {
 	padding-left: 2px;
 	padding-right: 2px;
 }
-.pavfn, .pavfn a.q, .revfn {
+.pavfn, .pavfn a.q {
 	color: #555555;
 }
 .psfn, .psfn a.q {
@@ -3447,10 +3447,10 @@ a.badge:active {
 	margin: 0 -5px 0.15em;
 	padding: 0 5px;
 }
-.pavfn, .psfn, .revfn {
+.pavfn, .psfn {
 	font-weight: bold;
 }
-h3.pavfn, h3.psfn, h3.revfn {
+h3.pavfn, h3.psfn {
 	font-size: inherit;
 	display: inline;
 	margin: 0;
@@ -3649,10 +3649,9 @@ a:hover .t-editor,
 }
 .rfehead {
 	font-size: inherit;
-	margin-bottom: 0.25rem;
-}
-.rfehead > .revfn {
 	color: #683131;
+	margin-top: 0;
+	margin-bottom: 0.25rem;
 }
 .field-visibility {
 	font-weight: normal;
@@ -3664,10 +3663,6 @@ a:hover .t-editor,
 .revoff {
 	margin: 0.2em 0 0.5em 0;
 	font-size: smaller;
-}
-.revoff .revfn {
-	float: none;
-	padding: 0 1em 5px 0;
 }
 .revscore, .revnoscore {
 	margin-bottom: 0;

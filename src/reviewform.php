@@ -201,15 +201,13 @@ class ReviewForm implements JsonSerializable {
         $fi = $this->conf->format_info($rrow ? $rrow->reviewFormat : null);
         echo '<div class="rve">';
         foreach ($rrow->viewable_fields($contact) as $f) {
-            $rval = $f->normalize_value($f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_STRING));
+            $fval = $f->normalize_value($f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_STRING));
             if ($rvalues && isset($rvalues->req[$f->short_id])) {
-                $fval = $f->normalize_value($rvalues->req[$f->short_id]);
+                $rval = $f->normalize_value($rvalues->req[$f->short_id]);
             } else {
-                $fval = $rval;
+                $rval = $fval;
             }
-            $f->print_web_edit($fval, $rval, [
-                "format" => $fi, "status" => $rvalues ? $rvalues->problem_status_at($f->short_id) : 0
-            ]);
+            $f->print_web_edit($fval, $rval, ["format" => $fi, "rvalues" => $rvalues]);
         }
         echo "</div>\n";
     }
@@ -636,7 +634,7 @@ $blind\n";
             echo '<div class="rge"><h3 class="rfehead checki"><label class="revfn">',
                 Ht::hidden("has_blind", 1),
                 '<span class="checkc">', Ht::checkbox("blind", 1, ($rvalues ? !!($rvalues->req["blind"] ?? null) : $rrow->reviewBlind)), '</span>',
-                "Anonymous review</span></h3>\n",
+                "Anonymous review</label></h3>\n",
                 '<div class="field-d">', htmlspecialchars($this->conf->short_name), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>",
                 "</div>\n";
         }

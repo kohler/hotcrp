@@ -4503,7 +4503,8 @@ function render_review_body(rrow) {
         }
 
         t = t.concat('<div class="rf rfd', display, '" data-rf="', f.uid,
-            '"><div class="revvt"><h3 class="revfn">', f.name_html);
+            '"><div class="revvt"><h3 class="rfehead"><label class="revfn">',
+            f.name_html, '</label>');
         x = f.visibility;
         if (x == "audec" && hotcrp_status && hotcrp_status.myperm
             && hotcrp_status.myperm.some_author_can_view_decision) {
