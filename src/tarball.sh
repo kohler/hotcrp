@@ -444,6 +444,7 @@ src/tokeninfo.php
 src/topicset.php
 src/track.php
 src/updateschema.php
+src/updatesession.php
 src/useractions.php
 src/userstatus.php
 

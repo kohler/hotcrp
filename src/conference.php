@@ -18,6 +18,9 @@ class Conf {
     /** @var string
      * @readonly */
     public $dbname;
+    /** @var ?string
+     * @readonly */
+    public $session_key;
 
     /** @var array<string,int> */
     public $settings;
@@ -246,6 +249,7 @@ class Conf {
         if (($cp = Dbl::parse_connection_params($options))) {
             $this->dblink = $connect ? $cp->connect() : null;
             $this->dbname = $cp->name;
+            $this->session_key = "@{$this->dbname}";
         }
         $this->opt = $options;
         $this->opt["confid"] = $this->opt["confid"] ?? $this->dbname;
@@ -2776,21 +2780,27 @@ class Conf {
     // session data
 
     /** @param string $name */
-    function session($name, $defval = null) {
-        return $_SESSION[$this->dbname][$name] ?? $defval;
+    function session($name) {
+        if ($this->session_key !== null) {
+            return $_SESSION[$this->session_key][$name] ?? null;
+        } else {
+            return null;
+        }
     }
 
     /** @param string $name */
     function save_session($name, $value) {
-        if ($value !== null) {
-            if (empty($_SESSION)) {
-                ensure_session();
-            }
-            $_SESSION[$this->dbname][$name] = $value;
-        } else if (isset($_SESSION[$this->dbname])) {
-            unset($_SESSION[$this->dbname][$name]);
-            if (empty($_SESSION[$this->dbname])) {
-                unset($_SESSION[$this->dbname]);
+        if ($this->session_key !== null) {
+            if ($value !== null) {
+                if (empty($_SESSION)) {
+                    ensure_session();
+                }
+                $_SESSION[$this->session_key][$name] = $value;
+            } else if (isset($_SESSION[$this->session_key])) {
+                unset($_SESSION[$this->session_key][$name]);
+                if (empty($_SESSION[$this->session_key])) {
+                    unset($_SESSION[$this->session_key]);
+                }
             }
         }
     }
@@ -3789,10 +3799,10 @@ class Conf {
     }
 
     function transfer_messages_to_session() {
-        if ($this->_save_msgs) {
+        if ($this->_save_msgs && $this->session_key !== null) {
             ensure_session();
             foreach ($this->_save_msgs as $m) {
-                $_SESSION[$this->dbname]["msgs"][] = $m;
+                $_SESSION[$this->session_key]["msgs"][] = $m;
             }
             $this->_save_msgs = null;
         }

@@ -31,7 +31,7 @@ class Session_API {
         foreach ($ms as $m) {
             $unfold = intval(substr($m[3], 1) ? : "0") === 0;
             if ($m[1] === "foldpaper" && $m[2] !== "") {
-                $x = $user->session($m[1], []);
+                $x = $user->session($m[1]) ?? [];
                 if (is_string($x)) {
                     $x = explode(" ", $x);
                 }

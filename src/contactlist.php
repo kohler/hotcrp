@@ -350,7 +350,7 @@ class ContactList {
             break;
         default:
             $f = $this->_rfields[$this->sortField - self::FIELD_SCORE];
-            $scoresort = $this->user->session("ulscoresort", "A");
+            $scoresort = $this->user->session("ulscoresort") ?? "A";
             if (!in_array($scoresort, ["A", "V", "D"], true)) {
                 $scoresort = "A";
             }

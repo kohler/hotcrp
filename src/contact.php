@@ -74,6 +74,8 @@ class Contact {
     private $orcid;
     /** @var ?string */
     private $phone;
+    /** @var ?int */
+    private $cdbRoles;
 
     public $demoSharing;
     public $demoBirthday;
@@ -217,6 +219,7 @@ class Contact {
         "defaultWatch" => self::PROP_LOCAL | self::PROP_INT,
         "primaryContactId" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE,
         "roles" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE,
+        "cdbRoles" => self::PROP_LOCAL | self::PROP_INT,
         "disabled" => self::PROP_LOCAL | self::PROP_BOOL | self::PROP_SLICE,
         "contactTags" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SLICE,
         "address" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRINGLIST | self::PROP_SIMPLIFY | self::PROP_UPDATE,
@@ -665,7 +668,7 @@ class Contact {
 
         // Maybe auto-create a user
         if (!self::$base_auth_user && $this->email) {
-            $trueuser_aucheck = $this->session("trueuser_author_check", 0);
+            $trueuser_aucheck = $this->session("trueuser_author_check") ?? 0;
             if (!$this->has_account_here()
                 && $trueuser_aucheck + 600 < Conf::$now) {
                 $this->save_session("trueuser_author_check", Conf::$now);
@@ -688,9 +691,8 @@ class Contact {
         // Maybe set up the shared contacts database
         if (($this->conf->opt("contactdbDsn") || $this->conf->opt("contactdb_dsn"))
             && $this->has_account_here()
-            && $this->session("contactdb_roles", 0) != $this->cdb_roles()) {
-            if ($this->contactdb_update())
-                $this->save_session("contactdb_roles", $this->cdb_roles());
+            && $this->cdbRoles !== $this->cdb_roles()) {
+            $this->contactdb_update();
         }
 
         // Check forceShow
@@ -801,9 +803,10 @@ class Contact {
 
     /** @param ?Contact $cdbu */
     private function _update_cdb_roles($cdbu = null) {
+        $roles = $this->cdb_roles();
         if (($cdbu = $cdbu ?? $this->cdb_user())
-            && (($roles = $this->cdb_roles()) !== $cdbu->roles
-                || ($roles && (int) $cdbu->activity_at <= Conf::$now - 604800))) {
+            && ($roles !== $cdbu->roles
+                || ($roles !== 0 && (int) $cdbu->activity_at <= Conf::$now - 604800))) {
             assert($cdbu->cdb_confid < 0 || $cdbu->cdb_confid == $this->conf->opt["contactdbConfid"]);
             if ($roles !== 0) {
                 Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=?, activity_at=?", $cdbu->contactDbId, $this->conf->cdb_confid(), $roles, Conf::$now, $roles, Conf::$now);
@@ -811,6 +814,11 @@ class Contact {
                 Dbl::ql($this->conf->contactdb(), "delete from Roles where contactDbId=? and confid=?", $cdbu->contactDbId, $this->conf->cdb_confid());
             }
             $cdbu->roles = $roles;
+        }
+        if ($this->contactId > 0
+            && $roles !== $this->cdbRoles) {
+            Dbl::ql($this->conf->dblink, "update ContactInfo set cdbRoles=? where contactId=?", $roles, $this->contactId);
+            $this->cdbRoles = $roles;
         }
     }
 
@@ -854,8 +862,8 @@ class Contact {
 
 
     /** @param string $name */
-    function session($name, $defval = null) {
-        return $this->conf->session($name, $defval);
+    function session($name) {
+        return $this->conf->session($name);
     }
 
     /** @param string $name */

@@ -437,7 +437,7 @@ class Users_Page {
                     $ss[$k] = $v;
             }
             echo '<tr><td colspan="3"><hr class="g"><b>Sort scores by:</b> &nbsp;',
-                Ht::select("scoresort", $ss, ListSorter::canonical_long_score_sort($this->viewer->session("ulscoresort", "A"))),
+                Ht::select("scoresort", $ss, ListSorter::canonical_long_score_sort($this->viewer->session("ulscoresort") ?? "A")),
                 "</td></tr>";
         }
         echo "</table></form>";

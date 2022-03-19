@@ -18,18 +18,18 @@ class ReviewToken_API {
                 if ($t === "") {
                 } else if (!($token = decode_token($t, "V"))) {
                     $ml[] = MessageItem::error("<0>Invalid review token ‘{$t}’");
-                } else if ($user->session("rev_token_fail", 0) >= 5) {
+                } else if (($user->session("rev_token_fail") ?? 0) >= 5) {
                     break;
                 } else if (($pid = $user->conf->fetch_ivalue("select paperId from PaperReview where reviewToken=?", $token))) {
                     $tval[] = $token;
                     $ml[] = MessageItem::success("<5>Review token ‘" . htmlspecialchars($t) . "’ lets you review <a href=\"" . $user->conf->hoturl("paper", "p=$pid") . "\">submission #{$pid}</a>");
                 } else {
                     $ml[] = MessageItem::error("<0>Review token ‘{$t}’ not found");
-                    $nfail = $user->session("rev_token_fail", 0) + 1;
+                    $nfail = ($user->session("rev_token_fail") ?? 0) + 1;
                     $user->save_session("rev_token_fail", $nfail);
                 }
             }
-            if ($user->session("rev_token_fail", 0) >= 5) {
+            if (($user->session("rev_token_fail") ?? 0) >= 5) {
                 $ml[] = MessageItem::error("<0>Too many failed attempts to use a review token. You need to sign out to try again");
             }
             if (MessageSet::list_status($ml) >= 2) {
