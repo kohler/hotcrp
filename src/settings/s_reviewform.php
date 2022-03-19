@@ -27,7 +27,7 @@ class ReviewForm_SettingParser extends SettingParser {
         assert($si->part0 === "rf__");
         if ($si->part2 === "") {
             $fid = $si->part1 === '$' ? 's99' : $sv->vstr("{$si->name}__id");
-            if (($finfo = ReviewInfo::field_info($fid))) {
+            if (($finfo = ReviewFieldInfo::find($sv->conf, $fid))) {
                 $f = $sv->conf->review_field($finfo->short_id) ?? ReviewField::make($sv->conf, $finfo);
                 $sv->set_oldv($si->name, $f->unparse_json(ReviewField::UJ_SI));
             }
@@ -144,7 +144,7 @@ class ReviewForm_SettingParser extends SettingParser {
         foreach ($sv->enumerate("rf__") as $ctr) {
             $rfj = $sv->parse_members("rf__{$ctr}");
             if (!$sv->reqstr("rf__{$ctr}__delete")
-                && ($finfo = ReviewInfo::field_info($rfj->id))) {
+                && ($finfo = ReviewFieldInfo::find($sv->conf, $rfj->id))) {
                 $sv->error_if_missing("rf__{$ctr}__name");
                 $this->_fix_req_condition($sv, $rfj);
                 $rfj->order = $rfj->order ?? 1000000;
@@ -167,7 +167,7 @@ class ReviewForm_SettingParser extends SettingParser {
             assert($si->part0 === "rf__");
             $pfx = $si->part0 . $si->part1;
             $sfx = $si->part2;
-            $finfo = ReviewInfo::field_info($sv->vstr("{$pfx}__id"));
+            $finfo = ReviewFieldInfo::find($sv->conf, $sv->vstr("{$pfx}__id"));
             if ($si->part2 === "__choices") {
                 if ($finfo->has_options
                     && !$this->_apply_req_choices($sv, $si)) {

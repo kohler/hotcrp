@@ -421,11 +421,6 @@ class Users_Page {
             $uldisplay = ContactList::uldisplay($this->viewer);
             foreach ($viewable_fields as $f) {
                 $checked = strpos($uldisplay, " {$f->short_id} ") !== false;
-                if (!$checked
-                    && $f->main_storage !== null
-                    && strpos($uldisplay, " {$f->main_storage} ") !== false) {
-                    $checked = true;
-                }
                 echo Ht::checkbox("show{$f->short_id}", 1, $checked),
                     "&nbsp;", Ht::label($f->name_html),
                     Ht::hidden("has_show{$f->short_id}", 1), "<br />";

@@ -263,7 +263,7 @@ class Permission_Tester {
         $this->conf->refresh_settings();
         assert_search_papers($user_mgbaker, "re:varghese", "");
 
-        $revreq = ["overAllMerit" => 5, "reviewerQualification" => 4, "ready" => true];
+        $revreq = ["s01" => 5, "s02" => 4, "ready" => true];
         save_review(1, $user_mgbaker, $revreq);
         assert_search_papers($user_mgbaker, "re:varghese", "1");
 

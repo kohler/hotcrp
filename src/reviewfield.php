@@ -21,6 +21,17 @@ class ReviewFieldInfo {
      * @readonly */
     public $json_storage;
 
+    // see also Signature properties in PaperInfo
+    /** @var list<?non-empty-string>
+     * @readonly */
+    static private $new_score_fields = [
+        "overAllMerit", "reviewerQualification", "novelty", "technicalMerit",
+        "interestToCommunity", "longevity", "grammar", "likelyPresentation",
+        "suitableForShort", "potential", "fixability"
+    ];
+    /** @var array<string,ReviewFieldInfo> */
+    static private $field_info_map = [];
+
     /** @param bool $has_options
      * @param ?non-empty-string $main_storage
      * @param ?non-empty-string $json_storage
@@ -30,6 +41,42 @@ class ReviewFieldInfo {
         $this->has_options = $has_options;
         $this->main_storage = $main_storage;
         $this->json_storage = $json_storage;
+    }
+
+    /** @param Conf $conf
+     * @param string $id
+     * @return ?ReviewFieldInfo */
+    static function find($conf, $id) {
+        $m = self::$field_info_map[$id] ?? null;
+        if (!$m && !array_key_exists($id, self::$field_info_map)) {
+            $sv = $conf->sversion;
+            if (strlen($id) > 3
+                && ($n = array_search($id, self::$new_score_fields)) !== false) {
+                $id = sprintf("s%02d", $n + 1);
+            }
+            if (strlen($id) === 3
+                && ($id[0] === "s" || $id[0] === "t")
+                && ($d1 = ord($id[1])) >= 48
+                && $d1 <= 57
+                && ($d2 = ord($id[2])) >= 48
+                && $d2 <= 57
+                && ($n = ($d1 - 48) * 10 + $d2 - 48) > 0) {
+                if ($id[0] === "s" && $n < 12) {
+                    if ($sv >= 260) {
+                        $m = new ReviewFieldInfo($id, true, $id, null);
+                    } else {
+                        $m = new ReviewFieldInfo($id, true, self::$new_score_fields[$n - 1], null);
+                        self::$field_info_map[$m->main_storage] = $m;
+                    }
+                } else {
+                    $m = new ReviewFieldInfo($id, $id[0] === "s", null, $id);
+                }
+                self::$field_info_map[$id] = $m;
+            } else {
+                self::$field_info_map[$id] = null;
+            }
+        }
+        return $m;
     }
 }
 

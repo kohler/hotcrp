@@ -59,8 +59,6 @@ class ReviewInfo implements JsonSerializable {
     public $reviewEditVersion;  // NB also used to check if `data` was loaded
     /** @var ?int */
     public $reviewWordCount;
-    /** @var ?int */
-    public $reviewFormat;
     /** @var ?string */
     private $tfields;
     /** @var ?string */
@@ -81,17 +79,17 @@ class ReviewInfo implements JsonSerializable {
 
     // scores
     // These scores are loaded from the database, but exposed only in `fields`
-    private $overAllMerit;
-    private $reviewerQualification;
-    private $novelty;
-    private $technicalMerit;
-    private $interestToCommunity;
-    private $longevity;
-    private $grammar;
-    private $likelyPresentation;
-    private $suitableForShort;
-    private $potential;
-    private $fixability;
+    private $s01;
+    private $s02;
+    private $s03;
+    private $s04;
+    private $s05;
+    private $s06;
+    private $s07;
+    private $s08;
+    private $s09;
+    private $s10;
+    private $s11;
 
     // sometimes joined
     /** @var ?string */
@@ -127,27 +125,6 @@ class ReviewInfo implements JsonSerializable {
     const RS_DELIVERED = 3;
     const RS_ADOPTED = 4;
     const RS_COMPLETED = 5;
-
-    /** @var array<non-empty-string,non-empty-string>
-     * @readonly */
-    static private $score_field_map = [
-        "overAllMerit" => "s01", "reviewerQualification" => "s02",
-        "novelty" => "s03", "technicalMerit" => "s04",
-        "interestToCommunity" => "s05", "longevity" => "s06", "grammar" => "s07",
-        "likelyPresentation" => "s08", "suitableForShort" => "s09",
-        "potential" => "s10", "fixability" => "s11"
-    ];
-    // see also Signature properties in PaperInfo
-    /** @var list<?non-empty-string>
-     * @readonly */
-    static private $new_score_fields = [
-        null, "overAllMerit", "reviewerQualification", "novelty",
-        "technicalMerit", "interestToCommunity", "longevity", "grammar",
-        "likelyPresentation", "suitableForShort", "potential", "fixability"
-    ];
-    /** @var array<string,ReviewFieldInfo> */
-    static private $field_info_map = [];
-    const MIN_SFIELD = 12;
 
     const RATING_GOODMASK = 1;
     const RATING_BADMASK = 126;
@@ -296,9 +273,6 @@ class ReviewInfo implements JsonSerializable {
         }
         if ($this->reviewWordCount !== null) {
             $this->reviewWordCount = (int) $this->reviewWordCount;
-        }
-        if ($this->reviewFormat !== null) {
-            $this->reviewFormat = (int) $this->reviewFormat;
         }
 
         $rform = $this->conf->review_form();
@@ -628,31 +602,6 @@ class ReviewInfo implements JsonSerializable {
         $assigned[] = $c;
     }
 
-    /** @param string $id
-     * @return ?ReviewFieldInfo */
-    static function field_info($id) {
-        $m = self::$field_info_map[$id] ?? null;
-        if (!$m && !array_key_exists($id, self::$field_info_map)) {
-            if (strlen($id) === 3 && ctype_digit(substr($id, 1))) {
-                $n = intval(substr($id, 1), 10);
-                $json_storage = $id;
-                if ($id[0] === "s" && isset(self::$new_score_fields[$n])) {
-                    $fid = self::$new_score_fields[$n];
-                    $m = new ReviewFieldInfo($id, true, $fid, null);
-                } else if ($id[0] === "s" || $id[0] === "t") {
-                    $m = new ReviewFieldInfo($id, $id[0] === "s", null, $id);
-                }
-            } else if (($short_id = self::$score_field_map[$id] ?? null)) {
-                $m = new ReviewFieldInfo($short_id, true, $id, null);
-            }
-            self::$field_info_map[$m->short_id] = $m;
-            if ($m && $m->main_storage !== null) {
-                self::$field_info_map[$m->main_storage] = $m;
-            }
-        }
-        return $m;
-    }
-
     /** @param ?TextPregexes $reg
      * @param int $order
      * @return bool */
@@ -819,7 +768,7 @@ class ReviewInfo implements JsonSerializable {
             if ($k[0] !== "_"
                 && $v !== null
                 && !in_array($k, ["conf", "prow", "sfields", "tfields", "fields"])
-                && !isset(self::$score_field_map[$k])) {
+                && strlen($k) > 3) {
                 $j[$k] = $v;
             }
         }

@@ -188,7 +188,7 @@ class ReviewCSV_Batch {
         $x["round"] = $prow->conf->round_name($rrow->reviewRound);
         $x["submitted_at"] = $rrow->reviewSubmitted;
         $x["status"] = $rrow->status_description();
-        $x["format"] = $rrow->reviewFormat ?? $prow->conf->default_format;
+        $x["format"] = $prow->conf->default_format;
         foreach ($rrow->viewable_fields($this->user) as $f) {
             if ($f->has_options ? $this->no_score : $this->no_text) {
                 continue;

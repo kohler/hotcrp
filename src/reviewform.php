@@ -65,7 +65,7 @@ class ReviewForm implements JsonSerializable {
             if (is_int($fid)) {
                 $fid = $j->id;
             }
-            if (($finfo = ReviewInfo::field_info($fid))) {
+            if (($finfo = ReviewFieldInfo::find($conf, $fid))) {
                 $f = ReviewField::make($conf, $finfo);
                 $this->fmap[$f->short_id] = $f;
                 $f->assign_json($j);
@@ -153,7 +153,7 @@ class ReviewForm implements JsonSerializable {
 
     /** @return ?Score_ReviewField */
     function default_highlighted_score() {
-        $f = $this->fmap["overAllMerit"] ?? null;
+        $f = $this->fmap["s01"] ?? null;
         if ($f && $f->order && $f->view_score >= VIEWSCORE_PC) {
             assert($f instanceof Score_ReviewField);
             return $f;
@@ -198,7 +198,7 @@ class ReviewForm implements JsonSerializable {
 
     private function print_web_edit(PaperInfo $prow, ReviewInfo $rrow, Contact $contact,
                                     ReviewValues $rvalues = null) {
-        $fi = $this->conf->format_info($rrow ? $rrow->reviewFormat : null);
+        $fi = $this->conf->format_info(null);
         echo '<div class="rve">';
         foreach ($rrow->viewable_fields($contact) as $f) {
             $fval = $f->normalize_value($f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_STRING));
@@ -362,7 +362,7 @@ $blind\n";
 
         $args = [
             "include_presence" => $prow->paperId <= 0,
-            "format" => $this->conf->format_info($rrow ? $rrow->reviewFormat : null)
+            "format" => $this->conf->format_info(null)
         ];
         foreach ($this->forder as $fid => $f) {
             if ($f->view_score > $revViewScore
@@ -766,7 +766,7 @@ $blind\n";
                 $rj[$f->uid()] = $fval;
             }
         }
-        if (($fmt = $rrow->reviewFormat ?? $this->conf->default_format)) {
+        if (($fmt = $this->conf->default_format)) {
             $rj["format"] = $fmt;
         }
 
@@ -1024,9 +1024,6 @@ class ReviewValues extends MessageSet {
                 } else if (preg_match('/\A==\+== Review Anonymity\s*/i', $line)) {
                     $field = "anonymity";
                     $mode = 1;
-                } else if (preg_match('/\A==\+== Review Format\s*/i', $line)) {
-                    $field = "reviewFormat";
-                    $mode = 1;
                 } else if (preg_match('/\A(?:==\+== [A-Z]\.|==\*== )\s*(.*?)\s*\z/', $line, $match)) {
                     while (substr($text, strlen($line), 6) === $linestart) {
                         $pos = strpos($text, "\n", strlen($line));
@@ -1081,9 +1078,6 @@ class ReviewValues extends MessageSet {
         }
         if (isset($this->req["anonymity"])) {
             $this->req["blind"] = strcasecmp(trim($this->req["anonymity"]), "Open") != 0;
-        }
-        if (isset($this->req["reviewFormat"])) {
-            $this->req["reviewFormat"] = trim($this->req["reviewFormat"]);
         }
 
         if ($this->paperId) {
@@ -1141,9 +1135,6 @@ class ReviewValues extends MessageSet {
             } else if ($k === "last" || $k === "lastName") {
                 if (is_string($v))
                     $this->req["reviewerLast"] = simplify_whitespace($v);
-            } else if ($k === "format") {
-                if (is_int($v))
-                    $this->req["reviewFormat"] = $v;
             } else if ($k === "version") {
                 if (is_int($v))
                     $this->req["version"] = $v;
@@ -1183,8 +1174,6 @@ class ReviewValues extends MessageSet {
                 $this->req["override"] = !!$v;
             } else if ($k === "blind" || $k === "version" || $k === "ready") {
                 $this->req[$k] = is_bool($v) ? (int) $v : cvtint($v);
-            } else if ($k === "format") {
-                $this->req["reviewFormat"] = cvtint($v);
             } else if (array_key_exists($k, $this->rf->fmap)) {
                 $this->req[$k] = $v;
             } else if (($f = $rf->field($k) ?? $this->conf->find_review_field($k))
@@ -1625,22 +1614,6 @@ class ReviewValues extends MessageSet {
         if ($diffinfo->nonempty()) {
             $qf[] = "reviewWordCount=?";
             $qv[] = $wc;
-        }
-        if (isset($this->req["reviewFormat"])
-            && $this->conf->opt("formatInfo")) {
-            $fmt = null;
-            foreach ($this->conf->opt("formatInfo") as $k => $f) {
-                if (($f["name"] ?? null)
-                    && strcasecmp($f["name"], $this->req["reviewFormat"]) === 0)
-                    $fmt = (int) $k;
-            }
-            if (!$fmt
-                && $this->req["reviewFormat"]
-                && preg_match('/\A(?:plain\s*)?(?:text)?\z/i', $this->req["reviewFormat"])) {
-                $fmt = 0;
-            }
-            $qf[] = "reviewFormat=?";
-            $qv[] = $fmt;
         }
 
         // notification

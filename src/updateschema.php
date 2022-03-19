@@ -2373,6 +2373,22 @@ class UpdateSchema {
             && $this->v259_add_affiliation_to_unaccented_name("DeletedContactInfo")) {
             $conf->update_schema_version(259);
         }
+        if ($conf->sversion === 259
+            && $conf->ql_ok("alter table PaperReview drop column `reviewFormat`")
+            && $conf->ql_ok("alter table ContactInfo add `cdbRoles` tinyint(1) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReview change `overAllMerit` `s01` smallint(1) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReview change `reviewerQualification` `s02` smallint(1) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReview change `novelty` `s03` smallint(1) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReview change `technicalMerit` `s04` smallint(1) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReview change `interestToCommunity` `s05` smallint(1) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReview change `longevity` `s06` smallint(1) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReview change `grammar` `s07` smallint(1) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReview change `likelyPresentation` `s08` smallint(1) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReview change `suitableForShort` `s09` smallint(1) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReview change `potential` `s10` smallint(1) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReview change `fixability` `s11` smallint(1) NOT NULL DEFAULT 0")) {
+            $conf->update_schema_version(260);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

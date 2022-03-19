@@ -77,7 +77,7 @@ class Reviews_Tester {
     }
 
     function test_add_incomplete_review() {
-        save_review(1, $this->u_mgbaker, ["overAllMerit" => 5, "ready" => false]);
+        save_review(1, $this->u_mgbaker, ["s01" => 5, "ready" => false]);
 
         assert_search_papers($this->u_chair, "re:3", "1-18");
         assert_search_papers($this->u_chair, "-re:3", "19-30");
@@ -105,7 +105,7 @@ class Reviews_Tester {
     }
 
     function test_complete_incomplete_review() {
-        save_review(1, $this->u_mgbaker, ["overAllMerit" => 5, "reviewerQualification" => 1, "ready" => true]);
+        save_review(1, $this->u_mgbaker, ["s01" => 5, "s02" => 1, "ready" => true]);
 
         assert_search_papers($this->u_chair, "re:3", "1-18");
         assert_search_papers($this->u_chair, "-re:3", "19-30");
@@ -209,7 +209,7 @@ class Reviews_Tester {
         xassert($tf->parse_text(false));
         xassert($tf->check_and_save($this->u_mgbaker));
         xassert_eqq(join(" ", $tf->updated ?? []), "#1A");
-        xassert(!$tf->has_problem_at("overAllMerit"));
+        xassert(!$tf->has_problem_at("s01"));
 
         assert_search_papers($this->u_chair, "has:ovemer", "");
 
@@ -218,7 +218,7 @@ class Reviews_Tester {
         xassert($tf->parse_text(false));
         xassert($tf->check_and_save($this->u_mgbaker));
         xassert_eqq(join(" ", $tf->updated), "#1A");
-        xassert(!$tf->has_problem_at("overAllMerit"));
+        xassert(!$tf->has_problem_at("s01"));
 
         assert_search_papers($this->u_chair, "ovemer:4", "1");
 

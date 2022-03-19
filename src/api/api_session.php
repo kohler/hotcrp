@@ -96,7 +96,7 @@ class Session_API {
         foreach ($settings as $name => $setting) {
             if (($f = $user->conf->review_field($name))) {
                 $terms = [$f->short_id];
-                if ($f->main_storage !== null) {
+                if ($f->main_storage !== null && $f->main_storage !== $f->short_id) {
                     $terms[] = $f->main_storage;
                 }
             } else {
