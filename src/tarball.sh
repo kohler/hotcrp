@@ -371,9 +371,9 @@ src/papertable.php
 src/paperrank.php
 src/permissionproblem.php
 src/responseround.php
-src/review.php
 src/reviewdiffinfo.php
 src/reviewfield.php
+src/reviewform.php
 src/reviewinfo.php
 src/reviewrefusalinfo.php
 src/reviewrequestinfo.php

@@ -576,8 +576,6 @@ insert into Settings (name, value) values ('pcrev_any', 1);
 insert into Settings (name, value) values ('extrev_view', 2);
 -- default: administrators must approve potentially-conflicted external reviews
 insert into Settings (name, value) values ('extrev_chairreq', 2);
--- default review form
-insert into Settings (name, value, data) values ('review_form',1,'{"overAllMerit":{"name":"Overall merit","order":1,"visibility":"au","options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},"reviewerQualification":{"name":"Reviewer expertise","order":2,"visibility":"au","options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},"t01":{"name":"Paper summary","order":3,"visibility":"au"},"t02":{"name":"Comments for author","order":4,"visibility":"au"},"t03":{"name":"Comments for PC","order":5,"visibility":"pc"}}');
 
 insert ignore into PaperStorage set
     paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain',

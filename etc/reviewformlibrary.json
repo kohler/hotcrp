@@ -106,13 +106,13 @@
         "visibility": "au"
     },
     {
-        "selector": "Comments to authors",
-        "name": "Comments to authors",
+        "selector": "Comments for authors",
+        "name": "Comments for authors",
         "visibility": "au"
     },
     {
-        "selector": "Comments to PC",
-        "name": "Comments to PC",
+        "selector": "Comments for PC",
+        "name": "Comments for PC",
         "visibility": "pc"
     },
     {

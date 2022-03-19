@@ -468,8 +468,8 @@ function json_object_replace($j, $updates, $nullable = false) {
 
 function caller_landmark($position = 1, $skipfunction_re = null) {
     if (is_string($position)) {
-        $position = 1;
         $skipfunction_re = $position;
+        $position = 1;
     }
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
     $fname = null;

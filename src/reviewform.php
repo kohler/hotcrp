@@ -1,11 +1,11 @@
 <?php
-// review.php -- HotCRP helper class for producing review forms and tables
+// reviewform.php -- HotCRP helper class for producing review forms and tables
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 // JSON schema for settings["review_form"]:
-// {FIELD:{"name":NAME,"description":DESCRIPTION,"order":ORDER,
-//         "display_space":ROWS,"visibility":VISIBILITY,
-//         "options":[DESCRIPTION,...],"option_letter":LEVELCHAR}}
+// [{"id":SHORT_ID,"name":NAME,"description":DESCRIPTION,"order":ORDER,
+//   "display_space":ROWS,"visibility":VISIBILITY,
+//   "options":[DESCRIPTION,...],"option_letter":LEVELCHAR}]
 
 class ReviewForm implements JsonSerializable {
     /** @var Conf
@@ -58,7 +58,7 @@ class ReviewForm implements JsonSerializable {
 
         // parse JSON
         if (!$rfj) {
-            $rfj = json_decode('[{"id":"s01","name":"Overall merit","order":1,"visibility":"au","options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},{"id":"s02","name":"Reviewer expertise","order":2,"visibility":"au","options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},{"id":"t01","name":"Paper summary","order":3,"visibility":"au"},{"id":"t02","name":"Comments to authors","order":4,"visibility":"au"},{"id":"t03","name":"Comments to PC","order":5,"visibility":"pc"}]');
+            $rfj = json_decode('[{"id":"s01","name":"Overall merit","order":1,"visibility":"au","options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},{"id":"s02","name":"Reviewer expertise","order":2,"visibility":"au","options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},{"id":"t01","name":"Paper summary","order":3,"visibility":"au"},{"id":"t02","name":"Comments for authors","order":4,"visibility":"au"},{"id":"t03","name":"Comments for PC","order":5,"visibility":"pc"}]');
         }
 
         foreach ($rfj as $fid => $j) {
@@ -1043,6 +1043,7 @@ class ReviewValues extends MessageSet {
                         $this->field_lineno[$field] = $this->lineno;
                         $nfields++;
                     } else {
+                        $field = null;
                         $this->check_garbage();
                         $this->rmsg(null, "<0>Review field ‘{$match[1]}’ is not used for {$this->conf->short_name} reviews. Ignoring this section.", self::ERROR);
                     }

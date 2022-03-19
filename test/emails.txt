@@ -1400,8 +1400,8 @@ Paper summary
 -------------
 No summary
 
-Comments for author
--------------------
+Comments for authors
+--------------------
 No comments
 
 ******** test06-17external
@@ -1444,8 +1444,8 @@ Paper summary
 -------------
 Hi
 
-Comments for author
--------------------
+Comments for authors
+--------------------
 Bye
 
 ******** test06-17lixia
@@ -1488,8 +1488,8 @@ Paper summary
 -------------
 Radical
 
-Comments for author
--------------------
+Comments for authors
+--------------------
 Nonradical
 
 ******** test06-external2-request17
@@ -1733,8 +1733,8 @@ Paper summary
 -------------
 Summary V
 
-Comments for author
--------------------
+Comments for authors
+--------------------
 Comments V
 
 ******** test05-reject14-2
@@ -1784,7 +1784,7 @@ Paper summary
 -------------
 Summary V
 
-Comments for author
--------------------
+Comments for authors
+--------------------
 Comments V
 
