@@ -130,14 +130,6 @@ class ReviewInfo implements JsonSerializable {
 
     /** @var array<non-empty-string,non-empty-string>
      * @readonly */
-    static public $text_field_map = [
-        "paperSummary" => "t01", "commentsToAuthor" => "t02",
-        "commentsToPC" => "t03", "commentsToAddress" => "t04",
-        "weaknessOfPaper" => "t05", "strengthOfPaper" => "t06",
-        "textField7" => "t07", "textField8" => "t08"
-    ];
-    /** @var array<non-empty-string,non-empty-string>
-     * @readonly */
     static private $score_field_map = [
         "overAllMerit" => "s01", "reviewerQualification" => "s02",
         "novelty" => "s03", "technicalMerit" => "s04",
@@ -650,8 +642,6 @@ class ReviewInfo implements JsonSerializable {
                 } else if ($id[0] === "s" || $id[0] === "t") {
                     $m = new ReviewFieldInfo($id, $id, $id[0] === "s", null, $id);
                 }
-            } else if (($short_id = self::$text_field_map[$id] ?? null)) {
-                $m = new ReviewFieldInfo($short_id, $short_id, false, null, $short_id);
             } else if (($short_id = self::$score_field_map[$id] ?? null)) {
                 $m = new ReviewFieldInfo($id, $short_id, true, $id, null);
             }
