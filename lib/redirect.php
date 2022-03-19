@@ -145,7 +145,7 @@ function ensure_session($flags = 0) {
             session_regenerate_id();
         }
         $_SESSION["testsession"] = false;
-        $_SESSION["v"] = 1;
+        $_SESSION["v"] = 2;
     } else if (Conf::$main->_session_handler
                && is_callable([Conf::$main->_session_handler, "refresh_cookie"])) {
         call_user_func([Conf::$main->_session_handler, "refresh_cookie"], $sn, session_id());
