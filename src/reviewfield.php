@@ -694,7 +694,7 @@ class Score_ReviewField extends ReviewField {
         if ($flags & (self::VALUE_SC | self::VALUE_REV_NUM)) {
             $vc = $this->value_class($value);
             if ($flags & self::VALUE_REV_NUM) {
-                $text = "<strong class=\"rev_num {$vc}\">{$text}</strong>";
+                $text = "<strong class=\"rev_num {$vc}\">{$text}.</strong>";
             } else {
                 $text = "<span class=\"{$vc}\">{$text}</span>";
             }
