@@ -168,7 +168,7 @@ class MailPreparation implements JsonSerializable {
             unset($headers["mime-version"], $headers["content-type"], $headers["content-transfer-encoding"]);
             $text = join("", $headers) . $eol . $this->body;
             if (PHP_SAPI != "cli") {
-                $this->conf->feedback_msg(new MessageItem(null, "<pre>" . htmlspecialchars($text) . "</pre>", 0));
+                $this->conf->feedback_msg(new MessageItem(null, "<pre class=\"pw\">" . htmlspecialchars($text) . "</pre>", 0));
             } else if (!$this->conf->opt("disablePrintEmail")) {
                 fwrite(STDERR, "========================================\n" . str_replace("\r\n", "\n", $text) .  "========================================\n");
             }
