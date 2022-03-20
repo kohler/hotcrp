@@ -62,12 +62,9 @@ class ReviewFieldInfo {
                 && $d2 <= 57
                 && ($n = ($d1 - 48) * 10 + $d2 - 48) > 0) {
                 if ($id[0] === "s" && $n < 12) {
-                    if ($sv >= 260) {
-                        $m = new ReviewFieldInfo($id, true, $id, null);
-                    } else {
-                        $m = new ReviewFieldInfo($id, true, self::$new_score_fields[$n - 1], null);
-                        self::$field_info_map[$m->main_storage] = $m;
-                    }
+                    $storage = $sv >= 260 ? $id : self::$new_score_fields[$n - 1];
+                    $m = new ReviewFieldInfo($id, true, $storage, null);
+                    self::$field_info_map[self::$new_score_fields[$n - 1]] = $m;
                 } else {
                     $m = new ReviewFieldInfo($id, $id[0] === "s", null, $id);
                 }
@@ -436,6 +433,7 @@ abstract class ReviewField implements JsonSerializable {
 
     /** @param list<string> &$t */
     protected function unparse_text_field_header(&$t, $args) {
+        $t[] = "\n";
         if (strlen($this->name) > 75) {
             $t[] = prefix_word_wrap("", $this->name, 0, 75, $args["flowed"]);
             $t[] = "\n";
@@ -488,6 +486,7 @@ abstract class ReviewField implements JsonSerializable {
      * @param array{format:?TextFormat,include_presence:bool} $args */
     abstract function unparse_offline_field(&$t, $fv, $args);
 }
+
 
 class Score_ReviewField extends ReviewField {
     /** @var array<mixed,string> */
@@ -695,9 +694,9 @@ class Score_ReviewField extends ReviewField {
         if ($flags & (self::VALUE_SC | self::VALUE_REV_NUM)) {
             $vc = $this->value_class($value);
             if ($flags & self::VALUE_REV_NUM) {
-                $text = '<strong class="rev_num ' . $vc . '">' . $text . '.</strong>';
+                $text = "<strong class=\"rev_num {$vc}\">{$text}</strong>";
             } else {
-                $text = '<span class="' . $vc . '">' . $text . '</span>';
+                $text = "<span class=\"{$vc}\">{$text}</span>";
             }
         }
         return $text;
@@ -759,7 +758,7 @@ class Score_ReviewField extends ReviewField {
 
     /** @param string $text
      * @return int|false */
-    function parse_option_value($text) {
+    function parse_value($text) {
         $text = trim($text);
         if ($text === "") {
             return 0;
@@ -784,12 +783,6 @@ class Score_ReviewField extends ReviewField {
         } else {
             return false;
         }
-    }
-
-    /** @param string $text
-     * @return int|string|false */
-    function parse_value($text) {
-        return $this->parse_option_value($text);
     }
 
     /** @param string $text
@@ -841,19 +834,35 @@ class Score_ReviewField extends ReviewField {
     }
 
     function unparse_text_field(&$t, $fv, $args) {
-        $this->unparse_text_field_header($t, $args);
-        assert($fv != 0);
-        $t[] = prefix_word_wrap("{$fv}. ", $this->options[$fv] ?? "", strlen($fv) + 2, null, $args["flowed"]);
+        if ($fv != 0) {
+            $this->unparse_text_field_header($t, $args);
+            $t[] = prefix_word_wrap("{$fv}. ", $this->options[$fv] ?? "", strlen($fv) + 2, null, $args["flowed"]);
+        }
     }
 
     function unparse_offline_field(&$t, $fv, $args) {
         $this->unparse_offline_field_header($t, $args);
+        $t[] = "==-== Choices:\n";
+        foreach ($this->options as $ch => $value) {
+            $y = "==-==    {$ch}. ";
+            /** @phan-suppress-next-line PhanParamSuspiciousOrder */
+            $t[] = prefix_word_wrap($y, $value, str_pad("==-==", strlen($y)));
+        }
+        if (!$this->required) {
+            $t[] = "==-==    No entry\n==-== Enter your choice:\n";
+        } else if ($this->option_letter) {
+            $t[] = "==-== Enter the letter of your choice:\n";
+        } else {
+            $t[] = "==-== Enter the number of your choice:\n";
+        }
         $t[] = "\n";
         if (isset($this->options[$fv])) {
-            $fv = "{$fv}. " . $this->options[$fv];
+            $t[] = "{$fv}. {$this->options[$fv]}\n";
+        } else if ($this->required) {
+            $t[] = "(Your choice here)\n";
+        } else {
+            $t[] = "No entry\n";
         }
-        $t[] = preg_replace('/^(?===[-+*]==)/m', '\\', $fv ? : "");
-        $t[] = "\n";
     }
 }
 
@@ -928,9 +937,11 @@ class Text_ReviewField extends ReviewField {
     }
 
     function unparse_text_field(&$t, $fv, $args) {
-        $this->unparse_text_field_header($t, $args);
-        $t[] = $fv;
-        $t[] = "\n";
+        if ($fv !== "") {
+            $this->unparse_text_field_header($t, $args);
+            $t[] = $fv;
+            $t[] = "\n";
+        }
     }
 
     function unparse_offline_field(&$t, $fv, $args) {

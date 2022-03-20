@@ -313,7 +313,7 @@ class Constant_Fexpr extends Fexpr {
             $this->x = 89 - ord($letter);
         } else if ($format === Fexpr::FREVIEWFIELD
                    && $letter
-                   && ($x = $format_detail->parse_option_value($letter))) {
+                   && ($x = $format_detail->parse_value($letter))) {
             $this->x = $x;
         } else if ($format === Fexpr::FROUND
                    && ($round = $formula->conf->round_number($this->x, false)) !== null) {

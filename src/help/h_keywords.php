@@ -217,7 +217,7 @@ class Keywords_HelpTopic {
                 $gt_typical = "greater than {$r->typical_score()}";
                 $le_typical = "less than or equal to {$r->typical_score()}";
             } else {
-                $s1 = $r->parse_option_value($r->typical_score());
+                $s1 = $r->parse_value($r->typical_score());
                 if ($hth->conf->opt("smartScoreCompare")) {
                     $s1le = range($s1, 1);
                     $s1gt = range(count($r->options), $s1 + 1);

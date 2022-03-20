@@ -419,10 +419,7 @@ $blind\n";
         foreach ($rrow->viewable_fields($contact) as $f) {
             if (isset($rrow->fields[$f->order])) {
                 $fv = $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_STRING | ReviewField::VALUE_TRIM);
-                if ($fv != "") {
-                    $t[] = "\n";
-                    $f->unparse_text_field($t, $fv, $args);
-                }
+                $f->unparse_text_field($t, $fv, $args);
             }
         }
         return join("", $t);
