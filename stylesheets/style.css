@@ -288,6 +288,8 @@ a.track:hover, a.ptitle:hover, a.pnum:hover,
 .js-click-child:hover a.hover-child,
 a:hover .pavfn {
 	color: #c45500;
+	-webkit-text-decoration-color: #c45500;
+	text-decoration-color: #c45500;
 }
 a:active,
 a.noq:active,
@@ -295,6 +297,8 @@ a.track:active, a.ptitle:active, a.pnum:active,
 .btn-link:active, .btn-qlink:active, .btn-xlink:active,
 a.attention {
 	color: red;
+	-webkit-text-decoration-color: red;
+	text-decoration-color: red;
 }
 a.btn {
 	cursor: default;
@@ -302,19 +306,24 @@ a.btn {
 .noul, .noul:hover,
 a.ulh, a.q, a.qo, a.btn, a.btn:hover,
 .papmode.active > a, .papmode.active:hover > a.noul, .leftmenu-item > a,
-a.pnum, a.ptitle, u.x {
-	-webkit-text-decoration-line: inherit;
-	text-decoration-line: inherit;
+u.x {
+	text-decoration: inherit;
 }
 .ul,
 a.ulh:hover, a.q:hover,
 .papmode.active:hover > a, .leftmenu-item:hover > a,
-tr.pl:hover a.pnum, tr.pl:hover a.ptitle,
 div.js-foldup:hover a.js-foldup,
 div.js-aufoldup:hover a.js-aufoldup,
 div.js-assignment-fold:hover a.js-assignment-fold,
 .js-click-child:hover a.hover-child,
 a:hover u.x {
+	text-decoration: underline;
+}
+a.pnum, a.ptitle {
+	-webkit-text-decoration-line: inherit;
+	text-decoration-line: inherit;
+}
+tr.pl:hover a.pnum, tr.pl:hover a.ptitle {
 	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
@@ -878,13 +887,11 @@ span.hastitle {
 	font-weight: bold;
 }
 .tll.active a.tla {
-	-webkit-text-decoration-line: none;
-	text-decoration-line: none;
+	text-decoration: inherit;
 	color: inherit;
 }
 .tll.active a.tla:hover {
-	-webkit-text-decoration-line: underline;
-	text-decoration-line: underline;
+	text-decoration: underline;
 }
 .tll {
 	position: relative;
@@ -947,13 +954,11 @@ span.hastitle {
 	font-weight: bold;
 }
 .linelink.active a.lla {
-	-webkit-text-decoration-line: none;
-	text-decoration-line: none;
+	text-decoration: inherit;
 	color: inherit;
 }
 .linelink.active a.lla:hover {
-	-webkit-text-decoration-line: underline;
-	text-decoration-line: underline;
+	text-decoration: underline;
 }
 .linelink .lld {
 	display: none;
@@ -1102,8 +1107,7 @@ span.expander {
 	text-indent: 0;
 	padding-right: 0.25em;
 	opacity: 0.65;
-	-webkit-text-decoration-line: none;
-	text-decoration-line: none;
+	text-decoration: none;
 }
 
 a.tbtn {
@@ -1111,8 +1115,7 @@ a.tbtn {
 	text-indent: 0;
 	padding: 2px 4px;
 	border-radius: 5px;
-	-webkit-text-decoration-line: none;
-	text-decoration-line: none;
+	text-decoration: inherit;
 	color: white;
 	background: #63639c;
 }
@@ -1137,8 +1140,7 @@ a.closebtn {
 	text-indent: 0;
 	padding: 2px 4px;
 	margin-left: 0.75em;
-	-webkit-text-decoration-line: none;
-	text-decoration-line: none;
+	text-decoration: inherit;
 	border: 1px solid black;
 	color: black;
 	line-height: .85;
@@ -2806,13 +2808,11 @@ hr.g, hr.mg, hr.ug {
 }
 
 .pl_sort {
-	-webkit-text-decoration-line: none;
-	text-decoration-line: none;
+	text-decoration: inherit;
 	color: #444488;
 }
 .pl_sort:hover {
-	-webkit-text-decoration-line: underline;
-	text-decoration-line: underline;
+	text-decoration: underline;
 	color: black;
 }
 .pl_sorting_fwd::after {
@@ -2927,8 +2927,7 @@ tr.plx {
 	background: #333333;
 	color: white;
 	font-weight: 500;
-	-webkit-text-decoration-line: none;
-	text-decoration-line: none;
+	text-decoration: none;
 	text-indent: 0;
 }
 h1 .badge {
@@ -4165,8 +4164,7 @@ body {
 	border: 1px solid #222222;
 	white-space: nowrap;
 	font-weight: 500;
-	-webkit-text-decoration-line: none;
-	text-decoration-line: none;
+	text-decoration: inherit;
 }
 .tracker-nomatch .tracker-name {
 	border-color: #e33355;
