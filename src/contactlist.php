@@ -808,7 +808,7 @@ class ContactList {
                 || $this->limit === "req") {
                 $f = $this->_rfields[$fieldId - self::FIELD_SCORE];
                 if (($scores = $this->_score_data[$f->order][$row->contactId] ?? [])) {
-                    return $f->unparse_graph($scores, 2, 0);
+                    return $f->unparse_graph(new ScoreInfo($scores, true), 2);
                 }
             }
             return "";

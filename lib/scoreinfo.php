@@ -3,9 +3,10 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ScoreInfo {
+    /** @var list<int|float> */
     private $_scores = [];
-    /** @var bool */
-    private $_keyed = true;
+    /** @var null|int|float */
+    private $_my_score;
     /** @var bool */
     private $_sorted = false;
     /** @var int|float */
@@ -45,11 +46,13 @@ class ScoreInfo {
         return $stat === self::MEDIAN || $stat === self::MIN || $stat === self::MAX;
     }
 
+    /** @param null|list<int|float>|string $data
+     * @param bool $positive */
     function __construct($data = null, $positive = false) {
         $this->_positive = $positive;
         if (is_array($data)) {
-            foreach ($data as $key => $x) {
-                $this->add($x, $key);
+            foreach ($data as $x) {
+                $this->add($x);
             }
         } else if (is_string($data) && $data !== "") {
             foreach (preg_split('/[\s,]+/', $data) as $x) {
@@ -86,19 +89,12 @@ class ScoreInfo {
     }
 
     /** @param int|float $x */
-    function add($x, $key = null) {
+    function add($x) {
         if (is_bool($x)) {
             $x = $x ? 1 : 0;
         }
         if ($x !== null && (!$this->_positive || $x > 0)) {
-            if ($this->_keyed && $key === null) {
-                $this->_keyed = false;
-            }
-            if ($this->_keyed) {
-                $this->_scores[$key] = $x;
-            } else {
-                $this->_scores[] = $x;
-            }
+            $this->_scores[] = $x;
             $this->_sum += $x;
             $this->_sumsq += $x * $x;
             ++$this->_n;
@@ -112,14 +108,34 @@ class ScoreInfo {
         }
     }
 
+    /** @param null|int|float $s */
+    function set_my_score($s) {
+        $this->_my_score = $s;
+    }
+
+    /** @return bool */
+    function is_empty() {
+        return $this->_n === 0;
+    }
+
     /** @return int */
     function count() {
         return $this->_n;
     }
 
+    /** @return null|int|float */
+    function my_score() {
+        return $this->_my_score;
+    }
+
     /** @return int */
     function n() {
         return $this->_n;
+    }
+
+    /** @return int|float */
+    function sum() {
+        return $this->_sum;
     }
 
     /** @return float */
@@ -163,7 +179,7 @@ class ScoreInfo {
 
     private function sort() {
         if (!$this->_sorted) {
-            $this->_keyed ? asort($this->_scores) : sort($this->_scores);
+            sort($this->_scores);
             $this->_sorted = true;
         }
     }
@@ -171,11 +187,10 @@ class ScoreInfo {
     /** @return int|float */
     function median() {
         $this->sort();
-        $a = $this->_keyed ? array_values($this->_scores) : $this->_scores;
         if ($this->_n % 2) {
-            return $a[($this->_n - 1) >> 1];
+            return $this->_scores[($this->_n - 1) >> 1];
         } else if ($this->_n) {
-            return ($a[($this->_n - 2) >> 1] + $a[$this->_n >> 1]) / 2;
+            return ($this->_scores[($this->_n - 2) >> 1] + $this->_scores[$this->_n >> 1]) / 2;
         } else {
             return 0;
         }
@@ -213,12 +228,18 @@ class ScoreInfo {
         }
     }
 
-    /** @param string $sorter
+    /** @return list<int|float> */
+    function as_sorted_list() {
+        $this->sort();
+        return $this->_scores;
+    }
+
+    /** @param 'C'|'M'|'E'|'V'|'D'|'A'|'Y' $sorter
      * @return null|int|float|list<int> */
-    function sort_data($sorter, $key = null) {
-        if ($sorter === "Y" && $key !== null && $this->_keyed) {
-            return $this->_scores[$key] ?? -1000000;
-        } else if ($sorter === "Y" || $sorter === "C" || $sorter === "M") {
+    function sort_data($sorter) {
+        if ($sorter === "Y") {
+            return $this->_my_score ?? -1000000;
+        } else if ($sorter === "C" || $sorter === "M") {
             $this->sort();
             return $this->_scores ? array_values($this->_scores) : null;
         } else if ($sorter === "E") {
@@ -234,7 +255,8 @@ class ScoreInfo {
 
     /** @param null|int|float|list<int> $av
      * @param null|int|float|list<int> $bv
-     * @return int */
+     * @param -1|1 $null_direction
+     * @return -1|0|1 */
     static function compare($av, $bv, $null_direction = 1) {
         if ($av === null || $bv === null) {
             return $av !== null ? -$null_direction : ($bv !== null ? $null_direction : 0);
@@ -266,8 +288,9 @@ class ScoreInfo {
         return 0;
     }
 
-    function compare_by(ScoreInfo $b, $sorter, $key = null) {
-        return self::compare($this->sort_data($sorter, $key),
-                             $b->sort_data($sorter, $key));
+    /** @param 'C'|'M'|'E'|'V'|'D'|'A'|'Y' $sorter
+     * @return -1|0|1 */
+    function compare_by(ScoreInfo $b, $sorter) {
+        return self::compare($this->sort_data($sorter), $b->sort_data($sorter));
     }
 }

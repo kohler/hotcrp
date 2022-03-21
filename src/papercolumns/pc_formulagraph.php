@@ -3,10 +3,12 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
+    /** @var Formula */
     public $formula;
+    /** @var callable */
     private $indexes_function;
+    /** @var callable */
     private $formula_function;
-    private $results;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->formula = $cj->formula;
@@ -29,16 +31,22 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         parent::prepare($pl, $visible);
         return true;
     }
-    function score_values(PaperList $pl, PaperInfo $row) {
+    function score_info(PaperList $pl, PaperInfo $row) {
         $indexesf = $this->indexes_function;
         $indexes = $indexesf ? $indexesf($row, $pl->user) : [null];
         $formulaf = $this->formula_function;
-        $vs = [];
+        $sci = new ScoreInfo(null, true);
         foreach ($indexes as $i) {
-            if (($v = $formulaf($row, $i, $pl->user)) !== null)
-                $vs[$i] = $v;
+            if (($v = $formulaf($row, $i, $pl->user)) !== null
+                && $v > 0) {
+                $sci->add($v);
+                if ($i === $this->cid
+                    && $row->can_view_review_identity_of($i, $pl->user)) {
+                    $sci->set_my_score($v);
+                }
+            }
         }
-        return $vs;
+        return $sci;
     }
     function header(PaperList $pl, $is_text) {
         $x = $this->formula->column_header();

@@ -804,9 +804,9 @@ class TagList_PaperColumn extends PaperColumn {
 }
 
 abstract class ScoreGraph_PaperColumn extends PaperColumn {
-    /** @var Contact */
-    protected $contact;
-    protected $not_me;
+    /** @var int */
+    protected $cid;
+    /** @var string */
     protected $score_sort;
     /** @var Score_ReviewField */
     protected $format_field;
@@ -831,9 +831,10 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
         return $this->score_sort;
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $pl->reviewer_user();
-        $this->not_me = $this->contact->contactId !== $pl->user->contactId;
-        if ($visible && $this->not_me
+        $ruser = $pl->reviewer_user();
+        $this->cid = $ruser->contactId;
+        if ($visible
+            && $this->cid !== $pl->user->contactId
             && (!$pl->user->privChair || $pl->conf->has_any_manager())) {
             $pl->qopts["reviewSignatures"] = true;
         }
@@ -841,21 +842,15 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
             $this->score_sort($pl);
         }
     }
-    /** @return array<int,int> */
-    abstract function score_values(PaperList $pl, PaperInfo $row);
+    /** @return ScoreInfo */
+    abstract function score_info(PaperList $pl, PaperInfo $row);
     function prepare_sort(PaperList $pl, $sortindex) {
         $this->sortmap = $this->avgmap = [];
         foreach ($pl->rowset() as $row) {
-            $s = $this->score_values($pl, $row);
-            if ($s !== null) {
-                $scoreinfo = new ScoreInfo($s, true);
-                $cid = $this->contact->contactId;
-                if ($this->not_me
-                    && !$row->can_view_review_identity_of($cid, $pl->user)) {
-                    $cid = 0;
-                }
-                $this->sortmap[$row->paperXid] = $scoreinfo->sort_data($this->score_sort, $cid);
-                $this->avgmap[$row->paperXid] = $scoreinfo->mean();
+            $sci = $this->score_info($pl, $row);
+            if (!$sci->is_empty()) {
+                $this->sortmap[$row->paperXid] = $sci->sort_data($this->score_sort);
+                $this->avgmap[$row->paperXid] = $sci->mean();
             }
         }
     }
@@ -867,20 +862,16 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
         return $x;
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $values = $this->score_values($pl, $row);
-        if (empty($values)) {
+        $sci = $this->score_info($pl, $row);
+        if (!$sci->is_empty()) {
+            return $this->format_field->unparse_graph($sci, 1);
+        } else {
             return "";
         }
-        $pl->need_render = true;
-        $cid = $this->contact->contactId;
-        if ($this->not_me && !$row->can_view_review_identity_of($cid, $pl->user)) {
-            $cid = 0;
-        }
-        return $this->format_field->unparse_graph($values, 1, $values[$cid] ?? null);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $values = array_map([$this->format_field, "unparse_value"],
-                            $this->score_values($pl, $row));
+        $si = $this->score_info($pl, $row);
+        $values = array_map([$this->format_field, "unparse_value"], $si->as_sorted_list());
         return join(" ", array_values($values));
     }
 }
@@ -903,23 +894,27 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         parent::prepare($pl, $visible);
         return true;
     }
-    /** return array<int,int> */
-    function score_values(PaperList $pl, PaperInfo $row) {
+    function score_info(PaperList $pl, PaperInfo $row) {
         $f = $this->format_field;
-        $row->ensure_review_field_order($f->order);
-        $scores = [];
         $vs = $f->view_score;
+        $row->ensure_review_field_order($f->order);
+        $sci = new ScoreInfo(null, true);
         foreach ($row->viewable_reviews_as_display($pl->user) as $rrow) {
             if ($rrow->reviewSubmitted
                 && $rrow->fields[$f->order]
                 && ($f->view_score >= VIEWSCORE_PC
-                    || $f->view_score > $pl->user->view_score_bound($row, $rrow)))
-                $scores[$rrow->contactId] = $rrow->fields[$f->order];
+                    || $f->view_score > $pl->user->view_score_bound($row, $rrow))) {
+                $sci->add($rrow->fields[$f->order]);
+                if ($rrow->contactId === $this->cid
+                    && $pl->user->can_view_review_identity($row, $rrow)) {
+                    $sci->set_my_score($rrow->fields[$f->order]);
+                }
+            }
         }
-        return $scores;
+        return $sci;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        // Do not use score_values to determine content emptiness, since
+        // Do not use score_info to determine content emptiness, since
         // that would load the scores from the DB -- even for folded score
         // columns.
         return !$row->may_have_viewable_scores($this->format_field, $pl->user);

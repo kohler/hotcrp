@@ -68,10 +68,8 @@ class ReviewFieldInfo {
                 } else {
                     $m = new ReviewFieldInfo($id, $id[0] === "s", null, $id);
                 }
-                self::$field_info_map[$id] = $m;
-            } else {
-                self::$field_info_map[$id] = null;
             }
+            self::$field_info_map[$id] = $m;
         }
         return $m;
     }
@@ -391,19 +389,20 @@ abstract class ReviewField implements JsonSerializable {
 
     /** @param ?string $id
      * @param string $label_for
-     * @param ?ReviewValues $rvalues */
-    protected function print_web_edit_open($id, $label_for, $rvalues) {
+     * @param ?ReviewValues $rvalues
+     * @param ?array{name_html?:string,label_class?:string} $args */
+    protected function print_web_edit_open($id, $label_for, $rvalues, $args = null) {
         echo '<div class="rf rfe" data-rf="', $this->uid(),
             '"><h3 class="',
             $rvalues ? $rvalues->control_class($this->short_id, "rfehead") : "rfehead";
         if ($id !== null) {
             echo '" id="', $id;
         }
-        echo '"><label class="revfn';
+        echo '"><label class="', $args["label_class"] ?? "revfn";
         if ($this->required) {
             echo ' field-required';
         }
-        echo '" for="', $label_for, '">', $this->name_html, '</label>';
+        echo '" for="', $label_for, '">', $args["name_html"] ?? $this->name_html, '</label>';
         if ($this->view_score < VIEWSCORE_AUTHOR) {
             echo '<div class="field-visibility">';
             if ($this->view_score < VIEWSCORE_REVIEWERONLY) {
@@ -707,23 +706,21 @@ class Score_ReviewField extends ReviewField {
         return (string) $this->unparse_value($value, 0, "%.2f");
     }
 
-    /** @return string */
-    function unparse_graph($v, $style, $myscore) {
+    /** @param ScoreInfo $sci
+     * @param 1|2 $style
+     * @return string */
+    function unparse_graph($sci, $style) {
         $max = count($this->options);
 
-        if (!is_object($v)) {
-            $v = new ScoreInfo($v, true);
-        }
-        $counts = $v->counts($max);
-
-        $avgtext = $this->unparse_average($v->mean());
-        if ($v->count() > 1 && ($stddev = $v->stddev_s())) {
+        $avgtext = $this->unparse_average($sci->mean());
+        if ($sci->count() > 1 && ($stddev = $sci->stddev_s())) {
             $avgtext .= sprintf(" ± %.2f", $stddev);
         }
 
+        $counts = $sci->counts($max);
         $args = "v=" . join(",", $counts);
-        if ($myscore && $counts[$myscore - 1] > 0) {
-            $args .= "&amp;h=$myscore";
+        if ($sci->my_score() && $counts[$sci->my_score() - 1] > 0) {
+            $args .= "&amp;h=" . $sci->my_score();
         }
         if ($this->option_letter) {
             $args .= "&amp;c=" . chr($this->option_letter - 1);
@@ -735,11 +732,10 @@ class Score_ReviewField extends ReviewField {
         if ($style == 1) {
             $width = 5 * $max + 3;
             $height = 5 * max(3, max($counts)) + 3;
-            $retstr = "<div class=\"need-scorechart\" style=\"width:${width}px;height:${height}px\" data-scorechart=\"$args&amp;s=1\" title=\"$avgtext\"></div>";
+            $retstr = "<div class=\"need-scorechart\" style=\"width:{$width}px;height:{$height}px\" data-scorechart=\"{$args}&amp;s=1\" title=\"{$avgtext}\"></div>";
         } else {
             $retstr = "<div class=\"sc\">"
-                . "<div class=\"need-scorechart\" style=\"width:64px;height:8px\" data-scorechart=\"$args&amp;s=2\" title=\"$avgtext\"></div>"
-                . "<br>";
+                . "<div class=\"need-scorechart\" style=\"width:64px;height:8px\" data-scorechart=\"{$args}&amp;s=2\" title=\"{$avgtext}\"></div><br>";
             if ($this->option_letter) {
                 for ($key = $max; $key >= 1; --$key) {
                     $retstr .= ($key < $max ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $counts[$key - 1] . "</span>";
@@ -749,7 +745,7 @@ class Score_ReviewField extends ReviewField {
                     $retstr .= ($key > 1 ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $counts[$key - 1] . "</span>";
                 }
             }
-            $retstr .= '<br><span class="sc_sum">' . $avgtext . "</span></div>";
+            $retstr .= "<br><span class=\"sc_sum\">{$avgtext}</span></div>";
         }
         Ht::stash_script("$(hotcrp.scorechart)", "scorechart");
 
