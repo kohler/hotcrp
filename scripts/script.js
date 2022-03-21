@@ -9931,7 +9931,6 @@ function row_click(evt) {
             window.location = href;
         } else {
             var w = window.open(href, "_blank");
-            w && w.blur();
             window.focus();
         }
     }
