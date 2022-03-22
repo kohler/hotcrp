@@ -7,16 +7,16 @@ class Timestamp_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $at = max($a->timeFinalSubmitted, $a->timeSubmitted, 0);
-        $bt = max($b->timeFinalSubmitted, $b->timeSubmitted, 0);
+        $at = max($a->timeSubmitted, 0);
+        $bt = max($b->timeSubmitted, 0);
         return $bt <=> $at;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return max($row->timeFinalSubmitted, $row->timeSubmitted) <= 0;
+        return $row->timeSubmitted <= 0;
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if (($t = max($row->timeFinalSubmitted, $row->timeSubmitted, 0)) > 0) {
-            return $row->conf->unparse_time_log($t);
+        if ($row->timeSubmitted > 0) {
+            return $row->conf->unparse_time_log($row->timeSubmitted);
         }
         return "";
     }
