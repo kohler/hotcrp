@@ -1207,7 +1207,7 @@ class AssignmentSet {
         $last = $req["lastName"];
         $email = trim((string) $req["email"]);
         $lemail = strtolower($email);
-        $special = null;
+        $special = "";
         if ($lemail) {
             $special = $lemail;
         } else if (!$first && $last && strpos(trim($last), " ") === false) {
@@ -1222,7 +1222,8 @@ class AssignmentSet {
             return "missing";
         } else if ($special === "none") {
             return [$this->astate->none_user()];
-        } else if (preg_match('/\A(?:(anonymous\d*)|new-?anonymous|anonymous-?new)\z/', $special, $m)) {
+        } else if ($special !== ""
+                   && preg_match('/\A(?:(anonymous\d*)|new-?anonymous|anonymous-?new)\z/', $special, $m)) {
             return isset($m[1]) && $m[1] ? $m[1] : "anonymous-new";
         }
         if ($special && !$first && (!$lemail || !$last)) {
