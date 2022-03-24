@@ -777,7 +777,9 @@ class TestRunner {
     static function go($testo) {
         $ro = new ReflectionObject($testo);
         foreach ($ro->getMethods() as $m) {
-            if (str_starts_with($m->name, "test_"))
+            if (str_starts_with($m->name, "test")
+                && strlen($m->name) > 4
+                && ($m->name[4] === "_" || ctype_upper($m->name[4])))
                 $testo->{$m->name}();
         }
     }

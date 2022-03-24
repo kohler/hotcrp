@@ -35,7 +35,8 @@ class SiteLoader {
         "TagMap" => "lib/tagger.php",
         "TextPregexes" => "lib/text.php",
         "Text_PaperOption" => "src/paperoption.php",
-        "XlsxGenerator" => "lib/xlsx.php"
+        "XlsxGenerator" => "lib/xlsx.php",
+        "dmp\\diff_match_patch" => "lib/diff_match_patch.php"
     ];
 
     static $suffix_map = [
