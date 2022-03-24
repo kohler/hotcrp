@@ -46,9 +46,8 @@ class diff_match_patch {
      * @param ?float $deadline
      * @return list<diff_obj> */
     function diff_main($text1, $text2, $checklines = null, $deadline = null) {
-        if ($text1 === null || $text2 === null) {
-            throw new \TypeError;
-        }
+        $text1 = (string) $text1;
+        $text2 = (string) $text2;
 
         if ($text1 === $text2) {
             if ($text1 !== "") {
@@ -1355,6 +1354,7 @@ class diff_match_patch {
      * Crush the diff into an encoded string which describes the operations
      * required to transform text1 into text2.
      * E.g. =3\t-2\t+ing  -> Keep 3 chars, delete 2 chars, insert 'ing'.
+     * Character counts assume UTF16 encoding.
      * Operations are tab-separated.  Inserted text is escaped using %xx notation.
      * @param list<diff_obj> $diffs Array of diff tuples.
      * @return string Delta text.
@@ -1372,37 +1372,44 @@ class diff_match_patch {
         return str_replace("%20", " ", join("\t", $text));
     }
 
-
     /**
      * Given the original text1, and an encoded string which describes the
      * operations required to transform text1 into text2, compute the full diff.
      * @param string $text1 Source string for the diff.
      * @param string $delta Delta text.
      * @return list<diff_obj> Array of diff tuples.
-     * @throws \RuntimeException If invalid input.
+     * @throws diff_exception If invalid input.
      */
     function diff_fromDelta($text1, $delta) {
         $diffs = [];
-        $pos = 0;  // cursor in text1
+        $pos = 0;  // cursor in $text1
         $len = strlen($text1);
-        foreach (explode("\t", $delta) as $t) {
-            if ($t === "") {
+        $dpos = 0;  // cursor in $delta
+        $dlen = strlen($delta);
+        while ($dpos !== $dlen) {
+            $dtab = strpos($delta, "\t", $dpos);
+            if ($dtab === $dpos) {
+                $dpos = $dtab + 1;
                 continue;
+            } else if ($dtab === false) {
+                $dtab = $dlen;
             }
             // Each token begins with a one character parameter which specifies the
             // operation of this token (delete, insert, equality).
-            $param = substr($t, 1);
-            if ($t[0] === "+") {
+            $op = $delta[$dpos];
+            $param = substr($delta, $dpos + 1, $dtab - $dpos - 1);
+            $dpos = min($dtab + 1, $dlen);
+            if ($op === "+") {
                 $diffs[] = new diff_obj(DIFF_INSERT, rawurldecode($param));
-            } else if ($t[0] === "-" || $t[0] === "=") {
+            } else if ($op === "-" || $op === "=") {
                 if (!ctype_digit($param)
                     || ($n = intval($param)) <= 0) {
-                    throw new \RuntimeException("Invalid number in diff_fromDelta");
+                    throw new diff_exception("Invalid number in diff_fromDelta");
                 }
                 $part = "";
                 while (true) {
                     if ($pos + $n > strlen($text1)) {
-                        throw new \RuntimeException("Invalid number in diff_fromDelta");
+                        throw new diff_exception("Invalid number in diff_fromDelta");
                     }
                     $chunk = substr($text1, $pos, $n);
                     $part .= $chunk;
@@ -1415,19 +1422,140 @@ class diff_match_patch {
                         $n += strlen($k);
                     }
                 }
-                if ($t[0] === "-") {
+                if ($op === "-") {
                     $diffs[] = new diff_obj(DIFF_DELETE, $part);
                 } else {
                     $diffs[] = new diff_obj(DIFF_EQUAL, $part);
                 }
             } else {
-                throw new \RuntimeException("Invalid operation in diff_fromDelta");
+                throw new diff_exception("Invalid operation in diff_fromDelta");
             }
         }
         if ($pos !== $len) {
-            throw new \RuntimeException("Delta length doesn't cover source text");
+            throw new diff_exception("Delta length doesn't cover source text");
         }
         return $diffs;
+    }
+
+    /**
+     * Crush the diff into an encoded string which describes the operations
+     * required to transform text1 into text2.
+     * E.g. =3|-2|+ing  -> Keep 3 bytes, delete 2 bytes, insert 'ing'.
+     * Operations are separated by |. Characters % and | are escaped using %xx notation.
+     * @param list<diff_obj> $diffs Array of diff tuples.
+     * @return string Delta text.
+     */
+    function diff_toHCDelta($diffs) {
+        $text = [];
+        foreach ($diffs as $diff) {
+            if ($diff->op === DIFF_INSERT) {
+                $text[] = "+" . str_replace(["%", "|"], ["%25", "%7C"], $diff->text);
+            } else {
+                $text[] = ($diff->op === DIFF_DELETE ? "-" : "=") . strlen($diff->text);
+            }
+        }
+        return join("|", $text);
+    }
+
+    /**
+     * Given the original text1, and an encoded string which describes the
+     * operations required to transform text1 into text2, compute the full diff.
+     * @param string $text1 Source string for the diff.
+     * @param string $delta HCDelta text.
+     * @return list<diff_obj> Array of diff tuples.
+     * @throws diff_exception If invalid input.
+     */
+    function diff_fromHCDelta($text1, $delta) {
+        $diffs = [];
+        $pos = 0;  // cursor in $text1
+        $len = strlen($text1);
+        $dpos = 0;  // cursor in $delta
+        $dlen = strlen($delta);
+        while ($dpos !== $dlen) {
+            $dtab = strpos($delta, "|", $dpos);
+            if ($dtab === $dpos) {
+                $dpos = $dtab + 1;
+                continue;
+            } else if ($dtab === false) {
+                $dtab = $dlen;
+            }
+            // Each token begins with a one character parameter which specifies the
+            // operation of this token (delete, insert, equality).
+            $op = $delta[$dpos];
+            $param = substr($delta, $dpos + 1, $dtab - $dpos - 1);
+            $dpos = min($dtab + 1, $dlen);
+            if ($op === "+") {
+                $diffs[] = new diff_obj(DIFF_INSERT, rawurldecode($param));
+            } else if ($op === "-" || $op === "=") {
+                if (!ctype_digit($param)
+                    || ($n = intval($param)) <= 0
+                    || $pos + $n > strlen($text1)) {
+                    throw new diff_exception("Invalid number $param in diff_fromHCDelta");
+                }
+                $part = substr($text1, $pos, $n);
+                $pos += $n;
+                if ($op === "-") {
+                    $diffs[] = new diff_obj(DIFF_DELETE, $part);
+                } else {
+                    $diffs[] = new diff_obj(DIFF_EQUAL, $part);
+                }
+            } else {
+                throw new diff_exception("Invalid operation in diff_fromHCDelta");
+            }
+        }
+        if ($pos !== $len) {
+            throw new diff_exception("HCDelta length doesn't cover source text");
+        }
+        return $diffs;
+    }
+
+    /**
+     * Given the original text1, and an encoded string which describes the
+     * operations required to transform text1 into text2, return text2.
+     * @param string $text1 Source string for the diff.
+     * @param string $delta HCDelta text.
+     * @return string Transformed source string.
+     * @throws diff_exception If invalid input.
+     */
+    function diff_applyHCDelta($text1, $delta) {
+        $out = [];
+        $pos = 0;  // cursor in $text1
+        $len = strlen($text1);
+        $dpos = 0;  // cursor in $delta
+        $dlen = strlen($delta);
+        while ($dpos !== $dlen) {
+            $dtab = strpos($delta, "|", $dpos);
+            if ($dtab === $dpos) {
+                $dpos = $dtab + 1;
+                continue;
+            } else if ($dtab === false) {
+                $dtab = $dlen;
+            }
+            // Each token begins with a one character parameter which specifies the
+            // operation of this token (delete, insert, equality).
+            $op = $delta[$dpos];
+            $param = substr($delta, $dpos + 1, $dtab - $dpos - 1);
+            $dpos = min($dtab + 1, $dlen);
+            if ($op === "+") {
+                $out[] = rawurldecode($param);
+            } else if ($op === "-" || $op === "=") {
+                if (!ctype_digit($param)
+                    || ($n = intval($param)) <= 0
+                    || $pos + $n > strlen($text1)) {
+                    throw new diff_exception("Invalid number $param in diff_fromHCDelta");
+                }
+                if ($op === "=") {
+                    $out[] = substr($text1, $pos, $n);
+                }
+                $pos += $n;
+            } else {
+                throw new diff_exception("Invalid operation in diff_fromHCDelta");
+            }
+        }
+        if ($pos !== $len) {
+            throw new diff_exception("HCDelta length doesn't cover source text");
+        }
+        return join("", $out);
     }
 
 
@@ -1455,7 +1583,7 @@ class diff_match_patch {
             return;
         }
         if ($patch->start2 === null) {
-            throw new \RuntimeException('patch not initialized');
+            throw new diff_exception('patch not initialized');
         }
 
         // Look for the first and last matches of pattern in text.  If two different
@@ -1537,7 +1665,7 @@ class diff_match_patch {
             $text1 = $a;
             $diffs = $opt_c;
         } else {
-            throw new \RuntimeException('Unknown call format to patch_make.');
+            throw new diff_exception('Unknown call format to patch_make.');
         }
 
         if (empty($diffs)) {
@@ -1651,7 +1779,7 @@ class diff_obj implements \JsonSerializable {
             if ($ch === "X") {
                 if (strlen($s) < 2
                     || ($x = hex2bin(substr($s, 2))) === false) {
-                    throw new \RuntimeException("bad diff_obj::parse_string_list hex");
+                    throw new diff_exception("bad diff_obj::parse_string_list hex");
                 }
                 $ch = $s[1];
             } else {
@@ -1664,7 +1792,7 @@ class diff_obj implements \JsonSerializable {
             } else if ($ch === "-") {
                 $a[] = new diff_obj(DIFF_DELETE, $x);
             } else {
-                throw new \RuntimeException("bad diff_obj::parse_string_list `{$ch}`");
+                throw new diff_exception("bad diff_obj::parse_string_list `{$ch}`");
             }
         }
         return $a;
@@ -1751,5 +1879,12 @@ class patch_obj {
             $text[] = $op . self::diff_encodeURI($diff->text) . "\n";
         }
         return str_replace("%20", " ", join("", $text));
+    }
+}
+
+
+class diff_exception extends \RuntimeException {
+    function __construct($msg) {
+        parent::__construct($msg);
     }
 }

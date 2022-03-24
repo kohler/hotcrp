@@ -527,6 +527,87 @@ class DiffMatchPatch_Tester {
         $this->assertEqualDiffs($diffs, $dmp->diff_fromDelta('', $delta));
     }
 
+    function testDiffHCDelta() {
+        $dmp = new diff_match_patch;
+
+        // Convert a diff into delta string.
+        $diffs = $dmp->diff_fromStringList(["=jump","-s","+ed","= over ","-the","+a","= lazy","+old dog"]);
+        $text1 = $dmp->diff_text1($diffs);
+        $this->assertEquals('jumps over the lazy', $text1);
+        $text2 = $dmp->diff_text2($diffs);
+
+        $delta = $dmp->diff_toHCDelta($diffs);
+        $this->assertEquals("=4|-1|+ed|=6|-3|+a|=5|+old dog", $delta);
+
+        // Convert delta string into a diff.
+        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
+        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
+
+        // Generates error (19 != 20).
+        try {
+            $dmp->diff_fromHCDelta($text1 . 'x', $delta);
+            $this->assertEquals(false, true);
+        } catch (\Exception $e) {
+            // Exception expected.
+        }
+
+        // Generates error (19 != 18).
+        try {
+            $dmp->diff_fromHCDelta(substr($text1, 1), $delta);
+            $this->assertEquals(false, true);
+        } catch (\Exception $e) {
+            // Exception expected.
+        }
+
+        // Test deltas with special characters.
+        $diffs = $dmp->diff_fromStringList(["=\xda\x80 \x00 \t %|","-\xda\x81 \x01 \n ^","+\xda\x82 \x02 \\ |%"]);
+        $text1 = $dmp->diff_text1($diffs);
+        $this->assertEquals("\xda\x80 \x00 \t %|\xda\x81 \x01 \n ^", $text1);
+        $text2 = $dmp->diff_text2($diffs);
+
+        $delta = $dmp->diff_toHCDelta($diffs);
+        $this->assertEquals("=9|-8|+\xda\x82 \x02 \\ %7C%25", $delta);
+
+        // Convert delta string into a diff.
+        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
+        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
+
+        // Test deltas for surrogate pairs.
+        $diffs = $dmp->diff_fromStringList(["=😀Héló"]);
+        $text1 = $dmp->diff_text1($diffs);
+        $this->assertEquals("😀Héló", $text1);
+        $text2 = $dmp->diff_text1($diffs);
+
+        $delta = $dmp->diff_toHCDelta($diffs);
+        $this->assertEquals("=10", $delta);
+
+        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
+        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
+
+        // Verify pool of unchanged characters.
+        $diffs = $dmp->diff_fromStringList(['+A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ']);
+        $text2 = $dmp->diff_text2($diffs);
+        $this->assertEquals('A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ', $text2);
+
+        $delta = $dmp->diff_toHCDelta($diffs);
+        $this->assertEquals('+A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ', $delta);
+
+        // Convert delta string into a diff.
+        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta('', $delta));
+
+        // 160 kb string.
+        $a = 'abcdefghij';
+        for ($i = 0; $i < 14; ++$i) {
+            $a .= $a;
+        }
+        $diffs = [new dmp\diff_obj(DIFF_INSERT, $a)];
+        $delta = $dmp->diff_toHCDelta($diffs);
+        $this->assertEquals('+' . $a, $delta);
+
+        // Convert delta string into a diff.
+        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta('', $delta));
+    }
+
     function testDiffXIndex() {
         $dmp = new diff_match_patch;
 
@@ -649,11 +730,12 @@ class DiffMatchPatch_Tester {
                      $dmp->diff_text2($dmp->diff_main($a, $b, true)));
 
         // Test null inputs.
+        // XXX This is a change from other language behavior.
         try {
-            $dmp->diff_main(null, null);
-            $this->assertEquals(true, false);
+            $diffs = $dmp->diff_main(null, null);
+            $this->assertEquals([], $diffs);
         } catch (\TypeError $e) {
-            // Exception expected.
+            xassert(false);
         }
     }
 
@@ -737,6 +819,5 @@ class DiffMatchPatch_Tester {
                 assert(false);
             }
         }
-
     }
 }
