@@ -1876,7 +1876,7 @@ class patch_obj {
             } else {
                 $op = " ";
             }
-            $text[] = $op . self::diff_encodeURI($diff->text) . "\n";
+            $text[] = $op . diff_match_patch::diff_encodeURI($diff->text) . "\n";
         }
         return str_replace("%20", " ", join("", $text));
     }

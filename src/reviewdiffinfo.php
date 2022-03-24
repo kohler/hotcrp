@@ -85,7 +85,7 @@ class ReviewDiffInfo {
                         file_put_contents("/tmp/hotcrp-baddiff.txt", "======" . strlen($v[1-$dir]) . "\n" . $v[1-$dir] . "\n======" . strlen($v[$dir]) . "\n" . $v[$dir] . "\n\n", FILE_APPEND);
                     }
 
-                    if (strlen($xp) < strlen($v[$dir]) - 32) {
+                    if (strlen($xdelta) < strlen($v[$dir]) - 32) {
                         $patch["{$sn}:p"] = $xdelta;
                         continue;
                     }
