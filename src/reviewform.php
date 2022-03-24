@@ -1777,6 +1777,7 @@ class ReviewValues extends MessageSet {
                 . $statusword
                 . (empty($log_fields) ? "" : ": ")
                 . join(", ", $log_fields), $prow);
+            $diffinfo->make_patch(0); // Evaluating use of diff_match_patch
         }
 
         // if external, forgive the requester from finishing their review
