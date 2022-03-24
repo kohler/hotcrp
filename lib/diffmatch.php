@@ -1,7 +1,9 @@
 <?php
 // diffmatch.php -- PHP diff-match-patch.
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
-// Ported from Neil Fraser's diff-match-patch.
+// Copyright 2018 The diff-match-patch Authors.
+// Copyright (c) 2006-2022 Eddie Kohler.
+// Ported with some changes from Neil Fraser's diff-match-patch:
+// https://github.com/google/diff-match-patch/
 
 class DiffMatch {
     /** @var float */
@@ -10,6 +12,10 @@ class DiffMatch {
     public $Diff_EditCost = 4;
     /** @var bool */
     public $Fix_UTF8 = true;
+    /** @var int */
+    public $Patch_Margin = 4;
+    /** @var int */
+    public $Match_MaxBits = 32;
 
     /** @var bool */
     public $checklines;
@@ -29,29 +35,19 @@ class DiffMatch {
      * @param ?float $deadline
      * @return list<DiffMatch_Diff> */
     function diff($text1, $text2, $checklines = null, $deadline = null) {
-        if ($text1 === null || $text2 === null) {
-            throw new TypeError;
-        }
-        if ($deadline === null) {
-            if ($this->Diff_Timeout <= 0) {
-                $deadline = INF;
-            } else {
-                $deadline = microtime(true) + $this->Diff_Timeout;
-            }
-        }
-        $diffs = $this->diff_main($text1, $text2, $checklines ?? true, $deadline);
-        if ($this->Fix_UTF8) {
-            $this->diff_cleanupUnicode($diffs);
-        }
-        return $diffs;
+        return $this->diff_main($text1, $text2, $checklines ?? true, $deadline);
     }
 
     /** @param string $text1 Old string to be diffed.
      * @param string $text2 New string to be diffed.
-     * @param bool $checklines
-     * @param float $deadline
+     * @param ?bool $checklines
+     * @param ?float $deadline
      * @return list<DiffMatch_Diff> */
-    private function diff_main($text1, $text2, $checklines = null, $deadline = null) {
+    function diff_main($text1, $text2, $checklines = null, $deadline = null) {
+        if ($text1 === null || $text2 === null) {
+            throw new TypeError;
+        }
+
         if ($text1 === $text2) {
             if ($text1 !== "") {
                 return [new DiffMatch_Diff(self::DIFF_EQUAL, $text1)];
@@ -60,6 +56,19 @@ class DiffMatch {
             }
         }
 
+        // Clean up parameters
+        $Fix_UTF8 = $this->Fix_UTF8;
+        $this->Fix_UTF8 = false;
+        $checklines = $checklines ?? true;
+        if ($deadline === null) {
+            if ($this->Diff_Timeout <= 0) {
+                $deadline = INF;
+            } else {
+                $deadline = microtime(true) + $this->Diff_Timeout;
+            }
+        }
+
+        // Trim off common prefix (speedup).
         $commonlength = $this->diff_commonPrefix($text1, $text2);
         if ($commonlength !== 0) {
             $commonprefix = substr($text1, 0, $commonlength);
@@ -69,6 +78,7 @@ class DiffMatch {
             $commonprefix = "";
         }
 
+        // Trim off common suffix (speedup).
         $commonlength = $this->diff_commonSuffix($text1, $text2);
         if ($commonlength !== 0) {
             $commonsuffix = substr($text1, -$commonlength);
@@ -78,8 +88,10 @@ class DiffMatch {
             $commonsuffix = "";
         }
 
+        // Compute the diff on the middle block.
         $diffs = $this->diff_compute_($text1, $text2, $checklines, $deadline);
 
+        // Restore the prefix and suffix.
         if ($commonprefix !== "") {
             array_unshift($diffs, new DiffMatch_Diff(self::DIFF_EQUAL, $commonprefix));
         }
@@ -87,6 +99,13 @@ class DiffMatch {
             $diffs[] = new DiffMatch_Diff(self::DIFF_EQUAL, $commonsuffix);
         }
         $this->diff_cleanupMerge($diffs);
+
+        // Fix UTF-8 issues.
+        if ($Fix_UTF8) {
+            $this->diff_cleanupUTF8($diffs);
+        }
+        $this->Fix_UTF8 = $Fix_UTF8;
+
         return $diffs;
     }
 
@@ -432,7 +451,6 @@ class DiffMatch {
      */
     private function diff_charsToLines_($diffs, $lineArray) {
         foreach ($diffs as $diff) {
-            assert(strlen($diff->text) % 2 === 0);
             $chars = $diff->text;
             $len = strlen($chars);
             $text = [];
@@ -496,7 +514,7 @@ class DiffMatch {
      * @param string $text2 Second string.
      * @return int The number of characters common to the end of each string.
      */
-    private function diff_commonSuffix($text1, $text2) {
+    function diff_commonSuffix($text1, $text2) {
         $len1 = strlen($text1);
         $len2 = strlen($text2);
         // Quick check for common null cases.
@@ -561,9 +579,6 @@ class DiffMatch {
             }
         }
         if ($bestlen * 2 >= strlen($longtext)) {
-            assert(($bestlongpos & $this->iota) === 0);
-            assert(($bestshortpos & $this->iota) === 0);
-            assert(($bestlen & $this->iota) === 0);
             return [
                 substr($longtext, 0, $bestlongpos),
                 substr($longtext, $bestlongpos + $bestlen),
@@ -678,6 +693,7 @@ class DiffMatch {
      * @param list<DiffMatch_Diff> &$diffs Array of diff tuples.
      */
     function diff_cleanupSemantic(&$diffs) {
+        '@phan-var-force list<DiffMatch_Diff> &$diffs';
         assert($this->iota === 0);
         $pos = 1;
         $ndiffs = count($diffs);
@@ -787,16 +803,18 @@ class DiffMatch {
 
 
     /**
-     * Given two strings, compute a score representing whether the internal
+     * Given a string and a boundary index,
+     * compute a score representing whether the internal
      * boundary falls on logical boundaries.
      * Scores range from 6 (best) to 0 (worst).
-     * Closure, but does not reference any external variables.
-     * @param string $one First string.
-     * @param string $two Second string.
+     * Change to indexes from Eric McSween (GH #103)
+     * @param string $buf Buffer string.
+     * @param int $idx Index.
      * @return int The score.
      */
-    private function diff_cleanupSemanticScore_($one, $two) {
-        if ($one === "" || $two === "") {
+    private function diff_cleanupSemanticScore_($buf, $idx) {
+        $len = strlen($buf);
+        if ($idx === 0 || $idx === $len) {
             // Edges are the best.
             return 6;
         }
@@ -805,19 +823,28 @@ class DiffMatch {
         // subtle differences in each language's definition of things like
         // 'whitespace'.  Since this function's purpose is largely cosmetic,
         // the choice has been made to use each language's native features
-        $ch1 = $one[strlen($one) - 1];
-        $ch2 = $two[0];
-        if (($line2 = $ch2 === "\n" || $ch2 === "\r")
-            || $ch1 === "\n"
-            || $ch1 === "\r") {
-            if (($ch1 === "\n" && preg_match('/\n\r?\n\z/', $one))
-                || ($line2 && preg_match('/\A\r?\n\r?\n/', $two))) {
-                // Five points for blank lines.
-                return 5;
-            } else {
-                // Four points for line breaks.
-                return 4;
+        $ch1 = $buf[$idx - 1];
+        $ch2 = $buf[$idx];
+        if ($ch2 === "\n" || $ch2 === "\r" || $ch1 === "\n" || $ch1 === "\r") {
+            // Five points for blank lines.
+            if ($ch1 === "\n" && $idx > 1) {
+                $ch1x = $buf[$idx - 2];
+                if ($ch1x === "\n"
+                    || ($ch1x === "\r" && $idx > 2 && $buf[$idx - 3] === "\n"))
+                    return 5;
             }
+            if ($ch2 === "\r" && $idx < $len - 2) {
+                ++$idx;
+                $ch2 = $buf[$idx];
+            }
+            if ($ch2 === "\n" && $idx < $len - 1) {
+                $ch2x = $buf[$idx + 1];
+                if ($ch2x === "\n"
+                    || ($ch2x === "\r" && $idx < $len - 2 && $buf[$idx + 2] === "\n"))
+                    return 5;
+            }
+            // Four points for line breaks.
+            return 4;
         }
 
         $nonalnum1 = !ctype_alnum($ch1);
@@ -844,7 +871,7 @@ class DiffMatch {
      * e.g: The c<ins>at c</ins>ame. -> The <ins>cat </ins>came.
      * @param list<DiffMatch_Diff> &$diffs Array of diff tuples.
      */
-    private function diff_cleanupSemanticLossless(&$diffs) {
+    function diff_cleanupSemanticLossless(&$diffs) {
         $pos = 1;
         $ndiffs = count($diffs);
         while ($pos < $ndiffs - 1) {
@@ -855,52 +882,48 @@ class DiffMatch {
                 $edit = $diffs[$pos]->text;
                 $eq2 = $diffs[$pos+1]->text;
 
-                // First, shift the edit as far left as possible.
-                $commonoff = $this->diff_commonSuffix($eq1, $edit);
-                if ($commonoff !== 0) {
-                    $commonstr = substr($edit, strlen($edit) - $commonoff);
-                    $eq1 = substr($eq1, 0, strlen($eq1) - $commonoff);
-                    $edit = $commonstr . substr($edit, 0, strlen($edit) - $commonoff);
-                    $eq2 = $commonstr . $eq2;
-                }
+                // Can the edit be shifted?
+                $offLeft = $this->diff_commonSuffix($eq1, $edit);
+                $offRight = $this->diff_commonPrefix($edit, $eq2);
+                if ($offLeft !== 0 || $offRight !== 0) {
+                    // Shift edit left as much as possible
+                    $buf = "{$eq1}{$edit}{$eq2}";
+                    $editStart = strlen($eq1) - $offLeft;
+                    $editMax = strlen($eq1) + $offRight;
+                    $editLen = strlen($edit);
 
-                // Second, step character by character right, looking for the best fit.
-                $besteq1 = $eq1;
-                $bestedit = $edit;
-                $besteq2 = $eq2;
-                $bestscore = $this->diff_cleanupSemanticScore_($eq1, $edit)
-                    + $this->diff_cleanupSemanticScore_($edit, $eq2);
-                while ($edit[0] === $eq2[0]) {
-                    $eq1 .= $edit[0];
-                    $edit = substr($edit, 1) . $eq2[0];
-                    $eq2 = substr($eq2, 1);
-                    $score = $this->diff_cleanupSemanticScore_($eq1, $edit)
-                        + $this->diff_cleanupSemanticScore_($edit, $eq2);
-                    // The >= encourages trailing rather than leading whitespace on edits.
-                    if ($score >= $bestscore) {
-                        $bestscore = $score;
-                        $besteq1 = $eq1;
-                        $bestedit = $edit;
-                        $besteq2 = $eq2;
+                    // Step character by character right, looking for the best fit
+                    $bestEditStart = $editStart;
+                    $bestScore = $this->diff_cleanupSemanticScore_($buf, $editStart)
+                        + $this->diff_cleanupSemanticScore_($buf, $editStart + $editLen);
+                    while ($editStart < $editMax) {
+                        ++$editStart;
+                        $score = $this->diff_cleanupSemanticScore_($buf, $editStart)
+                            + $this->diff_cleanupSemanticScore_($buf, $editStart + $editLen);
+                        // The >= encourages trailing rather than leading whitespace.
+                        if ($score >= $bestScore) {
+                            $bestScore = $score;
+                            $bestEditStart = $editStart;
+                        }
                     }
-                }
 
-                if ($diffs[$pos-1]->text !== $besteq1) {
-                    // We have an improvement, save it back to the diff.
-                    if ($besteq1 !== "") {
-                        $diffs[$pos-1]->text = $besteq1;
-                    } else {
-                        array_splice($diffs, $pos - 1, 1);
-                        --$pos;
-                        --$ndiffs;
-                    }
-                    $diffs[$pos]->text = $bestedit;
-                    if ($besteq2 !== "") {
-                        $diffs[$pos+1]->text = $besteq2;
-                    } else {
-                        array_splice($diffs, $pos + 1, 1);
-                        --$pos;
-                        --$ndiffs;
+                    if ($bestEditStart !== strlen($eq1)) {
+                        // We have an improvement, save it back to the diff.
+                        if ($bestEditStart !== 0) {
+                            $diffs[$pos-1]->text = substr($buf, 0, $bestEditStart);
+                        } else {
+                            array_splice($diffs, $pos - 1, 1);
+                            --$pos;
+                            --$ndiffs;
+                        }
+                        $diffs[$pos]->text = substr($buf, $bestEditStart, $editLen);
+                        if ($bestEditStart + $editLen !== strlen($buf)) {
+                            $diffs[$pos+1]->text = substr($buf, $bestEditStart + $editLen);
+                        } else {
+                            array_splice($diffs, $pos + 1, 1);
+                            --$pos;
+                            --$ndiffs;
+                        }
                     }
                 }
             }
@@ -914,6 +937,7 @@ class DiffMatch {
      * @param list<DiffMatch_Diff> &$diffs Array of diff tuples.
      */
     function diff_cleanupEfficiency(&$diffs) {
+        '@phan-var-force list<DiffMatch_Diff> &$diffs';
         $pos = 1;  // Index of current position.
         $ndiffs = count($diffs);
         while ($pos < $ndiffs - 1) {
@@ -1090,7 +1114,7 @@ class DiffMatch {
 
 
     /** @param list<DiffMatch_Diff> &$diffs */
-    private function diff_cleanupUnicode(&$diffs) {
+    private function diff_cleanupUTF8(&$diffs) {
         $ndiffs = count($diffs);
         for ($pos = 0; $pos !== $ndiffs; ++$pos) {
             $diff = $diffs[$pos];
@@ -1223,36 +1247,26 @@ class DiffMatch {
     }
 
 
-# /**
-#  * Convert a diff array into a pretty HTML report.
-#  * @param {!Array.<!diff_match_patch.Diff>} diffs Array of diff tuples.
-#  * @return {string} HTML representation.
-#  */
-# diff_match_patch.prototype.diff_prettyHtml = function(diffs) {
-#   var html = [];
-#   var pattern_amp = /&/g;
-#   var pattern_lt = /</g;
-#   var pattern_gt = />/g;
-#   var pattern_para = /\n/g;
-#   for (var x = 0; x < diffs.length; x++) {
-#     var op = diffs[x][0];    // Operation (insert, delete, equal)
-#     var data = diffs[x][1];  // Text of change.
-#     var text = data.replace(pattern_amp, '&amp;').replace(pattern_lt, '&lt;')
-#         .replace(pattern_gt, '&gt;').replace(pattern_para, '&para;<br>');
-#     switch (op) {
-#       case DIFF_INSERT:
-#         html[x] = '<ins style="background:#e6ffe6;">' + text + '</ins>';
-#         break;
-#       case DIFF_DELETE:
-#         html[x] = '<del style="background:#ffe6e6;">' + text + '</del>';
-#         break;
-#       case DIFF_EQUAL:
-#         html[x] = '<span>' + text + '</span>';
-#         break;
-#     }
-#   }
-#   return html.join('');
-# };
+    /**
+     * Convert a diff array into a pretty HTML report.
+     * @param list<DiffMatch_Diff> $diffs Array of diff tuples.
+     * @return string HTML representation.
+     */
+    function diff_prettyHtml($diffs) {
+        $html = [];
+        foreach ($diffs as $diff) {
+            $text = htmlspecialchars($diff->text, ENT_NOQUOTES);
+            $text = str_replace("\n", '&para;<br>', $text);
+            if ($diff->op === self::DIFF_INSERT) {
+                $html[] = "<ins style=\"background:#e6ffe6;\">{$text}</ins>";
+            } else if ($diff->op === self::DIFF_DELETE) {
+                $html[] = "<del style=\"background:#ffe6e6;\">{$text}</del>";
+            } else {
+                $html[] = "<span>{$text}</span>";
+            }
+        }
+        return join("", $html);
+    }
 
 
     /**
@@ -1312,89 +1326,300 @@ class DiffMatch {
     }
 
 
-# /**
-#  * Crush the diff into an encoded string which describes the operations
-#  * required to transform text1 into text2.
-#  * E.g. =3\t-2\t+ing  -> Keep 3 chars, delete 2 chars, insert 'ing'.
-#  * Operations are tab-separated.  Inserted text is escaped using %xx notation.
-#  * @param {!Array.<!diff_match_patch.Diff>} diffs Array of diff tuples.
-#  * @return {string} Delta text.
-#  */
-# diff_match_patch.prototype.diff_toDelta = function(diffs) {
-#   var text = [];
-#   for (var x = 0; x < diffs.length; x++) {
-#     switch (diffs[x][0]) {
-#       case DIFF_INSERT:
-#         text[x] = '+' + encodeURI(diffs[x][1]);
-#         break;
-#       case DIFF_DELETE:
-#         text[x] = '-' + diffs[x][1].length;
-#         break;
-#       case DIFF_EQUAL:
-#         text[x] = '=' + diffs[x][1].length;
-#         break;
-#     }
-#   }
-#   return text.join('\t').replace(/%20/g, ' ');
-# };
-#
-#
-# /**
-#  * Given the original text1, and an encoded string which describes the
-#  * operations required to transform text1 into text2, compute the full diff.
-#  * @param {string} text1 Source string for the diff.
-#  * @param {string} delta Delta text.
-#  * @return {!Array.<!diff_match_patch.Diff>} Array of diff tuples.
-#  * @throws {!Error} If invalid input.
-#  */
-# diff_match_patch.prototype.diff_fromDelta = function(text1, delta) {
-#   var diffs = [];
-#   var diffsLength = 0;  // Keeping our own length var is faster in JS.
-#   var pointer = 0;  // Cursor in text1
-#   var tokens = delta.split(/\t/g);
-#   for (var x = 0; x < tokens.length; x++) {
-#     // Each token begins with a one character parameter which specifies the
-#     // operation of this token (delete, insert, equality).
-#     var param = tokens[x].substring(1);
-#     switch (tokens[x].charAt(0)) {
-#       case '+':
-#         try {
-#           diffs[diffsLength++] =
-#               new diff_match_patch.Diff(DIFF_INSERT, decodeURI(param));
-#         } catch (ex) {
-#           // Malformed URI sequence.
-#           throw new Error('Illegal escape in diff_fromDelta: ' + param);
-#         }
-#         break;
-#       case '-':
-#         // Fall through.
-#       case '=':
-#         var n = parseInt(param, 10);
-#         if (isNaN(n) || n < 0) {
-#           throw new Error('Invalid number in diff_fromDelta: ' + param);
-#         }
-#         var text = text1.substring(pointer, pointer += n);
-#         if (tokens[x].charAt(0) == '=') {
-#           diffs[diffsLength++] = new diff_match_patch.Diff(DIFF_EQUAL, text);
-#         } else {
-#           diffs[diffsLength++] = new diff_match_patch.Diff(DIFF_DELETE, text);
-#         }
-#         break;
-#       default:
-#         // Blank tokens are ok (from a trailing \t).
-#         // Anything else is an error.
-#         if (tokens[x]) {
-#           throw new Error('Invalid diff operation in diff_fromDelta: ' +
-#                           tokens[x]);
-#         }
-#     }
-#   }
-#   if (pointer != text1.length) {
-#     throw new Error('Delta length (' + pointer +
-#         ') does not equal source text length (' + text1.length + ').');
-#   }
-#   return diffs;
-# };
+    /** @param string $utf8s
+     * @return int */
+    static function utf16strlen($utf8s) {
+        $n = strlen($utf8s);
+        if (($k = preg_replace("/[^\xC0-\xFF]/", "", $utf8s)) !== "") {
+            $n -= strlen($k);
+            if (($k = preg_replace("/[^\xE0-\xFF]/", "", $k)) !== "") {
+                $n -= strlen($k);
+            }
+        }
+        return $n;
+    }
+
+    /** @param string $s
+     * @return string */
+    static function diff_encodeURI($s) {
+        return str_replace(["%20", "%21", "%23", "%24", "%26", "%27", "%28", "%29", "%2A", "%2B", "%2C", "%2F", "%3A", "%3B", "%3D", "%3F", "%40", "%7E"],
+                    [" ", "!", "#", "\$", "&", "'", "(", ")", "*", "+", ",", "/", ":", ";", "=", "?", "@", "~"],
+                    rawurlencode($s));
+    }
+
+    /**
+     * Crush the diff into an encoded string which describes the operations
+     * required to transform text1 into text2.
+     * E.g. =3\t-2\t+ing  -> Keep 3 chars, delete 2 chars, insert 'ing'.
+     * Operations are tab-separated.  Inserted text is escaped using %xx notation.
+     * @param list<DiffMatch_Diff> $diffs Array of diff tuples.
+     * @return string Delta text.
+     */
+    function diff_toDelta($diffs) {
+        $text = [];
+        foreach ($diffs as $diff) {
+            if ($diff->op === self::DIFF_INSERT) {
+                $text[] = "+" . self::diff_encodeURI($diff->text);
+            } else {
+                $n = self::utf16strlen($diff->text);
+                $text[] = ($diff->op === self::DIFF_DELETE ? "-" : "=") . $n;
+            }
+        }
+        return str_replace("%20", " ", join("\t", $text));
+    }
+
+
+    /**
+     * Given the original text1, and an encoded string which describes the
+     * operations required to transform text1 into text2, compute the full diff.
+     * @param string $text1 Source string for the diff.
+     * @param string $delta Delta text.
+     * @return list<DiffMatch_Diff> Array of diff tuples.
+     * @throws RuntimeException If invalid input.
+     */
+    function diff_fromDelta($text1, $delta) {
+        $diffs = [];
+        $pos = 0;  // cursor in text1
+        $len = strlen($text1);
+        foreach (explode("\t", $delta) as $t) {
+            if ($t === "") {
+                continue;
+            }
+            // Each token begins with a one character parameter which specifies the
+            // operation of this token (delete, insert, equality).
+            $param = substr($t, 1);
+            if ($t[0] === "+") {
+                $diffs[] = new DiffMatch_Diff(self::DIFF_INSERT, rawurldecode($param));
+            } else if ($t[0] === "-" || $t[0] === "=") {
+                if (!ctype_digit($param)
+                    || ($n = intval($param)) <= 0) {
+                    throw new RuntimeException("Invalid number in diff_fromDelta");
+                }
+                $part = "";
+                while (true) {
+                    if ($pos + $n > strlen($text1)) {
+                        throw new RuntimeException("Invalid number in diff_fromDelta");
+                    }
+                    $chunk = substr($text1, $pos, $n);
+                    $part .= $chunk;
+                    $pos += $n;
+                    if (($k = preg_replace("/[^\xC0-\xFF]/", "", $chunk)) === "") {
+                        break;
+                    }
+                    $n = strlen($k);
+                    if (($k = preg_replace("/[^\xE0-\xFF]/", "", $k)) !== "") {
+                        $n += strlen($k);
+                    }
+                }
+                if ($t[0] === "-") {
+                    $diffs[] = new DiffMatch_Diff(self::DIFF_DELETE, $part);
+                } else {
+                    $diffs[] = new DiffMatch_Diff(self::DIFF_EQUAL, $part);
+                }
+            } else {
+                throw new RuntimeException("Invalid operation in diff_fromDelta");
+            }
+        }
+        if ($pos !== $len) {
+            throw new RuntimeException("Delta length doesn't cover source text");
+        }
+        return $diffs;
+    }
+
+
+    /** @param list<string> $strs
+     * @return list<DiffMatch_Diff> */
+    function diff_fromStringList($strs) {
+        return DiffMatch_Diff::parse_string_list($strs);
+    }
+
+    /** @param list<DiffMatch_Diff> $diffs
+     * @return list<string> */
+    function diff_toStringList($diffs) {
+        return DiffMatch_Diff::unparse_string_list($diffs);
+    }
+
+
+    /**
+     * Increase the context until it is unique,
+     * but don't let the pattern expand beyond Match_MaxBits.
+     * @param DiffMatch_Patch $patch The patch to grow.
+     * @param string $text Source text.
+     */
+    private function patch_addContext_($patch, $text) {
+        if ($text === "") {
+            return;
+        }
+        if ($patch->start2 === null) {
+            throw new RuntimeException('patch not initialized');
+        }
+
+        // Look for the first and last matches of pattern in text.  If two different
+        // matches are found, increase the pattern length.
+        $pattern = substr($text, $patch->start2, $patch->length1);
+        $padding = 0;
+        while (strpos($text, $pattern) !== strrpos($text, $pattern)
+               && strlen($pattern) < $this->Match_MaxBits - $this->Patch_Margin - $this->Patch_Margin) {
+            $padding += $this->Patch_Margin;
+            $pattern = substr($text, $patch->start2 - $padding, $patch->start2 + $patch->length1 + $padding);
+        }
+        // Add one chunk for good luck.
+        $padding += $this->Patch_Margin;
+
+        // Add the prefix.
+        $prefix = substr($text, $patch->start2 - $padding, $padding);
+        if ($prefix !== "") {
+            array_unshift($patch->diffs, new DiffMatch_Diff(self::DIFF_EQUAL, $prefix));
+        }
+        // Add the suffix.
+        $suffix = substr($text, $patch->start2 + $patch->length1, $padding);
+        if ($suffix !== "") {
+            $patch->diffs[] = new DiffMatch_Diff(self::DIFF_EQUAL, $suffix);
+        }
+
+        // Roll back the start points.
+        $patch->start1 -= strlen($prefix);
+        $patch->start2 -= strlen($prefix);
+        // Extend the lengths.
+        $patch->length1 += strlen($prefix) + strlen($suffix);
+        $patch->length2 += strlen($prefix) + strlen($suffix);
+    }
+
+
+    /**
+     * Compute a list of patches to turn text1 into text2.
+     * Use diffs if provided, otherwise compute it ourselves.
+     * There are four ways to call this function, depending on what data is
+     * available to the caller:
+     * Method 1:
+     * a = text1, b = text2
+     * Method 2:
+     * a = diffs
+     * Method 3 (optimal):
+     * a = text1, b = diffs
+     * Method 4 (deprecated, use method 3):
+     * a = text1, b = text2, c = diffs
+     *
+     * @param string|list<DiffMatch_Diff> $a text1 (methods 1,3,4) or
+     * Array of diff tuples for text1 to text2 (method 2).
+     * @param null|string|list<DiffMatch_Diff> $opt_b text2 (methods 1,4) or
+     * Array of diff tuples for text1 to text2 (method 3) or undefined (method 2).
+     * @param null|string|list<DiffMatch_Diff> $opt_c Array of diff tuples
+     * for text1 to text2 (method 4) or undefined (methods 1,2,3).
+     * @return list<DiffMatch_Patch> Array of Patch objects.
+     */
+    function patch_make($a, $opt_b = null, $opt_c = null) {
+        if (is_string($a) && is_string($opt_b) && $opt_c === null) {
+            // Method 1: text1, text2
+            // Compute diffs from text1 and text2.
+            $text1 = $a;
+            $diffs = $this->diff_main($text1, $opt_b, true);
+            if (count($diffs) > 2) {
+                $this->diff_cleanupSemantic($diffs);
+                $this->diff_cleanupEfficiency($diffs);
+            }
+        } else if (is_array($a) && $opt_b === null && $opt_c === null) {
+            // Method 2: diffs
+            // Compute text1 from diffs.
+            $diffs = $a;
+            $text1 = $this->diff_text1($diffs);
+        } else if (is_string($a) && is_array($opt_b) && $opt_c === null) {
+            // Method 3: text1, diffs
+            $text1 = $a;
+            $diffs = $opt_b;
+        } else if (is_string($a) && is_string($opt_b) && is_array($opt_c)) {
+            // Method 4: text1, text2, diffs
+            // text2 is not used.
+            $text1 = $a;
+            $diffs = $opt_c;
+        } else {
+            throw new RuntimeException('Unknown call format to patch_make.');
+        }
+
+        if (empty($diffs)) {
+            return [];  // Get rid of the null case.
+        }
+        $patches = [];
+        $patch = new DiffMatch_Patch;
+        $char_count1 = 0;  // Number of characters into the text1 string.
+        $char_count2 = 0;  // Number of characters into the text2 string.
+        // Start with text1 (prepatch_text) and apply the diffs until we arrive at
+        // text2 (postpatch_text).  We recreate the patches one by one to determine
+        // context info.
+        $prepatch_text = $text1;
+        $postpatch_text = $text1;
+        foreach ($diffs as $x => $diff) {
+            if (empty($patch->diffs) && $diff->op !== self::DIFF_EQUAL) {
+                // A new patch starts here.
+                $patch->start1 = $char_count1;
+                $patch->start2 = $char_count2;
+            }
+
+            if ($diff->op === self::DIFF_INSERT) {
+                $patch->diffs[] = $diff;
+                $patch->length2 += strlen($diff->text);
+                $postpatch_text = substr($postpatch_text, 0, $char_count2)
+                    . $diff->text . substr($postpatch_text, $char_count2);
+            } else if ($diff->op === self::DIFF_DELETE) {
+                $patch->diffs[] = $diff;
+                $patch->length1 += strlen($diff->text);
+                $postpatch_text = substr($postpatch_text, 0, $char_count2)
+                    . substr($postpatch_text, $char_count2 + strlen($diff->text));
+            } else if (!empty($patch->diffs)) {
+                if (strlen($diff->text) <= 2 * $this->Patch_Margin
+                    && $x + 1 !== count($diffs)) {
+                    // Small equality inside a patch.
+                    $patch->diffs[] = $diff;
+                    $patch->length1 += strlen($diff->text);
+                    $patch->length2 += strlen($diff->text);
+                } else if (strlen($diff->text) >= 2 * $this->Patch_Margin) {
+                    // Time for a new patch.
+                    $this->patch_addContext_($patch, $prepatch_text);
+                    $patches[] = $patch;
+                    $patch = new DiffMatch_Patch;
+                    // Unlike Unidiff, our patch lists have a rolling context.
+                    // https://github.com/google/diff-match-patch/wiki/Unidiff
+                    // Update prepatch text & pos to reflect the application of the
+                    // just completed patch.
+                    $prepatch_text = $postpatch_text;
+                    $char_count1 = $char_count2;
+                }
+            }
+
+            // Update the current character count.
+            if ($diff->op !== self::DIFF_INSERT) {
+                $char_count1 += strlen($diff->text);
+            }
+            if ($diff->op !== self::DIFF_DELETE) {
+                $char_count2 += strlen($diff->text);
+            }
+        }
+        // Pick up the leftover patch if not empty.
+        if (!empty($patch->diffs)) {
+            $this->patch_addContext_($patch, $prepatch_text);
+            $patches[] = $patch;
+        }
+
+        return $patches;
+    }
+
+
+    /**
+     * Given an array of patches, return another array that is identical.
+     * @param list<DiffMatch_Patch> $patches Array of Patch objects.
+     * @return list<DiffMatch_Patch> Array of Patch objects.
+     */
+    function patch_deepCopy($patches) {
+        $copy = [];
+        foreach ($patches as $p) {
+            $copy[] = $p2 = clone $p;
+            foreach ($p->diffs as &$diff) {
+                $diff = clone $diff;
+            }
+            unset($diff);
+        }
+        return $copy;
+    }
 }
 
 class DiffMatch_Diff implements JsonSerializable {
@@ -1416,22 +1641,43 @@ class DiffMatch_Diff implements JsonSerializable {
         $a = [];
         foreach ($slist as $s) {
             if ($s === "") {
-                // skip
-            } else if ($s[0] === "+") {
-                $a[] = new DiffMatch_Diff(DiffMatch::DIFF_INSERT, substr($s, 1));
-            } else if ($s[0] === "=") {
-                $a[] = new DiffMatch_Diff(DiffMatch::DIFF_EQUAL, substr($s, 1));
-            } else if ($s[0] === "-") {
-                $a[] = new DiffMatch_Diff(DiffMatch::DIFF_DELETE, substr($s, 1));
+                continue;
+            }
+            $ch = $s[0];
+            if ($ch === "X") {
+                if (strlen($s) < 2
+                    || ($x = hex2bin(substr($s, 2))) === false) {
+                    throw new RuntimeException("bad DiffMatch_Diff::parse_string_list hex");
+                }
+                $ch = $s[1];
             } else {
-                throw new RuntimeException("bad DiffMatch_Diff::parse_string_list `{$s}`");
+                $x = substr($s, 1);
+            }
+            if ($ch === "+") {
+                $a[] = new DiffMatch_Diff(DiffMatch::DIFF_INSERT, $x);
+            } else if ($ch === "=") {
+                $a[] = new DiffMatch_Diff(DiffMatch::DIFF_EQUAL, $x);
+            } else if ($ch === "-") {
+                $a[] = new DiffMatch_Diff(DiffMatch::DIFF_DELETE, $x);
+            } else {
+                throw new RuntimeException("bad DiffMatch_Diff::parse_string_list `{$ch}`");
             }
         }
         return $a;
     }
 
-    #[\ReturnTypeWillChange]
-    function jsonSerialize() {
+    /** @param list<DiffMatch_Diff> $diffs
+     * @return list<string> */
+    static function unparse_string_list($diffs) {
+        $a = [];
+        foreach ($diffs as $diff) {
+            $a[] = $diff->__toString();
+        }
+        return $a;
+    }
+
+    /** @return string */
+    function __toString() {
         $t = $this->text;
         if (!preg_match('//u', $t)) {
             $t = bin2hex($t);
@@ -1447,126 +1693,737 @@ class DiffMatch_Diff implements JsonSerializable {
             return "{$x}-{$t}";
         }
     }
+
+    #[\ReturnTypeWillChange]
+    function jsonSerialize() {
+        return $this->__toString();
+    }
 }
 
 
-function test_diff_cleanupSemantic() {
+class DiffMatch_Patch {
+    /** @var list<DiffMatch_Diff> */
+    public $diffs = [];
+    /** @var ?int */
+    public $start1 = null;
+    /** @var ?int */
+    public $start2 = null;
+    /** @var int */
+    public $length1 = 0;
+    /** @var int */
+    public $length2 = 0;
+
+    /**
+     * Emulate GNU diff's format.
+     * Header: @@ -382,8 +481,9 @@
+     * Indices are printed as 1-based, not 0-based.
+     * @return string The GNU diff string.
+     */
+    function __toString() {
+        if ($this->length1 === 0) {
+            $coords1 = "{$this->start1},0";
+        } else if ($this->length1 == 1) {
+            $coords1 = (string) ($this->start1 + 1);
+        } else {
+            $coords1 = ($this->start1 + 1) . ',' . $this->length1;
+        }
+        if ($this->length2 === 0) {
+            $coords2 = "{$this->start2},0";
+        } else if ($this->length2 == 1) {
+            $coords2 = (string) ($this->start2 + 1);
+        } else {
+            $coords2 = ($this->start2 + 1) . ',' . $this->length2;
+        }
+        $text = ["@@ -{$coords1} +{$coords2} @@\n"];
+        // Escape the body of the patch with %xx notation.
+        foreach ($this->diffs as $diff) {
+            if ($diff->op === DiffMatch::DIFF_INSERT) {
+                $op = "+";
+            } else if ($diff->op === DiffMatch::DIFF_DELETE) {
+                $op = "-";
+            } else {
+                $op = " ";
+            }
+            $text[] = $op . DiffMatch::diff_encodeURI($diff->text) . "\n";
+        }
+        return str_replace("%20", " ", join("", $text));
+    }
+}
+
+
+function assertEquals($a, $b) {
+    if ($a !== $b) {
+        $tr = explode("\n", (new Exception)->getTraceAsString());
+        $s = preg_replace('/\A\#?\d*\s*/', "", $tr[0]);
+        fwrite(STDERR, "ASSERTION FAILURE: $s\n");
+        fwrite(STDERR, "  expected " . (is_string($a) ? $a : (json_encode($a) ?? var_export($a, true))) . "\n");
+        fwrite(STDERR, "       got " . (is_string($b) ? $b : (json_encode($b) ?? var_export($b, true))) . "\n");
+        fwrite(STDERR, join("\n", $tr) . "\n");
+        exit(1);
+    }
+}
+
+/** @param list<DiffMatch_Diff>|list<string>|string $ax
+ * @param list<DiffMatch_Diff> $b */
+function assertEqualDiffs($ax, $b) {
+    $al = is_string($ax) ? json_decode($ax) : $ax;
+    if (!empty($al) && is_string($al[0])) {
+        $a = DiffMatch_Diff::parse_string_list($al);
+    } else {
+        $a = $al;
+    }
+    for ($i = 0; $i < count($a) || $i < count($b); ++$i) {
+        $da = $a[$i] ?? null;
+        $db = $b[$i] ?? null;
+        if ($da === null || $db === null || $da->op !== $db->op || $da->text !== $db->text) {
+            $tr = explode("\n", (new Exception)->getTraceAsString());
+            $s = preg_replace('/\A\#?\d*\s*/', "", $tr[0]);
+            fwrite(STDERR, "ASSERTION FAILURE: $s\n");
+            fwrite(STDERR, "  expected diff[{$i}] " . json_encode($da) . "\n");
+            fwrite(STDERR, "       got diff[{$i}] " . json_encode($db) . "\n");
+            fwrite(STDERR, join("\n", $tr) . "\n");
+            exit(1);
+        }
+    }
+}
+
+function testDiffCommonPrefix() {
+    $dmp = new DiffMatch;
+
+    // Detect any common prefix.
+    // Null case.
+    assertEquals(0, $dmp->diff_commonPrefix('abc', 'xyz'));
+
+    // Non-null case.
+    assertEquals(4, $dmp->diff_commonPrefix('1234abcdef', '1234xyz'));
+
+    // Whole case.
+    assertEquals(4, $dmp->diff_commonPrefix('1234', '1234xyz'));
+}
+
+function testDiffCommonSuffix() {
+    $dmp = new DiffMatch;
+
+    // Detect any common suffix.
+    // Null case.
+    assertEquals(0, $dmp->diff_commonSuffix('abc', 'xyz'));
+
+    // Non-null case.
+    assertEquals(4, $dmp->diff_commonSuffix('abcdef1234', 'xyz1234'));
+
+    // Whole case.
+    assertEquals(4, $dmp->diff_commonSuffix('1234', 'xyz1234'));
+}
+
+function testDiffCommonOverlap() {
+    $dmp = new DiffMatch;
+    $m = new ReflectionMethod("DiffMatch", "diff_commonOverlap_");
+    $m->setAccessible(true);
+
+    // Detect any suffix/prefix overlap.
+    // Null case.
+    assertEquals(0, $m->invoke($dmp, '', 'abcd'));
+
+    // Whole case.
+    assertEquals(3, $m->invoke($dmp, 'abc', 'abcd'));
+
+    // No overlap.
+    assertEquals(0, $m->invoke($dmp, '123456', 'abcd'));
+
+    // Overlap.
+    assertEquals(3, $m->invoke($dmp, '123456xxx', 'xxxabcd'));
+
+    // Unicode.
+    // Some overly clever languages (C#) may treat ligatures as equal to their
+    // component letters.  E.g. U+FB01 == 'fi'
+    assertEquals(0, $m->invoke($dmp, 'fi', '\ufb01i'));
+}
+
+function testDiffHalfMatch() {
+    // Detect a halfmatch.
+    $dmp = new DiffMatch;
+    $dmp->Diff_Timeout = 1;
+    $m = new ReflectionMethod("DiffMatch", "diff_halfMatch_");
+    $m->setAccessible(true);
+
+    // No match.
+    assertEquals(null, $m->invoke($dmp, '1234567890', 'abcdef'));
+
+    assertEquals(null, $m->invoke($dmp, '12345', '23'));
+
+    // Single Match.
+    assertEquals(['12', '90', 'a', 'z', '345678'], $m->invoke($dmp, '1234567890', 'a345678z'));
+
+    assertEquals(['a', 'z', '12', '90', '345678'], $m->invoke($dmp, 'a345678z', '1234567890'));
+
+    assertEquals(['abc', 'z', '1234', '0', '56789'], $m->invoke($dmp, 'abc56789z', '1234567890'));
+
+    assertEquals(['a', 'xyz', '1', '7890', '23456'], $m->invoke($dmp, 'a23456xyz', '1234567890'));
+
+    // Multiple Matches.
+    assertEquals(['12123', '123121', 'a', 'z', '1234123451234'], $m->invoke($dmp, '121231234123451234123121', 'a1234123451234z'));
+
+    assertEquals(['', '-=-=-=-=-=', 'x', '', 'x-=-=-=-=-=-=-='], $m->invoke($dmp, 'x-=-=-=-=-=-=-=-=-=-=-=-=', 'xx-=-=-=-=-=-=-='));
+
+    assertEquals(['-=-=-=-=-=', '', '', 'y', '-=-=-=-=-=-=-=y'], $m->invoke($dmp, '-=-=-=-=-=-=-=-=-=-=-=-=y', '-=-=-=-=-=-=-=yy'));
+
+    // Non-optimal halfmatch.
+    // Optimal diff would be -q+x=H-i+e=lloHe+Hu=llo-Hew+y not -qHillo+x=HelloHe-w+Hulloy
+    assertEquals(['qHillo', 'w', 'x', 'Hulloy', 'HelloHe'], $m->invoke($dmp, 'qHilloHelloHew', 'xHelloHeHulloy'));
+
+    // Optimal no halfmatch.
+    $dmp->Diff_Timeout = 0;
+    assertEquals(null, $m->invoke($dmp, 'qHilloHelloHew', 'xHelloHeHulloy'));
+}
+
+function testDiffLinesToChars() {
+    $dmp = new DiffMatch;
+    $m = new ReflectionMethod("DiffMatch", "diff_linesToChars_");
+    $m->setAccessible(true);
+
+    // Convert lines down to characters.
+    assertEquals(["\x01\x00\x02\x00\x01\x00", "\x02\x00\x01\x00\x02\x00", ["", "alpha\n", "beta\n"]],
+        $m->invoke($dmp, "alpha\nbeta\nalpha\n", "beta\nalpha\nbeta\n"));
+
+    assertEquals(["", "\x01\x00\x02\x00\x03\x00\x03\x00", ["", "alpha\r\n", "beta\r\n", "\r\n"]],
+        $m->invoke($dmp, "", "alpha\r\nbeta\r\n\r\n\r\n"));
+
+    assertEquals(["\x01\x00", "\x02\x00", ["", "a", "b"]],
+        $m->invoke($dmp, "a", "b"));
+
+    // More than 256 to reveal any 8-bit limitations.
+    $n = 300;
+    $lineList = $charList = [];
+    for ($i = 1; $i <= 300; ++$i) {
+        $lineList[] = "{$i}\n";
+        $charList[] = chr($i % 256) . chr($i >> 8);
+    }
+    assertEquals($n, count($lineList));
+    $lines = join("", $lineList);
+    $chars = join("", $charList);
+    assertEquals($n * 2, strlen($chars));
+    array_unshift($lineList, "");
+    assertEquals([$chars, "", $lineList], $m->invoke($dmp, $lines, ""));
+}
+
+function testDiffCharsToLines() {
+    $dmp = new DiffMatch;
+    $m = new ReflectionMethod("DiffMatch", "diff_charsToLines_");
+    $m->setAccessible(true);
+    $ml2c = new ReflectionMethod("DiffMatch", "diff_linesToChars_");
+    $ml2c->setAccessible(true);
+
+    // Convert chars up to lines.
+    $diffs = $dmp->diff_fromStringList(["=\x01\x00\x02\x00\x01\x00", "+\x02\x00\x01\x00\x02\x00"]);
+    $m->invoke($dmp, $diffs, ["", "alpha\n", "beta\n"]);
+    assertEqualDiffs(["=alpha\nbeta\nalpha\n","+beta\nalpha\nbeta\n"], $diffs);
+
+    // More than 256 to reveal any 8-bit limitations.
+    $n = 300;
+    $lineList = [];
+    $charList = [];
+    for ($i = 1; $i <= $n; ++$i) {
+        $lineList[] = "{$i}\n";
+        $charList[] = chr($i % 256) . chr($i >> 8);
+    }
+    assertEquals($n, count($lineList));
+    $lines = join("", $lineList);
+    $chars = join("", $charList);
+    assertEquals($n * 2, strlen($chars));
+    array_unshift($lineList, "");
+    $diffs = [new DiffMatch_Diff(DiffMatch::DIFF_DELETE, $chars)];
+    $m->invoke($dmp, $diffs, $lineList);
+    assertEqualDiffs(["-{$lines}"], $diffs);
+
+    // More than 65536 to verify any 16-bit limitation.
+    $lineList = [];
+    for ($i = 0; $i < 66000; ++$i) {
+        $lineList[] = "{$i}\n";;
+    }
+    $chars = join("", $lineList);
+    $results = $ml2c->invoke($dmp, $chars, "");
+    $diffs = [new DiffMatch_Diff(DiffMatch::DIFF_INSERT, $results[0])];
+    $m->invoke($dmp, $diffs, $results[2]);
+    assertEquals($chars, $diffs[0]->text);
+}
+
+function testDiffCleanupMerge() {
+    $dmp = new DiffMatch;
+
+    // Cleanup a messy diff.
+    // Null case.
+    $diffs = [];
+    $dmp->diff_cleanupMerge($diffs);
+    assertEquals([], $diffs);
+
+    // No change case.
+    $diffs = $dmp->diff_fromStringList(["=a", "-b", "+c"]);
+    $dmp->diff_cleanupMerge($diffs);
+    assertEqualDiffs(["=a","-b","+c"], $diffs);
+
+    // Merge equalities.
+    $diffs = $dmp->diff_fromStringList(["=a", "=b", "=c"]);
+    $dmp->diff_cleanupMerge($diffs);
+    assertEqualDiffs(["=abc"], $diffs);
+
+    // Merge deletions.
+    $diffs = $dmp->diff_fromStringList(["-a", "-b", "-c"]);
+    $dmp->diff_cleanupMerge($diffs);
+    assertEqualDiffs(["-abc"], $diffs);
+
+    // Merge insertions.
+    $diffs = $dmp->diff_fromStringList(["+a", "+b", "+c"]);
+    $dmp->diff_cleanupMerge($diffs);
+    assertEqualDiffs(["+abc"], $diffs);
+
+    // Merge interweave.
+    $diffs = $dmp->diff_fromStringList(["-a", "+b", "-c", "+d", "=e", "=f"]);
+    $dmp->diff_cleanupMerge($diffs);
+    assertEqualDiffs(["-ac","+bd","=ef"], $diffs);
+
+    // Prefix and suffix detection.
+    $diffs = $dmp->diff_fromStringList(["-a","+abc","-dc"]);
+    $dmp->diff_cleanupMerge($diffs);
+    assertEqualDiffs(["=a","-d","+b","=c"], $diffs);
+
+    // Prefix and suffix detection with equalities.
+    $diffs = $dmp->diff_fromStringList(["=x","-a","+abc","-dc","=y"]);
+    $dmp->diff_cleanupMerge($diffs);
+    assertEqualDiffs(["=xa","-d","+b","=cy"], $diffs);
+
+    // Slide edit left.
+    $diffs = $dmp->diff_fromStringList(["=a","+ba","=c"]);
+    $dmp->diff_cleanupMerge($diffs);
+    assertEqualDiffs(["+ab","=ac"], $diffs);
+
+    // Slide edit right.
+    $diffs = $dmp->diff_fromStringList(["=c","+ab","=a"]);
+    $dmp->diff_cleanupMerge($diffs);
+    assertEqualDiffs(["=ca","+ba"], $diffs);
+
+    // Slide edit left recursive.
+    $diffs = $dmp->diff_fromStringList(["=a","-b","=c","-ac","=x"]);
+    $dmp->diff_cleanupMerge($diffs);
+    assertEqualDiffs(["-abc","=acx"], $diffs);
+
+    // Slide edit right recursive.
+    $diffs = $dmp->diff_fromStringList(["=x","-ca","=c","-b","=a"]);
+    $dmp->diff_cleanupMerge($diffs);
+    assertEqualDiffs(["=xca","-cba"], $diffs);
+
+    // Empty merge.
+    $diffs = $dmp->diff_fromStringList(["-b","+ab","=c"]);
+    $dmp->diff_cleanupMerge($diffs);
+    assertEqualDiffs(["+a","=bc"], $diffs);
+
+    // Empty equality.
+    $diffs = $dmp->diff_fromStringList(["=","+a","=b"]);
+    $dmp->diff_cleanupMerge($diffs);
+    assertEqualDiffs(["+a","=b"], $diffs);
+}
+
+
+function testDiffCleanupSemanticLossless() {
+    $dmp = new DiffMatch;
+
+    // Slide diffs to match logical boundaries.
+    // Null case.
+    $diffs = [];
+    $dmp->diff_cleanupSemanticLossless($diffs);
+    assertEquals([], $diffs);
+
+    // Blank lines.
+    $diffs = $dmp->diff_fromStringList(["=AAA\r\n\r\nBBB","+\r\nDDD\r\n\r\nBBB","=\r\nEEE"]);
+    $dmp->diff_cleanupSemanticLossless($diffs);
+    assertEqualDiffs(["=AAA\r\n\r\n","+BBB\r\nDDD\r\n\r\n","=BBB\r\nEEE"], $diffs);
+
+    // Line boundaries.
+    $diffs = $dmp->diff_fromStringList(["=AAA\r\n\r\nBBB","+ DDD\r\nBBB","= EEE"]);
+    $dmp->diff_cleanupSemanticLossless($diffs);
+    assertEqualDiffs(["=AAA\r\n\r\n","+BBB DDD\r\n","=BBB EEE"], $diffs);
+
+    // Word boundaries.
+    $diffs = $dmp->diff_fromStringList(["=The c","+ow and the c","=at."]);
+    $dmp->diff_cleanupSemanticLossless($diffs);
+    assertEqualDiffs(["=The ","+cow and the ","=cat."], $diffs);
+
+    // Alphanumeric boundaries.
+    $diffs = $dmp->diff_fromStringList(["=The-c","+ow-and-the-c","=at."]);
+    $dmp->diff_cleanupSemanticLossless($diffs);
+    assertEqualDiffs(["=The-","+cow-and-the-","=cat."], $diffs);
+
+    // Hitting the start.
+    $diffs = $dmp->diff_fromStringList(["=a","-a","=ax"]);
+    $dmp->diff_cleanupSemanticLossless($diffs);
+    assertEqualDiffs(["-a","=aax"], $diffs);
+
+    // Hitting the end.
+    $diffs = $dmp->diff_fromStringList(["=xa","-a","=a"]);
+    $dmp->diff_cleanupSemanticLossless($diffs);
+    assertEqualDiffs(["=xaa","-a"], $diffs);
+
+    // Sentence boundaries.
+    $diffs = $dmp->diff_fromStringList(["=The xxx. The ","+zzz. The ","=yyy."]);
+    $dmp->diff_cleanupSemanticLossless($diffs);
+    assertEqualDiffs(["=The xxx.","+ The zzz.","= The yyy."], $diffs);
+}
+
+
+function testDiffCleanupSemantic() {
     $dmp = new DiffMatch;
 
     // Cleanup semantically trivial equalities.
     // Null case.
     $diffs = [];
     $dmp->diff_cleanupSemantic($diffs);
-    assert(json_encode($diffs) === '[]');
+    assertEqualDiffs([], $diffs);
 
     // No elimination #1.
-    $diffs = DiffMatch_Diff::parse_string_list(["-ab","+cd","=12","-e"]);
+    $diffs = $dmp->diff_fromStringList(["-ab","+cd","=12","-e"]);
     $dmp->diff_cleanupSemantic($diffs);
-    assert(json_encode($diffs) === '["-ab","+cd","=12","-e"]');
+    assertEqualDiffs(["-ab","+cd","=12","-e"], $diffs);
 
     // No elimination #2.
-    $diffs = DiffMatch_Diff::parse_string_list(["-abc","+ABC","=1234","-wxyz"]);
+    $diffs = $dmp->diff_fromStringList(["-abc","+ABC","=1234","-wxyz"]);
     $dmp->diff_cleanupSemantic($diffs);
-    assert(json_encode($diffs) === '["-abc","+ABC","=1234","-wxyz"]');
+    assertEqualDiffs(["-abc","+ABC","=1234","-wxyz"], $diffs);
 
     // Simple elimination.
-    $diffs = DiffMatch_Diff::parse_string_list(["-a","=b","-c"]);
+    $diffs = $dmp->diff_fromStringList(["-a","=b","-c"]);
     $dmp->diff_cleanupSemantic($diffs);
-    assert(json_encode($diffs) === '["-abc","+b"]');
+    assertEqualDiffs(["-abc","+b"], $diffs);
 
     // Backpass elimination.
-    $diffs = DiffMatch_Diff::parse_string_list(["-ab","=cd","-e","=f","+g"]);
+    $diffs = $dmp->diff_fromStringList(["-ab","=cd","-e","=f","+g"]);
     $dmp->diff_cleanupSemantic($diffs);
-    assert(json_encode($diffs) === '["-abcdef","+cdfg"]');
+    assertEqualDiffs(["-abcdef","+cdfg"], $diffs);
 
     // Multiple eliminations.
-    $diffs = DiffMatch_Diff::parse_string_list(["+1","=A","-B","+2","=_","+1","=A","-B","+2"]);
+    $diffs = $dmp->diff_fromStringList(["+1","=A","-B","+2","=_","+1","=A","-B","+2"]);
     $dmp->diff_cleanupSemantic($diffs);
-    assert(json_encode($diffs) === '["-AB_AB","+1A2_1A2"]');
+    assertEqualDiffs(["-AB_AB","+1A2_1A2"], $diffs);
 
     // Word boundaries.
-    $diffs = DiffMatch_Diff::parse_string_list(["=The c","-ow and the c","=at."]);
+    $diffs = $dmp->diff_fromStringList(["=The c","-ow and the c","=at."]);
     $dmp->diff_cleanupSemantic($diffs);
-    assert(json_encode($diffs) === '["=The ","-cow and the ","=cat."]');
+    assertEqualDiffs(["=The ","-cow and the ","=cat."], $diffs);
 
     // No overlap elimination.
-    $diffs = DiffMatch_Diff::parse_string_list(["-abcxx","+xxdef"]);
+    $diffs = $dmp->diff_fromStringList(["-abcxx","+xxdef"]);
     $dmp->diff_cleanupSemantic($diffs);
-    assert(json_encode($diffs) === '["-abcxx","+xxdef"]');
+    assertEqualDiffs(["-abcxx","+xxdef"], $diffs);
 
     // Overlap elimination.
-    $diffs = DiffMatch_Diff::parse_string_list(["-abcxxx","+xxxdef"]);
+    $diffs = $dmp->diff_fromStringList(["-abcxxx","+xxxdef"]);
     $dmp->diff_cleanupSemantic($diffs);
-    assert(json_encode($diffs) === '["-abc","=xxx","+def"]');
+    assertEqualDiffs(["-abc","=xxx","+def"], $diffs);
 
     // Reverse overlap elimination.
-    $diffs = DiffMatch_Diff::parse_string_list(["-xxxabc","+defxxx"]);
+    $diffs = $dmp->diff_fromStringList(["-xxxabc","+defxxx"]);
     $dmp->diff_cleanupSemantic($diffs);
-    assert(json_encode($diffs) === '["+def","=xxx","-abc"]');
+    assertEqualDiffs(["+def","=xxx","-abc"], $diffs);
 
     // Two overlap eliminations.
-    $diffs = DiffMatch_Diff::parse_string_list(["-abcd1212","+1212efghi","=----","-A3","+3BC"]);
+    $diffs = $dmp->diff_fromStringList(["-abcd1212","+1212efghi","=----","-A3","+3BC"]);
     $dmp->diff_cleanupSemantic($diffs);
-    assert(json_encode($diffs) === '["-abcd","=1212","+efghi","=----","-A","=3","+BC"]');
+    assertEqualDiffs(["-abcd","=1212","+efghi","=----","-A","=3","+BC"], $diffs);
 }
 
 
-function test_diff_cleanupEfficiency() {
+function testDiffCleanupEfficiency() {
     $dmp = new DiffMatch;
     $dmp->Diff_EditCost = 4;
 
     // Null case.
     $diffs = [];
     $dmp->diff_cleanupEfficiency($diffs);
-    assert(json_encode($diffs) === "[]");
+    assertEqualDiffs("[]", $diffs);
 
     // No elimination.
-    $diffs = DiffMatch_Diff::parse_string_list(["-ab", "+12", "=wxyz", "-cd", "+34"]);
+    $diffs = $dmp->diff_fromStringList(["-ab", "+12", "=wxyz", "-cd", "+34"]);
     $dmp->diff_cleanupEfficiency($diffs);
-    assert(json_encode($diffs) === '["-ab","+12","=wxyz","-cd","+34"]');
+    assertEqualDiffs(["-ab","+12","=wxyz","-cd","+34"], $diffs);
 
     // Four-edit elimination.
-    $diffs = DiffMatch_Diff::parse_string_list(["-ab","+12","=xyz","-cd","+34"]);
+    $diffs = $dmp->diff_fromStringList(["-ab","+12","=xyz","-cd","+34"]);
     $dmp->diff_cleanupEfficiency($diffs);
-    assert(json_encode($diffs) === '["-abxyzcd","+12xyz34"]');
+    assertEqualDiffs(["-abxyzcd","+12xyz34"], $diffs);
 
     // Three-edit elimination.
-    $diffs = DiffMatch_Diff::parse_string_list(["+12","=x","-cd","+34"]);
+    $diffs = $dmp->diff_fromStringList(["+12","=x","-cd","+34"]);
     $dmp->diff_cleanupEfficiency($diffs);
-    assert(json_encode($diffs) === '["-xcd","+12x34"]');
+    assertEqualDiffs(["-xcd","+12x34"], $diffs);
 
     // Backpass elimination.
-    $diffs = DiffMatch_Diff::parse_string_list(["-ab","+12","=xy","+34","=z","-cd","+56"]);
+    $diffs = $dmp->diff_fromStringList(["-ab","+12","=xy","+34","=z","-cd","+56"]);
     $dmp->diff_cleanupEfficiency($diffs);
-    assert(json_encode($diffs) === '["-abxyzcd","+12xy34z56"]');
+    assertEqualDiffs(["-abxyzcd","+12xy34z56"], $diffs);
 
     // High cost elimination.
     $dmp->Diff_EditCost = 5;
-    $diffs = DiffMatch_Diff::parse_string_list(["-ab","+12","=wxyz","-cd","+34"]);
+    $diffs = $dmp->diff_fromStringList(["-ab","+12","=wxyz","-cd","+34"]);
     $dmp->diff_cleanupEfficiency($diffs);
-    assert(json_encode($diffs) === '["-abwxyzcd","+12wxyz34"]');
+    assertEqualDiffs(["-abwxyzcd","+12wxyz34"], $diffs);
 }
 
+function testDiffPrettyHtml() {
+    // Pretty print.
+    $dmp = new DiffMatch;
+    $diffs = $dmp->diff_fromStringList(["=a\n","-<B>b</B>","+c&d"]);
+    assertEquals('<span>a&para;<br></span><del style="background:#ffe6e6;">&lt;B&gt;b&lt;/B&gt;</del><ins style="background:#e6ffe6;">c&amp;d</ins>', $dmp->diff_prettyHtml($diffs));
+}
 
-function test_diff_unicode() {
+function testDiffText() {
+    // Compute the source and destination texts.
+    $dmp = new DiffMatch;
+    $diffs = $dmp->diff_fromStringList(["=jump","-s","+ed","= over ","-the","+a","= lazy"]);
+    assertEquals('jumps over the lazy', $dmp->diff_text1($diffs));
+    assertEquals('jumped over a lazy', $dmp->diff_text2($diffs));
+}
+
+function testDiffDelta() {
+    $dmp = new DiffMatch;
+
+    // Convert a diff into delta string.
+    $diffs = $dmp->diff_fromStringList(["=jump","-s","+ed","= over ","-the","+a","= lazy","+old dog"]);
+    $text1 = $dmp->diff_text1($diffs);
+    assertEquals('jumps over the lazy', $text1);
+
+    $delta = $dmp->diff_toDelta($diffs);
+    assertEquals("=4\t-1\t+ed\t=6\t-3\t+a\t=5\t+old dog", $delta);
+
+    // Convert delta string into a diff.
+    assertEqualDiffs($diffs, $dmp->diff_fromDelta($text1, $delta));
+
+    // Generates error (19 != 20).
+    try {
+        $dmp->diff_fromDelta($text1 . 'x', $delta);
+        assertEquals(false, true);
+    } catch (Exception $e) {
+        // Exception expected.
+    }
+
+    // Generates error (19 != 18).
+    try {
+        $dmp->diff_fromDelta(substr($text1, 1), $delta);
+        assertEquals(false, true);
+    } catch (Exception $e) {
+        // Exception expected.
+    }
+
+    // Generates error (%c3%xy invalid Unicode).
+    // XXX This is not validated in the PHP version.
+    try {
+        $dmp->diff_fromDelta('', '+%c3%xy');
+        assertEquals(true, true);  // XXX
+    } catch (Exception $e) {
+        // Exception should be expected.
+        assertEquals(false, true);   // XXX
+    }
+
+    // Test deltas with special characters.
+    $diffs = $dmp->diff_fromStringList(["=\xda\x80 \x00 \t %","-\xda\x81 \x01 \n ^","+\xda\x82 \x02 \\ |"]);
+    $text1 = $dmp->diff_text1($diffs);
+    assertEquals("\xda\x80 \x00 \t %\xda\x81 \x01 \n ^", $text1);
+
+    $delta = $dmp->diff_toDelta($diffs);
+    assertEquals("=7\t-7\t+%DA%82 %02 %5C %7C", $delta);
+
+    // Convert delta string into a diff.
+    assertEqualDiffs($diffs, $dmp->diff_fromDelta($text1, $delta));
+
+    // Test deltas for surrogate pairs.
+    $diffs = $dmp->diff_fromStringList(["=😀Héló"]);
+    $text1 = $dmp->diff_text1($diffs);
+    assertEquals("😀Héló", $text1);
+
+    $delta = $dmp->diff_toDelta($diffs);
+    assertEquals("=6", $delta);
+
+    assertEqualDiffs($diffs, $dmp->diff_fromDelta($text1, $delta));
+
+    // Verify pool of unchanged characters.
+    $diffs = $dmp->diff_fromStringList(['+A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ']);
+    $text2 = $dmp->diff_text2($diffs);
+    assertEquals('A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ', $text2);
+
+    $delta = $dmp->diff_toDelta($diffs);
+    assertEquals('+A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ', $delta);
+
+    // Convert delta string into a diff.
+    assertEqualDiffs($diffs, $dmp->diff_fromDelta('', $delta));
+
+    // 160 kb string.
+    $a = 'abcdefghij';
+    for ($i = 0; $i < 14; ++$i) {
+        $a .= $a;
+    }
+    $diffs = [new DiffMatch_Diff(DiffMatch::DIFF_INSERT, $a)];
+    $delta = $dmp->diff_toDelta($diffs);
+    assertEquals('+' . $a, $delta);
+
+    // Convert delta string into a diff.
+    assertEqualDiffs($diffs, $dmp->diff_fromDelta('', $delta));
+}
+
+function testDiffXIndex() {
+    $dmp = new DiffMatch;
+
+    // Translate a location in text1 to text2.
+    // Translation on equality.
+    assertEquals(5, $dmp->diff_xIndex($dmp->diff_fromStringList(["-a","+1234","=xyz"]), 2));
+
+    // Translation on deletion.
+    assertEquals(1, $dmp->diff_xIndex($dmp->diff_fromStringList(["=a","-1234","=xyz"]), 3));
+}
+
+function testDiffLevenshtein() {
+    $dmp = new DiffMatch;
+
+    // Levenshtein with trailing equality.
+    assertEquals(4, $dmp->diff_levenshtein($dmp->diff_fromStringList(["-abc","+1234","=xyz"])));
+    // Levenshtein with leading equality.
+    assertEquals(4, $dmp->diff_levenshtein($dmp->diff_fromStringList(["=xyz","-abc","+1234"])));
+    // Levenshtein with middle equality.
+    assertEquals(7, $dmp->diff_levenshtein($dmp->diff_fromStringList(["-abc","=xyz","+1234"])));
+}
+
+function testDiffBisect() {
+    $dmp = new DiffMatch;
+    $m = new ReflectionMethod("DiffMatch", "diff_bisect_");
+    $m->setAccessible(true);
+
+    // Normal.
+    $a = 'cat';
+    $b = 'map';
+    // Since the resulting diff hasn't been normalized, it would be ok if
+    // the insertion and deletion pairs are swapped.
+    // If the order changes, tweak this test as required.
+    assertEqualDiffs(["-c", "+m", "=a", "-t", "+p"], $m->invoke($dmp, $a, $b, INF));
+
+    // Timeout.
+    assertEqualDiffs(["-cat", "+map"], $m->invoke($dmp, $a, $b, 0));
+}
+
+function testDiffMain() {
+    $dmp = new DiffMatch;
+
+    // Perform a trivial diff.
+    // Null case.
+    assertEqualDiffs([], $dmp->diff_main('', '', false));
+
+    // Equality.
+    assertEqualDiffs(["=abc"], $dmp->diff_main('abc', 'abc', false));
+
+    // Simple insertion.
+    assertEqualDiffs(["=ab", "+123", "=c"], $dmp->diff_main('abc', 'ab123c', false));
+
+    // Simple deletion.
+    assertEqualDiffs(["=a", "-123", "=bc"], $dmp->diff_main('a123bc', 'abc', false));
+
+    // Two insertions.
+    assertEqualDiffs(["=a", "+123", "=b", "+456", "=c"], $dmp->diff_main('abc', 'a123b456c', false));
+
+    // Two deletions.
+    assertEqualDiffs(["=a", "-123", "=b", "-456", "=c"], $dmp->diff_main('a123b456c', 'abc', false));
+
+    // Perform a real diff.
+    // Switch off the timeout.
+    $dmp->Diff_Timeout = 0;
+    // Simple cases.
+    assertEqualDiffs(["-a", "+b"], $dmp->diff_main('a', 'b', false));
+
+    assertEqualDiffs(["-Apple", "+Banana", "=s are a", "+lso", "= fruit."], $dmp->diff_main('Apples are a fruit.', 'Bananas are also fruit.', false));
+
+    assertEqualDiffs(["-a", "+\xDA\x80", "=x", "-\t", "+\0"], $dmp->diff_main("ax\t", "\xDA\x80x\0", false));
+
+    // Overlaps.
+    assertEqualDiffs(["-1", "=a", "-y", "=b", "-2", "+xab"], $dmp->diff_main('1ayb2', 'abxab', false));
+
+    assertEqualDiffs(["+xaxcx", "=abc", "-y"], $dmp->diff_main('abcy', 'xaxcxabc', false));
+
+    assertEqualDiffs(["-ABCD", "=a", "-=", "+-", "=bcd", "-=", "+-", "=efghijklmnopqrs", "-EFGHIJKLMNOefg"], $dmp->diff_main('ABCDa=bcd=efghijklmnopqrsEFGHIJKLMNOefg', 'a-bcd-efghijklmnopqrs', false));
+
+    // Large equality.
+    assertEqualDiffs(["+ ", "=a", "+nd", "= [[Pennsylvania]]", "- and [[New"], $dmp->diff_main('a [[Pennsylvania]] and [[New', ' and [[Pennsylvania]]', false));
+
+    // Timeout.
+    $dmp->Diff_Timeout = 0.1;  // 100ms
+    $a = "`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n";
+    $b = "I am the very model of a modern major general,\nI\'ve information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical.\n";
+    // Increase the text lengths by 1024 times to ensure a timeout.
+    for ($i = 0; $i < 10; ++$i) {
+        $a .= $a;
+        $b .= $b;
+    }
+    $startTime = microtime(true);
+    $dmp->diff_main($a, $b);
+    $endTime = microtime(true);
+    // Test that we took at least the timeout period.
+    assert($dmp->Diff_Timeout <= $endTime - $startTime);
+    // Test that we didn't take forever (be forgiving).
+    // Theoretically this test could fail very occasionally if the
+    // OS task swaps or locks up for a second at the wrong moment.
+    assert($dmp->Diff_Timeout * 2 > $endTime - $startTime);
+    $dmp->Diff_Timeout = 0;
+
+    // Test the linemode speedup.
+    // Must be long to pass the 100 char cutoff.
+    // Simple line-mode.
+    $a = "1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n";
+    $b = "abcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\n";
+    assertEqualDiffs($dmp->diff_main($a, $b, false), $dmp->diff_main($a, $b, true));
+
+    // Single line-mode.
+    $a = '1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890';
+    $b = 'abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij';
+    assertEqualDiffs($dmp->diff_main($a, $b, false), $dmp->diff_main($a, $b, true));
+
+    // Overlap line-mode.
+    $a = "1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n";
+    $b = "abcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n";
+    assertEquals($dmp->diff_text1($dmp->diff_main($a, $b, false)),
+                 $dmp->diff_text1($dmp->diff_main($a, $b, true)));
+    assertEquals($dmp->diff_text2($dmp->diff_main($a, $b, false)),
+                 $dmp->diff_text2($dmp->diff_main($a, $b, true)));
+
+    // Test null inputs.
+    try {
+        $dmp->diff_main(null, null);
+        assertEquals(true, false);
+    } catch (TypeError $e) {
+        // Exception expected.
+    }
+}
+
+function testUTF16Strlen() {
+    assertEquals(5, DiffMatch::utf16strlen("abcde"));
+    assertEquals(5, DiffMatch::utf16strlen("abcdé"));
+    assertEquals(5, DiffMatch::utf16strlen("abcdࠀ"));
+    assertEquals(6, DiffMatch::utf16strlen("abcdࠀࠀ"));
+    assertEquals(8, DiffMatch::utf16strlen("abcdࠀࠀ😀"));
+}
+
+function testDiffUTF8() {
     $dmp = new DiffMatch;
 
     $diffs = $dmp->diff("Hello this is a tést of Unicode", "Hello this is a tèst of Unicode");
-    assert(json_encode($diffs, JSON_UNESCAPED_UNICODE) === '["=Hello this is a t","-é","+è","=st of Unicode"]');
+    assertEquals('["=Hello this is a t","-é","+è","=st of Unicode"]', json_encode($diffs, JSON_UNESCAPED_UNICODE));
 
     $diffs = $dmp->diff("πanother test", "Ȁanother test");
-    assert(json_encode($diffs, JSON_UNESCAPED_UNICODE) === '["-π","+Ȁ","=another test"]');
+    assertEquals('["-π","+Ȁ","=another test"]', json_encode($diffs, JSON_UNESCAPED_UNICODE));
 
     $dmp->Fix_UTF8 = false;
     $diffs = $dmp->diff("\xe0\xa0\x96", "\xe1\xa0\x97");
-    assert(json_encode($diffs) === '["X-e0","X+e1","X=a0","X-96","X+97"]');
+    assertEquals('["X-e0","X+e1","X=a0","X-96","X+97"]', json_encode($diffs));
+
     $dmp->Fix_UTF8 = true;
     $diffs = $dmp->diff("\xe0\xa0\x96", "\xe1\xa0\x97");
-    assert(json_encode($diffs, JSON_UNESCAPED_UNICODE) === "[\"-\xe0\xa0\x96\",\"+\xe1\xa0\x97\"]");
+    assertEquals("[\"-\xe0\xa0\x96\",\"+\xe1\xa0\x97\"]", json_encode($diffs, JSON_UNESCAPED_UNICODE));
 }
 
 
-function test() {
+function testRandom() {
     $words = preg_split('/\s+/', file_get_contents("/usr/share/dict/words"));
     $nwords = count($words);
     mt_srand(1);
@@ -1620,7 +2477,59 @@ function test() {
     }
 }
 
-test_diff_cleanupSemantic();
-test_diff_cleanupEfficiency();
-test_diff_unicode();
-test();
+function testSpeedtest() {
+    $text1 = file_get_contents("conf/speedtest1.txt");
+    $text2 = file_get_contents("conf/speedtest2.txt");
+
+    $dmp = new DiffMatch;
+    $dmp->Diff_Timeout = 0;
+
+    // Execute one reverse diff as a warmup.
+    $dmp->diff($text2, $text1);
+    gc_collect_cycles();
+
+    $us_start = microtime(true);
+    $diff = $dmp->diff($text1, $text2);
+    $us_end = microtime(true);
+
+    file_put_contents("/tmp/x.html", $dmp->diff_prettyHtml($diff));
+    fwrite(STDOUT, sprintf("Elapsed time: %.3f\n", $us_end - $us_start));
+}
+
+function testSpeedtestSemantic($sz) {
+    $dmp = new DiffMatch;
+    $dmp->Diff_Timeout = 0;
+    $s1 = str_repeat("a", 50) . str_repeat("b", $sz) . str_repeat("c", 50);
+    $s2 = str_repeat("a", 50) . str_repeat("b", 2 * $sz) . str_repeat("c", 50);
+
+    $t0 = microtime(true);
+    $diffs = $dmp->diff($s1, $s2);
+    $t1 = microtime(true);
+    $dmp->diff_cleanupSemantic($diffs);
+    $t2 = microtime(true);
+
+    fwrite(STDOUT, sprintf("Elapsed time: diff %.3f, cleanup %.3f\n", $t1-$t0, $t2-$t1));
+}
+
+testUTF16Strlen();
+testDiffCommonPrefix();
+testDiffCommonSuffix();
+testDiffCommonOverlap();
+testDiffHalfMatch();
+testDiffLinesToChars();
+testDiffCharsToLines();
+testDiffCleanupMerge();
+testDiffCleanupSemanticLossless();
+testDiffCleanupSemantic();
+testDiffCleanupEfficiency();
+testDiffPrettyHtml();
+testDiffText();
+testDiffDelta();
+testDiffXIndex();
+testDiffLevenshtein();
+testDiffBisect();
+testDiffMain();
+testSpeedtest();
+testSpeedtestSemantic(1000000);
+testDiffUTF8();
+testRandom();
