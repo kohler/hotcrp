@@ -737,6 +737,8 @@ class DiffMatchPatch_Tester {
         } catch (\TypeError $e) {
             xassert(false);
         }
+
+        $this->assertEquals("+hello", (string) (new dmp\diff_obj(dmp\DIFF_INSERT, "hello")));
     }
 
     function testUTF16Strlen() {

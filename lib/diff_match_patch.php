@@ -23,10 +23,6 @@ class diff_match_patch {
     /** @var int */
     public $Match_MaxBits = 32;
 
-    /** @var bool */
-    public $checklines;
-    /** @var float */
-    public $deadline;
     /** @var 0|1
      * $iota === 1 if we are doing a line diff, so the unit is 2 bytes */
     private $iota = 0;
@@ -37,7 +33,7 @@ class diff_match_patch {
      * @param ?float $deadline
      * @return list<diff_obj> */
     function diff($text1, $text2, $checklines = null, $deadline = null) {
-        return $this->diff_main($text1, $text2, $checklines ?? true, $deadline);
+        return $this->diff_main($text1, $text2, $checklines, $deadline);
     }
 
     /** @param string $text1 Old string to be diffed.
@@ -60,7 +56,6 @@ class diff_match_patch {
         // Clean up parameters
         $Fix_UTF8 = $this->Fix_UTF8;
         $this->Fix_UTF8 = false;
-        $checklines = $checklines ?? true;
         if ($deadline === null) {
             if ($this->Diff_Timeout <= 0) {
                 $deadline = INF;
@@ -90,7 +85,7 @@ class diff_match_patch {
         }
 
         // Compute the diff on the middle block.
-        $diffs = $this->diff_compute_($text1, $text2, $checklines, $deadline);
+        $diffs = $this->diff_compute_($text1, $text2, $checklines ?? true, $deadline);
 
         // Restore the prefix and suffix.
         if ($commonprefix !== "") {
@@ -245,8 +240,12 @@ class diff_match_patch {
         } else {
             // Given the location of the 'middle snake', split the diff in two parts
             // and recurse.
-            $diffs = $this->diff_main(substr($text1, 0, $x), substr($text2, 0, $y), false, $deadline);
-            array_push($diffs, ...$this->diff_main(substr($text1, $x), substr($text2, $y), false, $deadline));
+            $text1a = substr($text1, 0, $x);
+            $text2a = substr($text2, 0, $y);
+            $text1b = substr($text1, $x);
+            $text2b = substr($text2, $y);
+            $diffs = $this->diff_main($text1a, $text2a, false, $deadline);
+            array_push($diffs, ...$this->diff_main($text1b, $text2b, false, $deadline));
             return $diffs;
         }
     }
@@ -1369,7 +1368,7 @@ class diff_match_patch {
                 $text[] = ($diff->op === DIFF_DELETE ? "-" : "=") . $n;
             }
         }
-        return str_replace("%20", " ", join("\t", $text));
+        return join("\t", $text);
     }
 
     /**
@@ -1878,7 +1877,7 @@ class patch_obj {
             }
             $text[] = $op . diff_match_patch::diff_encodeURI($diff->text) . "\n";
         }
-        return str_replace("%20", " ", join("", $text));
+        return join("", $text);
     }
 }
 
