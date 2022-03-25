@@ -644,7 +644,7 @@ class Score_ReviewField extends ReviewField {
     function value_class($value) {
         $info = self::$scheme_info[$this->scheme];
         if (count($this->options) <= 1) {
-            $n = 0;
+            $n = $info[1] - 1;
         } else if ($info[0] & 2) {
             $n = (int) round($value - 1) % $info[1];
         } else {

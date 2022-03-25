@@ -4472,7 +4472,7 @@ tooltip.add_builder("rf-description", function (info) {
                 d += "<div class=\"od\">Choices are:</div>";
                 for (si = 0, vo = fieldj.score_info.value_order();
                      si < vo.length; ++si)
-                    d += "<div class=\"od\"><strong class=\"rev_num " + fieldj.score_info.className(vo[si]) + "\">" + fieldj.score_info.unparse(vo[si]) + ".</strong>&nbsp;" + escape_html(fieldj.options[vo[si] - 1]) + "</div>";
+                    d += "<div class=\"od\"><strong class=\"rev_num " + fieldj.score_info.className(vo[si]) + "\">" + fieldj.score_info.unparse(vo[si]) + ".</strong>&nbsp;" + escape_html(fieldj.options[vo[si] - 1] || "") + "</div>";
             }
             info = $.extend({content: d, anchor: "w"}, info);
         }
@@ -4523,7 +4523,7 @@ function render_review_body(rrow) {
         } else if (rrow[f.uid] && (x = f.score_info.parse(rrow[f.uid]))) {
             t += '<p class="revv revscore"><span class="revscorenum">' +
                 f.score_info.unparse_revnum(x) + ' </span><span class="revscoredesc">' +
-                escape_html(f.options[x - 1]) + '</span></p>';
+                escape_html(f.options[x - 1] || "") + '</span></p>';
         } else {
             t += '<p class="revv revnoscore">' + (f.required ? "Unknown" : "No entry") + '</p>';
         }
@@ -10155,7 +10155,7 @@ var scheme_info = {
 
 function make_fm9(n, max, rev, categorical) {
     if (n <= 1 || max <= 1) {
-        return function (i) { return rev ? max : 1; };
+        return function (i) { return rev ? 1 : max; };
     } else if (categorical) {
         return function (i) {
             var x = Math.round(+i - 1) % max;
@@ -10267,7 +10267,7 @@ function make_info(n, c, sv) {
             if (val >= 1 && val <= n)
                 return '<strong class="rev_num sv '.concat(svk, fm9(val), '">', unparse(val), '.</strong>');
             else
-                return '(???)';
+                return '<strong class="rev_num">?'.concat(numeric_unparser(val), '.</strong>');
         },
         parse: c ? make_letter_parser(n, c) : numeric_parser,
         value_order: function () {
@@ -10287,7 +10287,7 @@ return function (n, c, sv) {
     sv = sv && scheme_info[sv] ? sv : "sv";
     var name = "".concat(n, "/", c || "", "/", sv);
     if (!info[name])
-        info[name] = make_info(n, c || "", sv);
+        info[name] = make_info(n || 1, c || "", sv);
     return info[name];
 };
 })(jQuery);
