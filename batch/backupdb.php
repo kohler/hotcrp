@@ -14,6 +14,10 @@ class BackupDB_Batch {
     public $schema;
     /** @var bool */
     public $skip_ephemeral;
+    /** @var bool */
+    public $tablespaces;
+    /** @var list<string> */
+    private $my_opts;
     /** @var ?resource */
     public $in;
     /** @var resource */
@@ -41,10 +45,12 @@ class BackupDB_Batch {
     /** @var string */
     private $_separator;
 
-    function __construct(Dbl_ConnectionParams $cp, $arg) {
+    function __construct(Dbl_ConnectionParams $cp, $arg = []) {
         $this->connp = $cp;
         $this->schema = isset($arg["schema"]);
         $this->skip_ephemeral = isset($arg["no-ephemeral"]);
+        $this->tablespaces = isset($arg["tablespaces"]);
+        $this->my_opts = $arg["-"] ?? [];
     }
 
     /** @param ?resource $input
@@ -106,6 +112,12 @@ class BackupDB_Batch {
         }
         if (($this->connp->socket ?? "") !== "") {
             $cmd .= " -S " . escapeshellarg($this->connp->socket);
+        }
+        if (!$this->tablespaces && $cmd === "mysqldump") {
+            $cmd .= " --no-tablespaces";
+        }
+        foreach ($this->my_opts as $opt) {
+            $cmd .= " " . escapeshellarg($opt);
         }
         if ($args !== "") {
             $cmd .= " " . $args;
@@ -267,10 +279,12 @@ class BackupDB_Batch {
             "z,compress Compress output",
             "schema Output schema only",
             "no-ephemeral Omit ephemeral settings and values",
+            "tablespaces Include tablespaces",
             "help,h"
         )->description("Back up HotCRP database.
 Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
          ->helpopt("help")
+         ->otheropt()
          ->parse($argv);
 
         $Opt["__no_main"] = true;
@@ -279,8 +293,8 @@ Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
 
         if (isset($arg["input"])) {
             if ($arg["input"] === "-") {
-                $bdb->set_input(STDIN);
-            } else if (($inf = gzopen($arg["input"], "rb")) !== false) {
+                $bdb->set_input(@fopen("compress.zlib://php://stdin", "rb"));
+            } else if (($inf = @gzopen($arg["input"], "rb")) !== false) {
                 $bdb->set_input($inf);
             } else {
                 throw error_get_last_as_exception($arg["input"] . ": ");
@@ -289,15 +303,19 @@ Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
 
         if (isset($arg["z"])) {
             if (($arg["output"] ?? "-") === "-") {
-                $f = fopen("compress.zlib://php://stdout", "wb");
+                $f = @fopen("compress.zlib://php://stdout", "wb");
             } else {
-                $f = gzopen($arg["output"], "wb");
+                $f = @gzopen($arg["output"], "wb");
             }
-            if ($f !== false) {
-                $bdb->set_output($f);
-            } else {
-                throw error_get_last_as_exception((($arg["output"] ?? "-") === "-" ? "<stdout>" : $arg["output"]) . ": ");
-            }
+        } else if (isset($arg["output"]) && $arg["output"] !== "-") {
+            $f = @fopen("file://" . $arg["output"], "wb");
+        } else {
+            $f = STDOUT;
+        }
+        if ($f !== false) {
+            $bdb->set_output($f);
+        } else {
+            throw error_get_last_as_exception((($arg["output"] ?? "-") === "-" ? "<stdout>" : $arg["output"]) . ": ");
         }
 
         return $bdb;

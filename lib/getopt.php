@@ -11,6 +11,8 @@ class Getopt {
     private $description;
     /** @var bool */
     private $allmulti = false;
+    /** @var bool */
+    private $otheropt = false;
     /** @var ?int */
     private $minarg;
     /** @var ?int */
@@ -93,6 +95,13 @@ class Getopt {
      * @return $this */
     function helpopt($helpopt) {
         $this->helpopt = $helpopt;
+        return $this;
+    }
+
+    /** @param ?bool $otheropt
+     * @return $this */
+    function otheropt($otheropt = null) {
+        $this->otheropt = $otheropt ?? true;
         return $this;
     }
 
@@ -207,7 +216,12 @@ class Getopt {
                 $eq = strpos($arg, "=");
                 $name = substr($arg, 2, ($eq ? $eq : strlen($arg)) - 2);
                 if (!($po = $this->po[$name] ?? null)) {
-                    break;
+                    if ($this->otheropt) {
+                        $res["-"][] = $arg;
+                        continue;
+                    } else {
+                        break;
+                    }
                 }
                 $oname = "--{$name}";
                 $name = $po[0];
@@ -228,13 +242,18 @@ class Getopt {
             } else if (ctype_alnum($arg[1])) {
                 $oname = "-{$arg[1]}";
                 if (!($po = $this->po[$arg[1]] ?? null)) {
-                    break;
+                    if ($this->otheropt) {
+                        $res["-"][] = $arg;
+                        continue;
+                    } else {
+                        break;
+                    }
                 }
                 $name = $po[0];
                 $pot = $po[1];
-                if (strlen($arg) == 2 && ($pot & 1) === 1 && $i === count($argv) - 1) {
+                if (strlen($arg) === 2 && ($pot & 1) === 1 && $i === count($argv) - 1) {
                     throw new CommandLineException("missing argument for `{$oname}`");
-                } else if ($pot === 0 || ($pot === 2 && strlen($arg) == 2)) {
+                } else if ($pot === 0 || ($pot === 2 && strlen($arg) === 2)) {
                     $value = false;
                 } else if (strlen($arg) > 2 && $arg[2] === "=") {
                     $value = substr($arg, 3);
