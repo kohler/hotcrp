@@ -3427,6 +3427,7 @@ class Contact {
                 && $rights->allow_pc_broad
                 && $rights->review_status === 0
                 && !$rights->allow_author_view
+                && ($prow->outcome <= 0 || !$rights->can_view_decision)
                 && $this->conf->time_pc_view($prow, true)
                 && $this->conf->check_tracks($prow, $this, Track::VIEWPDF);
         } else {
