@@ -1418,7 +1418,7 @@ class SettingValues extends MessageSet {
                     $basev = $vi ? "" : 0;
                     $newv = $v === null ? $basev : $v[$vi];
                     if ($oldv === $newv
-                        || ($vi === 0 && is_bool($oldv) && $oldv === !!$newv)) {
+                        || ($vi === 0 && is_bool($oldv) && (int) $oldv === $newv)) {
                         $v = null; // delete override value in database
                     } else if ($v === null && $oldv !== $basev && $oldv !== null) {
                         $v = $vi ? [0, ""] : [0, null];
