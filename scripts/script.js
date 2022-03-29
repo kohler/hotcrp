@@ -9569,7 +9569,7 @@ function handle_submit_list_bulkwarn(table, chkval, bgform, event) {
         var hc = popup_skeleton({near: event.target});
         hc.push('<div class="container"></div>');
         hc.push_actions([
-            '<button type="button" name="bsubmit" class="btn-primary">OK</button>',
+            '<button type="button" name="bsubmit" class="btn-primary">Download</button>',
             '<button type="button" name="cancel">Cancel</button>'
         ]);
         var $d = hc.show(false), m = table.getAttribute("data-bulkwarn-ftext");
