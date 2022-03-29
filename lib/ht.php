@@ -195,15 +195,15 @@ class Ht {
         $x = $optgroup = "";
         $first_value = null;
         $has_selected = false;
-        foreach ($opt as $value => $info) {
+        foreach ($opt as $key => $info) {
             if (is_array($info) && isset($info[0]) && $info[0] === "optgroup") {
                 $info = ["type" => "optgroup", "label" => $info[1] ?? null];
             } else if (is_object($info)) {
                 $info = (array) $info;
             } else if (is_scalar($info)) {
                 $info = ["label" => $info];
-                if (is_array($disabled) && isset($disabled[$value])) {
-                    $info["disabled"] = $disabled[$value];
+                if (is_array($disabled) && isset($disabled[$key])) {
+                    $info["disabled"] = $disabled[$key];
                 }
             }
 
@@ -220,14 +220,12 @@ class Ht {
             } else {
                 $label = $info["label"];
                 unset($info["label"]);
-                if (!isset($info["value"])) {
-                    $info["value"] = "";
-                }
+                $info["value"] = $info["value"] ?? (string) $key;
                 if (!isset($first_value)) {
-                    $first_value = $info["value"] ?? "";
+                    $first_value = $info["value"];
                 }
                 if ($selected !== null
-                    && strcmp((string) $value, $selected) === 0
+                    && strcmp($info["value"], $selected) === 0
                     && !$has_selected) {
                     $info["selected"] = true;
                     $has_selected = true;
