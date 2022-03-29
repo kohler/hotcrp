@@ -9559,6 +9559,33 @@ handle_ui.on("js-assign-list-action", function () {
     });
 });
 
+function handle_submit_list_bulkwarn(table, chkval, bgform, event) {
+    var chki = table.querySelectorAll("tr.pl[data-bulkwarn]"), i, n = 0;
+    for (i = 0; i !== chki.length && n < 3; ++i) {
+        if (chkval.indexOf(chki[i].getAttribute("data-pid")) >= 0)
+            ++n;
+    }
+    if (n >= 3) {
+        var hc = popup_skeleton({near: event.target});
+        hc.push('<p>Some program committees discourage reviewers from downloading submissions in bulk. Are you sure you want to continue?</p>');
+        hc.push_actions([
+            '<button type="button" name="bsubmit" class="btn-success">OK</button>',
+            '<button type="button" name="cancel">Cancel</button>'
+        ]);
+        var $d = hc.show();
+        $d.on("closedialog", function () {
+            bgform && document.body.removeChild(bgform);
+        });
+        $d.on("click", "button[name=bsubmit]", function (event) {
+            bgform.submit();
+            bgform = null;
+            $d.close();
+        });
+        return false;
+    } else
+        return true;
+}
+
 handle_ui.on("js-submit-list", function (event) {
     // choose action
     var form = this, fn, fnbutton, e, ne, i, es, t;
@@ -9603,7 +9630,7 @@ handle_ui.on("js-submit-list", function (event) {
         if (e.className === "is-background-form")
             document.body.removeChild(e);
     }
-    var bgform, action = form.action;
+    var bgform, action = form.action, need_bulkwarn = false;
     if (fnbutton && fnbutton.hasAttribute("formaction"))
         action = fnbutton.getAttribute("formaction");
     if (fnbutton && fnbutton.getAttribute("formmethod") === "get" && chkval.length < 20) {
@@ -9625,6 +9652,7 @@ handle_ui.on("js-submit-list", function (event) {
     bgform.className = "is-background-form";
     if (fnbutton && fnbutton.hasAttribute("formtarget"))
         bgform.setAttribute("target", fnbutton.getAttribute("formtarget"));
+    document.body.appendChild(bgform);
     if (chkval)
         bgform.appendChild(hidden_input("p", chkval.join(" ")));
     if (isdefault)
@@ -9643,11 +9671,16 @@ handle_ui.on("js-submit-list", function (event) {
                     e.files = es[i].files;
                 } else
                     bgform.appendChild(hidden_input(es[i].name, es[i].value));
+                if (es[i].hasAttribute("data-bulkwarn")
+                    || (es[i].tagName === "SELECT"
+                        && es[i].selectedIndex >= 0
+                        && es[i].options[es[i].selectedIndex].hasAttribute("data-bulkwarn")))
+                    need_bulkwarn = true;
             }
         }
     }
-    document.body.appendChild(bgform);
-    bgform.submit();
+    if (!need_bulkwarn || handle_submit_list_bulkwarn(table, chkval, bgform, event))
+        bgform.submit();
     event.preventDefault();
 });
 

@@ -1397,6 +1397,13 @@ class PaperList implements XtContext {
             $this->row_attr["data-tags"] = trim($this->row_tags);
         }
 
+        // warn about download?
+        if (!$this->user->privChair
+            && $this->user->isPC
+            && $this->user->needs_bulk_download_warning($row)) {
+            $this->row_attr["data-bulkwarn"] = "";
+        }
+
         // row classes
         $trclass = [];
         $cc = "";

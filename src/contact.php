@@ -3413,6 +3413,28 @@ class Contact {
     }
 
     /** @return bool */
+    function needs_some_bulk_download_warning() {
+        return !$this->privChair
+            && $this->isPC
+            && $this->conf->opt("warnPCBulkDownloads");
+    }
+
+    /** @return bool */
+    function needs_bulk_download_warning(PaperInfo $prow) {
+        if ($this->needs_some_bulk_download_warning()) {
+            $rights = $this->rights($prow);
+            return !$rights->allow_administer
+                && $rights->allow_pc_broad
+                && $rights->review_status === 0
+                && !$rights->allow_author_view
+                && $this->conf->time_pc_view($prow, true)
+                && $this->conf->check_tracks($prow, $this, Track::VIEWPDF);
+        } else {
+            return false;
+        }
+    }
+
+    /** @return bool */
     function can_view_manager(PaperInfo $prow = null) {
         if ($this->privChair) {
             return true;

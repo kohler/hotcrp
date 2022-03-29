@@ -7,10 +7,7 @@ class GetDocument_ListAction extends ListAction {
     function __construct($conf, $fj) {
         $this->dt = $fj->dtype;
     }
-    static function make_list_action(PaperOption $opt) {
-        return new GetDocument_ListAction($opt->conf, self::list_action_json($opt));
-    }
-    static function list_action_json(PaperOption $opt) {
+    static private function list_action_json(Contact $user, PaperOption $opt) {
         return (object) [
             "name" => "get/" . $opt->dtype_name(),
             "get" => true,
@@ -18,6 +15,7 @@ class GetDocument_ListAction extends ListAction {
             "title" => "Documents/" . $opt->plural_title(),
             "order" => $opt->page_order(),
             "display_if" => "listhas:" . $opt->field_key(),
+            "data-bulkwarn" => $user->needs_some_bulk_download_warning() ? "" : null,
             "function" => "+GetDocument_ListAction"
         ];
     }
@@ -25,7 +23,7 @@ class GetDocument_ListAction extends ListAction {
         $user = $gex->viewer();
         foreach ($user->conf->options()->page_fields() as $o) {
             if ($o->has_document() && $user->can_view_some_option($o))
-                $gex->add(self::list_action_json($o));
+                $gex->add(self::list_action_json($user, $o));
         }
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {

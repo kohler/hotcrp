@@ -35,6 +35,7 @@ class Ht {
         "optionstyles" => self::ATTR_SKIP,
         "readonly" => self::ATTR_BOOL,
         "required" => self::ATTR_BOOL,
+        "selected" => self::ATTR_BOOL,
         "spellcheck" => self::ATTR_BOOLTEXT,
         "type" => self::ATTR_SKIP
     ];
@@ -70,6 +71,8 @@ class Ht {
                     $x .= ($v ? " $k" : "");
                 } else if ($t === self::ATTR_BOOLTEXT && is_bool($v)) {
                     $x .= " $k=\"" . ($v ? "true" : "false") . "\"";
+                } else if ($v === "") {
+                    $x .= " $k";
                 } else {
                     $x .= " $k=\"" . str_replace("\"", "&quot;", $v) . "\"";
                 }
@@ -182,68 +185,50 @@ class Ht {
             unset($js["disabled"]);
         }
 
-        $optionstyles = $js["optionstyles"] ?? null;
         $x = $optgroup = "";
-        $first_value = $has_selected = false;
+        $first_value = null;
+        $has_selected = false;
         foreach ($opt as $value => $info) {
             if (is_array($info) && isset($info[0]) && $info[0] === "optgroup") {
-                $info = (object) ["type" => "optgroup", "label" => $info[1] ?? null];
-            } else if (is_array($info)) {
-                $info = (object) $info;
+                $info = ["type" => "optgroup", "label" => $info[1] ?? null];
+            } else if (is_object($info)) {
+                $info = (array) $info;
             } else if (is_scalar($info)) {
-                $info = (object) ["label" => $info];
+                $info = ["label" => $info];
                 if (is_array($disabled) && isset($disabled[$value])) {
-                    $info->disabled = $disabled[$value];
+                    $info["disabled"] = $disabled[$value];
                 }
-                if ($optionstyles && isset($optionstyles[$value])) {
-                    $info->style = $optionstyles[$value];
-                }
-            }
-            if (isset($info->value)) {
-                $value = $info->value;
             }
 
             if ($info === null) {
                 $x .= '<option label=" " disabled></option>';
-            } else if (isset($info->type) && $info->type === "optgroup") {
+            } else if (($info["type"] ?? null) === "optgroup") {
                 $x .= $optgroup;
-                if ($info->label) {
-                    $x .= '<optgroup label="' . htmlspecialchars($info->label) . '">';
+                if ($info["label"] ?? null) {
+                    $x .= '<optgroup label="' . htmlspecialchars($info["label"]) . '">';
                     $optgroup = "</optgroup>";
                 } else {
                     $optgroup = "";
                 }
             } else {
-                $x .= '<option';
-                if ($info->id ?? null) {
-                    $x .= " id=\"{$info->id}\"";
+                $label = $info["label"];
+                unset($info["label"]);
+                if (!isset($info["value"])) {
+                    $info["value"] = "";
                 }
-                $x .= ' value="' . htmlspecialchars((string) $value) . '"';
-                if ($first_value === false) {
-                    $first_value = $value;
+                if (!isset($first_value)) {
+                    $first_value = $info["value"] ?? "";
                 }
                 if ($selected !== null
                     && strcmp((string) $value, $selected) === 0
                     && !$has_selected) {
-                    $x .= ' selected';
+                    $info["selected"] = true;
                     $has_selected = true;
                 }
-                if ($info->disabled ?? false) {
-                    $x .= ' disabled';
-                }
-                if ($info->class ?? false) {
-                    $x .= " class=\"{$info->class}\"";
-                }
-                if ($info->style ?? false) {
-                    $x .= ' style="' . htmlspecialchars($info->style) . '"';
-                }
-                $x .= '>' . $info->label . '</option>';
+                $x .= '<option' . self::extra($info) . ">{$label}</option>";
             }
         }
 
-        if ($selected === null || !isset($opt[$selected])) {
-            $selected = key($opt);
-        }
         $t = '<span class="select"><select name="' . $name . '"' . self::extra($js);
         if (!isset($js["data-default-value"])) {
             $t .= ' data-default-value="' . htmlspecialchars($has_selected ? $selected : $first_value) . '"';

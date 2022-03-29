@@ -47,15 +47,22 @@ class ListAction {
                         $sel_opt[] = ["optgroup", false];
                     }
                     $last_group = null;
-                    $sel_opt[] = ["value" => substr($rf->name, $p), "label" => $rf->title];
                 } else {
                     $group = substr($rf->title, 0, $as);
                     if ($group !== $last_group) {
                         $sel_opt[] = ["optgroup", $group];
                         $last_group = $group;
                     }
-                    $sel_opt[] = ["value" => substr($rf->name, $p), "label" => substr($rf->title, $as + 1)];
                 }
+                $opt = [
+                    "value" => substr($rf->name, $p),
+                    "label" => $as === false ? $rf->title : substr($rf->title, $as + 1)
+                ];
+                foreach ($rf as $k => $v) {
+                    if (str_starts_with($k, "data-"))
+                        $opt[$k] = $v;
+                }
+                $sel_opt[] = $opt;
             }
         }
         return $sel_opt;
