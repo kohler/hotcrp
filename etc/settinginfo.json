@@ -301,6 +301,11 @@
         "type": "checkbox"
     },
     {
+        "name": "pc_warn_bulk_download", "group": "sub",
+        "title": "Warn PC about downloading submissions in bulk",
+        "type": "checkbox", "storage": "ova.pcWarnBulkDownload"
+    },
+    {
         "name": "pc_seeallrev", "group": "rev",
         "title": "PC can see all review contents",
         "type": "radio",

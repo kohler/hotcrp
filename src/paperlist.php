@@ -263,11 +263,13 @@ class PaperList implements XtContext {
     /** @var ?CheckFormat */
     public $check_format;
 
-    // collected during render and exported to caller
+    // collected during render
     /** @var int */
-    public $count; // also exported to columns access: 1 more than row index
+    public $count; // exported to caller and columns; equals 1 more than row index
     /** @var ?array<string,bool> */
     private $_has;
+    /** @var int */
+    private $_bulkwarn_count;
 
     /** @var bool */
     static public $include_stash = true;
@@ -1402,6 +1404,7 @@ class PaperList implements XtContext {
             && $this->user->isPC
             && $this->user->needs_bulk_download_warning($row)) {
             $this->row_attr["data-bulkwarn"] = "";
+            ++$this->_bulkwarn_count;
         }
 
         // row classes
@@ -1607,6 +1610,7 @@ class PaperList implements XtContext {
     private function _prepare() {
         $this->_has = [];
         $this->count = 0;
+        $this->_bulkwarn_count = 0;
         $this->need_render = false;
         $this->_vcolumns = [];
     }
@@ -1942,6 +1946,11 @@ class PaperList implements XtContext {
         // analyze `has`, including authors
         foreach ($this->_vcolumns as $fdef) {
             $this->mark_has($fdef->name, $fdef->has_content);
+        }
+        if ($this->_bulkwarn_count >= 4
+            && !isset($this->table_attr["data-bulkwarn-ftext"])
+            && ($m = $this->conf->_i("submission_bulk_warning", "")) !== "") {
+            $this->table_attr["data-bulkwarn-ftext"] = Ftext::ensure($m, 5);
         }
 
         // statistics rows

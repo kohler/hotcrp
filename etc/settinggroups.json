@@ -76,6 +76,10 @@
         "print_separator": true,
         "print_function": "Submissions_SettingRenderer::print_pcseeall"
     },
+    {
+        "name": "submissions/pcseeallpdf", "order": 51,
+        "print_function": "Submissions_SettingRenderer::print_pcseeallpdf"
+    },
 
 
     {

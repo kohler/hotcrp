@@ -37,6 +37,17 @@ class Ftext {
         return [null, $s];
     }
 
+    /** @param string $s
+     * @param int $default_format
+     * @return string */
+    static function ensure($s, $default_format) {
+        if (self::is_ftext($s) !== false) {
+            return $s;
+        } else {
+            return "<{$default_format}>{$s}";
+        }
+    }
+
     /** @param string $ftext
      * @param int $want_format
      * @return string */

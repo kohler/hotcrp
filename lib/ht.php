@@ -3,12 +3,19 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Ht {
+    /** @var string */
     public static $img_base = "";
+    /** @var string */
     private static $_script_open = "<script";
+    /** @var int */
     private static $_controlid = 0;
+    /** @var int */
     private static $_lastcontrolid = 0;
+    /** @var string */
     private static $_stash = "";
+    /** @var bool */
     private static $_stash_inscript = false;
+    /** @var array<string,true> */
     private static $_stash_map = [];
     /** @var ?MessageSet */
     private static $_msgset = null;
@@ -230,7 +237,8 @@ class Ht {
         }
 
         $t = '<span class="select"><select name="' . $name . '"' . self::extra($js);
-        if (!isset($js["data-default-value"])) {
+        if (!isset($js["data-default-value"])
+            && ($has_selected || isset($first_value))) {
             $t .= ' data-default-value="' . htmlspecialchars($has_selected ? $selected : $first_value) . '"';
         }
         return "{$t}>{$x}{$optgroup}</select></span>";

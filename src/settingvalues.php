@@ -1417,7 +1417,8 @@ class SettingValues extends MessageSet {
                     $vi = Si::$option_is_value[$okey] ? 0 : 1;
                     $basev = $vi ? "" : 0;
                     $newv = $v === null ? $basev : $v[$vi];
-                    if ($oldv === $newv) {
+                    if ($oldv === $newv
+                        || ($vi === 0 && is_bool($oldv) && $oldv === !!$newv)) {
                         $v = null; // delete override value in database
                     } else if ($v === null && $oldv !== $basev && $oldv !== null) {
                         $v = $vi ? [0, ""] : [0, null];

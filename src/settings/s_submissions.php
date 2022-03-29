@@ -29,6 +29,8 @@ class Submissions_SettingRenderer {
     }
     static function print_pcseeall(SettingValues $sv) {
         $sv->print_checkbox("pc_seeall", "PC can view incomplete submissions before submission deadline", null, "Check this box to collect review preferences before the submission deadline. After the submission deadline, PC members can only see completed submissions.");
+    }
+    static function print_pcseeallpdf(SettingValues $sv) {
         $sv->print_checkbox("pc_seeallpdf", "PC can view submitted PDFs before submission deadline");
     }
     static function crosscheck(SettingValues $sv) {

@@ -9561,18 +9561,22 @@ handle_ui.on("js-assign-list-action", function () {
 
 function handle_submit_list_bulkwarn(table, chkval, bgform, event) {
     var chki = table.querySelectorAll("tr.pl[data-bulkwarn]"), i, n = 0;
-    for (i = 0; i !== chki.length && n < 3; ++i) {
+    for (i = 0; i !== chki.length && n < 4; ++i) {
         if (chkval.indexOf(chki[i].getAttribute("data-pid")) >= 0)
             ++n;
     }
-    if (n >= 3) {
+    if (n >= 4) {
         var hc = popup_skeleton({near: event.target});
-        hc.push('<p>Some program committees discourage reviewers from downloading submissions in bulk. Are you sure you want to continue?</p>');
+        hc.push('<div class="container"></div>');
         hc.push_actions([
-            '<button type="button" name="bsubmit" class="btn-success">OK</button>',
+            '<button type="button" name="bsubmit" class="btn-primary">OK</button>',
             '<button type="button" name="cancel">Cancel</button>'
         ]);
-        var $d = hc.show();
+        var $d = hc.show(false), m = table.getAttribute("data-bulkwarn-ftext");
+        if (m === null || m === "") {
+            m = "<5><p>Some program committees discourage reviewers from downloading submissions in bulk. Are you sure you want to continue?</p>";
+        }
+        render_text.onto($d.find(".container")[0], "f", m);
         $d.on("closedialog", function () {
             bgform && document.body.removeChild(bgform);
         });
@@ -9581,6 +9585,7 @@ function handle_submit_list_bulkwarn(table, chkval, bgform, event) {
             bgform = null;
             $d.close();
         });
+        hc.show();
         return false;
     } else
         return true;

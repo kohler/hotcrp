@@ -3416,7 +3416,7 @@ class Contact {
     function needs_some_bulk_download_warning() {
         return !$this->privChair
             && $this->isPC
-            && $this->conf->opt("warnPCBulkDownloads");
+            && $this->conf->opt("pcWarnBulkDownload");
     }
 
     /** @return bool */
