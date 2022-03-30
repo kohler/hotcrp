@@ -2172,11 +2172,11 @@ class Attachments_PaperOption extends PaperOption {
             }
             if ($fr->for_page() && $this->page_order() < 2000) {
                 $fr->title = false;
-                $v = '<div class="pgsm';
+                $v = '';
                 if ($fr->table && $fr->user->view_option_state($ov->prow, $this) === 1) {
-                    $v .= ' fx8';
+                    $v = ' fx8';
                 }
-                $fr->value = $v . '">' . $fr->value . '</div>';
+                $fr->value = "<div class=\"pgsm{$v}\">{$fr->value}</div>";
             }
         } else if ($fr->verbose()) {
             $fr->set_text("None");

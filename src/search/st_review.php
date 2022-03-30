@@ -371,10 +371,10 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         if ($this->wordcountexpr) {
             $prow->ensure_review_word_counts();
         }
-        if (($this->rfield && !$this->rfield->has_options)
-            || $this->rate_bits !== null) {
+        if ($this->rate_bits !== null) {
             $prow->ensure_full_reviews();
-        } else if ($this->rfield) {
+        }
+        if ($this->rfield) {
             $prow->ensure_review_field_order($this->rfield->order);
         }
         $this->rfield_scorex = $this->rfield_scoret === 16 ? 0 : 3;
