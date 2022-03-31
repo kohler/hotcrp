@@ -93,7 +93,7 @@ class AdminHome_Page {
             foreach ($conf->defined_round_list() as $i => $rname) {
                 if (!$conf->missed_review_deadline($i, true, false)
                     && $conf->setting($conf->review_deadline_name($i, true, false))) {
-                    $ml[] = new MessageItem(null, "<0>The deadline for review round " . htmlspecialchars($conf->assignment_round_option(false)) . " has passed. You may want to <a href=\"" . $conf->hoturl("settings", "group=reviews") . "\">change the round for new assignments</a> to " . htmlspecialchars($rname) . ".", MessageSet::MARKED_NOTE);
+                    $ml[] = new MessageItem(null, "<5>The deadline for review round " . htmlspecialchars($conf->assignment_round_option(false)) . " has passed. You may want to <a href=\"" . $conf->hoturl("settings", "group=reviews") . "\">change the round for new assignments</a> to " . htmlspecialchars($rname) . ".", MessageSet::MARKED_NOTE);
                     break;
                 }
             }
