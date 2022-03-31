@@ -3771,24 +3771,6 @@ class Contact {
         return -1;
     }
 
-    /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
-     * @param PaperContactInfo $rights
-     * @return int */
-    private function seerevid_setting(PaperInfo $prow, $rbase, $rights) {
-        $round = $rbase ? $rbase->reviewRound : "max";
-        if ($rights->allow_pc) {
-            if ($this->conf->check_tracks($prow, $this, Track::VIEWREVID)) {
-                $s = $this->conf->round_setting("pc_seeblindrev", $round);
-                if ($s >= 0) {
-                    return $s ? 0 : Conf::PCSEEREV_YES;
-                }
-            }
-        } else if ($this->conf->round_setting("extrev_view", $round) == 2) {
-            return 0;
-        }
-        return -1;
-    }
-
     /** @param ?ReviewInfo $rrow
      * @param ?int $viewscore
      * @return bool */
@@ -3876,13 +3858,32 @@ class Contact {
     }
 
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
+     * @param PaperContactInfo $rights
+     * @return int */
+    private function seerevid_setting(PaperInfo $prow, $rbase, $rights) {
+        $round = $rbase ? $rbase->reviewRound : "max";
+        if ($rights->allow_pc) {
+            if ($this->conf->check_tracks($prow, $this, Track::VIEWREVID)) {
+                $s = $this->conf->round_setting("pc_seeblindrev", $round);
+                if ($s >= 0) {
+                    return $s ? 0 : Conf::PCSEEREV_YES;
+                }
+            }
+        } else if ($this->conf->round_setting("extrev_view", $round) == 2) {
+            return 0;
+        }
+        return -1;
+    }
+
+    /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
      * @return bool */
     function can_view_review_identity(PaperInfo $prow, $rbase = null) {
         $rights = $this->rights($prow);
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.
         if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
-            || $rights->reviewType == REVIEW_META
+            || ($rights->reviewType == REVIEW_META
+                && $this->conf->check_tracks($prow, $this, Track::VIEWREVID))
             || ($rbase && $rbase->requestedBy == $this->contactId && $rights->allow_pc)
             || ($rbase && $this->is_owned_review($rbase))) {
             return true;
