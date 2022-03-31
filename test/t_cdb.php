@@ -105,7 +105,7 @@ class Cdb_Tester {
         xassert_eqq($u->firstName, "Te");
 
         // inserting them should succeed and borrow their data
-        $acct = $this->us1->save((object) ["email" => "te@_.com"]);
+        $acct = $this->us1->save_user((object) ["email" => "te@_.com"]);
         xassert(!!$acct);
         $te = user("te@_.com");
         xassert(!!$te);
@@ -131,7 +131,7 @@ class Cdb_Tester {
         xassert_eqq($te2->affiliation, "Brandeis University");
 
         // changing local email does not change cdb
-        $acct = $this->us1->save((object) ["lastName" => "Thamrongrattanarit 1", "firstName" => "Te 1"], $te2);
+        $acct = $this->us1->save_user((object) ["email" => "te2@_.com", "lastName" => "Thamrongrattanarit 1", "firstName" => "Te 1"]);
         xassert(!!$acct);
         $te2 = user("te2@_.com");
         xassert_eqq($te2->lastName, "Thamrongrattanarit 1");
@@ -147,7 +147,7 @@ class Cdb_Tester {
     }
 
     function test_simplify_whitespace_on_save() {
-        $acct = $this->us1->save((object) ["lastName" => " Thamrongrattanarit  1  \t", "firstName" => "Te  1", "affiliation" => "  Brandeis   Friendiversity"], user("te2@_.com"));
+        $acct = $this->us1->save_user((object) ["email" => "te2@_.com", "lastName" => " Thamrongrattanarit  1  \t", "firstName" => "Te  1", "affiliation" => "  Brandeis   Friendiversity"]);
         xassert(!!$acct);
         $te2 = user("te2@_.com");
         xassert_eqq($te2->firstName, "Te 1");
@@ -160,7 +160,7 @@ class Cdb_Tester {
         $te2 = user("te2@_.com");
         $te2_cdb = $te2->cdb_user();
         Dbl::qe($this->conf->contactdb(), "update ContactInfo set affiliation='' where email='te2@_.com'");
-        $acct = $this->us1->save((object) ["firstName" => "Wacky", "affiliation" => "String"], $te2);
+        $acct = $this->us1->save_user((object) ["firstName" => "Wacky", "affiliation" => "String", "email" => "te2@_.com"]);
         xassert(!!$acct);
         $te2 = user("te2@_.com");
         xassert(!!$te2);
@@ -175,7 +175,7 @@ class Cdb_Tester {
     }
 
     function test_cdb_import_2() {
-        $acct = $this->us1->save((object) ["email" => "te@_.com"]);
+        $acct = $this->us1->save_user((object) ["email" => "te@_.com"]);
         xassert(!!$acct);
         $te = user("te@_.com");
         xassert_eqq($te->email, "te@_.com");
@@ -189,7 +189,7 @@ class Cdb_Tester {
         MailChecker::clear();
         $anna = "akhmatova@poema.ru";
         xassert(!maybe_user($anna));
-        $acct = $this->us1->save((object) ["email" => $anna, "first" => "Anna", "last" => "Akhmatova"]);
+        $acct = $this->us1->save_user((object) ["email" => $anna, "first" => "Anna", "last" => "Akhmatova"]);
         xassert(!!$acct);
         Dbl::qe("delete from ContactInfo where email=?", $anna);
         Dbl::qe($this->conf->contactdb(), "update ContactInfo set passwordUseTime=1 where email=?", $anna);
@@ -221,8 +221,8 @@ class Cdb_Tester {
 
     function test_merge_accounts() {
         // user merging
-        $this->us1->save((object) ["email" => "anne1@_.com", "tags" => ["a#1"], "roles" => (object) ["pc" => true]]);
-        $this->us1->save((object) ["email" => "anne2@_.com", "first" => "Anne", "last" => "Dudfield", "data" => (object) ["data_test" => 139], "tags" => ["a#2", "b#3"], "roles" => (object) ["sysadmin" => true], "collaborators" => "derpo\n"]);
+        $this->us1->save_user((object) ["email" => "anne1@_.com", "tags" => ["a#1"], "roles" => (object) ["pc" => true]]);
+        $this->us1->save_user((object) ["email" => "anne2@_.com", "first" => "Anne", "last" => "Dudfield", "data" => (object) ["data_test" => 139], "tags" => ["a#2", "b#3"], "roles" => (object) ["sysadmin" => true], "collaborators" => "derpo\n"]);
         $user_anne1 = user("anne1@_.com");
         $a1id = $user_anne1->contactId;
         xassert_eqq($user_anne1->firstName, "");
@@ -286,27 +286,27 @@ class Cdb_Tester {
 
     function test_role_save_formats() {
         // different forms of profile saving
-        $this->us1->save((object) ["email" => "anne1@_.com", "roles" => "pc"]);
+        $this->us1->save_user((object) ["email" => "anne1@_.com", "roles" => "pc"]);
         $user_anne1 = user("anne1@_.com");
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC);
 
-        $this->us1->save((object) ["email" => "anne1@_.com", "roles" => ["pc", "sysadmin"]]);
+        $this->us1->save_user((object) ["email" => "anne1@_.com", "roles" => ["pc", "sysadmin"]]);
         $user_anne1 = user("anne1@_.com");
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_ADMIN);
 
-        $this->us1->save((object) ["email" => "anne1@_.com", "roles" => "chair, sysadmin"]);
+        $this->us1->save_user((object) ["email" => "anne1@_.com", "roles" => "chair, sysadmin"]);
         $user_anne1 = user("anne1@_.com");
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_CHAIR | Contact::ROLE_ADMIN);
 
-        $this->us1->save((object) ["email" => "anne1@_.com", "roles" => "-chair"]);
+        $this->us1->save_user((object) ["email" => "anne1@_.com", "roles" => "-chair"]);
         $user_anne1 = user("anne1@_.com");
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_ADMIN);
 
-        $this->us1->save((object) ["email" => "anne1@_.com", "roles" => "-sysadmin"]);
+        $this->us1->save_user((object) ["email" => "anne1@_.com", "roles" => "-sysadmin"]);
         $user_anne1 = user("anne1@_.com");
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC);
 
-        $this->us1->save((object) ["email" => "anne1@_.com", "roles" => "+chair"]);
+        $this->us1->save_user((object) ["email" => "anne1@_.com", "roles" => "+chair"]);
         $user_anne1 = user("anne1@_.com");
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_CHAIR);
     }
@@ -450,7 +450,7 @@ class Cdb_Tester {
         // saving PC role works
         $acct = $this->conf->user_by_email("jmrv@startup.com");
         xassert(!$acct);
-        $acct = $this->us1->save((object) ["email" => "jmrv@startup.com", "lastName" => "Rutherford", "firstName" => "John", "roles" => "pc"]);
+        $acct = $this->us1->save_user((object) ["email" => "jmrv@startup.com", "lastName" => "Rutherford", "firstName" => "John", "roles" => "pc"]);
         xassert(!!$acct);
         $acct = $this->conf->user_by_email("jmrv@startup.com");
         xassert(($acct->roles & Contact::ROLE_PCLIKE) === Contact::ROLE_PC);
@@ -462,7 +462,7 @@ class Cdb_Tester {
         // saving creates authorship
         $acct = $this->conf->user_by_email("pavlin@isi.edu");
         xassert(!$acct);
-        $acct = $this->us1->save((object) ["email" => "pavlin@isi.edu"]);
+        $acct = $this->us1->save_user((object) ["email" => "pavlin@isi.edu"]);
         xassert(!!$acct);
         xassert($acct->is_author());
         xassert_eqq($acct->cdb_roles(), Contact::ROLE_AUTHOR);
@@ -475,7 +475,7 @@ class Cdb_Tester {
         $email = "lam@cs.utexas.edu";
         $acct = $this->conf->user_by_email($email);
         xassert(!$acct);
-        $acct = $this->us1->save((object) ["email" => $email, "roles" => "sysadmin"]);
+        $acct = $this->us1->save_user((object) ["email" => $email, "roles" => "sysadmin"]);
         xassert(!!$acct);
         xassert($acct->is_author());
         xassert($acct->isPC);

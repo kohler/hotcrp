@@ -296,13 +296,13 @@ class Users_Page {
             if (!isset($users[(int) $cid])) {
                 $users[(int) $cid] = (object) ["id" => (int) $cid, "add_tags" => [], "remove_tags" => []];
             }
-            $users[(int) $cid]->$key = array_merge($users[(int) $cid]->$key, $t1);
+            array_push($users[(int) $cid]->$key, ...$t1);
         }
 
         // apply modifications
         $us = new UserStatus($this->viewer);
         foreach ($users as $cid => $cj) {
-            $us->save($cj);
+            $us->save_user($cj);
         }
         Conf::$no_invalidate_caches = false;
         $this->conf->invalidate_caches(["pc" => true]);

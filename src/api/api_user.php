@@ -95,7 +95,7 @@ class User_API {
         } else {
             $ustatus = new UserStatus($viewer);
             $ustatus->set_user($user);
-            if ($ustatus->save((object) ["disabled" => $disabled], $user)) {
+            if ($ustatus->save_user((object) ["disabled" => $disabled], $user)) {
                 return new JsonResult(["ok" => true, "u" => $user->email, "disabled" => $user->disablement !== 0]);
             } else {
                 return new JsonResult(400, ["ok" => false, "u" => $user->email]);

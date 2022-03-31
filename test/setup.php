@@ -743,7 +743,7 @@ class TestRunner {
         $ok = true;
         foreach ($json->contacts as $c) {
             $us->notify = in_array("pc", $c->roles ?? []);
-            $user = $us->save($c);
+            $user = $us->save_user($c);
             if ($user) {
                 MailChecker::check_db("create-{$c->email}");
             } else {

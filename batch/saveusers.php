@@ -56,7 +56,7 @@ class SaveUsers_Batch {
             && validate_email($key)) {
             $cj->email = $key;
         }
-        if (($acct = $this->ustatus->save($cj))) {
+        if (($acct = $this->ustatus->save_user($cj))) {
             if (empty($this->ustatus->diffs)) {
                 fwrite(STDOUT, "{$acct->email}: No changes\n");
             } else {

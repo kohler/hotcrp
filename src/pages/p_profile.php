@@ -214,7 +214,7 @@ class Profile_Page {
         }
 
         // save account
-        return $ustatus->save($ustatus->jval, $acct);
+        return $ustatus->save_user($ustatus->jval, $acct);
     }
 
 

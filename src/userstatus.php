@@ -777,7 +777,7 @@ class UserStatus extends MessageSet {
     /** @param object $cj
      * @param ?Contact $old_user
      * @return ?Contact */
-    function save($cj, $old_user = null) {
+    function save_user($cj, $old_user = null) {
         assert(is_object($cj));
         assert(!$old_user || (!$this->no_create && !$this->no_modify));
         $this->diffs = [];
