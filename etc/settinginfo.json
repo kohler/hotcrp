@@ -39,13 +39,17 @@
     },
 
     {
-        "name": "decisions", "group": "decisions",
-        "hashid": "decision-types", "storage": "none",
-        "type": "string", "parser_class": "Decisions_SettingParser"
+        "name": "decisions", "group": "decisions", "hashid": "decision-types",
+        "internal": true
     },
     {
         "name": "outcome_map", "internal": true, "group": "decisions",
         "storage": "dat.outcome_map", "default_value": "{\"1\":\"Accepted\",\"-1\":\"Rejected\"}"
+    },
+
+    {
+        "name": "decision", "group": "decisions", "hashid": "decision-types",
+        "parser_class": "Decisions_SettingParser"
     },
     {
         "name_pattern": "decision__$", "group": "decisions",
@@ -220,16 +224,17 @@
         "type": "emailheader", "size": 80, "placeholder": "(none)"
     },
     {
-        "name": "options",
-        "group": "subform", "hashid": false,
-        "parser_class": "Options_SettingParser",
-        "type": "string", "storage": "dat.options"
+        "name": "options", "group": "subform", "hashid": false,
+        "internal": true, "type": "string", "storage": "dat.options"
     },
     {
         "name": "options_version", "internal": true,
         "storage": "val.options"
     },
 
+    {
+        "name": "sf", "group": "subform", "parser_class": "Options_SettingParser"
+    },
     {
         "name_pattern": "sf__$", "group": "subform",
         "type": "object", "storage": "none", "parser_class": "Options_SettingParser"
@@ -351,9 +356,12 @@
     },
 
     {
-        "name": "responses", "group": "responses",
-        "parser_class": "Responses_SettingParser",
-        "type": "string"
+        "name": "responses", "internal": true, "type": "string"
+    },
+
+    {
+        "name": "response", "group": "responses",
+        "parser_class": "Responses_SettingParser"
     },
     {
         "name_pattern": "response__$", "group": "responses",
@@ -439,10 +447,12 @@
     },
 
     {
-        "name": "review_form", "group": "reviewform",
-        "hashid": false,
-        "parser_class": "ReviewForm_SettingParser",
-        "type": "string"
+        "name": "review_form", "internal": true, "type": "string"
+    },
+
+    {
+        "name": "rf", "group": "reviewform", "hashid": false,
+        "parser_class": "ReviewForm_SettingParser"
     },
     {
         "name_pattern": "rf__$", "group": "reviewform",
@@ -713,11 +723,11 @@
         "parser_class": "Tags_SettingParser"
     },
 
+    {   "name": "has_topics", "internal": true, "type": "checkbox"   },
     {
-        "name": "topics", "group": "subform",
+        "name": "topic", "group": "subform",
         "type": "string", "parser_class": "Topics_SettingParser"
     },
-    {   "name": "has_topics", "internal": true, "type": "checkbox"   },
     {
         "name_pattern": "topic__$", "group": "subform",
         "type": "object", "storage": "none", "parser_class": "Topics_SettingParser"
@@ -734,9 +744,12 @@
     },
 
     {
-        "name": "tracks", "group": "tracks",
-        "parser_class": "Tracks_SettingParser",
-        "type": "string"
+        "name": "tracks", "group": "tracks", "internal": true, "type": "string"
+    },
+
+    {
+        "name": "track", "group": "tracks",
+        "parser_class": "Tracks_SettingParser"
     },
     {
         "name_pattern": "track__$", "group": "tracks",

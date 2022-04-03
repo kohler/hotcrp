@@ -36,7 +36,7 @@ class Topics_SettingParser extends SettingParser {
         if ($sv->conf->has_topics()) {
             echo " To delete an existing topic, remove its name.";
         }
-        echo "</p>\n", Ht::hidden("has_topics", 1);
+        echo "</p>\n", Ht::hidden("has_topic", 1);
 
         if (($topic_counters = $sv->enumerate("topic__"))) {
             echo '<div class="mg has-copy-topics"><table><thead><tr><th style="text-align:left">';
@@ -123,7 +123,7 @@ class Topics_SettingParser extends SettingParser {
     function apply_req(SettingValues $sv, Si $si) {
         if ($si->name === "new_topics") {
             return $this->_apply_req_newlist($sv, $si);
-        } else if ($si->name === "topics") {
+        } else if ($si->name === "topic") {
             return $this->_apply_req_topics($sv, $si);
         } else {
             return false;

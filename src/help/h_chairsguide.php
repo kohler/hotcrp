@@ -105,7 +105,7 @@ form also can include:</p>
   “X”).</p></li>\n";
 
         } else if ($gj->itemid === 3) {
-            echo "<li><p><strong>", $hth->setting_link("Prepare the review form.", "reviewform"),
+            echo "<li><p><strong>", $hth->setting_link("Prepare the review form.", "rf"),
   "</strong> Take a look at the templates to get ideas.</p></li>\n";
 
         } else if ($gj->itemid === 4) {
@@ -115,7 +115,7 @@ form also can include:</p>
   (usually “yes” is the right answer).</p></li>\n";
 
         } else if ($gj->itemid === 5) {
-            echo "<li><p><strong>", $hth->setting_link("Prepare tracks (optional).", "tracks"),
+            echo "<li><p><strong>", $hth->setting_link("Prepare tracks (optional).", "track"),
   "</strong> Tracks give chairs fine-grained control over PC
   members’ access rights for individual papers. Example situations calling for
   tracks include external review committees, PC-paper review committees, and
@@ -245,7 +245,7 @@ administrator’s identity.</p>\n\n";
                 $hth->hotlink("automatically", "autoassign"), ".</p></li>\n";
 
         } else if ($gj->itemid === 6) {
-            echo "<li><p><strong>", $hth->setting_link("Define decision types (optional).", "decisions"),
+            echo "<li><p><strong>", $hth->setting_link("Define decision types (optional).", "decision"),
   "</strong> By default, HotCRP has two decision types,
   “accept” and “reject,” but you can add other types of acceptance and
   rejection, such as “accept as short paper.”</p></li>\n";

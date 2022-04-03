@@ -21,7 +21,7 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     function set_oldv(SettingValues $sv, Si $si) {
-        if ($si->name === "review_form") {
+        if ($si->name === "rf") {
             return;
         }
         assert($si->part0 === "rf__");
@@ -161,7 +161,7 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     function apply_req(SettingValues $sv, Si $si) {
-        if ($si->name === "review_form") {
+        if ($si->name === "rf") {
             return $this->_apply_req_review_form($sv, $si);
         } else {
             assert($si->part0 === "rf__");
@@ -464,7 +464,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
     }
 
     static function print(SettingValues $sv) {
-        echo Ht::hidden("has_review_form", 1);
+        echo Ht::hidden("has_rf", 1);
         echo '<div class="mb-4">',
             '<div class="feedback is-note">Click on a field to edit it.</div>';
         if (!$sv->conf->time_some_author_view_review()) {

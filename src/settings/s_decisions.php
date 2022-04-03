@@ -28,7 +28,7 @@ class Decisions_SettingParser extends SettingParser {
         $did = $sv->vstr("decision__{$ctr}__id");
         $isnew = $did === "" || $did === "\$";
         $count = $countmap[$did] ?? 0;
-        $editable = $sv->editable("decisions");
+        $editable = $sv->editable("decision");
         echo '<div id="decision__', $ctr, '" class="has-fold foldo settings-decision',
             $isnew ? ' is-new' : '', '"><div class="entryi">',
             $sv->feedback_at("decision__{$ctr}__name"),
@@ -71,7 +71,7 @@ class Decisions_SettingParser extends SettingParser {
             $decs_pcount[(int) $row[0]] = (int) $row[1];
         }
 
-        echo Ht::hidden("has_decisions", 1),
+        echo Ht::hidden("has_decision", 1),
             '<div id="settings-decision-types">';
         foreach ($sv->enumerate("decision__") as $ctr) {
             self::print_decrow($sv, $ctr, $decs_pcount);
@@ -83,7 +83,7 @@ class Decisions_SettingParser extends SettingParser {
         }
         echo '<div id="settings-decision-type-notes" class="hidden">',
             '<div class="hint">Examples: “Accepted as short paper”, “Early reject”</div></div>';
-        if ($sv->editable("decisions")) {
+        if ($sv->editable("decision")) {
             echo '<template id="settings-new-decision-type" class="hidden">';
             self::print_decrow($sv, '$', $decs_pcount);
             echo '</template><div class="mg">',
@@ -113,7 +113,7 @@ class Decisions_SettingParser extends SettingParser {
     }
 
     function apply_req(SettingValues $sv, Si $si) {
-        if ($si->name !== "decisions") {
+        if ($si->name !== "decision") {
             return false;
         }
 

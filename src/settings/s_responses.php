@@ -106,7 +106,7 @@ class Responses_SettingParser extends SettingParser {
         Icons::stash_defs("trash");
         echo Ht::unstash(), '<div class="if-response-active',
             $sv->vstr("response_active") ? "" : " hidden",
-            '"><hr class="g">', Ht::hidden("has_responses", 1);
+            '"><hr class="g">', Ht::hidden("has_response", 1);
 
         foreach ($sv->enumerate("response__") as $ctr) {
             $this->print_one($sv, $ctr);
@@ -124,7 +124,7 @@ class Responses_SettingParser extends SettingParser {
     }
 
     function apply_req(SettingValues $sv, Si $si) {
-        if ($si->name === "responses") {
+        if ($si->name === "response") {
             return $this->apply_response_req($sv, $si);
         } else if ($si->part2 === "__name") {
             $rrd = $sv->cur_object;
@@ -206,7 +206,7 @@ class Responses_SettingParser extends SettingParser {
     }
 
     static function crosscheck(SettingValues $sv) {
-        if ($sv->has_interest("responses")) {
+        if ($sv->has_interest("response")) {
             foreach ($sv->conf->response_rounds() as $i => $rrd) {
                 if ($rrd->search) {
                     foreach ($rrd->search->message_list() as $mi) {

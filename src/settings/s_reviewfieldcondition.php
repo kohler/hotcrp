@@ -72,7 +72,7 @@ class ReviewFieldCondition_SettingParser extends SettingParser {
     }
 
     static function crosscheck(SettingValues $sv) {
-        if ($sv->has_interest("review_form")) {
+        if ($sv->has_interest("rf")) {
             foreach ($sv->conf->review_form()->all_fields() as $f) {
                 if ($f->exists_if)
                     self::validate($sv, "rf__{$f->order}", $f->exists_if, 1);

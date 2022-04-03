@@ -42,7 +42,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
             })) {
             $sv->warning_at(null, "<5>" . $sv->setting_link("Authors can see reviews", "au_seerev")
                 . ", but the reviews have no author-visible fields. This is sometimes unintentional; you may want to update "
-                . $sv->setting_link("the review form", "review_form") . ".");
+                . $sv->setting_link("the review form", "rf") . ".");
             $sv->warning_at("au_seerev");
         } else if ($sv->has_interest("au_seerev")
                    && $conf->setting("au_seerev") !== Conf::AUSEEREV_NO
@@ -56,7 +56,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
             $sv->warning_at(null, "<5>" . $sv->setting_link("Authors can see reviews", "au_seerev")
                 . ", but since " . $sv->setting_link("they cannot see decisions", "seedec")
                 . ", the reviews have no author-visible fields. This is sometimes unintentional; you may want to update "
-                . $sv->setting_link("the review form", "review_form") . ".");
+                . $sv->setting_link("the review form", "rf") . ".");
             $sv->warning_at("au_seerev");
             $sv->warning_at("seedec");
         }

@@ -209,7 +209,7 @@ class Options_SettingRenderer {
 
     function print(SettingValues $sv) {
         echo "<hr class=\"g\">\n",
-            Ht::hidden("has_options", 1),
+            Ht::hidden("has_sf", 1),
             Ht::hidden("options_version", (int) $sv->conf->setting("options")),
             "\n\n";
         Icons::stash_defs("movearrow0", "movearrow2", "trash");
@@ -327,7 +327,7 @@ class Options_SettingParser extends SettingParser {
     }
 
     function set_oldv(SettingValues $sv, Si $si) {
-        if ($si->name === "options") {
+        if ($si->name === "sf") {
             return;
         }
         assert($si->part0 === "sf__");
@@ -462,7 +462,7 @@ class Options_SettingParser extends SettingParser {
     private function _apply_req_options(SettingValues $sv, Si $si) {
         if ($sv->has_req("options_version")
             && (int) $sv->reqstr("options_version") !== (int) $sv->conf->setting("options")) {
-            $sv->error_at("options", "<0>You modified options settings in another tab. Please reload.");
+            $sv->error_at("sf", "<0>You modified options settings in another tab. Please reload.");
         }
         $nsfj = [];
         foreach ($sv->enumerate("sf__") as $ctr) {
@@ -516,7 +516,7 @@ class Options_SettingParser extends SettingParser {
     }
 
     function apply_req(SettingValues $sv, Si $si) {
-        if ($si->name === "options") {
+        if ($si->name === "sf") {
             return $this->_apply_req_options($sv, $si);
         } else if ($si->part2 === "__name") {
             return $this->_apply_req_name($sv, $si);
@@ -545,7 +545,7 @@ class Options_SettingParser extends SettingParser {
 
     static function crosscheck(SettingValues $sv) {
         $conf = $sv->conf;
-        if (($sv->has_interest("options") || $sv->has_interest("sub_blind"))
+        if (($sv->has_interest("sf") || $sv->has_interest("sub_blind"))
             && $sv->conf->setting("sub_blind") == Conf::BLIND_ALWAYS) {
             $opts = Options_SettingParser::configurable_options($sv->conf);
             foreach (array_values($opts) as $ctrz => $f) {

@@ -15,7 +15,7 @@ $hth->search_link("search for “re:membername:R1”", "re:membername:R1"), ".</
 
 <p>Different rounds usually share the same review form, but you can also
 mark review fields as appearing only in certain rounds. First configure
-rounds, then see ", $hth->setting_link("Settings &gt; Review form", "reviewform"), ".</p>";
+rounds, then see ", $hth->setting_link("Settings &gt; Review form", "rf"), ".</p>";
 
 
         echo $hth->subhead("Assigning rounds");
