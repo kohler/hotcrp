@@ -144,6 +144,8 @@ lib/ht.php
 lib/icons.php
 lib/intlmsgset.php
 lib/json.php
+lib/jsonexception.php
+lib/jsonparser.php
 lib/jwtparser.php
 lib/ldaplogin.php
 lib/login.php

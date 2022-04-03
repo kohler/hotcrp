@@ -231,6 +231,9 @@ class Multiconference {
     static function batch_exception_handler($ex) {
         global $argv;
         $s = $ex->getMessage();
+        if (defined("HOTCRP_TESTHARNESS")) {
+            $s = $ex->getFile() . ":" . $ex->getLine() . ": " . $s;
+        }
         if (strpos($s, ":") === false) {
             $script = $argv[0] ?? "";
             if (($slash = strrpos($script, "/")) !== false) {
@@ -250,6 +253,9 @@ class Multiconference {
         if (property_exists($ex, "getopt")
             && $ex->getopt instanceof Getopt) {
             $s .= $ex->getopt->short_usage();
+        }
+        if (defined("HOTCRP_TESTHARNESS")) {
+            $s .= debug_string_backtrace($ex) . "\n";
         }
         fwrite(STDERR, $s);
         exit(1);

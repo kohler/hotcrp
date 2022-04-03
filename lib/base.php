@@ -496,15 +496,20 @@ function assert_callback() {
 }
 //assert_options(ASSERT_CALLBACK, "assert_callback");
 
-/** @return string */
-function debug_string_backtrace() {
-    $s = preg_replace_callback('/^\#(\d+)/m', function ($m) {
-        return "#" . ($m[1] - 1);
-    }, (new Exception)->getTraceAsString());
+/** @param ?Throwable $ex
+ * @return string */
+function debug_string_backtrace($ex = null) {
+    $s = ($ex ?? new Exception)->getTraceAsString();
+    if (!$ex) {
+        $s = substr($s, strpos($s, "\n") + 1);
+        $s = preg_replace_callback('/^\#(\d+)/m', function ($m) {
+            return "#" . ($m[1] - 1);
+        }, $s);
+    }
     if (SiteLoader::$root) {
         $s = str_replace(SiteLoader::$root, "[" . (Conf::$main ? Conf::$main->dbname : "HotCRP") . "]", $s);
     }
-    return substr($s, strpos($s, "\n") + 1);
+    return $s;
 }
 
 

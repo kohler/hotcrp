@@ -36,6 +36,9 @@ if (!interface_exists("JsonSerializable")) {
         public function jsonSerialize();
     }
 }
+if (!function_exists("json_encode") || !function_exists("json_decode")) {
+    define("JSON_HOTCRP", 1);
+}
 if (!function_exists("json_encode")) {
     function json_encode($x, $options = 0) {
         return Json::encode($x, $options);
