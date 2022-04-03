@@ -54,7 +54,7 @@ class Settings_Tester {
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_topics" => 1,
-            "topic__newlist" => "Whatever\n"
+            "new_topics" => "Whatever\n"
         ])->parse();
 
         $s = $this->conf->si("preference_instructions")->default_value($sv);
@@ -85,7 +85,7 @@ class Settings_Tester {
         xassert_eqq(json_encode($this->conf->topic_set()->as_array()), '[]');
         $sv = SettingValues::make_request($this->u_chair, [
             "has_topics" => 1,
-            "topic__newlist" => "Fart\n   Barf"
+            "new_topics" => "Fart\n   Barf"
         ]);
         xassert($sv->execute());
         xassert_eqq(json_encode($this->conf->topic_set()->as_array()), '{"2":"Barf","1":"Fart"}');
@@ -93,7 +93,7 @@ class Settings_Tester {
         // duplicate topic not accepted
         $sv = SettingValues::make_request($this->u_chair, [
             "has_topics" => 1,
-            "topic__newlist" => "Fart"
+            "new_topics" => "Fart"
         ]);
         xassert(!$sv->execute());
         xassert_eqq($sv->reqstr("topic__3__name"), "Fart");
@@ -103,7 +103,7 @@ class Settings_Tester {
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_topics" => 1,
-            "topic__newlist" => "Fart2"
+            "new_topics" => "Fart2"
         ]);
         xassert($sv->execute());
         xassert_eqq(json_encode($this->conf->topic_set()->as_array()), '{"2":"Barf","1":"Fart","3":"Fart2"}');
@@ -116,7 +116,7 @@ class Settings_Tester {
             "topic__2__name" => "Festival Fartal",
             "topic__3__id" => "\$",
             "topic__3__name" => "Fet",
-            "topic__newlist" => "Fart3"
+            "new_topics" => "Fart3"
         ]);
         xassert($sv->execute());
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Fart","3":"Fart2","6":"Fart3","2":"Fért","4":"Festival Fartal","5":"Fet"}');

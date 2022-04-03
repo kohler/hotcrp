@@ -9,7 +9,7 @@ class Topics_SettingParser extends SettingParser {
     private $newtopics;
 
     function set_oldv(SettingValues $sv, Si $si) {
-        if ($si->name === "topic__newlist") {
+        if ($si->name === "new_topics") {
             $sv->set_oldv($si->name, "");
         } else if ($si->part0 === "topic__") {
             $tn = $sv->unmap_enumeration_member($si->name, $sv->conf->topic_set()->as_array());
@@ -65,9 +65,9 @@ class Topics_SettingParser extends SettingParser {
                 "</div>\n";
         }
 
-        echo '<div class="mg"><label for="topic__newlist"><strong>New topics</strong></label> (enter one per line)<br>',
-            $sv->feedback_at("topic__newlist"),
-            Ht::textarea("topic__newlist", $sv->use_req() ? $sv->reqstr("topic__newlist") : "", array("cols" => 80, "rows" => 2, "class" => ($sv->has_problem_at("topic__newlist") ? "has-error " : "") . "need-autogrow", "id" => "topic__newlist")), "</div>";
+        echo '<div class="mg"><label for="new_topics"><strong>New topics</strong></label> (enter one per line)<br>',
+            $sv->feedback_at("new_topics"),
+            Ht::textarea("new_topics", $sv->use_req() ? $sv->reqstr("new_topics") : "", array("cols" => 80, "rows" => 2, "class" => ($sv->has_problem_at("new_topics") ? "has-error " : "") . "need-autogrow", "id" => "new_topics")), "</div>";
     }
 
     /** @return bool */
@@ -81,7 +81,7 @@ class Topics_SettingParser extends SettingParser {
                 ++$ctr;
             }
         }
-        $sv->set_req("topic__newlist", "");
+        $sv->set_req("new_topics", "");
         return true;
     }
 
@@ -121,7 +121,7 @@ class Topics_SettingParser extends SettingParser {
     }
 
     function apply_req(SettingValues $sv, Si $si) {
-        if ($si->name === "topic__newlist") {
+        if ($si->name === "new_topics") {
             return $this->_apply_req_newlist($sv, $si);
         } else if ($si->name === "topics") {
             return $this->_apply_req_topics($sv, $si);

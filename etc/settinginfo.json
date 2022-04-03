@@ -729,7 +729,7 @@
         "type": "simplestring", "size": 80, "autogrow": true, "storage": "member.name"
     },
     {
-        "name": "topic__newlist", "title": "New topics", "group": "subform",
+        "name": "new_topics", "title": "New topics", "group": "subform",
         "type": "longstring", "order": -1, "parser_class": "Topics_SettingParser"
     },
 
