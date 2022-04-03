@@ -290,6 +290,9 @@ class Si {
 
     /** @return array<string,string> */
     function hoturl_param() {
+        if ($this->internal) {
+            error_log("Bug: Si[{$this->name}]::hoturl_param() to internal\n" . debug_string_backtrace());
+        }
         $param = ["group" => $this->group];
         if ($this->hashid !== false) {
             $param["#"] = $this->hashid ?? $this->name;
@@ -307,6 +310,9 @@ class Si {
     function sv_hoturl($sv) {
         if ($this->hashid !== false
             && (!$this->group || $sv->canonical_page === $this->group)) {
+            if ($this->internal) {
+                error_log("Bug: Si::sv_hoturl({$this->name}) to internal\n" . debug_string_backtrace());
+            }
             return "#" . urlencode($this->hashid ?? $this->name);
         } else {
             return $this->hoturl();

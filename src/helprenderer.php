@@ -7,19 +7,25 @@ class HelpRenderer extends Ht {
     public $conf;
     /** @var Contact */
     public $user;
+    /** @var bool */
     private $_tabletype;
+    /** @var int */
     private $_rowidx;
     /** @var ComponentSet */
     private $_help_topics;
-    private $_renderers = [];
+    /** @var ?SettingValues */
     private $_sv;
-    private $_h3ids;
+    /** @var array<string,true> */
+    private $_h3ids = [];
     function __construct(ComponentSet $help_topics, Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->_help_topics = $help_topics;
         $this->_help_topics->set_title_class("helppage")->set_context_args([$this]);
     }
+    /** @param string $title
+     * @param ?string $id
+     * @return string */
     function subhead($title, $id = null) {
         if (!$id && $title) {
             $id = preg_replace('/[^A-Za-z0-9]+|<.*?>/', "-", strtolower($title));
@@ -46,11 +52,16 @@ class HelpRenderer extends Ht {
             return "";
         }
     }
+    /** @param bool $tabletype
+     * @return string */
     function table($tabletype = false) {
         $this->_rowidx = 0;
         $this->_tabletype = $tabletype;
         return $this->_tabletype ? "" : '<table class="demargin"><tbody>';
     }
+    /** @param string $title
+     * @param ?string $id
+     * @return string */
     function tgroup($title, $id = null) {
         $this->_rowidx = 0;
         if ($this->_tabletype) {
@@ -61,6 +72,9 @@ class HelpRenderer extends Ht {
                 . $title . "</h4></td></tr>\n";
         }
     }
+    /** @param string $caption
+     * @param ?string $entry
+     * @return string */
     function trow($caption, $entry = null) {
         if ($this->_tabletype) {
             $t = "<div class=\"helplist-item demargin k{$this->_rowidx}\">"
@@ -128,36 +142,51 @@ class HelpRenderer extends Ht {
         return $this->hotlink($html, "help", $topic);
     }
     /** @param string $html
-     * @param ?string $siname
+     * @param string $siname
      * @return string */
-    function setting_link($html, $siname = null) {
-        if ($this->user->privChair || $siname !== null) {
-            $pre = $post = "";
-            if ($this->_sv === null) {
-                $this->_sv = new SettingValues($this->user);
-            }
-            if ($siname === null) {
-                $siname = $html;
-                $html = "Change this setting";
-                $pre = " (";
-                $post = ")";
-            }
-            if (($si = $this->conf->si($siname))) {
-                $param = $si->hoturl_param();
-            } else if (($g = $this->_sv->canonical_group($siname))) {
-                $param = ["group" => $g];
-            } else {
-                error_log("missing setting information for $siname");
-                $param = [];
-            }
-            $t = $pre . '<a href="' . $this->conf->hoturl("settings", $param);
-            if (!$this->user->privChair) {
-                $t .= '" class="noq need-tooltip" aria-label="This link to a settings page only works for administrators.';
-            }
-            return $t . '" rel="nofollow">' . $html . '</a>' . $post;
-        } else {
-            return '';
+    function setting_link($html, $siname) {
+        if ($this->_sv === null) {
+            $this->_sv = new SettingValues($this->user);
         }
+        if (($si = $this->conf->si($siname))) {
+            $param = $si->hoturl_param();
+        } else if (($g = $this->_sv->canonical_group($siname))) {
+            error_log("improper setting_link for group\n" . debug_string_backtrace());
+            $param = ["group" => $g];
+        } else {
+            error_log("missing setting information for $siname\n" . debug_string_backtrace());
+            $param = [];
+        }
+        $url = $this->conf->hoturl("settings", $param);
+        $rest = $this->user->privChair ? "" : ' class="noq need-tooltip" aria-label="This link to a settings page only works for administrators."';
+        return "<a href=\"{$url}\"{$rest} rel=\"nofollow\">{$html}</a>";
+    }
+    /** @param string $siname
+     * @return string */
+    function change_setting_link($siname) {
+        if ($this->user->privChair
+            && ($t = $this->setting_link("Change this setting", $siname)) !== "") {
+            return " ({$t})";
+        } else {
+            return "";
+        }
+    }
+    /** @param string $html
+     * @param string $sg
+     * @return string */
+    function setting_group_link($html, $sg) {
+        if ($this->_sv === null) {
+            $this->_sv = new SettingValues($this->user);
+        }
+        if (($g = $this->_sv->canonical_group($sg))) {
+            $param = ["group" => $g];
+        } else {
+            error_log("missing setting_group information for $sg\n" . debug_string_backtrace());
+            $param = [];
+        }
+        $url = $this->conf->hoturl("settings", $param);
+        $rest = $this->user->privChair ? "" : ' class="noq need-tooltip" aria-label="This link to a settings page only works for administrators."';
+        return "<a href=\"{$url}\"{$rest} rel=\"nofollow\">{$html}</a>";
     }
     /** @param string|array<string,string> $q
      * @return string */

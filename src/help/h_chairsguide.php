@@ -11,8 +11,9 @@ class ChairsGuide_HelpTopic {
             echo "</ol>\n\n";
 
         } else if ($gj->itemid === 1) {
-            echo "<li><p><strong>", $hth->setting_link("Set up PC member accounts", "users"),
-"</strong>. Many PCs are divided into classes, such as
+            echo "<li><p><strong>",
+                $hth->setting_group_link("Set up PC member accounts", "users"),
+                "</strong>. Many PCs are divided into classes, such as
   “heavy” and “light”, or “PC” and “ERC”. Mark these classes with user tags.
   It’s also useful to configure ", $hth->setting_link("tag colors", "tag_color"),
   " so that PC member names are displayed
@@ -20,11 +21,11 @@ class ChairsGuide_HelpTopic {
   in <b>bold</b>).</p></li>\n";
 
         } else if ($gj->itemid === 2) {
-            echo "<li><p><strong>", $hth->setting_link("Set submission policies", "sub"),
+            echo "<li><p><strong>", $hth->setting_group_link("Set submission policies", "sub"),
   "</strong>, including whether submission is blind.</p></li>\n";
 
         } else if ($gj->itemid === 3) {
-            echo "<li><p><strong>", $hth->setting_link("Set submission deadlines.", "sub"),
+            echo "<li><p><strong>", $hth->setting_group_link("Set submission deadlines.", "sub"),
   "</strong> Authors first <em>register</em>, then <em>submit</em>
   their work, possibly multiple times; they choose for each submitted
   version whether that version is ready for review.  Normally, HotCRP allows
@@ -38,7 +39,7 @@ class ChairsGuide_HelpTopic {
   for the specified time.</p></li>\n";
 
         } else if ($gj->itemid === 4) {
-            echo "<li><p><strong>", $hth->setting_link("Set up the submission form", "subform"),
+            echo "<li><p><strong>", $hth->setting_group_link("Set up the submission form", "subform"),
 "</strong>, including whether abstracts are required,
 whether authors check off conflicted PC members (“Collect authors’ PC
 conflicts with checkboxes”), and whether authors must enter additional
@@ -75,7 +76,7 @@ form also can include:</p>
               ' to make sure it looks right.</p></li>', "\n";
 
         } else if ($gj->itemid === 6) {
-            echo "<li><p><strong>", $hth->setting_link("Open the site for submissions.", "sub"),
+            echo "<li><p><strong>", $hth->setting_group_link("Open the site for submissions.", "sub"),
   "</strong> Submissions are allowed up to the listed deadline.</p></li>\n";
         }
     }
@@ -108,7 +109,7 @@ form also can include:</p>
   "</strong> Take a look at the templates to get ideas.</p></li>\n";
 
         } else if ($gj->itemid === 4) {
-            echo "<li><p><strong>", $hth->setting_link("Set review policies and deadlines", "reviews"),
+            echo "<li><p><strong>", $hth->setting_group_link("Set review policies and deadlines", "reviews"),
   "</strong>, including reviewing deadlines, whether
   review is blind, and whether PC members may review any paper
   (usually “yes” is the right answer).</p></li>\n";
@@ -209,9 +210,9 @@ administrator’s identity.</p>\n\n";
             echo "<li><p><strong>", $hth->setting_link("Collect authors’ responses to the reviews (optional).", "response_active"),
   "</strong>  Authors’ responses (also called rebuttals) let authors correct reviewer misconceptions
   before decisions are made.  Responses are entered
-  into the system as comments.  On the ", $hth->setting_link("decision settings page", "dec"),
+  into the system as comments.  On the ", $hth->setting_group_link("decision settings page", "dec"),
   ", update “Collect responses to the reviews,” then ", $hth->hotlink("send mail to authors", "mail"), " informing them of the response deadline.  PC members can still
-  update their reviews up to the ", $hth->setting_link("review deadline", "reviews"),
+  update their reviews up to the ", $hth->setting_group_link("review deadline", "reviews"),
   "; authors are informed via email of any review changes.</p></li>\n";
 
         } else if ($gj->itemid === 2) {
@@ -240,8 +241,8 @@ administrator’s identity.</p>\n\n";
         } else if ($gj->itemid === 5) {
             echo "<li><p><strong>", $hth->hotlink("Assign discussion leads (optional).", "autoassign"), "</strong> Discussion leads are expected to be able to
   summarize the paper and the reviews.  You can assign leads either ",
-  $hth->hotlink("paper by paper", "assign"), " or ",
-  $hth->hotlink("automatically", "autoassign"), ".</p></li>\n";
+                $hth->hotlink("paper by paper", "assign"), " or ",
+                $hth->hotlink("automatically", "autoassign"), ".</p></li>\n";
 
         } else if ($gj->itemid === 6) {
             echo "<li><p><strong>", $hth->setting_link("Define decision types (optional).", "decisions"),

@@ -66,7 +66,7 @@ as a column.</p>
             } else {
                 echo "They are hidden from conflicted PC members; for instance, if a PC member searches for a tag, the result will never include their conflicts.";
             }
-            echo $this->hth->setting_link("tag_seeall"), " ";
+            echo $this->hth->change_setting_link("tag_seeall"), " ";
         }
         echo "</p>";
     }
@@ -85,15 +85,15 @@ search list. <b>Add</b> adds tags to the selected papers, <b>Remove</b> removes
 tags from the selected papers, and <b>Define</b> adds the tag to the selected
 papers and removes it from all others.</p>
 
-<p>" . Ht::img("extagssearch.png", "[Setting tags on the search page]", ["width" => 510, "height" => 94]) . "</p></li>
+<p>", Ht::img("extagssearch.png", "[Setting tags on the search page]", ["width" => 510, "height" => 94]), "</p></li>
 
-<li><p><strong>With search keywords:</strong> Search for “"
-. $hth->search_link("edit:tag:tagname") . "” to add tags with checkboxes;
-search for “" . $hth->search_link("edit:tagval:tagname") . "” to type in <a
-href=\"#values\">tag values</a>; or search for “" . $hth->search_link("edit:tags") . "”
+<li><p><strong>With search keywords:</strong> Search for “",
+            $hth->search_link("edit:tag:tagname"), "” to add tags with checkboxes;
+search for “", $hth->search_link("edit:tagval:tagname"), "” to type in <a
+href=\"#values\">tag values</a>; or search for “", $hth->search_link("edit:tags"), "”
 to edit papers’ full tag lists.</p>
 
-<p>" . Ht::img("extagseditkw.png", "[Tag editing search keywords]", ["width" => 543, "height" => 133]) . "</p></li>
+<p>", Ht::img("extagseditkw.png", "[Tag editing search keywords]", ["width" => 543, "height" => 133]), "</p></li>
 
 <li><p><strong>In bulk:</strong> Administrators can also upload tag
 assignments using ", $hth->hotlink("bulk assignment", "bulkassign"), ".</p></li>
@@ -102,7 +102,8 @@ assignments using ", $hth->hotlink("bulk assignment", "bulkassign"), ".</p></li>
 
 <p>Although any PC member can view or search
 most tags, certain tags may be changed only by administrators",
-    $this->hth->current_tag_list("chair"), ".", $this->hth->setting_link("tag_chair"), "</p>";
+          $this->hth->current_tag_list("chair"), ".",
+          $this->hth->change_setting_link("tag_chair"), "</p>";
     }
 
     function print_values() {
@@ -110,9 +111,9 @@ most tags, certain tags may be changed only by administrators",
         echo $hth->subhead("Tag values and discussion orders", "values");
         echo "<p>Tags can have numeric values, as in “#tagname#100”. The
 default tag value is 0: “#t#0” is displayed as “#t”. You can search for
-specific values with search terms like “" . $hth->search_link("#discuss#2") .
-"” or “" . $hth->search_link("#discuss>1") .
-"”. A search like “" . $hth->search_link("order:#tagname") . "” selects
+specific values with search terms like “", $hth->search_link("#discuss#2"),
+"” or “", $hth->search_link("#discuss>1"),
+"”. A search like “", $hth->search_link("order:#tagname"), "” selects
 papers with the named tag and displays them ordered by that tag’s values.</p>
 
 <p>It’s common to assign increasing tag values to a set of papers.  Do this
@@ -120,7 +121,7 @@ using the ", $hth->hotlink("search screen", "search"), ". Search for the
 papers you want, sort them into the right order, select their checkboxes, and
 choose <b>Define order</b> in the tag action area.  If no sort gives what
 you want, search for the desired paper numbers in order—for instance,
-“" . $hth->search_link("4 1 12 9") . "”—then <b>Select all</b> and <b>Define
+“", $hth->search_link("4 1 12 9"), "”—then <b>Select all</b> and <b>Define
 order</b>.</p>
 
 <p><b>Define order</b> might assign values “#tag#1”,
@@ -134,8 +135,7 @@ strictly sequential values, like “#tag#1”,
 
 <p>To add new papers at the end of an existing discussion order, use <b>Add to
 order</b>. To create an order by entering explicit positions and/or dragging
-papers into order, use a search like “"
-. $hth->search_link("editsort:#tagname") . "”.</p>
+papers into order, use a search like “", $hth->search_link("editsort:#tagname"), "”.</p>
 
 <p>The ", $hth->hotlink("autoassigner", "autoassign", "a=discorder"), "
 has special support for creating discussion orders. It tries to group papers
@@ -189,8 +189,8 @@ high-ranked paper, but it’s usually better to trust the PC.)</p>\n";
         $vt = $this->hth->example_tag("allotment");
         echo "<p><strong>Vote for papers.</strong>
  The chair can define tags used for allotment voting", $this->hth->current_tag_list("allotment"), ".",
-    $this->hth->setting_link("tag_vote"),
-    " Each PC member is assigned an allotment of votes to distribute among papers.
+            $this->hth->change_setting_link("tag_vote"),
+            " Each PC member is assigned an allotment of votes to distribute among papers.
  For instance, if “#{$vt}” were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag “#~{$vt}#5”.
  The system automatically sums PC members’ votes into the public “#{$vt}” tag.
  To search for papers by vote count, search for “", $this->hth->search_link("rorder:#$vt"),
@@ -211,7 +211,7 @@ Publishing the order lets PC members prepare to discuss upcoming papers.
 Define an ordered tag such as “#discuss”, then ask the PC to ", $this->hth->search_link("search for “order:#discuss”", "order:#discuss"), ".
 The PC can now see the order and use quick links to go from paper to paper.";
         if ($this->user->isPC && !$this->conf->tag_seeall) {
-            echo " However, since PC members can’t see tags for conflicted papers, each PC member might see a different list.", $this->hth->setting_link("tag_seeall");
+            echo " However, since PC members can’t see tags for conflicted papers, each PC member might see a different list.", $this->hth->change_setting_link("tag_seeall");
         }
         echo "</p>\n";
     }
