@@ -246,11 +246,15 @@ handle_ui.on("js-settings-track-add", function () {
 
 handle_ui.on("js-settings-topics-copy", function () {
     var topics = [];
-    $(this).closest(".has-copy-topics").find("[name^=top]").each(function () {
-        topics.push(escape_html(this.value));
+    $(this).closest(".has-copy-topics").find("input").each(function () {
+        if (this.type === "text"
+            && this.name.startsWith("topic__")
+            && this.name.endsWith("__name")
+            && this.defaultValue.trim() !== "")
+            topics.push(escape_html(this.defaultValue.trim()));
     });
     var node = $("<textarea></textarea>").appendTo(document.body);
-    node.val(topics.join("\n"));
+    node[0].value = topics.join("\r");
     node[0].select();
     document.execCommand("copy");
     node.remove();
