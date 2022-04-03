@@ -87,6 +87,7 @@ class SettingValues extends MessageSet {
 
     /** @var array<string,?string> */
     public $req = [];
+    /** @var array<string,QrequestFile> */
     public $req_files = [];
     /** @var bool */
     private $_use_req = true;

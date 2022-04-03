@@ -127,11 +127,14 @@ class DocumentInfo implements JsonSerializable {
         return $di;
     }
 
-    /** @param array $upload
+    /** @param array|QrequestFile $upload
      * @param int $paperId
      * @param int $documentType
      * @return ?DocumentInfo */
     static function make_uploaded_file($upload, $paperId, $documentType, Conf $conf) {
+        if ($upload instanceof QrequestFile) {
+            $upload = $upload->as_array();
+        }
         if (!$upload || !is_array($upload)) {
             return null;
         }
@@ -214,6 +217,7 @@ class DocumentInfo implements JsonSerializable {
         }
     }
 
+    /** @return bool */
     static function check_json_upload($j) {
         return is_object($j)
             && (!isset($j->content) || is_string($j->content))

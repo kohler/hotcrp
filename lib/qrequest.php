@@ -10,6 +10,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     private $_v;
     /** @var array<string,list> */
     private $_a = [];
+    /** @var array<string,QrequestFile> */
     private $_files = [];
     private $_annexes = [];
     /** @var bool */
@@ -244,9 +245,14 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return array_key_exists($key, $this->_v);
     }
     /** @param string $name
+     * @param array|QrequestFile $finfo
      * @return $this */
     function set_file($name, $finfo) {
-        $this->_files[$name] = $finfo;
+        if (is_array($finfo)) {
+            $this->_files[$name] = new QrequestFile($finfo);
+        } else {
+            $this->_files[$name] = $finfo;
+        }
         return $this;
     }
     /** @param string $name
@@ -255,13 +261,12 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @param ?string $mimetype
      * @return $this */
     function set_file_content($name, $content, $filename = null, $mimetype = null) {
-        $this->_files[$name] = [
+        $this->_files[$name] = new QrequestFile([
             "name" => $filename ?? "__set_file_content.$name",
-            "type" => $mimetype ?? "application/octet-stream",
+            "type" => $mimetype,
             "size" => strlen($content),
-            "content" => $content,
-            "error" => 0
-        ];
+            "content" => $content
+        ]);
         return $this;
     }
     /** @return bool */
@@ -274,20 +279,16 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return isset($this->_files[$name]);
     }
     /** @param string $name
-     * @return ?array{name:string,type:string,size:int,tmp_name:string,error:int} */
+     * @return ?QrequestFile */
     function file($name) {
-        $f = null;
-        if (array_key_exists($name, $this->_files)) {
-            $f = $this->_files[$name];
-        }
-        return $f;
+        return $this->_files[$name] ?? null;
     }
     /** @param string $name
      * @return string|false */
     function file_filename($name) {
         $fn = false;
         if (array_key_exists($name, $this->_files)) {
-            $fn = $this->_files[$name]["name"];
+            $fn = $this->_files[$name]->name;
         }
         return $fn;
     }
@@ -296,7 +297,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function file_size($name) {
         $sz = false;
         if (array_key_exists($name, $this->_files)) {
-            $sz = $this->_files[$name]["size"];
+            $sz = $this->_files[$name]->size;
         }
         return $sz;
     }
@@ -308,12 +309,12 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         $data = false;
         if (array_key_exists($name, $this->_files)) {
             $finfo = $this->_files[$name];
-            if (isset($finfo["content"])) {
-                $data = substr($finfo["content"], $offset, $maxlen ?? PHP_INT_MAX);
+            if (isset($finfo->content)) {
+                $data = substr($finfo->content, $offset, $maxlen ?? PHP_INT_MAX);
             } else if ($maxlen === null) {
-                $data = @file_get_contents($finfo["tmp_name"], false, null, $offset);
+                $data = @file_get_contents($finfo->tmp_name, false, null, $offset);
             } else {
-                $data = @file_get_contents($finfo["tmp_name"], false, null, $offset, $maxlen);
+                $data = @file_get_contents($finfo->tmp_name, false, null, $offset, $maxlen);
             }
         }
         return $data;
@@ -456,5 +457,43 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         Qrequest::$main_request = $Qreq = $qreq;
         return $qreq;
+    }
+}
+
+class QrequestFile {
+    /** @var string */
+    public $name;
+    /** @var string */
+    public $type;
+    /** @var int */
+    public $size;
+    /** @var ?string */
+    public $tmp_name;
+    /** @var ?string */
+    public $content;
+    /** @var int */
+    public $error;
+
+    /** @param array $a */
+    function __construct($a) {
+        $this->name = $a["name"] ?? "";
+        $this->type = $a["type"] ?? "application/octet-stream";
+        $this->size = $a["size"] ?? 0;
+        $this->tmp_name = $a["tmp_name"] ?? null;
+        $this->content = $a["content"] ?? null;
+        $this->error = $a["error"] ?? 0;
+    }
+
+    /** @return array{name:string,type:string,size:int,tmp_name?:string,content?:string,error:int} */
+    function as_array() {
+        $a = ["name" => $this->name, "type" => $this->type, "size" => $this->size];
+        if ($this->tmp_name !== null) {
+            $a["tmp_name"] = $this->tmp_name;
+        }
+        if ($this->content !== null) {
+            $a["content"] = $this->content;
+        }
+        $a["error"] = $this->error;
+        return $a;
     }
 }
