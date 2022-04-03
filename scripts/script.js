@@ -4781,7 +4781,7 @@ return {
             f.uid = f.uid || i;
             f.name_html = escape_html(f.name);
             if (f.options)
-                f.score_info = make_score_info(f.options.length, f.option_letter, f.scheme || f.option_class_prefix);
+                f.score_info = make_score_info(f.options.length, f.start || f.option_letter, f.scheme);
             formj[f.uid] = f;
         }
         form_order = $.map(formj, function (v) { return v; });
@@ -10277,6 +10277,8 @@ function rgb_array_for(svx) {
 }
 
 function make_info(n, c, sv) {
+    if (c === 1)
+        c = null;
     var unparse = c ? make_letter_unparser(n, c) : numeric_unparser,
         sci = scheme_info[sv],
         fm9 = make_fm9(n, sci[1], !sci[2] !== !c, (sci[0] & 2) !== 0),

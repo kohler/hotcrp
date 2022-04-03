@@ -100,10 +100,10 @@ class ReviewForm_SettingParser extends SettingParser {
 
         if ($letters) {
             $sv->save("{$pfx}__choices", array_reverse($seqopts));
-            $sv->save("{$pfx}__option_letter", chr($lowonum));
+            $sv->save("{$pfx}__start", chr($lowonum));
         } else {
             $sv->save("{$pfx}__choices", $seqopts);
-            $sv->save("{$pfx}__option_letter", "");
+            $sv->save("{$pfx}__start", "");
         }
         return true;
     }

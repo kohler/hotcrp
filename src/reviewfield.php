@@ -5,7 +5,7 @@
 // JSON schema for settings["review_form"]:
 // [{"id":FIELDID,"name":NAME,"description":DESCRIPTION,"order":ORDER,
 //   "display_space":ROWS,"visibility":VISIBILITY,
-//   "options":[DESCRIPTION,...],"option_letter":LEVELCHAR},...]
+//   "options":[DESCRIPTION,...],["start":LEVELCHAR]},...]
 
 class ReviewFieldInfo {
     /** @var non-empty-string
@@ -519,16 +519,14 @@ class Score_ReviewField extends ReviewField {
     function assign_json($j) {
         parent::assign_json($j);
         $options = $j->options ?? [];
-        $ol = $j->option_letter ?? 0;
-        if ($ol && ctype_alpha($ol) && strlen($ol) == 1) {
+        $ol = $j->start ?? $j->option_letter ?? null;
+        if ($ol && is_string($ol) && ctype_alpha($ol) && strlen($ol) === 1) {
             $this->option_letter = ord($ol) + count($options);
-        } else if ($ol && (is_int($ol) || ctype_digit($ol))) {
-            $this->option_letter = (int) $ol;
         } else {
             $this->option_letter = 0;
         }
         $this->options = [];
-        if ($this->option_letter) {
+        if ($this->option_letter !== 0) {
             foreach (array_reverse($options, true) as $i => $n) {
                 $this->options[chr($this->option_letter - $i - 1)] = $n;
             }
@@ -570,9 +568,9 @@ class Score_ReviewField extends ReviewField {
         $j = parent::unparse_json($style);
         $j->options = $this->unparse_json_options();
         if ($this->option_letter) {
-            $j->option_letter = chr($this->option_letter - count($j->options));
+            $j->start = chr($this->option_letter - count($j->options));
         } else if ($style === self::UJ_SI) {
-            $j->option_letter = null;
+            $j->start = 1;
         }
         if ($this->scheme !== "sv" || $style === self::UJ_SI) {
             $j->scheme = $this->scheme;

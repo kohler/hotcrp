@@ -324,8 +324,8 @@ function get_fid(elt) {
 }
 
 function unparse_option(fieldj, idx) {
-    if (fieldj.option_letter) {
-        var cc = fieldj.option_letter.charCodeAt(0);
+    if (fieldj.start && fieldj.start !== 1) {
+        var cc = fieldj.start.charCodeAt(0);
         return String.fromCharCode(cc + fieldj.options.length - idx);
     } else
         return idx.toString();
@@ -337,7 +337,7 @@ function options_to_text(fieldj) {
         return "";
     for (i = 0; i !== fieldj.options.length; ++i)
         t.push(unparse_option(fieldj, i + 1) + ". " + fieldj.options[i]);
-    if (fieldj.option_letter)
+    if (fieldj.start && fieldj.start !== 1)
         t.reverse();
     if (t.length)
         t.push(""); // get a trailing newline
@@ -465,7 +465,7 @@ function option_value_html(fieldj, value) {
     if (!value || value < 0)
         return ["", "No entry"];
     else
-        return [make_score_info(fieldj.options.length, fieldj.option_letter, fieldj.scheme).unparse_revnum(value), escape_html(fieldj.options[value - 1] || "Unknown")];
+        return [make_score_info(fieldj.options.length, fieldj.start, fieldj.scheme).unparse_revnum(value), escape_html(fieldj.options[value - 1] || "Unknown")];
 }
 
 handle_ui.on("unfold.js-settings-field-unfold", function (event) {
@@ -510,7 +510,7 @@ function rf_render_view(fieldj) {
     hc.push('<div class="revev">', '</div>');
     if (fieldj.options) {
         for (i = 0; i !== fieldj.options.length; ++i) {
-            var n = fieldj.option_letter ? fieldj.options.length - i : i + 1;
+            var n = fieldj.start && fieldj.start !== 1 ? fieldj.options.length - i : i + 1;
             hc.push('<label class="checki"><span class="checkc"><input type="radio" disabled></span>'.concat(option_value_html(fieldj, n).join(" "), '</label>'));
         }
         if (!fieldj.required) {

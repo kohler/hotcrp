@@ -478,8 +478,8 @@
         "parser_class": "ReviewForm_SettingParser", "storage": "member.options"
     },
     {
-        "name_pattern": "rf__$__option_letter", "group": "reviewform", "internal": true,
-        "storage": "member.option_letter"
+        "name_pattern": "rf__$__start", "group": "reviewform", "internal": true,
+        "storage": "member.start"
     },
     {
         "name_pattern": "rf__$__colors", "group": "reviewform",
