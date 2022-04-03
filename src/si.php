@@ -377,6 +377,8 @@ class SettingInfoSet {
     private $xlist = [];
     /** @var array<string,?string> */
     private $canonpage = ["none" => null];
+    /** @var list<string> */
+    private $potential_aliases = [];
 
     function __construct(Conf $conf) {
         $this->cs = new ComponentSet($conf->root_user(), ["etc/settinggroups.json"], $conf->opt("settingGroups"));
@@ -410,6 +412,9 @@ class SettingInfoSet {
         } else {
             assert(is_string($v->name));
             $this->xmap[$v->name][] = $v;
+            if (isset($v->alias)) {
+                $this->potential_aliases[] = $v->name;
+            }
         }
         return true;
     }
@@ -486,5 +491,15 @@ class SettingInfoSet {
             $this->map[$name] = $jx ? new Si($cs->conf, $jx) : null;
         }
         return $this->map[$name];
+    }
+
+    /** @return array<string,string> */
+    function aliases() {
+        $a = [];
+        foreach ($this->potential_aliases as $n) {
+            if (($si = $this->get($n)) && $si->name !== $n)
+                $a[$n] = $si->name;
+        }
+        return $a;
     }
 }

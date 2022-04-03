@@ -153,6 +153,11 @@ class SettingValues extends MessageSet {
                 $sv->req_files[$f] = $finfo;
             }
         }
+        foreach ($user->conf->si_set()->aliases() as $in => $out) {
+            if (array_key_exists($in, $sv->req)
+                && !array_key_exists($out, $sv->req))
+                $sv->req[$out] = $sv->req[$in];
+        }
         return $sv;
     }
 
@@ -1293,7 +1298,7 @@ class SettingValues extends MessageSet {
         foreach ($this->req as $k => $v) {
             if (!str_starts_with($k, "has_")
                 && ($si = $siset->get($k))
-                && $this->has_req($si->name)) {
+                && $si->name === $k) {   // don’t count aliases
                 $this->_req_si[] = $si;
             }
         }
