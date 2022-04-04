@@ -269,7 +269,7 @@ class Tracks_SettingParser extends SettingParser {
         $pfx = $si->part0 . $si->part1;
         $type = $sv->base_parse_req("{$pfx}__type");
         $tagsi = $sv->si("{$pfx}__tag");
-        $tag = $type === "+" || $type === "-" ? $tagsi->parse_vstr($sv->vstr($tagsi), $sv) : "";
+        $tag = $type === "+" || $type === "-" ? $tagsi->parse_reqv($sv->vstr($tagsi), $sv) : "";
         $perm = Track::$perm_name_map[$si->part1];
         if ($type === "" || ($type === "+" && $tag === "")) {
             $pv = null;

@@ -125,6 +125,10 @@ class SettingValues extends MessageSet {
 
     /** @var ?ComponentSet */
     private $_cs;
+    /** @var ?string */
+    private $_jpath;
+    /** @var ?JsonParser */
+    private $_jp;
 
     function __construct(Contact $user) {
         parent::__construct();
@@ -175,6 +179,61 @@ class SettingValues extends MessageSet {
         if (str_starts_with($k, "has_")) {
             $k = substr($k, 4);
             $this->req[$k] = $this->req[$k] ?? null;
+        }
+    }
+
+    /** @param string $jstr */
+    function apply_json_string($jstr, $filename = null) {
+        assert(!$this->_req_parsed);
+        $this->_jp = (new JsonParser($jstr))->filename($filename);
+        $j = $this->_jp->decode();
+        if ($j !== null || $this->_jp->error_type === 0) {
+            $this->_jpath = "";
+            $this->apply_json_parts("", $j);
+        } else {
+            $this->error_at(null, "<0>Invalid JSON at character position {$this->_jp->error_pos}");
+        }
+        $this->_jp = null;
+    }
+
+    /** @param string $parts
+     * @param mixed $j */
+    private function apply_json_parts($parts, $j) {
+        if (!is_object($j)) {
+            $this->error_at(null, "<0>Expected JSON object");
+            return;
+        }
+        $si_set = $this->conf->si_set();
+        if (($jpath = $this->_jpath) !== "") {
+            $jpath .= ".";
+        }
+        foreach ((array) $j as $k => $v) {
+            $si = $si_set->get("{$parts}{$k}");
+            $this->_jpath = "{$jpath}{$k}";
+            if (!$si) {
+                $this->warning_at(null, "<0>Unknown setting");
+            } else if ($si->internal) {
+                // do nothing
+            } else if ($si->type === "objectlist") {
+                if (!is_array($v)) {
+                    $this->error_at(null, "<0>Setting should be an array of objects");
+                } else {
+                    $this->set_req("has_{$si->name}", "1");
+                    foreach ($v as $i => $vv) {
+                        $this->_jpath = "{$jpath}{$k}[{$i}]";
+                        $this->apply_json_parts("{$si->name}__" . ($i + 1) . "__", $vv);
+                    }
+                }
+            } else if ($si->type === "object") {
+                if (!is_object($v)) {
+                    $this->error_at(null, "<0>Expected JSON object");
+                } else {
+                    $this->set_req("has_{$si->name}", "1");
+                    $this->apply_json_parts($si->name, $v);
+                }
+            } else if (($vstr = $si->convert_jsonv($v, $this)) !== null) {
+                $this->set_req($si->name, $vstr);
+            }
         }
     }
 
@@ -258,12 +317,26 @@ class SettingValues extends MessageSet {
     }
 
 
+    /** @param MessageItem $mi
+     * @return MessageItem */
+    private function with_jpath($mi) {
+        if ($this->_jpath !== "") {
+            $mi = $mi->with_prefix($this->_jpath . ": ");
+        }
+        return $mi->with_landmark($this->_jp->path_landmark($this->_jpath));
+    }
+
     /** @param null|string|Si $field
      * @param MessageItem $mi
      * @return MessageItem */
     function append_item_at($field, $mi) {
-        $fname = $field instanceof Si ? $field->name : $field;
-        return parent::append_item_at($fname, $mi);
+        if ($this->_jp) {
+            $mi = $this->with_jpath($mi);
+        } else {
+            $fname = $field instanceof Si ? $field->name : $field;
+            $mi = $mi->with_field($fname);
+        }
+        return $this->append_item($mi);
     }
 
     /** @param null|string|Si $field
@@ -271,8 +344,13 @@ class SettingValues extends MessageSet {
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status
      * @return MessageItem */
     function msg_at($field, $msg, $status) {
-        $fname = $field instanceof Si ? $field->name : $field;
-        return $this->append_item(new MessageItem($fname, $msg ?? "", $status));
+        if ($this->_jp) {
+            $mi = $this->with_jpath(new MessageItem(null, $msg ?? "", $status));
+        } else {
+            $fname = $field instanceof Si ? $field->name : $field;
+            $mi = new MessageItem($fname, $msg ?? "", $status);
+        }
+        return $this->append_item($mi);
     }
 
     /** @param null|string|Si $field
@@ -470,6 +548,27 @@ class SettingValues extends MessageSet {
         }
         $si = is_string($id) ? $this->si($id) : $id;
         return $si->base_unparse_reqv($this->oldv($si));
+    }
+
+
+    /** @param String|Si $id
+     * @return mixed */
+    function vjson($id) {
+        $si = is_string($id) ? $this->si($id) : $id;
+        if ($si->type === "objectlist") {
+            $a = [];
+            foreach ($this->enumerate("{$si->name}__") as $ctr) {
+                $a[] = $this->vjson("{$si->name}__{$ctr}");
+            }
+            return $a;
+        }
+        if ($this->_use_req) {
+            $name = is_string($id) ? $id : $id->name;
+            if (isset($this->req[$name])) {
+                return $si->base_unparse_jsonv($this->req[$name]);
+            }
+        }
+        return $si->base_unparse_jsonv($this->oldv($si));
     }
 
 
@@ -1268,7 +1367,7 @@ class SettingValues extends MessageSet {
     function base_parse_req($id) {
         $si = is_string($id) ? $this->si($id) : $id;
         if ($this->has_req($si->name)) {
-            return $si->parse_vstr($this->reqstr($si->name), $this);
+            return $si->parse_reqv($this->reqstr($si->name), $this);
         } else {
             return $this->oldv($si);
         }
@@ -1282,7 +1381,7 @@ class SettingValues extends MessageSet {
             && (!$si->parser_class
                 || $this->si_parser($si)->apply_req($this, $si) === false)
             && $si->storage_type !== Si::SI_NONE
-            && ($value = $si->parse_vstr($this->reqstr($si->name), $this)) !== null) {
+            && ($value = $si->parse_reqv($this->reqstr($si->name), $this)) !== null) {
             $this->save($si, $value);
         }
     }

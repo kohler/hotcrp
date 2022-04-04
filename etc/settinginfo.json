@@ -49,7 +49,7 @@
 
     {
         "name": "decision", "group": "decisions", "hashid": "decision-types",
-        "parser_class": "Decisions_SettingParser"
+        "parser_class": "Decisions_SettingParser", "type": "objectlist"
     },
     {
         "name_pattern": "decision__$", "group": "decisions",
@@ -233,7 +233,8 @@
     },
 
     {
-        "name": "sf", "group": "subform", "parser_class": "Options_SettingParser"
+        "name": "sf", "group": "subform",
+        "parser_class": "Options_SettingParser", "type": "objectlist"
     },
     {
         "name_pattern": "sf__$", "group": "subform",
@@ -361,7 +362,7 @@
 
     {
         "name": "response", "group": "responses",
-        "parser_class": "Responses_SettingParser"
+        "parser_class": "Responses_SettingParser", "type": "objectlist"
     },
     {
         "name_pattern": "response__$", "group": "responses",
@@ -452,7 +453,7 @@
 
     {
         "name": "rf", "group": "reviewform", "hashid": false,
-        "parser_class": "ReviewForm_SettingParser"
+        "parser_class": "ReviewForm_SettingParser", "type": "objectlist"
     },
     {
         "name_pattern": "rf__$", "group": "reviewform",
@@ -515,6 +516,8 @@
         "type": "simplestring", "size": 30, "placeholder": "Search", "storage": "member.exists_if",
         "parser_class": "ReviewFieldCondition_SettingParser"
     },
+    {   "name_pattern": "rf__$__exists_if", "alias_pattern": "rf__$__condition"   },
+    {   "name_pattern": "rf__$__display_space", "group": "reviewform", "internal": true   },
 
     {
         "name_pattern": "roundname_$", "internal": true, "group": "reviews",
@@ -726,7 +729,7 @@
     {   "name": "has_topics", "internal": true, "type": "checkbox"   },
     {
         "name": "topic", "group": "subform",
-        "type": "string", "parser_class": "Topics_SettingParser"
+        "parser_class": "Topics_SettingParser", "type": "objectlist"
     },
     {
         "name_pattern": "topic__$", "group": "subform",

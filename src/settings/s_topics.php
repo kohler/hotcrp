@@ -13,7 +13,9 @@ class Topics_SettingParser extends SettingParser {
             $sv->set_oldv($si->name, "");
         } else if ($si->part0 === "topic__") {
             $tn = $sv->unmap_enumeration_member($si->name, $sv->conf->topic_set()->as_array());
-            $sv->set_oldv($si->name, (object) ["name" => $tn]);
+            if ($tn !== null) {
+                $sv->set_oldv($si->name, (object) ["id" => intval($si->part1), "name" => $tn]);
+            }
         }
     }
 
@@ -28,7 +30,7 @@ class Topics_SettingParser extends SettingParser {
         $interests = [];
         while (($row = $result->fetch_row())) {
             $interests[$row[0]] = $interests[$row[0]] ?? [0, 0];
-            $interests[$row[0]][$row[1] > 0] += 1;
+            $interests[$row[0]][$row[1] > 0 ? 1 : 0] += 1;
         }
         Dbl::free($result);
 

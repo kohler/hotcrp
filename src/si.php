@@ -37,6 +37,8 @@ class Si {
     public $tags;
     /** @var null|int|float */
     public $order;
+    /** @var null|int */
+    public $__source_order;
     /** @var null|false|string */
     public $hashid;
     /** @var bool */
@@ -86,6 +88,7 @@ class Si {
         "internal" => "is_bool",
         "json_values" => "is_array",
         "order" => "is_number",
+        "__source_order" => "is_int",
         "parser_class" => "is_string",
         "placeholder" => "is_string",
         "required" => "is_bool",
@@ -345,7 +348,7 @@ class Si {
 
     /** @param ?string $reqv
      * @return null|int|string */
-    function parse_vstr($reqv, SettingValues $sv) {
+    function parse_reqv($reqv, SettingValues $sv) {
         if ($reqv === null) {
             return $this->_tclass ? $this->_tclass->parse_null_vstr($this) : null;
         } else if ($this->_tclass) {
@@ -353,9 +356,9 @@ class Si {
             if ($this->placeholder === $v) {
                 $v = "";
             }
-            return $this->_tclass->parse_vstr($v, $this, $sv);
+            return $this->_tclass->parse_reqv($v, $this, $sv);
         } else {
-            throw new ErrorException("Don't know how to parse_vstr {$this->name}.");
+            throw new ErrorException("Don't know how to parse_reqv {$this->name}.");
         }
     }
 
@@ -363,9 +366,35 @@ class Si {
      * @return string */
     function base_unparse_reqv($v) {
         if ($this->_tclass) {
-            return $this->_tclass->unparse_vstr($v, $this);
+            return $this->_tclass->unparse_reqv($v, $this);
         } else {
             return (string) $v;
+        }
+    }
+
+    /** @param mixed $jv
+     * @return null|int|string */
+    function convert_jsonv($jv, SettingValues $sv) {
+        if ($this->_tclass) {
+            if (is_string($jv)) {
+                $jv = trim($jv);
+                if ($this->placeholder === $jv) {
+                    $jv = "";
+                }
+            }
+            return $this->_tclass->convert_jsonv($jv, $this, $sv);
+        } else {
+            throw new ErrorException("Don't know how to convert_jsonv {$this->name}.");
+        }
+    }
+
+    /** @param null|int|string $v
+     * @return mixed */
+    function base_unparse_jsonv($v) {
+        if ($this->_tclass) {
+            return $this->_tclass->unparse_jsonv($v, $this);
+        } else {
+            return $v;
         }
     }
 }
@@ -451,6 +480,25 @@ class SettingInfoSet {
         return $result;
     }
 
+    /** @param string $s
+     * @param list<string> $parts
+     * @return ?string */
+    private function _expand_pattern($s, $parts) {
+        $p0 = 0;
+        $l = strlen($s);
+        while ($p0 < $l && ($p1 = strpos($s, '$', $p0)) !== false) {
+            $n = strspn($s, '$', $p1);
+            if ($n * 2 - 1 < count($parts)) {
+                $t = $parts[$n * 2 - 1];
+                $s = substr($s, 0, $p1) . $t . substr($s, $p1 + $n);
+                $p0 = $p1 + strlen($t);
+            } else {
+                $p0 = $p1 + 1;
+            }
+        }
+        return $s;
+    }
+
     /** @param string $name
      * @param string $prefix
      * @param list<string|object> $items */
@@ -466,6 +514,9 @@ class SettingInfoSet {
                 $jx = clone $items[$i + 1];
                 $jx->name = $name;
                 $jx->parts = $parts;
+                if (isset($jx->alias_pattern)) {
+                    $jx->alias = $this->_expand_pattern($jx->alias_pattern, $parts);
+                }
                 $this->xmap[$name][] = $jx;
             }
         }
@@ -475,17 +526,25 @@ class SettingInfoSet {
      * @return ?Si */
     function get($name) {
         if (!array_key_exists($name, $this->map)) {
-            // expand patterns
-            $nlen = strlen($name);
-            for ($i = 0; $i !== count($this->xlist); $i += 2) {
-                if (str_starts_with($name, $this->xlist[$i])) {
-                    $this->_expand($name, $this->xlist[$i], $this->xlist[$i + 1]);
-                }
-            }
-            // create Si
             $cs = $this->cs;
-            $jx = $cs->conf->xt_search_name($this->xmap, $name, $cs->viewer);
-            if ($jx) {
+            $jx = null;
+            for ($aliases = 0; $aliases < 5; ++$aliases) {
+                // expand patterns
+                $nlen = strlen($name);
+                for ($i = 0; $i !== count($this->xlist); $i += 2) {
+                    if (str_starts_with($name, $this->xlist[$i])) {
+                        $this->_expand($name, $this->xlist[$i], $this->xlist[$i + 1]);
+                    }
+                }
+                // look up entry
+                $jx = $cs->conf->xt_search_name($this->xmap, $name, $cs->viewer, true);
+                // check for alias
+                if (!isset($jx->alias) || !is_string($jx->alias)) {
+                    break;
+                }
+                $name = $jx->alias;
+            }
+            if ($jx && !isset($jx->alias)) {
                 Conf::xt_resolve_require($jx);
                 if (($group = $jx->group ?? null)) {
                     if (!array_key_exists($group, $this->canonpage)) {
@@ -493,6 +552,8 @@ class SettingInfoSet {
                     }
                     $jx->group = $this->canonpage[$group];
                 }
+            } else {
+                $jx = null;
             }
             $this->map[$name] = $jx ? new Si($cs->conf, $jx) : null;
         }
@@ -506,6 +567,20 @@ class SettingInfoSet {
             if (($si = $this->get($n)) && $si->name !== $n)
                 $a[$n] = $si->name;
         }
+        return $a;
+    }
+
+    /** @return list<Si> */
+    function top_list() {
+        $a = [];
+        foreach (array_keys($this->xmap) as $k) {
+            if (($si = $this->get($k)) !== null
+                && empty($si->parts)
+                && !$si->internal
+                && $si->name === $k)
+                $a[] = $si;
+        }
+        usort($a, "Conf::xt_order_compare");
         return $a;
     }
 }
