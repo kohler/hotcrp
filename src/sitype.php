@@ -149,6 +149,18 @@ class Radio_Sitype extends Sitype {
         $sv->error_at(null, "<0>Invalid choice");
         return null;
     }
+    function unparse_jsonv($v, Si $si) {
+        if (isset($si->json_values)) {
+            if (($i = array_search($v, $si->values, true)) !== false
+                && $i < count($si->json_values)) {
+                return $si->json_values[$i];
+            }
+        } else if ($si->values === [0, 1]
+                   && ($v === 0 || $v === 1)) {
+            return $v === 1;
+        }
+        return $v;
+    }
     function nullable($v, Si $si, SettingValues $sv) {
         return $v === ($si->default_value ?? 0);
     }
@@ -169,6 +181,17 @@ class Cdate_Sitype extends Sitype {
     }
     function unparse_reqv($v, Si $si) {
         return $v ? "1" : "";
+    }
+    function convert_jsonv($jv, Si $si, SettingValues $sv) {
+        if (is_bool($jv)) {
+            return $jv ? "1" : "";
+        } else {
+            $sv->error_at($si, "<0>Boolean required");
+            return null;
+        }
+    }
+    function unparse_jsonv($v, Si $si) {
+        return $v ? true : false;
     }
 }
 
@@ -197,14 +220,24 @@ class Date_Sitype extends Sitype {
         }
     }
     function unparse_reqv($v, Si $si) {
-        if ($v === null) {
+        if ($v === null || ($v <= 0 && !$this->explicit_none)) {
             return "";
         } else if ($v <= 0) {
-            return $v === 0 && $this->explicit_none ? "none" : "";
+            return "none";
         } else if ($v === 1) {
             return "now";
         } else {
             return $si->conf->parseableTime($v, true);
+        }
+    }
+    function convert_jsonv($jv, Si $si, SettingValues $sv) {
+        if (is_string($jv)) {
+            return $jv;
+        } else if (is_int($jv)) {
+            return $jv > 0 ? "{$jv}s" : "";
+        } else {
+            $sv->error_at($si, "<0>Date string required");
+            return null;
         }
     }
     function nullable($v, Si $si, SettingValues $sv) {
@@ -237,6 +270,19 @@ class Grace_Sitype extends Sitype {
             return sprintf("%d:%02d", intval($v / 60), $v % 60);
         }
     }
+    function convert_jsonv($jv, Si $si, SettingValues $sv) {
+        if (is_string($jv)) {
+            return $jv;
+        } else if (is_int($jv)) {
+            return "{$jv} sec";
+        } else {
+            $sv->error_at($si, "<0>Grace period string required");
+            return null;
+        }
+    }
+    function unparse_jsonv($v, Si $si) {
+        return $v;
+    }
 }
 
 class Nonnegint_Sitype extends Sitype {
@@ -265,6 +311,9 @@ class Nonnegint_Sitype extends Sitype {
             return null;
         }
     }
+    function unparse_jsonv($v, Si $si) {
+        return $v;
+    }
 }
 
 class Float_Sitype extends Sitype {
@@ -291,6 +340,9 @@ class Float_Sitype extends Sitype {
             $sv->error_at($si, "<0>Number required");
             return null;
         }
+    }
+    function unparse_jsonv($v, Si $si) {
+        return $v;
     }
 }
 

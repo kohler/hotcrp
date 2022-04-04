@@ -37,6 +37,8 @@ class Si {
     public $tags;
     /** @var null|int|float */
     public $order;
+    /** @var null|int|float */
+    public $parse_order;
     /** @var null|int */
     public $__source_order;
     /** @var null|false|string */
@@ -88,6 +90,7 @@ class Si {
         "internal" => "is_bool",
         "json_values" => "is_array",
         "order" => "is_number",
+        "parse_order" => "is_number",
         "__source_order" => "is_int",
         "parser_class" => "is_string",
         "placeholder" => "is_string",
@@ -396,6 +399,21 @@ class Si {
         } else {
             return $v;
         }
+    }
+
+    /** @param Si $xta
+     * @param Si $xtb
+     * @return -1|0|1 */
+    static function parse_order_compare($xta, $xtb) {
+        $ap = $xta->parse_order ?? $xta->order ?? 0;
+        $ap = $ap !== false ? $ap : INF;
+        $bp = $xtb->parse_order ?? $xtb->order ?? 0;
+        $bp = $bp !== false ? $bp : INF;
+        if ($ap == $bp) {
+            $ap = $xta->__source_order ?? 0;
+            $bp = $xtb->__source_order ?? 0;
+        }
+        return $ap <=> $bp;
     }
 }
 

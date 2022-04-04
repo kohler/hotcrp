@@ -413,6 +413,7 @@ src/searchexample.php
 src/searchselection.php
 src/searchsplitter.php
 src/sessionlist.php
+src/settingparser.php
 src/settings/s_banal.php
 src/settings/s_basics.php
 src/settings/s_decisions.php

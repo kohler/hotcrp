@@ -976,24 +976,32 @@ class Conf {
     }
 
 
+    /** @param ?object $xt
+     * @return int|float */
     static function xt_priority($xt) {
-        return $xt ? $xt->priority ?? 0 : -PHP_INT_MAX;
+        return $xt ? $xt->priority ?? 0 : -INF;
     }
+    /** @param ?object $xta
+     * @param ?object $xtb
+     * @return -1|0|1 */
     static function xt_priority_compare($xta, $xtb) {
         // Return -1 if $xta is higher priority, 1 if $xtb is.
         $ap = self::xt_priority($xta);
         $bp = self::xt_priority($xtb);
         if ($ap == $bp) {
-            $ap = $xta ? $xta->__source_order ?? 0 : -PHP_INT_MAX;
-            $bp = $xtb ? $xtb->__source_order ?? 0 : -PHP_INT_MAX;
+            $ap = $xta ? $xta->__source_order ?? 0 : -INF;
+            $bp = $xtb ? $xtb->__source_order ?? 0 : -INF;
         }
         return $bp <=> $ap;
     }
+    /** @param object $xta
+     * @param object $xtb
+     * @return -1|0|1 */
     static function xt_order_compare($xta, $xtb) {
         $ap = $xta->order ?? 0;
-        $ap = $ap !== false ? $ap : PHP_INT_MAX;
+        $ap = $ap !== false ? $ap : INF;
         $bp = $xtb->order ?? 0;
-        $bp = $bp !== false ? $bp : PHP_INT_MAX;
+        $bp = $bp !== false ? $bp : INF;
         if ($ap == $bp) {
             if (isset($xta->name)
                 && isset($xtb->name)
@@ -1006,7 +1014,8 @@ class Conf {
         return $ap <=> $bp;
     }
     /** @param array<string|int,list<object>> &$a
-     * @param object $xt */
+     * @param object $xt
+     * @return true */
     static function xt_add(&$a, $name, $xt) {
         $a[$name][] = $xt;
         return true;

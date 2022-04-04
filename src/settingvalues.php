@@ -1,75 +1,6 @@
 <?php
-// settingvalues.php -- HotCRP conference settings management helper classes
+// settingvalues.php -- HotCRP conference settings manager
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
-
-class SettingParser {
-    /** @return void */
-    function set_oldv(SettingValues $sv, Si $si) {
-    }
-
-    /** @return void */
-    function prepare_enumeration(SettingValues $sv, Si $si) {
-    }
-
-    /** @return bool */
-    function apply_req(SettingValues $sv, Si $si) {
-        return false;
-    }
-
-    /** @return void */
-    function store_value(SettingValues $sv, Si $si) {
-    }
-
-    /** @param string $v
-     * @return -1|float|false */
-    static function parse_interval($v) {
-        $t = 0;
-        $v = trim($v);
-        if ($v === ""
-            || strtoupper($v) === "N/A"
-            || strtoupper($v) === "NONE"
-            || $v === "0") {
-            return -1;
-        } else if (ctype_digit($v)) {
-            return ((float) $v) * 60;
-        } else if (preg_match('/\A\s*([\d]+):(\d+\.?\d*|\.\d+)\s*\z/', $v, $m)) {
-            return ((float) $m[1]) * 60 + (float) $m[2];
-        }
-        if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*y(?:ears?|rs?|)(?![a-z])/i', $v, $m)) {
-            $t += ((float) $m[1]) * 3600 * 24 * 365;
-            $v = substr($v, strlen($m[0]));
-        }
-        if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*mo(?:nths?|ns?|s|)(?![a-z])/i', $v, $m)) {
-            $t += ((float) $m[1]) * 3600 * 24 * 30;
-            $v = substr($v, strlen($m[0]));
-        }
-        if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*w(?:eeks?|ks?|)(?![a-z])/i', $v, $m)) {
-            $t += ((float) $m[1]) * 3600 * 24 * 7;
-            $v = substr($v, strlen($m[0]));
-        }
-        if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*d(?:ays?|)(?![a-z])/i', $v, $m)) {
-            $t += ((float) $m[1]) * 3600 * 24;
-            $v = substr($v, strlen($m[0]));
-        }
-        if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*h(?:rs?|ours?|)(?![a-z])/i', $v, $m)) {
-            $t += ((float) $m[1]) * 3600;
-            $v = substr($v, strlen($m[0]));
-        }
-        if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*m(?:inutes?|ins?|)(?![a-z])/i', $v, $m)) {
-            $t += ((float) $m[1]) * 60;
-            $v = substr($v, strlen($m[0]));
-        }
-        if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*s(?:econds?|ecs?|)(?![a-z])/i', $v, $m)) {
-            $t += (float) $m[1];
-            $v = substr($v, strlen($m[0]));
-        }
-        if (trim($v) == "") {
-            return $t;
-        } else {
-            return false;
-        }
-    }
-}
 
 class SettingValues extends MessageSet {
     /** @var Conf
@@ -148,21 +79,7 @@ class SettingValues extends MessageSet {
 
     /** @param Qrequest|array<string,string|int|float> $qreq */
     static function make_request(Contact $user, $qreq) {
-        $sv = new SettingValues($user);
-        foreach ($qreq as $k => $v) {
-            $sv->set_req($k, (string) $v);
-        }
-        if ($qreq instanceof Qrequest) {
-            foreach ($qreq->files() as $f => $finfo) {
-                $sv->req_files[$f] = $finfo;
-            }
-        }
-        foreach ($user->conf->si_set()->aliases() as $in => $out) {
-            if (array_key_exists($in, $sv->req)
-                && !array_key_exists($out, $sv->req))
-                $sv->req[$out] = $sv->req[$in];
-        }
-        return $sv;
+        return (new SettingValues($user))->add_request($qreq);
     }
 
     /** @param bool $x
@@ -173,32 +90,58 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string $k
-     * @param string $v */
+     * @param string $v
+     * @return $this */
     function set_req($k, $v) {
         $this->req[$k] = $v;
         if (str_starts_with($k, "has_")) {
             $k = substr($k, 4);
             $this->req[$k] = $this->req[$k] ?? null;
         }
+        return $this;
     }
 
-    /** @param string $jstr */
-    function apply_json_string($jstr, $filename = null) {
+    /** @param Qrequest|array<string,string|int|float> $qreq
+     * @return $this */
+    function add_request($qreq) {
+        foreach ($qreq as $k => $v) {
+            $this->set_req($k, (string) $v);
+        }
+        if ($qreq instanceof Qrequest) {
+            foreach ($qreq->files() as $f => $finfo) {
+                $this->req_files[$f] = $finfo;
+            }
+        }
+        foreach ($this->conf->si_set()->aliases() as $in => $out) {
+            if (array_key_exists($in, $this->req)
+                && !array_key_exists($out, $this->req))
+                $this->req[$out] = $this->req[$in];
+        }
+        return $this;
+    }
+
+    /** @param string $jstr
+     * @param ?string $filename
+     * @param bool $reset
+     * @return $this */
+    function add_json_string($jstr, $filename = null, $reset = false) {
         assert(!$this->_req_parsed);
         $this->_jp = (new JsonParser($jstr))->filename($filename);
         $j = $this->_jp->decode();
         if ($j !== null || $this->_jp->error_type === 0) {
             $this->_jpath = "";
-            $this->apply_json_parts("", $j);
+            $this->set_json_parts("", $j, $reset);
         } else {
             $this->error_at(null, "<0>Invalid JSON at character position {$this->_jp->error_pos}");
         }
         $this->_jp = null;
+        return $this;
     }
 
     /** @param string $parts
-     * @param mixed $j */
-    private function apply_json_parts($parts, $j) {
+     * @param mixed $j
+     * @param bool $reset */
+    private function set_json_parts($parts, $j, $reset) {
         if (!is_object($j)) {
             $this->error_at(null, "<0>Expected JSON object");
             return;
@@ -211,25 +154,46 @@ class SettingValues extends MessageSet {
             $si = $si_set->get("{$parts}{$k}");
             $this->_jpath = "{$jpath}{$k}";
             if (!$si) {
-                $this->warning_at(null, "<0>Unknown setting");
+                if ($k === "delete" && is_bool($v) && $parts !== "") {
+                    if ($v === true) {
+                        $this->set_req("{$parts}delete", "1");
+                    }
+                } else if ($k !== "" && $k[0] !== "\$" && $k[0] !== "#") {
+                    $this->warning_at(null, "<0>Unknown setting");
+                }
             } else if ($si->internal) {
-                // do nothing
+                if (is_scalar($v)) {
+                    $this->set_req($si->name, "{$v}");
+                }
             } else if ($si->type === "objectlist") {
                 if (!is_array($v)) {
-                    $this->error_at(null, "<0>Setting should be an array of objects");
+                    $this->error_at(null, "<0>Array of JSON objects expected");
                 } else {
                     $this->set_req("has_{$si->name}", "1");
+                    if ($reset) {
+                        $this->set_req("{$si->name}__reset", "1");
+                    }
                     foreach ($v as $i => $vv) {
                         $this->_jpath = "{$jpath}{$k}[{$i}]";
-                        $this->apply_json_parts("{$si->name}__" . ($i + 1) . "__", $vv);
+                        $pfx = "{$si->name}__" . ($i + 1) . "__";
+                        if (!array_key_exists("{$pfx}id", $this->req)) {
+                            $this->req["{$pfx}id"] = "";
+                        }
+                        if (is_string($vv)) {
+                            $this->req["{$pfx}name"] = $vv;
+                        } else if (is_object($vv)) {
+                            $this->set_json_parts($pfx, $vv, $reset);
+                        } else {
+                            $this->error_at(null, "<0>JSON object expected");
+                        }
                     }
                 }
             } else if ($si->type === "object") {
                 if (!is_object($v)) {
-                    $this->error_at(null, "<0>Expected JSON object");
+                    $this->error_at(null, "<0>JSON object expected");
                 } else {
                     $this->set_req("has_{$si->name}", "1");
-                    $this->apply_json_parts($si->name, $v);
+                    $this->set_json_parts($si->name, $v, $reset);
                 }
             } else if (($vstr = $si->convert_jsonv($v, $this)) !== null) {
                 $this->set_req($si->name, $vstr);
@@ -607,14 +571,41 @@ class SettingValues extends MessageSet {
         assert(str_ends_with($pfx, "__"));
         $ctr = 1;
         if ($this->_use_req) {
-            $used = [];
+            $delete_rest = ($x = $this->reqstr("{$pfx}reset") ?? "") !== "";
+            $used = $names = $namectrs = [];
             while (($x = $this->reqstr("{$pfx}{$ctr}__id")) !== null) {
-                $used[$x] = true;
+                if ($x !== "") {
+                    $used[$x] = true;
+                } else if (($n = $this->reqstr("{$pfx}{$ctr}__name") ?? "") !== "") {
+                    $names[] = $n;
+                    $namectrs[] = $ctr;
+                }
                 ++$ctr;
+            }
+            if (!empty($names)) {
+                $mnames = $mids = [];
+                foreach ($map as $id => $obj) {
+                    if (!isset($used[$id])
+                        && is_object($obj)
+                        && isset($obj->name)
+                        && is_string($obj->name)) {
+                        $mnames[] = $obj->name;
+                        $mids[] = $id;
+                    }
+                }
+                foreach ($this->unambiguous_renumbering($names, $mnames) as $idx => $midx) {
+                    if ($midx >= 0) {
+                        $this->req["{$pfx}{$namectrs[$idx]}__id"] = $mids[$midx];
+                        $used[$mids[$midx]] = true;
+                    }
+                }
             }
             foreach ($map as $id => $obj) {
                 if (!isset($used[$id])) {
                     $this->set_req("{$pfx}{$ctr}__id", (string) $id);
+                    if ($delete_rest) {
+                        $this->set_req("{$pfx}{$ctr}__delete", "1");
+                    }
                     ++$ctr;
                 }
             }
@@ -849,7 +840,7 @@ class SettingValues extends MessageSet {
     /** @param ?string $c1
      * @param ?string $c2
      * @return ?string */
-    static function add_class($c1, $c2) {
+    static function join_class($c1, $c2) {
         if ($c1 === null || $c1 === "") {
             return $c2;
         } else if ($c2 === null || $c2 === "") {
@@ -868,7 +859,7 @@ class SettingValues extends MessageSet {
         } else {
             foreach (is_array($name) ? $name : array($name) as $n) {
                 if (($sc = $this->control_class($n))) {
-                    $label_js["class"] = self::add_class($sc, $label_js["class"] ?? null);
+                    $label_js["class"] = self::join_class($sc, $label_js["class"] ?? null);
                     break;
                 }
             }
@@ -916,7 +907,7 @@ class SettingValues extends MessageSet {
             $x["class"] = $this->control_class($name, $x["class"] ?? "");
         }
         if (isset($js["fold_values"])) {
-            $x["class"] = self::add_class($x["class"] ?? "", "uich js-foldup");
+            $x["class"] = self::join_class($x["class"] ?? "", "uich js-foldup");
         }
         return $x;
     }
@@ -931,13 +922,13 @@ class SettingValues extends MessageSet {
             $xjs["class"] = $this->control_class($si->name, $xjs["class"]);
         }
         if (isset($js["group_class"])) {
-            $xjs["class"] = self::add_class($xjs["class"], $js["group_class"]);
+            $xjs["class"] = self::join_class($xjs["class"], $js["group_class"]);
         }
         if (isset($js["fold_values"]) && !empty($js["fold_values"])) {
             $fv = $js["fold_values"];
             assert(is_array($fv));
             $fold = "fold" . (in_array($this->vstr($si->name), $fv) ? "o" : "c");
-            $xjs["class"] = self::add_class($xjs["class"], "has-fold {$fold}");
+            $xjs["class"] = self::join_class($xjs["class"], "has-fold {$fold}");
             $xjs["data-fold-values"] = join(" ", $fv);
         }
         if (isset($js["group_attr"])) {
@@ -968,7 +959,7 @@ class SettingValues extends MessageSet {
         echo '</span>', $this->label($name, $text, ["for" => $name, "class" => $js["label_class"] ?? null]);
         $this->print_feedback_at($name);
         if ($hint) {
-            echo '<div class="', self::add_class("settings-ap f-hx", $js["hint_class"] ?? null), '">', $hint, '</div>';
+            echo '<div class="', self::join_class("settings-ap f-hx", $js["hint_class"] ?? null), '">', $hint, '</div>';
         }
         if (!($js["group_open"] ?? null)) {
             echo "</div>\n";
@@ -1143,7 +1134,7 @@ class SettingValues extends MessageSet {
             $js["placeholder"] = $si->placeholder;
         }
         if ($si->autogrow ?? true) {
-            $js["class"] = self::add_class($js["class"] ?? "", "need-autogrow");
+            $js["class"] = self::join_class($js["class"] ?? "", "need-autogrow");
         }
         if (!isset($js["rows"])) {
             $js["rows"] = $si->size ? : 10;
@@ -1401,7 +1392,7 @@ class SettingValues extends MessageSet {
                 $this->_req_si[] = $si;
             }
         }
-        usort($this->_req_si, "Conf::xt_order_compare");
+        usort($this->_req_si, "Si::parse_order_compare");
 
         // parse and validate settings
         foreach ($this->_req_si as $si) {

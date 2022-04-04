@@ -143,6 +143,49 @@ class Settings_Tester {
         ConfInvariants::test_all($this->conf);
     }
 
+    function test_topics_json() {
+        $this->delete_topics();
+        xassert_eqq(json_encode($this->conf->topic_set()->as_array()), '[]');
+
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "topic": ["Barf", "Fart", "Money"]
+        }');
+        xassert($sv->execute());
+        xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Barf","2":"Fart","3":"Money"}');
+
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "topic": []
+        }');
+        xassert($sv->execute());
+        xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Barf","2":"Fart","3":"Money"}');
+
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "topic": [{"id": 1, "name": "Berf"}]
+        }');
+        xassert($sv->execute());
+        xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Berf","2":"Fart","3":"Money"}');
+
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "topic": [{"id": 1, "name": "Berf"}]
+        }', null, true);
+        xassert($sv->execute());
+        xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Berf"}');
+
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "topic": [{"id": "$", "name": "Berf"}]
+        }');
+        xassert(!$sv->execute());
+        xassert_neqq(strpos($sv->full_feedback_text(), "is not unique"), false);
+
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "topic": [{"name": "Bingle"}, {"name": "Bongle"}]
+        }');
+        xassert($sv->execute());
+        xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Berf","4":"Bingle","5":"Bongle"}');
+
+        $this->delete_topics();
+    }
+
     function test_decision_types() {
         $this->conf->save_refresh_setting("outcome_map", null);
         xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
