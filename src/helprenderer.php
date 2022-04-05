@@ -17,12 +17,14 @@ class HelpRenderer extends Ht {
     private $_sv;
     /** @var array<string,true> */
     private $_h3ids = [];
+
     function __construct(ComponentSet $help_topics, Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->_help_topics = $help_topics;
         $this->_help_topics->set_title_class("helppage")->set_context_args([$this]);
     }
+
     /** @param string $title
      * @param ?string $id
      * @return string */
@@ -52,6 +54,7 @@ class HelpRenderer extends Ht {
             return "";
         }
     }
+
     /** @param bool $tabletype
      * @return string */
     function table($tabletype = false) {
@@ -59,6 +62,7 @@ class HelpRenderer extends Ht {
         $this->_tabletype = $tabletype;
         return $this->_tabletype ? "" : '<table class="demargin"><tbody>';
     }
+
     /** @param string $title
      * @param ?string $id
      * @return string */
@@ -72,6 +76,7 @@ class HelpRenderer extends Ht {
                 . $title . "</h4></td></tr>\n";
         }
     }
+
     /** @param string $caption
      * @param ?string $entry
      * @return string */
@@ -95,10 +100,12 @@ class HelpRenderer extends Ht {
         $this->_rowidx = 1 - $this->_rowidx;
         return $t;
     }
+
     /** @return string */
     function end_table() {
         return $this->_tabletype ? "" : "</tbody></table>\n";
     }
+
     /** @param string $html
      * @param string $page
      * @param null|string|array $options
@@ -110,6 +117,7 @@ class HelpRenderer extends Ht {
         }
         return $this->conf->hotlink($html, $page, $options, $js);
     }
+
     /** @param string $html
      * @param string|array{q:string} $q
      * @param array $js
@@ -123,6 +131,7 @@ class HelpRenderer extends Ht {
         }
         return $this->hotlink($html ? : htmlspecialchars($q["q"]), "search", $q, $js);
     }
+
     /** @param string $html
      * @param ?string $topic
      * @return string */
@@ -141,6 +150,7 @@ class HelpRenderer extends Ht {
         }
         return $this->hotlink($html, "help", $topic);
     }
+
     /** @param string $html
      * @param string $siname
      * @return string */
@@ -150,9 +160,6 @@ class HelpRenderer extends Ht {
         }
         if (($si = $this->conf->si($siname))) {
             $param = $si->hoturl_param();
-        } else if (($g = $this->_sv->canonical_group($siname))) {
-            error_log("improper setting_link for group\n" . debug_string_backtrace());
-            $param = ["group" => $g];
         } else {
             error_log("missing setting information for $siname\n" . debug_string_backtrace());
             $param = [];
@@ -161,6 +168,7 @@ class HelpRenderer extends Ht {
         $rest = $this->user->privChair ? "" : ' class="noq need-tooltip" aria-label="This link to a settings page only works for administrators."';
         return "<a href=\"{$url}\"{$rest} rel=\"nofollow\">{$html}</a>";
     }
+
     /** @param string $siname
      * @return string */
     function change_setting_link($siname) {
@@ -171,6 +179,7 @@ class HelpRenderer extends Ht {
             return "";
         }
     }
+
     /** @param string $html
      * @param string $sg
      * @return string */
@@ -188,6 +197,7 @@ class HelpRenderer extends Ht {
         $rest = $this->user->privChair ? "" : ' class="noq need-tooltip" aria-label="This link to a settings page only works for administrators."';
         return "<a href=\"{$url}\"{$rest} rel=\"nofollow\">{$html}</a>";
     }
+
     /** @param string|array<string,string> $q
      * @return string */
     function search_form($q, $size = 20) {
@@ -204,9 +214,16 @@ class HelpRenderer extends Ht {
         }
         return $t . "</form>";
     }
+
+    /** @param string $q
+     * @param string $entry
+     * @return string */
     function search_trow($q, $entry) {
         return $this->trow($this->search_form($q, 36), $entry);
     }
+
+    /** @param string $property
+     * @return string */
     function example_tag($property) {
         $vt = [];
         if ($this->user->isPC) {
@@ -214,6 +231,9 @@ class HelpRenderer extends Ht {
         }
         return empty($vt) ? $property : current($vt)->tag;
     }
+
+    /** @param string $property
+     * @return string */
     function current_tag_list($property) {
         $vt = [];
         if ($this->user->isPC) {
@@ -227,15 +247,18 @@ class HelpRenderer extends Ht {
             }, $vt)) . ")";
         }
     }
+
     /** @param string $topic
      * @param bool $top */
     function print_group($topic, $top = false) {
         $this->_help_topics->print_group($topic, $top);
     }
+
     /** @return list<object> */
     function groups() {
         return $this->_help_topics->groups();
     }
+
     /** @param string $name
      * @return ?object */
     function member($name) {
@@ -250,6 +273,7 @@ class HelpRenderer extends Ht {
         }
         return null;
     }
+
     /** @return ?string */
     function meaningful_review_round_name() {
         if ($this->user->isPC) {

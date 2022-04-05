@@ -751,7 +751,7 @@
     },
 
     {
-        "name": "track", "group": "tracks",
+        "name": "track", "group": "tracks", "hashid": "tracks",
         "parser_class": "Tracks_SettingParser"
     },
     {
