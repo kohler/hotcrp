@@ -201,11 +201,6 @@ class TagSearchMatcher {
     }
 
 
-    /** @return bool */
-    function is_sqlexpr_precise() {
-        return $this->_mtype > 0;
-    }
-
     private function sqlexpr_tagpart($table) {
         if ($this->_mtype > 0) {
             return Dbl::format_query($this->user->conf->dblink, "$table.tag?a", $this->_tagpat);
@@ -234,6 +229,11 @@ class TagSearchMatcher {
         } else {
             return null;
         }
+    }
+
+    /** @return bool */
+    function is_sqlexpr_precise() {
+        return $this->_mtype > 0;
     }
 
     /** @return bool */

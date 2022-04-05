@@ -73,8 +73,7 @@ class Comment_SearchTerm extends SearchTerm {
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $a = CountMatcher::unpack_search_comparison($sword->qword);
-        $compar = CountMatcher::unparse_comparison($a[1], $a[2]);
-        if (($qr = PaperSearch::check_tautology($compar))) {
+        if (($qr = SearchTerm::make_constant(CountMatcher::comparison_tautology($a[1], $a[2])))) {
             return $qr;
         }
         $tags = $contacts = null;
@@ -88,6 +87,7 @@ class Comment_SearchTerm extends SearchTerm {
         } else if ($a[0] !== "") {
             $contacts = $srch->matching_uids($a[0], $sword->quoted, false);
         }
+        $compar = CountMatcher::unparse_comparison($a[1], $a[2]);
         $csm = new ContactCountMatcher($compar, $contacts);
         return new Comment_SearchTerm($srch->user, $csm, $tags, $sword->kwdef);
     }
@@ -95,7 +95,6 @@ class Comment_SearchTerm extends SearchTerm {
         if (!isset($sqi->columns["commentSkeletonInfo"])) {
             $sqi->add_column("commentSkeletonInfo", "coalesce((select group_concat(commentId, ';', contactId, ';', commentType, ';', commentRound, ';', coalesce(commentTags,'') separator '|') from PaperComment where paperId=Paper.paperId), '')");
         }
-
         $where = [];
         if ($this->type_mask) {
             $where[] = "(commentType&{$this->type_mask})={$this->type_value}";
@@ -112,9 +111,11 @@ class Comment_SearchTerm extends SearchTerm {
         if ($this->tags && !$this->tags->test_empty()) {
             $where[] = "commentTags is not null"; // conservative
         }
-        $thistab = "Comments_" . count($sqi->tables);
-        $sqi->add_table($thistab, ["left join", "(select paperId, count(commentId) count from PaperComment" . ($where ? " where " . join(" and ", $where) : "") . " group by paperId)"]);
-        return "coalesce($thistab.count,0)" . $this->csm->conservative_nonnegative_comparison();
+        if (($t = $sqi->try_add_table("Comments_", ["left join", "(select paperId, count(commentId) count from PaperComment" . ($where ? " where " . join(" and ", $where) : "") . " group by paperId)"]))) {
+            return "coalesce({$t}.count,0)" . $this->csm->conservative_nonnegative_comparison();
+        } else {
+            return "true";
+        }
     }
     function test(PaperInfo $row, $rrow) {
         $textless = $this->type_mask === (CommentInfo::CT_DRAFT | CommentInfo::CT_RESPONSE);

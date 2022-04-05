@@ -46,9 +46,6 @@ class Topic_SearchTerm extends SearchTerm {
         }
         return new Topic_SearchTerm($value, $negated);
     }
-    function is_sqlexpr_precise() {
-        return true;
-    }
     function sqlexpr(SearchQueryInfo $sqi) {
         $tm = "";
         if ($this->topics === []) {
@@ -61,6 +58,9 @@ class Topic_SearchTerm extends SearchTerm {
             $t = "not $t";
         }
         return $t;
+    }
+    function is_sqlexpr_precise() {
+        return true;
     }
     function test(PaperInfo $row, $rrow) {
         if ($this->topics === []) {

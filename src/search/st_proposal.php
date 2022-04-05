@@ -90,7 +90,7 @@ class Proposal_SearchTerm extends SearchTerm {
             }
         }
 
-        if (($qr = PaperSearch::check_tautology($rqsm->comparison()))) {
+        if (($qr = SearchTerm::make_constant($rqsm->tautology()))) {
             return $qr;
         }
 

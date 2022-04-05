@@ -34,7 +34,7 @@ abstract class Reconflict_SearchTerm extends SearchTerm {
         $srch->user->set_overrides($old_overrides);
 
         if (!empty($cids)) {
-            return new Conflict_SearchTerm($srch->user, ">0", array_keys($cids), false);
+            return new Conflict_SearchTerm($srch->user, new ContactCountMatcher(">0", array_keys($cids)), false);
         } else {
             $srch->lwarning($sword, "<0>No visible reviewers");
             return new False_SearchTerm;

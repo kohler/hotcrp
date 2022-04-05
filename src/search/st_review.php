@@ -605,7 +605,7 @@ class Review_SearchTerm extends SearchTerm {
                 return null;
             }
         }
-        if (($qr = PaperSearch::check_tautology($rsm->comparison()))) {
+        if (($qr = SearchTerm::make_constant($rsm->tautology()))) {
             return $qr;
         }
         if ($contacts !== null && $contacts !== "") {

@@ -60,4 +60,8 @@ class Search_Tester {
         xassert_eqq($h[10] ?? [], []);
         xassert(!array_key_exists(11, $h));
     }
+
+    function test_xor() {
+        assert_search_papers($this->conf->root_user(), "1-10 XOR 4-5", "1 2 3 6 7 8 9 10");
+    }
 }

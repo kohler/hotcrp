@@ -25,16 +25,16 @@ class PaperStatus_SearchTerm extends SearchTerm {
             return new PaperStatus_SearchTerm($fval);
         }
     }
-    function is_sqlexpr_precise() {
-        return true;
-    }
     function sqlexpr(SearchQueryInfo $sqi) {
-        $q = array();
+        $q = [];
         for ($i = 0; $i < count($this->match); $i += 2) {
             $sqi->add_column($this->match[$i], "Paper." . $this->match[$i]);
             $q[] = "Paper." . $this->match[$i] . CountMatcher::sqlexpr_using($this->match[$i+1]);
         }
         return self::andjoin_sqlexpr($q);
+    }
+    function is_sqlexpr_precise() {
+        return true;
     }
     function test(PaperInfo $row, $rrow) {
         for ($i = 0; $i < count($this->match); $i += 2) {

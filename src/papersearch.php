@@ -189,6 +189,7 @@ abstract class SearchTerm {
     function __construct($type) {
         $this->type = $type;
     }
+
     /** @param string|SearchOperator $op
      * @param list<SearchTerm> $terms
      * @return SearchTerm */
@@ -212,11 +213,13 @@ abstract class SearchTerm {
         }
         return $qr->_finish();
     }
+
     /** @return SearchTerm */
     function negate() {
         $qr = new Not_SearchTerm;
         return $qr->append($this)->_finish();
     }
+
     /** @param bool $negate
      * @return SearchTerm */
     function negate_if($negate) {
@@ -227,6 +230,7 @@ abstract class SearchTerm {
     function view_anno() {
         return $this->float["view"] ?? [];
     }
+
     /** @param string $view
      * @param SearchWord $sword
      * @return $this */
@@ -239,6 +243,7 @@ abstract class SearchTerm {
         $this->float["view"][] = [$view, $sword->pos1, $pos1x, $sword->pos2];
         return $this;
     }
+
     /** @param string $field
      * @return ?array{int,int,int} */
     function view_anno_pos($field) {
@@ -287,6 +292,7 @@ abstract class SearchTerm {
     }
 
 
+    /** @return mixed */
     function debug_json() {
         return $this->type;
     }
@@ -299,13 +305,20 @@ abstract class SearchTerm {
     }
 
 
-    /** @return bool */
-    function is_sqlexpr_precise() {
-        return false;
-    }
-
     /** @return string */
     abstract function sqlexpr(SearchQueryInfo $sqi);
+
+    /** @param ?bool $b
+     * @return null|False_SearchTerm|True_SearchTerm */
+    static function make_constant($b) {
+        if ($b === true) {
+            return new True_SearchTerm;
+        } else if ($b === false) {
+            return new False_SearchTerm;
+        } else {
+            return null;
+        }
+    }
 
     /** @return string */
     static function andjoin_sqlexpr($ff) {
@@ -322,8 +335,10 @@ abstract class SearchTerm {
         }
     }
 
-    /** @return string */
-    static function orjoin_sqlexpr($q, $default = "false") {
+    /** @param list<string> $q
+     * @param 'false'|'true' $default
+     * @return string */
+    static function orjoin_sqlexpr($q, $default) {
         if (empty($q)) {
             return $default;
         } else if (in_array("true", $q, true)) {
@@ -331,6 +346,11 @@ abstract class SearchTerm {
         } else {
             return "(" . join(" or ", $q) . ")";
         }
+    }
+
+    /** @return bool */
+    function is_sqlexpr_precise() {
+        return false;
     }
 
 
@@ -384,11 +404,11 @@ class False_SearchTerm extends SearchTerm {
     function __construct() {
         parent::__construct("f");
     }
-    function is_sqlexpr_precise() {
-        return true;
-    }
     function sqlexpr(SearchQueryInfo $sqi) {
         return "false";
+    }
+    function is_sqlexpr_precise() {
+        return true;
     }
     function test(PaperInfo $row, $rrow) {
         return false;
@@ -408,11 +428,11 @@ class True_SearchTerm extends SearchTerm {
     function simple_search(&$options) {
         return true;
     }
-    function is_sqlexpr_precise() {
-        return true;
-    }
     function sqlexpr(SearchQueryInfo $sqi) {
         return "true";
+    }
+    function is_sqlexpr_precise() {
+        return true;
     }
     function test(PaperInfo $row, $rrow) {
         return true;
@@ -585,7 +605,7 @@ class Not_SearchTerm extends Op_SearchTerm {
             } else if ($ff === "true") {
                 return "false";
             } else {
-                return "not coalesce($ff,0)";
+                return "not coalesce({$ff},0)";
             }
         } else {
             return "true";
@@ -713,10 +733,11 @@ class Or_SearchTerm extends Op_SearchTerm {
         return $this->_finish_combine($newchild, false);
     }
 
-    static function or_sqlexpr($child, SearchQueryInfo $sqi) {
+    /** @param list<SearchTerm> $child
+     * @return list<string> */
+    static function or_sqlexprs($child, SearchQueryInfo $sqi) {
         ++$sqi->depth;
-        $ff = [];
-        $tsf = [];
+        $ff = $tsf = [];
         foreach ($child as $subt) {
             if ($subt instanceof Tag_SearchTerm) {
                 $tsf[] = $subt->sqlexpr($sqi);
@@ -728,10 +749,11 @@ class Or_SearchTerm extends Op_SearchTerm {
             $ff[] = Tag_SearchTerm::combine_sqlexpr($tsf);
         }
         --$sqi->depth;
-        return self::orjoin_sqlexpr($ff);
+        return $ff;
     }
+
     function sqlexpr(SearchQueryInfo $sqi) {
-        return self::or_sqlexpr($this->child, $sqi);
+        return self::orjoin_sqlexpr(self::or_sqlexprs($this->child, $sqi), "false");
     }
     function test(PaperInfo $row, $rrow) {
         foreach ($this->child as $subt) {
@@ -786,22 +808,13 @@ class Xor_SearchTerm extends Op_SearchTerm {
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        $xor = true;
-        foreach ($this->child as $subt) {
-            $xor = $xor && $subt->is_sqlexpr_precise();
-        }
-        if (empty($this->child)) {
+        $ff = Or_SearchTerm::or_sqlexprs($this->child, $sqi);
+        if (empty($ff)) {
             return "false";
-        } else if ($xor) {
-            ++$sqi->depth;
-            $ff = [];
-            foreach ($this->child as $subt) {
-                $ff[] = $subt->sqlexpr($sqi);
-            }
-            --$sqi->depth;
+        } else if ($this->is_sqlexpr_precise()) {
             return "(coalesce(" . join(",0) xor coalesce(", $ff) . ",0))";
         } else {
-            return Or_SearchTerm::or_sqlexpr($this->child, $sqi);
+            return self::orjoin_sqlexpr($ff, "false");
         }
     }
     function test(PaperInfo $row, $rrow) {
@@ -1363,9 +1376,6 @@ class TextMatch_SearchTerm extends SearchTerm {
         return new TextMatch_SearchTerm($srch->user, $sword->kwdef->name, $word, $sword->quoted);
     }
 
-    function is_sqlexpr_precise() {
-        return $this->trivial && !$this->authorish;
-    }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_column($this->field, "Paper.{$this->field}");
         if ($this->trivial && !$this->authorish) {
@@ -1373,6 +1383,9 @@ class TextMatch_SearchTerm extends SearchTerm {
         } else {
             return "true";
         }
+    }
+    function is_sqlexpr_precise() {
+        return $this->trivial && !$this->authorish;
     }
     function test(PaperInfo $row, $rrow) {
         $data = $row->{$this->field};
@@ -1542,11 +1555,11 @@ class PaperID_SearchTerm extends SearchTerm {
         }
     }
 
-    function is_sqlexpr_precise() {
-        return true;
-    }
     function sqlexpr(SearchQueryInfo $sqi) {
         return $this->sql_predicate("Paper.paperId");
+    }
+    function is_sqlexpr_precise() {
+        return true;
     }
     function test(PaperInfo $row, $rrow) {
         return $this->index_of($row->paperId) !== false;
@@ -1580,7 +1593,7 @@ class SearchQueryInfo {
     /** @var PaperSearch
      * @readonly */
     public $srch;
-    /** @var array<string,mixed> */
+    /** @var array<string,?list<string>> */
     public $tables = [];
     /** @var array<string,string> */
     public $columns = [];
@@ -1598,28 +1611,42 @@ class SearchQueryInfo {
         if (!$srch->user->allow_administer_all()) {
             $this->add_reviewer_columns();
         }
+        $this->tables["Paper"] = [];
     }
-    function add_table($table, $joiner = false) {
+    /** @param string $table
+     * @param list<string> $joiner
+     * @param bool $required
+     * @return ?string */
+    function try_add_table($table, $joiner, $required = false) {
         // All added tables must match at most one Paper row each,
         // except MyReviews.
-        assert($joiner || !count($this->tables));
+        if (str_ends_with($table, "_")) {
+            $table .= count($this->tables);
+        }
         if (!isset($this->tables[$table])) {
+            if (!$required && count($this->tables) > 32) {
+                return null;
+            }
             $this->tables[$table] = $joiner;
-        } else if ($joiner && $joiner[0] === "join") {
+        } else if ($joiner[0] === "join") {
             $this->tables[$table][0] = "join";
         }
+        return $table;
+    }
+    /** @param string $table
+     * @param list<string> $joiner
+     * @return string */
+    function add_table($table, $joiner = null) {
+        return $this->try_add_table($table, $joiner, true);
     }
     function add_column($name, $expr) {
         assert(!isset($this->columns[$name]) || $this->columns[$name] === $expr);
         $this->columns[$name] = $expr;
     }
+    /** @return ?string */
     function conflict_table(Contact $user) {
         if ($user->contactXid > 0) {
-            $t = "PaperConflict{$user->contactXid}";
-            if (!isset($this->tables[$t])) {
-                $this->add_table($t, ["left join", "PaperConflict", "{$t}.contactId={$user->contactXid}"]);
-            }
-            return $t;
+            return $this->add_table("PaperConflict{$user->contactXid}", ["left join", "PaperConflict", "{}.contactId={$user->contactXid}"]);
         } else {
             return null;
         }
@@ -1945,18 +1972,6 @@ class PaperSearch extends MessageSet {
     // Transforms a search string into an expression object, possibly
     // including "and", "or", and "not" expressions (which point at other
     // expressions).
-
-    /** @param string $compar
-     * @return ?SearchTerm */
-    static function check_tautology($compar) {
-        if ($compar === "<0") {
-            return new False_SearchTerm;
-        } else if ($compar === ">=0") {
-            return new True_SearchTerm;
-        } else {
-            return null;
-        }
-    }
 
     /** @return ContactSearch */
     private function _find_contact_search($type, $word) {
@@ -2604,7 +2619,6 @@ class PaperSearch extends MessageSet {
 
     private function _prepare_result(SearchTerm $qe) {
         $sqi = new SearchQueryInfo($this);
-        $sqi->add_table("Paper");
         $sqi->add_column("paperId", "Paper.paperId");
         // always include columns needed by rights machinery
         $sqi->add_column("timeSubmitted", "Paper.timeSubmitted");
@@ -2661,16 +2675,16 @@ class PaperSearch extends MessageSet {
             if (!$value) {
                 $q .= $tabname;
             } else {
-                $joiners = array("$tabname.paperId=Paper.paperId");
+                $joiners = ["{$tabname}.paperId=Paper.paperId"];
                 for ($i = 2; $i < count($value); ++$i) {
                     if ($value[$i])
-                        $joiners[] = "(" . $value[$i] . ")";
+                        $joiners[] = "(" . str_replace("{}", $tabname, $value[$i]) . ")";
                 }
                 $q .= "\n    " . $value[0] . " " . $value[1] . " as " . $tabname
                     . " on (" . join("\n        and ", $joiners) . ")";
             }
         }
-        $q .= "\n    where $filter\n    group by Paper.paperId";
+        $q .= "\n    where {$filter}\n    group by Paper.paperId";
 
         //Conf::msg_debugt($q);
         //error_log($q);

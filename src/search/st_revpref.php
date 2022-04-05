@@ -119,24 +119,18 @@ class Revpref_SearchTerm extends SearchTerm {
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        if ($this->rpsm->preference_match
-            && $this->rpsm->preference_match->test(0)
-            && !$this->rpsm->expertise_match) {
+        if ($this->rpsm->test(0)
+            || ($this->rpsm->preference_match
+                && $this->rpsm->preference_match->test(0)
+                && !$this->rpsm->expertise_match)) {
             return "true";
+        } else {
+            $where = ["paperId=Paper.paperId", $this->rpsm->contact_match_sql("contactId")];
+            if (($match = $this->rpsm->preference_expertise_match())) {
+                $where[] = $match;
+            }
+            return "coalesce((select count(*) from PaperReviewPreference where " . join(" and ", $where) . "),0)" . $this->rpsm->comparison();
         }
-        $where = [$this->rpsm->contact_match_sql("contactId")];
-        if (($match = $this->rpsm->preference_expertise_match())) {
-            $where[] = $match;
-        }
-        $q = "select paperId, count(PaperReviewPreference.preference) as count"
-            . " from PaperReviewPreference";
-        if (count($where)) {
-            $q .= " where " . join(" and ", $where);
-        }
-        $q .= " group by paperId";
-        $thistab = "Revpref_" . count($sqi->tables);
-        $sqi->add_table($thistab, ["left join", "($q)"]);
-        return "coalesce($thistab.count,0)" . $this->rpsm->comparison();
     }
     function test(PaperInfo $row, $rrow) {
         $can_view = $this->user->can_view_preference($row, $this->rpsm->safe_contacts);

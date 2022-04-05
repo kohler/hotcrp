@@ -64,9 +64,6 @@ class PaperPDF_SearchTerm extends SearchTerm {
             return null;
         }
     }
-    function is_sqlexpr_precise() {
-        return $this->dtype === DTYPE_SUBMISSION && $this->format_problem === null;
-    }
     static function add_columns(SearchQueryInfo $sqi) {
         $sqi->add_column("paperStorageId", "Paper.paperStorageId");
         $sqi->add_column("finalPaperStorageId", "Paper.finalPaperStorageId");
@@ -93,6 +90,9 @@ class PaperPDF_SearchTerm extends SearchTerm {
             $f[] = "Paper.finalPaperStorageId" . ($this->present ? ">1" : "<=1");
         }
         return "(" . join($this->present ? " or " : " and ", $f) . ")";
+    }
+    function is_sqlexpr_precise() {
+        return $this->dtype === DTYPE_SUBMISSION && $this->format_problem === null;
     }
     function test(PaperInfo $row, $rrow) {
         $dtype = $this->dtype;
