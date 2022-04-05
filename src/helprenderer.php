@@ -198,7 +198,7 @@ class HelpRenderer extends Ht {
         return "<a href=\"{$url}\"{$rest} rel=\"nofollow\">{$html}</a>";
     }
 
-    /** @param string|array<string,string> $q
+    /** @param string|array{q:string} $q
      * @return string */
     function search_form($q, $size = 20) {
         if (is_string($q)) {
@@ -215,7 +215,7 @@ class HelpRenderer extends Ht {
         return $t . "</form>";
     }
 
-    /** @param string $q
+    /** @param string|array{q:string} $q
      * @param string $entry
      * @return string */
     function search_trow($q, $entry) {

@@ -7,7 +7,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
         $extrev_view = $sv->vstr("extrev_view");
         $Rtext = $extrev_view ? "Reviewers" : "PC reviewers";
         $rtext = $extrev_view ? "reviewers" : "PC reviewers";
-        $accept_auview = !$sv->vstr("seedec_hideau")
+        $accept_auview = $sv->vstr("seedec_showau")
             && $sv->vstr("sub_blind") != Conf::BLIND_NEVER;
         $sv->print_radio_table("seedec", [Conf::SEEDEC_ADMIN => "Only administrators",
                 Conf::SEEDEC_NCREV => "$Rtext and non-conflicted PC members",

@@ -912,11 +912,11 @@ class SettingValues extends MessageSet {
         return $x;
     }
 
-    /** @param string|Si $id
+    /** @param string|Si $name
      * @param string $class
      * @param ?array<string,mixed> $js */
-    function print_group_open($id, $class, $js = null) {
-        $si = is_string($id) ? $this->si($id) : $id;
+    function print_group_open($name, $class, $js = null) {
+        $si = is_string($name) ? $this->si($name) : $name;
         $xjs = ["class" => $class];
         if (!isset($js["no_control_class"])) {
             $xjs["class"] = $this->control_class($si->name, $xjs["class"]);
@@ -933,6 +933,9 @@ class SettingValues extends MessageSet {
         }
         if (isset($js["group_attr"])) {
             $xjs = $xjs + $js["group_attr"];
+        }
+        if (isset($js["group_id"]) && !isset($xjs["id"])) {
+            $xjs["id"] = $js["group_id"];
         }
         echo '<div', Ht::extra($xjs), '>';
     }
@@ -985,7 +988,7 @@ class SettingValues extends MessageSet {
             assert(is_array($fold_values));
         }
 
-        $this->print_group_open($name, "settings-radio", $rest + ["id" => $name]);
+        $this->print_group_open($name, "settings-radio", $rest + ["group_id" => $name]);
         if ($heading) {
             echo '<div class="settings-itemheading">', $heading, '</div>';
         }
