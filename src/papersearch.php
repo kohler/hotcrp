@@ -260,20 +260,24 @@ abstract class SearchTerm {
     function is_uninteresting() {
         return false;
     }
+
     /** @param string $k */
     final function set_float($k, $v) {
         $this->float[$k] = $v;
     }
+
     /** @param string $k */
     function get_float($k) {
         return $this->float[$k] ?? null;
     }
+
     /** @param int $pos1
      * @param int $pos2 */
     function set_strspan($pos1, $pos2) {
         $this->pos1 = $pos1;
         $this->pos2 = $pos2;
     }
+
     /** @param int $pos1
      * @param int $pos2 */
     function apply_strspan($pos1, $pos2) {
@@ -284,11 +288,17 @@ abstract class SearchTerm {
             $this->pos2 = $pos2;
         }
     }
+
     /** @param string $str */
     function set_strspan_owner($str) {
         if (!isset($this->float["strspan_owner"])) {
             $this->float["strspan_owner"] = $str;
         }
+    }
+
+    /** @return bool */
+    function merge(SearchTerm $st) {
+        return false;
     }
 
 
@@ -711,7 +721,7 @@ class Or_SearchTerm extends Op_SearchTerm {
         parent::__construct("or");
     }
     protected function _finish() {
-        $pn = null;
+        $pn = $lastqv = null;
         $newchild = [];
         foreach ($this->_flatten_children() as $qv) {
             if ($qv instanceof True_SearchTerm) {
@@ -726,8 +736,8 @@ class Or_SearchTerm extends Op_SearchTerm {
                 } else {
                     $pn->merge($qv);
                 }
-            } else {
-                $newchild[] = $qv;
+            } else if (!$lastqv || !$lastqv->merge($qv)) {
+                $newchild[] = $lastqv = $qv;
             }
         }
         return $this->_finish_combine($newchild, false);
@@ -1507,13 +1517,18 @@ class PaperID_SearchTerm extends SearchTerm {
             $this->add_drange($p1, $p0 + 1, true, false);
         }
     }
-    function merge(PaperID_SearchTerm $st) {
-        $rs = $st->r;
-        if (!$st->in_order) {
-            usort($rs, function ($a, $b) { return $a[2] - $b[2]; });
-        }
-        foreach ($rs as $r) {
-            $this->add_drange($r[0], $r[1], $r[3], $r[4]);
+    function merge(SearchTerm $st) {
+        if ($st instanceof PaperID_SearchTerm) {
+            $rs = $st->r;
+            if (!$st->in_order) {
+                usort($rs, function ($a, $b) { return $a[2] <=> $b[2]; });
+            }
+            foreach ($rs as $r) {
+                $this->add_drange($r[0], $r[1], $r[3], $r[4]);
+            }
+            return true;
+        } else {
+            return false;
         }
     }
     /** @return ?list<int> */

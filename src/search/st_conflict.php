@@ -2,7 +2,7 @@
 // search/st_conflict.php -- HotCRP helper class for searching for papers
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-class Conflict_SearchTerm extends SearchTerm {
+final class Conflict_SearchTerm extends SearchTerm {
     /** @var Contact */
     private $user;
     /** @var ContactCountMatcher */
@@ -30,6 +30,21 @@ class Conflict_SearchTerm extends SearchTerm {
             return $qr;
         } else {
             return new Conflict_SearchTerm($srch->user, $ccm, $sword->kwdef->pc_only);
+        }
+    }
+    function merge(SearchTerm $st) {
+        if ($st instanceof Conflict_SearchTerm
+            && $this->ccm->simplified_nonnegative_comparison() === ">0"
+            && $st->ccm->simplified_nonnegative_comparison() === ">0"
+            && $this->user === $st->user) {
+            foreach ($st->ccm->contact_set() as $cid) {
+                $this->ccm->add_contact($cid);
+            }
+            $this->ispc = $this->ispc && $st->ispc;
+            $this->self = $this->self && $st->self;
+            return true;
+        } else {
+            return false;
         }
     }
     function sqlexpr(SearchQueryInfo $sqi) {
