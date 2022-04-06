@@ -808,7 +808,7 @@ class DiffMatchPatch_Tester {
                 fwrite(STDERR, "\n#{$nt}\n");
                 fwrite(STDERR, "=== NO:\n$t0\n=== GOT:\n$o0\n");
                 $c1 = $differ->diff_commonPrefix($t0, $o0);
-                fwrite(STDERR, "=== NEAR {$c1}:\n" . substr($t0, $c1,100) . "\n=== GOT:\n" . substr($o0, $c1, 100) . "\n");
+                fwrite(STDERR, "=== NEAR {$c1}:\n" . substr($t0, $c1, 100) . "\n=== GOT:\n" . substr($o0, $c1, 100) . "\n");
                 assert(false);
             }
             $o1 = $differ->diff_text2($diff);
@@ -817,7 +817,7 @@ class DiffMatchPatch_Tester {
                 fwrite(STDERR, "\n#{$nt}\n");
                 fwrite(STDERR, "=== NO OUT:\n$t1\n=== GOT:\n$o1\n");
                 $c1 = $differ->diff_commonPrefix($t1, $o1);
-                fwrite(STDERR, "=== NEAR {$c1} OUT:\n" . substr($t1, $c1,100) . "\n=== GOT:\n" . substr($o1, $c1, 100) . "\n");
+                fwrite(STDERR, "=== NEAR {$c1} OUT:\n" . substr($t1, $c1, 100) . "\n=== GOT:\n" . substr($o1, $c1, 100) . "\n");
                 assert(false);
             }
         }

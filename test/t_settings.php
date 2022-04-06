@@ -32,15 +32,17 @@ class Settings_Tester {
     }
 
     function test_setting_info() {
-        $siset = $this->conf->si_set();
-        $si = $this->conf->si("sub_banal_data_0");
+        $si = $this->conf->si("format__0__spec");
         xassert_eqq($si->storage_type, Si::SI_DATA | Si::SI_SLICE);
         xassert_eqq($si->storage_name(), "sub_banal");
-        $si = $this->conf->si("sub_banal_data_4");
+        $si = $this->conf->si("format__4__spec");
         xassert_eqq($si->storage_type, Si::SI_DATA | Si::SI_SLICE);
         xassert_eqq($si->storage_name(), "sub_banal_4");
-        $si = $this->conf->si("sub_banal_m1");
-        xassert_eqq($si->group, "decisions");
+        $si = $this->conf->si("format__m1__active");
+        xassert_eqq($si->group(), "decisions");
+
+        $si = $this->conf->si("rf__1__order");
+        xassert_eqq($si->group(), "reviewform");
     }
 
     function test_message_defaults() {
@@ -196,7 +198,8 @@ class Settings_Tester {
             "decision__1__name" => "Accepted!",
             "decision__1__id" => "1",
             "decision__2__name" => "Newly accepted",
-            "decision__2__id" => "\$"
+            "decision__2__id" => "\$",
+            "decision__2__category" => "accept"
         ]);
         xassert($sv->execute());
         xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","1":"Accepted!","2":"Newly accepted","-1":"Rejected"}');
@@ -235,10 +238,24 @@ class Settings_Tester {
             "has_decision" => 1,
             "decision__1__id" => "2",
             "decision__1__name" => "Really Rejected",
-            "decision__1__name_force" => "1"
+            "decision__1__name_force" => "1",
+            "decision__2__id" => "\$",
+            "decision__2__name" => "Whatever",
+            "decision__2__category" => "reject"
         ]);
         xassert($sv->execute());
-        xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","2":"Really Rejected","-1":"Rejected"}');
+        xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","2":"Really Rejected","-1":"Rejected","-2":"Whatever"}');
+
+        // not change name => no need to override conflict
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_decision" => 1,
+            "decision__1__id" => "2",
+            "decision__1__name" => "Really Rejected",
+            "decision__2__id" => "-2",
+            "decision__2__name" => "Well I dunno"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","2":"Really Rejected","-1":"Rejected","-2":"Well I dunno"}');
 
         // missing name => error
         $sv = SettingValues::make_request($this->u_chair, [
@@ -253,7 +270,9 @@ class Settings_Tester {
             "decision__1__id" => "\$",
             "decision__1__name" => "Accepted",
             "decision__2__id" => "2",
-            "decision__2__delete" => "1"
+            "decision__2__delete" => "1",
+            "decision__3__id" => "-2",
+            "decision__3__delete" => "1"
         ]);
         xassert($sv->execute());
         xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');

@@ -9,11 +9,12 @@ class Decisions_SettingParser extends SettingParser {
         if (is_numeric($did)
             && ($dnum = intval($did)) !== 0
             && ($dname = ($sv->conf->decision_map())[$dnum] ?? null)) {
-            $v = (object) ["id" => $dnum, "name" => $dname, "category" => $dnum > 0 ? "a" : "r"];
+            $category = $dnum > 0 ? "accept" : "reject";
+            $v = ["id" => $dnum, "name" => $dname, "category" => $category];
         } else {
-            $v = (object) ["id" => null, "name" => "", "category" => "a"];
+            $v = ["id" => null, "name" => "", "category" => "accept"];
         }
-        $sv->set_oldv($si, $v);
+        $sv->set_oldv($si, (object) $v);
     }
 
     function prepare_enumeration(SettingValues $sv, Si $si) {
@@ -47,8 +48,8 @@ class Decisions_SettingParser extends SettingParser {
         $class = $sv->vstr("decision__{$ctr}__category");
         if ($isnew) {
             echo Ht::select("decision__{$ctr}__category",
-                    ["a" => "Accept category", "r" => "Reject category"], $class,
-                    $sv->sjs("decision__{$ctr}__category", ["data-default-value" => "a"]));
+                    ["accept" => "Accept category", "reject" => "Reject category"], $class,
+                    $sv->sjs("decision__{$ctr}__category", ["data-default-value" => "accept"]));
         } else {
             echo $class === "a" ? "<span class=\"pstat_decyes\">Accept</span> category" : "<span class=\"pstat_decno\">Reject</span> category";
             if ($count) {
@@ -101,9 +102,9 @@ class Decisions_SettingParser extends SettingParser {
                 $sv->error_at("decision__{$ctr}__name", "<0>{$error}");
             }
             if (!$sv->reqstr("decision__{$ctr}__name_force")
-                && stripos($dsr->name, $dsr->category === "a" ? "reject" : "accept") !== false) {
-                $n1 = $dsr->category === "a" ? "An Accept" : "A Reject";
-                $n2 = $dsr->category === "a" ? "reject" : "accept";
+                && stripos($dsr->name, $dsr->category === "accept" ? "reject" : "accept") !== false) {
+                $n1 = $dsr->category === "accept" ? "An Accept" : "A Reject";
+                $n2 = $dsr->category === "accept" ? "reject" : "accept";
                 $sv->error_at("decision__{$ctr}__name", "<0>{$n1}-category decision has “{$n2}” in its name");
                 $sv->inform_at("decision__{$ctr}__name", "<0>Either change the decision name or category or check the “Confirm” box to save anyway.");
                 $sv->error_at("decision__{$ctr}__category");
@@ -131,7 +132,7 @@ class Decisions_SettingParser extends SettingParser {
         // name reuse, new ids
         foreach ($djs as $dj) {
             if ($dj->id === null) {
-                $idstep = $dj->id = $dj->category === "a" ? 1 : -1;
+                $idstep = $dj->id = $dj->category === "accept" ? 1 : -1;
                 while (isset($hasid[$dj->id])) {
                     $dj->id += $idstep;
                 }
@@ -143,7 +144,7 @@ class Decisions_SettingParser extends SettingParser {
         $collator = $sv->conf->collator();
         usort($djs, function ($a, $b) use ($collator) {
             if ($a->category !== $b->category) {
-                return $a->category === "a" ? -1 : 1;
+                return $a->category === "accept" ? -1 : 1;
             } else {
                 return $collator->compare($a->name, $b->name);
             }

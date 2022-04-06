@@ -2029,7 +2029,8 @@ class Conf {
             $r->active = $active;
             $r->done = $rrj->done ?? 0;
             $r->grace = $rrj->grace ?? 0;
-            $r->open = $rrj->open ?? ($r->done && $r->done + $r->grace >= self::$now ? 1 : 0);
+            $r->open = $rrj->open
+                ?? ($r->done && $r->done + $r->grace >= self::$now ? 1 : 0);
             $r->words = $rrj->words ?? 500;
             if (isset($rrj->condition)) {
                 $r->search = new PaperSearch($this->root_user(), $rrj->condition);

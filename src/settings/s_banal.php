@@ -2,43 +2,42 @@
 // settings/s_banal.php -- HotCRP settings > submission form page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-class Banal_SettingRenderer {
-    /** @param string $suffix
+class Banal_SettingParser extends SettingParser {
+    /** @param string $ctr
      * @param SettingValues $sv */
-    static function print($suffix, $sv) {
-        $cfs = new FormatSpec($sv->oldv("sub_banal_opt_{$suffix}"),
-                              $sv->oldv("sub_banal_data_{$suffix}"));
+    static function print($ctr, $sv) {
+        $cfs = new FormatSpec($sv->oldv("format__{$ctr}__spec_options"),
+                              $sv->oldv("format__{$ctr}__spec"));
         foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight", "unlimitedref", "wordlimit"] as $k) {
-            $sv->set_oldv("sub_banal_{$k}_{$suffix}", $cfs->unparse_key($k));
+            $sv->set_oldv("format__{$ctr}__{$k}", $cfs->unparse_key($k));
         }
 
-        $open = $sv->vstr("sub_banal_val_{$suffix}") > 0;
-        $uropen = !in_array($sv->vstr("sub_banal_pagelimit_{$suffix}"), ["", "any", "N/A"]);
-        $editable = $sv->editable("sub_banal_{$suffix}");
-        echo Ht::hidden("has_sub_banal_{$suffix}", 1);
-        $sv->print_checkbox("sub_banal_val_{$suffix}", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "form-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
+        $open = $sv->vstr("format__{$ctr}__active") > 0;
+        $uropen = !in_array($sv->vstr("format__{$ctr}__pagelimit"), ["", "any", "N/A"]);
+        $editable = $sv->editable("format__{$ctr}");
+        echo Ht::hidden("has_format__{$ctr}", 1);
+        $sv->print_checkbox("format__{$ctr}__active", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "form-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
         echo '<div class="f-mcol mt-3 fx"><div class="flex-grow-0">';
-        $sv->print_entry_group("sub_banal_papersize_{$suffix}", "Paper size", ["horizontal" => true, "readonly" => !$editable], "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>");
-        $sv->print_entry_group("sub_banal_textblock_{$suffix}", "Text block", ["horizontal" => true, "readonly" => !$editable], "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
-        $sv->print_entry_group("sub_banal_columns_{$suffix}", "Columns", ["horizontal" => true, "readonly" => !$editable]);
+        $sv->print_entry_group("format__{$ctr}__papersize", "Paper size", ["horizontal" => true, "readonly" => !$editable], "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>");
+        $sv->print_entry_group("format__{$ctr}__textblock", "Text block", ["horizontal" => true, "readonly" => !$editable], "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
+        $sv->print_entry_group("format__{$ctr}__columns", "Columns", ["horizontal" => true, "readonly" => !$editable]);
         echo '</div>';
         echo '<div class="flex-grow-0">';
-        $sv->print_entry_group("sub_banal_pagelimit_{$suffix}", "Page limit", ["horizontal" => true, "class" => "uii uich js-settings-banal-pagelimit", "readonly" => !$editable]);
+        $sv->print_entry_group("format__{$ctr}__pagelimit", "Page limit", ["horizontal" => true, "class" => "uii uich js-settings-banal-pagelimit", "readonly" => !$editable]);
         echo '<div class="entryi fx2"><label></label><div class="entry settings-banal-unlimitedref">';
-        $sv->print_checkbox("sub_banal_unlimitedref_{$suffix}", "Unlimited reference pages", ["disabled" => !$uropen || !$editable, "label_class" => $uropen ? null : "dim"]);
+        $sv->print_checkbox("format__{$ctr}__unlimitedref", "Unlimited reference pages", ["disabled" => !$uropen || !$editable, "label_class" => $uropen ? null : "dim"]);
         echo '</div></div>';
         if ($sv->conf->opt("allowBanalWordlimit")) {
-            $sv->print_entry_group("sub_banal_wordlimit_{$suffix}", "Word limit", ["horizontal" => true, "readonly" => !$editable]);
+            $sv->print_entry_group("format__{$ctr}__wordlimit", "Word limit", ["horizontal" => true, "readonly" => !$editable]);
         }
-        $sv->print_entry_group("sub_banal_bodyfontsize_{$suffix}", "Body font size", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
-        $sv->print_entry_group("sub_banal_bodylineheight_{$suffix}", "Line height", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
+        $sv->print_entry_group("format__{$ctr}__bodyfontsize", "Body font size", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
+        $sv->print_entry_group("format__{$ctr}__bodylineheight", "Line height", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
         echo "</div></div></div>\n";
     }
-}
 
-class Banal_SettingParser extends SettingParser {
+
     function apply_req(SettingValues $sv, Si $si) {
-        assert($si->part0 === "sub_banal_");
+        assert($si->part0 === "format__");
         self::parse($si->part1, $sv, true);
         return true;
     }
@@ -89,10 +88,10 @@ class Banal_SettingParser extends SettingParser {
         return $s === "" || strcasecmp($s, "any") === 0 || strcasecmp($s, "N/A") === 0;
     }
 
-    /** @param string $suffix
+    /** @param string $ctr
      * @param SettingValues $sv
      * @return bool */
-    static function parse($suffix, $sv, $check) {
+    static function parse($ctr, $sv, $check) {
         // BANAL SETTINGS
         // option: extra settings
         // value: 0: off, no setting
@@ -100,26 +99,26 @@ class Banal_SettingParser extends SettingParser {
         //    >0: time setting was last changed
         // data: setting
 
-        if (!$sv->reqstr("sub_banal_val_{$suffix}")) {
-            $fs = new FormatSpec($sv->newv("sub_banal_opt_{$suffix}"));
-            $sv->save("sub_banal_val_{$suffix}", $fs->is_banal_empty() ? 0 : -1);
+        if (!$sv->reqstr("format__{$ctr}__active")) {
+            $fs = new FormatSpec($sv->newv("format__{$ctr}__spec_options"));
+            $sv->save("format__{$ctr}__active", $fs->is_banal_empty() ? 0 : -1);
             return false;
         }
 
         // check banal subsettings
         $problem = false;
-        $cfs = new FormatSpec($sv->oldv("sub_banal_data_{$suffix}"));
+        $cfs = new FormatSpec($sv->oldv("format__{$ctr}__spec"));
         $old_unparse = $cfs->unparse_banal();
-        if ($sv->has_req("sub_banal_papersize_{$suffix}")) {
+        if ($sv->has_req("format__{$ctr}__papersize")) {
             $cfs->papersize = [];
-            $s = trim($sv->reqstr("sub_banal_papersize_{$suffix}"));
+            $s = trim($sv->reqstr("format__{$ctr}__papersize"));
             if (!self::is_any_str($s)) {
                 $ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
                 foreach ($ses as $ss) {
                     if ($ss !== "" && ($d = FormatSpec::parse_dimen2($ss))) {
                         $cfs->papersize[] = $d;
                     } else if ($ss !== "") {
-                        $sv->error_at("sub_banal_papersize_{$suffix}", "<0>Invalid paper size");
+                        $sv->error_at("format__{$ctr}__papersize", "<0>Invalid paper size");
                         $problem = true;
                         $sout = null;
                         break;
@@ -128,9 +127,9 @@ class Banal_SettingParser extends SettingParser {
             }
         }
 
-        if ($sv->has_req("sub_banal_pagelimit_{$suffix}")) {
+        if ($sv->has_req("format__{$ctr}__pagelimit")) {
             $cfs->pagelimit = null;
-            $s = trim($sv->reqstr("sub_banal_pagelimit_{$suffix}"));
+            $s = trim($sv->reqstr("format__{$ctr}__pagelimit"));
             if (!self::is_any_str($s)) {
                 if (($sx = cvtint($s, -1)) > 0) {
                     $cfs->pagelimit = [0, $sx];
@@ -138,23 +137,23 @@ class Banal_SettingParser extends SettingParser {
                            && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2]) {
                     $cfs->pagelimit = [+$m[1], +$m[2]];
                 } else {
-                    $sv->error_at("sub_banal_pagelimit_{$suffix}", "<5>Requires a whole number greater than 0, or a page range such as <code>2-4</code>");
+                    $sv->error_at("format__{$ctr}__pagelimit", "<5>Requires a whole number greater than 0, or a page range such as <code>2-4</code>");
                     $problem = true;
                 }
             }
         }
 
-        if ($sv->has_req("sub_banal_unlimitedref_{$suffix}")) {
+        if ($sv->has_req("format__{$ctr}__unlimitedref")) {
             $cfs->unlimitedref = null;
             if ($cfs->pagelimit
-                && trim($sv->reqstr("sub_banal_unlimitedref_{$suffix}")) !== "") {
+                && trim($sv->reqstr("format__{$ctr}__unlimitedref")) !== "") {
                 $cfs->unlimitedref = true;
             }
         }
 
-        if ($sv->has_req("sub_banal_wordlimit_{$suffix}")) {
+        if ($sv->has_req("format__{$ctr}__wordlimit")) {
             $cfs->wordlimit = null;
-            $s = trim($sv->reqstr("sub_banal_wordlimit_{$suffix}"));
+            $s = trim($sv->reqstr("format__{$ctr}__wordlimit"));
             if (!self::is_any_str($s)) {
                 if (($sx = cvtint($s, -1)) >= 0) {
                     $cfs->wordlimit = [0, $sx];
@@ -162,35 +161,35 @@ class Banal_SettingParser extends SettingParser {
                            && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2]) {
                     $cfs->wordlimit = [+$m[1], +$m[2]];
                 } else {
-                    $sv->error_at("sub_banal_wordlimit_{$suffix}", "<5>Requires a whole number or a range such as <code>2-4</code>");
+                    $sv->error_at("format__{$ctr}__wordlimit", "<5>Requires a whole number or a range such as <code>2-4</code>");
                     $problem = true;
                 }
             }
         }
 
-        if ($sv->has_req("sub_banal_columns_{$suffix}")) {
+        if ($sv->has_req("format__{$ctr}__columns")) {
             $cfs->columns = 0;
-            $s = trim($sv->reqstr("sub_banal_columns_{$suffix}"));
+            $s = trim($sv->reqstr("format__{$ctr}__columns"));
             if (!self::is_any_str($s)) {
                 if (($sx = cvtint($s, -1)) >= 0) {
                     $cfs->columns = $sx;
                 } else {
-                    $sv->error_at("sub_banal_columns_{$suffix}", "<0>Requires a whole number");
+                    $sv->error_at("format__{$ctr}__columns", "<0>Requires a whole number");
                     $problem = true;
                 }
             }
         }
 
-        if ($sv->has_req("sub_banal_textblock_{$suffix}")) {
+        if ($sv->has_req("format__{$ctr}__textblock")) {
             $cfs->textblock = null;
-            $s = trim($sv->reqstr("sub_banal_textblock_{$suffix}"));
+            $s = trim($sv->reqstr("format__{$ctr}__textblock"));
             if (!self::is_any_str($s)) {
                 // change margin specifications into text block measurements
                 if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
                     $s = $m[1];
                     if (!$cfs->papersize || count($cfs->papersize) !== 1) {
-                        $sv->error_at("sub_banal_papersize_{$suffix}", "<0>You must specify a paper size as well as margins");
-                        $sv->error_at("sub_banal_textblock_{$suffix}");
+                        $sv->error_at("format__{$ctr}__papersize", "<0>You must specify a paper size as well as margins");
+                        $sv->error_at("format__{$ctr}__textblock");
                         $problem = true;
                     } else {
                         $ps = $cfs->papersize[0];
@@ -202,7 +201,7 @@ class Banal_SettingParser extends SettingParser {
                         }
                         if (!($m = FormatSpec::parse_dimen($s))
                             || (is_array($m) && count($m) > 4)) {
-                            $sv->error_at("sub_banal_textblock_{$suffix}", "<0>Invalid margin definition");
+                            $sv->error_at("format__{$ctr}__textblock", "<0>Invalid margin definition");
                             $problem = true;
                             $s = "";
                         } else if (!is_array($m)) {
@@ -221,31 +220,31 @@ class Banal_SettingParser extends SettingParser {
                 if ($s && ($s = FormatSpec::parse_dimen2($s))) {
                     $cfs->textblock = $s;
                 } else {
-                    $sv->error_at("sub_banal_textblock_{$suffix}", "<0>Invalid text block definition");
+                    $sv->error_at("format__{$ctr}__textblock", "<0>Invalid text block definition");
                     $problem = true;
                 }
             }
         }
 
-        if ($sv->has_req("sub_banal_bodyfontsize_{$suffix}")) {
+        if ($sv->has_req("format__{$ctr}__bodyfontsize")) {
             $cfs->bodyfontsize = null;
-            $s = trim($sv->reqstr("sub_banal_bodyfontsize_{$suffix}"));
+            $s = trim($sv->reqstr("format__{$ctr}__bodyfontsize"));
             if (!self::is_any_str($s)) {
                 $cfs->bodyfontsize = FormatSpec::parse_range($s);
                 if (!$cfs->bodyfontsize) {
-                    $sv->error_at("sub_banal_bodyfontsize_{$suffix}", "<0>Requires a number greater than 0");
+                    $sv->error_at("format__{$ctr}__bodyfontsize", "<0>Requires a number greater than 0");
                     $problem = true;
                 }
             }
         }
 
-        if ($sv->has_req("sub_banal_bodylineheight_{$suffix}")) {
+        if ($sv->has_req("format__{$ctr}__bodylineheight")) {
             $cfs->bodylineheight = null;
-            $s = trim($sv->reqstr("sub_banal_bodylineheight_{$suffix}"));
+            $s = trim($sv->reqstr("format__{$ctr}__bodylineheight"));
             if (!self::is_any_str($s)) {
                 $cfs->bodylineheight = FormatSpec::parse_range($s);
                 if (!$cfs->bodylineheight) {
-                    $sv->error_at("sub_banal_bodylineheight_{$suffix}", "<0>Requires a number greater than 0");
+                    $sv->error_at("format__{$ctr}__bodylineheight", "<0>Requires a number greater than 0");
                     $problem = true;
                 }
             }
@@ -258,28 +257,28 @@ class Banal_SettingParser extends SettingParser {
             self::check_banal($sv);
         }
 
-        $opt_spec = new FormatSpec($sv->newv("sub_banal_opt_{$suffix}"));
+        $opt_spec = new FormatSpec($sv->newv("format__{$ctr}__spec_options"));
         $opt_unparse = $opt_spec->unparse_banal();
         $unparse = $cfs->unparse();
         if ($unparse === $opt_unparse) {
             $unparse = "";
         }
-        $sv->save("sub_banal_data_{$suffix}", $unparse);
-        if ($unparse === "" && $sv->reqstr("sub_banal_val_{$suffix}")) {
-            $sv->warning_at("sub_banal_val_{$suffix}", "<0>The format checker does nothing unless at least one constraint is enabled");
+        $sv->save("format__{$ctr}__spec", $unparse);
+        if ($unparse === "" && $sv->reqstr("format__{$ctr}__active")) {
+            $sv->warning_at("format__{$ctr}__active", "<0>The format checker does nothing unless at least one constraint is enabled");
         }
-        if ($old_unparse !== $unparse || $sv->oldv("sub_banal_val_{$suffix}") <= 0) {
-            $sv->save("sub_banal_val_{$suffix}", $unparse !== "" ? Conf::$now : 0);
+        if ($old_unparse !== $unparse || $sv->oldv("format__{$ctr}__active") <= 0) {
+            $sv->save("format__{$ctr}__active", $unparse !== "" ? Conf::$now : 0);
         } else {
-            $sv->save("sub_banal_val_{$suffix}", $unparse === "" ? 0 : $sv->oldv("sub_banal_val_{$suffix}"));
+            $sv->save("format__{$ctr}__active", $unparse === "" ? 0 : $sv->oldv("format__{$ctr}__active"));
         }
 
-        if ($suffix === "0"
-            && !$sv->oldv("sub_banal_val_m1")
-            && !$sv->has_req("sub_banal_m1")) {
-            $m1spec = new FormatSpec($sv->oldv("sub_banal_opt_m1"));
+        if ($ctr === "0"
+            && !$sv->oldv("format__m1__active")
+            && !$sv->has_req("format__m1")) {
+            $m1spec = new FormatSpec($sv->oldv("format__m1__spec_options"));
             if ($m1spec->is_banal_empty()) {
-                $sv->save("sub_banal_data_m1", $unparse);
+                $sv->save("format__m1__spec", $unparse);
             }
         }
 

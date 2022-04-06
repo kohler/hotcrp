@@ -56,7 +56,7 @@ class SiteLoader {
         "_searchterm.php" => ["st_", "src/search"],
         "_settingrenderer.php" => ["s_", "src/settings"],
         "_settingparser.php" => ["s_", "src/settings"],
-        "_sitype.php" => ["s_", "src/settings"],
+        "_sitype.php" => ["si_", "src/settings"],
         "_tester.php" => ["t_", "test"],
         "_userinfo.php" => ["u_", "src/userinfo"]
     ];

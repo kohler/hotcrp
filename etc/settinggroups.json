@@ -6,17 +6,30 @@
     {
         "name": "basics/names", "order": 10,
         "print_function": "Basics_SettingParser::print_names",
-        "title": "Conference information"
+        "title": "Conference information",
+        "settings": [
+            "conference_abbreviation",
+            "conference_name",
+            "conference_url"
+        ]
     },
     {
         "name": "basics/site-contact", "order": 20,
         "print_function": "SiteContact_SettingParser::print_site_contact",
-        "title": "Site contact"
+        "title": "Site contact",
+        "settings": [
+            "site_contact_name",
+            "site_contact_email"
+        ]
     },
     {
         "name": "basics/email", "order": 30,
         "print_function": "Basics_SettingParser::print_email",
-        "title": "Email configuration"
+        "title": "Email configuration",
+        "settings": [
+            "email_default_cc",
+            "email_default_reply_to"
+        ]
     },
 
 
@@ -36,11 +49,21 @@
     {   "name": "msg", "alias": "messages"   },
     {
         "name": "messages/submissions", "order": 100,
-        "print_function": "Messages_SettingParser::print_submissions"
+        "print_function": "Messages_SettingParser::print_submissions",
+        "settings": [
+            "home_message",
+            "submission_terms",
+            "submission_edit_message"
+        ]
     },
     {
         "name": "messages/reviews", "order": 200,
-        "print_function": "Messages_SettingParser::print_reviews"
+        "print_function": "Messages_SettingParser::print_reviews",
+        "settings": [
+            "review_terms",
+            "conflict_description",
+            "preference_instructions"
+        ]
     },
 
 
@@ -55,30 +78,36 @@
     {
         "name": "submissions/open", "order": 10,
         "print_separator": true,
-        "print_function": "Submissions_SettingRenderer::print_open"
+        "print_function": "Submissions_SettingRenderer::print_open",
+        "settings": ["sub_open"]
     },
     {
         "name": "submissions/deadlines", "order": 20,
         "print_separator": true,
-        "print_function": "Submissions_SettingRenderer::print_deadlines"
+        "print_function": "Submissions_SettingRenderer::print_deadlines",
+        "settings": ["sub_reg", "sub_sub", "sub_grace"]
     },
     {
         "name": "submissions/updates", "order": 30,
-        "print_function": "Submissions_SettingRenderer::print_updates"
+        "print_function": "Submissions_SettingRenderer::print_updates",
+        "settings": ["sub_freeze"]
     },
     {
         "name": "submissions/blind", "order": 40,
         "print_function": "Submissions_SettingRenderer::print_blind",
-        "title": "Reviewer visibility"
+        "title": "Reviewer visibility",
+        "settings": ["sub_blind"]
     },
     {
         "name": "submissions/pcseeall", "order": 50,
         "print_separator": true,
-        "print_function": "Submissions_SettingRenderer::print_pcseeall"
+        "print_function": "Submissions_SettingRenderer::print_pcseeall",
+        "settings": ["pc_seeall"]
     },
     {
         "name": "submissions/pcseeallpdf", "order": 51,
-        "print_function": "Submissions_SettingRenderer::print_pcseeallpdf"
+        "print_function": "Submissions_SettingRenderer::print_pcseeallpdf",
+        "settings": ["pc_seeallpdf"]
     },
 
 
@@ -88,17 +117,20 @@
     {
         "name": "subform/abstract", "order": 10,
         "title": "Abstract and PDF",
-        "print_function": "SubForm_SettingRenderer::print_abstract"
+        "print_function": "SubForm_SettingRenderer::print_abstract",
+        "settings": ["sub_noabstract", "sub_nopapers"]
     },
     {
         "name": "subform/conflicts", "order": 20,
         "title": "Conflicts and collaborators",
-        "print_function": "SubForm_SettingRenderer::print_conflicts"
+        "print_function": "SubForm_SettingRenderer::print_conflicts",
+        "settings": ["sub_pcconf", "sub_pcconfsel", "sub_collab", "conflict_description", "sub_pcconfvis"]
     },
     {
         "name": "options", "group": "subform", "order": 440,
         "title": "Submission fields",
-        "print_function": "*Options_SettingRenderer::print"
+        "print_function": "*Options_SettingRenderer::print",
+        "settings": ["sf__$"]
     },
     {   "name": "opt", "alias": "options"   },
     {
@@ -125,7 +157,8 @@
     {
         "name": "topics", "group": "subform", "order": 480,
         "title": "Topics", "hashid": "topics",
-        "print_function": "Topics_SettingParser::print"
+        "print_function": "Topics_SettingParser::print",
+        "settings": ["topic__$"]
     },
 
 
@@ -140,7 +173,8 @@
     },
     {
         "name": "reviews/main", "order": 10,
-        "print_function": "Reviews_SettingRenderer::print"
+        "print_function": "Reviews_SettingRenderer::print",
+        "settings": ["rev_open", "cmt_always", "rev_blind"]
     },
     {
         "name": "reviews/rounds", "order": 20,
@@ -150,20 +184,40 @@
     {
         "name": "reviews/pc-reviews", "order": 30,
         "title": "PC reviews",
-        "print_function": "Reviews_SettingRenderer::print_pc"
+        "print_function": "Reviews_SettingRenderer::print_pc",
+        "settings": [
+            "pcrev_any",
+            "pc_seeblindrev",
+            "pc_seeallrev",
+            "lead_seerev",
+            "cmt_revid"
+        ]
     },
     {
         "name": "reviews/external", "order": 40,
         "title": "External reviews",
         "print_group": true
     },
-    [   "reviews/external/editdelegate", 10, "Reviews_SettingRenderer::print_extrev_editdelegate"   ],
-    [   "reviews/external/requestmail", 15, "Reviews_SettingRenderer::print_extrev_requestmail"   ],
-    [   "reviews/external/view", 20, "Reviews_SettingRenderer::print_extrev_view"   ],
+    {
+        "name": "reviews/external/editdelegate", "order": 10,
+        "print_function": "Reviews_SettingRenderer::print_extrev_editdelegate",
+        "settings": ["extrev_chairreq", "pcrev_editdelegate"]
+    },
+    {
+        "name": "reviews/external/requestmail", "order": 15,
+        "print_function": "Reviews_SettingRenderer::print_extrev_requestmail",
+        "settings": ["mailbody_requestreview"]
+    },
+    {
+        "name": "reviews/external/view", "order": 20,
+        "print_function": "Reviews_SettingRenderer::print_extrev_view",
+        "settings": ["extrev_view"]
+    },
     {
         "name": "reviews/ratings", "order": 50,
         "title": "Review ratings",
-        "print_function": "Reviews_SettingRenderer::print_ratings"
+        "print_function": "Reviews_SettingRenderer::print_ratings",
+        "settings": ["rev_ratings"]
     },
 
 
@@ -172,7 +226,8 @@
     },
     {
         "name": "reviewform/main", "order": 10,
-        "print_function": "ReviewForm_SettingParser::print"
+        "print_function": "ReviewForm_SettingParser::print",
+        "settings": ["rf__$"]
     },
     {   "name": "rfo", "alias": "reviewform"   },
     {
@@ -199,25 +254,51 @@
         "name": "__crosscheck/tags", "order": 700,
         "crosscheck_function": "Tags_SettingParser::crosscheck"
     },
-    [   "tags/main/chair", 10, "Tags_SettingRenderer::print_tag_chair"   ],
-    [   "tags/main/sitewide", 20, "Tags_SettingRenderer::print_tag_sitewide"   ],
-    [   "tags/main/approval", 30, "Tags_SettingRenderer::print_tag_approval"   ],
-    [   "tags/main/vote", 40, "Tags_SettingRenderer::print_tag_vote"   ],
-    [   "tags/main/rank", 50, "Tags_SettingRenderer::print_tag_rank"   ],
+    {
+        "name": "tags/main/chair", "order": 10,
+        "print_function": "Tags_SettingRenderer::print_tag_chair",
+        "settings": ["tag_chair"]
+    },
+    {
+        "name": "tags/main/sitewide", "order": 20,
+        "print_function": "Tags_SettingRenderer::print_tag_sitewide",
+        "settings": ["tag_sitewide"]
+    },
+    {
+        "name": "tags/main/approval", "order": 30,
+        "print_function": "Tags_SettingRenderer::print_tag_approval",
+        "settings": ["tag_approval"]
+    },
+    {
+        "name": "tags/main/vote", "order": 40,
+        "print_function": "Tags_SettingRenderer::print_tag_vote",
+        "settings": ["tag_vote"]
+    },
+    {
+        "name": "tags/main/rank", "order": 50,
+        "print_function": "Tags_SettingRenderer::print_tag_rank",
+        "settings": ["tag_rank"]
+    },
     {
         "name": "tags/visibility", "order": 100,
         "print_separator": true, "print_group": true
     },
-    [   "tags/visibility/seeall", 10, "Tags_SettingRenderer::print_tag_seeall"   ],
+    {
+        "name": "tags/visibility/seeall", "order": 10,
+        "print_function": "Tags_SettingRenderer::print_tag_seeall",
+        "settings": ["tag_seeall"]
+    },
     {
         "name": "tagstyles", "group": "tags", "order": 720,
         "title": "Colors and styles", "hashid": "colors-and-styles",
-        "print_function": "Tags_SettingRenderer::print_styles"
+        "print_function": "Tags_SettingRenderer::print_styles",
+        "settings": ["tag_color_$"]
     },
     {
         "name": "tracks", "group": "tags", "order": 750,
         "print_function": "*Tracks_SettingParser::print",
-        "title": "Tracks", "hashid": "tracks"
+        "title": "Tracks", "hashid": "tracks",
+        "settings": ["track__$"]
     },
     {
         "name": "__crosscheck/tracks", "order": 750,
@@ -242,7 +323,8 @@
     {
         "name": "decisions/responses", "order": 10,
         "title": "Responses",
-        "print_function": "*Responses_SettingParser::print"
+        "print_function": "*Responses_SettingParser::print",
+        "settings": ["response_active", "response__$"]
     },
     {   "name": "responses", "alias": "decisions/responses"   },
     [   "responses/properties/name", 10, "*Responses_SettingParser::print_name"   ],
@@ -256,12 +338,14 @@
     {
         "name": "decisions/review-visibility", "order": 100,
         "title": "Review visibility",
-        "print_function": "ReviewVisibility_SettingParser::print_review_author_visibility"
+        "print_function": "ReviewVisibility_SettingParser::print_review_author_visibility",
+        "settings": ["au_seerev", "tag_au_seerev"]
     },
     {
         "name": "decisions/author-exchange-comments", "order": 120,
         "print_separator": true,
-        "print_function": "ReviewVisibility_SettingParser::print_author_exchange_comments"
+        "print_function": "ReviewVisibility_SettingParser::print_author_exchange_comments",
+        "settings": ["cmt_author"]
     },
     {
         "name": "__crosscheck/review-visibility", "order": 800,
@@ -273,12 +357,14 @@
     },
     {
         "name": "shepherds/identity", "order": 10,
-        "print_function": "Shepherds_SettingParser::print_identity"
+        "print_function": "Shepherds_SettingParser::print_identity",
+        "settings": ["shepherd_show"]
     },
     {
         "name": "decisions/decision-visibility", "order": 300,
         "title": "Decision visibility",
-        "print_function": "DecisionVisibility_SettingParser::print"
+        "print_function": "DecisionVisibility_SettingParser::print",
+        "settings": ["seedec"]
     },
     {
         "name": "__crosscheck/decision-visibility", "order": 805,
@@ -287,7 +373,8 @@
     {
         "name": "decisions/decision-types", "order": 400,
         "title": "Decision types",
-        "print_function": "Decisions_SettingParser::print"
+        "print_function": "Decisions_SettingParser::print",
+        "settings": ["decision__$"]
     },
     {
         "name": "decisions/final-versions", "order": 500,
@@ -295,7 +382,15 @@
     },
     {
         "name": "decisions/final-versions-body", "order": 505,
-        "print_function": "FinalVersions_SettingParser::print"
+        "print_function": "FinalVersions_SettingParser::print",
+        "settings": [
+            "final_open",
+            "final_soft",
+            "final_done",
+            "final_grace",
+            "final_edit_message",
+            "format__m1"
+        ]
     },
     {
         "name": "__crosscheck/final-versions-body", "order": 810,

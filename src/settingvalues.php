@@ -276,8 +276,15 @@ class SettingValues extends MessageSet {
 
     /** @param string $title
      * @param ?string $hashid */
+    function print_start_section($title, $hashid = null) {
+        $this->cs()->print_start_section($title, $hashid);
+    }
+
+    /** @param string $title
+     * @param ?string $hashid */
     function print_section($title, $hashid = null) {
-        $this->cs()->print_section($title, $hashid);
+        // XXX should deprecate
+        $this->print_start_section($title, $hashid);
     }
 
 
@@ -422,11 +429,11 @@ class SettingValues extends MessageSet {
         if (!$si) {
             return false;
         } else {
-            assert(!!$si->group);
+            $group = $si->group();
             $perm = $this->all_perm;
             if ($this->perm !== null) {
                 for ($i = 0; $i !== count($this->perm); $i += 2) {
-                    if ($si->group === $this->perm[$i]
+                    if ($group === $this->perm[$i]
                         || ($si->tags !== null && in_array($this->perm[$i], $si->tags, true))) {
                         if ($this->perm[$i + 1]) {
                             $perm = true;
@@ -815,8 +822,9 @@ class SettingValues extends MessageSet {
         if (!$this->canonical_page) {
             return true;
         } else if (($si = is_string($id) ? $this->conf->si($id) : $id)) {
-            return !$si->group
-                || $si->group === $this->canonical_page
+            $group = $si->group();
+            return !$group
+                || $group === $this->canonical_page
                 || (isset($si->tags) && in_array($this->canonical_page, $si->tags))
                 || array_key_exists($si->storage_name(), $this->_savedv);
         } else {
@@ -1118,9 +1126,6 @@ class SettingValues extends MessageSet {
      * @param ?array<string,mixed> $js
      * @param string $hint */
     function print_select_group($name, $description, $values, $js = null, $hint = "") {
-        if (is_array($description)) { /* XXX backward compat */
-            $tmp = $description; $description = $values; $values = $tmp;
-        }
         $this->print_control_group($name, $description,
             $this->select($name, $values, $js),
             $js, $hint);

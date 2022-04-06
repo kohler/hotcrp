@@ -32,7 +32,9 @@ class Si {
     /** @var ?string */
     public $title_pattern;
     /** @var ?string */
-    public $group;
+    private $group;
+    /** @var bool */
+    private $_has_group = false;
     /** @var ?list<string> */
     public $tags;
     /** @var null|int|float */
@@ -161,16 +163,11 @@ class Si {
                 trigger_error("setting {$j->name}.default_value format error");
             }
         }
-        if (!$this->group && !$this->internal) {
-            trigger_error("setting {$j->name}.group missing");
-        }
 
-        if (!$this->type && $this->parser_class) {
-            $this->type = "special";
-        } else if ((!$this->type && !$this->internal) || $this->type === "none") {
-            trigger_error("setting {$j->name}.type missing");
+        if ($this->type) {
+            $this->_tclass = Sitype::get($conf, $this->type, $this->subtype);
         }
-        if (($this->_tclass = Sitype::get($conf, $this->type, $this->subtype))) {
+        if ($this->_tclass) {
             $this->_tclass->initialize_si($this);
         }
 
@@ -294,12 +291,25 @@ class Si {
         return $this->storage ?? $this->name;
     }
 
+    /** @return ?string */
+    function group() {
+        if ($this->group === null && !$this->_has_group) {
+            $this->_has_group = true;
+            if ($this->part2 !== null
+                && ($psi = $this->conf->si($this->part0 . $this->part1))) {
+                $this->group = $psi->group();
+            }
+        }
+        return $this->group;
+    }
+
     /** @return array<string,string> */
     function hoturl_param() {
-        if ($this->internal) {
-            error_log("Bug: Si[{$this->name}]::hoturl_param() to internal\n" . debug_string_backtrace());
+        $g = $this->group();
+        if ($g === null) {
+            error_log("Bug: Si[{$this->name}]::hoturl_param() to groupless\n" . debug_string_backtrace());
         }
-        $param = ["group" => $this->group];
+        $param = ["group" => $g];
         if ($this->hashid !== false) {
             $param["#"] = $this->hashid ?? $this->name;
         }
@@ -314,11 +324,12 @@ class Si {
     /** @param SettingValues $sv
      * @return string */
     function sv_hoturl($sv) {
+        $g = $this->group();
+        if (!$g) {
+            error_log("Bug: Si::sv_hoturl({$this->name}) to groupless\n" . debug_string_backtrace());
+        }
         if ($this->hashid !== false
-            && (!$this->group || $sv->canonical_page === $this->group)) {
-            if ($this->internal) {
-                error_log("Bug: Si::sv_hoturl({$this->name}) to internal\n" . debug_string_backtrace());
-            }
+            && $sv->canonical_page === $g) {
             return "#" . urlencode($this->hashid ?? $this->name);
         } else {
             return $this->hoturl();

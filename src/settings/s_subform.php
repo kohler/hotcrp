@@ -17,7 +17,7 @@ class SubForm_SettingRenderer {
 
         if (is_executable("src/banal")) {
             echo '<div class="g fx2">';
-            Banal_SettingRenderer::print("0", $sv);
+            Banal_SettingParser::print("0", $sv);
             echo '</div>';
         }
         echo '</div>';

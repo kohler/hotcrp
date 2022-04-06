@@ -5,25 +5,25 @@
 abstract class Sitype {
     /** @var associative-array<string,class-string> */
     static private $type_classname = [
-        "checkbox" => "Checkbox_Sitype",
-        "cdate" => "Cdate_Sitype",
-        "date" => "Date_Sitype",
-        "email" => "Email_Sitype",
-        "emailheader" => "EmailHeader_Sitype",
-        "float" => "Float_Sitype",
-        "grace" => "Grace_Sitype",
-        "htmlstring" => "Html_Sitype",
-        "int" => "Nonnegint_Sitype", /* XXX */
-        "longstring" => "String_Sitype",
-        "nonnegint" => "Nonnegint_Sitype",
-        "radio" => "Radio_Sitype",
-        "simplestring" => "String_Sitype",
-        "string" => "String_Sitype",
-        "tag" => "Tag_Sitype",
-        "tagbase" => "Tag_Sitype",
-        "taglist" => "TagList_Sitype",
-        "tagselect" => "Tag_Sitype",
-        "url" => "Url_Sitype"
+        "checkbox" => "+Checkbox_Sitype",
+        "cdate" => "+Cdate_Sitype",
+        "date" => "+Date_Sitype",
+        "email" => "+Email_Sitype",
+        "emailheader" => "+EmailHeader_Sitype",
+        "float" => "+Float_Sitype",
+        "grace" => "+Grace_Sitype",
+        "htmlstring" => "+Html_Sitype",
+        "int" => "+Nonnegint_Sitype", /* XXX */
+        "longstring" => "+String_Sitype",
+        "nonnegint" => "+Nonnegint_Sitype",
+        "radio" => "+Radio_Sitype",
+        "simplestring" => "+String_Sitype",
+        "string" => "+String_Sitype",
+        "tag" => "+Tag_Sitype",
+        "tagbase" => "+Tag_Sitype",
+        "taglist" => "+TagList_Sitype",
+        "tagselect" => "+Tag_Sitype",
+        "url" => "+Url_Sitype"
     ];
     /** @var associative-array<string,?Sitype> */
     static private $type_class = [];
@@ -32,11 +32,20 @@ abstract class Sitype {
      * @param ?string $subtype
      * @return ?Sitype */
     static function get(Conf $conf, $name, $subtype = null) {
+        assert($name !== null);
         $key = $subtype === null ? $name : "{$name}:{$subtype}";
         if (!array_key_exists($key, self::$type_class)) {
-            $tname = self::$type_classname[$name] ?? null;
-            /** @phan-suppress-next-line PhanParamTooMany */
-            self::$type_class[$key] = $tname ? new $tname($name, $subtype) : null;
+            if (array_key_exists($name, self::$type_classname)) {
+                $tstr = self::$type_classname[$name];
+            } else {
+                $tstr = $name;
+            }
+            if ($tstr[0] === "+") {
+                $tname = substr($tstr, 1);
+                self::$type_class[$key] = new $tname($name, $subtype);
+            } else {
+                self::$type_class[$key] = null;
+            }
         }
         return self::$type_class[$key];
     }

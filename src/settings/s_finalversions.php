@@ -15,7 +15,7 @@ class FinalVersions_SettingParser extends SettingParser {
         $sv->print_entry_group("final_grace", "Grace period", ["horizontal" => true]);
         echo '<hr class="form-sep">';
         $sv->print_message_minor("final_edit_message", "Instructions");
-        Banal_SettingRenderer::print("m1", $sv);
+        Banal_SettingParser::print("m1", $sv);
         echo "</div></div></div>\n\n";
     }
 

@@ -39,6 +39,7 @@ class ComponentSet implements XtContext {
     private $_annexes = [];
     /** @var list<callable(string,object,?Contact,Conf):(?bool)> */
     private $_xt_checkers = [];
+
     static private $next_placeholder;
 
     function add($fj) {
@@ -365,18 +366,17 @@ class ComponentSet implements XtContext {
         return $this;
     }
 
-    /** @param ?string $classes
-     * @param ?string $hashid
-     * @deprecated */
-    function print_open_section($classes = null, $hashid = null) {
-        $this->add_section_class($classes);
-        $this->print_section(null, $hashid);
+    /** @param ?string $title
+     * @param ?string $hashid */
+    function print_section($title = null, $hashid = null) {
+        // XXX should deprecate
+        $this->print_start_section($title, $hashid);
     }
 
     /** @param ?string $title
      * @param ?string $hashid */
-    function print_section($title = null, $hashid = null) {
-        $this->print_close_section();
+    function print_start_section($title = null, $hashid = null) {
+        $this->print_end_section();
         if ($this->_next_section_class !== ""
             || (($hashid ?? "") !== "" && ($title ?? "") === "")) {
             echo '<div';
@@ -396,11 +396,11 @@ class ComponentSet implements XtContext {
     }
 
     /** @param string $html */
-    function push_close_section($html) {
+    function push_end_section($html) {
         $this->_section_closer = $html . ($this->_section_closer ?? "");
     }
 
-    function print_close_section() {
+    function print_end_section() {
         if ($this->_section_closer !== null) {
             echo $this->_section_closer ?? "";
             $this->_section_closer = null;
@@ -428,7 +428,7 @@ class ComponentSet implements XtContext {
         if ($gj) {
             $title = ($gj->show_title ?? true) ? $gj->title ?? "" : "";
             if ($title !== "" || $this->_section_closer === null) {
-                $this->print_section($title, $gj->hashid ?? null);
+                $this->print_start_section($title, $gj->hashid ?? null);
             }
             $separator = $gj->print_separator ?? false;
             if ($separator) {
@@ -476,7 +476,7 @@ class ComponentSet implements XtContext {
             }
         }
         $this->end_print();
-        $top && $this->print_close_section();
+        $top && $this->print_end_section();
         return $result;
     }
 
