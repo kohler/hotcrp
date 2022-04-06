@@ -39,10 +39,10 @@ class Settings_Tester {
         xassert_eqq($si->storage_type, Si::SI_DATA | Si::SI_SLICE);
         xassert_eqq($si->storage_name(), "sub_banal_4");
         $si = $this->conf->si("format__m1__active");
-        xassert_eqq($si->group(), "decisions");
+        xassert_eqq($si->first_page(), "decisions");
 
         $si = $this->conf->si("rf__1__order");
-        xassert_eqq($si->group(), "reviewform");
+        xassert_eqq($si->first_page(), "reviewform");
     }
 
     function test_message_defaults() {

@@ -130,7 +130,7 @@
         "name": "options", "group": "subform", "order": 440,
         "title": "Submission fields",
         "print_function": "*Options_SettingRenderer::print",
-        "settings": ["sf__$"]
+        "settings": ["sf", "sf__$"]
     },
     {   "name": "opt", "alias": "options"   },
     {
@@ -179,7 +179,8 @@
     {
         "name": "reviews/rounds", "order": 20,
         "title": "Deadlines and rounds", "hashid": "rounds",
-        "print_function": "Reviews_SettingRenderer::print_rounds"
+        "print_function": "Reviews_SettingRenderer::print_rounds",
+        "settings": ["pcrev_soft_$", "pcrev_hard_$", "extrev_soft_$", "extrev_hard_$", "rev_roundtag"]
     },
     {
         "name": "reviews/pc-reviews", "order": 30,
@@ -196,7 +197,7 @@
     {
         "name": "reviews/external", "order": 40,
         "title": "External reviews",
-        "print_group": true
+        "print_members": true
     },
     {
         "name": "reviews/external/editdelegate", "order": 10,
@@ -227,7 +228,7 @@
     {
         "name": "reviewform/main", "order": 10,
         "print_function": "ReviewForm_SettingParser::print",
-        "settings": ["rf__$"]
+        "settings": ["rf", "rf__$"]
     },
     {   "name": "rfo", "alias": "reviewform"   },
     {
@@ -248,7 +249,7 @@
     },
     {
         "name": "tags/main", "order": 10,
-        "title": "Tags", "print_group": true
+        "title": "Tags", "print_members": true
     },
     {
         "name": "__crosscheck/tags", "order": 700,
@@ -281,7 +282,7 @@
     },
     {
         "name": "tags/visibility", "order": 100,
-        "print_separator": true, "print_group": true
+        "print_separator": true, "print_members": true
     },
     {
         "name": "tags/visibility/seeall", "order": 10,
@@ -289,16 +290,16 @@
         "settings": ["tag_seeall"]
     },
     {
-        "name": "tagstyles", "group": "tags", "order": 720,
+        "name": "tag-styles", "group": "tags", "order": 720,
         "title": "Colors and styles", "hashid": "colors-and-styles",
         "print_function": "Tags_SettingRenderer::print_styles",
-        "settings": ["tag_color_$"]
+        "settings": ["tag_color", "tag_color_$"]
     },
     {
         "name": "tracks", "group": "tags", "order": 750,
         "print_function": "*Tracks_SettingParser::print",
         "title": "Tracks", "hashid": "tracks",
-        "settings": ["track__$"]
+        "settings": ["track", "track__$"]
     },
     {
         "name": "__crosscheck/tracks", "order": 750,
@@ -324,7 +325,7 @@
         "name": "decisions/responses", "order": 10,
         "title": "Responses",
         "print_function": "*Responses_SettingParser::print",
-        "settings": ["response_active", "response__$"]
+        "settings": ["response_active", "response", "response__$"]
     },
     {   "name": "responses", "alias": "decisions/responses"   },
     [   "responses/properties/name", 10, "*Responses_SettingParser::print_name"   ],
@@ -353,7 +354,7 @@
     },
     {
         "name": "shepherds", "group": "decisions", "order": 200,
-        "title": "Shepherds", "print_group": true
+        "title": "Shepherds", "print_members": true
     },
     {
         "name": "shepherds/identity", "order": 10,
@@ -374,7 +375,7 @@
         "name": "decisions/decision-types", "order": 400,
         "title": "Decision types",
         "print_function": "Decisions_SettingParser::print",
-        "settings": ["decision__$"]
+        "settings": ["decision", "decision__$"]
     },
     {
         "name": "decisions/final-versions", "order": 500,

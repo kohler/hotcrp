@@ -39,7 +39,7 @@ class SubFieldCondition_SettingParser extends SettingParser {
     }
 
     static function crosscheck(SettingValues $sv) {
-        if ($sv->has_interest("options")) {
+        if ($sv->has_interest("sf")) {
             $opts = Options_SettingParser::configurable_options($sv->conf);
             foreach (array_values($opts) as $ctrz => $f) {
                 if ($f->exists_condition())

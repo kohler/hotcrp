@@ -31,12 +31,10 @@ class Si {
     private $title;
     /** @var ?string */
     public $title_pattern;
-    /** @var ?string */
-    private $group;
-    /** @var bool */
-    private $_has_group = false;
     /** @var ?list<string> */
-    public $tags;
+    public $pages;
+    /** @var bool */
+    private $_has_pages = false;
     /** @var null|int|float */
     public $order;
     /** @var null|int|float */
@@ -87,7 +85,6 @@ class Si {
     static private $key_storage = [
         "autogrow" => "is_bool",
         "disabled" => "is_bool",
-        "group" => "is_string",
         "ifnonempty" => "is_string",
         "internal" => "is_bool",
         "json_values" => "is_array",
@@ -95,13 +92,13 @@ class Si {
         "parse_order" => "is_number",
         "__source_order" => "is_int",
         "parser_class" => "is_string",
+        "pages" => "is_string_list",
         "placeholder" => "is_string",
         "required" => "is_bool",
         "size" => "is_int",
         "subtype" => "is_string",
         "title" => "is_string",
         "title_pattern" => "is_string",
-        "tags" => "is_string_list",
         "type" => "is_string",
         "values" => "is_array"
     ];
@@ -291,25 +288,40 @@ class Si {
         return $this->storage ?? $this->name;
     }
 
-    /** @return ?string */
-    function group() {
-        if ($this->group === null && !$this->_has_group) {
-            $this->_has_group = true;
-            if ($this->part2 !== null
-                && ($psi = $this->conf->si($this->part0 . $this->part1))) {
-                $this->group = $psi->group();
-            }
+    private function _collect_pages() {
+        $this->_has_pages = true;
+        if ($this->pages === null
+            && $this->part2 !== null
+            && $this->part2 !== ""
+            && ($psi = $this->conf->si($this->part0 . $this->part1))) {
+            $psi->_collect_pages();
+            $this->pages = $psi->pages;
         }
-        return $this->group;
+        if ($this->pages === null) {
+            error_log("no pages for {$this->name}\n" . debug_string_backtrace());
+        }
+    }
+
+    /** @return ?string */
+    function first_page() {
+        if ($this->pages === null && !$this->_has_pages) {
+            $this->_collect_pages();
+        }
+        return $this->pages[0] ?? null;
+    }
+
+    /** @param string $t
+     * @return bool */
+    function has_tag($t) {
+        if ($this->pages === null && !$this->_has_pages) {
+            $this->_collect_pages();
+        }
+        return $this->pages === null || in_array($t, $this->pages);
     }
 
     /** @return array<string,string> */
     function hoturl_param() {
-        $g = $this->group();
-        if ($g === null) {
-            error_log("Bug: Si[{$this->name}]::hoturl_param() to groupless\n" . debug_string_backtrace());
-        }
-        $param = ["group" => $g];
+        $param = ["group" => $this->first_page()];
         if ($this->hashid !== false) {
             $param["#"] = $this->hashid ?? $this->name;
         }
@@ -324,12 +336,7 @@ class Si {
     /** @param SettingValues $sv
      * @return string */
     function sv_hoturl($sv) {
-        $g = $this->group();
-        if (!$g) {
-            error_log("Bug: Si::sv_hoturl({$this->name}) to groupless\n" . debug_string_backtrace());
-        }
-        if ($this->hashid !== false
-            && $sv->canonical_page === $g) {
+        if ($this->hashid !== false && $this->has_tag($sv->canonical_page)) {
             return "#" . urlencode($this->hashid ?? $this->name);
         } else {
             return $this->hoturl();
@@ -439,8 +446,6 @@ class SettingInfoSet {
     private $xmap = [];
     /** @var list<string|list<string|object>> */
     private $xlist = [];
-    /** @var array<string,?string> */
-    private $canonpage = ["none" => null];
     /** @var list<string> */
     private $potential_aliases = [];
 
@@ -449,6 +454,9 @@ class SettingInfoSet {
         expand_json_includes_callback(["etc/settinginfo.json"], [$this, "_add_item"]);
         if (($olist = $conf->opt("settingInfo"))) {
             expand_json_includes_callback($olist, [$this, "_add_item"]);
+        }
+        foreach ($this->cs->members("") as $gj) {
+            $this->_assign_pages($gj, [$gj->group], true);
         }
     }
 
@@ -481,6 +489,64 @@ class SettingInfoSet {
             }
         }
         return true;
+    }
+
+    /** @param object $gj
+     * @param list<string> $pages
+     * @param bool $members */
+    private function _assign_pages($gj, $pages, $members) {
+        if (strpos($gj->group, "/") === false
+            && !in_array($gj->group, $pages)) {
+            $pages[] = $gj->group;
+        }
+        foreach ($gj->settings ?? [] as $s) {
+            foreach ($this->_get_sij($s) as $sij) {
+                $sij->pages = $sij->pages ?? [];
+                array_push($sij->pages, ...$pages);
+                //error_log(json_encode($sij));
+            }
+        }
+        $group = null;
+        if (isset($gj->print_members) && is_string($gj->print_members)) {
+            $group = $gj->print_members;
+        } else if ($members || ($gj->print_members ?? false) === true) {
+            $group = $gj->name;
+        } else {
+            $group = null;
+        }
+        if ($group !== null) {
+            foreach ($this->cs->members($group) as $gjx) {
+                $this->_assign_pages($gjx, $pages, false);
+            }
+        }
+    }
+
+    /** @param string $name
+     * @return list<object> */
+    function _get_sij($name) {
+        if (($pos1 = strpos($name, '$')) !== false) {
+            $part0 = substr($name, 0, $pos1);
+            $pos2 = strrpos($name, '$');
+            $part2 = substr($name, $pos2 + 1);
+            $result = [];
+            for ($i = 0; $i !== count($this->xlist); $i += 2) {
+                if ($this->xlist[$i] === $part0) {
+                    $xlist = $this->xlist[$i + 1];
+                    for ($j = 0; $j !== count($xlist); $j += 2) {
+                        if ($xlist[$j] === $part2 && $xlist[$j+1]->name_pattern === $name) {
+                            $result[] = $xlist[$j+1];
+                        }
+                    }
+                }
+            }
+            return $result;
+        } else {
+            $x = $this->xmap[$name] ?? null;
+            if ($x === null) {
+                $x = $this->xmap[$name] = [(object) ["name" => $name, "merge" => true, "priority" => INF]];
+            }
+            return $x;
+        }
     }
 
     /** @param string $name
@@ -575,12 +641,6 @@ class SettingInfoSet {
             }
             if ($jx && !isset($jx->alias)) {
                 Conf::xt_resolve_require($jx);
-                if (($group = $jx->group ?? null)) {
-                    if (!array_key_exists($group, $this->canonpage)) {
-                        $this->canonpage[$group] = $cs->canonical_group($group) ?? $group;
-                    }
-                    $jx->group = $this->canonpage[$group];
-                }
             } else {
                 $jx = null;
             }

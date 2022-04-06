@@ -281,9 +281,9 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string $title
-     * @param ?string $hashid */
+     * @param ?string $hashid
+     * @deprecated */
     function print_section($title, $hashid = null) {
-        // XXX should deprecate
         $this->print_start_section($title, $hashid);
     }
 
@@ -429,12 +429,10 @@ class SettingValues extends MessageSet {
         if (!$si) {
             return false;
         } else {
-            $group = $si->group();
             $perm = $this->all_perm;
             if ($this->perm !== null) {
                 for ($i = 0; $i !== count($this->perm); $i += 2) {
-                    if ($group === $this->perm[$i]
-                        || ($si->tags !== null && in_array($this->perm[$i], $si->tags, true))) {
+                    if ($si->has_tag($this->perm[$i])) {
                         if ($this->perm[$i + 1]) {
                             $perm = true;
                         } else {
@@ -822,10 +820,7 @@ class SettingValues extends MessageSet {
         if (!$this->canonical_page) {
             return true;
         } else if (($si = is_string($id) ? $this->conf->si($id) : $id)) {
-            $group = $si->group();
-            return !$group
-                || $group === $this->canonical_page
-                || (isset($si->tags) && in_array($this->canonical_page, $si->tags))
+            return $si->has_tag($this->canonical_page)
                 || array_key_exists($si->storage_name(), $this->_savedv);
         } else {
             return false;
@@ -1276,6 +1271,25 @@ class SettingValues extends MessageSet {
     function setting_link($html, $id, $js = null) {
         $si = is_string($id) ? $this->si($id) : $id;
         return Ht::link($html, $si->sv_hoturl($this), $js);
+    }
+
+    /** @param string $html
+     * @param string $sg
+     * @return string */
+    function setting_group_link($html, $sg, $js = null) {
+        $gj = $this->group_item($sg);
+        if ($gj) {
+            $page = $this->cs()->canonical_group($gj);
+            if ($page === $this->canonical_page && ($gj->hashid ?? false)) {
+                $url = "#" . $gj->hashid;
+            } else {
+                $url = $this->conf->hoturl("settings", ["group" => $page, "#" => $gj->hashid ?? null]);
+            }
+            return Ht::link($html, $url, $js);
+        } else {
+            error_log("missing setting_group information for $sg\n" . debug_string_backtrace());
+            return $html;
+        }
     }
 
 

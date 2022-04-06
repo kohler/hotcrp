@@ -155,14 +155,14 @@ class Reviews_SettingRenderer {
         $sv->print_checkbox('pcrev_any', "PC members can review any submission", ["class" => "uich js-foldup"]);
         if ($sv->conf->setting("pcrev_any")
             && $sv->conf->check_track_sensitivity(Track::UNASSREV)) {
-            echo '<p class="f-h fx">', $sv->setting_link("Current track settings", "tracks"), ' may restrict self-assigned reviews.</p>';
+            echo '<p class="f-h fx">', $sv->setting_group_link("Current track settings", "tracks"), ' may restrict self-assigned reviews.</p>';
         }
         echo "</div>\n";
 
 
         $hint = "";
         if ($sv->conf->check_track_sensitivity(Track::VIEWREVID)) {
-            $hint = '<p class="settings-ag f-h">' . $sv->setting_link("Current track settings", "tracks") . ' restrict reviewer name visibility.</p>';
+            $hint = '<p class="settings-ag f-h">' . $sv->setting_group_link("Current track settings", "tracks") . ' restrict reviewer name visibility.</p>';
         }
         $sv->print_radio_table("pc_seeblindrev", [0 => "Yes",
                 1 => "Only after completing a review for the same submission"],
@@ -176,7 +176,7 @@ class Reviews_SettingRenderer {
         }
         if ($sv->conf->check_track_sensitivity(Track::VIEWREV)
             || $sv->conf->check_track_sensitivity(Track::VIEWALLREV)) {
-            $hint .= ' ' . $sv->setting_link("Current track settings", "tracks") . ' restrict review visibility.';
+            $hint .= ' ' . $sv->setting_group_link("Current track settings", "tracks") . ' restrict review visibility.';
         }
         if ($hint !== "") {
             $hint = '<p class="settings-ag f-h">' . ltrim($hint) . '</p>';

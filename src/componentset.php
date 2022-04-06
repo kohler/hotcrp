@@ -189,10 +189,11 @@ class ComponentSet implements XtContext {
         return $gj;
     }
 
-    /** @param string $name
+    /** @param string|object $x
      * @return ?string */
-    function canonical_group($name) {
-        if (($gj = $this->get($name))) {
+    function canonical_group($x) {
+        $gj = is_string($x) ? $this->get($x) : $x;
+        if ($gj) {
             $pos = strpos($gj->group, "/");
             return $pos === false ? $gj->group : substr($gj->group, 0, $pos);
         } else {
@@ -368,13 +369,6 @@ class ComponentSet implements XtContext {
 
     /** @param ?string $title
      * @param ?string $hashid */
-    function print_section($title = null, $hashid = null) {
-        // XXX should deprecate
-        $this->print_start_section($title, $hashid);
-    }
-
-    /** @param ?string $title
-     * @param ?string $hashid */
     function print_start_section($title = null, $hashid = null) {
         $this->print_end_section();
         if ($this->_next_section_class !== ""
@@ -451,11 +445,11 @@ class ComponentSet implements XtContext {
         } else if (isset($gj->html_content)) {
             echo $gj->html_content;
         }
-        if ($result !== false && ($gj->print_group ?? false)) {
-            if ($gj->print_group === true) {
+        if ($result !== false && ($gj->print_members ?? false)) {
+            if ($gj->print_members === true) {
                 $result = $this->print_group($gj->name);
             } else {
-                $result = $this->print_group($gj->print_group);
+                $result = $this->print_group($gj->print_members);
             }
         }
         return $result;

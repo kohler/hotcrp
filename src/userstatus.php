@@ -1763,9 +1763,9 @@ John Adams,john@earbox.org,UC Berkeley,pc
     }
 
     /** @param string $title
-     * @param ?string $hashid */
+     * @param ?string $hashid
+     * @deprecated */
     function print_section($title, $hashid = null) {
-        // XXX should deprecate
         $this->print_start_section($title, $hashid);
     }
 

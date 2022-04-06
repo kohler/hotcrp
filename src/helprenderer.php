@@ -187,8 +187,8 @@ class HelpRenderer extends Ht {
         if ($this->_sv === null) {
             $this->_sv = new SettingValues($this->user);
         }
-        if (($g = $this->_sv->canonical_group($sg))) {
-            $param = ["group" => $g];
+        if (($g = $this->_sv->group_item($sg))) {
+            $param = ["group" => $this->_sv->canonical_group($g->group), "#" => $g->hashid ?? null];
         } else {
             error_log("missing setting_group information for $sg\n" . debug_string_backtrace());
             $param = [];
