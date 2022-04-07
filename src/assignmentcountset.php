@@ -186,6 +186,7 @@ class AssignmentCountSet {
             }
         }
         Dbl::free($result);
+        $this->user->set_overrides($overrides);
     }
 
     /** @param Contact $pc

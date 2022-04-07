@@ -56,7 +56,7 @@ class TokenInfo {
      * @return $this */
     function set_contactdb($is_cdb) {
         assert(!$this->_user && !$this->contactId);
-        $this->is_cdb = true;
+        $this->is_cdb = $is_cdb;
         return $this;
     }
 

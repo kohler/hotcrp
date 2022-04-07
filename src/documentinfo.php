@@ -1028,8 +1028,8 @@ class DocumentInfo implements JsonSerializable {
     }
     /** @return bool */
     function check_text_hash($hash) {
-        $hash = $this->binary_hash();
-        return $hash !== false && $hash === Filer::hash_as_binary($hash);
+        $my_hash = $this->binary_hash();
+        return $my_hash !== false && $my_hash === Filer::hash_as_binary($hash);
     }
     /** @return string|false */
     function hash_algorithm() {

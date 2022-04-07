@@ -65,6 +65,7 @@ class GetReviewCSV_ListAction extends ListAction {
         if (!empty($pids)) {
             $user->log_activity("Download reviews CSV", array_keys($pids));
         }
+        $user->set_overrides($overrides);
         return $user->conf->make_csvg($this->author_view ? "aureviews" : "reviews")
             ->select($selection)->append($items);
     }

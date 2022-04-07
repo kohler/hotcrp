@@ -4512,7 +4512,7 @@ class Conf {
             $siteinfo["cookie_params"] .= "; Secure";
         }
         if (($samesite = $this->opt("sessionSameSite") ?? "Lax")) {
-            $siteinfo["cookie_params"] .= "; SameSite=$x";
+            $siteinfo["cookie_params"] .= "; SameSite={$samesite}";
         }
         if (self::$hoturl_defaults) {
             $siteinfo["defaults"] = [];

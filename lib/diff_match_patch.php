@@ -1743,7 +1743,7 @@ class diff_match_patch {
         $copy = [];
         foreach ($patches as $p) {
             $copy[] = $p2 = clone $p;
-            foreach ($p->diffs as &$diff) {
+            foreach ($p2->diffs as &$diff) {
                 $diff = clone $diff;
             }
             unset($diff);

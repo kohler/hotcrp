@@ -120,9 +120,9 @@ class ReviewDiffInfo {
         $bdata = "";
         if ($str !== "" && ctype_digit($str[0])) {
             $pos = strpos($str, "{");
-            $len = substr($str, 0, $pos);
-            if (!ctype_digit($len)
-                || ($len = intval($len, 10)) <= $pos
+            $lenx = substr($str, 0, $pos);
+            if (!ctype_digit($lenx)
+                || ($len = intval($lenx, 10)) <= $pos
                 || $len > strlen($str)) {
                 return null;
             }

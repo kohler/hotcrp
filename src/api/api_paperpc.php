@@ -4,10 +4,7 @@
 
 class PaperPC_API {
     private static function run(Contact $user, Qrequest $qreq, PaperInfo $prow, $type) {
-        if ($qreq->method() !== "GET") {
-            if (!isset($qreq->$type)) {
-                return new JsonResult(400, "Parameter error");
-            }
+        if ($qreq->method() !== "GET" && isset($qreq->$type)) {
             $aset = new AssignmentSet($user);
             $aset->enable_papers($prow);
             $aset->parse("paper,action,user\n{$prow->paperId},$type," . CsvGenerator::quote($qreq->$type));

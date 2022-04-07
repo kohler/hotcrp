@@ -2565,9 +2565,9 @@ class Contact {
     function active_review_token_for(PaperInfo $prow, ReviewInfo $rrow = null) {
         if ($this->_review_tokens !== null) {
             foreach ($rrow ? [$rrow] : $prow->all_reviews() as $rr) {
-                if ($rrow->reviewToken !== 0
-                    && in_array($rrow->reviewToken, $this->_review_tokens, true))
-                    return $rrow->reviewToken;
+                if ($rr->reviewToken !== 0
+                    && in_array($rr->reviewToken, $this->_review_tokens, true))
+                    return $rr->reviewToken;
             }
         }
         return false;

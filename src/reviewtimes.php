@@ -105,6 +105,8 @@ class ReviewTimes {
         foreach ($this->r as &$r) {
             $r = array_map(function ($x) { return [$x[0], $x[1]]; }, $r);
         }
+
+        $user->set_overrides($overrides);
     }
 
     function json() {

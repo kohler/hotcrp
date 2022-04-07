@@ -1007,18 +1007,16 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         }
 
         $old_data = $this->commentData;
-        $this->set_data("mentions", empty($mentions) ? null : $mentions);
+        $this->set_data("mentions", empty($desired_mentions) ? null : $desired_mentions);
         if ($this->commentData !== $old_data) {
             $this->conf->qe("update CommentInfo set commentData=? where paperId=? and commentId=?", $this->commentData, $this->paperId, $this->commentId);
         }
 
         // go over mentions, send email
-        $mentions = [];
         foreach ($desired_mentions as $mxm) {
             if (($mentionee = $this->conf->cached_user_by_id($mxm[0]))
                 && !$mentionee->is_disabled()
                 && $mentionee->can_view_comment($this->prow, $this)) {
-                $mentions[] = $mxm;
                 if (!isset($this->saved_mentions[$mxm[0]])) {
                     HotCRPMailer::send_to($mentionee, "@mentionnotify", ["prow" => $this->prow, "comment_row" => $this]);
                     $this->saved_mentions[$mxm[0]] = htmlspecialchars(substr($text, $mxm[1] + 1, $mxm[2] - $mxm[1] - 1));

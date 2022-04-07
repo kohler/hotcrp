@@ -1291,7 +1291,7 @@ class PaperTable {
         echo '</ul></div>', "\n";
     }
 
-    private function _papstripLeadShepherd($type, $name, $showedit) {
+    private function _papstripLeadShepherd($type, $name) {
         $editable = $type === "manager" ? $this->user->privChair : $this->admin;
         $extrev_shepherd = $type === "shepherd" && $this->conf->setting("extrev_shepherd");
 
@@ -1331,16 +1331,16 @@ class PaperTable {
         echo "</div>\n";
     }
 
-    private function papstripLead($showedit) {
-        $this->_papstripLeadShepherd("lead", "Discussion lead", $showedit || $this->qreq->atab === "lead");
+    private function papstripLead() {
+        $this->_papstripLeadShepherd("lead", "Discussion lead");
     }
 
-    private function papstripShepherd($showedit) {
-        $this->_papstripLeadShepherd("shepherd", "Shepherd", $showedit || $this->qreq->atab === "shepherd");
+    private function papstripShepherd() {
+        $this->_papstripLeadShepherd("shepherd", "Shepherd");
     }
 
-    private function papstripManager($showedit) {
-        $this->_papstripLeadShepherd("manager", "Paper administrator", $showedit || $this->qreq->atab === "manager");
+    private function papstripManager() {
+        $this->_papstripLeadShepherd("manager", "Paper administrator");
     }
 
     private function papstripTags() {
@@ -1885,7 +1885,7 @@ class PaperTable {
         if (($this->prow->managerContactId > 0
              || ($this->user->privChair && $this->mode === "assign"))
             && $this->user->can_view_manager($this->prow)) {
-            $this->papstripManager($this->user->privChair);
+            $this->papstripManager();
         }
         $this->papstripTags();
         foreach ($this->conf->tags() as $ltag => $t) {
@@ -1910,10 +1910,10 @@ class PaperTable {
             $this->papstripOutcomeSelector();
         }
         if ($this->user->can_view_lead($this->prow)) {
-            $this->papstripLead($this->mode === "assign");
+            $this->papstripLead();
         }
         if ($this->user->can_view_shepherd($this->prow)) {
-            $this->papstripShepherd($this->mode === "assign");
+            $this->papstripShepherd();
         }
         if ($this->user->can_edit_preference_for($this->user, $this->prow, true)
             && $this->conf->timePCReviewPreferences()
@@ -2490,7 +2490,7 @@ class PaperTable {
             $t[] = '<span class="revlink"><a href="' . $prow->conf->selfurl($this->qreq, ["forceShow" => 1]) . '" class="noul">'
                 . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing</span>";
         } else if ($this->user->privChair && !$this->allow_admin) {
-            $x = '<span class="revlink">You can’t override your conflict because this submission has an administrator.</span>';
+            $t[] = '<span class="revlink">You can’t override your conflict because this submission has an administrator.</span>';
         }
 
         if ($any_comments) {
