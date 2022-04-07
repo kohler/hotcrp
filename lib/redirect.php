@@ -10,10 +10,10 @@ function make_session_name(Conf $conf, $n) {
     if (ctype_lower($n)) {
         return $n;
     }
-    if (($pos = strpos($n, '${')) !== false) {
+    if (strpos($n, '${') !== false) {
         $n = SiteLoader::substitute($n, [
-            "confid" => $conf->opt("confid") ?? null,
-            "siteclass" => $conf->opt("siteclass") ?? null
+            "confid" => $conf->opt("confid"),
+            "siteclass" => $conf->opt("siteclass")
         ]);
     }
     return preg_replace_callback('/[^-_A-Ya-z0-9]/', function ($m) {

@@ -396,7 +396,7 @@ class ComponentSet implements XtContext {
 
     function print_end_section() {
         if ($this->_section_closer !== null) {
-            echo $this->_section_closer ?? "";
+            echo $this->_section_closer;
             $this->_section_closer = null;
         }
     }

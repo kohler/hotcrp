@@ -48,7 +48,7 @@ class Formula_SearchTerm extends SearchTerm {
         return new False_SearchTerm;
     }
     static function parse_graph($word, SearchWord $sword, PaperSearch $srch) {
-        if (($formula = self::read_formula($word, $sword, $srch, true))) {
+        if (self::read_formula($word, $sword, $srch, true)) {
             return (new True_SearchTerm)->add_view_anno("show:graph($word)", $sword);
         }
         return null;

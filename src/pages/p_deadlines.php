@@ -100,7 +100,6 @@ class Deadlines_Page {
                 if ($dltext === "") {
                     continue;
                 }
-                $suffix = $roundname === "" ? "" : "_$roundname";
                 if ($dlroundunify) {
                     $roundname = "";
                 }

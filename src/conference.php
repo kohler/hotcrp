@@ -1078,7 +1078,7 @@ class Conf {
         } else if ($s === "deny" || $s === "false") {
             return false;
         } else if (strcspn($s, " !&|()") !== strlen($s)) {
-            $e = $this->xt_check_complex_string($s, $xt, $user, 0);
+            $e = $this->xt_check_complex_string($s, $xt, $user);
             if ($e === null) {
                 throw new UnexpectedValueException("xt_check syntax error in `$s`");
             }
@@ -1106,9 +1106,8 @@ class Conf {
     }
     /** @param string $s
      * @param ?Contact $user
-     * @param int $prec
      * @return ?bool */
-    function xt_check_complex_string($s, $xt, $user, $prec) {
+    function xt_check_complex_string($s, $xt, $user) {
         $stk = [];
         $p = 0;
         $l = strlen($s);
@@ -2193,7 +2192,7 @@ class Conf {
                 $args["firstName"] = $row->firstName;
                 $args["lastName"] = $row->lastName;
             } else if (($name = $this->opt("contactName"))) {
-                list($args["firstName"], $args["lastName"], $scrap) = Text::split_name($name);
+                list($args["firstName"], $args["lastName"], $unused) = Text::split_name($name);
             }
             $this->_site_contact = Contact::make_site_contact($this, $args);
         }
@@ -2418,7 +2417,6 @@ class Conf {
 
         // resolve indirected users
         for ($round = 0; !empty($redirect) && $round !== 3; ++$round) {
-            $needc = [];
             foreach ($redirect as $u) {
                 if ($u->cdb_confid) {
                     $this->prefetch_cdb_user_by_id($u->primaryContactId);
@@ -2598,7 +2596,7 @@ class Conf {
             foreach ($this->pc_users() as $u) {
                 if ($u->contactTags !== null) {
                     foreach (explode(" ", $u->contactTags) as $tv) {
-                        list($tag, $value) = Tagger::unpack($tv);
+                        list($tag, $unused) = Tagger::unpack($tv);
                         if ($tag) {
                             $this->_pc_tags_cache[strtolower($tag)] = $tag;
                         }
@@ -2881,7 +2879,6 @@ class Conf {
         if (!$this->_maybe_automatic_tags || $this->_updating_automatic_tags) {
             return;
         }
-        $tagmap = $this->tags();
         $csv = ["paper,tag,tag value"];
         if ($paper === null) {
             foreach ($this->tags()->filter("automatic") as $dt) {
@@ -3583,7 +3580,6 @@ class Conf {
         }
         // create slash-based URLs if appropriate
         if ($param) {
-            $tp = "";
             if ($page === "review"
                 && preg_match($are . 'p=(\d+)' . $zre, $param, $m)) {
                 $tp = "/" . $m[2];
@@ -4366,7 +4362,7 @@ class Conf {
                    . ($report_only ? "-Report-Only: " : ": ")
                    . join(" ", $csp));
         }
-        if (($cip = $this->opt("crossOriginIsolation")) !== false) {
+        if ($this->opt("crossOriginIsolation") !== false) {
             header("Cross-Origin-Opener-Policy: same-origin");
         }
         if (($sts = $this->opt("strictTransportSecurity"))) {

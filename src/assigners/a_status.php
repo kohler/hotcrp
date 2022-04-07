@@ -82,7 +82,6 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $m = $state->remove(new Status_Assignable($prow->paperId));
         $res = $m[0];
-        $ch = false;
         if ($this->xtype === "submit") {
             if ($res->_submitted === 0) {
                 if (($whynot = $state->user->perm_finalize_paper($prow))) {

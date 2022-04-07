@@ -588,7 +588,6 @@ class PaperList implements XtContext {
      * @param ?int $origin
      * @param int $sort_subset */
     private function set_view_list($groups, $origin, $sort_subset) {
-        $has_sort = false;
         foreach (PaperSearch::view_generator($groups) as $akd) {
             if ($akd[0] !== "sort" && $sort_subset === -1) {
                 $this->set_view($akd[1], substr($akd[0], 0, 4), $origin, $akd[2]);
@@ -1539,8 +1538,7 @@ class PaperList implements XtContext {
         return '<a class="' . $sort_class . '" rel="nofollow" href="' . $sort_url . '">' . $t . '</a>';
     }
 
-    /** @param PaperListTableRender $rstate */
-    private function _analyze_folds($rstate) {
+    private function _analyze_folds() {
         $classes = &$this->table_attr["class"];
         $jscol = [];
         $has_sel = $has_statistics = false;
@@ -1580,7 +1578,6 @@ class PaperList implements XtContext {
         $rstate->split_ncol = count($rstate->groupstart) - 1;
 
         $rownum_marker = "<span class=\"pl_rownum fx6\">";
-        $rownum_len = strlen($rownum_marker);
         $nbody = array("<tr>");
         $tbody_class = "pltable" . ($rstate->hascolors ? " pltable-colored" : "");
         for ($i = 1; $i < count($rstate->groupstart); ++$i) {
@@ -1960,7 +1957,7 @@ class PaperList implements XtContext {
         }
 
         // analyze folds
-        $this->_analyze_folds($rstate);
+        $this->_analyze_folds();
 
         // header cells
         if (($this->_table_decor & (self::DECOR_HEADER | self::DECOR_EVERYHEADER)) !== 0) {

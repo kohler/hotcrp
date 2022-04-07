@@ -110,7 +110,7 @@ class PCConflicts_PaperOption extends PaperOption {
         }
 
         $vm = self::paper_value_map($prow);
-        foreach ($vm as $k => &$v) {
+        foreach ($vm as &$v) {
             $v &= ~CONFLICT_PCMASK;
         }
         unset($v);
@@ -170,7 +170,6 @@ class PCConflicts_PaperOption extends PaperOption {
                 $ct = Conflict::set_pinned(Conflict::GENERAL, true);
                 $ctypes[$ct] = $confset->unparse_text($ct);
             }
-            $author_ctype = $confset->unparse_html(CONFLICT_AUTHOR);
         }
 
         $ctmaps = [[], []];

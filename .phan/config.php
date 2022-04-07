@@ -51,6 +51,9 @@ $config = [
     "enable_internal_return_type_plugins" => true,
     //"enable_extended_internal_return_type_plugins" => true,
 
+    //"redundant_condition_detection" => true,
+    //"unused_variable_detection" => true,
+
     // A list of directories that should be parsed for class and
     // method information. After excluding the directories
     // defined in exclude_analysis_directory_list, the remaining
@@ -115,6 +118,7 @@ $config = [
 
     "suppress_issue_types" => [
         "PhanUnusedPublicMethodParameter",
+        "PhanUnusedVariableValueOfForeachWithKey",
         "PhanParamReqAfterOpt", // remove when PHP 7.0 is not supported
         "PhanUndeclaredClassAttribute"
     ],

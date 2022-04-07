@@ -658,14 +658,12 @@ class PaperStatus extends MessageSet {
     private function _check_status($pj) {
         $pj_withdrawn = $pj->status->withdrawn;
         $pj_submitted = $pj->status->submitted;
-        $pj_draft = $pj->status->draft;
 
         if ($this->has_error()
             && $pj_submitted
             && !$pj_withdrawn
             && (!$this->prow || $this->prow->timeSubmitted == 0)) {
             $pj_submitted = false;
-            $pj_draft = true;
         }
 
         if (isset($pj->status->submitted_at)) {
@@ -799,7 +797,7 @@ class PaperStatus extends MessageSet {
 
     /** @param int $bit */
     function clear_conflict_values($bit) {
-        foreach ($this->_conflict_values as $lemail => &$cv) {
+        foreach ($this->_conflict_values as &$cv) {
             if (((($cv[0] & ~$cv[1]) | $cv[2]) & $bit) !== 0) {
                 $cv[1] |= $bit;
                 $cv[2] &= ~$bit;
@@ -1033,7 +1031,6 @@ class PaperStatus extends MessageSet {
         }
 
         // save parts and track diffs
-        $conf = $this->conf;
         $this->_check_fields($pj);
         $this->_check_status($pj);
         $this->_check_final_status($pj);
@@ -1114,10 +1111,8 @@ class PaperStatus extends MessageSet {
         $old_joinid = $old_joindoc ? $old_joindoc->paperStorageId : 0;
 
         $new_joinid = $this->_paper_upd["finalPaperStorageId"] ?? $this->_nnprow->finalPaperStorageId;
-        $new_dtype = DTYPE_FINAL;
         if ($new_joinid <= 1) {
             $new_joinid = $this->_paper_upd["paperStorageId"] ?? $this->_nnprow->paperStorageId;
-            $new_dtype = DTYPE_SUBMISSION;
         }
 
         if ($new_joinid == $old_joinid && $this->prow) {

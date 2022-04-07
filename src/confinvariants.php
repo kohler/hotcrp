@@ -315,7 +315,6 @@ class ConfInvariants {
 
     /** @return $this */
     function exec_document_inactive() {
-        $ie = [];
         $result = $this->conf->ql("select paperStorageId, finalPaperStorageId from Paper");
         $pids = [];
         while ($result && ($row = $result->fetch_row())) {

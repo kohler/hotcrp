@@ -372,7 +372,7 @@ class ContactList {
 
     /** @param int $fieldId
      * @return string */
-    function header($fieldId, $ordinal, $row = null) {
+    function header($fieldId, $row = null) {
         switch ($fieldId) {
         case self::FIELD_NAME:
             return "Name";
@@ -1044,7 +1044,7 @@ class ContactList {
                     if ($fdef[1] >= 3) {
                         $tt .= " class=\"fx" . ($fdef[1] - 2) . "\"";
                     }
-                    $tt .= '><em class="plx">' . $this->header($fieldId, -1, $row)
+                    $tt .= '><em class="plx">' . $this->header($fieldId, $row)
                         . ":</em> " . $d . "</div>";
                 }
             }
@@ -1103,7 +1103,6 @@ class ContactList {
         $x .= "\">\n";
 
         $x .= "  <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">\n";
-        $ord = 0;
 
         if ($this->sortable && $url) {
             $sortUrl = $url . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
@@ -1116,7 +1115,7 @@ class ContactList {
                     continue;
                 }
                 $x .= "    <th class=\"pl plh pl_$fdef[0]\">";
-                $ftext = $this->header($fieldId, ++$ord);
+                $ftext = $this->header($fieldId);
                 if ($fieldId === $this->sortField) {
                     $rev = $this->reverseSort ? "" : "-";
                     $x .= '<a class="pl_sort pl_sorting' . ($this->reverseSort ? "_rev" : "_fwd")
@@ -1133,7 +1132,7 @@ class ContactList {
             foreach ($fieldDef as $fieldId => $fdef) {
                 if ($fdef[1] == 1 && isset($anyData[$fieldId])) {
                     $x .= "    <th class=\"pl plh pl_$fdef[0]\">"
-                        . $this->header($fieldId, $ord++) . "</th>\n";
+                        . $this->header($fieldId) . "</th>\n";
                 } else if ($fdef[1] == 1) {
                     $x .= "    <th class=\"pl plh pl_$fdef[0]\"></th>\n";
                 }

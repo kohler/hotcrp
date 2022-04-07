@@ -1093,8 +1093,8 @@ class Tagger {
     /** @param string $tag
      * @return string */
     static function base($tag) {
-        if (($pos = strpos($tag, "#")) > 0
-            || ($pos = strpos($tag, "=")) > 0) {
+        if (($pos = strpos($tag, "#") ? : strpos($tag, "=")) !== false
+            && $pos > 0) {
             return substr($tag, 0, $pos);
         } else {
             return $tag;
@@ -1106,7 +1106,7 @@ class Tagger {
     static function unpack($tag) {
         if (!$tag) {
             return [false, null];
-        } else if (!($pos = strpos($tag, "#")) && !($pos = strpos($tag, "="))) {
+        } else if (!($pos = strpos($tag, "#") ? : strpos($tag, "="))) {
             return [$tag, null];
         } else if ($pos === strlen($tag) - 1) {
             return [substr($tag, 0, $pos), null];
@@ -1343,7 +1343,7 @@ class Tagger {
                 foreach ($ts as $t) {
                     if (($link = $this->link_base($t)))
                         $links[] = "#" . $link;
-                    list($base, $value) = Tagger::unpack($t);
+                    list($unused, $value) = Tagger::unpack($t);
                     $count = max($count, (float) $value);
                 }
                 $b = self::unparse_emoji_html($e, $count);
@@ -1430,7 +1430,6 @@ class Tagger {
             if (!($base = Tagger::base($tag))) {
                 continue;
             }
-            $lbase = strtolower($base);
             if (($link = $this->link($tag))) {
                 $tsuf = substr($tag, strlen($base));
                 $tx = "<a class=\"qo pw\" href=\"{$link}\"><u class=\"x\">#{$base}</u>{$tsuf}</a>";

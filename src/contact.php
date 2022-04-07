@@ -274,7 +274,7 @@ class Contact {
         $u->firstName = $args["firstName"] ?? $args["first"] ?? "";
         $u->lastName = $args["lastName"] ?? $args["last"] ?? "";
         if (isset($args["name"]) && $u->firstName === "" && $u->lastName === "") {
-            list($u->firstName, $u->lastName, $crap) = Text::split_name($args["name"]);
+            list($u->firstName, $u->lastName, $unused) = Text::split_name($args["name"]);
         }
         $u->affiliation = simplify_whitespace($args["affiliation"] ?? "");
         $u->disabled = !!($args["disabled"] ?? false);
@@ -824,7 +824,7 @@ class Contact {
 
     /** @return int|false */
     function contactdb_update() {
-        if (!($cdb = $this->conf->contactdb())
+        if (!$this->conf->contactdb()
             || !$this->has_account_here()
             || !validate_email($this->email)) {
             return false;
@@ -1039,19 +1039,18 @@ class Contact {
 
         if (!$x) {
             return $pfx === "u" ? null : "";
-        }
+        } else {
+            if ($pfx === "r"
+                && $this->can_view_user_tags()
+                && !isset($x->contactTags)
+                && ($pc = $this->conf->pc_member_by_id($cid))) {
+                $x = $pc;
+            }
 
-        if ($x
-            && $pfx === "r"
-            && $this->can_view_user_tags()
-            && !isset($x->contactTags)
-            && ($pc = $this->conf->pc_member_by_id($cid))) {
-            $x = $pc;
+            $res = $this->calculate_name_for($pfx, $x);
+            $this->_name_for_map[$key] = $res;
+            return $res;
         }
-
-        $res = $this->calculate_name_for($pfx, $x);
-        $this->_name_for_map[$key] = $res;
-        return $res;
     }
 
     /** @param Contact|ReviewInfo|int $x
@@ -1086,7 +1085,6 @@ class Contact {
 
     /** @param array<int,mixed> &$array */
     function ksort_cid_array(&$array) {
-        $pcm = $this->conf->pc_members();
         foreach ($array as $cid => $x) {
             $this->conf->prefetch_user_by_id($cid);
         }
@@ -2049,7 +2047,7 @@ class Contact {
 
     /** @param string $input
      * @return array{ok:bool} */
-    function check_password_info($input, $options = []) {
+    function check_password_info($input) {
         assert(!$this->conf->external_login());
         $cdbu = $this->cdb_user();
 
@@ -5128,7 +5126,6 @@ class Contact {
         }
 
         // reviewer deadlines
-        $revtypes = array();
         $rev_open = +$this->conf->setting("rev_open");
         $rev_open = $rev_open > 0 && $rev_open <= Conf::$now;
         if ($this->is_reviewer() && $rev_open) {
@@ -5361,7 +5358,6 @@ class Contact {
         $oldtype = $rrow ? $rrow->reviewType : 0;
         $type = max((int) $type, 0);
         assert($type >= 0 && $oldtype >= 0);
-        $oldround = $rrow ? $rrow->reviewRound : null;
         $round = $extra["round_number"] ?? null;
         $new_requester_cid = $this->contactId;
         $time = Conf::$now;

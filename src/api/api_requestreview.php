@@ -548,7 +548,6 @@ class RequestReview_API {
      * @param ?PaperInfo $prow
      * @return JsonResult */
     static function undeclinereview($user, $qreq, $prow) {
-        $refusals = [];
         $email = trim($qreq->email);
         if ($email === "" || $email === "me") {
             $email = $user->email;

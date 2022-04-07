@@ -508,7 +508,6 @@ class JsonParser {
                     }
                 }
 
-                $keypos = $this->pos;
                 $key = $this->decode_part($depth + 1);
                 if (!is_string($key)
                     || (!$this->assoc && ($key === "" || $key[0] === "\0"))) {

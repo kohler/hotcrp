@@ -44,7 +44,7 @@ class Color_SearchTerm {
                        && $tx->badges) {
                 $f = function ($t) use ($tx) { return $t === $tx; };
             } else {
-                $f = function ($t) { return false; };
+                $f = function () { return false; };
             }
             foreach ($srch->conf->tags()->filter_by($f) as $tag => $tinfo) {
                 $tm->add_tag($tag);

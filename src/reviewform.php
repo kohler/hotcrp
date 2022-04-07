@@ -425,8 +425,8 @@ $blind\n";
         return join("", $t);
     }
 
-    private function _print_accept_decline(PaperInfo $prow, $rrow, Contact $user,
-                                          $reviewPostLink) {
+    /** @param ?ReviewInfo $rrow */
+    private function _print_accept_decline(PaperInfo $prow, $rrow, Contact $user) {
         if ($rrow
             && $rrow->reviewId
             && $rrow->reviewStatus === 0
@@ -446,7 +446,10 @@ $blind\n";
         }
     }
 
-    private function _print_review_actions($prow, $rrow, $user, $reviewPostLink) {
+    /** @param PaperInfo $prow
+     * @param ?ReviewInfo $rrow
+     * @param Contact $user */
+    private function _print_review_actions($prow, $rrow, $user) {
         $buttons = [];
 
         $submitted = $rrow && $rrow->reviewStatus === ReviewInfo::RS_COMPLETED;
@@ -623,7 +626,7 @@ $blind\n";
         echo '<div class="revcard-form">';
         $allow_admin = $viewer->allow_administer($prow);
         if ($viewer->time_review($prow, $rrow) || $allow_admin) {
-            $this->_print_accept_decline($prow, $rrow, $viewer, $reviewPostLink);
+            $this->_print_accept_decline($prow, $rrow, $viewer);
         }
 
         // blind?
@@ -650,7 +653,7 @@ $blind\n";
                 && !$allow_admin) {
                 echo '<div class="feedback is-warning mb-2">Only administrators can remove or unsubmit the review at this point.</div>';
             }
-            $this->_print_review_actions($prow, $rrow, $viewer, $reviewPostLink);
+            $this->_print_review_actions($prow, $rrow, $viewer);
         }
 
         echo "</div></form></div>\n\n";
@@ -1103,7 +1106,6 @@ class ReviewValues extends MessageSet {
         $this->req = [];
 
         // XXX validate more
-        $first = $last = null;
         foreach ($j as $k => $v) {
             if ($k === "round") {
                 if ($v === null || is_string($v))
@@ -1492,7 +1494,7 @@ class ReviewValues extends MessageSet {
         $diffinfo = new ReviewDiffInfo($prow, $rrow);
         $fchanges = [[], []];
         $wc = 0;
-        foreach ($this->rf->all_fields() as $fid => $f) {
+        foreach ($this->rf->all_fields() as $f) {
             if (!$f->test_exists($rrow)) {
                 continue;
             }

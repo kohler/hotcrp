@@ -94,7 +94,6 @@ class PermissionProblem extends Exception
      * @return string */
     function unparse($format = 0) {
         $paperId = $this->_a["paperId"] ?? -1;
-        $reviewId = $this->_a["reviewId"] ?? -1;
         $option = $this->_a["option"] ?? null;
         '@phan-var ?PaperOption $option';
         $ms = [];

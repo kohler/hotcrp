@@ -149,7 +149,7 @@ class Permission_Tester {
         $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
         $user_varghese = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu"); // pc
         $user_wilma = $this->conf->checked_user_by_email("ojuelegba@gmail.com"); // pc
-        $user_mjh = $this->conf->checked_user_by_email("mjh@isi.edu"); // pc
+        // $user_mjh = $this->conf->checked_user_by_email("mjh@isi.edu"); // pc
         $user_pdruschel = $this->conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
         $user_randy = $this->conf->checked_user_by_email("randy@cs.berkeley.edu"); // author
         $user_lixia = $this->conf->checked_user_by_email("lixia@cs.ucla.edu"); // pc
@@ -348,7 +348,6 @@ class Permission_Tester {
         xassert($user_wilma->has_outstanding_review());
         xassert(!$user_wilma->can_view_review($paper1, $review1));
         xassert(!$user_wilma->can_view_review($paper1, $review2));
-        $paper3 = $user_wilma->checked_paper_by_id(3);
         save_review(3, $user_wilma, $revreq);
         xassert(!$user_wilma->has_outstanding_review());
         xassert($user_wilma->can_view_review($paper1, $review1));
@@ -634,7 +633,7 @@ class Permission_Tester {
         assert_search_papers($user_chair, "cmt:marina>1", "18");
         assert_search_papers($user_chair, "cmt:#redcmt", "18");
         $comment4 = new CommentInfo($paper2);
-        $c2ok = $comment4->save_comment(["text" => "test", "visibility" => "p", "blind" => false], $user_mgbaker);
+        $comment4->save_comment(["text" => "test", "visibility" => "p", "blind" => false], $user_mgbaker);
         MailChecker::check_db("test01-comment2");
         assert_search_papers($user_chair, "has:comment", "1 2 18");
         assert_search_papers($user_chair, "has:response", "");

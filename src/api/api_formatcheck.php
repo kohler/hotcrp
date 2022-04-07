@@ -6,7 +6,7 @@ class FormatCheck_API {
     static function run(Contact $user, Qrequest $qreq) {
         try {
             $docreq = new DocumentRequest($qreq, $qreq->doc, $user);
-        } catch (Exception $e) {
+        } catch (Exception $unused) {
             return new JsonResult(404, "No such document");
         }
         if (($whynot = $docreq->perm_view_document($user))) {

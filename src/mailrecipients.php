@@ -138,10 +138,7 @@ class MailRecipients extends MessageSet {
     function set_recipients($type) {
         $user = $this->user;
         $this->type = $this->canonical_recipients($type);
-
         assert(!!$user->isPC);
-        $any_pcrev = $any_extrev = 0;
-        $any_newpcrev = $any_lead = $any_shepherd = 0;
 
         if ($user->is_manager()) {
             $hide = !$this->conf->has_any_submitted();
@@ -201,6 +198,8 @@ class MailRecipients extends MessageSet {
             $this->defsel("extrev", "External reviewers", $hide);
             $this->defsel("uncextrev", "External reviewers with incomplete reviews", $hide);
             $this->defsel("rev_group_end", null, self::F_GROUP);
+        } else {
+            $any_lead = $any_shepherd = 0;
         }
 
         $hide = !$this->user->is_requester();

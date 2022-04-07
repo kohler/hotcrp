@@ -1641,7 +1641,7 @@ class PaperInfo {
             $this->load_preferences();
         }
         if ($this->_prefs_array === null) {
-            $x = array();
+            $x = [];
             if ($this->allReviewerPreference !== "") {
                 $p = preg_split('/[ ,]/', $this->allReviewerPreference);
                 for ($i = 0; $i + 2 < count($p); $i += 3) {
@@ -2771,7 +2771,6 @@ class PaperInfo {
         }
         $result = $this->conf->qe(self::fetch_comment_query()
             . " where paperId?a order by paperId, commentId", $row_set->paper_ids());
-        $comments = [];
         while (($c = CommentInfo::fetch($result, null, $this->conf))) {
             $prow = $row_set->checked_paper_by_id($c->paperId);
             $c->set_prow($prow);

@@ -116,12 +116,10 @@ class Reviews_SettingRenderer {
 
         echo '<div id="roundtable">', Ht::hidden("has_tag_rounds", 1);
         $round_map = Dbl::fetch_iimap($sv->conf->ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
-        $num_printed = 0;
         foreach ($roundorder as $i => $rname) {
             if ($i ? $rname !== ";" : $print_round0) {
                 self::print_round($sv, $i, $i ? $rname : "", $round_map[$i] ?? 0,
                                  $i !== 0 && count($selector) !== 1);
-                ++$num_printed;
             }
         }
         echo '</div><div id="newround" class="hidden">';

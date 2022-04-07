@@ -794,12 +794,13 @@ class PaperTable {
             return join(", ", $names);
         } else {
             foreach ($table as $au) {
-                $n = $e = $t = "";
                 $n = trim(Text::highlight("$au->firstName $au->lastName", $highpreg));
                 if ($au->email !== "") {
                     $s = Text::highlight($au->email, $highpreg);
                     $ehtml = htmlspecialchars($au->email);
                     $e = "&lt;<a href=\"mailto:{$ehtml}\" class=\"q\">{$s}</a>&gt;";
+                } else {
+                    $e = "";
                 }
                 $t = ($n === "" ? $e : $n);
                 if ($au->affiliation !== "") {
@@ -984,9 +985,8 @@ class PaperTable {
     }
 
     /** @param PaperOption $o
-     * @param int $vos
      * @param FieldRender $fr */
-    private function clean_render($o, $vos, $fr) {
+    private function clean_render($o, $fr) {
         if ($fr->title === false) {
             assert($fr->value_format === 5);
             return;
@@ -1068,7 +1068,7 @@ class PaperTable {
             $fr->clear();
             $o->render($fr, $this->prow->force_option($o));
             if (!$fr->is_empty()) {
-                $this->clean_render($o, $vos, $fr);
+                $this->clean_render($o, $fr);
                 $renders[] = new PaperTableFieldRender($o, $vos, $fr);
             }
         }
@@ -1276,10 +1276,10 @@ class PaperTable {
                 $pcconf[$p->pc_index] = $this->user->reviewer_html_for($p);
             }
         }
-        ksort($pcconf);
         if (empty($pcconf)) {
             $pcconf[] = 'None';
         }
+        ksort($pcconf);
         $option = $this->conf->option_by_id(PaperOption::PCCONFID);
         $this->_papstripBegin("pspcconf", $this->allow_folds, ["data-fold-storage" => "-p.pcconf", "class" => "need-fold-storage"]);
         echo $this->papt("pc_conflicts", $option->title_html(),
@@ -1620,7 +1620,6 @@ class PaperTable {
         $this->_main_message($msg, $this->admin ? 1 : 2);
     }
     private function _edit_message_new_paper() {
-        $msg = "";
         if ($this->admin || $this->conf->time_start_paper()) {
             $t = [$this->conf->_("Enter information about your submission.")];
             $sub_reg = $this->conf->setting("sub_reg");
@@ -1718,7 +1717,6 @@ class PaperTable {
 
     private function _edit_message_existing_paper() {
         $has_author = $this->prow->has_author($this->user);
-        $can_view_decision = $this->prow->outcome != 0 && $this->user->can_view_decision($this->prow);
         if ($has_author) {
             $this->_edit_message_for_author();
         } else if ($this->conf->allow_final_versions()
@@ -1776,8 +1774,6 @@ class PaperTable {
     }
 
     private function _collect_actions() {
-        $pid = $this->prow->paperId ? : "new";
-
         // Withdrawn papers can be revived
         if ($this->prow->timeWithdrawn > 0) {
             $revivable = $this->conf->time_finalize_paper($this->prow);
@@ -2161,10 +2157,9 @@ class PaperTable {
         $hideUnviewable = ($cflttype > 0 && !$this->admin)
             || (!$user->act_pc($prow) && !$conf->setting("extrev_view"));
         $show_ratings = $user->can_view_review_ratings($prow);
-        $xsep = ' <span class="barsep">·</span> ';
         $want_scores = !in_array($this->mode, ["assign", "edit", "re"]);
         $want_requested_by = false;
-        $score_header = array_map(function ($x) { return ""; },
+        $score_header = array_map(function ($unused) { return ""; },
                                   $conf->review_form()->forder);
         $last_pc_reviewer = -1;
 
@@ -2357,7 +2352,6 @@ class PaperTable {
         $prow = $this->prow;
         $cflttype = $this->user->view_conflict_type($prow);
         $any_comments = false;
-        $xsep = ' <span class="barsep">·</span> ';
 
         $nvisible = 0;
         $myrr = null;
@@ -2690,11 +2684,6 @@ class PaperTable {
     private function _mark_review_messages($editable, ReviewInfo $rrow) {
         if (($this->user->is_owned_review($rrow) || $this->admin)
             && !$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
-            if ($this->admin) {
-                $override = " As an administrator, you can override this deadline.";
-            } else {
-                $override = "";
-            }
             if ($this->conf->time_review_open()) {
                 $t = 'The <a href="' . $this->conf->hoturl("deadlines") . '">review deadline</a> has passed, so the review can no longer be changed.';
             } else {

@@ -2452,7 +2452,6 @@ class PaperSearch extends MessageSet {
         $parens = 0;
         $defaultop = $type === "all" ? "SPACE" : "SPACEOR";
         $curqe = null;
-        $t = "";
         $splitter = new SearchSplitter($str);
 
         while (!$splitter->is_empty()) {

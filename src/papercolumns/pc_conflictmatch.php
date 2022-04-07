@@ -73,7 +73,6 @@ class ConflictMatch_PaperColumn extends PaperColumn {
             $this->_potconf["pref"][] = ["<em>reviewer preference</em>", "PC entered preference " . unparse_preference($pref)];
         }
         $ch = [];
-        $nconf = count($this->_potconf);
         foreach ($this->_potconf as &$cx) {
             if (count($cx) > 1) {
                 $n = $len = false;
@@ -99,6 +98,8 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         }
     }
 
+    /** @param string $name @unused-param
+     * @param object $xfj @unused-param */
     static function expand($name, Contact $user, $xfj, $m) {
         if (!($fj = (array) $user->conf->basic_paper_column("potentialconflict", $user))) {
             return null;

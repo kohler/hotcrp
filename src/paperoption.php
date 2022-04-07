@@ -271,7 +271,7 @@ class PaperOptionList implements IteratorAggregate {
         $this->conf = $conf;
     }
 
-    function _add_json($oj, $k, $landmark) {
+    function _add_json($oj, $k) {
         if (!isset($oj->id) && $k === 0) {
             throw new ErrorException("This conference could not be upgraded from an old database schema. A system administrator must fix this problem.");
         }
@@ -362,7 +362,7 @@ class PaperOptionList implements IteratorAggregate {
         }
     }
 
-    function _add_intrinsic_json($oj, $k, $landmark) {
+    function _add_intrinsic_json($oj) {
         assert(is_int($oj->id) && $oj->id <= 0);
         $this->_accumulator[(string) $oj->id][] = $oj;
         return true;
@@ -951,7 +951,7 @@ class PaperOption implements JsonSerializable {
     /** @return string|false */
     function search_keyword() {
         if ($this->_search_keyword === null) {
-            $am = $this->abbrev_matcher();
+            $this->abbrev_matcher();
             assert($this->_search_keyword !== null);
         }
         return $this->_search_keyword;
@@ -1711,10 +1711,7 @@ class Document_PaperOption extends PaperOption {
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $fk = $this->field_key();
-        $fk2 = "opt{$this->id}";
-        if (($doc = DocumentInfo::make_request($qreq, $fk, $prow->paperId, $this->id, $this->conf))
-            || // backward compat
-               ($fk !== $fk2 && ($doc = DocumentInfo::make_request($qreq, $fk2, $prow->paperId, $this->id, $this->conf)))) {
+        if (($doc = DocumentInfo::make_request($qreq, $fk, $prow->paperId, $this->id, $this->conf))) {
             $ov = PaperValue::make($prow, $this, PaperValue::NEWDOC_VALUE);
             $ov->set_anno("document", $doc);
             if ($doc->has_error()) {
@@ -1723,7 +1720,7 @@ class Document_PaperOption extends PaperOption {
                 }
             }
             return $ov;
-        } else if ($qreq["{$fk}:remove"] || ($fk !== $fk2 && $qreq["{$fk2}:remove"])) {
+        } else if ($qreq["{$fk}:remove"]) {
             return PaperValue::make($prow, $this);
         } else {
             return null;
@@ -2064,7 +2061,6 @@ class Attachments_PaperOption extends PaperOption {
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
-        $dids = $anno = [];
         $ov = PaperValue::make($prow, $this, -1);
         foreach ($this->value_dids($prow->force_option($this)) as $i => $did) {
             if (!isset($qreq["{$this->formid}_{$did}_{$i}:remove"])) {

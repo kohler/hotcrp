@@ -308,7 +308,8 @@ class ReviewInfo implements JsonSerializable {
         return $rrow;
     }
 
-    /** @param ?list<ReviewField> $scores
+    /** @param Conf $conf @unused-param
+     * @param ?list<ReviewField> $scores
      * @return string */
     static function review_signature_sql(Conf $conf, $scores = null) {
         $t = "r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewOrdinal, ' ', r.timeDisplayed, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit, ' ', r.reviewViewScore";

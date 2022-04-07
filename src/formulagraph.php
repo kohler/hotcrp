@@ -221,11 +221,9 @@ class FormulaGraph extends MessageSet {
         $fy = simplify_whitespace($fy);
 
         // graph type
-        $fy_guess = false;
         $fy_gtype = $fy;
         if ($gtype === "") {
             $gtype = preg_replace('/\s+.*/', "", $fy);
-            $fy_guess = true;
             $fy_gtype = ltrim(substr($fy, strlen($gtype)));
         }
 
@@ -847,13 +845,13 @@ class FormulaGraph extends MessageSet {
 
     private function _tag_reformat() {
         if (!($axes = $this->_valuemap_axes(Fexpr::FTAG))
-            || !($rs = $this->_valuemap_collect($axes))) {
+            || !$this->_valuemap_collect($axes)) {
             return;
         }
         uksort($this->tags, [$this->conf->collator(), "compare"]);
         $i = -1;
         $m = [];
-        foreach ($this->tags as $tag => $ri) {
+        foreach ($this->tags as $ri) {
             $m[$ri] = ++$i;
         }
         $this->_valuemap_rewrite($axes, $m);

@@ -758,8 +758,8 @@ class Aggregate_Fexpr extends Fexpr {
 
     function typecheck(Formula $formula) {
         $ok = $this->typecheck_arguments($formula);
-        if (($this->op !== "argmin"
-            && $this->op !== "argmax")
+        if ($this->op !== "argmin"
+            && $this->op !== "argmax"
             && !$this->args[0]->math_format()) {
             $formula->fexpr_lerror($this->args[0], $this->args[0]->disallowed_use_error());
             $ok = false;
@@ -1306,7 +1306,6 @@ class FormulaCompiler {
     /** @param int $index_types
      * @return string */
     function loop_variable($index_types) {
-        $g = array();
         if ($index_types === Fexpr::IDX_TAGPC) {
             return $this->_add_tag_pc();
         } else if ($index_types === Fexpr::IDX_REVIEW) {
@@ -1396,7 +1395,7 @@ class FormulaCompiler {
 
     /** @return string */
     function _compile_my(Fexpr $e) {
-        $p = $this->_push();
+        $this->_push();
         $this->index_type = Fexpr::IDX_MY;
         $t = $this->_addltemp($e->compile($this));
         $loop = $this->_join_lstmt(false);
@@ -1531,6 +1530,7 @@ class Formula implements JsonSerializable {
         }
     }
 
+    /** @return string */
     function abbreviation() {
         if ($this->_abbreviation === null) {
             $this->conf->abbrev_matcher();
@@ -1876,7 +1876,6 @@ class Formula implements JsonSerializable {
                 || preg_match('/\A(?:null|false|true|pid|paperid)\z/i', $m[1])) {
                 break;
             }
-            $ee = null;
             if (preg_match('/\A(?:type|round|reviewer|words|auwords)\z/i', $m[1])) {
                 if ($e0) {
                     break;

@@ -568,7 +568,6 @@ class MeetingTracker {
         Dbl::free($result);
 
         foreach ($tis as $ti_index => $ti) {
-            $papers = [];
             foreach ($ti->pids ?? [] as $pid) {
                 $prow = $prows->get($pid);
                 $ti->papers[] = $p = (object) [];

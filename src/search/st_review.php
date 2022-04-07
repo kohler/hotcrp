@@ -691,7 +691,6 @@ class Review_SearchTerm extends SearchTerm {
         $f = $sword->kwdef->review_field;
         $rsm = new ReviewSearchMatcher;
 
-        $contactword = "";
         while (preg_match('/\A([^<>].*?|[<>].+?)(:|[=!<>]=?|≠|≤|≥)(.*)\z/s', $word, $m)) {
             if ($rsm->apply_review_type($m[1])
                 || $rsm->apply_completeness($m[1])
@@ -702,7 +701,6 @@ class Review_SearchTerm extends SearchTerm {
                 $rsm->set_contacts($srch->matching_uids($m[1], $sword->quoted, false));
             }
             $word = ($m[2] === ":" ? $m[3] : $m[2] . $m[3]);
-            $contactword .= $m[1] . ":";
         }
 
         if ($f instanceof Score_ReviewField) {

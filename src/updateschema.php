@@ -82,7 +82,6 @@ class UpdateSchema {
             return false;
         }
         $opsj = [];
-        $byabbr = [];
         while (($row = $result->fetch_object())) {
             // backward compatibility with old schema versions
             if (!isset($row->optionValues)) {
@@ -327,7 +326,6 @@ class UpdateSchema {
     }
 
     private function v176_paper_review_drop_main_fields() {
-        $rid = [];
         $kf = array_map(function ($k) { return "$k is not null"; }, array_keys(self::$v175_text_field_map));
         if (!$this->conf->ql_ok("lock tables PaperReview write")) {
             return false;

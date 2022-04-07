@@ -45,7 +45,6 @@ class TagRankParser {
         $csv->add_synonym("action", "index");
 
         $settings = $pids = [];
-        $found = 0;
         $tagger = new Tagger($this->user);
         $tag = $this->tag;
         $curIndex = 0;

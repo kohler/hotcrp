@@ -1022,7 +1022,6 @@ class diff_match_patch {
     function diff_cleanupMerge(&$diffs) {
         // Add a dummy entry at the end.
         $diffs[] = new diff_obj(DIFF_EQUAL, "");
-        $ndiff = count($diffs);
         $opos = 0;
         foreach ($diffs as $pos => $diff) {
             if ($diff->op !== DIFF_EQUAL) {

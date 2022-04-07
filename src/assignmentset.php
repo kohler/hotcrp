@@ -1213,7 +1213,6 @@ class AssignmentSet {
         } else if (!$first && $last && strpos(trim($last), " ") === false) {
             $special = trim(strtolower($last));
         }
-        $xspecial = $special;
 
         // check special: missing, "none", "any", "pc", "me", PC tag, "external"
         if ($special === "any" || $special === "all") {
@@ -1685,7 +1684,7 @@ class AssignmentSet {
 
         // create assigners for difference
         $this->assigners_pidhead = $pidtail = [];
-        foreach ($this->astate->diff() as $pid => $difflist) {
+        foreach ($this->astate->diff() as $difflist) {
             foreach ($difflist as $item) {
                 try {
                     $this->astate->set_landmark($item->landmark);

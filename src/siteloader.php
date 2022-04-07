@@ -159,7 +159,6 @@ class SiteLoader {
             if ($f === "") {
                 continue;
             }
-            $matches = [];
             $ignore_not_found = $globby = false;
             if ($f[0] === "?") {
                 $ignore_not_found = true;

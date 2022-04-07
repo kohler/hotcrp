@@ -276,7 +276,6 @@ function goPaperForm($baseUrl = null, $args = array()) {
     if ($Me->is_empty()) {
         return "";
     }
-    $list = Conf::$main->active_list();
     $x = Ht::form(Conf::$main->hoturl($baseUrl ? : "paper"), ["method" => "get", "class" => "gopaper"]);
     if ($baseUrl == "profile") {
         $x .= Ht::entry("u", "", ["id" => "quicklink-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow", "spellcheck" => false]);
@@ -469,9 +468,7 @@ function actionBar($mode = null, $qreq = null) {
     if ($Me->is_disabled()) {
         return "";
     }
-    $forceShow = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 
-    $paperArg = "p=*";
     $xmode = [];
     $listtype = "p";
 

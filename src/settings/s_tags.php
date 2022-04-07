@@ -143,10 +143,9 @@ class Tags_SettingParser extends SettingParser {
             $new_votish[] = "";
 
             // remove negative votes
-            $pcm = $sv->conf->pc_members();
             $removals = [];
             foreach ($new_votish as $t) {
-                list($tag, $index) = Tagger::unpack($t);
+                list($tag, $unused_index) = Tagger::unpack($t);
                 if ($tag !== false) {
                     $removals[] = "right(tag," . (strlen($tag) + 1) . ")='~" . sqlq($tag) . "'";
                 }
@@ -160,7 +159,7 @@ class Tags_SettingParser extends SettingParser {
 
             // remove no-longer-active voting tags
             if (($removed_votish = array_diff($old_votish, $new_votish))) {
-                $result = $sv->conf->qe("delete from PaperTag where tag?a", array_values($removed_votish));
+                $sv->conf->qe("delete from PaperTag where tag?a", array_values($removed_votish));
             }
 
             $sv->mark_invalidate_caches(["autosearch" => true]);

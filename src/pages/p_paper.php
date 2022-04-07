@@ -206,13 +206,6 @@ class Paper_Page {
         // submit paper if no error so far
         $_GET["paperId"] = $_GET["p"] = $this->qreq->paperId = $this->qreq->p = $this->ps->paperId;
 
-        if ($action === "final") {
-            $submitkey = "timeFinalSubmitted";
-            $storekey = "finalPaperStorageId";
-        } else {
-            $submitkey = "timeSubmitted";
-            $storekey = "paperStorageId";
-        }
         if ($is_new) {
             $new_prow->anno["is_new"] = true;
         }

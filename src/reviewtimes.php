@@ -110,8 +110,8 @@ class ReviewTimes {
     function json() {
         // find out who is light and who is heavy
         // (light => less than 0.66 * (80th percentile))
-        $nass = array();
-        foreach ($this->r as $cid => $x) {
+        $nass = [];
+        foreach ($this->r as $x) {
             $nass[] = count($x);
         }
         sort($nass);

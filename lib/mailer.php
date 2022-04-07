@@ -93,7 +93,6 @@ class Mailer {
         }
 
         $flags = $this->context === self::CONTEXT_EMAIL ? NAME_MAILQUOTE : 0;
-        $email = $r->email;
         if ($r->email !== "") {
             $email = $r->email;
         } else {
@@ -473,7 +472,6 @@ class Mailer {
         }
 
         $text = "";
-        $textstart = 0;
         for ($i = 0; $i < count($lines); ++$i) {
             $line = rtrim($lines[$i]);
             if ($line == "") {

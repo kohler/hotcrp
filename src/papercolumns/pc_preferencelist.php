@@ -38,7 +38,6 @@ class PreferenceList_PaperColumn extends PaperColumn {
         return !$pl->user->can_administer($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $prefs = $row->preferences();
         $ts = [];
         if ($this->topics || $row->preferences()) {
             foreach ($row->conf->pc_members() as $pcid => $pc) {

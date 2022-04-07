@@ -44,7 +44,6 @@ class UserActions {
         } else {
             $conf->qe("update ContactInfo set disabled=0 where contactId?a", array_keys($users));
             $conf->save_logs(true);
-            $unames = $activatednames = [];
             foreach ($users as $u) {
                 $conf->log_for($user, $u, "Account enabled");
                 $j->enabled_users[] = $u->name(NAME_E);

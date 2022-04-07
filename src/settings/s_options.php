@@ -231,8 +231,6 @@ class Options_SettingRenderer {
         echo '<template id="settings-sf-samples" class="hidden">';
         $jtypes = $sv->conf->option_type_map();
         uasort($jtypes, "Conf::xt_order_compare");
-
-        $otypes = [];
         foreach ($jtypes as $uf) {
             if (!isset($uf->display_if)
                 || $sv->conf->xt_check($uf->display_if, $uf, $sv->user)) {
@@ -544,7 +542,6 @@ class Options_SettingParser extends SettingParser {
 
 
     static function crosscheck(SettingValues $sv) {
-        $conf = $sv->conf;
         if (($sv->has_interest("sf") || $sv->has_interest("sub_blind"))
             && $sv->conf->setting("sub_blind") == Conf::BLIND_ALWAYS) {
             $opts = Options_SettingParser::configurable_options($sv->conf);

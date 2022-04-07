@@ -145,12 +145,10 @@ class DocumentInfo implements JsonSerializable {
             "mimetype" => $upload["type"] ?? null,
             "filename" => self::sanitize_filename($upload["name"] ?? null)
         ];
-        $fnhtml = isset($args["filename"]) ? " “" . htmlspecialchars($args["filename"]) . "”" : "";
 
-        $content = false;
         $upload_error = "";
         if (isset($upload["content"])) {
-            $content = $args["content"] = $upload["content"];
+            $args["content"] = $upload["content"];
         } else if (isset($upload["content_file"])) {
             $args["content_file"] = $upload["content_file"];
         } else if (isset($upload["tmp_name"]) && is_readable($upload["tmp_name"])) {
@@ -721,7 +719,6 @@ class DocumentInfo implements JsonSerializable {
                 }
             }
             $user_data = ["hotcrp" => json_encode_db($meta)];
-            $s3k = $this->s3_key();
 
             if ($s3->head_size($s3k) === $this->size()
                 || (($path = $this->available_content_file())
@@ -804,8 +801,7 @@ class DocumentInfo implements JsonSerializable {
         $this->ensure_content();
         if ($this->content !== null) {
             return $this->content;
-        } else if (($path = $this->content_file) !== null
-                   || ($path = $this->filestore) !== null) {
+        } else if (($path = $this->content_file ?? $this->filestore) !== null) {
             return @file_get_contents($path);
         } else {
             return false;

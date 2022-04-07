@@ -34,7 +34,7 @@ class TagAnno_API {
         if (!is_object($reqanno) && !is_array($reqanno)) {
             return ["ok" => false, "error" => "Bad request"];
         }
-        $q = $qv = $ml = $inserts = [];
+        $q = $qv = $ml = [];
         $next_annoid = $user->conf->fetch_value("select greatest(coalesce(max(annoId),0),0)+1 from PaperTagAnno where tag=?", $tag);
         // parse updates
         foreach (is_object($reqanno) ? [$reqanno] : $reqanno as $anno) {

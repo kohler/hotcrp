@@ -419,7 +419,6 @@ class Log_Page {
         $conf->header("Log", "actionlog");
 
         $trs = [];
-        $has_dest_user = false;
         foreach ($leg->page_rows($page) as $row) {
             $time = $conf->unparse_time_log((int) $row->timestamp);
             $t = ["<td class=\"pl pl_logtime\">{$time}</td>"];
@@ -432,7 +431,6 @@ class Log_Page {
             if ($xdest_users && $xusers != $xdest_users) {
                 $xdestusers_html = $this->users_html($xdest_users, false);
                 $t[] = "<td class=\"pl pl_logname\">{$xusers_html}</td><td class=\"pl pl_logname\">{$xdestusers_html}</td>";
-                $has_dest_user = true;
             } else {
                 $t[] = "<td class=\"pl pl_logname\" colspan=\"2\">{$xusers_html}</td>";
             }

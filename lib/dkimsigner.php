@@ -65,7 +65,6 @@ class DKIMSigner {
                 $v = $headers[$k];
                 $t = $k . ":";
                 assert(substr_compare($v, $t, 0, strlen($t), true) === 0);
-                $s = substr($v, strlen($k) + 1);
                 $a[] = $t . $this->_canonicalize_header_value_relaxed(substr($v, strlen($k) + 1)) . "\r\n";
             }
         }

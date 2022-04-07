@@ -338,7 +338,7 @@ class Review_Assigner extends Assigner {
         $x = ["pid" => $this->pid, "action" => ReviewInfo::unparse_assigner_action($this->rtype),
               "email" => $this->contact->email, "name" => $this->contact->name()];
         if (($round = $this->item["_round"])) {
-            $x["round"] = $this->item["_round"];
+            $x["round"] = $round;
         }
         if ($this->token) {
             $x["review_token"] = encode_token($this->token);

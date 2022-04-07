@@ -49,7 +49,7 @@ function handle_request($user, $qreq, $nav) {
         $user->conf->redirect($redir->url);
     } catch (JsonCompletion $jc) {
         $jc->result->emit($qreq->valid_token());
-    } catch (PageCompletion $pc) {
+    } catch (PageCompletion $unused) {
     }
 }
 

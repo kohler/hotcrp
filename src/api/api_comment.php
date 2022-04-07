@@ -68,13 +68,6 @@ class Comment_API {
             "docs" => $crow ? $crow->attachments()->as_list() : []
         ];
 
-        // check if response changed
-        $changed = true;
-        if ($response
-            && $req["text"] === rtrim(cleannl((string) ($xcrow->commentOverflow ?? $xcrow->comment)))) {
-            $changed = false;
-        }
-
         // tags
         if (!$response) {
             $req["tags"] = $qreq->tags;
@@ -84,14 +77,12 @@ class Comment_API {
         for ($i = count($req["docs"]) - 1; $i >= 0; --$i) {
             if ($qreq["cmtdoc_{$req["docs"][$i]->paperStorageId}_{$i}:remove"]) {
                 array_splice($req["docs"], $i, 1);
-                $changed = true;
             }
         }
         for ($i = 1; $qreq["has_cmtdoc_new_$i"] && count($req["docs"]) < 1000; ++$i) {
             if (($doc = DocumentInfo::make_request($qreq, "cmtdoc_new_$i", $prow->paperId, DTYPE_COMMENT, $prow->conf))) {
                 if ($doc->save()) {
                     $req["docs"][] = $doc;
-                    $changed = true;
                 } else {
                     $mis[] = MessageItem::error("<0>Error uploading attachment");
                     $ok = false;
@@ -109,7 +100,6 @@ class Comment_API {
                 $ok = false;
             } else {
                 $qreq->delete = true;
-                $changed = true;
             }
         }
 
@@ -228,7 +218,7 @@ class Comment_API {
         }
 
         // find comment
-        $crow = $response_name = null;
+        $crow = null;
         $mis = [];
         if (!$qreq->c && $qreq->response && $qreq->is_get()) {
             $qreq->c = ($qreq->response === "1" ? "" : $qreq->response) . "response";

@@ -15,8 +15,8 @@ class DiffMatchPatch_Tester {
             $tr = explode("\n", (new Exception)->getTraceAsString());
             $s = preg_replace('/\A\#?\d*\s*/', "", $tr[0]);
             fwrite(STDERR, "ASSERTION FAILURE: $s\n");
-            fwrite(STDERR, "  expected " . (is_string($a) ? $a : (json_encode($a) ?? var_export($a, true))) . "\n");
-            fwrite(STDERR, "       got " . (is_string($b) ? $b : (json_encode($b) ?? var_export($b, true))) . "\n");
+            fwrite(STDERR, "  expected " . (is_string($a) ? $a : (json_encode($a) ?: var_export($a, true))) . "\n");
+            fwrite(STDERR, "       got " . (is_string($b) ? $b : (json_encode($b) ?: var_export($b, true))) . "\n");
             fwrite(STDERR, join("\n", $tr) . "\n");
         }
         xassert($a === $b);

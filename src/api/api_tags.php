@@ -44,7 +44,6 @@ class Tags_API {
             $allotments[strtolower($row[0])][1] = (float) $row[1];
         }
         Dbl::free($result);
-        $tagger = new Tagger($user);
         foreach ($allotments as $tv) {
             $t = $tv[0];
             $link = $user->conf->hoturl("search", ["q" => "editsort:-#~{$t->tag}"]);

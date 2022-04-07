@@ -134,7 +134,7 @@ class Reviews_Tester {
 
     function test_offline_review_update() {
         $paper1 = $this->conf->checked_paper_by_id(1, $this->u_chair);
-        $rrow = fetch_review($paper1, $this->u_mgbaker);
+        fetch_review($paper1, $this->u_mgbaker);
         $this->review1A = file_get_contents(SiteLoader::find("test/review1A.txt"));
 
         // correct update

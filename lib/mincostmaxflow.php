@@ -642,7 +642,7 @@ class MinCostMaxFlow {
             if ($v->distance !== $bi) {
                 continue;
             }
-            foreach ($v->e as $ei => $e) {
+            foreach ($v->e as $e) {
                 if ($e->residual_cap_to($v)
                     && ($dst = $e->other($v))
                     && $bi < $dst->distance) {
@@ -1042,7 +1042,6 @@ class MinCostMaxFlow {
     function parse_dimacs($str) {
         $this->reset();
         $vnames = [];
-        $ismax = null;
         $next_cap = $next_cost = null;
         foreach (CsvParser::split_lines($str) as $lineno => $line) {
             if ($line[0] !== "f") {

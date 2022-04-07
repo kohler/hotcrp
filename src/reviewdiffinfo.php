@@ -148,7 +148,6 @@ class ReviewDiffInfo {
     /** @param array $patch
      * @return bool */
     static function apply_patch(ReviewInfo $rrow, $patch) {
-        $rform = $rrow->conf->review_form();
         $ok = true;
         $has_xpatch = null;
         $dmp = null;

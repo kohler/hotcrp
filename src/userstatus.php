@@ -1286,7 +1286,7 @@ class UserStatus extends MessageSet {
 
         // clean up
         if (isset($line["address"])
-            && ($v = trim($line["address"])) !== "") {
+            && trim($line["address"]) !== "") {
             $cj->address = explode("\n", cleannl($line["address"]));
             while (!empty($cj->address)
                    && $cj->address[count($cj->address) - 1] === "") {

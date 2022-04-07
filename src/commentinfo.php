@@ -358,14 +358,15 @@ class CommentInfo {
             }
             if ($separateColors
                 && ($tags = $cr->viewable_tags($viewer))
-                && ($color = $cr->conf->tags()->color_classes($tags))) {
+                && $cr->conf->tags()->color_classes($tags)) {
                 $include = true;
                 $record = false;
             }
             if ($include) {
                 $result[] = [$cr, 1, $connector];
-                if ($record)
+                if ($record) {
                     $known_cids[$cid] = count($result) - 1;
+                }
             } else {
                 ++$result[$known_cids[$cid]][1];
             }
@@ -798,12 +799,10 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $qv = [];
         if ($text === false) {
             if ($this->commentId) {
-                $change = true;
                 $q = "delete from PaperComment where commentId=$this->commentId";
                 $docids = [];
             }
         } else if (!$this->commentId) {
-            $change = true;
             $qa = ["contactId, paperId, commentType, comment, commentOverflow, timeModified, replyTo"];
             $qb = [$user->contactId, $this->prow->paperId, $ctype, "?", "?", Conf::$now, 0];
             if (strlen($text) <= 32000) {
@@ -839,7 +838,6 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         where t.commentId=0";
             }
         } else {
-            $change = ($this->commentType >= self::CT_AUTHOR) !== ($ctype >= self::CT_AUTHOR);
             if ($this->timeModified >= Conf::$now) {
                 Conf::advance_current_time($this->timeModified);
             }
@@ -872,7 +870,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             return false;
         }
 
-        $cmtid = $this->commentId ? : $result->insert_id;
+        $cmtid = $this->commentId ?: $result->insert_id;
         if (!$cmtid) {
             return false;
         }
@@ -964,7 +962,6 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         }
 
         // notify mentions and followers
-        $notified = [];
         if ($displayed
             && $this->commentId
             && ($this->commentType & self::CT_VISIBILITY) > self::CT_ADMINONLY
@@ -972,7 +969,6 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $this->analyze_mentions($user);
         }
 
-        $notify = false;
         if ($this->timeNotified === $this->timeModified) {
             if ($is_response && ($ctype & self::CT_DRAFT) !== 0) {
                 $tmpl = "@responsedraftnotify";

@@ -75,7 +75,7 @@ class NextTagAssigner implements AssignmentPreapplyFunction {
             if ($index >= $this->first_index && $index < $this->next_index) {
                 $x = $state->query_unmodified(new Tag_Assignable($pid, $ltag));
                 if (!empty($x)) {
-                    $item = $state->add(new Tag_Assignable($pid, $ltag, $this->tag, $this->next_index($this->isseq), true));
+                    $state->add(new Tag_Assignable($pid, $ltag, $this->tag, $this->next_index($this->isseq), true));
                 }
             }
         }
@@ -366,7 +366,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             if (preg_match($tag_re, $x->ltag)
                 && ($search_ltag
                     || $state->user->can_edit_tag($prow, $x->ltag, $x->_index, null))) {
-                $f = $state->remove($x);
+                $state->remove($x);
             }
         }
         return true;

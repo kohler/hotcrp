@@ -310,7 +310,6 @@ class Autoassigner {
             }
         }
         Dbl::free($result);
-        $row = $result = null;
         gc_collect_cycles();
         $this->make_pref_groups();
 
@@ -669,7 +668,6 @@ class Autoassigner {
             }
         }
         // paper <-> contact map
-        $bpdone = array();
         foreach ($papers as $pid => $ct) {
             if ($ct <= 0 && $peass[$pid] <= 0) {
                 continue;
@@ -745,7 +743,7 @@ class Autoassigner {
         $mcmf_round = 1;
         while ($this->assign_mcmf_once($papers, $action, $round, $nperpc)) {
             $nmissing = 0;
-            foreach ($papers as $pid => $ct) {
+            foreach ($papers as $ct) {
                 if ($ct > 0)
                     $nmissing += $ct;
             }
@@ -791,7 +789,6 @@ class Autoassigner {
         foreach ($badpids as $pid) {
             $b[] = $this->conf->hotlink($pid, "assign", "p=$pid&amp;ls=$pidx");
         }
-        $x = "";
         if ($action === "rev" || $action === "revadd") {
             $x = ", possibly because of conflicts or previously declined reviews in the PC members you selected";
         } else {
@@ -1026,7 +1023,7 @@ class Autoassigner {
 
     /** @return array<int,array<int,true>> */
     function tentative_assignment_map() {
-        $pcmap = $a = [];
+        $a = [];
         foreach ($this->acs as $ac) {
             $a[$ac->cid] = [];
             foreach ($ac->newass ?? [] as $pid) {

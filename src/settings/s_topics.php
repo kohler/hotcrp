@@ -134,7 +134,7 @@ class Topics_SettingParser extends SettingParser {
 
     function store_value(SettingValues $sv, Si $si) {
         $oldm = $sv->conf->topic_set()->as_array();
-        $newt2 = $delt = $changet = [];
+        $newt2 = $changet = [];
         foreach ($this->topicj as $tid => $tname) {
             if (!isset($oldm[$tid])) {
                 $newt2[] = [$tid, $tname];

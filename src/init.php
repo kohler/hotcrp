@@ -363,7 +363,6 @@ function initialize_request() {
         if ($lb[0] === $conf->dbname
             && $lb[2] !== "index"
             && $lb[2] === Navigation::page()) {
-            assert($qreq instanceof Qrequest);
             foreach ($lb[3] as $k => $v) {
                 if (!isset($qreq[$k]))
                     $qreq[$k] = $v;

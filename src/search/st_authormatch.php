@@ -44,7 +44,6 @@ class AuthorMatch_SearchTerm extends SearchTerm {
         if (!$this->user->allow_view_authors($row)) {
             return false;
         }
-        $anymatch = false;
         if ($this->type !== "comatch"
             && $row->field_match_pregexes($this->matcher->general_pregexes(), "authorInformation")) {
             foreach ($row->author_list() as $au) {

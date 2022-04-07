@@ -45,7 +45,6 @@ class Offline_Page {
 
     /** @return bool */
     function handle_tag_indexes() {
-        $filename = null;
         if ($this->qreq->upload && $this->qreq->has_file("file")) {
             if (($text = $this->qreq->file_contents("file")) === false) {
                 $this->conf->error_msg("<0>Internal error: cannot read uploaded file");

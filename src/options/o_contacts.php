@@ -106,7 +106,7 @@ class Contacts_PaperOption extends PaperOption {
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $ov = PaperValue::make_force($prow, $this);
         $ca = $ov->anno("users");
-        $bad_ca = $new_ca = [];
+        $new_ca = [];
         for ($n = 1; isset($qreq["contacts:email_$n"]); ++$n) {
             $email = trim($qreq["contacts:email_$n"]);
             $name = simplify_whitespace((string) $qreq["contacts:name_$n"]);

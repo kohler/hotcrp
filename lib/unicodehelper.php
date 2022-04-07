@@ -53,7 +53,6 @@ class UnicodeHelper {
         }
         if (preg_match_all("/[\xC0-\xFF]/", $x, $m, PREG_OFFSET_CAPTURE)) {
             $first = 0;
-            $len = strlen($x);
             $out = "";
             foreach ($m[0] as $mx) {
                 $i = $mx[1];
@@ -80,7 +79,6 @@ class UnicodeHelper {
         $offsetmap = [[0, 0]];
         if (preg_match_all("/[\xC0-\xFF]/", $x, $m, PREG_OFFSET_CAPTURE)) {
             $first = 0;
-            $len = strlen($x);
             $out = "";
             foreach ($m[0] as $mx) {
                 $i = $mx[1];
@@ -356,7 +354,7 @@ class UnicodeHelper {
         } else if ($e >= 0xE0 && $e < 0xF0) {
             return $str;
         } else if ($e >= 0xC0 || $len == 3
-                   || ($f = ord($str[$len - 4])) < 0xF0) {
+                   || ord($str[$len - 4]) < 0xF0) {
             return substr($str, 0, $len - 3);
         } else {
             return $str;

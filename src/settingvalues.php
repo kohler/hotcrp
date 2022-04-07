@@ -576,7 +576,7 @@ class SettingValues extends MessageSet {
         assert(str_ends_with($pfx, "__"));
         $ctr = 1;
         if ($this->_use_req) {
-            $delete_rest = ($x = $this->reqstr("{$pfx}reset") ?? "") !== "";
+            $delete_rest = ($this->reqstr("{$pfx}reset") ?? "") !== "";
             $used = $names = $namectrs = [];
             while (($x = $this->reqstr("{$pfx}{$ctr}__id")) !== null) {
                 if ($x !== "") {
@@ -742,7 +742,7 @@ class SettingValues extends MessageSet {
             }
         }
         $state = [];
-        foreach ($map1 as $i => $jlist) {
+        foreach ($map1 as $jlist) {
             if (count($jlist) === 1 && $map2c[$jlist[0]] === 1) {
                 $state[] = 1; // has a unique mapping
             } else if (empty($jlist) && $n2unique === $nlist2) {

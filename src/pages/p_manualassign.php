@@ -20,7 +20,6 @@ class ManualAssign_Page {
 
 
     private function save(Contact $reviewer) {
-        $round_number = null;
         $rcid = $reviewer->contactId;
 
         $pids = [];

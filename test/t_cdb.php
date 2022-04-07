@@ -158,7 +158,7 @@ class Cdb_Tester {
     function test_chair_update_no_cdb() {
         Contact::set_main_user(user("marina@poema.ru"));
         $te2 = user("te2@_.com");
-        $te2_cdb = $te2->cdb_user();
+        $te2->cdb_user();
         Dbl::qe($this->conf->contactdb(), "update ContactInfo set affiliation='' where email='te2@_.com'");
         $acct = $this->us1->save_user((object) ["firstName" => "Wacky", "affiliation" => "String", "email" => "te2@_.com"]);
         xassert(!!$acct);
@@ -387,7 +387,7 @@ class Cdb_Tester {
     function test_cdb_update() {
         // Betty is in the local db, but not yet the contact db;
         // cdb_update should put her in the cdb
-        $result = Dbl::qe($this->conf->dblink, "insert into ContactInfo set email='betty6@_.com', password='Fart', firstName='Betty', lastName='Knowles'");
+        Dbl::qe($this->conf->dblink, "insert into ContactInfo set email='betty6@_.com', password='Fart', firstName='Betty', lastName='Knowles'");
         $u = $this->conf->checked_user_by_email("betty6@_.com");
         xassert(!!$u);
         xassert(!$u->cdb_user());

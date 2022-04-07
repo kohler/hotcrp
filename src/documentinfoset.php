@@ -359,7 +359,6 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 0,            // number of disk with start of zip64 end of central dir
                 $offset,      // offset of zip64 end of central dir
                 1);           // total number of disks
-            $zip64 = true;
         } else {
             $ex = "";
         }

@@ -245,7 +245,6 @@ class DocumentFileTree implements JsonSerializable {
 
     /** @return int */
     static function random_index($di) {
-        global $verbose;
         $l = 0;
         $r = count($di) - 1;
         $val = mt_rand(0, $di[$r] - 1);
@@ -308,7 +307,6 @@ class DocumentFileTree implements JsonSerializable {
     function hide(DocumentFileTreeMatch $fm) {
         // account for removal
         assert($fm->treeid === $this->treeid);
-        $delta = null;
         for ($i = count($fm->idxes) - 1; $i >= 0; --$i) {
             $this->_dirinfo[$fm->bdirs[$i]]->hide_component_index($fm->idxes[$i]);
         }

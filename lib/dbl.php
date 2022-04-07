@@ -47,7 +47,8 @@ class Dbl_Result {
     }
     /** @template T
      * @param class-string<T> $class_name
-     * @return ?T */
+     * @return ?T
+     * @suppress PhanUnusedPublicNoOverrideMethodParameter */
     function fetch_object($class_name = "stdClass", $params = []) {
         return null;
     }
@@ -348,7 +349,6 @@ class Dbl {
             } else if ($nextch === "U") {
                 $U_mysql8 = $U_mysql8 ?? (strpos($dblink->server_info, "Maria") === false
                                           && $dblink->server_version >= 80020);
-                $ql = substr($qstr, 0, $strpos);
                 if (substr($qstr, $nextpos + 1, 1) === "(") {
                     $rparen = strpos($qstr, ")", $nextpos + 2);
                     $name = substr($qstr, $nextpos + 2, $rparen - $nextpos - 2);
@@ -380,10 +380,9 @@ class Dbl {
                 $nextch = substr($qstr, $nextpos, 1);
                 $simpleargs = false;
             } else {
-                do {
-                    $thisarg = $argpos;
-                    ++$argpos;
-                } while (isset($usedargs[$thisarg]));
+                for (++$argpos; isset($usedargs[$argpos - 1]); ++$argpos) {
+                }
+                $thisarg = $argpos - 1;
             }
             if (!array_key_exists($thisarg, $argv)) {
                 trigger_error(self::landmark() . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " not set");
@@ -537,7 +536,7 @@ class Dbl {
 
     /** @return Dbl_Result */
     static function do_query_on($dblink, $args, $flags) {
-        list($ignored_dblink, $qstr, $argv) = self::query_args($args, $flags, true);
+        list($unused_dblink, $qstr, $argv) = self::query_args($args, $flags, true);
         return self::do_query_with($dblink, $qstr, $argv, $flags);
     }
 

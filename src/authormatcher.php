@@ -59,7 +59,7 @@ class AuthorMatcher extends Author {
             $wordinfo = self::wordinfo();
             preg_match_all('/[a-z0-9&]+/', $this->deaccent(2), $m);
 
-            $directs = $wstrong = $wweak = $alts = [];
+            $wstrong = $wweak = $alts = [];
             $any_strong_alternate = false;
             foreach ($m[0] as $w) {
                 $aw = $wordinfo[$w] ?? null;
@@ -359,6 +359,10 @@ class AuthorMatcher extends Author {
         }
         return $result;
     }
+
+    /** @param string $iftext
+     * @param list<string> $ws
+     * @return bool */
     private static function match_if($iftext, $ws) {
         foreach (explode(" ", $iftext) as $w) {
             if ($w !== "" && !in_array($w, $ws))
@@ -368,6 +372,9 @@ class AuthorMatcher extends Author {
     }
 
 
+    /** @param string $s
+     * @param bool $default_name
+     * @return bool */
     static function is_likely_affiliation($s, $default_name = false) {
         preg_match_all('/[A-Za-z0-9&]+/', UnicodeHelper::deaccent($s), $m);
         $has_weak = $has_nameish = false;
@@ -415,6 +422,9 @@ class AuthorMatcher extends Author {
     }
 
 
+    /** @param string $s
+     * @param int $type
+     * @return string */
     static function fix_collaborators($s, $type = 0) {
         $s = cleannl($s);
 
@@ -433,7 +443,7 @@ class AuthorMatcher extends Author {
         foreach ($olines as $line) {
             $line = trim($line);
             if (strlen($line) <= 35
-                || !self::fix_collaborators_split_line($line, $lines, count($olines), $type))
+                || !self::fix_collaborators_split_line($line, $lines, $type))
                 $lines[] = $line;
         }
 
@@ -515,7 +525,12 @@ class AuthorMatcher extends Author {
             return null;
         }
     }
-    static private function fix_collaborators_split_line($line, &$lines, $ntext, $type) {
+
+    /** @param string $line
+     * @param list<string> &$lines
+     * @param int $type
+     * @return bool */
+    static private function fix_collaborators_split_line($line, &$lines, $type) {
         // some assholes enter more than one per line
         $ncomma = substr_count($line, ",");
         $nparen = substr_count($line, "(");
@@ -589,6 +604,9 @@ class AuthorMatcher extends Author {
         }
         return true;
     }
+
+    /** @param string $line
+     * @return string */
     static private function fix_collaborators_line_no_parens($line) {
         $line = str_replace(")", "", $line);
         if (preg_match('{\A(|none|n/a|na|)\s*[.,;\}]?\z}i', $line, $m)) {
@@ -618,6 +636,10 @@ class AuthorMatcher extends Author {
             return $line;
         }
     }
+
+    /** @param string $line
+     * @param int $paren
+     * @return string */
     static private function fix_collaborators_line_parens($line, $paren) {
         $name = rtrim((string) substr($line, 0, $paren));
         if (preg_match('{\A(?:|-|all|any|institution|none)\s*[.,:;\}]?\z}i', $name)) {

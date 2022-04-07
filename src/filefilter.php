@@ -74,7 +74,6 @@ class FileFilterJsonExpander {
             && isset($fj->name) && is_string($fj->name) && $fj->name !== ""
             && ctype_alnum($fj->name) && !ctype_digit($fj->name)
             && isset($fj->function) && is_string($fj->function)) {
-            $ff = null;
             if ($fj->function[0] === "+") {
                 $class = substr($fj->function, 1);
                 /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */

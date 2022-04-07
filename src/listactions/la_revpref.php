@@ -60,7 +60,6 @@ class Revpref_ListAction extends ListAction {
             "paper" => true, "title" => true, "email" => $not_me, "preference" => true,
             "notes" => false, "authors" => false, "abstract" => !!$extended, "topics" => false
         ];
-        $has_conflict = false;
         $texts = [];
         foreach ($ssel->paper_set($user, ["topics" => 1, "reviewerPreference" => 1]) as $prow) {
             if ($not_me && !$user->allow_administer($prow)) {

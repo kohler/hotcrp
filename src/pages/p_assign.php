@@ -76,7 +76,6 @@ class Assign_Page {
                 continue;
             }
 
-            $revtype = $conftype = "";
             if (in_array($assignment, $acceptable_review_types, true)) {
                 $revtype = ReviewInfo::unparse_assigner_action((int) $assignment);
                 $conftype = "off";

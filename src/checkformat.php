@@ -253,7 +253,6 @@ class CheckFormat extends MessageSet {
         // paper size
         if ($spec->papersize) {
             $papersize = $bj->papersize;
-            $psdefs = array();
             $ok = false;
             foreach ($spec->papersize as $p) {
                 if (abs($p[0] - $papersize[1]) < 9
@@ -546,7 +545,6 @@ class CheckFormat extends MessageSet {
             return;
         }
 
-        $done_me = false;
         $spec = $doc->conf->format_spec($doc->documentType);
         $checkers = $this->spec_checkers($spec);
         if ($spec !== $this->last_spec) {

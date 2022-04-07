@@ -231,7 +231,7 @@ class SearchConfig_API {
         // NB permissions handled in loop
 
         // capture current formula set
-        $saved_searches = $search_names = $id2idx = [];
+        $saved_searches = $search_names = [];
         foreach ($user->conf->named_searches() as $n => $j) {
             $ln = strtolower($n);
             $saved_searches[$ln] = $j;
