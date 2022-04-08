@@ -5676,7 +5676,7 @@ class Conf {
 
     /** @return SettingInfoSet */
     function si_set() {
-        $this->_setting_info = $this->_setting_info ?? new SettingInfoSet($this);
+        $this->_setting_info = $this->_setting_info ?? SettingInfoSet::make_conf($this);
         return $this->_setting_info;
     }
 

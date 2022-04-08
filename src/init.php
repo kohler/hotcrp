@@ -101,24 +101,27 @@ if (PHP_VERSION_ID < 80000
 
 function expand_json_includes_callback($includelist, $callback) {
     $includes = [];
-    foreach (is_array($includelist) ? $includelist : [$includelist] as $k => $str) {
+    foreach (is_array($includelist) ? $includelist : [$includelist] as $k => $v) {
+        if ($v === null || $v === false || $v === "") {
+            continue;
+        }
         $expandable = null;
-        if (is_string($str)) {
-            if (str_starts_with($str, "@")) {
-                $expandable = substr($str, 1);
-            } else if (!str_starts_with($str, "{")
-                       && (!str_starts_with($str, "[") || !str_ends_with(rtrim($str), "]"))
-                       && !ctype_space($str[0])) {
-                $expandable = $str;
+        if (is_string($v)) {
+            if (str_starts_with($v, "@")) {
+                $expandable = substr($v, 1);
+            } else if (!str_starts_with($v, "{")
+                       && (!str_starts_with($v, "[") || !str_ends_with(rtrim($v), "]"))
+                       && !ctype_space($v[0])) {
+                $expandable = $v;
             }
         }
-        if ($expandable) {
+        if ($expandable !== null) {
             foreach (SiteLoader::expand_includes($expandable) as $f) {
                 if (($x = file_get_contents($f)))
                     $includes[] = [$x, $f];
             }
         } else {
-            $includes[] = [$str, "entry $k"];
+            $includes[] = [$v, "entry $k"];
         }
     }
     foreach ($includes as $xentry) {

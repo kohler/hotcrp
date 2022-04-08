@@ -373,11 +373,11 @@ class String_Sitype extends Sitype {
         } else {
             $s = trim($vstr);
         }
-        if ($s === "" && $si->required === true) {
+        if ($s !== "" || $si->required !== true) {
+            return $s;
+        } else {
             $sv->error_at($si, "<0>Entry required");
             return null;
-        } else {
-            return $s;
         }
     }
     function nullable($v, Si $si, SettingValues $sv) {

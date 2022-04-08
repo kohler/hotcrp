@@ -27,7 +27,6 @@ class SiteLoader {
         "ReviewValues" => "src/reviewform.php",
         "SearchTerm" => "src/papersearch.php",
         "SearchWord" => "src/papersearch.php",
-        "SettingInfoSet" => "src/si.php",
         "StreamS3Result" => "lib/s3result.php",
         "TagAnno" => "lib/tagger.php",
         "TagInfo" => "lib/tagger.php",

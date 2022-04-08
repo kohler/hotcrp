@@ -2159,7 +2159,7 @@ class PaperTable {
         $show_ratings = $user->can_view_review_ratings($prow);
         $want_scores = !in_array($this->mode, ["assign", "edit", "re"]);
         $want_requested_by = false;
-        $score_header = array_map(function ($unused) { return ""; },
+        $score_header = array_map(function ($x) { return ""; },
                                   $conf->review_form()->forder);
         $last_pc_reviewer = -1;
 

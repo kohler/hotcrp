@@ -96,8 +96,7 @@ class ComponentSet implements XtContext {
         $this->viewer = $viewer;
         self::$next_placeholder = 1;
         foreach ($args as $arg) {
-            if ($arg)
-                expand_json_includes_callback($arg, [$this, "add"]);
+            expand_json_includes_callback($arg, [$this, "add"]);
         }
         $this->_ctx = new ComponentContext;
         $this->reset_context();
