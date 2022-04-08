@@ -707,13 +707,13 @@ class TestRunner {
         Conf::$main->load_settings();
     }
 
-    static function reset_db() {
+    static function reset_db($rebuild = false) {
         $conf = Conf::$main;
         $timer = new ProfileTimer;
         MailChecker::clear();
 
         // Initialize from an empty database.
-        self::reset_schema($conf->dblink, SiteLoader::find("src/schema.sql"));
+        self::reset_schema($conf->dblink, SiteLoader::find("src/schema.sql"), $rebuild);
         $timer->mark("schema");
 
         // No setup phase.
@@ -723,7 +723,7 @@ class TestRunner {
 
         // Contactdb.
         if (($cdb = $conf->contactdb())) {
-            self::reset_schema($cdb, SiteLoader::find("test/cdb-schema.sql"));
+            self::reset_schema($cdb, SiteLoader::find("test/cdb-schema.sql"), $rebuild);
             $cdb->query("insert into Conferences set dbname='" . $cdb->real_escape_string($conf->dbname) . "'");
             Contact::$props["demoBirthday"] = Contact::PROP_CDB | Contact::PROP_NULL | Contact::PROP_INT | Contact::PROP_IMPORT;
         }

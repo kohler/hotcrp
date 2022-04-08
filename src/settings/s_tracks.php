@@ -242,7 +242,7 @@ class Tracks_SettingParser extends SettingParser {
 
     private function print_cross_track(SettingValues $sv) {
         echo "<div class=\"settings-tracks\"><div class=\"entryg\">General permissions:</div>";
-        $this->ctr = $sv->search_enumeration("track__", "__id", "none");
+        $this->ctr = $sv->search_enumeration_id("track__", "none");
         $this->print_perm($sv, "viewtracker", "Who can see the <a href=\"" . $sv->conf->hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", self::PERM_DEFAULT_UNFOLDED);
         echo "</div>\n\n";
     }

@@ -658,7 +658,7 @@ class SettingValues extends MessageSet {
     function unmap_enumeration_member($pfx, $map) {
         $this->ensure_enumeration($pfx);
         $x = $this->reqstr("{$pfx}__id");
-        if ($x !== null && $x !== "" && $x !== "\$") {
+        if ($x !== null && $x !== "" && $x !== "\$" && $x !== "new") {
             return $map[$x] ?? null;
         } else {
             return null;
@@ -666,45 +666,46 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string $pfx
-     * @param string $sfx
-     * @param string $needle
-     * @param ?int $min_ctr
+     * @param int|string $needle
      * @return ?int */
-    function search_enumeration($pfx, $sfx, $needle, $min_ctr = null) {
+    function search_enumeration_id($pfx, $needle) {
         $this->ensure_enumeration($pfx);
-        $result = null;
+        for ($ctr = 1; isset($this->req["{$pfx}{$ctr}__id"]); ++$ctr) {
+            if ((string) $needle === (string) $this->req["{$pfx}{$ctr}__id"]) {
+                return $ctr;
+            }
+        }
+        return null;
+    }
+
+    /** @param string $pfx
+     * @param int|string $ctr
+     * @param string $sfx
+     * @param string $description */
+    function error_if_duplicate_member($pfx, $ctr, $sfx, $description) {
+        assert(is_int($ctr) || (is_string($ctr) && ctype_digit($ctr)));
+        $ctr = (int) $ctr;
+        if ($this->reqstr("{$pfx}{$ctr}__delete")) {
+            return;
+        }
         $oim = $this->swap_ignore_messages(true);
         $collator = $this->conf->collator();
-        for ($i = $min_ctr ?? 1; isset($this->req["{$pfx}{$i}__id"]); ++$i) {
-            $si1 = $this->si("{$pfx}{$i}{$sfx}");
-            $v1 = $this->base_parse_req($si1);
-            if ($v1 !== null && $collator->compare($needle, $v1) === 0) {
-                $result = $i;
+        $v0 = $this->base_parse_req("{$pfx}{$ctr}{$sfx}");
+        $badctr = null;
+        for ($ctr1 = $ctr + 1; isset($this->req["{$pfx}{$ctr1}__id"]); ++$ctr1) {
+            if (!$this->reqstr("{$pfx}{$ctr1}__delete")
+                && ($v1 = $this->base_parse_req("{$pfx}{$ctr1}{$sfx}")) !== null
+                && $v0 !== null
+                && $collator->compare($v0, $v1) === 0) {
+                $badctr = $ctr1;
                 break;
             }
         }
         $this->swap_ignore_messages($oim);
-        return $result;
-    }
-
-    /** @param string $pfx
-     * @param null|int|string $ctr
-     * @param string $sfx
-     * @param string $description */
-    function error_if_duplicate_member($pfx, $ctr, $sfx, $description) {
-        if ((is_int($ctr) || (is_string($ctr) && ctype_digit($ctr)))
-            && !$this->reqstr("{$pfx}{$ctr}__delete")) {
-            $v = $this->vstr("{$pfx}{$ctr}{$sfx}");
-            $ctr1 = (int) $ctr + 1;
-            while (($ctr1 = $this->search_enumeration($pfx, $sfx, $v, $ctr1))
-                   && $this->reqstr("{$pfx}{$ctr1}__delete")) {
-                ++$ctr1;
-            }
-            if ($ctr1) {
-                $v = $v === "" ? "(empty)" : $v;
-                $this->error_at("{$pfx}{$ctr}{$sfx}", "<0>{$description} ‘{$v}’ is not unique");
-                $this->error_at("{$pfx}{$ctr1}{$sfx}");
-            }
+        if ($badctr !== null) {
+            $v0 = $v0 === "" ? "(empty)" : $v0;
+            $this->error_at("{$pfx}{$ctr}{$sfx}", "<0>{$description} ‘{$v0}’ is not unique");
+            $this->error_at("{$pfx}{$badctr}{$sfx}");
         }
     }
 

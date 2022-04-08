@@ -38,7 +38,7 @@ class Responses_SettingParser extends SettingParser {
         // set placeholder for unnamed round
         $rrd = ($sv->conf->response_rounds())[0] ?? null;
         if ($rrd && $rrd->unnamed) {
-            $ctr = $sv->search_enumeration("response__", "__id", "0");
+            $ctr = $sv->search_enumeration_id("response__", "0");
             assert($ctr !== null);
             $si = $sv->si("response__{$ctr}__name");
             $si->placeholder = "unnamed";
