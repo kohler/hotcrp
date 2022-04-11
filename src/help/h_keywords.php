@@ -126,9 +126,13 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("re:secondary", "at least one secondary reviewer");
         echo $hth->search_trow("re:external", "at least one external reviewer");
         echo $hth->search_trow("re:primary:fdabek:complete", "“fdabek” has completed a primary review");
+        if ($hth->conf->setting("extrev_chairreq") >= 0) {
+            echo $hth->search_trow("re:myreq", "has a review requested by you");
+            echo $hth->search_trow("re:myreq:not-accepted", "has a review requested by you that hasn’t been accepted or edited yet");
+        }
         if ($roundname) {
-            echo $hth->search_trow("round:$roundname", "review in round “" . htmlspecialchars($roundname) . "”");
-            echo $hth->search_trow("round:{$roundname}:jinyang", "review in round “" . htmlspecialchars($roundname) . "” by reviewer “jinyang”");
+            echo $hth->search_trow("re:{$roundname}", "review in round “" . htmlspecialchars($roundname) . "”");
+            echo $hth->search_trow("re:{$roundname}:jinyang", "review in round “" . htmlspecialchars($roundname) . "” by reviewer “jinyang”");
         }
         echo $hth->search_trow("re:auwords<100", "has a review with less than 100 words in author-visible fields");
         if ($hth->conf->setting("rev_tokens")) {
