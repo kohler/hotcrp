@@ -1009,7 +1009,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $old_data = $this->commentData;
         $this->set_data("mentions", empty($desired_mentions) ? null : $desired_mentions);
         if ($this->commentData !== $old_data) {
-            $this->conf->qe("update CommentInfo set commentData=? where paperId=? and commentId=?", $this->commentData, $this->paperId, $this->commentId);
+            $this->conf->qe("update PaperComment set commentData=? where paperId=? and commentId=?", $this->commentData, $this->paperId, $this->commentId);
         }
 
         // go over mentions, send email
