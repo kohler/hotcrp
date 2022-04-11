@@ -6300,7 +6300,7 @@ function suggest() {
             text = complete_elt.textContent;
         else {
             var n = complete_elt.firstChild;
-            while (n && n.className !== "s9t")
+            while (n.className !== "s9t")
                 n = n.nextSibling;
             text = n.textContent;
         }

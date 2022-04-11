@@ -8,10 +8,11 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     const INCOMPLETE = 2;
     const INPROGRESS = 4;
     const NOTSTARTED = 8;
-    const PENDINGAPPROVAL = 16;
-    const MYREQUEST = 64;
-    const APPROVED = 128;
-    const SUBMITTED = 256;
+    const NOTACCEPTED = 16;
+    const PENDINGAPPROVAL = 32;
+    const MYREQUEST = 128;
+    const APPROVED = 256;
+    const SUBMITTED = 512;
 
     // `sensitivity` bits
     const HAS_COUNT = 1;
@@ -65,8 +66,10 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         "my-request" => self::MYREQUEST,
         "myreq" => self::MYREQUEST,
         "myrequest" => self::MYREQUEST,
+        "not-accepted" => self::NOTACCEPTED,
         "not-done" => self::INCOMPLETE,
         "not-started" => self::NOTSTARTED,
+        "notaccepted" => self::NOTACCEPTED,
         "notdone" => self::INCOMPLETE,
         "notstarted" => self::NOTSTARTED,
         "partial" => self::INPROGRESS,
@@ -310,7 +313,9 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         if ($this->status & self::PENDINGAPPROVAL) {
             $where[] = "(reviewSubmitted is null and timeApprovalRequested>0)";
         }
-        if ($this->status & self::NOTSTARTED) {
+        if ($this->status & self::NOTACCEPTED) {
+            $where[] = "reviewModified<1";
+        } else if ($this->status & self::NOTSTARTED) {
             $where[] = "reviewModified<2";
         }
         if (!empty($where)) {
@@ -395,6 +400,8 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 || (($this->status & self::INPROGRESS)
                     && $rrow->reviewStatus !== ReviewInfo::RS_DRAFTED
                     && $rrow->reviewStatus !== ReviewInfo::RS_DELIVERED)
+                || (($this->status & self::NOTACCEPTED)
+                    && $rrow->reviewStatus >= ReviewInfo::RS_ACCEPTED)
                 || (($this->status & self::NOTSTARTED)
                     && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED)
                 || (($this->status & self::PENDINGAPPROVAL)
