@@ -632,6 +632,8 @@ class Permission_Tester {
         assert_search_papers($user_chair, "cmt:marina", "18");
         assert_search_papers($user_chair, "cmt:marina>1", "18");
         assert_search_papers($user_chair, "cmt:#redcmt", "18");
+
+        // comment notification
         $comment4 = new CommentInfo($paper2);
         $comment4->save_comment(["text" => "test", "visibility" => "p", "blind" => false], $user_mgbaker);
         MailChecker::check_db("test01-comment2");
@@ -639,6 +641,21 @@ class Permission_Tester {
         assert_search_papers($user_chair, "has:response", "");
         assert_search_papers($user_chair, "has:author-comment", "1 18");
 
+        // turn off chair notification and insert comment
+        $this->conf->qe("insert into PaperWatch (paperId, contactId, watch) values (2,?,?) ?U on duplicate key update watch=?U(watch)", $user_chair->contactId, Contact::WATCH_REVIEW_EXPLICIT);
+        $paper2->load_watch();
+        $comment5 = new CommentInfo($paper2);
+        $comment5->save_comment(["text" => "second test", "visibility" => "p", "blind" => false], $user_mgbaker);
+        MailChecker::check0();
+
+        // explicit mention overrides no-notification
+        $comment6 = new CommentInfo($paper2);
+        $comment6->save_comment(["text" => "third test, @Jane Chair", "visibility" => "p", "blind" => false], $user_mgbaker);
+        MailChecker::check_db("test01-comment6");
+
+        // restore watch
+        $this->conf->qe("delete from PaperWatch where paperId=2 and contactId=?", $user_chair->contactId);
+        $paper2->load_watch();
 
         /*$result = Dbl::qe("select paperId, tag, tagIndex from PaperTag order by paperId, tag");
         $tags = array();

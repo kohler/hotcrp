@@ -94,7 +94,7 @@ class MailChecker {
     static function check_db($name = null) {
         if ($name) {
             xassert(isset(self::$messagedb[$name]));
-            xassert_eqq(count(self::$preps), count(self::$messagedb[$name]));
+            xassert_eqq(count(self::$messagedb[$name]), count(self::$preps));
             $mdb = self::$messagedb[$name];
         } else {
             xassert(!empty(self::$preps));
@@ -147,7 +147,7 @@ class MailChecker {
                 ++Xassert::$nsuccess;
             } else if ($index !== false) {
                 $have = $haves[$index];
-                error_log(assert_location() . ": Mail mismatch: " . var_export($have, true) . " !== " . var_export($want, true));
+                error_log(assert_location() . ": Mail mismatch: " . var_export($want, true) . " !== " . var_export($have, true));
                 $havel = explode("\n", $have);
                 $wantl = explode("\n", $want);
                 fwrite(STDERR, "... line {$badline} differs near {$havel[$badline-1]}\n... expected {$wantl[$badline-1]}\n");
@@ -186,7 +186,8 @@ class MailChecker {
                 if (!isset(self::$messagedb[$m[1]])) {
                     self::$messagedb[$m[1]] = [];
                 }
-                if (trim($m[2]) !== "") {
+                if (trim($body) !== "") {
+                    $body = preg_replace('/^\\\\\\*/m', "*", $body);
                     self::$messagedb[$m[1]][] = [$header, $body];
                 }
             }

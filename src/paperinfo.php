@@ -2947,16 +2947,19 @@ class PaperInfo {
 
 
     /** @return array<int,int> */
-    function all_watch() {
-        if ($this->_watch_array === null) {
-            $this->_watch_array = [];
-            $result = $this->conf->qe("select contactId, watch from PaperWatch where paperId=?", $this->paperId);
-            while (($row = $result->fetch_row())) {
-                $this->_watch_array[(int) $row[0]] = (int) $row[1];
-            }
-            Dbl::free($result);
+    function load_watch() {
+        $this->_watch_array = [];
+        $result = $this->conf->qe("select contactId, watch from PaperWatch where paperId=?", $this->paperId);
+        while (($row = $result->fetch_row())) {
+            $this->_watch_array[(int) $row[0]] = (int) $row[1];
         }
+        Dbl::free($result);
         return $this->_watch_array;
+    }
+
+    /** @return array<int,int> */
+    function all_watch() {
+        return $this->_watch_array ?? $this->load_watch();
     }
 
     /** @return int */

@@ -520,25 +520,27 @@
 		"name": "commentnotify",
 		"subject": "[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
 		"body": [
-			"A comment for %CONFNAME% submission #%NUMBER% has been posted. For the most up-to-date comments, or to unsubscribe from email notification, see the submission site.\n\n",
+			"%COMMENTS%\n\n",
+			"***************************************************************************\n\n\n",
+			"You’re following comments for %CONFNAME% submission #%NUMBER%. For the most up-to-date comments, or to unsubscribe from email notification, see the submission site.\n\n",
 			"* Title: %TITLE%\n",
 			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
-			"%SIGNATURE%\n\n",
-			"%COMMENTS%\n"
+			"%SIGNATURE%\n"
 		]
 	},
 
 	{
 		"name": "mentionnotify",
-		"subject": "[%CONFSHORTNAME%] Mentioned in #%NUMBER% %TITLEHINT%",
+		"subject": "[%CONFSHORTNAME%] Mentioned for #%NUMBER% %TITLEHINT%",
 		"body": [
-			"A comment for %CONFNAME% submission #%NUMBER% has been posted that mentions you. For the most up-to-date comments, see the submission site.\n\n",
+			"%COMMENTS%\n\n",
+			"***************************************************************************\n\n\n",
+			"You were mentioned in this comment for %CONFNAME% submission #%NUMBER%. For the most up-to-date comments, see the submission site.\n\n",
 			"* Title: %TITLE%\n",
 			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
-			"%SIGNATURE%\n\n",
-			"%COMMENTS%\n"
+			"%SIGNATURE%\n"
 		]
 	},
 
@@ -546,12 +548,12 @@
 		"name": "admincommentnotify",
 		"subject": "[%CONFSHORTNAME%] Comment for administrators of #%NUMBER% %TITLEHINT%",
 		"body": [
-			"A comment for the administrators of %CONFNAME% submission #%NUMBER% has been posted. For the most up-to-date comments, see the submission site.\n\n",
+			"%COMMENTS%\n\n",
+			"***************************************************************************\n\n\n",
+			"This comment is for the administrators of %CONFNAME% submission #%NUMBER%. For the most up-to-date comments, see the submission site.\n\n",
 			"* Title: %TITLE%\n",
 			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
-			"Contact %ADMIN% with any questions or concerns.\n\n",
-			"%SIGNATURE%\n\n",
-			"%COMMENTS%\n"
+			"%SIGNATURE%\n"
 		]
 	},
 
