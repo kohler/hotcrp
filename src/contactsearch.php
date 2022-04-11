@@ -197,7 +197,7 @@ class ContactSearch {
             $where = [];
             if ($n !== "") {
                 $x = sqlq(Dbl::escape_like(strtolower(UnicodeHelper::deaccent($n))));
-                $where[] = "unaccentedName like binary '%" . preg_replace('/[\s*]+/', "%", $x) . "%'";
+                $where[] = "unaccentedName like cast('%" . preg_replace('/[\s*]+/', "%", $x) . "%' as binary)";
             }
             if ($e !== "") {
                 $x = sqlq(Dbl::escape_like($e));

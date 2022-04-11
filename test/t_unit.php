@@ -40,34 +40,34 @@ class Unit_Tester {
     }
 
     function test_escape_like() {
-        xassert_eqq(Dbl::fetch_ivalue("select '1' like binary ? from dual", Dbl::escape_like("1")), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select '%' like binary ? from dual", Dbl::escape_like("%")), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select '!' like binary ? from dual", Dbl::escape_like("%")), 0);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary ? from dual", "\\", Dbl::escape_like("\\")), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary ? from dual", "\n", Dbl::escape_like("\n")), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary ? from dual", "\\x", Dbl::escape_like("\\x")), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary ? from dual", "xx", Dbl::escape_like("\\x")), 0);
+        xassert_eqq(Dbl::fetch_ivalue("select '1' like cast(? as binary) from dual", Dbl::escape_like("1")), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select '%' like cast(? as binary) from dual", Dbl::escape_like("%")), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select '!' like cast(? as binary) from dual", Dbl::escape_like("%")), 0);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast(? as binary) from dual", "\\", Dbl::escape_like("\\")), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast(? as binary) from dual", "\n", Dbl::escape_like("\n")), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast(? as binary) from dual", "\\x", Dbl::escape_like("\\x")), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast(? as binary) from dual", "xx", Dbl::escape_like("\\x")), 0);
 
-        xassert_eqq(Dbl::fetch_ivalue("select '1' like binary ?l from dual", "1"), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select '1' like binary ?l from dual", 1), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select '%' like binary ?l from dual", "%"), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select '!' like binary ?l from dual", "%"), 0);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary ?l from dual", "\\", "\\"), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary ?l from dual", "\n", "\n"), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary ?l from dual", "\\x", "\\x"), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary ?l from dual", "xx", "\\x"), 0);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary ?l from dual", "xx", "%x"), 0);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary ? from dual", "xx", "%x"), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select '1' like cast(?l as binary) from dual", "1"), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select '1' like cast(?l as binary) from dual", 1), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select '%' like cast(?l as binary) from dual", "%"), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select '!' like cast(?l as binary) from dual", "%"), 0);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast(?l as binary) from dual", "\\", "\\"), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast(?l as binary) from dual", "\n", "\n"), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast(?l as binary) from dual", "\\x", "\\x"), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast(?l as binary) from dual", "xx", "\\x"), 0);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast(?l as binary) from dual", "xx", "%x"), 0);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast(? as binary) from dual", "xx", "%x"), 1);
 
-        xassert_eqq(Dbl::fetch_ivalue("select '1' like binary '?ls' from dual", "1"), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select '1' like binary '?ls' from dual", 1), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select '%' like binary '?ls' from dual", "%"), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select '!' like binary '?ls' from dual", "%"), 0);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary '?ls' from dual", "\\", "\\"), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary '?ls' from dual", "\n", "\n"), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary '?ls' from dual", "\\x", "\\x"), 1);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary '?ls' from dual", "xx", "\\x"), 0);
-        xassert_eqq(Dbl::fetch_ivalue("select ? like binary '?ls' from dual", "xx", "%x"), 0);
+        xassert_eqq(Dbl::fetch_ivalue("select '1' like cast('?ls' as binary) from dual", "1"), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select '1' like cast('?ls' as binary) from dual", 1), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select '%' like cast('?ls' as binary) from dual", "%"), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select '!' like cast('?ls' as binary) from dual", "%"), 0);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast('?ls' as binary) from dual", "\\", "\\"), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast('?ls' as binary) from dual", "\n", "\n"), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast('?ls' as binary) from dual", "\\x", "\\x"), 1);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast('?ls' as binary) from dual", "xx", "\\x"), 0);
+        xassert_eqq(Dbl::fetch_ivalue("select ? like cast('?ls' as binary) from dual", "xx", "%x"), 0);
     }
 
     function test_dbl_compare_and_swap() {
