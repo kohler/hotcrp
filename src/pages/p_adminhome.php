@@ -72,7 +72,7 @@ class AdminHome_Page {
         // Weird URLs?
         foreach (["conferenceSite", "paperSite"] as $k) {
             if (($url = $conf->opt($k))
-                && !preg_match('`\Ahttps?://(?:[-.~\w:/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z`', $url))
+                && !preg_match('/\Ahttps?:\/\/(?:[-.~\w:\/?#\[\]@!$&\'()*+,;=]|%[0-9a-fA-F][0-9a-fA-F])*\z/', $url))
                 $ml[] = new MessageItem(null, "<5>The <code>\$Opt[\"$k\"]</code> setting, ‘<code>" . htmlspecialchars($url) . "</code>’, is not a valid URL.  Edit the <code>conf/options.php</code> file to fix this problem", MessageSet::URGENT_NOTE);
         }
         // Unnotified reviews?
