@@ -4794,10 +4794,13 @@ return {
 
 // comments
 window.papercomment = (function ($) {
-var vismap = {rev: "hidden from authors",
-              pc: "hidden from authors and external reviewers",
-              admin: "shown only to administrators"};
-var cmts = {}, has_unload = false, resp_rounds = {},
+var vismap = {
+        rev: "hidden from authors",
+        pc: "hidden from authors and external reviewers",
+        admin: "shown only to administrators"
+    },
+    emojiregex = /^(?:\ud83c[\udde6-\uddff]\ud83c[\udde6-\uddff]|(?:[\u231a-\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd-\u25fe\u2614-\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa-\u26ab\u26bd-\u26be\u26c4-\u26c5\u26ce\u26d4\u26ea\u26f2-\u26f3\u26f5\u26fa\u26fd\u2705\u270a-\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b-\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50-\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95-\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedd-\udedf\udeeb-\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude74\ude78-\ude7c\ude80-\ude86\ude90-\udeac\udeb0-\udeba\udec0-\udec5\uded0-\uded9\udee0-\udee7\udef0-\udef6]\ufe0f?|[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9-\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1-\u23f2\u23f8-\u23fa\u24c2\u25aa-\u25ab\u25b6\u25c0\u25fb-\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622-\u2623\u2626\u262a\u262e-\u262f\u2638-\u263a\u2640\u2642\u265f-\u2660\u2663\u2665-\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b-\u269c\u26a0\u26a7\u26b0-\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0-\u26f1\u26f4\u26f7-\u26f9\u2702\u2708-\u2709\u270c-\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733-\u2734\u2744\u2747\u2763-\u2764\u27a1\u2934-\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70-\udd71\udd7e-\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96-\udf97\udf99-\udf9b\udf9e-\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49-\udd4a\udd6f-\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1-\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3]\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?(?:\u200d(?:[\u231a-\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd-\u25fe\u2614-\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa-\u26ab\u26bd-\u26be\u26c4-\u26c5\u26ce\u26d4\u26ea\u26f2-\u26f3\u26f5\u26fa\u26fd\u2705\u270a-\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b-\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50-\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95-\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedd-\udedf\udeeb-\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude74\ude78-\ude7c\ude80-\ude86\ude90-\udeac\udeb0-\udeba\udec0-\udec5\uded0-\uded9\udee0-\udee7\udef0-\udef6]\ufe0f?|[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9-\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1-\u23f2\u23f8-\u23fa\u24c2\u25aa-\u25ab\u25b6\u25c0\u25fb-\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622-\u2623\u2626\u262a\u262e-\u262f\u2638-\u263a\u2640\u2642\u265f-\u2660\u2663\u2665-\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b-\u269c\u26a0\u26a7\u26b0-\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0-\u26f1\u26f4\u26f7-\u26f9\u2702\u2708-\u2709\u270c-\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733-\u2734\u2744\u2747\u2763-\u2764\u27a1\u2934-\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70-\udd71\udd7e-\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96-\udf97\udf99-\udf9b\udf9e-\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49-\udd4a\udd6f-\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1-\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3]\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?)*[ \t]*){1,3}$/,
+    cmts = {}, has_unload = false, resp_rounds = {},
     twiddle_start = siteinfo.user && siteinfo.user.cid ? siteinfo.user.cid + "~" : "###";
 
 function unparse_tag(tag, strip_value) {
@@ -5465,6 +5468,7 @@ function render_comment_text(format, value, response, textj, chead) {
         }
     }
     render_text.onto(textj[0], format, value);
+    toggleClass(textj[0], "emoji-only", emojiregex.test(value));
 }
 
 function render_preview(evt, format, value, dest) {
@@ -5927,14 +5931,16 @@ demand_load.emoji_codes = demand_load.make(function (resolve, reject) {
         var all = v.lists.all = Object.keys(v.emoji);
         all.sort();
 
+        var i, w, u, u2, wp;
         v.wordsets = {};
-        for (var i = 0; i !== all.length; ++i) {
-            var w = all[i], u = w.indexOf("_");
+        for (i = 0; i !== all.length; ++i) {
+            w = all[i];
+            u = w.indexOf("_");
             if (u === 6 && /^(?:family|couple)/.test(w))
                 continue;
             while (u > 0) {
-                var u2 = w.indexOf("_", u+1),
-                    wp = w.substring(u+1, u2 < 0 ? w.length : u2);
+                u2 = w.indexOf("_", u+1);
+                wp = w.substring(u+1, u2 < 0 ? w.length : u2);
                 v.wordsets[wp] = v.wordsets[wp] || [];
                 if (v.wordsets[wp].indexOf(w) < 0)
                     v.wordsets[wp].push(w);
@@ -5952,7 +5958,7 @@ demand_load.emoji_codes = demand_load.make(function (resolve, reject) {
 });
 
 (function () {
-var people_regex = /(?:[\u261d\u26f9\u270a-\u270d]|\ud83c[\udf85\udfc2-\udfc4\udfc7\udfca-\udfcc]|\ud83d[\udc42-\udc43\udc46-\udc50\udc66-\udc78\udc7c\udc81-\udc83\udc85-\udc87\udc8f\udc91\udcaa\udd74-\udd75\udd7a\udd90\udd95-\udd96\ude45-\ude47\ude4b-\ude4f\udea3\udeb4-\udeb6\udec0\udecc]|\ud83e[\udd0f\udd18-\udd1f\udd26\udd30-\udd39\udd3c-\udd3e\uddb5-\uddb6\uddb8-\uddb9\uddbb\uddcd-\uddcf\uddd1-\udddd])/g;
+var people_regex = /(?:[\u261d\u26f9\u270a-\u270d]|\ud83c[\udf85\udfc2-\udfc4\udfc7\udfca-\udfcc]|\ud83d[\udc42-\udc43\udc46-\udc50\udc66-\udc78\udc7c\udc81-\udc83\udc85-\udc87\udc8f\udc91\udcaa\udd74-\udd75\udd7a\udd90\udd95-\udd96\ude45-\ude47\ude4b-\ude4f\udea3\udeb4-\udeb6\udec0\udecc]|\ud83e[\udd0c\udd0f\udd18-\udd1f\udd26\udd30-\udd39\udd3c-\udd3e\udd77\uddb5-\uddb6\uddb8-\uddb9\uddbb\uddcd-\uddcf\uddd1-\udddd\udec3-\udec5\udef0-\udef6])/;
 
 function combine(sel, list, i, j) {
     while (i < j) {
@@ -5974,49 +5980,52 @@ function select_from(sel, s, list) {
     }
 }
 
-function apply_modifier(sel, mod, v) {
-    var modmatch = v.modifier_words, all = mod === ".";
-    if (!all) {
-        modmatch = [];
-        for (var j = 0; j !== v.modifier_words.length; ++j)
-            if (v.modifier_words[j].substring(0, mod.length - 1) === mod.substring(1))
-                modmatch.push(v.modifier_words[j]);
-    }
-    if (modmatch.length === 0)
-        return;
-    for (var i = 0; i !== sel.length; ) {
-        var code = sel[i];
-        all ? ++i : sel.splice(i, 1);
-        people_regex.lastIndex = 0;
-        if (people_regex.test(v.emoji[code])) {
-            for (var j = 0; j < modmatch.length; ++j) {
-                var mcode = code + "." + modmatch[j];
-                if (!v.emoji[mcode])
-                    v.emoji[mcode] = v.emoji[code].replace(people_regex, "$&" + v.modifiers[modmatch[j]]);
-                sel.splice(i, 0, mcode);
-                ++i;
+function complete_list(v, sel, modifiers) {
+    var res = [], i, j, code, compl, mod;
+    for (i = 0; i !== sel.length; ++i) {
+        code = sel[i];
+        compl = v.completion[code];
+        if (!compl) {
+            compl = v.completion[code] = {
+                s: ":".concat(code, ":"),
+                r: v.emoji[code],
+                no_space: true,
+                sh: '<span class="nw">'.concat(v.emoji[code], " :", code, ":</span>")
+            };
+        }
+        res.push(compl);
+        if (modifiers && people_regex.test(compl.r)) {
+            for (j = 0; j !== v.modifier_words.length; ++j) {
+                mod = v.modifier_words[j];
+                res.push({
+                    s: ":".concat(code, "-", mod, ":"),
+                    r: compl.r + v.emoji[mod],
+                    no_space: true,
+                    sh: '<span class="nw">'.concat(compl.r, v.emoji[mod], " :", code, "-", mod, ":</span>"),
+                    hl_length: 2 + code.length + mod.length,
+                    shorter_hl: ":".concat(code, ":")
+                });
             }
-            if (all && sel.length > 40)
-                break;
         }
     }
+    return res;
 }
 
 demand_load.emoji_completion = function (start) {
     return demand_load.emoji_codes().then(function (v) {
-        var sel, i, code, ch, basic = v.lists.basic,
-            period = start.indexOf("."), modifier = null;
-        start = start.replace(/:$/, "").replace(/-/g, "_");
-        if (period > 0) {
-            modifier = start.substring(period);
-            start = start.substring(0, period);
+        var sel, i, code, compl, ch, basic = v.lists.basic, m;
+        start = start.replace(/:$/, "");
+        if ((m = /^(-?[^\-]+)-/.exec(start))
+            && (ch = v.emoji[m[1]])
+            && people_regex.test(ch)) {
+            return complete_list(v, [m[1]], true);
         }
         if (start === "") {
             sel = basic.slice();
         } else {
             sel = [];
             for (i = 0; i !== basic.length; ++i) {
-                if (basic[i].substring(0, start.length) === start)
+                if (basic[i].startsWith(start))
                     sel.push(basic[i]);
             }
             sel = select_from(sel, start, v.lists.common);
@@ -6029,21 +6038,7 @@ demand_load.emoji_completion = function (start) {
                 combine(sel, ysel, 0, ysel.length);
             }
         }
-        if (modifier)
-            apply_modifier(sel, modifier, v);
-        for (i = 0; i !== sel.length; ++i) {
-            code = sel[i];
-            if (!v.completion[code]) {
-                v.completion[code] = {
-                    s: ":" + code + ":",
-                    r: v.emoji[code],
-                    no_space: true,
-                    sh: '<span class="nw">' + v.emoji[code] + " :" + code + ":</span>"
-                };
-            }
-            sel[i] = v.completion[code];
-        }
-        return sel;
+        return complete_list(v, sel, false);
     });
 };
 })();
@@ -6127,28 +6122,34 @@ function make_suggestions(precaret, postcaret, options) {
         lengths = [precaret.length, postcaret.length, (options.suffix || "").length];
 
     return function (tlist) {
-        var res = [], best = null,
+        var res = [], best = null, i,
             can_highlight = lregion.length >= (filter || "x").length,
             titem, text, ltext, rl, last_text;
 
-        for (var i = 0; i < tlist.length; ++i) {
+        for (i = 0; i < tlist.length; ++i) {
             titem = completion_item(tlist[i]);
             text = titem.s;
             ltext = case_sensitive ? text : text.toLowerCase();
             rl = titem.reqlen || 0;
 
-            if ((filter === null
-                 || ltext.substr(0, filter.length) === filter)
+            if ((filter === null || ltext.startsWith(filter))
                 && (rl === 0
                     || (lregion.length >= rl
-                        && ltext.substr(0, rl) === lregion.substr(0, rl)))
+                        && lregion.startsWith(ltext.substr(0, rl))))
                 && (last_text === null || last_text !== text)) {
                 if (can_highlight
-                    && ltext.substr(0, lregion.length) === lregion
+                    && ltext.startsWith(lregion)
                     && (best === null
                         || (titem.pri || 0) > (res[best].pri || 0)
                         || ltext.length === lregion.length)) {
                     best = res.length;
+                    if (titem.hl_length
+                        && lregion.length < titem.hl_length
+                        && titem.shorter_hl) {
+                        best = 0;
+                        while (best < res.length && res[best].s !== titem.shorter_hl)
+                            ++best;
+                    }
                 }
                 res.push(titem);
                 last_text = text;
@@ -6519,7 +6520,7 @@ suggest.add_builder("pc-tags", function (elt) {
 
 suggest.add_builder("suggest-emoji", function (elt) {
     var x = completion_split(elt), m;
-    if (x && (m = x[0].match(/(?:^|[\s(\u20e3-\u23ff\u2600-\u27ff\ufe0f\udc00-\udfff]):((?:|[-+]|[-+]1|[-_0-9a-zA-Z]+)(\.[0-9a-zA-Z]*|):?)$/))
+    if (x && (m = x[0].match(/(?:^|[\s(\u20e3-\u23ff\u2600-\u27ff\ufe0f\udc00-\udfff]):((?:|\+|\+?[-_0-9a-zA-Z]+):?)$/))
         && /^(?:$|[\s)\u20e3-\u23ff\u2600-\u27ff\ufe0f\ud83c-\ud83f])/.test(x[1])) {
         return demand_load.emoji_completion(m[1].toLowerCase()).then(make_suggestions(":" + m[1], "", {case_sensitive_items: true, min_columns: 4, region_trimmer: /\..*$/}));
     }

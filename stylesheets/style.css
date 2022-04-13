@@ -3908,6 +3908,9 @@ a:hover .t-editor,
 .revtext.format0, .cmttext.format0, .revtext .format0, .cmttext .format0 {
 	max-width: 720px;
 }
+.cmttext.emoji-only {
+	font-size: 200%;
+}
 .preview {
 	margin-bottom: 24px;
 }
