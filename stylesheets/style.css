@@ -600,6 +600,9 @@ label.checki {
 .align-items-center {
 	align-items: center !important;
 }
+.align-items-baseline {
+	align-items: baseline !important;
+}
 .relative {
 	position: relative;
 }

@@ -500,12 +500,14 @@ class Home_Page {
 
         $startable = $conf->time_start_paper();
         if ($startable && !$user->has_email()) {
-            echo '<em class="deadline">', $conf->unparse_setting_deadline_span("sub_reg"), "</em><br />\n<small>You must sign in to start a submission.</small>";
+            echo '<p><em class="deadline">', $conf->unparse_setting_deadline_span("sub_reg"), "</em><br>\n<small>You must sign in to start a submission.</small></p>";
         } else if ($startable || $user->privChair) {
-            echo '<a class="btn" href="', $conf->hoturl("paper", "p=new"), '">New submission</a> <em class="deadline">(', $conf->unparse_setting_deadline_span("sub_reg"), ")</em>";
-            if ($user->privChair) {
-                echo '<br><span class="hint">As an administrator, you can start a submission regardless of deadlines and on behalf of others.</span>';
-            }
+            $url = $conf->hoturl("paper", "p=new");
+            $dl = $conf->unparse_setting_deadline_span("sub_reg");
+            echo Ht::actions([
+                ["<a class=\"btn\" href=\"{$url}\">New submission</a>", $startable ? "" : "(admin only)"],
+                ["<em class=\"deadline\">{$dl}</em>"]
+            ], ["class" => "aab mt-0 mb-0 align-items-baseline"]);
         }
 
         $plist = null;
@@ -560,12 +562,8 @@ class Home_Page {
         if (!empty($deadlines)) {
             if ($plist && !$plist->is_empty()) {
                 echo '<hr class="g">';
-            } else if ($startable || $user->privChair) {
-                echo "<br>";
             }
-            echo '<em class="deadline">',
-                join("</em><br>\n<em class=\"deadline\">", $deadlines),
-                "</em>";
+            echo '<p>', join("<br>\n", $deadlines), "</p>";
         }
 
         echo "</div>\n";
