@@ -1578,7 +1578,7 @@ class PaperList implements XtContext {
         $rstate->split_ncol = count($rstate->groupstart) - 1;
 
         $rownum_marker = "<span class=\"pl_rownum fx6\">";
-        $nbody = array("<tr>");
+        $nbody = ["<tr>"];
         $tbody_class = "pltable" . ($rstate->hascolors ? " pltable-colored" : "");
         for ($i = 1; $i < count($rstate->groupstart); ++$i) {
             $nbody[] = '<td class="plsplit_col top" width="' . (100 / $rstate->split_ncol) . '%"><div class="plsplit_col"><table width="100%">';
@@ -1915,7 +1915,7 @@ class PaperList implements XtContext {
         }
 
         // collect row data
-        $body = array();
+        $body = [];
         $grouppos = empty($this->_groups) ? -1 : 0;
         $need_render = false;
         foreach ($rows as $row) {

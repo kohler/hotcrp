@@ -271,7 +271,7 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
         . "</a>";
 }
 
-function goPaperForm($baseUrl = null, $args = array()) {
+function goPaperForm($baseUrl = null, $args = []) {
     global $Me;
     if ($Me->is_empty()) {
         return "";

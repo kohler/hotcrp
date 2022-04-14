@@ -37,7 +37,7 @@ class Error_API {
             error_log("JS error: {$url}detail " . substr($qreq->detail, 0, 200));
         }
         if (($stacktext = $qreq->stack)) {
-            $stack = array();
+            $stack = [];
             foreach (explode("\n", $stacktext) as $line) {
                 $line = trim($line);
                 if ($line === "" || $line === $errormsg || "Uncaught $line" === $errormsg) {

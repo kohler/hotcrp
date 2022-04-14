@@ -127,11 +127,11 @@ class ReviewTimes {
                 $this->conf->prefetch_user_by_id((int) $cid);
         }
 
-        $users = array();
+        $users = [];
         $tags = $this->user->can_view_user_tags();
         foreach ($this->r as $cid => $x) {
             if ($cid !== "conflicts") {
-                $users[$cid] = $u = (object) array();
+                $users[$cid] = $u = (object) [];
                 if (($p = $this->conf->cached_user_by_id((int) $cid))) {
                     $u->name = $p->name(NAME_P);
                     $u->email = $p->email;

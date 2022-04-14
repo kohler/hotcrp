@@ -861,7 +861,7 @@ class SettingValues extends MessageSet {
             || ($label_js["no_control_class"] ?? false)) {
             unset($label_js["no_control_class"]);
         } else {
-            foreach (is_array($name) ? $name : array($name) as $n) {
+            foreach (is_array($name) ? $name : [$name] as $n) {
                 if (($sc = $this->control_class($n))) {
                     $label_js["class"] = self::join_class($sc, $label_js["class"] ?? null);
                     break;

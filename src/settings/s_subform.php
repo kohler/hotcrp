@@ -26,7 +26,7 @@ class SubForm_SettingRenderer {
     static function print_conflicts(SettingValues $sv) {
         echo '<div id="foldpcconf" class="fold', $sv->vstr("sub_pcconf") ? "o" : "c", "\">\n";
         $sv->print_checkbox("sub_pcconf", "Collect authors’ PC conflicts", ["class" => "uich js-foldup"]);
-        $cflt = array();
+        $cflt = [];
         $confset = $sv->conf->conflict_types();
         foreach ($confset->basic_conflict_types() as $ct) {
             $cflt[] = "“" . $confset->unparse_html_description($ct) . "”";

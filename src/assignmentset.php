@@ -400,8 +400,8 @@ class AssignmentState extends MessageSet {
     }
     /** @param int|list<int> $pids */
     function fetch_prows($pids, $initial_load = false) {
-        $pids = is_array($pids) ? $pids : array($pids);
-        $fetch_pids = array();
+        $pids = is_array($pids) ? $pids : [$pids];
+        $fetch_pids = [];
         foreach ($pids as $pid) {
             if (!isset($this->prows[$pid]) && !isset($this->pid_attempts[$pid]))
                 $fetch_pids[] = $pid;
@@ -1718,7 +1718,7 @@ class AssignmentSet {
 
     /** @return list<string> */
     function assigned_types() {
-        $types = array();
+        $types = [];
         foreach ($this->assigners as $assigner) {
             $types[$assigner->type] = true;
         }

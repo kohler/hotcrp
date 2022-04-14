@@ -104,7 +104,7 @@ class MinCostMaxFlow_Tester {
                 $m->add_edge($x, $y, 1, $c);
             }
         }
-        $assignments = array();
+        $assignments = [];
         foreach (range(100, 921384, 1247) as $seed) {
             $m->reset();
             srand($seed); // the shuffle() uses this seed
@@ -137,7 +137,7 @@ class MinCostMaxFlow_Tester {
                 $m->add_edge($x, $y, 1);
             }
         }
-        $assignments = array();
+        $assignments = [];
         foreach (range(100, 921384, 1247) as $seed) {
             $m->reset();
             srand($seed); // the shuffle() uses this seed

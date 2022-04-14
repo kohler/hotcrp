@@ -18,7 +18,7 @@ class Revpref_ListAction extends ListAction {
     }
     static function render_set(PaperList $pl) {
         return ["<b> preferences:</b> &nbsp;"
-            . Ht::entry("pref", "", array("class" => "want-focus js-autosubmit", "size" => 4, "data-submit-fn" => "setpref"))
+            . Ht::entry("pref", "", ["class" => "want-focus js-autosubmit", "size" => 4, "data-submit-fn" => "setpref"])
             . $pl->action_submit("setpref")];
     }
     /** @param ?string $reviewer

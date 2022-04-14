@@ -5112,7 +5112,7 @@ class Contact {
 
         // final copy deadlines
         if ($this->conf->setting("final_open") > 0) {
-            $dl->final = (object) array("open" => true);
+            $dl->final = (object) ["open" => true];
             $final_soft = +$this->conf->setting("final_soft");
             if ($final_soft > Conf::$now) {
                 $dl->final->done = $final_soft;

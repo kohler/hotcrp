@@ -197,9 +197,11 @@ class Text {
             } else if (!preg_match('{\A(.*?)\s+(\S+)\z}', $name, $m)) {
                 return ["", "", trim($name)];
             } else if (strpos($m[2], "@") !== false) {
-                list($name, $email) = array($m[1], $m[2]);
+                $name = $m[1];
+                $email = $m[2];
             } else {
-                list($name, $email) = array($m[2], $m[1]);
+                $name = $m[2];
+                $email = $m[1];
             }
             $ret[2] = $email;
         }
@@ -465,7 +467,7 @@ class Text {
             }
         }
 
-        $rewords = array();
+        $rewords = [];
         foreach (preg_split('/[^A-Za-z_0-9*]+/', $needle) as $word) {
             if ($word !== "")
                 $rewords[] = str_replace("*", ".*", $word);

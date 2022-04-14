@@ -518,7 +518,7 @@ class Home_Page {
             }
         }
 
-        $deadlines = array();
+        $deadlines = [];
         if ($plist && $plist->has("need_submit")) {
             if (!$conf->time_finalize_paper(null)) {
                 // Be careful not to refer to a future deadline; perhaps an admin

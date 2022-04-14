@@ -150,7 +150,7 @@ $Opt["emailSender"] = null;
 //
 //   favicon         Link to favicon. Default is images/review24.png.
 //   stylesheets     Array of additional stylesheet filenames/URIs to be
-//                   included after "style.css". Example: array("x.css").
+//                   included after "style.css". Example: ["x.css"].
 //   fontScript      HTML added to <head> before stylesheets.
 //   extraFooter     Extra HTML text shown at the bottom of every page, before
 //                   the HotCRP link. If set, should generally end with

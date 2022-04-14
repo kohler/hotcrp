@@ -40,7 +40,7 @@ class Tag_Assignable extends Assignable {
 
 class NextTagAssigner implements AssignmentPreapplyFunction {
     private $tag;
-    public $pidindex = array();
+    public $pidindex = [];
     private $first_index;
     private $next_index;
     private $isseq;

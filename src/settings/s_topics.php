@@ -69,7 +69,7 @@ class Topics_SettingParser extends SettingParser {
 
         echo '<div class="mg"><label for="new_topics"><strong>New topics</strong></label> (enter one per line)<br>',
             $sv->feedback_at("new_topics"),
-            Ht::textarea("new_topics", $sv->use_req() ? $sv->reqstr("new_topics") : "", array("cols" => 80, "rows" => 2, "class" => ($sv->has_problem_at("new_topics") ? "has-error " : "") . "need-autogrow", "id" => "new_topics")), "</div>";
+            Ht::textarea("new_topics", $sv->use_req() ? $sv->reqstr("new_topics") : "", ["cols" => 80, "rows" => 2, "class" => ($sv->has_problem_at("new_topics") ? "has-error " : "") . "need-autogrow", "id" => "new_topics"]), "</div>";
     }
 
     /** @return bool */

@@ -165,7 +165,7 @@ class ScoreInfo {
 
     /** @return list<int> */
     function counts($max = 0) {
-        $counts = $max ? array_fill(0, $max, 0) : array();
+        $counts = $max ? array_fill(0, $max, 0) : [];
         foreach ($this->_scores as $i) {
             while ($i > count($counts)) {
                 $counts[] = 0;

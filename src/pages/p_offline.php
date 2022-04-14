@@ -148,7 +148,7 @@ class Offline_Page {
                 Ht::form($conf->hoturl("=offline", "setrank=1&amp;tag=%7E$ranktag"), ["id" => "upload{$ranktag}form"]),
                 Ht::hidden("upload", 1),
                 '<input id="rank', $ranktag, 'uploader" type="file" name="file" accept="text/plain" size="30"', $dldisabled, '>&nbsp; ',
-                Ht::submit("Go", array("disabled" => !!$dldisabled));
+                Ht::submit("Go", ["disabled" => !!$dldisabled]);
             if ($pastDeadline && $this->user->privChair) {
                 echo '<label class="checki"><span class="checkc">', Ht::checkbox("override"), '</span>Override deadlines</label>';
             }

@@ -460,10 +460,10 @@ $blind\n";
             $whyNot = new PermissionProblem($this->conf, ["deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard")]);
             $override_text = $whyNot->unparse_html() . " Are you sure you want to override the deadline?";
             if (!$submitted) {
-                $buttons[] = array(Ht::button("Submit review", ["class" => "btn-primary btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
-                $buttons[] = array(Ht::button("Save draft", ["class" => "btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)");
+                $buttons[] = [Ht::button("Submit review", ["class" => "btn-primary btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)"];
+                $buttons[] = [Ht::button("Save draft", ["class" => "btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)"];
             } else {
-                $buttons[] = array(Ht::button("Save changes", ["class" => "btn-primary btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
+                $buttons[] = [Ht::button("Save changes", ["class" => "btn-primary btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)"];
             }
         } else if (!$submitted && $rrow && $rrow->subject_to_approval()) {
             assert($rrow->reviewStatus <= ReviewInfo::RS_ADOPTED);
@@ -511,9 +511,9 @@ $blind\n";
         if ($rrow && $user->allow_administer($prow)) {
             $buttons[] = "";
             if ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED) {
-                $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review"), "(admin only)");
+                $buttons[] = [Ht::submit("unsubmitreview", "Unsubmit review"), "(admin only)"];
             }
-            $buttons[] = array(Ht::button("Delete review", ["class" => "ui js-delete-review"]), "(admin only)");
+            $buttons[] = [Ht::button("Delete review", ["class" => "ui js-delete-review"]), "(admin only)"];
         }
 
         echo Ht::actions($buttons, ["class" => "aab aabig"]);

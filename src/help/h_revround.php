@@ -26,13 +26,13 @@ The automatic and bulk assignment pages also let you set a review round.</p>";
 
         // get current tag settings
         if ($hth->user->isPC) {
-            $texts = array();
+            $texts = [];
             if (($rr = $hth->conf->assignment_round_option(false)) !== "unnamed") {
                 $texts[] = "The review round for new assignments is “"
                     . $hth->search_link(htmlspecialchars($rr), "round:$rr") . "”."
                     . $hth->change_setting_link("rev_roundtag");
             }
-            $rounds = array();
+            $rounds = [];
             if ($hth->conf->has_rounds()) {
                 $result = $hth->conf->qe("select distinct reviewRound from PaperReview");
                 while (($row = $result->fetch_row())) {

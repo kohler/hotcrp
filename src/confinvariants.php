@@ -93,7 +93,7 @@ class ConfInvariants {
         Dbl::free($result);
 
         // no empty text options
-        $text_options = array();
+        $text_options = [];
         foreach ($this->conf->options() as $ox) {
             if ($ox->type === "text") {
                 $text_options[] = $ox->id;

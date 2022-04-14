@@ -502,7 +502,7 @@ function tag_normalize_compare($a, $b) {
 /** @param PaperInfo $prow
  * @return string */
 function paper_tag_normalize($prow) {
-    $t = array();
+    $t = [];
     $pcm = $prow->conf->pc_members();
     foreach (explode(" ", $prow->all_tags_text()) as $tag) {
         if (($twiddle = strpos($tag, "~")) > 0

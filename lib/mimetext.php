@@ -38,8 +38,8 @@ class MimeText {
     private function append($str, $utf8) {
         if ($utf8 > 0) {
             // replace all special characters used by the encoder
-            $str = str_replace(array('=',   '_',   '?',   ' '),
-                               array('=3D', '=5F', '=3F', '_'), $str);
+            $str = str_replace(['=',   '_',   '?',   ' '],
+                               ['=3D', '=5F', '=3F', '_'], $str);
             // define nonsafe characters
             if ($utf8 > 1) {
                 $matcher = '/[^-0-9a-zA-Z!*+\/=_]/';

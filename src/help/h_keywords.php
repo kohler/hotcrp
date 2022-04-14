@@ -94,9 +94,9 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("#disc*", "matches any tag that <em>starts with</em> “disc”");
 
         $cx = null;
-        $cm = array();
+        $cm = [];
         foreach ($hth->conf->tags() as $t) {
-            foreach ($t->colors ? : array() as $c) {
+            foreach ($t->colors ? : [] as $c) {
                 $cx = $cx ? : $c;
                 if ($cx === $c)
                     $cm[] = "“{$t->tag}”";

@@ -257,8 +257,8 @@ class FormatSpec {
         // replace \xC2\xA0 (utf-8 for U+00A0 NONBREAKING SPACE) with ' '
         $text = trim(str_replace("\xC2\xA0", " ", strtolower($text)));
         $n = $text;
-        $a = array();
-        $unit = array();
+        $a = [];
+        $unit = [];
         while (preg_match('/^\s*(\d+\.?\d*|\.\d+)\s*("|″|in?|cm?|mm|pt|)\s*(.*)$/', $n, $m)) {
             $a[] = $m[1];
             if ($m[2] === "i" || $m[2] === "in" || $m[2] === "\"" || $m[2] === "″") {

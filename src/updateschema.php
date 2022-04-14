@@ -813,12 +813,12 @@ class UpdateSchema {
             if (count($conf->round_list()) > 1) {
                 // update review rounds (XXX locking)
                 $result = $conf->ql_ok("select paperId, tag from PaperTag where tag like '%~%'");
-                $rrs = array();
+                $rrs = [];
                 while (($row = $result->fetch_row())) {
                     list($contact, $round) = explode("~", $row[1]);
                     if (($round = array_search($round, $conf->round_list()))) {
                         if (!isset($rrs[$round]))
-                            $rrs[$round] = array();
+                            $rrs[$round] = [];
                         $rrs[$round][] = "(contactId=$contact and paperId=$row[0])";
                     }
                 }
@@ -1194,7 +1194,7 @@ class UpdateSchema {
         }
         if (!isset($conf->settings["outcome_map"])
             && $conf->sversion < 65) {
-            $ojson = array();
+            $ojson = [];
             $result = $conf->ql_ok("select * from ReviewFormOptions where fieldName='outcome'");
             while ($result && ($row = $result->fetch_object())) {
                 $ojson[$row->level] = $row->description;

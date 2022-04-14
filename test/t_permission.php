@@ -658,7 +658,7 @@ class Permission_Tester {
         $paper2->load_watch();
 
         /*$result = Dbl::qe("select paperId, tag, tagIndex from PaperTag order by paperId, tag");
-        $tags = array();
+        $tags = [];
         while ($result && ($row = $result->fetch_row()))
             $tags[] = "$row[0],$row[1],$row[2]\n";
         echo join("", $tags);*/

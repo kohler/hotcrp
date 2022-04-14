@@ -159,7 +159,7 @@ class Users_Page {
             }
             $row["follow"] = empty($f) ? "none" : join(" ", $f);
             if ($user->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) {
-                $r = array();
+                $r = [];
                 if ($user->roles & Contact::ROLE_CHAIR) {
                     $r[] = "chair";
                 }

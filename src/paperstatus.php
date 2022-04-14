@@ -152,7 +152,7 @@ class PaperStatus extends MessageSet {
         }
         assert($doc instanceof DocumentInfo);
 
-        $d = (object) array();
+        $d = (object) [];
         if ($docid && !$this->hide_docids) {
             $d->docid = $docid;
         }

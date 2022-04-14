@@ -559,7 +559,7 @@ class PaperTable {
             }
             $c .= '>' . expander(null, $foldnum);
             if (!is_array($name)) {
-                $name = array($name, $name);
+                $name = [$name, $name];
             }
             if ($name[0] !== $name[1]) {
                 $c .= '<span class="fn' . $foldnum . '">' . $name[1] . '</span><span class="fx' . $foldnum . '">' . $name[0] . '</span>';

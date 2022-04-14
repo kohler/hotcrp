@@ -85,7 +85,7 @@ class AuthorView_Capability {
         }
         $start = "0" . $prow->paperId . "a";
         $hash = sha1($start . $prow->capVersion . $key, true);
-        $suffix = str_replace(array("+", "/", "="), array("-", "_", ""),
+        $suffix = str_replace(["+", "/", "="], ["-", "_", ""],
                               base64_encode(substr($hash, 0, 8)));
         return $start . $suffix;
     }

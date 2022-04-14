@@ -321,26 +321,26 @@ class ContactList {
             usort($rows, [$this, "_sortBase"]);
             break;
         case self::FIELD_EMAIL:
-            usort($rows, array($this, "_sortEmail"));
+            usort($rows, [$this, "_sortEmail"]);
             break;
         case self::FIELD_AFFILIATION:
         case self::FIELD_AFFILIATION_ROW:
-            usort($rows, array($this, "_sortAffiliation"));
+            usort($rows, [$this, "_sortAffiliation"]);
             break;
         case self::FIELD_LASTVISIT:
-            usort($rows, array($this, "_sortLastVisit"));
+            usort($rows, [$this, "_sortLastVisit"]);
             break;
         case self::FIELD_REVIEWS:
-            usort($rows, array($this, "_sortReviews"));
+            usort($rows, [$this, "_sortReviews"]);
             break;
         case self::FIELD_LEADS:
-            usort($rows, array($this, "_sortLeads"));
+            usort($rows, [$this, "_sortLeads"]);
             break;
         case self::FIELD_SHEPHERDS:
-            usort($rows, array($this, "_sortShepherds"));
+            usort($rows, [$this, "_sortShepherds"]);
             break;
         case self::FIELD_REVIEW_RATINGS:
-            usort($rows, array($this, "_sortReviewRatings"));
+            usort($rows, [$this, "_sortReviewRatings"]);
             break;
         case self::FIELD_PAPERS:
             usort($rows, [$this, "_sort_papers"]);
@@ -874,7 +874,7 @@ class ContactList {
         $lllgroups = [];
 
         // Begin linelinks
-        $types = array("nameemail" => "Names and emails");
+        $types = ["nameemail" => "Names and emails"];
         if ($this->user->privChair) {
             $types["pcinfo"] = "PC info";
         }
@@ -962,7 +962,7 @@ class ContactList {
         // get field array
         $fieldDef = [];
         $acceptable_fields = [];
-        $this->any = (object) array("sel" => false);
+        $this->any = (object) ["sel" => false];
         $ncol = 0;
         foreach ($baseFieldId as $fid) {
             if ($this->selector($fid) !== false) {
@@ -1011,7 +1011,7 @@ class ContactList {
         $anyData = [];
         $body = '';
         $extrainfo = $hascolors = false;
-        $ids = array();
+        $ids = [];
         foreach ($srows as $row) {
             if (($this->limit == "resub" || $this->limit == "extsub")
                 && (!isset($this->_rect_data[$row->contactId])
@@ -1081,7 +1081,7 @@ class ContactList {
         }
 
         $uldisplay = self::uldisplay($this->user);
-        $foldclasses = array();
+        $foldclasses = [];
         foreach (self::$folds as $k => $fold) {
             if (($this->have_folds[$fold] ?? null) !== null) {
                 $this->have_folds[$fold] = strpos($uldisplay, " $fold ") !== false;

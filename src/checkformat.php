@@ -291,7 +291,7 @@ class CheckFormat extends MessageSet {
 
         // number of columns
         if ($spec->columns) {
-            $px = array();
+            $px = [];
             $ncol = $bj->columns ?? 0;
             foreach ($bj->pages as $i => $pg) {
                 if (($pp = cvtint($pg->columns ?? $ncol)) > 0

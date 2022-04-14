@@ -21,11 +21,17 @@ class GetAllRevpref_ListAction extends ListAction {
                 $is_cflt = $cflt && $cflt->is_conflicted();
                 $tv = $prow->topicIds !== "" ? $prow->topic_interest_score($p) : 0;
                 if ($pref[0] !== 0 || $pref[1] !== null || $is_cflt || $tv) {
-                    $texts[] = array("paper" => $prow->paperId, "title" => $prow->title, "first" => $p->firstName, "last" => $p->lastName, "email" => $p->email,
-                                "preference" => $pref[0] ? : "",
-                                "expertise" => unparse_expertise($pref[1]),
-                                "topic_score" => $tv ? : "",
-                                "conflict" => ($is_cflt ? "conflict" : ""));
+                    $texts[] = [
+                        "paper" => $prow->paperId,
+                        "title" => $prow->title,
+                        "first" => $p->firstName,
+                        "last" => $p->lastName,
+                        "email" => $p->email,
+                        "preference" => $pref[0] ? : "",
+                        "expertise" => unparse_expertise($pref[1]),
+                        "topic_score" => $tv ? : "",
+                        "conflict" => ($is_cflt ? "conflict" : "")
+                    ];
                     $has_conflict = $has_conflict || $is_cflt;
                     $has_expertise = $has_expertise || $pref[1] !== null;
                     $has_topic_score = $has_topic_score || $tv;

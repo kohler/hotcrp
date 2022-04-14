@@ -1267,7 +1267,7 @@ class FormulaCompiler {
     private function _push() {
         $this->_stack[] = [$this->_lprefix, $this->lstmt, $this->index_type, $this->indexed, $this->_lflags];
         $this->_lprefix = ++$this->_maxlprefix;
-        $this->lstmt = array();
+        $this->lstmt = [];
         $this->index_type = Fexpr::IDX_NONE;
         $this->indexed = false;
         $this->_lflags = 0;
@@ -1462,7 +1462,7 @@ class Formula implements JsonSerializable {
     /** @var bool */
     const DEBUG = false;
 
-    static public $opprec = array(
+    static public $opprec = [
         "**" => 13,
         "u+" => 12, "u-" => 12, "u!" => 12,
         "*" => 11, "/" => 11, "%" => 11,
@@ -1478,16 +1478,16 @@ class Formula implements JsonSerializable {
         "||" => 1, "or" => 1,
         "?:" => 0,
         "in" => -1
-    );
+    ];
 
-    static private $_oprassoc = array(
+    static private $_oprassoc = [
         "**" => true
-    );
+    ];
 
-    static private $_oprewrite = array(
+    static private $_oprewrite = [
         "=" => "==", ":" => "==", "≤" => "<=", "≥" => ">=", "≠" => "!=",
         "and" => "&&", "or" => "||"
-    );
+    ];
 
     const ALLOW_INDEXED = 1;
     /** @param ?string $expr

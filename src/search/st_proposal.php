@@ -80,7 +80,7 @@ class Proposal_SearchTerm extends SearchTerm {
                 $qword = $m[2];
             } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))' . $tailre, $qword, $m)) {
                 if (($quoted = $m[1][0] === "\"")) {
-                    $m[1] = str_replace(array('"', '*'), array('', '\*'), $m[1]);
+                    $m[1] = str_replace(['"', '*'], ['', '\*'], $m[1]);
                 }
                 $contacts = $m[1];
                 $qword = $m[2];

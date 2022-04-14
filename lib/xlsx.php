@@ -9,7 +9,7 @@ class XlsxGenerator {
 
     /** @var DocumentInfoSet */
     private $zip;
-    private $sst = array();
+    private $sst = [];
     private $nsst = 0;
     private $nsheets = 0;
     private $any_headers = false;
@@ -66,8 +66,8 @@ class XlsxGenerator {
     function add_sheet($header, $rows) {
         assert(!$this->done);
         $extra = "";
-        $rout = array();
-        $this->widths = array();
+        $rout = [];
+        $this->widths = [];
         if ($header) {
             $rout[] = $this->row_data(count($rout) + 1, $header, 1);
             $this->any_headers = true;
@@ -94,7 +94,7 @@ class XlsxGenerator {
     }
 
     private function add_sst() {
-        $t = array(self::PROCESSING, "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"$this->nsst\" uniqueCount=\"$this->nsst\">\n");
+        $t = [self::PROCESSING, "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"$this->nsst\" uniqueCount=\"$this->nsst\">\n"];
         foreach ($this->sst as $k => $v)
             $t[] = "<si><t>" . htmlspecialchars($k) . "</t></si>";
         $t[] = "</sst>\n";
@@ -102,7 +102,7 @@ class XlsxGenerator {
     }
 
     private function add_workbook() {
-        $t = array(self::PROCESSING, "<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:mx=\"http://schemas.microsoft.com/office/mac/excel/2008/main\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" xmlns:mv=\"urn:schemas-microsoft-com:mac:vml\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\">\n", "<sheets>\n");
+        $t = [self::PROCESSING, "<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:mx=\"http://schemas.microsoft.com/office/mac/excel/2008/main\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" xmlns:mv=\"urn:schemas-microsoft-com:mac:vml\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\">\n", "<sheets>\n"];
         for ($i = 1; $i <= $this->nsheets; ++$i)
             $t[] = "<sheet sheetId=\"$i\" name=\"Sheet$i\""
                 . ($i == 1 ? " state=\"visible\"" : "")
@@ -112,7 +112,7 @@ class XlsxGenerator {
     }
 
     private function add_styles() {
-        $t = array(self::PROCESSING, "<styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\">\n");
+        $t = [self::PROCESSING, "<styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\">\n"];
         if ($this->any_headers) {
             $t[] = "<fonts count=\"2\"><font><sz val=\"10.0\"/><name val=\"Arial\"/></font><font><sz val=\"10.0\"/><name val=\"Arial\"/><b/></font></fonts>\n";
             $t[] = "<fills count=\"1\"><fill><patternFill patternType=\"none\"/></fill></fills>\n";
@@ -127,9 +127,9 @@ class XlsxGenerator {
     }
 
     private function add_xl_relationships() {
-        $t = array(self::PROCESSING, "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">\n",
+        $t = [self::PROCESSING, "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">\n",
                    "<Relationship Target=\"sharedStrings.xml\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings\" Id=\"rId1\"/>\n",
-                   "<Relationship Target=\"styles.xml\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Id=\"rId2\"/>\n");
+                   "<Relationship Target=\"styles.xml\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Id=\"rId2\"/>\n"];
         for ($i = 1; $i <= $this->nsheets; ++$i)
             $t[] = "<Relationship Target=\"worksheets/sheet$i.xml\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Id=\"rId" . ($i + 2) . "\"/>\n";
         $t[] = "</Relationships>\n";
@@ -137,20 +137,20 @@ class XlsxGenerator {
     }
 
     private function add_content_types() {
-        $t = array(self::PROCESSING, "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">\n",
+        $t = [self::PROCESSING, "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">\n",
                    "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>\n",
                    "<Default Extension=\"xml\" ContentType=\"application/xml\"/>\n",
                    "<Override PartName=\"/xl/sharedStrings.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml\"/>\n",
                    "<Override PartName=\"/xl/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml\"/>\n",
-                   "<Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/>\n");
+                   "<Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/>\n"];
         for ($i = 1; $i <= $this->nsheets; ++$i)
             $t[] = "<Override PartName=\"/xl/worksheets/sheet$i.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>\n";
         $t[] = "</Types>\n";
         $this->zip->add_string_as(join("", $t), "[Content_Types].xml");
 
-        $t = array(self::PROCESSING, "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">\n",
+        $t = [self::PROCESSING, "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">\n",
                    "<Relationship Target=\"xl/workbook.xml\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Id=\"rId1\"/>\n",
-                   "</Relationships>\n");
+                   "</Relationships>\n"];
         $this->zip->add_string_as(join("", $t), "_rels/.rels");
     }
 

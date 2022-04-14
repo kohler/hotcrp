@@ -5,7 +5,7 @@
 class Tag_ListAction extends ListAction {
     static function render(PaperList $pl, Qrequest $qreq) {
         // tagtype cell
-        $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order");
+        $tagopt = ["a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order"];
         $tagextra = ["class" => "js-submit-action-info-tag"];
         if ($pl->user->privChair) {
             $tagopt["xxxb"] = null;
@@ -57,7 +57,7 @@ class Tag_ListAction extends ListAction {
             shuffle($papers);
         }
 
-        $x = array("action,paper,tag\n");
+        $x = ["action,paper,tag\n"];
         if ($act === "s" || $act === "so" || $act === "sos" || $act === "sor") {
             foreach ($tags as $t) {
                 $x[] = "cleartag,all," . Tagger::base($t) . "\n";

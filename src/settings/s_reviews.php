@@ -131,7 +131,7 @@ class Reviews_SettingRenderer {
             Ht::hidden("has_rev_roundtag", 1), Ht::hidden("has_extrev_roundtag", 1);
         foreach ($roundorder as $i => $rname) {
             if ($i && $rname === ";")
-                echo Ht::hidden("roundname_$i", "", array("id" => "roundname_$i")),
+                echo Ht::hidden("roundname_$i", "", ["id" => "roundname_$i"]),
                     Ht::hidden("deleteround_$i", 1, ["data-default-value" => "1"]);
         }
         Ht::stash_script('hotcrp.settings.review_round()');
@@ -298,7 +298,7 @@ class Reviews_SettingRenderer {
 
 
 class Round_SettingParser extends SettingParser {
-    private $rev_round_changes = array();
+    private $rev_round_changes = [];
 
     function apply_req(SettingValues $sv, Si $si) {
         assert($si->name === "tag_rounds");

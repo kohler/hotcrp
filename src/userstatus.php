@@ -1180,7 +1180,7 @@ class UserStatus extends MessageSet {
         }
 
         if (isset($qreq->has_ti) && $roles_pc && $us->viewer->isPC) {
-            $topics = array();
+            $topics = [];
             foreach ($us->conf->topic_set() as $id => $t) {
                 if (isset($qreq["ti$id"]) && is_numeric($qreq["ti$id"])) {
                     $topics[$id] = (int) $qreq["ti$id"];
