@@ -4799,7 +4799,7 @@ var vismap = {
         pc: "hidden from authors and external reviewers",
         admin: "shown only to administrators"
     },
-    emojiregex = /^(?:\ud83c[\udde6-\uddff]\ud83c[\udde6-\uddff]|(?:[\u231a-\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd-\u25fe\u2614-\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa-\u26ab\u26bd-\u26be\u26c4-\u26c5\u26ce\u26d4\u26ea\u26f2-\u26f3\u26f5\u26fa\u26fd\u2705\u270a-\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b-\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50-\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95-\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedd-\udedf\udeeb-\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude74\ude78-\ude7c\ude80-\ude86\ude90-\udeac\udeb0-\udeba\udec0-\udec5\uded0-\uded9\udee0-\udee7\udef0-\udef6]\ufe0f?|[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9-\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1-\u23f2\u23f8-\u23fa\u24c2\u25aa-\u25ab\u25b6\u25c0\u25fb-\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622-\u2623\u2626\u262a\u262e-\u262f\u2638-\u263a\u2640\u2642\u265f-\u2660\u2663\u2665-\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b-\u269c\u26a0\u26a7\u26b0-\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0-\u26f1\u26f4\u26f7-\u26f9\u2702\u2708-\u2709\u270c-\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733-\u2734\u2744\u2747\u2763-\u2764\u27a1\u2934-\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70-\udd71\udd7e-\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96-\udf97\udf99-\udf9b\udf9e-\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49-\udd4a\udd6f-\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1-\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3]\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?(?:\u200d(?:[\u231a-\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd-\u25fe\u2614-\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa-\u26ab\u26bd-\u26be\u26c4-\u26c5\u26ce\u26d4\u26ea\u26f2-\u26f3\u26f5\u26fa\u26fd\u2705\u270a-\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b-\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50-\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95-\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedd-\udedf\udeeb-\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude74\ude78-\ude7c\ude80-\ude86\ude90-\udeac\udeb0-\udeba\udec0-\udec5\uded0-\uded9\udee0-\udee7\udef0-\udef6]\ufe0f?|[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9-\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1-\u23f2\u23f8-\u23fa\u24c2\u25aa-\u25ab\u25b6\u25c0\u25fb-\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622-\u2623\u2626\u262a\u262e-\u262f\u2638-\u263a\u2640\u2642\u265f-\u2660\u2663\u2665-\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b-\u269c\u26a0\u26a7\u26b0-\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0-\u26f1\u26f4\u26f7-\u26f9\u2702\u2708-\u2709\u270c-\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733-\u2734\u2744\u2747\u2763-\u2764\u27a1\u2934-\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70-\udd71\udd7e-\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96-\udf97\udf99-\udf9b\udf9e-\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49-\udd4a\udd6f-\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1-\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3]\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?)*[ \t]*){1,3}$/,
+    emojiregex = /^(?:(?:\ud83c[\udde6-\uddff]\ud83c[\udde6-\uddff]|(?:(?:[\u231a\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd\u25fe\u2614\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa\u26ab\u26bd\u26be\u26c4\u26c5\u26ce\u26d4\u26ea\u26f2\u26f3\u26f5\u26fa\u26fd\u2705\u270a\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedd-\udedf\udeeb\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude74\ude78-\ude7c\ude80-\ude86\ude90-\udeac\udeb0-\udeba\udec0-\udec5\uded0-\uded9\udee0-\udee7\udef0-\udef6])\ufe0f?|(?:[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1\u23f2\u23f8-\u23fa\u24c2\u25aa\u25ab\u25b6\u25c0\u25fb\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622\u2623\u2626\u262a\u262e\u262f\u2638-\u263a\u2640\u2642\u265f\u2660\u2663\u2665\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b\u269c\u26a0\u26a7\u26b0\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0\u26f1\u26f4\u26f7-\u26f9\u2702\u2708\u2709\u270c\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733\u2734\u2744\u2747\u2763\u2764\u27a1\u2934\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70\udd71\udd7e\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96\udf97\udf99-\udf9b\udf9e\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49\udd4a\udd6f\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3])\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?(?:\u200d(?:(?:[\u231a\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd\u25fe\u2614\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa\u26ab\u26bd\u26be\u26c4\u26c5\u26ce\u26d4\u26ea\u26f2\u26f3\u26f5\u26fa\u26fd\u2705\u270a\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedd-\udedf\udeeb\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude74\ude78-\ude7c\ude80-\ude86\ude90-\udeac\udeb0-\udeba\udec0-\udec5\uded0-\uded9\udee0-\udee7\udef0-\udef6])\ufe0f?|(?:[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1\u23f2\u23f8-\u23fa\u24c2\u25aa\u25ab\u25b6\u25c0\u25fb\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622\u2623\u2626\u262a\u262e\u262f\u2638-\u263a\u2640\u2642\u265f\u2660\u2663\u2665\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b\u269c\u26a0\u26a7\u26b0\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0\u26f1\u26f4\u26f7-\u26f9\u2702\u2708\u2709\u270c\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733\u2734\u2744\u2747\u2763\u2764\u27a1\u2934\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70\udd71\udd7e\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96\udf97\udf99-\udf9b\udf9e\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49\udd4a\udd6f\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3])\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?)*)*[ \t]*){1,3}$/,
     cmts = {}, has_unload = false, resp_rounds = {},
     twiddle_start = siteinfo.user && siteinfo.user.cid ? siteinfo.user.cid + "~" : "###";
 
@@ -5941,9 +5941,11 @@ demand_load.emoji_codes = demand_load.make(function (resolve, reject) {
             while (u > 0) {
                 u2 = w.indexOf("_", u+1);
                 wp = w.substring(u+1, u2 < 0 ? w.length : u2);
-                v.wordsets[wp] = v.wordsets[wp] || [];
-                if (v.wordsets[wp].indexOf(w) < 0)
-                    v.wordsets[wp].push(w);
+                if (wp !== "with" && wp !== "and" && wp !== "in") {
+                    v.wordsets[wp] = v.wordsets[wp] || [];
+                    if (v.wordsets[wp].indexOf(w) < 0)
+                        v.wordsets[wp].push(w);
+                }
                 u = u2;
             }
         }
@@ -6153,6 +6155,8 @@ function make_suggestions(precaret, postcaret, options) {
                 }
                 res.push(titem);
                 last_text = text;
+                if (res.length === options.max_items)
+                    break;
             }
         }
 
@@ -6166,13 +6170,13 @@ var suggest = (function () {
 var builders = {};
 
 function suggest() {
-    var elt = this, hintdiv, suggdata, hintlist,
+    var elt = this, hintdiv, hintinfo, suggdata,
         blurring = false, hiding = false, lastkey = false, lastpos = false,
         wasnav = 0, spacestate = -1;
 
     function kill() {
         hintdiv && hintdiv.remove();
-        hintdiv = hintlist = null;
+        hintdiv = hintinfo = null;
         blurring = hiding = lastkey = lastpos = false;
         wasnav = 0;
     }
@@ -6226,15 +6230,16 @@ function suggest() {
         }
 
         var i, clist = cinfo.list, same_list = false;
-        if (hintlist && hintlist.length === clist.length) {
-            for (same_list = true, i = 0; i !== hintlist.length; ++i) {
-                if (hintlist[i] !== clist[i]) {
+        if (hintinfo && hintinfo.list && hintinfo.list.length === clist.length) {
+            for (same_list = true, i = 0; i !== clist.length; ++i) {
+                if (hintinfo.list[i] !== clist[i]) {
                     same_list = false;
                     break;
                 }
             }
         }
-        hintlist = clist;
+        hintinfo = cinfo;
+        hintinfo.pcpos = precaretpos;
 
         var div;
         if (!same_list) {
@@ -6272,7 +6277,6 @@ function suggest() {
         var $pos = shadow.find("span").geometry(), soff = shadow.offset();
         $pos = geometry_translate($pos, -soff.left - $elt.scrollLeft(), -soff.top + 4 - $elt.scrollTop());
         hintdiv.near($pos, elt);
-        hintdiv.self().data("autocompletePos", [precaretpos, cinfo.lengths]);
         shadow.remove();
     }
 
@@ -6294,40 +6298,41 @@ function suggest() {
     }
 
     function do_complete(complete_elt) {
-        var text;
+        var repl;
         if (complete_elt.hasAttribute("data-replacement"))
-            text = complete_elt.getAttribute("data-replacement");
+            repl = complete_elt.getAttribute("data-replacement");
         else if (complete_elt.firstChild.nodeType === Node.TEXT_NODE)
-            text = complete_elt.textContent;
+            repl = complete_elt.textContent;
         else {
             var n = complete_elt.firstChild;
             while (n.className !== "s9t")
                 n = n.nextSibling;
-            text = n.textContent;
+            repl = n.textContent;
         }
 
-        var poss = hintdiv.self().data("autocompletePos"),
-            val = elt.value,
-            startPos = poss[0],
-            endPos = startPos + poss[1][0] + poss[1][1] + poss[1][2],
+        var val = elt.value,
+            startPos = hintinfo.pcpos,
+            endPos = startPos + hintinfo.lengths[0] + hintinfo.lengths[1] + hintinfo.lengths[2],
             space;
-        if (poss[1][2])
-            text += val.substring(endPos - poss[1][2], endPos);
-        else if ((space = text.indexOf(" ")) > 0) {
+        if (hintinfo.lengths[2])
+            repl += val.substring(endPos - hintinfo.lengths[2], endPos);
+        else if ((space = repl.indexOf(" ")) > 0) {
             // If user completes when caret is at e.g. `Jor|dan Peele`, skip over `Peele`
-            while (space < text.length && val.charCodeAt(endPos) === text.charCodeAt(space))
+            while (space < repl.length && val.charCodeAt(endPos) === repl.charCodeAt(space))
                 ++space, ++endPos;
         }
-        var outPos = startPos + text.length;
+        var outPos = startPos + repl.length;
         if (hasClass(complete_elt, "s9nsp")) {
             spacestate = -1;
         } else {
             ++outPos;
             if (endPos === val.length || /\S/.test(val.charAt(endPos)))
-                text += " ";
+                repl += " ";
             spacestate = complete_elt.closest(".s9smartpunc") ? outPos : -1;
         }
-        elt.setRangeText(text, startPos, endPos, "end");
+        elt.setRangeText(repl, startPos, endPos, "end");
+        if (hintinfo.postreplace)
+            hintinfo.postreplace(elt, repl, startPos);
         $(elt).trigger("input");
     }
 
@@ -6386,15 +6391,14 @@ function suggest() {
         var k = event_key(evt), m = event_modkey(evt), result = true,
             pspacestate = spacestate;
         if (k === "Escape" && !m) {
-            if (hintdiv) {
-                var poss = hintdiv.self().data("autocompletePos");
+            if (hintinfo) {
+                hiding = this.value.substring(hintinfo.pcpos, hintinfo.pcpos + hintinfo.lengths[0]);
                 kill();
-                hiding = this.value.substring(poss[0], poss[0] + poss[1][0]);
                 evt.stopImmediatePropagation();
             }
         } else if ((k === "Tab" || k === "Enter") && !m && hintdiv) {
             var $active = hintdiv.self().find(".s9y");
-            if ((k !== "Enter" || lastkey !== "Backspace") && $active.length)
+            if ($active.length)
                 do_complete($active[0]);
             kill();
             if ($active.length || this.selectionEnd !== this.value.length) {
@@ -6518,11 +6522,19 @@ suggest.add_builder("pc-tags", function (elt) {
     }
 });
 
+function suggest_emoji_postreplace(elt, repl, startPos) {
+    var m;
+    if (/^\uD83C[\uDFFB-\uDFFF]$/.test(repl)
+        && (m = /(?:\u200D\u2640\uFE0F?|\u200D\uD83E[\uDDB0-\uDDB3])+$/.exec(elt.value.substring(0, startPos)))) {
+        elt.setRangeText(repl + m[0], startPos - m[0].length, startPos + repl.length, "end");
+    }
+}
+
 suggest.add_builder("suggest-emoji", function (elt) {
     var x = completion_split(elt), m;
     if (x && (m = x[0].match(/(?:^|[\s(\u20e3-\u23ff\u2600-\u27ff\ufe0f\udc00-\udfff]):((?:|\+|\+?[-_0-9a-zA-Z]+):?)$/))
         && /^(?:$|[\s)\u20e3-\u23ff\u2600-\u27ff\ufe0f\ud83c-\ud83f])/.test(x[1])) {
-        return demand_load.emoji_completion(m[1].toLowerCase()).then(make_suggestions(":" + m[1], "", {case_sensitive_items: true, min_columns: 4, region_trimmer: /\..*$/}));
+        return demand_load.emoji_completion(m[1].toLowerCase()).then(make_suggestions(":" + m[1], "", {case_sensitive_items: true, max_items: 8, postreplace: suggest_emoji_postreplace}));
     }
 });
 

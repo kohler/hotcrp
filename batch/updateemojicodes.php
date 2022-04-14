@@ -171,6 +171,8 @@ class UpdateEmojiCodes_Batch {
             }
             if ($j - $i === 1) {
                 $f1[] = sprintf("\\u%04x", $ch[$i]);
+            } else if ($j - $i === 2) {
+                $f1[] = sprintf("\\u%04x\\u%04x", $ch[$i], $ch[$j-1]);
             } else {
                 $f1[] = sprintf("\\u%04x-\\u%04x", $ch[$i], $ch[$j-1]);
             }
@@ -191,6 +193,8 @@ class UpdateEmojiCodes_Batch {
                     }
                     if ($l - $k === 1) {
                         $m[] = sprintf("\\u%04x", 0xdc00 + ($ch[$k] & 0x3FF));
+                    } else if ($l - $k === 2) {
+                        $m[] = sprintf("\\u%04x\\u%04x", 0xdc00 + ($ch[$k] & 0x3FF), 0xdc00 + ($ch[$l-1] & 0x3FF));
                     } else {
                         $m[] = sprintf("\\u%04x-\\u%04x", 0xdc00 + ($ch[$k] & 0x3FF), 0xdc00 + ($ch[$l-1] & 0x3FF));
                     }
@@ -235,8 +239,8 @@ class UpdateEmojiCodes_Batch {
             $etag[] = $i;
         }
 
-        $eregex = "(?:" . self::ch_list_to_utf16_regex($epres) . "\\ufe0f?|"
-            . self::ch_list_to_utf16_regex($enpres) . "\\ufe0f)"
+        $eregex = "(?:(?:" . self::ch_list_to_utf16_regex($epres) . ")\\ufe0f?|"
+            . "(?:" . self::ch_list_to_utf16_regex($enpres) . ")\\ufe0f)"
             . "\\u20e3?"
             . "(?:" . self::ch_list_to_utf16_regex($emod)
             . "|(?:" . self::ch_list_to_utf16_regex($etag) . ")+"

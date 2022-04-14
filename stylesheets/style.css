@@ -3910,6 +3910,7 @@ a:hover .t-editor,
 }
 .cmttext.emoji-only {
 	font-size: 200%;
+	line-height: 1.125;
 }
 .preview {
 	margin-bottom: 24px;
