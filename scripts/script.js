@@ -3718,24 +3718,41 @@ handle_ui.on("js-keydown-enter-submit", function (event) {
 
 // assignment selection
 (function ($) {
-function make_radio(name, value, html, revtype) {
+function make_radio(name, value, text, revtype) {
     var rname = "assrev" + name, id = rname + "_" + value,
-        t = '<div class="assignment-ui-choice checki"><label><span class="checkc">'
-        + '<input type="radio" name="' + rname + '" value="' + value + '" id="' + id + '" class="assignment-ui-radio';
-    if (value == revtype)
-        t += ' want-focus" checked';
-    else
-        t += '"';
-    t += '></span>';
-    if (value != 0)
-        t += '<span class="rto rt' + value + '"><span class="rti">' + ["C", "", "E", "P", "2", "1", "M"][value + 1] + '</span></span>&nbsp;';
-    if (value == revtype)
-        t += '<u>' + html + '</u>';
-    else
-        t += html;
-    return t + '</label></div>';
+        div = document.createElement("div"),
+        label = document.createElement("label"),
+        span_checkc = document.createElement("span"),
+        input = document.createElement("input");
+    div.className = "assignment-ui-choice checki";
+    div.appendChild(label);
+    label.appendChild(span_checkc);
+    span_checkc.className = "checkc";
+    span_checkc.appendChild(input);
+    input.type = "radio";
+    input.name = rname;
+    input.value = value;
+    input.id = id;
+    if (value == revtype) {
+        input.class = "assignment-ui-radio want-focus";
+        input.checked = input.defaultChecked = true;
+        var u = document.createElement("u");
+        u.append(text);
+        text = u;
+    }
+    if (value != 0) {
+        var span_rto = document.createElement("span"),
+            span_rti = document.createElement("span");
+        span_rto.className = "rto rt" + value;
+        span_rto.appendChild(span_rti);
+        span_rti.className = "rti";
+        span_rti.textContent = ["C", "", "E", "P", "2", "1", "M"][value + 1];
+        label.append(span_rto, " ");
+    }
+    label.append(text);
+    return div;
 }
-function make_round_selector(name, revtype, $a) {
+function append_round_selector(name, revtype, $a, ctr) {
     var $as = $a.closest(".has-assignment-set"), rounds;
     try {
         rounds = parse_json($as.attr("data-review-rounds") || "[]");
@@ -3749,16 +3766,26 @@ function make_round_selector(name, revtype, $a) {
         else
             around = $as[0].getAttribute("data-default-review-round");
         around = around || "unnamed";
-        t += '<div class="assignment-ui-round fx2">Round:&nbsp; <span class="select"><select name="rev_round' + name + '" data-default-value="' + around + '">';
-        for (var i = 0; i < rounds.length; ++i) {
-            t += '<option value="' + rounds[i] + '"';
+        var div = document.createElement("div"),
+            span = document.createElement("span"),
+            select = document.createElement("select"),
+            i, option;
+        div.className = "assignment-ui-round fx2";
+        span.className = "select";
+        select.name = "rev_round" + name;
+        select.setAttribute("data-default-value", around);
+        for (i = 0; i !== rounds.length; ++i) {
+            option = document.createElement("option");
+            option.value = rounds[i];
+            option.textContent = rounds[i];
+            select.appendChild(option);
             if (rounds[i] == around)
-                t += " selected";
-            t += '>' + rounds[i] + '</option>';
+                select.selectedIndex = i;
         }
-        t += '</select></span></div>';
+        span.appendChild(select);
+        div.append("Round:  ", span);
+        ctr.appendChild(div);
     }
-    return t;
 }
 function revtype_change(event) {
     close_unnecessary(event);
@@ -3792,19 +3819,22 @@ handle_ui.on("js-assignment-fold", function (event) {
             var name = $a.attr("data-pid") + "u" + $a.attr("data-uid"),
                 revtype = +$a.attr("data-review-type"),
                 conftype = +$a.attr("data-conflict-type"),
-                revinprogress = $a[0].hasAttribute("data-review-in-progress");
-            $x = $('<div class="has-assignment-ui fold2' + (revtype > 0 ? "o" : "c") + '">'
-                + '<div class="assignment-ui-options">'
-                + make_radio(name, 4, "Primary", revtype)
-                + make_radio(name, 3, "Secondary", revtype)
-                + make_radio(name, 2, "Optional", revtype)
-                + make_radio(name, 5, "Metareview", revtype)
-                + (revinprogress ? "" :
-                   make_radio(name, -1, "Conflict", conftype > 0 ? -1 : 0)
-                   + make_radio(name, 0, "None", revtype || conftype ? -1 : 0))
-                + '</div>'
-                + make_round_selector(name, revtype, $a)
-                + '</div>').appendTo($a);
+                revinprogress = $a[0].hasAttribute("data-review-in-progress"),
+                div_container = document.createElement("div"),
+                div_options = document.createElement("div");
+            div_container.className = "has-assignment-ui fold2" + (revtype > 0 ? "o" : "c");
+            div_container.appendChild(div_options);
+            div_options.className = "assignment-ui-options";
+            div_options.append(make_radio(name, 4, "Primary", revtype),
+                make_radio(name, 3, "Secondary", revtype),
+                make_radio(name, 2, "Optional", revtype),
+                make_radio(name, 5, "Metareview", revtype));
+            if (!revinprogress) {
+                div_options.append(make_radio(name, -1, "Conflict", conftype > 0 ? -1 : 0),
+                    make_radio(name, 0, "None", revtype || conftype ? -1 : 0));
+            }
+            append_round_selector(name, revtype, $a, div_options);
+            $a.append(div_container);
         }
         $a.addClass("foldo").removeClass("foldc");
         focus_within($x[0]);
