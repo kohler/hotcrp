@@ -101,7 +101,7 @@ class PaperApi {
         } else if (!$user->can_view_review($prow, $rrow)) {
             return new JsonResult(403, "Permission error.");
         } else if (!$rrow) {
-            return new JsonResult(404, "No such review.");
+            return new JsonResult(404, "Review not found");
         }
         $editable = $user->can_rate_review($prow, $rrow);
         if ($qreq->method() !== "GET") {
@@ -140,7 +140,7 @@ class PaperApi {
         } else if (!$user->can_administer($prow)) {
             return new JsonResult(403, "Permission error.");
         } else if (!$rrow) {
-            return new JsonResult(404, "No such review.");
+            return new JsonResult(404, "Review not found");
         } else {
             $rname = trim((string) $qreq->round);
             $round = $user->conf->sanitize_round_name($rname);

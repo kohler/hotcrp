@@ -576,7 +576,7 @@ function xassert_paper_status_saved_nonrequired(PaperStatus $ps, $maxstatus = Me
 
 /** @param Contact $user
  * @param ?PaperInfo $prow
- * @return array */
+ * @return object */
 function call_api($fn, $user, $qreq, $prow) {
     if (!($qreq instanceof Qrequest)) {
         $qreq = new Qrequest("POST", $qreq);
@@ -584,7 +584,7 @@ function call_api($fn, $user, $qreq, $prow) {
     }
     $uf = $user->conf->api($fn, $user, $qreq->method());
     $jr = $user->conf->call_api_on($uf, $fn, $user, $qreq, $prow);
-    return $jr->content;
+    return (object) $jr->content;
 }
 
 /** @param int|PaperInfo $prow

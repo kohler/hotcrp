@@ -1469,9 +1469,9 @@ class Permission_Tester {
         $paper11 = $this->u_chair->checked_paper_by_id(11);
         $paper12 = $this->u_chair->checked_paper_by_id(12);
         $j = call_api("shepherd", $this->u_chair, ["shepherd" => $this->u_estrin->email], $paper11);
-        xassert_eqq($j["ok"], true);
+        xassert_eqq($j->ok, true);
         $j = call_api("shepherd", $this->u_chair, ["shepherd" => $this->u_estrin->email], $paper12);
-        xassert_eqq($j["ok"], true);
+        xassert_eqq($j->ok, true);
         assert_search_papers($this->u_chair, "shep:any", "11 12");
         assert_search_papers($this->u_chair, "shep:estrin", "11 12");
         assert_search_papers($this->u_shenker, "shep:any", "11 12");

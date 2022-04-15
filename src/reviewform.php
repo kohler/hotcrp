@@ -1238,7 +1238,7 @@ class ReviewValues extends MessageSet {
         } else if (isset($this->req["reviewerEmail"])
                    && strcasecmp($this->req["reviewerEmail"], $user->email) != 0) {
             if (!($reviewer = $this->conf->user_by_email($this->req["reviewerEmail"]))) {
-                $this->reviewer_error($user->privChair ? $this->conf->_("<0>No such user %s.", htmlspecialchars($this->req["reviewerEmail"])) : null);
+                $this->reviewer_error($user->privChair ? $this->conf->_("<0>User %s not found", htmlspecialchars($this->req["reviewerEmail"])) : null);
                 return false;
             }
         }

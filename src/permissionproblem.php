@@ -8,38 +8,45 @@ class PermissionProblem extends Exception
     public $conf;
     /** @var array<string,mixed> */
     private $_a;
+
     /** @param ?array<string,mixed> $a */
     function __construct(Conf $conf, $a = null) {
         parent::__construct("HotCRP permission problem");
         $this->conf = $conf;
         $this->_a = $a ?? [];
     }
+
     #[\ReturnTypeWillChange]
     /** @param string $offset
      * @return bool */
     function offsetExists($offset) {
         return array_key_exists($offset, $this->_a);
     }
+
     #[\ReturnTypeWillChange]
     /** @param string $offset */
     function offsetGet($offset) {
         return $this->_a[$offset] ?? null;
     }
+
     #[\ReturnTypeWillChange]
     /** @param string $offset
      * @param mixed $value */
     function offsetSet($offset, $value) {
         $this->_a[$offset] = $value;
     }
+
     #[\ReturnTypeWillChange]
     /** @param string $offset */
     function offsetUnset($offset) {
         unset($this->_a[$offset]);
     }
+
     #[\ReturnTypeWillChange]
     function getIterator() {
         return new ArrayIterator($this->as_array());
     }
+
     /** @param string $offset
      * @return mixed */
     function get($offset, $default = null) {
@@ -48,12 +55,14 @@ class PermissionProblem extends Exception
         }
         return $default;
     }
+
     /** @param string $offset
      * @return $this */
     function set($offset, $value) {
         $this->_a[$offset] = $value;
         return $this;
     }
+
     /** @param array<string,mixed> $a
      * @return $this */
     function merge($a) {
@@ -62,6 +71,7 @@ class PermissionProblem extends Exception
         }
         return $this;
     }
+
     #[\ReturnTypeWillChange]
     /** @return int */
     function count() {
@@ -72,14 +82,17 @@ class PermissionProblem extends Exception
         }
         return $n;
     }
+
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         return $this->as_array();
     }
+
     /** @return array<string,mixed> */
     function as_array() {
         return $this->_a;
     }
+
     /** @param list<string> $offsets
      * @return PermissionProblem */
     function filter($offsets) {
@@ -90,6 +103,33 @@ class PermissionProblem extends Exception
         }
         return $pp;
     }
+
+    /** @return array{string,int,string,int} */
+    private function deadline_info() {
+        $dn = $this->_a["deadline"];
+        if ($dn === "response") {
+            $rrd = ($this->conf->response_rounds())[$this->_a["commentRound"]];
+            return ["response_open", $rrd->open, "response_done", $rrd->done];
+        }
+
+        if (str_starts_with($dn, "sub_")) {
+            $odn = "sub_open";
+        } else if (str_starts_with($dn, "rev_")
+                   || str_starts_with($dn, "extrev_")
+                   || str_starts_with($dn, "pcrev_")) {
+            $odn = "rev_open";
+        } else {
+            $odn = null;
+        }
+        $start = $odn !== null ? $this->conf->setting($odn) ?? -1 : 1;
+
+        if ($dn === "extrev_chairreq") {
+            $dn = $this->conf->review_deadline_name($this->_a["reviewRound"] ?? null, false, true);
+        }
+        $end = $this->conf->setting($dn) ?? -1;
+        return [$odn, $start, $dn, $end];
+    }
+
     /** @param int $format
      * @return string */
     function unparse($format = 0) {
@@ -127,11 +167,11 @@ class PermissionProblem extends Exception
         if (isset($this->_a["permission"])) {
             $ms[] = $this->conf->_c("eperm", "Permission error.", $this->_a["permission"], $paperId, $this->_a);
         }
-        if (isset($this->_a["optionNotAccepted"])) {
-            $ms[] = $this->conf->_("The %2\$s field is reserved for accepted submissions.", $paperId, $quote($option->title()));
+        if (isset($this->_a["optionNonexistent"])) {
+            $ms[] = $this->conf->_("The %2\$s field is not present on submission #%1\$d.", $paperId, $quote($option->title()));
         }
         if (isset($this->_a["documentNotFound"])) {
-            $ms[] = $this->conf->_("No such document “%s”.", $quote($this->_a["documentNotFound"]));
+            $ms[] = $this->conf->_("Document “%s” not found.", $quote($this->_a["documentNotFound"]));
         }
         if (isset($this->_a["signin"])) {
             $ms[] = $this->conf->_c("eperm", "You have been signed out.", $this->_a["signin"], $paperId);
@@ -166,6 +206,9 @@ class PermissionProblem extends Exception
         if (isset($this->_a["reviewNotComplete"])) {
             $ms[] = $this->conf->_("Your own review for #%d is not complete, so you can’t view other people’s reviews.", $paperId);
         }
+        if (isset($this->_a["responseNonexistent"])) {
+            $ms[] = $this->conf->_("That response is not allowed on submission #%1\$d.", $paperId);
+        }
         if (isset($this->_a["responseNotReady"])) {
             $ms[] = $this->conf->_("The authors’ response is not yet ready for reviewers to view.");
         }
@@ -179,31 +222,17 @@ class PermissionProblem extends Exception
             $ms[] = $this->conf->_("You are not assigned to review submission #%d.", $paperId);
         }
         if (isset($this->_a["deadline"])) {
-            $dname = $this->_a["deadline"];
-            if ($dname[0] === "s") {
-                $open_dname = "sub_open";
-            } else if ($dname[0] === "p" || $dname[0] === "e") {
-                $open_dname = "rev_open";
-            } else {
-                $open_dname = false;
-            }
-            $start = $open_dname ? $this->conf->setting($open_dname) ?? -1 : 1;
-            if ($dname === "extrev_chairreq") {
-                $end_dname = $this->conf->review_deadline_name($this->_a["reviewRound"] ?? null, false, true);
-            } else {
-                $end_dname = $dname;
-            }
-            $end = $this->conf->setting($end_dname) ?? -1;
-            if ($dname == "au_seerev") {
-                $ms[] = $this->conf->_c("etime", "Action not available.", $dname, $paperId);
+            list($odn, $start, $edn, $end) = $this->deadline_info();
+            if ($edn == "au_seerev") {
+                $ms[] = $this->conf->_c("etime", "Action not available.", $edn, $paperId);
             } else if ($start <= 0 || $start == $end) {
-                $ms[] = $this->conf->_c("etime", "Action not available.", $open_dname, $paperId);
+                $ms[] = $this->conf->_c("etime", "Action not available.", $odn, $paperId);
             } else if ($start > 0 && Conf::$now < $start) {
-                $ms[] = $this->conf->_c("etime", "Action not available until %3\$s.", $open_dname, $paperId, $this->conf->unparse_time($start));
+                $ms[] = $this->conf->_c("etime", "Action not available until %3\$s.", $odn, $paperId, $this->conf->unparse_time($start));
             } else if ($end > 0 && Conf::$now > $end) {
-                $ms[] = $this->conf->_c("etime", "Deadline passed.", $dname, $paperId, $this->conf->unparse_time($end));
+                $ms[] = $this->conf->_c("etime", "Deadline passed.", $edn, $paperId, $this->conf->unparse_time($end));
             } else {
-                $ms[] = $this->conf->_c("etime", "Action not available.", $dname, $paperId);
+                $ms[] = $this->conf->_c("etime", "Action not available.", $edn, $paperId);
             }
         }
         if (isset($this->_a["override"])) {
@@ -225,7 +254,11 @@ class PermissionProblem extends Exception
             $ms[] = $this->conf->_("External reviewers cannot view other reviews.");
         }
         if (isset($this->_a["differentReviewer"])) {
-            $ms[] = $this->conf->_("You didn’t write this review, so you can’t change it.");
+            if (isset($this->_a["commentId"])) {
+                $ms[] = $this->conf->_("You didn’t write this comment, so you can’t change it.");
+            } else {
+                $ms[] = $this->conf->_("You didn’t write this review, so you can’t change it.");
+            }
         }
         if (isset($this->_a["unacceptableReviewer"])) {
             $ms[] = $this->conf->_("That user can’t be assigned to review #%d.", $paperId);

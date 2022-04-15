@@ -3532,17 +3532,24 @@ class Contact {
                                 && MeetingTracker::can_view_some_tracker($this))))));
     }
 
+    /** @param PaperInfo $prow
+     * @param PaperOption $opt
+     * @return bool */
+    function check_option_view_condition($prow, $opt) {
+        return (!$opt->final
+                || ($prow->outcome > 0
+                    && $prow->timeSubmitted > 0
+                    && $this->can_view_decision($prow)))
+            && ($opt->exists_condition() === null
+                || ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0
+                || $opt->test_exists($prow));
+    }
+
     /** @param PaperOption $opt
      * @return 0|1|2 */
     function view_option_state(PaperInfo $prow, $opt) {
         if (!$this->can_view_paper($prow, $opt->has_document())
-            || ($opt->final
-                && ($prow->outcome <= 0
-                    || $prow->timeSubmitted <= 0
-                    || !$this->can_view_decision($prow)))
-            || ($opt->exists_condition()
-                && !($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS)
-                && !$opt->test_exists($prow))) {
+            || !$this->check_option_view_condition($prow, $opt)) {
             return 0;
         }
         $rights = $this->rights($prow);
@@ -3637,11 +3644,8 @@ class Contact {
                       && !$this->can_view_review($prow, null)))) {
             $whyNot["permission"] = "view_option";
             $whyNot["option"] = $opt;
-        } else if ($opt->final
-                   && ($prow->outcome <= 0
-                       || $prow->timeSubmitted <= 0
-                       || !$rights->can_view_decision)) {
-            $whyNot["optionNotAccepted"] = true;
+        } else if (!$this->check_option_view_condition($prow, $opt)) {
+            $whyNot["optionNonexistent"] = true;
             $whyNot["option"] = $opt;
         } else {
             $whyNot["permission"] = "view_option";
@@ -4420,6 +4424,7 @@ class Contact {
         if ($crow->contactId !== $this->contactXid
             && !$rights->allow_administer) {
             $whyNot["differentReviewer"] = true;
+            $whyNot["commentId"] = $crow->commentId;
         } else if (!$rights->allow_pc
                    && !$rights->allow_review
                    && ($rights->conflictType < CONFLICT_AUTHOR
@@ -4479,15 +4484,21 @@ class Contact {
         } else if ($prow->timeSubmitted <= 0) {
             $whyNot["notSubmitted"] = true;
         } else {
-            $whyNot["deadline"] = "resp_done";
-            if ($crow->commentRound) {
-                $whyNot["deadline"] .= "_" . $crow->commentRound;
-            }
-            if ($rights->allow_administer && $rights->conflictType > CONFLICT_MAXUNCONFLICTED) {
-                $whyNot["forceShow"] = true;
-            }
-            if ($rights->allow_administer) {
-                $whyNot["override"] = true;
+            $rrd = ($prow->conf->response_rounds())[$crow->commentRound] ?? null;
+            if (!($crow->commentType & CommentInfo::CT_RESPONSE)
+                || !$rrd
+                || ($rrd->search && !$rrd->search->test($prow))) {
+                $whyNot["responseNonexistent"] = true;
+            } else {
+                $whyNot["deadline"] = "response";
+                $whyNot["commentRound"] = $crow->commentRound;
+                if ($rights->allow_administer
+                    && $rights->conflictType > CONFLICT_MAXUNCONFLICTED) {
+                    $whyNot["forceShow"] = true;
+                }
+                if ($rights->allow_administer) {
+                    $whyNot["override"] = true;
+                }
             }
         }
         return $whyNot;
@@ -4515,10 +4526,10 @@ class Contact {
                 && ($ctype >= CommentInfo::CT_AUTHOR
                     || $rights->potential_reviewer))
             || ($rights->act_author_view
-                && (($ctype & (CommentInfo::CT_BYAUTHOR | CommentInfo::CT_RESPONSE))
+                && (($ctype & (CommentInfo::CT_BYAUTHOR | CommentInfo::CT_RESPONSE)) !== 0
                     || ($ctype >= CommentInfo::CT_AUTHOR
-                        && !($ctype & CommentInfo::CT_DRAFT)
-                        && (($ctype & CommentInfo::CT_TOPIC_PAPER)
+                        && ($ctype & CommentInfo::CT_DRAFT) === 0
+                        && (($ctype & CommentInfo::CT_TOPIC_PAPER) !== 0
                             || $this->can_view_submitted_review_as_author($prow)))))
             || (!$rights->view_conflict_type
                 && (!($ctype & CommentInfo::CT_DRAFT)
@@ -4526,7 +4537,7 @@ class Contact {
                 && ($rights->allow_pc
                     ? $ctype >= CommentInfo::CT_PCONLY
                     : $ctype >= CommentInfo::CT_REVIEWER)
-                && (($ctype & CommentInfo::CT_TOPIC_PAPER)
+                && (($ctype & CommentInfo::CT_TOPIC_PAPER) !== 0
                     || $this->can_view_review($prow, null))
                 && ($ctype >= CommentInfo::CT_AUTHOR
                     || $this->conf->setting("cmt_revid")
@@ -5221,10 +5232,8 @@ class Contact {
                         } else if ($admin && $this->can_edit_response($prow, $crow)) {
                             $v = "override";
                         }
-                        if ($v && !isset($perm->can_responds)) {
-                            $perm->can_responds = [];
-                        }
                         if ($v) {
+                            $perm->can_responds = $perm->can_responds ?? [];
                             $perm->can_responds[$rrd->name] = $v;
                         }
                     }

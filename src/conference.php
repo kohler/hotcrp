@@ -2009,12 +2009,6 @@ class Conf {
         return $this->_resp_rounds;
     }
 
-    /** @return list<ResponseRound>
-     * @deprecated */
-    function resp_rounds() {
-        return $this->response_rounds();
-    }
-
     /** @return list<ResponseRound> */
     private function _new_response_rounds() {
         $rrds = [];

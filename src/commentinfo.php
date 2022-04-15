@@ -59,6 +59,8 @@ class CommentInfo {
     public $saved_mentions_missing;
     /** @var ?bool */
     public $notified_authors;
+    /** @var ?list<MessageItem> */
+    public $message_list;
 
     const CT_DRAFT = 1;
     const CT_BLIND = 2;
@@ -831,11 +833,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $q = "insert into PaperComment (" . join(", ", $qa) . ") select " . join(", ", $qb) . "\n";
             if ($is_response) {
                 // make sure there is exactly one response
-                $q .= " from (select Paper.paperId, coalesce(commentId, 0) commentId
-                from Paper
-                left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . self::CT_RESPONSE . ")!=0 and commentRound=$this->commentRound)
-                where Paper.paperId={$this->prow->paperId} limit 1) t
-        where t.commentId=0";
+                $q .= "from dual where not exists (select * from PaperComment where paperId={$this->prow->paperId} and (commentType&" . self::CT_RESPONSE . ")!=0 and commentRound={$this->commentRound})";
             }
         } else {
             if ($this->timeModified >= Conf::$now) {
@@ -870,7 +868,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             return false;
         }
 
-        $cmtid = $this->commentId ?: $result->insert_id;
+        $cmtid = $this->commentId ? : $result->insert_id;
         if (!$cmtid) {
             return false;
         }

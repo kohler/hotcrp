@@ -113,6 +113,7 @@ class JsonResult implements JsonSerializable {
             $this->content = $values;
         }
     }
+
     /** @return JsonResult */
     static function make($jr, $arg2 = null) {
         if ($jr instanceof JsonResult) {
@@ -123,6 +124,21 @@ class JsonResult implements JsonSerializable {
             return new JsonResult($jr);
         }
     }
+
+    /** @param int|string $a1
+     * @param ?string $a2
+     * @return JsonResult */
+    static function make_error($a1, $a2 = null) {
+        if (!is_int($a1)) {
+            $a2 = $a1;
+            $a1 = 400;
+        }
+        if (!Ftext::is_ftext($a2)) {
+            error_log("bad ftext `{$a2}` " . debug_string_backtrace());
+        }
+        return new JsonResult($a1, ["ok" => false, "message_list" => [MessageItem::error($a2)]]);
+    }
+
     function export_messages(Conf $conf) {
         $ml = [];
         foreach ($this->content["message_list"] ?? [] as $mi) {
@@ -144,6 +160,7 @@ class JsonResult implements JsonSerializable {
                 Ht::message_set()->append_item($mi);
         }
     }
+
     /** @param bool $validated */
     function emit($validated) {
         if ($this->status) {
@@ -167,6 +184,7 @@ class JsonResult implements JsonSerializable {
         header("Content-Type: application/json; charset=utf-8");
         echo json_encode_browser($this->content);
     }
+
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         return $this->content;

@@ -52,7 +52,7 @@ class Graph_Page {
             return false;
         }
         if (!$gj) {
-            Multiconference::fail(403, ["title" => "Graph"], "No such graph.");
+            Multiconference::fail(403, ["title" => "Graph"], "Graph not found.");
             return false;
         }
 

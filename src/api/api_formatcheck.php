@@ -7,7 +7,7 @@ class FormatCheck_API {
         try {
             $docreq = new DocumentRequest($qreq, $qreq->doc, $user);
         } catch (Exception $unused) {
-            return new JsonResult(404, "No such document");
+            return new JsonResult(404, "Document not found");
         }
         if (($whynot = $docreq->perm_view_document($user))) {
             return new JsonResult(isset($whynot["permission"]) ? 403 : 404, $whynot->unparse_html());
@@ -25,7 +25,7 @@ class FormatCheck_API {
                 "has_error" => $cf->has_error()
             ];
         } else {
-            return new JsonResult(404, "No such document");
+            return new JsonResult(404, "Document not found");
         }
     }
 }
