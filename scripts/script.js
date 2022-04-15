@@ -3734,11 +3734,13 @@ function make_radio(name, value, text, revtype) {
     input.value = value;
     input.id = id;
     if (value == revtype) {
-        input.class = "assignment-ui-radio want-focus";
+        input.className = "assignment-ui-radio want-focus";
         input.checked = input.defaultChecked = true;
         var u = document.createElement("u");
         u.append(text);
         text = u;
+    } else {
+        input.className = "assignment-ui-radio";
     }
     if (value != 0) {
         var span_rto = document.createElement("span"),
@@ -3805,7 +3807,7 @@ function close_unnecessary(event) {
 function setup($a) {
     var $as = $a.closest(".has-assignment-set");
     if ($as.hasClass("need-assignment-change")) {
-        $as.on("change", "input.assignment-ui-radio", revtype_change)
+        $as.on("change click", "input.assignment-ui-radio", revtype_change)
             .removeClass("need-assignment-change");
     }
 }
@@ -3829,11 +3831,11 @@ handle_ui.on("js-assignment-fold", function (event) {
                 make_radio(name, 3, "Secondary", revtype),
                 make_radio(name, 2, "Optional", revtype),
                 make_radio(name, 5, "Metareview", revtype));
+            append_round_selector(name, revtype, $a, div_options);
             if (!revinprogress) {
                 div_options.append(make_radio(name, -1, "Conflict", conftype > 0 ? -1 : 0),
                     make_radio(name, 0, "None", revtype || conftype ? -1 : 0));
             }
-            append_round_selector(name, revtype, $a, div_options);
             $a.append(div_container);
         }
         $a.addClass("foldo").removeClass("foldc");
