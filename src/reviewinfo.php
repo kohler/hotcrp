@@ -199,7 +199,11 @@ class ReviewInfo implements JsonSerializable {
     /** @param int $type
      * @return string */
     static function unparse_assigner_action($type) {
-        return self::$type_revmap[$type] ?? "clearreview";
+        if ($type === REVIEW_PC) {
+            return "optionalreview";
+        } else {
+            return self::$type_revmap[$type] ?? "clearreview";
+        }
     }
 
 
