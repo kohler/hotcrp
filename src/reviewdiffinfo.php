@@ -19,6 +19,8 @@ class ReviewDiffInfo {
     public $notify = false;
     /** @var bool */
     public $notify_author = false;
+    /** @var ?dmp\diff_match_patch */
+    private $_dmp;
 
     function __construct(PaperInfo $prow, ReviewInfo $rrow) {
         $this->conf = $prow->conf;
@@ -51,6 +53,34 @@ class ReviewDiffInfo {
         return $this->fields;
     }
 
+    /** @param string $s1
+     * @param string $s2
+     * @return string */
+    private function dmp_hcdelta($s1, $s2) {
+        $this->_dmp = $this->_dmp ?? new dmp\diff_match_patch;
+        try {
+            $diffs = $this->_dmp->diff($s1, $s2);
+            $hcdelta = $this->_dmp->diff_toHCDelta($diffs);
+
+            // validate that toHCDelta can create $v[$dir]
+            $xdiffs = $this->_dmp->diff_fromHCDelta($s1, $hcdelta);
+            if ($this->_dmp->diff_text1($xdiffs) !== $s1
+                || $this->_dmp->diff_text2($xdiffs) !== $s2) {
+                throw new dmp\diff_exception("incorrect HCDelta");
+            }
+
+            return $hcdelta;
+        } catch (dmp\diff_exception $ex) {
+            error_log("problem encoding delta: " . $ex->getMessage());
+            file_put_contents("/tmp/hotcrp-baddiff.txt",
+                "###### " . $ex->getMessage()
+                . "\n====== " . strlen($s1) . "\n" . $s1
+                . "\n====== " . strlen($s2) . "\n" . $s2 . "\n\n",
+                FILE_APPEND);
+            return null;
+        }
+    }
+
     /** @param 0|1 $dir
      * @return array */
     function make_patch($dir = 0) {
@@ -59,7 +89,6 @@ class ReviewDiffInfo {
         }
         $use_xdiff = $this->conf->opt("diffMethod") === "xdiff";
         $patch = [];
-        $dmp = null;
         foreach ($this->fields as $i => $f) {
             $sn = $f->short_id;
             $v = [$this->rrow->fields[$f->order], $this->newv[$i]];
@@ -73,20 +102,10 @@ class ReviewDiffInfo {
                         continue;
                     }
                 } else {
-                    $dmp = $dmp ?? new dmp\diff_match_patch;
-                    $diffs = $dmp->diff($v[1 - $dir], $v[$dir]);
-                    $xdelta = $dmp->diff_toHCDelta($diffs);
-
-                    // validate that toHCDelta can recreate $v[$dir]
-                    $xdiffs = $dmp->diff_fromHCDelta($v[1 - $dir], $xdelta);
-                    if ($dmp->diff_text1($xdiffs) !== $v[1 - $dir]
-                        || $dmp->diff_text2($xdiffs) !== $v[$dir]) {
-                        error_log("problem encoding delta for {$f->name}");
-                        file_put_contents("/tmp/hotcrp-baddiff.txt", "======" . strlen($v[1-$dir]) . "\n" . $v[1-$dir] . "\n======" . strlen($v[$dir]) . "\n" . $v[$dir] . "\n\n", FILE_APPEND);
-                    }
-
-                    if (strlen($xdelta) < strlen($v[$dir]) - 32) {
-                        $patch["{$sn}:p"] = $xdelta;
+                    $hcdelta = $this->dmp_hcdelta($v[1 - $dir], $v[$dir]);
+                    if ($hcdelta !== null
+                        && strlen($hcdelta) < strlen($v[$dir]) - 32) {
+                        $patch["{$sn}:p"] = $hcdelta;
                         continue;
                     }
                 }
