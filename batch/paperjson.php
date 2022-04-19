@@ -16,6 +16,8 @@ class PaperJson_Batch {
     public $sitename;
     /** @var bool */
     public $single;
+    /** @var bool */
+    public $reviews;
 
     function __construct(Contact $user, $arg) {
         $t = $arg["t"] ?? "s";
@@ -27,6 +29,7 @@ class PaperJson_Batch {
         $this->search = new PaperSearch($user, ["q" => join(" ", $arg["_"]), "t" => $t]);
         $this->sitename = isset($arg["N"]);
         $this->single = isset($arg["1"]);
+        $this->reviews = isset($arg["r"]);
     }
 
     /** @return int */
@@ -52,8 +55,14 @@ class PaperJson_Batch {
 
         $apj = [];
         $ps = new PaperStatus($conf, $this->user, ["hide_docids" => true]);
+        $rf = $conf->review_form();
         foreach ($pset as $prow) {
             $pj1 = $ps->paper_json($prow);
+            if ($this->reviews) {
+                foreach ($prow->reviews_as_display() as $rrow) {
+                    $pj1->reviews[] = $rf->unparse_review_json($this->user, $prow, $rrow);
+                }
+            }
             if (empty($pj_first)) {
                 $apj[] = $pj1;
             } else {
@@ -74,32 +83,20 @@ class PaperJson_Batch {
         return 0;
     }
 
-    static function help() {
-        fwrite(STDOUT, "Usage: php batch/paperjson.php [-n CONFID] [-t COLLECTION] [QUERY...]
-Output a JSON file containing the papers matching QUERY.
-
-Options include:
-  -t, --type COLLECTION  Search COLLECTION “s” (submitted) or “all” [s].
-  -N, --sitename         Include site name and class in JSON.
-  -1, --single           Output first matching paper rather than an array.
-  QUERY...               A search term.\n");
-    }
-
     /** @return PaperJson_Batch */
     static function make_args($argv) {
         $arg = (new Getopt)->long(
-            "name:,n:",
-            "config:",
-            "t:,type:",
-            "N,sitename",
-            "1,single",
+            "name:,n: !",
+            "config: !",
+            "r,reviews Include reviews in output",
+            "N,sitename Include site name and class in output",
+            "t:,type: =COLLECTION Search COLLECTION ‘s’ or ‘all’ [submitted]",
+            "1,single Output first matching paper rather than an array",
             "help,h"
-        )->parse($argv);
-
-        if (isset($arg["help"])) {
-            self::help();
-            exit(0);
-        }
+        )->description("Output a JSON file with papers matching SEARCH.
+Usage: php batch/paperjson.php [-t all] [-1] [SEARCH...]")
+         ->helpopt("help")
+         ->parse($argv);
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
         return new PaperJson_Batch($conf->root_user(), $arg);

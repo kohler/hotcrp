@@ -289,20 +289,27 @@ class PaperStatus extends MessageSet {
     function msg_at_option(PaperOption $o, $msg, $status) {
         return $this->msg_at($o->field_key(), $msg, $status);
     }
+
     /** @param ?string $msg
      * @return MessageItem */
     function error_at_option(PaperOption $o, $msg) {
         return $this->error_at($o->field_key(), $msg);
     }
+
     /** @param ?string $msg
      * @return MessageItem */
     function warning_at_option(PaperOption $o, $msg) {
         return $this->warning_at($o->field_key(), $msg);
     }
+
+    /** @param string $key
+     * @param mixed $value
+     * @return MessageItem */
     function syntax_error_at($key, $value) {
         error_log($this->conf->dbname . ": PaperStatus: syntax error $key " . gettype($value));
         return $this->error_at($key, "<0>Validation error [{$key}]");
     }
+
     /** @return list<MessageItem> */
     function decorated_message_list() {
         $ms = [];
@@ -556,7 +563,7 @@ class PaperStatus extends MessageSet {
         }
         foreach ((array) $ipj as $k => $v) {
             if (!isset($xpj->$k) && !isset($ikeys[$k]) && !isset($xstatus->$k)
-                && !in_array($k, ["pid", "id", "options", "status", "decision"])
+                && !in_array($k, ["pid", "id", "options", "status", "decision", "reviews"])
                 && $k[0] !== "_" && $k[0] !== "\$") {
                 $matches = $this->conf->options()->find_all($k);
                 if (count($matches) === 1) {
