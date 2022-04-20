@@ -216,9 +216,11 @@ class Getopt {
                 $eq = strpos($arg, "=");
                 $name = substr($arg, 2, ($eq ? $eq : strlen($arg)) - 2);
                 if (!($po = $this->po[$name] ?? null)) {
-                    if ($this->otheropt) {
+                    if ($this->otheropt === true) {
                         $res["-"][] = $arg;
                         continue;
+                    } else if ($this->otheropt === false) {
+                        throw new CommandLineException("Unknown option `{$arg}`", $this);
                     } else {
                         break;
                     }
@@ -227,9 +229,9 @@ class Getopt {
                 $name = $po[0];
                 $pot = $po[1];
                 if ($eq !== false && $pot === 0) {
-                    throw new CommandLineException("`{$oname}` takes no arguments");
+                    throw new CommandLineException("`{$oname}` takes no arguments", $this);
                 } else if ($eq === false && $i === count($argv) - 1 && ($pot & 1) === 1) {
-                    throw new CommandLineException("missing argument for `{$oname}`");
+                    throw new CommandLineException("Missing argument for `{$oname}`", $this);
                 }
                 if ($eq !== false) {
                     $value = substr($arg, $eq + 1);
@@ -252,7 +254,7 @@ class Getopt {
                 $name = $po[0];
                 $pot = $po[1];
                 if (strlen($arg) === 2 && ($pot & 1) === 1 && $i === count($argv) - 1) {
-                    throw new CommandLineException("missing argument for `{$oname}`");
+                    throw new CommandLineException("Missing argument for `{$oname}`", $this);
                 } else if ($pot === 0 || ($pot === 2 && strlen($arg) === 2)) {
                     $value = false;
                 } else if (strlen($arg) > 2 && $arg[2] === "=") {

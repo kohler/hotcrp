@@ -284,7 +284,7 @@ class BackupDB_Batch {
         )->description("Back up HotCRP database.
 Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
          ->helpopt("help")
-         ->otheropt()
+         ->otheropt(true)
          ->parse($argv);
 
         $Opt["__no_main"] = true;
