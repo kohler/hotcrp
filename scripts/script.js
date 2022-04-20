@@ -1283,9 +1283,10 @@ function onto(context, format, text) {
     }
     try {
         render_with(context, renderers[format] || renderers[0], text);
-    } catch (e) {
-        log_jserror("do_render format ".concat(format, ": ", e.toString()), e);
+    } catch (err) {
+        log_jserror("do_render format ".concat(format, ": ", err.toString()), err);
         render_with(context, renderers[0], text);
+        delete renderers[format];
     }
     $(context).trigger("renderText");
 }
