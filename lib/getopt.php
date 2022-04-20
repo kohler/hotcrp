@@ -11,8 +11,8 @@ class Getopt {
     private $description;
     /** @var bool */
     private $allmulti = false;
-    /** @var bool */
-    private $otheropt = false;
+    /** @var ?bool */
+    private $otheropt;
     /** @var ?int */
     private $minarg;
     /** @var ?int */
@@ -100,8 +100,8 @@ class Getopt {
 
     /** @param ?bool $otheropt
      * @return $this */
-    function otheropt($otheropt = null) {
-        $this->otheropt = $otheropt ?? true;
+    function otheropt($otheropt) {
+        $this->otheropt = $otheropt;
         return $this;
     }
 
