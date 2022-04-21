@@ -1488,7 +1488,7 @@ class diff_match_patch {
                 if (!ctype_digit($param)
                     || ($n = intval($param)) <= 0
                     || $pos + $n > strlen($text1)) {
-                    throw new diff_exception("Invalid number $param in diff_fromHCDelta");
+                    throw new diff_exception("Invalid number `{$param}` in diff_fromHCDelta @{$pos}/{$len}");
                 }
                 $part = substr($text1, $pos, $n);
                 $pos += $n;
@@ -1498,11 +1498,11 @@ class diff_match_patch {
                     $diffs[] = new diff_obj(DIFF_EQUAL, $part);
                 }
             } else {
-                throw new diff_exception("Invalid operation in diff_fromHCDelta");
+                throw new diff_exception("Invalid operation `{$op}` in diff_fromHCDelta @{$pos}/{$len}");
             }
         }
         if ($pos !== $len) {
-            throw new diff_exception("HCDelta length doesn't cover source text");
+            throw new diff_exception("Invalid source length in diff_fromHCDelta @{$pos}/{$len}");
         }
         return $diffs;
     }
