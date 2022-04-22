@@ -233,7 +233,7 @@ class Countries {
         if (!isset($extra["data-default-value"])) {
             $extra["data-default-value"] = $sel_country;
         }
-        return "<span class=\"select\"><select name=\"${name}\"" . Ht::extra($extra) . ">\n"
+        return "<span class=\"select\"><select name=\"{$name}\"" . Ht::extra($extra) . ">\n"
             . join("\n", $opts) . "</select></span>";
     }
 }
