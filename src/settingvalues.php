@@ -1113,7 +1113,7 @@ class SettingValues extends MessageSet {
     function select($name, $values, $js = null) {
         $si = $this->si($name);
         $v = $this->vstr($si);
-        return Ht::select($name, $values, $v !== null ? $v : 0, $this->sjs($si, $js));
+        return Ht::select($name, $values, $v ?? "0", $this->sjs($si, $js));
     }
 
     /** @param string $name

@@ -142,7 +142,11 @@ class Radio_Sitype extends Sitype {
         return null;
     }
     function unparse_reqv($v, Si $si) {
-        return (string) $v;
+        if (is_bool($v) && $si->values === [0, 1]) {
+            return $v ? "1" : "0";
+        } else {
+            return (string) $v;
+        }
     }
     function convert_jsonv($jv, Si $si, SettingValues $sv) {
         foreach ($si->values as $allowedv) {
