@@ -1604,7 +1604,7 @@ th.settings-simplehead {
 	border-color: #a5a5a5;
 	background-color: #ecf2f4;
 }
-.settings-sf-view > .pfe {
+.settings-sf-example > .pfe {
 	margin-bottom: 0;
 }
 .settings-rf-view > .rfehead {
@@ -1997,6 +1997,9 @@ img.check {
 }
 .minw-50 {
 	min-width: 50%;
+}
+.w-100 {
+	width: 100%;
 }
 .w-99 {
 	width: 99%;

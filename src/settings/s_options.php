@@ -156,7 +156,7 @@ class Options_SettingRenderer {
 
 
     private function print_one_option_view(PaperOption $io, $ctr) {
-        echo '<div id="sf__', $ctr, '__view" class="settings-sf-view fn2 ui js-foldup">';
+        echo '<div id="sf__', $ctr, '__view" class="settings-sf-view settings-sf-example fn2 ui js-foldup">';
         if ($io->exists_condition()) {
             $this->pt->msg_at($io->formid, "<0>Present on submissions matching ‘" . $io->exists_condition() . "’", MessageSet::WARNING_NOTE);
         }
@@ -236,7 +236,7 @@ class Options_SettingRenderer {
                 || $sv->conf->xt_check($uf->display_if, $uf, $sv->user)) {
                 $args = [
                     "id" => 1000,
-                    "name" => $uf->title . " example",
+                    "name" => "{$uf->title} field",
                     "type" => $uf->name,
                     "order" => 1,
                     "display" => "prominent",
@@ -248,7 +248,7 @@ class Options_SettingRenderer {
                 $o = PaperOption::make($sv->conf, (object) $args);
                 $ov = $o->parse_json($this->pt->prow, $args["value"] ?? null)
                     ?? PaperValue::make($this->pt->prow, $o);
-                echo '<div data-name="', htmlspecialchars($uf->name), '" data-title="', htmlspecialchars($uf->title), '">';
+                echo '<div class="settings-sf-example" data-name="', htmlspecialchars($uf->name), '" data-title="', htmlspecialchars($uf->title), '">';
                 $o->print_web_edit($this->pt, $ov, $ov);
                 echo '</div>';
             }

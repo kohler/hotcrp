@@ -58,8 +58,8 @@ class Topics_SettingParser extends SettingParser {
                 echo '</td>';
                 if (!empty($interests)) {
                     $ti = $interests[$tid] ?? [null, null];
-                    echo '<td class="fx plr padls">', ($ti[0] ? '<span class="topic-2">' . $ti[0] . "</span>" : ""), "</td>",
-                        '<td class="fx plr padls">', ($ti[1] ? '<span class="topic2">' . $ti[1] . "</span>" : ""), "</td>";
+                    echo '<td class="fx plr padls">', ($ti[0] ? '<span class="topic-1">' . $ti[0] . "</span>" : ""), "</td>",
+                        '<td class="fx plr padls">', ($ti[1] ? '<span class="topic1">' . $ti[1] . "</span>" : ""), "</td>";
                 }
             }
             echo '</tbody></table>',
