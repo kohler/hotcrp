@@ -79,6 +79,7 @@ function settings_disable_children(e) {
 
 // BEGIN SUBMISSION FIELD SETTINGS
 (function () {
+var type_properties, type_name_placeholders;
 
 function settings_sf_order() {
     var i = 0, n, pos,
@@ -95,10 +96,23 @@ function settings_sf_order() {
 }
 
 handle_ui.on("js-settings-sf-type", function (event) {
-    var v = this.value;
-    $(this).closest(".settings-sf").find(".has-type-condition").each(function () {
-        toggleClass(this, "hidden", this.getAttribute("data-type-condition").split(" ").indexOf(v) < 0);
-    });
+    var props, e, name;
+    if (!type_properties) {
+        e = document.getElementById("settings-sform");
+        type_properties = JSON.parse(e.getAttribute("data-type-properties"));
+        type_name_placeholders = JSON.parse(e.getAttribute("data-type-name-placeholders"));
+    }
+    if ((props = (type_properties || {})[this.value])) {
+        for (e = this.closest(".settings-sf-edit").firstChild;
+             e; e = e.nextSibling) {
+            if (e.nodeType === 1 && e.hasAttribute("data-property"))
+                toggleClass(e, "hidden", !props.includes(e.getAttribute("data-property")));
+        }
+    }
+    e = this.form.elements[this.name.replace("__type", "__name")];
+    if (e) {
+        e.placeholder = (type_name_placeholders || {})[this.value] || "Field name";
+    }
 });
 
 handle_ui.on("js-settings-sf-move", function (event) {
@@ -108,7 +122,7 @@ handle_ui.on("js-settings-sf-move", function (event) {
     } else if (hasClass(this, "movedown") && sf.nextSibling) {
         sf.parentNode.insertBefore(sf, sf.nextSibling.nextSibling);
     } else if (hasClass(this, "delete")) {
-        var msg;
+        var msg, x;
         if ((x = this.getAttribute("data-sf-exists")))
             msg = 'This field will be deleted from the submission form and from ' + plural(x, 'submission') + '.';
         else
@@ -174,13 +188,16 @@ handle_ui.on("js-settings-sf-add", add_dialog);
 
 $(document).on("hotcrpsettingssf", ".settings-sf", function (evt) {
     var view = document.getElementById(this.id + "__view"),
-        edit = document.getElementById(this.id + "__edit");
+        edit = document.getElementById(this.id + "__edit"),
+        type = document.getElementById(this.id + "__type");
     settings_disable_children(view);
     if (edit
         && !form_differs(edit)
         && !$(edit).find(".is-warning, .is-error, .has-warning, .has-error").length) {
         fold(this, true, 2);
     }
+    if (type)
+        $(type).trigger("change");
     removeClass(this, "hidden");
     settings_sf_order();
 });

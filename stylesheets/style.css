@@ -1607,6 +1607,9 @@ th.settings-simplehead {
 .settings-sf-example > .pfe {
 	margin-bottom: 0;
 }
+.settings-sf-example > .pfe.pf-separator {
+	margin-top: 0;
+}
 .settings-rf-view > .rfehead {
 	margin-top: 0;
 }

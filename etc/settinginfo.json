@@ -233,7 +233,7 @@
     },
     {
         "name_pattern": "sf__$__name", "title": "Submission field name",
-        "type": "simplestring", "required": true, "storage": "member.name",
+        "type": "simplestring", "storage": "member.name",
         "placeholder": "Field name", "size": 50, "parser_class": "Options_SettingParser"
     },
     {

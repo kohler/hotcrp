@@ -38,7 +38,7 @@ class Options_SettingRenderer {
 
 
     function print_name(SettingValues $sv) {
-        echo '<div class="', $sv->control_class("sf__{$this->ctr}__name", "entryi mb-3"), '">',
+        echo '<div class="', $sv->control_class("sf__{$this->ctr}__name", "entryi mb-3"), '" data-property="name">',
             '<div class="entry">',
             $sv->feedback_at("sf__{$this->ctr}__name");
         $sv->print_entry("sf__{$this->ctr}__name", [
@@ -67,28 +67,27 @@ class Options_SettingRenderer {
             }
         }
 
+        $name = "sf__{$this->ctr}__type";
         if (count($otypes) === 1) {
-            $sv->print_control_group("sf__{$this->ctr}__type", "Type",
-                Ht::hidden("sf__{$this->ctr}__type", $curt) . $otypes[$curt], [
+            $sv->print_control_group($name, "Type",
+                Ht::hidden($name, $curt, ["id" => $name, "class" => "uich js-settings-sf-type"])
+                . $otypes[$curt], [
                 "horizontal" => true
             ]);
         } else {
-            $sv->print_select_group("sf__{$this->ctr}__type", "Type", $otypes, [
+            $sv->print_select_group($name, "Type", $otypes, [
                 "horizontal" => true, "class" => "uich js-settings-sf-type"
             ]);
         }
     }
 
     function print_choices(SettingValues $sv) {
-        $type = $sv->vstr("sf__{$this->ctr}__type");
-        $wanted = ["selector", "radio"];
         $sv->print_textarea_group("sf__{$this->ctr}__choices", "Choices", [
             "horizontal" => true,
             "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-sf",
             "data-tooltip-type" => "focus",
-            "group_class" => "has-type-condition" . (in_array($type, $wanted) ? "" : " hidden"),
-            "group_attr" => ["data-type-condition" => join(" ", $wanted)]
+            "group_attr" => ["data-property" => "choices"]
         ]);
     }
 
@@ -98,7 +97,7 @@ class Options_SettingRenderer {
             "class" => "w-entry-text settings-sf-description need-tooltip",
             "data-tooltip-info" => "settings-sf",
             "data-tooltip-type" => "focus",
-            "group_class" => "is-property-description"
+            "group_attr" => ["data-property" => "description"]
         ]);
     }
 
@@ -106,7 +105,8 @@ class Options_SettingRenderer {
         $sv->print_select_group("sf__{$this->ctr}__presence", "Present on", [
             "all" => "All submissions", "final" => "Final versions only"
         ], [
-            "horizontal" => true, "group_class" => "is-property-editing"
+            "horizontal" => true,
+            "group_attr" => ["data-property" => "presence"]
         ]);
     }
 
@@ -114,7 +114,8 @@ class Options_SettingRenderer {
         $sv->print_select_group("sf__{$this->ctr}__required", "Required", [
             "0" => "No", "1" => "Yes"
         ], [
-            "horizontal" => true, "group_class" => "is-property-editing"
+            "horizontal" => true,
+            "group_attr" => ["data-property" => "required"]
         ]);
     }
 
@@ -130,8 +131,11 @@ class Options_SettingRenderer {
             unset($options["conflict"]);
         }
         $sv->print_select_group("sf__{$this->ctr}__visibility", "Visibility", $options, [
-            "horizontal" => true, "group_class" => "is-property-visibility", "group_open" => true,
-            "class" => "settings-sf-visibility", "fold_values" => ["review"]
+            "horizontal" => true,
+            "group_attr" => ["data-property" => "visibility"],
+            "group_open" => true,
+            "class" => "settings-sf-visibility",
+            "fold_values" => ["review"]
         ]);
         echo '<div class="hint fx">The field will be visible to reviewers who have submitted a review, and to PC members who can see all reviews.</div>',
             '</div></div>';
@@ -141,7 +145,9 @@ class Options_SettingRenderer {
         $sv->print_select_group("sf__{$this->ctr}__display", "Display", [
             "prominent" => "Normal", "topics" => "Grouped with topics", "submission" => "Near submission"
         ], [
-            "horizontal" => true, "group_class" => "is-property-display", "class" => "settings-sf-display"
+            "horizontal" => true,
+            "group_attr" => ["data-property" => "display"],
+            "class" => "settings-sf-display"
         ]);
     }
 
@@ -208,6 +214,31 @@ class Options_SettingRenderer {
     }
 
     function print(SettingValues $sv) {
+        // Collect and export type properties
+        $properties = [];
+        foreach ($sv->group_members("submissionfield/properties") as $pj) {
+            if (str_starts_with($pj->name, "submissionfield/properties/"))
+                $properties[substr($pj->name, 27)] = $pj->is_default ?? true;
+        }
+        $type_properties = $type_name_placeholders = [];
+        foreach ($sv->conf->option_type_map() as $uf) {
+            if (!isset($uf->display_if)
+                || $sv->conf->xt_check($uf->display_if, $uf, $sv->user)) {
+                $addprop = $uf->add_properties ?? [];
+                $remprop = $uf->remove_properties ?? [];
+                $prop = [];
+                foreach ($properties as $name => $include) {
+                    if (!in_array($name, $remprop)
+                        && ($include || in_array($name, $addprop)))
+                        $prop[] = $name;
+                }
+                $type_properties[$uf->name] = $prop;
+            }
+            if (isset($uf->field_name_placeholder)) {
+                $type_name_placeholders[$uf->name] = $uf->field_name_placeholder;
+            }
+        }
+
         echo "<hr class=\"g\">\n",
             Ht::hidden("has_sf", 1),
             Ht::hidden("options_version", (int) $sv->conf->setting("options")),
@@ -220,7 +251,13 @@ class Options_SettingRenderer {
         if ($sv->enumerate("sf__")) {
             echo '<div class="feedback is-note mb-4">Click on a field to edit it.</div>';
         }
-        echo '<div id="settings-sform" class="c">'; // must ONLY contain fields
+
+        echo '<div id="settings-sform" class="c" data-type-properties="',
+            htmlspecialchars(json_encode_browser($type_properties)),
+            '" data-type-name-placeholders="',
+            htmlspecialchars(json_encode_browser($type_name_placeholders)),
+            '">';
+        // NB: div#settings-sform must ONLY contain fields
         foreach ($sv->enumerate("sf__") as $ctr) {
             $this->print_one_option($sv, $ctr);
         }
@@ -243,7 +280,7 @@ class Options_SettingRenderer {
                     "json_key" => "__demo_{$uf->name}__"
                 ];
                 if ($uf->sample ?? null) {
-                    $args = array_merge((array) $uf->sample, $args);
+                    $args = array_merge($args, (array) $uf->sample);
                 }
                 $o = PaperOption::make($sv->conf, (object) $args);
                 $ov = $o->parse_json($this->pt->prow, $args["value"] ?? null)
@@ -353,14 +390,23 @@ class Options_SettingParser extends SettingParser {
 
     /** @return bool */
     private function _apply_req_name(SettingValues $sv, Si $si) {
-        if (($n = $sv->base_parse_req($si)) !== null) {
+        $n = $sv->base_parse_req($si);
+        if ($n === "") {
+            $tname = $sv->vstr("sf__{$si->part1}__type");
+            $t = $sv->conf->option_type($tname ?? "");
+            if ($t && ($t->require_name ?? true)) {
+                $sv->error_at($si, "<0>Entry required");
+            }
+        } else {
             if (preg_match('/\A(?:paper|submission|final|none|any|all|true|false|opt(?:ion)?[-:_ ]?\d+)\z/i', $n)) {
                 $sv->error_at($si, "<0>Field name ‘{$n}’ is reserved");
                 $sv->inform_at($si, "<0>Please pick another name.");
             }
-            $sv->save($si, $n);
         }
-        $sv->error_if_duplicate_member($si->part0, $si->part1, $si->part2, "Field name");
+        $sv->save($si, $n);
+        if ($n !== "") {
+            $sv->error_if_duplicate_member($si->part0, $si->part1, $si->part2, "Field name");
+        }
         return true;
     }
 

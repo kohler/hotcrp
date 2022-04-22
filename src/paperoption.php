@@ -746,7 +746,7 @@ class PaperOption implements JsonSerializable {
         $this->id = (int) $args->id;
         $this->name = $args->name ?? null;
         $this->title = $args->title ?? null;
-        if (!$this->title && $this->id > 0) {
+        if ($this->title === null && $this->id > 0) {
             $this->title = $this->name;
         }
         $this->type = $args->type ?? null;
@@ -1386,6 +1386,7 @@ class Separator_PaperOption extends PaperOption {
         if (($h = $pt->edit_title_html($this))) {
             echo '<h3 class="pfehead">', $h, '</h3>';
         }
+        $pt->print_field_hint($this, null);
         echo '</div>';
     }
 }

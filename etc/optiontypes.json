@@ -1,9 +1,5 @@
 [
     {
-        "name": "separator", "title": "Separator", "priority": -1,
-        "display_if": false, "function": "+Separator_PaperOption"
-    },
-    {
         "name": "checkbox", "title": "Checkbox", "order": 100,
         "function": "+Checkbox_PaperOption"
     },
@@ -11,13 +7,15 @@
         "name": "selector", "title": "Selector", "order": 200,
         "has_selector": true, "function": "+Selector_PaperOption",
         "sample": {"selector": ["Option 1", "Option 2", "Option 3"]},
-        "convert_from_functions": {"radio": true}
+        "convert_from_functions": {"radio": true},
+        "add_properties": ["choices"]
     },
     {
         "name": "radio", "title": "Radio buttons", "order": 300,
         "has_selector": true, "function": "+Selector_PaperOption",
         "sample": {"selector": ["Option 1", "Option 2", "Option 3"]},
-        "convert_from_functions": {"selector": true}
+        "convert_from_functions": {"selector": true},
+        "add_properties": ["choices"]
     },
     {
         "name": "numeric", "title": "Whole number", "order": 400,
@@ -60,5 +58,13 @@
     {
         "name": "attachments", "title": "Attachments", "order": 700,
         "function": "+Attachments_PaperOption"
+    },
+    {
+        "name": "separator", "title": "Section break", "order": 10000,
+        "function": "+Separator_PaperOption",
+        "sample": {"name": "Optional section title"},
+        "remove_properties": ["required", "visibility"],
+        "require_name": false,
+        "field_name_placeholder": "Optional section title"
     }
 ]
