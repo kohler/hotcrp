@@ -401,26 +401,36 @@ class diff_match_patch {
         // Keeping our own length variable is faster than looking it up.
         $lineArrayLength = count($lineArray);
         $textLen = strlen($text);
+        $cr = $nl = -1;
         while ($lineStart < $textLen) {
-            $lineEnd = strpos($text, "\n", $lineStart);
-            if ($lineEnd === false) {
-                $lineEnd = $textLen - 1;
+            if ($cr !== false && $cr < $lineStart) {
+                $cr = strpos($text, "\r", $lineStart);
             }
-            $line = substr($text, $lineStart, $lineEnd + 1 - $lineStart);
-
+            if ($nl !== false && $nl < $lineStart) {
+                $nl = strpos($text, "\n", $lineStart);
+            }
+            if ($cr === false && $nl === false) {
+                $lineEnd = $textLen;
+            } else if ($nl !== false
+                       && ($cr === false || $cr >= $nl - 1)) {
+                $lineEnd = $nl + 1;
+            } else {
+                $lineEnd = $cr + 1;
+            }
+            $line = substr($text, $lineStart, $lineEnd - $lineStart);
             $ch = $lineHash[$line] ?? null;
             if ($ch === null) {
                 if ($lineArrayLength === $maxLines) {
                     // Bail out once we reach maxLines
                     $line = substr($text, $lineStart);
-                    $lineEnd = $textLen - 1;
+                    $lineEnd = $textLen;
                 }
                 $lineHash[$line] = $ch = $lineArrayLength;
                 $lineArray[] = $line;
                 ++$lineArrayLength;
             }
             $chars .= chr($ch & 0xFF) . chr($ch >> 8);
-            $lineStart = $lineEnd + 1;
+            $lineStart = $lineEnd;
         }
         return $chars;
     }
@@ -1481,14 +1491,13 @@ class diff_match_patch {
             // operation of this token (delete, insert, equality).
             $op = $delta[$dpos];
             $param = substr($delta, $dpos + 1, $dtab - $dpos - 1);
-            $dpos = min($dtab + 1, $dlen);
             if ($op === "+") {
                 $diffs[] = new diff_obj(DIFF_INSERT, rawurldecode($param));
             } else if ($op === "-" || $op === "=") {
                 if (!ctype_digit($param)
                     || ($n = intval($param)) <= 0
                     || $pos + $n > strlen($text1)) {
-                    throw new diff_exception("Invalid number `{$param}` in diff_fromHCDelta @{$pos}/{$len}");
+                    throw new diff_exception("Invalid number `{$param}` in diff_fromHCDelta @{$pos}/{$len}:{$dpos}");
                 }
                 $part = substr($text1, $pos, $n);
                 $pos += $n;
@@ -1498,8 +1507,9 @@ class diff_match_patch {
                     $diffs[] = new diff_obj(DIFF_EQUAL, $part);
                 }
             } else {
-                throw new diff_exception("Invalid operation `{$op}` in diff_fromHCDelta @{$pos}/{$len}");
+                throw new diff_exception("Invalid operation `{$op}` in diff_fromHCDelta @{$pos}/{$len}:{$dpos}");
             }
+            $dpos = min($dtab + 1, $dlen);
         }
         if ($pos !== $len) {
             throw new diff_exception("Invalid source length in diff_fromHCDelta @{$pos}/{$len}");
@@ -1533,25 +1543,25 @@ class diff_match_patch {
             // operation of this token (delete, insert, equality).
             $op = $delta[$dpos];
             $param = substr($delta, $dpos + 1, $dtab - $dpos - 1);
-            $dpos = min($dtab + 1, $dlen);
             if ($op === "+") {
                 $out[] = rawurldecode($param);
             } else if ($op === "-" || $op === "=") {
                 if (!ctype_digit($param)
                     || ($n = intval($param)) <= 0
                     || $pos + $n > strlen($text1)) {
-                    throw new diff_exception("Invalid number $param in diff_fromHCDelta");
+                    throw new diff_exception("Invalid number `{$param}` in diff_applyHCDelta @{$pos}/{$len}:{$dpos}");
                 }
                 if ($op === "=") {
                     $out[] = substr($text1, $pos, $n);
                 }
                 $pos += $n;
             } else {
-                throw new diff_exception("Invalid operation in diff_fromHCDelta");
+                throw new diff_exception("Invalid operation in diff_applyHCDelta @{$pos}/{$len}:{$dpos}");
             }
+            $dpos = min($dtab + 1, $dlen);
         }
         if ($pos !== $len) {
-            throw new diff_exception("HCDelta length doesn't cover source text");
+            throw new diff_exception("Invalid source length in diff_applyHCDelta @{$pos}/{$len}");
         }
         return join("", $out);
     }
