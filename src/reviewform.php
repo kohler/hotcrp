@@ -1509,8 +1509,8 @@ class ReviewValues extends MessageSet {
                 $fval_diffs = $fval !== $old_fval;
             } else {
                 // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
-                $fval = convert_to_utf8($fval);
-                $fval_diffs = $fval !== $old_fval && cleannl($fval) !== cleannl($old_fval);
+                $fval = cleannl(convert_to_utf8($fval));
+                $fval_diffs = $fval !== $old_fval && $fval !== cleannl($old_fval);
             }
             if ($fval_diffs) {
                 $diffinfo->add_field($f, $fval);

@@ -822,4 +822,173 @@ class DiffMatchPatch_Tester {
             }
         }
     }
+
+    function test_line_diffs() {
+        $dmp = new diff_match_patch;
+        $t1 = "Hello.\nThis is a test of line diffs.\n";
+        $t2 = "Goodbye.\nThere is nothing to be done.\n";
+
+        xassert_eqq("@@ -1,2 +1,2 @@\n-Hello.\n-This is a test of line diffs.\n+Goodbye.\n+There is nothing to be done.\n", $dmp->line_diff_toUnified($dmp->line_diff($t1, $t2)));
+
+        $text1 = '<?php
+// diff_match_patch.php -- PHP diff-match-patch.
+// Copyright 2018 The diff-match-patch Authors.
+// Copyright (c) 2006-2022 Eddie Kohler.
+// Ported with some changes from Neil Fraser\'s diff-match-patch:
+// https://github.com/google/diff-match-patch/
+
+namespace dmp;
+
+const DIFF_DELETE = -1;
+const DIFF_INSERT = 1;
+const DIFF_EQUAL = 0;
+
+class diff_match_patch {
+    /** @var float */
+    public $Diff_Timeout = 1.0;
+    /** @var int */
+    public $Diff_EditCost = 4;
+    /** @var bool */
+    public $Fix_UTF8 = true;
+    /** @var int */
+    public $Patch_Margin = 4;
+    /** @var int */
+    public $Match_MaxBits = 32;
+
+    /** @var 0|1
+     * $iota === 1 if we are doing a line diff, so the unit is 2 bytes */
+    private $iota = 0;
+
+    /** @param string $text1
+     * @param string $text2
+     * @param ?bool $checklines
+     * @param ?float $deadline
+     * @return list<diff_obj> */
+    function diff($text1, $text2, $checklines = null, $deadline = null) {
+        return $this->diff_main($text1, $text2, $checklines, $deadline);
+    }
+
+    /** @param string $text1 Old string to be diffed.
+     * @param string $text2 New string to be diffed.
+     * @param ?bool $checklines
+     * @param ?float $deadline
+     * @return list<diff_obj> */
+    function diff_main($text1, $text2, $checklines = null, $deadline = null) {
+        $text1 = (string) $text1;
+        $text2 = (string) $text2;
+';
+ 
+    $text2 = '<?php
+// diff_match_patch.php -- PHP diff-match-patch.
+// Copyright 2018 The diff-match-patch Authors.
+// Copyright (c) 2006-2022 Eddie Kohler.
+// Ported with some changes from Neil Fraser\'s diff-match-patch:
+// https://github.com/google/diff-match-patch/
+
+namespace dmp;
+
+const DIFF_DELETE = -1;
+const DIFF_INSERT = 1;
+const DIFF_EQUAL = 0;
+
+class diff_match_patch {
+    /** @var float */
+    public $Diff_Timeout = 1.0;
+    /** @var int */
+    public $Diff_EditCost = 4;
+    /** @var bool */
+    public $Fix_UTF8 = true;
+    /** @var int */
+    public $Patch_Margin = 4;
+    /** @var int */
+    public $Match_MaxBits = 32;
+
+    /** @var 0|1
+     * $iota === 1 if we are doing a line diff, so the unit is 2 bytes */
+    private $iota = 0;
+
+    /** @param string $text1
+     * @param string $text2
+     * @param bool $checklines
+     * @param ?float $deadline
+     * @return list<diff_obj> */
+    function diff($text1, $text2, $checklines = true, $deadline = null) {
+        return $this->diff_main($text1, $text2, $checklines, $deadline);
+    }
+
+    /** @param ?float $deadline
+     * @return float */
+    private function compute_deadline_($deadline) {
+        if ($deadline !== null) {
+            return $deadline;
+        } else if ($this->Diff_Timeout <= 0) {
+            return INF;
+        } else {
+            return microtime(true) + $this->Diff_Timeout;
+        }
+    }
+
+    /** @param string $text1 Old string to be diffed.
+     * @param string $text2 New string to be diffed.
+     * @param bool $checklines
+     * @param ?float $deadline
+     * @return list<diff_obj> */
+    function diff_main($text1, $text2, $checklines = true, $deadline = null) {
+        $text1 = (string) $text1;
+        $text2 = (string) $text2;
+';
+ 
+        $diff = '@@ -29,18 +29,30 @@
+ 
+     /** @param string $text1
+      * @param string $text2
+-     * @param ?bool $checklines
++     * @param bool $checklines
+      * @param ?float $deadline
+      * @return list<diff_obj> */
+-    function diff($text1, $text2, $checklines = null, $deadline = null) {
++    function diff($text1, $text2, $checklines = true, $deadline = null) {
+         return $this->diff_main($text1, $text2, $checklines, $deadline);
+     }
+ 
++    /** @param ?float $deadline
++     * @return float */
++    private function compute_deadline_($deadline) {
++        if ($deadline !== null) {
++            return $deadline;
++        } else if ($this->Diff_Timeout <= 0) {
++            return INF;
++        } else {
++            return microtime(true) + $this->Diff_Timeout;
++        }
++    }
++
+     /** @param string $text1 Old string to be diffed.
+      * @param string $text2 New string to be diffed.
+-     * @param ?bool $checklines
++     * @param bool $checklines
+      * @param ?float $deadline
+      * @return list<diff_obj> */
+-    function diff_main($text1, $text2, $checklines = null, $deadline = null) {
++    function diff_main($text1, $text2, $checklines = true, $deadline = null) {
+         $text1 = (string) $text1;
+         $text2 = (string) $text2;
+';
+
+        xassert_eqq($diff, $dmp->line_diff_toUnified($dmp->line_diff($text1, $text2)));
+
+        $text1 .= "a\na\na\na\na\na\na\na\na\na\na\na\nn\n";
+        $text2 .= "a\na\na\na\na\na\na\na\na\na\na\na\no\n";
+        $diff = str_replace("@@ -29,18 +29,30 @@", "@@ -29,19 +29,31 @@", $diff)
+            . ' a
+@@ -56,4 +68,4 @@
+ a
+ a
+ a
+-n
++o
+';
+
+        xassert_eqq($diff, $dmp->line_diff_toUnified($dmp->line_diff($text1, $text2)));
+    }
 }

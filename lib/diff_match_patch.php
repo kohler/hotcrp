@@ -29,19 +29,31 @@ class diff_match_patch {
 
     /** @param string $text1
      * @param string $text2
-     * @param ?bool $checklines
+     * @param bool $checklines
      * @param ?float $deadline
      * @return list<diff_obj> */
-    function diff($text1, $text2, $checklines = null, $deadline = null) {
+    function diff($text1, $text2, $checklines = true, $deadline = null) {
         return $this->diff_main($text1, $text2, $checklines, $deadline);
+    }
+
+    /** @param ?float $deadline
+     * @return float */
+    private function compute_deadline_($deadline) {
+        if ($deadline !== null) {
+            return $deadline;
+        } else if ($this->Diff_Timeout <= 0) {
+            return INF;
+        } else {
+            return microtime(true) + $this->Diff_Timeout;
+        }
     }
 
     /** @param string $text1 Old string to be diffed.
      * @param string $text2 New string to be diffed.
-     * @param ?bool $checklines
+     * @param bool $checklines
      * @param ?float $deadline
      * @return list<diff_obj> */
-    function diff_main($text1, $text2, $checklines = null, $deadline = null) {
+    function diff_main($text1, $text2, $checklines = true, $deadline = null) {
         $text1 = (string) $text1;
         $text2 = (string) $text2;
 
@@ -56,13 +68,7 @@ class diff_match_patch {
         // Clean up parameters
         $Fix_UTF8 = $this->Fix_UTF8;
         $this->Fix_UTF8 = false;
-        if ($deadline === null) {
-            if ($this->Diff_Timeout <= 0) {
-                $deadline = INF;
-            } else {
-                $deadline = microtime(true) + $this->Diff_Timeout;
-            }
-        }
+        $deadline = $deadline ?? $this->compute_deadline_(null);
 
         // Trim off common prefix (speedup).
         $commonlength = $this->diff_commonPrefix($text1, $text2);
@@ -97,10 +103,9 @@ class diff_match_patch {
         $this->diff_cleanupMerge($diffs);
 
         // Fix UTF-8 issues.
-        if ($Fix_UTF8) {
+        if (($this->Fix_UTF8 = $Fix_UTF8)) {
             $this->diff_cleanupUTF8($diffs);
         }
-        $this->Fix_UTF8 = $Fix_UTF8;
 
         return $diffs;
     }
@@ -217,6 +222,103 @@ class diff_match_patch {
         }
 
         return $out;
+    }
+
+
+    /** @param string $s
+     * @return int */
+    static function count_lines($s) {
+        $cr = $nl = -1;
+        $pos = $nlines = 0;
+        while (true) {
+            if ($cr !== false && $cr < $pos) {
+                $cr = strpos($s, "\r", $pos);
+            }
+            if ($nl !== false && $nl < $pos) {
+                $nl = strpos($s, "\n", $pos);
+            }
+            if ($cr === false && $nl === false) {
+                return $nlines + ($pos === strlen($s) ? 0 : 1);
+            } else if ($nl !== false && ($cr === false || $cr >= $nl - 1)) {
+                $pos = $nl + 1;
+            } else {
+                $pos = $cr + 1;
+            }
+            ++$nlines;
+        }
+    }
+
+    /** @param string $s
+     * @return list<string> */
+    static function split_lines($s) {
+        $cr = $nl = -1;
+        $pos = 0;
+        $len = strlen($s);
+        $lines = [];
+        while ($pos !== $len) {
+            if ($cr !== false && $cr < $pos) {
+                $cr = strpos($s, "\r", $pos);
+            }
+            if ($nl !== false && $nl < $pos) {
+                $nl = strpos($s, "\n", $pos);
+            }
+            if ($cr === false && $nl === false) {
+                $npos = $len;
+            } else if ($nl !== false && ($cr === false || $cr >= $nl - 1)) {
+                $npos = $nl + 1;
+            } else {
+                $npos = $cr + 1;
+            }
+            if ($npos !== $pos) {
+                $lines[] = substr($s, $pos, $npos - $pos);
+            }
+            $pos = $npos;
+        }
+        return $lines;
+    }
+
+
+    /**
+     * Produce a line-based diff.
+     * @param string $text1 Old string to be diffed.
+     * @param string $text2 New string to be diffed.
+     * @param ?float $deadline Time when diff should be complete by.
+     * @return list<diff_obj> */
+    function line_diff($text1, $text2, $deadline = null) {
+        assert($this->iota === 0);
+
+        // Clean up parameters
+        $Fix_UTF8 = $this->Fix_UTF8;
+        $this->Fix_UTF8 = false;
+        $deadline = $deadline ?? $this->compute_deadline_(null);
+
+        // Scan the text on a line-by-line basis first.
+        list($text1, $text2, $lineArray) = $this->diff_linesToChars_($text1 ?? "", $text2 ?? "");
+
+        $this->iota = 1;
+        $diffs = $this->diff_main($text1, $text2, false, $deadline);
+        $this->iota = 0;
+
+        // Convert to line-based diffs.
+        foreach ($diffs as $diff) {
+            $text = [];
+            $len = strlen($diff->text);
+            $nlines = 0;
+            for ($j = 0; $j !== $len; $j += 2) {
+                $ch = ord($diff->text[$j]) | (ord($diff->text[$j+1]) << 8);
+                $text[] = $lineArray[$ch];
+                if ($ch !== 40000 && $ch !== 65535) {
+                    ++$nlines;
+                } else {
+                    $nlines += $this->count_lines($lineArray[$ch]);
+                }
+            }
+            $diff->text = join("", $text);
+            $diff->lines = $nlines;
+        }
+
+        $this->Fix_UTF8 = $Fix_UTF8;
+        return $diffs;
     }
 
 
@@ -1580,6 +1682,81 @@ class diff_match_patch {
     }
 
 
+    /** @param list<diff_obj> $diffs
+     * @param ?int $context
+     * @return string */
+    function line_diff_toUnified($diffs, $context = null) {
+        $context = $context ?? 3;
+        $l1 = $l2 = $sl1 = $sl2 = 1;
+        $nl1 = $nl2 = 0;
+        $ndiffs = count($diffs);
+        $cpos = 0;
+        $out = [""];
+        for ($i = 0; $i !== $ndiffs; ++$i) {
+            $diff = $diffs[$i];
+            $ls = self::split_lines($diff->text);
+            if ($diff->op === DIFF_EQUAL) {
+                $j = 0;
+                if ($cpos !== 0 || count($out) !== 1) {
+                    if ($diff->lines <= 8 && $i !== $ndiffs - 1) {
+                        $last = $diff->lines - 3;
+                    } else {
+                        $last = min($diff->lines, 3);
+                    }
+                    while ($j < $last) {
+                        $out[] = " " . $ls[$j];
+                        ++$l1;
+                        ++$nl1;
+                        ++$l2;
+                        ++$nl2;
+                        ++$j;
+                    }
+                    if ($j < $diff->lines - 3 && $i !== $ndiffs - 1) {
+                        $out[$cpos] = "@@ -{$sl1},{$nl1} +{$sl2},{$nl2} @@\n";
+                        $cpos = count($out);
+                        $out[] = "";
+                        $sl1 = $l1;
+                        $sl2 = $l2;
+                        $nl1 = $nl2 = 0;
+                    }
+                }
+                if ($j < $diff->lines - 3 && $cpos === count($out) - 1) {
+                    $x = $diff->lines - 3 - $j;
+                    $l1 += $x;
+                    $sl1 += $x;
+                    $l2 += $x;
+                    $sl2 += $x;
+                    $j += $x;
+                }
+                if ($i !== $ndiffs - 1) {
+                    while ($j < $diff->lines) {
+                        $out[] = " " . $ls[$j];
+                        ++$l1;
+                        ++$nl1;
+                        ++$l2;
+                        ++$nl2;
+                        ++$j;
+                    }
+                }
+            } else if ($diff->op === DIFF_INSERT) {
+                foreach ($ls as $t) {
+                    $out[] = "+" . $t;
+                }
+                $nl2 += $diff->lines;
+                $l2 += $diff->lines;
+            } else {
+                foreach ($ls as $t) {
+                    $out[] = "-" . $t;
+                }
+                $nl1 += $diff->lines;
+                $l1 += $diff->lines;
+            }
+        }
+        $out[$cpos] = "@@ -{$sl1},{$nl1} +{$sl2},{$nl2} @@\n";
+        return join("", $out);
+    }
+
+
     /**
      * Increase the context until it is unique,
      * but don't let the pattern expand beyond Match_MaxBits.
@@ -1767,12 +1944,16 @@ class diff_obj implements \JsonSerializable {
     public $op;
     /** @var string */
     public $text;
+    /** @var ?int */
+    public $lines;
 
     /** @param -1|0|1 $op
-     * @param string $text */
-    function __construct($op, $text) {
+     * @param string $text
+     * @param ?int $lines */
+    function __construct($op, $text, $lines = null) {
         $this->op = $op;
         $this->text = $text;
+        $this->lines = $lines;
     }
 
     /** @param list<string> $slist
