@@ -121,8 +121,7 @@ class diff_match_patch {
     private function diff_compute_($text1, $text2, $checklines, $deadline) {
         if ($text1 === "") {
             return [new diff_obj(DIFF_INSERT, $text2)];
-        }
-        if ($text2 === "") {
+        } else if ($text2 === "") {
             return [new diff_obj(DIFF_DELETE, $text1)];
         }
 
@@ -203,24 +202,19 @@ class diff_match_patch {
         $opos = 0;
         $out = [];
         foreach ($diffs as $diff) {
-            if ($diff->op !== DIFF_EQUAL) {
-                $opos = $this->diff_merge1($out, $opos, $diff);
-            } else {
-                // Upon reaching an equality, check for prior redundancies.
-                if ($opos > 1
-                    && $out[$opos-1]->op === DIFF_INSERT
-                    && $out[$opos-2]->op === DIFF_DELETE) {
-                    $subDiff = $this->diff_main($out[$opos-2]->text, $out[$opos-1]->text, false, $deadline);
-                    array_splice($out, $opos - 2, 2, $subDiff);
-                    $opos = count($out);
-                }
-                if ($diff->text !== "") {
-                    $out[] = $diff;
-                    ++$opos;
+            // Upon reaching an equality, check for prior redundancies.
+            if ($diff->op === DIFF_EQUAL
+                && $opos > 1
+                && $out[$opos-1]->op === DIFF_INSERT
+                && $out[$opos-2]->op === DIFF_DELETE) {
+                $opos -= 2;
+                foreach ($this->diff_main($out[$opos]->text, $out[$opos+1]->text, false, $deadline) as $subDiff) {
+                    $opos = $this->diff_merge1($out, $opos, $subDiff);
                 }
             }
+            $opos = $this->diff_merge1($out, $opos, $diff);
         }
-
+        array_splice($out, $opos);
         return $out;
     }
 
@@ -1101,24 +1095,24 @@ class diff_match_patch {
      * @param diff_obj $diff
      * @return int */
     static private function diff_merge1(&$diffs, $opos, $diff) {
-        assert($diff->op !== DIFF_EQUAL);
         if ($diff->text === "") {
             return $opos;
         } else if ($opos > 0
                    && $diffs[$opos-1]->op === $diff->op) {
             $diffs[$opos-1]->text .= $diff->text;
             return $opos;
-        } else if ($opos > 1
-                   && $diffs[$opos-1]->op === DIFF_INSERT
-                   && $diffs[$opos-2]->op === $diff->op) {
-            $diffs[$opos-2]->text .= $diff->text;
-            return $opos;
         } else if ($opos > 0
                    && $diffs[$opos-1]->op === DIFF_INSERT
                    && $diff->op === DIFF_DELETE) {
-            $diffs[$opos] = $diffs[$opos-1];
-            $diffs[$opos-1] = $diff;
-            return $opos + 1;
+            if ($opos > 1
+                && $diffs[$opos-2]->op === DIFF_DELETE) {
+                $diffs[$opos-2]->text .= $diff->text;
+                return $opos;
+            } else {
+                $diffs[$opos] = $diffs[$opos-1];
+                $diffs[$opos-1] = $diff;
+                return $opos + 1;
+            }
         } else {
             $diffs[$opos] = $diff;
             return $opos + 1;
