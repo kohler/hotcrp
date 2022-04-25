@@ -560,7 +560,7 @@ class diff_match_patch {
                     $nlines, $deadline, $diffs
                 );
             } else {
-                $diffs = $this->diff_main($text1, $text2, false, $deadline);
+                array_push($diffs, ...$this->diff_main($text1, $text2, false, $deadline));
             }
         }
     }
