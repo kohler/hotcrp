@@ -825,6 +825,7 @@ class DiffMatchPatch_Tester {
 
     function test_line_diffs() {
         $dmp = new diff_match_patch;
+        $dmp->Line_Histogram = true;
         $t1 = "Hello.\nThis is a test of line diffs.\n";
         $t2 = "Goodbye.\nThere is nothing to be done.\n";
 
@@ -987,6 +988,132 @@ class diff_match_patch {
  a
 -n
 +o
+';
+
+        xassert_eqq($diff, $dmp->line_diff_toUnified($dmp->line_diff($text1, $text2)));
+
+
+        $text1 = 'void func1() {
+    x += 1
+}
+
+void func2() {
+    x += 2
+}
+';
+
+        $text2 = 'void func1() {
+    x += 1
+}
+
+void functhreehalves() {
+    x += 1.5
+}
+
+void func2() {
+    x += 2
+}
+';
+
+        $diff = '@@ -2,6 +2,10 @@
+     x += 1
+ }
+ 
++void functhreehalves() {
++    x += 1.5
++}
++
+ void func2() {
+     x += 2
+ }
+';
+
+        xassert_eqq($diff, $dmp->line_diff_toUnified($dmp->line_diff($text1, $text2)));
+
+
+        $dmp->Line_Histogram = true;
+        $text1 = 'public class File1 {
+
+  public int add (int a, int b)
+  {
+    log();
+    return a + b;
+  }
+
+  public int sub (int a, int b)
+  {
+    if (a == b)
+    {
+        return 0;
+    }
+    log();
+    return a - b;
+    // TOOD: JIRA1234
+  }
+
+}
+';
+
+        $text2 = 'public class File1 {
+
+  public int sub (int a, int b)
+  {
+    // TOOD: JIRA1234
+    if ( isNull(a, b) )
+    {
+        return null
+    }
+    log();
+    return a - b;
+  }
+
+  public int mul (int a, int b)
+  {
+    if ( isNull(a, b) )
+    {
+        return null;
+    }
+    log();
+    return a * b;
+  }
+
+}
+';
+
+        $diff = '@@ -1,20 +1,24 @@
+ public class File1 {
+ 
+-  public int add (int a, int b)
+-  {
+-    log();
+-    return a + b;
+-  }
+-
+   public int sub (int a, int b)
+   {
+-    if (a == b)
++    // TOOD: JIRA1234
++    if ( isNull(a, b) )
+     {
+-        return 0;
++        return null
+     }
+     log();
+     return a - b;
+-    // TOOD: JIRA1234
+   }
+ 
++  public int mul (int a, int b)
++  {
++    if ( isNull(a, b) )
++    {
++        return null;
++    }
++    log();
++    return a * b;
++  }
++
+ }
 ';
 
         xassert_eqq($diff, $dmp->line_diff_toUnified($dmp->line_diff($text1, $text2)));

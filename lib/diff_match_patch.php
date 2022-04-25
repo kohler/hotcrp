@@ -22,6 +22,8 @@ class diff_match_patch {
     public $Patch_Margin = 4;
     /** @var int */
     public $Match_MaxBits = 32;
+    /** @var bool */
+    public $Line_Histogram = false;
 
     /** @var 0|1
      * $iota === 1 if we are doing a line diff, so the unit is 2 bytes */
@@ -188,7 +190,13 @@ class diff_match_patch {
         list($text1, $text2, $lineArray) = $this->diff_linesToChars_($text1, $text2);
 
         $this->iota = 1;
-        $diffs = $this->diff_main($text1, $text2, false, $deadline);
+        if ($this->Line_Histogram) {
+            $diffs = [];
+            $this->diff_histogram_($text1, $text2, count($lineArray), $deadline, $diffs);
+            $this->line_diff_cleanupSemantic_($diffs);
+        } else {
+            $diffs = $this->diff_main($text1, $text2, false, $deadline);
+        }
         $this->iota = 0;
 
         // Convert the diff back to original text.
@@ -201,6 +209,7 @@ class diff_match_patch {
         $diffs[] = new diff_obj(DIFF_EQUAL, "");
         $opos = 0;
         $out = [];
+        '@phan-var-force list<diff_obj> $out';
         foreach ($diffs as $diff) {
             // Upon reaching an equality, check for prior redundancies.
             if ($diff->op === DIFF_EQUAL
@@ -216,59 +225,6 @@ class diff_match_patch {
         }
         array_splice($out, $opos);
         return $out;
-    }
-
-
-    /** @param string $s
-     * @return int */
-    static function count_lines($s) {
-        $cr = $nl = -1;
-        $pos = $nlines = 0;
-        while (true) {
-            if ($cr !== false && $cr < $pos) {
-                $cr = strpos($s, "\r", $pos);
-            }
-            if ($nl !== false && $nl < $pos) {
-                $nl = strpos($s, "\n", $pos);
-            }
-            if ($cr === false && $nl === false) {
-                return $nlines + ($pos === strlen($s) ? 0 : 1);
-            } else if ($nl !== false && ($cr === false || $cr >= $nl - 1)) {
-                $pos = $nl + 1;
-            } else {
-                $pos = $cr + 1;
-            }
-            ++$nlines;
-        }
-    }
-
-    /** @param string $s
-     * @return list<string> */
-    static function split_lines($s) {
-        $cr = $nl = -1;
-        $pos = 0;
-        $len = strlen($s);
-        $lines = [];
-        while ($pos !== $len) {
-            if ($cr !== false && $cr < $pos) {
-                $cr = strpos($s, "\r", $pos);
-            }
-            if ($nl !== false && $nl < $pos) {
-                $nl = strpos($s, "\n", $pos);
-            }
-            if ($cr === false && $nl === false) {
-                $npos = $len;
-            } else if ($nl !== false && ($cr === false || $cr >= $nl - 1)) {
-                $npos = $nl + 1;
-            } else {
-                $npos = $cr + 1;
-            }
-            if ($npos !== $pos) {
-                $lines[] = substr($s, $pos, $npos - $pos);
-            }
-            $pos = $npos;
-        }
-        return $lines;
     }
 
 
@@ -290,26 +246,18 @@ class diff_match_patch {
         list($text1, $text2, $lineArray) = $this->diff_linesToChars_($text1 ?? "", $text2 ?? "");
 
         $this->iota = 1;
-        $diffs = $this->diff_main($text1, $text2, false, $deadline);
+        if ($this->Line_Histogram) {
+            $diffs = [];
+            $this->diff_histogram_($text1, $text2, count($lineArray), $deadline, $diffs);
+        } else {
+            $diffs = $this->diff_main($text1, $text2, false, $deadline);
+        }
+        // Shift diffs forward.
+        $this->line_diff_cleanupSemantic_($diffs);
         $this->iota = 0;
 
-        // Convert to line-based diffs.
-        foreach ($diffs as $diff) {
-            $text = [];
-            $len = strlen($diff->text);
-            $nlines = 0;
-            for ($j = 0; $j !== $len; $j += 2) {
-                $ch = ord($diff->text[$j]) | (ord($diff->text[$j+1]) << 8);
-                $text[] = $lineArray[$ch];
-                if ($ch !== 40000 && $ch !== 65535) {
-                    ++$nlines;
-                } else {
-                    $nlines += $this->count_lines($lineArray[$ch]);
-                }
-            }
-            $diff->text = join("", $text);
-            $diff->lines = $nlines;
-        }
+        // Convert the diff back to original text.
+        $this->diff_charsToLines_($diffs, $lineArray);
 
         $this->Fix_UTF8 = $Fix_UTF8;
         return $diffs;
@@ -576,6 +524,43 @@ class diff_match_patch {
         if ($this->iota) {
             foreach ($diffs as $diff) {
                 assert(strlen($diff->text) % 2 === 0);
+            }
+        }
+    }
+
+
+
+    /** @param string $text1
+     * @param string $text2
+     * @param int $nlines
+     * @param float $deadline
+     * @param list<diff_obj> &$diffs
+     * @return void */
+    private function diff_histogram_($text1, $text2, $nlines, $deadline, &$diffs) {
+        if ($text1 === "") {
+            $diffs[] = new diff_obj(DIFF_INSERT, $text2);
+        } else if ($text2 === "") {
+            $diffs[] = new diff_obj(DIFF_DELETE, $text1);
+        } else {
+            $hstate = new histogram_state($text1, $text2, $nlines);
+            if ($hstate->mstate === 0
+                || microtime(true) > $deadline) {
+                $diffs[] = new diff_obj(DIFF_DELETE, $text1);
+                $diffs[] = new diff_obj(DIFF_INSERT, $text2);
+            } else if ($hstate->mstate === 1) {
+                $this->diff_histogram_(
+                    substr($text1, 0, $hstate->mpos1),
+                    substr($text2, 0, $hstate->mpos2),
+                    $nlines, $deadline, $diffs
+                );
+                $diffs[] = new diff_obj(DIFF_EQUAL, substr($text1, $hstate->mpos1, $hstate->mlen));
+                $this->diff_histogram_(
+                    substr($text1, $hstate->mpos1 + $hstate->mlen),
+                    substr($text2, $hstate->mpos2 + $hstate->mlen),
+                    $nlines, $deadline, $diffs
+                );
+            } else {
+                $diffs = $this->diff_main($text1, $text2, false, $deadline);
             }
         }
     }
@@ -1220,6 +1205,51 @@ class diff_match_patch {
     }
 
 
+    /**
+     * Reduce the number of edits by eliminating semantically trivial equalities.
+     * @param list<diff_obj> &$diffs Array of diff tuples.
+     */
+    private function line_diff_cleanupSemantic_(&$diffs) {
+        '@phan-var-force list<diff_obj> &$diffs';
+        assert($this->iota === 1);
+        // Add a dummy entry at the end.
+        $opos = 0;
+        $ndiffs = count($diffs);
+        for ($pos = 0; $pos !== $ndiffs; ++$pos) {
+            $diff = $diffs[$pos];
+            if ($diff->op !== DIFF_EQUAL) {
+                $opos = $this->diff_merge1($diffs, $opos, $diff);
+            } else if ($opos === 0) {
+                $diffs[$opos] = $diff;
+                ++$opos;
+            } else if ($diffs[$opos-1]->op === DIFF_EQUAL) {
+                $diffs[$opos-1]->text .= $diff->text;
+            } else {
+                $pdiff = $diffs[$opos-1];
+                $clen = $this->diff_commonPrefix($pdiff->text, $diff->text) & ~1;
+                if ($clen > 1 && $clen < strlen($pdiff->text)) {
+                    $pfx = substr($diff->text, 0, $clen);
+                    if ($opos > 2 && $diffs[$opos-2]->op === DIFF_EQUAL) {
+                        $diffs[$opos-2]->text .= $pfx;
+                    } else {
+                        array_splice($diffs, $opos-1, 0, [new diff_obj(DIFF_EQUAL, $pfx)]);
+                        ++$pos;
+                        ++$opos;
+                        ++$ndiffs;
+                    }
+                    $pdiff->text = substr($pdiff->text, $clen) . $pfx;
+                    $diff->text = substr($diff->text, $clen);
+                }
+                if ($diff->text !== "") {
+                    $diffs[$opos] = $diff;
+                    ++$opos;
+                }
+            }
+        }
+        array_splice($diffs, $opos);
+    }
+
+
     /** @param list<diff_obj> &$diffs */
     private function diff_cleanupUTF8(&$diffs) {
         $ndiffs = count($diffs);
@@ -1676,6 +1706,39 @@ class diff_match_patch {
     }
 
 
+    /** @param string $s
+     * @return list<string> */
+    static function split_lines($s) {
+        $cr = $nl = -1;
+        $pos = 0;
+        $len = strlen($s);
+        $lines = [];
+        while ($pos !== $len) {
+            if ($cr !== false && $cr < $pos) {
+                $cr = strpos($s, "\r", $pos);
+            }
+            if ($nl !== false && $nl < $pos) {
+                $nl = strpos($s, "\n", $pos);
+            }
+            if ($cr === false && $nl === false) {
+                $npos = $len;
+            } else if ($nl !== false && ($cr === false || $cr >= $nl - 1)) {
+                $npos = $nl + 1;
+            } else {
+                $npos = $cr + 1;
+            }
+            if ($npos !== $pos) {
+                $xpos = $npos;
+                while ($xpos > $pos && ($s[$xpos-1] === "\n" || $s[$xpos-1] === "\r")) {
+                    --$xpos;
+                }
+                $lines[] = substr($s, $pos, $xpos - $pos);
+            }
+            $pos = $npos;
+        }
+        return $lines;
+    }
+
     /** @param list<diff_obj> $diffs
      * @param ?int $context
      * @return string */
@@ -1689,23 +1752,24 @@ class diff_match_patch {
         for ($i = 0; $i !== $ndiffs; ++$i) {
             $diff = $diffs[$i];
             $ls = self::split_lines($diff->text);
+            $nls = count($ls);
             if ($diff->op === DIFF_EQUAL) {
                 $j = 0;
                 if ($cpos !== 0 || count($out) !== 1) {
-                    if ($diff->lines <= 8 && $i !== $ndiffs - 1) {
-                        $last = $diff->lines - 3;
+                    if ($nls <= 8 && $i !== $ndiffs - 1) {
+                        $last = $nls - 3;
                     } else {
-                        $last = min($diff->lines, 3);
+                        $last = min($nls, 3);
                     }
                     while ($j < $last) {
-                        $out[] = " " . $ls[$j];
+                        $out[] = " {$ls[$j]}\n";
                         ++$l1;
                         ++$nl1;
                         ++$l2;
                         ++$nl2;
                         ++$j;
                     }
-                    if ($j < $diff->lines - 3 && $i !== $ndiffs - 1) {
+                    if ($j < $nls - 3 && $i !== $ndiffs - 1) {
                         $out[$cpos] = "@@ -{$sl1},{$nl1} +{$sl2},{$nl2} @@\n";
                         $cpos = count($out);
                         $out[] = "";
@@ -1714,8 +1778,8 @@ class diff_match_patch {
                         $nl1 = $nl2 = 0;
                     }
                 }
-                if ($j < $diff->lines - 3 && $cpos === count($out) - 1) {
-                    $x = $diff->lines - 3 - $j;
+                if ($j < $nls - 3 && $cpos === count($out) - 1) {
+                    $x = $nls - 3 - $j;
                     $l1 += $x;
                     $sl1 += $x;
                     $l2 += $x;
@@ -1723,8 +1787,8 @@ class diff_match_patch {
                     $j += $x;
                 }
                 if ($i !== $ndiffs - 1) {
-                    while ($j < $diff->lines) {
-                        $out[] = " " . $ls[$j];
+                    while ($j < $nls) {
+                        $out[] = " {$ls[$j]}\n";
                         ++$l1;
                         ++$nl1;
                         ++$l2;
@@ -1734,16 +1798,16 @@ class diff_match_patch {
                 }
             } else if ($diff->op === DIFF_INSERT) {
                 foreach ($ls as $t) {
-                    $out[] = "+" . $t;
+                    $out[] = "+{$t}\n";
                 }
-                $nl2 += $diff->lines;
-                $l2 += $diff->lines;
+                $nl2 += $nls;
+                $l2 += $nls;
             } else {
                 foreach ($ls as $t) {
-                    $out[] = "-" . $t;
+                    $out[] = "-{$t}\n";
                 }
-                $nl1 += $diff->lines;
-                $l1 += $diff->lines;
+                $nl1 += $nls;
+                $l1 += $nls;
             }
         }
         $out[$cpos] = "@@ -{$sl1},{$nl1} +{$sl2},{$nl2} @@\n";
@@ -1938,16 +2002,12 @@ class diff_obj implements \JsonSerializable {
     public $op;
     /** @var string */
     public $text;
-    /** @var ?int */
-    public $lines;
 
     /** @param -1|0|1 $op
-     * @param string $text
-     * @param ?int $lines */
-    function __construct($op, $text, $lines = null) {
+     * @param string $text */
+    function __construct($op, $text) {
         $this->op = $op;
         $this->text = $text;
-        $this->lines = $lines;
     }
 
     /** @param list<string> $slist
@@ -2062,6 +2122,114 @@ class patch_obj {
             $text[] = $op . diff_match_patch::diff_encodeURI($diff->text) . "\n";
         }
         return join("", $text);
+    }
+}
+
+
+class histogram_state {
+    const MAXMATCH = 64;
+
+    /** @var int */
+    public $mstate = 0;
+    /** @var int */
+    public $mpos1 = -1;
+    /** @var int */
+    public $mpos2 = -1;
+    /** @var int */
+    public $mlen = 0;
+    /** @var int */
+    private $mcount = self::MAXMATCH + 1;
+
+    /** @param string $text1
+     * @param string $text2
+     * @param int $nlines */
+    function __construct($text1, $text2, $nlines) {
+        // analyze $text1
+        $first = array_fill(0, $nlines, -1);
+        $count = array_fill(0, $nlines, 0);
+        $next = array_fill(0, strlen($text1) >> 1, -1);
+        $len1 = strlen($text1);
+        for ($j = 0; $j !== $len1; $j += 2) {
+            $ch = ord($text1[$j]) | (ord($text1[$j+1]) << 8);
+            $next[$j >> 1] = $first[$ch];
+            $first[$ch] = $j;
+            $count[$ch] += 1;
+        }
+
+        // find LCS with $text2
+        $len2 = strlen($text2);
+        $j = 0;
+        while ($j !== $len2) {
+            $j = $this->try_lcs($text1, $text2, $j, $first, $count, $next);
+        }
+
+        // too high match count => fallback
+        if ($this->mstate === 1 && $this->mcount > self::MAXMATCH) {
+            $this->mstate = 2;
+        }
+    }
+
+    /** @param string $text1
+     * @param string $text2
+     * @param int $pos2
+     * @param list<int> $first
+     * @param list<int> $count
+     * @param list<int> $next
+     * @return int */
+    function try_lcs($text1, $text2, $pos2, $first, $count, $next) {
+        $focusch = ord($text2[$pos2]) | (ord($text2[$pos2+1]) << 8);
+        $maxpos2 = $pos2 + 2;
+        if ($first[$focusch] < 0) {
+            return $maxpos2;
+        }
+        $this->mstate = 1;
+        if ($count[$focusch] > $this->mcount) {
+            return $maxpos2;
+        }
+        $len1 = strlen($text1);
+        $len2 = strlen($text2);
+        $pos1 = $first[$focusch];
+        while ($pos1 >= 0) {
+            $b1 = $pos1;
+            $b2 = $pos2;
+            $ml = 2;
+            $rc = $count[$focusch];
+            while ($b1 + $ml + 2 < $len1
+                   && $b2 + $ml + 2 < $len2
+                   && $text1[$b1 + $ml] === $text2[$b2 + $ml]
+                   && $text1[$b1 + $ml + 1] === $text2[$b2 + $ml + 1]) {
+                if ($rc > 1) {
+                    $ch = ord($text1[$b1 + $ml]) | (ord($text1[$b1 + $ml + 1]) << 8);
+                    $rc = min($rc, $count[$ch]);
+                }
+                $ml += 2;
+            }
+            while ($b1 > 0
+                   && $b2 > 0
+                   && $text1[$b1 - 2] === $text2[$b2 - 2]
+                   && $text1[$b1 - 1] === $text2[$b2 - 1]) {
+                $b1 -= 2;
+                $b2 -= 2;
+                $ml += 2;
+                if ($rc > 1) {
+                    $ch = ord($text1[$b1]) | (ord($text1[$b1+1]) << 8);
+                    $rc = min($rc, $count[$ch]);
+                }
+            }
+            $maxpos2 = max($maxpos2, $b2 + $ml);
+            if ($ml > $this->mlen || $rc < $this->mcount) {
+                $this->mpos1 = $b1;
+                $this->mpos2 = $b2;
+                $this->mlen = $ml;
+                $this->mcount = $rc;
+            }
+
+            $pos1 = $next[$pos1 >> 1];
+            while ($pos1 >= 0 && $pos1 < $b1 + $ml) {
+                $pos1 = $next[$pos1 >> 1];
+            }
+        }
+        return $maxpos2;
     }
 }
 
