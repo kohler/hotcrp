@@ -56,8 +56,9 @@ class ReviewDiffInfo {
     /** @param string $s1
      * @param string $s2
      * @return string */
-    private function dmp_hcdelta($s1, $s2) {
+    private function dmp_hcdelta($s1, $s2, $line_histogram = false) {
         $this->_dmp = $this->_dmp ?? new dmp\diff_match_patch;
+        $this->_dmp->Line_Histogram = $line_histogram;
         try {
             $diffs = $this->_dmp->diff($s1, $s2);
             $hcdelta = $this->_dmp->diff_toHCDelta($diffs);
@@ -66,7 +67,12 @@ class ReviewDiffInfo {
             $xdiffs = $this->_dmp->diff_fromHCDelta($s1, $hcdelta);
             if ($this->_dmp->diff_text1($xdiffs) !== $s1
                 || $this->_dmp->diff_text2($xdiffs) !== $s2) {
-                throw new dmp\diff_exception("incorrect HCDelta");
+                throw new dmp\diff_exception("incorrect diff_fromHCDelta");
+            }
+
+            // validate that applyHCDelta can create $v[$dir]
+            if ($this->_dmp->diff_applyHCDelta($s1, $hcdelta) !== $s2) {
+                throw new dmp\diff_exception("incorrect diff_applyHCDelta");
             }
 
             return $hcdelta;
@@ -102,7 +108,8 @@ class ReviewDiffInfo {
                         continue;
                     }
                 } else {
-                    $hcdelta = $this->dmp_hcdelta($v[1 - $dir], $v[$dir]);
+                    $hcdelta = $this->dmp_hcdelta($v[1 - $dir], $v[$dir], false);
+                    $hcdelta = $this->dmp_hcdelta($v[1 - $dir], $v[$dir], true);
                     if ($hcdelta !== null
                         && strlen($hcdelta) < strlen($v[$dir]) - 32) {
                         $patch["{$sn}:p"] = $hcdelta;
