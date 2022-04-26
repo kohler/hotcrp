@@ -726,7 +726,7 @@ class Conf {
             $value = (int) $value;
             $dval = is_array($data) || is_object($data) ? json_encode_db($data) : $data;
             if (($change = ($this->settings[$name] ?? null) !== $value
-                           || $this->settingTexts[$name] !== $dval)) {
+                           || ($this->settingTexts[$name] ?? null) !== $dval)) {
                 $this->settings[$name] = $value;
                 $this->settingTexts[$name] = $dval;
             }
