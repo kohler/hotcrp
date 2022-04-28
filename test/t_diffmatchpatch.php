@@ -40,6 +40,7 @@ class DiffMatchPatch_Tester {
                 fwrite(STDERR, "ASSERTION FAILURE: $s\n");
                 fwrite(STDERR, "  expected diff[{$i}] " . json_encode($da) . "\n");
                 fwrite(STDERR, "       got diff[{$i}] " . json_encode($db) . "\n");
+                fwrite(STDERR, "       got diff    " . json_encode($b) . "\n");
                 fwrite(STDERR, join("\n", $tr) . "\n");
                 xassert(false);
                 break;

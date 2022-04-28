@@ -1705,6 +1705,19 @@ class diff_match_patch {
         return diff_obj::unparse_string_list($diffs);
     }
 
+    /** @param list<diff_obj> $diffs
+     * @param string $s1
+     * @param string $s2
+     * @return void */
+    function diff_validate($diffs, $s1, $s2) {
+        if (($x = $this->diff_text1($diffs)) !== $s1) {
+            throw new diff_exception("incorrect diff_text1", $s1, $x);
+        }
+        if (($x = $this->diff_text2($diffs)) !== $s2) {
+            throw new diff_exception("incorrect diff_text2", $s2, $x);
+        }
+    }
+
 
     /** @param string $s
      * @return list<string> */
@@ -1998,7 +2011,7 @@ class diff_match_patch {
 }
 
 class diff_obj implements \JsonSerializable {
-    /** @var int */
+    /** @var -1|0|1 */
     public $op;
     /** @var string */
     public $text;
@@ -2051,6 +2064,13 @@ class diff_obj implements \JsonSerializable {
         return $a;
     }
 
+    /** @param -1|0|1 $op
+     * @return string */
+    static function unparse_op($op) {
+        $s = "-=+";
+        return $s[$op + 1];
+    }
+
     /** @return string */
     function __toString() {
         $t = $this->text;
@@ -2060,13 +2080,7 @@ class diff_obj implements \JsonSerializable {
         } else {
             $x = "";
         }
-        if ($this->op === DIFF_INSERT) {
-            return "{$x}+{$t}";
-        } else if ($this->op === DIFF_EQUAL) {
-            return "{$x}={$t}";
-        } else {
-            return "{$x}-{$t}";
-        }
+        return $x . self::unparse_op($this->op) . $t;
     }
 
     #[\ReturnTypeWillChange]
@@ -2235,7 +2249,16 @@ class histogram_state {
 
 
 class diff_exception extends \RuntimeException {
-    function __construct($msg) {
+    /** @var ?string */
+    public $expected;
+    /** @var ?string */
+    public $actual;
+    /** @param string $msg
+     * @param ?string $expected
+     * @param ?string $actual */
+    function __construct($msg, $expected = null, $actual = null) {
         parent::__construct($msg);
+        $this->expected = $expected;
+        $this->actual = $actual;
     }
 }
