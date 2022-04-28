@@ -781,6 +781,56 @@ class diff_match_patch {
     }
 
 
+    /** @param list<diff_obj> $diffs
+     * @param int $opos
+     * @param int $pos
+     * @param diff_obj $diff
+     * @param int $ndiffs
+     * @return bool */
+    private function diff_allowMergeEqual_($diffs, $opos, $pos, $diff, $ndiffs) {
+        assert($diff->op === DIFF_EQUAL);
+        $len = strlen($diff->text);
+        $preins = $opos > 0 && $diffs[$opos-1]->op === DIFF_INSERT ? 1 : 0;
+        $predel = $opos > $preins && $diffs[$opos-$preins-1]->op === DIFF_DELETE ? 1 : 0;
+        $postdel = $pos+1 < $ndiffs && $diffs[$pos+1]->op === DIFF_DELETE ? 1 : 0;
+        $postins = $pos+$postdel+1 < $ndiffs && $diffs[$pos+$postdel+1]->op === DIFF_INSERT ? 1 : 0;
+        return $postdel + $postins !== 0
+            && $predel + $preins !== 0
+            && $len <= max($preins ? strlen($diffs[$opos-1]->text) : 0,
+                           $predel ? strlen($diffs[$opos-$preins-1]->text) : 0)
+            && $len <= max($postins ? strlen($diffs[$pos+$postdel+1]->text) : 0,
+                           $postdel ? strlen($diffs[$pos+1]->text) : 0);
+    }
+
+    /** @param list<diff_obj> &$diffs
+     * @param int $opos
+     * @param diff_obj $diff
+     * @return int */
+    private function diff_mergeEqual_(&$diffs, $opos, $diff) {
+        $xpos0 = $xpos1 = 0;
+        while (true) {
+            $opos = $this->diff_merge1($diffs, $opos, new diff_obj(DIFF_DELETE, $diff->text));
+            $opos = $this->diff_merge1($diffs, $opos, new diff_obj(DIFF_INSERT, $diff->text));
+            // merge subsequent diffs if backtracking
+            for (; $xpos0 !== $xpos1; ++$xpos0) {
+                $opos = $this->diff_merge1($diffs, $opos, $diffs[$xpos0]);
+            }
+            // check if we should backtrack
+            $npos = $opos - 1;
+            while ($npos !== 0 && ($diff = $diffs[$npos])->op !== DIFF_EQUAL) {
+                --$npos;
+            }
+            if ($npos === 0
+                || !$this->diff_allowMergeEqual_($diffs, $npos, $npos, $diff, $opos)) {
+                return $opos;
+            }
+            // backtrack
+            $xpos0 = $npos + 1;
+            $xpos1 = $opos;
+            $opos = $npos;
+        }
+    }
+
     /**
      * Reduce the number of edits by eliminating semantically trivial equalities.
      * @param list<diff_obj> &$diffs Array of diff tuples.
@@ -788,61 +838,18 @@ class diff_match_patch {
     function diff_cleanupSemantic(&$diffs) {
         '@phan-var-force list<diff_obj> &$diffs';
         assert($this->iota === 0);
-        $pos = 1;
+        $pos = $opos = 1;
         $ndiffs = count($diffs);
-        while ($pos < $ndiffs) {
+        for ($pos = 1; $pos < $ndiffs; ++$pos) {
             $diff = $diffs[$pos];
-            if ($diff->op === DIFF_EQUAL) {
-                $preins = $pos > 0 && $diffs[$pos - 1]->op === DIFF_INSERT ? 1 : 0;
-                $predel = $pos > $preins && $diffs[$pos - $preins - 1]->op === DIFF_DELETE ? 1 : 0;
-                $postdel = $pos + 1 < $ndiffs && $diffs[$pos + 1]->op === DIFF_DELETE ? 1 : 0;
-                $postins = $pos + $postdel + 1 < $ndiffs && $diffs[$pos + $postdel + 1]->op === DIFF_INSERT ? 1 : 0;
-                // Eliminate an equality that is smaller or equal to the edits on both
-                // sides of it.
-                $len = strlen($diff->text);
-                if ($preins + $predel !== 0
-                    && $postins + $postdel !== 0
-                    && $len <= max($preins ? strlen($diffs[$pos - 1]->text) : 0,
-                                   $predel ? strlen($diffs[$pos - $preins - 1]->text) : 0)
-                    && $len <= max($postins ? strlen($diffs[$pos + $postdel + 1]->text) : 0,
-                                   $postdel ? strlen($diffs[$pos + 1]->text) : 0)) {
-                    if ($predel) {
-                        $diffs[$pos - $preins - 1]->text .= $diff->text;
-                        if ($postdel) {
-                            $diffs[$pos - $preins - 1]->text .= $diffs[$pos + 1]->text;
-                        }
-                    } else {
-                        $diffs[$pos] = $diffs[$pos - 1];
-                        if ($postdel) {
-                            $diffs[$pos - 1] = $diffs[$pos + 1];
-                            $diffs[$pos - 1]->text = $diff->text . $diffs[$pos - 1]->text;
-                        } else {
-                            $diffs[$pos - 1] = $diff;
-                            $diff->op = DIFF_DELETE;
-                        }
-                        ++$pos;
-                        $predel = 1;
-                        $postdel = 0;
-                    }
-                    if ($preins) {
-                        $diffs[$pos - 1]->text .= $diff->text;
-                        if ($postins) {
-                            $diffs[$pos - 1]->text .= $diffs[$pos + $postdel + 1]->text;
-                        }
-                    } else if ($postins) {
-                        $diffs[$pos + $postdel + 1]->text = $diff->text . $diffs[$pos + $postdel + 1]->text;
-                    } else {
-                        $diffs[$pos] = $diff;
-                        $diff->op = DIFF_INSERT;
-                        ++$pos;
-                    }
-                    array_splice($diffs, $pos, $predel + $preins + $postdel + $postins - 1);
-                    $ndiffs = count($diffs);
-                    $pos = max($pos - $preins - $predel - 1, 0) - 1;
-                }
+            if ($diff->op === DIFF_EQUAL
+                && $this->diff_allowMergeEqual_($diffs, $opos, $pos, $diff, $ndiffs)) {
+                $opos = $this->diff_mergeEqual_($diffs, $opos, $diff);
+            } else {
+                $opos = $this->diff_merge1($diffs, $opos, $diff);
             }
-            ++$pos;
         }
+        array_splice($diffs, $opos);
 
         $this->diff_cleanupSemanticLossless($diffs);
 
