@@ -1168,20 +1168,8 @@ function hoturl(page, options) {
     return siteinfo.site_relative + x.t + anchor;
 }
 
-function hoturl_post(page, options) {
-    if (typeof options === "string")
-        options += (options ? "&" : "") + "post=" + siteinfo.postvalue;
-    else
-        options = $.extend({post: siteinfo.postvalue}, options);
-    return hoturl(page, options);
-}
-
 function hoturl_html(page, options) {
     return escape_html(hoturl(page, options));
-}
-
-function hoturl_post_html(page, options) {
-    return escape_html(hoturl_post(page, options));
 }
 
 function url_absolute(url, loc) {
@@ -1208,17 +1196,6 @@ function hoturl_absolute_base() {
     if (!siteinfo.absolute_base)
         siteinfo.absolute_base = url_absolute(siteinfo.base);
     return siteinfo.absolute_base;
-}
-
-function hoturl_post_go(page, options) {
-    var form = document.createElement("form");
-    form.setAttribute("method", "post");
-    form.setAttribute("enctype", "multipart/form-data");
-    form.setAttribute("accept-charset", "UTF-8");
-    form.action = hoturl_post(page, options);
-    form.appendChild(hidden_input("____empty____", "1"));
-    document.body.appendChild(form);
-    form.submit();
 }
 
 function hoturl_get_form(action) {
