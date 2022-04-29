@@ -790,44 +790,45 @@ class diff_match_patch {
     private function diff_allowMergeEqual_($diffs, $opos, $pos, $diff, $ndiffs) {
         assert($diff->op === DIFF_EQUAL);
         $len = strlen($diff->text);
-        $preins = $opos > 0 && $diffs[$opos-1]->op === DIFF_INSERT ? 1 : 0;
-        $predel = $opos > $preins && $diffs[$opos-$preins-1]->op === DIFF_DELETE ? 1 : 0;
-        $postdel = $pos+1 < $ndiffs && $diffs[$pos+1]->op === DIFF_DELETE ? 1 : 0;
-        $postins = $pos+$postdel+1 < $ndiffs && $diffs[$pos+$postdel+1]->op === DIFF_INSERT ? 1 : 0;
-        return $postdel + $postins !== 0
-            && $predel + $preins !== 0
-            && $len <= max($preins ? strlen($diffs[$opos-1]->text) : 0,
-                           $predel ? strlen($diffs[$opos-$preins-1]->text) : 0)
-            && $len <= max($postins ? strlen($diffs[$pos+$postdel+1]->text) : 0,
-                           $postdel ? strlen($diffs[$pos+1]->text) : 0);
+        $pre = $opos > 0 && $diffs[$opos-1]->op === DIFF_INSERT ? 1 : 0;
+        $pre += $opos > $pre && $diffs[$opos-$pre-1]->op === DIFF_DELETE ? 1 : 0;
+        $post = $pos+1 < $ndiffs && $diffs[$pos+1]->op === DIFF_DELETE ? 1 : 0;
+        $post += $pos+$post+1 < $ndiffs && $diffs[$pos+$post+1]->op === DIFF_INSERT ? 1 : 0;
+        return $len > 0  /* merging empty is handled separately */
+            && $pre !== 0
+            && $post !== 0
+            && $len <= max(strlen($diffs[$opos-1]->text),
+                           $pre === 2 ? strlen($diffs[$opos-2]->text) : 0)
+            && $len <= max(strlen($diffs[$pos+1]->text),
+                           $post === 2 ? strlen($diffs[$pos+2]->text) : 0);
     }
 
     /** @param list<diff_obj> &$diffs
      * @param int $opos
+     * @param int $pos
      * @param diff_obj $diff
+     * @param int $ndiffs
      * @return int */
-    private function diff_mergeEqual_(&$diffs, $opos, $diff) {
-        $xpos0 = $xpos1 = 0;
+    private function diff_mergeEqual_(&$diffs, $opos, $pos, $diff, $ndiffs) {
         while (true) {
             $opos = $this->diff_merge1($diffs, $opos, new diff_obj(DIFF_DELETE, $diff->text));
             $opos = $this->diff_merge1($diffs, $opos, new diff_obj(DIFF_INSERT, $diff->text));
-            // merge subsequent diffs if backtracking
-            for (; $xpos0 !== $xpos1; ++$xpos0) {
-                $opos = $this->diff_merge1($diffs, $opos, $diffs[$xpos0]);
+            // merge subsequent diffs
+            for (++$pos; $pos !== $ndiffs && $diffs[$pos]->op !== DIFF_EQUAL; ++$pos) {
+                $opos = $this->diff_merge1($diffs, $opos, $diffs[$pos]);
             }
-            // check if we should backtrack
-            $npos = $opos - 1;
-            while ($npos !== 0 && ($diff = $diffs[$npos])->op !== DIFF_EQUAL) {
-                --$npos;
+            // potentially backtrack: find prior equality
+            $pos = $opos - 1;
+            while ($pos !== 0 && ($diff = $diffs[$pos])->op !== DIFF_EQUAL) {
+                --$pos;
             }
-            if ($npos === 0
-                || !$this->diff_allowMergeEqual_($diffs, $npos, $npos, $diff, $opos)) {
+            if ($pos === 0
+                || !$this->diff_allowMergeEqual_($diffs, $pos, $pos, $diff, $opos)) {
                 return $opos;
             }
             // backtrack
-            $xpos0 = $npos + 1;
-            $xpos1 = $opos;
-            $opos = $npos;
+            $ndiffs = $opos;
+            $opos = $pos;
         }
     }
 
@@ -844,7 +845,10 @@ class diff_match_patch {
             $diff = $diffs[$pos];
             if ($diff->op === DIFF_EQUAL
                 && $this->diff_allowMergeEqual_($diffs, $opos, $pos, $diff, $ndiffs)) {
-                $opos = $this->diff_mergeEqual_($diffs, $opos, $diff);
+                $opos = $this->diff_mergeEqual_($diffs, $opos, $pos, $diff, $ndiffs);
+                while ($pos + 1 !== $ndiffs && $diffs[$pos+1]->op !== DIFF_EQUAL) {
+                    ++$pos;
+                }
             } else {
                 $opos = $this->diff_merge1($diffs, $opos, $diff);
             }
