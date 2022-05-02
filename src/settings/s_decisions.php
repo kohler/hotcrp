@@ -51,7 +51,7 @@ class Decisions_SettingParser extends SettingParser {
                     ["accept" => "Accept category", "reject" => "Reject category"], $class,
                     $sv->sjs("decision__{$ctr}__category", ["data-default-value" => "accept"]));
         } else {
-            echo $class === "a" ? "<span class=\"pstat_decyes\">Accept</span> category" : "<span class=\"pstat_decno\">Reject</span> category";
+            echo $class === "accept" ? "<span class=\"pstat_decyes\">Accept</span> category" : "<span class=\"pstat_decno\">Reject</span> category";
             if ($count) {
                 echo ", ", plural($count, "submission");
             }
