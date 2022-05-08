@@ -73,11 +73,11 @@ class ReviewAccept_Capability {
                     new MessageItem(null, "<0>Bad review link", MessageSet::ERROR),
                     new MessageItem(null, $t, MessageSet::INFORM)
                 ]);
+                error_log("bad review acceptor {$uf->name}: "
+                          . (!$tok || $tok->capabilityType !== TokenInfo::REVIEWACCEPT
+                             ? "not found"
+                             : "created {$tok->timeCreated}, used {$tok->timeUsed}, invalid {$tok->timeInvalid}, expired {$tok->timeExpires}, user {$tok->contactId}"));
             }
-            error_log("bad review acceptor {$uf->name}: "
-                      . (!$tok || $tok->capabilityType !== TokenInfo::REVIEWACCEPT
-                         ? "not found"
-                         : "created {$tok->timeCreated}, used {$tok->timeUsed}, invalid {$tok->timeInvalid}, expired {$tok->timeExpires}, user {$tok->contactId}"));
         }
     }
 
