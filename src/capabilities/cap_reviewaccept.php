@@ -59,7 +59,7 @@ class ReviewAccept_Capability {
                 Dbl::free($result);
             }
             if (!$rrow && $user->contactId) {
-                $result = $user->conf->qe("select * from PaperReview where refusedReviewId=? order by timeRefused desc limit 1", $uf->match_data[1]);
+                $result = $user->conf->qe("select * from PaperReviewRefused where refusedReviewId=? order by timeRefused desc limit 1", $uf->match_data[1]);
                 $refused = ReviewRefusalInfo::fetch($result);
                 Dbl::free($result);
             }
