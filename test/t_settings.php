@@ -438,6 +438,7 @@ class Settings_Tester {
     function test_responses() {
         if ($this->conf->setting_data("responses")) {
             $this->conf->save_refresh_setting("responses", null);
+            $this->conf->qe("delete from PaperComment where (commentType&?)!=0", CommentInfo::CT_RESPONSE);
         }
 
         $rrds = $this->conf->response_rounds();

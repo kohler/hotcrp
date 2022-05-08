@@ -229,6 +229,21 @@ class Unit_Tester {
         xassert_eqq($csvr[2], "Hi");
     }
 
+    function test_csv_json() {
+        $csv = CsvParser::make_json(json_decode('[
+    {"pid":2,"Butts and Money":4,"thing":true},
+    {"paper":4, "Fungi": 10}
+]'));
+        $csv->add_synonym("pid", "paper");
+        $csvr = $csv->next_row();
+        xassert_eqq($csvr["pid"], "2");
+        xassert_eqq($csvr["butts_and_money"], "4");
+        xassert_eqq($csvr["thing"], "Y");
+        $csvr = $csv->next_row();
+        xassert_eqq($csvr["pid"], "4");
+        xassert_eqq($csvr["Fungi"], "10");
+    }
+
     function test_numrangejoin() {
         xassert_eqq(numrangejoin([1, 2, 3, 4, 6, 8]), "1–4, 6, and 8");
         xassert_eqq(numrangejoin(["#1", "#2", "#3", 4, "xx6", "xx7", 8]), "#1–3, 4, xx6–7, and 8");

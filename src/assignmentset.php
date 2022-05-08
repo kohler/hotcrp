@@ -7,10 +7,12 @@ class Assignable {
     public $type;
     /** @var int */
     public $pid;
+
     /** @return self */
     function fresh() {
         return new Assignable;
     }
+
     /** @param Assignable $q
      * @return bool */
     function match($q) {
@@ -1299,6 +1301,8 @@ class AssignmentSet {
         }
     }
 
+    /** @param list<string> $req
+     * @return bool */
     static private function is_csv_header($req) {
         return !!preg_grep('/\A(?:action|assignment|paper|pid|paperid|id)\z/i', $req);
     }
@@ -1380,18 +1384,23 @@ class AssignmentSet {
         }
     }
 
+    /** @param string $coldesc
+     * @param bool $force */
     function hide_column($coldesc, $force = false) {
         if (!isset($this->unparse_columns[$coldesc]) || $force) {
             $this->unparse_columns[$coldesc] = false;
         }
     }
 
+    /** @param string $coldesc
+     * @param bool $force */
     function show_column($coldesc, $force = false) {
         if (!isset($this->unparse_columns[$coldesc]) || $force) {
             $this->unparse_columns[$coldesc] = true;
         }
     }
 
+    /** @param string $line */
     function parse_csv_comment($line) {
         if (preg_match('/\A#\s*hotcrp_assign_display_search\s*(\S.*)\s*\z/', $line, $m)) {
             $this->unparse_search = $m[1];
