@@ -18,7 +18,7 @@ class Preference_API {
             }
         }
         if (!$user->can_edit_preference_for($u, $prow)) {
-            return new JsonResult(403, "Can’t edit preference for #{$prow->paperId}.");
+            return JsonResult::make_error(403, "<0>Can’t edit preference for #{$prow->paperId}");
         }
 
         if ($qreq->method() === "POST" || isset($qreq->pref)) {

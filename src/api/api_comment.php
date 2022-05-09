@@ -254,29 +254,25 @@ class Comment_API {
 
         if ($this->status === self::RESPONSE_REPLACED) {
             // report response replacement error
-            return new JsonResult(404, [
-                "ok" => false,
-                "cmt" => $crow->unparse_json($this->user),
-                "conflict" => true,
-                "message_list" => [MessageItem::error("<0>{$uccmttype} was edited concurrently")]
-            ]);
+            $jr = JsonResult::make_error(404, "<0>{uccmttype} was edited concurrently");
+            $jr["conflict"] = true;
         } else {
-            $j = ["ok" => $this->status <= 299];
-            if ($crow && $crow->commentId > 0) {
-                $j["cmt"] = $crow->unparse_json($this->user);
-            }
+            $jr = new JsonResult($this->status, ["ok" => $this->status <= 299]);
             if (!empty($this->ms)) {
-                $j["message_list"] = $this->ms;
+                $jr["message_list"] = $this->ms;
             }
-            return new JsonResult($this->status, $j);
         }
+        if ($crow && $crow->commentId > 0) {
+            $jr["cmt"] = $crow->unparse_json($this->user);
+        }
+        return $jr;
     }
 
     static function run(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         // check parameters
         if ((!isset($qreq->text) && !isset($qreq->delete) && $qreq->is_post())
             || ($qreq->c === "new" && !$qreq->is_post())) {
-            return new JsonResult(400, "Bad request.");
+            return JsonResult::make_error(400, "<0>Bad request");
         } else {
             return (new Comment_API($user, $prow))->run_qreq($qreq);
         }

@@ -15,10 +15,10 @@ class RequestReview_API {
         }
 
         if (($whyNot = $user->perm_request_review($prow, $round, true))) {
-            return new JsonResult(403, MessageItem::make_error_json("<5>" . $whyNot->unparse_html()));
+            return JsonResult::make_error(403, "<5>" . $whyNot->unparse_html());
         }
         if (!isset($qreq->email)) {
-            return new JsonResult(400, "Bad request");
+            return JsonResult::make_error(400, "<0>Bad request");
         }
         $email = $qreq->email = trim($qreq->email);
         if ($email === "" || $email === "newanonymous") {
@@ -65,7 +65,7 @@ class RequestReview_API {
             if ($user->allow_administer($prow)) {
                 $ml[] = new MessageItem("override", "", 2);
             }
-            return new JsonResult(400, ["ok" => false, "message_list" => $ml]);
+            return new JsonResult(["ok" => false, "message_list" => $ml]);
         }
         // - check conflict
         if ($reviewer
@@ -123,9 +123,9 @@ class RequestReview_API {
         // create account
         $reviewer = $reviewer ?? $xreviewer->store(0, $user);
         if (!$reviewer) {
-            return new JsonResult(400, "<0>Review assignment error: Could not create account");
+            return JsonResult::make_error(400, "<0>Review assignment error: Could not create account");
         } else if ($reviewer->is_disabled()) {
-            return new JsonResult(403, "<0>Review assignment error: The account for " . $reviewer->name(NAME_E) . " is disabled");
+            return JsonResult::make_error(403, "<0>Review assignment error: The account for " . $reviewer->name(NAME_E) . " is disabled");
         }
 
         // assign review
@@ -152,10 +152,10 @@ class RequestReview_API {
     static function requestreview_anonymous($user, $qreq, $prow) {
         if (trim((string) $qreq->firstName) !== ""
             || trim((string) $qreq->lastName) !== "") {
-            return new JsonResult(400, "An email address is required to request a review.");
+            return JsonResult::make_error(400, "<0>An email address is required to request a review");
         }
         if (!$user->allow_administer($prow)) {
-            return new JsonResult(403, "Only administrators can request anonymous reviews.");
+            return JsonResult::make_error(403, "<0>Only administrators can request anonymous reviews");
         }
         $aset = new AssignmentSet($user, true);
         $aset->enable_papers($prow);
@@ -169,7 +169,7 @@ class RequestReview_API {
             $mi = MessageItem::success("<0>Created anonymous review with review token ‘{$token}’");
             return new JsonResult(["ok" => true, "action" => "token", "review_token" => $token, "message_list" => [$mi]]);
         } else {
-            return new JsonResult(400, ["ok" => false, "message_list" => $aset->message_list()]);
+            return new JsonResult(["ok" => false, "message_list" => $aset->message_list()]);
         }
     }
 
@@ -179,7 +179,7 @@ class RequestReview_API {
      * @return JsonResult */
     static function denyreview($user, $qreq, $prow) {
         if (!$user->allow_administer($prow)) {
-            return new JsonResult(403, "Permission error");
+            return JsonResult::make_error(403, "<0>Permission error");
         }
         $email = trim((string) $qreq->email);
         if ($email === "") {
@@ -600,7 +600,9 @@ class RequestReview_API {
         return new JsonResult(["ok" => true, "action" => "undecline"]);
     }
 
-    /** @param string $field
+    /** @param int $status
+     * @param string $field
+     * @param string $message
      * @return JsonResult */
     static function error_result($status, $field, $message) {
         if (!Ftext::is_ftext($message)) {

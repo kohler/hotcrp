@@ -9,10 +9,10 @@ class User_API {
 
     static function user(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         if (!$user->can_lookup_user()) {
-            return new JsonResult(403, "Permission error");
+            return JsonResult::make_error(403, "<0>Permission error");
         }
         if (!($email = trim($qreq->email))) {
-            return new JsonResult(400, "Parameter error");
+            return JsonResult::make_error(400, "<0>Parameter error");
         }
 
         $users = [];
@@ -74,14 +74,14 @@ class User_API {
                        && ($ru = $user->reviewer_capability_user(intval($qreq->p)))) {
                 $dest_user = $ru;
             } else {
-                return new JsonResult(400, "User not found");
+                return JsonResult::make_error(404, "<0>User not found");
             }
             $dest_user->ensure_account_here();
             $dest_user->merge_and_save_data(["clickthrough" => [$hash => Conf::$now]]);
             $user->log_activity_for($dest_user, "Terms agreed " . substr($hash, 0, 10) . "...");
             return ["ok" => true];
         } else if ($qreq->clickthrough_accept) {
-            return new JsonResult(400, "Parameter error");
+            return JsonResult::make_error(400, "<0>Parameter error");
         } else {
             return ["ok" => false];
         }
@@ -89,28 +89,30 @@ class User_API {
 
     static function account_disable(Contact $user, Contact $viewer, $disabled) {
         if (!$viewer->privChair) {
-            return new JsonResult(403, "Permission error");
+            return JsonResult::make_error(403, "<0>Permission error");
         } else if ($viewer->contactId === $user->contactId) {
-            return new JsonResult(400, ["ok" => false, "error" => "You cannot disable your own account"]);
+            return JsonResult::make_error(400, "<0>You cannot disable your own account");
         } else {
             $ustatus = new UserStatus($viewer);
             $ustatus->set_user($user);
             if ($ustatus->save_user((object) ["disabled" => $disabled], $user)) {
                 return new JsonResult(["ok" => true, "u" => $user->email, "disabled" => $user->disablement !== 0]);
             } else {
-                return new JsonResult(400, ["ok" => false, "u" => $user->email]);
+                return new JsonResult(["ok" => false, "u" => $user->email]);
             }
         }
     }
 
     static function account_sendinfo(Contact $user, Contact $viewer) {
         if (!$viewer->privChair) {
-            return new JsonResult(403, "Permission error");
+            return JsonResult::make_error(403, "<0>Permission error");
         } else if ($user->disablement === 0) {
             $user->send_mail("@accountinfo");
             return new JsonResult(["ok" => true, "u" => $user->email]);
         } else {
-            return new JsonResult(["ok" => false, "u" => $user->email, "error" => "User disabled"]);
+            $j = MessageItem::make_error_json("<0>User disabled");
+            $j["u"] = $user->email;
+            return new JsonResult($j);
         }
     }
 
@@ -120,17 +122,17 @@ class User_API {
         } else if ($viewer->isPC) {
             $user = $viewer->conf->user_by_email($qreq->u);
         } else {
-            return new JsonResult(403, "Permission error");
+            return JsonResult::make_error(403, "<0>Permission error");
         }
         if (!$user) {
-            return new JsonResult(404, "User not found");
+            return JsonResult::make_error(404, "<0>User not found");
         }
         if ($qreq->valid_post() && ($qreq->disable || $qreq->enable)) {
             return self::account_disable($user, $viewer, !!$qreq->disable);
         } else if ($qreq->valid_post() && $qreq->sendinfo) {
             return self::account_sendinfo($user, $viewer);
         } else {
-            return new JsonResult(200, ["ok" => true]);
+            return new JsonResult(["ok" => true]);
         }
     }
 }

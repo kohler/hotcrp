@@ -5259,22 +5259,22 @@ class Conf {
             && !$qreq->valid_token()
             && (!$uf || ($uf->post ?? false))
             && (!$uf || !($uf->allow_xss ?? false))) {
-            return new JsonResult(403, "Missing credentials");
+            return JsonResult::make_error(403, "<0>Missing credentials");
         } else if ($user->is_disabled()
                    && (!$uf || !($uf->allow_disabled ?? false))) {
-            return new JsonResult(403, "Your account is disabled");
+            return JsonResult::make_error(403, "<0>Your account is disabled");
         } else if (!$uf) {
             if ($this->has_api($fn, $user, null)) {
-                return new JsonResult(405, "Method not supported");
+                return JsonResult::make_error(405, "<0>Method not supported");
             } else if ($this->has_api($fn, null, $qreq->method())) {
-                return new JsonResult(403, "Permission error");
+                return JsonResult::make_error(403, "<0>Permission error");
             } else {
-                return new JsonResult(404, "Function not found");
+                return JsonResult::make_error(404, "<0>Function not found");
             }
         } else if (!$prow && ($uf->paper ?? false)) {
             return self::paper_error_json_result($qreq->annex("paper_whynot"));
         } else if (!is_string($uf->function)) {
-            return new JsonResult(404, "Function not found");
+            return JsonResult::make_error(404, "<0>Function not found");
         } else {
             ++JsonCompletion::$capturing;
             try {

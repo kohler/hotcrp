@@ -75,7 +75,7 @@ class ListAction {
         if ($qreq->method() !== "GET"
             && $qreq->method() !== "HEAD"
             && !$qreq->valid_token()) {
-            return new JsonResult(403, "Missing credentials");
+            return JsonResult::make_error(403, "<0>Missing credentials");
         }
         $conf = $user->conf;
         $gex = self::grouped_extensions($user);
@@ -91,16 +91,16 @@ class ListAction {
             $uf1 = $gex->get($name);
             $conf->_xt_allow_callback = null;
             if ($uf1) {
-                return new JsonResult(405, "Method not supported");
+                return JsonResult::make_error(405, "<0>Method not supported");
             }
         }
         if (is_array($selection)) {
             $selection = new SearchSelection($selection);
         }
         if (!$uf || !Conf::xt_resolve_require($uf) || !is_string($uf->function)) {
-            return new JsonResult(404, "No such action");
+            return JsonResult::make_error(404, "<0>No such action");
         } else if (($uf->paper ?? false) && $selection->is_empty()) {
-            return new JsonResult(400, "No papers selected");
+            return JsonResult::make_error(400, "<0>No papers selected");
         } else if ($uf->function[0] === "+") {
             $class = substr($uf->function, 1);
             /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
@@ -109,7 +109,7 @@ class ListAction {
             $action = call_user_func($uf->function, $user->conf, $uf);
         }
         if (!$action || !$action->allow($user, $qreq)) {
-            return new JsonResult(403, "Permission error");
+            return JsonResult::make_error(403, "<0>Permission error");
         } else {
             return $action->run($user, $qreq, $selection);
         }

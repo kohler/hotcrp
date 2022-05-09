@@ -13,7 +13,7 @@ class Search_API {
         } else if (isset($qreq->qa) || isset($qreq->qo) || isset($qreq->qx)) {
             $q = PaperSearch::canonical_query((string) $qreq->qa, (string) $qreq->qo, (string) $qreq->qx, $qreq->qt, $user->conf);
         } else {
-            return new JsonResult(400, "Missing parameter.");
+            return JsonResult::make_error(400, "<0>Missing parameter");
         }
 
         $search = new PaperSearch($user, ["t" => $qreq->t ?? "", "q" => $q, "qt" => $qreq->qt, "reviewer" => $qreq->reviewer]);
@@ -31,7 +31,7 @@ class Search_API {
 
     static function fieldhtml(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         if ($qreq->f === null) {
-            return new JsonResult(400, "Missing parameter.");
+            return JsonResult::make_error(400, "<0>Missing parameter");
         }
         if (!isset($qreq->q) && $prow) {
             $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
@@ -60,7 +60,7 @@ class Search_API {
 
     static function fieldtext(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         if ($qreq->f === null) {
-            return new JsonResult(400, "Missing parameter.");
+            return JsonResult::make_error(400, "<0>Missing parameter");
         }
 
         if (!isset($qreq->q) && $prow) {

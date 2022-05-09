@@ -101,8 +101,8 @@ class Assign_Page {
             }
 
             $user = CsvGenerator::quote($p->email);
-            $t[] = "{$prow->paperId},conflict,$user,,$conftype\n";
-            $t[] = "{$prow->paperId},{$revtype},$user,$myround\n";
+            $t[] = "{$prow->paperId},conflict,{$user},,{$conftype}\n";
+            $t[] = "{$prow->paperId},{$revtype},{$user},{$myround}\n";
         }
 
         $aset = new AssignmentSet($this->user, true);

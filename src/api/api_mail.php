@@ -6,7 +6,7 @@ class Mail_API {
     static function mailtext(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         if (!$user->isPC
             || ($prow && !$user->can_view_paper($prow))) {
-            return new JsonResult(403, "Permission error");
+            return JsonResult::make_error(403, "<0>Permission error");
         }
 
         $recipient = null;
@@ -40,7 +40,7 @@ class Mail_API {
             return $j;
         } else if (isset($qreq->template)) {
             if (!($mt = $user->conf->mail_template($qreq->template, false, $user))) {
-                return new JsonResult(404, "Template not found");
+                return JsonResult::make_error(404, "<0>Template not found");
             }
             $j["subject"] = $mailer->expand($mt->subject, "subject");
             $j["body"] = $mailer->expand($mt->body, "body");
@@ -53,7 +53,7 @@ class Mail_API {
             }
             return $j;
         } else {
-            return new JsonResult(400, "Parameter error");
+            return JsonResult::make_error(400, "<0>Parameter error");
         }
     }
 
@@ -65,9 +65,9 @@ class Mail_API {
 
     static function maillog(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         if (!$qreq->mailid || !ctype_digit($qreq->mailid)) {
-            return new JsonResult(400, "Parameter error");
+            return JsonResult::make_error(400, "<0>Parameter error");
         } else if (!$user->privChair) {
-            return new JsonResult(403, "Permission error");
+            return JsonResult::make_error(403, "<0>Permission error");
         } else if (($row = $user->conf->fetch_first_object("select * from MailLog where mailId=?", $qreq->mailid))) {
             if (self::can_view_maillog($user, $row)) {
                 $j = ["ok" => true];
@@ -83,10 +83,10 @@ class Mail_API {
                 }
                 return $j;
             } else {
-                return new JsonResult(403, "Permission error");
+                return JsonResult::make_error(403, "<0>Permission error");
             }
         } else {
-            return ["ok" => false, "error" => "Email not found"];
+            return JsonResult::make_error(404, "<0>Email not found");
         }
     }
 }

@@ -7,10 +7,10 @@ class FormatCheck_API {
         try {
             $docreq = new DocumentRequest($qreq, $qreq->doc, $user);
         } catch (Exception $unused) {
-            return new JsonResult(404, "Document not found");
+            return JsonResult::make_error(404, "<0>Document not found");
         }
         if (($whynot = $docreq->perm_view_document($user))) {
-            return new JsonResult(isset($whynot["permission"]) ? 403 : 404, $whynot->unparse_html());
+            return JsonResult::make_error(isset($whynot["permission"]) ? 403 : 404, "<5>" . $whynot->unparse_html());
         }
         if (($doc = $docreq->prow->document($docreq->dtype, $docreq->docid, true))) {
             $runflag = $qreq->soft ? CheckFormat::RUN_IF_NECESSARY : CheckFormat::RUN_ALWAYS;
@@ -25,7 +25,7 @@ class FormatCheck_API {
                 "has_error" => $cf->has_error()
             ];
         } else {
-            return new JsonResult(404, "Document not found");
+            return JsonResult::make_error(404, "<0>Document not found");
         }
     }
 }

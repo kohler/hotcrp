@@ -10,7 +10,7 @@ class Error_API {
                 && preg_match('/MSIE [78]|MetaSr/', $_SERVER["HTTP_USER_AGENT"]))
             || preg_match('/(?:moz|safari|chrome)-extension/', $errormsg . ($qreq->stack ?? ""))
             || strpos($errormsg, "Uncaught ReferenceError: hotcrp") !== false) {
-            return new JsonResult(true);
+            return new JsonResult(["ok" => true]);
         }
         $url = $qreq->url ?? "";
         if (preg_match(',[/=]((?:script|jquery)[^/&;]*[.]js),', $url, $m)) {
@@ -54,6 +54,6 @@ class Error_API {
             }
             error_log("JS error: {$url}via " . join(" ", $stack));
         }
-        return new JsonResult(true);
+        return new JsonResult(["ok" => true]);
     }
 }

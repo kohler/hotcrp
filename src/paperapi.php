@@ -54,13 +54,13 @@ class PaperApi {
 
     static function review_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         if (!$user->can_view_review($prow, null)) {
-            return new JsonResult(403, "Permission error.");
+            return JsonResult::make_error(403, "<0>Permission error");
         }
         $need_id = false;
         if (isset($qreq->r)) {
             $rrow = $prow->full_review_by_ordinal_id($qreq->r);
             if (!$rrow && $prow->parse_ordinal_id($qreq->r) === false) {
-                return new JsonResult(400, "Bad request.");
+                return JsonResult::make_error(400, "<0>Bad request");
             }
             $rrows = $rrow ? [$rrow] : [];
         } else if (isset($qreq->u)) {
@@ -70,7 +70,7 @@ class PaperApi {
             if (!$rrows
                 && $user->contactId !== $u->contactId
                 && !$user->can_view_review_identity($prow, null)) {
-                return new JsonResult(403, "Permission error.");
+                return JsonResult::make_error(403, "<0>Permission error");
             }
         } else {
             $prow->ensure_full_reviews();
@@ -85,7 +85,7 @@ class PaperApi {
             }
         }
         if (!$vrrows && $rrows) {
-            return new JsonResult(403, "Permission error.");
+            return JsonResult::make_error(403, "<0>Permission error");
         } else {
             return new JsonResult(["ok" => true, "reviews" => $vrrows]);
         }
@@ -93,23 +93,23 @@ class PaperApi {
 
     static function reviewrating_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         if (!$qreq->r) {
-            return new JsonResult(400, "Bad request.");
+            return JsonResult::make_error(400, "<0>Bad request");
         }
         $rrow = $prow->full_review_by_ordinal_id($qreq->r);
         if (!$rrow && $prow->parse_ordinal_id($qreq->r) === false) {
-            return new JsonResult(400, "Bad request.");
+            return JsonResult::make_error(400, "<0>Bad request");
         } else if (!$user->can_view_review($prow, $rrow)) {
-            return new JsonResult(403, "Permission error.");
+            return JsonResult::make_error(403, "<0>Permission error");
         } else if (!$rrow) {
-            return new JsonResult(404, "Review not found");
+            return JsonResult::make_error(404, "<0>Review not found");
         }
         $editable = $user->can_rate_review($prow, $rrow);
         if ($qreq->method() !== "GET") {
             if (!isset($qreq->user_rating)
                 || ($rating = ReviewInfo::parse_rating($qreq->user_rating)) === null) {
-                return new JsonResult(400, "Bad request.");
+                return JsonResult::make_error(400, "<0>Bad request");
             } else if (!$editable) {
-                return new JsonResult(403, "Permission error.");
+                return JsonResult::make_error(403, "<0>Permission error");
             }
             if ($rating === 0) {
                 $user->conf->qe("delete from ReviewRating where paperId=? and reviewId=? and contactId=?", $prow->paperId, $rrow->reviewId, $user->contactId);
@@ -132,15 +132,15 @@ class PaperApi {
     /** @param PaperInfo $prow */
     static function reviewround_api(Contact $user, $qreq, $prow) {
         if (!$qreq->r) {
-            return new JsonResult(400, "Bad request.");
+            return JsonResult::make_error(400, "<0>Bad request");
         }
         $rrow = $prow->full_review_by_ordinal_id($qreq->r);
         if (!$rrow && $prow->parse_ordinal_id($qreq->r) === false) {
-            return new JsonResult(400, "Bad request.");
+            return JsonResult::make_error(400, "<0>Bad request");
         } else if (!$user->can_administer($prow)) {
-            return new JsonResult(403, "Permission error.");
+            return JsonResult::make_error(403, "<0>Permission error");
         } else if (!$rrow) {
-            return new JsonResult(404, "Review not found");
+            return JsonResult::make_error(404, "<0>Review not found");
         } else {
             $rname = trim((string) $qreq->round);
             $round = $user->conf->sanitize_round_name($rname);

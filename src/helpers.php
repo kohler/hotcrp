@@ -79,38 +79,38 @@ function hoturl_post($page, $param = null) {
 }
 
 
-class JsonResult implements JsonSerializable {
+class JsonResult implements JsonSerializable, ArrayAccess {
     /** @var ?int */
     public $status;
     /** @var array<string,mixed> */
     public $content;
 
-    function __construct($values = null) {
-        if (is_int($values)) {
-            $this->status = $values;
-            if (func_num_args() === 2) {
-                $values = func_get_arg(1);
-            } else {
-                $values = null;
-            }
-        }
-        if ($values === true || $values === false) {
-            $this->content = ["ok" => $values];
-        } else if ($values === null) {
-            $this->content = [];
-        } else if (is_object($values)) {
-            if ($values instanceof JsonSerializable) {
-                $this->content = (array) $values->jsonSerialize();
-            } else {
-                assert(!($values instanceof JsonResult));
-                $this->content = (array) $values;
-            }
-        } else if (is_string($values)) {
-            assert($this->status && $this->status > 299);
-            $this->content = ["ok" => false, "error" => $values];
+    /** @param int|array<string,mixed> $a1
+     * @param ?array<string,mixed> $a2 */
+    function __construct($a1, $a2 = null) {
+        if (is_int($a1)) {
+            $this->status = $a1;
         } else {
-            assert(is_associative_array($values));
-            $this->content = $values;
+            $a2 = $a1;
+        }
+        if ($a2 === true || $a2 === false) {
+            $this->content = ["ok" => $a2];
+        } else if ($a2 === null) {
+            $this->content = [];
+        } else if (is_object($a2)) {
+            if ($a2 instanceof JsonSerializable) {
+                $this->content = (array) $a2->jsonSerialize();
+            } else {
+                assert(!($a2 instanceof JsonResult));
+                $this->content = (array) $a2;
+            }
+        } else if (is_string($a2)) {
+            error_log("bad JsonResult with string " . debug_string_backtrace());
+            assert($this->status && $this->status > 299);
+            $this->content = ["ok" => false, "error" => $a2];
+        } else {
+            assert(is_associative_array($a2));
+            $this->content = $a2;
         }
     }
 
@@ -138,6 +138,37 @@ class JsonResult implements JsonSerializable {
         }
         return new JsonResult($a1, ["ok" => false, "message_list" => [MessageItem::error($a2)]]);
     }
+
+
+    #[\ReturnTypeWillChange]
+    /** @param string $offset
+     * @return bool */
+    function offsetExists($offset) {
+        return isset($this->content[$offset]);
+    }
+
+    #[\ReturnTypeWillChange]
+    /** @param string $offset
+     * @return mixed */
+    function &offsetGet($offset) {
+        return $this->content[$offset];
+    }
+
+    #[\ReturnTypeWillChange]
+    /** @param string $offset
+     * @param mixed $value
+     * @return void */
+    function offsetSet($offset, $value) {
+        $this->content[$offset] = $value;
+    }
+
+    #[\ReturnTypeWillChange]
+    /** @param string $offset
+     * @return void */
+    function offsetUnset($offset) {
+        unset($this->content[$offset]);
+    }
+
 
     function export_messages(Conf $conf) {
         $ml = [];
