@@ -972,6 +972,15 @@ class UserStatus extends MessageSet {
             $us->set_profile_prop($cdbu, $us->only_update_empty($cdbu));
         }
 
+        // Collaborators special case: set locally, even if no_noempty_profile
+        if (isset($cj->collaborators)
+            && !$user->prop_changed("collaborators")) {
+            $user->set_prop("collaborators", $cj->collaborators, false);
+            if ($user->prop_changed("collaborators")) {
+                $us->diffs["collaborators"] = true;
+            }
+        }
+
         // Disabled
         if (isset($cj->disabled)) {
             $user->set_prop("disabled", $cj->disabled);

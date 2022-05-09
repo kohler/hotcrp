@@ -287,20 +287,26 @@ class Profile_Page {
             $ustatus->csvreq = $line;
             $ustatus->parse_csv_group("");
             $ustatus->notify = friendly_boolean($line["notify"]) ?? true;
-            if (($saved_user = $this->save_user($ustatus, null))) {
+            $saved_user = $this->save_user($ustatus, null);
+            if ($saved_user) {
                 $url = $this->conf->hoturl("profile", "u=" . urlencode($saved_user->email));
-                $x = "<a class=\"nb\" href=\"{$url}\">" . $saved_user->name_h(NAME_E) . "</a>";
+                $link = "<a class=\"nb\" href=\"{$url}\">" . $saved_user->name_h(NAME_E) . "</a>";
                 if ($ustatus->notified) {
-                    $notified[] = $x;
-                    $success[] = $x;
+                    $notified[] = $link;
+                    $success[] = $link;
                 } else if (!empty($ustatus->diffs)) {
-                    $success[] = $x;
+                    $success[] = $link;
                 } else {
-                    $nochanges[] = $x;
+                    $nochanges[] = $link;
                 }
+            } else {
+                $link = null;
             }
             foreach ($ustatus->problem_list() as $mi) {
                 $mi->landmark = $csv->landmark();
+                if ($link !== null && $mi->status !== MessageSet::INFORM) {
+                    $mi->message = "<5>" . $mi->message_as(5) . " (account {$link})";
+                }
                 $ms->append_item($mi);
             }
         }
