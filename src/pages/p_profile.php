@@ -310,12 +310,12 @@ class Profile_Page {
         }
         $mpos = 0;
         if (!empty($success)) {
-            $ms->splice_item($mpos++, MessageItem::success($this->conf->_("<5>Accounts %#s saved", $success)));
+            $ms->splice_item($mpos++, MessageItem::success($this->conf->_("<5>Saved accounts %#s", $success)));
         } else if ($ms->has_error()) {
             $ms->splice_item($mpos++, MessageItem::error($this->conf->_("<0>Changes not saved; please correct these errors and try again")));
         }
         if (!empty($notified)) {
-            $ms->splice_item($mpos++, MessageItem::success($this->conf->_("<5>Accounts %#s activated with email notification", $notified)));
+            $ms->splice_item($mpos++, MessageItem::success($this->conf->_("<5>Activated accounts with email notification %#s", $notified)));
         }
         if (!empty($nochanges)) {
             $ms->splice_item($mpos++, new MessageItem(null, $this->conf->_("<5>No changes to accounts %#s", $nochanges), MessageSet::MARKED_NOTE));

@@ -1870,26 +1870,26 @@ class ReviewValues extends MessageSet {
     function finish() {
         $confirm = false;
         if ($this->submitted) {
-            $this->_confirm_message(MessageSet::SUCCESS, "<5>Reviews %#s submitted.", $this->submitted);
+            $this->_confirm_message(MessageSet::SUCCESS, "<5>Submitted reviews %#s", $this->submitted);
             $confirm = true;
         }
         if ($this->updated) {
-            $this->_confirm_message(MessageSet::SUCCESS, "<5>Reviews %#s updated.", $this->updated);
+            $this->_confirm_message(MessageSet::SUCCESS, "<5>Updated reviews %#s", $this->updated);
             $confirm = true;
         }
         if ($this->approval_requested) {
-            $this->_confirm_message(MessageSet::SUCCESS, "<5>Reviews %#s submitted for approval.", $this->approval_requested);
+            $this->_confirm_message(MessageSet::SUCCESS, "<5>Submitted reviews for approval %#s", $this->approval_requested);
             $confirm = true;
         }
         if ($this->approved) {
-            $this->_confirm_message(MessageSet::SUCCESS, "<5>Reviews %#s approved.", $this->approved);
+            $this->_confirm_message(MessageSet::SUCCESS, "<5>Approved reviews %#s", $this->approved);
             $confirm = true;
         }
         if ($this->saved_draft) {
-            $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>Draft reviews for submissions %#s saved.", $this->saved_draft, $this->_single_approval_state());
+            $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>Saved draft reviews for submissions %#s", $this->saved_draft, $this->_single_approval_state());
         }
         if ($this->author_notified) {
-            $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>Authors were notified about updated reviews %#s.", $this->author_notified);
+            $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>Authors were notified about updated reviews %#s", $this->author_notified);
         }
         $nunchanged = $this->unchanged ? count($this->unchanged) : 0;
         $nignoredBlank = $this->blank ? count($this->blank) : 0;
@@ -1901,10 +1901,10 @@ class ReviewValues extends MessageSet {
                 if ($this->unchanged == $this->unchanged_draft) {
                     $single = $this->_single_approval_state();
                 }
-                $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>Reviews %#s unchanged.", $this->unchanged, $single);
+                $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>No changes to reviews %#s", $this->unchanged, $single);
             }
             if ($this->blank) {
-                $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>Ignored blank review forms %#s.", $this->blank);
+                $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>Ignored blank review forms %#s", $this->blank);
             }
         }
         $this->finished = $confirm ? 2 : 1;

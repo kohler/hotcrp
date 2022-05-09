@@ -711,13 +711,13 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($tf->parse_text(false));
         xassert($tf->check_and_save($user_diot));
         xassert_eqq($tf->summary_status(), MessageSet::SUCCESS);
-        xassert_eqq($tf->full_feedback_text(), "Review #18A updated.\n");
+        xassert_eqq($tf->full_feedback_text(), "Updated review #18A\n");
 
         $tf = ReviewValues::make_text($conf->review_form(), $review18A, "review18A.txt");
         xassert($tf->parse_text(false));
         xassert($tf->check_and_save($user_diot));
         xassert_eqq($tf->summary_status(), MessageSet::WARNING);
-        xassert_eqq($tf->full_feedback_text(), "Review #18A unchanged.\n");
+        xassert_eqq($tf->full_feedback_text(), "No changes to review #18A\n");
 
         $rrow = fetch_review($paper18, $user_diot);
         xassert_eqq($rrow->fval("t04"), "This is the stuff I want to add for the authors’ response.\n");
