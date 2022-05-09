@@ -186,6 +186,7 @@ class CsvParser implements Iterator {
                         $x[$csvp->hmap[$k]] = (string) $v;
                     }
                 }
+                '@phan-var-force list<string> $x';
                 if (!empty($x)) {
                     $csvp->lines[] = $x;
                 }
