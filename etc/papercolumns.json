@@ -111,12 +111,12 @@
     {
         "name": "status", "title": "Status",
         "sort": true, "completion": true, "function": "+Status_PaperColumn",
-        "order": 900
+        "order": 380
     },
     {
         "name": "statusfull", "title": "Status",
         "sort": true, "completion": false, "className": "pl_status", "function": "+Status_PaperColumn",
-        "order": 910
+        "order": 390
     },
     {
         "name": "timestamp", "title": "Timestamp",
