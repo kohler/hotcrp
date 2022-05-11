@@ -181,7 +181,7 @@ class CsvParser implements Iterator {
                 $x = [];
                 foreach ($j as $k => $v) {
                     if (is_bool($v)) {
-                        $x[$csvp->hmap[$k]] = $v ? "Y" : "";
+                        $x[$csvp->hmap[$k]] = $v ? "Y" : "N";
                     } else if (is_scalar($v) || $v === null) {
                         $x[$csvp->hmap[$k]] = (string) $v;
                     }

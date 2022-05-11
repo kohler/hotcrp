@@ -1230,7 +1230,7 @@ class PaperTable {
         $this->_papstrip_framework();
         echo '<div';
         if ($foldid) {
-            echo " id=\"fold$foldid\"";
+            echo " id=\"fold{$foldid}\"";
         }
         echo ' class="psc';
         if ($foldid) {
