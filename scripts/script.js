@@ -3330,8 +3330,7 @@ function fold_storage() {
         $(".need-fold-storage").each(fold_storage);
     } else {
         removeClass(this, "need-fold-storage");
-        var sn = this.getAttribute("data-fold-storage"), smap, k, v, flip = false,
-            spfx = this.getAttribute("data-fold-storage-prefix") || "";
+        var sn = this.getAttribute("data-fold-storage"), smap, k, v, flip = false;
         if (sn.charAt(0) === "-") {
             sn = sn.substring(1);
             flip = true;
@@ -3346,9 +3345,9 @@ function fold_storage() {
         }
         sn = wstorage.json(true, "fold") || wstorage.json(false, "fold") || {};
         for (k in smap) {
-            if (sn[spfx + smap[k]]) {
+            if (sn[smap[k]]) {
                 foldup.call(this, null, {f: false, n: +k});
-            } else if (sn[spfx + smap[k]] != null) {
+            } else if (sn[smap[k]] != null) {
                 foldup.call(this, null, {f: true, n: +k});
             }
         }
@@ -3364,10 +3363,7 @@ function fold_session_for(foldnum, type) {
     if (s && (s.charAt(0) === "{" || s.charAt(0) === "[")) {
         s = (parse_json(s) || {})[foldnum];
     }
-    if (s && this.hasAttribute("data-fold-" + type + "-prefix")) {
-        s = this.getAttribute("data-fold-" + type + "-prefix") + s;
-    }
-    return [s, flip];
+    return s ? [s, flip] : null;
 }
 
 function fold(elt, dofold, foldnum) {

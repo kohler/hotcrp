@@ -357,7 +357,7 @@ class PaperTable {
 
         // 4="t": topics, 6="b": abstract, 7: [JavaScript abstract expansion],
         // 8="a": blind authors, 9="p": full authors
-        $foldstorage = [4 => "t", 6 => "b", 9 => "p"];
+        $foldstorage = [4 => "p.t", 6 => "p.b", 9 => "p.p"];
         $this->foldnumber = ["topics" => 4];
 
         // other expansions
@@ -371,12 +371,12 @@ class PaperTable {
                 if (strlen($o->page_group) > 1
                     && !isset($this->foldnumber[$o->page_group])) {
                     $this->foldnumber[$o->page_group] = $next_foldnum;
-                    $foldstorage[$next_foldnum] = str_replace(" ", "_", $o->page_group);
+                    $foldstorage[$next_foldnum] = str_replace(" ", "_", "p." . $o->page_group);
                     ++$next_foldnum;
                 }
                 if ($o->page_expand) {
                     $this->foldnumber[$o->formid] = $next_foldnum;
-                    $foldstorage[$next_foldnum] = $o->formid;
+                    $foldstorage[$next_foldnum] = "p." . $o->formid;
                     ++$next_foldnum;
                 }
             }
@@ -417,7 +417,7 @@ class PaperTable {
             echo '">';
         } else {
             echo (empty($folders) ? "" : " "),
-                'need-fold-storage" data-fold-storage-prefix="p." data-fold-storage="',
+                'need-fold-storage" data-fold-storage="',
                 htmlspecialchars(json_encode_browser($foldstorage)), '">';
             Ht::stash_script("hotcrp.fold_storage()");
         }
@@ -1257,8 +1257,9 @@ class PaperTable {
         $data = $this->highlight($this->prow->collaborators(), "co", $match);
         $option = $this->conf->option_by_id(PaperOption::COLLABORATORSID);
         $this->_papstripBegin("pscollab", false, ["data-fold-storage" => "-p.collab", "class" => "need-fold-storage"]);
-        echo $this->papt("collaborators", $option->title_html(),
-                         ["type" => "ps", "fold" => "pscollab"]),
+        echo Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"foldpscollab\"))"),
+            $this->papt("collaborators", $option->title_html(),
+                        ["type" => "ps", "fold" => "pscollab"]),
             '<ul class="fx x namelist-columns">';
         foreach (explode("\n", $data) as $line) {
             echo '<li class="od">', $line, '</li>';
@@ -1282,8 +1283,9 @@ class PaperTable {
         ksort($pcconf);
         $option = $this->conf->option_by_id(PaperOption::PCCONFID);
         $this->_papstripBegin("pspcconf", $this->allow_folds, ["data-fold-storage" => "-p.pcconf", "class" => "need-fold-storage"]);
-        echo $this->papt("pc_conflicts", $option->title_html(),
-                         ["type" => "ps", "fold" => "pspcconf"]),
+        echo Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"foldpspcconf\"))"),
+            $this->papt("pc_conflicts", $option->title_html(),
+                        ["type" => "ps", "fold" => "pspcconf"]),
             '<ul class="fx x namelist-columns">';
         foreach ($pcconf as $n) {
             echo '<li class="od">', $n, '</li>';
