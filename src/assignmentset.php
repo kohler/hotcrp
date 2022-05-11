@@ -1190,6 +1190,17 @@ class AssignmentSet {
             return [$this->astate->none_user()];
         }
 
+        // check for `userid`/`uid`
+        if (($req["uid"] ?? "") !== "") {
+            if (ctype_digit($req["uid"])
+                && ($u = $this->astate->user_by_id($req["uid"]))) {
+                return [$u];
+            } else {
+                $this->error("<0>User ID ‘" . $req["uid"] . "’ not found");
+                return null;
+            }
+        }
+
         // move all usable identification data to email, firstName, lastName
         if (isset($req["name"])) {
             self::apply_user_parts($req, Text::split_name($req["name"]));
@@ -1244,8 +1255,8 @@ class AssignmentSet {
         }
 
         // check for precise email match on existing contact (common case)
-        if ($lemail && ($contact = $this->astate->user_by_email($email, false))) {
-            return [$contact];
+        if ($lemail && ($u = $this->astate->user_by_email($email, false))) {
+            return [$u];
         }
 
         // check PC list
@@ -1329,7 +1340,8 @@ class AssignmentSet {
         }
 
         foreach ([["action", "assignment", "type"],
-                  ["paper", "pid", "paperid", "id", "search"],
+                  ["paper", "pid", "paperid", "paper_id", "id", "search"],
+                  ["uid", "userid", "user_id"],
                   ["firstName", "firstname", "first_name", "first", "givenname", "given_name"],
                   ["lastName", "lastname", "last_name", "last", "surname", "familyname", "family_name"],
                   ["reviewtype", "review_type"],
