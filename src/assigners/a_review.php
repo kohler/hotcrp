@@ -295,7 +295,7 @@ class Review_Assigner extends Assigner {
             . review_type_icon($this->item->get($before, "_rtype"),
                                !$this->item->get($before, "_rsubmitted"));
         if (($round = $this->item->get($before, "_round"))) {
-            $t .= ' <span class="revround" title="Review round">'
+            $t .= '<span class="revround" title="Review round">'
                 . htmlspecialchars($round) . '</span>';
         }
         return $t . unparse_preference_span($aset->prow($this->pid)->preference($this->cid, true));
@@ -321,13 +321,13 @@ class Review_Assigner extends Assigner {
         }
         if ($this->item->differs("_round")) {
             if (($round = $this->item->pre("_round"))) {
-                $t .= ' <del><span class="revround" title="Review round">' . htmlspecialchars($round) . '</span></del>';
+                $t .= '<span class="revround" title="Review round"><del>' . htmlspecialchars($round) . '</del></span>';
             }
             if (($round = $this->item->post("_round"))) {
-                $t .= ' <ins><span class="revround" title="Review round">' . htmlspecialchars($round) . '</span></ins>';
+                $t .= '<span class="revround" title="Review round"><ins>' . htmlspecialchars($round) . '</ins></span>';
             }
         } else if (($round = $this->item["_round"])) {
-            $t .= ' <span class="revround" title="Review round">' . htmlspecialchars($round) . '</span>';
+            $t .= '<span class="revround" title="Review round">' . htmlspecialchars($round) . '</span>';
         }
         if (!$this->item->existed()) {
             $t .= unparse_preference_span($aset->prow($this->pid)->preference($this->cid, true));

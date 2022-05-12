@@ -583,7 +583,7 @@ $blind\n";
         if ($viewer->can_view_review_meta($prow, $rrow)) {
             $revname .= ($revname ? " " : "") . $rrow->type_icon();
             if ($rrow->reviewRound > 0) {
-                $revname .= ' <span class="revround" title="Review round">'
+                $revname .= '<span class="revround" title="Review round">'
                     . htmlspecialchars($this->conf->round_name($rrow->reviewRound))
                     . '</span>';
             }

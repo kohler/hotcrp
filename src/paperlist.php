@@ -121,7 +121,7 @@ class PaperListReviewAnalysis {
             $t = $this->wrap_link($t);
         }
         if ($this->round) {
-            $t .= '<span class="revround" title="Review round">&nbsp;' . $this->round . "</span>";
+            $t .= '<span class="revround" title="Review round">' . $this->round . "</span>";
         }
         return $t;
     }

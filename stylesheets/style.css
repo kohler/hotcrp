@@ -2343,7 +2343,9 @@ th.rl {
 	padding-left: 0;
 	text-align: left;
 }
-span.revround {
+.revround {
+	display: inline-block;
+	padding-left: 0.35em;
 	font-size: 69%;
 	font-style: italic;
 	font-weight: normal;
@@ -2612,8 +2614,7 @@ div.pl_revtype.hasround {
 div.pl_revtype.hasrev.haslead {
 	margin-left: -16px;
 }
-div.pl_revtype span.revround {
-	display: inline-block;
+div.pl_revtype .revround {
 	min-width: 16px;
 }
 

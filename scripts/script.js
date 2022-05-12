@@ -4729,7 +4729,7 @@ function add_review(rrow) {
             '" title="' + rtype_info[rrow.rtype][1] +
             '"><span class="rti">' + rtype_info[rrow.rtype][0] + '</span></span>';
         if (rrow.round)
-            revname += ' <span class="revround" title="Review round">' + escape_html(rrow.round) + '</span>';
+            revname += '<span class="revround" title="Review round">' + escape_html(rrow.round) + '</span>';
     }
     if (rrow.modified_at) {
         revtime = '<time class="revtime" datetime="' + (new Date(rrow.modified_at * 1000)).toISOString() + '">' + rrow.modified_at_text + '</time>';

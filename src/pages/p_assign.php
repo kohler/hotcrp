@@ -358,7 +358,7 @@ class Assign_Page {
         }
         if ($rrow->reviewRound > 0
             && $this->user->can_view_review_meta($this->prow, $rrow)) {
-            $namex .= '&nbsp;<span class="revround" title="Review round">'
+            $namex .= '<span class="revround" title="Review round">'
                 . htmlspecialchars($this->conf->round_name($rrow->reviewRound))
                 . "</span>";
         }
@@ -458,7 +458,7 @@ class Assign_Page {
         if ($crevtype != 0) {
             echo review_type_icon($crevtype, $rrow && $rrow->reviewStatus < ReviewInfo::RS_ADOPTED, "ml-2");
             if ($rrow && $rrow->reviewRound > 0) {
-                echo ' <span class="revround" title="Review round">',
+                echo '<span class="revround" title="Review round">',
                     htmlspecialchars($this->conf->round_name($rrow->reviewRound)),
                     '</span>';
             }
