@@ -3690,6 +3690,89 @@ handle_ui.on("js-keydown-enter-submit", function (event) {
 });
 
 
+// review types
+var review_types = (function () {
+var canon = [
+        null, "none", "external", "pc", "secondary",
+        "primary", "meta", "conflict", "author", "declined"
+    ],
+    tmap = {
+        "0": 1, "none": 1,
+        "1": 2, "ext": 2, "external": 2,
+        "2": 3, "opt": 3, "optional": 3, "pc": 3,
+        "3": 4, "sec": 4, "secondary": 4,
+        "4": 5, "pri": 5, "primary": 5,
+        "5": 6, "meta": 6,
+        "-1": 7, "conflict": 7,
+        "-2": 8, "author": 8,
+        "-3": 9, "declined": 9
+    },
+    selectors = [
+        null, "None", "External", "Optional", "Secondary",
+        "Primary", "Metareview", "Conflict", "Author", "Declined"
+    ],
+    tooltips = [
+        null, "No review", "External review", "Optional PC review", "Secondary review",
+        "Primary review", "Metareview", "Conflict", "Author", "Declined"
+    ],
+    icon_texts = [
+        null, "", "E", "P", "2",
+        "1", "M", "C", "A", "−" /* MINUS SIGN */
+    ];
+function parse(s) {
+    var t = tmap[s] || 0;
+    if (t === 0 && s.endsWith("review")) {
+        t = tmap[s.substring(0, s.length - 6)] || 0;
+    }
+    return t;
+}
+return {
+    parse: function (s) {
+        return canon[parse(s)];
+    },
+    unparse_selector: function (s) {
+        return selectors[parse(s)];
+    },
+    unparse_assigner_action: function (s) {
+        var t = parse(s);
+        if (t === 1) {
+            return "clearreview";
+        } else if (t >= 2 && t <= 6) {
+            return t + "review";
+        } else if (t === 7) {
+            return "conflict";
+        } else {
+            return null;
+        }
+    },
+    make_icon: function (s, xc) {
+        var t = parse(s), span_rto, span_rti;
+        if (t > 1) {
+            span_rto = document.createElement("span");
+            span_rto.className = "rto rt" + canon[t] + (xc || "");
+            span_rti = document.createElement("span");
+            span_rto.appendChild(span_rti);
+            span_rti.className = "rti";
+            span_rti.textContent = icon_texts[t];
+            span_rti.title = tooltips[t];
+            return span_rto;
+        } else {
+            return null;
+        }
+    },
+    unparse_icon_html: function (s, xc) {
+        var t = parse(s);
+        if (t > 1) {
+            return '<span class="rto rt'.concat(
+                canon[t], xc || "", '"><span class="rti" title="', tooltips[t],
+                '">', icon_texts[t], '</span></span>');
+        } else {
+            return "";
+        }
+    }
+};
+})();
+
 // assignment selection
 (function ($) {
 function make_radio(name, value, text, revtype) {
@@ -3717,13 +3800,7 @@ function make_radio(name, value, text, revtype) {
         input.className = "assignment-ui-radio";
     }
     if (value != 0) {
-        var span_rto = document.createElement("span"),
-            span_rti = document.createElement("span");
-        span_rto.className = "rto rt" + value;
-        span_rto.appendChild(span_rti);
-        span_rti.className = "rti";
-        span_rti.textContent = ["C", "", "E", "P", "2", "1", "M"][value + 1];
-        label.append(span_rto, " ");
+        label.append(review_types.make_icon(value), " ");
     }
     label.append(text);
     return div;
@@ -4723,11 +4800,9 @@ function add_review(rrow) {
             revname = '<span title="' + rrow.reviewer_email + '">' + revname + '</span>';
     }
     if (rrow.rtype) {
-        revname += (revname ? " " : "") + '<span class="rto rt' + rrow.rtype +
-            (rrow.submitted || rrow.approved ? "" : " rtinc") +
-            (rrow.subreview ? " rtsubrev" : "") +
-            '" title="' + rtype_info[rrow.rtype][1] +
-            '"><span class="rti">' + rtype_info[rrow.rtype][0] + '</span></span>';
+        var xc = (rrow.submitted || rrow.approved ? "" : " rtinc") +
+            (rrow.subreview ? " rtsubrev" : "");
+        revname += (revname ? " " : "") + review_types.unparse_icon_html(rrow.rtype, xc);
         if (rrow.round)
             revname += '<span class="revround" title="Review round">' + escape_html(rrow.round) + '</span>';
     }
@@ -7698,20 +7773,21 @@ function render_assignment_selector() {
     var prow = prownear(this),
         conflict = hasClass(this, "conflict"),
         sel = document.createElement("select"),
-        rts = ["0", "None", "4", "Primary", "3", "Secondary", "2", "Optional", "5", "Metareview", "-1", "Conflict"],
+        rts = ["none", "primary", "secondary", "pc", "meta", "conflict"],
         asstext = this.getAttribute("data-assignment"),
         revtype, m = asstext.match(/^(\S+) (\S+)(.*)$/);
+    m[2] = review_types.parse(m[2]);
     sel.name = "assrev" + prow.getAttribute("data-pid") + "u" + m[1];
     sel.setAttribute("data-default-value", m[2]);
     sel.className = "uich js-assign-review";
     sel.tabIndex = 2;
-    for (var i = 0; i < rts.length; i += 2) {
-        if (!conflict || rts[i] === "0" || rts[i] === "-1" || rts[i] === "conflict") {
+    for (var i = 0; i < rts.length; ++i) {
+        if (!conflict || rts[i] === "none" || rts[i] === "conflict") {
             var opt = document.createElement("option");
             opt.value = rts[i];
-            opt.text = rts[i + 1];
+            opt.text = review_types.unparse_selector(rts[i]);
             opt.defaultSelected = opt.selected = m[2] === rts[i];
-            if (m[3] && rts[i] === "0")
+            if (m[3] && rts[i] === "none")
                 opt.disabled = true;
             sel.add(opt, null);
         }
@@ -9720,25 +9796,33 @@ handle_ui.on("js-unfold-pcselector", function () {
 
 
 handle_ui.on("js-assign-review", function (event) {
-    var form, m;
+    var form = this.form, m;
     if (event.type !== "change"
         || !(m = /^assrev(\d+)u(\d+)$/.exec(this.name))
-        || ((form = this.form)
-            && form.autosave
-            && !form.autosave.checked))
+        || (form && form.autosave && !form.autosave.checked))
         return;
-    var self = this, data, value;
+    var self = this, ass = [], value = self.value;
     if (self.tagName === "SELECT") {
-        var round = form.rev_round;
-        data = {kind: "a", rev_round: round ? round.value : ""};
-        value = self.value;
+        var rt = "clear", ct = false;
+        if (value.indexOf("conflict") >= 0) {
+            ct = value;
+        } else if (value !== "none") {
+            rt = value;
+        }
+        ass.push(
+            {pid: +m[1], uid: +m[2], action: rt + "review"},
+            {pid: +m[1], uid: +m[2], action: "conflict", conflict: ct}
+        );
+        if (form.rev_round && rt !== "clear") {
+            ass[0].round = form.rev_round.value;
+        }
     } else {
-        data = {kind: "c"};
-        value = self.checked ? -1 : 0;
+        ass.push(
+            {pid: +m[1], uid: +m[2], action: "conflict", conflict: self.checked}
+        );
     }
-    data["pcs" + m[2]] = value;
-    $.post(hoturl("=assign", {p: m[1], update: 1, ajax: 1}),
-        data, function (rv) {
+    $.post(hoturl("=api/assign", {p: m[1]}),
+        {assignments: JSON.stringify(ass)}, function (rv) {
             input_set_default_value(self, value);
             minifeedback(self, rv);
             form_highlight(form, self);

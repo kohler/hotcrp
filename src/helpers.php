@@ -85,7 +85,7 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     /** @var array<string,mixed> */
     public $content;
 
-    /** @param int|array<string,mixed> $a1
+    /** @param int|array<string,mixed>|\stdClass|\JsonSerializable $a1
      * @param ?array<string,mixed> $a2 */
     function __construct($a1, $a2 = null) {
         if (is_int($a1)) {

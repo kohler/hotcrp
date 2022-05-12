@@ -167,11 +167,8 @@ class ReviewInfo implements JsonSerializable {
         "optional" => REVIEW_PC, "opt" => REVIEW_PC, "pc" => REVIEW_PC,
         "external" => REVIEW_EXTERNAL, "ext" => REVIEW_EXTERNAL
     ];
-    static private $type_revmap = [
-        REVIEW_EXTERNAL => "review", REVIEW_PC => "optional",
-        REVIEW_SECONDARY => "secondary", REVIEW_PRIMARY => "primary",
-        REVIEW_META => "metareview"
-    ];
+    // see also assign.php, script.js
+    static private $type_revmap = ["none", "external", "pc", "secondary", "primary", "meta"];
 
     /** @param string $str
      * @param bool $required
@@ -199,10 +196,10 @@ class ReviewInfo implements JsonSerializable {
     /** @param int $type
      * @return string */
     static function unparse_assigner_action($type) {
-        if ($type === REVIEW_PC) {
-            return "optionalreview";
+        if ($type <= 0) {
+            return "clearreview";
         } else {
-            return self::$type_revmap[$type] ?? "clearreview";
+            return self::$type_revmap[$type] . "review";
         }
     }
 

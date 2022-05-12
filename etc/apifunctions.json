@@ -18,6 +18,10 @@
         "function": "AllTags_API::run"
     },
     {
+        "name": "assign", "post": true, "redirect": true,
+        "function": "Assign_API::assign"
+    },
+    {
         "name": "claimreview", "paper": true, "post": true, "redirect": true,
         "function": "RequestReview_API::claimreview"
     },
