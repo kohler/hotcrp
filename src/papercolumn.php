@@ -719,13 +719,14 @@ class ReviewerType_PaperColumn extends PaperColumn {
         if ($flags & self::F_SHEPHERD) {
             $x[] = review_shepherd_icon();
         }
-        if (!empty($x) || ($ranal && $ranal->round)) {
+        $hasround = $ranal && $ranal->rrow->reviewRound > 0;
+        if (!empty($x) || $hasround) {
             $c = ["pl_revtype"];
             $t && ($c[] = "hasrev");
             ($flags & (self::F_LEAD | self::F_SHEPHERD)) && ($c[] = "haslead");
-            $ranal && $ranal->round && ($c[] = "hasround");
+            $hasround && ($c[] = "hasround");
             $t && ($x[] = $t);
-            return '<div class="' . join(" ", $c) . '">' . join('&nbsp;', $x) . '</div>';
+            return '<div class="' . join(" ", $c) . '">' . join(' ', $x) . '</div>';
         } else {
             return $t;
         }

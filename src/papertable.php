@@ -2238,12 +2238,7 @@ class PaperTable {
             // primary/secondary glyph
             $rtype = "";
             if ($rr->reviewType > 0 && $user->can_view_review_meta($prow, $rr)) {
-                $rtype = $rr->type_icon();
-                if ($rr->reviewRound > 0) {
-                    $rtype .= '<span class="revround" title="Review round">'
-                        . htmlspecialchars($conf->round_name($rr->reviewRound))
-                        . "</span>";
-                }
+                $rtype = $rr->icon_h() . $rr->round_h();
             }
 
             // reviewer identity

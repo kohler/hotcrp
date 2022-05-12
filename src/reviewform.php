@@ -39,7 +39,7 @@ class ReviewForm implements JsonSerializable {
      * @readonly */
     static public $revtype_names_full = [
         -3 => "Refused", -2 => "Author", -1 => "Conflict",
-        0 => "No review", 1 => "External review", 2 => "PC review",
+        0 => "No review", 1 => "External review", 2 => "Optional PC review",
         3 => "Secondary review", 4 => "Primary review", 5 => "Metareview"
     ];
     /** @var array<int,string>
@@ -581,12 +581,7 @@ $blind\n";
             }
         }
         if ($viewer->can_view_review_meta($prow, $rrow)) {
-            $revname .= ($revname ? " " : "") . $rrow->type_icon();
-            if ($rrow->reviewRound > 0) {
-                $revname .= '<span class="revround" title="Review round">'
-                    . htmlspecialchars($this->conf->round_name($rrow->reviewRound))
-                    . '</span>';
-            }
+            $revname .= ($revname ? " " : "") . $rrow->icon_h() . $rrow->round_h();
         }
         if ($rrow->reviewStatus >= ReviewInfo::RS_DRAFTED
             && $viewer->can_view_review_time($prow, $rrow)) {

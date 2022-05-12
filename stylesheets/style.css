@@ -2266,10 +2266,12 @@ del .rto {
 	background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M0,5l10,0'%20fill='none'%20stroke='black'%20/%3E%3C/svg%3E");
 	background-size: 100% 100%;
 }
-.rt5, .rt4, .rt3, .rt2 {
+.rt5, .rt4, .rt3, .rt2,
+.rtmeta, .rtprimary, .rtsecondary, .rtpc {
 	background-color: #ffffbb;
 }
-.rt5, .rt4, .rt3, .rt-1, .rt-2, .rtlead, .rtshep {
+.rt5, .rt4, .rt3, .rt-1, .rt-2,
+.rtmeta, .rtprimary, .rtsecondary, .rtconflict, .rtauthor, .rtlead, .rtshep {
 	font-weight: bold;
 }
 .rtlead, .rtshep {
@@ -2285,7 +2287,8 @@ del .rto {
 	color: #555555;
 	border-color: #555555;
 }
-.rt-1, .rt-2, .rt-3 {
+.rt-1, .rt-2, .rt-3,
+.rtconflict, .rtauthor, .rtdeclined {
 	color: gray;
 	border: 1px solid gray;
 }

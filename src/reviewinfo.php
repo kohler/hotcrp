@@ -441,7 +441,7 @@ class ReviewInfo implements JsonSerializable {
     }
 
     /** @return string */
-    function type_icon() {
+    function icon_h() {
         if ($this->subject_to_approval()) {
             $title = "Subreview";
         } else {
@@ -461,6 +461,23 @@ class ReviewInfo implements JsonSerializable {
         return $t . '" title="' . $title . '"><span class="rti">'
             . ReviewForm::$revtype_icon_text[$this->reviewType]
             . '</span></span>';
+    }
+
+    /** @param Conf $conf
+     * @param int $round
+     * @return string */
+    static function make_round_h($conf, $round) {
+        if ($round > 0 && ($n = $conf->round_name($round)) !== "") {
+            $n = htmlspecialchars($n);
+            return "<span class=\"revround\" title=\"Review round\">{$n}</span>";
+        } else {
+            return "";
+        }
+    }
+
+    /** @return string */
+    function round_h() {
+        return self::make_round_h($this->conf, $this->reviewRound);
     }
 
     /** @return string */
