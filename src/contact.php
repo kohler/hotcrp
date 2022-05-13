@@ -112,6 +112,7 @@ class Contact {
     /** @var int */
     public $defaultWatch = self::WATCH_REVIEW;
 
+    /** @var ?array<int,int> */
     private $_topic_interest_map;
     private $_name_for_map = [];
 

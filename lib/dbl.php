@@ -817,7 +817,7 @@ class Dbl {
         $result = self::do_make_result(func_get_args());
         $x = [];
         while ($result && ($row = $result->fetch_row())) {
-            $x[$row[0]] = count($row) == 2 ? $row[1] : array_slice($row, 1);
+            $x[$row[0]] = count($row) === 2 ? $row[1] : array_slice($row, 1);
         }
         $result && $result->close();
         return $x;
@@ -828,7 +828,7 @@ class Dbl {
         $result = self::do_make_result(func_get_args());
         $x = [];
         while ($result && ($row = $result->fetch_row())) {
-            assert(count($row) == 2);
+            assert(count($row) === 2);
             $x[(int) $row[0]] = ($row[1] === null ? null : (int) $row[1]);
         }
         $result && $result->close();

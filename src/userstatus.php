@@ -2,6 +2,17 @@
 // userstatus.php -- HotCRP helpers for reading/storing users as JSON
 // Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
+class UserStatus_UserLinks {
+    /** @var list<int> */
+    public $soleAuthor = [];
+    /** @var list<int> */
+    public $author = [];
+    /** @var list<int> */
+    public $review = [];
+    /** @var list<int> */
+    public $comment = [];
+}
+
 class UserStatus extends MessageSet {
     /** @var Conf
      * @readonly */
@@ -184,8 +195,10 @@ class UserStatus extends MessageSet {
                     || $this->viewer->is_root_user()));
     }
 
+    /** @param int $cid
+     * @return UserStatus_UserLinks */
     static function user_paper_info(Conf $conf, $cid) {
-        $pinfo = (object) ["soleAuthor" => [], "author" => [], "review" => [], "comment" => []];
+        $pinfo = new UserStatus_UserLinks;
 
         // find authored papers
         $result = $conf->qe("select Paper.paperId, count(pc.contactId)
@@ -1239,7 +1252,7 @@ class UserStatus extends MessageSet {
         } else if ($us->has_req_security()
                    && $us->viewer->can_change_password($us->user)) {
             if ($pw !== $pw2) {
-                $us->error_at("password", "<0>Those passwords do not match");
+                $us->error_at("password", "<0>Passwords do not match");
                 $us->error_at("upassword2");
             } else if (strlen($pw) <= 5) {
                 $us->error_at("password", "<0>Password too short");

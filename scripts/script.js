@@ -3623,7 +3623,7 @@ function jump_hash(hash, focus) {
     }
     // find destination element
     e = hash ? document.getElementById(hash) : null;
-    if (e && (p = e.closest(".pfe, .rfe, .f-i, .form-g, .entryi, .checki"))) {
+    if (e && (p = e.closest(".pfe, .rfe, .f-i, .form-g, .form-section, .entryi, .checki"))) {
         var eg = $(e).geometry(), pg = $(p).geometry(), wh = $(window).height();
         if ((eg.width <= 0 && eg.height <= 0)
             || (pg.top <= eg.top && eg.top - pg.top <= wh * 0.75)) {

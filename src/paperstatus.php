@@ -334,7 +334,7 @@ class PaperStatus extends MessageSet {
         if (isset($docj->content_file)
             && is_string($docj->content_file)
             && !($docj instanceof DocumentInfo)) {
-            if (!$this->allow_any_content_file && preg_match(',\A/|(?:\A|/)\.\.(?:/|\z),', $docj->content_file)) {
+            if (!$this->allow_any_content_file && preg_match('/\A\/|(?:\A|\/)\.\.(?:\/|\z)/', $docj->content_file)) {
                 $pstatus->error_at_option($o, "<0>Bad content_file: only simple filenames allowed");
                 return false;
             }
