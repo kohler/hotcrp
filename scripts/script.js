@@ -3622,7 +3622,7 @@ function jump_hash(hash, focus) {
         return true;
     }
     // find destination element
-    e = hash ? document.getElementById(hash) : null;
+    e = hash ? document.getElementById(decodeURIComponent(hash)) : null;
     if (e && (p = e.closest(".pfe, .rfe, .f-i, .form-g, .form-section, .entryi, .checki"))) {
         var eg = $(e).geometry(), pg = $(p).geometry(), wh = $(window).height();
         if ((eg.width <= 0 && eg.height <= 0)

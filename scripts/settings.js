@@ -27,10 +27,11 @@ handle_ui.on("js-settings-show-property", function () {
 
 
 function settings_delete(elt, message) {
-    var form = elt.closest("form");
+    var form = elt.closest("form"),
+        sep = elt.id.indexOf("__") > 0 ? "__" : "/";
     addClass(elt, "deleted");
-    if (!form.elements[elt.id + "__delete"]) {
-        var deleter = hidden_input(elt.id + "__delete", "1");
+    if (!form.elements[elt.id + sep + "delete"]) {
+        var deleter = hidden_input(elt.id + sep + "delete", "1");
         deleter.setAttribute("data-default-value", "");
         form.appendChild(deleter);
     }
@@ -39,12 +40,12 @@ function settings_delete(elt, message) {
         $(elt).find("input, select, textarea").addClass("ignore-diff");
         return false;
     } else {
-        var edit = document.getElementById(elt.id + "__edit") || elt;
+        var edit = document.getElementById(elt.id + sep + "edit") || elt;
         if (edit) {
             $(edit).children().addClass("hidden");
-            $(edit).append('<div class="f-i"><em id="'.concat(elt.id, '__delete_message">', message, '</em></div>'));
+            $(edit).append('<div class="f-i"><em id="'.concat(elt.id, sep, 'delete_message">', message, '</em></div>'));
         }
-        var name = form.elements[elt.id + "__name"];
+        var name = form.elements[elt.id + sep + "name"];
         if (name) {
             name.disabled = true;
             addClass(name, "text-decoration-line-through");

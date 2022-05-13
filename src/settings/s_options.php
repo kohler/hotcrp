@@ -248,7 +248,7 @@ class Options_SettingRenderer {
         Ht::stash_html('<div id="settings-sf-caption-choices" class="hidden"><p>Enter choices one per line.</p></div>', 'settings-sf-caption-choices');
         echo Ht::unstash();
 
-        if ($sv->enumerate("sf__")) {
+        if ($sv->slist_keys("sf__")) {
             echo '<div class="feedback is-note mb-4">Click on a field to edit it.</div>';
         }
 
@@ -258,7 +258,7 @@ class Options_SettingRenderer {
             htmlspecialchars(json_encode_browser($type_name_placeholders)),
             '">';
         // NB: div#settings-sform must ONLY contain fields
-        foreach ($sv->enumerate("sf__") as $ctr) {
+        foreach ($sv->slist_keys("sf__") as $ctr) {
             $this->print_one_option($sv, $ctr);
         }
         echo "</div>";
@@ -509,7 +509,7 @@ class Options_SettingParser extends SettingParser {
             $sv->error_at("sf", "<0>You modified options settings in another tab. Please reload.");
         }
         $nsfj = [];
-        foreach ($sv->enumerate("sf__") as $ctr) {
+        foreach ($sv->slist_keys("sf__") as $ctr) {
             $sfj = $sv->parse_members("sf__{$ctr}");
             if ($sv->reqstr("sf__{$ctr}__delete")) {
                 if ($sfj->id !== DTYPE_INVALID) {

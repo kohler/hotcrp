@@ -108,7 +108,7 @@ class Responses_SettingParser extends SettingParser {
             $sv->vstr("response_active") ? "" : " hidden",
             '"><hr class="g">', Ht::hidden("has_response", 1);
 
-        foreach ($sv->enumerate("response__") as $ctr) {
+        foreach ($sv->slist_keys("response__") as $ctr) {
             $this->print_one($sv, $ctr);
         }
 
@@ -159,7 +159,7 @@ class Responses_SettingParser extends SettingParser {
         }
 
         $rrds = [];
-        foreach ($sv->enumerate("response__") as $ctr) {
+        foreach ($sv->slist_keys("response__") as $ctr) {
             $rrd = $sv->parse_members("response__{$ctr}");
             if ($sv->reqstr("response__{$ctr}__delete")) {
                 if ($rrd->number) {
@@ -172,7 +172,7 @@ class Responses_SettingParser extends SettingParser {
         }
 
         // having parsed all names, check for duplicates
-        foreach ($sv->enumerate("response__") as $ctr) {
+        foreach ($sv->slist_keys("response__") as $ctr) {
             $sv->error_if_duplicate_member("response__", $ctr, "__name", "Response name");
         }
 

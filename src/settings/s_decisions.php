@@ -74,11 +74,11 @@ class Decisions_SettingParser extends SettingParser {
 
         echo Ht::hidden("has_decision", 1),
             '<div id="settings-decision-types">';
-        foreach ($sv->enumerate("decision__") as $ctr) {
+        foreach ($sv->slist_keys("decision__") as $ctr) {
             self::print_decrow($sv, $ctr, $decs_pcount);
         }
         echo '</div>';
-        foreach ($sv->use_req() ? $sv->enumerate("decision__") : [] as $ctr) {
+        foreach ($sv->use_req() ? $sv->slist_keys("decision__") : [] as $ctr) {
             if ($sv->reqstr("decision__{$ctr}__delete"))
                 echo Ht::unstash_script("\$(\"#settingsform\")[0].elements.decision__{$ctr}__deleter.click()");
         }
@@ -120,7 +120,7 @@ class Decisions_SettingParser extends SettingParser {
 
         $djs = [];
         $hasid = [];
-        foreach ($sv->enumerate("decision__") as $ctr) {
+        foreach ($sv->slist_keys("decision__") as $ctr) {
             $dsr = $sv->parse_members("decision__{$ctr}");
             if (!$sv->reqstr("decision__{$ctr}__delete")) {
                 $this->_check_req_name($sv, $dsr, $ctr);

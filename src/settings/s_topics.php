@@ -40,7 +40,7 @@ class Topics_SettingParser extends SettingParser {
         }
         echo "</p>\n", Ht::hidden("has_topic", 1);
 
-        if (($topic_counters = $sv->enumerate("topic__"))) {
+        if (($topic_counters = $sv->slist_keys("topic__"))) {
             echo '<div class="mg has-copy-topics"><table><thead><tr><th style="text-align:left">';
             if (!empty($interests)) {
                 echo '<span class="float-right n"># PC interests: </span>';
@@ -77,7 +77,7 @@ class Topics_SettingParser extends SettingParser {
         $ctr = null;
         foreach (explode("\n", $sv->reqstr($si->name)) as $line) {
             if (($line = simplify_whitespace($line)) !== "") {
-                $ctr = $ctr ?? max(0, 0, ...$sv->enumerate("topic__")) + 1;
+                $ctr = $ctr ?? max(0, 0, ...$sv->slist_keys("topic__")) + 1;
                 $sv->set_req("topic__{$ctr}__id", "\$");
                 $sv->set_req("topic__{$ctr}__name", $line);
                 ++$ctr;
@@ -92,7 +92,7 @@ class Topics_SettingParser extends SettingParser {
         $this->topicj = $sv->conf->topic_set()->as_array();
         $this->newtopics = [];
         $oldj = json_encode_db($this->topicj);
-        foreach ($sv->enumerate("topic__") as $ctr) {
+        foreach ($sv->slist_keys("topic__") as $ctr) {
             $tid = $sv->vstr("topic__{$ctr}__id") ?? "\$";
             $tname = $sv->base_parse_req("topic__{$ctr}__name");
             if ($sv->reqstr("topic__{$ctr}__delete") || $tname === "") {

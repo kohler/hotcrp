@@ -141,7 +141,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
     private function _apply_req_review_form(SettingValues $sv, Si $si) {
         $nrfj = [];
-        foreach ($sv->enumerate("rf__") as $ctr) {
+        foreach ($sv->slist_keys("rf__") as $ctr) {
             $rfj = $sv->parse_members("rf__{$ctr}");
             if (!$sv->reqstr("rf__{$ctr}__delete")
                 && ($finfo = ReviewFieldInfo::find($sv->conf, $rfj->id))) {
