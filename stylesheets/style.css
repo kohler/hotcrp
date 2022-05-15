@@ -388,6 +388,10 @@ label.checki {
 .entryi {
 	display: flex;
 	align-items: baseline;
+	flex-wrap: wrap;
+}
+.entryi > ul.feedback-list {
+	flex-basis: 100%;
 }
 .entryi > label {
 	width: 8rem;
