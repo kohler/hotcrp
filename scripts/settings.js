@@ -276,7 +276,7 @@ handle_ui.on("js-settings-topics-copy", function () {
             && this.name.startsWith("topic__")
             && this.name.endsWith("__name")
             && this.defaultValue.trim() !== "")
-            topics.push(escape_html(this.defaultValue.trim()));
+            topics.push(this.defaultValue.trim());
     });
     var node = $("<textarea></textarea>").appendTo(document.body);
     node[0].value = topics.join("\r");

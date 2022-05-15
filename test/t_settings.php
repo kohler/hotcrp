@@ -116,7 +116,7 @@ class Settings_Tester {
             "topic__1__name" => "Fért",
             "topic__2__id" => "",
             "topic__2__name" => "Festival Fartal",
-            "topic__3__id" => "\$",
+            "topic__3__id" => "new",
             "topic__3__name" => "Fet",
             "new_topics" => "Fart3"
         ]);

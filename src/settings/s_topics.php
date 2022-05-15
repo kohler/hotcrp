@@ -51,7 +51,7 @@ class Topics_SettingParser extends SettingParser {
             }
             echo '</tr></thead><tbody>';
             foreach ($topic_counters as $ctr) {
-                $tid = $sv->vstr("topic__{$ctr}__id") ?? "\$";
+                $tid = $sv->vstr("topic__{$ctr}__id") ?? "new";
                 echo '<tr><td class="lentry">', Ht::hidden("topic__{$ctr}__id", $tid);
                 $sv->print_feedback_at("topic__{$ctr}__name");
                 $sv->print_entry("topic__{$ctr}__name", ["class" => "wide", "aria-label" => "Topic name"]);
@@ -78,7 +78,7 @@ class Topics_SettingParser extends SettingParser {
         foreach (explode("\n", $sv->reqstr($si->name)) as $line) {
             if (($line = simplify_whitespace($line)) !== "") {
                 $ctr = $ctr ?? max(0, 0, ...$sv->slist_keys("topic__")) + 1;
-                $sv->set_req("topic__{$ctr}__id", "\$");
+                $sv->set_req("topic__{$ctr}__id", "new");
                 $sv->set_req("topic__{$ctr}__name", $line);
                 ++$ctr;
             }
@@ -93,10 +93,10 @@ class Topics_SettingParser extends SettingParser {
         $this->newtopics = [];
         $oldj = json_encode_db($this->topicj);
         foreach ($sv->slist_keys("topic__") as $ctr) {
-            $tid = $sv->vstr("topic__{$ctr}__id") ?? "\$";
+            $tid = $sv->vstr("topic__{$ctr}__id") ?? "new";
             $tname = $sv->base_parse_req("topic__{$ctr}__name");
             if ($sv->reqstr("topic__{$ctr}__delete") || $tname === "") {
-                if ($tid !== "\$") {
+                if ($tid !== "new") {
                     unset($this->topicj[$tid]);
                 }
             } else {
