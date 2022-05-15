@@ -273,8 +273,8 @@ handle_ui.on("js-settings-topics-copy", function () {
     var topics = [];
     $(this).closest(".has-copy-topics").find("input").each(function () {
         if (this.type === "text"
-            && this.name.startsWith("topic__")
-            && this.name.endsWith("__name")
+            && this.name.startsWith("topic/")
+            && this.name.endsWith("/name")
             && this.defaultValue.trim() !== "")
             topics.push(this.defaultValue.trim());
     });

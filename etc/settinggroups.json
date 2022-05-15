@@ -162,7 +162,7 @@
         "name": "topics", "group": "subform", "order": 480,
         "title": "Topics", "hashid": "topics",
         "print_function": "Topics_SettingParser::print",
-        "settings": ["topic__$"]
+        "settings": ["topic/$"]
     },
 
 

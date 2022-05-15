@@ -715,12 +715,12 @@
         "parser_class": "Topics_SettingParser", "type": "slist"
     },
     {
-        "name_pattern": "topic__$",
+        "name_pattern": "topic/$",
         "type": "object", "storage": "none", "parser_class": "Topics_SettingParser"
     },
-    {   "name_pattern": "topic__$__id", "internal": true   },
+    {   "name_pattern": "topic/$/id", "internal": true   },
     {
-        "name_pattern": "topic__$__name", "title": "Topic name",
+        "name_pattern": "topic/$/name", "title": "Topic name",
         "type": "simplestring", "size": 80, "autogrow": true, "storage": "member.name"
     },
     {

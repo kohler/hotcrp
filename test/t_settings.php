@@ -66,8 +66,8 @@ class Settings_Tester {
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_topic" => 1,
-            "topic__1__name" => "Whatever",
-            "topic__1__delete" => 1
+            "topic/1/name" => "Whatever",
+            "topic/1/delete" => 1
         ]);
         xassert($sv->execute());
 
@@ -98,8 +98,8 @@ class Settings_Tester {
             "new_topics" => "Fart"
         ]);
         xassert(!$sv->execute());
-        xassert_eqq($sv->reqstr("topic__3__name"), "Fart");
-        xassert($sv->has_error_at("topic__3__name"));
+        xassert_eqq($sv->reqstr("topic/3/name"), "Fart");
+        xassert($sv->has_error_at("topic/3/name"));
         xassert_neqq(strpos($sv->full_feedback_text(), "is not unique"), false);
         xassert_eqq(json_encode($this->conf->topic_set()->as_array()), '{"2":"Barf","1":"Fart"}');
 
@@ -112,12 +112,12 @@ class Settings_Tester {
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_topic" => 1,
-            "topic__1__id" => "2",
-            "topic__1__name" => "Fért",
-            "topic__2__id" => "",
-            "topic__2__name" => "Festival Fartal",
-            "topic__3__id" => "new",
-            "topic__3__name" => "Fet",
+            "topic/1/id" => "2",
+            "topic/1/name" => "Fért",
+            "topic/2/id" => "",
+            "topic/2/name" => "Festival Fartal",
+            "topic/3/id" => "new",
+            "topic/3/name" => "Fet",
             "new_topics" => "Fart3"
         ]);
         xassert($sv->execute());
@@ -125,18 +125,18 @@ class Settings_Tester {
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_topic" => 1,
-            "topic__1__id" => "1",
-            "topic__1__delete" => "1",
-            "topic__2__id" => "2",
-            "topic__2__delete" => "1",
-            "topic__3__id" => "3",
-            "topic__3__delete" => "1",
-            "topic__4__id" => "4",
-            "topic__4__delete" => "1",
-            "topic__5__id" => "5",
-            "topic__5__delete" => "1",
-            "topic__6__id" => "6",
-            "topic__6__delete" => "1"
+            "topic/1/id" => "1",
+            "topic/1/delete" => "1",
+            "topic/2/id" => "2",
+            "topic/2/delete" => "1",
+            "topic/3/id" => "3",
+            "topic/3/delete" => "1",
+            "topic/4/id" => "4",
+            "topic/4/delete" => "1",
+            "topic/5/id" => "5",
+            "topic/5/delete" => "1",
+            "topic/6/id" => "6",
+            "topic/6/delete" => "1"
         ]);
         xassert($sv->execute());
 
@@ -174,7 +174,7 @@ class Settings_Tester {
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Berf"}');
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
-            "topic": [{"id": "$", "name": "Berf"}]
+            "topic": [{"id": "new", "name": "Berf"}]
         }');
         xassert(!$sv->execute());
         xassert_neqq(strpos($sv->full_feedback_text(), "is not unique"), false);

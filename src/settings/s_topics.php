@@ -11,7 +11,7 @@ class Topics_SettingParser extends SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
         if ($si->name === "new_topics") {
             $sv->set_oldv($si->name, "");
-        } else if ($si->part0 === "topic__") {
+        } else if ($si->part0 === "topic/") {
             $tn = $sv->unmap_enumeration_member($si->name, $sv->conf->topic_set()->as_array());
             if ($tn !== null) {
                 $sv->set_oldv($si->name, (object) ["id" => intval($si->part1), "name" => $tn]);
@@ -20,7 +20,7 @@ class Topics_SettingParser extends SettingParser {
     }
 
     function prepare_enumeration(SettingValues $sv, Si $si) {
-        $sv->map_enumeration("topic__", $sv->conf->topic_set()->as_array());
+        $sv->map_enumeration("topic/", $sv->conf->topic_set()->as_array());
     }
 
     static function print(SettingValues $sv) {
@@ -51,10 +51,10 @@ class Topics_SettingParser extends SettingParser {
             }
             echo '</tr></thead><tbody>';
             foreach ($topic_counters as $ctr) {
-                $tid = $sv->vstr("topic__{$ctr}__id") ?? "new";
-                echo '<tr><td class="lentry">', Ht::hidden("topic__{$ctr}__id", $tid);
-                $sv->print_feedback_at("topic__{$ctr}__name");
-                $sv->print_entry("topic__{$ctr}__name", ["class" => "wide", "aria-label" => "Topic name"]);
+                $tid = $sv->vstr("topic/{$ctr}/id") ?? "new";
+                echo '<tr><td class="lentry">', Ht::hidden("topic/{$ctr}/id", $tid);
+                $sv->print_feedback_at("topic/{$ctr}/name");
+                $sv->print_entry("topic/{$ctr}/name", ["class" => "wide", "aria-label" => "Topic name"]);
                 echo '</td>';
                 if (!empty($interests)) {
                     $ti = $interests[$tid] ?? [null, null];
@@ -77,9 +77,9 @@ class Topics_SettingParser extends SettingParser {
         $ctr = null;
         foreach (explode("\n", $sv->reqstr($si->name)) as $line) {
             if (($line = simplify_whitespace($line)) !== "") {
-                $ctr = $ctr ?? max(0, 0, ...$sv->slist_keys("topic__")) + 1;
-                $sv->set_req("topic__{$ctr}__id", "new");
-                $sv->set_req("topic__{$ctr}__name", $line);
+                $ctr = $ctr ?? max(0, 0, ...$sv->slist_keys("topic/")) + 1;
+                $sv->set_req("topic/{$ctr}/id", "new");
+                $sv->set_req("topic/{$ctr}/name", $line);
                 ++$ctr;
             }
         }
@@ -92,24 +92,24 @@ class Topics_SettingParser extends SettingParser {
         $this->topicj = $sv->conf->topic_set()->as_array();
         $this->newtopics = [];
         $oldj = json_encode_db($this->topicj);
-        foreach ($sv->slist_keys("topic__") as $ctr) {
-            $tid = $sv->vstr("topic__{$ctr}__id") ?? "new";
-            $tname = $sv->base_parse_req("topic__{$ctr}__name");
-            if ($sv->reqstr("topic__{$ctr}__delete") || $tname === "") {
+        foreach ($sv->slist_keys("topic/") as $ctr) {
+            $tid = $sv->vstr("topic/{$ctr}/id") ?? "new";
+            $tname = $sv->base_parse_req("topic/{$ctr}/name");
+            if ($sv->reqstr("topic/{$ctr}/delete") || $tname === "") {
                 if ($tid !== "new") {
                     unset($this->topicj[$tid]);
                 }
             } else {
                 if ($tname !== null) {
                     if (preg_match('/\A(?:\d+\z|[-+,;:]|–|—)/', $tname)) {
-                        $sv->error_at("topic__{$ctr}__name", "<0>Topic name ‘{$tname}’ is reserved");
+                        $sv->error_at("topic/{$ctr}/name", "<0>Topic name ‘{$tname}’ is reserved");
                     } else if (ctype_digit($tid)) {
                         $this->topicj[intval($tid)] = $tname;
                     } else {
                         $this->newtopics[] = $tname;
                     }
                 }
-                $sv->error_if_duplicate_member("topic__", $ctr, "__name", "Topic");
+                $sv->error_if_duplicate_member("topic/", $ctr, "/name", "Topic");
             }
         }
         if (!$sv->has_error()
