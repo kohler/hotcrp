@@ -4,8 +4,8 @@
 
 class Decisions_SettingParser extends SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
-        assert($si->part0 === "decision__" && $si->part2 === "");
-        $did = $sv->vstr("{$si->name}__id") ?? "\$";
+        assert($si->part0 === "decision/" && $si->part2 === "");
+        $did = $sv->vstr("{$si->name}/id") ?? "new";
         if (is_numeric($did)
             && ($dnum = intval($did)) !== 0
             && ($dname = ($sv->conf->decision_map())[$dnum] ?? null)) {
@@ -20,45 +20,45 @@ class Decisions_SettingParser extends SettingParser {
     function prepare_enumeration(SettingValues $sv, Si $si) {
         $dmap = $sv->conf->decision_map();
         unset($dmap[0]);
-        $sv->map_enumeration("decision__", $dmap);
+        $sv->map_enumeration("decision/", $dmap);
     }
 
     /** @param int|'$' $ctr
      * @param array<int> $countmap */
     static private function print_decrow(SettingValues $sv, $ctr, $countmap) {
-        $did = $sv->vstr("decision__{$ctr}__id");
-        $isnew = $did === "" || $did === "\$";
+        $did = $sv->vstr("decision/{$ctr}/id");
+        $isnew = $did === "" || $did === "new" || $did === "\$";
         $count = $countmap[$did] ?? 0;
         $editable = $sv->editable("decision");
-        echo '<div id="decision__', $ctr, '" class="has-fold foldo settings-decision',
+        echo '<div id="decision/', $ctr, '" class="has-fold foldo settings-decision',
             $isnew ? ' is-new' : '', '"><div class="entryi">',
-            $sv->feedback_at("decision__{$ctr}__name"),
-            $sv->feedback_at("decision__{$ctr}__category"),
-            Ht::hidden("decision__{$ctr}__id", $isnew ? "\$" : $did, ["data-default-value" => $isnew ? "" : null]),
-            $sv->entry("decision__{$ctr}__name", ["data-submission-count" => $count, "class" => $isnew ? "uii js-settings-decision-new-name" : ""]);
-        if ($sv->reqstr("decision__{$ctr}__delete")) {
-            echo Ht::hidden("decision__{$ctr}__delete", "1", ["data-default-value" => ""]);
+            $sv->feedback_at("decision/{$ctr}/name"),
+            $sv->feedback_at("decision/{$ctr}/category"),
+            Ht::hidden("decision/{$ctr}/id", $isnew ? "new" : $did, ["data-default-value" => $isnew ? "" : null]),
+            $sv->entry("decision/{$ctr}/name", ["data-submission-count" => $count, "class" => $isnew ? "uii js-settings-decision-new-name" : ""]);
+        if ($sv->reqstr("decision/{$ctr}/delete")) {
+            echo Ht::hidden("decision/{$ctr}/delete", "1", ["data-default-value" => ""]);
         }
         Icons::stash_defs("trash");
         echo Ht::unstash();
         if ($editable) {
-            echo Ht::button(Icons::ui_use("trash"), ["class" => "fx ui js-settings-decision-delete ml-2 need-tooltip", "name" => "decision__{$ctr}__deleter", "aria-label" => "Delete decision", "tabindex" => "-1"]);
+            echo Ht::button(Icons::ui_use("trash"), ["class" => "fx ui js-settings-decision-delete ml-2 need-tooltip", "name" => "decision/{$ctr}/deleter", "aria-label" => "Delete decision", "tabindex" => "-1"]);
         }
         echo '<span class="ml-2 d-inline-block fx">';
-        $class = $sv->vstr("decision__{$ctr}__category");
+        $class = $sv->vstr("decision/{$ctr}/category");
         if ($isnew) {
-            echo Ht::select("decision__{$ctr}__category",
+            echo Ht::select("decision/{$ctr}/category",
                     ["accept" => "Accept category", "reject" => "Reject category"], $class,
-                    $sv->sjs("decision__{$ctr}__category", ["data-default-value" => "accept"]));
+                    $sv->sjs("decision/{$ctr}/category", ["data-default-value" => "accept"]));
         } else {
             echo $class === "accept" ? "<span class=\"pstat_decyes\">Accept</span> category" : "<span class=\"pstat_decno\">Reject</span> category";
             if ($count) {
                 echo ", ", plural($count, "submission");
             }
         }
-        if ($sv->has_error_at("decision__{$ctr}__category")) {
+        if ($sv->has_error_at("decision/{$ctr}/category")) {
             echo '<label class="d-inline-block checki ml-2"><span class="checkc">',
-                Ht::checkbox("decision__{$ctr}__name_force", 1, false),
+                Ht::checkbox("decision/{$ctr}/name_force", 1, false),
                 '</span><span class="is-error">Confirm</span></label>';
         }
         echo "</span></div></div>";
@@ -71,16 +71,17 @@ class Decisions_SettingParser extends SettingParser {
         while (($row = $result->fetch_row())) {
             $decs_pcount[(int) $row[0]] = (int) $row[1];
         }
+        Dbl::free($result);
 
         echo Ht::hidden("has_decision", 1),
             '<div id="settings-decision-types">';
-        foreach ($sv->slist_keys("decision__") as $ctr) {
+        foreach ($sv->slist_keys("decision/") as $ctr) {
             self::print_decrow($sv, $ctr, $decs_pcount);
         }
         echo '</div>';
-        foreach ($sv->use_req() ? $sv->slist_keys("decision__") : [] as $ctr) {
-            if ($sv->reqstr("decision__{$ctr}__delete"))
-                echo Ht::unstash_script("\$(\"#settingsform\")[0].elements.decision__{$ctr}__deleter.click()");
+        foreach ($sv->use_req() ? $sv->slist_keys("decision/") : [] as $ctr) {
+            if ($sv->reqstr("decision/{$ctr}/delete"))
+                echo Ht::unstash_script("\$(\"#settingsform\")[0].elements[\"decision/{$ctr}/deleter\"].click()");
         }
         echo '<div id="settings-decision-type-notes" class="hidden">',
             '<div class="hint">Examples: “Accepted as short paper”, “Early reject”</div></div>';
@@ -98,19 +99,20 @@ class Decisions_SettingParser extends SettingParser {
      * @param int $ctr */
     private function _check_req_name($sv, $dsr, $ctr) {
         if ($dsr->id === null || $dsr->name !== $sv->conf->decision_name($dsr->id)) {
-            if (($error = Conf::decision_name_error($dsr->name))) {
-                $sv->error_at("decision__{$ctr}__name", "<0>{$error}");
+            if (($error = Conf::decision_name_error($dsr->name))
+                && !$sv->has_error_at("decision/{$ctr}/name")) {
+                $sv->error_at("decision/{$ctr}/name", "<0>{$error}");
             }
-            if (!$sv->reqstr("decision__{$ctr}__name_force")
+            if (!$sv->reqstr("decision/{$ctr}/name_force")
                 && stripos($dsr->name, $dsr->category === "accept" ? "reject" : "accept") !== false) {
                 $n1 = $dsr->category === "accept" ? "An Accept" : "A Reject";
                 $n2 = $dsr->category === "accept" ? "reject" : "accept";
-                $sv->error_at("decision__{$ctr}__name", "<0>{$n1}-category decision has “{$n2}” in its name");
-                $sv->inform_at("decision__{$ctr}__name", "<0>Either change the decision name or category or check the “Confirm” box to save anyway.");
-                $sv->error_at("decision__{$ctr}__category");
+                $sv->error_at("decision/{$ctr}/name", "<0>{$n1}-category decision has “{$n2}” in its name");
+                $sv->inform_at("decision/{$ctr}/name", "<0>Either change the decision name or category or check the “Confirm” box to save anyway.");
+                $sv->error_at("decision/{$ctr}/category");
             }
         }
-        $sv->error_if_duplicate_member("decision__", $ctr, "__name", "Decision name");
+        $sv->error_if_duplicate_member("decision/", $ctr, "/name", "Decision name");
     }
 
     function apply_req(SettingValues $sv, Si $si) {
@@ -120,9 +122,9 @@ class Decisions_SettingParser extends SettingParser {
 
         $djs = [];
         $hasid = [];
-        foreach ($sv->slist_keys("decision__") as $ctr) {
-            $dsr = $sv->parse_members("decision__{$ctr}");
-            if (!$sv->reqstr("decision__{$ctr}__delete")) {
+        foreach ($sv->slist_keys("decision/") as $ctr) {
+            $dsr = $sv->parse_members("decision/{$ctr}");
+            if (!$sv->reqstr("decision/{$ctr}/delete")) {
                 $this->_check_req_name($sv, $dsr, $ctr);
                 $djs[] = $dsr;
                 $hasid[$dsr->id ?? ""] = true;

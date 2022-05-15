@@ -52,17 +52,17 @@
         "parser_class": "Decisions_SettingParser", "type": "slist"
     },
     {
-        "name_pattern": "decision__$",
+        "name_pattern": "decision/$",
         "type": "object", "storage": "none", "parser_class": "Decisions_SettingParser"
     },
-    {   "name_pattern": "decision__$__id", "internal": true   },
+    {   "name_pattern": "decision/$/id", "internal": true   },
     {
-        "name_pattern": "decision__$__name", "title": "Decision name",
+        "name_pattern": "decision/$/name", "title": "Decision name",
         "type": "simplestring", "size": 35, "placeholder": "Decision name",
         "required": true, "storage": "member.name"
     },
     {
-        "name_pattern": "decision__$__category",
+        "name_pattern": "decision/$/category",
         "title": "Decision category", "type": "radio", "values": ["accept", "reject"],
         "storage": "member.category"
     },

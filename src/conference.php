@@ -1435,9 +1435,9 @@ class Conf {
     static function decision_name_error($dname) {
         $dname = simplify_whitespace($dname);
         if ((string) $dname === "") {
-            return "Empty decision name.";
+            return "Empty decision name";
         } else if (preg_match('/\A(?:yes|no|any|none|unknown|unspecified|undecided|\?)\z/i', $dname)) {
-            return "Decision name “{$dname}” is reserved.";
+            return "Decision name “{$dname}” is reserved";
         } else {
             return false;
         }

@@ -222,19 +222,19 @@ handle_ui.on("js-settings-banal-pagelimit", function (evt) {
 
 handle_ui.on("js-settings-decision-add", function (event) {
     var form = this.form, ctr = 1;
-    while (form.elements["decision__" + ctr + "__id"])
+    while (form.elements["decision/" + ctr + "/id"])
         ++ctr;
     $("#settings-decision-type-notes").removeClass("hidden");
-    var h = $("#settings-new-decision-type").html().replace(/__\$/g, "__" + ctr),
+    var h = $("#settings-new-decision-type").html().replace(/\/\$/g, "/" + ctr),
         $r = $(h).appendTo("#settings-decision-types");
     $r.find("input[type=text]").autogrow();
-    form.elements["decision__" + ctr + "__name"].focus();
+    form.elements["decision/" + ctr + "/name"].focus();
     form_highlight(form);
 });
 
 handle_ui.on("js-settings-decision-delete", function (event) {
     var dec = this.closest(".settings-decision"),
-        ne = this.form.elements[dec.id + "__name"],
+        ne = this.form.elements[dec.id + "/name"],
         sc = ne.getAttribute("data-submission-count")|0;
     settings_delete(dec, "This decision will be removed"
         + (sc ? ' and <a href="'.concat(hoturl_html("search", {q: "dec:\"" + ne.defaultValue + "\""}), '" target="_blank">', plural(sc, "submission"), '</a> set to undecided') : '')
@@ -752,11 +752,11 @@ handle_ui.on("input.js-settings-response-name", function () {
 handle_ui.on("js-settings-decision-new-name", function () {
     var d = this.closest(".settings-decision");
     if (/accept/i.test(this.value)) {
-        this.form.elements[d.id + "__category"].selectedIndex = 0;
+        this.form.elements[d.id + "/category"].selectedIndex = 0;
     } else if (/reject/i.test(this.value)) {
-        this.form.elements[d.id + "__category"].selectedIndex = 1;
+        this.form.elements[d.id + "/category"].selectedIndex = 1;
     } else if (/revis/i.test(this.value)) {
-        this.form.elements[d.id + "__category"].selectedIndex = 0;
+        this.form.elements[d.id + "/category"].selectedIndex = 0;
     }
 });
 

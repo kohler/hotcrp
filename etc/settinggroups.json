@@ -379,7 +379,7 @@
         "name": "decisions/decision-types", "order": 400,
         "title": "Decision types",
         "print_function": "Decisions_SettingParser::print",
-        "settings": ["decision", "decision__$"]
+        "settings": ["decision", "decision/$"]
     },
     {
         "name": "decisions/final-versions", "order": 500,

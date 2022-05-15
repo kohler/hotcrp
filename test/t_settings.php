@@ -195,11 +195,11 @@ class Settings_Tester {
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_decision" => 1,
-            "decision__1__name" => "Accepted!",
-            "decision__1__id" => "1",
-            "decision__2__name" => "Newly accepted",
-            "decision__2__id" => "\$",
-            "decision__2__category" => "accept"
+            "decision/1/name" => "Accepted!",
+            "decision/1/id" => "1",
+            "decision/2/name" => "Newly accepted",
+            "decision/2/id" => "new",
+            "decision/2/category" => "accept"
         ]);
         xassert($sv->execute());
         xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","1":"Accepted!","2":"Newly accepted","-1":"Rejected"}');
@@ -207,8 +207,8 @@ class Settings_Tester {
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_decision" => 1,
-            "decision__1__id" => "1",
-            "decision__1__delete" => "1"
+            "decision/1/id" => "1",
+            "decision/1/delete" => "1"
         ]);
         xassert($sv->execute());
         xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","2":"Newly accepted","-1":"Rejected"}');
@@ -216,8 +216,8 @@ class Settings_Tester {
         // accept-category with “reject” in the name is rejected by default
         $sv = SettingValues::make_request($this->u_chair, [
             "has_decision" => 1,
-            "decision__1__id" => "2",
-            "decision__1__name" => "Rejected"
+            "decision/1/id" => "2",
+            "decision/1/name" => "Rejected"
         ]);
         xassert(!$sv->execute());
         xassert_neqq(strpos($sv->full_feedback_text(), "Accept-category decision"), false);
@@ -225,9 +225,9 @@ class Settings_Tester {
         // duplicate decision names are rejected
         $sv = SettingValues::make_request($this->u_chair, [
             "has_decision" => 1,
-            "decision__1__id" => "2",
-            "decision__1__name" => "Rejected",
-            "decision__1__name_force" => "1"
+            "decision/1/id" => "2",
+            "decision/1/name" => "Rejected",
+            "decision/1/name_force" => "1"
         ]);
         xassert(!$sv->execute());
         xassert_neqq(strpos($sv->full_feedback_text(), "is not unique"), false);
@@ -236,12 +236,12 @@ class Settings_Tester {
         // can override name conflict
         $sv = SettingValues::make_request($this->u_chair, [
             "has_decision" => 1,
-            "decision__1__id" => "2",
-            "decision__1__name" => "Really Rejected",
-            "decision__1__name_force" => "1",
-            "decision__2__id" => "\$",
-            "decision__2__name" => "Whatever",
-            "decision__2__category" => "reject"
+            "decision/1/id" => "2",
+            "decision/1/name" => "Really Rejected",
+            "decision/1/name_force" => "1",
+            "decision/2/id" => "new",
+            "decision/2/name" => "Whatever",
+            "decision/2/category" => "reject"
         ]);
         xassert($sv->execute());
         xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","2":"Really Rejected","-1":"Rejected","-2":"Whatever"}');
@@ -249,10 +249,10 @@ class Settings_Tester {
         // not change name => no need to override conflict
         $sv = SettingValues::make_request($this->u_chair, [
             "has_decision" => 1,
-            "decision__1__id" => "2",
-            "decision__1__name" => "Really Rejected",
-            "decision__2__id" => "-2",
-            "decision__2__name" => "Well I dunno"
+            "decision/1/id" => "2",
+            "decision/1/name" => "Really Rejected",
+            "decision/2/id" => "-2",
+            "decision/2/name" => "Well I dunno"
         ]);
         xassert($sv->execute());
         xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","2":"Really Rejected","-1":"Rejected","-2":"Well I dunno"}');
@@ -260,19 +260,19 @@ class Settings_Tester {
         // missing name => error
         $sv = SettingValues::make_request($this->u_chair, [
             "has_decision" => 1,
-            "decision__1__id" => "\$"
+            "decision/1/id" => "new"
         ]);
         xassert(!$sv->execute());
 
         // restore default decisions => no database setting
         $sv = SettingValues::make_request($this->u_chair, [
             "has_decision" => 1,
-            "decision__1__id" => "\$",
-            "decision__1__name" => "Accepted",
-            "decision__2__id" => "2",
-            "decision__2__delete" => "1",
-            "decision__3__id" => "-2",
-            "decision__3__delete" => "1"
+            "decision/1/id" => "new",
+            "decision/1/name" => "Accepted",
+            "decision/2/id" => "2",
+            "decision/2/delete" => "1",
+            "decision/3/id" => "-2",
+            "decision/3/delete" => "1"
         ]);
         xassert($sv->execute());
         xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
