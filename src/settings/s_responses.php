@@ -19,14 +19,14 @@ class Responses_SettingParser extends SettingParser {
                 $sv->set_oldv($si->name, $rrd ? clone $rrd : new ResponseRound);
             } else {
                 $rrd = $sv->oldv($si->part0 . $si->part1);
-                if ($si->part2 === "__title") {
-                    $n = $sv->oldv("response__{$si->part1}__name");
+                if ($si->part2 === "/title") {
+                    $n = $sv->oldv("response/{$si->part1}/name");
                     $sv->set_oldv($si->name, $n ? "‘{$n}’ response" : "Response");
-                } else if ($si->part2 === "__name") {
+                } else if ($si->part2 === "/name") {
                     $sv->set_oldv($si->name, ($rrd->unnamed ? "" : $rrd->name) ?? "");
-                } else if ($si->part2 === "__condition") {
+                } else if ($si->part2 === "/condition") {
                     $sv->set_oldv($si->name, $rrd->search ? $rrd->search->q : "");
-                } else if ($si->part2 === "__instructions") {
+                } else if ($si->part2 === "/instructions") {
                     $sv->set_oldv($si->name, $rrd->instructions ?? $si->default_value($sv));
                 }
             }
@@ -34,13 +34,13 @@ class Responses_SettingParser extends SettingParser {
     }
 
     function prepare_enumeration(SettingValues $sv, Si $si) {
-        $sv->map_enumeration("response__", $sv->conf->response_rounds());
+        $sv->map_enumeration("response/", $sv->conf->response_rounds());
         // set placeholder for unnamed round
         $rrd = ($sv->conf->response_rounds())[0] ?? null;
         if ($rrd && $rrd->unnamed) {
-            $ctr = $sv->search_enumeration_id("response__", "0");
+            $ctr = $sv->search_enumeration_id("response/", "0");
             assert($ctr !== null);
-            $si = $sv->si("response__{$ctr}__name");
+            $si = $sv->si("response/{$ctr}/name");
             $si->placeholder = "unnamed";
         }
     }
@@ -59,42 +59,42 @@ class Responses_SettingParser extends SettingParser {
                 $t .= '<span class="ml-2 d-inline-block">' . plural($n, "response") . '</span>';
             }
         }
-        $sv->print_entry_group("response__{$this->ctr}__name", "Response name", [
+        $sv->print_entry_group("response/{$this->ctr}/name", "Response name", [
             "class" => "uii js-settings-response-name",
             "horizontal" => true, "control_after" => $t
         ], is_int($this->ctr) && $this->ctr > 1 ? null : "Use no name or a short name like ‘Rebuttal’.");
     }
 
     function print_deadline(SettingValues $sv) {
-        if ($sv->vstr("response__{$this->ctr}__open") == 1
-            && ($x = $sv->vstr("response__{$this->ctr}__done"))) {
-            $sv->conf->settings["response__{$this->ctr}__open"] = intval($x) - 7 * 86400;
+        if ($sv->vstr("response/{$this->ctr}/open") == 1
+            && ($x = $sv->vstr("response/{$this->ctr}/done"))) {
+            $sv->conf->settings["response/{$this->ctr}/open"] = intval($x) - 7 * 86400;
         }
-        $sv->print_entry_group("response__{$this->ctr}__open", "Start time", ["horizontal" => true]);
-        $sv->print_entry_group("response__{$this->ctr}__done", "Hard deadline", ["horizontal" => true]);
-        $sv->print_entry_group("response__{$this->ctr}__grace", "Grace period", ["horizontal" => true]);
+        $sv->print_entry_group("response/{$this->ctr}/open", "Start time", ["horizontal" => true]);
+        $sv->print_entry_group("response/{$this->ctr}/done", "Hard deadline", ["horizontal" => true]);
+        $sv->print_entry_group("response/{$this->ctr}/grace", "Grace period", ["horizontal" => true]);
     }
 
     function print_wordlimit(SettingValues $sv) {
-        $sv->print_entry_group("response__{$this->ctr}__words", "Word limit", ["horizontal" => true], is_int($this->ctr) && $this->ctr > 1 ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
+        $sv->print_entry_group("response/{$this->ctr}/words", "Word limit", ["horizontal" => true], is_int($this->ctr) && $this->ctr > 1 ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
     }
 
     function print_instructions(SettingValues $sv) {
-        $sv->print_message_horizontal("response__{$this->ctr}__instructions", "Instructions");
+        $sv->print_message_horizontal("response/{$this->ctr}/instructions", "Instructions");
     }
 
     function print_one(SettingValues $sv, $ctr) {
         $this->ctr = $ctr;
-        if ($ctr !== '$' && ($id = $sv->vstr("response__{$ctr}__id")) !== '$') {
+        if ($ctr !== "\$" && ($id = $sv->vstr("response/{$ctr}/id")) !== "new" && $id !== "\$") {
             $this->ctrid = intval($id);
         } else {
             $this->ctrid = null;
         }
-        echo '<div id="response__', $ctr, '" class="form-g settings-response',
+        echo '<div id="response/', $ctr, '" class="form-g settings-response',
             $this->ctrid === null ? " is-new" : "", '">',
-            Ht::hidden("response__{$ctr}__id", $this->ctrid ?? '$', ["data-default-value" => $this->ctrid === null ? "" : null]);
-        if ($sv->has_req("response__{$ctr}__delete")) {
-            Ht::hidden("response__{$ctr}__delete", "1", ["data-default-value" => ""]);
+            Ht::hidden("response/{$ctr}/id", $this->ctrid ?? "new", ["data-default-value" => $this->ctrid === null ? "" : null]);
+        if ($sv->has_req("response/{$ctr}/delete")) {
+            Ht::hidden("response/{$ctr}/delete", "1", ["data-default-value" => ""]);
         }
         $sv->print_group("responses/properties");
         echo '</div>';
@@ -108,14 +108,14 @@ class Responses_SettingParser extends SettingParser {
             $sv->vstr("response_active") ? "" : " hidden",
             '"><hr class="g">', Ht::hidden("has_response", 1);
 
-        foreach ($sv->slist_keys("response__") as $ctr) {
+        foreach ($sv->slist_keys("response/") as $ctr) {
             $this->print_one($sv, $ctr);
         }
 
         echo '<template id="response__new" class="hidden">';
         $this->print_one($sv, '$');
         echo '</template>';
-        if ($sv->editable("response__0__name")) {
+        if ($sv->editable("response/0/name")) {
             echo '<hr class="form-sep">',
                 Ht::button("Add response", ["class" => "ui js-settings-response-new"]);
         }
@@ -126,7 +126,7 @@ class Responses_SettingParser extends SettingParser {
     function apply_req(SettingValues $sv, Si $si) {
         if ($si->name === "response") {
             return $this->apply_response_req($sv, $si);
-        } else if ($si->part2 === "__name") {
+        } else if ($si->part2 === "/name") {
             $rrd = $sv->cur_object;
             $rrd->name = trim($sv->reqstr($si->name));
             $lname = strtolower($rrd->name);
@@ -137,7 +137,7 @@ class Responses_SettingParser extends SettingParser {
                 $sv->error_at($si->name, "<0>{$error}");
             }
             return true;
-        } else if ($si->part2 === "__condition") {
+        } else if ($si->part2 === "/condition") {
             if (($v = $sv->base_parse_req($si)) === "") {
                 $sv->cur_object->search = null;
             } else {
@@ -159,21 +159,21 @@ class Responses_SettingParser extends SettingParser {
         }
 
         $rrds = [];
-        foreach ($sv->slist_keys("response__") as $ctr) {
-            $rrd = $sv->parse_members("response__{$ctr}");
-            if ($sv->reqstr("response__{$ctr}__delete")) {
+        foreach ($sv->slist_keys("response/") as $ctr) {
+            $rrd = $sv->parse_members("response/{$ctr}");
+            if ($sv->reqstr("response/{$ctr}/delete")) {
                 if ($rrd->number) {
                     $this->round_transform[] = "when {$rrd->number} then 0";
                 }
             } else {
-                $sv->check_date_before("response__{$ctr}__open", "response__{$ctr}__done", false);
+                $sv->check_date_before("response/{$ctr}/open", "response/{$ctr}/done", false);
                 array_splice($rrds, $rrd->name === "" ? 0 : count($rrds), 0, [$rrd]);
             }
         }
 
         // having parsed all names, check for duplicates
-        foreach ($sv->slist_keys("response__") as $ctr) {
-            $sv->error_if_duplicate_member("response__", $ctr, "__name", "Response name");
+        foreach ($sv->slist_keys("response/") as $ctr) {
+            $sv->error_if_duplicate_member("response/", $ctr, "/name", "Response name");
         }
 
         $jrl = [];
@@ -210,7 +210,7 @@ class Responses_SettingParser extends SettingParser {
             foreach ($sv->conf->response_rounds() as $i => $rrd) {
                 if ($rrd->search) {
                     foreach ($rrd->search->message_list() as $mi) {
-                        $sv->append_item_at("response__" . ($i + 1) . "__condition", $mi);
+                        $sv->append_item_at("response/" . ($i + 1) . "/condition", $mi);
                     }
                 }
             }

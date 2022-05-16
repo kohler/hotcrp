@@ -329,7 +329,7 @@
         "name": "decisions/responses", "order": 10,
         "title": "Responses",
         "print_function": "*Responses_SettingParser::print",
-        "settings": ["response_active", "response", "response__$"]
+        "settings": ["response_active", "response", "response/$"]
     },
     {   "name": "responses", "alias": "decisions/responses"   },
     [   "responses/properties/name", 10, "*Responses_SettingParser::print_name"   ],

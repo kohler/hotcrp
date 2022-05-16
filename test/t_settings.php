@@ -450,10 +450,10 @@ class Settings_Tester {
         // rename unnamed response round
         $sv = SettingValues::make_request($this->u_chair, [
             "has_response" => 1,
-            "response__1__id" => "0",
-            "response__1__name" => "Butt",
-            "response__1__open" => "@" . (Conf::$now - 1),
-            "response__1__done" => "@" . (Conf::$now + 10000)
+            "response/1/id" => "0",
+            "response/1/name" => "Butt",
+            "response/1/open" => "@" . (Conf::$now - 1),
+            "response/1/done" => "@" . (Conf::$now + 10000)
         ]);
         xassert($sv->execute());
         xassert_array_eqq($sv->updated_fields(), ["responses"]);
@@ -478,10 +478,10 @@ class Settings_Tester {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_response_active" => 1,
             "has_response" => 1,
-            "response__1__id" => "0",
-            "response__1__name" => "ButtJRIOQOIFNINF",
-            "response__1__open" => "@" . (Conf::$now - 1),
-            "response__1__done" => "@" . (Conf::$now + 10000)
+            "response/1/id" => "0",
+            "response/1/name" => "ButtJRIOQOIFNINF",
+            "response/1/open" => "@" . (Conf::$now - 1),
+            "response/1/done" => "@" . (Conf::$now + 10000)
         ]);
         xassert($sv->execute());
         xassert_array_eqq($sv->updated_fields(), []);
@@ -489,10 +489,10 @@ class Settings_Tester {
         // add an unnamed response round
         $sv = SettingValues::make_request($this->u_chair, [
             "has_response" => 1,
-            "response__1__id" => '$',
-            "response__1__name" => "",
-            "response__1__open" => "@" . (Conf::$now - 1),
-            "response__1__done" => "@" . (Conf::$now + 10000)
+            "response/1/id" => "new",
+            "response/1/name" => "",
+            "response/1/open" => "@" . (Conf::$now - 1),
+            "response/1/done" => "@" . (Conf::$now + 10000)
         ]);
         xassert($sv->execute());
         xassert_array_eqq($sv->updated_fields(), ["responses"]);

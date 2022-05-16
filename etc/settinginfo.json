@@ -349,58 +349,58 @@
         "parser_class": "Responses_SettingParser", "type": "slist"
     },
     {
-        "name_pattern": "response__$",
+        "name_pattern": "response/$",
         "type": "object", "storage": "none", "parser_class": "Responses_SettingParser"
     },
-    {   "name_pattern": "response__$__id", "internal": true, "type": "string"   },
+    {   "name_pattern": "response/$/id", "internal": true, "type": "string"   },
     {
-        "name_pattern": "response__$__name",
+        "name_pattern": "response/$/name",
         "title": "Response name", "placeholder": "Response name",
         "type": "tag", "required": false, "size": 20,
         "storage": "member.name", "parser_class": "Responses_SettingParser"
     },
     {
-        "name_pattern": "response__$__title",
+        "name_pattern": "response/$/title",
         "internal": true, "parser_class": "Responses_SettingParser"
     },
     {
-        "name_pattern": "response__$__open",
+        "name_pattern": "response/$/open",
         "title": "Response start time", "type": "date",
-        "title_pattern": "${sv response__$__title} start time",
+        "title_pattern": "${sv response/$/title} start time",
         "storage": "member.open"
     },
     {
-        "name_pattern": "response__$__done",
+        "name_pattern": "response/$/done",
         "title": "Response hard deadline", "type": "date",
-        "title_pattern": "${sv response__$__title} hard deadline",
+        "title_pattern": "${sv response/$/title} hard deadline",
         "storage": "member.done"
     },
     {
-        "name_pattern": "response__$__grace",
+        "name_pattern": "response/$/grace",
         "title": "Response grace period", "type": "grace",
-        "title_pattern": "${sv response__$__title} grace period",
+        "title_pattern": "${sv response/$/title} grace period",
         "storage": "member.grace"
     },
     {
-        "name_pattern": "response__$__condition",
+        "name_pattern": "response/$/condition",
         "title": "Response condition",
         "type": "simplestring", "size": 40, "placeholder": "(All)",
-        "title_pattern": "${sv response__$__title} condition",
+        "title_pattern": "${sv response/$/title} condition",
         "storage": "member.condition", "parser_class": "Responses_SettingParser"
     },
     {
-        "name_pattern": "response__$__words",
+        "name_pattern": "response/$/words",
         "title": "Response word limit",
         "type": "int", "size": 5, "placeholder": "none", "default_value": 0,
-        "title_pattern": "${sv response__$__title} word limit",
+        "title_pattern": "${sv response/$/title} word limit",
         "storage": "member.words"
     },
     {
-        "name_pattern": "response__$__instructions",
+        "name_pattern": "response/$/instructions",
         "title": "Response instructions",
         "type": "htmlstring", "size": 3,
-        "default_message": ["resp_instrux", "response__$__words"],
-        "title_pattern": "${sv response__$__title} instructions",
+        "default_message": ["resp_instrux", "response/$/words"],
+        "title_pattern": "${sv response/$/title} instructions",
         "storage": "member.instructions", "parser_class": "Responses_SettingParser"
     },
 

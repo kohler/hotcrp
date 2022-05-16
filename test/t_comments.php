@@ -31,10 +31,10 @@ class Comments_Tester {
             "rev_open" => "1",
             "has_response" => "1",
             "response_active" => "1",
-            "response__1__id" => "0",
-            "response__1__name" => "",
-            "response__1__open" => "@" . (Conf::$now - 1),
-            "response__1__done" => "@" . (Conf::$now + 10000)
+            "response/1/id" => "0",
+            "response/1/name" => "",
+            "response/1/open" => "@" . (Conf::$now - 1),
+            "response/1/done" => "@" . (Conf::$now + 10000)
         ]);
         xassert($sv->execute());
 

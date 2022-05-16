@@ -710,10 +710,10 @@ $(function () { $(".js-settings-resp-active").trigger("change"); });
 
 handle_ui.on("js-settings-response-new", function () {
     var i, $rx, $rt = $("#response__new"), t;
-    for (i = 1; jQuery("#response__" + i).length; ++i) {
+    for (i = 1; $$("response/" + i); ++i) {
     }
-    $rt.before($rt.html().replace(/__\$/g, "__" + i));
-    $rx = $("#response__" + i);
+    $rt.before($rt.html().replace(/\/\$/g, "/" + i));
+    $rx = $("#response\\/" + i);
     $rx.find("textarea").css({height: "auto"}).autogrow();
     $rx.find(".need-suggest").each(suggest);
     $rx.find(".need-tooltip").each(tooltip);
