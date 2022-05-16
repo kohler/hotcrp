@@ -290,12 +290,19 @@ class Si {
 
     private function _collect_pages() {
         $this->_has_pages = true;
-        if ($this->pages === null
-            && $this->part2 !== null
-            && $this->part2 !== ""
-            && ($psi = $this->conf->si($this->part0 . $this->part1))) {
-            $psi->_collect_pages();
-            $this->pages = $psi->pages;
+        if ($this->pages === null && $this->part2 !== null) {
+            $pn = $this->part0;
+            if ($this->part2 !== "") {
+                $pn .= $this->part1;
+            } else if (str_ends_with($pn, "/")) {
+                $pn = substr($pn, 0, -1);
+            } else if (str_ends_with($pn, "__")) {
+                $pn = substr($pn, 0, -2);
+            }
+            if (($psi = $this->conf->si($pn))) {
+                $psi->_collect_pages();
+                $this->pages = $psi->pages;
+            }
         }
         if ($this->pages === null) {
             error_log("no pages for {$this->name}\n" . debug_string_backtrace());

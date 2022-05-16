@@ -162,7 +162,7 @@
         "name": "topics", "group": "subform", "order": 480,
         "title": "Topics", "hashid": "topics",
         "print_function": "Topics_SettingParser::print",
-        "settings": ["topic/$"]
+        "settings": ["topic"]
     },
 
 
@@ -303,7 +303,7 @@
         "name": "tracks", "group": "tags", "order": 750,
         "print_function": "*Tracks_SettingParser::print",
         "title": "Tracks", "hashid": "tracks",
-        "settings": ["track", "track__$"]
+        "settings": ["track"]
     },
     {
         "name": "__crosscheck/tracks", "order": 750,
@@ -329,7 +329,7 @@
         "name": "decisions/responses", "order": 10,
         "title": "Responses",
         "print_function": "*Responses_SettingParser::print",
-        "settings": ["response_active", "response", "response/$"]
+        "settings": ["response_active", "response"]
     },
     {   "name": "responses", "alias": "decisions/responses"   },
     [   "responses/properties/name", 10, "*Responses_SettingParser::print_name"   ],
@@ -379,7 +379,7 @@
         "name": "decisions/decision-types", "order": 400,
         "title": "Decision types",
         "print_function": "Decisions_SettingParser::print",
-        "settings": ["decision", "decision/$"]
+        "settings": ["decision"]
     },
     {
         "name": "decisions/final-versions", "order": 500,

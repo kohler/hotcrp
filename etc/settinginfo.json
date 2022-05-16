@@ -751,6 +751,9 @@
         "internal": true, "parser_class": "Tracks_SettingParser"
     },
     {
+        "name_pattern": "track__$__perm", "internal": true, "storage": "none"
+    },
+    {
         "name_pattern": "track__$__perm__$$",
         "type": "object", "storage": "none", "parser_class": "Tracks_SettingParser"
     },

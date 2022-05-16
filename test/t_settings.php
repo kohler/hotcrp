@@ -43,6 +43,9 @@ class Settings_Tester {
 
         $si = $this->conf->si("rf__1__order");
         xassert_eqq($si->first_page(), "reviewform");
+
+        $si = $this->conf->si("track__1__perm__view__tag");
+        xassert_eqq($si->first_page(), "tags");
     }
 
     function test_message_defaults() {
