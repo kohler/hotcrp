@@ -269,13 +269,13 @@ handle_ui.on("js-settings-delete-autosearch", function (event) {
 });
 
 handle_ui.on("js-settings-track-add", function () {
-    for (var i = 1; jQuery("#track__" + i).length; ++i) {
+    for (var i = 1; $$("track/" + i); ++i) {
     }
-    var trhtml = $("#settings-track-new").html().replace(/__\$/g, "__" + i);
-    $("#track__" + (i - 1)).after(trhtml);
-    var $j = jQuery("#track__" + i);
+    var trhtml = $("#settings-track-new").html().replace(/\/\$/g, "/" + i);
+    $("#track\\/" + (i - 1)).after(trhtml);
+    var $j = $("#track\\/" + i);
     $j.find(".need-suggest").each(suggest);
-    this.form.elements["track__".concat(i, "__tag")].focus();
+    this.form.elements["track/".concat(i, "/tag")].focus();
 });
 
 handle_ui.on("js-settings-topics-copy", function () {

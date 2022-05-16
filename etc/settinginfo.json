@@ -737,40 +737,40 @@
         "parser_class": "Tracks_SettingParser"
     },
     {
-        "name_pattern": "track__$",
+        "name_pattern": "track/$",
         "type": "object", "storage": "none", "parser_class": "Tracks_SettingParser"
     },
-    {   "name_pattern": "track__$__id", "internal": true, "type": "string"   },
+    {   "name_pattern": "track/$/id", "internal": true, "type": "string"   },
     {
-        "name_pattern": "track__$__tag",
+        "name_pattern": "track/$/tag",
         "title": "Track tag",
         "type": "tag", "size": 20, "autogrow": true, "storage": "member.tag"
     },
     {
-        "name_pattern": "track__$__title",
+        "name_pattern": "track/$/title",
         "internal": true, "parser_class": "Tracks_SettingParser"
     },
     {
-        "name_pattern": "track__$__perm", "internal": true, "storage": "none"
+        "name_pattern": "track/$/perm", "internal": true, "storage": "none"
     },
     {
-        "name_pattern": "track__$__perm__$$",
+        "name_pattern": "track/$/perm/$$",
         "type": "object", "storage": "none", "parser_class": "Tracks_SettingParser"
     },
     {
-        "name_pattern": "track__$__perm__$$__type",
-        "title_pattern": "${sv track__$__title} ${sv track__$__perm__$$__title} permission",
+        "name_pattern": "track/$/perm/$$/type",
+        "title_pattern": "${sv track/$/title} ${sv track/$/perm/$$/title} permission",
         "type": "radio", "values": ["", "+", "-", "none"], "storage": "member.type",
         "parser_class": "Tracks_SettingParser"
     },
     {
-        "name_pattern": "track__$__perm__$$__tag",
-        "title_pattern": "${sv track__$__title} ${sv track__$__perm__$$__title} permission",
+        "name_pattern": "track/$/perm/$$/tag",
+        "title_pattern": "${sv track/$/title} ${sv track/$/perm/$$/title} permission",
         "type": "tag", "storage": "member.tag",
         "parser_class": "Tracks_SettingParser"
     },
     {
-        "name_pattern": "track__$__perm__$$__title",
+        "name_pattern": "track/$/perm/$$/title",
         "internal": true, "parser_class": "Tracks_SettingParser"
     },
 
