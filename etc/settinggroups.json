@@ -130,7 +130,7 @@
         "name": "options", "group": "subform", "order": 440,
         "title": "Submission fields",
         "print_function": "*Options_SettingRenderer::print",
-        "settings": ["sf", "sf__$"]
+        "settings": ["sf"]
     },
     {   "name": "opt", "alias": "options"   },
     {

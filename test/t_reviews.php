@@ -1046,10 +1046,10 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         // rename field
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
-            "sf__1__name" => "Fudge",
-            "sf__1__id" => 1,
-            "sf__1__order" => 1,
-            "sf__1__type" => "numeric"
+            "sf/1/name" => "Fudge",
+            "sf/1/id" => 1,
+            "sf/1/order" => 1,
+            "sf/1/type" => "numeric"
         ]);
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "options");
@@ -1059,10 +1059,10 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         // retype field => fails
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
-            "sf__1__name" => "Fudge",
-            "sf__1__id" => 1,
-            "sf__1__order" => 1,
-            "sf__1__type" => "checkbox"
+            "sf/1/name" => "Fudge",
+            "sf/1/id" => 1,
+            "sf/1/order" => 1,
+            "sf/1/type" => "checkbox"
         ]);
         xassert(!$sv->execute());
         assert_search_papers($this->u_mgbaker, "has:fudge", "1 2 3 4 5");
@@ -1070,14 +1070,14 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         // delete old field, create new field with same name
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
-            "sf__1__name" => "Fudge",
-            "sf__1__id" => 1,
-            "sf__1__order" => 1,
-            "sf__1__delete" => 1,
-            "sf__2__name" => "Fudge",
-            "sf__2__id" => "\$",
-            "sf__2__type" => "checkbox",
-            "sf__2__order" => 2
+            "sf/1/name" => "Fudge",
+            "sf/1/id" => 1,
+            "sf/1/order" => 1,
+            "sf/1/delete" => 1,
+            "sf/2/name" => "Fudge",
+            "sf/2/id" => "new",
+            "sf/2/type" => "checkbox",
+            "sf/2/order" => 2
         ]);
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "options");
@@ -1086,10 +1086,10 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         // new field
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
-            "sf__1__name" => "Brownies",
-            "sf__1__id" => "\$",
-            "sf__1__order" => 100,
-            "sf__1__type" => "numeric"
+            "sf/1/name" => "Brownies",
+            "sf/1/id" => "new",
+            "sf/1/order" => 100,
+            "sf/1/type" => "numeric"
         ]);
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "options");
@@ -1104,24 +1104,24 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         // nonunique name => fail
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
-            "sf__1__name" => "Brownies",
-            "sf__1__id" => "\$",
-            "sf__1__order" => 100,
-            "sf__1__type" => "numeric"
+            "sf/1/name" => "Brownies",
+            "sf/1/id" => "new",
+            "sf/1/order" => 100,
+            "sf/1/type" => "numeric"
         ]);
         xassert(!$sv->execute());
         xassert_neqq(strpos($sv->full_feedback_text(), "is not unique"), false);
-        xassert($sv->has_error_at("sf__1__name"));
+        xassert($sv->has_error_at("sf/1/name"));
 
         // no name => fail
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
-            "sf__1__id" => "\$",
-            "sf__1__order" => 100,
-            "sf__1__type" => "numeric"
+            "sf/1/id" => "new",
+            "sf/1/order" => 100,
+            "sf/1/type" => "numeric"
         ]);
         xassert(!$sv->execute());
         xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
-        xassert($sv->has_error_at("sf__1__name"));
+        xassert($sv->has_error_at("sf/1/name"));
     }
 }

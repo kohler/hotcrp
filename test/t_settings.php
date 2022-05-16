@@ -531,30 +531,30 @@ class Settings_Tester {
         // recursive condition not allowed
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
-            "sf__1__name" => "Program",
-            "sf__1__id" => "\$",
-            "sf__1__order" => 100,
-            "sf__1__choices" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
-            "sf__1__type" => "radio",
-            "sf__1__presence" => "custom",
-            "sf__1__condition" => "Program:Honors"
+            "sf/1/name" => "Program",
+            "sf/1/id" => "new",
+            "sf/1/order" => 100,
+            "sf/1/choices" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
+            "sf/1/type" => "radio",
+            "sf/1/presence" => "custom",
+            "sf/1/condition" => "Program:Honors"
         ]);
         xassert(!$sv->execute());
 
         // newly-added field conditions can refer to other newly-added fields
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
-            "sf__1__name" => "Program",
-            "sf__1__id" => "\$",
-            "sf__1__order" => 100,
-            "sf__1__choices" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
-            "sf__1__type" => "radio",
-            "sf__2__name" => "Joint concentration",
-            "sf__2__id" => "\$",
-            "sf__2__order" => 101,
-            "sf__2__type" => "text",
-            "sf__2__presence" => "custom",
-            "sf__2__condition" => "Program:Joint*"
+            "sf/1/name" => "Program",
+            "sf/1/id" => "new",
+            "sf/1/order" => 100,
+            "sf/1/choices" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
+            "sf/1/type" => "radio",
+            "sf/2/name" => "Joint concentration",
+            "sf/2/id" => "new",
+            "sf/2/order" => 101,
+            "sf/2/type" => "text",
+            "sf/2/presence" => "custom",
+            "sf/2/condition" => "Program:Joint*"
         ]);
         xassert($sv->execute());
         xassert_eqq(trim($sv->full_feedback_text()), "");

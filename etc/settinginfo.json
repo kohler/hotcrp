@@ -222,60 +222,60 @@
         "parser_class": "Options_SettingParser", "type": "slist"
     },
     {
-        "name_pattern": "sf__$",
+        "name_pattern": "sf/$",
         "type": "object", "storage": "none", "parser_class": "Options_SettingParser"
     },
-    {   "name_pattern": "sf__$__id", "internal": true   },
+    {   "name_pattern": "sf/$/id", "internal": true   },
     {
-        "name_pattern": "sf__$__order",
-        "title": "Submission field order", "title_pattern": "‘${sv sf__$__name}’ order",
+        "name_pattern": "sf/$/order",
+        "title": "Submission field order", "title_pattern": "‘${sv sf/$/name}’ order",
         "type": "float", "storage": "member.order"
     },
     {
-        "name_pattern": "sf__$__name", "title": "Submission field name",
+        "name_pattern": "sf/$/name", "title": "Submission field name",
         "type": "simplestring", "storage": "member.name",
         "placeholder": "Field name", "size": 50, "parser_class": "Options_SettingParser"
     },
     {
-        "name_pattern": "sf__$__type",
-        "title": "Submission field type", "title_pattern": "‘${sv sf__$__name}’ type",
+        "name_pattern": "sf/$/type",
+        "title": "Submission field type", "title_pattern": "‘${sv sf/$/name}’ type",
         "type": "simplestring", "storage": "member.type", "parser_class": "Options_SettingParser"
     },
     {
-        "name_pattern": "sf__$__description",
-        "title": "Submission field description", "title_pattern": "‘${sv sf__$__name}’ description",
+        "name_pattern": "sf/$/description",
+        "title": "Submission field description", "title_pattern": "‘${sv sf/$/name}’ description",
         "type": "htmlstring", "size": 2, "autogrow": true,
         "storage": "member.description"
     },
     {
-        "name_pattern": "sf__$__choices",
-        "title": "Submission field choices", "title_pattern": "‘${sv sf__$__name}’ choices",
+        "name_pattern": "sf/$/choices",
+        "title": "Submission field choices", "title_pattern": "‘${sv sf/$/name}’ choices",
         "type": "longstring", "size": 3, "autogrow": true,
         "storage": "member.selector", "parser_class": "Options_SettingParser"
     },
     {
-        "name_pattern": "sf__$__required",
-        "title": "Submission field requirement", "title_pattern": "‘${sv sf__$__name}’ requirement",
+        "name_pattern": "sf/$/required",
+        "title": "Submission field requirement", "title_pattern": "‘${sv sf/$/name}’ requirement",
         "type": "radio", "values": [0, 1], "storage": "member.required"
     },
     {
-        "name_pattern": "sf__$__display",
-        "title": "Submission field display", "title_pattern": "‘${sv sf__$__name}’ display",
+        "name_pattern": "sf/$/display",
+        "title": "Submission field display", "title_pattern": "‘${sv sf/$/name}’ display",
         "type": "radio", "values": ["prominent", "topics", "submission"], "storage": "member.display"
     },
     {
-        "name_pattern": "sf__$__visibility",
-        "title": "Submission field visibility", "title_pattern": "‘${sv sf__$__name}’ visibility",
+        "name_pattern": "sf/$/visibility",
+        "title": "Submission field visibility", "title_pattern": "‘${sv sf/$/name}’ visibility",
         "type": "radio", "values": ["all", "nonblind", "conflict", "review", "admin"], "storage": "member.visibility"
     },
     {
-        "name_pattern": "sf__$__presence",
-        "title": "Submission field presence", "title_pattern": "‘${sv sf__$__name}’ presence",
+        "name_pattern": "sf/$/presence",
+        "title": "Submission field presence", "title_pattern": "‘${sv sf/$/name}’ presence",
         "type": "radio", "values": ["all", "final", "custom"], "storage": "member.presence"
     },
     {
-        "name_pattern": "sf__$__condition",
-        "title": "Submission field presence condition", "title_pattern": "‘${sv sf__$__name}’ presence condition",
+        "name_pattern": "sf/$/condition",
+        "title": "Submission field presence condition", "title_pattern": "‘${sv sf/$/name}’ presence condition",
         "type": "simplestring", "size": 30, "placeholder": "Search", "storage": "member.exists_if",
         "parser_class": "SubFieldCondition_SettingParser"
     },

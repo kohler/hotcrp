@@ -38,10 +38,10 @@ class Options_SettingRenderer {
 
 
     function print_name(SettingValues $sv) {
-        echo '<div class="', $sv->control_class("sf__{$this->ctr}__name", "entryi mb-3"), '" data-property="name">',
+        echo '<div class="', $sv->control_class("sf/{$this->ctr}/name", "entryi mb-3"), '" data-property="name">',
             '<div class="entry">',
-            $sv->feedback_at("sf__{$this->ctr}__name");
-        $sv->print_entry("sf__{$this->ctr}__name", [
+            $sv->feedback_at("sf/{$this->ctr}/name");
+        $sv->print_entry("sf/{$this->ctr}/name", [
             "class" => "need-tooltip font-weight-bold want-focus",
             "aria-label" => "Field name",
             "data-tooltip-info" => "settings-sf",
@@ -51,7 +51,7 @@ class Options_SettingRenderer {
     }
 
     function print_type(SettingValues $sv) {
-        $curt = $sv->oldv("sf__{$this->ctr}__type");
+        $curt = $sv->oldv("sf/{$this->ctr}/type");
         $jtypes = $sv->conf->option_type_map();
         uasort($jtypes, "Conf::xt_order_compare");
 
@@ -67,7 +67,7 @@ class Options_SettingRenderer {
             }
         }
 
-        $name = "sf__{$this->ctr}__type";
+        $name = "sf/{$this->ctr}/type";
         if (count($otypes) === 1) {
             $sv->print_control_group($name, "Type",
                 Ht::hidden($name, $curt, ["id" => $name, "class" => "uich js-settings-sf-type"])
@@ -82,7 +82,7 @@ class Options_SettingRenderer {
     }
 
     function print_choices(SettingValues $sv) {
-        $sv->print_textarea_group("sf__{$this->ctr}__choices", "Choices", [
+        $sv->print_textarea_group("sf/{$this->ctr}/choices", "Choices", [
             "horizontal" => true,
             "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-sf",
@@ -92,7 +92,7 @@ class Options_SettingRenderer {
     }
 
     function print_description(SettingValues $sv) {
-        $sv->print_textarea_group("sf__{$this->ctr}__description", "Description", [
+        $sv->print_textarea_group("sf/{$this->ctr}/description", "Description", [
             "horizontal" => true,
             "class" => "w-entry-text settings-sf-description need-tooltip",
             "data-tooltip-info" => "settings-sf",
@@ -102,7 +102,7 @@ class Options_SettingRenderer {
     }
 
     function print_presence(SettingValues $sv) {
-        $sv->print_select_group("sf__{$this->ctr}__presence", "Present on", [
+        $sv->print_select_group("sf/{$this->ctr}/presence", "Present on", [
             "all" => "All submissions", "final" => "Final versions only"
         ], [
             "horizontal" => true,
@@ -111,7 +111,7 @@ class Options_SettingRenderer {
     }
 
     function print_required(SettingValues $sv) {
-        $sv->print_select_group("sf__{$this->ctr}__required", "Required", [
+        $sv->print_select_group("sf/{$this->ctr}/required", "Required", [
             "0" => "No", "1" => "Yes"
         ], [
             "horizontal" => true,
@@ -127,10 +127,10 @@ class Options_SettingRenderer {
             "review" => "Hidden until review",
             "admin" => "Hidden from reviewers"
         ];
-        if ($sv->oldv("sf__{$this->ctr}__visibility") !== "conflict") {
+        if ($sv->oldv("sf/{$this->ctr}/visibility") !== "conflict") {
             unset($options["conflict"]);
         }
-        $sv->print_select_group("sf__{$this->ctr}__visibility", "Visibility", $options, [
+        $sv->print_select_group("sf/{$this->ctr}/visibility", "Visibility", $options, [
             "horizontal" => true,
             "group_attr" => ["data-property" => "visibility"],
             "group_open" => true,
@@ -142,7 +142,7 @@ class Options_SettingRenderer {
     }
 
     function print_display(SettingValues $sv) {
-        $sv->print_select_group("sf__{$this->ctr}__display", "Display", [
+        $sv->print_select_group("sf/{$this->ctr}/display", "Display", [
             "prominent" => "Normal", "topics" => "Grouped with topics", "submission" => "Near submission"
         ], [
             "horizontal" => true,
@@ -162,7 +162,7 @@ class Options_SettingRenderer {
 
 
     private function print_one_option_view(PaperOption $io, $ctr) {
-        echo '<div id="sf__', $ctr, '__view" class="settings-sf-view settings-sf-example fn2 ui js-foldup">';
+        echo '<div id="sf/', $ctr, '/view" class="settings-sf-view settings-sf-example fn2 ui js-foldup">';
         if ($io->exists_condition()) {
             $this->pt->msg_at($io->formid, "<0>Present on submissions matching ‘" . $io->exists_condition() . "’", MessageSet::WARNING_NOTE);
         }
@@ -185,10 +185,10 @@ class Options_SettingRenderer {
 
     private function print_one_option(SettingValues $sv, $ctr) {
         $this->ctr = $ctr;
-        $fid = $sv->reqstr("sf__{$ctr}__id");
+        $fid = $sv->reqstr("sf/{$ctr}/id");
         $this->io = is_numeric($fid) ? $sv->conf->option_by_id(intval($fid)) : null;
 
-        echo '<div id="sf__', $ctr, '" class="settings-sf ',
+        echo '<div id="sf/', $ctr, '" class="settings-sf ',
             $this->io ? '' : 'is-new ',
             'has-fold fold2o ui-unfold js-unfold-focus hidden">';
 
@@ -196,9 +196,9 @@ class Options_SettingRenderer {
             $this->print_one_option_view($this->io, $ctr);
         }
 
-        echo '<div id="sf__', $ctr, '__edit" class="settings-sf-edit fx2">',
-            Ht::hidden("sf__{$ctr}__id", $this->io ? $this->io->id : "\$", ["class" => "settings-sf-id", "data-default-value" => $this->io ? $this->io->id : ""]),
-            Ht::hidden("sf__{$ctr}__order", $ctr, ["class" => "settings-sf-order", "data-default-value" => $this->io ? $this->io->order : ""]);
+        echo '<div id="sf/', $ctr, '/edit" class="settings-sf-edit fx2">',
+            Ht::hidden("sf/{$ctr}/id", $this->io ? $this->io->id : "new", ["class" => "settings-sf-id", "data-default-value" => $this->io ? $this->io->id : ""]),
+            Ht::hidden("sf/{$ctr}/order", $ctr, ["class" => "settings-sf-order", "data-default-value" => $this->io ? $this->io->order : ""]);
         $sv->print_group("submissionfield/properties");
         echo '</div>';
 
@@ -208,7 +208,7 @@ class Options_SettingRenderer {
 
     private function print_js_trigger($ctr) {
         if ($this->_last_ctr !== null && $this->_last_ctr !== "\$") {
-            echo Ht::unstash_script('$("#sf__' . $this->_last_ctr . '").trigger("hotcrpsettingssf")');
+            echo Ht::unstash_script('$("#sf\\\\/' . $this->_last_ctr . '").trigger("hotcrpsettingssf")');
         }
         $this->_last_ctr = $ctr;
     }
@@ -248,7 +248,7 @@ class Options_SettingRenderer {
         Ht::stash_html('<div id="settings-sf-caption-choices" class="hidden"><p>Enter choices one per line.</p></div>', 'settings-sf-caption-choices');
         echo Ht::unstash();
 
-        if ($sv->slist_keys("sf__")) {
+        if ($sv->slist_keys("sf/")) {
             echo '<div class="feedback is-note mb-4">Click on a field to edit it.</div>';
         }
 
@@ -258,7 +258,7 @@ class Options_SettingRenderer {
             htmlspecialchars(json_encode_browser($type_name_placeholders)),
             '">';
         // NB: div#settings-sform must ONLY contain fields
-        foreach ($sv->slist_keys("sf__") as $ctr) {
+        foreach ($sv->slist_keys("sf/") as $ctr) {
             $this->print_one_option($sv, $ctr);
         }
         echo "</div>";
@@ -365,9 +365,9 @@ class Options_SettingParser extends SettingParser {
         if ($si->name === "sf") {
             return;
         }
-        assert($si->part0 === "sf__");
+        assert($si->part0 === "sf/");
         if ($si->part2 === "") {
-            $fid = intval($sv->vstr("{$si->name}__id"));
+            $fid = intval($sv->vstr("{$si->name}/id"));
             if ($fid <= 0 || !($f = $sv->conf->option_by_id($fid))) {
                 $f = self::make_placeholder_option($sv);
             }
@@ -385,14 +385,14 @@ class Options_SettingParser extends SettingParser {
     }
 
     function prepare_enumeration(SettingValues $sv, Si $si) {
-        $sv->map_enumeration("sf__", self::configurable_options($sv->conf));
+        $sv->map_enumeration("sf/", self::configurable_options($sv->conf));
     }
 
     /** @return bool */
     private function _apply_req_name(SettingValues $sv, Si $si) {
         $n = $sv->base_parse_req($si);
         if ($n === "") {
-            $tname = $sv->vstr("sf__{$si->part1}__type");
+            $tname = $sv->vstr("sf/{$si->part1}/type");
             $t = $sv->conf->option_type($tname ?? "");
             if ($t && ($t->require_name ?? true)) {
                 $sv->error_at($si, "<0>Entry required");
@@ -438,7 +438,7 @@ class Options_SettingParser extends SettingParser {
             if ($t !== "")
                 $selector[] = simplify_whitespace($t);
         }
-        if (($jtype = $sv->conf->option_type($sv->vstr("sf__{$si->part1}__type")))
+        if (($jtype = $sv->conf->option_type($sv->vstr("sf/{$si->part1}/type")))
             && ($jtype->has_selector ?? false)) {
             if (empty($selector)) {
                 $sv->error_at($si, "<0>Entry required (one choice per line)");
@@ -509,15 +509,15 @@ class Options_SettingParser extends SettingParser {
             $sv->error_at("sf", "<0>You modified options settings in another tab. Please reload.");
         }
         $nsfj = [];
-        foreach ($sv->slist_keys("sf__") as $ctr) {
-            $sfj = $sv->parse_members("sf__{$ctr}");
-            if ($sv->reqstr("sf__{$ctr}__delete")) {
+        foreach ($sv->slist_keys("sf/") as $ctr) {
+            $sfj = $sv->parse_members("sf/{$ctr}");
+            if ($sv->reqstr("sf/{$ctr}/delete")) {
                 if ($sfj->id !== DTYPE_INVALID) {
                     $this->_delete_optionids[] = $sfj->id;
                 }
             } else {
                 if ($sfj->id === DTYPE_INVALID) {
-                    $sv->error_if_missing("sf__{$ctr}__name");
+                    $sv->error_if_missing("sf/{$ctr}/name");
                     $this->_assign_new_id($sv->conf, $sfj);
                 }
                 $this->_fix_req_condition($sv, $sfj);
@@ -562,11 +562,11 @@ class Options_SettingParser extends SettingParser {
     function apply_req(SettingValues $sv, Si $si) {
         if ($si->name === "sf") {
             return $this->_apply_req_options($sv, $si);
-        } else if ($si->part2 === "__name") {
+        } else if ($si->part2 === "/name") {
             return $this->_apply_req_name($sv, $si);
-        } else if ($si->part2 === "__type") {
+        } else if ($si->part2 === "/type") {
             return $this->_apply_req_type($sv, $si);
-        } else if ($si->part2 === "__choices") {
+        } else if ($si->part2 === "/choices") {
             return $this->_apply_req_choices($sv, $si);
         } else {
             return false;
@@ -593,7 +593,7 @@ class Options_SettingParser extends SettingParser {
             $opts = Options_SettingParser::configurable_options($sv->conf);
             foreach (array_values($opts) as $ctrz => $f) {
                 if ($f->visibility() === PaperOption::VIS_AUTHOR) {
-                    $visname = "sf__" . ($ctrz + 1) . "__visibility";
+                    $visname = "sf/" . ($ctrz + 1) . "/visibility";
                     $sv->warning_at($visname, "<5>" . $sv->setting_link("All submissions are blind", "sub_blind") . ", so this field is always hidden");
                     $sv->inform_at($visname, "<0>Would “hidden until review” visibility be better?");
                 }

@@ -91,7 +91,7 @@ function settings_sf_order() {
     $(c).find(".settings-sf:last-child .movedown").prop("disabled", true);
     for (n = c.firstChild; n; n = n.nextSibling) {
         pos = hasClass(n, "deleted") ? 0 : ++i;
-        form.elements[n.id + "__order"].value = pos;
+        form.elements[n.id + "/order"].value = pos;
     }
     form_highlight("#settingsform");
 }
@@ -110,7 +110,7 @@ handle_ui.on("js-settings-sf-type", function (event) {
                 toggleClass(e, "hidden", !props.includes(e.getAttribute("data-property")));
         }
     }
-    e = this.form.elements[this.name.replace("__type", "__name")];
+    e = this.form.elements[this.name.replace("/type", "/name")];
     if (e) {
         e.placeholder = (type_name_placeholders || {})[this.value] || "Field name";
     }
@@ -152,14 +152,14 @@ function add_dialog() {
             samp = samps[opt.value | 0],
             h = $$("settings-sf-new").innerHTML,
             next = 1, odiv;
-        while ($$("sf__" + next + "__name"))
+        while ($$("sf/" + next + "/name"))
             ++next;
-        h = h.replace(/__\$/g, "__" + next);
+        h = h.replace(/\/\$/g, "/" + next);
         odiv = $(h).removeClass("hidden").appendTo("#settings-sform");
         odiv.find(".need-autogrow").autogrow();
         odiv.find(".need-tooltip").each(tooltip);
         odiv.find(".js-settings-sf-type").val(samp.getAttribute("data-name")).change();
-        $$("sf__" + next + "__name").focus();
+        $$("sf/" + next + "/name").focus();
         settings_sf_order();
         $d.close();
         event.preventDefault();
@@ -188,9 +188,9 @@ function add_dialog() {
 handle_ui.on("js-settings-sf-add", add_dialog);
 
 $(document).on("hotcrpsettingssf", ".settings-sf", function (evt) {
-    var view = document.getElementById(this.id + "__view"),
-        edit = document.getElementById(this.id + "__edit"),
-        type = document.getElementById(this.id + "__type");
+    var view = document.getElementById(this.id + "/view"),
+        edit = document.getElementById(this.id + "/edit"),
+        type = document.getElementById(this.id + "/type");
     settings_disable_children(view);
     if (edit
         && !form_differs(edit)
@@ -204,6 +204,15 @@ $(document).on("hotcrpsettingssf", ".settings-sf", function (evt) {
 });
 
 handle_ui.on("unfold.settings-sf", settings_field_unfold, -1);
+
+tooltip.add_builder("settings-sf", function (info) {
+    var x = "#settings-sf-caption-choices";
+    if (/\/name$/.test(this.name))
+        x = "#settings-sf-caption-name";
+    else if (/\/condition$/.test(this.name))
+        x = "#settings-sf-caption-condition";
+    return $.extend({anchor: "h", content: $(x).html(), className: "gray"}, info);
+});
 
 })();
 // END SUBMISSION FIELD SETTINGS
@@ -475,15 +484,6 @@ tooltip.add_builder("settings-rf", function (info) {
     return $.extend({
         anchor: "w", content: $("#settings-rf-caption-" + m[1]).html(), className: "gray"
     }, info);
-});
-
-tooltip.add_builder("settings-sf", function (info) {
-    var x = "#settings-sf-caption-choices";
-    if (/__name$/.test(this.name))
-        x = "#settings-sf-caption-name";
-    else if (/__condition$/.test(this.name))
-        x = "#settings-sf-caption-condition";
-    return $.extend({anchor: "h", content: $(x).html(), className: "gray"}, info);
 });
 
 function option_value_html(fieldj, value) {
