@@ -1432,7 +1432,7 @@ class Tagger {
             }
             if (($link = $this->link($tag))) {
                 $tsuf = substr($tag, strlen($base));
-                $tx = "<a class=\"qo pw\" href=\"{$link}\"><u class=\"x\">#{$base}</u>{$tsuf}</a>";
+                $tx = "<a class=\"qo ibw\" href=\"{$link}\"><u class=\"x\">#{$base}</u>{$tsuf}</a>";
             } else {
                 $tx = "#{$tag}";
             }

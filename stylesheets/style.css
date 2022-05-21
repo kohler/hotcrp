@@ -349,6 +349,10 @@ span.sep {
 	white-space: pre-wrap;
 	overflow-wrap: break-word;
 }
+.ibw {
+	display: inline-block;
+	overflow-wrap: break-word;
+}
 .text-break-line {
 	white-space: pre-line;
 }
