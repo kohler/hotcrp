@@ -108,16 +108,16 @@ class Tags_API {
         $interestall = !$prow || isset($qreq->tags);
         if ($prow) {
             if (isset($qreq->tags)) {
-                $x[] = "$prow->paperId,tag,all#clear";
+                $x[] = "{$prow->paperId},tag,all#clear";
                 foreach (Tagger::split($qreq->tags) as $t) {
-                    $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t);
+                    $x[] = "{$prow->paperId},tag," . CsvGenerator::quote($t);
                 }
             }
             foreach (Tagger::split((string) $qreq->addtags) as $t) {
-                $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t);
+                $x[] = "{$prow->paperId},tag," . CsvGenerator::quote($t);
             }
             foreach (Tagger::split((string) $qreq->deltags) as $t) {
-                $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t . "#clear");
+                $x[] = "{$prow->paperId},tag," . CsvGenerator::quote($t . "#clear");
             }
         } else if (isset($qreq->tagassignment)) {
             $pid = -1;
@@ -125,7 +125,7 @@ class Tags_API {
                 if ($w !== "" && ctype_digit($w)) {
                     $pid = intval($w);
                 } else if ($w !== "" && $pid > 0) {
-                    $x[] = "$pid,tag," . CsvGenerator::quote($w);
+                    $x[] = "{$pid},tag," . CsvGenerator::quote($w);
                     $pids[$pid] = true;
                 }
             }

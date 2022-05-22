@@ -40,7 +40,7 @@ class Topics_SettingParser extends SettingParser {
         }
         echo "</p>\n", Ht::hidden("has_topic", 1);
 
-        if (($topic_counters = $sv->slist_keys("topic__"))) {
+        if (($topic_counters = $sv->slist_keys("topic/"))) {
             echo '<div class="mg has-copy-topics"><table><thead><tr><th style="text-align:left">';
             if (!empty($interests)) {
                 echo '<span class="float-right n"># PC interests: </span>';

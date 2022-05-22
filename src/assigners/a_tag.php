@@ -155,8 +155,12 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             || ($m[4] !== "" && $m[4] !== "#")) {
             $state->error("<0>Invalid tag ‘{$tag}’");
             return false;
-        } else if ($xvalue !== "" && $m[5] !== "") {
-            $state->error("<0>‘{$tag}’: You have a ‘tag value’ column, so the tag value specified here is ignored");
+        }
+
+        // check parts
+        $m[5] = trim($m[5]);
+        if ($xvalue !== "" && $m[5] !== "" && $m[5] !== $xvalue) {
+            $state->error("<0>‘{$tag}’: Value conflicts with ‘tag_value’");
             return false;
         } else if (($this->remove || str_starts_with($m[1], "-")) && $m[5] !== "") {
             $state->warning("<0>‘{$tag}’: Tag values ignored when removing a tag");
@@ -173,7 +177,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             $xuser = $m[2];
         }
         $xtag = $m[3];
-        $xvalue = $xvalue !== "" ? $xvalue : trim($m[5]);
+        $xvalue = $xvalue !== "" ? $xvalue : $m[5];
         $xnext = $this->isnext;
 
         // parse index

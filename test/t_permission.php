@@ -145,7 +145,6 @@ class Permission_Tester {
         $user_marina = $this->u_marina;
         $user_van = $this->u_van;
         $user_mgbaker = $this->u_mgbaker;
-        $user_shenker = $this->u_shenker;
         $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
         $user_varghese = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu"); // pc
         $user_wilma = $this->conf->checked_user_by_email("ojuelegba@gmail.com"); // pc
@@ -222,21 +221,21 @@ class Permission_Tester {
 
         // limits are obeyed: all searches return subsets of `viewable`
         assert_search_papers($user_chair, ["q" => "", "t" => "s"], "1-30");
-        assert_search_papers($user_shenker, ["q" => "", "t" => "s"], "1-30");
+        assert_search_papers($this->u_shenker, ["q" => "", "t" => "s"], "1-30");
         assert_search_papers($user_randy, ["q" => "", "t" => "s"], "6");
         assert_search_papers($user_chair, ["q" => "", "t" => "a"], "");
-        assert_search_papers($user_shenker, ["q" => "", "t" => "a"], "20 29 30");
+        assert_search_papers($this->u_shenker, ["q" => "", "t" => "a"], "20 29 30");
         assert_search_papers($user_randy, ["q" => "", "t" => "a"], "6");
 
         assert_search_ids($user_chair, ["q" => "", "t" => "s"], "1-30");
-        assert_search_ids($user_shenker, ["q" => "", "t" => "s"], "1-30");
+        assert_search_ids($this->u_shenker, ["q" => "", "t" => "s"], "1-30");
         assert_search_ids($user_randy, ["q" => "", "t" => "s"], "6");
         assert_search_ids($user_chair, ["q" => "", "t" => "a"], "");
-        assert_search_ids($user_shenker, ["q" => "", "t" => "a"], "20 29 30");
+        assert_search_ids($this->u_shenker, ["q" => "", "t" => "a"], "20 29 30");
         assert_search_ids($user_randy, ["q" => "", "t" => "a"], "6");
 
         // correct conflict information returned
-        $j = search_json($user_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_mgbaker], "id conf");
+        $j = search_json($this->u_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_mgbaker], "id conf");
         xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
         xassert_eqq($j[3]["conf"], "Y");
         xassert_eqq($j[18]["conf"], "Y");
@@ -244,7 +243,7 @@ class Permission_Tester {
             xassert_eqq($j[$i]["conf"], "N");
         }
 
-        $j = search_json($user_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_jon], "id conf");
+        $j = search_json($this->u_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_jon], "id conf");
         xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
         xassert_eqq($j[17]["conf"], "Y");
         foreach ([1, 2, 3, 4, 5, 15, 16, 18] as $i) {
@@ -252,7 +251,7 @@ class Permission_Tester {
         }
 
         assert_search_papers($user_chair, "re:estrin", "4 8 18");
-        assert_search_papers($user_shenker, "re:estrin", "4 8 18");
+        assert_search_papers($this->u_shenker, "re:estrin", "4 8 18");
 
         // normals don't see conflicted reviews
         assert_search_papers($user_mgbaker, "re:estrin", "4 8");
@@ -352,6 +351,14 @@ class Permission_Tester {
         xassert(!$user_wilma->has_outstanding_review());
         xassert($user_wilma->can_view_review($paper1, $review1));
         xassert($user_wilma->can_view_review($paper1, $review2));
+    }
+
+    function test_tags() {
+        $user_chair = $this->u_chair;
+        $user_mgbaker = $this->u_mgbaker;
+        $user_estrin = $this->u_estrin;
+        $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
+        $user_varghese = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu"); // pc
 
         // set up some tags and tracks
         AssignmentSet::run($user_chair, "paper,tag\n3 9 13 17,green\n", true);
@@ -367,18 +374,18 @@ class Permission_Tester {
         // tag searches
         assert_search_papers($user_chair, "#green", "3 9 13 17");
         Dbl::qe("insert into PaperTag (paperId,tag,tagIndex) values (1,?,10), (1,?,5), (2,?,3)",
-                $user_jon->contactId . "~vote", $user_marina->contactId . "~vote", $user_marina->contactId . "~vote");
+                $user_jon->contactId . "~vote", $this->u_marina->contactId . "~vote", $this->u_marina->contactId . "~vote");
         assert_search_papers($user_jon, "#~vote", "1");
         assert_search_papers($user_jon, "#~vote≥10", "1");
         assert_search_papers($user_jon, "#~vote>10", "");
         assert_search_papers($user_jon, "#~vote=10", "1");
         assert_search_papers($user_jon, "#~vote<10", "");
         assert_search_papers($user_jon, "#~v*", "1");
-        assert_search_papers($user_marina, "#~vote", "2 1");
-        assert_search_papers($user_marina, "#~vote≥5", "1");
-        assert_search_papers($user_marina, "#~vote>5", "");
-        assert_search_papers($user_marina, "#~vote=5", "1");
-        assert_search_papers($user_marina, "#~vote<5", "2");
+        assert_search_papers($this->u_marina, "#~vote", "2 1");
+        assert_search_papers($this->u_marina, "#~vote≥5", "1");
+        assert_search_papers($this->u_marina, "#~vote>5", "");
+        assert_search_papers($this->u_marina, "#~vote=5", "1");
+        assert_search_papers($this->u_marina, "#~vote<5", "2");
         assert_search_papers($user_chair, "#marina~vote", "2 1");
         assert_search_papers($user_chair, "#red~vote", "1");
 
@@ -447,22 +454,22 @@ class Permission_Tester {
 
         // more AssignmentSet conflict checking
         assert_search_papers($user_chair, "#fart", "");
-        $assignset = new AssignmentSet($user_estrin, false);
+        $assignset = new AssignmentSet($this->u_estrin, false);
         $assignset->parse("paper,tag
         1,fart
         2,fart\n");
         xassert_eqq($assignset->full_feedback_text(), "You have a conflict with #1.\n");
 
-        xassert_assign($user_estrin, "paper,tag\n2,fart\n");
+        xassert_assign($this->u_estrin, "paper,tag\n2,fart\n");
         assert_search_papers($user_chair, "#fart", "2");
 
         xassert_assign($user_chair, "paper,tag\n1,#fart\n");
         assert_search_papers($user_chair, "#fart", "1 2");
-        assert_search_papers($user_estrin, "#fart", "2");
+        assert_search_papers($this->u_estrin, "#fart", "2");
 
         // check twiddle tags
         xassert_assign($user_chair, "paper,tag\n1,~fart\n1,~~fart\n1,varghese~fart\n1,mjh~fart\n");
-        $paper1->load_tags();
+        $paper1 = $user_chair->checked_paper_by_id(1);
         xassert_eqq(paper_tag_normalize($paper1),
                     "fart chair~fart mjh~fart varghese~fart jon~vote#10 marina~vote#5 ~~fart");
         assert_search_papers($user_chair, "#~~*art", "1");
@@ -555,6 +562,25 @@ class Permission_Tester {
         xassert_assign($user_chair, "paper,tag\n1,:poop:\n", true);
         xassert(!!$this->conf->setting("has_colontag"));
 
+        // NOT searches
+        assert_search_papers($user_chair, "#fart", "7 8 1 2 3 6 5 4");
+        assert_search_papers($user_chair, "tag:#fart", "1 2 3 4 5 6 7 8");
+        assert_search_papers($user_chair, "tag:fart", "1 2 3 4 5 6 7 8");
+        assert_search_papers($user_chair, "NOT #fart", "9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
+        assert_search_papers($user_chair, "-#fart", "9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
+
+        // Check all tags
+        assert_search_papers($user_chair, "#none", "9 10 11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
+        xassert_assign($user_chair, "paper,tag\n9,~private\n10,~~chair\n");
+        assert_search_papers($user_chair, "#none", "11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
+        assert_search_papers($user_mgbaker, "#none", "3 9 10 11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
+    }
+
+    function test_review_rounds() {
+        $user_chair = $this->u_chair;
+        $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
+        $user_pdruschel = $this->conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
+
         // round searches
         assert_search_papers($user_chair, "re:huitema", "8 10 13");
         assert_search_papers($user_chair, "re:huitema round:R1", "13");
@@ -596,36 +622,25 @@ class Permission_Tester {
         assert_search_papers($user_chair, "re:huitema", "8 10 13");
         assert_search_papers($user_chair, "8 10 13 re:huitema", "8 10 13");
 
-        // NOT searches
-        assert_search_papers($user_chair, "#fart", "7 8 1 2 3 6 5 4");
-        assert_search_papers($user_chair, "tag:#fart", "1 2 3 4 5 6 7 8");
-        assert_search_papers($user_chair, "tag:fart", "1 2 3 4 5 6 7 8");
-        assert_search_papers($user_chair, "NOT #fart", "9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
-        assert_search_papers($user_chair, "-#fart", "9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
-
-        // Check all tags
-        assert_search_papers($user_chair, "#none", "9 10 11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
-        xassert_assign($user_chair, "paper,tag\n9,~private\n10,~~chair\n");
-        assert_search_papers($user_chair, "#none", "11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
-        assert_search_papers($user_mgbaker, "#none", "3 9 10 11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
-
         // comment searches
+        $paper1 = $user_chair->checked_paper_by_id(1);
         $paper2 = $user_chair->checked_paper_by_id(2);
-        xassert($user_mgbaker->add_comment_state($paper2) !== 0);
-        xassert($user_mgbaker->add_comment_state($paper18) === 0);
-        xassert($user_marina->add_comment_state($paper1) !== 0);
-        xassert($user_marina->add_comment_state($paper18) !== 0);
+        $paper18 = $user_chair->checked_paper_by_id(18);
+        xassert($this->u_mgbaker->add_comment_state($paper2) !== 0);
+        xassert($this->u_mgbaker->add_comment_state($paper18) === 0);
+        xassert($this->u_marina->add_comment_state($paper1) !== 0);
+        xassert($this->u_marina->add_comment_state($paper18) !== 0);
         assert_search_papers($user_chair, "cmt:any", "1");
         assert_search_papers($user_chair, "has:comment", "1");
         assert_search_papers($user_chair, "has:response", "");
         assert_search_papers($user_chair, "has:author-comment", "1");
         $comment2 = new CommentInfo($paper18);
-        $c2ok = $comment2->save_comment(["text" => "test", "visibility" => "a", "blind" => false], $user_marina);
+        $c2ok = $comment2->save_comment(["text" => "test", "visibility" => "a", "blind" => false], $this->u_marina);
         xassert($c2ok);
         assert_search_papers($user_chair, "cmt:any", "1 18");
         assert_search_papers($user_chair, "cmt:any>1", "");
         $comment3 = new CommentInfo($paper18);
-        $c3ok = $comment3->save_comment(["text" => "test", "visibility" => "a", "blind" => false, "tags" => "redcmt"], $user_marina);
+        $c3ok = $comment3->save_comment(["text" => "test", "visibility" => "a", "blind" => false, "tags" => "redcmt"], $this->u_marina);
         xassert($c3ok);
         assert_search_papers($user_chair, "cmt:any>1", "18");
         assert_search_papers($user_chair, "cmt:jon", "");
@@ -635,7 +650,7 @@ class Permission_Tester {
 
         // comment notification
         $comment4 = new CommentInfo($paper2);
-        $comment4->save_comment(["text" => "test", "visibility" => "p", "blind" => false], $user_mgbaker);
+        $comment4->save_comment(["text" => "test", "visibility" => "p", "blind" => false], $this->u_mgbaker);
         MailChecker::check_db("test01-comment2");
         assert_search_papers($user_chair, "has:comment", "1 2 18");
         assert_search_papers($user_chair, "has:response", "");
@@ -645,12 +660,12 @@ class Permission_Tester {
         $this->conf->qe("insert into PaperWatch (paperId, contactId, watch) values (2,?,?) ?U on duplicate key update watch=?U(watch)", $user_chair->contactId, Contact::WATCH_REVIEW_EXPLICIT);
         $paper2->load_watch();
         $comment5 = new CommentInfo($paper2);
-        $comment5->save_comment(["text" => "second test", "visibility" => "p", "blind" => false], $user_mgbaker);
+        $comment5->save_comment(["text" => "second test", "visibility" => "p", "blind" => false], $this->u_mgbaker);
         MailChecker::check0();
 
         // explicit mention overrides no-notification
         $comment6 = new CommentInfo($paper2);
-        $comment6->save_comment(["text" => "third test, @Jane Chair", "visibility" => "p", "blind" => false], $user_mgbaker);
+        $comment6->save_comment(["text" => "third test, @Jane Chair", "visibility" => "p", "blind" => false], $this->u_mgbaker);
         MailChecker::check_db("test01-comment6");
 
         // restore watch
@@ -671,39 +686,40 @@ class Permission_Tester {
         xassert($review2a->reviewOrdinal == 0);
         xassert($user_jon->can_view_review($paper2, $review2a));
         xassert(!$user_pdruschel->can_view_review($paper2, $review2a));
-        xassert(!$user_mgbaker->can_view_review($paper2, $review2a));
+        xassert(!$this->u_mgbaker->can_view_review($paper2, $review2a));
+        $revreq = ["s01" => 5, "s02" => 4, "ready" => true];
         $review2a = save_review(2, $user_jon, $revreq);
         MailChecker::check_db("test01-review2A");
         xassert($review2a->reviewSubmitted && !$review2a->reviewAuthorSeen);
         xassert($review2a->reviewOrdinal == 1);
         xassert($user_jon->can_view_review($paper2, $review2a));
         xassert(!$user_pdruschel->can_view_review($paper2, $review2a));
-        xassert(!$user_mgbaker->can_view_review($paper2, $review2a));
+        xassert(!$this->u_mgbaker->can_view_review($paper2, $review2a));
         $review2b = save_review(2, $user_pdruschel, $revreq);
         MailChecker::check_db("test01-review2B");
         xassert($user_jon->can_view_review($paper2, $review2a));
         xassert($user_pdruschel->can_view_review($paper2, $review2a));
-        xassert(!$user_mgbaker->can_view_review($paper2, $review2a));
+        xassert(!$this->u_mgbaker->can_view_review($paper2, $review2a));
         AssignmentSet::run($user_chair, "paper,action,email\n2,secondary,mgbaker@cs.stanford.edu\n");
-        $review2d = fetch_review($paper2, $user_mgbaker);
+        $review2d = fetch_review($paper2, $this->u_mgbaker);
         xassert(!$review2d->reviewSubmitted);
         xassert($review2d->reviewNeedsSubmit == 1);
-        xassert(!$user_mgbaker->can_view_review($paper2, $review2a));
+        xassert(!$this->u_mgbaker->can_view_review($paper2, $review2a));
         $user_external = Contact::make_keyed($this->conf, ["email" => "external@_.com", "name" => "External Reviewer"])->store();
-        $user_mgbaker->assign_review(2, $user_external->contactId, REVIEW_EXTERNAL);
-        $review2d = fetch_review($paper2, $user_mgbaker);
+        $this->u_mgbaker->assign_review(2, $user_external->contactId, REVIEW_EXTERNAL);
+        $review2d = fetch_review($paper2, $this->u_mgbaker);
         xassert(!$review2d->reviewSubmitted);
         xassert($review2d->reviewNeedsSubmit == -1);
-        xassert(!$user_mgbaker->can_view_review($paper2, $review2a));
+        xassert(!$this->u_mgbaker->can_view_review($paper2, $review2a));
         $review2c = fetch_review($paper2, $user_external);
-        xassert(!$user_mgbaker->can_view_review($paper2, $review2c));
+        xassert(!$this->u_mgbaker->can_view_review($paper2, $review2c));
         $review2c = save_review(2, $user_external, $revreq);
         MailChecker::check_db("test01-review2C");
-        $review2d = fetch_review($paper2, $user_mgbaker);
+        $review2d = fetch_review($paper2, $this->u_mgbaker);
         xassert(!$review2d->reviewSubmitted);
         xassert($review2d->reviewNeedsSubmit == 0);
-        xassert($user_mgbaker->can_view_review($paper2, $review2a));
-        xassert($user_mgbaker->can_view_review($paper2, $review2c));
+        xassert($this->u_mgbaker->can_view_review($paper2, $review2a));
+        xassert($this->u_mgbaker->can_view_review($paper2, $review2c));
         assert_search_papers($this->u_chair, "2 AND re:4", "2");
     }
 
