@@ -647,6 +647,8 @@ function save_password($email, $encoded_password, $iscdb = false) {
 
 class TestRunner {
     static public $original_opt;
+    /** @var bool */
+    static public $verbose = false;
 
     static private function setup_assignments($assignments, Contact $user) {
         if (is_array($assignments)) {
@@ -703,11 +705,13 @@ class TestRunner {
         }
     }
 
+    /** @param bool $first */
     static function reset_options($first = false) {
         Conf::$main->qe("insert into Settings set name='options', value=1, data='[{\"id\":1,\"name\":\"Calories\",\"abbr\":\"calories\",\"type\":\"numeric\",\"order\":1,\"display\":\"default\"}]' ?U on duplicate key update data=?U(data)");
         Conf::$main->load_settings();
     }
 
+    /** @param bool $rebuild */
     static function reset_db($rebuild = false) {
         $conf = Conf::$main;
         $timer = new ProfileTimer;
@@ -780,8 +784,12 @@ class TestRunner {
         foreach ($ro->getMethods() as $m) {
             if (str_starts_with($m->name, "test")
                 && strlen($m->name) > 4
-                && ($m->name[4] === "_" || ctype_upper($m->name[4])))
+                && ($m->name[4] === "_" || ctype_upper($m->name[4]))) {
+                if (self::$verbose) {
+                    fwrite(STDERR, $ro->getName() . "::" . $m->name . "...\n");
+                }
                 $testo->{$m->name}();
+            }
         }
     }
 
@@ -809,3 +817,7 @@ class TestRunner {
 
 TestRunner::$original_opt = $Opt;
 TestRunner::set_navigation_base("/");
+global $argv;
+if (($argv[1] ?? "") === "-V" || ($argv[1] ?? "") === "--verbose") {
+    TestRunner::$verbose = true;
+}
