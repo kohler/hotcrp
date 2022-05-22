@@ -523,6 +523,9 @@ class Unit_Tester {
         xassert_eqq(SearchSplitter::span_balanced_parens("abc(def g)h)i jk"), 11);
         xassert_eqq(SearchSplitter::span_balanced_parens("abc(def [g)h)i jk"), 12);
         xassert_eqq(SearchSplitter::span_balanced_parens("abc(def sajf"), 12);
+
+        $m = SearchSplitter::split_balanced_parens(" a(b) )c");
+        xassert_array_eqq($m, ["a(b)", ")c"]);
     }
 
     function test_unpack_comparison() {

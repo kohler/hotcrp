@@ -409,6 +409,12 @@ class Permission_Tester {
         $assignset->execute();
         assert_search_papers($user_chair, "#any~vote", "1");
 
+        // check \v in AssignmentSet
+        $assignset = new AssignmentSet($user_chair, true);
+        $assignset->parse("paper,action,tag\n1,tag,fun#clear)nofun#clear\n");
+        xassert_eqq($assignset->full_feedback_text(), "Invalid tag ‘)nofun#clear’\n");
+        $assignset->execute();
+
         // check AssignmentSet conflict checking
         $assignset = new AssignmentSet($user_chair, false);
         $assignset->parse("paper,action,email\n1,pri,estrin@usc.edu\n");
