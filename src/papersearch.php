@@ -2281,7 +2281,7 @@ class PaperSearch extends MessageSet {
     /** @param string $str
      * @return string */
     static function escape_word($str) {
-        $pos = SearchSplitter::span_balanced_parens($str);
+        $pos = SearchSplitter::span_balanced_parens($str, 0, null, true);
         if ($pos === strlen($str)) {
             return $str;
         } else {
@@ -2313,7 +2313,7 @@ class PaperSearch extends MessageSet {
             $kwx = $t[0] === '"' ? substr($t, 1, -2) : substr($t, 0, -1);
             $kwd = $conf->search_keyword($kwx);
             if ($kwd && ($kwd->allow_parens ?? false)) {
-                return $t . $splitter->shift_balanced_parens();
+                return $t . $splitter->shift_balanced_parens(null, true);
             }
         }
         return $t . $splitter->shift("()");

@@ -86,10 +86,11 @@ class SearchSplitter {
     }
 
     /** @param ?string $endchars
+     * @param bool $allow_empty
      * @return string */
-    function shift_balanced_parens($endchars = null) {
+    function shift_balanced_parens($endchars = null, $allow_empty = false) {
         $pos0 = $this->pos;
-        $pos1 = self::span_balanced_parens($this->str, $pos0, $endchars);
+        $pos1 = self::span_balanced_parens($this->str, $pos0, $endchars, $allow_empty);
         $this->set_span_and_pos($pos1 - $pos0);
         return substr($this->str, $pos0, $pos1 - $pos0);
     }
@@ -122,11 +123,13 @@ class SearchSplitter {
     /** @param string $str
      * @param int $pos
      * @param ?string $endchars
+     * @param bool $allow_empty
      * @return int */
-    static function span_balanced_parens($str, $pos = 0, $endchars = null) {
+    static function span_balanced_parens($str, $pos = 0, $endchars = null, $allow_empty = false) {
         $pstack = "";
         $plast = "";
         $quote = 0;
+        $startpos = $allow_empty ? -1 : $pos;
         $len = strlen($str);
         while ($pos < $len) {
             $ch = $str[$pos];
@@ -145,7 +148,7 @@ class SearchSplitter {
                 $pos += 2;
             }
             if ($quote) {
-                if ($ch === "\\" && $pos + 1 < strlen($str)) {
+                if ($ch === "\\" && $pos + 1 < $len) {
                     ++$pos;
                 } else if ($ch === "\"") {
                     $quote = 0;
@@ -160,13 +163,17 @@ class SearchSplitter {
                 $pstack .= $plast;
                 $plast = "}";
             } else if ($ch === ")" || $ch === "]" || $ch === "}") {
-                do {
-                    $pcleared = $plast;
-                    $plast = (string) substr($pstack, -1);
-                    $pstack = (string) substr($pstack, 0, -1);
-                } while ($ch !== $pcleared && $pcleared !== "");
-                if ($pcleared === "") {
-                    break;
+                if ($pos === $startpos) {
+                    ++$startpos;
+                } else {
+                    do {
+                        $pcleared = $plast;
+                        $plast = (string) substr($pstack, -1);
+                        $pstack = (string) substr($pstack, 0, -1);
+                    } while ($ch !== $pcleared && $pcleared !== "");
+                    if ($pcleared === "") {
+                        break;
+                    }
                 }
             } else if ($ch === "\"") {
                 $quote = 1;
