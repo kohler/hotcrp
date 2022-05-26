@@ -404,7 +404,7 @@ class SettingValues extends MessageSet {
     function report() {
         $msgs = [];
         if ($this->_use_req && $this->has_error()) {
-            $msgs[] = new MessageItem("", "Your changes were not saved. Please fix these errors and try again.", MessageSet::PLAIN);
+            $msgs[] = new MessageItem("", "<0>Your changes were not saved. Please fix these errors and try again.", MessageSet::PLAIN);
         }
         foreach ($this->decorated_message_list() as $mi) {
             $msgs[] = $mi;
@@ -423,7 +423,7 @@ class SettingValues extends MessageSet {
         if (($si = $this->conf->si($name))) {
             return $si;
         } else {
-            throw new Exception(caller_landmark(2) . ": Unknown setting “{$name}”");
+            throw new Exception(caller_landmark(2) . ": Unknown setting ‘{$name}’");
         }
     }
 

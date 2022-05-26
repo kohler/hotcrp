@@ -154,9 +154,9 @@ class MimeText {
                 $mi->pos1 = $inlen - strlen($str);
                 $mi->context = $this->in;
                 if (preg_match('/[\s<>@]/', $str)) {
-                    $mi->message = "Invalid destination (possible quoting problem)";
+                    $mi->message = "<0>Invalid destination (possible quoting problem)";
                 } else {
-                    $mi->message = "Invalid email address";
+                    $mi->message = "<0>Invalid email address";
                 }
                 preg_match('/\A[^\s,;]*/', $str, $m);
                 $mi->pos2 = $mi->pos1 + strlen($m[0]);
@@ -167,7 +167,7 @@ class MimeText {
             if (!validate_email($email)
                 && $email !== "none"
                 && $email !== "hidden") {
-                $this->mi = $mi = new MessageItem(null, "Invalid email address", MessageSet::ERROR);
+                $this->mi = $mi = new MessageItem(null, "<0>Invalid email address", MessageSet::ERROR);
                 $mi->pos1 = $emailpos;
                 $mi->pos2 = $emailpos + strlen($email);
                 $mi->context = $this->in;
@@ -179,7 +179,7 @@ class MimeText {
                 && $str[0] !== ","
                 && $str[0] !== ";") {
                 if (!$this->mi) {
-                    $this->mi = $mi = new MessageItem(null, "Destinations must be separated with commas", MessageSet::ERROR);
+                    $this->mi = $mi = new MessageItem(null, "<0>Destinations must be separated with commas", MessageSet::ERROR);
                     $mi->pos1 = $mi->pos2 = $inlen - strlen($str);
                     $mi->context = $this->in;
                 }
