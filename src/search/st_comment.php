@@ -48,16 +48,28 @@ class Comment_SearchTerm extends SearchTerm {
             "has" => ">0"
         ];
     }
+    /** @param array{string,string,string,string} $m */
     static function response_factory($keyword, Contact $user, $kwfj, $m) {
-        $rrd = $user->conf->response_round($m[2]);
-        if (!$rrd
-            && $m[1] === ""
-            && preg_match('/\A(draft-?)(.*)\z/si', $m[2], $mm)) {
-            $m[1] = $mm[1];
-            $m[2] = $mm[2];
+        if ($m[2] === "") {
+            $round = 0;
+        } else {
+            if ($m[2] !== "-" && str_ends_with($m[2], "-")) {
+                $m[2] = substr($m[2], 0, -1);
+            }
             $rrd = $user->conf->response_round($m[2]);
+            if (!$rrd
+                && $m[1] === ""
+                && preg_match('/\A(draft-?)(.*)\z/si', $m[2], $mm)) {
+                $m[1] = $mm[1];
+                $m[2] = $mm[2];
+                $rrd = $user->conf->response_round($m[2]);
+            }
+            if (!$rrd) {
+                return null;
+            }
+            $round = $rrd->number;
         }
-        if (!$rrd || ($m[1] && $m[3])) {
+        if ($m[1] !== "" && $m[3] !== "") {
             return null;
         }
         return (object) [
@@ -65,8 +77,8 @@ class Comment_SearchTerm extends SearchTerm {
             "parse_function" => "Comment_SearchTerm::parse",
             "response" => true,
             "comment" => false,
-            "round" => $rrd->number,
-            "draft" => $m[1] || $m[3],
+            "round" => $round,
+            "draft" => $m[1] !== "" || $m[3] !== "",
             "only_author" => false,
             "has" => ">0"
         ];

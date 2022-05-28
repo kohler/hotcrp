@@ -244,7 +244,7 @@
         "expand_function": "Comment_SearchTerm::comment_factory"
     },
     {
-        "match": "(|draft-?)(\\w*)resp(?:onse)(|-?draft)",
+        "match": "(|draft-?)([-\\w]*)resp(?:onse)(|-?draft)",
         "expand_function": "Comment_SearchTerm::response_factory"
     },
     {

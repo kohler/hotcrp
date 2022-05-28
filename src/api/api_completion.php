@@ -66,8 +66,9 @@ class Completion_API {
             if (!in_array("has:response", $comp, true)) {
                 $comp[] = "has:response";
             }
-            if ($rrd->number) {
-                $comp[] = "has:{$rrd->name}response";
+            if (!$rrd->unnamed) {
+                $sep = strpos($rrd->name, "-") === false ? "" : "-";
+                $comp[] = "has:{$rrd->name}{$sep}response";
             }
         }
         if ($user->can_view_some_draft_response()) {
@@ -75,8 +76,9 @@ class Completion_API {
                 if (!in_array("has:draftresponse", $comp, true)) {
                     $comp[] = "has:draftresponse";
                 }
-                if ($rrd->number) {
-                    $comp[] = "has:draft{$rrd->name}response";
+                if (!$rrd->unnamed) {
+                    $sep = strpos($rrd->name, "-") === false ? "" : "-";
+                    $comp[] = "has:draft{$sep}{$rrd->name}{$sep}response";
                 }
             }
         }
