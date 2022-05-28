@@ -244,7 +244,7 @@ class UpdateSchema {
                 ++$n;
             }
             Dbl::free($result);
-            $cleanf(true);
+            $cleanf(null);
         } while ($n === 32);
     }
 
@@ -320,7 +320,7 @@ class UpdateSchema {
             }
         }
         Dbl::free($result);
-        $cleanf(true);
+        $cleanf(null);
         $kf = array_map(function ($k) { return "$k=null"; }, array_keys(self::$v175_text_field_map));
         return $this->conf->ql_ok("update PaperReview set " . join(", ", $kf));
     }
@@ -361,7 +361,7 @@ class UpdateSchema {
                        $row->paperId, $row->email]);
         }
         Dbl::free($result);
-        $cleanf(true);
+        $cleanf(null);
         $this->conf->ql_ok("unlock tables");
         return $this->conf->ql_ok("alter table ReviewRequest drop column `name`");
     }
@@ -380,7 +380,7 @@ class UpdateSchema {
             }
         }
         Dbl::free($result);
-        $cleanf(true);
+        $cleanf(null);
     }
 
     private function v199_selector_options() {
@@ -480,7 +480,7 @@ class UpdateSchema {
                 $last = +$rrow->timeDisplayed;
             }
         }
-        $cleanf(true);
+        $cleanf(null);
         return true;
     }
 
@@ -508,7 +508,7 @@ class UpdateSchema {
                 [simplify_whitespace($row->firstName), simplify_whitespace($row->lastName),
                  simplify_whitespace($row->affiliation), $row->contactId]);
         }
-        $cleanf(true);
+        $cleanf(null);
         Dbl::free($result);
         return true;
     }
@@ -740,7 +740,7 @@ class UpdateSchema {
         foreach ($users as $u) {
             $cleanf("update {$table} set unaccentedName=? where contactId=?", [strtolower(UnicodeHelper::deaccent($u->searchable_name())), $u->contactId]);
         }
-        $cleanf(true);
+        $cleanf(null);
         $this->conf->qe("unlock tables");
         return true;
     }

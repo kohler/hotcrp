@@ -815,68 +815,68 @@ class Conf {
     // database
 
     /** @return Dbl_Result */
-    function q(/* $qstr, ... */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), 0);
+    function q(...$args /* $qstr, ... */) {
+        return Dbl::do_query_on($this->dblink, $args, 0);
     }
     /** @return Dbl_Result */
-    function q_raw(/* $qstr */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_RAW);
+    function q_raw(...$args /* $qstr */) {
+        return Dbl::do_query_on($this->dblink, $args, Dbl::F_RAW);
     }
     /** @return Dbl_Result */
-    function q_apply(/* $qstr, $args */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_APPLY);
+    function q_apply(...$args /* $qstr, $argv */) {
+        return Dbl::do_query_on($this->dblink, $args, Dbl::F_APPLY);
     }
 
     /** @return Dbl_Result */
-    function ql(/* $qstr, ... */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_LOG);
+    function ql(...$args /* $qstr, ... */) {
+        return Dbl::do_query_on($this->dblink, $args, Dbl::F_LOG);
     }
     /** @return Dbl_Result */
-    function ql_raw(/* $qstr */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_RAW | Dbl::F_LOG);
+    function ql_raw(...$args /* $qstr */) {
+        return Dbl::do_query_on($this->dblink, $args, Dbl::F_RAW | Dbl::F_LOG);
     }
     /** @return Dbl_Result */
-    function ql_apply(/* $qstr, $args */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_APPLY | Dbl::F_LOG);
+    function ql_apply(...$args /* $qstr, $args */) {
+        return Dbl::do_query_on($this->dblink, $args, Dbl::F_APPLY | Dbl::F_LOG);
     }
     /** @return ?Dbl_Result */
-    function ql_ok(/* $qstr, ... */) {
-        $result = Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_LOG);
+    function ql_ok(...$args /* $qstr, ... */) {
+        $result = Dbl::do_query_on($this->dblink, $args, Dbl::F_LOG);
         return Dbl::is_error($result) ? null : $result;
     }
 
     /** @return Dbl_Result */
-    function qe(/* $qstr, ... */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR);
+    function qe(...$args /* $qstr, ... */) {
+        return Dbl::do_query_on($this->dblink, $args, Dbl::F_ERROR);
     }
     /** @return Dbl_Result */
-    function qe_raw(/* $qstr */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_RAW | Dbl::F_ERROR);
+    function qe_raw(...$args /* $qstr */) {
+        return Dbl::do_query_on($this->dblink, $args, Dbl::F_RAW | Dbl::F_ERROR);
     }
     /** @return Dbl_Result */
-    function qe_apply(/* $qstr, $args */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_APPLY | Dbl::F_ERROR);
+    function qe_apply(...$args /* $qstr, $args */) {
+        return Dbl::do_query_on($this->dblink, $args, Dbl::F_APPLY | Dbl::F_ERROR);
     }
 
     /** @return list<list<?string>> */
-    function fetch_rows(/* $qstr, ... */) {
-        return Dbl::fetch_rows(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
+    function fetch_rows(...$args /* $qstr, ... */) {
+        return Dbl::fetch_rows(Dbl::do_query_on($this->dblink, $args, Dbl::F_ERROR));
     }
     /** @return ?list<?string> */
-    function fetch_first_row(/* $qstr, ... */) {
-        return Dbl::fetch_first_row(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
+    function fetch_first_row(...$args /* $qstr, ... */) {
+        return Dbl::fetch_first_row(Dbl::do_query_on($this->dblink, $args, Dbl::F_ERROR));
     }
     /** @return ?object */
-    function fetch_first_object(/* $qstr, ... */) {
-        return Dbl::fetch_first_object(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
+    function fetch_first_object(...$args /* $qstr, ... */) {
+        return Dbl::fetch_first_object(Dbl::do_query_on($this->dblink, $args, Dbl::F_ERROR));
     }
     /** @return ?string */
-    function fetch_value(/* $qstr, ... */) {
-        return Dbl::fetch_value(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
+    function fetch_value(...$args /* $qstr, ... */) {
+        return Dbl::fetch_value(Dbl::do_query_on($this->dblink, $args, Dbl::F_ERROR));
     }
     /** @return ?int */
-    function fetch_ivalue(/* $qstr, ... */) {
-        return Dbl::fetch_ivalue(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
+    function fetch_ivalue(...$args /* $qstr, ... */) {
+        return Dbl::fetch_ivalue(Dbl::do_query_on($this->dblink, $args, Dbl::F_ERROR));
     }
 
     function db_error_html($getdb = true) {
@@ -5617,7 +5617,7 @@ class Conf {
         }
         return $this->_hook_map;
     }
-    function call_hooks($name, Contact $user = null /* ... args */) {
+    function call_hooks($name, Contact $user = null, ...$args) {
         $hs = ($this->hook_map())[$name] ?? null;
         foreach ($this->_hook_factories as $fj) {
             if ($fj->match === ".*"
@@ -5630,7 +5630,6 @@ class Conf {
             }
         }
         if ($hs !== null) {
-            $args = array_slice(func_get_args(), 1);
             usort($hs, "Conf::xt_priority_compare");
             $ids = [];
             foreach ($hs as $fj) {
@@ -5642,8 +5641,7 @@ class Conf {
                     if (self::xt_enabled($fj)) {
                         $fj->conf = $this;
                         $fj->user = $user;
-                        $args[0] = $fj;
-                        $x = call_user_func_array($fj->function, $args);
+                        $x = call_user_func($fj->function, $fj, ...$args);
                         unset($fj->conf, $fj->user);
                         if ($x === false) {
                             return false;

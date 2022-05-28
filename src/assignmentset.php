@@ -1960,8 +1960,8 @@ class AssignmentSet {
         return true;
     }
 
-    function stage_qe($query /* ... */) {
-        $this->stage_qe_apply($query, array_slice(func_get_args(), 1));
+    function stage_qe($query, ...$args) {
+        $this->stage_qe_apply($query, $args);
     }
     function stage_qe_apply($query, $args) {
         if (!$this->qe_stager) {

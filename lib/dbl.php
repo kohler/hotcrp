@@ -292,6 +292,9 @@ class Dbl {
         trigger_error(self::landmark() . ": database error: {$dblink->error} in {$query}");
     }
 
+    /** @param list $args
+     * @param int $flags
+     * @return array{\mysqli,string,list} */
     static private function query_args($args, $flags, $log_location) {
         $argpos = 0;
         $dblink = self::$default_dblink;
@@ -330,6 +333,10 @@ class Dbl {
         }
     }
 
+    /** @param \mysqli $dblink
+     * @param string $qstr
+     * @param list $argv
+     * @return string */
     static private function format_query_args($dblink, $qstr, $argv) {
         $original_qstr = $qstr;
         $strpos = $argpos = 0;
@@ -444,7 +451,7 @@ class Dbl {
             } else if ($nextch === "v") {
                 ++$nextpos;
                 if (!is_array($arg) || empty($arg)) {
-                    trigger_error(self::landmark() . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " should be nonempty array");
+                    trigger_error(self::landmark() . ": query `{$original_qstr}` argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " should be nonempty array");
                     $arg = "NULL";
                 } else {
                     $alln = -1;
@@ -458,7 +465,7 @@ class Dbl {
                             $alln = $n;
                         }
                         if ($alln !== $n && $alln !== -2) {
-                            trigger_error(self::landmark() . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " has components of different lengths");
+                            trigger_error(self::landmark() . ": query `{$original_qstr}` argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " has components of different lengths");
                             $alln = -2;
                         }
                         foreach ($x as &$y) {
@@ -486,18 +493,20 @@ class Dbl {
             $strpos = strlen($qstr) - strlen($suffix);
         }
         if ($simpleargs && $argpos !== count($argv)) {
-            trigger_error(self::landmark() . ": query '$original_qstr' unused arguments");
+            trigger_error(self::landmark() . ": query `{$original_qstr}` unused arguments");
         }
         return $qstr;
     }
 
-    static function format_query(/* [$dblink,] $qstr, ... */) {
-        list($dblink, $qstr, $argv) = self::query_args(func_get_args(), 0, false);
+    /** @return string */
+    static function format_query(...$args /* [$dblink,] $qstr, ... */) {
+        list($dblink, $qstr, $argv) = self::query_args($args, 0, false);
         return self::format_query_args($dblink, $qstr, $argv);
     }
 
-    static function format_query_apply(/* [$dblink,] $qstr, [$argv] */) {
-        list($dblink, $qstr, $argv) = self::query_args(func_get_args(), self::F_APPLY, false);
+    /** @return string */
+    static function format_query_apply(...$args /* [$dblink,] $qstr, [$argv] */) {
+        list($dblink, $qstr, $argv) = self::query_args($args, self::F_APPLY, false);
         return self::format_query_args($dblink, $qstr, $argv);
     }
 
@@ -528,13 +537,15 @@ class Dbl {
         return self::do_result($dblink, $flags, $qstr, self::call_query($dblink, $flags, "query", $qstr));
     }
 
-    /** @return Dbl_Result */
+    /** @param list $args
+     * @return Dbl_Result */
     static private function do_query($args, $flags) {
         list($dblink, $qstr, $argv) = self::query_args($args, $flags, true);
         return self::do_query_with($dblink, $qstr, $argv, $flags);
     }
 
-    /** @return Dbl_Result */
+    /** @param list $args
+     * @return Dbl_Result */
     static function do_query_on($dblink, $args, $flags) {
         list($unused_dblink, $qstr, $argv) = self::query_args($args, $flags, true);
         return self::do_query_with($dblink, $qstr, $argv, $flags);
@@ -556,7 +567,7 @@ class Dbl {
             if ($flags & self::F_ERROR) {
                 call_user_func(self::$error_handler, $dblink, $qstr);
             } else if ($flags & self::F_LOG) {
-                error_log(self::landmark() . ": database error: " . $dblink->error . " in $qstr");
+                error_log(self::landmark() . ": database error: {$dblink->error} in {$qstr}");
             }
         }
         if (self::$check_warnings
@@ -564,14 +575,15 @@ class Dbl {
             && $dblink->warning_count) {
             $wresult = $dblink->query("show warnings");
             while ($wresult && ($wrow = $wresult->fetch_row())) {
-                error_log(self::landmark() . ": database warning: $wrow[0] ($wrow[1]) $wrow[2]");
+                error_log(self::landmark() . ": database warning: {$wrow[0]} ({$wrow[1]}) {$wrow[2]}");
             }
             $wresult && $wresult->close();
         }
         return $result;
     }
 
-    /** @return Dbl_MultiResult */
+    /** @param list $args
+     * @return Dbl_MultiResult */
     static private function do_multi_query($args, $flags) {
         list($dblink, $qstr, $argv) = self::query_args($args, $flags, true);
         if (!($flags & self::F_RAW)) {
@@ -581,126 +593,130 @@ class Dbl {
     }
 
     /** @return Dbl_Result */
-    static function query(/* [$dblink,] $qstr, ... */) {
-        return self::do_query(func_get_args(), 0);
+    static function query(...$args /* [$dblink,] $qstr, [$qv...] */) {
+        return self::do_query($args, 0);
     }
 
     /** @return Dbl_Result */
-    static function query_raw(/* [$dblink,] $qstr */) {
-        return self::do_query(func_get_args(), self::F_RAW);
+    static function query_raw(...$args /* [$dblink,] $qstr */) {
+        return self::do_query($args, self::F_RAW);
     }
 
     /** @return Dbl_Result */
-    static function query_apply(/* [$dblink,] $qstr, [$argv] */) {
-        return self::do_query(func_get_args(), self::F_APPLY);
+    static function query_apply(...$args /* [$dblink,] $qstr, [$argv] */) {
+        return self::do_query($args, self::F_APPLY);
     }
 
     /** @return Dbl_Result */
-    static function q(/* [$dblink,] $qstr, ... */) {
-        return self::do_query(func_get_args(), 0);
+    static function q(...$args /* [$dblink,] $qstr, ... */) {
+        return self::do_query($args, 0);
     }
 
     /** @return Dbl_Result */
-    static function q_raw(/* [$dblink,] $qstr */) {
-        return self::do_query(func_get_args(), self::F_RAW);
+    static function q_raw(...$args /* [$dblink,] $qstr */) {
+        return self::do_query($args, self::F_RAW);
     }
 
     /** @return Dbl_Result */
-    static function q_apply(/* [$dblink,] $qstr, [$argv] */) {
-        return self::do_query(func_get_args(), self::F_APPLY);
+    static function q_apply(...$args /* [$dblink,] $qstr, [$argv] */) {
+        return self::do_query($args, self::F_APPLY);
     }
 
     /** @return Dbl_Result */
-    static function qx(/* [$dblink,] $qstr, ... */) {
-        return self::do_query(func_get_args(), self::F_ALLOWERROR);
+    static function qx(...$args /* [$dblink,] $qstr, ... */) {
+        return self::do_query($args, self::F_ALLOWERROR);
     }
 
     /** @return Dbl_Result */
-    static function qx_raw(/* [$dblink,] $qstr */) {
-        return self::do_query(func_get_args(), self::F_RAW | self::F_ALLOWERROR);
+    static function qx_raw(...$args /* [$dblink,] $qstr */) {
+        return self::do_query($args, self::F_RAW | self::F_ALLOWERROR);
     }
 
     /** @return Dbl_Result */
-    static function qx_apply(/* [$dblink,] $qstr, [$argv] */) {
-        return self::do_query(func_get_args(), self::F_APPLY | self::F_ALLOWERROR);
+    static function qx_apply(...$args /* [$dblink,] $qstr, [$argv] */) {
+        return self::do_query($args, self::F_APPLY | self::F_ALLOWERROR);
     }
 
     /** @return Dbl_Result */
-    static function ql(/* [$dblink,] $qstr, ... */) {
-        return self::do_query(func_get_args(), self::F_LOG);
+    static function ql(...$args /* [$dblink,] $qstr, ... */) {
+        return self::do_query($args, self::F_LOG);
     }
 
     /** @return Dbl_Result */
-    static function ql_raw(/* [$dblink,] $qstr */) {
-        return self::do_query(func_get_args(), self::F_RAW | self::F_LOG);
+    static function ql_raw(...$args /* [$dblink,] $qstr */) {
+        return self::do_query($args, self::F_RAW | self::F_LOG);
     }
 
     /** @return Dbl_Result */
-    static function ql_apply(/* [$dblink,] $qstr, [$argv] */) {
-        return self::do_query(func_get_args(), self::F_APPLY | self::F_LOG);
+    static function ql_apply(...$args /* [$dblink,] $qstr, [$argv] */) {
+        return self::do_query($args, self::F_APPLY | self::F_LOG);
     }
 
     /** @return Dbl_Result */
-    static function qe(/* [$dblink,] $qstr, ... */) {
-        return self::do_query(func_get_args(), self::F_ERROR);
+    static function qe(...$args /* [$dblink,] $qstr, ... */) {
+        return self::do_query($args, self::F_ERROR);
     }
 
     /** @return Dbl_Result */
-    static function qe_raw(/* [$dblink,] $qstr */) {
-        return self::do_query(func_get_args(), self::F_RAW | self::F_ERROR);
+    static function qe_raw(...$args /* [$dblink,] $qstr */) {
+        return self::do_query($args, self::F_RAW | self::F_ERROR);
     }
 
     /** @return Dbl_Result */
-    static function qe_apply(/* [$dblink,] $qstr, [$argv] */) {
-        return self::do_query(func_get_args(), self::F_APPLY | self::F_ERROR);
+    static function qe_apply(...$args /* [$dblink,] $qstr, [$argv] */) {
+        return self::do_query($args, self::F_APPLY | self::F_ERROR);
     }
 
     /** @return Dbl_MultiResult */
-    static function multi_q(/* [$dblink,] $qstr, ... */) {
-        return self::do_multi_query(func_get_args(), self::F_MULTI);
+    static function multi_q(...$args /* [$dblink,] $qstr, ... */) {
+        return self::do_multi_query($args, self::F_MULTI);
     }
 
     /** @return Dbl_MultiResult */
-    static function multi_q_raw(/* [$dblink,] $qstr */) {
-        return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_RAW);
+    static function multi_q_raw(...$args /* [$dblink,] $qstr */) {
+        return self::do_multi_query($args, self::F_MULTI | self::F_RAW);
     }
 
     /** @return Dbl_MultiResult */
-    static function multi_q_apply(/* [$dblink,] $qstr, [$argv] */) {
-        return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_APPLY);
+    static function multi_q_apply(...$args /* [$dblink,] $qstr, [$argv] */) {
+        return self::do_multi_query($args, self::F_MULTI | self::F_APPLY);
     }
 
     /** @return Dbl_MultiResult */
-    static function multi_ql(/* [$dblink,] $qstr, ... */) {
-        return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_LOG);
+    static function multi_ql(...$args /* [$dblink,] $qstr, ... */) {
+        return self::do_multi_query($args, self::F_MULTI | self::F_LOG);
     }
 
     /** @return Dbl_MultiResult */
-    static function multi_ql_raw(/* [$dblink,] $qstr */) {
-        return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_RAW | self::F_LOG);
+    static function multi_ql_raw(...$args /* [$dblink,] $qstr */) {
+        return self::do_multi_query($args, self::F_MULTI | self::F_RAW | self::F_LOG);
     }
 
     /** @return Dbl_MultiResult */
-    static function multi_ql_apply(/* [$dblink,] $qstr, [$argv] */) {
-        return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_APPLY | self::F_LOG);
+    static function multi_ql_apply(...$args /* [$dblink,] $qstr, [$argv] */) {
+        return self::do_multi_query($args, self::F_MULTI | self::F_APPLY | self::F_LOG);
     }
 
     /** @return Dbl_MultiResult */
-    static function multi_qe(/* [$dblink,] $qstr, ... */) {
-        return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_ERROR);
+    static function multi_qe(...$args /* [$dblink,] $qstr, ... */) {
+        return self::do_multi_query($args, self::F_MULTI | self::F_ERROR);
     }
 
     /** @return Dbl_MultiResult */
-    static function multi_qe_raw(/* [$dblink,] $qstr */) {
-        return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_RAW | self::F_ERROR);
+    static function multi_qe_raw(...$args /* [$dblink,] $qstr */) {
+        return self::do_multi_query($args, self::F_MULTI | self::F_RAW | self::F_ERROR);
     }
 
     /** @return Dbl_MultiResult */
-    static function multi_qe_apply(/* [$dblink,] $qstr, [$argv] */) {
-        return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_APPLY | self::F_ERROR);
+    static function multi_qe_apply(...$args /* [$dblink,] $qstr, [$argv] */) {
+        return self::do_multi_query($args, self::F_MULTI | self::F_APPLY | self::F_ERROR);
     }
 
+    /** @param \mysqli $dblink
+     * @param int $flags
+     * @return callable(?string,?list=):void */
     static function make_multi_query_stager($dblink, $flags) {
+        // NB $q argument as `true` is deprecated but might still be present
         $qs = $qvs = [];
         return function ($q, $qv = []) use ($dblink, $flags, &$qs, &$qvs) {
             if ($q && $q !== true) {
@@ -716,12 +732,16 @@ class Dbl {
         };
     }
 
+    /** @param ?\mysqli $dblink
+     * @return callable(?string,?list=):void */
     static function make_multi_ql_stager($dblink = null) {
-        return self::make_multi_query_stager($dblink ? : self::$default_dblink, self::F_LOG);
+        return self::make_multi_query_stager($dblink ?? self::$default_dblink, self::F_LOG);
     }
 
+    /** @param ?\mysqli $dblink
+     * @return callable(?string,?list=):void */
     static function make_multi_qe_stager($dblink = null) {
-        return self::make_multi_query_stager($dblink ? : self::$default_dblink, self::F_ERROR);
+        return self::make_multi_query_stager($dblink ?? self::$default_dblink, self::F_ERROR);
     }
 
     /** @param null|Dbl_Result|mysqli_result $result */
@@ -748,24 +768,24 @@ class Dbl {
     }
 
     /** @return ?string */
-    static function fetch_value(/* $result | [$dblink,] $query, ... */) {
-        $result = self::do_make_result(func_get_args());
+    static function fetch_value(...$args /* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result($args);
         $x = $result ? $result->fetch_row() : null;
         $result && $result->close();
         return $x ? $x[0] : null;
     }
 
     /** @return ?int */
-    static function fetch_ivalue(/* $result | [$dblink,] $query, ... */) {
-        $result = self::do_make_result(func_get_args());
+    static function fetch_ivalue(...$args /* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result($args);
         $x = $result ? $result->fetch_row() : null;
         $result && $result->close();
         return $x ? (int) $x[0] : null;
     }
 
     /** @return list<list<?string>> */
-    static function fetch_rows(/* $result | [$dblink,] $query, ... */) {
-        $result = self::do_make_result(func_get_args());
+    static function fetch_rows(...$args /* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result($args);
         $x = [];
         while (($row = ($result ? $result->fetch_row() : null))) {
             $x[] = $row;
@@ -775,8 +795,8 @@ class Dbl {
     }
 
     /** @return list<object> */
-    static function fetch_objects(/* $result | [$dblink,] $query, ... */) {
-        $result = self::do_make_result(func_get_args());
+    static function fetch_objects(...$args /* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result($args);
         $x = [];
         while (($row = ($result ? $result->fetch_object() : null))) {
             $x[] = $row;
@@ -786,24 +806,24 @@ class Dbl {
     }
 
     /** @return ?list<?string> */
-    static function fetch_first_row(/* $result | [$dblink,] $query, ... */) {
-        $result = self::do_make_result(func_get_args());
+    static function fetch_first_row(...$args /* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result($args);
         $x = $result ? $result->fetch_row() : null;
         $result && $result->close();
         return $x;
     }
 
     /** @return ?object */
-    static function fetch_first_object(/* $result | [$dblink,] $query, ... */) {
-        $result = self::do_make_result(func_get_args());
+    static function fetch_first_object(...$args /* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result($args);
         $x = $result ? $result->fetch_object() : null;
         $result && $result->close();
         return $x;
     }
 
     /** @return list<mixed> */
-    static function fetch_first_columns(/* $result | [$dblink,] $query, ... */) {
-        $result = self::do_make_result(func_get_args());
+    static function fetch_first_columns(...$args /* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result($args);
         $x = [];
         while ($result && ($row = $result->fetch_row())) {
             $x[] = $row[0];
@@ -813,8 +833,8 @@ class Dbl {
     }
 
     /** @return array<string,mixed> */
-    static function fetch_map(/* $result | [$dblink,] $query, ... */) {
-        $result = self::do_make_result(func_get_args());
+    static function fetch_map(...$args /* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result($args);
         $x = [];
         while ($result && ($row = $result->fetch_row())) {
             $x[$row[0]] = count($row) === 2 ? $row[1] : array_slice($row, 1);
@@ -824,8 +844,8 @@ class Dbl {
     }
 
     /** @return array<int,?int> */
-    static function fetch_iimap(/* $result | [$dblink,] $query, ... */) {
-        $result = self::do_make_result(func_get_args());
+    static function fetch_iimap(...$args /* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result($args);
         $x = [];
         while ($result && ($row = $result->fetch_row())) {
             assert(count($row) === 2);
