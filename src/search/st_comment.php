@@ -67,7 +67,7 @@ class Comment_SearchTerm extends SearchTerm {
             if (!$rrd) {
                 return null;
             }
-            $round = $rrd->number;
+            $round = $rrd->id;
         }
         if ($m[1] !== "" && $m[3] !== "") {
             return null;

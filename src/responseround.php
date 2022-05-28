@@ -8,7 +8,7 @@ class ResponseRound {
     /** @var string */
     public $name;
     /** @var int */
-    public $number;
+    public $id;
     /** @var bool */
     public $active = false;
     /** @var int */
@@ -65,10 +65,10 @@ class ResponseRound {
     function instructions(Conf $conf) {
         $ims = $conf->ims();
         if ($this->instructions !== null
-            && !$ims->has_override("resp_instrux_{$this->number}")) {
-            $ims->add_override("resp_instrux_{$this->number}", $this->instructions);
+            && !$ims->has_override("resp_instrux_{$this->id}")) {
+            $ims->add_override("resp_instrux_{$this->id}", $this->instructions);
         }
-        $m = $ims->_ci("resp_instrux", "resp_instrux_{$this->number}", null, $this->words);
+        $m = $ims->_ci("resp_instrux", "resp_instrux_{$this->id}", null, $this->words);
         if ($m === "") {
             $m = $ims->_ci("resp_instrux", "resp_instrux", null, $this->words);
         }

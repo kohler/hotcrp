@@ -231,7 +231,17 @@ class ConfInvariants {
         // responses have author visibility
         $any = $this->invariantq("select paperId, commentId from PaperComment where (commentType&" . CommentInfo::CT_RESPONSE  . ")!=0 and (commentType&" . CommentInfo::CT_AUTHOR . ")=0 limit 1");
         if ($any) {
-            $this->invariant_error("submitted response #{0}/{1} is not author-visible");
+            $this->invariant_error("response #{0}/{1} is not author-visible");
+        }
+
+        // response rounds make sense
+        $any = $this->invariantq("select paperId, commentId from PaperComment where (commentType&" . CommentInfo::CT_RESPONSE  . ")!=0 and commentRound=0 limit 1");
+        if ($any) {
+            $this->invariant_error("response #{0}/{1} has zero round");
+        }
+        $any = $this->invariantq("select paperId, commentId from PaperComment where (commentType&" . CommentInfo::CT_RESPONSE  . ")=0 and commentRound!=0 limit 1");
+        if ($any) {
+            $this->invariant_error("non-response #{0}/{1} has non-zero round");
         }
 
         // non-draft comments are displayed

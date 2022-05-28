@@ -222,6 +222,43 @@ class UpdateSchema {
         return true;
     }
 
+    private function v108_repair_comment_ordinals() {
+        $ctdraftresp = 5; /* CT_DRAFT | CT_RESPONSE */
+        $ctpc = 0x10000; /* CT_PCONLY */
+        $ctau = 0x30000; /* CT_AUTHOR */
+
+        // repair missing comment ordinals; reset incorrect `ordinal`s for
+        // author-visible comments
+        $result = $this->conf->ql_ok("select paperId, commentId from PaperComment where ordinal=0 and (commentType&{$ctdraftresp})=0 and commentType>={$ctpc} and commentType<{$ctau} order by commentId");
+        while (($row = $result->fetch_row())) {
+            $this->conf->ql_ok("update PaperComment,
+(select coalesce(count(commentId),0) commentCount from Paper
+    left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&{$ctdraftresp})=0 and commentType>={$ctpc} and commentType<{$ctau} and commentId<{$row[1]})
+    where Paper.paperId={$row[0]} group by Paper.paperId) t
+set ordinal=(t.commentCount+1) where commentId={$row[1]}");
+        }
+
+        $result = $this->conf->ql_ok("select paperId, commentId from PaperComment where ordinal=0 and (commentType&{$ctdraftresp})=0 and commentType>={$ctau} order by commentId");
+        while (($row = $result->fetch_row())) {
+            $this->conf->ql_ok("update PaperComment,
+(select coalesce(count(commentId),0) commentCount from Paper
+    left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&{$ctdraftresp})=0 and commentType>={$ctau} and commentId<{$row[1]})
+    where Paper.paperId={$row[0]} group by Paper.paperId) t
+set authorOrdinal=(t.commentCount+1) where commentId={$row[1]}");
+        }
+
+        $result = $this->conf->ql_ok("select paperId, commentId from PaperComment where ordinal=authorOrdinal and (commentType&{$ctdraftresp})=0 and commentType>={$ctau} order by commentId");
+        while (($row = $result->fetch_row())) {
+            $this->conf->ql_ok("update PaperComment,
+(select coalesce(max(ordinal),0) maxOrdinal from Paper
+    left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&{$ctdraftresp})=0 and commentType>={$ctpc} and commentType<{$ctau} and commentId<{$row[1]})
+    where Paper.paperId={$row[0]} group by Paper.paperId) t
+set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
+        }
+
+        $this->conf->update_schema_version(108);
+    }
+
     private function v111_transfer_country() {
         $result = $this->conf->ql("select contactId, data from ContactInfo where `data` is not null and `data`!='{}'");
         while (($x = $result->fetch_object())) {
@@ -782,6 +819,14 @@ class UpdateSchema {
             && ($nrfd = $this->v258_review_form_setting($rfd)) !== null) {
             $conf->save_setting("__review_form_v258", 1, $rfd);
             $conf->save_setting("review_form", 1, $nrfd);
+        }
+
+        // update commentRound
+        if ($conf->sversion >= 106
+            && $conf->sversion <= 260
+            && !$conf->setting("__response_round_v261")
+            && $conf->ql_ok("update PaperComment set commentRound=commentRound+1 where (commentType&4)!=0") /* CT_RESPONSE */) {
+            $conf->save_setting("__response_round_v261", 1);
         }
 
         if ($conf->sversion === 6
@@ -1473,41 +1518,11 @@ class UpdateSchema {
         }
         if ($conf->sversion === 106
             && $conf->ql_ok("alter table PaperComment add `authorOrdinal` int(11) NOT NULL default '0'")
-            && $conf->ql_ok("update PaperComment set authorOrdinal=ordinal where commentType>=" . CommentInfo::CT_AUTHOR)) {
+            && $conf->ql_ok("update PaperComment set authorOrdinal=ordinal where commentType>=0x30000" /* CT_AUTHOR */)) {
             $conf->update_schema_version(107);
         }
-
-        // repair missing comment ordinals; reset incorrect `ordinal`s for
-        // author-visible comments
         if ($conf->sversion === 107) {
-            $result = $conf->ql_ok("select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT) . ")=0 and commentType>=" . CommentInfo::CT_PCONLY . " and commentType<" . CommentInfo::CT_AUTHOR . " order by commentId");
-            while (($row = $result->fetch_row())) {
-                $conf->ql_ok("update PaperComment,
-    (select coalesce(count(commentId),0) commentCount from Paper
-        left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT) . ")=0 and commentType>=" . CommentInfo::CT_PCONLY . " and commentType<" . CommentInfo::CT_AUTHOR . " and commentId<$row[1])
-        where Paper.paperId=$row[0] group by Paper.paperId) t
-    set ordinal=(t.commentCount+1) where commentId=$row[1]");
-            }
-
-            $result = $conf->ql_ok("select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT) . ")=0 and commentType>=" . CommentInfo::CT_AUTHOR . " order by commentId");
-            while (($row = $result->fetch_row())) {
-                $conf->ql_ok("update PaperComment,
-    (select coalesce(count(commentId),0) commentCount from Paper
-        left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT) . ")=0 and commentType>=" . CommentInfo::CT_AUTHOR . " and commentId<$row[1])
-        where Paper.paperId=$row[0] group by Paper.paperId) t
-    set authorOrdinal=(t.commentCount+1) where commentId=$row[1]");
-            }
-
-            $result = $conf->ql_ok("select paperId, commentId from PaperComment where ordinal=authorOrdinal and (commentType&" . (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT) . ")=0 and commentType>=" . CommentInfo::CT_AUTHOR . " order by commentId");
-            while (($row = $result->fetch_row())) {
-                $conf->ql_ok("update PaperComment,
-    (select coalesce(max(ordinal),0) maxOrdinal from Paper
-        left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT) . ")=0 and commentType>=" . CommentInfo::CT_PCONLY . " and commentType<" . CommentInfo::CT_AUTHOR . " and commentId<$row[1])
-        where Paper.paperId=$row[0] group by Paper.paperId) t
-    set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
-            }
-
-            $conf->update_schema_version(108);
+            $this->v108_repair_comment_ordinals();
         }
 
         // contact tags format change
@@ -2386,6 +2401,12 @@ class UpdateSchema {
             && $conf->ql_ok("alter table PaperReview change `potential` `s10` smallint(1) NOT NULL DEFAULT 0")
             && $conf->ql_ok("alter table PaperReview change `fixability` `s11` smallint(1) NOT NULL DEFAULT 0")) {
             $conf->update_schema_version(260);
+        }
+        if ($conf->sversion === 260
+            && $conf->setting("__response_round_v261")) {
+            $conf->save_setting("__review_form_v258", null);
+            $conf->save_setting("__response_round_v261", null);
+            $conf->update_schema_version(261);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

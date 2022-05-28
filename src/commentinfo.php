@@ -162,7 +162,7 @@ class CommentInfo {
     static function make_response_template($rrd, PaperInfo $prow) {
         $cinfo = new CommentInfo($prow);
         $cinfo->commentType = $cinfo->fix_type(self::CT_RESPONSE);
-        $cinfo->commentRound = $rrd->number;
+        $cinfo->commentRound = $rrd->id;
         return $cinfo;
     }
 
@@ -204,7 +204,7 @@ class CommentInfo {
             $crow->commentType = self::CT_RESPONSE;
             foreach ($prow->conf->response_rounds() as $rrd) {
                 $j = ["words" => $rrd->words];
-                $crow->commentRound = $rrd->number;
+                $crow->commentRound = $rrd->id;
                 if (Contact::$main_user->can_edit_response($prow, $crow)) {
                     if (($m = $rrd->instructions($prow->conf)) !== false) {
                         $j["instrux"] = $m;

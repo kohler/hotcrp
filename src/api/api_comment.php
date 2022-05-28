@@ -31,7 +31,8 @@ class Comment_API {
 
     /** @param int $round
      * @return ?CommentInfo */
-    private function find_response($round) {
+    private function find_response_by_id($round) {
+        assert($round > 0);
         return $this->find_comment("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0 and commentRound={$round}");
     }
 
@@ -137,7 +138,7 @@ class Comment_API {
         // save errors; check for reentering same response
         if (!$ok) {
             if ($xcrow->is_response()
-                && ($ocrow = $this->find_response((int) $xcrow->commentRound))) {
+                && ($ocrow = $this->find_response_by_id((int) $xcrow->commentRound))) {
                 if ($ocrow->comment !== $req["text"]
                     || $ocrow->attachment_ids() != $xcrow->attachment_ids()) {
                     $this->status = self::RESPONSE_REPLACED;
@@ -192,7 +193,7 @@ class Comment_API {
                     && (string) $qreq->response !== $rname)) {
                 return JsonResult::make_error("<0>Invalid response request");
             }
-            $rcrow = $this->find_response($rrd->number);
+            $rcrow = $this->find_response_by_id($rrd->id);
             $c = $c !== "" ? $c : "response";
         } else {
             $rrd = null;

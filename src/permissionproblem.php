@@ -108,7 +108,7 @@ class PermissionProblem extends Exception
     private function deadline_info() {
         $dn = $this->_a["deadline"];
         if ($dn === "response") {
-            $rrd = ($this->conf->response_rounds())[$this->_a["commentRound"]];
+            $rrd = $this->conf->response_round_by_id($this->_a["commentRound"]);
             return ["response_open", $rrd->open, "response_done", $rrd->done];
         }
 

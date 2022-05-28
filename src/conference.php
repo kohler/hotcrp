@@ -327,7 +327,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 260) {
+        if ($this->sversion < 261) {
             $old_nerrors = Dbl::$nerrors;
             (new UpdateSchema($this))->run();
             Dbl::$nerrors = $old_nerrors;
@@ -2016,7 +2016,7 @@ class Conf {
         $jresp = json_decode($this->settingTexts["responses"] ?? "[{}]");
         foreach ($jresp ?? [(object) []] as $i => $rrj) {
             $r = new ResponseRound;
-            $r->number = $i;
+            $r->id = $i + 1;
             $r->unnamed = $i === 0 && !isset($rrj->name);
             $r->name = $rrj->name ?? "1";
             $r->active = $active;
@@ -2041,7 +2041,7 @@ class Conf {
         $active = ($this->settings["resp_active"] ?? 0) > 0;
         foreach (explode(" ", $x) as $i => $rname) {
             $r = new ResponseRound;
-            $r->number = $i;
+            $r->id = $i + 1;
             $r->unnamed = $rname === "1";
             $r->name = $rname;
             $isuf = $i ? "_{$i}" : "";
@@ -2070,18 +2070,24 @@ class Conf {
      * @return ?ResponseRound */
     function response_round($rname) {
         $rrds = $this->response_rounds();
-        if (!$rname
-            || $rname === 1
-            || $rname === "1"
-            || $rname === true
-            || strcasecmp($rname, "none") === 0) {
-            return $rrds[0];
-        }
         foreach ($rrds as $rrd) {
             if (strcasecmp($rname, $rrd->name) === 0)
                 return $rrd;
         }
+        if ($rrds[0]->unnamed
+            && ($rname === ""
+                || strcasecmp($rname, "unnamed") === 0
+                || strcasecmp($rname, "none") === 0)) {
+            return $rrds[0];
+        }
         return null;
+    }
+
+    /** @param int $round
+     * @return ?ResponseRound */
+    function response_round_by_id($round) {
+        $rrds = $this->response_rounds();
+        return $rrds[$round - 1] ?? null;
     }
 
 

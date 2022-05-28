@@ -709,7 +709,7 @@ handle_ui.on("js-settings-resp-active", function (event) {
 $(function () { $(".js-settings-resp-active").trigger("change"); });
 
 handle_ui.on("js-settings-response-new", function () {
-    var i, $rx, $rt = $("#response__new"), t;
+    var i, $rx, $rt = $("#new_response"), t;
     for (i = 1; $$("response/" + i); ++i) {
     }
     $rt.before($rt.html().replace(/\/\$/g, "/" + i));

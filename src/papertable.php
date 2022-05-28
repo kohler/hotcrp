@@ -2458,14 +2458,8 @@ class PaperTable {
             && ($prow->has_author($this->user) || $this->allow_admin)
             && $this->conf->any_response_open) {
             foreach ($this->conf->response_rounds() as $rrd) {
-                $cr = null;
-                foreach ($this->mycrows ? : [] as $crow) {
-                    if (($crow->commentType & CommentInfo::CT_RESPONSE)
-                        && $crow->commentRound == $rrd->number) {
-                        $cr = $crow;
-                    }
-                }
-                $cr = $cr ?? CommentInfo::make_response_template($rrd, $prow);
+                $cr = $this->response_by_id($rrd->id)
+                    ?? CommentInfo::make_response_template($rrd, $prow);
                 if ($this->user->can_edit_response($prow, $cr)) {
                     $cid = $rrd->tag_name();
                     if ($cr->commentId) {
@@ -2574,13 +2568,15 @@ class PaperTable {
         }
     }
 
-    private function has_response($respround) {
+    /** @param int $respround
+     * @return ?CommentInfo */
+    private function response_by_id($respround) {
         foreach ($this->mycrows as $cr) {
             if (($cr->commentType & CommentInfo::CT_RESPONSE)
                 && $cr->commentRound == $respround)
-                return true;
+                return $cr;
         }
-        return false;
+        return null;
     }
 
     /** @param list<ReviewInfo> $rrows
@@ -2625,7 +2621,7 @@ class PaperTable {
             }
             if ($this->admin || $this->prow->has_author($this->user)) {
                 foreach ($this->conf->response_rounds() as $rrd) {
-                    if (!$this->has_response($rrd->number)
+                    if (!$this->response_by_id($rrd->id)
                         && $rrd->relevant($this->user, $this->prow)) {
                         $crow = CommentInfo::make_response_template($rrd, $this->prow);
                         if ($this->user->can_edit_response($this->prow, $crow)) {

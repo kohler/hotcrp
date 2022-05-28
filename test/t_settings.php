@@ -446,32 +446,36 @@ class Settings_Tester {
 
         $rrds = $this->conf->response_rounds();
         xassert_eqq(count($rrds), 1);
-        xassert_eqq($rrds[0]->number, 0);
+        xassert_eqq($rrds[0]->id, 1);
         xassert_eqq($rrds[0]->name, "1");
         xassert($rrds[0]->unnamed);
+        $t0 = Conf::$now - 1;
 
         // rename unnamed response round
         $sv = SettingValues::make_request($this->u_chair, [
             "has_response" => 1,
-            "response/1/id" => "0",
+            "response/1/id" => "1",
             "response/1/name" => "Butt",
-            "response/1/open" => "@" . (Conf::$now - 1),
-            "response/1/done" => "@" . (Conf::$now + 10000)
+            "response/1/open" => "@{$t0}",
+            "response/1/done" => "@" . ($t0 + 10000),
+            "response/1/words" => "0"
         ]);
         xassert($sv->execute());
         xassert_array_eqq($sv->updated_fields(), ["responses"]);
 
         $rrds = $this->conf->response_rounds();
         xassert_eqq(count($rrds), 1);
-        xassert_eqq($rrds[0]->number, 0);
+        xassert_eqq($rrds[0]->id, 1);
         xassert_eqq($rrds[0]->name, "Butt");
+        xassert_eqq($rrds[0]->open, $t0);
+        xassert_eqq($rrds[0]->done, $t0 + 10000);
         xassert(!$rrds[0]->unnamed);
 
         // add a response
         assert_search_papers($this->u_chair, "has:response", "");
         assert_search_papers($this->u_chair, "has:Buttresponse", "");
 
-        $result = $this->conf->qe("insert into PaperComment (paperId,contactId,timeModified,timeDisplayed,comment,commentType,replyTo,commentRound) values (1,?,?,?,'Hi',?,0,?)", $this->u_chair->contactId, Conf::$now, Conf::$now, CommentInfo::CT_AUTHOR | CommentInfo::CT_RESPONSE, 0);
+        $result = $this->conf->qe("insert into PaperComment (paperId,contactId,timeModified,timeDisplayed,comment,commentType,replyTo,commentRound) values (1,?,?,?,'Hi',?,0,?)", $this->u_chair->contactId, Conf::$now, Conf::$now, CommentInfo::CT_AUTHOR | CommentInfo::CT_RESPONSE, 1);
         $new_commentId = $result->insert_id;
 
         assert_search_papers($this->u_chair, "has:response", "1");
@@ -481,36 +485,108 @@ class Settings_Tester {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_response_active" => 1,
             "has_response" => 1,
-            "response/1/id" => "0",
+            "response/1/id" => "1",
             "response/1/name" => "ButtJRIOQOIFNINF",
-            "response/1/open" => "@" . (Conf::$now - 1),
-            "response/1/done" => "@" . (Conf::$now + 10000)
+            "response/1/open" => "@{$t0}",
+            "response/1/done" => "@" . ($t0 + 10001)
         ]);
         xassert($sv->execute());
         xassert_array_eqq($sv->updated_fields(), []);
+        $rrd = $this->conf->response_round_by_id(1);
+        xassert_eqq($rrd->name, "Butt");
+        xassert_eqq($rrd->open, $t0);
+        xassert_eqq($rrd->done, $t0 + 10000);
 
         // add an unnamed response round
         $sv = SettingValues::make_request($this->u_chair, [
             "has_response" => 1,
             "response/1/id" => "new",
             "response/1/name" => "",
-            "response/1/open" => "@" . (Conf::$now - 1),
-            "response/1/done" => "@" . (Conf::$now + 10000)
+            "response/1/open" => "@{$t0}",
+            "response/1/done" => "@" . ($t0 + 10002),
+            "response/1/words" => "0"
         ]);
         xassert($sv->execute());
         xassert_array_eqq($sv->updated_fields(), ["responses"]);
 
         $rrds = $this->conf->response_rounds();
         xassert_eqq(count($rrds), 2);
-        xassert_eqq($rrds[0]->number, 0);
+        xassert_eqq($rrds[0]->id, 1);
         xassert_eqq($rrds[0]->name, "1");
+        xassert_eqq($rrds[0]->open, $t0);
+        xassert_eqq($rrds[0]->done, $t0 + 10002);
         xassert($rrds[0]->unnamed);
-        xassert_eqq($rrds[1]->number, 1);
+        xassert_eqq($rrds[1]->id, 2);
         xassert_eqq($rrds[1]->name, "Butt");
+        xassert_eqq($rrds[1]->done, $t0 + 10000);
         xassert(!$rrds[1]->unnamed);
 
         assert_search_papers($this->u_chair, "has:response", "1");
+        assert_search_papers($this->u_chair, "has:unnamedresponse", "");
         assert_search_papers($this->u_chair, "has:Buttresponse", "1");
+
+        // switch response round names
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_response" => 1,
+            "response/1/id" => "1",
+            "response/1/name" => "Butt",
+            "response/2/id" => "2",
+            "response/2/name" => "unnamed"
+        ]);
+        xassert($sv->execute());
+        xassert_array_eqq($sv->updated_fields(), ["responses"]);
+
+        $rrds = $this->conf->response_rounds();
+        xassert_eqq(count($rrds), 2);
+        xassert_eqq($rrds[0]->id, 1);
+        xassert_eqq($rrds[0]->name, "1");
+        xassert_eqq($rrds[0]->done, $t0 + 10000);
+        xassert($rrds[0]->unnamed);
+        xassert_eqq($rrds[1]->id, 2);
+        xassert_eqq($rrds[1]->name, "Butt");
+        xassert_eqq($rrds[1]->done, $t0 + 10002);
+        xassert(!$rrds[1]->unnamed);
+
+        assert_search_papers($this->u_chair, "has:response", "1");
+        assert_search_papers($this->u_chair, "has:unnamedresponse", "1");
+        assert_search_papers($this->u_chair, "has:Buttresponse", "");
+
+        // response instructions & defaults
+        $definstrux = $this->conf->ims()->default_itext("resp_instrux");
+        xassert_eqq($rrds[0]->instructions, null);
+        xassert_eqq($rrds[0]->instructions($this->conf), $definstrux);
+        xassert_eqq($rrds[1]->instructions, null);
+        xassert_eqq($rrds[1]->instructions($this->conf), $definstrux);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_response" => 1,
+            "response/1/id" => "1",
+            "response/1/instructions" => "PANTS",
+            "response/2/id" => "2",
+            "response/2/instructions" => $definstrux
+        ]);
+        xassert($sv->execute());
+        xassert_array_eqq($sv->updated_fields(), ["responses"]);
+
+        $rrds = $this->conf->response_rounds();
+        xassert_eqq($rrds[0]->instructions, "PANTS");
+        xassert_eqq($rrds[0]->instructions($this->conf), "PANTS");
+        xassert_eqq($rrds[1]->instructions, null);
+        xassert_eqq($rrds[1]->instructions($this->conf), $definstrux);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_response" => 1,
+            "response/1/id" => "1",
+            "response/1/instructions" => $definstrux
+        ]);
+        xassert($sv->execute());
+        xassert_array_eqq($sv->updated_fields(), ["responses"]);
+
+        $rrds = $this->conf->response_rounds();
+        xassert_eqq($rrds[0]->instructions, null);
+        xassert_eqq($rrds[0]->instructions($this->conf), $definstrux);
+        xassert_eqq($rrds[1]->instructions, null);
+        xassert_eqq($rrds[1]->instructions($this->conf), $definstrux);
 
         $this->conf->save_refresh_setting("responses", null);
         $this->conf->qe("delete from PaperComment where paperId=1 and commentId=?", $new_commentId);

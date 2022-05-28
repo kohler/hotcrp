@@ -49,18 +49,6 @@ const NAME_MAILQUOTE = 128; // quote name by RFC822
 const NAME_A = 256; // affiliation
 const NAME_PARSABLE = 512; // `last, first` if `first last` would be ambiguous
 
-const COMMENTTYPE_DRAFT = 1; // XXX obsolete, see CommentInfo versions
-const COMMENTTYPE_BLIND = 2;
-const COMMENTTYPE_RESPONSE = 4;
-const COMMENTTYPE_BYAUTHOR = 8;
-const COMMENTTYPE_BYSHEPHERD = 16;
-const COMMENTTYPE_HASDOC = 32;
-const COMMENTTYPE_ADMINONLY = 0x00000;
-const COMMENTTYPE_PCONLY = 0x10000;
-const COMMENTTYPE_REVIEWER = 0x20000;
-const COMMENTTYPE_AUTHOR = 0x30000;
-const COMMENTTYPE_VISIBILITY = 0xFFF0000;
-
 const TAG_REGEX_NOTWIDDLE = '[a-zA-Z@*_:.][-+a-zA-Z0-9?!@*_:.\/]*';
 const TAG_REGEX = '~?~?' . TAG_REGEX_NOTWIDDLE;
 const TAG_MAXLEN = 80;

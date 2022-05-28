@@ -4456,7 +4456,7 @@ class Contact {
     function can_edit_response(PaperInfo $prow, CommentInfo $crow, $newctype = null) {
         if ($prow->timeSubmitted <= 0
             || !($crow->commentType & CommentInfo::CT_RESPONSE)
-            || !($rrd = ($prow->conf->response_rounds())[$crow->commentRound] ?? null)) {
+            || !($rrd = $prow->conf->response_round_by_id($crow->commentRound))) {
             return false;
         }
         $rights = $this->rights($prow);
@@ -4485,7 +4485,7 @@ class Contact {
         } else if ($prow->timeSubmitted <= 0) {
             $whyNot["notSubmitted"] = true;
         } else {
-            $rrd = ($prow->conf->response_rounds())[$crow->commentRound] ?? null;
+            $rrd = $prow->conf->response_round_by_id($crow->commentRound);
             if (!($crow->commentType & CommentInfo::CT_RESPONSE)
                 || !$rrd
                 || ($rrd->search && !$rrd->search->test($prow))) {

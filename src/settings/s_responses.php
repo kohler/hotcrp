@@ -12,10 +12,19 @@ class Responses_SettingParser extends SettingParser {
     /** @var list<string> */
     private $round_transform = [];
 
+    /** @return array<int,ResponseRound> */
+    private function enumeration_map(SettingValues $sv) {
+        $m = [];
+        foreach ($sv->conf->response_rounds() as $rrd) {
+            $m[$rrd->id] = $rrd;
+        }
+        return $m;
+    }
+
     function set_oldv(SettingValues $sv, Si $si) {
         if ($si->part0 !== null) {
             if ($si->part2 === "") {
-                $rrd = $sv->unmap_enumeration_member($si->name, $sv->conf->response_rounds());
+                $rrd = $sv->unmap_enumeration_member($si->name, self::enumeration_map($sv));
                 $sv->set_oldv($si->name, $rrd ? clone $rrd : new ResponseRound);
             } else {
                 $rrd = $sv->oldv($si->part0 . $si->part1);
@@ -34,12 +43,10 @@ class Responses_SettingParser extends SettingParser {
     }
 
     function prepare_enumeration(SettingValues $sv, Si $si) {
-        $sv->map_enumeration("response/", $sv->conf->response_rounds());
+        $sv->map_enumeration("response/", self::enumeration_map($sv));
         // set placeholder for unnamed round
-        $rrd = ($sv->conf->response_rounds())[0] ?? null;
-        if ($rrd && $rrd->unnamed) {
-            $ctr = $sv->search_enumeration_id("response/", "0");
-            assert($ctr !== null);
+        $ctr = $sv->search_enumeration_id("response/", "1");
+        if ($ctr !== null && ($sv->conf->response_rounds())[0]->unnamed) {
             $si = $sv->si("response/{$ctr}/name");
             $si->placeholder = "unnamed";
         }
@@ -112,7 +119,7 @@ class Responses_SettingParser extends SettingParser {
             $this->print_one($sv, $ctr);
         }
 
-        echo '<template id="response__new" class="hidden">';
+        echo '<template id="new_response" class="hidden">';
         $this->print_one($sv, '$');
         echo '</template>';
         if ($sv->editable("response/0/name")) {
@@ -162,8 +169,8 @@ class Responses_SettingParser extends SettingParser {
         foreach ($sv->slist_keys("response/") as $ctr) {
             $rrd = $sv->parse_members("response/{$ctr}");
             if ($sv->reqstr("response/{$ctr}/delete")) {
-                if ($rrd->number) {
-                    $this->round_transform[] = "when {$rrd->number} then 0";
+                if ($rrd->id > 1) {
+                    $this->round_transform[] = "when {$rrd->id} then 1";
                 }
             } else {
                 $sv->check_date_before("response/{$ctr}/open", "response/{$ctr}/done", false);
@@ -187,8 +194,8 @@ class Responses_SettingParser extends SettingParser {
             $rrd->search && ($jr["condition"] = $rrd->search->q);
             ($rrd->instructions ?? "") !== "" && ($jr["instructions"] = $rrd->instructions);
             $jrl[] = $jr;
-            if ($rrd->number !== null && $i !== $rrd->number) {
-                $this->round_transform[] = "when {$rrd->number} then {$i}";
+            if ($rrd->id !== null && $i + 1 !== $rrd->id) {
+                $this->round_transform[] = "when {$rrd->id} then " . ($i + 1);
             }
         }
 
