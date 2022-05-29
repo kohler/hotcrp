@@ -68,9 +68,9 @@ class ResponseRound {
             && !$ims->has_override("resp_instrux_{$this->id}")) {
             $ims->add_override("resp_instrux_{$this->id}", $this->instructions);
         }
-        $m = $ims->_ci("resp_instrux", "resp_instrux_{$this->id}", null, $this->words);
+        $m = $ims->_ci("resp_instrux", "resp_instrux_{$this->id}", $this->words);
         if ($m === "") {
-            $m = $ims->_ci("resp_instrux", "resp_instrux", null, $this->words);
+            $m = $ims->_ci("resp_instrux", "resp_instrux", $this->words);
         }
         return $m;
     }

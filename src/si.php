@@ -360,7 +360,7 @@ class Si {
             foreach (is_string($dm) ? [] : array_slice($dm, 1) as $arg) {
                 $args[] = $sv->newv(str_replace("\$", $mid, $arg));
             }
-            $this->default_value = $this->conf->ims()->default_itext($id, "", ...$args);
+            $this->default_value = $this->conf->ims()->default_itext($id, ...$args);
         }
         return $this->default_value;
     }

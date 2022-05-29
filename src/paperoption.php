@@ -910,7 +910,7 @@ class PaperOption implements JsonSerializable {
         } else if ($context === null) {
             return $this->conf->_ci("field", $this->formid);
         } else {
-            return $this->conf->_ci("field", $this->formid, null, $context);
+            return $this->conf->_ci("field", $this->formid, $context);
         }
     }
     /** @return string */
@@ -937,8 +937,12 @@ class PaperOption implements JsonSerializable {
     /** @param FieldRender $fr */
     function render_description($fr, ...$context_args) {
         $fr->value_format = $this->description_format ?? 5;
-        $this->conf->ims()->render_ci($fr, "field_description/edit",
-                                      $this->formid, $this->description, ...$context_args);
+        if ($this->description !== "") {
+            $fr->value = $this->description;
+        } else {
+            $this->conf->ims()->render_ci($fr, "field_description/edit", $this->formid,
+                                          ...$context_args);
+        }
     }
 
     /** @return AbbreviationMatcher */

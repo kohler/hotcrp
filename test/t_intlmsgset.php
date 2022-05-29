@@ -33,8 +33,8 @@ class IntlMsgSet_Tester {
         xassert_eqq($ms->_("fart", "bobby"), "fart example B");
         xassert_eqq($ms->_("fart", "bob"), "fart example A");
         xassert_eqq($ms->_i("fox-saying"), "What the fox said");
-        xassert_eqq($ms->_i("fox-saying", null, "Animal"), "What the Animal said");
-        xassert_eqq($ms->_i("test103", null, "Ass"), "Ass %% %s %BU%%MAN%Ass");
+        xassert_eqq($ms->_i("fox-saying", "Animal"), "What the Animal said");
+        xassert_eqq($ms->_i("test103", "Ass"), "Ass %% %s %BU%%MAN%Ass");
 
         $ms->add(["itext" => "butt", "otext" => "normal butt"]);
         $ms->add(["itext" => "butt", "otext" => "fat butt", "require" => ["$1[fat]"]]);

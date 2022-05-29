@@ -38,7 +38,7 @@ class IntlMsg {
         if ($argname[0] === "\$") {
             $which = substr($argname, 1);
             if (ctype_digit($which)) {
-                $val = $args[+$which] ?? null;
+                $val = $args[+$which - 1] ?? null;
             } else {
                 return false;
             }
@@ -63,6 +63,9 @@ class IntlMsg {
         }
         return true;
     }
+
+    /** @param list<string> $args
+     * @return int|false */
     function check_require(IntlMsgSet $ms, $args) {
         if (!$this->require) {
             return 0;
@@ -319,7 +322,6 @@ class IntlMsgSet {
      * @param ?float $priobound
      * @return ?IntlMsg */
     private function find($context, $itext, $args, $priobound) {
-        assert(is_string($args[0]));
         if (++$this->_recursion > 5) {
             throw new Exception("too much recursion");
         }
@@ -385,14 +387,14 @@ class IntlMsgSet {
                 error_log("RECURSION ERROR ON {$m[0]} " . debug_string_backtrace());
             }
             --$this->_recursion;
-        } else if (($im && $im->no_conversions) || count($args) === 1) {
+        } else if (($im && $im->no_conversions) || count($args) === 0) {
             /* do nothing */
         } else if (strlen($s) > $pos + 1 && $s[$pos + 1] === "%") {
             return [2, "%"];
         } else if (preg_match('/%(?:(\d+)(\[[^\[\]\$]*\]|)\$)?(#[AON]?|)(\d*(?:\.\d+)?)([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
             $argi = $m[1] ? +$m[1] : ++$argnum;
-            if (isset($args[$argi])) {
-                $val = $args[$argi];
+            if (isset($args[$argi - 1])) {
+                $val = $args[$argi - 1];
                 if ($m[2]) {
                     assert(is_array($val));
                     $val = $val[substr($m[2], 1, -1)] ?? null;
@@ -451,70 +453,69 @@ class IntlMsgSet {
         }
     }
 
-    /** @return string */
-    function _(...$args) {
-        if (($im = $this->find(null, $args[0], $args, null))) {
-            $args[0] = $im->otext;
+    /** @param string $itext
+     * @return string */
+    function _($itext, ...$args) {
+        if (($im = $this->find(null, $itext, $args, null))) {
+            $itext = $im->otext;
         }
-        return $this->expand($args[0], $args, null, $im);
+        return $this->expand($itext, $args, null, $im);
     }
 
     /** @param string $context
+     * @param string $itext
      * @return string */
-    function _c($context, ...$args) {
-        if (($im = $this->find($context, $args[0], $args, null))) {
-            $args[0] = $im->otext;
+    function _c($context, $itext, ...$args) {
+        if (($im = $this->find($context, $itext, $args, null))) {
+            $itext = $im->otext;
         }
-        return $this->expand($args[0], $args, $context, $im);
+        return $this->expand($itext, $args, $context, $im);
     }
 
     /** @param string $id
      * @return string */
     function _i($id, ...$args) {
-        $args[0] = $args[0] ?? "";
-        if (($im = $this->find(null, $id, $args, null))
-            && ($args[0] === "" || $im->priority > 0.0)) {
-            $args[0] = $im->otext;
+        $itext = "";
+        if (($im = $this->find(null, $id, $args, null))) {
+            $itext = $im->otext;
         }
-        return $this->expand($args[0], $args, $id, $im);
+        return $this->expand($itext, $args, $id, $im);
     }
 
     /** @param string $context
      * @param string $id
      * @return string */
     function _ci($context, $id, ...$args) {
-        $args[0] = $args[0] ?? "";
-        if (($im = $this->find($context, $id, $args, null))
-            && ($args[0] === "" || $im->priority > 0.0)) {
-            $args[0] = $im->otext;
+        $itext = "";
+        if (($im = $this->find($context, $id, $args, null))) {
+            $itext = $im->otext;
         }
         $cid = (string) $context === "" ? $id : "$context/$id";
-        return $this->expand($args[0], $args, $cid, $im);
+        return $this->expand($itext, $args, $cid, $im);
     }
 
     /** @param FieldRender $fr
      * @param string $context
      * @param string $id */
     function render_ci($fr, $context, $id, ...$args) {
-        $args[0] = $args[0] ?? "";
-        if (($im = $this->find($context, $id, $args, null))
-            && ($args[0] === "" || $im->priority > 0.0)) {
-            $args[0] = $im->otext;
+        $itext = "";
+        if (($im = $this->find($context, $id, $args, null))) {
+            $itext = $im->otext;
             if ($im->format !== null) {
                 $fr->value_format = $im->format;
             }
         }
         $cid = (string) $context === "" ? $id : "$context/$id";
-        $fr->value = $this->expand($args[0], $args, $cid, $im);
+        $fr->value = $this->expand($itext, $args, $cid, $im);
     }
 
     /** @param string $id
      * @return string */
     function default_itext($id, ...$args) {
-        $args[0] = $args[0] ?? "";
+        $itext = "";
         if (($im = $this->find(null, $id, $args, self::PRIO_OVERRIDE))) {
-            $args[0] = $im->otext;
+            $itext = $im->otext;
         }
-        return $args[0];
+        return $itext;
     }
 }
