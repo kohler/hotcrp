@@ -458,7 +458,7 @@ class Settings_Tester {
             "response/1/name" => "Butt",
             "response/1/open" => "@{$t0}",
             "response/1/done" => "@" . ($t0 + 10000),
-            "response/1/words" => "0"
+            "response/1/wordlimit" => "0"
         ]);
         xassert($sv->execute());
         xassert_array_eqq($sv->updated_fields(), ["responses"]);
@@ -504,7 +504,7 @@ class Settings_Tester {
             "response/1/name" => "",
             "response/1/open" => "@{$t0}",
             "response/1/done" => "@" . ($t0 + 10002),
-            "response/1/words" => "0"
+            "response/1/wordlimit" => "0"
         ]);
         xassert($sv->execute());
         xassert_array_eqq($sv->updated_fields(), ["responses"]);

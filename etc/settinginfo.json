@@ -389,7 +389,7 @@
         "storage": "member.condition", "parser_class": "Responses_SettingParser"
     },
     {
-        "name_pattern": "response/$/words",
+        "name_pattern": "response/$/wordlimit",
         "title": "Response word limit",
         "type": "int", "size": 5, "placeholder": "none", "default_value": 0,
         "title_pattern": "${sv response/$/title} word limit",
@@ -399,7 +399,7 @@
         "name_pattern": "response/$/instructions",
         "title": "Response instructions",
         "type": "htmlstring", "size": 3,
-        "default_message": ["resp_instrux", "response/$/words"],
+        "default_message": ["resp_instrux", "response/$/wordlimit"],
         "title_pattern": "${sv response/$/title} instructions",
         "storage": "member.instructions", "parser_class": "Responses_SettingParser"
     },
