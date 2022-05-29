@@ -118,7 +118,7 @@
         "name": "subform/abstract", "order": 10,
         "title": "Abstract and PDF",
         "print_function": "SubForm_SettingRenderer::print_abstract",
-        "settings": ["sub_noabstract", "sub_nopapers", "format__0"]
+        "settings": ["sub_noabstract", "sub_nopapers", "format/1"]
     },
     {
         "name": "subform/conflicts", "order": 20,
@@ -394,7 +394,7 @@
             "final_done",
             "final_grace",
             "final_edit_message",
-            "format__m1"
+            "format/2"
         ]
     },
     {

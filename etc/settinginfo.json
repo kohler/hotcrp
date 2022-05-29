@@ -526,61 +526,65 @@
         "type": "checkbox", "storage": "negval.shepherd_hide"
     },
     {
-        "name_pattern": "format__$",
+        "name_pattern": "fmtstore_v_$", "internal": true, "storage": "val.sub_banal_$"
+    },
+    {
+        "name_pattern": "fmtstore_s_$", "internal": true, "storage": "dat.sub_banal_$"
+    },
+    {
+        "name_pattern": "fmtstore_o_$", "internal": true, "storage": "opt.sub_banal_$"
+    },
+    {
+        "name_pattern": "format/$",
         "parser_class": "Banal_SettingParser", "type": "object"
     },
     {
-        "name_pattern": "format__$__active", "internal": true,
-        "type": "checkbox", "storage": "val.sub_banal_$",
-        "title": "Format checker"
+        "name_pattern": "format/$/id", "internal": true
     },
     {
-        "name_pattern": "format__$__spec", "internal": true,
-        "type": "string", "storage": "dat.sub_banal_$"
+        "name_pattern": "format/$/active",
+        "title": "Format checker",
+        "type": "checkbox", "storage": "member.active"
     },
     {
-        "name_pattern": "format__$__spec_options", "internal": true,
-        "type": "string", "storage": "opt.sub_banal_$"
-    },
-    {
-        "name_pattern": "format__$__bodyfontsize", "internal": true,
+        "name_pattern": "format/$/bodyfontsize",
         "title": "PDF format checker minimum body font size",
-        "type": "string", "size": 5, "placeholder": "any"
+        "type": "string", "size": 5, "placeholder": "any", "storage": "member.bodyfontsize"
     },
     {
-        "name_pattern": "format__$__bodylineheight", "internal": true,
+        "name_pattern": "format/$/bodylineheight",
         "title": "PDF format checker minimum body line height",
-        "type": "string", "size": 5, "placeholder": "any"
+        "type": "string", "size": 5, "placeholder": "any", "storage": "member.bodylineheight"
     },
     {
-        "name_pattern": "format__$__columns", "internal": true,
+        "name_pattern": "format/$/columns",
         "title": "PDF format checker column count",
-        "type": "string", "size": 5, "placeholder": "any"
+        "type": "string", "size": 5, "placeholder": "any", "storage": "member.columns"
     },
     {
-        "name_pattern": "format__$__pagelimit", "internal": true,
+        "name_pattern": "format/$/pagelimit",
         "title": "PDF format checker page limit",
-        "type": "string", "size": 5, "placeholder": "any"
+        "type": "string", "size": 5, "placeholder": "any", "storage": "member.pagelimit"
     },
     {
-        "name_pattern": "format__$__papersize", "internal": true,
+        "name_pattern": "format/$/papersize",
         "title": "PDF format checker paper size",
-        "type": "string", "size": 18, "placeholder": "any"
+        "type": "string", "size": 18, "placeholder": "any", "storage": "member.papersize"
     },
     {
-        "name_pattern": "format__$__textblock", "internal": true,
+        "name_pattern": "format/$/textblock",
         "title": "PDF format checker text block size",
-        "type": "string", "size": 18, "placeholder": "any"
+        "type": "string", "size": 18, "placeholder": "any", "storage": "member.textblock"
     },
     {
-        "name_pattern": "format__$__unlimitedref", "internal": true,
+        "name_pattern": "format/$/unlimitedref",
         "title": "PDF format checker unlimited references",
-        "type": "checkbox"
+        "type": "checkbox", "storage": "member.unlimitedref"
     },
     {
-        "name_pattern": "format__$__wordlimit", "internal": true,
+        "name_pattern": "format/$/wordlimit",
         "title": "PDF format checker word limit",
-        "type": "string", "size": 8, "placeholder": "any"
+        "type": "string", "size": 8, "placeholder": "any", "storage": "member.wordlimit"
     },
     {
         "name": "sub_blind",
@@ -778,9 +782,9 @@
     {   "name": "extrev_soft_0", "merge": true, "storage": "extrev_soft"   },
     {   "name": "pcrev_hard_0", "merge": true, "storage": "pcrev_hard"   },
     {   "name": "pcrev_soft_0", "merge": true, "storage": "pcrev_soft"   },
-    {   "name": "format__0__active", "merge": true, "storage": "val.sub_banal"   },
-    {   "name": "format__0__spec", "merge": true, "storage": "dat.sub_banal"   },
-    {   "name": "format__0__spec_options", "merge": true, "storage": "opt.sub_banal"   },
+    {   "name": "fmtstore_v_0", "merge": true, "storage": "val.sub_banal"   },
+    {   "name": "fmtstore_s_0", "merge": true, "storage": "dat.sub_banal"   },
+    {   "name": "fmtstore_o_0", "merge": true, "storage": "opt.sub_banal"   },
 
     {   "name": "paperacc", "internal": true   },
     {   "name": "paperlead", "internal": true   },

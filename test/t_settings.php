@@ -32,13 +32,13 @@ class Settings_Tester {
     }
 
     function test_setting_info() {
-        $si = $this->conf->si("format__0__spec");
+        $si = $this->conf->si("fmtstore_s_0");
         xassert_eqq($si->storage_type, Si::SI_DATA | Si::SI_SLICE);
         xassert_eqq($si->storage_name(), "sub_banal");
-        $si = $this->conf->si("format__4__spec");
+        $si = $this->conf->si("fmtstore_s_4");
         xassert_eqq($si->storage_type, Si::SI_DATA | Si::SI_SLICE);
         xassert_eqq($si->storage_name(), "sub_banal_4");
-        $si = $this->conf->si("format__m1__active");
+        $si = $this->conf->si("format/2/active");
         xassert_eqq($si->first_page(), "decisions");
 
         $si = $this->conf->si("rf/1/order");
