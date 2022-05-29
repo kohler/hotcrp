@@ -49,18 +49,18 @@ class ReviewFieldCondition_SettingParser extends SettingParser {
     static function validate($sv, $pfx, $q, $status) {
         $ps = new PaperSearch($sv->conf->root_user(), $q);
         foreach ($ps->message_list() as $mi) {
-            $sv->append_item_at("{$pfx}__condition", $mi);
-            $sv->msg_at("{$pfx}__presence", "", $mi->status);
+            $sv->append_item_at("{$pfx}/condition", $mi);
+            $sv->msg_at("{$pfx}/presence", "", $mi->status);
         }
         if (!self::check_condition($ps)) {
-            $sv->msg_at("{$pfx}__presence", "", $status);
-            $sv->msg_at("{$pfx}__condition", "<0>Invalid search in field condition", $status);
-            $sv->inform_at("{$pfx}__condition", "<0>Field conditions are limited to simple search keywords about reviews.");
+            $sv->msg_at("{$pfx}/presence", "", $status);
+            $sv->msg_at("{$pfx}/condition", "<0>Invalid search in field condition", $status);
+            $sv->inform_at("{$pfx}/condition", "<0>Field conditions are limited to simple search keywords about reviews.");
         }
     }
 
     function apply_req(SettingValues $sv, Si $si) {
-        $pres = "{$si->part0}{$si->part1}__presence";
+        $pres = "{$si->part0}{$si->part1}/presence";
         if (($q = $sv->base_parse_req($si)) !== null
             && $q !== ""
             && (!$sv->has_req($pres) || $sv->reqstr($pres) === "custom")) {
@@ -75,7 +75,7 @@ class ReviewFieldCondition_SettingParser extends SettingParser {
         if ($sv->has_interest("rf")) {
             foreach ($sv->conf->review_form()->all_fields() as $f) {
                 if ($f->exists_if)
-                    self::validate($sv, "rf__{$f->order}", $f->exists_if, 1);
+                    self::validate($sv, "rf/{$f->order}", $f->exists_if, 1);
             }
         }
     }

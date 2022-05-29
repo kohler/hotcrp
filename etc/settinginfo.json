@@ -440,67 +440,67 @@
         "parser_class": "ReviewForm_SettingParser", "type": "slist"
     },
     {
-        "name_pattern": "rf__$",
+        "name_pattern": "rf/$",
         "type": "object", "storage": "none", "parser_class": "ReviewForm_SettingParser"
     },
-    {   "name_pattern": "rf__$__id", "internal": true   },
+    {   "name_pattern": "rf/$/id", "internal": true   },
     {
-        "name_pattern": "rf__$__name", "title": "Review field name",
+        "name_pattern": "rf/$/name", "title": "Review field name",
         "type": "simplestring", "required": true, "storage": "member.name",
         "placeholder": "Field name", "size": 50, "parser_class": "ReviewForm_SettingParser"
     },
     {
-        "name_pattern": "rf__$__description",
-        "title": "Review field description", "title_pattern": "‘${sv rf__$__name}’ description",
+        "name_pattern": "rf/$/description",
+        "title": "Review field description", "title_pattern": "‘${sv rf/$/name}’ description",
         "type": "htmlstring", "size": 2, "autogrow": true,
         "storage": "member.description"
     },
     {
-        "name_pattern": "rf__$__choices",
-        "title": "Review field choices", "title_pattern": "‘${sv rf__$__name}’ choices",
+        "name_pattern": "rf/$/choices",
+        "title": "Review field choices", "title_pattern": "‘${sv rf/$/name}’ choices",
         "type": "longstring", "size": 3, "autogrow": true,
         "parser_class": "ReviewForm_SettingParser", "storage": "member.options"
     },
     {
-        "name_pattern": "rf__$__start", "internal": true,
+        "name_pattern": "rf/$/start", "internal": true,
         "storage": "member.start"
     },
     {
-        "name_pattern": "rf__$__colors",
-        "title": "Review field colors", "title_pattern": "‘${sv rf__$__name}’ colors",
+        "name_pattern": "rf/$/colors",
+        "title": "Review field colors", "title_pattern": "‘${sv rf/$/name}’ colors",
         "type": "radio", "values": ["sv", "svr", "blpu", "publ", "rdpk", "pkrd", "viridisr", "viridis", "orbu", "buor", "turbo", "turbor", "catx", "none"],
         "storage": "member.scheme"
     },
     {
-        "name_pattern": "rf__$__order",
-        "title": "Review field order", "title_pattern": "‘${sv rf__$__name}’ order",
+        "name_pattern": "rf/$/order",
+        "title": "Review field order", "title_pattern": "‘${sv rf/$/name}’ order",
         "type": "float", "storage": "member.order"
     },
     {
-        "name_pattern": "rf__$__required",
-        "title": "Review field requirement", "title_pattern": "‘${sv rf__$__name}’ requirement",
+        "name_pattern": "rf/$/required",
+        "title": "Review field requirement", "title_pattern": "‘${sv rf/$/name}’ requirement",
         "type": "radio", "values": [0, 1], "storage": "member.required"
     },
     {
-        "name_pattern": "rf__$__visibility",
-        "title": "Review field visibility", "title_pattern": "‘${sv rf__$__name}’ visibility",
+        "name_pattern": "rf/$/visibility",
+        "title": "Review field visibility", "title_pattern": "‘${sv rf/$/name}’ visibility",
         "type": "radio", "values": ["au", "pc", "audec", "admin"],
         "storage": "member.visibility"
     },
     {
-        "name_pattern": "rf__$__presence",
-        "title": "Review field presence", "title_pattern": "‘${sv rf__$__name}’ presence",
+        "name_pattern": "rf/$/presence",
+        "title": "Review field presence", "title_pattern": "‘${sv rf/$/name}’ presence",
         "type": "radio", "values": ["all", "custom"], "storage": "member.presence",
         "parser_class": "ReviewForm_SettingParser"
     },
     {
-        "name_pattern": "rf__$__condition",
-        "title": "Review field presence condition", "title_pattern": "‘${sv rf__$__name}’ presence condition",
+        "name_pattern": "rf/$/condition",
+        "title": "Review field presence condition", "title_pattern": "‘${sv rf/$/name}’ presence condition",
         "type": "simplestring", "size": 30, "placeholder": "Search", "storage": "member.exists_if",
         "parser_class": "ReviewFieldCondition_SettingParser"
     },
-    {   "name_pattern": "rf__$__exists_if", "alias_pattern": "rf__$__condition"   },
-    {   "name_pattern": "rf__$__display_space", "internal": true   },
+    {   "name_pattern": "rf/$/exists_if", "alias_pattern": "rf/$/condition"   },
+    {   "name_pattern": "rf/$/display_space", "internal": true   },
 
     {
         "name_pattern": "roundname_$", "internal": true,

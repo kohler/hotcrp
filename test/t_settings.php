@@ -41,7 +41,7 @@ class Settings_Tester {
         $si = $this->conf->si("format__m1__active");
         xassert_eqq($si->first_page(), "decisions");
 
-        $si = $this->conf->si("rf__1__order");
+        $si = $this->conf->si("rf/1/order");
         xassert_eqq($si->first_page(), "reviewform");
 
         $si = $this->conf->si("track/1/perm/view/tag");

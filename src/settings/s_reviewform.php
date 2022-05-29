@@ -24,14 +24,14 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($si->name === "rf") {
             return;
         }
-        assert($si->part0 === "rf__");
+        assert($si->part0 === "rf/");
         if ($si->part2 === "") {
-            $fid = $si->part1 === '$' ? 's99' : $sv->vstr("{$si->name}__id");
+            $fid = $si->part1 === '$' ? 's99' : $sv->vstr("{$si->name}/id");
             if (($finfo = ReviewFieldInfo::find($sv->conf, $fid))) {
                 $f = $sv->conf->review_field($finfo->short_id) ?? ReviewField::make($sv->conf, $finfo);
                 $sv->set_oldv($si->name, $f->unparse_json(ReviewField::UJ_SI));
             }
-        } else if ($si->part2 === "__choices" && $si->part1 === '$') {
+        } else if ($si->part2 === "/choices" && $si->part1 === '$') {
             $sv->set_oldv($si->name, "");
         }
     }
@@ -41,7 +41,7 @@ class ReviewForm_SettingParser extends SettingParser {
         foreach ($sv->conf->all_review_fields() as $rf) {
             $fids[$rf->short_id] = true;
         }
-        $sv->map_enumeration("rf__", $fids);
+        $sv->map_enumeration("rf/", $fids);
     }
 
 
@@ -49,7 +49,7 @@ class ReviewForm_SettingParser extends SettingParser {
         if (($n = $sv->base_parse_req($si)) !== null) {
             if (ReviewField::clean_name($n) !== $n
                 && $sv->oldv($si) !== $n
-                && !$sv->reqstr("{$si->part0}{$si->part1}__name_force")) {
+                && !$sv->reqstr("{$si->part0}{$si->part1}/name_force")) {
                 $lparen = strrpos($n, "(");
                 $sv->error_at($si->name, "<0>Please remove ‘" . substr($n, $lparen) . "’ from the field name");
                 $sv->inform_at($si->name, "<0>Visibility descriptions are added automatically.");
@@ -62,7 +62,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
     private function _apply_req_choices(SettingValues $sv, Si $si) {
         $pfx = $si->part0 . $si->part1;
-        $text = cleannl($sv->reqstr("{$pfx}__choices"));
+        $text = cleannl($sv->reqstr("{$pfx}/choices"));
         $letters = $text && ord($text[0]) >= 65 && ord($text[0]) <= 90;
         $expect = $letters ? "[A-Z]" : "[1-9][0-9]*";
 
@@ -77,7 +77,7 @@ class ReviewForm_SettingParser extends SettingParser {
                     $lowonum = min($lowonum, $onum);
                     $opts[$onum] = $m[2];
                 } else if (preg_match('/^(?:0\.\s*)?No entry$/i', $line)) {
-                    $sv->save("{$pfx}__required", false);
+                    $sv->save("{$pfx}/required", false);
                 } else {
                     return false;
                 }
@@ -99,11 +99,11 @@ class ReviewForm_SettingParser extends SettingParser {
         }
 
         if ($letters) {
-            $sv->save("{$pfx}__choices", array_reverse($seqopts));
-            $sv->save("{$pfx}__start", chr($lowonum));
+            $sv->save("{$pfx}/choices", array_reverse($seqopts));
+            $sv->save("{$pfx}/start", chr($lowonum));
         } else {
-            $sv->save("{$pfx}__choices", $seqopts);
-            $sv->save("{$pfx}__start", "");
+            $sv->save("{$pfx}/choices", $seqopts);
+            $sv->save("{$pfx}/start", "");
         }
         return true;
     }
@@ -141,11 +141,11 @@ class ReviewForm_SettingParser extends SettingParser {
 
     private function _apply_req_review_form(SettingValues $sv, Si $si) {
         $nrfj = [];
-        foreach ($sv->slist_keys("rf__") as $ctr) {
-            $rfj = $sv->parse_members("rf__{$ctr}");
-            if (!$sv->reqstr("rf__{$ctr}__delete")
+        foreach ($sv->slist_keys("rf/") as $ctr) {
+            $rfj = $sv->parse_members("rf/{$ctr}");
+            if (!$sv->reqstr("rf/{$ctr}/delete")
                 && ($finfo = ReviewFieldInfo::find($sv->conf, $rfj->id))) {
-                $sv->error_if_missing("rf__{$ctr}__name");
+                $sv->error_if_missing("rf/{$ctr}/name");
                 $this->_fix_req_condition($sv, $rfj);
                 $rfj->order = $rfj->order ?? 1000000;
                 $nrfj[] = $rfj;
@@ -164,21 +164,21 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($si->name === "rf") {
             return $this->_apply_req_review_form($sv, $si);
         } else {
-            assert($si->part0 === "rf__");
+            assert($si->part0 === "rf/");
             $pfx = $si->part0 . $si->part1;
             $sfx = $si->part2;
-            $finfo = ReviewFieldInfo::find($sv->conf, $sv->vstr("{$pfx}__id"));
-            if ($si->part2 === "__choices") {
+            $finfo = ReviewFieldInfo::find($sv->conf, $sv->vstr("{$pfx}/id"));
+            if ($si->part2 === "/choices") {
                 if ($finfo->has_options
                     && !$this->_apply_req_choices($sv, $si)) {
                     $sv->error_at($si->name, "<0>Invalid choices");
                     $this->mark_options_error($sv);
                 }
                 return true;
-            } else if ($si->part2 === "__presence") {
+            } else if ($si->part2 === "/presence") {
                 $si->values = array_keys(self::presence_options($sv->conf));
                 return false;
-            } else if ($si->part2 === "__name") {
+            } else if ($si->part2 === "/name") {
                 return $this->_apply_req_name($sv, $si);
             }
             return true;
@@ -380,7 +380,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
     static function print_description(SettingValues $sv) {
         self::stash_description_caption();
-        $sv->print_textarea_group("rf__\$__description", "Description", [
+        $sv->print_textarea_group("rf/\$/description", "Description", [
             "horizontal" => true, "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus",
             "group_class" => "is-property-description"
@@ -399,7 +399,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
     static function print_choices(SettingValues $sv) {
         self::stash_choices_caption();
-        $sv->print_textarea_group("rf__\$__choices", "Choices", [
+        $sv->print_textarea_group("rf/\$/choices", "Choices", [
             "horizontal" => true, "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus",
             "group_class" => "is-property-options"
@@ -407,20 +407,20 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
     }
 
     static function print_required(SettingValues $sv) {
-        $sv->print_select_group("rf__\$__required", "Required", ["0" => "No", "1" => "Yes"], [
+        $sv->print_select_group("rf/\$/required", "Required", ["0" => "No", "1" => "Yes"], [
             "horizontal" => true, "group_class" => "is-property-options"
         ]);
     }
 
     static function print_display(SettingValues $sv) {
-        $sv->print_select_group("rf__\$__colors", "Colors", [], [
+        $sv->print_select_group("rf/\$/colors", "Colors", [], [
             "horizontal" => true, "group_class" => "is-property-options", "class" => "uich rf-colors",
             "control_after" => '<span class="d-inline-block ml-2 rf-colors-example"></span>'
         ]);
     }
 
     static function print_visibility(SettingValues $sv) {
-        $sv->print_select_group("rf__\$__visibility", "Visibility", [
+        $sv->print_select_group("rf/\$/visibility", "Visibility", [
             "au" => "Visible to authors",
             "pc" => "Hidden from authors",
             "audec" => "Hidden from authors until decision",
@@ -434,13 +434,13 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         Ht::stash_html('<div id="settings-rf-caption-condition" class="hidden">'
             . '<p>The field will be present only on reviews that match this search. Not all searches are supported. Examples:</p><dl><dt>round:R1 OR round:R2</dt><dd>present on reviews in round R1 or R2</dd><dt>re:ext</dt><dd>present on external reviews</dd></dl>'
             . '</div>', "settings-rf-caption-condition");
-        $sv->print_select_group("rf__\$__presence", "Present on",
+        $sv->print_select_group("rf/\$/presence", "Present on",
             ReviewForm_SettingParser::presence_options($sv->conf), [
                 "horizontal" => true, "group_class" => "is-property-editing",
                 "fold_values" => ["custom"], "group_open" => true
             ]);
         echo ' &nbsp;';
-        $sv->print_entry("rf__\$__condition", [
+        $sv->print_entry("rf/\$/condition", [
             "class" => "papersearch fx need-tooltip", "spellcheck" => false,
             "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus"
         ]);
@@ -449,12 +449,12 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
     static function print_actions(SettingValues $sv) {
         echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">',
-            Ht::button(Icons::ui_movearrow(0), ["id" => "rf__\$__moveup", "class" => "btn-licon ui js-settings-rf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
-            Ht::button(Icons::ui_movearrow(2), ["id" => "rf__\$__movedown", "class" => "btn-licon ui js-settings-rf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
+            Ht::button(Icons::ui_movearrow(0), ["id" => "rf/\$/moveup", "class" => "btn-licon ui js-settings-rf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
+            Ht::button(Icons::ui_movearrow(2), ["id" => "rf/\$/movedown", "class" => "btn-licon ui js-settings-rf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
             Ht::button(Icons::ui_trash(), ["class" => "btn-licon ui js-settings-rf-delete need-tooltip", "aria-label" => "Delete"]),
-            Ht::hidden("rf__\$__order", "0", ["id" => "rf__\$__order", "class" => "rf-order"]),
-            Ht::hidden("rf__\$__id", "", ["id" => "rf__\$__id", "class" => "rf-id"]),
+            Ht::hidden("rf/\$/order", "0", ["id" => "rf/\$/order", "class" => "rf-order"]),
+            Ht::hidden("rf/\$/id", "", ["id" => "rf/\$/id", "class" => "rf-id"]),
             "</div></div>";
     }
 
@@ -470,12 +470,12 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         if (!$sv->conf->time_some_author_view_review()) {
             echo '<div class="feedback is-note">Authors cannot see reviews at the moment.</div>';
         }
-        echo '</div><template id="rf__template" class="hidden">';
-        echo '<div id="rf__$" class="settings-rf f-contain has-fold fold2c">',
-            '<div id="rf__$__view" class="settings-rf-view fn2 ui js-foldup"></div>',
-            '<div id="rf__$__edit" class="settings-rf-edit fx2">',
+        echo '</div><template id="rf_template" class="hidden">';
+        echo '<div id="rf/$" class="settings-rf f-contain has-fold fold2c">',
+            '<div id="rf/$/view" class="settings-rf-view fn2 ui js-foldup"></div>',
+            '<div id="rf/$/edit" class="settings-rf-edit fx2">',
             '<div class="entryi mb-3"><div class="entry">',
-            '<input name="rf__$__name" id="rf__$__name" type="text" size="50" class="font-weight-bold" placeholder="Field name">',
+            '<input name="rf/$/name" id="rf/$/name" type="text" size="50" class="font-weight-bold" placeholder="Field name">',
             '</div></div>';
         $sv->print_group("reviewfield/properties");
         echo '</template>';
@@ -498,7 +498,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         $req = [];
         if ($sv->use_req()) {
             foreach ($sv->req as $k => $v) {
-                if (str_starts_with($k, "rf__"))
+                if (str_starts_with($k, "rf/"))
                     $req[$k] = $v;
             }
         }
