@@ -1,5 +1,5 @@
 <?php
-// settings/s_topics.php -- HotCRP settings > submission form page
+// settings/s_topic.php -- HotCRP settings > submission form page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Topic_Setting {
@@ -14,7 +14,7 @@ class Topic_Setting {
     }
 }
 
-class Topics_SettingParser extends SettingParser {
+class Topic_SettingParser extends SettingParser {
     /** @var array<string> */
     private $topicj;
     /** @var list<string> */

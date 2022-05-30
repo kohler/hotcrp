@@ -161,7 +161,7 @@
     {
         "name": "topics", "group": "subform", "order": 480,
         "title": "Topics", "hashid": "topics",
-        "print_function": "Topics_SettingParser::print",
+        "print_function": "Topic_SettingParser::print",
         "settings": ["topic"]
     },
 
@@ -301,22 +301,22 @@
     },
     {
         "name": "tracks", "group": "tags", "order": 750,
-        "print_function": "*Tracks_SettingParser::print",
+        "print_function": "*Track_SettingParser::print",
         "title": "Tracks", "hashid": "tracks",
         "settings": ["track"]
     },
     {
         "name": "__crosscheck/tracks", "order": 750,
-        "crosscheck_function": "Tracks_SettingParser::crosscheck"
+        "crosscheck_function": "Track_SettingParser::crosscheck"
     },
     {
         "name": "tracks/permissions/view", "order": 10,
-        "print_function": "*Tracks_SettingParser::print_view_perm",
+        "print_function": "*Track_SettingParser::print_view_perm",
         "default_unfolded": true
     },
     {
         "name": "tracks/permissions/viewrev", "order": 30,
-        "print_function": "*Tracks_SettingParser::print_viewrev_perm"
+        "print_function": "*Track_SettingParser::print_viewrev_perm"
     },
 
 
@@ -328,17 +328,17 @@
     {
         "name": "decisions/responses", "order": 10,
         "title": "Responses",
-        "print_function": "*Responses_SettingParser::print",
+        "print_function": "*Response_SettingParser::print",
         "settings": ["response_active", "response"]
     },
     {   "name": "responses", "alias": "decisions/responses"   },
-    [   "responses/properties/name", 10, "*Responses_SettingParser::print_name"   ],
-    [   "responses/properties/deadline", 20, "*Responses_SettingParser::print_deadline"   ],
-    [   "responses/properties/word-limit", 30, "*Responses_SettingParser::print_wordlimit"   ],
-    [   "responses/properties/instructions", 40, "*Responses_SettingParser::print_instructions"   ],
+    [   "responses/properties/name", 10, "*Response_SettingParser::print_name"   ],
+    [   "responses/properties/deadline", 20, "*Response_SettingParser::print_deadline"   ],
+    [   "responses/properties/word-limit", 30, "*Response_SettingParser::print_wordlimit"   ],
+    [   "responses/properties/instructions", 40, "*Response_SettingParser::print_instructions"   ],
     {
         "name": "__crosscheck/responses", "order": 800,
-        "crosscheck_function": "Responses_SettingParser::crosscheck"
+        "crosscheck_function": "Response_SettingParser::crosscheck"
     },
     {
         "name": "decisions/review-visibility", "order": 100,
@@ -378,7 +378,7 @@
     {
         "name": "decisions/decision-types", "order": 400,
         "title": "Decision types",
-        "print_function": "Decisions_SettingParser::print",
+        "print_function": "Decision_SettingParser::print",
         "settings": ["decision"]
     },
     {

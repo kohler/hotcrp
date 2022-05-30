@@ -1,5 +1,5 @@
 <?php
-// settings/s_decisions.php -- HotCRP settings > decisions page
+// settings/s_decision.php -- HotCRP settings > decisions page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Decision_Setting {
@@ -16,7 +16,7 @@ class Decision_Setting {
     }
 }
 
-class Decisions_SettingParser extends SettingParser {
+class Decision_SettingParser extends SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
         assert($si->part0 === "decision/" && $si->part2 === "");
         $did = $sv->vstr("{$si->name}/id") ?? "new";

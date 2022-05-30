@@ -49,11 +49,11 @@
 
     {
         "name": "decision", "hashid": "decision-types",
-        "type": "oblist", "parser_class": "Decisions_SettingParser"
+        "type": "oblist", "parser_class": "Decision_SettingParser"
     },
     {
         "name_pattern": "decision/$",
-        "type": "object", "storage": "none", "parser_class": "Decisions_SettingParser"
+        "type": "object", "storage": "none", "parser_class": "Decision_SettingParser"
     },
     {   "name_pattern": "decision/$/id", "internal": true   },
     {
@@ -346,22 +346,22 @@
 
     {
         "name": "response",
-        "type": "oblist", "parser_class": "Responses_SettingParser"
+        "type": "oblist", "parser_class": "Response_SettingParser"
     },
     {
         "name_pattern": "response/$",
-        "type": "object", "storage": "none", "parser_class": "Responses_SettingParser"
+        "type": "object", "storage": "none", "parser_class": "Response_SettingParser"
     },
     {   "name_pattern": "response/$/id", "internal": true, "type": "string"   },
     {
         "name_pattern": "response/$/name",
         "title": "Response name", "placeholder": "Response name",
         "type": "tag", "required": false, "size": 20,
-        "storage": "member.name", "parser_class": "Responses_SettingParser"
+        "storage": "member.name", "parser_class": "Response_SettingParser"
     },
     {
         "name_pattern": "response/$/title",
-        "internal": true, "parser_class": "Responses_SettingParser"
+        "internal": true, "parser_class": "Response_SettingParser"
     },
     {
         "name_pattern": "response/$/open",
@@ -386,7 +386,7 @@
         "title": "Response condition",
         "type": "simplestring", "size": 40, "placeholder": "(All)",
         "title_pattern": "${sv response/$/title} condition",
-        "storage": "member.condition", "parser_class": "Responses_SettingParser"
+        "storage": "member.condition", "parser_class": "Response_SettingParser"
     },
     {
         "name_pattern": "response/$/wordlimit",
@@ -401,7 +401,7 @@
         "type": "htmlstring", "size": 3,
         "default_message": ["resp_instrux", "response/$/wordlimit"],
         "title_pattern": "${sv response/$/title} instructions",
-        "storage": "member.instructions", "parser_class": "Responses_SettingParser"
+        "storage": "member.instructions", "parser_class": "Response_SettingParser"
     },
 
     {
@@ -512,8 +512,7 @@
         "title": "Decision visibility",
         "type": "radio",
         "values": [0, 1, 2, 3], "default_value": 0,
-        "json_values": ["no", "pc", "yes", "unconflicted-pc"],
-        "require": "src/settings/s_decisions.php"
+        "json_values": ["no", "pc", "yes", "unconflicted-pc"]
     },
     {
         "name": "seedec_showau",
@@ -716,11 +715,11 @@
     {   "name": "has_topics", "internal": true, "type": "checkbox"   },
     {
         "name": "topic",
-        "type": "oblist", "parser_class": "Topics_SettingParser"
+        "type": "oblist", "parser_class": "Topic_SettingParser"
     },
     {
         "name_pattern": "topic/$",
-        "type": "object", "storage": "none", "parser_class": "Topics_SettingParser"
+        "type": "object", "storage": "none", "parser_class": "Topic_SettingParser"
     },
     {   "name_pattern": "topic/$/id", "internal": true   },
     {
@@ -729,7 +728,7 @@
     },
     {
         "name": "new_topics", "title": "New topics",
-        "type": "longstring", "parse_order": -1, "parser_class": "Topics_SettingParser"
+        "type": "longstring", "parse_order": -1, "parser_class": "Topic_SettingParser"
     },
 
     {
@@ -738,11 +737,11 @@
 
     {
         "name": "track", "hashid": "tracks",
-        "parser_class": "Tracks_SettingParser"
+        "parser_class": "Track_SettingParser"
     },
     {
         "name_pattern": "track/$",
-        "type": "object", "storage": "none", "parser_class": "Tracks_SettingParser"
+        "type": "object", "storage": "none", "parser_class": "Track_SettingParser"
     },
     {   "name_pattern": "track/$/id", "internal": true, "type": "string"   },
     {
@@ -752,30 +751,30 @@
     },
     {
         "name_pattern": "track/$/title",
-        "internal": true, "parser_class": "Tracks_SettingParser"
+        "internal": true, "parser_class": "Track_SettingParser"
     },
     {
         "name_pattern": "track/$/perm", "internal": true, "storage": "none"
     },
     {
         "name_pattern": "track/$/perm/$$",
-        "type": "object", "storage": "none", "parser_class": "Tracks_SettingParser"
+        "type": "object", "storage": "none", "parser_class": "Track_SettingParser"
     },
     {
         "name_pattern": "track/$/perm/$$/type",
         "title_pattern": "${sv track/$/title} ${sv track/$/perm/$$/title} permission",
         "type": "radio", "values": ["", "+", "-", "none"], "storage": "member.type",
-        "parser_class": "Tracks_SettingParser"
+        "parser_class": "Track_SettingParser"
     },
     {
         "name_pattern": "track/$/perm/$$/tag",
         "title_pattern": "${sv track/$/title} ${sv track/$/perm/$$/title} permission",
         "type": "tag", "storage": "member.tag",
-        "parser_class": "Tracks_SettingParser"
+        "parser_class": "Track_SettingParser"
     },
     {
         "name_pattern": "track/$/perm/$$/title",
-        "internal": true, "parser_class": "Tracks_SettingParser"
+        "internal": true, "parser_class": "Track_SettingParser"
     },
 
     {   "name": "extrev_hard_0", "merge": true, "storage": "extrev_hard"   },

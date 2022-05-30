@@ -1,5 +1,5 @@
 <?php
-// settings/s_tracks.php -- HotCRP settings > tracks page
+// settings/s_track.php -- HotCRP settings > tracks page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class TrackPerm_Setting {
@@ -60,7 +60,7 @@ class Track_Setting {
     }
 }
 
-class Tracks_SettingParser extends SettingParser {
+class Track_SettingParser extends SettingParser {
     /** @var int|'$' */
     public $ctr;
     /** @var int */

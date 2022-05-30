@@ -417,12 +417,12 @@ src/settinginfoset.php
 src/settingparser.php
 src/settings/s_banal.php
 src/settings/s_basics.php
-src/settings/s_decisions.php
+src/settings/s_decision.php
 src/settings/s_decisionvisibility.php
 src/settings/s_finalversions.php
 src/settings/s_messages.php
 src/settings/s_options.php
-src/settings/s_responses.php
+src/settings/s_response.php
 src/settings/s_reviewfieldcondition.php
 src/settings/s_reviewform.php
 src/settings/s_reviews.php
@@ -433,8 +433,8 @@ src/settings/s_subfieldcondition.php
 src/settings/s_subform.php
 src/settings/s_submissions.php
 src/settings/s_tags.php
-src/settings/s_topics.php
-src/settings/s_tracks.php
+src/settings/s_topic.php
+src/settings/s_track.php
 src/settings/s_users.php
 src/settingvalues.php
 src/si.php

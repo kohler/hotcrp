@@ -1,5 +1,5 @@
 <?php
-// settings/s_responses.php -- HotCRP settings > decisions page
+// settings/s_response.php -- HotCRP settings > decisions page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Response_Setting {
@@ -28,7 +28,7 @@ class Response_Setting {
     }
 }
 
-class Responses_SettingParser extends SettingParser {
+class Response_SettingParser extends SettingParser {
     /** @var int|'$' */
     public $ctr;
     /** @var ?int */
