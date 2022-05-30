@@ -178,14 +178,13 @@ class SettingValues extends MessageSet {
                 if (!is_array($v)) {
                     $this->error_at(null, "<0>Array of JSON objects expected");
                 } else {
-                    $sep = $this->conf->si("{$si->name}__1") ? "__" : "/";
                     $this->set_req("has_{$si->name}", "1");
                     if ($reset) {
-                        $this->set_req("{$si->name}{$sep}reset", "1");
+                        $this->set_req("{$si->name}/reset", "1");
                     }
                     foreach ($v as $i => $vv) {
                         $this->_jpath = "{$jpath}{$k}[{$i}]";
-                        $pfx = "{$si->name}{$sep}" . ($i + 1) . $sep;
+                        $pfx = "{$si->name}/" . ($i + 1) . "/";
                         if (!array_key_exists("{$pfx}id", $this->req)) {
                             $this->req["{$pfx}id"] = "";
                         }
@@ -535,10 +534,9 @@ class SettingValues extends MessageSet {
     function vjson($id) {
         $si = is_string($id) ? $this->si($id) : $id;
         if ($si->type === "slist") {
-            $sep = $this->conf->si("{$si->name}__1") ? "__" : "/";
             $a = [];
-            foreach ($this->slist_keys("{$si->name}{$sep}") as $ctr) {
-                $a[] = $this->vjson("{$si->name}{$sep}{$ctr}");
+            foreach ($this->slist_keys("{$si->name}/") as $ctr) {
+                $a[] = $this->vjson("{$si->name}/{$ctr}");
             }
             return $a;
         }
@@ -571,7 +569,7 @@ class SettingValues extends MessageSet {
     private function ensure_enumeration($pfx) {
         if (!isset($this->_ensure_enumerations[$pfx])) {
             $this->_ensure_enumerations[$pfx] = true;
-            if ((str_ends_with($pfx, "__") || str_ends_with($pfx, "/"))
+            if (str_ends_with($pfx, "/")
                 && ($si = $this->conf->si("{$pfx}1"))
                 && $si->parser_class) {
                 $this->si_parser($si)->prepare_enumeration($this, $si);
@@ -584,16 +582,15 @@ class SettingValues extends MessageSet {
     /** @param string $pfx
      * @param array $map */
     function map_enumeration($pfx, $map) {
-        $sep = str_ends_with($pfx, "__") ? "__" : "/";
-        assert(str_ends_with($pfx, $sep));
+        assert(str_ends_with($pfx, "/"));
         $ctr = 1;
         if ($this->_use_req) {
             $delete_rest = ($this->reqstr("{$pfx}reset") ?? "") !== "";
             $used = $names = $namectrs = [];
-            while (($x = $this->reqstr("{$pfx}{$ctr}{$sep}id")) !== null) {
+            while (($x = $this->reqstr("{$pfx}{$ctr}/id")) !== null) {
                 if ($x !== "") {
                     $used[$x] = true;
-                } else if (($n = $this->reqstr("{$pfx}{$ctr}{$sep}name") ?? "") !== "") {
+                } else if (($n = $this->reqstr("{$pfx}{$ctr}/name") ?? "") !== "") {
                     $names[] = $n;
                     $namectrs[] = $ctr;
                 }
@@ -612,45 +609,44 @@ class SettingValues extends MessageSet {
                 }
                 foreach ($this->unambiguous_renumbering($names, $mnames) as $idx => $midx) {
                     if ($midx >= 0) {
-                        $this->req["{$pfx}{$namectrs[$idx]}{$sep}id"] = $mids[$midx];
+                        $this->req["{$pfx}{$namectrs[$idx]}/id"] = $mids[$midx];
                         $used[$mids[$midx]] = true;
                     }
                 }
             }
             foreach ($map as $id => $obj) {
                 if (!isset($used[$id])) {
-                    $this->set_req("{$pfx}{$ctr}{$sep}id", (string) $id);
+                    $this->set_req("{$pfx}{$ctr}/id", (string) $id);
                     if ($delete_rest) {
-                        $this->set_req("{$pfx}{$ctr}{$sep}delete", "1");
+                        $this->set_req("{$pfx}{$ctr}/delete", "1");
                     }
                     ++$ctr;
                 }
             }
         } else {
             foreach ($map as $id => $obj) {
-                $this->set_oldv("{$pfx}{$ctr}{$sep}id", (string) $id);
-                $this->set_req("{$pfx}{$ctr}{$sep}id", (string) $id);
+                $this->set_oldv("{$pfx}{$ctr}/id", (string) $id);
+                $this->set_req("{$pfx}{$ctr}/id", (string) $id);
                 ++$ctr;
             }
         }
-        unset($this->req["{$pfx}{$ctr}{$sep}id"]);
+        unset($this->req["{$pfx}{$ctr}/id"]);
     }
 
     /** @param string $pfx
      * @return list<int> */
     function slist_keys($pfx) {
-        $sep = str_ends_with($pfx, "__") ? "__" : "/";
-        assert(str_ends_with($pfx, $sep));
+        assert(str_ends_with($pfx, "/"));
         $this->ensure_enumeration($pfx);
         $ctrs = [];
-        for ($ctr = 1; isset($this->req["{$pfx}{$ctr}{$sep}id"]); ++$ctr) {
+        for ($ctr = 1; isset($this->req["{$pfx}{$ctr}/id"]); ++$ctr) {
             $ctrs[] = $ctr;
         }
-        if (($x = $this->conf->si("{$pfx}1{$sep}order"))) {
-            usort($ctrs, function ($a, $b) use ($pfx, $sep) {
-                $ao = $this->vstr("{$pfx}{$a}{$sep}order");
+        if (($x = $this->conf->si("{$pfx}1/order"))) {
+            usort($ctrs, function ($a, $b) use ($pfx) {
+                $ao = $this->vstr("{$pfx}{$a}/order");
                 $an = is_numeric($ao);
-                $bo = $this->vstr("{$pfx}{$b}{$sep}order");
+                $bo = $this->vstr("{$pfx}{$b}/order");
                 $bn = is_numeric($bo);
                 if ($an && $bn) {
                     return floatval($ao) <=> floatval($bo);
@@ -669,9 +665,8 @@ class SettingValues extends MessageSet {
      * @param array<T> $map
      * @return ?T */
     function unmap_enumeration_member($pfx, $map) {
-        $sep = strpos($pfx, "__") !== false ? "__" : "/";
         $this->ensure_enumeration($pfx);
-        $x = $this->reqstr("{$pfx}{$sep}id");
+        $x = $this->reqstr("{$pfx}/id");
         if ($x !== null && $x !== "" && $x !== "\$" && $x !== "new") {
             return $map[$x] ?? null;
         } else {
@@ -683,10 +678,9 @@ class SettingValues extends MessageSet {
      * @param int|string $needle
      * @return ?int */
     function search_enumeration_id($pfx, $needle) {
-        $sep = strpos($pfx, "__") !== false ? "__" : "/";
         $this->ensure_enumeration($pfx);
-        for ($ctr = 1; isset($this->req["{$pfx}{$ctr}{$sep}id"]); ++$ctr) {
-            if ((string) $needle === (string) $this->req["{$pfx}{$ctr}{$sep}id"]) {
+        for ($ctr = 1; isset($this->req["{$pfx}{$ctr}/id"]); ++$ctr) {
+            if ((string) $needle === (string) $this->req["{$pfx}{$ctr}/id"]) {
                 return $ctr;
             }
         }
@@ -698,18 +692,17 @@ class SettingValues extends MessageSet {
      * @param string $sfx
      * @param string $description */
     function error_if_duplicate_member($pfx, $ctr, $sfx, $description) {
-        $sep = str_ends_with($pfx, "__") ? "__" : "/";
         assert(is_int($ctr) || (is_string($ctr) && ctype_digit($ctr)));
         $ctr = (int) $ctr;
-        if ($this->reqstr("{$pfx}{$ctr}{$sep}delete")) {
+        if ($this->reqstr("{$pfx}{$ctr}/delete")) {
             return;
         }
         $oim = $this->swap_ignore_messages(true);
         $collator = $this->conf->collator();
         $v0 = $this->base_parse_req("{$pfx}{$ctr}{$sfx}");
         $badctr = null;
-        for ($ctr1 = $ctr + 1; isset($this->req["{$pfx}{$ctr1}{$sep}id"]); ++$ctr1) {
-            if (!$this->reqstr("{$pfx}{$ctr1}{$sep}delete")
+        for ($ctr1 = $ctr + 1; isset($this->req["{$pfx}{$ctr1}/id"]); ++$ctr1) {
+            if (!$this->reqstr("{$pfx}{$ctr1}/delete")
                 && ($v1 = $this->base_parse_req("{$pfx}{$ctr1}{$sfx}")) !== null
                 && $v0 !== null
                 && $collator->compare($v0, $v1) === 0) {
@@ -1446,13 +1439,12 @@ class SettingValues extends MessageSet {
      * @param bool $descendents
      * @return list<Si> */
     function si_req_members($pfx, $descendents = false) {
-        $seplen = str_ends_with($pfx, "__") ? 2 : 1;
-        assert($this->_req_parsed && (str_ends_with($pfx, "__") || str_ends_with($pfx, "/")));
+        assert($this->_req_parsed && str_ends_with($pfx, "/"));
         $sis = [];
         foreach ($this->_req_si as $si) {
             if (str_starts_with($si->name, $pfx)
                 && ($descendents
-                    || strlen($si->part0) + strlen($si->part1) === strlen($pfx) - $seplen))
+                    || strlen($si->part0) + strlen($si->part1) === strlen($pfx) - 1))
                 $sis[] = $si;
         }
         return $sis;
@@ -1462,14 +1454,13 @@ class SettingValues extends MessageSet {
      * @return object */
     function parse_members($oname) {
         $object = $this->objectv($oname);
-        assert($object && $this->_req_parsed && !str_ends_with($oname, "__") && !str_ends_with($oname, "/"));
+        assert($object && $this->_req_parsed && !str_ends_with($oname, "/"));
         $object = clone $object;
         $old_object = $this->cur_object;
         $this->cur_object = $object;
         // skip member parsing if object is deleted (don't want errors)
-        $sep = strpos($oname, "__") !== false ? "__" : "/";
-        if (!$this->reqstr("{$oname}{$sep}delete")) {
-            foreach ($this->si_req_members("{$oname}{$sep}") as $si) {
+        if (!$this->reqstr("{$oname}/delete")) {
+            foreach ($this->si_req_members("{$oname}/") as $si) {
                 if (($si->storage_type & Si::SI_MEMBER) !== 0)
                     $this->apply_req($si);
             }

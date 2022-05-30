@@ -296,8 +296,6 @@ class Si {
                 $pn .= $this->part1;
             } else if (str_ends_with($pn, "/")) {
                 $pn = substr($pn, 0, -1);
-            } else if (str_ends_with($pn, "__")) {
-                $pn = substr($pn, 0, -2);
             }
             if (($psi = $this->conf->si($pn))) {
                 $psi->_collect_pages();

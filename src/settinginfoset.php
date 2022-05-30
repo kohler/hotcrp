@@ -136,7 +136,6 @@ class SettingInfoSet {
             if ($npos === false
                 || $npos < $pos
                 || ($m = substr($name, $pos, $npos - $pos)) === ""
-                || strpos($m, "__") !== false
                 || strpos($m, "/") !== false) {
                 return null;
             }
