@@ -174,7 +174,7 @@ class SettingValues extends MessageSet {
                 if (is_scalar($v)) {
                     $this->set_req($si->name, "{$v}");
                 }
-            } else if ($si->type === "slist") {
+            } else if ($si->type === "oblist") {
                 if (!is_array($v)) {
                     $this->error_at(null, "<0>Array of JSON objects expected");
                 } else {
@@ -533,9 +533,9 @@ class SettingValues extends MessageSet {
      * @return mixed */
     function vjson($id) {
         $si = is_string($id) ? $this->si($id) : $id;
-        if ($si->type === "slist") {
+        if ($si->type === "oblist") {
             $a = [];
-            foreach ($this->slist_keys("{$si->name}/") as $ctr) {
+            foreach ($this->oblist_keys("{$si->name}/") as $ctr) {
                 $a[] = $this->vjson("{$si->name}/{$ctr}");
             }
             return $a;
@@ -635,7 +635,7 @@ class SettingValues extends MessageSet {
 
     /** @param string $pfx
      * @return list<int> */
-    function slist_keys($pfx) {
+    function oblist_keys($pfx) {
         assert(str_ends_with($pfx, "/"));
         $this->ensure_enumeration($pfx);
         $ctrs = [];
@@ -658,20 +658,6 @@ class SettingValues extends MessageSet {
             });
         }
         return $ctrs;
-    }
-
-    /** @template T
-     * @param string $pfx
-     * @param array<T> $map
-     * @return ?T */
-    function unmap_enumeration_member($pfx, $map) {
-        $this->ensure_enumeration($pfx);
-        $x = $this->reqstr("{$pfx}/id");
-        if ($x !== null && $x !== "" && $x !== "\$" && $x !== "new") {
-            return $map[$x] ?? null;
-        } else {
-            return null;
-        }
     }
 
     /** @param string $pfx

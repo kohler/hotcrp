@@ -251,7 +251,7 @@ class Tracks_SettingParser extends SettingParser {
         echo "<p>Tracks control the PC members allowed to view or review different sets of submissions. <span class=\"nw\">(<a href=\"" . $sv->conf->hoturl("help", "t=tracks") . "\">Help</a>)</span></p>",
             Ht::hidden("has_track", 1);
 
-        foreach ($sv->slist_keys("track/") as $ctr) {
+        foreach ($sv->oblist_keys("track/") as $ctr) {
             $this->print_track($sv, $ctr);
         }
         $this->print_cross_track($sv);
@@ -298,7 +298,7 @@ class Tracks_SettingParser extends SettingParser {
             return true;
         } else if ($si->name === "track") {
             $j = [];
-            foreach ($sv->slist_keys("track/") as $ctr) {
+            foreach ($sv->oblist_keys("track/") as $ctr) {
                 $this->cur_trx = $sv->parse_members("track/{$ctr}");
                 if (!$sv->reqstr("track/{$ctr}/delete")) {
                     if (!$this->cur_trx->is_default) {
@@ -332,7 +332,7 @@ class Tracks_SettingParser extends SettingParser {
         $tracks_interest = $sv->has_interest("track");
         if (($tracks_interest || $sv->has_interest("pcrev_any"))
             && $conf->has_tracks()) {
-            foreach ($sv->slist_keys("track/") as $ctr) {
+            foreach ($sv->oblist_keys("track/") as $ctr) {
                 if (($id = $sv->reqstr("track/{$ctr}/id")) === "") {
                     continue;
                 }

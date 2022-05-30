@@ -2,6 +2,18 @@
 // settings/s_topics.php -- HotCRP settings > submission form page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
+class Topic_Setting {
+    /** @var ?int */
+    public $id;
+    /** @var string */
+    public $name;
+
+    function __construct($id = null, $name = "") {
+        $this->id = $id;
+        $this->name = $name;
+    }
+}
+
 class Topics_SettingParser extends SettingParser {
     /** @var array<string> */
     private $topicj;
@@ -11,16 +23,23 @@ class Topics_SettingParser extends SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
         if ($si->name === "new_topics") {
             $sv->set_oldv($si->name, "");
-        } else if ($si->part0 === "topic/") {
-            $tn = $sv->unmap_enumeration_member($si->name, $sv->conf->topic_set()->as_array());
-            if ($tn !== null) {
-                $sv->set_oldv($si->name, (object) ["id" => intval($si->part1), "name" => $tn]);
+        } else if ($si->part0 === "topic/" && $si->part2 === "") {
+            $idv = $sv->vstr("topic/{$si->part1}/id") ?? "";
+            $id = ctype_digit($idv) ? intval($idv) : -1;
+            if ($id > 0 && ($name = $sv->conf->topic_set()->name($id)) !== null) {
+                $sv->set_oldv($si, new Topic_Setting($id, $name));
+            } else {
+                $sv->set_oldv($si, new Topic_Setting);
             }
         }
     }
 
     function prepare_enumeration(SettingValues $sv, Si $si) {
-        $sv->map_enumeration("topic/", $sv->conf->topic_set()->as_array());
+        $m = [];
+        foreach ($sv->conf->topic_set() as $id => $name) {
+            $m[$id] = new Topic_Setting($id, $name);
+        }
+        $sv->map_enumeration("topic/", $m);
     }
 
     static function print(SettingValues $sv) {
@@ -40,7 +59,7 @@ class Topics_SettingParser extends SettingParser {
         }
         echo "</p>\n", Ht::hidden("has_topic", 1);
 
-        if (($topic_counters = $sv->slist_keys("topic/"))) {
+        if (($topic_counters = $sv->oblist_keys("topic/"))) {
             echo '<div class="mg has-copy-topics"><table><thead><tr><th style="text-align:left">';
             if (!empty($interests)) {
                 echo '<span class="float-right n"># PC interests: </span>';
@@ -77,7 +96,7 @@ class Topics_SettingParser extends SettingParser {
         $ctr = null;
         foreach (explode("\n", $sv->reqstr($si->name)) as $line) {
             if (($line = simplify_whitespace($line)) !== "") {
-                $ctr = $ctr ?? max(0, 0, ...$sv->slist_keys("topic/")) + 1;
+                $ctr = $ctr ?? max(0, 0, ...$sv->oblist_keys("topic/")) + 1;
                 $sv->set_req("topic/{$ctr}/id", "new");
                 $sv->set_req("topic/{$ctr}/name", $line);
                 ++$ctr;
@@ -92,7 +111,7 @@ class Topics_SettingParser extends SettingParser {
         $this->topicj = $sv->conf->topic_set()->as_array();
         $this->newtopics = [];
         $oldj = json_encode_db($this->topicj);
-        foreach ($sv->slist_keys("topic/") as $ctr) {
+        foreach ($sv->oblist_keys("topic/") as $ctr) {
             $tid = $sv->vstr("topic/{$ctr}/id") ?? "new";
             $tname = $sv->base_parse_req("topic/{$ctr}/name");
             if ($sv->reqstr("topic/{$ctr}/delete") || $tname === "") {

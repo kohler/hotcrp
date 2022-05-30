@@ -49,7 +49,7 @@
 
     {
         "name": "decision", "hashid": "decision-types",
-        "parser_class": "Decisions_SettingParser", "type": "slist"
+        "type": "oblist", "parser_class": "Decisions_SettingParser"
     },
     {
         "name_pattern": "decision/$",
@@ -219,7 +219,7 @@
 
     {
         "name": "sf",
-        "parser_class": "Options_SettingParser", "type": "slist"
+        "type": "oblist", "parser_class": "Options_SettingParser"
     },
     {
         "name_pattern": "sf/$",
@@ -346,7 +346,7 @@
 
     {
         "name": "response",
-        "parser_class": "Responses_SettingParser", "type": "slist"
+        "type": "oblist", "parser_class": "Responses_SettingParser"
     },
     {
         "name_pattern": "response/$",
@@ -393,7 +393,7 @@
         "title": "Response word limit",
         "type": "int", "size": 5, "placeholder": "none", "default_value": 0,
         "title_pattern": "${sv response/$/title} word limit",
-        "storage": "member.words"
+        "storage": "member.wordlimit"
     },
     {
         "name_pattern": "response/$/instructions",
@@ -437,7 +437,7 @@
 
     {
         "name": "rf", "hashid": false,
-        "parser_class": "ReviewForm_SettingParser", "type": "slist"
+        "type": "oblist", "parser_class": "ReviewForm_SettingParser"
     },
     {
         "name_pattern": "rf/$",
@@ -716,7 +716,7 @@
     {   "name": "has_topics", "internal": true, "type": "checkbox"   },
     {
         "name": "topic",
-        "parser_class": "Topics_SettingParser", "type": "slist"
+        "type": "oblist", "parser_class": "Topics_SettingParser"
     },
     {
         "name_pattern": "topic/$",

@@ -2,6 +2,20 @@
 // settings/s_decisions.php -- HotCRP settings > decisions page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
+class Decision_Setting {
+    public $id;
+    /** @var string */
+    public $name;
+    /** @var 'accept'|'reject' */
+    public $category;
+
+    function __construct($id = null, $name = "", $category = "accept") {
+        $this->id = $id;
+        $this->name = $name;
+        $this->category = $category;
+    }
+}
+
 class Decisions_SettingParser extends SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
         assert($si->part0 === "decision/" && $si->part2 === "");
@@ -10,11 +24,11 @@ class Decisions_SettingParser extends SettingParser {
             && ($dnum = intval($did)) !== 0
             && ($dname = ($sv->conf->decision_map())[$dnum] ?? null)) {
             $category = $dnum > 0 ? "accept" : "reject";
-            $v = ["id" => $dnum, "name" => $dname, "category" => $category];
+            $v = new Decision_Setting($dnum, $dname, $category);
         } else {
-            $v = ["id" => null, "name" => "", "category" => "accept"];
+            $v = new Decision_Setting;
         }
-        $sv->set_oldv($si, (object) $v);
+        $sv->set_oldv($si, $v);
     }
 
     function prepare_enumeration(SettingValues $sv, Si $si) {
@@ -75,11 +89,11 @@ class Decisions_SettingParser extends SettingParser {
 
         echo Ht::hidden("has_decision", 1),
             '<div id="settings-decision-types">';
-        foreach ($sv->slist_keys("decision/") as $ctr) {
+        foreach ($sv->oblist_keys("decision/") as $ctr) {
             self::print_decrow($sv, $ctr, $decs_pcount);
         }
         echo '</div>';
-        foreach ($sv->use_req() ? $sv->slist_keys("decision/") : [] as $ctr) {
+        foreach ($sv->use_req() ? $sv->oblist_keys("decision/") : [] as $ctr) {
             if ($sv->reqstr("decision/{$ctr}/delete"))
                 echo Ht::unstash_script("\$(\"#settingsform\")[0].elements[\"decision/{$ctr}/deleter\"].click()");
         }
@@ -122,7 +136,7 @@ class Decisions_SettingParser extends SettingParser {
 
         $djs = [];
         $hasid = [];
-        foreach ($sv->slist_keys("decision/") as $ctr) {
+        foreach ($sv->oblist_keys("decision/") as $ctr) {
             $dsr = $sv->parse_members("decision/{$ctr}");
             if (!$sv->reqstr("decision/{$ctr}/delete")) {
                 $this->_check_req_name($sv, $dsr, $ctr);
