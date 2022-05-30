@@ -48,22 +48,19 @@ class Response_SettingParser extends SettingParser {
                 } else {
                     $sv->set_oldv($si, new Response_Setting);
                 }
-            } else {
-                $rrd = $sv->oldv($si->part0 . $si->part1);
-                if ($si->part2 === "/title") {
-                    $n = $sv->oldv("response/{$si->part1}/name");
-                    $sv->set_oldv($si->name, $n ? "‘{$n}’ response" : "Response");
-                }
+            } else if ($si->part2 === "/title") {
+                $n = $sv->oldv("response/{$si->part1}/name");
+                $sv->set_oldv($si, $n ? "‘{$n}’ response" : "Response");
             }
         }
     }
 
-    function prepare_enumeration(SettingValues $sv, Si $si) {
+    function prepare_oblist(SettingValues $sv, Si $si) {
         $m = [];
         foreach ($sv->conf->response_rounds() as $rrd) {
-            $m[$rrd->id] = Response_Setting::make($sv->conf, $rrd);
+            $m[] = Response_Setting::make($sv->conf, $rrd);
         }
-        $sv->map_enumeration("response/", $m);
+        $sv->append_oblist("response/", $m);
         // set placeholder for unnamed round
         $ctr = $sv->search_enumeration_id("response/", "1");
         if ($ctr !== null && ($sv->conf->response_rounds())[0]->unnamed) {

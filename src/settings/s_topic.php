@@ -24,22 +24,16 @@ class Topic_SettingParser extends SettingParser {
         if ($si->name === "new_topics") {
             $sv->set_oldv($si->name, "");
         } else if ($si->part0 === "topic/" && $si->part2 === "") {
-            $idv = $sv->vstr("topic/{$si->part1}/id") ?? "";
-            $id = ctype_digit($idv) ? intval($idv) : -1;
-            if ($id > 0 && ($name = $sv->conf->topic_set()->name($id)) !== null) {
-                $sv->set_oldv($si, new Topic_Setting($id, $name));
-            } else {
-                $sv->set_oldv($si, new Topic_Setting);
-            }
+            $sv->set_oldv($si, new Topic_Setting);
         }
     }
 
-    function prepare_enumeration(SettingValues $sv, Si $si) {
+    function prepare_oblist(SettingValues $sv, Si $si) {
         $m = [];
         foreach ($sv->conf->topic_set() as $id => $name) {
-            $m[$id] = new Topic_Setting($id, $name);
+            $m[] = new Topic_Setting($id, $name);
         }
-        $sv->map_enumeration("topic/", $m);
+        $sv->append_oblist("topic/", $m);
     }
 
     static function print(SettingValues $sv) {

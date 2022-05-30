@@ -8,7 +8,7 @@ class SettingParser {
     }
 
     /** @return void */
-    function prepare_enumeration(SettingValues $sv, Si $si) {
+    function prepare_oblist(SettingValues $sv, Si $si) {
     }
 
     /** @return bool */

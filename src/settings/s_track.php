@@ -16,6 +16,8 @@ class TrackPerm_Setting {
 
 class Track_Setting {
     /** @var string */
+    public $id;
+    /** @var string */
     public $tag;
     /** @var bool */
     public $is_default;
@@ -27,10 +29,11 @@ class Track_Setting {
     public $j;
 
     public function __construct(Track $tr, $j) {
+        $this->id = $tr->is_default ? "none" : $tr->tag;
         $this->tag = $tr->tag;
         $this->is_default = $tr->is_default;
-        $this->is_new = $tr->tag === "" && !$tr->is_default;
-        $this->j = $j;
+        $this->is_new = $this->id === "";
+        $this->j = $j ?? (object) [];
         foreach ($tr->perm as $perm => $p) {
             // undo defaulting
             if ($perm === Track::VIEWPDF
@@ -98,19 +101,7 @@ class Track_SettingParser extends SettingParser {
 
     function set_oldv(SettingValues $sv, Si $si) {
         if (count($si->parts) === 3 && $si->part2 === "") {
-            $id = $sv->reqstr("{$si->part0}{$si->part1}/id") ?? "";
-            $tr = $id !== "" ? $sv->conf->track($id === "none" ? "" : $id) : null;
-            if (!$tr && $id === "none") {
-                $tr = new Track("");
-                $tr->is_default = true;
-            }
-            if ($tr) {
-                $this->settings_json = $this->settings_json ?? $sv->conf->setting_json("tracks");
-                $k = $tr->is_default ? "_" : $tr->tag;
-                $sv->set_oldv($si->name, new Track_Setting($tr, $this->settings_json->{$k} ?? (object) []));
-            } else {
-                $sv->set_oldv($si->name, new Track_Setting(new Track(""), (object) []));
-            }
+            $sv->set_oldv($si, new Track_Setting(new Track, null));
         } else if (count($si->parts) === 3 && $si->part2 === "/title") {
             $id = $sv->reqstr("{$si->part0}{$si->part1}/id") ?? "";
             if ($id === "none") {
@@ -132,14 +123,17 @@ class Track_SettingParser extends SettingParser {
         }
     }
 
-    function prepare_enumeration(SettingValues $sv, Si $si) {
+    function prepare_oblist(SettingValues $sv, Si $si) {
         if (count($si->parts) === 3) {
-            $trs = [];
+            $this->settings_json = $this->settings_json ?? $sv->conf->setting_json("tracks");
+            $m = [];
             foreach ($sv->conf->track_tags() as $tag) {
-                $trs[$tag] = true;
+                $m[] = new Track_Setting($sv->conf->track($tag),
+                                         $this->settings_json->{$tag} ?? null);
             }
-            $trs["none"] = true;
-            $sv->map_enumeration("track/", $trs);
+            $m[] = new Track_Setting($sv->conf->track("") ?? new Track(""),
+                                     $this->settings_json->_ ?? null);
+            $sv->append_oblist("track/", $m);
         }
     }
 

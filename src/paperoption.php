@@ -930,10 +930,6 @@ class PaperOption implements JsonSerializable {
         return $this->title ?? $this->conf->_ci("field/missing", $this->formid);
     }
 
-    /** @return string */
-    function configured_description() {
-        return $this->description;
-    }
     /** @param FieldRender $fr */
     function render_description($fr, ...$context_args) {
         $fr->value_format = $this->description_format ?? 5;
@@ -1218,6 +1214,26 @@ class PaperOption implements JsonSerializable {
         return $j;
     }
 
+    /** @param Sf_Setting $sfs */
+    function unparse_setting($sfs) {
+        $sfs->id = $this->id;
+        $sfs->name = $this->name;
+        $sfs->type = $this->type;
+        $sfs->description = $this->description;
+        $sfs->display = $this->display_name();
+        $sfs->order = $this->order;
+        $sfs->visibility = $this->unparse_visibility();
+        $sfs->required = $this->required;
+        if ($this->exists_if) {
+            $sfs->presence = "custom";
+            $sfs->exists_if = $this->exists_if;
+        } else {
+            $sfs->presence = $this->final ? "final" : "all";
+            $sfs->exists_if = "";
+        }
+    }
+
+
     /** @return ?PaperValue */
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         return null;
@@ -1491,6 +1507,10 @@ class Selector_PaperOption extends PaperOption {
         $j = parent::jsonSerialize();
         $j->selector = $this->selector;
         return $j;
+    }
+    function unparse_setting($sfs) {
+        parent::unparse_setting($sfs);
+        $sfs->selector = $this->selector ? join("\n", $this->selector) . "\n" : "";
     }
 
     function value_compare($av, $bv) {
@@ -1995,6 +2015,12 @@ class Text_PaperOption extends PaperOption {
             $j->display_space = $this->display_space;
         }
         return $j;
+    }
+    function unparse_setting($sfs) {
+        parent::unparse_setting($sfs);
+        if ($this->display_space > 3) {
+            $sfs->type = "mtext";
+        }
     }
 }
 

@@ -243,9 +243,8 @@ abstract class ReviewField implements JsonSerializable {
     const UJ_EXPORT = 0;
     const UJ_TEMPLATE = 1;
     const UJ_STORAGE = 2;
-    const UJ_SI = 3;
 
-    /** @param 0|1|2|3 $style
+    /** @param 0|1|2 $style
      * @return object */
     function unparse_json($style) {
         $j = (object) [];
@@ -255,19 +254,17 @@ abstract class ReviewField implements JsonSerializable {
             $j->uid = $this->uid();
         }
         $j->name = $this->name;
-        if ($this->description || $style === self::UJ_SI) {
+        if ($this->description) {
             $j->description = $this->description;
         }
-        if ($this->order || $style === self::UJ_SI) {
+        if ($this->order) {
             $j->order = $this->order;
         }
         $j->visibility = $this->unparse_visibility();
-        if ($this->required || $style === self::UJ_SI) {
+        if ($this->required) {
             $j->required = true;
         }
-        if ($style === self::UJ_SI) {
-            $this->_unparse_json_presence_si($j);
-        } else if ($this->exists_if) {
+        if ($this->exists_if) {
             $j->exists_if = $this->exists_if;
         } else if ($this->round_mask) {
             if ($style === self::UJ_STORAGE) {
@@ -279,17 +276,23 @@ abstract class ReviewField implements JsonSerializable {
         return $j;
     }
 
-    /** @param object $j */
-    private function _unparse_json_presence_si($j) {
+    /** @param Rf_Setting $rfs */
+    function unparse_setting($rfs) {
+        $rfs->id = $this->short_id;
+        $rfs->name = $this->name;
+        $rfs->description = $this->description;
+        $rfs->order = $this->order;
+        $rfs->visibility = $this->unparse_visibility();
+        $rfs->required = $this->required;
         $rm = $this->round_mask;
         if ($this->exists_if || ($rm !== 0 && ($rm & ($rm - 1)) === 0)) {
-            $j->presence = "custom";
-            $j->exists_if = $this->exists_if ?? $this->unparse_round_mask();
+            $rfs->presence = "custom";
+            $rfs->exists_if = $this->exists_if ?? $this->unparse_round_mask();
         } else if ($rm !== 0) {
-            $j->presence = $j->exists_if = $this->unparse_round_mask();
+            $rfs->presence = $rfs->exists_if = $this->unparse_round_mask();
         } else {
-            $j->presence = "all";
-            $j->exists_if = "";
+            $rfs->presence = "all";
+            $rfs->exists_if = "";
         }
     }
 
@@ -569,14 +572,23 @@ class Score_ReviewField extends ReviewField {
         $j->options = $this->unparse_json_options();
         if ($this->option_letter) {
             $j->start = chr($this->option_letter - count($j->options));
-        } else if ($style === self::UJ_SI) {
-            $j->start = 1;
         }
-        if ($this->scheme !== "sv" || $style === self::UJ_SI) {
+        if ($this->scheme !== "sv") {
             $j->scheme = $this->scheme;
         }
         $j->required = $this->required;
         return $j;
+    }
+
+    function unparse_setting($rfs) {
+        parent::unparse_setting($rfs);
+        $rfs->options = $this->unparse_json_options();
+        if ($this->option_letter) {
+            $rfs->start = chr($this->option_letter - count($rfs->options));
+        } else {
+            $rfs->start = 1;
+        }
+        $rfs->scheme = $this->scheme;
     }
 
     /** @param ?int|string $value
@@ -877,7 +889,7 @@ class Text_ReviewField extends ReviewField {
 
     function unparse_json($style) {
         $j = parent::unparse_json($style);
-        if ($this->display_space > 3 || $style === self::UJ_SI) {
+        if ($this->display_space > 3) {
             $j->display_space = $this->display_space;
         }
         return $j;

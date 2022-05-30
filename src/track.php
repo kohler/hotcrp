@@ -38,11 +38,12 @@ class Track {
         "hiddentag" => 8, "viewallrev" => 9
     ];
 
-    /** @param string $tag */
-    function __construct($tag) {
-        $this->ltag = strtolower($tag);
-        $this->tag = $tag;
+    /** @param ?string $tag */
+    function __construct($tag = null) {
+        $this->tag = $tag ?? "";
+        $this->ltag = strtolower($this->tag);
         $this->perm = [null, null, null, null, null, null, null, null, null, null];
+        $this->is_default = $tag === "";
     }
 
     /** @param int $perm

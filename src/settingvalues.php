@@ -37,7 +37,9 @@ class SettingValues extends MessageSet {
     /** @var array<string,mixed> */
     private $_explicit_oldv = [];
     /** @var array<string,true> */
-    private $_ensure_enumerations = [];
+    private $_oblist_ensured = [];
+    /** @var array<string,int> */
+    private $_oblist_next = [];
 
     /** @var ?object */
     public $cur_object;
@@ -180,7 +182,7 @@ class SettingValues extends MessageSet {
                 } else {
                     $this->set_req("has_{$si->name}", "1");
                     if ($reset) {
-                        $this->set_req("{$si->name}/reset", "1");
+                        $this->set_req("{$si->name}_reset", "1");
                     }
                     foreach ($v as $i => $vv) {
                         $this->_jpath = "{$jpath}{$k}[{$i}]";
@@ -567,12 +569,12 @@ class SettingValues extends MessageSet {
 
     /** @param string $pfx */
     private function ensure_enumeration($pfx) {
-        if (!isset($this->_ensure_enumerations[$pfx])) {
-            $this->_ensure_enumerations[$pfx] = true;
+        if (!isset($this->_oblist_ensured[$pfx])) {
+            $this->_oblist_ensured[$pfx] = true;
             if (str_ends_with($pfx, "/")
                 && ($si = $this->conf->si("{$pfx}1"))
                 && $si->parser_class) {
-                $this->si_parser($si)->prepare_enumeration($this, $si);
+                $this->si_parser($si)->prepare_oblist($this, $si);
             } else if (($xpfx = preg_replace('/\d+\z/', '', $pfx)) !== $pfx) {
                 $this->ensure_enumeration($xpfx);
             }
@@ -580,12 +582,83 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string $pfx
-     * @param array $map */
-    function map_enumeration($pfx, $map) {
+     * @param iterable<object> $obs
+     * @return int */
+    function append_oblist($pfx, $obs) {
+        assert(str_ends_with($pfx, "/"));
+
+        // find next counter
+        if (($nextctr = $this->_oblist_next[$pfx] ?? 0) === 0) {
+            $nextctr = 1;
+            while ($this->_use_req && $this->has_req("{$pfx}{$nextctr}/id")) {
+                ++$nextctr;
+            }
+        }
+
+        // decide whether to mark unmentioned objects as deleted
+        if ($this->_use_req) {
+            $pfxn = substr($pfx, 0, -1);
+            $resetn = $this->has_req("{$pfxn}_reset") ? "{$pfxn}_reset" : "reset";
+            $reset = ($this->reqstr($resetn) ?? "") !== "";
+        } else {
+            $reset = false;
+        }
+
+        // map id => counter
+        $matches = [];
+        for ($ctr = 1; $ctr < $nextctr; ++$ctr) {
+            if (($id = $this->reqstr("{$pfx}{$ctr}/id")) !== null
+                && !array_key_exists($id, $matches)) {
+                $matches[$id] = $ctr;
+            }
+        }
+
+        // iterate over objects
+        $lastctr = 0;
+        foreach ($obs as $ob) {
+            // match existing id
+            $obid = $ob->id;
+            $obctr = $nextctr;
+            if ($obid !== null) {
+                if (array_key_exists((string) $obid, $matches)) {
+                    $obctr = $matches[(string) $obid];
+                } else {
+                    $matches[(string) $obid] = $obctr;
+                }
+            }
+
+            // store value
+            if ($obctr === $nextctr) {
+                if ($obid !== null) {
+                    $this->set_req("{$pfx}{$obctr}/id", (string) $obid);
+                    $this->set_oldv("{$pfx}{$obctr}/id", $obid);
+                } else {
+                    $this->set_req("{$pfx}{$obctr}/id", "");
+                }
+                if ($reset) {
+                    $this->set_req("{$pfx}{$obctr}/delete", "1");
+                } else {
+                    unset($this->req["{$pfx}{$obctr}/delete"]);
+                }
+                ++$nextctr;
+            }
+
+            $this->set_oldv("{$pfx}{$obctr}", $ob);
+            $lastctr = $obctr;
+        }
+
+        unset($this->req["{$pfx}{$nextctr}/id"]);
+        $this->_oblist_next[$pfx] = $nextctr;
+        return $lastctr;
+    }
+
+    /* function map_enumeration($pfx, $map) {
         assert(str_ends_with($pfx, "/"));
         $ctr = 1;
         if ($this->_use_req) {
-            $delete_rest = ($this->reqstr("{$pfx}reset") ?? "") !== "";
+            $pfxn = substr($pfx, 0, -1);
+            $resetn = $this->has_req("{$pfxn}_reset") ? "{$pfxn}_reset" : "reset";
+            $delete_rest = ($this->reqstr($resetn) ?? "") !== "";
             $used = $names = $namectrs = [];
             while (($x = $this->reqstr("{$pfx}{$ctr}/id")) !== null) {
                 if ($x !== "") {
@@ -631,7 +704,7 @@ class SettingValues extends MessageSet {
             }
         }
         unset($this->req["{$pfx}{$ctr}/id"]);
-    }
+    } */
 
     /** @param string $pfx
      * @return list<int> */

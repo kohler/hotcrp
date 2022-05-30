@@ -191,7 +191,8 @@ class Si {
         } else if ($dot === 6 && str_starts_with($s, "negval")) {
             $this->storage_type = self::SI_VALUE | self::SI_SLICE | self::SI_NEGATE;
             $this->storage = substr($s, 7);
-        } else if ($this->storage === "none") {
+        } else if ($this->storage === "none"
+                   || ($this->storage === null && $this->type === "object")) {
             $this->storage_type = self::SI_NONE;
         } else if ($this->_tclass) {
             $this->storage_type = $this->_tclass->storage_type();

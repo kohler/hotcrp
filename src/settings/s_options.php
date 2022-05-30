@@ -320,35 +320,6 @@ class Options_SettingParser extends SettingParser {
     /** @var array<int,int> */
     public $option_id_to_ctr = [];
 
-    /** @param PaperOption $f
-     * @return object */
-    static function unparse_json($f) {
-        $exists_if = $f->exists_condition();
-        $presence = $exists_if ? "custom" : ($f->final ? "final" : "all");
-        $j = (object) [
-            "id" => $f->id,
-            "type" => $f->type,
-            "name" => $f->name,
-            "description" => $f->configured_description(),
-            "display" => $f->display_name(),
-            "order" => $f->order,
-            "visibility" => $f->unparse_visibility(),
-            "required" => $f->required,
-            "exists_if" => $exists_if,
-            "presence" => $presence,
-            "selector" => ""
-        ];
-        if ($f instanceof Selector_PaperOption
-            && ($choices = $f->selector_options())) {
-            $j->selector = join("\n", $choices) . "\n";
-        } else if ($f->type === "text"
-                   && $f instanceof Text_PaperOption
-                   && $f->display_space > 3) {
-            $j->type = "mtext";
-        }
-        return $j;
-    }
-
     /** @return PaperOption */
     static function make_placeholder_option(SettingValues $sv) {
         return PaperOption::make($sv->conf, (object) [
@@ -367,11 +338,9 @@ class Options_SettingParser extends SettingParser {
         }
         assert($si->part0 === "sf/");
         if ($si->part2 === "") {
-            $fid = intval($sv->vstr("{$si->name}/id"));
-            if ($fid <= 0 || !($f = $sv->conf->option_by_id($fid))) {
-                $f = self::make_placeholder_option($sv);
-            }
-            $sv->set_oldv($si->name, self::unparse_json($f));
+            $sfs = new Sf_Setting;
+            self::make_placeholder_option($sv)->unparse_setting($sfs);
+            $sv->set_oldv($si, $sfs);
         }
     }
 
@@ -384,8 +353,13 @@ class Options_SettingParser extends SettingParser {
         return $opts;
     }
 
-    function prepare_enumeration(SettingValues $sv, Si $si) {
-        $sv->map_enumeration("sf/", self::configurable_options($sv->conf));
+    function prepare_oblist(SettingValues $sv, Si $si) {
+        $m = [];
+        foreach (self::configurable_options($sv->conf) as $f) {
+            $sfs = $m[] = new Sf_Setting;
+            $f->unparse_setting($sfs);
+        }
+        $sv->append_oblist("sf/", $m);
     }
 
     /** @return bool */
@@ -498,7 +472,7 @@ class Options_SettingParser extends SettingParser {
         $sfj->final = $sfj->presence === "final";
         if ($sfj->presence !== "custom"
             || trim($sfj->exists_if ?? "") === "") {
-            unset($sfj->exists_if);
+            $sfj->exists_if = "";
         }
     }
 

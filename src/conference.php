@@ -516,7 +516,6 @@ class Conf {
         $this->_tracks = [];
         $this->_track_tags = [];
         $trest = new Track("");
-        $trest->is_default = true;
         foreach ((array) $j as $tag => $v) {
             if ($tag === "" || $tag === "_") {
                 $tr = $trest;

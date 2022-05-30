@@ -9,7 +9,7 @@ class Decision_Setting {
     /** @var 'accept'|'reject' */
     public $category;
 
-    function __construct($id = null, $name = "", $category = "accept") {
+    function __construct($id, $name, $category) {
         $this->id = $id;
         $this->name = $name;
         $this->category = $category;
@@ -19,22 +19,17 @@ class Decision_Setting {
 class Decision_SettingParser extends SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
         assert($si->part0 === "decision/" && $si->part2 === "");
-        $did = $sv->vstr("{$si->name}/id") ?? "new";
-        if (is_numeric($did)
-            && ($dnum = intval($did)) !== 0
-            && ($dname = ($sv->conf->decision_map())[$dnum] ?? null)) {
-            $category = $dnum > 0 ? "accept" : "reject";
-            $v = new Decision_Setting($dnum, $dname, $category);
-        } else {
-            $v = new Decision_Setting;
-        }
-        $sv->set_oldv($si, $v);
+        $sv->set_oldv($si, new Decision_Setting(null, "", "accept"));
     }
 
-    function prepare_enumeration(SettingValues $sv, Si $si) {
-        $dmap = $sv->conf->decision_map();
-        unset($dmap[0]);
-        $sv->map_enumeration("decision/", $dmap);
+    function prepare_oblist(SettingValues $sv, Si $si) {
+        $m = [];
+        foreach ($sv->conf->decision_map() as $did => $dname) {
+            if ($did !== 0) {
+                $m[] = new Decision_Setting($did, $dname, $did > 0 ? "accept" : "reject");
+            }
+        }
+        $sv->append_oblist("decision/", $m);
     }
 
     /** @param int|'$' $ctr

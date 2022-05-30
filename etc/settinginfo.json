@@ -52,8 +52,9 @@
         "type": "oblist", "parser_class": "Decision_SettingParser"
     },
     {
-        "name_pattern": "decision/$",
-        "type": "object", "storage": "none", "parser_class": "Decision_SettingParser"
+        "name_pattern": "decision/$", "internal": true,
+        "type": "object", "subtype": "Decision_Setting",
+        "parser_class": "Decision_SettingParser"
     },
     {   "name_pattern": "decision/$/id", "internal": true   },
     {
@@ -222,8 +223,9 @@
         "type": "oblist", "parser_class": "Options_SettingParser"
     },
     {
-        "name_pattern": "sf/$",
-        "type": "object", "storage": "none", "parser_class": "Options_SettingParser"
+        "name_pattern": "sf/$", "internal": true,
+        "type": "object", "subtype": "Sf_Setting",
+        "parser_class": "Options_SettingParser"
     },
     {   "name_pattern": "sf/$/id", "internal": true   },
     {
@@ -349,8 +351,9 @@
         "type": "oblist", "parser_class": "Response_SettingParser"
     },
     {
-        "name_pattern": "response/$",
-        "type": "object", "storage": "none", "parser_class": "Response_SettingParser"
+        "name_pattern": "response/$", "internal": true,
+        "type": "object", "subtype": "Response_Setting",
+        "parser_class": "Response_SettingParser"
     },
     {   "name_pattern": "response/$/id", "internal": true, "type": "string"   },
     {
@@ -440,8 +443,9 @@
         "type": "oblist", "parser_class": "ReviewForm_SettingParser"
     },
     {
-        "name_pattern": "rf/$",
-        "type": "object", "storage": "none", "parser_class": "ReviewForm_SettingParser"
+        "name_pattern": "rf/$", "internal": true,
+        "type": "object", "subtype": "Rf_Setting",
+        "parser_class": "ReviewForm_SettingParser"
     },
     {   "name_pattern": "rf/$/id", "internal": true   },
     {
@@ -534,8 +538,9 @@
         "name_pattern": "fmtstore_o_$", "internal": true, "storage": "opt.sub_banal_$"
     },
     {
-        "name_pattern": "format/$",
-        "parser_class": "Banal_SettingParser", "type": "object"
+        "name_pattern": "format/$", "internal": true,
+        "type": "object", "subtype": "Banal_Setting",
+        "parser_class": "Banal_SettingParser"
     },
     {
         "name_pattern": "format/$/id", "internal": true
@@ -718,8 +723,9 @@
         "type": "oblist", "parser_class": "Topic_SettingParser"
     },
     {
-        "name_pattern": "topic/$",
-        "type": "object", "storage": "none", "parser_class": "Topic_SettingParser"
+        "name_pattern": "topic/$", "internal": true,
+        "type": "object", "subtype": "Topic_Setting",
+        "parser_class": "Topic_SettingParser"
     },
     {   "name_pattern": "topic/$/id", "internal": true   },
     {
@@ -740,8 +746,9 @@
         "parser_class": "Track_SettingParser"
     },
     {
-        "name_pattern": "track/$",
-        "type": "object", "storage": "none", "parser_class": "Track_SettingParser"
+        "name_pattern": "track/$", "internal": true,
+        "type": "object", "subtype": "Track_Setting",
+        "parser_class": "Track_SettingParser"
     },
     {   "name_pattern": "track/$/id", "internal": true, "type": "string"   },
     {
@@ -758,7 +765,8 @@
     },
     {
         "name_pattern": "track/$/perm/$$",
-        "type": "object", "storage": "none", "parser_class": "Track_SettingParser"
+        "type": "object", "subtype": "TrackPerm_Setting",
+        "parser_class": "Track_SettingParser"
     },
     {
         "name_pattern": "track/$/perm/$$/type",

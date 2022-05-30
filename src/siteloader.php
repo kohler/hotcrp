@@ -53,6 +53,7 @@ class SiteLoader {
         "_page.php" => ["p_", "src/pages"],
         "_partial.php" => ["p_", "src/pages"],
         "_searchterm.php" => ["st_", "src/search"],
+        "_setting.php" => ["s_", "src/settings"],
         "_settingrenderer.php" => ["s_", "src/settings"],
         "_settingparser.php" => ["s_", "src/settings"],
         "_sitype.php" => ["si_", "src/settings"],

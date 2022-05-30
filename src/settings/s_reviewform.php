@@ -28,20 +28,22 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($si->part2 === "") {
             $fid = $si->part1 === '$' ? 's99' : $sv->vstr("{$si->name}/id");
             if (($finfo = ReviewFieldInfo::find($sv->conf, $fid))) {
-                $f = $sv->conf->review_field($finfo->short_id) ?? ReviewField::make($sv->conf, $finfo);
-                $sv->set_oldv($si->name, $f->unparse_json(ReviewField::UJ_SI));
+                $rfs = new Rf_Setting;
+                ReviewField::make($sv->conf, $finfo)->unparse_setting($rfs);
+                $sv->set_oldv($si->name, $rfs);
             }
         } else if ($si->part2 === "/choices" && $si->part1 === '$') {
             $sv->set_oldv($si->name, "");
         }
     }
 
-    function prepare_enumeration(SettingValues $sv, Si $si) {
-        $fids = [];
+    function prepare_oblist(SettingValues $sv, Si $si) {
+        $rfss = [];
         foreach ($sv->conf->all_review_fields() as $rf) {
-            $fids[$rf->short_id] = true;
+            $rfss[] = $rfs = new Rf_Setting;
+            $rf->unparse_setting($rfs);
         }
-        $sv->map_enumeration("rf/", $fids);
+        $sv->append_oblist("rf/", $rfss);
     }
 
 
