@@ -562,7 +562,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 261);
+insert into Settings (name, value) values ('allowPaperOption', 262);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);
@@ -576,6 +576,8 @@ insert into Settings (name, value) values ('pcrev_any', 1);
 insert into Settings (name, value) values ('extrev_view', 2);
 -- default: administrators must approve potentially-conflicted external reviews
 insert into Settings (name, value) values ('extrev_chairreq', 2);
+-- `pcrev_soft` setting starts at explicit 0
+insert into Settings (name, value) values ('pcrev_soft', 0);
 
 insert ignore into PaperStorage set
     paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain',

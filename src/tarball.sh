@@ -423,9 +423,9 @@ src/settings/s_finalversions.php
 src/settings/s_messages.php
 src/settings/s_options.php
 src/settings/s_response.php
+src/settings/s_review.php
 src/settings/s_reviewfieldcondition.php
 src/settings/s_reviewform.php
-src/settings/s_reviews.php
 src/settings/s_reviewvisibility.php
 src/settings/s_rf.php
 src/settings/s_sf.php

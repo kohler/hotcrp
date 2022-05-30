@@ -734,12 +734,13 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string $pfx
+     * @param string $sfx
      * @param int|string $needle
      * @return ?int */
-    function search_enumeration_id($pfx, $needle) {
+    function search_oblist($pfx, $sfx, $needle) {
         $this->ensure_enumeration($pfx);
         for ($ctr = 1; isset($this->req["{$pfx}{$ctr}/id"]); ++$ctr) {
-            if ((string) $needle === (string) $this->req["{$pfx}{$ctr}/id"]) {
+            if ((string) $needle === (string) $this->req["{$pfx}{$ctr}{$sfx}"]) {
                 return $ctr;
             }
         }
@@ -1129,25 +1130,25 @@ class SettingValues extends MessageSet {
         echo $this->entry($name, $js);
     }
 
-    /** @param string $name
+    /** @param string|Si $id
      * @param string $description
      * @param string $control
      * @param ?array<string,mixed> $js
      * @param string $hint */
-    function print_control_group($name, $description, $control,
+    function print_control_group($id, $description, $control,
                                  $js = null, $hint = "") {
-        $si = $this->si($name);
+        $si = is_string($id) ? $this->si($id) : $id;
         $horizontal = !!($js["horizontal"] ?? false);
-        $this->print_group_open($name, $horizontal ? "entryi" : "f-i", $js);
+        $this->print_group_open($si->name, $horizontal ? "entryi" : "f-i", $js);
 
         if ($description === null) {
             $description = $si->title_html($this);
         }
-        echo $this->label($name, $description, ["class" => $js["label_class"] ?? null, "no_control_class" => true]);
+        echo $this->label($si->name, $description, ["class" => $js["label_class"] ?? null, "no_control_class" => true]);
         if ($horizontal) {
             echo '<div class="entry">';
         }
-        $this->print_feedback_at($name);
+        $this->print_feedback_at($si->name);
         echo $control, ($js["control_after"] ?? "");
         $thint = $this->type_hint($si->type);
         if ($hint || $thint) {

@@ -173,23 +173,23 @@
     {   "name": "review", "alias": "reviews"   },
     {
         "name": "__crosscheck/reviews", "order": 500,
-        "crosscheck_function": "Reviews_SettingRenderer::crosscheck"
+        "crosscheck_function": "Review_SettingParser::crosscheck"
     },
     {
         "name": "reviews/main", "order": 10,
-        "print_function": "Reviews_SettingRenderer::print",
-        "settings": ["rev_open", "cmt_always", "rev_blind"]
+        "print_function": "Review_SettingParser::print",
+        "settings": ["review_open", "cmt_always", "review_blind"]
     },
     {
         "name": "reviews/rounds", "order": 20,
         "title": "Deadlines and rounds", "hashid": "rounds",
-        "print_function": "Reviews_SettingRenderer::print_rounds",
-        "settings": ["pcrev_soft_$", "pcrev_hard_$", "extrev_soft_$", "extrev_hard_$", "rev_roundtag"]
+        "print_function": "Review_SettingParser::print_rounds",
+        "settings": ["review", "review_default_round_index", "review_default_external_round_index"]
     },
     {
         "name": "reviews/pc-reviews", "order": 30,
         "title": "PC reviews",
-        "print_function": "Reviews_SettingRenderer::print_pc",
+        "print_function": "Review_SettingParser::print_pc",
         "settings": [
             "pcrev_any",
             "pc_seeblindrev",
@@ -205,23 +205,23 @@
     },
     {
         "name": "reviews/external/editdelegate", "order": 10,
-        "print_function": "Reviews_SettingRenderer::print_extrev_editdelegate",
+        "print_function": "Review_SettingParser::print_extrev_editdelegate",
         "settings": ["extrev_chairreq", "pcrev_editdelegate"]
     },
     {
         "name": "reviews/external/requestmail", "order": 15,
-        "print_function": "Reviews_SettingRenderer::print_extrev_requestmail",
+        "print_function": "Review_SettingParser::print_extrev_requestmail",
         "settings": ["mailbody_requestreview"]
     },
     {
         "name": "reviews/external/view", "order": 20,
-        "print_function": "Reviews_SettingRenderer::print_extrev_view",
+        "print_function": "Review_SettingParser::print_extrev_view",
         "settings": ["extrev_view"]
     },
     {
         "name": "reviews/ratings", "order": 50,
         "title": "Review ratings",
-        "print_function": "Reviews_SettingRenderer::print_ratings",
+        "print_function": "Review_SettingParser::print_ratings",
         "settings": ["rev_ratings"]
     },
 

@@ -822,27 +822,27 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($conf->assignment_round(false), 0);
         xassert_eqq($conf->assignment_round(true), 0);
         $sv = SettingValues::make_request($user_chair, [
-            "extrev_roundtag" => "R1"
+            "review_default_round" => "R1"
         ]);
         xassert($sv->execute());
-        xassert_eqq($conf->assignment_round(false), 0);
+        xassert_eqq($conf->assignment_round(false), 1);
         xassert_eqq($conf->assignment_round(true), 1);
         $sv = SettingValues::make_request($user_chair, [
-            "rev_roundtag" => "R3",
-            "extrev_roundtag" => "unnamed"
+            "review_default_round" => "R3",
+            "review_default_external_round" => "unnamed"
         ]);
         xassert($sv->execute());
         xassert_eqq($conf->assignment_round(false), 3);
         xassert_eqq($conf->assignment_round(true), 0);
         $sv = SettingValues::make_request($user_chair, [
-            "extrev_roundtag" => "default"
+            "review_default_external_round" => "default"
         ]);
         xassert($sv->execute());
         xassert_eqq($conf->assignment_round(false), 3);
         xassert_eqq($conf->assignment_round(true), 3);
         xassert_eqq($conf->setting("extrev_roundtag"), null);
         $sv = SettingValues::make_request($user_chair, [
-            "rev_roundtag" => "unnamed"
+            "review_default_round" => "unnamed"
         ]);
         xassert($sv->execute());
         xassert_eqq($conf->assignment_round(false), 0);

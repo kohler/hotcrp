@@ -28,7 +28,7 @@ class Comments_Tester {
         }
 
         $sv = SettingValues::make_request($this->u_chair, [
-            "rev_open" => "1",
+            "review_open" => "1",
             "has_response" => "1",
             "response_active" => "1",
             "response/1/id" => "1",

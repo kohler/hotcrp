@@ -327,7 +327,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 261) {
+        if ($this->sversion < 262) {
             $old_nerrors = Dbl::$nerrors;
             (new UpdateSchema($this))->run();
             Dbl::$nerrors = $old_nerrors;
@@ -1818,31 +1818,26 @@ class Conf {
         return $this->rounds;
     }
 
-    /** @return bool */
-    function round0_defined() {
-        return isset($this->defined_round_list()[0]);
-    }
-
     /** @return array<int,string> */
-    function defined_round_list() {
+    function defined_rounds() {
         if ($this->_defined_rounds === null) {
-            $dl = [];
+            $dl = $r = [];
             foreach ($this->rounds as $i => $rname) {
-                if (!$i || $rname !== ";") {
-                    foreach (self::$review_deadlines as $rd) {
-                        if (($dl[$i] = $this->settings[$rd . ($i ? "_$i" : "")] ?? 0))
-                            break;
+                if ($i === 0 || $rname !== ";") {
+                    if ($i === 0) {
+                        $sfx = "";
+                    } else {
+                        $sfx = "_{$i}";
+                        $dl[$i] = 0;
                     }
-                }
-            }
-            if (!$dl[0]
-                && !$this->fetch_ivalue("select exists (select * from PaperReview where reviewRound=0)")) {
-                unset($dl[0]);
-            }
-            $r = [];
-            foreach ($this->rounds as $i => $rname) {
-                if (isset($dl[$i])) {
-                    $r[$i] = $i ? $rname : "unnamed";
+                    foreach (self::$review_deadlines as $rd) {
+                        if (($t = $this->settings["{$rd}{$sfx}"] ?? null) !== null) {
+                            $dl[$i] = max($dl[$i] ?? 0, $t);
+                        }
+                    }
+                    if (isset($dl[$i])) {
+                        $r[$i] = $i === 0 ? "unnamed" : $rname;
+                    }
                 }
             }
             uksort($r, function ($a, $b) use ($r, $dl) {
@@ -1859,6 +1854,12 @@ class Conf {
             $this->_defined_rounds = $r;
         }
         return $this->_defined_rounds;
+    }
+
+    /** @return array<int,string>
+     * @deprecated */
+    function defined_round_list() {
+        return $this->defined_rounds();
     }
 
     /** @param int $roundno
@@ -1943,7 +1944,9 @@ class Conf {
      * @param bool $add
      * @return ?int */
     function round_number($rname, $add) {
-        if (!$rname || !strcasecmp($rname, "none") || !strcasecmp($rname, "unnamed")) {
+        if (!$rname
+            || strcasecmp($rname, "none") === 0
+            || strcasecmp($rname, "unnamed") === 0) {
             return 0;
         }
         for ($i = 1; $i != count($this->rounds); ++$i) {
@@ -1965,7 +1968,7 @@ class Conf {
     /** @return array<string,string> */
     function round_selector_options($isexternal) {
         $opt = [];
-        foreach ($this->defined_round_list() as $rname) {
+        foreach ($this->defined_rounds() as $rname) {
             $opt[$rname] = $rname;
         }
         if (($isexternal === null || $isexternal === true)

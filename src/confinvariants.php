@@ -133,12 +133,23 @@ class ConfInvariants {
 
         // review rounds are defined
         $result = $this->conf->qe("select reviewRound, count(*) from PaperReview group by reviewRound");
-        $defined_rounds = $this->conf->defined_round_list();
+        $defined_rounds = $this->conf->defined_rounds();
         while (($row = $result->fetch_row())) {
             if (!isset($defined_rounds[$row[0]]))
                 $this->invariant_error("undefined_review_round", "{$row[1]} PaperReviews for reviewRound {$row[0]}, which is not defined");
         }
         Dbl::free($result);
+
+        // at least one round-0 time setting is defined if round 0 exists
+        if (!$this->conf->has_rounds()
+            || $this->conf->fetch_ivalue("select exists (select * from PaperReview where reviewRound=0) from dual")) {
+            if ($this->conf->setting("pcrev_soft") === null
+                && $this->conf->setting("pcrev_hard") === null
+                && $this->conf->setting("extrev_soft") === null
+                && $this->conf->setting("extrev_hard") === null) {
+                $this->invariant_error("round0_settings", "at least one setting for unnamed review round should be present");
+            }
+        }
 
         // anonymous users are disabled; primaryContactId is not recursive
         $result = $this->conf->qe("select contactId, email, primaryContactId, roles, disabled from ContactInfo where primaryContactId!=0 or (email>='anonymous' and email<='anonymous:') or (roles!=0 and (roles&~" . Contact::ROLE_DBMASK . ")!=0)");

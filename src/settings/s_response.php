@@ -62,7 +62,7 @@ class Response_SettingParser extends SettingParser {
         }
         $sv->append_oblist("response/", $m);
         // set placeholder for unnamed round
-        $ctr = $sv->search_enumeration_id("response/", "1");
+        $ctr = $sv->search_oblist("response/", "/id", "1");
         if ($ctr !== null && ($sv->conf->response_rounds())[0]->unnamed) {
             $si = $sv->si("response/{$ctr}/name");
             $si->placeholder = "unnamed";
@@ -80,7 +80,7 @@ class Response_SettingParser extends SettingParser {
         if ($this->ctrid !== null) {
             $this->ensure_round_counts($sv->conf);
             if (($n = $this->round_counts[$this->ctrid] ?? null)) {
-                $t .= '<span class="ml-2 d-inline-block">' . plural($n, "response") . '</span>';
+                $t .= '<span class="ml-3 d-inline-block">' . plural($n, "response") . '</span>';
             }
         }
         $sv->print_entry_group("response/{$this->ctr}/name", "Response name", [
@@ -238,3 +238,5 @@ class Response_SettingParser extends SettingParser {
         }
     }
 }
+
+class_alias("Response_SettingParser", "Responses_SettingParser"); // XXX

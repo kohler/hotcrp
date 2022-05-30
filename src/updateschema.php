@@ -2408,6 +2408,17 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->save_setting("__response_round_v261", null);
             $conf->update_schema_version(261);
         }
+        if ($conf->sversion === 261) {
+            if (($conf->setting("pcrev_soft") ?? 0) <= 0
+                && ($conf->setting("pcrev_hard") ?? 0) <= 0
+                && ($conf->setting("extrev_soft") ?? 0) <= 0
+                && ($conf->setting("extrev_hard") ?? 0) <= 0
+                && (trim($conf->setting_data("tag_rounds") ?? "") === ""
+                    || $conf->fetch_ivalue("select exists (select * from PaperReview where reviewRound=0) from dual"))) {
+                $conf->save_setting("pcrev_soft", 0);
+            }
+            $conf->update_schema_version(262);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

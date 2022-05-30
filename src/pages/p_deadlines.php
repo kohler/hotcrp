@@ -62,7 +62,7 @@ class Deadlines_Page {
         if (($dl->rev ?? false) && ($dl->rev->open ?? false)) {
             $dlbyround = [];
             $last_dlbyround = null;
-            foreach ($conf->defined_round_list() as $i => $round_name) {
+            foreach ($conf->defined_rounds() as $i => $round_name) {
                 $isuf = $i ? "_$i" : "";
                 $es = +$conf->setting("extrev_soft$isuf");
                 $eh = +$conf->setting("extrev_hard$isuf");

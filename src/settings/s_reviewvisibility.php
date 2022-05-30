@@ -31,7 +31,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
 
     static function print_author_exchange_comments(SettingValues $sv) {
         echo '<div class="has-fold fold', $sv->vstr("cmt_author") ? "o" : "c", '">';
-        if ((int) $sv->vstr("rev_blind") === Conf::BLIND_NEVER) {
+        if ((int) $sv->vstr("review_blind") === Conf::BLIND_NEVER) {
             $hint = "";
         } else {
             $hint = "Visible reviewer comments will be identified by “Reviewer A”, “Reviewer B”, etc.";

@@ -30,26 +30,27 @@ function settings_delete(elt, message) {
     var form = elt.closest("form"),
         sep = elt.id.indexOf("__") > 0 ? "__" : "/";
     addClass(elt, "deleted");
-    if (!form.elements[elt.id + sep + "delete"]) {
-        var deleter = hidden_input(elt.id + sep + "delete", "1");
+    var deleter = form.elements[elt.id + sep + "delete"];
+    if (!deleter) {
+        deleter = hidden_input(elt.id + sep + "delete", "");
         deleter.setAttribute("data-default-value", "");
         form.appendChild(deleter);
     }
+    deleter.value = "1";
     if (hasClass(elt, "is-new")) {
         addClass(elt, "hidden");
         $(elt).find("input, select, textarea").addClass("ignore-diff");
         return false;
     } else {
         var edit = document.getElementById(elt.id + sep + "edit") || elt;
-        if (edit) {
-            $(edit).children().addClass("hidden");
-            $(edit).append('<div class="f-i"><em id="'.concat(elt.id, sep, 'delete_message">', message, '</em></div>'));
-        }
+        $(edit).children().addClass("hidden");
+        $(edit).append('<div class="f-i"><em id="'.concat(elt.id, sep, 'delete_message">', message, '</em></div>'));
         var name = form.elements[elt.id + sep + "name"];
         if (name) {
             name.disabled = true;
             addClass(name, "text-decoration-line-through");
-            removeClass(name.closest(".entryi"), "hidden");
+            var parent = name.closest(".entryi");
+            parent && removeClass(parent, "hidden");
         }
         return true;
     }
@@ -124,7 +125,7 @@ handle_ui.on("js-settings-sf-move", function (event) {
         sf.parentNode.insertBefore(sf, sf.nextSibling.nextSibling);
     } else if (hasClass(this, "delete")) {
         var msg, x;
-        if ((x = this.getAttribute("data-sf-exists")))
+        if ((x = this.getAttribute("data-exists-count")|0))
             msg = 'This field will be deleted from the submission form and from ' + plural(x, 'submission') + '.';
         else
             msg = 'This field will be deleted from the submission form. It is not used on any submissions.';
@@ -244,7 +245,7 @@ handle_ui.on("js-settings-decision-add", function (event) {
 handle_ui.on("js-settings-decision-delete", function (event) {
     var dec = this.closest(".settings-decision"),
         ne = this.form.elements[dec.id + "/name"],
-        sc = ne.getAttribute("data-submission-count")|0;
+        sc = ne.getAttribute("data-exists-count")|0;
     settings_delete(dec, "This decision will be removed"
         + (sc ? ' and <a href="'.concat(hoturl_html("search", {q: "dec:\"" + ne.defaultValue + "\""}), '" target="_blank">', plural(sc, "submission"), '</a> set to undecided') : '')
         + '.');
@@ -295,52 +296,81 @@ handle_ui.on("js-settings-topics-copy", function () {
 });
 
 
-window.review_round_settings = (function ($) {
-var added = 0;
-
-function namechange() {
-    var roundnum = this.id.substr(10), name = $.trim($(this).val());
-    $("#rev_roundtag_" + roundnum + ", #extrev_roundtag_" + roundnum)
-        .text(name === "" ? "unnamed" : name).val(name);
-}
-
-function add() {
-    var i, h, j;
-    for (i = 1; $("#roundname_" + i).length; ++i)
-        /* do nothing */;
-    $("#round_container").show();
-    $("#roundtable").append($("#newround").html().replace(/\$/g, i));
-    var $mydiv = $("#roundname_" + i).closest(".js-settings-review-round");
-    $("#rev_roundtag").append('<option value="" id="rev_roundtag_' + i + '">(new round)</option>');
-    $("#extrev_roundtag").append('<option value="" id="extrev_roundtag_' + i + '">(new round)</option>');
-    $("#roundname_" + i).focus().on("input change", namechange);
-}
-
-function kill() {
-    var divj = $(this).closest(".js-settings-review-round"),
-        roundnum = divj.data("reviewRoundNumber"),
-        vj = divj.find("input[name=deleteround_" + roundnum + "]"),
-        ej = divj.find("input[name=roundname_" + roundnum + "]");
-    if (vj.val()) {
-        vj.val("");
-        divj.find(".js-settings-review-round-deleted").remove();
-        ej.prop("disabled", false);
-        $(this).html("Delete round");
-    } else {
-        vj.val(1);
-        ej.prop("disabled", true);
-        $(this).html("Restore round").after('<strong class="js-settings-review-round-deleted" style="padding-left:1.5em;font-style:italic;color:red">&nbsp; Review round deleted</strong>');
+function settings_review_round_selectors() {
+    var a = [], ch, i = 1, form = $$("settingsform");
+    for (ch = $("#settings-review-rounds")[0].firstChild; ch; ch = ch.nextSibling) {
+        if (!hasClass(ch, "deleted")) {
+            var ne = form.elements[ch.id + "/name"],
+                n = ne ? ne.value.trim() : "(unknown)";
+            if (n.toLowerCase() === "unnamed") {
+                n = "";
+            }
+            if (n === "" && hasClass(ch, "is-new")) {
+                n = "(new round)";
+            }
+            a.push({value: ch.id.substring(7)|0, name: n});
+        }
     }
-    divj.find("table").toggle(!vj.val());
-    form_highlight("#settingsform");
+    $(form).find(".settings-review-round-selector").each(function () {
+        var cur = this.firstChild, j = 0, selidx = this.selectedIndex;
+        while (cur || j < a.length) {
+            if (cur && cur.value === "0") {
+                cur = cur.nextSibling;
+            } else if (cur && a[j] && cur.value === a[j].value) {
+                if (opt.textContent !== a[j].name)
+                    opt.textContent = a[j].name;
+                cur = cur.nextSibling;
+                ++j;
+            } else if (cur && (!a[j] || (cur.value|0) < a[j].value)) {
+                if (selidx >= cur.index) {
+                    --selidx;
+                }
+                var last = cur;
+                cur = cur.nextSibling;
+                last.remove();
+            } else {
+                if (cur && selidx >= cur.index) {
+                    ++selidx;
+                }
+                var opt = document.createElement("option");
+                opt.value = a[j].value;
+                opt.textContent = a[j].name;
+                this.insertBefore(opt, cur);
+                ++j;
+            }
+        }
+        this.selectedIndex = selidx;
+    });
 }
 
-return function () {
-    $("#roundtable input[type=text]").on("input change", namechange);
-    $("#settings_review_round_add").on("click", add);
-    $("#roundtable").on("click", ".js-settings-review-round-delete", kill);
-};
-})($);
+handle_ui.on("change.js-settings-review-round-name", settings_review_round_selectors);
+handle_ui.on("input.js-settings-review-round-name", settings_review_round_selectors);
+
+handle_ui.on("js-settings-review-round-new", function () {
+    var i, h = $$("settings-review-round-new").innerHTML, $n;
+    for (i = 1; $$("review/" + i); ++i) {
+    }
+    $n = $(h.replace(/\/\$/g, "/" + i));
+    $("#settings-review-rounds").append($n);
+    $n.find("textarea").css({height: "auto"}).autogrow();
+    $n.find(".need-suggest").each(suggest);
+    $n.find(".need-tooltip").each(tooltip);
+    form_highlight(this.form);
+    settings_review_round_selectors(this.form);
+});
+
+handle_ui.on("js-settings-review-round-delete", function () {
+    var div = this.closest(".js-settings-review-round"),
+        ne = this.form.elements[div.id + "/name"],
+        n = div.getAttribute("data-exists-count")|0;
+    if (!n) {
+        settings_delete(div, "This review round will be deleted.");
+    } else {
+        settings_delete(div, "This review round will be deleted and <a href=\"".concat(hoturl_html("search", {q: "re:\"" + (ne ? ne.defaultValue : "<invalid>") + "\""}), '" target="_blank">', plural(n, "review"), '</a> assigned to another round.'));
+    }
+    form_highlight(this.form);
+    settings_review_round_selectors(this.form);
+});
 
 
 window.review_form_settings = (function () {
@@ -768,6 +798,5 @@ handle_ui.on("js-settings-decision-new-name", function () {
 
 
 hotcrp.settings = {
-    review_form: review_form_settings,
-    review_round: review_round_settings
+    review_form: review_form_settings
 };

@@ -185,7 +185,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             || ($allow_generic && strcasecmp($word, "none") === 0)) {
             $r = [0];
         } else if ($allow_generic && strcasecmp($word, "any") === 0) {
-            $r = array_keys($conf->defined_round_list());
+            $r = array_keys($conf->defined_rounds());
         } else if (strpos($word, "*") === false) {
             if (($round = $conf->round_number($word, false)) !== null) {
                 $r = [$round];
@@ -194,10 +194,10 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             }
         } else {
             $re = '/\A' . str_replace('\*', '.*', preg_quote($word)) . '\z/is';
-            $r = array_keys(preg_grep($re, $conf->defined_round_list()));
+            $r = array_keys(preg_grep($re, $conf->defined_rounds()));
         }
         if ($neg) {
-            $r = array_values(array_diff(array_keys($conf->defined_round_list()), $r));
+            $r = array_values(array_diff(array_keys($conf->defined_rounds()), $r));
         }
         return $r;
     }

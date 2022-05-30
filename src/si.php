@@ -284,6 +284,16 @@ class Si {
         }
     }
 
+    /** @param string $subtype
+     * @suppress PhanAccessReadOnlyProperty */
+    function change_subtype($subtype) {
+        assert(!!$this->type);
+        if ($this->subtype !== $subtype) {
+            $this->subtype = $subtype;
+            $this->_tclass = Sitype::get($this->conf, $this->type, $this->subtype);
+        }
+    }
+
     /** @return string */
     function storage_name() {
         return $this->storage ?? $this->name;

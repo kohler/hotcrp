@@ -438,6 +438,41 @@ class Settings_Tester {
         xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
     }
 
+    function test_review_rounds() {
+        $tn = Conf::$now + 10;
+
+        // reset existing review rounds
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_review" => 1,
+            "reset" => 1
+        ]);
+        xassert($sv->execute());
+        xassert(!$sv->conf->has_rounds());
+
+        // add a review round
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_review" => 1,
+            "review/1/id" => "new",
+            "review/1/name" => "Butt",
+            "review/1/soft" => "@{$tn}",
+            "review/1/done" => "@" . ($tn + 10),
+            "review/2/id" => "new",
+            "review/2/name" => "Fart",
+            "review/2/soft" => "@" . ($tn + 1),
+            "review/2/done" => "@" . ($tn + 10),
+            "review_default_round" => "Fart"
+        ]);
+        xassert($sv->execute());
+        xassert_array_eqq($sv->conf->round_list(), ["", "Butt", "Fart"]);
+
+        // check review_default_round
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_review" => 1,
+            "review_default_round" => "biglemd"
+        ]);
+        xassert(!$sv->execute());
+    }
+
     function test_responses() {
         if ($this->conf->setting_data("responses")) {
             $this->conf->save_refresh_setting("responses", null);

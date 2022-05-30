@@ -5148,7 +5148,7 @@ class Contact {
         if (isset($dl->rev)) {
             $dl->revs = [];
             $k = $this->isPC ? "pcrev" : "extrev";
-            foreach ($this->conf->defined_round_list() as $i => $round_name) {
+            foreach ($this->conf->defined_rounds() as $i => $round_name) {
                 $isuf = $i ? "_$i" : "";
                 $s = +$this->conf->setting("{$k}_soft$isuf");
                 $h = +$this->conf->setting("{$k}_hard$isuf");

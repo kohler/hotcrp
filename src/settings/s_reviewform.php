@@ -12,7 +12,7 @@ class ReviewForm_SettingParser extends SettingParser {
      * @return array<string,string> */
     static function presence_options($conf) {
         $ecsel = ["all" => "All reviews"];
-        foreach ($conf->defined_round_list() as $i => $rname) {
+        foreach ($conf->defined_rounds() as $i => $rname) {
             $rname = $i ? $rname : "unnamed";
             $ecsel["round:{$rname}"] = "{$rname} review round";
         }

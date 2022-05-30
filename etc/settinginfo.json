@@ -77,26 +77,6 @@
         "json_values": ["no", "yes", "approval-required", "approval-required-potential-conflicts"]
     },
     {
-        "name_pattern": "extrev_hard_$",
-        "title": "External reviewer hard review deadline",
-        "type": "date", "subtype": "explicit_none", "placeholder": "same as PC",
-        "parser_class": "ReviewDeadline_SettingParser",
-        "require": "src/settings/s_reviews.php", "parse_order": 1.1
-    },
-    {
-        "name": "extrev_roundtag",
-        "title": "External assignment review round",
-        "type": "tagselect", "parser_class": "RoundSelector_SettingParser", "default_value": "default",
-        "require": "src/settings/s_reviews.php", "parse_order": 1
-    },
-    {
-        "name_pattern": "extrev_soft_$",
-        "title": "External reviewer soft review deadline",
-        "type": "date", "subtype": "explicit_none", "placeholder": "same as PC",
-        "parser_class": "ReviewDeadline_SettingParser",
-        "require": "src/settings/s_reviews.php", "parse_order": 1
-    },
-    {
         "name": "extrev_view",
         "title": "External reviewers can view reviews",
         "type": "radio",
@@ -322,20 +302,7 @@
         "type": "radio", "values": [0, 1, 2, 3], "default_value": 0,
         "json_values": ["no", "yes", "approval-required", "approval-private"]
     },
-    {
-        "name_pattern": "pcrev_hard_$",
-        "title": "PC review hard deadline",
-        "type": "date", "placeholder": "none",
-        "parser_class": "ReviewDeadline_SettingParser",
-        "require": "src/settings/s_reviews.php", "parse_order": 1.1
-    },
-    {
-        "name_pattern": "pcrev_soft_$",
-        "title": "PC review deadline",
-        "type": "date", "placeholder": "none",
-        "parser_class": "ReviewDeadline_SettingParser",
-        "require": "src/settings/s_reviews.php", "parse_order": 1
-    },
+
     {
         "name": "response_active",
         "title": "Collect authors’ responses",
@@ -407,19 +374,97 @@
         "storage": "member.instructions", "parser_class": "Response_SettingParser"
     },
 
+
     {
-        "name": "rev_blind",
+        "name": "review_open",
+        "title": "Enable reviewing",
+        "type": "cdate", "storage": "rev_open"
+    },
+    {
+        "name": "review_blind",
         "title": "Review anonymity",
-        "type": "radio",
+        "type": "radio", "storage": "rev_blind",
         "values": [0, 1, 2], "default_value": 2,
         "json_values": ["open", "optional", "blind"]
     },
     {
-        "name": "rev_open",
-        "title": "Open site for reviewing",
-        "type": "cdate",
-        "require": "src/settings/s_reviews.php"
+        "name": "review",
+        "type": "oblist", "parser_class": "Review_SettingParser"
     },
+    {
+        "name_pattern": "review/$", "internal": true,
+        "type": "object", "subtype": "Review_Setting",
+        "parser_class": "Review_SettingParser"
+    },
+    {
+        "name_pattern": "review/$/id", "internal": true, "storage": "member.id"
+    },
+    {
+        "name_pattern": "review/$/pctitle", "internal": true, "parser_class": "Review_SettingParser"
+    },
+    {
+        "name_pattern": "review/$/exttitle", "internal": true, "parser_class": "Review_SettingParser"
+    },
+    {
+        "name_pattern": "review/$/name",
+        "title": "Review round name",
+        "type": "tag", "required": false, "size": 12, "placeholder": "unnamed",
+        "storage": "member.name"
+    },
+    {
+        "name_pattern": "review/$/soft",
+        "title_pattern": "${sv review/$/title} deadline",
+        "type": "date", "placeholder": "none", "storage": "member.soft"
+    },
+    {
+        "name_pattern": "review/$/done",
+        "title_pattern": "${sv review/$/title} hard deadline",
+        "type": "date", "placeholder": "none", "storage": "member.done"
+    },
+    {
+        "name_pattern": "review/$/external_soft",
+        "title_pattern": "${sv review/$/exttitle} deadline",
+        "type": "date", "subtype": "explicit_none", "placeholder": "same as PC",
+        "storage": "member.external_soft"
+    },
+    {
+        "name_pattern": "review/$/external_done",
+        "title_pattern": "${sv review/$/exttitle} hard deadline",
+        "type": "date", "subtype": "explicit_none", "placeholder": "same as PC",
+        "storage": "member.external_done"
+    },
+    {
+        "name": "review_default_round_index",
+        "title": "Default round for new PC reviews",
+        "type": "nonnegint", "parser_class": "Review_SettingParser",
+        "storage": "none", "parse_order": 1
+    },
+    {
+        "name": "review_default_external_round_index",
+        "title": "Default round for new external reviews",
+        "type": "nonnegint", "parser_class": "Review_SettingParser",
+        "storage": "none", "parse_order": 1
+    },
+    {
+        "name": "review_default_round",
+        "title": "Default round for new PC reviews",
+        "type": "tag", "required": false, "parser_class": "Review_SettingParser",
+        "storage": "rev_roundtag", "parse_order": 1
+    },
+    {
+        "name": "review_default_external_round",
+        "title": "Default round for new external reviews",
+        "type": "tag", "required": false, "parser_class": "Review_SettingParser",
+        "storage": "extrev_roundtag", "parse_order": 1
+    },
+    {   "name_pattern": "pcrev_soft_$", "internal": true, "type": "date"   },
+    {   "name_pattern": "pcrev_hard_$", "internal": true, "type": "date"   },
+    {   "name_pattern": "extrev_soft_$", "internal": true, "type": "date", "subtype": "explicit_none"   },
+    {   "name_pattern": "extrev_hard_$", "internal": true, "type": "date", "subtype": "explicit_none"   },
+    {   "name": "tag_rounds", "internal": true, "type": "taglist"   },
+    {   "name": "rev_roundtag", "internal": true, "type": "tagselect"   },
+    {   "name": "extrev_roundtag", "internal": true, "type": "tagselect"   },
+
     {
         "name": "rev_ratings",
         "title": "Collect ratings of reviews",
@@ -427,12 +472,7 @@
         "values": [0, 1, 2], "default_value": 0,
         "json_values": ["pc", "all", "no"]
     },
-    {
-        "name": "rev_roundtag",
-        "title": "Assignment review round",
-        "type": "tagselect", "parser_class": "RoundSelector_SettingParser", "default": "",
-        "require": "src/settings/s_reviews.php", "parse_order": 1
-    },
+
 
     {
         "name": "review_form", "internal": true, "type": "string"
@@ -506,11 +546,7 @@
     {   "name_pattern": "rf/$/exists_if", "alias_pattern": "rf/$/condition"   },
     {   "name_pattern": "rf/$/display_space", "internal": true   },
 
-    {
-        "name_pattern": "roundname_$", "internal": true,
-        "title": "Review round name", "hashid": "rounds",
-        "type": "tag", "size": 12, "placeholder": "unnamed"
-    },
+
     {
         "name": "seedec",
         "title": "Decision visibility",
@@ -632,7 +668,7 @@
     },
     {
         "name": "sub_open",
-        "title": "Open site for submissions",
+        "title": "Enable submissions",
         "type": "cdate"
     },
     {
@@ -695,11 +731,6 @@
         "name": "tag_rank",
         "title": "Ranking tags",
         "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
-    },
-    {
-        "name": "tag_rounds",
-        "type": "taglist", "parser_class": "Round_SettingParser",
-        "require": "src/settings/s_reviews.php", "parse_order": 0
     },
     {
         "name": "tag_seeall",

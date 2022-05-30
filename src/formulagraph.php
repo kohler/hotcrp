@@ -834,7 +834,7 @@ class FormulaGraph extends MessageSet {
             return;
         $i = 0;
         $m = [];
-        foreach ($this->conf->defined_round_list() as $n => $rname) {
+        foreach ($this->conf->defined_rounds() as $n => $rname) {
             if ($rs[$n] ?? null) {
                 $this->remapped_rounds[++$i] = $rname;
                 $m[$n] = $i;

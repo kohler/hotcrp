@@ -44,7 +44,7 @@ class Decision_SettingParser extends SettingParser {
             $sv->feedback_at("decision/{$ctr}/name"),
             $sv->feedback_at("decision/{$ctr}/category"),
             Ht::hidden("decision/{$ctr}/id", $isnew ? "new" : $did, ["data-default-value" => $isnew ? "" : null]),
-            $sv->entry("decision/{$ctr}/name", ["data-submission-count" => $count, "class" => $isnew ? "uii js-settings-decision-new-name" : ""]);
+            $sv->entry("decision/{$ctr}/name", ["data-exists-count" => $count, "class" => $isnew ? "uii js-settings-decision-new-name" : ""]);
         if ($sv->reqstr("decision/{$ctr}/delete")) {
             echo Ht::hidden("decision/{$ctr}/delete", "1", ["data-default-value" => ""]);
         }
