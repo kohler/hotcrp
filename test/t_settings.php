@@ -290,18 +290,18 @@ class Settings_Tester {
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
-            "rf__1__name" => "B9",
-            "rf__1__id" => "s03",
-            "rf__1__choices" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I",
-            "rf__2__name" => "B15",
-            "rf__2__id" => "s04",
-            "rf__2__choices" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J\n11. K\n12. L\n13. M\n14. N\n15. O",
-            "rf__3__name" => "B10",
-            "rf__3__id" => "s06",
-            "rf__3__choices" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J",
-            "rf__4__name" => "B5",
-            "rf__4__id" => "s07",
-            "rf__4__choices" => "A. A\nB. B\nC. C\nD. D\nE. E"
+            "rf/1/name" => "B9",
+            "rf/1/id" => "s03",
+            "rf/1/choices" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I",
+            "rf/2/name" => "B15",
+            "rf/2/id" => "s04",
+            "rf/2/choices" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J\n11. K\n12. L\n13. M\n14. N\n15. O",
+            "rf/3/name" => "B10",
+            "rf/3/id" => "s06",
+            "rf/3/choices" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J",
+            "rf/4/name" => "B5",
+            "rf/4/id" => "s07",
+            "rf/4/choices" => "A. A\nB. B\nC. C\nD. D\nE. E"
         ]);
         xassert($sv->execute());
 
@@ -355,14 +355,14 @@ class Settings_Tester {
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
-            "rf__1__id" => "s03",
-            "rf__1__colors" => "svr",
-            "rf__2__id" => "s04",
-            "rf__2__colors" => "svr",
-            "rf__3__id" => "s06",
-            "rf__3__colors" => "svr",
-            "rf__4__id" => "s07",
-            "rf__4__colors" => "svr"
+            "rf/1/id" => "s03",
+            "rf/1/colors" => "svr",
+            "rf/2/id" => "s04",
+            "rf/2/colors" => "svr",
+            "rf/3/id" => "s06",
+            "rf/3/colors" => "svr",
+            "rf/4/id" => "s07",
+            "rf/4/colors" => "svr"
         ]);
         xassert($sv->execute());
         $rf = $this->conf->find_review_field("B5");
@@ -415,14 +415,14 @@ class Settings_Tester {
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
-            "rf__1__id" => "s03",
-            "rf__1__delete" => "1",
-            "rf__2__id" => "s04",
-            "rf__2__delete" => "1",
-            "rf__3__id" => "s06",
-            "rf__3__delete" => "1",
-            "rf__4__id" => "s07",
-            "rf__4__delete" => "1"
+            "rf/1/id" => "s03",
+            "rf/1/delete" => "1",
+            "rf/2/id" => "s04",
+            "rf/2/delete" => "1",
+            "rf/3/id" => "s06",
+            "rf/3/delete" => "1",
+            "rf/4/id" => "s07",
+            "rf/4/delete" => "1"
         ]);
         xassert($sv->execute());
         xassert(!$this->conf->find_review_field("B5"));
@@ -431,8 +431,8 @@ class Settings_Tester {
     function test_review_name_required() {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
-            "rf__1__id" => "s90",
-            "rf__1__choices" => "1. A\n2. B\n"
+            "rf/1/id" => "s90",
+            "rf/1/choices" => "1. A\n2. B\n"
         ]);
         xassert(!$sv->execute());
         xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
