@@ -184,7 +184,7 @@ class BackupDB_Batch {
         $l = strlen($s);
         if ($this->_inserting === null
             && str_starts_with($s, "INSERT")
-            && preg_match('/\G(INSERT INTO `?([^`\s]*)`? VALUES)\s*(?=\(|$)/', $s, $m, 0, $p)) {
+            && preg_match('/\G(INSERT INTO `?([^`\s]*)`? VALUES)\s*(?=[(,]|$)/', $s, $m, 0, $p)) {
             $p = strlen($m[0]);
             $this->_inserting = $m[2];
             $this->_separator = "{$m[1]}\n";
