@@ -169,11 +169,21 @@ class SavePapers_Batch {
             && is_string($docj->content_file)
             && $this->ziparchive) {
             $name = $docj->content_file;
-            $content = $this->ziparchive->getFromName($name);
-            if ($content === false) {
+            $stat = $this->ziparchive->statName($name);
+            if (!$stat) {
                 $name = $this->document_directory . $docj->content_file;
-                $content = $this->ziparchive->getFromName($name);
+                $stat = $this->ziparchive->statName($name);
             }
+            if (!$stat) {
+                $pstatus->error_at_option($o, "{$docj->content_file}: Could not read");
+                return false;
+            }
+            // make room for large files in memory
+            if ($stat["size"] > 50000000
+                && $stat["size"] >= ini_get_bytes("memory_limit") * 0.8) {
+                ini_set("memory_limit", floor($stat["size"] * 1.25 / (1 << 20)) . "M");
+            }
+            $content = $this->ziparchive->getFromIndex($stat["index"]);
             if ($content === false) {
                 $pstatus->error_at_option($o, "{$docj->content_file}: Could not read");
                 return false;
@@ -298,17 +308,22 @@ class SavePapers_Batch {
         if ($jp === null) {
             fwrite(STDERR, "{$this->errprefix}invalid JSON: " . Json::last_error_msg() . "\n");
             ++$this->nerrors;
-        } else if (!is_object($jp) && !is_array($jp)) {
+        } else if (!is_array($jp) && !is_object($jp)) {
             fwrite(STDERR, "{$this->errprefix}invalid JSON, expected array of objects\n");
             ++$this->nerrors;
         } else {
-            foreach (is_object($jp) ? [$jp] : $jp as $j) {
-                $this->run_one(clone $j);
+            if (is_object($jp)) {
+                $jp = [$jp];
+            }
+            foreach ($jp as &$j) {
+                $this->run_one($j);
                 if ($this->nerrors && !$this->ignore_errors) {
                     break;
                 }
+                $j = null;
                 gc_collect_cycles();
             }
+            unset($j);
         }
         if ($this->nerrors) {
             return $this->ignore_errors && $this->nsuccesses ? 2 : 1;
