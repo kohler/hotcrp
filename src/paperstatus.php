@@ -416,7 +416,7 @@ class PaperStatus extends MessageSet {
             if ($doc->paperId === 0 || $doc->paperId === -1) {
                 $this->_update_pid_dids[] = $doc->paperStorageId;
             } else {
-                assert($this->prow && $doc->paperId === $this->prow->paperId);
+                assert(!$this->prow || $doc->paperId === $this->prow->paperId);
             }
             return $doc;
         } else {
@@ -1280,7 +1280,8 @@ class PaperStatus extends MessageSet {
 
             if ($need_insert) {
                 $this->_preexecute_set_default_columns();
-                if (($random_pids = $this->conf->setting("random_pids"))) {
+                $random_pids = $this->paperId <= 0 && $this->conf->setting("random_pids");
+                if ($random_pids) {
                     $this->conf->qe("lock tables Paper write");
                     $this->_paper_upd["paperId"] = $this->unused_random_pid();
                 }
