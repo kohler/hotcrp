@@ -36,13 +36,15 @@ class DeletePapers_Batch {
                 }
                 if (!$this->yes) {
                     $str = "";
-                    while (!preg_match('/\A[ynq]/i', $str)) {
-                        fwrite(STDERR, "Delete {$pid}? (y/n/q) ");
+                    while (!preg_match('/\A[ynaq]/i', $str)) {
+                        fwrite(STDERR, "Delete {$pid}? (y/n/a/q) ");
                         $str = fgets(STDIN);
                     }
                     $str = strtolower($str);
                     if (str_starts_with($str, "q")) {
                         return 1;
+                    } else if (str_starts_with($str, "a")) {
+                        $this->yes = true;
                     } else if (str_starts_with($str, "n")) {
                         continue;
                     }
