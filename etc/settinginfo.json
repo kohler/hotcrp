@@ -388,7 +388,7 @@
         "json_values": ["open", "optional", "blind"]
     },
     {
-        "name": "review",
+        "name": "review", "hashid": "rounds",
         "type": "oblist", "parser_class": "Review_SettingParser"
     },
     {

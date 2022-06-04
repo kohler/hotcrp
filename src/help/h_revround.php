@@ -7,7 +7,7 @@ class RevRound_HelpTopic {
         echo "<p>Many conferences divide their review assignments into multiple <em>rounds</em>.
 Each round is given a name, such as “R1” or “lastround.”
 (We suggest very short names like “R1”.)
-Configure rounds on the ", $hth->setting_link("settings page", "rev_roundtag"), ".
+Configure rounds on the ", $hth->setting_link("settings page", "review"), ".
 To search for any paper with a round “R2” review assignment, ",
 $hth->search_link("search for “re:R2”", "re:R2"), ".
 To list a PC member’s round “R1” review assignments, ",
@@ -20,7 +20,7 @@ rounds, then see ", $hth->setting_link("Settings &gt; Review form", "rf"), ".</p
 
         echo $hth->subhead("Assigning rounds");
         echo "<p>New assignments are marked by default with the round defined in ",
-            $hth->setting_link("review settings", "rev_roundtag"), ".
+            $hth->setting_link("review settings", "review"), ".
 The automatic and bulk assignment pages also let you set a review round.</p>";
 
 
@@ -30,7 +30,7 @@ The automatic and bulk assignment pages also let you set a review round.</p>";
             if (($rr = $hth->conf->assignment_round_option(false)) !== "unnamed") {
                 $texts[] = "The review round for new assignments is “"
                     . $hth->search_link(htmlspecialchars($rr), "round:$rr") . "”."
-                    . $hth->change_setting_link("rev_roundtag");
+                    . $hth->change_setting_link("review");
             }
             $rounds = [];
             if ($hth->conf->has_rounds()) {
