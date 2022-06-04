@@ -231,8 +231,7 @@ class CommentInfo {
     /** @return ?ResponseRound */
     function response_round() {
         if ($this->commentType & self::CT_RESPONSE) {
-            $rrds = $this->conf->response_rounds();
-            return $rrds[$this->commentRound] ?? $rrds[0];
+            return $this->conf->response_round_by_id($this->commentRound);
         } else {
             return null;
         }
