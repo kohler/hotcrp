@@ -304,6 +304,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
     }
 
+    /** @param string $table
+     * @param string $column
+     * @return ?int */
     private function check_column_exists($table, $column) {
         return Dbl::fetch_ivalue($this->conf->dblink, "select exists (select * from information_schema.columns where table_schema=database() and `table_name`='$table' and `column_name`='$column') from dual");
     }
@@ -779,6 +782,28 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
         $cleanf(null);
         $this->conf->qe("unlock tables");
+        return true;
+    }
+
+    /** @return bool */
+    private function v260_paperreview_fields() {
+        if ($this->check_column_exists("PaperReview", "reviewFormat")
+            && !$this->conf->ql_ok("alter table PaperReview drop column `reviewFormat`")) {
+            return false;
+        }
+        if (!$this->check_column_exists("ContactInfo", "cdbRoles")
+            && !$this->conf->ql_ok("alter table ContactInfo add `cdbRoles` tinyint(1) NOT NULL DEFAULT 0")) {
+            return false;
+        }
+        foreach (["overAllMerit", "reviewerQualification", "novelty", "technicalMerit",
+                  "interestToCommunity", "longevity", "grammar", "likelyPresentation",
+                  "suitableForShort", "potential", "fixability"] as $i => $f) {
+            $nfn = sprintf("s%02d", $i + 1);
+            $ofn = $this->check_column_exists("PaperReview", $f) ? $f : $nfn;
+            if (!$this->conf->ql_ok("alter table PaperReview change `{$ofn}` `{$nfn}` smallint(1) NOT NULL DEFAULT 0")) {
+                return false;
+            }
+        }
         return true;
     }
 
@@ -2387,19 +2412,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(259);
         }
         if ($conf->sversion === 259
-            && $conf->ql_ok("alter table PaperReview drop column `reviewFormat`")
-            && $conf->ql_ok("alter table ContactInfo add `cdbRoles` tinyint(1) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table PaperReview change `overAllMerit` `s01` smallint(1) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table PaperReview change `reviewerQualification` `s02` smallint(1) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table PaperReview change `novelty` `s03` smallint(1) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table PaperReview change `technicalMerit` `s04` smallint(1) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table PaperReview change `interestToCommunity` `s05` smallint(1) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table PaperReview change `longevity` `s06` smallint(1) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table PaperReview change `grammar` `s07` smallint(1) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table PaperReview change `likelyPresentation` `s08` smallint(1) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table PaperReview change `suitableForShort` `s09` smallint(1) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table PaperReview change `potential` `s10` smallint(1) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table PaperReview change `fixability` `s11` smallint(1) NOT NULL DEFAULT 0")) {
+            && $this->v260_paperreview_fields()) {
             $conf->update_schema_version(260);
         }
         if ($conf->sversion === 260
