@@ -138,6 +138,29 @@ class BackupDB_Batch {
                 || $this->_fields[0] !== "capabilityType");
     }
 
+    /** @var string $s
+     * @var int|false $sq
+     * @return int|false */
+    static function find_eq($s, $sq) {
+        if ($sq === false) {
+            return false;
+        }
+        $eq = $sq;
+        while (true) {
+            $eq = strpos($s, "'", $eq + 1);
+            if ($eq === false) {
+                return strlen($s);
+            }
+            $sbs = $eq - 1;
+            while ($sbs > $sq && $s[$sbs] === "\\") {
+                --$sbs;
+            }
+            if ((($eq - $sbs) & 1) !== 0) {
+                return $eq;
+            }
+        }
+    }
+
     private function process_line($s, $line) {
         if ($this->schema) {
             if (str_starts_with($line, "--")) {
@@ -182,6 +205,7 @@ class BackupDB_Batch {
 
         $p = 0;
         $l = strlen($s);
+        $sq = $eq = -1;
         if ($this->_inserting === null
             && str_starts_with($s, "INSERT")
             && preg_match('/\G(INSERT INTO `?([^`\s]*)`? VALUES)\s*(?=[(,]|$)/', $s, $m, 0, $p)) {
@@ -196,16 +220,28 @@ class BackupDB_Batch {
                 }
                 if ($p === $l) {
                     break;
-                } else if ($s[$p] === "("
-                           && preg_match('/\G(\((?:[^)\']|\'(?:\\\\.|[^\\\\\'])*\')*\))\s*/', $s, $m, 0, $p)) {
+                } else if ($s[$p] === "(") {
+                    $rp = strpos($s, ")", $p);
+                    while ($rp !== false) {
+                        while ($eq !== false && $eq < $rp) {
+                            $sq = strpos($s, "'", $eq + 1);
+                            $eq = self::find_eq($s, $sq);
+                        }
+                        if ($sq === false || $sq > $rp) {
+                            break;
+                        }
+                        $rp = strpos($s, ")", $rp + 1);
+                    }
+                    if ($rp === false) {
+                        break;
+                    }
+                    $x = substr($s, $p, $rp + 1 - $p);
                     if (!$this->skip_ephemeral
-                        || $this->should_include($m[1])) {
-                        fwrite($this->out, $this->_separator . $m[1]);
+                        || $this->should_include($x)) {
+                        fwrite($this->out, $this->_separator . $x);
                         $this->_separator = "";
                     }
-                    $p += strlen($m[0]);
-                } else if ($s[$p] === "(") {
-                    break;
+                    $p = $rp + 1;
                 } else if ($s[$p] === ",") {
                     if ($this->_separator === "") {
                         $this->_separator = ",\n";
@@ -250,7 +286,7 @@ class BackupDB_Batch {
             if ($line === false) {
                 break;
             }
-            $s = $this->process_line($s === "" ? $line : $s . $line, $line);
+            $s = $this->process_line($s . $line, $line);
         }
         $this->process_line($s, "\n");
 

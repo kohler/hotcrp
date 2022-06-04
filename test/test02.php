@@ -16,4 +16,5 @@ TestRunner::go(new Mention_Tester(Conf::$main));
 TestRunner::go(new Search_Tester(Conf::$main));
 TestRunner::go(new Settings_Tester(Conf::$main));
 TestRunner::go(new UpdateSchema_Tester(Conf::$main));
+TestRunner::go(new Batch_Tester);
 xassert_exit();
