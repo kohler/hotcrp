@@ -117,14 +117,14 @@ class Contact {
     private $_name_for_map = [];
 
     // Roles
-    const ROLE_PC = 1;
-    const ROLE_ADMIN = 2;
-    const ROLE_CHAIR = 4;
-    const ROLE_PCLIKE = 15;
-    const ROLE_DBMASK = 15;
-    const ROLE_AUTHOR = 16;
-    const ROLE_REVIEWER = 32;
-    const ROLE_REQUESTER = 64;
+    const ROLE_PC = 0x0001;
+    const ROLE_ADMIN = 0x0002;
+    const ROLE_CHAIR = 0x0004;
+    const ROLE_PCLIKE = 0x000F;
+    const ROLE_DBMASK = 0x000F;
+    const ROLE_AUTHOR = 0x0010;
+    const ROLE_REVIEWER = 0x0020;
+    const ROLE_REQUESTER = 0x0040;
     const ROLE_OUTSTANDING_REVIEW = 0x1000;
     const ROLE_METAREVIEWER = 0x2000;
     const ROLE_LEAD = 0x4000;
@@ -203,6 +203,7 @@ class Contact {
     const PROP_PASSWORD = 0x2000;
     const PROP_UPDATE = 0x4000;
     const PROP_IMPORT = 0x8000;
+    const PROP_ROLES = 0x10000;
     static public $props = [
         "firstName" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE | self::PROP_NAME | self::PROP_UPDATE | self::PROP_IMPORT,
         "lastName" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE | self::PROP_NAME | self::PROP_UPDATE | self::PROP_IMPORT,
@@ -219,7 +220,7 @@ class Contact {
         "lastLogin" => self::PROP_LOCAL | self::PROP_INT,
         "defaultWatch" => self::PROP_LOCAL | self::PROP_INT,
         "primaryContactId" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE,
-        "roles" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE,
+        "roles" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE | self::PROP_ROLES,
         "cdbRoles" => self::PROP_LOCAL | self::PROP_INT,
         "disabled" => self::PROP_LOCAL | self::PROP_BOOL | self::PROP_SLICE,
         "contactTags" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SLICE,
@@ -1564,6 +1565,8 @@ class Contact {
         }
         if (($shape & self::PROP_DATA) !== 0) {
             return $this->data($prop);
+        } else if (($shape & self::PROP_ROLES) !== 0) {
+            return $this->cdb_confid === 0 ? $this->roles & self::ROLE_DBMASK : $this->roles;
         } else {
             return $this->$prop;
         }

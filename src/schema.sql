@@ -333,17 +333,17 @@ CREATE TABLE `PaperReview` (
   `reviewEditVersion` int(1) NOT NULL DEFAULT 0,
   `reviewWordCount` int(11) DEFAULT NULL,
 
-  `s01` tinyint(1) NOT NULL DEFAULT 0,
-  `s02` tinyint(1) NOT NULL DEFAULT 0,
-  `s03` tinyint(1) NOT NULL DEFAULT 0,
-  `s04` tinyint(1) NOT NULL DEFAULT 0,
-  `s05` tinyint(1) NOT NULL DEFAULT 0,
-  `s06` tinyint(1) NOT NULL DEFAULT 0,
-  `s07` tinyint(1) NOT NULL DEFAULT 0,
-  `s08` tinyint(1) NOT NULL DEFAULT 0,
-  `s09` tinyint(1) NOT NULL DEFAULT 0,
-  `s10` tinyint(4) NOT NULL DEFAULT 0,
-  `s11` tinyint(4) NOT NULL DEFAULT 0,
+  `s01` smallint(1) NOT NULL DEFAULT 0,
+  `s02` smallint(1) NOT NULL DEFAULT 0,
+  `s03` smallint(1) NOT NULL DEFAULT 0,
+  `s04` smallint(1) NOT NULL DEFAULT 0,
+  `s05` smallint(1) NOT NULL DEFAULT 0,
+  `s06` smallint(1) NOT NULL DEFAULT 0,
+  `s07` smallint(1) NOT NULL DEFAULT 0,
+  `s08` smallint(1) NOT NULL DEFAULT 0,
+  `s09` smallint(1) NOT NULL DEFAULT 0,
+  `s10` smallint(4) NOT NULL DEFAULT 0,
+  `s11` smallint(4) NOT NULL DEFAULT 0,
 
   `tfields` longblob,
   `sfields` varbinary(2048) DEFAULT NULL,
@@ -562,7 +562,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 262);
+insert into Settings (name, value) values ('allowPaperOption', 263);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

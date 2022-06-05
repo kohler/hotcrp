@@ -2432,6 +2432,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             }
             $conf->update_schema_version(262);
         }
+        if ($conf->sversion === 262
+            && $conf->ql_ok("update ContactInfo set roles=roles&15 where roles>15") /* ROLE_DBMASK */
+            && $this->v260_paperreview_fields() /* schema.sql had tinyint for a while */) {
+            $conf->update_schema_version(263);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;
