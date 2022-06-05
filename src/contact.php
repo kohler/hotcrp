@@ -27,7 +27,7 @@ class Contact {
     /** @var int */
     public $contactXid = 0;
     /** @var int */
-    public $cdb_confid = 0;
+    public $cdb_confid = 0; // nonzero iff this is a CDB user
 
     /** @var string */
     public $firstName = "";
@@ -317,6 +317,7 @@ class Contact {
         $this->contactDbId = (int) $this->contactDbId;
         $this->cdb_confid = (int) $this->cdb_confid;
         assert($this->contactId > 0 || ($this->contactId === 0 && $this->contactDbId > 0));
+        assert(($this->contactId > 0) === ($this->cdb_confid === 0));
 
         // handle slice properties
         $this->role_mask = (int) ($this->role_mask ?? self::ROLE_DBMASK);
@@ -366,7 +367,7 @@ class Contact {
     /** @param object $x
      * @param bool $all */
     function unslice_using($x, $all = false) {
-        assert($all || $this->cdb_confid <= 0);
+        assert($all || $this->cdb_confid === 0);
         $shapemask = self::PROP_LOCAL | self::PROP_DATA | ($all ? 0 : self::PROP_SLICE);
         foreach (self::$props as $prop => $shape) {
             if (($shape & $shapemask) === self::PROP_LOCAL) {
@@ -759,7 +760,8 @@ class Contact {
 
     /** @return ?Contact */
     function cdb_user() {
-        if ($this->contactDbId && $this->contactId <= 0) {
+        if ($this->cdb_confid !== 0) {
+            assert($this->contactDbId !== 0 && $this->contactId <= 0);
             return $this;
         } else {
             $u = $this->_cdb_user;
@@ -782,7 +784,8 @@ class Contact {
     /** @return ?Contact */
     function ensure_cdb_user() {
         assert($this->has_email());
-        if ($this->contactDbId && $this->contactId <= 0) {
+        if ($this->cdb_confid !== 0) {
+            assert($this->contactDbId !== 0 && $this->contactId <= 0);
             return $this;
         } else {
             $u = $this->_cdb_user;
@@ -808,7 +811,7 @@ class Contact {
         if (($cdbu = $cdbu ?? $this->cdb_user())
             && ($roles !== $cdbu->roles
                 || ($roles !== 0 && (int) $cdbu->activity_at <= Conf::$now - 604800))) {
-            assert($cdbu->cdb_confid < 0 || $cdbu->cdb_confid == $this->conf->opt["contactdbConfid"]);
+            assert($cdbu->cdb_confid < 0 || $cdbu->cdb_confid === $this->conf->opt["contactdbConfid"]);
             if ($roles !== 0) {
                 Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=?, activity_at=?", $cdbu->contactDbId, $this->conf->cdb_confid(), $roles, Conf::$now, $roles, Conf::$now);
             } else {
@@ -1334,7 +1337,7 @@ class Contact {
 
     /** @param object|array $data */
     function merge_and_save_data($data) {
-        $cdb = $this->contactDbId && $this->contactId <= 0;
+        $cdb = $this->cdb_confid !== 0;
         $key = $cdb ? "contactDbId" : "contactId";
         $cid = $cdb ? $this->contactDbId : $this->contactId;
         $change = array_to_object_recursive($data);

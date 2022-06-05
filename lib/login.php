@@ -319,14 +319,14 @@ class LoginHelper {
         } else if (isset($info["noreset"])) {
             $e = "Password reset links aren’t used for this site. Contact your system administrator if you’ve forgotten your password.";
         } else if (isset($info["nologin"])) {
-            $e = "This user cannot sign in to the site.";
+            $e = "User %2[email]\$H cannot sign in to the site.";
         } else if (isset($info["userexists"])) {
             $e = "Incorrect password.";
         } else if (isset($info["unset"])) {
             if ($conf->allow_user_self_register()) {
-                $e = "User %2[email]\$H does not have a password yet. Check the email address or <a href=\"%2[newaccount]\$H\">create that account</a>.";
+                $e = "User %2[email]\$H does not have an account. Check the email address or <a href=\"%2[newaccount]\$H\">create that account</a>.";
             } else {
-                $e = "User %2[email]\$H does not have a password. Check the email address.";
+                $e = "User %2[email]\$H does not have an account. Check the email address.";
             }
         } else if (isset($info["disabled"])) {
             $e = "Your account on this site is disabled. Contact the site administrator for more information.";
