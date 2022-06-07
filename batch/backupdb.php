@@ -138,8 +138,8 @@ class BackupDB_Batch {
                 || $this->_fields[0] !== "capabilityType");
     }
 
-    /** @var string $s
-     * @var int|false $sq
+    /** @param string $s
+     * @param int|false $sq
      * @return int|false */
     static function find_eq($s, $sq) {
         if ($sq === false) {
