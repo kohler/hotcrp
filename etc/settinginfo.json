@@ -574,7 +574,7 @@
         "name_pattern": "fmtstore_o_$", "internal": true, "storage": "opt.sub_banal_$"
     },
     {
-        "name_pattern": "format/$",
+        "name_pattern": "format/$", "internal": false,
         "type": "object", "subtype": "Banal_Setting",
         "parser_class": "Banal_SettingParser"
     },
