@@ -230,17 +230,11 @@ class CommentInfo {
 
     /** @return ?ResponseRound */
     function response_round() {
-        if ($this->commentType & self::CT_RESPONSE) {
+        if (($this->commentType & self::CT_RESPONSE) !== 0) {
             return $this->conf->response_round_by_id($this->commentRound);
         } else {
             return null;
         }
-    }
-
-    /** @return ?ResponseRound
-     * @deprecated */
-    function resp_round() {
-        return $this->response_round();
     }
 
     /** @param int $ctype
@@ -254,28 +248,31 @@ class CommentInfo {
      * @return bool */
     private function ordinal_missing($ctype) {
         return self::commenttype_needs_ordinal($ctype)
-            && !($ctype >= self::CT_AUTHOR ? $this->authorOrdinal : $this->ordinal);
+            && ($ctype >= self::CT_AUTHOR ? $this->authorOrdinal : $this->ordinal) === 0;
     }
 
     /** @return ?string */
     function unparse_ordinal() {
-        $is_author = $this->commentType >= self::CT_AUTHOR;
-        $o = $is_author ? $this->authorOrdinal : $this->ordinal;
-        if (self::commenttype_needs_ordinal($this->commentType) && $o) {
-            return ($is_author ? "A" : "") . $o;
-        } else {
-            return null;
+        if (self::commenttype_needs_ordinal($this->commentType)) {
+            if ($this->commentType >= self::CT_AUTHOR) {
+                if ($this->authorOrdinal !== 0) {
+                    return "A{$this->authorOrdinal}";
+                }
+            } else {
+                if ($this->ordinal !== 0) {
+                    return "{$this->ordinal}";
+                }
+            }
         }
+        return null;
     }
 
     /** @return string */
     function unparse_html_id() {
-        $is_author = $this->commentType >= self::CT_AUTHOR;
-        $o = $is_author ? $this->authorOrdinal : $this->ordinal;
-        if (self::commenttype_needs_ordinal($this->commentType) && $o) {
-            return ($is_author ? "cA" : "c") . $o;
-        } else if ($this->commentType & self::CT_RESPONSE) {
-            return $this->response_round()->tag_name();
+        if (($o = $this->unparse_ordinal()) !== null) {
+            return "c{$o}";
+        } else if (($rrd = $this->response_round()) !== null) {
+            return $rrd->unnamed ? "response" : "{$rrd->name}response";
         } else {
             return "cx" . $this->commentId;
         }
@@ -346,8 +343,9 @@ class CommentInfo {
                 $cid = $cr->contactId;
             }
             if ($cr->commentType & self::CT_RESPONSE) {
-                if (!empty($result))
+                if (!empty($result)) {
                     $result[count($result) - 1][2] = ";";
+                }
                 $connector = ";";
                 $known_cids = [];
                 $include = true;
@@ -400,7 +398,7 @@ class CommentInfo {
         } else {
             $n = $this->unparse_commenter_pseudonym($viewer) ?? "anonymous";
         }
-        if ($this->commentType & self::CT_RESPONSE) {
+        if (($this->commentType & self::CT_RESPONSE) !== 0) {
             $n = "<i>" . $this->unparse_response_text() . "</i>"
                 . ($n === "Author" ? "" : " ($n)");
         }
@@ -414,18 +412,32 @@ class CommentInfo {
         } else {
             $n = $this->unparse_commenter_pseudonym($viewer) ?? "anonymous";
         }
-        if ($this->commentType & self::CT_RESPONSE) {
+        if (($this->commentType & self::CT_RESPONSE) !== 0) {
             $n = $this->unparse_response_text()
                 . ($n === "Author" ? "" : " ($n)");
         }
         return $n;
     }
 
+    /** @return string */
+    function all_tags_text() {
+        $t = $this->commentTags ?? "";
+        if ($this->commentRound !== 0) {
+            if (($rrd = $this->conf->response_round_by_id($this->commentRound))) {
+                $rname = $rrd->tag_name();
+                $t = "{$t} response#0 {$rname}#0";
+            } else {
+                $t = "{$t} response#0";
+            }
+        }
+        return $t;
+    }
+
     /** @return ?string */
     function searchable_tags(Contact $viewer) {
-        if ($this->commentTags
+        if (($tags = $this->all_tags_text()) !== ""
             && $viewer->can_view_comment_tags($this->prow, $this)) {
-            return $this->conf->tags()->censor(TagMap::CENSOR_SEARCH, $this->commentTags, $viewer, $this->prow);
+            return $this->conf->tags()->censor(TagMap::CENSOR_SEARCH, $tags, $viewer, $this->prow);
         } else {
             return null;
         }
@@ -433,9 +445,9 @@ class CommentInfo {
 
     /** @return ?string */
     function viewable_tags(Contact $viewer) {
-        if ($this->commentTags
+        if (($tags = $this->all_tags_text()) !== ""
             && $viewer->can_view_comment_tags($this->prow, $this)) {
-            return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $this->commentTags, $viewer, $this->prow);
+            return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $tags, $viewer, $this->prow);
         } else {
             return null;
         }
@@ -445,11 +457,7 @@ class CommentInfo {
     function viewable_nonresponse_tags(Contact $viewer) {
         if ($this->commentTags
             && $viewer->can_view_comment_tags($this->prow, $this)) {
-            $tags = $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $this->commentTags, $viewer, $this->prow);
-            if ($this->commentType & self::CT_RESPONSE) {
-                $tags = preg_replace('{ \S*response(?:|#\S+)(?= |\z)}i', "", $tags);
-            }
-            return $tags;
+            return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $this->commentTags, $viewer, $this->prow);
         } else {
             return null;
         }
@@ -458,8 +466,8 @@ class CommentInfo {
     /** @param string $tag
      * @return bool */
     function has_tag($tag) {
-        return $this->commentTags
-            && stripos($this->commentTags, " {$tag}#") !== false;
+        return ($tags = $this->all_tags_text()) !== ""
+            && stripos($tags, " {$tag}#") !== false;
     }
 
     /** @return bool */
@@ -747,15 +755,10 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
 
         // tags
         $expected_tags = $this->commentTags;
-        if ($is_response) {
-            $ctags = " response#0";
-            if ($response_name != "1") {
-                $ctags .= " {$response_name}response#0";
-            }
-            $expected_tags = $ctags;
-        } else if (($req["tags"] ?? null)
-                   && preg_match_all('/\S+/', (string) $req["tags"], $m)
-                   && !$user->act_author_view($this->prow)) {
+        if (!$is_response
+            && ($req["tags"] ?? null)
+            && preg_match_all('/\S+/', (string) $req["tags"], $m)
+            && !$user->act_author_view($this->prow)) {
             $tagger = new Tagger($user);
             $ts = [];
             foreach ($m[0] as $tt) {

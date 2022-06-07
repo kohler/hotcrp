@@ -2437,6 +2437,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $this->v260_paperreview_fields() /* schema.sql had tinyint for a while */) {
             $conf->update_schema_version(263);
         }
+        if ($conf->sversion === 263
+            && $conf->ql_ok("update PaperComment set commentTags=null where commentRound!=0")) {
+            $conf->update_schema_version(264);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

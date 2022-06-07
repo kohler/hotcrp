@@ -2377,12 +2377,12 @@ class PaperTable {
             if (!empty($cxs)) {
                 $count = array_reduce($cxs, function ($n, $cx) { return $n + $cx[1]; }, 0);
                 $cnames = array_map(function ($cx) {
-                    $cid = $cx[0]->unparse_html_id();
                     $tclass = "cmtlink";
                     if (($tags = $cx[0]->viewable_tags($this->user))
                         && ($color = $cx[0]->conf->tags()->color_classes($tags))) {
                         $tclass .= " $color taghh";
                     }
+                    $cid = $cx[0]->unparse_html_id();
                     return "<span class=\"nb\"><a class=\"{$tclass} track\" href=\"#{$cid}\">"
                         . $cx[0]->unparse_commenter_html($this->user)
                         . "</a>"
@@ -2461,7 +2461,6 @@ class PaperTable {
                 $cr = $this->response_by_id($rrd->id)
                     ?? CommentInfo::make_response_template($rrd, $prow);
                 if ($this->user->can_edit_response($prow, $cr)) {
-                    $cid = $rrd->tag_name();
                     if ($cr->commentId) {
                         $what = $cr->commentType & CommentInfo::CT_DRAFT ? "Edit draft" : "Edit";
                     } else {
@@ -2470,6 +2469,7 @@ class PaperTable {
                     $title_prefix = $rrd->unnamed ? "" : "{$rrd->name} ";
                     $img = Ht::img("comment48.png", "[{$what} response]", $dlimgjs);
                     $uk = $cflttype >= CONFLICT_AUTHOR ? ' class="font-weight-bold"' : '';
+                    $cid = $cr->unparse_html_id();
                     $t[] = "<a class=\"uic js-edit-comment noul revlink\" href=\"#{$cid}\">{$img} <u{$uk}>{$what} {$title_prefix}response</u></a>";
                     $any_comments = true;
                 }

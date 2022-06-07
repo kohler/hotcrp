@@ -58,7 +58,7 @@ class ResponseRound {
 
     /** @return string */
     function tag_name() {
-        return $this->unnamed ? "response" : $this->name . "response";
+        return $this->unnamed ? "unnamedresponse" : $this->name . "response";
     }
 
     /** @return string */

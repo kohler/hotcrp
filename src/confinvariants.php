@@ -254,11 +254,9 @@ class ConfInvariants {
         if ($any) {
             $this->invariant_error("non-response #{0}/{1} has non-zero round");
         }
-        foreach ($this->conf->response_rounds() as $rrd) {
-            $any = $this->invariantq("select paperId, commentId from PaperComment where (commentType&" . CommentInfo::CT_RESPONSE . ")!=0 and commentRound={$rrd->id} and commentTags not like '% ?ls#%'", [$rrd->tag_name()]);
-            if ($any) {
-                $this->invariant_error("response #{0}/{1} in round ID {$rrd->id} lacks tag '" . $rrd->tag_name() . "'");
-            }
+        $any = $this->invariantq("select paperId, commentId from PaperComment where commentTags like '%response#%' limit 1");
+        if ($any) {
+            $this->invariant_error("comment #{0}/{1} has `response` tag");
         }
 
         // non-draft comments are displayed

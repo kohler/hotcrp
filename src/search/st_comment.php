@@ -103,6 +103,14 @@ class Comment_SearchTerm extends SearchTerm {
         $csm = new ContactCountMatcher($compar, $contacts);
         return new Comment_SearchTerm($srch->user, $csm, $tags, $sword->kwdef);
     }
+    /** @return bool */
+    private function test_tags_response() {
+        $t = " response#0";
+        foreach ($this->user->conf->response_rounds() as $rrd) {
+            $t .= " " . $rrd->tag_name() . "#0";
+        }
+        return $this->tags->test($t);
+    }
     function sqlexpr(SearchQueryInfo $sqi) {
         if (!isset($sqi->columns["commentSkeletonInfo"])) {
             $sqi->add_column("commentSkeletonInfo", "coalesce((select group_concat(commentId, ';', contactId, ';', commentType, ';', commentRound, ';', coalesce(commentTags,'') separator '|') from PaperComment where paperId=Paper.paperId), '')");
@@ -121,7 +129,11 @@ class Comment_SearchTerm extends SearchTerm {
             $where[] = $this->csm->contact_match_sql("contactId");
         }
         if ($this->tags && !$this->tags->test_empty()) {
-            $where[] = "commentTags is not null"; // conservative
+            if ($this->test_tags_response()) {
+                $where[] = "(commentTags is not null or commentRound!=0)";
+            } else {
+                $where[] = "commentTags is not null"; // conservative
+            }
         }
         if (($t = $sqi->try_add_table("Comments_", ["left join", "(select paperId, count(commentId) count from PaperComment" . ($where ? " where " . join(" and ", $where) : "") . " group by paperId)"]))) {
             return "coalesce({$t}.count,0)" . $this->csm->conservative_nonnegative_comparison();
