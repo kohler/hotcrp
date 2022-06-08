@@ -44,6 +44,35 @@ class Comments_Tester {
         xassert($j->cmt->text === "Hello");
         $cid = $j->cmt->cid;
 
+        // check response comment tags
+        $cmt = ($paper1->fetch_comments("commentId={$cid}"))[0];
+        assert(!!$cmt);
+        xassert($cmt->has_tag("response"));
+        xassert($cmt->has_tag("unnamedresponse"));
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_response" => "1",
+            "response_active" => "1",
+            "response/1/id" => "1",
+            "response/1/name" => "R1",
+        ]);
+        xassert($sv->execute());
+
+        $cmt = ($paper1->fetch_comments("commentId={$cid}"))[0];
+        assert(!!$cmt);
+        xassert($cmt->has_tag("response"));
+        xassert(!$cmt->has_tag("unnamedresponse"));
+        xassert($cmt->has_tag("r1RESPONSE"));
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_response" => "1",
+            "response_active" => "1",
+            "response/1/id" => "1",
+            "response/1/name" => "",
+        ]);
+        xassert($sv->execute());
+
+        // return to response
         $j = call_api("comment", $this->u_floyd, ["response" => "1", "c" => "new", "text" => "Hi"], $paper1);
         xassert(!$j->ok);
         xassert_match($j->message_list[0]->message, '/concurrent/');

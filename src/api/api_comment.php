@@ -25,8 +25,7 @@ class Comment_API {
     /** @return ?CommentInfo */
     private function find_comment($query) {
         $cmts = $this->prow->fetch_comments($query);
-        reset($cmts);
-        return empty($cmts) ? null : current($cmts);
+        return $cmts[0] ?? null;
     }
 
     /** @param int $round

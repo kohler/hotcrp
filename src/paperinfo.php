@@ -2751,14 +2751,14 @@ class PaperInfo {
             left join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)";
     }
 
-    /** @return array<int,CommentInfo> */
+    /** @return list<CommentInfo> */
     function fetch_comments($extra_where = null) {
         $result = $this->conf->qe(self::fetch_comment_query()
             . " where paperId={$this->paperId}" . ($extra_where ? " and $extra_where" : "")
             . " order by paperId, commentId");
         $comments = [];
         while (($c = CommentInfo::fetch($result, $this, $this->conf))) {
-            $comments[$c->commentId] = $c;
+            $comments[] = $c;
         }
         Dbl::free($result);
         return $comments;
