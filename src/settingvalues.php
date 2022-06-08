@@ -558,8 +558,10 @@ class SettingValues extends MessageSet {
         $name = is_string($id) ? $id : $id->name;
         if (!array_key_exists($name, $this->_explicit_oldv)) {
             $si = is_string($id) ? $this->si($id) : $id;
-            if ($si && $si->parser_class) {
-                $si->part0 !== null && $this->ensure_enumeration($si->part0);
+            if ($si && $si->part0 !== null) {
+                $this->ensure_enumeration($si->part0);
+            }
+            if ($si && $si->parser_class && !array_key_exists($name, $this->_explicit_oldv)) {
                 $this->si_parser($si)->set_oldv($this, $si);
             }
         }
