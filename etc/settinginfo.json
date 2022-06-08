@@ -413,12 +413,12 @@
     },
     {
         "name_pattern": "review/$/soft",
-        "title_pattern": "${sv review/$/title} deadline",
+        "title_pattern": "${sv review/$/pctitle} deadline",
         "type": "date", "placeholder": "none", "storage": "member.soft"
     },
     {
         "name_pattern": "review/$/done",
-        "title_pattern": "${sv review/$/title} hard deadline",
+        "title_pattern": "${sv review/$/pctitle} hard deadline",
         "type": "date", "placeholder": "none", "storage": "member.done"
     },
     {
