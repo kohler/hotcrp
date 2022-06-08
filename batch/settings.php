@@ -33,7 +33,7 @@ class Settings_Batch {
             }
         }
         fwrite(STDOUT, json_encode($j, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n");
-        $this->sv->apply_json_string('{"rf":[{
+        /*$this->sv->apply_json_string('{"rf":[{
             "id": "t01",
             "name": "Paper summary...",
             "description": "SHIT SHIT SHIT",
@@ -47,7 +47,7 @@ class Settings_Batch {
         }]}');
         error_log($this->sv->full_feedback_text());
         $this->sv->execute();
-        error_log("Updated " . join(" ", $this->sv->updated_fields()));
+        error_log("Updated " . join(" ", $this->sv->updated_fields()));*/
         return 0;
     }
 

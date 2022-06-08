@@ -128,7 +128,8 @@ class Response_SettingParser extends SettingParser {
         // Authors' response
         $sv->print_checkbox("response_active", '<strong>Collect authors’ responses to the reviews<span class="if-response-active">:</span></strong>', ["group_open" => true, "class" => "uich js-settings-resp-active"]);
         Icons::stash_defs("trash");
-        echo Ht::unstash(), '<div class="if-response-active',
+        echo Ht::unstash(), Ht::hidden("response_requires_active", 1),
+            '<div class="if-response-active',
             $sv->vstr("response_active") ? "" : " hidden",
             '"><hr class="g">', Ht::hidden("has_response", 1);
 
@@ -175,7 +176,7 @@ class Response_SettingParser extends SettingParser {
 
     function apply_response_req(SettingValues $sv, Si $si) {
         // ignore changes to response settings if active checkbox is off
-        if ($sv->has_req("response_active") && !$sv->newv("response_active")) {
+        if ($sv->reqstr("response_requires_active") && !$sv->newv("response_active")) {
             return true;
         }
 

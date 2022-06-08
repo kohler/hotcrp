@@ -48,7 +48,7 @@ $hth->search_link("search for “rate:short”", "rate:short"), ".</p>";
             $what = "no one";
         echo $hth->subhead("Settings");
         echo "<p>Chairs set how ratings work on the ",
-            $hth->setting_link("review settings page", "rev_ratings"), ".",
+            $hth->setting_link("review settings page", "review_rating"), ".",
             ($hth->user->is_reviewer() ? " Currently, $what can rate reviews." : ""), "</p>";
 
         echo $hth->subhead("Visibility");

@@ -95,7 +95,7 @@ class Review_SettingParser extends SettingParser {
     static function print(SettingValues $sv) {
         echo '<hr class="form-sep">';
         $sv->print_checkbox("review_open", "<b>Enable reviewing</b>");
-        $sv->print_checkbox("cmt_always", "Allow comments even if reviewing is closed");
+        $sv->print_checkbox("comment_allow_always", "Allow comments even if reviewing is closed");
 
         echo '<hr class="form-sep">';
         $sv->print_radio_table("review_blind", [Conf::BLIND_ALWAYS => "Yes, reviews are anonymous",
@@ -198,7 +198,7 @@ class Review_SettingParser extends SettingParser {
     static function print_pc(SettingValues $sv) {
         echo '<div class="has-fold fold2c">';
         echo '<div class="form-g has-fold foldo">';
-        $sv->print_checkbox('pcrev_any', "PC members can review any submission", ["class" => "uich js-foldup"]);
+        $sv->print_checkbox("review_self_assign", "PC members can review any submission", ["class" => "uich js-foldup"]);
         if ($sv->conf->setting("pcrev_any")
             && $sv->conf->check_track_sensitivity(Track::UNASSREV)) {
             echo '<p class="f-h fx">', $sv->setting_group_link("Current track settings", "tracks"), ' may restrict self-assigned reviews.</p>';
@@ -210,7 +210,7 @@ class Review_SettingParser extends SettingParser {
         if ($sv->conf->check_track_sensitivity(Track::VIEWREVID)) {
             $hint = '<p class="settings-ag f-h">' . $sv->setting_group_link("Current track settings", "tracks") . ' restrict reviewer name visibility.</p>';
         }
-        $sv->print_radio_table("pc_seeblindrev", [0 => "Yes",
+        $sv->print_radio_table("review_identity_visibility_pc", [0 => "Yes",
                 1 => "Only after completing a review for the same submission"],
             'Can PC members see <strong>reviewer names<span class="fn2"> and comments</span></strong> except for conflicts?',
             ["after" => $hint]);
@@ -228,7 +228,7 @@ class Review_SettingParser extends SettingParser {
             $hint = '<p class="settings-ag f-h">' . ltrim($hint) . '</p>';
         }
         echo '<hr class="form-sep">';
-        $sv->print_radio_table("pc_seeallrev", [
+        $sv->print_radio_table("review_visibility_pc", [
                 Conf::PCSEEREV_YES => "Yes",
                 Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same submission",
                 Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
@@ -237,27 +237,27 @@ class Review_SettingParser extends SettingParser {
             ["after" => $hint]);
 
         echo '<hr class="form-nearby form-sep">';
-        $sv->print_checkbox("lead_seerev", "Discussion leads can always see submitted reviews and reviewer names");
+        $sv->print_checkbox("review_visibility_lead", "Discussion leads can always see submitted reviews and reviewer names");
 
 
         echo '<hr class="form-sep">';
-        $sv->print_checkbox('cmt_revid', "PC can see comments when reviews are anonymous", ["class" => "uich js-foldup", "data-fold-target" => "2", "hint_class" => "fx2"], "Commenter names are hidden when reviews are anonymous.");
+        $sv->print_checkbox("comment_visibility_anonymous", "PC can see comments when reviews are anonymous", ["class" => "uich js-foldup", "data-fold-target" => "2", "hint_class" => "fx2"], "Commenter names are hidden when reviews are anonymous.");
         echo "</div>\n";
     }
 
 
     static function print_extrev_view(SettingValues $sv) {
-        $sv->print_radio_table("extrev_view", [
+        $sv->print_radio_table("review_visibility_external", [
                 0 => "No",
                 1 => "Yes, but they can’t see comments or reviewer names",
                 2 => "Yes"
             ], 'Can external reviewers see reviews, comments, and eventual decisions for their assigned submissions, once they’ve completed a review?');
     }
     static function print_extrev_editdelegate(SettingValues $sv) {
-        echo '<div id="foldpcrev_editdelegate" class="form-g has-fold',
-            $sv->vstr("extrev_chairreq") >= 0 ? ' fold1o' : ' fold1c',
+        echo '<div id="foldreview_proposal_editable" class="form-g has-fold',
+            $sv->vstr("review_proposal") >= 0 ? ' fold1o' : ' fold1c',
             '" data-fold1-values="0 1 2">';
-        $sv->print_radio_table("extrev_chairreq", [-1 => "No",
+        $sv->print_radio_table("review_proposal", [-1 => "No",
                 1 => "Yes, but administrators must approve all requests",
                 2 => "Yes, but administrators must approve external reviewers with potential conflicts",
                 0 => "Yes"
@@ -269,9 +269,9 @@ class Review_SettingParser extends SettingParser {
         echo '<hr class="form-sep">';
         $label3 = "Yes, and external reviews are visible only to their requesters";
         if ($sv->conf->fetch_ivalue("select exists (select * from PaperReview where reviewType=" . REVIEW_EXTERNAL . " and reviewSubmitted>0)")) {
-            $label3 = '<label for="pcrev_editdelegate_3">' . $label3 . '</label><div class="settings-ap f-hx fx">Existing ' . Ht::link("submitted external reviews", $sv->conf->hoturl("search", ["q" => "re:ext:submitted"]), ["target" => "_new"]) . ' will remain visible to others.</div>';
+            $label3 = '<label for="review_proposal_editable_3">' . $label3 . '</label><div class="settings-ap f-hx fx">Existing ' . Ht::link("submitted external reviews", $sv->conf->hoturl("search", ["q" => "re:ext:submitted"]), ["target" => "_new"]) . ' will remain visible to others.</div>';
         }
-        $sv->print_radio_table("pcrev_editdelegate", [
+        $sv->print_radio_table("review_proposal_editable", [
                 0 => "No",
                 1 => "Yes, but external reviewers still own their reviews (requesters cannot adopt them)",
                 2 => "Yes, and external reviews are hidden until requesters approve or adopt them",
@@ -297,7 +297,7 @@ class Review_SettingParser extends SettingParser {
     }
 
     static function print_ratings(SettingValues $sv) {
-        $sv->print_radio_table("rev_ratings", [
+        $sv->print_radio_table("review_rating", [
                 REV_RATINGS_NONE => "No",
                 REV_RATINGS_PC => "Yes, PC members can rate reviews",
                 REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews"
@@ -499,18 +499,18 @@ class Review_SettingParser extends SettingParser {
             self::crosscheck_review_deadlines_closed_reviews($sv);
         }
 
-        if (($sv->has_interest("au_seerev") || $sv->has_interest("review/1"))
-            && $sv->oldv("au_seerev") != Conf::AUSEEREV_NO
-            && $sv->oldv("au_seerev") != Conf::AUSEEREV_TAGS
+        if (($sv->has_interest("review_visibility_author") || $sv->has_interest("review/1"))
+            && $sv->oldv("review_visibility_author") != Conf::AUSEEREV_NO
+            && $sv->oldv("review_visibility_author") != Conf::AUSEEREV_TAGS
             && ($dn = self::crosscheck_future_review_deadline($sv)) !== null
             && !$sv->has_error()) {
             $sv->warning_at(null, "<5>" . $sv->setting_link("Authors can see reviews and comments", "au_seerev") . " although it is before a " . $sv->setting_link("review deadline", $dn) . ". This is sometimes unintentional.");
         }
 
-        if (($sv->has_interest("review_blind") || $sv->has_interest("extrev_view"))
+        if (($sv->has_interest("review_blind") || $sv->has_interest("review_visibility_external"))
             && $sv->oldv("review_blind") == Conf::BLIND_NEVER
-            && $sv->oldv("extrev_view") == 1) {
-            $sv->warning_at("extrev_view", "<5>" . $sv->setting_link("Reviews aren’t blind", "review_blind") . ", so external reviewers can see reviewer names and comments despite " . $sv->setting_link("your settings", "extrev_view") . ".");
+            && $sv->oldv("review_visibility_external") == 1) {
+            $sv->warning_at("review_visibility_external", "<5>" . $sv->setting_link("Reviews aren’t blind", "review_blind") . ", so external reviewers can see reviewer names and comments despite " . $sv->setting_link("your settings", "review_visibility_external") . ".");
         }
 
         if ($sv->has_interest("mailbody_requestreview")

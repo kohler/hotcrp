@@ -324,7 +324,7 @@ class Track_SettingParser extends SettingParser {
     static function crosscheck(SettingValues $sv) {
         $conf = $sv->conf;
         $tracks_interest = $sv->has_interest("track");
-        if (($tracks_interest || $sv->has_interest("pcrev_any"))
+        if (($tracks_interest || $sv->has_interest("review_self_assign"))
             && $conf->has_tracks()) {
             foreach ($sv->oblist_keys("track/") as $ctr) {
                 if (($id = $sv->reqstr("track/{$ctr}/id")) === "") {

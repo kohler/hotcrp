@@ -518,6 +518,7 @@ class Settings_Tester {
 
         // changes ignored if response_active checkbox off
         $sv = SettingValues::make_request($this->u_chair, [
+            "response_requires_active" => 1,
             "has_response_active" => 1,
             "has_response" => 1,
             "response/1/id" => "1",

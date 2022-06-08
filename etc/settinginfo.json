@@ -11,29 +11,19 @@
         "type": "simplestring", "size": 70,
         "storage": "opt.longName", "parser_class": "Basics_SettingParser"
     },
+
     {
-        "name": "au_seerev",
-        "json_name": "author_view_review",
-        "title": "Authors can see reviews",
-        "type": "radio",
-        "values": [0, 2, 3], "default_value": 0,
-        "json_values": ["no", "yes", "by-tag"]
-    },
-    {
-        "name": "cmt_always",
-        "json_name": "comment_always_allowed",
+        "name": "comment_allow_always", "storage": "cmt_always",
         "title": "Allow comments even if reviewing is closed",
         "type": "checkbox"
     },
     {
-        "name": "cmt_author",
-        "json_name": "comment_author",
+        "name": "comment_allow_author", "storage": "cmt_author",
         "title": "Allow authors to post comments",
         "type": "checkbox"
     },
     {
-        "name": "cmt_revid",
-        "json_name": "comment_anonymous_discussion",
+        "name": "comment_visibility_anonymous", "storage": "cmt_revid",
         "title": "Anonymous PC discussion",
         "type": "checkbox"
     },
@@ -69,21 +59,6 @@
     },
 
     {
-        "name": "extrev_chairreq",
-        "json_name": "review_external_request",
-        "title": "PC chair must approve proposed external reviewers",
-        "type": "radio",
-        "values": [-1, 0, 1, 2], "default_value": 0,
-        "json_values": ["no", "yes", "approval-required", "approval-required-potential-conflicts"]
-    },
-    {
-        "name": "extrev_view",
-        "title": "External reviewers can view reviews",
-        "type": "radio",
-        "values": [0, 1, 2], "default_value": 0,
-        "json_values": ["no", "blind", "yes"]
-    },
-    {
         "name": "final_done",
         "title": "Final version upload hard deadline",
         "type": "date"
@@ -102,11 +77,6 @@
         "name": "final_soft",
         "title": "Final version upload deadline",
         "type": "date"
-    },
-    {
-        "name": "lead_seerev",
-        "title": "Lead gets special access to submitted reviews",
-        "type": "checkbox", "storage": "negval.lead_noseerev"
     },
     {
         "name": "mailbody_requestreview",
@@ -277,31 +247,6 @@
         "title": "Warn PC about downloading submissions in bulk",
         "type": "checkbox", "storage": "ova.pcWarnBulkDownload"
     },
-    {
-        "name": "pc_seeallrev",
-        "title": "PC can see all review contents",
-        "type": "radio",
-        "values": [0, 1, 3, 4], "default_value": 0,
-        "json_values": ["no", "yes", "unless-incomplete-assigned", "if-all-assignments-complete"]
-    },
-    {
-        "name": "pc_seeblindrev",
-        "title": "PC can see blind reviewers’ identities",
-        "type": "radio",
-        "values": [0, 1], "default_value": 0,
-        "json_values": [true, false]
-    },
-    {
-        "name": "pcrev_any",
-        "title": "PC can review any paper",
-        "type": "checkbox"
-    },
-    {
-        "name": "pcrev_editdelegate",
-        "title": "PC can edit external reviews they requested",
-        "type": "radio", "values": [0, 1, 2, 3], "default_value": 0,
-        "json_values": ["no", "yes", "approval-required", "approval-private"]
-    },
 
     {
         "name": "response_active",
@@ -376,17 +321,75 @@
 
 
     {
-        "name": "review_open",
+        "name": "review_open", "storage": "rev_open",
         "title": "Enable reviewing",
-        "type": "cdate", "storage": "rev_open"
+        "type": "cdate"
     },
     {
-        "name": "review_blind",
+        "name": "review_blind", "storage": "rev_blind",
         "title": "Review anonymity",
-        "type": "radio", "storage": "rev_blind",
+        "type": "radio",
         "values": [0, 1, 2], "default_value": 2,
         "json_values": ["open", "optional", "blind"]
     },
+    {
+        "name": "review_self_assign", "storage": "pcrev_any",
+        "title": "PC can review any paper",
+        "type": "checkbox"
+    },
+    {
+        "name": "review_visibility_author", "storage": "au_seerev",
+        "title": "Authors can see reviews",
+        "type": "radio",
+        "values": [0, 2, 3], "default_value": 0,
+        "json_values": ["no", "yes", "tag"]
+    },
+    {
+        "name": "review_visibility_author_tags", "storage": "tag_au_seerev",
+        "title": "Review visibility tags",
+        "type": "taglist", "size": 24,
+        "parser_class": "Tags_SettingParser"
+    },
+    {
+        "name": "review_visibility_external", "storage": "extrev_view",
+        "title": "External reviewers can view reviews",
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 0,
+        "json_values": ["no", "blind", "yes"]
+    },
+    {
+        "name": "review_visibility_lead", "storage": "negval.lead_noseerev",
+        "title": "Lead gets special access to submitted reviews",
+        "type": "checkbox"
+    },
+    {
+        "name": "review_visibility_pc", "storage": "pc_seeallrev",
+        "title": "PC can see all review contents",
+        "type": "radio",
+        "values": [0, 1, 3, 4], "default_value": 0,
+        "json_values": ["assignment_complete", "all", "assignment_not_incomplete", "all_assignments_complete"]
+    },
+    {
+        "name": "review_identity_visibility_pc", "storage": "pc_seeblindrev",
+        "title": "PC can see blind reviewers’ identities",
+        "type": "radio",
+        "values": [0, 1], "default_value": 0,
+        "json_values": [true, false]
+    },
+    {
+        "name": "review_proposal", "storage": "extrev_chairreq",
+        "title": "PC proposals for external reviewers",
+        "type": "radio",
+        "values": [-1, 0, 1, 2], "default_value": 0,
+        "json_values": ["no", "yes", "approval_required", "approval_required_potential_conflict"]
+    },
+    {
+        "name": "review_proposal_editable", "storage": "pcrev_editdelegate",
+        "title": "PC can edit external reviews they requested",
+        "type": "radio", "values": [0, 1, 2, 3], "default_value": 0,
+        "json_values": ["no", "yes", "approval_required", "approval_private"]
+    },
+
     {
         "name": "review", "hashid": "rounds",
         "type": "oblist", "parser_class": "Review_SettingParser"
@@ -446,10 +449,10 @@
         "storage": "none", "parse_order": 1
     },
     {
-        "name": "review_default_round",
+        "name": "review_default_round", "storage": "rev_roundtag",
         "title": "Default round for new PC reviews",
         "type": "tag", "required": false, "parser_class": "Review_SettingParser",
-        "storage": "rev_roundtag", "parse_order": 1
+        "parse_order": 1
     },
     {
         "name": "review_default_external_round",
@@ -466,7 +469,7 @@
     {   "name": "extrev_roundtag", "internal": true, "type": "tagselect"   },
 
     {
-        "name": "rev_ratings",
+        "name": "review_rating", "storage": "rev_ratings",
         "title": "Collect ratings of reviews",
         "type": "radio",
         "values": [0, 1, 2], "default_value": 0,
@@ -552,7 +555,7 @@
         "title": "Decision visibility",
         "type": "radio",
         "values": [0, 1, 2, 3], "default_value": 0,
-        "json_values": ["no", "pc", "yes", "unconflicted-pc"]
+        "json_values": ["no", "pc", "yes", "unconflicted_pc"]
     },
     {
         "name": "seedec_showau",
@@ -631,7 +634,7 @@
         "title": "Submission anonymity",
         "type": "radio",
         "values": [0, 1, 2, 3], "default_value": 2,
-        "json_values": ["open", "optional", "blind", "blind-until-review"]
+        "json_values": ["open", "optional", "blind", "blind_until_review"]
     },
     {
         "name": "sub_collab",
@@ -686,7 +689,7 @@
         "title": "PC conflict visibility",
         "type": "radio",
         "values": [0, 1, 2], "default_value": 0,
-        "json_values": ["if-authors-visible", "no", "yes"]
+        "json_values": ["if_authors_visible", "no", "yes"]
     },
     {
         "name": "sub_reg",
@@ -705,11 +708,6 @@
     {
         "name": "tag_approval", "title": "Approval voting tags",
         "type": "taglist", "size": 50, "autogrow": true,
-        "parser_class": "Tags_SettingParser"
-    },
-    {
-        "name": "tag_au_seerev", "title": "Review visibility tags",
-        "type": "taglist", "size": 24,
         "parser_class": "Tags_SettingParser"
     },
     {

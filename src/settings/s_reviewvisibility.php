@@ -7,9 +7,9 @@ class ReviewVisibility_SettingParser extends SettingParser {
         $opts = [Conf::AUSEEREV_NO => "No, unless authors can edit responses",
                  Conf::AUSEEREV_YES => "Yes"];
         $opts[Conf::AUSEEREV_TAGS] = '<div class="d-inline-flex flex-wrap">'
-            . "<label for=\"au_seerev_" . Conf::AUSEEREV_TAGS . "\" class=\"mr-2\">Yes, for submissions with any of these tags:</label>"
-            . "<div>" . $sv->feedback_at("tag_au_seerev")
-            . $sv->entry("tag_au_seerev", ["class" => "uii js-settings-au-seerev-tag"])
+            . "<label for=\"review_visibility_author_" . Conf::AUSEEREV_TAGS . "\" class=\"mr-2\">Yes, for submissions with any of these tags:</label>"
+            . "<div>" . $sv->feedback_at("review_visibility_author_tags")
+            . $sv->entry("review_visibility_author_tags", ["class" => "uii js-settings-au-seerev-tag"])
             . "</div></div>";
 
         $hint = '<div class="f-hx if-response-active';
@@ -24,37 +24,37 @@ class ReviewVisibility_SettingParser extends SettingParser {
         }
         $hint .= '</div>';
 
-        $sv->print_radio_table("au_seerev", $opts,
+        $sv->print_radio_table("review_visibility_author", $opts,
             'Can <strong>authors see reviews</strong> for their submissions?' . $hint);
-        echo Ht::hidden("has_tag_au_seerev", 1);
+        echo Ht::hidden("has_review_visibility_author_tags", 1);
     }
 
     static function print_author_exchange_comments(SettingValues $sv) {
-        echo '<div class="has-fold fold', $sv->vstr("cmt_author") ? "o" : "c", '">';
+        echo '<div class="has-fold fold', $sv->vstr("comment_allow_author") ? "o" : "c", '">';
         if ((int) $sv->vstr("review_blind") === Conf::BLIND_NEVER) {
             $hint = "";
         } else {
             $hint = "Visible reviewer comments will be identified by “Reviewer A”, “Reviewer B”, etc.";
         }
-        $sv->print_checkbox("cmt_author", "Authors can <strong>exchange comments</strong> with reviewers", ["class" => "uich js-foldup", "hint_class" => "fx"], $hint);
+        $sv->print_checkbox("comment_allow_author", "Authors can <strong>exchange comments</strong> with reviewers", ["class" => "uich js-foldup", "hint_class" => "fx"], $hint);
         echo "</div>\n";
     }
 
     static function crosscheck(SettingValues $sv) {
         $conf = $sv->conf;
-        if ($sv->has_interest("au_seerev")
-            && $sv->oldv("au_seerev") == Conf::AUSEEREV_TAGS
-            && !$sv->oldv("tag_au_seerev")
-            && !$sv->has_error_at("tag_au_seerev")) {
-            $sv->warning_at("tag_au_seerev", "<0>You haven’t set any review visibility tags.");
+        if ($sv->has_interest("review_visibility_author")
+            && $sv->oldv("review_visibility_author") == Conf::AUSEEREV_TAGS
+            && !$sv->oldv("review_visibility_author_tags")
+            && !$sv->has_error_at("review_visibility_author_tags")) {
+            $sv->warning_at("review_visibility_author_tags", "<0>You haven’t set any review visibility tags.");
         }
-        if (($sv->has_interest("au_seerev") || $sv->has_interest("tag_chair"))
-            && $sv->oldv("au_seerev") == Conf::AUSEEREV_TAGS
-            && $sv->oldv("tag_au_seerev")
-            && !$sv->has_error_at("tag_au_seerev")) {
+        if (($sv->has_interest("review_visibility_author") || $sv->has_interest("tag_chair"))
+            && $sv->oldv("review_visibility_author") == Conf::AUSEEREV_TAGS
+            && $sv->oldv("review_visibility_author_tags")
+            && !$sv->has_error_at("review_visibility_author_tags")) {
             foreach ($conf->tag_au_seerev as $t) {
                 if (!$conf->tags()->is_chair($t)) {
-                    $sv->warning_at("tag_au_seerev", "<5>PC members can change the tag ‘" . htmlspecialchars($t) . "’, which affects whether authors can see reviews. Such tags should usually be " . $sv->setting_link("read-only", "tag_chair") . ".");
+                    $sv->warning_at("review_visibility_author_tags", "<5>PC members can change the tag ‘" . htmlspecialchars($t) . "’, which affects whether authors can see reviews. Such tags should usually be " . $sv->setting_link("read-only", "tag_chair") . ".");
                     $sv->warning_at("tag_chair");
                 }
             }

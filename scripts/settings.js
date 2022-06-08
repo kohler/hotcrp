@@ -2,7 +2,7 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 handle_ui.on("js-settings-au-seerev-tag", function (event) {
-    $("#au_seerev_3").click(); // AUSEEREV_TAGS
+    $("#review_visibility_author_3").click(); // AUSEEREV_TAGS
 });
 
 handle_ui.on("js-settings-sub-nopapers", function (event) {

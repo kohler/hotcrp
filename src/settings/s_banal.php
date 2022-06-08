@@ -70,7 +70,6 @@ class Banal_SettingParser extends SettingParser {
 
 
     function apply_req(SettingValues $sv, Si $si) {
-        error_log("PARSING $si->name");
         assert($si->part0 === "format/");
         self::parse($sv, $si->part1, true);
         return true;

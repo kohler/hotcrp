@@ -178,7 +178,7 @@
     {
         "name": "reviews/main", "order": 10,
         "print_function": "Review_SettingParser::print",
-        "settings": ["review_open", "cmt_always", "review_blind"]
+        "settings": ["review_open", "comment_allow_always", "review_blind"]
     },
     {
         "name": "reviews/rounds", "order": 20,
@@ -191,11 +191,11 @@
         "title": "PC reviews",
         "print_function": "Review_SettingParser::print_pc",
         "settings": [
-            "pcrev_any",
-            "pc_seeblindrev",
-            "pc_seeallrev",
-            "lead_seerev",
-            "cmt_revid"
+            "review_self_assign",
+            "review_identity_visibility_pc",
+            "review_visibility_pc",
+            "review_visibility_lead",
+            "comment_visibility_anonymous"
         ]
     },
     {
@@ -206,7 +206,7 @@
     {
         "name": "reviews/external/editdelegate", "order": 10,
         "print_function": "Review_SettingParser::print_extrev_editdelegate",
-        "settings": ["extrev_chairreq", "pcrev_editdelegate"]
+        "settings": ["review_proposal", "review_proposal_editable"]
     },
     {
         "name": "reviews/external/requestmail", "order": 15,
@@ -216,13 +216,13 @@
     {
         "name": "reviews/external/view", "order": 20,
         "print_function": "Review_SettingParser::print_extrev_view",
-        "settings": ["extrev_view"]
+        "settings": ["review_visibility_external"]
     },
     {
         "name": "reviews/ratings", "order": 50,
         "title": "Review ratings",
         "print_function": "Review_SettingParser::print_ratings",
-        "settings": ["rev_ratings"]
+        "settings": ["review_rating"]
     },
 
 
@@ -344,13 +344,13 @@
         "name": "decisions/review-visibility", "order": 100,
         "title": "Review visibility",
         "print_function": "ReviewVisibility_SettingParser::print_review_author_visibility",
-        "settings": ["au_seerev", "tag_au_seerev"]
+        "settings": ["review_visibility_author", "review_visibility_author_tags"]
     },
     {
         "name": "decisions/author-exchange-comments", "order": 120,
         "print_separator": true,
         "print_function": "ReviewVisibility_SettingParser::print_author_exchange_comments",
-        "settings": ["cmt_author"]
+        "settings": ["comment_allow_author"]
     },
     {
         "name": "__crosscheck/review-visibility", "order": 800,
