@@ -559,7 +559,7 @@ class SettingValues extends MessageSet {
         if (!array_key_exists($name, $this->_explicit_oldv)) {
             $si = is_string($id) ? $this->si($id) : $id;
             if ($si && $si->part0 !== null) {
-                $this->ensure_enumeration($si->part0);
+                $this->ensure_oblist($si->part0);
             }
             if ($si && $si->parser_class && !array_key_exists($name, $this->_explicit_oldv)) {
                 $this->si_parser($si)->set_oldv($this, $si);
@@ -570,7 +570,7 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string $pfx */
-    private function ensure_enumeration($pfx) {
+    private function ensure_oblist($pfx) {
         if (!isset($this->_oblist_ensured[$pfx])) {
             $this->_oblist_ensured[$pfx] = true;
             if (str_ends_with($pfx, "/")
@@ -578,7 +578,7 @@ class SettingValues extends MessageSet {
                 && $si->parser_class) {
                 $this->si_parser($si)->prepare_oblist($this, $si);
             } else if (($xpfx = preg_replace('/\d+\z/', '', $pfx)) !== $pfx) {
-                $this->ensure_enumeration($xpfx);
+                $this->ensure_oblist($xpfx);
             }
         }
     }
@@ -712,7 +712,7 @@ class SettingValues extends MessageSet {
      * @return list<int> */
     function oblist_keys($pfx) {
         assert(str_ends_with($pfx, "/"));
-        $this->ensure_enumeration($pfx);
+        $this->ensure_oblist($pfx);
         $ctrs = [];
         for ($ctr = 1; isset($this->req["{$pfx}{$ctr}/id"]); ++$ctr) {
             $ctrs[] = $ctr;
@@ -740,7 +740,7 @@ class SettingValues extends MessageSet {
      * @param int|string $needle
      * @return ?int */
     function search_oblist($pfx, $sfx, $needle) {
-        $this->ensure_enumeration($pfx);
+        $this->ensure_oblist($pfx);
         for ($ctr = 1; isset($this->req["{$pfx}{$ctr}/id"]); ++$ctr) {
             if ((string) $needle === (string) $this->req["{$pfx}{$ctr}{$sfx}"]) {
                 return $ctr;

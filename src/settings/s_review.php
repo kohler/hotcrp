@@ -94,7 +94,7 @@ class Review_SettingParser extends SettingParser {
 
     static function print(SettingValues $sv) {
         echo '<hr class="form-sep">';
-        $sv->print_checkbox("review_open", "<b>Enable review editing</b>");
+        $sv->print_checkbox("review_open", "<b>Enable reviewing</b>");
         $sv->print_checkbox("cmt_always", "Allow comments even if reviewing is closed");
 
         echo '<hr class="form-sep">';
@@ -500,26 +500,34 @@ class Review_SettingParser extends SettingParser {
         }
 
         if (($sv->has_interest("au_seerev") || $sv->has_interest("review/1"))
-            && $conf->setting("au_seerev") != Conf::AUSEEREV_NO
-            && $conf->setting("au_seerev") != Conf::AUSEEREV_TAGS
-            && intval($sv->vstr("review/1/soft")) > 0
-            && Conf::$now < intval($sv->vstr("review/1/soft"))
+            && $sv->oldv("au_seerev") != Conf::AUSEEREV_NO
+            && $sv->oldv("au_seerev") != Conf::AUSEEREV_TAGS
+            && ($dn = self::crosscheck_future_review_deadline($sv)) !== null
             && !$sv->has_error()) {
-            $sv->warning_at(null, "<5>" . $sv->setting_link("Authors can see reviews and comments", "au_seerev") . " although it is before the " . $sv->setting_link("review deadline", "pcrev_soft_0") . ". This is sometimes unintentional.");
+            $sv->warning_at(null, "<5>" . $sv->setting_link("Authors can see reviews and comments", "au_seerev") . " although it is before a " . $sv->setting_link("review deadline", $dn) . ". This is sometimes unintentional.");
         }
 
         if (($sv->has_interest("review_blind") || $sv->has_interest("extrev_view"))
-            && $conf->setting("review_blind") == Conf::BLIND_NEVER
-            && $conf->setting("extrev_view") == 1) {
+            && $sv->oldv("review_blind") == Conf::BLIND_NEVER
+            && $sv->oldv("extrev_view") == 1) {
             $sv->warning_at("extrev_view", "<5>" . $sv->setting_link("Reviews aren’t blind", "review_blind") . ", so external reviewers can see reviewer names and comments despite " . $sv->setting_link("your settings", "extrev_view") . ".");
         }
 
         if ($sv->has_interest("mailbody_requestreview")
             && $sv->vstr("mailbody_requestreview")
-            && (strpos($sv->vstr("mailbody_requestreview"), "%LOGINURL%") !== false
-                || strpos($sv->vstr("mailbody_requestreview"), "%LOGINURLPARTS%") !== false)) {
+            && (strpos($sv->oldv("mailbody_requestreview"), "%LOGINURL%") !== false
+                || strpos($sv->oldv("mailbody_requestreview"), "%LOGINURLPARTS%") !== false)) {
             $sv->warning_at("mailbody_requestreview", "<5>The <code>%LOGINURL%</code> and <code>%LOGINURLPARTS%</code> keywords should no longer be used in email templates.");
         }
+    }
+
+    static private function crosscheck_future_review_deadline(SettingValues $sv) {
+        foreach ($sv->oblist_keys("review/") as $ctr) {
+            $sn = "review/{$ctr}/soft";
+            if (($t = $sv->oldv($sn)) > Conf::$now)
+                return $sn;
+        }
+        return null;
     }
 
     static private function crosscheck_review_deadlines_closed_reviews(SettingValues $sv) {

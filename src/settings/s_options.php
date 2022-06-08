@@ -563,7 +563,7 @@ class Options_SettingParser extends SettingParser {
 
     static function crosscheck(SettingValues $sv) {
         if (($sv->has_interest("sf") || $sv->has_interest("sub_blind"))
-            && $sv->conf->setting("sub_blind") == Conf::BLIND_ALWAYS) {
+            && $sv->oldv("sub_blind") == Conf::BLIND_ALWAYS) {
             $opts = Options_SettingParser::configurable_options($sv->conf);
             foreach (array_values($opts) as $ctrz => $f) {
                 if ($f->visibility() === PaperOption::VIS_AUTHOR) {
