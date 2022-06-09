@@ -7,6 +7,7 @@ class User_API {
         return ["ok" => true, "email" => $user->email];
     }
 
+    /** @return JsonResult */
     static function user(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         if (!$user->can_lookup_user()) {
             return JsonResult::make_error(403, "<0>Permission error");
@@ -87,6 +88,8 @@ class User_API {
         }
     }
 
+    /** @param bool $disabled
+     * @return JsonResult */
     static function account_disable(Contact $user, Contact $viewer, $disabled) {
         if (!$viewer->privChair) {
             return JsonResult::make_error(403, "<0>Permission error");
@@ -103,6 +106,7 @@ class User_API {
         }
     }
 
+    /** @return JsonResult */
     static function account_sendinfo(Contact $user, Contact $viewer) {
         if (!$viewer->privChair) {
             return JsonResult::make_error(403, "<0>Permission error");
@@ -116,6 +120,7 @@ class User_API {
         }
     }
 
+    /** @return JsonResult */
     static function account(Contact $viewer, Qrequest $qreq) {
         if (!isset($qreq->u) || $qreq->u === "me" || strcasecmp($qreq->u, $viewer->email) === 0) {
             $user = $viewer;

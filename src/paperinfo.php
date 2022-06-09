@@ -3112,14 +3112,14 @@ class PaperInfoLikelyContacts implements JsonSerializable {
     function jsonSerialize() {
         $x = ["author_list" => [], "author_cids" => $this->author_cids];
         foreach ($this->author_list as $au) {
-            $j = $au->unparse_nae_json();
+            $j = (object) $au->unparse_nae_json();
             if ($au->contactId > 0) {
                 $j->contactId = $au->contactId;
             }
             $x["author_list"][] = $j;
         }
         foreach ($this->nonauthor_contacts as $au) {
-            $j = $au->unparse_nae_json();
+            $j = (object) $au->unparse_nae_json();
             $j->contactId = $au->contactId;
             $x["nonauthor_contacts"][] = $j;
         }

@@ -61,7 +61,7 @@ class LoginHelper {
         }
     }
 
-    /** @return array|Contact */
+    /** @return array{ok:true,user:Contact}|array{ok:false} */
     static private function user_lookup(Conf $conf, Qrequest $qreq) {
         // Look up the account information
         // to determine if the user is registered
@@ -77,35 +77,33 @@ class LoginHelper {
                 $qreq[$k] = rawurldecode($qreq[$k]);
             }
         }
-        return $conf->user_by_email($qreq->email)
+        return ["ok" => true, "user" => $conf->user_by_email($qreq->email)
             ?? Contact::make_keyed($conf, $qreq->subset_as_array(
                 "firstName", "first", "lastName", "last", "name", "email", "affiliation"
-            ));
+            ))];
     }
 
+    /** @return array{ok:true,user:Contact}|array{ok:false} */
     static function login_info(Conf $conf, Qrequest $qreq) {
         assert(!$conf->external_login());
         assert($qreq->valid_post());
 
-        $user = self::user_lookup($conf, $qreq);
-        if (is_array($user)) {
-            $info = $user;
-        } else {
-            $info = $user->check_password_info(trim((string) $qreq->password));
-        }
+        $info = self::user_lookup($conf, $qreq);
         if ($info["ok"]) {
-            $info["user"] = $user;
+            $info = $info["user"]->check_password_info(trim((string) $qreq->password));
         }
         return $info;
     }
 
+    /** @return array{ok:true,user:Contact}|array{ok:false,disabled?:true,email?:true} */
     static function external_login_info(Conf $conf, Qrequest $qreq) {
         assert($conf->external_login());
 
-        $user = self::user_lookup($conf, $qreq);
-        if (is_array($user)) {
-            return $user;
+        $info = self::user_lookup($conf, $qreq);
+        if (!$info["ok"]) {
+            return $info;
         }
+        $user = $info["user"];
 
         // do LDAP login before validation, since we might create an account
         if ($conf->opt("ldapLogin")) {
@@ -130,6 +128,8 @@ class LoginHelper {
         }
     }
 
+    /** @param array{ok:true,user:Contact} $info
+     * @return array{ok:true,user:Contact,redirect:string,firstuser?:true} */
     static function login_complete($info, Qrequest $qreq) {
         assert($info["ok"] && $info["user"]);
         $luser = $info["user"];
@@ -227,14 +227,16 @@ class LoginHelper {
     }
 
 
+    /** @return array{ok:true,user:Contact}|array{ok:false,email?:true} */
     static function new_account_info(Conf $conf, Qrequest $qreq) {
         assert($conf->allow_user_self_register());
         assert($qreq->valid_post());
 
-        $user = self::user_lookup($conf, $qreq);
-        if (is_array($user)) {
-            return $user;
+        $info = self::user_lookup($conf, $qreq);
+        if (!$info["ok"]) {
+            return $info;
         }
+        $user = $info["user"];
 
         $cdbu = $user->cdb_user();
         if ($cdbu && !$cdbu->password_unset()) {
@@ -259,15 +261,17 @@ class LoginHelper {
     }
 
 
+    /** @return array{ok:true,user:Contact,mailtemplate:string}|array{ok:false} */
     static function forgot_password_info(Conf $conf, Qrequest $qreq, $create) {
         if ($conf->external_login()) {
             return ["ok" => false, "email" => true, "noreset" => true];
         }
 
-        $user = self::user_lookup($conf, $qreq);
-        if (is_array($user)) {
-            return $user;
+        $info = self::user_lookup($conf, $qreq);
+        if (!$info["ok"]) {
+            return $info;
         }
+        $user = $info["user"];
 
         // ignore reset request from disabled user
         $cdbu = $user->cdb_user();

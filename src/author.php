@@ -264,13 +264,13 @@ class Author {
         return "{$this->firstName}\t{$this->lastName}\t{$this->email}\t{$this->affiliation}";
     }
 
-    /** @return object */
+    /** @return array{email?:string,first?:string,last?:string,affiliation?:string} */
     function unparse_nae_json() {
         return self::unparse_nae_json_for($this);
     }
 
     /** @param Author|Contact $x
-     * @return object */
+     * @return array{email?:string,first?:string,last?:string,affiliation?:string} */
     static function unparse_nae_json_for($x) {
         $j = [];
         if ($x->email !== "") {
@@ -285,6 +285,6 @@ class Author {
         if ($x->affiliation !== "") {
             $j["affiliation"] = $x->affiliation;
         }
-        return (object) $j;
+        return $j;
     }
 }

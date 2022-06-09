@@ -289,7 +289,6 @@ class Contact {
     /** @param array{email?:string,firstName?:string,lastName?:string} $args
      * @return Contact */
     static function make_site_contact(Conf $conf, $args) {
-        // email, firstName, lastName, affiliation, disabled, disablement, contactId, first, last
         $u = new Contact($conf);
         $u->email = $args["email"] ?? "";
         $u->firstName = $args["firstName"] ?? "";
@@ -959,7 +958,7 @@ class Contact {
         return substr(strtolower(UnicodeHelper::deaccent($this->searchable_name())), 0, 2048);
     }
 
-    /** @return object */
+    /** @return array{email?:string,first?:string,last?:string,affiliation?:string} */
     function unparse_nae_json() {
         return Author::unparse_nae_json_for($this);
     }
@@ -1931,13 +1930,6 @@ class Contact {
         return $this;
     }
 
-    /** @param ?Contact $actor
-     * @return ?Contact
-     * @deprecated */
-    static function create(Conf $conf, $actor, $reg, $flags = 0) {
-        return self::make_keyed($conf, $reg)->store($flags, $actor);
-    }
-
 
     // PASSWORDS
     //
@@ -2053,7 +2045,7 @@ class Contact {
     }
 
     /** @param string $input
-     * @return array{ok:bool} */
+     * @return array{ok:true,user:$this}|array{ok:false} */
     function check_password_info($input) {
         assert(!$this->conf->external_login());
         $cdbu = $this->cdb_user();
@@ -2177,7 +2169,7 @@ class Contact {
             }
         }
 
-        return ["ok" => true];
+        return ["ok" => true, "user" => $this];
     }
 
     /** @param string $input

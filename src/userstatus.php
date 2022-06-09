@@ -646,7 +646,8 @@ class UserStatus extends MessageSet {
         }
     }
 
-    /** @param int $old_roles */
+    /** @param int $old_roles
+     * @return int */
     private function parse_roles($j, $old_roles) {
         if (is_object($j) || is_associative_array($j)) {
             $reset_roles = true;
@@ -1081,8 +1082,9 @@ class UserStatus extends MessageSet {
     }
 
     static function save_topics(UserStatus $us) {
-        if (!isset($us->jval->topics)
-            || !$us->conf->has_topics()) {
+        $topics = $us->jval->topics ?? null;
+        '@phan-var-force array<int,int> $topics';
+        if ($topics === null || !$us->conf->has_topics()) {
             return;
         }
         $ti = $us->created ? [] : $us->user->topic_interest_map();
@@ -1091,7 +1093,7 @@ class UserStatus extends MessageSet {
         }
         $tv = [];
         $diff = false;
-        foreach ($us->jval->topics as $k => $v) {
+        foreach ($topics as $k => $v) {
             if ($v) {
                 $tv[] = [$us->user->contactId, $k, $v];
             }
@@ -1101,7 +1103,7 @@ class UserStatus extends MessageSet {
         }
         if ($diff || empty($tv)) {
             if (empty($tv)) {
-                foreach ($us->jval->topics as $k => $v) {
+                foreach ($topics as $k => $v) {
                     $tv[] = [$us->user->contactId, $k, 0];
                     break;
                 }

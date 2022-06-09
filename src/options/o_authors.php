@@ -20,7 +20,7 @@ class Authors_PaperOption extends PaperOption {
         }
         $au = [];
         foreach (PaperInfo::parse_author_list($ov->data_by_index(0) ?? "") as $auth) {
-            $au[] = $j = $auth->unparse_nae_json();
+            $au[] = $j = (object) $auth->unparse_nae_json();
             if ($auth->email !== "" && in_array(strtolower($auth->email), $lemails)) {
                 $j->contact = true;
             }
@@ -48,11 +48,14 @@ class Authors_PaperOption extends PaperOption {
                 && strpos($auth->affiliation, "@") !== false) {
                 $msg1 = true;
                 $ov->msg_at("authors:" . ($n + 1), null, MessageSet::WARNING);
-            } else if ($auth->firstName === "" && $auth->lastName === ""
-                       && $auth->email === "" && $auth->affiliation !== "") {
+            } else if ($auth->firstName === ""
+                       && $auth->lastName === ""
+                       && $auth->email === ""
+                       && $auth->affiliation !== "") {
                 $msg2 = true;
                 $ov->msg_at("authors:" . ($n + 1), null, MessageSet::WARNING);
-            } else if ($auth->email !== "" && !validate_email($auth->email)
+            } else if ($auth->email !== ""
+                       && !validate_email($auth->email)
                        && !$ov->prow->author_by_email($auth->email)) {
                 $ov->estop(null);
                 $ov->msg_at("authors:" . ($n + 1), "<0>Invalid email address ‘{$auth->email}’", MessageSet::ESTOP);

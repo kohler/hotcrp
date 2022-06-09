@@ -242,7 +242,7 @@ class PaperStatus extends MessageSet {
         if ($this->user->can_view_authors($prow)) {
             $pj->authors = [];
             foreach ($prow->author_list() as $au) {
-                $pj->authors[] = $au->unparse_nae_json();
+                $pj->authors[] = (object) $au->unparse_nae_json();
             }
         }
 
@@ -832,15 +832,15 @@ class PaperStatus extends MessageSet {
         return ($cv[0] & $mask) !== ((($cv[0] & ~$cv[1]) | $cv[2]) & $mask);
     }
 
-    function register_user(Author $c) {
-        foreach ($this->_register_users ?? [] as $au) {
-            if (strcasecmp($au->email, $c->email) === 0) {
-                $au->merge($c);
-                $au->author_index = $au->author_index ?? $c->author_index;
+    function register_user(Author $au) {
+        foreach ($this->_register_users ?? [] as $rau) {
+            if (strcasecmp($rau->email, $au->email) === 0) {
+                $rau->merge($au);
+                $rau->author_index = $rau->author_index ?? $au->author_index;
                 return;
             }
         }
-        $this->_register_users[] = clone $c;
+        $this->_register_users[] = clone $au;
     }
 
     /** @param ?array{int,int,int} $cv
@@ -863,11 +863,11 @@ class PaperStatus extends MessageSet {
 
     /** @param Author $au */
     private function create_user($au) {
-        $j = $au->unparse_nae_json();
-        $j->disabled = !!$this->disable_users;
-        $conflictType = self::new_conflict_value($this->_conflict_values[strtolower($j->email)] ?? null);
+        $conflictType = self::new_conflict_value($this->_conflict_values[strtolower($au->email)] ?? null);
         $flags = $conflictType & CONFLICT_CONTACTAUTHOR ? 0 : Contact::SAVE_IMPORT;
-        $u = Contact::make_keyed($this->conf, (array) $j)->store($flags, $this->user);
+        $j = $au->unparse_nae_json();
+        $j["disabled"] = !!$this->disable_users;
+        $u = Contact::make_keyed($this->conf, $j)->store($flags, $this->user);
         if ($u) {
             $this->_created_contacts[] = $u;
         } else if (!($flags & Contact::SAVE_IMPORT)) {
