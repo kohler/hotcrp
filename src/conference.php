@@ -2250,28 +2250,35 @@ class Conf {
 
     /** @param int $id */
     function prefetch_user_by_id($id) {
-        if ($id > 0) {
+        $this->_user_cache_missing[] = $id;
+    }
+
+    /** @param iterable<int> $ids */
+    function prefetch_users_by_id($ids) {
+        foreach ($ids as $id) {
             $this->_user_cache_missing[] = $id;
         }
     }
 
     /** @param string $email */
     function prefetch_user_by_email($email) {
-        if ($email !== "") {
-            $this->_user_cache_missing[] = strtolower($email);
-        }
+        $this->_user_cache_missing[] = strtolower($email);
     }
 
     private function _refresh_user_cache() {
         $this->_user_cache = $this->_user_cache ?? $this->_pc_user_cache ?? [];
         $reqids = $reqemails = [];
         foreach ($this->_user_cache_missing as $reqid) {
-            if (is_int($reqid) && !array_key_exists($reqid, $this->_user_cache)) {
-                $this->_user_cache[$reqid] = null;
-                $reqids[] = $reqid;
+            if (is_int($reqid)) {
+                if ($reqid > 0
+                    && !array_key_exists($reqid, $this->_user_cache)) {
+                    $this->_user_cache[$reqid] = null;
+                    $reqids[] = $reqid;
+                }
             } else if (is_string($reqid)) {
                 $this->_ensure_user_email_cache();
-                if (!array_key_exists($reqid, $this->_user_email_cache)) {
+                if ($reqid !== ""
+                    && !array_key_exists($reqid, $this->_user_email_cache)) {
                     $this->_user_email_cache[$reqid] = null;
                     $reqemails[] = $reqid;
                 }
@@ -2728,12 +2735,6 @@ class Conf {
         if ($email !== "") {
             $this->_cdb_user_cache_missing[] = strtolower($email);
         }
-    }
-
-    /** @param string $email
-     * @deprecated */
-    function preload_cdb_user_by_email($email) {
-        $this->prefetch_cdb_user_by_email($email);
     }
 
     /** @param int $id

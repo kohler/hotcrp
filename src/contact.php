@@ -1090,9 +1090,7 @@ class Contact {
 
     /** @param array<int,mixed> &$array */
     function ksort_cid_array(&$array) {
-        foreach ($array as $cid => $x) {
-            $this->conf->prefetch_user_by_id($cid);
-        }
+        $this->conf->prefetch_users_by_id(array_keys($array));
         uksort($array, function ($a, $b) {
             $au = $this->conf->cached_user_by_id($a);
             $bu = $this->conf->cached_user_by_id($b);
