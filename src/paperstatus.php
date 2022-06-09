@@ -866,11 +866,11 @@ class PaperStatus extends MessageSet {
         $conflictType = self::new_conflict_value($this->_conflict_values[strtolower($au->email)] ?? null);
         $flags = $conflictType & CONFLICT_CONTACTAUTHOR ? 0 : Contact::SAVE_IMPORT;
         $j = $au->unparse_nae_json();
-        $j["disabled"] = !!$this->disable_users;
+        $j["disablement"] = ($this->disable_users ? Contact::DISABLEMENT_USER : 0);
         $u = Contact::make_keyed($this->conf, $j)->store($flags, $this->user);
         if ($u) {
             $this->_created_contacts[] = $u;
-        } else if (!($flags & Contact::SAVE_IMPORT)) {
+        } else if (($conflictType & CONFLICT_CONTACTAUTHOR) !== 0) {
             if ($au->author_index >= 0) {
                 $key = "contacts:" . $au->author_index;
             } else {

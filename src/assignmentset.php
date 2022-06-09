@@ -642,7 +642,7 @@ class AssignerContacts {
                     $cargs["firstName"] = "Jane Q.";
                     $cargs["lastName"] = "Public";
                     $cargs["affiliation"] = "Unaffiliated";
-                    $cargs["disabled"] = true;
+                    $cargs["disablement"] = Contact::DISABLEMENT_USER;
                 }
                 $c = Contact::make_keyed($this->conf, $cargs);
             }

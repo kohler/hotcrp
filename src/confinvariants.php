@@ -175,12 +175,18 @@ class ConfInvariants {
         }
         Dbl::free($result);
 
-        // whitespace is simplified
+        // no funkily disabled users
+        $any = $this->invariantq("select email from ContactInfo where disabled<0 or disabled>" . Contact::DISABLEMENT_DB);
+        if ($any) {
+            $this->invariant_error("user_disablement", "user {0} is funkily disabled");
+        }
+
+        // user whitespace is simplified
         $utf8cs = Dbl::utf8_charset($this->conf->dblink);
         $regex = "_{$utf8cs}'^ | \$|  |[\\n\\r\\t]'";
         $any = $this->invariantq("select email from ContactInfo where convert(firstName using $utf8cs) regexp $regex or convert(lastName using $utf8cs) regexp $regex or convert(affiliation using $utf8cs) regexp $regex limit 1");
         if ($any) {
-            $this->invariant_error("user_whitespace", "user whitespace is not simplified");
+            $this->invariant_error("user_whitespace", "user {0} whitespace is not simplified");
         }
 
         // check tag strings

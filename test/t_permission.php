@@ -1364,7 +1364,7 @@ class Permission_Tester {
     function test_make_anonymous_user_nologin() {
         xassert(!maybe_user("anonymous10"));
         $u = Contact::make_keyed($this->conf, [
-            "email" => "anonymous10", "disabled" => true
+            "email" => "anonymous10", "disablement" => Contact::DISABLEMENT_USER
         ])->store(Contact::SAVE_ANY_EMAIL);
         xassert($u->contactId > 0);
         xassert_eqq($this->conf->fetch_value("select password from ContactInfo where email='anonymous10'"), " nologin");

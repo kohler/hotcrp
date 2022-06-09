@@ -47,8 +47,8 @@ class Contact {
     public $role_mask = self::ROLE_DBMASK;
     /** @var ?string */
     public $contactTags;
-    /** @var bool */
-    private $disabled = false;
+    /** @var int */
+    private $disabled = 0;
     /** @var int */
     public $disablement = 0;
     /** @var ?int */
@@ -186,8 +186,9 @@ class Contact {
     public $paperId;
 
     const DISABLEMENT_USER = 1;
-    const DISABLEMENT_ROLE = 2;
-    const DISABLEMENT_DELETED = 4;
+    const DISABLEMENT_DB = 1;
+    const DISABLEMENT_ROLE = 4;
+    const DISABLEMENT_DELETED = 8;
 
     const PROP_LOCAL = 0x01;
     const PROP_CDB = 0x02;
@@ -210,7 +211,7 @@ class Contact {
         "email" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE,
         "preferredEmail" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY,
         "affiliation" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE | self::PROP_UPDATE | self::PROP_IMPORT,
-        "phone" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE,
+        "phone" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE | self::PROP_IMPORT,
         "country" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE | self::PROP_IMPORT,
         "password" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_PASSWORD,
         "passwordTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_PASSWORD,
@@ -222,7 +223,7 @@ class Contact {
         "primaryContactId" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE,
         "roles" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE | self::PROP_ROLES,
         "cdbRoles" => self::PROP_LOCAL | self::PROP_INT,
-        "disabled" => self::PROP_LOCAL | self::PROP_BOOL | self::PROP_SLICE,
+        "disabled" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_SLICE,
         "contactTags" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SLICE,
         "address" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRINGLIST | self::PROP_SIMPLIFY | self::PROP_UPDATE,
         "city" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE,
@@ -265,10 +266,10 @@ class Contact {
         return $u;
     }
 
-    /** @param array{contactId?:int,email?:string,firstName?:string,first?:string,lastName?:string,last?:string,name?:string,affiliation?:string,disabled?:bool,disablement?:int} $args
+    /** @param array{contactId?:int,email?:string,firstName?:string,first?:string,lastName?:string,last?:string,name?:string,affiliation?:string,disabled?:void,disablement?:int} $args
      * @return Contact */
     static function make_keyed(Conf $conf, $args) {
-        // email, firstName, lastName, affiliation, disabled, disablement, contactId, first, last:
+        // email, firstName, lastName, affiliation, disablement, contactId, first, last:
         // the importable properties
         $u = new Contact($conf);
         $u->contactId = $args["contactId"] ?? 0;
@@ -279,8 +280,8 @@ class Contact {
             list($u->firstName, $u->lastName, $unused) = Text::split_name($args["name"]);
         }
         $u->affiliation = simplify_whitespace($args["affiliation"] ?? "");
-        $u->disabled = !!($args["disabled"] ?? false);
         $u->disablement = $args["disablement"] ?? 0;
+        $u->disabled = $u->disablement & self::DISABLEMENT_DB;
         $u->set_roles_properties();
         $u->contactXid = $u->contactId ? : self::$next_xid--;
         return $u;
@@ -322,7 +323,7 @@ class Contact {
         // handle slice properties
         $this->role_mask = (int) ($this->role_mask ?? self::ROLE_DBMASK);
         $this->roles = (int) $this->roles;
-        $this->disabled = !!$this->disabled;
+        $this->disabled = (int) $this->disabled;
         $this->disablement = (int) $this->disablement;
         if (isset($this->primaryContactId)) {
             $this->primaryContactId = (int) $this->primaryContactId;
@@ -353,7 +354,7 @@ class Contact {
     private function set_roles_properties() {
         $this->isPC = ($this->roles & self::ROLE_PCLIKE) !== 0;
         $this->privChair = ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0;
-        $this->disablement = ($this->disabled ? self::DISABLEMENT_USER : 0)
+        $this->disablement = $this->disabled
             | (!$this->isPC && $this->conf->opt("disableNonPC") ? self::DISABLEMENT_ROLE : 0)
             | ($this->disablement & self::DISABLEMENT_DELETED);
     }
@@ -902,7 +903,7 @@ class Contact {
     }
 
     /** @return bool */
-    function is_stored_disabled() {
+    function is_fully_disabled() {
         return ($this->disablement & self::DISABLEMENT_USER) !== 0;
     }
 
@@ -1601,6 +1602,7 @@ class Contact {
 
     /** @param string $prop
      * @param mixed $value
+     * @param bool $ifempty
      * @return void */
     function set_prop($prop, $value, $ifempty = false) {
         // validate argument
@@ -1857,10 +1859,15 @@ class Contact {
         // look up existing accounts
         $u = $this->conf->user_by_email($this->email);
         $cdb = $valid_email ? $this->conf->contactdb() : null;
-        $cdbu = $cdb ? $this->conf->cdb_user_by_email($this->email) : null;
+        if ($cdb) {
+            $cdbu = $this->conf->cdb_user_by_email($this->email)
+                ?? Contact::make_cdb_email($this->conf, $this->email);
+        } else {
+            $cdbu = null;
+        }
 
         // skip creation depending on flags
-        if ((!$u && !$cdbu && ($flags & self::SAVE_IMPORT) !== 0)
+        if ((!$u && (!$cdbu || !$cdbu->contactDbId) && ($flags & self::SAVE_IMPORT) !== 0)
             || (!$u && !$valid_email && ($flags & self::SAVE_ANY_EMAIL) === 0)) {
             return null;
         }
@@ -1873,12 +1880,12 @@ class Contact {
         }
 
         // create or update contactdb user
-        if ($cdb) {
-            $cdbu = $cdbu ?? Contact::make_cdb_email($this->conf, $this->email);
+        if ($cdbu) {
             $cdbu->import_prop($this, true);
             if ($cdbu->save_prop()) {
                 $this->invalidate_cdb_user();
                 $u && $u->invalidate_cdb_user();
+                $cdbu->set_roles_properties();
             }
         }
 
@@ -1891,8 +1898,9 @@ class Contact {
             return $this;
         }
 
+        // from here on, previous account did not exist
         // override registration with current or cdb data
-        $this->_mod_undo = [];
+        $this->_mod_undo = ["disabled" => 0];
         foreach (self::importable_props() as $prop => $shape) {
             $this->_mod_undo[$prop] = $shape & self::PROP_NULL ? null : "";
         }
@@ -1902,11 +1910,6 @@ class Contact {
             $this->password = "";
             $this->passwordTime = $cdbu->passwordTime;
             $this->passwordUseTime = 0;
-        }
-        if (($cdbu && $cdbu->disablement)
-            || ($this->disablement & self::DISABLEMENT_USER) !== 0) {
-            $this->_mod_undo["disabled"] = false;
-            $this->set_prop("disabled", true);
         }
 
         $this->cdb_confid = $this->contactDbId = 0;
@@ -1919,7 +1922,7 @@ class Contact {
                 $this->_update_cdb_roles($cdbu);
             }
 
-            $type = $this->disablement ? ", disabled" : "";
+            $type = $this->disabled !== 0 ? ", disabled" : "";
             $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, "Account created" . $type);
         } else {
             // maybe failed because concurrent create (unlikely)

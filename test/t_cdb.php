@@ -330,45 +330,55 @@ class Cdb_Tester {
         $u = Contact::make_keyed($this->conf, ["email" => "betty1@_.com", "name" => "Betty Grable"])->store();
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Grable");
+        xassert(!$u->is_disabled());
         $u = $this->conf->fresh_cdb_user_by_email("betty1@_.com");
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Grable");
+        xassert(!$u->is_disabled());
 
         // registration name replaces empty local name, populates new cdb record
         $u = Contact::make_keyed($this->conf, ["email" => "betty2@_.com", "name" => "Betty Apiafi"])->store();
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Apiafi");
+        xassert(!$u->is_disabled());
         $u = $this->conf->fresh_cdb_user_by_email("betty2@_.com");
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Apiafi");
+        xassert(!$u->is_disabled());
 
         // cdb name overrides registration name
         $u = Contact::make_keyed($this->conf, ["email" => "betty3@_.com", "name" => "Betty Crocker"])->store();
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Shabazz");
+        xassert(!$u->is_disabled());
         $u = $this->conf->fresh_cdb_user_by_email("betty3@_.com");
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Shabazz");
+        xassert(!$u->is_disabled());
 
         // registration affiliation replaces empty affiliations
         $u = Contact::make_keyed($this->conf, ["email" => "betty4@_.com", "name" => "Betty Crocker", "affiliation" => "France"])->store();
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Kelly");
         xassert_eqq($u->affiliation, "France");
+        xassert(!$u->is_disabled());
         $u = $this->conf->fresh_cdb_user_by_email("betty4@_.com");
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Kelly");
         xassert_eqq($u->affiliation, "France");
+        xassert(!$u->is_disabled());
 
         // ensure_account_here
         $u = $this->conf->user_by_email("betty5@_.com");
         xassert(!$u);
         $u = $this->conf->cdb_user_by_email("betty5@_.com");
+        xassert(!$u->is_disabled());
         $u->ensure_account_here();
         $u = $this->conf->checked_user_by_email("betty5@_.com");
         xassert($u->has_account_here());
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Davis");
+        xassert(!$u->is_disabled());
     }
 
     function test_pc_json() {

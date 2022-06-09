@@ -281,7 +281,7 @@ class SavePapers_Batch {
                         "lastName" => $this->tf->req["reviewerLast"] ?? "",
                         "email" => $this->tf->req["reviewerEmail"],
                         "affiliation" => $this->tf->req["reviewerAffiliation"] ?? null,
-                        "disabled" => $this->disable_users
+                        "disablement" => $this->disable_users ? Contact::DISABLEMENT_USER : 0
                     ])->store();
                     $this->tf->check_and_save($this->user, $prow, null);
                 }

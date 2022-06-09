@@ -989,7 +989,7 @@ class UserStatus extends MessageSet {
         // Collaborators special case: set locally, even if no_noempty_profile
         if (isset($cj->collaborators)
             && !$user->prop_changed("collaborators")) {
-            $user->set_prop("collaborators", $cj->collaborators, false);
+            $user->set_prop("collaborators", $cj->collaborators);
             if ($user->prop_changed("collaborators")) {
                 $us->diffs["collaborators"] = true;
             }
@@ -1061,7 +1061,8 @@ class UserStatus extends MessageSet {
         }
     }
 
-    private function set_profile_prop(Contact $user, $only_empty) {
+    /** @param bool $ifempty */
+    private function set_profile_prop(Contact $user, $ifempty) {
         foreach (["firstName" => "name",
                   "lastName" => "name",
                   "affiliation" => "affiliation",
@@ -1073,7 +1074,7 @@ class UserStatus extends MessageSet {
                   "state" => "address",
                   "zip" => "address"] as $prop => $diff) {
             if (($v = $this->jval->$prop ?? null) !== null) {
-                $user->set_prop($prop, $v, $only_empty);
+                $user->set_prop($prop, $v, $ifempty);
                 if ($user->prop_changed($prop)) {
                     $this->diffs[$diff] = true;
                 }
@@ -1690,7 +1691,7 @@ topics. We use this information to help match papers to reviewers.</p>',
             echo '<div class="btngrid"><div class="d-flex mf mf-absolute">',
                 Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $disablement !== 0]), '</div><p></p>';
             if (!$us->is_auth_user()
-                && ($disablement & ~Contact::DISABLEMENT_USER) === 0) {
+                && ($disablement & ~Contact::DISABLEMENT_DB) === 0) {
                 echo '<div class="d-flex mf mf-absolute">',
                     Ht::button($disablement ? "Enable account" : "Disable account", [
                         "class" => "ui js-disable-user flex-grow-1 " . ($disablement ? "btn-success" : "btn-danger")

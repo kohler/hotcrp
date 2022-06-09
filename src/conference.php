@@ -2401,7 +2401,7 @@ class Conf {
             if (!$u && $cdb) {
                 $missing[] = $i;
                 $this->prefetch_cdb_user_by_email($email);
-            } else if ($u && !$u->is_stored_disabled() && $u->primaryContactId > 0) {
+            } else if ($u && !$u->is_fully_disabled() && $u->primaryContactId > 0) {
                 $redirect[$i] = $u;
             }
             $oemails[] = $u ? $u->email : $email;
@@ -2411,7 +2411,7 @@ class Conf {
         foreach ($missing as $i) {
             if (($u = $this->cdb_user_by_email($emails[$i]))) {
                 $oemails[$i] = $u->email;
-                if (!$u->is_stored_disabled() && $u->primaryContactId > 0) {
+                if (!$u->is_fully_disabled() && $u->primaryContactId > 0) {
                     $redirect[$i] = $u;
                 }
             }
@@ -2436,7 +2436,7 @@ class Conf {
                 }
                 if ($u2) {
                     $oemails[$i] = $u2->email;
-                    if (!$u2->is_stored_disabled() && $u2->primaryContactId > 0) {
+                    if (!$u2->is_fully_disabled() && $u2->primaryContactId > 0) {
                         $redirect2[$i] = $u2;
                     }
                 }
