@@ -216,7 +216,7 @@ administrator’s identity.</p>\n\n";
   "; authors are informed via email of any review changes.</p></li>\n";
 
         } else if ($gj->itemid === 2) {
-            echo "<li><p>Set <strong>", $hth->setting_link("PC can see review contents", "pc_seeallrev"),
+            echo "<li><p>Set <strong>", $hth->setting_link("PC can see review contents", "review_visibility_pc"),
   "</strong> to “Yes” (optional). This opens up the reviews to the program committee,
   allowing everyone to see scores and read reviews for non-conflicted papers.
   (During most conferences’ review periods, a PC member can see a paper’s reviews
