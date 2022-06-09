@@ -504,7 +504,7 @@ class Review_SettingParser extends SettingParser {
             && $sv->oldv("review_visibility_author") != Conf::AUSEEREV_TAGS
             && ($dn = self::crosscheck_future_review_deadline($sv)) !== null
             && !$sv->has_error()) {
-            $sv->warning_at(null, "<5>" . $sv->setting_link("Authors can see reviews and comments", "au_seerev") . " although it is before a " . $sv->setting_link("review deadline", $dn) . ". This is sometimes unintentional.");
+            $sv->warning_at(null, "<5>" . $sv->setting_link("Authors can see reviews and comments", "review_visibility_author") . " although it is before a " . $sv->setting_link("review deadline", $dn) . ". This is sometimes unintentional.");
         }
 
         if (($sv->has_interest("review_blind") || $sv->has_interest("review_visibility_external"))
