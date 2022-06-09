@@ -76,7 +76,7 @@ abstract class Option_SearchTerm extends SearchTerm {
                 $srch->lwarning($sword, "<0>Submission field ‘{$oname}’ is ambiguous");
                 $srch->message_set()->msg_at(null, "<0>Try " . commajoin($ts, " or ") . ", or use ‘{$oname}*’ if you mean to match them all.", MessageSet::INFORM);
             } else {
-                $srch->lwarning($sword, "Submission field ‘{$oname}’ not found");
+                $srch->lwarning($sword, "<0>Submission field ‘{$oname}’ not found");
             }
             return new False_SearchTerm;
         }
