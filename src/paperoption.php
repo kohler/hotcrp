@@ -1229,7 +1229,7 @@ class PaperOption implements JsonSerializable {
             $sfs->exists_if = $this->exists_if;
         } else {
             $sfs->presence = $this->final ? "final" : "all";
-            $sfs->exists_if = "";
+            $sfs->exists_if = null;
         }
     }
 
