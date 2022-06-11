@@ -2314,7 +2314,7 @@ class Conf {
         $id = (int) $id;
         if ($id === 0) {
             return null;
-        } else if (Contact::$main_user
+        } else if (Contact::$main_user !== null
                    && Contact::$main_user->conf === $this
                    && Contact::$main_user->contactId === $id) {
             return Contact::$main_user;
@@ -2330,7 +2330,7 @@ class Conf {
      * @return ?Contact */
     function cached_user_by_email($email) {
         if ($email
-            && Contact::$main_user
+            && Contact::$main_user !== null
             && Contact::$main_user->conf === $this
             && strcasecmp(Contact::$main_user->email, $email) === 0) {
             return Contact::$main_user;

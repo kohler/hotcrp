@@ -5,7 +5,8 @@
 class Contact {
     /** @var int */
     static public $rights_version = 1;
-    /** @var ?Contact */
+    /** @var ?Contact
+     * @readonly */
     static public $main_user;
     /** @var bool */
     static public $no_main_user = false;
@@ -359,6 +360,7 @@ class Contact {
             | ($this->disablement & self::DISABLEMENT_DELETED);
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
     static function set_main_user(Contact $user = null) {
         global $Me;
         Contact::$main_user = $Me = $user;

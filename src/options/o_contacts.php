@@ -251,7 +251,9 @@ class Contacts_PaperOption extends PaperOption {
                 '">';
 
             $reqcontacts = array_merge($reqov->anno("users"), $reqov->anno("bad_users") ?? []);
-            usort($reqcontacts, function ($a, $b) { return $a->author_index - $b->author_index; });
+            usort($reqcontacts, function ($a, $b) {
+                return $a->author_index <=> $b->author_index;
+            });
             foreach ($reqcontacts as $reqau) {
                 if (!in_array($reqau, $foundreqau)) {
                     echo self::editable_newcontact_row($pt, $cidx, $reqov, $reqau);

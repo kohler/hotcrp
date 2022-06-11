@@ -147,8 +147,8 @@ class Topics_PaperOption extends PaperOption {
         }
 
         $ov = PaperValue::make_multi($prow, $this, $vs, array_fill(0, count($vs), null));
-        $ov->anno["bad_topics"] = $bad_topics;
-        $ov->anno["new_topics"] = $new_topics;
+        $ov->set_anno("bad_topics", $bad_topics);
+        $ov->set_anno("new_topics", $new_topics);
         return $ov;
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
