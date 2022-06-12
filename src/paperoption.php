@@ -161,7 +161,7 @@ class PaperValue implements JsonSerializable {
     /** @param string $name
      * @return bool */
     function has_anno($name) {
-        return array_key_exists($name, $this->anno);
+        return $this->anno !== null && array_key_exists($name, $this->anno);
     }
     /** @param string $name
      * @return mixed */
