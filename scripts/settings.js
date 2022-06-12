@@ -27,12 +27,11 @@ handle_ui.on("js-settings-show-property", function () {
 
 
 function settings_delete(elt, message) {
-    var form = elt.closest("form"),
-        sep = elt.id.indexOf("__") > 0 ? "__" : "/";
+    var form = elt.closest("form");
     addClass(elt, "deleted");
-    var deleter = form.elements[elt.id + sep + "delete"];
+    var deleter = form.elements[elt.id + "/delete"];
     if (!deleter) {
-        deleter = hidden_input(elt.id + sep + "delete", "");
+        deleter = hidden_input(elt.id + "/delete", "");
         deleter.setAttribute("data-default-value", "");
         form.appendChild(deleter);
     }
@@ -42,10 +41,10 @@ function settings_delete(elt, message) {
         $(elt).find("input, select, textarea").addClass("ignore-diff");
         return false;
     } else {
-        var edit = document.getElementById(elt.id + sep + "edit") || elt;
+        var edit = document.getElementById(elt.id + "/edit") || elt;
         $(edit).children().addClass("hidden");
-        $(edit).append('<div class="f-i"><em id="'.concat(elt.id, sep, 'delete_message">', message, '</em></div>'));
-        var name = form.elements[elt.id + sep + "name"];
+        $(edit).append('<div class="f-i"><em id="'.concat(elt.id, '/delete_message">', message, '</em></div>'));
+        var name = form.elements[elt.id + "/name"];
         if (name) {
             name.disabled = true;
             addClass(name, "text-decoration-line-through");
@@ -501,7 +500,7 @@ function rf_delete() {
                     t = "This field will be deleted from the review form. No reviews have used the field.";
                 else
                     t = "This field will be deleted from the review form and possibly from some reviews.";
-                $("#" + rf.id + "\\/delete_message").html(t);
+                $$(rf.id + "/delete_message").innerHTML = t;
             });
         }
         foldup.call(rf, event, {n: 2, f: false});
