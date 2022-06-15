@@ -352,8 +352,8 @@ function jqxhr_error_ftext(jqxhr, status, errormsg) {
         return "<0>Failed";
 }
 
-var after_outstanding = (function () {
-var outstanding = 0, after = [];
+var $ajax = (function () {
+var outstanding = 0, when0 = [], when4 = [];
 
 function check_message_list(data, options) {
     if (typeof data === "object") {
@@ -393,9 +393,12 @@ $(document).ajaxError(function (event, jqxhr, options, httperror) {
 });
 
 $(document).ajaxComplete(function (event, jqxhr, options) {
-    if (options.trackOutstanding && --outstanding === 0) {
-        while (after.length)
-            after.shift()();
+    if (options.trackOutstanding) {
+        --outstanding;
+        while (outstanding === 0 && when0.length)
+            when0.shift()();
+        while (outstanding < 5 && when4.length)
+            when4.shift()();
     }
 });
 
@@ -458,13 +461,16 @@ $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
         ++outstanding;
 });
 
-return function (f) {
-    if (f === undefined)
+return {
+    has_outstanding: function () {
         return outstanding > 0;
-    else if (outstanding > 0)
-        after.push(f);
-    else
-        f();
+    },
+    after_outstanding: function (f) {
+        outstanding > 0 ? when0.push(f) : f();
+    },
+    condition: function (f) {
+        outstanding > 4 ? when4.push(f) : f();
+    }
 };
 })();
 
@@ -5736,7 +5742,7 @@ function quicklink_shortcut(evt, key) {
     if (a && a.focus) {
         // focus (for visual feedback), call callback
         a.focus();
-        after_outstanding(make_link_callback(a));
+        $ajax.after_outstanding(make_link_callback(a));
         return true;
     } else if ($$("quicklink-list")) {
         // at end of list
@@ -6655,20 +6661,23 @@ var add_revpref_ajax = (function () {
     }
 
     function rp_change(event) {
-        var self = this, pid = this.name.substr(7), cid = null, pos;
+        var self = this, pid = this.name.substr(7), data = {pref: self.value}, pos;
         if ((pos = pid.indexOf("u")) > 0) {
-            cid = pid.substr(pos + 1);
+            data.u = pid.substr(pos + 1);
             pid = pid.substr(0, pos);
         }
-        $.ajax(hoturl("=api/revpref", {p: pid}), {
-            method: "POST", data: {pref: self.value, u: cid},
-            success: function (rv) {
-                minifeedback(self, rv);
-                if (rv && rv.ok && rv.value != null) {
-                    self.value = rv.value === "0" ? "" : rv.value;
-                    input_set_default_value(self, self.value);
-                }
-            }, trackOutstanding: true
+        function success(rv) {
+            minifeedback(self, rv);
+            if (rv && rv.ok && rv.value != null) {
+                self.value = rv.value === "0" ? "" : rv.value;
+                input_set_default_value(self, self.value);
+            }
+        }
+        $ajax.condition(function () {
+            $.ajax(hoturl("=api/revpref", {p: pid}), {
+                method: "POST", data: data,
+                success: success, trackOutstanding: true
+            });
         });
     }
 
@@ -9821,12 +9830,17 @@ handle_ui.on("js-assign-review", function (event) {
             {pid: +m[1], uid: +m[2], action: "conflict", conflict: self.checked}
         );
     }
-    $.post(hoturl("=api/assign", {p: m[1]}),
-        {assignments: JSON.stringify(ass)}, function (rv) {
-            input_set_default_value(self, value);
-            minifeedback(self, rv);
-            form_highlight(form, self);
+    function success(rv) {
+        input_set_default_value(self, value);
+        minifeedback(self, rv);
+        form_highlight(form, self);
+    }
+    $ajax.condition(function () {
+        $.ajax(hoturl("=api/assign", {p: m[1]}), {
+            method: "POST", data: {assignments: JSON.stringify(ass)},
+            success: success, trackOutstanding: true
         });
+    });
 });
 
 
@@ -10095,8 +10109,8 @@ function default_click(evt) {
             evt.preventDefault();
         }
         return true;
-    } else if (after_outstanding()) {
-        after_outstanding(make_link_callback(this));
+    } else if ($ajax.has_outstanding()) {
+        $ajax.after_outstanding(make_link_callback(this));
         return true;
     } else {
         return false;
