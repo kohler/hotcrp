@@ -39,17 +39,17 @@ class Response_SettingParser extends SettingParser {
     private $round_transform = [];
 
     function set_oldv(SettingValues $sv, Si $si) {
-        if ($si->part0 !== null) {
-            if ($si->part2 === "") {
-                $idv = $sv->vstr("{$si->part0}{$si->part1}/id") ?? "";
+        if ($si->name0 !== null) {
+            if ($si->name2 === "") {
+                $idv = $sv->vstr("{$si->name0}{$si->name1}/id") ?? "";
                 $id = ctype_digit($idv) ? intval($idv) : -1;
                 if ($id > 0 && ($rrd = $sv->conf->response_round_by_id($id))) {
                     $sv->set_oldv($si, Response_Setting::make($sv->conf, $rrd));
                 } else {
                     $sv->set_oldv($si, new Response_Setting);
                 }
-            } else if ($si->part2 === "/title") {
-                $n = $sv->oldv("response/{$si->part1}/name");
+            } else if ($si->name2 === "/title") {
+                $n = $sv->oldv("response/{$si->name1}/name");
                 $sv->set_oldv($si, $n ? "‘{$n}’ response" : "Response");
             }
         }
@@ -151,7 +151,7 @@ class Response_SettingParser extends SettingParser {
     function apply_req(SettingValues $sv, Si $si) {
         if ($si->name === "response") {
             return $this->apply_response_req($sv, $si);
-        } else if ($si->part2 === "/name") {
+        } else if ($si->name2 === "/name") {
             if (($v = $sv->base_parse_req($si)) !== null) {
                 $lv = strtolower($v);
                 if ($lv === "1" || $lv === "unnamed" || $lv === "none") {
@@ -161,7 +161,7 @@ class Response_SettingParser extends SettingParser {
                 }
             }
             return false;
-        } else if ($si->part2 === "/condition") {
+        } else if ($si->name2 === "/condition") {
             if (($v = $sv->base_parse_req($si)) !== "") {
                 $search = new PaperSearch($sv->conf->root_user(), $v);
                 foreach ($search->message_list() as $mi) {

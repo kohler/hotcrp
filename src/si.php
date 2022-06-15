@@ -8,14 +8,26 @@ class Si {
     public $conf;
     /** @var string */
     public $name;
-    /** @var ?string */
+    /** @var ?string
+     * @deprecated */
     public $part0;
-    /** @var ?string */
+    /** @var ?string
+     * @deprecated */
     public $part1;
-    /** @var ?string */
+    /** @var ?string
+     * @deprecated */
     public $part2;
-    /** @var list<string> */
+    /** @var list<string> 
+     * @deprecated */
     public $parts = [];
+    /** @var list<string> */
+    public $name_parts = [];
+    /** @var ?string */
+    public $name0;
+    /** @var ?string */
+    public $name1;
+    /** @var ?string */
+    public $name2;
     /** @var string */
     public $json_name;
     /** @var ?string
@@ -120,13 +132,13 @@ class Si {
             && ($j->json_name === false || is_string($j->json_name))) {
             $this->json_name = $j->json_name;
         }
-        if (isset($j->parts)) {
-            $n = count($j->parts);
-            assert(is_string_list($j->parts) && $n >= 3);
-            $this->parts = $j->parts;
-            $this->part0 = $n === 3 ? $j->parts[0] : join("", array_slice($j->parts, 0, $n - 2));
-            $this->part1 = $j->parts[$n - 2];
-            $this->part2 = $j->parts[$n - 1];
+        if (isset($j->name_parts)) {
+            $n = count($j->name_parts);
+            assert(is_string_list($j->name_parts) && $n >= 3);
+            $this->name_parts = $this->parts = $j->name_parts;
+            $this->name0 = $this->part0 = $n === 3 ? $this->name_parts[0] : join("", array_slice($this->name_parts, 0, $n - 2));
+            $this->name1 = $this->part1 = $this->name_parts[$n - 2];
+            $this->name2 = $this->part2 = $this->name_parts[$n - 1];
         }
         foreach ((array) $j as $k => $v) {
             if (isset(self::$key_storage[$k])) {
@@ -185,7 +197,7 @@ class Si {
             $this->storage_type = self::SI_DATA;
             $this->default_message = $this->default_message ?? substr($s, 4);
         } else if ($dot === 6 && str_starts_with($s, "member")) {
-            assert($this->part0 !== null);
+            assert($this->name0 !== null);
             $this->storage_type = self::SI_MEMBER;
             $this->storage = substr($s, 7);
         } else if ($dot === 6 && str_starts_with($s, "negval")) {
@@ -211,10 +223,10 @@ class Si {
         }
 
         // resolve extension
-        if ($this->parts !== null && is_string($this->storage)) {
+        if ($this->name_parts !== null && is_string($this->storage)) {
             $this->storage = $this->_expand_pattern($this->storage, null);
         }
-        if ($this->parts !== null && is_string($this->hashid)) {
+        if ($this->name_parts !== null && is_string($this->hashid)) {
             $this->hashid = $this->_expand_pattern($this->hashid, null);
         }
     }
@@ -238,8 +250,8 @@ class Si {
                 } else {
                     return null;
                 }
-            } else if ($this->parts !== null && $n * 2 - 1 < count($this->parts)) {
-                $t = $this->parts[$n * 2 - 1];
+            } else if ($this->name_parts !== null && $n * 2 - 1 < count($this->name_parts)) {
+                $t = $this->name_parts[$n * 2 - 1];
                 $s = substr($s, 0, $p1) . $t . substr($s, $p1 + $n);
                 $p0 = $p1 + strlen($t);
             } else {
@@ -301,10 +313,10 @@ class Si {
 
     private function _collect_pages() {
         $this->_has_pages = true;
-        if ($this->pages === null && $this->part2 !== null) {
-            $pn = $this->part0;
-            if ($this->part2 !== "") {
-                $pn .= $this->part1;
+        if ($this->pages === null && $this->name2 !== null) {
+            $pn = $this->name0;
+            if ($this->name2 !== "") {
+                $pn .= $this->name1;
             } else if (str_ends_with($pn, "/")) {
                 $pn = substr($pn, 0, -1);
             }
@@ -364,7 +376,7 @@ class Si {
         if ($this->default_message) {
             $dm = $this->default_message;
             $id = is_string($dm) ? $dm : $dm[0];
-            $mid = $this->part1 !== null ? $this->part1 : "\$";
+            $mid = $this->name1 !== null ? $this->name1 : "\$";
             $args = [];
             foreach (is_string($dm) ? [] : array_slice($dm, 1) as $arg) {
                 $args[] = $sv->newv(str_replace("\$", $mid, $arg));

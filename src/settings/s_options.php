@@ -336,8 +336,8 @@ class Options_SettingParser extends SettingParser {
         if ($si->name === "sf") {
             return;
         }
-        assert($si->part0 === "sf/");
-        if ($si->part2 === "") {
+        assert($si->name0 === "sf/");
+        if ($si->name2 === "") {
             $sfs = new Sf_Setting;
             self::make_placeholder_option($sv)->unparse_setting($sfs);
             $sv->set_oldv($si, $sfs);
@@ -366,7 +366,7 @@ class Options_SettingParser extends SettingParser {
     private function _apply_req_name(SettingValues $sv, Si $si) {
         $n = $sv->base_parse_req($si);
         if ($n === "") {
-            $tname = $sv->vstr("sf/{$si->part1}/type");
+            $tname = $sv->vstr("sf/{$si->name1}/type");
             $t = $sv->conf->option_type($tname ?? "");
             if ($t && ($t->require_name ?? true)) {
                 $sv->error_at($si, "<0>Entry required");
@@ -379,7 +379,7 @@ class Options_SettingParser extends SettingParser {
         }
         $sv->save($si, $n);
         if ($n !== "") {
-            $sv->error_if_duplicate_member($si->part0, $si->part1, $si->part2, "Field name");
+            $sv->error_if_duplicate_member($si->name0, $si->name1, $si->name2, "Field name");
         }
         return true;
     }
@@ -387,7 +387,7 @@ class Options_SettingParser extends SettingParser {
     /** @return bool */
     private function _apply_req_type(SettingValues $sv, Si $si) {
         if (($nj = $sv->conf->option_type($sv->reqstr($si->name)))) {
-            $of = $sv->oldv($si->part0 . $si->part1);
+            $of = $sv->oldv($si->name0 . $si->name1);
             if ($nj->name !== $of->type && $of->type !== "none") {
                 $conversion = $nj->convert_from_functions->{$of->type} ?? null;
                 if (!$conversion) {
@@ -412,7 +412,7 @@ class Options_SettingParser extends SettingParser {
             if ($t !== "")
                 $selector[] = simplify_whitespace($t);
         }
-        if (($jtype = $sv->conf->option_type($sv->vstr("sf/{$si->part1}/type")))
+        if (($jtype = $sv->conf->option_type($sv->vstr("sf/{$si->name1}/type")))
             && ($jtype->has_selector ?? false)) {
             if (empty($selector)) {
                 $sv->error_at($si, "<0>Entry required (one choice per line)");
@@ -425,7 +425,7 @@ class Options_SettingParser extends SettingParser {
                         }
                     }
                 }
-                if (($of = $sv->oldv($si->part0 . $si->part1))
+                if (($of = $sv->oldv($si->name0 . $si->name1))
                     && $of->type !== "none"
                     && $of->selector !== $cleanreq) {
                     $this->_check_choices_renumbering($sv, $si, $selector, $of);
@@ -536,11 +536,11 @@ class Options_SettingParser extends SettingParser {
     function apply_req(SettingValues $sv, Si $si) {
         if ($si->name === "sf") {
             return $this->_apply_req_options($sv, $si);
-        } else if ($si->part2 === "/name") {
+        } else if ($si->name2 === "/name") {
             return $this->_apply_req_name($sv, $si);
-        } else if ($si->part2 === "/type") {
+        } else if ($si->name2 === "/type") {
             return $this->_apply_req_type($sv, $si);
-        } else if ($si->part2 === "/choices") {
+        } else if ($si->name2 === "/choices") {
             return $this->_apply_req_choices($sv, $si);
         } else {
             return false;

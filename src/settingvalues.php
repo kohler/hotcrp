@@ -473,7 +473,7 @@ class SettingValues extends MessageSet {
         } else if ($si->storage_type & Si::SI_VALUE) {
             $val = $this->conf->setting($si->storage_name()) ?? $si->default_value;
         } else if (($si->storage_type & Si::SI_MEMBER)
-                   && ($obj = $this->objectv($si->part0 . $si->part1))) {
+                   && ($obj = $this->objectv($si->name0 . $si->name1))) {
             $val = $obj->{$si->storage_name()};
         } else {
             error_log("setting $si->name: don't know how to get value");
@@ -558,8 +558,8 @@ class SettingValues extends MessageSet {
         $name = is_string($id) ? $id : $id->name;
         if (!array_key_exists($name, $this->_explicit_oldv)) {
             $si = is_string($id) ? $this->si($id) : $id;
-            if ($si && $si->part0 !== null) {
-                $this->ensure_oblist($si->part0);
+            if ($si && $si->name0 !== null) {
+                $this->ensure_oblist($si->name0);
             }
             if ($si && $si->parser_class && !array_key_exists($name, $this->_explicit_oldv)) {
                 $this->si_parser($si)->set_oldv($this, $si);
@@ -1506,7 +1506,7 @@ class SettingValues extends MessageSet {
         foreach ($this->_req_si as $si) {
             if (str_starts_with($si->name, $pfx)
                 && ($descendents
-                    || strlen($si->part0) + strlen($si->part1) === strlen($pfx) - 1))
+                    || strlen($si->name0) + strlen($si->name1) === strlen($pfx) - 1))
                 $sis[] = $si;
         }
         return $sis;

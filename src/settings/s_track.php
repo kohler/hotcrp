@@ -100,31 +100,31 @@ class Track_SettingParser extends SettingParser {
     }
 
     function set_oldv(SettingValues $sv, Si $si) {
-        if (count($si->parts) === 3 && $si->part2 === "") {
+        if (count($si->name_parts) === 3 && $si->name2 === "") {
             $sv->set_oldv($si, new Track_Setting(new Track, null));
-        } else if (count($si->parts) === 3 && $si->part2 === "/title") {
-            $id = $sv->reqstr("{$si->part0}{$si->part1}/id") ?? "";
+        } else if (count($si->name_parts) === 3 && $si->name2 === "/title") {
+            $id = $sv->reqstr("{$si->name0}{$si->name1}/id") ?? "";
             if ($id === "none") {
                 $sv->set_oldv($si->name, "Default track");
-            } else if (($tag = $sv->vstr("{$si->part0}{$si->part1}/tag") ?? "") !== "") {
+            } else if (($tag = $sv->vstr("{$si->name0}{$si->name1}/tag") ?? "") !== "") {
                 $sv->set_oldv($si->name, "Track ‘{$tag}’");
             } else {
                 $sv->set_oldv($si->name, "Unnamed track");
             }
-        } else if (count($si->parts) === 5 && $si->parts[2] === "/perm/" && $si->part2 === "") {
-            $trx = $sv->oldv("{$si->parts[0]}{$si->parts[1]}");
-            if ($trx && ($perm = Track::$perm_name_map[$si->part1] ?? null) !== null) {
+        } else if (count($si->name_parts) === 5 && $si->name_parts[2] === "/perm/" && $si->name2 === "") {
+            $trx = $sv->oldv("{$si->name_parts[0]}{$si->name_parts[1]}");
+            if ($trx && ($perm = Track::$perm_name_map[$si->name1] ?? null) !== null) {
                 $sv->set_oldv($si->name, clone $trx->perm[$perm]);
             } else {
                 $sv->set_oldv($si->name, new TrackPerm_Setting("", ""));
             }
-        } else if (count($si->parts) === 5 && $si->parts[2] === "/perm/" && $si->part2 === "/title") {
-            $sv->set_oldv($si->name, self::permission_title(Track::$perm_name_map[$si->part1] ?? null));
+        } else if (count($si->name_parts) === 5 && $si->name_parts[2] === "/perm/" && $si->name2 === "/title") {
+            $sv->set_oldv($si->name, self::permission_title(Track::$perm_name_map[$si->name1] ?? null));
         }
     }
 
     function prepare_oblist(SettingValues $sv, Si $si) {
-        if (count($si->parts) === 3) {
+        if (count($si->name_parts) === 3) {
             $this->settings_json = $this->settings_json ?? $sv->conf->setting_json("tracks");
             $m = [];
             foreach ($sv->conf->track_tags() as $tag) {
@@ -260,11 +260,11 @@ class Track_SettingParser extends SettingParser {
 
 
     private function _apply_req_perm(SettingValues $sv, Si $si) {
-        $pfx = $si->part0 . $si->part1;
+        $pfx = $si->name0 . $si->name1;
         $type = $sv->base_parse_req("{$pfx}/type");
         $tagsi = $sv->si("{$pfx}/tag");
         $tag = $type === "+" || $type === "-" ? $tagsi->parse_reqv($sv->vstr($tagsi), $sv) : "";
-        $perm = Track::$perm_name_map[$si->part1];
+        $perm = Track::$perm_name_map[$si->name1];
         if ($type === "" || ($type === "+" && $tag === "")) {
             $pv = null;
         } else if ($type === "none" || ($type === "-" && $tag === "")) {
@@ -276,17 +276,17 @@ class Track_SettingParser extends SettingParser {
             $pv = null;
         }
         if ($pv === null) {
-            unset($this->cur_trx->j->{$si->part1});
+            unset($this->cur_trx->j->{$si->name1});
         } else {
-            $this->cur_trx->j->{$si->part1} = $pv;
+            $this->cur_trx->j->{$si->name1} = $pv;
         }
     }
 
     function apply_req(SettingValues $sv, Si $si) {
-        if (count($si->parts) === 5
-            && $si->parts[2] === "/perm/"
-            && ($si->part2 === "/type" || $si->part2 === "/tag")) {
-            if ($si->part2 === "/type" || !$sv->has_req("{$si->part0}{$si->part1}/type")) {
+        if (count($si->name_parts) === 5
+            && $si->name_parts[2] === "/perm/"
+            && ($si->name2 === "/type" || $si->name2 === "/tag")) {
+            if ($si->name2 === "/type" || !$sv->has_req("{$si->name0}{$si->name1}/type")) {
                 $this->_apply_req_perm($sv, $si);
             }
             return true;

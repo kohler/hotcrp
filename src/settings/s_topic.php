@@ -23,7 +23,7 @@ class Topic_SettingParser extends SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
         if ($si->name === "new_topics") {
             $sv->set_oldv($si->name, "");
-        } else if ($si->part0 === "topic/" && $si->part2 === "") {
+        } else if ($si->name0 === "topic/" && $si->name2 === "") {
             $sv->set_oldv($si, new Topic_Setting);
         }
     }

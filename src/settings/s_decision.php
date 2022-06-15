@@ -18,7 +18,7 @@ class Decision_Setting {
 
 class Decision_SettingParser extends SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
-        assert($si->part0 === "decision/" && $si->part2 === "");
+        assert($si->name0 === "decision/" && $si->name2 === "");
         $sv->set_oldv($si, new Decision_Setting(null, "", "accept"));
     }
 

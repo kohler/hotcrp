@@ -24,15 +24,15 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($si->name === "rf") {
             return;
         }
-        assert($si->part0 === "rf/");
-        if ($si->part2 === "") {
-            $fid = $si->part1 === '$' ? 's99' : $sv->vstr("{$si->name}/id");
+        assert($si->name0 === "rf/");
+        if ($si->name2 === "") {
+            $fid = $si->name1 === '$' ? 's99' : $sv->vstr("{$si->name}/id");
             if (($finfo = ReviewFieldInfo::find($sv->conf, $fid))) {
                 $rfs = new Rf_Setting;
                 ReviewField::make($sv->conf, $finfo)->unparse_setting($rfs);
                 $sv->set_oldv($si->name, $rfs);
             }
-        } else if ($si->part2 === "/choices" && $si->part1 === '$') {
+        } else if ($si->name2 === "/choices" && $si->name1 === '$') {
             $sv->set_oldv($si->name, "");
         }
     }
@@ -51,19 +51,19 @@ class ReviewForm_SettingParser extends SettingParser {
         if (($n = $sv->base_parse_req($si)) !== null) {
             if (ReviewField::clean_name($n) !== $n
                 && $sv->oldv($si) !== $n
-                && !$sv->reqstr("{$si->part0}{$si->part1}/name_force")) {
+                && !$sv->reqstr("{$si->name0}{$si->name1}/name_force")) {
                 $lparen = strrpos($n, "(");
                 $sv->error_at($si->name, "<0>Please remove ‘" . substr($n, $lparen) . "’ from the field name");
                 $sv->inform_at($si->name, "<0>Visibility descriptions are added automatically.");
             }
             $sv->save($si, $n);
         }
-        $sv->error_if_duplicate_member($si->part0, $si->part1, $si->part2, "Field name");
+        $sv->error_if_duplicate_member($si->name0, $si->name1, $si->name2, "Field name");
         return true;
     }
 
     private function _apply_req_choices(SettingValues $sv, Si $si) {
-        $pfx = $si->part0 . $si->part1;
+        $pfx = $si->name0 . $si->name1;
         $text = cleannl($sv->reqstr("{$pfx}/choices"));
         $letters = $text && ord($text[0]) >= 65 && ord($text[0]) <= 90;
         $expect = $letters ? "[A-Z]" : "[1-9][0-9]*";
@@ -166,21 +166,21 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($si->name === "rf") {
             return $this->_apply_req_review_form($sv, $si);
         } else {
-            assert($si->part0 === "rf/");
-            $pfx = $si->part0 . $si->part1;
-            $sfx = $si->part2;
+            assert($si->name0 === "rf/");
+            $pfx = $si->name0 . $si->name1;
+            $sfx = $si->name2;
             $finfo = ReviewFieldInfo::find($sv->conf, $sv->vstr("{$pfx}/id"));
-            if ($si->part2 === "/choices") {
+            if ($si->name2 === "/choices") {
                 if ($finfo->has_options
                     && !$this->_apply_req_choices($sv, $si)) {
                     $sv->error_at($si->name, "<0>Invalid choices");
                     $this->mark_options_error($sv);
                 }
                 return true;
-            } else if ($si->part2 === "/presence") {
+            } else if ($si->name2 === "/presence") {
                 $si->values = array_keys(self::presence_options($sv->conf));
                 return false;
-            } else if ($si->part2 === "/name") {
+            } else if ($si->name2 === "/name") {
                 return $this->_apply_req_name($sv, $si);
             }
             return true;

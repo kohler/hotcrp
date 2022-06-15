@@ -34,10 +34,10 @@ class Banal_Setting {
 
 class Banal_SettingParser extends SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
-        if ($si->part0 === "format/"
-            && ($si->part1 === "1" || $si->part1 === "2")
-            && $si->part2 === "") {
-            $sv->set_oldv($si, Banal_Setting::make_document($sv, (int) $si->part1));
+        if ($si->name0 === "format/"
+            && ($si->name1 === "1" || $si->name1 === "2")
+            && $si->name2 === "") {
+            $sv->set_oldv($si, Banal_Setting::make_document($sv, (int) $si->name1));
         }
     }
 
@@ -70,8 +70,8 @@ class Banal_SettingParser extends SettingParser {
 
 
     function apply_req(SettingValues $sv, Si $si) {
-        assert($si->part0 === "format/");
-        self::parse($sv, $si->part1, true);
+        assert($si->name0 === "format/");
+        self::parse($sv, $si->name1, true);
         return true;
     }
 

@@ -43,7 +43,7 @@ class SettingInfoSet {
                 $pos = $pos2;
             }
             $parts[] = substr($v->name_pattern, $pos);
-            $v->parts = $parts;
+            $v->name_parts = $parts;
             $i = 0;
             while ($i !== count($this->xlist) && $this->xlist[$i] !== $parts[0]) {
                 $i += 2;
@@ -175,10 +175,10 @@ class SettingInfoSet {
         for ($j = 0; $j !== $nitems; $j += 2) {
             if ($plen + strlen($items[$j]) < $nlen
                 && str_ends_with($name, $items[$j])
-                && ($parts = $this->_match_parts($name, $items[$j + 1]->parts))) {
+                && ($parts = $this->_match_parts($name, $items[$j + 1]->name_parts))) {
                 $jx = clone $items[$j + 1];
                 $jx->name = $name;
-                $jx->parts = $parts;
+                $jx->name_parts = $parts;
                 if (isset($jx->alias_pattern)) {
                     $jx->alias = $this->_expand_pattern($jx->alias_pattern, $parts);
                 }
@@ -233,7 +233,7 @@ class SettingInfoSet {
         $a = [];
         foreach (array_keys($this->xmap) as $k) {
             if (($si = $this->get($k)) !== null
-                && empty($si->parts)
+                && empty($si->name_parts)
                 && !$si->internal
                 && $si->name === $k)
                 $a[] = $si;

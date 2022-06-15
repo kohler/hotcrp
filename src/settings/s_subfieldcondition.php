@@ -28,7 +28,7 @@ class SubFieldCondition_SettingParser extends SettingParser {
     }
 
     function apply_req(SettingValues $sv, Si $si) {
-        $pres = "{$si->part0}{$si->part1}/presence";
+        $pres = "{$si->name0}{$si->name1}/presence";
         if (($q = $sv->base_parse_req($si)) !== null
             && $q !== ""
             && (!$sv->has_req($pres) || $sv->reqstr($pres) === "custom")) {

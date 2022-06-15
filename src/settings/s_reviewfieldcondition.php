@@ -60,11 +60,11 @@ class ReviewFieldCondition_SettingParser extends SettingParser {
     }
 
     function apply_req(SettingValues $sv, Si $si) {
-        $pres = "{$si->part0}{$si->part1}/presence";
+        $pres = "{$si->name0}{$si->name1}/presence";
         if (($q = $sv->base_parse_req($si)) !== null
             && $q !== ""
             && (!$sv->has_req($pres) || $sv->reqstr($pres) === "custom")) {
-            self::validate($sv, $si->part0 . $si->part1, $q, 2);
+            self::validate($sv, $si->name0 . $si->name1, $q, 2);
             $sv->save($pres, "custom");
             $sv->save($si, $q);
         }

@@ -50,12 +50,12 @@ class Review_SettingParser extends SettingParser {
     private $round_transform = [];
 
     function set_oldv(SettingValues $sv, Si $si) {
-        if ($si->part0 === "review/" && $si->part2 === "") {
+        if ($si->name0 === "review/" && $si->name2 === "") {
             $sv->set_oldv($si, new Review_Setting);
-        } else if ($si->part0 === "review/"
-                   && ($si->part2 === "/title" || $si->part2 === "/exttitle")) {
-            $n = $sv->oldv("review/{$si->part1}/name");
-            $pc = $si->part2 === "/title";
+        } else if ($si->name0 === "review/"
+                   && ($si->name2 === "/title" || $si->name2 === "/exttitle")) {
+            $n = $sv->oldv("review/{$si->name1}/name");
+            $pc = $si->name2 === "/title";
             if ($n === "" && !$sv->conf->has_rounds()) {
                 $sv->set_oldv($si, $pc ? "PC review" : "External review");
             } else {
@@ -327,7 +327,7 @@ class Review_SettingParser extends SettingParser {
                 $this->apply_review_default_round_index($sv, $si, trim($n));
             }
             return true;
-        } else if ($si->part2 === "/name") {
+        } else if ($si->name2 === "/name") {
             if (($v = $sv->base_parse_req($si)) !== null) {
                 if (self::name_is_empty($v)) {
                     $sv->set_req($si->name, "");
