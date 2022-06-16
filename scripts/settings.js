@@ -32,8 +32,8 @@ function settings_delete(elt, message) {
     var deleted = form.elements[elt.id + "/delete"];
     if (!deleted) {
         deleted = hidden_input(elt.id + "/delete", "");
-        deleted.setAttribute("data-default-value", hasClass(elt, "is-new") ? "1" : "");
-        form.appendChild(deleted);
+        deleted.setAttribute("data-default-value", "");
+        elt.appendChild(deleted);
     }
     deleted.value = "1";
     var deleter = form.elements[elt.id + "/deleter"];
