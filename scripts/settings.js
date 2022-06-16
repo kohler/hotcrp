@@ -29,13 +29,19 @@ handle_ui.on("js-settings-show-property", function () {
 function settings_delete(elt, message) {
     var form = elt.closest("form");
     addClass(elt, "deleted");
-    var deleter = form.elements[elt.id + "/delete"];
-    if (!deleter) {
-        deleter = hidden_input(elt.id + "/delete", "");
-        deleter.setAttribute("data-default-value", "");
-        form.appendChild(deleter);
+    var deleted = form.elements[elt.id + "/delete"];
+    if (!deleted) {
+        deleted = hidden_input(elt.id + "/delete", "");
+        deleted.setAttribute("data-default-value", hasClass(elt, "is-new") ? "1" : "");
+        form.appendChild(deleted);
     }
-    deleter.value = "1";
+    deleted.value = "1";
+    var deleter = form.elements[elt.id + "/deleter"];
+    if (deleter && deleter.tagName === "BUTTON") {
+        deleter.disabled = true;
+        addClass(deleter, "btn-danger");
+        tooltip.erase.call(deleter);
+    }
     if (hasClass(elt, "is-new")) {
         addClass(elt, "hidden");
         $(elt).find("input, select, textarea").addClass("ignore-diff");
@@ -44,13 +50,15 @@ function settings_delete(elt, message) {
         var edit = document.getElementById(elt.id + "/edit") || elt;
         $(edit).children().addClass("hidden");
         $(edit).append('<div class="f-i"><em id="'.concat(elt.id, '/delete_message">', message, '</em></div>'));
-        var name = form.elements[elt.id + "/name"];
-        if (name) {
-            name.disabled = true;
-            addClass(name, "text-decoration-line-through");
-            var parent = name.closest(".entryi");
-            parent && removeClass(parent, "hidden");
-        }
+        $(elt).find("input").each(function () {
+            if (this.type !== "hidden" && !hasClass(this, "hidden")) {
+                this.disabled = true;
+                addClass(this, "text-decoration-line-through");
+                var parent = this.closest(".entryi");
+                parent && removeClass(parent, "hidden");
+                return false;
+            }
+        });
         return true;
     }
 }
@@ -251,21 +259,21 @@ handle_ui.on("js-settings-decision-delete", function (event) {
     form_highlight(this.form);
 });
 
-handle_ui.on("js-settings-new-autosearch", function (event) {
-    var odiv = $(this).closest(".settings_tag_autosearch")[0],
-        h = $("#settings_newtag_autosearch").html(), next = 1;
-    while ($("#tag_autosearch_t_" + next).length)
-        ++next;
-    h = h.replace(/_0/g, "_" + next);
-    odiv = $(h).appendTo("#settings_tag_autosearch");
+handle_ui.on("js-settings-automatic-tag-new", function (event) {
+    var odiv = this.closest(".settings-automatic-tag"), h, ctr = 1;
+    while ($$("automatic_tag/" + ctr))
+        ++ctr;
+    h = $("#settings-new-automatic-tag").html().replace(/\/\$/g, "/" + ctr);
+    odiv = $(h).appendTo("#settings-automatic-tags");
     odiv.find("input[type=text]").autogrow();
-    $("#tag_autosearch_t_" + next)[0].focus();
+    $$("automatic_tag/".concat(ctr, "/tag")).focus();
 });
 
-handle_ui.on("js-settings-delete-autosearch", function (event) {
-    var odiv = $(this).closest(".settings_tag_autosearch")[0];
-    $(odiv).find("input[name^=tag_autosearch_q_]").val("");
-    $(odiv).find("input[type=text]").prop("disabled", true).addClass("text-decoration-line-through");
+handle_ui.on("js-settings-automatic-tag-delete", function (event) {
+    var ne = this.form.elements[this.closest(".settings-automatic-tag").id + "/tag"];
+    settings_delete(this.closest(".settings-automatic-tag"),
+        "This automatic tag will be removed from settings and from <a href=\"".concat(hoturl_html("search", {q: "#" + ne.defaultValue, t: "all"}), '" target="_blank">any matching submissions</a>.'));
+    form_highlight(this.form);
 });
 
 handle_ui.on("js-settings-track-add", function () {

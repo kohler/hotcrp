@@ -76,7 +76,7 @@ class Response_SettingParser extends SettingParser {
     }
 
     function print_name(SettingValues $sv) {
-        $t = Ht::button(Icons::ui_use("trash"), ["class" => "ui js-settings-response-delete ml-2 need-tooltip", "aria-label" => "Delete response", "tabindex" => -1]);
+        $t = Ht::button(Icons::ui_use("trash"), ["class" => "ui js-settings-response-delete ml-2 need-tooltip", "name" => "response/{$this->ctr}/deleter", "aria-label" => "Delete response", "tabindex" => -1]);
         if ($this->ctrid !== null) {
             $this->ensure_round_counts($sv->conf);
             if (($n = $this->round_counts[$this->ctrid] ?? null)) {
