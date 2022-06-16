@@ -133,7 +133,7 @@ class Track_SettingParser extends SettingParser {
             }
             $m[] = new Track_Setting($sv->conf->track("") ?? new Track(""),
                                      $this->settings_json->_ ?? null);
-            $sv->append_oblist("track/", $m);
+            $sv->append_oblist("track/", $m, "tag");
         }
     }
 

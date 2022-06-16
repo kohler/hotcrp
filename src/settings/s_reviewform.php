@@ -43,7 +43,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $rfss[] = $rfs = new Rf_Setting;
             $rf->unparse_setting($rfs);
         }
-        $sv->append_oblist("rf/", $rfss);
+        $sv->append_oblist("rf/", $rfss, "name");
     }
 
 

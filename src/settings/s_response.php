@@ -60,7 +60,7 @@ class Response_SettingParser extends SettingParser {
         foreach ($sv->conf->response_rounds() as $rrd) {
             $m[] = Response_Setting::make($sv->conf, $rrd);
         }
-        $sv->append_oblist("response/", $m);
+        $sv->append_oblist("response/", $m, "name");
         // set placeholder for unnamed round
         $ctr = $sv->search_oblist("response/", "/id", "1");
         if ($ctr !== null && ($sv->conf->response_rounds())[0]->unnamed) {

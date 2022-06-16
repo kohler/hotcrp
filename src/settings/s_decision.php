@@ -29,7 +29,7 @@ class Decision_SettingParser extends SettingParser {
                 $m[] = new Decision_Setting($did, $dname, $did > 0 ? "accept" : "reject");
             }
         }
-        $sv->append_oblist("decision/", $m);
+        $sv->append_oblist("decision/", $m, "name");
     }
 
     /** @param int|'$' $ctr

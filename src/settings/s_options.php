@@ -359,7 +359,7 @@ class Options_SettingParser extends SettingParser {
             $sfs = $m[] = new Sf_Setting;
             $f->unparse_setting($sfs);
         }
-        $sv->append_oblist("sf/", $m);
+        $sv->append_oblist("sf/", $m, "name");
     }
 
     /** @return bool */

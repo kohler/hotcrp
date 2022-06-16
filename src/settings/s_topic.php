@@ -33,7 +33,7 @@ class Topic_SettingParser extends SettingParser {
         foreach ($sv->conf->topic_set() as $id => $name) {
             $m[] = new Topic_Setting($id, $name);
         }
-        $sv->append_oblist("topic/", $m);
+        $sv->append_oblist("topic/", $m, "name");
     }
 
     static function print(SettingValues $sv) {
@@ -109,9 +109,7 @@ class Topic_SettingParser extends SettingParser {
             $tid = $sv->vstr("topic/{$ctr}/id") ?? "new";
             $tname = $sv->base_parse_req("topic/{$ctr}/name");
             if ($sv->reqstr("topic/{$ctr}/delete") || $tname === "") {
-                if ($tid !== "new") {
-                    unset($this->topicj[$tid]);
-                }
+                unset($this->topicj[$tid]);
             } else {
                 if ($tname !== null) {
                     if (preg_match('/\A(?:\d+\z|[-+,;:]|–|—)/', $tname)) {

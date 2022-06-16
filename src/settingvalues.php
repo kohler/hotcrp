@@ -585,8 +585,8 @@ class SettingValues extends MessageSet {
 
     /** @param string $pfx
      * @param iterable<object> $obs
-     * @return int */
-    function append_oblist($pfx, $obs) {
+     * @param ?non-empty-string $namekey */
+    function append_oblist($pfx, $obs, $namekey = null) {
         assert(str_ends_with($pfx, "/"));
 
         // find next counter
@@ -606,107 +606,63 @@ class SettingValues extends MessageSet {
             $reset = false;
         }
 
-        // map id => counter
-        $matches = [];
+        // map id => ctr and name => ctr
+        $matches = $name_matches = [];
         for ($ctr = 1; $ctr < $nextctr; ++$ctr) {
-            if (($id = $this->reqstr("{$pfx}{$ctr}/id")) !== null
+            if (($id = $this->reqstr("{$pfx}{$ctr}/id") ?? "") !== ""
                 && !array_key_exists($id, $matches)) {
                 $matches[$id] = $ctr;
+            } else if ($namekey !== null
+                       && ($name = $this->reqstr("{$pfx}{$ctr}/{$namekey}")) !== null
+                       && ($lname = strtolower($name)) !== ""
+                       && !array_key_exists($lname, $name_matches)) {
+                $name_matches[$lname] = $ctr;
             }
         }
 
-        // iterate over objects
-        $lastctr = 0;
+        // iterate over objects, matching by id
+        $next_obs = [];
         foreach ($obs as $ob) {
-            // match existing id
-            $obid = $ob->id;
-            $obctr = $nextctr;
-            if ($obid !== null) {
-                if (array_key_exists((string) $obid, $matches)) {
-                    $obctr = $matches[(string) $obid];
+            if (($ob->id ?? "") !== ""
+                && ($obctr = $matches[(string) $ob->id] ?? null) !== null) {
+                $this->set_oldv("{$pfx}{$obctr}", $ob);
+            } else {
+                $next_obs[] = $ob;
+            }
+        }
+
+        // map name => ctr if any
+        if (!empty($name_matches) && !empty($next_obs)) {
+            $next_obs2 = [];
+            foreach ($next_obs as $ob) {
+                if (($name = $ob->$namekey ?? "") !== ""
+                    && ($obctr = $name_matches[strtolower($name)] ?? null) !== null) {
+                    $this->set_req("{$pfx}{$obctr}/id", (string) $ob->id);
+                    $this->set_oldv("{$pfx}{$obctr}/id", $ob->id);
+                    $this->set_oldv("{$pfx}{$obctr}", $ob);
                 } else {
-                    $matches[(string) $obid] = $obctr;
+                    $next_obs2[] = $ob;
                 }
             }
+            $next_obs = $next_obs2;
+        }
 
-            // store value
-            if ($obctr === $nextctr) {
-                if ($obid !== null) {
-                    $this->set_req("{$pfx}{$obctr}/id", (string) $obid);
-                    $this->set_oldv("{$pfx}{$obctr}/id", $obid);
-                } else {
-                    $this->set_req("{$pfx}{$obctr}/id", "");
-                }
-                if ($reset) {
-                    $this->set_req("{$pfx}{$obctr}/delete", "1");
-                } else {
-                    unset($this->req["{$pfx}{$obctr}/delete"]);
-                }
-                ++$nextctr;
+        // save new objects
+        foreach ($next_obs as $ob) {
+            $this->set_req("{$pfx}{$nextctr}/id", (string) $ob->id);
+            $this->set_oldv("{$pfx}{$nextctr}/id", $ob->id);
+            if ($reset) {
+                $this->set_req("{$pfx}{$nextctr}/delete", "1");
+            } else {
+                unset($this->req["{$pfx}{$nextctr}/delete"]);
             }
-
-            $this->set_oldv("{$pfx}{$obctr}", $ob);
-            $lastctr = $obctr;
+            $this->set_oldv("{$pfx}{$nextctr}", $ob);
+            ++$nextctr;
         }
 
         unset($this->req["{$pfx}{$nextctr}/id"]);
         $this->_oblist_next[$pfx] = $nextctr;
-        return $lastctr;
     }
-
-    /* function map_enumeration($pfx, $map) {
-        assert(str_ends_with($pfx, "/"));
-        $ctr = 1;
-        if ($this->_use_req) {
-            $pfxn = substr($pfx, 0, -1);
-            $resetn = $this->has_req("{$pfxn}_reset") ? "{$pfxn}_reset" : "reset";
-            $delete_rest = ($this->reqstr($resetn) ?? "") !== "";
-            $used = $names = $namectrs = [];
-            while (($x = $this->reqstr("{$pfx}{$ctr}/id")) !== null) {
-                if ($x !== "") {
-                    $used[$x] = true;
-                } else if (($n = $this->reqstr("{$pfx}{$ctr}/name") ?? "") !== "") {
-                    $names[] = $n;
-                    $namectrs[] = $ctr;
-                }
-                ++$ctr;
-            }
-            if (!empty($names)) {
-                $mnames = $mids = [];
-                foreach ($map as $id => $obj) {
-                    if (!isset($used[$id])
-                        && is_object($obj)
-                        && isset($obj->name)
-                        && is_string($obj->name)) {
-                        $mnames[] = $obj->name;
-                        $mids[] = $id;
-                    }
-                }
-                foreach ($this->unambiguous_renumbering($names, $mnames) as $idx => $midx) {
-                    if ($midx >= 0) {
-                        $this->req["{$pfx}{$namectrs[$idx]}/id"] = $mids[$midx];
-                        $used[$mids[$midx]] = true;
-                    }
-                }
-            }
-            foreach ($map as $id => $obj) {
-                if (!isset($used[$id])) {
-                    $this->set_req("{$pfx}{$ctr}/id", (string) $id);
-                    if ($delete_rest) {
-                        $this->set_req("{$pfx}{$ctr}/delete", "1");
-                    }
-                    ++$ctr;
-                }
-            }
-        } else {
-            foreach ($map as $id => $obj) {
-                $this->set_oldv("{$pfx}{$ctr}/id", (string) $id);
-                $this->set_req("{$pfx}{$ctr}/id", (string) $id);
-                ++$ctr;
-            }
-        }
-        unset($this->req["{$pfx}{$ctr}/id"]);
-    } */
 
     /** @param string $pfx
      * @return list<int> */

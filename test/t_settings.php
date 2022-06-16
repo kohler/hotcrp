@@ -128,6 +128,18 @@ class Settings_Tester {
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_topic" => 1,
+            "topic/1/id" => "",
+            "topic/1/name" => "Fért",
+            "topic/2/id" => "",
+            "topic/2/name" => "Festival Fartal",
+            "topic/3/id" => "",
+            "topic/3/name" => "Foop"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Fart","3":"Fart2","6":"Fart3","2":"Fért","4":"Festival Fartal","5":"Fet","7":"Foop"}');
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_topic" => 1,
             "topic/1/id" => "1",
             "topic/1/delete" => "1",
             "topic/2/id" => "2",
@@ -139,7 +151,9 @@ class Settings_Tester {
             "topic/5/id" => "5",
             "topic/5/delete" => "1",
             "topic/6/id" => "6",
-            "topic/6/delete" => "1"
+            "topic/6/delete" => "1",
+            "topic/7/id" => "7",
+            "topic/7/delete" => "1"
         ]);
         xassert($sv->execute());
 

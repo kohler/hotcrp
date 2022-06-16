@@ -88,7 +88,7 @@ class Review_SettingParser extends SettingParser {
         foreach ($sv->conf->defined_rounds() as $i => $name) {
             $m[] = Review_Setting::make($sv->conf, $i + 1);
         }
-        $sv->append_oblist("review/", $m);
+        $sv->append_oblist("review/", $m, "name");
     }
 
 
