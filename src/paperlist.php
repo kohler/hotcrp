@@ -1419,8 +1419,11 @@ class PaperList implements XtContext {
             $trclass[] = "k" . $rstate->colorindex;
         }
         if ($this->_highlight_map !== null
-            && ($highlightclass = $this->_highlight_map[$row->paperId])) {
-            $trclass[] = $highlightclass[0] . "highlightmark";
+            && ($highlightclass = $this->_highlight_map[$row->paperId] ?? null)) {
+            $trclass[] = "highlightmark";
+            if ($highlightclass[0] !== "") {
+                $trclass[] = "highlightmark-" . $highlightclass[0];
+            }
         }
         $want_plx = $tt !== "" || $this->table_id();
         if (!$want_plx) {

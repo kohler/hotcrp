@@ -8303,7 +8303,7 @@ $(window).on("hotcrptags", function (evt, rv) {
         && !hasClass(pr, "fold5o"))
         cc = rv.color_classes_conflicted;
     $ptr.removeClass(function (i, klass) {
-        return (klass.match(/(?:^| )(?:\S*tag)(?= |$)/g) || []).join(" ");
+        return (klass.match(/(?:^| )tag(?:bg|-\S+)(?= |$)/g) || []).join(" ");
     }).addClass(cc);
 
     // set tag decoration
@@ -8319,7 +8319,7 @@ $(window).on("hotcrptags", function (evt, rv) {
 function change_color_classes(isconflicted) {
     return function () {
         var a = pattrnear(this, isconflicted ? "data-color-classes-conflicted" : "data-color-classes");
-        this.className = this.className.replace(/(?:^|\s+)(?:\S*tag|k[01]|tagbg)(?= |$)/g, "").trim() + (a ? " " + a : "");
+        this.className = this.className.replace(/(?:^|\s+)(?:k[01]|tagbg|tag-\S+)(?= |$)/g, "").trim() + (a ? " " + a : "");
     };
 }
 
@@ -8374,7 +8374,7 @@ return plinfo;
 
 /* pattern fill functions */
 window.make_pattern_fill = (function () {
-var fmap = {}, cmap = {"whitetag": 1, "redtag": 2, "orangetag": 3, "yellowtag": 4, "greentag": 5, "bluetag": 6, "purpletag": 7, "graytag": 8},
+var fmap = {}, cmap = {"tag-white": 1, "tag-red": 2, "tag-orange": 3, "tag-yellow": 4, "tag-green": 5, "tag-blue": 6, "tag-purple": 7, "tag-gray": 8},
     params = {
         "": {size: 34, css: "backgroundColor", incr: 8, rule: true},
         "gdot ": {size: 12, css: "fill", incr: 3, pattern: true},
@@ -9272,7 +9272,7 @@ if (siteinfo.paperid) {
             return;
         data.color_classes && make_pattern_fill(data.color_classes, "", true);
         $(".has-tag-classes").each(function () {
-            var t = $.trim(this.className.replace(/(?: |^)\w*tag(?:bg)?(?= |$)/g, " "));
+            var t = $.trim(this.className.replace(/(?: |^)tag(?:bg|-\S+)(?= |$)/g, " "));
             if (data.color_classes)
                 t += " " + data.color_classes;
             this.className = t;

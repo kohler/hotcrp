@@ -2867,71 +2867,72 @@ tr.pl {
 tr.plx {
 	background-position: top left;
 }
-.redtag, .orangetag, .yellowtag, .greentag, .bluetag, .purpletag, .graytag, .whitetag {
+
+.tagbg, .badge {
 	-webkit-print-color-adjust: exact;
-	color-adjust: exact;
+	print-color-adjust: exact;
 }
-.redtag {
+.tag-red {
 	background-color: #ffd8d8;
 }
-.orangetag {
+.tag-orange {
 	background-color: #fdebcc;
 }
-.yellowtag {
+.tag-yellow {
 	background-color: #fdffcb;
 }
-.greentag {
+.tag-green {
 	background-color: #d8ffd8;
 }
-.bluetag {
+.tag-blue {
 	background-color: #d8d8ff;
 }
-.purpletag {
+.tag-purple {
 	background-color: #f2d8f8;
 }
-.graytag {
+.tag-gray {
 	background-color: #e2e2e2;
 }
-.whitetag {
+.tag-white {
 	background-color: #ffffff;
 }
-.boldtag.taghh, .boldtag .taghl {
+.tag-bold.taghh, .tag-bold .taghl {
 	font-weight: bold;
 }
-.italictag.taghh, .italictag .taghl {
+.tag-italic.taghh, .tag-italic .taghl {
 	font-style: italic;
 }
-.underlinetag.taghh, .underlinetag .taghl {
+.tag-underline.taghh, .tag-underline .taghl {
 	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
-.strikethroughtag.taghh, .strikethroughtag .taghl {
+.tag-strikethrough.taghh, .tag-strikethrough .taghl {
 	-webkit-text-decoration-line: line-through;
 	text-decoration-line: line-through;
 }
-.bigtag.taghh, .bigtag .taghl {
+.tag-big.taghh, .tag-big .taghl {
 	font-size: 140%;
 }
-.smalltag.taghh, .smalltag .taghl {
+.tag-small.taghh, .tag-small .taghl {
 	font-size: 80%;
 }
-.dimtag.taghh, .dimtag .taghl {
+.tag-dim.taghh, .tag-dim .taghl {
 	color: gray;
 }
 .highlightmark.taghh, .highlightmark .taghl,
-.yellowhighlightmark.taghh, .yellowhighlightmark .taghl {
+.highlightmark-yellow.taghh, .highlightmark-yellow .taghl {
 	background-color: #ffeb00;
 	box-shadow: -0.2em 0 0 #ffeb00, 0.2em 0 0 0 #ffeb00;
 }
-.pinkhighlightmark.taghh, .pinkhighlightmark .taghl {
+.highlightmark-pink.taghh, .highlightmark-pink .taghl {
 	background-color: #ff9ee5;
 	box-shadow: -0.2em 0 0 #ff9ee5, 0.2em 0 0 0 #ff9ee5;
 }
-.greenhighlightmark.taghh, .greenhighlightmark .taghl {
+.highlightmark-green.taghh, .highlightmark-green .taghl {
 	background-color: #70ff63;
 	box-shadow: -0.2em 0 0 #70ff63, 0.2em 0 0 0 #70ff63;
 }
-.bluehighlightmark.taghh, .bluehighlightmark .taghl {
+.highlightmark-blue.taghh, .highlightmark-blue .taghl {
 	background-color: #c4d2ff;
 	box-shadow: -0.2em 0 0 #c4d2ff, 0.2em 0 0 0 #c4d2ff;
 }
@@ -2959,47 +2960,47 @@ h1 .badge {
 	font-size: 51%;
 	bottom: 2px;
 }
-.whitebadge {
+.badge-white {
 	background: white;
 	color: #333333;
 	border: 1px solid #333333;
 	padding: 1px 0.2em 2px;
 }
-.redbadge {
+.badge-red {
 	background: #ee0000;
 }
-.orangebadge {
+.badge-orange {
 	background: #ee9900;
 	color: #111111;
 }
-.yellowbadge {
+.badge-yellow {
 	background: #e2e200;
 	color: #111111;
 }
-.greenbadge {
+.badge-green {
 	background: #008800;
 }
-.bluebadge {
+.badge-blue {
 	background: #0000ff;
 }
-.purplebadge {
+.badge-purple {
 	background: #aa00ee;
 }
-.graybadge {
+.badge-gray {
 	background: #8c8c94;
 }
-.pinkbadge {
+.badge-pink {
 	background: #ffc3c8;
 	color: #111111;
 }
 a.badge:hover {
 	color: #ffa25b;
 }
-a.whitebadge:hover {
+a.badge-white:hover {
 	color: #c45500;
 	border: 1px solid #c45500;
 }
-a.orangebadge:hover, a.yellowbadge:hover, a.pinkbadge:hover {
+a.badge-orange:hover, a.badge-yellow:hover, a.badge-pink:hover {
 	color: #c45500;
 }
 a.badge:active {
@@ -4608,52 +4609,52 @@ th.pl_logaction {
 	stroke-linecap: butt;
 	stroke-linejoin: miter;
 }
-.gcdf.whitetag, .gdot.whitetag, .gbar.whitetag, .gbox.whitetag {
+.gcdf.tag-white, .gdot.tag-white, .gbar.tag-white, .gbox.tag-white {
 	stroke: rgba(255, 255, 255, 0.8);
 }
-.gdot.whitetag, .gbar.whitetag, .gbox.whitetag, .glab.whitetag {
+.gdot.tag-white, .gbar.tag-white, .gbox.tag-white, .glab.tag-white {
 	fill: rgba(255, 255, 255, 0.6);
 }
-.gcdf.redtag, .gdot.redtag, .gbar.redtag, .gbox.redtag {
+.gcdf.tag-red, .gdot.tag-red, .gbar.tag-red, .gbox.tag-red {
 	stroke: rgba(245, 51, 51, 0.8);
 }
-.gdot.redtag, .gbar.redtag, .gbox.redtag, .glab.redtag {
+.gdot.tag-red, .gbar.tag-red, .gbox.tag-red, .glab.tag-red {
 	fill: rgba(245, 51, 51, 0.2);
 }
-.gcdf.orangetag, .gdot.orangetag, .gbar.orangetag, .gbox.orangetag {
+.gcdf.tag-orange, .gdot.tag-orange, .gbar.tag-orange, .gbox.tag-orange {
 	stroke: rgba(214, 136, 0, 0.8);
 }
-.gdot.orangetag, .gbar.orangetag, .gbox.orangetag, .glab.orangetag {
+.gdot.tag-orange, .gbar.tag-orange, .gbox.tag-orange, .glab.tag-orange {
 	fill: rgba(214, 136, 0, 0.2);
 }
-.gcdf.yellowtag, .gdot.yellowtag, .gbar.yellowtag, .gbox.yellowtag {
+.gcdf.tag-yellow, .gdot.tag-yellow, .gbar.tag-yellow, .gbox.tag-yellow {
 	stroke: rgba(191, 186, 38, 0.8);
 }
-.gdot.yellowtag, .gbar.yellowtag, .gbox.yellowtag, .glab.yellowtag {
+.gdot.tag-yellow, .gbar.tag-yellow, .gbox.tag-yellow, .glab.tag-yellow {
 	fill: rgba(221, 216, 85, 0.3);
 }
-.gcdf.greentag, .gdot.greentag, .gbar.greentag, .gbox.greentag {
+.gcdf.tag-green, .gdot.tag-green, .gbar.tag-green, .gbox.tag-green {
 	stroke: rgba(72, 185, 72, 0.8);
 }
-.gdot.greentag, .gbar.greentag, .gbox.greentag, .glab.greentag {
+.gdot.tag-green, .gbar.tag-green, .gbox.tag-green, .glab.tag-green {
 	fill: rgba(13, 195, 13, 0.2);
 }
-.gcdf.bluetag, .gdot.bluetag, .gbar.bluetag, .gbox.bluetag {
+.gcdf.tag-blue, .gdot.tag-blue, .gbar.tag-blue, .gbox.tag-blue {
 	stroke: rgba(47, 47, 202, 0.8);
 }
-.gdot.bluetag, .gbar.bluetag, .gbox.bluetag, .glab.bluetag {
+.gdot.tag-blue, .gbar.tag-blue, .gbox.tag-blue, .glab.tag-blue {
 	fill: rgba(47, 47, 202, 0.2);
 }
-.gcdf.purpletag, .gdot.purpletag, .gbar.purpletag, .gbox.purpletag {
+.gcdf.tag-purple, .gdot.tag-purple, .gbar.tag-purple, .gbox.tag-purple {
 	stroke: rgba(150, 44, 186, 0.8);
 }
-.gdot.purpletag, .gbar.purpletag, .gbox.purpletag, .glab.purpletag {
+.gdot.tag-purple, .gbar.tag-purple, .gbox.tag-purple, .glab.tag-purple {
 	fill: rgba(150, 44, 186, 0.2);
 }
-.gcdf.graytag, .gdot.graytag, .gbar.graytag, .gbox.graytag {
+.gcdf.tag-gray, .gdot.tag-gray, .gbar.tag-gray, .gbox.tag-gray {
 	stroke: rgba(120, 120, 120, 0.8);
 }
-.gdot.graytag, .gbar.graytag, .gbox.graytag, .glab.graytag {
+.gdot.tag-gray, .gbar.tag-gray, .gbox.tag-gray, .glab.tag-gray {
 	fill: rgba(120, 120, 120, 0.2);
 }
 .gcdf.color1, .gdot.color1, .gbar.color1, .gbox.color1 {

@@ -662,7 +662,7 @@ class TagMap implements IteratorAggregate {
             $ks = $t ? $t->colors : [$ltag];
             foreach ($ks as $k) {
                 if ($match === 0 || ($this->style_info_lmap[$k] & $match)) {
-                    $classes[] = $this->canonical_style_lmap[$k] . "tag";
+                    $classes[] = "tag-" . $this->canonical_style_lmap[$k];
                     $info |= $this->style_info_lmap[$k];
                 }
             }
@@ -1361,7 +1361,7 @@ class Tagger {
             foreach ($m as $mx) {
                 if (($t = $dt->check($mx[1])) && $t->badges) {
                     /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
-                    $klass = " class=\"badge {$t->badges[0]}badge\"";
+                    $klass = " class=\"badge badge-{$t->badges[0]}\"";
                     $tag = $this->unparse(trim($mx[0]));
                     if ($type === self::DECOR_PAPER && ($link = $this->link($tag))) {
                         $b = "<a href=\"{$link}\"{$klass}>#{$tag}</a>";

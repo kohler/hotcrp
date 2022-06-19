@@ -11,7 +11,7 @@ class Color_SearchTerm {
         if ($srch->user->isPC) {
             $dt = $srch->conf->tags();
             $tags = array_unique(array_merge(array_keys($dt->filter("colors")), $dt->known_styles()));
-            $known_style = $dt->known_style($word) . "tag";
+            $known_style = "tag-" . $dt->known_style($word);
             foreach ($tags as $t) {
                 if ($word === "color") {
                     if (!$dt->is_style($t, TagMap::STYLE_BG)) {
