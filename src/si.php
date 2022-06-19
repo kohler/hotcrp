@@ -8,18 +8,6 @@ class Si {
     public $conf;
     /** @var string */
     public $name;
-    /** @var ?string
-     * @deprecated */
-    public $part0;
-    /** @var ?string
-     * @deprecated */
-    public $part1;
-    /** @var ?string
-     * @deprecated */
-    public $part2;
-    /** @var list<string> 
-     * @deprecated */
-    public $parts = [];
     /** @var list<string> */
     public $name_parts = [];
     /** @var ?string */
@@ -135,10 +123,10 @@ class Si {
         if (isset($j->name_parts)) {
             $n = count($j->name_parts);
             assert(is_string_list($j->name_parts) && $n >= 3);
-            $this->name_parts = $this->parts = $j->name_parts;
-            $this->name0 = $this->part0 = $n === 3 ? $this->name_parts[0] : join("", array_slice($this->name_parts, 0, $n - 2));
-            $this->name1 = $this->part1 = $this->name_parts[$n - 2];
-            $this->name2 = $this->part2 = $this->name_parts[$n - 1];
+            $this->name_parts = $j->name_parts;
+            $this->name0 = $n === 3 ? $this->name_parts[0] : join("", array_slice($this->name_parts, 0, $n - 2));
+            $this->name1 = $this->name_parts[$n - 2];
+            $this->name2 = $this->name_parts[$n - 1];
         }
         foreach ((array) $j as $k => $v) {
             if (isset(self::$key_storage[$k])) {

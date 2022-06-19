@@ -1164,6 +1164,7 @@ class SettingValues extends MessageSet {
         if ($si->placeholder !== null && !isset($js["placeholder"])) {
             $js["placeholder"] = $si->placeholder;
         }
+        $js["class"] = $js["class"] ?? "w-entry-text";
         if ($si->autogrow ?? true) {
             $js["class"] = self::join_class($js["class"] ?? "", "need-autogrow");
         }
