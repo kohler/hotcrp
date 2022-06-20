@@ -903,7 +903,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         foreach ($row->viewable_reviews_as_display($pl->user) as $rrow) {
             if ($rrow->reviewSubmitted
                 && $rrow->fields[$f->order]
-                && ($f->view_score >= VIEWSCORE_PC
+                && ($f->view_score >= VIEWSCORE_REVIEWER
                     || $f->view_score > $pl->user->view_score_bound($row, $rrow))) {
                 $sci->add($rrow->fields[$f->order]);
                 if ($rrow->contactId === $this->cid

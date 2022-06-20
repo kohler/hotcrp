@@ -4594,15 +4594,16 @@ function render_review_body(rrow) {
         t = t.concat('<div class="rf rfd', display, '" data-rf="', f.uid,
             '"><div class="revvt"><h3 class="rfehead"><label class="revfn">',
             f.name_html, '</label>');
-        x = f.visibility;
-        if (x == "audec" && hotcrp_status && hotcrp_status.myperm
+        x = f.visibility || "re";
+        if (x === "audec" && hotcrp_status && hotcrp_status.myperm
             && hotcrp_status.myperm.some_author_can_view_decision) {
             x = "au";
         }
-        if (x != "au") {
+        if (x !== "au") {
             t += '<div class="field-visibility">(' +
                 (({secret: "secret", admin: "administrators only",
-                   pc: "hidden from authors", audec: "hidden from authors until decision"})[x] || x) +
+                   re: "hidden from authors", audec: "hidden from authors until decision",
+                   pconly: "hidden from authors and external reviewers"})[x] || x) +
                 ')</div>';
         }
         t += '</h3></div>';

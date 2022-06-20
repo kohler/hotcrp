@@ -118,18 +118,23 @@ abstract class ReviewField implements JsonSerializable {
     public $json_storage;
 
     static private $view_score_map = [
-        "secret" => VIEWSCORE_ADMINONLY, "admin" => VIEWSCORE_REVIEWERONLY,
-        "pc" => VIEWSCORE_PC,
+        "secret" => VIEWSCORE_ADMINONLY,
+        "admin" => VIEWSCORE_REVIEWERONLY,
+        "pconly" => VIEWSCORE_PC,
+        "re" => VIEWSCORE_REVIEWER, "pc" => VIEWSCORE_REVIEWER,
         "audec" => VIEWSCORE_AUTHORDEC, "authordec" => VIEWSCORE_AUTHORDEC,
         "au" => VIEWSCORE_AUTHOR, "author" => VIEWSCORE_AUTHOR
     ];
     // Hard-code the database's `view_score` values as of January 2016
     static private $view_score_upgrade_map = [
-        -2 => "secret", -1 => "admin", 0 => "pc", 1 => "au"
+        -2 => "secret", -1 => "admin", 0 => "re", 1 => "au"
     ];
     static private $view_score_rmap = [
-        VIEWSCORE_ADMINONLY => "secret", VIEWSCORE_REVIEWERONLY => "admin",
-        VIEWSCORE_PC => "pc", VIEWSCORE_AUTHORDEC => "audec",
+        VIEWSCORE_ADMINONLY => "secret",
+        VIEWSCORE_REVIEWERONLY => "admin",
+        VIEWSCORE_PC => "pconly",
+        VIEWSCORE_REVIEWER => "re",
+        VIEWSCORE_AUTHORDEC => "audec",
         VIEWSCORE_AUTHOR => "au"
     ];
 
@@ -183,7 +188,7 @@ abstract class ReviewField implements JsonSerializable {
                 $vis = self::$view_score_upgrade_map[$vis];
             }
         }
-        $this->view_score = VIEWSCORE_PC;
+        $this->view_score = VIEWSCORE_REVIEWER;
         if (is_string($vis) && isset(self::$view_score_map[$vis])) {
             $this->view_score = self::$view_score_map[$vis];
         }
@@ -219,7 +224,7 @@ abstract class ReviewField implements JsonSerializable {
         while ($s !== ""
                && $s[strlen($s) - 1] === ")"
                && ($lparen = strrpos($s, "(")) !== false
-               && preg_match('/\A\((?:(?:hidden|invisible|visible|shown)(?:| (?:from|to|from the|to the) authors?)|pc only|shown only to chairs|secret|private)(?:| until decision)[.?!]?\)\z/', substr($s, $lparen))) {
+               && preg_match('/\A\((?:(?:hidden|invisible|visible|shown)(?:| (?:from|to|from the|to the) authors?)|pc only|shown only to chairs|secret|private)(?:| until decision| and external reviewers)[.?!]?\)\z/', substr($s, $lparen))) {
             $s = rtrim(substr($s, 0, $lparen));
         }
         return $s;
@@ -413,6 +418,8 @@ abstract class ReviewField implements JsonSerializable {
                 echo '(secret)';
             } else if ($this->view_score < VIEWSCORE_PC) {
                 echo '(shown only to chairs)';
+            } else if ($this->view_score < VIEWSCORE_REVIEWER) {
+                echo '(hidden from authors and external reviewers)';
             } else if ($this->view_score < VIEWSCORE_AUTHORDEC) {
                 echo '(hidden from authors)';
             } else {
@@ -461,6 +468,8 @@ abstract class ReviewField implements JsonSerializable {
             $t[] = "==-== (secret field)\n";
         } else if ($this->view_score < VIEWSCORE_PC) {
             $t[] = "==-== (shown only to chairs)\n";
+        } else if ($this->view_score < VIEWSCORE_REVIEWER) {
+            $t[] = "==-== (hidden from authors and external reviewers)\n";
         } else if ($this->view_score < VIEWSCORE_AUTHORDEC) {
             $t[] = "==-== (hidden from authors)\n";
         } else if ($this->view_score < VIEWSCORE_AUTHOR) {

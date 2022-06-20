@@ -531,7 +531,7 @@
     {
         "name_pattern": "rf/$/visibility",
         "title": "Review field visibility", "title_pattern": "‘${sv rf/$/name}’ visibility",
-        "type": "radio", "values": ["au", "pc", "audec", "admin"],
+        "type": "radio", "values": ["au", "re", "audec", "pconly", "admin"],
         "storage": "member.visibility"
     },
     {

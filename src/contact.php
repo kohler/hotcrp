@@ -3811,7 +3811,7 @@ class Contact {
                     || $rights->review_status == 0))
             || ($rights->review_status > 0
                 && !$rights->view_conflict_type
-                && $viewscore >= VIEWSCORE_PC
+                && $viewscore >= ($rights->allow_pc ? VIEWSCORE_PC : VIEWSCORE_REVIEWER)
                 && $prow->review_not_incomplete($this)
                 && $seerev >= 0);
     }
@@ -4660,7 +4660,8 @@ class Contact {
         // field. Values are:
         //   VIEWSCORE_ADMINONLY     admin can view
         //   VIEWSCORE_REVIEWERONLY  ... and review author can view
-        //   VIEWSCORE_PC            ... and any PC/reviewer can view
+        //   VIEWSCORE_PC            ... and any PC can view
+        //   VIEWSCORE_REVIEWER      ... and external reviewers can view
         //   VIEWSCORE_AUTHORDEC     ... and authors can view when decisions visible
         //   VIEWSCORE_AUTHOR        ... and authors can view
         // So returning -3 means all scores are visible.
@@ -4679,8 +4680,10 @@ class Contact {
             return VIEWSCORE_AUTHORDEC - 1;
         } else if ($rights->act_author_view) {
             return VIEWSCORE_AUTHOR - 1;
-        } else {
+        } else if ($rights->allow_pc) {
             return VIEWSCORE_PC - 1;
+        } else {
+            return VIEWSCORE_REVIEWER - 1;
         }
     }
 

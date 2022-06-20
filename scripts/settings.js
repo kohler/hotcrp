@@ -460,7 +460,7 @@ function rf_fill(pos, fieldj, setdefault) {
     fieldj = fieldj || original[fid] || {};
     rf_fill_control(form, rfid + "/name", fieldj.name || "", setdefault);
     rf_fill_control(form, rfid + "/description", fieldj.description || "", setdefault);
-    rf_fill_control(form, rfid + "/visibility", fieldj.visibility || "pc", setdefault);
+    rf_fill_control(form, rfid + "/visibility", fieldj.visibility || "re", setdefault);
     rf_fill_control(form, rfid + "/choices", options_to_text(fieldj), setdefault);
     rf_fill_control(form, rfid + "/required", fieldj.required ? "1" : "0", setdefault);
     var colors = form.elements[rfid + "/colors"];
@@ -538,7 +538,7 @@ handle_ui.on("unfold.js-settings-field-unfold", function (event) {
 });
 
 function rf_visibility_text(visibility) {
-    if ((visibility || "pc") === "pc")
+    if ((visibility || "re") === "re")
         return "(hidden from authors)";
     else if (visibility === "admin")
         return "(administrators only)";
@@ -546,6 +546,8 @@ function rf_visibility_text(visibility) {
         return "(secret)";
     else if (visibility === "audec")
         return "(hidden from authors until decision)";
+    else if (visibility === "pconly")
+        return "(hidden from authors and external reviewers)";
     else
         return "";
 }

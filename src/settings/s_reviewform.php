@@ -424,8 +424,9 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
     static function print_visibility(SettingValues $sv) {
         $sv->print_select_group("rf/\$/visibility", "Visibility", [
             "au" => "Visible to authors",
-            "pc" => "Hidden from authors",
+            "re" => "Hidden from authors",
             "audec" => "Hidden from authors until decision",
+            "pconly" => "Hidden from authors and external reviewers",
             "admin" => "Administrators only"
         ], [
             "horizontal" => true, "group_class" => "is-property-visibility"

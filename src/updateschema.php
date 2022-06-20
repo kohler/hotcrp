@@ -854,6 +854,14 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->save_setting("__response_round_v261", 1);
         }
 
+        // update reviewViewScore
+        if ($conf->sversion >= 226
+            && $conf->sversion <= 264
+            && !$conf->setting("__review_view_score_v264")
+            && $conf->ql_ok("update PaperReview set reviewViewScore=reviewViewScore+1 where reviewViewScore>=0") /* old VIEWSCORE_PC becomes VIEWSCORE_REVIEWER */) {
+            $conf->save_setting("__review_view_score_v264", 1);
+        }
+
         if ($conf->sversion === 6
             && $conf->ql_ok("alter table ReviewRequest add `reason` text")) {
             $conf->update_schema_version(7);
@@ -2440,6 +2448,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 263
             && $conf->ql_ok("update PaperComment set commentTags=null where commentRound!=0")) {
             $conf->update_schema_version(264);
+        }
+        if ($conf->sversion === 264
+            && $conf->setting("__review_view_score_v264")) {
+            $conf->save_setting("__review_view_score_v264", null);
+            $conf->update_schema_version(265);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

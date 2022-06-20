@@ -33,9 +33,10 @@ const VIEWSCORE_EMPTY = -3;         // score no one can see; see also reviewView
 const VIEWSCORE_ADMINONLY = -2;
 const VIEWSCORE_REVIEWERONLY = -1;
 const VIEWSCORE_PC = 0;
-const VIEWSCORE_AUTHORDEC = 1;
-const VIEWSCORE_AUTHOR = 2;
-const VIEWSCORE_EMPTYBOUND = 3;     // bound that can see nothing
+const VIEWSCORE_REVIEWER = 1;
+const VIEWSCORE_AUTHORDEC = 2;
+const VIEWSCORE_AUTHOR = 3;
+const VIEWSCORE_EMPTYBOUND = 4;     // bound that can see nothing
 
 const NAME_E = 1;   // include email
 const NAME_B = 2;   // always put email in angle brackets

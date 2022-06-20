@@ -13,11 +13,9 @@ class ReviewWordCount_Fexpr extends Fexpr {
         return $user->is_reviewer();
     }
     function compile(FormulaCompiler $state) {
-        if ($state->index_type !== Fexpr::IDX_MY) {
-            $view_score = $state->user->permissive_view_score_bound();
-            if (VIEWSCORE_PC <= $view_score) {
-                return "null";
-            }
+        if ($state->index_type !== Fexpr::IDX_MY
+            && VIEWSCORE_REVIEWER <= $state->user->permissive_view_score_bound()) {
+            return "null";
         }
         $state->_ensure_review_word_counts();
         $rrow = $state->_rrow();

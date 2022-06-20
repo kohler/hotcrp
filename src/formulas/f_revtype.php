@@ -18,7 +18,7 @@ class Revtype_Fexpr extends Fexpr {
             $rt = $state->define_gvar("myrevtype", $state->_prow() . "->review_type(\$contact)");
         } else {
             $view_score = $state->user->permissive_view_score_bound();
-            if (VIEWSCORE_PC <= $view_score) {
+            if (VIEWSCORE_REVIEWER <= $view_score) {
                 return "null";
             }
             $state->queryOptions["reviewSignatures"] = true;

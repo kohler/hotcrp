@@ -18,12 +18,12 @@ class ReviewRound_Fexpr extends Fexpr {
             return $state->define_gvar("myrevround", "{$rrow} ? {$rrow}->reviewRound : null");
         } else {
             $view_score = $state->user->permissive_view_score_bound();
-            if (VIEWSCORE_PC <= $view_score) {
+            if (VIEWSCORE_REVIEWER <= $view_score) {
                 return "null";
             }
             $state->queryOptions["reviewSignatures"] = true;
             $rrow_vsb = $state->_rrow_view_score_bound();
-            return "(" . VIEWSCORE_PC . " > $rrow_vsb ? {$rrow}->reviewRound : null)";
+            return "(" . VIEWSCORE_REVIEWER . " > $rrow_vsb ? {$rrow}->reviewRound : null)";
         }
     }
 }
