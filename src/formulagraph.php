@@ -492,7 +492,7 @@ class FormulaGraph extends MessageSet {
                 if ($need_anal[$qi]) {
                     $c = [];
                     if ($prow->paperTags) {
-                        $c = $this->conf->tags()->styles($prow->viewable_tags($this->user), TagMap::STYLE_BG);
+                        $c = $this->conf->tags()->styles($prow->viewable_tags($this->user), TagStyle::BG);
                     }
                     if ($qcolors[$qi] !== null && !empty($c)) {
                         $c = array_values(array_intersect($qcolors[$qi], $c));
@@ -540,7 +540,7 @@ class FormulaGraph extends MessageSet {
                 return self::REVIEWER_COLOR;
             } else if ($prow->paperTags
                        && ($c = $prow->viewable_tags($this->user))
-                       && ($c = $prow->conf->tags()->styles($c, TagMap::STYLE_BG))) {
+                       && ($c = $prow->conf->tags()->styles($c, TagStyle::BG))) {
                 return join(" ", $c);
             }
         }

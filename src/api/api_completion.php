@@ -84,7 +84,7 @@ class Completion_API {
         }
         if ($user->can_view_tags()) {
             array_push($comp, "has:color", "has:style");
-            if ($conf->tags()->has_badges) {
+            if ($conf->tags()->has_badge) {
                 $comp[] = "has:badge";
             }
         }
@@ -155,10 +155,13 @@ class Completion_API {
         if ((!$category || $category === "style")
             && $user->can_view_tags()) {
             $comp[] = ["pri" => -1, "nosort" => true, "i" => ["style:any", "style:none", "color:any", "color:none"]];
-            foreach ($conf->tags()->canonical_colors() as $t) {
-                $comp[] = "style:$t";
-                if ($conf->tags()->is_known_style($t, TagMap::STYLE_BG)) {
-                    $comp[] = "color:$t";
+            $tagmap = $conf->tags();
+            foreach ($tagmap->canonical_known_styles() as $ks) {
+                if (($ks->sclass & TagStyle::SECRET) === 0) {
+                    $comp[] = "style:{$ks->style}";
+                    if (($ks->sclass & TagStyle::BG) !== 0) {
+                        $comp[] = "color:{$ks->style}";
+                    }
                 }
             }
         }

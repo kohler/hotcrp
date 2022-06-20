@@ -384,6 +384,7 @@ src/schema.sql
 src/search/st_admin.php
 src/search/st_author.php
 src/search/st_authormatch.php
+src/search/st_badge.php
 src/search/st_color.php
 src/search/st_comment.php
 src/search/st_conflict.php
@@ -391,6 +392,7 @@ src/search/st_decision.php
 src/search/st_documentcount.php
 src/search/st_documentname.php
 src/search/st_editfinal.php
+src/search/st_emoji.php
 src/search/st_formula.php
 src/search/st_option.php
 src/search/st_optionpresent.php
@@ -435,6 +437,7 @@ src/settings/s_subfieldcondition.php
 src/settings/s_subform.php
 src/settings/s_submissions.php
 src/settings/s_tags.php
+src/settings/s_tagstyle.php
 src/settings/s_topic.php
 src/settings/s_track.php
 src/settings/s_users.php

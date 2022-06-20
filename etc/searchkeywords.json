@@ -187,23 +187,23 @@
     {   "name": "revorder", "alias": "rorder"   },
     {
         "name": "color",
-        "parse_function": "Color_SearchTerm::parse",
-        "has": "color", "deprecated": true
+        "parse_function": "Color_SearchTerm::parse_color",
+        "has": "any"
     },
     {
         "name": "style",
-        "parse_function": "Color_SearchTerm::parse",
-        "has": "any", "deprecated": true
+        "parse_function": "Color_SearchTerm::parse_style",
+        "has": "any"
     },
     {
         "name": "badge",
-        "parse_function": "Color_SearchTerm::parse_badge",
-        "has": "any", "deprecated": true
+        "parse_function": "Badge_SearchTerm::parse",
+        "has": "any"
     },
     {
         "name": "emoji",
-        "parse_function": "Color_SearchTerm::parse_emoji",
-        "has": "any", "deprecated": true
+        "parse_function": "Emoji_SearchTerm::parse",
+        "has": "any"
     },
     {
         "name": "formula",

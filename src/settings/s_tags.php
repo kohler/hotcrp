@@ -29,32 +29,6 @@ class Tags_SettingRenderer {
     static function print_tag_seeall(SettingValues $sv) {
         $sv->print_checkbox('tag_seeall', "PC can see tags for conflicted submissions");
     }
-    static function print_styles(SettingValues $sv) {
-        $skip_colors = [];
-        if ($sv->conf->opt("tagNoSettingsColors")) {
-            $skip_colors = preg_split('/[\s|]+/', $sv->conf->opt("tagNoSettingsColors"));
-        }
-        $tag_color_data = $sv->conf->setting_data("tag_color") ?? "";
-        $tag_colors_rows = [];
-        foreach ($sv->conf->tags()->canonical_colors() as $k) {
-            if (in_array($k, $skip_colors)) {
-                continue;
-            }
-            preg_match_all("/(?:\\A|\\s)(\\S+)=$k(?=\\s|\\z)/", $tag_color_data, $m);
-            $sv->set_oldv("tag_color_$k", join(" ", $m[1] ?? []));
-            $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"remargin-left\"></td>"
-                . "<td class=\"pad taghl align-middle\"><label for=\"tag_color_{$k}\">{$k}</label></td>"
-                . "<td class=\"lentry\">"
-                  . $sv->feedback_at("tag_color_$k")
-                  . $sv->entry("tag_color_$k", ["class" => "need-suggest tags"])
-                . "</td><td class=\"remargin-right\"></td></tr>";
-        }
-
-        echo Ht::hidden("has_tag_color", 1),
-            "<p>Submissions tagged with a style name, or with an associated tag, appear in that style in lists. This also applies to PC tags.</p>",
-            '<table class="demargin"><tr><th></th><th class="settings-simplehead" style="min-width:8rem">Style name</th><th class="settings-simplehead">Tags</th><th></th></tr>',
-            join("", $tag_colors_rows), "</table>\n";
-    }
 }
 
 
@@ -114,16 +88,6 @@ class Tags_SettingParser extends SettingParser {
             } else if ($v !== null) {
                 $sv->error_at("tag_rank", "<0>Multiple ranking tags are not supported");
             }
-        } else if ($si->name === "tag_color") {
-            $ts = [];
-            foreach ($sv->conf->tags()->canonical_colors() as $k) {
-                if ($sv->has_req("tag_color_$k")
-                    && ($v = $sv->base_parse_req("tag_color_{$k}")) !== null
-                    && $v !== "") {
-                    $ts[] = preg_replace('/(?=\z| )/', "={$k}", $v);
-                }
-            }
-            $sv->save("tag_color", join(" ", $ts));
         } else {
             return false;
         }

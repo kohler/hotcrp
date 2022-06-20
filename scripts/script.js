@@ -8374,71 +8374,252 @@ return plinfo;
 
 /* pattern fill functions */
 window.make_pattern_fill = (function () {
-var fmap = {}, cmap = {"tag-white": 1, "tag-red": 2, "tag-orange": 3, "tag-yellow": 4, "tag-green": 5, "tag-blue": 6, "tag-purple": 7, "tag-gray": 8},
+var fmap = {},
+    knownmap = {
+        "tag-white": true, "tag-red": true, "tag-orange": true, "tag-yellow": true,
+        "tag-green": true, "tag-blue": true, "tag-purple": true, "tag-gray": true,
+        "badge-white": true, "badge-red": true, "badge-orange": true, "badge-yellow": true,
+        "badge-green": true, "badge-blue": true, "badge-purple": true, "badge-gray": true,
+        "badge-pink": true
+    },
+    colormap = {},
     params = {
-        "": {size: 34, css: "backgroundColor", incr: 8, rule: true},
-        "gdot ": {size: 12, css: "fill", incr: 3, pattern: true},
-        "glab ": {size: 20, css: "fill", incr: 6, pattern: true}
-    }, style;
-return function (classes, class_prefix) {
-    var space;
+        "": {prefix: "", size: 34, incr: 8, type: 0},
+        "gdot": {prefix: "gdot ", size: 12, incr: 3, type: 1},
+        "glab": {prefix: "glab ", size: 20, incr: 6, type: 1},
+        "badge": {prefix: "badge ", size: 12, incr: 3, type: 2}
+    },
+    stylesheet = null,
+    svgdef = null,
+    testdiv = null;
+function ensure_stylesheet() {
+    if (stylesheet === null) {
+        var selt = document.createElement("style");
+        document.head.appendChild(selt);
+        stylesheet = selt.sheet;
+    }
+    return stylesheet;
+}
+function make_color(k, r, g, b, a) {
+    var rx = r / 255, gx = g / 255, bx = b / 255;
+    rx = rx <= 0.04045 ? rx / 12.92 : Math.pow((rx + 0.055) / 1.055, 2.4);
+    gx = gx <= 0.04045 ? gx / 12.92 : Math.pow((gx + 0.055) / 1.055, 2.4);
+    bx = bx <= 0.04045 ? bx / 12.92 : Math.pow((bx + 0.055) / 1.055, 2.4);
+    var l = 0.2126 * rx + 0.7152 * gx + 0.0722 * bx,
+        vx = Math.max(rx, gx, bx),
+        cx = vx - Math.min(rx, gx, bx),
+        h, s;
+    if (cx < 0.00001) {
+        h = 0;
+    } else if (vx === rx) {
+        h = 60 * (gx - bx) / cx;
+    } else if (vx === gx) {
+        h = 120 + 60 * (bx - rx) / cx;
+    } else {
+        h = 240 + 60 * (rx - gx) / cx;
+    }
+    if (l <= 0.00001 || l >= 0.99999) {
+        s = 0;
+    } else {
+        s = (vx - l) / Math.min(l, 1 - l);
+    }
+
+    return {
+        k: k,
+        r: r,
+        g: g,
+        b: b,
+        a: a,
+        h: h,
+        s: s,
+        l: l,
+        has_graph: false,
+        gfill: null
+    };
+}
+function class_color(k) {
+    var value, m, c;
+    if (k in colormap) {
+        return colormap[k];
+    }
+    if (k.startsWith("tag-rgb-")
+        && (m = k.match(/^tag-rgb-([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/))) {
+        colormap[k] = c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0);
+        ensure_stylesheet().insertRule(".".concat(k, " { background-color: rgb(", c.r, ", ", c.g, ", ", c.b, "); }"), 0);
+        return c;
+    }
+    if (k.startsWith("badge-rgb-")
+        && (m = k.match(/^badge-rgb-([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/))) {
+        for (var xx in knownmap) {
+            if (xx.startsWith("badge-"))
+                console.log(JSON.stringify(class_color(xx)));
+        }
+        colormap[k] = c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0);
+        var rules = ["background-color: rgb(".concat(c.r, ", ", c.g, ", ", c.b, ");")];
+        if (c.l < 0.3)
+            rules.push("color: white;");
+        else if (c.l < 0.75)
+            rules.push("color: #111111;");
+        else {
+            rules.push("color: #333333;");
+            if (Math.min(c.r, c.g, c.b) > 200)
+                rules.push("border: 1px solid #333333;", "padding: 1px 0.2em 2px;");
+        }
+    console.log(JSON.stringify(c));
+        ensure_stylesheet().insertRule(".".concat(k, " { ", rules.join(" "), " }"), 0);
+        return c;
+    }
+    if (testdiv === null) {
+        testdiv = document.createElement("div");
+        testdiv.style.display = "none";
+        document.body.appendChild(testdiv);
+    }
+    testdiv.className = k;
+    var value = window.getComputedStyle(testdiv).backgroundColor, m;
+    if ((m = value.match(/^rgb\(([\d.]+), ([\d.]+), ([\d.]+)\)$/))) {
+        c = make_color(k, +m[1], +m[2], +m[3], 1.0);
+    } else if ((m = value.match(/^rgba\(([\d.]+), ([\d.]+), ([\d.]+), ([\d.]+)\)$/))
+               && +m[4] > 0) {
+        c = make_color(k, +m[1], +m[2], +m[3], +m[4]);
+    } else {
+        c = null;
+    }
+    colormap[k] = c;
+    return c;
+}
+function bgcolor(color) {
+    return "rgba(".concat(color.r, ", ", color.g, ", ", color.b, ", ", color.a, ")");
+}
+function gfillcolor(color) {
+    if (color.gfill !== null)
+        return color.gfill;
+    var r = color.r / 255,
+        g = color.g / 255,
+        b = color.b / 255,
+        min = Math.min(r, g, b),
+        a, d;
+    if (min < 0.3) {
+        a = 0.7 / (1 - min);
+        d = 1 - a;
+        r = d + a * r;
+        g = d + a * g;
+        b = d + a * b;
+        min = 0.3;
+    }
+    a = Math.max(0.2 + (color.l < 0.9 ? 0 : 4 * (color.l - 0.9)), 1 - min);
+    d = 1 - a;
+    r = Math.floor(255 * (r - d) / a);
+    g = Math.floor(255 * (g - d) / a);
+    b = Math.floor(255 * (b - d) / a);
+    color.gfill = [r, g, b, a];
+    return color.gfill;
+}
+function fillcolor(color) {
+    var gf = gfillcolor(color);
+    return "rgba(".concat(gf[0], ", ", gf[1], ", ", gf[2], ", ", gf[3], ")");
+}
+function strokecolor(color) {
+    var gf = gfillcolor(color);
+    if (color.l > 0.75) {
+        var f = 0.75 / color.l;
+        gf = [gf[0] * f, gf[1] * f, gf[2] * f, gf[3]];
+    }
+    return "rgba(".concat(gf[0], ", ", gf[1], ", ", gf[2], ", 0.8)");
+}
+function ensure_graph_rules(color) {
+    if (!color.has_graph) {
+        var stylesheet = ensure_stylesheet(), k = color.k;
+        stylesheet.insertRule(".gcdf.".concat(k, ", .gdot.", k, ", .gbar.", k, ", .gbox.", k, " { stroke: ", strokecolor(color), "; }"), 0);
+        stylesheet.insertRule(".gdot.".concat(k, ", .gbar.", k, ", .gbox.", k, ", .glab.", k, " { fill: ", fillcolor(color), "; }"), 0);
+        color.has_graph = true;
+    }
+}
+return function (classes, type) {
     if (!classes
-        || (space = classes.indexOf(" ")) < 0
-        || classes.substring(space) === " tagbg")
+        || (type === "" && classes.endsWith(" tagbg") && knownmap[classes.substr(0, -6)]))
         return null;
-    class_prefix = class_prefix || "";
-    if (class_prefix !== "" && class_prefix.charAt(class_prefix.length - 1) !== " ")
-        class_prefix += " ";
-    var index = class_prefix + classes;
+    // quick check on classes in input order
+    var param = params[type || ""] || params[""],
+        index = param.prefix + classes;
     if (index in fmap)
         return fmap[index];
-    // check canonical pattern name
-    var tags = classes.split(/\s+/).sort(function (a, b) {
-        var am = cmap[a], bm = cmap[b];
-        if (am && bm)
-            return am < bm ? -1 : 1;
-        else if (am || bm)
-            return am ? -1 : 1;
-        else
-            return a.localeCompare(b);
-    }), i;
-    for (i = 0; i < tags.length; ) {
-        if (!cmap[tags[i]] || (i && tags[i] == tags[i - 1]))
-            tags.splice(i, 1);
-        else
-            ++i;
+    // canonicalize classes, sort by color and luminance
+    var xtags = classes.split(/\s+/), i, k, color, colors = [];
+    for (i = 0; i !== xtags.length; ++i) {
+        k = xtags[i];
+        if (k !== "tagbg"
+            && k !== "badge"
+            && (color = class_color(k))
+            && colors.indexOf(color) < 0) {
+            colors.push(color);
+            param.type === 1 && ensure_graph_rules(color);
+        }
     }
-    var canonical_index = class_prefix + tags.join(" ");
-    if (canonical_index in fmap || tags.length <= 1) {
-        fmap[index] = fmap[canonical_index] || null;
+    colors.sort(function (a, b) {
+        if (a.s < 0.1 && b.s >= 0.1)
+            return a.l >= 0.9 ? -1 : 1;
+        else if (b.s < 0.1 && a.s >= 0.1)
+            return b.l >= 0.9 ? 1 : -1;
+        else if (a.h != b.h)
+            return a.h < b.h ? -1 : 1;
+        else if (a.l != b.l)
+            return a.l < b.l ? 1 : -1;
+        else
+            return a.s < b.s ? 1 : (a.s == b.s ? 0 : -1);
+    });
+    // check on classes in canonical order
+    var tags = [];
+    for (i = 0; i !== colors.length; ++i) {
+        tags.push(colors[i].k);
+    }
+    var cindex = param.prefix + tags.join(" ");
+    if (cindex in fmap || tags.length < 2) {
+        fmap[index] = fmap[cindex] || null;
         return fmap[index];
     }
     // create pattern
-    var param = params[class_prefix] || params[""],
-        id = "svgpat__" + canonical_index.replace(/\s+/g, "__"),
+    var id = "svgpat__" + cindex.replace(/\s+/g, "__"),
         size = param.size + Math.max(0, tags.length - 2) * param.incr,
-        sw = size / tags.length, t = "";
-    for (var i = 0; i < tags.length; ++i) {
-        var x = $('<div class="' + class_prefix + tags[i] + '"></div>').appendTo(document.body),
-            color = x.css(param.css);
-        x.remove();
-
-        t += '<path d="' + ["M", sw * i, 0, "l", -size, size, "l", sw, 0, "l", size, -size].join(" ") + '" fill="' + color + '"></path>' +
-            '<path d="' + ["M", sw * i + size, 0, "l", -size, size, "l", sw, 0, "l", size, -size].join(" ") + '" fill="' + color + '"></path>';
+        sw = size / tags.length,
+        svgns = "http://www.w3.org/2000/svg",
+        pathsfx = " 0l".concat(-size, " ", size, "l", sw, " 0l", size, " ", -size, "z"),
+        dxs = [],
+        pelt, elt;
+    for (i = 0; i !== colors.length; ++i) {
+        k = param.type === 1 ? fillcolor(colors[i]) : bgcolor(colors[i]);
+        dxs.push("M".concat(sw * i, pathsfx), k, "M".concat(sw * i + size, pathsfx), k);
     }
-    if (param.pattern)
-        $("div.body").prepend('<svg width="0" height="0" style="position:absolute"><defs><pattern id="' + id
-                              + '" patternUnits="userSpaceOnUse" width="' + size
-                              + '" height="' + size + '">' + t
-                              + '</pattern></defs></svg>');
-    if (param.rule && window.btoa) {
-        style || (style = $("<style></style>").appendTo("head")[0].sheet);
-        t = '<svg xmlns="http://www.w3.org/2000/svg" width="'.concat(size, '" height="', size, '">', t, '</svg>');
-        x = ".".concat(tags.join("."), class_prefix ? $.trim("." + class_prefix) : "");
-        style.insertRule(x.concat(" { background-image: url(data:image/svg+xml;base64,",
-            btoa(t), '); }'), 0);
+    if (param.type === 1) {
+        if (svgdef === null) {
+            var svg = document.createElementNS(svgns, "svg");
+            svg.setAttribute("width", 0);
+            svg.setAttribute("height", 0);
+            svg.style.position = "absolute";
+            document.body.insertBefore(svg, document.body.firstChild);
+            svgdef = document.createElementNS(svgns, "defs");
+            svg.appendChild(svgdef);
+        }
+        pelt = document.createElementNS(svgns, "pattern");
+        pelt.id = id;
+        pelt.setAttribute("patternUnits", "userSpaceOnUse");
+        pelt.setAttribute("width", size);
+        pelt.setAttribute("height", size);
+        for (i = 0; i !== dxs.length; i += 2) {
+            elt = document.createElementNS(svgns, "path");
+            elt.setAttribute("d", dxs[i]);
+            elt.setAttribute("fill", dxs[i + 1]);
+            pelt.appendChild(elt);
+        }
+        svgdef.appendChild(pelt);
+    } else if (window.btoa) {
+        var t = ['<svg xmlns="', svgns, '" width="', size, '" height="', size, '">'];
+        for (i = 0; i !== dxs.length; i += 2) {
+            t.push('<path d="', dxs[i], '" fill="', dxs[i + 1], '"></path>');
+        }
+        t.push('</svg>');
+        ensure_stylesheet().insertRule(".".concat(tags.join("."), " { background-image: url(data:image/svg+xml;base64,", btoa(t.join("")), '); }'), 0);
     }
-    fmap[index] = fmap[canonical_index] = "url(#" + id + ")";
+    fmap[index] = fmap[cindex] = "url(#" + id + ")";
     return fmap[index];
 };
 })();
@@ -8804,7 +8985,7 @@ function prepare_paper_select() {
                 var $p = $(self).find(".js-psedit-result").first();
                 $p.html(data.result || ctl.options[ctl.selectedIndex].innerHTML);
                 if (data.color_classes) {
-                    make_pattern_fill(data.color_classes || "");
+                    make_pattern_fill(data.color_classes);
                     $p.html('<span class="taghh ' + data.color_classes + '">' + $p.html() + '</span>');
                 }
             }
@@ -10386,7 +10567,7 @@ function rgb_array_for(svx) {
         document.body.appendChild(sp);
         sccolor[svx] = [0, 0, 0];
         st = window.getComputedStyle(sp).color;
-        if (st && (m = /^\s*rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)[\s,)]/.exec(st)))
+        if (st && (m = /^\s*rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)[\s,)]/.exec(st)))
             sccolor[svx] = [+m[1], +m[2], +m[3]];
         document.body.removeChild(sp);
     }

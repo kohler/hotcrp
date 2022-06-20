@@ -715,14 +715,26 @@
         "type": "taglist", "subtype": "wildcard", "size": 50, "autogrow": true,
         "parser_class": "Tags_SettingParser"
     },
+    {   "name": "tag_color", "internal": true, "type": "string"   },
     {
-        "name": "tag_color", "hashid": "colors-and-styles",
+        "name": "tag_style", "hashid": "colors-and-styles",
         "title": "Tag colors",
-        "type": "taglist", "parser_class": "Tags_SettingParser"
+        "type": "oblist", "parser_class": "TagStyle_SettingParser"
     },
     {
-        "name_pattern": "tag_color_$", "internal": true,
-        "title": "Tag colors", "title_pattern": "${uc $} tags",
+        "name_pattern": "tag_style/$", "internal": true,
+        "type": "object", "subtype": "TagStyle_Setting",
+        "parser_class": "TagStyle_SettingParser"
+    },
+    {   "name_pattern": "tag_style/$/id", "internal": true   },
+    {
+        "name_pattern": "tag_style/$/style", "storage": "member.style",
+        "title": "Tag style", "type": "simplestring", "required": true,
+        "parser_class": "TagStyle_SettingParser"
+    },
+    {
+        "name_pattern": "tag_style/$/tags", "storage": "member.tags",
+        "title": "Styled tags", "title_pattern": "${uc badge/$/style} tags",
         "type": "taglist", "subtype": "wildcard_chair", "size": 40, "autogrow": true
     },
     {

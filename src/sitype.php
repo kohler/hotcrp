@@ -506,6 +506,7 @@ class TagList_Sitype extends Sitype {
                 $sv->error_at($si, "<5>" . $sv->tagger()->error_html(true));
             }
         }
+        ksort($ts);
         return join(" ", array_values($ts));
     }
 }

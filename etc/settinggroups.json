@@ -296,8 +296,8 @@
     {
         "name": "tag-styles", "group": "tags", "order": 720,
         "title": "Colors and styles", "hashid": "colors-and-styles",
-        "print_function": "Tags_SettingRenderer::print_styles",
-        "settings": ["tag_color", "tag_color_$"]
+        "print_function": "TagStyle_SettingParser::print",
+        "settings": ["tag_color", "tag_style"]
     },
     {
         "name": "tracks", "group": "tags", "order": 750,
