@@ -2,7 +2,86 @@
 /* style.css -- HotCRP CSS styles */
 /* Copyright (c) 2006-2022 Eddie Kohler; see LICENSE. */
 
-@layer theme;
+/* theme colors */
+@layer theme {
+body {
+	color: #333333;
+	background-color: white;
+}
+select, button {
+	color: #222222;
+}
+
+.dark {
+	color: white;
+}
+.dark select, .dark button {
+	color: #eeeeee;
+}
+
+:link, :visited,
+.link, .btn-link, .btn-xlink {
+	color: #004daa;
+}
+.dark :link, .dark :visited,
+.dark .link, .dark .btn-link, .dark .btn-xlink {
+	color: #2177de;
+}
+.track:visited, .ptitle:visited, .pnum:visited {
+	color: #660099;
+}
+.dark .track:visited, .dark .ptitle:visited, .dark .pnum:visited {
+	color: #a645d6;
+}
+
+.hint, .f-h, .f-hx, .field-d {
+	color: #555555;
+}
+.dark .hint, .dark .f-h, .dark .f-hx, .dark .field-d {
+	color: #a0a0a0;
+}
+
+.auaff, em.plx, .asspref0 {
+	color: #555555;
+}
+.dark .auaff, .dark em.plx, .dark .asspref0 {
+	color: #a0a0a0;
+}
+
+.dim {
+	color: #777777;
+}
+
+.pstat_with {
+	color: #333333;
+}
+.pstat_sub {
+	color: #823e78;
+}
+.pstat_decno, .asspref-1 {
+	color: #9f0000;
+}
+.dark .pstat_decno {
+	color: #d01010;
+}
+.dark .asspref-1 {
+	color: #e02020;
+}
+.asspref1 {
+	color: #008000;
+}
+.pstat_decyes, .dark .asspref1 {
+	color: #259f00;
+}
+
+.pslcard-home-tag.tagbg {
+	color: #333333;
+}
+.pslcard-home-tag.tagbg.dark {
+	color: white;
+}
+}
+
 
 /* generic styles */
 html {
@@ -98,9 +177,6 @@ code, kbd, pre, samp, .text-monospace {
 	font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 	font-size: 90%;
 }
-select, button {
-	color: #222222;
-}
 body {
 	margin: 0;
 	position: relative;
@@ -117,80 +193,6 @@ body.leftmenu {
 }
 #body-buzzer {
 	background: #ecf2f4;
-}
-
-
-/* theme colors */
-@layer theme {
-body {
-	color: #333333;
-	background-color: white;
-}
-.dark {
-	color: white;
-}
-
-:link, :visited,
-.link, .btn-link, .btn-xlink {
-	color: #004daa;
-}
-.dark :link, .dark :visited,
-.dark .link, .dark .btn-link, .dark .btn-xlink {
-	color: #2177de;
-}
-.track:visited, .ptitle:visited, .pnum:visited {
-	color: #660099;
-}
-.dark .track:visited, .dark .ptitle:visited, .dark .pnum:visited {
-	color: #a645d6;
-}
-
-.hint {
-	color: #555555;
-}
-.dark .hint {
-	color: #a0a0a0;
-}
-
-.auaff, em.plx, .asspref0 {
-	color: #555555;
-}
-.dark .auaff, .dark em.plx, .dark .asspref0 {
-	color: #a0a0a0;
-}
-
-.dim {
-	color: #777777;
-}
-
-.pstat_with {
-	color: #333333;
-}
-.pstat_sub {
-	color: #823e78;
-}
-.pstat_decno, .asspref-1 {
-	color: #9f0000;
-}
-.dark .pstat_decno {
-	color: #d01010;
-}
-.dark .asspref-1 {
-	color: #e02020;
-}
-.asspref1 {
-	color: #008000;
-}
-.pstat_decyes, .dark .asspref1 {
-	color: #259f00;
-}
-
-.pslcard-home-tag.tagbg {
-	color: #333333;
-}
-.pslcard-home-tag.tagbg.dark {
-	color: white;
-}
 }
 
 
@@ -903,10 +905,6 @@ body.paper-error .msg {
 span.confirm {
 	font-style: italic;
 	color: #006600;
-}
-span.merror {
-	font-style: italic;
-	color: #660000;
 }
 span.hastitle {
 	border-bottom: 1px dotted #777777;
@@ -1832,10 +1830,7 @@ label.f-c, .f-i > label {
 .f-c.n, .f-i > label.n {
 	font-weight: normal;
 }
-.f-h, .f-hx, .field-d {
-	color: #555555;
-	font-size: 92%;
-}
+.f-h, .f-hx, .field-d,
 .feedback, .feedback-group {
 	font-size: 92%;
 }
