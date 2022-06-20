@@ -8514,9 +8514,9 @@ function gfillcolor(color) {
     }
     a = Math.max(0.2 + (color.l < 0.9 ? 0 : 4 * (color.l - 0.9)), 1 - min);
     d = 1 - a;
-    r = Math.floor(255 * (r - d) / a);
-    g = Math.floor(255 * (g - d) / a);
-    b = Math.floor(255 * (b - d) / a);
+    r = Math.floor(255.5 * (r - d) / a);
+    g = Math.floor(255.5 * (g - d) / a);
+    b = Math.floor(255.5 * (b - d) / a);
     color.gfill = [r, g, b, a];
     return color.gfill;
 }
