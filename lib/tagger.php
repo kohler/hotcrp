@@ -87,8 +87,16 @@ class TagInfo {
                 $this->$property = $t->$property;
         }
         foreach (["styles", "emoji"] as $property) {
-            if ($t->$property)
-                $this->$property = array_unique(array_merge($this->$property ?? [], $t->$property));
+            if (!empty($t->$property)) {
+                if (empty($this->$property)) {
+                    $this->$property = $t->$property;
+                } else {
+                    foreach ($t->$property as $x) {
+                        if (!in_array($x, $this->$property))
+                            $this->$property[] = $x;
+                    }
+                }
+            }
         }
     }
     /** @return string */
