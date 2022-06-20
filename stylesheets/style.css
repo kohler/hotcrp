@@ -3465,6 +3465,8 @@ a.badge-white:hover {
 .paperinfo {
 	display: flex;
 	align-items: stretch;
+	display: grid;
+	grid-template-columns: repeat(2, 50%);
 	word-wrap: break-word;
 	overflow-wrap: break-word;
 }
