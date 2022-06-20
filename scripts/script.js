@@ -8268,6 +8268,16 @@ plinfo.set_scoresort = function (ss) {
 
 plinfo.render_needed = render_needed;
 
+plinfo.update_tag_decoration = function ($title, html) {
+    $title.find(".tagdecoration").remove();
+    if (html) {
+        $title.append(html);
+        $title.find(".badge").each(function () {
+            make_pattern_fill(this.className);
+        });
+    }
+};
+
 $(window).on("hotcrptags", function (evt, rv) {
     if (!self && (self === false || initialize() === false))
         return;
@@ -8296,7 +8306,7 @@ $(window).on("hotcrptags", function (evt, rv) {
 
     // set color classes
     var cc = rv.color_classes;
-    if (/ tagbg$/.test(rv.color_classes || ""))
+    if (/tagbg$/.test(rv.color_classes || ""))
         $ptr.removeClass("k0 k1").closest("tbody").addClass("pltable-colored");
     if (hasClass(pr.closest("table"), "fold5c")
         && "color_classes_conflicted" in rv
@@ -8307,9 +8317,7 @@ $(window).on("hotcrptags", function (evt, rv) {
     }).addClass(cc);
 
     // set tag decoration
-    $ptr.find(".tagdecoration").remove();
-    if (rv.tag_decoration_html)
-        $ptr.find(".pl_title").append(rv.tag_decoration_html);
+    plinfo.update_tag_decoration($ptr.find(".pl_title"), rv.tag_decoration_html);
 
     // set actual tags
     if (fields.tags && !fields.tags.missing)
@@ -8319,7 +8327,7 @@ $(window).on("hotcrptags", function (evt, rv) {
 function change_color_classes(isconflicted) {
     return function () {
         var a = pattrnear(this, isconflicted ? "data-color-classes-conflicted" : "data-color-classes");
-        this.className = this.className.replace(/(?:^|\s+)(?:k[01]|tagbg|tag-\S+)(?= |$)/g, "").trim() + (a ? " " + a : "");
+        this.className = this.className.replace(/(?:^|\s+)(?:k[01]|tagbg|dark|tag-\S+)(?= |$)/g, "").trim() + (a ? " " + a : "");
     };
 }
 
@@ -8450,10 +8458,6 @@ function class_color(k) {
     }
     if (k.startsWith("badge-rgb-")
         && (m = k.match(/^badge-rgb-([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/))) {
-        for (var xx in knownmap) {
-            if (xx.startsWith("badge-"))
-                console.log(JSON.stringify(class_color(xx)));
-        }
         colormap[k] = c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0);
         var rules = ["background-color: rgb(".concat(c.r, ", ", c.g, ", ", c.b, ");")];
         if (c.l < 0.3)
@@ -8465,8 +8469,9 @@ function class_color(k) {
             if (Math.min(c.r, c.g, c.b) > 200)
                 rules.push("border: 1px solid #333333;", "padding: 1px 0.2em 2px;");
         }
-    console.log(JSON.stringify(c));
         ensure_stylesheet().insertRule(".".concat(k, " { ", rules.join(" "), " }"), 0);
+        if (c.l >= 0.3)
+            ensure_stylesheet().insertRule("a.".concat(k, ":hover { color: #c45500; border-color: #c45500; }"), 0);
         return c;
     }
     if (testdiv === null) {
@@ -8548,6 +8553,7 @@ return function (classes, type) {
     for (i = 0; i !== xtags.length; ++i) {
         k = xtags[i];
         if (k !== "tagbg"
+            && k !== "dark"
             && k !== "badge"
             && (color = class_color(k))
             && colors.indexOf(color) < 0) {
@@ -9453,7 +9459,7 @@ if (siteinfo.paperid) {
             return;
         data.color_classes && make_pattern_fill(data.color_classes, "", true);
         $(".has-tag-classes").each(function () {
-            var t = $.trim(this.className.replace(/(?: |^)tag(?:bg|-\S+)(?= |$)/g, " "));
+            var t = $.trim(this.className.replace(/(?: |^)(?:tagbg|dark|tag-\S+)(?= |$)/g, " "));
             if (data.color_classes)
                 t += " " + data.color_classes;
             this.className = t;
@@ -9461,9 +9467,7 @@ if (siteinfo.paperid) {
         $(".is-tag-index").each(function () {
             set_tag_index(this, data.tags);
         });
-        $("h1.paptitle .tagdecoration").remove();
-        if (data.tag_decoration_html)
-            $("h1.paptitle").append(data.tag_decoration_html);
+        plinfo.update_tag_decoration($("h1.paptitle"), data.tag_decoration_html);
     });
 }
 

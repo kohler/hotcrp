@@ -2,6 +2,8 @@
 /* style.css -- HotCRP CSS styles */
 /* Copyright (c) 2006-2022 Eddie Kohler; see LICENSE. */
 
+@layer theme;
+
 /* generic styles */
 html {
 	box-sizing: border-box;
@@ -100,8 +102,6 @@ select, button {
 	color: #222222;
 }
 body {
-	color: #333333;
-	background-color: white;
 	margin: 0;
 	position: relative;
 	min-height: 100vh;
@@ -117,6 +117,80 @@ body.leftmenu {
 }
 #body-buzzer {
 	background: #ecf2f4;
+}
+
+
+/* theme colors */
+@layer theme {
+body {
+	color: #333333;
+	background-color: white;
+}
+.dark {
+	color: white;
+}
+
+:link, :visited,
+.link, .btn-link, .btn-xlink {
+	color: #004daa;
+}
+.dark :link, .dark :visited,
+.dark .link, .dark .btn-link, .dark .btn-xlink {
+	color: #2177de;
+}
+.track:visited, .ptitle:visited, .pnum:visited {
+	color: #660099;
+}
+.dark .track:visited, .dark .ptitle:visited, .dark .pnum:visited {
+	color: #a645d6;
+}
+
+.hint {
+	color: #555555;
+}
+.dark .hint {
+	color: #a0a0a0;
+}
+
+.auaff, em.plx, .asspref0 {
+	color: #555555;
+}
+.dark .auaff, .dark em.plx, .dark .asspref0 {
+	color: #a0a0a0;
+}
+
+.dim {
+	color: #777777;
+}
+
+.pstat_with {
+	color: #333333;
+}
+.pstat_sub {
+	color: #823e78;
+}
+.pstat_decno, .asspref-1 {
+	color: #9f0000;
+}
+.dark .pstat_decno {
+	color: #d01010;
+}
+.dark .asspref-1 {
+	color: #e02020;
+}
+.asspref1 {
+	color: #008000;
+}
+.pstat_decyes, .dark .asspref1 {
+	color: #259f00;
+}
+
+.pslcard-home-tag.tagbg {
+	color: #333333;
+}
+.pslcard-home-tag.tagbg.dark {
+	color: white;
+}
 }
 
 
@@ -270,13 +344,6 @@ td.quicklinks, #tracker-connect {
    * a.noul: underline inherit/inherit
    * a.q: color inherit/link + underline inherit/link (a.qh.ulh)
    * a.qo: color inherit/link + underline inherit/inherit (a.qh.noul) */
-:link, :visited,
-.link, .btn-link, .btn-xlink {
-	color: #004daa;
-}
-.track:visited, .ptitle:visited, .pnum:visited {
-	color: #660099;
-}
 a.qh, a.noq, a.noq:hover, a.q, a.qo, a.btn, a.btn:hover,
 .is-error a, .is-warning a, .is-note a, .is-warning-note a, .is-urgent-note a,
 .btn-qlink, .btn-ulink {
@@ -425,9 +492,6 @@ label.checki {
 }
 .n {
 	font-weight: normal;
-}
-.dim {
-	color: #777777;
 }
 .small {
 	font-size: smaller;
@@ -1534,12 +1598,6 @@ div.hint {
 .hint {
 	font-weight: normal;
 	font-style: normal;
-	color: #555555;
-}
-.dark .hint {
-	color: #cccccc;
-}
-.hint {
 	font-size: smaller;
 }
 
@@ -2147,15 +2205,6 @@ pre.email {
 	font-weight: normal;
 	white-space: nowrap;
 }
-.asspref1 {
-	color: #008000;
-}
-.asspref0 {
-	color: #606060;
-}
-.asspref-1 {
-	color: #800000;
-}
 
 .pcconf-editselector {
 	float: right;
@@ -2383,22 +2432,6 @@ td.rlscore {
 span.pstat {
 	font-weight: bold;
 }
-.pstat_with {
-	color: #333333;
-}
-.pstat_sub {
-	color: #823e78;
-}
-.pstat_decno {
-	color: #9f0000;
-}
-.pstat_decyes {
-	color: #259f00;
-}
-
-.auaff {
-	color: #666666;
-}
 
 /* list footers */
 tfoot.pltable {
@@ -2584,7 +2617,6 @@ em.plx {
 	font-weight: normal;
 	font-style: italic;
 	padding-right: 0.25em;
-	color: #555;
 }
 
 /* paper list tables */
@@ -2958,7 +2990,6 @@ tr.plx {
 	bottom: 1px;
 	white-space: nowrap;
 	background-color: #333333;
-	color: white;
 	font-weight: 500;
 	text-decoration: none;
 	text-indent: 0;
@@ -2969,20 +3000,15 @@ h1 .badge {
 }
 .badge-white {
 	background-color: white;
-	color: #333333;
-	border: 1px solid #333333;
-	padding: 1px 0.2em 2px;
 }
 .badge-red {
 	background-color: #ee0000;
 }
 .badge-orange {
 	background-color: #ee9900;
-	color: #111111;
 }
 .badge-yellow {
 	background-color: #e2e200;
-	color: #111111;
 }
 .badge-green {
 	background-color: #008800;
@@ -2998,20 +3024,30 @@ h1 .badge {
 }
 .badge-pink {
 	background-color: #ffc3c8;
-	color: #111111;
+}
+.badge {
+	color: white;
 }
 a.badge:hover {
 	color: #ffa25b;
 }
-a.badge-white:hover {
-	color: #c45500;
-	border: 1px solid #c45500;
+a.badge:active {
+	color: red;
+}
+.badge-orange, .badge-yellow, .badge-pink {
+	color: #111111;
 }
 a.badge-orange:hover, a.badge-yellow:hover, a.badge-pink:hover {
 	color: #c45500;
 }
-a.badge:active {
-	color: red;
+.badge-white {
+	color: #333333;
+	border: 1px solid #333333;
+	padding: 1px 0.2em 2px;
+}
+a.badge-white:hover {
+	color: #c45500;
+	border-color: #c45500;
 }
 
 .graytext {
@@ -3123,7 +3159,6 @@ a.badge:active {
 	margin-left: -4px;
 	margin-right: -4px;
 	padding: 2px 4px;
-	color: #333333;
 }
 .pslitem {
 	text-overflow: ellipsis;
@@ -3369,7 +3404,6 @@ a.badge:active {
 }
 .bubble.graphtip.dark {
 	background-color: rgba(44, 44, 66, 0.95);
-	color: #ffffff;
 	border: 0 none;
 }
 .bubble.tooltip {

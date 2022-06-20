@@ -27,15 +27,16 @@ class TagStyle_SettingParser extends SettingParser {
         $dt = $sv->conf->tags();
         foreach ($dt->canonical_known_styles() as $ks) {
             if (($ks->sclass & TagStyle::SECRET) === 0)
-                $kmap[$ks->style] = [];
+                $kmap[$ks->name] = [];
         }
         $tc = $sv->conf->setting_data("tag_color") ?? "";
         preg_match_all('/(?:\A|\s)(\S+)=(\S+)(?=\s|\z)/', $tc, $m, PREG_SET_ORDER);
         foreach ($m as $mx) {
-            if (array_key_exists($mx[2], $kmap)
-                || (($ks = $dt->known_style($mx[2]))
-                    && ($ks->sclass & TagStyle::SECRET) === 0)) {
+            if (array_key_exists($mx[2], $kmap)) {
                 $kmap[$mx[2]][] = $mx[1];
+            } else if (($ks = $dt->known_style($mx[2]))
+                       && ($ks->sclass & TagStyle::SECRET) === 0) {
+                $kmap[$ks->name][] = $mx[1];
             }
         }
         $klist = [];
@@ -52,7 +53,6 @@ class TagStyle_SettingParser extends SettingParser {
         $dt = $sv->conf->tags();
         foreach ($sv->oblist_keys("tag_style/") as $ctr) {
             $style = $sv->oldv("tag_style/{$ctr}/style");
-            $ks = $dt->known_style($style);
             echo '<tr class="tag-', $style, '"><td class="remargin-left"></td>',
                 '<td class="pad taghl align-middle">',
                 '<label for="tag_style/', $ctr, '/tags">', $style, '</label></td>',
@@ -71,9 +71,11 @@ class TagStyle_SettingParser extends SettingParser {
         foreach ($sv->oblist_keys("tag_style/") as $ctr) {
             $br = $sv->parse_members("tag_style/{$ctr}");
             if (!$sv->reqstr("tag_style/{$ctr}/delete")) {
+                $ks = $sv->conf->tags()->known_style($br->style);
+                $sn = $ks ? $ks->name : $br->style;
                 foreach (explode(" ", $br->tags) as $tag) {
                     if ($tag !== "") {
-                        $bs[] = "{$tag}={$br->style}";
+                        $bs[] = "{$tag}={$sn}";
                     }
                 }
             }

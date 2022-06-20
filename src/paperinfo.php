@@ -1335,7 +1335,7 @@ class PaperInfo {
             $decor_c = $tagger->unparse_decoration_html($viewable_c);
             if ($decor !== $decor_c) {
                 $pj->tag_decoration_html = str_replace('class="tagdecoration"', 'class="tagdecoration fn5"', $decor_c)
-                    .  str_replace('class="tagdecoration"', 'class="tagdecoration fx5"', $decor);
+                    . str_replace('class="tagdecoration"', 'class="tagdecoration fx5"', $decor);
             } else {
                 $pj->tag_decoration_html = $decor;
             }
