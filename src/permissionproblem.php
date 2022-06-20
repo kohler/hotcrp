@@ -43,6 +43,7 @@ class PermissionProblem extends Exception
     }
 
     #[\ReturnTypeWillChange]
+    /** @return Iterator<string,mixed> */
     function getIterator() {
         return new ArrayIterator($this->as_array());
     }

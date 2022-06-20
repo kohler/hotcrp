@@ -96,15 +96,19 @@ class Keywords_HelpTopic {
         $cx = null;
         $cm = [];
         foreach ($hth->conf->tags() as $t) {
-            foreach ($t->colors ? : [] as $c) {
-                $cx = $cx ? : $c;
+            foreach ($t->styles ?? [] as $c) {
+                $cx = $cx ?? $c;
                 if ($cx === $c)
                     $cm[] = "“{$t->tag}”";
             }
         }
         if (!empty($cm)) {
-            array_unshift($cm, "“{$cx}”");
-            echo $hth->search_trow("style:$cx", "tagged to appear $cx (tagged " . commajoin($cm, "or") . ")");
+            array_unshift($cm, "“{$cx->name}”");
+            $klass = "taghh tag-{$cx->style}";
+            if (($cx->sclass & TagStyle::BG) !== 0) {
+                $klass .= $cx->dark() ? " dark tagbg" : " tagbg";
+            }
+            echo $hth->search_trow("style:{$cx->name}", "tagged to appear <span class=\"{$klass}\">{$cx->name}</span> (tagged " . commajoin($cm, "or") . ")");
         }
 
         $roundname = $hth->meaningful_review_round_name();

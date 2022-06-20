@@ -103,6 +103,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         return $this->_topic_map;
     }
     #[\ReturnTypeWillChange]
+    /** @return Iterator<int,string> */
     function getIterator() {
         return new ArrayIterator($this->_topic_map);
     }

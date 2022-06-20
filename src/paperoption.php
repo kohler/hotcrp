@@ -463,6 +463,7 @@ class PaperOptionList implements IteratorAggregate {
         return $this->_olist;
     }
 
+    /** @return Iterator<PaperOption> */
     #[\ReturnTypeWillChange]
     function getIterator() {
         $this->normal();

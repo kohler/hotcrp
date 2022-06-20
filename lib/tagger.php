@@ -548,6 +548,7 @@ class TagMap implements IteratorAggregate {
         ksort($this->storage);
         $this->sorted = true;
     }
+    /** @return Iterator<TagInfo> */
     #[\ReturnTypeWillChange]
     function getIterator() {
         $this->sorted || $this->sort_storage();

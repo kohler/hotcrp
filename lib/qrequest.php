@@ -137,6 +137,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         unset($this->_a[$offset]);
     }
     #[\ReturnTypeWillChange]
+    /** @return Iterator<string,mixed> */
     function getIterator() {
         return new ArrayIterator($this->as_array());
     }
