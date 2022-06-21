@@ -95,8 +95,8 @@
     {
         "name": "submissions/blind", "order": 40,
         "print_function": "Submissions_SettingRenderer::print_blind",
-        "title": "Reviewer visibility",
-        "settings": ["sub_blind"]
+        "title": "Visibility to reviewers",
+        "settings": ["author_visibility"]
     },
     {
         "name": "submissions/pcseeall", "order": 50,
@@ -118,13 +118,13 @@
         "name": "subform/abstract", "order": 10,
         "title": "Abstract and PDF",
         "print_function": "SubForm_SettingRenderer::print_abstract",
-        "settings": ["sub_noabstract", "sub_nopapers", "format/1"]
+        "settings": ["sf_abstract", "sf_pdf_submission", "format/1"]
     },
     {
         "name": "subform/conflicts", "order": 20,
         "title": "Conflicts and collaborators",
         "print_function": "SubForm_SettingRenderer::print_conflicts",
-        "settings": ["sub_pcconf", "sub_pcconfsel", "sub_collab", "conflict_description", "sub_pcconfvis"]
+        "settings": ["sf_pc_conflicts", "sf_pc_conflict_types", "sf_collaborators", "conflict_description", "conflict_visibility"]
     },
     {
         "name": "options", "group": "subform", "order": 440,
@@ -262,7 +262,7 @@
     {
         "name": "tags/main/chair", "order": 10,
         "print_function": "Tags_SettingRenderer::print_tag_chair",
-        "settings": ["tag_chair"]
+        "settings": ["tag_readonly"]
     },
     {
         "name": "tags/main/sitewide", "order": 20,
@@ -272,12 +272,12 @@
     {
         "name": "tags/main/approval", "order": 30,
         "print_function": "Tags_SettingRenderer::print_tag_approval",
-        "settings": ["tag_approval"]
+        "settings": ["tag_vote_approval"]
     },
     {
         "name": "tags/main/vote", "order": 40,
         "print_function": "Tags_SettingRenderer::print_tag_vote",
-        "settings": ["tag_vote"]
+        "settings": ["tag_vote_allotment"]
     },
     {
         "name": "tags/main/rank", "order": 50,
@@ -363,7 +363,7 @@
     {
         "name": "shepherds/identity", "order": 10,
         "print_function": "Shepherds_SettingParser::print_identity",
-        "settings": ["shepherd_show"]
+        "settings": ["shepherd_visibility"]
     },
     {
         "name": "decisions/decision-visibility", "order": 300,

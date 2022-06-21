@@ -562,13 +562,13 @@ class Options_SettingParser extends SettingParser {
 
 
     static function crosscheck(SettingValues $sv) {
-        if (($sv->has_interest("sf") || $sv->has_interest("sub_blind"))
-            && $sv->oldv("sub_blind") == Conf::BLIND_ALWAYS) {
+        if (($sv->has_interest("sf") || $sv->has_interest("author_visibility"))
+            && $sv->oldv("author_visibility") == Conf::BLIND_ALWAYS) {
             $opts = Options_SettingParser::configurable_options($sv->conf);
             foreach (array_values($opts) as $ctrz => $f) {
                 if ($f->visibility() === PaperOption::VIS_AUTHOR) {
                     $visname = "sf/" . ($ctrz + 1) . "/visibility";
-                    $sv->warning_at($visname, "<5>" . $sv->setting_link("All submissions are blind", "sub_blind") . ", so this field is always hidden");
+                    $sv->warning_at($visname, "<5>" . $sv->setting_link("All submissions are blind", "author_visibility") . ", so this field is always hidden");
                     $sv->inform_at($visname, "<0>Would “hidden until review” visibility be better?");
                 }
             }

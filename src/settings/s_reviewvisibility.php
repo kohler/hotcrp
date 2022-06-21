@@ -48,14 +48,14 @@ class ReviewVisibility_SettingParser extends SettingParser {
             && !$sv->has_error_at("review_visibility_author_tags")) {
             $sv->warning_at("review_visibility_author_tags", "<0>You haven’t set any review visibility tags.");
         }
-        if (($sv->has_interest("review_visibility_author") || $sv->has_interest("tag_chair"))
+        if (($sv->has_interest("review_visibility_author") || $sv->has_interest("tag_readonly"))
             && $sv->oldv("review_visibility_author") == Conf::AUSEEREV_TAGS
             && $sv->oldv("review_visibility_author_tags")
             && !$sv->has_error_at("review_visibility_author_tags")) {
             foreach ($conf->tag_au_seerev as $t) {
                 if (!$conf->tags()->is_chair($t)) {
-                    $sv->warning_at("review_visibility_author_tags", "<5>PC members can change the tag ‘" . htmlspecialchars($t) . "’, which affects whether authors can see reviews. Such tags should usually be " . $sv->setting_link("read-only", "tag_chair") . ".");
-                    $sv->warning_at("tag_chair");
+                    $sv->warning_at("review_visibility_author_tags", "<5>PC members can change the tag ‘" . htmlspecialchars($t) . "’, which affects whether authors can see reviews. Such tags should usually be " . $sv->setting_link("read-only", "tag_readonly") . ".");
+                    $sv->warning_at("tag_readonly");
                 }
             }
         }

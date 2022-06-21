@@ -10,7 +10,7 @@ class Tags_SettingRenderer {
         return join(" ", array_map(function ($t) { return $t->tag; }, $tl));
     }
     static function print_tag_chair(SettingValues $sv) {
-        $sv->print_entry_group("tag_chair", null, ["class" => "need-suggest tags"], "PC members can see these tags, but only administrators can change them.");
+        $sv->print_entry_group("tag_readonly", null, ["class" => "need-suggest tags"], "PC members can see these tags, but only administrators can change them.");
     }
     static function print_tag_sitewide(SettingValues $sv) {
         if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager()) {
@@ -18,10 +18,10 @@ class Tags_SettingRenderer {
         }
     }
     static function print_tag_approval(SettingValues $sv) {
-        $sv->print_entry_group("tag_approval", null, ["class" => "need-suggest tags"], "<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>");
+        $sv->print_entry_group("tag_vote_approval", null, ["class" => "need-suggest tags"], "<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>");
     }
     static function print_tag_vote(SettingValues $sv) {
-        $sv->print_entry_group("tag_vote", null, ["class" => "need-suggest tags"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>)");
+        $sv->print_entry_group("tag_vote_allotment", null, ["class" => "need-suggest tags"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>)");
     }
     static function print_tag_rank(SettingValues $sv) {
         $sv->print_entry_group("tag_rank", null, null, 'The <a href="' . $sv->conf->hoturl("offline") . '">offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href="' . $sv->conf->hoturl("help", "t=ranking") . '">Help</a>)');
@@ -46,22 +46,22 @@ class Tags_SettingParser extends SettingParser {
     }
 
     function set_oldv(SettingValues $sv, Si $si) {
-        if ($si->name === "tag_chair") {
+        if ($si->name === "tag_readonly") {
             $ts = array_filter($sv->conf->tags()->filter("chair"), function ($t) {
                 return !str_starts_with($t->tag, "~~")
                     && !str_starts_with($t->tag, "perm:");
             });
-            $sv->set_oldv("tag_chair", Tags_SettingRenderer::render_tags($ts));
+            $sv->set_oldv("tag_readonly", Tags_SettingRenderer::render_tags($ts));
         } else if ($si->name === "tag_sitewide") {
             $sv->set_oldv("tag_sitewide", Tags_SettingRenderer::render_tags($sv->conf->tags()->filter("sitewide")));
-        } else if ($si->name === "tag_approval") {
-            $sv->set_oldv("tag_approval", Tags_SettingRenderer::render_tags($sv->conf->tags()->filter("approval")));
-        } else if ($si->name === "tag_vote") {
+        } else if ($si->name === "tag_vote_approval") {
+            $sv->set_oldv("tag_vote_approval", Tags_SettingRenderer::render_tags($sv->conf->tags()->filter("approval")));
+        } else if ($si->name === "tag_vote_allotment") {
             $x = [];
             foreach ($sv->conf->tags()->filter("allotment") as $t) {
                 $x[] = "{$t->tag}#{$t->allotment}";
             }
-            $sv->set_oldv("tag_vote", join(" ", $x));
+            $sv->set_oldv("tag_vote_allotment", join(" ", $x));
         } else if ($si->name === "tag_rank") {
             $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank") ?? "");
         }
@@ -69,15 +69,15 @@ class Tags_SettingParser extends SettingParser {
 
     function apply_req(SettingValues $sv, Si $si) {
         assert($this->sv === $sv);
-        if ($si->name === "tag_vote") {
+        if ($si->name === "tag_vote_allotment") {
             if (($v = $sv->base_parse_req($si)) !== null
-                && $sv->update("tag_vote", $v)) {
+                && $sv->update("tag_vote_allotment", $v)) {
                 $sv->request_write_lock("PaperTag");
                 $sv->request_store_value($si);
             }
-        } else if ($si->name === "tag_approval") {
+        } else if ($si->name === "tag_vote_approval") {
             if (($v = $sv->base_parse_req($si)) !== null
-                && $sv->update("tag_approval", $v)) {
+                && $sv->update("tag_vote_approval", $v)) {
                 $sv->request_write_lock("PaperTag");
                 $sv->request_store_value($si);
             }
@@ -95,13 +95,14 @@ class Tags_SettingParser extends SettingParser {
     }
 
     function store_value(SettingValues $sv, Si $si) {
-        if (($si->name === "tag_vote" || $si->name === "tag_approval")
+        if (($si->name === "tag_vote_allotment"
+             || $si->name === "tag_vote_approval")
             && !$this->cleaned) {
             $old_votish = $new_votish = [];
-            foreach (Tagger::split_unpack(strtolower($sv->oldv("tag_vote") . " " . $sv->oldv("tag_approval"))) as $ti) {
+            foreach (Tagger::split_unpack(strtolower($sv->oldv("tag_vote_allotment") . " " . $sv->oldv("tag_vote_approval"))) as $ti) {
                 $old_votish[] = $ti[0];
             }
-            foreach (Tagger::split_unpack(strtolower($sv->newv("tag_vote") . " " . $sv->newv("tag_approval"))) as $ti) {
+            foreach (Tagger::split_unpack(strtolower($sv->newv("tag_vote_allotment") . " " . $sv->newv("tag_vote_approval"))) as $ti) {
                 $new_votish[] = $ti[0];
             }
             $new_votish[] = "";
@@ -133,22 +134,22 @@ class Tags_SettingParser extends SettingParser {
 
     static function crosscheck(SettingValues $sv) {
         $vs = [];
-        '@phan-var array<string,list<string>> $vs';
-        $descriptions = [
-            "tag_approval" => "approval voting",
-            "tag_vote" => "allotment voting",
-            "tag_rank" => "ranking"
+        '@phan-var array<string,list<int>> $vs';
+        $vinfo = [
+            ["tag_approval", "tag_vote_approval", "approval voting"],
+            ["tag_vote", "tag_vote_allotment", "allotment voting"],
+            ["tag_rank", "tag_rank", "ranking"]
         ];
-        foreach (array_keys($descriptions) as $n) {
-            foreach (Tagger::split_unpack($sv->conf->setting_data($n) ?? "") as $ti) {
-                $lx = &$vs[strtolower($ti[0])];
-                $lx = $lx ?? [];
-                $lx[] = $n;
-                if (count($lx) === 2) {
-                    $sv->warning_at($lx[0], "<0>Tag ‘{$ti[0]}’ is also used for " . $descriptions[$n]);
+        foreach ($vinfo as $di => $dd) {
+            foreach (Tagger::split_unpack($sv->conf->setting_data($dd[0]) ?? "") as $ti) {
+                $ltag = strtolower($ti[0]);
+                $vs[$ltag][] = $di;
+                $m = $vs[$ltag];
+                if (count($m) === 2) {
+                    $sv->warning_at($vinfo[$m[0]][1], "<0>Tag ‘{$ti[0]}’ is also used for {$dd[2]}");
                 }
-                if (count($lx) > 1) {
-                    $sv->warning_at($n, "<0>Tag ‘{$ti[0]}’ is also used for " . $descriptions[$lx[0]]);
+                if (count($m) > 1) {
+                    $sv->warning_at($dd[1], "<0>Tag ‘{$ti[0]}’ is also used for {$vinfo[$m[0]][2]}");
                 }
             }
         }

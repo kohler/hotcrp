@@ -145,6 +145,8 @@ class Si {
             } else {
                 trigger_error("setting {$j->name}.storage format error");
             }
+        } else if ($this->name2 !== null && str_starts_with($this->name2, "/")) {
+            $this->storage = "member." . substr($this->name2, 1);
         }
         if (isset($j->hashid)) {
             if (is_string($j->hashid) || $j->hashid === false) {

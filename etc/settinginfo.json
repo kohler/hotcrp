@@ -1,15 +1,15 @@
 [
     {
-        "name": "conference_abbreviation",
+        "name": "conference_abbreviation", "storage": "opt.shortName",
         "title": "Conference abbreviation",
         "type": "simplestring", "size": 20, "autogrow": true,
-        "storage": "opt.shortName", "parser_class": "Basics_SettingParser"
+        "parser_class": "Basics_SettingParser"
     },
     {
-        "name": "conference_name",
+        "name": "conference_name", "storage": "opt.longName",
         "title": "Conference name", "placeholder": "(same as abbreviation)",
         "type": "simplestring", "size": 70,
-        "storage": "opt.longName", "parser_class": "Basics_SettingParser"
+        "parser_class": "Basics_SettingParser"
     },
 
     {
@@ -33,8 +33,8 @@
         "internal": true
     },
     {
-        "name": "outcome_map", "internal": true,
-        "storage": "dat.outcome_map", "default_value": "{\"1\":\"Accepted\",\"-1\":\"Rejected\"}"
+        "name": "outcome_map", "internal": true, "storage": "dat.outcome_map",
+        "default_value": "{\"1\":\"Accepted\",\"-1\":\"Rejected\"}"
     },
 
     {
@@ -48,14 +48,14 @@
     },
     {   "name_pattern": "decision/$/id", "internal": true   },
     {
-        "name_pattern": "decision/$/name", "title": "Decision name",
+        "name_pattern": "decision/$/name",
+        "title": "Decision name",
         "type": "simplestring", "size": 35, "placeholder": "Decision name",
-        "required": true, "storage": "member.name"
+        "required": true
     },
     {
         "name_pattern": "decision/$/category",
-        "title": "Decision category", "type": "radio", "values": ["accept", "reject"],
-        "storage": "member.category"
+        "title": "Decision category", "type": "radio", "values": ["accept", "reject"]
     },
 
     {
@@ -84,88 +84,94 @@
         "type": "longstring"
     },
     {
-        "name": "review_terms",
+        "name": "review_terms", "storage": "msg.clickthrough_review",
         "title": "Clickthrough review terms",
-        "type": "htmlstring", "size": 10, "storage": "msg.clickthrough_review",
+        "type": "htmlstring", "size": 10,
         "ifnonempty": "review_terms_exist"
     },
     {
-        "name": "submission_terms",
+        "name": "submission_terms", "storage": "msg.clickthrough_submit",
         "title": "Clickthrough submission terms",
-        "type": "htmlstring", "size": 10, "storage": "msg.clickthrough_submit",
+        "type": "htmlstring", "size": 10,
         "ifnonempty": "submission_terms_exist"
     },
     {
-        "name": "conflict_description",
+        "name": "conflict_description", "storage": "msg.conflictdef",
         "title": "Definition of conflict of interest",
-        "type": "htmlstring", "size": 5, "storage": "msg.conflictdef"
+        "type": "htmlstring", "size": 5
     },
     {
-        "name": "final_edit_message",
+        "name": "conflict_visibility", "storage": "sub_pcconfvis",
+        "title": "PC conflict visibility",
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 0,
+        "json_values": ["if_authors_visible", "no", "yes"]
+    },
+    {
+        "name": "final_edit_message", "storage": "msg.finalsubmit",
         "title": "Final version edit message",
-        "type": "htmlstring", "storage": "msg.finalsubmit"
+        "type": "htmlstring"
     },
     {
-        "name": "home_message",
+        "name": "home_message", "storage": "msg.home",
         "title": "Home page message",
-        "type": "htmlstring", "storage": "msg.home"
+        "type": "htmlstring"
     },
     {
-        "name": "preference_instructions",
+        "name": "preference_instructions", "storage": "msg.revprefdescription",
         "title": "Review preference instructions",
-        "type": "htmlstring", "size": 20, "storage": "msg.revprefdescription",
+        "type": "htmlstring", "size": 20,
         "default_message": ["revprefdescription", "has_topics"]
     },
     {
-        "name": "submission_edit_message",
+        "name": "submission_edit_message", "storage": "msg.submit",
         "title": "Submission edit message",
-        "type": "htmlstring", "size": 5, "storage": "msg.submit"
+        "type": "htmlstring", "size": 5
     },
     {
         "name": "next_optionid", "internal": true, "type": "nonnegint"
     },
     {
-        "name": "review_terms_exist", "internal": true, "type": "checkbox",
-        "storage": "ova.clickthrough_review"
+        "name": "review_terms_exist", "internal": true, "storage": "ova.clickthrough_review",
+        "type": "checkbox"
     },
     {
-        "name": "submission_terms_exist", "internal": true, "type": "checkbox",
-        "storage": "ova.clickthrough_submit"
+        "name": "submission_terms_exist", "internal": true, "storage": "ova.clickthrough_submit",
+        "type": "checkbox"
     },
     {
-        "name": "conference_url",
-        "title": "Conference URL", "storage": "opt.conferenceSite",
+        "name": "conference_url", "storage": "opt.conferenceSite",
+        "title": "Conference URL",
         "type": "url", "required": false, "size": 70, "placeholder": "N/A"
     },
     {
-        "name": "site_contact_email",
-        "title": "Email of site contact", "storage": "opt.contactEmail",
+        "name": "site_contact_email", "storage": "opt.contactEmail",
+        "title": "Email of site contact",
         "type": "email", "required": false, "size": 40,
         "parser_class": "SiteContact_SettingParser", "parse_order": 1
     },
     {
-        "name": "site_contact_name",
-        "title": "Name of site contact", "storage": "opt.contactName",
+        "name": "site_contact_name", "storage": "opt.contactName",
+        "title": "Name of site contact",
         "type": "simplestring", "size": 50,
         "parser_class": "SiteContact_SettingParser", "placeholder": "(none)"
     },
     {
-        "name": "email_default_cc",
-        "title": "Default Cc for mail tool", "storage": "opt.emailCc",
+        "name": "email_default_cc", "storage": "opt.emailCc",
+        "title": "Default Cc for mail tool",
         "type": "emailheader", "size": 80, "placeholder": "(none)"
     },
     {
-        "name": "email_default_reply_to",
-        "title": "Default Reply-To for mail tool", "storage": "opt.emailReplyTo",
+        "name": "email_default_reply_to", "storage": "opt.emailReplyTo",
+        "title": "Default Reply-To for mail tool",
         "type": "emailheader", "size": 80, "placeholder": "(none)"
     },
     {
-        "name": "options", "hashid": false,
-        "internal": true, "type": "string", "storage": "dat.options"
+        "name": "options", "storage": "dat.options",
+        "internal": true, "type": "string", "hashid": false
     },
     {
-        "name": "options_version", "internal": true,
-        "storage": "val.options"
+        "name": "options_version", "internal": true, "storage": "val.options"
     },
 
     {
@@ -181,56 +187,97 @@
     {
         "name_pattern": "sf/$/order",
         "title": "Submission field order", "title_pattern": "‘${sv sf/$/name}’ order",
-        "type": "float", "storage": "member.order"
+        "type": "float"
     },
     {
         "name_pattern": "sf/$/name", "title": "Submission field name",
-        "type": "simplestring", "storage": "member.name",
+        "type": "simplestring",
         "placeholder": "Field name", "size": 50, "parser_class": "Options_SettingParser"
     },
     {
         "name_pattern": "sf/$/type",
         "title": "Submission field type", "title_pattern": "‘${sv sf/$/name}’ type",
-        "type": "simplestring", "storage": "member.type", "parser_class": "Options_SettingParser"
+        "type": "simplestring", "parser_class": "Options_SettingParser"
     },
     {
         "name_pattern": "sf/$/description",
         "title": "Submission field description", "title_pattern": "‘${sv sf/$/name}’ description",
-        "type": "htmlstring", "size": 2, "autogrow": true,
-        "storage": "member.description"
+        "type": "htmlstring", "size": 2, "autogrow": true
     },
     {
-        "name_pattern": "sf/$/choices",
+        "name_pattern": "sf/$/choices", "storage": "member.selector",
         "title": "Submission field choices", "title_pattern": "‘${sv sf/$/name}’ choices",
         "type": "longstring", "size": 3, "autogrow": true,
-        "storage": "member.selector", "parser_class": "Options_SettingParser"
+        "parser_class": "Options_SettingParser"
     },
     {
         "name_pattern": "sf/$/required",
         "title": "Submission field requirement", "title_pattern": "‘${sv sf/$/name}’ requirement",
-        "type": "radio", "values": [0, 1], "storage": "member.required"
+        "type": "radio", "values": [0, 1]
     },
     {
         "name_pattern": "sf/$/display",
         "title": "Submission field display", "title_pattern": "‘${sv sf/$/name}’ display",
-        "type": "radio", "values": ["prominent", "topics", "submission"], "storage": "member.display"
+        "type": "radio", "values": ["prominent", "topics", "submission"]
     },
     {
         "name_pattern": "sf/$/visibility",
         "title": "Submission field visibility", "title_pattern": "‘${sv sf/$/name}’ visibility",
-        "type": "radio", "values": ["all", "nonblind", "conflict", "review", "admin"], "storage": "member.visibility"
+        "type": "radio", "values": ["all", "nonblind", "conflict", "review", "admin"]
     },
     {
         "name_pattern": "sf/$/presence",
         "title": "Submission field presence", "title_pattern": "‘${sv sf/$/name}’ presence",
-        "type": "radio", "values": ["all", "final", "custom"], "storage": "member.presence"
+        "type": "radio", "values": ["all", "final", "custom"]
     },
     {
-        "name_pattern": "sf/$/condition",
+        "name_pattern": "sf/$/condition", "storage": "member.exists_if",
         "title": "Submission field presence condition", "title_pattern": "‘${sv sf/$/name}’ presence condition",
-        "type": "simplestring", "size": 30, "placeholder": "Search", "storage": "member.exists_if",
+        "type": "simplestring", "size": 30, "placeholder": "Search",
         "parser_class": "SubFieldCondition_SettingParser"
     },
+    {
+        "name": "sf_abstract", "storage": "ova.noAbstract",
+        "title": "Submission abstract required",
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 0,
+        "json_values": ["required", "optional", "none"]
+    },
+    {
+        "name": "sf_pdf_submission", "storage": "ova.noPapers",
+        "title": "Submission PDF required",
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 0,
+        "json_values": ["required", "optional", "none"]
+    },
+    {
+        "name": "author_visibility", "storage": "sub_blind",
+        "title": "Submission anonymity",
+        "type": "radio",
+        "values": [0, 1, 2, 3], "default_value": 2,
+        "json_values": ["open", "optional", "blind", "blind_until_review"]
+    },
+    {
+        "name": "accepted_author_visibility", "storage": "negval.seedec_hideau",
+        "title": "Show accepted submissions’ author lists to reviewers",
+        "type": "checkbox"
+    },
+    {
+        "name": "sf_pc_conflicts", "storage": "sub_pcconf",
+        "title": "Collect PC conflicts",
+        "type": "checkbox"
+    },
+    {
+        "name": "sf_pc_conflict_types", "storage": "sub_pcconfsel",
+        "title": "Collect PC conflict types",
+        "type": "checkbox"
+    },
+    {
+        "name": "sf_collaborators", "storage": "sub_collab",
+        "title": "Collect other conflicts and collaborators",
+        "type": "checkbox"
+    },
+
 
     {
         "name": "pc_seeall",
@@ -243,15 +290,15 @@
         "type": "checkbox"
     },
     {
-        "name": "pc_warn_bulk_download",
+        "name": "pc_warn_bulk_download", "storage": "ova.pcWarnBulkDownload",
         "title": "Warn PC about downloading submissions in bulk",
-        "type": "checkbox", "storage": "ova.pcWarnBulkDownload"
+        "type": "checkbox"
     },
 
     {
-        "name": "response_active",
+        "name": "response_active", "storage": "resp_active",
         "title": "Collect authors’ responses",
-        "type": "checkbox", "storage": "resp_active"
+        "type": "checkbox"
     },
 
     {
@@ -272,7 +319,7 @@
         "name_pattern": "response/$/name",
         "title": "Response name", "placeholder": "Response name",
         "type": "tag", "required": false, "size": 20,
-        "storage": "member.name", "parser_class": "Response_SettingParser"
+        "parser_class": "Response_SettingParser"
     },
     {
         "name_pattern": "response/$/title",
@@ -281,34 +328,30 @@
     {
         "name_pattern": "response/$/open",
         "title": "Response start time", "type": "date",
-        "title_pattern": "${sv response/$/title} start time",
-        "storage": "member.open"
+        "title_pattern": "${sv response/$/title} start time"
     },
     {
         "name_pattern": "response/$/done",
         "title": "Response hard deadline", "type": "date",
-        "title_pattern": "${sv response/$/title} hard deadline",
-        "storage": "member.done"
+        "title_pattern": "${sv response/$/title} hard deadline"
     },
     {
         "name_pattern": "response/$/grace",
         "title": "Response grace period", "type": "grace",
-        "title_pattern": "${sv response/$/title} grace period",
-        "storage": "member.grace"
+        "title_pattern": "${sv response/$/title} grace period"
     },
     {
         "name_pattern": "response/$/condition",
         "title": "Response condition",
         "type": "simplestring", "size": 40, "placeholder": "(All)",
         "title_pattern": "${sv response/$/title} condition",
-        "storage": "member.condition", "parser_class": "Response_SettingParser"
+        "parser_class": "Response_SettingParser"
     },
     {
         "name_pattern": "response/$/wordlimit",
         "title": "Response word limit",
         "type": "int", "size": 5, "placeholder": "none", "default_value": 0,
-        "title_pattern": "${sv response/$/title} word limit",
-        "storage": "member.wordlimit"
+        "title_pattern": "${sv response/$/title} word limit"
     },
     {
         "name_pattern": "response/$/instructions",
@@ -316,7 +359,7 @@
         "type": "htmlstring", "size": 3,
         "default_message": ["resp_instrux", "response/$/wordlimit"],
         "title_pattern": "${sv response/$/title} instructions",
-        "storage": "member.instructions", "parser_class": "Response_SettingParser"
+        "parser_class": "Response_SettingParser"
     },
 
 
@@ -400,7 +443,7 @@
         "parser_class": "Review_SettingParser"
     },
     {
-        "name_pattern": "review/$/id", "internal": true, "storage": "member.id"
+        "name_pattern": "review/$/id", "internal": true
     },
     {
         "name_pattern": "review/$/pctitle", "internal": true, "parser_class": "Review_SettingParser"
@@ -411,42 +454,39 @@
     {
         "name_pattern": "review/$/name",
         "title": "Review round name",
-        "type": "tag", "required": false, "size": 12, "placeholder": "unnamed",
-        "storage": "member.name"
+        "type": "tag", "required": false, "size": 12, "placeholder": "unnamed"
     },
     {
         "name_pattern": "review/$/soft",
         "title_pattern": "${sv review/$/pctitle} deadline",
-        "type": "date", "placeholder": "none", "storage": "member.soft"
+        "type": "date", "placeholder": "none"
     },
     {
         "name_pattern": "review/$/done",
         "title_pattern": "${sv review/$/pctitle} hard deadline",
-        "type": "date", "placeholder": "none", "storage": "member.done"
+        "type": "date", "placeholder": "none"
     },
     {
         "name_pattern": "review/$/external_soft",
         "title_pattern": "${sv review/$/exttitle} deadline",
-        "type": "date", "subtype": "explicit_none", "placeholder": "same as PC",
-        "storage": "member.external_soft"
+        "type": "date", "subtype": "explicit_none", "placeholder": "same as PC"
     },
     {
         "name_pattern": "review/$/external_done",
         "title_pattern": "${sv review/$/exttitle} hard deadline",
-        "type": "date", "subtype": "explicit_none", "placeholder": "same as PC",
-        "storage": "member.external_done"
+        "type": "date", "subtype": "explicit_none", "placeholder": "same as PC"
     },
     {
-        "name": "review_default_round_index",
+        "name": "review_default_round_index", "storage": "none",
         "title": "Default round for new PC reviews",
         "type": "nonnegint", "parser_class": "Review_SettingParser",
-        "storage": "none", "parse_order": 1
+        "parse_order": 1
     },
     {
-        "name": "review_default_external_round_index",
+        "name": "review_default_external_round_index", "storage": "none",
         "title": "Default round for new external reviews",
         "type": "nonnegint", "parser_class": "Review_SettingParser",
-        "storage": "none", "parse_order": 1
+        "parse_order": 1
     },
     {
         "name": "review_default_round", "storage": "rev_roundtag",
@@ -455,10 +495,10 @@
         "parse_order": 1
     },
     {
-        "name": "review_default_external_round",
+        "name": "review_default_external_round", "storage": "extrev_roundtag",
         "title": "Default round for new external reviews",
         "type": "tag", "required": false, "parser_class": "Review_SettingParser",
-        "storage": "extrev_roundtag", "parse_order": 1
+        "parse_order": 1
     },
     {   "name_pattern": "pcrev_soft_$", "internal": true, "type": "date"   },
     {   "name_pattern": "pcrev_hard_$", "internal": true, "type": "date"   },
@@ -493,57 +533,53 @@
     {   "name_pattern": "rf/$/id", "internal": true   },
     {
         "name_pattern": "rf/$/name", "title": "Review field name",
-        "type": "simplestring", "required": true, "storage": "member.name",
+        "type": "simplestring", "required": true,
         "placeholder": "Field name", "size": 50, "parser_class": "ReviewForm_SettingParser"
     },
     {
         "name_pattern": "rf/$/description",
         "title": "Review field description", "title_pattern": "‘${sv rf/$/name}’ description",
-        "type": "htmlstring", "size": 2, "autogrow": true,
-        "storage": "member.description"
+        "type": "htmlstring", "size": 2, "autogrow": true
     },
     {
-        "name_pattern": "rf/$/choices",
+        "name_pattern": "rf/$/choices", "storage": "member.options",
         "title": "Review field choices", "title_pattern": "‘${sv rf/$/name}’ choices",
         "type": "longstring", "size": 3, "autogrow": true,
-        "parser_class": "ReviewForm_SettingParser", "storage": "member.options"
+        "parser_class": "ReviewForm_SettingParser"
     },
     {
-        "name_pattern": "rf/$/start", "internal": true,
-        "storage": "member.start"
+        "name_pattern": "rf/$/start", "internal": true
     },
     {
-        "name_pattern": "rf/$/colors",
+        "name_pattern": "rf/$/colors", "storage": "member.scheme",
         "title": "Review field colors", "title_pattern": "‘${sv rf/$/name}’ colors",
-        "type": "radio", "values": ["sv", "svr", "blpu", "publ", "rdpk", "pkrd", "viridisr", "viridis", "orbu", "buor", "turbo", "turbor", "catx", "none"],
-        "storage": "member.scheme"
+        "type": "radio", "values": ["sv", "svr", "blpu", "publ", "rdpk", "pkrd", "viridisr", "viridis", "orbu", "buor", "turbo", "turbor", "catx", "none"]
     },
     {
         "name_pattern": "rf/$/order",
         "title": "Review field order", "title_pattern": "‘${sv rf/$/name}’ order",
-        "type": "float", "storage": "member.order"
+        "type": "float"
     },
     {
         "name_pattern": "rf/$/required",
         "title": "Review field requirement", "title_pattern": "‘${sv rf/$/name}’ requirement",
-        "type": "radio", "values": [0, 1], "storage": "member.required"
+        "type": "radio", "values": [0, 1]
     },
     {
         "name_pattern": "rf/$/visibility",
         "title": "Review field visibility", "title_pattern": "‘${sv rf/$/name}’ visibility",
-        "type": "radio", "values": ["au", "re", "audec", "pconly", "admin"],
-        "storage": "member.visibility"
+        "type": "radio", "values": ["au", "re", "audec", "pconly", "admin"]
     },
     {
         "name_pattern": "rf/$/presence",
         "title": "Review field presence", "title_pattern": "‘${sv rf/$/name}’ presence",
-        "type": "radio", "values": ["all", "custom"], "storage": "member.presence",
+        "type": "radio", "values": ["all", "custom"],
         "parser_class": "ReviewForm_SettingParser"
     },
     {
-        "name_pattern": "rf/$/condition",
+        "name_pattern": "rf/$/condition", "storage": "member.exists_if",
         "title": "Review field presence condition", "title_pattern": "‘${sv rf/$/name}’ presence condition",
-        "type": "simplestring", "size": 30, "placeholder": "Search", "storage": "member.exists_if",
+        "type": "simplestring", "size": 30, "placeholder": "Search",
         "parser_class": "ReviewFieldCondition_SettingParser"
     },
     {   "name_pattern": "rf/$/exists_if", "alias_pattern": "rf/$/condition"   },
@@ -558,14 +594,9 @@
         "json_values": ["admin", "unconflicted_pc", "pc", "au"]
     },
     {
-        "name": "seedec_showau",
-        "title": "Show accepted submissions’ author lists to reviewers",
-        "type": "checkbox", "storage": "negval.seedec_hideau"
-    },
-    {
-        "name": "shepherd_show",
+        "name": "shepherd_visibility", "storage": "negval.shepherd_hide",
         "title": "Shepherd visibility",
-        "type": "checkbox", "storage": "negval.shepherd_hide"
+        "type": "checkbox"
     },
     {
         "name_pattern": "fmtstore_v_$", "internal": true, "storage": "val.sub_banal_$"
@@ -587,60 +618,49 @@
     {
         "name_pattern": "format/$/active",
         "title": "Format checker",
-        "type": "checkbox", "storage": "member.active"
+        "type": "checkbox"
     },
     {
         "name_pattern": "format/$/bodyfontsize",
         "title": "PDF format checker minimum body font size",
-        "type": "string", "size": 5, "placeholder": "any", "storage": "member.bodyfontsize"
+        "type": "string", "size": 5, "placeholder": "any"
     },
     {
         "name_pattern": "format/$/bodylineheight",
         "title": "PDF format checker minimum body line height",
-        "type": "string", "size": 5, "placeholder": "any", "storage": "member.bodylineheight"
+        "type": "string", "size": 5, "placeholder": "any"
     },
     {
         "name_pattern": "format/$/columns",
         "title": "PDF format checker column count",
-        "type": "string", "size": 5, "placeholder": "any", "storage": "member.columns"
+        "type": "string", "size": 5, "placeholder": "any"
     },
     {
         "name_pattern": "format/$/pagelimit",
         "title": "PDF format checker page limit",
-        "type": "string", "size": 5, "placeholder": "any", "storage": "member.pagelimit"
+        "type": "string", "size": 5, "placeholder": "any"
     },
     {
         "name_pattern": "format/$/papersize",
         "title": "PDF format checker paper size",
-        "type": "string", "size": 18, "placeholder": "any", "storage": "member.papersize"
+        "type": "string", "size": 18, "placeholder": "any"
     },
     {
         "name_pattern": "format/$/textblock",
         "title": "PDF format checker text block size",
-        "type": "string", "size": 18, "placeholder": "any", "storage": "member.textblock"
+        "type": "string", "size": 18, "placeholder": "any"
     },
     {
         "name_pattern": "format/$/unlimitedref",
         "title": "PDF format checker unlimited references",
-        "type": "checkbox", "storage": "member.unlimitedref"
+        "type": "checkbox"
     },
     {
         "name_pattern": "format/$/wordlimit",
         "title": "PDF format checker word limit",
-        "type": "string", "size": 8, "placeholder": "any", "storage": "member.wordlimit"
+        "type": "string", "size": 8, "placeholder": "any"
     },
-    {
-        "name": "sub_blind",
-        "title": "Submission anonymity",
-        "type": "radio",
-        "values": [0, 1, 2, 3], "default_value": 2,
-        "json_values": ["open", "optional", "blind", "blind_until_review"]
-    },
-    {
-        "name": "sub_collab",
-        "title": "Collect other conflicts and collaborators",
-        "type": "checkbox"
-    },
+
     {
         "name": "sub_freeze",
         "title": "Submitters can update until the deadline",
@@ -654,42 +674,9 @@
         "type": "grace"
     },
     {
-        "name": "sub_noabstract",
-        "title": "Submission abstract required",
-        "type": "radio",
-        "values": [0, 1, 2], "default_value": 0,
-        "json_values": ["required", "optional", "none"],
-        "storage": "ova.noAbstract"
-    },
-    {
-        "name": "sub_nopapers",
-        "title": "Submission PDF required",
-        "type": "radio",
-        "values": [0, 1, 2], "default_value": 0,
-        "json_values": ["required", "optional", "none"],
-        "storage": "ova.noPapers"
-    },
-    {
         "name": "sub_open",
         "title": "Enable submissions",
         "type": "cdate"
-    },
-    {
-        "name": "sub_pcconf",
-        "title": "Collect PC conflicts",
-        "type": "checkbox"
-    },
-    {
-        "name": "sub_pcconfsel",
-        "title": "Collect PC conflict types",
-        "type": "checkbox"
-    },
-    {
-        "name": "sub_pcconfvis",
-        "title": "PC conflict visibility",
-        "type": "radio",
-        "values": [0, 1, 2], "default_value": 0,
-        "json_values": ["if_authors_visible", "no", "yes"]
     },
     {
         "name": "sub_reg",
@@ -706,12 +693,8 @@
         "name": "sub_update", "internal": true
     },
     {
-        "name": "tag_approval", "title": "Approval voting tags",
-        "type": "taglist", "size": 50, "autogrow": true,
-        "parser_class": "Tags_SettingParser"
-    },
-    {
-        "name": "tag_chair", "title": "Read-only tags",
+        "name": "tag_readonly", "storage": "tag_chair",
+        "title": "Read-only tags",
         "type": "taglist", "subtype": "wildcard", "size": 50, "autogrow": true,
         "parser_class": "Tags_SettingParser"
     },
@@ -728,12 +711,12 @@
     },
     {   "name_pattern": "tag_style/$/id", "internal": true   },
     {
-        "name_pattern": "tag_style/$/style", "storage": "member.style",
+        "name_pattern": "tag_style/$/style",
         "title": "Tag style", "type": "simplestring", "required": true,
         "parser_class": "TagStyle_SettingParser"
     },
     {
-        "name_pattern": "tag_style/$/tags", "storage": "member.tags",
+        "name_pattern": "tag_style/$/tags",
         "title": "Styled tags", "title_pattern": "${uc badge/$/style} tags",
         "type": "taglist", "subtype": "wildcard_chair", "size": 40, "autogrow": true
     },
@@ -753,10 +736,18 @@
         "parser_class": "Tags_SettingParser"
     },
     {
-        "name": "tag_vote", "title": "Allotment voting tags",
+        "name": "tag_vote_allotment", "storage": "tag_vote",
+        "title": "Allotment voting tags",
         "type": "taglist", "subtype": "allotment", "size": 50, "autogrow": true,
         "parser_class": "Tags_SettingParser"
     },
+    {
+        "name": "tag_vote_approval", "storage": "tag_approval",
+        "title": "Approval voting tags",
+        "type": "taglist", "size": 50, "autogrow": true,
+        "parser_class": "Tags_SettingParser"
+    },
+
 
     {   "name": "has_topics", "internal": true, "type": "checkbox"   },
     {
@@ -771,7 +762,7 @@
     {   "name_pattern": "topic/$/id", "internal": true   },
     {
         "name_pattern": "topic/$/name", "title": "Topic name",
-        "type": "simplestring", "size": 80, "autogrow": true, "storage": "member.name"
+        "type": "simplestring", "size": 80, "autogrow": true
     },
     {
         "name": "new_topics", "title": "New topics",
@@ -795,7 +786,7 @@
     {
         "name_pattern": "track/$/tag",
         "title": "Track tag",
-        "type": "tag", "size": 20, "autogrow": true, "storage": "member.tag"
+        "type": "tag", "size": 20, "autogrow": true
     },
     {
         "name_pattern": "track/$/title",
@@ -812,13 +803,13 @@
     {
         "name_pattern": "track/$/perm/$$/type",
         "title_pattern": "${sv track/$/title} ${sv track/$/perm/$$/title} permission",
-        "type": "radio", "values": ["", "+", "-", "none"], "storage": "member.type",
+        "type": "radio", "values": ["", "+", "-", "none"],
         "parser_class": "Track_SettingParser"
     },
     {
         "name_pattern": "track/$/perm/$$/tag",
         "title_pattern": "${sv track/$/title} ${sv track/$/perm/$$/title} permission",
-        "type": "tag", "storage": "member.tag",
+        "type": "tag",
         "parser_class": "Track_SettingParser"
     },
     {

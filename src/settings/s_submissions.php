@@ -21,10 +21,12 @@ class Submissions_SettingRenderer {
         $sv->print_radio_table("sub_freeze", [0 => "Allow updates until the submission deadline (usually the best choice)", 1 => "Authors must freeze the final version of each submission"]);
     }
     static function print_blind(SettingValues $sv) {
-        $sv->print_radio_table("sub_blind", [Conf::BLIND_ALWAYS => "Yes—submissions are anonymous",
-                                   Conf::BLIND_NEVER => "No—author names are visible to reviewers",
-                                   Conf::BLIND_UNTILREVIEW => "Blind until review—reviewers can see author names after submitting a review",
-                                   Conf::BLIND_OPTIONAL => "Depends—authors decide whether to expose their names"],
+        $sv->print_radio_table("author_visibility", [
+                Conf::BLIND_ALWAYS => "Yes—submissions are anonymous",
+                Conf::BLIND_NEVER => "No—author names are visible to reviewers",
+                Conf::BLIND_UNTILREVIEW => "Blind until review—reviewers can see author names after submitting a review",
+                Conf::BLIND_OPTIONAL => "Depends—authors decide whether to expose their names"
+            ],
             '<strong>Blind submission:</strong> Are author names hidden from reviewers?');
     }
     static function print_pcseeall(SettingValues $sv) {

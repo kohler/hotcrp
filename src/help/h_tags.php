@@ -103,7 +103,7 @@ assignments using ", $hth->hotlink("bulk assignment", "bulkassign"), ".</p></li>
 <p>Although any PC member can view or search
 most tags, certain tags may be changed only by administrators",
           $this->hth->current_tag_list("chair"), ".",
-          $this->hth->change_setting_link("tag_chair"), "</p>";
+          $this->hth->change_setting_link("tag_readonly"), "</p>";
     }
 
     function print_values() {
@@ -189,7 +189,7 @@ high-ranked paper, but it’s usually better to trust the PC.)</p>\n";
         $vt = $this->hth->example_tag("allotment");
         echo "<p><strong>Vote for papers.</strong>
  The chair can define tags used for allotment voting", $this->hth->current_tag_list("allotment"), ".",
-            $this->hth->change_setting_link("tag_vote"),
+            $this->hth->change_setting_link("tag_vote_allotment"),
             " Each PC member is assigned an allotment of votes to distribute among papers.
  For instance, if “#{$vt}” were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag “#~{$vt}#5”.
  The system automatically sums PC members’ votes into the public “#{$vt}” tag.

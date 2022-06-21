@@ -1287,7 +1287,7 @@ class Permission_Tester {
         xassert_eqq($paper16->sorted_viewable_tags($this->u_marina), " app#1 crap#3 vote#6");
         xassert_eqq($paper16->sorted_searchable_tags($this->u_marina), " 2~vote#5 4~app#0 4~crap#1 8~crap#2 8~vote#1 app#1 crap#3 vote#6");
         xassert(SettingValues::make_request($this->u_chair, [
-            "has_tag_approval" => 1, "tag_approval" => ""
+            "has_tag_vote_approval" => 1, "tag_vote_approval" => ""
         ])->execute());
         $paper16 = $this->u_chair->checked_paper_by_id(16);
         xassert_eqq($paper16->sorted_searchable_tags($this->u_chair), " 2~vote#5 4~app#0 4~bar#0 4~crap#1 8~crap#2 8~vote#1 crap#3 vote#6");
@@ -1298,7 +1298,7 @@ class Permission_Tester {
         xassert_eqq($paper16->sorted_searchable_tags($this->u_chair), " 2~vote#5 4~app#0 4~bar#0 4~crap#1 8~crap#2 8~vote#1 17~app#0 crap#3 vote#6");
 
         xassert(SettingValues::make_request($this->u_chair, [
-            "has_tag_approval" => 1, "tag_approval" => "app"
+            "has_tag_vote_approval" => 1, "tag_vote_approval" => "app"
         ])->execute());
         $paper16 = $this->u_chair->checked_paper_by_id(16);
         xassert_eqq($paper16->sorted_viewable_tags($this->u_marina), " app#2 crap#3 vote#6");
@@ -1306,7 +1306,7 @@ class Permission_Tester {
 
         $this->conf->invalidate_caches(["pc" => true]);
         xassert(SettingValues::make_request($this->u_chair, [
-            "has_tag_approval" => 1, "tag_approval" => "app app2"
+            "has_tag_vote_approval" => 1, "tag_vote_approval" => "app app2"
         ])->execute());
         $paper16 = $this->u_chair->checked_paper_by_id(16);
         xassert_eqq($paper16->sorted_viewable_tags($this->u_marina), " app#2 crap#3 vote#6");

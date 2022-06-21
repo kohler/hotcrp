@@ -4,6 +4,6 @@
 
 class Shepherds_SettingParser extends SettingParser {
     static function print_identity(SettingValues $sv) {
-        $sv->print_checkbox("shepherd_show", "Show shepherd names to authors");
+        $sv->print_checkbox("shepherd_visibility", "Show shepherd names to authors");
     }
 }

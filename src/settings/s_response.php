@@ -41,13 +41,7 @@ class Response_SettingParser extends SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
         if ($si->name0 !== null) {
             if ($si->name2 === "") {
-                $idv = $sv->vstr("{$si->name0}{$si->name1}/id") ?? "";
-                $id = ctype_digit($idv) ? intval($idv) : -1;
-                if ($id > 0 && ($rrd = $sv->conf->response_round_by_id($id))) {
-                    $sv->set_oldv($si, Response_Setting::make($sv->conf, $rrd));
-                } else {
-                    $sv->set_oldv($si, new Response_Setting);
-                }
+                $sv->set_oldv($si, new Response_Setting);
             } else if ($si->name2 === "/title") {
                 $n = $sv->oldv("response/{$si->name1}/name");
                 $sv->set_oldv($si, $n ? "‘{$n}’ response" : "Response");
