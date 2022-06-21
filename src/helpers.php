@@ -125,18 +125,16 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         }
     }
 
-    /** @param int|string $a1
-     * @param ?string $a2
+    /** @param int $status
+     * @param string $ftext
      * @return JsonResult */
-    static function make_error($a1, $a2 = null) {
-        if (!is_int($a1)) {
-            $a2 = $a1;
-            $a1 = 400;
+    static function make_error($status, $ftext) {
+        if (!Ftext::is_ftext($ftext)) {
+            error_log("bad ftext `{$ftext}` " . debug_string_backtrace());
         }
-        if (!Ftext::is_ftext($a2)) {
-            error_log("bad ftext `{$a2}` " . debug_string_backtrace());
-        }
-        return new JsonResult($a1, ["ok" => false, "message_list" => [MessageItem::error($a2)]]);
+        return new JsonResult($status, [
+            "ok" => false, "message_list" => [MessageItem::error($ftext)]
+        ]);
     }
 
 

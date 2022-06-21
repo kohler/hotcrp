@@ -190,7 +190,7 @@ class Comment_API {
             if (!$rrd
                 || (($qreq->response ?? "") !== ""
                     && (string) $qreq->response !== $rname)) {
-                return JsonResult::make_error("<0>Invalid response request");
+                return JsonResult::make_error(400, "<0>Invalid response request");
             }
             $rcrow = $this->find_response_by_id($rrd->id);
             $c = $c !== "" ? $c : "response";

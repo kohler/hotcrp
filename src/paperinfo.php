@@ -1712,6 +1712,8 @@ class PaperInfo {
     }
 
 
+    /** @param bool $only_me
+     * @param bool $need_data */
     private function load_options($only_me, $need_data) {
         if ($this->_option_values === null
             && ($this->paperId === 0 || $this->optionIds === "")) {
