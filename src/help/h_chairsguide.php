@@ -287,7 +287,7 @@ administrator’s identity.</p>\n\n";
         } else if ($gj->itemid === 3) {
             echo "<li><p><strong>Paper decisions</strong> can be recorded on the ",
   $hth->hotlink("paper pages", "review"), " or en masse via ",
-  $hth->search_link("search", ""), ".  Use ", $hth->setting_link("decision settings", "seedec"),
+  $hth->search_link("search", ""), ".  Use ", $hth->setting_link("decision settings", "decision_visibility"),
   " to expose decisions to PC members if desired.</p></li>\n";
 
         } else if ($gj->itemid === 4) {
@@ -314,7 +314,7 @@ administrator’s identity.</p>\n\n";
   response to PC discussion (optional).</p></li>\n";
 
         } else if ($gj->itemid === 3) {
-            echo "<li><p>Set ", $hth->setting_link("“Who can <strong>see decisions?</strong>”", "seedec"),
+            echo "<li><p>Set ", $hth->setting_link("“Who can <strong>see decisions?</strong>”", "decision_visibility"),
   " to “Authors, reviewers, and all PC members.”";
             if (!$hth->conf->setting("shepherd_hide"))
                 echo " This will also make shepherd names visible to authors.";

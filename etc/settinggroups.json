@@ -369,7 +369,7 @@
         "name": "decisions/decision-visibility", "order": 300,
         "title": "Decision visibility",
         "print_function": "DecisionVisibility_SettingParser::print",
-        "settings": ["seedec"]
+        "settings": ["decision_visibility"]
     },
     {
         "name": "__crosscheck/decision-visibility", "order": 805,

@@ -551,11 +551,11 @@
 
 
     {
-        "name": "seedec",
+        "name": "decision_visibility", "storage": "seedec",
         "title": "Decision visibility",
         "type": "radio",
-        "values": [0, 1, 2, 3], "default_value": 0,
-        "json_values": ["no", "pc", "yes", "unconflicted_pc"]
+        "values": [0, 3, 1, 2], "default_value": 0,
+        "json_values": ["admin", "unconflicted_pc", "pc", "au"]
     },
     {
         "name": "seedec_showau",
