@@ -15,7 +15,7 @@ class PaperValue implements JsonSerializable {
     /** @var ?int */
     public $value;
     /** @var ?array<string,mixed> */
-    public $anno;
+    private $anno;
     /** @var list<int> */
     private $_values = [];
     /** @var list<?string> */
