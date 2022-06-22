@@ -31,21 +31,21 @@ select, button {
 	color: #660099;
 }
 .dark .track:visited, .dark .ptitle:visited, .dark .pnum:visited {
-	color: #a645d6;
+	color: #b655e6;
 }
 
 .hint, .f-h, .f-hx, .field-d {
 	color: #555555;
 }
 .dark .hint, .dark .f-h, .dark .f-hx, .dark .field-d {
-	color: #a0a0a0;
+	color: #bcbcbc;
 }
 
 .auaff, em.plx, .asspref0 {
 	color: #555555;
 }
 .dark .auaff, .dark em.plx, .dark .asspref0 {
-	color: #a0a0a0;
+	color: #bcbcbc;
 }
 
 .dim {
