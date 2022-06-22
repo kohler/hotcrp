@@ -3038,11 +3038,14 @@ handle_ui.on("js-tracker", function (event) {
         }
         if (document.body
             && hasClass(document.body, "has-hotlist")
-            && (hotcrp_status.is_admin || hotcrp_status.is_track_admin)
-            && !hotcrp_status.tracker_here) {
-            hc.push('<div class="lg"><button type="button" name="new">Start new tracker</button></div>');
+            && (hotcrp_status.is_admin || hotcrp_status.is_track_admin)) {
+            if (!hotcrp_status.tracker_here) {
+                hc.push('<div class="lg"><button type="button" name="new">Start new tracker</button></div>');
+            } else {
+                hc.push('<div class="lg"><button type="button" class="need-tooltip btn-disabled" tabindex="-1" aria-label="This browser tab is already running a tracker.">Start new tracker</button></div>');
+            }
         } else {
-            hc.push('<div class="lg"><button type="button" class="need-tooltip btn-disabled" tabindex="-1" aria-label="This browser tab is already running a tracker.">Start new tracker</button></div>');
+            hc.push('<div class="lg"><button type="button" class="need-tooltip btn-disabled" tabindex="-1" aria-label="To start a new tracker, open a tab on a submission page.">Start new tracker</button></div>')
         }
         hc.push_actions();
         hc.push('<button type="submit" name="save" class="btn-primary">Save changes</button><button type="button" name="cancel">Cancel</button>');
