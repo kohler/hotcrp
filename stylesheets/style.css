@@ -479,7 +479,8 @@ label.checki {
 	width: 19rem;
 }
 .entryi > .entry {
-	flex: 1 1 auto;
+	flex: 1 1 0;
+	flex-basis: min-content;
 }
 .entry > textarea:first-child {
 	vertical-align: top;
@@ -4434,6 +4435,9 @@ a.help {
 	margin: 5vh auto;
 	position: relative;
 	display: flex;
+}
+.modal-dialog.modal-medium {
+	max-width: 40em;
 }
 .modal-content {
 	border: 1px solid rgba(0, 0, 0, 0.6);

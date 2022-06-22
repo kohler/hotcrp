@@ -2410,7 +2410,8 @@ function popup_skeleton(options) {
     var near = options.near || options.anchor;
     hc.push('<div class="modal" role="dialog"><div class="modal-dialog'.concat(
         !near || near === window ? " modal-dialog-centered" : "",
-        options.style ? '" style="' + escape_html(options.style) : '',
+        options.className ? " " + options.className : "",
+        options.style ? '" style="' + escape_html(options.style) : "",
         '" role="document"><div class="modal-content"><form enctype="multipart/form-data" accept-charset="UTF-8"',
         options.form_class ? ' class="' + options.form_class + '"' : '',
         '>'), '</form></div></div></div>');
@@ -9660,8 +9661,7 @@ handle_ui.on("js-edit-formulas", function () {
             });
     }
     function create(formulas) {
-        var hc = popup_skeleton(), i;
-        hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
+        var hc = popup_skeleton({className: "modal-medium"}), i;
         hc.push('<h2>Named formulas</h2>');
         hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank">Formulas</a>, such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”.</p>');
         hc.push('<div class="editformulas">', '</div>');
@@ -9707,8 +9707,7 @@ handle_ui.on("js-edit-view-options", function () {
         event.preventDefault();
     }
     function create(display_default, display_current) {
-        var hc = popup_skeleton();
-        hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
+        var hc = popup_skeleton({className: "modal-medium"});
         hc.push('<h2>View options</h2>');
         hc.push('<div class="f-i"><div class="f-c">Default view options</div>', '</div>');
         hc.push('<div class="reportdisplay-default">' + escape_html(display_default || "(none)") + '</div>');
@@ -9787,8 +9786,7 @@ handle_ui.on("js-edit-namedsearches", function () {
             });
     }
     function create(searches) {
-        var hc = popup_skeleton(), i;
-        hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
+        var hc = popup_skeleton({className: "modal-medium"}), i;
         hc.push('<h2>Saved searches</h2>');
         hc.push('<p>Invoke a saved search with “ss:NAME”. Saved searches are shared with the PC.</p>');
         hc.push('<div class="editsearches">', '</div>');
