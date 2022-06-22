@@ -2327,7 +2327,6 @@ tooltip.add_builder = function (name, f) {
     builders[name] = f;
 };
 
-$(function () { $(".need-tooltip").each(tooltip); });
 return tooltip;
 })($);
 
@@ -2450,8 +2449,7 @@ function popup_skeleton(options) {
         removeClass(document.body, "modal-open");
     }
     function show() {
-        $d = $(hc.render()).appendTo(document.body);
-        $d.find(".need-tooltip").each(tooltip);
+        $d = $(hc.render()).appendTo(document.body).awaken();
         $d.on("click", function (event) {
             event.target === $d[0] && close();
         });
@@ -2487,9 +2485,6 @@ function popup_skeleton(options) {
         }
         if (visible !== false) {
             popup_near($d, near || window);
-            $d.find(".need-autogrow").autogrow();
-            $d.find(".need-suggest").each(suggest);
-            $d.find(".need-tooltip").each(tooltip);
         }
         return $d;
     };
@@ -2528,6 +2523,7 @@ function popup_near(elt, near) {
         }
     });
     efocus && focus_at(efocus);
+    $(elt).awaken();
 }
 
 function override_deadlines(callback) {
@@ -2857,7 +2853,7 @@ function display_tracker() {
             global_tooltip.erase();
         }
         last_tracker_html = mne.innerHTML = t;
-        $(mne).find(".need-tooltip").each(tooltip);
+        $(mne).awaken();
         if (tracker_has_format)
             render_text.on_page();
     }
@@ -2961,8 +2957,7 @@ handle_ui.on("js-tracker", function (event) {
         push_tracker(hc, tr);
         focus_within($(hc.render()).insertBefore($myg));
         $myg.remove();
-        $d.find(".need-autogrow").autogrow();
-        $d.find(".need-suggest").each(suggest);
+        $d.awaken();
     }
     function make_submit_success(hiding, why) {
         return function (data) {
@@ -4224,8 +4219,7 @@ function row_order_change(e, delta, action) {
             || action > 0)
            && (max_rows <= 0 || trs.length < max_rows)) {
         var $newtr = $($tbody[0].getAttribute("data-row-template")).appendTo($tbody);
-        $newtr.find(".need-tooltip").each(tooltip);
-        $newtr.find(".need-suggest").each(suggest);
+        $newtr.awaken();
         trs = $tbody.children();
         if (want_focus) {
             focus_within($newtr);
@@ -5262,8 +5256,7 @@ function activate_editing(celt, cj) {
 
     $(form).on("submit", submit_editor).on("click", "button", buttonclick_editor);
     hiliter_children(form);
-    $(celt).find(".need-tooltip").each(tooltip);
-    $(celt).find(".need-suggest").each(suggest);
+    $(celt).awaken();
 }
 
 function render_edit_attachment(i, doc) {
@@ -6566,8 +6559,6 @@ suggest.add_builder = function (name, f) {
 
 return suggest;
 })();
-
-$(function () { $(".need-suggest").each(suggest); });
 
 suggest.add_builder("tags", function (elt) {
     var x = completion_split(elt), m, n;
@@ -9634,9 +9625,8 @@ handle_ui.on("js-edit-formulas", function () {
         if (this.name === "add") {
             var hc = new HtmlCollector;
             push1(hc, {name: "", expression: "", editable: true, id: "new"});
-            var $f = $(hc.render()).appendTo($d.find(".editformulas"));
+            var $f = $(hc.render()).appendTo($d.find(".editformulas")).awaken();
             $f[0].setAttribute("data-formula-new", "");
-            $f.find("textarea").autogrow();
             focus_at($f.find(".editformulas-name"));
             $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
         }
@@ -9759,9 +9749,8 @@ handle_ui.on("js-edit-namedsearches", function () {
             var hc = new HtmlCollector,
                 q = document.getElementById("searchform");
             push1(hc, {name: "", q: q ? q.getAttribute("data-lquery") : "", editable: true, id: "new"});
-            var $f = $(hc.render()).appendTo($d.find(".editsearches"));
+            var $f = $(hc.render()).appendTo($d.find(".editsearches")).awaken();
             $f[0].setAttribute("data-search-new", "");
-            $f.find("textarea").autogrow();
             focus_at($f.find(".editsearches-name"));
             $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
         }
@@ -10965,7 +10954,19 @@ $.fn.unautogrow = function () {
 };
 })(jQuery);
 
-$(function () { $(".need-autogrow").autogrow(); });
+$.fn.awaken = function () {
+    this.find(".need-autogrow, .need-suggest, .need-tooltip").each(function () {
+        if (hasClass(this, "need-autogrow"))
+            $(this).autogrow();
+        if (hasClass(this, "need-suggest"))
+            suggest.call(this);
+        if (hasClass(this, "need-tooltip"))
+            tooltip.call(this);
+    });
+    return this;
+};
+
+$(function () { $(document.body).awaken(); });
 
 $(function () {
     var err = [], elt = [];

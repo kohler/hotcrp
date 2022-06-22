@@ -163,9 +163,7 @@ function add_dialog() {
         while ($$("sf/" + next + "/name"))
             ++next;
         h = h.replace(/\/\$/g, "/" + next);
-        odiv = $(h).removeClass("hidden").appendTo("#settings-sform");
-        odiv.find(".need-autogrow").autogrow();
-        odiv.find(".need-tooltip").each(tooltip);
+        odiv = $(h).removeClass("hidden").appendTo("#settings-sform").awaken();
         odiv.find(".js-settings-sf-type").val(samp.getAttribute("data-name")).change();
         $$("sf/" + next + "/name").focus();
         settings_sf_order();
@@ -281,8 +279,7 @@ handle_ui.on("js-settings-track-add", function () {
     }
     var trhtml = $("#settings-track-new").html().replace(/\/\$/g, "/" + i);
     $("#track\\/" + (i - 1)).after(trhtml);
-    var $j = $("#track\\/" + i);
-    $j.find(".need-suggest").each(suggest);
+    var $j = $("#track\\/" + i).awaken();
     this.form.elements["track/".concat(i, "/tag")].focus();
 });
 
@@ -360,8 +357,7 @@ handle_ui.on("js-settings-review-round-new", function () {
     $n = $(h.replace(/\/\$/g, "/" + i));
     $("#settings-review-rounds").append($n);
     $n.find("textarea").css({height: "auto"}).autogrow();
-    $n.find(".need-suggest").each(suggest);
-    $n.find(".need-tooltip").each(tooltip);
+    $n.awaken();
     form_highlight(this.form);
     settings_review_round_selectors(this.form);
 });
@@ -621,7 +617,7 @@ function rf_append(fid) {
     $f.find(".rf-id").val(fid);
     $f.appendTo("#settings-rform");
     rf_fill(pos, original[fid], true);
-    $f.find(".need-tooltip").each(tooltip);
+    $f.awaken();
 }
 
 function rf_add(fid) {
@@ -760,8 +756,7 @@ handle_ui.on("js-settings-response-new", function () {
     $rt.before($rt.html().replace(/\/\$/g, "/" + i));
     $rx = $("#response\\/" + i);
     $rx.find("textarea").css({height: "auto"}).autogrow();
-    $rx.find(".need-suggest").each(suggest);
-    $rx.find(".need-tooltip").each(tooltip);
+    $rx.awaken();
     form_highlight(this.form);
     return false;
 });
