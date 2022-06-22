@@ -25,32 +25,13 @@ class API_Page {
 
         // requests
         $fn = $qreq->fn;
+        $prow = $conf->paper;
         $is_track = $fn === "track";
-        if (!$user->is_disabled() && ($is_track || $fn === "status")) {
-            if ($is_track) {
-                MeetingTracker::track_api($user, $qreq); // may fall through to act like `status`
-            }
-
-            $j = $user->my_deadlines($conf->paper ? [$conf->paper] : []);
-            $j->ok = true;
-            if ($is_track && ($new_trackerid = $qreq->annex("new_trackerid"))) {
-                $j->new_trackerid = $new_trackerid;
-            }
-
-            if ($conf->paper && $user->can_view_tags($conf->paper)) {
-                $pj = new TagMessageReport;
-                $pj->pid = $conf->paper->paperId;
-                $conf->paper->add_tag_info_json($pj, $user);
-                if (count((array) $pj) > 1) {
-                    $j->p = [$conf->paper->paperId => $pj];
-                }
-            }
-
-            json_exit($j);
-        } else {
+        if ((!$is_track && $fn !== "status")
+            || $user->is_disabled()) {
             JsonCompletion::$allow_short_circuit = true;
             $uf = $conf->api($fn, $user, $qreq->method());
-            $jr = $conf->call_api_on($uf, $fn, $user, $qreq, $conf->paper);
+            $jr = $conf->call_api_on($uf, $fn, $user, $qreq, $prow);
             if ($uf
                 && $qreq->redirect
                 && ($uf->redirect ?? false)
@@ -58,8 +39,25 @@ class API_Page {
                 $jr->export_messages($conf);
                 $conf->redirect($conf->make_absolute_site($qreq->redirect));
             }
-            json_exit($jr);
+        } else if ($is_track
+                   && ($jr = MeetingTracker::track_api($user, $qreq)) !== null) {
+            // OK
+        } else {
+            $jr = new JsonResult($user->my_deadlines($prow ? [$prow] : []));
+            $jr["ok"] = true;
+            if ($is_track && ($new_trackerid = $qreq->annex("new_trackerid"))) {
+                $jr["new_trackerid"] = $new_trackerid;
+            }
+            if ($prow && $user->can_view_tags($prow)) {
+                $pj = new TagMessageReport;
+                $pj->pid = $prow->paperId;
+                $prow->add_tag_info_json($pj, $user);
+                if (count((array) $pj) > 1) {
+                    $jr["p"] = [$prow->paperId => $pj];
+                }
+            }
         }
+        json_exit($jr);
     }
 
     /** @param NavigationState $nav
@@ -80,7 +78,7 @@ class API_Page {
                 $_GET["fn"] = "track";
             } else {
                 http_response_code(404);
-                header("Content-Type: text/plain; charset=utf-8");
+                header("Content-Type: application/json; charset=utf-8");
                 echo json_encode(["ok" => false, "error" => "API function missing"]);
                 exit;
             }
@@ -96,13 +94,10 @@ class API_Page {
 
         // trackerstatus is a special case: prevent session creation
         if ($_GET["fn"] === "trackerstatus") {
-            global $Opt;
-            $Opt["__no_main_user"] = true;
-            initialize_request();
-            MeetingTracker::trackerstatus_api(Contact::make(Conf::$main));
+            initialize_request(["no_main_user" => true]);
+            MeetingTracker::trackerstatus_api(Contact::make($conf));
         } else {
-            initialize_request();
-            self::go(Contact::$main_user, Qrequest::$main_request);
+            self::go(...initialize_request());
         }
     }
 }

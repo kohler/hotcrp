@@ -4,10 +4,11 @@
 
 class Events_API {
     /** @param Contact $user
-     * @param Qrequest $qreq */
+     * @param Qrequest $qreq
+     * @return JsonResult */
     static function run($user, $qreq) {
         if (!$user->is_reviewer()) {
-            json_exit(403, ["ok" => false]);
+            JsonResult::make_error(403, "<0>Permission error");
         }
         $from = $qreq->from;
         if (!$from || !ctype_digit($from)) {
@@ -30,7 +31,9 @@ class Events_API {
                 $when = $xr->eventTime;
             }
         }
-        json_exit(["ok" => true, "from" => (int) $from, "to" => (int) $when - 1,
-                   "rows" => $rows, "more" => $more]);
+        return new JsonResult([
+            "ok" => true, "from" => (int) $from, "to" => (int) $when - 1,
+            "rows" => $rows, "more" => $more
+        ]);
     }
 }

@@ -20,8 +20,11 @@ class PaperApi {
             }
             if (!$u) {
                 error_log("PaperApi::get_user: rejecting user {$x}, requested by {$user->email}");
-                json_exit(403, $user->isPC ? "User not found" : "Permission error");
-                exit;
+                if ($user->isPC) {
+                    JsonResult::make_error(404, "<0>User not found")->complete();
+                } else {
+                    JsonResult::make_error(403, "<0>Permission error")->complete();
+                }
             }
         }
         return $u;
@@ -33,7 +36,7 @@ class PaperApi {
         if ($u->contactId !== $user->contactId
             && ($prow ? !$user->can_administer($prow) : !$user->privChair)) {
             error_log("PaperApi::get_reviewer: rejecting user {$u->contactId}/{$u->email}, requested by {$user->contactId}/{$user->email}");
-            json_exit(403, "Permission error.");
+            JsonResult::make_error(403, "<0>Permission error")->complete();
         }
         return $u;
     }

@@ -956,8 +956,8 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         $xqreq = new Qrequest("POST", ["email" => "external2@_.com", "name" => "Jo March", "affiliation" => "Concord"]);
         $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
-        $result = JsonResult::make($result);
         MailChecker::check_db("test06-external2-request17");
+        xassert($result instanceof JsonResult);
         xassert($result->content["ok"]);
 
         $user_external2 = $conf->checked_user_by_email("external2@_.com");
@@ -986,7 +986,6 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $xqreq = new Qrequest("POST", ["email" => "external3@_.com", "name" => "Amy March", "affiliation" => "Transcendent"]);
         $paper17 = $this->conf->checked_paper_by_id(17);
         $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
-        $result = JsonResult::make($result);
         MailChecker::check_db("test06-external3-request17");
 
         assert_search_papers($this->u_chair, "has:proposal", "17");

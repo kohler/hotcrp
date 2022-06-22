@@ -8,7 +8,7 @@ require_once("lib/navigation.php");
  * @param Qrequest $qreq
  * @param string $group
  * @param ComponentSet $pc */
-function pc_call_requests($user, $qreq, $group, $pc) {
+function handle_request_components($user, $qreq, $group, $pc) {
     $pc->add_xt_checker([$qreq, "xt_allow"]);
     $reqgj = [];
     $not_allowed = false;
@@ -29,11 +29,15 @@ function pc_call_requests($user, $qreq, $group, $pc) {
     }
 }
 
-/** @param Contact $user
- * @param Qrequest $qreq
- * @param NavigationState $nav */
-function handle_request($user, $qreq, $nav) {
+/** @param NavigationState $nav */
+function handle_request($nav) {
     try {
+        $conf = initialize_conf();
+        if ($nav->page === "api") {
+            API_Page::go_nav($nav, $conf);
+            return;
+        }
+        list($user, $qreq) = initialize_request();
         $pc = $user->conf->page_components($user);
         $pagej = $pc->get($nav->page);
         if (!$pagej || str_starts_with($pagej->name, "__")) {
@@ -42,13 +46,13 @@ function handle_request($user, $qreq, $nav) {
             Multiconference::fail(403, "Your account is disabled.");
         } else {
             $pc->set_root($pagej->group)->set_context_args([$user, $qreq, $pc]);
-            pc_call_requests($user, $qreq, $pagej->group, $pc);
+            handle_request_components($user, $qreq, $pagej->group, $pc);
             $pc->print_group($pagej->group, true);
         }
     } catch (Redirection $redir) {
-        $user->conf->redirect($redir->url);
+        Conf::$main->redirect($redir->url);
     } catch (JsonCompletion $jc) {
-        $jc->result->emit($qreq->valid_token());
+        $jc->result->emit();
     } catch (PageCompletion $unused) {
     }
 }
@@ -70,10 +74,7 @@ if ($nav->page === "u") {
 }
 
 // handle pages
-if ($nav->page === "api") {
-    require_once("src/init.php");
-    API_Page::go_nav($nav, initialize_conf());
-} else if ($nav->page === "images" || $nav->page === "scripts" || $nav->page === "stylesheets") {
+if ($nav->page === "images" || $nav->page === "scripts" || $nav->page === "stylesheets") {
     $_GET["file"] = $nav->page . $nav->path;
     include("src/pages/p_cacheable.php");
     Cacheable_Page::go_nav($nav);
@@ -85,7 +86,5 @@ if ($nav->page === "api") {
     Scorechart_Page::go_param($_GET);
 } else {
     require_once("src/init.php");
-    initialize_conf();
-    initialize_request();
-    handle_request(Contact::$main_user, Qrequest::$main_request, $nav);
+    handle_request($nav);
 }

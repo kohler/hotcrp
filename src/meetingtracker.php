@@ -215,22 +215,23 @@ class MeetingTracker {
         self::contact_tracker_comet($conf);
     }
 
-    /** @param Qrequest $qreq */
+    /** @param Qrequest $qreq
+     * @return ?JsonResult */
     static function track_api(Contact $user, $qreq) {
-        // NB: This is a special API function; it should either return nothing
+        // NB: This is a special API function; it should either return null
         // (in which case the result of a `status` api call is returned),
-        // or call `json_exit` on error.
+        // or return a JsonResult that should be output.
 
         // track="IDENTIFIER POSITION" or track="IDENTIFIER stop" or track=stop
         if (!$user->is_track_manager() || !$qreq->valid_post()) {
-            return json_exit(403, "Permission error.");
+            return JsonResult::make_error(403, "<0>Permission error");
         }
 
         if ($qreq->track === "stop") {
             if ($user->privChair) {
                 self::clear($user->conf);
             }
-            return;
+            return null;
         }
 
         // check arguments
@@ -241,7 +242,7 @@ class MeetingTracker {
             || !$qreq["hotlist-info"]
             || !($xlist = SessionList::decode_info_string($user, $qreq["hotlist-info"], "p"))
             || !str_starts_with($xlist->listid, "p/")) {
-            return json_exit(400, "Parameter error.");
+            return JsonResult::make_error(400, "<0>Parameter error");
         }
 
         // look up trackers
@@ -267,14 +268,14 @@ class MeetingTracker {
             && ($trmatch === null
                 ? $qreq->tracker_start_at < $tracker->position_at
                 : $qreq->tracker_start_at < $trmatch->start_at)) {
-            return;
+            return null;
         }
 
         // check admin perms
         if (!$user->privChair
             && $trmatch !== null
             && !self::check_tracker_admin_perm($user, $trmatch->admin_perm ?? null)) {
-            return json_exit(403, "Permission error: You can’t administer that tracker.");
+            return JsonResult::make_error(403, "<0>Permission error: You can’t administer that tracker");
         }
 
         $admin_perm = null;
@@ -286,7 +287,7 @@ class MeetingTracker {
                 if (!$user->privChair
                     && !self::check_tracker_admin_perm($user, $admin_perm)) {
                     if ($trmatch === null) {
-                        json_exit(403, "Permission error: You can’t administer all the submissions on that list.");
+                        return JsonResult::make_error(403, "<0>Permission error: You can’t administer all the submissions on that list");
                     } else {
                         $xlist = $trmatch;
                     }
@@ -347,20 +348,20 @@ class MeetingTracker {
             array_splice($tracker->ts, $match, 1);
         }
 
-        if (empty($tracker->ts) && !$tracker->trackerid) {
-            return;
+        if (!empty($tracker->ts) || $tracker->trackerid) {
+            self::tracker_save($user->conf, $tracker, $position_at);
+            if ($new_trackerid !== false) {
+                $qreq->set_annex("new_trackerid", $new_trackerid);
+            }
         }
-
-        self::tracker_save($user->conf, $tracker, $position_at);
-        if ($new_trackerid !== false) {
-            $qreq->set_annex("new_trackerid", $new_trackerid);
-        }
+        return null;
     }
 
-    /** @param Qrequest $qreq */
+    /** @param Qrequest $qreq
+     * @return JsonResult */
     static function trackerconfig_api(Contact $user, $qreq) {
         if (!$user->is_track_manager() || !$qreq->valid_post()) {
-            return json_exit(403, "Permission error.");
+            return JsonResult::make_error(403, "<0>Permission error");
         }
 
         $tracker = self::lookup($user->conf);
@@ -519,9 +520,9 @@ class MeetingTracker {
                 $j->new_trackerid = $new_trackerid;
             }
             self::my_deadlines($j, $user);
-            return $j;
+            return new JsonResult($j);
         } else {
-            return json_exit(["ok" => false, "message_list" => $message_list]);
+            return new JsonResult(["ok" => false, "message_list" => $message_list]);
         }
     }
 

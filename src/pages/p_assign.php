@@ -120,7 +120,6 @@ class Assign_Page {
 
     function handle_requestreview() {
         $result = RequestReview_API::requestreview($this->user, $this->qreq, $this->prow);
-        $result = JsonResult::make($result);
         if ($result->content["ok"]) {
             assert(is_array($result->content["message_list"]));
             $this->conf->feedback_msg($result->content["message_list"]);
@@ -142,7 +141,6 @@ class Assign_Page {
 
     function handle_denyreview() {
         $result = RequestReview_API::denyreview($this->user, $this->qreq, $this->prow);
-        $result = JsonResult::make($result);
         if ($result->content["ok"]) {
             $this->conf->success_msg("<0>Proposed reviewer denied");
             $this->conf->redirect_self($this->qreq, ["email" => null, "firstName" => null, "lastName" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "deny" => null, "denyreview" => null]);
@@ -154,7 +152,6 @@ class Assign_Page {
 
     function handle_retractreview() {
         $result = RequestReview_API::retractreview($this->user, $this->qreq, $this->prow);
-        $result = JsonResult::make($result);
         if ($result->content["ok"]) {
             if ($result->content["notified"]) {
                 $this->conf->feedback_msg(
@@ -173,7 +170,6 @@ class Assign_Page {
 
     function handle_undeclinereview() {
         $result = RequestReview_API::undeclinereview($this->user, $this->qreq, $this->prow);
-        $result = JsonResult::make($result);
         if ($result->content["ok"]) {
             $email = $this->qreq->email ? : "You";
             $this->conf->feedback_msg(
@@ -193,7 +189,7 @@ class Assign_Page {
             if ($this->user->allow_administer($this->prow)) {
                 $this->handle_pc_update();
             } else if ($this->qreq->ajax) {
-                json_exit(["ok" => false, "error" => "Only administrators can assign reviews"]);
+                json_exit(JsonResult::make_error(403, "<0>Only administrators can assign reviews"));
             }
         }
         if ((isset($qreq->requestreview) || isset($qreq->approvereview))

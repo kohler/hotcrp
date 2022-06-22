@@ -193,10 +193,11 @@ function initialize_conf($config_file = null, $confid = null) {
 function initialize_user_redirect($nav, $uindex, $nusers, $cookie) {
     if ($nav->page === "api") {
         if ($nusers === 0) {
-            json_exit(["ok" => false, "error" => "You have been signed out"]);
+            $jr = JsonResult::make_error(401, "<0>You have been signed out");
         } else {
-            json_exit(["ok" => false, "error" => "Bad user specification"]);
+            $jr = JsonResult::make_error(400, "<0>Bad user specification");
         }
+        $jr->complete();
     } else if ($_SERVER["REQUEST_METHOD"] === "GET" || $_SERVER["REQUEST_METHOD"] === "HEAD") {
         $page = $nav->base_absolute();
         if ($nusers > 0) {
@@ -216,7 +217,9 @@ function initialize_user_redirect($nav, $uindex, $nusers, $cookie) {
 }
 
 
-function initialize_request() {
+/** @param ?array{no_main_user?:bool} $kwarg
+ * @return array{Contact,Qrequest} */
+function initialize_request($kwarg = null) {
     $conf = Conf::$main;
     $nav = Navigation::get();
 
@@ -250,8 +253,8 @@ function initialize_request() {
     $conf->prepare_security_headers();
 
     // skip user initialization if requested
-    if ($conf->opt["__no_main_user"] ?? null) {
-        return;
+    if ($kwarg["no_main_user"] ?? false) {
+        return [null, $qreq];
     }
 
     // set up session
@@ -380,4 +383,6 @@ function initialize_request() {
         }
         $_SESSION["addrs"] = $as;
     }
+
+    return [$muser, $qreq];
 }

@@ -114,7 +114,8 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         }
     }
 
-    /** @return JsonResult */
+    /** @return JsonResult
+     * @deprecated */
     static function make($jr, $arg2 = null) {
         if ($jr instanceof JsonResult) {
             return $jr;
@@ -190,8 +191,8 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         }
     }
 
-    /** @param bool $validated */
-    function emit($validated) {
+    /** @param ?bool $validated */
+    function emit($validated = null) {
         if ($this->status) {
             if (!isset($this->content["ok"])) {
                 $this->content["ok"] = $this->status <= 299;
@@ -202,7 +203,8 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         } else if (isset($this->content["status"])) {
             $this->status = $this->content["status"];
         }
-        if ($validated) {
+        if ($validated
+            ?? (Qrequest::$main_request && Qrequest::$main_request->valid_token())) {
             // Don’t set status on unvalidated requests, since that can leak
             // information (e.g. via <link prefetch onerror>).
             if ($this->status) {
@@ -212,6 +214,12 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         }
         header("Content-Type: application/json; charset=utf-8");
         echo json_encode_browser($this->content);
+    }
+
+    /** @return never
+     * @throws JsonCompletion */
+    function complete() {
+        throw new JsonCompletion($this);
     }
 
     #[\ReturnTypeWillChange]
@@ -239,8 +247,6 @@ class PageCompletion extends Exception {
 class JsonCompletion extends Exception {
     /** @var JsonResult */
     public $result;
-    /** @var int */
-    static public $capturing = 0;
     /** @var bool */
     static public $allow_short_circuit = false;
     /** @param JsonResult $j */
@@ -249,14 +255,13 @@ class JsonCompletion extends Exception {
     }
 }
 
-function json_exit($json, $arg2 = null) {
-    $json = JsonResult::make($json, $arg2);
-    if (JsonCompletion::$capturing > 0) {
-        throw new JsonCompletion($json);
-    } else {
-        $json->emit(Qrequest::$main_request && Qrequest::$main_request->valid_token());
-        exit;
-    }
+/** @param associative-array<string,mixed>|stdClass|JsonResult $json
+ * @return never
+ * @throws JsonCompletion
+ * @suppress PhanTypeMissingReturn */
+function json_exit($json) {
+    $jr = $json instanceof JsonResult ? $json : new JsonResult($json);
+    $jr->complete();
 }
 
 function foldupbutton($foldnum = 0, $content = "", $js = null) {

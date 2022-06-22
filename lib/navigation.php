@@ -453,7 +453,7 @@ class Navigation {
     }
 
     /** @param string $url
-     * @return void */
+     * @return never */
     static function redirect_absolute($url) {
         assert(str_starts_with($url, "https://") || str_starts_with($url, "http://"));
         // Might have an HTML-encoded URL; decode at least &amp;.
@@ -466,7 +466,7 @@ class Navigation {
 <title>Redirection</title>
 <script>location=", json_encode($url), ";</script></head>
 <body><p>You should be redirected <a href=\"", htmlspecialchars($url), "\">to here</a>.</p></body></html>\n";
-        exit();
+        exit;
     }
 }
 

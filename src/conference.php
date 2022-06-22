@@ -3817,7 +3817,9 @@ class Conf {
         }
     }
 
-    /** @param ?string $url */
+    /** @param ?string $url
+     * @return never
+     * @throws Redirection */
     function redirect($url = null) {
         $nav = Navigation::get();
         if (self::$test_mode) {
@@ -3830,13 +3832,17 @@ class Conf {
     }
 
     /** @param string $page
-     * @param null|string|array $param */
+     * @param null|string|array $param
+     * @return never
+     * @throws Redirection */
     function redirect_hoturl($page, $param = null) {
         $this->redirect($this->hoturl($page, $param, self::HOTURL_RAW));
     }
 
     /** @param Qrequest $qreq
-     * @param ?array $param */
+     * @param ?array $param
+     * @return never
+     * @throws Redirection */
     function redirect_self(Qrequest $qreq, $param = null) {
         $this->redirect($this->selfurl($qreq, $param, self::HOTURL_RAW));
     }
@@ -5285,17 +5291,17 @@ class Conf {
         } else if (!is_string($uf->function)) {
             return JsonResult::make_error(404, "<0>Function not found");
         } else {
-            ++JsonCompletion::$capturing;
             try {
                 self::xt_resolve_require($uf);
                 $j = call_user_func($uf->function, $user, $qreq, $prow, $uf);
+                return new JsonResult($j);
             } catch (JsonCompletion $ex) {
-                $j = $ex->result;
+                return $ex->result;
             }
-            --JsonCompletion::$capturing;
-            return JsonResult::make($j);
         }
     }
+    /** @param PermissionProblem $whynot
+     * @return JsonResult */
     static function paper_error_json_result($whynot) {
         $result = ["ok" => false, "message_list" => []];
         if ($whynot) {
