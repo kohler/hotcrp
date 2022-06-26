@@ -70,6 +70,8 @@ class Conf {
 
     /** @var ?Collator */
     private $_collator;
+    /** @var ?Collator */
+    private $_pcollator;
     /** @var list<string> */
     private $rounds;
     /** @var ?array<int,string> */
@@ -914,13 +916,25 @@ class Conf {
         return $this->_collator;
     }
 
+    /** @return Collator */
+    function punctuation_collator() {
+        if (!$this->_pcollator) {
+            $this->_pcollator = new Collator("en_US.utf8");
+            $this->_pcollator->setAttribute(Collator::NUMERIC_COLLATION, Collator::ON);
+            $this->_pcollator->setAttribute(Collator::ALTERNATE_HANDLING, Collator::SHIFTED);
+            $this->_pcollator->setStrength(Collator::QUATERNARY);
+        }
+        return $this->_pcollator;
+    }
+
     /** @return callable(Contact|Author,Contact|Author):int */
     function user_comparator() {
-        return function ($a, $b) {
-            $sortspec = $this->sort_by_last ? 0312 : 0321;
+        $sortspec = $this->sort_by_last ? 0312 : 0321;
+        $pcollator = $this->punctuation_collator();
+        return function ($a, $b) use ($sortspec, $pcollator) {
             $as = Contact::get_sorter($a, $sortspec);
             $bs = Contact::get_sorter($b, $sortspec);
-            return $this->collator()->compare($as, $bs);
+            return $pcollator->compare($as, $bs);
         };
     }
 
