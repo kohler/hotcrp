@@ -72,12 +72,6 @@ class ComponentSet implements XtContext {
                 $fj->group = $fj->name;
             }
         }
-        if (!isset($fj->hashid)
-            && !str_starts_with($fj->name, "__")
-            && ($pos = strpos($fj->name, "/")) !== false) {
-            $x = substr($fj->name, $pos + 1);
-            $fj->hashid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9_:.]+/', "-", strtolower($x));
-        }
         $this->_jall[$fj->name][] = $fj;
         if ($fj->group === $fj->name) {
             assert(strpos($fj->group, "/") === false);
@@ -369,21 +363,23 @@ class ComponentSet implements XtContext {
     /** @param ?string $title
      * @param ?string $hashid */
     function print_start_section($title = null, $hashid = null) {
+        $title = $title ?? "";
+        $hashid = $hashid ?? "";
+        $hashid_notitle = $title === "" && (string) $hashid !== "";
         $this->print_end_section();
-        if ($this->_next_section_class !== ""
-            || (($hashid ?? "") !== "" && ($title ?? "") === "")) {
+        if ($this->_next_section_class !== "" || $hashid_notitle) {
             echo '<div';
             if ($this->_next_section_class !== "") {
                 echo " class=\"", $this->_next_section_class, "\"";
             }
             $this->_next_section_class = $this->_section_class;
-            if (($hashid ?? "") !== "" && ($title ?? "") === "") {
+            if ($hashid_notitle) {
                 echo " id=\"", htmlspecialchars($hashid), "\"";
             }
             echo '>';
             $this->_section_closer = "</div>";
         }
-        if (($title ?? "") !== "") {
+        if ($title !== "") {
             $this->print_title($title, $hashid);
         }
     }
@@ -407,7 +403,7 @@ class ComponentSet implements XtContext {
         if ($this->_title_class) {
             echo ' class="', $this->_title_class, '"';
         }
-        if ($hashid) {
+        if ((string) $hashid !== "") {
             echo ' id="', htmlspecialchars($hashid), '"';
         }
         echo '>', $title, "</h3>\n";
@@ -419,11 +415,18 @@ class ComponentSet implements XtContext {
             $gj = $this->get($gj);
         }
         if ($gj) {
-            $title = ($gj->show_title ?? true) ? $gj->title ?? "" : "";
-            if ($title !== "" || $this->_section_closer === null) {
-                $this->print_start_section($title, $gj->hashid ?? null);
-            }
+            $title = ($gj->print_title ?? true) ? $gj->title ?? "" : "";
+            $hashid = $gj->hashid ?? null;
             $separator = $gj->print_separator ?? false;
+            if ($title !== ""
+                || ($this->_section_class === null && $this->_next_section_class !== "")
+                || (string) $hashid !== "") {
+                // create default hashid from title
+                if ($title !== "" && $hashid === null) {
+                    $hashid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9:.]+/', "-", strtolower($title));
+                }
+                $this->print_start_section($title, $hashid);
+            }
             if ($separator) {
                 echo is_string($separator) ? $separator : $this->_separator;
             }
@@ -440,6 +443,7 @@ class ComponentSet implements XtContext {
         if (isset($gj->print_function)) {
             $result = $this->call_function($gj, $gj->print_function, $gj);
         } else if (isset($gj->render_function)) {
+            error_log("deprecated render_function in " . json_encode($gj) . "\n" . debug_string_backtrace()); // XXX
             $result = $this->call_function($gj, $gj->render_function, $gj);
         } else if (isset($gj->html_content)) {
             echo $gj->html_content;
