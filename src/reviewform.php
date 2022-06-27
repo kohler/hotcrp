@@ -1260,7 +1260,7 @@ class ReviewValues extends MessageSet {
                 if ($user !== $reviewer) {
                     $this->reviewer_error(null);
                 }
-                $this->reviewer_error($whyNot->unparse_html());
+                $this->reviewer_error("<5>" . $whyNot->unparse_html());
                 return false;
             }
             $new_rrid = $user->assign_review($prow->paperId, $reviewer->contactId, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL, $extra);
