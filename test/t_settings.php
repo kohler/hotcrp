@@ -485,6 +485,34 @@ class Settings_Tester {
             "review_default_round" => "biglemd"
         ]);
         xassert(!$sv->execute());
+
+        // check deadline relationships
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_review" => 1,
+            "review/1/name" => "Butt",
+            "review/1/soft" => "@{$tn}",
+            "review/1/done" => "@" . ($tn - 10)
+        ]);
+        xassert(!$sv->execute());
+        xassert_neqq(stripos($sv->full_feedback_text(), "must come before"), false);
+
+        xassert_eqq($sv->conf->round_number("Butt", false), 1);
+        $sv->conf->save_refresh_setting("pcrev_hard_1", $tn - 10);
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_review" => 1,
+            "review/1/name" => "Butt",
+            "review/1/soft" => "@{$tn}",
+            "review/1/done" => "@" . ($tn - 10)
+        ]);
+        xassert($sv->execute());
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_review" => 1,
+            "review/1/name" => "Butt",
+            "review/1/soft" => "@{$tn}",
+            "review/1/done" => "none"
+        ]);
+        xassert($sv->execute());
     }
 
     function test_responses() {

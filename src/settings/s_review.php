@@ -346,10 +346,17 @@ class Review_SettingParser extends SettingParser {
         $old_rsid = [];
         $latest = null;
         foreach ($sv->oblist_keys("review/") as $ctr) {
-            $rs = $sv->object_newv("review/{$ctr}");
-            if (!$sv->reqstr("review/{$ctr}/delete")) {
-                $sv->check_date_before("review/{$ctr}/soft", "review/{$ctr}/done", false);
-                $sv->check_date_before("review/{$ctr}/external_soft", "review/{$ctr}/external_done", false);
+            $pfx = "review/{$ctr}";
+            $rs = $sv->object_newv($pfx);
+            if (!$sv->reqstr("{$pfx}/delete")) {
+                if ($sv->oldv("{$pfx}/soft") !== $sv->newv("{$pfx}/soft")
+                    || $sv->oldv("{$pfx}/done") !== $sv->newv("{$pfx}/done")) {
+                    $sv->check_date_before("review/{$ctr}/soft", "review/{$ctr}/done", false);
+                }
+                if ($sv->oldv("{$pfx}/external_soft") !== $sv->newv("{$pfx}/external_soft")
+                    || $sv->oldv("{$pfx}/external_done") !== $sv->newv("{$pfx}/external_done")) {
+                    $sv->check_date_before("review/{$ctr}/external_soft", "review/{$ctr}/external_done", false);
+                }
                 $rss[] = $rs;
                 if ($rs->id > 0) {
                     $old_rsid[$rs->id] = $rs;
