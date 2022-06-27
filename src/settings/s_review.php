@@ -346,7 +346,7 @@ class Review_SettingParser extends SettingParser {
         $old_rsid = [];
         $latest = null;
         foreach ($sv->oblist_keys("review/") as $ctr) {
-            $rs = $sv->parse_members("review/{$ctr}");
+            $rs = $sv->object_newv("review/{$ctr}");
             if (!$sv->reqstr("review/{$ctr}/delete")) {
                 $sv->check_date_before("review/{$ctr}/soft", "review/{$ctr}/done", false);
                 $sv->check_date_before("review/{$ctr}/external_soft", "review/{$ctr}/external_done", false);

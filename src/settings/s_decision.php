@@ -132,7 +132,7 @@ class Decision_SettingParser extends SettingParser {
         $djs = [];
         $hasid = [];
         foreach ($sv->oblist_keys("decision/") as $ctr) {
-            $dsr = $sv->parse_members("decision/{$ctr}");
+            $dsr = $sv->object_newv("decision/{$ctr}");
             if (!$sv->reqstr("decision/{$ctr}/delete")) {
                 $this->_check_req_name($sv, $dsr, $ctr);
                 $djs[] = $dsr;

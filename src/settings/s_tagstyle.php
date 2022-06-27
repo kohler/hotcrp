@@ -69,7 +69,7 @@ class TagStyle_SettingParser extends SettingParser {
     private function _apply_tag_style_req(SettingValues $sv, Si $si) {
         $bs = [];
         foreach ($sv->oblist_keys("tag_style/") as $ctr) {
-            $br = $sv->parse_members("tag_style/{$ctr}");
+            $br = $sv->object_newv("tag_style/{$ctr}");
             if (!$sv->reqstr("tag_style/{$ctr}/delete")) {
                 $ks = $sv->conf->tags()->known_style($br->style);
                 $sn = $ks ? $ks->name : $br->style;

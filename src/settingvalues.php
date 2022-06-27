@@ -36,6 +36,8 @@ class SettingValues extends MessageSet {
 
     /** @var array<string,mixed> */
     private $_explicit_oldv = [];
+    /** @var array<string,object> */
+    private $_object_newv = [];
     /** @var array<string,true> */
     private $_oblist_ensured = [];
     /** @var array<string,int> */
@@ -833,12 +835,19 @@ class SettingValues extends MessageSet {
     /** @param string|Si $id */
     function newv($id) {
         $si = is_string($id) ? $this->si($id) : $id;
-        $s = $si->storage_name();
-        if (array_key_exists($s, $this->_savedv)) {
-            return $this->si_savedv($s, $si);
+        assert($si->type !== "object" && $si->type !== "oblist");
+        if (($si->storage_type & Si::SI_MEMBER) === 0) {
+            $s = $si->storage_name();
+            if (array_key_exists($s, $this->_savedv)) {
+                return $this->si_savedv($s, $si);
+            }
         } else {
-            return $this->oldv($si);
+            if (($o = $this->object_newv($si->name0 . $si->name1))) {
+                $sn = $si->storage_name();
+                return $o->{$sn};
+            }
         }
+        return $this->oldv($si);
     }
 
 
@@ -1470,22 +1479,30 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string $oname
-     * @return object */
+     * @return object
+     * @deprecated */
     function parse_members($oname) {
-        $object = $this->objectv($oname);
-        assert($object && $this->_req_parsed && !str_ends_with($oname, "/"));
-        $object = clone $object;
-        $old_object = $this->cur_object;
-        $this->cur_object = $object;
-        // skip member parsing if object is deleted (don't want errors)
-        if (!$this->reqstr("{$oname}/delete")) {
-            foreach ($this->si_req_members("{$oname}/") as $si) {
-                if (($si->storage_type & Si::SI_MEMBER) !== 0)
-                    $this->apply_req($si);
+        return $this->object_newv($oname);
+    }
+
+    /** @param string $oname
+     * @return object */
+    function object_newv($oname) {
+        if (!array_key_exists($oname, $this->_object_newv)) {
+            $object = $this->objectv($oname);
+            assert($object && $this->_req_parsed && !str_ends_with($oname, "/"));
+            $old_object = $this->cur_object;
+            $this->_object_newv[$oname] = $this->cur_object = clone $object;
+            // skip member parsing if object is deleted (don't want errors)
+            if (!$this->reqstr("{$oname}/delete")) {
+                foreach ($this->si_req_members("{$oname}/") as $si) {
+                    if (($si->storage_type & Si::SI_MEMBER) !== 0)
+                        $this->apply_req($si);
+                }
             }
+            $this->cur_object = $old_object;
         }
-        $this->cur_object = $old_object;
-        return $object;
+        return $this->_object_newv[$oname];
     }
 
 

@@ -176,7 +176,7 @@ class Response_SettingParser extends SettingParser {
 
         $rrds = [];
         foreach ($sv->oblist_keys("response/") as $ctr) {
-            $rrd = $sv->parse_members("response/{$ctr}");
+            $rrd = $sv->object_newv("response/{$ctr}");
             if ($sv->reqstr("response/{$ctr}/delete")) {
                 if ($rrd->id > 1) {
                     $this->round_transform[] = "when {$rrd->id} then 1";

@@ -293,7 +293,7 @@ class Track_SettingParser extends SettingParser {
         } else if ($si->name === "track") {
             $j = [];
             foreach ($sv->oblist_keys("track/") as $ctr) {
-                $this->cur_trx = $sv->parse_members("track/{$ctr}");
+                $this->cur_trx = $sv->object_newv("track/{$ctr}");
                 if (!$sv->reqstr("track/{$ctr}/delete")) {
                     if (!$this->cur_trx->is_default) {
                         $sv->error_if_missing("track/{$ctr}/tag");

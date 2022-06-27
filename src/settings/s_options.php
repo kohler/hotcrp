@@ -484,7 +484,7 @@ class Options_SettingParser extends SettingParser {
         }
         $nsfj = [];
         foreach ($sv->oblist_keys("sf/") as $ctr) {
-            $sfj = $sv->parse_members("sf/{$ctr}");
+            $sfj = $sv->object_newv("sf/{$ctr}");
             if ($sv->reqstr("sf/{$ctr}/delete")) {
                 if ($sfj->id !== DTYPE_INVALID) {
                     $this->_delete_optionids[] = $sfj->id;
