@@ -518,7 +518,7 @@ class Options_SettingParser extends SettingParser {
     private function _validate_consistency(SettingValues $sv) {
         $old_oval = $sv->conf->setting("options");
         $old_options = $sv->conf->setting_data("options");
-        if (($new_options = $sv->savedv("options") ?? "") === "") {
+        if (($new_options = $sv->newv("options") ?? "") === "") {
             $sv->conf->change_setting("options", null);
         } else {
             $sv->conf->change_setting("options", $old_oval + 1, $new_options);

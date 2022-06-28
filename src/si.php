@@ -79,7 +79,7 @@ class Si {
     const SI_DATA = 2;
     const SI_SLICE = 4;
     const SI_OPT = 8;
-    const SI_NEGATE = 16;
+    const SI_NEGATE = 16; // requires SI_VALUE
     const SI_MEMBER = 32;
 
     static private $key_storage = [

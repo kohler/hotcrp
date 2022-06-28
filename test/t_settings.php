@@ -697,6 +697,7 @@ class Settings_Tester {
             "sf/1/condition" => "Program:Honors"
         ]);
         xassert(!$sv->execute());
+        xassert_neqq(stripos($sv->full_feedback_text(), "field condition"), false);
 
         // newly-added field conditions can refer to other newly-added fields
         $sv = SettingValues::make_request($this->u_chair, [

@@ -44,9 +44,10 @@ class SettingValues extends MessageSet {
     private $_oblist_next = [];
 
     /** @var ?object */
-    public $cur_object;
+    private $cur_object;
     /** @var array<string,array{?int,?string}> */
     private $_savedv = [];
+
     /** @var list<Si> */
     private $_saved_si = [];
     /** @var list<array{?string,callable()}> */
@@ -795,43 +796,6 @@ class SettingValues extends MessageSet {
     }
 
 
-    /** @param string|Si $id
-     * @return bool */
-    function has_savedv($id) {
-        $si = is_string($id) ? $this->si($id) : $id;
-        return array_key_exists($si->storage_name(), $this->_savedv);
-    }
-
-    /** @param string|Si $id
-     * @return mixed */
-    function savedv($id) {
-        $si = is_string($id) ? $this->si($id) : $id;
-        assert($si->storage_type !== Si::SI_NONE);
-        return $this->si_savedv($si->storage_name(), $si);
-    }
-
-    /** @param string $storage_name
-     * @param Si $si
-     * @return mixed */
-    private function si_savedv($storage_name, $si) {
-        assert(($si->storage_type & Si::SI_MEMBER) === 0);
-        if (array_key_exists($storage_name, $this->_savedv)) {
-            $v = $this->_savedv[$storage_name];
-            if ($v !== null) {
-                $vx = $v[$si->storage_type & Si::SI_DATA ? 1 : 0];
-                if ($si->storage_type & Si::SI_NEGATE) {
-                    $vx = $vx ? 0 : 1;
-                }
-                return $vx;
-            } else {
-                return $si->default_value;
-            }
-        } else {
-            return null;
-        }
-    }
-
-
     /** @param string|Si $id */
     function newv($id) {
         $si = is_string($id) ? $this->si($id) : $id;
@@ -839,7 +803,14 @@ class SettingValues extends MessageSet {
         if (($si->storage_type & Si::SI_MEMBER) === 0) {
             $s = $si->storage_name();
             if (array_key_exists($s, $this->_savedv)) {
-                return $this->si_savedv($s, $si);
+                $v = $this->_savedv[$s];
+                if ($v === null) {
+                    return $si->default_value;
+                } else if (($si->storage_type & Si::SI_NEGATE) !== 0) {
+                    return $v[0] ? 1 : 0;
+                } else {
+                    return $v[($si->storage_type & Si::SI_DATA) !== 0 ? 1 : 0];
+                }
             }
         } else {
             if (($o = $this->object_newv($si->name0 . $si->name1))) {
