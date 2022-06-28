@@ -1490,11 +1490,12 @@ class SettingValues extends MessageSet {
     function object_newv($oname) {
         if (!array_key_exists($oname, $this->_object_newv)) {
             $object = $this->objectv($oname);
-            assert($object && $this->_req_parsed && !str_ends_with($oname, "/"));
+            assert(!!$object);
             $old_object = $this->cur_object;
             $this->_object_newv[$oname] = $this->cur_object = clone $object;
             // skip member parsing if object is deleted (don't want errors)
-            if (!$this->reqstr("{$oname}/delete")) {
+            if ($this->_use_req
+                && !$this->reqstr("{$oname}/delete")) {
                 foreach ($this->si_req_members("{$oname}/") as $si) {
                     if (($si->storage_type & Si::SI_MEMBER) !== 0)
                         $this->apply_req($si);
