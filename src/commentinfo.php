@@ -876,9 +876,12 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         }
 
         // log
-        $log = $is_response ? "Response $cmtid" : "Comment $cmtid";
-        if ($is_response && $response_name != "1") {
-            $log .= " ($response_name)";
+        if ($is_response) {
+            $x = $response_name == "1" ? "" : " ({$response_name})";
+            $log = "Response {$cmtid}{$x}";
+        } else {
+            $x = ($ctype & self::CT_TOPIC_PAPER) !== 0 ? " on submission" : "";
+            $log = "Comment {$cmtid}{$x}";
         }
         if ($text === false) {
             $log .= " deleted";
@@ -886,13 +889,11 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             if (($ctype & self::CT_DRAFT) === 0
                 && (!$this->commentId || ($this->commentType & self::CT_DRAFT) !== 0)) {
                 $log .= " submitted";
-            } else if ($this->commentId) {
-                $log .= " edited";
             } else {
-                $log .= " started";
-            }
-            if ($ctype & self::CT_DRAFT) {
-                $log .= " draft";
+                $log .= $this->commentId ? " edited" : " started";
+                if (($ctype & self::CT_DRAFT) === 0) {
+                    $log .= " draft";
+                }
             }
             $ch = [];
             if ($this->commentId
