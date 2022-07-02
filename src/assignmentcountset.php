@@ -150,8 +150,7 @@ class AssignmentCountSet {
             $opt["shepherdContactId"] = true;
         }
         $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $result = $this->user->conf->paper_result($opt, $this->user);
-        while (($prow = PaperInfo::fetch($result, $this->user, $this->user->conf))) {
+        foreach ($this->user->conf->paper_set($opt, $this->user) as $prow) {
             if ($this->user->can_view_paper($prow)) {
                 if (($this->has & self::HAS_REVIEW)
                     && $this->user->can_view_review_assignment($prow, null)
@@ -185,7 +184,6 @@ class AssignmentCountSet {
                 }
             }
         }
-        Dbl::free($result);
         $this->user->set_overrides($overrides);
     }
 

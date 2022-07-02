@@ -562,11 +562,7 @@ class MeetingTracker {
             left join PaperConflict conf on (conf.paperId=p.paperId and conf.$cid_join)
             where p.paperId in (" . join(",", $pids) . ")
             group by p.paperId");
-        $prows = new PaperInfoSet;
-        while (($prow = PaperInfo::fetch($result, $user))) {
-            $prows->add($prow);
-        }
-        Dbl::free($result);
+        $prows = PaperInfoSet::make_result($result, $user);
 
         foreach ($tis as $ti_index => $ti) {
             foreach ($ti->pids ?? [] as $pid) {

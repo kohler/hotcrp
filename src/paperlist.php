@@ -691,13 +691,7 @@ class PaperList implements XtContext {
     /** @return PaperInfoSet|Iterable<PaperInfo> */
     function rowset() {
         if ($this->_rowset === null) {
-            $result = $this->conf->paper_result($this->qopts, $this->user);
-            $this->_rowset = new PaperInfoSet;
-            while (($row = PaperInfo::fetch($result, $this->user))) {
-                assert(!$this->_rowset->get($row->paperId));
-                $this->_rowset->add($row);
-            }
-            Dbl::free($result);
+            $this->_rowset = $this->conf->paper_set($this->qopts, $this->user);
         }
         if ($this->_groups === null) {
             $this->_sort($this->_rowset);

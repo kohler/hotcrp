@@ -902,14 +902,10 @@ class FormulaGraph extends MessageSet {
                 $queryOptions["reviewSignatures"] = true;
             }
 
-            $result = $this->conf->paper_result($queryOptions, $this->user);
-            $rowset = new PaperInfoSet;
-            while (($prow = PaperInfo::fetch($result, $this->user))) {
-                if ($this->user->can_view_paper($prow)) {
-                    $rowset->add($prow);
-                }
-            }
-            Dbl::free($result);
+            $rowset = $this->conf->paper_set($queryOptions, $this->user);
+            $rowset->apply_filter(function ($prow) {
+                return $this->user->can_view_paper($prow);
+            });
 
             if ($this->type & self::CDF) {
                 $this->_cdf_data($rowset);

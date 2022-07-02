@@ -241,12 +241,21 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             $this->add($prow, true);
         }
     }
+    /** @param Dbl_Result $result
+     * @param ?Contact $user
+     * @param ?Conf $conf
+     * @return PaperInfoSet */
+    static function make_result($result, $user, $conf = null) {
+        $set = new PaperInfoSet;
+        while (($prow = PaperInfo::fetch($result, $user, $conf))) {
+            $set->add($prow);
+        }
+        Dbl::free($result);
+        return $set;
+    }
     /** @param bool $copy */
     function add(PaperInfo $prow, $copy = false) {
-        $this->prows[] = $prow;
-        if (!isset($this->by_pid[$prow->paperId])) {
-            $this->by_pid[$prow->paperId] = $prow;
-        }
+        $this->prows[] = $this->by_pid[$prow->paperId] = $prow;
         if (!$copy) {
             assert(!$prow->_row_set);
             $prow->_row_set = $this;
@@ -288,12 +297,10 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @return list<int> */
     function paper_ids() {
         if ($this->_need_pid_sort) {
-            $by_pid = [];
+            $this->by_pid = [];
             foreach ($this->prows as $prow) {
-                if (!isset($by_pid[$prow->paperId]))
-                    $by_pid[$prow->paperId] = $this->by_pid[$prow->paperId];
+                $this->by_pid[$prow->paperId] = $prow;
             }
-            $this->by_pid = $by_pid;
             $this->_need_pid_sort = false;
         }
         return array_keys($this->by_pid);
@@ -329,16 +336,12 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
     /** @param callable(PaperInfo):bool $func */
     function apply_filter($func) {
-        $nprows = $by_pid = [];
+        $prows = $by_pid = [];
         foreach ($this->prows as $prow) {
-            if (call_user_func($func, $prow)) {
-                $nprows[] = $prow;
-                if (!isset($by_pid[$prow->paperId])) {
-                    $by_pid[$prow->paperId] = $prow;
-                }
-            }
+            if (call_user_func($func, $prow))
+                $prows[] = $by_pid[$prow->paperId] = $prow;
         }
-        $this->prows = $nprows;
+        $this->prows = $prows;
         $this->by_pid = $by_pid;
         $this->_need_pid_sort = false;
     }
@@ -356,11 +359,13 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         return new ArrayIterator($this->prows);
     }
     #[\ReturnTypeWillChange]
+    /** @param int $offset */
     function offsetExists($offset) {
         return isset($this->by_pid[$offset]);
     }
     #[\ReturnTypeWillChange]
-    /** @return ?PaperInfo */
+    /** @param int $offset
+     * @return ?PaperInfo */
     function offsetGet($offset) {
         return $this->by_pid[$offset] ?? null;
     }

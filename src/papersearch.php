@@ -2722,11 +2722,7 @@ class PaperSearch extends MessageSet {
 
         // collect papers
         $result = $this->_prepare_result($qe);
-        $rowset = new PaperInfoSet;
-        while (($row = PaperInfo::fetch($result, $this->user))) {
-            $rowset->add($row);
-        }
-        Dbl::free($result);
+        $rowset = PaperInfoSet::make_result($result, $this->user);
 
         // filter papers
         $thqe = $qe instanceof Then_SearchTerm ? $qe : null;
