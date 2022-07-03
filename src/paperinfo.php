@@ -144,19 +144,18 @@ class PaperContactInfo {
         $rev_tokens = $user->review_tokens();
         if ($cid > 0
             && !$rev_tokens
-            && ($row_set = $prow->_row_set)
-            && $row_set->size() > 1) {
+            && count($prow->_row_set) > 1) {
             $result = $conf->qe("$q, Paper.paperId paperId, ? contactId
                 from Paper
                 left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=?)
                 left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=?)
                 where Paper.paperId?a",
-                $cid, $cid, $cid, $row_set->paper_ids());
-            foreach ($row_set as $row) {
+                $cid, $cid, $cid, $prow->_row_set->paper_ids());
+            foreach ($prow->_row_set as $row) {
                 $row->_clear_contact_info($user);
             }
             while (($local = $result->fetch_row())) {
-                $row = $row_set->get((int) $local[5]);
+                $row = $prow->_row_set->get((int) $local[5]);
                 $ci = $row->_get_contact_info((int) $local[6]);
                 $ci->mark_conflict((int) $local[0]);
                 $ci->mark_review_type((int) $local[1], (int) $local[2], (int) $local[3], (int) $local[4]);
@@ -231,15 +230,15 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $prows = [];
     /** @var array<int,PaperInfo> */
     private $by_pid = [];
-    /** @var bool */
-    private $_need_pid_sort = false;
     /** @var int */
     public $loaded_allprefs = 0;
 
-    function __construct(PaperInfo $prow = null) {
-        if ($prow) {
-            $this->add($prow, true);
-        }
+    /** @param PaperInfo $row
+     * @return PaperInfoSet */
+    static function make_singleton($row) {
+        $set = new PaperInfoSet;
+        $set->add_paper($row);
+        return $set;
     }
     /** @param Dbl_Result $result
      * @param ?Contact $user
@@ -247,26 +246,20 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
      * @return PaperInfoSet */
     static function make_result($result, $user, $conf = null) {
         $set = new PaperInfoSet;
-        while (($prow = PaperInfo::fetch($result, $user, $conf))) {
-            $set->add($prow);
-        }
-        Dbl::free($result);
+        $set->add_result($result, $user, $conf);
         return $set;
     }
-    /** @param bool $copy */
-    function add(PaperInfo $prow, $copy = false) {
+    private function add_paper(PaperInfo $prow) {
         $this->prows[] = $this->by_pid[$prow->paperId] = $prow;
-        if (!$copy) {
-            assert(!$prow->_row_set);
-            $prow->_row_set = $this;
-        }
     }
-    function take_all(PaperInfoSet $set) {
-        foreach ($set->prows as $prow) {
-            $prow->_row_set = null;
-            $this->add($prow);
+    /** @param Dbl_Result $result
+     * @param ?Contact $user
+     * @param ?Conf $conf */
+    function add_result($result, $user, $conf = null) {
+        while (($prow = PaperInfo::fetch($result, $user, $conf, $this))) {
+            $this->add_paper($prow);
         }
-        $set->prows = $set->by_pid = [];
+        Dbl::free($result);
     }
     /** @return list<PaperInfo> */
     function as_list() {
@@ -292,17 +285,13 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @param callable(PaperInfo,PaperInfo):int $compare */
     function sort_by($compare) {
         usort($this->prows, $compare);
-        $this->_need_pid_sort = true;
+        $this->by_pid = [];
+        foreach ($this->prows as $prow) {
+            $this->by_pid[$prow->paperId] = $prow;
+        }
     }
     /** @return list<int> */
     function paper_ids() {
-        if ($this->_need_pid_sort) {
-            $this->by_pid = [];
-            foreach ($this->prows as $prow) {
-                $this->by_pid[$prow->paperId] = $prow;
-            }
-            $this->_need_pid_sort = false;
-        }
         return array_keys($this->by_pid);
     }
     /** @param int $pid
@@ -330,7 +319,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         $next_set = new PaperInfoSet;
         foreach ($this->prows as $prow) {
             if (call_user_func($func, $prow))
-                $next_set->add($prow, true);
+                $next_set->add_paper($prow);
         }
         return $next_set;
     }
@@ -338,14 +327,17 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     function apply_filter($func) {
         $prows = $by_pid = [];
         foreach ($this->prows as $prow) {
-            if (call_user_func($func, $prow))
+            if (call_user_func($func, $prow)) {
                 $prows[] = $by_pid[$prow->paperId] = $prow;
+            } else {
+                $prow->_row_set = PaperInfoSet::make_singleton($prow);
+            }
         }
         $this->prows = $prows;
         $this->by_pid = $by_pid;
-        $this->_need_pid_sort = false;
     }
-    /** @param callable(PaperInfo):bool $func */
+    /** @param callable(PaperInfo):bool $func
+     * @return bool */
     function any($func) {
         foreach ($this->prows as $prow) {
             if (($x = call_user_func($func, $prow)))
@@ -507,7 +499,7 @@ class PaperInfo {
     public $commentSkeletonInfo;
 
     // Not in database
-    /** @var ?PaperInfoSet */
+    /** @var PaperInfoSet */
     public $_row_set;
     /** @var array<int,PaperContactInfo> */
     private $_contact_info = [];
@@ -595,10 +587,12 @@ class PaperInfo {
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
     static private $next_uid = 0;
 
-    /** @param Conf $conf */
-    private function __construct(Conf $conf) {
+    /** @param Conf $conf
+     * @param ?PaperInfoSet $paperset */
+    private function __construct(Conf $conf, $paperset = null) {
         $this->conf = $conf;
         $this->paperXid = ++self::$next_uid;
+        $this->_row_set = $paperset ?? PaperInfoSet::make_singleton($this);
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
@@ -658,9 +652,10 @@ class PaperInfo {
 
     /** @param Dbl_Result $result
      * @param ?Contact $user
+     * @param ?PaperInfoSet $paperset
      * @return ?PaperInfo */
-    static function fetch($result, $user, Conf $conf = null) {
-        if (($prow = $result->fetch_object("PaperInfo", [$conf ?? $user->conf]))) {
+    static function fetch($result, $user, $conf = null, $paperset = null) {
+        if (($prow = $result->fetch_object("PaperInfo", [$conf ?? $user->conf, $paperset]))) {
             $prow->incorporate();
             $user && $prow->incorporate_user($user);
         }
@@ -1381,14 +1376,13 @@ class PaperInfo {
 
 
     private function load_topics() {
-        $row_set = $this->_row_set ?? new PaperInfoSet($this);
-        foreach ($row_set as $prow) {
+        foreach ($this->_row_set as $prow) {
             $prow->topicIds = "";
         }
         if ($this->conf->has_topics()) {
-            $result = $this->conf->qe("select paperId, group_concat(topicId) from PaperTopic where paperId?a group by paperId", $row_set->paper_ids());
+            $result = $this->conf->qe("select paperId, group_concat(topicId) from PaperTopic where paperId?a group by paperId", $this->_row_set->paper_ids());
             while ($result && ($row = $result->fetch_row())) {
-                $prow = $row_set->get((int) $row[0]);
+                $prow = $this->_row_set->get((int) $row[0]);
                 $prow->topicIds = $row[1] ?? "";
             }
             Dbl::free($result);
@@ -1505,21 +1499,20 @@ class PaperInfo {
             $this->_conflict_array = [$cflt->contactId => $cflt];
             $this->_conflict_array_email = true;
         } else {
-            $row_set = $this->_row_set ?? new PaperInfoSet($this);
-            foreach ($row_set as $prow) {
+            foreach ($this->_row_set as $prow) {
                 $prow->_conflict_array = [];
                 $prow->_conflict_array_email = $email;
             }
             if ($email) {
-                $result = $this->conf->qe("select paperId, PaperConflict.contactId, conflictType, firstName, lastName, affiliation, email from PaperConflict join ContactInfo using (contactId) where paperId?a", $row_set->paper_ids());
+                $result = $this->conf->qe("select paperId, PaperConflict.contactId, conflictType, firstName, lastName, affiliation, email from PaperConflict join ContactInfo using (contactId) where paperId?a", $this->_row_set->paper_ids());
             } else {
-                $result = $this->conf->qe("select paperId, contactId, conflictType, '' firstName, '' lastName, '' affiliation, '' email from PaperConflict where paperId?a", $row_set->paper_ids());
+                $result = $this->conf->qe("select paperId, contactId, conflictType, '' firstName, '' lastName, '' affiliation, '' email from PaperConflict where paperId?a", $this->_row_set->paper_ids());
             }
             while ($result && ($row = $result->fetch_object("Author"))) {
                 $row->paperId = (int) $row->paperId;
                 $row->contactId = (int) $row->contactId;
                 $row->conflictType = (int) $row->conflictType;
-                $prow = $row_set->get($row->paperId);
+                $prow = $this->_row_set->get($row->paperId);
                 $prow->_conflict_array[$row->contactId] = $row;
             }
             Dbl::free($result);
@@ -1621,12 +1614,13 @@ class PaperInfo {
 
 
     function load_preferences() {
-        if ($this->_row_set && ++$this->_row_set->loaded_allprefs >= 10) {
+        $this->allReviewerPreference = null;
+        if (count($this->_row_set) <= 10 || ++$this->_row_set->loaded_allprefs >= 10) {
             $row_set = $this->_row_set->filter(function ($prow) {
                 return $prow->allReviewerPreference === null;
             });
         } else {
-            $row_set = new PaperInfoSet($this);
+            $row_set = PaperInfoSet::make_singleton($this);
         }
         foreach ($row_set as $prow) {
             $prow->allReviewerPreference = "";
@@ -1666,14 +1660,13 @@ class PaperInfo {
         if ($this->_pref1_cid === null
             && $this->_prefs_array === null
             && $this->allReviewerPreference === null) {
-            $row_set = $this->_row_set ?? new PaperInfoSet($this);
-            foreach ($row_set as $prow) {
+            foreach ($this->_row_set as $prow) {
                 $prow->_pref1_cid = $cid;
                 $prow->_pref1 = null;
             }
-            $result = $this->conf->qe("select paperId, preference, expertise from PaperReviewPreference where paperId?a and contactId=?", $row_set->paper_ids(), $cid);
+            $result = $this->conf->qe("select paperId, preference, expertise from PaperReviewPreference where paperId?a and contactId=?", $this->_row_set->paper_ids(), $cid);
             while ($result && ($row = $result->fetch_row())) {
-                $prow = $row_set->get((int) $row[0]);
+                $prow = $this->_row_set->get((int) $row[0]);
                 $prow->_pref1 = [(int) $row[1], $row[2] === null ? null : (int) $row[2]];
             }
             Dbl::free($result);
@@ -1733,11 +1726,11 @@ class PaperInfo {
             }
         } else if ($this->_option_values === null
                    || ($need_data && $this->_option_data === null)) {
-            $old_row_set = $this->_row_set;
-            if ($only_me) {
-                $this->_row_set = null;
+            if (!$only_me || count($this->_row_set) === 1) {
+                $row_set = $this->_row_set;
+            } else {
+                $row_set = PaperInfoSet::make_singleton($this);
             }
-            $row_set = $this->_row_set ?? new PaperInfoSet($this);
             foreach ($row_set as $prow) {
                 $prow->_option_values = $prow->_option_data = [];
             }
@@ -1748,9 +1741,6 @@ class PaperInfo {
                 $prow->_option_data[(int) $row[1]][] = $row[3] !== null ? $row[3] : $row[4];
             }
             Dbl::free($result);
-            if ($only_me) {
-                $this->_row_set = $old_row_set;
-            }
         }
     }
 
@@ -2002,13 +1992,12 @@ class PaperInfo {
     /** @return array<int,array<int,int>> */
     private function doclink_array() {
         if ($this->_doclink_array === null) {
-            $row_set = $this->_row_set ?? new PaperInfoSet($this);
-            foreach ($row_set as $prow) {
+            foreach ($this->_row_set as $prow) {
                 $prow->_doclink_array = [];
             }
-            $result = $this->conf->qe("select paperId, linkId, linkType, documentId from DocumentLink where paperId?a order by paperId, linkId, linkType", $row_set->paper_ids());
+            $result = $this->conf->qe("select paperId, linkId, linkType, documentId from DocumentLink where paperId?a order by paperId, linkId, linkType", $this->_row_set->paper_ids());
             while ($result && ($row = $result->fetch_row())) {
-                $prow = $row_set->get((int) $row[0]);
+                $prow = $this->_row_set->get((int) $row[0]);
                 $linkid = (int) $row[1];
                 if (!isset($prow->_doclink_array[$linkid])) {
                     $prow->_doclink_array[$linkid] = [];
@@ -2081,10 +2070,10 @@ class PaperInfo {
             return;
         }
 
-        if ($this->_row_set && ($this->_review_array === null || $always)) {
+        if ($this->_review_array === null || count($this->_row_set) === 1 || $always) {
             $row_set = $this->_row_set;
         } else {
-            $row_set = new PaperInfoSet($this);
+            $row_set = PaperInfoSet::make_singleton($this);
         }
         $had = 0;
         foreach ($row_set as $prow) {
@@ -2323,13 +2312,12 @@ class PaperInfo {
         $cid = self::contact_to_cid($contact);
         if ($this->_full_review_key === null
             && !($this->_reviews_flags & self::REVIEW_HAS_FULL)) {
-            $row_set = $this->_row_set ?? new PaperInfoSet($this);
-            foreach ($row_set as $prow) {
+            foreach ($this->_row_set as $prow) {
                 $prow->_full_review = [];
                 $prow->_full_review_key = "u$cid";
             }
-            $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId?a and contactId=? order by paperId, reviewId", $row_set->paper_ids(), $cid);
-            while (($rrow = ReviewInfo::fetch($result, $row_set, $this->conf))) {
+            $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId?a and contactId=? order by paperId, reviewId", $this->_row_set->paper_ids(), $cid);
+            while (($rrow = ReviewInfo::fetch($result, $this->_row_set, $this->conf))) {
                 $rrow->prow->_full_review[] = $rrow;
             }
             Dbl::free($result);
@@ -2440,6 +2428,7 @@ class PaperInfo {
         }
     }
 
+    /** @param PaperInfoSet $row_set */
     private function ensure_reviewer_names_set($row_set) {
         foreach ($row_set as $prow) {
             foreach ($prow->all_reviews() as $rrow) {
@@ -2461,10 +2450,11 @@ class PaperInfo {
         $this->ensure_reviews();
         if (!empty($this->_review_array)
             && !($this->_reviews_flags & self::REVIEW_HAS_NAMES)) {
-            $this->ensure_reviewer_names_set($this->_row_set ?? new PaperInfoSet($this));
+            $this->ensure_reviewer_names_set($this->_row_set);
         }
     }
 
+    /** @param PaperInfoSet $row_set */
     private function ensure_reviewer_last_login_set($row_set) {
         $users = [];
         foreach ($row_set as $prow) {
@@ -2488,7 +2478,7 @@ class PaperInfo {
         $this->ensure_reviews();
         if (!empty($this->_review_array)
             && !($this->_reviews_flags & self::REVIEW_HAS_LASTLOGIN)) {
-            $this->ensure_reviewer_last_login_set($this->_row_set ?? new PaperInfoSet($this));
+            $this->ensure_reviewer_last_login_set($this->_row_set);
         }
     }
 
@@ -2497,14 +2487,13 @@ class PaperInfo {
      * @param bool $maybe_null */
     private function load_review_fields($fid, $main_storage, $maybe_null) {
         $k = $fid . "Signature";
-        $row_set = $this->_row_set ?? new PaperInfoSet($this);
-        foreach ($row_set as $prow) {
+        foreach ($this->_row_set as $prow) {
             $prow->$k = "";
         }
         $select = $maybe_null ? "coalesce($main_storage,'.')" : $main_storage;
-        $result = $this->conf->qe("select paperId, group_concat($select order by reviewId) from PaperReview where paperId?a group by paperId", $row_set->paper_ids());
+        $result = $this->conf->qe("select paperId, group_concat($select order by reviewId) from PaperReview where paperId?a group by paperId", $this->_row_set->paper_ids());
         while ($result && ($row = $result->fetch_row())) {
-            $prow = $row_set->get((int) $row[0]);
+            $prow = $this->_row_set->get((int) $row[0]);
             $prow->$k = $row[1];
         }
         Dbl::free($result);
@@ -2599,9 +2588,8 @@ class PaperInfo {
     }
 
     function ensure_review_ratings(ReviewInfo $ensure_rrow = null) {
-        $row_set = $this->_row_set ?? new PaperInfoSet($this);
         $pids = [];
-        foreach ($row_set as $prow) {
+        foreach ($this->_row_set as $prow) {
             if ($prow === $this
                 || !empty($prow->_review_array)
                 || isset($prow->reviewSignatures)) {
@@ -2616,7 +2604,7 @@ class PaperInfo {
         }
         $result = $this->conf->qe("select paperId, reviewId, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId?a", $pids);
         while (($row = $result->fetch_row())) {
-            $prow = $row_set->get((int) $row[0]);
+            $prow = $this->_row_set->get((int) $row[0]);
             if (($rrow = $prow->_review_array[(int) $row[1]] ?? null)) {
                 $rrow->ratingSignature = $row[2];
             }
@@ -2655,10 +2643,10 @@ class PaperInfo {
 
 
     function load_review_requests($always = false) {
-        if ($this->_row_set && ($this->_request_array === null || $always)) {
+        if ($this->_request_array === null || $always || count($this->_row_set) === 1) {
             $row_set = $this->_row_set;
         } else {
-            $row_set = new PaperInfoSet($this);
+            $row_set = PaperInfoSet::make_singleton($this);
         }
         foreach ($row_set as $prow) {
             $prow->_request_array = [];
@@ -2682,10 +2670,10 @@ class PaperInfo {
 
 
     function load_review_refusals($always = false) {
-        if ($this->_row_set && ($this->_refusal_array === null || $always)) {
+        if ($this->_refusal_array === null || $always || count($this->_row_set) === 1) {
             $row_set = $this->_row_set;
         } else {
-            $row_set = new PaperInfoSet($this);
+            $row_set = PaperInfoSet::make_singleton($this);
         }
         foreach ($row_set as $prow) {
             $prow->_refusal_array = [];
@@ -2772,14 +2760,13 @@ class PaperInfo {
     }
 
     function load_comments() {
-        $row_set = $this->_row_set ?? new PaperInfoSet($this);
-        foreach ($row_set as $prow) {
+        foreach ($this->_row_set as $prow) {
             $prow->_comment_array = [];
         }
         $result = $this->conf->qe(self::fetch_comment_query()
-            . " where paperId?a order by paperId, commentId", $row_set->paper_ids());
+            . " where paperId?a order by paperId, commentId", $this->_row_set->paper_ids());
         while (($c = CommentInfo::fetch($result, null, $this->conf))) {
-            $prow = $row_set->checked_paper_by_id($c->paperId);
+            $prow = $this->_row_set->checked_paper_by_id($c->paperId);
             $c->set_prow($prow);
             $prow->_comment_array[] = $c;
         }

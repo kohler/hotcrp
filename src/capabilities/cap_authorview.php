@@ -9,8 +9,7 @@ class AuthorView_Capability {
         if ($prow->_author_view_token === null
             && !$prow->conf->opt("disableCapabilities")) {
             // load already-assigned tokens
-            $row_set = $prow->_row_set ?? new PaperInfoSet($prow);
-            if ($row_set->size() > 5) {
+            if (count($prow->_row_set) > 5) {
                 $lo = "hcav";
                 $hi = "hcaw";
             } else {
@@ -19,7 +18,7 @@ class AuthorView_Capability {
             }
             $result = $prow->conf->qe("select * from Capability where salt>=? and salt<?", $lo, $hi);
             while (($tok = TokenInfo::fetch($result, $prow->conf))) {
-                if (($xrow = $row_set->get($tok->paperId))
+                if (($xrow = $prow->_row_set->get($tok->paperId))
                     && $tok->capabilityType === TokenInfo::AUTHORVIEW) {
                     $xrow->_author_view_token = $tok;
                 }
