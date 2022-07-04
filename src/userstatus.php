@@ -997,7 +997,12 @@ class UserStatus extends MessageSet {
 
         // Disabled
         if (isset($cj->disabled)) {
-            $user->set_prop("disabled", $cj->disabled);
+            if ($cj->disabled) {
+                $disablement = ($user->disablement & ~Contact::DISABLEMENT_DB) | Contact::DISABLEMENT_USER;
+            } else {
+                $disablement = 0;
+            }
+            $user->set_prop("disabled", $disablement);
             if ($user->prop_changed("disabled")) {
                 $us->diffs[$cj->disabled ? "disabled" : "enabled"] = true;
             }
