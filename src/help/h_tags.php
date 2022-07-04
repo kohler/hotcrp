@@ -147,7 +147,7 @@ with similar PC conflicts, which can make the meeting run smoother.</p>";
         echo $hth->subhead("Colors", "colors");
         echo "<p>Tags “red”, “orange”, “yellow”, “green”, “blue”, “purple”, “gray”, and
 “white” act as highlight colors. For example, papers tagged with “#red” will
-appear <span class=\"redtag tagbg\">red</span> in paper lists (for people
+appear <span class=\"tag-red tagbg\">red</span> in paper lists (for people
 who can see that tag).  Tag a paper “#~red” to make it red only on your display.
 Other styles are available; try “#bold”, “#italic”, “#big”, “#small”, and
 “#dim”. The ", $hth->setting_link("settings page", "tag_style"), " can associate other tags

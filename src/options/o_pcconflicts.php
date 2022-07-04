@@ -205,7 +205,7 @@ class PCConflicts_PaperOption extends PaperOption {
             }
             echo ' clearfix';
             if (Conflict::is_conflicted($pct)) {
-                echo ' boldtag';
+                echo ' tag-bold';
             }
             if ($pcconfmatch) {
                 echo ' need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($pcconfmatch));
