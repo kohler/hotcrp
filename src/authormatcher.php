@@ -418,7 +418,7 @@ class AuthorMatcher extends Author {
             || ($nc > 0
                 && !$has_nameish
                 && $fc !== 1
-                && ($nc < $nw || preg_match('{[-,/]}', $s)));
+                && ($nc < $nw || preg_match('/[-,\/]/', $s)));
     }
 
 
@@ -430,7 +430,7 @@ class AuthorMatcher extends Author {
 
         // remove unicode versions
         $x = ["“" => "\"", "”" => "\"", "–" => "-", "—" => "-", "•" => ";",
-              ".~" => ". ", "\\item" => "; "];
+              ".~" => ". ", "\\item" => "; ", "（" => " (", "）" => ") "];
         $s = preg_replace_callback('/(?:“|”|–|—|•|\.\~|\\\\item)/', function ($m) use ($x) {
             return $x[$m[0]];
         }, $s);
@@ -452,7 +452,7 @@ class AuthorMatcher extends Author {
         foreach ($olines as $line) {
             // remove quotes
             if (str_starts_with($line, "\"")) {
-                $line = preg_replace_callback('{""?}', function ($m) {
+                $line = preg_replace_callback('/""?/', function ($m) {
                     return strlen($m[0]) === 1 ? "" : "\"";
                 }, $line);
             }
@@ -483,7 +483,7 @@ class AuthorMatcher extends Author {
                     $rest = rtrim(join(" ", array_slice($ws, 2)));
                 }
                 if ($rest !== "") {
-                    $rest = preg_replace('{\A[,\s]+}', "", $rest);
+                    $rest = preg_replace('/\A[,\s]+/', "", $rest);
                 }
                 if ($aff !== "" && $aff[0] !== "(") {
                     $aff = "($aff)";
@@ -505,7 +505,7 @@ class AuthorMatcher extends Author {
                 $line = self::fix_collaborators_line_no_parens($line);
             }
             // append line
-            if (!preg_match('{\A(?:none|n/a|na|-*|\.*)[\s,;.]*\z}i', $line)) {
+            if (!preg_match('/\A(?:none|n\/a|na|-*|\.*)[\s,;.]*\z/i', $line)) {
                 $lines[] = $line;
             } else if ($line !== "") {
                 $any = true;
