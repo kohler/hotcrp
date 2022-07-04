@@ -41,13 +41,11 @@ class ConflictMatch_PaperColumn extends PaperColumn {
             $potconf->messages[] = ["<em>reviewer preference</em> " . unparse_preference($pref)];
         }
         $this->nonempty = !$row->has_author($this->contact) || $potconf;
-        if (!$this->nonempty) {
+        if (!$potconf || empty($potconf->messages)) {
             return "";
         }
         $m = $potconf->render_ul_list("break-avoid");
-        if (empty($m)) {
-            return "";
-        } else if (count($potconf->messages) === 1) {
+        if (count($potconf->messages) === 1) {
             return "<div class=\"potentialconflict-one\">{$m[0]}</div>";
         } else {
             return "<div class=\"potentialconflict-many\">" . join("", $m) . "</div>";
