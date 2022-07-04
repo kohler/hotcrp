@@ -256,9 +256,9 @@ class Assign_Page {
         }
         $reason = $rrow->reason;
         if ($this->allow_view_authors
-            && ($pconf = $this->prow->potential_conflict_html($rrowid, true))) {
-            foreach ($pconf[1] as $i => $pcx) {
-                echo '<li class="fx">possible conflict: ', $pcx, '</li>';
+            && ($potconf = $this->prow->potential_conflict_html($rrowid, true))) {
+            foreach ($potconf->messages as $ml) {
+                echo '<li class="fx">', $potconf->render_ul_item(null, "possible conflict: ", $ml), '</li>';
             }
             $reason = $reason ? : "This reviewer appears to have a conflict with the submission authors.";
         }
@@ -461,7 +461,7 @@ class Assign_Page {
         }
         echo '</div>'; // .pctbname
         if ($potconf) {
-            echo '<div class="need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($potconf)), '">', $potconf[0], '</div>';
+            echo '<div class="need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($potconf)), '">', $potconf->announce, '</div>';
         }
 
         // then, number of reviews

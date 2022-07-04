@@ -78,7 +78,7 @@ class RequestReview_API {
         $xreviewer = $reviewer
             ?? $user->conf->cdb_user_by_email($email)
             ?? Contact::make_keyed($user->conf, $name_args->unparse_nae_json());
-        $potconflict = $prow->potential_conflict_html($xreviewer);
+        $potconf = $prow->potential_conflict_html($xreviewer);
 
         // check requester
         if ($request && $user->can_administer($prow)) {
@@ -90,20 +90,20 @@ class RequestReview_API {
         // check whether to make a proposal
         $extrev_chairreq = $user->conf->setting("extrev_chairreq");
         if ($user->can_administer($prow)
-            ? $potconflict && !$qreq->override
+            ? $potconf && !$qreq->override
             : $extrev_chairreq === 1
-              || ($extrev_chairreq === 2 && $potconflict)) {
+              || ($extrev_chairreq === 2 && $potconf)) {
             $prow->conf->qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, reason=?, reviewRound=? on duplicate key update paperId=paperId",
                 $prow->paperId, $email, $xreviewer->firstName, $xreviewer->lastName,
                 $xreviewer->affiliation, $user->contactId, Conf::$now, $reason, $round);
             $ml = [];
             if ($user->can_administer($prow)) {
                 $ml[] = new MessageItem("email", "<5>" . $xreviewer->name_h(NAME_E) . " has a potential conflict with this submission, so you must approve this request for it to take effect", MessageSet::WARNING_NOTE);
-                $ml[] = new MessageItem("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconflict), MessageSet::INFORM);
+                $ml[] = new MessageItem("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconf), MessageSet::INFORM);
             } else if ($extrev_chairreq === 2) {
                 $ml[] = new MessageItem("email", "<5>" . $xreviewer->name_h(NAME_E) . " has a potential conflict with this submission, so an administrator must approve your proposed external review before it can take effect", MessageSet::WARNING_NOTE);
                 if ($user->can_view_authors($prow)) {
-                    $ml[] = new MessageItem("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconflict), MessageSet::INFORM);
+                    $ml[] = new MessageItem("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconf), MessageSet::INFORM);
                 }
             } else {
                 $ml[] = new MessageItem("email", "<5>Proposed an external review from " . $xreviewer->name_h(NAME_E), MessageSet::WARNING_NOTE);

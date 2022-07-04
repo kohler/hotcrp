@@ -1084,7 +1084,7 @@ class PaperInfo {
         $this->_potential_conflicts[] = [$order0, $userdesc, $order, $cfltdesc];
     }
 
-    /** @return ?array{string,list<string>} */
+    /** @return ?PaperInfoPotentialConflictHTML */
     function potential_conflict_html(Contact $user, $highlight = false) {
         if (!$this->potential_conflict_callback($user, [$this, "_potential_conflict_html_callback"])) {
             return null;
@@ -1106,29 +1106,32 @@ class PaperInfo {
         } else {
             $announce = "Possible conflict…";
         }
+        $potconf = new PaperInfoPotentialConflictHTML;
+        $announcehighlight = $highlight ? " pcconfmatch-highlight" : "";
+        $potconf->announce = "<div class=\"pcconfmatch{$announcehighlight}\">{$announce}</div>";
         $last = null;
-        $msgs = [];
         foreach ($this->_potential_conflicts as $x) {
             if ($last === $x[1]) {
-                $msgs[count($msgs) - 1] .= "</li><li>{$x[3]}";
+                $potconf->messages[count($potconf->messages) - 1][] = $x[3];
             } else {
-                $msgs[] = "<ul class=\"potentialconflict\"><li>{$x[1]}</li><li>{$x[3]}";
+                $potconf->messages[] = [$x[1], $x[3]];
                 $last = $x[1];
             }
         }
-        foreach ($msgs as &$m) {
-            $m .= "</li></ul>";
-        }
         $this->_potential_conflicts = null;
-        return ['<div class="pcconfmatch'
-            . ($highlight ? " pcconfmatch-highlight" : "")
-            . "\">{$announce}</div>", $msgs];
+        return $potconf;
     }
 
-    /** @param ?array{string,list<string>} $potconf
+    /** @param ?PaperInfoPotentialConflictHTML $potconf
      * @return string */
     static function potential_conflict_tooltip_html($potconf) {
-        return $potconf ? '<ul class="x"><li>' . join('</li><li>', $potconf[1]) . '</li></ul>' : '';
+        if ($potconf && !empty($potconf->messages)) {
+            return '<ul class="x"><li>'
+                . join('</li><li>', $potconf->render_ul_list())
+                . '</li></ul>';
+        } else {
+            return "";
+        }
     }
 
 
@@ -3222,5 +3225,33 @@ class PaperInfoLikelyContacts implements JsonSerializable {
             $x["nonauthor_contacts"][] = $j;
         }
         return $x;
+    }
+}
+
+class PaperInfoPotentialConflictHTML {
+    /** @var string */
+    public $announce;
+    /** @var list<list<string>> */
+    public $messages;
+
+    /** @param ?string $extraclass
+     * @param ?string $prefix
+     * @param list<string> $ml
+     * @return string */
+    static function render_ul_item($extraclass, $prefix, $ml) {
+        $class = Ht::add_tokens("potentialconflict", $extraclass);
+        return "<ul class=\"{$class}\"><li>" . ($prefix ?? "")
+            . join("</li><li>", $ml) . "</li></ul>";
+    }
+
+    /** @param ?string $extraclass
+     * @param ?string $prefix
+     * @return list<string> */
+    function render_ul_list($extraclass = null, $prefix = null) {
+        $t = [];
+        foreach ($this->messages as $ml) {
+            $t[] = self::render_ul_item($extraclass, $prefix, $ml);
+        }
+        return $t;
     }
 }

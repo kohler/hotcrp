@@ -188,8 +188,8 @@ class Conflict_Assigner extends Assigner {
                    && ($potconf = $state->prow($pid)->potential_conflict_html($u))) {
             $uname = $u->name(NAME_E);
             $state->msg_near($item->landmark, "<0>{$uname} has a potential conflict with #{$pid}", 1);
-            foreach ($potconf[1] as $confhtml) {
-                $state->msg_near($item->landmark, "<5>{$confhtml}", MessageSet::INFORM);
+            foreach ($potconf->messages as $msglist) {
+                $state->msg_near($item->landmark, "<5>" . $potconf->render_ul_item(null, null, $msglist), MessageSet::INFORM);
             }
         }
     }

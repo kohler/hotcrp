@@ -189,7 +189,6 @@ class PCConflicts_PaperOption extends PaperOption {
             $pct = $ctmaps[0][$p->contactId] ?? 0;
             $ct = $ctmaps[1][$p->contactId] ?? 0;
             $potconf = null;
-            '@phan-var-force ?array{string,list<string>} $potconf';
             if ($ov->prow->paperId && $pct < CONFLICT_AUTHOR) {
                 $potconf = $ov->prow->potential_conflict_html($p, $pct <= 0);
             }
@@ -253,7 +252,7 @@ class PCConflicts_PaperOption extends PaperOption {
 
             echo $label, "</label>", $hidden;
             if ($potconf) {
-                echo $potconf[0];
+                echo $potconf->announce;
             }
             echo "</div></li>";
         }
