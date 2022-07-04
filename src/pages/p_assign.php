@@ -428,9 +428,9 @@ class Assign_Page {
         if ($crevtype == 0 && Conflict::is_conflicted($ct)) {
             $crevtype = -1;
         }
-        $pcconfmatch = null;
+        $potconf = null;
         if ($this->allow_view_authors && $revtype != -2) {
-            $pcconfmatch = $this->prow->potential_conflict_html($pc, !Conflict::is_conflicted($ct));
+            $potconf = $this->prow->potential_conflict_html($pc, !Conflict::is_conflicted($ct));
         }
 
         echo '<div class="ctelt">',
@@ -460,8 +460,8 @@ class Assign_Page {
             echo unparse_preference_span($this->prow->preference($pc, true));
         }
         echo '</div>'; // .pctbname
-        if ($pcconfmatch) {
-            echo '<div class="need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($pcconfmatch)), '">', $pcconfmatch[0], '</div>';
+        if ($potconf) {
+            echo '<div class="need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($potconf)), '">', $potconf[0], '</div>';
         }
 
         // then, number of reviews

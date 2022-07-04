@@ -34,67 +34,27 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         $this->nonempty = false;
         return !$pl->user->allow_administer($row);
     }
-    /** @param Contact $user
-     * @param AuthorMatcher $matcher
-     * @param Author $conflict
-     * @param int $aunum
-     * @param string $why */
-    function _conflict_match($user, $matcher, $conflict, $aunum, $why) {
-        $aumatcher = new AuthorMatcher($conflict);
-        if ($aunum) {
-            $pfx = "<em>author #$aunum</em> ";
-            if ($matcher->nonauthor) {
-                $this->_potconf[$aunum][] = [$pfx . $matcher->highlight($conflict), "matches PC collaborator " . $aumatcher->highlight($matcher)];
-            } else if ($why == AuthorMatcher::MATCH_AFFILIATION) {
-                $this->_potconf[$aunum][] = [$pfx . htmlspecialchars($conflict->name()) . " (" . $matcher->highlight($conflict->affiliation) . ")", "matches PC affiliation " . $aumatcher->highlight($user->affiliation)];
-            } else {
-                $this->_potconf[$aunum][] = [$pfx . $matcher->highlight($conflict), "matches PC " . $aumatcher->highlight($user)];
-            }
-        } else {
-            $num = "x" . count($this->_potconf);
-            $pfx = "<em>collaborator</em> " . $matcher->highlight($conflict);
-            if ($why == AuthorMatcher::MATCH_AFFILIATION) {
-                $this->_potconf[$num][] = [$pfx, "matches PC affiliation " . $aumatcher->highlight($user->affiliation)];
-            } else {
-                $this->_potconf[$num][] = [$pfx, "matches PC " . $aumatcher->highlight($user)];
-            }
-        }
-    }
     function content(PaperList $pl, PaperInfo $row) {
         $this->_potconf = [];
         $pref = $row->preference($this->contact);
-        $this->nonempty = !$row->has_author($this->contact)
-            && ($row->potential_conflict_callback($this->contact, [$this, "_conflict_match"])
-                || $pref[0] <= -100);
+        $potconf = $row->potential_conflict_html($this->contact, true);
+        if ($pref[0] <= -100) {
+            $potconf = $potconf ?? ["", []];
+            $potconf[1][] = "<ul class=\"potentialconflict\"><li><em>reviewer preference</em> " . unparse_preference($pref) . "</li></ul>";
+        }
+        $this->nonempty = !$row->has_author($this->contact) || $potconf;
         if (!$this->nonempty) {
             return "";
         }
-        if ($pref[0] <= -100) {
-            $this->_potconf["pref"][] = ["<em>reviewer preference</em>", "PC entered preference " . unparse_preference($pref)];
+        foreach ($potconf[1] as &$m) {
+            $m = substr($m, 0, 28) . " break-avoid" . substr($m, 28);
         }
-        $ch = [];
-        foreach ($this->_potconf as &$cx) {
-            if (count($cx) > 1) {
-                $n = $len = false;
-                foreach ($cx as $c) {
-                    $thislen = strlen(preg_replace('{<[^>]*>[^<]*</[^>]*>}', "", $c[0]));
-                    if ($n === false || $thislen < $len) {
-                        $n = $c[0];
-                        $len = $thislen;
-                    }
-                }
-                $cx[0][0] = $n;
-            }
-            $cn = array_map(function ($c) { return $c[1]; }, $cx);
-            $ch[] = '<ul class="potentialconflict break-avoid"><li>' . $cx[0][0] . '</li><li>' . join('</li><li>', $cn) . '</li></ul>';
-        }
-        unset($cx);
-        if (empty($ch)) {
+        if (empty($potconf[1])) {
             return "";
-        } else if (count($ch) === 1) {
-            return '<div class="potentialconflict-one">' . $ch[0] . '</div>';
+        } else if (count($potconf[1]) === 1) {
+            return "<div class=\"potentialconflict-one\">{$potconf[1][0]}</div>";
         } else {
-            return '<div class="potentialconflict-many">' . join("", $ch) . '</div>';
+            return "<div class=\"potentialconflict-many\">" . join("", $potconf[1]) . "</div>";
         }
     }
 

@@ -610,6 +610,9 @@ label.checki {
 	padding-top: 0.5em !important;
 	padding-top: 0.5rem !important;
 }
+.pb-0 {
+	padding-bottom: 0 !important;
+}
 .pl-3 {
 	padding-left: 1em !important;
 	padding-left: 1rem !important;
@@ -2724,13 +2727,15 @@ th.pl-status-long {
 	-webkit-column-gap: 18px;
 	column-gap: 18px;
 }
+.potentialconflict-one > ul, .potentialconflict-many > ul {
+	padding-bottom: 10px;
+	padding-bottom: 0.625rem;
+}
 .potentialconflict {
 	margin-top: 0;
 	margin-bottom: 0;
-	padding-bottom: 10px;
-	padding-bottom: 0.625rem;
 	padding-left: 2em;
-	list-style-type: "→ ";
+	list-style-type: "≈ ";
 }
 .potentialconflict, .potentialconflict > li {
 	-webkit-column-break-inside: avoid;

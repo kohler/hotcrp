@@ -73,16 +73,16 @@ class ConflictAssign_Page {
                         '<div class="pltable-fullw-container demargin">',
                         $tr->table_start,
                         Ht::unstash(),
-                        ($tr->thead ? : ""),
-                        $tr->tbody_start();
+                        ($tr->thead ? : "");
                 } else {
-                    echo $tr->heading_separator_row();
+                    echo $tr->heading_separator_row(),
+                        "</tbody>\n";
                 }
                 $t = $user->reviewer_html_for($pc);
                 if ($pc->affiliation) {
                     $t .= " <span class=\"auaff\">(" . htmlspecialchars($pc->affiliation) . ")</span>";
                 }
-                echo $tr->heading_row($t, ["no_titlecol" => true]);
+                echo $tr->tbody_start(), $tr->heading_row($t, ["no_titlecol" => true]);
                 $tr->print_tbody_rows();
                 $any = true;
             }

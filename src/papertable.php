@@ -835,6 +835,7 @@ class PaperTable {
         }
 
         // find contact author information, combine with author table
+        // XXX fix this, it too aggressively combines information!!!!
         $result = $this->conf->qe("select contactId, firstName, lastName, '' affiliation, email from ContactInfo where contactId?a", array_keys($this->prow->contacts()));
         $contacts = [];
         while ($result && ($row = $result->fetch_object("Author"))) {

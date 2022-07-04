@@ -21,6 +21,7 @@ class UnicodeHelper {
 
     /** @var array<string,int> */
     private static $deaccent_map;
+    /** @var string */
     private static $deaccent_result;
 
     private static function add_deaccent_map($ins, $outs, $step) {

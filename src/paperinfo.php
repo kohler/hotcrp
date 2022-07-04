@@ -232,6 +232,8 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $by_pid = [];
     /** @var int */
     public $loaded_allprefs = 0;
+    /** @var array<int,list<AuthorMatcher>> */
+    private $collaborator_matchers_by_uid = [];
 
     /** @param PaperInfo $row
      * @return PaperInfoSet */
@@ -374,6 +376,23 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             $this->prows[0]->ensure_full_reviews();
         }
     }
+
+    /** @param Author $cflt
+     * @return list<AuthorMatcher> */
+    function collaborator_matchers($cflt) {
+        $ms = $this->collaborator_matchers_by_uid[$cflt->contactId] ?? null;
+        if ($ms === null) {
+            $ms = [];
+            foreach (Contact::make_collaborator_generator($cflt->collaborators ?? "") as $m) {
+                $m->paperId = $cflt->paperId;
+                $m->contactId = $cflt->contactId;
+                $m->author_index = $cflt->author_index;
+                $ms[] = $m;
+            }
+            $this->collaborator_matchers_by_uid[$cflt->contactId] = $ms;
+        }
+        return $ms;
+    }
 }
 
 class PaperInfo {
@@ -507,6 +526,8 @@ class PaperInfo {
     private $_rights_version = 0;
     /** @var ?list<Author> */
     private $_author_array;
+    /** @var ?string */
+    private $_full_collaborators;
     /** @var ?list<AuthorMatcher> */
     private $_collaborator_array;
     /** @var ?array<int,array{int,?int}> */
@@ -555,10 +576,8 @@ class PaperInfo {
     private $_comment_array;
     /** @var ?list<CommentInfo> */
     private $_comment_skeleton_array;
-    /** @var ?list<array{string,string}> */
+    /** @var ?list<array{int,string,int,string}> */
     private $_potential_conflicts;
-    /** @var int */
-    private $_potential_conflict_flags;
     /** @var ?list<ReviewRequestInfo> */
     private $_request_array;
     /** @var ?list<ReviewRefusalInfo> */
@@ -778,7 +797,7 @@ class PaperInfo {
             if ($this->_review_array
                 || $this->reviewSignatures !== null) {
                 $ci = PaperContactInfo::make_empty($this, $user);
-                if (($c = ($this->conflicts())[$cid] ?? null)) {
+                if (($c = $this->conflict_by_id($cid))) {
                     $ci->conflictType = $c->conflictType;
                 }
                 foreach ($this->reviews_by_user($cid, $user->review_tokens()) as $rrow) {
@@ -892,7 +911,7 @@ class PaperInfo {
         $cid = self::contact_to_cid($contact);
         if (array_key_exists($cid, $this->_contact_info)) {
             return $this->_contact_info[$cid]->conflictType;
-        } else if (($ci = (($this->conflicts())[$cid] ?? null))) {
+        } else if (($ci = $this->conflict_by_id($cid))) {
             return $ci->conflictType;
         } else {
             return 0;
@@ -935,54 +954,81 @@ class PaperInfo {
         }
     }
 
-    /** @return list<AuthorMatcher> */
-    function collaborator_list() {
-        if ($this->_collaborator_array === null) {
-            $this->_collaborator_array = [];
-            foreach (Contact::make_collaborator_generator($this->collaborators()) as $m) {
-                $this->_collaborator_array[] = $m;
-            }
-        }
-        return $this->_collaborator_array;
-    }
-
     /** @return bool */
     function has_nonempty_collaborators() {
         $collab = $this->collaborators();
         return $collab !== "" && strcasecmp($collab, "none") !== 0;
     }
 
-    /** @param ?callable(Contact,AuthorMatcher,Author,int,string) $callback
+    /** @return string */
+    function full_collaborators() {
+        if ($this->_full_collaborators === null) {
+            $s = $this->collaborators();
+            foreach ($this->conflicts(true) as $cflt) {
+                if ($cflt->conflictType >= CONFLICT_AUTHOR
+                    && ($cflt->collaborators ?? "") !== null)
+                    $s = str_ends_with($s, "\n") ? "{$s}{$cflt->collaborators}" : "{$s}\n{$cflt->collaborators}";
+            }
+            $this->_full_collaborators = $s;
+        }
+        return $this->_full_collaborators;
+    }
+
+    /** @return Generator<AuthorMatcher> */
+    function collaborator_list() {
+        if ($this->_collaborator_array === null) {
+            $this->_collaborator_array = [];
+            foreach (Contact::make_collaborator_generator($this->collaborators()) as $m) {
+                $m->contactId = 0;
+                $m->author_index = Author::COLLABORATORS_INDEX;
+                $this->_collaborator_array[] = $m;
+            }
+        }
+        yield from $this->_collaborator_array;
+        foreach ($this->conflicts(true) as $cflt) {
+            if ($cflt->conflictType >= CONFLICT_AUTHOR
+                && ($cflt->collaborators ?? "") !== null) {
+                yield from $this->_row_set->collaborator_matchers($cflt);
+            }
+        }
+    }
+
+    /** @param ?callable(Contact,AuthorMatcher,Author,string) $callback
      * @return bool */
     function potential_conflict_callback(Contact $user, $callback) {
         $nproblems = $auproblems = 0;
         if ($this->field_match_pregexes($user->aucollab_general_pregexes(), "authorInformation")) {
-            foreach ($this->author_list() as $n => $au) {
-                foreach ($user->aucollab_matchers() as $matcher) {
-                    if (($why = $matcher->test($au, $matcher->nonauthor))) {
+            foreach ($this->author_list() as $au) {
+                foreach ($user->aucollab_matchers() as $userm) {
+                    if (($why = $userm->test($au, $userm->nonauthor))) {
                         if (!$callback) {
                             return true;
                         }
                         $auproblems |= $why;
                         ++$nproblems;
-                        call_user_func($callback, $user, $matcher, $au, $n + 1, $why);
+                        call_user_func($callback, $user, $userm, $au, $why);
                     }
                 }
             }
         }
-        if (($collab = $this->collaborators()) !== "") {
-            $aum = $user->full_matcher();
-            if (Text::match_pregexes($aum->general_pregexes(), $collab, UnicodeHelper::deaccent($collab))) {
-                foreach ($this->collaborator_list() as $co) {
-                    if (($co->lastName !== ""
-                         || !($auproblems & AuthorMatcher::MATCH_AFFILIATION))
-                        && ($why = $aum->test($co, true))) {
-                        if (!$callback) {
-                            return true;
-                        }
-                        ++$nproblems;
-                        call_user_func($callback, $user, $aum, $co, 0, $why);
+        $userm = $user->full_matcher();
+        $collab = $this->full_collaborators();
+        if (Text::match_pregexes($userm->general_pregexes(), $collab, UnicodeHelper::deaccent($collab))) {
+            foreach ($this->collaborator_list() as $co) {
+                if (($co->lastName !== ""
+                     || ($auproblems & AuthorMatcher::MATCH_AFFILIATION) === 0)
+                    && ($why = $userm->test($co, true))) {
+                    if (!$callback) {
+                        return true;
                     }
+                    ++$nproblems;
+                    if ($co->paperId !== $this->paperId) {
+                        assert($co->contactId > 0);
+                        $cox = $this->conflict_by_id($co->contactId, true);
+                        $co->paperId = $this->paperId;
+                        $co->author_index = $cox->author_index;
+                    }
+                    call_user_func($callback, $user, $userm, $co, $why);
                 }
             }
         }
@@ -995,57 +1041,90 @@ class PaperInfo {
     }
 
     /** @param Contact $user
-     * @param AuthorMatcher $matcher
-     * @param Author $conflict
-     * @param int $aunum
+     * @param AuthorMatcher $userm
+     * @param Author $cflt
      * @param string $why */
-    function _potential_conflict_html_callback($user, $matcher, $conflict, $aunum, $why) {
-        if ($aunum && $matcher->nonauthor) {
-            $matchdesc = "collaborator";
+    function _potential_conflict_html_callback($user, $userm, $cflt, $why) {
+        $cfltm = AuthorMatcher::make($cflt);
+        if ($userm->nonauthor) {
+            $userdesc = "<em>collaborator</em> " . $cfltm->highlight($userm);
+            $order0 = 4;
+        } else if ($cflt->nonauthor) {
+            $userdesc = $cfltm->highlight($userm);
+            $order0 = 2;
         } else if ($why === AuthorMatcher::MATCH_AFFILIATION) {
-            $matchdesc = "affiliation";
-            if (!($this->_potential_conflict_flags & 1)) {
-                $matchdesc .= " (" . htmlspecialchars($user->affiliation) . ")";
-                $this->_potential_conflict_flags |= 1;
-            }
+            $userdesc = "<em>affiliation</em> " . $cfltm->highlight($userm->affiliation);
+            $order0 = 3;
         } else {
-            $matchdesc = "name";
+            $userdesc = $cfltm->highlight($userm->name());
+            $order0 = 1;
         }
-        if ($aunum) {
-            if ($matcher->nonauthor) {
-                $aumatcher = new AuthorMatcher($conflict);
-                $what = "$matchdesc " . $aumatcher->highlight($matcher) . "<br>matches author #$aunum " . $matcher->highlight($conflict);
-            } else if ($why == AuthorMatcher::MATCH_AFFILIATION) {
-                $what = "$matchdesc matches author #$aunum affiliation " . $matcher->highlight($conflict->affiliation);
-            } else {
-                $what = "$matchdesc matches author #$aunum name " . $matcher->highlight($conflict->name());
-            }
-            $this->_potential_conflicts[] = ["#$aunum", $what];
+        if ($cflt->author_index === Author::COLLABORATORS_INDEX) {
+            $order = PHP_INT_MAX;
+            $cfltdesc = "<em>submission collaborator</em> " . $userm->highlight($cflt);
+        } else if (($cflt->author_index ?? 0) <= 0) {
+            $order = PHP_INT_MAX - 1;
+            $fromcflt = $this->conflict_by_id($cflt->contactId, true);
+            $cfltdesc = "<em>contact"
+                . ($fromcflt ? " " . htmlspecialchars($fromcflt->email) : "")
+                . ($cflt->nonauthor ? " collaborator" : "")
+                . "</em> " . $userm->highlight($cflt);
+        } else if ($cflt->nonauthor) {
+            $order = $cflt->author_index | (2 << 24);
+            $cfltdesc = "<em>author #{$cflt->author_index} collaborator</em> " . $userm->highlight($cflt);
+        } else if ($why === AuthorMatcher::MATCH_AFFILIATION) {
+            $order = $cflt->author_index | (1 << 24);
+            $cfltdesc = "<em>author #{$cflt->author_index} affiliation</em> " . $userm->highlight($cflt->affiliation);
         } else {
-            $what = "$matchdesc matches paper collaborator ";
-            $this->_potential_conflicts[] = ["other conflicts", $what . $matcher->highlight($conflict)];
+            $order = $cflt->author_index;
+            $cfltdesc = "<em>author #{$cflt->author_index}</em> " . $userm->highlight($userm->nonauthor ? $userm : $userm->name());
         }
+        $this->_potential_conflicts[] = [$order0, $userdesc, $order, $cfltdesc];
     }
 
-    /** @return false|array{string,list<string>} */
+    /** @return ?array{string,list<string>} */
     function potential_conflict_html(Contact $user, $highlight = false) {
-        $this->_potential_conflicts = [];
-        $this->_potential_conflict_flags = 0;
         if (!$this->potential_conflict_callback($user, [$this, "_potential_conflict_html_callback"])) {
-            return false;
+            return null;
         }
-        usort($this->_potential_conflicts, function ($a, $b) { return strnatcmp($a[0], $b[0]); });
-        $authors = array_unique(array_map(function ($x) { return $x[0]; }, $this->_potential_conflicts));
-        $authors = array_filter($authors, function ($f) { return $f !== "other conflicts"; });
-        $messages = array_map(function ($x) { return $x[1]; }, $this->_potential_conflicts);
+        usort($this->_potential_conflicts, function ($a, $b) {
+            return $a[0] <=> $b[0] ? :
+                ($a[2] <=> $b[2] ? : strnatcasecmp($a[3], $b[3]));
+        });
+        $authors = [];
+        foreach ($this->_potential_conflicts as $x) {
+            if ($x[2] < PHP_INT_MAX - 2) {
+                $au = $x[2] & ((1 << 24) - 1);
+                $authors[$au] = "#{$au}";
+            }
+        }
+        if (!empty($authors)) {
+            ksort($authors);
+            $announce = "Possible conflict with " . plural_word($authors, "author") . " " . numrangejoin(array_values($authors)) . "…";
+        } else {
+            $announce = "Possible conflict…";
+        }
+        $last = null;
+        $msgs = [];
+        foreach ($this->_potential_conflicts as $x) {
+            if ($last === $x[1]) {
+                $msgs[count($msgs) - 1] .= "</li><li>{$x[3]}";
+            } else {
+                $msgs[] = "<ul class=\"potentialconflict\"><li>{$x[1]}</li><li>{$x[3]}";
+                $last = $x[1];
+            }
+        }
+        foreach ($msgs as &$m) {
+            $m .= "</li></ul>";
+        }
         $this->_potential_conflicts = null;
         return ['<div class="pcconfmatch'
             . ($highlight ? " pcconfmatch-highlight" : "")
-            . '">Possible conflict'
-            . (empty($authors) ? "" : " with " . plural_word($authors, "author") . " " . numrangejoin($authors))
-            . '…</div>', $messages];
+            . "\">{$announce}</div>", $msgs];
     }
 
+    /** @param ?array{string,list<string>} $potconf
+     * @return string */
     static function potential_conflict_tooltip_html($potconf) {
         return $potconf ? '<ul class="x"><li>' . join('</li><li>', $potconf[1]) . '</li></ul>' : '';
     }
@@ -1480,7 +1559,7 @@ class PaperInfo {
     function load_conflicts($email) {
         if (!$email && $this->allConflictType !== null) {
             $this->_conflict_array = [];
-            $this->_conflict_array_email = $email;
+            $this->_conflict_array_email = false;
             if ($this->allConflictType !== "") {
                 foreach (explode(",", $this->allConflictType) as $x) {
                     list($cid, $ctype) = explode(" ", $x);
@@ -1496,6 +1575,7 @@ class PaperInfo {
             $cflt->paperId = $this->paperId;
             $cflt->contactId = $this->_paper_creator->contactId;
             $cflt->conflictType = CONFLICT_CONTACTAUTHOR;
+            $cflt->collaborators = $this->_paper_creator->collaborators();
             $this->_conflict_array = [$cflt->contactId => $cflt];
             $this->_conflict_array_email = true;
         } else {
@@ -1504,16 +1584,31 @@ class PaperInfo {
                 $prow->_conflict_array_email = $email;
             }
             if ($email) {
-                $result = $this->conf->qe("select paperId, PaperConflict.contactId, conflictType, firstName, lastName, affiliation, email from PaperConflict join ContactInfo using (contactId) where paperId?a", $this->_row_set->paper_ids());
+                $result = $this->conf->qe("select paperId, PaperConflict.contactId, conflictType, firstName, lastName, affiliation, email, collaborators from PaperConflict join ContactInfo using (contactId) where paperId?a", $this->_row_set->paper_ids());
             } else {
-                $result = $this->conf->qe("select paperId, contactId, conflictType, '' firstName, '' lastName, '' affiliation, '' email from PaperConflict where paperId?a", $this->_row_set->paper_ids());
+                $result = $this->conf->qe("select paperId, contactId, conflictType, '' firstName, '' lastName, '' affiliation, '' email, null collaborators from PaperConflict where paperId?a", $this->_row_set->paper_ids());
             }
-            while ($result && ($row = $result->fetch_object("Author"))) {
-                $row->paperId = (int) $row->paperId;
-                $row->contactId = (int) $row->contactId;
-                $row->conflictType = (int) $row->conflictType;
-                $prow = $this->_row_set->get($row->paperId);
-                $prow->_conflict_array[$row->contactId] = $row;
+            $map = [];
+            while (($au = $result->fetch_object("Author"))) {
+                $au->paperId = (int) $au->paperId;
+                $au->contactId = (int) $au->contactId;
+                $au->conflictType = (int) $au->conflictType;
+                $prow = $this->_row_set->get($au->paperId);
+                $prow->_conflict_array[$au->contactId] = $au;
+                if ($email) {
+                    if (($x = $map[$au->contactId] ?? null) !== null) {
+                        $au->firstName = $x->firstName;
+                        $au->lastName = $x->lastName;
+                        $au->affiliation = $x->affiliation;
+                        $au->email = $x->email;
+                        $au->collaborators = $x->collaborators;
+                    } else {
+                        $map[$au->contactId] = $au;
+                    }
+                    if (($aux = $prow->author_by_email($au->email))) {
+                        $au->author_index = $aux->author_index;
+                    }
+                }
             }
             Dbl::free($result);
         }
@@ -1527,6 +1622,13 @@ class PaperInfo {
             $this->load_conflicts($email);
         }
         return $this->_conflict_array;
+    }
+
+    /** @param int $uid
+     * @param bool $email
+     * @return ?Author */
+    function conflict_by_id($uid, $email = false) {
+        return ($this->conflicts($email))[$uid] ?? null;
     }
 
     /** @param bool $email

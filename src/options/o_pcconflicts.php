@@ -188,10 +188,10 @@ class PCConflicts_PaperOption extends PaperOption {
         foreach ($pcm as $id => $p) {
             $pct = $ctmaps[0][$p->contactId] ?? 0;
             $ct = $ctmaps[1][$p->contactId] ?? 0;
-            $pcconfmatch = false;
-            '@phan-var false|array{string,list<string>} $pcconfmatch';
+            $potconf = null;
+            '@phan-var-force ?array{string,list<string>} $potconf';
             if ($ov->prow->paperId && $pct < CONFLICT_AUTHOR) {
-                $pcconfmatch = $ov->prow->potential_conflict_html($p, $pct <= 0);
+                $potconf = $ov->prow->potential_conflict_html($p, $pct <= 0);
             }
 
             $label = $pt->user->reviewer_html_for($p);
@@ -207,8 +207,8 @@ class PCConflicts_PaperOption extends PaperOption {
             if (Conflict::is_conflicted($pct)) {
                 echo ' tag-bold';
             }
-            if ($pcconfmatch) {
-                echo ' need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($pcconfmatch));
+            if ($potconf) {
+                echo ' need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($potconf));
             }
             echo '"><label>';
 
@@ -252,8 +252,8 @@ class PCConflicts_PaperOption extends PaperOption {
             }
 
             echo $label, "</label>", $hidden;
-            if ($pcconfmatch) {
-                echo $pcconfmatch[0];
+            if ($potconf) {
+                echo $potconf[0];
             }
             echo "</div></li>";
         }

@@ -19,6 +19,12 @@ class AuthorMatcher extends Author {
         parent::__construct($x);
     }
 
+    /** @param object $x
+     * @return AuthorMatcher */
+    static function make($x) {
+        return $x instanceof AuthorMatcher ? $x : new AuthorMatcher($x);
+    }
+
     private function prepare() {
         $any = [];
         if ($this->firstName !== "") {

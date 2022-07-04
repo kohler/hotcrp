@@ -11,10 +11,12 @@ class Author {
     public $email = "";
     /** @var string */
     public $affiliation = "";
-    /** @var ?string */
-    private $_name;
     /** @var ?int */
     public $contactId;
+    /** @var ?string */
+    public $collaborators;
+    /** @var ?string */
+    private $_name;
     /** @var ?array{string,string,string} */
     private $_deaccents;
     /** @var ?bool */
@@ -25,6 +27,8 @@ class Author {
     public $conflictType;
     /** @var ?int */
     public $author_index;
+
+    const COLLABORATORS_INDEX = -200;
 
     /** @param null|string|object $x */
     function __construct($x = null) {
