@@ -183,8 +183,7 @@ class Conflict_Assigner extends Assigner {
                 }
                 throw new AssignmentError("");
             }
-        } else if ($item->post("_rtype")
-                   && ($u = $state->user_by_id($cid))
+        } else if (($u = $state->user_by_id($cid))
                    && ($potconf = $state->prow($pid)->potential_conflict_html($u))) {
             $uname = $u->name(NAME_E);
             $state->msg_near($item->landmark, "<0>{$uname} has a potential conflict with #{$pid}", 1);
