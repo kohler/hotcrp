@@ -167,7 +167,7 @@ class DocumentInfo implements JsonSerializable {
             $filename = $args["filename"] ?? "";
             $doc->error("<0>Uploaded file" . ($filename === "" ? "" : "‘{$filename}’") . $upload_error);
         }
-        return new DocumentInfo($args, $conf);
+        return $doc;
     }
 
     /** @param string $token
