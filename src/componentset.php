@@ -419,11 +419,11 @@ class ComponentSet implements XtContext {
             $hashid = $gj->hashid ?? null;
             $separator = $gj->print_separator ?? false;
             if ($title !== ""
-                || ($this->_section_class === null && $this->_next_section_class !== "")
+                || ($this->_section_closer === null && $this->_next_section_class !== "")
                 || (string) $hashid !== "") {
                 // create default hashid from title
                 if ($title !== "" && $hashid === null) {
-                    $hashid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9:.]+/', "-", strtolower($title));
+                    $hashid = preg_replace('/(?:\A[^A-Za-z<>&]|[^A-Za-z0-9:.<>&]|<.*?>|&.*;)+/', "-", strtolower($title));
                 }
                 $this->print_start_section($title, $hashid);
             }
