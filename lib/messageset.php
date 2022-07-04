@@ -593,10 +593,14 @@ class MessageSet {
     static function feedback_html_items($message_list) {
         $ts = [];
         $t = "";
+        $last_landmark = null;
         foreach ($message_list as $mi) {
             if ($mi->message !== "") {
                 $s = $mi->message_as(5);
-                if ($mi->landmark !== null && $mi->landmark !== "") {
+                if ($mi->landmark !== null
+                    && $mi->landmark !== ""
+                    && ($mi->status !== self::INFORM || $mi->landmark !== $last_landmark)) {
+                    $last_landmark = $mi->landmark;
                     $lm = htmlspecialchars($mi->landmark);
                     $s = "<span class=\"lineno\">{$lm}:</span> {$s}";
                 }
