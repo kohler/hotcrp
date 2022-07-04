@@ -4,6 +4,6 @@
 
 declare(strict_types=1);
 require_once(__DIR__ . '/setup.php');
-TestRunner::reset_db();
-TestRunner::go(new PaperStatus_Tester(Conf::$main));
-xassert_exit();
+TestRunner::run(
+    "PaperStatus_Tester"
+);

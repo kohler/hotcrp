@@ -4,6 +4,7 @@
 
 declare(strict_types=1);
 require_once(__DIR__ . '/setup.php');
-TestRunner::reset_db(true);
-TestRunner::go(new Permission_Tester(Conf::$main));
-xassert_exit();
+TestRunner::run(
+    "reset_db",
+    "Permission_Tester"
+);

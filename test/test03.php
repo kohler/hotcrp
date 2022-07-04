@@ -4,5 +4,6 @@
 
 declare(strict_types=1);
 require_once(__DIR__ . '/setup.php');
-TestRunner::go(new MinCostMaxFlow_Tester);
-xassert_exit();
+TestRunner::run(
+    "MinCostMaxFlow_Tester"
+);

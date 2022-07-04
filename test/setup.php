@@ -779,7 +779,7 @@ class TestRunner {
     }
 
     /** @param object $testo */
-    static function go($testo) {
+    static function run_object($testo) {
         $ro = new ReflectionObject($testo);
         foreach ($ro->getMethods() as $m) {
             if (str_starts_with($m->name, "test")
@@ -813,11 +813,69 @@ class TestRunner {
         $nav->base_path = $nav->base_path_relative = $nav->site_path = $nav->site_path_relative =
             $urlp["path"] ?? "/";
     }
+
+    /** @param 'reset_db'|class-string ...$tests */
+    static function run(...$tests) {
+        $i = 0;
+
+        if (($tests[$i] ?? "") === "no_argv") {
+            ++$i;
+            $arg = [];
+        } else {
+            global $argv;
+            $arg = (new Getopt)->long(
+                "verbose,V be verbose",
+                "help,h !",
+                "reset-db,reset reset test database",
+                "no-reset-db,no-reset !"
+            )->description("Usage: php test/" . basename($_SERVER["PHP_SELF"]) . " [-V] [CLASSNAME...]")
+             ->helpopt("help")
+             ->parse($argv);
+        }
+
+        if (isset($arg["verbose"])) {
+            TestRunner::$verbose = true;
+        }
+
+        if (isset($arg["reset-db"])) {
+            $reset = true;
+        } else if (isset($arg["no-reset-db"])) {
+            $reset = false;
+        } else {
+            $reset = null;
+        }
+        $has_reset = false;
+
+        if (!empty($arg["_"])) {
+            $tests = $arg["_"];
+            $i = 0;
+        }
+        for (; $i < count($tests); ++$i) {
+            $classname = $tests[$i];
+            if ($classname === "reset_db") {
+                if ($reset !== false) {
+                    self::reset_db(true);
+                    $has_reset = true;
+                }
+            } else {
+                $class = new ReflectionClass($classname);
+                $ctor = $class->getConstructor();
+                if ($ctor && $ctor->getNumberOfParameters() === 1) {
+                    if (!$has_reset) {
+                        self::reset_db($reset ?? false);
+                        $has_reset = true;
+                    }
+                    $testo = $class->newInstance(Conf::$main);
+                } else {
+                    assert(!$ctor || $ctor->getNumberOfParameters() === 0);
+                    $testo = $class->newInstance();
+                }
+                self::run_object($testo);
+            }
+        }
+        xassert_exit();
+    }
 }
 
 TestRunner::$original_opt = $Opt;
 TestRunner::set_navigation_base("/");
-global $argv;
-if (($argv[1] ?? "") === "-V" || ($argv[1] ?? "") === "--verbose") {
-    TestRunner::$verbose = true;
-}
