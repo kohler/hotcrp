@@ -1023,11 +1023,12 @@ class PaperInfo {
                         return true;
                     }
                     ++$nproblems;
-                    if ($co->paperId !== $this->paperId
-                        && $co->contactId > 0) {
-                        $cox = $this->conflict_by_id($co->contactId, true);
+                    if ($co->paperId !== $this->paperId) {
                         $co->paperId = $this->paperId;
-                        $co->author_index = $cox->author_index;
+                        if ($co->contactId > 0) {
+                            $cox = $this->conflict_by_id($co->contactId, true);
+                            $co->author_index = $cox->author_index;
+                        }
                     }
                     call_user_func($callback, $user, $userm, $co, $why);
                 }
@@ -1078,7 +1079,7 @@ class PaperInfo {
             $cfltdesc = "<em>author #{$cflt->author_index} affiliation</em> " . $userm->highlight($cflt->affiliation);
         } else {
             $order = $cflt->author_index;
-            $cfltdesc = "<em>author #{$cflt->author_index}</em> " . $userm->highlight($userm->nonauthor ? $userm : $userm->name());
+            $cfltdesc = "<em>author #{$cflt->author_index}</em> " . $userm->highlight($cflt->nonauthor ? $cflt : $cflt->name());
         }
         $this->_potential_conflicts[] = [$order0, $userdesc, $order, $cfltdesc];
     }
