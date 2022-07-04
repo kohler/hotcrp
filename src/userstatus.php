@@ -1403,7 +1403,6 @@ class UserStatus extends MessageSet {
     }
 
     static function print_main(UserStatus $us) {
-        $us->cs()->add_section_class("w-text")->print_start_section();
         $user = $us->user;
         $qreq = $us->qreq;
         $actas = "";
@@ -1432,7 +1431,7 @@ class UserStatus extends MessageSet {
                       Ht::entry("preferredEmail", $qreq->preferredEmail ?? $user->preferredEmail, ["class" => "fullw", "size" => 52, "id" => "preferredEmail", "autocomplete" => $us->autocomplete("email"), "data-default-value" => $user->preferredEmail, "type" => "email"]));
         }
 
-        echo '<div class="f-mcol">';
+        echo '<div class="f-mcol w-text">';
         $t = Ht::entry("firstName", $qreq->firstName ?? $user->firstName, ["size" => 24, "autocomplete" => $us->autocomplete("given-name"), "class" => "fullw", "id" => "firstName", "data-default-value" => $user->firstName]) . $us->global_profile_difference("firstName");
         $us->print_field("firstName", "First name (given name)", $t, "f-i");
 
@@ -1448,7 +1447,7 @@ class UserStatus extends MessageSet {
         $original_ignore_msgs = $us->swap_ignore_messages(false);
         $us->msg_at("oldpassword", "<0>Enter your current password to make changes to security settings", MessageSet::WARNING_NOTE);
         $us->swap_ignore_messages($original_ignore_msgs);
-        echo '<div class="', $us->control_class("oldpassword", "f-i"), '">',
+        echo '<div class="', $us->control_class("oldpassword", "f-i w-text"), '">',
             '<label for="oldpassword">',
             $us->is_auth_self() ? "Current password" : "Current password for " . htmlspecialchars($us->viewer->email),
             '</label>',
@@ -1470,13 +1469,13 @@ class UserStatus extends MessageSet {
                     Ht::button("Change password", ["class" => "ui js-foldup need-profile-current-password", "disabled" => true]),
                     '</div><div class="fx">';
             }
-            echo '<div class="', $us->control_class("password", "f-i"), '">',
+            echo '<div class="', $us->control_class("password", "f-i w-text"), '">',
                 '<label for="upassword">New password</label>',
                 $us->feedback_html_at("password"),
                 $us->feedback_html_at("upassword"),
                 Ht::password("upassword", $pws[0], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => true, "class" => "need-profile-current-password want-focus"]),
                 '</div>',
-                '<div class="', $us->control_class("upassword2", "f-i"), '">',
+                '<div class="', $us->control_class("upassword2", "f-i w-text"), '">',
                 '<label for="upassword2">Repeat new password</label>',
                 $us->feedback_html_at("upassword2"),
                 Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => true, "class" => "need-profile-current-password"]),
