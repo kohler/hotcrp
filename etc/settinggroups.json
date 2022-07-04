@@ -38,7 +38,7 @@
     },
     {
         "name": "users/pc", "order": 10,
-        "title": "Program committee &amp; system administrators",
+        "title": "Program committee & system administrators",
         "print_function": "Users_SettingRenderer::print"
     },
 
@@ -249,7 +249,7 @@
 
 
     {
-        "name": "tags", "order": 700, "title": "Tags &amp; tracks"
+        "name": "tags", "order": 700, "title": "Tags & tracks"
     },
     {
         "name": "tags/main", "order": 10,

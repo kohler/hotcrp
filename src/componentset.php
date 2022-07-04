@@ -396,9 +396,9 @@ class ComponentSet implements XtContext {
         }
     }
 
-    /** @param string $title
+    /** @param string $ftext
      * @param ?string $hashid */
-    function print_title($title, $hashid = null) {
+    function print_title($ftext, $hashid = null) {
         echo '<h3';
         if ($this->_title_class) {
             echo ' class="', $this->_title_class, '"';
@@ -406,7 +406,33 @@ class ComponentSet implements XtContext {
         if ((string) $hashid !== "") {
             echo ' id="', htmlspecialchars($hashid), '"';
         }
-        echo '>', $title, "</h3>\n";
+        echo '>';
+        if (str_starts_with($ftext, "<") && Ftext::is_ftext($ftext)) {
+            echo Ftext::unparse_as($ftext, 5);
+        } else {
+            echo htmlspecialchars($ftext);
+        }
+        echo "</h3>\n";
+    }
+
+    /** @param string|object $gj
+     * @return ?string */
+    function hashid($gj) {
+        if (is_string($gj)) {
+            $gj = $this->get($gj);
+        }
+        $hashid = $gj ? $gj->hashid ?? null : null;
+        if ($hashid === null && $gj && ($gj->title ?? "") !== "") {
+            $title = strtolower($gj->title);
+            if (str_starts_with($title, "<") && Ftext::is_ftext($title)) {
+                $title = Ftext::unparse_as($title, 0);
+            }
+            $hashid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9:.]+/', "-", $title);
+            if (str_starts_with($hashid, "-")) {
+                $hashid = substr($hashid, 1);
+            }
+        }
+        return (string) $hashid !== "" ? $hashid : null;
     }
 
     /** @param string|object $gj */
@@ -422,10 +448,7 @@ class ComponentSet implements XtContext {
                 || ($this->_section_closer === null && $this->_next_section_class !== "")
                 || (string) $hashid !== "") {
                 // create default hashid from title
-                if ($title !== "" && $hashid === null) {
-                    $hashid = preg_replace('/(?:\A[^A-Za-z<>&]|[^A-Za-z0-9:.<>&]|<.*?>|&.*;)+/', "-", strtolower($title));
-                }
-                $this->print_start_section($title, $hashid);
+                $this->print_start_section($title, $hashid ?? $this->hashid($gj));
             }
             if ($separator) {
                 echo is_string($separator) ? $separator : $this->_separator;

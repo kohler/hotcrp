@@ -304,22 +304,22 @@
     },
     {
         "name": "bulkassignactions/review", "order": -1,
-        "title": "<code>review</code> action",
+        "title": "<5><code>review</code> action",
         "print_function": "BulkAssign_HelpTopic::print_action_review"
     },
     {
         "name": "bulkassignactions/tag",
-        "title": "<code>tag</code> action",
+        "title": "<5><code>tag</code> action",
         "print_function": "BulkAssign_HelpTopic::print_action_tag"
     },
     {
         "name": "bulkassignactions/conflict",
-        "title": "<code>conflict</code> action",
+        "title": "<5><code>conflict</code> action",
         "print_function": "BulkAssign_HelpTopic::print_action_conflict"
     },
     {
         "name": "bulkassignactions/follow",
-        "title": "<code>follow</code> action",
+        "title": "<5><code>follow</code> action",
         "print_function": "BulkAssign_HelpTopic::print_action_follow"
     }
 ]

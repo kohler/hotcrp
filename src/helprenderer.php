@@ -265,6 +265,12 @@ class HelpRenderer extends Ht {
         return $this->_help_topics->get($name);
     }
 
+    /** @param string $name
+     * @return ?string */
+    function hashid($name) {
+        return $this->_help_topics->hashid($name);
+    }
+
     /** @return ?string */
     function meaningful_pc_tag() {
         foreach ($this->conf->viewable_user_tags($this->user) as $tag) {

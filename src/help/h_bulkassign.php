@@ -151,9 +151,8 @@ a conflict type, such as “advisor” or “institutional”.</p>";
             $t .= '">';
             $n = '<code>' . htmlspecialchars($uf->name) . '</code>';
             if ($hth
-                && ($xt = $hth->member("bulkassignactions/{$uf->name}"))
-                && $xt->hashid) {
-                $n = '<a href="#' . $xt->hashid . '">' . $n . '</a>';
+                && ($hashid = $hth->hashid("bulkassignactions/{$uf->name}"))) {
+                $n = "<a href=\"#${hashid}\">{$n}</a>";
             }
             $t .= $n . '</td><td class="pad"><code>paper</code>';
             foreach ($uf->parameters ?? [] as $param) {
