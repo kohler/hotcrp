@@ -600,7 +600,6 @@ class MessageSet {
                 if ($mi->landmark !== null
                     && $mi->landmark !== ""
                     && ($mi->status !== self::INFORM || $mi->landmark !== $last_landmark)) {
-                    $last_landmark = $mi->landmark;
                     $lm = htmlspecialchars($mi->landmark);
                     $s = "<span class=\"lineno\">{$lm}:</span> {$s}";
                 }
@@ -610,6 +609,7 @@ class MessageSet {
                     }
                     $k = self::status_class($mi->status, "is-diagnostic", "is-");
                     $t = "<div class=\"{$k}\">{$s}</div>";
+                    $last_landmark = $mi->landmark;
                 } else {
                     $t .= "<div class=\"msg-inform\">{$s}</div>";
                 }
