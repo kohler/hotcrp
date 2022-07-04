@@ -979,6 +979,7 @@ class PaperInfo {
         if ($this->_collaborator_array === null) {
             $this->_collaborator_array = [];
             foreach (Contact::make_collaborator_generator($this->collaborators()) as $m) {
+                $m->paperId = $this->paperId;
                 $m->contactId = 0;
                 $m->author_index = Author::COLLABORATORS_INDEX;
                 $this->_collaborator_array[] = $m;
@@ -1022,8 +1023,8 @@ class PaperInfo {
                         return true;
                     }
                     ++$nproblems;
-                    if ($co->paperId !== $this->paperId) {
-                        assert($co->contactId > 0);
+                    if ($co->paperId !== $this->paperId
+                        && $co->contactId > 0) {
                         $cox = $this->conflict_by_id($co->contactId, true);
                         $co->paperId = $this->paperId;
                         $co->author_index = $cox->author_index;
