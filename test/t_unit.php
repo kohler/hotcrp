@@ -483,6 +483,10 @@ class Unit_Tester {
         xassert_eqq(plural_word(2, "worth"), "worths");
         xassert_eqq(plural_word(2, "hutch"), "hutches");
         xassert_eqq(plural_word(2, "ass"), "asses");
+        xassert_eqq(plural_word(1, "ass", ""), "ass");
+        xassert_eqq(plural_word(2, "ass", ""), "asses");
+        xassert_eqq(plural_word(1, "ass", "fun"), "ass");
+        xassert_eqq(plural_word(2, "ass", "fun"), "fun");
     }
 
     function test_parse_interval() {
