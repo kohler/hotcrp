@@ -431,7 +431,7 @@ class AuthorMatcher extends Author {
         // remove unicode versions
         $x = ["“" => "\"", "”" => "\"", "–" => "-", "—" => "-", "•" => ";",
               ".~" => ". ", "\\item" => "; ", "（" => " (", "）" => ") "];
-        $s = preg_replace_callback('/(?:“|”|–|—|•|\.\~|\\\\item)/', function ($m) use ($x) {
+        $s = preg_replace_callback('/(?:“|”|–|—|•|（|）|\.\~|\\\\item)/', function ($m) use ($x) {
             return $x[$m[0]];
         }, $s);
         // remove numbers
@@ -563,7 +563,7 @@ class AuthorMatcher extends Author {
         $any = false;
         while ($line !== "") {
             if (str_starts_with($line, "\"")) {
-                preg_match('{\A"(?:[^"]|"")*(?:"|\z)([\s,;]*)}', $line, $m);
+                preg_match('/\A"(?:[^"]|"")*(?:"|\z)([\s,;]*)/', $line, $m);
                 $skip = strlen($m[1]);
                 $pos = strlen($m[0]) - $skip;
                 $any = false;
@@ -572,7 +572,7 @@ class AuthorMatcher extends Author {
                 $len = strlen($line);
                 while ($pos < $len) {
                     $last = $pos;
-                    if (!preg_match('{\G([^,(;]*)([,(;])}', $line, $mm, 0, $pos)) {
+                    if (!preg_match('/\G([^,(;]*)([,(;])/', $line, $mm, 0, $pos)) {
                         $pos = $len;
                         break;
                     }
@@ -609,10 +609,10 @@ class AuthorMatcher extends Author {
      * @return string */
     static private function fix_collaborators_line_no_parens($line) {
         $line = str_replace(")", "", $line);
-        if (preg_match('{\A(|none|n/a|na|)\s*[.,;\}]?\z}i', $line, $m)) {
+        if (preg_match('/\A(|none|n\/a|na|)\s*[.,;\}]?\z/i', $line, $m)) {
             return $m[1] === "" ? "" : "None";
         }
-        if (preg_match('{\A(.*?)(\s*)([-,;:\}])\s+(.*)\z}', $line, $m)
+        if (preg_match('/\A(.*?)(\s*)([-,;:\}])\s+(.*)\z/', $line, $m)
             && ($m[2] !== "" || $m[3] !== "-")) {
             if (strcasecmp($m[1], "institution") === 0
                 || strcasecmp($m[1], "all") === 0) {
@@ -642,7 +642,7 @@ class AuthorMatcher extends Author {
      * @return string */
     static private function fix_collaborators_line_parens($line, $paren) {
         $name = rtrim((string) substr($line, 0, $paren));
-        if (preg_match('{\A(?:|-|all|any|institution|none)\s*[.,:;\}]?\z}i', $name)) {
+        if (preg_match('/\A(?:|-|all|any|institution|none)\s*[.,:;\}]?\z/i', $name)) {
             $line = "All " . substr($line, $paren);
             $paren = 4;
         }
@@ -671,7 +671,7 @@ class AuthorMatcher extends Author {
         }
         // check for unknown affiliation
         if ($pos - $paren <= 4
-            && preg_match('{\G\(\s*\)}i', $line, $m, 0, $paren)) {
+            && preg_match('/\G\(\s*\)/i', $line, $m, 0, $paren)) {
             $au = AuthorMatcher::make_string_guess($name);
             if ($au->affiliation) {
                 $line = $name . " (unknown)" . substr($line, $pos);
@@ -693,10 +693,10 @@ class AuthorMatcher extends Author {
             return $line;
         }
         // check for suffix
-        if (preg_match('{\G[-,:;.#()\s"]*\z}', $line, $m, 0, $pos)) {
+        if (preg_match('/\G[-,:;.#()\s"]*\z/', $line, $m, 0, $pos)) {
             return substr($line, 0, $pos);
         }
-        if (preg_match('{\G(\s*-+\s*|\s*[,:;.#%(\[\{]\s*|\s*(?=[a-z/\s]+\z))}', $line, $m, 0, $pos)) {
+        if (preg_match('/\G(\s*-+\s*|\s*[,:;.#%(\[\{]\s*|\s*(?=[a-z\/\s]+\z))/', $line, $m, 0, $pos)) {
             $suffix = substr($line, $pos + strlen($m[1]));
             $line = substr($line, 0, $pos);
             if ($suffix !== "") {
@@ -705,7 +705,7 @@ class AuthorMatcher extends Author {
             return $line;
         }
         if (strpos($line, "(", $pos) === false) {
-            if (preg_match('{\G([^,;]+)[,;]\s*(\S.+)\z}', $line, $m, 0, $pos)) {
+            if (preg_match('/\G([^,;]+)[,;]\s*(\S.+)\z/', $line, $m, 0, $pos)) {
                 $line = substr($line, 0, $pos) . $m[1] . " (" . $m[2] . ")";
             } else {
                 $line .= " (unknown)";
