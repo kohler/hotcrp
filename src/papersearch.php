@@ -996,6 +996,8 @@ class Limit_SearchTerm extends SearchTerm {
         "accepted" => ["acc", "accepted"],
         "act" => ["act", "active"],
         "active" => ["act", "active"],
+        "actadmin" => ["actadmin", "activeadmin"],
+        "activeadmin" => ["actadmin", "activeadmin"],
         "admin" => "admin",
         "administrator" => "admin",
         "all" => "all",
@@ -1072,7 +1074,7 @@ class Limit_SearchTerm extends SearchTerm {
             $this->lflag = 0;
         } else if (in_array($limit, ["r", "rout", "req"], true)) {
             $this->lflag = $this->reviewer_lflag();
-        } else if (in_array($limit, ["act", "unsub"], true)
+        } else if (in_array($limit, ["act", "unsub", "actadmin"], true)
                    || ($this->user->conf->time_pc_view_active_submissions()
                        && !in_array($limit, ["s", "acc"], true))) {
             $this->lflag = self::LFLAG_ACTIVE;
@@ -1156,6 +1158,7 @@ class Limit_SearchTerm extends SearchTerm {
             $options["myLead"] = true;
             return true;
         case "alladmin":
+        case "actadmin":
             return $this->user->allow_administer_all();
         case "admin":
             return false;
@@ -1171,7 +1174,7 @@ class Limit_SearchTerm extends SearchTerm {
     function is_sqlexpr_precise() {
         if ($this->user->has_hidden_papers()) {
             return false;
-        } else if (in_array($this->limit, ["undec", "acc", "viewable", "alladmin"], true)) {
+        } else if (in_array($this->limit, ["undec", "acc", "viewable", "alladmin", "actadmin"], true)) {
             return $this->user->allow_administer_all();
         } else {
             return $this->limit !== "reviewable" && $this->limit !== "admin";
@@ -1257,6 +1260,7 @@ class Limit_SearchTerm extends SearchTerm {
             $ff[] = "Paper.leadContactId={$this->user->contactXid}";
             break;
         case "alladmin":
+        case "actadmin":
             if ($this->user->privChair) {
                 break;
             }
@@ -1321,6 +1325,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "admin":
             return $user->is_primary_administrator($row);
         case "alladmin":
+        case "actadmin":
             return $user->allow_administer($row);
         case "req":
             foreach ($row->all_reviews() as $rrow) {

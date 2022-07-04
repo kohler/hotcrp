@@ -34,7 +34,7 @@ class ConflictAssign_Page {
         echo "</div>\n";
 
 
-        $search = (new PaperSearch($user, ["t" => "alladmin", "q" => ""]))->set_urlbase("conflictassign", ["neg" => $qreq->neg ? 1 : null]);
+        $search = (new PaperSearch($user, ["t" => $qreq->t ?? "alladmin", "q" => ""]))->set_urlbase("conflictassign", ["neg" => $qreq->neg ? 1 : null]);
         $rowset = $conf->paper_set(["allConflictType" => 1, "allReviewerPreference" => 1, "tags" => 1, "paperId" => $search->paper_ids()], $user);
 
         if ($qreq->neg) {
