@@ -212,7 +212,7 @@ class CheckFormat extends MessageSet {
         if (empty($px)) {
             return "";
         } else if (count($px) <= 20) {
-            return " (" . pluralx($px, "page") . " " . numrangejoin($px) . ")";
+            return " (" . plural_word($px, "page") . " " . numrangejoin($px) . ")";
         } else {
             return " (including pages " . numrangejoin(array_slice($px, 0, 20)) . ")";
         }

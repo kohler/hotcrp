@@ -472,17 +472,17 @@ class Unit_Tester {
     }
 
     function test_plural() {
-        xassert_eqq(pluralx(1, "that"), "that");
-        xassert_eqq(pluralx(1, "that butt"), "that butt");
-        xassert_eqq(pluralx(2, "that"), "those");
-        xassert_eqq(pluralx(2, "that butt"), "those butts");
-        xassert_eqq(pluralx(2, "this"), "these");
-        xassert_eqq(pluralx(2, "this butt"), "these butts");
-        xassert_eqq(pluralx(2, "day"), "days");
-        xassert_eqq(pluralx(2, "ply"), "plies");
-        xassert_eqq(pluralx(2, "worth"), "worths");
-        xassert_eqq(pluralx(2, "hutch"), "hutches");
-        xassert_eqq(pluralx(2, "ass"), "asses");
+        xassert_eqq(plural_word(1, "that"), "that");
+        xassert_eqq(plural_word(1, "that butt"), "that butt");
+        xassert_eqq(plural_word(2, "that"), "those");
+        xassert_eqq(plural_word(2, "that butt"), "those butts");
+        xassert_eqq(plural_word(2, "this"), "these");
+        xassert_eqq(plural_word(2, "this butt"), "these butts");
+        xassert_eqq(plural_word(2, "day"), "days");
+        xassert_eqq(plural_word(2, "ply"), "plies");
+        xassert_eqq(plural_word(2, "worth"), "worths");
+        xassert_eqq(plural_word(2, "hutch"), "hutches");
+        xassert_eqq(plural_word(2, "ass"), "asses");
     }
 
     function test_parse_interval() {

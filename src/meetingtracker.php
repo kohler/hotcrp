@@ -461,7 +461,7 @@ class MeetingTracker {
                             && $user->has_permission($perm))
                             $my_tracks[] = "#{$tag}";
                     }
-                    $message_list[] = new MessageItem("tr{$i}-p", "You can’t start a tracker on this list because you don’t administer all of its submissions. (You administer " . pluralx(count($my_tracks), "track") . " " . commajoin($my_tracks) . ".)", 2);
+                    $message_list[] = new MessageItem("tr{$i}-p", "You can’t start a tracker on this list because you don’t administer all of its submissions. (You administer " . plural_word(count($my_tracks), "track") . " " . commajoin($my_tracks) . ".)", 2);
                 } else {
                     do {
                         $new_trackerid = mt_rand(1, 9999999);

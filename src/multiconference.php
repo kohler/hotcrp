@@ -192,7 +192,7 @@ class Multiconference {
                     $errors[] = "The “{$confid}” conference does not exist. Check your URL to make sure you spelled it correctly.";
                 }
                 if (!empty($missing)) {
-                    $errors[] = "Unable to load " . pluralx(count($missing), "configuration file") . " " . commajoin($missing) . ".";
+                    $errors[] = "Unable to load " . plural_word(count($missing), "configuration file") . " " . commajoin($missing) . ".";
                 }
             }
         }

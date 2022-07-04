@@ -1042,7 +1042,7 @@ class PaperInfo {
         return ['<div class="pcconfmatch'
             . ($highlight ? " pcconfmatch-highlight" : "")
             . '">Possible conflict'
-            . (empty($authors) ? "" : " with " . pluralx($authors, "author") . " " . numrangejoin($authors))
+            . (empty($authors) ? "" : " with " . plural_word($authors, "author") . " " . numrangejoin($authors))
             . '…</div>', $messages];
     }
 

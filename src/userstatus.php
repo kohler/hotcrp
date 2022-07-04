@@ -243,7 +243,7 @@ class UserStatus extends MessageSet {
             $l = Ht::link(commajoin(array_map(function ($p) { return "#$p"; }, $pids)),
                           $conf->hoturl("search", ["q" => join(" ", $pids)]));
         }
-        return pluralx(count($pids), "submission") . " " . $l;
+        return plural_word(count($pids), "submission") . " " . $l;
     }
 
     /** @param string $what
@@ -1667,15 +1667,15 @@ topics. We use this information to help match papers to reviewers.</p>',
             $x = $y = [];
             if (!empty($tracks->author)) {
                 $x[] = "is contact for " . self::render_paper_link($us->conf, $tracks->author);
-                $y[] = "delete " . pluralx($tracks->author, "this authorship association");
+                $y[] = "delete " . plural_word($tracks->author, "this authorship association");
             }
             if (!empty($tracks->review)) {
                 $x[] = "reviewed " . self::render_paper_link($us->conf, $tracks->review);
-                $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->review, "this review");
+                $y[] = "<strong>permanently delete</strong> " . plural_word($tracks->review, "this review");
             }
             if (!empty($tracks->comment)) {
                 $x[] = "commented on " . self::render_paper_link($us->conf, $tracks->comment);
-                $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->comment, "this comment");
+                $y[] = "<strong>permanently delete</strong> " . plural_word($tracks->comment, "this comment");
             }
             if (!empty($x)) {
                 $args["data-delete-info"] = "<p>This user " . commajoin($x) . ". Deleting the user will also " . commajoin($y) . ".</p>";

@@ -46,7 +46,7 @@ class Assign_Batch {
             $pidt = $assignset->numjoin_assigned_pids(", #");
             fwrite(STDERR, "{$this->filename}: Assigned "
                 . join(", ", $assignset->assigned_types())
-                . " to " . pluralx($pids, "paper") . " #" . $pidt . "\n");
+                . " to " . plural_word($pids, "paper") . " #" . $pidt . "\n");
         }
         return 0;
     }

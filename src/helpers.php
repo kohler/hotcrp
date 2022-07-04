@@ -413,11 +413,26 @@ function numrangejoin($range) {
 }
 
 /** @param int|float|array $n
- * @param string $what
+ * @param string $singular
+ * @param ?string $plural
  * @return string */
-function pluralx($n, $what) {
+function plural_word($n, $singular, $plural = null) {
     $z = is_array($n) ? count($n) : $n;
-    return $z == 1 ? $what : pluralize($what);
+    if ($z == 1) {
+        return $singular;
+    } else if (($plural ?? "") !== "") {
+        return $plural;
+    } else {
+        return pluralize($singular);
+    }
+}
+
+/** @param int|float|array $n
+ * @param string $singular
+ * @return string
+ * @deprecated */
+function pluralx($n, $singular) {
+    return plural_word($n, $singular);
 }
 
 /** @param string $s
@@ -460,11 +475,12 @@ function pluralize($s) {
 }
 
 /** @param int|float|array $n
- * @param string $what
+ * @param string $singular
+ * @param ?string $plural
  * @return string */
-function plural($n, $what) {
+function plural($n, $singular, $plural = null) {
     $z = is_array($n) ? count($n) : $n;
-    return "$z " . pluralx($z, $what);
+    return "$z " . plural_word($z, $singular, $plural);
 }
 
 /** @param int $n
