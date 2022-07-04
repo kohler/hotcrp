@@ -1,6 +1,7 @@
 [
     {
-        "name": "account", "get": true, "post": true, "function": "User_API::account"
+        "name": "account", "get": true, "post": true,
+        "function": "User_API::account"
     },
     {
         "name": "administrator", "paper": true, "get": true, "post": true,

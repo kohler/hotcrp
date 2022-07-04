@@ -6,5 +6,6 @@ declare(strict_types=1);
 require_once(__DIR__ . '/setup.php');
 TestRunner::run(
     "Reviews_Tester",
-    "Comments_Tester"
+    "Comments_Tester",
+    "UserAPI_Tester"
 );
