@@ -292,100 +292,101 @@ function xassert_exit() {
 }
 
 /** @return bool */
-function xassert_eqq($a, $b) {
+function xassert_eqq($actual, $expected) {
     ++Xassert::$n;
-    $ok = $a === $b;
+    $ok = $actual === $expected;
     if ($ok) {
         ++Xassert::$nsuccess;
     } else {
-        error_log(assert_location() . ": Expected " . var_export($a, true) . " === " . var_export($b, true));
+        error_log(assert_location() . ": Expected === " . var_export($expected, true) . ", got " . var_export($actual, true));
     }
     return $ok;
 }
 
 /** @return bool */
-function xassert_neqq($a, $b) {
+function xassert_neqq($actual, $nonexpected) {
     ++Xassert::$n;
-    $ok = $a !== $b;
+    $ok = $actual !== $nonexpected;
     if ($ok) {
         ++Xassert::$nsuccess;
     } else {
-        error_log(assert_location() . ": Expected " . var_export($a, true) . " !== " . var_export($b, true));
+        error_log(assert_location() . ": Expected !== " . var_export($actual, true));
     }
     return $ok;
 }
 
-/** @param null|int|float|string $a
- * @param list<null|int|float|string> $b
+/** @param null|int|float|string $member
+ * @param list<null|int|float|string> $list
  * @return bool */
-function xassert_in_eqq($a, $b) {
+function xassert_in_eqq($member, $list) {
     ++Xassert::$n;
     $ok = false;
-    foreach ($b as $bx) {
-        $ok = $ok || $a === $bx;
+    foreach ($list as $bx) {
+        $ok = $ok || $member === $bx;
     }
     if ($ok) {
         ++Xassert::$nsuccess;
     } else {
-        error_log(assert_location() . ": Expected " . var_export($a, true) . " \\in " . var_export($b, true));
+        error_log(assert_location() . ": Expected " . var_export($member, true) . " \\in " . var_export($list, true));
     }
     return $ok;
 }
 
-/** @param null|int|float|string $a
- * @param null|int|float|string $b
+/** @param null|int|float|string $actual
+ * @param null|int|float|string $expected
  * @return bool */
-function xassert_eq($a, $b) {
+function xassert_eq($actual, $expected) {
     ++Xassert::$n;
-    $ok = $a == $b;
+    $ok = $actual == $expected;
     if ($ok) {
         ++Xassert::$nsuccess;
     } else {
-        error_log(assert_location() . ": Expected " . var_export($a, true) . " == " . var_export($b, true));
+        error_log(assert_location() . ": Expected == " . var_export($expected, true) . ", got " . var_export($actual, true));
     }
     return $ok;
 }
 
-/** @param null|int|float|string $a
- * @param null|int|float|string $b
+/** @param null|int|float|string $actual
+ * @param null|int|float|string $nonexpected
  * @return bool */
-function xassert_neq($a, $b) {
+function xassert_neq($actual, $nonexpected) {
     ++Xassert::$n;
-    $ok = $a != $b;
+    $ok = $actual != $nonexpected;
     if ($ok) {
         ++Xassert::$nsuccess;
     } else {
-        error_log(assert_location() . ": Expected " . var_export($a, true) . " != " . var_export($b, true));
+        error_log(assert_location() . ": Expected != " . var_export($actual, true));
     }
     return $ok;
 }
 
-/** @param ?list<mixed> $a
- * @param ?list<mixed> $b
+/** @param ?list<mixed> $actual
+ * @param ?list<mixed> $expected
  * @param bool $sort
  * @return bool */
-function xassert_array_eqq($a, $b, $sort = false) {
+function xassert_array_eqq($actual, $expected, $sort = false) {
     ++Xassert::$n;
     $problem = "";
-    if ($a === null && $b === null) {
+    if ($actual === null && $expected === null) {
         // ok
-    } else if (is_array($a) && is_array($b)) {
-        if (count($a) !== count($b) && !$sort) {
-            $problem = "size " . count($a) . " !== " . count($b);
-        } else if (is_associative_array($a) || is_associative_array($b)) {
+    } else if (is_array($actual) && is_array($expected)) {
+        if (count($actual) !== count($expected)
+            && !$sort) {
+            $problem = "expected size " . count($expected) . ", got " . count($actual);
+        } else if (is_associative_array($actual) || is_associative_array($expected)) {
             $problem = "associative arrays";
         } else {
             if ($sort) {
-                sort($a);
-                sort($b);
+                sort($actual);
+                sort($expected);
             }
-            for ($i = 0; $i < count($a) && $i < count($b) && !$problem; ++$i) {
-                if ($a[$i] !== $b[$i]) {
-                    $problem = "value {$i} differs, " . var_export($a[$i], true) . " !== " . var_export($b[$i], true);
+            for ($i = 0; $i < count($actual) && $i < count($expected) && !$problem; ++$i) {
+                if ($actual[$i] !== $expected[$i]) {
+                    $problem = "value {$i} differs, expected === " . var_export($expected[$i], true) . ", got " . var_export($actual[$i], true);
                 }
             }
-            if (!$problem && count($a) !== count($b)) {
-                $problem = "size " . count($a) . " !== " . count($b);
+            if (!$problem && count($actual) !== count($expected)) {
+                $problem = "expected size " . count($expected) . ", got " . count($actual);
             }
         }
     } else {
@@ -396,15 +397,15 @@ function xassert_array_eqq($a, $b, $sort = false) {
     } else {
         error_log(assert_location() . ": Array assertion failed, {$problem}");
         if ($sort) {
-            $aj = json_encode(array_slice($a, 0, 10));
-            if (count($a) > 10) {
+            $aj = json_encode(array_slice($actual, 0, 10));
+            if (count($actual) > 10) {
                 $aj .= "...";
             }
-            $bj = json_encode(array_slice($b, 0, 10));
-            if (count($b) > 10) {
+            $bj = json_encode(array_slice($expected, 0, 10));
+            if (count($expected) > 10) {
                 $bj .= "...";
             }
-            error_log("  " . $aj . " !== " . $bj);
+            error_log("  expected " . $bj . ", got " . $aj);
         }
     }
     return $problem === "";
