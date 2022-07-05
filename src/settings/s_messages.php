@@ -3,6 +3,14 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Messages_SettingParser extends SettingParser {
+    function default_value(SettingValues $sv, Si $si) {
+        if ($si->name === "preference_instructions") {
+            $n = $sv->oldv("has_topics");
+            return $sv->conf->ims()->default_itext("revprefdescription", $n);
+        } else {
+            return null;
+        }
+    }
     static function print_submissions(SettingValues $sv) {
         $sv->print_message("home_message", "Home page message");
         $sv->print_message("submission_terms", "Clickthrough submission terms",

@@ -5162,7 +5162,8 @@ function activate_editing_messages(cj, form) {
     var ul = document.createElement("ul"), msg;
     ul.className = "feedback-list";
     if (cj.response
-        && resp_rounds[cj.response].instrux) {
+        && resp_rounds[cj.response].instrux
+        && resp_rounds[cj.response].instrux !== "none") {
         append_feedback_to(ul, {message: '<5>' + resp_rounds[cj.response].instrux, status: 0});
     }
     if (cj.response

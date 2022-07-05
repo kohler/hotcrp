@@ -417,7 +417,7 @@ class SettingValues extends MessageSet {
     }
 
     /** @return SettingParser */
-    private function si_parser(Si $si) {
+    function si_parser(Si $si) {
         return $this->cs()->callable($si->parser_class);
     }
 
@@ -467,20 +467,20 @@ class SettingValues extends MessageSet {
             || ($si->parser_class && $this->si_find_oldv($si))) {
             $val = $this->_explicit_oldv[$si->name];
         } else if ($si->storage_type & Si::SI_OPT) {
-            $val = $this->conf->opt(substr($si->storage_name(), 4)) ?? $si->default_value;
+            $val = $this->conf->opt(substr($si->storage_name(), 4)) ?? $si->default_value($this);
             if (($si->storage_type & Si::SI_VALUE) && is_bool($val)) {
                 $val = (int) $val;
             }
         } else if ($si->storage_type & Si::SI_DATA) {
-            $val = $this->conf->setting_data($si->storage_name()) ?? $si->default_value;
+            $val = $this->conf->setting_data($si->storage_name()) ?? $si->default_value($this);
         } else if ($si->storage_type & Si::SI_VALUE) {
-            $val = $this->conf->setting($si->storage_name()) ?? $si->default_value;
+            $val = $this->conf->setting($si->storage_name()) ?? $si->default_value($this);
         } else if (($si->storage_type & Si::SI_MEMBER)
                    && ($obj = $this->objectv($si->name0 . $si->name1))) {
             $val = $obj->{$si->storage_name()};
         } else {
             error_log("setting $si->name: don't know how to get value");
-            $val = $si->default_value;
+            $val = $si->default_value($this);
         }
         if ($si->storage_type & Si::SI_NEGATE) {
             $val = $val ? 0 : 1;
@@ -809,7 +809,7 @@ class SettingValues extends MessageSet {
             if (array_key_exists($s, $this->_savedv)) {
                 $v = $this->_savedv[$s];
                 if ($v === null) {
-                    return $si->default_value;
+                    return $si->default_value($this);
                 } else if (($si->storage_type & Si::SI_NEGATE) !== 0) {
                     return $v[0] ? 1 : 0;
                 } else {
@@ -1057,18 +1057,20 @@ class SettingValues extends MessageSet {
         $si = $this->si($name);
         $v = $this->vstr($si);
         $js = $this->sjs($si, $js ?? []);
-        if ($si->size && !isset($js["size"])) {
+        if (!isset($js["size"])
+            && $si->size) {
             $js["size"] = $si->size;
         }
-        if ($si->placeholder !== null && !isset($js["placeholder"])) {
-            $js["placeholder"] = $si->placeholder;
+        if (!isset($js["placeholder"])
+            && ($placeholder = $si->placeholder($this)) !== null) {
+            $js["placeholder"] = $placeholder;
         }
         if ($si->autogrow) {
             $js["class"] = ltrim(($js["class"] ?? "") . " need-autogrow");
         }
-        if ($si->default_value !== null
+        if (($dv = $si->default_value($this)) !== null
             && isset($js["placeholder"])
-            && $v === (string) $si->default_value) {
+            && $v === (string) $dv) {
             $v = "";
         }
         return Ht::entry($name, $v, $js);
@@ -1154,8 +1156,9 @@ class SettingValues extends MessageSet {
         $si = $this->si($name);
         $v = $this->vstr($si);
         $js = $this->sjs($si, $js ?? []);
-        if ($si->placeholder !== null && !isset($js["placeholder"])) {
-            $js["placeholder"] = $si->placeholder;
+        if (!isset($js["placeholder"])
+            && ($placeholder = $si->placeholder($this)) !== null) {
+            $js["placeholder"] = $placeholder;
         }
         $js["class"] = $js["class"] ?? "w-entry-text";
         if ($si->autogrow ?? true) {
@@ -1189,7 +1192,8 @@ class SettingValues extends MessageSet {
         $current = $this->vstr($si);
         $description = '<a class="ui q js-foldup" href="">'
             . expander(null, 0) . $description . '</a>';
-        echo '<div class="f-i has-fold fold', ($current == $si->default_value($this) ? "c" : "o"), '">',
+        echo '<div class="f-i has-fold fold',
+            ($current == $si->default_value($this) ? "c" : "o"), '">',
             '<div class="f-c', $xclass, ' ui js-foldup">',
             $this->label($name, $description),
             ' <span class="n fx">(HTML allowed)</span></div>',

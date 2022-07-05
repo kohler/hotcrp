@@ -9,8 +9,14 @@ class Response_Setting {
     public $done;
     public $grace;
     public $wordlimit;
+    private $old_wordlimit; // needed to determine correct default_instructions
     public $condition;
     public $instructions;
+
+    /** @return string */
+    function default_instructions(Conf $conf) {
+        return $conf->ims()->default_itext("resp_instrux", $this->old_wordlimit);
+    }
 
     /** @return Response_Setting */
     static function make(Conf $conf, ResponseRound $rrd) {
@@ -20,10 +26,19 @@ class Response_Setting {
         $rs->open = $rrd->open;
         $rs->done = $rrd->done;
         $rs->grace = $rrd->grace;
-        $rs->wordlimit = $rrd->words;
+        $rs->wordlimit = $rs->old_wordlimit = $rrd->words;
         $rs->condition = $rrd->search ? $rrd->search->q : "";
-        $rs->instructions = $rrd->instructions
-            ?? $conf->ims()->default_itext("resp_instrux", $rrd->words);
+        $rs->instructions = $rrd->instructions ?? $rs->default_instructions($conf);
+        return $rs;
+    }
+
+    /** @return Response_Setting */
+    static function make_new(Conf $conf) {
+        $rs = new Response_Setting;
+        $rs->name = "";
+        $rs->wordlimit = $rs->old_wordlimit = 500;
+        $rs->condition = "";
+        $rs->instructions = $rs->default_instructions($conf);
         return $rs;
     }
 }
@@ -38,10 +53,31 @@ class Response_SettingParser extends SettingParser {
     /** @var list<string> */
     private $round_transform = [];
 
+    function placeholder(SettingValues $sv, Si $si) {
+        if ($si->name0 === "response/" && $si->name2 === "/name") {
+            if (!ctype_digit($sv->vstr("response/{$si->name1}/id"))) {
+                return "(new response)";
+            } else {
+                return "unnamed";
+            }
+        } else {
+            return null;
+        }
+    }
+
+    function default_value(SettingValues $sv, Si $si) {
+        if ($si->name0 === "response/" && $si->name2 === "/instructions") {
+            $n = $sv->oldv("response/{$si->name1}/wordlimit");
+            return $sv->conf->ims()->default_itext("resp_instrux", $n);
+        } else {
+            return null;
+        }
+    }
+
     function set_oldv(SettingValues $sv, Si $si) {
         if ($si->name0 !== null) {
             if ($si->name2 === "") {
-                $sv->set_oldv($si, new Response_Setting);
+                $sv->set_oldv($si, Response_Setting::make_new($sv->conf));
             } else if ($si->name2 === "/title") {
                 $n = $sv->oldv("response/{$si->name1}/name");
                 $sv->set_oldv($si, $n ? "‘{$n}’ response" : "Response");
@@ -55,12 +91,6 @@ class Response_SettingParser extends SettingParser {
             $m[] = Response_Setting::make($sv->conf, $rrd);
         }
         $sv->append_oblist("response/", $m, "name");
-        // set placeholder for unnamed round
-        $ctr = $sv->search_oblist("response/", "/id", "1");
-        if ($ctr !== null && ($sv->conf->response_rounds())[0]->unnamed) {
-            $si = $sv->si("response/{$ctr}/name");
-            $si->placeholder = "unnamed";
-        }
     }
 
     private function ensure_round_counts(Conf $conf) {
@@ -177,6 +207,7 @@ class Response_SettingParser extends SettingParser {
         $rrds = [];
         foreach ($sv->oblist_keys("response/") as $ctr) {
             $rrd = $sv->object_newv("response/{$ctr}");
+            '@phan-var-force Response_Setting $rrd';
             if ($sv->reqstr("response/{$ctr}/delete")) {
                 if ($rrd->id > 1) {
                     $this->round_transform[] = "when {$rrd->id} then 1";
@@ -201,7 +232,10 @@ class Response_SettingParser extends SettingParser {
             $rs->grace > 0 && ($jr["grace"] = $rs->grace);
             $rs->wordlimit !== 500 && ($jr["words"] = $rs->wordlimit ?? 0);
             $rs->condition !== "" && ($jr["condition"] = $rs->condition);
-            ($rs->instructions ?? "") !== "" && ($jr["instructions"] = $rs->instructions);
+            if (($rs->instructions ?? "") !== ""
+                && $rs->instructions !== $rs->default_instructions($sv->conf)) {
+                $jr["instructions"] = $rs->instructions;
+            }
             $jrl[] = $jr;
             if ($rs->id !== null && $i + 1 !== $rs->id) {
                 $this->round_transform[] = "when {$rs->id} then " . ($i + 1);

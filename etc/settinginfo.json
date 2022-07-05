@@ -120,8 +120,8 @@
     {
         "name": "preference_instructions", "storage": "msg.revprefdescription",
         "title": "Review preference instructions",
-        "type": "htmlstring", "size": 20,
-        "default_message": ["revprefdescription", "has_topics"]
+        "type": "htmlstring", "size": 20, "default_value": "auto",
+        "parser_class": "Messages_SettingParser"
     },
     {
         "name": "submission_edit_message", "storage": "msg.submit",
@@ -319,6 +319,7 @@
         "name_pattern": "response/$/name",
         "title": "Response name", "placeholder": "Response name",
         "type": "tag", "required": false, "size": 20,
+        "placeholder": "auto",
         "parser_class": "Response_SettingParser"
     },
     {
@@ -356,8 +357,7 @@
     {
         "name_pattern": "response/$/instructions",
         "title": "Response instructions",
-        "type": "htmlstring", "size": 3,
-        "default_message": ["resp_instrux", "response/$/wordlimit"],
+        "type": "htmlstring", "size": 3, "default_value": "auto",
         "title_pattern": "${sv response/$/title} instructions",
         "parser_class": "Response_SettingParser"
     },
@@ -454,7 +454,9 @@
     {
         "name_pattern": "review/$/name",
         "title": "Review round name",
-        "type": "tag", "required": false, "size": 12, "placeholder": "unnamed"
+        "type": "tag", "required": false, "size": 12,
+        "placeholder": "auto",
+        "parser_class": "Review_SettingParser"
     },
     {
         "name_pattern": "review/$/soft",

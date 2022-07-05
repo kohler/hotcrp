@@ -3,6 +3,16 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class SettingParser {
+    /** @return ?string */
+    function placeholder(SettingValues $sv, Si $si) {
+        return null;
+    }
+
+    /** @return ?string */
+    function default_value(SettingValues $sv, Si $si) {
+        return null;
+    }
+
     /** @return void */
     function set_oldv(SettingValues $sv, Si $si) {
     }

@@ -68,8 +68,6 @@ class Si {
     public $autogrow;
     /** @var ?string */
     public $ifnonempty;
-    /** @var null|string|list<string> */
-    public $default_message;
 
     /** @var associative-array<string,bool> */
     static public $option_is_value = [];
@@ -133,7 +131,6 @@ class Si {
                 $this->store($k, $j, $k, self::$key_storage[$k]);
             }
         }
-        $this->default_message = $j->default_message ?? null;
         if ($this->placeholder === "") {
             $this->placeholder = null;
         }
@@ -185,7 +182,7 @@ class Si {
             $this->storage = substr($s, 4);
         } else if ($dot === 3 && str_starts_with($s, "msg")) {
             $this->storage_type = self::SI_DATA;
-            $this->default_message = $this->default_message ?? substr($s, 4);
+            $this->storage = $s;
         } else if ($dot === 6 && str_starts_with($s, "member")) {
             assert($this->name0 !== null);
             $this->storage_type = self::SI_MEMBER;
@@ -361,19 +358,30 @@ class Si {
         }
     }
 
+    /** @param SettingValues $sv
+     * @return ?string */
+    function placeholder($sv) {
+        if ($this->placeholder === "auto"
+            && $this->parser_class
+            && ($v = $sv->si_parser($this)->placeholder($sv, $this)) !== null) {
+            return $v;
+        } else {
+            return $this->placeholder;
+        }
+    }
+
     /** @param SettingValues $sv */
     function default_value($sv) {
-        if ($this->default_message) {
-            $dm = $this->default_message;
-            $id = is_string($dm) ? $dm : $dm[0];
-            $mid = $this->name1 !== null ? $this->name1 : "\$";
-            $args = [];
-            foreach (is_string($dm) ? [] : array_slice($dm, 1) as $arg) {
-                $args[] = $sv->newv(str_replace("\$", $mid, $arg));
-            }
-            $this->default_value = $this->conf->ims()->default_itext($id, ...$args);
+        if ($this->default_value === "auto"
+            && $this->parser_class
+            && ($v = $sv->si_parser($this)->default_value($sv, $this)) !== null) {
+            return $v;
+        } else if ($this->storage_type === self::SI_DATA
+                   && str_starts_with($this->storage ?? "", "msg.")) {
+            return $sv->conf->ims()->default_itext(substr($this->storage, 4));
+        } else {
+            return $this->default_value;
         }
-        return $this->default_value;
     }
 
     /** @param mixed $v
@@ -392,7 +400,7 @@ class Si {
             return $this->_tclass ? $this->_tclass->parse_null_vstr($this) : null;
         } else if ($this->_tclass) {
             $v = trim($reqv);
-            if ($this->placeholder === $v) {
+            if ($v === $this->placeholder($sv)) {
                 $v = "";
             }
             return $this->_tclass->parse_reqv($v, $this, $sv);
@@ -417,7 +425,7 @@ class Si {
         if ($this->_tclass) {
             if (is_string($jv)) {
                 $jv = trim($jv);
-                if ($this->placeholder === $jv) {
+                if ($jv === $this->placeholder($sv)) {
                     $jv = "";
                 }
             }

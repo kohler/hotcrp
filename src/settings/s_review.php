@@ -49,6 +49,15 @@ class Review_Setting {
 class Review_SettingParser extends SettingParser {
     private $round_transform = [];
 
+    function placeholder(SettingValues $sv, Si $si) {
+        if ($si->name0 === "review/" && $si->name2 === "/name") {
+            $idv = $sv->vstr("review/{$si->name1}/id");
+            return ctype_digit($idv) && $idv !== "0" ? "unnamed" : "(new round)";
+        } else {
+            return null;
+        }
+    }
+
     function set_oldv(SettingValues $sv, Si $si) {
         if ($si->name0 === "review/" && $si->name2 === "") {
             $sv->set_oldv($si, new Review_Setting);
@@ -112,17 +121,13 @@ class Review_SettingParser extends SettingParser {
         $id = $ctr !== "\$" && ctype_digit($idv) ? intval($idv) : -1;
         $deleted = ($sv->reqstr("review/{$ctr}/delete") ?? "") !== "";
 
-        $namesi = $sv->si("review/{$ctr}/name");
-        if ($id <= 0) {
-            $namesi->placeholder = "(new round)";
-        }
-
         echo '<div class="js-settings-review-round mt-3 mb-2 form-g',
             $id > 0 ? "" : " is-new", $deleted ? " deleted" : "",
             '" data-exists-count="', $id > 0 ? $round_map[$id - 1] ?? 0 : 0,
             '" id="review/', $ctr, '"><div class="mb-2">',
             Ht::hidden("review/{$ctr}/id", $id > 0 ? $id : "new", ["data-default-value" => $id > 0 ? $id : ""]),
             Ht::hidden("review/{$ctr}/delete", $deleted ? "1" : "", ["data-default-value" => ""]);
+        $namesi = $sv->si("review/{$ctr}/name");
         $sv->print_feedback_at($namesi->name);
         echo $sv->label($namesi->name, "Round name"), ' &nbsp;',
             $sv->entry($namesi->name, ["class" => "uii uich js-settings-review-round-name"]);
