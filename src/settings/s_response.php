@@ -23,7 +23,7 @@ class Response_Setting {
         $rs->wordlimit = $rrd->words;
         $rs->condition = $rrd->search ? $rrd->search->q : "";
         $rs->instructions = $rrd->instructions
-            ?? $conf->ims()->default_itext("msg_instrux", $rrd->words);
+            ?? $conf->ims()->default_itext("resp_instrux", $rrd->words);
         return $rs;
     }
 }

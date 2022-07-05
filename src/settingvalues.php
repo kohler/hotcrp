@@ -36,17 +36,17 @@ class SettingValues extends MessageSet {
 
     /** @var array<string,mixed> */
     private $_explicit_oldv = [];
-    /** @var array<string,object> */
-    private $_object_newv = [];
     /** @var array<string,true> */
     private $_oblist_ensured = [];
     /** @var array<string,int> */
     private $_oblist_next = [];
 
-    /** @var ?object */
-    private $cur_object;
     /** @var array<string,array{?int,?string}> */
     private $_savedv = [];
+    /** @var array<string,mixed> */
+    private $_explicit_newv = [];
+    /** @var array<string,object> */
+    private $_object_parsingv = [];
 
     /** @var list<Si> */
     private $_saved_si = [];
@@ -802,7 +802,9 @@ class SettingValues extends MessageSet {
     function newv($id) {
         $si = is_string($id) ? $this->si($id) : $id;
         assert($si->type !== "object" && $si->type !== "oblist");
-        if (($si->storage_type & Si::SI_MEMBER) === 0) {
+        if (!$this->_use_req) {
+            // always use the old value
+        } else if (($si->storage_type & Si::SI_MEMBER) === 0) {
             $s = $si->storage_name();
             if (array_key_exists($s, $this->_savedv)) {
                 $v = $this->_savedv[$s];
@@ -815,9 +817,18 @@ class SettingValues extends MessageSet {
                 }
             }
         } else {
-            if (($o = $this->object_newv($si->name0 . $si->name1))) {
+            $objname = $si->name0 . $si->name1;
+            if (!array_key_exists($objname, $this->_explicit_newv)
+                && !array_key_exists($si->name, $this->_explicit_newv)
+                && $this->has_req($si->name)) {
+                $this->apply_req($si);
+            }
+            if (($nov = $this->_explicit_newv[$objname] ?? null)
+                && is_object($nov)) {
                 $sn = $si->storage_name();
-                return $o->{$sn};
+                return $nov->{$sn};
+            } else if (array_key_exists($si->name, $this->_explicit_newv)) {
+                return $this->_explicit_newv[$si->name];
             }
         }
         return $this->oldv($si);
@@ -1335,7 +1346,12 @@ class SettingValues extends MessageSet {
 
         $s = $si->storage_name();
         if ($member) {
-            $this->cur_object->{$s} = $value1;
+            $ov = $this->_object_parsingv[$si->name0 . $si->name1] ?? null;
+            if ($ov) {
+                $ov->{$s} = $value1;
+            } else {
+                $this->_explicit_newv[$si->name] = $value1;
+            }
         } else if ($si->storage_type & Si::SI_SLICE) {
             if (!isset($this->_savedv[$s])) {
                 if (!array_key_exists($s, $this->_savedv)) {
@@ -1461,22 +1477,21 @@ class SettingValues extends MessageSet {
     /** @param string $oname
      * @return object */
     function object_newv($oname) {
-        if (!array_key_exists($oname, $this->_object_newv)) {
-            $object = $this->objectv($oname);
-            assert(!!$object);
-            $old_object = $this->cur_object;
-            $this->_object_newv[$oname] = $this->cur_object = clone $object;
+        if (!array_key_exists($oname, $this->_explicit_newv)) {
+            $object = clone $this->objectv($oname);
             // skip member parsing if object is deleted (don't want errors)
             if ($this->_use_req
                 && !$this->reqstr("{$oname}/delete")) {
+                $this->_object_parsingv[$oname] = $object;
                 foreach ($this->si_req_members("{$oname}/") as $si) {
                     if (($si->storage_type & Si::SI_MEMBER) !== 0)
                         $this->apply_req($si);
                 }
+                unset($this->_object_parsingv[$oname]);
             }
-            $this->cur_object = $old_object;
+            $this->_explicit_newv[$oname] = $object;
         }
-        return $this->_object_newv[$oname];
+        return $this->_explicit_newv[$oname];
     }
 
 

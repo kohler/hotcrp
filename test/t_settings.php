@@ -61,11 +61,13 @@ class Settings_Tester {
             "has_topic" => 1,
             "new_topics" => "Whatever\n"
         ]);
-        xassert($sv->execute());
+        $sv->parse();
 
         $s = $this->conf->si("preference_instructions")->default_value($sv);
         xassert(strpos($s, "review preference") !== false);
         xassert(strpos($s, "topic") !== false);
+
+        xassert($sv->execute());
         ConfInvariants::test_all($this->conf);
         xassert_eqq(json_encode($this->conf->topic_set()->as_array()), '{"1":"Whatever"}');
 
