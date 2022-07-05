@@ -251,15 +251,14 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         $set->add_result($result, $user, $conf);
         return $set;
     }
-    private function add_paper(PaperInfo $prow) {
+    function add_paper(PaperInfo $prow) {
         $this->prows[] = $this->by_pid[$prow->paperId] = $prow;
     }
     /** @param Dbl_Result $result
      * @param ?Contact $user
      * @param ?Conf $conf */
     function add_result($result, $user, $conf = null) {
-        while (($prow = PaperInfo::fetch($result, $user, $conf, $this))) {
-            $this->add_paper($prow);
+        while (PaperInfo::fetch($result, $user, $conf, $this)) {
         }
         Dbl::free($result);
     }
@@ -611,7 +610,7 @@ class PaperInfo {
     private function __construct(Conf $conf, $paperset = null) {
         $this->conf = $conf;
         $this->paperXid = ++self::$next_uid;
-        $this->_row_set = $paperset ?? PaperInfoSet::make_singleton($this);
+        $this->_row_set = $paperset ?? new PaperInfoSet;
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
@@ -676,6 +675,7 @@ class PaperInfo {
     static function fetch($result, $user, $conf = null, $paperset = null) {
         if (($prow = $result->fetch_object("PaperInfo", [$conf ?? $user->conf, $paperset]))) {
             $prow->incorporate();
+            $prow->_row_set->add_paper($prow);
             $user && $prow->incorporate_user($user);
         }
         return $prow;
@@ -687,6 +687,7 @@ class PaperInfo {
     static function make_placeholder(Conf $conf, $paperId) {
         $prow = new PaperInfo($conf);
         $prow->paperId = $paperId;
+        $prow->_row_set->add_paper($prow);
         return $prow;
     }
 
@@ -704,6 +705,7 @@ class PaperInfo {
         $ci->conflictType = CONFLICT_CONTACTAUTHOR;
         $prow->_contact_info[$user->contactXid] = $ci;
         $prow->_comment_skeleton_array = $prow->_comment_array = [];
+        $prow->_row_set->add_paper($prow);
         return $prow;
     }
 
@@ -721,6 +723,7 @@ class PaperInfo {
         $prow->outcome = 1;
         $prow->conflictType = "0";
         $prow->myReviewPermissions = "{$rtype} 1 0 0";
+        $prow->_row_set->add_paper($prow);
         $prow->incorporate_user($user);
         return $prow;
     }
@@ -1838,6 +1841,7 @@ class PaperInfo {
             } else {
                 $row_set = PaperInfoSet::make_singleton($this);
             }
+            assert(!!$row_set->get($this->paperId));
             foreach ($row_set as $prow) {
                 $prow->_option_values = $prow->_option_data = [];
             }
