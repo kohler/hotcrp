@@ -998,7 +998,7 @@ class UserStatus extends MessageSet {
         // Disabled
         if (isset($cj->disabled)) {
             if ($cj->disabled) {
-                $disablement = ($user->disablement & ~Contact::DISABLEMENT_DB) | Contact::DISABLEMENT_USER;
+                $disablement = ($user->disablement & Contact::DISABLEMENT_DB) | Contact::DISABLEMENT_USER;
             } else {
                 $disablement = 0;
             }
