@@ -60,12 +60,14 @@ class Settings_Tester {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_topic" => 1,
             "new_topics" => "Whatever\n"
-        ])->parse();
+        ]);
+        xassert($sv->execute());
 
         $s = $this->conf->si("preference_instructions")->default_value($sv);
         xassert(strpos($s, "review preference") !== false);
         xassert(strpos($s, "topic") !== false);
         ConfInvariants::test_all($this->conf);
+        xassert_eqq(json_encode($this->conf->topic_set()->as_array()), '{"1":"Whatever"}');
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_topic" => 1,
@@ -75,6 +77,7 @@ class Settings_Tester {
         xassert($sv->execute());
 
         xassert_eqq($this->conf->setting("has_topics"), null);
+        xassert_eqq(json_encode($this->conf->topic_set()->as_array()), '[]');
     }
 
     function delete_topics() {

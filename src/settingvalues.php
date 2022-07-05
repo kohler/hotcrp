@@ -595,7 +595,9 @@ class SettingValues extends MessageSet {
         // find next counter
         if (($nextctr = $this->_oblist_next[$pfx] ?? 0) === 0) {
             $nextctr = 1;
-            while ($this->_use_req && $this->has_req("{$pfx}{$nextctr}/id")) {
+            while ($this->_use_req
+                   && ($this->has_req("{$pfx}{$nextctr}/id")
+                       || ($namekey !== null && $this->has_req("{$pfx}{$nextctr}/{$namekey}")))) {
                 ++$nextctr;
             }
         }
