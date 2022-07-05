@@ -292,7 +292,7 @@ class TagStyle {
 
     /** @param string $s
      * @return ?string */
-    static function rgb($s) {
+    static function dynamic_style($s) {
         if (str_starts_with($s, "rgb-")
             && (strlen($s) === 7 || strlen($s) === 10)
             && ctype_xdigit(substr($s, 4))) {
@@ -301,6 +301,8 @@ class TagStyle {
             } else {
                 return $s;
             }
+        } else if (str_starts_with($s, "font-")) {
+            return $s;
         } else {
             return null;
         }
@@ -309,7 +311,7 @@ class TagStyle {
     /** @param string $text */
     function __construct($text) {
         // $text format: [name=]style[^][@][-][*]
-        // where ^ means text mode, @ means badge mode (background by default);
+        // where ^ means text mode, @ means badge mode, default is background mode;
         // - means secret (do not show in settings by default);
         // * means dark mode (light mode by default unless dynamic)
         $sclass = self::BG;
@@ -336,10 +338,15 @@ class TagStyle {
         }
         $this->style = substr($text, $p0, $p1 - $p0);
         $this->name = $this->name ?? $this->style;
-        if (($rgb = self::rgb($this->style)) !== null) {
-            $this->style = $rgb;
+        if (($dstyle = self::dynamic_style($this->style)) !== null) {
+            $this->style = $dstyle;
             $sclass |= self::DYNAMIC;
-        } else if ($this->dark === null) {
+            if ($dstyle[0] === "f") { // `font-`
+                $sclass = ($sclass & ~self::BG) | self::TEXT;
+            }
+        }
+        if ($this->dark === null
+            && (($sclass & self::DYNAMIC) === 0 || ($sclass & self::BG) === 0)) {
             $this->dark = false;
         }
         $this->sclass = $sclass;
@@ -502,7 +509,8 @@ class TagMap implements IteratorAggregate {
             && $ltag !== ""
             && (($ltag[0] === ":" && $this->check_emoji_code($ltag))
                 || isset($this->style_lmap[$ltag])
-                || (str_starts_with($ltag, "rgb-") && ctype_xdigit(substr($ltag, 4))))) {
+                || (str_starts_with($ltag, "rgb-") && ctype_xdigit(substr($ltag, 4)))
+                || str_starts_with($ltag, "font-"))) {
             $t = $this->add($tag);
         }
         if ($this->has_pattern
@@ -677,8 +685,9 @@ class TagMap implements IteratorAggregate {
     function known_style($s) {
         $s = strtolower($s);
         $style = $this->style_lmap[$s] ?? null;
-        if ($style === null && ($rgb = TagStyle::rgb($s)) !== null) {
-            $style = new TagStyle($rgb);
+        if ($style === null
+            && ($dstyle = TagStyle::dynamic_style($s)) !== null) {
+            $style = new TagStyle($dstyle);
         }
         return $style;
     }
@@ -710,7 +719,7 @@ class TagMap implements IteratorAggregate {
     private function color_regex() {
         if (!$this->color_re) {
             $rex = [
-                "{(?:\\A| )(?:(?:\\d*~|~~|)(rgb-[0-9a-f]{3}(?:|[0-9a-f]{3})|",
+                "{(?:\\A| )(?:(?:\\d*~|~~|)(font-[^\s#]+|rgb-[0-9a-f]{3}(?:|[0-9a-f]{3})|",
                 join("|", array_keys($this->style_lmap))
             ];
             $any = false;
