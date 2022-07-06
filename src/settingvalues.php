@@ -924,7 +924,7 @@ class SettingValues extends MessageSet {
         }
         foreach ($js ?? [] as $k => $v) {
             if (strlen($k) < 10
-                || !preg_match('/\A(?:group_|hint_|control_|label_|fold_|horizontal\z|no_control_class\z)/', $k))
+                || ($k !== "horizontal" && strpos($k, "_") === false))
                 $x[$k] = $v;
         }
         if ($this->has_problem_at($name)) {
