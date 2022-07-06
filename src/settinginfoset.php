@@ -10,6 +10,8 @@ class SettingInfoSet {
     private $map = [];
     /** @var array<string,list<object>> */
     private $xmap = [];
+    /** @var bool */
+    private $xmap_sorted = false;
     /** @var list<string|list<string|object>> */
     private $xlist = [];
         // => [firstpart, [lastpart, object, ...], firstpart, ...]
@@ -59,6 +61,7 @@ class SettingInfoSet {
             if (isset($v->alias)) {
                 $this->potential_aliases[] = $v->name;
             }
+            $this->xmap_sorted = false;
         }
         return true;
     }
@@ -116,6 +119,7 @@ class SettingInfoSet {
             $x = $this->xmap[$name] ?? null;
             if ($x === null) {
                 $x = $this->xmap[$name] = [(object) ["name" => $name, "merge" => true, "priority" => INF]];
+                $this->xmap_sorted = false;
             }
             return $x;
         }
@@ -157,6 +161,23 @@ class SettingInfoSet {
         return $result;
     }
 
+    /** @param string $name
+     * @param object $xt
+     * @return ?object */
+    private function _instantiate_match($name, $xt) {
+        if (($parts = $this->_match_parts($name, $xt->name_parts))) {
+            $xt = clone $xt;
+            $xt->name = $name;
+            $xt->name_parts = $parts;
+            if (isset($xt->alias_pattern)) {
+                $xt->alias = $this->_expand_pattern($xt->alias_pattern, $parts);
+            }
+            return $xt;
+        } else {
+            return null;
+        }
+    }
+
     /** @param string $s
      * @param list<string> $parts
      * @return ?string */
@@ -187,14 +208,8 @@ class SettingInfoSet {
         for ($j = 0; $j !== $nitems; $j += 2) {
             if ($plen + strlen($items[$j]) < $nlen
                 && str_ends_with($name, $items[$j])
-                && ($parts = $this->_match_parts($name, $items[$j + 1]->name_parts))) {
-                $jx = clone $items[$j + 1];
-                $jx->name = $name;
-                $jx->name_parts = $parts;
-                if (isset($jx->alias_pattern)) {
-                    $jx->alias = $this->_expand_pattern($jx->alias_pattern, $parts);
-                }
-                $curlist[] = $jx;
+                && ($xt = $this->_instantiate_match($name, $items[$j + 1]))) {
+                $curlist[] = $xt;
             }
         }
     }
@@ -251,15 +266,83 @@ class SettingInfoSet {
 
     /** @return list<Si> */
     function top_list() {
-        $a = [];
+        $sis = [];
         foreach (array_keys($this->xmap) as $k) {
             if (($si = $this->get($k)) !== null
                 && empty($si->name_parts)
                 && !$si->internal
                 && $si->name === $k)
-                $a[] = $si;
+                $sis[] = $si;
         }
-        usort($a, "Conf::xt_order_compare");
-        return $a;
+        usort($sis, "Conf::xt_order_compare");
+        return $sis;
+    }
+
+    /** @param string $pfx
+     * @return array<string,list<object>> */
+    function _xmap_members($pfx) {
+        if (!$this->xmap_sorted) {
+            ksort($this->xmap, SORT_STRING);
+            $this->xmap_sorted = true;
+        }
+        $xkeys = array_keys($this->xmap);
+        $l = 0;
+        $r = count($xkeys);
+        while ($l < $r) {
+            $m = $l + (($r - $l) >> 1);
+            $cmp = strcmp($pfx, $xkeys[$m]);
+            if ($cmp < 0) {
+                $r = $m;
+            } else {
+                $l = $m + 1;
+            }
+        }
+        $mxmap = [];
+        while ($l < count($xkeys) && str_starts_with($xkeys[$l], $pfx)) {
+            if (strpos($xkeys[$l], "/", strlen($pfx)) === false) {
+                $mxmap[$xkeys[$l]] = $this->xmap[$xkeys[$l]];
+            }
+            ++$l;
+        }
+        return $mxmap;
+    }
+
+    /** @param string $pfx
+     * @return list<Si> */
+    function member_list($pfx) {
+        assert(str_ends_with($pfx, "/"));
+        // collect members by specific name
+        $mxmap = $this->_xmap_members($pfx);
+        // collect members by expansion
+        for ($i = 0; $i !== count($this->xlist); $i += 2) {
+            if (str_starts_with($pfx, $this->xlist[$i])) {
+                $items = $this->xlist[$i + 1];
+                $nitems = count($items);
+                for ($j = 0; $j !== $nitems; $j += 2) {
+                    if (str_starts_with($items[$j], "/")) {
+                        $name = $pfx . substr($items[$j], 1);
+                        if (($xt = $this->_instantiate_match($name, $items[$j + 1]))) {
+                            $mxmap[$name][] = $xt;
+                        }
+                    }
+                }
+            }
+        }
+        // instantiate members
+        $sis = [];
+        $cs = $this->cs;
+        foreach ($mxmap as $name => $curlist) {
+            if (array_key_exists($name, $this->map)) {
+                if (($si = $this->map[$name]))
+                    $sis[] = $si;
+            } else if (($jx = $cs->conf->xt_search_list($curlist, $cs->viewer))
+                       && !isset($jx->alias)) {
+                Conf::xt_resolve_require($jx);
+                $sis[] = new Si($cs->conf, $jx);
+            }
+        }
+        // sort by position
+        usort($sis, "Conf::xt_pure_order_compare");
+        return $sis;
     }
 }

@@ -1026,6 +1026,20 @@ class Conf {
         }
         return $ap <=> $bp;
     }
+    /** @param object $xta
+     * @param object $xtb
+     * @return -1|0|1 */
+    static function xt_pure_order_compare($xta, $xtb) {
+        $ap = $xta->order ?? 0;
+        $ap = $ap !== false ? $ap : INF;
+        $bp = $xtb->order ?? 0;
+        $bp = $bp !== false ? $bp : INF;
+        if ($ap == $bp) {
+            $ap = $xta->__source_order ?? 0;
+            $bp = $xtb->__source_order ?? 0;
+        }
+        return $ap <=> $bp;
+    }
     /** @param array<string|int,list<object>> &$a
      * @param object $xt
      * @return true */

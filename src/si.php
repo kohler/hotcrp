@@ -27,47 +27,67 @@ class Si {
     /** @var ?Sitype
      * @readonly */
     private $_tclass;
-    /** @var string */
+    /** @var string
+     * @readonly */
     private $title;
-    /** @var ?string */
+    /** @var ?string
+     * @readonly */
     public $title_pattern;
     /** @var ?list<string> */
     public $pages;
     /** @var bool */
     private $_has_pages = false;
-    /** @var null|int|float */
+    /** @var null|int|float
+     * @readonly */
     public $order;
-    /** @var null|int|float */
+    /** @var null|int|float
+     * @readonly */
     public $parse_order;
-    /** @var null|int */
+    /** @var null|int
+     * @readonly */
     public $__source_order;
-    /** @var null|false|string */
+    /** @var null|false|string
+     * @readonly */
     public $hashid;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $internal = false;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $storage_type;
-    /** @var ?string */
+    /** @var ?string
+     * @readonly */
     private $storage;
     /** @var ?bool */
     public $required;
-    /** @var list */
+    /** @var list
+     * @readonly */
     public $values;
-    /** @var list */
+    /** @var list
+     * @readonly */
     public $json_values;
     /** @var ?int */
     public $size;
     /** @var ?string */
     public $placeholder;
-    /** @var class-string */
+    /** @var class-string
+     * @readonly */
     public $parser_class;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $disabled = false;
+    /** @var mixed
+     * @readonly */
     public $default_value;
-    /** @var ?bool */
+    /** @var ?bool
+     * @readonly */
     public $autogrow;
-    /** @var ?string */
+    /** @var ?string
+     * @readonly */
     public $ifnonempty;
+    /** @var ?bool
+     * @readonly */
+    public $json_export;
 
     /** @var associative-array<string,bool> */
     static public $option_is_value = [];
@@ -86,6 +106,7 @@ class Si {
         "ifnonempty" => "is_string",
         "internal" => "is_bool",
         "json_values" => "is_array",
+        "json_export" => "is_bool",
         "order" => "is_number",
         "parse_order" => "is_number",
         "__source_order" => "is_int",

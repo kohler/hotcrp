@@ -28,7 +28,8 @@ class Settings_Batch {
     function run() {
         $j = [];
         foreach ($this->conf->si_set()->top_list() as $si) {
-            if (($v = $this->sv->vjson($si)) !== null) {
+            if (($si->json_export ?? !$si->internal)
+                && ($v = $this->sv->json_oldv($si)) !== null) {
                 $j[$si->name] = $v;
             }
         }

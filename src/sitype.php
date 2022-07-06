@@ -13,7 +13,7 @@ abstract class Sitype {
         "float" => "+Float_Sitype",
         "grace" => "+Grace_Sitype",
         "htmlstring" => "+Html_Sitype",
-        "int" => "+Nonnegint_Sitype", /* XXX */
+        "int" => "+Int_Sitype",
         "longstring" => "+String_Sitype",
         "nonnegint" => "+Nonnegint_Sitype",
         "radio" => "+Radio_Sitype",
@@ -79,7 +79,7 @@ abstract class Sitype {
     /** @param null|int|string $v
      * @return mixed */
     function unparse_jsonv($v, Si $si) {
-        return $this->unparse_reqv($v, $si);
+        return $v;
     }
 
     /** @return bool */
@@ -253,6 +253,9 @@ class Date_Sitype extends Sitype {
             return null;
         }
     }
+    function unparse_jsonv($jv, Si $si) {
+        return $this->unparse_reqv($jv, $si);
+    }
     function nullable($v, Si $si, SettingValues $sv) {
         return $v < 0 || ($v === 0 && !$this->explicit_none);
     }
@@ -298,6 +301,33 @@ class Grace_Sitype extends Sitype {
     }
 }
 
+class Int_Sitype extends Sitype {
+    function initialize_si(Si $si) {
+        $si->size = $si->size ?? 15;
+        $si->placeholder = $si->placeholder ?? "none";
+    }
+    function parse_reqv($vstr, Si $si, SettingValues $sv) {
+        if (preg_match('/\A[+-]?[0-9]+\z/', $vstr)) {
+            return intval($vstr);
+        } else if ($vstr === "" && $si->default_value !== null) {
+            return $si->default_value;
+        } else {
+            $sv->error_at($si, "<0>Please enter a whole number");
+            return null;
+        }
+    }
+    function convert_jsonv($jv, Si $si, SettingValues $sv) {
+        if (is_int($jv)) {
+            return (string) $jv;
+        } else if ($jv === null) {
+            return "";
+        } else {
+            $sv->error_at($si, "<0>Whole number required");
+            return null;
+        }
+    }
+}
+
 class Nonnegint_Sitype extends Sitype {
     use Positive_Sitype;
     function initialize_si(Si $si) {
@@ -323,9 +353,6 @@ class Nonnegint_Sitype extends Sitype {
             $sv->error_at($si, "<0>Nonnegative whole number required");
             return null;
         }
-    }
-    function unparse_jsonv($v, Si $si) {
-        return $v;
     }
 }
 
@@ -353,9 +380,6 @@ class Float_Sitype extends Sitype {
             $sv->error_at($si, "<0>Number required");
             return null;
         }
-    }
-    function unparse_jsonv($v, Si $si) {
-        return $v;
     }
 }
 

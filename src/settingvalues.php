@@ -538,20 +538,23 @@ class SettingValues extends MessageSet {
 
     /** @param string|Si $id
      * @return mixed */
-    function vjson($id) {
+    function json_oldv($id) {
         $si = is_string($id) ? $this->si($id) : $id;
         if ($si->type === "oblist") {
             $a = [];
             foreach ($this->oblist_keys("{$si->name}/") as $ctr) {
-                $a[] = $this->vjson("{$si->name}/{$ctr}");
+                $a[] = $this->json_oldv("{$si->name}/{$ctr}");
             }
             return $a;
         }
-        if ($this->_use_req) {
-            $name = is_string($id) ? $id : $id->name;
-            if (isset($this->req[$name])) {
-                return $si->base_unparse_jsonv($this->req[$name]);
+        if ($si->type === "object") {
+            $o = [];
+            foreach ($this->conf->si_set()->member_list("{$si->name}/") as $msi) {
+                if (($msi->json_export ?? !$msi->internal)
+                    && ($v = $this->json_oldv($msi)) !== null)
+                    $o[substr($msi->name2, 1)] = $v;
             }
+            return $o;
         }
         return $si->base_unparse_jsonv($this->oldv($si));
     }

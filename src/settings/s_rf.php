@@ -9,9 +9,9 @@ class Rf_Setting {
     public $order;
     public $visibility;
     public $required;
-    public $presence;
-    public $exists_if;
     public $options;
     public $start;
     public $scheme;
+    public $presence;
+    public $exists_if;
 }

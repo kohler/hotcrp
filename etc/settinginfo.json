@@ -29,8 +29,7 @@
     },
 
     {
-        "name": "decisions", "hashid": "decision-types",
-        "internal": true
+        "name": "decisions", "hashid": "decision-types", "internal": true
     },
     {
         "name": "outcome_map", "internal": true, "storage": "dat.outcome_map",
@@ -42,11 +41,14 @@
         "type": "oblist", "parser_class": "Decision_SettingParser"
     },
     {
-        "name_pattern": "decision/$", "internal": true,
+        "name_pattern": "decision/$",
         "type": "object", "subtype": "Decision_Setting",
         "parser_class": "Decision_SettingParser"
     },
-    {   "name_pattern": "decision/$/id", "internal": true   },
+    {
+        "name_pattern": "decision/$/id", "type": "int",
+        "internal": true, "json_export": true
+    },
     {
         "name_pattern": "decision/$/name",
         "title": "Decision name",
@@ -179,20 +181,23 @@
         "type": "oblist", "parser_class": "Options_SettingParser"
     },
     {
-        "name_pattern": "sf/$", "internal": true,
+        "name_pattern": "sf/$",
         "type": "object", "subtype": "Sf_Setting",
         "parser_class": "Options_SettingParser"
     },
-    {   "name_pattern": "sf/$/id", "internal": true   },
     {
-        "name_pattern": "sf/$/order",
-        "title": "Submission field order", "title_pattern": "‘${sv sf/$/name}’ order",
-        "type": "float"
+        "name_pattern": "sf/$/id", "type": "int",
+        "internal": true, "json_export": true
     },
     {
         "name_pattern": "sf/$/name", "title": "Submission field name",
         "type": "simplestring",
         "placeholder": "Field name", "size": 50, "parser_class": "Options_SettingParser"
+    },
+    {
+        "name_pattern": "sf/$/order",
+        "title": "Submission field order", "title_pattern": "‘${sv sf/$/name}’ order",
+        "type": "float"
     },
     {
         "name_pattern": "sf/$/type",
@@ -310,11 +315,14 @@
         "type": "oblist", "parser_class": "Response_SettingParser"
     },
     {
-        "name_pattern": "response/$", "internal": true,
+        "name_pattern": "response/$",
         "type": "object", "subtype": "Response_Setting",
         "parser_class": "Response_SettingParser"
     },
-    {   "name_pattern": "response/$/id", "internal": true, "type": "string"   },
+    {
+        "name_pattern": "response/$/id", "type": "int",
+        "internal": true, "json_export": true
+    },
     {
         "name_pattern": "response/$/name",
         "title": "Response name", "placeholder": "Response name",
@@ -438,12 +446,13 @@
         "type": "oblist", "parser_class": "Review_SettingParser"
     },
     {
-        "name_pattern": "review/$", "internal": true,
+        "name_pattern": "review/$",
         "type": "object", "subtype": "Review_Setting",
         "parser_class": "Review_SettingParser"
     },
     {
-        "name_pattern": "review/$/id", "internal": true
+        "name_pattern": "review/$/id", "type": "int",
+        "internal": true, "json_export": true
     },
     {
         "name_pattern": "review/$/pctitle", "internal": true, "parser_class": "Review_SettingParser"
@@ -528,15 +537,23 @@
         "type": "oblist", "parser_class": "ReviewForm_SettingParser"
     },
     {
-        "name_pattern": "rf/$", "internal": true,
+        "name_pattern": "rf/$",
         "type": "object", "subtype": "Rf_Setting",
         "parser_class": "ReviewForm_SettingParser"
     },
-    {   "name_pattern": "rf/$/id", "internal": true   },
+    {
+        "name_pattern": "rf/$/id", "type": "string",
+        "internal": true, "json_export": true
+    },
     {
         "name_pattern": "rf/$/name", "title": "Review field name",
         "type": "simplestring", "required": true,
         "placeholder": "Field name", "size": 50, "parser_class": "ReviewForm_SettingParser"
+    },
+    {
+        "name_pattern": "rf/$/order",
+        "title": "Review field order", "title_pattern": "‘${sv rf/$/name}’ order",
+        "type": "float"
     },
     {
         "name_pattern": "rf/$/description",
@@ -550,17 +567,13 @@
         "parser_class": "ReviewForm_SettingParser"
     },
     {
-        "name_pattern": "rf/$/start", "internal": true
+        "name_pattern": "rf/$/start",
+        "internal": true, "json_export": true
     },
     {
         "name_pattern": "rf/$/scheme",
         "title": "Review field color scheme", "title_pattern": "‘${sv rf/$/name}’ color scheme",
         "type": "radio", "values": ["sv", "svr", "blpu", "publ", "rdpk", "pkrd", "viridisr", "viridis", "orbu", "buor", "turbo", "turbor", "catx", "none"]
-    },
-    {
-        "name_pattern": "rf/$/order",
-        "title": "Review field order", "title_pattern": "‘${sv rf/$/name}’ order",
-        "type": "float"
     },
     {
         "name_pattern": "rf/$/required",
@@ -610,12 +623,12 @@
         "name_pattern": "fmtstore_o_$", "internal": true, "storage": "opt.sub_banal_$"
     },
     {
-        "name_pattern": "format/$", "internal": false,
+        "name_pattern": "format/$",
         "type": "object", "subtype": "Banal_Setting",
         "parser_class": "Banal_SettingParser"
     },
     {
-        "name_pattern": "format/$/id", "internal": true
+        "name_pattern": "format/$/id", "type": "int"
     },
     {
         "name_pattern": "format/$/active",
@@ -707,7 +720,7 @@
         "type": "oblist", "parser_class": "TagStyle_SettingParser"
     },
     {
-        "name_pattern": "tag_style/$", "internal": true,
+        "name_pattern": "tag_style/$",
         "type": "object", "subtype": "TagStyle_Setting",
         "parser_class": "TagStyle_SettingParser"
     },
@@ -757,18 +770,22 @@
         "type": "oblist", "parser_class": "Topic_SettingParser"
     },
     {
-        "name_pattern": "topic/$", "internal": true,
+        "name_pattern": "topic/$",
         "type": "object", "subtype": "Topic_Setting",
         "parser_class": "Topic_SettingParser"
     },
-    {   "name_pattern": "topic/$/id", "internal": true   },
+    {
+        "name_pattern": "topic/$/id", "type": "nonnegint",
+        "internal": true, "json_export": true
+    },
     {
         "name_pattern": "topic/$/name", "title": "Topic name",
         "type": "simplestring", "size": 80, "autogrow": true
     },
     {
         "name": "new_topics", "title": "New topics",
-        "type": "longstring", "parse_order": -1, "parser_class": "Topic_SettingParser"
+        "type": "longstring", "parse_order": -1, "parser_class": "Topic_SettingParser",
+        "json_export": false
     },
 
     {
@@ -776,11 +793,11 @@
     },
 
     {
-        "name": "track", "hashid": "tracks",
+        "name": "track", "hashid": "tracks", "type": "oblist",
         "parser_class": "Track_SettingParser"
     },
     {
-        "name_pattern": "track/$", "internal": true,
+        "name_pattern": "track/$",
         "type": "object", "subtype": "Track_Setting",
         "parser_class": "Track_SettingParser"
     },
@@ -795,7 +812,7 @@
         "internal": true, "parser_class": "Track_SettingParser"
     },
     {
-        "name_pattern": "track/$/perm", "internal": true, "storage": "none"
+        "name_pattern": "track/$/perm", "storage": "none"
     },
     {
         "name_pattern": "track/$/perm/$$",
