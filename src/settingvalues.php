@@ -87,6 +87,13 @@ class SettingValues extends MessageSet {
         return (new SettingValues($user))->add_request($qreq);
     }
 
+    /** @param string $page
+     * @return $this */
+    function set_canonical_page($page) {
+        $this->canonical_page = $page;
+        return $this;
+    }
+
     /** @param bool $x
      * @return $this */
     function set_use_req($x) {
@@ -429,11 +436,6 @@ class SettingValues extends MessageSet {
         } else {
             throw new Exception(caller_landmark(2) . ": Unknown setting ‘{$name}’");
         }
-    }
-
-    /** @param string $page */
-    function set_canonical_page($page) {
-        $this->canonical_page = $page;
     }
 
     /** @param string|Si $id
@@ -861,383 +863,6 @@ class SettingValues extends MessageSet {
         echo $this->feedback_at($field);
     }
 
-    /** @param ?string $c1
-     * @param ?string $c2
-     * @return ?string */
-    static function join_class($c1, $c2) {
-        if ($c1 === null || $c1 === "") {
-            return $c2;
-        } else if ($c2 === null || $c2 === "") {
-            return $c1;
-        } else {
-            return "{$c1} {$c2}";
-        }
-    }
-
-    /** @return string */
-    function label($name, $html, $label_js = []) {
-        $name1 = is_array($name) ? $name[0] : $name;
-        if (($label_js["class"] ?? null) === false
-            || ($label_js["no_control_class"] ?? false)) {
-            unset($label_js["no_control_class"]);
-        } else {
-            foreach (is_array($name) ? $name : [$name] as $n) {
-                if (($sc = $this->control_class($n))) {
-                    $label_js["class"] = self::join_class($sc, $label_js["class"] ?? null);
-                    break;
-                }
-            }
-        }
-        $post = "";
-        if (($pos = strpos($html, "<input")) !== false) {
-            list($html, $post) = [substr($html, 0, $pos), substr($html, $pos)];
-        }
-        return Ht::label($html, $name1, $label_js) . $post;
-    }
-
-    /** @param string|Si $id
-     * @param ?array<string,mixed> $js
-     * @return array<string,mixed> */
-    function sjs($id, $js = null) {
-        $si = is_string($id) ? $this->conf->si($id) : $id;
-        $name = $si ? $si->name : $id;
-        $x = ["id" => $name];
-        if ($si && !isset($js["disabled"]) && !isset($js["readonly"])) {
-            if ($si->disabled) {
-                $x["disabled"] = true;
-            } else if (!$this->editable($si)) {
-                if (in_array($si->type, ["checkbox", "radio", "select", "cdate", "tagselect"], true)) {
-                    $x["disabled"] = true;
-                } else {
-                    $x["readonly"] = true;
-                }
-            }
-        }
-        if ($this->_use_req
-            && !isset($js["data-default-value"])
-            && !isset($js["data-default-checked"])) {
-            if ($si && $this->has_interest($si)) {
-                $x["data-default-value"] = $si->base_unparse_reqv($this->oldv($si));
-            } else if (isset($this->_explicit_oldv[$name])) {
-                $x["data-default-value"] = $this->_explicit_oldv[$name];
-            }
-        }
-        foreach ($js ?? [] as $k => $v) {
-            if (strlen($k) < 10
-                || ($k !== "horizontal" && strpos($k, "_") === false))
-                $x[$k] = $v;
-        }
-        if ($this->has_problem_at($name)) {
-            $x["class"] = $this->control_class($name, $x["class"] ?? "");
-        }
-        if (isset($js["fold_values"])) {
-            $x["class"] = self::join_class($x["class"] ?? "", "uich js-foldup");
-        }
-        return $x;
-    }
-
-    /** @param string|Si $name
-     * @param string $class
-     * @param ?array<string,mixed> $js */
-    function print_group_open($name, $class, $js = null) {
-        $si = is_string($name) ? $this->si($name) : $name;
-        $xjs = ["class" => $class];
-        if (!isset($js["no_control_class"])) {
-            $xjs["class"] = $this->control_class($si->name, $xjs["class"]);
-        }
-        if (isset($js["group_class"])) {
-            $xjs["class"] = self::join_class($xjs["class"], $js["group_class"]);
-        }
-        if (isset($js["fold_values"]) && !empty($js["fold_values"])) {
-            $fv = $js["fold_values"];
-            assert(is_array($fv));
-            $fold = "fold" . (in_array($this->vstr($si->name), $fv) ? "o" : "c");
-            $xjs["class"] = self::join_class($xjs["class"], "has-fold {$fold}");
-            $xjs["data-fold-values"] = join(" ", $fv);
-        }
-        if (isset($js["group_attr"])) {
-            $xjs = $xjs + $js["group_attr"];
-        }
-        if (isset($js["group_id"]) && !isset($xjs["id"])) {
-            $xjs["id"] = $js["group_id"];
-        }
-        echo '<div', Ht::extra($xjs), '>';
-    }
-
-    /** @param string $name
-     * @param ?array<string,mixed> $js
-     * @return void */
-    function print_checkbox_only($name, $js = null) {
-        $js["id"] = $name;
-        echo Ht::hidden("has_$name", 1),
-            Ht::checkbox($name, 1, !!$this->vstr($name), $this->sjs($name, $js));
-    }
-
-    /** @param string $name
-     * @param string $text
-     * @param ?array<string,mixed> $js
-     * @param string $hint
-     * @return void */
-    function print_checkbox($name, $text, $js = null, $hint = "") {
-        $js = $js ?? [];
-        $this->print_group_open($name, "checki", $js + ["no_control_class" => true]);
-        echo '<span class="checkc">';
-        $this->print_checkbox_only($name, $js);
-        echo '</span>', $this->label($name, $text, ["for" => $name, "class" => $js["label_class"] ?? null]);
-        $this->print_feedback_at($name);
-        if ($hint) {
-            echo '<div class="', self::join_class("settings-ap f-hx", $js["hint_class"] ?? null), '">', $hint, '</div>';
-        }
-        if (!($js["group_open"] ?? null)) {
-            echo "</div>\n";
-        }
-    }
-
-    /** @param string $name
-     * @param array $varr
-     * @param ?string $heading
-     * @param string|array $rest
-     * @return void */
-    function print_radio_table($name, $varr, $heading = null, $rest = []) {
-        $x = $this->vstr($name);
-        if ($x === null || !isset($varr[$x])) {
-            $x = 0;
-        }
-        $rest = is_string($rest) ? ["after" => $rest] : $rest;
-        '@phan-var-force array $rest';
-
-        $fold_values = [];
-        if (($rest["fold_values"] ?? false) !== false) {
-            $fold_values = $rest["fold_values"];
-            assert(is_array($fold_values));
-        }
-
-        $this->print_group_open($name, "settings-radio", $rest + ["group_id" => $name]);
-        if ($heading) {
-            echo '<div class="settings-itemheading">', $heading, '</div>';
-        }
-        foreach ($varr as $k => $item) {
-            if (is_string($item)) {
-                $item = ["label" => $item];
-            }
-            $label = $item["label"];
-            $hint = $item["hint"] ?? "";
-            unset($item["label"], $item["hint"]);
-            $item["id"] = "{$name}_{$k}";
-            if (!isset($item["class"])) {
-                if (isset($rest["item_class"])) {
-                    $item["class"] = $rest["item_class"];
-                } else if ($fold_values) {
-                    $item["class"] = "uich js-foldup";
-                }
-            }
-
-            $label1 = "<label>";
-            $label2 = "</label>";
-            if (strpos($label, "<label") !== false) {
-                $label1 = $label2 = "";
-            }
-
-            echo '<div class="settings-radioitem checki">',
-                $label1, '<span class="checkc">',
-                Ht::radio($name, $k, $k == $x, $this->sjs($name, $item)),
-                '</span>', $label, $label2, $hint, '</div>';
-        }
-        $this->print_feedback_at($name);
-        if (isset($rest["after"])) {
-            echo $rest["after"];
-        }
-        echo "</div>\n";
-    }
-
-    /** @param string $name
-     * @param ?array<string,mixed> $js
-     * @return string */
-    function entry($name, $js = null) {
-        $si = $this->si($name);
-        $v = $this->vstr($si);
-        $js = $this->sjs($si, $js ?? []);
-        if (!isset($js["size"])
-            && $si->size) {
-            $js["size"] = $si->size;
-        }
-        if (!isset($js["placeholder"])
-            && ($placeholder = $si->placeholder($this)) !== null) {
-            $js["placeholder"] = $placeholder;
-        }
-        if ($si->autogrow) {
-            $js["class"] = ltrim(($js["class"] ?? "") . " need-autogrow");
-        }
-        if (($dv = $si->default_value($this)) !== null
-            && isset($js["placeholder"])
-            && $v === (string) $dv) {
-            $v = "";
-        }
-        return Ht::entry($name, $v, $js);
-    }
-
-    /** @param string $name
-     * @param ?array<string,mixed> $js
-     * @return void */
-    function print_entry($name, $js = null) {
-        echo $this->entry($name, $js);
-    }
-
-    /** @param string|Si $id
-     * @param string $description
-     * @param string $control
-     * @param ?array<string,mixed> $js
-     * @param string $hint */
-    function print_control_group($id, $description, $control,
-                                 $js = null, $hint = "") {
-        $si = is_string($id) ? $this->si($id) : $id;
-        $horizontal = !!($js["horizontal"] ?? false);
-        $this->print_group_open($si->name, $horizontal ? "entryi" : "f-i", $js);
-
-        if ($description === null) {
-            $description = $si->title_html($this);
-        }
-        echo $this->label($si->name, $description, ["class" => $js["label_class"] ?? null, "no_control_class" => true]);
-        if ($horizontal) {
-            echo '<div class="entry">';
-        }
-        $this->print_feedback_at($si->name);
-        echo $control, ($js["control_after"] ?? "");
-        $thint = $this->type_hint($si->type);
-        if ($hint || $thint) {
-            echo '<div class="f-h">';
-            if ($hint && $thint) {
-                echo '<div>', $hint, '</div><div>', $thint, '</div>';
-            } else if ($hint || $thint) {
-                echo $hint ? : $thint;
-            }
-            echo '</div>';
-        }
-        if (!($js["group_open"] ?? null)) {
-            echo $horizontal ? "</div></div>\n" : "</div>\n";
-        }
-    }
-
-    /** @param string $name
-     * @param ?array<string,mixed> $js
-     * @param string $hint
-     * @return void */
-    function print_entry_group($name, $description, $js = null, $hint = "") {
-        $this->print_control_group($name, $description,
-            $this->entry($name, $js),
-            $js, $hint);
-    }
-
-    /** @param string $name
-     * @param array $values
-     * @param ?array<string,mixed> $js
-     * @return string */
-    function select($name, $values, $js = null) {
-        $si = $this->si($name);
-        $v = $this->vstr($si);
-        return Ht::select($name, $values, $v ?? "0", $this->sjs($si, $js));
-    }
-
-    /** @param string $name
-     * @param string $description
-     * @param array $values
-     * @param ?array<string,mixed> $js
-     * @param string $hint */
-    function print_select_group($name, $description, $values, $js = null, $hint = "") {
-        $this->print_control_group($name, $description,
-            $this->select($name, $values, $js),
-            $js, $hint);
-    }
-
-    /** @param string $name
-     * @param ?array<string,mixed> $js
-     * @return string */
-    function textarea($name, $js = null) {
-        $si = $this->si($name);
-        $v = $this->vstr($si);
-        $js = $this->sjs($si, $js ?? []);
-        if (!isset($js["placeholder"])
-            && ($placeholder = $si->placeholder($this)) !== null) {
-            $js["placeholder"] = $placeholder;
-        }
-        $js["class"] = $js["class"] ?? "w-entry-text";
-        if ($si->autogrow ?? true) {
-            $js["class"] = self::join_class($js["class"] ?? "", "need-autogrow");
-        }
-        if (!isset($js["rows"])) {
-            $js["rows"] = $si->size ? : 10;
-        }
-        if (!isset($js["cols"])) {
-            $js["cols"] = 80;
-        }
-        return Ht::textarea($name, $v, $js);
-    }
-
-    /** @param string $name
-     * @param ?array<string,mixed> $js
-     * @param string $hint
-     * @return void */
-    function print_textarea_group($name, $description, $js = null, $hint = "") {
-        $this->print_control_group($name, $description,
-            $this->textarea($name, $js),
-            $js, $hint);
-    }
-
-    /** @param string $name
-     * @param string $description
-     * @param string $hint
-     * @param string $xclass */
-    private function print_message_base($name, $description, $hint, $xclass) {
-        $si = $this->si($name);
-        $current = $this->vstr($si);
-        $description = '<a class="ui q js-foldup" href="">'
-            . expander(null, 0) . $description . '</a>';
-        echo '<div class="f-i has-fold fold',
-            ($current == $si->default_value($this) ? "c" : "o"), '">',
-            '<div class="f-c', $xclass, ' ui js-foldup">',
-            $this->label($name, $description),
-            ' <span class="n fx">(HTML allowed)</span></div>',
-            $this->feedback_at($name),
-            $this->textarea($name, ["class" => "fx w-text"]),
-            $hint, "</div>\n";
-    }
-
-    /** @param string $name
-     * @param string $description
-     * @param string $hint */
-    function print_message($name, $description, $hint = "") {
-        $this->print_message_base($name, $description, $hint, "");
-    }
-
-    /** @param string $name
-     * @param string $description
-     * @param string $hint */
-    function print_message_minor($name, $description, $hint = "") {
-        $this->print_message_base($name, $description, $hint, " n");
-    }
-
-    /** @param string $name
-     * @param string $description
-     * @param string $hint */
-    function print_message_horizontal($name, $description, $hint = "") {
-        $si = $this->si($name);
-        $current = $this->vstr($si);
-        if ($current !== $si->default_value($this)) {
-            echo '<div class="entryi">', $this->label($name, $description), '<div>';
-            $close = "";
-        } else {
-            $description = '<a class="ui q js-foldup href="">'
-                . expander(null, 0) . $description . '</a>';
-            echo '<div class="entryi has-fold foldc">',
-                $this->label($name, $description), '<div>',
-                '<div class="dim ui js-foldup fn">default</div>',
-                '<div class="fx">';
-            $close = "</div>";
-        }
-        echo '<div class="f-c n">(HTML allowed)</div>',
-            $this->textarea($name),
-            $hint, $close, "</div></div>";
-    }
 
     /** @param string $name0
      * @param string $name1
@@ -1260,20 +885,6 @@ class SettingValues extends MessageSet {
         return true;
     }
 
-    /** @param string $type
-     * @return string */
-    function type_hint($type) {
-        if ($type && str_ends_with($type, "date") && !isset($this->_hint_status["date"])) {
-            $this->_hint_status["date"] = true;
-            return "Date examples: ‘now’, ‘10 Dec 2006 11:59:59pm PST’, ‘2019-10-31 UTC-1100’, ‘Dec 31 AoE’ <a href=\"http://php.net/manual/en/datetime.formats.php\">(more examples)</a>";
-        } else if ($type === "grace" && !isset($this->_hint_status["grace"])) {
-            $this->_hint_status["grace"] = true;
-            return "Example: ‘15 min’";
-        } else {
-            return "";
-        }
-    }
-
     /** @param string $name
      * @param bool $use_default
      * @return array{subject:string,body:string} */
@@ -1288,34 +899,6 @@ class SettingValues extends MessageSet {
     function tagger() {
         $this->_tagger = $this->_tagger ?? new Tagger($this->user);
         return $this->_tagger;
-    }
-
-
-    /** @param string $html
-     * @param string|Si $id
-     * @return string */
-    function setting_link($html, $id, $js = null) {
-        $si = is_string($id) ? $this->si($id) : $id;
-        return Ht::link($html, $si->sv_hoturl($this), $js);
-    }
-
-    /** @param string $html
-     * @param string $sg
-     * @return string */
-    function setting_group_link($html, $sg, $js = null) {
-        $gj = $this->group_item($sg);
-        if ($gj) {
-            $page = $this->cs()->canonical_group($gj);
-            if ($page === $this->canonical_page && ($gj->hashid ?? false)) {
-                $url = "#" . $gj->hashid;
-            } else {
-                $url = $this->conf->hoturl("settings", ["group" => $page, "#" => $gj->hashid ?? null]);
-            }
-            return Ht::link($html, $url, $js);
-        } else {
-            error_log("missing setting_group information for $sg\n" . debug_string_backtrace());
-            return $html;
-        }
     }
 
 
@@ -1499,37 +1082,6 @@ class SettingValues extends MessageSet {
     }
 
 
-    /** @param string ...$tables */
-    function request_read_lock(...$tables) {
-        foreach ($tables as $t) {
-            $this->_table_lock[$t] = max($this->_table_lock[$t] ?? 0, 1);
-        }
-    }
-
-    /** @param string ...$tables */
-    function request_write_lock(...$tables) {
-        foreach ($tables as $t) {
-            $this->_table_lock[$t] = max($this->_table_lock[$t] ?? 0, 2);
-        }
-    }
-
-    /** @param Si $si */
-    function request_store_value($si) {
-        $this->_saved_si[] = $si;
-    }
-
-    /** @param ?string $name
-     * @param callable() $func */
-    function register_cleanup_function($name, $func) {
-        if ($name !== null) {
-            foreach ($this->_cleanup_callbacks as $cb) {
-                if ($cb[0] === $name)
-                    return;
-            }
-        }
-        $this->_cleanup_callbacks[] = [$name, $func];
-    }
-
     /** @return bool */
     function execute() {
         if (!$this->_req_parsed) {
@@ -1622,6 +1174,7 @@ class SettingValues extends MessageSet {
         return !$this->has_error();
     }
 
+
     /** @param string $siname */
     function mark_diff($siname)  {
         $this->_diffs[$siname] = true;
@@ -1640,8 +1193,446 @@ class SettingValues extends MessageSet {
         }
     }
 
+    /** @param string ...$tables */
+    function request_read_lock(...$tables) {
+        foreach ($tables as $t) {
+            $this->_table_lock[$t] = max($this->_table_lock[$t] ?? 0, 1);
+        }
+    }
+
+    /** @param string ...$tables */
+    function request_write_lock(...$tables) {
+        foreach ($tables as $t) {
+            $this->_table_lock[$t] = max($this->_table_lock[$t] ?? 0, 2);
+        }
+    }
+
+    /** @param Si $si */
+    function request_store_value($si) {
+        $this->_saved_si[] = $si;
+    }
+
+    /** @param ?string $name
+     * @param callable() $func */
+    function register_cleanup_function($name, $func) {
+        if ($name !== null) {
+            foreach ($this->_cleanup_callbacks as $cb) {
+                if ($cb[0] === $name)
+                    return;
+            }
+        }
+        $this->_cleanup_callbacks[] = [$name, $func];
+    }
+
     /** @return list<string> */
     function updated_fields() {
         return array_keys($this->_diffs);
+    }
+
+
+    /** @param string $html
+     * @param string|Si $id
+     * @return string */
+    function setting_link($html, $id, $js = null) {
+        $si = is_string($id) ? $this->si($id) : $id;
+        return Ht::link($html, $si->sv_hoturl($this), $js);
+    }
+
+    /** @param string $html
+     * @param string $sg
+     * @return string */
+    function setting_group_link($html, $sg, $js = null) {
+        $gj = $this->group_item($sg);
+        if ($gj) {
+            $page = $this->cs()->canonical_group($gj);
+            if ($page === $this->canonical_page && ($gj->hashid ?? false)) {
+                $url = "#" . $gj->hashid;
+            } else {
+                $url = $this->conf->hoturl("settings", ["group" => $page, "#" => $gj->hashid ?? null]);
+            }
+            return Ht::link($html, $url, $js);
+        } else {
+            error_log("missing setting_group information for $sg\n" . debug_string_backtrace());
+            return $html;
+        }
+    }
+
+    /** @param string $type
+     * @return string */
+    function type_hint($type) {
+        if ($type && str_ends_with($type, "date") && !isset($this->_hint_status["date"])) {
+            $this->_hint_status["date"] = true;
+            return "Date examples: ‘now’, ‘10 Dec 2006 11:59:59pm PST’, ‘2019-10-31 UTC-1100’, ‘Dec 31 AoE’ <a href=\"http://php.net/manual/en/datetime.formats.php\">(more examples)</a>";
+        } else if ($type === "grace" && !isset($this->_hint_status["grace"])) {
+            $this->_hint_status["grace"] = true;
+            return "Example: ‘15 min’";
+        } else {
+            return "";
+        }
+    }
+
+    /** @return string */
+    function label($name, $html, $label_js = []) {
+        $name1 = is_array($name) ? $name[0] : $name;
+        if (($label_js["class"] ?? null) === false
+            || ($label_js["no_control_class"] ?? false)) {
+            unset($label_js["no_control_class"]);
+        } else {
+            foreach (is_array($name) ? $name : [$name] as $n) {
+                if (($sc = $this->control_class($n))) {
+                    $label_js["class"] = Ht::add_tokens($sc, $label_js["class"] ?? null);
+                    break;
+                }
+            }
+        }
+        $post = "";
+        if (($pos = strpos($html, "<input")) !== false) {
+            list($html, $post) = [substr($html, 0, $pos), substr($html, $pos)];
+        }
+        return Ht::label($html, $name1, $label_js) . $post;
+    }
+
+    /** @param string|Si $id
+     * @param ?array<string,mixed> $js
+     * @return array<string,mixed> */
+    function sjs($id, $js = null) {
+        $si = is_string($id) ? $this->conf->si($id) : $id;
+        $name = $si ? $si->name : $id;
+        $x = ["id" => $name];
+        if ($si && !isset($js["disabled"]) && !isset($js["readonly"])) {
+            if ($si->disabled) {
+                $x["disabled"] = true;
+            } else if (!$this->editable($si)) {
+                if (in_array($si->type, ["checkbox", "radio", "select", "cdate", "tagselect"], true)) {
+                    $x["disabled"] = true;
+                } else {
+                    $x["readonly"] = true;
+                }
+            }
+        }
+        if ($this->_use_req
+            && !isset($js["data-default-value"])
+            && !isset($js["data-default-checked"])) {
+            if ($si && $this->has_interest($si)) {
+                $x["data-default-value"] = $si->base_unparse_reqv($this->oldv($si));
+            } else if (isset($this->_explicit_oldv[$name])) {
+                $x["data-default-value"] = $this->_explicit_oldv[$name];
+            }
+        }
+        foreach ($js ?? [] as $k => $v) {
+            if (strlen($k) < 10
+                || ($k !== "horizontal" && strpos($k, "_") === false))
+                $x[$k] = $v;
+        }
+        if ($this->has_problem_at($name)) {
+            $x["class"] = $this->control_class($name, $x["class"] ?? "");
+        }
+        if (isset($js["fold_values"])) {
+            $x["class"] = Ht::add_tokens($x["class"] ?? "", "uich js-foldup");
+        }
+        return $x;
+    }
+
+    /** @param string|Si $name
+     * @param string $class
+     * @param ?array<string,mixed> $js */
+    function print_group_open($name, $class, $js = null) {
+        $si = is_string($name) ? $this->si($name) : $name;
+        $xjs = ["class" => $class];
+        if (!isset($js["no_control_class"])) {
+            $xjs["class"] = $this->control_class($si->name, $xjs["class"]);
+        }
+        if (isset($js["group_class"])) {
+            $xjs["class"] = Ht::add_tokens($xjs["class"], $js["group_class"]);
+        }
+        if (isset($js["fold_values"]) && !empty($js["fold_values"])) {
+            $fv = $js["fold_values"];
+            assert(is_array($fv));
+            $fold = "fold" . (in_array($this->vstr($si->name), $fv) ? "o" : "c");
+            $xjs["class"] = Ht::add_tokens($xjs["class"], "has-fold {$fold}");
+            $xjs["data-fold-values"] = join(" ", $fv);
+        }
+        if (isset($js["group_attr"])) {
+            $xjs = $xjs + $js["group_attr"];
+        }
+        if (isset($js["group_id"]) && !isset($xjs["id"])) {
+            $xjs["id"] = $js["group_id"];
+        }
+        echo '<div', Ht::extra($xjs), '>';
+    }
+
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @return void */
+    function print_checkbox_only($name, $js = null) {
+        $js["id"] = $name;
+        echo Ht::hidden("has_$name", 1),
+            Ht::checkbox($name, 1, !!$this->vstr($name), $this->sjs($name, $js));
+    }
+
+    /** @param string $name
+     * @param string $text
+     * @param ?array<string,mixed> $js
+     * @param string $hint
+     * @return void */
+    function print_checkbox($name, $text, $js = null, $hint = "") {
+        $js = $js ?? [];
+        $this->print_group_open($name, "checki", $js + ["no_control_class" => true]);
+        echo '<span class="checkc">';
+        $this->print_checkbox_only($name, $js);
+        echo '</span>', $this->label($name, $text, ["for" => $name, "class" => $js["label_class"] ?? null]);
+        $this->print_feedback_at($name);
+        if ($hint) {
+            echo '<div class="', Ht::add_tokens("settings-ap f-hx", $js["hint_class"] ?? null), '">', $hint, '</div>';
+        }
+        if (!($js["group_open"] ?? null)) {
+            echo "</div>\n";
+        }
+    }
+
+    /** @param string $name
+     * @param array $varr
+     * @param ?string $heading
+     * @param string|array $rest
+     * @return void */
+    function print_radio_table($name, $varr, $heading = null, $rest = []) {
+        $x = $this->vstr($name);
+        if ($x === null || !isset($varr[$x])) {
+            $x = 0;
+        }
+        $rest = is_string($rest) ? ["after" => $rest] : $rest;
+        '@phan-var-force array $rest';
+
+        $fold_values = [];
+        if (($rest["fold_values"] ?? false) !== false) {
+            $fold_values = $rest["fold_values"];
+            assert(is_array($fold_values));
+        }
+
+        $this->print_group_open($name, "settings-radio", $rest + ["group_id" => $name]);
+        if ($heading) {
+            echo '<div class="settings-itemheading">', $heading, '</div>';
+        }
+        foreach ($varr as $k => $item) {
+            if (is_string($item)) {
+                $item = ["label" => $item];
+            }
+            $label = $item["label"];
+            $hint = $item["hint"] ?? "";
+            unset($item["label"], $item["hint"]);
+            $item["id"] = "{$name}_{$k}";
+            if (!isset($item["class"])) {
+                if (isset($rest["item_class"])) {
+                    $item["class"] = $rest["item_class"];
+                } else if ($fold_values) {
+                    $item["class"] = "uich js-foldup";
+                }
+            }
+
+            $label1 = "<label>";
+            $label2 = "</label>";
+            if (strpos($label, "<label") !== false) {
+                $label1 = $label2 = "";
+            }
+
+            echo '<div class="settings-radioitem checki">',
+                $label1, '<span class="checkc">',
+                Ht::radio($name, $k, $k == $x, $this->sjs($name, $item)),
+                '</span>', $label, $label2, $hint, '</div>';
+        }
+        $this->print_feedback_at($name);
+        if (isset($rest["after"])) {
+            echo $rest["after"];
+        }
+        echo "</div>\n";
+    }
+
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @return string */
+    function entry($name, $js = null) {
+        $si = $this->si($name);
+        $v = $this->vstr($si);
+        $js = $this->sjs($si, $js ?? []);
+        if (!isset($js["size"])
+            && $si->size) {
+            $js["size"] = $si->size;
+        }
+        if (!isset($js["placeholder"])
+            && ($placeholder = $si->placeholder($this)) !== null) {
+            $js["placeholder"] = $placeholder;
+        }
+        if ($si->autogrow) {
+            $js["class"] = ltrim(($js["class"] ?? "") . " need-autogrow");
+        }
+        if (($dv = $si->default_value($this)) !== null
+            && isset($js["placeholder"])
+            && $v === (string) $dv) {
+            $v = "";
+        }
+        return Ht::entry($name, $v, $js);
+    }
+
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @return void */
+    function print_entry($name, $js = null) {
+        echo $this->entry($name, $js);
+    }
+
+    /** @param string|Si $id
+     * @param string $description
+     * @param string $control
+     * @param ?array<string,mixed> $js
+     * @param string $hint */
+    function print_control_group($id, $description, $control,
+                                 $js = null, $hint = "") {
+        $si = is_string($id) ? $this->si($id) : $id;
+        $horizontal = !!($js["horizontal"] ?? false);
+        $this->print_group_open($si->name, $horizontal ? "entryi" : "f-i", $js);
+
+        if ($description === null) {
+            $description = $si->title_html($this);
+        }
+        echo $this->label($si->name, $description, ["class" => $js["label_class"] ?? null, "no_control_class" => true]);
+        if ($horizontal) {
+            echo '<div class="entry">';
+        }
+        $this->print_feedback_at($si->name);
+        echo $control, ($js["control_after"] ?? "");
+        $thint = $this->type_hint($si->type);
+        if ($hint || $thint) {
+            echo '<div class="f-h">';
+            if ($hint && $thint) {
+                echo '<div>', $hint, '</div><div>', $thint, '</div>';
+            } else if ($hint || $thint) {
+                echo $hint ? : $thint;
+            }
+            echo '</div>';
+        }
+        if (!($js["group_open"] ?? null)) {
+            echo $horizontal ? "</div></div>\n" : "</div>\n";
+        }
+    }
+
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @param string $hint
+     * @return void */
+    function print_entry_group($name, $description, $js = null, $hint = "") {
+        $this->print_control_group($name, $description,
+            $this->entry($name, $js),
+            $js, $hint);
+    }
+
+    /** @param string $name
+     * @param array $values
+     * @param ?array<string,mixed> $js
+     * @return string */
+    function select($name, $values, $js = null) {
+        $si = $this->si($name);
+        $v = $this->vstr($si);
+        return Ht::select($name, $values, $v ?? "0", $this->sjs($si, $js));
+    }
+
+    /** @param string $name
+     * @param string $description
+     * @param array $values
+     * @param ?array<string,mixed> $js
+     * @param string $hint */
+    function print_select_group($name, $description, $values, $js = null, $hint = "") {
+        $this->print_control_group($name, $description,
+            $this->select($name, $values, $js),
+            $js, $hint);
+    }
+
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @return string */
+    function textarea($name, $js = null) {
+        $si = $this->si($name);
+        $v = $this->vstr($si);
+        $js = $this->sjs($si, $js ?? []);
+        if (!isset($js["placeholder"])
+            && ($placeholder = $si->placeholder($this)) !== null) {
+            $js["placeholder"] = $placeholder;
+        }
+        $js["class"] = $js["class"] ?? "w-entry-text";
+        if ($si->autogrow ?? true) {
+            $js["class"] = Ht::add_tokens($js["class"] ?? "", "need-autogrow");
+        }
+        if (!isset($js["rows"])) {
+            $js["rows"] = $si->size ? : 10;
+        }
+        if (!isset($js["cols"])) {
+            $js["cols"] = 80;
+        }
+        return Ht::textarea($name, $v, $js);
+    }
+
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @param string $hint
+     * @return void */
+    function print_textarea_group($name, $description, $js = null, $hint = "") {
+        $this->print_control_group($name, $description,
+            $this->textarea($name, $js),
+            $js, $hint);
+    }
+
+    /** @param string $name
+     * @param string $description
+     * @param string $hint
+     * @param string $xclass */
+    private function print_message_base($name, $description, $hint, $xclass) {
+        $si = $this->si($name);
+        $current = $this->vstr($si);
+        $description = '<a class="ui q js-foldup" href="">'
+            . expander(null, 0) . $description . '</a>';
+        echo '<div class="f-i has-fold fold',
+            ($current == $si->default_value($this) ? "c" : "o"), '">',
+            '<div class="f-c', $xclass, ' ui js-foldup">',
+            $this->label($name, $description),
+            ' <span class="n fx">(HTML allowed)</span></div>',
+            $this->feedback_at($name),
+            $this->textarea($name, ["class" => "fx w-text"]),
+            $hint, "</div>\n";
+    }
+
+    /** @param string $name
+     * @param string $description
+     * @param string $hint */
+    function print_message($name, $description, $hint = "") {
+        $this->print_message_base($name, $description, $hint, "");
+    }
+
+    /** @param string $name
+     * @param string $description
+     * @param string $hint */
+    function print_message_minor($name, $description, $hint = "") {
+        $this->print_message_base($name, $description, $hint, " n");
+    }
+
+    /** @param string $name
+     * @param string $description
+     * @param string $hint */
+    function print_message_horizontal($name, $description, $hint = "") {
+        $si = $this->si($name);
+        $current = $this->vstr($si);
+        if ($current !== $si->default_value($this)) {
+            echo '<div class="entryi">', $this->label($name, $description), '<div>';
+            $close = "";
+        } else {
+            $description = '<a class="ui q js-foldup href="">'
+                . expander(null, 0) . $description . '</a>';
+            echo '<div class="entryi has-fold foldc">',
+                $this->label($name, $description), '<div>',
+                '<div class="dim ui js-foldup fn">default</div>',
+                '<div class="fx">';
+            $close = "</div>";
+        }
+        echo '<div class="f-c n">(HTML allowed)</div>',
+            $this->textarea($name),
+            $hint, $close, "</div></div>";
     }
 }
