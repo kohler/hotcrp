@@ -12,6 +12,7 @@ class SettingInfoSet {
     private $xmap = [];
     /** @var list<string|list<string|object>> */
     private $xlist = [];
+        // => [firstpart, [lastpart, object, ...], firstpart, ...]
     /** @var list<string> */
     private $potential_aliases = [];
 
@@ -126,22 +127,32 @@ class SettingInfoSet {
     private function _match_parts($name, $parts) {
         $nparts = count($parts);
         $pos = strlen($parts[0]);
-        $result = [$parts[0]];
+        $splitlen = [];
+        $slashpos = strpos($name, "/");
         for ($i = 1; $i !== $nparts; $i += 2) {
             if ($i === $nparts - 2) {
                 $npos = strlen($name) - strlen($parts[$i + 1]);
             } else {
                 $npos = strpos($name, $parts[$i + 1], $pos);
             }
+            if ($slashpos !== false
+                && $slashpos < $pos) {
+                $slashpos = strpos($name, "/", $pos);
+            }
             if ($npos === false
-                || $npos < $pos
-                || ($m = substr($name, $pos, $npos - $pos)) === ""
-                || strpos($m, "/") !== false) {
+                || $npos <= $pos
+                || ($slashpos !== false && $slashpos < $npos)) {
                 return null;
             }
-            $result[] = $m;
+            $splitlen[] = $npos - $pos;
+            $pos = $npos + strlen($parts[$i + 1]);
+        }
+        $result = [$parts[0]];
+        $pos = strlen($parts[0]);
+        for ($i = 1, $j = 0; $i !== $nparts; $i += 2, ++$j) {
+            $result[] = substr($name, $pos, $splitlen[$j]);
             $result[] = $parts[$i + 1];
-            $pos += strlen($m) + strlen($parts[$i + 1]);
+            $pos += $splitlen[$j] + strlen($parts[$i + 1]);
         }
         return $result;
     }
