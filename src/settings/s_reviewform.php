@@ -415,9 +415,9 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
     }
 
     static function print_display(SettingValues $sv) {
-        $sv->print_select_group("rf/\$/colors", "Colors", [], [
-            "horizontal" => true, "group_class" => "is-property-options", "class" => "uich rf-colors",
-            "control_after" => '<span class="d-inline-block ml-2 rf-colors-example"></span>'
+        $sv->print_select_group("rf/\$/scheme", "Colors", [], [
+            "horizontal" => true, "group_class" => "is-property-options", "class" => "uich rf-scheme",
+            "control_after" => '<span class="d-inline-block ml-2 rf-scheme-example"></span>'
         ]);
     }
 

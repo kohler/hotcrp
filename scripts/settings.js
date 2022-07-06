@@ -434,7 +434,7 @@ function rf_fill_control(form, name, value, setdefault) {
 function rf_color() {
     var c = this, sv = $(this).val(), i, scanal = make_score_info(9, false, sv);
     hasClass(c.parentElement, "select") && (c = c.parentElement);
-    while (c && !hasClass(c, "rf-colors-example")) {
+    while (c && !hasClass(c, "rf-scheme-example")) {
         c = c.nextSibling;
     }
     for (i = 1; i <= scanal.max && c; ++i) {
@@ -447,7 +447,7 @@ function rf_color() {
     }
 }
 
-handle_ui.on("change.rf-colors", rf_color);
+handle_ui.on("change.rf-scheme", rf_color);
 
 function rf_fill(pos, fieldj, setdefault) {
     var form = document.getElementById("settingsform"),
@@ -459,10 +459,10 @@ function rf_fill(pos, fieldj, setdefault) {
     rf_fill_control(form, rfid + "/visibility", fieldj.visibility || "re", setdefault);
     rf_fill_control(form, rfid + "/choices", options_to_text(fieldj), setdefault);
     rf_fill_control(form, rfid + "/required", fieldj.required ? "1" : "0", setdefault);
-    var colors = form.elements[rfid + "/colors"];
+    var colors = form.elements[rfid + "/scheme"];
     if (colors) {
         fieldj.scheme = fieldj.scheme || "sv";
-        rf_fill_control(form, rfid + "/colors", fieldj.scheme, setdefault);
+        rf_fill_control(form, rfid + "/scheme", fieldj.scheme, setdefault);
         rf_color.call(colors);
     }
     var ec, ecs = fieldj.exists_if != null ? fieldj.exists_if : "";
@@ -607,7 +607,7 @@ function rf_append(fid) {
     original[fid] = original[fid] || Object.assign({}, has_options ? stemplate : ttemplate, {id: fid});
     $f = $($tmpl.html().replace(/\$/g, pos));
     if (has_options) {
-        $j = $f.find("select.rf-colors");
+        $j = $f.find("select.rf-scheme");
         for (i = 0; i < colors.length; i += 2)
             $j.append("<option value=\"" + colors[i] + "\">" + colors[i+1] + "</option>");
     } else

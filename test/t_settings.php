@@ -374,13 +374,13 @@ class Settings_Tester {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
             "rf/1/id" => "s03",
-            "rf/1/colors" => "svr",
+            "rf/1/scheme" => "svr",
             "rf/2/id" => "s04",
-            "rf/2/colors" => "svr",
+            "rf/2/scheme" => "svr",
             "rf/3/id" => "s06",
-            "rf/3/colors" => "svr",
+            "rf/3/scheme" => "svr",
             "rf/4/id" => "s07",
-            "rf/4/colors" => "svr"
+            "rf/4/scheme" => "svr"
         ]);
         xassert($sv->execute());
         $rf = $this->conf->find_review_field("B5");

@@ -351,7 +351,7 @@
     {
         "name_pattern": "response/$/wordlimit",
         "title": "Response word limit",
-        "type": "int", "size": 5, "placeholder": "none", "default_value": 0,
+        "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0,
         "title_pattern": "${sv response/$/title} word limit"
     },
     {
@@ -553,8 +553,8 @@
         "name_pattern": "rf/$/start", "internal": true
     },
     {
-        "name_pattern": "rf/$/colors", "storage": "member.scheme",
-        "title": "Review field colors", "title_pattern": "‘${sv rf/$/name}’ colors",
+        "name_pattern": "rf/$/scheme",
+        "title": "Review field color scheme", "title_pattern": "‘${sv rf/$/name}’ color scheme",
         "type": "radio", "values": ["sv", "svr", "blpu", "publ", "rdpk", "pkrd", "viridisr", "viridis", "orbu", "buor", "turbo", "turbor", "catx", "none"]
     },
     {
