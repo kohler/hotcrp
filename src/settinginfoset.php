@@ -178,8 +178,9 @@ class SettingInfoSet {
 
     /** @param string $name
      * @param string $prefix
-     * @param list<string|object> $items */
-    private function _expand($name, $prefix, $items) {
+     * @param list<string|object> $items
+     * @param list<object> &$curlist */
+    private function _expand($name, $prefix, $items, &$curlist) {
         $plen = strlen($prefix);
         $nlen = strlen($name);
         $nitems = count($items);
@@ -193,38 +194,47 @@ class SettingInfoSet {
                 if (isset($jx->alias_pattern)) {
                     $jx->alias = $this->_expand_pattern($jx->alias_pattern, $parts);
                 }
-                $this->xmap[$name][] = $jx;
+                $curlist[] = $jx;
             }
         }
     }
 
     /** @param string $name
      * @return ?Si */
+    private function _make_si($name) {
+        $cs = $this->cs;
+        $jx = null;
+        for ($aliases = 0; $aliases < 5; ++$aliases) {
+            // check cache
+            if (array_key_exists($name, $this->map)) {
+                return $this->map[$name];
+            }
+            // expand patterns
+            $curlist = $this->xmap[$name] ?? [];
+            for ($i = 0; $i !== count($this->xlist); $i += 2) {
+                if (str_starts_with($name, $this->xlist[$i])) {
+                    $this->_expand($name, $this->xlist[$i], $this->xlist[$i + 1], $curlist);
+                }
+            }
+            // look up entry
+            $jx = $cs->conf->xt_search_list($curlist, $cs->viewer);
+            // check for alias
+            if ($jx && isset($jx->alias) && is_string($jx->alias)) {
+                $name = $jx->alias;
+                $jx = null;
+            } else {
+                break;
+            }
+        }
+        Conf::xt_resolve_require($jx);
+        return $jx ? new Si($cs->conf, $jx) : null;
+    }
+
+    /** @param string $name
+     * @return ?Si */
     function get($name) {
         if (!array_key_exists($name, $this->map)) {
-            $cs = $this->cs;
-            $jx = null;
-            for ($aliases = 0; $aliases < 5; ++$aliases) {
-                // expand patterns
-                for ($i = 0; $i !== count($this->xlist); $i += 2) {
-                    if (str_starts_with($name, $this->xlist[$i])) {
-                        $this->_expand($name, $this->xlist[$i], $this->xlist[$i + 1]);
-                    }
-                }
-                // look up entry
-                $jx = $cs->conf->xt_search_name($this->xmap, $name, $cs->viewer, true);
-                // check for alias
-                if (!isset($jx->alias) || !is_string($jx->alias)) {
-                    break;
-                }
-                $name = $jx->alias;
-            }
-            if ($jx && !isset($jx->alias)) {
-                Conf::xt_resolve_require($jx);
-            } else {
-                $jx = null;
-            }
-            $this->map[$name] = $jx ? new Si($cs->conf, $jx) : null;
+            $this->map[$name] = $this->_make_si($name);
         }
         return $this->map[$name];
     }

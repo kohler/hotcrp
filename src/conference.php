@@ -1247,38 +1247,53 @@ class Conf {
      * @return ?object */
     function xt_search_name($map, $name, $user, $noalias = false) {
         $this->_xt_last_match = null;
-        $iname = $name;
         for ($aliases = 0;
              $aliases < 5 && $name !== null && isset($map[$name]);
              ++$aliases) {
-            $list = $map[$name];
-            $nlist = count($list);
-            if ($nlist > 1) {
-                usort($list, "Conf::xt_priority_compare");
+            $xt = $this->xt_search_list($map[$name], $user);
+            if ($xt && isset($xt->alias) && is_string($xt->alias) && !$noalias) {
+                $name = $xt->alias;
+            } else {
+                return $xt;
             }
-            $name = null;
-            for ($i = 0; $i < $nlist; ++$i) {
-                $xt = $list[$i];
-                while ($i + 1 < $nlist && ($xt->merge ?? false)) {
-                    ++$i;
-                    $overlay = $xt;
-                    unset($overlay->merge, $overlay->__source_order);
-                    $xt = $list[$i];
-                    object_replace_recursive($xt, $overlay);
-                    $overlay->priority = -PHP_INT_MAX;
-                }
-                if (isset($xt->deprecated) && $xt->deprecated) {
-                    error_log("{$this->dbname}: deprecated extension for `{$iname}`\n" . debug_string_backtrace());
-                }
-                if (!isset($xt->alias) || !is_string($xt->alias) || $noalias) {
-                    $this->_xt_last_match = $xt;
-                    if ($this->xt_checkf($xt, $user)) {
-                        return $xt;
+        }
+        return null;
+    }
+    /** @param list<object> $list
+     * @param ?Contact $user
+     * @return ?object */
+    function xt_search_list($list, $user) {
+        $nlist = count($list);
+        if ($nlist > 1) {
+            usort($list, "Conf::xt_priority_compare");
+        }
+        for ($i = 0; $i < $nlist; ++$i) {
+            $xt = $list[$i];
+            while ($i + 1 < $nlist && ($xt->merge ?? false)) {
+                ++$i;
+                $overlay = $xt;
+                $xt = clone $list[$i];
+                foreach (get_object_vars($overlay) as $k => $v) {
+                    if ($k === "merge" || $k === "__source_order") {
+                        // skip
+                    } else if ($v === null) {
+                        unset($xt->{$k});
+                    } else if (!property_exists($xt, $k)
+                               || !is_object($v)
+                               || !is_object($xt->{$k})) {
+                        $xt->{$k} = $v;
+                    } else {
+                        object_replace_recursive($xt->{$k}, $v);
                     }
-                } else {
-                    $name = $xt->alias;
-                    break;
                 }
+            }
+            if (isset($xt->deprecated) && $xt->deprecated) {
+                $name = $xt->name ?? "<unknown>";
+                error_log("{$this->dbname}: deprecated use of `{$name}`\n" . debug_string_backtrace());
+            }
+            $this->_xt_last_match = $xt;
+            if ($this->xt_checkf($xt, $user)) {
+                return $xt;
             }
         }
         return null;
@@ -5248,7 +5263,7 @@ class Conf {
     private function check_api_json($fj, $user, $method) {
         if (isset($fj->allow_if) && !$this->xt_allowed($fj, $user)) {
             return false;
-        } else if (!$method) {
+        } else if (!$method || isset($fj->alias)) {
             return true;
         } else {
             $k = strtolower($method);

@@ -536,7 +536,7 @@ class SettingValues extends MessageSet {
     }
 
 
-    /** @param String|Si $id
+    /** @param string|Si $id
      * @return mixed */
     function vjson($id) {
         $si = is_string($id) ? $this->si($id) : $id;
