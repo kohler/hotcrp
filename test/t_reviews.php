@@ -199,7 +199,7 @@ class Reviews_Tester {
             "has_rf" => 1,
             "rf/1/name" => "Overall merit",
             "rf/1/id" => "s01",
-            "rf/1/choices" => "1. Reject\n2. Weak reject\n3. Weak accept\n4. Accept\n5. Strong accept\nNo entry\n"
+            "rf/1/values" => "1. Reject\n2. Weak reject\n3. Weak accept\n4. Accept\n5. Strong accept\nNo entry\n"
         ]);
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
@@ -227,7 +227,7 @@ class Reviews_Tester {
             "has_rf" => 1,
             "rf/1/name" => "Overall merit",
             "rf/1/id" => "s01",
-            "rf/1/choices" => "1. Reject\n2. Weak reject\n3. Weak accept\nNo entry\n"
+            "rf/1/values" => "1. Reject\n2. Weak reject\n3. Weak accept\nNo entry\n"
         ]);
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
@@ -256,7 +256,7 @@ class Reviews_Tester {
             "has_rf" => 1,
             "rf/1/name" => "Reviewer expertise",
             "rf/1/id" => "s02",
-            "rf/1/choices" => "1. No familiarity\n2. Some familiarity\n3. Knowledgeable\n4. Expert",
+            "rf/1/values" => "1. No familiarity\n2. Some familiarity\n3. Knowledgeable\n4. Expert",
             "rf/1/order" => 1.5
         ]);
         xassert($sv->execute());
@@ -296,20 +296,20 @@ class Reviews_Tester {
     function test_many_fields() {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
-            "rf/1/name" => "Score 3", "rf/1/choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/1/order" => 2.03, "rf/1/id" => "s03",
-            "rf/2/name" => "Score 4", "rf/2/choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/2/order" => 2.04, "rf/2/id" => "s04",
-            "rf/3/name" => "Score 5", "rf/3/choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/3/order" => 2.05, "rf/3/id" => "s05",
-            "rf/4/name" => "Score 6", "rf/4/choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/4/order" => 2.06, "rf/4/id" => "s06",
-            "rf/5/name" => "Score 7", "rf/5/choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/5/order" => 2.07, "rf/5/id" => "s07",
-            "rf/6/name" => "Score 8", "rf/6/choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/6/order" => 2.08, "rf/6/id" => "s08",
-            "rf/7/name" => "Score 9", "rf/7/choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/7/order" => 2.09, "rf/7/id" => "s09",
-            "rf/8/name" => "Score 10", "rf/8/choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/8/order" => 2.10, "rf/8/id" => "s10",
-            "rf/9/name" => "Score 11", "rf/9/choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/9/order" => 2.11, "rf/9/id" => "s11",
-            "rf/10/name" => "Score 12", "rf/10/choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/10/order" => 2.12, "rf/10/id" => "s12",
-            "rf/11/name" => "Score 13", "rf/11/choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/11/order" => 2.13, "rf/11/id" => "s13",
-            "rf/12/name" => "Score 14", "rf/12/choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/12/order" => 2.14, "rf/12/id" => "s14",
-            "rf/13/name" => "Score 15", "rf/13/choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/13/order" => 2.15, "rf/13/id" => "s15",
-            "rf/14/name" => "Score 16", "rf/14/choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/14/order" => 2.16, "rf/14/id" => "s16",
+            "rf/1/name" => "Score 3", "rf/1/values" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/1/order" => 2.03, "rf/1/id" => "s03",
+            "rf/2/name" => "Score 4", "rf/2/values" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/2/order" => 2.04, "rf/2/id" => "s04",
+            "rf/3/name" => "Score 5", "rf/3/values" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/3/order" => 2.05, "rf/3/id" => "s05",
+            "rf/4/name" => "Score 6", "rf/4/values" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/4/order" => 2.06, "rf/4/id" => "s06",
+            "rf/5/name" => "Score 7", "rf/5/values" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/5/order" => 2.07, "rf/5/id" => "s07",
+            "rf/6/name" => "Score 8", "rf/6/values" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/6/order" => 2.08, "rf/6/id" => "s08",
+            "rf/7/name" => "Score 9", "rf/7/values" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/7/order" => 2.09, "rf/7/id" => "s09",
+            "rf/8/name" => "Score 10", "rf/8/values" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/8/order" => 2.10, "rf/8/id" => "s10",
+            "rf/9/name" => "Score 11", "rf/9/values" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/9/order" => 2.11, "rf/9/id" => "s11",
+            "rf/10/name" => "Score 12", "rf/10/values" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/10/order" => 2.12, "rf/10/id" => "s12",
+            "rf/11/name" => "Score 13", "rf/11/values" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/11/order" => 2.13, "rf/11/id" => "s13",
+            "rf/12/name" => "Score 14", "rf/12/values" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/12/order" => 2.14, "rf/12/id" => "s14",
+            "rf/13/name" => "Score 15", "rf/13/values" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/13/order" => 2.15, "rf/13/id" => "s15",
+            "rf/14/name" => "Score 16", "rf/14/values" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf/14/order" => 2.16, "rf/14/id" => "s16",
             "rf/15/name" => "Text 4", "rf/15/order" => 5.04, "rf/15/id" => "t04",
             "rf/16/name" => "Text 5", "rf/16/order" => 5.05, "rf/16/id" => "t05",
             "rf/17/name" => "Text 6", "rf/17/order" => 5.06, "rf/17/id" => "t06",
@@ -365,7 +365,7 @@ class Reviews_Tester {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
             "rf/1/name" => "Score 15", "rf/1/order" => 0, "rf/1/id" => "s15",
-            "rf/2/name" => "Score 16", "rf/2/choices" => "1. Yes\n2. No\nNo entry\n", "rf/2/id" => "s16",
+            "rf/2/name" => "Score 16", "rf/2/values" => "1. Yes\n2. No\nNo entry\n", "rf/2/id" => "s16",
             "rf/3/name" => "Text 10", "rf/3/order" => 0, "rf/3/id" => "t10"
         ]);
         xassert($sv->execute());
@@ -373,7 +373,7 @@ class Reviews_Tester {
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
-            "rf/1/name" => "Score 15", "rf/1/choices" => "1. Yes\n2. No\nNo entry\n", "rf/1/order" => 100, "rf/1/id" => "s15",
+            "rf/1/name" => "Score 15", "rf/1/values" => "1. Yes\n2. No\nNo entry\n", "rf/1/order" => 100, "rf/1/id" => "s15",
             "rf/2/name" => "Text 10", "rf/2/order" => 101, "rf/2/id" => "t10"
         ]);
         xassert($sv->execute());

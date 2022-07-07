@@ -53,7 +53,7 @@ class Response_SettingParser extends SettingParser {
     /** @var list<string> */
     private $round_transform = [];
 
-    function placeholder(SettingValues $sv, Si $si) {
+    function placeholder(Si $si, SettingValues $sv) {
         if ($si->name0 === "response/" && $si->name2 === "/name") {
             if (!ctype_digit($sv->vstr("response/{$si->name1}/id"))) {
                 return "(new response)";
@@ -65,7 +65,7 @@ class Response_SettingParser extends SettingParser {
         }
     }
 
-    function default_value(SettingValues $sv, Si $si) {
+    function default_value(Si $si, SettingValues $sv) {
         if ($si->name0 === "response/" && $si->name2 === "/instructions") {
             $n = $sv->oldv("response/{$si->name1}/wordlimit");
             return $sv->conf->ims()->default_itext("resp_instrux", $n);
@@ -74,7 +74,7 @@ class Response_SettingParser extends SettingParser {
         }
     }
 
-    function set_oldv(SettingValues $sv, Si $si) {
+    function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name0 !== null) {
             if ($si->name2 === "") {
                 $sv->set_oldv($si, Response_Setting::make_new($sv->conf));
@@ -85,7 +85,7 @@ class Response_SettingParser extends SettingParser {
         }
     }
 
-    function prepare_oblist(SettingValues $sv, Si $si) {
+    function prepare_oblist(Si $si, SettingValues $sv) {
         $m = [];
         foreach ($sv->conf->response_rounds() as $rrd) {
             $m[] = Response_Setting::make($sv->conf, $rrd);
@@ -172,9 +172,9 @@ class Response_SettingParser extends SettingParser {
         echo '</div></div>';
     }
 
-    function apply_req(SettingValues $sv, Si $si) {
+    function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "response") {
-            return $this->apply_response_req($sv, $si);
+            return $this->apply_response_req($si, $sv);
         } else if ($si->name2 === "/name") {
             if (($v = $sv->base_parse_req($si)) !== null) {
                 $lv = strtolower($v);
@@ -198,7 +198,7 @@ class Response_SettingParser extends SettingParser {
         }
     }
 
-    function apply_response_req(SettingValues $sv, Si $si) {
+    function apply_response_req(Si $si, SettingValues $sv) {
         // ignore changes to response settings if active checkbox is off
         if ($sv->reqstr("response_requires_active") && !$sv->newv("response_active")) {
             return true;
@@ -251,7 +251,7 @@ class Response_SettingParser extends SettingParser {
         return true;
     }
 
-    function store_value(SettingValues $sv, Si $si) {
+    function store_value(Si $si, SettingValues $sv) {
         $sv->conf->qe("update PaperComment set commentRound=case commentRound " . join(" ", $this->round_transform) . " else commentRound end where commentType>=" . CommentInfo::CT_AUTHOR . " and (commentType&" . CommentInfo::CT_RESPONSE . ")!=0");
     }
 

@@ -60,12 +60,12 @@ class Si {
     private $storage;
     /** @var ?bool */
     public $required;
-    /** @var list
+    /** @var null|'auto'|list
      * @readonly */
-    public $values;
-    /** @var list
+    private $values;
+    /** @var null|'auto'|list
      * @readonly */
-    public $json_values;
+    private $json_values;
     /** @var ?int */
     public $size;
     /** @var ?string */
@@ -78,7 +78,7 @@ class Si {
     public $disabled = false;
     /** @var mixed
      * @readonly */
-    public $default_value;
+    private $default_value;
     /** @var ?bool
      * @readonly */
     public $autogrow;
@@ -105,7 +105,7 @@ class Si {
         "disabled" => "is_bool",
         "ifnonempty" => "is_string",
         "internal" => "is_bool",
-        "json_values" => "is_array",
+        "json_values" => "Si::is_auto_or_list",
         "json_export" => "is_bool",
         "order" => "is_number",
         "parse_order" => "is_number",
@@ -119,8 +119,12 @@ class Si {
         "title" => "is_string",
         "title_pattern" => "is_string",
         "type" => "is_string",
-        "values" => "is_array"
+        "values" => "Si::is_auto_or_list"
     ];
+
+    static function is_auto_or_list($x) {
+        return $x === "auto" || is_list($x);
+    }
 
     private function store($key, $j, $jkey, $typecheck) {
         if (isset($j->$jkey)) {
@@ -380,11 +384,35 @@ class Si {
     }
 
     /** @param SettingValues $sv
+     * @return ?list */
+    function values($sv) {
+        if ($this->values === "auto"
+            && $this->parser_class
+            && ($v = $sv->si_parser($this)->values($this, $sv)) !== null) {
+            return $v;
+        } else {
+            return $this->values !== "auto" ? $this->values : null;
+        }
+    }
+
+    /** @param SettingValues $sv
+     * @return ?list */
+    function json_values($sv) {
+        if ($this->json_values === "auto"
+            && $this->parser_class
+            && ($v = $sv->si_parser($this)->json_values($this, $sv)) !== null) {
+            return $v;
+        } else {
+            return $this->json_values !== "auto" ? $this->json_values : null;
+        }
+    }
+
+    /** @param SettingValues $sv
      * @return ?string */
     function placeholder($sv) {
         if ($this->placeholder === "auto"
             && $this->parser_class
-            && ($v = $sv->si_parser($this)->placeholder($sv, $this)) !== null) {
+            && ($v = $sv->si_parser($this)->placeholder($this, $sv)) !== null) {
             return $v;
         } else {
             return $this->placeholder;
@@ -395,7 +423,7 @@ class Si {
     function default_value($sv) {
         if ($this->default_value === "auto"
             && $this->parser_class
-            && ($v = $sv->si_parser($this)->default_value($sv, $this)) !== null) {
+            && ($v = $sv->si_parser($this)->default_value($this, $sv)) !== null) {
             return $v;
         } else if ($this->storage_type === self::SI_DATA
                    && str_starts_with($this->storage ?? "", "msg.")) {
@@ -432,9 +460,9 @@ class Si {
 
     /** @param null|int|string $v
      * @return string */
-    function base_unparse_reqv($v) {
+    function base_unparse_reqv($v, SettingValues $sv) {
         if ($this->_tclass) {
-            return $this->_tclass->unparse_reqv($v, $this);
+            return $this->_tclass->unparse_reqv($v, $this, $sv);
         } else {
             return (string) $v;
         }
@@ -458,9 +486,9 @@ class Si {
 
     /** @param null|int|string $v
      * @return mixed */
-    function base_unparse_jsonv($v) {
+    function base_unparse_jsonv($v, SettingValues $sv) {
         if ($this->_tclass) {
-            return $this->_tclass->unparse_jsonv($v, $this);
+            return $this->_tclass->unparse_jsonv($v, $this, $sv);
         } else {
             return $v;
         }

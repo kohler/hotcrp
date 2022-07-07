@@ -500,7 +500,7 @@ class SettingValues extends MessageSet {
     /** @param Si $si
      * @return bool */
     private function si_find_oldv($si) {
-        $this->si_parser($si)->set_oldv($this, $si);
+        $this->si_parser($si)->set_oldv($si, $this);
         return array_key_exists($si->name, $this->_explicit_oldv);
     }
 
@@ -532,7 +532,7 @@ class SettingValues extends MessageSet {
             }
         }
         $si = is_string($id) ? $this->si($id) : $id;
-        return $si->base_unparse_reqv($this->oldv($si));
+        return $si->base_unparse_reqv($this->oldv($si), $this);
     }
 
 
@@ -548,15 +548,22 @@ class SettingValues extends MessageSet {
             return $a;
         }
         if ($si->type === "object") {
-            $o = [];
-            foreach ($this->conf->si_set()->member_list("{$si->name}/") as $msi) {
-                if (($msi->json_export ?? !$msi->internal)
-                    && ($v = $this->json_oldv($msi)) !== null)
-                    $o[substr($msi->name2, 1)] = $v;
+            $member_list = null;
+            if ($si->parser_class) {
+                $member_list = $this->si_parser($si)->member_list($si, $this);
             }
-            return $o;
+            $member_list = $member_list ?? $this->conf->si_set()->member_list("{$si->name}/");
+            $o = [];
+            foreach ($member_list as $msi) {
+                if (($msi->json_export ?? !$msi->internal)
+                    && ($v = $this->json_oldv($msi)) !== null) {
+                    $member = $msi->name2 === "" ? $msi->name1 : substr($msi->name2, 1);
+                    $o[$member] = $v;
+                }
+            }
+            return empty($o) ? (object) $o : $o;
         }
-        return $si->base_unparse_jsonv($this->oldv($si));
+        return $si->base_unparse_jsonv($this->oldv($si), $this);
     }
 
 
@@ -570,7 +577,7 @@ class SettingValues extends MessageSet {
                 $this->ensure_oblist($si->name0);
             }
             if ($si && $si->parser_class && !array_key_exists($name, $this->_explicit_oldv)) {
-                $this->si_parser($si)->set_oldv($this, $si);
+                $this->si_parser($si)->set_oldv($si, $this);
             }
         }
         $v = $this->_explicit_oldv[$name] ?? null;
@@ -584,7 +591,7 @@ class SettingValues extends MessageSet {
             if (str_ends_with($pfx, "/")
                 && ($si = $this->conf->si("{$pfx}1"))
                 && $si->parser_class) {
-                $this->si_parser($si)->prepare_oblist($this, $si);
+                $this->si_parser($si)->prepare_oblist($si, $this);
             } else if (($xpfx = preg_replace('/\d+\z/', '', $pfx)) !== $pfx) {
                 $this->ensure_oblist($xpfx);
             }
@@ -1009,7 +1016,7 @@ class SettingValues extends MessageSet {
             && !$si->disabled
             && $this->editable($si)
             && (!$si->parser_class
-                || $this->si_parser($si)->apply_req($this, $si) === false)
+                || $this->si_parser($si)->apply_req($si, $this) === false)
             && $si->storage_type !== Si::SI_NONE
             && ($value = $si->parse_reqv($this->reqstr($si->name), $this)) !== null) {
             $this->save($si, $value);
@@ -1115,7 +1122,7 @@ class SettingValues extends MessageSet {
 
             // apply settings
             foreach ($this->_saved_si as $si) {
-                $this->si_parser($si)->store_value($this, $si);
+                $this->si_parser($si)->store_value($si, $this);
             }
 
             $dv = $av = [];
@@ -1317,7 +1324,7 @@ class SettingValues extends MessageSet {
             && !isset($js["data-default-value"])
             && !isset($js["data-default-checked"])) {
             if ($si && $this->has_interest($si)) {
-                $x["data-default-value"] = $si->base_unparse_reqv($this->oldv($si));
+                $x["data-default-value"] = $si->base_unparse_reqv($this->oldv($si), $this);
             } else if (isset($this->_explicit_oldv[$name])) {
                 $x["data-default-value"] = $this->_explicit_oldv[$name];
             }

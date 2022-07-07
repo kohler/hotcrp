@@ -2,7 +2,41 @@
 // settings/s_tags.php -- HotCRP settings > tags page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-class Tags_SettingRenderer {
+class Tags_SettingParser extends SettingParser {
+    /** @var SettingValues */
+    private $sv;
+    /** @var Tagger */
+    private $tagger;
+    private $diffs = [];
+    private $cleaned = false;
+
+    function __construct(SettingValues $sv) {
+        $this->sv = $sv;
+        $this->tagger = new Tagger($sv->user);
+    }
+
+    function set_oldv(Si $si, SettingValues $sv) {
+        if ($si->name === "tag_readonly") {
+            $ts = array_filter($sv->conf->tags()->filter("chair"), function ($t) {
+                return !str_starts_with($t->tag, "~~")
+                    && !str_starts_with($t->tag, "perm:");
+            });
+            $sv->set_oldv("tag_readonly", Tags_SettingParser::render_tags($ts));
+        } else if ($si->name === "tag_sitewide") {
+            $sv->set_oldv("tag_sitewide", Tags_SettingParser::render_tags($sv->conf->tags()->filter("sitewide")));
+        } else if ($si->name === "tag_vote_approval") {
+            $sv->set_oldv("tag_vote_approval", Tags_SettingParser::render_tags($sv->conf->tags()->filter("approval")));
+        } else if ($si->name === "tag_vote_allotment") {
+            $x = [];
+            foreach ($sv->conf->tags()->filter("allotment") as $t) {
+                $x[] = "{$t->tag}#{$t->allotment}";
+            }
+            $sv->set_oldv("tag_vote_allotment", join(" ", $x));
+        } else if ($si->name === "tag_rank") {
+            $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank") ?? "");
+        }
+    }
+
     static function render_tags($tl) {
         $tl = array_filter($tl, function ($t) {
             return !$t->pattern_instance;
@@ -29,45 +63,8 @@ class Tags_SettingRenderer {
     static function print_tag_seeall(SettingValues $sv) {
         $sv->print_checkbox('tag_seeall', "PC can see tags for conflicted submissions");
     }
-}
 
-
-class Tags_SettingParser extends SettingParser {
-    /** @var SettingValues */
-    private $sv;
-    /** @var Tagger */
-    private $tagger;
-    private $diffs = [];
-    private $cleaned = false;
-
-    function __construct(SettingValues $sv) {
-        $this->sv = $sv;
-        $this->tagger = new Tagger($sv->user);
-    }
-
-    function set_oldv(SettingValues $sv, Si $si) {
-        if ($si->name === "tag_readonly") {
-            $ts = array_filter($sv->conf->tags()->filter("chair"), function ($t) {
-                return !str_starts_with($t->tag, "~~")
-                    && !str_starts_with($t->tag, "perm:");
-            });
-            $sv->set_oldv("tag_readonly", Tags_SettingRenderer::render_tags($ts));
-        } else if ($si->name === "tag_sitewide") {
-            $sv->set_oldv("tag_sitewide", Tags_SettingRenderer::render_tags($sv->conf->tags()->filter("sitewide")));
-        } else if ($si->name === "tag_vote_approval") {
-            $sv->set_oldv("tag_vote_approval", Tags_SettingRenderer::render_tags($sv->conf->tags()->filter("approval")));
-        } else if ($si->name === "tag_vote_allotment") {
-            $x = [];
-            foreach ($sv->conf->tags()->filter("allotment") as $t) {
-                $x[] = "{$t->tag}#{$t->allotment}";
-            }
-            $sv->set_oldv("tag_vote_allotment", join(" ", $x));
-        } else if ($si->name === "tag_rank") {
-            $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank") ?? "");
-        }
-    }
-
-    function apply_req(SettingValues $sv, Si $si) {
+    function apply_req(Si $si, SettingValues $sv) {
         assert($this->sv === $sv);
         if ($si->name === "tag_vote_allotment") {
             if (($v = $sv->base_parse_req($si)) !== null
@@ -94,7 +91,7 @@ class Tags_SettingParser extends SettingParser {
         return true;
     }
 
-    function store_value(SettingValues $sv, Si $si) {
+    function store_value(Si $si, SettingValues $sv) {
         if (($si->name === "tag_vote_allotment"
              || $si->name === "tag_vote_approval")
             && !$this->cleaned) {

@@ -212,7 +212,7 @@ $(document).on("hotcrpsettingssf", ".settings-sf", function (evt) {
 handle_ui.on("unfold.settings-sf", settings_field_unfold, -1);
 
 tooltip.add_builder("settings-sf", function (info) {
-    var x = "#settings-sf-caption-choices";
+    var x = "#settings-sf-caption-values";
     if (/\/name$/.test(this.name))
         x = "#settings-sf-caption-name";
     else if (/\/condition$/.test(this.name))
@@ -457,7 +457,7 @@ function rf_fill(pos, fieldj, setdefault) {
     rf_fill_control(form, rfid + "/name", fieldj.name || "", setdefault);
     rf_fill_control(form, rfid + "/description", fieldj.description || "", setdefault);
     rf_fill_control(form, rfid + "/visibility", fieldj.visibility || "re", setdefault);
-    rf_fill_control(form, rfid + "/choices", options_to_text(fieldj), setdefault);
+    rf_fill_control(form, rfid + "/values", options_to_text(fieldj), setdefault);
     rf_fill_control(form, rfid + "/required", fieldj.required ? "1" : "0", setdefault);
     var colors = form.elements[rfid + "/scheme"];
     if (colors) {

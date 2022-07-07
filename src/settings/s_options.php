@@ -81,13 +81,13 @@ class Options_SettingRenderer {
         }
     }
 
-    function print_choices(SettingValues $sv) {
-        $sv->print_textarea_group("sf/{$this->ctr}/choices", "Choices", [
+    function print_values(SettingValues $sv) {
+        $sv->print_textarea_group("sf/{$this->ctr}/values", "Choices", [
             "horizontal" => true,
             "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-sf",
             "data-tooltip-type" => "focus",
-            "group_attr" => ["data-property" => "choices"]
+            "group_attr" => ["data-property" => "values"]
         ]);
     }
 
@@ -245,7 +245,7 @@ class Options_SettingRenderer {
             "\n\n";
         Icons::stash_defs("movearrow0", "movearrow2", "trash");
         Ht::stash_html('<div id="settings-sf-caption-name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div>', 'settings-sf-caption-name');
-        Ht::stash_html('<div id="settings-sf-caption-choices" class="hidden"><p>Enter choices one per line.</p></div>', 'settings-sf-caption-choices');
+        Ht::stash_html('<div id="settings-sf-caption-values" class="hidden"><p>Enter choices one per line.</p></div>', 'settings-sf-caption-values');
         echo Ht::unstash();
 
         if ($sv->oblist_keys("sf/")) {
@@ -332,7 +332,7 @@ class Options_SettingParser extends SettingParser {
         ]);
     }
 
-    function set_oldv(SettingValues $sv, Si $si) {
+    function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name === "sf") {
             return;
         }
@@ -353,7 +353,7 @@ class Options_SettingParser extends SettingParser {
         return $opts;
     }
 
-    function prepare_oblist(SettingValues $sv, Si $si) {
+    function prepare_oblist(Si $si, SettingValues $sv) {
         $m = [];
         foreach (self::configurable_options($sv->conf) as $f) {
             $sfs = $m[] = new Sf_Setting;
@@ -363,7 +363,7 @@ class Options_SettingParser extends SettingParser {
     }
 
     /** @return bool */
-    private function _apply_req_name(SettingValues $sv, Si $si) {
+    private function _apply_req_name(Si $si, SettingValues $sv) {
         $n = $sv->base_parse_req($si);
         if ($n === "") {
             $tname = $sv->vstr("sf/{$si->name1}/type");
@@ -385,7 +385,7 @@ class Options_SettingParser extends SettingParser {
     }
 
     /** @return bool */
-    private function _apply_req_type(SettingValues $sv, Si $si) {
+    private function _apply_req_type(Si $si, SettingValues $sv) {
         if (($nj = $sv->conf->option_type($sv->reqstr($si->name)))) {
             $of = $sv->oldv($si->name0 . $si->name1);
             if ($nj->name !== $of->type && $of->type !== "none") {
@@ -405,7 +405,7 @@ class Options_SettingParser extends SettingParser {
     }
 
     /** @return bool */
-    private function _apply_req_choices(SettingValues $sv, Si $si) {
+    private function _apply_req_values(Si $si, SettingValues $sv) {
         $selector = [];
         $cleanreq = cleannl($sv->reqstr($si->name));
         foreach (explode("\n", $cleanreq) as $t) {
@@ -428,7 +428,7 @@ class Options_SettingParser extends SettingParser {
                 if (($of = $sv->oldv($si->name0 . $si->name1))
                     && $of->type !== "none"
                     && $of->selector !== $cleanreq) {
-                    $this->_check_choices_renumbering($sv, $si, $selector, $of);
+                    $this->_check_values_renumbering($si, $sv, $selector, $of);
                 }
             }
         }
@@ -436,7 +436,7 @@ class Options_SettingParser extends SettingParser {
         return true;
     }
 
-    private function _check_choices_renumbering(SettingValues $sv, Si $si, $selector, $of) {
+    private function _check_values_renumbering(Si $si, SettingValues $sv, $selector, $of) {
         $sqlmap = [];
         foreach ($sv->unambiguous_renumbering(explode("\n", trim($of->selector)), $selector) as $i => $j) {
             $sqlmap[] = "when " . ($i+1) . " then " . ($j+1);
@@ -477,7 +477,7 @@ class Options_SettingParser extends SettingParser {
     }
 
     /** @return bool */
-    private function _apply_req_options(SettingValues $sv, Si $si) {
+    private function _apply_req_options(Si $si, SettingValues $sv) {
         if ($sv->has_req("options_version")
             && (int) $sv->reqstr("options_version") !== (int) $sv->conf->setting("options")) {
             $sv->error_at("sf", "<0>You modified options settings in another tab. Please reload.");
@@ -533,21 +533,21 @@ class Options_SettingParser extends SettingParser {
         $sv->conf->refresh_settings();
     }
 
-    function apply_req(SettingValues $sv, Si $si) {
+    function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "sf") {
-            return $this->_apply_req_options($sv, $si);
+            return $this->_apply_req_options($si, $sv);
         } else if ($si->name2 === "/name") {
-            return $this->_apply_req_name($sv, $si);
+            return $this->_apply_req_name($si, $sv);
         } else if ($si->name2 === "/type") {
-            return $this->_apply_req_type($sv, $si);
-        } else if ($si->name2 === "/choices") {
-            return $this->_apply_req_choices($sv, $si);
+            return $this->_apply_req_type($si, $sv);
+        } else if ($si->name2 === "/values") {
+            return $this->_apply_req_values($si, $sv);
         } else {
             return false;
         }
     }
 
-    function store_value(SettingValues $sv, Si $si) {
+    function store_value(Si $si, SettingValues $sv) {
         if (!empty($this->_delete_optionids)) {
             $sv->conf->qe("delete from PaperOption where optionId?a", $this->_delete_optionids);
         }

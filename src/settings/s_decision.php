@@ -17,12 +17,12 @@ class Decision_Setting {
 }
 
 class Decision_SettingParser extends SettingParser {
-    function set_oldv(SettingValues $sv, Si $si) {
+    function set_oldv(Si $si, SettingValues $sv) {
         assert($si->name0 === "decision/" && $si->name2 === "");
         $sv->set_oldv($si, new Decision_Setting(null, "", "accept"));
     }
 
-    function prepare_oblist(SettingValues $sv, Si $si) {
+    function prepare_oblist(Si $si, SettingValues $sv) {
         $m = [];
         foreach ($sv->conf->decision_map() as $did => $dname) {
             if ($did !== 0) {
@@ -124,7 +124,7 @@ class Decision_SettingParser extends SettingParser {
         $sv->error_if_duplicate_member("decision/", $ctr, "/name", "Decision name");
     }
 
-    function apply_req(SettingValues $sv, Si $si) {
+    function apply_req(Si $si, SettingValues $sv) {
         if ($si->name !== "decision") {
             return false;
         }
@@ -177,7 +177,7 @@ class Decision_SettingParser extends SettingParser {
         return true;
     }
 
-    function store_value(SettingValues $sv, Si $si) {
+    function store_value(Si $si, SettingValues $sv) {
         $curmap = $sv->conf->decision_map();
         $newmap = json_decode($sv->newv("outcome_map"), true);
         $newmap[0] = "Unspecified";

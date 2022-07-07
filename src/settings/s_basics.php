@@ -14,7 +14,7 @@ class Basics_SettingParser extends SettingParser {
         $sv->print_entry_group("email_default_reply_to", null);
     }
 
-    function apply_req(SettingValues $sv, Si $si) {
+    function apply_req(Si $si, SettingValues $sv) {
         if (($v = $sv->base_parse_req($si)) !== null
             && $sv->update($si->name, $v)
             && $sv->conf->contactdb()) {

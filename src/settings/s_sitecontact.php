@@ -17,19 +17,19 @@ class SiteContact_SettingParser extends SettingParser {
         return $v !== $iv ? $v : "";
     }
 
-    function set_oldv(SettingValues $sv, Si $si) {
+    function set_oldv(Si $si, SettingValues $sv) {
         $user = $sv->conf->site_contact();
         $s = $si->name === "site_contact_email" ? $user->email : $user->name();
         $sv->set_oldv($si->name, self::cleanstr($s, $si));
     }
 
-    function apply_req(SettingValues $sv, Si $si) {
+    function apply_req(Si $si, SettingValues $sv) {
         $sv->save($si, self::cleanstr($sv->base_parse_req($si), $si));
         $sv->request_store_value($si);
         return true;
     }
 
-    function store_value(SettingValues $sv, Si $si) {
+    function store_value(Si $si, SettingValues $sv) {
         if (!$this->updated) {
             $this->updated = true;
             $defuser = $sv->conf->default_site_contact();

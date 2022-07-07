@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Messages_SettingParser extends SettingParser {
-    function default_value(SettingValues $sv, Si $si) {
+    function default_value(Si $si, SettingValues $sv) {
         if ($si->name === "preference_instructions") {
             $n = $sv->oldv("has_topics");
             return $sv->conf->ims()->default_itext("revprefdescription", $n);

@@ -8,14 +8,14 @@
         "has_selector": true, "function": "+Selector_PaperOption",
         "sample": {"selector": ["Option 1", "Option 2", "Option 3"]},
         "convert_from_functions": {"radio": true},
-        "add_properties": ["choices"]
+        "add_properties": ["values"]
     },
     {
         "name": "radio", "title": "Radio buttons", "order": 300,
         "has_selector": true, "function": "+Selector_PaperOption",
         "sample": {"selector": ["Option 1", "Option 2", "Option 3"]},
         "convert_from_functions": {"selector": true},
-        "add_properties": ["choices"]
+        "add_properties": ["values"]
     },
     {
         "name": "numeric", "title": "Whole number", "order": 400,

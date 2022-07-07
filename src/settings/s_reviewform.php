@@ -20,7 +20,15 @@ class ReviewForm_SettingParser extends SettingParser {
         return $ecsel;
     }
 
-    function set_oldv(SettingValues $sv, Si $si) {
+    function values(Si $si, SettingValues $sv) {
+        if ($si->name0 === "rf/" && $si->name2 === "/presence") {
+            return array_keys(self::presence_options($si->conf));
+        } else {
+            return null;
+        }
+    }
+
+    function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name === "rf") {
             return;
         }
@@ -32,12 +40,12 @@ class ReviewForm_SettingParser extends SettingParser {
                 ReviewField::make($sv->conf, $finfo)->unparse_setting($rfs);
                 $sv->set_oldv($si->name, $rfs);
             }
-        } else if ($si->name2 === "/choices" && $si->name1 === '$') {
+        } else if ($si->name2 === "/values" && $si->name1 === '$') {
             $sv->set_oldv($si->name, "");
         }
     }
 
-    function prepare_oblist(SettingValues $sv, Si $si) {
+    function prepare_oblist(Si $si, SettingValues $sv) {
         $rfss = [];
         foreach ($sv->conf->all_review_fields() as $rf) {
             $rfss[] = $rfs = new Rf_Setting;
@@ -47,7 +55,7 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
 
-    private function _apply_req_name(SettingValues $sv, Si $si) {
+    private function _apply_req_name(Si $si, SettingValues $sv) {
         if (($n = $sv->base_parse_req($si)) !== null) {
             if (ReviewField::clean_name($n) !== $n
                 && $sv->oldv($si) !== $n
@@ -62,9 +70,9 @@ class ReviewForm_SettingParser extends SettingParser {
         return true;
     }
 
-    private function _apply_req_choices(SettingValues $sv, Si $si) {
+    private function _apply_req_values(Si $si, SettingValues $sv) {
         $pfx = $si->name0 . $si->name1;
-        $text = cleannl($sv->reqstr("{$pfx}/choices"));
+        $text = cleannl($sv->reqstr("{$pfx}/values"));
         $letters = $text && ord($text[0]) >= 65 && ord($text[0]) <= 90;
         $expect = $letters ? "[A-Z]" : "[1-9][0-9]*";
 
@@ -101,10 +109,10 @@ class ReviewForm_SettingParser extends SettingParser {
         }
 
         if ($letters) {
-            $sv->save("{$pfx}/choices", array_reverse($seqopts));
+            $sv->save("{$pfx}/values", array_reverse($seqopts));
             $sv->save("{$pfx}/start", chr($lowonum));
         } else {
-            $sv->save("{$pfx}/choices", $seqopts);
+            $sv->save("{$pfx}/values", $seqopts);
             $sv->save("{$pfx}/start", "");
         }
         return true;
@@ -141,7 +149,7 @@ class ReviewForm_SettingParser extends SettingParser {
         }
     }
 
-    private function _apply_req_review_form(SettingValues $sv, Si $si) {
+    private function _apply_req_review_form(Si $si, SettingValues $sv) {
         $nrfj = [];
         foreach ($sv->oblist_keys("rf/") as $ctr) {
             $rfj = $sv->object_newv("rf/{$ctr}");
@@ -162,26 +170,23 @@ class ReviewForm_SettingParser extends SettingParser {
         return true;
     }
 
-    function apply_req(SettingValues $sv, Si $si) {
+    function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "rf") {
-            return $this->_apply_req_review_form($sv, $si);
+            return $this->_apply_req_review_form($si, $sv);
         } else {
             assert($si->name0 === "rf/");
             $pfx = $si->name0 . $si->name1;
             $sfx = $si->name2;
             $finfo = ReviewFieldInfo::find($sv->conf, $sv->vstr("{$pfx}/id"));
-            if ($si->name2 === "/choices") {
+            if ($si->name2 === "/values") {
                 if ($finfo->has_options
-                    && !$this->_apply_req_choices($sv, $si)) {
+                    && !$this->_apply_req_values($si, $sv)) {
                     $sv->error_at($si->name, "<0>Invalid choices");
                     $this->mark_options_error($sv);
                 }
                 return true;
-            } else if ($si->name2 === "/presence") {
-                $si->values = array_keys(self::presence_options($sv->conf));
-                return false;
             } else if ($si->name2 === "/name") {
-                return $this->_apply_req_name($sv, $si);
+                return $this->_apply_req_name($si, $sv);
             }
             return true;
         }
@@ -311,7 +316,7 @@ class ReviewForm_SettingParser extends SettingParser {
         }
     }
 
-    function store_value(SettingValues $sv, Si $si) {
+    function store_value(Si $si, SettingValues $sv) {
         $oform = $sv->conf->review_form();
         $nform = $this->_new_form;
         $clear_fields = [];
@@ -389,19 +394,19 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         ]);
     }
 
-    static function stash_choices_caption() {
-        Ht::stash_html('<div id="settings-rf-caption-choices" class="hidden">'
+    static function stash_values_caption() {
+        Ht::stash_html('<div id="settings-rf-caption-values" class="hidden">'
             . '<p>Enter one choice per line, numbered starting from 1 (higher numbers are better). For example:</p>
 <pre class="entryexample">1. Reject
 2. Weak reject
 3. Weak accept
 4. Accept</pre>
-<p>Or use consecutive capital letters (lower letters are better).</p></div>', 'settings-rf-caption-choices');
+<p>Or use consecutive capital letters (lower letters are better).</p></div>', 'settings-rf-caption-values');
     }
 
-    static function print_choices(SettingValues $sv) {
-        self::stash_choices_caption();
-        $sv->print_textarea_group("rf/\$/choices", "Choices", [
+    static function print_values(SettingValues $sv) {
+        self::stash_values_caption();
+        $sv->print_textarea_group("rf/\$/values", "Choices", [
             "horizontal" => true, "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus",
             "group_class" => "is-property-options"

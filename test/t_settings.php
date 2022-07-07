@@ -310,16 +310,16 @@ class Settings_Tester {
             "has_rf" => 1,
             "rf/1/name" => "B9",
             "rf/1/id" => "s03",
-            "rf/1/choices" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I",
+            "rf/1/values" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I",
             "rf/2/name" => "B15",
             "rf/2/id" => "s04",
-            "rf/2/choices" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J\n11. K\n12. L\n13. M\n14. N\n15. O",
+            "rf/2/values" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J\n11. K\n12. L\n13. M\n14. N\n15. O",
             "rf/3/name" => "B10",
             "rf/3/id" => "s06",
-            "rf/3/choices" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J",
+            "rf/3/values" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J",
             "rf/4/name" => "B5",
             "rf/4/id" => "s07",
-            "rf/4/choices" => "A. A\nB. B\nC. C\nD. D\nE. E"
+            "rf/4/values" => "A. A\nB. B\nC. C\nD. D\nE. E"
         ]);
         xassert($sv->execute());
 
@@ -450,7 +450,7 @@ class Settings_Tester {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
             "rf/1/id" => "s90",
-            "rf/1/choices" => "1. A\n2. B\n"
+            "rf/1/values" => "1. A\n2. B\n"
         ]);
         xassert(!$sv->execute());
         xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
@@ -695,7 +695,7 @@ class Settings_Tester {
             "sf/1/name" => "Program",
             "sf/1/id" => "new",
             "sf/1/order" => 100,
-            "sf/1/choices" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
+            "sf/1/values" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
             "sf/1/type" => "radio",
             "sf/1/presence" => "custom",
             "sf/1/condition" => "Program:Honors"
@@ -709,7 +709,7 @@ class Settings_Tester {
             "sf/1/name" => "Program",
             "sf/1/id" => "new",
             "sf/1/order" => 100,
-            "sf/1/choices" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
+            "sf/1/values" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
             "sf/1/type" => "radio",
             "sf/2/name" => "Joint concentration",
             "sf/2/id" => "new",

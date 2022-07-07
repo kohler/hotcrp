@@ -49,7 +49,7 @@ class Review_Setting {
 class Review_SettingParser extends SettingParser {
     private $round_transform = [];
 
-    function placeholder(SettingValues $sv, Si $si) {
+    function placeholder(Si $si, SettingValues $sv) {
         if ($si->name0 === "review/" && $si->name2 === "/name") {
             $idv = $sv->vstr("review/{$si->name1}/id");
             return ctype_digit($idv) && $idv !== "0" ? "unnamed" : "(new round)";
@@ -58,7 +58,7 @@ class Review_SettingParser extends SettingParser {
         }
     }
 
-    function set_oldv(SettingValues $sv, Si $si) {
+    function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name0 === "review/" && $si->name2 === "") {
             $sv->set_oldv($si, new Review_Setting);
         } else if ($si->name0 === "review/"
@@ -92,7 +92,7 @@ class Review_SettingParser extends SettingParser {
         }
     }
 
-    function prepare_oblist(SettingValues $sv, Si $si) {
+    function prepare_oblist(Si $si, SettingValues $sv) {
         $m = [];
         foreach ($sv->conf->defined_rounds() as $i => $name) {
             $m[] = Review_Setting::make($sv->conf, $i + 1);
@@ -317,19 +317,19 @@ class Review_SettingParser extends SettingParser {
         return $ln === "unnamed" || $ln === "default" || $ln === "none" || $ln === "";
     }
 
-    function apply_req(SettingValues $sv, Si $si) {
+    function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "review") {
-            return $this->apply_review_req($sv, $si);
+            return $this->apply_review_req($si, $sv);
         } else if ($si->name === "review_default_round"
                    || $si->name === "review_default_external_round") {
             if (($n = $sv->reqstr($si->name)) !== null) {
-                $this->apply_review_default_round($sv, $si, trim($n));
+                $this->apply_review_default_round($si, $sv, trim($n));
             }
             return true;
         } else if ($si->name === "review_default_round_index"
                    || $si->name === "review_default_external_round_index") {
             if (($n = $sv->reqstr($si->name)) !== null) {
-                $this->apply_review_default_round_index($sv, $si, trim($n));
+                $this->apply_review_default_round_index($si, $sv, trim($n));
             }
             return true;
         } else if ($si->name2 === "/name") {
@@ -346,7 +346,7 @@ class Review_SettingParser extends SettingParser {
         }
     }
 
-    private function apply_review_req(SettingValues $sv, Si $si) {
+    private function apply_review_req(Si $si, SettingValues $sv) {
         $rss = [];
         $old_rsid = [];
         $latest = null;
@@ -458,7 +458,7 @@ class Review_SettingParser extends SettingParser {
         return true;
     }
 
-    private function apply_review_default_round_index(SettingValues $sv, Si $si, $n) {
+    private function apply_review_default_round_index(Si $si, SettingValues $sv, $n) {
         $external = $si->name === "review_default_external_round_index";
         $savekey = $external ? "extrev_roundtag" : "rev_roundtag";
         if (($n === "0" && !$external)
@@ -477,7 +477,7 @@ class Review_SettingParser extends SettingParser {
         }
     }
 
-    private function apply_review_default_round(SettingValues $sv, Si $si, $n) {
+    private function apply_review_default_round(Si $si, SettingValues $sv, $n) {
         $external = $si->name === "review_default_external_round";
         $savekey = $external ? "extrev_roundtag" : "rev_roundtag";
         $newrounds = $sv->newv("tag_rounds") ?? "";
@@ -494,7 +494,7 @@ class Review_SettingParser extends SettingParser {
         }
     }
 
-    function store_value(SettingValues $sv, Si $si) {
+    function store_value(Si $si, SettingValues $sv) {
         if ($si->name === "review" && !empty($this->round_transform)) {
             $qx = "case reviewRound " . join(" ", $this->round_transform) . " else reviewRound end";
             $sv->conf->qe_raw("update PaperReview set reviewRound=" . $qx);

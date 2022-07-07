@@ -132,7 +132,7 @@ form also can include:</p>
   " and set their preferences on the ", $hth->hotlink("paper pages", "paper"), ".</p>
 
   <p>If desired, review preferences can be collected before the submission
-  deadline.  Select ", $hth->setting_link("“PC can see <em>all registered papers</em> until submission deadline”", "pc_seeall"),
+  deadline.  Select ", $hth->setting_link("“PC can see <em>all registered papers</em> until submission deadline”", "draft_submission_early_visibility"),
   ", which allows PC members to see abstracts for registered papers that haven’t yet
   been submitted.</p></li>\n";
 

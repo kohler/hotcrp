@@ -73,41 +73,41 @@
     {   "name": "sub", "alias": "submissions"   },
     {
         "name": "__crosscheck/submissions", "order": 300,
-        "crosscheck_function": "Submissions_SettingRenderer::crosscheck"
+        "crosscheck_function": "Submissions_SettingParser::crosscheck"
     },
     {
         "name": "submissions/open", "order": 10,
         "print_separator": true,
-        "print_function": "Submissions_SettingRenderer::print_open",
-        "settings": ["sub_open"]
+        "print_function": "Submissions_SettingParser::print_open",
+        "settings": ["submission_open"]
     },
     {
         "name": "submissions/deadlines", "order": 20,
         "print_separator": true,
-        "print_function": "Submissions_SettingRenderer::print_deadlines",
-        "settings": ["sub_reg", "sub_sub", "sub_grace"]
+        "print_function": "Submissions_SettingParser::print_deadlines",
+        "settings": ["submission_registration", "submission_done", "submission_grace"]
     },
     {
         "name": "submissions/updates", "order": 30,
-        "print_function": "Submissions_SettingRenderer::print_updates",
-        "settings": ["sub_freeze"]
+        "print_function": "Submissions_SettingParser::print_updates",
+        "settings": ["submission_freeze"]
     },
     {
         "name": "submissions/blind", "order": 40,
-        "print_function": "Submissions_SettingRenderer::print_blind",
+        "print_function": "Submissions_SettingParser::print_blind",
         "title": "Visibility to reviewers",
         "settings": ["author_visibility"]
     },
     {
         "name": "submissions/pcseeall", "order": 50,
         "print_separator": true,
-        "print_function": "Submissions_SettingRenderer::print_pcseeall",
-        "settings": ["pc_seeall"]
+        "print_function": "Submissions_SettingParser::print_pcseeall",
+        "settings": ["draft_submission_early_visibility"]
     },
     {
         "name": "submissions/pcseeallpdf", "order": 51,
-        "print_function": "Submissions_SettingRenderer::print_pcseeallpdf",
-        "settings": ["pc_seeallpdf"]
+        "print_function": "Submissions_SettingParser::print_pcseeallpdf",
+        "settings": ["submitted_document_early_visibility"]
     },
 
 
@@ -149,8 +149,8 @@
     [   "submissionfield/properties/type", 10, "*Options_SettingRenderer::print_type"   ],
     [   "submissionfield/properties/description", 20, "*Options_SettingRenderer::print_description"   ],
     {
-        "name": "submissionfield/properties/choices", "order": 25,
-        "print_function": "*Options_SettingRenderer::print_choices",
+        "name": "submissionfield/properties/values", "order": 25,
+        "print_function": "*Options_SettingRenderer::print_values",
         "is_default": false
     },
     [   "submissionfield/properties/presence", 30, "*Options_SettingRenderer::print_presence"   ],
@@ -240,7 +240,7 @@
         "crosscheck_function": "ReviewFieldCondition_SettingParser::crosscheck"
     },
     [   "reviewfield/properties/description", 20, "ReviewForm_SettingParser::print_description"   ],
-    [   "reviewfield/properties/choices", 50, "ReviewForm_SettingParser::print_choices"   ],
+    [   "reviewfield/properties/values", 50, "ReviewForm_SettingParser::print_values"   ],
     [   "reviewfield/properties/presence", 100, "ReviewForm_SettingParser::print_presence"   ],
     [   "reviewfield/properties/required", 101, "ReviewForm_SettingParser::print_required"   ],
     [   "reviewfield/properties/visibility", 110, "ReviewForm_SettingParser::print_visibility"   ],
@@ -261,27 +261,27 @@
     },
     {
         "name": "tags/main/chair", "order": 10,
-        "print_function": "Tags_SettingRenderer::print_tag_chair",
+        "print_function": "Tags_SettingParser::print_tag_chair",
         "settings": ["tag_readonly"]
     },
     {
         "name": "tags/main/sitewide", "order": 20,
-        "print_function": "Tags_SettingRenderer::print_tag_sitewide",
+        "print_function": "Tags_SettingParser::print_tag_sitewide",
         "settings": ["tag_sitewide"]
     },
     {
         "name": "tags/main/approval", "order": 30,
-        "print_function": "Tags_SettingRenderer::print_tag_approval",
+        "print_function": "Tags_SettingParser::print_tag_approval",
         "settings": ["tag_vote_approval"]
     },
     {
         "name": "tags/main/vote", "order": 40,
-        "print_function": "Tags_SettingRenderer::print_tag_vote",
+        "print_function": "Tags_SettingParser::print_tag_vote",
         "settings": ["tag_vote_allotment"]
     },
     {
         "name": "tags/main/rank", "order": 50,
-        "print_function": "Tags_SettingRenderer::print_tag_rank",
+        "print_function": "Tags_SettingParser::print_tag_rank",
         "settings": ["tag_rank"]
     },
     {
@@ -290,7 +290,7 @@
     },
     {
         "name": "tags/visibility/seeall", "order": 10,
-        "print_function": "Tags_SettingRenderer::print_tag_seeall",
+        "print_function": "Tags_SettingParser::print_tag_seeall",
         "settings": ["tag_seeall"]
     },
     {

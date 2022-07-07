@@ -27,9 +27,9 @@ class DecisionVisibility_SettingParser extends SettingParser {
             $sv->warning_at(null, "<5>Authors can " . $sv->setting_link("see decisions", "decision_visibility") . ", but " . $sv->setting_link("not reviews", "review_visibility_author") . ". This is sometimes unintentional.");
         }
 
-        if (($sv->has_interest("decision_visibility") || $sv->has_interest("sub_sub"))
-            && $sv->oldv("sub_open")
-            && $sv->oldv("sub_sub") > Conf::$now
+        if (($sv->has_interest("decision_visibility") || $sv->has_interest("submission_done"))
+            && $sv->oldv("submission_open")
+            && $sv->oldv("submission_done") > Conf::$now
             && $sv->oldv("decision_visibility") !== Conf::SEEDEC_ALL
             && $conf->fetch_value("select paperId from Paper where outcome<0 limit 1") > 0) {
             $sv->warning_at(null, "<0>Updates will not be allowed for rejected submissions. As a result, authors can discover information about decisions that would otherwise be hidden.");

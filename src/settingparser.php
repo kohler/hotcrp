@@ -3,31 +3,46 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class SettingParser {
-    /** @return ?string */
-    function placeholder(SettingValues $sv, Si $si) {
+    /** @return ?list */
+    function values(Si $si, SettingValues $sv) {
+        return null;
+    }
+
+    /** @return ?list */
+    function json_values(Si $si, SettingValues $sv) {
         return null;
     }
 
     /** @return ?string */
-    function default_value(SettingValues $sv, Si $si) {
+    function placeholder(Si $si, SettingValues $sv) {
+        return null;
+    }
+
+    /** @return ?string */
+    function default_value(Si $si, SettingValues $sv) {
         return null;
     }
 
     /** @return void */
-    function set_oldv(SettingValues $sv, Si $si) {
+    function set_oldv(Si $si, SettingValues $sv) {
     }
 
     /** @return void */
-    function prepare_oblist(SettingValues $sv, Si $si) {
+    function prepare_oblist(Si $si, SettingValues $sv) {
+    }
+
+    /** @return ?list<Si> */
+    function member_list(Si $si, SettingValues $sv) {
+        return null;
     }
 
     /** @return bool */
-    function apply_req(SettingValues $sv, Si $si) {
+    function apply_req(Si $si, SettingValues $sv) {
         return false;
     }
 
     /** @return void */
-    function store_value(SettingValues $sv, Si $si) {
+    function store_value(Si $si, SettingValues $sv) {
     }
 
 

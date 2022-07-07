@@ -16,13 +16,13 @@ class TagStyle_Setting {
 }
 
 class TagStyle_SettingParser extends SettingParser {
-    function set_oldv(SettingValues $sv, Si $si) {
+    function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name0 === "tag_style/" && $si->name2 === "") {
             $sv->set_oldv($si, new TagStyle_Setting);
         }
     }
 
-    function prepare_oblist(SettingValues $sv, Si $si) {
+    function prepare_oblist(Si $si, SettingValues $sv) {
         $kmap = [];
         $dt = $sv->conf->tags();
         foreach ($dt->canonical_known_styles() as $ks) {
@@ -66,7 +66,7 @@ class TagStyle_SettingParser extends SettingParser {
         echo Ht::unstash(), '</table>';
     }
 
-    private function _apply_tag_style_req(SettingValues $sv, Si $si) {
+    private function _apply_tag_style_req(Si $si, SettingValues $sv) {
         $bs = [];
         foreach ($sv->oblist_keys("tag_style/") as $ctr) {
             $br = $sv->object_newv("tag_style/{$ctr}");
@@ -86,9 +86,9 @@ class TagStyle_SettingParser extends SettingParser {
         return true;
     }
 
-    function apply_req(SettingValues $sv, Si $si) {
+    function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "tag_style") {
-            return $this->_apply_tag_style_req($sv, $si);
+            return $this->_apply_tag_style_req($si, $sv);
         } else if ($si->name0 === "tag_style/" && $si->name2 === "/style") {
             if (($v = $sv->base_parse_req($si->name)) !== null
                 && $sv->conf->tags()->known_style($v)) {

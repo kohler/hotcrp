@@ -20,7 +20,7 @@ class Topic_SettingParser extends SettingParser {
     /** @var list<string> */
     private $newtopics;
 
-    function set_oldv(SettingValues $sv, Si $si) {
+    function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name === "new_topics") {
             $sv->set_oldv($si->name, "");
         } else if ($si->name0 === "topic/" && $si->name2 === "") {
@@ -28,7 +28,7 @@ class Topic_SettingParser extends SettingParser {
         }
     }
 
-    function prepare_oblist(SettingValues $sv, Si $si) {
+    function prepare_oblist(Si $si, SettingValues $sv) {
         $m = [];
         foreach ($sv->conf->topic_set() as $id => $name) {
             $m[] = new Topic_Setting($id, $name);
@@ -86,7 +86,7 @@ class Topic_SettingParser extends SettingParser {
     }
 
     /** @return bool */
-    private function _apply_req_newlist(SettingValues $sv, Si $si) {
+    private function _apply_req_newlist(Si $si, SettingValues $sv) {
         $ctr = null;
         foreach (explode("\n", $sv->reqstr($si->name)) as $line) {
             if (($line = simplify_whitespace($line)) !== "") {
@@ -101,7 +101,7 @@ class Topic_SettingParser extends SettingParser {
     }
 
     /** @return bool */
-    private function _apply_req_topics(SettingValues $sv, Si $si) {
+    private function _apply_req_topics(Si $si, SettingValues $sv) {
         $this->topicj = $sv->conf->topic_set()->as_array();
         $this->newtopics = [];
         $oldj = json_encode_db($this->topicj);
@@ -133,17 +133,17 @@ class Topic_SettingParser extends SettingParser {
         return true;
     }
 
-    function apply_req(SettingValues $sv, Si $si) {
+    function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "new_topics") {
-            return $this->_apply_req_newlist($sv, $si);
+            return $this->_apply_req_newlist($si, $sv);
         } else if ($si->name === "topic") {
-            return $this->_apply_req_topics($sv, $si);
+            return $this->_apply_req_topics($si, $sv);
         } else {
             return false;
         }
     }
 
-    function store_value(SettingValues $sv, Si $si) {
+    function store_value(Si $si, SettingValues $sv) {
         $oldm = $sv->conf->topic_set()->as_array();
         $newt2 = $changet = [];
         foreach ($this->topicj as $tid => $tname) {

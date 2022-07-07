@@ -33,7 +33,7 @@ class Banal_Setting {
 }
 
 class Banal_SettingParser extends SettingParser {
-    function set_oldv(SettingValues $sv, Si $si) {
+    function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name0 === "format/"
             && ($si->name1 === "1" || $si->name1 === "2")
             && $si->name2 === "") {
@@ -69,7 +69,7 @@ class Banal_SettingParser extends SettingParser {
     }
 
 
-    function apply_req(SettingValues $sv, Si $si) {
+    function apply_req(Si $si, SettingValues $sv) {
         assert($si->name0 === "format/");
         self::parse($sv, $si->name1, true);
         return true;
