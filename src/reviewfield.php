@@ -5,7 +5,7 @@
 // JSON schema for settings["review_form"]:
 // [{"id":FIELDID,"name":NAME,"description":DESCRIPTION,"order":ORDER,
 //   "display_space":ROWS,"visibility":VISIBILITY,
-//   "options":[DESCRIPTION,...],["start":LEVELCHAR]},...]
+//   "values":[DESCRIPTION,...],["start":LEVELCHAR | "symbols":[WORD,...]]},...]
 
 class ReviewFieldInfo {
     /** @var non-empty-string
@@ -501,8 +501,10 @@ abstract class ReviewField implements JsonSerializable {
 
 
 class Score_ReviewField extends ReviewField {
-    /** @var array<mixed,string> */
-    public $options;
+    /** @var list<string> */
+    private $values;
+    /** @var list<int|string> */
+    private $symbols;
     /** @var int */
     public $option_letter = 0;
     /** @var string */
@@ -531,21 +533,28 @@ class Score_ReviewField extends ReviewField {
     /** @param object $j */
     function assign_json($j) {
         parent::assign_json($j);
-        $options = $j->options ?? [];
+        $this->values = $j->values ?? $j->options ?? [];
+        $nvalues = count($this->values);
         $ol = $j->start ?? $j->option_letter ?? null;
         if ($ol && is_string($ol) && ctype_alpha($ol) && strlen($ol) === 1) {
-            $this->option_letter = ord($ol) + count($options);
+            $this->option_letter = ord($ol) + $nvalues;
         } else {
             $this->option_letter = 0;
         }
-        $this->options = [];
-        if ($this->option_letter !== 0) {
-            foreach (array_reverse($options, true) as $i => $n) {
-                $this->options[chr($this->option_letter - $i - 1)] = $n;
+        if (isset($j->symbols) && count($j->symbols) === $nvalues) {
+            $this->option_letter = 0;
+            $this->symbols = $j->symbols;
+        } else if ($ol && is_string($ol) && ctype_upper($ol) && strlen($ol) === 1) {
+            $this->option_letter = ord($ol) + $nvalues;
+            $this->symbols = [];
+            $this->values = array_reverse($this->values);
+            for ($i = 0; $i !== $nvalues; ++$i) {
+                $this->symbols[] = chr($this->option_letter - $i - 1);
             }
         } else {
-            foreach ($options as $i => $n) {
-                $this->options[$i + 1] = $n;
+            $this->option_letter = 0;
+            for ($i = 0; $i !== $nvalues; ++$i) {
+                $this->symbols[] = $i + 1;
             }
         }
         if (isset($j->scheme)) {
@@ -571,17 +580,17 @@ class Score_ReviewField extends ReviewField {
     }
 
     /** @return list<string> */
-    function unparse_json_options() {
+    function unparse_json_values() {
         assert($this->has_options);
-        $options = array_values($this->options ?? []);
-        return $this->option_letter ? array_reverse($options) : $options;
+        $values = $this->values ?? [];
+        return $this->option_letter ? array_reverse($values) : $values;
     }
 
     function unparse_json($style) {
         $j = parent::unparse_json($style);
-        $j->options = $this->unparse_json_options();
+        $j->values = $this->unparse_json_values();
         if ($this->option_letter) {
-            $j->start = chr($this->option_letter - count($j->options));
+            $j->start = chr($this->option_letter - count($j->values));
         }
         if ($this->scheme !== "sv") {
             $j->scheme = $this->scheme;
@@ -592,13 +601,18 @@ class Score_ReviewField extends ReviewField {
 
     function unparse_setting($rfs) {
         parent::unparse_setting($rfs);
-        $rfs->options = $this->unparse_json_options();
+        $rfs->values = $this->unparse_json_values();
         if ($this->option_letter) {
-            $rfs->start = chr($this->option_letter - count($rfs->options));
+            $rfs->start = chr($this->option_letter - count($this->values));
         } else {
             $rfs->start = 1;
         }
         $rfs->scheme = $this->scheme;
+    }
+
+    /** @return int */
+    function nvalues() {
+        return count($this->values);
     }
 
     /** @param ?int|string $value
@@ -613,7 +627,7 @@ class Score_ReviewField extends ReviewField {
     /** @return ?string */
     function typical_score() {
         if ($this->_typical_score === null) {
-            $n = count($this->options);
+            $n = count($this->values);
             if ($n === 1) {
                 $this->_typical_score = $this->unparse_value(1);
             } else if ($this->option_letter) {
@@ -627,7 +641,7 @@ class Score_ReviewField extends ReviewField {
 
     /** @return ?array{string,string} */
     function typical_score_range() {
-        $n = count($this->options);
+        $n = count($this->values);
         if ($n < 2) {
             return null;
         } else if ($this->option_letter) {
@@ -639,8 +653,8 @@ class Score_ReviewField extends ReviewField {
 
     /** @return ?array{string,string} */
     function full_score_range() {
-        $f = $this->option_letter ? count($this->options) : 1;
-        $l = $this->option_letter ? 1 : count($this->options);
+        $f = $this->option_letter ? count($this->values) : 1;
+        $l = $this->option_letter ? 1 : count($this->values);
         return [$this->unparse_value($f), $this->unparse_value($l)];
     }
 
@@ -663,12 +677,12 @@ class Score_ReviewField extends ReviewField {
      * @return string */
     function value_class($value) {
         $info = self::$scheme_info[$this->scheme];
-        if (count($this->options) <= 1) {
+        if (count($this->values) <= 1) {
             $n = $info[1] - 1;
         } else if ($info[0] & 2) {
             $n = (int) round($value - 1) % $info[1];
         } else {
-            $n = (int) round(($value - 1) * ($info[1] - 1) / (count($this->options) - 1));
+            $n = (int) round(($value - 1) * ($info[1] - 1) / (count($this->values) - 1));
         }
         $sclass = $info[0] & 1 ? $info[2] : $this->scheme;
         if (!($info[0] & 1) !== !$this->option_letter) {
@@ -730,7 +744,7 @@ class Score_ReviewField extends ReviewField {
      * @param 1|2 $style
      * @return string */
     function unparse_graph($sci, $style) {
-        $max = count($this->options);
+        $max = count($this->values);
 
         $avgtext = $this->unparse_average($sci->mean());
         if ($sci->count() > 1 && ($stddev = $sci->stddev_s())) {
@@ -788,12 +802,8 @@ class Score_ReviewField extends ReviewField {
                 return false;
             }
         }
-        if (isset($this->options[$text])) {
-            if ($this->option_letter) {
-                return $this->option_letter - ord($text);
-            } else {
-                return intval($text);
-            }
+        if (($i = array_search($text, $this->symbols)) !== false) {
+            return $i + 1;
         } else if ($text === "0") {
             return 0;
         } else {
@@ -810,41 +820,51 @@ class Score_ReviewField extends ReviewField {
     /** @param int|string $fval
      * @return int|string */
     function normalize_value($fval) {
-        if (isset($this->options[$fval])) {
-            return $this->option_letter ? $fval : (int) $fval;
+        if (($i = array_search($fval, $this->symbols)) !== false) {
+            return $this->option_letter ? chr($this->option_letter - $i - 1) : (int) $i + 1;
         } else {
             return 0;
         }
     }
 
-    /** @param int $num
-     * @param int $fv
-     * @param int $reqv */
-    private function print_option($num, $fv, $reqv) {
-        $opt = ["id" => "{$this->short_id}_{$num}"];
+    /** @param int $idx
+     * @param int|string $symbol
+     * @param int|string $fv
+     * @param int|string $reqv */
+    private function print_option($idx, $symbol, $fv, $reqv) {
+        $opt = ["id" => "{$this->short_id}_{$symbol}"];
         if ($fv !== $reqv) {
-            $opt["data-default-checked"] = $fv === $num;
+            $opt["data-default-checked"] = $fv === $symbol;
         }
-        echo '<label class="checki', ($num ? "" : " g"), '"><span class="checkc">',
-            Ht::radio($this->short_id, $num, $reqv === $num, $opt), '</span>';
-        if ($num) {
-            echo $this->unparse_value($num, self::VALUE_REV_NUM),
-                ' ', htmlspecialchars($this->options[$num]);
+        echo '<label class="checki', ($symbol ? "" : " g"), '"><span class="checkc">',
+            Ht::radio($this->short_id, $symbol, $reqv === $symbol, $opt), '</span>';
+        if ($symbol) {
+            echo $this->unparse_value($symbol, self::VALUE_REV_NUM),
+                ' ', htmlspecialchars($this->values[$idx]);
         } else {
             echo 'No entry';
         }
         echo '</label>';
     }
 
+    /** @return list<int|string> */
+    private function ordered_symbols() {
+        return $this->option_letter ? array_reverse($this->symbols, true) : $this->symbols;
+    }
+
     function print_web_edit($fv, $reqv, $args) {
-        $for = $reqv || !$this->required ? "{$this->short_id}_{$reqv}" : "{$this->short_id}_" . key($this->options);
+        if ($reqv || !$this->required) {
+            $for = "{$this->short_id}_{$reqv}";
+        } else {
+            $for = "{$this->short_id}_" . ($this->ordered_symbols())[0];
+        }
         $this->print_web_edit_open($this->short_id, $for, $args["rvalues"]);
         echo '<div class="revev">';
-        foreach ($this->options as $num => $text) {
-            $this->print_option($num, $fv, $reqv);
+        foreach ($this->ordered_symbols() as $idx => $symbol) {
+            $this->print_option($idx, $symbol, $fv, $reqv);
         }
         if (!$this->required) {
-            $this->print_option(0, $fv, $reqv);
+            $this->print_option(0, 0, $fv, $reqv);
         }
         echo '</div></div>';
     }
@@ -852,17 +872,18 @@ class Score_ReviewField extends ReviewField {
     function unparse_text_field(&$t, $fv, $args) {
         if ($fv != 0) {
             $this->unparse_text_field_header($t, $args);
-            $t[] = prefix_word_wrap("{$fv}. ", $this->options[$fv] ?? "", strlen($fv) + 2, null, $args["flowed"]);
+            $idx = array_search($fv, $this->symbols);
+            $t[] = prefix_word_wrap("{$fv}. ", $idx !== false ? $this->values[$idx] : "", strlen($fv) + 2, null, $args["flowed"]);
         }
     }
 
     function unparse_offline_field(&$t, $fv, $args) {
         $this->unparse_offline_field_header($t, $args);
         $t[] = "==-== Choices:\n";
-        foreach ($this->options as $ch => $value) {
-            $y = "==-==    {$ch}. ";
+        foreach ($this->ordered_symbols() as $idx => $symbol) {
+            $y = "==-==    {$symbol}. ";
             /** @phan-suppress-next-line PhanParamSuspiciousOrder */
-            $t[] = prefix_word_wrap($y, $value, str_pad("==-==", strlen($y)));
+            $t[] = prefix_word_wrap($y, $this->values[$idx], str_pad("==-==", strlen($y)));
         }
         if (!$this->required) {
             $t[] = "==-==    No entry\n==-== Enter your choice:\n";
@@ -872,8 +893,8 @@ class Score_ReviewField extends ReviewField {
             $t[] = "==-== Enter the number of your choice:\n";
         }
         $t[] = "\n";
-        if (isset($this->options[$fv])) {
-            $t[] = "{$fv}. {$this->options[$fv]}\n";
+        if (($idx = array_search($fv, $this->symbols)) !== false) {
+            $t[] = "{$this->symbols[$idx]}. {$this->values[$idx]}\n";
         } else if ($this->required) {
             $t[] = "(Your choice here)\n";
         } else {

@@ -969,7 +969,8 @@ class FormulaGraph extends MessageSet {
             }, array_keys($this->tags));
         } else if ($format === Fexpr::FREVIEWFIELD) {
             $field = $isx ? $this->fxs[0]->result_format_detail() : $this->fy->result_format_detail();
-            $n = count($field->options);
+            '@phan-var-force Score_ReviewField $field';
+            $n = $field->nvalues();
             $ol = $field->option_letter ? chr($field->option_letter - $n) : null;
             $ticks = ["score", $n, $ol, $field->scheme];
             if ($field->option_letter && $isx) {

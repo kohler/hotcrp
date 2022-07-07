@@ -2,11 +2,6 @@
 // reviewform.php -- HotCRP helper class for producing review forms and tables
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-// JSON schema for settings["review_form"]:
-// [{"id":SHORT_ID,"name":NAME,"description":DESCRIPTION,"order":ORDER,
-//   "display_space":ROWS,"visibility":VISIBILITY,
-//   "options":[DESCRIPTION,...],"option_letter":LEVELCHAR}]
-
 class ReviewForm implements JsonSerializable {
     /** @var Conf
      * @readonly */

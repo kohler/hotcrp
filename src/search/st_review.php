@@ -744,10 +744,10 @@ class Review_SearchTerm extends SearchTerm {
             return false;
         } else if ($f->option_letter) {
             $val = $f->option_letter - ord(strtoupper($str));
-            return $val > 0 && $val <= count($f->options) ? $val : false;
+            return $val > 0 && $val <= $f->nvalues() ? $val : false;
         } else {
             $val = intval($str);
-            return $val >= 0 && $val <= count($f->options) ? $val : false;
+            return $val >= 0 && $val <= $f->nvalues() ? $val : false;
         }
     }
     /** @return SearchTerm */
@@ -765,7 +765,7 @@ class Review_SearchTerm extends SearchTerm {
             $score = self::parse_score($f, $m[2]);
             if ($score === false
                 || ($score === 0 && $relation === 1)
-                || ($score === count($f->options) && $relation === 4)) {
+                || ($score === $f->nvalues() && $relation === 4)) {
                 return self::impossible_score_match($f, $sword, $srch);
             }
             $rsm->apply_score_field($f, $score, 0, $relation);

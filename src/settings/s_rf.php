@@ -9,7 +9,7 @@ class Rf_Setting {
     public $order;
     public $visibility;
     public $required;
-    public $options;
+    public $values;
     public $start;
     public $scheme;
     public $presence;

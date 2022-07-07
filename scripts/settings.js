@@ -390,20 +390,20 @@ function get_fid(elt) {
     return elt.id.replace(/^.*_/, "");
 }
 
-function unparse_option(fieldj, idx) {
+function unparse_value(fieldj, idx) {
     if (fieldj.start && fieldj.start !== 1) {
         var cc = fieldj.start.charCodeAt(0);
-        return String.fromCharCode(cc + fieldj.options.length - idx);
+        return String.fromCharCode(cc + fieldj.values.length - idx);
     } else
         return idx.toString();
 }
 
-function options_to_text(fieldj) {
+function values_to_text(fieldj) {
     var i, t = [];
-    if (!fieldj.options)
+    if (!fieldj.values)
         return "";
-    for (i = 0; i !== fieldj.options.length; ++i)
-        t.push(unparse_option(fieldj, i + 1) + ". " + fieldj.options[i]);
+    for (i = 0; i !== fieldj.values.length; ++i)
+        t.push(unparse_value(fieldj, i + 1) + ". " + fieldj.values[i]);
     if (fieldj.start && fieldj.start !== 1)
         t.reverse();
     if (t.length)
@@ -457,7 +457,7 @@ function rf_fill(pos, fieldj, setdefault) {
     rf_fill_control(form, rfid + "/name", fieldj.name || "", setdefault);
     rf_fill_control(form, rfid + "/description", fieldj.description || "", setdefault);
     rf_fill_control(form, rfid + "/visibility", fieldj.visibility || "re", setdefault);
-    rf_fill_control(form, rfid + "/values", options_to_text(fieldj), setdefault);
+    rf_fill_control(form, rfid + "/values", values_to_text(fieldj), setdefault);
     rf_fill_control(form, rfid + "/required", fieldj.required ? "1" : "0", setdefault);
     var colors = form.elements[rfid + "/scheme"];
     if (colors) {
@@ -523,7 +523,7 @@ function option_value_html(fieldj, value) {
     if (!value || value < 0)
         return ["", "No entry"];
     else
-        return [make_score_info(fieldj.options.length, fieldj.start, fieldj.scheme).unparse_revnum(value), escape_html(fieldj.options[value - 1] || "Unknown")];
+        return [make_score_info(fieldj.values.length, fieldj.start, fieldj.scheme).unparse_revnum(value), escape_html(fieldj.values[value - 1] || "Unknown")];
 }
 
 handle_ui.on("unfold.js-settings-field-unfold", function (event) {
@@ -568,9 +568,9 @@ function rf_render_view(fieldj) {
         hc.push('<div class="field-d">'.concat(fieldj.description, '</div>'));
 
     hc.push('<div class="revev">', '</div>');
-    if (fieldj.options) {
-        for (i = 0; i !== fieldj.options.length; ++i) {
-            var n = fieldj.start && fieldj.start !== 1 ? fieldj.options.length - i : i + 1;
+    if (fieldj.values) {
+        for (i = 0; i !== fieldj.values.length; ++i) {
+            var n = fieldj.start && fieldj.start !== 1 ? fieldj.values.length - i : i + 1;
             hc.push('<label class="checki"><span class="checkc"><input type="radio" disabled></span>'.concat(option_value_html(fieldj, n).join(" "), '</label>'));
         }
         if (!fieldj.required) {
@@ -611,7 +611,7 @@ function rf_append(fid) {
         for (i = 0; i < colors.length; i += 2)
             $j.append("<option value=\"" + colors[i] + "\">" + colors[i+1] + "</option>");
     } else
-        $f.find(".is-property-options").remove();
+        $f.find(".is-property-values").remove();
     $f.find(".js-settings-rf-delete").on("click", rf_delete);
     $f.find(".js-settings-rf-move").on("click", rf_move);
     $f.find(".rf-id").val(fid);

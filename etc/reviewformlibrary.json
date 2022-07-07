@@ -3,7 +3,7 @@
         "selector": "Score",
         "name": "Field name",
         "is_blank": true,
-        "options": [
+        "values": [
             "Option 1",
             "Option 2"
         ],
@@ -19,7 +19,7 @@
     {
         "selector": "Overall merit (1–5, Reject through Strong Accept)",
         "name": "Overall merit",
-        "options": [
+        "values": [
             "Reject",
             "Weak reject",
             "Weak accept",
@@ -32,21 +32,21 @@
     {
         "selector": "Overall merit (A–D, Identify the Champion)",
         "name": "Overall merit",
-        "options": [
+        "values": [
             "Reject",
             "Weak paper, though I will not fight strongly against it",
             "OK paper, but I will not champion it",
             "Good paper, I will champion it"
         ],
+        "start": "A",
         "required": true,
-        "option_letter": "A",
         "visibility": "au",
         "scheme": "svr"
     },
     {
         "selector": "Overall merit (1–5, percentage rankings)",
         "name": "Overall merit",
-        "options": [
+        "values": [
             "Bottom 50% of submitted papers",
             "Top 50% but not top 25% of submitted papers",
             "Top 25% but not top 10% of submitted papers",
@@ -59,7 +59,7 @@
     {
         "selector": "Reviewer confidence (1–3, Low through High)",
         "name": "Reviewer confidence",
-        "options": [
+        "values": [
             "Low",
             "Medium",
             "High"
@@ -70,7 +70,7 @@
     {
         "selector": "Reviewer expertise (1–5)",
         "name": "Reviewer expertise",
-        "options": [
+        "values": [
              "I know nothing about this area",
              "I have passing familiarity with this area",
              "I know the material, but am not an expert",
@@ -83,13 +83,13 @@
     {
         "selector": "Confidence (X–Z, Identify the Champion)",
         "name": "Confidence",
-        "options": [
+        "values": [
             "I am not an expert; my evaluation is that of an informed outsider",
             "I am knowledgeable in this area, but not an expert",
             "I am an expert in this area"
         ],
+        "start": "X",
         "required": true,
-        "option_letter": "X",
         "visibility": "au",
         "scheme": "svr"
     },
@@ -124,7 +124,7 @@
     {
         "selector": "Novelty (1–4)",
         "name": "Novelty",
-        "options": [
+        "values": [
              "Published before or openly commercialized",
              "Incremental improvement",
              "New contribution",
@@ -136,7 +136,7 @@
     {
         "selector": "Writing quality (1–5)",
         "name": "Writing quality",
-        "options": [
+        "values": [
              "Unacceptable",
              "Needs improvement",
              "Adequate",
@@ -149,7 +149,7 @@
     {
         "selector": "Experimental methodology (1–5)",
         "name": "Experimental methodology",
-        "options": [
+        "values": [
              "Unacceptable",
              "Poor",
              "Average",

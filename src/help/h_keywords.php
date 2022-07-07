@@ -228,10 +228,10 @@ class Keywords_HelpTopic {
                 $s1 = $r->parse_value($r->typical_score());
                 if ($hth->conf->opt("smartScoreCompare")) {
                     $s1le = range($s1, 1);
-                    $s1gt = range(count($r->options), $s1 + 1);
+                    $s1gt = range(count($r->values), $s1 + 1);
                     $hint = "<br><small>(scores “better than” {$r->typical_score()} are earlier in the alphabet)</small>";
                 } else {
-                    $s1le = range(count($r->options), $s1);
+                    $s1le = range(count($r->values), $s1);
                     $s1gt = range($s1 - 1, 1);
                 }
                 $gt_typical = commajoin(array_map([$r, "unparse_value"], $s1gt), " or ");

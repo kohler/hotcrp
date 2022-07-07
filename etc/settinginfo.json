@@ -561,7 +561,7 @@
         "type": "htmlstring", "size": 2, "autogrow": true
     },
     {
-        "name_pattern": "rf/$/values", "storage": "member.options",
+        "name_pattern": "rf/$/values",
         "title": "Review field choices", "title_pattern": "‘${sv rf/$/name}’ choices",
         "type": "longstring", "size": 3, "autogrow": true,
         "parser_class": "ReviewForm_SettingParser"

@@ -4537,7 +4537,7 @@ tooltip.add_builder("rf-score", function (info) {
     if (fieldj && fieldj.score_info
         && (score = fieldj.score_info.parse($self.find("span.sv").text())))
         info = $.extend({
-            content: fieldj.options[score - 1],
+            content: fieldj.values[score - 1],
             anchor: "w", near: $self.find("span")[0]
         }, info);
     return info;
@@ -4547,7 +4547,7 @@ tooltip.add_builder("rf-description", function (info) {
     var rv = $(this).closest(".rf");
     if (rv.length) {
         var fieldj = formj[rv.data("rf")];
-        if (fieldj && (fieldj.description || fieldj.options)) {
+        if (fieldj && (fieldj.description || fieldj.values)) {
             var d = "", si, vo;
             if (fieldj.description) {
                 if (/<(?:p|div|table)/i.test(fieldj.description))
@@ -4555,11 +4555,11 @@ tooltip.add_builder("rf-description", function (info) {
                 else
                     d += "<p>" + fieldj.description + "</p>";
             }
-            if (fieldj.options) {
+            if (fieldj.values) {
                 d += "<div class=\"od\">Choices are:</div>";
                 for (si = 0, vo = fieldj.score_info.value_order();
                      si < vo.length; ++si)
-                    d += "<div class=\"od\"><strong class=\"rev_num " + fieldj.score_info.className(vo[si]) + "\">" + fieldj.score_info.unparse(vo[si]) + ".</strong>&nbsp;" + escape_html(fieldj.options[vo[si] - 1] || "") + "</div>";
+                    d += "<div class=\"od\"><strong class=\"rev_num " + fieldj.score_info.className(vo[si]) + "\">" + fieldj.score_info.unparse(vo[si]) + ".</strong>&nbsp;" + escape_html(fieldj.values[vo[si] - 1] || "") + "</div>";
             }
             info = $.extend({content: d, anchor: "w"}, info);
         }
@@ -4574,7 +4574,7 @@ function score_header_tooltips($j) {
 
 function render_review_body(rrow) {
     var view_order = $.grep(form_order, function (f) {
-        if (f.options && !f.required)
+        if (f.values && !f.required)
             return f.uid in rrow;
         else
             return !!rrow[f.uid];
@@ -4583,7 +4583,7 @@ function render_review_body(rrow) {
     for (i = 0; i != view_order.length; ++i) {
         f = view_order[i];
         nextf = view_order[i + 1];
-        if (last_display != 1 && f.options && nextf && nextf.options) {
+        if (last_display != 1 && f.values && nextf && nextf.values) {
             display = 1;
         } else {
             display = last_display == 1 ? 2 : 0;
@@ -4606,12 +4606,12 @@ function render_review_body(rrow) {
         }
         t += '</h3></div>';
 
-        if (!f.options) {
+        if (!f.values) {
             t += '<div class="revv revtext"></div>';
         } else if (rrow[f.uid] && (x = f.score_info.parse(rrow[f.uid]))) {
             t += '<p class="revv revscore"><span class="revscorenum">' +
                 f.score_info.unparse_revnum(x) + ' </span><span class="revscoredesc">' +
-                escape_html(f.options[x - 1] || "") + '</span></p>';
+                escape_html(f.values[x - 1] || "") + '</span></p>';
         } else {
             t += '<p class="revv revnoscore">' + (f.required ? "Unknown" : "No entry") + '</p>';
         }
@@ -4867,7 +4867,9 @@ return {
             f.uid = f.uid || i;
             f.name_html = escape_html(f.name);
             if (f.options)
-                f.score_info = make_score_info(f.options.length, f.start || f.option_letter, f.scheme);
+                f.values = f.options;
+            if (f.values)
+                f.score_info = make_score_info(f.values.length, f.start, f.scheme);
             formj[f.uid] = f;
         }
         form_order = $.map(formj, function (v) { return v; });

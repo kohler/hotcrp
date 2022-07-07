@@ -330,7 +330,7 @@ class ReviewForm_SettingParser extends SettingParser {
             } else if ($nf instanceof Score_ReviewField) {
                 assert($of instanceof Score_ReviewField);
                 $map = [];
-                foreach ($sv->unambiguous_renumbering($of->unparse_json_options(), $nf->unparse_json_options()) as $i => $j) {
+                foreach ($sv->unambiguous_renumbering($of->unparse_json_values(), $nf->unparse_json_values()) as $i => $j) {
                     $map[$i + 1] = $j + 1;
                 }
                 if (!empty($map)) {
@@ -409,19 +409,19 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         $sv->print_textarea_group("rf/\$/values", "Choices", [
             "horizontal" => true, "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus",
-            "group_class" => "is-property-options"
+            "group_class" => "is-property-values"
         ]);
     }
 
     static function print_required(SettingValues $sv) {
         $sv->print_select_group("rf/\$/required", "Required", ["0" => "No", "1" => "Yes"], [
-            "horizontal" => true, "group_class" => "is-property-options"
+            "horizontal" => true, "group_class" => "is-property-values"
         ]);
     }
 
     static function print_display(SettingValues $sv) {
         $sv->print_select_group("rf/\$/scheme", "Colors", [], [
-            "horizontal" => true, "group_class" => "is-property-options", "class" => "uich rf-scheme",
+            "horizontal" => true, "group_class" => "is-property-values", "class" => "uich rf-scheme",
             "control_after" => '<span class="d-inline-block ml-2 rf-scheme-example"></span>'
         ]);
     }
