@@ -24,8 +24,8 @@ class SettingValues extends MessageSet {
     private $_use_req = true;
     /** @var bool */
     private $_req_parsed = false;
-    /** @var list<Si> */
-    private $_req_si;
+    /** @var bool */
+    private $_req_sorted = false;
 
     /** @var array<string,true> */
     private $_hint_status = [];
@@ -105,10 +105,17 @@ class SettingValues extends MessageSet {
      * @param string $v
      * @return $this */
     function set_req($k, $v) {
-        $this->req[$k] = $v;
         if (str_starts_with($k, "has_")) {
-            $kx = substr($k, 4);
-            $this->req[$kx] = $this->req[$kx] ?? null;
+            $k = substr($k, 4);
+            if (!array_key_exists($k, $this->req)) {
+                $this->_req_sorted = false;
+                $this->req[$k] = null;
+            }
+        } else {
+            if (!array_key_exists($k, $this->req)) {
+                $this->_req_sorted = false;
+            }
+            $this->req[$k] = $v;
         }
         return $this;
     }
@@ -533,7 +540,7 @@ class SettingValues extends MessageSet {
         $si = is_string($id) ? $this->si($id) : $id;
         if ($si->type === "oblist") {
             $a = [];
-            foreach ($this->oblist_keys("{$si->name}/") as $ctr) {
+            foreach ($this->oblist_keys($si->name) as $ctr) {
                 $a[] = $this->json_oldv("{$si->name}/{$ctr}");
             }
             return $a;
@@ -543,7 +550,7 @@ class SettingValues extends MessageSet {
             if ($si->parser_class) {
                 $member_list = $this->si_parser($si)->member_list($si, $this);
             }
-            $member_list = $member_list ?? $this->conf->si_set()->member_list("{$si->name}/");
+            $member_list = $member_list ?? $this->conf->si_set()->member_list($si->name);
             $o = [];
             foreach ($member_list as $msi) {
                 if (($msi->json_export ?? !$msi->internal)
@@ -1046,36 +1053,45 @@ class SettingValues extends MessageSet {
 
         // find requested settings
         $siset = $this->conf->si_set();
-        $this->_req_si = [];
+        $req_si = [];
         foreach ($this->req as $k => $v) {
-            if (!str_starts_with($k, "has_")
+            if (strpos($k, "/") === false
                 && ($si = $siset->get($k))
+                && ($si->storage_type & Si::SI_MEMBER) === 0
                 && $si->name === $k) {   // don’t count aliases
-                $this->_req_si[] = $si;
+                $req_si[] = $si;
             }
         }
-        usort($this->_req_si, "Si::parse_order_compare");
 
         // parse and validate settings
-        foreach ($this->_req_si as $si) {
-            if (($si->storage_type & Si::SI_MEMBER) === 0)
-                $this->apply_req($si);
+        usort($req_si, "Si::parse_order_compare");
+        foreach ($req_si as $si) {
+            $this->apply_req($si);
         }
 
         return $this;
     }
 
     /** @param string $pfx
-     * @param bool $descendents
      * @return list<Si> */
-    function si_req_members($pfx, $descendents = false) {
-        assert($this->_req_parsed && str_ends_with($pfx, "/"));
+    function req_member_list($pfx) {
+        assert($this->_req_parsed && !str_ends_with($pfx, "/"));
+        if (!$this->_req_sorted) {
+            ksort($this->req, SORT_STRING);
+            $this->_req_sorted = true;
+        }
+        $reqkeys = array_keys($this->req);
+        $xpfx = "{$pfx}/";
+        $l = str_list_lower_bound($xpfx, $reqkeys);
         $sis = [];
-        foreach ($this->_req_si as $si) {
-            if (str_starts_with($si->name, $pfx)
-                && ($descendents
-                    || strlen($si->name0) + strlen($si->name1) === strlen($pfx) - 1))
+        $siset = $this->conf->si_set();
+        while ($l < count($reqkeys) && str_starts_with($reqkeys[$l], $xpfx)) {
+            if (strpos($reqkeys[$l], "/", strlen($xpfx)) === false
+                && ($si = $siset->get($reqkeys[$l]))
+                && $si->name === $reqkeys[$l]) {
                 $sis[] = $si;
+            }
+            ++$l;
         }
         return $sis;
     }
@@ -1096,7 +1112,7 @@ class SettingValues extends MessageSet {
             if ($this->_use_req
                 && !$this->reqstr("{$oname}/delete")) {
                 $this->_object_parsingv[$oname] = $object;
-                foreach ($this->si_req_members("{$oname}/") as $si) {
+                foreach ($this->req_member_list($oname) as $si) {
                     if (($si->storage_type & Si::SI_MEMBER) !== 0)
                         $this->apply_req($si);
                 }

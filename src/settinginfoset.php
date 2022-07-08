@@ -286,17 +286,7 @@ class SettingInfoSet {
             $this->xmap_sorted = true;
         }
         $xkeys = array_keys($this->xmap);
-        $l = 0;
-        $r = count($xkeys);
-        while ($l < $r) {
-            $m = $l + (($r - $l) >> 1);
-            $cmp = strcmp($pfx, $xkeys[$m]);
-            if ($cmp < 0) {
-                $r = $m;
-            } else {
-                $l = $m + 1;
-            }
-        }
+        $l = str_list_lower_bound($pfx, $xkeys);
         $mxmap = [];
         while ($l < count($xkeys) && str_starts_with($xkeys[$l], $pfx)) {
             if (strpos($xkeys[$l], "/", strlen($pfx)) === false) {
@@ -310,7 +300,8 @@ class SettingInfoSet {
     /** @param string $pfx
      * @return list<Si> */
     function member_list($pfx) {
-        assert(str_ends_with($pfx, "/"));
+        assert(!str_ends_with($pfx, "/"));
+        $pfx .= "/";
         // collect members by specific name
         $mxmap = $this->_xmap_members($pfx);
         // collect members by expansion

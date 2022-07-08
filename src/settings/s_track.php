@@ -196,10 +196,11 @@ class Track_SettingParser extends SettingParser {
             list($label, $hint) = $label;
         }
 
-        echo '<div class="', $sv->control_class("{$pfx}/type", "entryi wide"),
+        echo '<div class="', $sv->control_class($pfx, "entryi wide"),
             ' has-fold fold', $reqtype === "all" || $reqtype === "none" ? "c" : "o",
             $unfolded ? "" : " fx3",
             '" data-fold-values="+ -" id="', $pfx, '">',
+            Ht::hidden("has_{$pfx}", 1),
             $sv->label(["{$pfx}/type", "{$pfx}/tag"], $label),
             '<div class="entry">',
             Ht::select("{$pfx}/type", $permts, $reqtype, $sv->sjs("{$pfx}/type", ["class" => "uich js-foldup"])),
@@ -292,7 +293,7 @@ class Track_SettingParser extends SettingParser {
         $perm = Track::$perm_name_map[$si->name1];
 
         // parse request
-        if ($sv->has_req($pfx)) {
+        if ($sv->reqstr($pfx) !== null) {
             $s = trim($sv->reqstr($pfx));
             if ($s !== "" && ($s[0] === "+" || $s[0] === "-")) {
                 $type = $s[0];
@@ -368,7 +369,7 @@ class Track_SettingParser extends SettingParser {
                             $sv->error_at("track/{$ctr}/tag", "<0>Track name ‘_’ is reserved");
                         }
                     }
-                    foreach ($sv->si_req_members("track/{$ctr}/perm/", true) as $permsi) {
+                    foreach ($sv->req_member_list("track/{$ctr}/perm") as $permsi) {
                         $sv->apply_req($permsi);
                     }
                     if ($this->cur_trx->is_default) {

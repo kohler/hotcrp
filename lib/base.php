@@ -394,19 +394,22 @@ function json_encode_db($x, $flags = 0) {
 
 // array and object helpers
 
-/** @param object|array|null $var
- * @param string|int $idx
- * @return mixed
- * @deprecated */
-function get($var, $idx, $default = null) {
-    if (is_array($var)) {
-        return array_key_exists($idx, $var) ? $var[$idx] : $default;
-    } else if (is_object($var)) {
-        return property_exists($var, $idx) ? $var->$idx : $default;
-    } else {
-        assert($var === null);
-        return $default;
+/** @param string $needle
+ * @param list<string> $haystack
+ * @return int */
+function str_list_lower_bound($needle, $haystack) {
+    $l = 0;
+    $r = count($haystack);
+    while ($l < $r) {
+        $m = $l + (($r - $l) >> 1);
+        $cmp = strcmp($needle, $haystack[$m]);
+        if ($cmp < 0) {
+            $r = $m;
+        } else {
+            $l = $m + 1;
+        }
     }
+    return $l;
 }
 
 /** @param mixed $a */
