@@ -43,7 +43,7 @@ class TagStyle_SettingParser extends SettingParser {
         foreach ($kmap as $style => $tags) {
             $klist[] = TagStyle_Setting::make($style, $tags);
         }
-        $sv->append_oblist("tag_style/", $klist, "style");
+        $sv->append_oblist("tag_style", $klist, "style");
     }
 
     static function print(SettingValues $sv) {
@@ -51,7 +51,7 @@ class TagStyle_SettingParser extends SettingParser {
             "<p>Submissions tagged with a style name, or with an associated tag, appear in that style in lists. This also applies to PC tags.</p>",
             '<table class="demargin"><tr><th></th><th class="settings-simplehead" style="min-width:8rem">Style name</th><th class="settings-simplehead">Tags</th><th></th></tr>';
         $dt = $sv->conf->tags();
-        foreach ($sv->oblist_keys("tag_style/") as $ctr) {
+        foreach ($sv->oblist_keys("tag_style") as $ctr) {
             $style = $sv->oldv("tag_style/{$ctr}/style");
             echo '<tr class="tag-', $style, '"><td class="remargin-left"></td>',
                 '<td class="pad taghl align-middle">',
@@ -68,7 +68,7 @@ class TagStyle_SettingParser extends SettingParser {
 
     private function _apply_tag_style_req(Si $si, SettingValues $sv) {
         $bs = [];
-        foreach ($sv->oblist_keys("tag_style/") as $ctr) {
+        foreach ($sv->oblist_keys("tag_style") as $ctr) {
             $br = $sv->object_newv("tag_style/{$ctr}");
             if (!$sv->reqstr("tag_style/{$ctr}/delete")) {
                 $ks = $sv->conf->tags()->known_style($br->style);

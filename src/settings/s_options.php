@@ -248,7 +248,7 @@ class Options_SettingRenderer {
         Ht::stash_html('<div id="settings-sf-caption-values" class="hidden"><p>Enter choices one per line.</p></div>', 'settings-sf-caption-values');
         echo Ht::unstash();
 
-        if ($sv->oblist_keys("sf/")) {
+        if ($sv->oblist_keys("sf")) {
             echo '<div class="feedback is-note mb-4">Click on a field to edit it.</div>';
         }
 
@@ -258,7 +258,7 @@ class Options_SettingRenderer {
             htmlspecialchars(json_encode_browser($type_name_placeholders)),
             '">';
         // NB: div#settings-sform must ONLY contain fields
-        foreach ($sv->oblist_keys("sf/") as $ctr) {
+        foreach ($sv->oblist_keys("sf") as $ctr) {
             $this->print_one_option($sv, $ctr);
         }
         echo "</div>";
@@ -359,7 +359,7 @@ class Options_SettingParser extends SettingParser {
             $sfs = $m[] = new Sf_Setting;
             $f->unparse_setting($sfs);
         }
-        $sv->append_oblist("sf/", $m, "name");
+        $sv->append_oblist("sf", $m, "name");
     }
 
     /** @return bool */
@@ -480,10 +480,10 @@ class Options_SettingParser extends SettingParser {
     private function _apply_req_options(Si $si, SettingValues $sv) {
         if ($sv->has_req("options_version")
             && (int) $sv->reqstr("options_version") !== (int) $sv->conf->setting("options")) {
-            $sv->error_at("sf", "<0>You modified options settings in another tab. Please reload.");
+            $sv->error_at("sf", "<0>You modified submission field settings in another tab. Please reload.");
         }
         $nsfj = [];
-        foreach ($sv->oblist_keys("sf/") as $ctr) {
+        foreach ($sv->oblist_keys("sf") as $ctr) {
             $sfj = $sv->object_newv("sf/{$ctr}");
             if ($sv->reqstr("sf/{$ctr}/delete")) {
                 if ($sfj->id !== DTYPE_INVALID) {

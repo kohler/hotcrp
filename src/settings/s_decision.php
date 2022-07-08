@@ -29,7 +29,7 @@ class Decision_SettingParser extends SettingParser {
                 $m[] = new Decision_Setting($did, $dname, $did > 0 ? "accept" : "reject");
             }
         }
-        $sv->append_oblist("decision/", $m, "name");
+        $sv->append_oblist("decision", $m, "name");
     }
 
     /** @param int|'$' $ctr
@@ -84,11 +84,11 @@ class Decision_SettingParser extends SettingParser {
 
         echo Ht::hidden("has_decision", 1),
             '<div id="settings-decision-types">';
-        foreach ($sv->oblist_keys("decision/") as $ctr) {
+        foreach ($sv->oblist_keys("decision") as $ctr) {
             self::print_decrow($sv, $ctr, $decs_pcount);
         }
         echo '</div>';
-        foreach ($sv->use_req() ? $sv->oblist_keys("decision/") : [] as $ctr) {
+        foreach ($sv->use_req() ? $sv->oblist_keys("decision") : [] as $ctr) {
             if ($sv->reqstr("decision/{$ctr}/delete"))
                 echo Ht::unstash_script("\$(\"#settingsform\")[0].elements[\"decision/{$ctr}/deleter\"].click()");
         }
@@ -121,7 +121,7 @@ class Decision_SettingParser extends SettingParser {
                 $sv->error_at("decision/{$ctr}/category");
             }
         }
-        $sv->error_if_duplicate_member("decision/", $ctr, "/name", "Decision name");
+        $sv->error_if_duplicate_member("decision", $ctr, "name", "Decision name");
     }
 
     function apply_req(Si $si, SettingValues $sv) {
@@ -131,7 +131,7 @@ class Decision_SettingParser extends SettingParser {
 
         $djs = [];
         $hasid = [];
-        foreach ($sv->oblist_keys("decision/") as $ctr) {
+        foreach ($sv->oblist_keys("decision") as $ctr) {
             $dsr = $sv->object_newv("decision/{$ctr}");
             if (!$sv->reqstr("decision/{$ctr}/delete")) {
                 $this->_check_req_name($sv, $dsr, $ctr);

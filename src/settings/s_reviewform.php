@@ -51,7 +51,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $rfss[] = $rfs = new Rf_Setting;
             $rf->unparse_setting($rfs);
         }
-        $sv->append_oblist("rf/", $rfss, "name");
+        $sv->append_oblist("rf", $rfss, "name");
     }
 
 
@@ -151,7 +151,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
     private function _apply_req_review_form(Si $si, SettingValues $sv) {
         $nrfj = [];
-        foreach ($sv->oblist_keys("rf/") as $ctr) {
+        foreach ($sv->oblist_keys("rf") as $ctr) {
             $rfj = $sv->object_newv("rf/{$ctr}");
             if (!$sv->reqstr("rf/{$ctr}/delete")
                 && ($finfo = ReviewFieldInfo::find($sv->conf, $rfj->id))) {

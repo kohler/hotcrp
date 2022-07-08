@@ -159,7 +159,7 @@ class Track_SettingParser extends SettingParser {
             }
             $m[] = new Track_Setting($sv->conf->track("") ?? new Track(""),
                                      $this->settings_json->_ ?? null);
-            $sv->append_oblist("track/", $m, "tag");
+            $sv->append_oblist("track", $m, "tag");
         }
     }
 
@@ -264,7 +264,7 @@ class Track_SettingParser extends SettingParser {
 
     private function print_cross_track(SettingValues $sv) {
         echo "<div class=\"settings-tracks\"><div class=\"entryg\">General permissions:</div>";
-        $this->ctr = $sv->search_oblist("track/", "/id", "none");
+        $this->ctr = $sv->search_oblist("track", "id", "none");
         $this->print_perm($sv, "viewtracker", "Who can see the <a href=\"" . $sv->conf->hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", self::PERM_DEFAULT_UNFOLDED);
         echo "</div>\n\n";
     }
@@ -273,7 +273,7 @@ class Track_SettingParser extends SettingParser {
         echo "<p>Tracks control the PC members allowed to view or review different sets of submissions. <span class=\"nw\">(<a href=\"" . $sv->conf->hoturl("help", "t=tracks") . "\">Help</a>)</span></p>",
             Ht::hidden("has_track", 1);
 
-        foreach ($sv->oblist_keys("track/") as $ctr) {
+        foreach ($sv->oblist_keys("track") as $ctr) {
             $this->print_track($sv, $ctr);
         }
         $this->print_cross_track($sv);
@@ -358,12 +358,12 @@ class Track_SettingParser extends SettingParser {
             return true;
         } else if ($si->name === "track") {
             $j = [];
-            foreach ($sv->oblist_keys("track/") as $ctr) {
+            foreach ($sv->oblist_keys("track") as $ctr) {
                 $this->cur_trx = $sv->object_newv("track/{$ctr}");
                 if (!$sv->reqstr("track/{$ctr}/delete")) {
                     if (!$this->cur_trx->is_default) {
                         $sv->error_if_missing("track/{$ctr}/tag");
-                        $sv->error_if_duplicate_member("track/", $ctr, "/tag", "Track tag");
+                        $sv->error_if_duplicate_member("track", $ctr, "tag", "Track tag");
                         if ($this->cur_trx->tag === "_") {
                             $sv->error_at("track/{$ctr}/tag", "<0>Track name ‘_’ is reserved");
                         }
@@ -392,7 +392,7 @@ class Track_SettingParser extends SettingParser {
         $tracks_interest = $sv->has_interest("track");
         if (($tracks_interest || $sv->has_interest("review_self_assign"))
             && $conf->has_tracks()) {
-            foreach ($sv->oblist_keys("track/") as $ctr) {
+            foreach ($sv->oblist_keys("track") as $ctr) {
                 if (($id = $sv->reqstr("track/{$ctr}/id")) === "") {
                     continue;
                 }

@@ -75,7 +75,7 @@ class Review_SettingParser extends SettingParser {
             $sv->set_oldv($si, 0);
             $t = $sv->conf->setting_data("rev_roundtag") ?? "";
             if (($round = $sv->conf->round_number($t, false)) !== null
-                && ($ctr = $sv->search_oblist("review/", "/id", $round + 1))) {
+                && ($ctr = $sv->search_oblist("review", "id", $round + 1))) {
                 $sv->set_oldv($si, $ctr);
             }
         } else if ($si->name === "review_default_external_round_index") {
@@ -83,7 +83,7 @@ class Review_SettingParser extends SettingParser {
             $t = $sv->conf->setting_data("extrev_roundtag") ?? null;
             if ($t !== null
                 && ($round = $sv->conf->round_number($t, false)) !== null
-                && ($ctr = $sv->search_oblist("review/", "/id", $round + 1))) {
+                && ($ctr = $sv->search_oblist("review", "id", $round + 1))) {
                 $sv->set_oldv($si, $ctr);
             }
         } else if ($si->name === "review_default_external_round") {
@@ -97,7 +97,7 @@ class Review_SettingParser extends SettingParser {
         foreach ($sv->conf->defined_rounds() as $i => $name) {
             $m[] = Review_Setting::make($sv->conf, $i + 1);
         }
-        $sv->append_oblist("review/", $m, "name");
+        $sv->append_oblist("review", $m, "name");
     }
 
 
@@ -172,7 +172,7 @@ class Review_SettingParser extends SettingParser {
         // round deadlines
         echo '<div id="settings-review-rounds">';
         $round_map = Dbl::fetch_iimap($sv->conf->ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
-        foreach ($sv->oblist_keys("review/") as $ctr) {
+        foreach ($sv->oblist_keys("review") as $ctr) {
             self::print_round($sv, $ctr, $round_map);
         }
         echo '</div><template id="settings-review-round-new" class="hidden">';
@@ -184,7 +184,7 @@ class Review_SettingParser extends SettingParser {
         // default rounds for new assignments
         echo '<hr class="form-sep">';
         $sel = [];
-        foreach ($sv->oblist_keys("review/") as $ctr) {
+        foreach ($sv->oblist_keys("review") as $ctr) {
             if (!$sv->reqstr("review/{$ctr}/delete")) {
                 $n = $sv->vstr("review/{$ctr}/name");
                 $sel[$ctr] = $n === "" ? "unnamed" : $n;
@@ -350,7 +350,7 @@ class Review_SettingParser extends SettingParser {
         $rss = [];
         $old_rsid = [];
         $latest = null;
-        foreach ($sv->oblist_keys("review/") as $ctr) {
+        foreach ($sv->oblist_keys("review") as $ctr) {
             $pfx = "review/{$ctr}";
             $rs = $sv->object_newv($pfx);
             if (!$sv->reqstr("{$pfx}/delete")) {
@@ -374,8 +374,8 @@ class Review_SettingParser extends SettingParser {
         }
 
         // having parsed all names, check for duplicates
-        foreach ($sv->oblist_keys("review/") as $ctr) {
-            $sv->error_if_duplicate_member("review/", $ctr, "/name", "Review round name");
+        foreach ($sv->oblist_keys("review") as $ctr) {
+            $sv->error_if_duplicate_member("review", $ctr, "name", "Review round name");
         }
 
         // arrange in id order in `$rsid`
@@ -534,7 +534,7 @@ class Review_SettingParser extends SettingParser {
     }
 
     static private function crosscheck_future_review_deadline(SettingValues $sv) {
-        foreach ($sv->oblist_keys("review/") as $ctr) {
+        foreach ($sv->oblist_keys("review") as $ctr) {
             $sn = "review/{$ctr}/soft";
             if (($t = $sv->oldv($sn)) > Conf::$now)
                 return $sn;
@@ -543,7 +543,7 @@ class Review_SettingParser extends SettingParser {
     }
 
     static private function crosscheck_review_deadlines_closed_reviews(SettingValues $sv) {
-        foreach ($sv->oblist_keys("review/") as $ctr) {
+        foreach ($sv->oblist_keys("review") as $ctr) {
             if (($rs = $sv->oldv("review/{$ctr}")) && $rs->id > 0) {
                 foreach (["soft", "done", "external_soft", "external_done"] as $k) {
                     if (($rs->$k ?? 0) > Conf::$now) {

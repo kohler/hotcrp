@@ -33,7 +33,7 @@ class Topic_SettingParser extends SettingParser {
         foreach ($sv->conf->topic_set() as $id => $name) {
             $m[] = new Topic_Setting($id, $name);
         }
-        $sv->append_oblist("topic/", $m, "name");
+        $sv->append_oblist("topic", $m, "name");
     }
 
     static function print(SettingValues $sv) {
@@ -53,7 +53,7 @@ class Topic_SettingParser extends SettingParser {
         }
         echo "</p>\n", Ht::hidden("has_topic", 1);
 
-        if (($topic_counters = $sv->oblist_keys("topic/"))) {
+        if (($topic_counters = $sv->oblist_keys("topic"))) {
             echo '<div class="mg has-copy-topics"><table><thead><tr><th style="text-align:left">';
             if (!empty($interests)) {
                 echo '<span class="float-right n"># PC interests: </span>';
@@ -90,7 +90,7 @@ class Topic_SettingParser extends SettingParser {
         $ctr = null;
         foreach (explode("\n", $sv->reqstr($si->name)) as $line) {
             if (($line = simplify_whitespace($line)) !== "") {
-                $ctr = $ctr ?? max(0, 0, ...$sv->oblist_keys("topic/")) + 1;
+                $ctr = $ctr ?? max(0, 0, ...$sv->oblist_keys("topic")) + 1;
                 $sv->set_req("topic/{$ctr}/id", "new");
                 $sv->set_req("topic/{$ctr}/name", $line);
                 ++$ctr;
@@ -105,7 +105,7 @@ class Topic_SettingParser extends SettingParser {
         $this->topicj = $sv->conf->topic_set()->as_array();
         $this->newtopics = [];
         $oldj = json_encode_db($this->topicj);
-        foreach ($sv->oblist_keys("topic/") as $ctr) {
+        foreach ($sv->oblist_keys("topic") as $ctr) {
             $tid = $sv->vstr("topic/{$ctr}/id") ?? "new";
             $tname = $sv->base_parse_req("topic/{$ctr}/name");
             if ($sv->reqstr("topic/{$ctr}/delete") || $tname === "") {
@@ -120,7 +120,7 @@ class Topic_SettingParser extends SettingParser {
                         $this->newtopics[] = $tname;
                     }
                 }
-                $sv->error_if_duplicate_member("topic/", $ctr, "/name", "Topic");
+                $sv->error_if_duplicate_member("topic", $ctr, "name", "Topic");
             }
         }
         if (!$sv->has_error()

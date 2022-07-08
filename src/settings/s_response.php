@@ -90,7 +90,7 @@ class Response_SettingParser extends SettingParser {
         foreach ($sv->conf->response_rounds() as $rrd) {
             $m[] = Response_Setting::make($sv->conf, $rrd);
         }
-        $sv->append_oblist("response/", $m, "name");
+        $sv->append_oblist("response", $m, "name");
     }
 
     private function ensure_round_counts(Conf $conf) {
@@ -157,7 +157,7 @@ class Response_SettingParser extends SettingParser {
             $sv->vstr("response_active") ? "" : " hidden",
             '"><hr class="g">', Ht::hidden("has_response", 1);
 
-        foreach ($sv->oblist_keys("response/") as $ctr) {
+        foreach ($sv->oblist_keys("response") as $ctr) {
             $this->print_one($sv, $ctr);
         }
 
@@ -205,7 +205,7 @@ class Response_SettingParser extends SettingParser {
         }
 
         $rrds = [];
-        foreach ($sv->oblist_keys("response/") as $ctr) {
+        foreach ($sv->oblist_keys("response") as $ctr) {
             $rrd = $sv->object_newv("response/{$ctr}");
             '@phan-var-force Response_Setting $rrd';
             if ($sv->reqstr("response/{$ctr}/delete")) {
@@ -219,8 +219,8 @@ class Response_SettingParser extends SettingParser {
         }
 
         // having parsed all names, check for duplicates
-        foreach ($sv->oblist_keys("response/") as $ctr) {
-            $sv->error_if_duplicate_member("response/", $ctr, "/name", "Response name");
+        foreach ($sv->oblist_keys("response") as $ctr) {
+            $sv->error_if_duplicate_member("response", $ctr, "name", "Response name");
         }
 
         $jrl = [];

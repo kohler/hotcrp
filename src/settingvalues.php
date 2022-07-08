@@ -586,14 +586,20 @@ class SettingValues extends MessageSet {
 
     /** @param string $pfx */
     private function ensure_oblist($pfx) {
-        if (!isset($this->_oblist_ensured[$pfx])) {
+        while (!isset($this->_oblist_ensured[$pfx])) {
             $this->_oblist_ensured[$pfx] = true;
-            if (str_ends_with($pfx, "/")
-                && ($si = $this->conf->si("{$pfx}1"))
-                && $si->parser_class) {
-                $this->si_parser($si)->prepare_oblist($si, $this);
-            } else if (($xpfx = preg_replace('/\d+\z/', '', $pfx)) !== $pfx) {
-                $this->ensure_oblist($xpfx);
+            if (str_ends_with($pfx, "/")) {
+                $pfx = substr($pfx, 0, -1);
+            } else {
+                $si = $this->conf->si($pfx);
+                if ($si && $si->type === "oblist") {
+                    $this->si_parser($si)->prepare_oblist($si, $this);
+                    break;
+                } else if ($si && $si->type === "object") {
+                    $pfx = $si->name0;
+                } else {
+                    break;
+                }
             }
         }
     }
@@ -602,22 +608,24 @@ class SettingValues extends MessageSet {
      * @param iterable<object> $obs
      * @param ?non-empty-string $namekey */
     function append_oblist($pfx, $obs, $namekey = null) {
-        assert(str_ends_with($pfx, "/"));
+        if (str_ends_with($pfx, "/")) {
+            error_log(debug_string_backtrace());
+            $pfx = substr($pfx, 0, -1);
+        }
 
         // find next counter
         if (($nextctr = $this->_oblist_next[$pfx] ?? 0) === 0) {
             $nextctr = 1;
             while ($this->_use_req
-                   && ($this->has_req("{$pfx}{$nextctr}/id")
-                       || ($namekey !== null && $this->has_req("{$pfx}{$nextctr}/{$namekey}")))) {
+                   && ($this->has_req("{$pfx}/{$nextctr}/id")
+                       || ($namekey !== null && $this->has_req("{$pfx}/{$nextctr}/{$namekey}")))) {
                 ++$nextctr;
             }
         }
 
         // decide whether to mark unmentioned objects as deleted
         if ($this->_use_req) {
-            $pfxn = substr($pfx, 0, -1);
-            $resetn = $this->has_req("{$pfxn}_reset") ? "{$pfxn}_reset" : "reset";
+            $resetn = $this->has_req("{$pfx}_reset") ? "{$pfx}_reset" : "reset";
             $reset = ($this->reqstr($resetn) ?? "") !== "";
         } else {
             $reset = false;
@@ -626,11 +634,11 @@ class SettingValues extends MessageSet {
         // map id => ctr and name => ctr
         $matches = $name_matches = [];
         for ($ctr = 1; $ctr < $nextctr; ++$ctr) {
-            if (($id = $this->reqstr("{$pfx}{$ctr}/id") ?? "") !== ""
+            if (($id = $this->reqstr("{$pfx}/{$ctr}/id") ?? "") !== ""
                 && !array_key_exists($id, $matches)) {
                 $matches[$id] = $ctr;
             } else if ($namekey !== null
-                       && ($name = $this->reqstr("{$pfx}{$ctr}/{$namekey}")) !== null
+                       && ($name = $this->reqstr("{$pfx}/{$ctr}/{$namekey}")) !== null
                        && ($lname = strtolower($name)) !== ""
                        && !array_key_exists($lname, $name_matches)) {
                 $name_matches[$lname] = $ctr;
@@ -642,7 +650,7 @@ class SettingValues extends MessageSet {
         foreach ($obs as $ob) {
             if (($ob->id ?? "") !== ""
                 && ($obctr = $matches[(string) $ob->id] ?? null) !== null) {
-                $this->set_oldv("{$pfx}{$obctr}", $ob);
+                $this->set_oldv("{$pfx}/{$obctr}", $ob);
             } else {
                 $next_obs[] = $ob;
             }
@@ -654,9 +662,9 @@ class SettingValues extends MessageSet {
             foreach ($next_obs as $ob) {
                 if (($name = $ob->$namekey ?? "") !== ""
                     && ($obctr = $name_matches[strtolower($name)] ?? null) !== null) {
-                    $this->set_req("{$pfx}{$obctr}/id", (string) $ob->id);
-                    $this->set_oldv("{$pfx}{$obctr}/id", $ob->id);
-                    $this->set_oldv("{$pfx}{$obctr}", $ob);
+                    $this->set_req("{$pfx}/{$obctr}/id", (string) $ob->id);
+                    $this->set_oldv("{$pfx}/{$obctr}/id", $ob->id);
+                    $this->set_oldv("{$pfx}/{$obctr}", $ob);
                 } else {
                     $next_obs2[] = $ob;
                 }
@@ -666,35 +674,38 @@ class SettingValues extends MessageSet {
 
         // save new objects
         foreach ($next_obs as $ob) {
-            $this->set_req("{$pfx}{$nextctr}/id", (string) $ob->id);
-            $this->set_oldv("{$pfx}{$nextctr}/id", $ob->id);
+            $this->set_req("{$pfx}/{$nextctr}/id", (string) $ob->id);
+            $this->set_oldv("{$pfx}/{$nextctr}/id", $ob->id);
             if ($reset) {
-                $this->set_req("{$pfx}{$nextctr}/delete", "1");
+                $this->set_req("{$pfx}/{$nextctr}/delete", "1");
             } else {
-                unset($this->req["{$pfx}{$nextctr}/delete"]);
+                unset($this->req["{$pfx}/{$nextctr}/delete"]);
             }
-            $this->set_oldv("{$pfx}{$nextctr}", $ob);
+            $this->set_oldv("{$pfx}/{$nextctr}", $ob);
             ++$nextctr;
         }
 
-        unset($this->req["{$pfx}{$nextctr}/id"]);
+        unset($this->req["{$pfx}/{$nextctr}/id"]);
         $this->_oblist_next[$pfx] = $nextctr;
     }
 
     /** @param string $pfx
      * @return list<int> */
     function oblist_keys($pfx) {
-        assert(str_ends_with($pfx, "/"));
+        if (str_ends_with($pfx, "/")) {
+            error_log(debug_string_backtrace());
+            $pfx = substr($pfx, 0, -1);
+        }
         $this->ensure_oblist($pfx);
         $ctrs = [];
-        for ($ctr = 1; isset($this->req["{$pfx}{$ctr}/id"]); ++$ctr) {
+        for ($ctr = 1; isset($this->req["{$pfx}/{$ctr}/id"]); ++$ctr) {
             $ctrs[] = $ctr;
         }
-        if (($x = $this->conf->si("{$pfx}1/order"))) {
+        if (($x = $this->conf->si("{$pfx}/1/order"))) {
             usort($ctrs, function ($a, $b) use ($pfx) {
-                $ao = $this->vstr("{$pfx}{$a}/order");
+                $ao = $this->vstr("{$pfx}/{$a}/order");
                 $an = is_numeric($ao);
-                $bo = $this->vstr("{$pfx}{$b}/order");
+                $bo = $this->vstr("{$pfx}/{$b}/order");
                 $bn = is_numeric($bo);
                 if ($an && $bn) {
                     return floatval($ao) <=> floatval($bo);
@@ -713,9 +724,17 @@ class SettingValues extends MessageSet {
      * @param int|string $needle
      * @return ?int */
     function search_oblist($pfx, $sfx, $needle) {
+        if (str_ends_with($pfx, "/")) {
+            error_log(debug_string_backtrace());
+            $pfx = substr($pfx, 0, -1);
+        }
+        if (str_starts_with($sfx, "/")) {
+            error_log(debug_string_backtrace());
+            $sfx = substr($sfx, 1);
+        }
         $this->ensure_oblist($pfx);
-        for ($ctr = 1; isset($this->req["{$pfx}{$ctr}/id"]); ++$ctr) {
-            if ((string) $needle === (string) $this->req["{$pfx}{$ctr}{$sfx}"]) {
+        for ($ctr = 1; isset($this->req["{$pfx}/{$ctr}/id"]); ++$ctr) {
+            if ((string) $needle === (string) $this->req["{$pfx}/{$ctr}/{$sfx}"]) {
                 return $ctr;
             }
         }
@@ -727,6 +746,12 @@ class SettingValues extends MessageSet {
      * @param string $sfx
      * @param string $description */
     function error_if_duplicate_member($pfx, $ctr, $sfx, $description) {
+        if (!str_ends_with($pfx, "/")) {
+            $pfx .= "/";
+        }
+        if (!str_starts_with($sfx, "/")) {
+            $sfx = "/{$sfx}";
+        }
         assert(is_int($ctr) || (is_string($ctr) && ctype_digit($ctr)));
         $ctr = (int) $ctr;
         if ($this->reqstr("{$pfx}{$ctr}/delete")) {
