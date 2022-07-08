@@ -150,7 +150,7 @@ class Track_SettingParser extends SettingParser {
     }
 
     function prepare_oblist(Si $si, SettingValues $sv) {
-        if (count($si->name_parts) === 3) {
+        if ($si->name === "track") {
             $this->settings_json = $this->settings_json ?? $sv->conf->setting_json("tracks");
             $m = [];
             foreach ($sv->conf->track_tags() as $tag) {
