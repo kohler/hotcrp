@@ -110,15 +110,6 @@ class SettingValues extends MessageSet {
             $kx = substr($k, 4);
             $this->req[$kx] = $this->req[$kx] ?? null;
         }
-        // `__`-separated settings are also accessible as `/`
-        if (strpos($k, "__") !== false) {
-            $k = str_replace("__", "/", $k);
-            $this->req[$k] = $v;
-            if (str_starts_with($k, "has_")) {
-                $kx = substr($k, 4);
-                $this->req[$kx] = $this->req[$kx] ?? null;
-            }
-        }
         return $this;
     }
 
