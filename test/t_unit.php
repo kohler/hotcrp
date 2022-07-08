@@ -951,4 +951,19 @@ class Unit_Tester {
         xassert_eqq(Ftext::concat("<hello>", "?"), "<hello>?");
         xassert_eqq(Ftext::concat("<0><hello>", "?"), "<0><hello>?");
     }
+
+    function test_str_list_lower_bound() {
+        xassert_eqq(str_list_lower_bound("a", ["0", "ab", "ac", "ad"]), 1);
+        xassert_eqq(str_list_lower_bound("aa", ["0", "ab", "ac", "ad"]), 1);
+        xassert_eqq(str_list_lower_bound("ab", ["0", "ab", "ac", "ad"]), 1);
+        xassert_eqq(str_list_lower_bound("abb", ["0", "ab", "ac", "ad"]), 2);
+        xassert_eqq(str_list_lower_bound("af", ["0", "ab", "ac", "ad"]), 4);
+        xassert_eqq(str_list_lower_bound("a", ["0", "1", "2", "ab", "ac", "ad"]), 3);
+        xassert_eqq(str_list_lower_bound("aa", ["0", "1", "2", "ab", "ac", "ad"]), 3);
+        xassert_eqq(str_list_lower_bound("ab", ["0", "1", "2", "ab", "ac", "ad"]), 3);
+        xassert_eqq(str_list_lower_bound("abb", ["0", "1", "2", "ab", "ac", "ad"]), 4);
+        xassert_eqq(str_list_lower_bound("ad", ["0", "1", "2", "ab", "ac", "ad"]), 5);
+        xassert_eqq(str_list_lower_bound("ad1", ["0", "1", "2", "ab", "ac", "ad"]), 6);
+        xassert_eqq(str_list_lower_bound("af", ["0", "1", "2", "ab", "ac", "ad"]), 6);
+    }
 }

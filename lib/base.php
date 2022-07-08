@@ -403,7 +403,7 @@ function str_list_lower_bound($needle, $haystack) {
     while ($l < $r) {
         $m = $l + (($r - $l) >> 1);
         $cmp = strcmp($needle, $haystack[$m]);
-        if ($cmp < 0) {
+        if ($cmp <= 0) {
             $r = $m;
         } else {
             $l = $m + 1;
