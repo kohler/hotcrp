@@ -141,26 +141,27 @@ class MailChecker {
         }
         sort($wants);
         foreach ($wants as $want) {
-            ++Xassert::$n;
             list($match, $index, $badline) = self::find_best_mail_match($want, $haves);
             if ($match) {
-                ++Xassert::$nsuccess;
+                Xassert::succeed();
             } else if ($index !== false) {
                 $have = $haves[$index];
                 error_log(assert_location() . ": Mail mismatch: " . var_export($want, true) . " !== " . var_export($have, true));
                 $havel = explode("\n", $have);
                 $wantl = explode("\n", $want);
                 fwrite(STDERR, "... line {$badline} differs near {$havel[$badline-1]}\n... expected {$wantl[$badline-1]}\n");
+                Xassert::fail();
             } else {
                 error_log(assert_location() . ": Mail not found: " . var_export($want, true));
+                Xassert::fail();
             }
             if ($index !== false) {
                 array_splice($haves, $index, 1);
             }
         }
         foreach ($haves as $have) {
-            ++Xassert::$n;
             error_log(assert_location() . ": Unexpected mail: " . var_export($have, true));
+            Xassert::fail();
         }
         self::$preps = [];
     }
@@ -232,6 +233,8 @@ class Xassert {
     static public $nerror = 0;
     /** @var int */
     static public $disabled = 0;
+    /** @var bool */
+    static public $stop = false;
     /** @var array<int,string> */
     static public $emap = [
         E_ERROR => "PHP Fatal Error",
@@ -241,6 +244,17 @@ class Xassert {
         E_USER_WARNING => "PHP Warning",
         E_USER_NOTICE => "PHP Notice"
     ];
+
+    static function succeed() {
+        ++self::$n;
+        ++self::$nsuccess;
+    }
+    static function fail() {
+        ++self::$n;
+        if (self::$stop) {
+            throw new RuntimeException("error at assertion #" . self::$n);
+        }
+    }
 }
 
 /** @param int $errno
@@ -269,11 +283,11 @@ function assert_location() {
  * @param string $description
  * @return bool */
 function xassert($x, $description = "") {
-    ++Xassert::$n;
     if ($x) {
-        ++Xassert::$nsuccess;
+        Xassert::succeed();
     } else {
         error_log(assert_location() . ": " . ($description ? : "Assertion failed"));
+        Xassert::fail();
     }
     return !!$x;
 }
@@ -293,24 +307,24 @@ function xassert_exit() {
 
 /** @return bool */
 function xassert_eqq($actual, $expected) {
-    ++Xassert::$n;
     $ok = $actual === $expected;
     if ($ok) {
-        ++Xassert::$nsuccess;
+        Xassert::succeed();
     } else {
         error_log(assert_location() . ": Expected === " . var_export($expected, true) . ", got " . var_export($actual, true));
+        Xassert::fail();
     }
     return $ok;
 }
 
 /** @return bool */
 function xassert_neqq($actual, $nonexpected) {
-    ++Xassert::$n;
     $ok = $actual !== $nonexpected;
     if ($ok) {
-        ++Xassert::$nsuccess;
+        Xassert::succeed();
     } else {
         error_log(assert_location() . ": Expected !== " . var_export($actual, true));
+        Xassert::fail();
     }
     return $ok;
 }
@@ -319,15 +333,15 @@ function xassert_neqq($actual, $nonexpected) {
  * @param list<null|int|float|string> $list
  * @return bool */
 function xassert_in_eqq($member, $list) {
-    ++Xassert::$n;
     $ok = false;
     foreach ($list as $bx) {
         $ok = $ok || $member === $bx;
     }
     if ($ok) {
-        ++Xassert::$nsuccess;
+        Xassert::succeed();
     } else {
         error_log(assert_location() . ": Expected " . var_export($member, true) . " \\in " . var_export($list, true));
+        Xassert::fail();
     }
     return $ok;
 }
@@ -336,12 +350,12 @@ function xassert_in_eqq($member, $list) {
  * @param null|int|float|string $expected
  * @return bool */
 function xassert_eq($actual, $expected) {
-    ++Xassert::$n;
     $ok = $actual == $expected;
     if ($ok) {
-        ++Xassert::$nsuccess;
+        Xassert::succeed();
     } else {
         error_log(assert_location() . ": Expected == " . var_export($expected, true) . ", got " . var_export($actual, true));
+        Xassert::fail();
     }
     return $ok;
 }
@@ -350,12 +364,12 @@ function xassert_eq($actual, $expected) {
  * @param null|int|float|string $nonexpected
  * @return bool */
 function xassert_neq($actual, $nonexpected) {
-    ++Xassert::$n;
     $ok = $actual != $nonexpected;
     if ($ok) {
-        ++Xassert::$nsuccess;
+        Xassert::succeed();
     } else {
         error_log(assert_location() . ": Expected != " . var_export($actual, true));
+        Xassert::fail();
     }
     return $ok;
 }
@@ -365,10 +379,9 @@ function xassert_neq($actual, $nonexpected) {
  * @param bool $sort
  * @return bool */
 function xassert_array_eqq($actual, $expected, $sort = false) {
-    ++Xassert::$n;
     $problem = "";
     if ($actual === null && $expected === null) {
-        // ok
+        // OK
     } else if (is_array($actual) && is_array($expected)) {
         if (count($actual) !== count($expected)
             && !$sort) {
@@ -393,7 +406,7 @@ function xassert_array_eqq($actual, $expected, $sort = false) {
         $problem = "different types";
     }
     if ($problem === "") {
-        ++Xassert::$nsuccess;
+        Xassert::succeed();
     } else {
         error_log(assert_location() . ": Array assertion failed, {$problem}");
         if ($sort) {
@@ -407,25 +420,25 @@ function xassert_array_eqq($actual, $expected, $sort = false) {
             }
             error_log("  expected " . $bj . ", got " . $aj);
         }
+        Xassert::fail();
     }
     return $problem === "";
 }
 
 /** @return bool */
 function xassert_match($a, $b) {
-    ++Xassert::$n;
     $ok = is_string($a) && preg_match($b, $a);
     if ($ok) {
-        ++Xassert::$nsuccess;
+        Xassert::succeed();
     } else {
         error_log(assert_location() . ": Expected " . var_export($a, true) . " ~= {$b}");
+        Xassert::fail();
     }
     return $ok;
 }
 
 /** @return bool */
 function xassert_int_list_eqq($a, $b) {
-    ++Xassert::$n;
     $x = [];
     foreach ([$a, $b] as $ids) {
         $s = is_array($ids) ? join(" ", $ids) : $ids;
@@ -435,9 +448,10 @@ function xassert_int_list_eqq($a, $b) {
     }
     $ok = $x[0] === $x[1];
     if ($ok) {
-        ++Xassert::$nsuccess;
+        Xassert::succeed();
     } else {
         error_log(assert_location() . ": Expected {$x[0]} === {$x[1]}");
+        Xassert::fail();
     }
     return $ok;
 }
@@ -828,7 +842,8 @@ class TestRunner {
                 "verbose,V be verbose",
                 "help,h !",
                 "reset-db,reset reset test database",
-                "no-reset-db,no-reset !"
+                "no-reset-db,no-reset !",
+                "stop,s stop on first error"
             )->description("Usage: php test/" . basename($_SERVER["PHP_SELF"]) . " [-V] [CLASSNAME...]")
              ->helpopt("help")
              ->parse($argv);
@@ -836,6 +851,9 @@ class TestRunner {
 
         if (isset($arg["verbose"])) {
             TestRunner::$verbose = true;
+        }
+        if (isset($arg["stop"])) {
+            Xassert::$stop = true;
         }
 
         if (isset($arg["reset-db"])) {
