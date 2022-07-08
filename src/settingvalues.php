@@ -550,7 +550,10 @@ class SettingValues extends MessageSet {
             if ($si->parser_class) {
                 $member_list = $this->si_parser($si)->member_list($si, $this);
             }
-            $member_list = $member_list ?? $this->conf->si_set()->member_list($si->name);
+            if ($member_list === null) {
+                $member_list = $this->conf->si_set()->member_list($si->name);
+                usort($member_list, "Conf::xt_pure_order_compare");
+            }
             $o = [];
             foreach ($member_list as $msi) {
                 if (($msi->json_export ?? !$msi->internal)
@@ -614,10 +617,19 @@ class SettingValues extends MessageSet {
         // find next counter
         if (($nextctr = $this->_oblist_next[$pfx] ?? 0) === 0) {
             $nextctr = 1;
-            while ($this->_use_req
-                   && ($this->has_req("{$pfx}/{$nextctr}/id")
-                       || ($namekey !== null && $this->has_req("{$pfx}/{$nextctr}/{$namekey}")))) {
-                ++$nextctr;
+            if ($this->_use_req) {
+                while (true) {
+                    if ($this->has_req("{$pfx}/{$nextctr}/id")) {
+                        ++$nextctr;
+                    } else if ($namekey !== null
+                               && $this->has_req("{$pfx}/{$nextctr}/{$namekey}")) {
+                        // ensure `id` key exists
+                        $this->set_req("{$pfx}/{$nextctr}/id", "");
+                        ++$nextctr;
+                    } else {
+                        break;
+                    }
+                }
             }
         }
 
@@ -1057,18 +1069,16 @@ class SettingValues extends MessageSet {
         foreach ($this->req as $k => $v) {
             if (strpos($k, "/") === false
                 && ($si = $siset->get($k))
-                && ($si->storage_type & Si::SI_MEMBER) === 0
                 && $si->name === $k) {   // don’t count aliases
                 $req_si[] = $si;
             }
         }
+        usort($req_si, "Si::parse_order_compare");
 
         // parse and validate settings
-        usort($req_si, "Si::parse_order_compare");
         foreach ($req_si as $si) {
             $this->apply_req($si);
         }
-
         return $this;
     }
 
@@ -1093,6 +1103,7 @@ class SettingValues extends MessageSet {
             }
             ++$l;
         }
+        usort($sis, "Si::parse_order_compare");
         return $sis;
     }
 
@@ -1113,8 +1124,7 @@ class SettingValues extends MessageSet {
                 && !$this->reqstr("{$oname}/delete")) {
                 $this->_object_parsingv[$oname] = $object;
                 foreach ($this->req_member_list($oname) as $si) {
-                    if (($si->storage_type & Si::SI_MEMBER) !== 0)
-                        $this->apply_req($si);
+                    $this->apply_req($si);
                 }
                 unset($this->_object_parsingv[$oname]);
             }

@@ -12,6 +12,16 @@ class Sf_Setting {
     public $visibility;
     public $required;
     public $presence;
-    public $exists_if;
+    /** @var list<SfValue_Setting> */
+    public $values;
+
     public $selector;
+    public $exists_if;
+    public $final;
+}
+
+class SfValue_Setting {
+    public $id;
+    public $order;
+    public $name;
 }

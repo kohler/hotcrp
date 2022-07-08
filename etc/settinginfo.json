@@ -210,10 +210,33 @@
         "type": "htmlstring", "size": 2, "autogrow": true
     },
     {
-        "name_pattern": "sf/$/values", "storage": "member.selector",
+        "name_pattern": "sf/$/values", "type": "oblist", "parse_order": 2,
+        "parser_class": "Options_SettingParser"
+    },
+    {
+        "name_pattern": "sf/$/values/$$", "type": "object", "subtype": "SfValue_Setting",
+        "parser_class": "Options_SettingParser"
+    },
+    {
+        "name_pattern": "sf/$/values/$$/id", "type": "int",
+        "internal": true, "json_export": true
+    },
+    {
+        "name_pattern": "sf/$/values/$$/name", "title": "Submission value",
+        "type": "simplestring", "required": true,
+        "size": 50, "parser_class": "Options_SettingParser"
+    },
+    {
+        "name_pattern": "sf/$/values/$$/order",
+        "title": "Submission value order", "title_pattern": "‘${sv sf/$/values/$$/name}’ order",
+        "type": "float"
+    },
+    {
+        "name_pattern": "sf/$/values_text", "storage": "none",
         "title": "Submission field choices", "title_pattern": "‘${sv sf/$/name}’ choices",
         "type": "longstring", "size": 3, "autogrow": true,
-        "parser_class": "Options_SettingParser"
+        "parser_class": "Options_SettingParser", "parse_order": 1,
+        "json_export": false
     },
     {
         "name_pattern": "sf/$/required",

@@ -332,8 +332,6 @@ class SettingInfoSet {
                 $sis[] = new Si($cs->conf, $jx);
             }
         }
-        // sort by position
-        usort($sis, "Conf::xt_pure_order_compare");
         return $sis;
     }
 }

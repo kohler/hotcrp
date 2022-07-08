@@ -684,6 +684,81 @@ class Settings_Tester {
         $this->conf->load_settings();
     }
 
+    function test_subform_options() {
+        TestRunner::reset_options();
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/name" => "Program",
+            "sf/1/id" => "new",
+            "sf/1/order" => 100,
+            "sf/1/values_text" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
+            "sf/1/type" => "radio"
+        ]);
+        xassert($sv->execute());
+        $opt = $sv->conf->option_by_id(2);
+        assert($opt instanceof Selector_PaperOption);
+        xassert_eqq($opt->name, "Program");
+        xassert_array_eqq($opt->selector_options(), ["Honors", "MBB", "Joint primary", "Joint affiliated", "Basic"]);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/name" => "Program",
+            "sf/1/id" => "2",
+            "sf/1/order" => 100,
+            "sf/1/values_text" => "Honors\nMBB\n Joint primary \n\n\n",
+            "sf/1/type" => "radio"
+        ]);
+        xassert($sv->execute());
+        $opt = $sv->conf->option_by_id(2);
+        assert($opt instanceof Selector_PaperOption);
+        xassert_eqq($opt->name, "Program");
+        xassert_array_eqq($opt->selector_options(), ["Honors", "MBB", "Joint primary"]);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/name" => "Program",
+            "sf/1/id" => "new",
+            "sf/1/order" => 102,
+            "sf/1/values_text" => "A\nB",
+            "sf/1/type" => "radio"
+        ]);
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "is not unique");
+
+        // test option values and renumbering
+        $sv->conf->qe("delete from PaperOption where optionId=2");
+        $sv->conf->qe("insert into PaperOption (paperId, optionId, value, data) values (1, 2, 1, null)");
+        xassert_eqq($sv->conf->find_all_fields("Program"), [$sv->conf->option_by_id(2)]);
+        xassert_eqq(search_text_col($this->u_chair, "1", "Program"), "1 Honors\n");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/name" => "Program",
+            "sf/1/id" => "2",
+            "sf/1/order" => 100,
+            "sf/1/values_text" => "MBB\n Joint primary? \n  Honors\n\n",
+            "sf/1/type" => "radio"
+        ]);
+        xassert($sv->execute());
+        $opt = $sv->conf->option_by_id(2);
+        assert($opt instanceof Selector_PaperOption);
+        xassert_array_eqq($opt->selector_options(), ["MBB", "Joint primary?", "Honors"]);
+
+        xassert_eqq(search_text_col($this->u_chair, "1", "Program"), "1 Honors\n");
+        xassert_eqq($sv->conf->fetch_ivalue("select value from PaperOption where paperId=1 and optionId=2"), 3);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/name" => "Program",
+            "sf/1/id" => "2",
+            "sf/1/delete" => "1"
+        ]);
+        xassert($sv->execute());
+
+        xassert_eqq($sv->conf->fetch_ivalue("select value from PaperOption where paperId=1 and optionId=2"), null);
+    }
+
     function test_subform_condition() {
         TestRunner::reset_options();
 
@@ -693,7 +768,7 @@ class Settings_Tester {
             "sf/1/name" => "Program",
             "sf/1/id" => "new",
             "sf/1/order" => 100,
-            "sf/1/values" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
+            "sf/1/values_text" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
             "sf/1/type" => "radio",
             "sf/1/presence" => "custom",
             "sf/1/condition" => "Program:Honors"
@@ -707,7 +782,7 @@ class Settings_Tester {
             "sf/1/name" => "Program",
             "sf/1/id" => "new",
             "sf/1/order" => 100,
-            "sf/1/values" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
+            "sf/1/values_text" => "Honors\nMBB\nJoint primary\nJoint affiliated\nBasic",
             "sf/1/type" => "radio",
             "sf/2/name" => "Joint concentration",
             "sf/2/id" => "new",

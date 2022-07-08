@@ -1512,7 +1512,12 @@ class Selector_PaperOption extends PaperOption {
     }
     function unparse_setting($sfs) {
         parent::unparse_setting($sfs);
-        $sfs->selector = $this->selector ? join("\n", $this->selector) . "\n" : "";
+        $sfs->values = [];
+        foreach ($this->selector as $i => $s) {
+            $sfs->values[] = $sfv = new SfValue_Setting;
+            $sfv->id = $sfv->order = $i + 1;
+            $sfv->name = $s;
+        }
     }
 
     function value_compare($av, $bv) {

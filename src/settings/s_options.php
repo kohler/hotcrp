@@ -82,7 +82,7 @@ class Options_SettingRenderer {
     }
 
     function print_values(SettingValues $sv) {
-        $sv->print_textarea_group("sf/{$this->ctr}/values", "Choices", [
+        $sv->print_textarea_group("sf/{$this->ctr}/values_text", "Choices", [
             "horizontal" => true,
             "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-sf",
@@ -333,14 +333,21 @@ class Options_SettingParser extends SettingParser {
     }
 
     function set_oldv(Si $si, SettingValues $sv) {
-        if ($si->name === "sf") {
-            return;
-        }
-        assert($si->name0 === "sf/");
-        if ($si->name2 === "") {
+        if ($si->name0 === "sf/" && $si->name2 === "") {
             $sfs = new Sf_Setting;
             self::make_placeholder_option($sv)->unparse_setting($sfs);
             $sv->set_oldv($si, $sfs);
+        } else if ($si->name0 === "sf/" && $si->name2 === "/values_text") {
+            $sfs = $sv->oldv("sf/{$si->name1}");
+            $vs = [];
+            foreach ($sfs->values ?? [] as $sfsv) {
+                $vs[] = $sfsv->name;
+            }
+            $sv->set_oldv($si, empty($vs) ? "" : join("\n", $vs) . "\n");
+        } else if (count($si->name_parts) === 5
+                   && $si->name_parts[2] === "/values/"
+                   && $si->name2 === "") {
+            $sv->set_oldv($si, new SfValue_Setting);
         }
     }
 
@@ -354,12 +361,17 @@ class Options_SettingParser extends SettingParser {
     }
 
     function prepare_oblist(Si $si, SettingValues $sv) {
-        $m = [];
-        foreach (self::configurable_options($sv->conf) as $f) {
-            $sfs = $m[] = new Sf_Setting;
-            $f->unparse_setting($sfs);
+        if ($si->name === "sf") {
+            $m = [];
+            foreach (self::configurable_options($sv->conf) as $f) {
+                $sfs = $m[] = new Sf_Setting;
+                $f->unparse_setting($sfs);
+            }
+            $sv->append_oblist("sf", $m, "name");
+        } else if ($si->name2 === "/values") {
+            $sfs = $sv->oldv("sf/{$si->name1}");
+            $sv->append_oblist($si->name, $sfs->values ?? [], "name");
         }
-        $sv->append_oblist("sf", $m, "name");
     }
 
     /** @return bool */
@@ -405,45 +417,51 @@ class Options_SettingParser extends SettingParser {
     }
 
     /** @return bool */
-    private function _apply_req_values(Si $si, SettingValues $sv) {
-        $selector = [];
+    private function _apply_req_values_text(Si $si, SettingValues $sv) {
         $cleanreq = cleannl($sv->reqstr($si->name));
+        $i = 1;
         foreach (explode("\n", $cleanreq) as $t) {
-            if ($t !== "")
-                $selector[] = simplify_whitespace($t);
-        }
-        if (($jtype = $sv->conf->option_type($sv->vstr("sf/{$si->name1}/type")))
-            && ($jtype->has_selector ?? false)) {
-            if (empty($selector)) {
-                $sv->error_at($si, "<0>Entry required (one choice per line)");
-            } else {
-                $collator = $sv->conf->collator();
-                for ($i = 0; $i !== count($selector); ++$i) {
-                    for ($j = $i + 1; $j !== count($selector); ++$j) {
-                        if ($collator->compare($selector[$i], $selector[$j]) === 0) {
-                            $sv->error_at($si, "<0>Choice ‘{$selector[$i]}’ is duplicated");
-                        }
-                    }
-                }
-                if (($of = $sv->oldv($si->name0 . $si->name1))
-                    && $of->type !== "none"
-                    && $of->selector !== $cleanreq) {
-                    $this->_check_values_renumbering($si, $sv, $selector, $of);
-                }
+            if ($t !== "" && ($t = simplify_whitespace($t)) !== "") {
+                $sv->set_req("sf/{$si->name1}/values/{$i}/name", $t);
+                $sv->set_req("sf/{$si->name1}/values/{$i}/order", (string) $i);
+                ++$i;
             }
         }
-        $sv->save($si, $selector);
+        if (!$sv->has_req("sf/{$si->name1}/values")) {
+            $sv->set_req("sf/{$si->name1}/values_reset", "1");
+            $this->_apply_req_values($sv->si("sf/{$si->name1}/values"), $sv);
+        }
         return true;
     }
 
-    private function _check_values_renumbering(Si $si, SettingValues $sv, $selector, $of) {
-        $sqlmap = [];
-        foreach ($sv->unambiguous_renumbering(explode("\n", trim($of->selector)), $selector) as $i => $j) {
-            $sqlmap[] = "when " . ($i+1) . " then " . ($j+1);
+    /** @return bool */
+    private function _apply_req_values(Si $si, SettingValues $sv) {
+        $jtype = $sv->conf->option_type($sv->vstr("sf/{$si->name1}/type"));
+        if (!$jtype || !($jtype->has_values ?? false)) {
+            return true;
         }
-        if (count($sqlmap)) {
-            $this->_choice_renumberings[] = [$of->id, "case value " . join(" ", $sqlmap) . " else value end"];
+        $newsfv = $renumbering = [];
+        foreach ($sv->oblist_keys("sf/{$si->name1}/values") as $ctr) {
+            $sfv = $sv->object_newv("sf/{$si->name1}/values/{$ctr}");
+            if (!$sv->reqstr("sf/{$si->name1}/values/{$ctr}/delete")
+                && $sfv->name !== "") {
+                $newsfv[] = $sfv;
+                if ($sfv->id && $sfv->id !== count($newsfv)) {
+                    $renumbering[] = "when {$sfv->id} then " . count($newsfv);
+                }
+                $sv->error_if_duplicate_member("sf/{$si->name1}/values", $ctr, "name", "Field value");
+            }
         }
+        if (empty($newsfv)) {
+            $sv->error_at($si->name, "<0>Entry required");
+        }
+        $sv->save($si, $newsfv);
+        if (!empty($renumbering)
+            && ($of = $sv->oldv("sf/{$si->name1}"))
+            && $of->type !== "none") {
+            $this->_choice_renumberings[] = [$of->id, "case value " . join(" ", $renumbering) . " else value end"];
+        }
+        return true;
     }
 
     /** @param object $sfj */
@@ -467,12 +485,16 @@ class Options_SettingParser extends SettingParser {
         ++$this->_next_optionid;
     }
 
-    /** @param object $sfj */
-    private function _fix_req_condition(SettingValues $sv, $sfj) {
+    /** @param Sf_Setting $sfj */
+    private function _fix_sf_setting(SettingValues $sv, $sfj) {
         $sfj->final = $sfj->presence === "final";
         if ($sfj->presence !== "custom"
             || trim($sfj->exists_if ?? "") === "") {
             $sfj->exists_if = "";
+        }
+        $sfj->selector = [];
+        foreach ($sfj->values ?? [] as $sfv) {
+            $sfj->selector[] = $sfv->name;
         }
     }
 
@@ -494,7 +516,7 @@ class Options_SettingParser extends SettingParser {
                     $sv->error_if_missing("sf/{$ctr}/name");
                     $this->_assign_new_id($sv->conf, $sfj);
                 }
-                $this->_fix_req_condition($sv, $sfj);
+                $this->_fix_sf_setting($sv, $sfj);
                 $this->_new_options[$sfj->id] = $opt = PaperOption::make($sv->conf, $sfj);
                 $nsfj[] = $opt->jsonSerialize();
                 $this->option_id_to_ctr[$opt->id] = $ctr;
@@ -540,6 +562,8 @@ class Options_SettingParser extends SettingParser {
             return $this->_apply_req_name($si, $sv);
         } else if ($si->name2 === "/type") {
             return $this->_apply_req_type($si, $sv);
+        } else if ($si->name2 === "/values_text") {
+            return $this->_apply_req_values_text($si, $sv);
         } else if ($si->name2 === "/values") {
             return $this->_apply_req_values($si, $sv);
         } else {

@@ -149,7 +149,7 @@ class Radio_Sitype extends Sitype {
         }
     }
     function convert_jsonv($jv, Si $si, SettingValues $sv) {
-        $values = $si->values($sv);
+        $values = $si->values($sv) ?? [];
         foreach ($values as $allowedv) {
             if ($allowedv === $jv
                 || ($allowedv === 0 && $jv === false)

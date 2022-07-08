@@ -502,9 +502,11 @@ function search_json($user, $query, $cols = "id") {
 function search_text_col($user, $query, $col = "id") {
     $pl = new PaperList("empty", new PaperSearch($user, $query));
     $pl->parse_view($col);
+    $tj = $pl->text_json();
+    $colx = ($pl->vcolumns())[0]->name;
     $x = [];
-    foreach ($pl->text_json() as $pid => $p) {
-        $x[] = $pid . " " . $p[$col] . "\n";
+    foreach ($tj as $pid => $p) {
+        $x[] = $pid . " " . $p[$colx] . "\n";
     }
     return join("", $x);
 }
