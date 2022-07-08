@@ -513,7 +513,7 @@ class Permission_Tester {
 
         $paper8 = $user_chair->checked_paper_by_id(8);
         xassert_eqq($paper8->tag_value("fart"), 4.0);
-        xassert(strpos($paper8->all_tags_text(), " fArt#") !== false);
+        xassert_str_contains($paper8->all_tags_text(), " fArt#");
 
         xassert_assign($user_chair, "action,paper,tag\ntag,8,fArt#(pid+104)\n", true);
         $paper8 = $user_chair->checked_paper_by_id(8);

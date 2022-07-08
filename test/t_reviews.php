@@ -164,7 +164,7 @@ class Reviews_Tester {
         xassert($tf->check_and_save($this->u_mgbaker));
         xassert_eqq(join(" ", $tf->unchanged), "#1A");
         xassert($tf->has_problem_at("s01"));
-        xassert(strpos($tf->feedback_text_at("s01"), "Entry required") !== false);
+        xassert_str_contains($tf->feedback_text_at("s01"), "Entry required");
         //error_log(var_export($tf->message_list(), true));
     }
 
@@ -1109,7 +1109,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             "sf/1/type" => "numeric"
         ]);
         xassert(!$sv->execute());
-        xassert_neqq(strpos($sv->full_feedback_text(), "is not unique"), false);
+        xassert_str_contains($sv->full_feedback_text(), "is not unique");
         xassert($sv->has_error_at("sf/1/name"));
 
         // no name => fail
@@ -1120,7 +1120,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             "sf/1/type" => "numeric"
         ]);
         xassert(!$sv->execute());
-        xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
+        xassert_str_contains($sv->full_feedback_text(), "Entry required");
         xassert($sv->has_error_at("sf/1/name"));
     }
 }

@@ -52,8 +52,8 @@ class Settings_Tester {
 
         $sv = SettingValues::make_request($this->u_chair, []);
         $s = $this->conf->si("preference_instructions")->default_value($sv);
-        xassert(strpos($s, "review preference") !== false);
-        xassert(strpos($s, "topic") === false);
+        xassert_str_contains($s, "review preference");
+        xassert_not_str_contains($s, "topic");
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_topic" => 1,
@@ -62,8 +62,8 @@ class Settings_Tester {
         xassert($sv->execute());
 
         $s = $this->conf->si("preference_instructions")->default_value($sv);
-        xassert(strpos($s, "review preference") !== false);
-        xassert(strpos($s, "topic") !== false);
+        xassert_str_contains($s, "review preference");
+        xassert_str_contains($s, "topic");
 
         ConfInvariants::test_all($this->conf);
         xassert_eqq(json_encode($this->conf->topic_set()->as_array()), '{"1":"Whatever"}');
@@ -105,7 +105,7 @@ class Settings_Tester {
         xassert(!$sv->execute());
         xassert_eqq($sv->reqstr("topic/3/name"), "Fart");
         xassert($sv->has_error_at("topic/3/name"));
-        xassert_neqq(strpos($sv->full_feedback_text(), "is not unique"), false);
+        xassert_str_contains($sv->full_feedback_text(), "is not unique");
         xassert_eqq(json_encode($this->conf->topic_set()->as_array()), '{"2":"Barf","1":"Fart"}');
 
         $sv = SettingValues::make_request($this->u_chair, [
@@ -196,7 +196,7 @@ class Settings_Tester {
             "topic": [{"id": "new", "name": "Berf"}]
         }');
         xassert(!$sv->execute());
-        xassert_neqq(strpos($sv->full_feedback_text(), "is not unique"), false);
+        xassert_str_contains($sv->full_feedback_text(), "is not unique");
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
             "topic": [{"name": "Bingle"}, {"name": "Bongle"}]
@@ -239,7 +239,7 @@ class Settings_Tester {
             "decision/1/name" => "Rejected"
         ]);
         xassert(!$sv->execute());
-        xassert_neqq(strpos($sv->full_feedback_text(), "Accept-category decision"), false);
+        xassert_str_contains($sv->full_feedback_text(), "Accept-category decision");
 
         // duplicate decision names are rejected
         $sv = SettingValues::make_request($this->u_chair, [
@@ -249,7 +249,7 @@ class Settings_Tester {
             "decision/1/name_force" => "1"
         ]);
         xassert(!$sv->execute());
-        xassert_neqq(strpos($sv->full_feedback_text(), "is not unique"), false);
+        xassert_str_contains($sv->full_feedback_text(), "is not unique");
         xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","2":"Newly accepted","-1":"Rejected"}');
 
         // can override name conflict
@@ -451,7 +451,7 @@ class Settings_Tester {
             "rf/1/values" => "1. A\n2. B\n"
         ]);
         xassert(!$sv->execute());
-        xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
+        xassert_str_contains($sv->full_feedback_text(), "Entry required");
     }
 
     function test_review_rounds() {
@@ -496,7 +496,7 @@ class Settings_Tester {
             "review/1/done" => "@" . ($tn - 10)
         ]);
         xassert(!$sv->execute());
-        xassert_neqq(stripos($sv->full_feedback_text(), "must come before"), false);
+        xassert_str_contains(strtolower($sv->full_feedback_text()), "must come before");
 
         xassert_eqq($sv->conf->round_number("Butt", false), 1);
         $sv->conf->save_refresh_setting("pcrev_hard_1", $tn - 10);
@@ -699,7 +699,7 @@ class Settings_Tester {
             "sf/1/condition" => "Program:Honors"
         ]);
         xassert(!$sv->execute());
-        xassert_neqq(stripos($sv->full_feedback_text(), "field condition"), false);
+        xassert_str_contains(strtolower($sv->full_feedback_text()), "field condition");
 
         // newly-added field conditions can refer to other newly-added fields
         $sv = SettingValues::make_request($this->u_chair, [

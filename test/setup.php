@@ -374,6 +374,34 @@ function xassert_neq($actual, $nonexpected) {
     return $ok;
 }
 
+/** @param string $haystack
+ * @param string $needle
+ * @return bool */
+function xassert_str_contains($haystack, $needle) {
+    $ok = strpos($haystack, $needle) !== false;
+    if ($ok) {
+        Xassert::succeed();
+    } else {
+        error_log(assert_location() . ": Expected `{$haystack}` to contain `{$needle}`");
+        Xassert::fail();
+    }
+    return $ok;
+}
+
+/** @param string $haystack
+ * @param string $needle
+ * @return bool */
+function xassert_not_str_contains($haystack, $needle) {
+    $ok = strpos($haystack, $needle) === false;
+    if ($ok) {
+        Xassert::succeed();
+    } else {
+        error_log(assert_location() . ": Expected `{$haystack}` not to contain `{$needle}`");
+        Xassert::fail();
+    }
+    return $ok;
+}
+
 /** @param ?list<mixed> $actual
  * @param ?list<mixed> $expected
  * @param bool $sort
