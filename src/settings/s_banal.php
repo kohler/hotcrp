@@ -16,13 +16,13 @@ class Banal_Setting {
     public $wordlimit;
 
     /** @param SettingValues $sv
-     * @param 1|2 $id
+     * @param 'submission'|'final' $id
      * @return Banal_Setting */
     static function make_document($sv, $id) {
         $bs = new Banal_Setting;
         $bs->id = $id;
-        $bs->field = $id === 1 ? "submission" : "final";
-        $sid = $id === 1 ? "0" : "m1";
+        $bs->field = $id;
+        $sid = $id === "submission" ? "0" : "m1";
         $bs->active = $sv->oldv("fmtstore_v_{$sid}") > 0;
         $cfs = new FormatSpec($sv->oldv("fmtstore_o_{$sid}"), $sv->oldv("fmtstore_s_{$sid}"));
         foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight", "unlimitedref", "wordlimit"] as $k) {
@@ -33,46 +33,46 @@ class Banal_Setting {
 }
 
 class Banal_SettingParser extends SettingParser {
-    function set_oldv(Si $si, SettingValues $sv) {
-        if ($si->name0 === "format/"
-            && ($si->name1 === "1" || $si->name1 === "2")
-            && $si->name2 === "") {
-            $sv->set_oldv($si, Banal_Setting::make_document($sv, (int) $si->name1));
-        }
-    }
-
-    /** @param 1|2 $id
+    /** @param 'submission'|'final' $id
      * @param SettingValues $sv */
     static function print($id, $sv) {
-        $open = $sv->vstr("format/{$id}/active") > 0;
-        $uropen = !in_array($sv->vstr("format/{$id}/pagelimit"), ["", "any", "N/A"]);
-        $editable = $sv->editable("format/{$id}");
-        echo Ht::hidden("has_format/{$id}", 1),
-            Ht::hidden("format/{$id}/id", $id);
-        $sv->print_checkbox("format/{$id}/active", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "form-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
+        $sv->append_oblist("format", [Banal_Setting::make_document($sv, $id)]);
+        $ctr = $sv->search_oblist("format", "id", $id);
+
+        $open = $sv->vstr("format/{$ctr}/active") > 0;
+        $uropen = !in_array($sv->vstr("format/{$ctr}/pagelimit"), ["", "any", "N/A"]);
+        $editable = $sv->editable("format/{$ctr}");
+        echo Ht::hidden("has_format", 1),
+            Ht::hidden("format/{$ctr}/id", $id);
+        $sv->print_checkbox("format/{$ctr}/active", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "form-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
         echo '<div class="f-mcol mt-3 fx"><div class="flex-grow-0">';
-        $sv->print_entry_group("format/{$id}/papersize", "Paper size", ["horizontal" => true, "readonly" => !$editable], "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>");
-        $sv->print_entry_group("format/{$id}/textblock", "Text block", ["horizontal" => true, "readonly" => !$editable], "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
-        $sv->print_entry_group("format/{$id}/columns", "Columns", ["horizontal" => true, "readonly" => !$editable]);
+        $sv->print_entry_group("format/{$ctr}/papersize", "Paper size", ["horizontal" => true, "readonly" => !$editable], "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>");
+        $sv->print_entry_group("format/{$ctr}/textblock", "Text block", ["horizontal" => true, "readonly" => !$editable], "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
+        $sv->print_entry_group("format/{$ctr}/columns", "Columns", ["horizontal" => true, "readonly" => !$editable]);
         echo '</div>';
         echo '<div class="flex-grow-0">';
-        $sv->print_entry_group("format/{$id}/pagelimit", "Page limit", ["horizontal" => true, "class" => "uii uich js-settings-banal-pagelimit", "readonly" => !$editable]);
+        $sv->print_entry_group("format/{$ctr}/pagelimit", "Page limit", ["horizontal" => true, "class" => "uii uich js-settings-banal-pagelimit", "readonly" => !$editable]);
         echo '<div class="entryi fx2"><label></label><div class="entry settings-banal-unlimitedref">';
-        $sv->print_checkbox("format/{$id}/unlimitedref", "Unlimited reference pages", ["disabled" => !$uropen || !$editable, "label_class" => $uropen ? null : "dim"]);
+        $sv->print_checkbox("format/{$ctr}/unlimitedref", "Unlimited reference pages", ["disabled" => !$uropen || !$editable, "label_class" => $uropen ? null : "dim"]);
         echo '</div></div>';
         if ($sv->conf->opt("allowBanalWordlimit")) {
-            $sv->print_entry_group("format/{$id}/wordlimit", "Word limit", ["horizontal" => true, "readonly" => !$editable]);
+            $sv->print_entry_group("format/{$ctr}/wordlimit", "Word limit", ["horizontal" => true, "readonly" => !$editable]);
         }
-        $sv->print_entry_group("format/{$id}/bodyfontsize", "Body font size", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
-        $sv->print_entry_group("format/{$id}/bodylineheight", "Line height", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
+        $sv->print_entry_group("format/{$ctr}/bodyfontsize", "Body font size", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
+        $sv->print_entry_group("format/{$ctr}/bodylineheight", "Line height", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
         echo "</div></div></div>\n";
     }
 
 
     function apply_req(Si $si, SettingValues $sv) {
-        assert($si->name0 === "format/");
-        self::parse($sv, $si->name1, true);
-        return true;
+        if ($si->name === "format") {
+            foreach ($sv->oblist_keys("format") as $ctr) {
+                self::parse($sv, $ctr, true);
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /** @return string */
@@ -122,7 +122,7 @@ class Banal_SettingParser extends SettingParser {
     }
 
     /** @param SettingValues $sv
-     * @param string $ctr
+     * @param int $ctr
      * @return bool */
     static function parse($sv, $ctr, $check) {
         // BANAL SETTINGS
@@ -133,9 +133,9 @@ class Banal_SettingParser extends SettingParser {
         // data: setting
 
         $id = $sv->reqstr("format/{$ctr}/id") ?? $ctr;
-        if ($id === "1") {
+        if ($id === "submission") {
             $sid = "0";
-        } else if ($id === "2") {
+        } else if ($id === "final") {
             $sid = "m1";
         } else {
             return false;

@@ -689,7 +689,7 @@ class SettingValues extends MessageSet {
         }
         $this->ensure_oblist($pfx);
         $ctrs = [];
-        for ($ctr = 1; isset($this->req["{$pfx}/{$ctr}/id"]); ++$ctr) {
+        for ($ctr = 1; array_key_exists("{$pfx}/{$ctr}/id", $this->req); ++$ctr) {
             $ctrs[] = $ctr;
         }
         if (($x = $this->conf->si("{$pfx}/1/order"))) {
@@ -724,7 +724,7 @@ class SettingValues extends MessageSet {
             $sfx = substr($sfx, 1);
         }
         $this->ensure_oblist($pfx);
-        for ($ctr = 1; isset($this->req["{$pfx}/{$ctr}/id"]); ++$ctr) {
+        for ($ctr = 1; array_key_exists("{$pfx}/{$ctr}/id", $this->req); ++$ctr) {
             if ((string) $needle === (string) $this->req["{$pfx}/{$ctr}/{$sfx}"]) {
                 return $ctr;
             }
@@ -752,7 +752,7 @@ class SettingValues extends MessageSet {
         $collator = $this->conf->collator();
         $v0 = $this->base_parse_req("{$pfx}{$ctr}{$sfx}");
         $badctr = null;
-        for ($ctr1 = $ctr + 1; isset($this->req["{$pfx}{$ctr1}/id"]); ++$ctr1) {
+        for ($ctr1 = $ctr + 1; array_key_exists("{$pfx}{$ctr1}/id", $this->req); ++$ctr1) {
             if (!$this->reqstr("{$pfx}{$ctr1}/delete")
                 && ($v1 = $this->base_parse_req("{$pfx}{$ctr1}{$sfx}")) !== null
                 && $v0 !== null
