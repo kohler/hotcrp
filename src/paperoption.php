@@ -1616,8 +1616,10 @@ class Selector_PaperOption extends PaperOption {
                 $srch->msg_at(null, "<0>Try " . commajoin($ts, " or ") . ", or use ‘{$sword->cword}*’ to match them all.", MessageSet::INFORM);
             } else {
                 $srch->lwarning($sword, "<0>No " . $this->title() . " choices match ‘{$sword->cword}’");
-                $ts = array_map(function ($t) { return "‘{$t}’"; }, $this->selector);
-                $srch->msg_at(null, "<0>Choices are " . commajoin($ts, " and ") . ".", MessageSet::INFORM);
+                if (!empty($this->selector)) {
+                    $ts = array_map(function ($t) { return "‘{$t}’"; }, $this->selector);
+                    $srch->msg_at(null, "<0>Choices are " . commajoin($ts, " and ") . ".", MessageSet::INFORM);
+                }
             }
             return null;
         } else if (in_array($sword->compar, ["", "=", "!="], true)) {
