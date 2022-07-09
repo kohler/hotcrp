@@ -754,7 +754,8 @@ class SettingValues extends MessageSet {
     /** @param string $pfx
      * @param int|string $ctr
      * @param string $sfx
-     * @param string $description */
+     * @param string $description
+     * @return bool */
     function error_if_duplicate_member($pfx, $ctr, $sfx, $description) {
         if (!str_ends_with($pfx, "/")) {
             $pfx .= "/";
@@ -765,7 +766,7 @@ class SettingValues extends MessageSet {
         assert(is_int($ctr) || (is_string($ctr) && ctype_digit($ctr)));
         $ctr = (int) $ctr;
         if ($this->reqstr("{$pfx}{$ctr}/delete")) {
-            return;
+            return false;
         }
         $oim = $this->swap_ignore_messages(true);
         $collator = $this->conf->collator();
@@ -785,6 +786,9 @@ class SettingValues extends MessageSet {
             $v0 = $v0 === "" ? "(empty)" : $v0;
             $this->error_at("{$pfx}{$ctr}{$sfx}", "<0>{$description} ‘{$v0}’ is not unique");
             $this->error_at("{$pfx}{$badctr}{$sfx}");
+            return true;
+        } else {
+            return false;
         }
     }
 

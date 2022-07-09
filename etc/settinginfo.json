@@ -210,8 +210,8 @@
         "type": "htmlstring", "size": 2, "autogrow": true
     },
     {
-        "name_pattern": "sf/$/values", "type": "oblist", "parse_order": 2,
-        "parser_class": "Options_SettingParser"
+        "name_pattern": "sf/$/values", "type": "oblist",
+        "parser_class": "Options_SettingParser", "parse_order": 2
     },
     {
         "name_pattern": "sf/$/values/$$", "type": "object", "subtype": "SfValue_Setting",
@@ -222,13 +222,12 @@
         "internal": true, "json_export": true
     },
     {
-        "name_pattern": "sf/$/values/$$/name", "title": "Submission value",
-        "type": "simplestring", "required": true,
-        "size": 50, "parser_class": "Options_SettingParser"
+        "name_pattern": "sf/$/values/$$/name", "title": "Submission field value",
+        "type": "simplestring", "required": true, "size": 50
     },
     {
         "name_pattern": "sf/$/values/$$/order",
-        "title": "Submission value order", "title_pattern": "‘${sv sf/$/values/$$/name}’ order",
+        "title": "Submission field value order", "title_pattern": "‘${sv sf/$/values/$$/name}’ order",
         "type": "float"
     },
     {

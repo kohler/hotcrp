@@ -736,9 +736,7 @@ class Settings_Tester {
             "has_sf" => 1,
             "sf/1/name" => "Program",
             "sf/1/id" => "2",
-            "sf/1/order" => 100,
-            "sf/1/values_text" => "MBB\n Joint primary? \n  Honors\n\n",
-            "sf/1/type" => "radio"
+            "sf/1/values_text" => "MBB\n Joint primary? \n  Honors\n\n"
         ]);
         xassert($sv->execute());
         $opt = $sv->conf->option_by_id(2);
@@ -747,6 +745,14 @@ class Settings_Tester {
 
         xassert_eqq(search_text_col($this->u_chair, "1", "Program"), "1 Honors\n");
         xassert_eqq($sv->conf->fetch_ivalue("select value from PaperOption where paperId=1 and optionId=2"), 3);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => "2",
+            "sf/1/values_text" => "\n\n",
+        ]);
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "Entry required");
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,

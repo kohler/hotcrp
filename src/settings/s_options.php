@@ -340,8 +340,8 @@ class Options_SettingParser extends SettingParser {
         } else if ($si->name0 === "sf/" && $si->name2 === "/values_text") {
             $sfs = $sv->oldv("sf/{$si->name1}");
             $vs = [];
-            foreach ($sfs->values ?? [] as $sfsv) {
-                $vs[] = $sfsv->name;
+            foreach ($sfs->values ?? [] as $sfv) {
+                $vs[] = $sfv->name;
             }
             $sv->set_oldv($si, empty($vs) ? "" : join("\n", $vs) . "\n");
         } else if (count($si->name_parts) === 5
@@ -362,12 +362,12 @@ class Options_SettingParser extends SettingParser {
 
     function prepare_oblist(Si $si, SettingValues $sv) {
         if ($si->name === "sf") {
-            $m = [];
+            $sfss = [];
             foreach (self::configurable_options($sv->conf) as $f) {
-                $sfs = $m[] = new Sf_Setting;
+                $sfs = $sfss[] = new Sf_Setting;
                 $f->unparse_setting($sfs);
             }
-            $sv->append_oblist("sf", $m, "name");
+            $sv->append_oblist("sf", $sfss, "name");
         } else if ($si->name2 === "/values") {
             $sfs = $sv->oldv("sf/{$si->name1}");
             $sv->append_oblist($si->name, $sfs->values ?? [], "name");
@@ -420,16 +420,17 @@ class Options_SettingParser extends SettingParser {
     private function _apply_req_values_text(Si $si, SettingValues $sv) {
         $cleanreq = cleannl($sv->reqstr($si->name));
         $i = 1;
+        $pfx = "sf/{$si->name1}/values";
         foreach (explode("\n", $cleanreq) as $t) {
             if ($t !== "" && ($t = simplify_whitespace($t)) !== "") {
-                $sv->set_req("sf/{$si->name1}/values/{$i}/name", $t);
-                $sv->set_req("sf/{$si->name1}/values/{$i}/order", (string) $i);
+                $sv->set_req("{$pfx}/{$i}/name", $t);
+                $sv->set_req("{$pfx}/{$i}/order", (string) $i);
                 ++$i;
             }
         }
-        if (!$sv->has_req("sf/{$si->name1}/values")) {
+        if (!$sv->has_req($pfx)) {
             $sv->set_req("sf/{$si->name1}/values_reset", "1");
-            $this->_apply_req_values($sv->si("sf/{$si->name1}/values"), $sv);
+            $this->_apply_req_values($sv->si($pfx), $sv);
         }
         return true;
     }
@@ -441,15 +442,16 @@ class Options_SettingParser extends SettingParser {
             return true;
         }
         $newsfv = $renumbering = [];
-        foreach ($sv->oblist_keys("sf/{$si->name1}/values") as $ctr) {
-            $sfv = $sv->object_newv("sf/{$si->name1}/values/{$ctr}");
-            if (!$sv->reqstr("sf/{$si->name1}/values/{$ctr}/delete")
+        $pfx = "sf/{$si->name1}/values";
+        foreach ($sv->oblist_keys($pfx) as $ctr) {
+            $sfv = $sv->object_newv("{$pfx}/{$ctr}");
+            if (!$sv->reqstr("{$pfx}/{$ctr}/delete")
                 && $sfv->name !== "") {
                 $newsfv[] = $sfv;
                 if ($sfv->id && $sfv->id !== count($newsfv)) {
                     $renumbering[] = "when {$sfv->id} then " . count($newsfv);
                 }
-                $sv->error_if_duplicate_member("sf/{$si->name1}/values", $ctr, "name", "Field value");
+                $sv->error_if_duplicate_member($pfx, $ctr, "name", "Field value");
             }
         }
         if (empty($newsfv)) {
@@ -499,7 +501,7 @@ class Options_SettingParser extends SettingParser {
     }
 
     /** @return bool */
-    private function _apply_req_options(Si $si, SettingValues $sv) {
+    private function _apply_req_sf(Si $si, SettingValues $sv) {
         if ($sv->has_req("options_version")
             && (int) $sv->reqstr("options_version") !== (int) $sv->conf->setting("options")) {
             $sv->error_at("sf", "<0>You modified submission field settings in another tab. Please reload.");
@@ -557,7 +559,7 @@ class Options_SettingParser extends SettingParser {
 
     function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "sf") {
-            return $this->_apply_req_options($si, $sv);
+            return $this->_apply_req_sf($si, $sv);
         } else if ($si->name2 === "/name") {
             return $this->_apply_req_name($si, $sv);
         } else if ($si->name2 === "/type") {
