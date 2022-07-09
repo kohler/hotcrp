@@ -303,7 +303,7 @@ class Permission_Tester {
         // check comment/review visibility when reviews are incomplete
         $this->conf->save_refresh_setting("pc_seeallrev", Conf::PCSEEREV_UNLESSINCOMPLETE);
         Contact::update_rights();
-        $review1 = fetch_review($paper1, $user_mgbaker);
+        $review1 = fresh_review($paper1, $user_mgbaker);
         xassert(!$user_wilma->has_review());
         xassert(!$user_wilma->has_outstanding_review());
         xassert($user_wilma->can_view_review($paper1, $review1));
@@ -687,7 +687,7 @@ class Permission_Tester {
         // check review visibility for “not unless completed on same paper”
         $this->conf->save_refresh_setting("pc_seeallrev", Conf::PCSEEREV_IFCOMPLETE);
         Contact::update_rights();
-        $review2a = fetch_review($paper2, $user_jon);
+        $review2a = fresh_review($paper2, $user_jon);
         xassert(!$review2a->reviewSubmitted && !$review2a->reviewAuthorSeen);
         xassert($review2a->reviewOrdinal == 0);
         xassert($user_jon->can_view_review($paper2, $review2a));
@@ -707,21 +707,21 @@ class Permission_Tester {
         xassert($user_pdruschel->can_view_review($paper2, $review2a));
         xassert(!$this->u_mgbaker->can_view_review($paper2, $review2a));
         AssignmentSet::run($user_chair, "paper,action,email\n2,secondary,mgbaker@cs.stanford.edu\n");
-        $review2d = fetch_review($paper2, $this->u_mgbaker);
+        $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert(!$review2d->reviewSubmitted);
         xassert($review2d->reviewNeedsSubmit == 1);
         xassert(!$this->u_mgbaker->can_view_review($paper2, $review2a));
         $user_external = Contact::make_keyed($this->conf, ["email" => "external@_.com", "name" => "External Reviewer"])->store();
         $this->u_mgbaker->assign_review(2, $user_external->contactId, REVIEW_EXTERNAL);
-        $review2d = fetch_review($paper2, $this->u_mgbaker);
+        $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert(!$review2d->reviewSubmitted);
         xassert($review2d->reviewNeedsSubmit == -1);
         xassert(!$this->u_mgbaker->can_view_review($paper2, $review2a));
-        $review2c = fetch_review($paper2, $user_external);
+        $review2c = fresh_review($paper2, $user_external);
         xassert(!$this->u_mgbaker->can_view_review($paper2, $review2c));
         $review2c = save_review(2, $user_external, $revreq);
         MailChecker::check_db("test01-review2C");
-        $review2d = fetch_review($paper2, $this->u_mgbaker);
+        $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert(!$review2d->reviewSubmitted);
         xassert($review2d->reviewNeedsSubmit == 0);
         xassert($this->u_mgbaker->can_view_review($paper2, $review2a));
@@ -738,7 +738,7 @@ class Permission_Tester {
         assert_search_papers($this->u_chair, "re:pri:mgbaker", "1 13 17");
         $paper2 = $this->conf->checked_paper_by_id(2);
         xassert($paper2->timeSubmitted > 0);
-        $review2d = fetch_review($paper2, $this->u_mgbaker);
+        $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert_eqq($review2d->reviewType, REVIEW_SECONDARY);
         xassert(!$review2d->reviewSubmitted);
         xassert($review2d->reviewNeedsSubmit == 0);
@@ -751,7 +751,7 @@ class Permission_Tester {
 
         assert_search_papers($this->u_chair, "re:sec:mgbaker", "");
         assert_search_papers($this->u_chair, "re:pri:mgbaker", "1 2 13 17");
-        $review2d = fetch_review($paper2, $this->u_mgbaker);
+        $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert_eqq($review2d->reviewType, REVIEW_PRIMARY);
         xassert(!$review2d->reviewSubmitted);
         xassert($review2d->reviewNeedsSubmit == 1);
@@ -763,7 +763,7 @@ class Permission_Tester {
         assert_search_papers($this->u_chair, "re:pri:mgbaker", "1 13 17");
         assert_search_papers($this->u_chair, "sec:any", "2");
         assert_search_papers($this->u_chair, "has:sec", "2");
-        $review2d = fetch_review($paper2, $this->u_mgbaker);
+        $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert_eqq($review2d->reviewType, REVIEW_SECONDARY);
         xassert(!$review2d->reviewSubmitted);
         xassert($review2d->reviewNeedsSubmit == 0);
@@ -772,7 +772,7 @@ class Permission_Tester {
         $old_pcassignments = $this->get_pcassignment_csv();
         xassert_assign($this->u_chair, $old_pcassignments);
         xassert_eqq($this->get_pcassignment_csv(), $old_pcassignments);
-        $review2d = fetch_review($paper2, $this->u_mgbaker);
+        $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert_eqq($review2d->reviewType, REVIEW_SECONDARY);
         xassert(!$review2d->reviewSubmitted);
         xassert($review2d->reviewNeedsSubmit == 0);
@@ -1237,7 +1237,7 @@ class Permission_Tester {
         $user_author2 = $this->conf->checked_user_by_email("micke@cdt.luth.se");
         $user_pdruschel = $this->conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
         $paper2 = $this->conf->checked_paper_by_id(2);
-        $review2b = fetch_review($paper2, $user_pdruschel);
+        $review2b = fresh_review($paper2, $user_pdruschel);
         xassert(!$user_author2->can_view_review($paper2, $review2b));
         xassert(!$review2b->reviewAuthorSeen);
         $this->conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_YES);
@@ -1245,12 +1245,12 @@ class Permission_Tester {
 
         $rjson = $this->conf->review_form()->unparse_review_json($this->u_chair, $paper2, $review2b);
         ReviewForm::update_review_author_seen();
-        $review2b = fetch_review($paper2, $user_pdruschel);
+        $review2b = fresh_review($paper2, $user_pdruschel);
         xassert(!$review2b->reviewAuthorSeen);
 
         $rjson = $this->conf->review_form()->unparse_review_json($user_author2, $paper2, $review2b);
         ReviewForm::update_review_author_seen();
-        $review2b = fetch_review($paper2, $user_pdruschel);
+        $review2b = fresh_review($paper2, $user_pdruschel);
         xassert(!!$review2b->reviewAuthorSeen);
 
         // check review visibility

@@ -298,7 +298,7 @@ class Settings_Tester {
         xassert_eqq($this->conf->setting("outcome_map"), null);
     }
 
-    function test_score_value_class() {
+    function test_scores() {
         xassert(!$this->conf->find_review_field("B5"));
         xassert(!$this->conf->find_review_field("B9"));
         xassert(!$this->conf->find_review_field("B10"));
@@ -323,6 +323,19 @@ class Settings_Tester {
 
         $rf = $this->conf->find_review_field("B5");
         assert($rf instanceof Score_ReviewField);
+        xassert_array_eqq($rf->ordered_symbols(), ["A", "B", "C", "D", "E"]);
+        xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E"]);
+        xassert_eqq($rf->unparse_value(1), "E");
+        xassert_eqq($rf->unparse_value(2), "D");
+        xassert_eqq($rf->unparse_value(3), "C");
+        xassert_eqq($rf->unparse_value(4), "B");
+        xassert_eqq($rf->unparse_value(5), "A");
+        xassert_eqq($rf->unparse_text_field_content("A"), "\nB5\n--\nA. A\n");
+        xassert_eqq($rf->unparse_text_field_content("B"), "\nB5\n--\nB. B\n");
+        xassert_eqq($rf->unparse_text_field_content("C"), "\nB5\n--\nC. C\n");
+        xassert_eqq($rf->unparse_text_field_content("D"), "\nB5\n--\nD. D\n");
+        xassert_eqq($rf->unparse_text_field_content("E"), "\nB5\n--\nE. E\n");
+        xassert_eqq($rf->unparse_text_field_content("F"), "\nB5\n--\nF\n");
         xassert_eqq($rf->value_class(1), "sv sv9");
         xassert_eqq($rf->value_class(2), "sv sv7");
         xassert_eqq($rf->value_class(3), "sv sv5");
@@ -330,6 +343,26 @@ class Settings_Tester {
         xassert_eqq($rf->value_class(5), "sv sv1");
         $rf = $this->conf->find_review_field("B9");
         assert($rf instanceof Score_ReviewField);
+        xassert_array_eqq($rf->ordered_symbols(), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E", "F", "G", "H", "I"]);
+        xassert_eqq($rf->unparse_value(1), "1");
+        xassert_eqq($rf->unparse_value(2), "2");
+        xassert_eqq($rf->unparse_value(3), "3");
+        xassert_eqq($rf->unparse_value(4), "4");
+        xassert_eqq($rf->unparse_value(5), "5");
+        xassert_eqq($rf->unparse_value(6), "6");
+        xassert_eqq($rf->unparse_value(7), "7");
+        xassert_eqq($rf->unparse_value(8), "8");
+        xassert_eqq($rf->unparse_value(9), "9");
+        xassert_eqq($rf->unparse_text_field_content("1"), "\nB9\n--\n1. A\n");
+        xassert_eqq($rf->unparse_text_field_content("2"), "\nB9\n--\n2. B\n");
+        xassert_eqq($rf->unparse_text_field_content("3"), "\nB9\n--\n3. C\n");
+        xassert_eqq($rf->unparse_text_field_content("4"), "\nB9\n--\n4. D\n");
+        xassert_eqq($rf->unparse_text_field_content("5"), "\nB9\n--\n5. E\n");
+        xassert_eqq($rf->unparse_text_field_content("6"), "\nB9\n--\n6. F\n");
+        xassert_eqq($rf->unparse_text_field_content("7"), "\nB9\n--\n7. G\n");
+        xassert_eqq($rf->unparse_text_field_content("8"), "\nB9\n--\n8. H\n");
+        xassert_eqq($rf->unparse_text_field_content("9"), "\nB9\n--\n9. I\n");
         xassert_eqq($rf->value_class(1), "sv sv1");
         xassert_eqq($rf->value_class(2), "sv sv2");
         xassert_eqq($rf->value_class(3), "sv sv3");
@@ -341,6 +374,23 @@ class Settings_Tester {
         xassert_eqq($rf->value_class(9), "sv sv9");
         $rf = $this->conf->find_review_field("B15");
         assert($rf instanceof Score_ReviewField);
+        xassert_array_eqq($rf->ordered_symbols(), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"]);
+        xassert_eqq($rf->unparse_value(1), "1");
+        xassert_eqq($rf->unparse_value(2), "2");
+        xassert_eqq($rf->unparse_value(3), "3");
+        xassert_eqq($rf->unparse_value(4), "4");
+        xassert_eqq($rf->unparse_value(5), "5");
+        xassert_eqq($rf->unparse_value(6), "6");
+        xassert_eqq($rf->unparse_value(7), "7");
+        xassert_eqq($rf->unparse_value(8), "8");
+        xassert_eqq($rf->unparse_value(9), "9");
+        xassert_eqq($rf->unparse_value(10), "10");
+        xassert_eqq($rf->unparse_value(11), "11");
+        xassert_eqq($rf->unparse_value(12), "12");
+        xassert_eqq($rf->unparse_value(13), "13");
+        xassert_eqq($rf->unparse_value(14), "14");
+        xassert_eqq($rf->unparse_value(15), "15");
         xassert_eqq($rf->value_class(1), "sv sv1");
         xassert_eqq($rf->value_class(2), "sv sv2");
         xassert_eqq($rf->value_class(3), "sv sv2");
@@ -358,6 +408,18 @@ class Settings_Tester {
         xassert_eqq($rf->value_class(15), "sv sv9");
         $rf = $this->conf->find_review_field("B10");
         assert($rf instanceof Score_ReviewField);
+        xassert_array_eqq($rf->ordered_symbols(), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]);
+        xassert_eqq($rf->unparse_value(1), "1");
+        xassert_eqq($rf->unparse_value(2), "2");
+        xassert_eqq($rf->unparse_value(3), "3");
+        xassert_eqq($rf->unparse_value(4), "4");
+        xassert_eqq($rf->unparse_value(5), "5");
+        xassert_eqq($rf->unparse_value(6), "6");
+        xassert_eqq($rf->unparse_value(7), "7");
+        xassert_eqq($rf->unparse_value(8), "8");
+        xassert_eqq($rf->unparse_value(9), "9");
+        xassert_eqq($rf->unparse_value(10), "10");
         xassert_eqq($rf->value_class(1), "sv sv1");
         xassert_eqq($rf->value_class(2), "sv sv2");
         xassert_eqq($rf->value_class(3), "sv sv3");
@@ -383,6 +445,10 @@ class Settings_Tester {
         xassert($sv->execute());
         $rf = $this->conf->find_review_field("B5");
         assert($rf instanceof Score_ReviewField);
+        xassert_array_eqq($rf->ordered_symbols(), ["A", "B", "C", "D", "E"]);
+        xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E"]);
+        xassert_eqq($rf->unparse_value(1), "E");
+        xassert_eqq($rf->unparse_value(5), "A");
         xassert_eqq($rf->value_class(1), "sv sv1");
         xassert_eqq($rf->value_class(2), "sv sv3");
         xassert_eqq($rf->value_class(3), "sv sv5");
@@ -390,6 +456,10 @@ class Settings_Tester {
         xassert_eqq($rf->value_class(5), "sv sv9");
         $rf = $this->conf->find_review_field("B9");
         assert($rf instanceof Score_ReviewField);
+        xassert_array_eqq($rf->ordered_symbols(), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E", "F", "G", "H", "I"]);
+        xassert_eqq($rf->unparse_value(1), "1");
+        xassert_eqq($rf->unparse_value(9), "9");
         xassert_eqq($rf->value_class(1), "sv sv9");
         xassert_eqq($rf->value_class(2), "sv sv8");
         xassert_eqq($rf->value_class(3), "sv sv7");
@@ -401,6 +471,10 @@ class Settings_Tester {
         xassert_eqq($rf->value_class(9), "sv sv1");
         $rf = $this->conf->find_review_field("B15");
         assert($rf instanceof Score_ReviewField);
+        xassert_array_eqq($rf->ordered_symbols(), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"]);
+        xassert_eqq($rf->unparse_value(1), "1");
+        xassert_eqq($rf->unparse_value(15), "15");
         xassert_eqq($rf->value_class(15), "sv sv1");
         xassert_eqq($rf->value_class(14), "sv sv2");
         xassert_eqq($rf->value_class(13), "sv sv2");
@@ -418,6 +492,10 @@ class Settings_Tester {
         xassert_eqq($rf->value_class(1), "sv sv9");
         $rf = $this->conf->find_review_field("B10");
         assert($rf instanceof Score_ReviewField);
+        xassert_array_eqq($rf->ordered_symbols(), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]);
+        xassert_eqq($rf->unparse_value(1), "1");
+        xassert_eqq($rf->unparse_value(10), "10");
         xassert_eqq($rf->value_class(10), "sv sv1");
         xassert_eqq($rf->value_class(9), "sv sv2");
         xassert_eqq($rf->value_class(8), "sv sv3");
@@ -452,6 +530,86 @@ class Settings_Tester {
         ]);
         xassert(!$sv->execute());
         xassert_str_contains($sv->full_feedback_text(), "Entry required");
+    }
+
+    function test_review_renumber_choices() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s05",
+            "rf/1/name" => "Mf",
+            "rf/1/values" => "A. A\nB. B\nC. C",
+            "rf/2/id" => "s90",
+            "rf/2/name" => "Jf",
+            "rf/2/values" => "A. A\nB. B\nC. C"
+        ]);
+        xassert($sv->execute());
+
+        xassert_eqq($sv->conf->fetch_ivalue("select reviewId from PaperReview where paperId=30 limit 1"), null);
+
+        $sv->conf->save_refresh_setting("rev_open", 1);
+        save_review(30, $this->u_mgbaker, [
+            "ovemer" => 2, "revexp" => 1, "mf" => "A", "jf" => "A"
+        ]);
+        $u_jj = $this->conf->checked_user_by_email("jj@cse.ucsc.edu");
+        save_review(30, $u_jj, [
+            "ovemer" => 2, "revexp" => 1, "mf" => "B", "jf" => "B"
+        ]);
+        $u_floyd = $this->conf->checked_user_by_email("floyd@ee.lbl.gov");
+        save_review(30, $u_floyd, [
+            "ovemer" => 2, "revexp" => 1, "mf" => "C", "jf" => "C"
+        ]);
+
+        $rrow = checked_fresh_review(30, $this->u_mgbaker);
+        xassert_eqq($rrow->fval("s05"), 3);
+        xassert_eqq($rrow->fval("s90"), 3);
+        $rrow = checked_fresh_review(30, $u_jj);
+        xassert_eqq($rrow->fval("s05"), 2);
+        xassert_eqq($rrow->fval("s90"), 2);
+        $rrow = checked_fresh_review(30, $u_floyd);
+        xassert_eqq($rrow->fval("s05"), 1);
+        xassert_eqq($rrow->fval("s90"), 1);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s05",
+            "rf/1/name" => "Mf",
+            "rf/1/values" => "1. A\n2. B\n3. C",
+            "rf/2/id" => "s90",
+            "rf/2/name" => "Jf",
+            "rf/2/values" => "X. B\nY. C\nZ. A"
+        ]);
+        xassert($sv->execute());
+
+        $rrow = checked_fresh_review(30, $this->u_mgbaker);
+        xassert_eqq($rrow->fval("s05"), 1);
+        xassert_eqq($rrow->fval("s90"), 1);
+        $rrow = checked_fresh_review(30, $u_jj);
+        xassert_eqq($rrow->fval("s05"), 2);
+        xassert_eqq($rrow->fval("s90"), 3);
+        $rrow = checked_fresh_review(30, $u_floyd);
+        xassert_eqq($rrow->fval("s05"), 3);
+        xassert_eqq($rrow->fval("s90"), 2);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s05",
+            "rf/2/id" => "s90",
+            "rf/1/delete" => "1",
+            "rf/2/delete" => "1"
+        ]);
+        xassert($sv->execute());
+
+        $rrow = checked_fresh_review(30, $this->u_mgbaker);
+        xassert_eqq($rrow->fval("s05"), null);
+        xassert_eqq($rrow->fval("s90"), null);
+        $rrow = checked_fresh_review(30, $u_jj);
+        xassert_eqq($rrow->fval("s05"), null);
+        xassert_eqq($rrow->fval("s90"), null);
+        $rrow = checked_fresh_review(30, $u_floyd);
+        xassert_eqq($rrow->fval("s05"), null);
+        xassert_eqq($rrow->fval("s90"), null);
+
+        $this->conf->qe("delete from PaperReview where paperId=30");
     }
 
     function test_review_rounds() {
@@ -799,5 +957,23 @@ class Settings_Tester {
         ]);
         xassert($sv->execute());
         xassert_eqq(trim($sv->full_feedback_text()), "");
+
+        $opts = $this->conf->find_all_fields("Joint concentration");
+        xassert_eqq(count($opts), 1);
+        $opt = $opts[0];
+        $optid = $opt->id;
+        xassert_eqq($opt->exists_condition(), "Program:Joint*");
+
+        // conditions are preserved
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => $optid,
+            "sf/1/name" => "Joint concentration?"
+        ]);
+        xassert($sv->execute());
+
+        $opt = $this->conf->checked_option_by_id($optid);
+        xassert_eqq($opt->exists_condition(), "Program:Joint*");
+        xassert_eqq($opt->name, "Joint concentration?");
     }
 }

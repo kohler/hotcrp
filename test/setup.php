@@ -635,11 +635,25 @@ function call_api($fn, $user, $qreq, $prow) {
 /** @param int|PaperInfo $prow
  * @param Contact $user
  * @return ?ReviewInfo */
-function fetch_review($prow, $user) {
+function fresh_review($prow, $user) {
     if (is_int($prow)) {
         $prow = $user->conf->checked_paper_by_id($prow, $user);
     }
     return $prow->fresh_review_by_user($user);
+}
+
+/** @param int|PaperInfo $prow
+ * @param Contact $user
+ * @return ReviewInfo */
+function checked_fresh_review($prow, $user) {
+    if (is_int($prow)) {
+        $prow = $user->conf->checked_paper_by_id($prow, $user);
+    }
+    if (($rrow = $prow->fresh_review_by_user($user))) {
+        return $rrow;
+    } else {
+        throw new Exception("checked_fresh_review failed");
+    }
 }
 
 /** @param Contact $user
@@ -650,11 +664,11 @@ function save_review($paper, $user, $revreq, $rrow = null) {
     $rf = Conf::$main->review_form();
     $tf = new ReviewValues($rf);
     $tf->parse_qreq(new Qrequest("POST", $revreq), false);
-    $tf->check_and_save($user, $prow, $rrow ?? fetch_review($prow, $user));
+    $tf->check_and_save($user, $prow, $rrow ?? fresh_review($prow, $user));
     foreach ($tf->problem_list() as $mx) {
         error_log("! {$mx->field}" . ($mx->message ? ": {$mx->message}" : ""));
     }
-    return fetch_review($prow, $user);
+    return fresh_review($prow, $user);
 }
 
 /** @return Contact */

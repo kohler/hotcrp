@@ -134,7 +134,7 @@ class Reviews_Tester {
 
     function test_offline_review_update() {
         $paper1 = $this->conf->checked_paper_by_id(1, $this->u_chair);
-        fetch_review($paper1, $this->u_mgbaker);
+        fresh_review($paper1, $this->u_mgbaker);
         $this->review1A = file_get_contents(SiteLoader::find("test/review1A.txt"));
 
         // correct update
@@ -143,7 +143,7 @@ class Reviews_Tester {
         xassert($tf->check_and_save($this->u_mgbaker));
 
         assert_search_papers($this->u_chair, "ovemer:4", "1");
-        $rrow = fetch_review($paper1, $this->u_mgbaker);
+        $rrow = fresh_review($paper1, $this->u_mgbaker);
         xassert_eqq($rrow->fval("t03"), "  This is a test of leading whitespace\n\n  It should be preserved\nAnd defended\n");
 
         // different-conference form fails
@@ -177,7 +177,7 @@ class Reviews_Tester {
         $tf = ReviewValues::make_text($this->conf->review_form(), preg_replace('/Reviewer: .*/m', 'Reviewer: Mary Baaaker <mgbaker193r8219@butt.com>', preg_replace('/^4/m', "5", $this->review1A)), "review1A-5.txt");
         xassert($tf->parse_text(false));
         $paper1 = $this->conf->checked_paper_by_id(1);
-        xassert(!$tf->check_and_save($this->u_mgbaker, $paper1, fetch_review($paper1, $this->u_mgbaker)));
+        xassert(!$tf->check_and_save($this->u_mgbaker, $paper1, fresh_review($paper1, $this->u_mgbaker)));
         xassert($tf->has_problem_at("reviewerEmail"));
         assert_search_papers($this->u_chair, "ovemer:4", "1");
         assert_search_papers($this->u_chair, "ovemer:5", "");
@@ -186,7 +186,7 @@ class Reviews_Tester {
         // Also add a description of the field
         $tf = ReviewValues::make_text($this->conf->review_form(), preg_replace('/Reviewer: .*/m', 'Reviewer: Mary Baker <mgbaker193r8219@butt.com>', preg_replace('/^4/m', "5. Strong accept", $this->review1A)), "review1A-5.txt");
         xassert($tf->parse_text(false));
-        xassert($tf->check_and_save($this->u_mgbaker, $paper1, fetch_review($paper1, $this->u_mgbaker)));
+        xassert($tf->check_and_save($this->u_mgbaker, $paper1, fresh_review($paper1, $this->u_mgbaker)));
         xassert(!$tf->has_problem_at("reviewerEmail"));
         assert_search_papers($this->u_chair, "ovemer:4", "");
         assert_search_papers($this->u_chair, "ovemer:5", "1");
@@ -275,7 +275,7 @@ class Reviews_Tester {
             "comaut" => "Comments for äuthor", "compc" => "Comments for PC",
             "ready" => true
         ]);
-        $rrow = fetch_review(1, $this->u_mgbaker);
+        $rrow = fresh_review(1, $this->u_mgbaker);
         xassert_eqq((string) $rrow->fval("s01"), "2");
         xassert_eqq((string) $rrow->fval("s02"), "1");
         xassert_eqq((string) $rrow->fval("t01"), "This is the summary\n");
@@ -358,7 +358,7 @@ class Reviews_Tester {
         assert_search_papers($this->u_chair, "has:tex10", "1");
         assert_search_papers($this->u_chair, "has:tex11", "");
 
-        $rrow = fetch_review(1, $this->u_mgbaker);
+        $rrow = fresh_review(1, $this->u_mgbaker);
         xassert_eqq((string) $rrow->fval("s16"), "3");
 
         // Remove some fields and truncate their options
@@ -379,7 +379,7 @@ class Reviews_Tester {
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
-        $rrow = fetch_review(1, $this->u_mgbaker);
+        $rrow = fresh_review(1, $this->u_mgbaker);
         xassert($rrow->fval("s15") === null || (string) $rrow->fval("s15") === "0");
         xassert($rrow->fval("s16") === null || (string) $rrow->fval("s16") === "0");
         xassert($rrow->fval("t10") === null || (string) $rrow->fval("t10") === "");
@@ -613,14 +613,14 @@ class Reviews_Tester {
         xassert(!$user_pdruschel->can_view_authors($paper17));
         $conf->save_setting("sub_blind", Conf::BLIND_ALWAYS);
 
-        $rrow17m = fetch_review($paper17, $user_mgbaker);
+        $rrow17m = fresh_review($paper17, $user_mgbaker);
         xassert(!$rrow17m->reviewModified);
 
         $tf = new ReviewValues($conf->review_form());
         xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "No summary", "comaut" => "No comments"]));
         xassert($tf->check_and_save($user_mgbaker, $paper17));
 
-        $rrow17m = fetch_review($paper17, $user_mgbaker);
+        $rrow17m = fresh_review($paper17, $user_mgbaker);
         xassert_eq($rrow17m->fval("s01"), 2);
         xassert_eq($rrow17m->fval("s02"), 1);
         xassert_eqq($rrow17m->fval("t01"), "No summary\n");
@@ -650,7 +650,7 @@ class Reviews_Tester {
         xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "No summary", "comaut" => "No comments"]));
         xassert($tf->check_and_save($user_diot, $paper18));
 
-        $rrow18d = fetch_review($paper18, $user_diot);
+        $rrow18d = fresh_review($paper18, $user_diot);
         $rd = new ReviewDiffInfo($paper18, $rrow18d);
         $rd->add_field($conf->find_review_field("ovemer"), 3);
         $rd->add_field($conf->find_review_field("papsum"), "There definitely is a summary in this position.");
@@ -681,7 +681,7 @@ Now we are engaged in a great civil war, testing whether that nation, or any nat
 But, in a larger sense, we can not dedicate -- we can not consecrate -- we can not hallow -- this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract. The world will little note, nor long remember what we say here, but it can never forget what they did here. It is for us the living, rather, to be dedicated here to the unfinished work which they who fought here have thus far so nobly advanced. It is rather for us to be here dedicated to the great task remaining before us -- that from these honored dead we take increased devotion to that cause for which they gave the last full measure of devotion -- that we here highly resolve that these dead shall not have died in vain -- that this nation, under God, shall have a new birth of freedom -- and that government of the people, by the people, for the people, shall not perish from the earth.\n"]));
         xassert($tf->check_and_save($user_diot, $paper18));
 
-        $rrow18d = fetch_review($paper18, $user_diot);
+        $rrow18d = fresh_review($paper18, $user_diot);
         $gettysburg = $rrow18d->fval("t01");
         $gettysburg2 = str_replace("by the people", "near the people", $gettysburg);
 
@@ -719,7 +719,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($tf->summary_status(), MessageSet::WARNING);
         xassert_eqq($tf->full_feedback_text(), "No changes to review #18A\n");
 
-        $rrow = fetch_review($paper18, $user_diot);
+        $rrow = fresh_review($paper18, $user_diot);
         xassert_eqq($rrow->fval("t04"), "This is the stuff I want to add for the authors’ response.\n");
 
         $review18A2 = str_replace("This is the stuff", "That was the stuff",
@@ -728,7 +728,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($tf->parse_text(false));
         xassert($tf->check_and_save($user_diot));
 
-        $rrow = fetch_review($paper18, $user_diot);
+        $rrow = fresh_review($paper18, $user_diot);
         xassert_eqq($rrow->fval("t04"), "That was the stuff I want to add for the authors’ response.\n");
 
         $sv = SettingValues::make_request($user_chair, [
@@ -745,7 +745,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($tf->parse_text(false));
         xassert($tf->check_and_save($user_diot));
 
-        $rrow = fetch_review($paper18, $user_diot);
+        $rrow = fresh_review($paper18, $user_diot);
         xassert_eqq($rrow->fval("t04"), "Whence the stuff I want to add for the authors’ response.\n");
 
         $review18A4 = file_get_contents(SiteLoader::find("test/review18A-4.txt"));
@@ -753,7 +753,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($tf->parse_text(false));
         xassert($tf->check_and_save($user_diot));
 
-        $rrow = fetch_review($paper18, $user_diot);
+        $rrow = fresh_review($paper18, $user_diot);
         xassert(str_ends_with($rrow->fval("t01"), "\n==+== Want to make sure this works\n"));
         xassert_eqq($rrow->fval("t04"), "Whitherto the stuff I want to add for the authors’ response.\n");
 
@@ -784,8 +784,8 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "Radical", "comaut" => "Nonradical"]));
         xassert($tf->check_and_save($this->u_lixia, $paper17));
         MailChecker::check_db("test06-17lixia");
-        $rrow17h = fetch_review($paper17, $this->u_lixia);
-        $rrow17x = fetch_review($paper17, $user_external);
+        $rrow17h = fresh_review($paper17, $this->u_lixia);
+        $rrow17x = fresh_review($paper17, $user_external);
         xassert_eqq($rrow17m->reviewRound, $conf->round_number("R2", false));
         xassert_eqq($rrow17h->reviewRound, $conf->round_number("R1", false));
         xassert_eqq($rrow17x->reviewRound, $conf->round_number("R2", false));
@@ -966,7 +966,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         ]);
         MailChecker::check_db("test06-external2-approval17");
 
-        save_review(17, $this->u_lixia, ["ready" => true], fetch_review(17, $user_external2));
+        save_review(17, $this->u_lixia, ["ready" => true], fresh_review(17, $user_external2));
         MailChecker::check_db("test06-external2-submit17");
     }
 
@@ -1020,7 +1020,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         // author review visibility
         $paper17 = $this->conf->checked_paper_by_id(17);
-        $rrow17m = fetch_review($paper17, $this->u_mgbaker);
+        $rrow17m = fresh_review($paper17, $this->u_mgbaker);
         xassert(!$this->u_mjh->can_view_review($paper17, $rrow17m));
         $this->conf->save_refresh_setting("au_seerev", 2);
         xassert($this->u_mjh->can_view_review($paper17, $rrow17m));

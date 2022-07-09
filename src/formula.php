@@ -2446,7 +2446,7 @@ class Formula implements JsonSerializable {
         $rx = round($x * 100) / 100;
         if ($this->_format > Fexpr::FNUMERIC) {
             if ($this->_format === Fexpr::FREVIEWFIELD) {
-                return $this->_format_detail->unparse_value($rx, 0, $real_format);
+                return $this->_format_detail->unparse_value($rx, ReviewField::VALUE_NATIVE, $real_format);
             } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
                 return Score_ReviewField::unparse_letter(91, $x + 2);
             } else if ($this->_format === Fexpr::FREVIEWER) {

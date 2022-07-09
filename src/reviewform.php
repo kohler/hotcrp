@@ -196,7 +196,7 @@ class ReviewForm implements JsonSerializable {
         $fi = $this->conf->format_info(null);
         echo '<div class="rve">';
         foreach ($rrow->viewable_fields($contact) as $f) {
-            $fval = $f->normalize_value($f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_STRING));
+            $fval = $f->normalize_value($f->unparse_value($rrow->fields[$f->order]));
             if ($rvalues && isset($rvalues->req[$f->short_id])) {
                 $rval = $f->normalize_value($rvalues->req[$f->short_id]);
             } else {
@@ -365,7 +365,7 @@ $blind\n";
                 if ($req && isset($req[$fid])) {
                     $fval = rtrim($req[$fid]);
                 } else if (isset($rrow->fields[$f->order])) {
-                    $fval = $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_STRING | ReviewField::VALUE_TRIM);
+                    $fval = $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_TRIM);
                 } else {
                     $fval = "";
                 }
@@ -413,7 +413,7 @@ $blind\n";
         $args = ["flowed" => ($flags & self::UNPARSE_FLOWED) !== 0];
         foreach ($rrow->viewable_fields($contact) as $f) {
             if (isset($rrow->fields[$f->order])) {
-                $fv = $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_STRING | ReviewField::VALUE_TRIM);
+                $fv = $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_TRIM);
                 $f->unparse_text_field($t, $fv, $args);
             }
         }
@@ -751,7 +751,7 @@ $blind\n";
                 || !($flags & self::RJ_NO_REVIEWERONLY)) {
                 $fval = $rrow->fields[$f->order];
                 if ($f->has_options) {
-                    $fval = $f->unparse_value((int) $fval);
+                    $fval = $f->unparse_value((int) $fval, ReviewField::VALUE_NATIVE);
                 }
                 $rj[$f->uid()] = $fval;
             }

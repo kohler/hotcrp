@@ -78,9 +78,8 @@ class ReviewFieldInfo {
 abstract class ReviewField implements JsonSerializable {
     const VALUE_NONE = 0;
     const VALUE_SC = 1;
-    const VALUE_REV_NUM = 2;
-    const VALUE_STRING = 4;
-    const VALUE_TRIM = 8;
+    const VALUE_NATIVE = 2;
+    const VALUE_TRIM = 4;
 
     /** @var non-empty-string
      * @readonly */
@@ -441,7 +440,8 @@ abstract class ReviewField implements JsonSerializable {
      * @param array{format:?TextFormat,rvalues:?ReviewValues} $args */
     abstract function print_web_edit($fv, $reqv, $args);
 
-    /** @param list<string> &$t */
+    /** @param list<string> &$t
+     * @param array{flowed:bool} $args */
     protected function unparse_text_field_header(&$t, $args) {
         $t[] = "\n";
         if (strlen($this->name) > 75) {
@@ -460,6 +460,14 @@ abstract class ReviewField implements JsonSerializable {
      * @param string $fv
      * @param array{flowed:bool} $args */
     abstract function unparse_text_field(&$t, $fv, $args);
+
+    /** @param string $fv
+     * @return string */
+    function unparse_text_field_content($fv) {
+        $t = [];
+        $this->unparse_text_field($t, $fv, ["flowed" => false]);
+        return join("", $t);
+    }
 
     /** @param list<string> &$t */
     protected function unparse_offline_field_header(&$t, $args) {
@@ -502,11 +510,13 @@ abstract class ReviewField implements JsonSerializable {
 
 class Score_ReviewField extends ReviewField {
     /** @var list<string> */
-    private $values;
+    private $values = [];
     /** @var list<int|string> */
-    private $symbols;
+    private $symbols = [];
     /** @var int */
     public $option_letter = 0;
+    /** @var bool */
+    public $flip = false;
     /** @var string */
     public $scheme = "sv";
     /** @var ?string */
@@ -536,23 +546,18 @@ class Score_ReviewField extends ReviewField {
         $this->values = $j->values ?? $j->options ?? [];
         $nvalues = count($this->values);
         $ol = $j->start ?? $j->option_letter ?? null;
-        if ($ol && is_string($ol) && ctype_alpha($ol) && strlen($ol) === 1) {
-            $this->option_letter = ord($ol) + $nvalues;
-        } else {
-            $this->option_letter = 0;
-        }
+        $this->option_letter = 0;
+        $this->symbols = [];
+        $this->flip = false;
         if (isset($j->symbols) && count($j->symbols) === $nvalues) {
-            $this->option_letter = 0;
             $this->symbols = $j->symbols;
         } else if ($ol && is_string($ol) && ctype_upper($ol) && strlen($ol) === 1) {
             $this->option_letter = ord($ol) + $nvalues;
-            $this->symbols = [];
-            $this->values = array_reverse($this->values);
+            $this->flip = true;
             for ($i = 0; $i !== $nvalues; ++$i) {
                 $this->symbols[] = chr($this->option_letter - $i - 1);
             }
         } else {
-            $this->option_letter = 0;
             for ($i = 0; $i !== $nvalues; ++$i) {
                 $this->symbols[] = $i + 1;
             }
@@ -580,17 +585,28 @@ class Score_ReviewField extends ReviewField {
     }
 
     /** @return list<string> */
-    function unparse_json_values() {
-        assert($this->has_options);
-        $values = $this->values ?? [];
-        return $this->option_letter ? array_reverse($values) : $values;
+    function values() {
+        return $this->values;
+    }
+
+    /** @return list<int|string> */
+    function ordered_symbols() {
+        return $this->flip ? array_reverse($this->symbols) : $this->symbols;
+    }
+
+    /** @return list<string> */
+    function ordered_values() {
+        return $this->flip ? array_reverse($this->values) : $this->values;
     }
 
     function unparse_json($style) {
         $j = parent::unparse_json($style);
-        $j->values = $this->unparse_json_values();
+        $j->values = $this->values;
         if ($this->option_letter) {
-            $j->start = chr($this->option_letter - count($j->values));
+            $j->start = chr($this->option_letter - count($this->values));
+        }
+        if ($this->flip) {
+            $j->flip = true;
         }
         if ($this->scheme !== "sv") {
             $j->scheme = $this->scheme;
@@ -601,7 +617,7 @@ class Score_ReviewField extends ReviewField {
 
     function unparse_setting($rfs) {
         parent::unparse_setting($rfs);
-        $rfs->values = $this->unparse_json_values();
+        $rfs->values = $this->values;
         if ($this->option_letter) {
             $rfs->start = chr($this->option_letter - count($this->values));
         } else {
@@ -653,8 +669,8 @@ class Score_ReviewField extends ReviewField {
 
     /** @return ?array{string,string} */
     function full_score_range() {
-        $f = $this->option_letter ? count($this->values) : 1;
-        $l = $this->option_letter ? 1 : count($this->values);
+        $f = $this->flip ? count($this->values) : 1;
+        $l = $this->flip ? 1 : count($this->values);
         return [$this->unparse_value($f), $this->unparse_value($l)];
     }
 
@@ -685,7 +701,7 @@ class Score_ReviewField extends ReviewField {
             $n = (int) round(($value - 1) * ($info[1] - 1) / (count($this->values) - 1));
         }
         $sclass = $info[0] & 1 ? $info[2] : $this->scheme;
-        if (!($info[0] & 1) !== !$this->option_letter) {
+        if ((($info[0] & 1) !== 0) !== $this->flip) {
             $n = $info[1] - $n;
         } else {
             $n += 1;
@@ -719,18 +735,14 @@ class Score_ReviewField extends ReviewField {
             $text = self::unparse_letter($this->option_letter, $value);
         } else if ($real_format) {
             $text = sprintf($real_format, $value);
-        } else if ($flags & self::VALUE_STRING) {
+        } else if (($flags & self::VALUE_NATIVE) === 0) {
             $text = (string) $value;
         } else {
             $text = $value;
         }
-        if ($flags & (self::VALUE_SC | self::VALUE_REV_NUM)) {
+        if (($flags & self::VALUE_SC) !== 0) {
             $vc = $this->value_class($value);
-            if ($flags & self::VALUE_REV_NUM) {
-                $text = "<strong class=\"rev_num {$vc}\">{$text}.</strong>";
-            } else {
-                $text = "<span class=\"{$vc}\">{$text}</span>";
-            }
+            $text = "<span class=\"{$vc}\">{$text}</span>";
         }
         return $text;
     }
@@ -770,7 +782,7 @@ class Score_ReviewField extends ReviewField {
         } else {
             $retstr = "<div class=\"sc\">"
                 . "<div class=\"need-scorechart\" style=\"width:64px;height:8px\" data-scorechart=\"{$args}&amp;s=2\" title=\"{$avgtext}\"></div><br>";
-            if ($this->option_letter) {
+            if ($this->flip) {
                 for ($key = $max; $key >= 1; --$key) {
                     $retstr .= ($key < $max ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $counts[$key - 1] . "</span>";
                 }
@@ -821,50 +833,52 @@ class Score_ReviewField extends ReviewField {
      * @return int|string */
     function normalize_value($fval) {
         if (($i = array_search($fval, $this->symbols)) !== false) {
-            return $this->option_letter ? chr($this->option_letter - $i - 1) : (int) $i + 1;
+            return $this->symbols[$i];
         } else {
             return 0;
         }
     }
 
-    /** @param int $idx
-     * @param int|string $symbol
+    /** @param int $i
      * @param int|string $fv
      * @param int|string $reqv */
-    private function print_option($idx, $symbol, $fv, $reqv) {
+    private function print_choice($i, $fv, $reqv) {
+        $symbol = $i < 0 ? "0" : $this->symbols[$i];
         $opt = ["id" => "{$this->short_id}_{$symbol}"];
         if ($fv !== $reqv) {
             $opt["data-default-checked"] = $fv === $symbol;
         }
-        echo '<label class="checki', ($symbol ? "" : " g"), '"><span class="checkc">',
+        echo '<label class="checki', ($i >= 0 ? "" : " g"), '"><span class="checkc">',
             Ht::radio($this->short_id, $symbol, $reqv === $symbol, $opt), '</span>';
-        if ($symbol) {
-            echo $this->unparse_value($symbol, self::VALUE_REV_NUM),
-                ' ', htmlspecialchars($this->values[$idx]);
+        if ($i >= 0) {
+            $vc = $this->value_class($i + 1);
+            echo '<strong class="rev_num ', $vc, '">', $symbol;
+            if ($this->values[$i] !== "") {
+                echo '.</strong> ', htmlspecialchars($this->values[$i]);
+            } else {
+                echo '</strong>';
+            }
         } else {
             echo 'No entry';
         }
         echo '</label>';
     }
 
-    /** @return list<int|string> */
-    private function ordered_symbols() {
-        return $this->option_letter ? array_reverse($this->symbols, true) : $this->symbols;
-    }
-
     function print_web_edit($fv, $reqv, $args) {
+        $n = count($this->values);
         if ($reqv || !$this->required) {
             $for = "{$this->short_id}_{$reqv}";
         } else {
-            $for = "{$this->short_id}_" . ($this->ordered_symbols())[0];
+            $for = "{$this->short_id}_" . $this->symbols[$this->flip ? $n - 1 : 0];
         }
         $this->print_web_edit_open($this->short_id, $for, $args["rvalues"]);
         echo '<div class="revev">';
-        foreach ($this->ordered_symbols() as $idx => $symbol) {
-            $this->print_option($idx, $symbol, $fv, $reqv);
+        $step = $this->flip ? -1 : 1;
+        for ($i = $this->flip ? $n - 1 : 0; $i >= 0 && $i < $n; $i += $step) {
+            $this->print_choice($i, $fv, $reqv);
         }
         if (!$this->required) {
-            $this->print_option(0, 0, $fv, $reqv);
+            $this->print_choice(-1, $fv, $reqv);
         }
         echo '</div></div>';
     }
@@ -872,18 +886,28 @@ class Score_ReviewField extends ReviewField {
     function unparse_text_field(&$t, $fv, $args) {
         if ($fv != 0) {
             $this->unparse_text_field_header($t, $args);
-            $idx = array_search($fv, $this->symbols);
-            $t[] = prefix_word_wrap("{$fv}. ", $idx !== false ? $this->values[$idx] : "", strlen($fv) + 2, null, $args["flowed"]);
+            $i = array_search($fv, $this->symbols);
+            if ($i !== false && $this->values[$i] !== "") {
+                $t[] = prefix_word_wrap("{$fv}. ", $this->values[$i], strlen($fv) + 2, null, $args["flowed"]);
+            } else {
+                $t[] = "{$fv}\n";
+            }
         }
     }
 
     function unparse_offline_field(&$t, $fv, $args) {
         $this->unparse_offline_field_header($t, $args);
         $t[] = "==-== Choices:\n";
-        foreach ($this->ordered_symbols() as $idx => $symbol) {
-            $y = "==-==    {$symbol}. ";
-            /** @phan-suppress-next-line PhanParamSuspiciousOrder */
-            $t[] = prefix_word_wrap($y, $this->values[$idx], str_pad("==-==", strlen($y)));
+        $n = count($this->values);
+        $step = $this->flip ? -1 : 1;
+        for ($i = $this->flip ? $n - 1 : 0; $i >= 0 && $i < $n; $i += $step) {
+            if ($this->values[$i] !== "") {
+                $y = "==-==    {$this->symbols[$i]}. ";
+                /** @phan-suppress-next-line PhanParamSuspiciousOrder */
+                $t[] = prefix_word_wrap($y, $this->values[$i], str_pad("==-==", strlen($y)));
+            } else {
+                $t[] = "==-==   {$this->symbols[$i]}\n";
+            }
         }
         if (!$this->required) {
             $t[] = "==-==    No entry\n==-== Enter your choice:\n";
@@ -893,8 +917,12 @@ class Score_ReviewField extends ReviewField {
             $t[] = "==-== Enter the number of your choice:\n";
         }
         $t[] = "\n";
-        if (($idx = array_search($fv, $this->symbols)) !== false) {
-            $t[] = "{$this->symbols[$idx]}. {$this->values[$idx]}\n";
+        if (($i = array_search($fv, $this->symbols)) !== false) {
+            if ($this->values[$i] !== "") {
+                $t[] = "{$this->symbols[$i]}. {$this->values[$i]}\n";
+            } else {
+                $t[] = "{$this->symbols[$i]}\n";
+            }
         } else if ($this->required) {
             $t[] = "(Your choice here)\n";
         } else {

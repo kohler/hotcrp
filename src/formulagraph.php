@@ -973,7 +973,7 @@ class FormulaGraph extends MessageSet {
             $n = $field->nvalues();
             $ol = $field->option_letter ? chr($field->option_letter - $n) : null;
             $ticks = ["score", $n, $ol, $field->scheme];
-            if ($field->option_letter && $isx) {
+            if ($field->flip && $isx) {
                 $j["flip"] = true;
             }
         } else {

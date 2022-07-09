@@ -108,13 +108,8 @@ class ReviewForm_SettingParser extends SettingParser {
             $seqopts[] = $opts[$onum];
         }
 
-        if ($letters) {
-            $sv->save("{$pfx}/values", array_reverse($seqopts));
-            $sv->save("{$pfx}/start", chr($lowonum));
-        } else {
-            $sv->save("{$pfx}/values", $seqopts);
-            $sv->save("{$pfx}/start", "");
-        }
+        $sv->save("{$pfx}/values", $letters ? array_reverse($seqopts) : $seqopts);
+        $sv->save("{$pfx}/start", $letters ? chr($lowonum) : "");
         return true;
     }
 
@@ -329,7 +324,7 @@ class ReviewForm_SettingParser extends SettingParser {
             } else if ($nf instanceof Score_ReviewField) {
                 assert($of instanceof Score_ReviewField);
                 $map = [];
-                foreach ($sv->unambiguous_renumbering($of->unparse_json_values(), $nf->unparse_json_values()) as $i => $j) {
+                foreach ($sv->unambiguous_renumbering($of->values(), $nf->values()) as $i => $j) {
                     $map[$i + 1] = $j + 1;
                 }
                 if (!empty($map)) {

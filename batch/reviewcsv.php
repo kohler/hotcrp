@@ -193,7 +193,7 @@ class ReviewCSV_Batch {
             if ($f->has_options ? $this->no_score : $this->no_text) {
                 continue;
             }
-            $fv = $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_TRIM | ReviewField::VALUE_STRING);
+            $fv = $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_TRIM);
             if ($fv === "") {
                 // ignore
             } else if ($this->narrow) {
