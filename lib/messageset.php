@@ -555,6 +555,15 @@ class MessageSet {
             }
         }
     }
+    /** @param string $pfx
+     * @return \Generator<MessageItem> */
+    function message_list_at_prefix($pfx) {
+        foreach ($this->msgs as $mi) {
+            if ($mi->field !== null && str_starts_with($mi->field, $pfx)) {
+                yield $mi;
+            }
+        }
+    }
 
 
     /** @param iterable<MessageItem> $message_list

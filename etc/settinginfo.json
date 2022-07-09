@@ -222,12 +222,13 @@
         "internal": true, "json_export": true
     },
     {
-        "name_pattern": "sf/$/values/$$/name", "title": "Submission field value",
+        "name_pattern": "sf/$/values/$$/name",
+        "title": "Submission field value", "title_pattern": "‘${sv sf/$/name}’ field value",
         "type": "simplestring", "required": true, "size": 50
     },
     {
         "name_pattern": "sf/$/values/$$/order",
-        "title": "Submission field value order", "title_pattern": "‘${sv sf/$/values/$$/name}’ order",
+        "title": "Submission field value order", "title_pattern": "‘${sv sf/$/name}’ field order",
         "type": "float"
     },
     {

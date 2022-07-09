@@ -1396,7 +1396,11 @@ class SettingValues extends MessageSet {
         $si = is_string($name) ? $this->si($name) : $name;
         $xjs = ["class" => $class];
         if (!isset($js["no_control_class"])) {
-            $xjs["class"] = $this->control_class($si->name, $xjs["class"]);
+            if (isset($js["feedback_items"])) {
+                $xjs["class"] = self::status_class(self::list_status($js["feedback_items"]), $xjs["class"]);
+            } else {
+                $xjs["class"] = $this->control_class($si->name, $xjs["class"]);
+            }
         }
         if (isset($js["group_class"])) {
             $xjs["class"] = Ht::add_tokens($xjs["class"], $js["group_class"]);
@@ -1550,11 +1554,18 @@ class SettingValues extends MessageSet {
         if ($description === null) {
             $description = $si->title_html($this);
         }
-        echo $this->label($si->name, $description, ["class" => $js["label_class"] ?? null, "no_control_class" => true]);
+        echo $this->label($si->name, $description, [
+            "class" => $js["label_class"] ?? null,
+            "no_control_class" => true
+        ]);
         if ($horizontal) {
             echo '<div class="entry">';
         }
-        $this->print_feedback_at($si->name);
+        if (isset($js["feedback_items"])) {
+            echo MessageSet::feedback_html($js["feedback_items"]);
+        } else {
+            $this->print_feedback_at($si->name);
+        }
         echo $control, ($js["control_after"] ?? "");
         $thint = $this->type_hint($si->type);
         if ($hint || $thint) {

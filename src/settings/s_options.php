@@ -87,7 +87,12 @@ class Options_SettingRenderer {
             "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-sf",
             "data-tooltip-type" => "focus",
-            "group_attr" => ["data-property" => "values"]
+            "group_attr" => ["data-property" => "values"],
+            "feedback_items" => [
+                ...$sv->message_list_at("sf/{$this->ctr}/values_text"),
+                ...$sv->message_list_at("sf/{$this->ctr}/values"),
+                ...$sv->message_list_at_prefix("sf/{$this->ctr}/values/")
+            ]
         ]);
     }
 
@@ -455,7 +460,7 @@ class Options_SettingParser extends SettingParser {
             }
         }
         if (empty($newsfv)) {
-            $sv->error_at($si->name, "<0>Entry required");
+            $sv->error_at($si, "<0>Entry required");
         }
         $sv->save($si, $newsfv);
         if (!empty($renumbering)
