@@ -448,10 +448,9 @@ class Options_SettingParser extends SettingParser {
         }
         $newsfv = $renumbering = [];
         $pfx = "sf/{$si->name1}/values";
-        foreach ($sv->oblist_keys($pfx) as $ctr) {
+        foreach ($sv->oblist_nondeleted_keys($pfx) as $ctr) {
             $sfv = $sv->object_newv("{$pfx}/{$ctr}");
-            if (!$sv->reqstr("{$pfx}/{$ctr}/delete")
-                && $sfv->name !== "") {
+            if ($sfv->name !== "") {
                 $newsfv[] = $sfv;
                 if ($sfv->id && $sfv->id !== count($newsfv)) {
                     $renumbering[] = "when {$sfv->id} then " . count($newsfv);

@@ -359,26 +359,24 @@ class Track_SettingParser extends SettingParser {
             return true;
         } else if ($si->name === "track") {
             $j = [];
-            foreach ($sv->oblist_keys("track") as $ctr) {
+            foreach ($sv->oblist_nondeleted_keys("track") as $ctr) {
                 $this->cur_trx = $sv->object_newv("track/{$ctr}");
-                if (!$sv->reqstr("track/{$ctr}/delete")) {
-                    if (!$this->cur_trx->is_default) {
-                        $sv->error_if_missing("track/{$ctr}/tag");
-                        $sv->error_if_duplicate_member("track", $ctr, "tag", "Track tag");
-                        if ($this->cur_trx->tag === "_") {
-                            $sv->error_at("track/{$ctr}/tag", "<0>Track name ‘_’ is reserved");
-                        }
+                if (!$this->cur_trx->is_default) {
+                    $sv->error_if_missing("track/{$ctr}/tag");
+                    $sv->error_if_duplicate_member("track", $ctr, "tag", "Track tag");
+                    if ($this->cur_trx->tag === "_") {
+                        $sv->error_at("track/{$ctr}/tag", "<0>Track name ‘_’ is reserved");
                     }
-                    foreach ($sv->req_member_list("track/{$ctr}/perm") as $permsi) {
-                        $sv->apply_req($permsi);
+                }
+                foreach ($sv->req_member_list("track/{$ctr}/perm") as $permsi) {
+                    $sv->apply_req($permsi);
+                }
+                if ($this->cur_trx->is_default) {
+                    if (!empty((array) $this->cur_trx->j)) {
+                        $j["_"] = $this->cur_trx->j;
                     }
-                    if ($this->cur_trx->is_default) {
-                        if (!empty((array) $this->cur_trx->j)) {
-                            $j["_"] = $this->cur_trx->j;
-                        }
-                    } else {
-                        $j[$this->cur_trx->tag] = $this->cur_trx->j;
-                    }
+                } else {
+                    $j[$this->cur_trx->tag] = $this->cur_trx->j;
                 }
             }
             $sv->update("tracks", empty($j) ? "" : json_encode_db($j));

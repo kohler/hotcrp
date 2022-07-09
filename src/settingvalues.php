@@ -610,7 +610,7 @@ class SettingValues extends MessageSet {
      * @param ?non-empty-string $namekey */
     function append_oblist($pfx, $obs, $namekey = null) {
         if (str_ends_with($pfx, "/")) {
-            error_log(debug_string_backtrace());
+            error_log(debug_string_backtrace()); /* XXX */
             $pfx = substr($pfx, 0, -1);
         }
 
@@ -703,7 +703,7 @@ class SettingValues extends MessageSet {
      * @return list<int> */
     function oblist_keys($pfx) {
         if (str_ends_with($pfx, "/")) {
-            error_log(debug_string_backtrace());
+            error_log(debug_string_backtrace()); /* XXX */
             $pfx = substr($pfx, 0, -1);
         }
         $this->ensure_oblist($pfx);
@@ -730,16 +730,27 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string $pfx
+     * @return list<int> */
+    function oblist_nondeleted_keys($pfx) {
+        $ctrs = [];
+        foreach ($this->oblist_keys($pfx) as $ctr) {
+            if (!$this->reqstr("{$pfx}/{$ctr}/delete"))
+                $ctrs[] = $ctr;
+        }
+        return $ctrs;
+    }
+
+    /** @param string $pfx
      * @param string $sfx
      * @param int|string $needle
      * @return ?int */
     function search_oblist($pfx, $sfx, $needle) {
         if (str_ends_with($pfx, "/")) {
-            error_log(debug_string_backtrace());
+            error_log(debug_string_backtrace()); /* XXX */
             $pfx = substr($pfx, 0, -1);
         }
         if (str_starts_with($sfx, "/")) {
-            error_log(debug_string_backtrace());
+            error_log(debug_string_backtrace()); /* XXX */
             $sfx = substr($sfx, 1);
         }
         $this->ensure_oblist($pfx);

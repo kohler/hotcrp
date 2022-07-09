@@ -184,11 +184,9 @@ class Review_SettingParser extends SettingParser {
         // default rounds for new assignments
         echo '<hr class="form-sep">';
         $sel = [];
-        foreach ($sv->oblist_keys("review") as $ctr) {
-            if (!$sv->reqstr("review/{$ctr}/delete")) {
-                $n = $sv->vstr("review/{$ctr}/name");
-                $sel[$ctr] = $n === "" ? "unnamed" : $n;
-            }
+        foreach ($sv->oblist_nondeleted_keys("review") as $ctr) {
+            $n = $sv->vstr("review/{$ctr}/name");
+            $sel[$ctr] = $n === "" ? "unnamed" : $n;
         }
         $sv->print_select_group("review_default_round_index", null,
             $sel,
@@ -350,26 +348,24 @@ class Review_SettingParser extends SettingParser {
         $rss = [];
         $old_rsid = [];
         $latest = null;
-        foreach ($sv->oblist_keys("review") as $ctr) {
+        foreach ($sv->oblist_nondeleted_keys("review") as $ctr) {
             $pfx = "review/{$ctr}";
             $rs = $sv->object_newv($pfx);
-            if (!$sv->reqstr("{$pfx}/delete")) {
-                if ($sv->oldv("{$pfx}/soft") !== $sv->newv("{$pfx}/soft")
-                    || $sv->oldv("{$pfx}/done") !== $sv->newv("{$pfx}/done")) {
-                    $sv->check_date_before("review/{$ctr}/soft", "review/{$ctr}/done", false);
-                }
-                if ($sv->oldv("{$pfx}/external_soft") !== $sv->newv("{$pfx}/external_soft")
-                    || $sv->oldv("{$pfx}/external_done") !== $sv->newv("{$pfx}/external_done")) {
-                    $sv->check_date_before("review/{$ctr}/external_soft", "review/{$ctr}/external_done", false);
-                }
-                $rss[] = $rs;
-                if ($rs->id > 0) {
-                    $old_rsid[$rs->id] = $rs;
-                }
-                if (!$latest
-                    || ($latest->soft > 0 && $rs->soft > 0 && $latest->soft < $rs->soft)) {
-                    $latest = $rs;
-                }
+            if ($sv->oldv("{$pfx}/soft") !== $sv->newv("{$pfx}/soft")
+                || $sv->oldv("{$pfx}/done") !== $sv->newv("{$pfx}/done")) {
+                $sv->check_date_before("review/{$ctr}/soft", "review/{$ctr}/done", false);
+            }
+            if ($sv->oldv("{$pfx}/external_soft") !== $sv->newv("{$pfx}/external_soft")
+                || $sv->oldv("{$pfx}/external_done") !== $sv->newv("{$pfx}/external_done")) {
+                $sv->check_date_before("review/{$ctr}/external_soft", "review/{$ctr}/external_done", false);
+            }
+            $rss[] = $rs;
+            if ($rs->id > 0) {
+                $old_rsid[$rs->id] = $rs;
+            }
+            if (!$latest
+                || ($latest->soft > 0 && $rs->soft > 0 && $latest->soft < $rs->soft)) {
+                $latest = $rs;
             }
         }
 
