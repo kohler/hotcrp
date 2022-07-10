@@ -526,13 +526,6 @@ function option_value_html(fieldj, value) {
         return [make_score_info(fieldj.values.length, fieldj.start, fieldj.scheme).unparse_revnum(value), escape_html(fieldj.values[value - 1] || "Unknown")];
 }
 
-handle_ui.on("unfold.js-settings-field-unfold", function (event) {
-    var f = event.target.closest(".has-fold");
-    if ((hasClass(f, "fold2c") || !form_differs(f))
-        && !hasClass(f, "deleted"))
-        foldup.call(event.target, event, {n: 2});
-});
-
 function rf_visibility_text(visibility) {
     if ((visibility || "re") === "re")
         return "(hidden from authors)";
@@ -660,6 +653,8 @@ function rfs(data) {
         rf_add(data.req["rf/" + (fieldorder.length + 1) + "/id"]);
     }
 
+    $("#settings-rform").on("unfold", ".settings-rf", settings_field_unfold);
+
     // highlight errors, apply request
     for (i in data.req || {}) {
         if (/^rf\/\d+\//.test(i)
@@ -683,7 +678,6 @@ function rfs(data) {
         }
     }
 
-    $("#settings-rform").on("unfold", ".settings-rf", settings_field_unfold);
     rf_order();
     form_highlight("#settingsform");
 };

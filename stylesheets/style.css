@@ -1712,14 +1712,6 @@ hr.form-sep, hr.form-sep-2 {
 .form-g + .form-nearby {
 	margin-top: -1em;
 }
-.js-settings-field-unfold {
-	float: left;
-	margin-left: -1.2em;
-	margin-top: 0.05em;
-}
-.fold2o > .js-settings-field-unfold {
-	margin-top: 0.25em;
-}
 .settings-radio {
 	margin-bottom: 0.5rem;
 }
