@@ -81,6 +81,11 @@ class Options_SettingRenderer {
         }
     }
 
+    static private function make_array(...$x) {
+        // This works around a syntax error in PHP 7.0/7.1
+        return $x;
+    }
+
     function print_values(SettingValues $sv) {
         $sv->print_textarea_group("sf/{$this->ctr}/values_text", "Choices", [
             "horizontal" => true,
@@ -88,11 +93,11 @@ class Options_SettingRenderer {
             "data-tooltip-info" => "settings-sf",
             "data-tooltip-type" => "focus",
             "group_attr" => ["data-property" => "values"],
-            "feedback_items" => [
+            "feedback_items" => self::make_array(
                 ...$sv->message_list_at("sf/{$this->ctr}/values_text"),
                 ...$sv->message_list_at("sf/{$this->ctr}/values"),
                 ...$sv->message_list_at_prefix("sf/{$this->ctr}/values/")
-            ]
+            )
         ]);
     }
 
