@@ -652,6 +652,39 @@ class Settings_Tester {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
             "rf/1/id" => "s05",
+            "rf/1/presence" => "round:unnamed"
+        ]);
+        xassert($sv->execute());
+
+        $s05 = $this->conf->checked_review_field("s05");
+        xassert_neqq($s05->round_mask, 0);
+        xassert_eqq($s05->exists_condition(), "round:unnamed");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s05",
+            "rf/1/condition" => "all"
+        ]);
+        xassert($sv->execute());
+
+        $s05 = $this->conf->checked_review_field("s05");
+        xassert_eqq($s05->round_mask, 0);
+        xassert_eqq($s05->exists_condition(), null);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s05",
+            "rf/1/condition" => "none"
+        ]);
+        xassert($sv->execute());
+
+        $s05 = $this->conf->checked_review_field("s05");
+        xassert_eqq($s05->round_mask, 0);
+        xassert_eqq($s05->exists_condition(), "none");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s05",
             "rf/2/id" => "s90",
             "rf/1/delete" => "1",
             "rf/2/delete" => "1"

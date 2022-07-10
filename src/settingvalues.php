@@ -539,6 +539,10 @@ class SettingValues extends MessageSet {
     function json_oldv($id) {
         $si = is_string($id) ? $this->si($id) : $id;
         if ($si->type === "oblist") {
+            if (($si->storage_type & Si::SI_MEMBER) !== 0
+                && $this->oldv($si) === null) {
+                return null;
+            }
             $a = [];
             foreach ($this->oblist_keys($si->name) as $ctr) {
                 $a[] = $this->json_oldv("{$si->name}/{$ctr}");

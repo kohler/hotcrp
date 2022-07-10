@@ -10,26 +10,6 @@ class ReviewForm_SettingParser extends SettingParser {
     /** @var array<string,array<int,int>> */
     private $_score_renumberings = [];
 
-    /** @param Conf $conf
-     * @return array<string,string> */
-    static function presence_options($conf) {
-        $ecsel = ["all" => "All reviews"];
-        foreach ($conf->defined_rounds() as $i => $rname) {
-            $rname = $i ? $rname : "unnamed";
-            $ecsel["round:{$rname}"] = "{$rname} review round";
-        }
-        $ecsel["custom"] = "Custom…";
-        return $ecsel;
-    }
-
-    function values(Si $si, SettingValues $sv) {
-        if ($si->name0 === "rf/" && $si->name2 === "/presence") {
-            return array_keys(self::presence_options($si->conf));
-        } else {
-            return null;
-        }
-    }
-
     function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name0 === "rf/" && $si->name2 === "") {
             $fid = $si->name1 === '$' ? 's99' : $sv->vstr("{$si->name}/id");
@@ -218,15 +198,11 @@ class ReviewForm_SettingParser extends SettingParser {
     private function _fix_req_condition(SettingValues $sv, $rfj) {
         $q = "";
         $rl = null;
-        if ($rfj->presence !== "all") {
-            if ($rfj->presence === "custom") {
-                $ps = new PaperSearch($sv->conf->root_user(), $rfj->exists_if ?? "");
-                if (!($ps->term() instanceof True_SearchTerm)) {
-                    $rl = ReviewFieldCondition_SettingParser::condition_round_list($ps);
-                    $q = $rl === null ? $rfj->exists_if : "";
-                }
-            } else if (($rn = $sv->conf->round_number(substr($rfj->presence, 6), false)) !== null) {
-                $rl = [$rn];
+        if (($rfj->exists_if ?? "") !== "") {
+            $ps = new PaperSearch($sv->conf->root_user(), $rfj->exists_if ?? "");
+            if (!($ps->term() instanceof True_SearchTerm)) {
+                $rl = ReviewFieldCondition_SettingParser::condition_round_list($ps);
+                $q = $rl === null ? $rfj->exists_if : "";
             }
         }
         $rfj->exists_if = $q;
@@ -530,7 +506,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             . '<p>The field will be present only on reviews that match this search. Not all searches are supported. Examples:</p><dl><dt>round:R1 OR round:R2</dt><dd>present on reviews in round R1 or R2</dd><dt>re:ext</dt><dd>present on external reviews</dd></dl>'
             . '</div>', "settings-rf-caption-condition");
         $sv->print_select_group("rf/\$/presence", "Present on",
-            ReviewForm_SettingParser::presence_options($sv->conf), [
+            ReviewFieldCondition_SettingParser::presence_options($sv->conf), [
                 "horizontal" => true, "group_class" => "is-property-editing",
                 "fold_values" => ["custom"], "group_open" => true
             ]);

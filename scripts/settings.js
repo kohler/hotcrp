@@ -457,7 +457,7 @@ function rf_fill(pos, fieldj, setdefault) {
     rf_fill_control(form, rfid + "/name", fieldj.name || "", setdefault);
     rf_fill_control(form, rfid + "/description", fieldj.description || "", setdefault);
     rf_fill_control(form, rfid + "/visibility", fieldj.visibility || "re", setdefault);
-    rf_fill_control(form, rfid + "/values", values_to_text(fieldj), setdefault);
+    rf_fill_control(form, rfid + "/values_text", values_to_text(fieldj), setdefault);
     rf_fill_control(form, rfid + "/required", fieldj.required ? "1" : "0", setdefault);
     var colors = form.elements[rfid + "/scheme"];
     if (colors) {

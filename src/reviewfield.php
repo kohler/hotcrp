@@ -293,11 +293,9 @@ abstract class ReviewField implements JsonSerializable {
             $rfs->presence = "custom";
             $rfs->exists_if = $this->exists_if ?? $this->unparse_round_mask();
         } else if ($rm !== 0) {
-            $rfs->presence = $this->unparse_round_mask();
-            $rfs->exists_if = null;
+            $rfs->presence = $rfs->exists_if = $this->unparse_round_mask();
         } else {
-            $rfs->presence = "all";
-            $rfs->exists_if = null;
+            $rfs->presence = $rfs->exists_if = "all";
         }
     }
 

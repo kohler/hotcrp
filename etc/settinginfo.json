@@ -256,13 +256,14 @@
     {
         "name_pattern": "sf/$/presence",
         "title": "Submission field presence", "title_pattern": "‘${sv sf/$/name}’ presence",
-        "type": "radio", "values": ["all", "final", "custom"]
+        "type": "radio", "values": ["all", "final", "custom"],
+        "parser_class": "SubFieldCondition_SettingParser", "parse_order": 1
     },
     {
         "name_pattern": "sf/$/condition", "storage": "member.exists_if",
         "title": "Submission field presence condition", "title_pattern": "‘${sv sf/$/name}’ presence condition",
         "type": "simplestring", "size": 30, "placeholder": "Search",
-        "parser_class": "SubFieldCondition_SettingParser"
+        "parser_class": "SubFieldCondition_SettingParser", "parse_order": 2
     },
     {
         "name": "sf_abstract", "storage": "ova.noAbstract",
@@ -597,13 +598,13 @@
         "name_pattern": "rf/$/presence",
         "title": "Review field presence", "title_pattern": "‘${sv rf/$/name}’ presence",
         "type": "radio", "values": "auto",
-        "parser_class": "ReviewForm_SettingParser"
+        "parser_class": "ReviewFieldCondition_SettingParser", "parse_order": 1, "json_export": false
     },
     {
         "name_pattern": "rf/$/condition", "storage": "member.exists_if",
         "title": "Review field presence condition", "title_pattern": "‘${sv rf/$/name}’ presence condition",
         "type": "simplestring", "size": 30, "placeholder": "Search",
-        "parser_class": "ReviewFieldCondition_SettingParser"
+        "parser_class": "ReviewFieldCondition_SettingParser", "parse_order": 2
     },
     {   "name_pattern": "rf/$/exists_if", "alias_pattern": "rf/$/condition"   },
     {   "name_pattern": "rf/$/display_space", "internal": true   },
