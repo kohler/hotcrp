@@ -211,7 +211,8 @@
     },
     {
         "name_pattern": "sf/$/values", "type": "oblist",
-        "parser_class": "Options_SettingParser", "parse_order": 2
+        "parser_class": "Options_SettingParser", "parse_order": 2,
+        "hashid": "sf/$/values_text"
     },
     {
         "name_pattern": "sf/$/values/$$", "type": "object", "subtype": "SfValue_Setting",
@@ -223,13 +224,15 @@
     },
     {
         "name_pattern": "sf/$/values/$$/name",
-        "title": "Submission field value", "title_pattern": "‘${sv sf/$/name}’ field value",
-        "type": "simplestring", "required": true, "size": 50
+        "title": "Submission field value", "title_pattern": "‘${sv sf/$/name}’ choices",
+        "type": "simplestring", "required": true, "size": 50,
+        "hashid": "sf/$/values_text"
     },
     {
         "name_pattern": "sf/$/values/$$/order",
-        "title": "Submission field value order", "title_pattern": "‘${sv sf/$/name}’ field order",
-        "type": "float"
+        "title": "Submission field value order", "title_pattern": "‘${sv sf/$/name}’ choices",
+        "type": "float",
+        "hashid": "sf/$/values_text"
     },
     {
         "name_pattern": "sf/$/values_text", "storage": "none",
@@ -610,14 +613,17 @@
     {   "name_pattern": "rf/$/display_space", "internal": true   },
     {
         "name_pattern": "rf/$/values", "type": "oblist", "storage": "member.xvalues",
-        "parser_class": "ReviewForm_SettingParser", "parse_order": 2
+        "title": "Review field choices", "title_pattern": "‘${sv rf/$/name}’ choices",
+        "parser_class": "ReviewForm_SettingParser", "parse_order": 2,
+        "hashid": "rf/$/values_text"
     },
     {
         "name_pattern": "rf/$/values_storage", "internal": true, "storage": "member.values"
     },
     {
         "name_pattern": "rf/$/values/$$", "type": "object", "subtype": "RfValue_Setting",
-        "parser_class": "ReviewForm_SettingParser"
+        "parser_class": "ReviewForm_SettingParser",
+        "hashid": "rf/$/values_text"
     },
     {
         "name_pattern": "rf/$/values/$$/id", "type": "int",
@@ -627,18 +633,22 @@
         "name_pattern": "rf/$/values/$$/symbol",
         "title": "Review field value symbol",
         "title_pattern": "‘${sv rf/$/values/$$/name}’ symbol",
-        "type": "simplestring", "required": true, "size": 3
+        "type": "simplestring", "required": true, "size": 3,
+        "hashid": "rf/$/values_text"
     },
     {
         "name_pattern": "rf/$/values/$$/name",
         "title": "Review field value",
-        "type": "simplestring", "required": true, "size": 50
+        "title_pattern": "‘${sv rf/$/values/$$/name}’ field value",
+        "type": "simplestring", "required": true, "size": 50,
+        "hashid": "rf/$/values_text"
     },
     {
         "name_pattern": "rf/$/values/$$/order",
         "title": "Review field value order",
         "title_pattern": "‘${sv rf/$/values/$$/symbol}’ order",
-        "type": "float"
+        "type": "float",
+        "hashid": "rf/$/values_text"
     },
     {
         "name_pattern": "rf/$/values_text",

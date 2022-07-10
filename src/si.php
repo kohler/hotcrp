@@ -48,7 +48,7 @@ class Si {
     public $__source_order;
     /** @var null|false|string
      * @readonly */
-    public $hashid;
+    private $hashid;
     /** @var bool
      * @readonly */
     public $internal = false;
@@ -238,9 +238,6 @@ class Si {
         if ($this->name_parts !== null && is_string($this->storage)) {
             $this->storage = $this->_expand_pattern($this->storage, null);
         }
-        if ($this->name_parts !== null && is_string($this->hashid)) {
-            $this->hashid = $this->_expand_pattern($this->hashid, null);
-        }
     }
 
     /** @param string $s
@@ -359,11 +356,29 @@ class Si {
         return $this->pages === null || in_array($t, $this->pages);
     }
 
+    /** @return bool */
+    function has_hashid() {
+        return $this->hashid !== false;
+    }
+
+    /** @return ?string */
+    function hashid() {
+        if ($this->hashid === false) {
+            return null;
+        } else if ($this->hashid === null) {
+            return $this->name;
+        } else if ($this->name_parts === null) {
+            return $this->hashid;
+        } else {
+            return $this->_expand_pattern($this->hashid, null);
+        }
+    }
+
     /** @return array<string,string> */
     function hoturl_param() {
         $param = ["group" => $this->first_page()];
         if ($this->hashid !== false) {
-            $param["#"] = $this->hashid ?? $this->name;
+            $param["#"] = $this->hashid();
         }
         return $param;
     }
@@ -377,7 +392,7 @@ class Si {
      * @return string */
     function sv_hoturl($sv) {
         if ($this->hashid !== false && $this->has_tag($sv->canonical_page)) {
-            return "#" . urlencode($this->hashid ?? $this->name);
+            return "#" . urlencode($this->hashid());
         } else {
             return $this->hoturl();
         }

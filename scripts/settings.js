@@ -634,7 +634,7 @@ function rf_add(fid) {
 }
 
 function rfs(data) {
-    var i, fid, forder, mi, e, entryi;
+    var i, fid, forder, mi, e, m, entryi;
     original = {};
     samples = data.samples;
     stemplate = data.stemplate;
@@ -671,11 +671,15 @@ function rfs(data) {
     }
     for (i in data.message_list || []) {
         mi = data.message_list[i];
-        if (mi.field
-            && (e = document.getElementById(mi.field))
-            && (entryi = e.closest(".entryi"))) {
-            append_feedback_near(entryi, mi);
-            foldup.call(entryi, null, {n: 2, f: false});
+        if (mi.field) {
+            e = document.getElementById(mi.field);
+            if (!e && (m = mi.field.match(/^(.*)\/values(?:$|\/)/))) {
+                e = document.getElementById(m[1] + "/values_text");
+            }
+            if (e && (entryi = e.closest(".entryi"))) {
+                append_feedback_near(entryi, mi);
+                foldup.call(entryi, null, {n: 2, f: false});
+            }
         }
     }
 

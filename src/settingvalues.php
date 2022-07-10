@@ -389,7 +389,7 @@ class SettingValues extends MessageSet {
             if ($mi->field
                 && ($si = $this->conf->si($mi->field))) {
                 $loc = $si->title_html($this);
-                if ($loc && $si->hashid !== false) {
+                if ($loc && $si->has_hashid()) {
                     $loc = Ht::link($loc, $si->sv_hoturl($this));
                 }
             }
