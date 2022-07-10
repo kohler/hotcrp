@@ -511,13 +511,13 @@
         "type": "date", "subtype": "explicit_none", "placeholder": "same as PC"
     },
     {
-        "name": "review_default_round_index", "storage": "none",
+        "name": "review_default_round_index", "storage": "none", "json_export": false,
         "title": "Default round for new PC reviews",
         "type": "nonnegint", "parser_class": "Review_SettingParser",
         "parse_order": 1
     },
     {
-        "name": "review_default_external_round_index", "storage": "none",
+        "name": "review_default_external_round_index", "storage": "none", "json_export": false,
         "title": "Default round for new external reviews",
         "type": "nonnegint", "parser_class": "Review_SettingParser",
         "parse_order": 1
@@ -584,24 +584,9 @@
         "type": "htmlstring", "size": 2, "autogrow": true
     },
     {
-        "name_pattern": "rf/$/values",
-        "title": "Review field choices", "title_pattern": "‘${sv rf/$/name}’ choices",
-        "type": "longstring", "size": 3, "autogrow": true,
-        "parser_class": "ReviewForm_SettingParser"
-    },
-    {
-        "name_pattern": "rf/$/start",
-        "internal": true, "json_export": true
-    },
-    {
-        "name_pattern": "rf/$/scheme",
-        "title": "Review field color scheme", "title_pattern": "‘${sv rf/$/name}’ color scheme",
-        "type": "radio", "values": ["sv", "svr", "blpu", "publ", "rdpk", "pkrd", "viridisr", "viridis", "orbu", "buor", "turbo", "turbor", "catx", "none"]
-    },
-    {
         "name_pattern": "rf/$/required",
         "title": "Review field requirement", "title_pattern": "‘${sv rf/$/name}’ requirement",
-        "type": "radio", "values": [0, 1]
+        "type": "radio", "values": [0, 1], "parse_order": 2
     },
     {
         "name_pattern": "rf/$/visibility",
@@ -622,6 +607,53 @@
     },
     {   "name_pattern": "rf/$/exists_if", "alias_pattern": "rf/$/condition"   },
     {   "name_pattern": "rf/$/display_space", "internal": true   },
+    {
+        "name_pattern": "rf/$/values", "type": "oblist", "storage": "member.xvalues",
+        "parser_class": "ReviewForm_SettingParser", "parse_order": 2
+    },
+    {
+        "name_pattern": "rf/$/values_storage", "internal": true, "storage": "member.values"
+    },
+    {
+        "name_pattern": "rf/$/values/$$", "type": "object", "subtype": "RfValue_Setting",
+        "parser_class": "ReviewForm_SettingParser"
+    },
+    {
+        "name_pattern": "rf/$/values/$$/id", "type": "int",
+        "internal": true, "json_export": true
+    },
+    {
+        "name_pattern": "rf/$/values/$$/symbol",
+        "title": "Review field value symbol",
+        "title_pattern": "‘${sv rf/$/values/$$/name}’ symbol",
+        "type": "simplestring", "required": true, "size": 3
+    },
+    {
+        "name_pattern": "rf/$/values/$$/name",
+        "title": "Review field value",
+        "type": "simplestring", "required": true, "size": 50
+    },
+    {
+        "name_pattern": "rf/$/values/$$/order",
+        "title": "Review field value order",
+        "title_pattern": "‘${sv rf/$/values/$$/symbol}’ order",
+        "type": "float"
+    },
+    {
+        "name_pattern": "rf/$/values_text",
+        "title": "Review field choices", "title_pattern": "‘${sv rf/$/name}’ choices",
+        "type": "longstring", "size": 3, "autogrow": true,
+        "parser_class": "ReviewForm_SettingParser", "parse_order": 1,
+        "json_export": false
+    },
+    {
+        "name_pattern": "rf/$/start", "internal": true
+    },
+    {
+        "name_pattern": "rf/$/scheme",
+        "title": "Review field color scheme", "title_pattern": "‘${sv rf/$/name}’ color scheme",
+        "type": "radio", "values": ["sv", "svr", "blpu", "publ", "rdpk", "pkrd", "viridisr", "viridis", "orbu", "buor", "turbo", "turbor", "catx", "none"]
+    },
 
 
     {

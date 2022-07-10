@@ -78,6 +78,9 @@ class Review_SettingParser extends SettingParser {
                 && ($ctr = $sv->search_oblist("review", "id", $round + 1))) {
                 $sv->set_oldv($si, $ctr);
             }
+        } else if ($si->name === "review_default_round") {
+            $t = $sv->conf->setting_data("rev_roundtag") ?? null;
+            $sv->set_oldv($si, $t ?? "unnamed");
         } else if ($si->name === "review_default_external_round_index") {
             $sv->set_oldv($si, 0);
             $t = $sv->conf->setting_data("extrev_roundtag") ?? null;

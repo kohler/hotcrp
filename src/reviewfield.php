@@ -312,6 +312,17 @@ abstract class ReviewField implements JsonSerializable {
     }
 
 
+    /** @return ?string */
+    function exists_condition() {
+        if ($this->exists_if !== null) {
+            return $this->exists_if;
+        } else if ($this->round_mask !== 0) {
+            return $this->unparse_round_mask();
+        } else {
+            return null;
+        }
+    }
+
     /** @return bool */
     function test_exists(ReviewInfo $rrow) {
         if ($this->_need_exists_search) {
@@ -617,13 +628,24 @@ class Score_ReviewField extends ReviewField {
 
     function unparse_setting($rfs) {
         parent::unparse_setting($rfs);
+        $n = count($this->values);
         $rfs->values = $this->values;
         if ($this->option_letter) {
-            $rfs->start = chr($this->option_letter - count($this->values));
+            $rfs->start = chr($this->option_letter - $n);
         } else {
             $rfs->start = 1;
         }
+        $rfs->flip = $this->flip;
         $rfs->scheme = $this->scheme;
+
+        $rfs->xvalues = [];
+        foreach ($this->ordered_symbols() as $i => $symbol) {
+            $rfs->xvalues[] = $rfv = new RfValue_Setting;
+            $rfv->id = $id = $this->flip ? $n - $i : $i + 1;
+            $rfv->order = $i + 1;
+            $rfv->symbol = $symbol;
+            $rfv->name = $this->values[$id - 1];
+        }
     }
 
     /** @return int */

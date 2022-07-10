@@ -308,16 +308,16 @@ class Settings_Tester {
             "has_rf" => 1,
             "rf/1/name" => "B9",
             "rf/1/id" => "s03",
-            "rf/1/values" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I",
+            "rf/1/values_text" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I",
             "rf/2/name" => "B15",
             "rf/2/id" => "s04",
-            "rf/2/values" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J\n11. K\n12. L\n13. M\n14. N\n15. O",
+            "rf/2/values_text" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J\n11. K\n12. L\n13. M\n14. N\n15. O",
             "rf/3/name" => "B10",
             "rf/3/id" => "s06",
-            "rf/3/values" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J",
+            "rf/3/values_text" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J",
             "rf/4/name" => "B5",
             "rf/4/id" => "s07",
-            "rf/4/values" => "A. A\nB. B\nC. C\nD. D\nE. E"
+            "rf/4/values_text" => "A. A\nB. B\nC. C\nD. D\nE. E"
         ]);
         xassert($sv->execute());
 
@@ -526,7 +526,7 @@ class Settings_Tester {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
             "rf/1/id" => "s90",
-            "rf/1/values" => "1. A\n2. B\n"
+            "rf/1/values_text" => "1. A\n2. B\n"
         ]);
         xassert(!$sv->execute());
         xassert_str_contains($sv->full_feedback_text(), "Entry required");
@@ -537,10 +537,10 @@ class Settings_Tester {
             "has_rf" => 1,
             "rf/1/id" => "s05",
             "rf/1/name" => "Mf",
-            "rf/1/values" => "A. A\nB. B\nC. C",
+            "rf/1/values_text" => "A. A\nB. B\nC. C",
             "rf/2/id" => "s90",
             "rf/2/name" => "Jf",
-            "rf/2/values" => "A. A\nB. B\nC. C"
+            "rf/2/values_text" => "A. A\nB. B\nC. C"
         ]);
         xassert($sv->execute());
 
@@ -573,10 +573,10 @@ class Settings_Tester {
             "has_rf" => 1,
             "rf/1/id" => "s05",
             "rf/1/name" => "Mf",
-            "rf/1/values" => "1. A\n2. B\n3. C",
+            "rf/1/values_text" => "1. A\n2. B\n3. C",
             "rf/2/id" => "s90",
             "rf/2/name" => "Jf",
-            "rf/2/values" => "X. B\nY. C\nZ. A"
+            "rf/2/values_text" => "X. B\nY. C\nZ. A"
         ]);
         xassert($sv->execute());
 
@@ -610,6 +610,53 @@ class Settings_Tester {
         xassert_eqq($rrow->fval("s90"), null);
 
         $this->conf->qe("delete from PaperReview where paperId=30");
+    }
+
+    function test_review_conditions() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s05",
+            "rf/1/name" => "Mf",
+            "rf/1/values_text" => "A. A\nB. B\nC. C",
+            "rf/1/presence" => "custom",
+            "rf/1/condition" => "re:ext",
+            "rf/2/id" => "s90",
+            "rf/2/name" => "Jf",
+            "rf/2/values_text" => "A. A\nB. B\nC. C",
+            "rf/2/presence" => "custom",
+            "rf/2/condition" => "re:pri"
+        ]);
+        xassert($sv->execute());
+
+        $s05 = $this->conf->checked_review_field("s05");
+        xassert_eqq($s05->exists_condition(), "re:ext");
+        $s90 = $this->conf->checked_review_field("s90");
+        xassert_eqq($s90->exists_condition(), "re:pri");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s05",
+            "rf/1/name" => "Mf",
+            "rf/1/values_text" => "1. A\n2. B\n3. C",
+            "rf/2/id" => "s90",
+            "rf/2/name" => "Jf",
+            "rf/2/values_text" => "X. B\nY. C\nZ. A"
+        ]);
+        xassert($sv->execute());
+
+        $s05 = $this->conf->checked_review_field("s05");
+        xassert_eqq($s05->exists_condition(), "re:ext");
+        $s90 = $this->conf->checked_review_field("s90");
+        xassert_eqq($s90->exists_condition(), "re:pri");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s05",
+            "rf/2/id" => "s90",
+            "rf/1/delete" => "1",
+            "rf/2/delete" => "1"
+        ]);
+        xassert($sv->execute());
     }
 
     function test_review_rounds() {

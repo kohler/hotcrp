@@ -6,7 +6,9 @@ class ReviewForm_SettingParser extends SettingParser {
     /** @var ReviewForm */
     private $_new_form;
     /** @var bool */
-    private $_option_error_printed = false;
+    private $_values_error_printed = false;
+    /** @var array<string,array<int,int>> */
+    private $_score_renumberings = [];
 
     /** @param Conf $conf
      * @return array<string,string> */
@@ -29,96 +31,186 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     function set_oldv(Si $si, SettingValues $sv) {
-        if ($si->name === "rf") {
-            return;
-        }
-        assert($si->name0 === "rf/");
-        if ($si->name2 === "") {
+        if ($si->name0 === "rf/" && $si->name2 === "") {
             $fid = $si->name1 === '$' ? 's99' : $sv->vstr("{$si->name}/id");
             if (($finfo = ReviewFieldInfo::find($sv->conf, $fid))) {
                 $rfs = new Rf_Setting;
                 ReviewField::make($sv->conf, $finfo)->unparse_setting($rfs);
                 $sv->set_oldv($si->name, $rfs);
             }
-        } else if ($si->name2 === "/values" && $si->name1 === '$') {
-            $sv->set_oldv($si->name, "");
+        } else if ($si->name0 === "rf/" && $si->name2 === "/values_text") {
+            $rfs = $sv->oldv("rf/{$si->name1}");
+            $vs = [];
+            foreach ($rfs->xvalues ?? [] as $rfv) {
+                if ($rfv->name !== "") {
+                    $vs[] = "{$rfv->symbol}. {$rfv->name}\n";
+                } else {
+                    $vs[] = "{$rfv->symbol}\n";
+                }
+            }
+            $sv->set_oldv($si, join("", $vs));
+        } else if (count($si->name_parts) === 5
+                   && $si->name_parts[2] === "/values/"
+                   && $si->name2 === "") {
+            $sv->set_oldv($si, new RfValue_Setting);
         }
     }
 
     function prepare_oblist(Si $si, SettingValues $sv) {
-        $rfss = [];
-        foreach ($sv->conf->all_review_fields() as $rf) {
-            $rfss[] = $rfs = new Rf_Setting;
-            $rf->unparse_setting($rfs);
+        if ($si->name === "rf") {
+            $rfss = [];
+            foreach ($sv->conf->all_review_fields() as $rf) {
+                $rfss[] = $rfs = new Rf_Setting;
+                $rf->unparse_setting($rfs);
+            }
+            $sv->append_oblist("rf", $rfss, "name");
+        } else if ($si->name2 === "/values") {
+            $rfs = $sv->oldv("rf/{$si->name1}");
+            $sv->append_oblist($si->name, $rfs->xvalues ?? [], "name");
         }
-        $sv->append_oblist("rf", $rfss, "name");
     }
 
 
+    /** @return true */
     private function _apply_req_name(Si $si, SettingValues $sv) {
-        if (($n = $sv->base_parse_req($si)) !== null) {
-            if (ReviewField::clean_name($n) !== $n
-                && $sv->oldv($si) !== $n
+        if (($name = $sv->base_parse_req($si)) !== null) {
+            if (ReviewField::clean_name($name) !== $name
+                && $sv->oldv($si) !== $name
                 && !$sv->reqstr("{$si->name0}{$si->name1}/name_force")) {
-                $lparen = strrpos($n, "(");
-                $sv->error_at($si->name, "<0>Please remove ‘" . substr($n, $lparen) . "’ from the field name");
+                $lparen = strrpos($name, "(");
+                $sv->error_at($si->name, "<0>Please remove ‘" . substr($name, $lparen) . "’ from the field name");
                 $sv->inform_at($si->name, "<0>Visibility descriptions are added automatically.");
             }
-            $sv->save($si, $n);
+            $sv->save($si, $name);
         }
         $sv->error_if_duplicate_member($si->name0, $si->name1, $si->name2, "Field name");
         return true;
     }
 
-    private function _apply_req_values(Si $si, SettingValues $sv) {
-        $pfx = $si->name0 . $si->name1;
-        $text = cleannl($sv->reqstr("{$pfx}/values"));
-        $letters = $text && ord($text[0]) >= 65 && ord($text[0]) <= 90;
-        $expect = $letters ? "[A-Z]" : "[1-9][0-9]*";
-
-        $opts = [];
-        $lowonum = 10000;
-        foreach (explode("\n", $text) as $line) {
-            $line = trim($line);
-            if ($line !== "") {
-                if (preg_match("/^($expect)[\\.\\s]\\s*(\\S.*)/", $line, $m)
-                    && !isset($opts[$m[1]])) {
-                    $onum = $letters ? ord($m[1]) : intval($m[1]);
-                    $lowonum = min($lowonum, $onum);
-                    $opts[$onum] = $m[2];
-                } else if (preg_match('/^(?:0\.\s*)?No entry$/i', $line)) {
-                    $sv->save("{$pfx}/required", false);
+    /** @return bool */
+    private function _apply_req_values_text(Si $si, SettingValues $sv) {
+        $cleanreq = cleannl($sv->reqstr($si->name));
+        $i = 1;
+        $fpfx = "rf/{$si->name1}";
+        $vpfx = "rf/{$si->name1}/values";
+        foreach (explode("\n", $cleanreq) as $t) {
+            if ($t !== "" && ($t = simplify_whitespace($t)) !== "") {
+                if (($period = strpos($t, ".")) === false) {
+                    $symbol = $t;
+                    $name = "";
+                } else {
+                    $symbol = substr($t, 0, $period);
+                    $name = ltrim(substr($t, $period + 1));
+                }
+                if (($symbol === "0" && strcasecmp($name, "No entry") === 0)
+                    || (strcasecmp($symbol, "No entry") === 0 && $name === "")) {
+                    if (!$sv->has_req("{$fpfx}/required")) {
+                        $sv->save("{$fpfx}/required", "");
+                    }
+                } else if ($symbol !== "" && ctype_alnum($symbol)) {
+                    $sv->set_req("{$vpfx}/{$i}/name", $name);
+                    $sv->set_req("{$vpfx}/{$i}/symbol", $symbol);
                 } else {
                     return false;
                 }
+                ++$i;
             }
         }
-
-        // numeric options must start from 1
-        if ((!$letters && count($opts) > 0 && $lowonum != 1)
-            || count($opts) < 2) {
-            return false;
+        if (!$sv->has_req($vpfx)) {
+            $sv->set_req("{$fpfx}/values_reset", "1");
+            $this->_apply_req_values($sv->si($vpfx), $sv);
         }
-
-        $seqopts = [];
-        for ($onum = $lowonum; $onum < $lowonum + count($opts); ++$onum) {
-            if (!isset($opts[$onum])) {     // options out of order
-                return false;
-            }
-            $seqopts[] = $opts[$onum];
-        }
-
-        $sv->save("{$pfx}/values", $letters ? array_reverse($seqopts) : $seqopts);
-        $sv->save("{$pfx}/start", $letters ? chr($lowonum) : "");
         return true;
     }
 
-    function mark_options_error(SettingValues $sv) {
-        if (!$this->_option_error_printed) {
-            $sv->inform_at(null, "<5>Score fields must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
+    /** @param string $vpfx
+     * @param int $ctr
+     * @param RfValue_Setting $rfv
+     * @param SettingValues $sv
+     * @return bool */
+    private function _check_value($vpfx, $ctr, $rfv, $sv) {
+        if ($sv->error_if_duplicate_member($vpfx, $ctr, "symbol", "Field symbol")) {
+            return false;
+        }
+        if (ctype_digit($rfv->symbol)
+            ? str_starts_with($rfv->symbol, "0")
+            : !ctype_upper($rfv->symbol) || strlen($rfv->symbol) > 1) {
+            $sv->error_at("{$vpfx}/{$ctr}/symbol", "<0>Symbol must be a number or a single capital letter");
+            return false;
+        }
+        if (($rfv->name ?? "") !== ""
+            && $sv->error_if_duplicate_member($vpfx, $ctr, "name", "Field value")) {
+            return false;
+        }
+        return true;
+    }
+
+    private function _apply_req_values(Si $si, SettingValues $sv) {
+        $fpfx = "rf/{$si->name1}";
+        $vpfx = "rf/{$si->name1}/values";
+        $newrfv = $renumbering = $symbols = [];
+        $error = false;
+        foreach ($sv->oblist_nondeleted_keys($vpfx) as $ctr) {
+            $rfv = $sv->object_newv("{$vpfx}/{$ctr}");
+            $newrfv[$rfv->symbol ?? ""] = $rfv;
+            if (!$this->_check_value($vpfx, $ctr, $rfv, $sv)) {
+                $error = true;
+            }
+        }
+        if (empty($newrfv)) {
+            $sv->error_at($si, "<0>Entry required");
+        }
+        if ($error || empty($newrfv)) {
+            return;
+        }
+
+        ksort($newrfv, SORT_NATURAL);
+        $rfvk = array_keys($newrfv);
+        $option_letter = is_string($rfvk[0]) && ctype_upper($rfvk[0]);
+        if ($rfvk[0] == 1) {
+            foreach ($rfvk as $i => $k) {
+                $error = $error || ($k != $i + 1);
+            }
+        } else if ($option_letter) {
+            foreach ($rfvk as $i => $k) {
+                $error = $error || ($k !== chr(ord($rfvk[0]) + $i));
+            }
+        } else {
+            $error = true;
+        }
+        if ($error) {
+            $sv->error_at($vpfx, "<0>Invalid choices");
+            $this->mark_values_error($sv);
+            return;
+        }
+
+        $renumberings = $texts = [];
+        foreach (array_values($newrfv) as $i => $rfv) {
+            $want_id = $option_letter ? count($newrfv) - $i : $i + 1;
+            if ($rfv->id && $rfv->id !== $want_id) {
+                $renumberings[$rfv->id] = $want_id;
+            }
+            $texts[] = $rfv->name ?? "";
+        }
+        foreach ($sv->oblist_keys($vpfx) as $ctr) {
+            if ($sv->reqstr("{$vpfx}/{$ctr}/delete")
+                && ($rfv = $sv->oldv("{$vpfx}/{$ctr}"))
+                && $rfv->id) {
+                $renumberings[$rfv->id] = 0;
+            }
+        }
+        $this->_score_renumberings[$sv->vstr("{$fpfx}/id")] = $renumberings;
+
+        $sv->save("{$fpfx}/values_storage", $option_letter ? array_reverse($texts) : $texts);
+        $sv->save("{$fpfx}/start", $option_letter ? $rfvk[0] : 1);
+    }
+
+    private function mark_values_error(SettingValues $sv) {
+        if (!$this->_values_error_printed) {
+            $sv->inform_at(null, "<5>Score fields must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive capital letters (lower letters are better). Example: <pre>1. Low quality
 2. Medium quality
 3. High quality</pre>");
-            $this->_option_error_printed = true;
+            $this->_values_error_printed = true;
         }
     }
 
@@ -173,10 +265,13 @@ class ReviewForm_SettingParser extends SettingParser {
             $sfx = $si->name2;
             $finfo = ReviewFieldInfo::find($sv->conf, $sv->vstr("{$pfx}/id"));
             if ($si->name2 === "/values") {
-                if ($finfo->has_options
-                    && !$this->_apply_req_values($si, $sv)) {
-                    $sv->error_at($si->name, "<0>Invalid choices");
-                    $this->mark_options_error($sv);
+                if ($finfo->has_options) {
+                    $this->_apply_req_values($si, $sv);
+                }
+                return true;
+            } else if ($si->name2 === "/values_text") {
+                if ($finfo->has_options) {
+                    $this->_apply_req_values_text($si, $sv);
                 }
                 return true;
             } else if ($si->name2 === "/name") {
@@ -323,12 +418,8 @@ class ReviewForm_SettingParser extends SettingParser {
                 $clear_fields[] = $nf;
             } else if ($nf instanceof Score_ReviewField) {
                 assert($of instanceof Score_ReviewField);
-                $map = [];
-                foreach ($sv->unambiguous_renumbering($of->values(), $nf->values()) as $i => $j) {
-                    $map[$i + 1] = $j + 1;
-                }
-                if (!empty($map)) {
-                    $renumber_choices[] = [$nf, $map];
+                if (!empty($this->_score_renumberings[$nf->short_id])) {
+                    $renumber_choices[] = [$nf, $this->_score_renumberings[$nf->short_id]];
                 }
             }
             if ($of && $of->include_word_count() !== $nf->include_word_count()) {
@@ -400,9 +491,11 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
     static function print_values(SettingValues $sv) {
         self::stash_values_caption();
-        $sv->print_textarea_group("rf/\$/values", "Choices", [
-            "horizontal" => true, "class" => "w-entry-text need-tooltip",
-            "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus",
+        $sv->print_textarea_group("rf/\$/values_text", "Choices", [
+            "horizontal" => true,
+            "class" => "w-entry-text need-tooltip",
+            "data-tooltip-info" => "settings-rf",
+            "data-tooltip-type" => "focus",
             "group_class" => "is-property-values"
         ]);
     }
