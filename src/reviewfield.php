@@ -906,7 +906,7 @@ class Score_ReviewField extends ReviewField {
     }
 
     function unparse_text_field(&$t, $fv, $args) {
-        if ($fv != 0) {
+        if ($fv !== "" && $fv !== "0") {
             $this->unparse_text_field_header($t, $args);
             $i = array_search($fv, $this->symbols);
             if ($i !== false && $this->values[$i] !== "") {
