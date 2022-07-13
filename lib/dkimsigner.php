@@ -108,11 +108,11 @@ class DKIMSigner {
             $dkimh .= "i={$this->identity};";
         }
         $dkimh .= "{$eol} h=" . join(":", $this->h) . ";{$eol} bh={$bhash};{$eol} b=";
-        $a .= "dkim-signature:" . rtrim($this->_canonicalize_header_value_relaxed($dkimh));
+        $dksh = "dkim-signature:" . rtrim($this->_canonicalize_header_value_relaxed($dkimh));
         $signature = "";
-        if (openssl_sign($a, $signature, $this->pkey, OPENSSL_ALGO_SHA256)) {
+        if (openssl_sign($a . $dksh, $signature, $this->pkey, OPENSSL_ALGO_SHA256)) {
             $ahash = rtrim(chunk_split(base64_encode($signature), 64, "{$eol} "));
-            return "DKIM-Signature: {$dkimh}{$ahash}";
+            return "DKIM-Signature: {$dkimh}{$ahash}{$eol}";
         } else {
             return false;
         }
