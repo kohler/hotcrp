@@ -133,8 +133,8 @@ class MimeText {
             // try three types of match in turn:
             // 1. name <email> [RFC 822]
             // 2. name including periods and “\'” but no quotes <email>
-            if (preg_match('/\A((?:(?:"(?:[^"\\\\]|\\\\.)*"|[^\s\000-\037()[\\]<>@,;:\\\\".]+)\s*?)*)\s*<\s*(.*?)(\s*>\s*)(.*)\z/s', $str, $m)
-                || preg_match('/\A((?:[^\000-\037()[\\]<>@,;:\\\\"]|\\\\\')+?)\s*<\s*(.*?)(\s*>\s*)(.*)\z/s', $str, $m)) {
+            if (preg_match('/\A((?:(?:"(?:[^"\\\\]|\\\\.)*"|[^\s\000-\037()\[\\]<>@,;:\\\\".]+)\s*?)*)\s*<\s*(.*?)(\s*>\s*)(.*)\z/s', $str, $m)
+                || preg_match('/\A((?:[^\000-\037()\[\\]<>@,;:\\\\"]|\\\\\')+?)\s*<\s*(.*?)(\s*>\s*)(.*)\z/s', $str, $m)) {
                 $emailpos = $inlen - strlen($m[4]) - strlen($m[3]) - strlen($m[2]);
                 $name = $m[1];
                 $email = $m[2];
@@ -208,7 +208,7 @@ class MimeText {
             $utf8 = is_usascii($name) ? 0 : 2;
             if ($name !== ""
                 && $name[0] === "\""
-                && preg_match("/\\A\"([^\\\\\"]|\\\\.)*\"\\z/s", $name)) {
+                && preg_match('/\A"([^\\\\"]|\\\\.)*"\z/s', $name)) {
                 if ($utf8 > 0) {
                     $this->append(substr($name, 1, -1), $utf8);
                 } else {

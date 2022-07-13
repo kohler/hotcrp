@@ -322,7 +322,9 @@ function mime_token_quote($word) {
 /** @param string $words
  * @return string */
 function rfc2822_words_quote($words) {
-    if (preg_match('/\A[-A-Za-z0-9!#$%&\'*+\/=?^_`{|}~ \t]*\z/', $words)) {
+    // NB: Do not allow `'` in an unquoted <phrase>; Proofpoint can add quotes
+    // to names containing `'`, which invalidates a DKIM signature.
+    if (preg_match('/\A[-A-Za-z0-9!#$%&*+\/=?^_`{|}~ \t]*\z/', $words)) {
         return $words;
     } else {
         return mime_quote_string($words);
