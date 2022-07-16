@@ -334,14 +334,25 @@ class Unit_Tester {
         $jp->filename("x.txt");
         xassert_eqq($jp->position_landmark($x->a[0]), "x.txt:2:11");
         xassert_eqq($jp->path_landmark(" . a   "), "x.txt:2:11");
+        xassert_eqq($jp->path_landmark("\$.a"), "x.txt:2:11");
         xassert_eqq($jp->path_landmark("b"), "x.txt:3:10");
         xassert_eqq($jp->path_landmark("a[0]"), "x.txt:2:11");
+        xassert_eqq($jp->path_landmark("\$.a[0]"), "x.txt:2:11");
         xassert_eqq($jp->position_landmark($x->a[1]), "x.txt:2:16");
         xassert_eqq($jp->path_landmark(".a.1"), "x.txt:2:16");
+        xassert_eqq($jp->path_landmark("\$.a.1"), "x.txt:2:16");
         xassert_eqq($jp->position_landmark($x->b->c), "x.txt:4:14");
         xassert_eqq($jp->path_landmark("[  \"b\"   ][   \"c\"]"), "x.txt:4:14");
+        xassert_eqq($jp->path_landmark("\$[\"b\"].c"), "x.txt:4:14");
         xassert_eqq($jp->position_landmark($x->b->__LANDMARK__), "x.txt:3:10");
         xassert_eqq($jp->path_landmark("[  \"b\"   ][   \"c\"].d"), "x.txt:4:14");
+
+        xassert_eqq(JsonParser::path_push(null, 0), "\$[0]");
+        xassert_eqq(JsonParser::path_push(null, "0"), "\$[0]");
+        xassert_eqq(JsonParser::path_push(null, ""), "\$[\"\"]");
+        xassert_eqq(JsonParser::path_push("\$[0]", "a"), "\$[0].a");
+        xassert_eqq(JsonParser::path_push("\$[0]", "a\\"), "\$[0][\"a\\\\\"]");
+        xassert_eqq(JsonParser::path_push("\$[0]", "\n"), "\$[0][\"\\n\"]");
     }
 
     function test_json_object_replace() {

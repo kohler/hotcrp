@@ -627,7 +627,7 @@ class JsonParser {
             }
             if ($pos === $len) {
                 break;
-            } else if (ctype_alnum($path[$pos]) || $path[$pos] === "_" || $path[$pos] === "\$") {
+            } else if (ctype_alnum($path[$pos]) || $path[$pos] === "_") {
                 preg_match('/\G[a-zA-Z_0-9$]*/', $path, $m, 0, $pos);
                 $key = $m[0];
                 $pos += strlen($m[0]);
@@ -635,7 +635,8 @@ class JsonParser {
                 $x = self::potential_string($path, $pos + 1);
                 $key = $this->decode_string($x, false);
                 $pos = min($len, $pos + 2 + strlen($x));
-            } else if ($path[$pos] === "." || $path[$pos] === "[" || $path[$pos] === "]") {
+            } else if ($path[$pos] === "." || $path[$pos] === "[" || $path[$pos] === "]"
+                       || ($path[$pos] === "\$" && $pos === 0)) {
                 ++$pos;
                 continue;
             } else {
@@ -653,6 +654,37 @@ class JsonParser {
      * @return string */
     function path_landmark($path) {
         return $this->position_landmark($this->path_position($path));
+    }
+
+    /** @param ?string $path
+     * @param string|int $component
+     * @return string */
+    static function path_push($path, $component) {
+        if ($path === null || $path === "") {
+            $path = "\$";
+        }
+        if ($component === "") {
+            return "{$path}[\"\"]";
+        } else if (is_int($component)
+                   || $component === "0"
+                   || (ctype_digit($component) && !str_starts_with($component, "0"))) {
+            return "{$path}[{$component}]";
+        } else if (ctype_alnum($component) || preg_match('/\A\w+\z/', $component)) {
+            return "{$path}.{$component}";
+        } else {
+            $component = preg_replace_callback('/["\/\000-\037\\\\]/', function ($m) {
+                $ch = ord($m[0]);
+                if ($ch === 8 || $ch === 9 || $ch === 10 || $ch === 13) {
+                    $s = "btnxxr";
+                    return "\\" . $s[$ch - 8];
+                } else if ($ch < 32) {
+                    return sprintf("\\u%04X", $ch);
+                } else {
+                    return "\\{$m[0]}";
+                }
+            }, $component);
+            return "{$path}[\"{$component}\"]";
+        }
     }
 
 
