@@ -7271,7 +7271,7 @@ function tag_save() {
         minifeedback(this, {ok: false, message_list: [{message: "Value must be a number (or empty to remove the tag).", status: 2}]});
         return;
     }
-    $.post(hoturl("=api/settags", {p: m[2], forceShow: 1}),
+    $.post(hoturl("=api/tags", {p: m[2], forceShow: 1}),
            {addtags: ch}, make_tag_save_callback(this));
 }
 
@@ -7584,7 +7584,7 @@ function commit_drag(si, di) {
         } else if (rowanal[i].annoid)
             annosaves.push({annoid: rowanal[i].annoid, tagval: tagvalue_unparse(rowanal[i].newvalue)});
     if (saves.length)
-        $.post(hoturl("=api/settags", {forceShow: 1}),
+        $.post(hoturl("=api/tags", {forceShow: 1}),
                {tagassignment: saves.join(",")},
                make_tag_save_callback(rowanal[si].entry));
     if (annosaves.length)
@@ -7844,7 +7844,7 @@ handle_ui.on("js-plinfo-edittags", function () {
         focus_within(div);
     }
     function do_submit() {
-        $.post(hoturl("=api/settags", {p: pid, forceShow: 1}),
+        $.post(hoturl("=api/tags", {p: pid, forceShow: 1}),
             {tags: $(ta).val()},
             function (rv) {
                 minifeedback(ta, rv);
@@ -7860,7 +7860,7 @@ handle_ui.on("js-plinfo-edittags", function () {
         if (focused)
             focus_within(div.closest("tr"));
     }
-    $.post(hoturl("=api/settags", {p: pid, forceShow: 1}), start); // XXX should be GET
+    $.post(hoturl("=api/tags", {p: pid, forceShow: 1}), start); // XXX should be GET
 });
 
 
@@ -9109,7 +9109,7 @@ function save_pstags(evt) {
     var f = this, $f = $(f);
     evt.preventDefault();
     $f.find("input").prop("disabled", true);
-    $.ajax(hoturl("=api/settags", {p: $f.attr("data-pid")}), {
+    $.ajax(hoturl("=api/tags", {p: $f.attr("data-pid")}), {
         method: "POST", data: $f.serialize(), timeout: 4000,
         success: function (data) {
             $f.find("input").prop("disabled", false);
@@ -9171,7 +9171,7 @@ function save_pstagindex(event) {
         }
         data.ok && $(window).trigger("hotcrptags", [data]);
     }
-    $.post(hoturl("=api/settags", {p: $f.attr("data-pid")}),
+    $.post(hoturl("=api/tags", {p: $f.attr("data-pid")}),
             {"addtags": assignments.join(" ")}, done);
 }
 

@@ -71,7 +71,8 @@ class Tags_API {
         }
     }
 
-    /** @param ?PaperInfo $prow */
+    /** @param ?PaperInfo $prow
+     * @return JsonResult */
     static function tagmessages_api(Contact $user, $qreq, $prow) {
         return new JsonResult(self::tagmessages($user, $prow, null)->jsonSerialize());
     }
@@ -94,12 +95,20 @@ class Tags_API {
         return $ms1;
     }
 
-    /** @param ?PaperInfo $prow */
-    static function settags_api(Contact $user, $qreq, $prow) {
-        if ($qreq->cancel) {
-            return ["ok" => true];
-        } else if ($prow && !$user->can_view_paper($prow)) {
-            return ["ok" => false, "error" => "Paper not found"];
+    /** @param Qrequest $qreq
+     * @param ?PaperInfo $prow
+     * @return JsonResult */
+    static function run(Contact $user, $qreq, $prow) {
+        if ($prow && ($whyNot = $user->perm_view_paper($prow))) {
+            return Conf::paper_error_json_result($whyNot);
+        }
+        if ($qreq->is_get() || $qreq->cancel) {
+            if (!$prow) {
+                return JsonResult::make_error(400, "<0>Missing parameter");
+            }
+            $taginfo = self::tagmessages($user, $prow, null);
+            $prow->add_tag_info_json($taginfo, $user);
+            return new JsonResult($taginfo);
         }
 
         // save tags using assigner
@@ -130,7 +139,11 @@ class Tags_API {
                 }
             }
         }
+
         $assigner = new AssignmentSet($user);
+        if ($prow) {
+            $assigner->enable_papers($prow);
+        }
         $assigner->parse(join("\n", $x));
         $mlist = $assigner->message_list();
         $ok = $assigner->execute();

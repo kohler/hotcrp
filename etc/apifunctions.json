@@ -146,7 +146,11 @@
     },
     {
         "name": "settags", "post": true,
-        "function": "Tags_API::settags_api"
+        "function": "Tags_API::run"
+    },
+    {
+        "name": "tags", "get": true, "post": true,
+        "function": "Tags_API::run"
     },
     {
         "name": "shepherd", "paper": true, "get": true, "post": true,
