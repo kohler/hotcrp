@@ -5,7 +5,7 @@
 class GraphData_API {
     static function graphdata(Contact $user, Qrequest $qreq) {
         if (!isset($qreq->x)) {
-            return JsonResult::make_error(400, "<0>Missing parameter");
+            return JsonResult::make_missing_error("x");
         }
         $fg = new FormulaGraph($user, $qreq->gtype ? : "scatter", $qreq->x, $qreq->y);
         if ($qreq->xorder) {

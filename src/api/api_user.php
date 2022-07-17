@@ -10,10 +10,10 @@ class User_API {
     /** @return JsonResult */
     static function user(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         if (!$user->can_lookup_user()) {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         }
         if (!($email = trim($qreq->email))) {
-            return JsonResult::make_error(400, "<0>Parameter error");
+            return JsonResult::make_missing_error("email");
         }
 
         $users = [];
@@ -92,7 +92,7 @@ class User_API {
      * @return JsonResult */
     static function account_disable(Contact $user, Contact $viewer, $disabled) {
         if (!$viewer->privChair) {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         } else if ($viewer->contactId === $user->contactId) {
             return JsonResult::make_error(400, "<0>You cannot disable your own account");
         } else {
@@ -109,7 +109,7 @@ class User_API {
     /** @return JsonResult */
     static function account_sendinfo(Contact $user, Contact $viewer) {
         if (!$viewer->privChair) {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         } else if ($user->disablement === 0) {
             $user->send_mail("@accountinfo");
             return new JsonResult(["ok" => true, "u" => $user->email]);
@@ -127,7 +127,7 @@ class User_API {
         } else if ($viewer->isPC) {
             $user = $viewer->conf->user_by_email($qreq->u);
         } else {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         }
         if (!$user) {
             return JsonResult::make_error(404, "<0>User not found");

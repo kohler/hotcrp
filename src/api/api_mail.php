@@ -6,7 +6,7 @@ class Mail_API {
     static function mailtext(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         if (!$user->isPC
             || ($prow && !$user->can_view_paper($prow))) {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         }
 
         $recipient = null;
@@ -65,9 +65,9 @@ class Mail_API {
 
     static function maillog(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         if (!$qreq->mailid || !ctype_digit($qreq->mailid)) {
-            return JsonResult::make_error(400, "<0>Parameter error");
+            return JsonResult::make_missing_error("mailid");
         } else if (!$user->privChair) {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         } else if (($row = $user->conf->fetch_first_object("select * from MailLog where mailId=?", $qreq->mailid))) {
             if (self::can_view_maillog($user, $row)) {
                 $j = ["ok" => true];
@@ -83,7 +83,7 @@ class Mail_API {
                 }
                 return $j;
             } else {
-                return JsonResult::make_error(403, "<0>Permission error");
+                return JsonResult::make_permission_error();
             }
         } else {
             return JsonResult::make_error(404, "<0>Email not found");

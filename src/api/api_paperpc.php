@@ -15,7 +15,7 @@ class PaperPC_API {
         } else {
             $k = "can_view_$type";
             if (!$user->$k($prow)) {
-                return JsonResult::make_error(403, "<0>Permission error");
+                return JsonResult::make_permission_error();
             }
             $k = "{$type}ContactId";
             $cid = $prow->$k;
@@ -46,7 +46,7 @@ class PaperPC_API {
 
     static function pc_api(Contact $user, Qrequest $qreq) {
         if (!$user->can_view_pc()) {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         }
         $pc = $user->conf->hotcrp_pc_json($user);
         return ["ok" => true, "pc" => $pc];

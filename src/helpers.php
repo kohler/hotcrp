@@ -138,6 +138,38 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         ]);
     }
 
+    /** @param ?string $param
+     * @param ?string $ftext
+     * @return JsonResult */
+    static function make_parameter_error($param, $ftext = null) {
+        $mi = new MessageItem($param, $ftext ?? "<0>Parameter error", 2);
+        return new JsonResult(400, ["ok" => false, "message_list" => [$mi]]);
+    }
+
+    /** @param ?string $param
+     * @param ?string $ftext
+     * @return JsonResult */
+    static function make_missing_error($param, $ftext = null) {
+        $mi = new MessageItem($param, $ftext ?? "<0>Parameter missing", 2);
+        return new JsonResult(400, ["ok" => false, "message_list" => [$mi]]);
+    }
+
+    /** @param ?string $field
+     * @param ?string $ftext
+     * @return JsonResult */
+    static function make_permission_error($field = null, $ftext = null) {
+        $mi = new MessageItem($field, $ftext ?? "<0>Permission error", 2);
+        return new JsonResult(403, ["ok" => false, "message_list" => [$mi]]);
+    }
+
+    /** @param ?string $field
+     * @param ?string $ftext
+     * @return JsonResult */
+    static function make_not_found_error($field = null, $ftext = null) {
+        $mi = new MessageItem($field, $ftext ?? "<0>Not found", 2);
+        return new JsonResult(404, ["ok" => false, "message_list" => [$mi]]);
+    }
+
 
     #[\ReturnTypeWillChange]
     /** @param string $offset

@@ -18,7 +18,7 @@ class RequestReview_API {
             return JsonResult::make_error(403, "<5>" . $whyNot->unparse_html());
         }
         if (!isset($qreq->email)) {
-            return JsonResult::make_error(400, "<0>Bad request");
+            return JsonResult::make_missing_error("email");
         }
         $email = $qreq->email = trim($qreq->email);
         if ($email === "" || $email === "newanonymous") {
@@ -27,7 +27,7 @@ class RequestReview_API {
 
         $reviewer = $user->conf->user_by_email($email);
         if (!$reviewer && ($email === "" || !validate_email($email))) {
-            return self::error_result(400, "email", "<0>Invalid email address");
+            return JsonResult::make_parameter_error("email", "<0>Invalid email address");
         }
 
         $name_args = Author::make_keyed(["firstName" => $qreq->firstName, "lastName" => $qreq->lastName, "name" => $qreq->name, "affiliation" => $qreq->affiliation, "email" => $email]);
@@ -36,12 +36,12 @@ class RequestReview_API {
         // check proposal:
         // - check existing review
         if ($reviewer && $prow->review_by_user($reviewer)) {
-            return self::error_result(400, "email", "<0>{$email} is already a reviewer");
+            return JsonResult::make_parameter_error("email", "<0>{$email} is already a reviewer");
         }
         // - check existing request
         $request = $user->conf->fetch_first_object("select * from ReviewRequest where paperId=? and email=?", $prow->paperId, $email);
         if ($request && !$user->allow_administer($prow)) {
-            return self::error_result(400, "email", "<0>{$email} is already a requested reviewer");
+            return JsonResult::make_parameter_error("email", "<0>{$email} is already a requested reviewer");
         }
         // - check existing refusal
         if ($reviewer) {
@@ -71,7 +71,7 @@ class RequestReview_API {
         if ($reviewer
             && ($prow->has_conflict($reviewer)
                 || ($reviewer->isPC && !$reviewer->can_accept_review_assignment($prow)))) {
-            return self::error_result(400, "email", "<0>{$email} cannot be asked to review this submission");
+            return JsonResult::make_parameter_error("email", "<0>{$email} cannot be asked to review this submission");
         }
 
         // check for potential conflict
@@ -179,11 +179,11 @@ class RequestReview_API {
      * @return JsonResult */
     static function denyreview($user, $qreq, $prow) {
         if (!$user->allow_administer($prow)) {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         }
         $email = trim((string) $qreq->email);
         if ($email === "") {
-            return self::error_result(400, "email", "<0>Invalid email address");
+            return JsonResult::make_parameter_error("email", "<0>Invalid email address");
         }
         $user->conf->qe("lock tables ReviewRequest write, PaperReviewRefused write, ContactInfo read");
         // Need to be careful and not expose inappropriate information:
@@ -219,7 +219,7 @@ class RequestReview_API {
             return new JsonResult(["ok" => true, "action" => "deny"]);
         } else {
             Dbl::qx_raw("unlock tables");
-            return self::error_result(404, "email", "<0>No such request");
+            return JsonResult::make_not_found_error("email", "<0>No such request");
         }
     }
 
@@ -245,7 +245,7 @@ class RequestReview_API {
      * @return JsonResult */
     static function acceptreview($user, $qreq, $prow) {
         if (!ctype_digit($qreq->r ?? "X")) {
-            return self::error_result(400, "r", "<0>Bad request");
+            return JsonResult::make_parameter_error("r");
         }
         $r = intval($qreq->r);
         if ($qreq->redirect === "1") {
@@ -268,12 +268,12 @@ class RequestReview_API {
         if (!$rrow && !$refrow) {
             if ($user->can_administer($prow)
                 || $user->can_view_review($prow, null)) {
-                return self::error_result(404, "r", "<0>No such review");
+                return JsonResult::make_not_found_error("r", "<0>No such review");
             } else {
-                return self::error_result(403, "r", "<0>Permission error");
+                return JsonResult::make_permission_error("r");
             }
         } else if (!self::allow_accept_decline($user, $prow, $rrow ?? $refrow)) {
-            return self::error_result(403, "r", "<0>Permission error");
+            return JsonResult::make_permission_error("r");
         }
 
         if (!$rrow) {
@@ -316,7 +316,7 @@ class RequestReview_API {
      * @return JsonResult */
     static function declinereview($user, $qreq, $prow) {
         if (!ctype_digit($qreq->r ?? "X")) {
-            return self::error_result(400, "r", "<0>Bad request");
+            return JsonResult::make_parameter_error("r");
         }
         $r = intval($qreq->r);
         $redirect_in = $qreq->redirect;
@@ -347,17 +347,18 @@ class RequestReview_API {
         if (!$rrow && !$refrow) {
             if ($user->can_administer($prow)
                 || $user->can_view_review($prow, null)) {
-                return self::error_result(404, "r", "<0>Review not found");
+                return JsonResult::make_not_found_error("r", "<0>Review not found");
             } else {
-                return self::error_result(403, "r", "<0>Permission error");
+                return JsonResult::make_permission_error("r");
             }
         } else if (!self::allow_accept_decline($user, $prow, $rrow ?? $refrow)) {
-            return self::error_result(403, "r", "<0>Permission error");
+            return JsonResult::make_permission_error("r");
         } else if ($rrow && $rrow->reviewStatus >= ReviewInfo::RS_DELIVERED) {
-            return self::error_result(403, "r", "<0>Review has already been submitted");
+            return JsonResult::make_permission_error("r", "<0>Review has already been submitted");
         } else if ($rrow && $rrow->reviewType >= REVIEW_SECONDARY) {
-            $r = self::error_result(403, "r", "Primary and secondary reviews can’t be declined");
-            $r->content["message_list"][] = new MessageItem("r", "Contact the PC chairs directly if you really cannot finish this review.", MessageSet::INFORM);
+            $jr = JsonResult::make_permission_error("r", "<0>Primary and secondary reviews can’t be declined");
+            $jr->content["message_list"][] = new MessageItem("r", "Contact the PC chairs directly if you really cannot finish this review.", MessageSet::INFORM);
+            return $jr;
         }
         $rrid = $rrow ? $rrow->reviewId : $refrow->refusedReviewId;
 
@@ -413,7 +414,7 @@ class RequestReview_API {
      * @return JsonResult */
     static function claimreview($user, $qreq, $prow) {
         if (!ctype_digit($qreq->r ?? "X")) {
-            return self::error_result(400, "r", "<0>Bad request");
+            return JsonResult::make_parameter_error("r");
         }
         $r = intval($qreq->r);
         $redirect_in = $qreq->redirect;
@@ -425,20 +426,20 @@ class RequestReview_API {
         if (!$rrow) {
             if ($user->can_administer($prow)
                 || $user->can_view_review($prow, null)) {
-                return self::error_result(404, "r", "<0>Review not found");
+                return JsonResult::make_not_found_error("r", "<0>Review not found");
             } else {
-                return self::error_result(403, "r", "<0>Permission error");
+                return JsonResult::make_permission_error("r");
             }
         } else if (!self::allow_accept_decline($user, $prow, $rrow)) {
-            return self::error_result(403, "r", "<0>Permission error");
+            return JsonResult::make_permission_error("r");
         } else if ($rrow->reviewStatus > ReviewInfo::RS_DRAFTED) {
-            return self::error_result(403, "r", "<0>Reviews cannot be reassigned once they are submitted");
+            return JsonResult::make_permission_error("r", "<0>Reviews cannot be reassigned after they are submitted");
         }
 
         $email = $qreq->email;
         if (!$email
             || ($useridx = $user->session_user_index($email)) < 0) {
-            return self::error_result(403, "email", "<0>Reassigning reviews is only possible for accounts to which you are currently signed in");
+            return JsonResult::make_permission_error("email", "<0>Reassigning reviews is only possible for accounts to which you are currently signed in");
         }
 
         $destu = $user->conf->cached_user_by_email($email)
@@ -447,7 +448,7 @@ class RequestReview_API {
             $destu->ensure_account_here();
         }
         if (!$destu || $destu->is_disabled() || !$destu->has_account_here()) {
-            return self::error_result(403, "email", "<0>That account is not enabled here");
+            return JsonResult::make_permission_error("email", "<0>That account is not enabled here");
         }
 
         $prow->conf->qe("update PaperReview set contactId=? where paperId=? and reviewId=? and contactId=? and reviewSubmitted is null and timeApprovalRequested<=0",
@@ -470,7 +471,7 @@ class RequestReview_API {
         $xrrows = $xrequests = [];
         $email = trim($qreq->email);
         if ($email === "") {
-            return self::error_result(400, "email", "<0>Bad request");
+            return JsonResult::make_missing_error("email");
         }
 
         if (($u = $user->conf->cached_user_by_email($email))) {
@@ -497,9 +498,9 @@ class RequestReview_API {
             if (!empty($xrrows)
                 && ($user->can_administer($prow)
                     || ($user->contactId && $user->contactId == $xrrows[0]->requestedBy))) {
-                return self::error_result(403, "r", "<0>This review can’t be retracted because the reviewer has already begun their work");
+                return JsonResult::make_permission_error("r", "<0>This review can’t be retracted because the reviewer has already begun their work");
             } else {
-                return self::error_result(404, null, "<0>No reviews to retract");
+                return JsonResult::make_not_found_error(null, "<0>No reviews to retract");
             }
         }
 
@@ -568,12 +569,12 @@ class RequestReview_API {
         // check permissions
         if (!$user->can_administer($prow)
             && strcasecmp($email, $user->email) !== 0) {
-            return self::error_result(403, "email", "<0>Permission error");
+            return JsonResult::make_permission_error("email");
         }
 
         $refusals = $prow->review_refusals_by_email($email);
         if (empty($refusals)) {
-            return self::error_result(404, null, "<0>No reviews declined");
+            return JsonResult::make_not_found_error(null, "<0>No reviews declined");
         }
 
         if (!$user->can_administer($prow)) {
@@ -581,9 +582,9 @@ class RequestReview_API {
                 return $ref->contactId == $user->contactId;
             });
             if (empty($xrefusals)) {
-                return self::error_result(404, null, "<0>No reviews declined");
+                return JsonResult::make_not_found_error(null, "<0>No reviews declined");
             } else if (count($xrefusals) !== count($refusals)) {
-                return self::error_result(403, null, "<0>Permission error");
+                return JsonResult::make_permission_error();
             }
         }
 
@@ -598,16 +599,5 @@ class RequestReview_API {
         }
 
         return new JsonResult(["ok" => true, "action" => "undecline"]);
-    }
-
-    /** @param int $status
-     * @param string $field
-     * @param string $message
-     * @return JsonResult */
-    static function error_result($status, $field, $message) {
-        if (!Ftext::is_ftext($message)) {
-            error_log("not ftext: " . debug_string_backtrace());
-        }
-        return new JsonResult($status, ["ok" => false, "message_list" => [new MessageItem($field, $message, 2)]]);
     }
 }

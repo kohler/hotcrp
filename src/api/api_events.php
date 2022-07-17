@@ -8,7 +8,7 @@ class Events_API {
      * @return JsonResult */
     static function run($user, $qreq) {
         if (!$user->is_reviewer()) {
-            JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         }
         $from = $qreq->from;
         if (!$from || !ctype_digit($from)) {

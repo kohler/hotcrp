@@ -224,7 +224,7 @@ class MeetingTracker {
 
         // track="IDENTIFIER POSITION" or track="IDENTIFIER stop" or track=stop
         if (!$user->is_track_manager() || !$qreq->valid_post()) {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         }
 
         if ($qreq->track === "stop") {
@@ -275,7 +275,7 @@ class MeetingTracker {
         if (!$user->privChair
             && $trmatch !== null
             && !self::check_tracker_admin_perm($user, $trmatch->admin_perm ?? null)) {
-            return JsonResult::make_error(403, "<0>Permission error: You can’t administer that tracker");
+            return JsonResult::make_permission_error(null, "<0>You can’t administer that tracker");
         }
 
         $admin_perm = null;
@@ -287,7 +287,7 @@ class MeetingTracker {
                 if (!$user->privChair
                     && !self::check_tracker_admin_perm($user, $admin_perm)) {
                     if ($trmatch === null) {
-                        return JsonResult::make_error(403, "<0>Permission error: You can’t administer all the submissions on that list");
+                        return JsonResult::make_permission_error(null, "<0>You can’t administer all the submissions on that list");
                     } else {
                         $xlist = $trmatch;
                     }
@@ -361,7 +361,7 @@ class MeetingTracker {
      * @return JsonResult */
     static function trackerconfig_api(Contact $user, $qreq) {
         if (!$user->is_track_manager() || !$qreq->valid_post()) {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         }
 
         $tracker = self::lookup($user->conf);

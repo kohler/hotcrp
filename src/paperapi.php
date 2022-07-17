@@ -23,7 +23,7 @@ class PaperApi {
                 if ($user->isPC) {
                     JsonResult::make_error(404, "<0>User not found")->complete();
                 } else {
-                    JsonResult::make_error(403, "<0>Permission error")->complete();
+                    JsonResult::make_permission_error()->complete();
                 }
             }
         }
@@ -36,7 +36,7 @@ class PaperApi {
         if ($u->contactId !== $user->contactId
             && ($prow ? !$user->can_administer($prow) : !$user->privChair)) {
             error_log("PaperApi::get_reviewer: rejecting user {$u->contactId}/{$u->email}, requested by {$user->contactId}/{$user->email}");
-            JsonResult::make_error(403, "<0>Permission error")->complete();
+            JsonResult::make_permission_error()->complete();
         }
         return $u;
     }
@@ -57,7 +57,7 @@ class PaperApi {
 
     static function review_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         if (!$user->can_view_review($prow, null)) {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         }
         $need_id = false;
         if (isset($qreq->r)) {
@@ -73,7 +73,7 @@ class PaperApi {
             if (!$rrows
                 && $user->contactId !== $u->contactId
                 && !$user->can_view_review_identity($prow, null)) {
-                return JsonResult::make_error(403, "<0>Permission error");
+                return JsonResult::make_permission_error();
             }
         } else {
             $prow->ensure_full_reviews();
@@ -88,7 +88,7 @@ class PaperApi {
             }
         }
         if (!$vrrows && $rrows) {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         } else {
             return new JsonResult(["ok" => true, "reviews" => $vrrows]);
         }
@@ -102,7 +102,7 @@ class PaperApi {
         if (!$rrow && $prow->parse_ordinal_id($qreq->r) === false) {
             return JsonResult::make_error(400, "<0>Bad request");
         } else if (!$user->can_view_review($prow, $rrow)) {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         } else if (!$rrow) {
             return JsonResult::make_error(404, "<0>Review not found");
         }
@@ -112,7 +112,7 @@ class PaperApi {
                 || ($rating = ReviewInfo::parse_rating($qreq->user_rating)) === null) {
                 return JsonResult::make_error(400, "<0>Bad request");
             } else if (!$editable) {
-                return JsonResult::make_error(403, "<0>Permission error");
+                return JsonResult::make_permission_error();
             }
             if ($rating === 0) {
                 $user->conf->qe("delete from ReviewRating where paperId=? and reviewId=? and contactId=?", $prow->paperId, $rrow->reviewId, $user->contactId);
@@ -141,7 +141,7 @@ class PaperApi {
         if (!$rrow && $prow->parse_ordinal_id($qreq->r) === false) {
             return JsonResult::make_error(400, "<0>Bad request");
         } else if (!$user->can_administer($prow)) {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         } else if (!$rrow) {
             return JsonResult::make_error(404, "<0>Review not found");
         } else {

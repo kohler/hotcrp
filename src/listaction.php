@@ -8,12 +8,12 @@ class ListAction {
     }
     /** @return null|MessageItem|CsvGenerator|Redirection */
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
-        return MessageItem::error("<0>No such action");
+        return MessageItem::error("<0>Action not found");
     }
 
     /** @return MessageItem */
     static function enoent() {
-        return MessageItem::error("<0>No such action");
+        return MessageItem::error("<0>Action not found");
     }
     /** @return MessageItem */
     static function eperm() {
@@ -98,7 +98,7 @@ class ListAction {
             $selection = new SearchSelection($selection);
         }
         if (!$uf || !Conf::xt_resolve_require($uf) || !is_string($uf->function)) {
-            return JsonResult::make_error(404, "<0>No such action");
+            return JsonResult::make_error(404, "<0>Action not found");
         } else if (($uf->paper ?? false) && $selection->is_empty()) {
             return JsonResult::make_error(400, "<0>No papers selected");
         } else if ($uf->function[0] === "+") {
@@ -109,7 +109,7 @@ class ListAction {
             $action = call_user_func($uf->function, $user->conf, $uf);
         }
         if (!$action || !$action->allow($user, $qreq)) {
-            return JsonResult::make_error(403, "<0>Permission error");
+            return JsonResult::make_permission_error();
         } else {
             return $action->run($user, $qreq, $selection);
         }
