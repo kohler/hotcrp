@@ -21,7 +21,7 @@ class Comments_Tester {
 
     function test_responses() {
         $paper1 = $this->conf->checked_paper_by_id(1);
-        $j = call_api("comment", $this->u_floyd, ["response" => "1", "text" => "Hello"], $paper1);
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "text" => "Hello"], $paper1);
         xassert(!$j->ok);
         if (!$j->ok) {
             xassert_match($j->message_list[0]->message, '/not open for responses/');
@@ -38,7 +38,7 @@ class Comments_Tester {
         ]);
         xassert($sv->execute());
 
-        $j = call_api("comment", $this->u_floyd, ["response" => "1", "text" => "Hello"], $paper1);
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "text" => "Hello"], $paper1);
         xassert($j->ok);
         xassert(is_object($j->cmt));
         xassert($j->cmt->text === "Hello");
@@ -73,48 +73,48 @@ class Comments_Tester {
         xassert($sv->execute());
 
         // return to response
-        $j = call_api("comment", $this->u_floyd, ["response" => "1", "c" => "new", "text" => "Hi"], $paper1);
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "c" => "new", "text" => "Hi"], $paper1);
         xassert(!$j->ok);
         xassert_match($j->message_list[0]->message, '/concurrent/');
         xassert($j->conflict === true);
         xassert(is_object($j->cmt));
         xassert_eqq($j->cmt->text, "Hello");
 
-        $j = call_api("comment", $this->u_floyd, ["response" => "1", "text" => "Hi"], $paper1);
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "text" => "Hi"], $paper1);
         xassert($j->ok);
         xassert_eqq($j->cmt->text, "Hi");
         xassert_eqq($j->cmt->cid, $cid);
 
-        $j = call_api("comment", $this->u_floyd, ["c" => "response", "text" => "Ho ho ho"], $paper1);
+        $j = call_api("=comment", $this->u_floyd, ["c" => "response", "text" => "Ho ho ho"], $paper1);
         xassert($j->ok);
         xassert_eqq($j->cmt->text, "Ho ho ho");
         xassert_eqq($j->cmt->cid, $cid);
 
-        $j = call_api("comment", $this->u_floyd, ["response" => "1", "c" => (string) $cid, "text" => "Hee hee"], $paper1);
+        $j = call_api("=comment", $this->u_floyd, ["response" => "1", "c" => (string) $cid, "text" => "Hee hee"], $paper1);
         xassert($j->ok);
         xassert_eqq($j->cmt->text, "Hee hee");
         xassert_eqq($j->cmt->cid, $cid);
 
-        $j = call_api("comment", $this->u_floyd, new Qrequest("GET", ["response" => "1"]), $paper1);
+        $j = call_api("comment", $this->u_floyd, ["response" => "1"], $paper1);
         xassert($j->ok);
         xassert_eqq($j->cmt->text, "Hee hee");
         xassert_eqq($j->cmt->cid, $cid);
 
-        $j = call_api("comment", $this->u_floyd, new Qrequest("GET", ["c" => (string) $cid]), $paper1);
+        $j = call_api("comment", $this->u_floyd, ["c" => (string) $cid], $paper1);
         xassert($j->ok);
         xassert_eqq($j->cmt->text, "Hee hee");
         xassert_eqq($j->cmt->cid, $cid);
 
-        $j = call_api("comment", $this->u_floyd, ["c" => "new", "text" => "Nope"], $paper1);
+        $j = call_api("=comment", $this->u_floyd, ["c" => "new", "text" => "Nope"], $paper1);
         xassert(!$j->ok);
         xassert_match($j->message_list[0]->message, '/didn’t write this comment/');
 
-        $j = call_api("comment", $this->u_chair, ["c" => "new", "text" => "Yep"], $paper1);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Yep"], $paper1);
         xassert($j->ok);
         xassert_eqq($j->cmt->text, "Yep");
         xassert_neqq($j->cmt->cid, $cid);
 
-        $j = call_api("comment", $this->u_chair, ["c" => "new", "text" => ""], $paper1);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => ""], $paper1);
         xassert(!$j->ok);
         xassert_match($j->message_list[0]->message, '/required/');
     }

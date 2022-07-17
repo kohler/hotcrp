@@ -19,12 +19,12 @@ class UserAPI_Tester {
         $user = $this->conf->checked_user_by_email("marina@poema.ru");
         xassert_eqq($user->is_disabled(), false);
 
-        $j = call_api("account", $this->user, ["u" => "marina@poema.ru", "disable" => true], null);
+        $j = call_api("=account", $this->user, ["u" => "marina@poema.ru", "disable" => true], null);
         xassert($j->ok);
         $user = $this->conf->checked_user_by_email("marina@poema.ru");
         xassert_eqq($user->is_disabled(), true);
 
-        $j = call_api("account", $this->user, ["u" => "marina@poema.ru", "enable" => true], null);
+        $j = call_api("=account", $this->user, ["u" => "marina@poema.ru", "enable" => true], null);
         xassert($j->ok);
         $user = $this->conf->checked_user_by_email("marina@poema.ru");
         xassert_eqq($user->is_disabled(), false);

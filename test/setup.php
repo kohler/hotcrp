@@ -622,10 +622,17 @@ function xassert_paper_status_saved_nonrequired(PaperStatus $ps, $maxstatus = Me
 /** @param Contact $user
  * @param ?PaperInfo $prow
  * @return object */
-function call_api($fn, $user, $qreq, $prow) {
+function call_api($fn, $user, $qreq, $prow = null) {
+    if (($is_post = str_starts_with($fn, "="))) {
+        $fn = substr($fn, 1);
+    }
     if (!($qreq instanceof Qrequest)) {
-        $qreq = new Qrequest("POST", $qreq);
-        $qreq->approve_token();
+        if ($is_post) {
+            $qreq = new Qrequest("POST", $qreq);
+            $qreq->approve_token();
+        } else {
+            $qreq = new Qrequest("GET", $qreq);
+        }
     }
     $uf = $user->conf->api($fn, $user, $qreq->method());
     $jr = $user->conf->call_api_on($uf, $fn, $user, $qreq, $prow);
