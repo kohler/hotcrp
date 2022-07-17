@@ -304,6 +304,7 @@ class Unit_Tester {
 
     function test_json() {
         xassert_eqq(json_encode(Json::decode("{}")), "{}");
+        xassert_eqq(Json::decode('"\\u0030"'), "0");
         xassert_eqq(json_encode(Json::decode('"\\u0030"')), '"0"');
         xassert_eqq(json_encode(Json::decode('""')), '""');
         xassert_eqq(json_encode(Json::decode('"')), 'null');
@@ -324,28 +325,36 @@ class Unit_Tester {
         xassert_eqq(json_encode(Json::decode('{"1":"1"}')), '{"1":"1"}');
         xassert_eqq(json_encode(Json::decode('[1,"1"]   ')), '[1,"1"]');
         xassert_eqq(json_encode(Json::decode('[1,"1"]   !')), "null");
-        $jp = new JsonParser;
-        $x = $jp->input('{
+
+        $input = '{
     "a": ["b", "c"],
     "b": {
         "c": "d"
     }
-}')->flags(JSON_THROW_ON_ERROR)->decode_positions();
-        $jp->filename("x.txt");
-        xassert_eqq($jp->position_landmark($x->a[0]), "x.txt:2:11");
-        xassert_eqq($jp->path_landmark(" . a   "), "x.txt:2:11");
-        xassert_eqq($jp->path_landmark("\$.a"), "x.txt:2:11");
+}';
+        $jp = (new JsonParser)->input($input)->flags(JSON_THROW_ON_ERROR)->filename("x.txt");
+        xassert_eqq($jp->position_landmark(11), "x.txt:2:10");
+        xassert_eqq($jp->path_landmark(" . a   "), "x.txt:2:10");
+        xassert_eqq($jp->path_landmark("\$.a"), "x.txt:2:10");
         xassert_eqq($jp->path_landmark("b"), "x.txt:3:10");
         xassert_eqq($jp->path_landmark("a[0]"), "x.txt:2:11");
         xassert_eqq($jp->path_landmark("\$.a[0]"), "x.txt:2:11");
-        xassert_eqq($jp->position_landmark($x->a[1]), "x.txt:2:16");
+        xassert_eqq($jp->position_landmark(16), "x.txt:2:15");
         xassert_eqq($jp->path_landmark(".a.1"), "x.txt:2:16");
         xassert_eqq($jp->path_landmark("\$.a.1"), "x.txt:2:16");
-        xassert_eqq($jp->position_landmark($x->b->c), "x.txt:4:14");
         xassert_eqq($jp->path_landmark("[  \"b\"   ][   \"c\"]"), "x.txt:4:14");
         xassert_eqq($jp->path_landmark("\$[\"b\"].c"), "x.txt:4:14");
-        xassert_eqq($jp->position_landmark($x->b->__LANDMARK__), "x.txt:3:10");
-        xassert_eqq($jp->path_landmark("[  \"b\"   ][   \"c\"].d"), "x.txt:4:14");
+        xassert_eqq($jp->path_landmark("[  \"b\"   ][   \"c\"].d"), null);
+        $jpp = $jp->path_position("\$");
+        xassert_eqq($jpp->vpos1, 0);
+        xassert_eqq($jpp->vpos2, strlen($input));
+
+        xassert_eqq(JsonParser::potential_string_includes_last("\"", 1), false);
+        xassert_eqq(JsonParser::potential_string_includes_last("\"\"", 1), false);
+        xassert_eqq(JsonParser::potential_string_includes_last("\"\\\"", 1), true);
+        xassert_eqq(JsonParser::potential_string_includes_last("\"\\\\\"", 1), false);
+        xassert_eqq(JsonParser::potential_string_includes_last("\"\\\n", 1), false);
+        xassert_eqq(JsonParser::potential_string_includes_last("\"\\x", 1), true);
 
         xassert_eqq(JsonParser::path_push(null, 0), "\$[0]");
         xassert_eqq(JsonParser::path_push(null, "0"), "\$[0]");
