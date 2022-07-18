@@ -12,7 +12,7 @@ class User_API {
         if (!$user->can_lookup_user()) {
             return JsonResult::make_permission_error();
         }
-        if (!($email = trim($qreq->email))) {
+        if (($email = trim($qreq->email ?? "")) === "") {
             return JsonResult::make_missing_error("email");
         }
 

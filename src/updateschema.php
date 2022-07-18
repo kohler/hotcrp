@@ -807,6 +807,24 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         return true;
     }
 
+    /** @return bool */
+    private function v266_contact_counter() {
+        return $this->conf->ql_ok("DROP TABLE IF EXISTS `ContactCounter`")
+            && $this->conf->ql_ok("CREATE TABLE `ContactCounter` (
+  `contactId` int(11) NOT NULL,
+  `apiCount` bigint(11) NOT NULL DEFAULT '0',
+  `apiLimit` bigint(11) NOT NULL DEFAULT '0',
+  `apiRefreshMtime` bigint(11) NOT NULL DEFAULT '0',
+  `apiRefreshWindow` int(11) NOT NULL DEFAULT '0',
+  `apiRefreshAmount` int(11) NOT NULL DEFAULT '0',
+  `apiLimit2` bigint(11) NOT NULL DEFAULT '0',
+  `apiRefreshMtime2` bigint(11) NOT NULL DEFAULT '0',
+  `apiRefreshWindow2` int(11) NOT NULL DEFAULT '0',
+  `apiRefreshAmount2` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`contactId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
     function run() {
         $conf = $this->conf;
 
@@ -2364,7 +2382,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
   `data` varbinary(4096) DEFAULT NULL,
   PRIMARY KEY (`invitationId`),
   UNIQUE KEY (`salt`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8")
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
             && $conf->ql_ok("DROP TABLE IF EXISTS `InvitationLog`")
             && $conf->ql_ok("CREATE TABLE `InvitationLog` (
   `logId` int(11) NOT NULL AUTO_INCREMENT,
@@ -2374,7 +2392,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
   `action` int(11) NOT NULL,
   `timestamp` bigint(11) NOT NULL,
   PRIMARY KEY (`logId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8")) {
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")) {
             $conf->update_schema_version(250);
         }
         if ($conf->sversion === 250
@@ -2453,6 +2471,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->setting("__review_view_score_v264")) {
             $conf->save_setting("__review_view_score_v264", null);
             $conf->update_schema_version(265);
+        }
+        if ($conf->sversion === 265
+            && $this->v266_contact_counter()) {
+            $conf->update_schema_version(266);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

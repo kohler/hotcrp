@@ -209,6 +209,7 @@ src/autoassigner.php
 src/autoassignerinterface.php
 src/banal
 src/capabilities/cap_authorview.php
+src/capabilities/cap_bearer.php
 src/capabilities/cap_reviewaccept.php
 src/checkformat.php
 src/commentinfo.php
@@ -217,6 +218,7 @@ src/conference.php
 src/confinvariants.php
 src/conflict.php
 src/contact.php
+src/contactcounter.php
 src/contactcountmatcher.php
 src/contactlist.php
 src/contactsearch.php

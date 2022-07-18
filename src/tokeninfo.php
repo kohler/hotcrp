@@ -27,6 +27,8 @@ class TokenInfo {
     public $salt;
     /** @var string */
     public $data;
+    /** @var ?string */
+    public $email;
     /** @var ?Contact|false */
     private $_user = false;
     /** @var ?string */
@@ -38,6 +40,7 @@ class TokenInfo {
     const AUTHORVIEW = 4;
     const REVIEWACCEPT = 5;
     const OAUTHSIGNIN = 6;
+    const BEARER = 7;
 
     /** @param ?int $capabilityType */
     function __construct(Conf $conf, $capabilityType = null) {
@@ -55,7 +58,7 @@ class TokenInfo {
     /** @param bool $is_cdb
      * @return $this */
     function set_contactdb($is_cdb) {
-        assert(!$this->_user && !$this->contactId);
+        assert($this->_user === false && !$this->contactId);
         $this->is_cdb = $is_cdb;
         return $this;
     }
@@ -115,7 +118,8 @@ class TokenInfo {
     static function find($token, Conf $conf, $is_cdb = false) {
         if (strlen($token) >= 5
             && ($dblink = $is_cdb ? $conf->contactdb() : $conf->dblink)) {
-            $result = Dbl::qe($dblink, "select * from Capability where salt=?", $token);
+            $email = $is_cdb ? ", (select email from ContactInfo where contactDbId=Capability.contactId) email" : "";
+            $result = Dbl::qe($dblink, "select *{$email} from Capability where salt=?", $token);
             $cap = self::fetch($result, $conf, $is_cdb);
             Dbl::free($result);
             return $cap;
@@ -142,6 +146,18 @@ class TokenInfo {
             }
         }
         return $this->_user;
+    }
+
+    /** @return ?Contact */
+    function local_user() {
+        if (!$this->is_cdb) {
+            return $this->user();
+        } else if ($this->email !== null) {
+            return $this->conf->user_by_email($this->email)
+                ?? Contact::make_email($this->conf, $this->email);
+        } else {
+            return null;
+        }
     }
 
     /** @return string */

@@ -217,7 +217,7 @@ function initialize_user_redirect($nav, $uindex, $nusers, $cookie) {
 }
 
 
-/** @param ?array{no_main_user?:bool} $kwarg
+/** @param ?array{no_main_user?:bool,bearer?:bool} $kwarg
  * @return array{Contact,Qrequest} */
 function initialize_request($kwarg = null) {
     $conf = Conf::$main;
@@ -255,6 +255,23 @@ function initialize_request($kwarg = null) {
     // skip user initialization if requested
     if ($kwarg["no_main_user"] ?? false) {
         return [null, $qreq];
+    }
+
+    // check for bearer token
+    if (($kwarg["bearer"] ?? false)
+        && isset($_SERVER["HTTP_AUTHORIZATION"])
+        && ($token = Bearer_Capability::header_token($conf, $_SERVER["HTTP_AUTHORIZATION"]))
+        && ($user = $token->local_user())) {
+        Contact::$main_bearer_token = $token;
+        $qreq->approve_token();
+        $conf->disable_session();
+        $ucounter = ContactCounter::find_by_uid($conf, $token->is_cdb, $token->contactId);
+        $ucounter->api_refresh();
+        $ucounter->api_account(true);
+        $user = $user->activate($qreq, true);
+        Contact::set_main_user($user);
+        Contact::$session_users = [$user->email];
+        return [$user, $qreq];
     }
 
     // set up session

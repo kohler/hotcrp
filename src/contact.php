@@ -13,6 +13,8 @@ class Contact {
     /** The base authenticated user when "acting as"; otherwise null.
      * @var ?Contact */
     static public $base_auth_user;
+    /** @var ?TokenInfo */
+    static public $main_bearer_token;
     /** @var int */
     static public $next_xid = -2;
     /** @var ?list<string> */
@@ -651,7 +653,9 @@ class Contact {
             $actascontact = $this->actas_user($actas);
             if ($actascontact !== $this) {
                 Conf::$hoturl_defaults["actas"] = urlencode($actascontact->email);
-                $_SESSION["last_actas"] = $actascontact->email;
+                if ($this->conf->session_key !== null) {
+                    $_SESSION["last_actas"] = $actascontact->email;
+                }
                 self::$base_auth_user = $this;
                 return $actascontact->activate($qreq, true);
             }
@@ -683,7 +687,8 @@ class Contact {
                 }
             }
             if ($this->has_account_here()
-                && $trueuser_aucheck) {
+                && $trueuser_aucheck
+                && $this->conf->session_key !== null) {
                 foreach ($_SESSION as $k => $v) {
                     if (is_array($v)
                         && isset($v["trueuser_author_check"])
@@ -1478,7 +1483,8 @@ class Contact {
             }
         }
 
-        if (!$this->is_signed_in()) {
+        if (!$this->is_signed_in()
+            && $this->conf->session_key !== null) {
             // Preserve post values across session expiration.
             ensure_session();
             $x = [];

@@ -329,13 +329,13 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 265) {
+        if ($this->sversion < 266) {
             $old_nerrors = Dbl::$nerrors;
             (new UpdateSchema($this))->run();
             Dbl::$nerrors = $old_nerrors;
         }
         if ($this->sversion < 200) {
-            $this->error_msg("Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
+            $this->error_msg("<0>Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
         }
 
         // refresh after loading from backup
@@ -2833,6 +2833,11 @@ class Conf {
 
     // session data
 
+    /** @suppress PhanAccessReadOnlyProperty */
+    function disable_session() {
+        $this->session_key = null;
+    }
+
     /** @param string $name */
     function session($name) {
         if ($this->session_key !== null) {
@@ -4705,7 +4710,8 @@ class Conf {
                 $link = $this->selfurl($qreq, ["actas" => null]);
                 $profile_parts[] = "<a href=\"{$link}\">Admin&nbsp;"
                     . Ht::img('viewas.png', 'Act as ' . htmlspecialchars(Contact::$base_auth_user->email)) . '</a>';
-            } else if (($actas = $_SESSION["last_actas"] ?? null)
+            } else if ($this->session_key !== null
+                       && ($actas = $_SESSION["last_actas"] ?? null)
                        && $user->privChair
                        && strcasecmp($user->email, $actas) !== 0) {
                 $actas_html = htmlspecialchars($actas);
@@ -4792,6 +4798,7 @@ class Conf {
         // Callback for version warnings
         if ($user
             && $user->privChair
+            && $this->session_key !== null
             && (!isset($_SESSION["updatecheck"])
                 || $_SESSION["updatecheck"] + 3600 <= Conf::$now)
             && (!isset($this->opt["updatesSite"]) || $this->opt["updatesSite"])) {

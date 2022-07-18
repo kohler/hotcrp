@@ -245,7 +245,12 @@ class JsonResult implements JsonSerializable, ArrayAccess {
             header("Access-Control-Allow-Origin: *");
         }
         header("Content-Type: application/json; charset=utf-8");
-        echo json_encode_browser($this->content);
+        if (Qrequest::$main_request && isset(Qrequest::$main_request->pprint)) {
+            $pprint = friendly_boolean(Qrequest::$main_request->pprint);
+        } else {
+            $pprint = Contact::$main_bearer_token !== null;
+        }
+        echo json_encode_browser($this->content, $pprint ? JSON_PRETTY_PRINT : 0), "\n";
     }
 
     /** @return never
@@ -852,7 +857,7 @@ function decode_token($x, $format = "") {
 /** @param string $bytes
  * @return string */
 function base48_encode($bytes) {
-    $convtab = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXY";
+    $convtab = "ABCDEFGHJKLMNPQRSTUVWXYabcdefghijkmnopqrstuvwxyz";
     $bi = 0;
     $blen = strlen($bytes);
     $have = $w = 0;
@@ -877,7 +882,7 @@ function base48_encode($bytes) {
 /** @param string $text
  * @return string|false */
 function base48_decode($text) {
-    $revconvtab = "IJKLMNOP QRSTU VWXYZ[\\]^_       0123456789: ;<=>?@ABCDEFGH";
+    $revconvtab = "01234567 89:;< =>?@ABCDEF       GHIJKLMNOPQ RSTUVWXYZ[\\]^_";
     $ti = 0;
     $tlen = strlen($text);
     $have = $w = 0;

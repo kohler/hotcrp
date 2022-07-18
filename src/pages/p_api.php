@@ -97,7 +97,7 @@ class API_Page {
             initialize_request(["no_main_user" => true]);
             MeetingTracker::trackerstatus_api(Contact::make($conf));
         } else {
-            self::go(...initialize_request());
+            self::go(...initialize_request(["bearer" => true]));
         }
     }
 }
