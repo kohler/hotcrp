@@ -49,8 +49,6 @@ class UserStatus extends MessageSet {
 
     /** @var ?bool */
     private $_req_security;
-    /** @var ?array{string,string} */
-    private $_req_passwords;
     /** @var bool */
     public $created;
     /** @var bool */
@@ -908,11 +906,8 @@ class UserStatus extends MessageSet {
         $cdb_user = $user->ensure_cdb_user();
 
         // Early properties
-        $gx = $this->cs();
         $this->jval = $cj;
-        foreach ($gx->members("", "save_early_function") as $gj) {
-            $gx->call_function($gj, $gj->save_early_function, $gj);
-        }
+        $this->save_members("", "save_early_function", null);
         if (($user->prop_changed() || $this->created)
             && !$user->save_prop()) {
             return null;
@@ -939,9 +934,7 @@ class UserStatus extends MessageSet {
         }
 
         // Main properties
-        foreach ($gx->members("", "save_function") as $gj) {
-            $gx->call_function($gj, $gj->save_function, $gj);
-        }
+        $this->save_members("", "save_function", "save_members");
 
         // Clean up
         $old_activity_at = $user->activity_at;
@@ -975,6 +968,26 @@ class UserStatus extends MessageSet {
         return $user;
     }
 
+
+    /** @param string $name
+     * @param string $function
+     * @param string $members
+     * @return null|false */
+    private function save_members($name, $function, $members) {
+        $cs = $this->cs();
+        foreach ($cs->members($name) as $gj) {
+            if (isset($gj->$function)
+                && $cs->call_function($gj, $gj->$function, $gj) === false) {
+                return false;
+            }
+            if ($members !== null
+                && ($gj->$members ?? false)
+                && $this->save_members($gj->name, $function, $members) === false) {
+                return false;
+            }
+        }
+        return null;
+    }
 
     static function save_main(UserStatus $us) {
         $user = $us->user;
@@ -1221,15 +1234,6 @@ class UserStatus extends MessageSet {
     }
 
 
-    static function request_security(UserStatus $us) {
-        if ($us->allow_security()) {
-            if (trim($us->qreq->oldpassword ?? "") !== "") {
-                $us->has_req_security();
-            }
-            $us->request_group("security");
-        }
-    }
-
     /** @return bool */
     function has_req_security() {
         if ($this->_req_security === null) {
@@ -1249,34 +1253,6 @@ class UserStatus extends MessageSet {
             }
         }
         return $this->_req_security;
-    }
-
-    static function request_new_password(UserStatus $us) {
-        $pw = trim($us->qreq->upassword ?? "");
-        $pw2 = trim($us->qreq->upassword2 ?? "");
-        $us->_req_passwords = [$us->qreq->upassword ?? "", $us->qreq->upassword2 ?? ""];
-        if ($pw === "" && $pw2 === "") {
-            // do nothing
-        } else if ($us->has_req_security()
-                   && $us->viewer->can_change_password($us->user)) {
-            if ($pw !== $pw2) {
-                $us->error_at("password", "<0>Passwords do not match");
-                $us->error_at("upassword2");
-            } else if (strlen($pw) <= 5) {
-                $us->error_at("password", "<0>Password too short");
-            } else if (!Contact::valid_password($pw)) {
-                $us->error_at("password", "<0>Invalid new password");
-            } else {
-                $us->jval->new_password = $pw;
-            }
-        }
-    }
-
-    static function save_security(UserStatus $us) {
-        if (isset($us->jval->new_password)) {
-            $us->user->change_password($us->jval->new_password);
-            $us->diffs["password"] = true;
-        }
     }
 
 
@@ -1441,46 +1417,6 @@ class UserStatus extends MessageSet {
 
         $t = Ht::entry("affiliation", $qreq->affiliation ?? $user->affiliation, ["size" => 52, "autocomplete" => $us->autocomplete("organization"), "class" => "fullw", "id" => "affiliation", "data-default-value" => $user->affiliation]) . $us->global_profile_difference("affiliation");
         $us->print_field("affiliation", "Affiliation", $t);
-    }
-
-    static function print_current_password(UserStatus $us) {
-        $original_ignore_msgs = $us->swap_ignore_messages(false);
-        $us->msg_at("oldpassword", "<0>Enter your current password to make changes to security settings", MessageSet::WARNING_NOTE);
-        $us->swap_ignore_messages($original_ignore_msgs);
-        echo '<div class="', $us->control_class("oldpassword", "f-i w-text"), '">',
-            '<label for="oldpassword">',
-            $us->is_auth_self() ? "Current password" : "Current password for " . htmlspecialchars($us->viewer->email),
-            '</label>',
-            $us->feedback_html_at("oldpassword"),
-            Ht::entry("viewer_email", $us->viewer->email, ["autocomplete" => "username", "class" => "hidden ignore-diff", "readonly" => true]),
-            Ht::password("oldpassword", "", ["size" => 52, "autocomplete" => "current-password", "class" => "ignore-diff uii js-profile-current-password", "id" => "oldpassword", "autofocus" => true]),
-            '</div>';
-    }
-
-    static function print_new_password(UserStatus $us) {
-        if ($us->viewer->can_change_password($us->user)) {
-            $us->print_start_section("Change password");
-            $pws = $us->_req_passwords ?? ["", ""];
-            $open = $pws[0] !== "" || $pws[1] !== ""
-                || $us->has_problem_at("upassword") || $us->has_problem_at("upassword2");
-            echo '<div class="has-fold foldc ui-unfold js-unfold-focus">';
-            if (!$open) {
-                echo '<div class="fn">',
-                    Ht::button("Change password", ["class" => "ui js-foldup need-profile-current-password", "disabled" => true]),
-                    '</div><div class="fx">';
-            }
-            echo '<div class="', $us->control_class("password", "f-i w-text"), '">',
-                '<label for="upassword">New password</label>',
-                $us->feedback_html_at("password"),
-                $us->feedback_html_at("upassword"),
-                Ht::password("upassword", $pws[0], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => true, "class" => "need-profile-current-password want-focus"]),
-                '</div>',
-                '<div class="', $us->control_class("upassword2", "f-i w-text"), '">',
-                '<label for="upassword2">Repeat new password</label>',
-                $us->feedback_html_at("upassword2"),
-                Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => true, "class" => "need-profile-current-password"]),
-                '</div>', $open ? '' : '</div>', '</div>';
-        }
     }
 
     static function print_country(UserStatus $us) {

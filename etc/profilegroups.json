@@ -38,12 +38,13 @@
 
     {   "name": "security", "title": "Security", "order": 200,
         "allow_if": "profile_security",
-        "request_function": "UserStatus::request_security",
-        "save_function": "UserStatus::save_security"   },
-    [   "security/currentpassword", 10, "UserStatus::print_current_password"   ],
+        "request_function": "Security_UserInfo::request",
+        "save_members": true   },
+    [   "security/currentpassword", 10, "Security_UserInfo::print_current_password"   ],
     {   "name": "security/newpassword", "order": 100,
-        "print_function": "UserStatus::print_new_password",
-        "request_function": "UserStatus::request_new_password"   },
+        "print_function": "*Security_UserInfo::print_new_password",
+        "request_function": "*Security_UserInfo::request_new_password",
+        "save_function": "Security_UserInfo::save_new_password"   },
     [   "security/actions", 1000000, "UserStatus::print_actions"   ],
 
 
