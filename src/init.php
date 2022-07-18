@@ -270,6 +270,7 @@ function initialize_request($kwarg = null) {
         $ucounter = ContactCounter::find_by_uid($conf, $token->is_cdb, $token->contactId);
         $ucounter->api_refresh();
         $ucounter->api_account(true);
+        $token->mark_use(86400); // mark use once a day
         $user = $user->activate($qreq, true);
         return [$user, $qreq];
     }

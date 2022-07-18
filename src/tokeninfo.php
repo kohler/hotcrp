@@ -207,6 +207,13 @@ class TokenInfo {
         return !Dbl::is_error($result);
     }
 
+    /** @param ?int $within_sec */
+    function mark_use($within_sec = null) {
+        if ($within_sec === null || $this->timeUsed + $within_sec <= Conf::$now) {
+            Dbl::qe($this->dblink(), "update Capability set timeUsed=greatest(?,timeUsed) where salt=?", Conf::$now, $this->salt);
+        }
+    }
+
     function delete() {
         Dbl::qe($this->dblink(), "delete from Capability where salt=?", $this->salt);
     }
