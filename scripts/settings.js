@@ -50,7 +50,7 @@ function settings_delete(elt, message) {
         var edit = document.getElementById(elt.id + "/edit") || elt;
         $(edit).children().addClass("hidden");
         $(edit).append('<div class="f-i"><em id="'.concat(elt.id, '/delete_message">', message, '</em></div>'));
-        $(elt).find("input").each(function () {
+        $(edit).find("input").each(function () {
             if (this.type !== "hidden" && !hasClass(this, "hidden")) {
                 this.disabled = true;
                 addClass(this, "text-decoration-line-through");
