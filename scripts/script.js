@@ -9555,6 +9555,26 @@ handle_ui.on("js-profile-current-password", function () {
     }
 });
 
+handle_ui.on("js-profile-token-add", function () {
+    this.disabled = true;
+    var nbt = document.getElementById("new-api-token").closest(".form-section");
+    removeClass(nbt, "hidden");
+    focus_within(nbt);
+    var enabler = this.form.elements["bearer_token/new/enable"];
+    enabler.value = "1";
+    form_highlight(this.form, enabler);
+});
+
+handle_ui.on("js-profile-token-delete", function () {
+    var $j = $(this.closest(".f-i"));
+    $j.find(".feedback").remove();
+    var deleter = $j.find(".deleter")[0];
+    deleter.value = "1";
+    $j.find("label, code").addClass("text-decoration-line-through");
+    $j.append('<div class="feedback is-warning mt-1">This API token will be deleted. <strong>This operation cannot be undone.</strong></div>');
+    hiliter_children(this.form, deleter);
+});
+
 
 // review UI
 handle_ui.on("js-deny-review-request", function () {

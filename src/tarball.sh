@@ -458,6 +458,7 @@ src/track.php
 src/updateschema.php
 src/updatesession.php
 src/useractions.php
+src/userinfo/u_developer.php
 src/userinfo/u_security.php
 src/userstatus.php
 
