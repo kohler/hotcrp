@@ -134,8 +134,9 @@ class Icons {
     static function stash_licon($name) {
         if (Ht::mark_stash("licon-{$name}")) {
             $xname = str_replace("_", "-", $name);
-            if (str_starts_with($xname, "ui-"))
+            if (str_starts_with($xname, "ui-")) {
                 $xname = substr($xname, 3);
+            }
             Ht::stash_html('<div id="licon-' . $xname . '" class="hidden">' . call_user_func("Icons::$name") . '</div>');
         }
     }

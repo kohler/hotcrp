@@ -520,10 +520,10 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
     static function print_actions(SettingValues $sv) {
         echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">',
-            Ht::button(Icons::ui_movearrow(0), ["id" => "rf/\$/moveup", "class" => "btn-licon ui js-settings-rf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
-            Ht::button(Icons::ui_movearrow(2), ["id" => "rf/\$/movedown", "class" => "btn-licon ui js-settings-rf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
+            Ht::button(Icons::ui_use("movearrow0"), ["id" => "rf/\$/moveup", "class" => "btn-licon ui js-settings-rf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
+            Ht::button(Icons::ui_use("movearrow2"), ["id" => "rf/\$/movedown", "class" => "btn-licon ui js-settings-rf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
-            Ht::button(Icons::ui_trash(), ["class" => "btn-licon ui js-settings-rf-delete need-tooltip", "aria-label" => "Delete"]),
+            Ht::button(Icons::ui_use("trash"), ["class" => "btn-licon ui js-settings-rf-delete need-tooltip", "aria-label" => "Delete"]),
             Ht::hidden("rf/\$/order", "0", ["id" => "rf/\$/order", "class" => "rf-order"]),
             Ht::hidden("rf/\$/id", "", ["id" => "rf/\$/id", "class" => "rf-id"]),
             "</div></div>";

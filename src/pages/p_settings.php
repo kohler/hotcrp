@@ -79,6 +79,7 @@ class Settings_Page {
             "body_class" => "leftmenu",
             "save_messages" => true
         ]);
+        Icons::stash_defs("movearrow0", "movearrow2", "trash");
         echo Ht::unstash(), // clear out other script references
             $conf->make_script_file("scripts/settings.js"), "\n",
 

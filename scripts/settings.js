@@ -49,13 +49,16 @@ function settings_delete(elt, message) {
     } else {
         var edit = document.getElementById(elt.id + "/edit") || elt;
         $(edit).children().addClass("hidden");
-        $(edit).append('<div class="f-i"><em id="'.concat(elt.id, '/delete_message">', message, '</em></div>'));
+        $(edit).append('<div class="feedback is-warning" id="'.concat(elt.id, '/delete_message">', message, '</div>'));
         $(edit).find("input").each(function () {
             if (this.type !== "hidden" && !hasClass(this, "hidden")) {
                 this.disabled = true;
                 addClass(this, "text-decoration-line-through");
                 var parent = this.closest(".entryi");
-                parent && removeClass(parent, "hidden");
+                if (parent) {
+                    removeClass(parent, "hidden");
+                    removeClass(parent, "mb-3");
+                }
                 return false;
             }
         });
