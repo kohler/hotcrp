@@ -809,8 +809,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
 
     /** @return bool */
     private function v266_contact_counter() {
-        return $this->conf->ql_ok("DROP TABLE IF EXISTS `ContactCounter`")
-            && $this->conf->ql_ok("CREATE TABLE `ContactCounter` (
+        Dbl::qx($this->conf->dblink, "DROP TABLE IF EXISTS `ContactCounter`");
+        return !!$this->conf->ql_ok("CREATE TABLE `ContactCounter` (
   `contactId` int(11) NOT NULL,
   `apiCount` bigint(11) NOT NULL DEFAULT '0',
   `apiLimit` bigint(11) NOT NULL DEFAULT '0',
@@ -926,16 +926,17 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
                 $conf->ql_ok("delete from PaperTag where " . substr($x, 0, strlen($x) - 3));
             }
         }
-        if ($conf->sversion === 11
-            && $conf->ql_ok("DROP TABLE IF EXISTS `ReviewRating`")
-            && $conf->ql_ok("create table `ReviewRating` (
+        if ($conf->sversion === 11) {
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `ReviewRating`");
+            if ($conf->ql_ok("create table `ReviewRating` (
       `reviewId` int(11) NOT NULL,
       `contactId` int(11) NOT NULL,
       `rating` tinyint(1) NOT NULL default '0',
       UNIQUE KEY `reviewContact` (`reviewId`,`contactId`),
       UNIQUE KEY `reviewContactRating` (`reviewId`,`contactId`,`rating`)
     ) ENGINE=MyISAM DEFAULT CHARSET=utf8")) {
-            $conf->update_schema_version(12);
+                $conf->update_schema_version(12);
+            }
         }
         if ($conf->sversion === 12
             && $conf->ql_ok("alter table PaperReview add `reviewToken` int(11) NOT NULL default '0'")) {
@@ -963,23 +964,15 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(17);
         }
         if ($conf->sversion === 17
-            && $conf->ql_ok("alter table PaperReviewPreference add key `paperId` (`paperId`)")
-            && $conf->ql_ok("DROP TABLE IF EXISTS `PaperRank`")
-            && $conf->ql_ok("create table PaperRank (
-      `paperId` int(11) NOT NULL,
-      `contactId` int(11) NOT NULL,
-      `rank` int(11) NOT NULL,
-      UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
-      KEY `paperId` (`paperId`)
-    ) ENGINE=MyISAM DEFAULT CHARSET=utf8;")) {
+            && $conf->ql_ok("alter table PaperReviewPreference add key `paperId` (`paperId`)")) {
             $conf->update_schema_version(18);
         }
         if ($conf->sversion === 18
             && $conf->ql_ok("alter table PaperComment add `replyTo` int(11) NOT NULL")) {
             $conf->update_schema_version(19);
         }
-        if ($conf->sversion === 19
-            && $conf->ql_ok("drop table PaperRank")) {
+        if ($conf->sversion === 19) {
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `PaperRank`");
             $conf->update_schema_version(20);
         }
         if ($conf->sversion === 20
@@ -1032,9 +1025,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("delete from Settings where name='pldisplay_default'")) {
             $conf->update_schema_version(30);
         }
-        if ($conf->sversion === 30
-            && $conf->ql_ok("DROP TABLE IF EXISTS `Formula`")
-            && $conf->ql_ok("CREATE TABLE `Formula` (
+        if ($conf->sversion === 30) {
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `Formula`");
+            if ($conf->ql_ok("CREATE TABLE `Formula` (
       `formulaId` int(11) NOT NULL auto_increment,
       `name` varchar(200) NOT NULL,
       `heading` varchar(200) NOT NULL default '',
@@ -1045,7 +1038,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
       UNIQUE KEY `formulaId` (`formulaId`),
       UNIQUE KEY `name` (`name`)
     ) ENGINE=MyISAM DEFAULT CHARSET=utf8")) {
-            $conf->update_schema_version(31);
+                $conf->update_schema_version(31);
+            }
         }
         if ($conf->sversion === 31
             && $conf->ql_ok("alter table Formula add `createdBy` int(11) NOT NULL default '0'")
@@ -1083,9 +1077,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("update PaperComment set forReviewers=1 where forReviewers=-1")) {
             $conf->update_schema_version(39);
         }
-        if ($conf->sversion === 39
-            && $conf->ql_ok("DROP TABLE IF EXISTS `MailLog`")
-            && $conf->ql_ok("CREATE TABLE `MailLog` (
+        if ($conf->sversion === 39) {
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `MailLog`");
+            if ($conf->ql_ok("CREATE TABLE `MailLog` (
       `mailId` int(11) NOT NULL auto_increment,
       `recipients` varchar(200) NOT NULL,
       `paperIds` text,
@@ -1095,7 +1089,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
       `emailBody` text,
       PRIMARY KEY  (`mailId`)
     ) ENGINE=MyISAM DEFAULT CHARSET=utf8")) {
-            $conf->update_schema_version(40);
+                $conf->update_schema_version(40);
+            }
         }
         if ($conf->sversion === 40
             && $conf->ql_ok("alter table Paper add `capVersion` int(1) NOT NULL default '0'")) {
@@ -1208,9 +1203,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table Settings modify `data` blob")) {
             $conf->update_schema_version(57);
         }
-        if ($conf->sversion === 57
-            && $conf->ql_ok("DROP TABLE IF EXISTS `Capability`")
-            && $conf->ql_ok("CREATE TABLE `Capability` (
+        if ($conf->sversion === 57) {
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `Capability`");
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `CapabilityMap`");
+            if ($conf->ql_ok("CREATE TABLE `Capability` (
       `capabilityId` int(11) NOT NULL AUTO_INCREMENT,
       `capabilityType` int(11) NOT NULL,
       `contactId` int(11) NOT NULL,
@@ -1221,15 +1217,15 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
       PRIMARY KEY (`capabilityId`),
       UNIQUE KEY `capabilityId` (`capabilityId`)
     ) ENGINE=MyISAM DEFAULT CHARSET=utf8")
-            && $conf->ql_ok("DROP TABLE IF EXISTS `CapabilityMap`")
-            && $conf->ql_ok("CREATE TABLE `CapabilityMap` (
+                && $conf->ql_ok("CREATE TABLE `CapabilityMap` (
       `capabilityValue` varbinary(255) NOT NULL,
       `capabilityId` int(11) NOT NULL,
       `timeExpires` int(11) NOT NULL,
       PRIMARY KEY (`capabilityValue`),
       UNIQUE KEY `capabilityValue` (`capabilityValue`)
     ) ENGINE=MyISAM DEFAULT CHARSET=utf8")) {
-            $conf->update_schema_version(58);
+                $conf->update_schema_version(58);
+            }
         }
         if ($conf->sversion === 58
             && $conf->ql_ok("alter table PaperReview modify `paperSummary` mediumtext DEFAULT NULL")
@@ -1271,8 +1267,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table ContactAddress modify `zipCode` varchar(2048) NOT NULL")
             && $conf->ql_ok("alter table ContactAddress modify `country` varchar(2048) NOT NULL")
             && $conf->ql_ok("alter table PaperTopic modify `topicId` int(11) NOT NULL")
-            && $conf->ql_ok("alter table PaperTopic modify `paperId` int(11) NOT NULL")
-            && $conf->ql_ok("drop table if exists ChairTag")) {
+            && $conf->ql_ok("alter table PaperTopic modify `paperId` int(11) NOT NULL")) {
+            Dbl::qx($conf->dblink, "drop table if exists ChairTag");
             $conf->update_schema_version(60);
         }
         if ($conf->sversion === 60) {
@@ -1309,9 +1305,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && isset($conf->settings["review_form"])) {
             $conf->update_schema_version(64);
         }
-        if ($conf->sversion === 64
-            && $conf->ql_ok("drop table if exists `ReviewFormField`")
-            && $conf->ql_ok("drop table if exists `ReviewFormOptions`")) {
+        if ($conf->sversion === 64) {
+            Dbl::qx($conf->dblink, "drop table if exists `ReviewFormField`");
+            Dbl::qx($conf->dblink, "drop table if exists `ReviewFormOptions`");
             $conf->update_schema_version(65);
         }
         if (!isset($conf->settings["options"])
@@ -1322,8 +1318,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && isset($conf->settings["options"])) {
             $conf->update_schema_version(66);
         }
-        if ($conf->sversion === 66
-            && $conf->ql_ok("drop table if exists `OptionType`")) {
+        if ($conf->sversion === 66) {
+            Dbl::qx($conf->dblink, "drop table if exists `OptionType`");
             $conf->update_schema_version(67);
         }
         if ($conf->sversion === 67
@@ -1414,18 +1410,18 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("insert ignore into Settings (name, value) select 'resp_active', value from Settings where name='resp_open'")) {
             $conf->update_schema_version(85);
         }
-        if ($conf->sversion === 85
-            && $conf->ql_ok("DROP TABLE IF EXISTS `PCMember`")
-            && $conf->ql_ok("DROP TABLE IF EXISTS `ChairAssistant`")
-            && $conf->ql_ok("DROP TABLE IF EXISTS `Chair`")) {
+        if ($conf->sversion === 85) {
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `PCMember`");
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `ChairAssistant`");
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `Chair`");
             $conf->update_schema_version(86);
         }
         if ($conf->sversion === 86
             && $this->v86_transfer_address()) {
             $conf->update_schema_version(87);
         }
-        if ($conf->sversion === 87
-            && $conf->ql_ok("DROP TABLE IF EXISTS `ContactAddress`")) {
+        if ($conf->sversion === 87) {
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `ContactAddress`");
             $conf->update_schema_version(88);
         }
         if ($conf->sversion === 88
@@ -1472,8 +1468,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
         if ($conf->sversion === 95
             && $conf->ql_ok("alter table Capability add unique key `salt` (`salt`)")
-            && $conf->ql_ok("update Capability join CapabilityMap using (capabilityId) set Capability.salt=CapabilityMap.capabilityValue")
-            && $conf->ql_ok("drop table if exists `CapabilityMap`")) {
+            && $conf->ql_ok("update Capability join CapabilityMap using (capabilityId) set Capability.salt=CapabilityMap.capabilityValue")) {
+            Dbl::qx($conf->dblink, "drop table if exists `CapabilityMap`");
             $conf->update_schema_version(96);
         }
         if ($conf->sversion === 96
@@ -1602,8 +1598,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("update ContactInfo set passwordUseTime=lastLogin where passwordUseTime=0")) {
             $conf->update_schema_version(113);
         }
-        if ($conf->sversion === 113
-            && $conf->ql_ok("drop table if exists `PaperReviewArchive`")) {
+        if ($conf->sversion === 113) {
+            Dbl::qx($conf->dblink, "drop table if exists `PaperReviewArchive`");
             $conf->update_schema_version(114);
         }
         if ($conf->sversion === 114
@@ -1687,9 +1683,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("update PaperComment set timeDisplayed=1 where timeDisplayed=0 and timeNotified>0")) {
             $conf->update_schema_version(130);
         }
-        if ($conf->sversion === 130
-            && $conf->ql_ok("DROP TABLE IF EXISTS `PaperTagAnno`")
-            && $conf->ql_ok("CREATE TABLE `PaperTagAnno` (
+        if ($conf->sversion === 130) {
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `PaperTagAnno`");
+            if ($conf->ql_ok("CREATE TABLE `PaperTagAnno` (
       `tag` varchar(40) NOT NULL,   # see TAG_MAXLEN in header.php
       `annoId` int(11) NOT NULL,
       `tagIndex` float NOT NULL DEFAULT '0',
@@ -1698,15 +1694,16 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
       `infoJson` varbinary(32768) DEFAULT NULL,
       PRIMARY KEY (`tag`,`annoId`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8")) {
-            $conf->update_schema_version(131);
+                $conf->update_schema_version(131);
+            }
         }
         if ($conf->sversion === 131
             && $conf->ql_ok("alter table PaperStorage modify `infoJson` varbinary(32768) DEFAULT NULL")) {
             $conf->update_schema_version(132);
         }
-        if ($conf->sversion === 132
-            && $conf->ql_ok("DROP TABLE IF EXISTS `Mimetype`")
-            && $conf->ql_ok("CREATE TABLE `Mimetype` (
+        if ($conf->sversion === 132) {
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `Mimetype`");
+            if ($conf->ql_ok("CREATE TABLE `Mimetype` (
       `mimetypeid` int(11) NOT NULL,
       `mimetype` varbinary(200) NOT NULL,
       `extension` varbinary(10) DEFAULT NULL,
@@ -1716,7 +1713,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
       UNIQUE KEY `mimetypeid` (`mimetypeid`),
       UNIQUE KEY `mimetype` (`mimetype`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8")) {
-            $conf->update_schema_version(133);
+                $conf->update_schema_version(133);
+            }
         }
         if ($conf->sversion === 133) {
             $conf->update_schema_version(134);
@@ -1743,9 +1741,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 137) {
             $conf->update_schema_version(138);
         }
-        if (($conf->sversion === 138 || $conf->sversion === 139)
-            && $conf->ql_ok("DROP TABLE IF EXISTS `FilteredDocument`")
-            && $conf->ql_ok("CREATE TABLE `FilteredDocument` (
+        if ($conf->sversion === 138 || $conf->sversion === 139) {
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `FilteredDocument`");
+            if ($conf->ql_ok("CREATE TABLE `FilteredDocument` (
       `inDocId` int(11) NOT NULL,
       `filterType` int(11) NOT NULL,
       `outDocId` int(11) NOT NULL,
@@ -1753,7 +1751,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
       PRIMARY KEY (`inDocId`,`filterType`),
       UNIQUE KEY `inDocFilter` (`inDocId`,`filterType`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8")) {
-            $conf->update_schema_version(140);
+                $conf->update_schema_version(140);
+            }
         }
         if ($conf->sversion === 140
             && $conf->ql_ok("update Paper p join PaperStorage ps on (p.paperStorageId>1 and p.finalPaperStorageId<=0 and p.paperStorageId=ps.paperStorageId) set p.sha1=ps.sha1, p.timestamp=ps.timestamp, p.mimetype=ps.mimetype, p.size=ps.size where p.sha1!=ps.sha1 or p.timestamp!=ps.timestamp or p.mimetype!=ps.mimetype or p.size!=ps.size")
@@ -1953,15 +1952,16 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table ActionLog add `destContactId` int(11) NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(171);
         }
-        if ($conf->sversion === 171
-            && $conf->ql_ok("DROP TABLE IF EXISTS `DeletedContactInfo`")
-            && $conf->ql_ok("CREATE TABLE `DeletedContactInfo` (
+        if ($conf->sversion === 171) {
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `DeletedContactInfo`");
+            if ($conf->ql_ok("CREATE TABLE `DeletedContactInfo` (
       `contactId` int(11) NOT NULL,
       `firstName` varchar(60) NOT NULL,
       `lastName` varchar(60) NOT NULL,
       `email` varchar(120) NOT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8")) {
-            $conf->update_schema_version(172);
+                $conf->update_schema_version(172);
+            }
         }
         if ($conf->sversion === 172
             && $conf->ql_ok("alter table DeletedContactInfo add `unaccentedName` varchar(120) NOT NULL DEFAULT ''")
@@ -1989,9 +1989,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
         if ($conf->sversion === 177) {
             set_time_limit(300); // might take a while
-            if ((!$this->check_column_exists("PaperStorage", "mimetypeid")
-                 || $conf->ql_ok("alter table PaperStorage drop `mimetypeid`"))
-                && $conf->ql_ok("drop table if exists `Mimetype`")) {
+            if (!$this->check_column_exists("PaperStorage", "mimetypeid")
+                || $conf->ql_ok("alter table PaperStorage drop `mimetypeid`")) {
+                Dbl::qx($conf->dblink, "drop table if exists `Mimetype`");
                 $conf->update_schema_version(178);
             }
         }
@@ -2101,16 +2101,17 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
                 $conf->update_schema_version(196);
             }
         }
-        if ($conf->sversion === 196
-            && $conf->ql_ok("drop table if exists `DocumentLink`")
-            && $conf->ql_ok("create table `DocumentLink` (
+        if ($conf->sversion === 196) {
+            Dbl::qx($conf->dblink, "drop table if exists `DocumentLink`");
+            if ($conf->ql_ok("create table `DocumentLink` (
       `paperId` int(11) NOT NULL,
       `linkId` int(11) NOT NULL,
       `linkType` int(11) NOT NULL,
       `documentId` int(11) NOT NULL,
       PRIMARY KEY (`paperId`,`linkId`,`linkType`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8")) {
-            $conf->update_schema_version(197);
+                $conf->update_schema_version(197);
+            }
         }
         if ($conf->sversion === 197
             && $conf->ql_ok("alter table PaperConflict add key `paperId` (`paperId`)")) {
@@ -2366,9 +2367,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table MailLog add `contactId` int NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(249);
         }
-        if ($conf->sversion === 249
-            && $conf->ql_ok("DROP TABLE IF EXISTS `Invitation`")
-            && $conf->ql_ok("CREATE TABLE `Invitation` (
+        if ($conf->sversion === 249) {
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `Invitation`");
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `InvitationLog`");
+            if ($conf->ql_ok("CREATE TABLE `Invitation` (
   `invitationId` int(11) NOT NULL AUTO_INCREMENT,
   `invitationType` int(11) NOT NULL,
   `email` varchar(120) NOT NULL,
@@ -2383,8 +2385,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
   PRIMARY KEY (`invitationId`),
   UNIQUE KEY (`salt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
-            && $conf->ql_ok("DROP TABLE IF EXISTS `InvitationLog`")
-            && $conf->ql_ok("CREATE TABLE `InvitationLog` (
+                && $conf->ql_ok("CREATE TABLE `InvitationLog` (
   `logId` int(11) NOT NULL AUTO_INCREMENT,
   `invitationId` int(11) NOT NULL,
   `mailId` int(11) DEFAULT NULL,
@@ -2393,7 +2394,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
   `timestamp` bigint(11) NOT NULL,
   PRIMARY KEY (`logId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")) {
-            $conf->update_schema_version(250);
+                $conf->update_schema_version(250);
+            }
         }
         if ($conf->sversion === 250
             && $this->v251_change_default_charset()) {
