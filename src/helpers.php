@@ -248,7 +248,7 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         if (Qrequest::$main_request && isset(Qrequest::$main_request->pprint)) {
             $pprint = friendly_boolean(Qrequest::$main_request->pprint);
         } else {
-            $pprint = Contact::$main_bearer_token !== null;
+            $pprint = Contact::$main_user && Contact::$main_user->is_bearer_authorized();
         }
         echo json_encode_browser($this->content, $pprint ? JSON_PRETTY_PRINT : 0), "\n";
     }

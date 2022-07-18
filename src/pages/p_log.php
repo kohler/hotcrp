@@ -195,10 +195,15 @@ class Log_Page {
             if ($xdest_users == $xusers) {
                 $xdest_users = [];
             }
-            if ($row->trueContactId) {
-                $via = $row->trueContactId < 0 ? "link" : "admin";
-            } else {
-                $via = "";
+            $via = "";
+            if (($trueContactId = (int) $row->trueContactId) !== 0) {
+                if ($trueContactId > 0) {
+                    $via = "admin";
+                } else if ($trueContactId == -1) {
+                    $via = "link";
+                } else if ($trueContactId == -2) {
+                    $via = "API token";
+                }
             }
             $pids = $leg->paper_ids($row);
             $action = $leg->cleaned_action($row);
@@ -363,10 +368,11 @@ class Log_Page {
     }
 
     /** @param list<Contact> $users
+     * @param int $trueContactId
      * @return string */
-    function users_html($users, $via) {
-        if (empty($users) && $via < 0) {
-            return "<i>via author link</i>";
+    function users_html($users, $trueContactId) {
+        if ($trueContactId === -1 && empty($users)) {
+            return "<i>via link</i>";
         }
         $all_pc = true;
         $ts = [];
@@ -391,8 +397,14 @@ class Log_Page {
                 if ($t === null) {
                     $t = $this->user_html[$user->contactId] = $this->user_html($user);
                 }
-                if ($via) {
-                    $t .= ($via < 0 ? ' <i>via link</i>' : ' <i>via admin</i>');
+                if ($trueContactId !== 0) {
+                    if ($trueContactId > 0) {
+                        $t .= ' <i>via admin</i>';
+                    } else if ($trueContactId === -1) {
+                        $t .= ' <i>via link</i>';
+                    } else if ($trueContactId === -2) {
+                        $t .= ' <i>via API token</i>';
+                    }
                 }
             }
             $ts[] = $t;
@@ -423,13 +435,12 @@ class Log_Page {
             $time = $conf->unparse_time_log((int) $row->timestamp);
             $t = ["<td class=\"pl pl_logtime\">{$time}</td>"];
 
-            $via = $row->trueContactId;
             $xusers = $leg->users_for($row, "contactId");
-            $xusers_html = $this->users_html($xusers, $via);
+            $xusers_html = $this->users_html($xusers, (int) $row->trueContactId);
             $xdest_users = $leg->users_for($row, "destContactId");
 
             if ($xdest_users && $xusers != $xdest_users) {
-                $xdestusers_html = $this->users_html($xdest_users, false);
+                $xdestusers_html = $this->users_html($xdest_users, 0);
                 $t[] = "<td class=\"pl pl_logname\">{$xusers_html}</td><td class=\"pl pl_logname\">{$xdestusers_html}</td>";
             } else {
                 $t[] = "<td class=\"pl pl_logname\" colspan=\"2\">{$xusers_html}</td>";

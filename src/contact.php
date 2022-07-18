@@ -13,8 +13,6 @@ class Contact {
     /** The base authenticated user when "acting as"; otherwise null.
      * @var ?Contact */
     static public $base_auth_user;
-    /** @var ?TokenInfo */
-    static public $main_bearer_token;
     /** @var int */
     static public $next_xid = -2;
     /** @var ?list<string> */
@@ -170,8 +168,9 @@ class Contact {
     /** @var ?array<string,true> */
     private $_author_perm_tags;
 
-    /** @var bool */
-    private $_activated = false;
+    /** @var int */
+    private $_activated = 0;
+    // 0: no, 1: yes, 2: actas, 4: token
 
     /** @var ?non-empty-list<AuthorMatcher> */
     private $_aucollab_matchers;
@@ -641,10 +640,14 @@ class Contact {
         return $u;
     }
 
+    function set_bearer_authorized() {
+        $this->_activated |= 4;
+    }
+
     /** @param ?Qrequest $qreq
      * @return Contact */
     function activate($qreq, $signin = false) {
-        $this->_activated = true;
+        $this->_activated |= 1;
 
         // Handle actas requests
         if ($qreq && $qreq->actas && $signin && $this->email) {
@@ -657,6 +660,7 @@ class Contact {
                     $_SESSION["last_actas"] = $actascontact->email;
                 }
                 self::$base_auth_user = $this;
+                $actascontact->_activated |= 2;
                 return $actascontact->activate($qreq, true);
             }
         }
@@ -676,7 +680,7 @@ class Contact {
         }
 
         // Maybe auto-create a user
-        if (!self::$base_auth_user && $this->email) {
+        if (($this->_activated & 2) === 0 && $this->email) {
             $trueuser_aucheck = $this->session("trueuser_author_check") ?? 0;
             if (!$this->has_account_here()
                 && $trueuser_aucheck + 600 < Conf::$now) {
@@ -699,7 +703,7 @@ class Contact {
         }
 
         // Maybe set up the shared contacts database
-        if (($this->conf->opt("contactdbDsn") || $this->conf->opt("contactdb_dsn"))
+        if ($this->conf->opt("contactdbDsn")
             && $this->has_account_here()
             && $this->cdbRoles !== $this->cdb_roles()) {
             $this->contactdb_update();
@@ -885,13 +889,13 @@ class Contact {
 
 
     /** @return bool */
-    function is_activated() {
-        return $this->_activated;
+    function is_actas_user() {
+        return ($this->_activated & 3) === 3;
     }
 
     /** @return bool */
-    function is_actas_user() {
-        return $this->_activated && self::$base_auth_user;
+    function is_bearer_authorized() {
+        return ($this->_activated & 4) === 4;
     }
 
     /** @return bool */
@@ -1132,7 +1136,7 @@ class Contact {
 
     /** @return bool */
     function is_signed_in() {
-        return $this->email && $this->_activated;
+        return $this->email && $this->_activated !== 0;
     }
 
     /** @return bool */
@@ -1453,7 +1457,7 @@ class Contact {
     /** @param string $text
      * @param bool $add */
     function set_default_cap_param($text, $add) {
-        if ($this->is_activated()) {
+        if ($this->_activated !== 0) {
             Conf::$hoturl_defaults = Conf::$hoturl_defaults ?? [];
             $cap = urldecode(Conf::$hoturl_defaults["cap"] ?? "");
             $a = array_diff(explode(" ", $cap), [$text, ""]);
@@ -2603,7 +2607,7 @@ class Contact {
         }
         if ($new_ntokens !== $old_ntokens) {
             $this->update_my_rights();
-            if ($this->_activated) {
+            if ($this->_activated !== 0) {
                 $this->save_session("rev_tokens", $this->_review_tokens);
             }
         }
@@ -2675,8 +2679,7 @@ class Contact {
             || ($acct
                 && $this->contactId > 0
                 && $this->contactId == $acct->contactId
-                && $this->_activated
-                && !self::$base_auth_user);
+                && $this->_activated === 1);
     }
 
 

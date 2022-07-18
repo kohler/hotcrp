@@ -5040,6 +5040,8 @@ class Conf {
                        && !empty($pids)
                        && $user->has_capability_for($pids[0])) {
                 $true_user = -1; // indicate download via link
+            } else if ($user->is_bearer_authorized()) {
+                $true_user = -2; // indicate bearer token
             }
         }
         $user = self::log_clean_user($user, $text);

@@ -224,11 +224,11 @@ class ContactCounter {
             if ($left === 0
                 ? $left2 > 0 || $this->apiRefreshMtime > $this->apiRefreshMtime2
                 : $left2 > 0 && $this->apiRefreshWindow >= $this->apiRefreshWindow2) {
-                header("x-ratelimit-limit: {$this->apiRefreshWindow}");
+                header("x-ratelimit-limit: {$this->apiRefreshAmount}");
                 header("x-ratelimit-remaining: " . max($this->apiLimit - $this->apiCount, 0));
                 header("x-ratelimit-reset: " . (int) ($this->apiRefreshMtime / 1000));
             } else {
-                header("x-ratelimit-limit: {$this->apiRefreshWindow2}");
+                header("x-ratelimit-limit: {$this->apiRefreshAmount2}");
                 header("x-ratelimit-remaining: " . max($this->apiLimit2 - $this->apiCount, 0));
                 header("x-ratelimit-reset: " . (int) ($this->apiRefreshMtime2 / 1000));
             }

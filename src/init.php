@@ -262,15 +262,15 @@ function initialize_request($kwarg = null) {
         && isset($_SERVER["HTTP_AUTHORIZATION"])
         && ($token = Bearer_Capability::header_token($conf, $_SERVER["HTTP_AUTHORIZATION"]))
         && ($user = $token->local_user())) {
-        Contact::$main_bearer_token = $token;
-        $qreq->approve_token();
         $conf->disable_session();
+        $qreq->approve_token();
+        $user->set_bearer_authorized();
+        Contact::set_main_user($user);
+        Contact::$session_users = [$user->email];
         $ucounter = ContactCounter::find_by_uid($conf, $token->is_cdb, $token->contactId);
         $ucounter->api_refresh();
         $ucounter->api_account(true);
         $user = $user->activate($qreq, true);
-        Contact::set_main_user($user);
-        Contact::$session_users = [$user->email];
         return [$user, $qreq];
     }
 
