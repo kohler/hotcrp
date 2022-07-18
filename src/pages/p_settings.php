@@ -90,11 +90,12 @@ class Settings_Page {
             '<h1 class="leftmenu"><a href="" class="uic js-leftmenu q">Settings</a></h1>',
             '<ul class="leftmenu-list">';
         foreach ($sv->group_members("") as $gj) {
+            $title = $gj->short_title ?? $gj->title;
             if ($gj->name === $group) {
-                echo '<li class="leftmenu-item active">', $gj->title, '</li>';
+                echo '<li class="leftmenu-item active">', $title, '</li>';
             } else if ($gj->title) {
                 echo '<li class="leftmenu-item ui js-click-child">',
-                    '<a href="', $conf->hoturl("settings", "group={$gj->name}"), '">', $gj->title, '</a></li>';
+                    '<a href="', $conf->hoturl("settings", "group={$gj->name}"), '">', $title, '</a></li>';
             }
         }
         echo '</ul><div class="leftmenu-if-left if-alert mt-5">',

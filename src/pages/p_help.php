@@ -52,14 +52,14 @@ class Help_Page {
         echo '</h1><ul class="leftmenu-list">';
         $gap = false;
         foreach ($help_topics->groups() as $gj) {
-            if (isset($gj->title)) {
+            if (($title = $gj->short_title ?? $gj->title ?? null) !== null) {
                 echo '<li class="leftmenu-item',
                     ($gap ? " leftmenu-item-gap3" : ""),
                     ($gj->name === $topic ? ' active">' : ' ui js-click-child">');
                 if ($gj->name === $topic) {
-                    echo $gj->title;
+                    echo $title;
                 } else {
-                    echo Ht::link($gj->title, $conf->hoturl("help", "t=$gj->name"));
+                    echo Ht::link($title, $conf->hoturl("help", "t=$gj->name"));
                 }
                 echo '</li>';
                 $gap = $gj->name === "topics";

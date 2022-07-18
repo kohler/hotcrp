@@ -364,7 +364,6 @@ class ComponentSet implements XtContext {
      * @param ?string $hashid */
     function print_start_section($title = null, $hashid = null) {
         $title = $title ?? "";
-        $hashid = $hashid ?? "";
         $hashid_notitle = $title === "" && (string) $hashid !== "";
         $this->print_end_section();
         if ($this->_next_section_class !== "" || $hashid_notitle) {
@@ -403,6 +402,7 @@ class ComponentSet implements XtContext {
         if ($this->_title_class) {
             echo ' class="', $this->_title_class, '"';
         }
+        $hashid = $hashid ?? self::title_hashid($ftext);
         if ((string) $hashid !== "") {
             echo ' id="', htmlspecialchars($hashid), '"';
         }
@@ -415,24 +415,35 @@ class ComponentSet implements XtContext {
         echo "</h3>\n";
     }
 
+    /** @param string $ftext
+     * @return ?string */
+    static function title_hashid($ftext) {
+        $ftext = strtolower($ftext);
+        if (str_starts_with($ftext, "<") && Ftext::is_ftext($ftext)) {
+            $ftext = Ftext::unparse_as($ftext, 0);
+        }
+        $hashid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9:.]+/', "-", $ftext);
+        if (str_starts_with($hashid, "-")) {
+            $hashid = substr($hashid, 1);
+        }
+        return $hashid !== "" ? $hashid : null;
+    }
+
     /** @param string|object $gj
      * @return ?string */
     function hashid($gj) {
         if (is_string($gj)) {
             $gj = $this->get($gj);
         }
-        $hashid = $gj ? $gj->hashid ?? null : null;
-        if ($hashid === null && $gj && ($gj->title ?? "") !== "") {
-            $title = strtolower($gj->title);
-            if (str_starts_with($title, "<") && Ftext::is_ftext($title)) {
-                $title = Ftext::unparse_as($title, 0);
-            }
-            $hashid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9:.]+/', "-", $title);
-            if (str_starts_with($hashid, "-")) {
-                $hashid = substr($hashid, 1);
-            }
+        if (!$gj) {
+            return null;
+        } else if (($gj->hashid ?? null) !== null) {
+            return $gj->hashid !== "" ? $gj->hashid : null;
+        } else if (($gj->title ?? "") !== "") {
+            return self::title_hashid($gj->title);
+        } else {
+            return null;
         }
-        return (string) $hashid !== "" ? $hashid : null;
     }
 
     /** @param string|object $gj */
@@ -448,7 +459,7 @@ class ComponentSet implements XtContext {
                 || ($this->_section_closer === null && $this->_next_section_class !== "")
                 || (string) $hashid !== "") {
                 // create default hashid from title
-                $this->print_start_section($title, $hashid ?? $this->hashid($gj));
+                $this->print_start_section($title, $hashid);
             }
             if ($separator) {
                 echo is_string($separator) ? $separator : $this->_separator;

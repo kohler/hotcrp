@@ -152,7 +152,9 @@ class UserStatus extends MessageSet {
     function cs() {
         if ($this->_cs === null) {
             $this->_cs = new ComponentSet($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
-            $this->_cs->set_title_class("form-h")->set_section_class("form-section");
+            $this->_cs->set_title_class("form-h")
+                ->set_section_class("form-section")
+                ->set_separator('<hr class="form-sep">');
             $this->_cs->add_xt_checker([$this, "xt_allower"]);
             $this->initialize_cs();
         }
@@ -1726,13 +1728,6 @@ John Adams,john@earbox.org,UC Berkeley,pc
      * @param ?string $hashid */
     function print_start_section($title, $hashid = null) {
         $this->cs()->print_start_section($title, $hashid);
-    }
-
-    /** @param string $title
-     * @param ?string $hashid
-     * @deprecated */
-    function print_section($title, $hashid = null) {
-        $this->print_start_section($title, $hashid);
     }
 
     /** @param string $name */

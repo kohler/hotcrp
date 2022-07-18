@@ -640,10 +640,11 @@ class Profile_Page {
                 echo '<li class="leftmenu-item',
                     $gj->name === $this->topic ? ' active' : ' ui js-click-child',
                     $first ? ' leftmenu-item-gap4' : '', '">';
+                $title = $gj->short_title ?? $gj->title;
                 if ($gj->name === $this->topic) {
-                    echo $gj->title;
+                    echo $title;
                 } else {
-                    echo Ht::link($gj->title, $this->conf->selfurl($this->qreq, ["t" => $gj->name]));
+                    echo Ht::link($title, $this->conf->selfurl($this->qreq, ["t" => $gj->name]));
                 }
                 echo '</li>';
                 $first = false;
