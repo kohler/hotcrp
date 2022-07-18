@@ -2737,7 +2737,10 @@ class PaperTable {
     function print_review_form() {
         // notecard messages
         $msgs = [];
-        if ($this->editrrow && !$this->user->is_signed_in()) {
+        if (!$this->user->is_signed_in()
+            && $this->editrrow
+            && ($capuser = $this->user->reviewer_capability_user($this->prow->paperId))
+            && $capuser->contactId === $this->editrrow->contactId) {
             $msgs[] = $this->conf->_("You followed a review link to edit this review. You can also <a href=\"%s\">sign in to the site</a>.", $this->conf->hoturl("signin", ["email" => $this->editrrow->email, "cap" => null]));
         }
         if ($this->user->is_admin_force()) {

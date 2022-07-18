@@ -378,10 +378,7 @@ class Review_Page {
             $pt->paptabEndWithReviewMessage();
         } else {
             if ($pt->mode === "re" || $this->rrow) {
-                $pt->print_review_form();
-                $pt->print_main_link();
-            } else if ($this->rrow) {
-                $pt->print_rc([$this->rrow], false);
+                $pt->print_review_form(); // might just render review
                 $pt->print_main_link();
             } else {
                 $pt->paptabEndWithReviewsAndComments();
