@@ -726,9 +726,9 @@ class Profile_Page {
 
 
     static function go(Contact $user, Qrequest $qreq) {
-        if (isset($qreq->cancel)) {
-            $user->conf->redirect_self($qreq);
-        } else if ($qreq->changeemail && !$user->is_actas_user()) {
+        if ($qreq->changeemail
+            && !$user->is_actas_user()
+            && !isset($qreq->cancel)) {
             ChangeEmail_Page::go($user, $qreq);
         } else if (!$user->is_signed_in()) {
             $user->escape();
