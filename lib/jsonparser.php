@@ -107,6 +107,11 @@ class JsonParser {
         return $this;
     }
 
+    /** @return bool */
+    function has_filename() {
+        return ($this->filename ?? "") !== "";
+    }
+
 
     /** @param int $pos
      * @param int $etype

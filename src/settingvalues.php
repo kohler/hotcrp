@@ -120,6 +120,16 @@ class SettingValues extends MessageSet {
         return $this;
     }
 
+    /** @param string $k
+     * @return $this */
+    function unset_req($k) {
+        if (array_key_exists($k, $this->req)) {
+            $this->_req_sorted = false;
+            unset($this->req[$k]);
+        }
+        return $this;
+    }
+
     /** @param Qrequest|array<string,string|int|float> $qreq
      * @return $this */
     function add_request($qreq) {
@@ -141,57 +151,63 @@ class SettingValues extends MessageSet {
 
     /** @param string $jstr
      * @param ?string $filename
-     * @param bool $reset
      * @return $this */
-    function add_json_string($jstr, $filename = null, $reset = false) {
+    function add_json_string($jstr, $filename = null) {
         assert(!$this->_req_parsed);
         $this->_jp = (new JsonParser($jstr))->filename($filename);
         $j = $this->_jp->decode();
         if ($j !== null || $this->_jp->error_type === 0) {
             $this->_jpath = "";
-            $this->set_json_parts("", $j, $reset);
+            $this->set_json_parts("", $j);
         } else {
-            $this->error_at(null, "<0>Invalid JSON at character position {$this->_jp->error_pos}");
+            $mi = $this->error_at(null, "<0>Invalid JSON");
+            $mi->pos1 = $mi->pos2 = $this->_jp->error_pos;
         }
-        $this->_jp = null;
+        $this->_jpath = null;
         return $this;
     }
 
     /** @param string $parts
-     * @param mixed $j
-     * @param bool $reset */
-    private function set_json_parts($parts, $j, $reset) {
+     * @param mixed $j */
+    private function set_json_parts($parts, $j) {
         if (!is_object($j)) {
             $this->error_at(null, "<0>Expected JSON object");
             return;
         }
         $si_set = $this->conf->si_set();
-        if (($jpath = $this->_jpath) !== "") {
-            $jpath .= ".";
-        }
+        $jpath = $this->_jpath;
         foreach ((array) $j as $k => $v) {
             $si = $si_set->get("{$parts}{$k}");
-            $this->_jpath = "{$jpath}{$k}";
+            $this->_jpath = JsonParser::path_push($jpath, $k);
             if (!$si) {
-                if ($k === "delete" && is_bool($v) && $parts !== "") {
+                if ($k === "delete" && $parts !== "") {
                     if ($v === true) {
                         $this->set_req("{$parts}delete", "1");
+                    } else if ($v === false) {
+                        $this->unset_req("{$parts}delete");
+                    } else {
+                        $this->error_at(null, "<0>Boolean required");
+                    }
+                } else if ($k === "reset" || str_ends_with($k, "_reset")) {
+                    if (is_bool($v)) {
+                        $this->set_req("{$parts}{$k}", $v ? "1" : "");
+                    } else {
+                        $this->error_at(null, "<0>Boolean required");
                     }
                 } else if ($k !== "" && $k[0] !== "\$" && $k[0] !== "#") {
-                    $this->warning_at(null, "<0>Unknown setting");
+                    $mi = $this->warning_at("{$parts}{$k}", "<0>Unknown setting");
+                    if (($jpp = $this->_jp->path_position($this->_jpath))) {
+                        $mi->pos1 = $jpp->kpos1;
+                        $mi->pos2 = $jpp->kpos2;
+                    }
                 }
             } else if ($si->internal) {
                 if (is_scalar($v)) {
                     $this->set_req($si->name, "{$v}");
                 }
             } else if ($si->type === "oblist") {
-                if (!is_array($v)) {
-                    $this->error_at(null, "<0>Array of JSON objects expected");
-                } else {
+                if (is_array($v)) {
                     $this->set_req("has_{$si->name}", "1");
-                    if ($reset) {
-                        $this->set_req("{$si->name}_reset", "1");
-                    }
                     foreach ($v as $i => $vv) {
                         $this->_jpath = "{$jpath}{$k}[{$i}]";
                         $pfx = "{$si->name}/" . ($i + 1) . "/";
@@ -201,18 +217,20 @@ class SettingValues extends MessageSet {
                         if (is_string($vv)) {
                             $this->req["{$pfx}name"] = $vv;
                         } else if (is_object($vv)) {
-                            $this->set_json_parts($pfx, $vv, $reset);
+                            $this->set_json_parts($pfx, $vv);
                         } else {
-                            $this->error_at(null, "<0>JSON object expected");
+                            $this->error_at(null, "<0>Expected JSON object");
                         }
                     }
+                } else {
+                    $mi = $this->error_at(null, "<0>Expected array of JSON objects");
                 }
             } else if ($si->type === "object") {
-                if (!is_object($v)) {
-                    $this->error_at(null, "<0>JSON object expected");
-                } else {
+                if (is_object($v)) {
                     $this->set_req("has_{$si->name}", "1");
-                    $this->set_json_parts($si->name, $v, $reset);
+                    $this->set_json_parts($si->name, $v);
+                } else {
+                    $this->error_at(null, "<0>Expected JSON object");
                 }
             } else if (($vstr = $si->convert_jsonv($v, $this)) !== null) {
                 $this->set_req($si->name, $vstr);
@@ -308,22 +326,41 @@ class SettingValues extends MessageSet {
 
 
     /** @param MessageItem $mi
+     * @param ?string $field
      * @return MessageItem */
-    private function with_jpath($mi) {
-        if ($this->_jpath !== "") {
-            $mi = $mi->with_prefix($this->_jpath . ": ");
+    private function with_jfield($mi, $field) {
+        $updates = [];
+        $jpp = null;
+        if ($field !== null) {
+            $updates["field"] = $field;
+            $path = "\$";
+            foreach (explode("/", $field) as $part) {
+                $path = JsonParser::path_push($path, ctype_digit($part) ? intval($part) - 1 : $part);
+            }
+            $jpp = $this->_jp->path_position($path);
+        } else if ($this->_jpath !== "") {
+            $jpp = $this->_jp->path_position($this->_jpath);
         }
-        return $mi->with_landmark($this->_jp->path_landmark($this->_jpath));
+        if ($jpp) {
+            $updates["pos1"] = $jpp->vpos1;
+            $updates["pos2"] = $jpp->vpos2;
+        }
+        if (isset($updates["pos1"])
+            && $this->_jp->has_filename()
+            && ($lm = $this->_jp->position_landmark($jpp->vpos1))) {
+            $updates["landmark"] = $lm;
+        }
+        return $mi->with($updates);
     }
 
     /** @param null|string|Si $field
      * @param MessageItem $mi
      * @return MessageItem */
     function append_item_at($field, $mi) {
-        if ($this->_jp) {
-            $mi = $this->with_jpath($mi);
+        $fname = $field instanceof Si ? $field->name : $field;
+        if ($this->_jp !== null) {
+            $mi = $this->with_jfield($mi, $fname);
         } else {
-            $fname = $field instanceof Si ? $field->name : $field;
             $mi = $mi->with_field($fname);
         }
         return $this->append_item($mi);
@@ -334,10 +371,10 @@ class SettingValues extends MessageSet {
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status
      * @return MessageItem */
     function msg_at($field, $msg, $status) {
-        if ($this->_jp) {
-            $mi = $this->with_jpath(new MessageItem(null, $msg ?? "", $status));
+        $fname = $field instanceof Si ? $field->name : $field;
+        if ($this->_jp !== null) {
+            $mi = $this->with_jfield(new MessageItem(null, $msg ?? "", $status), $fname);
         } else {
-            $fname = $field instanceof Si ? $field->name : $field;
             $mi = new MessageItem($fname, $msg ?? "", $status);
         }
         return $this->append_item($mi);
@@ -533,6 +570,18 @@ class SettingValues extends MessageSet {
         return $si->base_unparse_reqv($this->oldv($si), $this);
     }
 
+
+    /** @return object */
+    function json_allv() {
+        $j = [];
+        foreach ($this->conf->si_set()->top_list() as $si) {
+            if (($si->json_export ?? !$si->internal)
+                && ($v = $this->json_oldv($si)) !== null) {
+                $j[$si->name] = $v;
+            }
+        }
+        return (object) $j;
+    }
 
     /** @param string|Si $id
      * @return mixed */

@@ -26,14 +26,7 @@ class Settings_Batch {
 
     /** @return int */
     function run() {
-        $j = [];
-        foreach ($this->conf->si_set()->top_list() as $si) {
-            if (($si->json_export ?? !$si->internal)
-                && ($v = $this->sv->json_oldv($si)) !== null) {
-                $j[$si->name] = $v;
-            }
-        }
-        fwrite(STDOUT, json_encode($j, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n");
+        fwrite(STDOUT, json_encode($this->sv->json_allv(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n");
         /*$this->sv->apply_json_string('{"rf":[{
             "id": "t01",
             "name": "Paper summary...",

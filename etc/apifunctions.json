@@ -153,6 +153,10 @@
         "function": "Tags_API::run"
     },
     {
+        "name": "settings", "get": true, "post": true,
+        "function": "Settings_API::run"
+    },
+    {
         "name": "shepherd", "paper": true, "get": true, "post": true,
         "function": "PaperPC_API::shepherd_api"
     },

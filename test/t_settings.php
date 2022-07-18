@@ -187,9 +187,10 @@ class Settings_Tester {
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Berf","2":"Fart","3":"Money"}');
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
-            "topic": [{"id": 1, "name": "Berf"}]
-        }', null, true);
+            "topic": [{"id": 1, "name": "Berf"}], "reset": true
+        }');
         xassert($sv->execute());
+        xassert_eqq($sv->updated_fields(), ["topics"]);
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Berf"}');
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
@@ -1055,5 +1056,43 @@ class Settings_Tester {
         $opt = $this->conf->checked_option_by_id($optid);
         xassert_eqq($opt->exists_condition(), "Program:Joint*");
         xassert_eqq($opt->name, "Joint concentration?");
+    }
+
+    function test_json_settings() {
+        $x = call_api("settings", $this->u_chair, []);
+        xassert($x->ok);
+        xassert(!isset($x->updates));
+        xassert(is_object($x->settings));
+        xassert_eqq($x->settings->review_blind, "blind");
+
+        $x = call_api("=settings", $this->u_chair, ["settings" => "{}"]);
+        xassert($x->ok);
+        xassert_eqq($x->message_list, []);
+        xassert_eqq($x->updates, []);
+
+        $x = call_api("=settings", $this->u_chair, ["settings" => "{\"notgood\":true}"]);
+        xassert($x->ok);
+        xassert_eqq(count($x->message_list), 1);
+        $mi = $x->message_list[0];
+        xassert_eqq($mi->status, 1);
+        xassert_eqq($mi->field, "notgood");
+        xassert_eqq($mi->message, "<0>Unknown setting");
+
+        $x = call_api("=settings", $this->u_chair, ["settings" => "{\"response_active\":1}"]);
+        xassert(!$x->ok);
+        xassert_eqq(count($x->message_list), 1);
+        $mi = $x->message_list[0];
+        xassert_eqq($mi->status, 2);
+        xassert_eqq($mi->field, "response_active");
+        xassert_eqq($mi->message, "<0>Boolean required");
+
+        $x = call_api("=settings", $this->u_chair, ["settings" => "{\"review_blind\":\"open\"}"]);
+        xassert($x->ok);
+        xassert_eqq($x->updates, ["rev_blind"]);
+        xassert_eqq($x->settings->review_blind, "open");
+
+        $x = call_api("settings", $this->u_mgbaker, []);
+        xassert(!$x->ok);
+        xassert(!isset($x->settings));
     }
 }

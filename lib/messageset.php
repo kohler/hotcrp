@@ -49,6 +49,15 @@ class MessageItem implements JsonSerializable {
         if (array_key_exists("message", $updates)) {
             $mi->message = $updates["message"];
         }
+        if (array_key_exists("pos1", $updates)) {
+            $mi->pos1 = $updates["pos1"];
+        }
+        if (array_key_exists("pos2", $updates)) {
+            $mi->pos2 = $updates["pos2"];
+        }
+        if (array_key_exists("context", $updates)) {
+            $mi->context = $updates["context"];
+        }
         if (array_key_exists("landmark", $updates)) {
             $mi->landmark = $updates["landmark"];
         }
@@ -91,6 +100,9 @@ class MessageItem implements JsonSerializable {
         $x["status"] = $this->status;
         if ($this->pos1 !== null && $this->context !== null) {
             $x["context"] = Ht::make_mark_substring($this->context, $this->pos1, $this->pos2);
+        } else if ($this->pos1 !== null) {
+            $x["pos1"] = $this->pos1;
+            $x["pos2"] = $this->pos2;
         }
         return (object) $x;
     }
