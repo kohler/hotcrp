@@ -698,7 +698,7 @@ function add_dialog() {
     }
     function submit(event) {
         var sample = cur_sample(),
-            has_options = !!sample.options,
+            has_options = !!sample.values,
             ffmt = has_options ? "s%02d" : "t%02d",
             i, fid;
         for (i = 1; ; ++i) {
