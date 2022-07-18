@@ -4572,17 +4572,22 @@ function score_header_tooltips($j) {
         .each(tooltip);
 }
 
+function field_visible(f, rrow) {
+    if (f.values && !f.required)
+        return f.uid in rrow;
+    else
+        return !!rrow[f.uid];
+}
+
 function render_review_body(rrow) {
-    var view_order = $.grep(form_order, function (f) {
-        if (f.values && !f.required)
-            return f.uid in rrow;
-        else
-            return !!rrow[f.uid];
-    });
-    var t = "", i, f, k, x, nextf, last_display = 0, display;
-    for (i = 0; i != view_order.length; ++i) {
-        f = view_order[i];
-        nextf = view_order[i + 1];
+    var t = "", foidx = 0, f, k, x, nextf, last_display = 0, display;
+    for (foidx = 0; (nextf = form_order[foidx]) && !field_visible(nextf, rrow); ++foidx) {
+    }
+    while (nextf) {
+        f = nextf;
+        for (++foidx; (nextf = form_order[foidx]) && !field_visible(nextf, rrow); ++foidx) {
+        }
+
         if (last_display != 1 && f.values && nextf && nextf.values) {
             display = 1;
         } else {
