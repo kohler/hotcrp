@@ -38,7 +38,8 @@
 
     {
         "name": "decision", "hashid": "decision-types",
-        "type": "oblist", "parser_class": "Decision_SettingParser"
+        "type": "oblist", "parser_class": "Decision_SettingParser",
+        "title": "Decision types"
     },
     {
         "name_pattern": "decision/$",
@@ -178,7 +179,8 @@
 
     {
         "name": "sf",
-        "type": "oblist", "parser_class": "Options_SettingParser"
+        "type": "oblist", "parser_class": "Options_SettingParser",
+        "title": "Submission form"
     },
     {
         "name_pattern": "sf/$",
@@ -339,7 +341,8 @@
 
     {
         "name": "response",
-        "type": "oblist", "parser_class": "Response_SettingParser"
+        "type": "oblist", "parser_class": "Response_SettingParser",
+        "title": "Response rounds and deadlines"
     },
     {
         "name_pattern": "response/$",
@@ -451,8 +454,7 @@
         "name": "review_identity_visibility_pc", "storage": "pc_seeblindrev",
         "title": "PC can see blind reviewers’ identities",
         "type": "radio",
-        "values": [0, 1], "default_value": 0,
-        "json_values": [true, false]
+        "values": [0, 1], "default_value": 0
     },
     {
         "name": "review_proposal", "storage": "extrev_chairreq",
@@ -470,7 +472,8 @@
 
     {
         "name": "review", "hashid": "rounds",
-        "type": "oblist", "parser_class": "Review_SettingParser"
+        "type": "oblist", "parser_class": "Review_SettingParser",
+        "title": "Review rounds and deadlines"
     },
     {
         "name_pattern": "review/$",
@@ -561,7 +564,8 @@
 
     {
         "name": "rf", "hashid": false,
-        "type": "oblist", "parser_class": "ReviewForm_SettingParser"
+        "type": "oblist", "parser_class": "ReviewForm_SettingParser",
+        "title": "Review form"
     },
     {
         "name_pattern": "rf/$",
@@ -689,7 +693,8 @@
         "name_pattern": "fmtstore_o_$", "internal": true, "storage": "opt.sub_banal_$"
     },
     {
-        "name": "format", "type": "oblist", "parser_class": "Banal_SettingParser"
+        "name": "format", "type": "oblist", "parser_class": "Banal_SettingParser",
+        "title": "Format checker settings"
     },
     {
         "name_pattern": "format/$",
@@ -749,8 +754,7 @@
         "name": "submission_freeze", "storage": "sub_freeze",
         "title": "Submitters can update until the deadline",
         "type": "radio",
-        "values": [0, 1], "default_value": 0,
-        "json_values": [true, false]
+        "values": [0, 1], "default_value": 0
     },
     {
         "name": "submission_grace", "storage": "sub_grace",
@@ -836,7 +840,8 @@
     {   "name": "has_topics", "internal": true, "type": "checkbox"   },
     {
         "name": "topic",
-        "type": "oblist", "parser_class": "Topic_SettingParser"
+        "type": "oblist", "parser_class": "Topic_SettingParser",
+        "title": "Topics"
     },
     {
         "name_pattern": "topic/$",
@@ -863,7 +868,8 @@
 
     {
         "name": "track", "hashid": "tracks", "type": "oblist",
-        "parser_class": "Track_SettingParser"
+        "parser_class": "Track_SettingParser",
+        "title": "Tracks"
     },
     {
         "name_pattern": "track/$",
