@@ -26,6 +26,8 @@ class SettingValues extends MessageSet {
     private $_req_parsed = false;
     /** @var bool */
     private $_req_sorted = false;
+    /** @var ?list<string> */
+    private $_new_req;
 
     /** @var array<string,true> */
     private $_hint_status = [];
@@ -107,15 +109,19 @@ class SettingValues extends MessageSet {
     function set_req($k, $v) {
         if (str_starts_with($k, "has_")) {
             $k = substr($k, 4);
-            if (!array_key_exists($k, $this->req)) {
-                $this->_req_sorted = false;
-                $this->req[$k] = null;
+            if (($x = array_key_exists($k, $this->req))) {
+                return $this;
             }
+            $v = null;
         } else {
-            if (!array_key_exists($k, $this->req)) {
-                $this->_req_sorted = false;
+            $x = array_key_exists($k, $this->req);
+        }
+        $this->req[$k] = $v;
+        if (!$x) {
+            $this->_req_sorted = false;
+            if ($this->_new_req !== null) {
+                $this->_new_req[] = $k;
             }
-            $this->req[$k] = $v;
         }
         return $this;
     }
@@ -153,7 +159,6 @@ class SettingValues extends MessageSet {
      * @param ?string $filename
      * @return $this */
     function add_json_string($jstr, $filename = null) {
-        assert(!$this->_req_parsed);
         $this->_jp = (new JsonParser($jstr))->filename($filename);
         $j = $this->_jp->decode();
         if ($j !== null || $this->_jp->error_type === 0) {
@@ -1130,23 +1135,40 @@ class SettingValues extends MessageSet {
     function parse() {
         assert(!$this->_req_parsed);
         $this->_req_parsed = true;
-
-        // find requested settings
         $siset = $this->conf->si_set();
+        $this->_new_req = array_keys($this->req);
+        $i = 0;
         $req_si = [];
-        foreach ($this->req as $k => $v) {
-            if (strpos($k, "/") === false
-                && ($si = $siset->get($k))
-                && $si->name === $k) {   // don’t count aliases
-                $req_si[] = $si;
+
+        while (true) {
+            // add newly requested settings
+            foreach ($this->_new_req as $k) {
+                if (strpos($k, "/") === false
+                    && ($si = $siset->get($k))
+                    && $si->name === $k /* skip aliases */) {
+                    if ($i !== 0) {
+                        $req_si = array_slice($req_si, $i);
+                        $i = 0;
+                    }
+                    $req_si[] = $si;
+                }
+            }
+            $this->_new_req = [];
+            // exit after processing all settings
+            $n = count($req_si);
+            if ($i === $n) {
+                break;
+            }
+            // process settings in parse order
+            if ($i === 0) { /* sort or resort */
+                usort($req_si, "Si::parse_order_compare");
+            }
+            while ($i !== $n && empty($this->_new_req)) {
+                $this->apply_req($req_si[$i]);
+                ++$i;
             }
         }
-        usort($req_si, "Si::parse_order_compare");
 
-        // parse and validate settings
-        foreach ($req_si as $si) {
-            $this->apply_req($si);
-        }
         return $this;
     }
 
