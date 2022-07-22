@@ -224,9 +224,9 @@ class JsonParser {
     /** @param string $s
      * @param int $pos1
      * @param int $pos2
-     * @param bool $error
+     * @param ?callable(int,int):void $errorf
      * @return string */
-    private function decode_potential_string($s, $pos1, $pos2, $error) {
+    static private function decode_potential_string($s, $pos1, $pos2, $errorf) {
         ++$pos1;
         $len = $pos2 - $pos1 - 1;
         if ($len < 0
@@ -234,11 +234,11 @@ class JsonParser {
             ++$len;
         }
         $in = substr($s, $pos1, $len);
-        if ($error) {
+        if ($errorf) {
             if (preg_match('/[\000-\037]/', $in, $m, PREG_OFFSET_CAPTURE)) {
-                $this->set_error($pos1 + $m[0][1], JSON_ERROR_SYNTAX);
+                $errorf($pos1 + $m[0][1], JSON_ERROR_SYNTAX);
             } else if ($pos1 + $len === strlen($s) || $s[$pos1 + $len] !== "\"") {
-                $this->set_error($pos1 + $len, JSON_ERROR_SYNTAX);
+                $errorf($pos1 + $len, JSON_ERROR_SYNTAX);
             }
         }
         $x = "";
@@ -252,8 +252,8 @@ class JsonParser {
             $x .= substr($in, $bs, $bs1 - $bs);
             if (is_string($esc)) {
                 $x .= $esc;
-            } else if ($error) {
-                $this->set_error($pos1 + $bs1, $esc);
+            } else if ($errorf) {
+                $errorf($pos1 + $bs1, $esc);
             }
             $bs = $bs2;
         }
@@ -296,7 +296,7 @@ class JsonParser {
             return true;
         } else if ($ch === "\"") {
             $this->pos = self::skip_potential_string($this->input, $pos);
-            $s = $this->decode_potential_string($this->input, $pos, $this->pos, true);
+            $s = self::decode_potential_string($this->input, $pos, $this->pos, [$this, "set_error"]);
             return $this->error_type === 0 ? $s : null;
         } else if ($ch === "{") {
             if ($depth > $this->maxdepth) {
@@ -501,7 +501,7 @@ class JsonParser {
                 if ($pos !== $len && self::ctype_json_value_start($s[$pos])) {
                     $vpos1 = $pos;
                     $vpos2 = $pos = self::skip($s, $pos);
-                    yield new JsonParserPosition($this->decode_potential_string($s, $kpos1, $kpos2, false), $kpos1, $kpos2, $vpos1, $vpos2);
+                    yield new JsonParserPosition(self::decode_potential_string($s, $kpos1, $kpos2, null), $kpos1, $kpos2, $vpos1, $vpos2);
                 } else {
                     $pos = self::skip($s, $pos);
                 }
@@ -576,67 +576,6 @@ class JsonParser {
         }
     }
 
-    /** @param string $path
-     * @return ?JsonParserPosition */
-    function path_position($path) {
-        $ipos = 0;
-        $ppos = 0;
-        $jpp = null;
-        $plen = strlen($path);
-        while (true) {
-            while ($ppos !== $plen && ctype_space($path[$ppos])) {
-                ++$ppos;
-            }
-            if ($ppos === $plen) {
-                break;
-            }
-            $ch = $path[$ppos];
-            if (ctype_alnum($ch) || $ch === "_") {
-                preg_match('/\G[a-zA-Z_0-9$]*/', $path, $m, 0, $ppos);
-                $key = $m[0];
-                $ppos += strlen($m[0]);
-            } else if ($ch === "\"") {
-                $ppos1 = $ppos;
-                $ppos = self::skip_potential_string($path, $ppos1);
-                $key = $this->decode_potential_string($path, $ppos1, $ppos, false);
-            } else if ($ch === "." || $ch === "[" || $ch === "]"
-                       || ($ch === "\$" && $ipos === 0)) {
-                ++$ppos;
-                continue;
-            } else {
-                throw new ErrorException("bad path `{$path}`");
-            }
-            $jpp = null;
-            foreach ($this->member_positions($ipos) as $memp) {
-                if ($memp->key !== null && (string) $memp->key === $key) {
-                    $jpp = $memp;
-                    break;
-                }
-            }
-            if (!$jpp) {
-                return null;
-            }
-            $ipos = $jpp->vpos1;
-        }
-        if ($jpp === null && $ipos === 0) {
-            $ilen = strlen($this->input);
-            while ($ipos !== $ilen && ctype_space($this->input[$ipos])) {
-                ++$ipos;
-            }
-            $vpos2 = self::skip($this->input, $ipos);
-            return new JsonParserPosition(null, null, null, $ipos, $vpos2);
-        } else {
-            return $jpp;
-        }
-    }
-
-    /** @param string $path
-     * @return ?string */
-    function path_landmark($path) {
-        $jpp = $this->path_position($path);
-        return $jpp ? $this->position_landmark($jpp->vpos1) : null;
-    }
-
     /** @param ?string $path
      * @param string|int $component
      * @return string */
@@ -666,6 +605,72 @@ class JsonParser {
             }, $component);
             return "{$path}[\"{$component}\"]";
         }
+    }
+
+    /** @param ?string $path
+     * @return list<int|string> */
+    static function path_split($path) {
+        $ppos = 0;
+        $plen = strlen($path ?? "");
+        $a = [];
+        while ($ppos !== $plen) {
+            $ch = $path[$ppos];
+            if (ctype_space($ch)) {
+                for (++$ppos; $ppos !== $plen && ctype_space($path[$ppos]); ++$ppos) {
+                }
+            } else if (ctype_alnum($ch) || $ch === "_") {
+                preg_match('/\G[a-zA-Z0-9_$]+/', $path, $m, 0, $ppos);
+                $a[] = ctype_digit($m[0]) ? intval($m[0]) : $m[0];
+                $ppos += strlen($m[0]);
+            } else if ($ch === "\"") {
+                $ppos1 = $ppos;
+                $ppos = self::skip_potential_string($path, $ppos1);
+                $a[] = self::decode_potential_string($path, $ppos1, $ppos, null);
+            } else if ($ch === "." || $ch === "[" || $ch === "]"
+                       || ($ch === "\$" && empty($a))) {
+                ++$ppos;
+            } else {
+                throw new ErrorException("bad JSON path `{$path}`");
+            }
+        }
+        return $a;
+    }
+
+    /** @param string $path
+     * @return ?JsonParserPosition */
+    function path_position($path) {
+        $ipos = 0;
+        $jpp = null;
+        foreach (self::path_split($path) as $key) {
+            $jpp = null;
+            foreach ($this->member_positions($ipos) as $memp) {
+                if ($memp->key !== null && (string) $memp->key === (string) $key) {
+                    $jpp = $memp;
+                    break;
+                }
+            }
+            if (!$jpp) {
+                return null;
+            }
+            $ipos = $jpp->vpos1;
+        }
+        if ($jpp === null && $ipos === 0) {
+            $ilen = strlen($this->input);
+            while ($ipos !== $ilen && ctype_space($this->input[$ipos])) {
+                ++$ipos;
+            }
+            $vpos2 = self::skip($this->input, $ipos);
+            return new JsonParserPosition(null, null, null, $ipos, $vpos2);
+        } else {
+            return $jpp;
+        }
+    }
+
+    /** @param string $path
+     * @return ?string */
+    function path_landmark($path) {
+        $jpp = $this->path_position($path);
+        return $jpp ? $this->position_landmark($jpp->vpos1) : null;
     }
 
 

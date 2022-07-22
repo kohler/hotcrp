@@ -11,6 +11,10 @@ class SettingValues extends MessageSet {
     public $user;
     /** @var ?string */
     public $canonical_page;
+    /** @var bool */
+    public $all_interest = false;
+    /** @var bool */
+    public $link_json = false;
     /** @var list<string|bool> */
     private $perm;
     /** @var bool */
@@ -93,6 +97,20 @@ class SettingValues extends MessageSet {
      * @return $this */
     function set_canonical_page($page) {
         $this->canonical_page = $page;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_all_interest($x) {
+        $this->all_interest = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_link_json($x) {
+        $this->link_json = $x;
         return $this;
     }
 
@@ -345,6 +363,7 @@ class SettingValues extends MessageSet {
             }
             $jpp = $this->_jp->path_position($path);
         } else if ($this->_jpath !== "") {
+            $updates["field"] = join("/", JsonParser::path_split($this->_jpath));
             $jpp = $this->_jp->path_position($this->_jpath);
         }
         if ($jpp) {
@@ -429,11 +448,17 @@ class SettingValues extends MessageSet {
                 $mi->message = "<5>Warning: " . $mi->message_as(5);
             }
             $loc = null;
-            if ($mi->field
-                && ($si = $this->conf->si($mi->field))) {
-                $loc = $si->title_html($this);
-                if ($loc && $si->has_hashid()) {
-                    $loc = Ht::link($loc, $si->sv_hoturl($this));
+            if ($mi->field) {
+                if (($si = $this->conf->si($mi->field))) {
+                    $loc = $si->title_html($this);
+                    if ($loc && $si->has_hashid()) {
+                        $loc = Ht::link($loc, $si->sv_hoturl($this));
+                    }
+                    if ($this->link_json && ($jpath = $si->json_path())) {
+                        $loc .= " <code class=\"settings-jpath\">" . htmlspecialchars($jpath) . "</code>";
+                    }
+                } else if ($this->link_json) {
+                    $loc = "<code class=\"settings-jpath\">" . htmlspecialchars(Si::json_path_for($mi->field)) . "</code>";
                 }
             }
             if ($lastmi
@@ -959,7 +984,7 @@ class SettingValues extends MessageSet {
     /** @param string|Si $id
      * @return bool */
     function has_interest($id) {
-        if (!$this->canonical_page) {
+        if (!$this->canonical_page || $this->all_interest) {
             return true;
         } else if (($si = is_string($id) ? $this->conf->si($id) : $id)) {
             return $si->has_tag($this->canonical_page)
@@ -1378,7 +1403,11 @@ class SettingValues extends MessageSet {
      * @return string */
     function setting_link($html, $id, $js = null) {
         $si = is_string($id) ? $this->si($id) : $id;
-        return Ht::link($html, $si->sv_hoturl($this), $js);
+        $link = Ht::link($html, $si->sv_hoturl($this), $js);
+        if ($this->link_json && ($jpath = $si->json_path())) {
+            $link .= " <code class=\"settings-jpath\">" . htmlspecialchars($jpath) . "</code>";
+        }
+        return $link;
     }
 
     /** @param string $html
