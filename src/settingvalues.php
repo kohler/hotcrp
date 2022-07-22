@@ -184,32 +184,33 @@ class SettingValues extends MessageSet {
         foreach ((array) $j as $k => $v) {
             $si = $si_set->get("{$parts}{$k}");
             $this->_jpath = JsonParser::path_push($jpath, $k);
+            $name = $si ? $si->name : "{$parts}{$k}";
             if (!$si) {
                 if ($k === "delete" && $parts !== "") {
                     if ($v === true) {
-                        $this->set_req("{$parts}delete", "1");
+                        $this->set_req($name, "1");
                     } else if ($v === false) {
-                        $this->unset_req("{$parts}delete");
+                        $this->unset_req($name);
                     } else {
                         $this->error_at(null, "<0>Boolean required");
                     }
                 } else if ($k === "reset" || str_ends_with($k, "_reset")) {
                     if (is_bool($v)) {
-                        $this->set_req("{$parts}{$k}", $v ? "1" : "");
+                        $this->set_req($name, $v ? "1" : "");
                     } else {
                         $this->error_at(null, "<0>Boolean required");
                     }
                 } else if ($k !== "" && $k[0] !== "\$" && $k[0] !== "#") {
-                    $mi = $this->warning_at("{$parts}{$k}", "<0>Unknown setting");
+                    $mi = $this->warning_at($name, "<0>Unknown setting");
                     if (($jpp = $this->_jp->path_position($this->_jpath))) {
                         $mi->pos1 = $jpp->kpos1;
                         $mi->pos2 = $jpp->kpos2;
                     }
                 }
-            } else if ($si->internal) {
-                if (is_scalar($v)) {
-                    $this->set_req($si->name, "{$v}");
-                }
+            } else if (!$si->json_export()) {
+                $this->warning_at(null, "<0>This setting cannot be changed in JSON");
+            } else if ($si->internal && is_scalar($v)) {
+                $this->set_req($si->name, "{$v}");
             } else if ($si->type === "oblist") {
                 if (is_array($v)) {
                     $this->set_req("has_{$si->name}", "1");
@@ -233,11 +234,11 @@ class SettingValues extends MessageSet {
             } else if ($si->type === "object") {
                 if (is_object($v)) {
                     $this->set_req("has_{$si->name}", "1");
-                    $this->set_json_parts($si->name, $v);
+                    $this->set_json_parts("{$si->name}/", $v);
                 } else {
                     $this->error_at(null, "<0>Expected JSON object");
                 }
-            } else if (($vstr = $si->convert_jsonv($v, $this)) !== null) {
+            } else if (($vstr = $si->jsonv_reqstr($v, $this)) !== null) {
                 $this->set_req($si->name, $vstr);
             }
         }
@@ -580,7 +581,7 @@ class SettingValues extends MessageSet {
     function json_allv() {
         $j = [];
         foreach ($this->conf->si_set()->top_list() as $si) {
-            if (($si->json_export ?? !$si->internal)
+            if ($si->json_export()
                 && ($v = $this->json_oldv($si)) !== null) {
                 $j[$si->name] = $v;
             }
@@ -614,7 +615,7 @@ class SettingValues extends MessageSet {
             }
             $o = [];
             foreach ($member_list as $msi) {
-                if (($msi->json_export ?? !$msi->internal)
+                if ($msi->json_export()
                     && ($v = $this->json_oldv($msi)) !== null) {
                     $member = $msi->name2 === "" ? $msi->name1 : substr($msi->name2, 1);
                     $o[$member] = $v;

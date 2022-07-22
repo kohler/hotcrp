@@ -1362,8 +1362,8 @@ class Tagger {
         if ($m[3] !== "" && ($flags & self::NOVALUE)) {
             return $this->set_error_code($tag, self::NOVALUE);
         }
-        if (!($flags & self::ALLOWRESERVED)
-            && (!strcasecmp("none", $m[2]) || !strcasecmp("any", $m[2]))) {
+        if (($flags & self::ALLOWRESERVED) === 0
+            && (strcasecmp("none", $m[2]) === 0 || strcasecmp("any", $m[2]) === 0)) {
             return $this->set_error_code($tag, self::ALLOWRESERVED);
         }
         $t = $m[1] . $m[2];

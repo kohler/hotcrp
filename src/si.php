@@ -33,6 +33,9 @@ class Si {
     /** @var ?string
      * @readonly */
     public $title_pattern;
+    /** @var ?string
+     * @readonly */
+    public $description;
     /** @var ?list<string> */
     public $pages;
     /** @var bool */
@@ -79,6 +82,9 @@ class Si {
     /** @var mixed
      * @readonly */
     private $default_value;
+    /** @var mixed
+     * @readonly */
+    private $initial_value;
     /** @var ?bool
      * @readonly */
     public $autogrow;
@@ -102,6 +108,7 @@ class Si {
 
     static private $key_storage = [
         "autogrow" => "is_bool",
+        "description" => "is_string",
         "disabled" => "is_bool",
         "ifnonempty" => "is_string",
         "internal" => "is_bool",
@@ -159,17 +166,6 @@ class Si {
         if ($this->placeholder === "") {
             $this->placeholder = null;
         }
-        if (isset($j->storage)) {
-            if (is_string($j->storage) && $j->storage !== "") {
-                $this->storage = $j->storage;
-            } else if ($j->storage === false) {
-                $this->storage = "none";
-            } else {
-                trigger_error("setting {$j->name}.storage format error");
-            }
-        } else if ($this->name2 !== null && str_starts_with($this->name2, "/")) {
-            $this->storage = "member." . substr($this->name2, 1);
-        }
         if (isset($j->hashid)) {
             if (is_string($j->hashid) || $j->hashid === false) {
                 $this->hashid = $j->hashid;
@@ -184,45 +180,63 @@ class Si {
                 trigger_error("setting {$j->name}.default_value format error");
             }
         }
-
-        if ($this->type) {
-            $this->_tclass = Sitype::get($conf, $this->type, $this->subtype);
+        if (isset($j->initial_value)) {
+            if (is_int($j->initial_value) || is_string($j->initial_value)) {
+                $this->initial_value = $j->initial_value;
+            } else {
+                trigger_error("setting {$j->name}.initial_value format error");
+            }
         }
-        if ($this->_tclass) {
+
+        if ($this->type
+            && ($this->_tclass = Sitype::get($conf, $this->type, $this->subtype))) {
             $this->_tclass->initialize_si($this);
         }
 
-        $s = $this->storage ?? $this->name;
-        $dot = strpos($s, ".");
-        if ($dot === 3 && str_starts_with($s, "opt")) {
-            $this->storage_type = self::SI_DATA | self::SI_OPT;
-        } else if ($dot === 3 && str_starts_with($s, "ova")) {
-            $this->storage_type = self::SI_VALUE | self::SI_OPT;
-            $this->storage = "opt." . substr($s, 4);
-        } else if ($dot === 3 && str_starts_with($s, "val")) {
-            $this->storage_type = self::SI_VALUE | self::SI_SLICE;
-            $this->storage = substr($s, 4);
-        } else if ($dot === 3 && str_starts_with($s, "dat")) {
-            $this->storage_type = self::SI_DATA | self::SI_SLICE;
-            $this->storage = substr($s, 4);
-        } else if ($dot === 3 && str_starts_with($s, "msg")) {
-            $this->storage_type = self::SI_DATA;
+        $storage_type = null;
+        if (isset($j->storage)) {
+            $s = "none";
+            if (is_string($j->storage) && $j->storage !== "") {
+                $s = $j->storage;
+            } else if ($j->storage !== false) {
+                trigger_error("setting {$j->name}.storage format error");
+            }
+            $dot = strpos($s, ".");
+            if ($dot === 3 && str_starts_with($s, "opt")) {
+                $storage_type = self::SI_DATA | self::SI_OPT;
+            } else if ($dot === 3 && str_starts_with($s, "ova")) {
+                $storage_type = self::SI_VALUE | self::SI_OPT;
+                $s = "opt." . substr($s, 4);
+            } else if ($dot === 3 && str_starts_with($s, "val")) {
+                $storage_type = self::SI_VALUE | self::SI_SLICE;
+                $s = substr($s, 4);
+            } else if ($dot === 3 && str_starts_with($s, "dat")) {
+                $storage_type = self::SI_DATA | self::SI_SLICE;
+                $s = substr($s, 4);
+            } else if ($dot === 3 && str_starts_with($s, "msg")) {
+                $storage_type = self::SI_DATA;
+            } else if ($dot === 6 && str_starts_with($s, "member")) {
+                assert($this->name0 !== null);
+                $storage_type = self::SI_MEMBER;
+                $s = substr($s, 7);
+            } else if ($dot === 6 && str_starts_with($s, "negval")) {
+                $storage_type = self::SI_VALUE | self::SI_SLICE | self::SI_NEGATE;
+                $s = substr($s, 7);
+            } else if ($s === "none") {
+                $storage_type = self::SI_NONE;
+                $s = null;
+            }
             $this->storage = $s;
-        } else if ($dot === 6 && str_starts_with($s, "member")) {
-            assert($this->name0 !== null);
-            $this->storage_type = self::SI_MEMBER;
-            $this->storage = substr($s, 7);
-        } else if ($dot === 6 && str_starts_with($s, "negval")) {
-            $this->storage_type = self::SI_VALUE | self::SI_SLICE | self::SI_NEGATE;
-            $this->storage = substr($s, 7);
-        } else if ($this->storage === "none"
-                   || ($this->storage === null && $this->type === "object")) {
-            $this->storage_type = self::SI_NONE;
-        } else if ($this->_tclass) {
-            $this->storage_type = $this->_tclass->storage_type();
-        } else {
-            $this->storage_type = self::SI_VALUE;
+        } else if ($this->name2 !== null && str_starts_with($this->name2, "/")) {
+            $storage_type = self::SI_MEMBER;
+        } else if ($this->type === "object") {
+            $storage_type = self::SI_NONE;
         }
+        if ($storage_type === null) {
+            $storage_type = $this->_tclass ? $this->_tclass->storage_type() : self::SI_VALUE;
+        }
+        $this->storage_type = $storage_type;
+
         if ($this->storage_type & self::SI_OPT) {
             $is_value = !!($this->storage_type & self::SI_VALUE);
             $oname = substr($this->storage ?? $this->name, 4);
@@ -232,11 +246,6 @@ class Si {
             if (self::$option_is_value[$oname] != $is_value) {
                 error_log("$oname: conflicting option_is_value");
             }
-        }
-
-        // resolve extension
-        if ($this->name_parts !== null && is_string($this->storage)) {
-            $this->storage = $this->_expand_pattern($this->storage, null);
         }
     }
 
@@ -285,6 +294,11 @@ class Si {
         return $r;
     }
 
+    /** @return bool */
+    function has_title() {
+        return $this->title_pattern || $this->title !== $this->name;
+    }
+
     /** @param ?SettingValues $sv
      * @return ?string */
     function title($sv = null) {
@@ -317,7 +331,38 @@ class Si {
 
     /** @return string */
     function storage_name() {
-        return $this->storage ?? $this->name;
+        if ($this->storage === null) {
+            if ($this->storage_type === self::SI_MEMBER) {
+                return substr($this->name2, 1);
+            } else {
+                return $this->name;
+            }
+        } else if ($this->name_parts === null) {
+            return $this->storage;
+        } else {
+            return $this->_expand_pattern($this->storage, null);
+        }
+    }
+
+    /** @return bool */
+    function json_export() {
+        return $this->json_export ?? !$this->internal;
+    }
+
+    /** @return ?string */
+    function json_path() {
+        return ($this->json_export ?? !$this->internal) ? self::json_path_for($this->name) : null;
+    }
+
+    /** @param string $name
+     * @return string */
+    static function json_path_for($name) {
+        $t = "";
+        foreach (explode("/", $name) as $np) {
+            if ($np !== "")
+                $t = JsonParser::path_push($t, $np);
+        }
+        return str_starts_with($t, "\$.") ? substr($t, 2) : $t;
     }
 
     private function _collect_pages() {
@@ -442,10 +487,15 @@ class Si {
             return $v;
         } else if ($this->storage_type === self::SI_DATA
                    && str_starts_with($this->storage ?? "", "msg.")) {
-            return $sv->conf->ims()->default_itext(substr($this->storage, 4));
+            return $sv->conf->ims()->default_itext(substr($this->storage_name(), 4));
         } else {
             return $this->default_value;
         }
+    }
+
+    /** @param SettingValues $sv */
+    function initial_value($sv) {
+        return $this->initial_value ?? $this->default_value($sv);
     }
 
     /** @param mixed $v
@@ -484,8 +534,8 @@ class Si {
     }
 
     /** @param mixed $jv
-     * @return null|int|string */
-    function convert_jsonv($jv, SettingValues $sv) {
+     * @return ?string */
+    function jsonv_reqstr($jv, SettingValues $sv) {
         if ($this->_tclass) {
             if (is_string($jv)) {
                 $jv = trim($jv);
@@ -493,9 +543,9 @@ class Si {
                     $jv = "";
                 }
             }
-            return $this->_tclass->convert_jsonv($jv, $this, $sv);
+            return $this->_tclass->jsonv_reqstr($jv, $this, $sv);
         } else {
-            throw new ErrorException("Don't know how to convert_jsonv {$this->name}.");
+            throw new ErrorException("Don't know how to jsonv_reqstr {$this->name}.");
         }
     }
 
@@ -507,6 +557,11 @@ class Si {
         } else {
             return $v;
         }
+    }
+
+    /** @return mixed */
+    function json_examples(SettingValues $sv) {
+        return $this->_tclass ? $this->_tclass->json_examples($this, $sv) : null;
     }
 
     /** @param Si $xta

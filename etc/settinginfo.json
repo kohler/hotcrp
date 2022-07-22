@@ -299,7 +299,7 @@
     {
         "name": "sf_pc_conflicts", "storage": "sub_pcconf",
         "title": "Collect PC conflicts",
-        "type": "checkbox"
+        "type": "checkbox", "initial_value": 1
     },
     {
         "name": "sf_pc_conflict_types", "storage": "sub_pcconfsel",
@@ -416,7 +416,7 @@
     {
         "name": "review_self_assign", "storage": "pcrev_any",
         "title": "PC can review any paper",
-        "type": "checkbox"
+        "type": "checkbox", "initial_value": 1
     },
     {
         "name": "review_visibility_author", "storage": "au_seerev",
@@ -435,7 +435,7 @@
         "name": "review_visibility_external", "storage": "extrev_view",
         "title": "External reviewers can view reviews",
         "type": "radio",
-        "values": [0, 1, 2], "default_value": 0,
+        "values": [0, 1, 2], "default_value": 0, "initial_value": 2,
         "json_values": ["no", "blind", "yes"]
     },
     {
@@ -460,7 +460,7 @@
         "name": "review_proposal", "storage": "extrev_chairreq",
         "title": "PC proposals for external reviewers",
         "type": "radio",
-        "values": [-1, 0, 1, 2], "default_value": 0,
+        "values": [-1, 0, 1, 2], "default_value": 0, "initial_value": "approval_required_potential_conflict",
         "json_values": ["no", "yes", "approval_required", "approval_required_potential_conflict"]
     },
     {
@@ -784,7 +784,7 @@
         "name": "tag_readonly", "storage": "tag_chair",
         "title": "Read-only tags",
         "type": "taglist", "subtype": "wildcard", "size": 50, "autogrow": true,
-        "parser_class": "Tags_SettingParser"
+        "parser_class": "Tags_SettingParser", "initial_value": "accept reject pcpaper"
     },
     {   "name": "tag_color", "internal": true, "type": "string"   },
     {
