@@ -399,5 +399,14 @@
     {
         "name": "__crosscheck/final-versions-body", "order": 810,
         "crosscheck_function": "FinalVersions_SettingParser::crosscheck"
+    },
+
+    {
+        "name": "json", "order": 2000, "title": "Advanced",
+        "print_function": "JSON_SettingParser::print"
+    },
+    {
+        "name": "__crosscheck/json", "order": -1000,
+        "crosscheck_function": "JSON_SettingParser::crosscheck"
     }
 ]

@@ -1,6 +1,8 @@
 // settings.js -- HotCRP JavaScript library for settings
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
+"use strict";
+
 handle_ui.on("js-settings-au-seerev-tag", function (event) {
     $("#review_visibility_author_3").click(); // AUSEEREV_TAGS
 });
@@ -800,6 +802,824 @@ handle_ui.on("js-settings-decision-new-name", function () {
         this.form.elements[d.id + "/category"].selectedIndex = 0;
     }
 });
+
+
+// JSON contenteditable support
+
+(function () {
+
+// Test if `node` is a BR element
+function is_br(node) {
+    return node.nodeType === 1 && node.tagName === "BR";
+}
+
+// Test if `node` is a text node or inline element
+function is_text_or_inline(node) {
+    return node.nodeType !== 1
+        || node.tagName === "SPAN"
+        || (node.tagName !== "BR" && node.childWidth === 0 && node.childHeight === 0);
+}
+
+// Test if `node` is a descendent of `ancestor`
+function is_descendent(node, ancestor) {
+    var parent = ancestor.parentElement;
+    while (node && node !== ancestor && node !== parent) {
+        node = node.parentElement;
+    }
+    return node === ancestor;
+}
+
+// Test if `ch` is a character code for JSON whitespace
+function isspace(ch) {
+    return ch === 9 || ch === 10 || ch === 13 || ch === 32;
+}
+
+// Test if `ch` is a character code for a JSON delimiter ([\s",:\[\]\{\}])
+function isdelim(ch) {
+    return isspace(ch) || ch === 34 || ch === 44 || ch === 45
+        || ch === 58 || ch === 91 || ch === 93 || ch == 123 || ch === 125;
+}
+
+// Return an object `wsel` representing the current Selection, specialized for
+// element `el`.
+// * Move selection endpoints within `el` down into Text nodes if possible.
+// * `nsel.transfer_text(dst, src, src_min_offset, delta)` shifts pending
+//   selection endpoints from `src` to `dst`, depending on offset. Useful when
+//   splitting or combining Text nodes.
+// * `nsel.trim_newline(el)` trims trailing newlines from `el`, changing the
+//   pending selection as appropriate.
+// * `nsel.refresh()` installs the pending selection.
+function window_selection_inside(el) {
+    var sel = window.getSelection(),
+        selm = [is_descendent(sel.anchorNode, el), is_descendent(sel.focusNode, el)],
+        selmx = selm[0] || selm[1],
+        selx = [sel.anchorNode, sel.anchorOffset, sel.focusNode, sel.focusOffset];
+    function reset(i, el, offset) {
+        selx[i] = el;
+        selx[i + 1] = offset;
+    }
+    function normalize_edge(i) {
+        if (!selm[i >> 1]) {
+            return false;
+        }
+        var changed = false;
+        while (selx[i] && selx[i].nodeType === 1 && selx[i].tagName !== "BR") {
+            var ch = selx[i].childNodes[selx[i + 1]];
+            if (ch && ch.nodeType === 1 && ch.tagName === "BR") {
+                break;
+            }
+            reset(i, ch, 0);
+            changed = true;
+        }
+        return changed;
+    }
+    function refresh() {
+        selmx && sel.setBaseAndExtent(selx[0], selx[1], selx[2], selx[3]);
+    }
+    if (normalize_edge(0) || normalize_edge(2)) {
+        refresh();
+    }
+    function transfer_text(dst, src, src_min_offset, offset_delta) {
+        for (var i = selmx ? 0 : 4; i !== 4; i += 2) {
+            if (selx[i] === src && selx[i + 1] >= src_min_offset) {
+                selx[i] = dst;
+                selx[i + 1] += offset_delta;
+            }
+        }
+    }
+    function render_sel(el, offset) {
+        if (!el) {
+            return "";
+        } else if (el.nodeType === 3) {
+            return el.data.substring(0, offset).concat("⭐️", el.data.substring(offset));
+        } else {
+            var t = ["<", el.tagName.toLowerCase(), ">"], i, n;
+            for (i = 0; i !== el.childNodes.length; ++i) {
+                i === offset && t.push("⭐️");
+                n = el.childNodes[i];
+                if (n.nodeType === 3) {
+                    t.push(n.data);
+                } else if (n.nodeType === 1) {
+                    t.push(n.outerHTML);
+                }
+            }
+            t.push("</", t[1], ">");
+            return t.join("");
+        }
+    }
+    return {
+        modified: selmx,
+        transfer_text: transfer_text,
+        trim_newline: function (el) {
+            var i = el.length - 1;
+            while (i >= 0 && el.data[i] === "\n") {
+                el.deleteData(i, 1);
+                transfer_text(el, el, i + 1, -1);
+                --i;
+            }
+        },
+        reset_modified: function (el, offset) {
+            selm[0] && reset(0, el, offset);
+            selm[1] && reset(2, el, offset);
+        },
+        refresh: refresh,
+        log_anchor: function () {
+            console.log(JSON.stringify(render_sel(selx[0], selx[1])));
+        }
+    };
+}
+
+// Normalize the contents of `mainel` to a sensible format for editing.
+// * Text only.
+// * Every line in a separate <div>.
+// * No trailing newlines within these <div>s.
+// * Blank <div> lines contain <br>.
+function normalize_content_editable(mainel, firstel, lastel) {
+    var ch, next, fix1, fixfresh, nsel = window_selection_inside(mainel);
+
+    function append_line() {
+        var line = document.createElement("div");
+        mainel.insertBefore(line, fix1.nextSibling);
+        fix1 = line;
+        fixfresh = true;
+    }
+
+    function fix_div(ch) {
+        var next, nl;
+        while (ch) {
+            next = ch.nextSibling;
+            if (ch.nodeType === 3 && (nl = ch.data.indexOf("\n")) !== -1) {
+                if (nl !== ch.length - 1) {
+                    next = ch.splitText(nl + 1);
+                    nsel.transfer_text(next, ch, nl + 1, -nl - 1);
+                }
+                nsel.trim_newline(ch);
+                if (fix1 !== ch.parentElement) {
+                    fix1.appendChild(ch);
+                }
+                append_line();
+            } else if (is_text_or_inline(ch)) {
+                if (fix1 !== ch.parentElement) {
+                    fix1.appendChild(ch);
+                    fixfresh = false;
+                }
+            } else if (is_br(ch)) {
+                if (fix1.firstChild && fix1.firstChild !== ch) {
+                    ch.remove();
+                } else if (fix1 !== ch.parentElement) {
+                    fix1.appendChild(ch);
+                }
+                append_line();
+            } else {
+                fixfresh || append_line();
+                ch.remove();
+                fix_div(ch.firstChild);
+                fixfresh || append_line();
+            }
+            ch = next;
+        }
+    }
+
+    ch = firstel || mainel.firstChild;
+    while (ch && ch !== lastel) {
+        if (ch.nodeType !== 1
+            || ch.tagName !== "DIV"
+            || ch.hasAttribute("style")) {
+            var line = document.createElement("div"), first = true;
+            mainel.insertBefore(line, ch);
+            while (ch && (first || is_text_or_inline(ch))) {
+                line.appendChild(ch);
+                ch = line.nextSibling;
+                first = false;
+            }
+            if (ch && is_br(ch)) {
+                line.firstChild ? ch.remove() : line.appendChild(ch);
+            }
+            ch === firstel && (firstel = line);
+            ch = line;
+        }
+        next = ch.nextSibling;
+        fix1 = ch;
+        fixfresh = false;
+        fix_div(ch.firstChild);
+        ch.firstChild || ch.remove();
+        fixfresh && fix1.remove();
+        ch = next;
+    }
+
+    nsel.refresh();
+    return firstel;
+}
+
+
+// Mark the range [p0, p1) as erroneous with `flags` in `errors`,
+// which is a list of points:
+// [0, flag0, p1, flag1, p2, flag2, ...]
+function jsonhl_add_error(errors, p0, p1, flags) {
+    var i, j, x, y;
+    for (j = errors.length - 2; errors[j] > p1; j -= 2) {
+    }
+    if (errors[j] < p1) {
+        j += 2;
+        errors.splice(j, 0, p1, errors[j - 1]);
+    }
+    for (i = j; errors[i] > p0; i -= 2) {
+    }
+    if (errors[i] < p0) {
+        i += 2;
+        j += 2;
+        errors.splice(i, 0, p0, errors[i - 1]);
+    }
+    for (x = i; x !== j; x += 2) {
+        errors[x + 1] |= flags;
+    }
+    for (x = Math.max(i - 2, 0); x < j; x += 2) {
+        y = x;
+        while (y + 2 !== errors.length && errors[x + 1] === errors[y + 3]) {
+            y += 2;
+        }
+        if (y !== x) {
+            errors.splice(x + 1, y - x);
+            j -= y - x;
+        }
+    }
+}
+
+// Move all text nodes from inside `src` to be children of `dst`, inserted before `reference`.
+function jsonhl_move_text(dst, src, reference) {
+    var ch, next;
+    for (ch = src.firstChild; ch; ) {
+        if (ch.nodeType === 1) {
+            jsonhl_move_text(dst, ch, reference);
+            ch = ch.nextSibling;
+        } else if (ch.nodeType === 3) {
+            next = ch.nextSibling;
+            dst.insertBefore(ch, reference);
+            ch = next;
+        }
+    }
+}
+
+// Transform the contents of `lineel` according to `errors`, and fix up selection.
+function jsonhl_install(lineel, errors) {
+    if (lineel.firstChild
+        && lineel.firstChild === lineel.lastChild
+        && lineel.firstChild.nodeType === 1
+        && lineel.firstChild.tagName === "BR") {
+        lineel.firstChild.removeAttribute("class");
+        lineel.firstChild.removeAttribute("style");
+        return;
+    }
+
+    var ei = 0, ch = lineel.firstChild,
+        nsel = window_selection_inside(lineel);
+
+    function ensure_text_length(len) {
+        var sib;
+        if (ch.nodeType !== 3) {
+            jsonhl_move_text(lineel, ch, ch.nextSibling);
+            sib = ch.nextSibling;
+            ch.remove();
+            ch = sib;
+        }
+        while (ch && (sib = ch.nextSibling) && ch.length < len) {
+            if (sib.nodeType !== 3) {
+                jsonhl_move_text(lineel, sib, sib.nextSibling);
+            } else {
+                nsel.transfer_text(ch, sib, 0, ch.length);
+                ch.appendData(sib.data);
+            }
+            sib.remove();
+        }
+        if (ch && ch.length > len) {
+            sib = ch.splitText(len);
+            nsel.transfer_text(sib, ch, len, -len);
+        }
+    }
+
+    // split & combine text nodes, add error spans
+    while (ch) {
+        var tp = errors[ei],
+            wc = errors[ei + 1] ? "is-error" : "",
+            ep = errors[ei + 2] || Infinity;
+        if (ch.nodeType === 1
+            && ch.tagName === "SPAN"
+            && ch.childNodes.length === 1
+            && ch.firstChild.nodeType === 3
+            && ch.firstChild.length === ep - tp
+            && !ch.hasAttribute("style")
+            && wc !== "") {
+            ch.className = wc;
+        } else {
+            ensure_text_length(ep - tp);
+            if (wc !== "") {
+                var es = document.createElement("span");
+                es.className = wc;
+                lineel.insertBefore(es, ch);
+                es.appendChild(ch);
+                ch = es;
+            }
+        }
+        ei += 2;
+        ch = ch.nextSibling;
+    }
+
+    if (lineel.firstChild === null) {
+        lineel.appendChild(document.createElement("br"));
+        nsel.reset_modified(lineel, 0);
+    }
+
+    nsel.refresh();
+}
+
+
+/* 0/a -- end
+   1/b -- initial         -- V
+   2/c -- after `[`       -- V or ]
+   3/d -- after `[V,`     -- V
+   4/e -- after `{"":`    -- V
+   5/f -- after `{"":V,`  -- ""
+   6/g -- after `{`       -- "" or }
+   7/h -- after `[V`      -- , or ] (=== 3 + 4)
+   8/i -- after `{""`     -- :
+   9/j -- after `{"":V`   -- , or } (=== 5 + 4) */
+
+var jsonhl_nextcst = [0, 0, 7, 7, 9, 8, 8, 7, 9, 9];
+
+function jsonhl_line(lineel, st) {
+    var t = lineel.textContent, p = 0, n = t.length, ch,
+        cst = st.length ? st.charCodeAt(st.length - 1) - 97 : 1,
+        errors = [0, 0], node;
+    st = st.length ? st.substring(0, st.length - 1) : "";
+
+    function push_state(stx) {
+        if (st.length !== 0 || stx !== 0) {
+            st += String.fromCharCode(stx + 97);
+        }
+    }
+
+    function pop_state_until(s0, s1) {
+        var i = st.length - 1, ch, ok = cst === s0 || cst === s1;
+        if (!ok) {
+            --i;
+            while (i >= 0
+                   && i >= st.length - 3
+                   && (ch = st.charCodeAt(i) - 97) !== s0
+                   && ch !== s1) {
+                --i;
+            }
+            if (i < 0 || i < st.length - 3) {
+                i = 0;
+            }
+        }
+        if (i >= 0 && st !== "") {
+            cst = st.charCodeAt(i) - 97;
+            st = st.substring(0, i);
+        } else {
+            cst = 9;
+            st = "";
+        }
+        return ok;
+    }
+
+    function check_identifier(id) {
+        var p0 = p, ch;
+        for (++p; p !== n && t.charCodeAt(p) === id.charCodeAt(p - p0); ++p) {
+        }
+        if (p - p0 < id.length
+            || (p !== n && !isdelim(t.charCodeAt(p)))
+            || cst < 1
+            || cst > 4) {
+            jsonhl_add_error(errors, p0, p, 1);
+        } else {
+            cst = jsonhl_nextcst[cst];
+        }
+    }
+
+    function check_number() {
+        var p0 = p, p1, c, c0, ok;
+        c = t.charCodeAt(p);
+        ok = cst >= 1 && cst <= 4 && c !== 46;
+        if (c == 45) { // `-`
+            ++p;
+            c = t.charCodeAt(p);
+        }
+        if (c >= 48 && c <= 57) { // `0`-`9`
+            c0 = c;
+            for (++p; (c = t.charCodeAt(p)) >= 48 && c <= 57; ++p) {
+                if (c0 === 48)
+                    ok = false;
+            }
+        } else {
+            ok = false;
+        }
+        if (c === 46) { // `.`
+            ++p;
+            c = t.charCodeAt(p);
+            if (c >= 48 && c <= 57) {
+                for (++p; (c = t.charCodeAt(p)) >= 48 && c <= 57; ++p) {
+                }
+            } else {
+                ok = false;
+            }
+        }
+        if (c === 69 || c === 101) { // `E` `e`
+            ++p;
+            c = t.charCodeAt(p);
+            if (c === 43 || c === 45) { // `+` `-`
+                ++p;
+                c = t.charCodeAt(p);
+            }
+            if (c >= 48 && c <= 57) {
+                for (++p; (c = t.charCodeAt(p)) >= 48 && c <= 57; ++p) {
+                }
+            } else {
+                ok = false;
+            }
+        }
+        if (!ok) {
+            jsonhl_add_error(errors, p0, p, 1);
+        }
+        cst = jsonhl_nextcst[cst];
+    }
+
+    function check_string() {
+        var p0 = p, i, c, ok = false;
+        for (++p; p !== n; ++p) {
+            c = t.charCodeAt(p);
+            if (c === 34) { // `"`
+                ++p;
+                ok = true;
+                break;
+            } else if (c === 92 && p + 1 !== n) { // `\`
+                ++p;
+                c = t.charCodeAt(p);
+                if (c === 117) { // `u`
+                    for (i = 0; i !== 4 && p + 1 !== n; ++i) {
+                        ++p;
+                        c = t.charCodeAt(p) | 0x20;
+                        if (c < 48
+                            || (c > 57 && c < 97)
+                            || c > 102) {
+                            jsonhl_add_error(errors, p - i - 2, p, 1);
+                            --p;
+                            break;
+                        }
+                    }
+                } else if (c !== 34 && c !== 47 && c !== 92       // `"` `/` `\`
+                           && c !== 98 && c !== 102 && c !== 110  // `b` `f` `n`
+                           && c !== 114 && c !== 116) {           // `r` `t`
+                    jsonhl_add_error(errors, p - 1, p + 1, 1);
+                }
+            } else if (c < 32 || c === 0x2028 || c === 0x2029) { // ctl/LT
+                jsonhl_add_error(errors, p, p + 1, 1);
+            }
+        }
+        if (!ok || cst < 1 || cst > 6) {
+            jsonhl_add_error(errors, p0, p, 1);
+        }
+        cst = jsonhl_nextcst[cst];
+    }
+
+    function check_invalid() {
+        var p0 = p, ch;
+        for (++p; p !== n && !isdelim(t.charCodeAt(p)); ++p) {
+        }
+        jsonhl_add_error(errors, p0, p, 1);
+    }
+
+
+    main_loop:
+    while (true) {
+        while (p !== n && isspace((ch = t.charCodeAt(p)))) {
+            ++p;
+        }
+        if (p === n) {
+            break;
+        } else if (ch === 34) { // `"`
+            check_string();
+        } else if (ch >= 45 && ch <= 57 && ch !== 47) { // `-`, `.`, `0`-`9`
+            check_number();
+        } else if (ch === 44) { // `,`
+            if (cst === 7 || cst === 9) {
+                cst -= 4;
+            } else {
+                jsonhl_add_error(errors, p, p + 1, 1);
+            }
+            ++p;
+        } else if (ch === 58) { // `:`
+            if (cst !== 8) {
+                jsonhl_add_error(errors, p, p + 1, 1);
+            }
+            if (cst === 4 || cst === 5 || cst === 6 || cst === 8 || cst === 9) {
+                cst = 4;
+            }
+            ++p;
+        } else if (ch === 91) { // `[`
+            if (cst >= 1 && cst <= 4) {
+                push_state(jsonhl_nextcst[cst]);
+            } else {
+                jsonhl_add_error(errors, p, p + 1, 1);
+                push_state(cst);
+            }
+            cst = 2;
+            ++p;
+        } else if (ch === 93) { // `]`
+            pop_state_until(2, 7) || jsonhl_add_error(errors, p, p + 1, 1);
+            ++p;
+        } else if (ch === 123) { // `{`
+            if (cst >= 1 && cst <= 4) {
+                push_state(jsonhl_nextcst[cst]);
+            } else {
+                jsonhl_add_error(errors, p, p + 1, 1);
+                push_state(cst);
+            }
+            cst = 6;
+            ++p;
+        } else if (ch === 125) { // `}`
+            pop_state_until(6, 9) || jsonhl_add_error(errors, p, p + 1, 1);
+            ++p;
+        } else if (ch === 102) { // `f`
+            check_identifier("false");
+        } else if (ch === 110) { // `n`
+            check_identifier("null");
+        } else if (ch === 116) { // `t`
+            check_identifier("true");
+        } else { // invalid
+            check_invalid();
+        }
+    }
+
+
+    jsonhl_install(lineel, errors);
+
+    if (cst === 0) {
+        return "a";
+    } else {
+        return st + String.fromCharCode(cst + 97);
+    }
+}
+
+
+function make_json_validate() {
+    var mainel = this,
+        states = [""], lineels = [null], texts = [""],
+        state_redisplay = null, need_normalize = true, rehighlight_queued = false;
+
+    function node_lineno(node) {
+        while (node && node.parentElement !== mainel) {
+            node = node.parentElement;
+        }
+        return node ? Array.prototype.indexOf.call(mainel.childNodes, node) : -1;
+    }
+
+    function rehighlight() {
+        try {
+            var i, end_index, lineel, k, st, st0, x;
+            if (need_normalize) {
+                normalize_content_editable(mainel);
+                lineel = mainel.firstChild;
+                state_redisplay = null;
+                need_normalize = false;
+            }
+            state_redisplay = state_redisplay || [0, Infinity];
+            i = state_redisplay[0];
+            end_index = state_redisplay[1];
+            lineel = mainel.childNodes[i];
+            st = st0 = states[i];
+            while (lineel !== null
+                   && (i < end_index
+                       || states[i] !== st
+                       || lineels[i] !== lineel)) {
+                if (lineel.nodeType !== 1 || lineel.tagName !== "DIV") {
+                    lineel = normalize_content_editable(mainel, lineel, lineel.nextSibling);
+                }
+                if (lineels[i] !== lineel && lineels[i]) {
+                    // incremental line insertions and deletions
+                    if ((k = node_lineno(lineels[i])) > i) {
+                        x = new Array(k - i);
+                        states.splice(i, 0, ...x);
+                        lineels.splice(i, 0, ...x);
+                        texts.splice(i, 0, ...x);
+                    } else if ((k = lineels.indexOf(lineel)) > i) {
+                        states.splice(i, k - i);
+                        lineels.splice(i, k - i);
+                        texts.splice(i, k - i);
+                    }
+                }
+                states[i] = st;
+                lineels[i] = lineel;
+                st = jsonhl_line(lineel, st);
+                texts[i] = lineel.textContent + "\n";
+                ++i;
+                lineel = lineel.nextSibling;
+            }
+            if (lineel == null) {
+                states.splice(i);
+                lineels.splice(i);
+                texts.splice(i);
+            }
+            //state_redisplay.push(i, st, states[i - 1]);
+            //console.log(state_redisplay);
+            if ((x = mainel.getAttribute("data-reflect-text"))
+                && (x = document.getElementById(x))) {
+                x.value = texts.join("");
+                form_highlight(x.form, x);
+            }
+            state_redisplay = null;
+            rehighlight_queued = false;
+        } catch (err) {
+            console.trace(err);
+        }
+    }
+
+    function redisplay_ranges(ranges) {
+        var i, ln;
+        state_redisplay = state_redisplay || [Infinity, 0];
+        for (i = 0; i !== ranges.length; ++i) {
+            if ((ln = node_lineno(ranges[i].startContainer)) >= 0)
+                state_redisplay[0] = Math.min(state_redisplay[0], ln);
+            if ((ln = node_lineno(ranges[i].endContainer)) >= 0)
+                state_redisplay[1] = Math.max(state_redisplay[1], ln + 1);
+        }
+    }
+
+    function beforeinput(e) {
+        if (e.inputType.startsWith("format") || e.inputType.startsWith("history") /*🙁*/) {
+            e.preventDefault();
+            return;
+        }
+        if (e.dataTransfer) {
+            need_normalize = true;
+        }
+        redisplay_ranges(e.getTargetRanges());
+    }
+
+    function input(e) {
+        redisplay_ranges(e.getTargetRanges());
+        if (!rehighlight_queued) {
+            queueMicrotask(rehighlight);
+            rehighlight_queued = true;
+        }
+    }
+
+    function selectionchange(e) {
+        var sel = window.getSelection(), lineno, st;
+        if (!sel.isCollapsed
+            || !sel.anchorNode
+            || (lineno = node_lineno(sel.anchorNode)) < 0)
+            return;
+        var path = [], i, s, m, lim;
+        for (i = lineno; i > 0 && (st = states[i]) !== "j"; --i) {
+            s = st.endsWith("f") || st.endsWith("g") ? texts[i].trim() : "";
+            if (s === "") {
+                continue;
+            }
+            m = s.match(/^\"(?:[^\\\"]|\\[\/\\bfnrt\"]|\\u[0-9a-fA-F]{4})+\"/);
+            if (!m) {
+                return;
+            }
+            path.push(JSON.parse(m[0]));
+            if (st.length === 1) {
+                break;
+            } else if (st[st.length - 2] === "h") {
+                // in a list
+                path.push("#");
+                lim = st.length - 1;
+            } else {
+                lim = st.length;
+            }
+            while (i > 1 && states[i - 1].length >= lim) {
+                --i;
+            }
+        }
+        path.reverse();
+        var spath = JSON.stringify(path);
+        if (mainel.getAttribute("data-caret-path") !== spath) {
+            mainel.setAttribute("data-caret-path", spath);
+            mainel.dispatchEvent(new CustomEvent("jsonpathchange", {detail: path}));
+        }
+    }
+
+    mainel.addEventListener("beforeinput", beforeinput);
+    mainel.addEventListener("input", input);
+    document.addEventListener("selectionchange", selectionchange);
+    queueMicrotask(rehighlight);
+}
+
+demand_load.settingdescriptions = demand_load.make(function (resolve, reject) {
+    $.get(hoturl("api/settingdescriptions"), null, function (v) {
+        var sd = null, i, e;
+        if (v && v.ok && v.setting_descriptions) {
+            sd = {"$order": []};
+            for (i = 0; i !== v.setting_descriptions.length; ++i) {
+                e = v.setting_descriptions[i];
+                sd[e.name] = e;
+                sd.$order.push(e);
+            }
+        }
+        (sd ? resolve : reject)(sd);
+    });
+});
+
+function settings_jpath_head(el) {
+    var path = el.getAttribute("data-caret-path");
+    try {
+        if (path
+            && (path = JSON.parse(path))
+            && path.length > 0
+            && !path[0].startsWith("$"))
+            return path[0];
+    } catch (err) {
+    }
+    return null;
+}
+
+function settings_jsonpathchange(evt) {
+    var head = (evt.detail || [])[0];
+    if (!head || head.startsWith("$")) {
+        if (this.hasAttribute("data-caret-path-head")) {
+            this.removeAttribute("data-caret-path-head");
+            $(".settings-json-panel-info").empty();
+        }
+    } else if (head !== this.getAttribute("data-caret-path-head")) {
+        this.setAttribute("data-caret-path-head", head);
+        demand_load.settingdescriptions().then(make_settings_descriptor(this, head));
+    }
+}
+
+function make_settings_descriptor(mainel, head) {
+    return function (sd) {
+        if (settings_jpath_head(mainel) === head)
+            settings_describe(sd[head]);
+    };
+}
+
+function settings_describe(d) {
+    var $i = $(".settings-json-panel-info"), e, es, i, sep;
+    $i.empty();
+    if (!d) {
+        return;
+    }
+    if (d.title) {
+        e = document.createElement("h3");
+        e.className = "form-h mb-1";
+        render_text.onto(e, "f", d.title);
+        $i.append(e);
+    }
+    e = document.createElement("h4");
+    e.className = "form-h settings-jpath";
+    e.append(d.name);
+    $i.append(e);
+    if (d.values) {
+        es = ["Value: "];
+        if (Array.isArray(d.values)) {
+            sep = d.values.length <= 2 ? " or " : ", ";
+            d.values.length > 2 && es.push("one of ");
+            for (i = 0; i !== d.values.length; ++i) {
+                e = document.createElement("samp");
+                e.append(JSON.stringify(d.values[i]));
+                i === 0 || es.push(sep);
+                es.push(e);
+            }
+        } else {
+            es.push(d.values);
+        }
+        e = document.createElement("p");
+        e.append(...es);
+        $i.append(e);
+    }
+    if (d.default_value != null && d.default_value !== "") {
+        es = ["Default: "];
+        if (typeof d.default_value !== "string"
+            || (d.values && Array.isArray(d.values) && d.values.indexOf(d.default_value) >= 0)) {
+            e = document.createElement("samp");
+            e.append(JSON.stringify(d.default_value));
+            es.push(e);
+        } else {
+            es.push("“", d.default_value, "”");
+        }
+        e = document.createElement("p");
+        e.className = "pw";
+        e.append(...es);
+        $i.append(e);
+    }
+    if (d.description) {
+        e = document.createElement("div");
+        e.className = "w-text mb-4";
+        render_text.onto(e, "f", d.description);
+        $i.append(e);
+    }
+}
+
+$(function () {
+    $(".js-settings-json").each(function () {
+        make_json_validate.call(this);
+        this.addEventListener("jsonpathchange", settings_jsonpathchange);
+    });
+});
+
+})();
 
 
 hotcrp.settings = {

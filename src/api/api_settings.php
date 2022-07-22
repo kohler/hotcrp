@@ -27,4 +27,36 @@ class Settings_API {
         $content["settings"] = $sv->json_allv();
         return new JsonResult($content);
     }
+
+    static function descriptions(Contact $user, Qrequest $qreq) {
+        $sv = new SettingValues($user);
+        if (!$sv->viewable_by_user()) {
+            return JsonResult::make_permission_error();
+        }
+        $m = [];
+        foreach ($sv->conf->si_set()->top_list() as $si) {
+            if ($si->json_export()
+                && ($si->has_title() || $si->description)) {
+                $o = ["name" => $si->name];
+                if (($t = $si->title($sv))) {
+                    $o["title"] = "<0>{$t}";
+                }
+                $o["type"] = $si->type;
+                if ($si->subtype) {
+                    $o["subtype"] = $si->subtype;
+                }
+                if (($je = $si->json_examples($sv)) !== null) {
+                    $o["values"] = $je;
+                }
+                if (($dv = $si->initial_value($sv)) !== null) {
+                    $o["default_value"] = $si->base_unparse_jsonv($dv, $sv);
+                }
+                if ($si->description) {
+                    $o["description"] = Ftext::ensure($si->description, 0);
+                }
+                $m[] = $o;
+            }
+        }
+        return new JsonResult(["ok" => true, "setting_descriptions" => $m]);
+    }
 }

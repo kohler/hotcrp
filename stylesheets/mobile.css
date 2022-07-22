@@ -199,6 +199,9 @@ td.pl.pl_title, td.pl.pl_text {
 .rfd1, .rfd2 {
 	max-width: none;
 }
+.settings-json-panel-info {
+	display: none;
+}
 }
 @media screen and (max-width: 640px) {
 .revcard-render {

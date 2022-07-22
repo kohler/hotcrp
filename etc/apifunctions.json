@@ -153,6 +153,10 @@
         "function": "Tags_API::run"
     },
     {
+        "name": "settingdescriptions", "get": true,
+        "function": "Settings_API::descriptions"
+    },
+    {
         "name": "settings", "get": true, "post": true,
         "function": "Settings_API::run"
     },

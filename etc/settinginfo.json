@@ -913,6 +913,12 @@
         "internal": true, "parser_class": "Track_SettingParser"
     },
 
+    {
+        "name": "json_settings", "storage": "none", "json_export": false,
+        "parser_class": "JSON_SettingParser",
+        "parse_order": -1000000
+    },
+
     {   "name": "extrev_hard_0", "merge": true, "storage": "extrev_hard"   },
     {   "name": "extrev_soft_0", "merge": true, "storage": "extrev_soft"   },
     {   "name": "pcrev_hard_0", "merge": true, "storage": "pcrev_hard"   },

@@ -425,6 +425,7 @@ src/settings/s_basics.php
 src/settings/s_decision.php
 src/settings/s_decisionvisibility.php
 src/settings/s_finalversions.php
+src/settings/s_json.php
 src/settings/s_messages.php
 src/settings/s_options.php
 src/settings/s_response.php

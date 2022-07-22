@@ -111,7 +111,7 @@ table {
 tr, textarea, select {
 	vertical-align: baseline;
 }
-input, textarea, select, button, .btn {
+input, textarea, .textarea, select, button, .btn {
 	font-family: inherit;
 	font-size: 100%;
 	line-height: 1.35;
@@ -131,7 +131,8 @@ dl.dd {
 a > img {
 	border: none;
 }
-input[type=text], input[type=email], input[type=password], input[type=date], textarea {
+input[type=text], input[type=email], input[type=password], input[type=date],
+textarea, .textarea {
 	border: 1px solid silver;
 	padding: 3px 5px;
 }
@@ -1718,6 +1719,21 @@ th.settings-simplehead {
 	padding: 0 2px;
 	vertical-align: 1px;
 	color: #333333;
+}
+.settings-json-panels {
+	display: flex;
+}
+.settings-json-panel-edit {
+	flex: 1 1 auto;
+}
+.settings-json-panel-info {
+	max-height: 100vh;
+	flex: 0 0 40%;
+	padding-left: 2rem;
+	position: sticky;
+	top: 1rem;
+	overflow-y: auto;
+	font-size: smaller;
 }
 
 .form-sep {

@@ -1,6 +1,7 @@
 // script.js -- HotCRP JavaScript library
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
+"use strict";
 var siteinfo, hotcrp, hotcrp_status;
 
 function $$(id) {
@@ -1503,6 +1504,7 @@ $(document).on("click", ".ui, .uic", handle_ui);
 $(document).on("change", ".uich", handle_ui);
 $(document).on("keydown", ".uikd", handle_ui);
 $(document).on("input", ".uii", handle_ui);
+$(document).on("beforeinput", ".ui-beforeinput", handle_ui);
 $(document).on("fold", ".ui-fold", handle_ui);
 $(document).on("unfold", ".ui-unfold", handle_ui);
 
