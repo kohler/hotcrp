@@ -637,7 +637,7 @@
         "name_pattern": "rf/$/values/$$/symbol",
         "title": "Review field value symbol",
         "title_pattern": "‘${sv rf/$/values/$$/name}’ symbol",
-        "type": "simplestring", "required": true, "size": 3,
+        "type": "simplestring", "subtype": "allow_int", "required": true, "size": 3,
         "hashid": "rf/$/values_text"
     },
     {
@@ -880,7 +880,7 @@
     {
         "name_pattern": "track/$/tag",
         "title": "Track tag",
-        "type": "tag", "size": 20, "autogrow": true
+        "type": "tag", "subtype": "allow_reserved", "size": 20, "autogrow": true
     },
     {
         "name_pattern": "track/$/title", "internal": true, "parser_class": "Track_SettingParser"

@@ -17,8 +17,7 @@ class Track_Setting {
     public $j;
 
     function __construct(Track $tr, $j) {
-        $this->id = $tr->is_default ? "none" : $tr->tag;
-        $this->tag = $tr->tag;
+        $this->id = $this->tag = $tr->is_default ? "any" : $tr->tag;
         $this->is_default = $tr->is_default;
         $this->is_new = $this->id === "";
         $this->j = $j ?? (object) [];
@@ -126,7 +125,7 @@ class Track_SettingParser extends SettingParser {
             $sv->set_oldv($si, new Track_Setting(new Track, null));
         } else if (count($si->name_parts) === 3 && $si->name2 === "/title") {
             $id = $sv->reqstr("{$si->name0}{$si->name1}/id") ?? "";
-            if ($id === "none") {
+            if ($id === "any") {
                 $sv->set_oldv($si->name, "Default track");
             } else if (($tag = $sv->vstr("{$si->name0}{$si->name1}/tag") ?? "") !== "") {
                 $sv->set_oldv($si->name, "Track ‘{$tag}’");
@@ -237,8 +236,7 @@ class Track_SettingParser extends SettingParser {
         $trx = $sv->oldv("track/{$ctr}");
         echo '<div id="track/', $ctr, '" class="mg has-fold ',
             $trx->is_new ? "fold3o" : "fold3c", '">',
-            Ht::hidden("track/{$ctr}/id",
-                $trx->is_default ? "none" : ($trx->is_new ? "new" : $trx->tag),
+            Ht::hidden("track/{$ctr}/id", $trx->tag,
                 ["data-default-value" => $trx->is_new ? "" : null]),
             '<div class="settings-tracks"><div class="entryg">';
         if ($trx->is_default) {
@@ -265,7 +263,7 @@ class Track_SettingParser extends SettingParser {
 
     private function print_cross_track(SettingValues $sv) {
         echo "<div class=\"settings-tracks\"><div class=\"entryg\">General permissions:</div>";
-        $this->ctr = $sv->search_oblist("track", "id", "none");
+        $this->ctr = $sv->search_oblist("track", "id", "any");
         $this->print_perm($sv, "viewtracker", "Who can see the <a href=\"" . $sv->conf->hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", self::PERM_DEFAULT_UNFOLDED);
         echo "</div>\n\n";
     }
@@ -364,8 +362,9 @@ class Track_SettingParser extends SettingParser {
                 if (!$this->cur_trx->is_default) {
                     $sv->error_if_missing("track/{$ctr}/tag");
                     $sv->error_if_duplicate_member("track", $ctr, "tag", "Track tag");
-                    if ($this->cur_trx->tag === "_") {
-                        $sv->error_at("track/{$ctr}/tag", "<0>Track name ‘_’ is reserved");
+                    if ($this->cur_trx->tag === "_"
+                        || !$sv->tagger()->check($this->cur_trx->tag, Tagger::NOVALUE)) {
+                        $sv->error_at("track/{$ctr}/tag", "<0>Track name ‘{$this->cur_trx->tag}’ is reserved");
                     }
                 }
                 foreach ($sv->req_member_list("track/{$ctr}/perm") as $permsi) {
@@ -395,7 +394,7 @@ class Track_SettingParser extends SettingParser {
                 if (($id = $sv->reqstr("track/{$ctr}/id")) === "") {
                     continue;
                 }
-                $tr = $conf->track($id === "none" ? "" : $id);
+                $tr = $conf->track($id === "any" ? "" : $id);
                 if ($tr->perm[Track::VIEWPDF]
                     && $tr->perm[Track::VIEWPDF] !== $tr->perm[Track::UNASSREV]
                     && $tr->perm[Track::UNASSREV] !== "+none"
