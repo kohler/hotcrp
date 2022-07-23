@@ -1736,6 +1736,23 @@ th.settings-simplehead {
 	font-size: smaller;
 }
 
+.is-error-part {
+	background-color: #fff0f0;
+	text-decoration-line: underline;
+	text-decoration-style: wavy;
+	text-decoration-thickness: 2px;
+	text-underline-position: under;
+	text-decoration-color: red;
+}
+.is-warning-part {
+	background-color: #fffff0;
+	text-decoration-line: underline;
+	text-decoration-style: wavy;
+	text-decoration-thickness: 2px;
+	text-underline-position: under;
+	text-decoration-color: #c07700;
+}
+
 .form-sep {
 	margin-top: 2.25rem;
 	margin-bottom: 0;

@@ -1100,8 +1100,11 @@ function jsonhl_install(lineel, errors) {
     // split & combine text nodes, add error spans
     while (ch) {
         var tp = errors[ei],
-            wc = errors[ei + 1] ? "is-error" : "",
-            ep = errors[ei + 2] || Infinity;
+            ep = errors[ei + 2] || Infinity,
+            wc = "";
+        if (errors[ei + 1]) {
+            wc = errors[ei + 1] & 2 ? "is-error-part" : "is-warning-part";
+        }
         if (ch.nodeType === 1
             && ch.tagName === "SPAN"
             && ch.childNodes.length === 1
@@ -1130,6 +1133,94 @@ function jsonhl_install(lineel, errors) {
     }
 
     nsel.refresh();
+}
+
+function make_utf16tf(text) {
+    var ipos = 0, opos = 0, delta = 0, map = [0, 0],
+        re = /[\u0080-\uDBFF\uE000-\uFFFF]/g, m, i, ch;
+    while ((m = re.exec(text))) {
+        ipos += re.lastIndex - 1 - opos;
+        opos = re.lastIndex;
+        ch = m[0].charCodeAt(0)
+        if (ch < 0x800) { // two bytes = one character
+            --delta;
+            map.push(ipos + 2, delta);
+            ipos += 2;
+        } else if (ch < 0xD800 || ch >= 0xE000) { // three bytes = one character
+            delta -= 2;
+            map.push(ipos + 3, delta);
+            ipos += 3;
+        } else { // four bytes = two characters
+            delta -= 2;
+            map.push(ipos + 4, delta);
+            ipos += 4;
+            ++opos;
+        }
+    }
+    return make_utf16tf_finish(map);
+}
+
+function make_utf16tf_finish(map) {
+    return function (pos) {
+        var ei = 0, n = map.length;
+        while (ei !== n && map[ei] < pos) {
+            ei += 2;
+        }
+        return pos + map[ei - 1];
+    };
+}
+
+function jsonhl_add_error_ranges(errors, ranges, text_function) {
+    if ((ranges || "") === "") {
+        return;
+    }
+    var utf16tf = ranges.startsWith("utf8 ") ? make_utf16tf(text_function()) : null,
+        regex = /(\d+)-(\d+):(\d+)/g, m;
+    while ((m = regex.exec(ranges)) !== null) {
+        if (utf16tf) {
+            jsonhl_add_error(errors, utf16tf(+m[1]), utf16tf(+m[2]), +m[3]);
+        } else {
+            jsonhl_add_error(errors, +m[1], +m[2], +m[3]);
+        }
+    }
+}
+
+function jsonhl_transfer_ranges(mainel) {
+    var errors = [0, 0], ranges = mainel.getAttribute("data-highlight-ranges");
+    if (ranges !== "") {
+        jsonhl_add_error_ranges(errors, ranges, function () {
+            var t = [], el = mainel.firstChild;
+            while (el) {
+                t.push(el.textContent, "\n");
+                el = el.nextSibling;
+            }
+            return t.join("");
+        });
+        mainel.removeAttribute("data-highlight-ranges");
+    }
+    var ei = 0, el = mainel.firstChild, tp = 0, len;
+    while (el && ei !== errors.length) {
+        while (ei !== errors.length && errors[ei + 2] < tp) {
+            ei += 2;
+        }
+        len = el.textContent.length + 1;
+        var rs = [];
+        while (ei !== errors.length && errors[ei] <= tp + len) {
+            if (errors[ei + 1]) {
+                var p1 = Math.max(0, errors[ei] - tp),
+                    p2 = Math.min(len, (errors[ei + 2] || Infinity) - tp);
+                rs.push("".concat(p1, "-", p2, ":", errors[ei + 1]));
+            }
+            ei += 2;
+        }
+        if (rs.length) {
+            el.setAttribute("data-highlight-ranges", rs.join(" "));
+        } else {
+            el.removeAttribute("data-highlight-ranges");
+        }
+        tp += len;
+        el = el.nextSibling;
+    }
 }
 
 
@@ -1190,7 +1281,7 @@ function jsonhl_line(lineel, st) {
             || (p !== n && !isdelim(t.charCodeAt(p)))
             || cst < 1
             || cst > 4) {
-            jsonhl_add_error(errors, p0, p, 1);
+            jsonhl_add_error(errors, p0, p, 2);
         } else {
             cst = jsonhl_nextcst[cst];
         }
@@ -1238,7 +1329,7 @@ function jsonhl_line(lineel, st) {
             }
         }
         if (!ok) {
-            jsonhl_add_error(errors, p0, p, 1);
+            jsonhl_add_error(errors, p0, p, 2);
         }
         cst = jsonhl_nextcst[cst];
     }
@@ -1261,7 +1352,7 @@ function jsonhl_line(lineel, st) {
                         if (c < 48
                             || (c > 57 && c < 97)
                             || c > 102) {
-                            jsonhl_add_error(errors, p - i - 2, p, 1);
+                            jsonhl_add_error(errors, p - i - 2, p, 2);
                             --p;
                             break;
                         }
@@ -1269,14 +1360,14 @@ function jsonhl_line(lineel, st) {
                 } else if (c !== 34 && c !== 47 && c !== 92       // `"` `/` `\`
                            && c !== 98 && c !== 102 && c !== 110  // `b` `f` `n`
                            && c !== 114 && c !== 116) {           // `r` `t`
-                    jsonhl_add_error(errors, p - 1, p + 1, 1);
+                    jsonhl_add_error(errors, p - 1, p + 1, 2);
                 }
             } else if (c < 32 || c === 0x2028 || c === 0x2029) { // ctl/LT
-                jsonhl_add_error(errors, p, p + 1, 1);
+                jsonhl_add_error(errors, p, p + 1, 2);
             }
         }
         if (!ok || cst < 1 || cst > 6) {
-            jsonhl_add_error(errors, p0, p, 1);
+            jsonhl_add_error(errors, p0, p, 2);
         }
         cst = jsonhl_nextcst[cst];
     }
@@ -1285,7 +1376,7 @@ function jsonhl_line(lineel, st) {
         var p0 = p, ch;
         for (++p; p !== n && !isdelim(t.charCodeAt(p)); ++p) {
         }
-        jsonhl_add_error(errors, p0, p, 1);
+        jsonhl_add_error(errors, p0, p, 2);
     }
 
 
@@ -1304,12 +1395,12 @@ function jsonhl_line(lineel, st) {
             if (cst === 7 || cst === 9) {
                 cst -= 4;
             } else {
-                jsonhl_add_error(errors, p, p + 1, 1);
+                jsonhl_add_error(errors, p, p + 1, 2);
             }
             ++p;
         } else if (ch === 58) { // `:`
             if (cst !== 8) {
-                jsonhl_add_error(errors, p, p + 1, 1);
+                jsonhl_add_error(errors, p, p + 1, 2);
             }
             if (cst === 4 || cst === 5 || cst === 6 || cst === 8 || cst === 9) {
                 cst = 4;
@@ -1319,25 +1410,25 @@ function jsonhl_line(lineel, st) {
             if (cst >= 1 && cst <= 4) {
                 push_state(jsonhl_nextcst[cst]);
             } else {
-                jsonhl_add_error(errors, p, p + 1, 1);
+                jsonhl_add_error(errors, p, p + 1, 2);
                 push_state(cst);
             }
             cst = 2;
             ++p;
         } else if (ch === 93) { // `]`
-            pop_state_until(2, 7) || jsonhl_add_error(errors, p, p + 1, 1);
+            pop_state_until(2, 7) || jsonhl_add_error(errors, p, p + 1, 2);
             ++p;
         } else if (ch === 123) { // `{`
             if (cst >= 1 && cst <= 4) {
                 push_state(jsonhl_nextcst[cst]);
             } else {
-                jsonhl_add_error(errors, p, p + 1, 1);
+                jsonhl_add_error(errors, p, p + 1, 2);
                 push_state(cst);
             }
             cst = 6;
             ++p;
         } else if (ch === 125) { // `}`
-            pop_state_until(6, 9) || jsonhl_add_error(errors, p, p + 1, 1);
+            pop_state_until(6, 9) || jsonhl_add_error(errors, p, p + 1, 2);
             ++p;
         } else if (ch === 102) { // `f`
             check_identifier("false");
@@ -1351,6 +1442,9 @@ function jsonhl_line(lineel, st) {
     }
 
 
+    jsonhl_add_error_ranges(errors, lineel.getAttribute("data-highlight-ranges"), function () {
+        return lineel.textContent + "\n";
+    });
     jsonhl_install(lineel, errors);
 
     if (cst === 0) {
@@ -1364,7 +1458,7 @@ function jsonhl_line(lineel, st) {
 function make_json_validate() {
     var mainel = this,
         states = [""], lineels = [null], texts = [""],
-        state_redisplay = null, need_normalize = true, rehighlight_queued = false;
+        state_redisplay = null, normalization = -1, rehighlight_queued = false;
 
     function node_lineno(node) {
         while (node && node.parentElement !== mainel) {
@@ -1376,11 +1470,14 @@ function make_json_validate() {
     function rehighlight() {
         try {
             var i, end_index, lineel, k, st, st0, x;
-            if (need_normalize) {
+            if (normalization !== 0) {
                 normalize_content_editable(mainel);
+                if (normalization < 0
+                    && mainel.hasAttribute("data-highlight-ranges")) {
+                    jsonhl_transfer_ranges(mainel);
+                }
                 lineel = mainel.firstChild;
                 state_redisplay = null;
-                need_normalize = false;
             }
             state_redisplay = state_redisplay || [0, Infinity];
             i = state_redisplay[0];
@@ -1393,6 +1490,9 @@ function make_json_validate() {
                        || lineels[i] !== lineel)) {
                 if (lineel.nodeType !== 1 || lineel.tagName !== "DIV") {
                     lineel = normalize_content_editable(mainel, lineel, lineel.nextSibling);
+                }
+                if (normalization >= 0) {
+                    lineel.removeAttribute("data-highlight-ranges");
                 }
                 if (lineels[i] !== lineel && lineels[i]) {
                     // incremental line insertions and deletions
@@ -1428,6 +1528,7 @@ function make_json_validate() {
             }
             state_redisplay = null;
             rehighlight_queued = false;
+            normalization = 0;
         } catch (err) {
             console.trace(err);
         }
@@ -1450,7 +1551,7 @@ function make_json_validate() {
             return;
         }
         if (e.dataTransfer) {
-            need_normalize = true;
+            normalization = 1;
         }
         redisplay_ranges(e.getTargetRanges());
     }
