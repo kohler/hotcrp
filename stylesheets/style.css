@@ -108,6 +108,12 @@ table {
 .p {
 	margin-bottom: 1em;
 }
+.p-sqz {
+	margin-bottom: 1em;
+}
+.p-sqz + .p-sqz {
+	margin-top: -0.5em;
+}
 tr, textarea, select {
 	vertical-align: baseline;
 }
@@ -3437,7 +3443,7 @@ a.badge-white:hover {
 	color: #ffffff;
 	border: 0 none;
 }
-.bubble.gray, .bubble.graphtip {
+.bubble.gray, .bubble.graphtip, .bubble.feedback {
 	background-color: rgba(246, 246, 250, 0.95);
 	color: #222222;
 	border: 1px solid #b8b8b8;

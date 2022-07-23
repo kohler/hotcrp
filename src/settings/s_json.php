@@ -6,25 +6,32 @@ class JSON_SettingParser extends SettingParser {
     static function print(SettingValues $sv) {
         echo '<p class="w-text">HotCRP conference settings can be viewed, changed in bulk, or transferred between conferences using JSON.</p>';
 
-        $wantjerr = $sv->use_req() && $sv->has_req("json_settings");
+        $wantjreq = $sv->use_req() && $sv->has_req("json_settings");
         $defj = json_encode_browser($sv->json_allv(), JSON_PRETTY_PRINT);
-        $mainj = $wantjerr ? cleannl($sv->reqstr("json_settings")) : $defj;
+        $mainj = $wantjreq ? cleannl($sv->reqstr("json_settings")) : $defj;
         $mainh = htmlspecialchars($mainj);
         echo '<div class="settings-json-panels">',
             '<div class="settings-json-panel-edit">',
             '<div class="textarea pw js-settings-json uii ui-beforeinput" contenteditable spellcheck="false" autocapitalization="none" data-reflect-text="json_settings"';
-        if ($wantjerr) {
-            $hl = [];
-            foreach ($sv->message_list() as $mi) {
-                if ($mi->pos1 !== null
-                    && $mi->context === null
-                    && $mi->status >= 1) {
-                    $hl[] = "{$mi->pos1}-{$mi->pos2}:" . ($mi->status > 1 ? 2 : 1);
+        $hl = $tips = [];
+        foreach ($sv->message_list() as $mi) {
+            if ($mi->pos1 !== null
+                && $mi->context === null
+                && $mi->status >= 1) {
+                $hl[] = "{$mi->pos1}-{$mi->pos2}:" . ($mi->status > 1 ? 2 : 1);
+                if ($mi->message) {
+                    $tips[] = $mi;
                 }
             }
-            if (!empty($hl)) {
-                echo ' data-highlight-ranges="utf8 ', join(" ", $hl), '"';
-            }
+        }
+        if (!empty($hl)) {
+            echo ' data-highlight-ranges="', join(" ", $hl), '"';
+        }
+        if (!empty($tips)) {
+            echo ' data-highlight-tips="', htmlspecialchars(json_encode_browser($tips)), '"';
+        }
+        if (!empty($hl) || !empty($tips)) {
+            echo ' data-highlight-utf8-pos';
         }
         echo ' data-reflect-highlight-api="=api/settings?dryrun=1 settings">',
             $mainh, "\n</div>",

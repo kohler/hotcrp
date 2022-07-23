@@ -2160,7 +2160,7 @@ return function (content, bubopt) {
                 return bubble.html(text ? text_to_html(text) : text);
         },
         content_node: function () {
-            return bubch[1].firstChild;
+            return bubch[1];
         },
         hover: function (enter, leave) {
             $(bubdiv).hover(enter, leave);
@@ -6355,7 +6355,7 @@ function suggest() {
                 div.appendChild(render_item(clist[i], cinfo.prefix));
             hintdiv.html(div);
         } else {
-            div = hintdiv.content_node();
+            div = hintdiv.content_node().firstChild;
             $(div).find(".s9y").removeClass("s9y");
         }
         if (cinfo.best !== null)
