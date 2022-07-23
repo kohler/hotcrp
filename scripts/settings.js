@@ -1458,7 +1458,8 @@ function jsonhl_line(lineel, st) {
 function make_json_validate() {
     var mainel = this,
         states = [""], lineels = [null], texts = [""],
-        state_redisplay = null, normalization = -1, rehighlight_queued = false;
+        state_redisplay = null, normalization, rehighlight_queued,
+        api_timer = null, api_value = null;
 
     function node_lineno(node) {
         while (node && node.parentElement !== mainel) {
@@ -1521,10 +1522,9 @@ function make_json_validate() {
             }
             //state_redisplay.push(i, st, states[i - 1]);
             //console.log(state_redisplay);
-            if ((x = mainel.getAttribute("data-reflect-text"))
-                && (x = document.getElementById(x))) {
-                x.value = texts.join("");
-                form_highlight(x.form, x);
+            if (mainel.hasAttribute("data-reflect-text")
+                || mainel.hasAttribute("data-reflect-highlight-api")) {
+                handle_reflection(texts.join(""));
             }
             state_redisplay = null;
             rehighlight_queued = false;
@@ -1532,6 +1532,47 @@ function make_json_validate() {
         } catch (err) {
             console.trace(err);
         }
+    }
+
+    function handle_reflection(text) {
+        var s, el;
+        if ((s = mainel.getAttribute("data-reflect-text"))
+            && (el = document.getElementById(s))
+            && !text_eq(text, el.value)) {
+            el.value = text;
+            form_highlight(el.form, el);
+        }
+        if (mainel.hasAttribute("data-reflect-highlight-api")) {
+            if (api_value === null) {
+                api_value = text;
+            } else if (!text_eq(text, api_value)) {
+                api_timer && clearTimeout(api_timer);
+                api_timer = setTimeout(handle_reflect_api, 750);
+                api_value = text;
+            }
+        }
+    }
+
+    function handle_reflect_api() {
+        var text = api_value,
+            m = mainel.getAttribute("data-reflect-highlight-api").split(/\s+/);
+        api_timer = null;
+        $.post(hoturl(m[0]), {[m[1]]: text}, function (rv) {
+            var i, mi, ranges = [];
+            if (!rv || !rv.message_list || !text_eq(api_value, text))
+                return;
+            for (i = 0; i !== rv.message_list.length; ++i) {
+                mi = rv.message_list[i];
+                if (mi.pos1 != null && mi.context == null && mi.status >= 1)
+                    ranges.push(" ".concat(mi.pos1, "-", mi.pos2, ":", mi.status > 1 ? 2 : 1));
+            }
+            if (ranges.length) {
+                mainel.setAttribute("data-highlight-ranges", "utf8".concat(...ranges));
+                normalization = -1;
+                rehighlight_queued || queueMicrotask(rehighlight);
+                rehighlight_queued = true;
+            }
+        });
     }
 
     function redisplay_ranges(ranges) {
@@ -1605,6 +1646,8 @@ function make_json_validate() {
     mainel.addEventListener("beforeinput", beforeinput);
     mainel.addEventListener("input", input);
     document.addEventListener("selectionchange", selectionchange);
+    normalization = -1;
+    rehighlight_queued = true;
     queueMicrotask(rehighlight);
 }
 

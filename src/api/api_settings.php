@@ -14,11 +14,19 @@ class Settings_API {
                 return JsonResult::make_permission_error();
             }
             $sv->add_json_string($qreq->settings, $qreq->filename);
-            if (!$sv->execute()) {
-                return new JsonResult(["ok" => false, "message_list" => $sv->message_list()]);
+            $sv->parse();
+            $dry_run = $qreq->dryrun || $qreq->dry_run;
+            if ($dry_run) {
+                $content["dry_run"] = true;
+            } else {
+                $sv->execute();
             }
+            $content["ok"] = !$sv->has_error();
             $content["message_list"] = $sv->message_list();
             $content["updates"] = $sv->updated_fields();
+            if ($dry_run || $sv->has_error()) {
+                return new JsonResult($content);
+            }
         }
         $sv = new SettingValues($user);
         if (!$sv->viewable_by_user()) {

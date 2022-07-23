@@ -1098,6 +1098,10 @@ function hoturl(page, options) {
     }
 
     var x = {t: page};
+    if (options == null && (i = page.indexOf("?")) > 0) {
+        options = page.substring(i);
+        page = page.substring(0, i);
+    }
     if (typeof options === "string") {
         if (options.charAt(0) === "?")
             options = options.substring(1);

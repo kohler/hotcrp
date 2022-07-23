@@ -26,7 +26,8 @@ class JSON_SettingParser extends SettingParser {
                 echo ' data-highlight-ranges="utf8 ', join(" ", $hl), '"';
             }
         }
-        echo '>', $mainh, "\n</div>",
+        echo ' data-reflect-highlight-api="=api/settings?dryrun=1 settings">',
+            $mainh, "\n</div>",
             '</div><div class="settings-json-panel-info"></div></div>',
             '<textarea name="json_settings" id="json_settings" class="hidden" readonly';
         if ($mainj !== $defj) {
