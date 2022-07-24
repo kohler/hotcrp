@@ -66,7 +66,7 @@ as a column.</p>
             } else {
                 echo "They are hidden from conflicted PC members; for instance, if a PC member searches for a tag, the result will never include their conflicts.";
             }
-            echo $this->hth->change_setting_link("tag_seeall"), " ";
+            echo $this->hth->change_setting_link("tag_visibility_conflict"), " ";
         }
         echo "</p>";
     }
@@ -211,7 +211,7 @@ Publishing the order lets PC members prepare to discuss upcoming papers.
 Define an ordered tag such as “#discuss”, then ask the PC to ", $this->hth->search_link("search for “order:#discuss”", "order:#discuss"), ".
 The PC can now see the order and use quick links to go from paper to paper.";
         if ($this->user->isPC && !$this->conf->tag_seeall) {
-            echo " However, since PC members can’t see tags for conflicted papers, each PC member might see a different list.", $this->hth->change_setting_link("tag_seeall");
+            echo " However, since PC members can’t see tags for conflicted papers, each PC member might see a different list.", $this->hth->change_setting_link("tag_visibility_conflict");
         }
         echo "</p>\n";
     }

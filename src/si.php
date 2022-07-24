@@ -360,7 +360,7 @@ class Si {
         $t = "";
         foreach (explode("/", $name) as $np) {
             if ($np !== "")
-                $t = JsonParser::path_push($t, $np);
+                $t = JsonParser::path_push($t, ctype_digit($np) ? intval($np) - 1 : $np);
         }
         return str_starts_with($t, "\$.") ? substr($t, 2) : $t;
     }

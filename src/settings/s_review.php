@@ -312,10 +312,17 @@ class Review_SettingParser extends SettingParser {
 
 
     /** @param string $name
-     * @return bool */
-    static function name_is_empty($name) {
+     * @param bool $external
+     * @return string */
+    static function clean_name($name, $external) {
         $ln = strtolower($name);
-        return $ln === "unnamed" || $ln === "default" || $ln === "none" || $ln === "";
+        if ($ln === "default" || $ln === "") {
+            return "";
+        } else if ($ln === "unnamed" || $ln === "none") {
+            return $external ? "unnamed" : "";
+        } else {
+            return $name;
+        }
     }
 
     function apply_req(Si $si, SettingValues $sv) {
@@ -335,7 +342,7 @@ class Review_SettingParser extends SettingParser {
             return true;
         } else if ($si->name2 === "/name") {
             if (($v = $sv->base_parse_req($si)) !== null) {
-                if (self::name_is_empty($v)) {
+                if (self::clean_name($v, false) === "") {
                     $sv->set_req($si->name, "");
                 } else if (($err = Conf::round_name_error($v))) {
                     $sv->error_at($si->name, "<0>{$err}");
@@ -467,23 +474,19 @@ class Review_SettingParser extends SettingParser {
         } else if ($n === "0") {
             $sv->save($savekey, "");
         } else {
-            $name = trim($sv->vstr("review/{$n}/name") ?? "");
-            if (self::name_is_empty($name)) {
-                $sv->save($savekey, $external ? "unnamed" : "");
-            } else {
-                $sv->save($savekey, $name);
-            }
+            $name = self::clean_name(trim($sv->vstr("review/{$n}/name") ?? ""), $external);
+            $sv->save($savekey, $name);
         }
     }
 
+    /** @param string $n */
     private function apply_review_default_round(Si $si, SettingValues $sv, $n) {
         $external = $si->name === "review_default_external_round";
         $savekey = $external ? "extrev_roundtag" : "rev_roundtag";
         $newrounds = $sv->newv("tag_rounds") ?? "";
-        if ($n === "default") {
-            $sv->save($savekey, "");
-        } else if (self::name_is_empty($n)) {
-            $sv->save($savekey, $external ? "unnamed" : "");
+        $name = self::clean_name($n, $external);
+        if ($name === "" || $name === "unnamed") {
+            $sv->save($savekey, $name);
         } else if (($err = Conf::round_name_error($n))) {
             $sv->error_at($si, "<0>{$err}");
         } else if (stripos(" {$newrounds} ", $n) === false) {

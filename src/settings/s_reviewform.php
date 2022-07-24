@@ -112,9 +112,10 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($sv->error_if_duplicate_member($vpfx, $ctr, "symbol", "Field symbol")) {
             return false;
         }
-        if (ctype_digit($rfv->symbol)
-            ? str_starts_with($rfv->symbol, "0")
-            : !ctype_upper($rfv->symbol) || strlen($rfv->symbol) > 1) {
+        if (is_string($rfv->symbol)
+            && (ctype_digit($rfv->symbol)
+                ? str_starts_with($rfv->symbol, "0")
+                : !ctype_upper($rfv->symbol) || strlen($rfv->symbol) > 1)) {
             $sv->error_at("{$vpfx}/{$ctr}/symbol", "<0>Symbol must be a number or a single capital letter");
             return false;
         }

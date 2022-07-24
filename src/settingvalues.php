@@ -1274,6 +1274,7 @@ class SettingValues extends MessageSet {
             $dbsettings = [];
             $result = $this->conf->qe("select name, value, data from Settings");
             while (($row = $result->fetch_row())) {
+                $row[1] = isset($row[1]) ? (int) $row[1] : null;
                 $dbsettings[$row[0]] = $row;
             }
             Dbl::free($result);
@@ -1304,9 +1305,10 @@ class SettingValues extends MessageSet {
                 }
                 if ($v === null
                     ? !isset($dbsettings[$n])
-                    : isset($dbsettings[$n]) && (int) $dbsettings[$n][1] === $v[0] && $dbsettings[$n][2] === $v[1]) {
+                    : isset($dbsettings[$n]) && $dbsettings[$n][1] === $v[0] && $dbsettings[$n][2] === $v[1]) {
                     continue;
                 }
+                //error_log("{$n}: " . json_encode($dbsettings[$n][1] ?? null) . "=>" . json_encode($v[0] ?? null) . "; " . json_encode($dbsettings[$n][2] ?? null) . "=>" . json_encode($v[1] ?? null));
                 $this->_diffs[$n] = true;
                 if ($v !== null) {
                     $av[] = [$n, $v[0], $v[1]];

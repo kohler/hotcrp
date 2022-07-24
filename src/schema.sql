@@ -590,7 +590,7 @@ insert into Settings (name, value) values ('no_papersub', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
 -- default chair-only tags
-insert into Settings (name, value, data) values ('tag_chair', 1, 'accept reject pcpaper');
+insert into Settings (name, value, data) values ('tag_chair', 1, 'accept pcpaper reject');
 -- default: allow PC members to review any paper
 insert into Settings (name, value) values ('pcrev_any', 1);
 -- default: allow external reviewers to see the other reviews

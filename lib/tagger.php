@@ -1337,18 +1337,19 @@ class Tagger {
                 return $this->set_error_code($tag, self::EINVAL);
             }
         }
-        if (!($flags & self::ALLOWSTAR) && strpos($tag, "*") !== false) {
+        if (($flags & self::ALLOWSTAR) === 0
+            && strpos($tag, "*") !== false) {
             return $this->set_error_code($tag, self::ALLOWSTAR);
         }
         // After this point we know `$tag` contains no HTML specials
         if ($m[1] === "") {
             // OK
         } else if ($m[1] === "~~") {
-            if ($flags & self::NOCHAIR) {
+            if (($flags & self::NOCHAIR) !== 0) {
                 return $this->set_error_code($tag, self::NOCHAIR);
             }
         } else {
-            if ($flags & self::NOPRIVATE) {
+            if (($flags & self::NOPRIVATE) !== 0) {
                 return $this->set_error_code($tag, self::NOPRIVATE);
             } else if ($m[1] === "~") {
                 if ($this->_contactId) {
@@ -1359,7 +1360,7 @@ class Tagger {
                 return $this->set_error_code($tag, self::ALLOWCONTACTID);
             }
         }
-        if ($m[3] !== "" && ($flags & self::NOVALUE)) {
+        if ($m[3] !== "" && ($flags & self::NOVALUE) !== 0) {
             return $this->set_error_code($tag, self::NOVALUE);
         }
         if (($flags & self::ALLOWRESERVED) === 0

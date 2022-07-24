@@ -61,7 +61,7 @@ class Tags_SettingParser extends SettingParser {
         $sv->print_entry_group("tag_rank", null, null, 'The <a href="' . $sv->conf->hoturl("offline") . '">offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href="' . $sv->conf->hoturl("help", "t=ranking") . '">Help</a>)');
     }
     static function print_tag_seeall(SettingValues $sv) {
-        $sv->print_checkbox('tag_seeall', "PC can see tags for conflicted submissions");
+        $sv->print_checkbox("tag_visibility_conflict", "PC can see tags for conflicted submissions");
     }
 
     function apply_req(Si $si, SettingValues $sv) {

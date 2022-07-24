@@ -231,12 +231,12 @@ class Response_SettingParser extends SettingParser {
             $rs->done > 0 && ($jr["done"] = $rs->done);
             $rs->grace > 0 && ($jr["grace"] = $rs->grace);
             $rs->wordlimit !== 500 && ($jr["words"] = $rs->wordlimit ?? 0);
-            $rs->condition !== "" && ($jr["condition"] = $rs->condition);
+            ($rs->condition ?? "") !== "" && ($jr["condition"] = $rs->condition);
             if (($rs->instructions ?? "") !== ""
                 && $rs->instructions !== $rs->default_instructions($sv->conf)) {
                 $jr["instructions"] = $rs->instructions;
             }
-            $jrl[] = $jr;
+            $jrl[] = (object) $jr;
             if ($rs->id !== null && $i + 1 !== $rs->id) {
                 $this->round_transform[] = "when {$rs->id} then " . ($i + 1);
             }

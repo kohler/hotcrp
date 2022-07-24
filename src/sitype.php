@@ -169,7 +169,8 @@ class Radio_Sitype extends Sitype {
             if ($allowedv === $jv)
                 return (string) $values[$i];
         }
-        $sv->error_at(null, "<0>Invalid choice");
+        $nonbool = $this->json_examples($si, $sv) !== [false, true];
+        $sv->error_at(null, $nonbool ? "<0>Invalid choice" : "<0>Boolean required");
         return null;
     }
     function unparse_jsonv($v, Si $si, SettingValues $sv) {
@@ -280,7 +281,11 @@ class Date_Sitype extends Sitype {
         }
     }
     function unparse_jsonv($jv, Si $si, SettingValues $sv) {
-        return $this->unparse_reqv($jv, $si, $sv);
+        if ($jv === null || $jv <= 1) {
+            return $this->unparse_reqv($jv, $si, $sv);
+        } else {
+            return $si->conf->unparse_time_log($jv);
+        }
     }
     function nullable($v, Si $si, SettingValues $sv) {
         return $v < 0 || ($v === 0 && !$this->explicit_none);

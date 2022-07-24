@@ -291,7 +291,7 @@
     {
         "name": "tags/visibility/seeall", "order": 10,
         "print_function": "Tags_SettingParser::print_tag_seeall",
-        "settings": ["tag_seeall"]
+        "settings": ["tag_visibility_conflict"]
     },
     {
         "name": "tag-styles", "group": "tags", "order": 720,
