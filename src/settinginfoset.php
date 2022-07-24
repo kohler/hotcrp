@@ -17,6 +17,8 @@ class SettingInfoSet {
         // => [firstpart, [lastpart, object, ...], firstpart, ...]
     /** @var list<string> */
     private $potential_aliases = [];
+    /** @var bool */
+    private $has_descriptions = false;
 
     function __construct(ComponentSet $cs, ...$args) {
         $this->cs = $cs;
@@ -62,6 +64,27 @@ class SettingInfoSet {
                 $this->potential_aliases[] = $v->name;
             }
             $this->xmap_sorted = false;
+        }
+        return true;
+    }
+
+    function _add_description_item($v, $k, $landmark) {
+        if (isset($v->description)) {
+            $x = (object) [
+                "description" => $v->description,
+                "merge" => $v->merge ?? true,
+                "__source_order" => $v->__source_order
+            ];
+            foreach (["name_pattern", "name", "priority"] as $k) {
+                if (isset($v->$k))
+                    $x->$k = $v->$k;
+            }
+            $this->_add_item($x, $k, $landmark);
+            if (isset($x->name)
+                && ($si = $this->xmap[$x->name] ?? null) !== null
+                && Conf::xt_priority_compare($si, $x) <= 0) {
+                $si->description = $x->description;
+            }
         }
         return true;
     }
@@ -333,5 +356,31 @@ class SettingInfoSet {
             }
         }
         return $sis;
+    }
+
+    static function parse_description_markdown($s) {
+        if (str_starts_with($s, "#")) {
+            $m = preg_split('/^#\s+([\w$\/]+)\s*\n/m', $s, -1, PREG_SPLIT_DELIM_CAPTURE);
+            $xs = [];
+            for ($i = 1; $i < count($m); $i += 2) {
+                $x = [];
+                $key = $m[$i];
+                $x[strpos($key, "\$") === false ? "name" : "name_pattern"] = $key;
+                $x["description"] = "<1>" . cleannl(ltrim($m[$i + 1]));
+                $xs[] = (object) $x;
+            }
+            return $xs;
+        } else {
+            return null;
+        }
+    }
+
+    function ensure_descriptions() {
+        if (!$this->has_descriptions) {
+            $this->has_descriptions = true;
+            foreach ([["?etc/settingdescriptions.md"], $this->cs->conf->opt("settingDescriptions")] as $arg) {
+                expand_json_includes_callback($arg, [$this, "_add_description_item"], "SettingInfoSet::parse_description_markdown");
+            }
+        }
     }
 }

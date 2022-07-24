@@ -1825,6 +1825,22 @@ function make_settings_descriptor(mainel, head) {
     };
 }
 
+function append_rendered_values(es, values) {
+    var sep, e, i;
+    if (Array.isArray(values)) {
+        sep = values.length <= 2 ? "" : ", ";
+        for (i = 0; i !== values.length; ++i) {
+            e = document.createElement("samp");
+            e.append(JSON.stringify(values[i]));
+            i === 0 || es.push(sep);
+            i === values.length - 1 && es.push(" or ");
+            es.push(e);
+        }
+    } else {
+        es.push(values);
+    }
+}
+
 function settings_describe(d) {
     var $i = $(".settings-json-panel-info"), e, es, i, sep;
     $i.empty();
@@ -1834,32 +1850,69 @@ function settings_describe(d) {
     if (d.title) {
         e = document.createElement("h3");
         e.className = "form-h mb-1";
-        render_text.onto(e, "f", d.title);
+        render_text.ftext_onto(e, d.title, 0);
         $i.append(e);
     }
     e = document.createElement("h4");
     e.className = "form-h settings-jpath";
     e.append(d.name);
     $i.append(e);
+
     if (d.values) {
         es = ["Value: "];
-        if (Array.isArray(d.values)) {
-            sep = d.values.length <= 2 ? " or " : ", ";
-            d.values.length > 2 && es.push("one of ");
-            for (i = 0; i !== d.values.length; ++i) {
-                e = document.createElement("samp");
-                e.append(JSON.stringify(d.values[i]));
-                i === 0 || es.push(sep);
-                es.push(e);
-            }
-        } else {
-            es.push(d.values);
-        }
+        append_rendered_values(es, d.values);
+    } else if (d.type === "oblist") {
+        es = ["Value: list of objects"];
+    } else if (d.type === "object") {
+        es = ["Value: object"];
+    } else {
+        es = [];
+    }
+    if (es.length > 0) {
         e = document.createElement("p");
         e.className = "p-sqz";
         e.append(...es);
         $i.append(e);
     }
+
+    if (d.components && d.components.length > 1) {
+        var table, tbody, trs = [], tr, th, td, div, span, comp;
+        $i.append((e = document.createElement("div")));
+        e.className = "p-sqz";
+        e.append(d.type === "oblist" ? "Object components:" : "Components:",
+            (table = document.createElement("table")));
+        table.className = "key-value";
+        table.append((tbody = document.createElement("tbody")));
+        for (i = 0; i !== d.components.length; ++i) {
+            comp = d.components[i];
+            tbody.append((tr = document.createElement("tr")));
+            tr.append((th = document.createElement("th")),
+                      (td = document.createElement("td")));
+            th.append(comp.name);
+            if (comp.title || comp.values) {
+                td.append((div = document.createElement("div")));
+                if (comp.title) {
+                    div.append((span = document.createElement("span")));
+                    render_text.ftext_onto(span, comp.title, 0);
+                }
+                es = [];
+                if (comp.values) {
+                    append_rendered_values(es, comp.values);
+                }
+                if (es.length !== 0) {
+                    comp.title && div.append(" ");
+                    div.append((span = document.createElement("span")));
+                    span.className = "dim";
+                    span.append("(", ...es, ")");
+                }
+            }
+            if (comp.summary) {
+                td.append((div = document.createElement("div")));
+                render_text.ftext_onto(div, comp.summary, 0);
+            }
+        }
+    }
+
     if (d.default_value != null && d.default_value !== "") {
         es = ["Default: "];
         if (typeof d.default_value !== "string"

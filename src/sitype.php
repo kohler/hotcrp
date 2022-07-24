@@ -276,7 +276,7 @@ class Date_Sitype extends Sitype {
         } else if (is_int($jv)) {
             return $jv > 0 ? "@{$jv}" : "";
         } else {
-            $sv->error_at($si, "<0>Date string required");
+            $sv->error_at($si, "<0>Date required");
             return null;
         }
     }
@@ -291,7 +291,7 @@ class Date_Sitype extends Sitype {
         return $v < 0 || ($v === 0 && !$this->explicit_none);
     }
     function json_examples(Si $si, SettingValues $sv) {
-        return "<date string>";
+        return "date";
     }
 }
 
@@ -361,7 +361,7 @@ class Int_Sitype extends Sitype {
         }
     }
     function json_examples(Si $si, SettingValues $sv) {
-        return "<whole number>";
+        return "whole number";
     }
 }
 
@@ -392,7 +392,7 @@ class Nonnegint_Sitype extends Sitype {
         }
     }
     function json_examples(Si $si, SettingValues $sv) {
-        return "<nonnegative whole number>";
+        return "nonnegative whole number";
     }
 }
 
@@ -422,22 +422,34 @@ class Float_Sitype extends Sitype {
         }
     }
     function json_examples(Si $si, SettingValues $sv) {
-        return "<decimal number>";
+        return "decimal number";
     }
 }
 
 class String_Sitype extends Sitype {
     use Data_Sitype;
     /** @var bool */
-    private $simple;
+    private $simple = false;
     /** @var bool */
-    private $long;
+    private $long = false;
     /** @var bool */
-    private $allow_int;
+    private $allow_int = false;
+    /** @var ?string */
+    private $example;
     function __construct($name, $subtype = null) {
-        $this->simple = $name === "simplestring";
-        $this->long = $name === "longstring";
-        $this->allow_int = $subtype === "allow_int";
+        if ($name === "simplestring" || $subtype === "simple") {
+            $this->simple = true;
+        } else if ($name === "longstring" || $subtype === "long") {
+            $this->long = true;
+        } else if ($subtype === "allow_int") {
+            $this->simple = $this->allow_int = true;
+        } else if ($subtype === "search") {
+            $this->simple = true;
+            $this->example = "search expression";
+        } else if ($subtype === "formula") {
+            $this->simple = true;
+            $this->example = "formula expression";
+        }
     }
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
         if ($this->simple) {
@@ -470,7 +482,7 @@ class String_Sitype extends Sitype {
                 && ($sv->expand_mail_template(substr($si->name, 9), true))["body"] === $v);
     }
     function json_examples(Si $si, SettingValues $sv) {
-        return $this->simple ? "<one-line text>" : "<text>";
+        return $this->example ?? ($this->simple ? "short string" : "text");
     }
 }
 
@@ -489,7 +501,7 @@ class Url_Sitype extends Sitype {
         }
     }
     function json_examples(Si $si, SettingValues $sv) {
-        return "<URL>";
+        return "URL";
     }
 }
 
@@ -509,7 +521,7 @@ class Email_Sitype extends Sitype {
         }
     }
     function json_examples(Si $si, SettingValues $sv) {
-        return "<email address>";
+        return "email address";
     }
 }
 
@@ -526,7 +538,7 @@ class EmailHeader_Sitype extends Sitype {
         }
     }
     function json_examples(Si $si, SettingValues $sv) {
-        return "<email header>";
+        return "email header";
     }
 }
 
@@ -542,7 +554,7 @@ class Html_Sitype extends Sitype {
         }
     }
     function json_examples(Si $si, SettingValues $sv) {
-        return "<HTML text>";
+        return "HTML text";
     }
 }
 
@@ -569,7 +581,7 @@ class Tag_Sitype extends Sitype {
         }
     }
     function json_examples(Si $si, SettingValues $sv) {
-        return "<tag>";
+        return "tag";
     }
 }
 
@@ -610,6 +622,6 @@ class TagList_Sitype extends Sitype {
         return join(" ", array_values($ts));
     }
     function json_examples(Si $si, SettingValues $sv) {
-        return "<tag1> <tag2>..." . ($this->flags & Tagger::ALLOWSTAR ? " (wildcards allowed)" : "");
+        return "space-separated tag list" . ($this->flags & Tagger::ALLOWSTAR ? " (wildcards allowed)" : "");
     }
 }

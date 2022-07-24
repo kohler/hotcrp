@@ -88,7 +88,7 @@ if (PHP_VERSION_ID < 80000
 }
 
 
-function expand_json_includes_callback($includelist, $callback) {
+function expand_json_includes_callback($includelist, $callback, $parser = null) {
     $includes = [];
     foreach (is_array($includelist) ? $includelist : [$includelist] as $k => $v) {
         if ($v === null || $v === false || $v === "") {
@@ -118,9 +118,10 @@ function expand_json_includes_callback($includelist, $callback) {
         if (is_string($entry)) {
             $x = json_decode($entry);
             if ($x === null && json_last_error()) {
-                $x = Json::decode($entry);
+                $x = ($parser ? call_user_func($parser, $entry, $landmark) : null)
+                    ?? Json::decode($entry);
                 if ($x === null) {
-                    error_log("$landmark: Invalid JSON: " . Json::last_error_msg());
+                    error_log("{$landmark}: Invalid JSON: " . Json::last_error_msg());
                 }
             }
             $entry = $x;

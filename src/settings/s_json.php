@@ -4,7 +4,7 @@
 
 class JSON_SettingParser extends SettingParser {
     static function print(SettingValues $sv) {
-        echo '<p class="w-text">HotCRP conference settings can be viewed, changed in bulk, or transferred between conferences using JSON.</p>';
+        echo '<p class="w-text">HotCRP conference settings can be viewed, changed, or transferred between conferences using JSON.</p>';
 
         $wantjreq = $sv->use_req() && $sv->has_req("json_settings");
         $defj = json_encode_browser($sv->json_allv(), JSON_PRETTY_PRINT);

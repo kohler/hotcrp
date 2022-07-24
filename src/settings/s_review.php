@@ -61,15 +61,12 @@ class Review_SettingParser extends SettingParser {
     function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name0 === "review/" && $si->name2 === "") {
             $sv->set_oldv($si, new Review_Setting);
-        } else if ($si->name0 === "review/"
-                   && ($si->name2 === "/pctitle" || $si->name2 === "/exttitle")) {
+        } else if ($si->name0 === "review/" && $si->name2 === "/title") {
             $n = $sv->oldv("review/{$si->name1}/name");
-            $pc = $si->name2 === "/pctitle";
             if ($n === "" && !$sv->conf->has_rounds()) {
-                $sv->set_oldv($si, $pc ? "PC review" : "External review");
+                $sv->set_oldv($si, "Review");
             } else {
-                $nx = $n === "" ? "Default" : "‘{$n}’";
-                $sv->set_oldv($si, $pc ? "{$nx} PC review" : "{$nx} external review");
+                $sv->set_oldv($si, ($n === "" ? "Default" : "‘{$n}’") . " review");
             }
         } else if ($si->name === "review_default_round_index") {
             $sv->set_oldv($si, 0);

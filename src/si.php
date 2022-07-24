@@ -32,7 +32,10 @@ class Si {
     private $title;
     /** @var ?string
      * @readonly */
-    public $title_pattern;
+    private $title_pattern;
+    /** @var ?string
+     * @readonly */
+    public $summary;
     /** @var ?string
      * @readonly */
     public $description;
@@ -123,6 +126,7 @@ class Si {
         "required" => "is_bool",
         "size" => "is_int",
         "subtype" => "is_string",
+        "summary" => "is_string",
         "title" => "is_string",
         "title_pattern" => "is_string",
         "type" => "is_string",
@@ -145,7 +149,7 @@ class Si {
 
     function __construct(Conf $conf, $j) {
         $this->conf = $conf;
-        $this->name = $this->json_name = $this->title = $j->name;
+        $this->name = $this->json_name = $j->name;
         if (isset($j->json_name)
             && ($j->json_name === false || is_string($j->json_name))) {
             $this->json_name = $j->json_name;
@@ -302,11 +306,46 @@ class Si {
     /** @param ?SettingValues $sv
      * @return ?string */
     function title($sv = null) {
-        if ($this->title_pattern
-            && ($title = $this->_expand_pattern($this->title_pattern, $sv)) !== null) {
-            return $title;
+        $title = null;
+        if ($this->title_pattern) {
+            $title = $this->_expand_pattern($this->title_pattern, $sv);
+        }
+        $title = $title ?? $this->title ?? $this->name;
+        if (($this->storage_type === self::SI_MEMBER || $this->storage_type === self::SI_NONE)
+            && str_starts_with($title, "/")
+            && ($psi = $this->conf->si($this->name0 . $this->name1))
+            && ($ptitle = $psi->title($sv))) {
+            $tsuf = substr($title, 1);
+            if (strlen($tsuf) > 1
+                && ctype_upper($tsuf[0])
+                && ctype_lower($tsuf[1])) {
+                $tsuf = lcfirst($tsuf);
+            } else {
+                $tsuf = ltrim($tsuf);
+            }
+            if ($tsuf !== "") {
+                $title = "{$ptitle} {$tsuf}";
+            } else {
+                $title = $ptitle;
+            }
+        }
+        return $title;
+    }
+
+    /** @param ?SettingValues $sv
+     * @return ?string */
+    function member_title($sv = null) {
+        if ($this->title_pattern) {
+            $title = $this->_expand_pattern($this->title_pattern, $sv) ?? $this->title;
         } else {
-            return $this->title;
+            $title = $this->title;
+        }
+        if ($title !== null
+            && ($this->storage_type === self::SI_MEMBER || $this->storage_type === self::SI_NONE)
+            && str_starts_with($title, "/")) {
+            return ltrim(substr($title, 1));
+        } else {
+            return $title;
         }
     }
 

@@ -58,7 +58,8 @@
     },
     {
         "name_pattern": "decision/$/category",
-        "title": "Decision category", "type": "radio", "values": ["accept", "reject"]
+        "title": "Decision category", "type": "radio",
+        "values": ["accept", "reject"]
     },
 
     {
@@ -185,7 +186,8 @@
     {
         "name_pattern": "sf/$",
         "type": "object", "subtype": "Sf_Setting",
-        "parser_class": "Options_SettingParser"
+        "parser_class": "Options_SettingParser",
+        "title": "Submission field", "title_pattern": "‘${sv sf/$/name}’"
     },
     {
         "name_pattern": "sf/$/id", "type": "int",
@@ -198,22 +200,23 @@
     },
     {
         "name_pattern": "sf/$/order",
-        "title": "Submission field order", "title_pattern": "‘${sv sf/$/name}’ order",
+        "title": "/Order",
         "type": "float"
     },
     {
         "name_pattern": "sf/$/type",
-        "title": "Submission field type", "title_pattern": "‘${sv sf/$/name}’ type",
+        "title": "/Field type",
         "type": "simplestring", "parser_class": "Options_SettingParser"
     },
     {
         "name_pattern": "sf/$/description",
-        "title": "Submission field description", "title_pattern": "‘${sv sf/$/name}’ description",
+        "title": "/Description",
         "type": "htmlstring", "size": 2, "autogrow": true
     },
     {
         "name_pattern": "sf/$/values", "type": "oblist",
         "parser_class": "Options_SettingParser", "parse_order": 2,
+        "title": "/Value list",
         "hashid": "sf/$/values_text"
     },
     {
@@ -226,48 +229,48 @@
     },
     {
         "name_pattern": "sf/$/values/$$/name",
-        "title": "Submission field value", "title_pattern": "‘${sv sf/$/name}’ choices",
+        "title": "/Name",
         "type": "simplestring", "required": true, "size": 50,
         "hashid": "sf/$/values_text"
     },
     {
         "name_pattern": "sf/$/values/$$/order",
-        "title": "Submission field value order", "title_pattern": "‘${sv sf/$/name}’ choices",
+        "title": "/Order",
         "type": "float",
         "hashid": "sf/$/values_text"
     },
     {
         "name_pattern": "sf/$/values_text", "storage": "none",
-        "title": "Submission field choices", "title_pattern": "‘${sv sf/$/name}’ choices",
+        "title": "/Choices",
         "type": "longstring", "size": 3, "autogrow": true,
         "parser_class": "Options_SettingParser", "parse_order": 1,
         "json_export": false
     },
     {
         "name_pattern": "sf/$/required",
-        "title": "Submission field requirement", "title_pattern": "‘${sv sf/$/name}’ requirement",
+        "title": "/Requirement",
         "type": "radio", "values": [0, 1]
     },
     {
         "name_pattern": "sf/$/display",
-        "title": "Submission field display", "title_pattern": "‘${sv sf/$/name}’ display",
+        "title": "/Display",
         "type": "radio", "values": ["prominent", "topics", "submission", "none"]
     },
     {
         "name_pattern": "sf/$/visibility",
-        "title": "Submission field visibility", "title_pattern": "‘${sv sf/$/name}’ visibility",
+        "title": "/Visibility",
         "type": "radio", "values": ["all", "nonblind", "conflict", "review", "admin"]
     },
     {
         "name_pattern": "sf/$/presence",
-        "title": "Submission field presence", "title_pattern": "‘${sv sf/$/name}’ presence",
+        "title": "/Presence",
         "type": "radio", "values": ["all", "final", "custom"],
         "parser_class": "SubFieldCondition_SettingParser", "parse_order": 1
     },
     {
         "name_pattern": "sf/$/condition", "storage": "member.exists_if",
-        "title": "Submission field presence condition", "title_pattern": "‘${sv sf/$/name}’ presence condition",
-        "type": "simplestring", "size": 30, "placeholder": "Search",
+        "title": "/Presence condition",
+        "type": "string", "subtype": "search", "size": 30, "placeholder": "Search",
         "parser_class": "SubFieldCondition_SettingParser", "parse_order": 2
     },
     {
@@ -347,7 +350,8 @@
     {
         "name_pattern": "response/$",
         "type": "object", "subtype": "Response_Setting",
-        "parser_class": "Response_SettingParser"
+        "parser_class": "Response_SettingParser",
+        "title": "Response round", "title_pattern": "${sv response/$/title}"
     },
     {
         "name_pattern": "response/$/id", "type": "int",
@@ -366,37 +370,31 @@
     },
     {
         "name_pattern": "response/$/open",
-        "title": "Response start time", "type": "date",
-        "title_pattern": "${sv response/$/title} start time"
+        "title": "/Start time", "type": "date"
     },
     {
         "name_pattern": "response/$/done",
-        "title": "Response hard deadline", "type": "date",
-        "title_pattern": "${sv response/$/title} hard deadline"
+        "title": "/Hard deadline", "type": "date"
     },
     {
         "name_pattern": "response/$/grace",
-        "title": "Response grace period", "type": "grace",
-        "title_pattern": "${sv response/$/title} grace period"
+        "title": "/Grace period", "type": "grace"
     },
     {
         "name_pattern": "response/$/condition",
-        "title": "Response condition",
-        "type": "simplestring", "size": 40, "placeholder": "(All)",
-        "title_pattern": "${sv response/$/title} condition",
+        "title": "/Condition",
+        "type": "string", "subtype": "search", "size": 40, "placeholder": "(All)",
         "parser_class": "Response_SettingParser"
     },
     {
         "name_pattern": "response/$/wordlimit",
-        "title": "Response word limit",
-        "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0,
-        "title_pattern": "${sv response/$/title} word limit"
+        "title": "/Word limit",
+        "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0
     },
     {
         "name_pattern": "response/$/instructions",
-        "title": "Response instructions",
+        "title": "/Instructions",
         "type": "htmlstring", "size": 3, "default_value": "auto",
-        "title_pattern": "${sv response/$/title} instructions",
         "parser_class": "Response_SettingParser"
     },
 
@@ -478,6 +476,7 @@
     {
         "name_pattern": "review/$",
         "type": "object", "subtype": "Review_Setting",
+        "title": "Review round", "title_pattern": "${sv review/$/title}",
         "parser_class": "Review_SettingParser"
     },
     {
@@ -485,10 +484,7 @@
         "internal": true, "json_export": true
     },
     {
-        "name_pattern": "review/$/pctitle", "internal": true, "parser_class": "Review_SettingParser"
-    },
-    {
-        "name_pattern": "review/$/exttitle", "internal": true, "parser_class": "Review_SettingParser"
+        "name_pattern": "review/$/title", "internal": true, "parser_class": "Review_SettingParser"
     },
     {
         "name_pattern": "review/$/name",
@@ -499,22 +495,22 @@
     },
     {
         "name_pattern": "review/$/soft",
-        "title_pattern": "${sv review/$/pctitle} deadline",
+        "title": "/Deadline",
         "type": "date", "placeholder": "none"
     },
     {
         "name_pattern": "review/$/done",
-        "title_pattern": "${sv review/$/pctitle} hard deadline",
+        "title": "/Hard deadline",
         "type": "date", "placeholder": "none"
     },
     {
         "name_pattern": "review/$/external_soft",
-        "title_pattern": "${sv review/$/exttitle} deadline",
+        "title": "/External deadline",
         "type": "date", "subtype": "explicit_none", "placeholder": "same as PC"
     },
     {
         "name_pattern": "review/$/external_done",
-        "title_pattern": "${sv review/$/exttitle} hard deadline",
+        "title": "/External hard deadline",
         "type": "date", "subtype": "explicit_none", "placeholder": "same as PC"
     },
     {
@@ -570,6 +566,7 @@
     {
         "name_pattern": "rf/$",
         "type": "object", "subtype": "Rf_Setting",
+        "title_pattern": "‘${sv rf/$/name}’",
         "parser_class": "ReviewForm_SettingParser"
     },
     {
@@ -583,41 +580,41 @@
     },
     {
         "name_pattern": "rf/$/order",
-        "title": "Review field order", "title_pattern": "‘${sv rf/$/name}’ order",
+        "title": "/Field order",
         "type": "float"
     },
     {
         "name_pattern": "rf/$/description",
-        "title": "Review field description", "title_pattern": "‘${sv rf/$/name}’ description",
+        "title": "/Description",
         "type": "htmlstring", "size": 2, "autogrow": true
     },
     {
         "name_pattern": "rf/$/required",
-        "title": "Review field requirement", "title_pattern": "‘${sv rf/$/name}’ requirement",
+        "title": "/Requirement",
         "type": "radio", "values": [0, 1], "parse_order": 2
     },
     {
         "name_pattern": "rf/$/visibility",
-        "title": "Review field visibility", "title_pattern": "‘${sv rf/$/name}’ visibility",
+        "title": "/Visibility",
         "type": "radio", "values": ["au", "re", "audec", "pconly", "admin"]
     },
     {
         "name_pattern": "rf/$/presence",
-        "title": "Review field presence", "title_pattern": "‘${sv rf/$/name}’ presence",
+        "title": "/Presence",
         "type": "radio", "values": "auto",
         "parser_class": "ReviewFieldCondition_SettingParser", "parse_order": 1, "json_export": false
     },
     {
         "name_pattern": "rf/$/condition", "storage": "member.exists_if",
-        "title": "Review field presence condition", "title_pattern": "‘${sv rf/$/name}’ presence condition",
-        "type": "simplestring", "size": 30, "placeholder": "Search",
+        "title": "/Presence condition",
+        "type": "string", "subtype": "search", "size": 30, "placeholder": "Search",
         "parser_class": "ReviewFieldCondition_SettingParser", "parse_order": 2
     },
     {   "name_pattern": "rf/$/exists_if", "alias_pattern": "rf/$/condition"   },
     {   "name_pattern": "rf/$/display_space", "internal": true   },
     {
         "name_pattern": "rf/$/values", "type": "oblist", "storage": "member.xvalues",
-        "title": "Review field choices", "title_pattern": "‘${sv rf/$/name}’ choices",
+        "title": "/Value list",
         "parser_class": "ReviewForm_SettingParser", "parse_order": 2,
         "hashid": "rf/$/values_text"
     },
@@ -627,6 +624,8 @@
     {
         "name_pattern": "rf/$/values/$$", "type": "object", "subtype": "RfValue_Setting",
         "parser_class": "ReviewForm_SettingParser",
+        "title": "/Value",
+        "title_pattern": "‘${sv rf/$/values/$$/name}’",
         "hashid": "rf/$/values_text"
     },
     {
@@ -635,28 +634,25 @@
     },
     {
         "name_pattern": "rf/$/values/$$/symbol",
-        "title": "Review field value symbol",
-        "title_pattern": "‘${sv rf/$/values/$$/name}’ symbol",
-        "type": "simplestring", "subtype": "allow_int", "required": true, "size": 3,
+        "title": "/Symbol",
+        "type": "string", "subtype": "allow_int", "required": true, "size": 3,
         "hashid": "rf/$/values_text"
     },
     {
         "name_pattern": "rf/$/values/$$/name",
-        "title": "Review field value",
-        "title_pattern": "‘${sv rf/$/values/$$/name}’ field value",
+        "title": "/Description",
         "type": "simplestring", "required": true, "size": 50,
         "hashid": "rf/$/values_text"
     },
     {
         "name_pattern": "rf/$/values/$$/order",
-        "title": "Review field value order",
-        "title_pattern": "‘${sv rf/$/values/$$/symbol}’ order",
+        "title": "/Order",
         "type": "float",
         "hashid": "rf/$/values_text"
     },
     {
         "name_pattern": "rf/$/values_text",
-        "title": "Review field choices", "title_pattern": "‘${sv rf/$/name}’ choices",
+        "title": "/Choices",
         "type": "longstring", "size": 3, "autogrow": true,
         "parser_class": "ReviewForm_SettingParser", "parse_order": 1,
         "json_export": false
@@ -666,7 +662,7 @@
     },
     {
         "name_pattern": "rf/$/scheme",
-        "title": "Review field color scheme", "title_pattern": "‘${sv rf/$/name}’ color scheme",
+        "title": "/Color scheme",
         "type": "radio", "values": ["sv", "svr", "blpu", "publ", "rdpk", "pkrd", "viridisr", "viridis", "orbu", "buor", "turbo", "turbor", "catx", "none"]
     },
 
@@ -802,12 +798,12 @@
     {   "name_pattern": "tag_style/$/id", "internal": true   },
     {
         "name_pattern": "tag_style/$/style",
-        "title": "Tag style", "type": "simplestring", "required": true,
+        "title": "/Style", "type": "simplestring", "required": true,
         "parser_class": "TagStyle_SettingParser"
     },
     {
         "name_pattern": "tag_style/$/tags",
-        "title": "Styled tags", "title_pattern": "${uc tag_style/$/style} tags",
+        "title": "/Tag list",
         "type": "taglist", "subtype": "wildcard_chair", "size": 40, "autogrow": true
     },
     {
@@ -876,6 +872,7 @@
     {
         "name_pattern": "track/$",
         "type": "object", "subtype": "Track_Setting",
+        "title_pattern": "${sv track/$/title}",
         "parser_class": "Track_SettingParser"
     },
     {   "name_pattern": "track/$/id", "internal": true, "type": "string"   },
@@ -890,6 +887,7 @@
     {
         "name_pattern": "track/$/perm", "storage": "none",
         "type": "object",
+        "title": "/Track permissions",
         "parser_class": "Track_SettingParser"
     },
     {

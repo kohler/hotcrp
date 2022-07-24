@@ -1569,12 +1569,12 @@ button > .licon, .btn > .licon {
 /* Key-value tables */
 table.key-value th:first-child {
 	text-align: left;
-	padding-right: 1em;
-	padding-top: 3px;
-	padding-bottom: 3px;
+	padding-right: 1.25em;
+	padding-bottom: 0.125em;
 	font-weight: 500;
 }
 table.key-value {
+	padding-top: 0.125em;
 	margin-bottom: 1em;
 }
 

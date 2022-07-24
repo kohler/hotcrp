@@ -36,32 +36,70 @@ class Settings_API {
         return new JsonResult($content);
     }
 
+    /** @param SettingValues $sv
+     * @param Si $si
+     * @param array &$x */
+    static private function export_si($sv, $si, &$x) {
+        $x["type"] = $si->type;
+        if ($si->subtype) {
+            $x["subtype"] = $si->subtype;
+        }
+        if ($si->summary) {
+            $x["summary"] = Ftext::ensure($si->summary, 0);
+        }
+        if ($si->description) {
+            $x["description"] = Ftext::ensure($si->description, 0);
+        }
+        if (($je = $si->json_examples($sv)) !== null) {
+            $x["values"] = $je;
+        }
+    }
+
+    /** @param SettingInfoSet $si_set
+     * @param string $pfx
+     * @return list<object> */
+    static private function components(SettingValues $sv, $si_set, $pfx) {
+        $comp = [];
+        foreach ($si_set->member_list($pfx) as $xsi) {
+            if ($xsi->json_export()) {
+                $x = ["name" => substr($xsi->name2, 1)];
+                if (($t = $xsi->member_title($sv))) {
+                    $x["title"] = "<0>{$t}";
+                }
+                self::export_si($sv, $xsi, $x);
+                $comp[] = (object) $x;
+            }
+        }
+        return $comp;
+    }
+
     static function descriptions(Contact $user, Qrequest $qreq) {
+        $si_set = $user->conf->si_set();
         $sv = new SettingValues($user);
         if (!$sv->viewable_by_user()) {
             return JsonResult::make_permission_error();
         }
+        $si_set->ensure_descriptions();
         $m = [];
-        foreach ($sv->conf->si_set()->top_list() as $si) {
+        foreach ($si_set->top_list() as $si) {
             if ($si->json_export()
                 && ($si->has_title() || $si->description)) {
                 $o = ["name" => $si->name];
                 if (($t = $si->title($sv))) {
                     $o["title"] = "<0>{$t}";
                 }
-                $o["type"] = $si->type;
-                if ($si->subtype) {
-                    $o["subtype"] = $si->subtype;
-                }
-                if (($je = $si->json_examples($sv)) !== null) {
-                    $o["values"] = $je;
-                }
+                self::export_si($sv, $si, $o);
                 if (($dv = $si->initial_value($sv)) !== null) {
                     $o["default_value"] = $si->base_unparse_jsonv($dv, $sv);
                 }
-                if ($si->description) {
-                    $o["description"] = Ftext::ensure($si->description, 0);
+                if ($si->type === "oblist" || $si->type === "object") {
+                    $pfx = $si->type === "oblist" ? "{$si->name}/1" : $si->name;
+                    $comp = self::components($sv, $si_set, $pfx);
+                    if (!empty($comp)) {
+                        $o["components"] = $comp;
+                    }
                 }
+
                 $m[] = $o;
             }
         }
