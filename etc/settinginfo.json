@@ -515,7 +515,7 @@
     },
     {
         "name": "review_default_round_index", "storage": "none", "json_export": false,
-        "title": "Default round for new PC reviews",
+        "title": "Default round for new reviews",
         "type": "nonnegint", "parser_class": "Review_SettingParser",
         "parse_order": 1
     },
@@ -527,7 +527,7 @@
     },
     {
         "name": "review_default_round", "storage": "rev_roundtag",
-        "title": "Default round for new PC reviews",
+        "title": "Default round for new reviews",
         "type": "tag", "required": false, "parser_class": "Review_SettingParser",
         "parse_order": 1
     },

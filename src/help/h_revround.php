@@ -4,23 +4,23 @@
 
 class RevRound_HelpTopic {
     static function print(HelpRenderer $hth) {
-        echo "<p>Many conferences divide their review assignments into multiple <em>rounds</em>.
-Each round is given a name, such as “R1” or “lastround.”
+        echo "<p>Many conferences divide their review assignments into named <em>rounds</em>,
+such as “R1” or “lastround”.
 (We suggest very short names like “R1”.)
-Configure rounds on the ", $hth->setting_link("settings page", "review"), ".
+Different review rounds can have different deadlines and can even have different fields on their review forms.
 To search for any paper with a round “R2” review assignment, ",
 $hth->search_link("search for “re:R2”", "re:R2"), ".
 To list a PC member’s round “R1” review assignments, ",
 $hth->search_link("search for “re:membername:R1”", "re:membername:R1"), ".</p>
 
-<p>Different rounds usually share the same review form, but you can also
-mark review fields as appearing only in certain rounds. First configure
+<p>Administrators can configure review rounds on ", $hth->setting_link("Settings &gt; Reviews", "review"), ".
+To configure per-round review fields, first configure
 rounds, then see ", $hth->setting_link("Settings &gt; Review form", "rf"), ".</p>";
 
 
         echo $hth->subhead("Assigning rounds");
         echo "<p>New assignments are marked by default with the round defined in ",
-            $hth->setting_link("review settings", "review"), ".
+            $hth->setting_link("review settings", "review_default_round_index"), ".
 The automatic and bulk assignment pages also let you set a review round.</p>";
 
 
@@ -29,17 +29,24 @@ The automatic and bulk assignment pages also let you set a review round.</p>";
             $texts = [];
             if (($rr = $hth->conf->assignment_round_option(false)) !== "unnamed") {
                 $texts[] = "The review round for new assignments is “"
-                    . $hth->search_link(htmlspecialchars($rr), "round:$rr") . "”."
-                    . $hth->change_setting_link("review");
+                    . $hth->search_link(htmlspecialchars($rr), "re:{$rr}") . "”."
+                    . $hth->change_setting_link("review_default_round_index");
             }
             $rounds = [];
             if ($hth->conf->has_rounds()) {
                 $result = $hth->conf->qe("select distinct reviewRound from PaperReview");
+                $has_unnamed = false;
                 while (($row = $result->fetch_row())) {
-                    if ($row[0] && ($rname = $hth->conf->round_name((int) $row[0])))
-                        $rounds[] = "“" . $hth->search_link(htmlspecialchars($rname), "round:$rname") . "”";
+                    if (($rname = $hth->conf->round_name((int) $row[0]))) {
+                        $rounds[] = "“" . $hth->search_link(htmlspecialchars($rname), "re:$rname") . "”";
+                    } else {
+                        $has_unnamed = true;
+                    }
                 }
                 sort($rounds);
+                if ($has_unnamed) {
+                    $rounds[] = $hth->search_link("unnamed", "re:unnamed");
+                }
             }
             if (count($rounds)) {
                 $texts[] = "Review rounds currently in use: " . commajoin($rounds) . ".";
