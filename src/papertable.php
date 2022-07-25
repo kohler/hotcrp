@@ -495,7 +495,7 @@ class PaperTable {
             echo '<div class="field-visibility">(hidden from reviewers)</div>';
         } else if ($this->edit_show_all_visibility) {
             if ($vis === PaperOption::VIS_AUTHOR) {
-                echo '<div class="field-visibility">(hidden on blind submissions)</div>';
+                echo '<div class="field-visibility">(hidden on anonymous submissions)</div>';
             } else if ($vis === PaperOption::VIS_REVIEW) {
                 echo '<div class="field-visibility">(hidden until review)</div>';
             } else if ($vis === PaperOption::VIS_CONFLICT) {
@@ -884,7 +884,7 @@ class PaperTable {
         if ($vas === 0) {
             $fr->value = '<div class="pg">'
                 . $this->papt("authors", $o->title_html(0))
-                . '<div class="pavb"><i>Hidden for blind review</i></div>'
+                . '<div class="pavb"><i>Hidden</i></div>'
                 . "</div>\n\n";
             return;
         }
@@ -895,7 +895,7 @@ class PaperTable {
         // "author" or "authors"?
         $auname = $o->title_html(count($aulist));
         if ($vas === 1) {
-            $auname .= " <span class=\"n\">(deblinded)</span>";
+            $auname .= " <span class=\"n\">(deanonymized)</span>";
         } else if ($this->user->act_author_view($this->prow)) {
             // Tell authors whether they are blind.
             // Accepted papers are sometimes not blind.
@@ -905,9 +905,9 @@ class PaperTable {
                 $sb = $this->conf->submission_blindness();
                 if ($sb === Conf::BLIND_ALWAYS
                     || ($sb === Conf::BLIND_OPTIONAL && $this->prow->blind)) {
-                    $auname .= " <span class=\"n\">(blind)</span>";
+                    $auname .= " <span class=\"n\">(anonymous)</span>";
                 } else if ($sb === Conf::BLIND_UNTILREVIEW) {
-                    $auname .= " <span class=\"n\">(blind until review)</span>";
+                    $auname .= " <span class=\"n\">(anonymous until review)</span>";
                 }
             }
         }
@@ -953,7 +953,7 @@ class PaperTable {
         $fr->value .= '<div class="pavb">';
         if ($vas === 1) {
             $fr->value .= '<a class="q fn8 ui js-aufoldup" href="" title="Toggle author display">'
-                . '+&nbsp;<i>Hidden for blind review</i>'
+                . '+&nbsp;<i>Hidden</i>'
                 . '</a><div class="fx8">';
         }
         if ($this->allow_folds) {

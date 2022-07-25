@@ -521,7 +521,7 @@ class Review_SettingParser extends SettingParser {
         if (($sv->has_interest("review_blind") || $sv->has_interest("review_visibility_external"))
             && $sv->oldv("review_blind") == Conf::BLIND_NEVER
             && $sv->oldv("review_visibility_external") == 1) {
-            $sv->warning_at("review_visibility_external", "<5>" . $sv->setting_link("Reviews aren’t blind", "review_blind") . ", so external reviewers can see reviewer names and comments despite " . $sv->setting_link("your settings", "review_visibility_external") . ".");
+            $sv->warning_at("review_visibility_external", "<5>" . $sv->setting_link("Reviews aren’t anonymous", "review_blind") . ", so external reviewers can see reviewer names and comments despite " . $sv->setting_link("your settings", "review_visibility_external") . ".");
         }
 
         if ($sv->has_interest("mailbody_requestreview")

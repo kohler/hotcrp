@@ -114,7 +114,7 @@ class ReviewPrefs_Page {
                 $extra = ["item_class" => "fx10"];
             }
             if ($vat & 1) {
-                $show_data[] = self::pref_element($pl, "anonau", "Authors (deblinded)", $extra);
+                $show_data[] = self::pref_element($pl, "anonau", "Authors (deanonymized)", $extra);
                 $extra = ["item_class" => "fx10"];
             }
             $show_data[] = self::pref_element($pl, "aufull", "Full author info", $extra);

@@ -124,7 +124,7 @@ class HotCRPMailer extends Mailer {
             } else if ($this->context == self::CONTEXT_EMAIL) {
                 return "<hidden>";
             } else {
-                return "Hidden for blind review";
+                return "Hidden for anonymous review";
             }
         }
         return $this->expand_user($c, $type);
@@ -354,7 +354,7 @@ class HotCRPMailer extends Mailer {
     function kw_authors($args, $isbool) {
         if (!$this->permuser->is_root_user()
             && !$this->permuser->can_view_authors($this->row)) {
-            return $isbool ? false : "Hidden for blind review";
+            return $isbool ? false : "Hidden for anonymous review";
         }
         $t = array_map(function ($a) { return $a->name(NAME_P|NAME_A); }, $this->row->author_list());
         return join(";\n", $t);

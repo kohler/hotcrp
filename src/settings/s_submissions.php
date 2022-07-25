@@ -22,12 +22,12 @@ class Submissions_SettingParser extends SettingParser {
     }
     static function print_blind(SettingValues $sv) {
         $sv->print_radio_table("author_visibility", [
-                Conf::BLIND_ALWAYS => "Yes—submissions are anonymous",
-                Conf::BLIND_NEVER => "No—author names are visible to reviewers",
-                Conf::BLIND_UNTILREVIEW => "Blind until review—reviewers can see author names after submitting a review",
-                Conf::BLIND_OPTIONAL => "Depends—authors decide whether to expose their names"
+                Conf::BLIND_ALWAYS => "Yes, submissions are anonymous",
+                Conf::BLIND_NEVER => "No, author names are visible to reviewers",
+                Conf::BLIND_UNTILREVIEW => "Anonymous until review: reviewers can see author names after submitting a review",
+                Conf::BLIND_OPTIONAL => "Depends: authors decide whether to expose their names"
             ],
-            '<strong>Blind submission:</strong> Are author names hidden from reviewers?');
+            '<strong>Submission anonymity:</strong> Are author names hidden from reviewers?');
     }
     static function print_pcseeall(SettingValues $sv) {
         $sv->print_checkbox("draft_submission_early_visibility", "PC can view incomplete submissions before submission deadline", null, "Check this box to collect review preferences before the submission deadline. After the submission deadline, PC members can only see completed submissions.");

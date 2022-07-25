@@ -132,7 +132,7 @@ class Options_SettingRenderer {
     function print_visibility(SettingValues $sv) {
         $options = [
             "all" => "Visible to reviewers",
-            "nonblind" => "Hidden on blind submissions",
+            "nonblind" => "Hidden on anonymous submissions",
             "conflict" => "Hidden until conflicts are visible",
             "review" => "Hidden until review",
             "admin" => "Hidden from reviewers"
@@ -603,7 +603,7 @@ class Options_SettingParser extends SettingParser {
             foreach (array_values($opts) as $ctrz => $f) {
                 if ($f->visibility() === PaperOption::VIS_AUTHOR) {
                     $visname = "sf/" . ($ctrz + 1) . "/visibility";
-                    $sv->warning_at($visname, "<5>" . $sv->setting_link("All submissions are blind", "author_visibility") . ", so this field is always hidden");
+                    $sv->warning_at($visname, "<5>" . $sv->setting_link("All submissions are anonymous", "author_visibility") . ", so this field is always hidden");
                     $sv->inform_at($visname, "<0>Would “hidden until review” visibility be better?");
                 }
             }

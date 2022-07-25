@@ -254,9 +254,9 @@ class Authors_PaperOption extends PaperOption {
         $sb = $this->conf->submission_blindness();
         $title = $pt->edit_title_html($this);
         if ($sb === Conf::BLIND_ALWAYS) {
-            $title .= ' <span class="n">(blind)</span>';
+            $title .= ' <span class="n">(anonymous)</span>';
         } else if ($sb === Conf::BLIND_UNTILREVIEW) {
-            $title .= ' <span class="n">(blind until review)</span>';
+            $title .= ' <span class="n">(anonymous until review)</span>';
         }
         $pt->print_editable_option_papt($this, $title, ["id" => "authors"]);
         $readonly = !$this->test_editable($ov->prow);

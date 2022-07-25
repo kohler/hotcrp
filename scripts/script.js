@@ -4963,7 +4963,7 @@ function comment_identity_time(cj, editing) {
         t.push('<address class="cmtname fold9c" itemprop="author"><span class="fx9' +
                (cj.author_email ? '" title="' + cj.author_email : '') +
                '">' + cj.author + ' </span><a class="ui q js-foldup" href="" data-fold-target="9" title="Toggle author"><span class="fn9"><span class="expander"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span>' +
-               (cj.author_pseudonym || "<i>Hidden</i>") + '</span><span class="fx9">(deblinded)</span></a></address>');
+               (cj.author_pseudonym || "<i>Hidden</i>") + '</span><span class="fx9">(deanonymized)</span></a></address>');
     } else if (cj.author) {
         x = cj.author;
         if (cj.blind && cj.visibility === "au") {

@@ -450,7 +450,7 @@
     },
     {
         "name": "review_identity_visibility_pc", "storage": "pc_seeblindrev",
-        "title": "PC can see blind reviewers’ identities",
+        "title": "PC can see anonymous reviewers’ identities",
         "type": "radio",
         "values": [0, 1], "default_value": 0
     },

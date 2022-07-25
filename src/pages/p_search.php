@@ -64,7 +64,7 @@ class Search_Page {
                 $this->checkbox_item(1, "au", "Authors");
             }
             if ($vat & 1) {
-                $this->checkbox_item(1, "anonau", "Authors (deblinded)");
+                $this->checkbox_item(1, "anonau", "Authors (deanonymized)");
             }
             $this->checkbox_item(1, "aufull", "Full author info");
         }
@@ -166,8 +166,8 @@ class Search_Page {
                 $qt["n"] = "Title and abstract";
             }
         } else {
-            $qt["au"] = "Non-blind authors";
-            $qt["n"] = "Title, abstract, and non-blind authors";
+            $qt["au"] = "Non-anonymous authors";
+            $qt["n"] = "Title, abstract, and non-anonymous authors";
         }
         if ($this->user->privChair) {
             $qt["ac"] = "Authors and collaborators";

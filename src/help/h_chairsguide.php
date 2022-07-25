@@ -22,7 +22,7 @@ class ChairsGuide_HelpTopic {
 
         } else if ($gj->itemid === 2) {
             echo "<li><p><strong>", $hth->setting_group_link("Set submission policies", "sub"),
-  "</strong>, including whether submission is blind.</p></li>\n";
+  "</strong>, including anonymity.</p></li>\n";
 
         } else if ($gj->itemid === 3) {
             echo "<li><p><strong>", $hth->setting_group_link("Set submission deadlines.", "sub"),
@@ -110,8 +110,8 @@ form also can include:</p>
 
         } else if ($gj->itemid === 4) {
             echo "<li><p><strong>", $hth->setting_group_link("Set review policies and deadlines", "reviews"),
-  "</strong>, including reviewing deadlines, whether
-  review is blind, and whether PC members may review any paper
+  "</strong>, including reviewing deadlines,
+  review anonymity, and whether PC members may review any paper
   (usually “yes” is the right answer).</p></li>\n";
 
         } else if ($gj->itemid === 5) {
