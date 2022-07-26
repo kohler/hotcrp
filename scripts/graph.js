@@ -390,7 +390,7 @@ function pid_renderer(ps, cc) {
             }
         }
         if (cx) {
-            make_pattern_fill(cx);
+            ensure_pattern(cx);
             p = '<span class="'.concat(cx, '">#', p, '</span>');
         } else
             p = '#' + p;
@@ -853,7 +853,7 @@ function scatter_create(svg, data, klass) {
     sel.enter()
         .append("path")
         .attr("class", function (d) { return pathklass + (d[3] ? " " + d[3] : "") })
-        .style("fill", function (d) { return make_pattern_fill(d[3], "gdot"); })
+        .style("fill", function (d) { return ensure_pattern(d[3], "gdot"); })
       .merge(sel)
         .attr("d", scatter_annulus)
         .attr("transform", scatter_transform);
@@ -1095,7 +1095,7 @@ function graph_bars(selector, args) {
             .attr("class", function (d) {
                 return d[3] ? "gbar " + d[3] : "gbar";
             })
-            .style("fill", function (d) { return make_pattern_fill(d[3], "gdot"); }));
+            .style("fill", function (d) { return ensure_pattern(d[3], "gdot"); }));
 
     make_axes(svg, xAxis, yAxis, args);
 
@@ -1278,7 +1278,7 @@ function graph_boxplot(selector, args) {
     place_box(svg.selectAll(".gbox.box").data(nonoutliers)
             .enter().append("path")
             .attr("class", function (d) { return "gbox box " + d.c; })
-            .style("fill", function (d) { return make_pattern_fill(d.c, "gdot"); }));
+            .style("fill", function (d) { return ensure_pattern(d.c, "gdot"); }));
 
     place_median(svg.selectAll(".gbox.median").data(nonoutliers)
             .enter().append("line")
@@ -1562,7 +1562,7 @@ function named_integer_ticks(map) {
                         .attr("x", b.x - 3).attr("y", b.y)
                         .attr("width", b.width + 6).attr("height", b.height + 1)
                         .attr("class", "glab " + c)
-                        .style("fill", make_pattern_fill(c, "glab"));
+                        .style("fill", ensure_pattern(c, "glab"));
                 }
             });
         }

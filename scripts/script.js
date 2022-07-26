@@ -5463,7 +5463,7 @@ function render_comment(cj, editing) {
         t.push("cmt" + cj.visibility + "vis");
     }
     if (cj.color_classes) {
-        make_pattern_fill(cj.color_classes);
+        ensure_pattern(cj.color_classes);
         t.push("cmtcolor " + cj.color_classes);
     }
     if (t.length && !editing) {
@@ -8282,9 +8282,7 @@ plinfo.update_tag_decoration = function ($title, html) {
     $title.find(".tagdecoration").remove();
     if (html) {
         $title.append(html);
-        $title.find(".badge").each(function () {
-            make_pattern_fill(this.className);
-        });
+        $title.find(".badge").each(ensure_pattern_here);
     }
 };
 
@@ -8303,13 +8301,13 @@ $(window).on("hotcrptags", function (evt, rv) {
         pr.setAttribute("data-tags-conflicted", rv.tags_conflicted);
     }
     if (rv.color_classes) {
-        make_pattern_fill(rv.color_classes);
+        ensure_pattern(rv.color_classes);
     }
     if ("color_classes_conflicted" in rv) {
         pr.setAttribute("data-color-classes", rv.color_classes);
         pr.setAttribute("data-color-classes-conflicted", rv.color_classes_conflicted);
         $ptr.addClass("colorconflict");
-        make_pattern_fill(rv.color_classes_conflicted);
+        ensure_pattern(rv.color_classes_conflicted);
     } else {
         $ptr.removeClass("colorconflict");
     }
@@ -8391,7 +8389,7 @@ return plinfo;
 
 
 /* pattern fill functions */
-window.make_pattern_fill = (function () {
+window.ensure_pattern = (function () {
 var fmap = {},
     knownmap = {
         "tag-white": true, "tag-red": true, "tag-orange": true, "tag-yellow": true,
@@ -8466,10 +8464,21 @@ function class_color(k) {
         ensure_stylesheet().insertRule(".".concat(k, " { background-color: rgb(", c.r, ", ", c.g, ", ", c.b, "); }"), 0);
         return c;
     }
+    if (k.startsWith("tag-text-rgb-")
+        && (m = k.match(/^tag-text-rgb-([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/))) {
+        colormap[k] = c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0);
+        ensure_stylesheet().insertRule(".".concat(k, " { color: rgb(", c.r, ", ", c.g, ", ", c.b, "); }"), 0);
+        return c;
+    }
     if (k.startsWith("tag-font-")) {
         m = k.substring(9).replace(/_/g, " ");
         c = /^(?:serif|sans-serif|monospace|cursive|fantasy|system-ui|ui-(?:serif|sans-serif|monospace|rounded)|math|emoji|fangsong)$/.test(m) ? "" : "\"";
         ensure_stylesheet().insertRule(".".concat(k, ".taghh, .", k, " .taghl { font-family: ", c, m, c, "; }"), 0);
+        colormap[k] = null;
+        return null;
+    }
+    if (k.startsWith("tag-weight-")) {
+        ensure_stylesheet().insertRule(".".concat(k, ".taghh, .", k, " .taghl { font-weight: ", k.substring(11), "; }"), 0);
         colormap[k] = null;
         return null;
     }
@@ -8646,6 +8655,13 @@ return function (classes, type) {
     return fmap[index];
 };
 })();
+
+function ensure_pattern_here() {
+    if (this.className !== ""
+        && (this.className.indexOf("tag-") >= 0
+            || this.className.indexOf("badge-") >= 0))
+        ensure_pattern(this.className);
+}
 
 
 /* form value transfer */
@@ -9008,7 +9024,7 @@ function prepare_paper_select() {
                 var $p = $(self).find(".js-psedit-result").first();
                 $p.html(data.result || ctl.options[ctl.selectedIndex].innerHTML);
                 if (data.color_classes) {
-                    make_pattern_fill(data.color_classes);
+                    ensure_pattern(data.color_classes);
                     $p.html('<span class="taghh ' + data.color_classes + '">' + $p.html() + '</span>');
                 }
             }
@@ -9474,7 +9490,7 @@ if (siteinfo.paperid) {
     $(window).on("hotcrptags", function (event, data) {
         if (data.pid != siteinfo.paperid)
             return;
-        data.color_classes && make_pattern_fill(data.color_classes, "", true);
+        data.color_classes && ensure_pattern(data.color_classes, "", true);
         $(".has-tag-classes").each(function () {
             var t = $.trim(this.className.replace(/(?: |^)(?:tagbg|dark|tag-\S+)(?= |$)/g, " "));
             if (data.color_classes)
@@ -11038,6 +11054,7 @@ window.hotcrp = {
     check_version: check_version,
     demand_load: demand_load,
     edit_comment: papercomment.edit,
+    ensure_pattern: ensure_pattern,
     escape_html: escape_html,
     focus_within: focus_within,
     fold: fold,
@@ -11049,7 +11066,6 @@ window.hotcrp = {
     init_deadlines: hotcrp_deadlines.init,
     load_editable_paper: edit_paper_ui.load,
     load_editable_review: edit_paper_ui.load_review,
-    make_pattern_fill: make_pattern_fill,
     onload: hotcrp_load,
     paper_edit_conditions: edit_paper_ui.edit_condition,
     prepare_editable_paper: edit_paper_ui.prepare,

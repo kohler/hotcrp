@@ -301,7 +301,16 @@ class TagStyle {
             } else {
                 return $s;
             }
-        } else if (str_starts_with($s, "font-")) {
+        } else if (str_starts_with($s, "text-rgb-")
+                   && (strlen($s) === 12 || strlen($s) === 15)
+                   && ctype_xdigit(substr($s, 9))) {
+            if (strlen($s) === 12) {
+                return "text-rgb-{$s[9]}{$s[9]}{$s[10]}{$s[10]}{$s[11]}{$s[11]}";
+            } else {
+                return $s;
+            }
+        } else if (str_starts_with($s, "font-")
+                   || str_starts_with($s, "weight-")) {
             return $s;
         } else {
             return null;
@@ -341,7 +350,7 @@ class TagStyle {
         if (($dstyle = self::dynamic_style($this->style)) !== null) {
             $this->style = $dstyle;
             $sclass |= self::DYNAMIC;
-            if ($dstyle[0] === "f") { // `font-`
+            if ($dstyle[0] !== "r") { // not `rgb-`
                 $sclass = ($sclass & ~self::BG) | self::TEXT;
             }
         }
@@ -510,7 +519,9 @@ class TagMap implements IteratorAggregate {
             && (($ltag[0] === ":" && $this->check_emoji_code($ltag))
                 || isset($this->style_lmap[$ltag])
                 || (str_starts_with($ltag, "rgb-") && ctype_xdigit(substr($ltag, 4)))
-                || str_starts_with($ltag, "font-"))) {
+                || (str_starts_with($ltag, "text-rgb-") && ctype_xdigit(substr($ltag, 9)))
+                || str_starts_with($ltag, "font-")
+                || str_starts_with($ltag, "weight-"))) {
             $t = $this->add($tag);
         }
         if ($this->has_pattern
@@ -719,7 +730,7 @@ class TagMap implements IteratorAggregate {
     private function color_regex() {
         if (!$this->color_re) {
             $rex = [
-                "{(?:\\A| )(?:(?:\\d*~|~~|)(font-[^\s#]+|rgb-[0-9a-f]{3}(?:|[0-9a-f]{3})|",
+                "{(?:\\A| )(?:(?:\\d*~|~~|)(font-[^\s#]+|weight-(?:[a-z]+|\d+)|(?:text-)rgb-[0-9a-f]{3}(?:|[0-9a-f]{3})|",
                 join("|", array_keys($this->style_lmap))
             ];
             $any = false;
@@ -796,7 +807,7 @@ class TagMap implements IteratorAggregate {
             $arg = json_encode_browser($key);
             if (str_starts_with($key, "badge-"))
                 $arg .= ",\"badge\"";
-            Ht::stash_script("hotcrp.make_pattern_fill({$arg})");
+            Ht::stash_script("hotcrp.ensure_pattern({$arg})");
             self::$multicolor_map[$key] = true;
         }
     }
