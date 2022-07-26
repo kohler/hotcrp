@@ -787,12 +787,13 @@
     {   "name": "tag_color", "internal": true, "type": "string"   },
     {
         "name": "tag_style", "hashid": "colors-and-styles",
-        "title": "Tag colors",
+        "title": "Tag colors and styles",
         "type": "oblist", "parser_class": "TagStyle_SettingParser"
     },
     {
         "name_pattern": "tag_style/$",
         "type": "object", "subtype": "TagStyle_Setting",
+        "title": "Tag style", "title_pattern": "‘${sv tag_style/$/style}’",
         "parser_class": "TagStyle_SettingParser"
     },
     {   "name_pattern": "tag_style/$/id", "internal": true   },

@@ -1853,6 +1853,12 @@ function settings_describe(d) {
         render_text.ftext_onto(e, d.title, 0);
         $i.append(e);
     }
+    if (d.summary) {
+        e = document.createElement("h4");
+        e.className = "form-h n mb-1";
+        render_text.ftext_onto(e, d.summary, 0);
+        $i.append(e);
+    }
     e = document.createElement("h4");
     e.className = "form-h settings-jpath";
     e.append(d.name);
@@ -1934,6 +1940,8 @@ function settings_describe(d) {
         render_text.ftext_onto(e, d.description, 0);
         $i.append(e);
     }
+
+    $i.find(".taghh, .badge").each(ensure_pattern_here);
 }
 
 $(function () {

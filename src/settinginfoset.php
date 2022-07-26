@@ -71,11 +71,10 @@ class SettingInfoSet {
     function _add_description_item($v, $k, $landmark) {
         if (isset($v->description)) {
             $x = (object) [
-                "description" => $v->description,
                 "merge" => $v->merge ?? true,
                 "__source_order" => $v->__source_order
             ];
-            foreach (["name_pattern", "name", "priority"] as $k) {
+            foreach (["name_pattern", "summary", "description", "name", "priority"] as $k) {
                 if (isset($v->$k))
                     $x->$k = $v->$k;
             }
@@ -366,7 +365,15 @@ class SettingInfoSet {
                 $x = [];
                 $key = $m[$i];
                 $x[strpos($key, "\$") === false ? "name" : "name_pattern"] = $key;
-                $x["description"] = "<1>" . cleannl(ltrim($m[$i + 1]));
+                $d = cleannl(ltrim($m[$i + 1]));
+                if (str_starts_with($d, "> ")) {
+                    preg_match('/\A(?:^> .*?\n)+/m', $d, $m);
+                    $x["summary"] = "<3>" . simplify_whitespace(str_replace("\n> ", "", substr($m[0], 2)));
+                    $d = ltrim(substr($d, strlen($m[0])));
+                }
+                if ($d !== "") {
+                    $x["description"] = "<3>" . $d;
+                }
                 $xs[] = (object) $x;
             }
             return $xs;

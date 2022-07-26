@@ -118,6 +118,7 @@ etc/profilegroups.json
 etc/reviewformlibrary.json
 etc/sample.pdf
 etc/searchkeywords.json
+etc/settingdescriptions.md
 etc/settinginfo.json
 etc/settinggroups.json
 
