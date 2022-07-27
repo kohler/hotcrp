@@ -361,8 +361,8 @@
         "title": "Shepherds", "print_members": true
     },
     {
-        "name": "shepherds/identity", "order": 10,
-        "print_function": "Shepherds_SettingParser::print_identity",
+        "name": "shepherds/visibility", "order": 10,
+        "print_function": "Shepherds_SettingParser::print_visibility",
         "settings": ["shepherd_visibility"]
     },
     {

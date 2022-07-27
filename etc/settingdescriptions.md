@@ -38,7 +38,6 @@ Extensible `style`s include:
   Examples: <span class="taghh tag-weight-100">weight-100</span>,
   <span class="taghh tag-weight-900">weight-900</span>.
 
-
-A submission with multiple tags will be shown in
+Submissions with multiple styled tags will appear with
 <span class="taghh tagbg tag-red tag-orange tag-underline">combined styles</span>.
 
