@@ -1764,10 +1764,12 @@ class diff_match_patch {
     }
 
     /** @param list<diff_obj> $diffs
-     * @param ?int $context
+     * @param ?int $left_context
+     * @param ?int $right_context
      * @return string */
-    function line_diff_toUnified($diffs, $context = null) {
-        $context = $context ?? 3;
+    function line_diff_toUnified($diffs, $left_context = null, $right_context = null) {
+        $left_context = $left_context ?? 3;
+        $right_context = $right_context ?? $left_context;
         $l1 = $l2 = $sl1 = $sl2 = 1;
         $nl1 = $nl2 = 0;
         $ndiffs = count($diffs);
@@ -1781,9 +1783,9 @@ class diff_match_patch {
                 $j = 0;
                 if ($cpos !== 0 || count($out) !== 1) {
                     if ($nls <= 8 && $i !== $ndiffs - 1) {
-                        $last = $nls - 3;
+                        $last = $nls - $left_context;
                     } else {
-                        $last = min($nls, 3);
+                        $last = min($nls, $right_context);
                     }
                     while ($j < $last) {
                         $out[] = " {$ls[$j]}\n";
@@ -1793,7 +1795,7 @@ class diff_match_patch {
                         ++$nl2;
                         ++$j;
                     }
-                    if ($j < $nls - 3 && $i !== $ndiffs - 1) {
+                    if ($j < $nls - $left_context && $i !== $ndiffs - 1) {
                         $out[$cpos] = "@@ -{$sl1},{$nl1} +{$sl2},{$nl2} @@\n";
                         $cpos = count($out);
                         $out[] = "";
@@ -1802,8 +1804,8 @@ class diff_match_patch {
                         $nl1 = $nl2 = 0;
                     }
                 }
-                if ($j < $nls - 3 && $cpos === count($out) - 1) {
-                    $x = $nls - 3 - $j;
+                if ($j < $nls - $left_context && $cpos === count($out) - 1) {
+                    $x = $nls - $left_context - $j;
                     $l1 += $x;
                     $sl1 += $x;
                     $l2 += $x;
