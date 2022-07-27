@@ -144,8 +144,9 @@ class Checkbox_Sitype extends Sitype {
 class Radio_Sitype extends Sitype {
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
         foreach ($si->values($sv) as $allowedv) {
-            if ((string) $allowedv === $vstr)
+            if ((string) $allowedv === $vstr) {
                 return $allowedv;
+            }
         }
         $sv->error_at($si, "<0>‘" . ($vstr === "" ? "(empty)" : $vstr) . "’ is not a valid choice");
         return null;
@@ -187,9 +188,6 @@ class Radio_Sitype extends Sitype {
             return $v === 1;
         }
         return $v;
-    }
-    function nullable($v, Si $si, SettingValues $sv) {
-        return $v === ($si->default_value($sv) ?? 0);
     }
     function json_examples(Si $si, SettingValues $sv) {
         $values = $si->json_values($sv);
