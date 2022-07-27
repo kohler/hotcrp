@@ -80,7 +80,7 @@ class SettingInfoSet {
             }
             $this->_add_item($x, $k, $landmark);
             if (isset($x->name)
-                && ($si = $this->xmap[$x->name] ?? null) !== null
+                && ($si = $this->map[$x->name] ?? null) !== null
                 && Conf::xt_priority_compare($si, $x) <= 0) {
                 $si->description = $x->description;
             }

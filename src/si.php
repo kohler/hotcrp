@@ -36,8 +36,7 @@ class Si {
     /** @var ?string
      * @readonly */
     public $summary;
-    /** @var ?string
-     * @readonly */
+    /** @var ?string */
     public $description;
     /** @var ?list<string> */
     public $pages;
