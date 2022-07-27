@@ -1085,6 +1085,18 @@ class Settings_Tester {
         $opt = $this->conf->checked_option_by_id($optid);
         xassert_eqq($opt->exists_condition(), "Program:Joint*");
         xassert_eqq($opt->name, "Joint concentration?");
+
+        // `final` presence obeyed
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/name" => "Joint concentration?",
+            "sf/1/presence" => "final"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq(trim($sv->full_feedback_text()), "");
+
+        $opt = $this->conf->checked_option_by_id($optid);
+        xassert_eqq($opt->final, true);
     }
 
     function test_json_settings_api() {
