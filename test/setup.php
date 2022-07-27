@@ -346,6 +346,23 @@ function xassert_in_eqq($member, $list) {
     return $ok;
 }
 
+/** @param null|int|float|string $member
+ * @param list<null|int|float|string> $list
+ * @return bool */
+function xassert_not_in_eqq($member, $list) {
+    $ok = true;
+    foreach ($list as $bx) {
+        $ok = $ok && $member !== $bx;
+    }
+    if ($ok) {
+        Xassert::succeed();
+    } else {
+        error_log(assert_location() . ": Expected " . var_export($member, true) . " \\not\\in " . var_export($list, true));
+        Xassert::fail();
+    }
+    return $ok;
+}
+
 /** @param null|int|float|string $actual
  * @param null|int|float|string $expected
  * @return bool */

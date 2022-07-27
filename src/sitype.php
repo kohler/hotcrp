@@ -175,17 +175,14 @@ class Radio_Sitype extends Sitype {
         return null;
     }
     function unparse_jsonv($v, Si $si, SettingValues $sv) {
-        $json_values = $si->json_values($sv);
-        $values = $si->values($sv);
-        if ($json_values !== null) {
-            if (($i = array_search($v, $values, true)) !== false
-                && $i < count($json_values)) {
-                return $json_values[$i];
-            }
+        if (($values = $si->values($sv)) === [0, 1]
+            && (is_bool($v) || $v === 0 || $v === 1)) {
+            return $v === true || $v === 1;
         }
-        if ($values === [0, 1]
-            && ($v === 0 || $v === 1)) {
-            return $v === 1;
+        if (($json_values = $si->json_values($sv)) !== null
+            && ($i = array_search($v, $values, true)) !== false
+            && $i < count($json_values)) {
+            return $json_values[$i];
         }
         return $v;
     }

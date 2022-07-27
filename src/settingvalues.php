@@ -232,8 +232,9 @@ class SettingValues extends MessageSet {
             } else if ($si->type === "oblist") {
                 if (is_array($v)) {
                     $this->set_req("has_{$si->name}", "1");
+                    $myjpath = $this->_jpath;
                     foreach ($v as $i => $vv) {
-                        $this->_jpath = "{$jpath}{$k}[{$i}]";
+                        $this->_jpath = "{$myjpath}[{$i}]";
                         $pfx = "{$si->name}/" . ($i + 1) . "/";
                         if (!array_key_exists("{$pfx}id", $this->req)) {
                             $this->req["{$pfx}id"] = "";
@@ -246,6 +247,7 @@ class SettingValues extends MessageSet {
                             $this->error_at(null, "<0>Expected JSON object");
                         }
                     }
+                    $this->_jpath = $myjpath;
                 } else {
                     $mi = $this->error_at(null, "<0>Expected array of JSON objects");
                 }
@@ -547,7 +549,7 @@ class SettingValues extends MessageSet {
                    && ($obj = $this->objectv($si->name0 . $si->name1))) {
             $val = $obj->{$si->storage_name()};
         } else {
-            error_log("setting $si->name: don't know how to get value");
+            error_log("setting {$si->name}: don't know how to get value\n" . debug_string_backtrace());
             $val = $si->default_value($this);
         }
         if ($si->storage_type & Si::SI_NEGATE) {
@@ -693,10 +695,7 @@ class SettingValues extends MessageSet {
      * @param iterable<object> $obs
      * @param ?non-empty-string $namekey */
     function append_oblist($pfx, $obs, $namekey = null) {
-        if (str_ends_with($pfx, "/")) {
-            error_log(debug_string_backtrace()); /* XXX */
-            $pfx = substr($pfx, 0, -1);
-        }
+        assert(!str_ends_with($pfx, "/"));
 
         // find next counter
         if (($nextctr = $this->_oblist_next[$pfx] ?? 0) === 0) {
@@ -786,10 +785,7 @@ class SettingValues extends MessageSet {
     /** @param string $pfx
      * @return list<int> */
     function oblist_keys($pfx) {
-        if (str_ends_with($pfx, "/")) {
-            error_log(debug_string_backtrace()); /* XXX */
-            $pfx = substr($pfx, 0, -1);
-        }
+        assert(!str_ends_with($pfx, "/"));
         $this->ensure_oblist($pfx);
         $ctrs = [];
         for ($ctr = 1; array_key_exists("{$pfx}/{$ctr}/id", $this->req); ++$ctr) {
@@ -829,14 +825,7 @@ class SettingValues extends MessageSet {
      * @param int|string $needle
      * @return ?int */
     function search_oblist($pfx, $sfx, $needle) {
-        if (str_ends_with($pfx, "/")) {
-            error_log(debug_string_backtrace()); /* XXX */
-            $pfx = substr($pfx, 0, -1);
-        }
-        if (str_starts_with($sfx, "/")) {
-            error_log(debug_string_backtrace()); /* XXX */
-            $sfx = substr($sfx, 1);
-        }
+        assert(!str_ends_with($pfx, "/") && !str_starts_with($sfx, "/"));
         $this->ensure_oblist($pfx);
         for ($ctr = 1; array_key_exists("{$pfx}/{$ctr}/id", $this->req); ++$ctr) {
             if ((string) $needle === (string) $this->req["{$pfx}/{$ctr}/{$sfx}"]) {

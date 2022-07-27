@@ -12,10 +12,24 @@ class ReviewForm_SettingParser extends SettingParser {
 
     function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name0 === "rf/" && $si->name2 === "") {
-            $fid = $si->name1 === '$' ? 's99' : $sv->vstr("{$si->name}/id");
-            if (($finfo = ReviewFieldInfo::find($sv->conf, $fid))) {
+            if ($si->name1 !== "\$"
+                && ($fid = $sv->vstr("{$si->name}/id") ?? "") !== ""
+                && $fid !== "new") {
+                $finfo = ReviewFieldInfo::find($sv->conf, $fid);
+                $isnew = false;
+            } else if ($si->name1 === "\$") {
+                $finfo = ReviewFieldInfo::find($sv->conf, "s99");
+                $isnew = true;
+            } else {
+                $type = $sv->reqstr("{$si->name}/type") ?? "radio";
+                $finfo = ReviewFieldInfo::find($sv->conf, $type === "text" ? "t99" : "s99");
+                $isnew = true;
+            }
+            if ($finfo) {
                 $rfs = new Rf_Setting;
                 ReviewField::make($sv->conf, $finfo)->unparse_setting($rfs);
+                $rfs->id = $isnew ? "new" : $rfs->id;
+                $rfs->required = false;
                 $sv->set_oldv($si->name, $rfs);
             }
         } else if ($si->name0 === "rf/" && $si->name2 === "/values_text") {
@@ -85,7 +99,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 if (($symbol === "0" && strcasecmp($name, "No entry") === 0)
                     || (strcasecmp($symbol, "No entry") === 0 && $name === "")) {
                     if (!$sv->has_req("{$fpfx}/required")) {
-                        $sv->save("{$fpfx}/required", "");
+                        $sv->save("{$fpfx}/required", "0");
                     }
                 } else if ($symbol !== "" && ctype_alnum($symbol)) {
                     $sv->set_req("{$vpfx}/{$i}/name", $name);
@@ -214,14 +228,27 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     private function _apply_req_review_form(Si $si, SettingValues $sv) {
+        $known_ids = [];
+        foreach ($sv->oblist_keys("rf") as $ctr) {
+            $known_ids[$sv->vstr("rf/{$ctr}/id") ?? ""] = true;
+        }
         $nrfj = [];
         foreach ($sv->oblist_nondeleted_keys("rf") as $ctr) {
             $rfj = $sv->object_newv("rf/{$ctr}");
+            if ($rfj->id === "new") {
+                $pattern = $rfj->type === "text" ? "t%02d" : "s%02d";
+                for ($i = 1; isset($known_ids[$rfj->id]); ++$i) {
+                    $rfj->id = sprintf($pattern, ++$i);
+                }
+                $known_ids[$rfj->id] = true;
+            }
             if (($finfo = ReviewFieldInfo::find($sv->conf, $rfj->id))) {
                 $sv->error_if_missing("rf/{$ctr}/name");
                 $this->_fix_req_condition($sv, $rfj);
                 $rfj->order = $rfj->order ?? 1000000;
                 $nrfj[] = $rfj;
+            } else {
+                $sv->error_at("rf/{$ctr}/id", "<0>Invalid review form ID");
             }
         }
         $this->_new_form = new ReviewForm($sv->conf, $nrfj);
@@ -238,21 +265,25 @@ class ReviewForm_SettingParser extends SettingParser {
             return $this->_apply_req_review_form($si, $sv);
         } else {
             assert($si->name0 === "rf/");
-            $pfx = $si->name0 . $si->name1;
-            $sfx = $si->name2;
-            $finfo = ReviewFieldInfo::find($sv->conf, $sv->vstr("{$pfx}/id"));
+            $rfs = $sv->oldv($si->name0 . $si->name1);
             if ($si->name2 === "/values") {
-                if ($finfo->has_options) {
+                if ($rfs->type !== "text") {
                     $this->_apply_req_values($si, $sv);
                 }
                 return true;
             } else if ($si->name2 === "/values_text") {
-                if ($finfo->has_options) {
+                if ($rfs->type !== "text") {
                     $this->_apply_req_values_text($si, $sv);
                 }
                 return true;
             } else if ($si->name2 === "/name") {
                 return $this->_apply_req_name($si, $sv);
+            } else if ($si->name2 === "/type") {
+                assert($sv->has_req($si->name));
+                $v = $sv->base_parse_req($si);
+                if ($v !== $rfs->type) {
+                    $sv->error_at($si, "<0>Type doesn’t match with ID");
+                }
             }
             return true;
         }

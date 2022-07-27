@@ -6,8 +6,9 @@ class Rf_Setting {
     // used by ReviewForm constructor
     public $id;
     public $name;
-    public $description;
     public $order;
+    public $type;
+    public $description;
     public $visibility;
     public $required;
     public $exists_if;
@@ -25,7 +26,7 @@ class Rf_Setting {
 
 class RfValue_Setting {
     public $id;
-    public $order;
     public $name;
+    public $order;
     public $symbol;
 }

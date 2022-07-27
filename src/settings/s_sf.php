@@ -5,10 +5,10 @@
 class Sf_Setting {
     public $id;
     public $name;
+    public $order;
     public $type;
     public $description;
     public $display;
-    public $order;
     public $visibility;
     public $required;
     public $presence;
@@ -22,6 +22,6 @@ class Sf_Setting {
 
 class SfValue_Setting {
     public $id;
-    public $order;
     public $name;
+    public $order;
 }

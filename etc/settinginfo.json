@@ -584,6 +584,10 @@
         "type": "float"
     },
     {
+        "name_pattern": "rf/$/type", "title": "/Field type",
+        "type": "radio", "values": ["text", "radio"]
+    },
+    {
         "name_pattern": "rf/$/description",
         "title": "/Description",
         "type": "htmlstring", "size": 2, "autogrow": true

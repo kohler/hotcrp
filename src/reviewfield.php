@@ -626,6 +626,7 @@ class Score_ReviewField extends ReviewField {
 
     function unparse_setting($rfs) {
         parent::unparse_setting($rfs);
+        $rfs->type = "radio";
         $n = count($this->values);
         $rfs->values = $this->values;
         if ($this->option_letter) {
@@ -972,6 +973,11 @@ class Text_ReviewField extends ReviewField {
             $j->display_space = $this->display_space;
         }
         return $j;
+    }
+
+    function unparse_setting($rfs) {
+        parent::unparse_setting($rfs);
+        $rfs->type = "text";
     }
 
     /** @param ?int|string $value

@@ -693,6 +693,35 @@ class Settings_Tester {
         xassert($sv->execute());
     }
 
+    function test_review_field_id_new() {
+        $rfkeys = array_keys($this->conf->all_review_fields());
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/name" => "Nude Feeled",
+            "rf/1/id" => "new",
+            "rf/1/type" => "radio",
+            "rf/1/values_text" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I",
+            "rf/2/name" => "Clothings",
+            "rf/2/id" => "new",
+            "rf/2/type" => "text",
+            "rf/2/required" => "1"
+        ]);
+        xassert($sv->execute());
+
+        $rf1 = $this->conf->find_review_field("NudFee");
+        xassert(!!$rf1);
+        xassert_not_in_eqq($rf1->short_id, $rfkeys);
+        xassert_eqq($rf1->short_id[0], "s");
+        xassert_eqq($rf1->required, false);
+
+        $rf2 = $this->conf->find_review_field("Clothings");
+        xassert(!!$rf2);
+        xassert_not_in_eqq($rf2->short_id, $rfkeys);
+        xassert_eqq($rf2->short_id[0], "t");
+        xassert_eqq($rf2->required, true);
+    }
+
     function test_review_rounds() {
         $tn = Conf::$now + 10;
 
@@ -1103,23 +1132,56 @@ class Settings_Tester {
         xassert(!isset($x->settings));
     }
 
+    static function print_unified_diff($x, $y) {
+        $dmp = new dmp\diff_match_patch;
+        $diff = $dmp->line_diff($x, $y);
+        fwrite(STDERR, $dmp->line_diff_toUnified($diff, 10, 50));
+    }
+
     function test_json_settings_roundtrip() {
+        $rf1 = $this->conf->find_review_field("NudFee");
+        xassert_eqq($rf1->required, false);
+
         $x = call_api("settings", $this->u_chair, []);
         xassert($x->ok);
         xassert(!isset($x->updates));
         xassert(is_object($x->settings));
         xassert_eqq($x->settings->review_blind, "blind");
+        xassert_eqq($x->settings->rf[5]["required"], false);
 
-        $x = call_api("=settings", $this->u_chair, ["settings" => json_encode($x->settings)]);
+        $sa = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
+
+        $x = call_api("=settings", $this->u_chair, ["settings" => $sa]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
         xassert_eqq($x->updates, []);
         xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), null);
 
-        $x->settings->reset = true;
-        $x = call_api("=settings", $this->u_chair, ["settings" => json_encode($x->settings)]);
+        $sb = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
+        if ($sa !== $sb) {
+            self::print_unified_diff($sa, $sb);
+        }
+
+        $x = call_api("=settings", $this->u_chair, ["settings" => $sb]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
         xassert_eqq($x->updates, []);
+        xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), null);
+
+        $sc = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
+        if ($sb !== $sc) {
+            self::print_unified_diff($sb, $sc);
+        }
+
+        $x->settings->reset = true;
+        $x = call_api("=settings", $this->u_chair, ["settings" => json_encode_browser($x->settings)]);
+        xassert($x->ok);
+        xassert_eqq($x->message_list, []);
+        xassert_eqq($x->updates, []);
+
+        $sd = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
+        if ($sc !== $sd) {
+            self::print_unified_diff($sc, $sd);
+        }
     }
 }
