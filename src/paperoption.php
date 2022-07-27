@@ -739,7 +739,7 @@ class PaperOption implements JsonSerializable {
         "attachments" => "+Attachments_PaperOption"
     ];
 
-    /** @param stdClass $args
+    /** @param stdClass|Sf_Setting $args
      * @param string $default_className */
     function __construct(Conf $conf, $args, $default_className = "") {
         assert(is_object($args));
@@ -852,7 +852,7 @@ class PaperOption implements JsonSerializable {
         $this->max_size = $args->max_size ?? null;
     }
 
-    /** @param object $args
+    /** @param stdClass|Sf_Setting $args
      * @return PaperOption */
     static function make(Conf $conf, $args) {
         assert(is_object($args));

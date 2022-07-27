@@ -264,8 +264,7 @@
     {
         "name_pattern": "sf/$/presence",
         "title": "/Presence",
-        "type": "radio", "values": ["all", "final", "custom"],
-        "parser_class": "SubFieldCondition_SettingParser", "parse_order": 1
+        "type": "radio", "values": ["all", "final", "custom"]
     },
     {
         "name_pattern": "sf/$/condition", "storage": "member.exists_if",
