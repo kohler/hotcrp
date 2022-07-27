@@ -201,7 +201,7 @@ abstract class ReviewField implements JsonSerializable {
             $this->_exists_search = null;
             $this->_need_exists_search = ($this->exists_if ?? "") !== "";
         }
-        $this->required = false;
+        $this->required = !!($j->required ?? false);
     }
 
     /** @param ReviewField $a
@@ -284,8 +284,8 @@ abstract class ReviewField implements JsonSerializable {
     function unparse_setting($rfs) {
         $rfs->id = $this->short_id;
         $rfs->name = $this->name;
-        $rfs->description = $this->description;
         $rfs->order = $this->order;
+        $rfs->description = $this->description;
         $rfs->visibility = $this->unparse_visibility();
         $rfs->required = $this->required;
         $rm = $this->round_mask;
@@ -583,12 +583,12 @@ class Score_ReviewField extends ReviewField {
             }
             $this->scheme = $p;
         }
-        if (isset($j->required)) {
-            $this->required = !!$j->required;
-        } else if (isset($j->allow_empty) /* XXX backward compat */) {
-            $this->required = !$j->allow_empty;
-        } else {
-            $this->required = true;
+        if (!isset($j->required)) {
+            if (isset($j->allow_empty) /* XXX backward compat */) {
+                $this->required = !$j->allow_empty;
+            } else {
+                $this->required = true;
+            }
         }
         $this->_typical_score = null;
     }
