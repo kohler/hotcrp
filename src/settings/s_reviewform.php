@@ -11,7 +11,7 @@ class ReviewForm_SettingParser extends SettingParser {
     private $_score_renumberings = [];
 
     function set_oldv(Si $si, SettingValues $sv) {
-        if ($si->name0 === "rf/" && $si->name2 === "") {
+        if ($si->name_matches("rf/", "*")) {
             if ($si->name1 !== "\$"
                 && ($fid = $sv->vstr("{$si->name}/id") ?? "") !== ""
                 && $fid !== "new") {
@@ -32,7 +32,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 $rfs->required = false;
                 $sv->set_oldv($si->name, $rfs);
             }
-        } else if ($si->name0 === "rf/" && $si->name2 === "/values_text") {
+        } else if ($si->name_matches("rf/", "*", "/values_text")) {
             $rfs = $sv->oldv("rf/{$si->name1}");
             $vs = [];
             foreach ($rfs->xvalues ?? [] as $rfv) {
@@ -43,9 +43,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 }
             }
             $sv->set_oldv($si, join("", $vs));
-        } else if (count($si->name_parts) === 5
-                   && $si->name_parts[2] === "/values/"
-                   && $si->name2 === "") {
+        } else if ($si->name_matches("rf/", "*", "/values/", "*")) {
             $sv->set_oldv($si, new RfValue_Setting);
         }
     }

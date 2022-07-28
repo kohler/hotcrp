@@ -36,19 +36,19 @@ class SettingInfoSet {
         return new SettingInfoSet($cs, ["etc/settinginfo.json"], $conf->opt("settingInfo"));
     }
 
-    function _add_item($v, $k, $landmark) {
-        if (isset($v->name_pattern)) {
+    function _add_item($xt, $k, $landmark) {
+        if (isset($xt->name_pattern)) {
             $parts = [];
             $pos = 0;
-            while (($pos1 = strpos($v->name_pattern, '$', $pos)) !== false) {
-                $pos2 = $pos1 + strspn($v->name_pattern, '$', $pos1);
+            while (($pos1 = strpos($xt->name_pattern, '$', $pos)) !== false) {
+                $pos2 = $pos1 + strspn($xt->name_pattern, '$', $pos1);
                 assert($pos2 - $pos1 === count($parts) / 2 + 1);
-                $parts[] = substr($v->name_pattern, $pos, $pos1 - $pos);
+                $parts[] = substr($xt->name_pattern, $pos, $pos1 - $pos);
                 $parts[] = "";
                 $pos = $pos2;
             }
-            $parts[] = substr($v->name_pattern, $pos);
-            $v->name_parts = $parts;
+            $parts[] = substr($xt->name_pattern, $pos);
+            $xt->name_parts = $parts;
             $i = 0;
             while ($i !== count($this->xlist) && $this->xlist[$i] !== $parts[0]) {
                 $i += 2;
@@ -56,33 +56,39 @@ class SettingInfoSet {
             if ($i === count($this->xlist)) {
                 array_push($this->xlist, $parts[0], []);
             }
-            array_push($this->xlist[$i + 1], $parts[count($parts) - 1], $v);
+            array_push($this->xlist[$i + 1], $parts[count($parts) - 1], $xt);
         } else {
-            assert(is_string($v->name));
-            $this->xmap[$v->name][] = $v;
-            if (isset($v->alias)) {
-                $this->potential_aliases[] = $v->name;
+            assert(is_string($xt->name));
+            $this->xmap[$xt->name][] = $xt;
+            if (isset($xt->alias)) {
+                $this->potential_aliases[] = $xt->name;
             }
             $this->xmap_sorted = false;
         }
         return true;
     }
 
-    function _add_description_item($v, $k, $landmark) {
-        if (isset($v->description)) {
+    /** @suppress PhanAccessReadOnlyProperty */
+    function _add_description_item($xt, $k, $landmark) {
+        if (isset($xt->description) || isset($xt->summary)) {
             $x = (object) [
-                "merge" => $v->merge ?? true,
-                "__source_order" => $v->__source_order
+                "merge" => $xt->merge ?? true,
+                "__source_order" => $xt->__source_order
             ];
             foreach (["name_pattern", "summary", "description", "name", "priority"] as $k) {
-                if (isset($v->$k))
-                    $x->$k = $v->$k;
+                if (isset($xt->$k))
+                    $x->$k = $xt->$k;
             }
             $this->_add_item($x, $k, $landmark);
             if (isset($x->name)
                 && ($si = $this->map[$x->name] ?? null) !== null
                 && Conf::xt_priority_compare($si, $x) <= 0) {
-                $si->description = $x->description;
+                if (isset($x->description)) {
+                    $si->description = $x->description;
+                }
+                if (isset($x->summary)) {
+                    $si->summary = $x->summary;
+                }
             }
         }
         return true;
@@ -184,8 +190,8 @@ class SettingInfoSet {
     }
 
     /** @param string $name
-     * @param object $xt
-     * @return ?object */
+     * @param stdClass $xt
+     * @return ?stdClass */
     private function _instantiate_match($name, $xt) {
         if (($parts = $this->_match_parts($name, $xt->name_parts))) {
             $xt = clone $xt;
@@ -291,9 +297,8 @@ class SettingInfoSet {
         $sis = [];
         foreach (array_keys($this->xmap) as $k) {
             if (($si = $this->get($k)) !== null
-                && empty($si->name_parts)
-                && !$si->internal
-                && $si->name === $k)
+                && $si->is_top()
+                && $si->name === $k /* no aliases */)
                 $sis[] = $si;
         }
         usort($sis, "Conf::xt_order_compare");

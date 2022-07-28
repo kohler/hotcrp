@@ -343,20 +343,18 @@ class Options_SettingParser extends SettingParser {
     }
 
     function set_oldv(Si $si, SettingValues $sv) {
-        if ($si->name0 === "sf/" && $si->name2 === "") {
+        if ($si->name_matches("sf/", "*")) {
             $sfs = new Sf_Setting;
             self::make_placeholder_option($sv)->unparse_setting($sfs);
             $sv->set_oldv($si, $sfs);
-        } else if ($si->name0 === "sf/" && $si->name2 === "/values_text") {
+        } else if ($si->name_matches("sf/", "*", "/values_text")) {
             $sfs = $sv->oldv("sf/{$si->name1}");
             $vs = [];
             foreach ($sfs->values ?? [] as $sfv) {
                 $vs[] = $sfv->name;
             }
             $sv->set_oldv($si, empty($vs) ? "" : join("\n", $vs) . "\n");
-        } else if (count($si->name_parts) === 5
-                   && $si->name_parts[2] === "/values/"
-                   && $si->name2 === "") {
+        } else if ($si->name_matches("sf/", "*", "/values/", "*")) {
             $sv->set_oldv($si, new SfValue_Setting);
         }
     }

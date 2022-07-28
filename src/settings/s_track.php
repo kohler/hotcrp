@@ -99,7 +99,7 @@ class Track_SettingParser extends SettingParser {
     }
 
     function member_list(Si $si, SettingValues $sv) {
-        if (count($si->name_parts) === 3 && $si->name2 === "/perm") {
+        if ($si->name_matches("track/", "*", "/perm")) {
             $sis = [];
             foreach (Track::$perm_name_map as $pn => $perm) {
                 $sis[] = $si->conf->si("{$si->name}/{$pn}");
@@ -111,8 +111,8 @@ class Track_SettingParser extends SettingParser {
     }
 
     function default_value(Si $si, SettingValues $sv) {
-        if (count($si->name_parts) === 5
-            && ($si->name2 === "" || $si->name2 === "/tag")
+        if (($si->name_matches("track/", "*", "/perm/", "*")
+             || $si->name_matches("track/", "*", "/perm/", "*", "/tag"))
             && ($perm = Track::$perm_name_map[$si->name1] ?? null) !== null) {
             return Track::perm_required($perm) ? "none" : "all";
         } else {
@@ -121,9 +121,9 @@ class Track_SettingParser extends SettingParser {
     }
 
     function set_oldv(Si $si, SettingValues $sv) {
-        if (count($si->name_parts) === 3 && $si->name2 === "") {
+        if ($si->name_matches("track/", "*")) {
             $sv->set_oldv($si, new Track_Setting(new Track, null));
-        } else if (count($si->name_parts) === 3 && $si->name2 === "/title") {
+        } else if ($si->name_matches("track/", "*", "/title")) {
             $id = $sv->reqstr("{$si->name0}{$si->name1}/id") ?? "";
             if ($id === "any") {
                 $sv->set_oldv($si->name, "Default track");
@@ -132,8 +132,8 @@ class Track_SettingParser extends SettingParser {
             } else {
                 $sv->set_oldv($si->name, "Unnamed track");
             }
-        } else if (count($si->name_parts) === 5) {
-            $trx = $sv->oldv("{$si->name_parts[0]}{$si->name_parts[1]}");
+        } else if ($si->name_matches("track/", "*", "/perm/", "*", "*")) {
+            $trx = $sv->oldv($si->name_prefix(2));
             $perm = Track::$perm_name_map[$si->name1] ?? null;
             $p = $trx !== null && $perm !== null ? $trx->perms[$perm] : "all";
             if ($si->name2 === "") {
@@ -348,8 +348,7 @@ class Track_SettingParser extends SettingParser {
     }
 
     function apply_req(Si $si, SettingValues $sv) {
-        if (count($si->name_parts) === 5
-            && $si->name_parts[2] === "/perm/"
+        if ($si->name_matches("track/", "*", "/perm/", "*", "*")
             && ($si->name2 === "" || $si->name2 === "/type" || $si->name2 === "/tag")) {
             if ($si->name2 !== "/tag" || !$sv->has_req("{$si->name0}{$si->name1}/type")) {
                 $this->_apply_req_perm($si, $sv);

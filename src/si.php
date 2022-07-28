@@ -8,8 +8,8 @@ class Si {
     public $conf;
     /** @var string */
     public $name;
-    /** @var list<string> */
-    public $name_parts = [];
+    /** @var ?list<string> */
+    private $name_parts;
     /** @var ?string */
     public $name0;
     /** @var ?string */
@@ -36,7 +36,8 @@ class Si {
     /** @var ?string
      * @readonly */
     public $summary;
-    /** @var ?string */
+    /** @var ?string
+     * @readonly */
     public $description;
     /** @var ?list<string> */
     public $pages;
@@ -365,6 +366,43 @@ class Si {
             $this->subtype = $subtype;
             $this->_tclass = Sitype::get($this->conf, $this->type, $this->subtype);
         }
+    }
+
+    /** @return bool */
+    function is_top() {
+        return empty($this->name_parts) && !$this->internal;
+    }
+
+    /** @param string ...$parts
+     * @return bool */
+    function name_matches(...$parts) {
+        $nparts = count($parts);
+        if (empty($this->name_parts)) {
+            return $nparts === 1
+                && ($parts[0] === "*" || $parts[0] === $this->name);
+        }
+        if (($nparts | 1) !== count($this->name_parts)) {
+            return false;
+        }
+        if ($nparts % 2 === 0 && $this->name_parts[$nparts] !== "") {
+            return false;
+        }
+        foreach ($parts as $i => $p) {
+            if ($p !== "*" && $this->name_parts[$i] !== $p)
+                return false;
+        }
+        return true;
+    }
+
+    /** @param int $n
+     * @return string */
+    function name_prefix($n) {
+        assert($this->name_parts !== null && $n <= count($this->name_parts));
+        $p = "";
+        for ($i = 0; $i !== $n; ++$i) {
+            $p .= $this->name_parts[$i];
+        }
+        return $p;
     }
 
     /** @return string */
