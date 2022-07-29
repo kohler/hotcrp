@@ -945,6 +945,9 @@ class TestRunner {
                     $has_reset = true;
                 }
             } else {
+                if (strpos($classname, "_") === false && ctype_alpha($classname[0])) {
+                    $classname .= "_Tester";
+                }
                 $class = new ReflectionClass($classname);
                 $ctor = $class->getConstructor();
                 if ($ctor && $ctor->getNumberOfParameters() === 1) {

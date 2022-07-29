@@ -1196,4 +1196,13 @@ class Settings_Tester {
             self::print_unified_diff($sc, $sd);
         }
     }
+
+    function test_json_settings_errors() {
+        $x = call_api("=settings", $this->u_chair, ["dryrun" => 1, "settings" => "{\"review\":[\"a\"]}"]);
+        xassert(!$x->ok);
+        $mi = $x->message_list[0] ?? null;
+        xassert_eqq($mi->status, 2);
+        xassert_eqq($mi->pos1, 11);
+        xassert_eqq($mi->pos2, 14);
+    }
 }

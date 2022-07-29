@@ -841,9 +841,9 @@
 
     {   "name": "has_topics", "internal": true, "type": "checkbox"   },
     {
-        "name": "topic",
-        "type": "oblist", "parser_class": "Topic_SettingParser",
-        "title": "Topics"
+        "name": "topic", "title": "Topics",
+        "type": "oblist", "subtype": "allow_bare_name",
+        "parser_class": "Topic_SettingParser"
     },
     {
         "name_pattern": "topic/$",

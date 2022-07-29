@@ -239,9 +239,10 @@ class SettingValues extends MessageSet {
                         if (!array_key_exists("{$pfx}id", $this->req)) {
                             $this->req["{$pfx}id"] = "";
                         }
-                        if (is_string($vv)) {
-                            $this->req["{$pfx}name"] = $vv;
-                        } else if (is_object($vv)) {
+                        if (is_string($vv) && $si->subtype === "allow_bare_name") {
+                            $vv = (object) ["name" => $vv];
+                        }
+                        if (is_object($vv)) {
                             $this->set_json_parts($pfx, $vv);
                         } else {
                             $this->error_at(null, "<0>Expected JSON object");
@@ -249,7 +250,7 @@ class SettingValues extends MessageSet {
                     }
                     $this->_jpath = $myjpath;
                 } else {
-                    $mi = $this->error_at(null, "<0>Expected array of JSON objects");
+                    $this->error_at(null, "<0>Expected array of JSON objects");
                 }
             } else if ($si->type === "object") {
                 if (is_object($v)) {
@@ -365,7 +366,11 @@ class SettingValues extends MessageSet {
             }
             $jpp = $this->_jp->path_position($path);
         } else if ($this->_jpath !== "") {
-            $updates["field"] = join("/", JsonParser::path_split($this->_jpath));
+            $field = "";
+            foreach (JsonParser::path_split($this->_jpath) as $i => $part) {
+                $field .= ($i === 0 ? "" : "/") . (is_int($part) ? $part + 1 : $part);
+            }
+            $updates["field"] = $field;
             $jpp = $this->_jp->path_position($this->_jpath);
         }
         if ($jpp) {
