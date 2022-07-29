@@ -1124,7 +1124,7 @@ function jsonhl_install(lineel, errors) {
             }
         }
         ei += 2;
-        ch = ch.nextSibling;
+        ch = ch ? ch.nextSibling : null;
     }
 
     if (lineel.firstChild === null) {
