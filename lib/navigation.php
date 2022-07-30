@@ -31,7 +31,7 @@ class NavigationState {
     /** @var string */
     public $query;              // "?QUERY" or ""
     /** @var string */
-    public $php_suffix;
+    public $php_suffix = "";
     /** @var string */
     public $request_uri;
 
@@ -44,6 +44,15 @@ class NavigationState {
             return;
         }
 
+        // php_suffix
+        if (isset($server["HOTCRP_PHP_SUFFIX"])) {
+            $this->php_suffix = $server["HOTCRP_PHP_SUFFIX"];
+        } else if (function_exists("apache_get_modules")
+                   && array_search("mod_rewrite", apache_get_modules()) === false) {
+            $this->php_suffix = ".php";
+        }
+
+        // host, protocol, server
         $this->host = $server["HTTP_HOST"] ?? $server["SERVER_NAME"] ?? null;
         if ((isset($server["HTTPS"])
              && $server["HTTPS"] !== ""
@@ -115,11 +124,7 @@ class NavigationState {
             $this->raw_page = "";
             $this->page = $index_name;
         }
-        // NB: str_ends_with is not available in this file in older PHPs
-        if (($pagelen = strlen($this->page)) > 4
-            && substr($this->page, $pagelen - 4) === ".php") {
-            $this->page = substr($this->page, 0, $pagelen - 4);
-        }
+        $this->apply_php_suffix();
         $this->path = $m[2];
         $this->shifted_path = "";
         $this->query = $m[3];
@@ -137,15 +142,29 @@ class NavigationState {
         // set $base_path
         $this->base_path = $this->site_path;
         $this->base_path_relative = $this->site_path_relative;
+    }
 
-        if (isset($server["HOTCRP_PHP_SUFFIX"])) {
-            $this->php_suffix = $server["HOTCRP_PHP_SUFFIX"];
-        } else if (!function_exists("apache_get_modules")
-                   || array_search("mod_rewrite", apache_get_modules()) !== false) {
-            $this->php_suffix = "";
-        } else {
-            $this->php_suffix = ".php";
+    private function apply_php_suffix() {
+        if ($this->page === $this->raw_page) {
+            $pagelen = strlen($this->page);
+            if ($pagelen > 4
+                && substr_compare($this->page, ".php", $pagelen - 4) === 0) {
+                $this->page = substr($this->page, 0, $pagelen - 4);
+            } else if ($this->php_suffix !== ""
+                       && $this->php_suffix !== ".php"
+                       && $pagelen > ($sfxlen = strlen($this->php_suffix))
+                       && substr_compare($this->page, $this->php_suffix, $pagelen - $sfxlen) === 0) {
+                $this->page = substr($this->page, 0, $pagelen - $sfxlen);
+            }
         }
+    }
+
+    /** @param string $suffix
+     * @return $this */
+    function set_php_suffix($suffix) {
+        $this->php_suffix = $suffix;
+        $this->apply_php_suffix();
+        return $this;
     }
 
     /** @return string */
@@ -205,11 +224,9 @@ class NavigationState {
     /** @param string $page
      * @return string */
     function set_page($page) {
-        $this->raw_page = $page;
-        if (str_ends_with($page, ".php")) {
-            $page = substr($page, 0, -4);
-        }
-        return ($this->page = $page);
+        $this->raw_page = $this->page = $page;
+        $this->apply_php_suffix();
+        return $this->page;
     }
 
     /** @param string $path

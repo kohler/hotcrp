@@ -3700,10 +3700,16 @@ class Conf {
         }
         if ($nav->php_suffix !== "") {
             if (($slash = strpos($t, "/")) !== false) {
-                $t = substr($t, 0, $slash) . $nav->php_suffix . substr($t, $slash);
+                $a = substr($t, 0, $slash);
+                $b = substr($t, $slash);
             } else {
-                $t .= $nav->php_suffix;
+                $a = $t;
+                $b = "";
             }
+            if (!str_ends_with($a, $nav->php_suffix)) {
+                $a .= $nav->php_suffix;
+            }
+            $t = $a . $b;
         }
         if ($param !== "" && preg_match('/\A&(?:amp;)?(.*)\z/', $param, $m)) {
             $param = $m[1];

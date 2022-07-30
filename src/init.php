@@ -226,7 +226,7 @@ function initialize_request($kwarg = null) {
 
     // check PHP suffix
     if (($php_suffix = $conf->opt("phpSuffix")) !== null) {
-        $nav->php_suffix = $php_suffix;
+        $nav->set_php_suffix($php_suffix);
     }
 
     // maybe redirect to https

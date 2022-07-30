@@ -1162,11 +1162,14 @@ function hoturl(page, options) {
     }
 
     if (siteinfo.suffix !== "") {
-        if ((i = x.t.indexOf("/")) > 0) {
-            x.t = x.t.substring(0, i).concat(siteinfo.suffix, x.t.substring(i));
-        } else {
-            x.t += siteinfo.suffix;
+        if ((i = x.t.indexOf("/")) <= 0) {
+            i = x.t.length;
         }
+        k = x.t.substring(0, i);
+        if (!k.endsWith(siteinfo.suffix)) {
+            k += siteinfo.suffix;
+        }
+        x.t = k + x.t.substring(i);
     }
 
     if (siteinfo.want_override_conflict && want_forceShow
