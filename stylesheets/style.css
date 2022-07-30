@@ -1727,10 +1727,15 @@ th.settings-simplehead {
 	color: #333333;
 }
 .settings-json-panels {
+	width: 100%;
 	display: flex;
+	display: grid;
+	grid-template-columns: 60% 40%;
 }
 .settings-json-panel-edit {
-	flex: 1 1 auto;
+	flex: 0 0 60%;
+	position: relative;
+	overflow-x: visible;
 }
 .settings-json-panel-info {
 	max-height: 100vh;
@@ -1743,18 +1748,16 @@ th.settings-simplehead {
 }
 
 .is-error-part {
-	background-color: #fff0f0;
+	background-color: rgba(255, 186, 186, 0.2);
 	text-decoration-line: underline;
 	text-decoration-style: wavy;
-	text-decoration-thickness: 2px;
 	text-underline-position: under;
 	text-decoration-color: red;
 }
 .is-warning-part {
-	background-color: #fffff0;
+	background-color: rgba(240, 224, 100, 0.3);
 	text-decoration-line: underline;
 	text-decoration-style: wavy;
-	text-decoration-thickness: 2px;
 	text-underline-position: under;
 	text-decoration-color: #c07700;
 }
@@ -2026,7 +2029,6 @@ li:last-child > .msg-context:last-child {
 .context-mark {
 	text-decoration-line: underline;
 	text-decoration-style: wavy;
-	text-decoration-thickness: 2px;
 	text-underline-position: under;
 }
 .context-mark.short {
@@ -3447,6 +3449,9 @@ a.badge-white:hover {
 	background-color: rgba(246, 246, 250, 0.95);
 	color: #222222;
 	border: 1px solid #b8b8b8;
+}
+.bubble.feedback {
+	margin: 5px;
 }
 .bubble.tooltip, .bubble.graphtip {
 	font-size: 75%;
