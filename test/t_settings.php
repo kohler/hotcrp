@@ -591,6 +591,74 @@ class Settings_Tester {
         xassert_eqq($rrow->fval("s05"), 3);
         xassert_eqq($rrow->fval("s90"), 2);
 
+        xassert_eqq(review_score($this->conf, "s05")->ids(), [3, 2, 1]);
+        xassert_eqq(review_score($this->conf, "s90")->ids(), [3, 1, 2]);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s05",
+            "has_rf/1/values" => 1,
+            "rf/1/values/1/id" => 3,        // was `1`, now `2`
+            "rf/1/values/1/symbol" => 2,
+            "rf/1/values/1/order" => 2,
+            "rf/1/values/1/name" => "Yep",
+            "rf/1/values/2/id" => 2,        // was `2`, now `1`
+            "rf/1/values/2/symbol" => 1,
+            "rf/1/values/2/order" => 1,
+            "rf/1/values/2/name" => "It's bad",
+            "rf/1/values/3/id" => 1,        // was `3`, now `3`
+            "rf/1/values/3/symbol" => 3,
+            "rf/1/values/3/order" => 3,
+            "rf/1/values/3/name" => "Problem"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($sv->full_feedback_text(), "");
+
+        xassert_eqq(review_score($this->conf, "s05")->values(), ["It's bad", "Yep", "Problem"]);
+
+        $rrow = checked_fresh_review(30, $this->u_mgbaker);
+        xassert_eqq($rrow->fval("s05"), 2);
+        $rrow = checked_fresh_review(30, $u_jj);
+        xassert_eqq($rrow->fval("s05"), 1);
+        $rrow = checked_fresh_review(30, $u_floyd);
+        xassert_eqq($rrow->fval("s05"), 3);
+
+        xassert_eqq(review_score($this->conf, "s05")->ids(), [2, 3, 1]);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s05",
+            "has_rf/1/values" => 1,
+            "rf/1/values/1/id" => 3,        // was `2`, now `3`
+            "rf/1/values/1/symbol" => 3,
+            "rf/1/values/1/order" => 3,
+            "rf/1/values/1/name" => "Yep",
+            "rf/1/values/2/id" => 2,        // was `1`, now `2`
+            "rf/1/values/2/symbol" => 2,
+            "rf/1/values/2/order" => 2,
+            "rf/1/values/2/name" => "It's bad",
+            "rf/1/values/3/id" => 1,        // was `3`, now `1`
+            "rf/1/values/3/symbol" => 1,
+            "rf/1/values/3/order" => 1,
+            "rf/1/values/3/name" => "Problem"
+        ]);
+        xassert($sv->execute());
+
+        xassert_eqq(review_score($this->conf, "s05")->values(), ["Problem", "It's bad", "Yep"]);
+
+        $rrow = checked_fresh_review(30, $this->u_mgbaker);
+        xassert_eqq($rrow->fval("s05"), 3);
+        $rrow = checked_fresh_review(30, $u_jj);
+        xassert_eqq($rrow->fval("s05"), 2);
+        $rrow = checked_fresh_review(30, $u_floyd);
+        xassert_eqq($rrow->fval("s05"), 1);
+
+        xassert_eqq(review_score($this->conf, "s05")->ids(), [1, 2, 3]);
+        foreach ($this->conf->setting_json("review_form") as $rj) {
+            if ($rj->id === "s05")
+                xassert(!isset($rj->ids));
+        }
+
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
             "rf/1/id" => "s05",

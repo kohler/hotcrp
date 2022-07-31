@@ -656,6 +656,15 @@ function call_api($fn, $user, $qreq, $prow = null) {
     return (object) $jr->content;
 }
 
+/** @param Conf $conf
+ * @param string $id
+ * @return Score_ReviewField */
+function review_score($conf, $id) {
+    $rf = $conf->checked_review_field($id);
+    assert($rf instanceof Score_ReviewField);
+    return $rf;
+}
+
 /** @param int|PaperInfo $prow
  * @param Contact $user
  * @return ?ReviewInfo */

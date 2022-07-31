@@ -14,6 +14,7 @@ class Rf_Setting {
     public $exists_if;
     /** @var list<string> */
     public $values;
+    public $ids;
     public $start;
     public $flip;
     public $scheme;
@@ -29,4 +30,7 @@ class RfValue_Setting {
     public $name;
     public $order;
     public $symbol;
+
+    // internal
+    public $old_index;
 }

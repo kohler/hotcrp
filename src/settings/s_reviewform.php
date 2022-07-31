@@ -102,6 +102,11 @@ class ReviewForm_SettingParser extends SettingParser {
                 } else if ($symbol !== "" && ctype_alnum($symbol)) {
                     $sv->set_req("{$vpfx}/{$i}/name", $name);
                     $sv->set_req("{$vpfx}/{$i}/symbol", $symbol);
+                    if (ctype_digit($symbol)) {
+                        $sv->set_req("{$vpfx}/{$i}/order", (string) (1000 + intval($symbol)));
+                    } else if (ctype_upper($symbol) && strlen($symbol) === 1) {
+                        $sv->set_req("{$vpfx}/{$i}/order", (string) ord($symbol));
+                    }
                 } else {
                     return false;
                 }
@@ -145,7 +150,7 @@ class ReviewForm_SettingParser extends SettingParser {
         $error = false;
         foreach ($sv->oblist_nondeleted_keys($vpfx) as $ctr) {
             $rfv = $sv->object_newv("{$vpfx}/{$ctr}");
-            $newrfv[$rfv->symbol ?? ""] = $rfv;
+            $newrfv[] = $rfv;
             if (!$this->_check_value($vpfx, $ctr, $rfv, $sv)) {
                 $error = true;
             }
@@ -157,16 +162,16 @@ class ReviewForm_SettingParser extends SettingParser {
             return;
         }
 
-        ksort($newrfv, SORT_NATURAL);
-        $rfvk = array_keys($newrfv);
-        $option_letter = is_string($rfvk[0]) && ctype_upper($rfvk[0]);
-        if ($rfvk[0] == 1) {
-            foreach ($rfvk as $i => $k) {
-                $error = $error || ($k != $i + 1);
+        $key0 = $newrfv[0]->symbol;
+        $flip = $option_letter = is_string($key0) && ctype_upper($key0);
+        if ($key0 == 1) {
+            foreach ($newrfv as $i => $rfv) {
+                $error = $error || $rfv->symbol != $i + 1;
             }
         } else if ($option_letter) {
-            foreach ($rfvk as $i => $k) {
-                $error = $error || ($k !== chr(ord($rfvk[0]) + $i));
+            foreach ($newrfv as $i => $rfv) {
+                $want_key = chr(ord($key0) + $i);
+                $error = $error || $rfv->symbol !== $want_key || !ctype_upper($want_key);
             }
         } else {
             $error = true;
@@ -177,25 +182,42 @@ class ReviewForm_SettingParser extends SettingParser {
             return;
         }
 
-        $renumberings = $texts = [];
-        foreach (array_values($newrfv) as $i => $rfv) {
-            $want_id = $option_letter ? count($newrfv) - $i : $i + 1;
-            if ($rfv->id && $rfv->id !== $want_id) {
-                $renumberings[$rfv->id] = $want_id;
-            }
-            $texts[] = $rfv->name ?? "";
-        }
+        $renumberings = $known_ids = [];
         foreach ($sv->oblist_keys($vpfx) as $ctr) {
-            if ($sv->reqstr("{$vpfx}/{$ctr}/delete")
-                && ($rfv = $sv->oldv("{$vpfx}/{$ctr}"))
-                && $rfv->id) {
-                $renumberings[$rfv->id] = 0;
+            if (($rfv = $sv->oldv("{$vpfx}/{$ctr}"))
+                && $rfv->old_index !== null) {
+                $known_ids[] = $rfv->id;
+                if ($sv->reqstr("{$vpfx}/{$ctr}/delete")) {
+                    $renumberings[$rfv->old_index + 1] = 0;
+                }
             }
         }
+
+        $texts = $ids = [];
+        foreach ($newrfv as $i => $rfv) {
+            $texts[] = $rfv->name ?? "";
+            $want_index = $flip ? count($newrfv) - $i - 1 : $i;
+            if ($rfv->old_index !== null) {
+                $id = $rfv->id;
+                if ($rfv->old_index !== $want_index) {
+                    $renumberings[$rfv->old_index + 1] = $want_index + 1;
+                }
+            } else if (!in_array($want_index + 1, $known_ids)) {
+                $id = $want_index + 1;
+                $known_ids[] = $id;
+            } else {
+                for ($id = 1; in_array($id, $known_ids); ++$id) {
+                }
+                $known_ids[] = $id;
+            }
+            $ids[] = $id;
+        }
+
         $this->_score_renumberings[$sv->vstr("{$fpfx}/id")] = $renumberings;
 
-        $sv->save("{$fpfx}/values_storage", $option_letter ? array_reverse($texts) : $texts);
-        $sv->save("{$fpfx}/start", $option_letter ? $rfvk[0] : 1);
+        $sv->save("{$fpfx}/values_storage", $flip ? array_reverse($texts) : $texts);
+        $sv->save("{$fpfx}/ids", $flip ? array_reverse($ids) : $ids);
+        $sv->save("{$fpfx}/start", ctype_digit($key0) ? intval($key0) : $key0);
     }
 
     private function mark_values_error(SettingValues $sv) {
@@ -368,7 +390,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 foreach ($jrenumberings as $fmap) {
                     if (($v = $sfields[$fmap[0]->json_storage] ?? null) > 0
                         && ($v1 = $fmap[1][$v] ?? $v) !== $v) {
-                        if ($v1) {
+                        if ($v1 !== 0) {
                             $sfields[$fmap[0]->json_storage] = $v1;
                         } else {
                             unset($sfields[$fmap[0]->json_storage]);

@@ -621,9 +621,8 @@
         "parser_class": "ReviewForm_SettingParser", "parse_order": 2,
         "hashid": "rf/$/values_text"
     },
-    {
-        "name_pattern": "rf/$/values_storage", "internal": true, "storage": "member.values"
-    },
+    {   "name_pattern": "rf/$/ids", "internal": true   },
+    {   "name_pattern": "rf/$/values_storage", "internal": true, "storage": "member.values"   },
     {
         "name_pattern": "rf/$/values/$$", "type": "object", "subtype": "RfValue_Setting",
         "parser_class": "ReviewForm_SettingParser",

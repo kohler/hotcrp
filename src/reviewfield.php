@@ -522,6 +522,8 @@ class Score_ReviewField extends ReviewField {
     private $values = [];
     /** @var list<int|string> */
     private $symbols = [];
+    /** @var ?list<int> */
+    private $ids;
     /** @var int */
     public $option_letter = 0;
     /** @var bool */
@@ -571,6 +573,9 @@ class Score_ReviewField extends ReviewField {
                 $this->symbols[] = $i + 1;
             }
         }
+        if (isset($j->ids) && count($j->ids) === $nvalues) {
+            $this->ids = $j->ids;
+        }
         if (isset($j->scheme)) {
             $this->scheme = $j->scheme;
         } else if (isset($j->option_class_prefix) /* XXX backward compat */) {
@@ -608,9 +613,19 @@ class Score_ReviewField extends ReviewField {
         return $this->flip ? array_reverse($this->values) : $this->values;
     }
 
+    /** @return list<int> */
+    function ids() {
+        return $this->ids ?? range(1, count($this->values));
+    }
+
     function unparse_json($style) {
         $j = parent::unparse_json($style);
         $j->values = $this->values;
+        if ($this->ids
+            && ($style !== self::UJ_STORAGE
+                || $this->ids !== range(1, count($this->values)))) {
+            $j->ids = $this->ids;
+        }
         if ($this->option_letter) {
             $j->start = chr($this->option_letter - count($this->values));
         }
@@ -640,10 +655,12 @@ class Score_ReviewField extends ReviewField {
         $rfs->xvalues = [];
         foreach ($this->ordered_symbols() as $i => $symbol) {
             $rfs->xvalues[] = $rfv = new RfValue_Setting;
-            $rfv->id = $id = $this->flip ? $n - $i : $i + 1;
+            $idx = $this->flip ? $n - $i - 1 : $i;
+            $rfv->id = $this->ids ? $this->ids[$idx] : $idx + 1;
             $rfv->order = $i + 1;
             $rfv->symbol = $symbol;
-            $rfv->name = $this->values[$id - 1];
+            $rfv->name = $this->values[$idx];
+            $rfv->old_index = $idx;
         }
     }
 
