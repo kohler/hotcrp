@@ -948,128 +948,217 @@ function window_selection_inside(el) {
     };
 }
 
-function set_caret_position(mainel, lineno, pos) {
-    var ln = mainel.childNodes[lineno], el, down = true;
-    if (!ln) {
-        ln = mainel.lastChild;
-        pos = -1;
-    }
-    if (pos < 0) {
-        pos = ln.textContent.length + 1 + pos;
-    }
-    el = ln.firstChild;
-    while (el) {
-        if (el.nodeType === 1) {
-            if (down && el.firstChild) {
-                el = el.firstChild;
-            } else if (down) {
-                down = false;
-            } else if (el.nextSibling) {
-                el = el.nextSibling;
-                down = true;
-            } else if (el.parentElement !== ln) {
-                el = el.parentElement;
-            } else {
-                el = null;
-            }
-        } else {
-            if (pos <= el.length) {
-                window.getSelection().setBaseAndExtent(el, pos, el, pos);
-                return;
-            } else {
-                pos -= el.length;
-                if (el.nextSibling) {
-                    el = el.nextSibling;
+function make_content_editable(mainel) {
+    var texts = [""],
+        jh_ln0 = null, jh_ln1, jh_s0, jh_s2;
+
+    // Normalize the contents of `mainel` to a sensible format for editing.
+    // * Text only.
+    // * Every line in a separate <div>.
+    // * No trailing newlines within these <div>s.
+    // * Blank <div> lines contain <br>.
+    function normalizer(firstel, lastel) {
+        var ch, next, fix1, fixfresh, nsel = window_selection_inside(mainel);
+
+        function append_line() {
+            var line = document.createElement("div");
+            mainel.insertBefore(line, fix1.nextSibling);
+            fix1 = line;
+            fixfresh = true;
+        }
+
+        function fix_div(ch) {
+            var next, nl;
+            while (ch) {
+                next = ch.nextSibling;
+                if (ch.nodeType === 3 && (nl = ch.data.indexOf("\n")) !== -1) {
+                    if (nl !== ch.length - 1) {
+                        next = ch.splitText(nl + 1);
+                        nsel.transfer_text(next, ch, nl + 1, -nl - 1);
+                    }
+                    nsel.trim_newline(ch);
+                    if (fix1 !== ch.parentElement) {
+                        fix1.appendChild(ch);
+                    }
+                    append_line();
+                } else if (is_text_or_inline(ch)) {
+                    if (fix1 !== ch.parentElement) {
+                        fix1.appendChild(ch);
+                        fixfresh = false;
+                    }
+                } else if (is_br(ch)) {
+                    if (fix1.firstChild && fix1.firstChild !== ch) {
+                        ch.remove();
+                    } else if (fix1 !== ch.parentElement) {
+                        fix1.appendChild(ch);
+                    }
+                    append_line();
                 } else {
-                    el = el.parentElement;
-                    down = false;
+                    fixfresh || append_line();
+                    ch.remove();
+                    fix_div(ch.firstChild);
+                    fixfresh || append_line();
                 }
+                ch = next;
             }
         }
-    }
-    window.getSelection().setBaseAndExtent(ln, ln.childNodes.length, ln, ln.childNodes.length);
-}
 
-// Normalize the contents of `mainel` to a sensible format for editing.
-// * Text only.
-// * Every line in a separate <div>.
-// * No trailing newlines within these <div>s.
-// * Blank <div> lines contain <br>.
-function normalize_content_editable(mainel, firstel, lastel) {
-    var ch, next, fix1, fixfresh, nsel = window_selection_inside(mainel);
-
-    function append_line() {
-        var line = document.createElement("div");
-        mainel.insertBefore(line, fix1.nextSibling);
-        fix1 = line;
-        fixfresh = true;
-    }
-
-    function fix_div(ch) {
-        var next, nl;
-        while (ch) {
-            next = ch.nextSibling;
-            if (ch.nodeType === 3 && (nl = ch.data.indexOf("\n")) !== -1) {
-                if (nl !== ch.length - 1) {
-                    next = ch.splitText(nl + 1);
-                    nsel.transfer_text(next, ch, nl + 1, -nl - 1);
+        ch = firstel || mainel.firstChild;
+        while (ch && ch !== lastel) {
+            if (ch.nodeType !== 1
+                || ch.tagName !== "DIV"
+                || ch.hasAttribute("style")) {
+                var line = document.createElement("div"), first = true;
+                mainel.insertBefore(line, ch);
+                while (ch && (first || is_text_or_inline(ch))) {
+                    line.appendChild(ch);
+                    ch = line.nextSibling;
+                    first = false;
                 }
-                nsel.trim_newline(ch);
-                if (fix1 !== ch.parentElement) {
-                    fix1.appendChild(ch);
+                if (ch && is_br(ch)) {
+                    line.firstChild ? ch.remove() : line.appendChild(ch);
                 }
-                append_line();
-            } else if (is_text_or_inline(ch)) {
-                if (fix1 !== ch.parentElement) {
-                    fix1.appendChild(ch);
-                    fixfresh = false;
-                }
-            } else if (is_br(ch)) {
-                if (fix1.firstChild && fix1.firstChild !== ch) {
-                    ch.remove();
-                } else if (fix1 !== ch.parentElement) {
-                    fix1.appendChild(ch);
-                }
-                append_line();
-            } else {
-                fixfresh || append_line();
-                ch.remove();
-                fix_div(ch.firstChild);
-                fixfresh || append_line();
+                ch === firstel && (firstel = line);
+                ch = line;
             }
+            next = ch.nextSibling;
+            fix1 = ch;
+            fixfresh = false;
+            fix_div(ch.firstChild);
+            ch.firstChild || ch.remove();
+            fixfresh && fix1.remove();
             ch = next;
         }
+
+        nsel.refresh();
+        return firstel;
     }
 
-    ch = firstel || mainel.firstChild;
-    while (ch && ch !== lastel) {
-        if (ch.nodeType !== 1
-            || ch.tagName !== "DIV"
-            || ch.hasAttribute("style")) {
-            var line = document.createElement("div"), first = true;
-            mainel.insertBefore(line, ch);
-            while (ch && (first || is_text_or_inline(ch))) {
-                line.appendChild(ch);
-                ch = line.nextSibling;
-                first = false;
-            }
-            if (ch && is_br(ch)) {
-                line.firstChild ? ch.remove() : line.appendChild(ch);
-            }
-            ch === firstel && (firstel = line);
-            ch = line;
+    function length() {
+        return texts.length;
+    }
+
+    function lineno(node) {
+        while (node && node.parentElement !== mainel) {
+            node = node.parentElement;
         }
-        next = ch.nextSibling;
-        fix1 = ch;
-        fixfresh = false;
-        fix_div(ch.firstChild);
-        ch.firstChild || ch.remove();
-        fixfresh && fix1.remove();
-        ch = next;
+        return node ? Array.prototype.indexOf.call(mainel.childNodes, node) : -1;
     }
 
-    nsel.refresh();
-    return firstel;
+    function slice(...rest) {
+        return texts.slice(...rest);
+    }
+
+    function splice(start, ...rest) {
+        return texts.splice(start, ...rest);
+    }
+
+    function line(lineno) {
+        return texts[lineno];
+    }
+
+    function set_line(lineno, text) {
+        texts[lineno] = text;
+        if (jh_ln0 !== null) {
+            lineno < jh_ln0 && (jh_ln0 = null);
+            lineno >= jh_ln1 && (jh_ln1 = null);
+        }
+    }
+
+    function join(hint0, hint1) {
+        if (hint0 == null || (hint0 === 0 && hint1 === texts.length)) {
+            return texts.join("");
+        }
+        if (jh_ln0 !== hint0) {
+            jh_ln0 = hint0;
+            jh_s0 = texts.slice(0, jh_ln0).join("");
+        }
+        if (jh_ln1 !== hint1) {
+            jh_ln1 = Math.max(jh_ln0, hint1);
+            jh_s2 = texts.slice(jh_ln1).join("");
+        }
+        return jh_s0.concat(texts.slice(hint0, hint1).join(""), jh_s2);
+    }
+
+    function boff2lp(base, off) {
+        var pos = 0, parent;
+        if (base.nodeType === 3) {
+            pos += off;
+            base = base.parentElement;
+            parent = base.parentElement;
+        } else {
+            parent = base;
+            base = base.childNodes[off];
+        }
+        while (parent !== mainel) {
+            if (base) {
+                base = base.previousSibling;
+            } else {
+                base = parent.lastChild;
+            }
+            if (base) {
+                pos += base.textContent.length;
+            } else {
+                base = parent;
+                parent = parent.parentElement;
+            }
+        }
+        return [lineno(base), pos];
+    }
+
+    function lp2boff(lineno, pos) {
+        var ln = mainel.childNodes[lineno], el, down = true;
+        if (!ln) {
+            ln = mainel.lastChild;
+            pos = -1;
+        }
+        if (pos < 0) {
+            pos = ln.textContent.length + 1 + pos;
+        }
+        el = ln.firstChild;
+        while (el) {
+            if (el.nodeType === 1) {
+                if (down && el.firstChild) {
+                    el = el.firstChild;
+                } else if (down) {
+                    down = false;
+                } else if (el.nextSibling) {
+                    el = el.nextSibling;
+                    down = true;
+                } else if (el.parentElement !== ln) {
+                    el = el.parentElement;
+                } else {
+                    el = null;
+                }
+            } else {
+                if (pos <= el.length) {
+                    return [el, pos];
+                } else {
+                    pos -= el.length;
+                    if (el.nextSibling) {
+                        el = el.nextSibling;
+                    } else {
+                        el = el.parentElement;
+                        down = false;
+                    }
+                }
+            }
+        }
+        return [ln, ln.childNodes.length];
+    }
+
+    return {
+        length: length,
+        lineno: lineno,
+        line: line,
+        set_line: set_line,
+        normalize: normalizer,
+        slice: slice,
+        splice: splice,
+        join: join,
+        boff2lp: boff2lp,
+        lp2boff: lp2boff
+    };
 }
 
 
@@ -1594,8 +1683,8 @@ function jsonhl_line(lineel, st, nsel) {
 
 
 function make_json_validate() {
-    var mainel = this,
-        states = [""], lineels = [null], texts = [""],
+    var mainel = this, maince = make_content_editable(mainel),
+        states = [""], lineels = [null],
         redisplay_ln0 = 0, redisplay_el1 = null,
         normalization, rehighlight_queued,
         api_timer = null, api_value = null, msgbub = null,
@@ -1603,18 +1692,11 @@ function make_json_validate() {
         reflect_ln0, reflect_ln1, reflect_text0, reflect_text2,
         undo_time, redo_time;
 
-    function node_lineno(node) {
-        while (node && node.parentElement !== mainel) {
-            node = node.parentElement;
-        }
-        return node ? Array.prototype.indexOf.call(mainel.childNodes, node) : -1;
-    }
-
     function rehighlight() {
         try {
             var i, saw_line1 = false, lineel, k, st, st0, x, cmd, nsel;
             if (normalization !== 0) {
-                normalize_content_editable(mainel);
+                maince.normalize();
                 if (normalization < 0
                     && mainel.hasAttribute("data-highlight-ranges")) {
                     jsonhl_transfer_ranges(mainel);
@@ -1633,7 +1715,7 @@ function make_json_validate() {
                     clear_msgbub();
                 }
                 if (lineel.nodeType !== 1 || lineel.tagName !== "DIV") {
-                    lineel = normalize_content_editable(mainel, lineel, lineel.nextSibling);
+                    lineel = maince.normalize(lineel, lineel.nextSibling);
                 }
                 if (normalization >= 0) {
                     lineel.removeAttribute("data-highlight-ranges");
@@ -1645,48 +1727,35 @@ function make_json_validate() {
                 }
                 if (lineels[i] !== lineel && lineels[i]) {
                     // incremental line insertions and deletions
-                    if ((k = node_lineno(lineels[i])) > i) {
+                    if ((k = maince.lineno(lineels[i])) > i) {
                         x = new Array(k - i);
                         states.splice(i, 0, ...x);
                         lineels.splice(i, 0, ...x);
-                        texts.splice(i, 0, ...x);
+                        maince.splice(i, 0, ...x);
                     } else if ((k = lineels.indexOf(lineel)) > i) {
                         states.splice(i, k - i);
                         lineels.splice(i, k - i);
-                        texts.splice(i, k - i);
+                        maince.splice(i, k - i);
                     }
                 }
                 states[i] = st;
                 lineels[i] = lineel;
                 st = jsonhl_line(lineel, st, nsel);
-                texts[i] = lineel.textContent + "\n";
+                maince.set_line(i, lineel.textContent + "\n");
                 ++i;
                 lineel = lineel.nextSibling;
             }
             if (!lineel) {
                 states.splice(i);
                 lineels.splice(i);
-                texts.splice(i);
+                maince.splice(i);
             }
             nsel.refresh();
             //state_redisplay.push(i, st, states[i - 1]);
             //console.log(state_redisplay);
             if (mainel.hasAttribute("data-reflect-text")
                 || mainel.hasAttribute("data-reflect-highlight-api")) {
-                if (redisplay_ln0 === 0 && i === texts.length) {
-                    handle_reflection(texts.join(""));
-                    reflect_ln0 = null;
-                } else {
-                    if (redisplay_ln0 !== reflect_ln0) {
-                        reflect_ln0 = redisplay_ln0;
-                        reflect_text0 = texts.slice(0, reflect_ln0).join("");
-                    }
-                    if (i !== reflect_ln1) {
-                        reflect_ln1 = i;
-                        reflect_text2 = texts.slice(reflect_ln1).join("");
-                    }
-                    handle_reflection(reflect_text0.concat(texts.slice(reflect_ln0, reflect_ln1), reflect_text2));
-                }
+                handle_reflection(maince.join(redisplay_ln0, i));
             }
             redisplay_ln0 = 0;
             redisplay_el1 = null;
@@ -1756,8 +1825,8 @@ function make_json_validate() {
     function event_range(evt) {
         var i, r = null, ranges = evt.getTargetRanges();
         for (i = 0; i !== ranges.length; ++i) {
-            var ln0 = node_lineno(ranges[i].startContainer),
-                ln1 = node_lineno(ranges[i].endContainer);
+            var ln0 = maince.lineno(ranges[i].startContainer),
+                ln1 = maince.lineno(ranges[i].endContainer);
             r = union_range(r, [ln0, ln1 < 0 ? -1 : ln1 + 1]);
         }
         return r;
@@ -1785,11 +1854,11 @@ function make_json_validate() {
             commandPos = commands.length;
         }
         if (editRange[0] < c.beforeRange[0]) {
-            c.beforeLines.splice(0, 0, ...texts.slice(r[0], c.beforeRange[0]));
+            c.beforeLines.splice(0, 0, ...maince.slice(r[0], c.beforeRange[0]));
             c.beforeRange[0] = editRange[1];
         }
         if (c.afterRange[1] < editRange[1]) {
-            c.beforeLines.splice(c.beforeLines.length, 0, ...texts.slice(c.afterRange[1], editRange[1]));
+            c.beforeLines.splice(c.beforeLines.length, 0, ...maince.slice(c.afterRange[1], editRange[1]));
             c.beforeRange[1] += editRange[1] - c.afterRange[1];
         }
         if (c.afterRange[1] <= editRange[1]) {
@@ -1828,14 +1897,15 @@ function make_json_validate() {
         while (ft.charCodeAt(ft.length + i) === lt.charAt(lt.length + i)) {
             --i;
         }
-        set_caret_position(mainel, dstRange[1] - 1, i);
+        let [b, off] = maince.lp2boff(dstRange[1] - 1, i);
+        window.getSelection().setBaseAndExtent(b, off, b, off);
     }
 
     function handle_undo(time) {
         var c = commands[commandPos - 1];
         if (c && (undo_time === null || time - undo_time > 3)) {
             undo_time = undo_time || time;
-            c.afterLines = c.afterLines || texts.slice(c.afterRange[0], c.afterRange[1]);
+            c.afterLines = c.afterLines || maince.slice(c.afterRange[0], c.afterRange[1]);
             handle_swap(c.beforeRange, c.beforeLines, c.afterRange, c.afterLines);
             --commandPos;
         }
@@ -1936,7 +2006,7 @@ function make_json_validate() {
         var sel = window.getSelection(), lineno, st;
         if (!sel.isCollapsed
             || !sel.anchorNode
-            || (lineno = node_lineno(sel.anchorNode)) < 0) {
+            || (lineno = maince.lineno(sel.anchorNode)) < 0) {
             clear_msgbub();
             return;
         }
@@ -1944,7 +2014,7 @@ function make_json_validate() {
         // set data-caret-path
         var path = [], i, s, m, lim;
         for (i = lineno; i > 0 && (st = states[i]) !== "j"; --i) {
-            s = st.endsWith("f") || st.endsWith("g") ? texts[i].trim() : "";
+            s = st.endsWith("f") || st.endsWith("g") ? maince.line(i).trim() : "";
             if (s === "") {
                 continue;
             }
