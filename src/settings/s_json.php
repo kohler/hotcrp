@@ -11,8 +11,8 @@ class JSON_SettingParser extends SettingParser {
         $mainj = $wantjreq ? cleannl($sv->reqstr("json_settings")) : $defj;
         $mainh = htmlspecialchars($mainj);
         echo '<div class="settings-json-panels">',
-            '<div class="settings-json-panel-edit">',
-            '<div class="textarea pw js-settings-json uii ui-beforeinput" contenteditable spellcheck="false" autocapitalization="none" data-reflect-text="json_settings"';
+            '<div class="settings-json-panel-edit textarea">',
+            '<div class="pw js-settings-json uii ui-beforeinput" contenteditable spellcheck="false" autocapitalization="none" data-reflect-text="json_settings"';
         $hl = $tips = [];
         foreach ($sv->message_list() as $mi) {
             if ($mi->pos1 !== null

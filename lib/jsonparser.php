@@ -421,7 +421,7 @@ class JsonParser {
      * @return bool */
     static function ctype_json_value_start($ch) {
         $ord = ord($ch);
-        return $ord === 34 || $ord === 45 || ($ord >= 48 && $ord <= 57)
+        return $ord === 34 || $ord === 45 || ($ord >= 48 && $ord < 58)
             || $ord === 91 || $ord === 102 || $ord === 110 || $ord === 116 || $ord === 123;
     }
 
@@ -491,14 +491,14 @@ class JsonParser {
                     continue;
                 }
                 $kpos1 = $pos;
-                $kpos2 = $pos = self::skip_potential_string($s, $kpos1);
+                $kpos2 = $pos = self::skip_potential_string($s, $pos);
                 while ($pos !== $len && (ctype_space($s[$pos]) || $s[$pos] === ":")) {
                     ++$pos;
                 }
                 if ($pos !== $len && self::ctype_json_value_start($s[$pos])) {
                     $vpos1 = $pos;
-                    $vpos2 = $pos = self::skip($s, $pos);
-                    yield new JsonParserPosition(self::decode_potential_string($s, $kpos1, $kpos2, null), $kpos1, $kpos2, $vpos1, $vpos2);
+                    $pos = self::skip($s, $pos);
+                    yield new JsonParserPosition(self::decode_potential_string($s, $kpos1, $kpos2, null), $kpos1, $kpos2, $vpos1, $pos);
                 } else {
                     $pos = self::skip($s, $pos);
                 }
@@ -515,8 +515,8 @@ class JsonParser {
                 }
                 if (self::ctype_json_value_start($s[$pos])) {
                     $vpos1 = $pos;
-                    $vpos2 = $pos = self::skip($s, $pos);
-                    yield new JsonParserPosition($key, null, null, $vpos1, $vpos2);
+                    $pos = self::skip($s, $pos);
+                    yield new JsonParserPosition($key, null, null, $vpos1, $pos);
                     ++$key;
                 } else {
                     $pos = self::skip($s, $pos);
@@ -524,7 +524,7 @@ class JsonParser {
             }
         } else if ($ch === "\"") {
             $vpos1 = $pos;
-            $pos = self::skip_potential_string($s, $vpos1);
+            $pos = self::skip_potential_string($s, $pos);
             yield new JsonParserPosition(null, null, null, $vpos1, $pos);
         } else if ($ch === "n" || $ch === "f" || $ch === "t") {
             $vpos1 = $pos;
@@ -618,7 +618,7 @@ class JsonParser {
                 $ppos += strlen($m[0]);
             } else if ($ch === "\"") {
                 $ppos1 = $ppos;
-                $ppos = self::skip_potential_string($path, $ppos1);
+                $ppos = self::skip_potential_string($path, $ppos);
                 $a[] = self::decode_potential_string($path, $ppos1, $ppos, null);
             } else if ($ch === "." || $ch === "[" || $ch === "]"
                        || ($ch === "\$" && empty($a))) {

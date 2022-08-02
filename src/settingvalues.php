@@ -456,16 +456,21 @@ class SettingValues extends MessageSet {
             }
             $loc = null;
             if ($mi->field) {
-                if (($si = $this->conf->si($mi->field))) {
-                    $loc = $si->title_html($this);
-                    if ($loc && $si->has_hashid()) {
-                        $loc = Ht::link($loc, $si->sv_hoturl($this));
+                $si = $this->conf->si($mi->field);
+                $loc = $si ? $si->title_html($this) : "";
+                if ($this->link_json) {
+                    $jpath = ($si ? $si->json_path() : null) ?? Si::json_path_for($mi->field);
+                    if ($jpath) {
+                        $hjpath = htmlspecialchars($jpath);
+                        if ($loc) {
+                            $loc = "<u>{$loc}</u> <code class=\"settings-jpath\">{$hjpath}</code>";
+                        } else {
+                            $loc = "<code class=\"settings-jpath\">{$hjpath}</code>";
+                        }
+                        $loc = "<a href=\"\" class=\"ui js-settings-jpath noul\">{$loc}</a>";
                     }
-                    if ($this->link_json && ($jpath = $si->json_path())) {
-                        $loc .= " <code class=\"settings-jpath\">" . htmlspecialchars($jpath) . "</code>";
-                    }
-                } else if ($this->link_json) {
-                    $loc = "<code class=\"settings-jpath\">" . htmlspecialchars(Si::json_path_for($mi->field)) . "</code>";
+                } else if ($loc && $si->has_hashid()) {
+                    $loc = Ht::link($loc, $si->sv_hoturl($this));
                 }
             }
             if ($lastmi

@@ -840,6 +840,18 @@ function isdelim(ch) {
         || ch === 58 || ch === 91 || ch === 93 || ch == 123 || ch === 125;
 }
 
+// Test if `ch` is alphanumeric ([0-9A-Za-z])
+function isalnum(ch) {
+    return (ch >= 48 && ch < 58)
+        || ((ch | 32) >= 97 && (ch | 32) < 123);
+}
+
+// Test if `ch` could begin a JSON value
+function isjsonvaluestart(ch) {
+    return ch === 34 || ch === 45 || (ch >= 48 && ch < 58)
+        || ch === 91 || ch === 102 || ch === 110 || ch === 116 || ch === 123;
+}
+
 // Return undo-canonical inputType.
 function canonical_input_type(it) {
     if (["insertText", "insertReplacementText", "insertLineBreak",
@@ -1824,6 +1836,207 @@ function jsonhl_line(lineel, st, nsel) {
     }
 }
 
+function json_skip_potential_string(s, pos) {
+    let len = s.length, nl, dq;
+    if ((nl = s.indexOf("\n", pos)) < 0) {
+        nl = len;
+    }
+    dq = pos;
+    while (true) {
+        if ((dq = s.indexOf("\"", dq + 1)) < 0) {
+            dq = len;
+        }
+        if (dq >= nl) {
+            break;
+        }
+        let bs = dq - 1;
+        while (bs > pos && s.charCodeAt(bs) === 92) { // `\`
+            --bs;
+        }
+        if ((dq - bs) % 2 === 1) {
+            break;
+        }
+    }
+    return dq + 1 < len ? dq + 1 : len;
+}
+
+function json_skip(s, pos) {
+    let len = s.length, depth = 0, ch;
+    while (true) {
+        while (pos !== len && (ch = s.charCodeAt(pos), isspace(ch))) {
+            ++pos;
+        }
+        if (pos === len) {
+            return pos;
+        } else if (ch === 34) { // `"`
+            pos = json_skip_potential_string(s, pos);
+        } else if (ch === 123 || ch === 91) { // `{`, `[`
+            ++depth;
+            ++pos;
+        } else if (isalnum(ch) || ch === 45) { // `-`
+            while (pos !== len
+                   && (isalnum(ch) || ch === 45 || ch === 43 || ch === 46)) { // `-+.`
+                ++pos;
+                if (pos !== len) {
+                    ch = s.charCodeAt(pos);
+                }
+            }
+        } else if (depth !== 0 && (ch === 125 || ch === 93)) { // `}`, `]`
+            --depth;
+            ++pos;
+        } else {
+            ++pos;
+        }
+        if (depth === 0) {
+            return pos;
+        }
+    }
+}
+
+function json_decode_string(s, pos1, pos2) {
+    try {
+        return JSON.parse(s.substring(pos1, pos2));
+    } catch (err) {
+        return null;
+    }
+}
+
+function JsonParserPosition(key, kpos1, kpos2, vpos1, vpos2) {
+    this.key = key;
+    this.kpos1 = kpos1;
+    this.kpos2 = kpos2;
+    this.vpos1 = vpos1;
+    this.vpos2 = vpos2;
+}
+
+function* json_member_positions(s, pos) {
+    let len = s.length;
+    while (pos !== len && isspace(s.charCodeAt(pos))) {
+        ++pos;
+    }
+    if (pos === len) {
+        return;
+    }
+    let ch = s.charCodeAt(pos);
+    if (ch === 123) { // `{`
+        ++pos;
+        while (true) {
+            while (pos !== len
+                   && (ch = s.charCodeAt(pos), isspace(ch) || ch === 44)) { // `,`
+                ++pos;
+            }
+            if (pos === len || ch === 125) { // `}`
+                break;
+            } else if (ch !== 34) { // `"`
+                pos = json_skip(s, pos);
+                continue;
+            }
+            const kpos1 = pos, kpos2 = pos = json_skip_potential_string(s, kpos1);
+            while (pos !== len
+                   && (ch = s.charCodeAt(pos), isspace(ch) || ch === 58)) { // `:`
+                ++pos;
+            }
+            if (pos !== len && isjsonvaluestart(ch)) {
+                const vpos1 = pos;
+                pos = json_skip(s, pos)
+                yield new JsonParserPosition(json_decode_string(s, kpos1, kpos2), kpos1, kpos2, vpos1, pos);
+            } else {
+                pos = json_skip(s, pos);
+            }
+        }
+    } else if (ch === 91) { // `[`
+        ++pos;
+        let key = 0;
+        while (true) {
+            while (pos !== len
+                   && (ch = s.charCodeAt(pos), isspace(ch) || ch === 44)) { // `,`
+                ++pos;
+            }
+            if (pos === len || ch === 93) { // `]`
+                break;
+            }
+            if (isjsonvaluestart(ch)) {
+                const vpos1 = pos;
+                pos = json_skip(s, pos);
+                yield new JsonParserPosition(key, null, null, vpos1, pos);
+                ++key;
+            } else {
+                pos = json_skip(s, pos)
+            }
+        }
+    } else if (ch === 34) { // `"`
+        const vpos1 = pos;
+        pos = json_skip_potential_string(pos);
+        yield new JsonParserPosition(null, null, null, vpos1, pos);
+    } else if (ch >= 97 && ch < 123) { // `a`-`z`
+        const vpos1 = pos;
+        for (++pos; pos !== len && (ch = s.charCodeAt(pos), ch >= 97 && ch < 123); ++pos) {
+        }
+        yield new JsonParserPosition(null, null, null, vpos1, pos);
+    } else if (ch >= 45 && ch < 58) { // `-`-`9`` {
+        const vpos1 = pos;
+        for (++pos; pos !== len && (ch = s.charCodeAt(pos), isalnum(ch) || ch === 45 || ch === 43 || ch === 46); ++pos) {
+        }
+        yield new JsonParserPosition(null, null, null, vpos1, pos);
+    }
+}
+
+function json_path_split(path) {
+    let ppos = 0, plen = (path || "").length, a = [];
+    while (ppos !== plen) {
+        let ch = path.charCodeAt(ppos);
+        if (isspace(ch)) {
+            for (++ppos; ppos !== plen && (ch = path.charCodeAt(ppos), isspace(ch)); ++ppos) {
+            }
+        } else if (isalnum(ch) || ch === 95) { // `_`
+            const ppos1 = ppos;
+            let digit = ch >= 48 && ch < 58;
+            for (++ppos;
+                 ppos !== plen &&
+                     (ch = path.charCodeAt(ppos), isalnum(ch) || ch === 95 || ch === 36);
+                 ++ppos) {
+                digit = digit && ch >= 48 && ch < 58;
+            }
+            const comp = path.substring(ppos1, ppos);
+            a.push(digit ? parseInt(comp) : comp);
+        } else if (ch === 34) { // `"`
+            const ppos1 = ppos;
+            ppos = json_skip_potential_string(path, ppos);
+            a.push(json_decode_string(path, ppos1, ppos));
+        } else if (ch === 46 || ch === 91 || ch === 93 || (ch === 36 && a.length === 0)) {
+            ++ppos;
+        } else {
+            throw new Error(`bad JSON path ${path}`);
+        }
+    }
+    return a;
+}
+
+function json_path_position(s, path) {
+    let ipos = 0, jpp = null;
+    for (let key of json_path_split(path)) {
+        jpp = null;
+        for (let memp of json_member_positions(s, ipos)) {
+            if (memp.key !== null && memp.key.toString() === key.toString()) {
+                jpp = memp;
+                break;
+            }
+        }
+        if (!jpp) {
+            return null;
+        }
+        ipos = jpp.vpos1;
+    }
+    if (jpp === null && ipos === 0) {
+        let ilen = s.length, ch;
+        while (ipos !== ilen && (ch = s.charCodeAt(ipos), isspace(ch))) {
+            ++ipos;
+        }
+        return new JsonParserPosition(null, null, null, ipos, json_skip(s, ipos));
+    } else {
+        return jpp;
+    }
+}
 
 function make_json_validate() {
     var mainel = this, reflectel = null,
@@ -2139,9 +2352,10 @@ function make_json_validate() {
 
     function selectionchange(e) {
         var sel = window.getSelection(), lineno, st;
-        if (!sel.isCollapsed
-            || !sel.anchorNode
-            || (lineno = maince.lineno(sel.anchorNode)) < 0) {
+        if (!sel.anchorNode
+            || (lineno = maince.lineno(sel.anchorNode)) < 0
+            || (!sel.isCollapsed
+                && maince.lineno(sel.focusNode) !== lineno)) {
             clear_msgbub();
             return;
         }
@@ -2194,12 +2408,14 @@ function make_json_validate() {
     if (mainel.hasAttribute("data-reflect-text")
         && (reflectel = document.getElementById(mainel.getAttribute("data-reflect-text")))) {
         maince.add_reflector(reflectel);
+        reflectel.hotcrp_ce = maince;
     }
 
     normalization = -1;
     rehighlight_queued = true;
     queueMicrotask(rehighlight);
 }
+
 
 demand_load.settingdescriptions = demand_load.make(function (resolve, reject) {
     $.get(hoturl("api/settingdescriptions"), null, function (v) {
@@ -2367,6 +2583,19 @@ function settings_describe(d) {
 
     $i.find(".taghh, .badge").each(ensure_pattern_here);
 }
+
+handle_ui.on("click.js-settings-jpath", function (evt) {
+    let path = this.querySelector("code.settings-jpath"),
+        el = document.getElementById("json_settings"), jpp;
+    if (path && el && (jpp = json_path_position(el.value, path.textContent))) {
+        let [ln1, lp1] = el.hotcrp_ce.p2lp(jpp.vpos1),
+            [ln2, lp2] = el.hotcrp_ce.p2lp(jpp.vpos2),
+            [le1, lo1] = el.hotcrp_ce.lp2boff(ln1, lp1),
+            [le2, lo2] = el.hotcrp_ce.lp2boff(ln2, lp2);
+        $(le2).scrollIntoView({marginTop: 24, atTop: true});
+        window.getSelection().setBaseAndExtent(le1, lo1, le2, lo2);
+    }
+});
 
 $(function () {
     $(".js-settings-json").each(function () {

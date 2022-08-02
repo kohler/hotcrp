@@ -509,22 +509,26 @@ jQuery.fn.extend({
     scrollIntoView: function (opts) {
         opts = opts || {};
         for (var i = 0; i !== this.length; ++i) {
-            var tg = $(this[i]).geometry(), p = this[i].parentNode;
+            var e = this[i];
+            while (e && e.nodeType !== 1) {
+                e = e.parentNode;
+            }
+            var tg = $(e).geometry(), p = e.parentNode;
             while (p && p.tagName && $(p).css("overflowY") === "visible") {
                 p = p.parentNode;
             }
             p = p && p.tagName ? p : window;
-            var pg = $(p).geometry();
-            if (p !== window) {
-                tg.top += p.scrollTop;
-                tg.bottom += p.scrollTop;
+            var pg;
+            if (p !== window && opts.scrollParent) {
+                $(p).scrollIntoView(opts);
             }
-            var mt = opts.marginTop || 0, mb = opts.marginBottom || 0;
+            var pg = $(p).geometry(),
+                mt = opts.marginTop || 0, mb = opts.marginBottom || 0;
             if (mt === "auto") {
-                mt = parseFloat($(this[i]).css("marginTop"));
+                mt = parseFloat($(e).css("marginTop"));
             }
             if (mb === "auto") {
-                mb = parseFloat($(this[i]).css("marginBottom"));
+                mb = parseFloat($(e).css("marginBottom"));
             }
             if ((tg.top < pg.top + mt && !opts.atBottom)
                 || opts.atTop) {
@@ -532,14 +536,14 @@ jQuery.fn.extend({
                 if (p === window) {
                     p.scrollTo(pg.scrollX, pos);
                 } else {
-                    p.scrollTop = pos;
+                    p.scrollTop = pos - pg.top;
                 }
             } else if (tg.bottom > pg.bottom - mb) {
                 var pos = Math.max(tg.bottom + mb - pg.height, 0);
                 if (p === window) {
                     p.scrollTo(pg.scrollX, pos);
                 } else {
-                    p.scrollTop = pos;
+                    p.scrollTop = pos - pg.top;
                 }
             }
         }

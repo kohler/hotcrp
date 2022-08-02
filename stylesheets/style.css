@@ -1732,6 +1732,9 @@ th.settings-simplehead {
 	vertical-align: 1px;
 	color: #333333;
 }
+a:hover .settings-jpath {
+	color: #c45500;
+}
 .settings-json-panels {
 	width: 100%;
 	display: flex;
@@ -1742,6 +1745,15 @@ th.settings-simplehead {
 	flex: 0 0 60%;
 	position: relative;
 	overflow-x: visible;
+	overflow-y: scroll;
+	max-height: 80vh;
+}
+.settings-json-panel-edit:focus-within {
+	outline: 3px auto Highlight;
+	outline: 3px auto -webkit-focus-ring-color;
+}
+.settings-json-panel-edit > .js-settings-json {
+	outline: none;
 }
 .settings-json-panel-info {
 	max-height: 100vh;
