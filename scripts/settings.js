@@ -951,7 +951,7 @@ function window_selection_inside(el) {
 function make_content_editable(mainel) {
     var texts = [""],
         posd = [], posb = 0,
-        jh_ln0 = null, jh_ln1, jh_s0, jh_s2;
+        reflectors = [];
 
     // Normalize the contents of `mainel` to a sensible format for editing.
     // * Text only.
@@ -1051,8 +1051,25 @@ function make_content_editable(mainel) {
     }
 
     function splice(start, ...rest) {
-        posd.length > start && posd.splice(start);
-        return texts.splice(start, ...rest);
+        if (posd.length > start) {
+            posd.splice(start);
+        }
+        for (let i = 1; i < rest.length; ++i) {
+            rest[i] = rest[i] || "";
+        }
+        let deleted = texts.splice(start, ...rest);
+        if (reflectors.length !== 0) {
+            let n = 0;
+            for (let i = 0; i !== deleted.length; ++i) {
+                n += deleted[i].length;
+            }
+            let t = rest.length > 1 ? rest.slice(1).join("") : "",
+                p = lp2p(start, 0);
+            for (let el of reflectors) {
+                el.setRangeText(t, p, p + n);
+            }
+        }
+        return deleted;
     }
 
     function line(lineno) {
@@ -1063,27 +1080,21 @@ function make_content_editable(mainel) {
         if (lineno > texts.length) {
             throw new Error(`bad ${lineno} on texts[${texts.length}]`);
         }
-        lineno < posd.length && update_posd(lineno, text.length - texts[lineno].length);
+        let oldtext = texts[lineno] || "";
+        if (lineno < posd.length) {
+            update_posd(lineno, text.length - oldtext.length);
+        }
         texts[lineno] = text;
-        if (jh_ln0 !== null) {
-            lineno < jh_ln0 && (jh_ln0 = null);
-            lineno >= jh_ln1 && (jh_ln1 = null);
+        if (reflectors.length !== 0) {
+            let p = lp2p(lineno, 0);
+            for (let el of reflectors) {
+                el.setRangeText(text, p, p + oldtext.length);
+            }
         }
     }
 
-    function join(hint0, hint1) {
-        if (hint0 == null || (hint0 === 0 && hint1 === texts.length)) {
-            return texts.join("");
-        }
-        if (jh_ln0 !== hint0) {
-            jh_ln0 = hint0;
-            jh_s0 = texts.slice(0, jh_ln0).join("");
-        }
-        if (jh_ln1 !== hint1) {
-            jh_ln1 = Math.max(jh_ln0, hint1);
-            jh_s2 = texts.slice(jh_ln1).join("");
-        }
-        return jh_s0.concat(texts.slice(hint0, hint1).join(""), jh_s2);
+    function join() {
+        return texts.join("");
     }
 
     function boff2lp(base, off) {
@@ -1181,7 +1192,6 @@ function make_content_editable(mainel) {
             update_posd(ln, texts[ln].length);
             ++ln;
         }
-        check_posd();
     }
 
     function update_posd(ln, delta) {
@@ -1262,6 +1272,18 @@ function make_content_editable(mainel) {
 //                throw new Error(`[${ln},${lp}] -> ${p} !-> [${ln1},${lp1}]`);
 //        }
 //    }
+//
+//    function check_reflectors() {
+//        for (let el of reflectors) {
+//            if (el.value !== texts.join(""))
+//                throw new Error(`fuck ${JSON.stringify([el.value, texts.join("")])}`);
+//        }
+//    }
+
+    function add_reflector(el) {
+        reflectors.push(el);
+        el.value = texts.join("");
+    }
 
     return {
         length: length,
@@ -1275,7 +1297,8 @@ function make_content_editable(mainel) {
         boff2lp: boff2lp,
         lp2boff: lp2boff,
         lp2p: lp2p,
-        p2lp: p2lp
+        p2lp: p2lp,
+        add_reflector: add_reflector
     };
 }
 
@@ -1801,13 +1824,13 @@ function jsonhl_line(lineel, st, nsel) {
 
 
 function make_json_validate() {
-    var mainel = this, maince = make_content_editable(mainel),
+    var mainel = this, reflectel = null,
+        maince = make_content_editable(mainel),
         states = [""], lineels = [null],
         redisplay_ln0 = 0, redisplay_el1 = null,
         normalization, rehighlight_queued,
         api_timer = null, api_value = null, msgbub = null,
         commands = [], commandPos = 0,
-        reflect_ln0, reflect_ln1, reflect_text0, reflect_text2,
         undo_time, redo_time;
 
     function rehighlight() {
@@ -1871,9 +1894,8 @@ function make_json_validate() {
             nsel.refresh();
             //state_redisplay.push(i, st, states[i - 1]);
             //console.log(state_redisplay);
-            if (mainel.hasAttribute("data-reflect-text")
-                || mainel.hasAttribute("data-reflect-highlight-api")) {
-                handle_reflection(maince.join(redisplay_ln0, i));
+            if (reflectel) {
+                handle_reflection();
             }
             redisplay_ln0 = 0;
             redisplay_el1 = null;
@@ -1884,33 +1906,25 @@ function make_json_validate() {
         }
     }
 
-    function handle_reflection(text) {
-        var s, el;
-        if ((s = mainel.getAttribute("data-reflect-text"))
-            && (el = document.getElementById(s))
-            && !text_eq(text, el.value)) {
-            el.value = text;
-            form_highlight(el.form, el);
-        }
+    function handle_reflection() {
+        form_highlight(reflectel.form, reflectel);
         if (mainel.hasAttribute("data-reflect-highlight-api")) {
-            if (api_value === null) {
-                api_value = text;
-            } else if (!text_eq(text, api_value)) {
-                api_timer && clearTimeout(api_timer);
-                api_timer = setTimeout(handle_reflect_api, 500);
-                api_value = text;
-            }
+            api_timer && clearTimeout(api_timer);
+            api_timer = setTimeout(handle_reflect_api, 500);
         }
     }
 
     function handle_reflect_api() {
-        var text = api_value,
-            m = mainel.getAttribute("data-reflect-highlight-api").split(/\s+/);
         api_timer = null;
+        let text = reflectel.value;
+        if (text === api_value)
+            return;
+        let m = mainel.getAttribute("data-reflect-highlight-api").split(/\s+/);
         $.post(hoturl(m[0]), {[m[1]]: text}, function (rv) {
             var i, mi, ranges = [], tips = [], utf16tf;
-            if (!rv || !rv.message_list || api_value !== text)
+            if (!rv || !rv.message_list || text !== reflectel.value)
                 return;
+            api_value = text;
             for (i = 0; i !== rv.message_list.length; ++i) {
                 mi = rv.message_list[i];
                 if (mi.pos1 != null && mi.context == null && mi.status >= 1) {
@@ -1956,10 +1970,9 @@ function make_json_validate() {
         }
         var c = commands[commandPos - 1], t = canonical_input_type(evt.inputType);
         if (!(c
-              && !c.afterLines
               && c.type === t
-              && evt.timeStamp - c.recentTime <= 250
-              && evt.timeStamp - c.startTime <= 3000)) {
+              && evt.timeStamp <= c.recentTime + 250
+              && evt.timeStamp <= c.startTime + 3000)) {
             if (commandPos > 2000) {
                 commands.splice(0, 1000);
             }
@@ -2023,9 +2036,11 @@ function make_json_validate() {
         var c = commands[commandPos - 1];
         if (c && (undo_time === null || time - undo_time > 3)) {
             undo_time = undo_time || time;
+            c.recentTime = 0;
             c.afterLines = c.afterLines || maince.slice(c.afterRange[0], c.afterRange[1]);
             handle_swap(c.beforeRange, c.beforeLines, c.afterRange, c.afterLines);
             --commandPos;
+            commandPos > 0 && (commands[commandPos - 1].recentTime = 0);
         }
     }
 
@@ -2173,6 +2188,11 @@ function make_json_validate() {
     mainel.addEventListener("beforeinput", beforeinput);
     mainel.addEventListener("input", input);
     document.addEventListener("selectionchange", selectionchange);
+    if (mainel.hasAttribute("data-reflect-text")
+        && (reflectel = document.getElementById(mainel.getAttribute("data-reflect-text")))) {
+        maince.add_reflector(reflectel);
+    }
+
     normalization = -1;
     rehighlight_queued = true;
     queueMicrotask(rehighlight);

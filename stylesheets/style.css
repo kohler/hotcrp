@@ -651,6 +651,13 @@ label.checki {
 	vertical-align: middle;
 }
 
+.position-absolute {
+	position: absolute !important;
+}
+.invisible {
+	visibility: hidden !important;
+}
+
 .d-inline {
 	display: inline !important;
 }

@@ -35,8 +35,9 @@ class JSON_SettingParser extends SettingParser {
         }
         echo ' data-reflect-highlight-api="=api/settings?dryrun=1 settings">',
             $mainh, "\n</div>",
-            '</div><div class="settings-json-panel-info"></div></div>',
-            '<textarea name="json_settings" id="json_settings" class="hidden" readonly';
+            '</div><div class="settings-json-panel-info"></div></div>';
+        // NB On Safari, HTMLTextAreaElement.setRangeText only works on displayed elements.
+        echo '<textarea name="json_settings" id="json_settings" class="position-absolute invisible"';
         if ($mainj !== $defj) {
             echo ' data-default-value="', htmlspecialchars($defj), '"';
         }

@@ -484,10 +484,7 @@ class JsonParser {
                 while ($pos !== $len && (ctype_space($s[$pos]) || $s[$pos] === ",")) {
                     ++$pos;
                 }
-                if ($pos === $len) {
-                    break;
-                } else if ($s[$pos] === "}") {
-                    ++$pos;
+                if ($pos === $len || $s[$pos] === "}") {
                     break;
                 } else if ($s[$pos] !== "\"") {
                     $pos = self::skip($s, $pos);
@@ -513,10 +510,7 @@ class JsonParser {
                 while ($pos !== $len && (ctype_space($s[$pos]) || $s[$pos] === ",")) {
                     ++$pos;
                 }
-                if ($pos === $len) {
-                    break;
-                } else if ($s[$pos] === "]") {
-                    ++$pos;
+                if ($pos === $len || $s[$pos] === "]") {
                     break;
                 }
                 if (self::ctype_json_value_start($s[$pos])) {
