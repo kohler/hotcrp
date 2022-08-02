@@ -1302,6 +1302,8 @@ function make_content_editable(mainel) {
     };
 }
 
+let json_string_re = /\"(?:[^\\\"\x00-\x1F]|\\[\/\\bfnrt\"]|\\u[0-9a-fA-F]{4})+\"/y;
+
 
 // Mark the range [p0, p1) as erroneous with `flags` in `errors`,
 // which is a list of points:
@@ -2151,7 +2153,8 @@ function make_json_validate() {
             if (s === "") {
                 continue;
             }
-            m = s.match(/^\"(?:[^\\\"]|\\[\/\\bfnrt\"]|\\u[0-9a-fA-F]{4})+\"/);
+            json_string_re.lastIndex = 0;
+            m = json_string_re.exec(s);
             if (!m) {
                 return;
             }
