@@ -950,6 +950,7 @@ function window_selection_inside(el) {
 
 function make_content_editable(mainel) {
     var texts = [""],
+        posd = [], posb = 0,
         jh_ln0 = null, jh_ln1, jh_s0, jh_s2;
 
     // Normalize the contents of `mainel` to a sensible format for editing.
@@ -1050,6 +1051,7 @@ function make_content_editable(mainel) {
     }
 
     function splice(start, ...rest) {
+        posd.length > start && posd.splice(start);
         return texts.splice(start, ...rest);
     }
 
@@ -1058,6 +1060,10 @@ function make_content_editable(mainel) {
     }
 
     function set_line(lineno, text) {
+        if (lineno > texts.length) {
+            throw new Error(`bad ${lineno} on texts[${texts.length}]`);
+        }
+        lineno < posd.length && update_posd(lineno, text.length - texts[lineno].length);
         texts[lineno] = text;
         if (jh_ln0 !== null) {
             lineno < jh_ln0 && (jh_ln0 = null);
@@ -1081,9 +1087,9 @@ function make_content_editable(mainel) {
     }
 
     function boff2lp(base, off) {
-        var pos = 0, parent;
+        var lp = 0, parent;
         if (base.nodeType === 3) {
-            pos += off;
+            lp += off;
             base = base.parentElement;
             parent = base.parentElement;
         } else {
@@ -1097,55 +1103,165 @@ function make_content_editable(mainel) {
                 base = parent.lastChild;
             }
             if (base) {
-                pos += base.textContent.length;
+                lp += base.textContent.length;
             } else {
                 base = parent;
                 parent = parent.parentElement;
             }
         }
-        return [lineno(base), pos];
+        return [lineno(base), lp];
     }
 
-    function lp2boff(lineno, pos) {
-        var ln = mainel.childNodes[lineno], el, down = true;
-        if (!ln) {
-            ln = mainel.lastChild;
-            pos = -1;
+    function lp2boff(ln, lp) {
+        var le = mainel.childNodes[ln], e, down = true;
+        if (!le) {
+            le = mainel.lastChild;
+            lp = -1;
         }
-        if (pos < 0) {
-            pos = ln.textContent.length + 1 + pos;
+        if (lp < 0) {
+            lp = le.textContent.length + 1 + lp;
         }
-        el = ln.firstChild;
-        while (el) {
-            if (el.nodeType === 1) {
-                if (down && el.firstChild) {
-                    el = el.firstChild;
+        e = le.firstChild;
+        while (e) {
+            if (e.nodeType === 1) {
+                if (down && e.firstChild) {
+                    e = e.firstChild;
                 } else if (down) {
                     down = false;
-                } else if (el.nextSibling) {
-                    el = el.nextSibling;
+                } else if (e.nextSibling) {
+                    e = e.nextSibling;
                     down = true;
-                } else if (el.parentElement !== ln) {
-                    el = el.parentElement;
+                } else if (e.parentElement !== le) {
+                    e = e.parentElement;
                 } else {
-                    el = null;
+                    e = null;
                 }
             } else {
-                if (pos <= el.length) {
-                    return [el, pos];
+                if (lp <= e.length) {
+                    return [e, lp];
                 } else {
-                    pos -= el.length;
-                    if (el.nextSibling) {
-                        el = el.nextSibling;
+                    lp -= e.length;
+                    if (e.nextSibling) {
+                        e = e.nextSibling;
                     } else {
-                        el = el.parentElement;
+                        e = e.parentElement;
                         down = false;
                     }
                 }
             }
         }
-        return [ln, ln.childNodes.length];
+        return [le, le.childNodes.length];
     }
+
+    function make_posd() {
+        // Preconditions:
+        // * posd[i] is valid for all i < posd.length
+        // * posd.length < texts.length
+        // Postconditions:
+        // * posd[i] is valid for all i < texts.length
+        // * posd.length === texts.length
+        posb = 1 << Math.ceil(Math.log2(Math.max(texts.length, 1)));
+        // fill in tail of `posd` with zeros
+        let ln = posd.length;
+        posd.length = texts.length;
+        posd.fill(0, ln);
+        // update tail with information about `texts.slice(0, ln)`
+        // (`log2(ln)` updates)
+        if (ln !== 0) {
+            let x = ln - 1, n = texts[x].length;
+            for (let a = 1; (x | a) < texts.length; x &= ~a, a <<= 1) {
+                (x | a) >= ln && (posd[x | a] = n);
+                let xx = x & ~a;
+                x !== xx && (n += posd[x]);
+                x = xx;
+            }
+        }
+        // update tail with information about `texts.slice(ln)`
+        while (ln !== texts.length) {
+            update_posd(ln, texts[ln].length);
+            ++ln;
+        }
+        check_posd();
+    }
+
+    function update_posd(ln, delta) {
+        let max = texts.length;
+        for (let a = 1, y = ln; y + 1 < max; y |= a, a <<= 1) {
+            (y & a) === 0 && (posd[y + 1] += delta);
+        }
+    }
+
+    function lp2p(ln, lp) {
+        posd.length > ln || make_posd();
+        if (ln >= texts.length) {
+            ln = texts.length;
+            lp = 0;
+        }
+        let max = texts.length, lsp = 0;
+        for (let a = 1, y = ln; y !== 0; a <<= 1) {
+            if ((y & a) !== 0) {
+                lsp += posd[y];
+                y ^= a;
+            }
+        }
+        return lsp + lp;
+    }
+
+    function p2lp(p) {
+        posd.length === texts.length || make_posd();
+        let max = texts.length, ln = 0, lsp = 0;
+        for (let a = posb; a !== 0; a >>= 1) {
+            if ((ln | a) < max && posd[ln | a] <= p) {
+                ln |= a;
+                lsp += posd[ln];
+                p -= posd[ln];
+            }
+        }
+        return [ln, p];
+    }
+
+// Testing code:
+//    function check_posd() {
+//        posd.length === texts.length || make_posd();
+//        for (let i = 1; i !== texts.length; ++i) {
+//            let k = 1;
+//            while ((k << 1) < texts.length && (i & k) === 0) {
+//                k <<= 1;
+//            }
+//            //console.log(`${k} vs ${i} @${texts.length}`);
+//            let p = 0;
+//            for (let x = 0; x !== k; ++x) {
+//                p += texts[i - k + x].length;
+//            }
+//            if (p !== posd[i]) {
+//                throw new Error(`expected posd[${i}] === ${p}, got ${posd[i]}`);
+//            }
+//        }
+//    }
+//
+//    function lp2p_base(ln, lp) {
+//        let p = 0;
+//        while (ln > 0) {
+//            --ln;
+//            p += texts[ln].length;
+//        }
+//        return p + lp;
+//    }
+//
+//    function test_posd() {
+//        posd.length === texts.length || make_posd();
+//        for (let i = 0; i !== 100; ++i) {
+//            let ln = Math.floor(Math.random() * texts.length),
+//                lp = Math.floor(Math.random() * (texts[ln].length + 1)),
+//                p = lp2p(ln, lp),
+//                [ln1, lp1] = p2lp(p);
+//            if (p !== lp2p_base(ln, lp))
+//                throw new Error(`[${ln},${lp}] -> ${p} !<- ${lp2p_base(ln, lp)}`);
+//            if ((ln1 !== ln || lp1 !== lp)
+//                && (ln1 !== ln + 1 || lp1 !== 0 || lp !== texts[ln].length))
+//                throw new Error(`[${ln},${lp}] -> ${p} !-> [${ln1},${lp1}]`);
+//        }
+//    }
 
     return {
         length: length,
@@ -1157,7 +1273,9 @@ function make_content_editable(mainel) {
         splice: splice,
         join: join,
         boff2lp: boff2lp,
-        lp2boff: lp2boff
+        lp2boff: lp2boff,
+        lp2p: lp2p,
+        p2lp: p2lp
     };
 }
 
@@ -1854,7 +1972,7 @@ function make_json_validate() {
             commandPos = commands.length;
         }
         if (editRange[0] < c.beforeRange[0]) {
-            c.beforeLines.splice(0, 0, ...maince.slice(r[0], c.beforeRange[0]));
+            c.beforeLines.splice(0, 0, ...maince.slice(editRange[0], c.beforeRange[0]));
             c.beforeRange[0] = editRange[1];
         }
         if (c.afterRange[1] < editRange[1]) {
