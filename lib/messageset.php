@@ -618,6 +618,17 @@ class MessageSet {
         foreach ($message_list as $mi) {
             if ($mi->message !== "") {
                 $s = $mi->message_as(5);
+                $pstart = $pstartclass = "";
+                if (str_starts_with($s, "<p")) {
+                    if ($s[2] === ">") {
+                        $pstart = "<p>";
+                        $s = substr($s, 3);
+                    } else if (preg_match('/\A<p class="(.*?)">/', $s, $m)) {
+                        $pstart = $m[0];
+                        $pstartclass = "{$m[1]} ";
+                        $s = substr($s, strlen($m[0]));
+                    }
+                }
                 if ($mi->landmark !== null
                     && $mi->landmark !== ""
                     && ($mi->status !== self::INFORM || $mi->landmark !== $last_landmark)) {
@@ -628,11 +639,16 @@ class MessageSet {
                     if ($t !== "") {
                         $ts[] = $t;
                     }
-                    $k = self::status_class($mi->status, "is-diagnostic", "is-");
-                    $t = "<div class=\"{$k}\">{$s}</div>";
+                    if ($pstart !== "") {
+                        $pstart = "<p class=\"" . self::status_class($mi->status, "{$pstartclass}is-diagnostic", "is-") . "\">";
+                        $k = "has-diagnostic";
+                    } else {
+                        $k = self::status_class($mi->status, "is-diagnostic", "is-");
+                    }
+                    $t = "<div class=\"{$k}\">{$pstart}{$s}</div>";
                     $last_landmark = $mi->landmark;
                 } else {
-                    $t .= "<div class=\"msg-inform\">{$s}</div>";
+                    $t .= "<div class=\"msg-inform\">{$pstart}{$s}</div>";
                 }
                 if ($mi->pos1 !== null && $mi->context !== null) {
                     $mark = Ht::mark_substring($mi->context, $mi->pos1, $mi->pos2, $mi->status);

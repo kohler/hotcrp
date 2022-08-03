@@ -319,8 +319,8 @@ class Review_Page {
                 . ($ref[0]->reason ? "" : '<div class="field-d">If you’d like, you may enter a brief explanation here.</div>')
                 . Ht::textarea("reason", $ref[0]->reason, ["rows" => 3, "cols" => 40, "spellcheck" => true, "class" => "w-text", "id" => "declinereason"])
                 . '</div><div class="aab mt-3">'
-                . '<div class="aabut">' . Ht::submit("Update explanation", ["class" => "btn-primary"])
-                . '</div><div class="aabut">' . Ht::submit("Accept review", ["formaction" => $this->conf->hoturl("=api/acceptreview", ["p" => $this->prow->paperId, "r" => $rrid, "verbose" => 1, "redirect" => 1])])
+                . '<div class="aabut">' . Ht::submit("Save explanation", ["class" => "btn-primary"])
+                . '</div><div class="aabut">' . Ht::submit("Accept review after all", ["formaction" => $this->conf->hoturl("=api/acceptreview", ["p" => $this->prow->paperId, "r" => $rrid, "verbose" => 1, "redirect" => 1])])
                 . '</div></div></form>');
         } else {
             $this->conf->warning_msg("<5><p>You have declined to complete this review. Thank you for informing us.</p>");
@@ -348,7 +348,7 @@ class Review_Page {
                 }
                 $this->conf->warning_msg("<5>{$m}");
             } else {
-                $this->conf->warning_msg("<5><p>This review is assigned to " . htmlspecialchars($u->email) . '. You can edit the review since you accessed it using a special link.</p>');
+                $this->conf->warning_msg("<5>This review is assigned to " . htmlspecialchars($u->email) . ". You are not signed in, but you can edit the review anyway since you accessed it using a special link. " . Ht::link("Sign in to the site", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null])));
             }
         }
     }

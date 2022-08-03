@@ -2736,22 +2736,9 @@ class PaperTable {
 
     function print_review_form() {
         // notecard messages
-        $msgs = [];
-        if (!$this->user->is_signed_in()
-            && $this->editrrow
-            && ($capuser = $this->user->reviewer_capability_user($this->prow->paperId))
-            && $capuser->contactId === $this->editrrow->contactId) {
-            $msgs[] = $this->conf->_("You followed a review link to edit this review. You can also <a href=\"%s\">sign in to the site</a>.", $this->conf->hoturl("signin", ["email" => $this->editrrow->email, "cap" => null]));
-        }
-        if ($this->user->is_admin_force()) {
-            if (!$this->user->call_with_overrides(0, "can_view_review", $this->prow, null)) {
-                $msgs[] = $this->_privilegeMessage();
-            }
-        }
-        if (!empty($msgs)) {
-            echo '<div class="pcard notecard"><p class="sd">',
-                join("</p><p class=\"sd\">", $msgs), '</p></div>';
-
+        if ($this->user->is_admin_force()
+            && !$this->user->call_with_overrides(0, "can_view_review", $this->prow, null)) {
+            echo '<div class="pcard notecard"><p class="sd">', $this->_privilegeMessage(), '</p></div>';
         }
 
         // review

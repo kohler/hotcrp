@@ -704,6 +704,9 @@ label.checki {
 .align-items-baseline {
 	align-items: baseline !important;
 }
+.align-self-center {
+	align-self: center !important;
+}
 .relative {
 	position: relative;
 }
