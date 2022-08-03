@@ -88,8 +88,26 @@ class TokenInfo {
 
     /** @param int $seconds
      * @return $this */
+    function set_min_invalid_after($seconds) {
+        if ($this->timeInvalid > 0 && $this->timeInvalid < Conf::$now + $seconds) {
+            $this->timeInvalid = Conf::$now + $seconds;
+        }
+        return $this;
+    }
+
+    /** @param int $seconds
+     * @return $this */
     function set_expires_after($seconds) {
         $this->timeExpires = Conf::$now + $seconds;
+        return $this;
+    }
+
+    /** @param int $seconds
+     * @return $this */
+    function set_min_expires_after($seconds) {
+        if ($this->timeExpires > 0 && $this->timeExpires < Conf::$now + $seconds) {
+            $this->timeExpires = Conf::$now + $seconds;
+        }
         return $this;
     }
 

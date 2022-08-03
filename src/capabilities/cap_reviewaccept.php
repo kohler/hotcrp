@@ -34,32 +34,32 @@ class ReviewAccept_Capability {
         return $tok;
     }
 
-    /** @param ReviewInfo $rrow */
-    static function invalidate_for($rrow) {
-        $invtime = Conf::$now + 259200 /* 3 days */;
-        $rrow->conf->qe("update Capability set timeInvalid=? where salt>=? and salt<? and (timeInvalid=0 or timeInvalid>?)",
-            $invtime, "hcra{$rrow->reviewId}@", "hcra{$rrow->reviewId}~", $invtime);
-    }
-
     static function apply_review_acceptor(Contact $user, $uf) {
+        $rrowid = (int) $uf->match_data[1];
         if (($tok = TokenInfo::find($uf->name, $user->conf))
             && $tok->capabilityType === TokenInfo::REVIEWACCEPT
             && $tok->is_active()) {
             $user->set_capability("@ra{$tok->paperId}", $tok->contactId);
             $user->set_default_cap_param($uf->name, true);
+            if ($tok->timeUsed === 0) {
+                $user->conf->qe("update Capability set timeInvalid=? where salt>=? and salt<? and salt!=? and (timeInvalid=0 or timeInvalid>?)",
+                    Conf::$now, "hcra{$rrowid}@", "hcra{$rrowid}~", $uf->name, Conf::$now);
+            }
             $tok->timeUsed = Conf::$now;
+            $tok->set_min_invalid_after(7776000); /* 90 days */
+            $tok->set_min_expires_after(15552000); /* 180 days */
             $tok->update();
         } else {
             // Token not found, but users often follow links after they expire.
             // Do not report an error if the logged-in user corresponds to the review.
             $rrow = $refused = null;
             if ($user->contactId) {
-                $result = $user->conf->qe("select * from PaperReview where reviewId=?", $uf->match_data[1]);
+                $result = $user->conf->qe("select * from PaperReview where reviewId=?", $rrowid);
                 $rrow = ReviewInfo::fetch($result, null, $user->conf);
                 Dbl::free($result);
             }
             if (!$rrow && $user->contactId) {
-                $result = $user->conf->qe("select * from PaperReviewRefused where refusedReviewId=? order by timeRefused desc limit 1", $uf->match_data[1]);
+                $result = $user->conf->qe("select * from PaperReviewRefused where refusedReviewId=? order by timeRefused desc limit 1", $rrowid);
                 $refused = ReviewRefusalInfo::fetch($result);
                 Dbl::free($result);
             }

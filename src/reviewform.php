@@ -1717,11 +1717,6 @@ class ReviewValues extends MessageSet {
         if (!$reviewId) {
             return false;
         }
-        if ($rrow->reviewId
-            && $user->is_signed_in()
-            && $user->contactId === $contactId) {
-            ReviewAccept_Capability::invalidate_for($rrow);
-        }
         $this->req["reviewId"] = $reviewId;
         $this->reviewId = $reviewId;
         $new_rrow = $prow->fresh_review_by_id($reviewId);
