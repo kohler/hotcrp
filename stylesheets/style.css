@@ -1756,13 +1756,14 @@ a:hover .settings-jpath {
 	outline: none;
 }
 .settings-json-panel-info {
-	max-height: 100vh;
 	flex: 0 0 40%;
 	padding-left: 2rem;
+}
+.settings-json-info {
 	position: sticky;
 	top: 1rem;
-	overflow-y: auto;
 	font-size: smaller;
+	overflow-y: auto;
 }
 
 .is-error-part {

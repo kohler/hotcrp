@@ -4,8 +4,6 @@
 
 class JSON_SettingParser extends SettingParser {
     static function print(SettingValues $sv) {
-        echo '<p class="w-text">HotCRP conference settings can be viewed, changed, or transferred between conferences using JSON.</p>';
-
         $wantjreq = $sv->use_req() && $sv->has_req("json_settings");
         $defj = json_encode_browser($sv->json_allv(), JSON_PRETTY_PRINT);
         $mainj = $wantjreq ? cleannl($sv->reqstr("json_settings")) : $defj;
@@ -35,7 +33,7 @@ class JSON_SettingParser extends SettingParser {
         }
         echo ' data-reflect-highlight-api="=api/settings?dryrun=1 settings">',
             $mainh, "\n</div>",
-            '</div><div class="settings-json-panel-info"></div></div>';
+            '</div><div class="settings-json-panel-info"><div class="settings-json-info"></div></div></div>';
         // NB On Safari, HTMLTextAreaElement.setRangeText only works on displayed elements.
         echo '<textarea name="json_settings" id="json_settings" class="position-absolute invisible"';
         if ($mainj !== $defj) {

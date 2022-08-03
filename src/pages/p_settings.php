@@ -102,7 +102,12 @@ class Settings_Page {
             Ht::submit("update", "Save changes", ["class" => "btn-primary"]),
             "</div></nav></div>\n",
             '<main class="leftmenu-content main-column">',
-            '<h2 class="leftmenu">', $sv->group_title($group), '</h2>';
+            '<h2 class="leftmenu">', $sv->group_title($group);
+        $gj = $sv->cs()->get($group);
+        if ($gj && isset($gj->title_help_group)) {
+            echo " ", Ht::link(Icons::ui_solid_question(), $sv->conf->hoturl("help", "t={$gj->title_help_group}"), ["class" => "ml-1"]);
+        }
+        echo '</h2>';
 
         if (!$sv->use_req()) {
             $sv->crosscheck();

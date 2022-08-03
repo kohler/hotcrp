@@ -255,6 +255,7 @@ src/formulas/f_topicscore.php
 src/help/h_bulkassign.php
 src/help/h_chairsguide.php
 src/help/h_formulas.php
+src/help/h_jsonsettings.php
 src/help/h_keywords.php
 src/help/h_ranking.php
 src/help/h_revrate.php

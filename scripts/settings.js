@@ -2450,7 +2450,7 @@ function settings_jsonpathchange(evt) {
     if (!head || head.startsWith("$")) {
         if (this.hasAttribute("data-caret-path-head")) {
             this.removeAttribute("data-caret-path-head");
-            $(".settings-json-panel-info").empty();
+            $(".settings-json-info").empty();
         }
     } else if (head !== this.getAttribute("data-caret-path-head")) {
         this.setAttribute("data-caret-path-head", head);
@@ -2482,7 +2482,7 @@ function append_rendered_values(es, values) {
 }
 
 function settings_describe(d) {
-    var $i = $(".settings-json-panel-info"), e, es, i, sep;
+    var $i = $(".settings-json-info"), e, es, i, sep;
     $i.empty();
     if (!d) {
         return;

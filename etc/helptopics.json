@@ -321,5 +321,12 @@
         "name": "bulkassignactions/follow",
         "title": "<5><code>follow</code> action",
         "print_function": "BulkAssign_HelpTopic::print_action_follow"
+    },
+    {
+        "name": "jsonsettings", "short_title": "Advanced settings",
+        "title": "Advanced settings in JSON",
+        "description": "Advanced control of site configuration.",
+        "print_function": "*JSONSettings_HelpTopic::print",
+        "order": 12000
     }
 ]
