@@ -327,28 +327,32 @@ class Review_Page {
         }
     }
 
-    function print_accept_other_message($capuid) {
+    function print_capability_user_message($capuid) {
         if (($u = $this->conf->cached_user_by_id($capuid))) {
             if (PaperRequest::simple_qreq($this->qreq)
                 && ($i = $this->user->session_user_index($u->email)) >= 0) {
                 $selfurl = $this->conf->selfurl($this->qreq, null, Conf::HOTURL_SITEREL | Conf::HOTURL_RAW);
                 $this->conf->redirect(Navigation::base_absolute() . "u/{$i}/{$selfurl}");
-            } else if ($this->user->has_email()) {
-                $mx = 'This review is assigned to ' . htmlspecialchars($u->email) . ', while you are signed in as ' . htmlspecialchars($this->user->email) . '. You can edit the review anyway since you accessed it using a special link.';
+                return;
+            }
+
+            $hemail = htmlspecialchars($u->email);
+            if ($this->user->has_email()) {
+                $mx = "You’re accessing this review using a special link for reviewer {$hemail}. (You are signed in as " . htmlspecialchars($this->user->email) . ".)";
                 if ($this->rrow->reviewStatus <= ReviewInfo::RS_DRAFTED) {
-                    $m = Ht::form($this->conf->hoturl("=api/claimreview", ["p" => $this->prow->paperId, "r" => $this->rrow->reviewId, "redirect" => 1]), ["class" => "has-fold foldc"])
-                        . "<p class=\"mb-0\">$mx Alternately, you can <a href=\"\" class=\"ui js-foldup\">reassign it to this account</a>.</p>"
-                        . '<div class="aab mt-3 fx">';
+                    $m = "<5><p class=\"mb-0\">{$mx} If you wish, you can reassign the linked review to one your current accounts.</p>"
+                        . Ht::form($this->conf->hoturl("=api/claimreview", ["p" => $this->prow->paperId, "r" => $this->rrow->reviewId, "redirect" => 1]), ["class" => "has-fold foldo", "id" => "claimreview-form"])
+                        . '<div class="aab mt-2 fx">';
                     foreach ($this->user->session_users() as $e) {
                         $m .= '<div class="aabut">' . Ht::submit("Reassign to " . htmlspecialchars($e), ["name" => "email", "value" => $e]) . '</div>';
                     }
-                    $m .= '</div></div></form>';
+                    $m .= '</div></form>';
                 } else {
-                    $m = "<p>{$mx}</p>";
+                    $m = "<5>{$mx}";
                 }
-                $this->conf->warning_msg("<5>{$m}");
+                $this->conf->warning_msg($m);
             } else {
-                $this->conf->warning_msg("<5>This review is assigned to " . htmlspecialchars($u->email) . ". You are not signed in, but you can edit the review anyway since you accessed it using a special link. " . Ht::link("Sign in to the site", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null])));
+                $this->conf->warning_msg("<5>You’re accessing this review using a special link for reviewer {$hemail}. " . Ht::link("Sign in to the site", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null])));
             }
         }
     }
@@ -446,7 +450,7 @@ class Review_Page {
             } else if ($pp->rrow
                        && $capuid === $pp->rrow->contactId
                        && $capuid !== $user->contactXid) {
-                $pp->print_accept_other_message($capuid);
+                $pp->print_capability_user_message($capuid);
             }
         }
 

@@ -389,6 +389,17 @@ class Paper_Page {
         $this->pt->set_edit_status($this->ps, $editable, $editable && $this->useRequest);
     }
 
+    /** @param int $capuid */
+    private function print_capability_user_message($capuid) {
+        if (($u = $this->conf->cached_user_by_id($capuid))) {
+            if ($this->user->has_email()) {
+                $this->conf->warning_msg("<0>You’re accessing this submission using a special link for reviewer {$u->email}. (You are signed in as {$this->user->email}.)");
+            } else {
+                $this->conf->warning_msg("<5>You’re accessing this submission using a special link for reviewer {$u->email}. " . Ht::link("Sign in to the site", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null])));
+            }
+        }
+    }
+
     function print() {
         // correct modes
         $this->pt = $pt = new PaperTable($this->user, $this->qreq, $this->prow);
@@ -509,6 +520,12 @@ class Paper_Page {
             $pp->handle_delete();
         } else if ($qreq->updateoverride && $qreq->valid_token()) {
             $pp->conf->redirect_self($qreq, ["m" => "edit", "forceShow" => 1]);
+        }
+
+        // capability messages: decline, accept to different user
+        if (($capuid = $user->capability("@ra{$pp->prow->paperId}"))
+            && $capuid !== $user->contactXid) {
+            $pp->print_capability_user_message($capuid);
         }
 
         // render

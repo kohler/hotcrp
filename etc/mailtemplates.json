@@ -333,7 +333,7 @@
 			"On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% has asked you to review %CONFNAME% submission #%NUMBER%.%IF(REASON)%\n\nThey supplied this note: %REASON%%ENDIF%\n\n",
 			"* Title: %TITLE%\n",
 			"* %_(Authors)%: %OPT(AUTHORS)%\n",
-			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Site: %URL(paper, p=%NUMBER%&cap=%REVIEWACCEPTOR%)%\n\n",
 			"If you are willing to review this submission, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))% Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%\n\n",
 			"Once you've decided, please accept or decline this review request using one of these links.\n\n",
 			"* Accept: %URL(review, p=%NUMBER%&cap=%REVIEWACCEPTOR%&accept=1)%\n",
