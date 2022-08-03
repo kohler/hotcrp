@@ -45,6 +45,12 @@ class ReviewForm_SettingParser extends SettingParser {
             $sv->set_oldv($si, join("", $vs));
         } else if ($si->name_matches("rf/", "*", "/values/", "*")) {
             $sv->set_oldv($si, new RfValue_Setting);
+        } else if ($si->name_matches("rf/", "*", "/values/", "*", "/title")) {
+            $rfs = $sv->oldv($si->name_prefix(2));
+            $t0 = $rfs->name ? "‘{$rfs->name}’" : "Review field";
+            $rfv = $sv->oldv($si->name_prefix(4));
+            $t1 = $rfv->name ? "value ‘{$rfv->name}’" : "value";
+            $sv->set_oldv($si, "{$t0} {$t1}");
         }
     }
 
@@ -222,7 +228,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
     private function mark_values_error(SettingValues $sv) {
         if (!$this->_values_error_printed) {
-            $sv->inform_at(null, "<5>Score fields must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive capital letters (lower letters are better). Example: <pre>1. Low quality
+            $sv->inform_at(null, "<5><p>Score fields must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive capital letters (lower letters are better). Example:</p><pre class=\"sample mb-0\">1. Low quality
 2. Medium quality
 3. High quality</pre>");
             $this->_values_error_printed = true;
@@ -510,7 +516,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
     static function stash_values_caption() {
         Ht::stash_html('<div id="settings-rf-caption-values" class="hidden">'
             . '<p>Enter one choice per line, numbered starting from 1 (higher numbers are better). For example:</p>
-<pre class="entryexample">1. Reject
+<pre class="sample">1. Reject
 2. Weak reject
 3. Weak accept
 4. Accept</pre>

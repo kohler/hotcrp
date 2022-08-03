@@ -518,7 +518,7 @@ function rf_delete() {
 }
 
 tooltip.add_builder("settings-rf", function (info) {
-    var m = this.name.match(/^rf\/\d+\/(.*)$/);
+    var m = this.name.match(/^rf\/\d+\/(.*?)(?:_text|)$/);
     return $.extend({
         anchor: "w", content: $("#settings-rf-caption-" + m[1]).html(), className: "gray"
     }, info);

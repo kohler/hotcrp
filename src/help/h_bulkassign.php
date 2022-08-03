@@ -25,7 +25,7 @@ name</code>, and/or <code>user</code> fields.</p>
 #redo, then assigns two primary reviews for submission #1 and one secondary
 review for submission #2:</p>
 
-<pre class=\"entryexample\">paper,action,email,round
+<pre class=\"sample\">paper,action,email,round
 #redo,clearreview,all,R1
 1,primary,man@alice.org
 2,secondary,slugger@manny.com
@@ -69,29 +69,29 @@ entered.</p>
 <code>drew@harvard.edu</code> in review round R2, or, if Drew already has a
 review assignment for submission #1, modify that review’s type and round:</p>
 
-<pre class=\"entryexample\">paper,action,email,reviewtype,round
+<pre class=\"sample\">paper,action,email,reviewtype,round
 1,review,drew@harvard.edu,primary,R2</pre>
 
 <p>To avoid modifying an existing review, use this syntax, which means “ignore
 this assignment unless the current review type is ‘none’”:</p>
 
-<pre class=\"entryexample\">paper,action,email,reviewtype,round
+<pre class=\"sample\">paper,action,email,reviewtype,round
 1,review,drew@harvard.edu,none:primary,R2</pre>
 
 <p>To modify an existing review (the “<code>any</code>” review type only
 matches existing reviews):</p>
 
-<pre class=\"entryexample\">paper,action,email,reviewtype,round
+<pre class=\"sample\">paper,action,email,reviewtype,round
 1,review,drew@harvard.edu,any,R2</pre>
 
 <p>To change an existing review from round R1 to round R2:</p>
 
-<pre class=\"entryexample\">paper,action,email,reviewtype,round
+<pre class=\"sample\">paper,action,email,reviewtype,round
 1,review,drew@harvard.edu,any,R1:R2</pre>
 
 <p>To change all round-R1 primary reviews to round R2:</p>
 
-<pre class=\"entryexample\">paper,action,email,reviewtype,round
+<pre class=\"sample\">paper,action,email,reviewtype,round
 all,review,all,primary,R1:R2</pre>
 
 <p>The <code>primary</code>, <code>secondary</code>, <code>pcreview</code>,
@@ -111,14 +111,14 @@ value</code> field.</p>
 <code>clear</code>. For example, this file clears all #p tags with value
 less than 10:</p>
 
-<pre class=\"entryexample\">paper,action,tag
+<pre class=\"sample\">paper,action,tag
 #p#&lt;10,cleartag,p</pre>
 
 <p>To add to a tag order, use action <code>nexttag</code>; to add to a gapless
 tag order, use <code>seqnexttag</code>. For example, this file creates a
-tag order in tag #p containing submissions 4, 3, 2, 9, 10, and 6:</p>
+tag order in tag #p:</p>
 
-<pre class=\"entryexample\">paper,action,tag
+<pre class=\"sample\">paper,action,tag
 all,cleartag,p
 4,nexttag,p
 3,nexttag,p

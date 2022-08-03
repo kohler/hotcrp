@@ -17,15 +17,15 @@ class JSONSettings_HelpTopic {
     }
 
     function print() {
-        echo "<p>",
+        echo "<p>With ",
             $this->hth->setting_group_link("Settings &gt; Advanced", "json"),
-            " lets administrators configure site operation by modifying a JSON
-configuration file. Advanced users can copy settings from one conference to
+            ", administrators can configure site operation by modifying a JSON
+specification. Advanced users can copy settings from one conference to
 another and configure aspects of the site not accessible via the normal
 settings UI.</p>";
 
 
-        echo $this->hth->subhead("Viewing");
+        echo $this->hth->subhead("View settings");
 
         echo "<p>HotCRP site configuration is formatted as a JSON object. ",
             $this->hth->setting_group_link("Settings &gt; Advanced", "json"),
@@ -34,7 +34,7 @@ dozens of components. Click on a component to get more information about that
 setting’s meaning and format.</p>";
 
 
-        echo $this->hth->subhead("Modifying");
+        echo $this->hth->subhead("Modify settings");
 
         echo "<p>To modify the configuration, edit the provided JSON
 and save changes. Errors will be highlighted.</p>";
@@ -55,8 +55,9 @@ class=\"settings-jpath\">rf</code>, and decision types <code
 class=\"settings-jpath\">decision</code>, are specified as <strong>object
 lists</strong>. These are arrays of JSON objects where each object corresponds
 to a subsetting. For instance, <code class=\"settings-jpath\">sf</code> is an
-object list with one entry per submission field. Read this section before
-working with object lists.</p>";
+array with one entry per submission field, and <code
+class=\"settings-jpath\">decision</code> is an array with one entry per
+decision type.</p>";
 
         echo "<ul>", "<li><p><strong>IDs.</strong> Individual objects in most
 lists are identified by their <code>\"id\"</code> components. The
@@ -65,11 +66,9 @@ lists are identified by their <code>\"id\"</code> components. The
 
 <li><p><strong>Adding subsettings.</strong> Add a subsetting, such as a new
 submission field, by including an object with <code>\"id\": \"new\"</code>. For
-instance, this JSON adds a new decision type for desk-rejected papers (an
-error will be reported if an existing decision type is named “Desk
-rejects”).</p>
+instance, this JSON adds a new decision type for desk-rejected papers:</p>
 
-<pre class=\"example\">{
+<pre class=\"sample\">{
     \"decision\": [
         {\"id\": \"new\", \"name\": \"Desk rejects\", \"category\": \"reject\"}
     ]

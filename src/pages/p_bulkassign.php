@@ -158,7 +158,7 @@ performed. Supported actions include:</p>";
 tagged #redo, then assigns two primary reviews for submission #1 and one
 secondary review for submission #2:</p>
 
-<pre class=\"entryexample\">paper,action,email,round
+<pre class=\"sample\">paper,action,email,round
 #redo,clearreview,all,R1
 1,primary,man@alice.org
 2,secondary,slugger@manny.com

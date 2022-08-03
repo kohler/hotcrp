@@ -627,9 +627,10 @@
         "name_pattern": "rf/$/values/$$", "type": "object", "subtype": "RfValue_Setting",
         "parser_class": "ReviewForm_SettingParser",
         "title": "/Value",
-        "title_pattern": "‘${sv rf/$/values/$$/name}’",
+        "title_pattern": "${sv rf/$/values/$$/title}",
         "hashid": "rf/$/values_text"
     },
+    {   "name_pattern": "rf/$/values/$$/title", "internal": true, "parser_class": "ReviewForm_SettingParser"   },
     {
         "name_pattern": "rf/$/values/$$/id", "type": "int",
         "internal": true, "json_export": true
@@ -884,9 +885,7 @@
         "title": "Track tag",
         "type": "tag", "subtype": "allow_reserved", "size": 20, "autogrow": true
     },
-    {
-        "name_pattern": "track/$/title", "internal": true, "parser_class": "Track_SettingParser"
-    },
+    {   "name_pattern": "track/$/title", "internal": true, "parser_class": "Track_SettingParser"   },
     {
         "name_pattern": "track/$/perm", "storage": "none",
         "type": "object",

@@ -180,6 +180,11 @@ html, .text-default {
 .text-serif {
 	font-family: serif;
 }
+.text-truncate {
+	text-overflow: ellipsis !important;
+	overflow-x: hidden !important;
+	white-space: pre !important;
+}
 code, kbd, pre, samp, .text-monospace {
 	font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 	font-size: 90%;
@@ -1622,7 +1627,7 @@ div.hint {
 
 
 /* column content */
-.main-column p, .main-column dl {
+.main-column p, .main-column dl, .main-column pre.sample {
 	max-width: 720px;
 }
 .main-column ul, .main-column ol {
@@ -2234,18 +2239,20 @@ span.author, span.conflict {
 	font-weight: bold;
 	color: #ff0000;
 }
-.entryexample {
-	padding: 0.4em 0.75em 0.4em 0.5em;
+pre.sample {
+	font-size: 83.33%;
+	padding: 0.35em 0.75em 0.35em 0.6em;
 	background: rgba(238, 240, 242, 0.4);
 	border: 1px solid #ddd;
 	border-radius: 4px;
-	display: table;
 	overflow-wrap: break-word;
 	white-space: pre-wrap;
-	margin-bottom: 1em;
+	margin-bottom: 1.2em;
+	color: #223355;
 }
-.entryexample.dark {
+pre.sample.dark {
 	background: rgba(66, 66, 88, 0.95);
+	color: #ccddee;
 }
 pre.email {
 	margin: 0;

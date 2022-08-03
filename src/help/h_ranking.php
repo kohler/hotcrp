@@ -32,7 +32,7 @@ into position using the dotted areas on the right-hand side of the list.</p>
 rank, and upload the form again.  For example, here is an initial ranking
 file:</p>
 
-<pre class=\"entryexample\">
+<pre class=\"sample text-truncate\">
 # Edit the rank order by rearranging this file's lines.
 # The first line has the highest rank.
 
@@ -59,7 +59,7 @@ X       11      Analyzing Scatter/Gather I/O Using Encrypted Epistemologies
 
 <p>The user might edit the file as follows:</p>
 
-<pre class=\"entryexample\">
+<pre class=\"sample text-truncate\">
         8       Rooter: A Methodology for the Typical Unification of Access Points and Redundancy
         5       The Effect of Collaborative Epistemologies on Theory
 =       1       Write-Back Caches Considered Harmful

@@ -1679,7 +1679,7 @@ topics. We use this information to help match papers to reviewers.</p>',
     static function print_bulk_help(UserStatus $us) {
         echo '<section class="mt-7"><h3>Instructions</h3>',
             "<p>Enter or upload CSV data with header, such as:</p>\n",
-            '<pre class="entryexample">
+            '<pre class="sample">
 name,email,affiliation,roles
 John Adams,john@earbox.org,UC Berkeley,pc
 "Adams, John Quincy",quincy@whitehouse.gov
