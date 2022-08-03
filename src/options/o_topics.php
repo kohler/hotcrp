@@ -5,28 +5,29 @@
 class Topics_PaperOption extends PaperOption {
     /** @var int */
     private $min_count = 0;
-    /** @var ?int */
-    private $max_count;
+    /** @var int */
+    private $max_count = 0;
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        $this->set_exists_condition(!!$this->conf->setting("has_topics"));
-        if (is_int($args->min_count ?? null)) {
-            $this->min_count = $args->min_count;
-            $this->required = $this->min_count > 0;
-        } else if ($this->required) {
-            $this->min_count = 1;
-        }
-        if (is_int($args->max_count ?? null)) {
-            $this->max_count = $args->max_count;
+        if ($this->conf->setting("has_topics")) {
+            $min_count = $conf->setting("topic_min");
+            if ($min_count === null && $this->required) {
+                $min_count = 1;
+            }
+            $this->min_count = $min_count ?? 0;
+            $this->max_count = $conf->setting("topic_max") ?? 0;
+            $this->required = $min_count > 0;
+        } else {
+            $this->set_exists_condition(false);
         }
     }
     function jsonSerialize() {
         $j = parent::jsonSerialize();
         if ($this->min_count > 1) {
-            $j->min_count = $this->min_count;
+            $j->min = $this->min_count;
         }
-        if ($this->max_count !== null) {
-            $j->max_count = $this->max_count;
+        if ($this->max_count > 0) {
+            $j->max = $this->max_count;
         }
         return $j;
     }
@@ -41,7 +42,7 @@ class Topics_PaperOption extends PaperOption {
                 && $ov->value_count() < $this->min_count) {
                 $ov->error($this->conf->_("<0>You must select at least %d topics", $this->min_count));
             }
-            if ($this->max_count !== null
+            if ($this->max_count > 0
                 && $ov->value_count() > $this->max_count) {
                 $ov->error($this->conf->_("<0>You may select at most %d topics", $this->max_count));
             }

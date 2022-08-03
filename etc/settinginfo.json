@@ -863,6 +863,16 @@
         "type": "longstring", "parse_order": -1, "parser_class": "Topic_SettingParser",
         "json_export": false
     },
+    {
+        "name": "topic_max", "storage": "topic_max", "type": "nonnegint",
+        "title": "Maximum topics per submission",
+        "default_value": 0
+    },
+    {
+        "name": "topic_min", "storage": "topic_min", "type": "nonnegint",
+        "title": "Minimum topics per submission",
+        "default_value": 0
+    },
 
     {
         "name": "tracks", "internal": true, "type": "string"
