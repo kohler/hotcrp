@@ -1477,44 +1477,52 @@ class Checkbox_PaperOption extends PaperOption {
 
 class Selector_PaperOption extends PaperOption {
     /** @var list<string> */
-    private $selector;
+    private $values;
     /** @var ?AbbreviationMatcher */
-    private $_selector_am;
+    private $_values_am;
 
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        $this->selector = $args->selector ?? [];
+        $this->values = $args->selector ?? [];
     }
 
+    /** @return list<string> */
+    function values() {
+        return $this->values;
+    }
+    /** @return list<string>
+     * @deprecated */
     function selector_options() {
-        return $this->selector;
+        return $this->values;
     }
-    function set_selector_options($selector) {
-        $this->selector = $selector;
+    /** @param list<string> $values */
+    function set_values($values) {
+        $this->values = $values;
     }
-    function selector_abbrev_matcher() {
-        if (!$this->_selector_am) {
-            $this->_selector_am = new AbbreviationMatcher;
-            foreach ($this->selector as $id => $name) {
-                $this->_selector_am->add_phrase($name, $id + 1);
+    /** @return AbbreviationMatcher<int> */
+    protected function values_abbrev_matcher() {
+        if (!$this->_values_am) {
+            $this->_values_am = new AbbreviationMatcher;
+            foreach ($this->values as $id => $name) {
+                $this->_values_am->add_phrase($name, $id + 1);
             }
             if (!$this->required) {
-                $this->_selector_am->add_keyword("none", 0);
+                $this->_values_am->add_keyword("none", 0);
             }
         }
-        return $this->_selector_am;
+        return $this->_values_am;
     }
 
     function jsonSerialize() {
         $j = parent::jsonSerialize();
-        $j->selector = $this->selector;
+        $j->selector = $this->values;
         return $j;
     }
     function unparse_setting($sfs) {
         parent::unparse_setting($sfs);
-        $sfs->values = [];
-        foreach ($this->selector as $i => $s) {
-            $sfs->values[] = $sfv = new SfValue_Setting;
+        $sfs->xvalues = [];
+        foreach ($this->values as $i => $s) {
+            $sfs->xvalues[] = $sfv = new SfValue_Setting;
             $sfv->id = $sfv->order = $i + 1;
             $sfv->name = $s;
         }
@@ -1524,7 +1532,7 @@ class Selector_PaperOption extends PaperOption {
         return PaperOption::basic_value_compare($av, $bv);
     }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
-        return $this->selector[$ov->value - 1] ?? null;
+        return $this->values[$ov->value - 1] ?? null;
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
@@ -1533,12 +1541,12 @@ class Selector_PaperOption extends PaperOption {
             return PaperValue::make($prow, $this);
         } else {
             $iv = ctype_digit($v) ? intval($v) : -1;
-            if ($iv > 0 && isset($this->selector[$iv - 1])) {
+            if ($iv > 0 && isset($this->values[$iv - 1])) {
                 return PaperValue::make($prow, $this, $iv);
-            } else if (($iv = array_search($v, $this->selector)) !== false) {
+            } else if (($iv = array_search($v, $this->values)) !== false) {
                 return PaperValue::make($prow, $this, $iv + 1);
             } else {
-                return PaperValue::make_estop($prow, $this, "<0>Option doesn’t match any of the selectors");
+                return PaperValue::make_estop($prow, $this, "<0>Value doesn’t match any of the options");
             }
         }
     }
@@ -1547,14 +1555,14 @@ class Selector_PaperOption extends PaperOption {
         if ($j === null || $j === 0) {
             return PaperValue::make($prow, $this);
         } else if (is_string($j)) {
-            $v = array_search($j, $this->selector);
-        } else if (is_int($j) && isset($this->selector[$j - 1])) {
+            $v = array_search($j, $this->values);
+        } else if (is_int($j) && isset($this->values[$j - 1])) {
             $v = $j - 1;
         }
         if ($v !== false) {
             return PaperValue::make($prow, $this, $v + 1);
         } else {
-            return PaperValue::make_estop($prow, $this, "<0>Option doesn’t match any of the selectors");
+            return PaperValue::make_estop($prow, $this, "<0>Value doesn’t match any of the options");
         }
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -1569,7 +1577,7 @@ class Selector_PaperOption extends PaperOption {
             if (!$ov->value) {
                 $sel[0] = "(Select one)";
             }
-            foreach ($this->selector as $val => $text) {
+            foreach ($this->values as $val => $text) {
                 $sel[$val + 1] = $text;
             }
             echo Ht::select($this->formid, $sel, $reqov->value,
@@ -1577,7 +1585,7 @@ class Selector_PaperOption extends PaperOption {
                  "data-default-value" => $ov->value ?? 0,
                  "disabled" => $readonly]);
         } else {
-            foreach ($this->selector as $val => $text) {
+            foreach ($this->values as $val => $text) {
                 echo '<div class="checki"><label><span class="checkc">',
                     Ht::radio($this->formid, $val + 1, $val + 1 == $reqov->value,
                         ["data-default-checked" => $val + 1 == $ov->value,
@@ -1589,40 +1597,40 @@ class Selector_PaperOption extends PaperOption {
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
-        $fr->set_text($this->selector[$ov->value - 1] ?? "");
+        $fr->set_text($this->values[$ov->value - 1] ?? "");
     }
 
     /** @return ?string */
     function selector_option_search($idx) {
         if ($idx <= 0) {
             return "none";
-        } else if ($idx > count($this->selector)) {
+        } else if ($idx > count($this->values)) {
             return null;
         } else {
-            $e = new AbbreviationEntry($this->selector[$idx - 1], $idx);
-            return $this->selector_abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);
+            $e = new AbbreviationEntry($this->values[$idx - 1], $idx);
+            return $this->values_abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);
         }
     }
     function search_examples(Contact $viewer, $context) {
         $a = [$this->has_search_example()];
         if (($q = $this->selector_option_search(2))) {
-            $a[] = new SearchExample($this->search_keyword() . ":<selector>", "submission’s “%s” field has value “%s”", [$this->title_html(), htmlspecialchars($this->selector[1])], $q);
+            $a[] = new SearchExample($this->search_keyword() . ":<value>", "submission’s “%s” field has value “%s”", [$this->title_html(), htmlspecialchars($this->values[1])], $q);
         }
         return $a;
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {
-        $vs = $this->selector_abbrev_matcher()->findp($sword->cword);
+        $vs = $this->values_abbrev_matcher()->findp($sword->cword);
         if (empty($vs)) {
             if ($sword->cword === "") {
                 $srch->lwarning($sword, "<0>Match required");
-            } else if (($vs2 = $this->selector_abbrev_matcher()->find_all($sword->cword))) {
+            } else if (($vs2 = $this->values_abbrev_matcher()->find_all($sword->cword))) {
                 $srch->lwarning($sword, "<0>‘{$sword->cword}’ is ambiguous for " . $this->title());
-                $ts = array_map(function ($x) { return "‘" . $this->selector[$x-1] . "’"; }, $vs2);
+                $ts = array_map(function ($x) { return "‘" . $this->values[$x-1] . "’"; }, $vs2);
                 $srch->msg_at(null, "<0>Try " . commajoin($ts, " or ") . ", or use ‘{$sword->cword}*’ to match them all.", MessageSet::INFORM);
             } else {
                 $srch->lwarning($sword, "<0>No " . $this->title() . " choices match ‘{$sword->cword}’");
-                if (!empty($this->selector)) {
-                    $ts = array_map(function ($t) { return "‘{$t}’"; }, $this->selector);
+                if (!empty($this->values)) {
+                    $ts = array_map(function ($t) { return "‘{$t}’"; }, $this->values);
                     $srch->msg_at(null, "<0>Choices are " . commajoin($ts, " and ") . ".", MessageSet::INFORM);
                 }
             }

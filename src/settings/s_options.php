@@ -350,7 +350,7 @@ class Options_SettingParser extends SettingParser {
         } else if ($si->name_matches("sf/", "*", "/values_text")) {
             $sfs = $sv->oldv("sf/{$si->name1}");
             $vs = [];
-            foreach ($sfs->values ?? [] as $sfv) {
+            foreach ($sfs->xvalues ?? [] as $sfv) {
                 $vs[] = $sfv->name;
             }
             $sv->set_oldv($si, empty($vs) ? "" : join("\n", $vs) . "\n");
@@ -378,7 +378,7 @@ class Options_SettingParser extends SettingParser {
             $sv->append_oblist("sf", $sfss, "name");
         } else if ($si->name2 === "/values") {
             $sfs = $sv->oldv("sf/{$si->name1}");
-            $sv->append_oblist($si->name, $sfs->values ?? [], "name");
+            $sv->append_oblist($si->name, $sfs->xvalues ?? [], "name");
         }
     }
 
@@ -502,7 +502,7 @@ class Options_SettingParser extends SettingParser {
             $sfj->exists_if = "";
         }
         $sfj->selector = [];
-        foreach ($sfj->values ?? [] as $sfv) {
+        foreach ($sfj->xvalues ?? [] as $sfv) {
             $sfj->selector[] = $sfv->name;
         }
     }

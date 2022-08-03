@@ -214,7 +214,7 @@
         "type": "htmlstring", "size": 2, "autogrow": true
     },
     {
-        "name_pattern": "sf/$/values", "type": "oblist",
+        "name_pattern": "sf/$/values", "type": "oblist", "storage": "member.xvalues",
         "parser_class": "Options_SettingParser", "parse_order": 2,
         "title": "/Value list",
         "hashid": "sf/$/values_text"

@@ -999,7 +999,7 @@ class FormulaGraph extends MessageSet {
             } else if ($format === Fexpr::FBOOL) {
                 $named_ticks = ["no", "yes"];
             } else if ($format instanceof Selector_PaperOption) {
-                $named_ticks = $format->selector_options();
+                $named_ticks = $format->values();
             } else if ($format === Fexpr::FROUND) {
                 $named_ticks = $this->remapped_rounds;
             } else if ($format === Fexpr::FREVTYPE) {

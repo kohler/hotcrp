@@ -1035,7 +1035,7 @@ class Settings_Tester {
         $opt = $sv->conf->option_by_id(2);
         assert($opt instanceof Selector_PaperOption);
         xassert_eqq($opt->name, "Program");
-        xassert_array_eqq($opt->selector_options(), ["Honors", "MBB", "Joint primary", "Joint affiliated", "Basic"]);
+        xassert_array_eqq($opt->values(), ["Honors", "MBB", "Joint primary", "Joint affiliated", "Basic"]);
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
@@ -1049,7 +1049,7 @@ class Settings_Tester {
         $opt = $sv->conf->option_by_id(2);
         assert($opt instanceof Selector_PaperOption);
         xassert_eqq($opt->name, "Program");
-        xassert_array_eqq($opt->selector_options(), ["Honors", "MBB", "Joint primary"]);
+        xassert_array_eqq($opt->values(), ["Honors", "MBB", "Joint primary"]);
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
@@ -1077,7 +1077,7 @@ class Settings_Tester {
         xassert($sv->execute());
         $opt = $sv->conf->option_by_id(2);
         assert($opt instanceof Selector_PaperOption);
-        xassert_array_eqq($opt->selector_options(), ["MBB", "Joint primary?", "Honors"]);
+        xassert_array_eqq($opt->values(), ["MBB", "Joint primary?", "Honors"]);
 
         xassert_eqq(search_text_col($this->u_chair, "1", "Program"), "1 Honors\n");
         xassert_eqq($sv->conf->fetch_ivalue("select value from PaperOption where paperId=1 and optionId=2"), 3);
