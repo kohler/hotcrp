@@ -1535,7 +1535,7 @@ class Conf {
     /** @return TopicSet */
     function topic_set() {
         if ($this->_topic_set === null) {
-            $this->_topic_set = new TopicSet($this);
+            $this->_topic_set = TopicSet::make_main($this);
         }
         return $this->_topic_set;
     }

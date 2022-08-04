@@ -49,6 +49,8 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     private $_topic_map = [];
     /** @var array<int,int> */
     private $_order = [];
+    /** @var array<int,string> */
+    private $_others_suffix = [];
     /** @var list<TopicGroup> */
     private $_group_list;
     /** @var array<int,TopicGroup> */
@@ -61,37 +63,80 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
-        $txs = [];
-        $result = $conf->qe_raw("select topicId, topicName from TopicArea");
-        while (($row = $result->fetch_row())) {
-            $colon = (int) strpos($row[1], ":");
-            $other = 0;
-            if (preg_match('{\G\s*(?:none of |others?(?: |\z))}i', $row[1], $m, 0, $colon !== 0 ? $colon + 1 : 0)) {
-                $other = $colon === 0 ? 2 : 1;
-            }
-            $txs[] = [(int) $row[0], $row[1], $other, substr($row[1], 0, $colon)];
-        }
-        Dbl::free($result);
+    }
 
-        $collator = $conf->collator();
-        usort($txs, function ($ta, $tb) use ($collator) {
-            if ($ta[2] !== $tb[2]
-                && ($ta[2] === 2
-                    || $tb[2] === 2
-                    || strcasecmp($ta[3], $tb[3]) === 0)) {
-                return $ta[2] > $tb[2] ? 1 : -1;
-            } else {
-                return $collator->compare($ta[1], $tb[1]);
+    /** @param int $id
+     * @param string $name */
+    function __add($id, $name) {
+        $this->_topic_map[$id] = $name;
+        $this->_order[$id] = count($this->_order);
+
+        // check for `None of the above`, `Others`, and `GROUP: (None of |Others)`
+        $len = strlen($name);
+        if (($colon = strpos($name, ":")) !== false) {
+            $pos = $colon + 1;
+            while ($pos !== $len && ctype_space($name[$pos])) {
+                ++$pos;
             }
+        } else {
+            $colon = $pos = 0;
+        }
+        $ch = $pos !== $len ? ord($name[$pos]) | 0x20 : 0;
+        if (($ch === 110 || $ch === 111)
+            && preg_match('/\G(?:none of |others?(?: |\z))/', $name, $m, 0, $pos)) {
+            $this->_others_suffix[$id] = substr($name, $colon);
+        }
+
+        // XXX assert no abbrevmatcher, etc.
+    }
+
+    function sort_by_name() {
+        if (empty($this->_topic_map)) {
+            return;
+        }
+
+        $ids = array_keys($this->_topic_map);
+        $collator = $this->conf->collator();
+        usort($ids, function ($ida, $idb) use ($collator) {
+            $na = $this->_topic_map[$ida];
+            $nb = $this->_topic_map[$idb];
+
+            // `none of the above`/`others` requires special handling
+            $sfxa = $this->_others_suffix[$ida] ?? null;
+            $sfxb = $this->_others_suffix[$idb] ?? null;
+            if ($sfxa !== null || $sfxb !== null) {
+                $glena = strlen($na) - ($sfxa !== null ? strlen($sfxa) : 0);
+                $glenb = strlen($nb) - ($sfxb !== null ? strlen($sfxb) : 0);
+                if (($glenb === 0 && $glena !== 0)
+                    || ($sfxa === null && substr_compare($na, $nb, 0, $glenb, true) === 0)) {
+                    return -1;
+                } else if (($glena === 0 && $glenb !== 0)
+                           || ($sfxb === null && substr_compare($nb, $na, 0, $glena, true) === 0)) {
+                    return 1;
+                }
+            }
+
+            return $collator->compare($na, $nb);
         });
 
-        $n = 0;
-        foreach ($txs as $t) {
-            $this->_topic_map[$t[0]] = $t[1];
-            $this->_order[$t[0]] = $n;
-            ++$n;
-        }
+        $this->_order = array_combine($ids, range(0, count($ids) - 1));
+        uksort($this->_topic_map, function ($ida, $idb) {
+            return $this->_order[$ida] <=> $this->_order[$idb];
+        });
     }
+
+    /** @return TopicSet */
+    static function make_main(Conf $conf) {
+        $ts = new TopicSet($conf);
+        $result = $conf->qe_raw("select topicId, topicName from TopicArea");
+        while (($row = $result->fetch_row())) {
+            $ts->__add((int) $row[0], $row[1]);
+        }
+        Dbl::free($result);
+        $ts->sort_by_name();
+        return $ts;
+    }
+
 
     #[\ReturnTypeWillChange]
     /** @return int */
@@ -158,13 +203,15 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         return $this->_group_list;
     }
 
-    function sort(&$a) {
-        usort($a, function ($a, $b) {
+    /** @param list<int> &$ids */
+    function sort(&$ids) {
+        usort($ids, function ($a, $b) {
             return $this->_order[$a] - $this->_order[$b];
         });
     }
-    function ksort(&$a) {
-        uksort($a, function ($a, $b) {
+    /** @param array<int,mixed> &$by_id */
+    function ksort(&$by_id) {
+        uksort($by_id, function ($a, $b) {
             return $this->_order[$a] - $this->_order[$b];
         });
     }

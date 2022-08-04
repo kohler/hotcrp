@@ -986,4 +986,25 @@ class Unit_Tester {
         xassert_eqq(str_list_lower_bound("ad1", ["0", "1", "2", "ab", "ac", "ad"]), 6);
         xassert_eqq(str_list_lower_bound("af", ["0", "1", "2", "ab", "ac", "ad"]), 6);
     }
+
+    function test_topic_set() {
+        $ts = new TopicSet($this->conf);
+        $ts->__add(1, "None of the above");
+        $ts->__add(2, "Other");
+        $ts->__add(3, "Fudge");
+        $ts->__add(4, "Fudge: Packing");
+        $ts->__add(5, "Fudge: Opening");
+        $ts->__add(6, "Fudge: Others");
+        $ts->__add(7, "Fudge: Really");
+        $ts->__add(8, "Fudgey");
+        $ts->__add(9, "Fudge: All of them");
+        xassert_eqq(json_encode($ts->as_array()), '{"1":"None of the above","2":"Other","3":"Fudge","4":"Fudge: Packing","5":"Fudge: Opening","6":"Fudge: Others","7":"Fudge: Really","8":"Fudgey","9":"Fudge: All of them"}');
+
+        $ts->sort_by_name();
+        xassert_eqq(json_encode($ts->as_array()), '{"3":"Fudge","9":"Fudge: All of them","5":"Fudge: Opening","4":"Fudge: Packing","7":"Fudge: Really","6":"Fudge: Others","8":"Fudgey","1":"None of the above","2":"Other"}');
+
+        $ts->__add(10, "Fudge:Questions");
+        $ts->sort_by_name();
+        xassert_eqq(json_encode($ts->as_array()), '{"3":"Fudge","9":"Fudge: All of them","5":"Fudge: Opening","4":"Fudge: Packing","7":"Fudge: Really","10":"Fudge:Questions","6":"Fudge: Others","8":"Fudgey","1":"None of the above","2":"Other"}');
+    }
 }
