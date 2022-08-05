@@ -49,8 +49,8 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     private $_topic_map = [];
     /** @var array<int,int> */
     private $_order = [];
-    /** @var array<int,string> */
-    private $_others_suffix = [];
+    /** @var array<int,int> */
+    private $_others_sfxlen = [];
     /** @var list<TopicGroup> */
     private $_group_list;
     /** @var array<int,TopicGroup> */
@@ -73,18 +73,17 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
 
         // check for `None of the above`, `Others`, and `GROUP: (None of |Others)`
         $len = strlen($name);
-        if (($colon = strpos($name, ":")) !== false) {
+        $colon = $pos = (int) strpos($name, ":");
+        if ($colon !== 0) {
             $pos = $colon + 1;
             while ($pos !== $len && ctype_space($name[$pos])) {
                 ++$pos;
             }
-        } else {
-            $colon = $pos = 0;
         }
         $ch = $pos !== $len ? ord($name[$pos]) | 0x20 : 0;
         if (($ch === 110 || $ch === 111)
-            && preg_match('/\G(?:none of |others?(?: |\z))/', $name, $m, 0, $pos)) {
-            $this->_others_suffix[$id] = substr($name, $colon);
+            && preg_match('/\G(?:none of |others?(?: |\z))/i', $name, $m, 0, $pos)) {
+            $this->_others_sfxlen[$id] = strlen($name) - ($colon !== 0 ? $colon + 1 : 0);
         }
 
         // XXX assert no abbrevmatcher, etc.
@@ -102,16 +101,16 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
             $nb = $this->_topic_map[$idb];
 
             // `none of the above`/`others` requires special handling
-            $sfxa = $this->_others_suffix[$ida] ?? null;
-            $sfxb = $this->_others_suffix[$idb] ?? null;
-            if ($sfxa !== null || $sfxb !== null) {
-                $glena = strlen($na) - ($sfxa !== null ? strlen($sfxa) : 0);
-                $glenb = strlen($nb) - ($sfxb !== null ? strlen($sfxb) : 0);
+            $slena = $this->_others_sfxlen[$ida] ?? 0;
+            $slenb = $this->_others_sfxlen[$idb] ?? 0;
+            if ($slena !== 0 || $slenb !== 0) {
+                $glena = strlen($na) - $slena;
+                $glenb = strlen($nb) - $slenb;
                 if (($glenb === 0 && $glena !== 0)
-                    || ($sfxa === null && substr_compare($na, $nb, 0, $glenb, true) === 0)) {
+                    || ($slena === 0 && substr_compare($na, $nb, 0, $glenb, true) === 0)) {
                     return -1;
                 } else if (($glena === 0 && $glenb !== 0)
-                           || ($sfxb === null && substr_compare($nb, $na, 0, $glena, true) === 0)) {
+                           || ($slenb === 0 && substr_compare($nb, $na, 0, $glena, true) === 0)) {
                     return 1;
                 }
             }
