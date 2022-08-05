@@ -249,10 +249,34 @@ class Xassert {
         ++self::$n;
         ++self::$nsuccess;
     }
+
     static function fail() {
         ++self::$n;
         if (self::$stop) {
             throw new RuntimeException("error at assertion #" . self::$n);
+        }
+    }
+
+    /** @param string $xprefix
+     * @param string $eprefix
+     * @param mixed $expected
+     * @param string $aprefix
+     * @param mixed $actual
+     * @return string */
+    static function match_failure_message($xprefix, $eprefix, $expected, $aprefix, $actual) {
+        $estr = var_export($expected, true);
+        $astr = var_export($actual, true);
+        if (strlen($estr) < 20 && strlen($astr) < 20) {
+            return "{$xprefix}{$eprefix}{$estr}{$aprefix}{$astr}";
+        } else {
+            $xprefix = rtrim($xprefix);
+            if (str_starts_with($aprefix, ",")) {
+                $aprefix = substr($aprefix, 1);
+            }
+            $aprefix = ltrim($aprefix);
+            $eprefix = str_pad($eprefix, max(strlen($eprefix), strlen($aprefix)), " ", STR_PAD_LEFT);
+            $aprefix = str_pad($aprefix, strlen($eprefix), " ", STR_PAD_LEFT);
+            return "{$xprefix}\n  {$eprefix}{$estr}\n  {$aprefix}{$astr}";
         }
     }
 }
@@ -311,7 +335,7 @@ function xassert_eqq($actual, $expected) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        error_log(assert_location() . ": Expected === " . var_export($expected, true) . ", got " . var_export($actual, true));
+        error_log(Xassert::match_failure_message(assert_location() . ": ", "expected === ", $expected, ", got ", $actual));
         Xassert::fail();
     }
     return $ok;
@@ -340,7 +364,7 @@ function xassert_in_eqq($member, $list) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        error_log(assert_location() . ": Expected " . var_export($member, true) . " \\in " . var_export($list, true));
+        error_log(Xassert::match_failure_message(assert_location() . ": ", "expected ", $member, " ∈ ", $list));
         Xassert::fail();
     }
     return $ok;
@@ -357,7 +381,7 @@ function xassert_not_in_eqq($member, $list) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        error_log(assert_location() . ": Expected " . var_export($member, true) . " \\not\\in " . var_export($list, true));
+        error_log(Xassert::match_failure_message(assert_location() . ": ", "expected ", $member, " ∉ ", $list));
         Xassert::fail();
     }
     return $ok;
@@ -371,7 +395,7 @@ function xassert_eq($actual, $expected) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        error_log(assert_location() . ": Expected == " . var_export($expected, true) . ", got " . var_export($actual, true));
+        error_log(Xassert::match_failure_message(assert_location() . ": ", "expected == ", $expected, ", got ", $actual));
         Xassert::fail();
     }
     return $ok;
@@ -440,7 +464,7 @@ function xassert_array_eqq($actual, $expected, $sort = false) {
             }
             for ($i = 0; $i < count($actual) && $i < count($expected) && !$problem; ++$i) {
                 if ($actual[$i] !== $expected[$i]) {
-                    $problem = "value {$i} differs, expected === " . var_export($expected[$i], true) . ", got " . var_export($actual[$i], true);
+                    $problem = Xassert::match_failure_message("value {$i} differs: ", "expected === ", $expected[$i], ", got ", $actual[$i]);
                 }
             }
             if (!$problem && count($actual) !== count($expected)) {
