@@ -1464,7 +1464,7 @@ class Checkbox_PaperOption extends PaperOption {
         return $this->parse_boolean_search($sword, $srch);
     }
     function present_script_expression() {
-        return ["type" => "checkbox", "id" => $this->id];
+        return ["type" => "checkbox", "formid" => $this->formid];
     }
     function value_script_expression() {
         return $this->present_script_expression();
@@ -1642,7 +1642,7 @@ class Selector_PaperOption extends PaperOption {
         }
     }
     function present_script_expression() {
-        return ["type" => "selector", "id" => $this->id];
+        return ["type" => "selector", "formid" => $this->formid];
     }
     function value_script_expression() {
         return $this->present_script_expression();
@@ -1958,7 +1958,7 @@ class Document_PaperOption extends PaperOption {
         return $this->parse_boolean_search($sword, $srch);
     }
     function present_script_expression() {
-        return ["type" => "document_count", "id" => $this->id];
+        return ["type" => "document_count", "dtype" => $this->id];
     }
 }
 
@@ -2023,7 +2023,7 @@ class Text_PaperOption extends PaperOption {
         }
     }
     function present_script_expression() {
-        return ["type" => "text_present", "id" => $this->id];
+        return ["type" => "text_present", "formid" => $this->formid];
     }
 
     function jsonSerialize() {
@@ -2245,7 +2245,7 @@ class Attachments_PaperOption extends PaperOption {
         }
     }
     function present_script_expression() {
-        return ["type" => "document_count", "id" => $this->id];
+        return ["type" => "document_count", "dtype" => $this->id];
     }
 }
 

@@ -154,7 +154,7 @@ class Topics_PaperOption extends PaperOption {
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $pt->print_editable_option_papt($this, null, ["id" => "topics", "context_args" => [$this->min_count, $this->max_count]]);
-        echo '<div class="papev"><ul class="ctable">';
+        echo '<fieldset class="papev fieldset-covert" name="topics"><ul class="ctable">';
         $ptopics = $pt->prow->topic_map();
         $topics = $this->conf->topic_set();
         $readonly = !$this->test_editable($ov->prow);
@@ -185,7 +185,7 @@ class Topics_PaperOption extends PaperOption {
                 $checked = in_array($tid, $reqov->value_list());
                 echo ($isgroup ? '<label class="checki cteltx">' : '<li class="ctelt"><label class="checki ctelti">'),
                     '<span class="checkc">',
-                    Ht::checkbox("top$tid", 1, $checked, $arg),
+                    Ht::checkbox("topics:{$tid}", 1, $checked, $arg),
                     '</span>', $tname, '</label>',
                     ($isgroup ? '' : '</li>');
             }
@@ -193,7 +193,7 @@ class Topics_PaperOption extends PaperOption {
                 echo '</div></div></li>';
             }
         }
-        echo "</ul></div></div>\n\n";
+        echo "</ul></fieldset></div>\n\n";
     }
     function render(FieldRender $fr, PaperValue $ov) {
         $vs = $ov->value_list();

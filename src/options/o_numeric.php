@@ -74,10 +74,10 @@ class Numeric_PaperOption extends PaperOption {
         }
     }
     function present_script_expression() {
-        return ["type" => "text_present", "id" => $this->id];
+        return ["type" => "text_present", "formid" => $this->formid];
     }
     function value_script_expression() {
-        return ["type" => "numeric", "id" => $this->id];
+        return ["type" => "numeric", "formid" => $this->formid];
     }
 
     function parse_fexpr(FormulaCall $fcall, &$t) {

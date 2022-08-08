@@ -9253,27 +9253,38 @@ edit_conditions.not = function (ec, form) {
     return !evaluate_edit_condition(ec.child[0], form);
 };
 edit_conditions.checkbox = function (ec, form) {
-    var e = form.elements["opt" + ec.id];
+    var e = form.elements[ec.formid];
     return e && e.checked;
 };
+edit_conditions.checkboxes = function (ec, form) {
+    if (ec.values === false || ec.values === true) {
+        var es = form.elements[ec.formid].querySelectorAll("input:checked");
+        return ec.values === (es.length !== 0);
+    }
+    for (var i = 0; i !== ec.values.length; ++i) {
+        if (form.elements[ec.formid + ":" + ec.values[i]].checked)
+            return true;
+    }
+    return false;
+};
 edit_conditions.selector = function (ec, form) {
-    var e = form.elements["opt" + ec.id];
+    var e = form.elements[ec.formid];
     return e && e.value ? +e.value : false;
 };
 edit_conditions.text_present = function (ec, form) {
-    var e = form.elements["opt" + ec.id],
+    var e = form.elements[ec.formid],
         v = $.trim(e ? e.value : "");
     return v !== "";
 };
 edit_conditions.numeric = function (ec, form) {
-    var e = form.elements["opt" + ec.id],
+    var e = form.elements[ec.formid],
         v = (e ? e.value : "").trim(), n;
     return v !== "" && !isNaN((n = parseFloat(v))) ? n : null;
 };
 edit_conditions.document_count = function (ec, form) {
     var n = 0;
     $(form).find(".has-document").each(function () {
-        if (this.getAttribute("data-dtype") == ec.id) {
+        if (this.getAttribute("data-dtype") == ec.dtype) {
             var name = this.getAttribute("data-document-name"), e;
             if ((e = form.elements[name])) {
                 n += e.value ? 1 : 0;
@@ -9294,16 +9305,6 @@ edit_conditions["in"] = function (ec, form) {
     var v = evaluate_edit_condition(ec.child[0], form);
     return ec.values.indexOf(v) >= 0;
 }
-edit_conditions.topic = function (ec, form) {
-    if (ec.topics === false || ec.topics === true) {
-        var has_topics = $(form).find(".topic-entry").filter(":checked").length > 0;
-        return has_topics === ec.topics;
-    }
-    for (var i = 0; i !== ec.topics.length; ++i)
-        if (form.elements["topics:" + ec.topics[i]].checked)
-            return true;
-    return false;
-};
 edit_conditions.title = function (ec, form) {
     var e = form.elements.title;
     return ec.match === ($.trim(e && e.value) !== "");

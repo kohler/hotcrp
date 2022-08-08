@@ -53,6 +53,7 @@ class RealNumber_PaperOption extends PaperOption {
             return PaperValue::make_estop($prow, $this, "<0>Number required");
         }
     }
+
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $reqx = $reqov->anno("request") ?? $reqov->data() ?? "";
         $pt->print_editable_option_papt($this);
@@ -87,10 +88,10 @@ class RealNumber_PaperOption extends PaperOption {
         }
     }
     function present_script_expression() {
-        return ["type" => "text_present", "id" => $this->id];
+        return ["type" => "text_present", "formid" => $this->formid];
     }
     function value_script_expression() {
-        return ["type" => "numeric", "id" => $this->id];
+        return ["type" => "numeric", "formid" => $this->formid];
     }
 
     function parse_fexpr(FormulaCall $fcall, &$t) {

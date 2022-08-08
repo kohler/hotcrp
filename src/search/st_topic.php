@@ -73,7 +73,7 @@ class Topic_SearchTerm extends SearchTerm {
         return $this->negated ? !$v : $v;
     }
     function script_expression(PaperInfo $row) {
-        $o = ["type" => "topic", "topics" => $this->topics];
+        $o = ["type" => "checkboxes", "formid" => "topics", "values" => $this->topics];
         if ($this->negated) {
             $o = ["type" => "not", "child" => [$o]];
         }
