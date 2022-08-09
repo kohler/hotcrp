@@ -167,8 +167,8 @@ class Paper_Page {
                 // XXX save uploaded files
                 $this->ps->prepend_msg("<5><strong>Your uploaded files were ignored.</strong>", 2);
             }
-            $this->ps->prepend_msg("<0>Changes not saved; please correct these errors and try again", 2);
-            $conf->feedback_msg($this->ps);
+            $this->ps->prepend_msg("<0>Changes not saved; please correct these errors and try again.", 2);
+            $conf->feedback_msg($this->ps->decorated_message_list());
             return;
         }
 
