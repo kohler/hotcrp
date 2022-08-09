@@ -770,7 +770,7 @@ class PaperStatus extends MessageSet {
             }
         }
         if (!empty($pj->_bad_options)) {
-            $this->warning_at("options", $this->_("<0>Unknown options ignored (%#s)", $pj->_bad_options));
+            $this->warning_at("options", $this->_("<0>Submission fields not found (%#s)", $pj->_bad_options));
         }
     }
 

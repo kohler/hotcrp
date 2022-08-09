@@ -591,7 +591,7 @@ Phil Porras.");
         ]);
         xassert_paper_status($ps, MessageSet::WARNING);
         xassert($ps->has_problem());
-        xassert_eqq($ps->feedback_text_at("topics"), "Unknown topic ignored (fartchitecture)\n");
+        xassert_eqq($ps->feedback_text_at("topics"), "Topic ‘fartchitecture’ not found\n");
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), []); // XXX should be unchanged
 
@@ -605,7 +605,7 @@ Phil Porras.");
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), [2, 5]);
 
-        $qreq = new Qrequest("POST", ["submitpaper" => 1, "has_topics" => 1, "top1" => 1, "top5" => 1]);
+        $qreq = new Qrequest("POST", ["submitpaper" => 1, "has_topics" => 1, "topics:1" => 1, "topics:5" => 1]);
         $ps->save_paper_web($qreq, $nprow1, "update");
         xassert(!$ps->has_problem());
         $nprow1->invalidate_topics();
