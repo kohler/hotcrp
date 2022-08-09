@@ -325,8 +325,8 @@ class Options_SettingParser extends SettingParser {
     private $_conversions = [];
     /** @var array<int,PaperOption> */
     private $_new_options = [];
-    /** @var list<array{int,string}> */
-    private $_choice_renumberings = [];
+    /** @var array<int,array<int,int>> */
+    private $_value_renumberings = [];
     /** @var array<int,int> */
     public $option_id_to_ctr = [];
 
@@ -428,17 +428,17 @@ class Options_SettingParser extends SettingParser {
     private function _apply_req_values_text(Si $si, SettingValues $sv) {
         $cleanreq = cleannl($sv->reqstr($si->name));
         $i = 1;
-        $pfx = "sf/{$si->name1}/values";
+        $vpfx = "sf/{$si->name1}/values";
         foreach (explode("\n", $cleanreq) as $t) {
             if ($t !== "" && ($t = simplify_whitespace($t)) !== "") {
-                $sv->set_req("{$pfx}/{$i}/name", $t);
-                $sv->set_req("{$pfx}/{$i}/order", (string) $i);
+                $sv->set_req("{$vpfx}/{$i}/name", $t);
+                $sv->set_req("{$vpfx}/{$i}/order", (string) $i);
                 ++$i;
             }
         }
-        if (!$sv->has_req($pfx)) {
+        if (!$sv->has_req($vpfx)) {
             $sv->set_req("sf/{$si->name1}/values_reset", "1");
-            $this->_apply_req_values($sv->si($pfx), $sv);
+            $this->_apply_req_values($sv->si($vpfx), $sv);
         }
         return true;
     }
@@ -449,27 +449,71 @@ class Options_SettingParser extends SettingParser {
         if (!$jtype || !($jtype->has_values ?? false)) {
             return true;
         }
-        $newsfv = $renumbering = [];
-        $pfx = "sf/{$si->name1}/values";
-        foreach ($sv->oblist_nondeleted_keys($pfx) as $ctr) {
-            $sfv = $sv->object_newv("{$pfx}/{$ctr}");
+        $fpfx = "sf/{$si->name1}";
+        $vpfx = "sf/{$si->name1}/values";
+
+        // check values
+        $newsfv = [];
+        $error = false;
+        foreach ($sv->oblist_nondeleted_keys($vpfx) as $ctr) {
+            $sfv = $sv->object_newv("{$vpfx}/{$ctr}");
             if ($sfv->name !== "") {
                 $newsfv[] = $sfv;
-                if ($sfv->id && $sfv->id !== count($newsfv)) {
-                    $renumbering[] = "when {$sfv->id} then " . count($newsfv);
+                if ($sv->error_if_duplicate_member($vpfx, $ctr, "name", "Field value")) {
+                    $error = true;
                 }
-                $sv->error_if_duplicate_member($pfx, $ctr, "name", "Field value");
             }
         }
         if (empty($newsfv)) {
             $sv->error_at($si, "<0>Entry required");
         }
-        $sv->save($si, $newsfv);
-        if (!empty($renumbering)
-            && ($of = $sv->oldv("sf/{$si->name1}"))
-            && $of->type !== "none") {
-            $this->_choice_renumberings[] = [$of->id, "case value " . join(" ", $renumbering) . " else value end"];
+        if ($error || empty($newsfv)) {
+            return;
         }
+
+        // mark deleted values, account for known ids
+        $renumberings = $known_ids = [];
+        foreach ($sv->oblist_keys($vpfx) as $ctr) {
+            if (($sfv = $sv->oldv("{$vpfx}/{$ctr}"))
+                && $sfv->old_value !== null) {
+                $known_ids[] = $sfv->id;
+                if ($sv->reqstr("{$vpfx}/{$ctr}/delete")) {
+                    $renumberings[$sfv->old_value] = 0;
+                }
+            }
+        }
+
+        // assign ids to new values
+        $values = $ids = [];
+        foreach ($newsfv as $idx => $sfv) {
+            $values[] = $sfv->name;
+            $want_value = $idx + 1;
+            if ($sfv->old_value !== null) {
+                $id = $sfv->id;
+                if ($sfv->old_value !== $want_value) {
+                    $renumberings[$sfv->old_value] = $want_value;
+                }
+            } else if (!in_array($want_value, $known_ids)) {
+                $id = $want_value;
+                $known_ids[] = $id;
+            } else {
+                for ($id = 1; in_array($id, $known_ids); ++$id) {
+                }
+                $known_ids[] = $id;
+            }
+            $ids[] = $id;
+        }
+
+        // record renumberings
+        if (!empty($renumberings)
+            && ($of = $sv->oldv($fpfx))
+            && $of->type !== "none") {
+            $this->_value_renumberings[$of->id] = $renumberings;
+        }
+
+        // save values
+        $sv->save("{$fpfx}/values_storage", $values);
+        $sv->save("{$fpfx}/ids", $ids);
         return true;
     }
 
@@ -500,10 +544,6 @@ class Options_SettingParser extends SettingParser {
         if ($sfj->presence !== "custom"
             || trim($sfj->exists_if ?? "") === "") {
             $sfj->exists_if = "";
-        }
-        $sfj->selector = [];
-        foreach ($sfj->xvalues ?? [] as $sfv) {
-            $sfj->selector[] = $sfv->name;
         }
     }
 
@@ -539,7 +579,7 @@ class Options_SettingParser extends SettingParser {
             $sv->mark_invalidate_caches(["options" => true]);
             if (!empty($this->_delete_optionids)
                 || !empty($this->_conversions)
-                || !empty($this->_choice_renumberings)) {
+                || !empty($this->_value_renumberings)) {
                 $sv->request_write_lock("PaperOption");
             }
         }
@@ -587,8 +627,21 @@ class Options_SettingParser extends SettingParser {
         foreach ($this->_conversions as $conv) {
             call_user_func($conv[0], $this->_new_options[$conv[1]->id], $conv[1]);
         }
-        foreach ($this->_choice_renumberings as $idcase) {
-            $sv->conf->qe("update PaperOption set value={$idcase[1]} where optionId={$idcase[0]}");
+        foreach ($this->_value_renumberings as $oid => $renumberings) {
+            $delete = $modify = [];
+            foreach ($renumberings as $old => $new) {
+                if ($new === 0) {
+                    $delete[] = $old;
+                } else {
+                    $modify[] = "when {$old} then {$new} ";
+                }
+            }
+            if (!empty($delete)) {
+                $sv->conf->qe("delete from PaperOption where optionId=? and value?a", $oid, $delete);
+            }
+            if (!empty($modify)) {
+                $sv->conf->qe("update PaperOption set value=case value " . join("", $modify) . "else value end where optionId=?", $oid);
+            }
         }
         $sv->mark_invalidate_caches(["autosearch" => true]);
     }

@@ -12,7 +12,8 @@ class Sf_Setting {
     public $visibility;
     public $required;
     public $presence;
-    public $selector;
+    public $values;
+    public $ids;
 
     public $exists_if;
     public $final;
@@ -24,4 +25,7 @@ class SfValue_Setting {
     public $id;
     public $name;
     public $order;
+
+    // internal
+    public $old_value;
 }

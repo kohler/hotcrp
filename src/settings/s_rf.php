@@ -32,5 +32,5 @@ class RfValue_Setting {
     public $symbol;
 
     // internal
-    public $old_index;
+    public $old_value;
 }

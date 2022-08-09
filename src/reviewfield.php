@@ -621,7 +621,7 @@ class Score_ReviewField extends ReviewField {
     function unparse_json($style) {
         $j = parent::unparse_json($style);
         $j->values = $this->values;
-        if ($this->ids
+        if (!empty($this->ids)
             && ($style !== self::UJ_STORAGE
                 || $this->ids !== range(1, count($this->values)))) {
             $j->ids = $this->ids;
@@ -644,6 +644,7 @@ class Score_ReviewField extends ReviewField {
         $rfs->type = "radio";
         $n = count($this->values);
         $rfs->values = $this->values;
+        $rfs->ids = $this->ids();
         if ($this->option_letter) {
             $rfs->start = chr($this->option_letter - $n);
         } else {
@@ -656,11 +657,11 @@ class Score_ReviewField extends ReviewField {
         foreach ($this->ordered_symbols() as $i => $symbol) {
             $rfs->xvalues[] = $rfv = new RfValue_Setting;
             $idx = $this->flip ? $n - $i - 1 : $i;
-            $rfv->id = $this->ids ? $this->ids[$idx] : $idx + 1;
+            $rfv->id = $rfs->ids[$idx];
             $rfv->order = $i + 1;
             $rfv->symbol = $symbol;
             $rfv->name = $this->values[$idx];
-            $rfv->old_index = $idx;
+            $rfv->old_value = $idx + 1;
         }
     }
 

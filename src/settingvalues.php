@@ -775,6 +775,28 @@ class SettingValues extends MessageSet {
             $next_obs = $next_obs2;
         }
 
+        // assign remaining objects sequentially to ID-less inputs
+        // (only if name matches are allowed and resetting)
+        if ($namekey !== null && $reset && !empty($next_obs)) {
+            $next_obs2 = [];
+            $obctr = 1;
+            foreach ($next_obs as $ob) {
+                while ($obctr < $nextctr
+                       && ($this->reqstr("{$pfx}/{$obctr}/id") ?? "") !== "") {
+                    ++$obctr;
+                }
+                if ($obctr < $nextctr) {
+                    $this->set_req("{$pfx}/{$obctr}/id", (string) $ob->id);
+                    $this->set_oldv("{$pfx}/{$obctr}/id", $ob->id);
+                    $this->set_oldv("{$pfx}/{$obctr}", $ob);
+                    ++$obctr;
+                } else {
+                    $next_obs2[] = $ob;
+                }
+            }
+            $next_obs = $next_obs2;
+        }
+
         // save new objects
         foreach ($next_obs as $ob) {
             $this->set_req("{$pfx}/{$nextctr}/id", (string) $ob->id);
@@ -801,7 +823,7 @@ class SettingValues extends MessageSet {
         for ($ctr = 1; array_key_exists("{$pfx}/{$ctr}/id", $this->req); ++$ctr) {
             $ctrs[] = $ctr;
         }
-        if (($x = $this->conf->si("{$pfx}/1/order"))) {
+        if ($this->conf->si("{$pfx}/1/order")) {
             usort($ctrs, function ($a, $b) use ($pfx) {
                 $ao = $this->vstr("{$pfx}/{$a}/order");
                 $an = is_numeric($ao);
@@ -851,6 +873,7 @@ class SettingValues extends MessageSet {
      * @param string $description
      * @return bool */
     function error_if_duplicate_member($pfx, $ctr, $sfx, $description) {
+        // NB: $pfx may or may not end with `/`; $sfx may or may not begin with `/`
         if (!str_ends_with($pfx, "/")) {
             $pfx .= "/";
         }

@@ -219,6 +219,8 @@
         "title": "/Value list",
         "hashid": "sf/$/values_text"
     },
+    {   "name_pattern": "sf/$/values_storage", "internal": true, "storage": "member.values"   },
+    {   "name_pattern": "sf/$/ids", "internal": true   },
     {
         "name_pattern": "sf/$/values/$$", "type": "object", "subtype": "SfValue_Setting",
         "parser_class": "Options_SettingParser"

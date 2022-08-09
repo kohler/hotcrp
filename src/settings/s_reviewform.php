@@ -152,7 +152,9 @@ class ReviewForm_SettingParser extends SettingParser {
     private function _apply_req_values(Si $si, SettingValues $sv) {
         $fpfx = "rf/{$si->name1}";
         $vpfx = "rf/{$si->name1}/values";
-        $newrfv = $renumbering = $symbols = [];
+
+        // check values
+        $newrfv = [];
         $error = false;
         foreach ($sv->oblist_nondeleted_keys($vpfx) as $ctr) {
             $rfv = $sv->object_newv("{$vpfx}/{$ctr}");
@@ -168,6 +170,7 @@ class ReviewForm_SettingParser extends SettingParser {
             return;
         }
 
+        // check that values are consecutive
         $key0 = $newrfv[0]->symbol;
         $flip = $option_letter = is_string($key0) && ctype_upper($key0);
         if ($key0 == 1) {
@@ -188,28 +191,30 @@ class ReviewForm_SettingParser extends SettingParser {
             return;
         }
 
+        // mark deleted values, account for known ids
         $renumberings = $known_ids = [];
         foreach ($sv->oblist_keys($vpfx) as $ctr) {
             if (($rfv = $sv->oldv("{$vpfx}/{$ctr}"))
-                && $rfv->old_index !== null) {
+                && $rfv->old_value !== null) {
                 $known_ids[] = $rfv->id;
                 if ($sv->reqstr("{$vpfx}/{$ctr}/delete")) {
-                    $renumberings[$rfv->old_index + 1] = 0;
+                    $renumberings[$rfv->old_value] = 0;
                 }
             }
         }
 
-        $texts = $ids = [];
+        // assign ids to new values
+        $values = $ids = [];
         foreach ($newrfv as $i => $rfv) {
-            $texts[] = $rfv->name ?? "";
-            $want_index = $flip ? count($newrfv) - $i - 1 : $i;
-            if ($rfv->old_index !== null) {
+            $values[] = $rfv->name ?? "";
+            $want_value = $flip ? count($newrfv) - $i : $i + 1;
+            if ($rfv->old_value !== null) {
                 $id = $rfv->id;
-                if ($rfv->old_index !== $want_index) {
-                    $renumberings[$rfv->old_index + 1] = $want_index + 1;
+                if ($rfv->old_value !== $want_value) {
+                    $renumberings[$rfv->old_value] = $want_value;
                 }
-            } else if (!in_array($want_index + 1, $known_ids)) {
-                $id = $want_index + 1;
+            } else if (!in_array($want_value, $known_ids)) {
+                $id = $want_value;
                 $known_ids[] = $id;
             } else {
                 for ($id = 1; in_array($id, $known_ids); ++$id) {
@@ -219,9 +224,11 @@ class ReviewForm_SettingParser extends SettingParser {
             $ids[] = $id;
         }
 
+        // record renumberings
         $this->_score_renumberings[$sv->vstr("{$fpfx}/id")] = $renumberings;
 
-        $sv->save("{$fpfx}/values_storage", $flip ? array_reverse($texts) : $texts);
+        // save values
+        $sv->save("{$fpfx}/values_storage", $flip ? array_reverse($values) : $values);
         $sv->save("{$fpfx}/ids", $flip ? array_reverse($ids) : $ids);
         $sv->save("{$fpfx}/start", ctype_digit($key0) ? intval($key0) : $key0);
     }

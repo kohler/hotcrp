@@ -662,6 +662,7 @@ class PaperOption implements JsonSerializable {
     /** @var string
      * @readonly */
     public $formid;
+    /** @var ?string */
     private $_readable_formid;
     /** @var ?string
      * @readonly */
@@ -893,6 +894,8 @@ class PaperOption implements JsonSerializable {
         return $ap <=> $bp ? : (strcasecmp($a->title, $b->title) ? : $a->id <=> $b->id);
     }
 
+    /** @param string $s
+     * @return string */
     static function make_readable_formid($s) {
         $s = strtolower(preg_replace('/[^A-Za-z0-9]+/', "-", UnicodeHelper::deaccent($s)));
         if (str_ends_with($s, "-")) {
@@ -1475,33 +1478,40 @@ class Checkbox_PaperOption extends PaperOption {
     }
 }
 
-class Selector_PaperOption extends PaperOption {
+class Multivalue_PaperOption extends PaperOption {
     /** @var list<string> */
-    private $values;
+    protected $values;
+    /** @var ?list<int> */
+    protected $ids;
     /** @var ?AbbreviationMatcher */
     private $_values_am;
 
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        $this->values = $args->selector ?? [];
+        $this->values = $args->values ?? /* XXX */ $args->selector ?? [];
+        if (isset($args->ids) && count($args->ids) === count($this->values)) {
+            $this->ids = $args->ids;
+        }
     }
 
     /** @return list<string> */
     function values() {
         return $this->values;
     }
-    /** @return list<string>
-     * @deprecated */
-    function selector_options() {
-        return $this->values;
+
+    /** @return list<int> */
+    function ids() {
+        return $this->ids ?? range(1, count($this->values));
     }
+
     /** @param list<string> $values */
     function set_values($values) {
         $this->values = $values;
     }
+
     /** @return AbbreviationMatcher<int> */
     protected function values_abbrev_matcher() {
-        if (!$this->_values_am) {
+        if ($this->_values_am === null) {
             $this->_values_am = new AbbreviationMatcher;
             foreach ($this->values as $id => $name) {
                 $this->_values_am->add_phrase($name, $id + 1);
@@ -1515,17 +1525,51 @@ class Selector_PaperOption extends PaperOption {
 
     function jsonSerialize() {
         $j = parent::jsonSerialize();
-        $j->selector = $this->values;
+        $j->values = $this->values;
+        if (!empty($this->ids)
+            && $this->ids !== range(1, count($this->values))) {
+            $j->ids = $this->ids;
+        }
         return $j;
     }
+
     function unparse_setting($sfs) {
         parent::unparse_setting($sfs);
+        $sfs->values = $this->values;
+        $sfs->ids = $this->ids();
+
         $sfs->xvalues = [];
-        foreach ($this->values as $i => $s) {
+        foreach ($this->values as $idx => $s) {
             $sfs->xvalues[] = $sfv = new SfValue_Setting;
-            $sfv->id = $sfv->order = $i + 1;
+            $sfv->id = $sfs->ids[$idx];
+            $sfv->order = $sfv->old_value = $idx + 1;
             $sfv->name = $s;
         }
+    }
+
+    /** @param int $idx
+     * @return ?string */
+    function value_search_keyword($idx) {
+        if ($idx <= 0) {
+            return "none";
+        } else if ($idx > count($this->values)) {
+            return null;
+        } else {
+            $e = new AbbreviationEntry($this->values[$idx - 1], $idx);
+            return $this->values_abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);
+        }
+    }
+}
+
+class Selector_PaperOption extends Multivalue_PaperOption {
+    function __construct(Conf $conf, $args) {
+        parent::__construct($conf, $args);
+    }
+
+    /** @return list<string>
+     * @deprecated */
+    function selector_options() {
+        return $this->values();
     }
 
     function value_compare($av, $bv) {
@@ -1600,20 +1644,14 @@ class Selector_PaperOption extends PaperOption {
         $fr->set_text($this->values[$ov->value - 1] ?? "");
     }
 
-    /** @return ?string */
+    /** @return ?string
+     * @deprecated */
     function selector_option_search($idx) {
-        if ($idx <= 0) {
-            return "none";
-        } else if ($idx > count($this->values)) {
-            return null;
-        } else {
-            $e = new AbbreviationEntry($this->values[$idx - 1], $idx);
-            return $this->values_abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);
-        }
+        return $this->value_search_keyword($idx);
     }
     function search_examples(Contact $viewer, $context) {
         $a = [$this->has_search_example()];
-        if (($q = $this->selector_option_search(2))) {
+        if (($q = $this->value_search_keyword(2))) {
             $a[] = new SearchExample($this->search_keyword() . ":<value>", "submission’s “%s” field has value “%s”", [$this->title_html(), htmlspecialchars($this->values[1])], $q);
         }
         return $a;

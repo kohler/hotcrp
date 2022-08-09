@@ -1036,6 +1036,7 @@ class Settings_Tester {
         assert($opt instanceof Selector_PaperOption);
         xassert_eqq($opt->name, "Program");
         xassert_array_eqq($opt->values(), ["Honors", "MBB", "Joint primary", "Joint affiliated", "Basic"]);
+        xassert_array_eqq($opt->ids(), [1, 2, 3, 4, 5]);
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
@@ -1050,6 +1051,7 @@ class Settings_Tester {
         assert($opt instanceof Selector_PaperOption);
         xassert_eqq($opt->name, "Program");
         xassert_array_eqq($opt->values(), ["Honors", "MBB", "Joint primary"]);
+        xassert_array_eqq($opt->ids(), [1, 2, 3]);
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
@@ -1078,9 +1080,31 @@ class Settings_Tester {
         $opt = $sv->conf->option_by_id(2);
         assert($opt instanceof Selector_PaperOption);
         xassert_array_eqq($opt->values(), ["MBB", "Joint primary?", "Honors"]);
+        xassert_array_eqq($opt->ids(), [2, 3, 1]);
 
         xassert_eqq(search_text_col($this->u_chair, "1", "Program"), "1 Honors\n");
         xassert_eqq($sv->conf->fetch_ivalue("select value from PaperOption where paperId=1 and optionId=2"), 3);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/name" => "Program",
+            "sf/1/id" => "2",
+            "has_sf/1/values" => 1,
+            "sf/1/values/1/id" => "2",
+            "sf/1/values/1/name" => "Fart primary",
+            "sf/1/values/1/order" => "3",
+            "sf/1/values/2/id" => "3",
+            "sf/1/values/2/name" => "MBB",
+            "sf/1/values/2/order" => "2",
+            "sf/1/values/3/id" => "1",
+            "sf/1/values/3/name" => "Honors",
+            "sf/1/values/3/order" => "1"
+        ]);
+        xassert($sv->execute());
+        $opt = $sv->conf->option_by_id(2);
+        assert($opt instanceof Selector_PaperOption);
+        xassert_array_eqq($opt->values(), ["Honors", "MBB", "Fart primary"]);
+        xassert_array_eqq($opt->ids(), [1, 3, 2]);
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
@@ -1097,8 +1121,10 @@ class Settings_Tester {
             "sf/1/delete" => "1"
         ]);
         xassert($sv->execute());
+        $opt = $sv->conf->option_by_id(2);
+        xassert_eqq($opt, null);
 
-        xassert_eqq($sv->conf->fetch_ivalue("select value from PaperOption where paperId=1 and optionId=2"), null);
+        xassert_eqq($sv->conf->fetch_ivalue("select value from PaperOption where optionId=2 limit 1"), null);
     }
 
     function test_subform_condition() {
