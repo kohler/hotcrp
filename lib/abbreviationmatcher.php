@@ -41,6 +41,7 @@ class AbbreviationEntry {
      * @readonly */
     public $loader_args;
 
+    const TFLAG_USER = 0x0FFFFFFF;
     const TFLAG_KW = 0x10000000;
     const TFLAG_DP = 0x20000000;
 
@@ -508,14 +509,14 @@ class AbbreviationMatcher {
     }
 
 
-    private function test_all_matches($pattern, AbbreviationEntry $test, $tflags) {
+    private function test_all_matches($pattern, AbbreviationEntry $test) {
         if ($pattern === "") {
             return false;
         }
         $n = $nok = 0;
-        foreach ($this->find_entries($pattern, $tflags) as $e) {
+        foreach ($this->find_entries($pattern) as $e) {
             ++$n;
-            if ($test->tflags === ($e->tflags & 255)
+            if ((($test->tflags ^ $e->tflags) & AbbreviationEntry::TFLAG_USER) === 0
                 && ($test->value !== null
                     ? $test->value === $e->value
                     : $test->loader === $e->loader && $test->loader_args === $e->loader_args)) {
@@ -582,19 +583,18 @@ class AbbreviationMatcher {
     const KW_FULLPHRASE = 8;
     const KWP_MULTIWORD = 32;
     /** @param int $class
-     * @param int $tflags
      * @return ?string
      * @suppress PhanAccessReadOnlyProperty */
-    function find_entry_keyword(AbbreviationEntry $e, $class, $tflags = 0) {
+    function find_entry_keyword(AbbreviationEntry $e, $class) {
         // Strip parenthetical remarks when that preserves uniqueness
         $name = simplify_whitespace(UnicodeHelper::deaccent($e->name));
         if (($xname = self::deparenthesize($name)) !== ""
-            && $this->test_all_matches($xname, $e, $tflags)) {
+            && $this->test_all_matches($xname, $e)) {
             $name = $xname;
         }
         // Take portion before dash or colon when that preserves uniqueness
         if (preg_match('/\A.*?(?=\s+-+\s|\s*–|\s*—|:\s)/', $name, $m)
-            && $this->test_all_matches($m[0], $e, $tflags)) {
+            && $this->test_all_matches($m[0], $e)) {
             $name = $m[0];
         }
         // Translate to xtester
@@ -604,7 +604,7 @@ class AbbreviationMatcher {
         if ($nsp > 2
             && ($sname = self::xtester_remove_stops($name)) !== ""
             && strlen($sname) !== strlen($name)
-            && $this->test_all_matches($sname, $e, $tflags)) {
+            && $this->test_all_matches($sname, $e)) {
             $name = $sname;
             $nsp = substr_count($name, " ");
         }
@@ -620,7 +620,7 @@ class AbbreviationMatcher {
             if ($nsp === 1) {
                 // only one word
                 $s = substr($cname, 1, strlen($cname) < 7 ? 6 : 3);
-                if ($this->test_all_matches($s, $e, $tflags)) {
+                if ($this->test_all_matches($s, $e)) {
                     return $this->_finish_abbreviation($s, $e, $class);
                 }
                 $cname = substr($cname, 1);
@@ -630,7 +630,7 @@ class AbbreviationMatcher {
                 $cname = preg_replace('/([A-Z][a-z][a-z])[A-Za-z~!?]*/', '$1', $cname);
                 foreach (self::phrase_subset_generator($cname, $nsp, $class) as $s) {
                     $s = self::camelize_phrase($s, $hasnum);
-                    if ($this->test_all_matches($s, $e, $tflags)) {
+                    if ($this->test_all_matches($s, $e)) {
                         return $this->_finish_abbreviation($s, $e, $class);
                     }
                 }
@@ -641,14 +641,14 @@ class AbbreviationMatcher {
             $cname = strtolower($name);
             foreach (self::phrase_subset_generator($cname, $nsp, $class) as $s) {
                 $s = str_replace(" ", $ch, $s);
-                if ($this->test_all_matches($s, $e, $tflags)) {
+                if ($this->test_all_matches($s, $e)) {
                     return $this->_finish_abbreviation($s, $e, $class);
                 }
             }
             $cname = str_replace(" ", $ch, substr($cname, 1));
         }
         // Add suffix
-        if ($this->test_all_matches($cname, $e, $tflags)) {
+        if ($this->test_all_matches($cname, $e)) {
             return $this->_finish_abbreviation($cname, $e, $class);
         } else if (($class & self::KW_ENSURE) !== 0) {
             $cname .= ".";
@@ -667,9 +667,8 @@ class AbbreviationMatcher {
     }
 
     /** @param int $class
-     * @param int $tflags
      * @return ?string */
-    function ensure_entry_keyword(AbbreviationEntry $e, $class, $tflags = 0) {
-        return $this->find_entry_keyword($e, $class | self::KW_ENSURE, $tflags);
+    function ensure_entry_keyword(AbbreviationEntry $e, $class) {
+        return $this->find_entry_keyword($e, $class | self::KW_ENSURE);
     }
 }
