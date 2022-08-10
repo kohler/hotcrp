@@ -1589,9 +1589,9 @@ class PaperTable {
         if ($deadline === "N/A") {
             return "";
         } else if (Conf::$now < $this->conf->setting($dname)) {
-            return " The $dl is $deadline.";
+            return " The {$dl} is {$deadline}.";
         } else {
-            return " The $dl was $deadline.";
+            return " The {$dl} was {$deadline}.";
         }
     }
 
@@ -1652,7 +1652,8 @@ class PaperTable {
     private function _edit_message_for_author() {
         $can_view_decision = $this->prow->outcome != 0
             && $this->user->can_view_decision($this->prow);
-        if ($can_view_decision && $this->prow->outcome < 0) {
+        if ($can_view_decision
+            && $this->prow->outcome < 0) {
             $this->_main_message("<5>This submission was not accepted." . $this->_forceShow_message(), 1);
         } else if ($this->prow->timeWithdrawn > 0) {
             if ($this->user->can_revive_paper($this->prow)) {
@@ -1683,19 +1684,19 @@ class PaperTable {
             } else {
                 $this->_main_message('<5>This submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message(), 1);
             }
-        } else if ($this->user->can_edit_paper($this->prow)) {
-            if ($this->mode === "edit") {
-                $this->_main_message('<5>This submission is ready for review. You do not need to take further action. However, you can still make changes if you wish.' . $this->deadline_setting_is("sub_update", "submission deadline"), MessageSet::SUCCESS);
-            }
         } else if ($this->conf->allow_final_versions()
                    && $this->prow->outcome > 0
                    && $can_view_decision) {
             if ($this->user->can_edit_final_paper($this->prow)) {
-                if (($t = $this->conf->_i("finalsubmit", $this->deadline_setting_is("final_soft")))) {
-                    $this->_main_message("<5>" . $t, 0);
+                if (($t = $this->conf->_i("finalsubmit", new FmtArg("deadline", $this->deadline_setting_is("final_soft"))))) {
+                    $this->_main_message("<5>" . $t, MessageSet::SUCCESS);
                 }
             } else if ($this->mode === "edit") {
                 $this->_main_message("<5>The deadline for updating final versions has passed. You can still change contact information." . $this->_deadline_override_message(), 1);
+            }
+        } else if ($this->user->can_edit_paper($this->prow)) {
+            if ($this->mode === "edit") {
+                $this->_main_message('<5>This submission is ready for review. You do not need to take further action. However, you can still make changes if you wish.' . $this->deadline_setting_is("sub_update", "submission deadline"), MessageSet::SUCCESS);
             }
         } else if ($this->mode === "edit") {
             if ($this->user->can_withdraw_paper($this->prow, true)) {

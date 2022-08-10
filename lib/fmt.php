@@ -1,8 +1,21 @@
 <?php
-// intlmsgset.php -- HotCRP helper functions for message i18n
+// fmt.php -- HotCRP helper functions for message formatting i18n
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-class IntlMsg {
+class FmtArg {
+    /** @var int|string */
+    public $name;
+    /** @var mixed */
+    public $value;
+
+    /** @param int|string $name */
+    function __construct($name, $value) {
+        $this->name = $name;
+        $this->value = $value;
+    }
+}
+
+class FmtItem {
     /** @var ?string */
     public $context;
     /** @var string */
@@ -17,35 +30,54 @@ class IntlMsg {
     public $no_conversions = false;
     /** @var bool */
     public $template = false;
-    /** @var ?IntlMsg */
+    /** @var ?FmtItem */
     public $next;
 
     /** @param list<string> $args
-     * @param string $argname
+     * @param string $s
      * @param ?string &$val
      * @return bool */
-    private function resolve_arg(IntlMsgSet $ms, $args, $argname, &$val) {
-        $component = false;
-        if (strpos($argname, "[") !== false
-            && preg_match('/\A(.*?)\[([^\]]*)\]\z/', $argname, $m)) {
-            $argname = $m[1];
-            $component = $m[2];
+    private function resolve_arg(Fmt $ms, $args, $s, &$val) {
+        $pos = 0;
+        $len = strlen($s);
+        if ($pos !== $len && $s[$pos] === "#") {
+            $iscount = true;
+            ++$pos;
+        } else {
+            $iscount = false;
         }
-        $iscount = $argname[0] === "#";
-        if ($iscount) {
-            $argname = substr($argname, 1);
-        }
-        if ($argname[0] === "\$") {
-            $which = substr($argname, 1);
-            if (ctype_digit($which)) {
-                $val = $args[+$which - 1] ?? null;
+
+        if ($pos !== $len
+            && $s[$pos] === "{"
+            && preg_match('/\{(0|[1-9]\d*|[A-Za-z_]\w*)(|\[[^\]]+\])\}\z/A', $s, $m, 0, $pos)) {
+            if (($fa = Fmt::find_arg($args, ctype_digit($m[1]) ? intval($m[1]) : $m[1]))) {
+                $val = $fa->value;
             } else {
                 return false;
             }
+            $component = $m[2] === "" ? null : substr($m[2], 1, -1);
+        } else if ($pos !== $len
+                   && $s[$pos] === "\$"
+                   && preg_match('/\$([1-9]\d*)(|\[[^\]]+\])\z/A', $s, $m, 0, $pos)) {
+            if (($fa = Fmt::find_arg($args, intval($m[1]) - 1))) {
+                $val = $fa->value;
+            } else {
+                return false;
+            }
+            $component = $m[2] === "" ? null : substr($m[2], 1, -1);
         } else {
-            $val = $ms->resolve_requirement_argument($argname);
+            if (($bpos = strpos($s, "[", $pos)) !== false
+                && $bpos !== $len - 1
+                && $s[$len - 1] === "]") {
+                $val = $ms->resolve_requirement_argument(substr($s, $pos, $bpos - $pos));
+                $component = substr($s, $bpos + 1, $len - $bpos - 2);
+            } else {
+                $val = $ms->resolve_requirement_argument($s);
+                $component = null;
+            }
         }
-        if ($component !== false) {
+
+        if ($component !== null) {
             if (is_array($val)) {
                 $val = $val[$component] ?? null;
             } else if (is_object($val)) {
@@ -54,6 +86,7 @@ class IntlMsg {
                 return false;
             }
         }
+
         if ($iscount) {
             if (is_array($val)) {
                 $val = count($val);
@@ -61,12 +94,13 @@ class IntlMsg {
                 return false;
             }
         }
+
         return true;
     }
 
     /** @param list<string> $args
      * @return int|false */
-    function check_require(IntlMsgSet $ms, $args) {
+    function check_require(Fmt $ms, $args) {
         if (!$this->require) {
             return 0;
         }
@@ -83,7 +117,7 @@ class IntlMsg {
                 $compar = $m[3];
                 $compval = $m[4];
                 if ($m[4] !== ""
-                    && $m[4][0] === "\$"
+                    && ($m[4][0] === "\$" || $m[4][0] === "{")
                     && !$this->resolve_arg($ms, $args, $m[4], $compval)) {
                     return false;
                 }
@@ -117,15 +151,14 @@ class IntlMsg {
     }
 }
 
-class IntlMsgSet {
-    /** @var array<string,IntlMsg> */
+class Fmt {
+    /** @var array<string,FmtItem> */
     private $ims = [];
     /** @var list<callable(string):(false|array{true,mixed})> */
     private $require_resolvers = [];
     private $_context_prefix;
     private $_default_priority;
     private $_default_format;
-    private $_recursion = 0;
 
     const PRIO_OVERRIDE = 1000.0;
 
@@ -178,7 +211,7 @@ class IntlMsgSet {
             $this->_default_format = $ofmt;
             return $ret;
         } else {
-            $im = new IntlMsg;
+            $im = new FmtItem;
             if (isset($m->context) && is_string($m->context)) {
                 $im->context = $m->context;
             }
@@ -218,7 +251,7 @@ class IntlMsgSet {
 
     /** @param array{string,string} $m */
     private function _addj_list($m) {
-        $im = new IntlMsg;
+        $im = new FmtItem;
         $n = count($m);
         $p = false;
         while ($n > 0 && !is_string($m[$n - 1])) {
@@ -248,7 +281,7 @@ class IntlMsgSet {
     }
 
     /** @param string $itext
-     * @param IntlMsg $im */
+     * @param FmtItem $im */
     private function _addj_finish($itext, $im) {
         if ($this->_context_prefix) {
             $im->context = $this->_context_prefix . ($im->context ? "/" . $im->context : "");
@@ -320,11 +353,8 @@ class IntlMsgSet {
      * @param string $itext
      * @param list<mixed> $args
      * @param ?float $priobound
-     * @return ?IntlMsg */
+     * @return ?FmtItem */
     private function find($context, $itext, $args, $priobound) {
-        if (++$this->_recursion > 5) {
-            throw new Exception("too much recursion");
-        }
         $match = null;
         $matchnreq = $matchctxlen = 0;
         if ($context === "") {
@@ -365,8 +395,30 @@ class IntlMsgSet {
                 $matchctxlen = $ctxlen;
             }
         }
-        --$this->_recursion;
         return $match;
+    }
+
+    /** @param list<mixed> $args
+     * @param int|string $argdef
+     * @return ?FmtArg */
+    static function find_arg($args, $argdef) {
+        $arg = null;
+        if (is_string($argdef)) {
+            foreach ($args as $arg) {
+                if ($arg instanceof FmtArg
+                    && strcasecmp($arg->name, $argdef) === 0) {
+                    return $arg;
+                }
+            }
+        } else if (is_int($argdef) && $argdef >= 0 && $argdef < count($args)) {
+            $arg = $args[$argdef];
+            if (!($arg instanceof FmtArg)) {
+                return new FmtArg($argdef, $arg);
+            } else if ($arg->name === $argdef) {
+                return $arg;
+            }
+        }
+        return null;
     }
 
     /** @param string $s
@@ -374,24 +426,21 @@ class IntlMsgSet {
      * @param list<mixed> $args
      * @param int &$argnum
      * @param ?string $context
-     * @param ?IntlMsg $im
+     * @param ?FmtItem $im
      * @return array{int,?string} */
     private function expand_percent($s, $pos, $args, &$argnum, $context, $im) {
-        if (preg_match('/%((?!\d)\w+)%/A', $s, $m, 0, $pos)
-            && ($imt = $this->find($context, strtolower($m[1]), [$m[1]], null))
-            && $imt->template) {
-            ++$this->_recursion;
-            if ($this->_recursion < 5) {
-                return [strlen($m[0]), $this->expand($imt->otext, $args, null, null)];
-            } else {
-                error_log("RECURSION ERROR ON {$m[0]} " . debug_string_backtrace());
+        if (preg_match('/%((?!\d)\w+)%/A', $s, $m, 0, $pos)) {
+            if (($fa = self::find_arg($args, strtolower($m[1])))) {
+                return [$pos + strlen($m[0]), $fa->value];
+            } else if (($imt = $this->find($context, strtolower($m[1]), [$m[1]], null))
+                       && $imt->template) {
+                return [$pos + strlen($m[0]), $this->expand($imt->otext, $args, null, null)];
             }
-            --$this->_recursion;
-        } else if (($im && $im->no_conversions) || count($args) === 0) {
-            /* do nothing */
-        } else if (strlen($s) > $pos + 1 && $s[$pos + 1] === "%") {
-            return [2, "%"];
-        } else if (preg_match('/%(?:(\d+)(\[[^\[\]\$]*\]|)\$)?(#[AON]?|)(\d*(?:\.\d+)?)([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
+        }
+
+        if (!($im && $im->no_conversions)
+            && count($args) > 0
+            && preg_match('/%(?:(\d+)(\[[^\[\]\$]*\]|)\$)?(#[AON]?|)(\d*(?:\.\d+)?)([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
             $argi = $m[1] ? +$m[1] : ++$argnum;
             if (isset($args[$argi - 1])) {
                 $val = $args[$argi - 1];
@@ -418,38 +467,86 @@ class IntlMsgSet {
                 } else {
                     $x = sprintf("%{$conv}{$m[5]}", $val);
                 }
-                return [strlen($m[0]), $x];
+                return [$pos + strlen($m[0]), $x];
             }
         }
-        return [0, null];
+
+        return [$pos + 1, null];
+    }
+
+    /** @param string $s
+     * @param int $pos
+     * @param list<mixed> $args
+     * @param int &$argnum
+     * @param ?string $context
+     * @param ?FmtItem $im
+     * @return array{int,?string} */
+    private function expand_brace($s, $pos, $args, &$argnum, $context, $im) {
+        if (preg_match('/\{(|0|[1-9]\d*|[a-zA-Z_]\w*)(|\[[^\]]*\])(|:(?:[^\}]|\}\})*)\}/A', $s, $m, 0, $pos)
+            && ($m[1] !== "" || ($argnum !== null && $m[2] === ""))
+            && !($im && $im->no_conversions && ($m[1] === "" || ctype_digit($m[1])))) {
+            if (($fa = self::find_arg($args, strtolower($m[1])))) {
+                return [$pos + strlen($m[0]), $fa->value];
+            } else if (($imt = $this->find($context, strtolower($m[1]), [$m[1]], null))
+                       && $imt->template) {
+                return [$pos + strlen($m[0]), $this->expand($imt->otext, $args, null, null)];
+            }
+        }
+        return [$pos + 1, null];
     }
 
     /** @param string $s
      * @param list<mixed> $args
      * @param ?string $context
-     * @param ?IntlMsg $im
+     * @param ?FmtItem $im
      * @return string */
     private function expand($s, $args, $context, $im) {
         if ($s === null || $s === false || $s === "") {
             return $s;
         }
-        $pos = 0;
+        $pos = $bpos = 0;
+        $len = strlen($s);
+        $ppos = $lpos = $rpos = -1;
         $argnum = 0;
         $t = "";
+
         while (true) {
-            $ppos = strpos($s, "%", $pos);
-            if ($ppos === false) {
-                return $t . $s;
+            if ($ppos < $pos) {
+                $ppos = strpos($s, "%", $pos);
+                $ppos = $ppos !== false ? $ppos : $len;
             }
-            $pos = $ppos;
-            list($npos, $x) = $this->expand_percent($s, $pos, $args, $argnum, $context, $im);
+            if ($lpos < $pos) {
+                $lpos = strpos($s, "{", $pos);
+                $lpos = $lpos !== false ? $lpos : $len;
+            }
+            if ($rpos < $pos) {
+                $rpos = strpos($s, "}", $pos);
+                $rpos = $rpos !== false ? $rpos : $len;
+            }
+
+            $pos = min($ppos, $lpos, $rpos);
+            if ($pos === $len) {
+                return $t . substr($s, $bpos);
+            }
+
+            $x = null;
+            $npos = $pos + 1;
+            if ($npos < $len && $s[$pos] === $s[$npos]) {
+                if (!$im || !$im->no_conversions) {
+                    $x = $s[$pos];
+                    ++$npos;
+                }
+            } else if ($pos === $ppos) {
+                list($npos, $x) = $this->expand_percent($s, $pos, $args, $argnum, $context, $im);
+            } else if ($pos === $lpos) {
+                list($npos, $x) = $this->expand_brace($s, $pos, $args, $argnum, $context, $im);
+            }
+
             if ($x !== null) {
-                $t .= substr($s, 0, $pos) . $x;
-                $s = substr($s, $pos + $npos);
-                $pos = 0;
-            } else {
-                ++$pos;
+                $t .= substr($s, $bpos, $pos - $bpos) . $x;
+                $bpos = $npos;
             }
+            $pos = $npos;
         }
     }
 
@@ -519,3 +616,5 @@ class IntlMsgSet {
         return $itext;
     }
 }
+
+class_alias("Fmt", "IntlMsgSet");

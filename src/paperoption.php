@@ -941,7 +941,7 @@ class PaperOption implements JsonSerializable {
         if ($this->description !== "") {
             $fr->value = $this->description;
         } else {
-            $this->conf->ims()->render_ci($fr, "field_description/edit", $this->formid,
+            $this->conf->fmt()->render_ci($fr, "field_description/edit", $this->formid,
                                           ...$context_args);
         }
     }

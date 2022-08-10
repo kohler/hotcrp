@@ -144,10 +144,10 @@ class Conf {
     private $_emoji_codes;
     /** @var S3Client|null|false */
     private $_s3_client = false;
-    /** @var ?IntlMsgSet */
-    private $_ims;
+    /** @var ?Fmt */
+    private $_fmt;
     /** @var ?list<string> */
-    private $_ims_override_names;
+    private $_fmt_override_names;
     /** @var ?array<int,TextFormat> */
     private $_format_info;
     /** @var bool */
@@ -302,10 +302,10 @@ class Conf {
             }
         }
         $this->opt_override = [];
-        if ($this->_ims) {
-            $this->_ims->remove_overrides();
+        if ($this->_fmt) {
+            $this->_fmt->remove_overrides();
         }
-        $this->_ims_override_names = null;
+        $this->_fmt_override_names = null;
 
         $result = $this->q_raw("select name, value, data from Settings");
         while (($row = $result->fetch_row())) {
@@ -318,8 +318,8 @@ class Conf {
                 $this->opt_override[$okey] = $this->opt[$okey] ?? null;
                 $this->opt[$okey] = ($row[2] === null ? (int) $row[1] : $row[2]);
             } else if (str_starts_with($row[0], "msg.")) {
-                $this->_ims_override_names = $this->_ims_override_names ?? [];
-                $this->_ims_override_names[] = $row[0];
+                $this->_fmt_override_names = $this->_fmt_override_names ?? [];
+                $this->_fmt_override_names[] = $row[0];
             }
         }
         Dbl::free($result);
@@ -5118,60 +5118,66 @@ class Conf {
 
     // messages
 
-    /** @return IntlMsgSet */
+    /** @return Fmt
+     * @deprecated */
     function ims() {
-        if (!$this->_ims) {
-            $this->_ims = new IntlMsgSet;
-            $this->_ims->add_requirement_resolver([$this, "resolve_ims_requirement"]);
+        return $this->fmt();
+    }
+
+    /** @return Fmt */
+    function fmt() {
+        if (!$this->_fmt) {
+            $this->_fmt = new Fmt;
+            $this->_fmt->add_requirement_resolver([$this, "resolve_fmt_requirement"]);
             $m = ["?etc/msgs.json"];
             if (($lang = $this->opt("lang"))) {
                 $m[] = "?etc/msgs.$lang.json";
             }
-            $this->_ims->set_default_priority(-1.0);
-            expand_json_includes_callback($m, [$this->_ims, "addj"]);
-            $this->_ims->clear_default_priority();
+            $this->_fmt->set_default_priority(-1.0);
+            expand_json_includes_callback($m, [$this->_fmt, "addj"]);
+            $this->_fmt->clear_default_priority();
             if (($mlist = $this->opt("messageOverrides"))) {
-                expand_json_includes_callback($mlist, [$this->_ims, "addj"]);
+                expand_json_includes_callback($mlist, [$this->_fmt, "addj"]);
             }
         }
-        if ($this->_ims_override_names !== null) {
-            foreach ($this->_ims_override_names as $id) {
-                $this->_ims->add_override(substr($id, 4), $this->settingTexts[$id]);
+        if ($this->_fmt_override_names !== null) {
+            foreach ($this->_fmt_override_names as $id) {
+                $this->_fmt->add_override(substr($id, 4), $this->settingTexts[$id]);
             }
-            $this->_ims_override_names = null;
+            $this->_fmt_override_names = null;
         }
-        return $this->_ims;
+        return $this->_fmt;
     }
 
     /** @param string $itext
      * @return string */
     function _($itext, ...$args) {
-        return $this->ims()->_($itext, ...$args);
+        return $this->fmt()->_($itext, ...$args);
     }
 
     /** @param string $context
      * @param string $itext
      * @return string */
     function _c($context, $itext, ...$args) {
-        return $this->ims()->_c($context, $itext, ...$args);
+        return $this->fmt()->_c($context, $itext, ...$args);
     }
 
     /** @param string $id
      * @return string */
     function _i($id, ...$args) {
-        return $this->ims()->_i($id, ...$args);
+        return $this->fmt()->_i($id, ...$args);
     }
 
     /** @param string $context
      * @param string $id
      * @return string */
     function _ci($context, $id, ...$args) {
-        return $this->ims()->_ci($context, $id, ...$args);
+        return $this->fmt()->_ci($context, $id, ...$args);
     }
 
     /** @param string $s
      * @return false|array{true,mixed} */
-    function resolve_ims_requirement($s) {
+    function resolve_fmt_requirement($s) {
         if (str_starts_with($s, "setting.")) {
             return [true, $this->setting(substr($s, 8))];
         } else if (str_starts_with($s, "opt.")) {

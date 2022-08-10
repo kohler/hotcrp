@@ -1,10 +1,10 @@
 <?php
-// t_intlmsgset.php -- HotCRP tests
+// t_fmt.php -- HotCRP tests
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-class IntlMsgSet_Tester {
+class Fmt_Tester {
     function test_1() {
-        $ms = new IntlMsgSet;
+        $ms = new Fmt;
         $ms->add("Hello", "Bonjour");
         $ms->add(["%d friend", "%d amis", ["$1 ≠ 1"]]);
         $ms->add("%d friend", "%d ami");
@@ -12,13 +12,12 @@ class IntlMsgSet_Tester {
         $ms->add("ax", "b");
         $ms->add("bx", "a", 2);
         $ms->add("bx", "b");
-        $ms->add(["fart", "fart example A", ["$1=bob"]]);
-        $ms->add(["fart", "fart example B", ["$1^=bob"]]);
+        $ms->add(["fart", "fart example A", ["{0}=bob"]]);
+        $ms->add(["fart", "fart example B", ["{0}^=bob"]]);
         $ms->add(["fart", "fart example C"]);
-        $ms->add(["itext" => "fox", "otext" => "%1\$s", "format" => "expand", "context" => "fox-saying", "template" => true]);
         $ms->add(["id" => "fox-saying", "itext" => "What the fox said"]);
-        $ms->add(["id" => "fox-saying", "itext" => "What the %FOX% said", "require" => ["$1"]]);
-        $ms->add(["itext" => "butt", "otext" => "%1\$s", "format" => "expand", "context" => "test103", "template" => true]);
+        $ms->add(["id" => "fox-saying", "itext" => "What the {fox} said", "require" => ["{fox}"]]);
+        $ms->add(["itext" => "butt", "otext" => "%1\$s", "context" => "test103", "template" => true]);
         $ms->add_override("test103", "%BUTT% %% %s %BU%%MAN%%BUTT%");
         xassert_eqq($ms->_("Hello"), "Bonjour");
         xassert_eqq($ms->_("%d friend", 1), "1 ami");
@@ -33,7 +32,7 @@ class IntlMsgSet_Tester {
         xassert_eqq($ms->_("fart", "bobby"), "fart example B");
         xassert_eqq($ms->_("fart", "bob"), "fart example A");
         xassert_eqq($ms->_i("fox-saying"), "What the fox said");
-        xassert_eqq($ms->_i("fox-saying", "Animal"), "What the Animal said");
+        xassert_eqq($ms->_i("fox-saying", new FmtArg("fox", "Animal")), "What the Animal said");
         xassert_eqq($ms->_i("test103", "Ass"), "Ass %% %s %BU%%MAN%Ass");
 
         $ms->add(["itext" => "butt", "otext" => "normal butt"]);
@@ -52,7 +51,7 @@ class IntlMsgSet_Tester {
     }
 
     function test_contexts() {
-        $ms = new IntlMsgSet;
+        $ms = new Fmt;
         $ms->add("Hello", "Hello");
         $ms->add(["hello", "Hello", "Hello1"]);
         $ms->add(["hello/yes", "Hello", "Hello2"]);

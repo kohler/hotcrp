@@ -63,14 +63,15 @@ class ResponseRound {
 
     /** @return string */
     function instructions(Conf $conf) {
-        $ims = $conf->ims();
+        $fmt = $conf->fmt();
         if ($this->instructions !== null
-            && !$ims->has_override("resp_instrux_{$this->id}")) {
-            $ims->add_override("resp_instrux_{$this->id}", $this->instructions);
+            && !$fmt->has_override("resp_instrux_{$this->id}")) {
+            $fmt->add_override("resp_instrux_{$this->id}", $this->instructions);
         }
-        $m = $ims->_ci("resp_instrux", "resp_instrux_{$this->id}", $this->words);
+        $fa = new FmtArg("wordlimit", $this->words);
+        $m = $fmt->_ci("resp_instrux", "resp_instrux_{$this->id}", $fa);
         if ($m === "") {
-            $m = $ims->_ci("resp_instrux", "resp_instrux", $this->words);
+            $m = $fmt->_ci("resp_instrux", "resp_instrux", $fa);
         }
         return $m;
     }

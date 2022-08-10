@@ -6,7 +6,7 @@ class Messages_SettingParser extends SettingParser {
     function default_value(Si $si, SettingValues $sv) {
         if ($si->name === "preference_instructions") {
             $n = $sv->oldv("has_topics");
-            return $sv->conf->ims()->default_itext("revprefdescription", $n);
+            return $sv->conf->fmt()->default_itext("revprefdescription", $n);
         } else {
             return null;
         }

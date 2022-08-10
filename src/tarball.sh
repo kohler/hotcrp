@@ -139,11 +139,11 @@ lib/dbhelper.sh
 lib/dbl.php
 lib/dkimsigner.php
 lib/filer.php
+lib/fmt.php
 lib/getopt.php
 lib/gmpshim.php
 lib/ht.php
 lib/icons.php
-lib/intlmsgset.php
 lib/json.php
 lib/jsonexception.php
 lib/jsonparser.php

@@ -9,7 +9,7 @@ TestRunner::run(
     "XtCheck_Tester",
     "Navigation_Tester",
     "AuthorMatch_Tester",
-    "IntlMsgSet_Tester",
+    "Fmt_Tester",
     "Abbreviation_Tester",
     "DocumentBasics_Tester",
     "FixCollaborators_Tester",
