@@ -336,6 +336,24 @@ class Abbreviation_Tester {
         xassert_eqq($am->find_all("PreVid"), [0, 1]);
     }
 
+    function test_findp() {
+        $am = new AbbreviationMatcher;
+        $names = ["0",
+                  "1",
+                  "2",
+                  "21",
+                  "2 or more"];
+        foreach ($names as $i => $k) {
+            $am->add_phrase($k, $i);
+        }
+        xassert_eqq($am->find_all("2"), [2]);
+        xassert_eqq($am->find_all("2*"), [2, 3, 4]);
+        xassert_eqq($am->find_all("21"), [3]);
+        xassert_eqq($am->findp("2"), [2]);
+        xassert_eqq($am->findp("2*"), [2, 3, 4]);
+        xassert_eqq($am->findp("21"), [3]);
+    }
+
     function test_find_all() {
         $am = new AbbreviationMatcher;
         $names = ["Applications of cryptography",

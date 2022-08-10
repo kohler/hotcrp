@@ -306,7 +306,7 @@ class AbbreviationMatcher {
                 ++$npatternw;
             }
         } else {
-            preg_match_all('/(?:\A_+|)[A-Za-z~?!*][A-Za-z~?!*]*|(?:[0-9]|\.[0-9])[0-9.]*/', $upat, $m);
+            preg_match_all('/(?:\A_+|)[A-Za-z~?!*][A-Za-z~?!*]*|(?:[0-9]|\.[0-9])[0-9.]*\**/', $upat, $m);
             $sep = " ";
             foreach ($m[0] as $w) {
                 $re .= $sep . preg_quote($w, "/");
