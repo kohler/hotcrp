@@ -1552,7 +1552,7 @@ class Multivalue_PaperOption extends PaperOption {
         } else if ($v > count($this->values)) {
             return null;
         } else {
-            $e = new AbbreviationEntry($this->values[$v - 1], $idx, TopicSet::MFLAG_TOPIC);
+            $e = new AbbreviationEntry($this->values[$v - 1], $v, TopicSet::MFLAG_TOPIC);
             return $this->values_topic_set()->abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);
         }
     }
