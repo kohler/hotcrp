@@ -352,7 +352,7 @@ class PaperOptionList implements IteratorAggregate {
                 && (($oj->nonpaper ?? false) === true) === $nonpaper) {
                 if ($oj->name ?? null) {
                     $e = AbbreviationEntry::make_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
-                    $s = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL, Conf::MFLAG_OPTION) ?? false;
+                    $s = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL) ?? false;
                 } else {
                     $s = false;
                 }

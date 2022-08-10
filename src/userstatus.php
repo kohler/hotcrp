@@ -623,7 +623,7 @@ class UserStatus extends MessageSet {
             if ((is_int($k) || ctype_digit($k))
                 && $this->conf->topic_set()->name((int) $k)) {
                 $k = (int) $k;
-            } else if (($tid = $this->conf->topic_abbrev_matcher()->find1($k, TopicSet::MFLAG_TOPIC))) {
+            } else if (($tid = $this->conf->topic_set()->find1($k, TopicSet::MFLAG_TOPIC)) > 0) {
                 $k = $tid;
             } else {
                 $cj->bad_topics[] = $k;
@@ -1307,7 +1307,7 @@ class UserStatus extends MessageSet {
             $topics = [];
             foreach ($line as $k => $v) {
                 if (preg_match('/^topic[:\s]\s*(.*?)\s*$/i', $k, $m)) {
-                    if (($tid = $us->conf->topic_abbrev_matcher()->find1($m[1], TopicSet::MFLAG_TOPIC))) {
+                    if (($tid = $us->conf->topic_set()->find1($m[1], TopicSet::MFLAG_TOPIC)) > 0) {
                         $v = trim($v);
                         $topics[$tid] = $v === "" ? 0 : $v;
                     } else {

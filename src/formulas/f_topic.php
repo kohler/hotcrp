@@ -6,15 +6,12 @@ class Topic_Fexpr extends Fexpr {
     private $match;
     function __construct(FormulaCall $ff, Formula $formula) {
         parent::__construct("topic");
-        if ($ff->modifier === false || $ff->modifier === true) {
+        if ($ff->modifier === false || $ff->modifier === [-1]) {
             $this->match = true;
             $this->set_format(Fexpr::FNUMERIC);
-        } else if ($ff->modifier === [false]) {
-            $this->match = false;
-            $this->set_format(Fexpr::FBOOL);
         } else {
             $this->match = $ff->modifier;
-            if (count($this->match) === 1) {
+            if (count($this->match) <= 1 || $this->match[0] === 0) {
                 $this->set_format(Fexpr::FBOOL);
             }
         }
@@ -25,14 +22,8 @@ class Topic_Fexpr extends Fexpr {
                 $arg = substr($arg, 1);
             }
             $w = new SearchWord($arg, $arg);
-            if (strcasecmp($w->word, "any") === 0 && !$w->quoted) {
-                $ff->modifier = true;
-            } else if (strcasecmp($w->word, "none") === 0 && !$w->quoted) {
-                $ff->modifier = [false];
-            } else {
-                $ff->modifier = $formula->conf->topic_abbrev_matcher()->find_all($w->word);
-                // XXX warn if no match
-            }
+            $ff->modifier = $formula->conf->topic_set()->find_all($w->word);
+            // XXX warn if no match
             return true;
         } else {
             return false;
@@ -40,15 +31,21 @@ class Topic_Fexpr extends Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $state->queryOptions["topics"] = true;
-        $prow = $state->_prow();
+        $texpr = $state->_prow() . "->topic_list()";
         if ($this->match === true) {
-            return "count({$prow}->topic_list())";
-        } else if ($this->match === false) {
-            return "empty({$prow}->topic_list())";
-        } else if ($this->format() === Fexpr::FBOOL) {
-            return "in_array({$this->match[0]},{$prow}->topic_list())";
+            return "count({$texpr})";
+        } else if ($this->match === []) {
+            return "false";
         } else {
-            return "count(array_intersect({$prow}->topic_list()," . json_encode($this->match) . '))';
+            $none = $this->match[0] === 0;
+            $ts = $none ? array_slice($this->match, 1) : $this->match;
+            if ($ts === []) {
+                return "empty({$texpr})";
+            } else if (count($ts) === 1) {
+                return ($none ? "!" : "") . "in_array({$ts[0]},{$texpr})";
+            } else {
+                return ($none ? "empty" : "count") . "(array_intersect({$texpr}," . json_encode($ts) . "))";
+            }
         }
     }
 }

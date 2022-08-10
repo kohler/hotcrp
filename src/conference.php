@@ -1540,11 +1540,6 @@ class Conf {
         return $this->_topic_set;
     }
 
-    /** @return AbbreviationMatcher<int> */
-    function topic_abbrev_matcher() {
-        return $this->topic_set()->abbrev_matcher();
-    }
-
     function invalidate_topics() {
         $this->_topic_set = null;
         $this->_paper_opts->invalidate_intrinsic_option(PaperOption::TOPICSID);

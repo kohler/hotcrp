@@ -217,22 +217,53 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
 
     const MFLAG_TOPIC = 1;
     const MFLAG_GROUP = 2;
+    const MFLAG_SPECIAL = 4;
     /** @return AbbreviationMatcher<int> */
     function abbrev_matcher() {
         if ($this->_topic_abbrev_matcher === null) {
-            $this->_topic_abbrev_matcher = new AbbreviationMatcher;
+            $am = $this->_topic_abbrev_matcher = new AbbreviationMatcher;
             foreach ($this->_topic_map as $tid => $tname) {
-                $this->_topic_abbrev_matcher->add_phrase($tname, $tid, self::MFLAG_TOPIC);
+                $am->add_phrase($tname, $tid, self::MFLAG_TOPIC);
             }
             foreach ($this->group_list() as $tg) {
                 if ($tg->size() > 1) {
                     foreach ($tg->members() as $tid) {
-                        $this->_topic_abbrev_matcher->add_phrase($tg->name, $tid, self::MFLAG_GROUP);
+                        $am->add_phrase($tg->name, $tid, self::MFLAG_GROUP);
                     }
                 }
             }
+            $am->add_keyword("none", 0, self::MFLAG_SPECIAL);
+            $am->add_keyword("any", -1, self::MFLAG_SPECIAL);
         }
         return $this->_topic_abbrev_matcher;
+    }
+
+    /** @param string $pattern
+     * @param int $tflags
+     * @return list<int> */
+    function find_all($pattern, $tflags = 0) {
+        if ($tflags === 0
+            && ($colon = strpos($pattern, ":")) !== false) {
+            $pword = ltrim(substr($pattern, $colon + 1));
+            $any = strcasecmp($pword, "any") === 0;
+            if ($any || strcasecmp($pword, "none") === 0) {
+                $ts = $this->abbrev_matcher()->find_all(substr($pattern, 0, $colon), self::MFLAG_GROUP);
+                if (!empty($ts)) {
+                    if (!$any) {
+                        array_unshift($ts, 0);
+                    }
+                    return $ts;
+                }
+            }
+        }
+        return $this->abbrev_matcher()->find_all($pattern, $tflags);
+    }
+
+    /** @param string $pattern
+     * @param int $tflags
+     * @return ?int */
+    function find1($pattern, $tflags = 0) {
+        return $this->abbrev_matcher()->find1($pattern, $tflags);
     }
 
     /** @param 'long'|'medium'|'short' $lenclass

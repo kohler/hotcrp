@@ -7,50 +7,30 @@ class Topic_SearchTerm extends SearchTerm {
     private $topics;
     private $negated;
 
-    /** @param true|list<int> $topics */
+    /** @param true|list<int> $topics
+     * @param bool $negated */
     function __construct($topics, $negated) {
         parent::__construct("topic");
         $this->topics = $topics;
         $this->negated = $negated;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        $value = null;
-        $negated = false;
         $word = simplify_whitespace($word);
-        if (strcasecmp($word, "any") === 0) {
-            $value = true;
-        } else if (strcasecmp($word, "none") === 0) {
-            $value = true;
-            $negated = true;
-        } else if ($word === "") {
-            $srch->lwarning($sword, "<0>Topic required");
+        $tlist = $srch->conf->topic_set()->find_all($word);
+        if (empty($tlist)) {
+            $srch->lwarning($sword, "<0>Topic ‘{$word}’ not found");
             return new False_SearchTerm;
+        } else if ($tlist === [-1]) {
+            return new Topic_SearchTerm(true, false);
+        } else if ($tlist[0] === 0) {
+            return new Topic_SearchTerm(count($tlist) === 1 ? true : array_slice($tlist, 1), true);
         } else {
-            $tam = $srch->conf->topic_abbrev_matcher();
-            $value = [];
-            $pword = "";
-            if (($colon = strpos($word, ":")) !== false) {
-                $pword = ltrim(substr($word, $colon + 1));
-            }
-            if (strcasecmp($pword, "any") === 0
-                && ($value = $tam->find_all(substr($word, 0, $colon)))) {
-            } else if (strcasecmp($pword, "none") === 0
-                       && ($value = $tam->find_all(substr($word, 0, $colon)))) {
-                $negated = true;
-            } else {
-                $value = $tam->find_all($word);
-            }
-            if (empty($value)) {
-                $srch->lwarning($sword, "<0>Topic ‘{$word}’ not found");
-            }
+            return new Topic_SearchTerm($tlist, false);
         }
-        return new Topic_SearchTerm($value, $negated);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $tm = "";
-        if ($this->topics === []) {
-            return "false";
-        } else if (is_array($this->topics)) {
+        if (is_array($this->topics)) {
             $tm = " and topicId in (" . join(",", $this->topics) . ")";
         }
         $t = "exists (select * from PaperTopic where paperId=Paper.paperId$tm)";
@@ -63,10 +43,10 @@ class Topic_SearchTerm extends SearchTerm {
         return true;
     }
     function test(PaperInfo $row, $rrow) {
-        if ($this->topics === []) {
-            return false;
-        } else if ($this->topics === true) {
+        if ($this->topics === true) {
             $v = $row->has_topics();
+        } else if (count($this->topics) === 1) {
+            $v = in_array($this->topics[0], $row->topic_list());
         } else {
             $v = !!array_intersect($this->topics, $row->topic_list());
         }
