@@ -1483,8 +1483,8 @@ class Multivalue_PaperOption extends PaperOption {
     protected $values;
     /** @var ?list<int> */
     protected $ids;
-    /** @var ?AbbreviationMatcher */
-    private $_values_am;
+    /** @var ?TopicSet */
+    private $_values_ts;
 
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
@@ -1509,18 +1509,15 @@ class Multivalue_PaperOption extends PaperOption {
         $this->values = $values;
     }
 
-    /** @return AbbreviationMatcher<int> */
-    protected function values_abbrev_matcher() {
-        if ($this->_values_am === null) {
-            $this->_values_am = new AbbreviationMatcher;
-            foreach ($this->values as $id => $name) {
-                $this->_values_am->add_phrase($name, $id + 1);
-            }
-            if (!$this->required) {
-                $this->_values_am->add_keyword("none", 0);
+    /** @return TopicSet */
+    protected function values_topic_set() {
+        if ($this->_values_ts === null) {
+            $this->_values_ts = new TopicSet($this->conf);
+            foreach ($this->values as $idx => $name) {
+                $this->_values_ts->__add($idx + 1, $name);
             }
         }
-        return $this->_values_am;
+        return $this->_values_ts;
     }
 
     function jsonSerialize() {
@@ -1547,16 +1544,16 @@ class Multivalue_PaperOption extends PaperOption {
         }
     }
 
-    /** @param int $idx
+    /** @param int $v
      * @return ?string */
-    function value_search_keyword($idx) {
-        if ($idx <= 0) {
+    function value_search_keyword($v) {
+        if ($v <= 0) {
             return "none";
-        } else if ($idx > count($this->values)) {
+        } else if ($v > count($this->values)) {
             return null;
         } else {
-            $e = new AbbreviationEntry($this->values[$idx - 1], $idx);
-            return $this->values_abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);
+            $e = new AbbreviationEntry($this->values[$v - 1], $idx, TopicSet::MFLAG_TOPIC);
+            return $this->values_topic_set()->abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);
         }
     }
 }
@@ -1657,17 +1654,17 @@ class Selector_PaperOption extends Multivalue_PaperOption {
         return $a;
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {
-        $vs = $this->values_abbrev_matcher()->findp($sword->cword);
+        $vs = $this->values_topic_set()->findp($sword->cword);
         if (empty($vs)) {
             if ($sword->cword === "") {
                 $srch->lwarning($sword, "<0>Match required");
-            } else if (($vs2 = $this->values_abbrev_matcher()->find_all($sword->cword))) {
+            } else if (($vs2 = $this->values_topic_set()->find_all($sword->cword))) {
                 $srch->lwarning($sword, "<0>‘{$sword->cword}’ is ambiguous for " . $this->title());
                 $ts = array_map(function ($x) { return "‘" . $this->values[$x-1] . "’"; }, $vs2);
                 $srch->msg_at(null, "<0>Try " . commajoin($ts, " or ") . ", or use ‘{$sword->cword}*’ to match them all.", MessageSet::INFORM);
             } else {
                 $srch->lwarning($sword, "<0>No " . $this->title() . " choices match ‘{$sword->cword}’");
-                if (!empty($this->values)) {
+                if (!empty($this->values) && count($this->values) <= 10) {
                     $ts = array_map(function ($t) { return "‘{$t}’"; }, $this->values);
                     $srch->msg_at(null, "<0>Choices are " . commajoin($ts, " and ") . ".", MessageSet::INFORM);
                 }

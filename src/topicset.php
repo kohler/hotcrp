@@ -266,6 +266,13 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         return $this->abbrev_matcher()->find1($pattern, $tflags);
     }
 
+    /** @param string $pattern
+     * @param int $tflags
+     * @return list<int> */
+    function findp($pattern, $tflags = 0) {
+        return $this->abbrev_matcher()->findp($pattern, $tflags);
+    }
+
     /** @param 'long'|'medium'|'short' $lenclass
      * @param string $tname
      * @return 'long'|'medium'|'short' */
