@@ -300,7 +300,7 @@ class Fmt {
             return $this->_addj_list($m);
         } else if (is_object($m)) {
             return $this->_addj_object($m);
-        } else  {
+        } else {
             return false;
         }
     }
@@ -442,8 +442,8 @@ class Fmt {
             && count($args) > 0
             && preg_match('/%(?:(\d+)(\[[^\[\]\$]*\]|)\$)?(#[AON]?|)(\d*(?:\.\d+)?)([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
             $argi = $m[1] ? +$m[1] : ++$argnum;
-            if (isset($args[$argi - 1])) {
-                $val = $args[$argi - 1];
+            if (($fa = self::find_arg($args, $argi - 1))) {
+                $val = $fa->value;
                 if ($m[2]) {
                     assert(is_array($val));
                     $val = $val[substr($m[2], 1, -1)] ?? null;
@@ -485,7 +485,15 @@ class Fmt {
         if (preg_match('/\{(|0|[1-9]\d*|[a-zA-Z_]\w*)(|\[[^\]]*\])(|:(?:[^\}]|\}\})*)\}/A', $s, $m, 0, $pos)
             && ($m[1] !== "" || ($argnum !== null && $m[2] === ""))
             && !($im && $im->no_conversions && ($m[1] === "" || ctype_digit($m[1])))) {
-            if (($fa = self::find_arg($args, strtolower($m[1])))) {
+            if ($m[1] === "") {
+                $fa = self::find_arg($args, $argnum);
+                ++$argnum;
+            } else if (ctype_digit($m[1])) {
+                $fa = self::find_arg($args, intval($m[1]));
+            } else {
+                $fa = self::find_arg($args, strtolower($m[1]));
+            }
+            if ($fa) {
                 return [$pos + strlen($m[0]), $fa->value];
             } else if (($imt = $this->find($context, strtolower($m[1]), [$m[1]], null))
                        && $imt->template) {

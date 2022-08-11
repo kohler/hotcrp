@@ -3,6 +3,8 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class SearchExample {
+    /** @var ?PaperOption */
+    public $opt;
     /** @var string */
     public $q;
     /** @var ?string */
@@ -15,19 +17,14 @@ class SearchExample {
     public $param_q;
 
     /** @param string $q
-     * @param ?string $description
-     * @param null|string|list<string> $params
+     * @param ?string $param_q
+     * @param string $description
+     * @param list<string> ...$params
      * @param ?string $param_q */
-    function __construct($q, $description = null, $params = null, $param_q = null) {
+    function __construct($q, $param_q, $description, ...$params) {
         $this->q = $q;
-        $this->description = $description;
-        if ($params === null) {
-            $this->params = [];
-        } else if (is_string($params)) {
-            $this->params = [$params];
-        } else {
-            $this->params = $params;
-        }
         $this->param_q = $param_q;
+        $this->description = $description;
+        $this->params = $params;
     }
 }

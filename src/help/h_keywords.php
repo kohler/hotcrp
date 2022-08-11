@@ -58,27 +58,35 @@ class Keywords_HelpTopic {
                 return PaperOption::compare($a, $b);
             }
         });
-        $oex = [];
+        $oexs = [];
         foreach ($opts as $o) {
-            $oex = array_merge($oex, $o->search_examples($hth->user, PaperOption::EXAMPLE_HELP));
+            foreach ($o->search_examples($hth->user, PaperOption::EXAMPLE_HELP) as $ex) {
+                if ($ex) {
+                    $ex->opt = $o;
+                    $oexs[] = $ex;
+                }
+            }
         }
 
-        if (!empty($oex)) {
+        if (!empty($oexs)) {
             echo $hth->tgroup("Submission fields");
-            for ($i = 0; $i !== count($oex); ++$i) {
-                if (($ex = $oex[$i]) && $ex->description) {
+            for ($i = 0; $i !== count($oexs); ++$i) {
+                if (($ex = $oexs[$i]) && $ex->description) {
                     $others = [];
-                    for ($j = $i + 1; $j !== count($oex); ++$j) {
-                        if ($oex[$j] && $oex[$j]->description === $ex->description) {
-                            $others[] = htmlspecialchars($oex[$j]->q);
-                            $oex[$j] = null;
+                    for ($j = $i + 1; $j !== count($oexs); ++$j) {
+                        if ($oexs[$j] && $oexs[$j]->description === $ex->description) {
+                            $others[] = htmlspecialchars($oexs[$j]->q);
+                            $oexs[$j] = null;
                         }
                     }
                     $q = $ex->q;
                     if ($ex->param_q) {
                         $q = preg_replace('/<.*?>(?=\z|"\z)/', $ex->param_q, $q);
                     }
-                    $desc = $hth->conf->_($ex->description, ...$ex->params);
+                    $args = $ex->params;
+                    $args[] = new FmtArg("title", $ex->opt->title());
+                    $args[] = new FmtArg("id", $ex->opt->readable_formid());
+                    $desc = Ftext::unparse_as($hth->conf->_($ex->description, ...$args), 5);
                     if (!empty($others)) {
                         $desc .= '<div class="hint">Also ' . join(", ", $others) . '</div>';
                     }

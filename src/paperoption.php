@@ -1365,7 +1365,10 @@ class PaperOption implements JsonSerializable {
     /** @return SearchExample */
     function has_search_example() {
         assert($this->search_keyword() !== false);
-        return new SearchExample("has:" . $this->search_keyword(), "submission field “%s” set", $this->title_html());
+        return new SearchExample(
+            "has:" . $this->search_keyword(), "",
+            "<0>submission’s {title} field is set"
+        );
     }
     /** @return ?SearchTerm */
     function parse_search(SearchWord $sword, PaperSearch $srch) {
@@ -1396,7 +1399,7 @@ class PaperOption implements JsonSerializable {
     function parse_fexpr(FormulaCall $fcall, &$t) {
         return null;
     }
-    /** @return Fexpr */
+    /** @return OptionPresent_Fexpr */
     final function present_fexpr() {
         return new OptionPresent_Fexpr($this);
     }
@@ -1549,10 +1552,10 @@ class Multivalue_PaperOption extends PaperOption {
     function value_search_keyword($v) {
         if ($v <= 0) {
             return "none";
-        } else if ($v > count($this->values)) {
+        } else if (($vx = $this->values[$v - 1] ?? null) === null) {
             return null;
         } else {
-            $e = new AbbreviationEntry($this->values[$v - 1], $v, TopicSet::MFLAG_TOPIC);
+            $e = new AbbreviationEntry($vx, $v, TopicSet::MFLAG_TOPIC);
             return $this->values_topic_set()->abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);
         }
     }
@@ -1584,13 +1587,14 @@ class Selector_PaperOption extends Multivalue_PaperOption {
             $iv = ctype_digit($v) ? intval($v) : -1;
             if ($iv > 0 && isset($this->values[$iv - 1])) {
                 return PaperValue::make($prow, $this, $iv);
-            } else if (($iv = array_search($v, $this->values)) !== false) {
-                return PaperValue::make($prow, $this, $iv + 1);
+            } else if (($idx = array_search($v, $this->values)) !== false) {
+                return PaperValue::make($prow, $this, $idx + 1);
             } else {
                 return PaperValue::make_estop($prow, $this, "<0>Value doesn’t match any of the options");
             }
         }
     }
+
     function parse_json(PaperInfo $prow, $j) {
         $v = false;
         if ($j === null || $j === 0) {
@@ -1606,6 +1610,7 @@ class Selector_PaperOption extends Multivalue_PaperOption {
             return PaperValue::make_estop($prow, $this, "<0>Value doesn’t match any of the options");
         }
     }
+
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $pt->print_editable_option_papt($this, null,
             $this->type === "selector"
@@ -1646,13 +1651,18 @@ class Selector_PaperOption extends Multivalue_PaperOption {
     function selector_option_search($idx) {
         return $this->value_search_keyword($idx);
     }
+
     function search_examples(Contact $viewer, $context) {
         $a = [$this->has_search_example()];
         if (($q = $this->value_search_keyword(2))) {
-            $a[] = new SearchExample($this->search_keyword() . ":<value>", "submission’s “%s” field has value “%s”", [$this->title_html(), htmlspecialchars($this->values[1])], $q);
+            $a[] = new SearchExample(
+                $this->search_keyword() . ":<value>", $q,
+                "<0>submission’s {title} field has value ‘{0}’", $this->values[1]
+            );
         }
         return $a;
     }
+
     function parse_search(SearchWord $sword, PaperSearch $srch) {
         $vs = $this->values_topic_set()->findp($sword->cword);
         if (empty($vs)) {
@@ -1676,9 +1686,11 @@ class Selector_PaperOption extends Multivalue_PaperOption {
             return null;
         }
     }
+
     function present_script_expression() {
         return ["type" => "selector", "formid" => $this->formid];
     }
+
     function value_script_expression() {
         return $this->present_script_expression();
     }
@@ -2047,7 +2059,10 @@ class Text_PaperOption extends PaperOption {
     function search_examples(Contact $viewer, $context) {
         return [
             $this->has_search_example(),
-            new SearchExample($this->search_keyword() . ":<text>", "submission’s “%s” field contains “hello”", $this->title_html(), "hello")
+            new SearchExample(
+                $this->search_keyword() . ":<text>", "hello",
+                "submission’s {title} field contains ‘hello’"
+            )
         ];
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {
@@ -2266,8 +2281,14 @@ class Attachments_PaperOption extends PaperOption {
     function search_examples(Contact $viewer, $context) {
         return [
             $this->has_search_example(),
-            new SearchExample($this->search_keyword() . ":<count>", "submission has three or more “%s” attachments", $this->title_html(), ">2"),
-            new SearchExample($this->search_keyword() . ":\"<filename>\"", "submission has “%s” attachment matching “*.gif”", $this->title_html(), "*.gif")
+            new SearchExample(
+                $this->search_keyword() . ":<count>", ">2",
+                "<0>submission has three or more {title} attachments"
+            ),
+            new SearchExample(
+                $this->search_keyword() . ":\"<filename>\"", "*.gif",
+                "<0>submission has {title} attachment matching “*.gif”"
+            )
         ];
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {
