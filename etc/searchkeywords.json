@@ -264,7 +264,8 @@
     {   "name": "proposedre", "alias": "proposal"   },
     {
         "name": "option",
-        "parse_function": "Option_SearchTerm::parse", "has": "any"
+        "parse_function": "Option_SearchTerm::parse",
+        "deprecated": true
     },
     {   "name": "opt", "alias": "option"   },
     {

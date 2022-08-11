@@ -3,18 +3,15 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class OptionPresent_SearchTerm extends Option_SearchTerm {
-    private $is_multi;
-
-    function __construct(Contact $user, PaperOption $o, $is_multi = false) {
+    function __construct(Contact $user, PaperOption $o) {
         parent::__construct($user, $o, "optionpresent");
-        $this->is_multi = $is_multi;
     }
     function debug_json() {
         return [$this->type, $this->option->search_keyword()];
     }
-    function sqlexpr(SearchQueryInfo $sqi) {
-        $sqi->add_options_columns();
-        return $this->is_multi ? "true" : parent::sqlexpr($sqi);
+    function is_sqlexpr_precise() {
+        return $this->option->always_visible()
+            && $this->option->is_value_present_trivial();
     }
     function test(PaperInfo $row, $xinfo) {
         return $this->user->can_view_option($row, $this->option)

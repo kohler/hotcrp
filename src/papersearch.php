@@ -56,6 +56,18 @@ class SearchWord {
     function source_html() {
         return htmlspecialchars($this->source);
     }
+    /** @param ?string $cword */
+    function set_compar_word($cword) {
+        $cword = $cword ?? $this->word;
+        if ($this->quoted) {
+            $this->compar = "";
+            $this->cword = $cword;
+        } else {
+            preg_match('/\A(?:[=!<>]=?|≠|≤|≥)?/', $cword, $m);
+            $this->compar = $m[0] === "" ? "" : CountMatcher::canonical_relation($m[0]);
+            $this->cword = ltrim(substr($cword, strlen($m[0])));
+        }
+    }
 }
 
 class SearchOperator {
@@ -1673,6 +1685,11 @@ class SearchQueryInfo {
     }
     function add_options_columns() {
         $this->columns["optionIds"] = "coalesce((select group_concat(PaperOption.optionId, '#', value) from PaperOption force index (primary) where paperId=Paper.paperId), '')";
+    }
+    function add_topics_columns() {
+        if ($this->srch->conf->has_topics()) {
+            $this->columns["topicIds"] = "coalesce((select group_concat(topicId) from PaperTopic force index (primary) where PaperTopic.paperId=Paper.paperId), '')";
+        }
     }
     function add_reviewer_columns() {
         $this->_has_my_review = true;

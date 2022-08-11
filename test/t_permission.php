@@ -1524,8 +1524,7 @@ class Permission_Tester {
 
     function test_search_submission_field() {
         assert_search_papers($this->u_chair, "has:calories", "1 2 3 4 5");
-        assert_search_papers($this->u_chair, "opt:calories", "1 2 3 4 5");
-        assert_search_papers($this->u_chair, "-opt:calories", "6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
+        assert_search_papers($this->u_chair, "-has:calories", "6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
         assert_search_papers($this->u_chair, "calories:any", "1 2 3 4 5");
         assert_search_papers($this->u_chair, "calories:none", "6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
         assert_search_papers($this->u_chair, "calories>200", "1 3 4");

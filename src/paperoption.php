@@ -1024,6 +1024,12 @@ class PaperOption implements JsonSerializable {
     function unparse_visibility() {
         return self::$visibility_map[$this->_visibility];
     }
+    /** @return bool */
+    function always_visible() {
+        return $this->_visibility === self::VIS_SUB
+            && !$this->final
+            && $this->exists_if === null;
+    }
 
     /** @return bool */
     function test_exists(PaperInfo $prow) {
@@ -1115,12 +1121,16 @@ class PaperOption implements JsonSerializable {
     function has_attachments() {
         return false;
     }
+    /** @return bool */
+    function is_value_present_trivial() {
+        return !$this->include_empty;
+    }
 
     function value_force(PaperValue $ov) {
     }
     /** @return bool */
     function value_present(PaperValue $ov) {
-        return !!$ov->value;
+        return $ov->value !== null;
     }
     /** @param PaperValue $av
      * @param PaperValue $bv */
@@ -1265,7 +1275,7 @@ class PaperOption implements JsonSerializable {
                     $j = preg_replace('/\A(?: {0,3}[\r\n]*)*/', "", $j);
                 }
             }
-            if ($j !== "" || ($flags & self::PARSE_STRING_EMPTY)) {
+            if ($j !== "" || ($flags & self::PARSE_STRING_EMPTY) !== 0) {
                 return PaperValue::make($prow, $this, 1, $j);
             } else {
                 return PaperValue::make($prow, $this);
@@ -1735,6 +1745,9 @@ class Document_PaperOption extends PaperOption {
         } else {
             $ov->set_value_data([], []);
         }
+    }
+    function is_value_present_trivial() {
+        return $this->id > 0;
     }
     function value_present(PaperValue $ov) {
         return ($ov->value ?? 0) > 1 || $ov->value === PaperValue::NEWDOC_VALUE;

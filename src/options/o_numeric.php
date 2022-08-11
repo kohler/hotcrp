@@ -7,9 +7,6 @@ class Numeric_PaperOption extends PaperOption {
         parent::__construct($conf, $args, "plrd");
     }
 
-    function value_present(PaperValue $ov) {
-        return $ov->value !== null;
-    }
     function value_compare($av, $bv) {
         return PaperOption::basic_value_compare($av, $bv);
     }

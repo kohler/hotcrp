@@ -21,12 +21,16 @@ abstract class Option_SearchTerm extends SearchTerm {
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        $sqi->add_options_columns();
-        if (!$this->option->include_empty) {
-            return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id})";
-        } else {
-            return "true";
+        if ($this->option->id > 0) {
+            $sqi->add_options_columns();
+            if (!$this->option->include_empty) {
+                return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id})";
+            }
+        } else if ($this->option->id === PaperOption::TOPICSID) {
+            $sqi->add_topics_columns();
+            return "exists (select * from PaperTopic where paperId=Paper.paperId)";
         }
+        return "true";
     }
 
     static function parse_factory($keyword, Contact $user, $kwfj, $m) {
@@ -41,22 +45,12 @@ abstract class Option_SearchTerm extends SearchTerm {
             return null;
         }
     }
-    /** @param list<PaperOption> $os */
-    static private function make_present($os, Contact $user) {
-        $sts = [];
-        foreach ($os as $o) {
-            $sts[] = new OptionPresent_SearchTerm($user, $o, count($os) > 1);
-        }
-        return SearchTerm::combine("or", $sts);
-    }
+
+    /** @return SearchTerm */
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         // option name and option content
         if ($sword->kwdef->name === "option") {
-            if (!$sword->quoted && strcasecmp($word, "any") === 0) {
-                return self::make_present($srch->conf->options()->normal(), $srch->user);
-            } else if (!$sword->quoted && strcasecmp($word, "none") === 0) {
-                return self::make_present($srch->conf->options()->normal(), $srch->user)->negate();
-            } else if (preg_match('/\A(.*?)(?::|(?=[#=!<>]|≠|≤|≥))(.*)\z/s', $word, $m)) {
+            if (preg_match('/\A(.*?)(?::|(?=[#=!<>]|≠|≤|≥))(.*)\z/s', $word, $m)) {
                 $oname = $m[1];
                 $ocontent = $m[2];
             } else {
@@ -68,45 +62,41 @@ abstract class Option_SearchTerm extends SearchTerm {
             $ocontent = $word;
         }
 
-        // find options by name
-        $os = $srch->conf->abbrev_matcher()->findp($oname, Conf::MFLAG_OPTION);
-        if (empty($os)) {
+        // find option by name
+        $opt = $srch->conf->abbrev_matcher()->find1($oname, Conf::MFLAG_OPTION);
+        if ($opt === null) {
             if (($os2 = $srch->conf->abbrev_matcher()->find_all($oname, Conf::MFLAG_OPTION))) {
                 $ts = array_map(function ($o) { return "‘" . $o->search_keyword() . "’"; }, $os2);
                 $srch->lwarning($sword, "<0>Submission field ‘{$oname}’ is ambiguous");
-                $srch->message_set()->msg_at(null, "<0>Try " . commajoin($ts, " or ") . ", or use ‘{$oname}*’ if you mean to match them all.", MessageSet::INFORM);
+                $srch->message_set()->msg_at(null, "<0>Submission fields include " . commajoin($ts, " and ") . ".", MessageSet::INFORM);
             } else {
                 $srch->lwarning($sword, "<0>Submission field ‘{$oname}’ not found");
             }
             return new False_SearchTerm;
         }
 
+        // parse by delegating to option
+        $sword->set_compar_word($ocontent);
+        return self::parse_option($sword, $srch, $opt);
+    }
+
+    /** @return SearchTerm */
+    static function parse_option(SearchWord $sword, PaperSearch $srch, PaperOption $opt) {
         // handle any/none
-        if (!$sword->quoted && strcasecmp($ocontent, "any") === 0) {
-            return self::make_present($os, $srch->user);
-        } else if (!$sword->quoted && strcasecmp($ocontent, "none") === 0) {
-            return self::make_present($os, $srch->user)->negate();
-        }
-
-        // handle other searches
-        if ($sword->quoted) {
-            $sword->compar = "";
-            $sword->cword = $ocontent;
+        if (!$sword->quoted && strcasecmp($sword->cword, "any") === 0) {
+            return new OptionPresent_SearchTerm($srch->user, $opt);
+        } else if (!$sword->quoted && strcasecmp($sword->cword, "none") === 0) {
+            return (new OptionPresent_SearchTerm($srch->user, $opt))->negate();
         } else {
-            preg_match('/\A(?:[=!<>]=?|≠|≤|≥)?/', $ocontent, $m);
-            $sword->compar = $m[0] === "" ? "" : CountMatcher::canonical_relation($m[0]);
-            $sword->cword = ltrim(substr($ocontent, strlen($m[0])));
-        }
-
-        $ts = [];
-        foreach ($os as $o) {
-            $nwarn = $srch->message_set()->message_count();
-            if (($st = $o->parse_search($sword, $srch))) {
-                $ts[] = $st;
-            } else if ($nwarn === $srch->message_set()->message_count()) {
-                $srch->lwarning($sword, "<0>Submission field ‘{$oname}’ does not support this search");
+            $nmsg = $srch->message_set()->message_count();
+            if (($st = $opt->parse_search($sword, $srch))) {
+                return $st;
+            } else {
+                if ($srch->message_set()->message_count() === $nmsg) {
+                    $srch->lwarning($sword, "<0>Submission field ‘" . $opt->title() . "’ does not support this search");
+                }
+                return new False_SearchTerm;
             }
         }
-        return SearchTerm::combine("or", $ts);
     }
 }

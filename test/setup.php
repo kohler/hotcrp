@@ -554,14 +554,14 @@ function search_text_col($user, $query, $col = "id") {
 
 /** @param Contact $user
  * @return bool */
-function assert_search_papers($user, $query, $result) {
-    return xassert_int_list_eqq(array_keys(search_json($user, $query)), $result);
+function assert_search_papers($user, $query, $expected) {
+    return xassert_int_list_eqq(array_keys(search_json($user, $query)), $expected);
 }
 
 /** @param Contact $user
  * @return bool */
-function assert_search_ids($user, $query, $result) {
-    return xassert_int_list_eqq((new PaperSearch($user, $query))->paper_ids(), $result);
+function assert_search_ids($user, $query, $expected) {
+    return xassert_int_list_eqq((new PaperSearch($user, $query))->paper_ids(), $expected);
 }
 
 /** @return bool */

@@ -7,9 +7,6 @@ class RealNumber_PaperOption extends PaperOption {
         parent::__construct($conf, $args, "plrd");
     }
 
-    function value_present(PaperValue $ov) {
-        return $ov->value !== null;
-    }
     function value_compare($av, $bv) {
         $axv = $av ? $av->value : null;
         $bxv = $bv ? $bv->value : null;
