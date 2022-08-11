@@ -275,6 +275,16 @@
         "parser_class": "SubFieldCondition_SettingParser", "parse_order": 2
     },
     {
+        "name_pattern": "sf/$/min",
+        "title": "/Minimum value count",
+        "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0
+    },
+    {
+        "name_pattern": "sf/$/max",
+        "title": "/Maximum value count",
+        "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0
+    },
+    {
         "name": "sf_abstract", "storage": "ova.noAbstract",
         "title": "Submission abstract required",
         "type": "radio",

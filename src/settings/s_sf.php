@@ -14,6 +14,8 @@ class Sf_Setting {
     public $presence;
     public $values;
     public $ids;
+    public $min;
+    public $max;
 
     public $exists_if;
     public $final;
