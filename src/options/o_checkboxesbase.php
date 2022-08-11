@@ -38,11 +38,11 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
             if ($this->min_count > 0
                 && !$ov->prow->allow_absent()
                 && $ov->value_count() < $this->min_count) {
-                $ov->error($this->conf->_("<0>You must select at least {0} values", $this->min_count, new FmtArg("id", $this->readable_formid())));
+                $ov->error($this->conf->_("<0>Select at least {0} values", $this->min_count, new FmtArg("id", $this->readable_formid())));
             }
             if ($this->max_count > 0
                 && $ov->value_count() > $this->max_count) {
-                $ov->error($this->conf->_("<0>You may select at most {0} values", $this->max_count, new FmtArg("id", $this->readable_formid())));
+                $ov->error($this->conf->_("<0>Select at most {0} values", $this->max_count, new FmtArg("id", $this->readable_formid())));
             }
         }
     }
