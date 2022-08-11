@@ -301,12 +301,12 @@
         "type": "checkbox"
     },
     {
-        "name": "author_max", "storage": "ova.maxAuthors", "type": "nonnegint",
+        "name": "sf_author_max", "storage": "ova.maxAuthors", "type": "nonnegint",
         "title": "Maximum authors per submission",
         "default_value": 0
     },
     {
-        "name": "author_min", "storage": "ova.minAuthors", "type": "nonnegint",
+        "name": "sf_author_min", "storage": "ova.minAuthors", "type": "nonnegint",
         "title": "Minimum authors per submission",
         "default_value": 0
     },
