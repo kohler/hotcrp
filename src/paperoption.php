@@ -729,6 +729,7 @@ class PaperOption implements JsonSerializable {
         "checkbox" => "+Checkbox_PaperOption",
         "radio" => "+Selector_PaperOption",
         "selector" => "+Selector_PaperOption",
+        "checkboxes" => "+Checkboxes_PaperOption",
         "numeric" => "+Numeric_PaperOption",
         "realnumber" => "+RealNumber_PaperOption",
         "text" => "+Text_PaperOption",
@@ -1403,6 +1404,16 @@ class PaperOption implements JsonSerializable {
     function value_script_expression() {
         return null;
     }
+    /** @param list $values
+     * @return array|bool|null */
+    function match_script_expression($values) {
+        $se = $this->value_script_expression();
+        if (is_array($se)) {
+            return ["type" => "in", "child" => [$se], "values" => $values];
+        } else {
+            return $se;
+        }
+    }
 
     /** @param string &$t
      * @return ?Fexpr */
@@ -1412,6 +1423,43 @@ class PaperOption implements JsonSerializable {
     /** @return OptionPresent_Fexpr */
     final function present_fexpr() {
         return new OptionPresent_Fexpr($this);
+    }
+
+    /** @param bool $allow_ambiguous
+     * @return ?SearchTerm */
+    function parse_topic_set_search(SearchWord $sword, PaperSearch $srch, TopicSet $ts,
+                                    $allow_ambiguous) {
+        if ($sword->cword === "") {
+            $srch->lwarning($sword, "<0>Match required");
+            return null;
+        }
+
+        $vs = $allow_ambiguous ? $ts->find_all($sword->cword) : $ts->findp($sword->cword);
+        if (empty($vs)) {
+            if (($vs2 = $ts->find_all($sword->cword))) {
+                $srch->lwarning($sword, $this->conf->_("<0>{title} ‘{0}’ is ambiguous", $sword->cword, new FmtArg("title", $this->title()), new FmtArg("id", $this->readable_formid())));
+                $txts = array_map(function ($x) use ($ts) { return "‘{$ts[$x]}’"; }, $vs2);
+                $srch->msg_at(null, "<0>Try " . commajoin($txts, " or ") . ", or use ‘{$sword->cword}*’ to match them all.", MessageSet::INFORM);
+            } else {
+                $srch->lwarning($sword, $this->conf->_("<0>{title} ‘{0}’ not found", $sword->cword, new FmtArg("title", $this->title()), new FmtArg("id", $this->formid)));
+                if ($ts->count() <= 10) {
+                    $txts = array_map(function ($t) { return "‘{$t}’"; }, $ts->as_array());
+                    $srch->msg_at(null, "<0>Choices are " . commajoin($txts, " and ") . ".", MessageSet::INFORM);
+                }
+                return null;
+            }
+        }
+
+        if (!in_array($sword->compar, ["", "=", "!="], true)) {
+            return null;
+        }
+        $negate = ($sword->compar === "!=") !== ($vs[0] === 0);
+        if ($vs === [-1] || $vs === [0]) {
+            return (new OptionPresent_SearchTerm($srch->user, $this))->negate_if($negate);
+        } else {
+            $vs = array_slice($vs, $vs[0] === 0 ? 1 : 0);
+            return (new OptionValueIn_SearchTerm($srch->user, $this, $vs))->negate_if($negate);
+        }
     }
 }
 
@@ -1491,19 +1539,22 @@ class Checkbox_PaperOption extends PaperOption {
     }
 }
 
-class Multivalue_PaperOption extends PaperOption {
+trait Multivalue_OptionTrait {
     /** @var list<string> */
-    protected $values;
+    public $values;
     /** @var ?list<int> */
-    protected $ids;
+    public $ids;
     /** @var ?TopicSet */
     private $_values_ts;
 
-    function __construct(Conf $conf, $args) {
-        parent::__construct($conf, $args);
-        $this->values = $args->values ?? /* XXX */ $args->selector ?? [];
-        if (isset($args->ids) && count($args->ids) === count($this->values)) {
-            $this->ids = $args->ids;
+    /** @param list<string> $values
+     * @param ?list<int> $ids */
+    function assign_values($values, $ids) {
+        $this->values = $values;
+        if ($ids !== null && count($ids) === count($values)) {
+            $this->ids = $ids;
+        } else {
+            $this->ids = null;
         }
     }
 
@@ -1517,14 +1568,15 @@ class Multivalue_PaperOption extends PaperOption {
         return $this->ids ?? range(1, count($this->values));
     }
 
-    /** @param list<string> $values */
-    function set_values($values) {
-        $this->values = $values;
+    /** @return bool */
+    function is_ids_nontrivial() {
+        return $this->ids !== null && $this->ids !== range(1, count($this->values));
     }
 
     /** @return TopicSet */
     protected function values_topic_set() {
         if ($this->_values_ts === null) {
+            /** @phan-suppress-next-line PhanUndeclaredProperty */
             $this->_values_ts = new TopicSet($this->conf);
             foreach ($this->values as $idx => $name) {
                 $this->_values_ts->__add($idx + 1, $name);
@@ -1533,27 +1585,19 @@ class Multivalue_PaperOption extends PaperOption {
         return $this->_values_ts;
     }
 
-    function jsonSerialize() {
-        $j = parent::jsonSerialize();
-        $j->values = $this->values;
-        if (!empty($this->ids)
-            && $this->ids !== range(1, count($this->values))) {
-            $j->ids = $this->ids;
-        }
-        return $j;
-    }
-
-    function unparse_setting($sfs) {
-        parent::unparse_setting($sfs);
+    /** @param Sf_Setting $sfs */
+    function unparse_values_setting($sfs) {
         $sfs->values = $this->values;
         $sfs->ids = $this->ids();
 
         $sfs->xvalues = [];
         foreach ($this->values as $idx => $s) {
-            $sfs->xvalues[] = $sfv = new SfValue_Setting;
-            $sfv->id = $sfs->ids[$idx];
-            $sfv->order = $sfv->old_value = $idx + 1;
-            $sfv->name = $s;
+            if ($s !== null) {
+                $sfs->xvalues[] = $sfv = new SfValue_Setting;
+                $sfv->id = $sfs->ids[$idx];
+                $sfv->order = $sfv->old_value = count($sfs->xvalues);
+                $sfv->name = $s;
+            }
         }
     }
 
@@ -1571,15 +1615,31 @@ class Multivalue_PaperOption extends PaperOption {
     }
 }
 
-class Selector_PaperOption extends Multivalue_PaperOption {
+class Selector_PaperOption extends PaperOption {
+    use Multivalue_OptionTrait;
+
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
+        $this->assign_values($args->values ?? /* XXX */ $args->selector ?? [], $args->ids ?? null);
     }
 
     /** @return list<string>
      * @deprecated */
     function selector_options() {
         return $this->values();
+    }
+
+    function jsonSerialize() {
+        $j = parent::jsonSerialize();
+        $j->values = $this->values();
+        if ($this->is_ids_nontrivial()) {
+            $j->ids = $this->ids();
+        }
+        return $j;
+    }
+    function unparse_setting($sfs) {
+        parent::unparse_setting($sfs);
+        $this->unparse_values_setting($sfs);
     }
 
     function value_compare($av, $bv) {
@@ -1633,20 +1693,23 @@ class Selector_PaperOption extends Multivalue_PaperOption {
             if (!$ov->value) {
                 $sel[0] = "(Select one)";
             }
-            foreach ($this->values as $val => $text) {
-                $sel[$val + 1] = $text;
+            foreach ($this->values() as $i => $s) {
+                if ($s !== null)
+                    $sel[$i + 1] = $s;
             }
             echo Ht::select($this->formid, $sel, $reqov->value,
                 ["id" => $this->readable_formid(),
                  "data-default-value" => $ov->value ?? 0,
                  "disabled" => $readonly]);
         } else {
-            foreach ($this->values as $val => $text) {
-                echo '<div class="checki"><label><span class="checkc">',
-                    Ht::radio($this->formid, $val + 1, $val + 1 == $reqov->value,
-                        ["data-default-checked" => $val + 1 == $ov->value,
-                         "disabled" => $readonly]),
-                    '</span>', htmlspecialchars($text), '</label></div>';
+            foreach ($this->values() as $i => $s) {
+                if ($s !== null) {
+                    echo '<div class="checki"><label><span class="checkc">',
+                        Ht::radio($this->formid, $i + 1, $i + 1 == $reqov->value,
+                            ["data-default-checked" => $i + 1 == $ov->value,
+                             "disabled" => $readonly]),
+                        '</span>', htmlspecialchars($s), '</label></div>';
+                }
             }
         }
         echo "</div></div>\n\n";
@@ -1674,27 +1737,7 @@ class Selector_PaperOption extends Multivalue_PaperOption {
     }
 
     function parse_search(SearchWord $sword, PaperSearch $srch) {
-        $vs = $this->values_topic_set()->findp($sword->cword);
-        if (empty($vs)) {
-            if ($sword->cword === "") {
-                $srch->lwarning($sword, "<0>Match required");
-            } else if (($vs2 = $this->values_topic_set()->find_all($sword->cword))) {
-                $srch->lwarning($sword, "<0>‘{$sword->cword}’ is ambiguous for " . $this->title());
-                $ts = array_map(function ($x) { return "‘" . $this->values[$x-1] . "’"; }, $vs2);
-                $srch->msg_at(null, "<0>Try " . commajoin($ts, " or ") . ", or use ‘{$sword->cword}*’ to match them all.", MessageSet::INFORM);
-            } else {
-                $srch->lwarning($sword, "<0>No " . $this->title() . " choices match ‘{$sword->cword}’");
-                if (!empty($this->values) && count($this->values) <= 10) {
-                    $ts = array_map(function ($t) { return "‘{$t}’"; }, $this->values);
-                    $srch->msg_at(null, "<0>Choices are " . commajoin($ts, " and ") . ".", MessageSet::INFORM);
-                }
-            }
-            return null;
-        } else if (in_array($sword->compar, ["", "=", "!="], true)) {
-            return (new OptionValueIn_SearchTerm($srch->user, $this, $vs))->negate_if($sword->compar === "!=");
-        } else {
-            return null;
-        }
+        return $this->parse_topic_set_search($sword, $srch, $this->values_topic_set(), false);
     }
 
     function present_script_expression() {

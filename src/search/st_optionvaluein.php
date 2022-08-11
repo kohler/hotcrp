@@ -16,11 +16,12 @@ class OptionValueIn_SearchTerm extends Option_SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         $st = parent::sqlexpr($sqi);
         if ($st !== "true") {
+            $op = count($this->values) === 1 ? "=" : " in ";
             $values = join(",", $this->values);
             if ($this->option->id > 0) {
-                return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id} and value in ({$values}))";
+                return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id} and value{$op}({$values}))";
             } else if ($this->option->id === PaperOption::TOPICSID) {
-                return "exists (select * from PaperTopic where paperId=Paper.paperId and topicId in ({$values}))";
+                return "exists (select * from PaperTopic where paperId=Paper.paperId and topicId{$op}({$values}))";
             }
         }
         return "true";
@@ -42,11 +43,7 @@ class OptionValueIn_SearchTerm extends Option_SearchTerm {
     }
     function script_expression(PaperInfo $row) {
         if ($this->user->can_view_option($row, $this->option)) {
-            if (($se = $this->option->value_script_expression())) {
-                return ["type" => "in", "child" => [$se], "values" => $this->values];
-            } else {
-                return null;
-            }
+            return $this->option->match_script_expression($this->values);
         } else {
             return false;
         }

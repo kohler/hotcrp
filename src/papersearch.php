@@ -2642,7 +2642,6 @@ class PaperSearch extends MessageSet {
             } else {
                 $this->_qe = new True_SearchTerm;
             }
-            //Conf::msg_debugt(json_encode($this->_qe->debug_json()));
 
             // extract regular expressions
             $this->_qe->configure_search(true, $this);
@@ -2721,6 +2720,8 @@ class PaperSearch extends MessageSet {
 
         //Conf::msg_debugt($q);
         //error_log($q);
+        //Conf::msg_debugt(json_encode($this->_qe->debug_json()));
+        //error_log(json_encode($this->_qe->debug_json()));
 
         // actually perform query
         return $this->conf->qe_raw($q);

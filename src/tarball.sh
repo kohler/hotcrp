@@ -301,6 +301,8 @@ src/mergecontacts.php
 src/multiconference.php
 src/options/o_abstract.php
 src/options/o_authors.php
+src/options/o_checkboxes.php
+src/options/o_checkboxesbase.php
 src/options/o_collaborators.php
 src/options/o_contacts.php
 src/options/o_nonblind.php
