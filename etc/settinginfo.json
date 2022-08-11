@@ -301,6 +301,16 @@
         "type": "checkbox"
     },
     {
+        "name": "author_max", "storage": "ova.maxAuthors", "type": "nonnegint",
+        "title": "Maximum authors per submission",
+        "default_value": 0
+    },
+    {
+        "name": "author_min", "storage": "ova.minAuthors", "type": "nonnegint",
+        "title": "Minimum authors per submission",
+        "default_value": 0
+    },
+    {
         "name": "sf_pc_conflicts", "storage": "sub_pcconf",
         "title": "Collect PC conflicts",
         "type": "checkbox", "initial_value": 1
