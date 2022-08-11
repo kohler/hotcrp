@@ -16,7 +16,7 @@ class OptionPresent_SearchTerm extends Option_SearchTerm {
         $sqi->add_options_columns();
         return $this->is_multi ? "true" : parent::sqlexpr($sqi);
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         return $this->user->can_view_option($row, $this->option)
             && ($ov = $row->option($this->option))
             && $this->option->value_present($ov);

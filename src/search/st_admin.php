@@ -44,7 +44,7 @@ class Admin_SearchTerm extends SearchTerm {
             return "(Paper.managerContactId" . CountMatcher::sqlexpr_using($cs) . ")";
         }
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         if (!$this->user->can_view_manager($row)) {
             return $this->match === false || ($this->flags & self::ALLOW_NONE);
         } else if (is_bool($this->match)) {

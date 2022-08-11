@@ -40,7 +40,7 @@ class AuthorMatch_SearchTerm extends SearchTerm {
             return "(Paper.authorInformation!='' or Paper.collaborators!='')";
         }
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         if (!$this->user->allow_view_authors($row)) {
             return false;
         }

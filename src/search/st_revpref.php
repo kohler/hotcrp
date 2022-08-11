@@ -132,7 +132,7 @@ class Revpref_SearchTerm extends SearchTerm {
             return "coalesce((select count(*) from PaperReviewPreference where " . join(" and ", $where) . "),0)" . $this->rpsm->comparison();
         }
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $can_view = $this->user->can_view_preference($row, $this->rpsm->safe_contacts);
         $n = 0;
         foreach ($this->rpsm->contact_set() as $cid) {

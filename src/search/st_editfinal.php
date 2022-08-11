@@ -19,7 +19,7 @@ class EditFinal_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         return "(Paper.outcome>0)";
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         return $row->can_author_edit_final_paper();
     }
     function about_reviews() {

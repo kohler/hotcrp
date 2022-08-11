@@ -63,7 +63,7 @@ final class Conflict_SearchTerm extends SearchTerm {
     function is_sqlexpr_precise() {
         return $this->self;
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         if ($this->self) {
             $n = $row->has_conflict($this->user->contactXid) ? 1 : 0;
         } else {

@@ -32,7 +32,7 @@ class Perm_SearchTerm extends SearchTerm {
             return "(Paper.timeWithdrawn<=0)";
         }
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         if ($this->perm === "author-write") {
             return $row->can_author_edit_paper();
         } else if ($this->perm === "author-write-final") {

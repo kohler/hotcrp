@@ -38,7 +38,7 @@ class PaperPC_SearchTerm extends SearchTerm {
         $sqi->add_column($this->fieldname, "Paper.{$this->fieldname}");
         return "(Paper.{$this->fieldname}" . CountMatcher::sqlexpr_using($this->match) . ")";
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $can_view = "can_view_{$this->kind}";
         return $this->user->$can_view($row)
             && CountMatcher::compare_using($row->{$this->fieldname}, $this->match);

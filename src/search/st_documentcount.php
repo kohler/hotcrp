@@ -21,7 +21,7 @@ class DocumentCount_SearchTerm extends Option_SearchTerm {
         $sqi->add_options_columns();
         return CountMatcher::compare(0, $this->compar, $this->value) ? "true" : parent::sqlexpr($sqi);
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         if ($this->user->can_view_option($row, $this->option)
             && ($ov = $row->option($this->option))) {
             $n = count($this->option->value_dids($ov));

@@ -52,7 +52,7 @@ class Author_SearchTerm extends SearchTerm {
         return $this->csm->single_cid() === $this->user->contactId
             && !$this->csm->test(0);
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $n = 0;
         $can_view = $this->user->allow_view_authors($row);
         if ($this->csm->has_contacts()) {

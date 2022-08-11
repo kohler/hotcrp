@@ -123,7 +123,7 @@ class Tag_SearchTerm extends SearchTerm {
             return self::SQLEXPR_PREFIX . " and (" . join(" or ", $x) . "))";
         }
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $ok = $this->tsm->test($row->searchable_tags($this->user));
         if ($ok && $this->tag1 && !$this->tag1nz) {
             $this->tag1nz = $row->tag_value($this->tag1) != 0;

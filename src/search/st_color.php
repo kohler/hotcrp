@@ -17,7 +17,7 @@ class Color_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         return 'exists (select * from PaperTag where paperId=Paper.paperId)';
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $tags = $row->viewable_tags($this->user);
         $styles = $row->conf->tags()->styles($tags, 0, true);
         return !empty($styles)

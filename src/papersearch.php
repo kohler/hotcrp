@@ -364,9 +364,9 @@ abstract class SearchTerm {
     }
 
 
-    /** @param ?ReviewInfo $rrow
+    /** @param ?ReviewInfo|?CommentInfo $xinfo
      * @return bool */
-    abstract function test(PaperInfo $row, $rrow);
+    abstract function test(PaperInfo $row, $xinfo);
 
 
     /** @param callable(SearchTerm,...):mixed $visitor
@@ -420,7 +420,7 @@ class False_SearchTerm extends SearchTerm {
     function is_sqlexpr_precise() {
         return true;
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         return false;
     }
     function about_reviews() {
@@ -444,7 +444,7 @@ class True_SearchTerm extends SearchTerm {
     function is_sqlexpr_precise() {
         return true;
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         return true;
     }
     function about_reviews() {
@@ -621,8 +621,8 @@ class Not_SearchTerm extends Op_SearchTerm {
             return "true";
         }
     }
-    function test(PaperInfo $row, $rrow) {
-        return !$this->child[0]->test($row, $rrow);
+    function test(PaperInfo $row, $xinfo) {
+        return !$this->child[0]->test($row, $xinfo);
     }
 
     function script_expression(PaperInfo $row) {
@@ -675,9 +675,9 @@ class And_SearchTerm extends Op_SearchTerm {
         }
         return self::andjoin_sqlexpr($ff);
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         foreach ($this->child as $subt) {
-            if (!$subt->test($row, $rrow))
+            if (!$subt->test($row, $xinfo))
                 return false;
         }
         return true;
@@ -765,9 +765,9 @@ class Or_SearchTerm extends Op_SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         return self::orjoin_sqlexpr(self::or_sqlexprs($this->child, $sqi), "false");
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         foreach ($this->child as $subt) {
-            if ($subt->test($row, $rrow))
+            if ($subt->test($row, $xinfo))
                 return true;
         }
         return false;
@@ -827,10 +827,10 @@ class Xor_SearchTerm extends Op_SearchTerm {
             return self::orjoin_sqlexpr($ff, "false");
         }
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $x = false;
         foreach ($this->child as $subt) {
-            if ($subt->test($row, $rrow))
+            if ($subt->test($row, $xinfo))
                 $x = !$x;
         }
         return $x;
@@ -917,9 +917,9 @@ class Then_SearchTerm extends Op_SearchTerm {
         --$sqi->depth;
         return self::orjoin_sqlexpr(array_slice($ff, 0, $this->nthen), "true");
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         for ($i = 0; $i !== $this->nthen; ++$i) {
-            if ($this->child[$i]->test($row, $rrow)) {
+            if ($this->child[$i]->test($row, $xinfo)) {
                 $this->_last_group = $i;
                 return true;
             }
@@ -1283,7 +1283,7 @@ class Limit_SearchTerm extends SearchTerm {
         return empty($ff) ? "true" : self::andjoin_sqlexpr($ff);
     }
 
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $user = $this->user;
         if ((($this->lflag & self::LFLAG_SUBMITTED) !== 0 && $row->timeSubmitted <= 0)
             || (($this->lflag & self::LFLAG_ACTIVE) !== 0 && $row->timeWithdrawn > 0)) {
@@ -1402,7 +1402,7 @@ class TextMatch_SearchTerm extends SearchTerm {
     function is_sqlexpr_precise() {
         return $this->trivial && !$this->authorish;
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $data = $row->{$this->field};
         if ($this->authorish && !$this->user->allow_view_authors($row)) {
             $data = "";
@@ -1581,7 +1581,7 @@ class PaperID_SearchTerm extends SearchTerm {
     function is_sqlexpr_precise() {
         return true;
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         return $this->index_of($row->paperId) !== false;
     }
     function default_sort_column($top, PaperSearch $srch) {
@@ -1771,9 +1771,6 @@ class PaperSearch extends MessageSet {
     private $_then_map;
     /** @var ?array<int,list<string>> */
     private $_highlight_map;
-
-    /** @var ?ReviewInfo */
-    public $test_review;
 
     static public $search_type_names = [
         "a" => "Your submissions",

@@ -36,7 +36,7 @@ class PaperStatus_SearchTerm extends SearchTerm {
     function is_sqlexpr_precise() {
         return true;
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         for ($i = 0; $i < count($this->match); $i += 2) {
             if (!CountMatcher::compare_using($row->{$this->match[$i]}, $this->match[$i+1]))
                 return false;

@@ -111,7 +111,7 @@ class Proposal_SearchTerm extends SearchTerm {
             return "exists (select * from ReviewRequest where paperId=Paper.paperId)";
         }
     }
-    function test(PaperInfo $prow, $rrow) {
+    function test(PaperInfo $prow, $xinfo) {
         $n = 0;
         foreach ($prow->review_requests() as $rqrow) {
             $n += $this->rqsm->test_review_request($this->user, $prow, $rqrow);

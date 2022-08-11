@@ -94,7 +94,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
     function is_sqlexpr_precise() {
         return $this->dtype === DTYPE_SUBMISSION && $this->format_problem === null;
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $dtype = $this->dtype;
         if ($dtype === null) {
             if ($row->finalPaperStorageId > 1
@@ -169,7 +169,7 @@ class Pages_SearchTerm extends SearchTerm {
         PaperPDF_SearchTerm::add_columns($sqi);
         return "true";
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $dtype = DTYPE_SUBMISSION;
         if ($this->user->can_view_decision($row)
             && $row->outcome > 0

@@ -42,7 +42,7 @@ class Topic_SearchTerm extends SearchTerm {
     function is_sqlexpr_precise() {
         return true;
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         if ($this->topics === true) {
             $v = $row->has_topics();
         } else if (count($this->topics) === 1) {

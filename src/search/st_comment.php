@@ -141,7 +141,7 @@ class Comment_SearchTerm extends SearchTerm {
             return "true";
         }
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $textless = $this->type_mask === (CommentInfo::CT_DRAFT | CommentInfo::CT_RESPONSE);
         $n = 0;
         foreach ($row->viewable_comment_skeletons($this->user, $textless) as $crow) {

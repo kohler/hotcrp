@@ -17,7 +17,7 @@ class Emoji_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         return 'exists (select * from PaperTag where paperId=Paper.paperId)';
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $tags = $row->viewable_tags($this->user);
         foreach ($row->conf->tags()->emoji($tags) as $code => $ts) {
             if ($this->codes === null || in_array($code, $this->codes))

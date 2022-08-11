@@ -37,9 +37,14 @@ class ReviewToken_SearchTerm extends SearchTerm {
             return "coalesce({$thistab}.count,0)=0";
         }
     }
-    function test(PaperInfo $prow, $rrow) {
+    function test(PaperInfo $prow, $xinfo) {
         $nr = $nt = 0;
-        foreach ($prow->all_reviews() as $rrow) {
+        if ($xinfo && $xinfo instanceof ReviewInfo) {
+            $rrows = [$xinfo];
+        } else {
+            $rrows = $prow->all_reviews();
+        }
+        foreach ($rrows as $rrow) {
             if ($this->user->can_view_review_assignment($prow, $rrow)) {
                 ++$nr;
                 if ($this->token
@@ -57,6 +62,6 @@ class ReviewToken_SearchTerm extends SearchTerm {
         }
     }
     function about_reviews() {
-        return self::ABOUT_MANY;
+        return self::ABOUT_SELF;
     }
 }

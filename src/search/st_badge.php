@@ -17,7 +17,7 @@ class Badge_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         return 'exists (select * from PaperTag where paperId=Paper.paperId)';
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $tags = $row->viewable_tags($this->user);
         foreach ($row->conf->tags()->badges($tags) as $tb) {
             if ($this->word === "any" || $this->word === $tb[1])

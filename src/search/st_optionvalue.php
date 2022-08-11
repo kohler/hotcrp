@@ -17,7 +17,7 @@ class OptionValue_SearchTerm extends Option_SearchTerm {
     function debug_json() {
         return [$this->type, $this->option->search_keyword()];
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         return $this->user->can_view_option($row, $this->option)
             && ($ov = $row->option($this->option))
             && $ov->value !== null

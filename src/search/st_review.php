@@ -808,11 +808,13 @@ class Review_SearchTerm extends SearchTerm {
             }
         }
     }
-    function test(PaperInfo $prow, $rrow) {
+    function test(PaperInfo $prow, $xinfo) {
         $this->rsm->prepare_reviews($prow);
         $n = 0;
-        if ($this->rsm->can_test_review() && $rrow) {
-            $n += $this->rsm->test_review($this->user, $prow, $rrow);
+        if ($this->rsm->can_test_review()
+            && $xinfo
+            && $xinfo instanceof ReviewInfo) {
+            $n += $this->rsm->test_review($this->user, $prow, $xinfo);
         } else {
             $n = 0;
             foreach ($prow->all_reviews() as $rrow) {

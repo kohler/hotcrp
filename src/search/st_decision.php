@@ -28,7 +28,7 @@ class Decision_SearchTerm extends SearchTerm {
         }
         return "(" . join(" or ", $f) . ")";
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $d = $this->user->can_view_decision($row) ? $row->outcome : 0;
         return CountMatcher::compare_using($d, $this->match);
     }

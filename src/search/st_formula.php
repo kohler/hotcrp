@@ -57,8 +57,12 @@ class Formula_SearchTerm extends SearchTerm {
         $this->formula->add_query_options($sqi->query_options);
         return "true";
     }
-    function test(PaperInfo $row, $rrow) {
+    function test(PaperInfo $row, $xinfo) {
         $formulaf = $this->function;
-        return !!$formulaf($row, $rrow ? $rrow->contactId : null, $this->user);
+        if ($xinfo && $xinfo instanceof ReviewInfo) {
+            return !!$formulaf($row, $xinfo->contactId, $this->user);
+        } else {
+            return !!$formulaf($row, null, $this->user);
+        }
     }
 }
