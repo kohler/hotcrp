@@ -327,21 +327,24 @@ class Review_SettingParser extends SettingParser {
             return $this->apply_review_req($si, $sv);
         } else if ($si->name === "review_default_round"
                    || $si->name === "review_default_external_round") {
-            if (($n = $sv->reqstr($si->name)) !== null) {
+            if (($n = $sv->reqstr($si->name)) !== null
+                && $n !== $sv->oldv($si)) {
                 $this->apply_review_default_round($si, $sv, trim($n));
             }
             return true;
         } else if ($si->name === "review_default_round_index"
                    || $si->name === "review_default_external_round_index") {
-            if (($n = $sv->reqstr($si->name)) !== null) {
+            if (($n = $sv->reqstr($si->name)) !== null
+                && $n !== $sv->oldv($si)) {
                 $this->apply_review_default_round_index($si, $sv, trim($n));
             }
             return true;
         } else if ($si->name2 === "/name") {
-            if (($v = $sv->base_parse_req($si)) !== null) {
-                if (self::clean_name($v, false) === "") {
+            if (($n = $sv->base_parse_req($si)) !== null
+                && $n !== $sv->oldv($si)) {
+                if (self::clean_name($n, false) === "") {
                     $sv->set_req($si->name, "");
-                } else if (($err = Conf::round_name_error($v))) {
+                } else if (($err = Conf::round_name_error($n))) {
                     $sv->error_at($si->name, "<0>{$err}");
                 }
             }

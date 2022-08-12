@@ -1940,7 +1940,7 @@ class Conf {
             return "Round names must start with a letter and contain only letters, numbers, and dashes";
         } else if (str_ends_with($rname, "_") || str_ends_with($rname, "-")) {
             return "Round names must not end in a dash";
-        } else if (preg_match('/\A(?:none|any|all|default|unnamed|.*(?:draft|response|review)|(?:draft|response|review).*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc|ext(?:ernal)|meta)\z/i', $rname)) {
+        } else if (preg_match('/\A(?:none|any|all|default|unnamed|.*(?:draft|response|review)|(?:draft|response).*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc|ext(?:ernal)|meta)\z/i', $rname)) {
             return "Round name ‘{$rname}’ is reserved";
         } else {
             return false;
