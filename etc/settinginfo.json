@@ -206,7 +206,8 @@
     {
         "name_pattern": "sf/$/type",
         "title": "/Field type",
-        "type": "simplestring", "parser_class": "Options_SettingParser"
+        "type": "radio", "values": "auto",
+        "parser_class": "Options_SettingParser"
     },
     {
         "name_pattern": "sf/$/description",

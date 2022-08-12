@@ -52,9 +52,6 @@ class Options_SettingRenderer {
 
     function print_type(SettingValues $sv) {
         $curt = $sv->oldv("sf/{$this->ctr}/type");
-        $jtypes = $sv->conf->option_type_map();
-        uasort($jtypes, "Conf::xt_order_compare");
-
         $otypes = [];
         foreach ($sv->conf->option_type_map() as $uf) {
             if (($uf->name === $curt
@@ -276,9 +273,7 @@ class Options_SettingRenderer {
 
         // render sample options
         echo '<template id="settings-sf-samples" class="hidden">';
-        $jtypes = $sv->conf->option_type_map();
-        uasort($jtypes, "Conf::xt_order_compare");
-        foreach ($jtypes as $uf) {
+        foreach ($sv->conf->option_type_map() as $uf) {
             if (!isset($uf->display_if)
                 || $sv->conf->xt_check($uf->display_if, $uf, $sv->user)) {
                 $args = [
@@ -311,7 +306,6 @@ class Options_SettingRenderer {
             Ht::button("Add submission field", ["class" => "ui js-settings-sf-add"]),
             "</div>\n";
     }
-
 }
 
 class Options_SettingParser extends SettingParser {
@@ -340,6 +334,20 @@ class Options_SettingParser extends SettingParser {
             "order" => 1000,
             "display" => "prominent"
         ]);
+    }
+
+    function values(Si $si, SettingValues $sv) {
+        if ($si->name_matches("sf/", "*", "/type")) {
+            $ot = [];
+            foreach ($sv->conf->option_type_map() as $uf) {
+                if (!isset($uf->display_if)
+                    || $sv->conf->xt_check($uf->display_if, $uf, $sv->user))
+                    $ot[] = $uf->name;
+            }
+            return $ot;
+        } else {
+            return null;
+        }
     }
 
     function set_oldv(Si $si, SettingValues $sv) {

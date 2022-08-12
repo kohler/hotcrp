@@ -5450,6 +5450,7 @@ class Conf {
                     $m[$name] = $uf;
             }
             $this->_option_type_map = $m;
+            uasort($this->_option_type_map, "Conf::xt_order_compare");
         }
         return $this->_option_type_map;
     }
