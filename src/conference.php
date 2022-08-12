@@ -1953,9 +1953,9 @@ class Conf {
         if ($rname === null) {
             return (string) ($this->settingTexts["rev_roundtag"] ?? null);
         } else if ($rname === ""
-                   || !strcasecmp($rname, "(none)")
-                   || !strcasecmp($rname, "none")
-                   || !strcasecmp($rname, "unnamed")) {
+                   || strcasecmp($rname, "(none)") === 0
+                   || strcasecmp($rname, "none") === 0
+                   || strcasecmp($rname, "unnamed") === 0) {
             return "";
         } else if (self::round_name_error($rname)) {
             return false;
@@ -1967,8 +1967,10 @@ class Conf {
     /** @param bool $external
      * @return string */
     function assignment_round_option($external) {
-        $x = $external ? $this->settingTexts["extrev_roundtag"] ?? null : null;
-        $x = $x ?? $this->settingTexts["rev_roundtag"] ?? "";
+        $x = $this->settingTexts["rev_roundtag"] ?? "";
+        if ($external) {
+            $x = $this->settingTexts["extrev_roundtag"] ?? $x;
+        }
         return $x === "" ? "unnamed" : $x;
     }
 
