@@ -64,6 +64,12 @@ lists are identified by their <code>\"id\"</code> components. The
 <code>\"id\"</code> is assigned by HotCRP and should not be changed.</p></li>
 
 
+<li><p><strong>Missing IDs.</strong> If a subsetting is missing a required
+<code>\"id\"</code> component, HotCRP tries matching its <code>\"name\"</code>
+component with those of existing subsettings. Any unmatched objects are
+assumed to be new.</p></li>
+
+
 <li><p><strong>Adding subsettings.</strong> Add a subsetting, such as a new
 submission field, by including an object with <code>\"id\": \"new\"</code>. For
 instance, this JSON adds a new decision type for desk-rejected papers:</p>
@@ -80,12 +86,6 @@ instance, this JSON adds a new decision type for desk-rejected papers:</p>
 <em>from the list</em> will preserve the corresponding setting, since settings
 not mentioned in a JSON file preserve their original values. You must
 explicitly delete subsettings you no longer want.</p></li>
-
-
-<li><p><strong>Missing IDs.</strong> If an object is missing a required
-<code>\"id\"</code> component, HotCRP try matching its <code>\"name\"</code>
-component with those of existing subsettings. Any unmatched objects are
-assumed to be new.</p></li>
 
 
 <li><p><strong>Copying settings between conferences.</strong> Beware of IDs
