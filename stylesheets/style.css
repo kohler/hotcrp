@@ -2333,6 +2333,9 @@ pre.email {
 	padding: 0;
 	list-style-type: none;
 }
+ul.ctable {
+	padding-left: 0;
+}
 .ctable-wide {
 	-webkit-columns: 450px 4;
 	columns: 450px 4;
