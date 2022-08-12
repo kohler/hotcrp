@@ -199,6 +199,9 @@ td.pl.pl_title, td.pl.pl_text {
 .rfd1, .rfd2 {
 	max-width: none;
 }
+.settings-json-panels {
+	grid-template-columns: 100% 0%;
+}
 .settings-json-panel-edit {
 	flex: 1 1 auto;
 }
