@@ -3,11 +3,11 @@
 
 "use strict";
 
-handle_ui.on("js-settings-au-seerev-tag", function (event) {
+handle_ui.on("js-settings-au-seerev-tag", function () {
     $("#review_visibility_author_3").click(); // AUSEEREV_TAGS
 });
 
-handle_ui.on("js-settings-sub-nopapers", function (event) {
+handle_ui.on("js-settings-sub-nopapers", function () {
     var v = $(this).val();
     hotcrp.fold("pdfupload", v == 1, 2);
     hotcrp.fold("pdfupload", v != 0, 3);
@@ -109,8 +109,8 @@ function settings_sf_order() {
     form_highlight("#settingsform");
 }
 
-handle_ui.on("js-settings-sf-type", function (event) {
-    var props, e, name;
+handle_ui.on("js-settings-sf-type", function () {
+    var props, e;
     if (!type_properties) {
         e = document.getElementById("settings-sform");
         type_properties = JSON.parse(e.getAttribute("data-type-properties"));
@@ -129,7 +129,7 @@ handle_ui.on("js-settings-sf-type", function (event) {
     }
 });
 
-handle_ui.on("js-settings-sf-move", function (event) {
+handle_ui.on("js-settings-sf-move", function (evt) {
     var sf = this.closest(".settings-sf");
     if (hasClass(this, "moveup") && sf.previousSibling) {
         sf.parentNode.insertBefore(sf, sf.previousSibling);
@@ -142,7 +142,7 @@ handle_ui.on("js-settings-sf-move", function (event) {
         else
             msg = 'This field will be deleted from the submission form. It is not used on any submissions.';
         settings_delete(sf, msg);
-        foldup.call(sf, event, {n: 2, f: false});
+        foldup.call(sf, evt, {n: 2, f: false});
     }
     settings_sf_order();
 });
@@ -160,7 +160,7 @@ function add_dialog() {
         sft.appendChild(samps[opt.value | 0].cloneNode(true));
         settings_disable_children(sft);
     }
-    function submit(event) {
+    function submit(evt) {
         var opt = cur_option(),
             samp = samps[opt.value | 0],
             h = $$("settings-sf-new").innerHTML,
@@ -173,7 +173,7 @@ function add_dialog() {
         $$("sf/" + next + "/name").focus();
         settings_sf_order();
         $d.close();
-        event.preventDefault();
+        evt.preventDefault();
     }
     function create() {
         var hc = popup_skeleton(), i;
@@ -198,7 +198,7 @@ function add_dialog() {
 
 handle_ui.on("js-settings-sf-add", add_dialog);
 
-$(document).on("hotcrpsettingssf", ".settings-sf", function (evt) {
+$(document).on("hotcrpsettingssf", ".settings-sf", function () {
     var view = document.getElementById(this.id + "/view"),
         edit = document.getElementById(this.id + "/edit"),
         type = document.getElementById(this.id + "/type");
@@ -240,7 +240,7 @@ handle_ui.on("js-settings-banal-pagelimit", function (evt) {
 });
 
 
-handle_ui.on("js-settings-decision-add", function (event) {
+handle_ui.on("js-settings-decision-add", function () {
     var form = this.form, ctr = 1;
     while (form.elements["decision/" + ctr + "/id"])
         ++ctr;
@@ -252,7 +252,7 @@ handle_ui.on("js-settings-decision-add", function (event) {
     form_highlight(form);
 });
 
-handle_ui.on("js-settings-decision-delete", function (event) {
+handle_ui.on("js-settings-decision-delete", function () {
     var dec = this.closest(".settings-decision"),
         ne = this.form.elements[dec.id + "/name"],
         sc = ne.getAttribute("data-exists-count")|0;
@@ -262,7 +262,7 @@ handle_ui.on("js-settings-decision-delete", function (event) {
     form_highlight(this.form);
 });
 
-handle_ui.on("js-settings-automatic-tag-new", function (event) {
+handle_ui.on("js-settings-automatic-tag-new", function () {
     var odiv = this.closest(".settings-automatic-tag"), h, ctr = 1;
     while ($$("automatic_tag/" + ctr))
         ++ctr;
@@ -272,7 +272,7 @@ handle_ui.on("js-settings-automatic-tag-new", function (event) {
     $$("automatic_tag/".concat(ctr, "/tag")).focus();
 });
 
-handle_ui.on("js-settings-automatic-tag-delete", function (event) {
+handle_ui.on("js-settings-automatic-tag-delete", function () {
     var ne = this.form.elements[this.closest(".settings-automatic-tag").id + "/tag"];
     settings_delete(this.closest(".settings-automatic-tag"),
         "This automatic tag will be removed from settings and from <a href=\"".concat(hoturl_html("search", {q: "#" + ne.defaultValue, t: "all"}), '" target="_blank">any matching submissions</a>.'));
@@ -284,7 +284,7 @@ handle_ui.on("js-settings-track-add", function () {
     }
     var trhtml = $("#settings-track-new").html().replace(/\/\$/g, "/" + i);
     $("#track\\/" + (i - 1)).after(trhtml);
-    var $j = $("#track\\/" + i).awaken();
+    $("#track\\/" + i).awaken();
     this.form.elements["track/".concat(i, "/tag")].focus();
 });
 
@@ -306,7 +306,7 @@ handle_ui.on("js-settings-topics-copy", function () {
 
 
 function settings_review_round_selectors() {
-    var a = [], ch, i = 1, form = $$("settingsform");
+    var a = [], ch, form = $$("settingsform");
     for (ch = $("#settings-review-rounds")[0].firstChild; ch; ch = ch.nextSibling) {
         if (!hasClass(ch, "deleted")) {
             var ne = form.elements[ch.id + "/name"],
@@ -390,10 +390,6 @@ var fieldorder = [], original, samples, stemplate, ttemplate,
               "orbu", "Orange to blue", "buor", "Blue to orange",
               "turbo", "Turbo", "turbor", "Turbo reversed",
               "catx", "Category10", "none", "None"];
-
-function get_fid(elt) {
-    return elt.id.replace(/^.*_/, "");
-}
 
 function unparse_value(fieldj, idx) {
     if (fieldj.start && fieldj.start !== 1) {
@@ -496,7 +492,7 @@ function rf_fill(pos, fieldj, setdefault) {
     return false;
 }
 
-function rf_delete() {
+function rf_delete(evt) {
     var rf = this.closest(".settings-rf");
     if (settings_delete(rf, "This field will be deleted from the review form.")) {
         if (rf.hasAttribute("data-rf")) {
@@ -512,7 +508,7 @@ function rf_delete() {
                 $$(rf.id + "/delete_message").innerHTML = t;
             });
         }
-        foldup.call(rf, event, {n: 2, f: false});
+        foldup.call(rf, evt, {n: 2, f: false});
     }
     rf_order();
 }
@@ -580,7 +576,7 @@ function rf_render_view(fieldj) {
     return hc.render();
 }
 
-function rf_move(event) {
+function rf_move() {
     var isup = $(this).hasClass("moveup"),
         $f = $(this).closest(".settings-rf").detach(),
         pos = $f.find(".rf-order").val() | 0,
@@ -685,7 +681,7 @@ function rfs(data) {
 
     rf_order();
     form_highlight("#settingsform");
-};
+}
 
 function add_dialog() {
     var $d, sel;
@@ -701,7 +697,7 @@ function add_dialog() {
         ex.innerHTML = rf_render_view(cur_sample());
         rft.appendChild(ex);
     }
-    function submit(event) {
+    function submit(evt) {
         var sample = cur_sample(),
             has_options = !!sample.values,
             ffmt = has_options ? "s%02d" : "t%02d",
@@ -718,7 +714,7 @@ function add_dialog() {
         rf_fill(fieldorder.length, sample, false);
         document.getElementById("rf/" + fieldorder.length + "/name").focus();
         $d.close();
-        event.preventDefault();
+        evt.preventDefault();
     }
     function create() {
         var hc = popup_skeleton(), i;
@@ -746,14 +742,14 @@ return rfs;
 })();
 
 
-handle_ui.on("js-settings-resp-active", function (event) {
+handle_ui.on("js-settings-resp-active", function () {
     $(".if-response-active").toggleClass("hidden", !this.checked);
 });
 
 $(function () { $(".js-settings-resp-active").trigger("change"); });
 
 handle_ui.on("js-settings-response-new", function () {
-    var i, $rx, $rt = $("#new_response"), t;
+    var i, $rx, $rt = $("#new_response");
     for (i = 1; $$("response/" + i); ++i) {
     }
     $rt.before($rt.html().replace(/\/\$/g, "/" + i));
@@ -889,7 +885,7 @@ function window_selection_inside(el) {
         if (!selm[i >> 1]) {
             return false;
         }
-        var changed = false, end = false;
+        var changed = false;
         while (selx[i] && selx[i].nodeType === 1 && selx[i].tagName !== "BR") {
             var end = selx[i + 1] === selx[i].childNodes.length,
                 ch = selx[i].childNodes[selx[i + 1] - (end ? 1 : 0)];
@@ -1219,7 +1215,7 @@ function make_content_editable(mainel) {
             ln = texts.length;
             lp = 0;
         }
-        let max = texts.length, lsp = 0;
+        let lsp = 0;
         for (let a = 1, y = ln; y !== 0; a <<= 1) {
             if ((y & a) !== 0) {
                 lsp += posd[y];
@@ -1231,11 +1227,10 @@ function make_content_editable(mainel) {
 
     function p2lp(p) {
         posd.length === texts.length || make_posd();
-        let max = texts.length, ln = 0, lsp = 0;
+        let max = texts.length, ln = 0;
         for (let a = posb; a !== 0; a >>= 1) {
             if ((ln | a) < max && posd[ln | a] <= p) {
                 ln |= a;
-                lsp += posd[ln];
                 p -= posd[ln];
             }
         }
@@ -1314,7 +1309,7 @@ function make_content_editable(mainel) {
     };
 }
 
-let json_string_re = /\"(?:[^\\\"\x00-\x1F]|\\[\/\\bfnrt\"]|\\u[0-9a-fA-F]{4})+\"/y;
+let json_string_re = /"(?:[^\\"\x00-\x1F]|\\[/\\bfnrt"]|\\u[0-9a-fA-F]{4})+"/y;
 
 
 // Mark the range [p0, p1) as erroneous with `flags` in `errors`,
@@ -1462,7 +1457,7 @@ function log_line_summary(lineno, lineel) {
 
 function make_utf16tf(text) {
     var ipos = 0, opos = 0, delta = 0, map = [0, 0],
-        re = /[\u0080-\uDBFF\uE000-\uFFFF]/g, m, i, ch;
+        re = /[\u0080-\uDBFF\uE000-\uFFFF]/g, m, ch;
     while ((m = re.exec(text))) {
         ipos += re.lastIndex - 1 - opos;
         opos = re.lastIndex;
@@ -1624,7 +1619,7 @@ var jsonhl_nextcst = [0, 0, 7, 7, 9, 8, 8, 7, 9, 9];
 function jsonhl_line(lineel, st, nsel) {
     var t = lineel.textContent, p = 0, n = t.length, ch,
         cst = st.length ? st.charCodeAt(st.length - 1) - 97 : 1,
-        errors = [0, 0], node;
+        errors = [0, 0];
     st = st.length ? st.substring(0, st.length - 1) : "";
 
     function push_state(stx) {
@@ -1658,7 +1653,7 @@ function jsonhl_line(lineel, st, nsel) {
     }
 
     function check_identifier(id) {
-        var p0 = p, ch;
+        var p0 = p;
         for (++p; p !== n && t.charCodeAt(p) === id.charCodeAt(p - p0); ++p) {
         }
         if (p - p0 < id.length
@@ -1672,7 +1667,7 @@ function jsonhl_line(lineel, st, nsel) {
     }
 
     function check_number() {
-        var p0 = p, p1, c, c0, ok;
+        var p0 = p, c, c0, ok;
         c = t.charCodeAt(p);
         ok = cst >= 1 && cst <= 4 && c !== 46;
         if (c == 45) { // `-`
@@ -1757,14 +1752,13 @@ function jsonhl_line(lineel, st, nsel) {
     }
 
     function check_invalid() {
-        var p0 = p, ch;
+        var p0 = p;
         for (++p; p !== n && !isdelim(t.charCodeAt(p)); ++p) {
         }
         jsonhl_add_error(errors, p0, p, 2);
     }
 
 
-    main_loop:
     while (true) {
         while (p !== n && isspace((ch = t.charCodeAt(p)))) {
             ++p;
@@ -2050,7 +2044,7 @@ function make_json_validate() {
 
     function rehighlight() {
         try {
-            var i, saw_line1 = false, lineel, k, st, st0, x, cmd, nsel;
+            var i, saw_line1 = false, lineel, k, st, x, cmd, nsel;
             if (normalization !== 0) {
                 maince.normalize();
                 if (normalization < 0
@@ -2060,7 +2054,7 @@ function make_json_validate() {
             }
             i = redisplay_ln0;
             lineel = mainel.childNodes[i];
-            st = st0 = states[i];
+            st = states[i];
             cmd = commands[commandPos - 1];
             nsel = window_selection_inside(mainel);
             while (lineel !== null
@@ -2268,8 +2262,8 @@ function make_json_validate() {
         }
     }
 
-    function beforeinput(e) {
-        var t = e.inputType;
+    function beforeinput(evt) {
+        var t = evt.inputType;
         if (t !== "historyUndo") {
             undo_time = null;
         }
@@ -2277,23 +2271,23 @@ function make_json_validate() {
             redo_time = null;
         }
         if (t.startsWith("format")) {
-            e.preventDefault();
+            evt.preventDefault();
         } else if (t === "historyUndo") {
-            e.preventDefault();
-            handle_undo(e.timeStamp);
+            evt.preventDefault();
+            handle_undo(evt.timeStamp);
         } else if (t === "historyRedo") {
-            e.preventDefault();
-            handle_redo(e.timeStamp);
+            evt.preventDefault();
+            handle_redo(evt.timeStamp);
         } else {
-            var r = event_range(e);
+            var r = event_range(evt);
             redisplay_ln0 = r[0];
             redisplay_el1 = r[1] >= 0 ? mainel.childNodes[r[1]] : null;
-            prepare_undo(r, e);
-            e.dataTransfer && (normalization = 1);
+            prepare_undo(r, evt);
+            evt.dataTransfer && (normalization = 1);
         }
     }
 
-    function input(e) {
+    function input() {
         if (!rehighlight_queued) {
             queueMicrotask(rehighlight);
             rehighlight_queued = true;
@@ -2350,7 +2344,7 @@ function make_json_validate() {
         }
     }
 
-    function selectionchange(e) {
+    function selectionchange() {
         var sel = window.getSelection(), lineno, st;
         if (!sel.anchorNode
             || (lineno = maince.lineno(sel.anchorNode)) < 0
@@ -2482,7 +2476,7 @@ function append_rendered_values(es, values) {
 }
 
 function settings_describe(d) {
-    var $i = $(".settings-json-info"), e, es, i, sep;
+    var $i = $(".settings-json-info"), e, es, i;
     $i.empty();
     if (!d) {
         return;
@@ -2522,7 +2516,7 @@ function settings_describe(d) {
     }
 
     if (d.components && d.components.length > 1) {
-        var table, tbody, trs = [], tr, th, td, div, span, comp;
+        var table, tbody, tr, th, td, div, span, comp;
         $i.append((e = document.createElement("div")));
         e.className = "p-sqz";
         e.append(d.type === "oblist" ? "Object components:" : "Components:",
@@ -2584,7 +2578,7 @@ function settings_describe(d) {
     $i.find(".taghh, .badge").each(ensure_pattern_here);
 }
 
-handle_ui.on("click.js-settings-jpath", function (evt) {
+handle_ui.on("click.js-settings-jpath", function () {
     let path = this.querySelector("code.settings-jpath"),
         el = document.getElementById("json_settings"), jpp;
     if (path && el && (jpp = json_path_position(el.value, path.textContent))) {

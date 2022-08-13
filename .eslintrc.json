@@ -1,0 +1,19 @@
+{
+    "env": {
+        "browser": true,
+        "jquery": true
+    },
+    "extends": "eslint:recommended",
+    "parserOptions": {
+        "ecmaVersion": "latest"
+    },
+    "globals": {
+        "hotcrp": "writable",
+        "Set": "readonly",
+        "WeakMap": "readonly"
+    },
+    "rules": {
+        "no-empty": 0,
+        "no-constant-condition": ["error", {"checkLoops": false}]
+    }
+}

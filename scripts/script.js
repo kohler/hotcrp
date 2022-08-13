@@ -33,7 +33,7 @@ function parse_json(s) {
 
 if (typeof Object.assign !== "function") {
     Object.defineProperty(Object, "assign", {
-        value: function assign(target, rest) {
+        value: function assign(target /* , ... */) {
             var d = Object(target), i, s, k, hop = Object.prototype.hasOwnProperty;
             for (i = 1; i < arguments.length; ++i) {
                 s = arguments[i];
@@ -209,6 +209,7 @@ function lower_bound_index(a, v) {
 function string_utf8_index(str, index) {
     var r = 0, m, n;
     while (str && index > 0) {
+        // eslint-disable-next-line no-control-regex
         m = str.match(/^([\x00-\x7F]*)([\u0080-\u07FF]*)([\u0800-\uD7FF\uE000-\uFFFF]*)((?:[\uD800-\uDBFF][\uDC00-\uDFFF])*)/);
         if (!m)
             break;
@@ -369,7 +370,7 @@ function check_message_list(data, options) {
     }
 }
 
-$(document).ajaxError(function (event, jqxhr, options, httperror) {
+$(document).ajaxError(function (evt, jqxhr, options, httperror) {
     if (jqxhr.readyState != 4)
         return;
     var data;
@@ -393,7 +394,7 @@ $(document).ajaxError(function (event, jqxhr, options, httperror) {
     }
 });
 
-$(document).ajaxComplete(function (event, jqxhr, options) {
+$(document).ajaxComplete(function (evt, jqxhr, options) {
     if (options.trackOutstanding) {
         --outstanding;
         while (outstanding === 0 && when0.length)
@@ -403,10 +404,10 @@ $(document).ajaxComplete(function (event, jqxhr, options) {
     }
 });
 
-$.ajaxPrefilter(function (options, originalOptions, jqxhr) {
+$.ajaxPrefilter(function (options) {
     if (options.global === false)
         return;
-    function onsuccess(data, status, errormsg) {
+    function onsuccess(data) {
         check_message_list(data, options);
         if (typeof data === "object"
             && data.sessioninfo
@@ -518,12 +519,13 @@ jQuery.fn.extend({
                 p = p.parentNode;
             }
             p = p && p.tagName ? p : window;
-            var pg;
             if (p !== window && opts.scrollParent) {
                 $(p).scrollIntoView(opts);
             }
             var pg = $(p).geometry(),
-                mt = opts.marginTop || 0, mb = opts.marginBottom || 0;
+                mt = opts.marginTop || 0,
+                mb = opts.marginBottom || 0,
+                pos;
             if (mt === "auto") {
                 mt = parseFloat($(e).css("marginTop"));
             }
@@ -532,14 +534,14 @@ jQuery.fn.extend({
             }
             if ((tg.top < pg.top + mt && !opts.atBottom)
                 || opts.atTop) {
-                var pos = Math.max(tg.top - mt, 0);
+                pos = Math.max(tg.top - mt, 0);
                 if (p === window) {
                     p.scrollTo(pg.scrollX, pos);
                 } else {
                     p.scrollTop = pos - pg.top;
                 }
             } else if (tg.bottom > pg.bottom - mb) {
-                var pos = Math.max(tg.bottom + mb - pg.height, 0);
+                pos = Math.max(tg.bottom + mb - pg.height, 0);
                 if (p === window) {
                     p.scrollTo(pg.scrollX, pos);
                 } else {
@@ -605,7 +607,8 @@ function text_eq(a, b) {
 }
 
 function regexp_quote(s) {
-    return String(s).replace(/([-()\[\]{}+?*.$\^|,:#<!\\])/g, '\\$1').replace(/\x08/g, '\\x08');
+    // eslint-disable-next-line no-control-regex
+    return String(s).replace(/([-()[\]{}+?*.$^|,:#<!\\])/g, '\\$1').replace(/\x08/g, '\\x08');
 }
 
 function plural_noun(n, what) {
@@ -782,9 +785,9 @@ var strftime = (function () {
         D: function (d) { return strftime("%m/%d/%y", d); },
         F: function (d) { return strftime("%Y-%m-%d", d); },
         s: function (d) { return Math.floor(d.getTime() / 1000); },
-        n: function (d) { return "\n"; },
-        t: function (d) { return "\t"; },
-        "%": function (d) { return "%"; }
+        n: function () { return "\n"; },
+        t: function () { return "\t"; },
+        "%": function () { return "%"; }
     };
     function strftime(fmt, d) {
         var words = fmt.split(/(%[#U]*\S)/), wordno, word, alt, pos, f, t = "";
@@ -813,7 +816,7 @@ var strftime = (function () {
                 t += word;
         }
         return t;
-    };
+    }
     return strftime;
 })();
 
@@ -1101,7 +1104,7 @@ function hoturl(page, options) {
         log_jserror("missing siteinfo");
     }
 
-    var x = {t: page};
+    x = {t: page};
     if (options == null && (i = page.indexOf("?")) > 0) {
         options = page.substring(i);
         page = page.substring(0, i);
@@ -1197,13 +1200,13 @@ function url_absolute(url, loc) {
         && (m = loc.match(/^(\w+:)/)))
         x = m[1];
     if (x && !/^\/\//.test(url)
-        && (m = loc.match(/^\w+:(\/\/[^\/]+)/)))
+        && (m = loc.match(/^\w+:(\/\/[^/]+)/)))
         x += m[1];
     if (x && !/^\//.test(url)
-        && (m = loc.match(/^\w+:\/\/[^\/]+(\/[^?#]*)/))) {
-        x = (x + m[1]).replace(/\/[^\/]+$/, "/");
+        && (m = loc.match(/^\w+:\/\/[^/]+(\/[^?#]*)/))) {
+        x = (x + m[1]).replace(/\/[^/]+$/, "/");
         while (url.substring(0, 3) === "../") {
-            x = x.replace(/\/[^\/]*\/$/, "/");
+            x = x.replace(/\/[^/]*\/$/, "/");
             url = url.substring(3);
         }
     }
@@ -1220,7 +1223,7 @@ function hoturl_get_form(action) {
     var form = document.createElement("form");
     form.setAttribute("method", "get");
     form.setAttribute("accept-charset", "UTF-8");
-    var m = action.match(/^([^?#]*)((?:\?[^#]*)?)((?:\#.*)?)$/);
+    var m = action.match(/^([^?#]*)((?:\?[^#]*)?)((?:#.*)?)$/);
     form.action = m[1];
     var re = /([^?&=;]*)=([^&=;]*)/g, mm;
     while ((mm = re.exec(m[2])) !== null) {
@@ -1231,7 +1234,7 @@ function hoturl_get_form(action) {
 
 
 // text rendering
-window.render_text = (function ($) {
+var render_text = (function ($) {
 var renderers = {};
 
 function parse_ftext(t) {
@@ -1469,26 +1472,26 @@ function collect_callbacks(cbs, c, etype) {
         }
     }
 }
-function call_callbacks(cbs, element, event) {
-    for (var i = 0; i !== cbs.length && !event.isImmediatePropagationStopped(); i += 2) {
-        cbs[i+1].call(element, event);
+function call_callbacks(cbs, element, evt) {
+    for (var i = 0; i !== cbs.length && !evt.isImmediatePropagationStopped(); i += 2) {
+        cbs[i+1].call(element, evt);
     }
 }
-function handle_ui(event) {
-    var e = event.target;
+function handle_ui(evt) {
+    var e = evt.target;
     if ((e && (hasClass(e, "ui") || hasClass(e, "uin")))
         || (this.tagName === "A" && hasClass(this, "ui"))) {
-        event.preventDefault();
+        evt.preventDefault();
     }
     var k = classList(this), cbs = null;
     for (var i = 0; i < k.length; ++i) {
         var c = callbacks[k[i]];
         if (c) {
             cbs = cbs || [];
-            collect_callbacks(cbs, c, event.type);
+            collect_callbacks(cbs, c, evt.type);
         }
     }
-    cbs && cbs.length && call_callbacks(cbs, this, event);
+    cbs && cbs.length && call_callbacks(cbs, this, evt);
 }
 handle_ui.on = function (className, callback, priority) {
     var dot = className.indexOf("."), type = null;
@@ -1499,14 +1502,14 @@ handle_ui.on = function (className, callback, priority) {
     callbacks[className] = callbacks[className] || [];
     callbacks[className].push(type, priority || 0, callback);
 };
-handle_ui.trigger = function (className, event) {
+handle_ui.trigger = function (className, evt) {
     var c = callbacks[className];
     if (c) {
-        if (typeof event === "string")
-            event = $.Event(event); // XXX IE8: `new Event` is not supported
+        if (typeof evt === "string")
+            evt = $.Event(evt); // XXX IE8: `new Event` is not supported
         var cbs = [];
-        collect_callbacks(cbs, c, event.type);
-        cbs.length && call_callbacks(cbs, this, event);
+        collect_callbacks(cbs, c, evt.type);
+        cbs.length && call_callbacks(cbs, this, evt);
     }
 };
 return handle_ui;
@@ -1556,11 +1559,13 @@ function input_set_default_value(elt, val) {
     var cb = input_is_checkboxlike(elt), upd, j;
     if (cb) {
         elt.removeAttribute("data-default-checked");
-        elt.checked = elt.checked; // set dirty checkedness flag
+        // set dirty checkedness flag:
+        elt.checked = elt.checked; // eslint-disable-line no-self-assign
         elt.defaultChecked = val != null && val != "";
     } else {
         elt.removeAttribute("data-default-value");
-        elt.value = elt.value; // set dirty value flag
+        // set dirty value flag:
+        elt.value = elt.value; // eslint-disable-line no-self-assign
         elt.defaultValue = val;
     }
     // 2021 Chrome workaround
@@ -1587,8 +1592,8 @@ function input_differs(elt) {
         return !text_eq(elt.value, expected);
 }
 
-function form_differs(form, want_ediff) {
-    var ediff = null, coll, i, len, e;
+function form_differs(form) {
+    var coll, i, len, e;
     if (form instanceof HTMLFormElement)
         coll = form.elements;
     else {
@@ -1600,15 +1605,15 @@ function form_differs(form, want_ediff) {
     for (i = 0; i !== len; ++i) {
         e = coll[i];
         if (e.name && !hasClass(e, "ignore-diff") && input_differs(e))
-            return want_ediff ? e : true;
+            return e;
     }
-    return false;
+    return null;
 }
 
 function form_highlight(form, elt) {
     (form instanceof HTMLElement) || (form = $(form)[0]);
     var alerting = (elt && form_differs(elt)) || form_differs(form);
-    toggleClass(form, "alert", alerting);
+    toggleClass(form, "alert", !!alerting);
     if (form.hasAttribute("data-alert-toggle")) {
         $("." + form.getAttribute("data-alert-toggle")).toggleClass("hidden", !alerting);
     }
@@ -1710,18 +1715,18 @@ function refocus_within(elt) {
 
 
 // rangeclick
-handle_ui.on("js-range-click", function (event) {
+handle_ui.on("js-range-click", function (evt) {
     var $f = $(this.form),
         rangeclick_state = $f[0].jsRangeClick || {},
         kind = this.getAttribute("data-range-type") || this.name;
     $f[0].jsRangeClick = rangeclick_state;
 
     var key = false;
-    if (event.type === "keydown" && !event_modkey(event))
-        key = event_key(event);
+    if (evt.type === "keydown" && !event_modkey(evt))
+        key = event_key(evt);
     if (rangeclick_state.__clicking__
-        || (event.type === "updaterange" && rangeclick_state["__update__" + kind])
-        || (event.type === "keydown" && key !== "ArrowDown" && key !== "ArrowUp"))
+        || (evt.type === "updaterange" && rangeclick_state["__update__" + kind])
+        || (evt.type === "keydown" && key !== "ArrowDown" && key !== "ArrowUp"))
         return;
 
     // find checkboxes and groups of this type
@@ -1750,13 +1755,13 @@ handle_ui.on("js-range-click", function (event) {
         else if (thispos < cbs.length - 1 && key === "ArrowDown")
             ++thispos;
         $(cbs[thispos]).focus().scrollIntoView();
-        event.preventDefault();
+        evt.preventDefault();
         return;
     }
 
     // handle click
     var group = false, single_group = false, j;
-    if (event.type === "click") {
+    if (evt.type === "click") {
         rangeclick_state.__clicking__ = true;
 
         if (hasClass(this, "is-range-group")) {
@@ -1765,7 +1770,7 @@ handle_ui.on("js-range-click", function (event) {
             group = this.getAttribute("data-range-group");
         } else {
             rangeclick_state[kind] = this;
-            if (event.shiftKey && lastelt) {
+            if (evt.shiftKey && lastelt) {
                 if (lastpos <= thispos) {
                     i = lastpos;
                     j = thispos - 1;
@@ -1789,7 +1794,7 @@ handle_ui.on("js-range-click", function (event) {
         }
 
         delete rangeclick_state.__clicking__;
-    } else if (event.type === "updaterange") {
+    } else if (evt.type === "updaterange") {
         rangeclick_state["__updated__" + kind] = true;
     }
 
@@ -2102,7 +2107,7 @@ return function (content, bubopt) {
 
     var bubble = {
         near: function (epos, reference) {
-            var i, off;
+            var i;
             if (typeof epos === "string" || epos.tagName || epos.jquery) {
                 epos = $(epos);
                 if (dirspec == null && epos[0])
@@ -2173,9 +2178,9 @@ return function (content, bubopt) {
             $(bubdiv).hover(enter, leave);
             return bubble;
         },
-        removeOn: function (jq, event) {
+        removeOn: function (jq, evt) {
             if (arguments.length > 1)
-                $(jq).on(event, remove);
+                $(jq).on(evt, remove);
             else if (bubdiv)
                 $(bubdiv).on(jq, remove);
             return bubble;
@@ -2194,6 +2199,7 @@ return function (content, bubopt) {
 })();
 
 
+var global_tooltip;
 var tooltip = (function ($) {
 var builders = {};
 
@@ -2239,8 +2245,8 @@ function show_tooltip(info) {
         to = clearTimeout(to);
         bub && bub.remove();
         $self.removeData("tooltipState");
-        if (window.global_tooltip === tt) {
-            window.global_tooltip = null;
+        if (global_tooltip === tt) {
+            global_tooltip = null;
         }
     }
 
@@ -2261,7 +2267,7 @@ function show_tooltip(info) {
         if (new_content instanceof HPromise) {
             new_content.then(complete);
         } else {
-            var tx = window.global_tooltip;
+            var tx = global_tooltip;
             content = new_content;
             if (tx
                 && tx._element === info.element
@@ -2272,7 +2278,7 @@ function show_tooltip(info) {
                 tx && tx.erase();
                 $self.data("tooltipState", tt);
                 show_bub();
-                window.global_tooltip = tt;
+                global_tooltip = tt;
             }
         }
     }
@@ -2333,7 +2339,7 @@ function tooltip() {
         $(this).hover(ttenter, ttleave);
 }
 tooltip.erase = function () {
-    var tt = this === tooltip ? window.global_tooltip : $(this).data("tooltipState");
+    var tt = this === tooltip ? global_tooltip : $(this).data("tooltipState");
     tt && tt.erase();
 };
 tooltip.add_builder = function (name, f) {
@@ -2463,12 +2469,12 @@ function popup_skeleton(options) {
     }
     function show() {
         $d = $(hc.render()).appendTo(document.body).awaken();
-        $d.on("click", function (event) {
-            event.target === $d[0] && close();
+        $d.on("click", function (evt) {
+            evt.target === $d[0] && close();
         });
         $d.find("button[name=cancel]").on("click", close);
-        $d.on("keydown", function (event) {
-            if (event_modkey(event) === 0 && event_key(event) === "Escape") {
+        $d.on("keydown", function (evt) {
+            if (event_modkey(evt) === 0 && event_key(evt) === "Escape") {
                 close();
             }
         });
@@ -2557,7 +2563,7 @@ function override_deadlines(callback) {
               || $(this).html()
               || this.getAttribute("value")
               || "Save changes")
-        .on("click", function (event) {
+        .on("click", function () {
             if (callback && $.isFunction(callback)) {
                 callback();
             } else {
@@ -2571,9 +2577,9 @@ function override_deadlines(callback) {
 }
 handle_ui.on("js-override-deadlines", override_deadlines);
 
-function form_submitter(form, event) {
-    if (event && event.originalEvent && event.originalEvent.submitter) {
-        return event.originalEvent.submitter.name || null;
+function form_submitter(form, evt) {
+    if (evt && evt.originalEvent && evt.originalEvent.submitter) {
+        return evt.originalEvent.submitter.name || null;
     } else if (form.hotcrpSubmitter
                && form.hotcrpSubmitter[1] >= (new Date).getTime() - 10) {
         return form.hotcrpSubmitter[0];
@@ -2589,7 +2595,7 @@ handle_ui.on("js-mark-submit", function () {
 
 
 // initialization
-window.hotcrp_deadlines = (function ($) {
+var hotcrp_deadlines = (function ($) {
 var dl, dlname, dltime, reload_timeout, reload_nerrors = 0, redisplay_timeout;
 
 // deadline display
@@ -2602,7 +2608,7 @@ function checkdl(now, endtime, ingrace) {
 
 function display_main(is_initial) {
     // this logic is repeated in the back end
-    var i, x, subtype, browser_now = now_sec(),
+    var i, x, browser_now = now_sec(),
         now = +dl.now + (browser_now - +dl.load),
         elt = $$("header-deadline");
 
@@ -2774,7 +2780,7 @@ function tracker_html(tr) {
         t += '<div class="'.concat(logo_class, '">', logo, '</div>');
     var rows = [], i, wwidth = $(window).width();
     if (!tr.papers || !tr.papers[0]) {
-        rows.push('<td><a href=\"' + text_to_html(siteinfo.site_relative + tr.url) + '\">Discussion list</a></td>');
+        rows.push('<td><a href="' + text_to_html(siteinfo.site_relative + tr.url) + '">Discussion list</a></td>');
     } else {
         for (i = tr.paper_offset; i < tr.papers.length; ++i)
             rows.push(tracker_paper_columns(tr, i, wwidth));
@@ -2821,7 +2827,7 @@ function display_tracker() {
         || (dl.tracker.ts && dl.tracker.ts.length === 0)
         || hasClass(document.body, "hide-tracker")) {
         if (mne) {
-            if (window.global_tooltip
+            if (global_tooltip
                 && mne.contains(global_tooltip.near())) {
                 global_tooltip.erase();
             }
@@ -2861,7 +2867,7 @@ function display_tracker() {
     } else
         t = tracker_html(dl.tracker);
     if (t !== last_tracker_html) {
-        if (window.global_tooltip
+        if (global_tooltip
             && mne.contains(global_tooltip.near())) {
             global_tooltip.erase();
         }
@@ -2897,7 +2903,7 @@ function tracker_refresh() {
     }
 }
 
-handle_ui.on("js-tracker", function (event) {
+handle_ui.on("js-tracker", function (evt) {
     var $d, trno = 1, elapsed_timer;
     function push_tracker(hc, tr) {
         hc.push('<div class="lg tracker-group" data-index="' + trno + '" data-trackerid="' + tr.trackerid + '">', '</div>');
@@ -2996,7 +3002,7 @@ handle_ui.on("js-tracker", function (event) {
             }
         };
     }
-    function submit(event) {
+    function submit(evt) {
         var f = $d.find("form")[0], hiding = {};
         $d.find(".tracker-changemark").remove();
 
@@ -3021,7 +3027,7 @@ handle_ui.on("js-tracker", function (event) {
         $.post(hoturl("=api/trackerconfig"),
                $d.find("form").serialize(),
                make_submit_success(hiding));
-        event.preventDefault();
+        evt.preventDefault();
     }
     function stop_all() {
         $d.find("input[name$='stop']").prop("checked", true);
@@ -3030,7 +3036,7 @@ handle_ui.on("js-tracker", function (event) {
     function start() {
         var hc = popup_skeleton({minWidth: "38rem"});
         hc.push('<h2>Meeting tracker</h2>');
-        var trackers, trno = 1, nshown = 0;
+        var trackers, nshown = 0;
         if (!dl.tracker) {
             trackers = [];
         } else if (!dl.tracker.ts) {
@@ -3069,9 +3075,9 @@ handle_ui.on("js-tracker", function (event) {
             .on("click", "button[name=stopall]", stop_all)
             .on("submit", "form", submit);
     }
-    if (event.shiftKey
-        || event.ctrlKey
-        || event.metaKey
+    if (evt.shiftKey
+        || evt.ctrlKey
+        || evt.metaKey
         || hotcrp_status.tracker
         || !hasClass(document.body, "has-hotlist")) {
         start();
@@ -3090,8 +3096,8 @@ function tracker_configure_success() {
     tracker_configured = false;
 }
 
-handle_ui.on("js-tracker-stop", function (event) {
-    var e = event.target.closest(".has-tracker");
+handle_ui.on("js-tracker-stop", function (evt) {
+    var e = evt.target.closest(".has-tracker");
     if (e && e.hasAttribute("data-trackerid"))
         $.post(hoturl("=api/trackerconfig"),
             {"tr1-id": e.getAttribute("data-trackerid"), "tr1-stop": 1},
@@ -3143,7 +3149,7 @@ var comet_store = (function () {
     $(window).on("storage", function (e) {
         var x, ee = e.originalEvent;
         if (dl && dl.tracker_site && ee.key === "hotcrp-comet") {
-            var x = make_site_status(ee.newValue);
+            x = make_site_status(ee.newValue);
             if (x.expired || x.fresh)
                 reload();
         }
@@ -3348,7 +3354,7 @@ function fold_storage() {
         $(".need-fold-storage").each(fold_storage);
     } else {
         removeClass(this, "need-fold-storage");
-        var sn = this.getAttribute("data-fold-storage"), smap, k, v, flip = false;
+        var sn = this.getAttribute("data-fold-storage"), smap, k, flip = false;
         if (sn.charAt(0) === "-") {
             sn = sn.substring(1);
             flip = true;
@@ -3385,7 +3391,7 @@ function fold_session_for(foldnum, type) {
 }
 
 function fold(elt, dofold, foldnum) {
-    var i, foldname, opentxt, closetxt, wasopen, foldnumid, s;
+    var i, opentxt, closetxt, wasopen, foldnumid, s;
 
     // find element
     if (elt && ($.isArray(elt) || elt.jquery)) {
@@ -3400,8 +3406,7 @@ function fold(elt, dofold, foldnum) {
         return false;
     }
 
-    // find element name, fold number, fold/unfold
-    foldname = /^fold/.test(elt.id || "") ? elt.id.substr(4) : false;
+    // find fold number, fold/unfold
     foldnumid = foldnum ? foldnum : "";
     opentxt = "fold" + foldnumid + "o";
     closetxt = "fold" + foldnumid + "c";
@@ -3421,7 +3426,7 @@ function fold(elt, dofold, foldnum) {
             var sj = wstorage.json(true, "fold") || {};
             wasopen === !s[1] ? delete sj[s[0]] : sj[s[0]] = wasopen ? 0 : 1;
             wstorage(true, "fold", $.isEmptyObject(sj) ? null : sj);
-            var sj = wstorage.json(false, "fold") || {};
+            sj = wstorage.json(false, "fold") || {};
             wasopen === !s[1] ? delete sj[s[0]] : sj[s[0]] = wasopen ? 0 : 1;
             wstorage(false, "fold", $.isEmptyObject(sj) ? null : sj);
         } else if ((s = fold_session_for.call(elt, foldnum, "session"))) {
@@ -3432,7 +3437,7 @@ function fold(elt, dofold, foldnum) {
     return false;
 }
 
-function foldup(event, opts) {
+function foldup(evt, opts) {
     var e = this, dofold = false, m, x;
     if (typeof opts === "number") {
         opts = {n: opts};
@@ -3440,8 +3445,8 @@ function foldup(event, opts) {
         opts = {};
     }
     if (this.tagName === "DIV"
-        && event
-        && event.target.closest("a")
+        && evt
+        && evt.target.closest("a")
         && !opts.required) {
         return;
     }
@@ -3505,23 +3510,23 @@ function foldup(event, opts) {
     if (this.hasAttribute("aria-expanded")) {
         this.setAttribute("aria-expanded", dofold ? "false" : "true");
     }
-    if (event
-        && typeof event === "object"
-        && event.type === "click"
-        && !hasClass(event.target, "uic")) {
-        event.stopPropagation();
-        event.preventDefault(); // needed for expanders despite handle_ui!
+    if (evt
+        && typeof evt === "object"
+        && evt.type === "click"
+        && !hasClass(evt.target, "uic")) {
+        evt.stopPropagation();
+        evt.preventDefault(); // needed for expanders despite handle_ui!
     }
 }
 
 handle_ui.on("js-foldup", foldup);
-handle_ui.on("unfold.js-unfold-focus", function (event) {
-    if (!event.which.nofocus)
-        focus_within(this, ".fx" + (event.which.n || "") + " *");
+handle_ui.on("unfold.js-unfold-focus", function (evt) {
+    if (!evt.which.nofocus)
+        focus_within(this, ".fx" + (evt.which.n || "") + " *");
 });
-handle_ui.on("fold.js-fold-focus", function (event) {
-    if (!event.which.nofocus)
-        focus_within(this, ".fn" + (event.which.n || "") + " *");
+handle_ui.on("fold.js-fold-focus", function (evt) {
+    if (!evt.which.nofocus)
+        focus_within(this, ".fn" + (evt.which.n || "") + " *");
 })
 $(function () {
     $(".uich.js-foldup").each(function () { foldup.call(this, null, {nofocus: true}); });
@@ -3529,32 +3534,32 @@ $(function () {
 
 
 // special-case folding for author table
-handle_ui.on("js-aufoldup", function (event) {
-    if (event.target === this || event.target.tagName !== "A") {
+handle_ui.on("js-aufoldup", function (evt) {
+    if (evt.target === this || evt.target.tagName !== "A") {
         var e = $$("foldpaper"),
             m9 = e.className.match(/\bfold9([co])\b/),
             m8 = e.className.match(/\bfold8([co])\b/);
         if (m9 && (!m8 || m8[1] == "o"))
-            foldup.call(e, event, {n: 9, required: true});
+            foldup.call(e, evt, {n: 9, required: true});
         if (m8 && (!m9 || m8[1] == "c" || m9[1] == "o")) {
-            foldup.call(e, event, {n: 8, required: true});
+            foldup.call(e, evt, {n: 8, required: true});
             if (m8[1] == "o" && $$("foldpscollab"))
                 fold("pscollab", 1);
         }
     }
 });
 
-handle_ui.on("js-click-child", function (event) {
+handle_ui.on("js-click-child", function (evt) {
     var a = $(this).find("a")[0]
         || $(this).find("input[type=checkbox], input[type=radio]")[0];
-    if (a && event.target !== a && !a.disabled) {
+    if (a && evt.target !== a && !a.disabled) {
         var newEvent = new MouseEvent("click", {
-            button: event.button, buttons: event.buttons,
-            ctrlKey: event.ctrlKey, shiftKey: event.shiftKey,
-            altKey: event.altKey, metaKey: event.metaKey
+            button: evt.button, buttons: evt.buttons,
+            ctrlKey: evt.ctrlKey, shiftKey: evt.shiftKey,
+            altKey: evt.altKey, metaKey: evt.metaKey
         });
         a.dispatchEvent(newEvent);
-        event.preventDefault();
+        evt.preventDefault();
     }
 });
 
@@ -3585,7 +3590,7 @@ if ("pushState" in window.history) {
 
 // line links
 
-handle_ui.on("lla", function (event) {
+handle_ui.on("lla", function () {
     var e = this.closest(".linelink");
     var f = e.closest(".linelinks");
     $(f).find(".linelink").removeClass("active");
@@ -3601,7 +3606,7 @@ $(function () {
 
 // tla, focus history
 
-handle_ui.on("tla", function (event) {
+handle_ui.on("tla", function () {
     var hash = this.href.replace(/^[^#]*#*/, "");
     var e = document.getElementById("tla-" + (hash || "default"));
     $(".is-tla, .tll, .papmode").removeClass("active");
@@ -3657,12 +3662,12 @@ function jump_hash(hash, focus) {
     return false;
 }
 
-$(window).on("popstate", function (event) {
-    var state = (event.originalEvent || event).state;
+$(window).on("popstate", function (evt) {
+    var state = (evt.originalEvent || evt).state;
     if (state) {
         jump_hash(state.href);
     }
-}).on("hashchange", function (event) {
+}).on("hashchange", function () {
     jump_hash(location.hash);
 });
 $(function () {
@@ -3674,15 +3679,15 @@ $(function () {
 
 // autosubmit
 
-$(document).on("keypress", "input.js-autosubmit", function (event) {
-    if (event_modkey(event) || event_key(event) !== "Enter") {
+$(document).on("keypress", "input.js-autosubmit", function (evt) {
+    if (event_modkey(evt) || event_key(evt) !== "Enter") {
         return;
     }
-    var f = event.target.form,
+    var f = evt.target.form,
         fn = this.getAttribute("data-submit-fn"),
         dest;
     if (fn === "false") {
-        event.preventDefault();
+        evt.preventDefault();
         return;
     } else if (fn && f.elements.defaultfn && f.elements["default"]) {
         f.elements.defaultfn.value = fn;
@@ -3691,19 +3696,19 @@ $(document).on("keypress", "input.js-autosubmit", function (event) {
         dest = f.elements[fn];
     }
     if (dest) {
-        event.target.blur();
+        evt.target.blur();
         dest.click();
     }
-    event.stopPropagation();
-    event.preventDefault();
+    evt.stopPropagation();
+    evt.preventDefault();
 });
 
-handle_ui.on("js-keydown-enter-submit", function (event) {
-    if (event.type === "keydown"
-        && !(event_modkey(event) & (event_modkey.SHIFT | event_modkey.ALT))
-        && event_key(event) === "Enter") {
-        $(event.target.form).trigger("submit");
-        event.preventDefault();
+handle_ui.on("js-keydown-enter-submit", function (evt) {
+    if (evt.type === "keydown"
+        && !(event_modkey(evt) & (event_modkey.SHIFT | event_modkey.ALT))
+        && event_key(evt) === "Enter") {
+        $(evt.target.form).trigger("submit");
+        evt.preventDefault();
     }
 });
 
@@ -3830,7 +3835,7 @@ function append_round_selector(name, revtype, $a, ctr) {
     } catch (e) {
         rounds = [];
     }
-    var t = "", around;
+    var around;
     if (rounds.length > 1) {
         if (revtype > 0)
             around = $a[0].getAttribute("data-review-round");
@@ -3858,13 +3863,13 @@ function append_round_selector(name, revtype, $a, ctr) {
         ctr.appendChild(div);
     }
 }
-function revtype_change(event) {
-    close_unnecessary(event);
+function revtype_change(evt) {
+    close_unnecessary(evt);
     if (this.checked)
         fold(this.closest(".has-assignment-ui"), this.value <= 0, 2);
 }
-function close_unnecessary(event) {
-    var $a = $(event.target).closest(".has-assignment"),
+function close_unnecessary(evt) {
+    var $a = $(evt.target).closest(".has-assignment"),
         $as = $a.closest(".has-assignment-set"),
         d = $as.data("lastAssignmentModified");
     if (d && d !== $a[0] && !form_differs(d)) {
@@ -3880,12 +3885,12 @@ function setup($a) {
             .removeClass("need-assignment-change");
     }
 }
-handle_ui.on("js-assignment-fold", function (event) {
-    var $a = $(event.target).closest(".has-assignment"),
+handle_ui.on("js-assignment-fold", function (evt) {
+    var $a = $(evt.target).closest(".has-assignment"),
         $x = $a.find(".has-assignment-ui");
     if ($a.hasClass("foldc")) {
         setup($a);
-        // close_unnecessary(event);
+        // close_unnecessary(evt);
         if (!$x.length) {
             var name = $a.attr("data-pid") + "u" + $a.attr("data-uid"),
                 revtype = +$a.attr("data-review-type"),
@@ -3914,9 +3919,9 @@ handle_ui.on("js-assignment-fold", function (event) {
         form_highlight($a.closest("form")[0]);
         $a.addClass("foldc").removeClass("foldo");
     }
-    event.stopPropagation();
+    evt.stopPropagation();
 });
-handle_ui.on("js-assignment-autosave", function (event) {
+handle_ui.on("js-assignment-autosave", function () {
     var f = this.form;
     toggleClass(f, "ignore-diff", this.checked);
     $(f).find(".autosave-hidden").toggleClass("hidden", this.checked);
@@ -3926,7 +3931,7 @@ handle_ui.on("js-assignment-autosave", function (event) {
 
 (function () {
 var email_info = [], email_info_at = 0;
-handle_ui.on("input.js-email-populate", function (event) {
+handle_ui.on("input.js-email-populate", function () {
     var self = this,
         v = self.value.toLowerCase().trim(),
         f = this.form,
@@ -3998,7 +4003,7 @@ handle_ui.on("input.js-email-populate", function (event) {
         self.setAttribute("data-populated-email", v);
     }
 
-    if (/^\S+\@\S+\.\S\S+$/.test(v)) {
+    if (/^\S+@\S+\.\S\S+$/.test(v)) {
         if ((email_info_at && now_sec() - email_info_at >= 3600)
             || email_info.length > 200)
             email_info = [];
@@ -4026,10 +4031,9 @@ handle_ui.on("input.js-email-populate", function (event) {
 });
 })();
 
-handle_ui.on("js-request-review-preview-email", function (event) {
+handle_ui.on("js-request-review-preview-email", function (evt) {
     var f = this.closest("form"),
-        a = {p: siteinfo.paperid, template: "requestreview"},
-        self = this;
+        a = {p: siteinfo.paperid, template: "requestreview"};
     function fv(field, defaultv) {
         var x = f.elements[field] && f.elements[field].value.trim();
         if (x === "")
@@ -4059,14 +4063,14 @@ handle_ui.on("js-request-review-preview-email", function (event) {
             }
         }
     });
-    event.stopPropagation();
+    evt.stopPropagation();
 });
 
 // mail
 handle_ui.on("change.js-mail-recipients", function () {
     var plimit = this.closest("form").elements.plimit;
     foldup.call(this, null, {f: !!plimit && !plimit.checked, n: 8});
-    var sopt = $(this).find("option[value=\'" + this.value + "\']");
+    var sopt = $(this).find("option[value='" + this.value + "']");
     foldup.call(this, null, {f: sopt.hasClass("mail-want-no-papers"), n: 9});
     foldup.call(this, null, {f: !sopt.hasClass("mail-want-since"), n: 10});
 });
@@ -4093,13 +4097,13 @@ function make_pcsel_members(tag) {
     else {
         tag = " " + tag.toLowerCase() + "#";
         return function () {
-            var tlist = hotcrp_pc_tags[this.name.substr(3)] || "";
+            var tlist = window.hotcrp_pc_tags[this.name.substr(3)] || "";
             return tlist.indexOf(tag) >= 0;
         };
     }
 }
-function pcsel_tag(event) {
-    var $g = $(this).closest(".js-radio-focus"), e;
+function pcsel_tag(evt) {
+    var $g = $(this).closest(".js-radio-focus");
     if (this.tagName === "A") {
         $g.find("input[type=radio]").first().click();
         var tag = this.hash.substring(4),
@@ -4119,7 +4123,7 @@ function pcsel_tag(event) {
                     this.checked = on;
             }
         });
-        event.preventDefault();
+        evt.preventDefault();
     }
     var tags = [], functions = {}, isall = true;
     $g.find("a.js-pcsel-tag").each(function () {
@@ -4176,7 +4180,7 @@ handle_ui.on(".js-badpairs-row", function () {
 
 
 // author entry
-var row_order_ui = (function ($) {
+(function ($) {
 
 function row_order_change(e, delta, action) {
     var $r, $tbody;
@@ -4271,7 +4275,7 @@ function row_order_change(e, delta, action) {
     $(changes).trigger("change");
 }
 
-function row_order_ui(event) {
+function row_order_ui() {
     if (hasClass(this, "moveup"))
         row_order_change(this, -1, 0);
     else if (hasClass(this, "movedown"))
@@ -4298,7 +4302,6 @@ $(function () {
     });
 });
 
-return row_order_ui;
 })($);
 
 
@@ -4365,7 +4368,7 @@ function minifeedback(e, rv) {
 }
 
 function link_urls(t) {
-    var re = /((?:https?|ftp):\/\/(?:[^\s<>\"&]|&amp;)*[^\s<>\"().,:;?!&])([\"().,:;?!]*)(?=[\s<>&]|$)/g;
+    var re = /((?:https?|ftp):\/\/(?:[^\s<>"&]|&amp;)*[^\s<>"().,:;?!&])(["().,:;?!]*)(?=[\s<>&]|$)/g;
     return t.replace(re, function (m, a, b) {
         return '<a href="'.concat(a, '" rel="noreferrer">', a, '</a>', b);
     });
@@ -4474,7 +4477,7 @@ return {
 };
 })();
 
-handle_ui.on("js-leftmenu", function (event) {
+handle_ui.on("js-leftmenu", function (evt) {
     var nav = this.closest("nav"), list = nav.firstChild;
     while (list.tagName !== "UL") {
         list = list.nextSibling;
@@ -4482,12 +4485,12 @@ handle_ui.on("js-leftmenu", function (event) {
     var liststyle = window.getComputedStyle(list);
     if (liststyle.display === "none") {
         addClass(nav, "leftmenu-open");
-        event.preventDefault();
+        evt.preventDefault();
     } else if (liststyle.display === "block") {
         removeClass(nav, "leftmenu-open");
-        event.preventDefault();
+        evt.preventDefault();
     } else if (this.href === "") {
-        event.preventDefault();
+        evt.preventDefault();
     }
 });
 
@@ -4521,7 +4524,7 @@ handle_ui.on("js-review-tokens", function () {
     hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save tokens</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     $d = hc.show();
-    $d.on("submit", "form", function (evt) {
+    $d.on("submit", "form", function () {
         $d.find(".msg").remove();
         $.post(hoturl("=api/reviewtoken"), $d.find("form").serialize(),
             function (data) {
@@ -4536,14 +4539,8 @@ handle_ui.on("js-review-tokens", function () {
     });
 });
 
-window.review_form = (function ($) {
+var review_form = (function ($) {
 var formj, form_order;
-var rtype_info = {
-    "-3": ["−" /* &minus; */, "Declined"], "-2": ["A", "Author"],
-    "-1": ["C", "Conflict"], 1: ["E", "External review"],
-    2: ["P", "PC review"], 3: ["2", "Secondary review"],
-    4: ["1", "Primary review"], 5: ["M", "Metareview"]
-};
 
 tooltip.add_builder("rf-score", function (info) {
     var $self = $(this), fieldj = formj[$self.data("rf")], score;
@@ -4593,7 +4590,7 @@ function field_visible(f, rrow) {
 }
 
 function render_review_body(rrow) {
-    var t = "", foidx = 0, f, k, x, nextf, last_display = 0, display;
+    var t = "", foidx = 0, f, x, nextf, last_display = 0, display;
     for (foidx = 0; (nextf = form_order[foidx]) && !field_visible(nextf, rrow); ++foidx) {
     }
     while (nextf) {
@@ -4693,8 +4690,8 @@ function unparse_ratings(ratings, user_rating, editable) {
     }
 }
 
-handle_ui.on("js-revrating-unfold", function (event) {
-    if (event.target === this)
+handle_ui.on("js-revrating-unfold", function (evt) {
+    if (evt.target === this)
         foldup.call(this, null, {f: false});
 });
 
@@ -4726,8 +4723,7 @@ handle_ui.on("js-revrating", function () {
     $.post(hoturl("=api", {p: $card.attr("data-pid"), r: $card.data("rid"),
                            fn: "reviewrating"}),
         {user_rating: (current & ~off) | on},
-        function (data, status, jqxhr) {
-            var result = data && data.ok ? "Feedback saved." : (data && data.error ? data.error : "Internal error.");
+        function (data) {
             if (data && "user_rating" in data) {
                 $rr.find(".revrating-choice").each(function () {
                     var bit = this.getAttribute("data-revrating-bit");
@@ -4754,9 +4750,9 @@ handle_ui.on("js-revrating", function () {
         });
 });
 
-function revrating_key(event) {
-    var k = event_key(event);
-    if ((k === "ArrowLeft" || k === "ArrowRight") && !event_modkey(event)) {
+function revrating_key(evt) {
+    var k = event_key(evt);
+    if ((k === "ArrowLeft" || k === "ArrowRight") && !event_modkey(evt)) {
         foldup.call(this, null, {f: false});
         var wantbit = $(this).closest(".revrating-choice").attr("data-revrating-bit");
         if (wantbit != null) {
@@ -4769,7 +4765,7 @@ function revrating_key(event) {
                     this.firstChild.focus();
             });
         }
-        event.preventDefault();
+        evt.preventDefault();
     }
 }
 
@@ -4777,7 +4773,7 @@ function add_review(rrow) {
     var hc = new HtmlCollector,
         rid = rrow.pid + (rrow.ordinal || "r" + rrow.rid),
         rlink = "p=".concat(rrow.pid, "&r=", rid),
-        has_user_rating = false, i, ratekey, selected;
+        has_user_rating = false, i;
     if (siteinfo.want_override_conflict)
         rlink += "&forceShow=1";
 
@@ -4899,7 +4895,7 @@ return {
 
 
 // comments
-window.papercomment = (function ($) {
+var papercomment = (function ($) {
 var vismap = {
         rev: "hidden from authors",
         pc: "hidden from authors and external reviewers",
@@ -4949,7 +4945,7 @@ function cj_name(cj) {
 }
 
 function comment_identity_time(cj, editing) {
-    var t = [], res = [], x, i;
+    var t = [], x, i;
     if (cj.response || cj.is_new) {
     } else if (cj.editable) {
         t.push('<div class="cmtnumid"><a href="#' + cj_cid(cj) +
@@ -5013,7 +5009,7 @@ function edit_allowed(cj, override) {
 
 
 function render_editing(hc, cj) {
-    var i, x, btnbox = [], cid = cj_cid(cj), bnote;
+    var x, btnbox = [], cid = cj_cid(cj), bnote;
 
     hc.push('<form class="cmtform">', '</form>');
     if (cj.review_token) {
@@ -5165,7 +5161,7 @@ function ready_change() {
 
 function make_update_words(celt, wlimit) {
     var wce = $(celt).find(".words")[0];
-    function setwc(event) {
+    function setwc() {
         var wc = count_words(this.value);
         wce.className = "words" + (wlimit < wc ? " wordsover" :
                                    (wlimit * 0.9 < wc ? " wordsclose" : ""));
@@ -5317,7 +5313,7 @@ function beforeunload() {
 
 function make_save_callback(cj) {
     var cid = cj_cid(cj), celt = $$(cid), form = $(celt).find("form")[0];
-    return function (data, textStatus, jqxhr) {
+    return function (data) {
         if (!data.ok) {
             if (data.loggedout) {
                 has_unload = false;
@@ -5443,7 +5439,7 @@ function submit_editor(evt) {
 }
 
 function render_comment(cj, editing) {
-    var hc = new HtmlCollector, hcid = new HtmlCollector, t, chead, i,
+    var hc = new HtmlCollector, t, chead, i,
         cid = cj_cid(cj), celt = $$(cid);
 
     // clear current comment
@@ -5620,7 +5616,7 @@ function add_comment(cj, editing) {
     } else if (cj.is_new && !editing) {
         add_new_comment_button(cj, cid);
     } else {
-        add_new_comment(cj, cid, editing);
+        add_new_comment(cj, cid);
         add_comment_sidebar($$(cid), cj);
         render_comment(cj, editing);
         if (cj.response && cj.is_new) {
@@ -5648,7 +5644,7 @@ function add_new_comment_button(cj, cid) {
     }
 }
 
-function add_new_comment(cj, cid, editing) {
+function add_new_comment(cj, cid) {
     var article = document.createElement("article");
     article.id = cid;
     article.className = "pcard cmtcard cmtid".concat(cj.editable ? " editable" : "", cj.response ? " response" : " comment");
@@ -5685,7 +5681,7 @@ function edit_this() {
 }
 
 function edit(cj) {
-    var cid = cj_cid(cj), elt = $$(cid), top;
+    var cid = cj_cid(cj), elt = $$(cid);
     if (!elt && (cj.is_new || cj.response)) {
         add_comment(cj, true);
         elt = $$(cid);
@@ -5726,7 +5722,7 @@ handle_ui.on("js-overlong-expand", function () {
 
 // previewing
 (function ($) {
-function switch_preview(evt) {
+function switch_preview() {
     var $j = $(this).parent(), $ta;
     while ($j.length && ($ta = $j.find("textarea")).length == 0)
         $j = $j.parent();
@@ -5797,20 +5793,6 @@ function nextprev_shortcut(evt, key) {
     return true;
 }
 
-function blur_keyup_shortcut(evt) {
-    // IE compatibility
-    evt = evt || window.event;
-    // reject modified keys, interesting targets
-    if (evt.altKey || evt.ctrlKey || evt.metaKey || event_key(evt) !== "Escape")
-        return true;
-    document.activeElement && document.activeElement.blur();
-    if (evt.preventDefault)
-        evt.preventDefault();
-    else
-        evt.returnValue = false;
-    return false;
-}
-
 function make_selector_shortcut(type) {
     function find(e) {
         return e.getElementsByTagName("select")[0]
@@ -5827,7 +5809,7 @@ function make_selector_shortcut(type) {
             this.blur();
         return false;
     }
-    return function (event) {
+    return function (evt) {
         var e = $$("fold" + type);
         if (e) {
             e.className += " psfocus";
@@ -5838,7 +5820,7 @@ function make_selector_shortcut(type) {
                 e.addEventListener("blur", end, false);
                 e.addEventListener("change", end, false);
             }
-            event.stopPropagation();
+            evt.stopPropagation();
             return true;
         }
         return false;
@@ -5849,7 +5831,7 @@ function shortcut(top_elt) {
     var self, main_keys = {}, current_keys = null, last_key_at = null;
 
     function keypress(evt) {
-        var key, a, f, target, x, i, j;
+        var key, target, x;
         // IE compatibility
         evt = evt || window.event;
         key = event_key(evt);
@@ -5958,7 +5940,7 @@ demand_load.pc = demand_load.make(function (resolve, reject) {
     });
 });
 
-demand_load.search_completion = demand_load.make(function (resolve, reject) {
+demand_load.search_completion = demand_load.make(function (resolve) {
     $.get(hoturl("api/searchcompletion"), null, function (v) {
         var sc = (v && v.searchcompletion) || [],
             scs = $.grep(sc, function (x) { return typeof x === "string"; }),
@@ -5978,7 +5960,7 @@ demand_load.search_completion = demand_load.make(function (resolve, reject) {
     });
 });
 
-demand_load.alltag_info = demand_load.make(function (resolve, reject) {
+demand_load.alltag_info = demand_load.make(function (resolve) {
     if (siteinfo.user.is_pclike)
         $.get(hoturl("api/alltags"), null, function (v) {
             resolve(v && v.tags ? v : {tags: []});
@@ -5987,7 +5969,7 @@ demand_load.alltag_info = demand_load.make(function (resolve, reject) {
         resolve({tags: []});
 })
 
-demand_load.tags = demand_load.make(function (resolve, reject) {
+demand_load.tags = demand_load.make(function (resolve) {
     demand_load.alltag_info().then(function (v) { resolve(v.tags); });
 });
 
@@ -6003,12 +5985,12 @@ demand_load.tags = demand_load.make(function (resolve, reject) {
         } else
             return remove ? tags : [];
     }
-    demand_load.editable_tags = demand_load.make(function (resolve, reject) {
+    demand_load.editable_tags = demand_load.make(function (resolve) {
         demand_load.alltag_info().then(function (v) {
             resolve(filter_tags(v.tags, v.readonly_tagmap, true));
         });
     });
-    demand_load.sitewide_editable_tags = demand_load.make(function (resolve, reject) {
+    demand_load.sitewide_editable_tags = demand_load.make(function (resolve) {
         demand_load.alltag_info().then(function (v) {
             resolve(filter_tags(filter_tags(v.tags, v.sitewide_tagmap, false),
                                 v.readonly_tagmap, true));
@@ -6016,7 +5998,7 @@ demand_load.tags = demand_load.make(function (resolve, reject) {
     });
 })();
 
-demand_load.mentions = demand_load.make(function (resolve, reject) {
+demand_load.mentions = demand_load.make(function (resolve) {
     if (siteinfo.user.is_pclike)
         $.get(hoturl("api/mentioncompletion", {p: siteinfo.paperid}), null, function (v) {
             var tlist = ((v && v.mentioncompletion) || []).map(completion_item);
@@ -6027,7 +6009,7 @@ demand_load.mentions = demand_load.make(function (resolve, reject) {
         resolve([]);
 });
 
-demand_load.emoji_codes = demand_load.make(function (resolve, reject) {
+demand_load.emoji_codes = demand_load.make(function (resolve) {
     $.get(siteinfo.assets + "scripts/emojicodes.json", null, function (v) {
         if (!v || !v.emoji)
             v = {emoji: []};
@@ -6121,9 +6103,9 @@ function complete_list(v, sel, modifiers) {
 
 demand_load.emoji_completion = function (start) {
     return demand_load.emoji_codes().then(function (v) {
-        var sel, i, code, compl, ch, basic = v.lists.basic, m;
+        var sel, i, ch, basic = v.lists.basic, m;
         start = start.replace(/:$/, "");
-        if ((m = /^(-?[^\-]+)-/.exec(start))
+        if ((m = /^(-?[^-]+)-/.exec(start))
             && (ch = v.emoji[m[1]])
             && people_regex.test(ch)) {
             return complete_list(v, [m[1]], true);
@@ -6273,17 +6255,22 @@ function make_suggestions(precaret, postcaret, options) {
 }
 
 var suggest = (function () {
-var builders = {};
+var builders = {}, punctre;
+try {
+    punctre = new RegExp("^(?!@)[\\p{Po}\\p{Pd}\\p{Pe}\\p{Pf}]$", "u");
+} catch (err) {
+    punctre = /^[-‐‑‒–—!"#%&'*,./:;?\\¡§¶·¿¡)\]}»›’”]$/;
+}
 
 function suggest() {
     var elt = this, hintdiv, hintinfo, suggdata,
-        blurring = false, hiding = false, lastkey = false, lastpos = false,
+        blurring = false, hiding = false, lastpos = false,
         wasnav = 0, spacestate = -1;
 
     function kill() {
         hintdiv && hintdiv.remove();
         hintdiv = hintinfo = null;
-        blurring = hiding = lastkey = lastpos = false;
+        blurring = hiding = lastpos = false;
         wasnav = 0;
     }
 
@@ -6520,8 +6507,8 @@ function suggest() {
                 && event_key.printable(evt)
                 && elt.selectionStart === elt.selectionEnd
                 && elt.selectionStart === pspacestate
-                && /^(?!@)[\p{Po}\p{Pd}\p{Pe}\p{Pf}]$/u.test(k)
-                && elt.value[pspacestate - 1] === " ") {
+                && elt.value[pspacestate - 1] === " "
+                && punctre.test(k)) {
                 elt.setRangeText(k, pspacestate - 1, pspacestate, "end");
                 evt.preventDefault();
                 result = false;
@@ -6531,7 +6518,6 @@ function suggest() {
                 setTimeout(display, 1);
             }
         }
-        lastkey = k;
         wasnav = Math.max(wasnav - 1, 0);
         return result;
     }
@@ -6547,7 +6533,6 @@ function suggest() {
                         || Math.abs(lastpos.y - evt.screenY) > 1)) {
             hintdiv.self().find(".s9y").removeClass("s9y");
             $(this).addClass("s9y");
-            lastkey = "Arrow";
             wasnav = 1;
         }
         lastpos = {x: evt.screenX, y: evt.screenY};
@@ -6635,11 +6620,13 @@ function suggest_emoji_postreplace(elt, repl, startPos) {
 }
 
 suggest.add_builder("suggest-emoji", function (elt) {
+    /* eslint-disable no-misleading-character-class */
     var x = completion_split(elt), m;
     if (x && (m = x[0].match(/(?:^|[\s(\u20e3-\u23ff\u2600-\u27ff\ufe0f\udc00-\udfff]):((?:|\+|\+?[-_0-9a-zA-Z]+):?)$/))
         && /^(?:$|[\s)\u20e3-\u23ff\u2600-\u27ff\ufe0f\ud83c-\ud83f])/.test(x[1])) {
         return demand_load.emoji_completion(m[1].toLowerCase()).then(make_suggestions(":" + m[1], "", {case_sensitive_items: true, max_items: 8, postreplace: suggest_emoji_postreplace}));
     }
+    /* eslint-enable no-misleading-character-class */
 });
 
 suggest.add_builder("mentions", function (elt) {
@@ -6650,6 +6637,364 @@ suggest.add_builder("mentions", function (elt) {
     } else
         return null;
 });
+
+
+// list management, conflict management
+function decode_session_list_ids(str) {
+    if ($.isArray(str))
+        return str;
+    var a = [], l = str.length, next = null, sign = 1, include_after = false;
+    for (var i = 0; i !== l; ) {
+        var ch = str.charCodeAt(i);
+        if (ch >= 48 && ch <= 57) {
+            var n1 = 0;
+            while (ch >= 48 && ch <= 57) {
+                n1 = 10 * n1 + ch - 48;
+                ++i;
+                ch = i !== l ? str.charCodeAt(i) : 0;
+            }
+            var n2 = n1;
+            if (ch === 45
+                && i + 1 < l
+                && (ch = str.charCodeAt(i + 1)) >= 48
+                && ch <= 57) {
+                ++i;
+                n2 = 0;
+                while (ch >= 48 && ch <= 57) {
+                    n2 = 10 * n2 + ch - 48;
+                    ++i;
+                    ch = i !== l ? str.charCodeAt(i) : 0;
+                }
+            }
+            while (n1 <= n2) {
+                a.push(n1);
+                ++n1;
+            }
+            next = n1;
+            sign = 1;
+            continue;
+        }
+
+        ++i;
+        var add0 = 0, skip = 0;
+        if (ch >= 97 && ch <= 104) {
+            add0 = ch - 96;
+        } else if (ch >= 105 && ch <= 112) {
+            skip = ch - 104;
+        } else if (ch >= 117 && ch <= 120) {
+            next += (ch - 116) * 8 * sign;
+            continue;
+        } else if (ch === 113 || ch === 114 || ch === 116) {
+            var j = 0, ch2;
+            while (i !== l && (ch2 = str.charCodeAt(i)) >= 48 && ch2 <= 57) {
+                j = 10 * j + ch2 - 48;
+                ++i;
+            }
+            if (ch === 113) {
+                add0 = j;
+            } else if (ch === 114) {
+                skip = j;
+            } else {
+                skip = -j;
+            }
+        } else if (ch >= 65 && ch <= 72) {
+            add0 = ch - 64;
+            skip = 1;
+        } else if (ch >= 73 && ch <= 80) {
+            add0 = ch - 72;
+            skip = 2;
+        } else if (ch === 122) {
+            sign = -sign;
+        } else if (ch === 90) {
+            sign = -sign;
+            skip = 2;
+        } else if (ch === 81 && i === 1) {
+            include_after = true;
+            continue;
+        }
+
+        while (add0 !== 0) {
+            a.push(next);
+            next += sign;
+            --add0;
+        }
+        next += skip * sign;
+        if (skip !== 0 && include_after) {
+            a.push(next);
+            next += sign;
+        }
+    }
+    return a;
+}
+
+var Hotlist;
+(function ($) {
+var cookie_set_at;
+function update_digest(info) {
+    var add = typeof info === "string" ? 1 : 0,
+        digests = wstorage.site_json(false, "list_digests") || [],
+        found = -1, now = now_msec();
+    for (var i = 0; i < digests.length; ++i) {
+        var digest = digests[i];
+        if (digest[add] === info)
+            found = i;
+        else if (digest[2] < now - 30000) {
+            digests.splice(i, 1);
+            --i;
+        } else if (now <= digest[0])
+            now = digest[0] + 1;
+    }
+    if (found >= 0)
+        digests[found][2] = now;
+    else if (add) {
+        digests.push([now, info, now]);
+        found = digests.length - 1;
+    }
+    wstorage.site(false, "list_digests", digests);
+    if (found >= 0)
+        return digests[found][1 - add];
+    else
+        return false;
+}
+Hotlist = function (s) {
+    this.str = s || "";
+    this.obj = null;
+    if (this.str && this.str.charAt(0) === "{") {
+        try {
+            this.obj = parse_json(this.str);
+        } catch (e) {
+        }
+    }
+};
+Hotlist.at = function (elt) {
+    return new Hotlist(elt ? elt.getAttribute("data-hotlist") : "");
+};
+Hotlist.prototype.ids = function () {
+    return this.obj && this.obj.ids ? decode_session_list_ids(this.obj.ids) : null;
+};
+Hotlist.prototype.resolve = function () {
+    var ids;
+    if (this.obj
+        && !this.obj.ids
+        && this.obj.digest
+        && /^listdigest[0-9]+$/.test(this.obj.digest)
+        && (ids = update_digest(+this.obj.digest.substring(10)))) {
+        delete this.obj.digest;
+        this.obj.ids = ids;
+        this.str = JSON.stringify(this.obj);
+    }
+    return this;
+};
+Hotlist.prototype.cookie_at = function (pid) {
+    this.resolve();
+    var digest, ids, pos;
+    if (this.str.length > 1500
+        && this.obj
+        && this.obj.ids
+        && wstorage()
+        && (digest = update_digest(this.obj.ids))) {
+        var x = Object.assign({digest: "listdigest" + digest}, this.obj);
+        delete x.ids;
+        if (pid
+            && (ids = this.ids())
+            && (pos = $.inArray(pid, ids)) >= 0) {
+            x.curid = pid;
+            x.previd = pos > 0 ? ids[pos - 1] : false;
+            x.nextid = pos < ids.length - 1 ? ids[pos + 1] : false;
+        }
+        return JSON.stringify(x);
+    } else {
+        return this.str;
+    }
+};
+Hotlist.prototype.reorder = function (tbody) {
+    if (this.obj) {
+        this.resolve();
+        var p0 = -100, p1 = -100, pid, l = [];
+        for (var cur = tbody.firstChild; cur; cur = cur.nextSibling)
+            if (cur.nodeName === "TR" && /^pl(?:\s|$)/.test(cur.className)
+                && (pid = +cur.getAttribute("data-pid"))) {
+                if (pid != p1 + 1) {
+                    if (p0 > 0)
+                        l.push(p0 == p1 ? p0 : p0 + "-" + p1);
+                    p0 = pid;
+                }
+                p1 = pid;
+            }
+        if (p0 > 0)
+            l.push(p0 == p1 ? p0 : p0 + "-" + p1);
+        this.obj.ids = l.join("'");
+        this.str = JSON.stringify(this.obj);
+    }
+};
+function set_cookie(info, pid) {
+    var cstr = info.cookie_at(pid);
+    cookie_set_at = now_msec();
+    var p = "; Max-Age=20", m;
+    if (siteinfo.site_relative && (m = /^[a-z]+:\/\/[^/]*(\/.*)/.exec(hoturl_absolute_base())))
+        p += "; Path=" + m[1];
+    document.cookie = "hotlist-info-".concat(cookie_set_at, "=", encodeURIComponent(cstr), siteinfo.cookie_params, p);
+}
+function is_listable(sitehref) {
+    return /^(?:paper|review|assign|profile)(?:|\.php)\//.test(sitehref);
+}
+function handle_list(e, href) {
+    var hl, sitehref, info;
+    if (href
+        && href.substring(0, siteinfo.site_relative.length) === siteinfo.site_relative
+        && is_listable((sitehref = href.substring(siteinfo.site_relative.length)))
+        && (hl = e.closest(".has-hotlist"))
+        && (info = Hotlist.at(hl)).str) {
+        if (hl.tagName === "TABLE"
+            && hasClass(hl, "pltable")
+            && hl.hasAttribute("data-reordered")
+            && document.getElementById("footer"))
+            // Existence of `#footer` checks that the table is fully loaded
+            info.reorder(hl.tBodies[0]);
+        var m = /^[^/]*\/(\d+)(?:$|[a-zA-Z]*\/)/.exec(sitehref);
+        set_cookie(info, m ? +m[1] : null);
+    }
+}
+function unload_list() {
+    var hl = Hotlist.at(document.body);
+    if (hl.str && (!cookie_set_at || cookie_set_at + 3 < now_msec()))
+        set_cookie(hl);
+}
+function row_click(evt) {
+    if (!hasClass(this.parentElement, "pltable")
+        || evt.target.closest("a, input, textarea, select, button"))
+        return;
+    var td = evt.target.closest("td");
+    if (!td || (!hasClass(td, "pl_id") && !hasClass(td, "pl_title") && !hasClass(td, "pl_rowclick")))
+        return;
+    var pl = this;
+    while (pl.nodeType !== 1 || /^plx/.test(pl.className))
+        pl = pl.previousSibling;
+    var $inputs = $(pl).find("input, textarea, select, button")
+        .not("input[type=hidden], .pl_sel > input");
+    if ($inputs.length) {
+        $inputs.first().focus().scrollIntoView();
+    } else {
+        var $a = $(pl).find("a.pnum").first(),
+            href = $a[0].getAttribute("href");
+        handle_list($a[0], href);
+        if (event_key.is_default_a(evt)) {
+            window.location = href;
+        } else {
+            window.open(href, "_blank");
+            window.focus();
+        }
+    }
+    evt.preventDefault();
+}
+handle_ui.on("js-edit-comment", function (evt) {
+    if (this.tagName !== "A" || event_key.is_default_a(evt)) {
+        evt.preventDefault();
+        papercomment.edit_id(this.hash.substring(1));
+    }
+});
+
+function default_click(evt) {
+    var base = location.href;
+    if (location.hash) {
+        base = base.substring(0, base.length - location.hash.length);
+    }
+    if (this.href.substring(0, base.length + 1) === base + "#") {
+        if (jump_hash(this.href)) {
+            push_history_state(this.href);
+            evt.preventDefault();
+        }
+        return true;
+    } else if ($ajax.has_outstanding()) {
+        $ajax.after_outstanding(make_link_callback(this));
+        return true;
+    } else {
+        return false;
+    }
+}
+
+$(document).on("click", "a", function (evt) {
+    if (hasClass(this, "fn5")) {
+        foldup.call(this, evt, {n: 5, f: false});
+    } else if (!hasClass(this, "ui")) {
+        if (!event_key.is_default_a(evt)
+            || this.target
+            || !default_click.call(this, evt))
+            handle_list(this, this.getAttribute("href"));
+    }
+});
+
+$(document).on("submit", "form", function (evt) {
+    if (hasClass(this, "ui-submit")) {
+        handle_ui.call(this, evt);
+    } else {
+        handle_list(this, this.getAttribute("action"));
+    }
+});
+
+$(document).on("click", "tr.pl", row_click);
+$(window).on("beforeunload", unload_list);
+
+$(function () {
+    // resolve list digests
+    if (document.body.hasAttribute("data-hotlist")) {
+        document.body.setAttribute("data-hotlist", Hotlist.at(document.body).resolve().str);
+    }
+    // having resolved digests, insert quicklinks
+    if (siteinfo.paperid
+        && !$$("quicklink-prev")
+        && !$$("quicklink-next")) {
+        $(".quicklinks").each(function () {
+            var info = Hotlist.at(this.closest(".has-hotlist")), ids, pos, page, mode;
+            try {
+                mode = parse_json(this.getAttribute("data-link-params") || "{}");
+            } catch (e) {
+                mode = {};
+            }
+            page = mode.page || "paper";
+            delete mode.page;
+            if ((ids = info.ids())
+                && (pos = $.inArray(siteinfo.paperid, ids)) >= 0) {
+                if (pos > 0) {
+                    mode.p = ids[pos - 1];
+                    $(this).prepend('<a id="quicklink-prev" class="ulh" href="'.concat(hoturl_html(page, mode), '">&lt; #', ids[pos - 1], '</a> '));
+                }
+                if (pos < ids.length - 1) {
+                    mode.p = ids[pos + 1];
+                    $(this).append(' <a id="quicklink-next" class="ulh" href="'.concat(hoturl_html(page, mode), '">#', ids[pos + 1], ' &gt;</a>'));
+                }
+            }
+        });
+    }
+});
+})($);
+
+function hotlist_search_params(x, ids) {
+    x = x instanceof HTMLElement ? Hotlist.at(x) : new Hotlist(x);
+    var m;
+    if (!x || !x.obj || !x.obj.ids || !(m = x.obj.listid.match(/^p\/(.*?)\/(.*?)(?:$|\/)(.*)/)))
+        return false;
+    var idv;
+    if (ids) {
+        if (x.obj.sorted_ids)
+            idv = "pidcode:" + x.obj.sorted_ids;
+        else if ($.isArray(x.obj.ids))
+            idv = x.obj.ids.join(" ");
+        else
+            idv = "pidcode:" + x.obj.ids;
+    } else {
+        idv = urldecode(m[2]);
+    }
+    var q = {q: idv, t: m[1] || "s"};
+    if (m[3]) {
+        var args = m[3].split(/[&;]/);
+        for (var i = 0; i < args.length; ++i) {
+            var pos = args[i].indexOf("=");
+            q[args[i].substr(0, pos)] = urldecode(args[i].substr(pos + 1));
+        }
+    }
+    return q;
+}
 
 
 // review preferences
@@ -6677,7 +7022,7 @@ var add_revpref_ajax = (function () {
         blurred_at = now_msec();
     }
 
-    function rp_change(event) {
+    function rp_change() {
         var self = this, pid = this.name.substr(7), data = {pref: self.value}, pos;
         if ((pos = pid.indexOf("u")) > 0) {
             data.u = pid.substr(pos + 1);
@@ -6704,22 +7049,22 @@ var add_revpref_ajax = (function () {
             wstorage.site(true, "revpref_focus", blurred_at || now_msec());
     }
 
-    handle_ui.on("revpref", function (event) {
-        if (event.type === "keydown") {
-            if (!event_modkey(event) && event_key(event) === "Enter") {
-                event.preventDefault();
-                event.stopImmediatePropagation();
+    handle_ui.on("revpref", function (evt) {
+        if (evt.type === "keydown") {
+            if (!event_modkey(evt) && event_key(evt) === "Enter") {
+                evt.preventDefault();
+                evt.stopImmediatePropagation();
                 rp_change.call(this);
             }
-        } else if (event.type === "change")
-            rp_change.call(this, event);
+        } else if (evt.type === "change")
+            rp_change.call(this, evt);
     });
 
     return rp;
 })();
 
 
-window.paperlist_tag_ui = (function () {
+var paperlist_tag_ui = (function () {
 
 function tag_canonicalize(tag) {
     return tag && /^~[^~]/.test(tag) ? siteinfo.user.cid + tag : tag;
@@ -6809,7 +7154,6 @@ function tagannorow_add(tbl, tbody, before, anno) {
 function searchbody_postreorder(tbody) {
     for (var cur = tbody.firstChild, e = 1, n = 0; cur; cur = cur.nextSibling)
         if (cur.nodeName == "TR") {
-            var c = cur.className;
             if (hasClass(cur, "pl")) {
                 e = 1 - e;
                 ++n;
@@ -6964,7 +7308,7 @@ function search_sort_success(tbl, data_href, data) {
     }
 }
 
-$(document).on("collectState", function (event, state) {
+$(document).on("collectState", function (evt, state) {
     var tbl = document.getElementById("foldpl");
     if (!tbl || !tbl.hasAttribute("data-sort-url-template"))
         return;
@@ -7014,7 +7358,7 @@ function search_sort_click(evt) {
     }
 }
 
-function search_scoresort_change(evt) {
+function search_scoresort_change() {
     var scoresort = $(this).val(),
         re = / (?:counts|average|median|variance|maxmin|my)\b/;
     $.post(hoturl("=api/session"), {v: "scoresort=" + scoresort});
@@ -7170,7 +7514,7 @@ function taganno_success(rv) {
 
 handle_ui.on("js-annotate-order", function () {
     var $d, annos, last_newannoid = 0, mytag = this.getAttribute("data-anno-tag");
-    function clickh(evt) {
+    function clickh() {
         if (this.name === "add") {
             var hc = new HtmlCollector;
             add_anno(hc, {});
@@ -7230,20 +7574,20 @@ handle_ui.on("js-annotate-order", function () {
     function show_dialog(rv) {
         if (!rv.ok || !rv.editable)
             return;
-        var hc = popup_skeleton({minWidth: "32rem"});
-        var dtag = mytag.replace(/^\d+~/, "~");
+        var hc = popup_skeleton({minWidth: "32rem"}),
+            dtag = mytag.replace(/^\d+~/, "~"), i;
         hc.push('<h2>Annotate #' + dtag + ' order</h2>');
         hc.push('<p>These annotations will appear in searches such as “order:' + dtag + '”.</p>');
         hc.push('<div class="tagannos">', '</div>');
         annos = rv.anno;
-        for (var i = 0; i < annos.length; ++i) {
+        for (i = 0; i < annos.length; ++i) {
             add_anno(hc, annos[i]);
         }
         hc.pop();
         hc.push('<div class="g"><button type="button" name="add">Add group</button></div>');
         hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save changes</button>', '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
-        for (var i = 0; i < annos.length; ++i) {
+        for (i = 0; i < annos.length; ++i) {
             $d.find("input[name='legend_" + annos[i].annoid + "']").val(annos[i].legend);
             $d.find("input[name='tagval_" + annos[i].annoid + "']").val(tagvalue_unparse(annos[i].tagval));
         }
@@ -7294,9 +7638,10 @@ function tag_save() {
 }
 
 function analyze_rows(e) {
-    var rows = plt_tbody.childNodes, i, l, r, e, eindex = null;
-    while (e && typeof e !== "number" && e.nodeName != "TR")
+    var rows = plt_tbody.childNodes, i, l, r, eindex = null;
+    while (e && typeof e !== "number" && e.nodeName != "TR") {
         e = e.parentElement;
+    }
 
     // create analysis
     rowanal = [];
@@ -7373,7 +7718,7 @@ function tag_mousemove(evt) {
     if (evt.clientX == null)
         evt = mousepos;
     mousepos = {clientX: evt.clientX, clientY: evt.clientY};
-    var rows = plt_tbody.childNodes, geometry = $(window).geometry(), a,
+    var geometry = $(window).geometry(),
         x = evt.clientX + geometry.left, y = evt.clientY + geometry.top;
 
     // binary search to find containing rows
@@ -7571,8 +7916,7 @@ function rowcompar(a, b) {
 
 function row_move(srcindex) {
     // find new position
-    var id = rowanal[srcindex].id, newval = rowanal[srcindex].tagvalue;
-    var rows = plt_tbody.childNodes, ltv, dstindex, cmp;
+    var rows = plt_tbody.childNodes, dstindex;
     for (dstindex = 0; dstindex < rowanal.length; ++dstindex)
         if (dstindex !== srcindex && rowcompar(srcindex, dstindex) < 0)
             break;
@@ -7591,7 +7935,7 @@ function row_move(srcindex) {
 }
 
 function commit_drag(si, di) {
-    var saves = [], annosaves = [], elts;
+    var saves = [], annosaves = [];
     calculate_shift(si, di);
     for (var i = 0; i < rowanal.length; ++i)
         if (rowanal[i].newvalue === rowanal[i].tagvalue)
@@ -7633,7 +7977,7 @@ function tag_mousedown(evt) {
     evt.preventDefault();
 }
 
-function tag_mouseup(evt) {
+function tag_mouseup() {
     if (document.removeEventListener) {
         document.removeEventListener("mousemove", tag_mousemove, true);
         document.removeEventListener("mouseup", tag_mouseup, true);
@@ -7664,7 +8008,7 @@ plt_tbody = this.tagName === "TABLE" ? this.tBodies[0] : this;
         .on("change.edittag_ajax", "input.edittagval", tag_save)
         .on("keydown.edittag_ajax", "input.edittagval", make_onkey("Enter", tag_save));
     if ((full_ordertag = this.getAttribute("data-order-tag")))
-        $(window).on("hotcrptags", function (event, data) {
+        $(window).on("hotcrptags", function (evt, data) {
             row_move(analyze_rows(data.pid));
         });
     if ((dragtag = this.getAttribute("data-drag-tag")))
@@ -7801,7 +8145,7 @@ function render_assignment_selector() {
         sel = document.createElement("select"),
         rts = ["none", "primary", "secondary", "pc", "meta", "conflict"],
         asstext = this.getAttribute("data-assignment"),
-        revtype, m = asstext.match(/^(\S+) (\S+)(.*)$/);
+        m = asstext.match(/^(\S+) (\S+)(.*)$/);
     m[2] = review_types.parse(m[2]);
     sel.name = "assrev" + prow.getAttribute("data-pid") + "u" + m[1];
     sel.setAttribute("data-default-value", m[2]);
@@ -7912,14 +8256,6 @@ function field_index(f) {
         if (!field_order[i].as_row === !f.as_row && !field_order[i].missing)
             ++index;
     return index;
-}
-
-function pidmap() {
-    var map = {};
-    $("tr.pl").each(function () {
-        map[+this.getAttribute("data-pid")] = this;
-    });
-    return map;
 }
 
 function populate_bypid(table, selector) {
@@ -8150,7 +8486,6 @@ function make_callback(dofold, type) {
         for (; tr; tr = tr.nextSibling)
             if (tr.nodeName === "TR" && tr.hasAttribute("data-statistic")) {
                 var stat = tr.getAttribute("data-statistic"),
-                    j = 0,
                     td = tr.childNodes[index];
                 if (td && stat in statvalues)
                     td.innerHTML = statvalues[stat];
@@ -8186,18 +8521,6 @@ function make_callback(dofold, type) {
             $(render_start);
         }
     };
-}
-
-function show_loading(f) {
-    function go() {
-        ensure_field(f);
-        if (f.loadable) {
-            var index = field_index(f);
-            for (var p in pidmap())
-                set(f, pidfield(p, f, index), "Loading");
-        }
-    }
-    return function () { $(go); };
 }
 
 function check_statistics() {
@@ -8271,7 +8594,7 @@ function initialize() {
     var fs = parse_json(self.getAttribute("data-columns"));
     for (var i = 0; i !== fs.length; ++i)
         add_field(fs[i]);
-};
+}
 
 plinfo.set_scoresort = function (ss) {
     self || initialize();
@@ -8354,7 +8677,7 @@ function fold_override(dofold) {
         // show the color classes appropriate to this conflict state
         $(self).find(".colorconflict").each(change_color_classes(dofold));
     });
-};
+}
 
 handle_ui.on("js-override-conflict", function () {
     var pid = this.closest("tr").getAttribute("data-pid"),
@@ -8368,9 +8691,9 @@ handle_ui.on("js-override-conflict", function () {
     }
 });
 
-handle_ui.on("js-plinfo", function (event) {
+handle_ui.on("js-plinfo", function (evt) {
     if (this.type !== "checkbox" || this.name.substring(0, 4) !== "show")
-        throw new Exception("bad plinfo");
+        throw new Error("bad plinfo");
     var types = [this.name.substring(4)], dofold = !this.checked;
     if (types[0] === "anonau") {
         var form = this.form, showau = form && form.elements.showau;
@@ -8388,7 +8711,7 @@ handle_ui.on("js-plinfo", function (event) {
         else
             plinfo(types[i], dofold);
     }
-    event.preventDefault();
+    evt.preventDefault();
 });
 
 return plinfo;
@@ -8396,7 +8719,7 @@ return plinfo;
 
 
 /* pattern fill functions */
-window.ensure_pattern = (function () {
+var ensure_pattern = (function () {
 var fmap = {},
     knownmap = {
         "tag-white": true, "tag-red": true, "tag-orange": true, "tag-yellow": true,
@@ -8513,7 +8836,7 @@ function class_color(k) {
         document.body.appendChild(testdiv);
     }
     testdiv.className = k;
-    var value = window.getComputedStyle(testdiv).backgroundColor, m;
+    value = window.getComputedStyle(testdiv).backgroundColor;
     if ((m = value.match(/^rgb\(([\d.]+), ([\d.]+), ([\d.]+)\)$/))) {
         c = make_color(k, +m[1], +m[2], +m[3], 1.0);
     } else if ((m = value.match(/^rgba\(([\d.]+), ([\d.]+), ([\d.]+), ([\d.]+)\)$/))
@@ -8691,18 +9014,18 @@ function transfer_form_values($dst, $src, names) {
 
 
 // login UI
-handle_ui.on("js-signin", function (event) {
+handle_ui.on("js-signin", function () {
     var form = this, signin = document.getElementById("signin_signin");
     signin && (signin.disabled = true);
     $.get(hoturl("api/session"), function () { form.submit() });
 });
 
-handle_ui.on("js-no-signin", function (event) {
+handle_ui.on("js-no-signin", function () {
     var e = this.closest(".js-signin");
     e && removeClass(e, "ui-submit");
 });
 
-handle_ui.on("js-href-add-email", function (event) {
+handle_ui.on("js-href-add-email", function () {
     var e = this.closest("form");
     if (e && e.email && e.email.value !== "") {
         this.href = hoturl_add(this.href, "email=" + urlencode(e.email.value));
@@ -8800,8 +9123,8 @@ function background_format_check() {
 $(background_format_check);
 });
 
-handle_ui.on("change.js-submit-paper", function (event) {
-    if (event.target && (event.target.name === "submission" || event.target.name === "final" || event.target.name === "submitpaper")) {
+handle_ui.on("change.js-submit-paper", function (evt) {
+    if (evt.target && (evt.target.name === "submission" || evt.target.name === "final" || evt.target.name === "submitpaper")) {
         var readye = this.elements.submitpaper, was, is;
         was = is = this.getAttribute("data-submitted");
         if (!was) {
@@ -8864,7 +9187,7 @@ handle_ui.on("js-add-attachment", function () {
     $na.appendTo($ei).find(".document-uploader")[0].click();
 });
 
-handle_ui.on("js-replace-document", function (event) {
+handle_ui.on("js-replace-document", function () {
     var doce = this.closest(".has-document"), $doc = $(doce),
         $actions = $doc.find(".document-actions"),
         $u = $doc.find(".document-uploader");
@@ -8888,7 +9211,7 @@ handle_ui.on("js-replace-document", function (event) {
     $u[0].click();
 });
 
-handle_ui.on("document-uploader", function (event) {
+handle_ui.on("document-uploader", function () {
     var doce = this.closest(".has-document"), $doc = $(doce);
     if (hasClass(doce, "document-new-instance") && hasClass(doce, "hidden")) {
         removeClass(doce, "hidden");
@@ -8903,7 +9226,7 @@ handle_ui.on("document-uploader", function (event) {
     }
 });
 
-handle_ui.on("js-cancel-document", function (event) {
+handle_ui.on("js-cancel-document", function () {
     var doce = this.closest(".has-document"),
         $doc = $(doce), $actions = $doc.find(".document-actions"),
         f = doce.closest("form");
@@ -8925,10 +9248,9 @@ handle_ui.on("js-cancel-document", function (event) {
     form_highlight(f);
 });
 
-handle_ui.on("js-remove-document", function (event) {
+handle_ui.on("js-remove-document", function () {
     var doce = this.closest(".has-document"), $doc = $(doce),
-        $en = $doc.find(".document-file"),
-        f = this.closest("form") /* set before $doc is removed */;
+        $en = $doc.find(".document-file");
     if (hasClass(this, "undelete")) {
         $doc.find(".document-remover").val("").trigger("change").remove();
         $en.find("del > *").unwrap();
@@ -8944,7 +9266,7 @@ handle_ui.on("js-remove-document", function (event) {
     }
 });
 
-handle_ui.on("js-withdraw", function (event) {
+handle_ui.on("js-withdraw", function () {
     var f = this.form,
         hc = popup_skeleton({near: this, action: f});
     hc.push('<p>Are you sure you want to withdraw this submission from consideration and/or publication?');
@@ -8953,7 +9275,6 @@ handle_ui.on("js-withdraw", function (event) {
     hc.push('</p>');
     hc.push('<textarea name="reason" rows="3" cols="40" class="w-99 need-autogrow" placeholder="Optional explanation" spellcheck="true"></textarea>');
     if (!this.hasAttribute("data-withdrawable")) {
-        var idctr = hc.next_htctl_id();
         hc.push('<label class="checki"><span class="checkc"><input type="checkbox" name="override" value="1"> </span>Override deadlines</label>');
     }
     hc.push_actions(['<button type="submit" name="withdraw" value="1" class="btn-danger">Withdraw</button>',
@@ -8963,7 +9284,7 @@ handle_ui.on("js-withdraw", function (event) {
     $d.on("submit", "form", function () { addClass(f, "submitting"); });
 });
 
-handle_ui.on("js-delete-paper", function (event) {
+handle_ui.on("js-delete-paper", function () {
     var f = this.form,
         hc = popup_skeleton({near: this, action: f});
     hc.push('<p>Be careful: This will permanently delete all information about this submission from the database and <strong>cannot be undone</strong>.</p>');
@@ -8974,7 +9295,7 @@ handle_ui.on("js-delete-paper", function (event) {
     $d.on("submit", "form", function () { addClass(f, "submitting"); });
 });
 
-handle_ui.on("js-clickthrough", function (event) {
+handle_ui.on("js-clickthrough", function () {
     var self = this,
         $container = $(this).closest(".js-clickthrough-container");
     if (!$container.length)
@@ -8993,7 +9314,7 @@ handle_ui.on("js-clickthrough", function (event) {
         });
 });
 
-handle_ui.on("js-follow-change", function (event) {
+handle_ui.on("js-follow-change", function () {
     var self = this;
     $.post(hoturl("=api/follow",
         {p: $(self).attr("data-pid") || siteinfo.paperid}),
@@ -9004,8 +9325,8 @@ handle_ui.on("js-follow-change", function (event) {
         });
 });
 
-handle_ui.on("pspcard-fold", function (event) {
-    if (!event.target.closest("a")) {
+handle_ui.on("pspcard-fold", function (evt) {
+    if (!evt.target.closest("a")) {
         addClass(this, "hidden");
         $(this.parentElement).find(".pspcard-open").addClass("unhidden");
     }
@@ -9069,9 +9390,8 @@ function prepare_paper_select() {
 }
 
 function render_tag_messages(message_list) {
-    var $me = $(this), t0 = this.querySelector(".want-tag-report"),
-        t1 = this.querySelector(".want-tag-report-warnings"),
-        i, m, t;
+    var t0 = this.querySelector(".want-tag-report"),
+        t1 = this.querySelector(".want-tag-report-warnings"), i;
     t0.replaceChildren();
     t1.replaceChildren();
     for (i = 0; i !== message_list.length; ++i) {
@@ -9091,14 +9411,14 @@ function prepare_pstags() {
     function handle_tag_report(data) {
         data.message_list && render_tag_messages.call(self, data.message_list);
     }
-    $f.on("keydown", "textarea", function (event) {
-        var key = event_key(event);
+    $f.on("keydown", "textarea", function (evt) {
+        var key = event_key(evt);
         if (key === "Enter" || key === "Escape") {
-            var mod = event_modkey(event);
+            var mod = event_modkey(evt);
             if (mod === 0 || (key === "Enter" && mod === event_modkey.META)) {
                 $f[0][key === "Enter" ? "save" : "cancel"].click();
-                event.preventDefault();
-                event.stopImmediatePropagation();
+                evt.preventDefault();
+                evt.stopImmediatePropagation();
             }
         }
     });
@@ -9110,7 +9430,7 @@ function prepare_pstags() {
         foldup.call($ta[0], evt, {f: true});
     });
     $f.on("submit", save_pstags);
-    $f.closest(".foldc, .foldo").on("unfold", function (evt) {
+    $f.closest(".foldc, .foldo").on("unfold", function () {
         $f.data("everOpened", true);
         $f.find("input").prop("disabled", false);
         if (!$f.data("noTagReport")) {
@@ -9167,11 +9487,11 @@ function save_pstags(evt) {
     });
 }
 
-function save_pstagindex(event) {
+function save_pstagindex(evt) {
     var self = this, $f = $(self).closest("form"),
         assignments = [], inputs = [];
-    if (event.type === "submit")
-        event.preventDefault();
+    if (evt.type === "submit")
+        evt.preventDefault();
     if (hasClass($f[0], "submitting"))
         return;
     $f.addClass("submitting");
@@ -9186,15 +9506,6 @@ function save_pstagindex(event) {
             assignments.push(t + "#" + (v === "" ? "clear" : v));
         }
     });
-    function interesting(m) {
-        for (var i = 0; i !== assignments.length; ++i) {
-            var pound = assignments[i].indexOf("#"),
-                start = "#" + assignments[i].substring(0, pound) + ": ";
-            if (start.length > 3 && m.startsWith(start))
-                return true;
-        }
-        return false;
-    }
     function done(data) {
         $f.removeClass("submitting");
         minifeedback($f.find("input")[0], data);
@@ -9206,7 +9517,7 @@ function save_pstagindex(event) {
         data.ok && $(window).trigger("hotcrptags", [data]);
     }
     $.post(hoturl("=api/tags", {p: $f.attr("data-pid")}),
-            {"addtags": assignments.join(" ")}, done);
+           {"addtags": assignments.join(" ")}, done);
 }
 
 function evaluate_compar(x, compar, y) {
@@ -9375,27 +9686,27 @@ function add_pslitem_pfe() {
     }
 }
 
-handle_ui.on("submit.js-submit-paper", function (event) {
+handle_ui.on("submit.js-submit-paper", function (evt) {
     var sub = this.elements.submitpaper,
-        is_submit = (form_submitter(this, event) || "update") === "update";
+        is_submit = (form_submitter(this, evt) || "update") === "update";
     if (is_submit
         && sub && sub.type === "checkbox" && !sub.checked
         && this.hasAttribute("data-submitted")) {
         if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered.")) {
-            event.preventDefault();
+            evt.preventDefault();
             return;
         }
     }
     if (is_submit
         && $(this).find(".prevent-submit").length) {
         window.alert("Waiting for uploads to complete");
-        event.preventDefault();
+        evt.preventDefault();
     }
 });
 
-function fieldchange(event) {
-    $(event.delegateTarget).find(".want-fieldchange")
-        .trigger({type: "fieldchange", changeTarget: event.target});
+function fieldchange(evt) {
+    $(evt.delegateTarget).find(".want-fieldchange")
+        .trigger({type: "fieldchange", changeTarget: evt.target});
 }
 
 return {
@@ -9479,7 +9790,7 @@ function tag_value(taglist, t) {
 }
 
 function set_tag_index(e, taglist) {
-    var res = tag_value(taglist, e.getAttribute("data-tag-base")), i;
+    var res = tag_value(taglist, e.getAttribute("data-tag-base"));
     res = res === null ? "" : String(res);
     if (e.tagName === "SPAN") {
         e.textContent = res;
@@ -9495,7 +9806,7 @@ function set_tag_index(e, taglist) {
 }
 
 if (siteinfo.paperid) {
-    $(window).on("hotcrptags", function (event, data) {
+    $(window).on("hotcrptags", function (evt, data) {
         if (data.pid != siteinfo.paperid)
             return;
         data.color_classes && ensure_pattern(data.color_classes, "", true);
@@ -9518,14 +9829,14 @@ handle_ui.on("js-users-selection", function () {
     this.form.submit();
 });
 
-handle_ui.on("js-cannot-delete-user", function (event) {
+handle_ui.on("js-cannot-delete-user", function () {
     var hc = popup_skeleton({near: this});
     hc.push('<p><strong>This account cannot be deleted</strong> because they are the sole contact for ' + $(this).data("soleAuthor") + '. To delete the account, first remove those submissions from the database or give them more contacts.</p>');
     hc.push_actions(['<button type="button" name="cancel">Cancel</button>']);
     hc.show();
 });
 
-handle_ui.on("js-delete-user", function (event) {
+handle_ui.on("js-delete-user", function () {
     var f = this.form,
         hc = popup_skeleton({near: this, action: f}), x;
     hc.push('<p>Be careful: This will permanently delete all information about this account from the database and <strong>cannot be undone</strong>.</p>');
@@ -9537,7 +9848,7 @@ handle_ui.on("js-delete-user", function (event) {
     $d.on("submit", "form", function () { addClass(f, "submitting"); });
 });
 
-handle_ui.on("js-disable-user", function (event) {
+handle_ui.on("js-disable-user", function () {
     var disabled = hasClass(this, "btn-success"), self = this;
     self.disabled = true;
     $.post(hoturl("=api/account", {u: this.getAttribute("data-user") || this.form.getAttribute("data-user")}),
@@ -9560,7 +9871,7 @@ handle_ui.on("js-disable-user", function (event) {
         });
 });
 
-handle_ui.on("js-send-user-accountinfo", function (event) {
+handle_ui.on("js-send-user-accountinfo", function () {
     var self = this;
     self.disabled = true;
     $.post(hoturl("=api/account", {u: this.getAttribute("data-user") || this.form.getAttribute("data-user")}),
@@ -9627,8 +9938,8 @@ handle_ui.on("js-delete-review", function () {
     hc.show();
 });
 
-handle_ui.on("js-approve-review", function (event) {
-    var self = this, hc = popup_skeleton({near: event.sidebarTarget || self});
+handle_ui.on("js-approve-review", function (evt) {
+    var self = this, hc = popup_skeleton({near: evt.sidebarTarget || self});
     hc.push('<div class="btngrid">', '</div>');
     var subreviewClass = "";
     if (hasClass(self, "can-adopt")) {
@@ -9647,8 +9958,8 @@ handle_ui.on("js-approve-review", function (event) {
     hc.pop();
     hc.push_actions(['<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
-    $d.on("click", "button", function (event) {
-        var b = event.target.name;
+    $d.on("click", "button", function (evt) {
+        var b = evt.target.name;
         if (b !== "cancel") {
             var form = self.form;
             $(form).append(hidden_input(b, "1"))
@@ -9663,7 +9974,7 @@ handle_ui.on("js-approve-review", function (event) {
 
 // search/paperlist UI
 handle_ui.on("js-edit-formulas", function () {
-    var self = this, $d, count = 0;
+    var $d, count = 0;
     function push1(hc, f) {
         ++count;
         hc.push('<div class="editformulas-formula" data-formula-number="' + count + '">', '</div>');
@@ -9686,7 +9997,7 @@ handle_ui.on("js-edit-formulas", function () {
         }
         hc.pop();
     }
-    function click(event) {
+    function click() {
         if (this.name === "add") {
             var hc = new HtmlCollector;
             push1(hc, {name: "", expression: "", editable: true, id: "new"});
@@ -9707,8 +10018,8 @@ handle_ui.on("js-edit-formulas", function () {
         }
         $x.append('<input type="hidden" name="formuladeleted_' + $x.data("formulaNumber") + '" value="1">');
     }
-    function submit(event) {
-        event.preventDefault();
+    function submit(evt) {
+        evt.preventDefault();
         $.post(hoturl("=api/namedformula"),
             $d.find("form").serialize(),
             function (data) {
@@ -9740,7 +10051,7 @@ handle_ui.on("js-edit-formulas", function () {
 
 handle_ui.on("js-edit-view-options", function () {
     var $d;
-    function submit(event) {
+    function submit(evt) {
         $.ajax(hoturl("=api/viewoptions"), {
             method: "POST", data: $(this).serialize(),
             success: function (data) {
@@ -9762,7 +10073,7 @@ handle_ui.on("js-edit-view-options", function () {
                 }
             }
         });
-        event.preventDefault();
+        evt.preventDefault();
     }
     function create(display_default, display_current) {
         var hc = popup_skeleton({className: "modal-medium"});
@@ -9786,7 +10097,7 @@ handle_ui.on("js-edit-view-options", function () {
 });
 
 handle_ui.on("js-edit-namedsearches", function () {
-    var self = this, $d, count = 0;
+    var $d, count = 0;
     function push1(hc, f) {
         ++count;
         hc.push('<div class="editsearches-search" data-search-number="' + count + '">', '</div>');
@@ -9809,7 +10120,7 @@ handle_ui.on("js-edit-namedsearches", function () {
         }
         hc.pop();
     }
-    function click(event) {
+    function click() {
         if (this.name === "add") {
             var hc = new HtmlCollector,
                 q = document.getElementById("searchform");
@@ -9831,8 +10142,8 @@ handle_ui.on("js-edit-namedsearches", function () {
         }
         $x.append('<input type="hidden" name="searchdeleted_' + $x.data("searchNumber") + '" value="1">');
     }
-    function submit(event) {
-        event.preventDefault();
+    function submit(evt) {
+        evt.preventDefault();
         $.post(hoturl("=api/namedsearch"),
             $d.find("form").serialize(),
             function (data) {
@@ -9904,14 +10215,14 @@ handle_ui.on("js-assign-list-action", function () {
     });
 });
 
-function handle_submit_list_bulkwarn(table, chkval, bgform, event) {
+function handle_submit_list_bulkwarn(table, chkval, bgform, evt) {
     var chki = table.querySelectorAll("tr.pl[data-bulkwarn]"), i, n = 0;
     for (i = 0; i !== chki.length && n < 4; ++i) {
         if (chkval.indexOf(chki[i].getAttribute("data-pid")) >= 0)
             ++n;
     }
     if (n >= 4) {
-        var hc = popup_skeleton({near: event.target});
+        var hc = popup_skeleton({near: evt.target});
         hc.push('<div class="container"></div>');
         hc.push_actions([
             '<button type="button" name="bsubmit" class="btn-primary">Download</button>',
@@ -9925,7 +10236,7 @@ function handle_submit_list_bulkwarn(table, chkval, bgform, event) {
         $d.on("closedialog", function () {
             bgform && document.body.removeChild(bgform);
         });
-        $d.on("click", "button[name=bsubmit]", function (event) {
+        $d.on("click", "button[name=bsubmit]", function () {
             bgform.submit();
             bgform = null;
             $d.close();
@@ -9936,9 +10247,9 @@ function handle_submit_list_bulkwarn(table, chkval, bgform, event) {
         return true;
 }
 
-handle_ui.on("js-submit-list", function (event) {
+handle_ui.on("js-submit-list", function (evt) {
     // choose action
-    var form = this, fn, fnbutton, e, ne, i, es, t;
+    var form = this, fn, fnbutton, e, ne, i, es;
     if (this instanceof HTMLButtonElement) {
         fn = this.value;
         fnbutton = this;
@@ -9970,7 +10281,7 @@ handle_ui.on("js-submit-list", function (event) {
         isdefault = true;
     } else if (!chkval.length) {
         alert("Select one or more rows first.");
-        event.preventDefault();
+        evt.preventDefault();
         return;
     }
 
@@ -10029,9 +10340,9 @@ handle_ui.on("js-submit-list", function (event) {
             }
         }
     }
-    if (!need_bulkwarn || handle_submit_list_bulkwarn(table, chkval, bgform, event))
+    if (!need_bulkwarn || handle_submit_list_bulkwarn(table, chkval, bgform, evt))
         bgform.submit();
-    event.preventDefault();
+    evt.preventDefault();
 });
 
 
@@ -10045,9 +10356,9 @@ handle_ui.on("js-unfold-pcselector", function () {
 });
 
 
-handle_ui.on("js-assign-review", function (event) {
+handle_ui.on("js-assign-review", function (evt) {
     var form = this.form, m;
-    if (event.type !== "change"
+    if (evt.type !== "change"
         || !(m = /^assrev(\d+)u(\d+)$/.exec(this.name))
         || (form && form.autosave && !form.autosave.checked))
         return;
@@ -10085,366 +10396,9 @@ handle_ui.on("js-assign-review", function (event) {
 });
 
 
-// list management, conflict management
-function decode_session_list_ids(str) {
-    if ($.isArray(str))
-        return str;
-    var a = [], l = str.length, next = null, sign = 1, include_after = false;
-    for (var i = 0; i !== l; ) {
-        var ch = str.charCodeAt(i);
-        if (ch >= 48 && ch <= 57) {
-            var n1 = 0;
-            while (ch >= 48 && ch <= 57) {
-                n1 = 10 * n1 + ch - 48;
-                ++i;
-                ch = i !== l ? str.charCodeAt(i) : 0;
-            }
-            var n2 = n1;
-            if (ch === 45
-                && i + 1 < l
-                && (ch = str.charCodeAt(i + 1)) >= 48
-                && ch <= 57) {
-                ++i;
-                n2 = 0;
-                while (ch >= 48 && ch <= 57) {
-                    n2 = 10 * n2 + ch - 48;
-                    ++i;
-                    ch = i !== l ? str.charCodeAt(i) : 0;
-                }
-            }
-            while (n1 <= n2) {
-                a.push(n1);
-                ++n1;
-            }
-            next = n1;
-            sign = 1;
-            continue;
-        }
-
-        ++i;
-        var add0 = 0, skip = 0;
-        if (ch >= 97 && ch <= 104) {
-            add0 = ch - 96;
-        } else if (ch >= 105 && ch <= 112) {
-            skip = ch - 104;
-        } else if (ch >= 117 && ch <= 120) {
-            next += (ch - 116) * 8 * sign;
-            continue;
-        } else if (ch === 113 || ch === 114 || ch === 116) {
-            var j = 0, ch2;
-            while (i !== l && (ch2 = str.charCodeAt(i)) >= 48 && ch2 <= 57) {
-                j = 10 * j + ch2 - 48;
-                ++i;
-            }
-            if (ch === 113) {
-                add0 = j;
-            } else if (ch === 114) {
-                skip = j;
-            } else {
-                skip = -j;
-            }
-        } else if (ch >= 65 && ch <= 72) {
-            add0 = ch - 64;
-            skip = 1;
-        } else if (ch >= 73 && ch <= 80) {
-            add0 = ch - 72;
-            skip = 2;
-        } else if (ch === 122) {
-            sign = -sign;
-        } else if (ch === 90) {
-            sign = -sign;
-            skip = 2;
-        } else if (ch === 81 && i === 1) {
-            include_after = true;
-            continue;
-        }
-
-        while (add0 !== 0) {
-            a.push(next);
-            next += sign;
-            --add0;
-        }
-        next += skip * sign;
-        if (skip !== 0 && include_after) {
-            a.push(next);
-            next += sign;
-        }
-    }
-    return a;
-}
-
-(function ($) {
-var cookie_set_at;
-function update_digest(info) {
-    var add = typeof info === "string" ? 1 : 0,
-        digests = wstorage.site_json(false, "list_digests") || [],
-        found = -1, now = now_msec();
-    for (var i = 0; i < digests.length; ++i) {
-        var digest = digests[i];
-        if (digest[add] === info)
-            found = i;
-        else if (digest[2] < now - 30000) {
-            digests.splice(i, 1);
-            --i;
-        } else if (now <= digest[0])
-            now = digest[0] + 1;
-    }
-    if (found >= 0)
-        digests[found][2] = now;
-    else if (add) {
-        digests.push([now, info, now]);
-        found = digests.length - 1;
-    }
-    wstorage.site(false, "list_digests", digests);
-    if (found >= 0)
-        return digests[found][1 - add];
-    else
-        return false;
-}
-window.Hotlist = function (s) {
-    this.str = s || "";
-    this.obj = null;
-    if (this.str && this.str.charAt(0) === "{") {
-        try {
-            this.obj = parse_json(this.str);
-        } catch (e) {
-        }
-    }
-};
-Hotlist.at = function (elt) {
-    return new Hotlist(elt ? elt.getAttribute("data-hotlist") : "");
-};
-Hotlist.prototype.ids = function () {
-    return this.obj && this.obj.ids ? decode_session_list_ids(this.obj.ids) : null;
-};
-Hotlist.prototype.resolve = function () {
-    var m, ids;
-    if (this.obj
-        && !this.obj.ids
-        && this.obj.digest
-        && /^listdigest[0-9]+$/.test(this.obj.digest)
-        && (ids = update_digest(+this.obj.digest.substring(10)))) {
-        delete this.obj.digest;
-        this.obj.ids = ids;
-        this.str = JSON.stringify(this.obj);
-    }
-    return this;
-};
-Hotlist.prototype.cookie_at = function (pid) {
-    this.resolve();
-    var m, digest, ids, pos;
-    if (this.str.length > 1500
-        && this.obj
-        && this.obj.ids
-        && wstorage()
-        && (digest = update_digest(this.obj.ids))) {
-        var x = Object.assign({digest: "listdigest" + digest}, this.obj);
-        delete x.ids;
-        if (pid
-            && (ids = this.ids())
-            && (pos = $.inArray(pid, ids)) >= 0) {
-            x.curid = pid;
-            x.previd = pos > 0 ? ids[pos - 1] : false;
-            x.nextid = pos < ids.length - 1 ? ids[pos + 1] : false;
-        }
-        return JSON.stringify(x);
-    } else {
-        return this.str;
-    }
-};
-Hotlist.prototype.reorder = function (tbody) {
-    if (this.obj) {
-        this.resolve();
-        var p0 = -100, p1 = -100, pid, l = [];
-        for (var cur = tbody.firstChild; cur; cur = cur.nextSibling)
-            if (cur.nodeName === "TR" && /^pl(?:\s|\z)/.test(cur.className)
-                && (pid = +cur.getAttribute("data-pid"))) {
-                if (pid != p1 + 1) {
-                    if (p0 > 0)
-                        l.push(p0 == p1 ? p0 : p0 + "-" + p1);
-                    p0 = pid;
-                }
-                p1 = pid;
-            }
-        if (p0 > 0)
-            l.push(p0 == p1 ? p0 : p0 + "-" + p1);
-        this.obj.ids = l.join("'");
-        this.str = JSON.stringify(this.obj);
-    }
-};
-function set_cookie(info, pid) {
-    var cstr = info.cookie_at(pid);
-    cookie_set_at = now_msec();
-    var p = "; Max-Age=20", m;
-    if (siteinfo.site_relative && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
-        p += "; Path=" + m[1];
-    document.cookie = "hotlist-info-".concat(cookie_set_at, "=", encodeURIComponent(cstr), siteinfo.cookie_params, p);
-}
-function is_listable(sitehref) {
-    return /^(?:paper|review|assign|profile)(?:|\.php)\//.test(sitehref);
-}
-function handle_list(e, href) {
-    var hl, sitehref, info;
-    if (href
-        && href.substring(0, siteinfo.site_relative.length) === siteinfo.site_relative
-        && is_listable((sitehref = href.substring(siteinfo.site_relative.length)))
-        && (hl = e.closest(".has-hotlist"))
-        && (info = Hotlist.at(hl)).str) {
-        if (hl.tagName === "TABLE"
-            && hasClass(hl, "pltable")
-            && hl.hasAttribute("data-reordered")
-            && document.getElementById("footer"))
-            // Existence of `#footer` checks that the table is fully loaded
-            info.reorder(hl.tBodies[0]);
-        var m = /^[^\/]*\/(\d+)(?:$|[a-zA-Z]*\/)/.exec(sitehref);
-        set_cookie(info, m ? +m[1] : null);
-    }
-}
-function unload_list() {
-    var hl = Hotlist.at(document.body);
-    if (hl.str && (!cookie_set_at || cookie_set_at + 3 < now_msec()))
-        set_cookie(hl);
-}
-function row_click(evt) {
-    if (!hasClass(this.parentElement, "pltable")
-        || evt.target.closest("a, input, textarea, select, button"))
-        return;
-    var td = evt.target.closest("td");
-    if (!td || (!hasClass(td, "pl_id") && !hasClass(td, "pl_title") && !hasClass(td, "pl_rowclick")))
-        return;
-    var pl = this;
-    while (pl.nodeType !== 1 || /^plx/.test(pl.className))
-        pl = pl.previousSibling;
-    var $inputs = $(pl).find("input, textarea, select, button")
-        .not("input[type=hidden], .pl_sel > input");
-    if ($inputs.length) {
-        $inputs.first().focus().scrollIntoView();
-    } else {
-        var $a = $(pl).find("a.pnum").first(),
-            href = $a[0].getAttribute("href");
-        handle_list($a[0], href);
-        if (event_key.is_default_a(evt)) {
-            window.location = href;
-        } else {
-            var w = window.open(href, "_blank");
-            window.focus();
-        }
-    }
-    evt.preventDefault();
-}
-handle_ui.on("js-edit-comment", function (event) {
-    if (this.tagName !== "A" || event_key.is_default_a(event)) {
-        event.preventDefault();
-        papercomment.edit_id(this.hash.substring(1));
-    }
-});
-
-function default_click(evt) {
-    var base = location.href;
-    if (location.hash) {
-        base = base.substring(0, base.length - location.hash.length);
-    }
-    if (this.href.substring(0, base.length + 1) === base + "#") {
-        if (jump_hash(this.href)) {
-            push_history_state(this.href);
-            evt.preventDefault();
-        }
-        return true;
-    } else if ($ajax.has_outstanding()) {
-        $ajax.after_outstanding(make_link_callback(this));
-        return true;
-    } else {
-        return false;
-    }
-}
-
-$(document).on("click", "a", function (evt) {
-    if (hasClass(this, "fn5")) {
-        foldup.call(this, evt, {n: 5, f: false});
-    } else if (!hasClass(this, "ui")) {
-        if (!event_key.is_default_a(evt)
-            || this.target
-            || !default_click.call(this, evt))
-            handle_list(this, this.getAttribute("href"));
-    }
-});
-
-$(document).on("submit", "form", function (evt) {
-    if (hasClass(this, "ui-submit")) {
-        handle_ui.call(this, evt);
-    } else {
-        handle_list(this, this.getAttribute("action"));
-    }
-});
-$(document).on("click", "tr.pl", row_click);
-$(window).on("beforeunload", unload_list);
-
-$(function () {
-    // resolve list digests
-    if (document.body.hasAttribute("data-hotlist")) {
-        document.body.setAttribute("data-hotlist", Hotlist.at(document.body).resolve().str);
-    }
-    // having resolved digests, insert quicklinks
-    if (siteinfo.paperid
-        && !$$("quicklink-prev")
-        && !$$("quicklink-next")) {
-        $(".quicklinks").each(function () {
-            var info = Hotlist.at(this.closest(".has-hotlist")), ids, pos, page, mode;
-            try {
-                mode = parse_json(this.getAttribute("data-link-params") || "{}");
-            } catch (e) {
-                mode = {};
-            }
-            page = mode.page || "paper";
-            delete mode.page;
-            if ((ids = info.ids())
-                && (pos = $.inArray(siteinfo.paperid, ids)) >= 0) {
-                if (pos > 0) {
-                    mode.p = ids[pos - 1];
-                    $(this).prepend('<a id="quicklink-prev" class="ulh" href="'.concat(hoturl_html(page, mode), '">&lt; #', ids[pos - 1], '</a> '));
-                }
-                if (pos < ids.length - 1) {
-                    mode.p = ids[pos + 1];
-                    $(this).append(' <a id="quicklink-next" class="ulh" href="'.concat(hoturl_html(page, mode), '">#', ids[pos + 1], ' &gt;</a>'));
-                }
-            }
-        });
-    }
-});
-})($);
-
-
-function hotlist_search_params(x, ids) {
-    x = x instanceof HTMLElement ? Hotlist.at(x) : new Hotlist(x);
-    var m;
-    if (!x || !x.obj || !x.obj.ids || !(m = x.obj.listid.match(/^p\/(.*?)\/(.*?)(?:$|\/)(.*)/)))
-        return false;
-    var idv;
-    if (ids) {
-        if (x.obj.sorted_ids)
-            idv = "pidcode:" + x.obj.sorted_ids;
-        else if ($.isArray(x.obj.ids))
-            idv = x.obj.ids.join(" ");
-        else
-            idv = "pidcode:" + x.obj.ids;
-    } else {
-        idv = urldecode(m[2]);
-    }
-    var q = {q: idv, t: m[1] || "s"};
-    if (m[3]) {
-        var args = m[3].split(/[&;]/);
-        for (var i = 0; i < args.length; ++i) {
-            var pos = args[i].indexOf("=");
-            q[args[i].substr(0, pos)] = urldecode(args[i].substr(pos + 1));
-        }
-    }
-    return q;
-}
-
-
 // focusing
 $(function () {
-$(".js-radio-focus").on("click keypress", "input, select", function (event) {
+$(".js-radio-focus").on("click keypress", "input, select", function () {
     var x = $(this).closest(".js-radio-focus").find("input[type=radio]").first();
     if (x.length && x[0] !== this)
         x[0].click();
@@ -10517,7 +10471,7 @@ function populate_pcselector(pcs) {
         if (selected == 0 || selected == null) {
             selindex = 0;
         } else {
-            var opt = document.createElement("option");
+            opt = document.createElement("option");
             if ((p = pcs[selected])) {
                 opt.setAttribute("value", p.email);
                 opt.text = p.name + " (not assignable)";
@@ -10541,7 +10495,7 @@ $(function () {
 
 
 // score information
-var make_score_info = (function ($) {
+var make_score_info = (function () {
 var scheme_info = {
     sv: [0, 9], svr: [1, 9, "sv"], blpu: [0, 9], publ: [1, 9, "blpu"],
     orbu: [0, 9], buor: [1, 9, "orbu"], viridis: [0, 9], viridisr: [1, 9, "viridis"],
@@ -10551,7 +10505,7 @@ var scheme_info = {
 
 function make_fm9(n, max, rev, categorical) {
     if (n <= 1 || max <= 1) {
-        return function (i) { return rev ? 1 : max; };
+        return function () { return rev ? 1 : max; };
     } else if (categorical) {
         return function (i) {
             var x = Math.round(+i - 1) % max;
@@ -10688,7 +10642,7 @@ return function (n, c, sv) {
         info[name] = make_info(n || 1, c || "", sv);
     return info[name];
 };
-})(jQuery);
+})();
 
 
 // score charts
@@ -10697,7 +10651,7 @@ var has_canvas = (function () {
     var e = document.createElement("canvas");
     return !!(e.getContext && e.getContext("2d"));
 })();
-var blackcolor = [0, 0, 0], graycolor = [190, 190, 255], sccolor = {};
+var blackcolor = [0, 0, 0], graycolor = [190, 190, 255];
 
 function setup_canvas(canvas, w, h) {
     var ctx = canvas.getContext("2d"),
@@ -10759,7 +10713,7 @@ function color_unparse(a) {
     return sprintf("#%02x%02x%02x", a[0], a[1], a[2]);
 }
 
-function scorechart1_s1(sc, parent) {
+function scorechart1_s1(sc) {
     var anal = analyze_sc(sc), blocksize = 3, blockpad = 2, blockfull = blocksize + blockpad;
     var cwidth = blockfull * (anal.v.length - 1) + blockpad + 1;
     var cheight = blockfull * Math.max(anal.max, 1) + blockpad + 1;
@@ -10799,7 +10753,7 @@ function scorechart1_s1(sc, parent) {
     return $(t + '</svg>')[0];
 }
 
-function scorechart1_s2(sc, parent) {
+function scorechart1_s2(sc) {
     var canvas = document.createElement("canvas"),
         ctx, anal = analyze_sc(sc),
         cwidth = 64, cheight = 8,
@@ -10826,9 +10780,9 @@ function scorechart1() {
         return;
     this.replaceChildren();
     if (/.*&s=1$/.test(sc) && has_canvas)
-        e = scorechart1_s1(sc, this);
+        e = scorechart1_s1(sc);
     else if (/.*&s=2$/.test(sc) && has_canvas)
-        e = scorechart1_s2(sc, this);
+        e = scorechart1_s2(sc);
     else {
         e = document.createElement("img");
         e.src = hoturl("scorechart", sc);
@@ -10922,8 +10876,8 @@ function remover($self, shadow) {
 }
 function make_textarea_autogrower($self) {
     var shadow, minHeight, lineHeight;
-    return function (event) {
-        if (event === false)
+    return function (evt) {
+        if (evt === false)
             return remover($self, shadow);
         var width = $self.width();
         if (width <= 0)
@@ -10936,7 +10890,7 @@ function make_textarea_autogrower($self) {
 
         // Did enter get pressed?  Resize in this keydown event so that the flicker doesn't occur.
         var val = $self[0].value;
-        if (event && event.type == "keydown" && event.keyCode === 13)
+        if (evt && evt.type == "keydown" && evt.keyCode === 13)
             val += "\n";
         shadow.css("width", width).text(val + "...");
 
@@ -10946,11 +10900,11 @@ function make_textarea_autogrower($self) {
 }
 function make_input_autogrower($self) {
     var shadow;
-    return function (event) {
-        if (event === false) {
+    return function (evt) {
+        if (evt === false) {
             return remover($self, shadow);
         }
-        var width = 0, ws;
+        var width = 0, p;
         try {
             width = $self.outerWidth();
         } catch (e) { // IE11 is annoying here
@@ -10960,29 +10914,27 @@ function make_input_autogrower($self) {
         }
         if (!shadow) {
             shadow = textarea_shadow($self, width);
-            var p = $self.css(["paddingRight", "paddingLeft", "borderLeftWidth", "borderRightWidth"]);
+            p = $self.css(["paddingRight", "paddingLeft", "borderLeftWidth", "borderRightWidth", "minWidth", "maxWidth"]);
             shadow.css({
                 width: "auto",
                 display: "table-cell",
-                paddingLeft: p.paddingLeft,
                 paddingLeft: (parseFloat(p.paddingRight) + parseFloat(p.paddingLeft) + parseFloat(p.borderLeftWidth) + parseFloat(p.borderRightWidth)) + "px"
             });
-            ws = $self.css(["minWidth", "maxWidth"]);
-            if (ws.minWidth == "0px") {
+            if (p.minWidth == "0px") {
                 $self.css("minWidth", width + "px");
             }
-            if (ws.maxWidth == "none" && !$self.hasClass("wide")) {
+            if (p.maxWidth == "none" && !$self.hasClass("wide")) {
                 $self.css("maxWidth", "640px");
             }
         }
         shadow.text($self[0].value + "  ");
-        ws = $self.css(["minWidth", "maxWidth"]);
+        p = $self.css(["minWidth", "maxWidth"]);
         var outerWidth = Math.min(shadow.outerWidth(), $(window).width()),
-            maxWidth = parseFloat(ws.maxWidth);
+            maxWidth = parseFloat(p.maxWidth);
         if (maxWidth === maxWidth) { // i.e., isn't NaN
             outerWidth = Math.min(outerWidth, maxWidth);
         }
-        $self.outerWidth(Math.max(outerWidth, parseFloat(ws.minWidth)));
+        $self.outerWidth(Math.max(outerWidth, parseFloat(p.minWidth)));
     };
 }
 $.fn.autogrow = function () {

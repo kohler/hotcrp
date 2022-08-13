@@ -2,8 +2,9 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 hotcrp.graph = (function ($, d3) {
-var handle_ui = hotcrp.handle_ui;
-var hoturl = hotcrp.hoturl;
+var handle_ui = hotcrp.handle_ui,
+    ensure_pattern = hotcrp.ensure_pattern,
+    hoturl = hotcrp.hoturl;
 var BOTTOM_MARGIN = 30;
 var PATHSEG_ARGMAP = {
     m: 2, M: 2, z: 0, Z: 0, l: 2, L: 2, h: 1, H: 1, v: 1, V: 1, c: 6, C: 6,
@@ -26,7 +27,7 @@ function make_svg_path_parser(s) {
     s = s.split(/([a-zA-Z]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[Ee][-+]?\d+)?)/);
     var i = 1, e = s.length, next_cmd;
     return function () {
-        var a = null, m, ch;
+        var a = null, ch;
         while (i < e) {
             ch = s[i];
             if (ch >= "A") {
@@ -406,7 +407,7 @@ function pid_renderer(ps, cc) {
 }
 
 function clicker(pids, event) {
-    var m, x, i, url, last_review = null;
+    var x, i, last_review = null;
     if (!pids)
         return;
     if (typeof pids !== "object")
@@ -455,16 +456,16 @@ function make_axis(ticks) {
     else
         ticks = {type: ticks ? ticks[0] : null};
     return $.extend({
-        prepare: function (domain, range) {},
+        prepare: function () {},
         rewrite: function () {},
-        unparse_html: function (value, include_numeric) {
+        unparse_html: function (value) {
             if (value == Math.floor(value))
                 return value;
             var dom = this.scale().domain(),
                 dig = Math.max(0, -Math.round(Math.log10(dom[1] - dom[0])) + 2);
             return value.toFixed(dig);
         },
-        search: function (value) { return null; }
+        search: function () { return null; }
     }, ticks);
 }
 
@@ -597,7 +598,6 @@ function graph_cdf(selector, args) {
             hubble = hubble || make_bubble("", {color: args.tooltip_class || "graphtip", "pointer-events": "none"});
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
             if (args.cdf_tooltip_position) {
-                var xp = x.invert(p[0]), yp = y.invert(p[1]);
                 var label = (hovered_series.label ? text_to_html(hovered_series.label) + " " : "") +
                     args.x.ticks.unparse_html.call(xAxis, x.invert(p[0]), true) +
                     ", " +
@@ -622,16 +622,16 @@ function graph_cdf(selector, args) {
         if (hovered_series && hovered_series.click)
             hovered_series.click.call(this, evt);
     }
-};
+}
 
 
 function procrastination_filter(revdata) {
     var args = {type: "cdf", data: {}, x: {}, y: {}, tooltip_class: "graphtip dark"};
 
     // collect data
-    var alldata = [], d, i, l, cid, u;
+    var alldata = [], d, i, cid, u;
     for (cid in revdata.reviews) {
-        var d = {d: revdata.reviews[cid], className: "gcdf-many"};
+        d = {d: revdata.reviews[cid], className: "gcdf-many"};
         if ((u = revdata.users[cid])) {
             if (u.name)
                 d.label = u.name;
@@ -671,7 +671,7 @@ function procrastination_filter(revdata) {
     args.y.label = "Fraction of assignments completed";
 
     return args;
-};
+}
 
 
 /* grouped quadtree */
@@ -708,7 +708,7 @@ function grouped_quadtree_mark_bounds(q, rf, ordinalf) {
 }
 
 function grouped_quadtree_gfind(point, min_distance) {
-    var q = this, closest = null;
+    var closest = null;
     if (min_distance == null)
         min_distance = Infinity;
     function visitor(node) {
@@ -1001,7 +1001,7 @@ function graph_scatter(selector, args) {
         } else if (event.q && event.ok)
             $.getJSON(hoturl("api/search", {q: event.q}), null, highlight);
     }
-};
+}
 
 function data_quantize_x(data) {
     if (data.length) {
@@ -1025,7 +1025,8 @@ function data_to_barchart(data, yaxis) {
             || (a[3] || "").localeCompare(b[3] || "");
     });
 
-    for (var i = 0; i != data.length; ++i) {
+    var i, maxy;
+    for (i = 0; i != data.length; ++i) {
         if (i && data[i-1][0] == data[i][0] && data[i-1][4] == data[i][4]) {
             data[i].yoff = data[i-1].yoff + data[i-1][1];
             if (data[i-1].i0 == null)
@@ -1037,11 +1038,11 @@ function data_to_barchart(data, yaxis) {
     }
 
     if (yaxis.fraction && data.some(function (d) { return d[4] != data[0][4]; })) {
-        var maxy = {};
+        maxy = {};
         data.forEach(function (d) { maxy[d[0]] = d[1] + d.yoff; });
         data.forEach(function (d) { d.yoff /= maxy[d[0]]; d[1] /= maxy[d[0]]; });
     } else if (yaxis.fraction) {
-        var maxy = 0;
+        maxy = 0;
         data.forEach(function (d) { maxy += d[1]; });
         data.forEach(function (d) { d.yoff /= maxy; d[1] /= maxy; });
     }
@@ -1155,7 +1156,7 @@ function graph_bars(selector, args) {
     function mouseclick(event) {
         clicker(hovered_data ? hovered_data[2] : null, event);
     }
-};
+}
 
 function boxplot_sort(data) {
     data.sort(function (a, b) {
@@ -1169,7 +1170,7 @@ function boxplot_sort(data) {
 function data_to_boxplot(data, septags) {
     data = boxplot_sort(data_quantize_x(data_to_scatter(data)));
 
-    var active = null, count = 0;
+    var active = null;
     data = data.reduce(function (newdata, d) {
         if (!active || active[0] != d[0] || (septags && active[4] != d[3])) {
             active = {"0": d[0], ymin: d[1], c: d[3] || "", d: [], p: []};
@@ -1422,13 +1423,13 @@ function graph_boxplot(selector, args) {
                     if (args.x.reordered && args.x.ticks.map)
                         remap_scatter_data(data, rv, args.x.ticks.map);
                     data = grouped_quadtree(data, x, y, 4);
-                    var sel = scatter_create(svg, data.data, "gscatter");
+                    scatter_create(svg, data.data, "gscatter");
                     scatter_highlight(svg, data.data, "gscatter");
                 }
             });
         }
     }
-};
+}
 
 function score_ticks(n, c, sv) {
     var info = make_score_info(n, c, sv), split = 2;
@@ -1614,7 +1615,7 @@ function named_integer_ticks(map) {
         type: "named_integer",
         map: map
     };
-};
+}
 
 function make_rotate_ticks(angle) {
     if (!angle)
@@ -1626,7 +1627,7 @@ function make_rotate_ticks(angle) {
                 .attr("transform", "rotate(" + angle + ")")
                 .style("text-anchor", "middle");
         };
-};
+}
 
 handle_ui.on("js-hotgraph-highlight", function () {
     var s = $.trim(this.value), pids = null;
