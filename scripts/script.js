@@ -995,6 +995,7 @@ function make_onkey(key, f) {
             evt.preventDefault();
             evt.stopImmediatePropagation();
             f.call(this, evt);
+            return false;
         }
     };
 }
@@ -1473,8 +1474,9 @@ function collect_callbacks(cbs, c, etype) {
     }
 }
 function call_callbacks(cbs, element, evt) {
-    for (var i = 0; i !== cbs.length && !evt.isImmediatePropagationStopped(); i += 2) {
-        cbs[i+1].call(element, evt);
+    for (var i = 0; i !== cbs.length; i += 2) {
+        if (cbs[i+1].call(element, evt) === false)
+            break;
     }
 }
 function handle_ui(evt) {
@@ -1483,15 +1485,15 @@ function handle_ui(evt) {
         || (this.tagName === "A" && hasClass(this, "ui"))) {
         evt.preventDefault();
     }
-    var k = classList(this), cbs = null;
-    for (var i = 0; i < k.length; ++i) {
+    var k = classList(this), cbs = [];
+    for (var i = 0; i !== k.length; ++i) {
         var c = callbacks[k[i]];
-        if (c) {
-            cbs = cbs || [];
+        if (c)
             collect_callbacks(cbs, c, evt.type);
-        }
     }
-    cbs && cbs.length && call_callbacks(cbs, this, evt);
+    if (cbs.length !== 0) {
+        call_callbacks(cbs, this, evt.originalEvent || evt);
+    }
 }
 handle_ui.on = function (className, callback, priority) {
     var dot = className.indexOf("."), type = null;
@@ -6488,6 +6490,7 @@ function suggest() {
                 hiding = this.value.substring(hintinfo.pcpos, hintinfo.pcpos + hintinfo.lengths[0]);
                 kill();
                 evt.stopImmediatePropagation();
+                result = false;
             }
         } else if ((k === "Tab" || k === "Enter") && !m && hintdiv) {
             var $active = hintdiv.self().find(".s9y");
@@ -6501,7 +6504,6 @@ function suggest() {
             }
         } else if (k.substring(0, 5) === "Arrow" && !m && hintdiv && move_active(k)) {
             evt.preventDefault();
-            result = false;
         } else {
             if (pspacestate > 0
                 && event_key.printable(evt)
@@ -7052,9 +7054,10 @@ var add_revpref_ajax = (function () {
     handle_ui.on("revpref", function (evt) {
         if (evt.type === "keydown") {
             if (!event_modkey(evt) && event_key(evt) === "Enter") {
+                rp_change.call(this);
                 evt.preventDefault();
                 evt.stopImmediatePropagation();
-                rp_change.call(this);
+                return false;
             }
         } else if (evt.type === "change")
             rp_change.call(this, evt);
@@ -9419,6 +9422,7 @@ function prepare_pstags() {
                 $f[0][key === "Enter" ? "save" : "cancel"].click();
                 evt.preventDefault();
                 evt.stopImmediatePropagation();
+                return false;
             }
         }
     });
@@ -9705,7 +9709,7 @@ handle_ui.on("submit.js-submit-paper", function (evt) {
 });
 
 function fieldchange(evt) {
-    $(evt.delegateTarget).find(".want-fieldchange")
+    $(this.form).find(".want-fieldchange")
         .trigger({type: "fieldchange", changeTarget: evt.target});
 }
 
