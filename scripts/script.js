@@ -11037,7 +11037,6 @@ window.hotcrp = {
     render_text_page: render_text.on_page,
     replace_editable_field: edit_paper_ui.replace_field,
     scorechart: scorechart,
-    set_default_format: function () {}, /* XXX */
     set_response_round: papercomment.set_resp_round,
     set_review_form: review_form.set_form,
     shortcut: shortcut

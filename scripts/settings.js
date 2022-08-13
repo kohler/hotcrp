@@ -816,15 +816,6 @@ function is_text_or_inline(node) {
         || (node.tagName !== "BR" && node.childWidth === 0 && node.childHeight === 0);
 }
 
-// Test if `node` is a descendent of `ancestor`
-function is_descendent(node, ancestor) {
-    var parent = ancestor.parentElement;
-    while (node && node !== ancestor && node !== parent) {
-        node = node.parentElement;
-    }
-    return node === ancestor;
-}
-
 // Test if `ch` is a character code for JSON whitespace
 function isspace(ch) {
     return ch === 9 || ch === 10 || ch === 13 || ch === 32;
@@ -874,7 +865,7 @@ function canonical_input_type(it) {
 // * `nsel.refresh()` installs the pending selection.
 function window_selection_inside(el) {
     var sel = window.getSelection(),
-        selm = [is_descendent(sel.anchorNode, el), is_descendent(sel.focusNode, el)],
+        selm = [el.contains(sel.anchorNode), el.contains(sel.focusNode)],
         selmx = selm[0] || selm[1],
         selx = [sel.anchorNode, sel.anchorOffset, sel.focusNode, sel.focusOffset];
     function reset(i, el, offset) {
@@ -1434,7 +1425,7 @@ function jsonhl_install(lineel, errors, nsel) {
 
 function log_line_summary(lineno, lineel) {
     var x = [], i = 0, ch,
-        sel = window.getSelection(), sub = is_descendent(sel.anchorNode, lineel);
+        sel = window.getSelection(), sub = lineel.contains(sel.anchorNode);
     for (ch = lineel.firstChild; ch; ch = ch.nextSibling, ++i) {
         if (sel.anchorNode === lineel && sel.anchorOffset === i) {
             x.push("*");
@@ -1443,7 +1434,7 @@ function log_line_summary(lineno, lineel) {
             x.push("T".concat(ch.length, "@", sel.anchorOffset));
         } else if (ch.nodeType === 3) {
             x.push("T".concat(ch.length));
-        } else if (sub && is_descendent(sel.anchorNode, ch)) {
+        } else if (sub && ch.contains(sel.anchorNode)) {
             x.push(ch.tagName.concat(ch.childNodes.length, "@", sel.anchorOffset));
         } else {
             x.push(ch.tagName.concat(ch.childNodes.length));
@@ -2231,13 +2222,15 @@ function make_json_validate() {
             rehighlight_queued = true;
         }
         // place selection at end of difference
-        var ft = dstTexts[dstTexts.length - 1] || "",
-            lt = srcTexts[srcTexts.length - 1] || "";
+        var dt = dstTexts[dstTexts.length - 1] || "",
+            dl = dt.length,
+            st = srcTexts[srcTexts.length - 1] || "",
+            sl = st.length;
         i = -1;
-        while (ft.charCodeAt(ft.length + i) === lt.charAt(lt.length + i)) {
+        while (st.charCodeAt(sl + i) === dt.charCodeAt(dl + i)) {
             --i;
         }
-        let [b, off] = maince.lp2boff(dstRange[1] - 1, i);
+        let [b, off] = maince.lp2boff(dstRange[1] - 1, i + 1);
         window.getSelection().setBaseAndExtent(b, off, b, off);
     }
 
