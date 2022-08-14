@@ -750,15 +750,13 @@ Phil Porras.");
             "id" => $this->pid2, "contacts" => []
         ]);
         xassert($ps->has_problem());
-        xassert_eqq($ps->feedback_text_at("contacts"), "Each submission must have at least one contact
-You can’t remove yourself from the submission’s contacts
+        xassert_eqq($ps->feedback_text_at("contacts"), "You can’t remove yourself from the submission’s contacts
     (Ask another contact to remove you.)\n");
 
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu"]), $nprow1, "update");
         xassert($ps->has_problem());
-        xassert_eqq($ps->feedback_text_at("contacts"), "Each submission must have at least one contact
-You can’t remove yourself from the submission’s contacts
+        xassert_eqq($ps->feedback_text_at("contacts"), "You can’t remove yourself from the submission’s contacts
     (Ask another contact to remove you.)\n");
 
         $ps->save_paper_json((object) [
