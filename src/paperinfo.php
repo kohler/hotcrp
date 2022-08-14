@@ -869,6 +869,7 @@ class PaperInfo {
         return $this->conf->format_info($this->paperFormat);
     }
 
+
     /** @param string $authorInformation
      * @return list<Author> */
     static function parse_author_list($authorInformation) {
@@ -908,6 +909,107 @@ class PaperInfo {
         return self::search_author_list_by_email($this->author_list(), $email);
     }
 
+
+    /** @param bool $with_email */
+    function load_conflicts($with_email) {
+        if (!$with_email && $this->allConflictType !== null) {
+            $this->_conflict_array = [];
+            $this->_conflict_array_email = false;
+            if ($this->allConflictType !== "") {
+                foreach (explode(",", $this->allConflictType) as $x) {
+                    list($cid, $ctype) = explode(" ", $x);
+                    $cflt = new Author;
+                    $cflt->paperId = $this->paperId;
+                    $cflt->contactId = (int) $cid;
+                    $cflt->conflictType = (int) $ctype;
+                    $this->_conflict_array[$cflt->contactId] = $cflt;
+                }
+            }
+        } else if ($this->paperId === 0 && $this->_paper_creator) {
+            $cflt = new Author($this->_paper_creator);
+            $cflt->paperId = $this->paperId;
+            $cflt->contactId = $this->_paper_creator->contactId;
+            $cflt->conflictType = CONFLICT_CONTACTAUTHOR;
+            $cflt->disabled = $this->_paper_creator->disablement;
+            $cflt->collaborators = $this->_paper_creator->collaborators();
+            $this->_conflict_array = [$cflt->contactId => $cflt];
+            $this->_conflict_array_email = true;
+        } else {
+            foreach ($this->_row_set as $prow) {
+                $prow->_conflict_array = [];
+                $prow->_conflict_array_email = $with_email;
+            }
+            if ($with_email) {
+                $this->_load_conflicts_with_email();
+            } else {
+                $this->_load_conflicts_without_email();
+            }
+        }
+    }
+
+    private function _load_conflicts_with_email() {
+        $result = $this->conf->qe("select paperId, PaperConflict.contactId, conflictType, firstName, lastName, affiliation, email, disabled, collaborators from PaperConflict join ContactInfo using (contactId) where paperId?a", $this->_row_set->paper_ids());
+        while (($au = $result->fetch_object("Author"))) {
+            $au->paperId = (int) $au->paperId;
+            $au->contactId = (int) $au->contactId;
+            $au->conflictType = (int) $au->conflictType;
+            if ($au->disabled !== null) {
+                $au->disabled = (int) $au->disabled;
+            }
+            $prow = $this->_row_set->get($au->paperId);
+            $prow->_conflict_array[$au->contactId] = $au;
+            if (($aux = $prow->author_by_email($au->email))) {
+                $au->author_index = $aux->author_index;
+            }
+        }
+        Dbl::free($result);
+    }
+
+    private function _load_conflicts_without_email() {
+        $result = $this->conf->qe("select paperId, contactId, conflictType from PaperConflict where paperId?a", $this->_row_set->paper_ids());
+        while (($au = $result->fetch_object("Author"))) {
+            $au->paperId = (int) $au->paperId;
+            $au->contactId = (int) $au->contactId;
+            $au->conflictType = (int) $au->conflictType;
+            $au->firstName = $au->lastName = $au->email = $au->affiliation = "";
+            $prow = $this->_row_set->get($au->paperId);
+            $prow->_conflict_array[$au->contactId] = $au;
+        }
+        Dbl::free($result);
+    }
+
+    /** @param bool $with_email
+     * @return associative-array<int,Author> */
+    function conflicts($with_email = false) {
+        if ($this->_conflict_array === null
+            || ($with_email && !$this->_conflict_array_email)) {
+            $this->load_conflicts($with_email);
+        }
+        return $this->_conflict_array;
+    }
+
+    /** @param int $uid
+     * @param bool $with_email
+     * @return ?Author */
+    function conflict_by_id($uid, $with_email = false) {
+        return ($this->conflicts($with_email))[$uid] ?? null;
+    }
+
+    /** @param string $email
+     * @return ?Author */
+    function conflict_by_email($email) {
+        foreach ($this->conflicts(true) as $cflt) {
+            if (strcasecmp($cflt->email, $email) === 0)
+                return $cflt;
+        }
+        return null;
+    }
+
+    function invalidate_conflicts() {
+        $this->allConflictType = $this->_conflict_array = null;
+    }
+
+
     /** @param Contact|int $contact
      * @return int */
     function conflict_type($contact) {
@@ -924,11 +1026,8 @@ class PaperInfo {
     /** @param string $email
      * @return int */
     function conflict_type_by_email($email) {
-        foreach ($this->conflicts(true) as $cflt) {
-            if (strcasecmp($cflt->email, $email) === 0)
-                return $cflt->conflictType;
-        }
-        return 0;
+        $cflt = $this->conflict_by_email($email);
+        return $cflt ? $cflt->conflictType : 0;
     }
 
     /** @param Contact|int $contact
@@ -947,6 +1046,7 @@ class PaperInfo {
     function has_author_view(Contact $user) {
         return $user->view_conflict_type($this) >= CONFLICT_AUTHOR;
     }
+
 
     /** @return string */
     function collaborators() {
@@ -1563,86 +1663,10 @@ class PaperInfo {
     }
 
 
-    /** @param bool $email */
-    function load_conflicts($email) {
-        if (!$email && $this->allConflictType !== null) {
-            $this->_conflict_array = [];
-            $this->_conflict_array_email = false;
-            if ($this->allConflictType !== "") {
-                foreach (explode(",", $this->allConflictType) as $x) {
-                    list($cid, $ctype) = explode(" ", $x);
-                    $cflt = new Author;
-                    $cflt->paperId = $this->paperId;
-                    $cflt->contactId = (int) $cid;
-                    $cflt->conflictType = (int) $ctype;
-                    $this->_conflict_array[$cflt->contactId] = $cflt;
-                }
-            }
-        } else if ($this->paperId === 0 && $this->_paper_creator) {
-            $cflt = new Author($this->_paper_creator);
-            $cflt->paperId = $this->paperId;
-            $cflt->contactId = $this->_paper_creator->contactId;
-            $cflt->conflictType = CONFLICT_CONTACTAUTHOR;
-            $cflt->collaborators = $this->_paper_creator->collaborators();
-            $this->_conflict_array = [$cflt->contactId => $cflt];
-            $this->_conflict_array_email = true;
-        } else {
-            foreach ($this->_row_set as $prow) {
-                $prow->_conflict_array = [];
-                $prow->_conflict_array_email = $email;
-            }
-            if ($email) {
-                $result = $this->conf->qe("select paperId, PaperConflict.contactId, conflictType, firstName, lastName, affiliation, email, collaborators from PaperConflict join ContactInfo using (contactId) where paperId?a", $this->_row_set->paper_ids());
-            } else {
-                $result = $this->conf->qe("select paperId, contactId, conflictType, '' firstName, '' lastName, '' affiliation, '' email, null collaborators from PaperConflict where paperId?a", $this->_row_set->paper_ids());
-            }
-            $map = [];
-            while (($au = $result->fetch_object("Author"))) {
-                $au->paperId = (int) $au->paperId;
-                $au->contactId = (int) $au->contactId;
-                $au->conflictType = (int) $au->conflictType;
-                $prow = $this->_row_set->get($au->paperId);
-                $prow->_conflict_array[$au->contactId] = $au;
-                if ($email) {
-                    if (($x = $map[$au->contactId] ?? null) !== null) {
-                        $au->firstName = $x->firstName;
-                        $au->lastName = $x->lastName;
-                        $au->affiliation = $x->affiliation;
-                        $au->email = $x->email;
-                        $au->collaborators = $x->collaborators;
-                    } else {
-                        $map[$au->contactId] = $au;
-                    }
-                    if (($aux = $prow->author_by_email($au->email))) {
-                        $au->author_index = $aux->author_index;
-                    }
-                }
-            }
-            Dbl::free($result);
-        }
-    }
-
-    /** @param bool $email
+    /** @param bool $with_email
      * @return associative-array<int,Author> */
-    function conflicts($email = false) {
-        if ($this->_conflict_array === null
-            || ($email && !$this->_conflict_array_email)) {
-            $this->load_conflicts($email);
-        }
-        return $this->_conflict_array;
-    }
-
-    /** @param int $uid
-     * @param bool $email
-     * @return ?Author */
-    function conflict_by_id($uid, $email = false) {
-        return ($this->conflicts($email))[$uid] ?? null;
-    }
-
-    /** @param bool $email
-     * @return associative-array<int,Author> */
-    function pc_conflicts($email = false) {
-        return array_intersect_key($this->conflicts($email), $this->conf->pc_members());
+    function pc_conflicts($with_email = false) {
+        return array_intersect_key($this->conflicts($with_email), $this->conf->pc_members());
     }
 
     /** @return associative-array<int,int> */
@@ -1654,15 +1678,11 @@ class PaperInfo {
         return $ct;
     }
 
-    function invalidate_conflicts() {
-        $this->allConflictType = $this->_conflict_array = null;
-    }
-
 
     /** @return associative-array<int,Author> */
-    function contacts($email = false) {
+    function contacts($with_email = false) {
         $c = [];
-        foreach ($this->conflicts($email) as $id => $cflt) {
+        foreach ($this->conflicts($with_email) as $id => $cflt) {
             if ($cflt->conflictType >= CONFLICT_AUTHOR)
                 $c[$id] = $cflt;
         }
@@ -2839,7 +2859,8 @@ class PaperInfo {
         return $a;
     }
 
-    /** @return list<ReviewRefusalInfo> */
+    /** @param string $email
+     * @return list<ReviewRefusalInfo> */
     function review_refusals_by_email($email) {
         $a = [];
         foreach ($this->review_refusals() as $ref) {
@@ -3123,8 +3144,9 @@ class PaperInfo {
     /** @return list<Contact> */
     function contact_followers() {
         $cids = [];
-        foreach ($this->contacts() as $cflt) {
-            $cids[] = $cflt->contactId;
+        foreach ($this->conflicts() as $cflt) {
+            if ($cflt->conflictType >= CONFLICT_AUTHOR)
+                $cids[] = $cflt->contactId;
         }
         return $this->generic_followers($cids, "false", null);
     }
@@ -3149,8 +3171,9 @@ class PaperInfo {
     /** @return list<Contact> */
     function review_followers() {
         $cids = [];
-        foreach ($this->contacts() as $cflt) {
-            $cids[] = $cflt->contactId;
+        foreach ($this->conflicts() as $cflt) {
+            if ($cflt->conflictType >= CONFLICT_AUTHOR)
+                $cids[] = $cflt->contactId;
         }
         foreach ($this->all_reviews() as $rrow) {
             $cids[] = $rrow->contactId;

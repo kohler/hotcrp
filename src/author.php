@@ -13,6 +13,8 @@ class Author {
     public $affiliation = "";
     /** @var ?int */
     public $contactId;
+    /** @var ?int */
+    public $disabled;
     /** @var ?string */
     public $collaborators;
     /** @var ?string */
