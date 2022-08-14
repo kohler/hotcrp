@@ -15,7 +15,7 @@ class PaperValue implements JsonSerializable {
     /** @var ?int */
     public $value;
     /** @var ?array<string,mixed> */
-    private $anno;
+    private $_anno;
     /** @var list<int> */
     private $_values = [];
     /** @var list<?string> */
@@ -162,23 +162,23 @@ class PaperValue implements JsonSerializable {
     /** @param string $name
      * @return bool */
     function has_anno($name) {
-        return $this->anno !== null && array_key_exists($name, $this->anno);
+        return $this->_anno !== null && array_key_exists($name, $this->_anno);
     }
     /** @param string $name
      * @return mixed */
     function anno($name) {
-        return $this->anno[$name] ?? null;
+        return $this->_anno[$name] ?? null;
     }
     /** @param string $name
      * @param mixed $value */
     function set_anno($name, $value) {
-        $this->anno[$name] = $value;
+        $this->_anno[$name] = $value;
     }
     /** @param string $name
      * @param mixed $value */
     function push_anno($name, $value) {
-        $this->anno = $this->anno ?? [];
-        $this->anno[$name][] = $value;
+        $this->_anno = $this->_anno ?? [];
+        $this->_anno[$name][] = $value;
     }
 
     /** @return MessageSet */
