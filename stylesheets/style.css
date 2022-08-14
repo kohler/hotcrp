@@ -1505,6 +1505,9 @@ a.btn-disabled, a.btn-disabled:hover {
 .licon-raised {
 	fill: currentColor;
 }
+.move-handle-icon {
+	fill: currentColor;
+}
 button > .licon, .btn > .licon {
 	vertical-align: -0.15em;
 }
@@ -1689,23 +1692,61 @@ th.settings-simplehead {
 	margin-top: 0;
 	margin-bottom: 0;
 }
-.settings-rf-edit, .settings-sf-edit {
-	margin-top: 2em;
-	margin-bottom: 3em;
-}
-.settings-sf-view, .settings-rf-view {
+.settings-rf, .settings-sf {
+	position: relative;
 	border: 1px solid silver;
 	border-radius: 5px;
-	margin-top: 16px;
+	margin-top: 1.5em;
 	margin-bottom: 1.5em;
-	padding: 8px 12px;
-	background-color: #f9fbfb;
 	width: fit-content;
 	min-width: 800px;
+	transition: opacity 0.5s;
 }
-.settings-sf-view:hover, .settings-rf-view:hover {
+.settings-rf.fold2c, .settings-sf.fold2c {
+	background-color: #f9fbfb;
+}
+.settings-rf.fold2c:hover, .settings-sf.fold2c:hover {
 	border-color: #a5a5a5;
 	background-color: #ecf2f4;
+}
+.settings-sf-view, .settings-rf-view {
+	padding: 16px;
+	border-radius: 5px;
+}
+.settings-sf-edit, .settings-rf-edit {
+	padding: 20px 16px 16px;
+	border-radius: 5px;
+}
+.settings-draghandle {
+	position: absolute;
+	display: inline-block;
+	left: 50%;
+	left: calc(50% - 0.5em);
+	right: auto;
+	top: 0;
+	user-select: none;
+	-webkit-user-select: none;
+	cursor: move;
+	opacity: 0.25;
+}
+hr.dropmark {
+	max-width: 800px;
+	border-top: 2px solid #e68e00;
+	margin: 16px 0;
+}
+.settings-sf:hover .settings-draghandle, .settings-rf:hover .settings-draghandle {
+	opacity: 0.5;
+}
+.settings-rf.drag-would-keep, .settings-sf.drag-would-keep {
+	opacity: 0.75;
+	border-color: #c07700 !important;
+}
+.settings-rf.drag-would-move, .settings-sf.drag-would-move {
+	opacity: 0.25 !important;
+	border-color: silver !important;
+}
+.settings-draghandle:hover {
+	opacity: 1 !important;
 }
 .settings-sf-example > .pfe {
 	margin-bottom: 0;

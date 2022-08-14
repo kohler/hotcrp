@@ -36,6 +36,8 @@ class Icons {
             return '<path d="M 9.6 21.9 C 9.6 21.9 9.2 23.9 9.9 24.9 L 31.2 59.1 C 32.1 60.6 33.9 61 35.3 60.1 L 54 48.5 C 55.5 47.6 55.9 45.8 55 44.4 L 33.7 10.1 C 33.5 9.6 32.8 9 31.6 8.5 L 17 3.5 C 15.3 2.9 14.1 2.9 13.1 3.5 C 12.2 4.1 11.6 5.2 11.4 6.9 C 11.4 6.9 9.7 21.9 9.6 21.9 Z M 52 45.4 L 33.5 56.9 L 13.2 24.2 L 31.7 12.7 Z M 18.1 8 C 20.2 8 21.9 9.7 21.9 11.8 C 21.9 13.9 20.2 15.6 18.1 15.6 C 16 15.6 14.3 13.9 14.3 11.8 C 14.3 9.7 16 8 18.1 8 Z" />';
         case "solid_question":
             return '<path d="M 63.5 32 C 63.5 49.396 49.396 63.5 32 63.5 C 14.604 63.5 0.5 49.396 0.5 32 C 0.5 14.604 14.604 0.5 32 0.5 C 49.396 0.5 63.5 14.604 63.5 32 Z M 36.212 39.584 L 36.212 38.464 C 36.152 35.684 37.152 33.264 39.372 30.724 C 41.732 28.124 44.712 25.024 44.712 20.244 C 44.712 15.164 40.208 10.334 32.088 10.334 C 27.608 10.334 22.852 11.998 19.112 16.54 L 24.206 21.862 C 25.588 20.524 27.42 17.934 31.34 17.934 C 34.38 17.934 36.056 19.624 36.056 21.784 C 36.056 23.844 33.552 25.884 31.572 28.244 C 28.772 31.584 27.772 34.804 27.912 37.984 L 28.032 39.584 Z M 31.932 55.018 C 34.562 55.01 37.452 52.598 37.452 49.378 C 37.392 46.038 35.232 43.738 31.872 43.738 C 28.652 43.738 26.352 46.038 26.352 49.378 C 26.352 52.598 29.288 55.026 31.932 55.018 Z" />';
+        case "move_handle_horizontal":
+            return '<circle cx="4" cy="4" r="1.5" /><circle cx="9" cy="4" r="1.5" /><circle cx="14" cy="4" r="1.5" /><circle cx="4" cy="9" r="1.5" /><circle cx="9" cy="9" r="1.5" /><circle cx="14" cy="9" r="1.5" />';
         default:
             throw new InvalidArgumentException("bad icon $name");
         }
@@ -120,6 +122,10 @@ class Icons {
     }
     static function ui_solid_question() {
         return '<svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 64 64" preserveAspectRatio="none">' . self::svg_contents("solid_question") . '</svg>';
+    }
+    static function ui_move_handle_horizontal() {
+        return '<svg class="move-handle-icon" width="1em" height="0.666em" viewBox="0 0 18 12" preserveAspectRatio="none">' . self::svg_contents("move_handle_horizontal") . '</svg>';
+
     }
     static function ui_graph_scatter() {
         return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path stroke-linejoin="miter" d="M7 12V60H89" /><circle cx="22" cy="22" r="4" class="gdot" /><circle cx="39" cy="41" r="6" class="gdot" /><circle cx="54" cy="22" r="2" class="gdot" /><circle cx="64" cy="50" r="3" class="gdot" /><circle cx="64" cy="20" r="2" class="gdot" /><circle cx="75" cy="39" r="3" class="gdot" /></svg>';

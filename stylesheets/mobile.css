@@ -31,8 +31,7 @@ body.paper {
 .paperinfo-c {
 	padding-right: 0;
 }
-.settings-rf.fold2c, .settings-sf.fold2c {
-	width: auto;
+.settings-rf-view, .settings-sf-view {
 	min-width: initial;
 }
 }

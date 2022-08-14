@@ -159,7 +159,7 @@ class Options_SettingRenderer {
     }
 
     function print_actions(SettingValues $sv) {
-        echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">',
+        echo '<div class="f-i entryi mb-0"><label></label><div class="btnp entry"><span class="btnbox">',
             Ht::button(Icons::ui_use("movearrow0"), ["class" => "btn-licon ui js-settings-sf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
             Ht::button(Icons::ui_use("movearrow2"), ["class" => "btn-licon ui js-settings-sf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
@@ -197,7 +197,10 @@ class Options_SettingRenderer {
 
         echo '<div id="sf/', $ctr, '" class="settings-sf ',
             $this->io ? '' : 'is-new ',
-            'has-fold fold2o ui-unfold js-unfold-focus hidden">';
+            'has-fold fold2o ui-unfold js-unfold-focus hidden">',
+            '<div class="settings-draghandle ui-drag js-settings-drag" draggable="true" title="Drag to reorder fields">',
+            Icons::ui_move_handle_horizontal(),
+            '</div>';
 
         if ($this->io) {
             $this->print_one_option_view($this->io, $ctr);
@@ -205,7 +208,7 @@ class Options_SettingRenderer {
 
         echo '<div id="sf/', $ctr, '/edit" class="settings-sf-edit fx2">',
             Ht::hidden("sf/{$ctr}/id", $this->io ? $this->io->id : "new", ["class" => "settings-sf-id", "data-default-value" => $this->io ? $this->io->id : ""]),
-            Ht::hidden("sf/{$ctr}/order", $ctr, ["class" => "settings-sf-order", "data-default-value" => $this->io ? $this->io->order : ""]);
+            Ht::hidden("sf/{$ctr}/order", $ctr, ["class" => "is-order", "data-default-value" => $this->io ? $this->io->order : ""]);
         $sv->print_group("submissionfield/properties");
         echo '</div>';
 
@@ -253,6 +256,7 @@ class Options_SettingRenderer {
         Icons::stash_defs("movearrow0", "movearrow2", "trash");
         Ht::stash_html('<div id="settings-sf-caption-name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div>', 'settings-sf-caption-name');
         Ht::stash_html('<div id="settings-sf-caption-values" class="hidden"><p>Enter choices one per line.</p></div>', 'settings-sf-caption-values');
+        Ht::stash_html('<div id="settings-sf-caption-description" class="hidden"><p>Enter an HTML description for the submission form.</p></div>', 'settings-sf-caption-description');
         echo Ht::unstash();
 
         if ($sv->oblist_keys("sf")) {

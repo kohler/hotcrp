@@ -218,10 +218,12 @@ handle_ui.on("unfold.settings-sf", settings_field_unfold, -1);
 
 tooltip.add_builder("settings-sf", function (info) {
     var x = "#settings-sf-caption-values";
-    if (/\/name$/.test(this.name))
+    if (this.name.endsWith("/name"))
         x = "#settings-sf-caption-name";
-    else if (/\/condition$/.test(this.name))
+    else if (this.name.endsWith("/condition"))
         x = "#settings-sf-caption-condition";
+    else if (this.name.endsWith("/description"))
+        x = "#settings-sf-caption-description";
     return $.extend({anchor: "h", content: $(x).html(), className: "gray"}, info);
 });
 
@@ -381,7 +383,7 @@ handle_ui.on("js-settings-review-round-delete", function () {
 });
 
 
-window.review_form_settings = (function () {
+var review_form_settings = (function () {
 var fieldorder = [], original, samples, stemplate, ttemplate,
     colors = ["sv", "Red to green", "svr", "Green to red",
               "blpu", "Blue to purple", "publ", "Purple to blue",
@@ -578,14 +580,14 @@ function rf_render_view(fieldj) {
 
 function rf_move() {
     var isup = $(this).hasClass("moveup"),
-        $f = $(this).closest(".settings-rf").detach(),
-        pos = $f.find(".rf-order").val() | 0,
-        $c = $("#settings-rform")[0], $n, i;
-    for (i = 1, $n = $c.firstChild;
-         $n && i < (isup ? pos - 1 : pos + 1);
-         ++i, $n = $n.nextSibling) {
+        $field = $(this).closest(".settings-rf").detach(),
+        pos = $field.find(".is-order").val() | 0,
+        rf = $$("settings-rform"), n, i;
+    for (i = 1, n = rf.firstChild;
+         n && i < (isup ? pos - 1 : pos + 1);
+         ++i, n = n.nextSibling) {
     }
-    $c.insertBefore($f[0], $n);
+    rf.insertBefore($field[0], n);
     rf_order();
 }
 
@@ -2592,6 +2594,141 @@ $(function () {
 });
 
 })();
+
+
+handle_ui.on("dragstart.js-settings-drag", function (evt) {
+    var id = this.parentElement.id;
+    if (id.startsWith("sf/")) {
+        settings_drag(this, this.parentElement, $$("settings-sform"), evt);
+    } else if (id.startsWith("rf/")) {
+        settings_drag(this, this.parentElement, $$("settings-rform"), evt);
+    }
+});
+
+function settings_drag(draghandle, draggable, group, evt) {
+    var pos, posy0, posy1, contains = 0, sep, changed = false, scrollt = null;
+    function drag(evt) {
+        if (contains === 0) {
+            sep && sep.remove();
+            pos = posy0 = posy1 = sep = null;
+            return;
+        }
+
+        var wh = window.innerHeight,
+            tsb = Math.min(wh * 0.125, 200), bsb = wh - tsb,
+            g, x;
+        if ((scrollt === null || evt.timeStamp > scrollt + 50)
+            && (evt.clientY < tsb || evt.clientY > bsb)) {
+            g = group.getBoundingClientRect();
+            if (evt.clientY < tsb && g.top < tsb / 2) {
+                x = evt.clientY < 20 ? 1 : Math.pow((tsb - evt.clientY) / tsb, 2.5);
+                window.scrollBy({left: 0, top: -x * 16, behavior: "smooth"});
+            } else if (evt.clientY > bsb && g.bottom > bsb + tsb / 2) {
+                x = evt.clientY > wh - 20 ? 1 : Math.pow((evt.clientY - bsb) / tsb, 2.5);
+                window.scrollBy({left: 0, top: x * 16, behavior: "smooth"});
+            }
+        }
+        if (posy0 !== null && evt.clientY >= posy0 && evt.clientY < posy1) {
+            return;
+        }
+
+        posy0 = null;
+        posy1 = 0;
+        for (pos = group.firstChild; pos; pos = pos.nextSibling) {
+            if (hasClass(pos, "dropmark")
+                || (g = pos.getBoundingClientRect()).height === 0) {
+                continue;
+            }
+            posy0 = posy1;
+            if (hasClass(pos, "dragging")) {
+                posy1 = posy0;
+            } else {
+                posy1 = (g.top + g.bottom) / 2;
+                if (evt.clientY >= posy0 && evt.clientY < posy1) {
+                    break;
+                }
+            }
+        }
+        if (pos === null) {
+            posy0 = posy1;
+            posy1 = Infinity;
+        }
+
+        changed = pos !== draggable.nextSibling;
+        if (changed) {
+            if (!sep) {
+                sep = document.createElement("hr");
+                sep.className = "dropmark";
+            }
+            group.insertBefore(sep, pos);
+        } else {
+            sep && sep.remove();
+            sep = null;
+        }
+        toggleClass(draggable, "drag-would-move", changed);
+        toggleClass(draggable, "drag-would-keep", !changed);
+    }
+    function dragover(evt) {
+        evt.preventDefault();
+        evt.dropEffect = "move";
+    }
+    function drop() {
+        if (contains !== 0) {
+            changed && group.insertBefore(draggable, sep);
+            var ch, e, i = 1;
+            for (ch = group.firstChild; ch; ch = ch.nextSibling) {
+                if ((e = ch.querySelector(".is-order"))) {
+                    if (e.value != i) {
+                        e.value = i;
+                        $(e).trigger("change");
+                    }
+                    ++i;
+                }
+            }
+        }
+    }
+    function dragstart(evt) {
+        var g = draggable.getBoundingClientRect();
+        evt.dataTransfer.setDragImage(draggable, evt.clientX - g.left, evt.clientY - g.top);
+        evt.dataTransfer.effectAllowed = "move";
+        addClass(draggable, "dragging");
+    }
+    function dragend() {
+        sep && sep.remove();
+        removeClass(draggable, "dragging");
+        removeClass(draggable, "drag-would-move");
+        removeClass(draggable, "drag-would-keep");
+        draghandle.removeEventListener("drag", drag);
+        draghandle.removeEventListener("dragend", dragend);
+        group.removeEventListener("drop", drop);
+        group.removeEventListener("dragover", dragover);
+        group.removeEventListener("dragenter", dragenter);
+        group.removeEventListener("dragleave", dragenter);
+    }
+    function dragenter(evt) {
+        if (group.contains(evt.target)) {
+            var delta = evt.type === "dragenter" ? 1 : -1;
+            contains += delta;
+            if (contains === (delta === 1 ? 1 : 0)) {
+                drag(evt);
+            }
+        }
+    }
+    function scroll() {
+        posy0 = posy1 = null;
+    }
+
+    dragstart(evt);
+    evt = null;
+    draghandle.addEventListener("drag", drag);
+    draghandle.addEventListener("dragend", dragend);
+    group.addEventListener("drop", drop);
+    group.addEventListener("dragover", dragover);
+    group.addEventListener("dragenter", dragenter);
+    group.addEventListener("dragleave", dragenter);
+    window.addEventListener("scroll", scroll);
+    window.addEventListener("resize", scroll);
+}
 
 
 hotcrp.settings = {

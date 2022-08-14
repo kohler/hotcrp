@@ -1495,14 +1495,33 @@ function handle_ui(evt) {
         call_callbacks(cbs, this, evt.originalEvent || evt);
     }
 }
-handle_ui.on = function (className, callback, priority) {
-    var dot = className.indexOf("."), type = null;
-    if (dot >= 0) {
-        type = className.substring(0, dot);
-        className = className.substring(dot + 1);
+handle_ui.on = function (s, callback, priority) {
+    var pos = 0, sp, dot = 0, len = s.length,
+        type, className;
+    while (true) {
+        while (pos !== len && s.charCodeAt(pos) === 32) {
+            ++pos;
+        }
+        if (pos === len) {
+            return;
+        }
+        sp = s.indexOf(" ", pos);
+        sp = sp >= 0 ? sp : len;
+        if (dot <= pos) {
+            dot = s.indexOf(".", pos);
+            dot = dot >= 0 ? dot : len;
+        }
+        if (dot < sp) {
+            type = s.substring(pos, dot);
+            className = s.substring(dot + 1, sp);
+        } else {
+            type = null;
+            className = s.substring(pos, sp);
+        }
+        callbacks[className] = callbacks[className] || [];
+        callbacks[className].push(type, priority || 0, callback);
+        pos = sp;
     }
-    callbacks[className] = callbacks[className] || [];
-    callbacks[className].push(type, priority || 0, callback);
 };
 handle_ui.trigger = function (className, evt) {
     var c = callbacks[className];
@@ -1523,6 +1542,7 @@ $(document).on("input", ".uii", handle_ui);
 $(document).on("beforeinput", ".ui-beforeinput", handle_ui);
 $(document).on("fold", ".ui-fold", handle_ui);
 $(document).on("unfold", ".ui-unfold", handle_ui);
+$(document).on("dragstart", ".ui-drag", handle_ui);
 
 
 // differences and focusing
