@@ -2617,15 +2617,15 @@ function settings_drag(draghandle, draggable, group, evt) {
         var wh = window.innerHeight,
             tsb = Math.min(wh * 0.125, 200), bsb = wh - tsb,
             g, x;
-        if ((scrollt === null || evt.timeStamp > scrollt + 50)
+        if ((scrollt === null || evt.timeStamp > scrollt + 100)
             && (evt.clientY < tsb || evt.clientY > bsb)) {
             g = group.getBoundingClientRect();
             if (evt.clientY < tsb && g.top < tsb / 2) {
                 x = evt.clientY < 20 ? 1 : Math.pow((tsb - evt.clientY) / tsb, 2.5);
-                window.scrollBy({left: 0, top: -x * 16, behavior: "smooth"});
+                window.scrollBy({left: 0, top: -x * 32, behavior: "smooth"});
             } else if (evt.clientY > bsb && g.bottom > bsb + tsb / 2) {
                 x = evt.clientY > wh - 20 ? 1 : Math.pow((evt.clientY - bsb) / tsb, 2.5);
-                window.scrollBy({left: 0, top: x * 16, behavior: "smooth"});
+                window.scrollBy({left: 0, top: x * 32, behavior: "smooth"});
             }
         }
         if (posy0 !== null && evt.clientY >= posy0 && evt.clientY < posy1) {
