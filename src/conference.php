@@ -2448,7 +2448,7 @@ class Conf {
             if (!$u && $cdb) {
                 $missing[] = $i;
                 $this->prefetch_cdb_user_by_email($email);
-            } else if ($u && !$u->is_fully_disabled() && $u->primaryContactId > 0) {
+            } else if ($u && $u->primaryContactId > 0) {
                 $redirect[$i] = $u;
             }
             $oemails[] = $u ? $u->email : $email;
@@ -2458,7 +2458,7 @@ class Conf {
         foreach ($missing as $i) {
             if (($u = $this->cdb_user_by_email($emails[$i]))) {
                 $oemails[$i] = $u->email;
-                if (!$u->is_fully_disabled() && $u->primaryContactId > 0) {
+                if ($u->primaryContactId > 0) {
                     $redirect[$i] = $u;
                 }
             }
@@ -2466,29 +2466,33 @@ class Conf {
 
         // resolve indirected users
         for ($round = 0; !empty($redirect) && $round !== 3; ++$round) {
-            foreach ($redirect as $u) {
-                if ($u->cdb_confid) {
-                    $this->prefetch_cdb_user_by_id($u->primaryContactId);
-                } else {
-                    $this->prefetch_user_by_id($u->primaryContactId);
+            // redirection chains stop at explicitly disabled users
+            $this_redirect = [];
+            foreach ($redirect as $i => $u) {
+                if (!$u->is_explicitly_disabled()) {
+                    if ($u->cdb_confid !== 0) {
+                        $this->prefetch_cdb_user_by_id($u->primaryContactId);
+                    } else {
+                        $this->prefetch_user_by_id($u->primaryContactId);
+                    }
+                    $this_redirect[$i] = $u;
                 }
             }
 
-            $redirect2 = [];
-            foreach ($redirect as $i => $u) {
-                if ($u->cdb_confid) {
+            $redirect = [];
+            foreach ($this_redirect as $i => $u) {
+                if ($u->cdb_confid !== 0) {
                     $u2 = $this->cdb_user_by_id($u->primaryContactId);
                 } else {
                     $u2 = $this->cached_user_by_id($u->primaryContactId);
                 }
                 if ($u2) {
                     $oemails[$i] = $u2->email;
-                    if (!$u2->is_fully_disabled() && $u2->primaryContactId > 0) {
-                        $redirect2[$i] = $u2;
+                    if ($u2->primaryContactId > 0) {
+                        $redirect[$i] = $u2;
                     }
                 }
             }
-            $redirect = $redirect2;
         }
 
         return $oemails;

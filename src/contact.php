@@ -914,7 +914,7 @@ class Contact {
     }
 
     /** @return bool */
-    function is_fully_disabled() {
+    function is_explicitly_disabled() {
         return ($this->disablement & self::DISABLEMENT_USER) !== 0;
     }
 
