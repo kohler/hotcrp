@@ -32,9 +32,15 @@ class LogEntryGenerator {
     /** @var Conf */
     private $conf;
     private $wheres;
+    /** @var int */
     private $page_size;
+    /** @var int */
+    private $nlinks;
+    /** @var int */
     private $delta = 0;
+    /** @var int|float */
     private $lower_offset_bound;
+    /** @var int|float */
     private $upper_offset_bound;
     private $rows_offset;
     private $rows_max_offset;
@@ -50,10 +56,13 @@ class LogEntryGenerator {
     /** @var array<int,true> */
     private $need_users;
 
-    function __construct(Conf $conf, $wheres, $page_size) {
+    /** @param int $page_size
+     * @param int $nlinks */
+    function __construct(Conf $conf, $wheres, $page_size, $nlinks) {
         $this->conf = $conf;
         $this->wheres = $wheres;
         $this->page_size = $page_size;
+        $this->nlinks = $nlinks;
         $this->set_filter(null);
         $this->users = $conf->pc_users();
         $this->need_users = [];
@@ -185,7 +194,6 @@ class LogEntryGenerator {
     /** @param int $pageno
      * @return bool */
     function has_page($pageno, $load_npages = null) {
-        global $nlinks;
         assert(is_int($pageno) && $pageno >= 1);
         $offset = $this->page_offset($pageno);
         if ($offset >= $this->lower_offset_bound
@@ -193,7 +201,7 @@ class LogEntryGenerator {
             if ($load_npages) {
                 $limit = $load_npages * $this->page_size;
             } else {
-                $limit = ($nlinks + 1) * $this->page_size + 30;
+                $limit = ($this->nlinks + 1) * $this->page_size + 30;
             }
             if ($this->filter) {
                 $limit = max($limit, 2000);

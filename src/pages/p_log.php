@@ -116,7 +116,7 @@ class Log_Page {
     /** @param int $count
      * @return LogEntryGenerator */
     private function make_generator($count) {
-        $leg = new LogEntryGenerator($this->conf, $this->lef_clauses, $count);
+        $leg = new LogEntryGenerator($this->conf, $this->lef_clauses, $count, $this->nlinks);
 
         $this->exclude_pids = $this->viewer->hidden_papers ? : [];
         if ($this->viewer->privChair && $this->conf->has_any_manager()) {
