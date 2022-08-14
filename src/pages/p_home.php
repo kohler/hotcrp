@@ -91,16 +91,16 @@ class Home_Page {
     }
 
     function print_content(Contact $user, Qrequest $qreq, $gx) {
-        echo '<div class="home-content">';
+        echo '<main class="home-content">';
         ob_start();
         $gx->print_group("home/sidebar");
         if (($t = ob_get_clean()) !== "") {
-            echo '<div class="home-sidebar">', $t, '</div>';
+            echo '<nav class="home-sidebar">', $t, '</nav>';
             $this->_has_sidebar = true;
         }
         echo '<div class="home-main">';
         $gx->print_group("home/main");
-        echo "</div></div>\n";
+        echo "</div></main>\n";
     }
 
     private function print_h2_home($x) {
