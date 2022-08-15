@@ -14,7 +14,7 @@ class HashAnalysis {
     function __construct($hash) {
         $len = strlen($hash);
         if ($len === 37
-            && strcasecmp(substr($hash, 0, 5), "sha2-") == 0) {
+            && strcasecmp(substr($hash, 0, 5), "sha2-") === 0) {
             $this->prefix = "sha2-";
             $this->hash = substr($hash, 5);
             $this->binary = true;
@@ -23,7 +23,7 @@ class HashAnalysis {
             $this->hash = $hash;
             $this->binary = true;
         } else if ($len === 69
-                   && strcasecmp(substr($hash, 0, 5), "sha2-") == 0
+                   && strcasecmp(substr($hash, 0, 5), "sha2-") === 0
                    && ctype_xdigit(substr($hash, 5))) {
             $this->prefix = "sha2-";
             $this->hash = substr($hash, 5);
@@ -43,12 +43,12 @@ class HashAnalysis {
             $this->hash = $hash;
             $this->binary = false;
         } else if ($len === 25
-                   && strcasecmp(substr($hash, 0, 5), "sha1-") == 0) {
+                   && strcasecmp(substr($hash, 0, 5), "sha1-") === 0) {
             $this->prefix = "";
             $this->hash = substr($hash, 5);
             $this->binary = true;
         } else if ($len === 45
-                   && strcasecmp(substr($hash, 0, 5), "sha1-") == 0
+                   && strcasecmp(substr($hash, 0, 5), "sha1-") === 0
                    && ctype_xdigit(substr($hash, 5))) {
             $this->prefix = "";
             $this->hash = substr($hash, 5);
