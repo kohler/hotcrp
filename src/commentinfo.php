@@ -196,8 +196,9 @@ class CommentInfo {
     }
 
 
-    /** @param PaperInfo $prow */
-    static function print_script($prow) {
+    /** @param PaperInfo $prow
+     * @return string */
+    static function script($prow) {
         if (Ht::mark_stash("papercomment")) {
             $t = [];
             $crow = new CommentInfo($prow);
@@ -215,11 +216,18 @@ class CommentInfo {
                 }
                 $t[] = "hotcrp.set_response_round(" . json_encode($rrd->name) . "," . json_encode($j) . ")";
             }
-            echo Ht::unstash_script(join(";", $t));
             Icons::stash_licon("ui_tag");
             Icons::stash_licon("ui_attachment");
             Icons::stash_licon("ui_trash");
+            return Ht::unstash_script(join(";", $t));
+        } else {
+            return "";
         }
+    }
+
+    /** @param PaperInfo $prow */
+    static function print_script($prow) {
+        echo self::script($prow);
     }
 
 

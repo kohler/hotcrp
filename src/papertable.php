@@ -103,22 +103,26 @@ class PaperTable {
         }
 
         // enumerate allowed modes
-        if ($this->allow_mode("re", true)) {
+        $page = $qreq->page();
+        if ($page === "review" && $this->allow_review()) {
             $this->mode = "re";
-        } else if ($qreq->page() === "paper" && $this->paper_page_prefers_edit_mode()) {
+        } else if ($page === "paper"
+                   && $this->paper_page_prefers_edit_mode()) {
             $this->mode = "edit";
         } else {
             $this->mode = "p";
         }
-        if ($qreq->page() === "assign") {
+        if ($page === "assign") {
             $this->mode = "assign";
         } else {
             $m = $this->qreq->m ?? $this->qreq->mode;
-            if (($m === "edit" || $m === "pe") && $this->allow_mode("edit", true)) {
+            if (($m === "edit" || $m === "pe")
+                && $page === "paper"
+                && ($this->allow_admin || $this->allow_edit())) {
                 $this->mode = "edit";
-            } else if ($m === "assign" && $this->allow_mode("assign", true)) {
-                $this->mode = "assign";
-            } else if (($m === "re" || $m === "rea") && $this->allow_mode("re", true)) {
+            } else if (($m === "re" || $m === "rea")
+                       && $page === "review"
+                       && $this->allow_review()) {
                 $this->mode = "re";
                 $this->prefer_approvable = $m === "rea";
             } else if ($m === "view" || $m === "r" || $m === "main") {
@@ -127,22 +131,19 @@ class PaperTable {
         }
     }
 
-    /** @param 'p'|'edit'|'re'|'assign' $mode
-     * @param bool $check_page
-     * @return bool */
-    function allow_mode($mode, $check_page) {
-        if ($mode === "edit") {
-            return ($this->allow_admin || $this->prow->has_author($this->user))
-                && (!$check_page || $this->qreq->page() === "paper");
-        } else if ($mode === "assign") {
-            return ($this->allow_admin || $this->user->can_request_review($this->prow, null, true))
-                && (!$check_page || $this->qreq->page() === "assign");
-        } else if ($mode === "re") {
-            return $this->user->can_edit_some_review($this->prow)
-                && (!$check_page || $this->qreq->page() === "review");
-        } else {
-            return true;
-        }
+    /** @return bool */
+    private function allow_edit() {
+        return $this->admin || $this->prow->has_author($this->user);
+    }
+
+    /** @return bool */
+    private function allow_review() {
+        return $this->user->can_edit_some_review($this->prow);
+    }
+
+    /** @return bool */
+    private function allow_assign() {
+        return $this->admin || $this->user->can_request_review($this->prow, null, true);
     }
 
     /** @return bool */
@@ -1850,7 +1851,7 @@ class PaperTable {
         }
 
         // override conflict button
-        if ($want_override && !$this->admin) {
+        if ($want_override && !$this->admin && false) {
             if ($this->allow_admin) {
                 $buttons[] = "";
                 $buttons[] = [Ht::submit("updateoverride", "Override conflict", ["class" => "uic js-mark-submit"]), "(admin only)"];
@@ -1926,19 +1927,27 @@ class PaperTable {
         }
     }
 
-    /** @return string */
-    private function _mode_nav_link($text, $link, $image, $highlight) {
-        return '<li class="papmode' . ($highlight ? " active" : "")
-            . '"><a href="' . $link . '" class="noul">'
-            . Ht::img($image, "[$text]", "papmodeimg")
-            . "&nbsp;<u" . ($highlight ? ' class="x"' : "") . ">" . $text
-            . "</u></a></li>";
+    /** @param string $text
+     * @param string $url
+     * @param string $imgfile
+     * @param bool $highlight
+     * @param bool $nondisabled
+     * @return string */
+    private function _mode_nav_link($text, $url, $imgfile, $highlight, $nondisabled) {
+        $class1 = $highlight ? " active" : "";
+        $hl = $highlight ? " class=\"x\"" : "";
+        $img = Ht::img("{$imgfile}.png", "[{$text}]", "papmodeimg");
+        if ($nondisabled) {
+            return "<li class=\"papmode{$class1}\"><a href=\"{$url}\" class=\"noul\">{$img}&nbsp;<u{$hl}>{$text}</u></a></li>";
+        } else {
+            return "<li class=\"papmode{$class1}\"><a href=\"{$url}\" class=\"noul dim\">{$img}&nbsp;<u class=\"x\">{$text}</u></a></li>";
+        }
     }
 
     /** @return string */
     private function _mode_nav() {
         $tx = [];
-        if ($this->allow_mode("edit", false)) {
+        if (($allow = $this->allow_edit()) || $this->allow_admin) {
             if ($this->allow_admin
                 && $this->mode !== "edit"
                 && !$this->user->can_edit_paper($this->prow)
@@ -1947,20 +1956,20 @@ class PaperTable {
             } else {
                 $url = $this->prow->hoturl(["m" => "edit"]);
             }
-            $tx[] = $this->_mode_nav_link("Edit", $url, "edit48.png", $this->mode === "edit");
+            $tx[] = $this->_mode_nav_link("Edit", $url, "edit48", $this->mode === "edit", $allow);
         }
-        if ($this->allow_mode("re", false)) {
+        if (($allow = $this->allow_review()) || $this->allow_admin) {
             $hl = $this->mode === "re" && (!$this->editrrow || $this->user->is_my_review($this->editrrow));
-            $tx[] = $this->_mode_nav_link("Review", $this->prow->reviewurl(), "review48.png", $hl);
+            $tx[] = $this->_mode_nav_link("Review", $this->prow->reviewurl(), "review48", $hl, $allow);
         }
-        if ($this->allow_mode("assign", false)) {
+        if (($allow = $this->allow_assign()) || $this->allow_admin) {
             $name = $this->allow_admin ? "Assign" : "Invite";
-            $tx[] = $this->_mode_nav_link($name, $this->conf->hoturl("assign", "p={$this->prow->paperId}"), "assign48.png", $this->mode === "assign");
+            $tx[] = $this->_mode_nav_link($name, $this->conf->hoturl("assign", "p={$this->prow->paperId}"), "assign48", $this->mode === "assign", $allow);
         }
         if (!empty($tx)
             || $this->qreq->page() !== "paper"
             || ($this->mode !== "p" && $this->prow->paperId > 0)) {
-            array_unshift($tx, $this->_mode_nav_link("Main", $this->prow->hoturl(["m" => $this->paper_page_prefers_edit_mode() ? "main" : null]), "view48.png", $this->mode === "p" && $this->qreq->page() === "paper"));
+            array_unshift($tx, $this->_mode_nav_link("Main", $this->prow->hoturl(["m" => $this->paper_page_prefers_edit_mode() ? "main" : null]), "view48", $this->mode === "p" && $this->qreq->page() === "paper", true));
         }
         if (!empty($tx)) {
             return '<nav class="submission-modes"><ul>' . join("", $tx) . '</ul></nav>';
@@ -2079,6 +2088,24 @@ class PaperTable {
             echo "#", $this->prow->paperId, " review";
         }
         echo '</a>', $close, '</h4><ul class="pslcard"></ul></nav></div>';
+
+        if ($this->allow_admin) {
+            if (!$this->admin) {
+                echo '<div class="pcard notecard mb-3"><p class="sd">',
+                    '<a class="noul" href="', $this->conf->selfurl($this->qreq, ["forceShow" => 1]), '">',
+                    Ht::img("override24.png", "[Override]", "dlimg"),
+                    '&nbsp;<u>Override conflict</u></a> for administrator view</p></div>';
+            } else if ($this->user->is_admin_force() && $this->prow->has_conflict($this->user)) {
+                $unprivurl = $this->mode === "assign"
+                    ? $this->conf->hoturl("paper", ["p" => $this->prow->paperId, "forceShow" => 0])
+                    : $this->conf->selfurl($this->qreq, ["forceShow" => 0]);
+                echo '<div class="pcard notecard mb-0 notecard-highlight"><p class="sd">',
+                    Ht::img("override24.png", "[Override]", "dlimg"),
+                    ' You are using administrator privilege to override your conflict with this submission. ',
+                    '<a class="noul ibw" href="', $unprivurl, '"><u>Unprivileged view</u></a>',
+                    '</p></div>';
+            }
+        }
 
         echo '<div class="pcard papcard">';
         $this->conf->report_saved_messages();
@@ -2479,15 +2506,8 @@ class PaperTable {
         }
 
         // override conflict
-        if ($this->allow_admin && !$this->admin) {
-            $t[] = '<span class="revlink"><a href="' . $prow->conf->selfurl($this->qreq, ["forceShow" => 1]) . '" class="noul">'
-                . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing</span>";
-        } else if ($this->user->privChair && !$this->allow_admin) {
+        if ($this->user->privChair && !$this->allow_admin) {
             $t[] = '<span class="revlink">You can’t override your conflict because this submission has an administrator.</span>';
-        }
-
-        if ($any_comments) {
-            CommentInfo::print_script($prow);
         }
 
         $aut = "";
@@ -2500,7 +2520,9 @@ class PaperTable {
         } else if ($prow->has_conflict($this->user)) {
             $aut = $this->conf->_('You have a <span class="conflict">conflict</span> with this submission.');
         }
-        return $pret . ($aut ? "<p class=\"sd\">{$aut}</p>" : "")
+        return $pret
+            . ($aut ? "<p class=\"sd\">{$aut}</p>" : "")
+            . ($any_comments ? CommentInfo::script($prow) : "")
             . (empty($t) ? "" : '<p class="sd">' . join("", $t) . '</p>');
     }
 
@@ -2522,12 +2544,6 @@ class PaperTable {
         return $empty;
     }
 
-    function _privilegeMessage() {
-        $a = "<a href=\"" . $this->conf->selfurl($this->qreq, ["forceShow" => 0]) . "\">";
-        return $a . Ht::img("override24.png", "[Override]", "dlimg")
-            . "</a>&nbsp;You have used administrator privileges to view and edit reviews for this submission. (" . $a . "Unprivileged view</a>)";
-    }
-
     private function include_comments() {
         return !$this->allreviewslink
             && (!empty($this->mycrows)
@@ -2536,11 +2552,8 @@ class PaperTable {
     }
 
     function paptabEndWithReviewsAndComments() {
-        if ($this->user->is_admin_force()
-            && !$this->user->call_with_overrides(0, "can_view_review", $this->prow, null)) {
-            $this->_paptabSepContaining($this->_privilegeMessage());
-        } else if ($this->prow->managerContactId === $this->user->contactXid
-                   && !$this->user->privChair) {
+        if ($this->prow->managerContactId === $this->user->contactXid
+            && !$this->user->privChair) {
             $this->_paptabSepContaining("You are this submission’s administrator.");
         }
 
@@ -2736,13 +2749,6 @@ class PaperTable {
     }
 
     function print_review_form() {
-        // notecard messages
-        if ($this->user->is_admin_force()
-            && !$this->user->call_with_overrides(0, "can_view_review", $this->prow, null)) {
-            echo '<div class="pcard notecard"><p class="sd">', $this->_privilegeMessage(), '</p></div>';
-        }
-
-        // review
         $editable = $this->mode === "re";
         if ($this->editrrow) {
             $editable = $this->_mark_review_messages($editable, $this->editrrow);
@@ -2759,18 +2765,11 @@ class PaperTable {
 
     function print_main_link() {
         // intended for pages like review editing where we need a link back
-        $t = [];
-        $dlimgjs = ["class" => "dlimg", "width" => 24, "height" => 24];
         $title = count($this->viewable_rrows) > 1 ? "All reviews" : "Main";
-        $t[] = '<a href="' . $this->prow->hoturl(["m" => $this->paper_page_prefers_edit_mode() ? "main" : null]) .  '" class="noul revlink">'
-            . Ht::img("view48.png", "[{$title}]", $dlimgjs) . "&nbsp;<u>{$title}</u></a>";
-
-        if ($this->allow_admin && !$this->admin) {
-            $t[] = '<a href="' . $this->prow->conf->selfurl($this->qreq, ["forceShow" => 1]) . '" class="noul revlink">'
-                . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a>";
-        }
-
-        echo '<div class="pcard notecard"><p class="sd">', join("", $t), "</p></div>\n";
+        echo '<div class="pcard notecard"><p class="sd">',
+            '<a href="', $this->prow->hoturl(["m" => $this->paper_page_prefers_edit_mode() ? "main" : null]), '" class="noul revlink">',
+            Ht::img("view48.png", "[{$title}]", ["class" => "dlimg", "width" => 24, "height" => 24]) . "&nbsp;<u>{$title}</u></a>",
+            "</p></div>\n";
     }
 
 
@@ -2855,7 +2854,8 @@ class PaperTable {
             && empty($this->viewable_rrows)
             && empty($this->mycrows)
             && !$this->allow_admin
-            && $this->allow_mode("edit", true)
+            && $this->qreq->page() === "paper"
+            && ($this->allow_admin || $this->allow_edit())
             && ($this->conf->time_finalize_paper($this->prow)
                 || $this->prow->timeSubmitted <= 0)) {
             $this->mode = "edit";

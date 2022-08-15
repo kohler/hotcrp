@@ -414,6 +414,13 @@ tr.pl:hover a.pnum, tr.pl:hover a.ptitle {
 	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
+.dim img {
+	filter: grayscale(100%);
+}
+a.dim:hover img {
+	filter: none;
+}
+
 span.barsep {
 	opacity: 0.8;
 	padding: 0 0.5em;
@@ -3759,12 +3766,19 @@ h3.pavfn, h3.psfn {
 .papcard, .notecard {
 	position: relative;
 	padding-top: 16px;
+}
+.papcard {
 	margin-bottom: 40px;
 }
 .notecard {
 	margin-bottom: 24px;
 }
-.papcard + .papcard, .notecard {
+.notecard-highlight {
+	background: #fffddd;
+	padding-bottom: 16px;
+	margin-bottom: 0;
+}
+.pcard + .papcard, .pcard + .notecard {
 	border-top: 5px solid #fad5d5;
 }
 .papcard h2, .notecard h2 {
