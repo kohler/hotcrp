@@ -3589,7 +3589,7 @@ handle_ui.on("js-click-child", function (evt) {
 
 // history
 
-var push_history_state, ever_push_history_state = false;
+var push_history_state;
 if ("pushState" in window.history) {
     push_history_state = function (href) {
         var state;
@@ -3603,12 +3603,13 @@ if ("pushState" in window.history) {
             $(document).trigger("collectState", [state]);
             history.pushState(state, "", state.href);
         }
-        ever_push_history_state = true;
+        push_history_state.ever = true;
         return true;
     };
 } else {
     push_history_state = function () { return false; };
 }
+push_history_state.ever = false;
 
 
 // line links
@@ -3694,7 +3695,7 @@ $(window).on("popstate", function (evt) {
     jump_hash(location.hash);
 });
 $(function () {
-    if (!ever_push_history_state) {
+    if (!push_history_state.ever) {
         jump_hash(location.hash, hasClass(document.body, "want-hash-focus"));
     }
 });

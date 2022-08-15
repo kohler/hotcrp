@@ -300,8 +300,6 @@ class Search_Page {
     /** @param Qrequest $qreq */
     function print($qreq) {
         $user = $this->user;
-        $this->conf->header("Search", "search");
-        echo Ht::unstash(); // need the JS right away
 
         // create PaperList
         if (isset($qreq->q)) {
@@ -330,7 +328,11 @@ class Search_Page {
         }
 
         // echo form
-        echo '<div id="searchform" class="mb-3 clearfix" data-lquery="',
+        $this->conf->header("Search", "search", [
+            "body_class" => $pl_text === null ? "want-hash-focus" : null
+        ]);
+        echo Ht::unstash(), // need the JS right away
+            '<div id="searchform" class="mb-3 clearfix" data-lquery="',
             htmlspecialchars($search->default_limited_query()),
             '"><div class="tlx"><div class="tld is-tla active" id="tla-default">';
 
@@ -395,11 +397,7 @@ class Search_Page {
         if (!$this->pl->is_empty()) {
             echo '<td><div class="tll"><a class="ui tla nw" href="#view">View options</a></div></td>';
         }
-        echo "</tr></table></div></div>\n\n";
-        if (!$this->pl->is_empty()) {
-            Ht::stash_script("\$(document.body).addClass(\"want-hash-focus\")");
-        }
-        echo Ht::unstash();
+        echo "</tr></table></div></div>\n\n", Ht::unstash();
 
         // Paper body
         if ($pl_text !== null) {
