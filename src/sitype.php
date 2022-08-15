@@ -417,7 +417,7 @@ class Float_Sitype extends Sitype {
         }
     }
     function json_examples(Si $si, SettingValues $sv) {
-        return "decimal number";
+        return "number";
     }
 }
 

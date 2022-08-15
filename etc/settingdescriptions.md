@@ -22,7 +22,7 @@ Built-in styles include
 <span class="taghh tag-small">small</span>, and
 <span class="taghh tag-dim">dim</span>.
 
-Extensible `style`s include:
+You can also extend the list with new entries. Extended styles include:
 
 * `rgb-RRGGBB`: Color the submission with `#RRGGBB`, an HTML hex color.
   Examples: <span class="taghh tagbg dark tag-rgb-000000">rgb-000000</span>,
@@ -38,6 +38,7 @@ Extensible `style`s include:
   Examples: <span class="taghh tag-weight-100">weight-100</span>,
   <span class="taghh tag-weight-900">weight-900</span>.
 
-Submissions with multiple styled tags will appear with
+A tag can appear in more than one list.
+Submissions with multiple styles will appear with
 <span class="taghh tagbg tag-red tag-orange tag-underline">combined styles</span>.
 
