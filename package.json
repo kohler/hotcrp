@@ -1,0 +1,17 @@
+{
+  "devDependencies": {
+    "eslint": "^8.21.0"
+  },
+  "name": "hotcrp",
+  "description": "HotCRP Conference Review Software",
+  "version": "3.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kohler/hotcrp.git"
+  },
+  "author": "Eddie Kohler",
+  "bugs": {
+    "url": "https://github.com/kohler/hotcrp/issues"
+  },
+  "homepage": "https://github.com/kohler/hotcrp#readme"
+}
