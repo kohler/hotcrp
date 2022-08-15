@@ -760,6 +760,27 @@ function save_password($email, $encoded_password, $iscdb = false) {
     }
 }
 
+const TESTSC_ALL = 7;
+const TESTSC_CONTACTS = 1;
+const TESTSC_CONFLICTS = 2;
+const TESTSC_ENABLED = 3;
+const TESTSC_DISABLED = 4;
+
+/** @param int $flags
+ * @return string */
+function sorted_conflicts(PaperInfo $prow, $flags) {
+    $c = [];
+    foreach ($prow->conflicts(true) as $cflt) {
+        if (($cflt->conflictType >= CONFLICT_AUTHOR
+             ? ($flags & TESTSC_CONTACTS) !== 0
+             : ($flags & TESTSC_CONFLICTS) !== 0)
+            && ($cflt->disabled === 0 || ($flags & TESTSC_DISABLED) !== 0))
+            $c[] = $cflt->email;
+    }
+    sort($c);
+    return join(" ", $c);
+}
+
 
 class TestRunner {
     static public $original_opt;

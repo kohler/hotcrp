@@ -523,7 +523,7 @@ class HotCRPMailer extends Mailer {
      * @return ?HotCRPMailPreparation */
     static function prepare_to($recipient, $template, $rest = []) {
         $answer = null;
-        if (!$recipient->is_disabled()) {
+        if (!$recipient->is_dormant()) {
             $old_overrides = $recipient->remove_overrides(Contact::OVERRIDE_CONFLICT);
             $mailer = new HotCRPMailer($recipient->conf, $recipient, $rest);
             $checkf = $rest["check_function"] ?? null;

@@ -56,6 +56,8 @@ class PaperStatus extends MessageSet {
     private $_conflict_values;
     /** @var ?list<array{int,int,int}> */
     private $_conflict_ins;
+    /** @var ?list<int> */
+    private $_author_change_cids;
     /** @var ?list<Author> */
     private $_register_users;
     /** @var ?list<Contact> */
@@ -109,6 +111,7 @@ class PaperStatus extends MessageSet {
         $this->_field_values = $this->_option_delid = $this->_option_ins = [];
         $this->_conflict_values = [];
         $this->_conflict_ins = $this->_register_users = $this->_created_contacts = null;
+        $this->_author_change_cids = null;
         $this->_paper_submitted = $this->_documents_changed = false;
         $this->_update_pid_dids = $this->_joindocs = [];
         $this->_save_status = 0;
@@ -864,15 +867,18 @@ class PaperStatus extends MessageSet {
     /** @param Author $au */
     private function create_user($au) {
         $conflictType = self::new_conflict_value($this->_conflict_values[strtolower($au->email)] ?? null);
-        $flags = $conflictType & CONFLICT_CONTACTAUTHOR ? 0 : Contact::SAVE_IMPORT;
         $j = $au->unparse_nae_json();
-        $j["disablement"] = ($this->disable_users ? Contact::DISABLEMENT_USER : 0);
-        $u = Contact::make_keyed($this->conf, $j)->store($flags, $this->user);
+        $j["disablement"] = ($this->disable_users ? Contact::DISABLEMENT_USER : 0)
+            | ($conflictType & CONFLICT_CONTACTAUTHOR ? 0 : Contact::DISABLEMENT_PLACEHOLDER);
+        $u = Contact::make_keyed($this->conf, $j)->store(0, $this->user);
         if ($u) {
             $this->_created_contacts[] = $u;
+            if (($conflictType & CONFLICT_CONTACTAUTHOR) !== 0) {
+                $this->change_at($this->conf->option_by_id(PaperOption::CONTACTSID));
+            }
         } else if (($conflictType & CONFLICT_CONTACTAUTHOR) !== 0) {
             if ($au->author_index >= 0) {
-                $key = "contacts:" . $au->author_index;
+                $key = "contacts:{$au->author_index}";
             } else {
                 $key = "contacts";
             }
@@ -931,24 +937,24 @@ class PaperStatus extends MessageSet {
 
         // save diffs if change
         if ($this->has_conflict_diff($lemail_to_cid)) {
-            $this->_conflict_ins = [];
-            $ds = 0;
+            $this->_conflict_ins = $this->_author_change_cids = [];
+            $pcc_changed = false;
             foreach ($this->_conflict_values as $lemail => $cv) {
                 if (($cid = $lemail_to_cid[$lemail] ?? null)) {
                     $ncv = self::new_conflict_value($cv);
                     if (($cv[0] ^ $ncv) & CONFLICT_PCMASK) {
-                        $ds |= 1;
+                        $pcc_changed = true;
                     }
                     if (($cv[0] >= CONFLICT_AUTHOR) !== ($ncv >= CONFLICT_AUTHOR)) {
-                        $ds |= 2;
+                        $this->_author_change_cids[] = $cid;
                     }
                     $this->_conflict_ins[] = [$cid, $cv[1], $cv[2]];
                 }
             }
-            if ($ds & 2) {
+            if (!empty($this->_author_change_cids)) {
                 $this->change_at($this->conf->option_by_id(PaperOption::CONTACTSID));
             }
-            if ($ds & 1) {
+            if ($pcc_changed) {
                 $this->change_at($this->conf->option_by_id(PaperOption::PCCONFID));
             }
         }
@@ -1177,7 +1183,8 @@ class PaperStatus extends MessageSet {
     }
 
     private function _execute_conflicts() {
-        if ($this->_conflict_ins !== null) {
+        if (!empty($this->_conflict_ins)) {
+            // insert conflicts
             $cfltf = Dbl::make_multi_query_stager($this->conf->dblink, Dbl::F_ERROR);
             $auflags = CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR;
             foreach ($this->_conflict_ins as $ci) {
@@ -1193,7 +1200,25 @@ class PaperStatus extends MessageSet {
             $cfltf("delete from PaperConflict where paperId=? and conflictType=0", [$this->paperId]);
             $cfltf(null);
         }
+
+        if (!empty($this->_author_change_cids)
+            && $this->conf->contactdb()) {
+            // update author records in contactdb
+            $this->conf->prefetch_users_by_id($this->_author_change_cids);
+            $emails = [];
+            foreach ($this->_author_change_cids as $cid) {
+                if (($u = $this->conf->cached_user_by_id($cid)))
+                    $emails[] = $u->email;
+            }
+            $this->conf->prefetch_cdb_users_by_email($emails);
+            foreach ($this->_author_change_cids as $cid) {
+                if (($u = $this->conf->cached_user_by_id($cid)))
+                    $u->update_cdb_roles();
+            }
+        }
+
         if ($this->_created_contacts !== null) {
+            // send mail to new contacts
             $rest = ["prow" => $this->conf->paper_by_id($this->paperId)];
             if ($this->user->can_administer($rest["prow"])
                 && !$rest["prow"]->has_author($this->user)) {
@@ -1203,7 +1228,7 @@ class PaperStatus extends MessageSet {
                 if ($u->password_unset()
                     && !$u->activity_at
                     && !$u->isPC
-                    && !$u->is_disabled()) {
+                    && !$u->is_dormant()) {
                     $u->send_mail("@newaccount.paper", $rest);
                 }
             }

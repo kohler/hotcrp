@@ -188,7 +188,9 @@ class Contact {
     public $paperId;
 
     const DISABLEMENT_USER = 1;
-    const DISABLEMENT_DB = 1;
+    const DISABLEMENT_PLACEHOLDER = 2;
+        // NB some code depends on PLACEHOLDER being highest bit in DB
+    const DISABLEMENT_DB = 3;
     const DISABLEMENT_ROLE = 4;
     const DISABLEMENT_DELETED = 8;
 
@@ -665,13 +667,13 @@ class Contact {
             }
         }
 
-        // Add capabilities from session and request
+        // add capabilities from session and request
         if ($qreq && isset($qreq->cap)) {
             $this->apply_capability_text($qreq->cap);
             unset($qreq->cap, $_GET["cap"], $_POST["cap"]);
         }
 
-        // Add review tokens from session
+        // add review tokens from session
         if (($rtokens = $this->session("rev_tokens"))) {
             foreach ($rtokens as $t) {
                 $this->_review_tokens[] = (int) $t;
@@ -679,8 +681,12 @@ class Contact {
             ++self::$rights_version;
         }
 
-        // Maybe auto-create a user
+        // maybe auto-create a user
         if (($this->_activated & 2) === 0 && $this->email) {
+            if (($this->disabled & self::DISABLEMENT_PLACEHOLDER) !== 0) {
+                $this->activate_placeholder_prop();
+                $this->save_prop();
+            }
             $trueuser_aucheck = $this->session("trueuser_author_check") ?? 0;
             if (!$this->has_account_here()
                 && $trueuser_aucheck + 600 < Conf::$now) {
@@ -702,14 +708,14 @@ class Contact {
             }
         }
 
-        // Maybe set up the shared contacts database
+        // maybe set up the shared contacts database
         if ($this->conf->opt("contactdbDsn")
             && $this->has_account_here()
             && $this->cdbRoles !== $this->cdb_roles()) {
             $this->contactdb_update();
         }
 
-        // Check forceShow
+        // check forceShow
         $this->_overrides = 0;
         if ($qreq && $qreq->forceShow && $this->is_manager()) {
             $this->_overrides |= self::OVERRIDE_CONFLICT;
@@ -818,7 +824,7 @@ class Contact {
     }
 
     /** @param ?Contact $cdbu */
-    private function _update_cdb_roles($cdbu = null) {
+    function update_cdb_roles($cdbu = null) {
         $roles = $this->cdb_roles();
         if (($cdbu = $cdbu ?? $this->cdb_user())
             && ($roles !== $cdbu->roles
@@ -869,7 +875,7 @@ class Contact {
             $this->invalidate_cdb_user();
         }
         if (($cdbur = $cdbur ?? $this->conf->cdb_user_by_email($this->email))) {
-            $this->_update_cdb_roles($cdbur);
+            $this->update_cdb_roles($cdbur);
             return $cdbur->contactDbId;
         } else {
             return false;
@@ -910,6 +916,11 @@ class Contact {
 
     /** @return bool */
     function is_disabled() {
+        return ($this->disablement & ~self::DISABLEMENT_PLACEHOLDER) !== 0;
+    }
+
+    /** @return bool */
+    function is_dormant() {
         return $this->disablement !== 0;
     }
 
@@ -919,9 +930,14 @@ class Contact {
     }
 
     /** @return bool */
+    function is_placeholder() {
+        return ($this->disablement & self::DISABLEMENT_PLACEHOLDER) !== 0;
+    }
+
+    /** @return bool */
     function contactdb_disabled() {
         $cdbu = $this->cdb_user();
-        return $cdbu && $cdbu->disablement;
+        return $cdbu && ($cdbu->disablement & ~self::DISABLEMENT_PLACEHOLDER) !== 0;
     }
 
     /** @param int $flags
@@ -1510,7 +1526,6 @@ class Contact {
 
 
     const SAVE_ANY_EMAIL = 1;
-    const SAVE_IMPORT = 2;
 
     function change_email($email) {
         assert($this->has_account_here());
@@ -1523,6 +1538,8 @@ class Contact {
             && ($cdbu = $this->cdb_user())
             && $cdbu->password) {
             $this->password = $cdbu->password;
+            $this->passwordTime = $cdbu->passwordTime;
+            $this->passwordUseTime = $cdbu->passwordUseTime;
         }
         $this->email = $email;
         $this->contactdb_update();
@@ -1631,9 +1648,12 @@ class Contact {
         if (($shape & ($this->cdb_confid !== 0 ? self::PROP_CDB : self::PROP_LOCAL)) === 0) {
             return;
         }
-        // check ifempty update
+        // on `$ifempty`, update only empty properties and placeholder users
         $old = $this->prop1($prop, $shape);
-        if ($ifempty) {
+        if ($ifempty
+            && (($this->disabled & self::DISABLEMENT_PLACEHOLDER) === 0
+                || $value === null
+                || $value === "")) {
             if ($old !== null && $old !== "") {
                 return;
             } else if (($shape & self::PROP_NAME) !== 0) {
@@ -1712,6 +1732,12 @@ class Contact {
      * @return bool */
     function prop_changed($prop = null) {
         return $prop ? array_key_exists($prop, $this->_mod_undo ?? []) : !empty($this->_mod_undo);
+    }
+
+    function activate_placeholder_prop() {
+        if (($this->disabled & self::DISABLEMENT_PLACEHOLDER) !== 0) {
+            $this->set_prop("disabled", $this->disabled & ~self::DISABLEMENT_PLACEHOLDER);
+        }
     }
 
     /** @return bool */
@@ -1818,11 +1844,11 @@ class Contact {
         // save the roles bits
         if ($old_roles !== $new_roles) {
             $this->conf->qe("update ContactInfo set roles=$new_roles where contactId=$this->contactId");
-            $this->roles = $this->_session_roles = $new_roles;
-            $this->role_mask = self::ROLE_DBMASK;
+            $this->roles = $new_roles;
+            $this->_session_roles = (($this->_session_roles ?? 0) & ~self::ROLE_DBMASK) | $new_roles;
             $this->set_roles_properties();
             $this->conf->invalidate_caches(["pc" => true]);
-            $this->_update_cdb_roles();
+            $this->update_cdb_roles();
             return true;
         } else {
             return false;
@@ -1836,21 +1862,28 @@ class Contact {
         }
     }
 
-    /** @param Contact|Author|object $reg
+    /** @param Contact $src
      * @param bool $ifempty */
-    function import_prop($reg, $ifempty) {
-        if ($reg instanceof Contact) {
-            foreach (self::importable_props() as $prop => $shape) {
-                $this->set_prop($prop, $reg->prop1($prop, $shape), $ifempty);
-            }
-        } else {
-            $this->set_prop("firstName", $reg->firstName ?? "", $ifempty);
-            $this->set_prop("lastName", $reg->lastName ?? "", $ifempty);
-            $this->set_prop("affiliation", $reg->affiliation ?? "", $ifempty);
-            if (!($reg instanceof Author)) {
-                $this->set_prop("phone", $reg->phone ?? "", $ifempty);
-                $this->set_prop("country", $reg->country ?? "", $ifempty);
-            }
+    function import_prop($src, $ifempty) {
+        foreach (self::importable_props() as $prop => $shape) {
+            $this->set_prop($prop, $src->prop1($prop, $shape), $ifempty);
+        }
+
+        // disablement requires special handling
+        if ($this->cdb_confid !== 0
+            && $this->contactDbId === 0
+            && $src->disablement !== 0) {
+            // creating a cdb user for a disabled local user: cdb is placeholder
+            $this->set_prop("disabled", $this->disabled | self::DISABLEMENT_PLACEHOLDER);
+        } else if (($this->disabled & self::DISABLEMENT_PLACEHOLDER) !== 0
+                   && $src->disablement === 0) {
+            // saving a non-placeholder user: other user loses placeholder status
+            $this->set_prop("disabled", $this->disabled & ~self::DISABLEMENT_PLACEHOLDER);
+        }
+        if ($src->cdb_confid !== 0
+            && ($src->disabled & self::DISABLEMENT_USER) !== 0) {
+            // globally disabled users are locally disabled too
+            $this->set_prop("disabled", $this->disabled | self::DISABLEMENT_USER);
         }
     }
 
@@ -1876,9 +1909,8 @@ class Contact {
             $cdbu = null;
         }
 
-        // skip creation depending on flags
-        if ((!$u && (!$cdbu || !$cdbu->contactDbId) && ($flags & self::SAVE_IMPORT) !== 0)
-            || (!$u && !$valid_email && ($flags & self::SAVE_ANY_EMAIL) === 0)) {
+        // do not create invalid-email users unless granted permission
+        if (!$u && !$valid_email && ($flags & self::SAVE_ANY_EMAIL) === 0) {
             return null;
         }
 
@@ -1916,7 +1948,9 @@ class Contact {
         }
         if ($cdbu) {
             $this->import_prop($cdbu, false);
-            $this->_mod_undo["password"] = $this->_mod_undo["passwordTime"] = $this->_mod_undo["passwordUseTime"] = null;
+            $this->_mod_undo["password"] = null;
+            $this->_mod_undo["passwordTime"] = null;
+            $this->_mod_undo["passwordUseTime"] = null;
             $this->password = "";
             $this->passwordTime = $cdbu->passwordTime;
             $this->passwordUseTime = 0;
@@ -1929,7 +1963,7 @@ class Contact {
             // update roles
             if ($aupapers) {
                 $this->save_authored_papers($aupapers);
-                $this->_update_cdb_roles($cdbu);
+                $this->update_cdb_roles($cdbu);
             }
 
             $type = $this->disabled !== 0 ? ", disabled" : "";
@@ -2204,20 +2238,25 @@ class Contact {
             $use_time = 0;
         }
 
+        // prefer to store passwords in cdb
         $cdbu = $this->cdb_user();
         $saveu = $cdbu ?? ($this->contactId ? $this : null);
         if ($saveu) {
             $saveu->set_prop("password", $hash);
             $saveu->set_prop("passwordTime", Conf::$now);
             $saveu->set_prop("passwordUseTime", $use_time);
+            $saveu->activate_placeholder_prop();
             $saveu->save_prop();
         }
+
         if ($saveu === $cdbu && $this->contactId && (string) $this->password !== "") {
             $this->set_prop("password", "");
             $this->set_prop("passwordTime", Conf::$now);
             $this->set_prop("passwordUseTime", $use_time);
-            $this->save_prop();
         }
+        $this->activate_placeholder_prop();
+        $this->save_prop();
+
         return true;
     }
 
@@ -2254,7 +2293,7 @@ class Contact {
             if ($this->contactId) {
                 $this->conf->ql("update ContactInfo set lastLogin=" . Conf::$now . " where contactId=$this->contactId");
             }
-            $this->_update_cdb_roles();
+            $this->update_cdb_roles();
         }
     }
 

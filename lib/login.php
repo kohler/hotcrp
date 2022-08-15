@@ -120,7 +120,7 @@ class LoginHelper {
         }
 
         // if user disabled, then fail
-        if (($user && $user->is_disabled())
+        if ($user->is_disabled()
             || (($cdbuser = $user->cdb_user()) && $cdbuser->is_disabled())) {
             return ["ok" => false, "disabled" => true, "email" => true];
         } else {
@@ -272,16 +272,24 @@ class LoginHelper {
             return $info;
         }
         $user = $info["user"];
-
-        // ignore reset request from disabled user
         $cdbu = $user->cdb_user();
-        if (!$user->has_account_here() && !$cdbu && !$create) {
+
+        // check for nonexistent users (placeholders count as nonexistent)
+        if ((!$user->has_account_here() || $user->is_placeholder())
+            && (!$cdbu || $cdbu->is_placeholder())
+            && !$create) {
             return ["ok" => false, "email" => true, "unset" => true];
-        } else if (!$user->can_reset_password()) {
+        }
+
+        // check for users that cannot reset their password
+        if (!$user->can_reset_password()) {
             return ["ok" => false, "email" => true, "nologin" => true];
-        } else if ($user->is_disabled()
-                   || (!$user->contactId && !$conf->allow_user_self_register())
-                   || ($cdbu && $cdbu->is_disabled())) {
+        }
+
+        // disabled users get mail saying they're disabled
+        if ($user->is_disabled()
+            || (!$user->contactId && !$conf->allow_user_self_register())
+            || ($cdbu && $cdbu->is_disabled())) {
             $template = "@resetdisabled";
         } else {
             $template = "@resetpassword";

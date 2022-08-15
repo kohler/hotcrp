@@ -1016,7 +1016,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         // go over mentions, send email
         foreach ($desired_mentions as $mxm) {
             if (($mentionee = $this->conf->cached_user_by_id($mxm[0]))
-                && !$mentionee->is_disabled()
+                && !$mentionee->is_dormant()
                 && $mentionee->can_view_comment($this->prow, $this)) {
                 if (!isset($this->saved_mentions[$mxm[0]])) {
                     HotCRPMailer::send_to($mentionee, "@mentionnotify", ["prow" => $this->prow, "comment_row" => $this]);

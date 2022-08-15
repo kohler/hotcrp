@@ -12,9 +12,12 @@ class Contacts_PaperOption extends PaperOption {
         // $ov->anno("users"): list<Author>
         // $ov->anno("bad_users"): list<Author>
         // NB fake papers start out with this user as contact
+        // only non-placeholder users
         $ca = $va = [];
-        foreach ($ov->prow->contacts(true) as $cflt) {
-            if ($cflt->contactId > 0) {
+        foreach ($ov->prow->conflicts(true) as $cflt) {
+            if ($cflt->conflictType >= CONFLICT_AUTHOR
+                && $cflt->contactId > 0
+                && $cflt->disabled !== Contact::DISABLEMENT_PLACEHOLDER) {
                 $ca[] = $cflt;
                 $va[$cflt->contactId] = $cflt->email;
             }
@@ -56,10 +59,10 @@ class Contacts_PaperOption extends PaperOption {
     function value_save(PaperValue $ov, PaperStatus $ps) {
         // do not mark diff (will be marked later)
         $ps->clear_conflict_values(CONFLICT_CONTACTAUTHOR);
-        foreach ($ov->anno("users") as $c) {
-            $ps->update_conflict_value($c->email, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
-            if ($c->contactId === 0) {
-                $ps->register_user($c);
+        foreach ($ov->anno("users") as $cflt) {
+            $ps->update_conflict_value($cflt->email, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
+            if ($cflt->contactId === 0) {
+                $ps->register_user($cflt);
             }
         }
         return true;
@@ -106,16 +109,22 @@ class Contacts_PaperOption extends PaperOption {
         $ov = PaperValue::make_force($prow, $this);
         $ca = $ov->anno("users");
         $new_ca = [];
-        for ($n = 1; isset($qreq["contacts:email_$n"]); ++$n) {
-            $email = trim($qreq["contacts:email_$n"]);
-            $name = simplify_whitespace((string) $qreq["contacts:name_$n"]);
-            $affiliation = simplify_whitespace((string) $qreq["contacts:affiliation_$n"]);
+        for ($n = 1; isset($qreq["contacts:email_{$n}"]); ++$n) {
+            $email = trim($qreq["contacts:email_{$n}"]);
+            $name = simplify_whitespace((string) $qreq["contacts:name_{$n}"]);
+            $affiliation = simplify_whitespace((string) $qreq["contacts:affiliation_{$n}"]);
+            $active = !!$qreq["contacts:active_{$n}"];
             if (($i = self::ca_index($ca, $email)) !== false) {
-                if (!$qreq["contacts:active_$n"]
-                    && ($ca[$i]->conflictType & CONFLICT_AUTHOR) === 0) {
-                    array_splice($ca, $i, 1);
+                if ($active) {
+                    if ((($ca[$i]->disabled ?? 0) & Contact::DISABLEMENT_PLACEHOLDER) !== 0) {
+                        $new_ca[] = $ca;
+                    }
+                } else {
+                    if (($ca[$i]->conflictType & CONFLICT_AUTHOR) === 0) {
+                        array_splice($ca, $i, 1);
+                    }
                 }
-            } else if (($email !== "" || $name !== "") && $qreq["contacts:active_$n"]) {
+            } else if (($email !== "" || $name !== "") && $active) {
                 $new_ca[] = $c = Author::make_keyed(["email" => $email, "name" => $name, "affiliation" => $affiliation]);
                 $c->author_index = $n;
             }
@@ -189,12 +198,12 @@ class Contacts_PaperOption extends PaperOption {
             . '"><span class="checkc">'
             . Ht::checkbox("contacts:active_$anum", 1, true, ["data-default-checked" => false, "id" => false, "class" => "ignore-diff"])
             . '</span>'
-            . Ht::entry("contacts:email_$anum", $email, ["size" => 30, "placeholder" => "Email", "class" => $pt->control_class("contacts:email_$reqidx", "want-focus js-autosubmit uii js-email-populate"), "autocomplete" => "off", "data-default-value" => ""])
+            . Ht::entry("contacts:email_{$anum}", $email, ["size" => 30, "placeholder" => "Email", "class" => $pt->control_class("contacts:email_$reqidx", "want-focus js-autosubmit uii js-email-populate"), "autocomplete" => "off", "data-default-value" => ""])
             . '  '
-            . Ht::entry("contacts:name_$anum", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit", "autocomplete" => "off", "data-default-value" => ""])
-            . $pt->messages_at("contacts:$reqidx")
-            . $pt->messages_at("contacts:name_$reqidx")
-            . $pt->messages_at("contacts:email_$reqidx")
+            . Ht::entry("contacts:name_{$anum}", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit", "autocomplete" => "off", "data-default-value" => ""])
+            . $pt->messages_at("contacts:{$reqidx}")
+            . $pt->messages_at("contacts:name_{$reqidx}")
+            . $pt->messages_at("contacts:email_{$reqidx}")
             . '</div>';
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -221,13 +230,16 @@ class Contacts_PaperOption extends PaperOption {
                     ? $pt->control_class("contacts:{$reqau->author_index}", "checki")
                     : "checki",
                 '"><label><span class="checkc">',
-                Ht::hidden("contacts:email_$cidx", $au->email);
-            if (($au->contactId > 0 && ($au->conflictType & CONFLICT_AUTHOR) !== 0)
-                || ($au->contactId === $pt->user->contactId && $ov->prow->paperId <= 0)) {
-                echo Ht::hidden("contacts:active_$cidx", 1),
+                Ht::hidden("contacts:email_{$cidx}", $au->email);
+            if (($au->contactId > 0
+                 && ($au->conflictType & CONFLICT_AUTHOR) !== 0
+                 && (($au->disabled ?? 0) & Contact::DISABLEMENT_PLACEHOLDER) === 0)
+                || ($au->contactId === $pt->user->contactId
+                    && $ov->prow->paperId <= 0)) {
+                echo Ht::hidden("contacts:active_{$cidx}", 1),
                     Ht::checkbox(null, 1, true, ["disabled" => true, "id" => false]);
             } else {
-                echo Ht::checkbox("contacts:active_$cidx", 1, !!$reqau,
+                echo Ht::checkbox("contacts:active_{$cidx}", 1, !!$reqau,
                     ["data-default-checked" => $au->contactId > 0 && $au->conflictType >= CONFLICT_AUTHOR, "id" => false, "disabled" => $readonly]);
             }
             echo '</span>', Text::nameo_h($au, NAME_E);

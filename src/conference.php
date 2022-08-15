@@ -2781,6 +2781,14 @@ class Conf {
         }
     }
 
+    /** @param iterable<string> $emails */
+    function prefetch_cdb_users_by_email($emails) {
+        foreach ($emails as $email) {
+            if ($email !== "")
+                $this->_cdb_user_cache_missing[] = strtolower($email);
+        }
+    }
+
     /** @param int $id
      * @return ?Contact */
     function cdb_user_by_id($id) {
@@ -2810,13 +2818,6 @@ class Conf {
         }
     }
 
-    /** @param string $email
-     * @return ?Contact
-     * @deprecated */
-    function contactdb_user_by_email($email) {
-        return $this->cdb_user_by_email($email);
-    }
-
     /** @param string $email */
     function invalidate_cdb_user_by_email($email) {
         if ($this->_cdb_user_cache !== null) {
@@ -2829,6 +2830,16 @@ class Conf {
     function fresh_cdb_user_by_email($email) {
         $this->invalidate_cdb_user_by_email($email);
         return $this->cdb_user_by_email($email);
+    }
+
+    /** @param string $email
+     * @return Contact */
+    function checked_cdb_user_by_email($email) {
+        $acct = $this->cdb_user_by_email($email);
+        if (!$acct) {
+            throw new Exception("Contact::checked_cdb_user_by_email($email) failed");
+        }
+        return $acct;
     }
 
 

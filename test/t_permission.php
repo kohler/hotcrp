@@ -121,15 +121,6 @@ class Permission_Tester {
         return $csvg->select($header)->append($texts)->unparse();
     }
 
-    /** @param bool $contacts
-     * @return string */
-    function sorted_conflicts(PaperInfo $prow, $contacts) {
-        $c = $contacts ? $prow->contacts(true) : $prow->conflicts(true);
-        $c = array_map(function ($c) { return $c->email; }, $c);
-        sort($c);
-        return join(" ", $c);
-    }
-
     function test_main() {
         ConfInvariants::test_all($this->conf);
 
@@ -923,8 +914,9 @@ class Permission_Tester {
 
     function test_assign_conflicts() {
         $paper3 = $this->u_chair->checked_paper_by_id(3);
-        xassert_eqq($this->sorted_conflicts($paper3, true), "sclin@leland.stanford.edu");
-        xassert_eqq($this->sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
+        xassert_eqq(sorted_conflicts($paper3, TESTSC_ALL), "mgbaker@cs.stanford.edu nickm@ee.stanford.edu sclin@leland.stanford.edu");
+        xassert_eqq(sorted_conflicts($paper3, TESTSC_CONTACTS), "sclin@leland.stanford.edu");
+        xassert_eqq(sorted_conflicts($paper3, TESTSC_ENABLED), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
 
         // reopen submissions: author can update conflicts
         $user_sclin = $this->conf->checked_user_by_email("sclin@leland.stanford.edu");
@@ -934,7 +926,7 @@ class Permission_Tester {
 
         xassert_assign($user_sclin, "paper,action,user\n3,conflict,rguerin@ibm.com\n");
         $paper3 = $this->u_chair->checked_paper_by_id(3);
-        xassert_eqq($this->sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu rguerin@ibm.com sclin@leland.stanford.edu");
+        xassert_eqq(sorted_conflicts($paper3, TESTSC_ENABLED), "mgbaker@cs.stanford.edu rguerin@ibm.com sclin@leland.stanford.edu");
 
         // test conflict types
         $user_rguerin = $this->conf->checked_user_by_email("rguerin@ibm.com");
@@ -986,7 +978,7 @@ class Permission_Tester {
         $this->conf->save_refresh_setting("sub_sub", Conf::$now - 5);
         xassert_assign_fail($user_sclin, "paper,action,user\n3,clearconflict,rguerin@ibm.com\n");
         $paper3 = $this->u_chair->checked_paper_by_id(3);
-        xassert_eqq($this->sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu rguerin@ibm.com sclin@leland.stanford.edu");
+        xassert_eqq(sorted_conflicts($paper3, TESTSC_ENABLED), "mgbaker@cs.stanford.edu rguerin@ibm.com sclin@leland.stanford.edu");
 
         xassert(!$paper3->has_author($user_rguerin));
         xassert($paper3->has_conflict($user_rguerin));
@@ -1010,8 +1002,8 @@ class Permission_Tester {
 
         xassert_assign($this->u_chair, "paper,action,user\n3,clearconflict,rguerin@ibm.com\n3,clearconflict,sclin@leland.stanford.edu\n3,clearcontact,mgbaker@cs.stanford.edu\n");
         $paper3 = $this->u_chair->checked_paper_by_id(3);
-        xassert_eqq($this->sorted_conflicts($paper3, true), "sclin@leland.stanford.edu");
-        xassert_eqq($this->sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
+        xassert_eqq(sorted_conflicts($paper3, TESTSC_CONTACTS), "sclin@leland.stanford.edu");
+        xassert_eqq(sorted_conflicts($paper3, TESTSC_ENABLED), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
 
         xassert_assign_fail($this->u_chair, "paper,action,user\n3,clearcontact,sclin@leland.stanford.edu\n");
         xassert_assign($this->u_chair, "paper,action,user\n3,clearcontact,sclin@leland.stanford.edu\n3,contact,mgbaker@cs.stanford.edu\n");
@@ -1019,16 +1011,16 @@ class Permission_Tester {
         // has a conflict that way
         $paper3 = $this->u_chair->checked_paper_by_id(3);
         xassert_eqq($paper3->conflict_type($user_sclin), CONFLICT_AUTHOR);
-        xassert_eqq($this->sorted_conflicts($paper3, true), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
-        xassert_eqq($this->sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
+        xassert_eqq(sorted_conflicts($paper3, TESTSC_CONTACTS), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
+        xassert_eqq(sorted_conflicts($paper3, TESTSC_ENABLED), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
 
         // change author list => remove conflict
         $ps = new PaperStatus($this->conf);
         xassert($ps->save_paper_json(json_decode('{"id":3,"authors":[{"name":"Nick McKeown", "email": "nickm@ee.stanford.edu", "affiliation": "Stanford University"}]}')));
         $paper3->load_conflicts(false);
         xassert_eqq($paper3->conflict_type($user_sclin), 0);
-        xassert_eqq($this->sorted_conflicts($paper3, true), "mgbaker@cs.stanford.edu");
-        xassert_eqq($this->sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu");
+        xassert_eqq(sorted_conflicts($paper3, TESTSC_CONTACTS), "mgbaker@cs.stanford.edu");
+        xassert_eqq(sorted_conflicts($paper3, TESTSC_ENABLED), "mgbaker@cs.stanford.edu");
     }
 
     function test_tracks() {
@@ -1390,26 +1382,31 @@ class Permission_Tester {
         xassert_eqq($u->affiliation, "Fart World");
 
         // registering email of an author grants author privilege
-        xassert(!maybe_user("thalerd@eecs.umich.edu"));
+        $u = maybe_user("thalerd@eecs.umich.edu");
+        xassert(!!$u);
+        xassert_eqq($u->disablement, Contact::DISABLEMENT_PLACEHOLDER);
         $u = Contact::make_email($this->conf, "thalerd@eecs.umich.edu")->store();
         assert($u !== null);
-        xassert(!!$u);
         xassert($u->contactId > 0);
         xassert_eqq($u->email, "thalerd@eecs.umich.edu");
         xassert_eqq($u->firstName, "David");
         xassert_eqq($u->lastName, "Thaler");
         xassert_eqq($u->affiliation, "University of Michigan");
+        xassert_eqq($u->disablement, 0);
         xassert($this->conf->checked_paper_by_id(27)->has_author($u));
 
         // registration-time name overrides author name
-        xassert(!maybe_user("schwartz@ctr.columbia.edu"));
-        $u = Contact::make_keyed($this->conf, ["email" => "schwartz@ctr.columbia.edu", "first" => "cengiz!", "last" => "SCHwarTZ", "affiliation" => "Coyumbia"])->store();
+        $u = maybe_user("schwartz@ctr.columbia.edu");
         xassert(!!$u);
+        xassert_eqq($u->disablement, Contact::DISABLEMENT_PLACEHOLDER);
+        $u = Contact::make_keyed($this->conf, ["email" => "schwartz@ctr.columbia.edu", "first" => "cengiz!", "last" => "SCHwarTZ", "affiliation" => "Coyumbia"])->store();
+        assert($u !== null);
         xassert($u->contactId > 0);
         xassert_eqq($u->email, "schwartz@ctr.columbia.edu");
         xassert_eqq($u->firstName, "cengiz!");
         xassert_eqq($u->lastName, "SCHwarTZ");
         xassert_eqq($u->affiliation, "Coyumbia");
+        xassert_eqq($u->disablement, 0);
         xassert($this->conf->checked_paper_by_id(26)->has_author($u));
     }
 

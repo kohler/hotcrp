@@ -926,12 +926,13 @@ class ContactList {
         } else if ($this->_limit_cids !== null) {
             $mainwhere[] = "contactId" . sql_in_int_list(array_keys($this->_limit_cids));
         }
+        $mainwhere[] = "disabled<" . Contact::DISABLEMENT_PLACEHOLDER;
 
         // make query
         $result = $this->conf->qe_raw("select * from ContactInfo" . (empty($mainwhere) ? "" : " where " . join(" and ", $mainwhere)));
         $rows = [];
         while (($row = Contact::fetch($result, $this->conf))) {
-            if (!$row->is_anonymous_user()) {
+            if (!$row->is_anonymous_user() && !$row->is_placeholder()) {
                 $rows[] = $row;
             }
         }

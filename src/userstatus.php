@@ -291,7 +291,7 @@ class UserStatus extends MessageSet {
             }
         }
 
-        if ($user->disablement !== 0) {
+        if ($user->is_disabled()) {
             $cj->disabled = true;
         }
 
@@ -890,11 +890,11 @@ class UserStatus extends MessageSet {
         $this->check_invariants($cj);
         $actor = $this->viewer->is_root_user() ? null : $this->viewer;
         if ($old_user) {
-            $old_disabled = $old_user->disablement !== 0;
+            $old_disablement = $old_user->disablement;
         } else {
             $user = Contact::make_keyed($this->conf, (array) $cj)->store(0, $actor);
             $cj->email = $user->email; // adopt contactdb’s email capitalization
-            $old_disabled = true;
+            $old_disablement = Contact::DISABLEMENT_PLACEHOLDER;
         }
         if (!$user) {
             return null;
@@ -931,7 +931,7 @@ class UserStatus extends MessageSet {
             $user->cdb_user();
         }
         if ($roles !== $old_roles
-            || ($user->disablement !== 0) !== $old_disabled) {
+            || ($user->disablement !== 0) !== ($old_disablement !== 0)) {
             $user->contactdb_update();
         }
 
@@ -952,7 +952,7 @@ class UserStatus extends MessageSet {
 
         // Notify of new accounts or new PC-ness
         if ($this->notify && $user->disablement === 0) {
-            $eff_old_roles = $old_disabled ? 0 : $old_roles;
+            $eff_old_roles = $old_disablement !== 0 ? 0 : $old_roles;
             if (!$old_activity_at
                 || (($eff_old_roles & Contact::ROLE_PCLIKE) === 0
                     && ($roles & Contact::ROLE_PCLIKE) !== 0)) {
@@ -1012,15 +1012,12 @@ class UserStatus extends MessageSet {
 
         // Disabled
         if (isset($cj->disabled)) {
-            if ($cj->disabled) {
-                $disablement = ($user->disablement & Contact::DISABLEMENT_DB) | Contact::DISABLEMENT_USER;
-            } else {
-                $disablement = 0;
-            }
-            $user->set_prop("disabled", $disablement);
+            $user->set_prop("disabled", $cj->disabled ? Contact::DISABLEMENT_USER : 0);
             if ($user->prop_changed("disabled")) {
                 $us->diffs[$cj->disabled ? "disabled" : "enabled"] = true;
             }
+        } else { // always revoke placeholder status
+            $user->activate_placeholder_prop();
         }
 
         // Follow
@@ -1630,7 +1627,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         if ($us->viewer->privChair
             && !$us->is_new_user()) {
             $us->cs()->add_section_class("form-outline-section")->print_start_section("User administration");
-            $disablement = $us->user->disablement;
+            $disablement = $us->user->disablement & ~Contact::DISABLEMENT_PLACEHOLDER;
             echo '<div class="btngrid"><div class="d-flex mf mf-absolute">',
                 Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $disablement !== 0]), '</div><p></p>';
             if (!$us->is_auth_user()
