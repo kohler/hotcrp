@@ -1463,19 +1463,19 @@ function append_feedback_near(elt, mi) {
 // ui
 var handle_ui = (function ($) {
 var callbacks = {};
-function collect_callbacks(cbs, c, etype) {
+function collect_callbacks(cbs, c, evt_type) {
     var j, k;
     for (j = 0; j !== c.length; j += 3) {
-        if (!c[j] || c[j] === etype) {
-            for (k = cbs.length - 3; k >= 0 && c[j+1] > cbs[k]; k -= 2) {
+        if (!c[j] || c[j] === evt_type) {
+            for (k = cbs.length - 2; k >= 0 && c[j+2] > cbs[k+1]; k -= 2) {
             }
-            cbs.splice(k + 3, 0, c[j+1], c[j+2]);
+            cbs.splice(k+2, 0, c[j+1], c[j+2]);
         }
     }
 }
 function call_callbacks(cbs, element, evt) {
     for (var i = 0; i !== cbs.length; i += 2) {
-        if (cbs[i+1].call(element, evt) === false)
+        if (cbs[i].call(element, evt) === false)
             break;
     }
 }
@@ -1488,12 +1488,9 @@ function handle_ui(evt) {
     var k = classList(this), cbs = [];
     for (var i = 0; i !== k.length; ++i) {
         var c = callbacks[k[i]];
-        if (c)
-            collect_callbacks(cbs, c, evt.type);
+        c && collect_callbacks(cbs, c, evt.type);
     }
-    if (cbs.length !== 0) {
-        call_callbacks(cbs, this, evt.originalEvent || evt);
-    }
+    cbs.length !== 0 && call_callbacks(cbs, this, evt.originalEvent || evt);
 }
 handle_ui.on = function (s, callback, priority) {
     var pos = 0, sp, dot = 0, len = s.length,
@@ -1519,7 +1516,7 @@ handle_ui.on = function (s, callback, priority) {
             className = s.substring(pos, sp);
         }
         callbacks[className] = callbacks[className] || [];
-        callbacks[className].push(type, priority || 0, callback);
+        callbacks[className].push(type, callback, priority || 0);
         pos = sp;
     }
 };
@@ -1530,8 +1527,16 @@ handle_ui.trigger = function (className, evt) {
             evt = $.Event(evt); // XXX IE8: `new Event` is not supported
         var cbs = [];
         collect_callbacks(cbs, c, evt.type);
-        cbs.length && call_callbacks(cbs, this, evt);
+        cbs.length !== 0 && call_callbacks(cbs, this, evt);
     }
+};
+handle_ui.handlers = function (className, evt_type) {
+    var cbs = [], result = [], i;
+    collect_callbacks(cbs, callbacks[className] || [], evt_type);
+    for (i = 0; i !== cbs.length; i += 2) {
+        result.push(cbs[i])
+    }
+    return result;
 };
 return handle_ui;
 })($);
@@ -3641,18 +3646,57 @@ handle_ui.on("tla", function () {
 });
 
 function jump_hash(hash, focus) {
-    var e, m, p;
-    // clean up hash, including trailers like “%E3%80%82” (ideographic full stop)
+    // separate hash into components
     hash = hash.replace(/^[^#]*#?/, "");
-    if (hash !== ""
-        && !document.getElementById(hash)
-        && (m = hash.match(/^[-_a-zA-Z0-9]+(?=[^-_a-zA-Z0-9])/))
-        && document.getElementById(m[0])) {
-        hash = location.hash = m[0];
+    var c = [], i, s, eq;
+    if (hash !== "") {
+        c = hash.replace(/\+/g, "%20").split(/[&;]/);
+        for (i = 0; i !== c.length; ++i) {
+            s = c[i];
+            if ((eq = s.indexOf("=")) > 0) {
+                c[i] = [decodeURIComponent(s.substring(0, eq)), decodeURIComponent(s.substring(eq + 1))];
+            } else {
+                c[i] = decodeURIComponent(s);
+            }
+        }
     }
-    // check for destination tla element
-    e = document.getElementById("tla-" + (hash || "default"));
-    if (e) {
+
+    // call handlers
+    var handlers = handle_ui.handlers("js-hash", "hashjump");
+    for (i = 0; i !== handlers.length; ++i) {
+        if (handlers[i](c, focus) === true)
+            return true;
+    }
+    return false;
+}
+
+handle_ui.on("hashjump.js-hash", function (hashc, focus) {
+    if (hashc.length > 1 || (hashc.length === 1 && typeof hashc[0] !== "string")) {
+        hashc = [];
+    }
+    if (hashc.length === 0 && !focus) {
+        return;
+    }
+
+    // look up destination element
+    var hash = hashc[0] || "", m, e, p;
+    if (hash === "") {
+        e = document.getElementById("tla-default");
+    } else {
+        e = document.getElementById("tla-" + hash) || document.getElementById(hash);
+        if (!e
+            // check for trailing punctuation
+            && (m = hash.match(/^([-_a-zA-Z0-9\/]+)[\p{Pd}\p{Pe}\p{Pf}\p{Po}]$/u))
+            && (e = document.getElementById("tla-" + m[1]) || document.getElementById(m[1]))) {
+            hash = m[1];
+            location.hash = "#" + hash;
+        }
+    }
+
+    if (!e) {
+        /* do nothing */
+    } else if (e.id.startsWith("tla-")) {
+        // tabbed UI
         if (!hasClass(e, "active")) {
             $(".is-tla, .tll, .papmode").removeClass("active");
             addClass(e, "active");
@@ -3663,14 +3707,10 @@ function jump_hash(hash, focus) {
                 }
             });
         }
-        if (focus) {
-            focus_within(e);
-        }
+        focus && focus_within(e);
         return true;
-    }
-    // find destination element
-    e = hash ? document.getElementById(decodeURIComponent(hash)) : null;
-    if (e && (p = e.closest(".pfe, .rfe, .f-i, .form-g, .form-section, .entryi, .checki"))) {
+    } else if ((p = e.closest(".pfe, .rfe, .f-i, .form-g, .form-section, .entryi, .checki"))) {
+        // highlight destination
         var eg = $(e).geometry(), pg = $(p).geometry(), wh = $(window).height();
         if ((eg.width <= 0 && eg.height <= 0)
             || (pg.top <= eg.top && eg.top - pg.top <= wh * 0.75)) {
@@ -3680,11 +3720,10 @@ function jump_hash(hash, focus) {
             focus_at(e);
             return true;
         }
-    } else if (e && hasClass(e, "need-anchor-unfold")) {
+    } else if (hasClass(e, "need-anchor-unfold")) {
         foldup.call(e, null, {f: false});
     }
-    return false;
-}
+}, -1);
 
 $(window).on("popstate", function (evt) {
     var state = (evt.originalEvent || evt).state;

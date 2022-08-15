@@ -2108,6 +2108,13 @@ function make_json_validate() {
         }
     }
 
+    function queue_rehighlight() {
+        if (!rehighlight_queued) {
+            queueMicrotask(rehighlight);
+            rehighlight_queued = true;
+        }
+    }
+
     function handle_reflection() {
         form_highlight(reflectel.form, reflectel);
         if (mainel.hasAttribute("data-reflect-highlight-api")) {
@@ -2141,8 +2148,7 @@ function make_json_validate() {
                 mainel.setAttribute("data-highlight-ranges", ranges.join(" "));
                 mainel.setAttribute("data-highlight-tips", JSON.stringify(tips));
                 normalization = -1;
-                rehighlight_queued || queueMicrotask(rehighlight);
-                rehighlight_queued = true;
+                queue_rehighlight();
             }
         });
     }
@@ -2219,10 +2225,7 @@ function make_json_validate() {
         }
         redisplay_ln0 = dstRange[0];
         redisplay_el1 = elx;
-        if (!rehighlight_queued) {
-            queueMicrotask(rehighlight);
-            rehighlight_queued = true;
-        }
+        queue_rehighlight();
         // place selection at end of difference
         var dt = dstTexts[dstTexts.length - 1] || "",
             dl = dt.length,
@@ -2279,13 +2282,6 @@ function make_json_validate() {
             redisplay_el1 = r[1] >= 0 ? mainel.childNodes[r[1]] : null;
             prepare_undo(r, evt);
             evt.dataTransfer && (normalization = 1);
-        }
-    }
-
-    function input() {
-        if (!rehighlight_queued) {
-            queueMicrotask(rehighlight);
-            rehighlight_queued = true;
         }
     }
 
@@ -2392,7 +2388,7 @@ function make_json_validate() {
     }
 
     mainel.addEventListener("beforeinput", beforeinput);
-    mainel.addEventListener("input", input);
+    mainel.addEventListener("input", queue_rehighlight);
     document.addEventListener("selectionchange", selectionchange);
     if (mainel.hasAttribute("data-reflect-text")
         && (reflectel = document.getElementById(mainel.getAttribute("data-reflect-text")))) {
@@ -2402,7 +2398,7 @@ function make_json_validate() {
 
     normalization = -1;
     rehighlight_queued = true;
-    queueMicrotask(rehighlight);
+    rehighlight();
 }
 
 
@@ -2573,25 +2569,49 @@ function settings_describe(d) {
     $i.find(".taghh, .badge").each(ensure_pattern_here);
 }
 
-handle_ui.on("click.js-settings-jpath", function () {
-    let path = this.querySelector("code.settings-jpath"),
-        el = document.getElementById("json_settings"), jpp;
-    if (path && el && (jpp = json_path_position(el.value, path.textContent))) {
-        let [ln1, lp1] = el.hotcrp_ce.p2lp(jpp.vpos1),
-            [ln2, lp2] = el.hotcrp_ce.p2lp(jpp.vpos2),
+function settings_path_jump(el, path, use_key) {
+    let jpp = json_path_position(el.value, path);
+    if (jpp) {
+        let [ln1, lp1] = el.hotcrp_ce.p2lp((use_key && jpp.kpos1) || jpp.vpos1),
+            [ln2, lp2] = el.hotcrp_ce.p2lp((use_key && jpp.kpos2) || jpp.vpos2),
             [le1, lo1] = el.hotcrp_ce.lp2boff(ln1, lp1),
             [le2, lo2] = el.hotcrp_ce.lp2boff(ln2, lp2);
         $(le2).scrollIntoView({marginTop: 24, atTop: true});
         window.getSelection().setBaseAndExtent(le1, lo1, le2, lo2);
     }
-});
+}
 
-$(function () {
-    $(".js-settings-json").each(function () {
+function initialize_json_settings() {
+    $(".need-settings-json").each(function () {
         make_json_validate.call(this);
         this.addEventListener("jsonpathchange", settings_jsonpathchange);
+        removeClass(this, "need-settings-json");
+        addClass(this, "js-settings-json");
     });
+}
+
+handle_ui.on("click.js-settings-jpath", function () {
+    let path = this.querySelector("code.settings-jpath"),
+        el = document.getElementById("json_settings");
+    if (path && el) {
+        settings_path_jump(el, path.textContent, hasClass(this, "use-key"));
+    }
 });
+
+handle_ui.on("hashjump.js-hash", function (c) {
+    let el = document.getElementById("json_settings");
+    if (el) {
+        initialize_json_settings();
+        for (let i = 0; i !== c.length; ++i) {
+            if (typeof c[i] === "object" && c[i][0] === "path") {
+                settings_path_jump(el, c[i][1], true);
+                return true;
+            }
+        }
+    }
+});
+
+$(initialize_json_settings);
 
 })();
 

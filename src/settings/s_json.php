@@ -10,7 +10,7 @@ class JSON_SettingParser extends SettingParser {
         $mainh = htmlspecialchars($mainj);
         echo '<div class="settings-json-panels">',
             '<div class="settings-json-panel-edit textarea">',
-            '<div class="pw js-settings-json uii ui-beforeinput" contenteditable spellcheck="false" autocapitalization="none" data-reflect-text="json_settings"';
+            '<div class="pw need-settings-json uii ui-beforeinput" contenteditable spellcheck="false" autocapitalization="none" data-reflect-text="json_settings"';
         $hl = $tips = [];
         foreach ($sv->message_list() as $mi) {
             if ($mi->pos1 !== null
@@ -33,7 +33,16 @@ class JSON_SettingParser extends SettingParser {
         }
         echo ' data-reflect-highlight-api="=api/settings?dryrun=1 settings">',
             $mainh, "\n</div>",
-            '</div><div class="settings-json-panel-info"><div class="settings-json-info"></div></div></div>';
+            '</div><div class="settings-json-panel-info"><div class="settings-json-info">',
+            '<h3 class="form-h">Important settings</h3>',
+            '<ul class="x">',
+            '<li><a href="#path=sf"><code class="settings-jpath">sf</code></a>: Submission form</li>',
+            '<li><a href="#path=rf"><code class="settings-jpath">rf</code></a>: Review form</li>',
+            '<li><a href="#path=review"><code class="settings-jpath">review</code></a>: Review rounds and deadlines</li>',
+            '<li><a href="#path=track"><code class="settings-jpath">track</code></a>: Submission tracks</li>',
+            '<li><a href="#path=tag_style"><code class="settings-jpath">tag_style</code></a>: Tag colors and styles</li>',
+            '</ul>',
+            '</div></div></div>';
         // NB On Safari, HTMLTextAreaElement.setRangeText only works on displayed elements.
         echo '<textarea name="json_settings" id="json_settings" class="position-absolute invisible"';
         if ($mainj !== $defj) {
