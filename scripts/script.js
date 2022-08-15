@@ -2600,8 +2600,9 @@ function override_deadlines(callback) {
 handle_ui.on("js-override-deadlines", override_deadlines);
 
 function form_submitter(form, evt) {
-    if (evt && evt.originalEvent && evt.originalEvent.submitter) {
-        return evt.originalEvent.submitter.name || null;
+    var oevt = (evt && evt.originalEvent) || evt;
+    if (oevt && oevt.submitter) {
+        return oevt.submitter.name || null;
     } else if (form.hotcrpSubmitter
                && form.hotcrpSubmitter[1] >= (new Date).getTime() - 10) {
         return form.hotcrpSubmitter[0];
@@ -3168,10 +3169,10 @@ var comet_store = (function () {
         if (comet_sent_at)
             store_current_status();
     }
-    $(window).on("storage", function (e) {
-        var x, ee = e.originalEvent;
-        if (dl && dl.tracker_site && ee.key === "hotcrp-comet") {
-            x = make_site_status(ee.newValue);
+    $(window).on("storage", function (evt) {
+        var x, oevt = evt.originalEvent || evt;
+        if (dl && dl.tracker_site && oevt.key === "hotcrp-comet") {
+            x = make_site_status(oevt.newValue);
             if (x.expired || x.fresh)
                 reload();
         }
