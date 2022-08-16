@@ -467,12 +467,14 @@ class Ht {
     }
 
     /** @param string $src
+     * @param string $alt
+     * @param ?string|?array<string,mixed> $js
      * @return string */
     static function img($src, $alt, $js = null) {
         if (is_string($js)) {
             $js = ["class" => $js];
         }
-        if (self::$img_base && !preg_match(',\A(?:https?:/|/),i', $src)) {
+        if (self::$img_base && !preg_match('/\A(?:https?:\/|\/)/i', $src)) {
             $src = self::$img_base . $src;
         }
         $altt = htmlspecialchars($alt);

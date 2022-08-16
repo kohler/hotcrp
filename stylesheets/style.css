@@ -3773,13 +3773,21 @@ h3.pavfn, h3.psfn {
 .notecard {
 	margin-bottom: 24px;
 }
-.notecard-highlight {
-	background: #fffddd;
-	padding-bottom: 16px;
+.notecard.override-conflict {
+	background: #f5f9fa;
+	font-size: 82.5%;
+	padding-bottom: 12px;
+	padding-top: 12px;
 	margin-bottom: 0;
+}
+.notecard.override-conflict.on {
+	background: #fffddd;
 }
 .pcard + .papcard, .pcard + .notecard {
 	border-top: 5px solid #fad5d5;
+}
+.notecard.override-conflict + .pcard {
+	border-top: 1px solid #f33360;
 }
 .papcard h2, .notecard h2 {
 	font-size: 1.17em;

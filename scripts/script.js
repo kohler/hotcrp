@@ -2604,6 +2604,20 @@ function override_deadlines(callback) {
 }
 handle_ui.on("js-override-deadlines", override_deadlines);
 
+handle_ui.on("js-confirm-override-conflict", function (evt) {
+    var self = this, hc = popup_skeleton({near: this}), $d;
+    hc.push('<p>Are you sure you want to override your conflict?</p>');
+    hc.push_actions([
+        '<button type="button" name="bsubmit" class="btn-primary">Override conflict</button>',
+        '<button type="button" name="cancel">Cancel</button>'
+    ]);
+    hc.show().on("click", "button", function () {
+        if (this.name === "bsubmit") {
+            document.location = self.href;
+        }
+    });
+});
+
 function form_submitter(form, evt) {
     var oevt = (evt && evt.originalEvent) || evt;
     if (oevt && oevt.submitter) {
