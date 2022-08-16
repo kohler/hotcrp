@@ -1547,9 +1547,10 @@ class ReviewValues extends MessageSet {
         }
 
         // get the current time
-        $now = time();
-        if ($rrow->reviewModified >= $now) {
-            $now = $rrow->reviewModified + 1;
+        $now = max(time(), $rrow->reviewModified + 1, $rrow->reviewTime + 1);
+        if ($this->conf->sversion >= 267) {
+            $qf[] = "reviewTime=?";
+            $qv[] = $now;
         }
 
         if (($newstatus >= ReviewInfo::RS_COMPLETED)
@@ -1764,7 +1765,10 @@ class ReviewValues extends MessageSet {
                 . $statusword
                 . (empty($log_fields) ? "" : ": ")
                 . join(", ", $log_fields), $prow);
-            $diffinfo->make_patch(0); // Evaluating use of diff_match_patch
+        }
+
+        if ($this->conf->sversion >= 267) {
+            $diffinfo->save_history($new_rrow);
         }
 
         // if external, forgive the requester from finishing their review

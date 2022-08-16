@@ -16,23 +16,25 @@ class ReviewInfo implements JsonSerializable {
     /** @var int */
     public $contactId;
     /** @var int */
-    public $reviewToken;
+    public $requestedBy;
     /** @var int */
-    public $reviewType;
+    public $reviewToken;
     /** @var int */
     public $reviewRound;
     /** @var int */
-    public $requestedBy;
+    public $reviewOrdinal;
+    /** @var int */
+    public $reviewType;
     /** @var int */
     public $reviewBlind;
+    /** @var int */
+    public $reviewTime;
     /** @var int */
     public $reviewModified;
     /** @var ?int */
     public $reviewSubmitted;
     /** @var ?int */
     public $reviewAuthorSeen;
-    /** @var int */
-    public $reviewOrdinal;
     /** @var int */
     public $timeDisplayed;
     /** @var int */
@@ -212,13 +214,14 @@ class ReviewInfo implements JsonSerializable {
         $rrow->paperId = $prow ? $prow->paperId : 0;
         $rrow->reviewId = 0;
         $rrow->contactId = $user->contactId;
-        $rrow->reviewToken = 0;
-        $rrow->reviewType = $user->isPC ? REVIEW_PC : REVIEW_EXTERNAL;
-        $rrow->reviewRound = $user->conf->assignment_round(!$user->isPC);
         $rrow->requestedBy = 0;
-        $rrow->reviewBlind = $user->conf->review_blindness() !== Conf::BLIND_NEVER ? 1 : 0;
-        $rrow->reviewModified = 0;
+        $rrow->reviewToken = 0;
+        $rrow->reviewRound = $user->conf->assignment_round(!$user->isPC);
         $rrow->reviewOrdinal = 0;
+        $rrow->reviewType = $user->isPC ? REVIEW_PC : REVIEW_EXTERNAL;
+        $rrow->reviewBlind = $user->conf->review_blindness() !== Conf::BLIND_NEVER ? 1 : 0;
+        $rrow->reviewTime = 0;
+        $rrow->reviewModified = 0;
         $rrow->timeDisplayed = 0;
         $rrow->timeApprovalRequested = 0;
         $rrow->reviewNeedsSubmit = 0;
@@ -235,11 +238,13 @@ class ReviewInfo implements JsonSerializable {
         assert($prow === null || $this->paperId === $prow->paperId);
         $this->reviewId = (int) $this->reviewId;
         $this->contactId = (int) $this->contactId;
-        $this->reviewToken = (int) $this->reviewToken;
-        $this->reviewType = (int) $this->reviewType;
-        $this->reviewRound = (int) $this->reviewRound;
         $this->requestedBy = (int) $this->requestedBy;
+        $this->reviewToken = (int) $this->reviewToken;
+        $this->reviewRound = (int) $this->reviewRound;
+        $this->reviewOrdinal = (int) $this->reviewOrdinal;
+        $this->reviewType = (int) $this->reviewType;
         $this->reviewBlind = (int) $this->reviewBlind;
+        $this->reviewTime = (int) $this->reviewTime;
         $this->reviewModified = (int) $this->reviewModified;
         if ($this->reviewSubmitted !== null) {
             $this->reviewSubmitted = (int) $this->reviewSubmitted;
@@ -247,7 +252,6 @@ class ReviewInfo implements JsonSerializable {
         if ($this->reviewAuthorSeen !== null) {
             $this->reviewAuthorSeen = (int) $this->reviewAuthorSeen;
         }
-        $this->reviewOrdinal = (int) $this->reviewOrdinal;
         $this->timeDisplayed = (int) $this->timeDisplayed;
         $this->timeApprovalRequested = (int) $this->timeApprovalRequested;
         $this->reviewNeedsSubmit = (int) $this->reviewNeedsSubmit;

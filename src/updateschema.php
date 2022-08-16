@@ -825,6 +825,33 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 
+    /** @return bool */
+    private function v267_paper_review_history() {
+        Dbl::qx($this->conf->dblink, "DROP TABLE IF EXISTS `PaperReviewHistory`");
+        return $this->conf->ql_ok("CREATE TABLE `PaperReviewHistory` (
+  `paperId` int(11) NOT NULL,
+  `reviewId` int(11) NOT NULL,
+  `reviewTime` bigint(11) NOT NULL,
+  `contactId` int(11) NOT NULL,
+  `reviewRound` int(1) NOT NULL,
+  `reviewOrdinal` int(1) NOT NULL,
+  `reviewType` tinyint(1) NOT NULL,
+  `reviewBlind` tinyint(1) NOT NULL,
+  `reviewModified` bigint(11) NOT NULL,
+  `reviewSubmitted` bigint(1) NOT NULL,
+  `timeDisplayed` bigint(11) NOT NULL,
+  `reviewAuthorSeen` bigint(1) NOT NULL,
+  `reviewAuthorModified` bigint(1) DEFAULT NULL,
+  `reviewNotified` bigint(1) DEFAULT NULL,
+  `reviewAuthorNotified` bigint(11) NOT NULL DEFAULT 0,
+  `reviewEditVersion` int(1) NOT NULL DEFAULT 0,
+  `revdelta` longblob DEFAULT NULL,
+
+  PRIMARY KEY (`paperId`,`reviewId`,`reviewTime`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
+            && $this->conf->ql_ok("alter table PaperReview add `reviewTime` bigint(11) NOT NULL DEFAULT 0");
+    }
+
     function run() {
         $conf = $this->conf;
 
@@ -2477,6 +2504,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 265
             && $this->v266_contact_counter()) {
             $conf->update_schema_version(266);
+        }
+        if ($conf->sversion === 266
+            && $this->v267_paper_review_history()) {
+            $conf->update_schema_version(267);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

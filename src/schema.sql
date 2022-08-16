@@ -332,15 +332,16 @@ CREATE TABLE `PaperReview` (
   `paperId` int(11) NOT NULL,
   `reviewId` int(11) NOT NULL AUTO_INCREMENT,
   `contactId` int(11) NOT NULL,
-  `reviewToken` int(11) NOT NULL DEFAULT 0,
-  `reviewType` tinyint(1) NOT NULL DEFAULT 0,
-  `reviewRound` int(1) NOT NULL DEFAULT 0,
   `requestedBy` int(11) NOT NULL DEFAULT 0,
+  `reviewToken` int(11) NOT NULL DEFAULT 0,
+  `reviewRound` int(1) NOT NULL DEFAULT 0,
+  `reviewOrdinal` int(1) NOT NULL DEFAULT 0,
+  `reviewType` tinyint(1) NOT NULL DEFAULT 0,
   `reviewBlind` tinyint(1) NOT NULL DEFAULT 1,
+  `reviewTime` bigint(1) NOT NULL DEFAULT 0,
   `reviewModified` bigint(1) NOT NULL DEFAULT 0,
   `reviewSubmitted` bigint(1) DEFAULT NULL,
   `reviewAuthorSeen` bigint(1) DEFAULT NULL,
-  `reviewOrdinal` int(1) NOT NULL DEFAULT 0,
   `timeDisplayed` bigint(11) NOT NULL DEFAULT 0,
   `timeApprovalRequested` bigint(11) NOT NULL DEFAULT 0,
   `reviewNeedsSubmit` tinyint(1) NOT NULL DEFAULT 1,
@@ -376,6 +377,35 @@ CREATE TABLE `PaperReview` (
   KEY `reviewType` (`reviewType`),
   KEY `reviewRound` (`reviewRound`),
   KEY `requestedBy` (`requestedBy`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
+--
+-- Table structure for table `PaperReviewHistory`
+--
+
+DROP TABLE IF EXISTS `PaperReviewHistory`;
+CREATE TABLE `PaperReviewHistory` (
+  `paperId` int(11) NOT NULL,
+  `reviewId` int(11) NOT NULL,
+  `reviewTime` bigint(11) NOT NULL,
+  `contactId` int(11) NOT NULL,
+  `reviewRound` int(1) NOT NULL,
+  `reviewOrdinal` int(1) NOT NULL,
+  `reviewType` tinyint(1) NOT NULL,
+  `reviewBlind` tinyint(1) NOT NULL,
+  `reviewModified` bigint(11) NOT NULL,
+  `reviewSubmitted` bigint(1) NOT NULL,
+  `timeDisplayed` bigint(11) NOT NULL,
+  `reviewAuthorSeen` bigint(1) NOT NULL,
+  `reviewAuthorModified` bigint(1) DEFAULT NULL,
+  `reviewNotified` bigint(1) DEFAULT NULL,
+  `reviewAuthorNotified` bigint(11) NOT NULL DEFAULT 0,
+  `reviewEditVersion` int(1) NOT NULL DEFAULT 0,
+  `revdelta` longblob DEFAULT NULL,
+
+  PRIMARY KEY (`paperId`,`reviewId`,`reviewTime`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -583,7 +613,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 266);
+insert into Settings (name, value) values ('allowPaperOption', 267);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

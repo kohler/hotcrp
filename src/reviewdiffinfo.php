@@ -22,6 +22,8 @@ class ReviewDiffInfo {
     /** @var ?dmp\diff_match_patch */
     private $_dmp;
 
+    const VALIDATE_PATCH = true;
+
     function __construct(PaperInfo $prow, ReviewInfo $rrow) {
         $this->conf = $prow->conf;
         $this->prow = $prow;
@@ -63,16 +65,18 @@ class ReviewDiffInfo {
             $diffs = $this->_dmp->diff($s1, $s2);
             $hcdelta = $this->_dmp->diff_toHCDelta($diffs);
 
-            // validate that toHCDelta can create $s2
-            $xdiffs = $this->_dmp->diff_fromHCDelta($s1, $hcdelta);
-            if ($this->_dmp->diff_text1($xdiffs) !== $s1
-                || $this->_dmp->diff_text2($xdiffs) !== $s2) {
-                throw new dmp\diff_exception("incorrect diff_fromHCDelta");
-            }
+            if (self::VALIDATE_PATCH) {
+                // validate that toHCDelta can create $s2
+                $xdiffs = $this->_dmp->diff_fromHCDelta($s1, $hcdelta);
+                if ($this->_dmp->diff_text1($xdiffs) !== $s1
+                    || $this->_dmp->diff_text2($xdiffs) !== $s2) {
+                    throw new dmp\diff_exception("incorrect diff_fromHCDelta");
+                }
 
-            // validate that applyHCDelta can create $s2
-            if ($this->_dmp->diff_applyHCDelta($s1, $hcdelta) !== $s2) {
-                throw new dmp\diff_exception("incorrect diff_applyHCDelta");
+                // validate that applyHCDelta can create $s2
+                if ($this->_dmp->diff_applyHCDelta($s1, $hcdelta) !== $s2) {
+                    throw new dmp\diff_exception("incorrect diff_applyHCDelta");
+                }
             }
 
             return $hcdelta;
@@ -89,15 +93,12 @@ class ReviewDiffInfo {
 
     /** @param 0|1 $dir
      * @return array */
-    function make_patch($dir = 0) {
-        if (!$this->rrow || !$this->rrow->reviewId) {
-            return null;
-        }
+    function make_patch($dir) {
         $use_xdiff = $this->conf->opt("diffMethod") === "xdiff";
         $patch = [];
         foreach ($this->fields as $i => $f) {
             $sn = $f->short_id;
-            $v = [$this->rrow->fields[$f->order], $this->newv[$i]];
+            $v = [$this->rrow->fields[$f->order] ?? "", $this->newv[$i]];
             if ($f->has_options) {
                 $v[$dir] = (int) $v[$dir];
             } else if (($v[$dir] ?? "") !== "") {
@@ -121,6 +122,32 @@ class ReviewDiffInfo {
         }
         return $patch;
     }
+
+    function save_history(ReviewInfo $rrow) {
+        assert($this->rrow->paperId === $rrow->paperId
+               && ($this->rrow->reviewId === 0 || $this->rrow->reviewId === $rrow->reviewId));
+        $patch = $this->make_patch(0);
+        $this->conf->qe("insert into PaperReviewHistory set
+            paperId=?, reviewId=?, reviewTime=?,
+            contactId=?, reviewRound=?, reviewOrdinal=?,
+            reviewType=?, reviewBlind=?,
+            reviewModified=?, reviewSubmitted=?,
+            timeDisplayed=?,
+            reviewAuthorSeen=?, reviewAuthorModified=?,
+            reviewNotified=?, reviewAuthorNotified=?,
+            reviewEditVersion=?,
+            revdelta=?",
+            $rrow->paperId, $rrow->reviewId, $this->rrow->reviewTime,
+            $this->rrow->contactId, $this->rrow->reviewRound, $this->rrow->reviewOrdinal,
+            $this->rrow->reviewType, $this->rrow->reviewBlind,
+            $this->rrow->reviewModified ?? 0, $this->rrow->reviewSubmitted ?? 0,
+            $this->rrow->timeDisplayed ?? 0,
+            $this->rrow->reviewAuthorSeen ?? 0, $this->rrow->reviewAuthorModified ?? 0,
+            $this->rrow->reviewNotified ?? 0, $this->rrow->reviewAuthorNotified ?? 0,
+            $this->rrow->reviewEditVersion ?? 0,
+            empty($patch) ? null : json_encode_db($patch));
+    }
+
     /** @param array $patch
      * @return string */
     static function unparse_patch($patch) {

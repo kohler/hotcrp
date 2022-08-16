@@ -295,7 +295,7 @@ class RequestReview_API {
         if ($rrow->reviewStatus < ReviewInfo::RS_ACCEPTED) {
             $prow->conf->qe("update PaperReview set reviewModified=1, timeRequestNotified=greatest(?,timeRequestNotified)
                 where paperId=? and reviewId=? and reviewModified<=0",
-                Conf::$now, $prow->paperId, $rrow->reviewId);
+                Conf::$now, $prow->paperId, $rrow->reviewId); /* XXX PaperReviewHistory? */
             $user->log_activity_for($rrow->contactId, "Review {$rrow->reviewId} accepted", $prow);
 
             // send mail to requesters

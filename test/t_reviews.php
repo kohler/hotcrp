@@ -660,7 +660,7 @@ class Reviews_Tester {
         $rd = new ReviewDiffInfo($paper18, $rrow18d);
         $rd->add_field($conf->find_review_field("ovemer"), 3);
         $rd->add_field($conf->find_review_field("papsum"), "There definitely is a summary in this position.");
-        xassert_eqq(ReviewDiffInfo::unparse_patch($rd->make_patch()),
+        xassert_eqq(ReviewDiffInfo::unparse_patch($rd->make_patch(0)),
                     '{"s01":2,"t01":"No summary\\n"}');
         xassert_eqq(ReviewDiffInfo::unparse_patch($rd->make_patch(1)),
                     '{"s01":3,"t01":"There definitely is a summary in this position."}');
@@ -673,7 +673,7 @@ class Reviews_Tester {
         xassert_eq($rrow18d2->fval("s01"), 3);
         xassert_eq($rrow18d2->fval("s02"), 1);
         xassert_eqq($rrow18d2->fval("t01"), "There definitely is a summary in this position.");
-        ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch());
+        ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch(0));
         xassert_eq($rrow18d2->fval("s01"), 2);
         xassert_eq($rrow18d2->fval("s02"), 1);
         xassert_eqq($rrow18d2->fval("t01"), "No summary\n");
@@ -698,7 +698,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($rrow18d2->fval("t01"), $gettysburg);
         ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch(1));
         xassert_eqq($rrow18d2->fval("t01"), $gettysburg2);
-        ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch());
+        ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch(0));
         xassert_eqq($rrow18d2->fval("t01"), $gettysburg);
 
         // offline review parsing for UTF-8 review questions
