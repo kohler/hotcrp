@@ -3578,10 +3578,10 @@ class Conf {
     const HOTURL_NO_DEFAULTS = 32;
 
     /** @param string $page
-     * @param null|string|array $param
+     * @param null|string|array $params
      * @param int $flags
      * @return string */
-    function hoturl($page, $param = null, $flags = 0) {
+    function hoturl($page, $params = null, $flags = 0) {
         $nav = Navigation::get();
         $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
         if (str_starts_with($page, "=")) {
@@ -3593,9 +3593,9 @@ class Conf {
         $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
         // parse options, separate anchor
         $anchor = "";
-        if (is_array($param)) {
+        if (is_array($params)) {
             $x = "";
-            foreach ($param as $k => $v) {
+            foreach ($params as $k => $v) {
                 if ($v === null || $v === false) {
                     // skip
                 } else if ($k === "anchor" /* XXX deprecated */ || $k === "#") {
@@ -3606,14 +3606,14 @@ class Conf {
             }
             if (Conf::$hoturl_defaults && !($flags & self::HOTURL_NO_DEFAULTS)) {
                 foreach (Conf::$hoturl_defaults as $k => $v) {
-                    if (!array_key_exists($k, $param)) {
+                    if (!array_key_exists($k, $params)) {
                         $x .= ($x === "" ? "" : $amp) . $k . "=" . $v;
                     }
                 }
             }
             $param = $x;
         } else {
-            $param = (string) $param;
+            $param = (string) $params;
             if (($pos = strpos($param, "#"))) {
                 $anchor = substr($param, $pos);
                 $param = substr($param, 0, $pos);
@@ -3637,8 +3637,8 @@ class Conf {
             && Contact::$main_user->conf === $this
             && Contact::$main_user->can_administer($this->paper)
             && $this->paper->has_conflict(Contact::$main_user)
-            && preg_match($are . 'p=' . $this->paper->paperId . $zre, $param)
-            && !preg_match($are . 'forceShow=/', $param)) {
+            && preg_match("{$are}p={$this->paper->paperId}{$zre}", $param)
+            && (is_array($params) ? !array_key_exists("forceShow", $params) : !preg_match($are . 'forceShow=/', $param))) {
             $param .= $amp . "forceShow=1";
         }
         // create slash-based URLs if appropriate

@@ -2115,8 +2115,8 @@ class PaperTable {
                     '🔒&nbsp;<u>Override conflict</u></a> for administrator view</p></div>';
             } else if ($this->user->is_admin_force() && $this->prow->has_conflict($this->user)) {
                 $unprivurl = $this->mode === "assign"
-                    ? $this->conf->hoturl("paper", ["p" => $this->prow->paperId, "forceShow" => 0])
-                    : $this->conf->selfurl($this->qreq, ["forceShow" => 0]);
+                    ? $this->conf->hoturl("paper", ["p" => $this->prow->paperId, "forceShow" => null])
+                    : $this->conf->selfurl($this->qreq, ["forceShow" => null]);
                 echo '<div class="pcard notecard override-conflict on"><p class="sd">',
                     '🔓 You are using administrator privilege to override your conflict with this submission. ',
                     '<a class="noul ibw" href="', $unprivurl, '"><u>Unprivileged view</u></a>',
