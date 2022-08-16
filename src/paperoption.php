@@ -1491,7 +1491,8 @@ class Checkbox_PaperOption extends PaperOption {
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
-        return PaperValue::make($prow, $this, $qreq[$this->formid] > 0 ? 1 : null);
+        $x = (string) $qreq[$this->formid];
+        return PaperValue::make($prow, $this, $x !== "" && $x !== "0" ? 1 : null);
     }
     function parse_json(PaperInfo $prow, $j) {
         if (is_bool($j) || $j === null) {
@@ -2094,7 +2095,7 @@ class Text_PaperOption extends PaperOption {
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
-        return $this->parse_json_string($prow, convert_to_utf8($qreq[$this->formid]));
+        return $this->parse_json_string($prow, convert_to_utf8($qreq[$this->formid] ?? ""));
     }
     function parse_json(PaperInfo $prow, $j) {
         return $this->parse_json_string($prow, $j);
