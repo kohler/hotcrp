@@ -2570,14 +2570,20 @@ function settings_describe(d) {
 }
 
 function settings_path_jump(el, path, use_key) {
-    let jpp = json_path_position(el.value, path);
+    const jpp = json_path_position(el.value, path);
     if (jpp) {
-        let [ln1, lp1] = el.hotcrp_ce.p2lp((use_key && jpp.kpos1) || jpp.vpos1),
-            [ln2, lp2] = el.hotcrp_ce.p2lp((use_key && jpp.kpos2) || jpp.vpos2),
+        const pos1 = use_key ? jpp.kpos1 : jpp.vpos1,
+            pos2 = use_key ? jpp.kpos2 : jpp.vpos2,
+            [ln1, lp1] = el.hotcrp_ce.p2lp(pos1 != null ? pos1 : jpp.vpos1),
+            [ln2, lp2] = el.hotcrp_ce.p2lp(pos2 != null ? pos2 : jpp.vpos2),
             [le1, lo1] = el.hotcrp_ce.lp2boff(ln1, lp1),
             [le2, lo2] = el.hotcrp_ce.lp2boff(ln2, lp2);
-        $(le2).scrollIntoView({marginTop: 24, atTop: true});
-        window.getSelection().setBaseAndExtent(le1, lo1, le2, lo2);
+        $(le1).scrollIntoView({marginTop: 24, atTop: true});
+        if (use_key && jpp.kpos1 == null) {
+            window.getSelection().setBaseAndExtent(le2, lo2, le2, lo2);
+        } else {
+            window.getSelection().setBaseAndExtent(le1, lo1, le2, lo2);
+        }
     }
 }
 
