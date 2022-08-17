@@ -952,6 +952,7 @@ function window_selection_inside(el) {
 function make_content_editable(mainel) {
     var texts = [""],
         posd = [], posb = 0,
+        repl = null,
         reflectors = [];
 
     // Normalize the contents of `mainel` to a sensible format for editing.
@@ -1051,6 +1052,22 @@ function make_content_editable(mainel) {
         return texts.slice(...rest);
     }
 
+    function mark_replace(lineno, charsdel, s) {
+        if (reflectors.length) {
+            let p = lp2p(lineno, 0);
+            if (repl !== null && repl.expected !== p) {
+                reflect();
+            }
+            if (repl === null) {
+                repl = {first: p, last: p + charsdel, expected: p + s.length, text: s};
+            } else {
+                repl.last += charsdel;
+                repl.expected += s.length;
+                repl.text += s;
+            }
+        }
+    }
+
     function splice(start, ...rest) {
         if (posd.length > start) {
             posd.splice(start);
@@ -1064,11 +1081,7 @@ function make_content_editable(mainel) {
             for (let i = 0; i !== deleted.length; ++i) {
                 n += deleted[i].length;
             }
-            let t = rest.length > 1 ? rest.slice(1).join("") : "",
-                p = lp2p(start, 0);
-            for (let el of reflectors) {
-                el.setRangeText(t, p, p + n);
-            }
+            mark_replace(start, n, rest.length > 1 ? rest.slice(1).join("") : "");
         }
         return deleted;
     }
@@ -1086,11 +1099,15 @@ function make_content_editable(mainel) {
             update_posd(lineno, text.length - oldtext.length);
         }
         texts[lineno] = text;
-        if (reflectors.length !== 0) {
-            let p = lp2p(lineno, 0);
+        mark_replace(lineno, oldtext.length, text);
+    }
+
+    function reflect() {
+        if (repl !== null) {
             for (let el of reflectors) {
-                el.setRangeText(text, p, p + oldtext.length);
+                el.setRangeText(repl.text, repl.first, repl.last);
             }
+            repl = null;
         }
     }
 
@@ -1290,6 +1307,7 @@ function make_content_editable(mainel) {
         lineno: lineno,
         line: line,
         set_line: set_line,
+        reflect: reflect,
         normalize: normalizer,
         slice: slice,
         splice: splice,
@@ -2093,6 +2111,7 @@ function make_json_validate() {
                 lineels.splice(i);
                 maince.splice(i);
             }
+            maince.reflect();
             nsel.refresh();
             //state_redisplay.push(i, st, states[i - 1]);
             //console.log(state_redisplay);
