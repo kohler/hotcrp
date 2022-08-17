@@ -2509,6 +2509,18 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $this->v267_paper_review_history()) {
             $conf->update_schema_version(267);
         }
+        if ($conf->sversion === 267
+            && $conf->ql_ok("alter table PaperReviewHistory add `timeApprovalRequested` bigint(11) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReviewHistory change `timeApprovalRequested` `timeApprovalRequested` bigint(11) NOT NULL")
+            && $conf->ql_ok("alter table PaperReviewHistory change `reviewAuthorNotified` `reviewAuthorNotified` bigint(11) NOT NULL")
+            && $conf->ql_ok("alter table PaperReviewHistory change `reviewEditVersion` `reviewEditVersion` int(1) NOT NULL")) {
+            $conf->update_schema_version(268);
+        }
+        if ($conf->sversion === 268
+            && $conf->ql_ok("alter table PaperReviewHistory add `reviewNextTime` bigint(11) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("delete from PaperReviewHistory")) {
+            $conf->update_schema_version(269);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

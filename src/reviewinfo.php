@@ -118,6 +118,8 @@ class ReviewInfo implements JsonSerializable {
     // other
     /** @var ?list<MessageItem> */
     public $message_list;
+    /** @var ?list<ReviewHistoryInfo|ReviewInfo> */
+    private $_history;
 
     const VIEWSCORE_RECOMPUTE = -100;
 
@@ -783,6 +785,96 @@ class ReviewInfo implements JsonSerializable {
         $s = json_encode_db($this->_data);
         return $s === "{}" ? null : $s;
     }
+
+
+    /** @param ReviewHistoryInfo $rhrow
+     * @return ?ReviewInfo */
+    function apply_history($rhrow) {
+        assert($this->paperId === $rhrow->paperId);
+        assert($this->reviewId === $rhrow->reviewId);
+        assert($this->reviewTime === $rhrow->reviewNextTime);
+
+        $rrow = clone $this;
+        $rrow->_data = null;
+        $rrow->message_list = null;
+        $rrow->_history = null;
+        $rrow->reviewViewScore = self::VIEWSCORE_RECOMPUTE;
+
+        $rrow->reviewTime = $rhrow->reviewTime;
+        $rrow->contactId = $rhrow->contactId;
+        $rrow->reviewRound = $rhrow->reviewRound;
+        $rrow->reviewOrdinal = $rhrow->reviewOrdinal;
+        $rrow->reviewType = $rhrow->reviewType;
+        $rrow->reviewBlind = $rhrow->reviewBlind;
+        $rrow->reviewModified = $rhrow->reviewModified;
+        $rrow->reviewSubmitted = $rhrow->reviewSubmitted;
+        $rrow->timeDisplayed = $rhrow->timeDisplayed;
+        $rrow->timeApprovalRequested = $rhrow->timeApprovalRequested;
+        $rrow->reviewAuthorSeen = $rhrow->reviewAuthorSeen;
+        $rrow->reviewAuthorModified = $rhrow->reviewAuthorModified;
+        $rrow->reviewNotified = $rhrow->reviewNotified;
+        $rrow->reviewAuthorNotified = $rhrow->reviewAuthorNotified;
+        $rrow->reviewEditVersion = $rhrow->reviewEditVersion;
+
+        if ($rhrow->revdelta !== null) {
+            $patch = json_decode($rhrow->revdelta, true);
+            if (!is_array($patch)
+                || !ReviewDiffInfo::apply_patch($rrow, $patch)) {
+                return null;
+            }
+        }
+
+        $rrow->reviewStatus = $rrow->compute_review_status();
+        return $rrow;
+    }
+
+    function load_history() {
+        $this->_history = [];
+        $result = $this->conf->qe("select * from PaperReviewHistory where paperId=? and reviewId=? order by reviewTime asc", $this->paperId, $this->reviewId);
+        while (($rhrow = ReviewHistoryInfo::fetch($result))) {
+            $this->_history[] = $rhrow;
+        }
+        Dbl::free($result);
+    }
+
+    /** @param list<int> */
+    function versions() {
+        if ($this->_history === null) {
+            $this->load_history();
+        }
+        $times = [];
+        foreach ($this->_history as $rhrow) {
+            if ($rhrow->reviewTime !== 0) {
+                $times[] = $rhrow->reviewTime;
+            }
+        }
+        $times[] = $this->reviewTime;
+        return $times;
+    }
+
+    /** @param int $time
+     * @return ?ReviewInfo */
+    function version_at($time) {
+        if ($time >= $this->reviewTime) {
+            return $this;
+        }
+        if ($this->_history === null) {
+            $this->load_history();
+        }
+        $rrow = $this;
+        for ($i = count($this->_history) - 1; $i >= 0 && $time < $rrow->reviewTime; --$i) {
+            $rhrow = $this->_history[$i];
+            if ($rhrow instanceof ReviewInfo) {
+                $rrow = $rhrow;
+            } else if ($rhrow->reviewNextTime !== $rrow->reviewTime) {
+                return null;
+            } else {
+                $rrow = $this->_history[$i] = $rrow->apply_history($rhrow);
+            }
+        }
+        return $rrow;
+    }
+
 
     #[\ReturnTypeWillChange]
     function jsonSerialize() {

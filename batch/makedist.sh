@@ -387,6 +387,7 @@ src/responseround.php
 src/reviewdiffinfo.php
 src/reviewfield.php
 src/reviewform.php
+src/reviewhistoryinfo.php
 src/reviewinfo.php
 src/reviewrefusalinfo.php
 src/reviewrequestinfo.php

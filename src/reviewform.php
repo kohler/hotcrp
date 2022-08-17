@@ -1767,8 +1767,8 @@ class ReviewValues extends MessageSet {
                 . join(", ", $log_fields), $prow);
         }
 
-        if ($this->conf->sversion >= 267) {
-            $diffinfo->save_history($new_rrow);
+        if ($this->conf->sversion >= 269) {
+            $diffinfo->save_history($new_rrow, $now);
         }
 
         // if external, forgive the requester from finishing their review

@@ -123,25 +123,26 @@ class ReviewDiffInfo {
         return $patch;
     }
 
-    function save_history(ReviewInfo $rrow) {
+    /** @param int $now */
+    function save_history(ReviewInfo $rrow, $now) {
         assert($this->rrow->paperId === $rrow->paperId
                && ($this->rrow->reviewId === 0 || $this->rrow->reviewId === $rrow->reviewId));
         $patch = $this->make_patch(0);
         $this->conf->qe("insert into PaperReviewHistory set
-            paperId=?, reviewId=?, reviewTime=?,
+            paperId=?, reviewId=?, reviewTime=?, reviewNextTime=?,
             contactId=?, reviewRound=?, reviewOrdinal=?,
             reviewType=?, reviewBlind=?,
             reviewModified=?, reviewSubmitted=?,
-            timeDisplayed=?,
+            timeDisplayed=?, timeApprovalRequested=?,
             reviewAuthorSeen=?, reviewAuthorModified=?,
             reviewNotified=?, reviewAuthorNotified=?,
             reviewEditVersion=?,
             revdelta=?",
-            $rrow->paperId, $rrow->reviewId, $this->rrow->reviewTime,
+            $rrow->paperId, $rrow->reviewId, $this->rrow->reviewTime, $now,
             $this->rrow->contactId, $this->rrow->reviewRound, $this->rrow->reviewOrdinal,
             $this->rrow->reviewType, $this->rrow->reviewBlind,
             $this->rrow->reviewModified ?? 0, $this->rrow->reviewSubmitted ?? 0,
-            $this->rrow->timeDisplayed ?? 0,
+            $this->rrow->timeDisplayed ?? 0, $this->rrow->timeApprovalRequested ?? 0,
             $this->rrow->reviewAuthorSeen ?? 0, $this->rrow->reviewAuthorModified ?? 0,
             $this->rrow->reviewNotified ?? 0, $this->rrow->reviewAuthorNotified ?? 0,
             $this->rrow->reviewEditVersion ?? 0,
@@ -198,6 +199,7 @@ class ReviewDiffInfo {
         }
         return $data;
     }
+
     /** @param array $patch
      * @return bool */
     static function apply_patch(ReviewInfo $rrow, $patch) {

@@ -36,6 +36,8 @@ class ReviewCSV_Batch {
     public $t;
     /** @var ?int */
     public $format;
+    /** @var ?int */
+    public $version;
     /** @var list<bool> */
     public $rfseen;
     /** @var list<string> */
@@ -74,6 +76,13 @@ class ReviewCSV_Batch {
         $this->t = $arg["t"] ?? "s";
         if (!in_array($this->t, PaperSearch::viewable_limits($this->user, $this->t))) {
             throw new CommandLineException("No search collection ‘{$this->t}’");
+        }
+        if (isset($arg["version"])) {
+            if (($t = $this->conf->parse_time($arg["version"])) !== false) {
+                $this->version = $t;
+            } else {
+                throw new CommandLineException("‘--version’ requires a date");
+            }
         }
     }
 
@@ -253,7 +262,11 @@ class ReviewCSV_Batch {
                         $this->add_comment($prow, $xrow, $px);
                     }
                 } else if ($xrow instanceof ReviewInfo) {
+                    if ($this->version !== null) {
+                        $xrow = $xrow->version_at($this->version);
+                    }
                     if ($this->reviews
+                        && $xrow !== null
                         && $xrow->reviewStatus >= ReviewInfo::RS_DRAFTED
                         && ($this->all_status || $xrow->reviewStatus >= ReviewInfo::RS_COMPLETED)) {
                         $this->add_review($prow, $xrow, $px);
@@ -277,6 +290,7 @@ class ReviewCSV_Batch {
             "comments,c",
             "fields,f",
             "sitename,N",
+            "version:,time:",
             "no-header",
             "no-text",
             "no-score",
@@ -295,6 +309,7 @@ Options include:
   -c, --comments         Include comments.
   -f, --fields           Include paper fields.
   -N, --sitename         Include site name and class in CSV.
+  --version TIME         Return reviews as of time TIME.
   --no-text              Omit text fields.
   --no-score             Omit score fields.
   --no-header            Omit CSV header.
