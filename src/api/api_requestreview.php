@@ -247,26 +247,35 @@ class RequestReview_API {
 
     /** @param Contact $user
      * @param Qrequest $qreq
+     * @return ?PaperInfo */
+    static private function review_refusal_paper($user, $qreq) {
+        if (ctype_digit($qreq->p ?? "X")
+            && ($prow = $user->conf->paper_by_id(intval($qreq->p), $user))
+            && $prow->review_refusals_by_user($user)) {
+            return $prow;
+        }
+        return null;
+    }
+
+    /** @param Contact $user
+     * @param Qrequest $qreq
      * @param PaperInfo $prow
      * @return JsonResult */
     static function acceptreview($user, $qreq, $prow) {
+        // check `p` parameter
+        // maybe user can view paper because of a declined review
+        $prow = $prow ?? self::review_refusal_paper($user, $qreq);
+        if (!$prow) {
+            return $user->conf->paper_error_json_result($qreq->annex("paper_whynot"));
+        }
+
+        // check `r` parameter, set redirect
         if (!ctype_digit($qreq->r ?? "X")) {
             return JsonResult::make_parameter_error("r");
         }
         $r = intval($qreq->r);
         if ($qreq->redirect === "1") {
             $qreq->redirect = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
-        }
-
-        // maybe user can view paper because of a declined review
-        if (!$prow && ctype_digit($qreq->p ?? "X")) {
-            $xprow = $user->conf->paper_by_id(intval($qreq->p), $user);
-            if ($xprow && $xprow->review_refusals_by_user($user)) {
-                $prow = $xprow;
-            }
-        }
-        if (!$prow) {
-            return $user->conf->paper_error_json_result($qreq->annex("paper_whynot"));
         }
 
         $rrow = $prow->review_by_id($r);
@@ -321,6 +330,16 @@ class RequestReview_API {
      * @param PaperInfo $prow
      * @return JsonResult */
     static function declinereview($user, $qreq, $prow) {
+        // check `p` parameter
+        // maybe user can view paper because of a declined review
+        $prow = $prow ?? self::review_refusal_paper($user, $qreq);
+        if (!$prow) {
+            return $user->conf->paper_error_json_result($qreq->annex("paper_whynot"));
+        }
+        $prow->ensure_full_reviews();
+        $prow->ensure_reviewer_names();
+
+        // check `r` parameter, set redirect
         if (!ctype_digit($qreq->r ?? "X")) {
             return JsonResult::make_parameter_error("r");
         }
@@ -334,19 +353,6 @@ class RequestReview_API {
         if ($reason === "" || $reason === "Optional explanation") {
             $reason = null;
         }
-
-        // maybe user can view paper because of a declined review
-        if (!$prow && ctype_digit($qreq->p ?? "X")) {
-            $xprow = $user->conf->paper_by_id(intval($qreq->p), $user);
-            if ($xprow && $xprow->review_refusals_by_user($user)) {
-                $prow = $xprow;
-            }
-        }
-        if (!$prow) {
-            return $user->conf->paper_error_json_result($qreq->annex("paper_whynot"));
-        }
-        $prow->ensure_full_reviews();
-        $prow->ensure_reviewer_names();
 
         $rrow = $prow->review_by_id($r);
         $refrow = $prow->review_refusal_by_id($r);
