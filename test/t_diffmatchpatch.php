@@ -537,11 +537,15 @@ class DiffMatchPatch_Tester {
         $this->assertEquals('jumps over the lazy', $text1);
         $text2 = $dmp->diff_text2($diffs);
 
-        $delta = $dmp->diff_toHCDelta($diffs);
+        $delta = $dmp->diff_toHCDelta($diffs, false);
         $this->assertEquals("=4|-1|+ed|=6|-3|+a|=5|+old dog", $delta);
 
         // Convert delta string into a diff.
         $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
+        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
+
+        // Test optimized hcdelta
+        $delta1 = $dmp->diff_toHCDelta($diffs, true);
         $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
 
         // Generates error (19 != 20).
@@ -566,12 +570,16 @@ class DiffMatchPatch_Tester {
         $this->assertEquals("\xda\x80 \x00 \t %|\xda\x81 \x01 \n ^", $text1);
         $text2 = $dmp->diff_text2($diffs);
 
-        $delta = $dmp->diff_toHCDelta($diffs);
+        $delta = $dmp->diff_toHCDelta($diffs, false);
         $this->assertEquals("=9|-8|+\xda\x82 \x02 \\ %7C%25", $delta);
 
         // Convert delta string into a diff.
         $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
         $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
+
+        // Test optimized hcdelta
+        $delta1 = $dmp->diff_toHCDelta($diffs, true);
+        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta1));
 
         // Test deltas for surrogate pairs.
         $diffs = $dmp->diff_fromStringList(["=😀Héló"]);
@@ -579,7 +587,7 @@ class DiffMatchPatch_Tester {
         $this->assertEquals("😀Héló", $text1);
         $text2 = $dmp->diff_text1($diffs);
 
-        $delta = $dmp->diff_toHCDelta($diffs);
+        $delta = $dmp->diff_toHCDelta($diffs, false);
         $this->assertEquals("=10", $delta);
 
         $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
@@ -590,7 +598,7 @@ class DiffMatchPatch_Tester {
         $text2 = $dmp->diff_text2($diffs);
         $this->assertEquals('A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ', $text2);
 
-        $delta = $dmp->diff_toHCDelta($diffs);
+        $delta = $dmp->diff_toHCDelta($diffs, false);
         $this->assertEquals('+A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ', $delta);
 
         // Convert delta string into a diff.
@@ -602,7 +610,7 @@ class DiffMatchPatch_Tester {
             $a .= $a;
         }
         $diffs = [new dmp\diff_obj(DIFF_INSERT, $a)];
-        $delta = $dmp->diff_toHCDelta($diffs);
+        $delta = $dmp->diff_toHCDelta($diffs, false);
         $this->assertEquals('+' . $a, $delta);
 
         // Convert delta string into a diff.

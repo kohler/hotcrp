@@ -1582,21 +1582,66 @@ class diff_match_patch {
         return $diffs;
     }
 
+    /** @param string $s
+     * @return string */
+    static private function insert_hcdelta($s) {
+        return "+" . str_replace(["%", "|"], ["%25", "%7C"], $s);
+    }
+
     /**
      * Crush the diff into an encoded string which describes the operations
      * required to transform text1 into text2.
      * E.g. =3|-2|+ing  -> Keep 3 bytes, delete 2 bytes, insert 'ing'.
      * Operations are separated by |. Characters % and | are escaped using %xx notation.
      * @param list<diff_obj> $diffs Array of diff tuples.
+     * @param bool $minimize
      * @return string Delta text.
      */
-    function diff_toHCDelta($diffs) {
+    function diff_toHCDelta($diffs, $minimize = false) {
         $text = [];
-        foreach ($diffs as $diff) {
-            if ($diff->op === DIFF_INSERT) {
-                $text[] = "+" . str_replace(["%", "|"], ["%25", "%7C"], $diff->text);
-            } else {
-                $text[] = ($diff->op === DIFF_DELETE ? "-" : "=") . strlen($diff->text);
+        if ($minimize) {
+            // Shorten diff by eliminating short equalities
+            $ndiffs = count($diffs);
+            for ($i = 0; $i !== $ndiffs; ) {
+                $diff = $diffs[$i];
+                if ($diff->op === DIFF_INSERT) {
+                    $text[] = self::insert_hcdelta($diff->text);
+                    ++$i;
+                } else if ($diff->op === DIFF_DELETE
+                           && $i + 1 !== $ndiffs
+                           && $diffs[$i + 1]->op === DIFF_INSERT) {
+                    $ndelete = strlen($diff->text);
+                    $insert = $diffs[$i + 1]->text;
+                    $i += 2;
+                    while ($i !== $ndiffs) {
+                        $diff = $diffs[$i];
+                        if ($diff->op === DIFF_EQUAL) {
+                            if (strlen($diff->text) > 4) {
+                                break;
+                            }
+                            $ndelete += strlen($diff->text);
+                            $insert .= $diff->text;
+                        } else if ($diff->op === DIFF_DELETE) {
+                            $ndelete += strlen($diff->text);
+                        } else {
+                            $insert .= $diff->text;
+                        }
+                        ++$i;
+                    }
+                    $text[] = "-{$ndelete}";
+                    $text[] = self::insert_hcdelta($insert);
+                } else {
+                    $text[] = ($diff->op === DIFF_DELETE ? "-" : "=") . strlen($diff->text);
+                    ++$i;
+                }
+            }
+        } else {
+            foreach ($diffs as $diff) {
+                if ($diff->op === DIFF_INSERT) {
+                    $text[] = self::insert_hcdelta($diff->text);
+                } else {
+                    $text[] = ($diff->op === DIFF_DELETE ? "-" : "=") . strlen($diff->text);
+                }
             }
         }
         return join("|", $text);
@@ -1631,8 +1676,14 @@ class diff_match_patch {
             if ($op === "+") {
                 $diffs[] = new diff_obj(DIFF_INSERT, rawurldecode($param));
             } else if ($op === "-" || $op === "=") {
-                if (!ctype_digit($param)
-                    || ($n = intval($param)) <= 0
+                if ($param === "") {
+                    $n = 1;
+                } else if (ctype_digit($param)) {
+                    $n = intval($param);
+                } else {
+                    $n = 0;
+                }
+                if ($n <= 0
                     || $pos + $n > strlen($text1)) {
                     throw new diff_exception("Invalid number `{$param}` in diff_fromHCDelta @{$pos}/{$len}:{$dpos}");
                 }

@@ -63,16 +63,9 @@ class ReviewDiffInfo {
         $this->_dmp->Line_Histogram = $line_histogram;
         try {
             $diffs = $this->_dmp->diff($s1, $s2);
-            $hcdelta = $this->_dmp->diff_toHCDelta($diffs);
+            $hcdelta = $this->_dmp->diff_toHCDelta($diffs, true);
 
             if (self::VALIDATE_PATCH) {
-                // validate that toHCDelta can create $s2
-                $xdiffs = $this->_dmp->diff_fromHCDelta($s1, $hcdelta);
-                if ($this->_dmp->diff_text1($xdiffs) !== $s1
-                    || $this->_dmp->diff_text2($xdiffs) !== $s2) {
-                    throw new dmp\diff_exception("incorrect diff_fromHCDelta");
-                }
-
                 // validate that applyHCDelta can create $s2
                 if ($this->_dmp->diff_applyHCDelta($s1, $hcdelta) !== $s2) {
                     throw new dmp\diff_exception("incorrect diff_applyHCDelta");
