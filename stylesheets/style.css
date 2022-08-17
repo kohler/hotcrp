@@ -1808,7 +1808,8 @@ a:hover .settings-jpath {
 	position: relative;
 	overflow-x: visible;
 	overflow-y: scroll;
-	max-height: 80vh;
+	height: 80vh;
+	contain: content;
 }
 .settings-json-panel-edit:focus-within {
 	outline: 3px auto Highlight;
