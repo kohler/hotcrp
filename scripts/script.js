@@ -1462,7 +1462,7 @@ function append_feedback_near(elt, mi) {
 
 // ui
 var handle_ui = (function ($) {
-var callbacks = {}, handling, stopped = 0, nest = 0;
+var callbacks = {}, handling = {}, stopped = 0, nest = 0;
 function collect_callbacks(cbs, c, evt_type) {
     var j, k;
     for (j = 0; j !== c.length; j += 3) {
