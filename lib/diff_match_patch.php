@@ -1585,7 +1585,7 @@ class diff_match_patch {
     /** @param string $s
      * @return string */
     static private function insert_hcdelta($s) {
-        return "+" . str_replace(["%", "|"], ["%25", "%7C"], $s);
+        return str_replace(["%", "|"], ["%25", "%7C"], $s);
     }
 
     /**
@@ -1598,53 +1598,51 @@ class diff_match_patch {
      * @return string Delta text.
      */
     function diff_toHCDelta($diffs, $minimize = false) {
-        $text = [];
-        if ($minimize) {
-            // Shorten diff by eliminating short equalities
-            $ndiffs = count($diffs);
-            for ($i = 0; $i !== $ndiffs; ) {
-                $diff = $diffs[$i];
-                if ($diff->op === DIFF_INSERT) {
-                    $text[] = self::insert_hcdelta($diff->text);
-                    ++$i;
-                } else if ($diff->op === DIFF_DELETE
-                           && $i + 1 !== $ndiffs
-                           && $diffs[$i + 1]->op === DIFF_INSERT) {
-                    $ndelete = strlen($diff->text);
-                    $insert = $diffs[$i + 1]->text;
-                    $i += 2;
-                    while ($i !== $ndiffs) {
-                        $diff = $diffs[$i];
-                        if ($diff->op === DIFF_EQUAL) {
-                            if (strlen($diff->text) > 4) {
-                                break;
-                            }
-                            $ndelete += strlen($diff->text);
-                            $insert .= $diff->text;
-                        } else if ($diff->op === DIFF_DELETE) {
-                            $ndelete += strlen($diff->text);
-                        } else {
-                            $insert .= $diff->text;
+        $out = [];
+        $sep = "";
+        $ndiffs = count($diffs);
+        for ($i = 0; $i !== $ndiffs; ) {
+            $diff = $diffs[$i];
+            if ($diff->op === DIFF_INSERT) {
+                $out[] = "{$sep}+";
+                $out[] = self::insert_hcdelta($diff->text);
+                $sep = "|";
+                ++$i;
+            } else if (($n = strlen($diff->text)) === 0) {
+                ++$i;
+            } else if ($minimize
+                       && $diff->op === DIFF_DELETE
+                       && $i + 1 !== $ndiffs
+                       && $diffs[$i + 1]->op === DIFF_INSERT) {
+                // Shorten diff by eliminating short equalities
+                $insert = $diffs[$i + 1]->text;
+                $i += 2;
+                while ($i !== $ndiffs) {
+                    $diff = $diffs[$i];
+                    if ($diff->op === DIFF_EQUAL) {
+                        if (strlen($diff->text) > 4) {
+                            break;
                         }
-                        ++$i;
+                        $n += strlen($diff->text);
+                        $insert .= $diff->text;
+                    } else if ($diff->op === DIFF_DELETE) {
+                        $n += strlen($diff->text);
+                    } else {
+                        $insert .= $diff->text;
                     }
-                    $text[] = "-{$ndelete}";
-                    $text[] = self::insert_hcdelta($insert);
-                } else {
-                    $text[] = ($diff->op === DIFF_DELETE ? "-" : "=") . strlen($diff->text);
                     ++$i;
                 }
-            }
-        } else {
-            foreach ($diffs as $diff) {
-                if ($diff->op === DIFF_INSERT) {
-                    $text[] = self::insert_hcdelta($diff->text);
-                } else {
-                    $text[] = ($diff->op === DIFF_DELETE ? "-" : "=") . strlen($diff->text);
-                }
+                $out[] = "{$sep}-" . ($n === 1 ? "" : $n) . "+";
+                $out[] = self::insert_hcdelta($insert);
+                $sep = "|";
+            } else {
+                $s = $diff->op === DIFF_DELETE ? "{$sep}-" : "{$sep}=";
+                $out[] = $s . ($n === 1 ? "" : $n);
+                $sep = "";
+                ++$i;
             }
         }
-        return join("|", $text);
+        return join("", $out);
     }
 
     /**
@@ -1662,42 +1660,35 @@ class diff_match_patch {
         $dpos = 0;  // cursor in $delta
         $dlen = strlen($delta);
         while ($dpos !== $dlen) {
-            $dtab = strpos($delta, "|", $dpos);
-            if ($dtab === $dpos) {
-                $dpos = $dtab + 1;
-                continue;
-            } else if ($dtab === false) {
-                $dtab = $dlen;
-            }
             // Each token begins with a one character parameter which specifies the
             // operation of this token (delete, insert, equality).
             $op = $delta[$dpos];
-            $param = substr($delta, $dpos + 1, $dtab - $dpos - 1);
+            $p0 = $dpos + 1;
             if ($op === "+") {
-                $diffs[] = new diff_obj(DIFF_INSERT, rawurldecode($param));
-            } else if ($op === "-" || $op === "=") {
-                if ($param === "") {
-                    $n = 1;
-                } else if (ctype_digit($param)) {
-                    $n = intval($param);
-                } else {
-                    $n = 0;
+                $dpos = strpos($delta, "|", $p0);
+                if ($dpos === false) {
+                    $dpos = $dlen;
                 }
-                if ($n <= 0
-                    || $pos + $n > strlen($text1)) {
-                    throw new diff_exception("Invalid number `{$param}` in diff_fromHCDelta @{$pos}/{$len}:{$dpos}");
+                $s = substr($delta, $p0, $dpos - $p0);
+                $diffs[] = new diff_obj(DIFF_INSERT, rawurldecode($s));
+                $dpos += $dpos !== $dlen ? 1 : 0;
+            } else if ($op === "-" || $op === "=") {
+                $dpos = $p0 + strspn($delta, "0123456789", $p0);
+                $n = $dpos !== $p0 ? intval(substr($delta, $p0, $dpos - $p0)) : 1;
+                $ech = $dpos !== $dlen ? $delta[$dpos] : "|";
+                if (strpos("|-=+", $ech) === false
+                    || $n <= 0
+                    || $pos + $n > $len) {
+                    throw new diff_exception("Invalid syntax in diff_fromHCDelta {$ech} {$n} @{$pos}/{$len}:{$dpos}");
                 }
                 $part = substr($text1, $pos, $n);
                 $pos += $n;
-                if ($op === "-") {
-                    $diffs[] = new diff_obj(DIFF_DELETE, $part);
-                } else {
-                    $diffs[] = new diff_obj(DIFF_EQUAL, $part);
-                }
+                $diffs[] = new diff_obj($op === "-" ? DIFF_DELETE : DIFF_EQUAL, $part);
+            } else if ($op === "|") {
+                ++$dpos;
             } else {
                 throw new diff_exception("Invalid operation `{$op}` in diff_fromHCDelta @{$pos}/{$len}:{$dpos}");
             }
-            $dpos = min($dtab + 1, $dlen);
         }
         if ($pos !== $len) {
             throw new diff_exception("Invalid source length in diff_fromHCDelta @{$pos}/{$len}");
@@ -1720,33 +1711,33 @@ class diff_match_patch {
         $dpos = 0;  // cursor in $delta
         $dlen = strlen($delta);
         while ($dpos !== $dlen) {
-            $dtab = strpos($delta, "|", $dpos);
-            if ($dtab === $dpos) {
-                $dpos = $dtab + 1;
-                continue;
-            } else if ($dtab === false) {
-                $dtab = $dlen;
-            }
-            // Each token begins with a one character parameter which specifies the
-            // operation of this token (delete, insert, equality).
             $op = $delta[$dpos];
-            $param = substr($delta, $dpos + 1, $dtab - $dpos - 1);
+            $p0 = $dpos + 1;
             if ($op === "+") {
-                $out[] = rawurldecode($param);
+                $dpos = strpos($delta, "|", $p0);
+                if ($dpos === false) {
+                    $dpos = $dlen;
+                }
+                $out[] = rawurldecode(substr($delta, $p0, $dpos - $p0));
+                $dpos += $dpos !== $dlen ? 1 : 0;
             } else if ($op === "-" || $op === "=") {
-                if (!ctype_digit($param)
-                    || ($n = intval($param)) <= 0
-                    || $pos + $n > strlen($text1)) {
-                    throw new diff_exception("Invalid number `{$param}` in diff_applyHCDelta @{$pos}/{$len}:{$dpos}");
+                $dpos = $p0 + strspn($delta, "0123456789", $p0);
+                $n = $dpos !== $p0 ? intval(substr($delta, $p0, $dpos - $p0)) : 1;
+                $ech = $dpos !== $dlen ? $delta[$dpos] : "|";
+                if (strpos("|-=+", $ech) === false
+                    || $n <= 0
+                    || $pos + $n > $len) {
+                    throw new diff_exception("Invalid syntax in diff_applyHCDelta @{$pos}/{$len}:{$dpos}");
                 }
                 if ($op === "=") {
                     $out[] = substr($text1, $pos, $n);
                 }
                 $pos += $n;
+            } else if ($op === "|") {
+                ++$dpos;
             } else {
                 throw new diff_exception("Invalid operation in diff_applyHCDelta @{$pos}/{$len}:{$dpos}");
             }
-            $dpos = min($dtab + 1, $dlen);
         }
         if ($pos !== $len) {
             throw new diff_exception("Invalid source length in diff_applyHCDelta @{$pos}/{$len}");

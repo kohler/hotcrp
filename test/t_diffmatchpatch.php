@@ -538,15 +538,20 @@ class DiffMatchPatch_Tester {
         $text2 = $dmp->diff_text2($diffs);
 
         $delta = $dmp->diff_toHCDelta($diffs, false);
-        $this->assertEquals("=4|-1|+ed|=6|-3|+a|=5|+old dog", $delta);
+        $this->assertEquals("=4-+ed|=6-3+a|=5+old dog", $delta);
 
         // Convert delta string into a diff.
         $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
+        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, "=4|-1|+ed|=6|-3|+a|=5|+old dog"));
         $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
+        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, "=4|-1|+ed|=6|-3|+a|=5|+old dog"));
 
         // Test optimized hcdelta
         $delta1 = $dmp->diff_toHCDelta($diffs, true);
         $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
+        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, "=4|-1|+ed|=6|-3|+a|=5|+old dog"));
+        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, "=4-1|+ed|=6-3+a|=5+old dog"));
+        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, "=4-+ed|=6-3+a|=5+old dog"));
 
         // Generates error (19 != 20).
         try {
@@ -571,11 +576,13 @@ class DiffMatchPatch_Tester {
         $text2 = $dmp->diff_text2($diffs);
 
         $delta = $dmp->diff_toHCDelta($diffs, false);
-        $this->assertEquals("=9|-8|+\xda\x82 \x02 \\ %7C%25", $delta);
+        $this->assertEquals("=9-8+\xda\x82 \x02 \\ %7C%25", $delta);
 
         // Convert delta string into a diff.
         $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
+        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, "=9|-8|+\xda\x82 \x02 \\ %7C%25"));
         $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
+        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, "=9|-8|+\xda\x82 \x02 \\ %7C%25"));
 
         // Test optimized hcdelta
         $delta1 = $dmp->diff_toHCDelta($diffs, true);
@@ -615,6 +622,23 @@ class DiffMatchPatch_Tester {
 
         // Convert delta string into a diff.
         $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta('', $delta));
+
+        // Test one-character diffs.
+        $diffs = $dmp->diff_fromStringList(["=A", "-B", "=C", "-D", "=E", "+F", "=G"]);
+        $text1 = $dmp->diff_text1($diffs);
+        $text2 = $dmp->diff_text2($diffs);
+        $this->assertEquals('ABCDEG', $text1);
+        $this->assertEquals('ACEFG', $text2);
+
+        $delta = $dmp->diff_toHCDelta($diffs, false);
+        $this->assertEquals("=-=-=+F|=", $delta);
+        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
+        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
+
+        $delta = $dmp->diff_toHCDelta($diffs, true);
+        $this->assertEquals("=-=-=+F|=", $delta);
+        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
+        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
     }
 
     function testDiffXIndex() {
