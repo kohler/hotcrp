@@ -5871,7 +5871,7 @@ function quicklink_shortcut(evt, key) {
         return true;
     } else if ($$("quicklink-list")) {
         // at end of list
-        a = evt.target || evt.srcElement;
+        a = evt.target;
         a = (a && a.tagName == "INPUT" ? a : $$("quicklink-list"));
         removeClass(a, "flash-error-outline");
         void a.offsetWidth;
@@ -5942,10 +5942,8 @@ function shortcut(top_elt) {
 
     function keypress(evt) {
         var key, target, x;
-        // IE compatibility
-        evt = evt || window.event;
         key = event_key(evt);
-        target = evt.target || evt.srcElement;
+        target = evt.target;
         // reject modified keys, interesting targets
         if (!key || evt.altKey || evt.ctrlKey || evt.metaKey
             || (target && (x = target.tagName) && target != top_elt
@@ -5974,13 +5972,9 @@ function shortcut(top_elt) {
             last_key_at = time;
         }
         // done
-        if (evt.preventDefault)
-            evt.preventDefault();
-        else
-            evt.returnValue = false;
+        evt.preventDefault();
         return false;
     }
-
 
     function add(key, f) {
         if (key) {
@@ -6016,10 +6010,7 @@ function shortcut(top_elt) {
     else if (typeof top_elt === "string")
         top_elt = $$(top_elt);
     if (top_elt && !top_elt.hotcrp_shortcut) {
-        if (top_elt.addEventListener)
-            top_elt.addEventListener("keypress", keypress, false);
-        else
-            top_elt.onkeypress = keypress;
+        top_elt.addEventListener("keypress", keypress, false);
         top_elt.hotcrp_shortcut = true;
     }
     return self;
@@ -7825,7 +7816,6 @@ function endgroup_index(i) {
 }
 
 function tag_mousemove(evt) {
-    evt = evt || window.event;
     if (evt.clientX == null)
         evt = mousepos;
     mousepos = {clientX: evt.clientX, clientY: evt.clientY};
@@ -8066,22 +8056,14 @@ function commit_drag(si, di) {
 }
 
 function tag_mousedown(evt) {
-    evt = evt || window.event;
     if (dragging)
         tag_mouseup();
     dragging = this;
     dragindex = null;
     srcindex = analyze_rows(this);
-    if (document.addEventListener) {
-        document.addEventListener("mousemove", tag_mousemove, true);
-        document.addEventListener("mouseup", tag_mouseup, true);
-        document.addEventListener("scroll", tag_mousemove, true);
-    } else {
-        dragging.setCapture();
-        dragging.attachEvent("onmousemove", tag_mousemove);
-        dragging.attachEvent("onmouseup", tag_mouseup);
-        dragging.attachEvent("onmousecapture", tag_mouseup);
-    }
+    document.addEventListener("mousemove", tag_mousemove, true);
+    document.addEventListener("mouseup", tag_mouseup, true);
+    document.addEventListener("scroll", tag_mousemove, true);
     addClass(document.body, "grabbing");
     tag_mousemove(evt);
     handle_ui.stopPropagation(evt);
@@ -8089,16 +8071,9 @@ function tag_mousedown(evt) {
 }
 
 function tag_mouseup() {
-    if (document.removeEventListener) {
-        document.removeEventListener("mousemove", tag_mousemove, true);
-        document.removeEventListener("mouseup", tag_mouseup, true);
-        document.removeEventListener("scroll", tag_mousemove, true);
-    } else {
-        dragging.detachEvent("onmousemove", tag_mousemove);
-        dragging.detachEvent("onmouseup", tag_mouseup);
-        dragging.detachEvent("onmousecapture", tag_mouseup);
-        dragging.releaseCapture();
-    }
+    document.removeEventListener("mousemove", tag_mousemove, true);
+    document.removeEventListener("mouseup", tag_mouseup, true);
+    document.removeEventListener("scroll", tag_mousemove, true);
     removeClass(document.body, "grabbing");
     if (dragger) {
         dragger = dragger.remove();
