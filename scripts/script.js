@@ -993,7 +993,7 @@ function make_onkey(key, f) {
     return function (evt) {
         if (!event_modkey(evt) && event_key(evt) === key) {
             evt.preventDefault();
-            evt.stopImmediatePropagation();
+            handle_ui.stopImmediatePropagation(evt);
             f.call(this, evt);
             return false;
         }
@@ -1462,7 +1462,7 @@ function append_feedback_near(elt, mi) {
 
 // ui
 var handle_ui = (function ($) {
-var callbacks = {};
+var callbacks = {}, handling, stopped = 0, nest = 0;
 function collect_callbacks(cbs, c, evt_type) {
     var j, k;
     for (j = 0; j !== c.length; j += 3) {
@@ -1474,12 +1474,31 @@ function collect_callbacks(cbs, c, evt_type) {
     }
 }
 function call_callbacks(cbs, element, evt) {
-    for (var i = 0; i !== cbs.length; i += 2) {
-        if (cbs[i].call(element, evt) === false)
-            break;
+    var nhandling, nstopped, oevt = evt.originalEvent || evt;
+    try {
+        if (++nest !== 1) {
+            nhandling = handling;
+            nstopped = stopped;
+        }
+        if (evt !== handling) {
+            handling = evt;
+            stopped = 0;
+        }
+        for (var i = 0; i !== cbs.length && stopped !== 2; i += 2) {
+            if (cbs[i].call(element, oevt) === false)
+                break;
+        }
+    } finally {
+        if (--nest !== 0) {
+            handling = nhandling;
+            stopped = nstopped;
+        }
     }
 }
 function handle_ui(evt) {
+    if (evt === handling && stopped !== 0) {
+        return;
+    }
     var e = evt.target;
     if ((e && (hasClass(e, "ui") || hasClass(e, "uin")))
         || (this.tagName === "A" && hasClass(this, "ui"))) {
@@ -1490,7 +1509,7 @@ function handle_ui(evt) {
         var c = callbacks[k[i]];
         c && collect_callbacks(cbs, c, evt.type);
     }
-    cbs.length !== 0 && call_callbacks(cbs, this, evt.originalEvent || evt);
+    cbs.length !== 0 && call_callbacks(cbs, this, evt);
 }
 handle_ui.on = function (s, callback, priority) {
     var pos = 0, sp, dot = 0, len = s.length,
@@ -1523,8 +1542,6 @@ handle_ui.on = function (s, callback, priority) {
 handle_ui.trigger = function (className, evt) {
     var c = callbacks[className];
     if (c) {
-        if (typeof evt === "string")
-            evt = $.Event(evt); // XXX IE8: `new Event` is not supported
         var cbs = [];
         collect_callbacks(cbs, c, evt.type);
         cbs.length !== 0 && call_callbacks(cbs, this, evt);
@@ -1537,6 +1554,22 @@ handle_ui.handlers = function (className, evt_type) {
         result.push(cbs[i])
     }
     return result;
+};
+handle_ui.stopPropagation = function (evt) {
+    if (evt === handling || evt === handling.originalEvent) {
+        handling.stopPropagation();
+        stopped = stopped || 1;
+    } else {
+        evt.stopPropagation();
+    }
+};
+handle_ui.stopImmediatePropagation = function (evt, immediate) {
+    if (evt === handling || evt === handling.originalEvent) {
+        handling.stopImmediatePropagation();
+        stopped = 2;
+    } else {
+        evt.stopImmediatePropagation();
+    }
 };
 return handle_ui;
 })($);
@@ -1856,7 +1889,7 @@ handle_ui.on("js-range-click", function (evt) {
 
 $(function () {
     $(".is-range-group").each(function () {
-        handle_ui.trigger.call(this, "js-range-click", "updaterange");
+        handle_ui.trigger.call(this, "js-range-click", new Event("updaterange"));
     });
 });
 
@@ -3556,7 +3589,7 @@ function foldup(evt, opts) {
         && typeof evt === "object"
         && evt.type === "click"
         && !hasClass(evt.target, "uic")) {
-        evt.stopPropagation();
+        handle_ui.stopPropagation(evt);
         evt.preventDefault(); // needed for expanders despite handle_ui!
     }
 }
@@ -3776,7 +3809,7 @@ $(document).on("keypress", "input.js-autosubmit", function (evt) {
         evt.target.blur();
         dest.click();
     }
-    evt.stopPropagation();
+    handle_ui.stopPropagation(evt);
     evt.preventDefault();
 });
 
@@ -3996,7 +4029,7 @@ handle_ui.on("js-assignment-fold", function (evt) {
         form_highlight($a.closest("form")[0]);
         $a.addClass("foldc").removeClass("foldo");
     }
-    evt.stopPropagation();
+    handle_ui.stopPropagation(evt);
 });
 handle_ui.on("js-assignment-autosave", function () {
     var f = this.form;
@@ -4140,7 +4173,7 @@ handle_ui.on("js-request-review-preview-email", function (evt) {
             }
         }
     });
-    evt.stopPropagation();
+    handle_ui.stopPropagation(evt);
 });
 
 // mail
@@ -5897,7 +5930,7 @@ function make_selector_shortcut(type) {
                 e.addEventListener("blur", end, false);
                 e.addEventListener("change", end, false);
             }
-            evt.stopPropagation();
+            handle_ui.stopPropagation(evt);
             return true;
         }
         return false;
@@ -6564,7 +6597,7 @@ function suggest() {
             if (hintinfo) {
                 hiding = this.value.substring(hintinfo.pcpos, hintinfo.pcpos + hintinfo.lengths[0]);
                 kill();
-                evt.stopImmediatePropagation();
+                handle_ui.stopImmediatePropagation(evt);
                 result = false;
             }
         } else if ((k === "Tab" || k === "Enter") && !m && hintdiv) {
@@ -6574,7 +6607,7 @@ function suggest() {
             kill();
             if ($active.length || this.selectionEnd !== this.value.length) {
                 evt.preventDefault();
-                evt.stopImmediatePropagation();
+                handle_ui.stopImmediatePropagation(evt);
                 result = false;
             }
         } else if (k.substring(0, 5) === "Arrow" && !m && hintdiv && move_active(k)) {
@@ -6602,7 +6635,7 @@ function suggest() {
     function click(evt) {
         do_complete(this);
         kill();
-        evt.stopPropagation();
+        handle_ui.stopPropagation(evt);
     }
 
     function hover(evt) {
@@ -7131,7 +7164,7 @@ var add_revpref_ajax = (function () {
             if (!event_modkey(evt) && event_key(evt) === "Enter") {
                 rp_change.call(this);
                 evt.preventDefault();
-                evt.stopImmediatePropagation();
+                handle_ui.stopImmediatePropagation(evt);
                 return false;
             }
         } else if (evt.type === "change")
@@ -7844,7 +7877,7 @@ function tag_mousemove(evt) {
     if (l !== dragindex) {
         tag_dragto(l);
         if (evt.type === "mousemove")
-            evt.stopPropagation();
+            handle_ui.stopPropagation(evt);
     }
 }
 
@@ -8051,7 +8084,7 @@ function tag_mousedown(evt) {
     }
     addClass(document.body, "grabbing");
     tag_mousemove(evt);
-    evt.stopPropagation();
+    handle_ui.stopPropagation(evt);
     evt.preventDefault();
 }
 
@@ -9496,7 +9529,7 @@ function prepare_pstags() {
             if (mod === 0 || (key === "Enter" && mod === event_modkey.META)) {
                 $f[0][key === "Enter" ? "save" : "cancel"].click();
                 evt.preventDefault();
-                evt.stopImmediatePropagation();
+                handle_ui.stopImmediatePropagation(evt);
                 return false;
             }
         }
