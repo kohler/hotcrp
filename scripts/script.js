@@ -995,7 +995,6 @@ function make_onkey(key, f) {
             evt.preventDefault();
             handle_ui.stopImmediatePropagation(evt);
             f.call(this, evt);
-            return false;
         }
     };
 }
@@ -4272,7 +4271,7 @@ handle_ui.on("badpairs", function () {
     }
 });
 
-handle_ui.on(".js-badpairs-row", function () {
+handle_ui.on(".js-badpairs-row", function (evt) {
     var tbody = $("#bptable > tbody"), n = tbody.children().length;
     if (hasClass(this, "more")) {
         ++n;
@@ -4283,7 +4282,8 @@ handle_ui.on(".js-badpairs-row", function () {
         --n;
         tbody.children().last().remove();
     }
-    return false;
+    evt.preventDefault();
+    handle_ui.stopPropagation(evt);
 });
 
 })();
@@ -4634,7 +4634,7 @@ handle_ui.on("js-review-tokens", function () {
     hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save tokens</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     $d = hc.show();
-    $d.on("submit", "form", function () {
+    $d.on("submit", "form", function (evt) {
         $d.find(".msg").remove();
         $.post(hoturl("=api/reviewtoken"), $d.find("form").serialize(),
             function (data) {
@@ -4645,7 +4645,7 @@ handle_ui.on("js-review-tokens", function () {
                     $d.show_errors(data);
                 }
             });
-        return false;
+        evt.preventDefault();
     });
 });
 
@@ -5797,7 +5797,7 @@ function edit(cj) {
         elt = $$(cid);
     }
     if (!elt && /\beditcomment\b/.test(window.location.search)) {
-        return false;
+        return;
     }
     if (!$(elt).find("form").length) {
         render_comment(cj, true);
@@ -5808,7 +5808,6 @@ function edit(cj) {
     $(function () { te.focus(); });
     has_unload || $(window).on("beforeunload.papercomment", beforeunload);
     has_unload = true;
-    return false;
 }
 
 return {
@@ -5832,7 +5831,7 @@ handle_ui.on("js-overlong-expand", function () {
 
 // previewing
 (function ($) {
-function switch_preview() {
+function switch_preview(evt) {
     var $j = $(this).parent(), $ta;
     while ($j.length && ($ta = $j.find("textarea")).length == 0)
         $j = $j.parent();
@@ -5851,7 +5850,8 @@ function switch_preview() {
             this.innerHTML = "Preview";
         }
     }
-    return false;
+    evt.preventDefault();
+    handle_ui.stopPropagation(evt);
 }
 $(document).on("hotcrprenderpreview", function (evt, format, value, dest) {
     render_text.onto(dest, format, value);
@@ -5861,14 +5861,15 @@ handle_ui.on("js-togglepreview", switch_preview);
 
 
 // quicklink shortcuts
-function quicklink_shortcut(evt, key) {
+function quicklink_shortcut(evt) {
     // find the quicklink, reject if not found
-    var a = $$("quicklink-" + (key === "j" ? "prev" : "next"));
+    var key = event_key(evt),
+        a = $$("quicklink-" + (key === "j" ? "prev" : "next"));
     if (a && a.focus) {
         // focus (for visual feedback), call callback
         a.focus();
         $ajax.after_outstanding(make_link_callback(a));
-        return true;
+        evt.preventDefault();
     } else if ($$("quicklink-list")) {
         // at end of list
         a = evt.target;
@@ -5876,18 +5877,19 @@ function quicklink_shortcut(evt, key) {
         removeClass(a, "flash-error-outline");
         void a.offsetWidth;
         addClass(a, "flash-error-outline");
-        return true;
-    } else
-        return false;
+        evt.preventDefault();
+    }
 }
 
-function comment_shortcut() {
+function comment_shortcut(evt) {
     papercomment.edit_id("cnew");
-    return !!$$("cnew");
+    if ($$("cnew"))
+        evt.preventDefault();
 }
 
-function nextprev_shortcut(evt, key) {
+function nextprev_shortcut(evt) {
     var hash = (location.hash || "#").replace(/^#/, ""), ctr, walk,
+        key = event_key(evt),
         siblingdir = key === "n" ? "nextElementSibling" : "previousElementSibling",
         jqdir = key === "n" ? "first" : "last";
     if (hash
@@ -5900,7 +5902,6 @@ function nextprev_shortcut(evt, key) {
     }
     if (walk && walk.hasAttribute("id"))
         location.hash = "#" + walk.getAttribute("id");
-    return true;
 }
 
 function make_selector_shortcut(type) {
@@ -5917,7 +5918,6 @@ function make_selector_shortcut(type) {
         e.removeEventListener("change", end, false);
         if (evt && evt.type == "change")
             this.blur();
-        return false;
     }
     return function (evt) {
         var e = $$("fold" + type);
@@ -5930,50 +5930,56 @@ function make_selector_shortcut(type) {
                 e.addEventListener("blur", end, false);
                 e.addEventListener("change", end, false);
             }
+            evt.preventDefault();
             handle_ui.stopPropagation(evt);
-            return true;
         }
-        return false;
     }
 }
 
 function shortcut(top_elt) {
-    var self, main_keys = {}, current_keys = null, last_key_at = null;
+    var self, main_keys = {}, current_keys = null, last_key_at = now_msec() - 1000;
 
     function keypress(evt) {
-        var key, target, x;
-        key = event_key(evt);
-        target = evt.target;
-        // reject modified keys, interesting targets
-        if (!key || evt.altKey || evt.ctrlKey || evt.metaKey
-            || (target && (x = target.tagName) && target != top_elt
-                && (x === "TEXTAREA"
-                    || x === "SELECT"
-                    || (x === "INPUT"
-                        && target.type !== "button"
-                        && target.type !== "checkbox"
-                        && target.type !== "radio"
-                        && target.type !== "reset"
-                        && target.type !== "submit"))))
-            return true;
-        // call function
-        var keymap, time = now_msec();
-        if (current_keys && last_key_at && time - last_key_at <= 600)
-            keymap = current_keys;
-        else
-            keymap = current_keys = main_keys;
-        var keyfunc = keymap[key] || function () { return false; };
-        if (jQuery.isFunction(keyfunc)) {
-            current_keys = null;
-            if (!keyfunc(evt, key))
-                return true;
-        } else {
-            current_keys = keyfunc;
-            last_key_at = time;
+        var delta = evt.timeStamp - last_key_at;
+        last_key_at = evt.timeStamp;
+
+        var e = evt.target;
+        if (e && e !== top_elt) {
+            // reject targets that want the keypress
+            var tag = e.tagName, type = e.type;
+            if (tag === "TEXTAREA"
+                || tag === "SELECT"
+                || (tag === "INPUT"
+                    && type !== "button"
+                    && type !== "checkbox"
+                    && type !== "radio"
+                    && type !== "reset"
+                    && type !== "submit"))
+                return;
         }
-        // done
-        evt.preventDefault();
-        return false;
+
+        var key = event_key(evt);
+        // reject modified keys
+        if (!key || evt.altKey || evt.ctrlKey || evt.metaKey)
+            return;
+
+        var action;
+        if (delta >= 0 && delta <= 600 && current_keys)
+            action = current_keys[key];
+        else {
+            current_keys = null;
+            action = main_keys[key];
+        }
+
+        if (action) {
+            if (action.__submap__) {
+                current_keys = action;
+                evt.preventDefault();
+            } else {
+                current_keys = null;
+                action.call(top_elt, evt);
+            }
+        }
     }
 
     function add(key, f) {
@@ -5981,7 +5987,7 @@ function shortcut(top_elt) {
             if (typeof key === "string")
                 key = [key];
             for (var i = 0, keymap = main_keys; i < key.length - 1; ++i) {
-                keymap[key[i]] = keymap[key[i]] || {};
+                keymap[key[i]] = keymap[key[i]] || {__submap__: true};
                 if (jQuery.isFunction(keymap[key[i]]))
                     log_jserror("bad shortcut " + key.join(","));
                 keymap = keymap[key[i]];
@@ -5990,7 +5996,7 @@ function shortcut(top_elt) {
         } else {
             add("j", quicklink_shortcut);
             add("k", quicklink_shortcut);
-            if (top_elt == document) {
+            if (top_elt === document) {
                 add("c", comment_shortcut);
                 add(["s", "d"], make_selector_shortcut("decision"));
                 add(["s", "l"], make_selector_shortcut("lead"));
@@ -9427,7 +9433,10 @@ function prepare_paper_select() {
         keyed = 0;
     function cancel(close) {
         $(ctl).val(input_default_value(ctl));
-        close && foldup.call(self, null, {f: true});
+        if (close) {
+            foldup.call(self, null, {f: true});
+            ctl.blur();
+        }
     }
     function make_callback(close) {
         return function (data) {
@@ -9514,6 +9523,7 @@ function prepare_pstags() {
         $ta.removeClass("has-error");
         $f.find(".is-error").remove();
         $f.find(".btn-highlight").removeClass("btn-highlight");
+        $ta[0].blur();
         foldup.call($ta[0], evt, {f: true});
     });
     $f.on("submit", save_pstags);
