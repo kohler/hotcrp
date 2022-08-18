@@ -5786,8 +5786,10 @@ function add_comment_sidebar(celt, cj) {
     navsidebar.set(celt, comment_content_function);
 }
 
-function edit_this() {
-    return edit(find_cj(this));
+function edit_this(evt) {
+    edit(find_cj(this));
+    evt.preventDefault();
+    handle_ui.stopPropagation(evt);
 }
 
 function edit(cj) {
