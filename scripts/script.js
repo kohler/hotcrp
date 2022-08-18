@@ -7162,7 +7162,6 @@ var add_revpref_ajax = (function () {
                 rp_change.call(this);
                 evt.preventDefault();
                 handle_ui.stopImmediatePropagation(evt);
-                return false;
             }
         } else if (evt.type === "change")
             rp_change.call(this, evt);
@@ -7622,7 +7621,7 @@ function taganno_success(rv) {
 
 handle_ui.on("js-annotate-order", function () {
     var $d, annos, last_newannoid = 0, mytag = this.getAttribute("data-anno-tag");
-    function clickh() {
+    function clickh(evt) {
         if (this.name === "add") {
             var hc = new HtmlCollector;
             add_anno(hc, {});
@@ -7648,7 +7647,8 @@ handle_ui.on("js-annotate-order", function () {
             $.post(hoturl("=api/taganno", {tag: mytag}),
                    {anno: JSON.stringify(anno)}, make_onsave($d));
         }
-        return false;
+        evt.preventDefault();
+        handle_ui.stopPropagation(evt);
     }
     function ondeleteclick() {
         var $div = $(this).closest(".form-g"), annoid = $div.attr("data-anno-id");
@@ -7657,7 +7657,8 @@ handle_ui.on("js-annotate-order", function () {
         $div.find("input[name='legend_" + annoid + "']").prop("disabled", true);
         tooltip.erase.call(this);
         $(this).remove();
-        return false;
+        evt.preventDefault();
+        handle_ui.stopPropagation(evt);
     }
     function make_onsave($d) {
         return function (rv) {
@@ -8072,8 +8073,8 @@ function tag_mousedown(evt) {
     document.addEventListener("scroll", tag_mousemove, true);
     addClass(document.body, "grabbing");
     tag_mousemove(evt);
-    handle_ui.stopPropagation(evt);
     evt.preventDefault();
+    handle_ui.stopPropagation(evt);
 }
 
 function tag_mouseup() {
@@ -8129,7 +8130,6 @@ handle_ui.on("js-expand-archive", function (evt) {
             }
         });
     }
-    return false;
 });
 
 
@@ -9514,7 +9514,6 @@ function prepare_pstags() {
                 $f[0][key === "Enter" ? "save" : "cancel"].click();
                 evt.preventDefault();
                 handle_ui.stopImmediatePropagation(evt);
-                return false;
             }
         }
     });

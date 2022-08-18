@@ -759,14 +759,12 @@ handle_ui.on("js-settings-response-new", function () {
     $rx.find("textarea").css({height: "auto"}).autogrow();
     $rx.awaken();
     form_highlight(this.form);
-    return false;
 });
 
 handle_ui.on("js-settings-response-delete", function () {
     var rr = this.closest(".settings-response");
     settings_delete(rr, "This response will be deleted.");
     form_highlight(this.form);
-    return false;
 });
 
 handle_ui.on("input.js-settings-response-name", function () {
