@@ -2305,6 +2305,13 @@ class Conf {
         $this->_user_cache_missing[] = strtolower($email);
     }
 
+    /** @param list<string> $emails */
+    function prefetch_users_by_email($emails) {
+        foreach ($emails as $email) {
+            $this->_user_cache_missing[] = strtolower($email);
+        }
+    }
+
     private function _refresh_user_cache() {
         $this->_user_cache = $this->_user_cache ?? $this->_pc_user_cache ?? [];
         $reqids = $reqemails = [];

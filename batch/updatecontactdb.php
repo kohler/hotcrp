@@ -20,13 +20,16 @@ class UpdateContactdb_Batch {
     public $users;
     /** @var bool */
     public $collaborators;
+    /** @var bool */
+    public $authors;
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
         $this->papers = isset($arg["papers"]);
         $this->users = isset($arg["users"]);
         $this->collaborators = isset($arg["collaborators"]);
-        if (!$this->papers && !$this->users && !$this->collaborators) {
+        $this->authors = isset($arg["authors"]);
+        if (!$this->papers && !$this->users && !$this->collaborators && !$this->authors) {
             $this->papers = $this->users = true;
         }
     }
@@ -97,6 +100,45 @@ class UpdateContactdb_Batch {
         Dbl::free($result);
     }
 
+    private function run_authors() {
+        $authors = $papers = [];
+        $prows = $this->conf->paper_set(["minimal" => true, "authorInformation" => true]);
+        foreach ($prows as $prow) {
+            foreach ($prow->author_list() as $au) {
+                if ($au->email !== "" && validate_email($au->email)) {
+                    $lemail = strtolower($au->email);
+                    if (!isset($authors[$lemail])) {
+                        $authors[$lemail] = clone $au;
+                    } else {
+                        $authors[$lemail]->merge($au);
+                    }
+                    $papers[$lemail][] = $prow->paperId;
+                }
+            }
+        }
+
+        $emails = array_keys($authors);
+        $pemails = $this->conf->resolve_primary_emails($emails);
+        $this->conf->prefetch_users_by_email($pemails);
+
+        $n = count($emails);
+        for ($i = 0; $i !== $n; ++$i) {
+            $au = $authors[$emails[$i]];
+            if (!$this->conf->cached_user_by_email($pemails[$i])) {
+                $au->email = $pemails[$i];
+                Contact::make_keyed($this->conf, [
+                    "email" => $pemails[$i],
+                    "firstName" => $au->firstName,
+                    "lastName" => $au->lastName,
+                    "affiliation" => $au->affiliation,
+                    "disablement" => Contact::DISABLEMENT_PLACEHOLDER
+                ])->store();
+                error_log($au->email);
+            }
+        }
+    }
+
+
     /** @param \mysqli $cdb */
     private function run_papers($cdb) {
         $result = Dbl::ql($this->conf->dblink, "select paperId, title, timeSubmitted from Paper");
@@ -119,9 +161,12 @@ class UpdateContactdb_Batch {
         }
     }
 
-    /** @return int */
-    function run() {
+    /** @return \mysqli */
+    private function cdb() {
         $cdb = $this->conf->contactdb();
+        if (!$cdb) {
+            throw new RuntimeException("Conference has no contactdb");
+        }
         $result = Dbl::ql($cdb, "select * from Conferences where `dbname`=?", $this->conf->dbname);
         $this->confrow = Dbl::fetch_first_object($result);
         if (!$this->confrow) {
@@ -134,13 +179,25 @@ class UpdateContactdb_Batch {
                 $this->conf->short_name ? : $this->confrow->shortName,
                 $this->conf->long_name ? : $this->confrow->longName, $this->cdb_confid);
         }
+        return $cdb;
+    }
+
+    /** @return int */
+    function run() {
+        $cdb = null;
+        if ($this->authors) {
+            $this->run_authors();
+        }
         if ($this->users) {
+            $cdb = $cdb ?? $this->cdb();
             $this->run_users($cdb);
         }
         if ($this->collaborators) {
+            $cdb = $cdb ?? $this->cdb();
             $this->run_collaborators($cdb);
         }
         if ($this->papers) {
+            $cdb = $cdb ?? $this->cdb();
             $this->run_papers($cdb);
         }
         return 0;
@@ -155,17 +212,15 @@ class UpdateContactdb_Batch {
             "help,h !",
             "papers,p",
             "users,u",
-            "collaborators"
+            "collaborators",
+            "authors"
         )->description("Update HotCRP contactdb for a conference.
-Usage: php batch/updatecontactdb.php [-n CONFID | --config CONFIG] [--papers] [--users] [--collaborators]")
+Usage: php batch/updatecontactdb.php [-n CONFID | --config CONFIG] [--papers] [--users] [--collaborators] [--authors]")
          ->helpopt("help")
          ->maxarg(0)
          ->parse($argv);
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
-        if (!$conf->contactdb()) {
-            throw new RuntimeException("Conference has no contactdb");
-        }
         return new UpdateContactdb_Batch($conf, $arg);
     }
 }
