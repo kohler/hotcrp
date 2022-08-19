@@ -828,6 +828,7 @@ class ReviewInfo implements JsonSerializable {
         return $rrow;
     }
 
+    /** @return list<ReviewHistoryInfo> */
     function load_history() {
         $this->_history = [];
         $result = $this->conf->qe("select * from PaperReviewHistory where paperId=? and reviewId=? order by reviewTime asc", $this->paperId, $this->reviewId);
@@ -835,9 +836,10 @@ class ReviewInfo implements JsonSerializable {
             $this->_history[] = $rhrow;
         }
         Dbl::free($result);
+        return $this->_history;
     }
 
-    /** @param list<int> */
+    /** @return list<int> */
     function versions() {
         if ($this->_history === null) {
             $this->load_history();
@@ -858,12 +860,10 @@ class ReviewInfo implements JsonSerializable {
         if ($time >= $this->reviewTime) {
             return $this;
         }
-        if ($this->_history === null) {
-            $this->load_history();
-        }
+        $history = $this->_history ?? $this->load_history();
         $rrow = $this;
-        for ($i = count($this->_history) - 1; $i >= 0 && $time < $rrow->reviewTime; --$i) {
-            $rhrow = $this->_history[$i];
+        for ($i = count($history) - 1; $i >= 0 && $time < $rrow->reviewTime; --$i) {
+            $rhrow = $history[$i];
             if ($rhrow instanceof ReviewInfo) {
                 $rrow = $rhrow;
             } else if ($rhrow->reviewNextTime !== $rrow->reviewTime) {

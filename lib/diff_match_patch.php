@@ -1676,6 +1676,7 @@ class diff_match_patch {
                 $dpos = $p0 + strspn($delta, "0123456789", $p0);
                 $n = $dpos !== $p0 ? intval(substr($delta, $p0, $dpos - $p0)) : 1;
                 $ech = $dpos !== $dlen ? $delta[$dpos] : "|";
+                /* @phan-suppress-next-line PhanParamSuspiciousOrder */
                 if (strpos("|-=+", $ech) === false
                     || $n <= 0
                     || $pos + $n > $len) {
@@ -1724,6 +1725,7 @@ class diff_match_patch {
                 $dpos = $p0 + strspn($delta, "0123456789", $p0);
                 $n = $dpos !== $p0 ? intval(substr($delta, $p0, $dpos - $p0)) : 1;
                 $ech = $dpos !== $dlen ? $delta[$dpos] : "|";
+                /* @phan-suppress-next-line PhanParamSuspiciousOrder */
                 if (strpos("|-=+", $ech) === false
                     || $n <= 0
                     || $pos + $n > $len) {

@@ -44,8 +44,8 @@ class ReviewHistoryInfo implements JsonSerializable {
     /** @var ?string */
     public $revdelta;
 
-    /** @param PaperInfo|PaperInfoSet|null $prowx
-     * @return ?ReviewInfo */
+    /** @param Dbl_Result $result
+     * @return ?ReviewHistoryInfo */
     static function fetch($result) {
         $rhrow = $result ? $result->fetch_object("ReviewHistoryInfo") : null;
         '@phan-var ?ReviewHistoryInfo $rhrow';
