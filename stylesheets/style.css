@@ -3544,8 +3544,9 @@ a.badge-white:hover {
 	font-size: 75%;
 	line-height: 1.35;
 }
-.bubble.graphtip.dark {
+.bubble.graphtip.dark, .bubble.feedback.dark {
 	background-color: rgba(44, 44, 66, 0.95);
+	color: white;
 	border: 0 none;
 }
 .bubble.tooltip {
