@@ -586,7 +586,7 @@ class PaperStatus extends MessageSet {
             }
             if (!$this->user->allow_administer($this->prow)
                 && $this->prow->conflict_type($this->user) === CONFLICT_AUTHOR) {
-                $this->update_conflict_value(strtolower($this->user->email), CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
+                $this->update_conflict_value($this->user->email, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
             }
         }
 
@@ -904,36 +904,13 @@ class PaperStatus extends MessageSet {
         }
 
         // load email => cid map
-        $lemail_to_cid = $pricid_to_lemail = [];
-        $result = $this->conf->qe("select contactId, email, primaryContactId from ContactInfo where email?a", array_keys($this->_conflict_values));
+        // NB: callers must have taken care of primaryContactId resolution
+        $lemail_to_cid = [];
+        $result = $this->conf->qe("select contactId, email from ContactInfo where email?a", array_keys($this->_conflict_values));
         while (($row = $result->fetch_row())) {
             $lemail_to_cid[strtolower($row[1])] = (int) $row[0];
-            if ($row[2]) {
-                $pricid_to_lemail[(int) $row[2]][] = strtolower($row[1]);
-            }
         }
         Dbl::free($result);
-
-        // update for primaryContactId
-        if (!empty($pricid_to_lemail)) {
-            $result = $this->conf->qe("select contactId, email from ContactInfo where contactId?a", array_keys($pricid_to_lemail));
-            while (($row = $result->fetch_row())) {
-                $pcid = (int) $row[0];
-                $plemail = strtolower($row[1]);
-                $lemail_to_cid[$plemail] = $pcid;
-                foreach ($pricid_to_lemail[$pcid] as $lemail) {
-                    $cv = $this->_conflict_values[$lemail];
-                    $npcv = self::new_conflict_value($this->_conflict_values[$plemail] ?? null);
-                    foreach ([CONFLICT_PCMASK, CONFLICT_AUTHOR, CONFLICT_CONTACTAUTHOR] as $ct) {
-                        if (($cv[1] & $ct) !== 0 && ($npcv & $ct) === 0) {
-                            $this->update_conflict_value($plemail, $cv[1] & $ct, $cv[2] & $ct);
-                        }
-                    }
-                    $this->update_conflict_value($lemail, CONFLICT_PCMASK | CONFLICT_CONTACTAUTHOR, 0);
-                }
-            }
-            Dbl::free($result);
-        }
 
         // save diffs if change
         if ($this->has_conflict_diff($lemail_to_cid)) {

@@ -2376,8 +2376,10 @@ class Conf {
     /** @param string $email
      * @return ?Contact */
     function cached_user_by_email($email) {
-        if ($email
-            && Contact::$main_user !== null
+        if ($email === "") {
+            return null;
+        }
+        if (Contact::$main_user !== null
             && Contact::$main_user->conf === $this
             && strcasecmp(Contact::$main_user->email, $email) === 0) {
             return Contact::$main_user;
@@ -2813,16 +2815,15 @@ class Conf {
     /** @param string $email
      * @return ?Contact */
     function cdb_user_by_email($email) {
-        if ($email !== "" && !Contact::is_anonymous_email($email)) {
-            $lemail = strtolower($email);
-            if (!array_key_exists($lemail, $this->_cdb_user_cache ?? [])) {
-                $this->_cdb_user_cache_missing[] = $lemail;
-                $this->_refresh_cdb_user_cache();
-            }
-            return $this->_cdb_user_cache[$lemail] ?? null;
-        } else {
+        if ($email === "" || Contact::is_anonymous_email($email)) {
             return null;
         }
+        $lemail = strtolower($email);
+        if (!array_key_exists($lemail, $this->_cdb_user_cache ?? [])) {
+            $this->_cdb_user_cache_missing[] = $lemail;
+            $this->_refresh_cdb_user_cache();
+        }
+        return $this->_cdb_user_cache[$lemail] ?? null;
     }
 
     /** @param string $email */

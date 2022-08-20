@@ -77,6 +77,29 @@ class Authors_PaperOption extends PaperOption {
             }
         }
     }
+    /** @param list<Author> $authlist */
+    private function save_conflicts_author($authlist, PaperStatus $ps) {
+        $emails = [];
+        foreach ($authlist as $auth) {
+            $emails[] = $auth->email;
+        }
+        $pemails = $this->conf->resolve_primary_emails($emails);
+        $ps->clear_conflict_values(CONFLICT_AUTHOR);
+        foreach ($authlist as $i => $auth) {
+            if ($auth->email === "") {
+                continue;
+            }
+            if ($ps->update_conflict_value($auth->email, CONFLICT_AUTHOR, CONFLICT_AUTHOR)) {
+                $ps->register_user($auth);
+            }
+            if (strcasecmp($auth->email, $pemails[$i]) !== 0
+                && $ps->update_conflict_value($pemails[$i], CONFLICT_AUTHOR, CONFLICT_AUTHOR)) {
+                $auth2 = clone $auth;
+                $auth2->email = $pemails[$i];
+                $ps->register_user($auth2);
+            }
+        }
+    }
     function value_save(PaperValue $ov, PaperStatus $ps) {
         $authlist = $this->author_list($ov);
         $v = "";
@@ -87,27 +110,22 @@ class Authors_PaperOption extends PaperOption {
         if ($v !== $ov->prow->authorInformation) {
             $ps->change_at($this);
             $ps->save_paperf("authorInformation", $v);
-            $ps->clear_conflict_values(CONFLICT_AUTHOR);
-            foreach ($authlist as $auth) {
-                if ($auth->email !== ""
-                    && $ps->update_conflict_value($auth->email, CONFLICT_AUTHOR, CONFLICT_AUTHOR)) {
-                    $ps->register_user($auth);
-                }
-            }
+            $this->save_conflicts_author($authlist, $ps);
         }
         if (($contacts = $ov->data_by_index(1)) !== null) {
-            foreach (explode("\n", $contacts) as $lemail) {
-                $ps->update_conflict_value($lemail, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
+            $pemails = $this->conf->resolve_primary_emails(explode("\n", trim($contacts)));
+            foreach ($pemails as $email) {
+                $ps->update_conflict_value($email, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
             }
         }
         return true;
     }
     static private function translate_qreq(Qrequest $qreq) {
         $n = 1;
-        while (isset($qreq["auemail$n"])) {
-            $qreq["authors:email_$n"] = $qreq["auemail$n"];
-            $qreq["authors:name_$n"] = $qreq["auname$n"];
-            $qreq["authors:affiliation_$n"] = $qreq["auaff$n"];
+        while (isset($qreq["auemail{$n}"])) {
+            $qreq["authors:email_{$n}"] = $qreq["auemail{$n}"];
+            $qreq["authors:name_{$n}"] = $qreq["auname{$n}"];
+            $qreq["authors:affiliation_{$n}"] = $qreq["auaff{$n}"];
             ++$n;
         }
     }

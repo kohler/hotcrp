@@ -109,34 +109,41 @@ class PCConflicts_PaperOption extends PaperOption {
             return PaperValue::make_estop($prow, $this, "<0>Validation error");
         }
 
-        $vm = self::paper_value_map($prow);
-        foreach ($vm as &$v) {
-            $v &= ~CONFLICT_PCMASK;
-        }
-        unset($v);
-
+        // parse conflicts
         $confset = $prow->conf->conflict_types();
         $pv = new PaperValue($prow, $this);
+        $emails = [];
+        $values = [];
         foreach ($ja as $email => $v) {
             if (is_string($email)
                 && (is_bool($v) || is_int($v) || is_string($v))) {
-                $pc = $prow->conf->cached_user_by_email($email);
-                if ($pc && $pc->primaryContactId) {
-                    $pc = $prow->conf->cached_user_by_id($pc->primaryContactId);
-                }
-                if (!$pc || !$pc->isPC) {
-                    $pv->msg("<0>Email address ‘{$email}’ does not match a PC member", MessageSet::WARNING);
-                }
                 $ct = $confset->parse_json($v);
                 if ($ct === false) {
                     $pv->msg("<0>Invalid conflict type ‘{$v}’", MessageSet::WARNING);
                     $ct = Conflict::GENERAL;
                 }
-                if ($pc && $pc->isPC) {
-                    $this->update_value_map($vm, $pc->contactId, $ct);
-                }
+                $emails[] = $email;
+                $values[] = $ct;
             } else {
                 return PaperValue::make_estop($prow, $this, "<0>Validation error");
+            }
+        }
+
+        // look up primary emails
+        $pemails = $this->conf->resolve_primary_emails($emails);
+
+        // apply conflicts, save result
+        $vm = self::paper_value_map($prow);
+        foreach ($vm as &$v) {
+            $v &= ~CONFLICT_PCMASK;
+        }
+        unset($v);
+        for ($i = 0; $i !== count($emails); ++$i) {
+            $pc = $prow->conf->cached_user_by_email($pemails[$i]);
+            if ($pc && $pc->isPC) {
+                $this->update_value_map($vm, $pc->contactId, $values[$i]);
+            } else {
+                $pv->msg("<0>Email address ‘{$emails[$i]}’ does not match a PC member", MessageSet::WARNING);
             }
         }
         /** @phan-suppress-next-line PhanTypeMismatchArgument */
