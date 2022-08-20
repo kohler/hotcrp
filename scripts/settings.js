@@ -491,6 +491,10 @@ function rf_fill(pos, fieldj, setdefault) {
     if (fieldj.search_keyword) {
         $("#rf\\/" + pos).attr("data-rf", fieldj.search_keyword);
     }
+    if (fieldj.configurable === false) {
+        $("#rf\\/" + pos + " .settings-draghandle, #rf\\/" + pos + " .settings-rf-actions").addClass("hidden");
+        $$("rf/" + pos + "/edit").disabled = true;
+    }
     return false;
 }
 
@@ -606,8 +610,9 @@ function rf_append(fid) {
         $j = $f.find("select.rf-scheme");
         for (i = 0; i < colors.length; i += 2)
             $j.append("<option value=\"" + colors[i] + "\">" + colors[i+1] + "</option>");
-    } else
+    } else {
         $f.find(".is-property-values").remove();
+    }
     $f.find(".js-settings-rf-delete").on("click", rf_delete);
     $f.find(".js-settings-rf-move").on("click", rf_move);
     $f.find(".rf-id").val(fid);
@@ -625,8 +630,6 @@ function rf_add(fid) {
     var ordere = document.getElementById("rf/" + pos + "/order");
     ordere.setAttribute("data-default-value", "0");
     ordere.value = pos;
-    form_highlight("#settingsform");
-    return true;
 }
 
 function rfs(data) {
@@ -716,6 +719,7 @@ function add_dialog() {
         rf_fill(fieldorder.length, sample, false);
         document.getElementById("rf/" + fieldorder.length + "/name").focus();
         $d.close();
+        form_highlight("#settingsform");
         evt.preventDefault();
     }
     function create() {

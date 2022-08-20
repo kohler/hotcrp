@@ -584,7 +584,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
     }
 
     static function print_actions(SettingValues $sv) {
-        echo '<div class="f-i entryi mb-0"><label></label><div class="btnp entry"><span class="btnbox">',
+        echo '<div class="f-i entryi mb-0 settings-rf-actions"><label></label><div class="btnp entry"><span class="btnbox">',
             Ht::button(Icons::ui_use("movearrow0"), ["id" => "rf/\$/moveup", "class" => "btn-licon ui js-settings-rf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
             Ht::button(Icons::ui_use("movearrow2"), ["id" => "rf/\$/movedown", "class" => "btn-licon ui js-settings-rf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
@@ -601,26 +601,33 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
     static function print(SettingValues $sv) {
         echo Ht::hidden("has_rf", 1);
-        echo '<div class="mb-4">',
-            '<div class="feedback is-note">Click on a field to edit it.</div>';
+        $rfedit = $sv->editable("rf");
+
+        echo '<div class="mb-4">';
+        if ($rfedit) {
+            echo '<div class="feedback is-note">Click on a field to edit it.</div>';
+        }
         if (!$sv->conf->time_some_author_view_review()) {
             echo '<div class="feedback is-note">Authors cannot see reviews at the moment.</div>';
         }
-        echo '</div><template id="rf_template" class="hidden">';
-        echo '<div id="rf/$" class="settings-rf has-fold fold2c ui-unfold js-unfold-focus">',
+        echo '</div><template id="rf_template" class="hidden">',
+            '<div id="rf/$" class="settings-rf has-fold fold2c ui-unfold js-unfold-focus">',
             '<div class="settings-draghandle ui-drag js-settings-drag" draggable="true" title="Drag to reorder fields">',
             Icons::ui_move_handle_horizontal(),
             '</div>',
             '<div id="rf/$/view" class="settings-rf-view fn2 ui js-foldup"></div>',
-            '<div id="rf/$/edit" class="settings-rf-edit fx2">',
-            '<div class="entryi mb-3"><div class="entry">',
-            '<input name="rf/$/name" id="rf/$/name" type="text" size="50" class="font-weight-bold want-focus" placeholder="Field name">',
-            '</div></div>';
+            '<fieldset id="rf/$/edit" class="fieldset-covert settings-rf-edit fx2">',
+              '<div class="entryi mb-3"><div class="entry">',
+                '<input name="rf/$/name" id="rf/$/name" type="text" size="50" class="font-weight-bold want-focus" placeholder="Field name">',
+              '</div></div>';
         $sv->print_group("reviewfield/properties");
-        echo '</template>';
+        echo '</fieldset>', // rf/$/edit
+            '</div></template>';
 
-        echo "<div id=\"settings-rform\"></div>",
+        echo "<div id=\"settings-rform\"></div>";
+        if ($rfedit) {
             Ht::button("Add field", ["class" => "ui js-settings-rf-add"]);
+        }
 
         $sj = [];
 
@@ -628,6 +635,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         foreach ($sv->conf->review_form()->all_fields() as $f) {
             $rfj[] = $fj = $f->unparse_json(ReviewField::UJ_TEMPLATE);
             $fj->search_keyword = $f->search_keyword();
+            $fj->configurable = $rfedit;
         }
         $sj["fields"] = $rfj;
 

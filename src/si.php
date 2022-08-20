@@ -81,7 +81,7 @@ class Si {
     public $parser_class;
     /** @var bool
      * @readonly */
-    public $disabled = false;
+    public $configurable = true;
     /** @var mixed
      * @readonly */
     private $default_value;
@@ -112,7 +112,6 @@ class Si {
     static private $key_storage = [
         "autogrow" => "is_bool",
         "description" => "is_string",
-        "disabled" => "is_bool",
         "ifnonempty" => "is_string",
         "internal" => "is_bool",
         "json_values" => "Si::is_auto_or_list",
@@ -166,6 +165,13 @@ class Si {
             if (isset(self::$key_storage[$k])) {
                 $this->store($k, $j, $k, self::$key_storage[$k]);
             }
+        }
+        if (isset($j->configurable) && is_bool($j->configurable)) {
+            $this->configurable = $j->configurable;
+        } else if (isset($j->disabled) && is_bool($j->disabled)) {
+            $this->configurable = !$j->disabled;
+        } else if (isset($j->configurable) || isset($j->disabled)) {
+            trigger_error("setting {$j->name}.configurable format error");
         }
         if ($this->placeholder === "") {
             $this->placeholder = null;

@@ -520,23 +520,22 @@ class SettingValues extends MessageSet {
      * @return bool */
     function editable($id) {
         $si = is_string($id) ? $this->conf->si($id) : $id;
-        if (!$si) {
+        if (!$si || !$si->configurable) {
             return false;
-        } else {
-            $perm = $this->all_perm;
-            if ($this->perm !== null) {
-                for ($i = 0; $i !== count($this->perm); $i += 2) {
-                    if ($si->has_tag($this->perm[$i])) {
-                        if ($this->perm[$i + 1]) {
-                            $perm = true;
-                        } else {
-                            return false;
-                        }
+        }
+        $perm = $this->all_perm;
+        if ($this->perm !== null) {
+            for ($i = 0; $i !== count($this->perm); $i += 2) {
+                if ($si->has_tag($this->perm[$i])) {
+                    if ($this->perm[$i + 1]) {
+                        $perm = true;
+                    } else {
+                        return false;
                     }
                 }
             }
-            return $perm;
         }
+        return $perm;
     }
 
     /** @param string|Si $id
@@ -1169,7 +1168,6 @@ class SettingValues extends MessageSet {
     /** @param Si $si */
     function apply_req($si) {
         if (!$si->internal
-            && !$si->disabled
             && $this->editable($si)
             && (!$si->parser_class
                 || $this->si_parser($si)->apply_req($si, $this) === false)
@@ -1495,15 +1493,14 @@ class SettingValues extends MessageSet {
         $si = is_string($id) ? $this->conf->si($id) : $id;
         $name = $si ? $si->name : $id;
         $x = ["id" => $name];
-        if ($si && !isset($js["disabled"]) && !isset($js["readonly"])) {
-            if ($si->disabled) {
+        if ($si
+            && !isset($js["disabled"])
+            && !isset($js["readonly"])
+            && !$this->editable($si)) {
+            if (in_array($si->type, ["checkbox", "radio", "select", "cdate", "tagselect"], true)) {
                 $x["disabled"] = true;
-            } else if (!$this->editable($si)) {
-                if (in_array($si->type, ["checkbox", "radio", "select", "cdate", "tagselect"], true)) {
-                    $x["disabled"] = true;
-                } else {
-                    $x["readonly"] = true;
-                }
+            } else {
+                $x["readonly"] = true;
             }
         }
         if ($this->_use_req
