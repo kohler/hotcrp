@@ -724,6 +724,7 @@ class Settings_Tester {
             "rf/1/presence" => "round:unnamed"
         ]);
         xassert($sv->execute());
+        xassert_eqq($sv->full_feedback_text(), "");
 
         $s05 = $this->conf->checked_review_field("s05");
         xassert_neqq($s05->round_mask, 0);

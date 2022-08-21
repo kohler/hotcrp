@@ -8,6 +8,8 @@ class Decision_Setting {
     public $name;
     /** @var 'accept'|'reject' */
     public $category;
+    /** @var bool */
+    public $deleted = false;
 
     function __construct($id, $name, $category) {
         $this->id = $id;
@@ -132,7 +134,7 @@ class Decision_SettingParser extends SettingParser {
         $djs = [];
         $hasid = [];
         foreach ($sv->oblist_nondeleted_keys("decision") as $ctr) {
-            $dsr = $sv->object_newv("decision/{$ctr}");
+            $dsr = $sv->newv("decision/{$ctr}");
             $this->_check_req_name($sv, $dsr, $ctr);
             $djs[] = $dsr;
             $hasid[$dsr->id ?? ""] = true;

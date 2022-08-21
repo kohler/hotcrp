@@ -157,7 +157,7 @@ class ReviewForm_SettingParser extends SettingParser {
         $newrfv = [];
         $error = false;
         foreach ($sv->oblist_nondeleted_keys($vpfx) as $ctr) {
-            $rfv = $sv->object_newv("{$vpfx}/{$ctr}");
+            $rfv = $sv->newv("{$vpfx}/{$ctr}");
             $newrfv[] = $rfv;
             if (!$this->_check_value($vpfx, $ctr, $rfv, $sv)) {
                 $error = true;
@@ -267,7 +267,7 @@ class ReviewForm_SettingParser extends SettingParser {
         }
         $nrfj = [];
         foreach ($sv->oblist_nondeleted_keys("rf") as $ctr) {
-            $rfj = $sv->object_newv("rf/{$ctr}");
+            $rfj = $sv->newv("rf/{$ctr}");
             if ($rfj->id === "new") {
                 $pattern = $rfj->type === "text" ? "t%02d" : "s%02d";
                 for ($i = 1; isset($known_ids[$rfj->id]); ++$i) {

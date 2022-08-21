@@ -5,7 +5,7 @@
 class JSON_SettingParser extends SettingParser {
     static function print(SettingValues $sv) {
         $wantjreq = $sv->use_req() && $sv->has_req("json_settings");
-        $defj = json_encode_browser($sv->json_allv(), JSON_PRETTY_PRINT);
+        $defj = json_encode_browser($sv->all_json_oldv(), JSON_PRETTY_PRINT);
         $mainj = $wantjreq ? cleannl($sv->reqstr("json_settings")) : $defj;
         $mainh = htmlspecialchars($mainj);
         echo '<div class="settings-json-panels">',

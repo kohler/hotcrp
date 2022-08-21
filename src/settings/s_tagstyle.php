@@ -3,9 +3,14 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class TagStyle_Setting {
+    /** @var string */
     public $id = "\$";
+    /** @var string */
     public $style = "";
+    /** @var string */
     public $tags = "";
+    /** @var bool */
+    public $deleted = false;
 
     static function make($style, $tags) {
         $tss = new TagStyle_Setting;
@@ -69,7 +74,7 @@ class TagStyle_SettingParser extends SettingParser {
     private function _apply_tag_style_req(Si $si, SettingValues $sv) {
         $bs = [];
         foreach ($sv->oblist_nondeleted_keys("tag_style") as $ctr) {
-            $br = $sv->object_newv("tag_style/{$ctr}");
+            $br = $sv->newv("tag_style/{$ctr}");
             $ks = $sv->conf->tags()->known_style($br->style);
             $sn = $ks ? $ks->name : $br->style;
             foreach (explode(" ", $br->tags) as $tag) {

@@ -16,6 +16,9 @@ class Track_Setting {
     /** @var object */
     public $j;
 
+    /** @var bool */
+    public $deleted = false;
+
     function __construct(Track $tr, $j) {
         $this->id = $this->tag = $tr->is_default ? "any" : $tr->tag;
         $this->is_default = $tr->is_default;
@@ -357,7 +360,7 @@ class Track_SettingParser extends SettingParser {
         } else if ($si->name === "track") {
             $j = [];
             foreach ($sv->oblist_nondeleted_keys("track") as $ctr) {
-                $this->cur_trx = $sv->object_newv("track/{$ctr}");
+                $this->cur_trx = $sv->newv("track/{$ctr}");
                 if (!$this->cur_trx->is_default) {
                     $sv->error_if_missing("track/{$ctr}/tag");
                     $sv->error_if_duplicate_member("track", $ctr, "tag", "Track tag");

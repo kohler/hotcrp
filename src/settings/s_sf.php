@@ -12,15 +12,17 @@ class Sf_Setting {
     public $visibility;
     public $required;
     public $presence;
+    public $exists_if;
     public $values;
     public $ids;
     public $min;
     public $max;
 
-    public $exists_if;
     public $final;
     /** @var list<SfValue_Setting> */
     public $xvalues;
+    /** @var bool */
+    public $deleted = false;
 }
 
 class SfValue_Setting {
@@ -30,4 +32,6 @@ class SfValue_Setting {
 
     // internal
     public $old_value;
+    /** @var bool */
+    public $deleted = false;
 }

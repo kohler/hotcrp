@@ -7,6 +7,8 @@ class Topic_Setting {
     public $id;
     /** @var string */
     public $name;
+    /** @var bool */
+    public $deleted = false;
 
     function __construct($id = null, $name = "") {
         $this->id = $id;

@@ -5,7 +5,6 @@
 class Review_Setting {
     /** @var int */
     public $id = 0;
-    public $saved_id; // only set during save
     /** @var string */
     public $name = "";
     /** @var ?int */
@@ -16,6 +15,10 @@ class Review_Setting {
     public $external_soft;
     /** @var ?int */
     public $external_done;
+
+    public $saved_id; // only set during save
+    /** @var bool */
+    public $deleted = false;
 
     /** @return bool */
     function is_empty() {
@@ -360,7 +363,7 @@ class Review_SettingParser extends SettingParser {
         $latest = null;
         foreach ($sv->oblist_nondeleted_keys("review") as $ctr) {
             $pfx = "review/{$ctr}";
-            $rs = $sv->object_newv($pfx);
+            $rs = $sv->newv($pfx);
             if ($sv->oldv("{$pfx}/soft") !== $sv->newv("{$pfx}/soft")
                 || $sv->oldv("{$pfx}/done") !== $sv->newv("{$pfx}/done")) {
                 $sv->check_date_before("review/{$ctr}/soft", "review/{$ctr}/done", false);

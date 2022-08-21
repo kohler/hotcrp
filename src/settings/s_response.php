@@ -3,15 +3,26 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Response_Setting {
+    /** @var int */
     public $id;
+    /** @var string */
     public $name;
+    /** @var ?int */
     public $open;
+    /** @var ?int */
     public $done;
+    /** @var ?int */
     public $grace;
+    /** @var ?int */
     public $wordlimit;
-    private $old_wordlimit; // needed to determine correct default_instructions
+    /** @var string */
     public $condition;
+    /** @var string */
     public $instructions;
+
+    private $old_wordlimit; // needed to determine correct default_instructions
+    /** @var bool */
+    public $deleted = false;
 
     /** @return string */
     function default_instructions(Conf $conf) {
@@ -206,9 +217,9 @@ class Response_SettingParser extends SettingParser {
 
         $rrds = [];
         foreach ($sv->oblist_keys("response") as $ctr) {
-            $rrd = $sv->object_newv("response/{$ctr}");
+            $rrd = $sv->newv("response/{$ctr}");
             '@phan-var-force Response_Setting $rrd';
-            if ($sv->reqstr("response/{$ctr}/delete")) {
+            if ($rrd->deleted) {
                 if ($rrd->id > 1) {
                     $this->round_transform[] = "when {$rrd->id} then 1";
                 }

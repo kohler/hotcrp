@@ -468,7 +468,7 @@ class Options_SettingParser extends SettingParser {
         $newsfv = [];
         $error = false;
         foreach ($sv->oblist_nondeleted_keys($vpfx) as $ctr) {
-            $sfv = $sv->object_newv("{$vpfx}/{$ctr}");
+            $sfv = $sv->newv("{$vpfx}/{$ctr}");
             if ($sfv->name !== "") {
                 $newsfv[] = $sfv;
                 if ($sv->error_if_duplicate_member($vpfx, $ctr, "name", "Field value")) {
@@ -567,8 +567,8 @@ class Options_SettingParser extends SettingParser {
         }
         $nsfj = [];
         foreach ($sv->oblist_keys("sf") as $ctr) {
-            $sfj = $sv->object_newv("sf/{$ctr}");
-            if ($sv->reqstr("sf/{$ctr}/delete")) {
+            $sfj = $sv->newv("sf/{$ctr}");
+            if ($sfj->deleted) {
                 if ($sfj->id !== DTYPE_INVALID) {
                     $this->_delete_optionids[] = $sfj->id;
                 }

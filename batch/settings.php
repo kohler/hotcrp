@@ -26,7 +26,7 @@ class Settings_Batch {
 
     /** @return int */
     function run() {
-        fwrite(STDOUT, json_encode($this->sv->json_allv(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n");
+        fwrite(STDOUT, json_encode($this->sv->all_json_oldv(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n");
         /*$this->sv->apply_json_string('{"rf":[{
             "id": "t01",
             "name": "Paper summary...",

@@ -32,7 +32,7 @@ class Settings_API {
         if (!$sv->viewable_by_user()) {
             return JsonResult::make_permission_error();
         }
-        $content["settings"] = $sv->json_allv();
+        $content["settings"] = $sv->all_json_oldv();
         return new JsonResult($content);
     }
 

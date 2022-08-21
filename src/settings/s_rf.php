@@ -23,6 +23,8 @@ class Rf_Setting {
     public $presence;
     /** @var list<RfValue_Setting> */
     public $xvalues;
+    /** @var bool */
+    public $deleted = false;
 }
 
 class RfValue_Setting {
@@ -33,4 +35,6 @@ class RfValue_Setting {
 
     // internal
     public $old_value;
+    /** @var bool */
+    public $deleted = false;
 }
