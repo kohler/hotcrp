@@ -12,7 +12,7 @@ class Getopt {
     /** @var bool */
     private $allmulti = false;
     /** @var ?bool */
-    private $otheropt;
+    private $otheropt = false;
     /** @var ?int */
     private $minarg;
     /** @var ?int */

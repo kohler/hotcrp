@@ -898,7 +898,7 @@ class Conf {
 
     function query_error_handler($dblink, $query) {
         $landmark = caller_landmark(1, "/^(?:Dbl::|Conf::q|call_user_func)/");
-        if (PHP_SAPI == "cli") {
+        if (PHP_SAPI === "cli") {
             fwrite(STDERR, "$landmark: database error: $dblink->error in $query\n" . debug_string_backtrace());
         } else {
             error_log("$landmark: database error: $dblink->error in $query\n" . debug_string_backtrace());
@@ -5068,6 +5068,8 @@ class Conf {
                 $true_user = -1; // indicate download via link
             } else if ($user->is_bearer_authorized()) {
                 $true_user = -2; // indicate bearer token
+            } else if (PHP_SAPI === "cli") {
+                $true_user = -3; // indicate command line
             }
         }
         $user = self::log_clean_user($user, $text);

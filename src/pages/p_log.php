@@ -203,6 +203,8 @@ class Log_Page {
                     $via = "link";
                 } else if ($trueContactId == -2) {
                     $via = "API token";
+                } else if ($trueContactId == -3) {
+                    $via = "command line";
                 }
             }
             $pids = $leg->paper_ids($row);
@@ -404,6 +406,8 @@ class Log_Page {
                         $t .= ' <i>via link</i>';
                     } else if ($trueContactId === -2) {
                         $t .= ' <i>via API token</i>';
+                    } else if ($trueContactId === -3) {
+                        $t .= ' <i>via command line</i>';
                     }
                 }
             }

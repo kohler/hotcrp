@@ -32,6 +32,7 @@ class Json {
         self::$json_parser = self::$json_parser ?? new JsonParser;
         $x = self::$json_parser->input($json)->params($assoc, $depth, $flags)->decode();
         if (self::$json_parser->error_type === 0) {
+            // ensure storage is reclaimed
             self::$json_parser->input(null);
         }
         return $x;
@@ -104,6 +105,15 @@ class Json {
         }
     }
 
+
+    /** @param string $s
+     * @return mixed */
+    static function try_decode($s) {
+        if (self::$json_parser) {
+            self::$json_parser->error_type = 0;
+        }
+        return json_decode($s) ?? self::decode($s);
+    }
 
     /** @return int */
     static function last_error() {

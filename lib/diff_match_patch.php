@@ -1223,7 +1223,6 @@ class diff_match_patch {
     private function line_diff_cleanupSemantic_(&$diffs) {
         '@phan-var-force list<diff_obj> &$diffs';
         assert($this->iota === 1);
-        // Add a dummy entry at the end.
         $opos = 0;
         $ndiffs = count($diffs);
         for ($pos = 0; $pos !== $ndiffs; ++$pos) {
@@ -1812,11 +1811,14 @@ class diff_match_patch {
      * @param ?int $right_context
      * @return string */
     function line_diff_toUnified($diffs, $left_context = null, $right_context = null) {
+        $ndiffs = count($diffs);
+        if ($ndiffs === 0 || ($ndiffs === 1 && $diffs[0]->op === DIFF_EQUAL)) {
+            return "";
+        }
         $left_context = $left_context ?? 3;
         $right_context = $right_context ?? $left_context;
         $l1 = $l2 = $sl1 = $sl2 = 1;
         $nl1 = $nl2 = 0;
-        $ndiffs = count($diffs);
         $cpos = 0;
         $out = [""];
         for ($i = 0; $i !== $ndiffs; ++$i) {

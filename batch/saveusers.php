@@ -73,7 +73,7 @@ class SaveUsers_Batch {
     }
 
     function parse_json($str) {
-        $j = json_decode($str);
+        $j = Json::try_decode($str);
         if (is_object($j)) {
             if (count((array) $j)
                 && validate_email(array_keys((array) $j)[0])) {
@@ -83,9 +83,6 @@ class SaveUsers_Batch {
             }
         }
         if ($j === null || !is_array($j)) {
-            if ($j === null) {
-                Json::decode($str);
-            }
             throw new CommandLineException("{$this->filename}: " . (Json::last_error_msg() ?? "JSON parse error"));
         }
         foreach ($j as $key => $cj) {

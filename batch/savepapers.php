@@ -301,10 +301,7 @@ class SavePapers_Batch {
 
     /** @return 0|1|2 */
     function run($content) {
-        $jp = json_decode($content);
-        if ($jp === null) {
-            $jp = Json::decode($content); // our JSON decoder provides error positions
-        }
+        $jp = Json::try_decode($content);
         if ($jp === null) {
             fwrite(STDERR, "{$this->errprefix}invalid JSON: " . Json::last_error_msg() . "\n");
             ++$this->nerrors;
@@ -351,7 +348,6 @@ class SavePapers_Batch {
          ->description("Change papers as specified by FILE, a JSON object or array of objects.
 Usage: php batch/savepapers.php [OPTIONS] [FILE]")
          ->maxarg(1)
-         ->otheropt(false)
          ->parse($argv);
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
