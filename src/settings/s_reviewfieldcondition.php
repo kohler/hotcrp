@@ -31,7 +31,7 @@ class ReviewFieldCondition_SettingParser extends SettingParser {
                 if ($rsm->sensitivity() & ~(ReviewSearchMatcher::HAS_ROUND | ReviewSearchMatcher::HAS_RTYPE)) {
                     return false;
                 }
-            } else if (!in_array($e->type, ["xor", "not", "and", "or", "space", "t", "f"])) {
+            } else if (!in_array($e->type, ["xor", "not", "and", "or", "space", "true", "false"])) {
                 return false;
             }
         }

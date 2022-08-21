@@ -424,7 +424,7 @@ class False_SearchTerm extends SearchTerm {
     /** @var ?MessageItem */
     public $score_warning;
     function __construct() {
-        parent::__construct("f");
+        parent::__construct("false");
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         return "false";
@@ -442,7 +442,7 @@ class False_SearchTerm extends SearchTerm {
 
 class True_SearchTerm extends SearchTerm {
     function __construct() {
-        parent::__construct("t");
+        parent::__construct("true");
     }
     function is_uninteresting() {
         return count($this->float) === 1 && isset($this->float["view"]);
