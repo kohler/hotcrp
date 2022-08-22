@@ -612,7 +612,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
         echo "<div id=\"settings-rform\"></div>";
         if ($rfedit) {
-            Ht::button("Add field", ["class" => "ui js-settings-rf-add"]);
+            echo Ht::button("Add field", ["class" => "ui js-settings-rf-add"]);
         }
 
         $sj = [];
