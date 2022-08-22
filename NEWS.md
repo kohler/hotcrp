@@ -1,7 +1,7 @@
 HotCRP NEWS
 ===========
 
-## Version 3.0b2
+## Version 3.0b2 - 22.Aug.2022
 
 * Upgrade notes
 
@@ -10,7 +10,7 @@ HotCRP NEWS
     * If you’re upgrading a very old installation, make sure your options
       are in `conf/options.php`, not `conf/options.inc`.
 
-* More overhaul of HotCRP’s internals. More pages are rendered through
+* Continued overhaul of HotCRP’s internals. All pages are rendered through
   accumulated partials configured in JSON. Remove global variables. Better
   behavior on HEAD methods. Introduce “formatted texts” for messages; these
   are strings that start with either `<0>`, meaning what follows is plaintext,
@@ -29,6 +29,7 @@ HotCRP NEWS
     * Support fields that become visible when reviews are visible.
     * Support real-number submission fields.
     * Improve format checker robustness.
+    * Check authors’ collaborators against PC members.
 
 * Search
 
@@ -42,6 +43,7 @@ HotCRP NEWS
     * More color schemes for options.
     * Improve accept/decline workflow; send mail on accept as well as decline.
     * Support assigning reviews to draft papers.
+    * Record deltas between review versions.
 
 * Comments
 
@@ -68,11 +70,16 @@ HotCRP NEWS
 * Settings
 
     * Better display of submission and review fields.
-    * Internal overhaul.
+    * Internal overhaul. Rename setting patterns for readability.
     * Reordering choices in a submission or review field should update existing
       submissions (or reviews) accordingly.
+    * Support settings export and modification through JSON.
+    * Support arbitrary tag colors and badges.
 
 * Many other bug fixes, tests, and improvements.
+
+    * Use `force index` to improve MariaDB performance.
+    * Add support for bearer-token API access.
 
 
 ## Version 3.0b1 - 12.Nov.2020

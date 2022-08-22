@@ -1,4 +1,4 @@
-export VERSION=3.0b1
+export VERSION=3.0b2
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*[(] *//;s/[;)].*//'`
@@ -94,6 +94,7 @@ batch/s3verifyall.php
 batch/savepapers.php
 batch/saveusers.php
 batch/search.php
+batch/settings.php
 batch/updatecontactdb.php
 
 conf/.htaccess
@@ -494,10 +495,7 @@ images/generic.png
 images/generic24.png
 images/genericf.png
 images/genericf24.png
-images/headgrad.png
-images/homegrad.png
 images/info45.png
-images/next.png
 images/pageresultsex.png
 images/pdf.png
 images/pdf24.png
@@ -511,12 +509,9 @@ images/postscript.png
 images/postscript24.png
 images/postscriptf.png
 images/postscriptf24.png
-images/prev.png
 images/quicksearchex.png
 images/review24.png
 images/review48.png
-images/sortdown.png
-images/sortup.png
 images/stophand45.png
 images/txt.png
 images/txt24.png
