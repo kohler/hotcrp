@@ -30,7 +30,7 @@ class Settings_Batch {
         $this->user = $user;
         $this->sv = new SettingValues($user);
         if (!empty($arg["_"])) {
-            $this->filename = $arg["_"];
+            $this->filename = $arg["_"][0];
         }
         $this->expr = $arg["expr"] ?? null;
         if ($this->filename !== null && $this->expr !== null) {

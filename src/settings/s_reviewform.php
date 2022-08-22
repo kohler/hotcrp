@@ -131,10 +131,18 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($sv->error_if_duplicate_member($vpfx, $ctr, "symbol", "Field symbol")) {
             return false;
         }
-        if (is_string($rfv->symbol)
-            && (ctype_digit($rfv->symbol)
-                ? str_starts_with($rfv->symbol, "0")
-                : !ctype_upper($rfv->symbol) || strlen($rfv->symbol) > 1)) {
+        $symbol = $rfv->symbol;
+        if (is_int($symbol)) {
+            $invalid = $symbol <= 0;
+        } else if (is_string($symbol) && ctype_digit($symbol)) {
+            $invalid = str_starts_with($symbol, "0");
+            $symbol = intval($symbol);
+        } else if (is_string($symbol)) {
+            $invalid = !ctype_upper($symbol) || strlen($symbol) > 1;
+        } else {
+            $invalid = true;
+        }
+        if ($invalid) {
             $sv->error_at("{$vpfx}/{$ctr}/symbol", "<0>Symbol must be a number or a single capital letter");
             return false;
         }
@@ -142,6 +150,7 @@ class ReviewForm_SettingParser extends SettingParser {
             && $sv->error_if_duplicate_member($vpfx, $ctr, "name", "Field value")) {
             return false;
         }
+        $rfv->symbol = $symbol;
         return true;
     }
 
@@ -169,9 +178,9 @@ class ReviewForm_SettingParser extends SettingParser {
         // check that values are consecutive
         $key0 = $newrfv[0]->symbol;
         $flip = $option_letter = is_string($key0) && ctype_upper($key0);
-        if ($key0 == 1) {
+        if ($key0 === 1) {
             foreach ($newrfv as $i => $rfv) {
-                $error = $error || $rfv->symbol != $i + 1;
+                $error = $error || $rfv->symbol !== $i + 1;
             }
         } else if ($option_letter) {
             foreach ($newrfv as $i => $rfv) {
@@ -226,7 +235,7 @@ class ReviewForm_SettingParser extends SettingParser {
         // save values
         $sv->save("{$fpfx}/values_storage", $flip ? array_reverse($values) : $values);
         $sv->save("{$fpfx}/ids", $flip ? array_reverse($ids) : $ids);
-        $sv->save("{$fpfx}/start", ctype_digit($key0) ? intval($key0) : $key0);
+        $sv->save("{$fpfx}/start", $key0);
     }
 
     private function mark_values_error(SettingValues $sv) {

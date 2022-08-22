@@ -567,9 +567,12 @@ class Si {
             && $this->parser_class
             && ($v = $sv->si_parser($this)->default_value($this, $sv)) !== null) {
             return $v;
-        } else if ($this->storage_type === self::SI_DATA
-                   && str_starts_with($this->storage ?? "", "msg.")) {
-            return $sv->conf->fmt()->default_itext(substr($this->storage_name(), 4));
+        } else if (($this->storage_type & self::SI_DATA) !== 0) {
+            if (str_starts_with($this->storage ?? "", "msg.")) {
+                return $sv->conf->fmt()->default_itext(substr($this->storage_name(), 4));
+            } else {
+                return $this->default_value ?? "";
+            }
         } else {
             return $this->default_value;
         }

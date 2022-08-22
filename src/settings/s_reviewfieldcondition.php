@@ -43,16 +43,13 @@ class ReviewFieldCondition_SettingParser extends SettingParser {
      * @param string $q
      * @param 1|2 $status */
     static function validate($sv, $pfx, $q, $status) {
-        if ($q === "") {
-            return "";
+        if ($q === "" || $q === "all") {
+            return "all";
         }
         $ps = new PaperSearch($sv->conf->root_user(), $q);
         foreach ($ps->message_list() as $mi) {
             $sv->append_item_at("{$pfx}/condition", $mi);
             $sv->msg_at("{$pfx}/presence", "", $mi->status);
-        }
-        if ($ps->term() instanceof True_SearchTerm) {
-            return "";
         }
         if (!self::check_condition($ps)) {
             $sv->msg_at("{$pfx}/presence", "", $status);

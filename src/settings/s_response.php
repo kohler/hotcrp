@@ -16,7 +16,7 @@ class Response_Setting {
     /** @var ?int */
     public $wordlimit;
     /** @var string */
-    public $condition;
+    public $condition = "all";
     /** @var string */
     public $instructions;
 
@@ -38,7 +38,7 @@ class Response_Setting {
         $rs->done = $rrd->done;
         $rs->grace = $rrd->grace;
         $rs->wordlimit = $rs->old_wordlimit = $rrd->words;
-        $rs->condition = $rrd->search ? $rrd->search->q : "";
+        $rs->condition = $rrd->search ? $rrd->search->q : "all";
         $rs->instructions = $rrd->instructions ?? $rs->default_instructions($conf);
         return $rs;
     }
@@ -48,7 +48,7 @@ class Response_Setting {
         $rs = new Response_Setting;
         $rs->name = "";
         $rs->wordlimit = $rs->old_wordlimit = 500;
-        $rs->condition = "";
+        $rs->condition = "all";
         $rs->instructions = $rs->default_instructions($conf);
         return $rs;
     }
@@ -197,7 +197,7 @@ class Response_SettingParser extends SettingParser {
             }
             return false;
         } else if ($si->name2 === "/condition") {
-            if (($v = $sv->base_parse_req($si)) !== "") {
+            if (($v = $sv->base_parse_req($si)) !== "" && $v !== "all") {
                 $search = new PaperSearch($sv->conf->root_user(), $v);
                 foreach ($search->message_list() as $mi) {
                     $sv->append_item_at($si->name, $mi);
@@ -242,7 +242,10 @@ class Response_SettingParser extends SettingParser {
             $rs->done > 0 && ($jr["done"] = $rs->done);
             $rs->grace > 0 && ($jr["grace"] = $rs->grace);
             $rs->wordlimit !== 500 && ($jr["words"] = $rs->wordlimit ?? 0);
-            ($rs->condition ?? "") !== "" && ($jr["condition"] = $rs->condition);
+            if (($rs->condition ?? "") !== ""
+                && $rs->condition !== "all") {
+                $jr["condition"] = $rs->condition;
+            }
             if (($rs->instructions ?? "") !== ""
                 && $rs->instructions !== $rs->default_instructions($sv->conf)) {
                 $jr["instructions"] = $rs->instructions;

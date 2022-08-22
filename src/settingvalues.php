@@ -648,8 +648,7 @@ class SettingValues extends MessageSet {
         // ensure that `$id` has been parsed, and return the new value.
         // If `$id` refers to something else, then this function will only return a
         // new value if `$id` has already been parsed.
-        assert($this->_req_parse_state !== 0);
-        if (!$this->_use_req) {
+        if ($this->_req_parse_state === 0) {
             return $this->oldv($id);
         }
         $si = is_string($id) ? $this->si($id) : $id;
@@ -674,14 +673,16 @@ class SettingValues extends MessageSet {
         }
         $sn = $si->storage_name();
         if (array_key_exists($sn, $this->_savedv)) {
-            $v = $this->_savedv[$sn];
-            if ($v === null) {
-                return $si->default_value($this);
-            } else if (($si->storage_type & Si::SI_NEGATE) !== 0) {
-                return $v[0] ? 1 : 0;
+            $vp = $this->_savedv[$sn];
+            if ($vp === null) {
+                $val = $si->default_value($this);
             } else {
-                return $v[($si->storage_type & Si::SI_DATA) !== 0 ? 1 : 0];
+                $val = $vp[($si->storage_type & Si::SI_DATA) !== 0 ? 1 : 0];
             }
+            if (($si->storage_type & Si::SI_NEGATE) !== 0) {
+                $val = $val ? 0 : 1;
+            }
+            return $val;
         }
         return $this->oldv($si);
     }
@@ -1262,6 +1263,7 @@ class SettingValues extends MessageSet {
     /** @return $this */
     function parse() {
         assert($this->_req_parse_state === 0);
+        assert($this->_use_req);
         $this->_req_parse_state = 1;
         $siset = $this->conf->si_set();
         $this->_new_req = array_keys($this->req);
