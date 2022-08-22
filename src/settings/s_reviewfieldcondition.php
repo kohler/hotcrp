@@ -38,30 +38,6 @@ class ReviewFieldCondition_SettingParser extends SettingParser {
         return true;
     }
 
-    /** @return ?list<int> */
-    static function condition_round_list(PaperSearch $ps) {
-        $rl = [];
-        foreach ($ps->term()->preorder() as $e) {
-            if ($e instanceof Review_SearchTerm) {
-                $rsm = $e->review_matcher();
-                if ($rsm->sensitivity() === ReviewSearchMatcher::HAS_ROUND
-                    && $rl !== null
-                    && $rsm->test(1)) {
-                    $rl = array_merge($rl, $rsm->round_list);
-                } else if ($rsm->sensitivity() & ~(ReviewSearchMatcher::HAS_ROUND | ReviewSearchMatcher::HAS_RTYPE)) {
-                    return null;
-                } else {
-                    $rl = null;
-                }
-            } else if (!in_array($e->type, ["xor", "not", "and", "or"])) {
-                return null;
-            } else if ($e->type !== "or") {
-                $rl = null;
-            }
-        }
-        return $rl;
-    }
-
     /** @param SettingValues $sv
      * @param string $pfx
      * @param string $q
@@ -86,31 +62,31 @@ class ReviewFieldCondition_SettingParser extends SettingParser {
         return $q;
     }
 
-    function apply_req(Si $si, SettingValues $sv) {
-        if ($si->name2 === "/presence") {
-            $pres = $sv->reqstr($si->name);
-            if ($pres === "" || $pres === "custom") {
-                $sv->save($si, $pres);
-                return true;
-            } else if ($pres !== "all" && !str_starts_with($pres, "round:")) {
-                $sv->error_at($si, "<0>Unknown value");
-                return true;
-            }
-            $has = $sv->has_req("rf/{$si->name1}/condition");
-            $sv->set_req("rf/{$si->name1}/condition", $pres === "all" ? "" : $pres);
-            if (!$has) {
-                $sv->apply_req($sv->si("rf/{$si->name1}/condition"));
-            }
-            $sv->save($si, "custom");
-            return true;
-        } else if ($si->name2 === "/condition") {
-            if (($q = $sv->base_parse_req($si)) !== null) {
-                $sv->save($si, self::validate($sv, "rf/{$si->name1}", $q, 2));
-            }
-            return true;
-        } else {
-            return false;
+    /** @param string $pfx
+     * @return ?string */
+    static function condition_vstr($pfx, SettingValues $sv) {
+        $pres = $sv->reqstr("{$pfx}/presence") ?? "custom";
+        $cond = $sv->vstr("{$pfx}/condition");
+        if ($pres === "all") {
+            $cond = "all";
+        } else if ((str_starts_with($pres, "round:")
+                    && !Conf::round_name_error(substr($pres, 6)))
+                   || !$sv->has_req("{$pfx}/condition")) {
+            $cond = $pres;
+        } else if ($pres !== "custom") {
+            $sv->error_at("{$pfx}/presence", "<0>Unknown value");
+            return null;
         }
+        return simplify_whitespace($cond);
+    }
+
+    function apply_req(Si $si, SettingValues $sv) {
+        $pfx = $si->name0 . $si->name1;
+        if (($si->name2 === "/condition" || !$sv->has_req("{$pfx}/condition"))
+            && ($cond = self::condition_vstr($pfx, $sv)) !== null) {
+            $sv->save("{$pfx}/condition", self::validate($sv, $pfx, $cond, 2));
+        }
+        return true;
     }
 
     static function crosscheck(SettingValues $sv) {

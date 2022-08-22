@@ -829,4 +829,57 @@ class Review_SearchTerm extends SearchTerm {
     function about_reviews() {
         return $this->rsm->can_test_review() ? self::ABOUT_SELF : self::ABOUT_MANY;
     }
+
+
+    /** @param SearchTerm $term
+     * @return array{int,bool} */
+    static function term_round_mask($term) {
+        $other = false;
+        $mask = $term->visit(function ($st, ...$args) use (&$other) {
+            if ($st instanceof True_SearchTerm) {
+                return ~0;
+            } else if ($st instanceof False_SearchTerm) {
+                $other = true;
+                return 0;
+            } else if ($st instanceof Or_SearchTerm) {
+                return Review_SearchTerm::round_mask_combine($args, false);
+            } else if ($st instanceof And_SearchTerm) {
+                $mx = ~0;
+                foreach ($args as $m) {
+                    $mx &= $m ?? ~0;
+                }
+                return $mx;
+            } else if ($st instanceof Review_SearchTerm) {
+                $rsm = $st->review_matcher();
+                if ($rsm->sensitivity() !== ReviewSearchMatcher::HAS_ROUND) {
+                    $other = true;
+                }
+                if ($rsm->can_test_review()
+                    && ($rsm->sensitivity() & ReviewSearchMatcher::HAS_ROUND) !== 0
+                    && $rsm->test(1)) {
+                    return Review_SearchTerm::round_mask_combine($rsm->round_list, true);
+                }
+            }
+            $other = true;
+            return null;
+        });
+        if ($mask === ~0 || $mask === null) {
+            $mask = 0;
+        }
+        return [$mask, $other];
+    }
+
+    /** @param list<?int> $rlist
+     * @param bool $isrnum
+     * @return ?int */
+    static private function round_mask_combine($rlist, $isrnum) {
+        $rm = 0;
+        foreach ($rlist as $round) {
+            if ($round === null || ($isrnum && $round >= PHP_INT_SIZE * 8 - 1)) {
+                return null;
+            }
+            $rm |= $isrnum ? 1 << $round : $round;
+        }
+        return $rm;
+    }
 }

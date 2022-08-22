@@ -268,14 +268,22 @@ abstract class ReviewField implements JsonSerializable {
         if ($this->required) {
             $j->required = true;
         }
-        if ($this->exists_if) {
-            $j->exists_if = $this->exists_if;
-        } else if ($this->round_mask) {
-            if ($style === self::UJ_STORAGE) {
-                $j->round_mask = $this->round_mask;
-            } else if ($this->round_mask) {
-                $j->exists_if = $this->unparse_round_mask();
+        $exists_if = $this->exists_if;
+        if ($exists_if !== null && $style === self::UJ_STORAGE) {
+            if (($term = $this->exists_term())) {
+                list($this->round_mask, $other) = Review_SearchTerm::term_round_mask($term);
+                $exists_if = $other ? $exists_if : null;
+            } else {
+                $exists_if = null;
             }
+        }
+        if ($exists_if !== null) {
+            $j->exists_if = $exists_if;
+        } else if ($this->round_mask !== 0 && $style !== self::UJ_STORAGE) {
+            $j->exists_if = $this->unparse_round_mask();
+        }
+        if ($this->round_mask !== 0 && $style === self::UJ_STORAGE) {
+            $j->round_mask = $this->round_mask;
         }
         return $j;
     }
@@ -321,11 +329,16 @@ abstract class ReviewField implements JsonSerializable {
         }
     }
 
+    /** @return ?SearchTerm */
+    private function exists_term() {
+        $st = (new PaperSearch($this->conf->root_user(), $this->exists_if ?? ""))->term();
+        return $st instanceof True_SearchTerm ? null : $st;
+    }
+
     /** @return bool */
     function test_exists(ReviewInfo $rrow) {
         if ($this->_need_exists_search) {
-            $search = new PaperSearch($this->conf->root_user(), $this->exists_if);
-            $this->_exists_search = $search->term();
+            $this->_exists_search = $this->exists_term();
             $this->_need_exists_search = false;
         }
         return (!$this->round_mask || ($this->round_mask & (1 << $rrow->reviewRound)) !== 0)

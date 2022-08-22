@@ -555,7 +555,7 @@ class Options_SettingParser extends SettingParser {
         $sfj->final = $sfj->presence === "final";
         if ($sfj->presence !== "custom"
             || trim($sfj->exists_if ?? "") === "") {
-            $sfj->exists_if = "";
+            $sfj->exists_if = null;
         }
     }
 

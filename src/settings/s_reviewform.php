@@ -12,26 +12,22 @@ class ReviewForm_SettingParser extends SettingParser {
 
     function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name_matches("rf/", "*")) {
+            $finfo = null;
             if ($si->name1 !== "\$"
                 && ($fid = $sv->vstr("{$si->name}/id") ?? "") !== ""
                 && $fid !== "new") {
                 $finfo = ReviewFieldInfo::find($sv->conf, $fid);
-                $isnew = false;
-            } else if ($si->name1 === "\$") {
-                $finfo = ReviewFieldInfo::find($sv->conf, "s99");
-                $isnew = true;
-            } else {
+            }
+            $isnew = $finfo === null;
+            if ($finfo === null) {
                 $type = $sv->reqstr("{$si->name}/type") ?? "radio";
                 $finfo = ReviewFieldInfo::find($sv->conf, $type === "text" ? "t99" : "s99");
-                $isnew = true;
             }
-            if ($finfo) {
-                $rfs = new Rf_Setting;
-                ReviewField::make($sv->conf, $finfo)->unparse_setting($rfs);
-                $rfs->id = $isnew ? "new" : $rfs->id;
-                $rfs->required = false;
-                $sv->set_oldv($si->name, $rfs);
-            }
+            $rfs = new Rf_Setting;
+            ReviewField::make($sv->conf, $finfo)->unparse_setting($rfs);
+            $rfs->id = $isnew ? "new" : $rfs->id;
+            $rfs->required = false;
+            $sv->set_oldv($si->name, $rfs);
         } else if ($si->name_matches("rf/", "*", "/values_text")) {
             $rfs = $sv->oldv("rf/{$si->name1}");
             $vs = [];
@@ -242,24 +238,6 @@ class ReviewForm_SettingParser extends SettingParser {
         }
     }
 
-    /** @param object $rfj */
-    private function _fix_req_condition(SettingValues $sv, $rfj) {
-        $q = "";
-        $rl = null;
-        if (($rfj->exists_if ?? "") !== "") {
-            $ps = new PaperSearch($sv->conf->root_user(), $rfj->exists_if ?? "");
-            if (!($ps->term() instanceof True_SearchTerm)) {
-                $rl = ReviewFieldCondition_SettingParser::condition_round_list($ps);
-                $q = $rl === null ? $rfj->exists_if : "";
-            }
-        }
-        $rfj->exists_if = $q;
-        $rfj->round_mask = 0;
-        foreach ($rl ?? [] as $rn) {
-            $rfj->round_mask |= 1 << $rn;
-        }
-    }
-
     private function _apply_req_review_form(Si $si, SettingValues $sv) {
         $known_ids = [];
         foreach ($sv->oblist_keys("rf") as $ctr) {
@@ -277,7 +255,6 @@ class ReviewForm_SettingParser extends SettingParser {
             }
             if (($finfo = ReviewFieldInfo::find($sv->conf, $rfj->id))) {
                 $sv->error_if_missing("rf/{$ctr}/name");
-                $this->_fix_req_condition($sv, $rfj);
                 $rfj->order = $rfj->order ?? 1000000;
                 $nrfj[] = $rfj;
             } else {
