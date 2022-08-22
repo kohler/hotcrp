@@ -1153,63 +1153,74 @@ class SettingValues extends MessageSet {
     /** @param string|Si $id
      * @return void */
     function save($id, $value) {
+        // check that storage is allowed
         $si = is_string($id) ? $this->si($id) : $id;
+        if (!$si || $si->storage_type === Si::SI_NONE) {
+            $name = is_string($id) ? $id : $si->name;
+            error_log("setting {$name}: no setting or cannot save value");
+            return;
+        }
+
+        // check that value is valid for saving type
+        $member = ($si->storage_type & Si::SI_MEMBER) !== 0;
+        $sn = $si->storage_name();
         if ($value === null) {
             error_log("setting {$si->name}: setting value to null: " . debug_string_backtrace());
-        }
-        $member = ($si->storage_type & Si::SI_MEMBER) !== 0;
-        if (!$si || $si->storage_type === Si::SI_NONE) {
-            error_log("setting {$si->name}: no setting or cannot save value");
-            return;
-        }
-        if ($si->storage_type & Si::SI_NEGATE) {
-            $value = !$value;
-        }
-        if ($value !== null
-            && !$member
-            && !($si->storage_type & Si::SI_DATA ? is_string($value) : is_int($value) || is_bool($value))) {
+        } else if (!$member
+                   && (($si->storage_type & Si::SI_DATA) !== 0
+                       ? !is_string($value)
+                       : !is_int($value) && !is_bool($value))) {
             error_log(caller_landmark() . ": setting {$si->name}: invalid value " . var_export($value, true));
             return;
+        }
+
+        // adapt value to storage requirements
+        if ($si->storage_type & Si::SI_NEGATE) {
+            $value = !$value;
         }
         if ($si->value_nullable($value, $this)) {
             $value = null;
         }
-        $value1 = $value;
+
+        // save to member
+        if ($member) {
+            $ov = $this->_object_parsingv[$si->name0 . $si->name1] ?? null;
+            if (!$ov) {
+                $this->_explicit_newv[$si->name] = $value;
+            } else if ($value === null && $si->value_nullable($ov->{$sn}, $this)) {
+                // special case: do not write `null` over a nullable member
+            } else {
+                $ov->{$sn} = $value;
+            }
+            return;
+        }
+
+        // save to _savedv
         if (is_bool($value)) {
             $value = $value ? 1 : 0;
         }
-
-        $s = $si->storage_name();
-        if ($member) {
-            $ov = $this->_object_parsingv[$si->name0 . $si->name1] ?? null;
-            if ($ov) {
-                $ov->{$s} = $value1;
+        if (($si->storage_type & Si::SI_SLICE) !== 0) {
+            if (array_key_exists($sn, $this->_savedv)) {
+                $vp = $this->_savedv[$sn] ?? [0, null];
             } else {
-                $this->_explicit_newv[$si->name] = $value1;
+                $vp = [$this->conf->setting($sn) ?? 0, $this->conf->setting_data($sn)];
             }
-        } else if ($si->storage_type & Si::SI_SLICE) {
-            if (!isset($this->_savedv[$s])) {
-                if (!array_key_exists($s, $this->_savedv)) {
-                    $this->_savedv[$s] = [$this->conf->setting($s) ?? 0, $this->conf->setting_data($s)];
-                } else {
-                    $this->_savedv[$s] = [0, null];
-                }
-            }
-            if ($si->storage_type & Si::SI_DATA) {
-                $this->_savedv[$s][1] = $value;
+            if (($si->storage_type & Si::SI_VALUE) !== 0) {
+                $vp[0] = $value ?? 0;
             } else {
-                $this->_savedv[$s][0] = $value ?? 0;
+                $vp[1] = $value;
             }
-            if ($this->_savedv[$s][0] === 0 && $this->_savedv[$s][1] === null) {
-                $this->_savedv[$s] = null;
+            if ($vp === [0, null]) {
+                $vp = null;
             }
         } else if ($value === null) {
-            $this->_savedv[$s] = null;
-        } else if ($si->storage_type & Si::SI_DATA) {
-            $this->_savedv[$s] = [1, $value];
+            $vp = null;
+        } else if (($si->storage_type & Si::SI_VALUE) !== 0) {
+            $vp = [$value, null];
         } else {
-            $this->_savedv[$s] = [$value, null];
+            $vp = [1, $value];
         }
+        $this->_savedv[$sn] = $vp;
     }
 
     /** @param string|Si $id

@@ -52,6 +52,35 @@ class Response_Setting {
         $rs->instructions = $rs->default_instructions($conf);
         return $rs;
     }
+
+    /** @return object */
+    function unparse_json(Conf $conf) {
+        $j = (object) [];
+        if ($this->name !== "" && $this->name !== "unnamed") {
+            $j->name = $this->name;
+        }
+        if ($this->open > 0) {
+            $j->open = $this->open;
+        }
+        if ($this->done > 0) {
+            $j->done = $this->done;
+        }
+        if ($this->grace > 0) {
+            $j->grace = $this->grace;
+        }
+        if ($this->wordlimit !== 500) {
+            $j->words = $this->wordlimit ?? 0;
+        }
+        if (($this->condition ?? "") !== ""
+            && $this->condition !== "all") {
+            $j->condition = $this->condition;
+        }
+        if (($this->instructions ?? "") !== ""
+            && $this->instructions !== $this->default_instructions($conf)) {
+            $j->instructions = $this->instructions;
+        }
+        return $j;
+    }
 }
 
 class Response_SettingParser extends SettingParser {
@@ -215,17 +244,17 @@ class Response_SettingParser extends SettingParser {
             return true;
         }
 
-        $rrds = [];
+        $rss = [];
         foreach ($sv->oblist_keys("response") as $ctr) {
-            $rrd = $sv->newv("response/{$ctr}");
-            '@phan-var-force Response_Setting $rrd';
-            if ($rrd->deleted) {
-                if ($rrd->id > 1) {
-                    $this->round_transform[] = "when {$rrd->id} then 1";
+            $rs = $sv->newv("response/{$ctr}");
+            '@phan-var-force Response_Setting $rs';
+            if ($rs->deleted) {
+                if ($rs->id > 1) {
+                    $this->round_transform[] = "when {$rs->id} then 1";
                 }
             } else {
                 $sv->check_date_before("response/{$ctr}/open", "response/{$ctr}/done", false);
-                array_splice($rrds, $rrd->name === "" ? 0 : count($rrds), 0, [$rrd]);
+                array_splice($rss, $rs->name === "" ? 0 : count($rss), 0, [$rs]);
             }
         }
 
@@ -235,22 +264,8 @@ class Response_SettingParser extends SettingParser {
         }
 
         $jrl = [];
-        foreach ($rrds as $i => $rs) {
-            $jr = [];
-            $rs->name !== "" && $rs->name !== "unnamed" && ($jr["name"] = $rs->name);
-            $rs->open > 0 && ($jr["open"] = $rs->open);
-            $rs->done > 0 && ($jr["done"] = $rs->done);
-            $rs->grace > 0 && ($jr["grace"] = $rs->grace);
-            $rs->wordlimit !== 500 && ($jr["words"] = $rs->wordlimit ?? 0);
-            if (($rs->condition ?? "") !== ""
-                && $rs->condition !== "all") {
-                $jr["condition"] = $rs->condition;
-            }
-            if (($rs->instructions ?? "") !== ""
-                && $rs->instructions !== $rs->default_instructions($sv->conf)) {
-                $jr["instructions"] = $rs->instructions;
-            }
-            $jrl[] = (object) $jr;
+        foreach ($rss as $i => $rs) {
+            $jrl[] = $rs->unparse_json($sv->conf);
             if ($rs->id !== null && $i + 1 !== $rs->id) {
                 $this->round_transform[] = "when {$rs->id} then " . ($i + 1);
             }

@@ -1276,10 +1276,12 @@ class Settings_Tester {
         xassert_eqq($this->conf->_i("clickthrough_submit"), "");
     }
 
-    static function print_unified_diff($x, $y) {
+    static function unexpected_unified_diff($x, $y) {
         $dmp = new dmp\diff_match_patch;
         $diff = $dmp->line_diff($x, $y);
-        fwrite(STDERR, $dmp->line_diff_toUnified($diff, 10, 50));
+        $udiff = $dmp->line_diff_toUnified($diff, 10, 50);
+        fwrite(STDERR, $udiff);
+        xassert_eqq($udiff, "");
     }
 
     function test_json_settings_roundtrip() {
@@ -1303,7 +1305,7 @@ class Settings_Tester {
 
         $sb = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
         if ($sa !== $sb) {
-            self::print_unified_diff($sa, $sb);
+            self::unexpected_unified_diff($sa, $sb);
         }
 
         $x = call_api("=settings", $this->u_chair, ["settings" => $sb]);
@@ -1314,7 +1316,7 @@ class Settings_Tester {
 
         $sc = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
         if ($sb !== $sc) {
-            self::print_unified_diff($sb, $sc);
+            self::unexpected_unified_diff($sb, $sc);
         }
 
         $x->settings->reset = true;
@@ -1325,7 +1327,7 @@ class Settings_Tester {
 
         $sd = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
         if ($sc !== $sd) {
-            self::print_unified_diff($sc, $sd);
+            self::unexpected_unified_diff($sc, $sd);
         }
     }
 
@@ -1336,5 +1338,20 @@ class Settings_Tester {
         xassert_eqq($mi->status, 2);
         xassert_eqq($mi->pos1, 11);
         xassert_eqq($mi->pos2, 14);
+    }
+
+    function test_json_settings_silent_roundtrip() {
+        $sv = new SettingValues($this->u_chair);
+        $j1 = json_encode($sv->all_json_choosev(false), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string($j1, "<roundtrip>");
+        $sv->parse();
+        $j2 = json_encode($sv->all_json_choosev(false), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $j3 = json_encode($sv->all_json_choosev(true), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        xassert_eqq($j2, $j1);
+        if ($j3 !== $j1) {
+            self::unexpected_unified_diff($j1, $j3);
+        }
     }
 }
