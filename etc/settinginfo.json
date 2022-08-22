@@ -91,13 +91,13 @@
         "name": "review_terms", "storage": "msg.clickthrough_review",
         "title": "Clickthrough review terms",
         "type": "htmlstring", "size": 10,
-        "ifnonempty": "review_terms_exist"
+        "parser_class": "Messages_SettingParser"
     },
     {
         "name": "submission_terms", "storage": "msg.clickthrough_submit",
         "title": "Clickthrough submission terms",
         "type": "htmlstring", "size": 10,
-        "ifnonempty": "submission_terms_exist"
+        "parser_class": "Messages_SettingParser"
     },
     {
         "name": "conflict_description", "storage": "msg.conflictdef",

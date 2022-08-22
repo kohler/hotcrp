@@ -1210,10 +1210,6 @@ class SettingValues extends MessageSet {
         } else {
             $this->_savedv[$s] = [$value, null];
         }
-
-        if ($si->ifnonempty) {
-            $this->save($si->ifnonempty, isset($this->_savedv[$s]));
-        }
     }
 
     /** @param string|Si $id

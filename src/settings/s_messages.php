@@ -7,9 +7,16 @@ class Messages_SettingParser extends SettingParser {
         if ($si->name === "preference_instructions") {
             $n = $sv->oldv("has_topics");
             return $sv->conf->fmt()->default_itext("revprefdescription", $n);
-        } else {
-            return null;
         }
+        return null;
+    }
+    function apply_req(Si $si, SettingValues $sv) {
+        if ($si->name === "submission_terms" || $si->name === "review_terms") {
+            if (($v = $sv->base_parse_req($si)) !== null) {
+                $sv->save("{$si->name}_exist", $v !== "" ? 1 : 0);
+            }
+        }
+        return false;
     }
     static function print_submissions(SettingValues $sv) {
         $sv->print_message("home_message", "Home page message");

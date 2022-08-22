@@ -1239,6 +1239,43 @@ class Settings_Tester {
         xassert(!isset($x->settings));
     }
 
+    function test_terms_exist() {
+        xassert_eqq($this->conf->opt("clickthrough_submit"), null);
+        xassert_eqq($this->conf->_i("clickthrough_submit"), "");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "submission_terms" => ""
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($sv->updated_fields(), []);
+        xassert_eqq($this->conf->opt("clickthrough_submit"), null);
+        xassert_eqq($this->conf->_i("clickthrough_submit"), "");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "submission_terms" => "xxx"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($sv->updated_fields(), ["opt.clickthrough_submit", "msg.clickthrough_submit"]);
+        xassert_neqq($this->conf->opt("clickthrough_submit"), null);
+        xassert_eqq($this->conf->_i("clickthrough_submit"), "xxx");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "submission_terms" => "xxx"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($sv->updated_fields(), []);
+        xassert_neqq($this->conf->opt("clickthrough_submit"), null);
+        xassert_eqq($this->conf->_i("clickthrough_submit"), "xxx");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "submission_terms" => ""
+        ]);
+        xassert($sv->execute());
+        xassert_eqq($sv->updated_fields(), ["opt.clickthrough_submit", "msg.clickthrough_submit"]);
+        xassert_eqq($this->conf->opt("clickthrough_submit"), null);
+        xassert_eqq($this->conf->_i("clickthrough_submit"), "");
+    }
+
     static function print_unified_diff($x, $y) {
         $dmp = new dmp\diff_match_patch;
         $diff = $dmp->line_diff($x, $y);

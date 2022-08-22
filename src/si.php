@@ -91,9 +91,6 @@ class Si {
     /** @var ?bool
      * @readonly */
     public $autogrow;
-    /** @var ?string
-     * @readonly */
-    public $ifnonempty;
     /** @var ?bool
      * @readonly */
     public $json_export;
@@ -112,7 +109,6 @@ class Si {
     static private $key_storage = [
         "autogrow" => "is_bool",
         "description" => "is_string",
-        "ifnonempty" => "is_string",
         "internal" => "is_bool",
         "json_values" => "Si::is_auto_or_list",
         "json_export" => "is_bool",
