@@ -31,7 +31,7 @@ class Multiconference {
 
         if (!$confid) {
             $Opt["confid"] = "__nonexistent__";
-        } else if (preg_match('/\A[-a-zA-Z0-9_][-a-zA-Z0-9_.]*\z/', $confid)) {
+        } else if (preg_match('/\A[a-zA-Z0-9_][-a-zA-Z0-9_.]*\z/', $confid)) {
             $Opt["confid"] = $confid;
         } else {
             $Opt["__original_confid"] = $confid;
@@ -159,9 +159,15 @@ class Multiconference {
         $errors = [];
         $confid = $Opt["confid"] ?? null;
         $multiconference = $Opt["multiconference"] ?? null;
-        $missing = array_values(array_filter($Opt["missing"] ?? [], function ($x) {
-            return strpos($x, "__nonexistent__") === false;
-        }));
+        $missing = [];
+        $invalid = false;
+        foreach ($Opt["missing"] ?? [] as $x) {
+            if (strpos($x, "__invalid__") !== false) {
+                $invalid = true;
+            } else if (strpos($x, "__nonexistent__") === false) {
+                $missing[] = $x;
+            }
+        }
 
         if (PHP_SAPI === "cli") {
             if ($missing) {
@@ -172,6 +178,8 @@ class Multiconference {
                         return "{$s}: Unable to load configuration file";
                     }
                 }, $missing));
+            } else if ($invalid) {
+                $errors[] = "Invalid conference specified with `-n`.";
             } else if ($multiconference && $confid === "__nonexistent__") {
                 $errors[] = self::nonexistence_error();
             } else {

@@ -149,10 +149,15 @@ function initialize_conf($config_file = null, $confid = null) {
     $Opt = $Opt ?? [];
     if (!($Opt["loaded"] ?? null)) {
         SiteLoader::read_main_options($config_file);
-        if ($confid !== null) {
-            $Opt["confid"] = $confid;
-        } else if ($Opt["multiconference"] ?? null) {
+        if ($Opt["multiconference"] ?? null) {
             Multiconference::init($confid);
+        } else if ($confid !== null) {
+            if (!isset($Opt["confid"])) {
+                $Opt["confid"] = $confid;
+            } else if ($Opt["confid"] !== $confid) {
+                $Opt["missing"][] = "__invalid__";
+                Multiconference::fail_bad_options();
+            }
         }
         if ($Opt["include"] ?? null) {
             SiteLoader::read_included_options();
