@@ -508,45 +508,36 @@ jQuery.fn.extend({
         return g;
     },
     scrollIntoView: function (opts) {
-        opts = opts || {};
         for (var i = 0; i !== this.length; ++i) {
-            var e = this[i];
+            var e = this[i],
+                root = document.documentElement,
+                eopts = opts || {};
             while (e && e.nodeType !== 1) {
                 e = e.parentNode;
             }
-            var tg = $(e).geometry(), p = e.parentNode;
-            while (p && p.tagName && $(p).css("overflowY") === "visible") {
-                p = p.parentNode;
-            }
-            p = p && p.tagName ? p : window;
-            if (p !== window && opts.scrollParent) {
-                $(p).scrollIntoView(opts);
-            }
-            var pg = $(p).geometry(),
-                mt = opts.marginTop || 0,
-                mb = opts.marginBottom || 0,
-                pos;
-            if (mt === "auto") {
-                mt = parseFloat($(e).css("marginTop"));
-            }
-            if (mb === "auto") {
-                mb = parseFloat($(e).css("marginBottom"));
-            }
-            if ((tg.top < pg.top + mt && !opts.atBottom)
-                || opts.atTop) {
-                pos = Math.max(tg.top - mt, 0);
-                if (p === window) {
-                    p.scrollTo(pg.scrollX, pos);
-                } else {
-                    p.scrollTop = pos - pg.top;
+            while (e !== root) {
+                var er = e.getBoundingClientRect(),
+                    p = e.parentNode;
+                while (p !== root && window.getComputedStyle(p).overflowY === "visible") {
+                    p = p.parentNode;
                 }
-            } else if (tg.bottom > pg.bottom - mb) {
-                pos = Math.max(tg.bottom + mb - pg.height, 0);
-                if (p === window) {
-                    p.scrollTo(pg.scrollX, pos);
-                } else {
-                    p.scrollTop = pos - pg.top;
+                var pr = p.getBoundingClientRect(),
+                    mt = eopts.marginTop || 0,
+                    mb = eopts.marginBottom || 0;
+                if (mt === "auto") {
+                    mt = parseFloat(window.getComputedStyle(e).marginTop);
                 }
+                if (mb === "auto") {
+                    mb = parseFloat(window.getComputedStyle(e).marginBottom);
+                }
+                if ((er.top - mt < pr.top && !eopts.atBottom)
+                    || (er.bottom + mb > pr.bottom && eopts.atTop)) {
+                    p.scrollBy(0, er.top - mt - pr.top);
+                } else if (er.bottom + mb > pr.bottom) {
+                    p.scrollBy(0, er.bottom + mb - pr.bottom);
+                }
+                e = p;
+                eopts = {};
             }
         }
         return this;
