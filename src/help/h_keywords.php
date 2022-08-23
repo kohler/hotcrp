@@ -285,7 +285,7 @@ class Keywords_HelpTopic {
             $r = $scoref[0];
             echo $hth->search_trow("show:max({$r->search_keyword()})", "show a " . $hth->help_link("formula", "formulas"));
             echo $hth->search_trow("sort:{$r->search_keyword()}", "sort by score");
-            echo $hth->search_trow("sort:\"{$r->search_keyword()} variance\"", "sort by score variance");
+            echo $hth->search_trow("sort:[{$r->search_keyword()} variance]", "sort by score variance");
         }
         echo $hth->search_trow("sort:-status", "sort by reverse status");
         echo $hth->search_trow("edit:#discuss", "edit the values for tag “#discuss”");
