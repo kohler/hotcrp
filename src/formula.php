@@ -313,7 +313,7 @@ class Constant_Fexpr extends Fexpr {
             $this->x = 89 - ord($letter);
         } else if ($format === Fexpr::FREVIEWFIELD
                    && $letter
-                   && ($x = $format_detail->parse_value($letter))) {
+                   && ($x = $format_detail->parse_string($letter))) {
             $this->x = $x;
         } else if ($format === Fexpr::FROUND
                    && ($round = $formula->conf->round_number($this->x, false)) !== null) {
@@ -904,7 +904,7 @@ class Pid_Fexpr extends Fexpr {
 }
 
 class Score_Fexpr extends Fexpr {
-    function __construct(ReviewField $field) {
+    function __construct(Score_ReviewField $field) {
         parent::__construct("rf");
         $this->set_format(Fexpr::FREVIEWFIELD, $field);
     }
@@ -1964,7 +1964,7 @@ class Formula implements JsonSerializable {
         if ($f instanceof PaperOption) {
             return $this->_parse_one_option($pos1, $t, $f);
         } else if ($f instanceof ReviewField) {
-            if ($f->has_options) {
+            if ($f instanceof Score_ReviewField) {
                 return $this->_reviewer_decoration($t, new Score_Fexpr($f));
             } else {
                 $this->lerror($pos1, $pos2, "<0>Review field ‘{$f->name}’ can’t be used in formulas");
@@ -2407,7 +2407,7 @@ class Formula implements JsonSerializable {
         }
     }
 
-    /** @return string|int|float */
+    /** @return string */
     function unparse_html($x, $real_format = null) {
         if ($x === null || $x === false) {
             return "";
@@ -2417,7 +2417,7 @@ class Formula implements JsonSerializable {
         $rx = round($x * 100) / 100;
         if ($this->_format > Fexpr::FNUMERIC) {
             if ($this->_format === Fexpr::FREVIEWFIELD) {
-                return $this->_format_detail->unparse_value($rx, ReviewField::VALUE_SC, $real_format);
+                return $this->_format_detail->value_unparse($rx, ReviewField::VALUE_SC, $real_format);
             } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
                 return Score_ReviewField::unparse_letter(91, $x + 2);
             } else if ($this->_format === Fexpr::FREVIEWER) {
@@ -2431,10 +2431,10 @@ class Formula implements JsonSerializable {
                 return $this->_unparse_duration($x);
             }
         }
-        return $real_format ? sprintf($real_format, $rx) : $rx;
+        return $real_format ? sprintf($real_format, $rx) : (string) $rx;
     }
 
-    /** @return string|int|float */
+    /** @return string */
     function unparse_text($x, $real_format) {
         if ($x === null) {
             return "";
@@ -2446,7 +2446,7 @@ class Formula implements JsonSerializable {
         $rx = round($x * 100) / 100;
         if ($this->_format > Fexpr::FNUMERIC) {
             if ($this->_format === Fexpr::FREVIEWFIELD) {
-                return $this->_format_detail->unparse_value($rx, ReviewField::VALUE_NATIVE, $real_format);
+                return $this->_format_detail->value_unparse($rx, 0, $real_format);
             } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
                 return Score_ReviewField::unparse_letter(91, $x + 2);
             } else if ($this->_format === Fexpr::FREVIEWER) {
@@ -2460,9 +2460,11 @@ class Formula implements JsonSerializable {
                 return $this->_unparse_duration($x);
             }
         }
-        return $real_format ? sprintf($real_format, $x) : $x;
+        return $real_format ? sprintf($real_format, $x) : (string) $x;
     }
 
+    /** @param ?string $real_format
+     * @return string */
     function unparse_diff_html($x, $real_format) {
         if ($x === null) {
             return "";
@@ -2471,7 +2473,7 @@ class Formula implements JsonSerializable {
             return $this->_unparse_duration($x);
         } else {
             $rx = round($x * 100) / 100;
-            return $real_format ? sprintf($real_format, $rx) : $rx;
+            return $real_format ? sprintf($real_format, $rx) : (string) $rx;
         }
     }
 

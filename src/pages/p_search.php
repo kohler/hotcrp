@@ -124,7 +124,7 @@ class Search_Page {
 
         // Scores group
         foreach ($this->conf->review_form()->viewable_fields($user) as $f) {
-            if ($f->has_options)
+            if ($f instanceof Score_ReviewField)
                 $this->checkbox_item(30, $f->search_keyword(), $f->name_html);
         }
         if (!empty($this->items[30])) {

@@ -270,7 +270,7 @@ foreach ($Conf->review_form()->all_fields() as $f) {
               (int) $f->display_space,
               $f->view_score >= VIEWSCORE_AUTHORDEC ? 1 : 0,
               $f->option_letter ? : 0);
-    if ($f->has_options) {
+    if ($f instanceof Score_ReviewField) {
         foreach ($f->options as $i => $x)
             $Conf->qe("insert into ReviewFormOptions values (?,?,?)",
                       $f->id, $i, $x);

@@ -208,19 +208,24 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("dec:none", "decision unspecified");
 
         // find names of review fields to demonstrate syntax
-        $farr = [[], []];
+        $scoref = [];
+        $textf = [];
         foreach ($hth->conf->review_form()->viewable_fields($hth->user) as $f) {
-            $farr[$f->has_options ? 0 : 1][] = $f;
+            if ($f instanceof Score_ReviewField) {
+                $scoref[] = $f;
+            } else if ($f instanceof Text_ReviewField) {
+                $textf[] = $f;
+            }
         }
-        if (!empty($farr[0]) || !empty($farr[1])) {
+        if (!empty($scoref) || !empty($textf)) {
             echo $hth->tgroup("Review fields");
         }
-        if (count($farr[0])) {
-            $r = $farr[0][0];
+        if (count($scoref)) {
+            $r = $scoref[0];
             echo $hth->search_trow("{$r->abbreviation1()}:{$r->typical_score()}", "at least one completed review has $r->name_html score {$r->typical_score()}");
             echo $hth->search_trow("{$r->search_keyword()}:{$r->typical_score()}", "other abbreviations accepted");
-            if (count($farr[0]) > 1) {
-                $r2 = $farr[0][1];
+            if (count($scoref) > 1) {
+                $r2 = $scoref[1];
                 echo $hth->search_trow(strtolower($r2->search_keyword()) . ":{$r2->typical_score()}", "other fields accepted (here, $r2->name_html)");
             }
             if (($range = $r->typical_score_range())) {
@@ -233,17 +238,17 @@ class Keywords_HelpTopic {
                 $gt_typical = "greater than {$r->typical_score()}";
                 $le_typical = "less than or equal to {$r->typical_score()}";
             } else {
-                $s1 = $r->parse_value($r->typical_score());
+                $s1 = $r->parse_string($r->typical_score());
                 if ($hth->conf->opt("smartScoreCompare")) {
                     $s1le = range($s1, 1);
-                    $s1gt = range(count($r->values), $s1 + 1);
+                    $s1gt = range($r->nvalues(), $s1 + 1);
                     $hint = "<br><small>(scores “better than” {$r->typical_score()} are earlier in the alphabet)</small>";
                 } else {
-                    $s1le = range(count($r->values), $s1);
+                    $s1le = range($r->nvalues(), $s1);
                     $s1gt = range($s1 - 1, 1);
                 }
-                $gt_typical = commajoin(array_map([$r, "unparse_value"], $s1gt), " or ");
-                $le_typical = commajoin(array_map([$r, "unparse_value"], $s1le), " or ");
+                $gt_typical = commajoin(array_map([$r, "value_unparse"], $s1gt), " or ");
+                $le_typical = commajoin(array_map([$r, "value_unparse"], $s1le), " or ");
             }
             echo $hth->search_trow("{$r->search_keyword()}:>{$r->typical_score()}", "at least one completed review has $r->name_html score $gt_typical" . $hint);
             echo $hth->search_trow("{$r->search_keyword()}:2<={$r->typical_score()}", "at least two completed reviews have $r->name_html score $le_typical");
@@ -255,15 +260,15 @@ class Keywords_HelpTopic {
             echo $hth->search_trow("{$r->search_keyword()}:pc:2>{$r->typical_score()}", "at least two completed PC reviews have $r->name_html score $gt_typical");
             echo $hth->search_trow("{$r->search_keyword()}:sylvia={$r->typical_score()}", "“sylvia” (reviewer name/email) gave $r->name_html score {$r->typical_score()}");
         }
-        if (count($farr[1])) {
-            $r = $farr[1][0];
+        if (count($textf)) {
+            $r = $textf[0];
             echo $hth->search_trow($r->abbreviation1() . ":finger", "at least one completed review has “finger” in the $r->name_html field");
             echo $hth->search_trow("{$r->search_keyword()}:finger", "other abbreviations accepted");
             echo $hth->search_trow("{$r->search_keyword()}:any", "at least one completed review has text in the $r->name_html field");
         }
 
-        if (count($farr[0])) {
-            $r = $farr[0][0];
+        if (count($scoref)) {
+            $r = $scoref[0];
             echo $hth->tgroup($hth->help_link("Formulas", "formulas"));
             echo $hth->search_trow("formula:all({$r->search_keyword()}={$r->typical_score()})",
                 "all reviews have $r->name_html score {$r->typical_score()}<br />" .
@@ -276,8 +281,8 @@ class Keywords_HelpTopic {
         echo $hth->tgroup("Display");
         echo $hth->search_trow("show:tags show:pcconflicts", "show tags and PC conflicts in the results");
         echo $hth->search_trow("hide:title", "hide title in the results");
-        if (count($farr[0])) {
-            $r = $farr[0][0];
+        if (count($scoref)) {
+            $r = $scoref[0];
             echo $hth->search_trow("show:max({$r->search_keyword()})", "show a " . $hth->help_link("formula", "formulas"));
             echo $hth->search_trow("sort:{$r->search_keyword()}", "sort by score");
             echo $hth->search_trow("sort:\"{$r->search_keyword()} variance\"", "sort by score variance");

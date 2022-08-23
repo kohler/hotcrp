@@ -92,7 +92,7 @@ class ReviewDiffInfo {
         foreach ($this->fields as $i => $f) {
             $sn = $f->short_id;
             $v = [$this->rrow->fields[$f->order] ?? "", $this->newv[$i]];
-            if ($f->has_options) {
+            if (!($f instanceof Text_ReviewField)) {
                 $v[$dir] = (int) $v[$dir];
             } else if (($v[$dir] ?? "") !== "") {
                 if ($use_xdiff) {
@@ -204,13 +204,13 @@ class ReviewDiffInfo {
                 && is_string($v)
                 && ($has_xpatch = $has_xpatch ?? function_exists("xdiff_string_bpatch"))
                 && ($fi = ReviewFieldInfo::find($rrow->conf, substr($n, 0, -2)))
-                && !$fi->has_options) {
+                && !$fi->is_sfield) {
                 $oldv = $rrow->finfoval($fi);
                 $rrow->set_finfoval($fi, xdiff_string_bpatch($oldv, $v));
             } else if (str_ends_with($n, ":p")
                        && is_string($v)
                        && ($fi = ReviewFieldInfo::find($rrow->conf, substr($n, 0, -2)))
-                       && !$fi->has_options) {
+                       && !$fi->is_sfield) {
                 $dmp = $dmp ?? new dmp\diff_match_patch;
                 $oldv = $rrow->finfoval($fi);
                 $rrow->set_finfoval($fi, $dmp->diff_applyHCDelta($oldv, $v));

@@ -872,7 +872,7 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
     }
     function text(PaperList $pl, PaperInfo $row) {
         $si = $this->score_info($pl, $row);
-        $values = array_map([$this->format_field, "unparse_value"], $si->as_sorted_list());
+        $values = array_map([$this->format_field, "value_unparse"], $si->as_sorted_list());
         return join(" ", array_values($values));
     }
 }
@@ -930,7 +930,9 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         }
         $vsbound = $user->permissive_view_score_bound();
         return array_filter($fs, function ($f) use ($vsbound) {
-            return $f && $f->has_options && $f->order && $f->view_score > $vsbound;
+            return $f instanceof Score_ReviewField
+                && $f->order > 0
+                && $f->view_score > $vsbound;
         });
     }
     /** @return array<ReviewField> */
@@ -952,7 +954,9 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $cs = array_map(function ($f) {
             return $f->search_keyword();
         }, array_filter($user->conf->all_review_fields(), function ($f) use ($vsbound) {
-            return $f->has_options && $f->order && $f->view_score > $vsbound;
+            return $f instanceof Score_ReviewField
+                && $f->order > 0
+                && $f->view_score > $vsbound;
         }));
         if (!empty($cs)) {
             array_unshift($cs, "scores");

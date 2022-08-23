@@ -275,13 +275,13 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         $this->sensitivity |= self::HAS_RATINGS;
     }
     function apply_text_field(ReviewField $field, $value) {
-        assert(!$this->rfield && !$field->has_options);
+        assert(!$this->rfield && $field instanceof Text_ReviewField);
         $this->rfield = $field;
         $this->rfield_text = $value;
         $this->sensitivity |= self::HAS_FIELD;
     }
     function apply_score_field(ReviewField $field, $value1, $value2, $valuet) {
-        assert(!$this->rfield && $field->has_options);
+        assert(!$this->rfield && $field instanceof Score_ReviewField);
         $this->rfield = $field;
         $this->rfield_score1 = $value1;
         $this->rfield_score2 = $value2;
@@ -337,7 +337,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             $where[] = $cm;
         }
         if ($this->rfield) {
-            if ($this->rfield->has_options) {
+            if ($this->rfield instanceof Score_ReviewField) {
                 if ($this->rfield->main_storage) {
                     if ($this->rfield_scoret >= 8) {
                         $ce = ">=";
@@ -471,7 +471,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 return false;
             }
             $val = $rrow->fields[$this->rfield->order];
-            if ($this->rfield->has_options) {
+            if ($this->rfield instanceof Score_ReviewField) {
                 if ($this->rfield_scoret >= 8) {
                     if (!$val || $this->rfield_scorex < 0) {
                         return false;
@@ -729,7 +729,7 @@ class Review_SearchTerm extends SearchTerm {
         }
     }
     /** @return False_SearchTerm */
-    private static function impossible_score_match(ReviewField $f, SearchWord $sword, PaperSearch $srch) {
+    private static function impossible_score_match(Score_ReviewField $f, SearchWord $sword, PaperSearch $srch) {
         $r = $f->full_score_range();
         $mi = $srch->lwarning($sword, "<0>{$f->name} scores range from {$r[0]} to {$r[1]}");
         $ft = new False_SearchTerm;

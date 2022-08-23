@@ -111,9 +111,11 @@ class Formula_PaperColumn extends PaperColumn {
         }
         assert(!!$this->statistics);
     }
+    /** @return string */
     private function unparse($x) {
         return $this->formula->unparse_html($x, $this->real_format);
     }
+    /** @return string */
     private function unparse_diff($x) {
         return $this->formula->unparse_diff_html($x, $this->real_format);
     }
@@ -127,7 +129,7 @@ class Formula_PaperColumn extends PaperColumn {
                 $this->override_statistics = clone $this->statistics;
             }
             if ($t !== $tt) {
-                $t = '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
+                $t = "<span class=\"fn5\">{$t}</span><span class=\"fx5\">{$tt}</span>";
             }
         }
         $this->statistics->add($v);
@@ -143,6 +145,7 @@ class Formula_PaperColumn extends PaperColumn {
     function has_statistics() {
         return true;
     }
+    /** @return string */
     private function unparse_statistic($statistics, $stat) {
         $x = $statistics->statistic($stat);
         if ($stat === ScoreInfo::MEAN || $stat === ScoreInfo::MEDIAN) {
@@ -150,11 +153,11 @@ class Formula_PaperColumn extends PaperColumn {
         } else if ($stat === ScoreInfo::STDDEV_P || $stat === ScoreInfo::VARIANCE_P) {
             return $this->unparse_diff($x);
         } else if ($stat === ScoreInfo::COUNT && is_int($x)) {
-            return $x;
+            return (string) $x;
         } else if ($this->real_format) {
             return sprintf($this->real_format, $x);
         } else {
-            return is_int($x) ? $x : sprintf("%.2f", $x);
+            return is_int($x) ? (string) $x : sprintf("%.2f", $x);
         }
     }
     function statistic_html(PaperList $pl, $stat) {
@@ -166,7 +169,7 @@ class Formula_PaperColumn extends PaperColumn {
         if ($this->override_statistics) {
             $tt = $this->unparse_statistic($this->override_statistics, $stat);
             if ($t !== $tt) {
-                $t = '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
+                $t = "<span class=\"fn5\">{$t}</span><span class=\"fx5\">{$tt}</span>";
             }
         }
         return $t;

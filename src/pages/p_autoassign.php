@@ -126,7 +126,7 @@ class Autoassign_Page {
     function scoreselector_options() {
         $opt = ["+s01" => "", "-s01" => ""];
         foreach ($this->conf->all_review_fields() as $f) {
-            if ($f->has_options) {
+            if ($f instanceof Score_ReviewField) {
                 $opt["+" . $f->short_id] = "high $f->name_html scores";
                 $opt["-" . $f->short_id] = "low $f->name_html scores";
             }

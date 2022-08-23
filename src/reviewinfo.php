@@ -290,10 +290,10 @@ class ReviewInfo implements JsonSerializable {
             if ($f->main_storage) {
                 $x = $this->{$f->main_storage};
                 if ($x !== null) {
-                    $this->fields[$f->order] = $f->has_options ? (int) $x : $x;
+                    $this->fields[$f->order] = $f->is_sfield ? (int) $x : $x;
                 }
             } else {
-                $xfields = $f->json_storage[0] === "s" ? $sfields : $tfields;
+                $xfields = $f->is_sfield ? $sfields : $tfields;
                 $this->fields[$f->order] = $xfields[$f->json_storage] ?? null;
             }
         }
@@ -532,24 +532,23 @@ class ReviewInfo implements JsonSerializable {
     }
 
 
-    /** @param bool $has_options
+    /** @param bool $is_sfield
      * @return array */
-    function fstorage($has_options) {
-        if ($has_options && $this->_sfields === null) {
+    function fstorage($is_sfield) {
+        if ($is_sfield && $this->_sfields === null) {
             $this->_sfields = json_decode($this->sfields ?? "{}", true) ?? [];
-        } else if (!$has_options && $this->_tfields === null) {
+        } else if (!$is_sfield && $this->_tfields === null) {
             $this->_tfields = json_decode($this->tfields ?? "{}", true) ?? [];
         }
-        return $has_options ? $this->_sfields : $this->_tfields;
+        return $is_sfield ? $this->_sfields : $this->_tfields;
     }
 
 
     /** @return bool */
     function has_nonempty_field(ReviewField $f) {
         return $f->test_exists($this)
-            && ($x = $this->fields[$f->order]) !== null
-            && $x !== ""
-            && (!$f->has_options || $x !== 0);
+            && ($fval = $this->fields[$f->order]) !== null
+            && !$f->value_empty($fval);
     }
 
     /** @param string|ReviewField $field
@@ -564,12 +563,12 @@ class ReviewInfo implements JsonSerializable {
     function finfoval($finfo) {
         if ($finfo->main_storage) {
             $v = $this->{$finfo->main_storage};
-            if ($finfo->has_options && $v !== null) {
+            if ($finfo->is_sfield && $v !== null) {
                 $v = intval($v);
             }
             return $v;
         } else {
-            return ($this->fstorage($finfo->has_options))[$finfo->json_storage] ?? null;
+            return ($this->fstorage($finfo->is_sfield))[$finfo->json_storage] ?? null;
         }
     }
 
@@ -580,8 +579,8 @@ class ReviewInfo implements JsonSerializable {
             $this->{$finfo->main_storage} = $v;
         }
         if ($finfo->json_storage) {
-            $this->fstorage($finfo->has_options);
-            $k = $finfo->has_options ? "_sfields" : "_tfields";
+            $this->fstorage($finfo->is_sfield);
+            $k = $finfo->is_sfield ? "_sfields" : "_tfields";
             if ($v === null) {
                 unset($this->$k[$finfo->json_storage]);
             } else {

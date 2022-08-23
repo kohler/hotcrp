@@ -412,8 +412,8 @@ class Users_Page {
         $revViewScore = $this->viewer->permissive_view_score_bound();
         foreach ($this->conf->all_review_fields() as $f) {
             if ($f->view_score > $revViewScore
-                && $f->has_options
-                && $f->main_storage)
+                && $f->main_storage
+                && $f instanceof Score_ReviewField)
                 $viewable_fields[] = $f;
         }
         if (!empty($viewable_fields)) {

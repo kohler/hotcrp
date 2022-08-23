@@ -13,7 +13,7 @@ class ReviewFieldInfo {
     public $short_id;
     /** @var bool
      * @readonly */
-    public $has_options;
+    public $is_sfield;
     /** @var ?non-empty-string
      * @readonly */
     public $main_storage;
@@ -24,7 +24,7 @@ class ReviewFieldInfo {
     // see also Signature properties in PaperInfo
     /** @var list<?non-empty-string>
      * @readonly */
-    static private $new_score_fields = [
+    static private $new_sfields = [
         "overAllMerit", "reviewerQualification", "novelty", "technicalMerit",
         "interestToCommunity", "longevity", "grammar", "likelyPresentation",
         "suitableForShort", "potential", "fixability"
@@ -32,13 +32,14 @@ class ReviewFieldInfo {
     /** @var array<string,ReviewFieldInfo> */
     static private $field_info_map = [];
 
-    /** @param bool $has_options
+    /** @param string $short_id
+     * @param bool $is_sfield
      * @param ?non-empty-string $main_storage
      * @param ?non-empty-string $json_storage
      * @phan-assert non-empty-string $short_id */
-    function __construct($short_id, $has_options, $main_storage, $json_storage) {
+    function __construct($short_id, $is_sfield, $main_storage, $json_storage) {
         $this->short_id = $short_id;
-        $this->has_options = $has_options;
+        $this->is_sfield = $is_sfield;
         $this->main_storage = $main_storage;
         $this->json_storage = $json_storage;
     }
@@ -51,7 +52,7 @@ class ReviewFieldInfo {
         if (!$m && !array_key_exists($id, self::$field_info_map)) {
             $sv = $conf->sversion;
             if (strlen($id) > 3
-                && ($n = array_search($id, self::$new_score_fields)) !== false) {
+                && ($n = array_search($id, self::$new_sfields)) !== false) {
                 $id = sprintf("s%02d", $n + 1);
             }
             if (strlen($id) === 3
@@ -62,9 +63,9 @@ class ReviewFieldInfo {
                 && $d2 <= 57
                 && ($n = ($d1 - 48) * 10 + $d2 - 48) > 0) {
                 if ($id[0] === "s" && $n < 12) {
-                    $storage = $sv >= 260 ? $id : self::$new_score_fields[$n - 1];
+                    $storage = $sv >= 260 ? $id : self::$new_sfields[$n - 1];
                     $m = new ReviewFieldInfo($id, true, $storage, null);
-                    self::$field_info_map[self::$new_score_fields[$n - 1]] = $m;
+                    self::$field_info_map[self::$new_sfields[$n - 1]] = $m;
                 } else {
                     $m = new ReviewFieldInfo($id, $id[0] === "s", null, $id);
                 }
@@ -78,8 +79,7 @@ class ReviewFieldInfo {
 abstract class ReviewField implements JsonSerializable {
     const VALUE_NONE = 0;
     const VALUE_SC = 1;
-    const VALUE_NATIVE = 2;
-    const VALUE_TRIM = 4;
+    const VALUE_TRIM = 2;
 
     /** @var non-empty-string
      * @readonly */
@@ -91,16 +91,12 @@ abstract class ReviewField implements JsonSerializable {
     public $name;
     /** @var string */
     public $name_html;
-    /** @var string
-     * @readonly */
+    /** @var string */
     public $type;
     /** @var ?string */
     public $description;
     /** @var ?string */
     public $_search_keyword;
-    /** @var bool
-     * @readonly */
-    public $has_options;
     /** @var int */
     public $view_score;
     /** @var ?int */
@@ -121,6 +117,9 @@ abstract class ReviewField implements JsonSerializable {
     /** @var ?non-empty-string
      * @readonly */
     public $json_storage;
+    /** @var bool
+     * @readonly */
+    public $is_sfield;
 
     static private $view_score_map = [
         "secret" => VIEWSCORE_ADMINONLY,
@@ -145,16 +144,16 @@ abstract class ReviewField implements JsonSerializable {
 
     function __construct(Conf $conf, ReviewFieldInfo $finfo) {
         $this->short_id = $finfo->short_id;
-        $this->has_options = $finfo->has_options;
         $this->main_storage = $finfo->main_storage;
         $this->json_storage = $finfo->json_storage;
+        $this->is_sfield = $finfo->is_sfield;
         $this->conf = $conf;
     }
 
     /** @param ReviewFieldInfo $rfi
      * @return ReviewField */
     static function make(Conf $conf, $rfi) {
-        if ($rfi->has_options) {
+        if ($rfi->is_sfield) {
             return new Score_ReviewField($conf, $rfi);
         } else {
             return new Text_ReviewField($conf, $rfi);
@@ -165,7 +164,7 @@ abstract class ReviewField implements JsonSerializable {
     function assign_json($j) {
         $this->name = $j->name ?? "Field name";
         $this->name_html = htmlspecialchars($this->name);
-        $this->type = $j->type ?? ($this->has_options ? "radio" : "text");
+        $this->type = $j->type ?? ($this->is_sfield ? "radio" : "text");
         $this->description = $j->description ?? "";
         $vis = $j->visibility ?? null;
         if ($vis === null /* XXX backward compat */) {
@@ -333,28 +332,13 @@ abstract class ReviewField implements JsonSerializable {
             && (!$this->_exists_search || $this->_exists_search->test($rrow->prow, $rrow));
     }
 
-    /** @param ?int|string $value
+    /** @param ?int|?string $fval
      * @return bool */
-    abstract function value_empty($value);
+    abstract function value_empty($fval);
 
     /** @return bool */
     function include_word_count() {
         return false;
-    }
-
-    /** @return ?string */
-    function typical_score() {
-        return null;
-    }
-
-    /** @return ?array{string,string} */
-    function typical_score_range() {
-        return null;
-    }
-
-    /** @return ?array{string,string} */
-    function full_score_range() {
-        return null;
     }
 
     /** @return string */
@@ -383,26 +367,24 @@ abstract class ReviewField implements JsonSerializable {
         return $this->search_keyword();
     }
 
-    /** @param int|float|string $value
+    /** @param ?int|?float|?string $fval
+     * @return mixed */
+    abstract function value_normalize($fval);
+
+    /** @param int|float|string $fval
      * @param int $flags
      * @param ?string $real_format
      * @return ?string */
-    abstract function unparse_value($value, $flags = 0, $real_format = null);
+    abstract function value_unparse($fval, $flags = 0, $real_format = null);
 
-    /** @param string $text
+    /** @param string $s
      * @return int|string|false */
-    abstract function parse_value($text);
+    abstract function parse_string($s);
 
-    /** @param string $text
+    /** @param string $s
      * @return bool */
-    function parse_is_explicit_empty($text) {
+    function parse_is_explicit_empty($s) {
         return false;
-    }
-
-    /** @param int|string $fval
-     * @return int|string */
-    function normalize_value($fval) {
-        return $fval;
     }
 
     /** @param ?string $id
@@ -547,7 +529,7 @@ class Score_ReviewField extends ReviewField {
     ];
 
     function __construct(Conf $conf, ReviewFieldInfo $finfo) {
-        assert($finfo->has_options);
+        assert($finfo->is_sfield);
         parent::__construct($conf, $finfo);
         $this->type = "radio";
     }
@@ -665,13 +647,8 @@ class Score_ReviewField extends ReviewField {
         return count($this->values);
     }
 
-    /** @param ?int|string $value
-     * @return bool */
-    function value_empty($value) {
-        // see also ReviewInfo::has_nonempty_field
-        return $value === null
-            || $value === ""
-            || (int) $value === 0;
+    function value_empty($fval) {
+        return $fval === null || $fval === "" || $fval === 0;
     }
 
     /** @return ?string */
@@ -679,11 +656,11 @@ class Score_ReviewField extends ReviewField {
         if ($this->_typical_score === null) {
             $n = count($this->values);
             if ($n === 1) {
-                $this->_typical_score = $this->unparse_value(1);
+                $this->_typical_score = $this->value_unparse(1);
             } else if ($this->option_letter) {
-                $this->_typical_score = $this->unparse_value(1 + (int) (($n - 1) / 2));
+                $this->_typical_score = $this->value_unparse(1 + (int) (($n - 1) / 2));
             } else {
-                $this->_typical_score = $this->unparse_value(2);
+                $this->_typical_score = $this->value_unparse(2);
             }
         }
         return $this->_typical_score;
@@ -695,9 +672,9 @@ class Score_ReviewField extends ReviewField {
         if ($n < 2) {
             return null;
         } else if ($this->option_letter) {
-            return [$this->unparse_value($n - ($n > 2 ? 1 : 0)), $this->unparse_value($n - 1 - ($n > 2 ? 1 : 0) - ($n > 3 ? 1 : 0))];
+            return [$this->value_unparse($n - ($n > 2 ? 1 : 0)), $this->value_unparse($n - 1 - ($n > 2 ? 1 : 0) - ($n > 3 ? 1 : 0))];
         } else {
-            return [$this->unparse_value(1 + ($n > 2 ? 1 : 0)), $this->unparse_value(2 + ($n > 2 ? 1 : 0) + ($n > 3 ? 1 : 0))];
+            return [$this->value_unparse(1 + ($n > 2 ? 1 : 0)), $this->value_unparse(2 + ($n > 2 ? 1 : 0) + ($n > 3 ? 1 : 0))];
         }
     }
 
@@ -705,34 +682,34 @@ class Score_ReviewField extends ReviewField {
     function full_score_range() {
         $f = $this->flip ? count($this->values) : 1;
         $l = $this->flip ? 1 : count($this->values);
-        return [$this->unparse_value($f), $this->unparse_value($l)];
+        return [$this->value_unparse($f), $this->value_unparse($l)];
     }
 
     /** @param int $option_letter
-     * @param int|float $value
+     * @param int|float $fval
      * @return string */
-    static function unparse_letter($option_letter, $value) {
-        $ivalue = (int) $value;
+    static function unparse_letter($option_letter, $fval) {
+        $ivalue = (int) $fval;
         $ch = $option_letter - $ivalue;
-        if ($value < $ivalue + 0.25) {
+        if ($fval < $ivalue + 0.25) {
             return chr($ch);
-        } else if ($value < $ivalue + 0.75) {
+        } else if ($fval < $ivalue + 0.75) {
             return chr($ch - 1) . chr($ch);
         } else {
             return chr($ch - 1);
         }
     }
 
-    /** @param int|float $value
+    /** @param int|float $fval
      * @return string */
-    function value_class($value) {
+    function value_class($fval) {
         $info = self::$scheme_info[$this->scheme];
         if (count($this->values) <= 1) {
             $n = $info[1] - 1;
         } else if ($info[0] & 2) {
-            $n = (int) round($value - 1) % $info[1];
+            $n = (int) round($fval - 1) % $info[1];
         } else {
-            $n = (int) round(($value - 1) * ($info[1] - 1) / (count($this->values) - 1));
+            $n = (int) round(($fval - 1) * ($info[1] - 1) / (count($this->values) - 1));
         }
         $sclass = $info[0] & 1 ? $info[2] : $this->scheme;
         if ((($info[0] & 1) !== 0) !== $this->flip) {
@@ -747,43 +724,48 @@ class Score_ReviewField extends ReviewField {
         }
     }
 
-    /** @param int|float|string $value
+    /** @param ?int|?float|?string $fval
+     * @return ?int */
+    function value_normalize($fval) {
+        assert($fval === null || is_int($fval));
+        return $fval !== 0 ? $fval : null;
+    }
+
+    /** @param int|float|string $fval
      * @param int $flags
      * @param ?string $real_format
      * @return ?string */
-    function unparse_value($value, $flags = 0, $real_format = null) {
-        if (!$value) {
+    function value_unparse($fval, $flags = 0, $real_format = null) {
+        if (!$fval) {
             return null;
         }
-        if (!$this->option_letter || is_numeric($value)) {
-            $value = (float) $value;
-        } else if (strlen($value) === 1) {
-            $value = (float) $this->option_letter - ord($value);
-        } else if (ord($value[0]) + 1 === ord($value[1])) {
-            $value = ($this->option_letter - ord($value[0])) - 0.5;
+        if (!$this->option_letter || is_numeric($fval)) {
+            $fval = (float) $fval;
+        } else if (strlen($fval) === 1) {
+            $fval = (float) $this->option_letter - ord($fval);
+        } else if (ord($fval[0]) + 1 === ord($fval[1])) {
+            $fval = ($this->option_letter - ord($fval[0])) - 0.5;
         }
-        if (!is_float($value) || $value <= 0.8) {
+        if (!is_float($fval) || $fval <= 0.8) {
             return null;
         }
         if ($this->option_letter) {
-            $text = self::unparse_letter($this->option_letter, $value);
+            $text = self::unparse_letter($this->option_letter, $fval);
         } else if ($real_format) {
-            $text = sprintf($real_format, $value);
-        } else if (($flags & self::VALUE_NATIVE) === 0) {
-            $text = (string) $value;
+            $text = sprintf($real_format, $fval);
         } else {
-            $text = $value;
+            $text = (string) $fval;
         }
-        if (($flags & self::VALUE_SC) !== 0) {
-            $vc = $this->value_class($value);
+        if ($flags === self::VALUE_SC) {
+            $vc = $this->value_class($fval);
             $text = "<span class=\"{$vc}\">{$text}</span>";
         }
         return $text;
     }
 
-    /** @param int|float $value */
-    function unparse_average($value) {
-        return (string) $this->unparse_value($value, 0, "%.2f");
+    /** @param int|float $fval */
+    function unparse_average($fval) {
+        return (string) $this->value_unparse($fval, 0, "%.2f");
     }
 
     /** @param ScoreInfo $sci
@@ -834,7 +816,7 @@ class Score_ReviewField extends ReviewField {
 
     /** @param string $text
      * @return int|false */
-    function parse_value($text) {
+    function parse_string($text) {
         $text = trim($text);
         if ($text === "") {
             return 0;
@@ -970,7 +952,7 @@ class Text_ReviewField extends ReviewField {
     public $display_space;
 
     function __construct(Conf $conf, ReviewFieldInfo $finfo) {
-        assert(!$finfo->has_options);
+        assert(!$finfo->is_sfield);
         parent::__construct($conf, $finfo);
         $this->type = "text";
     }
@@ -994,11 +976,8 @@ class Text_ReviewField extends ReviewField {
         $rfs->type = "text";
     }
 
-    /** @param ?int|string $value
-     * @return bool */
-    function value_empty($value) {
-        // see also ReviewInfo::has_nonempty_field
-        return $value === null || $value === "";
+    function value_empty($fval) {
+        return $fval === null || $fval === "";
     }
 
     /** @return bool */
@@ -1006,21 +985,24 @@ class Text_ReviewField extends ReviewField {
         return $this->order && $this->view_score >= VIEWSCORE_AUTHORDEC;
     }
 
-    /** @param int|float|string $value
+    function value_normalize($fval) {
+        return $fval;
+    }
+
+    /** @param int|float|string $fval
      * @param int $flags
      * @param ?string $real_format
      * @return ?string */
-    function unparse_value($value, $flags = 0, $real_format = null) {
-        assert(!is_object($value));
-        if ($flags & self::VALUE_TRIM) {
-            $value = rtrim($value ?? "");
+    function value_unparse($fval, $flags = 0, $real_format = null) {
+        if ($flags === self::VALUE_TRIM) {
+            $fval = rtrim($fval ?? "");
         }
-        return $value;
+        return $fval;
     }
 
     /** @param string $text
      * @return int|string|false */
-    function parse_value($text) {
+    function parse_string($text) {
         $text = rtrim($text);
         if ($text !== "") {
             $text .= "\n";

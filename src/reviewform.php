@@ -123,7 +123,7 @@ class ReviewForm implements JsonSerializable {
         $hpos = 0;
         $fs = [];
         foreach ($this->viewable_fields($user) as $f) {
-            if ($f->has_options && $f->search_keyword()) {
+            if ($f instanceof Score_ReviewField && $f->search_keyword()) {
                 if (in_array($f, $hfs)) {
                     array_splice($fs, $hpos, 0, [$f]);
                     ++$hpos;
@@ -196,9 +196,9 @@ class ReviewForm implements JsonSerializable {
         $fi = $this->conf->format_info(null);
         echo '<div class="rve">';
         foreach ($rrow->viewable_fields($contact) as $f) {
-            $fval = $f->normalize_value($f->unparse_value($rrow->fields[$f->order]));
+            $fval = $f->value_unparse($rrow->fields[$f->order]);
             if ($rvalues && isset($rvalues->req[$f->short_id])) {
-                $rval = $f->normalize_value($rvalues->req[$f->short_id]);
+                $rval = $rvalues->req[$f->short_id];
             } else {
                 $rval = $fval;
             }
@@ -233,7 +233,7 @@ class ReviewForm implements JsonSerializable {
     function full_word_count(ReviewInfo $rrow) {
         $wc = null;
         foreach ($this->forder as $f) {
-            if (!$f->has_options && $f->test_exists($rrow)) {
+            if ($f instanceof Text_ReviewField && $f->test_exists($rrow)) {
                 $wc = $wc ?? 0;
                 if (!$f->value_empty($rrow->fields[$f->order])) {
                     $wc += count_words($rrow->fields[$f->order]);
@@ -365,7 +365,7 @@ $blind\n";
                 if ($req && isset($req[$fid])) {
                     $fval = rtrim($req[$fid]);
                 } else if (isset($rrow->fields[$f->order])) {
-                    $fval = $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_TRIM);
+                    $fval = $f->value_unparse($rrow->fields[$f->order], ReviewField::VALUE_TRIM);
                 } else {
                     $fval = "";
                 }
@@ -413,7 +413,7 @@ $blind\n";
         $args = ["flowed" => ($flags & self::UNPARSE_FLOWED) !== 0];
         foreach ($rrow->viewable_fields($contact) as $f) {
             if (isset($rrow->fields[$f->order])) {
-                $fv = $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_TRIM);
+                $fv = $f->value_unparse($rrow->fields[$f->order], ReviewField::VALUE_TRIM);
                 $f->unparse_text_field($t, $fv, $args);
             }
         }
@@ -748,12 +748,8 @@ $blind\n";
         // (field UIDs always are uppercase so can't conflict)
         foreach ($rrow->viewable_fields($viewer) as $f) {
             if ($f->view_score > VIEWSCORE_REVIEWERONLY
-                || !($flags & self::RJ_NO_REVIEWERONLY)) {
-                $fval = $rrow->fields[$f->order];
-                if ($f->has_options) {
-                    $fval = $f->unparse_value((int) $fval, ReviewField::VALUE_NATIVE);
-                }
-                $rj[$f->uid()] = $fval;
+                || ($flags & self::RJ_NO_REVIEWERONLY) === 0) {
+                $rj[$f->uid()] = $f->value_normalize($rrow->fields[$f->order]);
             }
         }
         if (($fmt = $this->conf->default_format)) {
@@ -796,9 +792,10 @@ $blind\n";
             $xbarsep = "";
         }
         foreach ($rrow->viewable_fields($contact) as $f) {
-            if ($f->has_options && !$f->value_empty($rrow->fields[$f->order])) {
+            if ($f instanceof Score_ReviewField
+                && !$f->value_empty($rrow->fields[$f->order])) {
                 $t .= $xbarsep . $f->name_html . "&nbsp;"
-                    . $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_SC);
+                    . $f->value_unparse($rrow->fields[$f->order], ReviewField::VALUE_SC);
                 $xbarsep = $barsep;
             }
         }
@@ -1292,23 +1289,12 @@ class ReviewValues extends MessageSet {
      * @param ReviewInfo $rrow
      * @return array{int|string,int|string} */
     private function fvalues($f, $rrow) {
-        $oldval = isset($rrow->fields[$f->order]) ? $rrow->fields[$f->order] : "";
-        if ($f->has_options) {
-            $oldval = (int) $oldval;
-        }
+        $oldval = $rrow->fields[$f->order] ?? ($f->is_sfield ? 0 : "");
         if (isset($this->req[$f->short_id])) {
-            return [$oldval, $f->parse_value($this->req[$f->short_id])];
+            return [$oldval, $f->parse_string($this->req[$f->short_id])];
         } else {
             return [$oldval, $oldval];
         }
-    }
-
-    /** @return bool */
-    private function fvalue_nonempty(ReviewField $f, $fval) {
-        return $fval !== ""
-            && ($fval !== 0
-                || (isset($this->req[$f->short_id])
-                    && $f->parse_is_explicit_empty($this->req[$f->short_id])));
     }
 
     private function check(ReviewInfo $rrow) {
@@ -1330,7 +1316,7 @@ class ReviewValues extends MessageSet {
             } else {
                 if (!$anydiff
                     && $old_fval !== $fval
-                    && ($f->has_options || cleannl($old_fval) !== cleannl($fval))) {
+                    && (!is_string($old_fval) || cleannl($old_fval) !== cleannl($fval))) {
                     $anydiff = true;
                 }
                 if (!$f->value_empty($fval)
@@ -1492,15 +1478,15 @@ class ReviewValues extends MessageSet {
             if ($fval === false) {
                 $fval = $old_fval;
             }
-            if ($f->has_options) {
+            if (is_string($fval)) {
+                // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
+                $fval = cleannl(convert_to_utf8($fval));
+                $fval_diffs = $fval !== $old_fval && $fval !== cleannl($old_fval);
+            } else {
                 if ($fval === 0 && $rrow->reviewId && $f->required) {
                     $fval = $old_fval;
                 }
                 $fval_diffs = $fval !== $old_fval;
-            } else {
-                // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
-                $fval = cleannl(convert_to_utf8($fval));
-                $fval_diffs = $fval !== $old_fval && $fval !== cleannl($old_fval);
             }
             if ($fval_diffs) {
                 $diffinfo->add_field($f, $fval);
@@ -1511,7 +1497,7 @@ class ReviewValues extends MessageSet {
                     $qv[] = $fval;
                 }
                 if ($f->json_storage) {
-                    $fchanges[$f->has_options ? 0 : 1][] = [$f, $fval];
+                    $fchanges[$f->is_sfield ? 0 : 1][] = [$f, $fval];
                 }
             }
             if ($f->include_word_count()) {
@@ -1742,8 +1728,8 @@ class ReviewValues extends MessageSet {
             }
             $log_fields = [];
             foreach ($diffinfo->fields() as $f) {
-                if ($f->has_options) {
-                    $log_fields[] = $f->search_keyword() . ":" . $f->unparse_value($new_rrow->fields[$f->order]);
+                if ($f instanceof Score_ReviewField) {
+                    $log_fields[] = $f->search_keyword() . ":" . $f->value_unparse($new_rrow->fields[$f->order]);
                 } else {
                     $log_fields[] = $f->search_keyword();
                 }

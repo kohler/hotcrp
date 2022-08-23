@@ -199,10 +199,11 @@ class ReviewCSV_Batch {
         $x["status"] = $rrow->status_description();
         $x["format"] = $prow->conf->default_format;
         foreach ($rrow->viewable_fields($this->user) as $f) {
-            if ($f->has_options ? $this->no_score : $this->no_text) {
+            if (($this->no_score && $f instanceof Score_ReviewField)
+                || ($this->no_text && $f instanceof Text_ReviewField)) {
                 continue;
             }
-            $fv = $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_TRIM);
+            $fv = $f->value_unparse($rrow->fields[$f->order], ReviewField::VALUE_TRIM);
             if ($fv === "") {
                 // ignore
             } else if ($this->narrow) {

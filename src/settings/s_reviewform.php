@@ -314,9 +314,9 @@ class ReviewForm_SettingParser extends SettingParser {
         $clear_jfields = [];
         foreach ($fields as $f) {
             if ($f->main_storage) {
-                if ($f->has_options) {
+                if ($f instanceof Score_ReviewField) {
                     $result = $conf->qe("update PaperReview set {$f->main_storage}=0");
-                } else {
+                } else { // NB dead code, all current fields with main_storage are scores
                     $result = $conf->qe("update PaperReview set {$f->main_storage}=null");
                 }
             }
@@ -336,10 +336,10 @@ class ReviewForm_SettingParser extends SettingParser {
             $tfields = json_decode($rrow->tfields ?? "{}", true) ?? [];
             $update = 0;
             foreach ($clear_jfields as $f) {
-                if ($f->has_options && isset($sfields[$f->json_storage])) {
+                if ($f->is_sfield && isset($sfields[$f->json_storage])) {
                     unset($sfields[$f->json_storage]);
                     $update |= 1;
-                } else if (!$f->has_options && isset($tfields[$f->json_storage])) {
+                } else if (!$f->is_sfield && isset($tfields[$f->json_storage])) {
                     unset($tfields[$f->json_storage]);
                     $update |= 2;
                 }
