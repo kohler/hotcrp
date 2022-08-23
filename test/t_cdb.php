@@ -760,4 +760,53 @@ class Cdb_Tester {
         xassert(!!$u);
         xassert_eqq($u->disablement, 0);
     }
+
+    function test_updatecontactdb_authors() {
+        $paper9 = $this->conf->checked_paper_by_id(9);
+        $aulist = $paper9->author_list();
+        $aulist[] = Author::make_keyed([
+            "name" => "Nonsense Person",
+            "email" => "NONSENSE@_.com"
+        ]);
+        $austr = join("\n", array_map(function ($au) { return $au->unparse_tabbed(); }, $aulist));
+        $this->conf->qe("update Paper set authorInformation=? where paperId=9", $austr);
+
+        $paper10 = $this->conf->checked_paper_by_id(10);
+        $aulist = $paper9->author_list();
+        $aulist[] = Author::make_keyed([
+            "email" => "nonsense@_.com",
+            "affiliation" => "Nonsense University"
+        ]);
+        $austr = join("\n", array_map(function ($au) { return $au->unparse_tabbed(); }, $aulist));
+        $this->conf->qe("update Paper set authorInformation=? where paperId=10", $austr);
+
+        $u = $this->conf->fresh_user_by_email("nonsense@_.com");
+        xassert(!$u);
+        $u = $this->conf->fresh_cdb_user_by_email("nonsense@_.com");
+        xassert(!$u);
+
+        $ucdb = new UpdateContactdb_Batch($this->conf, ["authors" => false]);
+        $ucdb->run_authors();
+
+        $u = $this->conf->fresh_user_by_email("nonsense@_.com");
+        xassert(!!$u);
+        xassert_eqq($u->disablement, Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($u->email, "NONSENSE@_.com");
+        xassert_eqq($u->firstName, "Nonsense");
+        xassert_eqq($u->lastName, "Person");
+        xassert_eqq($u->affiliation, "Nonsense University");
+        $paper9 = $this->conf->checked_paper_by_id(9);
+        xassert($paper9->has_author($u));
+        $paper10 = $this->conf->checked_paper_by_id(10);
+        xassert($paper10->has_author($u));
+
+        $u = $this->conf->fresh_cdb_user_by_email("nonsense@_.com");
+        xassert(!!$u);
+        xassert_eqq($u->disablement, Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($u->email, "NONSENSE@_.com");
+        xassert_eqq($u->firstName, "Nonsense");
+        xassert_eqq($u->lastName, "Person");
+        xassert_eqq($u->affiliation, "Nonsense University");
+        xassert_eqq($u->disablement, Contact::DISABLEMENT_PLACEHOLDER);
+    }
 }

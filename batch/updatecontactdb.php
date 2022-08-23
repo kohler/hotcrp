@@ -34,6 +34,36 @@ class UpdateContactdb_Batch {
         }
     }
 
+    /** @return ?\mysqli */
+    private function try_cdb() {
+        $cdb = $this->conf->contactdb();
+        if (!$cdb) {
+            return null;
+        }
+        $result = Dbl::ql($cdb, "select * from Conferences where `dbname`=?", $this->conf->dbname);
+        $this->confrow = Dbl::fetch_first_object($result);
+        if (!$this->confrow) {
+            throw new RuntimeException("Conference is not recorded in contactdb");
+        }
+        $this->cdb_confid = $this->confrow->confid = (int) $this->confrow->confid;
+        if ($this->confrow->shortName !== $this->conf->short_name
+            || $this->confrow->longName !== $this->conf->long_name) {
+            Dbl::ql($cdb, "update Conferences set shortName=?, longName=? where confid=?",
+                $this->conf->short_name ? : $this->confrow->shortName,
+                $this->conf->long_name ? : $this->confrow->longName, $this->cdb_confid);
+        }
+        return $cdb;
+    }
+
+    /** @return \mysqli */
+    private function cdb() {
+        $cdb = $this->try_cdb();
+        if (!$cdb) {
+            throw new RuntimeException("Conference has no contactdb");
+        }
+        return $cdb;
+    }
+
     /** @param \mysqli $cdb */
     private function run_users($cdb) {
         // read current cdb roles
@@ -100,7 +130,7 @@ class UpdateContactdb_Batch {
         Dbl::free($result);
     }
 
-    private function run_authors() {
+    function run_authors() {
         $authors = $papers = [];
         $prows = $this->conf->paper_set(["minimal" => true, "authorInformation" => true]);
         foreach ($prows as $prow) {
@@ -120,20 +150,25 @@ class UpdateContactdb_Batch {
         $emails = array_keys($authors);
         $pemails = $this->conf->resolve_primary_emails($emails);
         $this->conf->prefetch_users_by_email($pemails);
+        $this->conf->prefetch_cdb_users_by_email($pemails);
+        $cdb = $this->conf->contactdb();
 
         $n = count($emails);
         for ($i = 0; $i !== $n; ++$i) {
             $au = $authors[$emails[$i]];
             if (!$this->conf->user_by_email($pemails[$i])) {
-                $au->email = $pemails[$i];
-                Contact::make_keyed($this->conf, [
-                    "email" => $pemails[$i],
+                if (strcasecmp($au->email, $pemails[$i]) !== 0) {
+                    // try to preserve case of original email
+                    $au->email = $pemails[$i];
+                }
+                $u = Contact::make_keyed($this->conf, [
+                    "email" => $au->email,
                     "firstName" => $au->firstName,
                     "lastName" => $au->lastName,
                     "affiliation" => $au->affiliation,
                     "disablement" => Contact::DISABLEMENT_PLACEHOLDER
                 ])->store();
-                error_log($au->email);
+                $u->update_cdb();
             }
         }
     }
@@ -159,27 +194,6 @@ class UpdateContactdb_Batch {
         if ($this->confrow->last_submission_at != $max_submitted) {
             Dbl::ql($cdb, "update Conferences set last_submission_at=greatest(coalesce(last_submission_at,0), ?) where confid=?", $max_submitted, $this->cdb_confid);
         }
-    }
-
-    /** @return \mysqli */
-    private function cdb() {
-        $cdb = $this->conf->contactdb();
-        if (!$cdb) {
-            throw new RuntimeException("Conference has no contactdb");
-        }
-        $result = Dbl::ql($cdb, "select * from Conferences where `dbname`=?", $this->conf->dbname);
-        $this->confrow = Dbl::fetch_first_object($result);
-        if (!$this->confrow) {
-            throw new RuntimeException("Conference is not recorded in contactdb");
-        }
-        $this->cdb_confid = $this->confrow->confid = (int) $this->confrow->confid;
-        if ($this->confrow->shortName !== $this->conf->short_name
-            || $this->confrow->longName !== $this->conf->long_name) {
-            Dbl::ql($cdb, "update Conferences set shortName=?, longName=? where confid=?",
-                $this->conf->short_name ? : $this->confrow->shortName,
-                $this->conf->long_name ? : $this->confrow->longName, $this->cdb_confid);
-        }
-        return $cdb;
     }
 
     /** @return int */
