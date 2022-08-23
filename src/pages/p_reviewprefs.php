@@ -177,8 +177,8 @@ class ReviewPrefs_Page {
             $correct_reviewer = false;
             $conf->ensure_cached_user_collaborators();
             $u = ctype_digit($qreq->reviewer)
-                ? $conf->cached_user_by_id(intval($qreq->reviewer))
-                : $conf->cached_user_by_email($qreq->reviewer);
+                ? $conf->user_by_id(intval($qreq->reviewer))
+                : $conf->user_by_email($qreq->reviewer);
             if ($u && ($u->roles & Contact::ROLE_PC) !== 0) {
                 $reviewer = $u;
                 $correct_reviewer = true;

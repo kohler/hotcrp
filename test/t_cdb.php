@@ -410,7 +410,7 @@ class Cdb_Tester {
         xassert(!$u->is_disabled());
 
         // ensure_account_here
-        $u = $this->conf->user_by_email("betty5@_.com");
+        $u = $this->conf->fresh_user_by_email("betty5@_.com");
         xassert(!$u);
         $u = $this->conf->cdb_user_by_email("betty5@_.com");
         xassert(!$u->is_disabled());
@@ -442,7 +442,7 @@ class Cdb_Tester {
         $u = $this->conf->checked_user_by_email("betty6@_.com");
         xassert(!!$u);
         xassert(!$u->cdb_user());
-        $u->contactdb_update();
+        $u->update_cdb();
         $v = $u->cdb_user();
         xassert(!!$v);
         xassert_eqq($v->firstName, "Betty");
@@ -451,7 +451,7 @@ class Cdb_Tester {
 
     function test_email_authored_papers() {
         // Cengiz is in localdb and cdb as placeholder
-        $u = $this->conf->user_by_email("cengiz@isi.edu");
+        $u = $this->conf->fresh_user_by_email("cengiz@isi.edu");
         xassert(!!$u);
         xassert_eqq($u->firstName, "Cengiz");
         xassert_eqq($u->lastName, "Alaettinoğlu");
@@ -498,7 +498,7 @@ class Cdb_Tester {
     function test_claim_review() {
         // Sophia is in cdb, not local db
         Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set email='sophia@dros.nl', password='', firstName='Sophia', lastName='Dros'");
-        $user_sophia = $this->conf->user_by_email("sophia@dros.nl");
+        $user_sophia = $this->conf->fresh_user_by_email("sophia@dros.nl");
         xassert(!$user_sophia);
         $user_sophia = $this->conf->cdb_user_by_email("sophia@dros.nl");
         xassert(!!$user_sophia);
@@ -537,11 +537,11 @@ class Cdb_Tester {
 
     function test_cdb_roles_1() {
         // saving PC role works
-        $acct = $this->conf->user_by_email("jmrv@startup.com");
+        $acct = $this->conf->fresh_user_by_email("jmrv@startup.com");
         xassert(!$acct);
         $acct = $this->us1->save_user((object) ["email" => "jmrv@startup.com", "lastName" => "Rutherford", "firstName" => "John", "roles" => "pc"]);
         xassert(!!$acct);
-        $acct = $this->conf->user_by_email("jmrv@startup.com");
+        $acct = $this->conf->fresh_user_by_email("jmrv@startup.com");
         xassert(($acct->roles & Contact::ROLE_PCLIKE) === Contact::ROLE_PC);
         $acct = $this->conf->fresh_cdb_user_by_email("jmrv@startup.com");
         xassert_eqq($acct->roles, Contact::ROLE_PC);
@@ -549,7 +549,7 @@ class Cdb_Tester {
 
     function test_cdb_roles_2() {
         // authorship is encoded in placeholder
-        $acct = $this->conf->user_by_email("pavlin@isi.edu");
+        $acct = $this->conf->fresh_user_by_email("pavlin@isi.edu");
         xassert_eqq($acct->disablement, Contact::DISABLEMENT_PLACEHOLDER);
         xassert($acct->is_author());
         xassert_eqq($acct->cdb_roles(), Contact::ROLE_AUTHOR);
@@ -567,7 +567,7 @@ class Cdb_Tester {
     function test_cdb_roles_3() {
         // saving a user with a role does both role and authorship
         $email = "lam@cs.utexas.edu";
-        $acct = $this->conf->user_by_email($email);
+        $acct = $this->conf->fresh_user_by_email($email);
         xassert_eqq($acct->disablement, Contact::DISABLEMENT_PLACEHOLDER);
 
         $acct = $this->us1->save_user((object) ["email" => $email, "roles" => "sysadmin"]);

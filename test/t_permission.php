@@ -820,10 +820,10 @@ class Permission_Tester {
     }
 
     function test_assign_external_review() {
-        xassert(!$this->conf->user_by_email("newexternal@_.com"));
+        xassert(!$this->conf->fresh_user_by_email("newexternal@_.com"));
         assert_search_papers($this->u_chair, "re:newexternal@_.com", "");
         xassert_assign($this->u_chair, "action,paper,email\nreview,3,newexternal@_.com");
-        xassert($this->conf->user_by_email("newexternal@_.com"));
+        xassert(!!$this->conf->fresh_user_by_email("newexternal@_.com"));
         assert_search_papers($this->u_chair, "re:newexternal@_.com", "3");
 
         assert_search_papers($this->u_chair, "re:external@_.com", "2");

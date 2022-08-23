@@ -43,7 +43,7 @@ class FixDelegation_Batch {
         while (($row = $result->fetch_object())) {
             if ($row->contactId == $req_cid
                 && preg_match('/\ALogged proposal for (\S+) to review/', $row->action, $m)
-                && ($xuser = $this->conf->cached_user_by_email($m[1]))) {
+                && ($xuser = $this->conf->user_by_email($m[1]))) {
                 $proposals[$xuser->contactId] = true;
             } else if (preg_match('/\AAdded External review by (\S+)/', $row->action, $m)
                        && ($pc = $this->conf->pc_member_by_email($m[1]))

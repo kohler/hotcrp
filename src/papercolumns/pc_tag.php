@@ -110,7 +110,7 @@ class Tag_PaperColumn extends PaperColumn {
             $cid = (int) substr($this->dtag, 0, $twiddle);
             if ($cid == $pl->user->contactId) {
                 return "#" . substr($this->dtag, $twiddle);
-            } else if (($p = $pl->conf->cached_user_by_id($cid))) {
+            } else if (($p = $pl->conf->user_by_id($cid))) {
                 if ($is_text) {
                     return $pl->user->reviewer_text_for($p) . " #" . substr($this->dtag, $twiddle);
                 } else {

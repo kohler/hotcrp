@@ -71,7 +71,7 @@ class UpdateContactdb_Batch {
             } else if ($cdbu && $cdbu->password !== null) {
                 $qv[] = [$cdbid, $this->cdb_confid, $cdb_roles, $u->activity_at ?? 0];
             } else {
-                $cdbid = $u->contactdb_update();
+                $cdbid = $u->update_cdb();
             }
             if ($cdbid) {
                 $cdbids[] = $cdbid;
@@ -124,7 +124,7 @@ class UpdateContactdb_Batch {
         $n = count($emails);
         for ($i = 0; $i !== $n; ++$i) {
             $au = $authors[$emails[$i]];
-            if (!$this->conf->cached_user_by_email($pemails[$i])) {
+            if (!$this->conf->user_by_email($pemails[$i])) {
                 $au->email = $pemails[$i];
                 Contact::make_keyed($this->conf, [
                     "email" => $pemails[$i],

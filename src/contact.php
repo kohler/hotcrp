@@ -712,7 +712,7 @@ class Contact {
         if ($this->conf->opt("contactdbDsn")
             && $this->has_account_here()
             && $this->cdbRoles !== $this->cdb_roles()) {
-            $this->contactdb_update();
+            $this->update_cdb();
         }
 
         // check forceShow
@@ -845,7 +845,7 @@ class Contact {
     }
 
     /** @return int|false */
-    function contactdb_update() {
+    function update_cdb() {
         if (!$this->conf->contactdb()
             || !$this->has_account_here()
             || !validate_email($this->email)) {
@@ -880,6 +880,12 @@ class Contact {
         } else {
             return false;
         }
+    }
+
+    /** @return int|false
+     * @deprecated */
+    function contactdb_update() {
+        return $this->update_cdb();
     }
 
 
@@ -1063,7 +1069,7 @@ class Contact {
 
         if (!is_object($x) || !isset($x->firstName)) {
             if ($pfx === "u") {
-                $x = $this->conf->cached_user_by_id($cid);
+                $x = $this->conf->user_by_id($cid);
             } else {
                 $x = $this->name_for("u", $cid);
             }
@@ -1119,8 +1125,8 @@ class Contact {
     function ksort_cid_array(&$array) {
         $this->conf->prefetch_users_by_id(array_keys($array));
         uksort($array, function ($a, $b) {
-            $au = $this->conf->cached_user_by_id($a);
-            $bu = $this->conf->cached_user_by_id($b);
+            $au = $this->conf->user_by_id($a);
+            $bu = $this->conf->user_by_id($b);
             if ($au && $au->pc_index !== null && $bu && $bu->pc_index !== null) {
                 return $au->pc_index <=> $bu->pc_index;
             } else if ($au && $bu) {
@@ -1433,7 +1439,7 @@ class Contact {
     function reviewer_capability_user($pid) {
         if ($this->_capabilities !== null
             && ($rcid = $this->_capabilities["@ra{$pid}"] ?? null)) {
-            return $this->conf->cached_user_by_id($rcid);
+            return $this->conf->user_by_id($rcid);
         } else {
             return null;
         }
@@ -1542,7 +1548,7 @@ class Contact {
             $this->passwordUseTime = $cdbu->passwordUseTime;
         }
         $this->email = $email;
-        $this->contactdb_update();
+        $this->update_cdb();
 
         if ($this->roles & Contact::ROLE_PCLIKE) {
             $this->conf->invalidate_caches(["pc" => true]);
@@ -1900,7 +1906,7 @@ class Contact {
         $valid_email = validate_email($this->email);
 
         // look up existing accounts
-        $u = $this->conf->user_by_email($this->email);
+        $u = $this->conf->fresh_user_by_email($this->email);
         $cdb = $valid_email ? $this->conf->contactdb() : null;
         if ($cdb) {
             $cdbu = $this->conf->cdb_user_by_email($this->email)
@@ -1970,7 +1976,7 @@ class Contact {
             $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, "Account created" . $type);
         } else {
             // maybe failed because concurrent create (unlikely)
-            $u = $this->conf->user_by_email($this->email);
+            $u = $this->conf->fresh_user_by_email($this->email);
             $this->unslice_using($u, true);
         }
 
@@ -2171,7 +2177,7 @@ class Contact {
 
         // create cdb user
         if (!$cdbu && $this->conf->contactdb()) {
-            $this->contactdb_update();
+            $this->update_cdb();
             $cdbu = $this->cdb_user();
         }
 

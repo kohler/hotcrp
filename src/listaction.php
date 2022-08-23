@@ -142,7 +142,6 @@ class ListAction {
     static function pcassignments_csv_data(Contact $user, $pids) {
         require_once("assignmentset.php");
         $pcm = $user->conf->pc_members();
-        $token_users = [];
 
         $round_list = $user->conf->round_list();
         $any_round = $any_token = false;
@@ -159,10 +158,7 @@ class ListAction {
                 foreach ($prow->reviews_as_display() as $rrow) {
                     $cid = $rrow->contactId;
                     if ($rrow->reviewToken) {
-                        if (!array_key_exists($cid, $token_users)) {
-                            $token_users[$cid] = $user->conf->user_by_id($cid);
-                        }
-                        $u = $token_users[$cid];
+                        $u = $user->conf->user_by_id($cid);
                     } else if ($rrow->reviewType >= REVIEW_PC) {
                         $u = $pcm[$cid] ?? null;
                     } else {

@@ -420,7 +420,7 @@ class HotCRPMailer extends Mailer {
     function kw_paperpc($args, $isbool, $uf) {
         $k = $uf->pctype . "ContactId";
         $cid = $this->row->$k;
-        if ($cid > 0 && ($u = $this->conf->cached_user_by_id($cid))) {
+        if ($cid > 0 && ($u = $this->conf->user_by_id($cid))) {
             return $this->expand_user($u, $uf->userx);
         } else if ($isbool)  {
             return false;

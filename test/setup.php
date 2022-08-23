@@ -735,7 +735,7 @@ function user($email) {
 
 /** @return ?Contact */
 function maybe_user($email) {
-    return Conf::$main->user_by_email($email);
+    return Conf::$main->fresh_user_by_email($email);
 }
 
 /** @param string $email

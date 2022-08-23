@@ -132,7 +132,7 @@ class ReviewTimes {
         foreach ($this->r as $cid => $x) {
             if ($cid !== "conflicts") {
                 $users[$cid] = $u = (object) [];
-                if (($p = $this->conf->cached_user_by_id((int) $cid))) {
+                if (($p = $this->conf->user_by_id((int) $cid))) {
                     $u->name = $p->name(NAME_P);
                     $u->email = $p->email;
                 }

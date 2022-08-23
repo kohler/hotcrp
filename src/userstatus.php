@@ -464,7 +464,7 @@ class UserStatus extends MessageSet {
             && $old_user
             && ($cj->email ?? false)
             && strtolower($old_user->email) !== strtolower($cj->email)
-            && $this->conf->user_by_email($cj->email)) {
+            && $this->conf->fresh_user_by_email($cj->email)) {
             $this->error_at("email", "<0>Email address ‘{$cj->email}’ already in use");
             $this->msg_at("email", "<5>You may want to <a href=\"" . $this->conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.", MessageSet::INFORM);
         }
@@ -816,7 +816,7 @@ class UserStatus extends MessageSet {
         // obtain old users in this conference and contactdb
         // - load by id if only id is set
         if (!$old_user && isset($cj->id) && is_int($cj->id)) {
-            $old_user = $this->conf->user_by_id($cj->id);
+            $old_user = $this->conf->fresh_user_by_id($cj->id);
         }
 
         // - obtain email
@@ -832,7 +832,7 @@ class UserStatus extends MessageSet {
         if ($old_user && $old_user->contactDbId > 0) {
             $old_cdb_user = $old_user;
         } else if ($old_email) {
-            $old_cdb_user = $this->conf->cdb_user_by_email($old_email);
+            $old_cdb_user = $this->conf->fresh_cdb_user_by_email($old_email);
         } else {
             $old_cdb_user = null;
         }
@@ -840,7 +840,7 @@ class UserStatus extends MessageSet {
         // - load old_user; reset if old_user was in contactdb
         if (!$old_user || !$old_user->has_account_here()) {
             if ($old_email) {
-                $old_user = $this->conf->user_by_email($old_email);
+                $old_user = $this->conf->fresh_user_by_email($old_email);
             } else {
                 $old_user = null;
             }
@@ -932,7 +932,7 @@ class UserStatus extends MessageSet {
         }
         if ($roles !== $old_roles
             || ($user->disablement !== 0) !== ($old_disablement !== 0)) {
-            $user->contactdb_update();
+            $user->update_cdb();
         }
 
         // Main properties

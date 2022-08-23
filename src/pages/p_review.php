@@ -276,7 +276,7 @@ class Review_Page {
     /** @return ?int */
     function current_capability_rrid() {
         if (($capuid = $this->user->capability("@ra{$this->prow->paperId}"))) {
-            $u = $this->conf->cached_user_by_id($capuid);
+            $u = $this->conf->user_by_id($capuid);
             $rrow = $this->prow->review_by_user($capuid);
             $refs = $u ? $this->prow->review_refusals_by_user($u) : [];
             if ($rrow && (!$this->rrow || $this->rrow === $rrow)) {
@@ -328,7 +328,7 @@ class Review_Page {
     }
 
     function print_capability_user_message($capuid) {
-        if (($u = $this->conf->cached_user_by_id($capuid))) {
+        if (($u = $this->conf->user_by_id($capuid))) {
             if (PaperRequest::simple_qreq($this->qreq)
                 && ($i = $this->user->session_user_index($u->email)) >= 0) {
                 $selfurl = $this->conf->selfurl($this->qreq, null, Conf::HOTURL_SITEREL | Conf::HOTURL_RAW);

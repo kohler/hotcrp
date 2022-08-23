@@ -347,7 +347,7 @@ function initialize_request($kwarg = null) {
     }
 
     // look up and activate user
-    $muser = $trueemail ? $conf->user_by_email($trueemail) : null;
+    $muser = $trueemail ? $conf->fresh_user_by_email($trueemail) : null;
     if (!$muser) {
         $muser = Contact::make_email($conf, $trueemail);
     }

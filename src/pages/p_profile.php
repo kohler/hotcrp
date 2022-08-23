@@ -163,7 +163,7 @@ class Profile_Page {
             if ($acct && $acct->data("locked")) {
                 $ustatus->error_at("email", "<0>This account is locked, so you can’t change its email address");
                 return null;
-            } else if (($new_acct = $this->conf->user_by_email($ustatus->jval->email))) {
+            } else if (($new_acct = $this->conf->fresh_user_by_email($ustatus->jval->email))) {
                 if (!$acct) {
                     $ustatus->jval->id = $new_acct->contactId;
                 } else {

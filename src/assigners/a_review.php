@@ -388,6 +388,10 @@ class Review_Assigner extends Assigner {
         if (($extra["token"] ?? false) && $reviewId) {
             $this->token = $aset->conf->fetch_ivalue("select reviewToken from PaperReview where paperId=? and reviewId=?", $this->pid, $reviewId);
         }
+        if ($this->notify) {
+            // ensure notification email gets a relatively fresh user
+            $aset->conf->invalidate_user_by_id($this->cid);
+        }
     }
     function cleanup(AssignmentSet $aset) {
         if ($this->notify) {

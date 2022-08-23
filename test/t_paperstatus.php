@@ -786,14 +786,14 @@ Phil Porras.");
 
     function test_save_contacts_creates_user() {
         $ps = new PaperStatus($this->conf, $this->u_estrin);
-        xassert(!$this->conf->user_by_email("festrin@fusc.fedu"));
+        xassert(!$this->conf->fresh_user_by_email("festrin@fusc.fedu"));
         $ps->save_paper_json((object) [
             "id" => $this->pid2, "contacts" => ["estrin@usc.edu", (object) ["email" => "festrin@fusc.fedu", "name" => "Feborah Festrin"]]
         ]);
         xassert(!$ps->has_problem());
         xassert_array_eqq($ps->change_keys(), ["contacts"], true);
 
-        $new_user = $this->conf->user_by_email("festrin@fusc.fedu");
+        $new_user = $this->conf->fresh_user_by_email("festrin@fusc.fedu");
         xassert(!!$new_user);
         xassert_eqq($new_user->firstName, "Feborah");
         xassert_eqq($new_user->lastName, "Festrin");
@@ -805,12 +805,12 @@ Phil Porras.");
     function test_save_contacts_creates_user_2() {
         $ps = new PaperStatus($this->conf, $this->u_estrin);
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
-        xassert(!$this->conf->user_by_email("gestrin@gusc.gedu"));
+        xassert(!$this->conf->fresh_user_by_email("gestrin@gusc.gedu"));
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu", "contacts:active_1" => 1, "contacts:email_2" => "festrin@fusc.fedu", "contacts:email_3" => "gestrin@gusc.gedu", "contacts:name_3" => "Geborah Gestrin", "contacts:active_3" => 1]), $nprow1, "update");
         xassert(!$ps->has_problem());
         xassert_array_eqq($ps->change_keys(), ["contacts"], true);
 
-        $new_user2 = $this->conf->user_by_email("gestrin@gusc.gedu");
+        $new_user2 = $this->conf->fresh_user_by_email("gestrin@gusc.gedu");
         xassert(!!$new_user2);
         $this->gestrin_cid = $new_user2->contactId;
         xassert_eqq($new_user2->firstName, "Geborah");
