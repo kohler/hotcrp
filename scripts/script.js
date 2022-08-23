@@ -1451,7 +1451,7 @@ function append_feedback_near(elt, mi) {
 
 
 // ui
-var handle_ui = (function ($) {
+var handle_ui = (function () {
 var callbacks = {}, handling = {}, stopped = 0, nest = 0;
 function collect_callbacks(cbs, c, evt_type) {
     var j, k;
@@ -1553,7 +1553,7 @@ handle_ui.stopPropagation = function (evt) {
         evt.stopPropagation();
     }
 };
-handle_ui.stopImmediatePropagation = function (evt, immediate) {
+handle_ui.stopImmediatePropagation = function (evt) {
     if (evt === handling || evt === handling.originalEvent) {
         handling.stopImmediatePropagation();
         stopped = 2;
@@ -1562,7 +1562,7 @@ handle_ui.stopImmediatePropagation = function (evt, immediate) {
     }
 };
 return handle_ui;
-})($);
+})();
 $(document).on("click", ".ui, .uic", handle_ui);
 $(document).on("change", ".uich", handle_ui);
 $(document).on("keydown", ".uikd", handle_ui);
@@ -2627,8 +2627,8 @@ function override_deadlines(callback) {
 }
 handle_ui.on("js-override-deadlines", override_deadlines);
 
-handle_ui.on("js-confirm-override-conflict", function (evt) {
-    var self = this, hc = popup_skeleton({near: this}), $d;
+handle_ui.on("js-confirm-override-conflict", function () {
+    var self = this, hc = popup_skeleton({near: this});
     hc.push('<p>Are you sure you want to override your conflict?</p>');
     hc.push_actions([
         '<button type="button" name="bsubmit" class="btn-primary">Override conflict</button>',
@@ -3723,7 +3723,7 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
         e = document.getElementById("tla-" + hash) || document.getElementById(hash);
         if (!e
             // check for trailing punctuation
-            && (m = hash.match(/^([-_a-zA-Z0-9\/]+)[\p{Pd}\p{Pe}\p{Pf}\p{Po}]$/u))
+            && (m = hash.match(/^([-_a-zA-Z0-9/]+)[\p{Pd}\p{Pe}\p{Pf}\p{Po}]$/u))
             && (e = document.getElementById("tla-" + m[1]) || document.getElementById(m[1]))) {
             hash = m[1];
             location.hash = "#" + hash;
@@ -7643,7 +7643,7 @@ handle_ui.on("js-annotate-order", function () {
         evt.preventDefault();
         handle_ui.stopPropagation(evt);
     }
-    function ondeleteclick() {
+    function ondeleteclick(evt) {
         var $div = $(this).closest(".form-g"), annoid = $div.attr("data-anno-id");
         $div.find("input[name='tagval_" + annoid + "']").after("[deleted]").remove();
         $div.append(hidden_input("deleted_" + annoid, "1"));

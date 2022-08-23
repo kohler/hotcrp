@@ -384,7 +384,7 @@ handle_ui.on("js-settings-review-round-delete", function () {
 
 
 var review_form_settings = (function () {
-var fieldorder = [], original, samples,
+var fieldorder = [], samples,
     colors = ["sv", "Red to green", "svr", "Green to red",
               "bupu", "Blue to purple", "pubu", "Purple to blue",
               "rdpk", "Red to pink", "pkrd", "Pink to red",
@@ -608,9 +608,8 @@ function rf_append(fld) {
         throw new Error("rf_append error on " + fld.id + " " + (document.getElementById("rf/" + pos + "/id") ? "1 " : "0 ") + fieldorder.join(","));
     }
     fieldorder.push(fld.id);
-    var has_options = fld.id.charAt(0) === "s";
     $f = $($("#rf_template").html().replace(/\$/g, pos));
-    if (has_options) {
+    if (fld.type === "radio") {
         $j = $f.find("select.rf-scheme");
         for (i = 0; i < colors.length; i += 2)
             $j.append("<option value=\"" + colors[i] + "\">" + colors[i+1] + "</option>");
@@ -638,7 +637,6 @@ function rf_add(fld) {
 
 function rfs(data) {
     var i, fld, mi, pfx, e, m, entryi;
-    original = {};
     samples = data.samples;
 
     // construct form for original fields
