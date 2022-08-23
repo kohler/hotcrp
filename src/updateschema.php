@@ -734,8 +734,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
                 if (str_starts_with($sv, "sv-")) {
                     $sv = substr($sv, 3);
                 }
+                if ($sv === "blpu" || $sv === "publ") {
+                    $sv = $sv[0] === "b" ? "bupu" : "pubu";
+                }
                 if (isset($fj->option_letter)) {
-                    $svs = ["sv", "svr", "blpu", "publ", "viridis", "viridisr"];
+                    $svs = ["sv", "svr", "bupu", "pubu", "viridis", "viridisr"];
                     if (($i = array_search($sv, $svs)) !== false) {
                         $sv = $svs[$i ^ 1];
                     } else {

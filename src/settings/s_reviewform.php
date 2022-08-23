@@ -577,6 +577,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             Ht::button(Icons::ui_use("trash"), ["class" => "btn-licon ui js-settings-rf-delete need-tooltip", "aria-label" => "Delete"]),
             Ht::hidden("rf/\$/order", "0", ["id" => "rf/\$/order", "class" => "is-order"]),
             Ht::hidden("rf/\$/id", "", ["id" => "rf/\$/id", "class" => "rf-id"]),
+            Ht::hidden("rf/\$/type", "", ["id" => "rf/\$/type", "class" => "rf-id ignore-diff"]),
             "</div></div>";
     }
 
@@ -637,8 +638,6 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         }
         $sj["req"] = $req;
 
-        $sj["stemplate"] = ReviewField::make_template($sv->conf, true)->unparse_json(ReviewField::UJ_TEMPLATE);
-        $sj["ttemplate"] = ReviewField::make_template($sv->conf, false)->unparse_json(ReviewField::UJ_TEMPLATE);
         Ht::stash_script("hotcrp.settings.review_form(" . json_encode_browser($sj) . ")");
     }
 }

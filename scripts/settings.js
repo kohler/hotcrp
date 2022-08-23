@@ -384,30 +384,30 @@ handle_ui.on("js-settings-review-round-delete", function () {
 
 
 var review_form_settings = (function () {
-var fieldorder = [], original, samples, stemplate, ttemplate,
+var fieldorder = [], original, samples,
     colors = ["sv", "Red to green", "svr", "Green to red",
-              "blpu", "Blue to purple", "publ", "Purple to blue",
+              "bupu", "Blue to purple", "pubu", "Purple to blue",
               "rdpk", "Red to pink", "pkrd", "Pink to red",
               "viridisr", "Yellow to purple", "viridis", "Purple to yellow",
               "orbu", "Orange to blue", "buor", "Blue to orange",
               "turbo", "Turbo", "turbor", "Turbo reversed",
               "catx", "Category10", "none", "None"];
 
-function unparse_value(fieldj, idx) {
-    if (fieldj.start && fieldj.start !== 1) {
-        var cc = fieldj.start.charCodeAt(0);
-        return String.fromCharCode(cc + fieldj.values.length - idx);
+function unparse_value(fld, idx) {
+    if (fld.start && fld.start !== 1) {
+        var cc = fld.start.charCodeAt(0);
+        return String.fromCharCode(cc + fld.values.length - idx);
     } else
         return idx.toString();
 }
 
-function values_to_text(fieldj) {
+function values_to_text(fld) {
     var i, t = [];
-    if (!fieldj.values)
+    if (!fld.values)
         return "";
-    for (i = 0; i !== fieldj.values.length; ++i)
-        t.push(unparse_value(fieldj, i + 1) + ". " + fieldj.values[i]);
-    if (fieldj.start && fieldj.start !== 1)
+    for (i = 0; i !== fld.values.length; ++i)
+        t.push(unparse_value(fld, i + 1) + ". " + fld.values[i]);
+    if (fld.start && fld.start !== 1)
         t.reverse();
     if (t.length)
         t.push(""); // get a trailing newline
@@ -452,23 +452,22 @@ function rf_color() {
 
 handle_ui.on("change.rf-scheme", rf_color);
 
-function rf_fill(pos, fieldj, setdefault) {
+function rf_fill(pos, fld, setdefault) {
     var form = document.getElementById("settingsform"),
-        rfid = "rf/" + pos,
-        fid = form.elements[rfid + "/id"].value;
-    fieldj = fieldj || original[fid] || {};
-    rf_fill_control(form, rfid + "/name", fieldj.name || "", setdefault);
-    rf_fill_control(form, rfid + "/description", fieldj.description || "", setdefault);
-    rf_fill_control(form, rfid + "/visibility", fieldj.visibility || "re", setdefault);
-    rf_fill_control(form, rfid + "/values_text", values_to_text(fieldj), setdefault);
-    rf_fill_control(form, rfid + "/required", fieldj.required ? "1" : "0", setdefault);
+        rfid = "rf/" + pos;
+    rf_fill_control(form, rfid + "/name", fld.name || "", setdefault);
+    rf_fill_control(form, rfid + "/type", fld.type, setdefault);
+    rf_fill_control(form, rfid + "/description", fld.description || "", setdefault);
+    rf_fill_control(form, rfid + "/visibility", fld.visibility || "re", setdefault);
+    rf_fill_control(form, rfid + "/values_text", values_to_text(fld), setdefault);
+    rf_fill_control(form, rfid + "/required", fld.required ? "1" : "0", setdefault);
     var colors = form.elements[rfid + "/scheme"];
     if (colors) {
-        fieldj.scheme = fieldj.scheme || "sv";
-        rf_fill_control(form, rfid + "/scheme", fieldj.scheme, setdefault);
+        fld.scheme = fld.scheme || "sv";
+        rf_fill_control(form, rfid + "/scheme", fld.scheme, setdefault);
         rf_color.call(colors);
     }
-    var ec, ecs = fieldj.exists_if != null ? fieldj.exists_if : "";
+    var ec, ecs = fld.exists_if != null ? fld.exists_if : "";
     if (ecs === "" || ecs.toLowerCase() === "all") {
         ec = "all";
     } else {
@@ -481,17 +480,17 @@ function rf_fill(pos, fieldj, setdefault) {
     }
     rf_fill_control(form, rfid + "/presence", ec, setdefault);
     rf_fill_control(form, rfid + "/condition", ecs, setdefault);
-    rf_fill_control(form, rfid + "/id", fid, true);
+    rf_fill_control(form, rfid + "/id", fld.id, true);
     $("#rf\\/" + pos + " textarea").trigger("change");
-    $("#rf\\/" + pos + "\\/view").html(rf_render_view(fieldj));
+    $("#rf\\/" + pos + "\\/view").html(rf_render_view(fld));
     $("#rf\\/" + pos + "\\/delete").attr("aria-label", "Delete from form");
     if (setdefault) {
-        rf_fill_control(form, rfid + "/order", fieldj.order || 0, setdefault);
+        rf_fill_control(form, rfid + "/order", fld.order || 0, setdefault);
     }
-    if (fieldj.search_keyword) {
-        $("#rf\\/" + pos).attr("data-rf", fieldj.search_keyword);
+    if (fld.search_keyword) {
+        $("#rf\\/" + pos).attr("data-rf", fld.search_keyword);
     }
-    if (fieldj.configurable === false) {
+    if (fld.configurable === false) {
         $("#rf\\/" + pos + " .settings-draghandle, #rf\\/" + pos + " .settings-rf-actions").addClass("hidden");
         $$("rf/" + pos + "/edit").disabled = true;
     }
@@ -526,11 +525,11 @@ tooltip.add_builder("settings-rf", function (info) {
     }, info);
 });
 
-function option_value_html(fieldj, value) {
+function option_value_html(fld, value) {
     if (!value || value < 0)
         return ["", "No entry"];
     else
-        return [make_score_info(fieldj.values.length, fieldj.start, fieldj.scheme).unparse_revnum(value), escape_html(fieldj.values[value - 1] || "Unknown")];
+        return [make_score_info(fld.values.length, fld.start, fld.scheme).unparse_revnum(value), escape_html(fld.values[value - 1] || "Unknown")];
 }
 
 function rf_visibility_text(visibility) {
@@ -548,36 +547,36 @@ function rf_visibility_text(visibility) {
         return "";
 }
 
-function rf_render_view(fieldj) {
+function rf_render_view(fld) {
     var hc = new HtmlCollector;
 
     hc.push('<h3 class="rfehead">', '</h3>');
-    hc.push('<label class="revfn'.concat(fieldj.required ? " field-required" : "", '">', escape_html(fieldj.name || "<unnamed>"), '</label>'));
-    var t = rf_visibility_text(fieldj.visibility), i;
+    hc.push('<label class="revfn'.concat(fld.required ? " field-required" : "", '">', escape_html(fld.name || "<unnamed>"), '</label>'));
+    var t = rf_visibility_text(fld.visibility), i;
     if (t)
         hc.push('<div class="field-visibility">'.concat(t, '</div>'));
     hc.pop();
 
-    if (fieldj.exists_if && /^round:[a-zA-Z][-_a-zA-Z0-9]*$/.test(fieldj.exists_if)) {
-        hc.push('<p class="feedback is-warning-note">Present on ' + fieldj.exists_if.substring(6) + ' reviews</p>');
-    } else if (fieldj.exists_if) {
-        hc.push('<p class="feedback is-warning-note">Present on reviews matching “' + escape_html(fieldj.exists_if) + '”</p>');
+    if (fld.exists_if && /^round:[a-zA-Z][-_a-zA-Z0-9]*$/.test(fld.exists_if)) {
+        hc.push('<p class="feedback is-warning-note">Present on ' + fld.exists_if.substring(6) + ' reviews</p>');
+    } else if (fld.exists_if) {
+        hc.push('<p class="feedback is-warning-note">Present on reviews matching “' + escape_html(fld.exists_if) + '”</p>');
     }
 
-    if (fieldj.description)
-        hc.push('<div class="field-d">'.concat(fieldj.description, '</div>'));
+    if (fld.description)
+        hc.push('<div class="field-d">'.concat(fld.description, '</div>'));
 
     hc.push('<div class="revev">', '</div>');
-    if (fieldj.values) {
-        for (i = 0; i !== fieldj.values.length; ++i) {
-            var n = fieldj.start && fieldj.start !== 1 ? fieldj.values.length - i : i + 1;
-            hc.push('<label class="checki"><span class="checkc"><input type="radio" disabled></span>'.concat(option_value_html(fieldj, n).join(" "), '</label>'));
+    if (fld.values) {
+        for (i = 0; i !== fld.values.length; ++i) {
+            var n = fld.start && fld.start !== 1 ? fld.values.length - i : i + 1;
+            hc.push('<label class="checki"><span class="checkc"><input type="radio" disabled></span>'.concat(option_value_html(fld, n).join(" "), '</label>'));
         }
-        if (!fieldj.required) {
+        if (!fld.required) {
             hc.push('<label class="checki g"><span class="checkc"><input type="radio" disabled></span>No entry</label>');
         }
     } else
-        hc.push('<textarea class="w-text" rows="' + Math.max(fieldj.display_space || 0, 3) + '" disabled>Text field</textarea>');
+        hc.push('<textarea class="w-text" rows="' + Math.max(fld.display_space || 0, 3) + '" disabled>Text field</textarea>');
 
     return hc.render();
 }
@@ -595,17 +594,22 @@ function rf_move() {
     rf_order();
 }
 
-function rf_append(fid) {
-    var pos = fieldorder.length + 1, $f, i, $j, $tmpl = $("#rf_template");
-    if (document.getElementById("rf/" + pos + "/id")
-        || !/^[st]\d\d$/.test(fid)
-        || fieldorder.indexOf(fid) >= 0) {
-        throw new Error("rf_append error on " + fid + " " + (document.getElementById("rf/" + pos + "/id") ? "1 " : "0 ") + fieldorder.join(","));
+function rf_append(fld) {
+    var pos = fieldorder.length + 1, $f, i, $j;
+    if (!fld.id) {
+        var pat = /text/.test(fld.type || "radio") ? "t%02d" : "s%02d";
+        for (i = 0; i === 0 || fieldorder.indexOf(fld.id) >= 0; ) {
+            fld.id = sprintf(pat, ++i);
+        }
     }
-    fieldorder.push(fid);
-    var has_options = fid.charAt(0) === "s";
-    original[fid] = original[fid] || Object.assign({}, has_options ? stemplate : ttemplate, {id: fid});
-    $f = $($tmpl.html().replace(/\$/g, pos));
+    if (document.getElementById("rf/" + pos + "/id")
+        || !/^[st]\d\d$/.test(fld.id)
+        || fieldorder.indexOf(fld.id) >= 0) {
+        throw new Error("rf_append error on " + fld.id + " " + (document.getElementById("rf/" + pos + "/id") ? "1 " : "0 ") + fieldorder.join(","));
+    }
+    fieldorder.push(fld.id);
+    var has_options = fld.id.charAt(0) === "s";
+    $f = $($("#rf_template").html().replace(/\$/g, pos));
     if (has_options) {
         $j = $f.find("select.rf-scheme");
         for (i = 0; i < colors.length; i += 2)
@@ -615,15 +619,15 @@ function rf_append(fid) {
     }
     $f.find(".js-settings-rf-delete").on("click", rf_delete);
     $f.find(".js-settings-rf-move").on("click", rf_move);
-    $f.find(".rf-id").val(fid);
+    $f.find(".rf-id").val(fld.id);
     $f.appendTo("#settings-rform");
-    rf_fill(pos, original[fid], true);
+    rf_fill(pos, fld, true);
     $f.awaken();
 }
 
-function rf_add(fid) {
+function rf_add(fld) {
     var pos = fieldorder.length + 1;
-    rf_append(fid);
+    rf_append(fld);
     var rf = document.getElementById("rf/" + pos);
     addClass(rf, "is-new");
     foldup.call(rf, null, {n: 2, f: false});
@@ -633,30 +637,25 @@ function rf_add(fid) {
 }
 
 function rfs(data) {
-    var i, fid, forder, mi, e, m, entryi;
+    var i, fld, mi, pfx, e, m, entryi;
     original = {};
     samples = data.samples;
-    stemplate = data.stemplate;
-    ttemplate = data.ttemplate;
 
     // construct form for original fields
-    forder = [];
-    for (i in data.fields) {
-        fid = data.fields[i].id || i;
-        original[fid] = data.fields[i];
-        if (original[fid].order)
-            forder.push(fid);
-    }
-    forder.sort(function (a, b) {
-        return original[a].order - original[b].order;
+    data.fields.sort(function (a, b) {
+        return a.order - b.order;
     });
-    while (fieldorder.length < forder.length) {
-        rf_append(forder[fieldorder.length]);
+    for (fld of data.fields) {
+        rf_append(fld);
     }
 
     // amend form for new fields
-    while ((data.req || {})["rf/" + (fieldorder.length + 1) + "/id"]) {
-        rf_add(data.req["rf/" + (fieldorder.length + 1) + "/id"]);
+    while (data.req) {
+        pfx = "rf/".concat(fieldorder.length + 1);
+        if (!data.req[pfx + "/id"] || !/^[st]/.test(data.req[pfx + "/id"])) {
+            break;
+        }
+        rf_add({id: data.req[pfx + "/id"], type: data.req[pfx + "/type"]});
     }
 
     $("#settings-rform").on("unfold", ".settings-rf", settings_field_unfold);
@@ -703,22 +702,15 @@ function add_dialog() {
         rft.appendChild(ex);
     }
     function submit(evt) {
-        var sample = cur_sample(),
-            has_options = !!sample.values,
-            ffmt = has_options ? "s%02d" : "t%02d",
-            i, fid;
-        for (i = 1; ; ++i) {
-            fid = sprintf(ffmt, i);
-            if ($.inArray(fid, fieldorder) < 0)
-                break;
+        var fld = Object.assign({}, cur_sample());
+        delete fld.id;
+        for (var i of fld.instantiate_blank || []) {
+            delete fld[i];
         }
-        original[fid] = Object.assign({}, has_options ? stemplate : ttemplate, {id: fid});
-        rf_add(fid);
-        if (sample.is_example)
-            sample = Object.assign({}, sample, {name: ""});
-        rf_fill(fieldorder.length, sample, false);
+        rf_add(fld);
         document.getElementById("rf/" + fieldorder.length + "/name").focus();
         $d.close();
+        rf_order();
         form_highlight("#settingsform");
         evt.preventDefault();
     }

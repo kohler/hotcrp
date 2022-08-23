@@ -1,8 +1,9 @@
 [
     {
         "selector": "Score",
+        "instantiate_blank": ["name", "values"],
         "name": "Field name",
-        "is_blank": true,
+        "type": "radio",
         "values": [
             "Option 1",
             "Option 2"
@@ -12,13 +13,15 @@
     },
     {
         "selector": "Text field",
+        "instantiate_blank": ["name"],
         "name": "Field name",
-        "is_example": true,
+        "type": "text",
         "visibility": "au"
     },
     {
         "selector": "Overall merit (1–5, Reject through Strong Accept)",
         "name": "Overall merit",
+        "type": "radio",
         "values": [
             "Reject",
             "Weak reject",
@@ -32,6 +35,7 @@
     {
         "selector": "Overall merit (A–D, Identify the Champion)",
         "name": "Overall merit",
+        "type": "radio",
         "values": [
             "Reject",
             "Weak paper, though I will not fight strongly against it",
@@ -46,6 +50,7 @@
     {
         "selector": "Overall merit (1–5, percentage rankings)",
         "name": "Overall merit",
+        "type": "radio",
         "values": [
             "Bottom 50% of submitted papers",
             "Top 50% but not top 25% of submitted papers",
@@ -59,17 +64,20 @@
     {
         "selector": "Reviewer confidence (1–3, Low through High)",
         "name": "Reviewer confidence",
+        "type": "radio",
         "values": [
             "Low",
             "Medium",
             "High"
         ],
         "required": true,
-        "visibility": "au"
+        "visibility": "au",
+        "scheme": "buor"
     },
     {
         "selector": "Reviewer expertise (1–5)",
         "name": "Reviewer expertise",
+        "type": "radio",
         "values": [
              "I know nothing about this area",
              "I have passing familiarity with this area",
@@ -78,11 +86,13 @@
              "This is my area"
         ],
         "required": true,
-        "visibility": "au"
+        "visibility": "au",
+        "scheme": "buor"
     },
     {
         "selector": "Confidence (X–Z, Identify the Champion)",
         "name": "Confidence",
+        "type": "radio",
         "values": [
             "I am not an expert; my evaluation is that of an informed outsider",
             "I am knowledgeable in this area, but not an expert",
@@ -91,39 +101,45 @@
         "start": "X",
         "required": true,
         "visibility": "au",
-        "scheme": "svr"
+        "scheme": "orbu"
     },
     {
         "selector": "Paper summary",
         "name": "Paper summary",
+        "type": "text",
         "description": "Please summarize the paper’s main results in your own words. This will frame the review and show that you have understood the paper’s intent.",
         "visibility": "au"
     },
     {
         "selector": "Paper summary (shorter description)",
         "name": "Paper summary",
+        "type": "text",
         "description": "Please summarize the paper briefly in your own words.",
         "visibility": "au"
     },
     {
         "selector": "Comments for authors",
         "name": "Comments for authors",
+        "type": "text",
         "visibility": "au"
     },
     {
         "selector": "Comments for PC",
         "name": "Comments for PC",
+        "type": "text",
         "visibility": "pc"
     },
     {
         "selector": "Response questions",
         "name": "Questions for authors’ response",
+        "type": "text",
         "description": "Specific questions that could affect your accept/reject decision. Remember that the authors have limited space and must respond to all reviewers.",
         "visibility": "au"
     },
     {
         "selector": "Novelty (1–4)",
         "name": "Novelty",
+        "type": "radio",
         "values": [
              "Published before or openly commercialized",
              "Incremental improvement",
@@ -136,6 +152,7 @@
     {
         "selector": "Writing quality (1–5)",
         "name": "Writing quality",
+        "type": "radio",
         "values": [
              "Unacceptable",
              "Needs improvement",
@@ -149,6 +166,7 @@
     {
         "selector": "Experimental methodology (1–5)",
         "name": "Experimental methodology",
+        "type": "radio",
         "values": [
              "Unacceptable",
              "Poor",
@@ -163,12 +181,14 @@
     {
         "selector": "Strengths",
         "name": "Strengths",
+        "type": "text",
         "description": "What are the paper’s important strengths? Just a couple sentences, please.",
         "visibility": "au"
     },
     {
         "selector": "Weaknesses",
         "name": "Weaknesses",
+        "type": "text",
         "description": "What are the paper’s important weaknesses? Just a couple sentences, please.",
         "visibility": "au"
     }

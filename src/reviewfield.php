@@ -91,11 +91,15 @@ abstract class ReviewField implements JsonSerializable {
     public $name;
     /** @var string */
     public $name_html;
+    /** @var string
+     * @readonly */
+    public $type;
     /** @var ?string */
     public $description;
     /** @var ?string */
     public $_search_keyword;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $has_options;
     /** @var int */
     public $view_score;
@@ -111,9 +115,11 @@ abstract class ReviewField implements JsonSerializable {
     private $_need_exists_search;
     /** @var bool */
     public $required = false;
-    /** @var ?non-empty-string */
+    /** @var ?non-empty-string
+     * @readonly */
     public $main_storage;
-    /** @var ?non-empty-string */
+    /** @var ?non-empty-string
+     * @readonly */
     public $json_storage;
 
     static private $view_score_map = [
@@ -137,19 +143,6 @@ abstract class ReviewField implements JsonSerializable {
         VIEWSCORE_AUTHOR => "au"
     ];
 
-    // colors
-    /** @var array<string,list>
-     * @readonly */
-    static public $scheme_info = [
-        "sv" => [0, 9, "svr"], "svr" => [1, 9, "sv"],
-        "blpu" => [0, 9, "publ"], "publ" => [1, 9, "blpu"],
-        "rdpk" => [1, 9, "pkrd"], "pkrd" => [0, 9, "rdpk"],
-        "viridisr" => [1, 9, "viridis"], "viridis" => [0, 9, "viridisr"],
-        "orbu" => [0, 9, "buor"], "buor" => [1, 9, "orbu"],
-        "turbo" => [0, 9, "turbor"], "turbor" => [1, 9, "turbo"],
-        "catx" => [2, 10, null], "none" => [2, 1, null]
-    ];
-
     function __construct(Conf $conf, ReviewFieldInfo $finfo) {
         $this->short_id = $finfo->short_id;
         $this->has_options = $finfo->has_options;
@@ -168,17 +161,11 @@ abstract class ReviewField implements JsonSerializable {
         }
     }
 
-    /** @param bool $has_options
-     * @return ReviewField */
-    static function make_template(Conf $conf, $has_options) {
-        $id = $has_options ? "s00" : "t00";
-        return self::make($conf, new ReviewFieldInfo($id, $has_options, null, null));
-    }
-
     /** @param object $j */
     function assign_json($j) {
         $this->name = $j->name ?? "Field name";
         $this->name_html = htmlspecialchars($this->name);
+        $this->type = $j->type ?? ($this->has_options ? "radio" : "text");
         $this->description = $j->description ?? "";
         $vis = $j->visibility ?? null;
         if ($vis === null /* XXX backward compat */) {
@@ -258,6 +245,7 @@ abstract class ReviewField implements JsonSerializable {
             $j->uid = $this->uid();
         }
         $j->name = $this->name;
+        $j->type = $this->type;
         if ($this->description) {
             $j->description = $this->description;
         }
@@ -550,7 +538,7 @@ class Score_ReviewField extends ReviewField {
     /** @var array<string,list> */
     static public $scheme_info = [
         "sv" => [0, 9, "svr"], "svr" => [1, 9, "sv"],
-        "blpu" => [0, 9, "publ"], "publ" => [1, 9, "blpu"],
+        "bupu" => [0, 9, "pubu"], "pubu" => [1, 9, "bupu"],
         "rdpk" => [1, 9, "pkrd"], "pkrd" => [0, 9, "rdpk"],
         "viridisr" => [1, 9, "viridis"], "viridis" => [0, 9, "viridisr"],
         "orbu" => [0, 9, "buor"], "buor" => [1, 9, "orbu"],
@@ -561,7 +549,7 @@ class Score_ReviewField extends ReviewField {
     function __construct(Conf $conf, ReviewFieldInfo $finfo) {
         assert($finfo->has_options);
         parent::__construct($conf, $finfo);
-        $this->has_options = true;
+        $this->type = "radio";
     }
 
     /** @param object $j */
@@ -591,15 +579,9 @@ class Score_ReviewField extends ReviewField {
         }
         if (isset($j->scheme)) {
             $this->scheme = $j->scheme;
-        } else if (isset($j->option_class_prefix) /* XXX backward compat */) {
-            $p = $j->option_class_prefix;
-            if (str_starts_with($p, "sv-")) {
-                $p = substr($p, 3);
+            if ($this->scheme === "blpu" || $this->scheme === "publ") {
+                $this->scheme = $this->scheme[0] === "b" ? "bupu" : "pubu";
             }
-            if ($this->option_letter && isset(self::$scheme_info[$p])) {
-                $p = self::$scheme_info[$p][2] ?? $p;
-            }
-            $this->scheme = $p;
         }
         if (!isset($j->required)) {
             if (isset($j->allow_empty) /* XXX backward compat */) {
@@ -988,8 +970,9 @@ class Text_ReviewField extends ReviewField {
     public $display_space;
 
     function __construct(Conf $conf, ReviewFieldInfo $finfo) {
+        assert(!$finfo->has_options);
         parent::__construct($conf, $finfo);
-        $this->has_options = false;
+        $this->type = "text";
     }
 
     /** @param object $j */
