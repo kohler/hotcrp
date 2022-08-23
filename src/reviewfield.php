@@ -725,8 +725,6 @@ class Score_ReviewField extends ReviewField {
         }
     }
 
-    /** @param ?int|?float|?string $fval
-     * @return ?int */
     function value_unparse_json($fval) {
         assert($fval === null || is_int($fval));
         if ($fval === null || $fval <= 0) {

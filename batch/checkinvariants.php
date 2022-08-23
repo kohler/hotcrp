@@ -21,7 +21,7 @@ class CheckInvariants_Batch {
     /** @return int */
     function run() {
         $ic = new ConfInvariants($this->conf);
-        $ic->exec_all();
+        $ic->check_all();
         if (isset($ic->problems["autosearch"]) && $this->fix_autosearch) {
             $this->conf->update_automatic_tags();
         }

@@ -30,6 +30,12 @@ class ConfInvariants {
     }
 
     private function invariant_error($abbrev, $text = null) {
+        if (str_starts_with($abbrev, "!")) {
+            $abbrev = substr($abbrev, 1);
+            if ($this->problems[$abbrev] ?? false) {
+                return;
+            }
+        }
         $this->problems[$abbrev] = true;
         if ((string) $text === "") {
             $text = $abbrev;
@@ -46,44 +52,75 @@ class ConfInvariants {
     }
 
     /** @return $this */
-    function exec_main() {
-        // local invariants
-        $any = $this->invariantq("select paperId from Paper where timeSubmitted>0 and timeWithdrawn>0 limit 1");
-        if ($any) {
-            $this->invariant_error("submitted_withdrawn", "paper #{0} is both submitted and withdrawn");
-        }
-
+    function check_paper_assertion_settings() {
         // settings correctly materialize database facts
+
+        // `no_papersub` === no submitted papers
         $any = $this->invariantq("select paperId from Paper where timeSubmitted>0 limit 1");
         if ($any !== !($this->conf->setting("no_papersub") ?? false)) {
             $this->invariant_error("no_papersub");
         }
 
+        // `paperacc` === any accepted submitted papers
         $any = $this->invariantq("select paperId from Paper where outcome>0 and timeSubmitted>0 limit 1");
         if ($any !== !!($this->conf->setting("paperacc") ?? false)) {
             $this->invariant_error("paperacc");
         }
 
+        // `rev_tokens` === any papers with reviewToken
         $any = $this->invariantq("select reviewId from PaperReview where reviewToken!=0 limit 1");
         if ($any !== !!($this->conf->setting("rev_tokens") ?? false)) {
             $this->invariant_error("rev_tokens");
         }
 
+        // `paperlead` === any papers with defined lead or shepherd
         $any = $this->invariantq("select paperId from Paper where leadContactId>0 or shepherdContactId>0 limit 1");
         if ($any !== !!($this->conf->setting("paperlead") ?? false)) {
             $this->invariant_error("paperlead");
         }
 
+        // `papermanager` === any papers with defined manager
         $any = $this->invariantq("select paperId from Paper where managerContactId>0 limit 1");
         if ($any !== !!($this->conf->setting("papermanager") ?? false)) {
             $this->invariant_error("papermanager");
         }
 
+        // `metareviews` === any assigned metareviews
         $any = $this->invariantq("select paperId from PaperReview where reviewType=" . REVIEW_META . " limit 1");
         if ($any !== !!($this->conf->setting("metareviews") ?? false)) {
             $this->invariant_error("metareviews");
         }
 
+        // `has_topics` === any defined topics
+        $any = $this->invariantq("select topicId from TopicArea limit 1");
+        if (!$any !== !$this->conf->setting("has_topics")) {
+            $this->invariant_error("has_topics");
+        }
+
+        // `has_colontag` === any tags ending with `:`
+        $any = $this->invariantq("select tag from PaperTag where tag like '%:' limit 1");
+        if ($any && !$this->conf->setting("has_colontag")) {
+            $this->invariant_error("has_colontag", "has tag {0} but no has_colontag");
+        }
+
+        // `has_permtag` === any tags starting with `perm:`
+        $any = $this->invariantq("select tag from PaperTag where tag like 'perm:%' limit 1");
+        if ($any && !$this->conf->setting("has_permtag")) {
+            $this->invariant_error("has_permtag", "has tag {0} but no has_permtag");
+        }
+
+        return $this;
+    }
+
+    /** @return $this */
+    function check_papers() {
+        // submitted xor withdrawn
+        $any = $this->invariantq("select paperId from Paper where timeSubmitted>0 and timeWithdrawn>0 limit 1");
+        if ($any) {
+            $this->invariant_error("submitted_withdrawn", "paper #{0} is both submitted and withdrawn");
+        }
+
+        // `dataOverflow` is JSON
         $result = $this->conf->ql("select paperId, dataOverflow from Paper where dataOverflow is not null");
         while (($row = $result->fetch_row())) {
             if (json_decode($row[1]) === null) {
@@ -112,19 +149,11 @@ class ConfInvariants {
             $this->invariant_error("PaperConflict_zero", "PaperConflict with zero conflictType");
         }
 
-        // reviewNeedsSubmit is defined correctly
-        $any = $this->invariantq("select r.paperId, r.reviewId from PaperReview r
-            left join (select paperId, requestedBy, count(reviewId) ct, count(reviewSubmitted) cs
-                       from PaperReview where reviewType>0 and reviewType<" . REVIEW_SECONDARY . "
-                       group by paperId, requestedBy) q
-                on (q.paperId=r.paperId and q.requestedBy=r.contactId)
-            where r.reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null
-            and if(coalesce(q.ct,0)=0,1,if(q.cs=0,-1,0))!=r.reviewNeedsSubmit
-            limit 1");
-        if ($any) {
-            $this->invariant_error("reviewNeedsSubmit", "bad reviewNeedsSubmit for review #{0}/{1}");
-        }
+        return $this;
+    }
 
+    /** @return $this */
+    function check_reviews() {
         // reviewType is defined correctly
         $any = $this->invariantq("select paperId, reviewId from PaperReview where reviewType<0 and (reviewNeedsSubmit!=0 or reviewSubmitted is not null) limit 1");
         if ($any) {
@@ -151,100 +180,47 @@ class ConfInvariants {
             }
         }
 
-        // anonymous users are disabled; primaryContactId is not recursive
-        $result = $this->conf->qe("select contactId, email, primaryContactId, roles, disabled from ContactInfo where primaryContactId!=0 or (email>='anonymous' and email<='anonymous:') or (roles!=0 and (roles&~" . Contact::ROLE_DBMASK . ")!=0)");
-        $primary = [];
-        while (($row = $result->fetch_object())) {
-            if (str_starts_with($row->email, "anonymous")
-                && Contact::is_anonymous_email($row->email)
-                && !$row->disabled) {
-                $this->invariant_error("anonymous_user_enabled", "anonymous user {$row->email} is not disabled");
-            }
-            if ($row->primaryContactId != 0) {
-                $cid = (int) $row->contactId;
-                $pcid = (int) $row->primaryContactId;
-                $primary[$cid] = ($primary[$cid] ?? 0) | 1;
-                $primary[$pcid] = ($primary[$pcid] ?? 0) | 2;
-                if ($primary[$cid] === 3 || $primary[$pcid] === 3) {
-                    $this->invariant_error("primary_user_loop", "primary user loop involving {$cid}/{$row->email}");
-                }
-            }
-            if (($row->roles & ~Contact::ROLE_DBMASK) !== 0) {
-                $this->invariant_error("user_roles", "user {$row->email} has funky roles {$row->roles}");
-            }
-        }
-        Dbl::free($result);
-
-        // no funkily disabled users
-        $any = $this->invariantq("select email from ContactInfo where disabled<0 or disabled>" . Contact::DISABLEMENT_DB);
+        // reviewNeedsSubmit is defined correctly
+        $any = $this->invariantq("select r.paperId, r.reviewId from PaperReview r
+            left join (select paperId, requestedBy, count(reviewId) ct, count(reviewSubmitted) cs
+                       from PaperReview where reviewType>0 and reviewType<" . REVIEW_SECONDARY . "
+                       group by paperId, requestedBy) q
+                on (q.paperId=r.paperId and q.requestedBy=r.contactId)
+            where r.reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null
+            and if(coalesce(q.ct,0)=0,1,if(q.cs=0,-1,0))!=r.reviewNeedsSubmit
+            limit 1");
         if ($any) {
-            $this->invariant_error("user_disablement", "user {0} is funkily disabled");
+            $this->invariant_error("reviewNeedsSubmit", "bad reviewNeedsSubmit for review #{0}/{1}");
         }
 
-        // user whitespace is simplified
-        $utf8cs = Dbl::utf8_charset($this->conf->dblink);
-        $regex = "_{$utf8cs}'^ | \$|  |[\\n\\r\\t]'";
-        $any = $this->invariantq("select email from ContactInfo where convert(firstName using $utf8cs) regexp $regex or convert(lastName using $utf8cs) regexp $regex or convert(affiliation using $utf8cs) regexp $regex limit 1");
+        // submitted and ordinaled reviews are displayed
+        $any = $this->invariantq("select paperId, reviewId from PaperReview where timeDisplayed=0 and (reviewSubmitted is not null or reviewOrdinal>0) limit 1");
         if ($any) {
-            $this->invariant_error("user_whitespace", "user {0} whitespace is not simplified");
+            $this->invariant_error("submitted/ordinal review #{0}/{1} has no timeDisplayed");
         }
 
-        // check tag strings
-        $result = $this->conf->qe("select distinct contactTags from ContactInfo where contactTags is not null union select distinct commentTags from PaperComment where commentTags is not null");
-        while (($row = $result->fetch_row())) {
-            if ($row[0] === "" || !TagMap::is_tag_string($row[0], true)) {
-                $this->invariant_error("tag_strings", "bad tag string “{$row[0]}”");
-            }
-        }
-        Dbl::free($result);
+        return $this;
+    }
 
-        // paper denormalizations match
-        $any = $this->invariantq("select p.paperId, ps.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.paperStorageId>1 and p.paperId!=ps.paperId limit 1");
-        if ($any) {
-            $this->invariant_error("paper_id_denormalization", "bad PaperStorage link, paper #{0} (storage paper #{1})");
-        }
-        $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.finalPaperStorageId<=0 and p.paperStorageId>1 and (p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
-        if ($any) {
-            $this->invariant_error("paper_denormalization", "bad Paper denormalization, paper #{0}");
-        }
-        $any = $this->invariantq("select p.paperId, ps.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.finalPaperStorageId) where p.finalPaperStorageId>1 and (p.paperId!=ps.paperId or p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
-        if ($any) {
-            $this->invariant_error("paper_final_denormalization", "bad Paper final denormalization, paper #{0} (storage paper #{1})");
-        }
-
-        // filterType is never zero
-        $any = $this->invariantq("select paperStorageId from PaperStorage where filterType=0 limit 1");
-        if ($any) {
-            $this->invariant_error("filterType", "bad PaperStorage filterType, id #{0}");
-        }
-
-        // has_colontag is defined
-        $any = $this->invariantq("select tag from PaperTag where tag like '%:' limit 1");
-        if ($any && !$this->conf->setting("has_colontag")) {
-            $this->invariant_error("has_colontag", "has tag {0} but no has_colontag");
-        }
-
-        // has_permtag is defined
-        $any = $this->invariantq("select tag from PaperTag where tag like 'perm:%' limit 1");
-        if ($any && !$this->conf->setting("has_permtag")) {
-            $this->invariant_error("has_permtag", "has tag {0} but no has_permtag");
-        }
-
-        // has_topics is defined
-        $any = $this->invariantq("select topicId from TopicArea limit 1");
-        if (!$any !== !$this->conf->setting("has_topics")) {
-            $this->invariant_error("has_topics");
-        }
-
-        // autosearches are correct
-        $this->exec_automatic_tags();
-
+    /** @return $this */
+    function check_comments() {
         // comments are nonempty
         $any = $this->invariantq("select paperId, commentId from PaperComment where comment is null and commentOverflow is null and not exists (select * from DocumentLink where paperId=PaperComment.paperId and linkId=PaperComment.commentId and linkType>=" . DocumentInfo::LINKTYPE_COMMENT_BEGIN . " and linkType<" . DocumentInfo::LINKTYPE_COMMENT_END . ") limit 1");
         if ($any) {
             $this->invariant_error("empty comment #{0}/{1}");
         }
 
+        // non-draft comments are displayed
+        $any = $this->invariantq("select paperId, commentId from PaperComment where timeDisplayed=0 and (commentType&" . CommentInfo::CT_DRAFT . ")=0 limit 1");
+        if ($any) {
+            $this->invariant_error("submitted comment #{0}/{1} has no timeDisplayed");
+        }
+
+        return $this;
+    }
+
+    /** @return $this */
+    function check_responses() {
         // responses have author visibility
         $any = $this->invariantq("select paperId, commentId from PaperComment where (commentType&" . CommentInfo::CT_RESPONSE  . ")!=0 and (commentType&" . CommentInfo::CT_AUTHOR . ")=0 limit 1");
         if ($any) {
@@ -265,23 +241,11 @@ class ConfInvariants {
             $this->invariant_error("comment #{0}/{1} has `response` tag");
         }
 
-        // non-draft comments are displayed
-        $any = $this->invariantq("select paperId, commentId from PaperComment where timeDisplayed=0 and (commentType&" . CommentInfo::CT_DRAFT . ")=0 limit 1");
-        if ($any) {
-            $this->invariant_error("submitted comment #{0}/{1} has no timeDisplayed");
-        }
-
-        // submitted and ordinaled reviews are displayed
-        $any = $this->invariantq("select paperId, reviewId from PaperReview where timeDisplayed=0 and (reviewSubmitted is not null or reviewOrdinal>0) limit 1");
-        if ($any) {
-            $this->invariant_error("submitted/ordinal review #{0}/{1} has no timeDisplayed");
-        }
-
         return $this;
     }
 
     /** @return $this */
-    function exec_automatic_tags() {
+    function check_automatic_tags() {
         $dt = $this->conf->tags();
         if (!$dt->has_automatic) {
             return $this;
@@ -345,7 +309,136 @@ class ConfInvariants {
     }
 
     /** @return $this */
-    function exec_document_inactive() {
+    function check_documents() {
+        // paper denormalizations match
+        $any = $this->invariantq("select p.paperId, ps.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.paperStorageId>1 and p.paperId!=ps.paperId limit 1");
+        if ($any) {
+            $this->invariant_error("paper_id_denormalization", "bad PaperStorage link, paper #{0} (storage paper #{1})");
+        }
+        $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.finalPaperStorageId<=0 and p.paperStorageId>1 and (p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
+        if ($any) {
+            $this->invariant_error("paper_denormalization", "bad Paper denormalization, paper #{0}");
+        }
+        $any = $this->invariantq("select p.paperId, ps.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.finalPaperStorageId) where p.finalPaperStorageId>1 and (p.paperId!=ps.paperId or p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
+        if ($any) {
+            $this->invariant_error("paper_final_denormalization", "bad Paper final denormalization, paper #{0} (storage paper #{1})");
+        }
+
+        // filterType is never zero
+        $any = $this->invariantq("select paperStorageId from PaperStorage where filterType=0 limit 1");
+        if ($any) {
+            $this->invariant_error("filterType", "bad PaperStorage filterType, id #{0}");
+        }
+
+        return $this;
+    }
+
+    /** @return $this */
+    function check_users() {
+        // load paper authors
+        $authors = [];
+        $result = $this->conf->qe("select paperId, authorInformation from Paper");
+        while (($row = $result->fetch_row())) {
+            $pid = intval($row[0]);
+            foreach (explode("\n", $row[1]) as $auline) {
+                if ($auline !== "") {
+                    $au = Author::make_tabbed($auline);
+                    if ($au->email !== "" && validate_email($au->email)) {
+                        $authors[strtolower($au->email)][] = $pid;
+                    }
+                }
+            }
+        }
+        Dbl::free($result);
+
+        // load users
+        $primary = [];
+        $result = $this->conf->qe("select contactId, firstName, lastName, email, affiliation, primaryContactId, roles, disabled, contactTags from ContactInfo");
+        while (($u = $result->fetch_object())) {
+            $u->contactId = intval($u->contactId);
+            $u->primaryContactId = intval($u->primaryContactId);
+            $u->roles = intval($u->roles);
+            $u->disabled = intval($u->disabled);
+            unset($authors[strtolower($u->email)]);
+
+            // anonymous users are disabled
+            if (str_starts_with($u->email, "anonymous")
+                && Contact::is_anonymous_email($u->email)
+                && ($u->disabled & 1) !== 1) {
+                $this->invariant_error("anonymous_user_enabled", "anonymous user {$u->email} is not disabled");
+            }
+
+            // text is utf8
+            if (!is_valid_utf8($u->firstName)
+                || !is_valid_utf8($u->lastName)
+                || !is_valid_utf8($u->affiliation)) {
+                $this->invariant_error("user_text_utf8", "user {$u->email} has non-UTF8 text");
+            }
+
+            // whitespace is simplified
+            $t = " ";
+            foreach ([$u->firstName, $u->lastName, $u->email, $u->affiliation] as $s) {
+                if ($s !== "")
+                    $t .= "{$s} ";
+            }
+            if (strcspn($t, "\r\n\t") !== strlen($t)
+                || strpos($t, "  ") !== false
+                || strpos($u->email, " ") !== false) {
+                $this->invariant_error("user_whitespace", "user {$u->email}/{$u->contactId} has invalid whitespace");
+            }
+
+            // roles have only expected bits
+            if (($u->roles & ~Contact::ROLE_DBMASK) !== 0) {
+                $this->invariant_error("user_roles", "user {$u->email} has funky roles {$u->roles}");
+            }
+
+            // disabled has only expected bits
+            if (($u->disabled & ~Contact::DISABLEMENT_DB) !== 0) {
+                $this->invariant_error("user_disabled", "user {$u->email}/{$u->contactId} is funkily disabled");
+            }
+
+            // contactTags is a valid tag string
+            if ($u->contactTags !== null
+                && ($u->contactTags === ""
+                    || !TagMap::is_tag_string($u->contactTags, true))) {
+                $this->invariant_error("user_tag_strings", "bad user tags ‘{$u->contactTags}’ for {$u->email}/{$u->contactId}");
+            }
+
+            // primary contactIds are not negative
+            if ($u->primaryContactId < 0) {
+                $this->invariant_error("primary_user_negative", "primary user ID for {$u->email} is negative");
+            } else if ($u->primaryContactId !== 0) {
+                $primary[$u->contactId] = $u->primaryContactId;
+            }
+        }
+        Dbl::free($result);
+
+        // primary contactIds can be resolved in at most 2 rounds
+        $tprimary = $primary;
+        for ($i = 0; $i !== 2 && !empty($tprimary); ++$i) {
+            $nprimary = [];
+            foreach ($tprimary as $uid => $puid) {
+                if (isset($primary[$puid])) {
+                    $nprimary[$uid] = $primary[$puid];
+                }
+            }
+            $tprimary = $nprimary;
+        }
+        if (!empty($tprimary)) {
+            $baduid = (array_keys($tprimary))[0];
+            $this->invariant_error("primary_resolvable", "primary user ID for #{$baduid} cannot be quickly resolved");
+        }
+
+        // authors are all accounted for
+        foreach ($authors as $lemail => $pids) {
+            $this->invariant_error("author_contacts", "author {$lemail} of #{$pids[0]} lacking from database");
+        }
+
+        return $this;
+    }
+
+    /** @return $this */
+    function check_document_inactive() {
         $result = $this->conf->ql("select paperStorageId, finalPaperStorageId from Paper");
         $pids = [];
         while ($result && ($row = $result->fetch_row())) {
@@ -400,9 +493,16 @@ class ConfInvariants {
     }
 
     /** @return $this */
-    function exec_all() {
-        $this->exec_main();
-        $this->exec_document_inactive();
+    function check_all() {
+        $this->check_paper_assertion_settings();
+        $this->check_papers();
+        $this->check_automatic_tags();
+        $this->check_reviews();
+        $this->check_comments();
+        $this->check_responses();
+        $this->check_documents();
+        $this->check_users();
+        $this->check_document_inactive();
         return $this;
     }
 
@@ -410,13 +510,13 @@ class ConfInvariants {
      * @return bool */
     static function test_all(Conf $conf, $prefix = null) {
         $prefix = $prefix ?? caller_landmark() . ": ";
-        return (new ConfInvariants($conf, $prefix))->exec_all()->ok();
+        return (new ConfInvariants($conf, $prefix))->check_all()->ok();
     }
 
     /** @param ?string $prefix
      * @return bool */
     static function test_document_inactive(Conf $conf, $prefix = null) {
         $prefix = $prefix ?? caller_landmark() . ": ";
-        return (new ConfInvariants($conf, $prefix))->exec_document_inactive()->ok();
+        return (new ConfInvariants($conf, $prefix))->check_document_inactive()->ok();
     }
 }
