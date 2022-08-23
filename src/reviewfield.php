@@ -369,7 +369,7 @@ abstract class ReviewField implements JsonSerializable {
 
     /** @param ?int|?float|?string $fval
      * @return mixed */
-    abstract function value_normalize($fval);
+    abstract function value_unparse_json($fval);
 
     /** @param int|float|string $fval
      * @param int $flags
@@ -603,7 +603,7 @@ class Score_ReviewField extends ReviewField {
                 || $this->ids !== range(1, count($this->values)))) {
             $j->ids = $this->ids;
         }
-        if ($this->option_letter) {
+        if ($this->option_letter !== 0) {
             $j->start = chr($this->option_letter - count($this->values));
         }
         if ($this->flip) {
@@ -622,7 +622,7 @@ class Score_ReviewField extends ReviewField {
         $n = count($this->values);
         $rfs->values = $this->values;
         $rfs->ids = $this->ids();
-        if ($this->option_letter) {
+        if ($this->option_letter !== 0) {
             $rfs->start = chr($this->option_letter - $n);
         } else {
             $rfs->start = 1;
@@ -657,7 +657,7 @@ class Score_ReviewField extends ReviewField {
             $n = count($this->values);
             if ($n === 1) {
                 $this->_typical_score = $this->value_unparse(1);
-            } else if ($this->option_letter) {
+            } else if ($this->option_letter !== 0) {
                 $this->_typical_score = $this->value_unparse(1 + (int) (($n - 1) / 2));
             } else {
                 $this->_typical_score = $this->value_unparse(2);
@@ -671,7 +671,7 @@ class Score_ReviewField extends ReviewField {
         $n = count($this->values);
         if ($n < 2) {
             return null;
-        } else if ($this->option_letter) {
+        } else if ($this->option_letter !== 0) {
             return [$this->value_unparse($n - ($n > 2 ? 1 : 0)), $this->value_unparse($n - 1 - ($n > 2 ? 1 : 0) - ($n > 3 ? 1 : 0))];
         } else {
             return [$this->value_unparse(1 + ($n > 2 ? 1 : 0)), $this->value_unparse(2 + ($n > 2 ? 1 : 0) + ($n > 3 ? 1 : 0))];
@@ -689,6 +689,7 @@ class Score_ReviewField extends ReviewField {
      * @param int|float $fval
      * @return string */
     static function unparse_letter($option_letter, $fval) {
+        // see also `value_unparse_json`
         $ivalue = (int) $fval;
         $ch = $option_letter - $ivalue;
         if ($fval < $ivalue + 0.25) {
@@ -726,9 +727,15 @@ class Score_ReviewField extends ReviewField {
 
     /** @param ?int|?float|?string $fval
      * @return ?int */
-    function value_normalize($fval) {
+    function value_unparse_json($fval) {
         assert($fval === null || is_int($fval));
-        return $fval !== 0 ? $fval : null;
+        if ($fval === null || $fval <= 0) {
+            return null;
+        } else if ($this->option_letter !== 0) {
+            return chr($this->option_letter - $fval);
+        } else {
+            return $fval;
+        }
     }
 
     /** @param int|float|string $fval
@@ -739,7 +746,7 @@ class Score_ReviewField extends ReviewField {
         if (!$fval) {
             return null;
         }
-        if (!$this->option_letter || is_numeric($fval)) {
+        if ($this->option_letter === 0 || is_numeric($fval)) {
             $fval = (float) $fval;
         } else if (strlen($fval) === 1) {
             $fval = (float) $this->option_letter - ord($fval);
@@ -749,7 +756,7 @@ class Score_ReviewField extends ReviewField {
         if (!is_float($fval) || $fval <= 0.8) {
             return null;
         }
-        if ($this->option_letter) {
+        if ($this->option_letter !== 0) {
             $text = self::unparse_letter($this->option_letter, $fval);
         } else if ($real_format) {
             $text = sprintf($real_format, $fval);
@@ -784,7 +791,7 @@ class Score_ReviewField extends ReviewField {
         if ($sci->my_score() && $counts[$sci->my_score() - 1] > 0) {
             $args .= "&amp;h=" . $sci->my_score();
         }
-        if ($this->option_letter) {
+        if ($this->option_letter !== 0) {
             $args .= "&amp;c=" . chr($this->option_letter - 1);
         }
         if ($this->scheme !== "sv") {
@@ -927,7 +934,7 @@ class Score_ReviewField extends ReviewField {
         }
         if (!$this->required) {
             $t[] = "==-==    No entry\n==-== Enter your choice:\n";
-        } else if ($this->option_letter) {
+        } else if ($this->option_letter !== 0) {
             $t[] = "==-== Enter the letter of your choice:\n";
         } else {
             $t[] = "==-== Enter the number of your choice:\n";
@@ -985,7 +992,7 @@ class Text_ReviewField extends ReviewField {
         return $this->order && $this->view_score >= VIEWSCORE_AUTHORDEC;
     }
 
-    function value_normalize($fval) {
+    function value_unparse_json($fval) {
         return $fval;
     }
 

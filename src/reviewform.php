@@ -749,7 +749,7 @@ $blind\n";
         foreach ($rrow->viewable_fields($viewer) as $f) {
             if ($f->view_score > VIEWSCORE_REVIEWERONLY
                 || ($flags & self::RJ_NO_REVIEWERONLY) === 0) {
-                $rj[$f->uid()] = $f->value_normalize($rrow->fields[$f->order]);
+                $rj[$f->uid()] = $f->value_unparse_json($rrow->fields[$f->order]);
             }
         }
         if (($fmt = $this->conf->default_format)) {
