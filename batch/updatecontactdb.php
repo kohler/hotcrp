@@ -168,6 +168,7 @@ class UpdateContactdb_Batch {
                     "affiliation" => $au->affiliation,
                     "disablement" => Contact::DISABLEMENT_PLACEHOLDER
                 ])->store();
+                // NB: Contact::store() creates CONFLICT_AUTHOR records.
                 $u->update_cdb();
             }
         }
