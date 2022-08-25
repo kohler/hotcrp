@@ -110,7 +110,8 @@ class UserStatus extends MessageSet {
     function set_user(Contact $user) {
         if ($user !== $this->user) {
             $this->user = $user;
-            $auth_user = Contact::$base_auth_user ?? $this->viewer;
+            $auth_user = $this->viewer->base_user();
+            assert($auth_user === $this->viewer || $auth_user === Contact::$base_auth_user);
             $this->is_auth_user = $auth_user->has_email()
                 && strcasecmp($auth_user->email, $user->email) === 0;
             if ($this->_cs) {
@@ -132,7 +133,7 @@ class UserStatus extends MessageSet {
     /** Test if the edited user is the authenticated user and same as the viewer.
      * @return bool */
     function is_auth_self() {
-        return $this->is_auth_user && !Contact::$base_auth_user;
+        return $this->is_auth_user && !$this->viewer->is_actas_user();
     }
     /** @return ?Contact */
     function cdb_user() {
@@ -302,7 +303,7 @@ class UserStatus extends MessageSet {
         if ($user->defaultWatch) {
             $cj->follow = (object) [];
             $dw = $user->defaultWatch;
-            if ($dw & Contact::WATCH_REVIEW_ALL) {
+            if (($dw & Contact::WATCH_REVIEW_ALL) !== 0) {
                 $dw |= Contact::WATCH_REVIEW;
             }
             foreach (self::$watch_keywords as $kw => $bit) {

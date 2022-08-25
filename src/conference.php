@@ -4715,6 +4715,62 @@ class Conf {
         return false;
     }
 
+    private function print_header_profile($id, Qrequest $qreq, Contact $user) {
+        if (!$user || $user->is_empty()) {
+            return;
+        }
+
+        $profile_parts = [];
+        if ($user->has_email() && !$user->is_disabled()) {
+            if (!$user->is_anonymous_user()) {
+                $purl = $this->hoturl("profile");
+                $link = "<a class=\"q\" href=\"{$purl}\"><strong>" . htmlspecialchars($user->email) . "</strong></a>";
+                if ($user->is_actas_user()) {
+                    $link = "<span class=\"header-actas\"><span class=\"warning-mark\"></span> Acting as {$link}</span>";
+                }
+                $profile_parts[] = "{$link} &nbsp; <a href=\"{$purl}\">Profile</a>";
+            } else {
+                $profile_parts[] = "<strong>" . htmlspecialchars($user->email) . "</strong>";
+            }
+        }
+
+        // "act as" link
+        if ($user->is_actas_user()) {
+            $link = $this->selfurl($qreq, ["actas" => null]);
+            $profile_parts[] = "<a href=\"{$link}\">Admin&nbsp;"
+                . Ht::img('viewas.png', 'Act as ' . htmlspecialchars($user->base_user()->email)) . '</a>';
+        } else if ($this->session_key !== null
+                   && ($actas = $_SESSION["last_actas"] ?? null)
+                   && $user->privChair
+                   && strcasecmp($user->email, $actas) !== 0) {
+            $actas_html = htmlspecialchars($actas);
+            $link = $this->selfurl($qreq, ["actas" => $actas]);
+            $profile_parts[] = "<a href=\"{$link}\">{$actas_html}&nbsp;"
+                . Ht::img('viewas.png', "Act as {$actas_html}") . '</a>';
+        }
+
+        // help
+        if (!$user->is_disabled()) {
+            $helpargs = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
+            $profile_parts[] = '<a href="' . $this->hoturl("help", $helpargs) . '">Help</a>';
+        }
+
+        // sign in and out
+        if (!$user->is_signed_in()
+            && !($this->opt["httpAuthLogin"] ?? false)
+            && $id !== "signin") {
+            $profile_parts[] = '<a href="' . $this->hoturl("signin", ["cap" => null]) . '" class="nw">Sign in</a>';
+        }
+        if ((!$user->is_empty() || ($this->opt["httpAuthLogin"] ?? false))
+            && $id !== "signout") {
+            $profile_parts[] = Ht::form($this->hoturl("=signout", ["cap" => null]), ["class" => "d-inline"])
+                . Ht::button("Sign out", ["type" => "submit", "class" => "btn btn-link"])
+                . "</form>";
+        }
+
+        echo join(' <span class="barsep">·</span> ', $profile_parts);
+    }
+
     function header_body($title, $id, $extra = []) {
         $user = Contact::$main_user;
         $qreq = Qrequest::$main_request;
@@ -4738,18 +4794,6 @@ class Conf {
         }
         echo '"><div id="top">';
 
-        // site header
-        if ($id === "home") {
-            $site_div = '<div id="header-site" class="header-site-home">'
-                . '<h1><a class="q" href="' . $this->hoturl("index", ["cap" => null])
-                . '">' . htmlspecialchars($this->short_name) . '</a></h1></div>';
-        } else {
-            $site_div = '<div id="header-site" class="header-site-page">'
-                . '<a class="q" href="' . $this->hoturl("index", ["cap" => null])
-                . '"><span class="header-site-name">' . htmlspecialchars($this->short_name)
-                . '</span> Home</a></div>';
-        }
-
         // initial load (JS's timezone offsets are negative of PHP's)
         Ht::stash_script("hotcrp.onload.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
 
@@ -4760,62 +4804,6 @@ class Conf {
             Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
         }
 
-        // $header_profile
-        $profile_html = "";
-        if ($user && !$user->is_empty()) {
-            // profile link
-            $profile_parts = [];
-            if ($user->has_email() && !$user->is_disabled()) {
-                if (!$user->is_anonymous_user()) {
-                    $purl = $this->hoturl("profile");
-                    $link = "<a class=\"q\" href=\"{$purl}\"><strong>" . htmlspecialchars($user->email) . "</strong></a>";
-                    if ($user->is_actas_user()) {
-                        $link = "<span class=\"header-actas\"><span class=\"warning-mark\"></span> Acting as {$link}</span>";
-                    }
-                    $profile_parts[] = "{$link} &nbsp; <a href=\"{$purl}\">Profile</a>";
-                } else {
-                    $profile_parts[] = "<strong>" . htmlspecialchars($user->email) . "</strong>";
-                }
-            }
-
-            // "act as" link
-            if (Contact::$base_auth_user) {
-                $link = $this->selfurl($qreq, ["actas" => null]);
-                $profile_parts[] = "<a href=\"{$link}\">Admin&nbsp;"
-                    . Ht::img('viewas.png', 'Act as ' . htmlspecialchars(Contact::$base_auth_user->email)) . '</a>';
-            } else if ($this->session_key !== null
-                       && ($actas = $_SESSION["last_actas"] ?? null)
-                       && $user->privChair
-                       && strcasecmp($user->email, $actas) !== 0) {
-                $actas_html = htmlspecialchars($actas);
-                $link = $this->selfurl($qreq, ["actas" => $actas]);
-                $profile_parts[] = "<a href=\"{$link}\">{$actas_html}&nbsp;"
-                    . Ht::img('viewas.png', "Act as {$actas_html}") . '</a>';
-            }
-
-            // help
-            if (!$user->is_disabled()) {
-                $helpargs = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
-                $profile_parts[] = '<a href="' . $this->hoturl("help", $helpargs) . '">Help</a>';
-            }
-
-            // sign in and out
-            if (!$user->is_signed_in()
-                && !($this->opt["httpAuthLogin"] ?? false)
-                && $id !== "signin") {
-                $profile_parts[] = '<a href="' . $this->hoturl("signin", ["cap" => null]) . '" class="nw">Sign in</a>';
-            }
-            if ((!$user->is_empty() || ($this->opt["httpAuthLogin"] ?? false))
-                && $id !== "signout") {
-                $profile_parts[] = Ht::form($this->hoturl("=signout", ["cap" => null]), ["class" => "d-inline"])
-                    . Ht::button("Sign out", ["type" => "submit", "class" => "btn btn-link"])
-                    . "</form>";
-            }
-
-            if (!empty($profile_parts))
-                $profile_html .= join(' <span class="barsep">·</span> ', $profile_parts);
-        }
-
         $action_bar = $extra["action_bar"] ?? null;
         if ($action_bar === null) {
             $action_bar = actionBar();
@@ -4824,16 +4812,29 @@ class Conf {
         $title_div = $extra["title_div"] ?? null;
         if ($title_div === null) {
             if (($subtitle = $extra["subtitle"] ?? null)) {
-                $title .= " &nbsp;&#x2215;&nbsp; <strong>" . $subtitle . "</strong>";
+                $title .= " &nbsp;&#x2215;&nbsp; <strong>{$subtitle}</strong>";
             }
             if ($title && $title !== "Home") {
-                $title_div = '<div id="header-page"><h1>' . $title . '</h1></div>';
+                $title_div = "<div id=\"header-page\"><h1>{$title}</h1></div>";
             } else if ($action_bar) {
                 $title_div = '<hr class="c">';
             }
         }
 
-        echo $site_div, '<div id="header-right">', $profile_html;
+        // site header
+        if ($id === "home") {
+            echo '<div id="header-site" class="header-site-home">',
+                '<h1><a class="q" href="', $this->hoturl("index", ["cap" => null]),
+                '">', htmlspecialchars($this->short_name), '</a></h1></div>';
+        } else {
+            echo '<div id="header-site" class="header-site-page">',
+                '<a class="q" href="', $this->hoturl("index", ["cap" => null]),
+                '"><span class="header-site-name">', htmlspecialchars($this->short_name),
+                '</span> Home</a></div>';
+        }
+
+        echo '<div id="header-right">';
+        $this->print_header_profile($id, $qreq, $user);
         if ($my_deadlines && $this->has_interesting_deadline($my_deadlines)) {
             echo '<div id="header-deadline">&nbsp;</div>';
         } else {
@@ -5108,7 +5109,7 @@ class Conf {
         $true_user = 0;
         if ($user && is_object($user)) {
             if ($user->is_actas_user()) {
-                $true_user = Contact::$base_auth_user->contactId;
+                $true_user = $user->base_user()->contactId;
             } else if (!$user->contactId
                        && !empty($pids)
                        && $user->has_capability_for($pids[0])) {

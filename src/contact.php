@@ -171,6 +171,8 @@ class Contact {
     /** @var int */
     private $_activated = 0;
     // 0: no, 1: yes, 2: actas, 4: token
+    /** @var ?Contact */
+    private $_admin_base_user;
 
     /** @var ?non-empty-list<AuthorMatcher> */
     private $_aucollab_matchers;
@@ -663,6 +665,7 @@ class Contact {
                 }
                 self::$base_auth_user = $this;
                 $actascontact->_activated |= 2;
+                $actascontact->_admin_base_user = $this;
                 return $actascontact->activate($qreq, true);
             }
         }
@@ -903,6 +906,13 @@ class Contact {
     /** @return bool */
     function is_actas_user() {
         return ($this->_activated & 3) === 3;
+    }
+
+    /** @return Contact */
+    function base_user() {
+        assert((!$this->is_actas_user() && $this->_admin_base_user === null)
+               || self::$base_auth_user === $this->_admin_base_user);
+        return $this->_admin_base_user ?? $this;
     }
 
     /** @return bool */
