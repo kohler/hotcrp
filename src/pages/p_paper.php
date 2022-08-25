@@ -128,7 +128,7 @@ class Paper_Page {
         }
         $msg = $t < Conf::$now ? $past_msg : $future_msg;
         if ($msg !== "") {
-            $msg = $this->conf->_($msg, $this->conf->unparse_time_long($t) . $this->conf->unparse_usertime_span($t));
+            $msg = $this->conf->_($msg, $this->conf->unparse_time_with_local_span($t));
         }
         if ($msg !== "" && $t < Conf::$now) {
             $msg = "<5><strong>" . Ftext::unparse_as($msg, 5) . "</strong>";

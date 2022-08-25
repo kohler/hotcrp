@@ -3391,15 +3391,32 @@ return {
 
 
 var hotcrp_load = (function ($) {
+    function append_span(e, fmt, d) {
+        var span = document.createElement("span");
+        span.textContent = strftime(fmt, d);
+        span.className = "usertime";
+        e.append(" ", span);
+    }
     function show_usertimes() {
         $(".need-usertime").each(function () {
-            var d = new Date(+this.getAttribute("data-time") * 1000),
-                s = strftime("%X your time", d);
-            if (this.tagName === "SPAN")
-                this.innerHTML = " (" + s + ")";
-            else
-                this.innerHTML = s;
-            removeClass(this, "hidden");
+            var d = new Date(+this.getAttribute("data-time") * 1000), s, n, m;
+            if ((m = this.textContent.match(/(\d+) (\S+) (\d{4})/))) {
+                if (+m[3] !== d.getFullYear())
+                    append_span(this, " (%#e %b %Y %#q your time)", d);
+                else if (+m[1] !== d.getDate())
+                    append_span(this, " (%#e %b %#q your time)", d);
+                else
+                    append_span(this, " (%#q your time)", d);
+            } else if ((m = this.textContent.match(/(\d{4}-\d+-\d+)/))) {
+                if (m[1] !== strftime("%Y-%m-%d"))
+                    append_span(this, " (%Y-%m-%d %#q your time)", d);
+                else
+                    append_span(this, " (%#q your time)", d);
+            } else {
+                this.textContent = strftime(" (%X your time)", d);
+                addClass(this, "usertime");
+                removeClass(this, "hidden");
+            }
             removeClass(this, "need-usertime");
         });
     }

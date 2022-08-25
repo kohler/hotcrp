@@ -733,7 +733,7 @@ class PaperTable {
         $upd_html = "";
         if (Conf::$now <= $upd) {
             // can update until future deadline
-            $upd_html = $this->conf->unparse_time_long($upd) . $this->conf->unparse_usertime_span($upd);
+            $upd_html = $this->conf->unparse_time_with_local_span($upd);
             echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review") . "</strong>", null, ["class" => $checked ? null : "is-error"]),
                 '<p class="feedback is-urgent-note if-unready ', $checked ? "hidden" : "",
                 '">Submissions not marked ready for review by the deadline will not be considered.</p>';
@@ -1616,7 +1616,7 @@ class PaperTable {
         if ($t <= 0) {
             return "";
         }
-        $ts = $this->conf->unparse_time_long($t) . $this->conf->unparse_usertime_span($t);
+        $ts = $this->conf->unparse_time_with_local_span($t);
         return Conf::$now < $t ? " The {$noun} is {$ts}." : " The {$noun} was {$ts}.";
     }
 

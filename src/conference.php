@@ -3284,6 +3284,13 @@ class Conf {
         return $this->_unparse_time($timestamp, "long");
     }
     /** @param int $timestamp
+     * @param string $suffix
+     * @return string */
+    function unparse_time_with_local_span($timestamp, $suffix = "") {
+        $s = $this->_unparse_time($timestamp, "long");
+        return "<span class=\"need-usertime\" data-time=\"{$timestamp}\">{$s}{$suffix}</span>";
+    }
+    /** @param int $timestamp
      * @return string */
     function unparse_time($timestamp) {
         return $this->_unparse_time($timestamp, "timestamp");
@@ -3349,11 +3356,6 @@ class Conf {
             return $timestamp < ($now ? : Conf::$now) ? $d . " ago" : "in " . $d;
         }
     }
-    /** @param int $timestamp
-     * @return string */
-    function unparse_usertime_span($timestamp) {
-        return '<span class="usertime hidden need-usertime" data-time="' . $timestamp . '"></span>';
-    }
 
     /** @param string $name
      * @return string */
@@ -3367,7 +3369,7 @@ class Conf {
     function unparse_setting_time_span($name, $suffix = "") {
         $t = $this->settings[$name] ?? 0;
         if ($t > 0) {
-            return $this->unparse_time_long($t) . $suffix . $this->unparse_usertime_span($t);
+            return $this->unparse_time_with_local_span($t, $suffix);
         } else {
             return "N/A";
         }
@@ -3377,7 +3379,7 @@ class Conf {
     function unparse_setting_deadline_span($name) {
         $t = $this->settings[$name] ?? 0;
         if ($t > 0) {
-            return "Deadline: " . $this->unparse_time_long($t) . $this->unparse_usertime_span($t);
+            return "Deadline: " . $this->unparse_time_with_local_span($t);
         } else {
             return "No deadline";
         }

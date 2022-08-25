@@ -6,7 +6,7 @@ class Deadlines_Page {
     /** @param Conf $conf */
     static private function dl1($conf, $time, $phrase, $description, $arg = null) {
         echo "<dt><strong>", $conf->_($phrase, $arg), "</strong>: ",
-            $conf->unparse_time_long($time), $conf->unparse_usertime_span($time),
+            $conf->unparse_time_with_local_span($time),
             "</dt>\n<dd>", $conf->_($description, $arg), "</dd>";
     }
 
