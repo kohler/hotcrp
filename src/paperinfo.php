@@ -842,6 +842,37 @@ class PaperInfo {
 
 
     /** @return int */
+    function open_time() {
+        return $this->conf->setting("sub_open") ?? 0;
+    }
+
+    /** @return int */
+    function registration_deadline() {
+        return $this->conf->setting("sub_reg") ?? 0;
+    }
+
+    /** @return int */
+    function update_deadline() {
+        return $this->conf->setting("sub_update") ?? 0;
+    }
+
+    /** @return int */
+    function submission_deadline() {
+        return $this->conf->setting("sub_sub") ?? 0;
+    }
+
+    /** @return int */
+    function submission_grace() {
+        return $this->conf->setting("sub_grace") ?? 0;
+    }
+
+    /** @return bool */
+    function can_update_until_deadline() {
+        return ($this->conf->setting("sub_freeze") ?? 0) <= 0;
+    }
+
+
+    /** @return int */
     function format_of($text, $check_simple = false) {
         return $this->conf->check_format($this->paperFormat, $check_simple ? $text : null);
     }

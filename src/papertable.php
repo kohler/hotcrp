@@ -706,7 +706,7 @@ class PaperTable {
         } else {
             return $this->prow->timeSubmitted > 0
                 || ($checkbox
-                    && !$this->conf->setting("sub_freeze")
+                    && $this->prow->can_update_until_deadline()
                     && (!$this->prow->paperId
                         || (!$this->conf->opt("noPapers") && $this->prow->paperStorageId <= 1)));
         }
@@ -718,6 +718,9 @@ class PaperTable {
             return;
         }
 
+        $can_upd = $this->prow->can_update_until_deadline();
+        $upd = $can_upd ? $this->prow->update_deadline() : 0;
+
         $checked = $this->is_ready(true);
         $ready_open = $this->prow->paperStorageId > 1 || $this->conf->opt("noPapers");
         echo '<div class="ready-container ',
@@ -725,13 +728,27 @@ class PaperTable {
             '"><div class="checki fx"><span class="checkc">',
             Ht::checkbox("submitpaper", 1, $checked, ["disabled" => !$ready_open]),
             "</span>";
-        if ($this->conf->setting("sub_freeze")) {
-            echo Ht::label("<strong>" . $this->conf->_("The submission is complete") . "</strong>"),
-                '<p class="settings-ap hint">You must complete the submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</p>';
-        } else {
+
+        // script.js depends on the HTML here
+        $upd_html = "";
+        if (Conf::$now <= $upd) {
+            // can update until future deadline
+            $upd_html = $this->conf->unparse_time_long($upd) . $this->conf->unparse_usertime_span($upd);
+            echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review") . "</strong>", null, ["class" => $checked ? null : "is-error"]),
+                '<p class="feedback is-urgent-note if-unready ', $checked ? "hidden" : "",
+                '">Submissions not marked ready for review by the deadline will not be considered.</p>';
+        } else if ($can_upd) {
             echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review") . "</strong>");
+        } else {
+            echo Ht::label("<strong>" . $this->conf->_("The submission is complete") . "</strong>", null, ["class" => $checked ? null : "is-error"]),
+                '<p class="feedback is-urgent-note">You must complete the submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</p>';
         }
         echo "</div></div>\n";
+
+        // update message
+        if (Conf::$now <= $upd) {
+            echo '<div class="mt-2 feedback is-note">You can update the submission until ', $upd_html, '.</div>';
+        }
     }
 
     static function document_upload_input($inputid, $dtype, $accepts) {
@@ -1585,15 +1602,22 @@ class PaperTable {
 
     // Functions for editing
 
-    function deadline_setting_is($dname, $dl = "deadline") {
-        $deadline = $this->conf->unparse_setting_time_span($dname);
-        if ($deadline === "N/A") {
+    /** @param string $dname
+     * @param string $noun
+     * @return string */
+    function deadline_setting_is($dname, $noun = "deadline") {
+        return $this->deadline_is($this->conf->setting($dname) ?? 0, $noun);
+    }
+
+    /** @param int $t
+     * @param string $noun
+     * @return string */
+    function deadline_is($t, $noun = "deadline") {
+        if ($t <= 0) {
             return "";
-        } else if (Conf::$now < $this->conf->setting($dname)) {
-            return " The {$dl} is {$deadline}.";
-        } else {
-            return " The {$dl} was {$deadline}.";
         }
+        $ts = $this->conf->unparse_time_long($t) . $this->conf->unparse_usertime_span($t);
+        return Conf::$now < $t ? " The {$noun} is {$ts}." : " The {$noun} was {$ts}.";
     }
 
     private function _deadline_override_message() {
@@ -1617,11 +1641,11 @@ class PaperTable {
     }
 
     private function _edit_message_new_paper_deadline() {
-        $sub_open = $this->conf->setting("sub_open");
-        if ($sub_open <= 0 || $sub_open > Conf::$now) {
+        $opent = $this->prow->open_time();
+        if ($opent <= 0 || $opent > Conf::$now) {
             $msg = "<5>The site is not open for submissions." . $this->_deadline_override_message();
         } else {
-            $msg = '<5>The <a href="' . $this->conf->hoturl("deadlines") . '">deadline</a> for registering submissions has passed.' . $this->deadline_setting_is("sub_reg") . $this->_deadline_override_message();
+            $msg = '<5>The <a href="' . $this->conf->hoturl("deadlines") . '">deadline</a> for registering submissions has passed.' . $this->deadline_is($this->prow->registration_deadline()) . $this->_deadline_override_message();
         }
         $this->_main_message($msg, $this->admin ? 1 : 2);
     }
@@ -1629,15 +1653,15 @@ class PaperTable {
     private function _edit_message_new_paper() {
         if ($this->admin || $this->conf->time_start_paper()) {
             $t = [$this->conf->_("Enter information about your submission.")];
-            $sub_reg = $this->conf->setting("sub_reg");
-            $sub_upd = $this->conf->setting("sub_update");
-            if ($sub_reg > 0 && $sub_upd > 0 && $sub_reg < $sub_upd) {
-                $t[] = $this->conf->_("Submissions must be registered by %s and completed by %s.", $this->conf->unparse_setting_time("sub_reg"), $this->conf->unparse_setting_time("sub_sub"));
+            $reg_dl = $this->prow->registration_deadline();
+            $upd_dl = $this->prow->update_deadline();
+            if ($reg_dl > 0 && $upd_dl > 0 && $reg_dl < $upd_dl) {
+                $t[] = $this->conf->_("Submissions must be registered by %s and completed by %s.", $this->conf->unparse_time_long($reg_dl), $this->conf->unparse_time_long($this->prow->submission_deadline()));
                 if (!$this->conf->opt("noPapers")) {
                     $t[] = $this->conf->_("PDF upload is not required to register.");
                 }
-            } else if ($sub_upd > 0) {
-                $t[] = $this->conf->_("Submissions must be completed by %s.", $this->conf->unparse_setting_time("sub_update"));
+            } else if ($upd_dl > 0) {
+                $t[] = $this->conf->_("Submissions must be completed by %s.", $this->conf->unparse_time_long($upd_dl));
             }
             $this->_main_message("<5>" . join(" ", $t), 0);
             if (($v = $this->conf->_i("submit"))) {
@@ -1661,29 +1685,34 @@ class PaperTable {
             $this->_main_message("<5>This submission was not accepted." . $this->_forceShow_message(), 1);
         } else if ($this->prow->timeWithdrawn > 0) {
             if ($this->user->can_revive_paper($this->prow)) {
-                $this->_main_message("<5>This submission has been withdrawn, but you can still revive it." . $this->deadline_setting_is("sub_update"), 1);
+                $this->_main_message("<5>This submission has been withdrawn, but you can still revive it." . $this->deadline_is($this->prow->update_deadline()), 1);
             } else {
                 $this->_main_message("<5>This submission has been withdrawn." . $this->_forceShow_message(), 1);
             }
         } else if ($this->prow->timeSubmitted <= 0) {
             $whyNot = $this->user->perm_edit_paper($this->prow);
+            $sub_dl = $this->prow->submission_deadline();
             if (!$whyNot) {
-                $t = [];
-                $t[] = $this->conf->_("This submission is not yet ready for review.");
-                if ($this->conf->setting("sub_update")) {
-                    $t[] = $this->conf->_("Submissions must be completed by %s to be considered.", $this->conf->unparse_setting_time("sub_update"));
+                if (($missing = PaperTable::missing_required_fields($this->prow))) {
+                    $first = $this->conf->_("<5>This submission is not ready for review. Required fields %#s are missing.", PaperTable::field_title_links($missing, "missing_title"));
                 } else {
-                    $t[] = $this->conf->_("Incomplete submissions will not be considered.");
+                    $first = $this->conf->_("<5>This submission is marked as not ready for review.");
+                    $first = "<strong>" . Ftext::unparse_as($first, 5) . "</strong>";
                 }
-                $this->_main_message("<5>" . join(" ", $t), 1);
+                if (($upd_dl = $this->prow->update_deadline()) > 0) {
+                    $rest = $this->conf->_("Submissions incomplete as of %s will not be considered.", $this->conf->unparse_time_long($upd_dl));
+                } else {
+                    $rest = $this->conf->_("Incomplete submissions will not be considered.");
+                }
+                $this->_main_message("<5>{$first} {$rest}", MessageSet::URGENT_NOTE);
             } else if (isset($whyNot["updateSubmitted"])
                        && $this->user->can_finalize_paper($this->prow)) {
-                $this->_main_message('<5>This submission is not ready for review. Although you cannot make further changes, the current version can be still be submitted for review.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
+                $this->_main_message('<5>This submission is not ready for review. Although you cannot make further changes, the current version can be still be submitted for review.' . $this->deadline_is($sub_dl) . $this->_deadline_override_message(), 1);
             } else if (isset($whyNot["deadline"])) {
-                if ($this->conf->time_between_settings("", "sub_sub", "sub_grace") > 0) {
+                if ($this->conf->time_between(null, $sub_dl, $this->prow->submission_grace()) > 0) {
                     $this->_main_message('<5>The site is not open for updates at the moment.' . $this->_deadline_override_message(), 1);
                 } else {
-                    $this->_main_message('<5>The <a href="' . $this->conf->hoturl("deadlines") . '">submission deadline</a> has passed and this submission will not be reviewed.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
+                    $this->_main_message('<5>The <a href="' . $this->conf->hoturl("deadlines") . '">submission deadline</a> has passed and this submission will not be reviewed.' . $this->deadline_is($sub_dl) . $this->_deadline_override_message(), 1);
                 }
             } else {
                 $this->_main_message('<5>This submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message(), MessageSet::URGENT_NOTE);
@@ -1699,8 +1728,9 @@ class PaperTable {
                 $this->_main_message("<5>The deadline for updating final versions has passed. You can still change contact information." . $this->_deadline_override_message(), 1);
             }
         } else if ($this->user->can_edit_paper($this->prow)) {
-            if ($this->mode === "edit") {
-                $this->_main_message('<5>This submission is ready for review. You do not need to take further action. However, you can still make changes if you wish.' . $this->deadline_setting_is("sub_update", "submission deadline"), MessageSet::SUCCESS);
+            if ($this->mode === "edit"
+                && (!$this->edit_status || !$this->edit_status->has_error())) {
+                $this->_main_message('<5>This submission is ready for review. You do not need to take further action, but you can still make changes if you wish.' . $this->deadline_is($this->prow->update_deadline(), "submission deadline"), MessageSet::SUCCESS);
             }
         } else if ($this->mode === "edit") {
             if ($this->user->can_withdraw_paper($this->prow, true)) {

@@ -11,12 +11,18 @@ body {
 select, button {
 	color: #222222;
 }
+.text-color {
+	color: #333333;
+}
 
 .dark {
 	color: white;
 }
 .dark select, .dark button {
 	color: #eeeeee;
+}
+.dark .text-color {
+	color: white;
 }
 
 :link, :visited,
@@ -464,7 +470,7 @@ span.nb {
 	cursor: grabbing !important;
 }
 .checki {
-	padding-left: 1.3125em;
+	padding-left: 1.275em;
 }
 label.checki {
 	display: block;
@@ -472,8 +478,8 @@ label.checki {
 .checkc {
 	display: inline-block;
 	text-indent: 0;
-	margin-left: -1.3125em;
-	width: 1.3125em;
+	margin-left: -1.275em;
+	width: 1.275em;
 	white-space: nowrap;
 }
 .checkc > input {

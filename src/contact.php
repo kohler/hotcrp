@@ -3175,7 +3175,7 @@ class Contact {
         }
         if ($prow->timeSubmitted > 0
             && strpos($kind, "f") !== false
-            && $this->conf->setting("sub_freeze") > 0) {
+            && $prow->can_update_until_deadline()) {
             $whyNot["updateSubmitted"] = true;
         }
         if ($rights->allow_administer) {

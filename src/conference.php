@@ -3388,8 +3388,27 @@ class Conf {
      * @return bool */
     function time_after_setting($lo, $time = null) {
         $time = $time ?? Conf::$now;
-        $t0 = $this->settings[$lo] ?? null;
-        return $t0 !== null && $t0 > 0 && $time >= $t0;
+        $t = $this->settings[$lo] ?? 0;
+        return $t > 0 && $time >= $t;
+    }
+
+    /** @param ?int $lo
+     * @param int $hi
+     * @param ?int $grace
+     * @param ?int $time
+     * @return 0|1|2 */
+    function time_between($lo, $hi, $grace = null, $time = null) {
+        // see also ResponseRound::time_allowed
+        $time = $time ?? Conf::$now;
+        if ($lo !== null && ($lo <= 0 || $time < $lo)) {
+            return 0;
+        } else if ($hi <= 0 || $time <= $hi) {
+            return 1;
+        } else if ($grace !== null && $time <= $hi + $grace) {
+            return 2;
+        } else {
+            return 0;
+        }
     }
 
     /** @param string $lo

@@ -9210,7 +9210,7 @@ $(background_format_check);
 
 handle_ui.on("change.js-submit-paper", function (evt) {
     if (evt.target && (evt.target.name === "submission" || evt.target.name === "final" || evt.target.name === "submitpaper")) {
-        var readye = this.elements.submitpaper, was, is;
+        var readye = this.elements.submitpaper, was, is, label;
         was = is = this.getAttribute("data-submitted");
         if (!was) {
             var e0 = this.elements.final || this.elements.submission;
@@ -9242,6 +9242,12 @@ handle_ui.on("change.js-submit-paper", function (evt) {
             t = "Save and submit";
         }
         $("button.btn-savepaper").html(t);
+        if (readye && (label = readye.parentElement.nextSibling) && label.tagName === "LABEL") {
+            toggleClass(label, "is-error", !is);
+            if (label.nextSibling && hasClass(label.nextSibling, "if-unready")) {
+                toggleClass(label.nextSibling, "hidden", is);
+            }
+        }
     }
 });
 

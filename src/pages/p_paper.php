@@ -118,38 +118,22 @@ class Paper_Page {
         }
     }
 
-    /** @param string $dl
+    /** @param int $t
      * @param string $future_msg
      * @param string $past_msg
      * @return string */
-    private function deadline_note($dl, $future_msg, $past_msg) {
-        $deadline = $this->conf->unparse_setting_time_span($dl);
-        $strong = false;
-        if ($deadline === "N/A") {
-            $msg = "";
-        } else if ($this->conf->time_after_setting($dl)) {
-            $msg = $past_msg;
-            $strong = true;
-        } else {
-            $msg = $future_msg;
+    private function time_note($t, $future_msg, $past_msg) {
+        if ($t <= 0) {
+            return "";
         }
+        $msg = $t < Conf::$now ? $past_msg : $future_msg;
         if ($msg !== "") {
-            $msg = $this->conf->_($msg, $deadline);
+            $msg = $this->conf->_($msg, $this->conf->unparse_time_long($t) . $this->conf->unparse_usertime_span($t));
         }
-        if ($msg !== "" && $strong) {
+        if ($msg !== "" && $t < Conf::$now) {
             $msg = "<5><strong>" . Ftext::unparse_as($msg, 5) . "</strong>";
         }
         return $msg;
-    }
-
-    /** @return list<PaperOption> */
-    private function missing_required_fields(PaperInfo $prow) {
-        $missing = [];
-        foreach ($prow->form_fields() as $o) {
-            if ($o->test_required($prow) && !$o->value_present($prow->force_option($o)))
-                $missing[] = $o;
-        }
-        return $missing;
     }
 
     function handle_update($action) {
@@ -228,34 +212,38 @@ class Paper_Page {
         // additional information
         $notes = [];
         $note_status = MessageSet::PLAIN;
-        if ($action == "final") {
+        if ($this->ps->has_error()) {
+            // only print save error message; to do otherwise is confusing
+        } else if ($action == "final") {
             if ($new_prow->timeFinalSubmitted <= 0) {
                 $notes[] = $conf->_("<0>The final version has not yet been submitted.");
             }
-            $notes[] = $this->deadline_note("final_soft",
+            $notes[] = $this->time_note($this->conf->setting("final_soft") ?? 0,
                 "<5>You have until %s to make further changes.",
                 "<5>The deadline for submitting final versions was %s.");
         } else if ($new_prow->timeSubmitted > 0) {
             $note_status = MessageSet::SUCCESS;
             $notes[] = $conf->_("<0>The submission is ready for review.");
-            if ($conf->setting("sub_freeze") <= 0) {
-                $notes[] = $this->deadline_note("sub_update",
+            if ($new_prow->can_update_until_deadline()) {
+                $notes[] = $this->time_note($new_prow->update_deadline(),
                     "<5>You have until %s to make further changes.", "");
             }
         } else {
             $note_status = MessageSet::URGENT_NOTE;
-            if ($conf->setting("sub_freeze") > 0) {
+            if (!$new_prow->can_update_until_deadline()) {
                 $notes[] = $conf->_("<0>The submission has not yet been completed.");
             } else if (($missing = PaperTable::missing_required_fields($new_prow))) {
                 $notes[] = $conf->_("<5>The submission is not ready for review. Required fields %#s are missing.", PaperTable::field_title_links($missing, "missing_title"));
             } else {
-                $notes[] = $conf->_("<0>The submission is marked as not ready for review.");
+                $first = $conf->_("This submission is marked as not ready for review.");
+                $notes[] = "<5><strong>" . Ftext::unparse_as(Ftext::ensure($first, 0), 5) . "</strong>";
             }
-            $notes[] = $this->deadline_note("sub_update",
+            $notes[] = $this->time_note($new_prow->update_deadline(),
                 "<5>You have until %s to make further changes.",
                 "<5>The deadline for updating submissions was %s.");
-            if (($msg = $this->deadline_note("sub_sub", "<5>Submissions incomplete as of %s will not be considered for review.", "")) !== "") {
-                $notes[] = "<5><strong>" . Ftext::unparse_as($msg, 5) . "</strong>";
+            if (($msg = $this->time_note($new_prow->submission_deadline(),
+                "<5>Submissions incomplete as of %s will not be considered.", "")) !== "") {
+                $notes[] = $msg;
             }
         }
 
@@ -274,11 +262,11 @@ class Paper_Page {
         }
         if ($this->ps->has_error()) {
             if (!$this->ps->has_change()) {
-                $this->ps->splice_msg($msgpos++, $conf->_("<0>Changes not saved. Please correct these issues and save again:"), MessageSet::ERROR);
+                $this->ps->splice_msg($msgpos++, $conf->_("<5><strong>Changes not saved.</strong> Please correct these issues and save again."), MessageSet::ERROR);
             } else {
-                $this->ps->splice_msg($msgpos++, $conf->_("<0>Please correct these issues and save again:"), MessageSet::URGENT_NOTE);
+                $this->ps->splice_msg($msgpos++, $conf->_("<0>Please correct these issues and save again."), MessageSet::URGENT_NOTE);
             }
-        } else if ($this->ps->has_problem() && $conf->setting("sub_freeze") <= 0) {
+        } else if ($this->ps->has_problem() && $new_prow->can_update_until_deadline()) {
             $this->ps->splice_msg($msgpos++, $conf->_("<0>Please check these issues before completing the submission:"), MessageSet::WARNING_NOTE);
         }
         $notes = array_filter($notes, function ($n) { return $n !== ""; });
