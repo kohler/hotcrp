@@ -236,21 +236,21 @@ class Paper_Page {
                 "<5>You have until %s to make further changes.",
                 "<5>The deadline for submitting final versions was %s.");
         } else if ($new_prow->timeSubmitted > 0) {
-            $notes[] = $conf->_("<0>The submission is ready for review.");
             $note_status = MessageSet::SUCCESS;
+            $notes[] = $conf->_("<0>The submission is ready for review.");
             if ($conf->setting("sub_freeze") <= 0) {
                 $notes[] = $this->deadline_note("sub_update",
                     "<5>You have until %s to make further changes.", "");
             }
         } else {
+            $note_status = MessageSet::URGENT_NOTE;
             if ($conf->setting("sub_freeze") > 0) {
                 $notes[] = $conf->_("<0>The submission has not yet been completed.");
-            } else if (($missing = $this->missing_required_fields($new_prow))) {
+            } else if (($missing = PaperTable::missing_required_fields($new_prow))) {
                 $notes[] = $conf->_("<5>The submission is not ready for review. Required fields %#s are missing.", PaperTable::field_title_links($missing, "missing_title"));
             } else {
                 $notes[] = $conf->_("<0>The submission is marked as not ready for review.");
             }
-            $note_status = MessageSet::WARNING_NOTE;
             $notes[] = $this->deadline_note("sub_update",
                 "<5>You have until %s to make further changes.",
                 "<5>The deadline for updating submissions was %s.");

@@ -1610,6 +1610,8 @@ class PaperTable {
             return "";
         }
     }
+    /** @param string $m
+     * @param int $status */
     private function _main_message($m, $status) {
         $this->edit_status->msg_at(":main", $m, $status);
     }
@@ -1623,6 +1625,7 @@ class PaperTable {
         }
         $this->_main_message($msg, $this->admin ? 1 : 2);
     }
+
     private function _edit_message_new_paper() {
         if ($this->admin || $this->conf->time_start_paper()) {
             $t = [$this->conf->_("Enter information about your submission.")];
@@ -1683,7 +1686,7 @@ class PaperTable {
                     $this->_main_message('<5>The <a href="' . $this->conf->hoturl("deadlines") . '">submission deadline</a> has passed and this submission will not be reviewed.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
                 }
             } else {
-                $this->_main_message('<5>This submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message(), 1);
+                $this->_main_message('<5>This submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message(), MessageSet::URGENT_NOTE);
             }
         } else if ($this->conf->allow_final_versions()
                    && $this->prow->outcome > 0
@@ -1718,6 +1721,16 @@ class PaperTable {
             $x[] = Ht::link(htmlspecialchars($o->$title_method()), "#" . $o->readable_formid());
         }
         return $x;
+    }
+
+    /** @return list<PaperOption> */
+    static function missing_required_fields(PaperInfo $prow) {
+        $missing = [];
+        foreach ($prow->form_fields() as $o) {
+            if ($o->test_required($prow) && !$o->value_present($prow->force_option($o)))
+                $missing[] = $o;
+        }
+        return $missing;
     }
 
     private function _edit_message_existing_paper() {
