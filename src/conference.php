@@ -4894,10 +4894,9 @@ class Conf {
         echo join(' <span class="barsep">·</span> ', $profile_parts);
     }
 
+    /** @param string $id */
     private function print_header_profile($id, Qrequest $qreq, Contact $user) {
-        if (!$user || $user->is_empty()) {
-            return;
-        }
+        assert($user && !$user->is_empty());
 
         if ($user->is_actas_user()) {
             $details_class = " header-actas";
@@ -4994,7 +4993,9 @@ class Conf {
         }
 
         echo '<div id="header-right">';
-        $this->print_header_profile($id, $qreq, $user);
+        if ($user && !$user->is_empty()) {
+            $this->print_header_profile($id, $qreq, $user);
+        }
         echo '</div>', ($title_div ? : ""), ($action_bar ? : "");
 
         echo "  <hr class=\"c\">\n";
