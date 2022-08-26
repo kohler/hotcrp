@@ -974,14 +974,6 @@ span.hastitle {
 	content: "";
 }
 
-/* multimessage */
-.mmm {
-	margin-bottom: 0.3em;
-}
-.mmm:last-child {
-	margin-bottom: 0;
-}
-
 
 /* Tab links, as in search form */
 .is-tla {

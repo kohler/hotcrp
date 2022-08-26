@@ -42,7 +42,7 @@ class Mail_Page {
     function clean_request() {
         $qreq = $this->qreq;
         if (isset($qreq->psearch)
-            || (isset($qreq->default) && $qreq->defaultfn === "recheck")) {
+            || (isset($qreq->default) && $qreq->defaultfn === "psearch")) {
             $qreq->recheck = "1";
         }
         if (isset($qreq->recipients) && !isset($qreq->to)) {
@@ -76,7 +76,7 @@ class Mail_Page {
                     $qreq->to = $row->recipients;
                 }
                 if ($row->q) {
-                    $qreq["plimit"] = 1;
+                    $qreq->plimit = 1;
                 }
             }
         }
@@ -190,19 +190,20 @@ class Mail_Page {
     function print_review_requests() {
         $plist = new PaperList("reqrevs", new PaperSearch($this->viewer, ["t" => "req", "q" => ""]));
         $plist->set_table_id_class("foldpl", "fullw");
+        $plist->set_view("sel", false);
         if ($plist->is_empty()) {
             $this->conf->warning_msg("<5>You have not requested any external reviews. " . Ht::link("Return home", $this->conf->hoturl("index")));
         } else {
             echo "<h2>Requested reviews</h2>\n\n";
             $plist->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST);
             $plist->print_table_html();
-            echo '<div class="info">';
+            echo '<div class="msg msg-info"><p>';
             if ($plist->has("need_review")) {
                 echo "Some of your requested external reviewers have not completed their reviews. To send them an email reminder, check the text below and then select “Prepare mail.” You’ll get a chance to review the emails and select specific reviewers to remind.";
             } else {
                 echo 'All of your requested external reviewers have completed their reviews. ', Ht::link("Return home", $this->conf->hoturl("index"));
             }
-            echo "</div>\n";
+            echo "</p></div>\n";
         }
         $this->done = !$plist->has("need_review");
     }
@@ -328,7 +329,7 @@ class Mail_Page {
     }
 
     function print_form() {
-        echo Ht::form($this->conf->hoturl("=mail", "check=1")),
+        echo Ht::form($this->conf->hoturl("=mail", ["check" => 1, "monreq" => $this->qreq->monreq])),
             Ht::hidden("defaultfn", ""),
             Ht::hidden_default_submit("default", 1);
 
@@ -350,23 +351,23 @@ class Mail_Page {
                 "<span class=\"fx8\">:&nbsp; ";
         } else {
             echo '<td class="nw">Papers: &nbsp;</td><td>',
-                Ht::hidden("plimit", 1), '<span>';
+                Ht::checkbox("plimit", 1, true, ["id" => "plimit", "class" => "hidden"]),
+                '<span>';
         }
         echo Ht::entry("q", (string) $this->qreq->q, [
                 "id" => "q", "placeholder" => "(All)", "spellcheck" => false,
                 "class" => "papersearch need-suggest js-autosubmit", "size" => 36,
-                "data-submit-fn" => "recheck"
+                "data-submit-fn" => "psearch"
             ]), " &nbsp;in&nbsp;";
-        if (count($this->search_topt) == 1) {
+        if (count($this->search_topt) === 1) {
             echo htmlspecialchars($this->search_topt[$this->qreq->t]);
         } else {
             echo " ", Ht::select("t", $this->search_topt, $this->qreq->t, ["id" => "t"]);
         }
         echo " &nbsp;", Ht::submit("psearch", "Search"), "</span>";
-        if (isset($this->qreq->plimit)
-            && !isset($this->qreq->monreq)
-            && isset($this->qreq->recheck)) {
-            $plist = new PaperList("reviewers", new PaperSearch($this->viewer, ["t" => $this->qreq->t, "q" => $this->qreq->q]));
+        if ($this->qreq->recheck) {
+            $plist = new PaperList($this->qreq->t === "req" ? "reqrevs" : "reviewers",
+                new PaperSearch($this->viewer, ["t" => $this->qreq->t, "q" => $this->qreq->q]));
             echo "<div class=\"fx8";
             if ($plist->is_empty()) {
                 echo "\">No papers match that search.";
@@ -386,7 +387,7 @@ class Mail_Page {
         }
         echo 'Assignments since:&nbsp; ',
             Ht::entry("newrev_since", $this->qreq->newrev_since,
-                      ["placeholder" => "(all)", "size" => 30, "class" => "js-autosubmit", "data-submit-fn" => "recheck"]),
+                      ["placeholder" => "(all)", "size" => 30, "class" => "js-autosubmit", "data-submit-fn" => "psearch"]),
             '</div>';
 
         echo '<div class="fx9 g"></div>';

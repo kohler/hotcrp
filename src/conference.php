@@ -3942,8 +3942,8 @@ class Conf {
     function report_saved_messages() {
         $max_status = 0;
         foreach ($this->_save_msgs ?? [] as $m) {
-            self::msg_on($this, $m[0], $m[1]);
-            if (is_int($m[1])) {
+            if (is_string($m[0] ?? null) && is_int($m[1] ?? null)) {
+                self::msg_on($this, $m[0], $m[1]);
                 $max_status = max($max_status, $m[1]);
             }
         }
@@ -4349,18 +4349,16 @@ class Conf {
             }
         } else if ($conf && !$conf->_header_printed) {
             $conf->_save_msgs[] = [$text, $type];
-        } else if (is_int($type) || $type[0] === "x") {
+        } else if (is_int($type)) {
             echo Ht::msg($text, $type);
         } else {
-            if (is_array($text)) {
-                $text = '<div class="multimessage">' . join("", array_map(function ($x) { return '<div class="mmm">' . $x . '</div>'; }, $text)) . '</div>';
-            }
-            echo "<div class=\"$type\">$text</div>";
+            error_log("bad Conf::msg_on: " . debug_string_backtrace());
         }
     }
 
     /** @param string $text
-     * @param int $type */
+     * @param int $type
+     * @deprecated */
     function msg($text, $type) {
         self::msg_on($this, $text, $type);
     }

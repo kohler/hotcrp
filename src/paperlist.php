@@ -344,7 +344,7 @@ class PaperList implements XtContext {
         case "pl":
             return "sel id title revtype revstat status";
         case "reqrevs":
-            return "id title revdelegation revstat status";
+            return "sel[selected] id title revdelegation revstat status";
         case "reviewAssignment":
             return "id title mypref topicscore desirability assignment potentialconflict topics reviewers linkto[assign]";
         case "conflictassign":

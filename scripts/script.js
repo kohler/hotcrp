@@ -11188,19 +11188,22 @@ $(function () { $(document.body).awaken(); });
 
 $(function () {
     var err = [], elt = [];
+    $("div.info,div.warning,div.confirm,div.merror,div.help,.xinfo,.xconfirm,.xwarning,.xmerror").each(function () {
+        err.push(this.tagName.concat(".", this.className.replace(/\s+/g, ".")));
+    });
     $("a.btn[href='']").each(function () {
         err.push(this.tagName.concat(".", this.className.replace(/\s+/g, "."), "[href=", this.href, "]"));
         elt.push(this);
     });
     if (err.length > 0) {
         if (window.console) {
-            for (var i = 0; i !== err.length; ++i) {
+            for (var i = 0; i !== elt.length; ++i) {
                 console.log(elt[i]);
             }
         }
         log_jserror(err.join("\n"));
     }
-    if (document.documentMode) {
+    if (document.documentMode || window.attachEvent) {
         var msg = $('<div class="msg msg-error"></div>').appendTo("#msgs-initial");
         append_feedback_near(msg[0], {message: "<0>This site no longer supports Internet Explorer", status: 2});
         append_feedback_near(msg[0], {message: "<5>Please use <a href=\"https://browsehappy.com/\">a modern browser</a> if you can.", status: -5});
