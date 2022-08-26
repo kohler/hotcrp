@@ -129,16 +129,30 @@ class MailSender {
         $this->print_request_form(false);
         if ($this->phase === 2) {
             echo '<div id="foldmail" class="foldc fold2c">',
-                '<div class="fn fx2 merror">In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br><span id="mailcount"></span></div>',
+                '<div class="fn fx2 msg msg-warning">',
+                  '<p class="feedback is-warning">',
+                    '<span id="mailcount">In the process of</span> sending mail. <strong>Do not leave this page until this message disappears!</strong>',
+                  '</p>',
+                '</div>',
                 '<div id="mailwarnings"></div>',
-                '<div class="fx"><div class="confirm">Sent to:&nbsp;', $this->recip->unparse(),
-                '<span id="mailinfo"></span></div>',
-                '<div class="aa">',
-                Ht::submit("again", "Prepare more mail"),
-                "</div></div>",
+                '<div class="fx">',
+                  '<div class="msg msg-confirm">',
+                    '<p class="feedback is-confirm">',
+                      'Sent to:&nbsp;', $this->recip->unparse(),
+                      '<span id="mailinfo"></span>',
+                    '</p>',
+                  '</div>',
+                  '<div class="aa">',
+                    Ht::submit("again", "Prepare more mail"),
+                  '</div>',
+                '</div>',
                 // This next is only displayed when Javascript is off
-                '<div class="fn2 warning">Sending mail. <strong>Do not leave this page until it finishes rendering!</strong></div>',
-                "</div>";
+                '<div class="fn2 msg msg-warning">',
+                  '<p class="feedback is-warning">',
+                    'Sending mail. <strong>Do not leave this page until it finishes rendering!</strong>',
+                  '</p>',
+                '</div>',
+              '</div>';
         } else if ($this->phase === 0) {
             if (isset($this->qreq->body)
                 && $this->user->privChair
@@ -156,21 +170,31 @@ class MailSender {
                 }
             }
             echo '<div id="foldmail" class="foldc fold2c">',
-                '<div class="fn fx2 warning">In the process of preparing mail. You will be able to send the prepared mail once this message disappears.<br><span id="mailcount"></span></div>',
-                '<div id="mailwarnings"></div>',
-                '<div class="fx info">Verify that the mails look correct, then select “Send” to send the checked mails.<br>',
-                "Mailing to:&nbsp;", $this->recip->unparse(),
-                '<span id="mailinfo"></span>';
+              '<div class="fn fx2 msg msg-warning">',
+                '<p class="feedback is-warning">',
+                  '<span id="mailcount">In the process of</span> preparing mail. You will be able to send the prepared mail once this message disappears. ',
+                '</p>',
+              '</div>',
+              '<div id="mailwarnings"></div>',
+              '<div class="fx msg msg-info">',
+                '<p class="feedback is-note">',
+                  'Verify that the mails look correct, then select “Send” to send the checked mails.<br>',
+                  "Mailing to:&nbsp;", $this->recip->unparse(),
+                  '<span id="mailinfo"></span>';
             if (!preg_match('/\A(?:pc\z|pc:|all\z)/', $this->recipients)
                 && $this->qreq->plimit
                 && (string) $this->qreq->q !== "") {
                 echo "<br>Paper selection:&nbsp;", htmlspecialchars($this->qreq->q);
             }
-            echo "</div>";
+            echo '</p>',
+              '</div>';
             $this->print_actions(" fx");
             // This next is only displayed when Javascript is off
-            echo '<div class="fn2 warning">Scroll down to send the prepared mail once the page finishes loading.</div>',
-                "</div>\n";
+            echo '<div class="fn2 msg msg-warning">',
+                '<p class="feedback is-warning">',
+                  'Scroll down to send the prepared mail once the page finishes loading.',
+                '</p>',
+              "</div></div>\n";
         }
         echo Ht::unstash_script("hotcrp.fold('mail',0,2)");
         $this->started = true;
@@ -186,7 +210,7 @@ class MailSender {
         } else {
             $s .= min(round(100 * $nrows_done / max(1, $nrows_total)), 99);
         }
-        $s .= "% done.\";";
+        $s .= "% done\";";
         $m = plural($this->mcount, "mail") . ", "
             . plural($this->mrecipients, "recipient");
         $s .= "document.getElementById('mailinfo').innerHTML=\"<span class='barsep'>·</span>" . $m . "\";";
