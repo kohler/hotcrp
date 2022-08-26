@@ -326,6 +326,9 @@ class Search_Page {
         } else {
             $pl_text = null;
         }
+        if ($this->pl->has("sel")) {
+            ensure_session();
+        }
 
         // echo form
         $this->conf->header("Search", "search", [
