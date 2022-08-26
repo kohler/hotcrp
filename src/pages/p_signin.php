@@ -27,7 +27,7 @@ class Signin_Page {
             error_log($msg);
         }
         ensure_session();
-        $user->conf->error_msg($user->conf->_i("badpost"));
+        $user->conf->error_msg($user->conf->_id("badpost", ""));
     }
 
 

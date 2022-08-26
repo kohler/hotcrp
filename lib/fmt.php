@@ -440,7 +440,7 @@ class Fmt {
 
         if (!($im && $im->no_conversions)
             && count($args) > 0
-            && preg_match('/%(?:(\d+)(\[[^\[\]\$]*\]|)\$)?(#[AON]?|)(\d*(?:\.\d+)?)([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
+            && preg_match('/%(?:(\d+)(\[[^\[\]\$]*\]|)\$|)(#[AON]?|)(\d*(?:\.\d+|))([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
             $argi = $m[1] ? +$m[1] : ++$argnum;
             if (($fa = self::find_arg($args, $argi - 1))) {
                 $val = $fa->value;
@@ -578,9 +578,20 @@ class Fmt {
     }
 
     /** @param string $id
-     * @return string */
+     * @return string
+     * @deprecated */
     function _i($id, ...$args) {
         $itext = "";
+        if (($im = $this->find(null, $id, $args, null))) {
+            $itext = $im->otext;
+        }
+        return $this->expand($itext, $args, $id, $im);
+    }
+
+    /** @param string $id
+     * @param string $itext
+     * @return string */
+    function _id($id, $itext, ...$args) {
         if (($im = $this->find(null, $id, $args, null))) {
             $itext = $im->otext;
         }

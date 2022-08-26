@@ -5383,9 +5383,18 @@ class Conf {
     }
 
     /** @param string $id
-     * @return string */
+     * @return string
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     function _i($id, ...$args) {
         return $this->fmt()->_i($id, ...$args);
+    }
+
+    /** @param string $id
+     * @param string $itext
+     * @return string */
+    function _id($id, $itext, ...$args) {
+        return $this->fmt()->_id($id, $itext, ...$args);
     }
 
     /** @param string $context

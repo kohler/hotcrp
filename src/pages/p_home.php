@@ -163,7 +163,7 @@ class Home_Page {
     }
 
     function print_message(Contact $user) {
-        if (($t = $user->conf->_i("home"))) {
+        if (($t = $user->conf->_id("home", ""))) {
             echo '<div class="msg ',
                 $this->_has_sidebar ? 'avoid-home-sidebar' : 'maxw-auto',
                 ' mb-5">', $t, '</div>';

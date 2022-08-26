@@ -353,12 +353,11 @@ class LoginHelper {
         } else {
             $e = "Incorrect password.";
         }
-        $e = $conf->_i("signin_error", $info, [
+        $e = $conf->_id("signin_error", $e, $info, [
             "email" => $email,
             "signin" => $conf->hoturl_raw("signin", ["email" => $xemail]),
             "forgotpassword" => $conf->hoturl_raw("forgotpassword", ["email" => $xemail]),
-            "newaccount" => $conf->hoturl_raw("newaccount", ["email" => $xemail]),
-            "message" => $e
+            "newaccount" => $conf->hoturl_raw("newaccount", ["email" => $xemail])
         ]);
         Ht::error_at(isset($info["email"]) ? "email" : "password", $e);
         if (isset($info["password"])) {

@@ -31,9 +31,9 @@ class Fmt_Tester {
         xassert_eqq($ms->_("fart"), "fart example C");
         xassert_eqq($ms->_("fart", "bobby"), "fart example B");
         xassert_eqq($ms->_("fart", "bob"), "fart example A");
-        xassert_eqq($ms->_i("fox-saying"), "What the fox said");
-        xassert_eqq($ms->_i("fox-saying", new FmtArg("fox", "Animal")), "What the Animal said");
-        xassert_eqq($ms->_i("test103", "Ass"), "Ass %% %s %BU%%MAN%Ass");
+        xassert_eqq($ms->_id("fox-saying", ""), "What the fox said");
+        xassert_eqq($ms->_id("fox-saying", "", new FmtArg("fox", "Animal")), "What the Animal said");
+        xassert_eqq($ms->_id("test103", "", "Ass"), "Ass %% %s %BU%%MAN%Ass");
 
         $ms->add(["itext" => "butt", "otext" => "normal butt"]);
         $ms->add(["itext" => "butt", "otext" => "fat butt", "require" => ["$1[fat]"]]);

@@ -583,7 +583,7 @@ class Assign_Page {
             '<div class="revcard-head">',
             "<h2>", $req, "</h2></div><div class=\"revcard-body\">";
 
-        echo '<p class="w-text">', $this->conf->_i("external_review_request_description");
+        echo '<p class="w-text">', $this->conf->_id("external_review_request_description", "");
         if ($user->allow_administer($prow)) {
             echo "\nTo create an anonymous review with a review token, leave Name and Email blank.";
         }

@@ -4329,7 +4329,7 @@ class Contact {
         if ($this->privChair || !$this->conf->opt("clickthrough_$ctype"))  {
             return true;
         }
-        $csha1 = sha1($this->conf->_i("clickthrough_$ctype"));
+        $csha1 = sha1($this->conf->_id("clickthrough_{$ctype}", ""));
         $data = $this->data("clickthrough");
         return ($data && ($data->$csha1 ?? null))
             || ($prow
