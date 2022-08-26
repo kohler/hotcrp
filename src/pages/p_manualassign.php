@@ -319,8 +319,8 @@ class ManualAssign_Page {
         if (isset($this->qreq->reviewer)) {
             $this->conf->ensure_cached_user_collaborators();
             $reviewer = ctype_digit($this->qreq->reviewer)
-                ? $this->conf->user_by_id(intval($this->qreq->reviewer))
-                : $this->conf->user_by_email($this->qreq->reviewer);
+                ? $this->conf->user_by_id(intval($this->qreq->reviewer), USER_SLICE)
+                : $this->conf->user_by_email($this->qreq->reviewer, USER_SLICE);
         }
         if ($reviewer && ($reviewer->roles & Contact::ROLE_PC) === 0) {
             $reviewer = null;

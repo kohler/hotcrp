@@ -1328,7 +1328,7 @@ class PaperTable {
             ["type" => "ps", "fold" => $editable ? $type : false]);
         if (!$value) {
             $n = "";
-        } else if (($p = $this->conf->user_by_id($value))
+        } else if (($p = $this->conf->user_by_id($value, USER_SLICE))
                    && ($p->isPC
                        || ($extrev_shepherd && $this->prow->review_type($p) == REVIEW_EXTERNAL))) {
             $n = $this->user->reviewer_html_for($p);

@@ -88,7 +88,7 @@ class RequestReview_API {
 
         // check requester
         if ($request && $user->can_administer($prow)) {
-            $requester = $user->conf->user_by_id($request->requestedBy) ?? $user;
+            $requester = $user->conf->user_by_id($request->requestedBy, USER_SLICE) ?? $user;
         } else {
             $requester = $user;
         }
@@ -454,7 +454,7 @@ class RequestReview_API {
             return JsonResult::make_permission_error("email", "<0>Reassigning reviews is only possible for accounts to which you are currently signed in");
         }
 
-        $destu = $user->conf->user_by_email($email)
+        $destu = $user->conf->user_by_email($email, USER_SLICE)
             ?? $user->conf->cdb_user_by_email($email);
         if ($destu && !$destu->is_disabled()) {
             $destu->ensure_account_here();
@@ -465,7 +465,7 @@ class RequestReview_API {
 
         $prow->conf->qe("update PaperReview set contactId=? where paperId=? and reviewId=? and contactId=? and reviewSubmitted is null and timeApprovalRequested<=0",
             $destu->contactId, $prow->paperId, $rrow->reviewId, $rrow->contactId);
-        $oldu = $user->conf->user_by_id($rrow->contactId);
+        $oldu = $user->conf->user_by_id($rrow->contactId, USER_SLICE);
         $user->log_activity_for($destu->contactId, "Review {$rrow->reviewId} reassigned from " . ($oldu ? $oldu->email : "<user {$rrow->contactId}>"), $prow);
 
         if ($redirect_in === "1"
@@ -486,7 +486,7 @@ class RequestReview_API {
             return JsonResult::make_missing_error("email");
         }
 
-        if (($u = $user->conf->user_by_email($email))) {
+        if (($u = $user->conf->user_by_email($email, USER_SLICE))) {
             $xrrows = $prow->reviews_by_user($u);
         }
         $result = $user->conf->qe("select * from ReviewRequest where paperId=? and email=?",
@@ -538,9 +538,9 @@ class RequestReview_API {
         $notified = false;
         if ($user->conf->time_review_open()) {
             foreach ($rrows as $rrow) {
-                if (($reviewer = $user->conf->user_by_id($rrow->contactId))) {
+                if (($reviewer = $user->conf->user_by_id($rrow->contactId, USER_SLICE))) {
                     $cc = Text::nameo($user, NAME_MAILQUOTE|NAME_E);
-                    if (($requester = $user->conf->user_by_id($rrow->requestedBy))
+                    if (($requester = $user->conf->user_by_id($rrow->requestedBy, USER_SLICE))
                         && $requester->contactId != $user->contactId) {
                         $cc .= ", " . Text::nameo($requester, NAME_MAILQUOTE|NAME_E);
                     }

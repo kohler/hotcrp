@@ -1286,7 +1286,7 @@ class PaperInfo {
     /** @return list<Contact> */
     function administrators() {
         if ($this->managerContactId > 0) {
-            $u = $this->conf->user_by_id($this->managerContactId);
+            $u = $this->conf->user_by_id($this->managerContactId, USER_SLICE);
             return $u ? [$u] : [];
         }
 
@@ -2444,7 +2444,7 @@ class PaperInfo {
     private function ensure_full_review_name() {
         $names = [];
         foreach ($this->_full_review ?? [] as $rrow) {
-            if (($u = $this->conf->user_by_id($rrow->contactId))) {
+            if (($u = $this->conf->user_by_id($rrow->contactId, USER_SLICE))) {
                 $rrow->assign_name($u, $names);
             }
         }
@@ -2601,7 +2601,7 @@ class PaperInfo {
             $prow->_reviews_flags |= self::REVIEW_HAS_NAMES;
             $names = [];
             foreach ($prow->all_reviews() as $rrow) {
-                if (($u = $this->conf->user_by_id($rrow->contactId))) {
+                if (($u = $this->conf->user_by_id($rrow->contactId, USER_SLICE))) {
                     $rrow->assign_name($u, $names);
                 }
             }
@@ -2797,7 +2797,7 @@ class PaperInfo {
         }
         $us = [];
         foreach (array_keys($cids) as $cid) {
-            if (($u = $this->conf->user_by_id($cid)))
+            if (($u = $this->conf->user_by_id($cid, USER_SLICE)))
                 $us[] = $u;
         }
         return $us;

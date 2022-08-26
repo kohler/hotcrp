@@ -1184,12 +1184,12 @@ class PaperStatus extends MessageSet {
             $this->conf->prefetch_users_by_id($this->_author_change_cids);
             $emails = [];
             foreach ($this->_author_change_cids as $cid) {
-                if (($u = $this->conf->user_by_id($cid)))
+                if (($u = $this->conf->user_by_id($cid, USER_SLICE)))
                     $emails[] = $u->email;
             }
             $this->conf->prefetch_cdb_users_by_email($emails);
             foreach ($this->_author_change_cids as $cid) {
-                if (($u = $this->conf->user_by_id($cid)))
+                if (($u = $this->conf->user_by_id($cid, USER_SLICE)))
                     $u->update_cdb_roles();
             }
         }

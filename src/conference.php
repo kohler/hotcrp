@@ -2376,8 +2376,9 @@ class Conf {
     }
 
     /** @param int $id
+     * @param 0|1 $sliced
      * @return ?Contact */
-    function user_by_id($id) {
+    function user_by_id($id, $sliced = 0) {
         $id = (int) $id;
         if ($id === 0) {
             return null;
@@ -2390,12 +2391,17 @@ class Conf {
             $this->_user_cache_missing[] = $id;
             $this->_refresh_user_cache();
         }
-        return $this->_user_cache[$id] ?? null;
+        $u = $this->_user_cache[$id] ?? null;
+        if ($u && $sliced !== 1 && $u->_slice !== 0) {
+            $u->unslice();
+        }
+        return $u;
     }
 
     /** @param string $email
+     * @param 0|1 $sliced
      * @return ?Contact */
-    function user_by_email($email) {
+    function user_by_email($email, $sliced = 0) {
         if ($email === "") {
             return null;
         }
@@ -2410,25 +2416,29 @@ class Conf {
             $this->_user_cache_missing[] = $lemail;
             $this->_refresh_user_cache();
         }
-        return $this->_user_email_cache[$lemail] ?? null;
+        $u = $this->_user_email_cache[$lemail] ?? null;
+        if ($u && $sliced !== 1 && $u->_slice !== 0) {
+            $u->unslice();
+        }
+        return $u;
     }
 
     /** @param int $id
      * @return ?Contact
      * @deprecated */
     function cached_user_by_id($id) {
-        return $this->user_by_id($id);
+        return $this->user_by_id($id, USER_SLICE);
     }
 
     /** @param string $email
      * @return ?Contact
      * @deprecated */
     function cached_user_by_email($email) {
-        return $this->user_by_email($email);
+        return $this->user_by_email($email, USER_SLICE);
     }
 
     function ensure_cached_user_collaborators() {
-        if ($this->_slice & 1) {
+        if (($this->_slice & 1) !== 0) {
             $this->_slice &= ~1;
             $this->_user_cache = $this->_user_cache ?? $this->_pc_user_cache;
             if (!empty($this->_user_cache)) {
@@ -2487,7 +2497,7 @@ class Conf {
         }
         $missing = $redirect = $oemails = [];
         foreach ($emails as $i => $email) {
-            $u = $this->user_by_email($email);
+            $u = $this->user_by_email($email, USER_SLICE);
             if (!$u && $cdb) {
                 $missing[] = $i;
                 $this->prefetch_cdb_user_by_email($email);
@@ -2527,7 +2537,7 @@ class Conf {
                 if ($u->cdb_confid !== 0) {
                     $u2 = $this->cdb_user_by_id($u->primaryContactId);
                 } else {
-                    $u2 = $this->user_by_id($u->primaryContactId);
+                    $u2 = $this->user_by_id($u->primaryContactId, USER_SLICE);
                 }
                 if ($u2) {
                     $oemails[$i] = $u2->email;

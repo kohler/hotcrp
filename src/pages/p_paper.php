@@ -379,7 +379,7 @@ class Paper_Page {
 
     /** @param int $capuid */
     private function print_capability_user_message($capuid) {
-        if (($u = $this->conf->user_by_id($capuid))) {
+        if (($u = $this->conf->user_by_id($capuid, USER_SLICE))) {
             if ($this->user->has_email()) {
                 $this->conf->warning_msg("<0>You’re accessing this submission using a special link for reviewer {$u->email}. (You are signed in as {$this->user->email}.)");
             } else {

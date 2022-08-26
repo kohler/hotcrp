@@ -318,9 +318,9 @@ class Assign_Page {
         // create contact-like for identity
         $rrowid = null;
         if (isset($rrow->contactId) && $rrow->contactId > 0) {
-            $rrowid = $this->conf->user_by_id($rrow->contactId);
+            $rrowid = $this->conf->user_by_id($rrow->contactId, USER_SLICE);
         } else if ($rrow->reviewType === REVIEW_REQUEST) {
-            $rrowid = $this->conf->user_by_email($rrow->email);
+            $rrowid = $this->conf->user_by_email($rrow->email, USER_SLICE);
         }
         if ($rrowid === null) {
             if ($rrow->reviewType === REVIEW_REQUEST) {

@@ -156,7 +156,7 @@ class UpdateContactdb_Batch {
         $n = count($emails);
         for ($i = 0; $i !== $n; ++$i) {
             $au = $authors[$emails[$i]];
-            if (!$this->conf->user_by_email($pemails[$i])) {
+            if (!$this->conf->user_by_email($pemails[$i], USER_SLICE)) {
                 if (strcasecmp($au->email, $pemails[$i]) !== 0) {
                     // try to preserve case of original email
                     $au->email = $pemails[$i];

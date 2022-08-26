@@ -55,6 +55,8 @@ const TAG_REGEX = '~?~?' . TAG_REGEX_NOTWIDDLE;
 const TAG_MAXLEN = 80;
 const TAG_INDEXBOUND = 2147483646;
 
+const USER_SLICE = 1;
+
 global $Conf;
 
 require_once("siteloader.php");

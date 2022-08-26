@@ -279,7 +279,7 @@ class ContactSearch {
             }
             $this->contacts = [];
             foreach ($this->ids as $cid) {
-                if (($p = $this->cset[$cid] ?? $this->conf->user_by_id($cid)))
+                if (($p = $this->cset[$cid] ?? $this->conf->user_by_id($cid, USER_SLICE)))
                     $this->contacts[] = $p;
             }
         }

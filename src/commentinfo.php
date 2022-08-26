@@ -1023,7 +1023,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
 
         // go over mentions, send email
         foreach ($desired_mentions as $mxm) {
-            if (($mentionee = $this->conf->user_by_id($mxm[0]))
+            if (($mentionee = $this->conf->user_by_id($mxm[0], USER_SLICE))
                 && !$mentionee->is_dormant()
                 && $mentionee->can_view_comment($this->prow, $this)) {
                 if (!isset($this->saved_mentions[$mxm[0]])) {

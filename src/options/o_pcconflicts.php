@@ -139,7 +139,7 @@ class PCConflicts_PaperOption extends PaperOption {
         }
         unset($v);
         for ($i = 0; $i !== count($emails); ++$i) {
-            $pc = $prow->conf->user_by_email($pemails[$i]);
+            $pc = $prow->conf->user_by_email($pemails[$i], USER_SLICE);
             if ($pc && $pc->isPC) {
                 $this->update_value_map($vm, $pc->contactId, $values[$i]);
             } else {

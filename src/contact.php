@@ -401,7 +401,7 @@ class Contact {
     }
 
     function unslice() {
-        if ($this->_slice) {
+        if ($this->_slice !== 0) {
             assert($this->contactId > 0);
             $this->conf->unslice_user($this);
         }
@@ -1079,7 +1079,7 @@ class Contact {
 
         if (!is_object($x) || !isset($x->firstName)) {
             if ($pfx === "u") {
-                $x = $this->conf->user_by_id($cid);
+                $x = $this->conf->user_by_id($cid, USER_SLICE);
             } else {
                 $x = $this->name_for("u", $cid);
             }
@@ -1135,8 +1135,8 @@ class Contact {
     function ksort_cid_array(&$array) {
         $this->conf->prefetch_users_by_id(array_keys($array));
         uksort($array, function ($a, $b) {
-            $au = $this->conf->user_by_id($a);
-            $bu = $this->conf->user_by_id($b);
+            $au = $this->conf->user_by_id($a, USER_SLICE);
+            $bu = $this->conf->user_by_id($b, USER_SLICE);
             if ($au && $au->pc_index !== null && $bu && $bu->pc_index !== null) {
                 return $au->pc_index <=> $bu->pc_index;
             } else if ($au && $bu) {
@@ -1449,7 +1449,7 @@ class Contact {
     function reviewer_capability_user($pid) {
         if ($this->_capabilities !== null
             && ($rcid = $this->_capabilities["@ra{$pid}"] ?? null)) {
-            return $this->conf->user_by_id($rcid);
+            return $this->conf->user_by_id($rcid, USER_SLICE);
         } else {
             return null;
         }
@@ -1545,6 +1545,7 @@ class Contact {
 
     function change_email($email) {
         assert($this->has_account_here());
+        assert($this->_slice === 0);
         $old_email = $this->email;
         $aupapers = self::email_authored_papers($this->conf, $email, $this);
         $this->conf->ql("update ContactInfo set email=? where contactId=?", $email, $this->contactId);
@@ -2022,6 +2023,7 @@ class Contact {
 
     /** @return bool */
     function password_unset() {
+        assert($this->_slice === 0);
         $cdbu = $this->cdb_user();
         return (!$cdbu
                 || (string) $cdbu->password === ""
@@ -2033,6 +2035,7 @@ class Contact {
 
     /** @return bool */
     function can_reset_password() {
+        assert($this->_slice === 0);
         $cdbu = $this->cdb_user();
         return !$this->conf->external_login()
             && !str_starts_with((string) $this->password, " nologin")
@@ -2111,6 +2114,7 @@ class Contact {
      * @return array{ok:true,user:$this}|array{ok:false} */
     function check_password_info($input) {
         assert(!$this->conf->external_login());
+        assert($this->_slice === 0);
         $cdbu = $this->cdb_user();
 
         // check passwords
@@ -4326,7 +4330,7 @@ class Contact {
 
     /** @return bool */
     function can_clickthrough($ctype, PaperInfo $prow = null) {
-        if ($this->privChair || !$this->conf->opt("clickthrough_$ctype"))  {
+        if ($this->privChair || !$this->conf->opt("clickthrough_{$ctype}"))  {
             return true;
         }
         $csha1 = sha1($this->conf->_id("clickthrough_{$ctype}", ""));

@@ -177,7 +177,7 @@ class PaperRequest {
             }
             foreach (Contact::session_users() as $i => $email) {
                 if (strcasecmp($user->email, $email) !== 0
-                    && ($u = $user->conf->user_by_email($email))
+                    && ($u = $user->conf->user_by_email($email, USER_SLICE))
                     && self::check_prow($prow, $u, $qreq)) {
                     $nav = Navigation::get();
                     throw new Redirection($user->conf->make_absolute_site("u/{$i}/{$nav->raw_page}{$nav->path}{$nav->query}"));
