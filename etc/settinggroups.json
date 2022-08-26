@@ -77,13 +77,13 @@
     },
     {
         "name": "submissions/open", "order": 10,
-        "print_separator": true,
+        "separator_before": true,
         "print_function": "Submissions_SettingParser::print_open",
         "settings": ["submission_open"]
     },
     {
         "name": "submissions/deadlines", "order": 20,
-        "print_separator": true,
+        "separator_before": true,
         "print_function": "Submissions_SettingParser::print_deadlines",
         "settings": ["submission_registration", "submission_done", "submission_grace"]
     },
@@ -100,7 +100,7 @@
     },
     {
         "name": "submissions/pcseeall", "order": 50,
-        "print_separator": true,
+        "separator_before": true,
         "print_function": "Submissions_SettingParser::print_pcseeall",
         "settings": ["draft_submission_early_visibility"]
     },
@@ -286,7 +286,7 @@
     },
     {
         "name": "tags/visibility", "order": 100,
-        "print_separator": true, "print_members": true
+        "separator_before": true, "print_members": true
     },
     {
         "name": "tags/visibility/seeall", "order": 10,
@@ -348,7 +348,7 @@
     },
     {
         "name": "decisions/author-exchange-comments", "order": 120,
-        "print_separator": true,
+        "separator_before": true,
         "print_function": "ReviewVisibility_SettingParser::print_author_exchange_comments",
         "settings": ["comment_allow_author"]
     },

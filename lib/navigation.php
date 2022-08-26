@@ -17,7 +17,8 @@ class NavigationState {
     /** @var string */
     public $base_path_relative; // "/BASEPATH/", "../"+, or ""
     /** @var string */
-    public $site_path;          // "/SITEPATH/"; always ends in /; suffix of $site_path
+    public $site_path;          // "/SITEPATH/"; always ends in /; suffix of $site_path;
+                                // may end in `/u/NNN/`
     /** @var string */
     public $site_path_relative; // "/SITEPATH/", "../"+, or ""
     /** @var string */

@@ -30,6 +30,8 @@ class ComponentSet implements XtContext {
     private $_title_class = "";
     /** @var string */
     private $_separator = "";
+    /** @var bool */
+    private $_need_separator = false;
     /** @var ?string */
     private $_section_closer;
     /** @var ComponentContext */
@@ -306,7 +308,17 @@ class ComponentSet implements XtContext {
      * @return $this */
     function set_separator($separator) {
         $this->_separator = $separator;
+        $this->_need_separator = false;
         return $this;
+    }
+
+    /** @param string $separator
+     * @return string */
+    function swap_separator($separator) {
+        $old_separator = $this->_separator;
+        $this->_separator = $separator;
+        $this->_need_separator = false;
+        return $old_separator;
     }
 
     /** @param list<mixed> $args
@@ -366,6 +378,7 @@ class ComponentSet implements XtContext {
         $title = $title ?? "";
         $hashid_notitle = $title === "" && (string) $hashid !== "";
         $this->print_end_section();
+        $this->trigger_separator();
         if ($this->_next_section_class !== "" || $hashid_notitle) {
             echo '<div';
             if ($this->_next_section_class !== "") {
@@ -454,15 +467,16 @@ class ComponentSet implements XtContext {
         if ($gj) {
             $title = ($gj->print_title ?? true) ? $gj->title ?? "" : "";
             $hashid = $gj->hashid ?? null;
-            $separator = $gj->print_separator ?? false;
+            if ($gj->separator_before ?? false) {
+                $this->mark_separator();
+            }
             if ($title !== ""
                 || ($this->_section_closer === null && $this->_next_section_class !== "")
                 || (string) $hashid !== "") {
                 // create default hashid from title
                 $this->print_start_section($title, $hashid);
-            }
-            if ($separator) {
-                echo is_string($separator) ? $separator : $this->_separator;
+            } else {
+                $this->trigger_separator();
             }
             return $this->_print_body($gj);
         } else {
@@ -489,6 +503,9 @@ class ComponentSet implements XtContext {
                 $result = $this->print_group($gj->print_members);
             }
         }
+        if ($gj->separator_after ?? false) {
+            $this->mark_separator();
+        }
         return $result;
     }
 
@@ -509,6 +526,17 @@ class ComponentSet implements XtContext {
         $this->end_print();
         $top && $this->print_end_section();
         return $result;
+    }
+
+    function mark_separator() {
+        $this->_need_separator = true;
+    }
+
+    function trigger_separator() {
+        if ($this->_need_separator) {
+            echo $this->_separator;
+        }
+        $this->_need_separator = false;
     }
 
     /** @param string $name

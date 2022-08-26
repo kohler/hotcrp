@@ -2476,7 +2476,7 @@ function popup_skeleton(options) {
     var hc = new HtmlCollector, $d = null;
     options = options || {};
     var near = options.near || options.anchor;
-    hc.push('<div class="modal" role="dialog"><div class="modal-dialog'.concat(
+    hc.push('<div class="modal hidden" role="dialog"><div class="modal-dialog'.concat(
         !near || near === window ? " modal-dialog-centered" : "",
         options.className ? " " + options.className : "",
         options.style ? '" style="' + escape_html(options.style) : "",
@@ -2567,7 +2567,7 @@ function popup_near(elt, near) {
     while (!hasClass(elt, "modal-dialog"))
         elt = elt.childNodes[0];
     var bgelt = elt.parentNode;
-    addClass(bgelt, "show");
+    removeClass(bgelt, "hidden");
     addClass(document.body, "modal-open");
     if (!hasClass(elt, "modal-dialog-centered")) {
         var anchorPos = $(near).geometry(),
@@ -2675,10 +2675,7 @@ function display_main(is_initial) {
     // this logic is repeated in the back end
     var i, x, browser_now = now_sec(),
         now = +dl.now + (browser_now - +dl.load),
-        elt = $$("header-deadline");
-
-    if (!elt)
-        return;
+        elt;
 
     if (!is_initial
         && Math.abs(browser_now - dl.now) >= 300000
@@ -2708,7 +2705,10 @@ function display_main(is_initial) {
                 break;
             }
         }
+    if (dltime && dltime - now > 2678400 /* 31 days */)
+        dlname = null;
 
+    elt = $$("header-deadline");
     if (dlname) {
         var impending = !dltime || dltime - now < 180.5,
             s = '<a href="' + hoturl_html("deadlines");
@@ -2721,11 +2721,24 @@ function display_main(is_initial) {
             s += unparse_time_relative(dltime, now, 8);
         if (impending)
             s = '<span class="impending">' + s + '</span>';
+        if (!elt) {
+            var hdrelt = $$("header-right"), divelt, sepelt;
+            if (!hdrelt)
+                return;
+            divelt = document.createElement("div");
+            divelt.className = "d-inline-block";
+            elt = document.createElement("span");
+            elt.id = "header-deadline";
+            sepelt = document.createElement("span");
+            sepelt.className = "barsep ml-1 mr-1";
+            sepelt.textContent = "·";
+            divelt.append(elt, sepelt);
+            hdrelt.insertBefore(divelt, hdrelt.firstChild);
+        }
         elt.innerHTML = s;
-        removeClass(elt, "hidden");
     } else {
-        elt.innerHTML = "";
-        addClass(elt, "hidden");
+        if (elt && elt.parentElement.className === "d-inline-block")
+            elt.parentElement.remove();
     }
 
     if (!redisplay_timeout && dlname) {
@@ -3794,6 +3807,77 @@ $(function () {
 });
 
 
+// dropdown menus
+
+(function ($) {
+var is_ie = document.documentMode || window.attachEvent;
+
+if (is_ie) {
+    $(function () {
+        $("details .dropmenu-container").addClass("hidden");
+        $("details").attr("open", "");
+    });
+}
+
+function dropmenu_close() {
+    $$("dropmenu-modal").remove();
+    if (!is_ie)
+        $("details.dropmenu-details").removeAttr("open");
+}
+
+handle_ui.on("click.js-dropmenu-open", function (evt) {
+    var modal = $$("dropmenu-modal"), elt = this, was_open;
+    if (elt.tagName === "BUTTON")
+        elt = elt.closest("summary");
+    was_open = is_ie ? hasClass(elt.parentElement.lastChild, "hidden") : elt.parentElement.open;
+    if (!was_open && !modal) {
+        modal = document.createElement("div");
+        modal.id = "dropmenu-modal";
+        modal.className = "modal transparent";
+        document.body.appendChild(modal);
+        modal.addEventListener("click", dropmenu_close, false);
+    } else if (modal)
+        dropmenu_close();
+    if (is_ie || this.tagName === "BUTTON") {
+        if (is_ie)
+            toggleClass(elt.parentElement.lastChild, "hidden", !was_open);
+        else
+            elt.parentElement.open = !was_open;
+        evt.preventDefault();
+        handle_ui.stopPropagation(evt);
+    }
+});
+
+handle_ui.on("click.dropmenu", function (evt) {
+    var li, es, bs, i;
+    if (evt.target.tagName === "A"
+        || evt.target.tagName === "BUTTON"
+        || evt.target.closest("ul") !== this) {
+        return;
+    }
+    li = evt.target.closest("li");
+    if ((es = li.querySelectorAll("a")).length === 1) {
+        es[0].click();
+        evt.preventDefault();
+        handle_ui.stopPropagation(evt);
+    } else if ((es = li.querySelectorAll("form")).length === 1) {
+        es = es[0].elements;
+        bs = [];
+        for (i = 0; i !== es.length; ++i) {
+            if (es[i].type === "submit")
+                bs.push(es[i]);
+        }
+        if (bs.length === 1) {
+            bs[0].click();
+            evt.preventDefault();
+            handle_ui.stopPropagation(evt);
+        }
+    }
+});
+
+})($);
+
+
 // autosubmit
 
 $(document).on("keypress", "input.js-autosubmit", function (evt) {
@@ -3831,6 +3915,7 @@ handle_ui.on("js-keydown-enter-submit", function (evt) {
 
 
 // review types
+
 var review_types = (function () {
 var canon = [
         null, "none", "external", "pc", "secondary",
@@ -3913,7 +3998,9 @@ return {
 };
 })();
 
+
 // assignment selection
+
 (function ($) {
 function make_radio(name, value, text, revtype) {
     var rname = "assrev" + name, id = rname + "_" + value,
@@ -4183,6 +4270,7 @@ handle_ui.on("js-request-review-preview-email", function (evt) {
     handle_ui.stopPropagation(evt);
 });
 
+
 // mail
 handle_ui.on("change.js-mail-recipients", function () {
     var plimit = this.closest("form").elements.plimit;
@@ -4201,6 +4289,7 @@ handle_ui.on(".js-mail-populate-template", function () {
     document.location = hoturl("mail", {template: this.value});
     this.selectedIndex = i;
 });
+
 
 // autoassignment
 (function () {

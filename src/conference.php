@@ -1092,6 +1092,8 @@ class Conf {
             return !$user || $user->is_manager();
         } else if ($s === "pc") {
             return !$user || $user->isPC;
+        } else if ($s === "author") {
+            return !$user || $user->is_author();
         } else if ($s === "reviewer") {
             return !$user || $user->is_reviewer();
         } else if ($s === "view_review") {
@@ -4736,7 +4738,99 @@ class Conf {
         return false;
     }
 
-    private function print_header_profile($id, Qrequest $qreq, Contact $user) {
+    /** @param ComponentSet $pagecs */
+    function print_profilemenu_item(Contact $user, Qrequest $qreq, $pagecs, $gj) {
+        $itemid = substr($gj->name, 14); // NB 14 === strlen("__profilemenu/")
+        if ($itemid === "me") {
+            if (!$user->has_email()) {
+                return;
+            }
+            $pagecs->trigger_separator();
+            $type = $user->is_actas_user() ? "Acting as" : "Signed in as";
+            $t = "{$type} <strong>" . htmlspecialchars($user->email) . "</strong>";
+            if (!$user->is_disabled() && !$user->is_anonymous_user()) {
+                echo '<li class="has-quiet-link">', Ht::link($t, $this->hoturl("profile")), '</li>';
+            } else {
+                echo '<li>', $t, '</li>';
+            }
+            $pagecs->mark_separator();
+        } else if ($itemid === "other_accounts") {
+            $pagecs->trigger_separator();
+            $base_email = $user->base_user()->email;
+            $actas_email = null;
+            if ($user->is_actas_user()) {
+                $t = "Signed in as <strong>" . htmlspecialchars($base_email) . "</strong>";
+                echo '<li class="has-link">', Ht::link($t, $this->selfurl($qreq, ["actas" => null])), '</li>';
+            } else if ($this->session_key !== null && $user->privChair) {
+                $actas_email = $_SESSION["last_actas"] ?? null;
+            }
+            $nav = Navigation::get();
+            foreach (Contact::session_users() as $i => $email) {
+                if ($actas_email !== null && strcasecmp($email, $actas_email) === 0) {
+                    $actas_email = null;
+                }
+                if (strcasecmp($email, $base_email) !== 0) {
+                    $url = "{$nav->base_path_relative}u/$i/" . $this->selfurl($qreq, ["actas" => null], self::HOTURL_SITEREL);
+                    echo '<li class="has-link">', Ht::link("Switch to " . htmlspecialchars($email), $url), '</li>';
+                }
+            }
+            if ($actas_email !== null) {
+                echo '<li class="has-link">', Ht::link("Act as ". htmlspecialchars($actas_email), $this->selfurl($qreq, ["actas" => $actas_email])), '</li>';
+            }
+            $t = $user->is_empty() ? "Sign in" : "Add account";
+            echo '<li class="has-link">', Ht::link($t, $this->hoturl("signin")), '</li>';
+        } else if ($itemid === "profile") {
+            if (!$user->has_email()) {
+                return;
+            }
+            $pagecs->trigger_separator();
+            if (!$user->is_disabled()) {
+                echo '<li class="has-link">', Ht::link("Your profile", $this->hoturl("profile")), '</li>';
+            } else {
+                echo '<li class="dim">Your profile</li>';
+            }
+        } else if ($itemid === "my_submissions") {
+            $pagecs->trigger_separator();
+            echo '<li class="has-link">', Ht::link("Your submissions", $this->hoturl("search", "t=a")), '</li>';
+        } else if ($itemid === "my_reviews") {
+            $pagecs->trigger_separator();
+            echo '<li class="has-link">', Ht::link("Your reviews", $this->hoturl("search", "t=r")), '</li>';
+        } else if ($itemid === "search") {
+            $pagecs->trigger_separator();
+            echo '<li class="has-link">', Ht::link("Search", $this->hoturl("search")), '</li>';
+        } else if ($itemid === "help") {
+            if ($user->is_disabled()) {
+                return;
+            }
+            $pagecs->trigger_separator();
+            echo '<li class="has-link">', Ht::link("Help", $this->hoturl("help")), '</li>';
+        } else if ($itemid === "settings") {
+            $pagecs->trigger_separator();
+            echo '<li class="has-link">', Ht::link("Settings", $this->hoturl("settings")), '</li>';
+        } else if ($itemid === "users") {
+            $pagecs->trigger_separator();
+            echo '<li class="has-link">', Ht::link("Users", $this->hoturl("users")), '</li>';
+        } else if ($itemid === "assignments") {
+            $pagecs->trigger_separator();
+            echo '<li class="has-link">', Ht::link("Assignments", $this->hoturl("autoassign")), '</li>';
+        } else if ($itemid === "signout") {
+            if (!$user->has_email()) {
+                return;
+            }
+            $pagecs->mark_separator();
+            $pagecs->trigger_separator();
+            if ($user->is_actas_user()) {
+                echo '<li class="has-link">', Ht::link("Return to main account", $this->selfurl($qreq, ["actas" => null])), '</li>';
+                return;
+            }
+            echo '<li class="has-link">',
+                Ht::form($this->hoturl("=signout", ["cap" => null])),
+                Ht::button("Sign out", ["type" => "submit", "class" => "btn btn-link"]),
+                '</form></li>';
+        }
+    }
+
+    private function print_header_profile_old($id, Qrequest $qreq, Contact $user) {
         if (!$user || $user->is_empty()) {
             return;
         }
@@ -4790,6 +4884,43 @@ class Conf {
         }
 
         echo join(' <span class="barsep">·</span> ', $profile_parts);
+    }
+
+    private function print_header_profile($id, Qrequest $qreq, Contact $user) {
+        if (!$user || $user->is_empty()) {
+            return;
+        }
+
+        if ($user->is_actas_user()) {
+            $details_class = " header-actas";
+            $details_prefix = "<span class=\"warning-mark\"></span> Acting as ";
+            $details_suffix = "";
+            $button_class = "btn-qlink";
+        } else {
+            $details_class = $details_prefix = "";
+            $details_suffix = '<svg class="licon ml-1" width="1em" height="1em" viewBox="0 0 8 8" preserveAspectRatio="none" role="none"><path d="M2 1.5h5M2 4h5M2 6.5h5" stroke="#222" stroke-width="1" /></svg>';
+            //$details_prefix = '<svg class="licon" width="1em" height="1em" viewBox="0 0 8 8" preserveAspectRatio="none"><circle cx="2" cy="1" r="1" /><circle cx="2" cy="4" r="1" /><circle cx="2" cy="7" r="1" /></svg>';
+            $button_class = "btn-t";
+        }
+        $user_html = $user->has_email() ? htmlspecialchars($user->email) : "Not signed in";
+
+        $pagecs = $this->page_components($user);
+        $old_separator = $pagecs->swap_separator('<li class="separator"></li>');
+        echo '<details class="dropmenu-details', $details_class, '" role="menu">',
+            '<summary class="uic js-dropmenu-open">',
+            '<button class="ui js-dropmenu-open btn ', $button_class, '">',
+            $details_prefix, $user_html, $details_suffix,
+            '</button></summary><div class="dropmenu-container dropmenu-sw"><ul class="uic dropmenu">';
+        $pagecs->print_group("__profilemenu", false);
+        $pagecs->swap_separator($old_separator);
+        echo '</ul></div></details>';
+
+        if ($user->is_actas_user()) {
+            echo '<details class="invisible dropmenu-details', $details_class, '" role="none">',
+                '<summary><button class="btn btn-qlink">',
+                $details_prefix, $user_html, $details_suffix,
+                '</button></summary></details>';
+        }
     }
 
     function header_body($title, $id, $extra = []) {
@@ -4856,11 +4987,6 @@ class Conf {
 
         echo '<div id="header-right">';
         $this->print_header_profile($id, $qreq, $user);
-        if ($my_deadlines && $this->has_interesting_deadline($my_deadlines)) {
-            echo '<div id="header-deadline">&nbsp;</div>';
-        } else {
-            echo '<div id="header-deadline" class="hidden"></div>';
-        }
         echo '</div>', ($title_div ? : ""), ($action_bar ? : "");
 
         echo "  <hr class=\"c\">\n";
