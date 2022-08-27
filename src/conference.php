@@ -4905,7 +4905,7 @@ class Conf {
             $button_class = "btn-qlink";
         } else {
             $details_class = $details_prefix = "";
-            $details_suffix = '<svg class="licon ml-1" width="1em" height="1em" viewBox="0 0 8 8" preserveAspectRatio="none" role="none"><path d="M2 1.5h5M2 4h5M2 6.5h5" stroke="#222" stroke-width="1" /></svg>';
+            $details_suffix = '<svg class="licon ml-1" width="1em" height="1em" viewBox="0 0 16 16" preserveAspectRatio="none" role="none"><path d="M2 3h12M2 8h12M2 13h12" stroke="#222" stroke-width="2" /></svg>';
             //$details_prefix = '<svg class="licon" width="1em" height="1em" viewBox="0 0 8 8" preserveAspectRatio="none"><circle cx="2" cy="1" r="1" /><circle cx="2" cy="4" r="1" /><circle cx="2" cy="7" r="1" /></svg>';
             $button_class = "btn-t";
         }
