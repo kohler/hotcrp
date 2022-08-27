@@ -729,8 +729,6 @@ class Score_ReviewField extends ReviewField {
         assert($fval === null || is_int($fval));
         if ($fval === null || $fval <= 0) {
             return null;
-        } else if ($this->flip) {
-            return $this->symbols[count($this->values) - $fval];
         } else {
             return $this->symbols[$fval - 1];
         }
