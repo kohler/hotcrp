@@ -675,7 +675,7 @@ class Ht {
     }
 
     /** @param string $msg
-     * @param int|string $status */
+     * @param int $status */
     static function msg($msg, $status) {
         if (is_int($status)) {
             if ($status >= 2) {
@@ -687,12 +687,9 @@ class Ht {
             } else {
                 $status = "info";
             }
-        }
-        if (substr($status, 0, 1) === "x") { /* XXX */
-            $status = substr($status, 1);
-        }
-        if ($status === "merror") { /* XXX */
-            $status = "error";
+        } else {
+            error_log("not a string " . var_export($status, true) . ": " . debug_string_backtrace());
+            $status = "info";
         }
         $mx = "";
         foreach (is_array($msg) ? $msg : [$msg] as $x) {
