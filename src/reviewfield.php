@@ -855,7 +855,7 @@ class Score_ReviewField extends ReviewField {
         $symstr = $i < 0 ? "0" : (string) $this->symbols[$i];
         $opt = [
             "id" => "{$this->short_id}_{$symstr}",
-            "data-default-checked" => $fval === $i + 1
+            "data-default-checked" => $i < 0 ? !$fval : $fval === $i + 1
         ];
         echo '<label class="checki', ($i >= 0 ? "" : " mt-1"), '"><span class="checkc">',
             Ht::radio($this->short_id, $symstr, $reqstr === $symstr, $opt), '</span>';
