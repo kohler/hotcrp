@@ -196,13 +196,13 @@ class ReviewForm implements JsonSerializable {
         $fi = $this->conf->format_info(null);
         echo '<div class="rve">';
         foreach ($rrow->viewable_fields($contact) as $f) {
-            $fval = $f->value_unparse($rrow->fields[$f->order]);
+            $fval = $rrow->fields[$f->order];
             if ($rvalues && isset($rvalues->req[$f->short_id])) {
-                $rval = $rvalues->req[$f->short_id];
+                $reqstr = $rvalues->req[$f->short_id];
             } else {
-                $rval = $fval;
+                $reqstr = $f->value_unparse($fval);
             }
-            $f->print_web_edit($fval, $rval, ["format" => $fi, "rvalues" => $rvalues]);
+            $f->print_web_edit($fval, $reqstr, ["format" => $fi, "rvalues" => $rvalues]);
         }
         echo "</div>\n";
     }

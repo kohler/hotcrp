@@ -427,10 +427,10 @@ abstract class ReviewField implements JsonSerializable {
         }
     }
 
-    /** @param int|string $fv
-     * @param int|string $reqv
+    /** @param int|string $fval
+     * @param string $reqstr
      * @param array{format:?TextFormat,rvalues:?ReviewValues} $args */
-    abstract function print_web_edit($fv, $reqv, $args);
+    abstract function print_web_edit($fval, $reqstr, $args);
 
     /** @param list<string> &$t
      * @param array{flowed:bool} $args */
@@ -575,6 +575,11 @@ class Score_ReviewField extends ReviewField {
         $this->_typical_score = null;
     }
 
+    /** @return int */
+    function nvalues() {
+        return count($this->values);
+    }
+
     /** @return list<string> */
     function values() {
         return $this->values;
@@ -640,11 +645,6 @@ class Score_ReviewField extends ReviewField {
             $rfv->name = $this->values[$idx];
             $rfv->old_value = $idx + 1;
         }
-    }
-
-    /** @return int */
-    function nvalues() {
-        return count($this->values);
     }
 
     function value_empty($fval) {
@@ -729,10 +729,10 @@ class Score_ReviewField extends ReviewField {
         assert($fval === null || is_int($fval));
         if ($fval === null || $fval <= 0) {
             return null;
-        } else if ($this->option_letter !== 0) {
-            return chr($this->option_letter - $fval);
+        } else if ($this->flip) {
+            return $this->symbols[count($this->values) - $fval];
         } else {
-            return $fval;
+            return $this->symbols[$fval - 1];
         }
     }
 
@@ -850,30 +850,20 @@ class Score_ReviewField extends ReviewField {
         return $text === "0" || strcasecmp($text, "No entry") === 0;
     }
 
-    /** @param int|string $fval
-     * @return int|string */
-    function normalize_value($fval) {
-        if (($i = array_search($fval, $this->symbols)) !== false) {
-            return $this->symbols[$i];
-        } else {
-            return 0;
-        }
-    }
-
     /** @param int $i
-     * @param int|string $fv
-     * @param int|string $reqv */
-    private function print_choice($i, $fv, $reqv) {
-        $symbol = $i < 0 ? "0" : $this->symbols[$i];
-        $opt = ["id" => "{$this->short_id}_{$symbol}"];
-        if ($fv !== $reqv) {
-            $opt["data-default-checked"] = $fv === $symbol;
-        }
+     * @param int|string $fval
+     * @param string $reqstr */
+    private function print_choice($i, $fval, $reqstr) {
+        $symstr = $i < 0 ? "0" : (string) $this->symbols[$i];
+        $opt = [
+            "id" => "{$this->short_id}_{$symstr}",
+            "data-default-checked" => $fval === $i + 1
+        ];
         echo '<label class="checki', ($i >= 0 ? "" : " g"), '"><span class="checkc">',
-            Ht::radio($this->short_id, $symbol, $reqv === $symbol, $opt), '</span>';
+            Ht::radio($this->short_id, $symstr, $reqstr === $symstr, $opt), '</span>';
         if ($i >= 0) {
             $vc = $this->value_class($i + 1);
-            echo '<strong class="rev_num ', $vc, '">', $symbol;
+            echo '<strong class="rev_num ', $vc, '">', $symstr;
             if ($this->values[$i] !== "") {
                 echo '.</strong> ', htmlspecialchars($this->values[$i]);
             } else {
@@ -885,21 +875,23 @@ class Score_ReviewField extends ReviewField {
         echo '</label>';
     }
 
-    function print_web_edit($fv, $reqv, $args) {
+    function print_web_edit($fval, $reqstr, $args) {
         $n = count($this->values);
-        if ($reqv || !$this->required) {
-            $for = "{$this->short_id}_{$reqv}";
-        } else {
+        $fvsymstr = $fval > 0 ? (string) $this->value_unparse_json($fval) : "0";
+        $reqstr = ($reqstr ?? "") === "" ? "0" : $reqstr;
+        if (($fval ?? 0) <= 0 && $this->required) {
             $for = "{$this->short_id}_" . $this->symbols[$this->flip ? $n - 1 : 0];
+        } else {
+            $for = "{$this->short_id}_{$fvsymstr}";
         }
         $this->print_web_edit_open($this->short_id, $for, $args["rvalues"]);
         echo '<div class="revev">';
         $step = $this->flip ? -1 : 1;
         for ($i = $this->flip ? $n - 1 : 0; $i >= 0 && $i < $n; $i += $step) {
-            $this->print_choice($i, $fv, $reqv);
+            $this->print_choice($i, $fval, $reqstr);
         }
         if (!$this->required) {
-            $this->print_choice(-1, $fv, $reqv);
+            $this->print_choice(-1, $fval, $reqstr);
         }
         echo '</div></div>';
     }
@@ -1015,17 +1007,17 @@ class Text_ReviewField extends ReviewField {
         return $text;
     }
 
-    function print_web_edit($fv, $reqv, $args) {
+    function print_web_edit($fval, $reqstr, $args) {
         $this->print_web_edit_open(null, $this->short_id, $args["rvalues"]);
         echo '<div class="revev">';
         if (($fi = $args["format"])) {
             echo $fi->description_preview_html();
         }
         $opt = ["class" => "w-text need-autogrow need-suggest suggest-emoji", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->short_id];
-        if ($fv !== $reqv) {
-            $opt["data-default-value"] = (string) $fv;
+        if ($fval !== $reqstr) {
+            $opt["data-default-value"] = (string) $fval;
         }
-        echo Ht::textarea($this->short_id, (string) $reqv, $opt), '</div></div>';
+        echo Ht::textarea($this->short_id, (string) $reqstr, $opt), '</div></div>';
     }
 
     function unparse_text_field(&$t, $fv, $args) {
