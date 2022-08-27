@@ -45,6 +45,9 @@ html {
 #header-right, h1.paptitle, div#footer {
 	padding-right: 12px;
 }
+#top > table.vbar {
+	margin-right: 12px;
+}
 h1.leftmenu, h2.leftmenu {
 	margin-bottom: 8px;
 }
