@@ -573,7 +573,7 @@ function rf_render_view(fld) {
             hc.push('<label class="checki"><span class="checkc"><input type="radio" disabled></span>'.concat(option_value_html(fld, n).join(" "), '</label>'));
         }
         if (!fld.required) {
-            hc.push('<label class="checki g"><span class="checkc"><input type="radio" disabled></span>No entry</label>');
+            hc.push('<label class="checki mt-1"><span class="checkc"><input type="radio" disabled></span>No entry</label>');
         }
     } else
         hc.push('<textarea class="w-text" rows="' + Math.max(fld.display_space || 0, 3) + '" disabled>Text field</textarea>');
