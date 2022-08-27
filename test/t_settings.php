@@ -331,6 +331,11 @@ class Settings_Tester {
         xassert_eqq($rf->value_unparse(3), "C");
         xassert_eqq($rf->value_unparse(4), "B");
         xassert_eqq($rf->value_unparse(5), "A");
+        xassert_eqq($rf->value_unparse_json(1), "E");
+        xassert_eqq($rf->value_unparse_json(2), "D");
+        xassert_eqq($rf->value_unparse_json(3), "C");
+        xassert_eqq($rf->value_unparse_json(4), "B");
+        xassert_eqq($rf->value_unparse_json(5), "A");
         xassert_eqq($rf->unparse_text_field_content("A"), "\nB5\n--\nA. A\n");
         xassert_eqq($rf->unparse_text_field_content("B"), "\nB5\n--\nB. B\n");
         xassert_eqq($rf->unparse_text_field_content("C"), "\nB5\n--\nC. C\n");
@@ -355,6 +360,15 @@ class Settings_Tester {
         xassert_eqq($rf->value_unparse(7), "7");
         xassert_eqq($rf->value_unparse(8), "8");
         xassert_eqq($rf->value_unparse(9), "9");
+        xassert_eqq($rf->value_unparse_json(1), 1);
+        xassert_eqq($rf->value_unparse_json(2), 2);
+        xassert_eqq($rf->value_unparse_json(3), 3);
+        xassert_eqq($rf->value_unparse_json(4), 4);
+        xassert_eqq($rf->value_unparse_json(5), 5);
+        xassert_eqq($rf->value_unparse_json(6), 6);
+        xassert_eqq($rf->value_unparse_json(7), 7);
+        xassert_eqq($rf->value_unparse_json(8), 8);
+        xassert_eqq($rf->value_unparse_json(9), 9);
         xassert_eqq($rf->unparse_text_field_content("1"), "\nB9\n--\n1. A\n");
         xassert_eqq($rf->unparse_text_field_content("2"), "\nB9\n--\n2. B\n");
         xassert_eqq($rf->unparse_text_field_content("3"), "\nB9\n--\n3. C\n");
