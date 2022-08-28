@@ -4754,22 +4754,23 @@ class Conf {
                 return;
             }
             $pagecs->trigger_separator();
-            $type = $user->is_actas_user() ? "Acting as" : "Signed in as";
-            $t = "{$type} <strong>" . htmlspecialchars($user->email) . "</strong>";
-            if (!$user->is_disabled() && !$user->is_anonymous_user()) {
-                echo '<li class="has-quiet-link">', Ht::link($t, $this->hoturl("profile")), '</li>';
+            $ouser = $user;
+            if ($user->is_actas_user()) {
+                echo '<li class="has-link">', Ht::link("Signed in as " . htmlspecialchars($user->base_user()->email), $this->selfurl($qreq, ["actas" => null])), '</li>',
+                    '<li class="has-quiet-link">', Ht::link("Acting as <strong>" . htmlspecialchars($user->email) . "</strong>", $this->hoturl("profile")), '</li>';
+            } else if (!$user->is_disabled() && !$user->is_anonymous_user()) {
+                echo '<li class="has-quiet-link">', Ht::link("Signed in as <strong>" . htmlspecialchars($user->email) . "</strong>", $this->hoturl("profile")), '</li>';
             } else {
-                echo '<li>', $t, '</li>';
+                echo '<li>Signed in as <strong>', htmlspecialchars($user->email), '</strong></li>';
             }
             $pagecs->mark_separator();
         } else if ($itemid === "other_accounts") {
             $pagecs->trigger_separator();
             $base_email = $user->base_user()->email;
             $actas_email = null;
-            if ($user->is_actas_user()) {
-                $t = "Signed in as <strong>" . htmlspecialchars($base_email) . "</strong>";
-                echo '<li class="has-link">', Ht::link($t, $this->selfurl($qreq, ["actas" => null])), '</li>';
-            } else if ($this->session_key !== null && $user->privChair) {
+            if ($user->privChair
+                && !$user->is_actas_user()
+                && $this->session_key !== null) {
                 $actas_email = $_SESSION["last_actas"] ?? null;
             }
             $nav = Navigation::get();
