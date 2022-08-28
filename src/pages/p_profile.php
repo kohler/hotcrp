@@ -328,7 +328,7 @@ class Profile_Page {
         } else if (!$ms->has_message()) {
             $ms->splice_item($mpos++, new MessageItem(null, "<0>No changes", MessageSet::WARNING_NOTE));
         }
-        $this->conf->feedback_msg($ms);
+        $this->conf->feedback_msg($ms->deduplicate(MessageSet::DEDUP_NO_FIELD));
         return !$ms->has_error();
     }
 
@@ -381,7 +381,7 @@ class Profile_Page {
                 $this->ustatus->splice_msg($pos++, "<0>Changes saved{$diffs}", MessageSet::SUCCESS);
             }
         }
-        $this->conf->feedback_msg($this->ustatus);
+        $this->conf->feedback_msg($this->ustatus->deduplicate(MessageSet::DEDUP_NO_FIELD));
 
         // exit on error
         if ($this->ustatus->has_error()) {
@@ -699,7 +699,7 @@ class Profile_Page {
 
         if (($this->conf->report_saved_messages() < 1 || !$use_req)
             && $this->ustatus->has_message()) {
-            $this->conf->feedback_msg($this->ustatus);
+            $this->conf->feedback_msg($this->ustatus->deduplicate(MessageSet::DEDUP_NO_FIELD));
         }
 
         if ($this->page_type === 2) {

@@ -4756,8 +4756,8 @@ class Conf {
             $pagecs->trigger_separator();
             $ouser = $user;
             if ($user->is_actas_user()) {
-                echo '<li class="has-link">', Ht::link("Signed in as " . htmlspecialchars($user->base_user()->email), $this->selfurl($qreq, ["actas" => null])), '</li>',
-                    '<li class="has-quiet-link">', Ht::link("Acting as <strong>" . htmlspecialchars($user->email) . "</strong>", $this->hoturl("profile")), '</li>';
+                echo '<li class="has-quiet-link">', Ht::link("Acting as " . htmlspecialchars($user->email), $this->hoturl("profile")), '</li>';
+                echo '<li class="has-link">', Ht::link("Signed in as <strong>" . htmlspecialchars($user->base_user()->email), $this->selfurl($qreq, ["actas" => null])), '</strong></li>';
             } else if (!$user->is_disabled() && !$user->is_anonymous_user()) {
                 echo '<li class="has-quiet-link">', Ht::link("Signed in as <strong>" . htmlspecialchars($user->email) . "</strong>", $this->hoturl("profile")), '</li>';
             } else {

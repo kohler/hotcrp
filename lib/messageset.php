@@ -252,7 +252,7 @@ class MessageSet {
             }
             $this->problem_status = max($this->problem_status, $mi->status);
             if ($mi->message !== ""
-                && (!($this->_ms_flags & self::IGNORE_DUPS)
+                && (($this->_ms_flags & self::IGNORE_DUPS) === 0
                     || $old_status < $mi->status
                     || $this->message_index($mi) === false)) {
                 if ($pos < 0 || $pos >= count($this->msgs)) {
@@ -262,7 +262,7 @@ class MessageSet {
                 } else {
                     array_splice($this->msgs, $pos, 0, [$mi]);
                 }
-                if (($this->_ms_flags & self::WANT_FTEXT)
+                if (($this->_ms_flags & self::WANT_FTEXT) !== 0
                     && $mi->message !== ""
                     && !Ftext::is_ftext($mi->message)) {
                     error_log("not ftext: " . debug_string_backtrace());
@@ -575,6 +575,24 @@ class MessageSet {
                 yield $mi;
             }
         }
+    }
+
+
+    const DEDUP_NORMAL = 0;
+    const DEDUP_NO_FIELD = 1;
+
+    /** @param 0|1 $type
+     * @return MessageSet */
+    function deduplicate($type = 0) {
+        $ms = (new MessageSet)->set_ignore_duplicates(true);
+        foreach ($this->msgs as $mi) {
+            if ($type === 0 || $mi->field === null) {
+                $ms->append_item($mi);
+            } else {
+                $ms->append_item($mi->with_field(null));
+            }
+        }
+        return $ms;
     }
 
 
