@@ -2344,18 +2344,25 @@ textarea[name=comment] {
 	white-space: nowrap;
 	color: inherit;
 }
+.revrating-unused > button {
+	color: #e35f5f;
+}
+.revrating-used > button {
+	background: #fff2f1;
+	color: #d92626;
+}
 .revrating-active > button {
-	border: 1px solid #6b73b5;
-	background: #8089d1;
-	background-image: linear-gradient(#9ca3d6, #8089d1);
 	border: 1px solid #cc0000;
 	background: #ff0000;
 	background-image: linear-gradient(#ff4040, #ff0000);
 	color: white;
 }
 .revrating-choice:hover > button, .revrating-group:hover > button {
-	color: #c45500;
-	border-color: rgba(196, 85, 0, 0.5);
+	color: #9f0000;
+	border-color: #c44343;
+}
+.revrating-choice.revrating-unused:hover > button {
+	background: #fff2f3;
 }
 .revrating-active:hover > button {
 	color: #ffe080;
@@ -2367,15 +2374,17 @@ textarea[name=comment] {
 	display: inline-block;
 	text-indent: 0;
 	padding-left: 0.5em;
-	min-width: 2em;
 	font-weight: bold;
 	font-size: 92%;
 }
 .revrating-choice > .ct {
 	padding-left: 0.333em;
 }
-.revrating-choice.revrating-unused > .ct {
+.revrating-choice > .ct {
 	min-width: 1em;
+}
+.revrating-choice.revrating-used > .ct, .revrating-group > .ct {
+	min-width: 2em;
 }
 
 span.author, span.conflict {
