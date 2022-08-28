@@ -125,7 +125,7 @@ class Dbl_ConnectionParams {
 
     /** @return ?\mysqli */
     function connect() {
-        assert($this->name);
+        assert(!empty($this->name));
         if ($this->socket) {
             $dblink = new mysqli($this->host, $this->user, $this->password, "", $this->port, $this->socket);
         } else if ($this->port !== null) {
