@@ -951,7 +951,7 @@ class TestRunner {
             $urlp["path"] ?? "/";
     }
 
-    /** @param 'reset_db'|class-string ...$tests */
+    /** @param 'no_cdb'|'reset_db'|class-string ...$tests */
     static function run(...$tests) {
         $i = 0;
 
@@ -965,6 +965,7 @@ class TestRunner {
                 "help,h !",
                 "reset-db,reset reset test database",
                 "no-reset-db,no-reset !",
+                "no-cdb no contact database",
                 "stop,s stop on first error"
             )->description("Usage: php test/" . basename($_SERVER["PHP_SELF"]) . " [-V] [CLASSNAME...]")
              ->helpopt("help")
@@ -985,7 +986,7 @@ class TestRunner {
         } else {
             $reset = null;
         }
-        $has_reset = false;
+        $need_reset = true;
 
         if (!empty($arg["_"])) {
             $tests = $arg["_"];
@@ -993,10 +994,12 @@ class TestRunner {
         }
         for (; $i < count($tests); ++$i) {
             $classname = $tests[$i];
-            if ($classname === "reset_db") {
-                if ($reset !== false) {
-                    self::reset_db(true);
-                    $has_reset = true;
+            if ($classname === "no_cdb") {
+                Conf::$main->set_opt("contactdbDsn", null);
+                $need_reset = true;
+            } else if ($classname === "reset_db") {
+                if (!$reset) {
+                    $need_reset = $reset = true;
                 }
             } else {
                 if (strpos($classname, "_") === false && ctype_alpha($classname[0])) {
@@ -1005,9 +1008,9 @@ class TestRunner {
                 $class = new ReflectionClass($classname);
                 $ctor = $class->getConstructor();
                 if ($ctor && $ctor->getNumberOfParameters() === 1) {
-                    if (!$has_reset) {
+                    if ($need_reset) {
                         self::reset_db($reset ?? false);
-                        $has_reset = true;
+                        $need_reset = false;
                     }
                     $testo = $class->newInstance(Conf::$main);
                 } else {
