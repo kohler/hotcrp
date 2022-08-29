@@ -2792,7 +2792,8 @@ class Conf {
      * @param ?list<string> $emails
      * @return list<Contact> */
     private function _fresh_cdb_user_list($ids, $emails) {
-        if (empty($ids) && empty($emails)) {
+        $cdb = $this->contactdb();
+        if (!$cdb || (empty($ids) && empty($emails))) {
             return [];
         }
         $q = "select ContactInfo.*, roles, activity_at";
@@ -2812,7 +2813,7 @@ class Conf {
             $q .= (empty($ids) ? "" : " or ") . "email?a";
             $qv[] = $emails;
         }
-        $result = Dbl::qe($this->contactdb(), $q, ...$qv);
+        $result = Dbl::qe($cdb, $q, ...$qv);
         $us = [];
         while (($u = Contact::fetch($result, $this))) {
             if ($confid <= 0 && $u->cdb_confid > 0) {

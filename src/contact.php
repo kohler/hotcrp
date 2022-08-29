@@ -774,11 +774,13 @@ class Contact implements JsonSerializable {
         return $this->cdb_confid !== 0;
     }
 
+    /** @return $this */
     function ensure_account_here() {
         assert($this->has_email());
         if (!$this->has_account_here()) {
             $this->store();
         }
+        return $this;
     }
 
     function invalidate_cdb_user() {
@@ -1926,7 +1928,6 @@ class Contact implements JsonSerializable {
         assert($this->email === trim($this->email));
         assert(empty($this->_mod_undo));
         assert($this->contactId <= 0);
-        assert($this->roles === 0);
         $valid_email = validate_email($this->email);
 
         // look up existing accounts

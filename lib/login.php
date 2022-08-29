@@ -193,7 +193,7 @@ class LoginHelper {
     /** @return bool */
     static private function check_setup_phase(Contact $user) {
         if ($user->conf->setting("setupPhase")) {
-            $user->save_roles(Contact::ROLE_ADMIN, null);
+            $user->ensure_account_here()->save_roles(Contact::ROLE_ADMIN, null);
             $user->conf->save_setting("setupPhase", null);
             return true;
         } else {
@@ -245,14 +245,14 @@ class LoginHelper {
             return ["ok" => false, "email" => true, "userexists" => true];
         } else if (!validate_email($qreq->email)) {
             return ["ok" => false, "email" => true, "invalidemail" => true];
+        } else if (!$user->has_account_here() && !$user->store()) {
+            return ["ok" => false, "email" => true, "internal" => true];
         } else {
-            if (!$user->has_account_here() && !$user->store()) {
-                return ["ok" => false, "email" => true, "internal" => true];
-            }
+            $conf->invalidate_user($user);
             $info = self::forgot_password_info($conf, $qreq, true);
             if ($info["ok"] && $info["mailtemplate"] === "@resetpassword") {
                 $info["mailtemplate"] = "@newaccount.selfregister";
-                if (self::check_setup_phase($user)) {
+                if (self::check_setup_phase($info["user"])) {
                     $info["firstuser"] = true;
                 }
             }
