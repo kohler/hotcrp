@@ -190,7 +190,7 @@ class UserStatus extends MessageSet {
     function only_update_empty(Contact $user) {
         // XXX want way in script to modify all
         return $this->no_nonempty_profile
-            || ($user->cdb_confid !== 0
+            || ($user->is_cdb_user()
                 && (strcasecmp($user->email, $this->viewer->email) !== 0
                     || $this->viewer->is_actas_user()
                     || $this->viewer->is_root_user()));

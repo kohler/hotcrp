@@ -390,7 +390,7 @@ class Review_Assigner extends Assigner {
         }
         if ($this->notify) {
             // ensure notification email gets a relatively fresh user
-            $aset->conf->invalidate_user_by_id($this->cid);
+            $aset->conf->invalidate_user($this->contact);
         }
     }
     function cleanup(AssignmentSet $aset) {

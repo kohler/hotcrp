@@ -756,7 +756,7 @@ function save_password($email, $encoded_password, $iscdb = false) {
     Dbl::qe($dblink, "update ContactInfo set password=?, passwordTime=?, passwordUseTime=? where email=?", $encoded_password, Conf::$now + 1, Conf::$now + 1, $email);
     Conf::advance_current_time(Conf::$now + 2);
     if ($iscdb) {
-        Conf::$main->invalidate_cdb_user_by_email($email);
+        Conf::$main->invalidate_user(Contact::make_cdb_email(Conf::$main, $email));
     }
 }
 

@@ -2,7 +2,7 @@
 // contact.php -- HotCRP helper class representing system users
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-class Contact {
+class Contact implements JsonSerializable {
     /** @var int */
     static public $rights_version = 1;
     /** @var ?Contact
@@ -410,7 +410,9 @@ class Contact {
 
     /** @return string */
     function collaborators() {
-        ($this->_slice & 1) && $this->unslice();
+        if (($this->_slice & 1) !== 0) {
+            $this->unslice();
+        }
         return $this->collaborators ?? "";
     }
 
@@ -767,6 +769,11 @@ class Contact {
         return $result;
     }
 
+    /** @return bool */
+    function is_cdb_user() {
+        return $this->cdb_confid !== 0;
+    }
+
     function ensure_account_here() {
         assert($this->has_email());
         if (!$this->has_account_here()) {
@@ -775,8 +782,9 @@ class Contact {
     }
 
     function invalidate_cdb_user() {
+        $u = $this->_cdb_user ? : Contact::make_cdb_email($this->conf, $this->email);
+        $this->conf->invalidate_user($u);
         $this->_cdb_user = false;
-        $this->conf->invalidate_cdb_user_by_email($this->email);
     }
 
     /** @return ?Contact */
@@ -855,7 +863,12 @@ class Contact {
             return false;
         }
 
-        $this->conf->invalidate_cdb_user_by_email($this->email);
+        if ($this->_cdb_user) {
+            $this->conf->invalidate_user($this->_cdb_user);
+        } else {
+            $this->conf->invalidate_user(Contact::make_cdb_email($this->conf, $this->email));
+        }
+
         $cdbur = $this->conf->cdb_user_by_email($this->email);
         $cdbux = $cdbur ?? Contact::make_cdb_email($this->conf, $this->email);
         foreach (self::$props as $prop => $shape) {
@@ -1943,7 +1956,9 @@ class Contact {
             $cdbu->import_prop($this, true);
             if ($cdbu->save_prop()) {
                 $this->invalidate_cdb_user();
-                $u && $u->invalidate_cdb_user();
+                if ($u) {
+                    $u->invalidate_cdb_user();
+                }
                 $cdbu->set_roles_properties();
             }
         }
@@ -1961,7 +1976,7 @@ class Contact {
         // override registration with current or cdb data
         $this->_mod_undo = ["disabled" => 0];
         foreach (self::importable_props() as $prop => $shape) {
-            $this->_mod_undo[$prop] = $shape & self::PROP_NULL ? null : "";
+            $this->_mod_undo[$prop] = ($shape & self::PROP_NULL) !== 0 ? null : "";
         }
         if ($cdbu) {
             $this->import_prop($cdbu, false);
@@ -5579,5 +5594,20 @@ class Contact {
             $this->conf->update_automatic_tags($rrow->paperId, "review");
         }
         return $result->affected_rows > 0;
+    }
+
+
+    /** @return array */
+    #[\ReturnTypeWillChange]
+    function jsonSerialize() {
+        $a = ["email" => $this->email];
+        if ($this->cdb_confid !== 0) {
+            $a["contactDbId"] = $this->contactDbId;
+            $a["cdb_confid"] = $this->cdb_confid;
+        } else {
+            $a["contactId"] = $this->contactId;
+        }
+        $a["roles"] = $this->roles;
+        return $a;
     }
 }

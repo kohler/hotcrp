@@ -2451,14 +2451,30 @@ class Conf {
         }
     }
 
-    /** @param int $id */
-    function invalidate_user_by_id($id) {
-        if (array_key_exists($id, $this->_user_cache ?? [])) {
-            /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
-            $u = $this->_user_cache[$id];
-            unset($this->_user_cache[$id]);
-            if ($u !== null && $u->email !== "") {
-                unset($this->_user_cache[strtolower($u->email)]);
+    /** @param ?Contact $u */
+    function invalidate_user($u) {
+        if ($u !== null) {
+            $lemail = strtolower($u->email);
+            if ($u->cdb_confid === 0) {
+                $ux = $this->_user_email_cache[$lemail] ?? null;
+                if ($this->_user_email_cache !== null) {
+                    unset($this->_user_email_cache[$lemail]);
+                }
+                if ($this->_user_cache !== null) {
+                    if ($u->contactId > 0) {
+                        unset($this->_user_cache[$u->contactId]);
+                    } else if ($ux !== null && $ux->contactId > 0) {
+                        unset($this->_user_cache[$ux->contactId]);
+                    }
+                }
+            } else if ($this->_cdb_user_cache !== null) {
+                $ux = $this->_cdb_user_cache[$lemail] ?? null;
+                unset($this->_cdb_user_cache[$lemail]);
+                if ($u->contactDbId > 0) {
+                    unset($this->_cdb_user_cache[$u->contactDbId]);
+                } else if ($ux !== null && $ux->contactDbId > 0) {
+                    unset($this->_cdb_user_cache[$ux->contactDbId]);
+                }
             }
         }
     }
@@ -2877,19 +2893,6 @@ class Conf {
             $this->_refresh_cdb_user_cache();
         }
         return $this->_cdb_user_cache[$lemail] ?? null;
-    }
-
-    /** @param string $email */
-    function invalidate_cdb_user_by_email($email) {
-        $lemail = strtolower($email);
-        if (array_key_exists($lemail, $this->_cdb_user_cache ?? [])) {
-            /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
-            $u = $this->_cdb_user_cache[$lemail];
-            unset($this->_cdb_user_cache[$lemail]);
-            if ($u !== null) {
-                unset($this->_cdb_user_cache[$u->contactDbId]);
-            }
-        }
     }
 
     /** @param string $email

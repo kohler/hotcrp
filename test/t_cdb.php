@@ -351,7 +351,7 @@ class Cdb_Tester {
             ('betty4@_.com','','Betty','Kelly'),
             ('betty5@_.com','','Betty','Davis')");
         foreach (["betty3@_.com", "betty4@_.com", "betty5@_.com"] as $email) {
-            $this->conf->invalidate_cdb_user_by_email($email);
+            $this->conf->invalidate_user(Contact::make_cdb_email($this->conf, $email));
         }
 
         // registration name populates new records
@@ -474,7 +474,7 @@ class Cdb_Tester {
         Dbl::qe($this->conf->contactdb(), "update ContactInfo set email=?, password=?, firstName=?, lastName=?, disabled=? where email=?",
             'cenGiz@isi.edu', 'TEST PASSWORD', '', '', 0,
             'cengiz@isi.edu');
-        $this->conf->invalidate_cdb_user_by_email("cengiz@isi.edu");
+        $this->conf->invalidate_user(Contact::make_cdb_email($this->conf, "cengiz@isi.edu"));
 
         // creating a local user adopts name from authorship record
         $u = Contact::make_email($this->conf, "Cengiz@isi.edu")->store();

@@ -17,7 +17,7 @@ class Developer_UserInfo {
     /** @param Contact $user
      * @return list<TokenInfo> */
     static function active_bearer_tokens($user) {
-        $is_cdb = $user->cdb_confid !== 0;
+        $is_cdb = $user->is_cdb_user();
         $uid = $is_cdb ? $user->contactDbId : $user->contactId;
         if ($uid <= 0) {
             return [];
