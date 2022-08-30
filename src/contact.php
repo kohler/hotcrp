@@ -1999,8 +1999,11 @@ class Contact implements JsonSerializable {
                 $this->update_cdb_roles($cdbu);
             }
 
-            $type = $this->disabled !== 0 ? ", disabled" : "";
-            $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, "Account created" . $type);
+            // log creation (except for placeholder accounts)
+            if ($this->disabled !== self::DISABLEMENT_PLACEHOLDER) {
+                $type = $this->disabled !== 0 ? ", disabled" : "";
+                $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, "Account created" . $type);
+            }
         } else {
             // maybe failed because concurrent create (unlikely)
             $u = $this->conf->fresh_user_by_email($this->email);
