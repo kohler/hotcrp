@@ -382,6 +382,7 @@ class SettingValues extends MessageSet {
         if ($jpp) {
             $updates["pos1"] = $jpp->vpos1;
             $updates["pos2"] = $jpp->vpos2;
+            $updates["context"] = null; // reset existing context
         }
         if (isset($updates["pos1"])
             && $this->_jp->has_filename()

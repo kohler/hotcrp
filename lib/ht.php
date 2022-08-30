@@ -598,6 +598,7 @@ class Ht {
     static function make_mark_substring($s, $pos1, $pos2) {
         if ($pos1 > strlen($s) || $pos2 > strlen($s)) {
             error_log("bad arguments [{$pos1}, {$pos2}, " . strlen($s) . "]: " . debug_string_backtrace());
+            return [$s, 0, 0];
         }
         $pos2 = max($pos1, $pos2);
         if ($pos1 > 0

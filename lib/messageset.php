@@ -99,9 +99,6 @@ class MessageItem implements JsonSerializable {
         }
         $x["status"] = $this->status;
         if ($this->pos1 !== null && $this->context !== null) {
-            if ($this->pos1 > strlen($this->context) || $this->pos2 > strlen($this->context)) {
-                error_log("problem with {$this->field} {$this->message}");
-            }
             $x["context"] = Ht::make_mark_substring($this->context, $this->pos1, $this->pos2);
         } else if ($this->pos1 !== null) {
             $x["pos1"] = $this->pos1;
@@ -672,9 +669,6 @@ class MessageSet {
                     $t .= "<div class=\"msg-inform\">{$pstart}{$s}</div>";
                 }
                 if ($mi->pos1 !== null && $mi->context !== null) {
-                    if ($mi->pos1 > strlen($mi->context) || $mi->pos2 > strlen($mi->context)) {
-                        error_log("problem with {$mi->field} {$mi->message}");
-                    }
                     $mark = Ht::mark_substring($mi->context, $mi->pos1, $mi->pos2, $mi->status);
                     $t .= "<div class=\"msg-context\">{$mark}</div>";
                 }
