@@ -3856,22 +3856,23 @@ handle_ui.on("click.dropmenu", function (evt) {
         return;
     }
     li = evt.target.closest("li");
-    if ((es = li.querySelectorAll("a")).length === 1) {
+    if (!li) {
+        return;
+    }
+    es = li.querySelectorAll("a");
+    if (es.length !== 1
+        && (bs = li.querySelectorAll("form")).length === 1) {
+        bs = bs[0].elements;
+        es = [];
+        for (i = 0; i !== bs.length; ++i) {
+            if (bs[i].type === "submit")
+                es.push(bs[i]);
+        }
+    }
+    if (es.length === 1) {
         es[0].click();
         evt.preventDefault();
         handle_ui.stopPropagation(evt);
-    } else if ((es = li.querySelectorAll("form")).length === 1) {
-        es = es[0].elements;
-        bs = [];
-        for (i = 0; i !== es.length; ++i) {
-            if (es[i].type === "submit")
-                bs.push(es[i]);
-        }
-        if (bs.length === 1) {
-            bs[0].click();
-            evt.preventDefault();
-            handle_ui.stopPropagation(evt);
-        }
     }
 });
 
