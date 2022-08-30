@@ -84,7 +84,7 @@ class Settings_Tester {
         $this->conf->qe("truncate table TopicArea");
         $this->conf->qe("alter table TopicArea auto_increment=0");
         $this->conf->qe("delete from PaperTopic");
-        $this->conf->qe("delete from Settings where name='has_topics'");
+        $this->conf->save_refresh_setting("has_topics", null);
     }
 
     function test_topics() {
@@ -209,6 +209,8 @@ class Settings_Tester {
     }
 
     function test_decision_types() {
+        xassert(ConfInvariants::test_setting_invariants($this->conf));
+
         $this->conf->save_refresh_setting("outcome_map", null);
         xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
         xassert_eqq($this->conf->setting("decisions"), null);
@@ -232,6 +234,7 @@ class Settings_Tester {
         ]);
         xassert($sv->execute());
         xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","2":"Newly accepted","-1":"Rejected"}');
+        xassert(ConfInvariants::test_setting_invariants($this->conf));
 
         // accept-category with “reject” in the name is rejected by default
         $sv = SettingValues::make_request($this->u_chair, [
@@ -283,6 +286,7 @@ class Settings_Tester {
             "decision/1/id" => "new"
         ]);
         xassert(!$sv->execute());
+        xassert(ConfInvariants::test_setting_invariants($this->conf));
 
         // restore default decisions => no database setting
         $sv = SettingValues::make_request($this->u_chair, [
@@ -297,6 +301,7 @@ class Settings_Tester {
         xassert($sv->execute());
         xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
         xassert_eqq($this->conf->setting("outcome_map"), null);
+        xassert(ConfInvariants::test_setting_invariants($this->conf));
     }
 
     function test_scores() {

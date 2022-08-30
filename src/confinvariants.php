@@ -52,7 +52,7 @@ class ConfInvariants {
     }
 
     /** @return $this */
-    function check_paper_assertion_settings() {
+    function check_setting_invariants() {
         // settings correctly materialize database facts
 
         // `no_papersub` === no submitted papers
@@ -494,7 +494,7 @@ class ConfInvariants {
 
     /** @return $this */
     function check_all() {
-        $this->check_paper_assertion_settings();
+        $this->check_setting_invariants();
         $this->check_papers();
         $this->check_automatic_tags();
         $this->check_reviews();
@@ -511,6 +511,13 @@ class ConfInvariants {
     static function test_all(Conf $conf, $prefix = null) {
         $prefix = $prefix ?? caller_landmark() . ": ";
         return (new ConfInvariants($conf, $prefix))->check_all()->ok();
+    }
+
+    /** @param ?string $prefix
+     * @return bool */
+    static function test_setting_invariants(Conf $conf, $prefix = null) {
+        $prefix = $prefix ?? caller_landmark() . ": ";
+        return (new ConfInvariants($conf, $prefix))->check_setting_invariants()->ok();
     }
 
     /** @param ?string $prefix
