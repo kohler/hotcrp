@@ -265,20 +265,20 @@ class Permission_Tester {
         assert_search_papers($user_marina, "re:\"washington louis\"", "1");
 
         // check comment identity
-        xassert($this->conf->setting("au_seerev") == Conf::AUSEEREV_NO); // NB null
-        xassert($this->conf->setting("rev_blind") === Conf::BLIND_ALWAYS);
+        xassert_eqq($this->conf->au_seerev, Conf::AUSEEREV_NO); // NB null
+        xassert_eqq($this->conf->setting("rev_blind"), Conf::BLIND_ALWAYS);
         $comment1 = new CommentInfo($paper1);
         $c1ok = $comment1->save_comment(["text" => "test", "visibility" => "a", "blind" => false], $user_mgbaker);
         xassert($c1ok);
         xassert(!$user_van->can_view_comment($paper1, $comment1));
         xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
-        xassert($user_van->add_comment_state($paper1) === 0);
+        xassert_eqq($user_van->add_comment_state($paper1), 0);
         $this->conf->save_refresh_setting("cmt_author", 1);
-        xassert($user_van->add_comment_state($paper1) === 0);
+        xassert_eqq($user_van->add_comment_state($paper1), 0);
         $this->conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_YES);
-        xassert($user_van->add_comment_state($paper1) !== 0);
+        xassert_neqq($user_van->add_comment_state($paper1), 0);
         $this->conf->save_refresh_setting("cmt_author", null);
-        xassert($user_van->add_comment_state($paper1) === 0);
+        xassert_eqq($user_van->add_comment_state($paper1), 0);
         xassert($user_van->can_view_comment($paper1, $comment1));
         xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
         $this->conf->save_refresh_setting("rev_blind", Conf::BLIND_OPTIONAL);
@@ -289,7 +289,8 @@ class Permission_Tester {
         xassert($user_van->can_view_comment_identity($paper1, $comment1));
         $this->conf->save_refresh_setting("rev_blind", null);
         xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
-        $this->conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_NO);
+        $this->conf->save_refresh_setting("au_seerev", null);
+        xassert_eqq($this->conf->au_seerev, Conf::AUSEEREV_NO);
 
         // check comment/review visibility when reviews are incomplete
         $this->conf->save_refresh_setting("pc_seeallrev", Conf::PCSEEREV_UNLESSINCOMPLETE);
@@ -526,7 +527,8 @@ class Permission_Tester {
         xassert_assign($user_varghese, "paper,tag\n1,chairtest#clear\n");
         assert_search_papers($user_varghese, "#chairtest", "");
 
-        $this->conf->save_refresh_setting("tag_chair", 1, trim($this->conf->setting_data("tag_chair") . " chairtest"));
+        xassert_eqq($this->conf->setting_data("tag_chair"), "accept pcpaper reject");
+        $this->conf->save_refresh_setting("tag_chair", 1, "accept chairtest pcpaper reject");
         xassert_assign($user_chair, "paper,tag\n1,chairtest\n", true);
         assert_search_papers($user_chair, "#chairtest", "1");
         assert_search_papers($user_varghese, "#chairtest", "1");
@@ -539,7 +541,7 @@ class Permission_Tester {
         xassert_assign($user_varghese, "paper,tag\n1,chairtest1#clear\n");
         assert_search_papers($user_varghese, "#chairtest1", "");
 
-        $this->conf->save_refresh_setting("tag_chair", 1, trim($this->conf->setting_data("tag_chair") . " chairtest*"));
+        $this->conf->save_refresh_setting("tag_chair", 1, "accept chairtest chairtest* pcpaper reject");
         xassert($this->conf->tags()->has_pattern);
         $ct = $this->conf->tags()->check("chairtest0");
         xassert(!!$ct);
@@ -1031,7 +1033,7 @@ class Permission_Tester {
         AssignmentSet::run($this->u_chair, "paper,tag\nall,-green\n3 9 13 17,green\n", true);
         $this->conf->save_refresh_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"},\"_\":{\"view\":\"+red\"}}");
         $this->conf->save_refresh_setting("pc_seeallrev", 1);
-        $this->conf->save_refresh_setting("pc_seeblindrev", 0);
+        $this->conf->save_refresh_setting("pc_seeblindrev", null);
         xassert($user_jon->has_tag("red"));
         xassert(!$this->u_marina->has_tag("red"));
 
@@ -1246,7 +1248,8 @@ class Permission_Tester {
         xassert(!!$review2b->reviewAuthorSeen);
 
         // check review visibility
-        $this->conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_NO);
+        $this->conf->save_refresh_setting("au_seerev", null);
+        xassert_eqq($this->conf->au_seerev, Conf::AUSEEREV_NO);
         xassert(!$user_author2->can_view_review($paper2, $review2b));
         $this->conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_TAGS);
         $this->conf->save_refresh_setting("tag_au_seerev", 1, "fart");
@@ -1256,7 +1259,8 @@ class Permission_Tester {
         $this->conf->save_refresh_setting("resp_active", 1);
         $this->conf->save_refresh_setting("responses", 1, '[{"open":1,"done":' . (Conf::$now + 100) . '}]');
         xassert($user_author2->can_view_review($paper2, $review2b));
-        $this->conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_NO);
+        $this->conf->save_refresh_setting("au_seerev", null);
+        xassert_eqq($this->conf->au_seerev, Conf::AUSEEREV_NO);
         xassert($user_author2->can_view_review($paper2, $review2b));
         $this->conf->save_refresh_setting("resp_active", null);
         xassert(!$user_author2->can_view_review($paper2, $review2b));
@@ -1449,7 +1453,8 @@ class Permission_Tester {
         xassert(!$user_diot->can_view_authors($paper17));
         xassert(!$user_pdruschel->can_view_authors($paper17));
 
-        $this->conf->save_setting("sub_blind", Conf::BLIND_ALWAYS);
+        $this->conf->save_refresh_setting("sub_blind", null);
+        xassert_eqq($this->conf->setting("sub_blind"), Conf::BLIND_ALWAYS);
     }
 
     function test_search_authors() {
@@ -1661,5 +1666,11 @@ class Permission_Tester {
                 xassert($revs[$i]->reviewToken != $revs[$j]->reviewToken);
             }
         }
+    }
+
+    function test_reset_deadlines() {
+        $this->conf->save_setting("sub_reg", Conf::$now + 10);
+        $this->conf->save_setting("sub_update", Conf::$now + 10);
+        $this->conf->save_setting("sub_sub", Conf::$now + 10);
     }
 }

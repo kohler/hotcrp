@@ -367,7 +367,7 @@ class Conf {
                 $this->settings["seedec"] = self::SEEDEC_REV;
             }
         }
-        if (($this->settings["pc_seeallrev"] ?? null) == 2) {
+        if (($this->settings["pc_seeallrev"] ?? null) === 2) {
             $this->settings["pc_seeblindrev"] = 1;
             $this->settings["pc_seeallrev"] = self::PCSEEREV_YES;
         }

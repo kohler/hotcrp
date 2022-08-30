@@ -617,7 +617,8 @@ class Reviews_Tester {
         xassert(!$user_mgbaker->can_view_authors($paper17));
         xassert(!$user_diot->can_view_authors($paper17));
         xassert(!$user_pdruschel->can_view_authors($paper17));
-        $conf->save_setting("sub_blind", Conf::BLIND_ALWAYS);
+        $conf->save_refresh_setting("sub_blind", null);
+        xassert_eqq($conf->settings["sub_blind"], Conf::BLIND_ALWAYS);
 
         $rrow17m = fresh_review($paper17, $user_mgbaker);
         xassert(!$rrow17m->reviewModified);

@@ -449,15 +449,15 @@ abstract class ReviewField implements JsonSerializable {
     }
 
     /** @param list<string> &$t
-     * @param string $fv
+     * @param int|string $fval
      * @param array{flowed:bool} $args */
-    abstract function unparse_text_field(&$t, $fv, $args);
+    abstract function unparse_text_field(&$t, $fval, $args);
 
-    /** @param string $fv
+    /** @param int|string $fval
      * @return string */
-    function unparse_text_field_content($fv) {
+    function unparse_text_field_content($fval) {
         $t = [];
-        $this->unparse_text_field($t, $fv, ["flowed" => false]);
+        $this->unparse_text_field($t, $fval, ["flowed" => false]);
         return join("", $t);
     }
 
@@ -494,9 +494,9 @@ abstract class ReviewField implements JsonSerializable {
     }
 
     /** @param list<string> &$t
-     * @param string $fv
+     * @param string $fstr
      * @param array{format:?TextFormat,include_presence:bool} $args */
-    abstract function unparse_offline_field(&$t, $fv, $args);
+    abstract function unparse_offline_field(&$t, $fstr, $args);
 }
 
 
@@ -894,19 +894,18 @@ class Score_ReviewField extends ReviewField {
         echo '</div></div>';
     }
 
-    function unparse_text_field(&$t, $fv, $args) {
-        if ($fv !== "" && $fv !== "0") {
+    function unparse_text_field(&$t, $fval, $args) {
+        if ($fval > 0 && ($sym = $this->symbols[$fval - 1] ?? null) !== null) {
             $this->unparse_text_field_header($t, $args);
-            $i = array_search($fv, $this->symbols);
-            if ($i !== false && $this->values[$i] !== "") {
-                $t[] = prefix_word_wrap("{$fv}. ", $this->values[$i], strlen($fv) + 2, null, $args["flowed"]);
+            if ($this->values[$fval - 1] !== "") {
+                $t[] = prefix_word_wrap("{$sym}. ", $this->values[$fval - 1], strlen($sym) + 2, null, $args["flowed"]);
             } else {
-                $t[] = "{$fv}\n";
+                $t[] = "{$sym}\n";
             }
         }
     }
 
-    function unparse_offline_field(&$t, $fv, $args) {
+    function unparse_offline_field(&$t, $fstr, $args) {
         $this->unparse_offline_field_header($t, $args);
         $t[] = "==-== Choices:\n";
         $n = count($this->values);
@@ -928,7 +927,7 @@ class Score_ReviewField extends ReviewField {
             $t[] = "==-== Enter the number of your choice:\n";
         }
         $t[] = "\n";
-        if (($i = array_search($fv, $this->symbols)) !== false) {
+        if (($i = array_search($fstr, $this->symbols)) !== false) {
             if ($this->values[$i] !== "") {
                 $t[] = "{$this->symbols[$i]}. {$this->values[$i]}\n";
             } else {
@@ -1018,22 +1017,22 @@ class Text_ReviewField extends ReviewField {
         echo Ht::textarea($this->short_id, (string) $reqstr, $opt), '</div></div>';
     }
 
-    function unparse_text_field(&$t, $fv, $args) {
-        if ($fv !== "") {
+    function unparse_text_field(&$t, $fval, $args) {
+        if ($fval !== "") {
             $this->unparse_text_field_header($t, $args);
-            $t[] = $fv;
+            $t[] = rtrim($fval);
             $t[] = "\n";
         }
     }
 
-    function unparse_offline_field(&$t, $fv, $args) {
+    function unparse_offline_field(&$t, $fstr, $args) {
         $this->unparse_offline_field_header($t, $args);
         if (($fi = $args["format"])
             && ($desc = $fi->description_text()) !== "") {
             $t[] = prefix_word_wrap("==-== ", $desc, "==-== ");
         }
         $t[] = "\n";
-        $t[] = preg_replace('/^(?===[-+*]==)/m', '\\', $fv ?? "");
+        $t[] = preg_replace('/^(?===[-+*]==)/m', '\\', $fstr ?? "");
         $t[] = "\n";
     }
 }

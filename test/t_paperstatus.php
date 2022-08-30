@@ -133,8 +133,12 @@ class PaperStatus_Tester {
     }
 
     function test_document_options_storage() {
+        TestRunner::reset_options();
         $options = $this->conf->setting_json("options");
         xassert(!array_filter((array) $options, function ($o) { return $o->id === 2; }));
+        if (array_filter((array) $options, function ($o) { return $o->id === 2; })) {
+            error_log("! " . json_encode($options, JSON_PRETTY_PRINT));
+        }
         $options[] = (object) ["id" => 2, "name" => "Attachments", "abbr" => "attachments", "type" => "attachments", "order" => 2];
         $this->conf->save_setting("options", 1, json_encode($options));
         $this->conf->invalidate_caches(["options" => true]);

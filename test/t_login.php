@@ -22,7 +22,7 @@ class Login_Tester {
         $this->conf = $conf;
         $this->us1 = new UserStatus($conf->root_user());
         $this->user_chair = $conf->checked_user_by_email("chair@_.com");
-        assert(!$conf->contactdb());
+        $this->cdb = $conf->contactdb();
     }
 
     function test_setup() {
@@ -45,7 +45,7 @@ class Login_Tester {
         $prep = Signin_Page::mail_user($this->conf, $info);
         // reset capability set, is in cdb
         xassert(is_string($prep->reset_capability));
-        xassert(str_starts_with($prep->reset_capability, "hcpw0"));
+        xassert(str_starts_with($prep->reset_capability, "hcpw"));
 
         $this->conf->invalidate_caches(["users" => true]);
 
@@ -89,7 +89,7 @@ class Login_Tester {
         $prep = Signin_Page::mail_user($this->conf, $info);
         // reset capability set, is in cdb
         xassert(is_string($prep->reset_capability));
-        xassert(str_starts_with($prep->reset_capability, "hcpw0"));
+        xassert(str_starts_with($prep->reset_capability, "hcpw"));
 
         // but user is still a placeholder
         $u = $this->conf->checked_user_by_email($email);
@@ -134,7 +134,7 @@ class Login_Tester {
         $prep = Signin_Page::mail_user($this->conf, $info);
         // reset capability set, is in cdb
         xassert(is_string($prep->reset_capability));
-        xassert(str_starts_with($prep->reset_capability, "hcpw0"));
+        xassert(str_starts_with($prep->reset_capability, "hcpw"));
 
         $this->conf->invalidate_caches(["users" => true]);
 

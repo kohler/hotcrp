@@ -363,14 +363,14 @@ $blind\n";
             if ($f->view_score > $revViewScore
                 && ($prow->paperId <= 0 || $f->test_exists($rrow))) {
                 if ($req && isset($req[$fid])) {
-                    $fval = rtrim($req[$fid]);
+                    $fstr = rtrim($req[$fid]);
                 } else if (isset($rrow->fields[$f->order])) {
-                    $fval = $f->value_unparse($rrow->fields[$f->order], ReviewField::VALUE_TRIM);
+                    $fstr = $f->value_unparse($rrow->fields[$f->order], ReviewField::VALUE_TRIM);
                 } else {
-                    $fval = "";
+                    $fstr = "";
                 }
                 $t[] = "\n";
-                $f->unparse_offline_field($t, $fval, $args);
+                $f->unparse_offline_field($t, $fstr, $args);
             }
         }
         $t[] = "\n==+== Scratchpad (for unsaved private notes)\n\n==+== End Review\n";
@@ -413,8 +413,7 @@ $blind\n";
         $args = ["flowed" => ($flags & self::UNPARSE_FLOWED) !== 0];
         foreach ($rrow->viewable_fields($contact) as $f) {
             if (isset($rrow->fields[$f->order])) {
-                $fv = $f->value_unparse($rrow->fields[$f->order], ReviewField::VALUE_TRIM);
-                $f->unparse_text_field($t, $fv, $args);
+                $f->unparse_text_field($t, $rrow->fields[$f->order], $args);
             }
         }
         return join("", $t);
