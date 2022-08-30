@@ -1,12 +1,19 @@
 HotCRP NEWS
 ===========
 
+## Version 3.0b3 – 30.Aug.2022
+
+* Fix bugs in v3.0b2.
+
+* Add dropdown menu for help, settings, and accounts.
+
+
 ## Version 3.0b2 - 22.Aug.2022
 
 * Upgrade notes
 
     * Search change: Search for `re:me:R1`, not `re:me round:R1`.
-    * PHP 8.0 is supported.
+    * PHP 8.0 and 8.1 are supported.
     * If you’re upgrading a very old installation, make sure your options
       are in `conf/options.php`, not `conf/options.inc`.
 
