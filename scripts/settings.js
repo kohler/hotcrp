@@ -2358,7 +2358,7 @@ function make_json_validate() {
 
         // set data-caret-path
         var path = [], i, s, m, lim;
-        for (i = lineno; i > 0 && (st = states[i]) !== "j"; --i) {
+        for (i = lineno; i > 0 && (st = states[i] || "") !== "j"; --i) {
             s = st.endsWith("f") || st.endsWith("g") ? maince.line(i).trim() : "";
             if (s === "") {
                 continue;
