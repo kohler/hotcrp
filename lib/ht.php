@@ -597,7 +597,7 @@ class Ht {
      * @return array{string,int,int} */
     static function make_mark_substring($s, $pos1, $pos2) {
         if ($pos1 > strlen($s) || $pos2 > strlen($s)) {
-            error_log("bad arguments [{$pos1}, {$pos2}]: " . debug_string_backtrace());
+            error_log("bad arguments [{$pos1}, {$pos2}, " . strlen($s) . "]: " . debug_string_backtrace());
         }
         $pos2 = max($pos1, $pos2);
         if ($pos1 > 0
