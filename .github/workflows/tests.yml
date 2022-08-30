@@ -75,4 +75,4 @@ jobs:
       run: sudo apt-get install poppler-utils
 
     - name: Run tests
-      run: sh test/check.sh
+      run: sh test/check.sh --all

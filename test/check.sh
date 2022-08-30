@@ -1,4 +1,8 @@
 #! /bin/sh
+
+all=false
+if [ "$1" = "-a" -o "$1" = "--all" ]; then all=true; fi
+
 a=0
 runcheck () {
     echo $1:
@@ -15,5 +19,8 @@ runcheck test/test04.php
 runcheck test/test05.php
 runcheck test/test06.php
 runcheck test/test07.php
+if $all; then
+    runcheck test/test08.php
+fi
 
 exit $a

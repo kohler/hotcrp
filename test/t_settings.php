@@ -808,6 +808,13 @@ class Settings_Tester {
         xassert_not_in_eqq($rf2->short_id, $rfkeys);
         xassert_eqq($rf2->short_id[0], "t");
         xassert_eqq($rf2->required, true);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => $rf2->short_id,
+            "rf/1/delete" => 1
+        ]);
+        xassert($sv->execute());
     }
 
     function test_review_rounds() {
