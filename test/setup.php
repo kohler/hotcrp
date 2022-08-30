@@ -94,7 +94,7 @@ class MailChecker {
     static function check_db($name = null) {
         if ($name) {
             xassert(isset(self::$messagedb[$name]));
-            xassert_eqq(count(self::$messagedb[$name]), count(self::$preps));
+            xassert_eqq(count(self::$preps), count(self::$messagedb[$name]));
             $mdb = self::$messagedb[$name];
         } else {
             xassert(!empty(self::$preps));
@@ -506,20 +506,20 @@ function xassert_match($a, $b) {
     return $ok;
 }
 
-/** @return bool */
-function xassert_int_list_eqq($a, $b) {
-    $x = [];
-    foreach ([$a, $b] as $ids) {
-        $s = is_array($ids) ? join(" ", $ids) : $ids;
-        $x[] = preg_replace_callback('/(\d+)-(\d+)/', function ($m) {
-            return join(" ", range(+$m[1], +$m[2]));
-        }, $s);
-    }
-    $ok = $x[0] === $x[1];
+/** @param list<int> $actual
+ * @param list<int|string>|string $expected
+ * @return bool */
+function xassert_int_list_eqq($actual, $expected) {
+    $astr = join(" ", $actual);
+    $estr = is_array($expected) ? join(" ", $expected) : $expected;
+    $estr = preg_replace_callback('/(\d+)-(\d+)/', function ($m) {
+        return join(" ", range(+$m[1], +$m[2]));
+    }, $estr);
+    $ok = $astr === $estr;
     if ($ok) {
         Xassert::succeed();
     } else {
-        error_log(assert_location() . ": Expected {$x[0]} === {$x[1]}");
+        error_log(assert_location() . ": Expected {$estr}, got {$astr}");
         Xassert::fail();
     }
     return $ok;
@@ -917,13 +917,15 @@ class TestRunner {
         MailChecker::clear();
     }
 
-    /** @param object $testo */
-    static function run_object($testo) {
+    /** @param object $testo
+     * @param string $methodmatch */
+    static function run_object($testo, $methodmatch = "") {
         $ro = new ReflectionObject($testo);
         foreach ($ro->getMethods() as $m) {
             if (str_starts_with($m->name, "test")
                 && strlen($m->name) > 4
-                && ($m->name[4] === "_" || ctype_upper($m->name[4]))) {
+                && ($m->name[4] === "_" || ctype_upper($m->name[4]))
+                && ($methodmatch === "" || fnmatch($methodmatch, $m->name))) {
                 if (self::$verbose) {
                     fwrite(STDERR, $ro->getName() . "::" . $m->name . "...\n");
                 }
@@ -980,6 +982,9 @@ class TestRunner {
         if (isset($arg["stop"])) {
             Xassert::$stop = true;
         }
+        if (isset($arg["no-cdb"])) {
+            Conf::$main->set_opt("contactdbDsn", null);
+        }
 
         if (isset($arg["reset-db"])) {
             $reset = true;
@@ -990,6 +995,7 @@ class TestRunner {
         }
         $need_reset = true;
 
+        $last_classname = $tester = null;
         if (!empty($arg["_"])) {
             $tests = $arg["_"];
             $i = 0;
@@ -998,29 +1004,48 @@ class TestRunner {
             $classname = $tests[$i];
             if ($classname === "no_cdb") {
                 Conf::$main->set_opt("contactdbDsn", null);
-                $need_reset = true;
+                Conf::$main->invalidate_caches(["cdb" => true]);
+                $last_classname = null;
+                continue;
             } else if ($classname === "reset_db") {
                 if (!$reset) {
                     $need_reset = $reset = true;
                 }
-            } else {
-                if (strpos($classname, "_") === false && ctype_alpha($classname[0])) {
-                    $classname .= "_Tester";
+                $last_classname = null;
+                continue;
+            } else if ($classname === "clear_db") {
+                if (!$need_reset) {
+                    $need_reset = true;
                 }
+                $last_classname = null;
+                continue;
+            }
+
+            if (strpos($classname, "_") === false && ctype_alpha($classname[0])) {
+                $classname .= "_Tester";
+            }
+            $methodmatch = "";
+            if (($pos = strpos($classname, "::")) !== false) {
+                $methodmatch = substr($classname, $pos + 2);
+                $classname = substr($classname, 0, $pos);
+            }
+            if ($classname !== $last_classname || $methodmatch === "") {
                 $class = new ReflectionClass($classname);
                 $ctor = $class->getConstructor();
                 if ($ctor && $ctor->getNumberOfParameters() === 1) {
                     if ($need_reset) {
                         self::reset_db($reset ?? false);
                         $need_reset = false;
+                        $reset = null;
                     }
-                    $testo = $class->newInstance(Conf::$main);
+                    $tester = $class->newInstance(Conf::$main);
                 } else {
                     assert(!$ctor || $ctor->getNumberOfParameters() === 0);
-                    $testo = $class->newInstance();
+                    $tester = $class->newInstance();
                 }
-                self::run_object($testo);
+                $last_classname = $classname;
             }
+            self::run_object($tester, $methodmatch);
         }
         xassert_exit();
     }

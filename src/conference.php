@@ -3091,6 +3091,7 @@ class Conf {
             }
             if (isset($caches["cdb"])) {
                 unset($this->opt["contactdbConfid"]);
+                self::$_cdb = false;
             }
             // NB All setting-related caches cleared here should also be cleared
             // in refresh_settings().
