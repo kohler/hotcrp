@@ -39,9 +39,8 @@ class Developer_UserInfo {
     /** @param Contact $user
      * @return list<TokenInfo> */
     static function all_active_bearer_tokens($user) {
-        $toks = self::active_bearer_tokens($user->cdb_user());
-        array_push($toks, ...self::active_bearer_tokens($user));
-        return $toks;
+        $toks1 = self::active_bearer_tokens($user->cdb_user());
+        return array_merge($toks1, self::active_bearer_tokens($user));
     }
 
     function print_bearer_tokens(UserStatus $us) {
