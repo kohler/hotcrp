@@ -295,7 +295,7 @@ class SettingValues extends MessageSet {
             $this->_cs->set_title_class("form-h")
                 ->set_section_class("form-section")
                 ->set_separator('<hr class="form-sep">')
-                ->set_context_args([$this]);
+                ->set_context_args($this);
         }
         return $this->_cs;
     }

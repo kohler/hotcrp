@@ -162,7 +162,7 @@ class UserStatus extends MessageSet {
         return $this->_cs;
     }
     private function initialize_cs() {
-        $this->_cs->set_callable("UserStatus", $this)->set_context_args([$this]);
+        $this->_cs->set_callable("UserStatus", $this)->set_context_args($this);
     }
 
     /** @return bool */

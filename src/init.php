@@ -365,7 +365,7 @@ function initialize_request($kwarg = null) {
 
     // redirect if disabled
     if ($muser->is_disabled()) {
-        $gj = $conf->page_components($muser)->get($nav->page);
+        $gj = $conf->page_components($muser, $qreq)->get($nav->page);
         if (!$gj || !($gj->allow_disabled ?? false)) {
             $conf->redirect_hoturl("index");
         }

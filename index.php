@@ -38,14 +38,14 @@ function handle_request($nav) {
             return;
         }
         list($user, $qreq) = initialize_request();
-        $pc = $user->conf->page_components($user);
+        $pc = $user->conf->page_components($user, $qreq);
         $pagej = $pc->get($nav->page);
         if (!$pagej || str_starts_with($pagej->name, "__")) {
             Multiconference::fail(404, "Page not found.");
         } else if ($user->is_disabled() && !($pagej->allow_disabled ?? false)) {
             Multiconference::fail(403, "Your account is disabled.");
         } else {
-            $pc->set_root($pagej->group)->set_context_args([$user, $qreq, $pc]);
+            $pc->set_root($pagej->group);
             handle_request_components($user, $qreq, $pagej->group, $pc);
             $pc->print_group($pagej->group, true);
         }

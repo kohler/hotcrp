@@ -3,8 +3,8 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ComponentContext {
-    /** @var ?list<mixed> */
-    public $args;
+    /** @var list<mixed> */
+    public $args = [];
     /** @var ?list<callable> */
     public $cleanup;
 }
@@ -255,7 +255,7 @@ class ComponentSet implements XtContext {
      * @param class-string<T> $name
      * @return ?T */
     function callable($name) {
-        if (!isset($this->_callables[$name]) && $this->_ctx->args !== null) {
+        if (!isset($this->_callables[$name])) {
             /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
             $this->_callables[$name] = new $name(...$this->_ctx->args);
         }
@@ -321,9 +321,9 @@ class ComponentSet implements XtContext {
         return $old_separator;
     }
 
-    /** @param list<mixed> $args
+    /** @param mixed ...$args
      * @return $this */
-    function set_context_args($args) {
+    function set_context_args(...$args) {
         $this->_ctx->args = $args;
         return $this;
     }

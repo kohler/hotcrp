@@ -4762,7 +4762,7 @@ class Conf {
             $ouser = $user;
             if ($user->is_actas_user()) {
                 echo '<li class="has-quiet-link">', Ht::link("Acting as " . htmlspecialchars($user->email), $this->hoturl("profile")), '</li>';
-                echo '<li class="has-link">', Ht::link("Signed in as <strong>" . htmlspecialchars($user->base_user()->email), $this->selfurl($qreq, ["actas" => null])), '</strong></li>';
+                echo '<li class="has-link">', Ht::link("Switch to <strong>" . htmlspecialchars($user->base_user()->email), $this->selfurl($qreq, ["actas" => null])), '</strong></li>';
             } else if (!$user->is_disabled() && !$user->is_anonymous_user()) {
                 echo '<li class="has-quiet-link">', Ht::link("Signed in as <strong>" . htmlspecialchars($user->email) . "</strong>", $this->hoturl("profile")), '</li>';
             } else {
@@ -4917,7 +4917,7 @@ class Conf {
         }
         $user_html = $user->has_email() ? htmlspecialchars($user->email) : "Not signed in";
 
-        $pagecs = $this->page_components($user);
+        $pagecs = $this->page_components($user, $qreq);
         $old_separator = $pagecs->swap_separator('<li class="separator"></li>');
         echo '<details class="dropmenu-details', $details_class, '" role="menu">',
             '<summary class="uic js-dropmenu-open">',
@@ -5972,11 +5972,16 @@ class Conf {
     // pages
 
     /** @return ComponentSet */
-    function page_components(Contact $viewer) {
-        if (!$this->_page_components || $this->_page_components->viewer() !== $viewer) {
-            $this->_page_components = new ComponentSet($viewer, ["etc/pages.json"], $this->opt("pages"));
+    function page_components(Contact $viewer, Qrequest $qreq) {
+        $pc = $this->_page_components;
+        if (!$pc
+            || $pc->viewer() !== $viewer
+            || $pc->arg(1) !== $qreq) {
+            $pc = new ComponentSet($viewer, ["etc/pages.json"], $this->opt("pages"));
+            $pc->set_context_args($viewer, $qreq, $pc);
+            $this->_page_components = $pc;
         }
-        return $this->_page_components;
+        return $pc;
     }
 
 

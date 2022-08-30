@@ -22,7 +22,7 @@ class HelpRenderer extends Ht {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->_help_topics = $help_topics;
-        $this->_help_topics->set_title_class("helppage")->set_context_args([$this]);
+        $this->_help_topics->set_title_class("helppage")->set_context_args($this);
     }
 
     /** @param string $title

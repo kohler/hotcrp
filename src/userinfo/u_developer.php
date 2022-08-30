@@ -14,7 +14,7 @@ class Developer_UserInfo {
         }
     }
 
-    /** @param Contact ?$user
+    /** @param ?Contact $user
      * @return list<TokenInfo> */
     static function active_bearer_tokens($user) {
         if (!$user) {
