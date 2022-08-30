@@ -5,7 +5,8 @@
 declare(strict_types=1);
 require_once(__DIR__ . '/setup.php');
 TestRunner::run(
-    "no_cdb",
     "PaperStatus_Tester",
+    "Login_Tester",
+    "no_cdb",
     "Login_Tester"
 );
