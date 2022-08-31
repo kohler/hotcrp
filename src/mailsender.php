@@ -73,7 +73,7 @@ class MailSender {
             Ht::submit("Send mail", ["class" => "btn-highlight"]),
             "</form>",
             Ht::unstash_script('$("#mailform").submit()'),
-            '<div class="warning">About to send mail.</div>';
+            Ht::msg("About to send mail.", 1);
         $user->conf->footer();
         exit;
     }
@@ -142,7 +142,7 @@ class MailSender {
                       '<span id="mailinfo"></span>',
                     '</p>',
                   '</div>',
-                  '<div class="aa">',
+                  '<div class="aab aabig mt-1 mb-3">',
                     Ht::submit("again", "Prepare more mail"),
                   '</div>',
                 '</div>',
@@ -154,20 +154,24 @@ class MailSender {
                 '</div>',
               '</div>';
         } else if ($this->phase === 0) {
+            $ms = [];
             if (isset($this->qreq->body)
                 && $this->user->privChair
                 && (strpos($this->qreq->body, "%REVIEWS%")
                     || strpos($this->qreq->body, "%COMMENTS%"))) {
                 if (!$this->conf->time_some_author_view_review()) {
-                    echo '<div class="warning">Although these mails contain reviews and/or comments, authors can’t see reviews or comments on the site. (<a href="', $this->conf->hoturl("settings", "group=dec"), '" class="nw">Change this setting</a>)</div>', "\n";
+                    $ms[] = MessageItem::warning("<5>Although these mails contain reviews and/or comments, authors can’t see reviews or comments on the site. (<a href=\"" . $this->conf->hoturl("settings", "group=dec") . "\" class=\"nw\">Change this setting</a>)");
                 }
             }
             if (isset($this->qreq->body)
                 && $this->user->privChair
                 && substr($this->recipients, 0, 4) == "dec:") {
                 if (!$this->conf->time_some_author_view_decision()) {
-                    echo '<div class="warning">You appear to be sending an acceptance or rejection notification, but authors can’t see paper decisions on the site. (<a href="', $this->conf->hoturl("settings", "group=dec"), '" class="nw">Change this setting</a>)</div>', "\n";
+                    $ms[] = MessageItem::warning("<5>You appear to be sending an acceptance or rejection notification, but authors can’t see paper decisions on the site. (<a href=\"" . $this->conf->hoturl("settings", "group=dec") . "\" class=\"nw\">Change this setting</a>)");
                 }
+            }
+            if (!empty($ms)) {
+                $this->conf->feedback_msg($ms);
             }
             echo '<div id="foldmail" class="foldc fold2c">',
               '<div class="fn fx2 msg msg-warning">',
