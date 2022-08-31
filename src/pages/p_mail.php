@@ -287,8 +287,9 @@ class Mail_Page {
     }
 
     function print_template() {
-        echo '<div class="aa" style="padding-left:8px">
-  <strong>Template:</strong> &nbsp;';
+        echo '<div class="aab aabig mt-0">',
+            '<div class="aabut mr-2"><strong>Template:</strong></div>',
+            '<div class="aabut">';
         $tmpl = $tmploptions = [];
         foreach (array_keys($this->conf->mail_template_map()) as $tname) {
             if (($template = $this->conf->mail_template($tname))
@@ -306,9 +307,9 @@ class Mail_Page {
             $this->qreq->template = "generic";
         }
         echo Ht::select("template", $tmploptions, $this->qreq->template, ["class" => "uich js-mail-populate-template"]),
-            ' &nbsp;
- <span class="hint">Templates are mail texts tailored for common conference tasks.</span>
-</div>';
+            '</div>',
+            '<div class="aabut"><span class="hint">Templates are mail texts tailored for common conference tasks.</span></div>',
+            '</div>';
     }
 
     function print_mail_log() {
@@ -335,7 +336,7 @@ class Mail_Page {
 
         $this->print_template();
 
-        echo '<div class="mail" style="float:left;margin:4px 1em 12px 0"><table id="foldpsel" class="fold8c fold9o fold10c">', "\n";
+        echo '<div class="mail" style="float:left;margin:4px 1em 1em 0"><table id="foldpsel" class="fold8c fold9o fold10c">', "\n";
 
         // ** TO
         echo '<tr><td class="mhnp nw"><label for="to">To:</label></td><td class="mhdd">',
@@ -433,8 +434,10 @@ $(function () { $("#to").trigger("change"); })');
             $this->print_mail_log();
         }
 
-        echo '<div class="aa c">',
-            Ht::submit("Prepare mail", ["class" => "btn-primary"]), ' &nbsp; <span class="hint">You’ll be able to review the mails before they are sent.</span></div>';
+        echo '<div class="aab aabig c mb-5">',
+            '<div class="aabut">', Ht::submit("Prepare mail", ["class" => "btn-primary"]), '</div>',
+            '<div class="aabut"><span class="hint">You’ll be able to review the mails before they are sent.</span></div>',
+            '</div>';
 
         $this->print_keyword_help();
         echo '</form>';

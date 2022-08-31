@@ -143,7 +143,7 @@ class MailSender {
                     '</p>',
                   '</div>',
                   '<div class="aab aabig mt-1 mb-3">',
-                    Ht::submit("again", "Prepare more mail"),
+                    '<div class="aabut">', Ht::submit("again", "Prepare more mail"), '</div>',
                   '</div>',
                 '</div>',
                 // This next is only displayed when Javascript is off
