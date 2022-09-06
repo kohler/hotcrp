@@ -203,7 +203,9 @@ class Users_Page {
             }
         }
 
-        $this->conf->make_csvg("pcinfo")->select($selection, $header)->append($people)->emit();
+        $this->conf->make_csvg("pcinfo")
+            ->set_keys($selection)->set_header($header)
+            ->append($people)->emit();
         return true;
     }
 

@@ -679,7 +679,9 @@ class CsvGenerator {
     private $stream_filename;
     /** @var int */
     private $stream_length = 0;
+    /** @var ?list<int|string> */
     private $selection;
+    /** @var bool */
     private $selection_is_names = false;
     /** @var string */
     private $lf = "\n";
@@ -730,35 +732,30 @@ class CsvGenerator {
         }
     }
 
-    /** @param list<string>|array<string,string> $selection
-     * @param null|false|true|list<string> $header
+
+    /** @param list<int|string> $selection
      * @return $this */
-    function select($selection, $header = null) {
-        assert($this->lines_length === 0 && !($this->flags & self::FLAG_FLUSHED));
+    function set_keys($selection) {
         assert(($this->flags & self::FLAG_TYPE) !== self::TYPE_STRING);
-        if ($header === false || $header === []) {
-            $this->selection = $selection;
-        } else if ($header === true) {
-            $this->add_row($selection);
-            $this->selection = $selection;
-        } else if ($header !== null) {
-            assert(is_array($selection) && !is_associative_array($selection)
-                   && is_array($header) && !is_associative_array($header)
-                   && count($selection) === count($header));
-            $this->add_row($header);
-            $this->selection = $selection;
-        } else if (is_associative_array($selection)) {
-            $this->add_row(array_values($selection));
-            $this->selection = array_keys($selection);
-        } else {
-            $this->add_row($selection);
-            $this->selection = $selection;
-        }
+        $this->selection = $selection;
         $this->selection_is_names = true;
         foreach ($this->selection as $s) {
-            if (ctype_digit($s)) {
+            if (is_int($s) || ctype_digit($s)) {
                 $this->selection_is_names = false;
             }
+        }
+        return $this;
+    }
+
+    /** @param list<int|string> $header
+     * @return $this */
+    function set_header($header) {
+        assert(empty($this->lines) && ($this->flags & self::FLAG_FLUSHED) === 0);
+        $this->headerline = "";
+        $this->lines_length = 0;
+        if (!empty($header)) {
+            assert(!$this->selection || count($header) <= count($this->selection));
+            $this->add_row($header);
         }
         if (!empty($this->lines)) {
             $this->headerline = $this->lines[0];
@@ -766,6 +763,12 @@ class CsvGenerator {
             $this->flags |= self::FLAG_HEADERS;
         }
         return $this;
+    }
+
+    /** @param list<int|string> $fields
+     * @return $this */
+    function select($fields) {
+        return $this->set_keys($fields)->set_header($fields);
     }
 
     /** @param string $filename
@@ -785,68 +788,19 @@ class CsvGenerator {
 
     /** @return bool */
     function is_empty() {
-        return empty($this->lines);
+        return empty($this->lines) && ($this->flags & self::FLAG_FLUSHED) === 0;
     }
 
     /** @return bool */
     function is_csv() {
-        return $this->type == self::TYPE_COMMA;
+        return $this->type === self::TYPE_COMMA;
     }
 
     /** @return string */
     function extension() {
-        return $this->type == self::TYPE_COMMA ? ".csv" : ".txt";
+        return $this->type === self::TYPE_COMMA ? ".csv" : ".txt";
     }
 
-    private function apply_selection($row, $is_array) {
-        if (!$this->selection
-            || empty($row)
-            || ($this->selection_is_names
-                && $is_array
-                && !is_associative_array($row)
-                && count($row) <= count($this->selection))) {
-            return $row;
-        }
-        $selected = [];
-        $i = 0;
-        foreach ($this->selection as $key) {
-            if (isset($row[$key])) {
-                while (count($selected) < $i) {
-                    $selected[] = "";
-                }
-                $selected[] = $row[$key];
-            }
-            ++$i;
-        }
-        if (empty($selected) && $is_array) {
-            for ($i = 0;
-                 array_key_exists($i, $row) && $i != count($this->selection);
-                 ++$i) {
-                $selected[] = $row[$i];
-            }
-        }
-        return $selected;
-    }
-
-    /** @param string $text
-     * @return $this */
-    function add_string($text) {
-        if ($this->lines_length >= 10000000 && $this->stream !== false) {
-            $this->_flush_stream();
-        }
-        $this->lines[] = $text;
-        $this->lines_length += strlen($text);
-        return $this;
-    }
-
-    /** @param list<string> $texts
-     * @return $this */
-    function append_strings($texts) {
-        foreach ($texts as $t) {
-            $this->add_string($t);
-        }
-        return $this;
-    }
 
     private function _flush_stream() {
         if ($this->stream === null) {
@@ -888,6 +842,26 @@ class CsvGenerator {
 
     /** @param string $text
      * @return $this */
+    function add_string($text) {
+        if ($this->lines_length >= 10000000 && $this->stream !== false) {
+            $this->_flush_stream();
+        }
+        $this->lines[] = $text;
+        $this->lines_length += strlen($text);
+        return $this;
+    }
+
+    /** @param list<string> $texts
+     * @return $this */
+    function append_strings($texts) {
+        foreach ($texts as $t) {
+            $this->add_string($t);
+        }
+        return $this;
+    }
+
+    /** @param string $text
+     * @return $this */
     function add_comment($text) {
         preg_match_all('/([^\r\n]*)(?:\r\n?|\n|\z)/', $text, $m);
         if ($m[1][count($m[1]) - 1] === "") {
@@ -899,16 +873,40 @@ class CsvGenerator {
         return $this;
     }
 
+    private function apply_selection($row) {
+        if (!$this->selection
+            || empty($row)
+            || ($this->selection_is_names
+                && !is_associative_array($row)
+                && count($row) <= count($this->selection))) {
+            return $row;
+        }
+        $selected = [];
+        $i = 0;
+        foreach ($this->selection as $key) {
+            if (isset($row[$key])) {
+                while (count($selected) < $i) {
+                    $selected[] = "";
+                }
+                $selected[] = $row[$key];
+            }
+            ++$i;
+        }
+        if (empty($selected)) {
+            for ($i = 0;
+                 array_key_exists($i, $row) && $i !== count($this->selection);
+                 ++$i) {
+                $selected[] = $row[$i];
+            }
+        }
+        return $selected;
+    }
+
     /** @param list<string|int|float>|array<string,string|int|float> $row
      * @return $this */
     function add_row($row) {
         if (!empty($row)) {
-            $is_array = is_array($row);
-            assert(is_array($row));
-            if (!$is_array) {
-                $row = (array) $row;
-            }
-            if (($this->flags & self::FLAG_ITEM_COMMENTS)
+            if (($this->flags & self::FLAG_ITEM_COMMENTS) !== 0
                 && $this->selection
                 && isset($row["__precomment__"])
                 && ($cmt = (string) $row["__precomment__"]) !== "") {
@@ -916,10 +914,10 @@ class CsvGenerator {
             }
             $srow = $row;
             if ($this->selection) {
-                $srow = $this->apply_selection($srow, $is_array);
+                $srow = $this->apply_selection($srow);
             }
-            if ($this->type == self::TYPE_COMMA) {
-                if ($this->flags & self::FLAG_ALWAYS_QUOTE) {
+            if ($this->type === self::TYPE_COMMA) {
+                if (($this->flags & self::FLAG_ALWAYS_QUOTE) !== 0) {
                     foreach ($srow as &$x) {
                         $x = self::always_quote($x);
                     }
@@ -930,12 +928,12 @@ class CsvGenerator {
                 }
                 unset($x);
                 $this->add_string(join(",", $srow) . $this->lf);
-            } else if ($this->type == self::TYPE_TAB) {
+            } else if ($this->type === self::TYPE_TAB) {
                 $this->add_string(join("\t", $srow) . $this->lf);
             } else {
                 $this->add_string(join("|", $srow) . $this->lf);
             }
-            if (($this->flags & self::FLAG_ITEM_COMMENTS)
+            if (($this->flags & self::FLAG_ITEM_COMMENTS) !== 0
                 && $this->selection
                 && isset($row["__postcomment__"])
                 && ($cmt = (string) $row["__postcomment__"]) !== "") {
@@ -958,7 +956,7 @@ class CsvGenerator {
     /** @param int $flags
      * @return $this */
     function sort($flags = SORT_REGULAR) {
-        assert(!($this->flags & self::FLAG_FLUSHED));
+        assert(($this->flags & self::FLAG_FLUSHED) === 0);
         sort($this->lines, $flags);
         return $this;
     }

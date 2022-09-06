@@ -127,7 +127,10 @@ class ReviewCSV_Batch {
         }
         if ($this->narrow) {
             if (empty($this->output)) {
-                $this->csv->select($this->header, !$this->no_header);
+                $this->csv->set_keys($this->header);
+                if (!$this->no_header) {
+                    $this->csv->set_header($this->header);
+                }
                 $this->output[] = [];
             }
             $this->csv->add_row($x);
@@ -227,7 +230,10 @@ class ReviewCSV_Batch {
                     $this->header[] = $f->name;
                 }
             }
-            $this->csv->select($this->header, !$this->no_header);
+            $this->csv->set_keys($this->header);
+            if (!$this->no_header) {
+                $this->csv->set_header($this->header);
+            }
             foreach ($this->output as $orow) {
                 $this->csv->add_row($orow);
             }

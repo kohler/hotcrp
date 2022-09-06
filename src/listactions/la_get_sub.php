@@ -101,6 +101,7 @@ class GetCSV_ListAction extends ListAction {
         $pl->set_view("sel", false);
         list($header, $data) = $pl->text_csv();
         return $user->conf->make_csvg("data", CsvGenerator::FLAG_ITEM_COMMENTS)
-            ->select($header)->append($data);
+            ->set_keys(array_keys($header))->set_header(array_values($header))
+            ->append($data);
     }
 }
