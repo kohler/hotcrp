@@ -3,52 +3,83 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class GetAllRevpref_ListAction extends ListAction {
+    /** @var bool */
+    private $has_conflict;
+    /** @var bool */
+    private $has_expertise;
+    /** @var bool */
+    private $has_topic_score;
+    /** @var array<int,string> */
+    private $titles;
+    /** @var list<int|float|bool> */
+    private $pupec;
+
     function allow(Contact $user, Qrequest $qreq) {
         return $user->is_manager();
     }
-    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
-        $texts = [];
+
+    /** @param Contact $user
+     * @param SearchSelection $ssel */
+    private function prepare_pupec($user, $ssel) {
         $pcm = $user->conf->pc_members();
-        $has_conflict = $has_expertise = $has_topic_score = false;
+        $this->has_conflict = $this->has_expertise = $this->has_topic_score = false;
+        $this->titles = $this->pupec = [];
         foreach ($ssel->paper_set($user, ["allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1]) as $prow) {
             if (!$user->allow_administer($prow)) {
                 continue;
             }
+            $this->titles[$prow->paperId] = $prow->title;
             $conflicts = $prow->conflicts();
             foreach ($pcm as $cid => $p) {
                 $pref = $prow->preference($p);
                 $cflt = $conflicts[$cid] ?? null;
                 $is_cflt = $cflt && $cflt->is_conflicted();
-                $tv = $prow->topicIds !== "" ? $prow->topic_interest_score($p) : 0;
-                if ($pref[0] !== 0 || $pref[1] !== null || $is_cflt || $tv) {
-                    $texts[] = [
-                        "paper" => $prow->paperId,
-                        "title" => $prow->title,
-                        "first" => $p->firstName,
-                        "last" => $p->lastName,
-                        "email" => $p->email,
-                        "preference" => $pref[0] ? : "",
-                        "expertise" => unparse_expertise($pref[1]),
-                        "topic_score" => $tv ? : "",
-                        "conflict" => ($is_cflt ? "conflict" : "")
-                    ];
-                    $has_conflict = $has_conflict || $is_cflt;
-                    $has_expertise = $has_expertise || $pref[1] !== null;
-                    $has_topic_score = $has_topic_score || $tv;
+                $ts = $prow->topicIds !== "" ? $prow->topic_interest_score($p) : 0;
+                if ($pref[0] !== 0 || $pref[1] !== null || $is_cflt || $ts !== 0) {
+                    array_push($this->pupec, $prow->paperId, $cid, $pref[0], $pref[1], $ts, $is_cflt);
+                }
+                if ($is_cflt) {
+                    $this->has_conflict = true;
+                }
+                if ($pref[1] !== null) {
+                    $this->has_expertise = true;
+                }
+                if ($ts !== 0) {
+                    $this->has_topic_score = true;
                 }
             }
         }
+    }
+
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
+        // Reduce memory requirements with two passes
+        $this->prepare_pupec($user, $ssel);
 
         $headers = ["paper", "title", "first", "last", "email", "preference"];
-        if ($has_expertise) {
+        if ($this->has_expertise) {
             $headers[] = "expertise";
         }
-        if ($has_topic_score) {
+        if ($this->has_topic_score) {
             $headers[] = "topic_score";
         }
-        if ($has_conflict) {
+        if ($this->has_conflict) {
             $headers[] = "conflict";
         }
-        return $user->conf->make_csvg("allprefs")->select($headers)->append($texts);
+        $csvg = $user->conf->make_csvg("allprefs")->select($headers);
+        $n = count($this->pupec);
+        $pcm = $user->conf->pc_members();
+        for ($i = 0; $i !== $n; $i += 6) {
+            list($pid, $uid, $pref, $exp, $ts, $cflt) = array_slice($this->pupec, $i, 6);
+            $pc = $pcm[$uid];
+            $csvg->add_row([
+                "paper" => $pid, "title" => $this->titles[$pid],
+                "first" => $pc->firstName, "last" => $pc->lastName, "email" => $pc->email,
+                "preference" => $pref ? : "",
+                "expertise" => unparse_expertise($exp),
+                "topic_score" => $ts ? : "",
+                "conflict" => $cflt ? "conflict" : ""
+            ]);
+        }
+        return $csvg;
     }
 }

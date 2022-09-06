@@ -149,7 +149,7 @@ class CsvParser implements Iterator {
 
     /** @param string|list<string>|list<list<string>> $str
      * @param int $type */
-    function __construct($str, $type = self::TYPE_COMMA) {
+    function __construct($str = "", $type = self::TYPE_COMMA) {
         $this->lines = is_array($str) ? $str : self::split_lines($str);
         $this->set_type($type & ~self::TYPE_HEADER);
         $this->used = gmp_init("0");
@@ -238,7 +238,8 @@ class CsvParser implements Iterator {
         return $this->header;
     }
 
-    /** @param list<string>|CsvRow $header */
+    /** @param list<string>|CsvRow $header
+     * @return $this */
     function set_header($header) {
         if ($header instanceof CsvRow) {
             $header = $header->as_list();
@@ -291,6 +292,7 @@ class CsvParser implements Iterator {
         }
 
         $this->_rewind_pos = $this->lpos;
+        return $this;
     }
 
     /** @param string $dst
