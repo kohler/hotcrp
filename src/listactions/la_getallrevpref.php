@@ -65,20 +65,23 @@ class GetAllRevpref_ListAction extends ListAction {
         if ($this->has_conflict) {
             $headers[] = "conflict";
         }
-        $csvg = $user->conf->make_csvg("allprefs")->select($headers);
+        $csvg = $user->conf->make_csvg("allprefs")->set_header($headers);
         $n = count($this->pupec);
         $pcm = $user->conf->pc_members();
         for ($i = 0; $i !== $n; $i += 6) {
             list($pid, $uid, $pref, $exp, $ts, $cflt) = array_slice($this->pupec, $i, 6);
             $pc = $pcm[$uid];
-            $csvg->add_row([
-                "paper" => $pid, "title" => $this->titles[$pid],
-                "first" => $pc->firstName, "last" => $pc->lastName, "email" => $pc->email,
-                "preference" => $pref ? : "",
-                "expertise" => unparse_expertise($exp),
-                "topic_score" => $ts ? : "",
-                "conflict" => $cflt ? "conflict" : ""
-            ]);
+            $l = [$pid, $this->titles[$pid], $pc->firstName, $pc->lastName, $pc->email, $pref ? : ""];
+            if ($this->has_expertise) {
+                $l[] = unparse_expertise($exp);
+            }
+            if ($this->has_topic_score) {
+                $l[] = $ts ? : "";
+            }
+            if ($this->has_conflict) {
+                $l[] = $cflt ? "conflict" : "";
+            }
+            $csvg->add_row($l);
         }
         return $csvg;
     }
