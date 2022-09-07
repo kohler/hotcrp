@@ -11,7 +11,11 @@ class GetAllRevpref_ListAction extends ListAction {
         // Reduce memory requirements by prefetching has_expertise and has_interest
         list($has_expertise, $has_interest) = $user->conf->fetch_first_row("select exists (select * from PaperReviewPreference where expertise is not null) has_expertise, exists (select * from TopicInterest where interest!=0) has_interest from dual");
 
-        $headers = ["paper", "title", "first", "last", "email", "conflict", "preference"];
+        $headers = [
+            "paper", "title",
+            "first", "last", "email",
+            "conflict", "preference"
+        ];
         if ($has_expertise) {
             $headers[] = "expertise";
         }
@@ -35,8 +39,7 @@ class GetAllRevpref_ListAction extends ListAction {
                     $l = [
                         $prow->paperId, $prow->title,
                         $p->firstName, $p->lastName, $p->email,
-                        $is_cflt ? "conflict" : "",
-                        $pref[0] ? : ""
+                        $is_cflt ? "conflict" : "", $pref[0] ? : ""
                     ];
                     if ($has_expertise) {
                         $l[] = unparse_expertise($pref[1]);
