@@ -382,7 +382,7 @@ class Abbreviation_Tester {
     }
 
     function test_unknown_decision() {
-        $dm = $this->conf->decision_matcher();
+        $dm = $this->conf->decision_set();
         xassert_eqq($dm->find_all("unknown"), [0]);
         xassert_eqq($dm->find_all("unk"), [0]);
         xassert_eqq($dm->find_all("und"), [0]);

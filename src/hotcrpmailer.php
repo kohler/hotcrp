@@ -377,10 +377,10 @@ class HotCRPMailer extends Mailer {
         return null;
     }
     function kw_decision($args, $isbool) {
-        if (!$this->row->outcome && $isbool) {
+        if ($this->row->outcome === 0 && $isbool) {
             return false;
         } else {
-            return $this->conf->decision_name($this->row->outcome);
+            return $this->row->decision()->name;
         }
     }
     function kw_tagvalue($args, $isbool, $uf) {

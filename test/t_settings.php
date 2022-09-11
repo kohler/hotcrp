@@ -208,11 +208,20 @@ class Settings_Tester {
         $this->delete_topics();
     }
 
+    /** @return string */
+    private function json_decision_map() {
+        $x = [];
+        foreach ($this->conf->decision_set() as $dec) {
+            $x[$dec->id] = $dec->name;
+        }
+        return json_encode($x);
+    }
+
     function test_decision_types() {
         xassert(ConfInvariants::test_setting_invariants($this->conf));
 
         $this->conf->save_refresh_setting("outcome_map", null);
-        xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
         xassert_eqq($this->conf->setting("decisions"), null);
 
         $sv = SettingValues::make_request($this->u_chair, [
@@ -224,7 +233,7 @@ class Settings_Tester {
             "decision/2/category" => "accept"
         ]);
         xassert($sv->execute());
-        xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","1":"Accepted!","2":"Newly accepted","-1":"Rejected"}');
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted!","2":"Newly accepted","-1":"Rejected"}');
         xassert_eqq($this->conf->setting("decisions"), null);
 
         $sv = SettingValues::make_request($this->u_chair, [
@@ -233,7 +242,7 @@ class Settings_Tester {
             "decision/1/delete" => "1"
         ]);
         xassert($sv->execute());
-        xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","2":"Newly accepted","-1":"Rejected"}');
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","2":"Newly accepted","-1":"Rejected"}');
         xassert(ConfInvariants::test_setting_invariants($this->conf));
 
         // accept-category with “reject” in the name is rejected by default
@@ -254,7 +263,7 @@ class Settings_Tester {
         ]);
         xassert(!$sv->execute());
         xassert_str_contains($sv->full_feedback_text(), "is not unique");
-        xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","2":"Newly accepted","-1":"Rejected"}');
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","2":"Newly accepted","-1":"Rejected"}');
 
         // can override name conflict
         $sv = SettingValues::make_request($this->u_chair, [
@@ -267,7 +276,7 @@ class Settings_Tester {
             "decision/2/category" => "reject"
         ]);
         xassert($sv->execute());
-        xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","2":"Really Rejected","-1":"Rejected","-2":"Whatever"}');
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","2":"Really Rejected","-1":"Rejected","-2":"Whatever"}');
 
         // not change name => no need to override conflict
         $sv = SettingValues::make_request($this->u_chair, [
@@ -278,7 +287,7 @@ class Settings_Tester {
             "decision/2/name" => "Well I dunno"
         ]);
         xassert($sv->execute());
-        xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","2":"Really Rejected","-1":"Rejected","-2":"Well I dunno"}');
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","2":"Really Rejected","-1":"Rejected","-2":"Well I dunno"}');
 
         // missing name => error
         $sv = SettingValues::make_request($this->u_chair, [
@@ -299,7 +308,7 @@ class Settings_Tester {
             "decision/3/delete" => "1"
         ]);
         xassert($sv->execute());
-        xassert_eqq(json_encode($this->conf->decision_map()), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
         xassert_eqq($this->conf->setting("outcome_map"), null);
         xassert(ConfInvariants::test_setting_invariants($this->conf));
     }

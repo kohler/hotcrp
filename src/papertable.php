@@ -917,7 +917,7 @@ class PaperTable {
         } else if ($this->user->act_author_view($this->prow)) {
             // Tell authors whether they are blind.
             // Accepted papers are sometimes not blind.
-            if ($this->prow->outcome <= 0
+            if ($this->prow->outcome_sign <= 0
                 || !$this->user->can_view_decision($this->prow)
                 || !$this->conf->time_reviewer_view_accepted_authors()) {
                 $sb = $this->conf->submission_blindness();
@@ -954,12 +954,14 @@ class PaperTable {
             $fr->value .= '</a>';
         }
         if ($this->admin) {
+            $mailt = "s";
             if ($this->prow->timeSubmitted <= 0) {
                 $mailt = "all";
-            } else if ($this->prow->outcome != 0 && $this->prow->can_author_view_decision()) {
-                $mailt = $this->prow->outcome > 0 ? "dec:yes" : "dec:no";
-            } else {
-                $mailt = "s";
+            } else if ($this->prow->outcome !== 0 && $this->prow->can_author_view_decision()) {
+                $dec = $this->prow->decision();
+                if ($dec->category !== DecisionInfo::CAT_NONE) {
+                    $mailt = $dec->category === DecisionInfo::CAT_YES ? "dec:yes" : "dec:no";
+                }
             }
             $fr->value .= ' <a class="fx9 q" href="'
                 . $this->conf->hoturl("mail", ["t" => $mailt, "plimit" => 1, "q" => $this->prow->paperId])
@@ -1069,9 +1071,9 @@ class PaperTable {
     }
 
     private function _print_normal_body() {
-        $status_info = $this->user->paper_status_info($this->prow);
-        echo '<p class="pgsm"><span class="pstat ', $status_info[0], '">',
-            htmlspecialchars($status_info[1]), "</span></p>";
+        list($class, $name) = $this->prow->status_class_and_name($this->user);
+        echo '<p class="pgsm"><span class="pstat ', $class, '">',
+            htmlspecialchars($name), "</span></p>";
 
         $renders = [];
         $fr = new FieldRender(FieldRender::CPAGE, $this->user);
@@ -1456,11 +1458,15 @@ class PaperTable {
         if (isset($this->qreq->forceShow)) {
             echo Ht::hidden("forceShow", $this->qreq->forceShow ? 1 : 0);
         }
-        echo Ht::select("decision", $this->conf->decision_map(),
+        $opts = [];
+        foreach ($this->conf->decision_set() as $dec) {
+            $opts[$dec->id] = $dec->name;
+        }
+        echo Ht::select("decision", $opts,
                         (string) $this->prow->outcome,
                         ["class" => "w-99 want-focus", "id" => $id]),
             '</form><p class="fn odname js-psedit-result">',
-            htmlspecialchars($this->conf->decision_name($this->prow->outcome)),
+            htmlspecialchars($this->prow->decision()->name),
             "</p></div>\n";
     }
 
@@ -1678,10 +1684,8 @@ class PaperTable {
     }
 
     private function _edit_message_for_author() {
-        $can_view_decision = $this->prow->outcome != 0
-            && $this->user->can_view_decision($this->prow);
-        if ($can_view_decision
-            && $this->prow->outcome < 0) {
+        $viewable_decision = $this->prow->viewable_decision($this->user);
+        if ($viewable_decision->sign < 0) {
             $this->_main_message("<5>This submission was not accepted." . $this->_forceShow_message(), 1);
         } else if ($this->prow->timeWithdrawn > 0) {
             if ($this->user->can_revive_paper($this->prow)) {
@@ -1718,8 +1722,7 @@ class PaperTable {
                 $this->_main_message('<5>This submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message(), MessageSet::URGENT_NOTE);
             }
         } else if ($this->conf->allow_final_versions()
-                   && $this->prow->outcome > 0
-                   && $can_view_decision) {
+                   && $viewable_decision->sign > 0) {
             if ($this->user->can_edit_final_paper($this->prow)) {
                 if (($t = $this->conf->_id("finalsubmit", "", new FmtArg("deadline", $this->deadline_setting_is("final_soft"))))) {
                     $this->_main_message("<5>" . $t, MessageSet::SUCCESS);
@@ -1768,7 +1771,7 @@ class PaperTable {
         if ($has_author) {
             $this->_edit_message_for_author();
         } else if ($this->conf->allow_final_versions()
-                   && $this->prow->outcome > 0
+                   && $this->prow->outcome_sign > 0
                    && !$this->prow->can_author_view_decision()) {
             $this->_main_message("<5>The submission has been accepted, but its authors can’t see that yet. Once decisions are visible, the system will allow accepted authors to upload final versions.", 1);
         } else {

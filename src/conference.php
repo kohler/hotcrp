@@ -91,12 +91,14 @@ class Conf {
     private $_maybe_automatic_tags;
     /** @var bool */
     private $_has_permtag = false;
-    /** @var ?array<int,string> */
-    private $_decisions;
-    /** @var ?AbbreviationMatcher<int> */
-    private $_decision_matcher;
-    /** @var ?array<int,array{string,string}> */
-    private $_decision_status_info;
+    /** @var ?DecisionSet */
+    private $_decision_set;
+    /** @var DecisionInfo
+     * @readonly */
+    public $unspecified_decision;
+    /** @var bool
+     * @readonly */
+    public $has_complex_decision;
     /** @var ?TopicSet */
     private $_topic_set;
     /** @var ?Conflict */
@@ -256,6 +258,7 @@ class Conf {
         $this->opt = $options;
         $this->opt["confid"] = $this->opt["confid"] ?? $this->dbname;
         $this->_paper_opts = new PaperOptionList($this);
+        $this->unspecified_decision = new DecisionInfo(0, "Unspecified");
         if ($this->dblink && !Dbl::$default_dblink) {
             Dbl::set_default_dblink($this->dblink);
             Dbl::set_error_handler([$this, "query_error_handler"]);
@@ -417,9 +420,9 @@ class Conf {
 
         // clear caches
         $this->_paper_opts->invalidate_options();
-        $this->_decisions = null;
-        $this->_decision_matcher = null;
-        $this->_decision_status_info = null;
+        $this->_decision_set = null;
+        /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
+        $this->has_complex_decision = strpos($this->settingTexts["outcome_map"] ?? "{", "{", 1) !== false;
         $this->_review_form = null;
         $this->_defined_rounds = null;
         $this->_resp_rounds = null;
@@ -1441,91 +1444,18 @@ class Conf {
     }
 
 
-    /** @return array<int,string> */
-    function decision_map() {
-        if ($this->_decisions === null) {
-            if (($j = $this->settingTexts["outcome_map"] ?? null)
-                && ($j = json_decode($j, true))
-                && is_array($j)) {
-                $dmap = $j;
-            } else {
-                // see also settinginfo.json default_value
-                $dmap = [1 => "Accepted", -1 => "Rejected"];
-            }
-            $dmap[0] = "Unspecified";
-            $collator = $this->collator();
-            $this->_decisions = $dmap;
-            uksort($this->_decisions, function ($ka, $kb) use ($dmap, $collator) {
-                if ($ka === 0 || $kb === 0) {
-                    return $ka === 0 ? -1 : 1;
-                } else if (($ka > 0) !== ($kb > 0)) {
-                    return $ka > 0 ? -1 : 1;
-                } else {
-                    return $collator->compare($dmap[$ka], $dmap[$kb]);
-                }
-            });
+    /** @return DecisionSet */
+    function decision_set() {
+        if ($this->_decision_set === null) {
+            $this->_decision_set = DecisionSet::make_main($this);
         }
-        return $this->_decisions;
+        return $this->_decision_set;
     }
 
-    /** @param int $dnum
-     * @return string|false */
-    function decision_name($dnum) {
-        return ($this->decision_map())[$dnum] ?? false;
-    }
-
-    /** @param string $dname
-     * @return string|false */
-    static function decision_name_error($dname) {
-        $dname = simplify_whitespace($dname);
-        if ((string) $dname === "") {
-            return "Empty decision name";
-        } else if (preg_match('/\A(?:yes|no|any|none|unknown|unspecified|undecided|\?)\z/i', $dname)) {
-            return "Decision name “{$dname}” is reserved";
-        } else {
-            return false;
-        }
-    }
-
-    /** @return AbbreviationMatcher<int> */
-    function decision_matcher() {
-        if ($this->_decision_matcher === null) {
-            $this->_decision_matcher = new AbbreviationMatcher;
-            foreach ($this->decision_map() as $d => $dname) {
-                $this->_decision_matcher->add_phrase($dname, $d);
-            }
-            foreach (["none", "unknown", "undecided", "?"] as $dname) {
-                $this->_decision_matcher->add_phrase($dname, 0);
-            }
-        }
-        return $this->_decision_matcher;
-    }
-
-    /** @param string $dname
-     * @return list<int> */
-    function find_all_decisions($dname) {
-        return $this->decision_matcher()->find_all($dname);
-    }
-
-    /** @param int $dnum
-     * @return array{string,string} */
-    function decision_status_info($dnum) {
-        if ($this->_decision_status_info === null) {
-            $this->_decision_status_info = [];
-        }
-        $s = $this->_decision_status_info[$dnum] ?? null;
-        if (!$s) {
-            $decclass = $dnum > 0 ? "pstat_decyes" : "pstat_decno";
-            if (($decname = $this->decision_name($dnum))) {
-                if (($trdecname = preg_replace('/[^-.\w]/', '', $decname)) !== "") {
-                    $decclass .= " pstat_" . strtolower($trdecname);
-                }
-            } else {
-                $decname = "Unknown decision #" . $dnum;
-            }
-            $s = $this->_decision_status_info[$dnum] = [$decclass, $decname];
-        }
-        return $s;
+    /** @param int $decid
+     * @return string */
+    function decision_name($decid) {
+        return $this->decision_set()->get($decid)->name;
     }
 
 

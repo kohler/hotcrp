@@ -292,7 +292,7 @@ class Status_PaperColumn extends PaperColumn {
     function prepare_sort(PaperList $pl, $sortindex) {
         $this->sortmap = [];
         foreach ($pl->rowset() as $row) {
-            if ($row->outcome && $pl->user->can_view_decision($row)) {
+            if ($row->outcome !== 0 && $pl->user->can_view_decision($row)) {
                 $this->sortmap[$row->paperXid] = $row->outcome;
             } else {
                 $this->sortmap[$row->paperXid] = -10000;
@@ -301,9 +301,9 @@ class Status_PaperColumn extends PaperColumn {
     }
     function analyze(PaperList $pl) {
         foreach ($pl->rowset() as $row) {
-            if ($row->outcome != 0 || $row->paperStorageId <= 1) {
-                $t = ($pl->user->paper_status_info($row))[1];
-                if (strlen($t) > 10 && strpos($t, " ") !== false) {
+            if ($row->outcome !== 0 || $row->paperStorageId <= 1) {
+                list($class, $name) = $row->status_class_and_name($pl->user);
+                if (strlen($name) > 10 && strpos($name, " ") !== false) {
                     $this->className .= " pl-status-long";
                     break;
                 }
@@ -317,16 +317,16 @@ class Status_PaperColumn extends PaperColumn {
         return $x ? : ($b->paperStorageId > 1 ? 1 : 0) - ($a->paperStorageId > 1 ? 1 : 0);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $status_info = $pl->user->paper_status_info($row);
-        if ($this->show_submitted || $status_info[0] !== "pstat_sub") {
-            return "<span class=\"pstat $status_info[0]\">" . htmlspecialchars($status_info[1]) . "</span>";
+        list($class, $name) = $row->status_class_and_name($pl->user);
+        if ($this->show_submitted || $class !== "ps-submitted") {
+            return "<span class=\"pstat {$class}\">" . htmlspecialchars($name) . "</span>";
         } else {
             return "";
         }
     }
     function text(PaperList $pl, PaperInfo $row) {
-        $status_info = $pl->user->paper_status_info($row);
-        return $status_info[1];
+        list($class, $name) = $row->status_class_and_name($pl->user);
+        return $name;
     }
 }
 

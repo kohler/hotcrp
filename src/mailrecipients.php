@@ -107,18 +107,14 @@ class MailRecipients extends MessageSet {
     function canonical_recipients($t) {
         if ($t === "somedec:yes" || $t === "somedec:no") {
             $this->dcounts();
-            $wantyes = $t === "somedec:yes";
+            $category = $t === "somedec:yes" ? DecisionInfo::CAT_YES : DecisionInfo::CAT_NO;
             $dmaxcount = 0;
             $dmaxname = "";
-            foreach ($this->_dcounts as $outcome => $n) {
-                if ($n > 0
-                    && ($wantyes ? $outcome > 0 : $outcome < 0)
-                    && ($dname = $this->conf->decision_name($outcome))) {
-                    if ($n > $dmaxcount
-                        || ($n === $dmaxcount && $this->conf->collator()->compare($dname, $dmaxname) < 0)) {
-                        $dmaxcount = $n;
-                        $dmaxname = $dname;
-                    }
+            foreach ($this->conf->decision_set() as $dinfo) {
+                if ($dinfo->category === $category
+                    && ($dcount = $this->_dcounts[$dinfo->id] ?? 0) > $dmaxcount) {
+                    $dmaxcount = $dcount;
+                    $dmaxname = $dinfo->name;
                 }
             }
             if ($dmaxcount > 0) {
@@ -148,10 +144,10 @@ class MailRecipients extends MessageSet {
 
             $this->dcounts();
             $this->defsel("bydec_group", "Contact authors by decision", self::F_GROUP);
-            foreach ($this->conf->decision_map() as $dnum => $dname) {
-                if ($dnum) {
-                    $hide = ($this->_dcounts[$dnum] ?? 0) === 0;
-                    $this->defsel("dec:$dname", "Contact authors of " . htmlspecialchars($dname) . " papers", $hide ? self::F_HIDE : 0);
+            foreach ($this->conf->decision_set() as $dec) {
+                if ($dec->id !== 0) {
+                    $hide = ($this->_dcounts[$dec->id] ?? 0) === 0;
+                    $this->defsel("dec:{$dec->name}", "Contact authors of " . htmlspecialchars($dec->name) . " papers", $hide ? self::F_HIDE : 0);
                 }
             }
             $this->defsel("dec:yes", "Contact authors of accept-class papers", $this->_has_dt[2] ? 0 : self::F_HIDE);
@@ -334,9 +330,9 @@ class MailRecipients extends MessageSet {
         } else if (substr($this->type, 0, 4) === "dec:") {
             $options["finalized"] = true;
             $options["where"] = "false";
-            foreach ($this->conf->decision_map() as $dnum => $dname) {
-                if (strcasecmp($dname, substr($this->type, 4)) === 0) {
-                    $options["where"] = "Paper.outcome={$dnum}";
+            foreach ($this->conf->decision_set() as $dec) {
+                if (strcasecmp($dec->name, substr($this->type, 4)) === 0) {
+                    $options["where"] = "Paper.outcome={$dec->id}";
                     break;
                 }
             }

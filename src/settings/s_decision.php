@@ -10,25 +10,24 @@ class Decision_Setting {
     public $category;
     /** @var bool */
     public $deleted = false;
-
-    function __construct($id, $name, $category) {
-        $this->id = $id;
-        $this->name = $name;
-        $this->category = $category;
-    }
 }
 
 class Decision_SettingParser extends SettingParser {
     function set_oldv(Si $si, SettingValues $sv) {
         assert($si->name0 === "decision/" && $si->name2 === "");
-        $sv->set_oldv($si, new Decision_Setting(null, "", "accept"));
+        $ds = new Decision_Setting;
+        $ds->name = "";
+        $ds->category = "accept";
+        $sv->set_oldv($si, $ds);
     }
 
     function prepare_oblist(Si $si, SettingValues $sv) {
         $m = [];
-        foreach ($sv->conf->decision_map() as $did => $dname) {
-            if ($did !== 0) {
-                $m[] = new Decision_Setting($did, $dname, $did > 0 ? "accept" : "reject");
+        foreach ($sv->conf->decision_set() as $dec) {
+            if ($dec->id !== 0) {
+                $ds = new Decision_Setting;
+                $dec->unparse_setting($ds);
+                $m[] = $ds;
             }
         }
         $sv->append_oblist("decision", $m, "name");
@@ -62,7 +61,7 @@ class Decision_SettingParser extends SettingParser {
                     ["accept" => "Accept category", "reject" => "Reject category"], $class,
                     $sv->sjs("decision/{$ctr}/category", ["data-default-value" => "accept"]));
         } else {
-            echo $class === "accept" ? "<span class=\"pstat_decyes\">Accept</span> category" : "<span class=\"pstat_decno\">Reject</span> category";
+            echo $class === "accept" ? "<span class=\"dec-yes\">Accept</span> category" : "<span class=\"dec-no\">Reject</span> category";
             if ($count) {
                 echo ", ", plural($count, "submission");
             }
@@ -106,11 +105,11 @@ class Decision_SettingParser extends SettingParser {
     }
 
     /** @param SettingValues $sv
-     * @param object $dsr
+     * @param Decision_Setting $dsr
      * @param int $ctr */
     private function _check_req_name($sv, $dsr, $ctr) {
         if ($dsr->id === null || $dsr->name !== $sv->conf->decision_name($dsr->id)) {
-            if (($error = Conf::decision_name_error($dsr->name))
+            if (($error = DecisionSet::name_error($dsr->name))
                 && !$sv->has_error_at("decision/{$ctr}/name")) {
                 $sv->error_at("decision/{$ctr}/name", "<0>{$error}");
             }
@@ -135,6 +134,7 @@ class Decision_SettingParser extends SettingParser {
         $hasid = [];
         foreach ($sv->oblist_nondeleted_keys("decision") as $ctr) {
             $dsr = $sv->newv("decision/{$ctr}");
+            '@phan-var-force Decision_Setting $dsr';
             $this->_check_req_name($sv, $dsr, $ctr);
             $djs[] = $dsr;
             $hasid[$dsr->id ?? ""] = true;
@@ -152,25 +152,11 @@ class Decision_SettingParser extends SettingParser {
         }
 
         // sort and save
-        $collator = $sv->conf->collator();
-        usort($djs, function ($a, $b) use ($collator) {
-            if ($a->category !== $b->category) {
-                return $a->category === "accept" ? -1 : 1;
-            } else {
-                return $collator->compare($a->name, $b->name);
-            }
-        });
-
-        $dm = [];
-        foreach ($djs as $dj) {
-            $dm[$dj->id] = $dj->name;
-        }
-        $tx = json_encode_db($dm);
-
-        $olddm = $sv->conf->decision_map();
-        unset($olddm[0]);
-        if ($tx !== json_encode_db($olddm)) {
-            $sv->save("outcome_map", $tx);
+        $decset = new DecisionSet($sv->conf, $djs);
+        $new_setting = $decset->unparse_database();
+        $old_setting = $sv->conf->decision_set()->unparse_database();
+        if ($new_setting !== $old_setting) {
+            $sv->save("outcome_map", $new_setting);
             $sv->request_write_lock("Paper");
             $sv->request_store_value($si);
         }
@@ -178,12 +164,11 @@ class Decision_SettingParser extends SettingParser {
     }
 
     function store_value(Si $si, SettingValues $sv) {
-        $curmap = $sv->conf->decision_map();
-        $newmap = json_decode($sv->newv("outcome_map"), true);
-        $newmap[0] = "Unspecified";
-        $dels = array_diff_key($curmap, $newmap);
+        $new_decids = (new DecisionSet($sv->conf, json_decode($sv->newv("outcome_map"))))->ids();
+        $old_decids = $sv->conf->decision_set()->ids();
+        $dels = array_diff($old_decids, $new_decids);
         if (!empty($dels)
-            && ($pids = Dbl::fetch_first_columns($sv->conf->dblink, "select paperId from Paper where outcome?a", array_keys($dels)))) {
+            && ($pids = Dbl::fetch_first_columns($sv->conf->dblink, "select paperId from Paper where outcome?a", array_values($dels)))) {
             $sv->conf->qe("update Paper set outcome=0 where outcome?a", array_keys($dels));
             $sv->conf->update_paperacc_setting(-1);
             $sv->user->log_activity("Set decision: Unspecified", $pids);

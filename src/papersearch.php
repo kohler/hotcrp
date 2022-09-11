@@ -1324,7 +1324,7 @@ class Limit_SearchTerm extends SearchTerm {
             return $row->outcome > 0
                 && $user->can_view_decision($row);
         case "undec":
-            return $row->outcome == 0
+            return $row->outcome === 0
                 || !$user->can_view_decision($row);
         case "reviewable":
             return $this->reviewer->can_accept_review_assignment_ignore_conflict($row)
@@ -2069,7 +2069,7 @@ class PaperSearch extends MessageSet {
                 return "!=0";
             }
         }
-        return $conf->find_all_decisions($word);
+        return $conf->decision_set()->find_all($word);
     }
 
     static function status_field_matcher(Conf $conf, $word, $quoted = null) {

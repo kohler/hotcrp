@@ -192,13 +192,13 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("has:final", "final version uploaded");
 
         echo $hth->tgroup("Decisions");
-        foreach ($hth->conf->decision_map() as $dnum => $dname) {
-            if ($dnum) {
-                $qdname = strtolower($dname);
+        foreach ($hth->conf->decision_set() as $dec) {
+            if ($dec->id !== 0) {
+                $qdname = strtolower($dec->name);
                 if (strpos($qdname, " ") !== false) {
-                    $qdname = "\"$qdname\"";
+                    $qdname = "\"{$qdname}\"";
                 }
-                echo $hth->search_trow("dec:$qdname", "decision is “" . htmlspecialchars($dname) . "” (partial matches OK)");
+                echo $hth->search_trow("dec:{$qdname}", "decision is “" . htmlspecialchars($dec->name) . "” (partial matches OK)");
                 break;
             }
         }

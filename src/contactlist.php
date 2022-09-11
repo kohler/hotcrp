@@ -463,9 +463,9 @@ class ContactList {
             } else if ($this->limit === "auuns") {
                 return $prow->timeSubmitted <= 0;
             } else if ($this->limit === "aurej") {
-                return $prow->outcome < 0 && $this->user->can_view_decision($prow);
+                return $prow->outcome_sign < 0 && $this->user->can_view_decision($prow);
             } else if ($this->limit === "auacc") {
-                return $prow->outcome > 0 && $this->user->can_view_decision($prow);
+                return $prow->outcome_sign > 0 && $this->user->can_view_decision($prow);
             } else {
                 return true;
             }

@@ -982,7 +982,7 @@ class FormulaGraph extends MessageSet {
                 $format = Fexpr::FBOOL;
             }
             if ($format === Fexpr::FREVIEWER) {
-                $x = [];
+                $named_ticks = [];
                 foreach ($this->reviewers as $i => $r) {
                     $rd = ["text" => $this->user->name_text_for($r),
                            "search" => "re:" . $r->email];
@@ -991,11 +991,13 @@ class FormulaGraph extends MessageSet {
                         $rd["color_classes"] = $colors;
                     }
                     $rd["id"] = $r->contactId;
-                    $x[$i] = $rd;
+                    $named_ticks[$i] = $rd;
                 }
-                $named_ticks = $x;
             } else if ($format === Fexpr::FDECISION) {
-                $named_ticks = $this->conf->decision_map();
+                $named_ticks = [];
+                foreach ($this->conf->decision_set() as $dec) {
+                    $named_ticks[$dec->id] = $dec->name;
+                }
             } else if ($format === Fexpr::FBOOL) {
                 $named_ticks = ["no", "yes"];
             } else if ($format instanceof Selector_PaperOption) {

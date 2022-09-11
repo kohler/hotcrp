@@ -58,16 +58,16 @@ select, button {
 	color: #777777;
 }
 
-.pstat_with {
+.ps-withdrawn {
 	color: #333333;
 }
-.pstat_sub {
+.dec-undecided, .ps-submitted {
 	color: #823e78;
 }
-.pstat_decno, .asspref-1 {
+.dec-no, .asspref-1 {
 	color: #9f0000;
 }
-.dark .pstat_decno {
+.dark .dec-no {
 	color: #d01010;
 }
 .dark .asspref-1 {
@@ -76,7 +76,7 @@ select, button {
 .asspref1 {
 	color: #008000;
 }
-.pstat_decyes, .dark .asspref1 {
+.dec-yes, .pstat_decyes, .dark .asspref1 {
 	color: #259f00;
 }
 

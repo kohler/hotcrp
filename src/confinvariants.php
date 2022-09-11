@@ -18,18 +18,25 @@ class ConfInvariants {
         $this->prefix = $prefix;
     }
 
-    private function invariantq($q, $args = []) {
+    /** @param string $q
+     * @param mixed ...$args
+     * @return ?bool */
+    private function invariantq($q, ...$args) {
         $result = $this->conf->ql_apply($q, $args);
         if (!Dbl::is_error($result)) {
             self::$invariant_row = $result->fetch_row();
             $result->close();
             return !!self::$invariant_row;
         } else {
+            self::$invariant_row = null;
             return null;
         }
     }
 
-    private function invariant_error($abbrev, $text = null) {
+    /** @param string $abbrev
+     * @param ?string $text
+     * @param ?string $no_row_text */
+    private function invariant_error($abbrev, $text = null, $no_row_text = null) {
         if (str_starts_with($abbrev, "!")) {
             $abbrev = substr($abbrev, 1);
             if ($this->problems[$abbrev] ?? false) {
@@ -37,11 +44,15 @@ class ConfInvariants {
             }
         }
         $this->problems[$abbrev] = true;
-        if ((string) $text === "") {
-            $text = $abbrev;
+        if ($no_row_text !== null && self::$invariant_row === null) {
+            $text = $no_row_text;
         }
-        foreach (self::$invariant_row ?? [] as $i => $v) {
-            $text = str_replace("{{$i}}", $v, $text);
+        if (($text ?? "") !== "") {
+            foreach (self::$invariant_row ?? [] as $i => $v) {
+                $text = str_replace("{{$i}}", $v, $text);
+            }
+        } else {
+            $text = $abbrev;
         }
         trigger_error("{$this->prefix}{$this->conf->dbname} invariant error: $text");
     }
@@ -52,19 +63,30 @@ class ConfInvariants {
     }
 
     /** @return $this */
+    function check_settings() {
+        foreach ($this->conf->decision_set() as $dinfo) {
+            if (($dinfo->id > 0) !== ($dinfo->category === DecisionInfo::CAT_YES)) {
+                $this->invariant_error("decision_id", "decision {$dinfo->id} has wrong category");
+            }
+        }
+
+        return $this;
+    }
+
+    /** @return $this */
     function check_setting_invariants() {
         // settings correctly materialize database facts
 
         // `no_papersub` === no submitted papers
         $any = $this->invariantq("select paperId from Paper where timeSubmitted>0 limit 1");
         if ($any !== !($this->conf->setting("no_papersub") ?? false)) {
-            $this->invariant_error("no_papersub");
+            $this->invariant_error("no_papersub", "paper #{0} is submitted but no_papersub is true", "no paper is submitted but no_papersub is false");
         }
 
         // `paperacc` === any accepted submitted papers
         $any = $this->invariantq("select paperId from Paper where outcome>0 and timeSubmitted>0 limit 1");
         if ($any !== !!($this->conf->setting("paperacc") ?? false)) {
-            $this->invariant_error("paperacc");
+            $this->invariant_error("paperacc", "paper #{0} is accepted but paperacc is false", "no paper is accepted but paperacc is true");
         }
 
         // `rev_tokens` === any papers with reviewToken
@@ -137,7 +159,7 @@ class ConfInvariants {
             }
         }
         if (count($text_options)) {
-            $any = $this->invariantq("select paperId from PaperOption where optionId?a and data='' limit 1", [$text_options]);
+            $any = $this->invariantq("select paperId from PaperOption where optionId?a and data='' limit 1", $text_options);
             if ($any) {
                 $this->invariant_error("text_option_empty", "text option with empty text");
             }
@@ -147,6 +169,12 @@ class ConfInvariants {
         $any = $this->invariantq("select paperId from PaperConflict where conflictType<=0 limit 1");
         if ($any) {
             $this->invariant_error("PaperConflict_zero", "PaperConflict with zero conflictType");
+        }
+
+        // no unknown decisions
+        $any = $this->invariantq("select paperId, outcome from Paper where outcome?A", $this->conf->decision_set()->ids());
+        if ($any) {
+            $this->invariant_error("unknown_decision", "paper #{0} with unknown outcome #{1}");
         }
 
         return $this;
@@ -451,7 +479,7 @@ class ConfInvariants {
         }
         Dbl::free($result);
         sort($pids);
-        $any = $this->invariantq("select s.paperId, s.paperStorageId from PaperStorage s where s.paperStorageId?a and s.inactive limit 1", [$pids]);
+        $any = $this->invariantq("select s.paperId, s.paperStorageId from PaperStorage s where s.paperStorageId?a and s.inactive limit 1", $pids);
         if ($any) {
             $this->invariant_error("paper {0} document {1} is inappropriately inactive");
         }
@@ -466,19 +494,19 @@ class ConfInvariants {
         }
 
         if (!empty($oids)) {
-            $any = $this->invariantq("select o.paperId, o.optionId, s.paperStorageId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.inactive and s.paperStorageId>1) where o.optionId?a limit 1", [$oids]);
+            $any = $this->invariantq("select o.paperId, o.optionId, s.paperStorageId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.inactive and s.paperStorageId>1) where o.optionId?a limit 1", $oids);
             if ($any) {
                 $this->invariant_error("paper {0} option {1} document {2} is inappropriately inactive");
             }
 
-            $any = $this->invariantq("select o.paperId, o.optionId, s.paperStorageId, s.paperId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.paperStorageId>1 and s.paperId!=o.paperId) where o.optionId?a limit 1", [$oids]);
+            $any = $this->invariantq("select o.paperId, o.optionId, s.paperStorageId, s.paperId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.paperStorageId>1 and s.paperId!=o.paperId) where o.optionId?a limit 1", $oids);
             if ($any) {
                 $this->invariant_error("paper {0} option {1} document {2} belongs to different paper {3}");
             }
         }
 
         if (!empty($nonempty_oids)) {
-            $any = $this->invariantq("select o.paperId, o.optionId from PaperOption o where o.optionId?a and o.value<=1 limit 1", [$nonempty_oids]);
+            $any = $this->invariantq("select o.paperId, o.optionId from PaperOption o where o.optionId?a and o.value<=1 limit 1", $nonempty_oids);
             if ($any) {
                 $this->invariant_error("paper {0} option {1} links to empty document");
             }
@@ -494,6 +522,7 @@ class ConfInvariants {
 
     /** @return $this */
     function check_all() {
+        $this->check_settings();
         $this->check_setting_invariants();
         $this->check_papers();
         $this->check_automatic_tags();

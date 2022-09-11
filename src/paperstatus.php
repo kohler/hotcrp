@@ -250,12 +250,12 @@ class PaperStatus extends MessageSet {
         }
 
         $submitted_status = "submitted";
-        if ($prow->outcome != 0 && $this->user->can_view_decision($prow)) {
-            $pj->decision = $this->conf->decision_name($prow->outcome);
-            if ($pj->decision === false) {
-                $pj->decision = (int) $prow->outcome;
+        $dec = $prow->viewable_decision($this->user);
+        if ($dec->id !== 0) {
+            $pj->decision = $dec->placeholder ? $dec->name : $dec->id;
+            if ($dec->category !== DecisionInfo::CAT_NONE) {
+                $submitted_status = $dec->category === DecisionInfo::CAT_YES ? "accepted" : "rejected";
             }
-            $submitted_status = $prow->outcome > 0 ? "accepted" : "rejected";
         }
 
         if ($prow->timeWithdrawn > 0) {
@@ -502,13 +502,13 @@ class PaperStatus extends MessageSet {
         // Decision
         $idecision = $ipj->decision ?? null;
         if ($idecision !== null) {
-            $decision_map = $this->conf->decision_map();
-            if (is_int($idecision) && isset($decision_map[$idecision])) {
+            $decision_set = $this->conf->decision_set();
+            if (is_int($idecision) && $decision_set->contains($idecision)) {
                 $xpj->decision = $idecision;
             } else if (is_string($idecision)) {
-                foreach ($decision_map as $d => $dname) {
-                    if (strcasecmp($dname, $idecision) === 0)
-                        $xpj->decision = $d;
+                foreach ($decision_set as $dec) {
+                    if (strcasecmp($dec->name, $idecision) === 0)
+                        $xpj->decision = $dec->id;
                 }
                 if (!isset($xpj->decision)
                     && preg_match('/\A(?:unknown|undecided|none|\?|)\z/i', $idecision)) {

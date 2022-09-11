@@ -43,7 +43,7 @@ class PCConflicts_PaperOption extends PaperOption {
     }
     function value_check(PaperValue $ov, Contact $user) {
         if ($this->conf->setting("sub_pcconf")
-            && ($ov->prow->outcome <= 0 || !$user->can_view_decision($ov->prow))) {
+            && ($ov->prow->outcome_sign <= 0 || !$user->can_view_decision($ov->prow))) {
             $vm = self::value_map($ov);
             $pcs = [];
             $this->conf->ensure_cached_user_collaborators();

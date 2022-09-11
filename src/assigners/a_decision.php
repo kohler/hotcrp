@@ -52,8 +52,12 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
             $matchexpr = PaperSearch::decision_matchexpr($state->conf, $req["decision"], false);
             if (!$this->remove) {
                 if (is_string($matchexpr)) {
-                    $dec = array_keys($state->conf->decision_map());
-                    $dec = array_values(CountMatcher::filter_using($dec, $matchexpr));
+                    $cm = new CountMatcher($matchexpr);
+                    $dec = [];
+                    foreach ($state->conf->decision_set() as $di) {
+                        if ($cm->test($di->id))
+                            $dec[] = $di->id;
+                    }
                 } else {
                     $dec = $matchexpr;
                 }
@@ -101,15 +105,12 @@ class Decision_Assigner extends Assigner {
     static function make(AssignmentItem $item, AssignmentState $state) {
         return new Decision_Assigner($item, $state);
     }
-    static function decision_html(Conf $conf, $dec) {
-        if (!$dec) {
-            $class = "pstat_sub";
-            $dname = "No decision";
-        } else {
-            $class = $dec < 0 ? "pstat_decno" : "pstat_decyes";
-            $dname = $conf->decision_name($dec) ? : "Unknown decision #$dec";
-        }
-        return "<span class=\"pstat $class\">" . htmlspecialchars($dname) . "</span>";
+    /** @param int $decid */
+    static function decision_html(Conf $conf, $decid) {
+        $dec = $conf->decision_set()->get($decid);
+        $class = $dec->status_class();
+        $name_h = htmlspecialchars($dec->id === 0 ? "No decision" : $dec->name);
+        return "<span class=\"pstat {$class}\">{$name_h}</span>";
     }
     function unparse_display(AssignmentSet $aset) {
         $t = [];

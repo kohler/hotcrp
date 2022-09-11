@@ -4,21 +4,21 @@
 
 class Decision_API {
     static function run(Contact $user, Qrequest $qreq, PaperInfo $prow) {
+        $decset = $user->conf->decision_set();
         if ($qreq->method() !== "GET") {
             $aset = new AssignmentSet($user, true);
             $aset->enable_papers($prow);
-            if (is_numeric($qreq->decision)) {
-                $qreq->decision = ($user->conf->decision_map())[+$qreq->decision] ?? null;
+            if (is_numeric($qreq->decision) && $decset->contains(+$qreq->decision)) {
+                $qreq->decision = $decset->get(+$qreq->decision)->name;
             }
             $aset->parse("paper,action,decision\n{$prow->paperId},decision," . CsvGenerator::quote($qreq->decision));
             if (!$aset->execute()) {
                 return $aset->json_result();
             }
-            $prow->outcome = $prow->conf->fetch_ivalue("select outcome from Paper where paperId=?", $prow->paperId);
+            $prow->load_decision();
         }
-        $outcome = $user->can_view_decision($prow) ? (int) $prow->outcome : 0;
-        $dname = $prow->conf->decision_name($outcome);
-        $jr = new JsonResult(["ok" => true, "value" => $outcome, "result" => htmlspecialchars($dname ? : "?")]);
+        $dec = $prow->viewable_decision($user);
+        $jr = new JsonResult(["ok" => true, "value" => $dec->id, "result" => htmlspecialchars($dec->name)]);
         if ($user->can_set_decision($prow)) {
             $jr->content["editable"] = true;
         }

@@ -7,18 +7,22 @@ class Decide_ListAction extends ListAction {
         return $user->can_set_some_decision();
     }
     static function render(PaperList $pl, Qrequest $qreq) {
-        $opts = $pl->conf->decision_map();
+        $opts = [];
+        foreach ($pl->conf->decision_set() as $dec) {
+            $opts[$dec->id] = $dec->name;
+        }
         return ["Set to &nbsp;"
                 . Ht::select("decision", $opts, "", ["class" => "want-focus js-submit-action-info-decide"])
                 . $pl->action_submit("decide")];
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $aset = new AssignmentSet($user, true);
-        $decision = $qreq->decision;
-        if (is_numeric($decision)) {
-            $decision = ($user->conf->decision_map())[+$decision] ?? null;
+        $did = $qreq->decision;
+        if (is_numeric($did)
+            && ($dec = ($user->conf->decision_set())[+$did])) {
+            $did = $dec->name;
         }
-        $aset->parse("paper,action,decision\n" . join(" ", $ssel->selection()) . ",decision," . CsvGenerator::quote($decision));
+        $aset->parse("paper,action,decision\n" . join(" ", $ssel->selection()) . ",decision," . CsvGenerator::quote($did));
         if ($aset->execute()) {
             return new Redirection($user->conf->site_referrer_url($qreq, ["atab" => "decide", "decision" => $qreq->decision], Conf::HOTURL_RAW));
         } else {

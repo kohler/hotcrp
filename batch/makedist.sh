@@ -227,6 +227,8 @@ src/contactcounter.php
 src/contactcountmatcher.php
 src/contactlist.php
 src/contactsearch.php
+src/decisioninfo.php
+src/decisionset.php
 src/documentfiletree.php
 src/documentinfo.php
 src/documentinfoset.php

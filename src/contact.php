@@ -2894,7 +2894,7 @@ class Contact implements JsonSerializable {
                         && !$prow->blind)
                     || ($bs == Conf::BLIND_UNTILREVIEW
                         && $ci->review_status > PaperContactInfo::RS_PROXIED)
-                    || ($prow->outcome > 0
+                    || ($prow->outcome_sign > 0
                         && ($isPC || $ci->allow_review)
                         && $ci->can_view_decision
                         && $this->conf->time_reviewer_view_accepted_authors());
@@ -3178,7 +3178,7 @@ class Contact implements JsonSerializable {
         return $rights->allow_author_edit
             && $prow->timeWithdrawn <= 0
             && (($rights->perm_tag_allows("author-write")
-                 ?? ($prow->outcome >= 0 && $this->conf->time_edit_paper($prow)))
+                 ?? ($prow->outcome_sign >= 0 && $this->conf->time_edit_paper($prow)))
                 || $this->override_deadlines($rights));
     }
 
@@ -3214,7 +3214,7 @@ class Contact implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         $whyNot = $this->perm_edit_paper_failure($prow, $rights, "f");
-        if ($prow->outcome < 0
+        if ($prow->outcome_sign < 0
             && $rights->can_view_decision) {
             $whyNot["rejected"] = true;
         }
@@ -3261,7 +3261,7 @@ class Contact implements JsonSerializable {
             && ($sub_withdraw !== 0
                 || !$prow->has_author_seen_any_review()
                 || $override)
-            && ($prow->outcome == 0
+            && ($prow->outcome_sign === 0
                 || ($display_only && !$prow->can_author_view_decision())
                 || $override);
     }
@@ -3278,7 +3278,7 @@ class Contact implements JsonSerializable {
             $sub_withdraw = $this->conf->setting("sub_withdraw") ?? 0;
             if ($sub_withdraw === 0 && $prow->has_author_seen_any_review()) {
                 $whyNot["reviewsSeen"] = true;
-            } else if ($prow->outcome != 0) {
+            } else if ($prow->outcome_sign !== 0) {
                 $whyNot["decided"] = true;
             }
         }
@@ -3316,7 +3316,7 @@ class Contact implements JsonSerializable {
     function allow_edit_final_paper(PaperInfo $prow) {
         // see also PaperInfo::can_author_edit_final_paper
         if ($prow->timeWithdrawn > 0
-            || $prow->outcome <= 0
+            || $prow->outcome_sign <= 0
             || !$this->conf->allow_final_versions()) {
             return false;
         }
@@ -3331,7 +3331,7 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_edit_final_paper(PaperInfo $prow) {
         if ($prow->timeWithdrawn > 0
-            || $prow->outcome <= 0
+            || $prow->outcome_sign <= 0
             || !$this->conf->allow_final_versions()) {
             return false;
         }
@@ -3352,7 +3352,7 @@ class Contact implements JsonSerializable {
         $whyNot = $this->perm_edit_paper_failure($prow, $rights);
         // NB logic order here is important elsewhere
         // Don’t report “rejected” error to admins
-        if ($prow->outcome <= 0
+        if ($prow->outcome_sign <= 0
             || (!$rights->allow_administer
                 && !$rights->can_view_decision)) {
             $whyNot["rejected"] = true;
@@ -3514,7 +3514,7 @@ class Contact implements JsonSerializable {
                 && $rights->allow_pc_broad
                 && $rights->review_status === 0
                 && !$rights->allow_author_view
-                && ($prow->outcome <= 0 || !$rights->can_view_decision)
+                && ($prow->outcome_sign <= 0 || !$rights->can_view_decision)
                 && $this->conf->time_pc_view($prow, true)
                 && $this->conf->check_tracks($prow, $this, Track::VIEWPDF);
         } else {
@@ -3626,7 +3626,7 @@ class Contact implements JsonSerializable {
      * @return bool */
     function check_option_view_condition($prow, $opt) {
         return (!$opt->final
-                || ($prow->outcome > 0
+                || ($prow->outcome_sign > 0
                     && $prow->timeSubmitted > 0
                     && $this->can_view_decision($prow)))
             && ($opt->exists_condition() === null
@@ -3886,7 +3886,7 @@ class Contact implements JsonSerializable {
         return ($rights->act_author_view
                 && ($viewscore >= VIEWSCORE_AUTHOR
                     || ($viewscore >= VIEWSCORE_AUTHORDEC
-                        && $prow->outcome
+                        && $prow->outcome_sign !== 0
                         && $rights->can_view_decision))
                 && $this->can_view_submitted_review_as_author($prow))
             || ($rights->allow_pc
@@ -4762,7 +4762,7 @@ class Contact implements JsonSerializable {
         } else if (!$this->can_view_review($prow, $rrow)) {
             return VIEWSCORE_EMPTYBOUND;
         } else if ($rights->act_author_view
-                   && $prow->outcome
+                   && $prow->outcome_sign !== 0
                    && $rights->can_view_decision) {
             return VIEWSCORE_AUTHORDEC - 1;
         } else if ($rights->act_author_view) {
@@ -5408,22 +5408,6 @@ class Contact implements JsonSerializable {
      * @return PaperInfo */
     function checked_paper_by_id($pid, $options = []) {
         return $this->conf->checked_paper_by_id($pid, $this, $options);
-    }
-
-    /** @return array{string,string} */
-    function paper_status_info(PaperInfo $row) {
-        if ($row->timeWithdrawn > 0) {
-            return ["pstat_with", "Withdrawn"];
-        } else if ($row->outcome && $this->can_view_decision($row)) {
-            return $this->conf->decision_status_info($row->outcome);
-        } else if ($row->timeSubmitted > 0) {
-            return ["pstat_sub", "Submitted"];
-        } else if ($row->paperStorageId <= 1
-                   && (int) $this->conf->opt("noPapers") !== 1) {
-            return ["pstat_draft", "No submission"];
-        } else {
-            return ["pstat_draft", "Draft"];
-        }
     }
 
 

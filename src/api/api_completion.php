@@ -117,9 +117,9 @@ class Completion_API {
         if ((!$category || $category === "dec")
             && $user->can_view_some_decision()) {
             $comp[] = ["pri" => -1, "nosort" => true, "i" => ["dec:any", "dec:none", "dec:yes", "dec:no"]];
-            foreach ($conf->decision_map() as $d => $dname) {
-                if ($d !== 0) {
-                    $comp[] = "dec:" . SearchWord::quote($dname);
+            foreach ($conf->decision_set() as $dec) {
+                if ($dec->id !== 0) {
+                    $comp[] = "dec:" . SearchWord::quote($dec->name);
                 }
             }
         }

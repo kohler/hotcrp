@@ -413,6 +413,8 @@ class PaperInfo {
     /** @var int */
     public $outcome = 0;
     /** @var int */
+    public $outcome_sign = 0;
+    /** @var int */
     public $leadContactId = 0;
     /** @var int */
     public $managerContactId = 0;
@@ -559,6 +561,8 @@ class PaperInfo {
     private $_conflict_array_email;
     /** @var ?Contact */
     private $_paper_creator;
+    /** @var ?DecisionInfo */
+    private $_decision;
     /** @var ?array<int,ReviewInfo> */
     private $_review_array;
     /** @var int */
@@ -647,6 +651,19 @@ class PaperInfo {
         }
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
+    private function set_outcome_sign() {
+        if ($this->outcome === 0) {
+            $this->outcome_sign = 0;
+        } else if ($this->outcome > 0) {
+            $this->outcome_sign = 1;
+        } else if ($this->conf->has_complex_decision) {
+            $this->outcome_sign = $this->decision()->sign;
+        } else {
+            $this->outcome_sign = -1;
+        }
+    }
+
     /** @param Contact $user */
     private function incorporate_user($user) {
         assert($this->conf === $user->conf);
@@ -675,8 +692,11 @@ class PaperInfo {
     static function fetch($result, $user, $conf = null, $paperset = null) {
         if (($prow = $result->fetch_object("PaperInfo", [$conf ?? $user->conf, $paperset]))) {
             $prow->incorporate();
+            $prow->set_outcome_sign();
             $prow->_row_set->add_paper($prow);
-            $user && $prow->incorporate_user($user);
+            if ($user !== null) {
+                $prow->incorporate_user($user);
+            }
         }
         return $prow;
     }
@@ -721,6 +741,7 @@ class PaperInfo {
         $prow->managerContactId = 0;
         $prow->paperTags = $tags;
         $prow->outcome = 1;
+        $prow->outcome_sign = 1;
         $prow->conflictType = "0";
         $prow->myReviewPermissions = "{$rtype} 1 0 0";
         $prow->_row_set->add_paper($prow);
@@ -1368,14 +1389,14 @@ class PaperInfo {
 
     /** @return bool */
     function can_author_view_decision() {
-        return $this->outcome != 0
+        return $this->outcome !== 0
             && $this->conf->time_all_author_view_decision();
     }
 
     /** @return bool */
     function can_author_edit_paper() {
         return $this->timeWithdrawn <= 0
-            && $this->outcome >= 0
+            && $this->outcome_sign >= 0
             && ($this->conf->time_edit_paper($this)
                 || $this->perm_tag_allows("author-write"));
     }
@@ -1383,7 +1404,7 @@ class PaperInfo {
     /** @return bool */
     function can_author_edit_final_paper() {
         return $this->timeWithdrawn <= 0
-            && $this->outcome > 0
+            && $this->outcome_sign > 0
             && $this->can_author_view_decision()
             && ($this->conf->time_edit_final_paper()
                 || $this->perm_tag_allows("author-write"));
@@ -1771,6 +1792,52 @@ class PaperInfo {
             }
         }
         return $lc;
+    }
+
+
+    function load_decision() {
+        $this->outcome = $this->conf->fetch_ivalue("select outcome from Paper where paperId=?", $this->paperId);
+        $this->_decision = null;
+        $this->set_outcome_sign();
+    }
+
+    /** @return DecisionInfo */
+    function decision() {
+        if ($this->_decision === null) {
+            if ($this->outcome === 0) {
+                $this->_decision = $this->conf->unspecified_decision;
+            } else {
+                $this->_decision = $this->conf->decision_set()->get($this->outcome);
+            }
+        }
+        return $this->_decision;
+    }
+
+    /** @return DecisionInfo */
+    function viewable_decision(Contact $user) {
+        if ($this->outcome === 0 || !$user->can_view_decision($this)) {
+            return $this->conf->unspecified_decision;
+        } else {
+            return $this->decision();
+        }
+    }
+
+    /** @return array{string,string} */
+    function status_class_and_name(Contact $user) {
+        if ($this->timeWithdrawn > 0) {
+            return ["ps-withdrawn", "Withdrawn"];
+        }
+        $dec = $this->viewable_decision($user);
+        if ($dec->id !== 0) {
+            return [$dec->status_class(), $dec->name];
+        } else if ($this->timeSubmitted > 0) {
+            return ["ps-submitted", "Submitted"];
+        } else if ($this->paperStorageId <= 1
+                   && (int) $this->conf->opt("noPapers") !== 1) {
+            return ["ps-draft", "No submission"];
+        } else {
+            return ["ps-draft", "Draft"];
+        }
     }
 
 
@@ -3235,7 +3302,7 @@ class PaperInfo {
 
         if (!Dbl::$nerrors) {
             $this->conf->update_papersub_setting(-1);
-            if ($this->outcome > 0) {
+            if ($this->outcome_sign > 0) {
                 $this->conf->update_paperacc_setting(-1);
             }
             if ($this->leadContactId > 0 || $this->shepherdContactId > 0) {

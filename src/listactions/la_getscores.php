@@ -23,8 +23,10 @@ class GetScores_ListAction extends ListAction {
             } else {
                 $row->ensure_full_reviews();
                 $a = ["paper" => $row->paperId, "title" => $row->title];
-                if ($row->outcome && $user->can_view_decision($row)) {
-                    $a["decision"] = $any_decision = $user->conf->decision_name($row->outcome);
+                $dec = $row->viewable_decision($user);
+                if ($dec->id !== 0) {
+                    $a["decision"] = $dec->name;
+                    $any_decision = true;
                 }
                 foreach ($row->viewable_reviews_as_display($user) as $rrow) {
                     if ($rrow->reviewSubmitted) {
