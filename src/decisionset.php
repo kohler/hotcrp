@@ -17,8 +17,8 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
         $this->conf = $conf;
         if (is_object($j)) {
             foreach ((array) $j as $decid => $dj) {
-                if (is_int($decid) && (is_string($dj) || is_object($dj))) {
-                    $this->__add($decid, $dj);
+                if (is_numeric($decid) && (is_string($dj) || is_object($dj))) {
+                    $this->__add(+$decid, $dj);
                 }
             }
         } else if (is_array($j)) {
@@ -52,19 +52,6 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
         }
     }
 
-    /** @param string $dname
-     * @return string|false */
-    static function name_error($dname) {
-        $dname = simplify_whitespace($dname);
-        if ((string) $dname === "") {
-            return "Empty decision name";
-        } else if (preg_match('/\A(?:yes|no|maybe|any|none|unknown|unspecified|undecided|\?)\z/i', $dname)) {
-            return "Decision name “{$dname}” is reserved";
-        } else {
-            return false;
-        }
-    }
-
     /** @param int $id
      * @param string|object $dj */
     function __add($id, $dj) {
@@ -89,6 +76,19 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
         }
 
         // XXX assert no abbrevmatcher, etc.
+    }
+
+    /** @param string $dname
+     * @return string|false */
+    static function name_error($dname) {
+        $dname = simplify_whitespace($dname);
+        if ((string) $dname === "") {
+            return "Empty decision name";
+        } else if (preg_match('/\A(?:yes|no|maybe|any|none|unknown|unspecified|undecided|\?)\z/i', $dname)) {
+            return "Decision name “{$dname}” is reserved";
+        } else {
+            return false;
+        }
     }
 
     /** @return DecisionSet */

@@ -420,9 +420,6 @@ class Conf {
 
         // clear caches
         $this->_paper_opts->invalidate_options();
-        $this->_decision_set = null;
-        /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-        $this->has_complex_decision = strpos($this->settingTexts["outcome_map"] ?? "{", "{", 1) !== false;
         $this->_review_form = null;
         $this->_defined_rounds = null;
         $this->_resp_rounds = null;
@@ -431,6 +428,9 @@ class Conf {
         $this->_tag_map = null;
         $this->_formula_functions = null;
         $this->_assignment_parsers = null;
+        $this->_decision_set = null;
+        /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
+        $this->has_complex_decision = strpos($this->settingTexts["outcome_map"] ?? "{", "{", 1) !== false;
         $this->_topic_set = null;
 
         // digested settings
