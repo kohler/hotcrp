@@ -319,14 +319,8 @@ class MailRecipients extends MessageSet {
             $options["finalized"] = true;
         } else if ($this->type === "unsub") {
             $options["unsub"] = $options["active"] = true;
-        } else if ($this->type === "dec:any") {
-            $options["finalized"] = $options["decided"] = true;
-        } else if ($this->type === "dec:none") {
-            $options["finalized"] = $options["undecided"] = true;
-        } else if ($this->type === "dec:yes") {
-            $options["finalized"] = $options["accepted"] = true;
-        } else if ($this->type === "dec:no") {
-            $options["finalized"] = $options["rejected"] = true;
+        } else if (in_array($this->type, ["dec:any", "dec:none", "dec:yes", "dec:no", "dec:maybe"])) {
+            $options["finalized"] = $options[$this->type] = true;
         } else if (substr($this->type, 0, 4) === "dec:") {
             $options["finalized"] = true;
             $options["where"] = "false";

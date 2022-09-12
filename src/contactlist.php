@@ -493,9 +493,9 @@ class ContactList {
         } else if ($limit === "au") {
             $args["finalized"] = true;
         } else if ($limit === "aurej") {
-            $args["rejected"] = true;
+            $args["dec:no"] = true;
         } else if ($limit === "auacc") {
-            $args["accepted"] = true;
+            $args["dec:yes"] = true;
         } else if ($limit === "auuns") {
             $args["unsub"] = true;
         }

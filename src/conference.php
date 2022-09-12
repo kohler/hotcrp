@@ -3981,8 +3981,8 @@ class Conf {
         //   "paperId" => $pids Only papers in list<int> $pids
         //   "finalized"        Only submitted papers
         //   "unsub"            Only unsubmitted papers
-        //   "accepted"         Only accepted papers
-        //   "rejected"         Only rejected papers
+        //   "dec:yes"          Only accepted papers
+        //   "dec:no"           Only rejected papers — also dec:none, dec:any, dec:maybe
         //   "active"           Only nonwithdrawn papers
         //   "author"           Only papers authored by $user
         //   "myReviewRequests" Only reviews requested by $user
@@ -4145,17 +4145,10 @@ class Conf {
         if ($options["active"] ?? false) {
             $where[] = "timeWithdrawn<=0";
         }
-        if ($options["accepted"] ?? false) {
-            $where[] = $this->decision_set()->sqlexpr("yes");
-        }
-        if ($options["rejected"] ?? false) {
-            $where[] = $this->decision_set()->sqlexpr("no");
-        }
-        if ($options["undecided"] ?? false) {
-            $where[] = $this->decision_set()->sqlexpr("maybe");
-        }
-        if ($options["decided"] ?? false) {
-            $where[] = "not (" . $this->decision_set()->sqlexpr("maybe") . ")";
+        foreach (["yes", "no", "any", "none", "maybe"] as $word) {
+            if ($options["dec:{$word}"] ?? false) {
+                $where[] = $this->decision_set()->sqlexpr($word);
+            }
         }
         if ($options["myLead"] ?? false) {
             $where[] = "leadContactId={$cxid}";

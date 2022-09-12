@@ -1030,9 +1030,9 @@ class Limit_SearchTerm extends SearchTerm {
         "rout" => ["rout", "outstandingreviews"],
         "s" => ["s", "submitted"],
         "submitted" => ["s", "submitted"],
-        "und" => ["undec", "undecided"],
-        "undec" => ["undec", "undecided"],
-        "undecided" => ["undec", "undecided"],
+        "und" => "undecided",
+        "undec" => "undecided",
+        "undecided" => "undecided",
         "unsub" => ["unsub", "unsubmitted"],
         "unsubmitted" => ["unsub", "unsubmitted"],
         "vis" => "viewable",
@@ -1154,12 +1154,12 @@ class Limit_SearchTerm extends SearchTerm {
             return true;
         case "acc":
             assert($options["finalized"] ?? false);
-            $options["accepted"] = true;
+            $options["dec:yes"] = true;
             return $this->user->allow_administer_all()
                 || ($this->user->isPC && $conf->time_pc_view_decision(true));
-        case "undec":
+        case "undecided":
             assert($options["finalized"] ?? false);
-            $options["undecided"] = true;
+            $options["dec:none"] = true;
             return $this->user->allow_administer_all()
                 || ($this->user->isPC && $conf->time_pc_view_decision(true));
         case "unsub":
@@ -1186,7 +1186,7 @@ class Limit_SearchTerm extends SearchTerm {
     function is_sqlexpr_precise() {
         if ($this->user->has_hidden_papers()) {
             return false;
-        } else if (in_array($this->limit, ["undec", "acc", "viewable", "alladmin", "actadmin"], true)) {
+        } else if (in_array($this->limit, ["undecided", "acc", "viewable", "alladmin", "actadmin"], true)) {
             return $this->user->allow_administer_all();
         } else {
             return $this->limit !== "reviewable" && $this->limit !== "admin";
@@ -1259,7 +1259,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "acc":
             $ff[] = "Paper.outcome>0";
             break;
-        case "undec":
+        case "undecided":
             if ($this->user->allow_administer_all()) {
                 $ff[] = "Paper.outcome=0";
             }
@@ -1323,7 +1323,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "acc":
             return $row->outcome > 0
                 && $user->can_view_decision($row);
-        case "undec":
+        case "undecided":
             return $row->outcome === 0
                 || !$user->can_view_decision($row);
         case "reviewable":
@@ -1802,7 +1802,7 @@ class PaperSearch extends MessageSet {
         "req" => "Your review requests",
         "rout" => "Your incomplete reviews",
         "s" => "Submitted",
-        "undec" => "Undecided",
+        "undecided" => "Undecided",
         "viewable" => "Submissions you can view"
     ];
 
@@ -3219,7 +3219,7 @@ class PaperSearch extends MessageSet {
             } else {
                 $ts = ["s"];
             }
-            array_push($ts, "acc", "undec", "all");
+            array_push($ts, "acc", "undecided", "all");
         } else {
             $ts = ["admin"];
         }
