@@ -2057,21 +2057,6 @@ class PaperSearch extends MessageSet {
         return $scm->has_error() ? null : $scm->user_ids();
     }
 
-    /** @param string $word
-     * @param bool $quoted */
-    static function decision_matchexpr(Conf $conf, $word, $quoted) {
-        if (!$quoted) {
-            if (strcasecmp($word, "yes") === 0) {
-                return ">0";
-            } else if (strcasecmp($word, "no") === 0) {
-                return "<0";
-            } else if (strcasecmp($word, "any") === 0) {
-                return "!=0";
-            }
-        }
-        return $conf->decision_set()->find_all($word);
-    }
-
     static function status_field_matcher(Conf $conf, $word, $quoted = null) {
         if (strlen($word) >= 3
             && ($k = Text::simple_search($word, ["w0" => "withdrawn", "s0" => "submitted", "s1" => "ready", "s2" => "complete", "u0" => "in progress", "u1" => "unsubmitted", "u2" => "not ready", "u3" => "incomplete", "u4" => "draft", "a0" => "active", "x0" => "no submission"]))) {
@@ -2091,7 +2076,7 @@ class PaperSearch extends MessageSet {
                 }
             }
         }
-        return ["outcome", self::decision_matchexpr($conf, $word, $quoted)];
+        return ["outcome", $conf->decision_set()->matchexpr($word)];
     }
 
     /** @return SearchTerm */

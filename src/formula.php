@@ -2042,7 +2042,7 @@ class Formula implements JsonSerializable {
             $e = $this->_parse_option($pos1, $t);
         } else if ($t[0] === "d"
                    && preg_match('/\A(?:dec|decision):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
-            $me = PaperSearch::decision_matchexpr($this->conf, $m[1], false);
+            $me = $this->conf->decision_set()->matchexpr($m[1]);
             $e = $this->field_search_fexpr(["outcome", $me]);
             $t = $m[2];
         } else if ($t[0] === "d"

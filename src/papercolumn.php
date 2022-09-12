@@ -292,11 +292,7 @@ class Status_PaperColumn extends PaperColumn {
     function prepare_sort(PaperList $pl, $sortindex) {
         $this->sortmap = [];
         foreach ($pl->rowset() as $row) {
-            if ($row->outcome !== 0 && $pl->user->can_view_decision($row)) {
-                $this->sortmap[$row->paperXid] = $row->outcome;
-            } else {
-                $this->sortmap[$row->paperXid] = -10000;
-            }
+            $this->sortmap[$row->paperXid] = $row->viewable_decision($pl->user)->order ? : PHP_INT_MAX;
         }
     }
     function analyze(PaperList $pl) {
@@ -311,7 +307,7 @@ class Status_PaperColumn extends PaperColumn {
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $x = $this->sortmap[$b->paperXid] - $this->sortmap[$a->paperXid];
+        $x = $this->sortmap[$a->paperXid] <=> $this->sortmap[$b->paperXid];
         $x = $x ? : ($a->timeWithdrawn > 0 ? 1 : 0) - ($b->timeWithdrawn > 0 ? 1 : 0);
         $x = $x ? : ($b->timeSubmitted > 0 ? 1 : 0) - ($a->timeSubmitted > 0 ? 1 : 0);
         return $x ? : ($b->paperStorageId > 1 ? 1 : 0) - ($a->paperStorageId > 1 ? 1 : 0);

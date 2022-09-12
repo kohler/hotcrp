@@ -13,7 +13,7 @@ class Decision_SearchTerm extends SearchTerm {
         $this->match = $match;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        $dec = PaperSearch::decision_matchexpr($srch->conf, $word, $sword->quoted);
+        $dec = $srch->conf->decision_set()->matchexpr($word);
         if (is_array($dec) && empty($dec)) {
             $srch->lwarning($sword, "<0>Decision not found");
             $dec[] = -10000000;

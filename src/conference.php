@@ -4146,19 +4146,19 @@ class Conf {
             $where[] = "timeWithdrawn<=0";
         }
         if ($options["accepted"] ?? false) {
-            $where[] = "outcome>0";
+            $where[] = $this->decision_set()->sqlexpr("yes");
         }
         if ($options["rejected"] ?? false) {
-            $where[] = "outcome<0";
+            $where[] = $this->decision_set()->sqlexpr("no");
         }
         if ($options["undecided"] ?? false) {
-            $where[] = "outcome=0";
+            $where[] = $this->decision_set()->sqlexpr("maybe");
         }
         if ($options["decided"] ?? false) {
-            $where[] = "outcome!=0";
+            $where[] = "not (" . $this->decision_set()->sqlexpr("maybe") . ")";
         }
         if ($options["myLead"] ?? false) {
-            $where[] = "leadContactId=$cxid";
+            $where[] = "leadContactId={$cxid}";
         } else if ($options["anyLead"] ?? false) {
             $where[] = "leadContactId!=0";
         }
@@ -4168,7 +4168,7 @@ class Conf {
             $where[] = "shepherdContactId!=0";
         }
         if ($options["myManaged"] ?? false) {
-            $where[] = "managerContactId=$cxid";
+            $where[] = "managerContactId={$cxid}";
         }
         if (($options["myWatching"] ?? false) && $cxid > 0) {
             // return the papers with explicit or implicit WATCH_REVIEW

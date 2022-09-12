@@ -21,6 +21,8 @@ class DecisionInfo {
     const CAT_YES = 2;
     const CAT_NO = 4;
     const CAT_ALL = 7;
+    // see also DecisionSet::matchexpr
+
 
     /** @param int $id
      * @param string $name */

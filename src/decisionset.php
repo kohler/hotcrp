@@ -9,6 +9,8 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
     private $_decision_map = [];
     /** @var ?AbbreviationMatcher */
     private $_decision_matcher;
+    /** @var bool */
+    private $_complex = false;
 
 
     function __construct(Conf $conf, $j = null) {
@@ -56,7 +58,7 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
         $dname = simplify_whitespace($dname);
         if ((string) $dname === "") {
             return "Empty decision name";
-        } else if (preg_match('/\A(?:yes|no|any|none|unknown|unspecified|undecided|\?)\z/i', $dname)) {
+        } else if (preg_match('/\A(?:yes|no|maybe|any|none|unknown|unspecified|undecided|\?)\z/i', $dname)) {
             return "Decision name “{$dname}” is reserved";
         } else {
             return false;
@@ -80,6 +82,11 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
             }
         }
         $this->_decision_map[$id] = $dinfo;
+
+        $ecat = $dinfo->id > 0 ? DecisionInfo::CAT_YES : DecisionInfo::CAT_NO;
+        if ($ecat !== $dinfo->category) {
+            $this->_complex = true;
+        }
 
         // XXX assert no abbrevmatcher, etc.
     }
@@ -153,7 +160,7 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
             foreach ($this->_decision_map as $dinfo) {
                 $this->_decision_matcher->add_phrase($dinfo->name, $dinfo->id);
             }
-            foreach (["none", "unknown", "undecided", "?"] as $dname) {
+            foreach (["none", "unknown", "undecided"] as $dname) {
                 $this->_decision_matcher->add_phrase($dname, 0);
             }
         }
@@ -164,6 +171,36 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
      * @return list<int> */
     function find_all($pattern) {
         return $this->abbrev_matcher()->find_all($pattern);
+    }
+
+    /** @param string $word
+     * @param bool $list
+     * @return string|list<int> */
+    function matchexpr($word, $list = false) {
+        if (strcasecmp($word, "yes") === 0) {
+            return $list ? $this->ids(DecisionInfo::CAT_YES) : ">0";
+        } else if (strcasecmp($word, "no") === 0) {
+            return $list || $this->_complex ? $this->ids(DecisionInfo::CAT_NO) : "<0";
+        } else if (strcasecmp($word, "maybe") === 0 || $word === "?") {
+            return $list || $this->_complex ? $this->ids(DecisionInfo::CAT_NONE) : "=0";
+        } else if (strcasecmp($word, "any") === 0) {
+            return $list ? array_values(array_diff($this->ids(), [0])) : "!=0";
+        } else {
+            return $this->abbrev_matcher()->find_all($word);
+        }
+    }
+
+    /** @param string $word
+     * @return string */
+    function sqlexpr($word) {
+        $compar = $this->matchexpr($word);
+        if (is_string($compar)) {
+            return "outcome{$compar}";
+        } else if (empty($compar)) {
+            return "false";
+        } else {
+            return "outcome in (" . join(",", $compar) . ")";
+        }
     }
 
 

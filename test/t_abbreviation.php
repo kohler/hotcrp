@@ -383,10 +383,13 @@ class Abbreviation_Tester {
 
     function test_unknown_decision() {
         $dm = $this->conf->decision_set();
-        xassert_eqq($dm->find_all("unknown"), [0]);
-        xassert_eqq($dm->find_all("unk"), [0]);
-        xassert_eqq($dm->find_all("und"), [0]);
-        xassert_eqq($dm->find_all("undecided"), [0]);
-        xassert_eqq($dm->find_all("?"), [0]);
+        xassert_eqq($dm->matchexpr("unknown", true), [0]);
+        xassert_eqq($dm->matchexpr("unk", true), [0]);
+        xassert_eqq($dm->matchexpr("und", true), [0]);
+        xassert_eqq($dm->matchexpr("undecided", true), [0]);
+        xassert_eqq($dm->matchexpr("?", true), [0]);
+        xassert_eqq($dm->matchexpr("any", true), [1, -1]);
+        xassert_eqq($dm->matchexpr("yes", true), [1]);
+        xassert_eqq($dm->matchexpr("no", true), [-1]);
     }
 }

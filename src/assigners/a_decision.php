@@ -49,7 +49,7 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
         $removepred = null;
         $dec = null;
         if (isset($req["decision"])) {
-            $matchexpr = PaperSearch::decision_matchexpr($state->conf, $req["decision"], false);
+            $matchexpr = $state->conf->decision_set()->matchexpr($req["decision"]);
             if (!$this->remove) {
                 if (is_string($matchexpr)) {
                     $cm = new CountMatcher($matchexpr);
