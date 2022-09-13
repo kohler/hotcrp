@@ -10,7 +10,7 @@ class Tag_SearchTerm extends SearchTerm {
     /** @var bool */
     private $allow_default_sort = false;
 
-    function __construct(Contact $user, TagSearchMatcher $tsm,) {
+    function __construct(Contact $user, TagSearchMatcher $tsm) {
         parent::__construct("tag");
         $this->user = $user;
         $this->tsm = $tsm;
