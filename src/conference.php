@@ -436,7 +436,7 @@ class Conf {
         // digested settings
         $this->au_seerev = $this->settings["au_seerev"] ?? 0;
         $this->tag_au_seerev = null;
-        if ($this->au_seerev == self::AUSEEREV_TAGS) {
+        if ($this->au_seerev === self::AUSEEREV_TAGS) {
             $this->tag_au_seerev = explode(" ", $this->settingTexts["tag_au_seerev"] ?? "");
         }
         $this->tag_seeall = ($this->settings["tag_seeall"] ?? 0) > 0;

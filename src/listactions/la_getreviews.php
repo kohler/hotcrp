@@ -14,12 +14,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $rf = $user->conf->review_form();
-        $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $au_seerev = $user->conf->au_seerev;
-        if ($this->author_view && $user->privChair) {
-            $user->conf->au_seerev = Conf::AUSEEREV_YES;
-            Contact::update_rights();
-        }
+        $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $texts = $pids = [];
         $ms = (new MessageSet)->set_ignore_duplicates(true)->set_want_ftext(true, 0);
         foreach ($ssel->paper_set($user) as $prow) {
@@ -34,7 +29,11 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
             }
             $last_rc = null;
             $time = null;
-            $viewer = $this->author_view && $user->allow_administer($prow) ? $prow->author_view_user() : $user;
+            $viewer = $this->author_view ? $prow->author_view_user() : $user;
+            $old_viewer_overrides = $viewer->overrides();
+            if ($this->author_view && $user->allow_administer($prow)) {
+                $viewer->add_overrides(Contact::OVERRIDE_AU_SEEREV);
+            }
             foreach ($prow->viewable_submitted_reviews_and_comments($user) as $rc) {
                 if ($viewer === $user
                     || (isset($rc->reviewId)
@@ -58,12 +57,13 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
                 }
                 $texts[] = [$prow->paperId, $rctext, $time];
                 $pids[] = $prow->paperId;
-            } else if (($whyNot = $user->perm_view_review($prow, null))) {
+            } else if (($whyNot = $viewer->perm_view_review($prow, null))) {
                 $mi = $ms->error_at(null, "<0>" . $whyNot->unparse_text());
                 $mi->landmark = "#{$prow->paperId}";
             } else {
                 $ms->msg_at(null, "<0>{$prow->paperId} has no visible reviews", MessageSet::WARNING_NOTE);
             }
+            $viewer->set_overrides($old_viewer_overrides);
         }
         if (!$this->iszip) {
             foreach ($texts as $i => &$pt) {
@@ -72,11 +72,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
             }
             unset($pt);
         }
-        $user->set_overrides($overrides);
-        if ($this->author_view && $user->privChair) {
-            $user->conf->au_seerev = $au_seerev;
-            Contact::update_rights();
-        }
+        $user->set_overrides($old_overrides);
         if (!empty($pids)) {
             $user->log_activity("Download reviews", $pids);
         }

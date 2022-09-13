@@ -161,6 +161,7 @@ class Contact implements JsonSerializable {
     const OVERRIDE_CHECK_TIME = 4;
     const OVERRIDE_TAG_CHECKS = 8;
     const OVERRIDE_EDIT_CONDITIONS = 16;
+    const OVERRIDE_AU_SEEREV = 32;
     /** @var int */
     private $_overrides = 0;
     /** @var ?array<int,bool> */
@@ -3817,8 +3818,9 @@ class Contact implements JsonSerializable {
             return $v;
         } else {
             return $prow->can_author_respond()
-                || $this->conf->au_seerev == Conf::AUSEEREV_YES
-                || ($this->conf->au_seerev == Conf::AUSEEREV_TAGS
+                || ($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0
+                || $this->conf->au_seerev === Conf::AUSEEREV_YES
+                || ($this->conf->au_seerev === Conf::AUSEEREV_TAGS
                     && $prow->has_any_tag($this->conf->tag_au_seerev));
         }
     }
@@ -3827,7 +3829,8 @@ class Contact implements JsonSerializable {
     function can_view_some_review() {
         return $this->is_reviewer()
             || ($this->is_author()
-                && ($this->conf->au_seerev !== 0
+                && (($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0
+                    || $this->conf->au_seerev !== 0
                     || $this->conf->any_response_open === 2
                     || ($this->conf->any_response_open === 1
                         && !empty($this->relevant_response_rounds()))
@@ -4782,7 +4785,8 @@ class Contact implements JsonSerializable {
             return VIEWSCORE_REVIEWERONLY - 1;
         } else if (($as_author || $this->is_author())
                    && ($this->conf->any_response_open
-                       || $this->conf->au_seerev != 0)) {
+                       || ($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0
+                       || $this->conf->au_seerev !== 0)) {
             if ($this->can_view_some_decision_as_author()) {
                 return VIEWSCORE_AUTHORDEC - 1;
             } else {

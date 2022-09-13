@@ -1646,11 +1646,7 @@ class ReviewValues extends MessageSet {
                 && ($newsubmit || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED)
                 && ($diffinfo->view_score >= VIEWSCORE_AUTHORDEC
                     || $this->rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC))) {
-            $table_suffix = "";
-            if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS) {
-                $table_suffix = ", PaperTag read";
-            }
-            $result = $this->conf->qe_raw("lock tables PaperReview write" . $table_suffix);
+            $result = $this->conf->qe_raw("lock tables PaperReview write");
             if (Dbl::is_error($result)) {
                 return false;
             }

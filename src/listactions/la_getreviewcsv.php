@@ -13,11 +13,7 @@ class GetReviewCSV_ListAction extends ListAction {
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $rf = $user->conf->review_form();
-        $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        if ($this->author_view && $user->privChair) {
-            $au_seerev = $user->conf->au_seerev;
-            $user->conf->au_seerev = Conf::AUSEEREV_YES;
-        }
+        $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $errors = $items = $fields = $pids = [];
         $has_id = $has_ordinal = false;
         foreach ($ssel->paper_set($user) as $prow) {
@@ -26,6 +22,10 @@ class GetReviewCSV_ListAction extends ListAction {
                 continue;
             }
             $viewer = $this->author_view ? $prow->author_view_user() : $user;
+            $old_viewer_overrides = $viewer->overrides();
+            if ($this->author_view && $user->allow_administer($prow)) {
+                $viewer->add_overrides(Contact::OVERRIDE_AU_SEEREV);
+            }
             $prow->ensure_full_reviews();
             foreach ($prow->viewable_reviews_as_display($user) as $rrow) {
                 if (($viewer === $user || $viewer->can_view_review($prow, $rrow))
@@ -50,6 +50,7 @@ class GetReviewCSV_ListAction extends ListAction {
                     $pids[$prow->paperId] = true;
                 }
             }
+            $viewer->set_overrides($old_viewer_overrides);
         }
         $selection = ["paper", "title"];
         if ($has_ordinal) {
@@ -65,7 +66,7 @@ class GetReviewCSV_ListAction extends ListAction {
         if (!empty($pids)) {
             $user->log_activity("Download reviews CSV", array_keys($pids));
         }
-        $user->set_overrides($overrides);
+        $user->set_overrides($old_overrides);
         return $user->conf->make_csvg($this->author_view ? "aureviews" : "reviews")
             ->select($selection)->append($items);
     }

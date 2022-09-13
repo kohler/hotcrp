@@ -136,11 +136,11 @@ class HotCRPMailer extends Mailer {
     }
 
     private function get_reviews() {
-        // save old au_seerev setting, and reset it so authors can see them.
-        if (!($au_seerev = $this->conf->au_seerev)) {
-            $this->conf->au_seerev = Conf::AUSEEREV_YES;
+        $old_overrides = $this->permuser->overrides();
+        if ($this->conf->au_seerev === 0) { /* assume sender wanted to override */
+            $this->permuser->add_overrides(Contact::OVERRIDE_AU_SEEREV);
         }
-        assert(!($this->permuser->overrides() & contact::OVERRIDE_CONFLICT));
+        assert(($old_overrides & contact::OVERRIDE_CONFLICT) === 0);
 
         if ($this->rrow) {
             $rrows = [$this->rrow];
@@ -166,16 +166,16 @@ class HotCRPMailer extends Mailer {
             }
         }
 
-        $this->conf->au_seerev = $au_seerev;
+        $this->permuser->set_overrides($old_overrides);
         return $text;
     }
 
     private function get_comments($tag) {
-        // save old au_seerev setting, and reset it so authors can see them.
-        if (!($au_seerev = $this->conf->au_seerev)) {
-            $this->conf->au_seerev = Conf::AUSEEREV_YES;
+        $old_overrides = $this->permuser->overrides();
+        if ($this->conf->au_seerev === 0) { /* assume sender wanted to override */
+            $this->permuser->add_overrides(Contact::OVERRIDE_AU_SEEREV);
         }
-        assert(!($this->permuser->overrides() & Contact::OVERRIDE_CONFLICT));
+        assert(($old_overrides & Contact::OVERRIDE_CONFLICT) === 0);
 
         if ($this->comment_row) {
             $crows = [$this->comment_row];
@@ -203,7 +203,7 @@ class HotCRPMailer extends Mailer {
             $text .= $crow->unparse_text($this->permuser, $flags);
         }
 
-        $this->conf->au_seerev = $au_seerev;
+        $this->permuser->set_overrides($old_overrides);
         return $text;
     }
 
