@@ -223,8 +223,8 @@ class PaperList implements XtContext {
 
     /** @var list<PaperColumn> */
     private $_sortcol = [];
-    /** @var bool */
-    private $_sortcol_fixed = false;
+    /** @var int */
+    private $_sortcol_fixed = 0;
     /** @var ?string */
     private $_sort_etag;
 
@@ -303,13 +303,14 @@ class PaperList implements XtContext {
 
         $qe = $this->search->term();
         if ($qe instanceof Then_SearchTerm) {
-            for ($i = 0; $i < $qe->nthen; ++$i) {
-                $this->apply_view_search($qe->child[$i], $i);
-            }
             $this->_then_map = $this->search->groups_by_paper_id();
             $this->_highlight_map = $this->search->highlights_by_paper_id();
         }
-        $this->apply_view_search($qe, -1);
+        foreach (PaperSearch::view_generator($qe->view_anno()) as $akd) {
+            if ($akd[0] !== "sort") {
+                $this->set_view($akd[1], substr($akd[0], 0, 4), null, $akd[2]);
+            }
+        }
 
         if ($qreq->forceShow !== null) {
             $this->set_view("force", !!$qreq->forceShow);
@@ -534,7 +535,7 @@ class PaperList implements XtContext {
      * @param ?int $pos1
      * @param ?int $pos2 */
     private function _add_sorter($name, $decorations, $sort_subset, $pos1, $pos2) {
-        assert(!$this->_sortcol_fixed);
+        assert($this->_sortcol_fixed < 2);
         // Do not use ensure_columns_by_name(), because decorations for sorters
         // might differ.
         $old_context = $this->conf->xt_swap_context($this);
@@ -570,39 +571,18 @@ class PaperList implements XtContext {
         }
     }
 
-    /** @param list<string>|list<array{string,?int,?int,?int}> $groups
-     * @param ?int $origin
-     * @param int $sort_subset */
-    private function set_view_list($groups, $origin, $sort_subset) {
+    /** @param ?string $str
+     * @param ?int $origin */
+    function parse_view($str, $origin = null) {
+        $groups = SearchSplitter::split_balanced_parens($str ?? "");
         foreach (PaperSearch::view_generator($groups) as $akd) {
-            if ($akd[0] !== "sort" && $sort_subset === -1) {
+            if ($akd[0] !== "sort") {
                 $this->set_view($akd[1], substr($akd[0], 0, 4), $origin, $akd[2]);
             }
             if (str_ends_with($akd[0], "sort")
                 && ($akd[1] !== "id" || !empty($akd[1]) || $this->_sortcol)) {
-                $this->_add_sorter($akd[1], $akd[2], $sort_subset, $akd[3], $akd[4]);
+                $this->_add_sorter($akd[1], $akd[2], -1, $akd[3], $akd[4]);
             }
-        }
-    }
-
-    /** @param ?string $str
-     * @param ?int $origin */
-    function parse_view($str, $origin = null) {
-        if ($str !== null && $str !== "") {
-            $this->set_view_list(SearchSplitter::split_balanced_parens($str), $origin, -1);
-        }
-    }
-
-    /** @param int $sort_subset */
-    private function apply_view_search(SearchTerm $qe, $sort_subset) {
-        $nsort = count($this->_sortcol);
-        $this->set_view_list($qe->view_anno(), null, $sort_subset);
-        if ($nsort === count($this->_sortcol)
-            && ($sortcol = $qe->default_sort_column(true, $this->search))
-            && $sortcol->prepare($this, PaperColumn::PREP_SORT)) {
-            assert(!!$sortcol->sort);
-            $sortcol->sort_subset = $sort_subset;
-            $this->_sortcol[] = $sortcol;
         }
     }
 
@@ -727,26 +707,56 @@ class PaperList implements XtContext {
         return $a->paperId <=> $b->paperId;
     }
 
+    /** @param int $sort_subset */
+    private function _add_view_sorters(SearchTerm $qe, $sort_subset) {
+        $nsortcol = count($this->_sortcol);
+        foreach (PaperSearch::view_generator($qe->view_anno()) as $akd) {
+            if (str_ends_with($akd[0], "sort")
+                && ($akd[1] !== "id" || !empty($akd[1]) || $this->_sortcol)) {
+                $this->_add_sorter($akd[1], $akd[2], $sort_subset, $akd[3], $akd[4]);
+            }
+        }
+        if (count($this->_sortcol) === $nsortcol
+            && ($dspc = $qe->default_sort_column(true, $this))
+            && $dspc->prepare($this, PaperColumn::PREP_SORT)) {
+            assert(!!$dspc->sort);
+            $dspc->sort_subset = $sort_subset;
+            $this->_sortcol[] = $dspc;
+        }
+    }
+
     /** @return non-empty-list<PaperColumn> */
     function sorters() {
-        if (!$this->_sortcol_fixed) {
-            $this->_sortcol_fixed = true;
+        if ($this->_sortcol_fixed === 0) {
+            $this->_sortcol_fixed = 1;
+            // apply sorters from search terms
+            $qe = $this->search->term();
+            if ($qe instanceof Then_SearchTerm) {
+                for ($i = 0; $i < $qe->nthen; ++$i) {
+                    $this->_add_view_sorters($qe->child[$i], $i);
+                }
+            }
+            $this->_add_view_sorters($qe, -1);
+            // final default sorter
             if (empty($this->_sortcol)) {
                 $this->_sortcol[] = ($this->ensure_columns_by_name("id"))[0];
             }
+            // default editable tag
             $this->_sort_etag = "";
             if ($this->_then_map === null
                 && $this->_sortcol[0] instanceof Tag_PaperColumn
                 && !$this->_sortcol[0]->sort_reverse) {
                 $this->_sort_etag = $this->_sortcol[0]->etag();
             }
+            // done
+            $this->_sortcol_fixed = 2;
         }
         return $this->_sortcol;
     }
 
     /** @return string */
     function sort_etag() {
-        if (!$this->_sortcol_fixed) {
+        if ($this->_sortcol_fixed === 0) {
             $this->sorters();
         }
         return $this->_sort_etag;

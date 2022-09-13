@@ -405,8 +405,9 @@ abstract class SearchTerm {
     }
 
     /** @param bool $top
+     * @param PaperList $pl
      * @return ?PaperColumn */
-    function default_sort_column($top, PaperSearch $srch) {
+    function default_sort_column($top, $pl) {
         return null;
     }
 
@@ -715,10 +716,10 @@ class And_SearchTerm extends Op_SearchTerm {
             return ["type" => "and", "child" => $ch];
         }
     }
-    function default_sort_column($top, PaperSearch $srch) {
+    function default_sort_column($top, $pl) {
         $s = null;
         foreach ($this->child as $qv) {
-            $s1 = $qv->default_sort_column($top, $srch);
+            $s1 = $qv->default_sort_column($top, $pl);
             if ($s && $s1) {
                 return null;
             }
@@ -1596,9 +1597,9 @@ class PaperID_SearchTerm extends SearchTerm {
     function test(PaperInfo $row, $xinfo) {
         return $this->index_of($row->paperId) !== false;
     }
-    function default_sort_column($top, PaperSearch $srch) {
+    function default_sort_column($top, $pl) {
         if ($top && !$this->in_order) {
-            return new PaperIDOrder_PaperColumn($srch->conf, $this);
+            return new PaperIDOrder_PaperColumn($pl->conf, $this);
         } else {
             return null;
         }

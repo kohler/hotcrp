@@ -7,14 +7,19 @@ class Tag_SearchTerm extends SearchTerm {
     private $user;
     /** @var TagSearchMatcher */
     private $tsm;
-    private $tag1;
-    private $tag1nz;
+    /** @var bool */
+    private $allow_default_sort = false;
 
-    function __construct(Contact $user, TagSearchMatcher $tsm) {
+    function __construct(Contact $user, TagSearchMatcher $tsm,) {
         parent::__construct("tag");
         $this->user = $user;
         $this->tsm = $tsm;
     }
+
+    function set_allow_default_sort() {
+        $this->allow_default_sort = true;
+    }
+
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $negated = $sword->kwdef->negated;
         $revsort = $sword->kwdef->sorting && $sword->kwdef->revsort;
@@ -80,9 +85,8 @@ class Tag_SearchTerm extends SearchTerm {
                     $term->add_view_anno("sort:{$revanno}#{$tagpat[0]}", $sword);
                 }
             }
-            if (!$negated && $sword->kwdef->is_hash && $value->single_tag()) {
-                $term->tag1 = $value->single_tag();
-                $term->tag1nz = false;
+            if (!$negated && $sword->kwdef->is_hash) {
+                $term->set_allow_default_sort();
             }
         }
 
@@ -124,19 +128,30 @@ class Tag_SearchTerm extends SearchTerm {
         }
     }
     function test(PaperInfo $row, $xinfo) {
-        $ok = $this->tsm->test($row->searchable_tags($this->user));
-        if ($ok && $this->tag1 && !$this->tag1nz) {
-            $this->tag1nz = $row->tag_value($this->tag1) != 0;
-        }
-        return $ok;
+        return $this->tsm->test($row->searchable_tags($this->user));
     }
-    function default_sort_column($top, PaperSearch $srch) {
-        if ($top && $this->tag1) {
-            $dt = $srch->conf->tags()->check(Tagger::base($this->tag1));
-            if (($dt && $dt->order_anno) || $this->tag1nz) {
-                $xjs = Tag_PaperColumn::expand("#{$this->tag1}", $srch->user, (object) [], ["#{$this->tag1}", "#", $this->tag1]);
-                assert(count($xjs) === 1 && $xjs[0]->function === "+Tag_PaperColumn");
-                return PaperColumn::make($srch->conf, $xjs[0], $dt && $dt->votish ? ["reverse"] : []);
+    /** @param PaperList $pl
+     * @param string $tag
+     * @param ?TagInfo $dt
+     * @return PaperColumn */
+    private function _make_default_sort_column($pl, $tag, $dt) {
+        $xjs = Tag_PaperColumn::expand("#{$tag}", $pl->user, (object) [], ["#{$tag}", "#", $tag]);
+        assert(count($xjs) === 1 && $xjs[0]->function === "+Tag_PaperColumn");
+        return PaperColumn::make($pl->conf, $xjs[0], $dt && $dt->votish ? ["reverse"] : []);
+    }
+    function default_sort_column($top, $pl) {
+        if (!$top
+            || !$this->allow_default_sort
+            || !($tag = $this->tsm->single_tag())) {
+            return null;
+        }
+        if (($dt = $pl->conf->tags()->check(Tagger::base($tag)))
+            && $dt->order_anno) {
+            return $this->_make_default_sort_column($pl, $tag, $dt);
+        }
+        foreach ($pl->rowset() as $prow) {
+            if ($prow->tag_value($tag) != 0) {
+                return $this->_make_default_sort_column($pl, $tag, $dt);
             }
         }
         return null;

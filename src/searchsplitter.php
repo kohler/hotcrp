@@ -186,10 +186,12 @@ class SearchSplitter {
     /** @param string $s
      * @return list<string> */
     static function split_balanced_parens($s) {
-        $splitter = new SearchSplitter($s);
         $w = [];
-        while ($splitter->skip_whitespace()) {
-            $w[] = $splitter->shift_balanced_parens();
+        if ($s !== "") {
+            $splitter = new SearchSplitter($s);
+            while ($splitter->skip_whitespace()) {
+                $w[] = $splitter->shift_balanced_parens();
+            }
         }
         return $w;
     }
