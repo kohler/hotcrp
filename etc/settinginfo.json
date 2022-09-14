@@ -439,16 +439,23 @@
         "type": "checkbox", "initial_value": 1
     },
     {
-        "name": "review_visibility_author", "storage": "au_seerev",
+        "name": "review_visibility_author", "storage": "val.au_seerev",
         "title": "Authors can see reviews",
         "type": "radio",
         "values": [0, 2, 3], "default_value": 0,
         "json_values": ["no", "yes", "tag"]
     },
     {
+        "name": "review_visibility_author_condition", "storage": "dat.au_seerev",
+        "title": "Review visibility condition",
+        "type": "string", "subtype": "search", "size": 30, "placeholder": "Search",
+        "parser_class": "ReviewVisibility_SettingParser"
+    },
+    {
         "name": "review_visibility_author_tags", "storage": "tag_au_seerev",
         "title": "Review visibility tags",
-        "type": "taglist", "size": 24
+        "type": "taglist", "size": 24,
+        "parser_class": "ReviewVisibility_SettingParser"
     },
     {
         "name": "review_visibility_external", "storage": "extrev_view",

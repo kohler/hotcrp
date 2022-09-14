@@ -1396,22 +1396,34 @@ class Permission_Tester {
         xassert($paper2->can_author_view_submitted_review());
 
         xassert(SettingValues::make_request($this->u_chair, [
+            "review_visibility_author_condition" => "#fart"
+        ])->execute());
+        xassert(!$paper10->can_author_view_submitted_review());
+        xassert($paper2->can_author_view_submitted_review());
+
+        xassert(SettingValues::make_request($this->u_chair, [
             "review_visibility_author" => Conf::AUSEEREV_YES,
-            "review_visibility_author_tags" => "fart"
+            "review_visibility_author_condition" => "#fart"
+        ])->execute());
+        xassert($paper10->can_author_view_submitted_review());
+        xassert($paper2->can_author_view_submitted_review());
+
+        xassert(SettingValues::make_request($this->u_chair, [
+            "review_visibility_author_condition" => "#fart OR 10"
         ])->execute());
         xassert($paper10->can_author_view_submitted_review());
         xassert($paper2->can_author_view_submitted_review());
 
         xassert(SettingValues::make_request($this->u_chair, [
             "review_visibility_author" => Conf::AUSEEREV_NO,
-            "review_visibility_author_tags" => "fart"
+            "review_visibility_author_condition" => "#fart"
         ])->execute());
         xassert(!$paper10->can_author_view_submitted_review());
         xassert(!$paper2->can_author_view_submitted_review());
 
         xassert(SettingValues::make_request($this->u_chair, [
             "review_visibility_author" => Conf::AUSEEREV_SEARCH,
-            "review_visibility_author_tags" => "faart"
+            "review_visibility_author_condition" => "#faart"
         ])->execute());
         xassert(!$paper10->can_author_view_submitted_review());
         xassert(!$paper2->can_author_view_submitted_review());

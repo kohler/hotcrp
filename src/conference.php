@@ -435,7 +435,10 @@ class Conf {
         $au_seerev = $this->settings["au_seerev"] ?? 0;
         $this->_au_seerev = false;
         if ($au_seerev === self::AUSEEREV_SEARCH) {
-            if (($tags = $this->settingTexts["tag_au_seerev"] ?? "") !== "") {
+            if (($q = $this->settingTexts["au_seerev"] ?? null) !== null) {
+                $srch = new PaperSearch($this->root_user(), $q);
+                $this->_au_seerev = $srch->full_term();
+            } else if (($tags = $this->settingTexts["tag_au_seerev"] ?? "") !== "") {
                 $tsm = new TagSearchMatcher($this->root_user());
                 foreach (explode(" ", $tags) as $t) {
                     if ($t !== "")

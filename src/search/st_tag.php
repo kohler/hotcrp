@@ -4,7 +4,7 @@
 
 class Tag_SearchTerm extends SearchTerm {
     /** @var TagSearchMatcher */
-    private $tsm;
+    public $tsm;
     /** @var bool */
     private $allow_default_sort = false;
 
