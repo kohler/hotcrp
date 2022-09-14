@@ -707,12 +707,12 @@ class PaperOption implements JsonSerializable {
     public $classes;
     /** @var ?string */
     private $exists_if;
-    /** @var ?PaperSearch */
-    private $_exists_search;
+    /** @var ?SearchTerm */
+    private $_exists_term;
     /** @var ?string */
     private $editable_if;
-    /** @var ?PaperSearch */
-    private $_editable_search;
+    /** @var ?SearchTerm */
+    private $_editable_term;
     /** @var int */
     private $_recursion = 0;
     public $max_size;
@@ -842,14 +842,8 @@ class PaperOption implements JsonSerializable {
 
         $x = property_exists($args, "exists_if") ? $args->exists_if : ($args->edit_condition ?? null);
         // XXX edit_condition backward compat
-        if ($x !== null && $x !== "" && $x !== true) {
-            $this->set_exists_condition($x);
-        }
-
-        $x = $args->editable_if ?? null;
-        if ($x !== null && $x !== "" && $x !== true) {
-            $this->set_editable_condition($x);
-        }
+        $this->set_exists_condition($x);
+        $this->set_editable_condition($args->editable_if ?? null);
 
         $this->max_size = $args->max_size ?? null;
     }
@@ -1032,64 +1026,79 @@ class PaperOption implements JsonSerializable {
             && $this->exists_if === null;
     }
 
-    /** @return bool */
-    function test_exists(PaperInfo $prow) {
-        if (!$this->_exists_search) {
-            return true;
-        } else if (++$this->_recursion > 5) {
-            throw new ErrorException("Recursion in {$this->name}::test_exists");
+    /** @param null|bool|string $expr
+     * @return ?string */
+    static private function clean_condition($expr) {
+        if ($expr === null || $expr === true || $expr === "") {
+            return null;
         } else {
-            $x = $this->_exists_search->test($prow);
-            --$this->_recursion;
-            return $x;
+            return $expr === false ? "NONE" : $expr;
         }
     }
+    /** @return SearchTerm */
+    private function exists_term() {
+        if ($this->_exists_term === null) {
+            $s = new PaperSearch($this->conf->root_user(), $this->exists_if);
+            $s->set_expand_automatic(true);
+            $this->_exists_term = $s->full_term();
+        }
+        return $this->_exists_term;
+    }
+
     /** @return ?string */
     function exists_condition() {
         return $this->exists_if;
     }
-    /** @param ?string &$condition
-     * @param null|bool|string $expr
-     * @return ?PaperSearch */
-    private function compile_condition(&$condition, $expr) {
-        if ($expr === null || $expr === true || $expr === "") {
-            $condition = null;
-            return null;
-        } else {
-            $condition = $expr === false ? "NONE" : $expr;
-            return new PaperSearch($this->conf->root_user(), $condition);
-        }
-    }
     /** @param $x null|bool|string */
     function set_exists_condition($x) {
-        if (($this->_exists_search = $this->compile_condition($this->exists_if, $x))) {
-            $this->_exists_search->set_expand_automatic(true);
-        }
+        $this->exists_if = self::clean_condition($x);
+        $this->_exists_term = null;
     }
-    function exists_script_expression(PaperInfo $prow) {
-        $s = $this->_exists_search;
-        return $s ? $s->term()->script_expression($prow) : null;
-    }
-
     /** @return bool */
-    function test_editable(PaperInfo $prow) {
-        if (!$this->_editable_search) {
+    function test_exists(PaperInfo $prow) {
+        if ($this->exists_if === null) {
             return true;
         } else if (++$this->_recursion > 5) {
-            throw new ErrorException("Recursion in {$this->name}::test_editable");
+            throw new ErrorException("Recursion in {$this->name}::test_exists");
         } else {
-            $x = $this->_editable_search->test($prow);
+            $x = $this->exists_term()->test($prow, null);
             --$this->_recursion;
             return $x;
         }
     }
+    function exists_script_expression(PaperInfo $prow) {
+        if ($this->exists_if === null) {
+            return null;
+        } else {
+            return $this->exists_term()->script_expression($prow);
+        }
+    }
+
     /** @return ?string */
     function editable_condition() {
         return $this->editable_if;
     }
     /** @param $x null|bool|string */
     function set_editable_condition($x) {
-        $this->_editable_search = $this->compile_condition($this->editable_if, $x);
+        $this->editable_if = self::clean_condition($x);
+        $this->_editable_term = null;
+    }
+    /** @return bool */
+    function test_editable(PaperInfo $prow) {
+        if ($this->editable_if === null) {
+            return true;
+        }
+        if ($this->_editable_term === null) {
+            $s = new PaperSearch($this->conf->root_user(), $this->editable_if);
+            $this->_editable_term = $s->full_term();
+        }
+        if (++$this->_recursion > 5) {
+            throw new ErrorException("Recursion in {$this->name}::test_editable");
+        } else {
+            $x = $this->_editable_term->test($prow, null);
+            --$this->_recursion;
+            return $x;
+        }
     }
 
     /** @return bool */

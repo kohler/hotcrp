@@ -429,6 +429,7 @@ src/search/st_topic.php
 src/searchexample.php
 src/searchselection.php
 src/searchsplitter.php
+src/searchterm.php
 src/sessionlist.php
 src/settinginfoset.php
 src/settingparser.php

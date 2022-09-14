@@ -94,7 +94,7 @@ class Tag_SearchTerm extends SearchTerm {
         foreach ($value->error_texts() as $e) {
             $srch->lwarning($sword, "<5>$e");
         }
-        return SearchTerm::combine("or", $allterms)->negate_if($negated);
+        return SearchTerm::combine("or", ...$allterms)->negate_if($negated);
     }
     const SQLEXPR_PREFIX = 'exists (select * from PaperTag where paperId=Paper.paperId';
     function sqlexpr(SearchQueryInfo $sqi) {

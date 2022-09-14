@@ -38,7 +38,7 @@ class Response_Setting {
         $rs->done = $rrd->done;
         $rs->grace = $rrd->grace;
         $rs->wordlimit = $rs->old_wordlimit = $rrd->words;
-        $rs->condition = $rrd->search ? $rrd->search->q : "all";
+        $rs->condition = $rrd->condition ?? "all";
         $rs->instructions = $rrd->instructions ?? $rs->default_instructions($conf);
         return $rs;
     }
@@ -287,8 +287,9 @@ class Response_SettingParser extends SettingParser {
     static function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("response")) {
             foreach ($sv->conf->response_rounds() as $i => $rrd) {
-                if ($rrd->search) {
-                    foreach ($rrd->search->message_list() as $mi) {
+                if ($rrd->condition !== null) {
+                    $s = new PaperSearch($sv->conf->root_user(), $rrd->condition);
+                    foreach ($s->message_list() as $mi) {
                         $sv->append_item_at("response/" . ($i + 1) . "/condition", $mi);
                     }
                 }

@@ -4549,8 +4549,7 @@ class Contact implements JsonSerializable {
             && (($rights->allow_administer
                  && ($newctype === null || $this->override_deadlines($rights)))
                 || $rrd->time_allowed(true))
-            && (!$rrd->search
-                || $rrd->search->test($prow));
+            && $rrd->test_condition($prow);
     }
 
     /** @param ?int $newctype
@@ -4572,7 +4571,7 @@ class Contact implements JsonSerializable {
             $rrd = $prow->conf->response_round_by_id($crow->commentRound);
             if (!($crow->commentType & CommentInfo::CT_RESPONSE)
                 || !$rrd
-                || ($rrd->search && !$rrd->search->test($prow))) {
+                || !$rrd->test_condition($prow)) {
                 $whyNot["responseNonexistent"] = true;
             } else {
                 $whyNot["deadline"] = "response";

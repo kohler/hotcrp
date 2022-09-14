@@ -1378,10 +1378,8 @@ class PaperInfo {
             return true;
         } else if ($this->conf->any_response_open) {
             foreach ($this->conf->response_rounds() as $rrd) {
-                if ($rrd->time_allowed(true)
-                    && (!$rrd->search || $rrd->search->test($this))) {
+                if ($rrd->can_author_respond($this, true))
                     return true;
-                }
             }
         }
         return false;

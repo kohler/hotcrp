@@ -19,8 +19,10 @@ class ResponseRound {
     public $grace = 0;
     /** @var int */
     public $words = 500;
-    /** @var ?PaperSearch */
-    public $search;
+    /** @var ?string */
+    public $condition;
+    /** @var ?SearchTerm */
+    private $_condition_term;
     /** @var ?string */
     public $instructions;
 
@@ -38,13 +40,26 @@ class ResponseRound {
      * @return bool */
     function can_author_respond(PaperInfo $prow, $with_grace) {
         return $this->time_allowed($with_grace)
-            && (!$this->search || $this->search->test($prow));
+            && $this->test_condition($prow);
+    }
+
+    /** @param PaperInfo $prow
+     * @return bool */
+    function test_condition($prow) {
+        if ($this->condition === null) {
+            return true;
+        }
+        if ($this->_condition_term === null) {
+            $s = new PaperSearch($prow->conf->root_user(), $this->condition);
+            $this->_condition_term = $s->full_term();
+        }
+        return $this->_condition_term->test($prow, null);
     }
 
     /** @return bool */
     function relevant(Contact $user, PaperInfo $prow = null) {
         if (($prow ? $user->allow_administer($prow) : $user->is_manager())
-            && ($this->done || $this->search || $this->name !== "1")) {
+            && ($this->done || $this->condition !== null || $this->name !== "1")) {
             return true;
         } else if ($user->isPC) {
             return $this->open > 0;
@@ -52,8 +67,17 @@ class ResponseRound {
             return $this->active
                 && $this->open > 0
                 && $this->open < Conf::$now
-                && (!$this->search || $this->search->filter($prow ? [$prow] : $user->authored_papers()));
+                && ($this->condition === null || $this->_condition_relevant($user, $prow));
         }
+    }
+
+    /** @return bool */
+    private function _condition_relevant(Contact $user, PaperInfo $prow = null) {
+        foreach ($prow ? [$prow] : $user->authored_papers() as $row) {
+            if ($this->test_condition($row))
+                return true;
+        }
+        return false;
     }
 
     /** @return string */

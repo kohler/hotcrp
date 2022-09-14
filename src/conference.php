@@ -463,7 +463,7 @@ class Conf {
         if (($this->settings["resp_active"] ?? 0) > 0) {
             foreach ($this->response_rounds() as $rrd) {
                 if ($rrd->time_allowed(true)) {
-                    if ($rrd->search) {
+                    if ($rrd->condition !== null) {
                         $this->any_response_open = 1;
                     } else {
                         $this->any_response_open = 2;
@@ -1975,21 +1975,21 @@ class Conf {
         $active = ($this->settings["resp_active"] ?? 0) > 0;
         $jresp = json_decode($this->settingTexts["responses"] ?? "[{}]");
         foreach ($jresp ?? [(object) []] as $i => $rrj) {
-            $r = new ResponseRound;
-            $r->id = $i + 1;
-            $r->unnamed = $i === 0 && !isset($rrj->name);
-            $r->name = $rrj->name ?? "1";
-            $r->active = $active;
-            $r->done = $rrj->done ?? 0;
-            $r->grace = $rrj->grace ?? 0;
-            $r->open = $rrj->open
-                ?? ($r->done && $r->done + $r->grace >= self::$now ? 1 : 0);
-            $r->words = $rrj->words ?? 500;
-            if (isset($rrj->condition)) {
-                $r->search = new PaperSearch($this->root_user(), $rrj->condition);
+            $rrd = new ResponseRound;
+            $rrd->id = $i + 1;
+            $rrd->unnamed = $i === 0 && !isset($rrj->name);
+            $rrd->name = $rrj->name ?? "1";
+            $rrd->active = $active;
+            $rrd->done = $rrj->done ?? 0;
+            $rrd->grace = $rrj->grace ?? 0;
+            $rrd->open = $rrj->open
+                ?? ($rrd->done && $rrd->done + $rrd->grace >= self::$now ? 1 : 0);
+            $rrd->words = $rrj->words ?? 500;
+            if (($rrj->condition ?? "") !== "") {
+                $rrd->condition = $rrj->condition;
             }
-            $r->instructions = $rrj->instructions ?? null;
-            $rrds[] = $r;
+            $rrd->instructions = $rrj->instructions ?? null;
+            $rrds[] = $rrd;
         }
         return $rrds;
     }
@@ -2000,22 +2000,22 @@ class Conf {
         $x = $this->settingTexts["resp_rounds"] ?? "1";
         $active = ($this->settings["resp_active"] ?? 0) > 0;
         foreach (explode(" ", $x) as $i => $rname) {
-            $r = new ResponseRound;
-            $r->id = $i + 1;
-            $r->unnamed = $rname === "1";
-            $r->name = $rname;
+            $rrd = new ResponseRound;
+            $rrd->id = $i + 1;
+            $rrd->unnamed = $rname === "1";
+            $rrd->name = $rname;
             $isuf = $i ? "_{$i}" : "";
-            $r->active = $active;
-            $r->done = $this->settings["resp_done{$isuf}"] ?? 0;
-            $r->grace = $this->settings["resp_grace{$isuf}"] ?? 0;
-            $r->open = $this->settings["resp_open{$isuf}"]
-                ?? ($r->done && $r->done + $r->grace >= self::$now ? 1 : 0);
-            $r->words = $this->settings["resp_words{$isuf}"] ?? 500;
-            if (($s = $this->settingTexts["resp_search{$isuf}"] ?? null)) {
-                $r->search = new PaperSearch($this->root_user(), $s);
+            $rrd->active = $active;
+            $rrd->done = $this->settings["resp_done{$isuf}"] ?? 0;
+            $rrd->grace = $this->settings["resp_grace{$isuf}"] ?? 0;
+            $rrd->open = $this->settings["resp_open{$isuf}"]
+                ?? ($rrd->done && $rrd->done + $rrd->grace >= self::$now ? 1 : 0);
+            $rrd->words = $this->settings["resp_words{$isuf}"] ?? 500;
+            if (($condition = $this->settingTexts["resp_search{$isuf}"] ?? "") !== "") {
+                $rrd->condition = $condition;
             }
-            $r->instructions = $this->settingTexts["msg.resp_instrux_{$i}"] ?? null;
-            $rrds[] = $r;
+            $rrd->instructions = $this->settingTexts["msg.resp_instrux_{$i}"] ?? null;
+            $rrds[] = $rrd;
         }
         return $rrds;
     }
