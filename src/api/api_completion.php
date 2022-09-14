@@ -256,7 +256,7 @@ class Completion_API {
                 $pclist = [];
                 foreach ($user->conf->pc_members() as $p) {
                     if ($p->disablement === 0
-                        && $p->can_view_paper_ignore_conflict_and_review($prow))
+                        && $p->can_pc_view_paper_track($prow))
                         $pclist[] = $p;
                 }
             }

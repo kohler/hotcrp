@@ -253,8 +253,7 @@ class Search_Page {
     private function print_list($pl_text, $qreq, $limits) {
         $search = $this->pl->search;
 
-        if ($this->user->has_hidden_papers()
-            && !empty($this->user->hidden_papers)
+        if (!empty($this->user->hidden_papers)
             && $this->user->is_actas_user()) {
             $this->pl->message_set()->warning_at(null, $this->conf->_("<0>Submissions %#Ns are totally hidden when viewing the site as another user.", array_map(function ($n) { return "#$n"; }, array_keys($this->user->hidden_papers))));
         }

@@ -1106,22 +1106,29 @@ class Limit_SearchTerm extends SearchTerm {
     }
 
     function simple_search(&$options) {
-        $conf = $this->user->conf;
-        if (($conf->has_tracks()
-             && !in_array($this->limit, ["a", "r", "ar"], true)
-             && !$this->user->privChair)
-            || $this->user->has_hidden_papers()) {
+        // hidden papers => complex search
+        if (($this->user->dangerous_track_mask() & Track::BITS_VIEW) !== 0) {
             return false;
         }
-        if ($this->lflag & self::LFLAG_SUBMITTED) {
+        // if tracks, nonchairs get simple search only for "a", "r", sometimes "s"
+        $conf = $this->user->conf;
+        if (!$this->user->privChair
+            && $conf->has_tracks()
+            && $this->limit !== "a"
+            && $this->limit !== "r"
+            && $this->limit !== "s") {
+            return false;
+        }
+        // otherwise go by limit
+        if (($this->lflag & self::LFLAG_SUBMITTED) !== 0) {
             $options["finalized"] = true;
-        } else if ($this->lflag & self::LFLAG_ACTIVE) {
+        } else if (($this->lflag & self::LFLAG_ACTIVE) !== 0) {
             $options["active"] = true;
         }
         switch ($this->limit) {
         case "all":
         case "viewable":
-            return $this->user->can_view_all();
+            return $this->user->privChair;
         case "s":
             assert(!!($options["finalized"] ?? false));
             return $this->user->isPC;
@@ -1185,12 +1192,24 @@ class Limit_SearchTerm extends SearchTerm {
     }
 
     function is_sqlexpr_precise() {
-        if ($this->user->has_hidden_papers()) {
+        // hidden papers => imprecise
+        if (($this->user->dangerous_track_mask() & Track::BITS_VIEW) !== 0) {
             return false;
-        } else if (in_array($this->limit, ["undecided", "acc", "viewable", "alladmin", "actadmin"], true)) {
+        }
+        switch ($this->limit) {
+        case "acc":
+        case "viewable":
+        case "undecided":
+        case "alladmin":
+        case "actadmin":
+            // broad limits are precise only if allowed to administer all
             return $this->user->allow_administer_all();
-        } else {
-            return $this->limit !== "reviewable" && $this->limit !== "admin";
+        case "reviewable":
+        case "admin":
+            // never precise
+            return false;
+        default:
+            return true;
         }
     }
 

@@ -748,7 +748,7 @@ class PaperStatus extends MessageSet {
     private function _check_fields($pj) {
         foreach ($this->_nnprow->form_fields() as $opt) {
             if ($this->user->can_edit_option($this->_nnprow, $opt)
-                || ($this->user->is_site_contact
+                || ($this->user->is_root_user()
                     && isset($pj->{$opt->json_key()}))) {
                 $oj = $pj->{$opt->json_key()} ?? null;
                 if ($oj === null) {

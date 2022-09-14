@@ -345,6 +345,50 @@ class Permission_Tester {
         xassert($user_wilma->can_view_review($paper1, $review2));
     }
 
+    /** @param list<Contact> $users */
+    static private function check_rights_version($users) {
+        Contact::update_rights();
+        foreach ($users as $u) {
+            $u->check_rights_version();
+        }
+    }
+
+    function test_dangerous_track_mask() {
+        $user_chair = $this->u_chair;
+        $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
+        $user_marina = $this->conf->checked_user_by_email("marina@poema.ru"); // pc
+        $user_pfrancis = $this->conf->checked_user_by_email("pfrancis@ntt.jp"); // pc, blue
+        xassert_eqq($user_chair->contactTags, null);
+        xassert_eqq($user_jon->contactTags, " red#0");
+        xassert_eqq($user_marina->contactTags, null);
+        xassert_eqq($user_pfrancis->contactTags, " blue#0");
+        $users = [$user_chair, $user_jon, $user_marina, $user_pfrancis];
+
+        xassert_eqq($this->conf->setting("tracks"), null);
+        self::check_rights_version($users);
+        xassert_eqq($user_chair->dangerous_track_mask(), 0);
+        xassert_eqq($user_jon->dangerous_track_mask(), 0);
+        xassert_eqq($user_marina->dangerous_track_mask(), 0);
+        xassert_eqq($user_pfrancis->dangerous_track_mask(), 0);
+
+        $this->conf->save_refresh_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"}}");
+        self::check_rights_version($users);
+        xassert_eqq($user_chair->dangerous_track_mask(), 0);
+        xassert_eqq($user_jon->dangerous_track_mask() & Track::BITS_VIEW, Track::BITS_VIEW);
+        xassert_eqq($user_marina->dangerous_track_mask(), 0);
+        xassert_eqq($user_pfrancis->dangerous_track_mask(), 0);
+
+        $this->conf->save_refresh_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"},\"_\":{\"view\":\"+blue\"}}");
+        self::check_rights_version($users);
+        xassert_eqq($user_chair->dangerous_track_mask(), 0);
+        xassert_eqq($user_jon->dangerous_track_mask() & Track::BITS_VIEW, Track::BITS_VIEW);
+        xassert_eqq($user_marina->dangerous_track_mask() & Track::BITS_VIEW, Track::BITS_VIEW);
+        xassert_eqq($user_pfrancis->dangerous_track_mask(), 0);
+
+        $this->conf->save_refresh_setting("tracks", null);
+        self::check_rights_version($users);
+    }
+
     function test_tags() {
         $user_chair = $this->u_chair;
         $user_mgbaker = $this->u_mgbaker;

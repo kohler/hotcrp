@@ -106,7 +106,7 @@ class Tag_SearchTerm extends SearchTerm {
         }
     }
     function is_sqlexpr_precise() {
-        return $this->tsm->is_sqlexpr_precise() && $this->user->is_site_contact;
+        return $this->tsm->is_sqlexpr_precise() && $this->user->is_root_user();
     }
     /** @param non-empty-list<string> $ff
      * @return string */

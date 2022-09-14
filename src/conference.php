@@ -1682,21 +1682,6 @@ class Conf {
 
     /** @param int $ttype
      * @return bool */
-    function check_all_tracks(Contact $user, $ttype) {
-        if ($this->_tracks) {
-            foreach ($this->_tracks as $tr) {
-                if (!(($ttype === Track::VIEW
-                       || $user->has_permission($tr->perm[Track::VIEW]))
-                      && $user->has_permission($tr->perm[$ttype]))) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    /** @param int $ttype
-     * @return bool */
     function check_track_sensitivity($ttype) {
         return ($this->_track_sensitivity & (1 << $ttype)) !== 0;
     }
@@ -1746,11 +1731,12 @@ class Conf {
     /** @return int */
     function dangerous_track_mask(Contact $user) {
         $m = 0;
-        if ($this->_tracks && $user->contactTags) {
+        $nonchair = !$user->privChair;
+        if ($this->_tracks && ($nonchair || $user->contactTags)) {
             foreach ($this->_tracks as $tr) {
                 foreach ($tr->perm as $i => $perm) {
                     if ($perm
-                        && $perm[0] === "-"
+                        && ($nonchair || $perm[0] === "-")
                         && !$user->has_permission($perm)) {
                         $m |= 1 << $i;
                     }
@@ -5159,7 +5145,7 @@ class Conf {
         } else if (!is_numeric($user)) {
             if ($user->email
                 && !$user->contactId
-                && !$user->is_site_contact) {
+                && !$user->is_root_user()) {
                 $suffix = " <{$user->email}>";
                 if (!str_ends_with($text, $suffix)) {
                     $text .= $suffix;

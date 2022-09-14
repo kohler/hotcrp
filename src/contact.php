@@ -137,7 +137,7 @@ class Contact implements JsonSerializable {
     /** @var bool */
     public $privChair = false;
     /** @var bool */
-    public $is_site_contact = false;
+    private $_root_user = false;
     /** @var ?int */
     private $_session_roles;
     /** @var ?associative-array<int,int> */
@@ -302,7 +302,8 @@ class Contact implements JsonSerializable {
         $u->firstName = $args["firstName"] ?? "";
         $u->lastName = $args["lastName"] ?? "";
         $u->roles = self::ROLE_PC | self::ROLE_CHAIR;
-        $u->is_site_contact = true;
+        $u->_root_user = true;
+        $u->_dangerous_track_mask = 0;
         $u->set_roles_properties();
         $u->contactXid = self::$next_xid--;
         return $u;
@@ -637,6 +638,8 @@ class Contact implements JsonSerializable {
         // cannot turn into a manager of conflicted papers
         if ($this->conf->setting("papermanager")) {
             $result = $this->conf->qe("select paperId from Paper join PaperConflict using (paperId) where managerContactId!=0 and managerContactId!=? and PaperConflict.contactId=? and conflictType>" . CONFLICT_MAXUNCONFLICTED, $this->contactXid, $this->contactXid);
+            // XXX should also consider setting papers that this user cannot administer
+            // XXX because of tracks
             while (($row = $result->fetch_row())) {
                 $u->hidden_papers[(int) $row[0]] = false;
             }
@@ -1194,7 +1197,7 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function is_root_user() {
-        return $this->is_site_contact;
+        return $this->_root_user;
     }
 
     /** @return bool */
@@ -2436,7 +2439,7 @@ class Contact implements JsonSerializable {
         }
     }
 
-    private function check_rights_version() {
+    function check_rights_version() {
         if ($this->_rights_version !== self::$rights_version) {
             $this->role_mask = self::ROLE_DBMASK;
             $this->roles = $this->roles & self::ROLE_DBMASK;
@@ -2751,21 +2754,13 @@ class Contact implements JsonSerializable {
 
     // permissions policies
 
-    /** @param Contact $acct
-     * @return bool */
-    function can_change_password($acct) {
-        return ($this->privChair && !$this->conf->opt("chairHidePasswords"))
-            || ($acct
-                && $this->contactId > 0
-                && $this->contactId == $acct->contactId
-                && $this->_activated === 1);
-    }
-
-
     /** @return int */
-    private function dangerous_track_mask() {
+    function dangerous_track_mask() {
         if ($this->_dangerous_track_mask === null) {
             $this->_dangerous_track_mask = $this->conf->dangerous_track_mask($this);
+            if ($this->hidden_papers) {
+                $this->_dangerous_track_mask |= Track::BITS_VIEW;
+            }
         }
         return $this->_dangerous_track_mask;
     }
@@ -2780,14 +2775,14 @@ class Contact implements JsonSerializable {
             if ($prow->managerContactId === $this->contactXid
                 || ($this->privChair
                     && (!$prow->managerContactId || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED)
-                    && (!($this->dangerous_track_mask() & Track::BITS_VIEWADMIN)
+                    && (($this->dangerous_track_mask() & Track::BITS_VIEWADMIN) === 0
                         || ($this->conf->check_tracks($prow, $this, Track::VIEW)
                             && $this->conf->check_tracks($prow, $this, Track::ADMIN))))
                 || ($this->isPC
                     && $this->is_track_manager()
                     && (!$prow->managerContactId || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED)
                     && $this->conf->check_admin_tracks($prow, $this))
-                || $this->is_site_contact) {
+                || $this->_root_user) {
                 $ci->allow_administer = true;
             }
         }
@@ -2844,7 +2839,7 @@ class Contact implements JsonSerializable {
                 $ci->potential_reviewer = !$tracks
                     || !$this->conf->check_track_review_sensitivity()
                     || ($ci->allow_administer
-                        && !($this->dangerous_track_mask() & Track::BITS_REVIEW))
+                        && ($this->dangerous_track_mask() & Track::BITS_REVIEW) === 0)
                     || ($this->conf->check_tracks($prow, $this, Track::ASSREV)
                         && $this->conf->check_tracks($prow, $this, Track::UNASSREV));
             } else {
@@ -2946,17 +2941,16 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function allow_administer_all() {
-        return $this->is_site_contact
+        return $this->_root_user
             || ($this->privChair
                 && !$this->conf->has_any_explicit_manager()
-                && !($this->dangerous_track_mask() & Track::BITS_VIEWADMIN));
+                && ($this->dangerous_track_mask() & Track::BITS_VIEWADMIN) === 0);
     }
 
     /** @return bool */
     function allow_administer(PaperInfo $prow = null) {
         if ($prow) {
-            $rights = $this->rights($prow);
-            return $rights->allow_administer;
+            return $this->rights($prow)->allow_administer;
         } else {
             return $this->privChair;
         }
@@ -2981,7 +2975,7 @@ class Contact implements JsonSerializable {
      * @return bool */
     private function _can_administer_for_track(PaperInfo $prow, $rights, $ttype) {
         return $rights->can_administer
-            && (!($this->dangerous_track_mask() & (1 << $ttype))
+            && (($this->dangerous_track_mask() & (1 << $ttype)) === 0
                 || $this->conf->check_tracks($prow, $this, $ttype));
     }
 
@@ -2989,7 +2983,7 @@ class Contact implements JsonSerializable {
      * @return bool */
     private function _allow_administer_for_track(PaperInfo $prow, $rights, $ttype) {
         return $rights->allow_administer
-            && (!($this->dangerous_track_mask() & (1 << $ttype))
+            && (($this->dangerous_track_mask() & (1 << $ttype)) === 0
                 || $this->conf->check_tracks($prow, $this, $ttype));
     }
 
@@ -3061,6 +3055,16 @@ class Contact implements JsonSerializable {
     function can_view_user_tag($tag) {
         return $this->can_view_user_tags()
             && $this->conf->tags()->censor(TagMap::CENSOR_VIEW, " {$tag}#0", $this, null) !== "";
+    }
+
+    /** @param Contact $acct
+     * @return bool */
+    function can_change_password($acct) {
+        return ($this->privChair && !$this->conf->opt("chairHidePasswords"))
+            || ($acct
+                && $this->contactId > 0
+                && $this->contactId === $acct->contactId
+                && $this->_activated === 1);
     }
 
     /** @return bool */
@@ -3367,20 +3371,16 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function has_hidden_papers() {
-        return $this->hidden_papers !== null
-            || ($this->dangerous_track_mask() & Track::BITS_VIEW);
-    }
-
-    /** @return bool */
     function can_view_all() {
-        return $this->privChair && !$this->has_hidden_papers();
+        // see also Limit_SeachTerm
+        return $this->privChair
+            && ($this->dangerous_track_mask() & Track::BITS_VIEW) === 0;
     }
 
     /** @return bool */
     function can_view_missing_papers() {
         return $this->privChair
-            || ($this->isPC && $this->conf->check_all_tracks($this, Track::VIEW));
+            || ($this->isPC && ($this->dangerous_track_mask() & Track::BITS_VIEW) === 0);
     }
 
     /** @return PermissionProblem */
@@ -3401,16 +3401,25 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function can_view_paper(PaperInfo $prow, $pdf = false) {
-        // hidden_papers is set when a chair with a conflicted, managed
-        // paper “becomes” a user
+        // root user can view everything
+        if ($this->_root_user) {
+            return true;
+        }
+        // hidden_papers is set when a chair with a conflicted, managed paper
+        // “becomes” a user
         if ($this->hidden_papers !== null
             && isset($this->hidden_papers[$prow->paperId])) {
             $this->hidden_papers[$prow->paperId] = true;
             return false;
-        } else if ($this->privChair
-                   && !($this->dangerous_track_mask() & Track::BITS_VIEW)) {
-            return true;
         }
+        // chairs can view everything unless there are dangerous view tracks
+        if ($this->privChair) {
+            $f = Track::BITS_VIEW | ($pdf ? 1 << Track::VIEWPDF : 0);
+            if (($this->dangerous_track_mask() & $f) === 0) {
+                return true;
+            }
+        }
+        // otherwise check rights
         $rights = $this->rights($prow);
         return $rights->allow_author_view
             || ($pdf
@@ -3466,29 +3475,13 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_view_paper_ignore_conflict(PaperInfo $prow) {
-        if ($this->privChair
-            && !($this->dangerous_track_mask() & Track::BITS_VIEW)) {
-            return true;
-        } else {
-            $rights = $this->rights($prow);
-            return $rights->allow_pc_broad
-                && $this->conf->time_pc_view($prow, false);
-        }
-    }
-
-    /** @return bool */
-    function can_view_paper_ignore_conflict_and_review(PaperInfo $prow) {
-        if ($this->privChair
-            && !($this->dangerous_track_mask() & Track::BITS_VIEW)) {
-            return true;
-        } else {
-            $rights = $this->rights($prow);
-            return $rights->allow_pc_broad
-                && $this->conf->time_pc_view($prow, false)
-                && (!$this->conf->check_track_view_sensitivity()
-                    || $this->conf->check_tracks($prow, $this, Track::VIEW));
-        }
+    function can_pc_view_paper_track(PaperInfo $prow) {
+        assert($this->isPC);
+        $rights = $this->rights($prow);
+        return $rights->allow_pc_broad
+            && $this->conf->time_pc_view($prow, false)
+            && (!$this->conf->check_track_view_sensitivity()
+                || $this->conf->check_tracks($prow, $this, Track::VIEW));
     }
 
     /** @return bool */
@@ -4105,7 +4098,7 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_accept_some_review_assignment() {
         return $this->isPC
-            && $this->conf->check_all_tracks($this, Track::ASSREV);
+            && $this->conf->check_any_tracks($this, Track::ASSREV);
     }
 
     /** @return bool */
@@ -4899,7 +4892,7 @@ class Contact implements JsonSerializable {
     function can_edit_tag(PaperInfo $prow, $tag, $previndex, $index) {
         assert(!!$tag);
         if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
-            || $this->is_site_contact) {
+            || $this->_root_user) {
             return true;
         }
         $rights = $this->rights($prow);
@@ -4994,7 +4987,7 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_edit_some_tag(PaperInfo $prow = null) {
         if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
-            || $this->is_site_contact) {
+            || $this->_root_user) {
             return true;
         } else if ($prow) {
             $rights = $this->rights($prow);
@@ -5044,7 +5037,7 @@ class Contact implements JsonSerializable {
     function can_edit_tag_somewhere($tag) {
         assert(!!$tag);
         if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
-            || $this->is_site_contact) {
+            || $this->_root_user) {
             return true;
         } else if (!$this->isPC) {
             return false;
