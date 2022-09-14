@@ -33,7 +33,6 @@ class SiteLoader {
         "TagAnno" => "lib/tagger.php",
         "TagInfo" => "lib/tagger.php",
         "TagMap" => "lib/tagger.php",
-        "Tag_SearchTerm" => "src/searchterm.php",
         "TextPregexes" => "lib/text.php",
         "Text_PaperOption" => "src/paperoption.php",
         "XlsxGenerator" => "lib/xlsx.php",
