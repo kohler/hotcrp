@@ -1363,13 +1363,10 @@ class PaperInfo {
 
     /** @return bool */
     function can_author_view_submitted_review() {
-        if ($this->can_author_respond()) {
-            return true;
-        } else if ($this->conf->au_seerev === Conf::AUSEEREV_TAGS) {
-            return $this->has_any_tag($this->conf->tag_au_seerev);
-        } else {
-            return $this->conf->au_seerev !== 0;
-        }
+        return $this->can_author_respond()
+            || ($this->conf->au_seerev !== 0
+                && ($this->conf->au_seerev_term === null
+                    || $this->conf->au_seerev_term->test($this, null)));
     }
 
     /** @return bool */

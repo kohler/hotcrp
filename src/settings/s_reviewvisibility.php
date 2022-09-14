@@ -52,8 +52,8 @@ class ReviewVisibility_SettingParser extends SettingParser {
             && $sv->oldv("review_visibility_author") == Conf::AUSEEREV_TAGS
             && $sv->oldv("review_visibility_author_tags")
             && !$sv->has_error_at("review_visibility_author_tags")) {
-            foreach ($conf->tag_au_seerev as $t) {
-                if (!$conf->tags()->is_chair($t)) {
+            foreach (explode(" ", $sv->oldv("review_visibility_author_tags")) as $t) {
+                if ($t !== "" && !$conf->tags()->is_chair($t)) {
                     $sv->warning_at("review_visibility_author_tags", "<5>PC members can change the tag ‘" . htmlspecialchars($t) . "’, which affects whether authors can see reviews. Such tags should usually be " . $sv->setting_link("read-only", "tag_readonly") . ".");
                     $sv->warning_at("tag_readonly");
                 }

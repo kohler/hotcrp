@@ -13,7 +13,7 @@ class TagSearchMatcher {
     private $_avoid_regex = false;
     /** Defines the class of match.
      *
-     * * -2: Matches if no visible tags (is_empty()).
+     * * -2: Matches if no visible tags ("none"/test_empty()).
      * * -1: Matches if any visible tags.
      * * 0: Matches tags given by patterns (might include `*` or regex).
      * * 1: Matches two or more literal tags.

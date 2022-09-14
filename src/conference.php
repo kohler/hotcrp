@@ -41,8 +41,8 @@ class Conf {
     public $download_prefix;
     /** @var int */
     public $au_seerev;
-    /** @var ?list<string> */
-    public $tag_au_seerev;
+    /** @var ?SearchTerm */
+    public $au_seerev_term;
     /** @var bool */
     public $tag_seeall;
     /** @var int */
@@ -435,9 +435,14 @@ class Conf {
 
         // digested settings
         $this->au_seerev = $this->settings["au_seerev"] ?? 0;
-        $this->tag_au_seerev = null;
+        $this->au_seerev_term = null;
         if ($this->au_seerev === self::AUSEEREV_TAGS) {
-            $this->tag_au_seerev = explode(" ", $this->settingTexts["tag_au_seerev"] ?? "");
+            $tsm = new TagSearchMatcher($this->root_user());
+            foreach (explode(" ", $this->settingTexts["tag_au_seerev"] ?? "") as $t) {
+                if ($t !== "")
+                    $tsm->add_tag($t);
+            }
+            $this->au_seerev_term = new Tag_SearchTerm($tsm);
         }
         $this->tag_seeall = ($this->settings["tag_seeall"] ?? 0) > 0;
         $this->ext_subreviews = $this->settings["pcrev_editdelegate"] ?? 0;

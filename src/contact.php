@@ -3812,9 +3812,9 @@ class Contact implements JsonSerializable {
         } else {
             return $prow->can_author_respond()
                 || ($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0
-                || $this->conf->au_seerev === Conf::AUSEEREV_YES
-                || ($this->conf->au_seerev === Conf::AUSEEREV_TAGS
-                    && $prow->has_any_tag($this->conf->tag_au_seerev));
+                || ($this->conf->au_seerev !== 0
+                    && ($this->conf->au_seerev_term === null
+                        || $this->conf->au_seerev_term->test($prow, null)));
         }
     }
 

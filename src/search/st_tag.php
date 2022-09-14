@@ -3,16 +3,13 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Tag_SearchTerm extends SearchTerm {
-    /** @var Contact */
-    private $user;
     /** @var TagSearchMatcher */
     private $tsm;
     /** @var bool */
     private $allow_default_sort = false;
 
-    function __construct(Contact $user, TagSearchMatcher $tsm) {
+    function __construct(TagSearchMatcher $tsm) {
         parent::__construct("tag");
-        $this->user = $user;
         $this->tsm = $tsm;
     }
 
@@ -37,23 +34,23 @@ class Tag_SearchTerm extends SearchTerm {
         }
 
         // check value matchers
-        $value = new TagSearchMatcher($srch->user);
+        $tsm = new TagSearchMatcher($srch->user);
         if (preg_match('/\A([^#=!<>\x80-\xFF]+)(?:#|=)(-?(?:\.\d+|\d+\.?\d*))(?:\.\.\.?|-|–|—)(-?(?:\.\d+|\d+\.?\d*))\z/s', $word, $m)) {
             $tagword = $m[1];
-            $value->add_value_matcher(new CountMatcher(">=$m[2]"));
-            $value->add_value_matcher(new CountMatcher("<=$m[3]"));
+            $tsm->add_value_matcher(new CountMatcher(">=$m[2]"));
+            $tsm->add_value_matcher(new CountMatcher("<=$m[3]"));
         } else if (preg_match('/\A([^#=!<>\x80-\xFF]+)(#?)([=!<>]=?|≠|≤|≥|)(-?(?:\.\d+|\d+\.?\d*))\z/s', $word, $m)
                    && $m[1] !== "any"
                    && $m[1] !== "none"
                    && ($m[2] !== "" || $m[3] !== "")) {
             $tagword = $m[1];
-            $value->add_value_matcher(new CountMatcher(($m[3] ? : "=") . $m[4]));
+            $tsm->add_value_matcher(new CountMatcher(($m[3] ? : "=") . $m[4]));
         } else {
             $tagword = $word;
         }
 
         // match tag body
-        $value->add_check_tag($tagword, !$sword->kwdef->sorting);
+        $tsm->add_check_tag($tagword, !$sword->kwdef->sorting);
 
         // expand automatic tags if requested
         $allterms = [];
@@ -61,24 +58,24 @@ class Tag_SearchTerm extends SearchTerm {
             && ($dt = $srch->conf->tags())->has_automatic) {
             $nomatch = [];
             foreach ($dt->filter("automatic") as $t) {
-                if ($value->test_ignore_value(" {$t->tag}#")
+                if ($tsm->test_ignore_value(" {$t->tag}#")
                     && $t->automatic_formula_expression() === "0") {
                     $nomatch[] = " " . preg_quote($t->tag) . "#";
-                    if ($value->test_value(0.0)) {
+                    if ($tsm->test_value(0.0)) {
                         $asrch = new PaperSearch($srch->conf->root_user(), ["q" => $t->automatic_search(), "t" => "all"]);
                         $allterms[] = $asrch->term();
                     }
                 }
             }
             if (!empty($nomatch)) {
-                $value->set_tag_exclusion_regex(join("|", $nomatch));
+                $tsm->set_tag_exclusion_regex(join("|", $nomatch));
             }
         }
 
         // add value term
-        if (!$value->is_empty_after_exclusion()) {
-            $allterms[] = $term = new Tag_SearchTerm($srch->user, $value);
-            if (!$negated && ($tagpat = $value->tag_patterns())) {
+        if (!$tsm->is_empty_after_exclusion()) {
+            $allterms[] = $term = new Tag_SearchTerm($tsm);
+            if (!$negated && ($tagpat = $tsm->tag_patterns())) {
                 $term->set_float("tags", $tagpat);
                 if ($sword->kwdef->sorting) {
                     $revanno = $revsort ? "-" : "";
@@ -91,7 +88,7 @@ class Tag_SearchTerm extends SearchTerm {
         }
 
         // return
-        foreach ($value->error_texts() as $e) {
+        foreach ($tsm->error_texts() as $e) {
             $srch->lwarning($sword, "<5>$e");
         }
         return SearchTerm::combine("or", ...$allterms)->negate_if($negated);
@@ -106,7 +103,7 @@ class Tag_SearchTerm extends SearchTerm {
         }
     }
     function is_sqlexpr_precise() {
-        return $this->tsm->is_sqlexpr_precise() && $this->user->is_root_user();
+        return $this->tsm->is_sqlexpr_precise() && $this->tsm->user->is_root_user();
     }
     /** @param non-empty-list<string> $ff
      * @return string */
@@ -128,7 +125,7 @@ class Tag_SearchTerm extends SearchTerm {
         }
     }
     function test(PaperInfo $row, $xinfo) {
-        return $this->tsm->test($row->searchable_tags($this->user));
+        return $this->tsm->test($row->searchable_tags($this->tsm->user));
     }
     /** @param PaperList $pl
      * @param string $tag
