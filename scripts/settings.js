@@ -3,8 +3,8 @@
 
 "use strict";
 
-handle_ui.on("js-settings-au-seerev-tag", function () {
-    $("#review_visibility_author_3").click(); // AUSEEREV_TAGS
+handle_ui.on("js-settings-au-seerev-search", function () {
+    $("#review_visibility_author_3").click(); // AUSEEREV_SEARCH
 });
 
 handle_ui.on("js-settings-sub-nopapers", function () {

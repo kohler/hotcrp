@@ -39,10 +39,8 @@ class Conf {
     public $default_format;
     /** @var string */
     public $download_prefix;
-    /** @var int */
-    public $au_seerev;
-    /** @var ?SearchTerm */
-    public $au_seerev_term;
+    /** @var bool|SearchTerm */
+    public $_au_seerev;
     /** @var bool */
     public $tag_seeall;
     /** @var int */
@@ -235,7 +233,7 @@ class Conf {
 
     const AUSEEREV_NO = 0;          // these values matter
     const AUSEEREV_YES = 2;
-    const AUSEEREV_TAGS = 3;
+    const AUSEEREV_SEARCH = 3;
 
     const PCSEEREV_IFCOMPLETE = 0;
     const PCSEEREV_YES = 1;
@@ -434,15 +432,19 @@ class Conf {
         $this->_topic_set = null;
 
         // digested settings
-        $this->au_seerev = $this->settings["au_seerev"] ?? 0;
-        $this->au_seerev_term = null;
-        if ($this->au_seerev === self::AUSEEREV_TAGS) {
-            $tsm = new TagSearchMatcher($this->root_user());
-            foreach (explode(" ", $this->settingTexts["tag_au_seerev"] ?? "") as $t) {
-                if ($t !== "")
-                    $tsm->add_tag($t);
+        $au_seerev = $this->settings["au_seerev"] ?? 0;
+        $this->_au_seerev = false;
+        if ($au_seerev === self::AUSEEREV_SEARCH) {
+            if (($tags = $this->settingTexts["tag_au_seerev"] ?? "") !== "") {
+                $tsm = new TagSearchMatcher($this->root_user());
+                foreach (explode(" ", $tags) as $t) {
+                    if ($t !== "")
+                        $tsm->add_tag($t);
+                }
+                $this->_au_seerev = new Tag_SearchTerm($tsm);
             }
-            $this->au_seerev_term = new Tag_SearchTerm($tsm);
+        } else {
+            $this->_au_seerev = $au_seerev > 0;
         }
         $this->tag_seeall = ($this->settings["tag_seeall"] ?? 0) > 0;
         $this->ext_subreviews = $this->settings["pcrev_editdelegate"] ?? 0;
@@ -3399,7 +3401,7 @@ class Conf {
     }
     /** @return bool */
     function time_some_author_view_review() {
-        return $this->any_response_open || $this->au_seerev > 0;
+        return $this->any_response_open || $this->_au_seerev;
     }
     /** @return bool */
     function time_all_author_view_decision() {

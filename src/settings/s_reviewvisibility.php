@@ -6,10 +6,10 @@ class ReviewVisibility_SettingParser extends SettingParser {
     static function print_review_author_visibility(SettingValues $sv) {
         $opts = [Conf::AUSEEREV_NO => "No, unless authors can edit responses",
                  Conf::AUSEEREV_YES => "Yes"];
-        $opts[Conf::AUSEEREV_TAGS] = '<div class="d-inline-flex flex-wrap">'
-            . "<label for=\"review_visibility_author_" . Conf::AUSEEREV_TAGS . "\" class=\"mr-2\">Yes, for submissions with any of these tags:</label>"
+        $opts[Conf::AUSEEREV_SEARCH] = '<div class="d-inline-flex flex-wrap">'
+            . "<label for=\"review_visibility_author_" . Conf::AUSEEREV_SEARCH . "\" class=\"mr-2\">Yes, for submissions with any of these tags:</label>"
             . "<div>" . $sv->feedback_at("review_visibility_author_tags")
-            . $sv->entry("review_visibility_author_tags", ["class" => "uii js-settings-au-seerev-tag"])
+            . $sv->entry("review_visibility_author_tags", ["class" => "uii js-settings-au-seerev-search"])
             . "</div></div>";
 
         $hint = '<div class="f-hx if-response-active';
@@ -43,13 +43,13 @@ class ReviewVisibility_SettingParser extends SettingParser {
     static function crosscheck(SettingValues $sv) {
         $conf = $sv->conf;
         if ($sv->has_interest("review_visibility_author")
-            && $sv->oldv("review_visibility_author") == Conf::AUSEEREV_TAGS
+            && $sv->oldv("review_visibility_author") == Conf::AUSEEREV_SEARCH
             && !$sv->oldv("review_visibility_author_tags")
             && !$sv->has_error_at("review_visibility_author_tags")) {
             $sv->warning_at("review_visibility_author_tags", "<0>You haven’t set any review visibility tags.");
         }
         if (($sv->has_interest("review_visibility_author") || $sv->has_interest("tag_readonly"))
-            && $sv->oldv("review_visibility_author") == Conf::AUSEEREV_TAGS
+            && $sv->oldv("review_visibility_author") == Conf::AUSEEREV_SEARCH
             && $sv->oldv("review_visibility_author_tags")
             && !$sv->has_error_at("review_visibility_author_tags")) {
             foreach (explode(" ", $sv->oldv("review_visibility_author_tags")) as $t) {

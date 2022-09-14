@@ -3810,11 +3810,8 @@ class Contact implements JsonSerializable {
             && ($v = $prow->perm_tag_allows("author-read-review")) !== null) {
             return $v;
         } else {
-            return $prow->can_author_respond()
-                || ($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0
-                || ($this->conf->au_seerev !== 0
-                    && ($this->conf->au_seerev_term === null
-                        || $this->conf->au_seerev_term->test($prow, null)));
+            return $prow->can_author_view_submitted_review()
+                || ($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0;
         }
     }
 
@@ -3823,7 +3820,7 @@ class Contact implements JsonSerializable {
         return $this->is_reviewer()
             || ($this->is_author()
                 && (($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0
-                    || $this->conf->au_seerev !== 0
+                    || $this->conf->_au_seerev
                     || $this->conf->any_response_open === 2
                     || ($this->conf->any_response_open === 1
                         && !empty($this->relevant_response_rounds()))
@@ -4776,9 +4773,9 @@ class Contact implements JsonSerializable {
         } else if (!$as_author && $this->is_reviewer()) {
             return VIEWSCORE_REVIEWERONLY - 1;
         } else if (($as_author || $this->is_author())
-                   && ($this->conf->any_response_open
-                       || ($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0
-                       || $this->conf->au_seerev !== 0)) {
+                   && ($this->conf->_au_seerev
+                       || $this->conf->any_response_open
+                       || ($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0)) {
             if ($this->can_view_some_decision_as_author()) {
                 return VIEWSCORE_AUTHORDEC - 1;
             } else {

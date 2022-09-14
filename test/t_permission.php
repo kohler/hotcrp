@@ -265,7 +265,7 @@ class Permission_Tester {
         assert_search_papers($user_marina, "re:\"washington louis\"", "1");
 
         // check comment identity
-        xassert_eqq($this->conf->au_seerev, Conf::AUSEEREV_NO); // NB null
+        xassert_eqq($this->conf->_au_seerev, false);
         xassert_eqq($this->conf->setting("rev_blind"), Conf::BLIND_ALWAYS);
         $comment1 = new CommentInfo($paper1);
         $c1ok = $comment1->save_comment(["text" => "test", "visibility" => "a", "blind" => false], $user_mgbaker);
@@ -290,7 +290,7 @@ class Permission_Tester {
         $this->conf->save_refresh_setting("rev_blind", null);
         xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
         $this->conf->save_refresh_setting("au_seerev", null);
-        xassert_eqq($this->conf->au_seerev, Conf::AUSEEREV_NO);
+        xassert_eqq($this->conf->_au_seerev, false);
 
         // check comment/review visibility when reviews are incomplete
         $this->conf->save_refresh_setting("pc_seeallrev", Conf::PCSEEREV_UNLESSINCOMPLETE);
@@ -1293,9 +1293,9 @@ class Permission_Tester {
 
         // check review visibility
         $this->conf->save_refresh_setting("au_seerev", null);
-        xassert_eqq($this->conf->au_seerev, Conf::AUSEEREV_NO);
+        xassert_eqq($this->conf->_au_seerev, false);
         xassert(!$user_author2->can_view_review($paper2, $review2b));
-        $this->conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_TAGS);
+        $this->conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_SEARCH);
         $this->conf->save_refresh_setting("tag_au_seerev", 1, "fart");
         xassert($user_author2->can_view_review($paper2, $review2b));
         $this->conf->save_refresh_setting("tag_au_seerev", 1, "faart");
@@ -1304,7 +1304,7 @@ class Permission_Tester {
         $this->conf->save_refresh_setting("responses", 1, '[{"open":1,"done":' . (Conf::$now + 100) . '}]');
         xassert($user_author2->can_view_review($paper2, $review2b));
         $this->conf->save_refresh_setting("au_seerev", null);
-        xassert_eqq($this->conf->au_seerev, Conf::AUSEEREV_NO);
+        xassert_eqq($this->conf->_au_seerev, false);
         xassert($user_author2->can_view_review($paper2, $review2b));
         $this->conf->save_refresh_setting("resp_active", null);
         xassert(!$user_author2->can_view_review($paper2, $review2b));
