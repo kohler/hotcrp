@@ -448,8 +448,7 @@
     {
         "name": "review_visibility_author_tags", "storage": "tag_au_seerev",
         "title": "Review visibility tags",
-        "type": "taglist", "size": 24,
-        "parser_class": "Tags_SettingParser"
+        "type": "taglist", "size": 24
     },
     {
         "name": "review_visibility_external", "storage": "extrev_view",
