@@ -717,7 +717,7 @@ class UserStatus extends MessageSet {
         }
 
         $roles = ($reset_roles ? 0 : ($old_roles & ~$remove_roles)) | $add_roles;
-        if ($roles & Contact::ROLE_CHAIR) {
+        if (($roles & Contact::ROLE_CHAIR) !== 0) {
             $roles |= Contact::ROLE_PC;
         }
         return $roles;
@@ -1271,11 +1271,11 @@ class UserStatus extends MessageSet {
         ["state", "province", "region"],
         ["zip", "zipcode", "zip_code", "postalcode", "postal_code"],
         ["country"],
-        ["roles"],
+        ["roles", "role"],
         ["follow"],
-        ["tags"],
-        ["add_tags"],
-        ["remove_tags"],
+        ["tags", "tag"],
+        ["add_tags", "add_tag"],
+        ["remove_tags", "remove_tag"],
         ["disabled"]
     ];
 
