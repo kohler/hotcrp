@@ -325,8 +325,14 @@ class Contact implements JsonSerializable {
         $this->contactId = (int) $this->contactId;
         $this->contactDbId = (int) $this->contactDbId;
         $this->cdb_confid = (int) $this->cdb_confid;
-        assert($this->contactId > 0 || ($this->contactId === 0 && $this->contactDbId > 0));
-        assert(($this->contactId > 0) === ($this->cdb_confid === 0));
+        if ($this->contactId > 0) {
+            assert($this->cdb_confid === 0);
+        } else {
+            assert($this->contactId === 0 && $this->contactDbId > 0);
+            if ($this->cdb_confid === 0) {
+                $this->cdb_confid = -1;
+            }
+        }
 
         // handle slice properties
         $this->role_mask = (int) ($this->role_mask ?? self::ROLE_DBMASK);

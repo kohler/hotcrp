@@ -34,7 +34,7 @@ class User_API {
                 $db = $user->conf->dblink;
                 $idk = "contactId";
             }
-            $result = Dbl::qe($db, "select $idk, email, firstName, lastName, affiliation, collaborators from ContactInfo where email>=? and email<? and not disabled order by email asc limit 2", $email, $email . "~");
+            $result = Dbl::qe($db, "select $idk, email, firstName, lastName, affiliation, collaborators, country, orcid from ContactInfo where email>=? and email<? and not disabled order by email asc limit 2", $email, $email . "~");
             $users = [];
             while (($u = Contact::fetch($result, $user->conf))) {
                 $users[] = $u;
@@ -53,7 +53,19 @@ class User_API {
         } else {
             $u = $users[0];
             $ok = strcasecmp($u->email, $email) === 0;
-            $rj = ["ok" => $ok, "email" => $u->email, "firstName" => $u->firstName, "lastName" => $u->lastName, "affiliation" => $u->affiliation];
+            $rj = [
+                "ok" => $ok,
+                "email" => $u->email,
+                "firstName" => $u->firstName,
+                "lastName" => $u->lastName,
+                "affiliation" => $u->affiliation
+            ];
+            if ($u->country() !== "") {
+                $rj["country"] = $u->country();
+            }
+            if ($u->orcid() !== "") {
+                $rj["orcid"] = $u->orcid();
+            }
             if ($prow
                 && $user->allow_view_authors($prow)
                 && $qreq->potential_conflict
