@@ -5116,10 +5116,14 @@ class Conf {
     const action_log_query = "insert into ActionLog (ipaddr, contactId, destContactId, trueContactId, paperId, timestamp, action)";
     const action_log_query_action_index = 6;
 
-    function save_logs($on) {
-        if ($on && $this->_save_logs === null) {
+    function delay_logs() {
+        if ($this->_save_logs === null) {
             $this->_save_logs = [];
-        } else if (!$on && $this->_save_logs !== null) {
+        }
+    }
+
+    function release_logs() {
+        if ($this->_save_logs !== null) {
             $qv = [];
             '@phan-var-force list<list<string>> $qv';
             $last_pids = null;

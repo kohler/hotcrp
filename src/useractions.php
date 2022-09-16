@@ -26,11 +26,12 @@ class UserActions {
             $j->message_list[] = new MessageItem(null, "<0>No changes (those accounts were already disabled)", MessageSet::MARKED_NOTE);
         } else {
             $conf->qe("update ContactInfo set disabled=1 where contactId?a and disabled=0", array_keys($users));
-            $conf->save_logs(true);
+            $conf->delay_logs();
             foreach ($users as $u) {
                 $conf->log_for($user, $u, "Account disabled");
                 $j->disabled_users[] = $u->name(NAME_E);
             }
+            $conf->release_logs();
         }
         return $j;
     }
@@ -43,7 +44,7 @@ class UserActions {
             $j->message_list[] = new MessageItem(null, "<0>No changes (those accounts were already enabled)", MessageSet::MARKED_NOTE);
         } else {
             $conf->qe("update ContactInfo set disabled=0 where contactId?a", array_keys($users));
-            $conf->save_logs(true);
+            $conf->delay_logs();
             foreach ($users as $u) {
                 $conf->log_for($user, $u, "Account enabled");
                 $j->enabled_users[] = $u->name(NAME_E);
@@ -57,7 +58,7 @@ class UserActions {
                     }
                 }
             }
-            $conf->save_logs(false);
+            $conf->release_logs();
         }
         return $j;
     }
