@@ -34,7 +34,7 @@ class MimeText {
 
     /// Quote potentially non-ASCII header text a la RFC2047 and/or RFC822.
     /** @param string $str
-     * @param int $utf8 */
+     * @param 0|1|2 $utf8 */
     private function append($str, $utf8) {
         if ($utf8 > 0) {
             // replace all special characters used by the encoder
@@ -60,14 +60,14 @@ class MimeText {
         }
 
         // append words to the line
-        while ($xstr != "") {
+        while ($xstr !== "") {
             $z = strlen($xstr);
             assert($z > 0);
 
             // add a line break
             $maxlinelen = $utf8 > 0 ? 76 - 12 : 78;
             if (($this->linelen + $z > $maxlinelen && $this->linelen > 30)
-                || ($utf8 > 0 && substr($this->out, strlen($this->out) - 2) == "?=")) {
+                || ($utf8 > 0 && substr($this->out, strlen($this->out) - 2) === "?=")) {
                 $this->out .= $this->eol . " ";
                 $this->linelen = 1;
                 while ($utf8 === 0 && $xstr !== "" && ctype_space($xstr[0])) {
@@ -80,13 +80,13 @@ class MimeText {
             // otherwise, try to break at a space
             if ($utf8 > 0 && $this->linelen + $z > $maxlinelen) {
                 $z = $maxlinelen - $this->linelen;
-                if ($xstr[$z - 1] == "=") {
+                if ($xstr[$z - 1] === "=") {
                     $z -= 1;
-                } else if ($xstr[$z - 2] == "=") {
+                } else if ($xstr[$z - 2] === "=") {
                     $z -= 2;
                 }
                 while ($z > 3
-                       && $xstr[$z] == "="
+                       && $xstr[$z] === "="
                        && ($chr = hexdec(substr($xstr, $z + 1, 2))) >= 128
                        && $chr < 192) {
                     $z -= 3;
@@ -201,7 +201,7 @@ class MimeText {
             // unquote any existing UTF-8 encoding
             if ($name !== ""
                 && $name[0] === "="
-                && strcasecmp(substr($name, 0, 10), "=?utf-8?q?") == 0) {
+                && strcasecmp(substr($name, 0, 10), "=?utf-8?q?") === 0) {
                 $name = self::decode_header($name);
             }
 
@@ -223,7 +223,7 @@ class MimeText {
             if ($name === "") {
                 $this->append($email, 0);
             } else {
-                $this->append(" <$email>", 0);
+                $this->append(" <{$email}>", 0);
             }
         }
     }
@@ -246,7 +246,7 @@ class MimeText {
     /** @param string $text
      * @return string */
     static function decode_header($text) {
-        if (strlen($text) > 2 && $text[0] == '=' && $text[1] == '?') {
+        if (strlen($text) > 2 && $text[0] === '=' && $text[1] === '?') {
             $out = '';
             while (preg_match('/\A=\?utf-8\?q\?(.*?)\?=(\r?\n )?/i', $text, $m)) {
                 $f = str_replace('_', ' ', $m[1]);
