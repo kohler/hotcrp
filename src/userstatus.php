@@ -1625,23 +1625,30 @@ topics. We use this information to help match papers to reviewers.</p>',
     }
 
     static function print_main_actions(UserStatus $us) {
-        if ($us->viewer->privChair
-            && !$us->is_new_user()) {
-            $us->cs()->add_section_class("form-outline-section")->print_start_section("User administration");
-            $disablement = $us->user->disablement & ~Contact::DISABLEMENT_PLACEHOLDER;
-            echo '<div class="btngrid"><div class="d-flex mf mf-absolute">',
-                Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $disablement !== 0]), '</div><p></p>';
-            if (!$us->is_auth_user()
-                && ($disablement & ~Contact::DISABLEMENT_DB) === 0) {
-                echo '<div class="d-flex mf mf-absolute">',
-                    Ht::button($disablement ? "Enable account" : "Disable account", [
-                        "class" => "ui js-disable-user flex-grow-1 " . ($disablement ? "btn-success" : "btn-danger")
-                    ]),
-                    '</div><p class="pt-1 mb-0">Disabled accounts cannot sign in or view the site.</p>';
-                self::print_delete_action($us);
-            }
-            echo '</div>';
+        if (!$us->viewer->privChair || $us->is_new_user()) {
+            return;
         }
+        $us->cs()->add_section_class("form-outline-section")->print_start_section("User administration");
+        $disablement = $us->user->disablement & ~Contact::DISABLEMENT_PLACEHOLDER;
+        echo '<div class="btngrid"><div class="d-flex mf mf-absolute">',
+            Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $disablement !== 0]), '</div><p></p>';
+        if (!$us->is_auth_user()) {
+            echo '<div class="d-flex mf mf-absolute">';
+            $no_change = ($disablement & ~Contact::DISABLEMENT_DB) !== 0;
+            if (!$no_change) {
+                $klass = "ui js-disable-user flex-grow-1 " . ($disablement ? "btn-success" : "btn-danger");
+                $p = "<p class=\"pt-1 mb-0\">Disabled accounts cannot sign in or view the site.";
+            } else {
+                $klass = "flex-grow-1 btn-disabled";
+                $p = "<p class=\"pt-1 mb-0 feedback is-warning\">Conference settings prevent this account from being enabled.";
+            }
+            echo Ht::button($disablement ? "Enable account" : "Disable account", [
+                "class" => $klass, "disabled" => $no_change
+            ]), '</div>', $p, '</p>';
+
+            self::print_delete_action($us);
+        }
+        echo '</div>';
     }
 
     static function print_actions(UserStatus $us) {
