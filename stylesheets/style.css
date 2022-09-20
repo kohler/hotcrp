@@ -2009,7 +2009,7 @@ input.wide {
 	cursor: pointer;
 }
 .dropmenu > li.has-link:hover {
-	background-color: blue;
+	background-color: #004daa;
 	color: white;
 }
 .dropmenu > li.separator {
@@ -3707,6 +3707,10 @@ a.badge-white:hover {
 	grid-template-columns: repeat(2, 50%);
 	word-wrap: break-word;
 	overflow-wrap: break-word;
+}
+.paperinfo-c:first-child:last-child {
+	grid-column-start: 1;
+	grid-column-end: 3;
 }
 .paperinfo-c {
 	flex-basis: 0;

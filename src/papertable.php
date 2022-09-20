@@ -1146,7 +1146,7 @@ class PaperTable {
                     $group_html = $this->_group_name_html($renders, $first, $last, 2);
                     $gn1 = $this->_group_name_html($renders, $first, $last, 1);
                     if ($group_html !== $gn1) {
-                        $group_html = '<span class="fn8">' . $group_html . '</span><span class="fx8">' . $gn1 . '</span>';
+                        $group_html = "<span class=\"fn8\">{$group_html}</span><span class=\"fx8\">{$gn1}</span>";
                     }
                 }
 
@@ -1156,9 +1156,7 @@ class PaperTable {
                 }
                 $foldnum = $this->foldnumber[$o1->page_group] ?? 0;
                 if ($foldnum && $renders[$first]->title !== "") {
-                    $group_html = '<span class="fn' . $foldnum . '">'
-                        . $group_html . '</span><span class="fx' . $foldnum
-                        . '">' . $renders[$first]->title . '</span>';
+                    $group_html = "<span class=\"fn{$foldnum}\">{$group_html}</span><span class=\"fx{$foldnum}\">" . $renders[$first]->title . '</span>';
                     $renders[$first]->title = false;
                     $renders[$first]->value = '<div class="'
                         . ($renders[$first]->value_long ? "pg" : "pgsm")
