@@ -982,7 +982,8 @@ class PaperInfo {
             $cflt->paperId = $this->paperId;
             $cflt->contactId = $this->_paper_creator->contactId;
             $cflt->conflictType = CONFLICT_CONTACTAUTHOR;
-            $cflt->disabled = $this->_paper_creator->disablement;
+            $cflt->roles = $this->_paper_creator->roles;
+            $cflt->disablement = $this->_paper_creator->disablement;
             $cflt->collaborators = $this->_paper_creator->collaborators();
             $this->_conflict_array = [$cflt->contactId => $cflt];
             $this->_conflict_array_email = true;
@@ -1000,14 +1001,13 @@ class PaperInfo {
     }
 
     private function _load_conflicts_with_email() {
-        $result = $this->conf->qe("select paperId, PaperConflict.contactId, conflictType, firstName, lastName, affiliation, email, disabled, collaborators from PaperConflict join ContactInfo using (contactId) where paperId?a", $this->_row_set->paper_ids());
+        $result = $this->conf->qe("select paperId, PaperConflict.contactId, conflictType, firstName, lastName, affiliation, email, roles, disabled as disablement, collaborators from PaperConflict join ContactInfo using (contactId) where paperId?a", $this->_row_set->paper_ids());
         while (($au = $result->fetch_object("Author"))) {
             $au->paperId = (int) $au->paperId;
             $au->contactId = (int) $au->contactId;
             $au->conflictType = (int) $au->conflictType;
-            if ($au->disabled !== null) {
-                $au->disabled = (int) $au->disabled;
-            }
+            $au->roles = (int) $au->roles;
+            $au->disablement = $this->conf->disablement_for((int) $au->disablement, $au->roles);
             $prow = $this->_row_set->get($au->paperId);
             $prow->_conflict_array[$au->contactId] = $au;
             if (($aux = $prow->author_by_email($au->email))) {

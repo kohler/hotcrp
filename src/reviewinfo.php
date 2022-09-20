@@ -104,12 +104,12 @@ class ReviewInfo implements JsonSerializable {
     public $email;
     /** @var ?bool */
     public $nameAmbiguous;
-    /** @var ?int */
-    public $roles;
+    /** @var int */
+    public $roles = 0;
+    /** @var int */
+    public $disablement = 0;
     /** @var ?string */
     public $contactTags;
-    /** @var ?int */
-    public $disablement;
     /** @var ?int */
     public $lastLogin;
     /** @var ?string */
@@ -615,8 +615,8 @@ class ReviewInfo implements JsonSerializable {
         $this->affiliation = $c->affiliation;
         $this->email = $c->email;
         $this->roles = $c->roles;
-        $this->contactTags = $c->contactTags;
         $this->disablement = $c->disablement;
+        $this->contactTags = $c->contactTags;
         $this->nameAmbiguous = false;
         foreach ($assigned as $pc) {
             if ($pc->firstName === $c->firstName && $pc->lastName === $c->lastName) {

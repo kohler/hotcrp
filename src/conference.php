@@ -42,6 +42,8 @@ class Conf {
     /** @var bool|SearchTerm */
     public $_au_seerev;
     /** @var bool */
+    public $disable_non_pc;
+    /** @var bool */
     public $tag_seeall;
     /** @var int */
     public $ext_subreviews;
@@ -671,6 +673,7 @@ class Conf {
             $this->invalidate_caches(["pc" => true]);
         }
         $this->sort_by_last = $sort_by_last;
+        $this->disable_non_pc = !!$this->opt("disableNonPC");
 
         $this->_api_map = null;
         $this->_file_filters = null;
@@ -2128,8 +2131,8 @@ class Conf {
     /** @return bool */
     function allow_user_self_register() {
         return !$this->external_login()
-            && !$this->opt("disableNewUsers")
-            && !$this->opt("disableNonPC");
+            && !$this->disable_non_pc
+            && !$this->opt("disableNewUsers");
     }
 
 
@@ -2167,6 +2170,17 @@ class Conf {
             $this->_site_contact = Contact::make_site_contact($this, $args);
         }
         return $this->_site_contact;
+    }
+
+    /** @param int $disabled
+     * @param int $roles
+     * @return int */
+    function disablement_for($disabled, $roles) {
+        $disabled &= Contact::DISABLEMENT_DB;
+        if ($this->disable_non_pc && ($roles & Contact::ROLE_PCLIKE) === 0) {
+            $disabled |= Contact::DISABLEMENT_ROLE;
+        }
+        return $disabled;
     }
 
 

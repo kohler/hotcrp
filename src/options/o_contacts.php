@@ -33,7 +33,7 @@ class Contacts_PaperOption extends PaperOption {
         foreach ($ov->prow->conflicts(true) as $cflt) {
             if ($cflt->conflictType >= CONFLICT_AUTHOR
                 && $cflt->contactId > 0
-                && $cflt->disabled !== Contact::DISABLEMENT_PLACEHOLDER) {
+                && $cflt->disablement !== Contact::DISABLEMENT_PLACEHOLDER) {
                 $ca[] = $cflt;
                 $va[$cflt->contactId] = $cflt->email;
             }
@@ -100,7 +100,7 @@ class Contacts_PaperOption extends PaperOption {
                 if ($specau[$i]->conflictType !== 0) {
                     $curau[$j]->author_index = $specau[$i]->author_index;
                     $modified = $modified
-                        || (($curau[$j]->disabled ?? 0) & Contact::DISABLEMENT_PLACEHOLDER) !== 0;
+                        || ($curau[$j]->disablement & Contact::DISABLEMENT_PLACEHOLDER) !== 0;
                 } else {
                     // only remove contacts on exact email match
                     // (removing by a non-primary email has no effect)
@@ -268,7 +268,7 @@ class Contacts_PaperOption extends PaperOption {
                 Ht::hidden("contacts:email_{$cidx}", $au->email);
             if (($au->contactId > 0
                  && ($au->conflictType & CONFLICT_AUTHOR) !== 0
-                 && (($au->disabled ?? 0) & Contact::DISABLEMENT_PLACEHOLDER) === 0)
+                 && ($au->disablement & Contact::DISABLEMENT_PLACEHOLDER) === 0)
                 || ($au->contactId === $pt->user->contactId
                     && $ov->prow->paperId <= 0)) {
                 echo Ht::hidden("contacts:active_{$cidx}", 1),

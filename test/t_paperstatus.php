@@ -411,8 +411,10 @@ class PaperStatus_Tester {
         xassert_eqq($aus[0]->lastName, "Attenborough");
         xassert_eqq($aus[0]->email, "atten@_.com");
         $cflt = $nprow1->conflict_by_email("atten@_.com");
+        xassert($cflt->contactId > 0);
         xassert_eqq($cflt->conflictType, CONFLICT_AUTHOR);
-        xassert_eqq($cflt->disabled, Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($cflt->roles, 0);
+        xassert_eqq($cflt->disablement, Contact::DISABLEMENT_PLACEHOLDER);
         xassert($nprow1->timeSubmitted > 0);
         xassert($nprow1->timeWithdrawn <= 0);
         xassert(!$nprow1->option(1));

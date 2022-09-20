@@ -774,7 +774,7 @@ function sorted_conflicts(PaperInfo $prow, $flags) {
         if (($cflt->conflictType >= CONFLICT_AUTHOR
              ? ($flags & TESTSC_CONTACTS) !== 0
              : ($flags & TESTSC_CONFLICTS) !== 0)
-            && ($cflt->disabled === 0 || ($flags & TESTSC_DISABLED) !== 0))
+            && ($cflt->disablement === 0 || ($flags & TESTSC_DISABLED) !== 0))
             $c[] = $cflt->email;
     }
     sort($c);

@@ -368,8 +368,7 @@ class Contact implements JsonSerializable {
     private function set_roles_properties() {
         $this->isPC = ($this->roles & self::ROLE_PCLIKE) !== 0;
         $this->privChair = ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0;
-        $this->disablement = $this->disabled
-            | (!$this->isPC && $this->conf->opt("disableNonPC") ? self::DISABLEMENT_ROLE : 0)
+        $this->disablement = $this->conf->disablement_for($this->disabled, $this->roles)
             | ($this->disablement & self::DISABLEMENT_DELETED);
     }
 
@@ -1066,21 +1065,19 @@ class Contact implements JsonSerializable {
         if ($pfx !== "n") {
             $n = htmlspecialchars($n);
         }
-        if ($pfx === "r"
-            && (isset($user->contactTags) || ($user->roles ?? 0) > 0)) {
+        if ($pfx === "r") {
             $dt = $this->conf->tags();
             if (($user->contactTags !== null
-                 || ($user->roles > 0 && $dt->has_role_decoration)
-                 || $user->disablement !== 0)
+                 || $user->disablement !== 0
+                 || ($user->roles !== 0 && $dt->has_role_decoration))
                 && ($this->can_view_user_tags()
                     || $user->contactId === $this->contactXid)
                 && ($viewable = $dt->censor(TagMap::CENSOR_VIEW, self::all_contact_tags_for($user, true), $this, null))) {
                 if (($colors = $dt->color_classes($viewable))) {
-                    $n = '<span class="' . $colors . ' taghh">' . $n . '</span>';
+                    $n = "<span class=\"{$colors} taghh\">{$n}</span>";
                 }
                 if ($dt->has_decoration) {
-                    $tagger = new Tagger($this);
-                    $n .= $tagger->unparse_decoration_html($viewable, Tagger::DECOR_USER);
+                    $n .= (new Tagger($this))->unparse_decoration_html($viewable, Tagger::DECOR_USER);
                 }
             }
         }
@@ -1298,12 +1295,12 @@ class Contact implements JsonSerializable {
         }
     }
 
-    /** @param Contact $x
+    /** @param Contact|ReviewInfo|Author $x
      * @param bool $want_disabled
      * @return string */
     static function all_contact_tags_for($x, $want_disabled = false) {
-        $tags = $x->contactTags;
-        if ($x->roles & self::ROLE_PC) {
+        $tags = $x->contactTags ?? "";
+        if (($x->roles & self::ROLE_PC) !== 0) {
             $tags = " pc#0{$tags}";
         }
         if ($want_disabled && $x->disablement !== 0) {
