@@ -344,7 +344,11 @@
         "name": "decisions/review-visibility", "order": 100,
         "title": "Review visibility",
         "print_function": "ReviewVisibility_SettingParser::print_review_author_visibility",
-        "settings": ["review_visibility_author", "review_visibility_author_tags"]
+        "settings": [
+            "review_visibility_author",
+            "review_visibility_author_tags",
+            "review_visibility_author_condition"
+        ]
     },
     {
         "name": "decisions/author-exchange-comments", "order": 120,
