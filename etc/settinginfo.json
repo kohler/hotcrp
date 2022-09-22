@@ -32,7 +32,8 @@
         "name": "decisions", "hashid": "decision-types", "internal": true
     },
     {
-        "name": "outcome_map", "internal": true, "storage": "dat.outcome_map",
+        "name": "outcome_map", "internal": true, "storage": "outcome_map",
+        "type": "string",
         "default_value": "{\"1\":\"Accepted\",\"-1\":\"Rejected\"}"
     },
 

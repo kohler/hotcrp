@@ -217,7 +217,6 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
                 }
             }
         }
-        $s = json_encode_db($x);
-        return $s !== '{"1":"Accept","-1":"Reject"}' ? $s : null;
+        return json_encode_db((object) $x);
     }
 }
