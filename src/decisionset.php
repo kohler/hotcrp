@@ -22,9 +22,9 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
                 }
             }
         } else if (is_array($j)) {
-            foreach ($j as $dj) {
-                if (is_object($dj) && is_int($dj->id ?? null)) {
-                    $this->__add($dj->id, $dj);
+            foreach ($j as $i => $dj) {
+                if ((is_object($dj) && is_int($dj->id ?? null)) || is_string($dj)) {
+                    $this->__add($i, $dj);
                 }
             }
         } else {
