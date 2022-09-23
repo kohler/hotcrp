@@ -61,7 +61,7 @@ select, button {
 .ps-withdrawn {
 	color: #333333;
 }
-.dec-undecided, .ps-submitted {
+.dec-maybe, .ps-submitted {
 	color: #823e78;
 }
 .dec-no, .asspref-1 {

@@ -6,7 +6,7 @@ class Decision_Setting {
     public $id;
     /** @var string */
     public $name;
-    /** @var 'accept'|'reject' */
+    /** @var 'accept'|'reject'|'maybe' */
     public $category;
     /** @var bool */
     public $deleted = false;
@@ -61,7 +61,13 @@ class Decision_SettingParser extends SettingParser {
                     ["accept" => "Accept category", "reject" => "Reject category"], $class,
                     $sv->sjs("decision/{$ctr}/category", ["data-default-value" => "accept"]));
         } else {
-            echo $class === "accept" ? "<span class=\"dec-yes\">Accept</span> category" : "<span class=\"dec-no\">Reject</span> category";
+            if ($class === "accept") {
+                echo '<span class="dec-yes">Accept</span> category';
+            } else if ($class === "reject") {
+                echo '<span class="dec-no">Reject</span> category';
+            } else {
+                echo '<span class="dec-maybe">Maybe</span> category';
+            }
             if ($count) {
                 echo ", ", plural($count, "submission");
             }
@@ -114,6 +120,7 @@ class Decision_SettingParser extends SettingParser {
                 $sv->error_at("decision/{$ctr}/name", "<0>{$error}");
             }
             if (!$sv->reqstr("decision/{$ctr}/name_force")
+                && ($dsr->category === "accept" || $dsr->category === "reject")
                 && stripos($dsr->name, $dsr->category === "accept" ? "reject" : "accept") !== false) {
                 $n1 = $dsr->category === "accept" ? "An Accept" : "A Reject";
                 $n2 = $dsr->category === "accept" ? "reject" : "accept";
