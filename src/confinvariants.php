@@ -9,9 +9,8 @@ class ConfInvariants {
     public $problems = [];
     /** @var string */
     public $prefix;
-
     /** @var ?list<string> */
-    static private $invariant_row = null;
+    private $irow;
 
     function __construct(Conf $conf, $prefix = "") {
         $this->conf = $conf;
@@ -24,11 +23,11 @@ class ConfInvariants {
     private function invariantq($q, ...$args) {
         $result = $this->conf->ql_apply($q, $args);
         if (!Dbl::is_error($result)) {
-            self::$invariant_row = $result->fetch_row();
+            $this->irow = $result->fetch_row();
             $result->close();
-            return !!self::$invariant_row;
+            return $this->irow !== null;
         } else {
-            self::$invariant_row = null;
+            $this->irow = null;
             return null;
         }
     }
@@ -44,17 +43,15 @@ class ConfInvariants {
             }
         }
         $this->problems[$abbrev] = true;
-        if ($no_row_text !== null && self::$invariant_row === null) {
+        if ($no_row_text !== null && $this->irow === null) {
             $text = $no_row_text;
-        }
-        if (($text ?? "") !== "") {
-            foreach (self::$invariant_row ?? [] as $i => $v) {
-                $text = str_replace("{{$i}}", $v, $text);
-            }
-        } else {
+        } else if ($text === null) {
             $text = $abbrev;
         }
-        trigger_error("{$this->prefix}{$this->conf->dbname} invariant error: $text");
+        foreach ($this->irow ?? [] as $i => $v) {
+            $text = str_replace("{{$i}}", $v, $text);
+        }
+        trigger_error("{$this->prefix}{$this->conf->dbname} invariant error: {$text}");
     }
 
     /** @return bool */
@@ -69,7 +66,6 @@ class ConfInvariants {
                 $this->invariant_error("decision_id", "decision {$dinfo->id} has wrong category");
             }
         }
-
         return $this;
     }
 
@@ -146,7 +142,7 @@ class ConfInvariants {
         $result = $this->conf->ql("select paperId, dataOverflow from Paper where dataOverflow is not null");
         while (($row = $result->fetch_row())) {
             if (json_decode($row[1]) === null) {
-                $this->invariant_error("#{$row[0]}: invalid dataOverflow");
+                $this->invariant_error("dataOverflow", "#{$row[0]}: invalid dataOverflow");
             }
         }
         Dbl::free($result);
@@ -224,7 +220,7 @@ class ConfInvariants {
         // submitted and ordinaled reviews are displayed
         $any = $this->invariantq("select paperId, reviewId from PaperReview where timeDisplayed=0 and (reviewSubmitted is not null or reviewOrdinal>0) limit 1");
         if ($any) {
-            $this->invariant_error("submitted/ordinal review #{0}/{1} has no timeDisplayed");
+            $this->invariant_error("review_timeDisplayed", "submitted/ordinal review #{0}/{1} has no timeDisplayed");
         }
 
         return $this;
@@ -522,16 +518,13 @@ class ConfInvariants {
 
     /** @return $this */
     function check_all() {
-        $this->check_settings();
-        $this->check_setting_invariants();
-        $this->check_papers();
-        $this->check_automatic_tags();
-        $this->check_reviews();
-        $this->check_comments();
-        $this->check_responses();
-        $this->check_documents();
-        $this->check_users();
-        $this->check_document_inactive();
+        $ro = new ReflectionObject($this);
+        foreach ($ro->getMethods() as $m) {
+            if (str_starts_with($m->name, "check_")
+                && $m->name !== "check_all") {
+                $this->{$m->name}();
+            }
+        }
         return $this;
     }
 
