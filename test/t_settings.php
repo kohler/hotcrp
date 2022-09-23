@@ -214,7 +214,7 @@ class Settings_Tester {
         foreach ($this->conf->decision_set() as $dec) {
             $x[$dec->id] = $dec->name;
         }
-        return json_encode($x);
+        return json_encode((object) $x);
     }
 
     function test_decision_types() {
@@ -311,6 +311,14 @@ class Settings_Tester {
         xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
         xassert_eqq($this->conf->setting("outcome_map"), null);
         xassert(ConfInvariants::test_setting_invariants($this->conf));
+    }
+
+    function test_decision_setting_as_list() {
+        $x = $this->conf->setting_data("outcome_map");
+        $this->conf->save_refresh_setting("outcome_map", 1, '["Unspecified","Accepted","Accepted II"]'); // Old settings could save this format
+        xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","2":"Accepted II"}');
+        xassert_eqq($this->conf->decision_set()->unparse_database(), '{"1":"Accepted","2":"Accepted II"}');
+        $this->conf->save_refresh_setting("outcome_map", 1, $x);
     }
 
     function test_scores() {
