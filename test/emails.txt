@@ -1532,16 +1532,12 @@ Zhang <lixia@cs.ucla.edu> has asked you to review Test Conference I
 
 * Title: Network Text Editor (NTE): A Scalable Shared Text Editor for
   the MBone
-* Site: http://hotcrp.lcdf.org/test/paper/17?cap={{}}
+* Site: http://hotcrp.lcdf.org/test/review/17?cap={{}}
 
-If you are willing to review this submission, you may enter your review
-on the conference site or complete a review form offline and upload it.
-
-Once you've decided, please accept or decline this review request using
-one of these links.
-
-* Accept: http://hotcrp.lcdf.org/test/review/17?cap={{}}&accept=1
-* Decline: http://hotcrp.lcdf.org/test/review/17?cap={{}}&decline=1
+Once you have viewed the submission and decided whether you are willing
+to review it, please accept or decline this review request at the
+submission site. Should you accept, your review will also be entered on
+that site.
 
 You haven't used the site as external2@_.com before, so you may need to
 create a password to sign in. Use this link to set one up:
