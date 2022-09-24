@@ -456,7 +456,8 @@ class Users_Page {
 
 
     private function print_pre_list_links(...$msgs) {
-        echo '<div class="msg demargin remargin"><div class="mx-auto"><ul class="inline">';
+        echo '<div class="msg demargin remargin-left remargin-right">',
+            '<div class="mx-auto"><ul class="inline">';
         foreach ($msgs as $m) {
             echo '<li>', $m, '</li>';
         }

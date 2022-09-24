@@ -775,16 +775,6 @@ body.paper > #body {
 	margin-left: 0;
 	margin-right: 0;
 }
-.demargin {
-	margin-left: -24px;
-	margin-right: -24px;
-}
-.demargin .remargin-left, .demargin.remargin {
-	padding-left: 24px;
-}
-.demargin .remargin-right, .demargin.remargin {
-	padding-right: 24px;
-}
 
 #msgs-initial {
 	margin-left: 24px;
@@ -938,7 +928,6 @@ body.paper-error .msg {
 	border-width: 2px;
 }
 
-
 span.confirm {
 	font-style: italic;
 	color: #006600;
@@ -1077,6 +1066,19 @@ span.hastitle {
 }
 .linelink.active div.lld {
 	display: block;
+}
+
+
+/* demargining (must follow .msg) */
+.demargin {
+	margin-left: -24px;
+	margin-right: -24px;
+}
+.remargin-left {
+	padding-left: 24px;
+}
+.remargin-right {
+	padding-right: 24px;
 }
 
 
@@ -3833,6 +3835,7 @@ h3.pavfn, h3.psfn {
 .reinfotable {
 	min-width: fit-content;
 }
+
 @media screen and (min-width: 1152px) {
 .pcard {
 	padding-left: calc((100vw - 1056px) / 4);
@@ -3841,13 +3844,18 @@ h3.pavfn, h3.psfn {
 .paperinfo-c {
 	padding-right: calc((100vw - 1008px) / 6);
 }
-.pcard > .demargin {
+.pcard .demargin {
 	margin-left: calc((100vw - 1056px) / -4);
+	margin-right: calc((100vw - 1056px) / -4);
 }
-.pcard > .demargin > .remargin-left {
+.pcard .remargin-left {
 	padding-left: calc((100vw - 1056px) / 4);
 }
+.pcard .remargin-right {
+	padding-right: calc((100vw - 1056px) / 4);
 }
+}
+
 @media screen and (min-width: 1344px) {
 .pcard {
 	padding-left: 72px;
@@ -3855,14 +3863,14 @@ h3.pavfn, h3.psfn {
 .paperinfo-c {
 	padding-right: 56px;
 }
-.pcard > .demargin {
+.pcard .demargin {
 	margin-left: -72px;
 }
-.pcard > .demargin > .remargin-left {
+.pcard .remargin-left {
 	padding-left: 72px;
-	padding-right: 72px;
 }
 }
+
 .papcard, .notecard {
 	position: relative;
 	padding-top: 16px;

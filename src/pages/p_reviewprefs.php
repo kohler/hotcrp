@@ -54,7 +54,7 @@ class ReviewPrefs_Page {
         $conf->header("Review preferences", "revpref");
 
         if (($prefdesc = $conf->_id("revprefdescription", "", $conf->has_topics()))) {
-            echo '<div class="msg demargin remargin">',
+            echo '<div class="msg demargin remargin-left remargin-right">',
                 $prefdesc, '</div>';
         }
 

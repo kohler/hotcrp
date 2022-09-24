@@ -76,7 +76,7 @@ function make_row(hc, idx, paper, pcm) {
         hc.push_pop(text_to_html(paper.title));
     else
         hc.push_pop("<i>No title</i>");
-    hc.push("<td class=\"tracker-table remargin-right tracker-elapsed\">", "</td>");
+    hc.push("<td class=\"tracker-table tracker-elapsed remargin-right\">", "</td>");
     if (idx == 0)
         hc.push("<span class=\"tracker-timer\"></span>");
     hc.pop_n(2);

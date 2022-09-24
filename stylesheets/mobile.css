@@ -23,6 +23,7 @@ body.paper {
     min-width: initial;
 }
 }
+
 @media screen and (max-width: 1024px) {
 .paperinfo, .paperinfo-c {
 	display: block;
@@ -35,6 +36,7 @@ body.paper {
 	min-width: initial;
 }
 }
+
 @media screen and (max-width: 768px) {
 html {
 	font-size: 14px;
@@ -85,10 +87,10 @@ body.paper > #top {
 	margin-left: -12px;
 	margin-right: -12px;
 }
-.demargin .remargin-left, .demargin.remargin {
+.remargin-left {
 	padding-left: 12px;
 }
-.demargin .remargin-right, .demargin.remargin {
+.remargin-right {
 	padding-right: 12px;
 }
 #msgs-initial {
@@ -173,6 +175,16 @@ h1.leftmenu > a:after {
 	padding-left: 16px;
 	padding-right: 16px;
 }
+.pcard .demargin {
+	margin-left: -16px;
+	margin-right: -16px;
+}
+.pcard .remargin-left {
+	padding-left: 16px;
+}
+.pcard .remargin-right {
+	padding-right: 16px;
+}
 .leftmenu-content {
 	margin: 0 -12px;
 	padding-top: 20px;
@@ -213,6 +225,7 @@ td.pl.pl_title, td.pl.pl_text {
 	display: none;
 }
 }
+
 @media screen and (max-width: 640px) {
 .revcard-render {
 	display: block;

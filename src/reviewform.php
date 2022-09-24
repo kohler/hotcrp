@@ -432,7 +432,8 @@ $blind\n";
             } else {
                 $req = 'Please take a moment to accept or decline our review request.';
             }
-            echo '<div class="revcard-bodyinsert demargin remargin"><div class="aab aabr aabig mt-0">',
+            echo '<div class="revcard-bodyinsert demargin">',
+                '<div class="aab aabr aabig mt-0 remargin-left remargin-right">',
                 '<div class="flex-grow-1 align-self-center">', $req, '</div>',
                 '<div class="aabut">', Ht::submit("Decline", ["class" => "btn-danger", "formaction" => $this->conf->hoturl("=api/declinereview", ["p" => $prow->paperId, "r" => $rrow->reviewId, "redirect" => 1])]), '</div>',
                 '<div class="aabut">', Ht::submit("Accept", ["class" => "btn-success", "formaction" => $this->conf->hoturl("=api/acceptreview", ["p" => $prow->paperId, "r" => $rrow->reviewId, "verbose" => 1, "redirect" => 1])]), '</div>',
