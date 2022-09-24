@@ -26,6 +26,14 @@ class Review_Page {
         $this->qreq = $qreq;
     }
 
+    /** @return PaperTable */
+    function pt() {
+        if ($this->pt === null) {
+            $this->pt = new PaperTable($this->user, $this->qreq, $this->prow);
+        }
+        return $this->pt;
+    }
+
     /** @return ReviewForm */
     function rf() {
         return $this->conf->review_form();
@@ -288,46 +296,7 @@ class Review_Page {
         return null;
     }
 
-    function handle_accept_decline_redirect($capuid) {
-        if (!$this->qreq->is_get()
-            || !($rrid = $this->current_capability_rrid())) {
-            return;
-        }
-        $isaccept = $this->qreq->accept;
-        echo "<!DOCTYPE html>
-<html lang=\"en\"><head>
-<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
-<meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />
-<title>Redirection</title>
-<body>",
-            Ht::form($this->conf->hoturl("=api/" . ($isaccept ? "acceptreview" : "declinereview"), ["p" => $this->prow->paperId, "r" => $rrid, "verbose" => 1, "redirect" => 1]), ["id" => "redirectform"]),
-            Ht::submit("Press to continue"),
-            "</form>",
-            Ht::script("document.getElementById(\"redirectform\").submit()"),
-            "</body></html>\n";
-        throw new PageCompletion;
-    }
-
-    function print_decline_message($capuid) {
-        $ref = $this->prow->review_refusals_by_user_id($capuid);
-        if ($ref && $ref[0] && $ref[0]->refusedReviewId) {
-            $rrid = $ref[0]->refusedReviewId;
-            $this->conf->warning_msg(
-                "<5><p>You declined to complete this review. Thank you for informing us.</p>"
-                . Ht::form($this->conf->hoturl("=api/declinereview", ["p" => $this->prow->paperId, "r" => $rrid, "redirect" => 1]))
-                . '<div class="f-i mt-3"><label for="declinereason">Optional explanation</label>'
-                . ($ref[0]->reason ? "" : '<div class="field-d">If you’d like, you may enter a brief explanation here.</div>')
-                . Ht::textarea("reason", $ref[0]->reason, ["rows" => 3, "cols" => 40, "spellcheck" => true, "class" => "w-text", "id" => "declinereason"])
-                . '</div><div class="aab mt-3">'
-                . '<div class="aabut">' . Ht::submit("Save explanation", ["class" => "btn-primary"])
-                . '</div><div class="aabut">' . Ht::submit("Accept review after all", ["formaction" => $this->conf->hoturl("=api/acceptreview", ["p" => $this->prow->paperId, "r" => $rrid, "verbose" => 1, "redirect" => 1])])
-                . '</div></div></form>');
-        } else {
-            $this->conf->warning_msg("<5><p>You have declined to complete this review. Thank you for informing us.</p>");
-        }
-    }
-
-    function print_capability_user_message($capuid) {
+    function add_capability_user_message($capuid) {
         if (($u = $this->conf->user_by_id($capuid, USER_SLICE))) {
             if (PaperRequest::simple_qreq($this->qreq)
                 && ($i = $this->user->session_user_index($u->email)) >= 0) {
@@ -353,12 +322,12 @@ class Review_Page {
             } else {
                 $m = "<5>You’re accessing this review using a special link for reviewer {$hemail}. " . Ht::link("Sign in to the site", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null]), ["class" => "nw"]);
             }
-            $this->conf->feedback_msg(new MessageItem(null, $m, MessageSet::MARKED_NOTE));
+            $this->pt()->add_pre_status_feedback(new MessageItem(null, $m, MessageSet::WARNING_NOTE));
         }
     }
 
     function print() {
-        $this->pt = $pt = new PaperTable($this->user, $this->qreq, $this->prow);
+        $pt = $this->pt();
         $pt->resolve_review(!!$this->rrow);
         $pt->resolve_comments();
 
@@ -438,20 +407,14 @@ class Review_Page {
             $pp->handle_unsubmit();
         } else if ($qreq->deletereview && $qreq->valid_post()) {
             $pp->handle_delete();
-        } else if (($qreq->accept || $qreq->decline) && $capuid) {
-            $pp->handle_accept_decline_redirect($capuid);
         }
 
-        // capability messages: decline, accept to different user
-        if ($capuid) {
-            if (!$pp->rrow
-                && $pp->prow->review_refusals_by_user_id($capuid)) {
-                $pp->print_decline_message($capuid);
-            } else if ($pp->rrow
-                       && $capuid === $pp->rrow->contactId
-                       && $capuid !== $user->contactXid) {
-                $pp->print_capability_user_message($capuid);
-            }
+        // capability may accept to different user
+        if ($capuid
+            && $pp->rrow
+            && $capuid === $pp->rrow->contactId
+            && $capuid !== $user->contactXid) {
+            $pp->add_capability_user_message($capuid);
         }
 
         $pp->print();

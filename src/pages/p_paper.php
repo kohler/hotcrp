@@ -24,6 +24,14 @@ class Paper_Page {
         $this->qreq = $qreq;
     }
 
+    /** @return PaperTable */
+    function pt() {
+        if (!$this->pt) {
+            $this->pt = new PaperTable($this->user, $this->qreq, $this->prow);
+        }
+        return $this->pt;
+    }
+
     /** @param bool $error */
     function print_header($error) {
         PaperTable::print_header($this->pt, $this->qreq, $error);
@@ -385,13 +393,13 @@ class Paper_Page {
             } else {
                 $m = "<5>You’re accessing this submission using a special link for reviewer {$u->email}. " . Ht::link("Sign in to the site", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null]), ["class" => "nw"]);
             }
-            $this->conf->feedback_msg(new MessageItem(null, $m, MessageSet::MARKED_NOTE));
+            $this->pt()->add_pre_status_feedback(new MessageItem(null, $m, MessageSet::WARNING_NOTE));
         }
     }
 
     function print() {
         // correct modes
-        $this->pt = $pt = new PaperTable($this->user, $this->qreq, $this->prow);
+        $pt = $this->pt();
         if ($pt->can_view_reviews()
             || $pt->mode === "re"
             || ($this->prow->paperId > 0 && $this->user->can_edit_some_review($this->prow))) {

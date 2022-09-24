@@ -423,7 +423,6 @@ class PaperStatus extends MessageSet {
             }
             return $doc;
         } else {
-            error_log($doc->message_set()->full_feedback_text());
             foreach ($doc->message_list() as $mi) {
                 $mi = $this->msg_at_option($o, $mi->message, $mi->status);
                 $mi->landmark = $doc->export_filename();

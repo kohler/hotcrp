@@ -60,10 +60,14 @@ class PaperTable {
     /** @var bool */
     public $edit_show_all_visibility = false;
 
+    /** @var ?list<MessageItem> */
+    private $pre_status_feedback;
     /** @var int */
     private $npapstrip = 0;
     /** @var bool */
     private $allow_folds;
+    /** @var bool */
+    private $unfold_all = false;
     /** @var ?ReviewValues */
     private $review_values;
     /** @var array<string,TextPregexes> */
@@ -339,6 +343,11 @@ class PaperTable {
         $this->review_values = $rvalues;
     }
 
+    /** @param MessageItem $mi */
+    function add_pre_status_feedback($mi) {
+        $this->pre_status_feedback[] = $mi;
+    }
+
     /** @return bool */
     function can_view_reviews() {
         return $this->can_view_reviews;
@@ -388,7 +397,7 @@ class PaperTable {
         $vas = $this->user->view_authors_state($this->prow);
         $this->foldmap = [];
         foreach ($foldstorage as $num => $k) {
-            $this->foldmap[$num] = $this->allow_folds;
+            $this->foldmap[$num] = $this->allow_folds && !$this->unfold_all;
         }
         $this->foldmap[8] = $vas === 1;
         if ($this->foldmap[6]) {
@@ -1070,16 +1079,84 @@ class PaperTable {
         return htmlspecialchars($this->conf->_c("field_group", $renders[$first]->option->page_group, commajoin($group_names), commajoin($group_types)));
     }
 
+    private function _print_pre_status_feedback() {
+        if (($psf = MessageSet::feedback_html($this->pre_status_feedback ?? []))) {
+            echo '<div class="mb-3">', $psf, '</div>';
+        }
+    }
+
+    private function _print_accept_decline() {
+        $rrow = $this->editrrow;
+        if ($rrow->reviewId <= 0
+            || $rrow->reviewType >= REVIEW_SECONDARY
+            || $rrow->reviewStatus > ReviewInfo::RS_ACCEPTED
+            || (!$this->user->can_administer($this->prow)
+                && (!$this->user->is_my_review($rrow)
+                    || !$this->user->time_review($this->prow, $rrow)))) {
+            return;
+        }
+        $acc = $rrow->reviewStatus === ReviewInfo::RS_ACCEPTED;
+        echo Ht::form(["method" => "post", "class" => ($acc ? "msg" : "msg msg-warning") . ' d-flex demargin remargin-left remargin-right']),
+            '<div class="flex-grow-1 align-self-center">';
+        if ($acc) {
+            echo 'Thank you for confirming your intention to finish this review.';
+        } else if ($rrow->requestedBy
+                   && ($requester = $this->conf->user_by_id($rrow->requestedBy, USER_SLICE))) {
+            echo 'Please take a moment to accept or decline ' . Text::nameo_h($requester, NAME_P) . '’s review request.';
+        } else {
+            echo 'Please take a moment to accept or decline our review request.';
+        }
+        echo '</div><div class="aabr align-self-center">';
+        if ($acc) {
+            echo '<div class="aabut">', Ht::submit("Decline review after all", ["class" => "btn-danger", "formaction" => $this->conf->hoturl("=api/declinereview", ["p" => $rrow->paperId, "r" => $rrow->reviewId, "redirect" => 1])]), '</div>';
+        } else {
+            echo '<div class="aabut">', Ht::submit("Decline", ["class" => "btn-danger", "formaction" => $this->conf->hoturl("=api/declinereview", ["p" => $rrow->paperId, "r" => $rrow->reviewId, "redirect" => 1])]), '</div>',
+                '<div class="aabut">', Ht::submit("Accept", ["class" => "btn-success", "formaction" => $this->conf->hoturl("=api/acceptreview", ["p" => $rrow->paperId, "r" => $rrow->reviewId, "redirect" => 1])]), '</div>';
+        }
+        echo '</div></form>';
+        if ($rrow->reviewStatus === ReviewInfo::RS_EMPTY) {
+            $this->unfold_all = true;
+        }
+    }
+
+    private function _print_decline_reason(Contact $capu, ReviewRefusalInfo $refusal) {
+        echo Ht::form($this->conf->hoturl("=api/declinereview", ["p" => $this->prow->paperId, "r" => $refusal->refusedReviewId, "redirect" => 1]),
+            ["class" => "msg msg-warning demargin remargin-left remargin-right"]);
+        echo '<p>You have declined to complete this review. Thank you for informing us.</p>',
+            '<div class="f-i mt-3"><label for="declinereason">Optional explanation</label>',
+            (empty($refusal->reason) ? '<div class="field-d">If you’d like, you may enter a brief explanation here.</div>' : ''),
+            Ht::textarea("reason", $refusal->reason ?? "", ["rows" => 3, "cols" => 40, "spellcheck" => true, "class" => "w-text", "id" => "declinereason"]),
+            '</div><div class="aab mt-3">',
+            '<div class="aabut">', Ht::submit("Save explanation", ["class" => "btn-primary"]), '</div>';
+        if ($this->conf->time_review($refusal->reviewRound, $refusal->refusedReviewType, true)) {
+            echo '<div class="aabut">', Ht::submit("Accept review after all", ["formaction" => $this->conf->hoturl("=api/acceptreview", ["p" => $this->prow->paperId, "r" => $refusal->refusedReviewId, "redirect" => 1])]), '</div>';
+        }
+        echo '</div></form>';
+    }
+
     private function _print_normal_body() {
+        // pre-status feedback
+        $this->_print_pre_status_feedback();
+
         // review accept/decline message
         if ($this->mode === "re"
             && $this->editrrow
-            && $this->editrrow->reviewStatus === 0
+            && $this->editrrow->reviewStatus <= ReviewInfo::RS_ACCEPTED
             && $this->user->is_my_review($this->editrrow)) {
-            echo '<form method="post">';
-            ReviewForm::print_accept_decline($this->prow, $this->editrrow, $this->user);
-            echo '</form>';
+            $this->_print_accept_decline();
+        } else if ($this->mode === "p"
+                   && $this->qreq->page() === "review") {
+            $capuid = $this->user->capability("@ra{$this->prow->paperId}");
+            $capu = $capuid ? $this->conf->user_by_id($capuid, USER_SLICE) : $this->user;
+            $refusals = $capu ? $this->prow->review_refusals_by_user($capu) : [];
+            if ($refusals && $refusals[0]->refusedReviewId) {
+                $this->_print_decline_reason($capu, $refusals[0]);
+            } else if ($capu) {
+                echo '<div class="msg msg-warning demargin remargin-left remargin-right"><p>You have declined to complete a review. Thank you for informing us.</p></div>';
+            }
         }
+
+        $this->_print_foldpaper_div();
 
         // status
         list($class, $name) = $this->prow->status_class_and_name($this->user);
@@ -1234,6 +1311,7 @@ class PaperTable {
         if ($lasto1 && $lasto1->page_order() >= 2000) {
             echo '</div></div>';
         }
+        echo '</div>'; // #foldpaper
     }
 
 
@@ -2108,6 +2186,7 @@ class PaperTable {
             }
         ));
 
+        $this->_print_pre_status_feedback();
         $this->_print_edit_messages(true);
 
         if (!$this->quit) {
@@ -2195,9 +2274,7 @@ class PaperTable {
             $this->_print_editable_body();
             echo '</div>';
         } else {
-            $this->_print_foldpaper_div();
             $this->_print_normal_body();
-            echo '</div>'; // foldpaper div
         }
         echo '</div>';
 

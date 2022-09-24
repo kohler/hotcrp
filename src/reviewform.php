@@ -419,29 +419,6 @@ $blind\n";
         return join("", $t);
     }
 
-    /** @param ?ReviewInfo $rrow */
-    static function print_accept_decline(PaperInfo $prow, $rrow, Contact $user) {
-        if ($rrow
-            && $rrow->reviewId > 0
-            && $rrow->reviewStatus === 0
-            && $rrow->reviewType < REVIEW_SECONDARY
-            && (($user->is_my_review($rrow) && $user->time_review($prow, $rrow))
-                || $user->can_administer($prow))) {
-            if ($rrow->requestedBy
-                && ($requester = $prow->conf->user_by_id($rrow->requestedBy, USER_SLICE))) {
-                $req = 'Please take a moment to accept or decline ' . Text::nameo_h($requester, NAME_P) . '’s review request.';
-            } else {
-                $req = 'Please take a moment to accept or decline our review request.';
-            }
-            echo '<div class="msg msg-warning d-flex demargin remargin-left remargin-right">',
-                '<div class="flex-grow-1 align-self-center">', $req, '</div>',
-                '<div class="aabr align-self-center">',
-                '<div class="aabut">', Ht::submit("Decline", ["class" => "btn-danger", "formaction" => $prow->conf->hoturl("=api/declinereview", ["p" => $prow->paperId, "r" => $rrow->reviewId, "redirect" => 1])]), '</div>',
-                '<div class="aabut">', Ht::submit("Accept", ["class" => "btn-success", "formaction" => $prow->conf->hoturl("=api/acceptreview", ["p" => $prow->paperId, "r" => $rrow->reviewId, "verbose" => 1, "redirect" => 1])]), '</div>',
-                '</div></div>';
-        }
-    }
-
     /** @param PaperInfo $prow
      * @param ?ReviewInfo $rrow
      * @param Contact $user */

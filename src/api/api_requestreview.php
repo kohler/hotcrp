@@ -317,12 +317,7 @@ class RequestReview_API {
             }
         }
 
-        $message_list = [];
-        if ($qreq->verbose) {
-            $message_list[] = MessageItem::success("<0>Thank you for confirming your intention to finish this review.");
-        }
-
-        return new JsonResult(["ok" => true, "action" => "accept", "message_list" => $message_list]);
+        return new JsonResult(["ok" => true, "action" => "accept"]);
     }
 
     /** @param Contact $user
