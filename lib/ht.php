@@ -134,6 +134,8 @@ class Ht {
         if (is_array($action)) {
             $extra = $action;
             $action = $extra["action"] ?? "";
+        } else {
+            $action = $action ?? "";
         }
 
         // GET method requires special handling: extract params from URL
@@ -156,8 +158,11 @@ class Ht {
         }
 
         $x = '<form';
-        if ((string) $action !== "") {
-            $x .= " method=\"{$method}\" action=\"{$action}\"";
+        if ($action !== "" || isset($extra["method"])) {
+            $x .= " method=\"{$method}\"";
+        }
+        if ($action !== "") {
+            $x .= " action=\"{$action}\"";
         }
         $enctype = $extra["enctype"] ?? null;
         if (!$enctype && $method !== "get") {

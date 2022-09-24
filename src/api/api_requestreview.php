@@ -349,7 +349,7 @@ class RequestReview_API {
             $qreq->redirect = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
         }
 
-        $reason = trim($qreq->reason);
+        $reason = trim($qreq->reason ?? "");
         if ($reason === "" || $reason === "Optional explanation") {
             $reason = null;
         }
