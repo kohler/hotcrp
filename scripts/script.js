@@ -3826,23 +3826,24 @@ function dropmenu_close() {
 }
 
 handle_ui.on("click.js-dropmenu-open", function (evt) {
-    var modal = $$("dropmenu-modal"), elt = this, was_open;
-    if (elt.tagName === "BUTTON")
-        elt = elt.closest("summary");
-    was_open = is_ie ? hasClass(elt.parentElement.lastChild, "hidden") : elt.parentElement.open;
+    var modal = $$("dropmenu-modal"), esummary = this, edetails, was_open;
+    if (esummary.tagName === "BUTTON")
+        esummary = esummary.closest("summary");
+    edetails = esummary.parentElement;
+    was_open = is_ie ? hasClass(edetails.lastChild, "hidden") : edetails.open;
     if (!was_open && !modal) {
         modal = document.createElement("div");
         modal.id = "dropmenu-modal";
         modal.className = "modal transparent";
-        document.body.appendChild(modal);
+        edetails.parentElement.insertBefore(modal, edetails.nextsibling);
         modal.addEventListener("click", dropmenu_close, false);
     } else if (modal)
         dropmenu_close();
     if (is_ie || this.tagName === "BUTTON") {
         if (is_ie)
-            toggleClass(elt.parentElement.lastChild, "hidden", !was_open);
+            toggleClass(edetails.lastChild, "hidden", !was_open);
         else
-            elt.parentElement.open = !was_open;
+            edetails.open = !was_open;
         evt.preventDefault();
         handle_ui.stopPropagation(evt);
     }

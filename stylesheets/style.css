@@ -233,6 +233,7 @@ body.paper > #top {
 	padding-bottom: 8px;
 	border-bottom: 1px solid #f33360;
 	position: relative;
+	z-index: 4;
 }
 #header-right {
 	padding: 6px 24px 0;
@@ -3326,7 +3327,6 @@ a.badge-white:hover {
 .submission-modes {
 	float: left;
 	padding: 12px 0 0 24px;
-	z-index: 5;
 }
 .submission-modes > ul, .papmodes > ul {
 	list-style-type: none;
@@ -3337,7 +3337,6 @@ a.badge-white:hover {
 /* paper strip */
 .pcard-left {
 	position: absolute;
-	z-index: 4;
 	top: 0;
 	bottom: 0;
 	width: 248px;
