@@ -420,23 +420,24 @@ $blind\n";
     }
 
     /** @param ?ReviewInfo $rrow */
-    private function _print_accept_decline(PaperInfo $prow, $rrow, Contact $user) {
+    static function print_accept_decline(PaperInfo $prow, $rrow, Contact $user) {
         if ($rrow
-            && $rrow->reviewId
+            && $rrow->reviewId > 0
             && $rrow->reviewStatus === 0
             && $rrow->reviewType < REVIEW_SECONDARY
-            && ($user->is_my_review($rrow) || $user->can_administer($prow))) {
+            && (($user->is_my_review($rrow) && $user->time_review($prow, $rrow))
+                || $user->can_administer($prow))) {
             if ($rrow->requestedBy
-                && ($requester = $this->conf->user_by_id($rrow->requestedBy, USER_SLICE))) {
+                && ($requester = $prow->conf->user_by_id($rrow->requestedBy, USER_SLICE))) {
                 $req = 'Please take a moment to accept or decline ' . Text::nameo_h($requester, NAME_P) . '’s review request.';
             } else {
                 $req = 'Please take a moment to accept or decline our review request.';
             }
-            echo '<div class="revcard-bodyinsert demargin">',
-                '<div class="aab aabr aabig mt-0 remargin-left remargin-right">',
+            echo '<div class="msg msg-warning d-flex demargin remargin-left remargin-right">',
                 '<div class="flex-grow-1 align-self-center">', $req, '</div>',
-                '<div class="aabut">', Ht::submit("Decline", ["class" => "btn-danger", "formaction" => $this->conf->hoturl("=api/declinereview", ["p" => $prow->paperId, "r" => $rrow->reviewId, "redirect" => 1])]), '</div>',
-                '<div class="aabut">', Ht::submit("Accept", ["class" => "btn-success", "formaction" => $this->conf->hoturl("=api/acceptreview", ["p" => $prow->paperId, "r" => $rrow->reviewId, "verbose" => 1, "redirect" => 1])]), '</div>',
+                '<div class="aabr align-self-center">',
+                '<div class="aabut">', Ht::submit("Decline", ["class" => "btn-danger", "formaction" => $prow->conf->hoturl("=api/declinereview", ["p" => $prow->paperId, "r" => $rrow->reviewId, "redirect" => 1])]), '</div>',
+                '<div class="aabut">', Ht::submit("Accept", ["class" => "btn-success", "formaction" => $prow->conf->hoturl("=api/acceptreview", ["p" => $prow->paperId, "r" => $rrow->reviewId, "verbose" => 1, "redirect" => 1])]), '</div>',
                 '</div></div>';
         }
     }
@@ -615,9 +616,6 @@ $blind\n";
         // review card
         echo '<div class="revcard-form">';
         $allow_admin = $viewer->allow_administer($prow);
-        if ($viewer->time_review($prow, $rrow) || $allow_admin) {
-            $this->_print_accept_decline($prow, $rrow, $viewer);
-        }
 
         // blind?
         if ($this->conf->review_blindness() === Conf::BLIND_OPTIONAL) {
@@ -764,12 +762,11 @@ $blind\n";
         // See also CommentInfo::unparse_flow_entry
         $barsep = ' <span class="barsep">·</span> ';
         $a = '<a href="' . $prow->hoturl(["#" => "r" . $rrow->unparse_ordinal_id()]) . '"';
-        $t = '<tr class="pl"><td class="pl_eventicon">' . $a . '>'
+        $t = "<tr class=\"pl\"><td class=\"pl_eventicon\">{$a}>"
             . Ht::img("review48.png", "[Review]", ["class" => "dlimg", "width" => 24, "height" => 24])
-            . '</a></td><td class="pl_eventid pl_rowclick">'
-            . $a . ' class="pnum">#' . $prow->paperId . '</a></td>'
-            . '<td class="pl_eventdesc pl_rowclick"><small>'
-            . $a . ' class="ptitle">'
+            . "</a></td>"
+            . "<td class=\"pl_eventid pl_rowclick\">{$a} class=\"pnum\">#{$prow->paperId}</a></td>"
+            . "<td class=\"pl_eventdesc pl_rowclick\"><small>{$a} class=\"ptitle\">"
             . htmlspecialchars(UnicodeHelper::utf8_abbreviate($prow->title, 80))
             . "</a>";
         if ($rrow->reviewStatus >= ReviewInfo::RS_DRAFTED) {

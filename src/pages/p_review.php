@@ -350,10 +350,10 @@ class Review_Page {
                 } else {
                     $m = "<5>{$mx}";
                 }
-                $this->conf->warning_msg($m);
             } else {
-                $this->conf->warning_msg("<5>You’re accessing this review using a special link for reviewer {$hemail}. " . Ht::link("Sign in to the site", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null])));
+                $m = "<5>You’re accessing this review using a special link for reviewer {$hemail}. " . Ht::link("Sign in to the site", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null]), ["class" => "nw"]);
             }
+            $this->conf->feedback_msg(new MessageItem(null, $m, MessageSet::MARKED_NOTE));
         }
     }
 

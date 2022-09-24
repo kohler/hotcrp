@@ -293,10 +293,10 @@ class PaperTable {
             if (($opt = PaperSearch::unparse_listid($listdesc))) {
                 $list = $this->try_list($opt, $prow);
             }
-            if (!$list && preg_match('{\A(all|s):(.*)\z}s', $listdesc, $m)) {
+            if (!$list && preg_match('/\A(all|s):(.*)\z/s', $listdesc, $m)) {
                 $list = $this->try_list(["t" => $m[1], "q" => $m[2]], $prow);
             }
-            if (!$list && preg_match('{\A[a-z]+\z}', $listdesc)) {
+            if (!$list && preg_match('/\A[a-z]+\z/', $listdesc)) {
                 $list = $this->try_list(["t" => $listdesc], $prow);
             }
             if (!$list) {
@@ -1071,6 +1071,17 @@ class PaperTable {
     }
 
     private function _print_normal_body() {
+        // review accept/decline message
+        if ($this->mode === "re"
+            && $this->editrrow
+            && $this->editrrow->reviewStatus === 0
+            && $this->user->is_my_review($this->editrrow)) {
+            echo '<form method="post">';
+            ReviewForm::print_accept_decline($this->prow, $this->editrrow, $this->user);
+            echo '</form>';
+        }
+
+        // status
         list($class, $name) = $this->prow->status_class_and_name($this->user);
         echo '<p class="pgsm"><span class="pstat ', $class, '">',
             htmlspecialchars($name), "</span></p>";

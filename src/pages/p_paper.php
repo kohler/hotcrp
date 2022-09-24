@@ -381,10 +381,11 @@ class Paper_Page {
     private function print_capability_user_message($capuid) {
         if (($u = $this->conf->user_by_id($capuid, USER_SLICE))) {
             if ($this->user->has_email()) {
-                $this->conf->warning_msg("<0>You’re accessing this submission using a special link for reviewer {$u->email}. (You are signed in as {$this->user->email}.)");
+                $m = "<0>You’re accessing this submission using a special link for reviewer {$u->email}. (You are signed in as {$this->user->email}.)";
             } else {
-                $this->conf->warning_msg("<5>You’re accessing this submission using a special link for reviewer {$u->email}. " . Ht::link("Sign in to the site", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null])));
+                $m = "<5>You’re accessing this submission using a special link for reviewer {$u->email}. " . Ht::link("Sign in to the site", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null]), ["class" => "nw"]);
             }
+            $this->conf->feedback_msg(new MessageItem(null, $m, MessageSet::MARKED_NOTE));
         }
     }
 
