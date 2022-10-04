@@ -2985,6 +2985,7 @@ class Conf {
         $this->_update_automatic_tags_csv($csv);
     }
 
+    /** @param list<string> $csv */
     function _update_automatic_tags_csv($csv) {
         if (count($csv) > 1) {
             $this->_updating_automatic_tags = true;
@@ -3019,9 +3020,6 @@ class Conf {
     /** @param array<string,true> $caches */
     function invalidate_caches($caches) {
         if (!self::$no_invalidate_caches) {
-            if (is_string($caches)) {
-                $caches = [$caches => true];
-            }
             if (!$caches || isset($caches["pc"]) || isset($caches["users"])) {
                 $this->_pc_members_cache = $this->_pc_tags_cache = $this->_pc_user_cache = $this->_pc_chairs_cache = null;
                 $this->_user_cache = $this->_user_email_cache = null;
