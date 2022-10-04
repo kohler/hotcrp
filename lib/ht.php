@@ -127,7 +127,7 @@ class Ht {
             . htmlspecialchars($src) . "\" />";
     }
 
-    /** @param string $action
+    /** @param string|array<string,mixed> $action
      * @param array<string,mixed> $extra
      * @return string */
     static function form($action, $extra = []) {
