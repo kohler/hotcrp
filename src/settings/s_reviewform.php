@@ -271,10 +271,16 @@ class ReviewForm_SettingParser extends SettingParser {
             }
         }
         $this->_new_form = new ReviewForm($sv->conf, $nrfj);
-        if ($sv->update("review_form", json_encode_db($this->_new_form))) {
+        $newv = json_encode_db($this->_new_form->unparse_storage_json());
+        if ($sv->update("review_form", $newv)) {
             $sv->request_write_lock("PaperReview");
             $sv->request_store_value($si);
             $sv->mark_invalidate_caches(["rf" => true]);
+            // don’t claim there’s a diff if there’s no real diff, just a format change
+            if (json_encode_db($sv->conf->review_form()->unparse_storage_json())
+                === $newv) {
+                $sv->mark_no_diff("review_form");
+            }
         }
         return true;
     }

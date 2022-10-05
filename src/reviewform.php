@@ -2,7 +2,7 @@
 // reviewform.php -- HotCRP helper class for producing review forms and tables
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-class ReviewForm implements JsonSerializable {
+class ReviewForm {
     /** @var Conf
      * @readonly */
     public $conf;
@@ -180,9 +180,8 @@ class ReviewForm implements JsonSerializable {
         return $fs;
     }
 
-    #[\ReturnTypeWillChange]
     /** @return list<object> */
-    function jsonSerialize() {
+    function unparse_storage_json() {
         $rj = [];
         foreach ($this->fmap as $f) {
             $rj[] = $f->unparse_json(ReviewField::UJ_STORAGE);
