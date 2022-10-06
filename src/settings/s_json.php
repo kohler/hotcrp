@@ -58,7 +58,7 @@ class JSON_SettingParser extends SettingParser {
     function apply_req(Si $si, SettingValues $sv) {
         if (($v = $sv->reqstr($si->name)) !== null) {
             $sv->set_link_json(true);
-            $sv->add_json_string(cleannl($v));
+            $sv->add_json_string($v);
         }
         return true;
     }

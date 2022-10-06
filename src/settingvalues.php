@@ -185,13 +185,13 @@ class SettingValues extends MessageSet {
     function add_json_string($jstr, $filename = null) {
         assert($this->_use_req === true);
         assert(empty($this->_oblist_ensured));
-        $this->_jp = (new JsonParser($jstr))->filename($filename);
+        $this->_jp = (new JsonParser($jstr))->flags(JsonParser::JSON_ALLOW_NBSP)->filename($filename);
         $j = $this->_jp->decode();
         if ($j !== null || $this->_jp->error_type === 0) {
             $this->_jpath = "";
             $this->set_json_parts("", $j);
         } else {
-            $mi = $this->error_at(null, "<0>Invalid JSON");
+            $mi = $this->error_at(null, "<0>Invalid JSON: " . $this->_jp->last_error_msg());
             $mi->pos1 = $mi->pos2 = $this->_jp->error_pos;
         }
         $this->_jpath = null;

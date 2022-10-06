@@ -47,6 +47,8 @@ class JsonParser {
         JSON_ERROR_UTF16 => "Single unpaired UTF-16 surrogate in unicode escape"
     ];
 
+    const JSON_ALLOW_NBSP = 1 << 19;
+
 
     /** @param ?string $input
      * @param ?bool $assoc
@@ -259,15 +261,31 @@ class JsonParser {
         }
     }
 
+    /** @param int $pos
+     * @return int */
+    private function skip_space($pos) {
+        $s = $this->input;
+        $len = strlen($s);
+        while (true) {
+            while ($pos !== $len && ctype_space($s[$pos])) {
+                ++$pos;
+            }
+            if ($pos + 1 >= $len
+                || $s[$pos] !== "\xC2"
+                || $s[$pos + 1] !== "\xA0"
+                || ($this->flags & self::JSON_ALLOW_NBSP) === 0) {
+                return $pos;
+            }
+            $pos += 2;
+        }
+    }
+
     /** @param int $depth
      * @return mixed */
     private function decode_part($depth) {
         $s = $this->input;
-        $pos = $this->pos;
         $len = strlen($s);
-        while ($pos !== $len && ctype_space($s[$pos])) {
-            ++$pos;
-        }
+        $pos = $this->skip_space($this->pos);
         if ($pos === $len) {
             return $this->set_error($pos, JSON_ERROR_SYNTAX);
         }
@@ -305,9 +323,7 @@ class JsonParser {
             $arr = [];
             $this->pos = $pos + 1;
             while (true) {
-                while ($this->pos !== $len && ctype_space($s[$this->pos])) {
-                    ++$this->pos;
-                }
+                $this->pos = $this->skip_space($this->pos);
                 if ($this->pos !== $len) {
                     if ($s[$this->pos] === "}") {
                         ++$this->pos;
@@ -332,9 +348,7 @@ class JsonParser {
                     return $this->set_error($keypos, JSON_ERROR_INVALID_PROPERTY_NAME);
                 }
 
-                while ($this->pos !== $len && ctype_space($s[$this->pos])) {
-                    ++$this->pos;
-                }
+                $this->pos = $this->skip_space($this->pos);
                 if ($this->pos === $len || $s[$this->pos] !== ":") {
                     return $this->set_error($this->pos, JSON_ERROR_SYNTAX);
                 }
@@ -354,9 +368,7 @@ class JsonParser {
             $arr = [];
             $this->pos = $pos + 1;
             while (true) {
-                while ($this->pos !== $len && ctype_space($s[$this->pos])) {
-                    ++$this->pos;
-                }
+                $this->pos = $this->skip_space($this->pos);
                 if ($this->pos !== $len) {
                     if ($s[$this->pos] === "]") {
                         ++$this->pos;
@@ -402,11 +414,8 @@ class JsonParser {
         $result = $this->decode_part(0);
 
         $this->assoc = $assoc;
-        $s = $this->input;
-        while ($this->pos !== strlen($s) && ctype_space($s[$this->pos])) {
-            ++$this->pos;
-        }
-        if ($this->error_type === 0 && $this->pos !== strlen($s)) {
+        $this->pos = $this->skip_space($this->pos);
+        if ($this->error_type === 0 && $this->pos !== strlen($this->input)) {
             $this->set_error($this->pos, JSON_ERROR_STATE_MISMATCH);
         }
         if ($this->error_type === 0) {
@@ -426,16 +435,14 @@ class JsonParser {
     }
 
 
-    /** @param string $s
-     * @param int $pos
+    /** @param int $pos
      * @return int */
-    static private function skip($s, $pos) {
+    private function skip($pos) {
+        $s = $this->input;
         $len = strlen($s);
         $depth = 0;
         while (true) {
-            while ($pos !== $len && ctype_space($s[$pos])) {
-                ++$pos;
-            }
+            $pos = $this->skip_space($pos);
             if ($pos === $len) {
                 return $pos;
             }
@@ -471,9 +478,7 @@ class JsonParser {
     function member_positions($pos) {
         $s = $this->input;
         $len = strlen($s);
-        while ($pos !== $len && ctype_space($s[$pos])) {
-            ++$pos;
-        }
+        $pos = $this->skip_space($pos);
         if ($pos === $len) {
             return;
         }
@@ -481,13 +486,14 @@ class JsonParser {
         if ($ch === "{") {
             ++$pos;
             while (true) {
-                while ($pos !== $len && (ctype_space($s[$pos]) || $s[$pos] === ",")) {
-                    ++$pos;
-                }
+                $pos = $this->skip_space($pos);
                 if ($pos === $len || $s[$pos] === "}") {
                     break;
+                } else if ($s[$pos] === ",") {
+                    ++$pos;
+                    continue;
                 } else if ($s[$pos] !== "\"") {
-                    $pos = self::skip($s, $pos);
+                    $pos = $this->skip($pos);
                     continue;
                 }
                 $kpos1 = $pos;
@@ -497,29 +503,30 @@ class JsonParser {
                 }
                 if ($pos !== $len && self::ctype_json_value_start($s[$pos])) {
                     $vpos1 = $pos;
-                    $pos = self::skip($s, $pos);
+                    $pos = $this->skip($pos);
                     yield new JsonParserPosition(self::decode_potential_string($s, $kpos1, $kpos2, null), $kpos1, $kpos2, $vpos1, $pos);
                 } else {
-                    $pos = self::skip($s, $pos);
+                    $pos = $this->skip($pos);
                 }
             }
         } else if ($ch === "[") {
             ++$pos;
             $key = 0;
             while (true) {
-                while ($pos !== $len && (ctype_space($s[$pos]) || $s[$pos] === ",")) {
-                    ++$pos;
-                }
+                $pos = $this->skip_space($pos);
                 if ($pos === $len || $s[$pos] === "]") {
                     break;
+                } else if ($s[$pos] === ",") {
+                    ++$pos;
+                    continue;
                 }
                 if (self::ctype_json_value_start($s[$pos])) {
                     $vpos1 = $pos;
-                    $pos = self::skip($s, $pos);
+                    $pos = $this->skip($pos);
                     yield new JsonParserPosition($key, null, null, $vpos1, $pos);
                     ++$key;
                 } else {
-                    $pos = self::skip($s, $pos);
+                    $pos = $this->skip($pos);
                 }
             }
         } else if ($ch === "\"") {
@@ -653,7 +660,7 @@ class JsonParser {
             while ($ipos !== $ilen && ctype_space($this->input[$ipos])) {
                 ++$ipos;
             }
-            $vpos2 = self::skip($this->input, $ipos);
+            $vpos2 = $this->skip($ipos);
             return new JsonParserPosition(null, null, null, $ipos, $vpos2);
         } else {
             return $jpp;

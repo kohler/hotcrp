@@ -973,7 +973,9 @@ function make_content_editable(mainel) {
             var next, nl;
             while (ch) {
                 next = ch.nextSibling;
-                if (ch.nodeType === 3 && (nl = ch.data.indexOf("\n")) !== -1) {
+                if (ch.nodeType !== 1 && ch.nodeType !== 3) {
+                    ch.remove();
+                } else if (ch.nodeType === 3 && (nl = ch.data.indexOf("\n")) !== -1) {
                     if (nl !== ch.length - 1) {
                         next = ch.splitText(nl + 1);
                         nsel.transfer_text(next, ch, nl + 1, -nl - 1);
@@ -1005,22 +1007,23 @@ function make_content_editable(mainel) {
             }
         }
 
-        ch = firstel || mainel.firstChild;
+        ch = firstel = firstel || mainel.firstChild;
         while (ch && ch !== lastel) {
             if (ch.nodeType !== 1
                 || ch.tagName !== "DIV"
                 || ch.hasAttribute("style")) {
-                var line = document.createElement("div"), first = true;
+                var line = document.createElement("div"),
+                    line1 = ch === firstel, child1 = true;
                 mainel.insertBefore(line, ch);
-                while (ch && (first || is_text_or_inline(ch))) {
+                while (ch && (child1 || is_text_or_inline(ch))) {
                     line.appendChild(ch);
                     ch = line.nextSibling;
-                    first = false;
+                    child1 = false;
                 }
                 if (ch && is_br(ch)) {
                     line.firstChild ? ch.remove() : line.appendChild(ch);
                 }
-                ch === firstel && (firstel = line);
+                line1 && (firstel = line);
                 ch = line;
             }
             next = ch.nextSibling;
@@ -1040,7 +1043,10 @@ function make_content_editable(mainel) {
         return texts.length;
     }
 
-    function lineno(node) {
+    function lineno(node, offset) {
+        if (node === mainel) {
+            return offset;
+        }
         while (node && node.parentElement !== mainel) {
             node = node.parentElement;
         }
@@ -1221,8 +1227,8 @@ function make_content_editable(mainel) {
     function lp2p(ln, lp) {
         posd.length > ln || make_posd();
         if (ln >= texts.length) {
-            ln = texts.length;
-            lp = 0;
+            ln = texts.length - 1;
+            lp = ln >= 0 ? texts[ln].length : 0;
         }
         let lsp = 0;
         for (let a = 1, y = ln; y !== 0; a <<= 1) {
@@ -2183,8 +2189,8 @@ function make_json_validate() {
     function event_range(evt) {
         var i, r = null, ranges = evt.getTargetRanges();
         for (i = 0; i !== ranges.length; ++i) {
-            var ln0 = maince.lineno(ranges[i].startContainer),
-                ln1 = maince.lineno(ranges[i].endContainer);
+            var ln0 = maince.lineno(ranges[i].startContainer, ranges[i].startOffset),
+                ln1 = maince.lineno(ranges[i].endContainer, ranges[i].endOffset);
             r = union_range(r, [ln0, ln1 < 0 ? -1 : ln1 + 1]);
         }
         return r;
