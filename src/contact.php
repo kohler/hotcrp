@@ -4703,7 +4703,7 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_view_all_decision() {
         return $this->allow_administer_all()
-            || ($this->isPC && $this->conf->setting("seedec") === Conf::SEEDEC_NCREV);
+            || ($this->isPC && $this->conf->setting("seedec") === Conf::SEEDEC_REV);
     }
 
     /** @return bool */
