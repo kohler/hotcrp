@@ -175,8 +175,7 @@ class ManualAssign_Page {
         $pl->apply_view_qreq();
         echo Ht::form($this->conf->hoturl("=manualassign", ["reviewer" => $reviewer->email, "sort" => $this->qreq->sort]), ["class" => "assignpc ignore-diff"]),
             Ht::hidden("t", $this->qreq->t),
-            Ht::hidden("q", $this->qreq->q),
-            Ht::entry("____updates____", "", ["class" => "hidden ignore-diff"]);
+            Ht::hidden("q", $this->qreq->q);
         $rev_rounds = $this->conf->round_selector_options(false);
         $expected_round = $this->conf->assignment_round_option(false);
 

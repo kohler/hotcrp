@@ -1618,18 +1618,6 @@ function input_set_default_value(elt, val) {
         elt.value = elt.value; // eslint-disable-line no-self-assign
         elt.defaultValue = val;
     }
-    // 2021 Chrome workaround
-    if (elt.name && elt.form && (upd = elt.form.elements.____updates____)) {
-        try {
-            j = parse_json(upd.value || "{}");
-        } catch (e) {
-            j = {};
-        }
-        if (elt.type === "radio" && !elt.checked)
-            val = elt.form.elements[elt.name].value;
-        j[elt.name] = val || "";
-        upd.value = JSON.stringify(j);
-    }
 }
 
 function input_differs(elt) {
@@ -1680,30 +1668,6 @@ function hidden_input(name, value, attr) {
     }
     return input;
 }
-
-$(function () {
-    $("form").each(function () {
-        var upd = this.elements.____updates____, j, n, e, e2, i;
-        if (upd && upd.value) {
-            try {
-                j = parse_json(upd.value);
-                for (n in j)
-                    if ((e = this.elements[n])) {
-                        if (e.type === "checkbox")
-                            e.defaultChecked = e.value === j[n];
-                        else if (e instanceof RadioNodeList) {
-                            for (i = 0; i !== e.length; ++i) {
-                                e2 = e.item(i);
-                                e2.defaultChecked = e2.value === j[n];
-                            }
-                        } else
-                            e.defaultValue = j[n];
-                    }
-            } catch (e) {
-            }
-        }
-    });
-});
 
 function hiliter_children(form) {
     form = $(form)[0];

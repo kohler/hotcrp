@@ -69,7 +69,6 @@ class ConflictAssign_Page {
             if (!$tr->is_empty()) {
                 if (!$any) {
                     echo Ht::form($conf->hoturl("conflictassign")),
-                        Ht::entry("____updates____", "", ["class" => "hidden ignore-diff"]),
                         '<div class="pltable-fullw-container demargin">',
                         $tr->table_start,
                         Ht::unstash(),

@@ -142,7 +142,6 @@ class ReviewPrefs_Page {
         }
         echo Ht::form($conf->hoturl("=reviewprefs", $hoturl_args), ["id" => "sel", "class" => "ui-submit js-submit-paperlist assignpc"]),
             Ht::hidden("defaultfn", ""),
-            Ht::entry("____updates____", "", ["class" => "hidden ignore-diff"]),
             Ht::hidden_default_submit("default", 1);
         echo '<noscript><div style="text-align:center">',
             Ht::submit("fn", "Save changes", ["value" => "saveprefs", "class" => "btn-primary"]),

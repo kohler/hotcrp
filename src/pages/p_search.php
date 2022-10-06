@@ -269,7 +269,6 @@ class Search_Page {
             echo Ht::form($this->conf->selfurl($qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel", "class" => "ui-submit js-submit-paperlist"]),
                 Ht::hidden("defaultfn", ""),
                 Ht::hidden("forceShow", (string) $qreq->forceShow, ["id" => "forceShow"]),
-                Ht::entry("____updates____", "", ["class" => "hidden ignore-diff"]),
                 Ht::hidden_default_submit("default", 1);
         }
 
