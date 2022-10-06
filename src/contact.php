@@ -3585,7 +3585,7 @@ class Contact implements JsonSerializable {
         return $this->is_manager()
             || $this->is_author()
             || ($this->is_reviewer()
-                && ($this->conf->submission_blindness() != Conf::BLIND_ALWAYS
+                && ($this->conf->submission_blindness() !== Conf::BLIND_ALWAYS
                     || $this->conf->time_reviewer_view_accepted_authors()));
     }
 

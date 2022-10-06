@@ -11,6 +11,7 @@ class SiteLoader {
         "Collator" => "lib/collatorshim.php",
         "CsvGenerator" => "lib/csv.php",
         "CsvParser" => "lib/csv.php",
+        "False_SearchTerm" => "src/searchterm.php",
         "Fexpr" => "src/formula.php",
         "FmtArg" => "lib/fmt.php",
         "FormulaCall" => "src/formula.php",
@@ -35,6 +36,7 @@ class SiteLoader {
         "TagMap" => "lib/tagger.php",
         "TextPregexes" => "lib/text.php",
         "Text_PaperOption" => "src/paperoption.php",
+        "True_SearchTerm" => "src/searchterm.php",
         "XlsxGenerator" => "lib/xlsx.php",
         "dmp\\diff_match_patch" => "lib/diff_match_patch.php"
     ];

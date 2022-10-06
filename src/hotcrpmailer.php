@@ -137,7 +137,7 @@ class HotCRPMailer extends Mailer {
 
     private function get_reviews() {
         $old_overrides = $this->permuser->overrides();
-        if ($this->conf->_au_seerev === false) { /* assume sender wanted to override */
+        if ($this->conf->_au_seerev === null) { /* assume sender wanted to override */
             $this->permuser->add_overrides(Contact::OVERRIDE_AU_SEEREV);
         }
         assert(($old_overrides & contact::OVERRIDE_CONFLICT) === 0);
@@ -172,7 +172,7 @@ class HotCRPMailer extends Mailer {
 
     private function get_comments($tag) {
         $old_overrides = $this->permuser->overrides();
-        if ($this->conf->_au_seerev === false) { /* assume sender wanted to override */
+        if ($this->conf->_au_seerev === null) { /* assume sender wanted to override */
             $this->permuser->add_overrides(Contact::OVERRIDE_AU_SEEREV);
         }
         assert(($old_overrides & Contact::OVERRIDE_CONFLICT) === 0);

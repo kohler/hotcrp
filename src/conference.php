@@ -39,8 +39,10 @@ class Conf {
     public $default_format;
     /** @var string */
     public $download_prefix;
-    /** @var bool|SearchTerm */
+    /** @var ?SearchTerm */
     public $_au_seerev;
+    /** @var ?SearchTerm */
+    public $_au_seedec;
     /** @var bool */
     public $disable_non_pc;
     /** @var bool */
@@ -435,7 +437,7 @@ class Conf {
 
         // digested settings
         $au_seerev = $this->settings["au_seerev"] ?? 0;
-        $this->_au_seerev = false;
+        $this->_au_seerev = null;
         if ($au_seerev === self::AUSEEREV_SEARCH) {
             if (($q = $this->settingTexts["au_seerev"] ?? null) !== null) {
                 $srch = new PaperSearch($this->root_user(), $q);
@@ -448,8 +450,16 @@ class Conf {
                 }
                 $this->_au_seerev = new Tag_SearchTerm($tsm);
             }
-        } else {
-            $this->_au_seerev = $au_seerev > 0;
+        } else if ($au_seerev > 0) {
+            $this->_au_seerev = new True_SearchTerm;
+        }
+        if ($this->_au_seerev && $this->_au_seerev instanceof False_SearchTerm) {
+            $this->_au_seerev = null;
+        }
+        $au_seedec = $this->settings["seedec"] ?? 0;
+        $this->_au_seedec = null;
+        if ($au_seedec === self::SEEDEC_ALL) {
+            $this->_au_seedec = new True_SearchTerm;
         }
         $this->tag_seeall = ($this->settings["tag_seeall"] ?? 0) > 0;
         $this->ext_subreviews = $this->settings["pcrev_editdelegate"] ?? 0;
@@ -3420,11 +3430,11 @@ class Conf {
     }
     /** @return bool */
     function time_all_author_view_decision() {
-        return $this->setting("seedec") == self::SEEDEC_ALL;
+        return $this->_au_seedec instanceof True_SearchTerm;
     }
     /** @return bool */
     function time_some_author_view_decision() {
-        return $this->setting("seedec") == self::SEEDEC_ALL;
+        return $this->_au_seedec !== null;
     }
     /** @return bool */
     function time_review_open() {
@@ -3503,7 +3513,7 @@ class Conf {
     }
     /** @return bool */
     function time_reviewer_view_accepted_authors() {
-        return $this->setting("seedec") == self::SEEDEC_ALL
+        return $this->_au_seedec instanceof True_SearchTerm
             && !$this->setting("seedec_hideau");
     }
 
