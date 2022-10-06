@@ -208,7 +208,7 @@ class Options_SettingRenderer {
 
         echo '<div id="sf/', $ctr, '/edit" class="settings-sf-edit fx2">',
             Ht::hidden("sf/{$ctr}/id", $this->io ? $this->io->id : "new", ["class" => "settings-sf-id", "data-default-value" => $this->io ? $this->io->id : ""]),
-            Ht::hidden("sf/{$ctr}/order", $ctr, ["class" => "is-order", "data-default-value" => $this->io ? $this->io->order : ""]);
+            Ht::hidden("sf/{$ctr}/order", $sv->newv("sf/{$ctr}/order"), ["class" => "is-order", "data-default-value" => $this->io ? $sv->oldv("sf/{$ctr}/order") : ""]);
         $sv->print_group("submissionfield/properties");
         echo '</div>';
 

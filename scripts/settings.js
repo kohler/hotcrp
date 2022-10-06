@@ -90,23 +90,40 @@ function settings_disable_children(e) {
     });
 }
 
+function settings_field_order(parentid) {
+    var i = 0, j, orde, n, pos,
+        form = document.getElementById("settingsform"),
+        c = document.getElementById(parentid),
+        moveup = null, movedown = null;
+    for (n = c.firstChild; n; n = n.nextSibling) {
+        orde = form.elements[n.id + "/order"];
+        if (hasClass(n, "deleted")) {
+            orde.value = 0;
+            continue;
+        }
+        moveup = n.querySelector(".moveup");
+        moveup.disabled = movedown === null;
+        movedown = n.querySelector(".movedown");
+        movedown.disabled = false;
+        ++i;
+        j = +orde.value;
+        if (j !== j || j < i) {
+            orde.value = i;
+        } else {
+            i = j;
+        }
+    }
+    movedown && (movedown.disabled = true);
+    form_highlight(form);
+}
+
 
 // BEGIN SUBMISSION FIELD SETTINGS
 (function () {
 var type_properties, type_name_placeholders;
 
 function settings_sf_order() {
-    var i = 0, n, pos,
-        form = document.getElementById("settingsform"),
-        c = document.getElementById("settings-sform");
-    $(c).find(".moveup, .movedown").prop("disabled", false);
-    $(c).find(".settings-sf:first-child .moveup").prop("disabled", true);
-    $(c).find(".settings-sf:last-child .movedown").prop("disabled", true);
-    for (n = c.firstChild; n; n = n.nextSibling) {
-        pos = hasClass(n, "deleted") ? 0 : ++i;
-        form.elements[n.id + "/order"].value = pos;
-    }
-    form_highlight("#settingsform");
+    settings_field_order("settings-sform");
 }
 
 handle_ui.on("js-settings-sf-type", function () {
@@ -415,17 +432,7 @@ function values_to_text(fld) {
 }
 
 function rf_order() {
-    var i = 0, n, pos,
-        form = document.getElementById("settingsform"),
-        c = document.getElementById("settings-rform");
-    $(c).find(".moveup, .movedown").prop("disabled", false);
-    $(c).find(".settings-rf:first-child .moveup").prop("disabled", true);
-    $(c).find(".settings-rf:last-child .movedown").prop("disabled", true);
-    for (n = c.firstChild; n; n = n.nextSibling) {
-        pos = hasClass(n, "deleted") ? 0 : ++i;
-        form.elements[n.id + "/order"].value = pos;
-    }
-    form_highlight("#settingsform");
+    settings_field_order("settings-rform");
 }
 
 function rf_fill_control(form, name, value, setdefault) {
