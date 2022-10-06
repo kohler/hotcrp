@@ -109,11 +109,11 @@ class ReviewPrefs_Page {
         }
         if (($vat = $pl->viewable_author_types()) !== 0) {
             $extra = ["fold_target" => 10];
-            if ($vat & 2) {
+            if (($vat & 2) !== 0) {
                 $show_data[] = self::pref_element($pl, "au", "Authors", $extra);
                 $extra = ["item_class" => "fx10"];
             }
-            if ($vat & 1) {
+            if (($vat & 1) !== 0) {
                 $show_data[] = self::pref_element($pl, "anonau", "Authors (deanonymized)", $extra);
                 $extra = ["item_class" => "fx10"];
             }

@@ -60,10 +60,10 @@ class Search_Page {
 
         // Authors group
         if (($vat = $pl->viewable_author_types()) !== 0) {
-            if ($vat & 2) {
+            if (($vat & 2) !== 0) {
                 $this->checkbox_item(1, "au", "Authors");
             }
-            if ($vat & 1) {
+            if (($vat & 1) !== 0) {
                 $this->checkbox_item(1, "anonau", "Authors (deanonymized)");
             }
             $this->checkbox_item(1, "aufull", "Full author info");
@@ -157,17 +157,11 @@ class Search_Page {
             || $this->conf->submission_blindness() === Conf::BLIND_NEVER) {
             $qt["au"] = "Authors";
             $qt["n"] = "Title, abstract, and authors";
-        } else if ($this->conf->submission_blindness() === Conf::BLIND_ALWAYS) {
-            if ($this->user->is_reviewer()
-                && $this->conf->time_reviewer_view_accepted_authors()) {
-                $qt["au"] = "Accepted authors";
-                $qt["n"] = "Title, abstract, and accepted authors";
-            } else {
-                $qt["n"] = "Title and abstract";
-            }
-        } else {
+        } else if ($this->user->can_view_some_authors()) {
             $qt["au"] = "Non-anonymous authors";
             $qt["n"] = "Title, abstract, and non-anonymous authors";
+        } else {
+            $qt["n"] = "Title and abstract";
         }
         if ($this->user->privChair) {
             $qt["ac"] = "Authors and collaborators";

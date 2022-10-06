@@ -24,8 +24,7 @@ class Mail_Page {
         // set list of searchable paper collections
         if ($viewer->privChair) {
             $this->search_topt["s"] = PaperSearch::$search_type_names["s"];
-            if ($this->conf->time_pc_view_decision(false)
-                && $this->conf->has_any_accepted()) {
+            if ($this->conf->has_any_accepted()) {
                 $this->search_topt["acc"] = PaperSearch::$search_type_names["acc"];
             }
             $this->search_topt["unsub"] = "Unsubmitted";

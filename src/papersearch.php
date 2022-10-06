@@ -1748,8 +1748,8 @@ class PaperSearch extends MessageSet {
                 $ts[] = "act";
             }
             $ts[] = "s";
-            if ($user->conf->time_pc_view_decision(false)
-                && $user->conf->has_any_accepted()) {
+            if ($user->conf->has_any_accepted()
+                && $user->can_view_some_decision()) {
                 $ts[] = "acc";
             }
         }

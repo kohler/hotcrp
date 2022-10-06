@@ -1210,25 +1210,24 @@ class PaperList implements XtContext {
     }
 
 
-    /** @return int */
+    /** @return 0|1|2|3 */
     function viewable_author_types() {
+        // Bit 2: If set, then some authors may be plainly visible.
+        // Bit 1: If set, then some authors may be visible through deblinding.
+        $sb = $this->conf->submission_blindness();
         if ($this->search->limit_author()
-            || $this->conf->submission_blindness() === Conf::BLIND_NEVER) {
+            || $sb === Conf::BLIND_NEVER
+            || ($this->search->limit_accepted()
+                && $this->conf->time_all_author_view_decision()
+                && !$this->conf->setting("seedec_hideau"))) {
             return 2;
-        } else if ($this->user->is_reviewer()
-                   && ($this->conf->submission_blindness() === Conf::BLIND_UNTILREVIEW
-                       || $this->conf->time_reviewer_view_accepted_authors())) {
-            if (($this->search->limit_accepted()
-                 && $this->conf->time_reviewer_view_accepted_authors())
-                || !$this->user->is_manager()) {
-                return 2;
-            } else {
-                return 3;
-            }
-        } else if ($this->conf->submission_blindness() === Conf::BLIND_OPTIONAL) {
-            return $this->user->is_manager() ? 3 : 2;
         } else {
-            return $this->user->is_manager() ? 1 : 0;
+            $bits = $this->user->is_manager() ? 1 : 0;
+            if ($this->user->is_reviewer()
+                && $this->conf->time_some_reviewer_view_authors($this->user->isPC)) {
+                $bits |= 2;
+            }
+            return $bits;
         }
     }
 

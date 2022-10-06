@@ -51,17 +51,20 @@ class Users_Page {
         }
         if ($viewer->privChair
             || ($viewer->isPC
-                && $this->conf->submission_blindness() === Conf::BLIND_NEVER)) {
+                && $this->conf->submission_blindness() !== Conf::BLIND_ALWAYS)) {
             $this->limits["au"] = "Contact authors of submitted papers";
         }
-        if ($viewer->privChair
-            || ($viewer->isPC && $this->conf->time_pc_view_decision(true))) {
+        if ($this->conf->has_any_accepted()
+            && ($viewer->privChair
+                || ($viewer->isPC
+                    && $viewer->can_view_some_decision()
+                    && $viewer->can_view_some_authors()))) {
             $this->limits["auacc"] = "Contact authors of accepted papers";
         }
         if ($viewer->privChair
             || ($viewer->isPC
-                && $this->conf->submission_blindness() === Conf::BLIND_NEVER
-                && $this->conf->time_pc_view_decision(true))) {
+                && $viewer->can_view_some_decision()
+                && $this->conf->submission_blindness() !== Conf::BLIND_ALWAYS)) {
             $this->limits["aurej"] = "Contact authors of rejected papers";
         }
         if ($viewer->privChair) {

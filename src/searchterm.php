@@ -979,13 +979,11 @@ class Limit_SearchTerm extends SearchTerm {
         case "acc":
             assert($options["finalized"] ?? false);
             $options["dec:yes"] = true;
-            return $this->user->allow_administer_all()
-                || ($this->user->isPC && $conf->time_pc_view_decision(true));
+            return $this->user->can_view_all_decision();
         case "undecided":
             assert($options["finalized"] ?? false);
             $options["dec:none"] = true;
-            return $this->user->allow_administer_all()
-                || ($this->user->isPC && $conf->time_pc_view_decision(true));
+            return $this->user->can_view_all_decision();
         case "unsub":
             assert($options["active"] ?? false);
             $options["unsub"] = true;

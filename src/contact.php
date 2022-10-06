@@ -2873,15 +2873,15 @@ class Contact implements JsonSerializable {
             $ci->allow_author_view = $ci->act_author_view || $ci->allow_administer;
 
             // check decision visibility
-            $ci->can_view_decision = $ci->can_administer
-                || ($ci->act_author_view
-                    && $prow->can_author_view_decision())
-                || ($ci->allow_pc_broad
-                    && $this->conf->time_pc_view_decision($ci->view_conflict_type > 0))
+            $sdr = $ci->allow_pc_broad
                 || ($ci->review_status > PaperContactInfo::RS_UNSUBMITTED
-                    && $this->conf->time_reviewer_view_decision()
-                    && ($ci->allow_pc_broad
-                        || $this->conf->setting("extrev_view") > 0));
+                    && $this->conf->setting("extrev_view") > 0);
+            $ci->can_view_decision = $ci->can_administer
+                || (($sdr || $ci->act_author_view)
+                    && $prow->can_author_view_decision())
+                || ($sdr
+                    && ($sd = $this->conf->setting("seedec")) > 0
+                    && ($sd !== Conf::SEEDEC_NCREV || $ci->view_conflict_type <= 0));
 
             // check view-authors state
             if ($ci->act_author_view && !$ci->allow_administer) {
@@ -2896,7 +2896,8 @@ class Contact implements JsonSerializable {
                     || ($prow->outcome_sign > 0
                         && ($isPC || $ci->allow_review)
                         && $ci->can_view_decision
-                        && $this->conf->time_reviewer_view_accepted_authors());
+                        && $prow->can_author_view_decision()
+                        && !$this->conf->setting("seedec_hideau"));
                 if ($ci->allow_administer) {
                     $ci->view_authors_state = $nb ? 2 : 1;
                 } else if ($nb
@@ -3559,7 +3560,7 @@ class Contact implements JsonSerializable {
         } else {
             return $this->isPC
                 || (!$this->conf->setting("shepherd_hide")
-                    && $this->can_view_some_decision_as_author());
+                    && $this->can_view_some_decision());
         }
     }
 
@@ -3585,8 +3586,7 @@ class Contact implements JsonSerializable {
         return $this->is_manager()
             || $this->is_author()
             || ($this->is_reviewer()
-                && ($this->conf->submission_blindness() !== Conf::BLIND_ALWAYS
-                    || $this->conf->time_reviewer_view_accepted_authors()));
+                && $this->conf->time_some_reviewer_view_authors($this->isPC));
     }
 
     /** @return bool */
@@ -4701,16 +4701,25 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_view_some_decision() {
-        return $this->is_manager()
-            || ($this->is_author() && $this->can_view_some_decision_as_author())
-            || ($this->isPC && $this->conf->time_pc_view_decision(false))
-            || ($this->is_reviewer() && $this->conf->time_reviewer_view_decision());
+    function can_view_all_decision() {
+        return $this->allow_administer_all()
+            || ($this->isPC && $this->conf->setting("seedec") === Conf::SEEDEC_NCREV);
     }
 
     /** @return bool */
-    function can_view_some_decision_as_author() {
-        return $this->conf->time_some_author_view_decision();
+    function can_view_some_decision() {
+        if ($this->is_manager()) {
+            return true;
+        } else if ($this->conf->time_some_author_view_decision()) {
+            return $this->isPC
+                || $this->is_author()
+                || ($this->is_reviewer() && $this->conf->setting("extrev_view") > 0);
+        } else if ($this->is_reviewer()) {
+            return $this->conf->setting("seedec") > 0
+                && $this->conf->setting("extrev_view") > 0;
+        } else {
+            return false;
+        }
     }
 
     /** @return bool */
@@ -4779,7 +4788,7 @@ class Contact implements JsonSerializable {
                    && ($this->conf->_au_seerev
                        || $this->conf->any_response_open
                        || ($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0)) {
-            if ($this->can_view_some_decision_as_author()) {
+            if ($this->can_view_some_decision()) {
                 return VIEWSCORE_AUTHORDEC - 1;
             } else {
                 return VIEWSCORE_AUTHOR - 1;

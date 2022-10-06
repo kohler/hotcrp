@@ -3429,12 +3429,12 @@ class Conf {
         return $this->any_response_open || $this->_au_seerev;
     }
     /** @return bool */
-    function time_all_author_view_decision() {
-        return $this->_au_seedec instanceof True_SearchTerm;
-    }
-    /** @return bool */
     function time_some_author_view_decision() {
         return $this->_au_seedec !== null;
+    }
+    /** @return bool */
+    function time_all_author_view_decision() {
+        return $this->_au_seedec instanceof True_SearchTerm;
     }
     /** @return bool */
     function time_review_open() {
@@ -3498,23 +3498,14 @@ class Conf {
             return false;
         }
     }
-    /** @return bool */
-    function time_pc_view_decision($conflicted) {
-        $s = $this->setting("seedec");
-        if ($conflicted) {
-            return $s == self::SEEDEC_ALL || $s == self::SEEDEC_REV;
-        } else {
-            return $s >= self::SEEDEC_REV;
-        }
-    }
-    /** @return bool */
-    function time_reviewer_view_decision() {
-        return $this->setting("seedec") >= self::SEEDEC_REV;
-    }
-    /** @return bool */
-    function time_reviewer_view_accepted_authors() {
-        return $this->_au_seedec instanceof True_SearchTerm
-            && !$this->setting("seedec_hideau");
+    /** @param bool $pc
+     * @return bool */
+    function time_some_reviewer_view_authors($pc) {
+        return $this->submission_blindness() !== self::BLIND_ALWAYS
+            || (($pc || $this->setting("extrev_view") > 0)
+                && $this->has_any_accepted()
+                && $this->time_some_author_view_decision()
+                && !$this->setting("seedec_hideau"));
     }
 
     /** @return int */

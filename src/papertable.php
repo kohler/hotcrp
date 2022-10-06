@@ -928,7 +928,7 @@ class PaperTable {
             // Accepted papers are sometimes not blind.
             if ($this->prow->outcome_sign <= 0
                 || !$this->user->can_view_decision($this->prow)
-                || !$this->conf->time_reviewer_view_accepted_authors()) {
+                || $this->conf->setting("seedec_hideau")) {
                 $sb = $this->conf->submission_blindness();
                 if ($sb === Conf::BLIND_ALWAYS
                     || ($sb === Conf::BLIND_OPTIONAL && $this->prow->blind)) {

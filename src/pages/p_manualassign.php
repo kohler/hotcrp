@@ -106,7 +106,7 @@ class ManualAssign_Page {
             $show_data[] = $this->show_ass_element($pl, "abstract", "Abstract");
         }
         if (($vat = $pl->viewable_author_types()) !== 0) {
-            if ($vat & 1) {
+            if (($vat & 1) !== 0) {
                 $show_data[] = $this->show_ass_element($pl, "anonau", "Authors (deanonymized)", ["fold_target" => 10]);
             } else {
                 $show_data[] = $this->show_ass_element($pl, "au", "Authors", ["fold_target" => 10]);
