@@ -817,9 +817,9 @@ function is_text_or_inline(node) {
         || (node.tagName !== "BR" && node.childWidth === 0 && node.childHeight === 0);
 }
 
-// Test if `ch` is a character code for JSON whitespace
+// Test if `ch` is a character code for JSON whitespace **or NBSP**
 function isspace(ch) {
-    return ch === 9 || ch === 10 || ch === 13 || ch === 32;
+    return ch === 9 || ch === 10 || ch === 13 || ch === 32 || ch === 160;
 }
 
 // Test if `ch` is a character code for a JSON delimiter ([\s",:\[\]\{\}])
@@ -1776,7 +1776,7 @@ function jsonhl_line(lineel, st, nsel) {
 
 
     while (true) {
-        while (p !== n && isspace((ch = t.charCodeAt(p)))) {
+        while (p !== n && (ch = t.charCodeAt(p), isspace(ch))) {
             ++p;
         }
         if (p === n) {
