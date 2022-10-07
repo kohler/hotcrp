@@ -57,8 +57,15 @@ class JSON_SettingParser extends SettingParser {
     }
     function apply_req(Si $si, SettingValues $sv) {
         if (($v = $sv->reqstr($si->name)) !== null) {
-            $sv->set_link_json(true);
-            $sv->add_json_string($v);
+            if (($v2 = $sv->reqstr("json_settings:copy")) !== null
+                && $v !== $v2) {
+                $sv->error_at($si, "<0>Internal error: Inconsistent JSON submitted by browser");
+                $sv->inform_at($si, "<0>Please report this problem to the HotCRP.com maintainer.");
+                $sv->inform_at($si, "<0>Lengths: " . json_encode([strlen($v), strlen($v2)]));
+            } else {
+                $sv->set_link_json(true);
+                $sv->add_json_string($v);
+            }
         }
         return true;
     }

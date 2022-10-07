@@ -2611,12 +2611,25 @@ function settings_path_jump(el, path, use_key) {
     }
 }
 
+function json_settings_presubmit(settingse) {
+    return function () {
+        let lines = [], e;
+        for (let ch = settingse.firstChild; ch; ch = ch.nextSibling) {
+            lines.push(ch.textContent, "\n");
+        }
+        e = this.elements["json_settings:copy"];
+        e || this.appendChild((e = hidden_input("json_settings:copy", "")));
+        e.value = lines.join("");
+    };
+}
+
 function initialize_json_settings() {
     $(".need-settings-json").each(function () {
         make_json_validate.call(this);
         this.addEventListener("jsonpathchange", settings_jsonpathchange);
         removeClass(this, "need-settings-json");
         addClass(this, "js-settings-json");
+        this.closest("form").addEventListener("submit", json_settings_presubmit(this));
     });
 }
 
