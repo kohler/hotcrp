@@ -230,7 +230,6 @@ class Conf {
     const BLIND_ALWAYS = 2;
     const BLIND_UNTILREVIEW = 3;
 
-    const SEEDEC_ADMIN = 0;
     const SEEDEC_REV = 1;
     const SEEDEC_NCREV = 3;
 

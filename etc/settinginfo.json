@@ -715,7 +715,7 @@
     },
     {
         "name": "decision_visibility_reviewer", "storage": "seedec",
-        "title": "Decision visibility",
+        "title": "Decision visibility for reviewers",
         "type": "radio",
         "values": [0, 3, 1], "default_value": 0,
         "json_values": ["no", "unconflicted", "yes"]

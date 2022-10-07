@@ -70,10 +70,10 @@ class ReviewVisibility_SettingParser extends SettingParser {
         $opts = [Conf::AUSEEREV_NO => "No, unless authors can edit responses",
                  Conf::AUSEEREV_YES => "Yes"];
         $opts[Conf::AUSEEREV_SEARCH] = '<div class="d-inline-flex flex-wrap">'
-            . "<label for=\"review_visibility_author_" . Conf::AUSEEREV_SEARCH . "\" class=\"mr-2\">Yes, for submissions matching this search:</label>"
-            . "<div>" . $sv->feedback_at("review_visibility_author_condition")
+            . '<label for="review_visibility_author_condition" class="mr-2 uic js-settings-radioitem-click">Yes, for submissions matching this search:</label>'
+            . '<div>' . $sv->feedback_at("review_visibility_author_condition")
             . $sv->feedback_at("review_visibility_author_tags")
-            . $sv->entry("review_visibility_author_condition", ["class" => "uii js-settings-au-seerev-search papersearch need-suggest"])
+            . $sv->entry("review_visibility_author_condition", ["class" => "uii js-settings-radioitem-click papersearch need-suggest"])
             . "</div></div>";
 
         $hint = '<div class="f-hx if-response-active';

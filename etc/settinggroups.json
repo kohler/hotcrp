@@ -372,8 +372,13 @@
     {
         "name": "decisions/decision-visibility", "order": 300,
         "title": "Decision visibility",
-        "print_function": "DecisionVisibility_SettingParser::print",
-        "settings": ["decision_visibility"]
+        "print_function": "DecisionVisibility_SettingParser::print_author",
+        "settings": ["decision_visibility_author"]
+    },
+    {
+        "name": "decisions/decision-visibility-reviewer", "order": 310,
+        "print_function": "DecisionVisibility_SettingParser::print_reviewer",
+        "settings": ["decision_visibility_reviewer"]
     },
     {
         "name": "__crosscheck/decision-visibility", "order": 805,

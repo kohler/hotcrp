@@ -3,8 +3,12 @@
 
 "use strict";
 
-handle_ui.on("js-settings-au-seerev-search", function () {
-    $("#review_visibility_author_3").click(); // AUSEEREV_SEARCH
+handle_ui.on("js-settings-radioitem-click", function () {
+    let e = this.closest(".settings-radioitem"), re;
+    if (e && (re = e.firstElementChild)
+        && (re = re.firstElementChild)
+        && re.tagName === "INPUT")
+        re.click();
 });
 
 handle_ui.on("js-settings-sub-nopapers", function () {
