@@ -726,7 +726,8 @@
         "type": "radio",
         "values": [0, 3, 1, 2], "default_value": 0,
         "json_values": ["admin", "unconflicted_pc", "pc", "au"],
-        "parser_class": "DecisionVisibility_SettingParser"
+        "parser_class": "DecisionVisibility_SettingParser",
+        "json_export": false
     },
     {
         "name": "shepherd_visibility", "storage": "negval.shepherd_hide",

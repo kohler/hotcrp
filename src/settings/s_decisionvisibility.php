@@ -113,7 +113,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
                 . ", the reviews have no author-visible fields. This is sometimes unintentional; you may want to update "
                 . $sv->setting_link("the review form", "rf") . ".");
             $sv->warning_at("review_visibility_author");
-            $sv->warning_at("decision_visibility");
+            $sv->warning_at("decision_visibility_author");
         }
     }
 }
