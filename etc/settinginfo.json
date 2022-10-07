@@ -444,7 +444,7 @@
         "title": "Authors can see reviews",
         "type": "radio",
         "values": [0, 2, 3], "default_value": 0,
-        "json_values": ["no", "yes", "tag"]
+        "json_values": ["no", "yes", "condition"]
     },
     {
         "name": "review_visibility_author_condition", "storage": "dat.au_seerev",
@@ -701,11 +701,32 @@
 
 
     {
-        "name": "decision_visibility", "storage": "seedec",
+        "name": "decision_visibility_author", "storage": "val.au_seedec",
+        "title": "Decision visibility to authors",
+        "type": "radio",
+        "values": [0, 2, 1], "default_value": 0,
+        "json_values": ["no", "yes", "condition"]
+    },
+    {
+        "name": "decision_visibility_author_condition", "storage": "dat.au_seedec",
+        "title": "Decision visibility condition",
+        "type": "string", "subtype": "search", "size": 30, "placeholder": "Search",
+        "parser_class": "DecisionVisibility_SettingParser"
+    },
+    {
+        "name": "decision_visibility_reviewer", "storage": "seedec",
+        "title": "Decision visibility",
+        "type": "radio",
+        "values": [0, 3, 1], "default_value": 0,
+        "json_values": ["no", "unconflicted", "yes"]
+    },
+    {
+        "name": "decision_visibility", "storage": "none",
         "title": "Decision visibility",
         "type": "radio",
         "values": [0, 3, 1, 2], "default_value": 0,
-        "json_values": ["admin", "unconflicted_pc", "pc", "au"]
+        "json_values": ["admin", "unconflicted_pc", "pc", "au"],
+        "parser_class": "DecisionVisibility_SettingParser"
     },
     {
         "name": "shepherd_visibility", "storage": "negval.shepherd_hide",

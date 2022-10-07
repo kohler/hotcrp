@@ -232,7 +232,6 @@ class Conf {
 
     const SEEDEC_ADMIN = 0;
     const SEEDEC_REV = 1;
-    const SEEDEC_ALL = 2;
     const SEEDEC_NCREV = 3;
 
     const AUSEEREV_NO = 0;          // these values matter
@@ -334,7 +333,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 269) {
+        if ($this->sversion < 270) {
             $old_nerrors = Dbl::$nerrors;
             (new UpdateSchema($this))->run();
             Dbl::$nerrors = $old_nerrors;
@@ -365,13 +364,6 @@ class Conf {
         $this->settings["extrev_view"] = $this->settings["extrev_view"] ?? 0;
         $this->settings["sub_blind"] = $this->settings["sub_blind"] ?? self::BLIND_ALWAYS;
         $this->settings["rev_blind"] = $this->settings["rev_blind"] ?? self::BLIND_ALWAYS;
-        if (!isset($this->settings["seedec"])) {
-            if ($this->settings["au_seedec"] ?? null) {
-                $this->settings["seedec"] = self::SEEDEC_ALL;
-            } else if ($this->settings["rev_seedec"] ?? null) {
-                $this->settings["seedec"] = self::SEEDEC_REV;
-            }
-        }
         if (($this->settings["pc_seeallrev"] ?? null) === 2) {
             $this->settings["pc_seeblindrev"] = 1;
             $this->settings["pc_seeallrev"] = self::PCSEEREV_YES;
@@ -453,13 +445,19 @@ class Conf {
         } else if ($au_seerev > 0) {
             $this->_au_seerev = new True_SearchTerm;
         }
-        if ($this->_au_seerev && $this->_au_seerev instanceof False_SearchTerm) {
+        if ($this->_au_seerev instanceof False_SearchTerm) {
             $this->_au_seerev = null;
         }
-        $au_seedec = $this->settings["seedec"] ?? 0;
+        $au_seedec = $this->settings["au_seedec"] ?? 0;
         $this->_au_seedec = null;
-        if ($au_seedec === self::SEEDEC_ALL) {
+        if ($au_seedec === 1 && ($q = $this->settingTexts["au_seedec"] ?? null) !== null) {
+            $srch = new PaperSearch($this->root_user(), $q);
+            $this->_au_seedec = $srch->full_term();
+        } else if ($au_seedec > 0) {
             $this->_au_seedec = new True_SearchTerm;
+        }
+        if ($this->_au_seedec instanceof False_SearchTerm) {
+            $this->_au_seedec = null;
         }
         $this->tag_seeall = ($this->settings["tag_seeall"] ?? 0) > 0;
         $this->ext_subreviews = $this->settings["pcrev_editdelegate"] ?? 0;

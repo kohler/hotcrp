@@ -910,6 +910,19 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->save_setting("__review_view_score_v264", 1);
         }
 
+        // update seedec
+        if ($conf->sversion <= 269) {
+            $sd = $conf->setting("seedec");
+            if ($sd === null && $conf->setting("rev_seedec")) {
+                $sd = 1; /* SEEDEC_REV */
+            }
+            if ($sd === 2) {
+                $conf->save_setting("seedec", 1);
+                $conf->save_setting("au_seedec", 2);
+            }
+            $conf->save_setting("rev_seedec", null);
+        }
+
         if ($conf->sversion === 6
             && $conf->ql_ok("alter table ReviewRequest add `reason` text")) {
             $conf->update_schema_version(7);
@@ -2523,6 +2536,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table PaperReviewHistory add `reviewNextTime` bigint(11) NOT NULL DEFAULT 0")
             && $conf->ql_ok("delete from PaperReviewHistory")) {
             $conf->update_schema_version(269);
+        }
+        if ($conf->sversion === 269) {
+            $conf->update_schema_version(270);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
