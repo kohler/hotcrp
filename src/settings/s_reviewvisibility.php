@@ -105,7 +105,6 @@ class ReviewVisibility_SettingParser extends SettingParser {
     }
 
     static function crosscheck(SettingValues $sv) {
-        $conf = $sv->conf;
         if (($sv->has_interest("review_visibility_author") || $sv->has_interest("tag_readonly"))
             && $sv->oldv("review_visibility_author") == Conf::AUSEEREV_SEARCH
             && $sv->oldv("review_visibility_author_condition")

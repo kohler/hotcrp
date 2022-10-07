@@ -76,7 +76,7 @@ select, button {
 .asspref1 {
 	color: #008000;
 }
-.dec-yes, .pstat_decyes, .dark .asspref1 {
+.dec-yes, .dark .asspref1 {
 	color: #259f00;
 }
 
