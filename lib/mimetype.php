@@ -45,7 +45,8 @@ class Mimetype {
         "video/x-msvideo" =>  [".avi", null, self::FLAG_INCOMPRESSIBLE],
         self::JSON_TYPE =>    [".json", "JSON", self::FLAG_UTF8 | self::FLAG_COMPRESSIBLE | self::FLAG_TEXTUAL],
         self::JPG_TYPE =>     [".jpg", "JPEG", self::FLAG_INLINE, ".jpeg"],
-        self::PNG_TYPE =>     [".png", "PNG", self::FLAG_INLINE]
+        self::PNG_TYPE =>     [".png", "PNG", self::FLAG_INLINE],
+        self::GIF_TYPE =>     [".gif", "GIF", self::FLAG_INLINE]
     ];
 
     private static $mime_types = null;
@@ -65,7 +66,7 @@ class Mimetype {
 
     /** @param string|Mimetype $type
      * @return ?Mimetype */
-    static function lookup($type, $nocreate = false) {
+    static function lookup($type) {
         if (!$type) {
             return null;
         }
@@ -125,9 +126,14 @@ class Mimetype {
         }
     }
 
-    /** @param string|Mimetype $type */
+    /** @param string|Mimetype $type
+     * @return string */
     static function type($type) {
-        if (($x = self::lookup($type, true))) {
+        if ($type instanceof Mimetype) {
+            return $type->mimetype;
+        } else if (isset(self::$tinfo[$type])) {
+            return $type;
+        } else if (($x = self::lookup($type))) {
             return $x->mimetype;
         } else {
             return $type;
@@ -137,8 +143,8 @@ class Mimetype {
     /** @param string|Mimetype $type
      * @return string */
     static function type_with_charset($type) {
-        if (($x = self::lookup($type, true))) {
-            if ($x->flags & self::FLAG_UTF8) {
+        if (($x = self::lookup($type))) {
+            if (($x->flags & self::FLAG_UTF8) !== 0) {
                 return $x->mimetype . "; charset=utf-8";
             } else {
                 return $x->mimetype;
@@ -197,14 +203,14 @@ class Mimetype {
     /** @param string|Mimetype $type
      * @return bool */
     static function disposition_inline($type) {
-        $x = self::lookup($type, true);
+        $x = self::lookup($type);
         return $x && ($x->flags & self::FLAG_INLINE) !== 0;
     }
 
     /** @param string|Mimetype $type
      * @return bool */
     static function textual($type) {
-        $x = self::lookup($type, true);
+        $x = self::lookup($type);
         if ($x && $x->flags !== 0) {
             return ($x->flags & self::FLAG_TEXTUAL) !== 0;
         } else {
@@ -215,7 +221,7 @@ class Mimetype {
     /** @param string|Mimetype $type
      * @return bool */
     static function compressible($type) {
-        $x = self::lookup($type, true);
+        $x = self::lookup($type);
         if ($x && $x->flags !== 0) {
             return ($x->flags & self::FLAG_COMPRESSIBLE) !== 0;
         } else {
@@ -231,33 +237,42 @@ class Mimetype {
     }
 
 
-    /** @return bool */
+    /** @param ?string $content
+     * @return bool */
     static function pdf_content($content) {
         return $content && strncmp("%PDF-", $content, 5) == 0;
     }
 
-    /** @return string */
+    /** @param ?string $content
+     * @param ?string $type
+     * @return string */
     static function content_type($content, $type = null) {
+        // null content must use type
+        if ($content === null || $content === "") {
+            return self::type($type ? : self::BIN_TYPE);
+        }
         // reliable sniffs
-        if ($content !== null && $content !== "") {
-            if (strncmp("%PDF-", $content, 5) == 0) {
-                return self::PDF_TYPE;
-            } else if (substr($content, 512, 4) === "\x00\x6E\x1E\xF0") {
-                return self::PPT_TYPE;
-            } else if (strncmp($content, "\xFF\xD8\xFF\xD8", 4) == 0
-                       || (strncmp($content, "\xFF\xD8\xFF\xE0", 4) == 0 && substr($content, 6, 6) == "JFIF\x00\x01")
-                       || (strncmp($content, "\xFF\xD8\xFF\xE1", 4) == 0 && substr($content, 6, 6) == "Exif\x00\x00")) {
-                return self::JPG_TYPE;
-            } else if (strncmp($content, "\x89PNG\r\n\x1A\x0A", 8) == 0) {
-                return self::PNG_TYPE;
-            } else if ((strncmp($content, "GIF87a", 6) == 0
-                        || strncmp($content, "GIF89a", 6) == 0)
-                       && str_ends_with($content, "\x00;")) {
-                return self::GIF_TYPE;
-            } else if (strncmp($content, "Rar!\x1A\x07\x00", 7) == 0
-                       || strncmp($content, "Rar!\x1A\x07\x01\x00", 8) == 0) {
-                return self::RAR_TYPE;
-            }
+        if (strlen($content) < 16) {
+            // do not sniff
+        } else if (substr($content, 0, 5) === "%PDF-") {
+            return self::PDF_TYPE;
+        } else if (strlen($content) > 516 && substr($content, 512, 4) === "\x00\x6E\x1E\xF0") {
+            return self::PPT_TYPE;
+        } else if (substr($content, 0, 4) === "\xFF\xD8\xFF\xD8"
+                   || (substr($content, 0, 4) === "\xFF\xD8\xFF\xE0"
+                       && substr($content, 6, 6) === "JFIF\x00\x01")
+                   || (substr($content, 0, 4) === "\xFF\xD8\xFF\xE1"
+                       && substr($content, 6, 6) === "Exif\x00\x00")) {
+            return self::JPG_TYPE;
+        } else if (substr($content, 0, 8) === "\x89PNG\r\n\x1A\x0A") {
+            return self::PNG_TYPE;
+        } else if ((substr($content, 0, 6) === "GIF87a"
+                    || substr($content, 0, 6) === "GIF89a")
+                   && str_ends_with($content, "\x00;")) {
+            return self::GIF_TYPE;
+        } else if (substr($content, 0, 7) === "Rar!\x1A\x07\x00"
+                   || substr($content, 0, 8) === "Rar!\x1A\x07\x01\x00") {
+            return self::RAR_TYPE;
         }
         // eliminate invalid types, canonicalize
         if ($type
@@ -266,27 +281,177 @@ class Mimetype {
             $type = $tx;
         }
         // unreliable sniffs
-        if ($content !== null
-            && $content !== ""
-            && (!$type || $type === self::BIN_TYPE)) {
-            if (strncmp("%!PS-", $content, 5) == 0) {
+        if (!$type || $type === self::BIN_TYPE) {
+            if (substr($content, 0, 5) === "%!PS-") {
                 return self::PS_TYPE;
-            } else if (strncmp($content, "ustar\x0000", 8) == 0
-                       || strncmp($content, "ustar  \x00", 8) == 0) {
+            } else if (substr($content, 0, 8) === "ustar\x0000"
+                       || substr($content, 0, 8) === "ustar  \x00") {
                 return self::TAR_TYPE;
             }
-            if (!self::$finfo) {
-                self::$finfo = new finfo(FILEINFO_MIME_TYPE);
-            }
+            self::$finfo = self::$finfo ?? new finfo(FILEINFO_MIME_TYPE);
             $type = self::$finfo->buffer(substr($content, 0, 2048));
-            // canonicalize
-            if ($type
-                && !isset(self::$tinfo[$type])
-                && ($tx = self::type($type))) {
-                $type = $tx;
-            }
         }
         // type obtained, or octet-stream if nothing else works
         return self::type($type ? : self::BIN_TYPE);
+    }
+
+    /** @param ?string $content
+     * @param ?string $type
+     * @return array{type:string,width?:int,height?:int} */
+    static function content_info($content, $type = null) {
+        $type = self::content_type($content, $type);
+        if ($type === self::JPG_TYPE) {
+            return self::jpeg_content_info($content);
+        } else if ($type === self::PNG_TYPE) {
+            return self::png_content_info($content);
+        } else if ($type === self::GIF_TYPE) {
+            return self::gif_content_info($content);
+        } else {
+            return ["type" => $type];
+        }
+    }
+
+    /** @param string $s
+     * @return array{type:string,width?:int,height?:int} */
+    static private function jpeg_content_info($s) {
+        $info = ["type" => self::JPG_TYPE];
+        $pos = 0;
+        $len = strlen($s);
+        while ($pos + 2 <= $len && ord($s[$pos]) === 0xFF) {
+            $ch = ord($s[$pos + 1]);
+            if ($ch === 0xFF) {
+                ++$pos;
+                continue;
+            } else if (($ch >= 0xD0 && $ch <= 0xD8) || $ch === 0x01) {
+                $pos += 2;
+                continue;
+            } else if ($ch === 0xD9 || $pos + 4 > $len) {
+                break;
+            }
+            $blen = (ord($s[$pos + 2]) << 8) + ord($s[$pos + 3]);
+            if (($ch >= 0xC0 && $ch <= 0xCF) && $ch !== 0xC8) {
+                // SOF
+                if ($blen < 8 || $pos + 6 > $len) {
+                    break;
+                }
+                $x = $pos + 8 <= $len ? (ord($s[$pos + 7]) << 8) + ord($s[$pos + 8]) : 0;
+                $y = (ord($s[$pos + 5]) << 8) + ord($s[$pos + 6]);
+                if ($x !== 0) {
+                    $info["width"] = $x;
+                }
+                if ($y !== 0) {
+                    $info["height"] = $y;
+                }
+                if ($x === 0 || $y !== 0) {
+                    break;
+                }
+            } else if ($ch === 0xDC) {
+                // DNL
+                if ($blen !== 4 || $pos + 5 > $len) {
+                    break;
+                }
+                $y = (ord($s[$pos + 4]) << 8) + ord($s[$pos + 5]);
+                if ($y !== 0) {
+                    $info["height"] = $y;
+                }
+                break;
+            }
+            $pos += 2 + $blen;
+        }
+        return $info;
+    }
+
+    /** @param string $s
+     * @return array{type:string,width?:int,height?:int} */
+    static private function gif_content_info($s) {
+        $info = ["type" => self::GIF_TYPE];
+        $pos = 6;
+        $len = strlen($s);
+        if ($pos + 3 > $len) {
+            return $info;
+        }
+        $lw = ord($s[$pos]) + (ord($s[$pos + 1]) << 8);
+        $lh = ord($s[$pos + 2]) + (ord($s[$pos + 3]) << 8);
+        if ($lw !== 0) {
+            $info["width"] = $lw;
+        }
+        if ($lh !== 0) {
+            $info["height"] = $lh;
+        }
+        if (($lw !== 0 && $lh !== 0) || $pos + 6 > $len) {
+            return $info;
+        }
+        $flags = ord($s[$pos + 4]);
+        $pos += 6;
+        if (($flags & 0x80) !== 0) {
+            $pos += 3 * (1 << (($flags & 7) + 1));
+        }
+        while ($pos + 8 <= $len) {
+            $ch = ord($s[$pos]);
+            if ($ch === 0x21) {
+                // extension
+                $pos += 2;
+                $blen = 1;
+                while ($pos < $len && $blen !== 0) {
+                    $blen = ord($s[$pos]);
+                    $pos += $blen + 1;
+                }
+            } else if ($ch === 0x2C) {
+                // image
+                $left = ord($s[$pos + 1]) + (ord($s[$pos + 2]) << 8);
+                $top = ord($s[$pos + 3]) + (ord($s[$pos + 4]) << 8);
+                $w = ord($s[$pos + 5]) + (ord($s[$pos + 6]) << 8);
+                $h = ord($s[$pos + 7]) + (ord($s[$pos + 8]) << 8);
+                if ($w !== 0 && $left + $w > ($info["width"] ?? 0)) {
+                    $info["width"] = $left + $w;
+                }
+                if ($h !== 0 && $top + $h > ($info["height"] ?? 0)) {
+                    $info["height"] = $top + $h;
+                }
+                break;
+            } else {
+                // trailer/unknown
+                break;
+            }
+        }
+        return $info;
+    }
+
+    /** @param string $s
+     * @param int $off
+     * @return int */
+    static private function net4at($s, $off) {
+        return (ord($s[$off]) << 24) + (ord($s[$off + 1]) << 16)
+            + (ord($s[$off + 2]) << 8) + ord($s[$off + 3]);
+    }
+
+    /** @param string $s
+     * @return array{type:string,width?:int,height?:int} */
+    static private function png_content_info($s) {
+        $info = ["type" => self::PNG_TYPE];
+        $pos = 8;
+        $len = strlen($s);
+        while ($pos + 8 <= $len) {
+            $blen = self::net4at($s, $pos);
+            $chunk = self::net4at($s, $pos + 4);
+            if ($chunk === 0x49484452 /* IHDR */) {
+                $w = $pos + 11 <= $len ? self::net4at($s, $pos + 8) : 0;
+                $h = $pos + 15 <= $len ? self::net4at($s, $pos + 12) : 0;
+                if ($w !== 0) {
+                    $info["width"] = $w;
+                }
+                if ($h !== 0) {
+                    $info["height"] = $h;
+                }
+                break;
+            }
+            $min = min($chunk >> 24, ($chunk >> 16) & 0xFF, ($chunk >> 8) & 0xFF, $chunk & 0xFF);
+            $max = max($chunk >> 24, ($chunk >> 16) & 0xFF, ($chunk >> 8) & 0xFF, $chunk & 0xFF);
+            if (($min | 0x20) < 0x61 || ($max | 0x20) > 0x7A) {
+                break;
+            }
+            $pos += 12 + $blen;
+        }
+        return $info;
     }
 }
