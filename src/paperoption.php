@@ -1762,7 +1762,7 @@ class Selector_PaperOption extends PaperOption {
 class Document_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        if ($this->id === 0 && !$conf->opt("noPapers")) {
+        if ($this->id === DTYPE_SUBMISSION && !$conf->opt("noPapers")) {
             $this->set_required(true);
         }
     }
@@ -1827,11 +1827,14 @@ class Document_PaperOption extends PaperOption {
         }
     }
     function value_check(PaperValue $ov, Contact $user) {
-        if ($this->id === DTYPE_SUBMISSION
-            && !$this->conf->opt("noPapers")
+        if ($this->test_required($ov->prow)
             && !$this->value_present($ov)
             && !$ov->prow->allow_absent()) {
-            $ov->msg($this->conf->_("<0>Entry required to complete submission"), MessageSet::WARNING_NOTE);
+            if ($this->id === DTYPE_SUBMISSION) {
+                $ov->msg($this->conf->_("<0>Entry required to complete submission"), MessageSet::WARNING_NOTE);
+            } else {
+                $ov->error("<0>Entry required");
+            }
         }
         if ($this->value_present($ov)
             && ($doc = $ov->document(0))
