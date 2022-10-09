@@ -299,6 +299,7 @@ class Mimetype {
      * @param ?string $type
      * @return array{type:string,width?:int,height?:int} */
     static function content_info($content, $type = null) {
+        $content = $content ?? "";
         $type = self::content_type($content, $type);
         if ($type === self::JPG_TYPE) {
             return self::jpeg_content_info($content);
