@@ -477,7 +477,7 @@ class ConfInvariants {
         sort($pids);
         $any = $this->invariantq("select s.paperId, s.paperStorageId from PaperStorage s where s.paperStorageId?a and s.inactive limit 1", $pids);
         if ($any) {
-            $this->invariant_error("paper {0} document {1} is inappropriately inactive");
+            $this->invariant_error("inactive", "paper {0} document {1} is inappropriately inactive");
         }
 
         $oids = $nonempty_oids = [];
@@ -492,7 +492,7 @@ class ConfInvariants {
         if (!empty($oids)) {
             $any = $this->invariantq("select o.paperId, o.optionId, s.paperStorageId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.inactive and s.paperStorageId>1) where o.optionId?a limit 1", $oids);
             if ($any) {
-                $this->invariant_error("paper {0} option {1} document {2} is inappropriately inactive");
+                $this->invariant_error("inactive", "paper {0} option {1} document {2} is inappropriately inactive");
             }
 
             $any = $this->invariantq("select o.paperId, o.optionId, s.paperStorageId, s.paperId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.paperStorageId>1 and s.paperId!=o.paperId) where o.optionId?a limit 1", $oids);
@@ -510,7 +510,7 @@ class ConfInvariants {
 
         $any = $this->invariantq("select l.paperId, l.linkId, s.paperStorageId from DocumentLink l join PaperStorage s on (l.documentId=s.paperStorageId and s.inactive) limit 1");
         if ($any) {
-            $this->invariant_error("paper {0} link {1} document {2} is inappropriately inactive");
+            $this->invariant_error("inactive", "paper {0} link {1} document {2} is inappropriately inactive");
         }
 
         return $this;
