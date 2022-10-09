@@ -783,14 +783,27 @@ class DocumentInfo implements JsonSerializable {
     function save() {
         // look for an existing document with same sha1
         if ($this->binary_hash() !== false && $this->paperId != 0) {
-            $row = $this->conf->fetch_first_row("select paperStorageId, timestamp, inactive, filename, mimetype from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $this->documentType, $this->binary_hash());
+            $row = $this->conf->fetch_first_row("select paperStorageId, timestamp, inactive, filename, mimetype, infoJson from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $this->documentType, $this->binary_hash());
             if ($row
                 && (!isset($this->filename) || $row[3] === $this->filename)
                 && (!isset($this->mimetype) || $row[4] === $this->mimetype)) {
                 $this->paperStorageId = (int) $row[0];
                 $this->timestamp = (int) $row[1];
+                $qf = $qv = [];
                 if ($row[2]) {
-                    $this->conf->qe("update PaperStorage set inactive=0 where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId);
+                    $qf[] = "inactive=?";
+                    $qv[] = 0;
+                }
+                $m = $this->metadata();
+                $this->infoJson = $row[5];
+                $this->_metadata = null;
+                if ($m) {
+                    $this->infoJson = json_object_replace_recursive($this->infoJson, $m);
+                    $qf[] = "infoJson=?";
+                    $qv[] = $this->infoJson;
+                }
+                if (!empty($qf)) {
+                    $this->conf->qe("update PaperStorage set " . join(",", $qf) . " where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId, ...$qv);
                 }
                 return true;
             }
@@ -1418,11 +1431,10 @@ class DocumentInfo implements JsonSerializable {
         $ijstr = Dbl::compare_and_swap($this->conf->dblink,
             "select infoJson from PaperStorage where paperId=? and paperStorageId=?",
             [$this->paperId, $this->paperStorageId],
-            function ($old) use ($delta, &$length_ok) {
-                $j = json_object_replace($old ? json_decode($old) : null, $delta, true);
-                $new = $j ? json_encode($j) : null;
-                $length_ok = $new === null || strlen($new) <= 32768;
-                return $length_ok ? $new : $old;
+            function ($oldstr) use ($delta, &$length_ok) {
+                $newstr = json_object_replace_recursive($oldstr, $delta);
+                $length_ok = $newstr === null || strlen($newstr) <= 32768;
+                return $length_ok ? $newstr : $oldstr;
             },
             "update PaperStorage set infoJson=?{desired} where paperId=? and paperStorageId=? and infoJson?{expected}e",
             [$this->paperId, $this->paperStorageId]);

@@ -490,6 +490,9 @@ function object_replace($a, $b) {
     }
 }
 
+/** @param object $a
+ * @param array|object $b
+ * @return void */
 function object_replace_recursive($a, $b) {
     foreach (is_object($b) ? get_object_vars($b) : $b as $k => $v) {
         if ($v === null) {
@@ -504,20 +507,16 @@ function object_replace_recursive($a, $b) {
     }
 }
 
-function json_object_replace($j, $updates, $nullable = false) {
-    if ($j === null) {
-        $j = (object) [];
-    } else if (is_array($j)) {
-        $j = (object) $j;
+/** @param ?string $a
+ * @param array|object $b
+ * @return ?string */
+function json_object_replace_recursive($a, $b) {
+    $obj = $a ? json_decode($a) : (object) [];
+    if (is_object($obj)) {
+        object_replace_recursive($obj, $b);
     }
-    object_replace($j, $updates);
-    if ($nullable) {
-        $x = get_object_vars($j);
-        if (empty($x)) {
-            $j = null;
-        }
-    }
-    return $j;
+    $s = json_encode_db($obj ?? (object) []);
+    return $s !== "{}" ? $s : null;
 }
 
 
