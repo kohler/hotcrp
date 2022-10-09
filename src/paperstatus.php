@@ -399,8 +399,8 @@ class PaperStatus extends MessageSet {
                 if (isset($docj->filename)) {
                     $args["filename"] = DocumentInfo::sanitize_filename($docj->filename);
                 }
-                DocumentInfo::fix_mimetype($args);
                 $doc = new DocumentInfo($args, $this->conf, $this->prow);
+                $doc->analyze_content();
             }
         }
 

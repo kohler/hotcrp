@@ -211,6 +211,40 @@ class PaperStatus_Tester {
         xassert_eqq($paper3b->submission->hash, "sha2-38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4");
     }
 
+    function test_document_image_dimensions() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/name" => "Image",
+            "sf/1/id" => "new",
+            "sf/1/order" => 100,
+            "sf/1/type" => "document"
+        ]);
+        xassert($sv->execute());
+        $opt = $this->conf->options()->find("Image");
+        xassert(!!$opt);
+
+        $ps = new PaperStatus($this->conf);
+        $ps->save_paper_json(json_decode('{"id":3,"Image":{"content_base64":"R0lGODlhIAAeAPAAAP///wAAACH/C05FVFNDQVBFMi4wAwEAAAAh+QQEMgD/ACwAAAAAIAAeAAACHYSPqcvtD6OctNqLs968+w+G4kiW5omm6sq27isVADs="}}'));
+        xassert_paper_status($ps);
+
+        $paper3 = $this->u_estrin->checked_paper_by_id(3);
+        $doc = $paper3->document($opt->id);
+        xassert(!!$doc);
+        xassert_eqq($doc->mimetype, "image/gif");
+        xassert_eqq($doc->metadata()->width ?? 0, 32);
+        xassert_eqq($doc->metadata()->height ?? 0, 30);
+
+        $this->conf->qe("delete from PaperOption where optionId=?", $opt->id);
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/name" => "Image",
+            "sf/1/delete" => "1"
+        ]);
+        xassert($sv->execute());
+        $opt = $this->conf->options()->find("Image");
+        xassert(!$opt);
+    }
+
     function test_save_new_paper() {
         $ps = new PaperStatus($this->conf);
         $ps->save_paper_json(json_decode("{\"id\":\"new\",\"submission\":{\"content\":\"%PDF-jiajfnbsaf\\n\",\"type\":\"application/pdf\"},\"title\":\"New paper J\",\"abstract\":\"This is a jabstract\\r\\n\",\"authors\":[{\"name\":\"Poopo\"}]}"));

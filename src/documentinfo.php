@@ -121,7 +121,6 @@ class DocumentInfo implements JsonSerializable {
         }
         $this->filters_applied = $p["filters_applied"] ?? null;
 
-        assert($this->paperStorageId <= 1 || !!$this->mimetype);
         assert(!isset($p["sha1"]));
         assert($this->sha1 === false || is_string($this->sha1));
     }
@@ -179,8 +178,8 @@ class DocumentInfo implements JsonSerializable {
         } else {
             $upload_error = " could not be read";
         }
-        self::fix_mimetype($args);
         $doc = new DocumentInfo($args, $conf);
+        $doc->analyze_content();
         if ($upload_error) {
             $filename = $args["filename"] ?? "";
             $doc->error("<0>Uploaded file" . ($filename === "" ? "" : "‘{$filename}’") . $upload_error);
@@ -241,16 +240,6 @@ class DocumentInfo implements JsonSerializable {
             && (!isset($j->content_file) || is_string($j->content_file));
     }
 
-    static function fix_mimetype(&$args) {
-        $content = $args["content"] ?? null;
-        if ($content === null && isset($args["content_file"])) {
-            $content = file_get_contents($args["content_file"], false, null, 0, 2048);
-        } else if ($content === null && isset($args["content_base64"])) {
-            $content = base64_decode(substr($args["content_base64"], 0, 2730));
-        }
-        $args["mimetype"] = Mimetype::content_type($content, $args["mimetype"] ?? null);
-    }
-
     /** @param ?string $fn
      * @return ?string */
     static function sanitize_filename($fn) {
@@ -270,6 +259,26 @@ class DocumentInfo implements JsonSerializable {
             $fn = UnicodeHelper::utf8_replace_invalid($fn);
         }
         return $fn !== "" ? $fn : null;
+    }
+
+    function analyze_content() {
+        $content = $this->content;
+        if ($content === null && $this->content_file) {
+            $content = file_get_contents($this->content_file, false, null, 0, 4096);
+        }
+        if ($content !== null) {
+            $info = Mimetype::content_info($content, $this->mimetype);
+            $this->mimetype = $info["type"];
+            if (isset($info["width"]) || isset($info["height"])) {
+                $this->_metadata = $this->metadata() ?? (object) [];
+                if (isset($info["width"])) {
+                    $this->_metadata->width = $info["width"];
+                }
+                if (isset($info["height"])) {
+                    $this->_metadata->height = $info["height"];
+                }
+            }
+        }
     }
 
 
@@ -736,6 +745,17 @@ class DocumentInfo implements JsonSerializable {
                 $meta["filtertype"] = $this->filterType;
                 if ($this->sourceHash != "") {
                     $meta["sourcehash"] = Filer::hash_as_text($this->sourceHash);
+                }
+            }
+            if (($m = $this->metadata())) {
+                if (isset($m->width)) {
+                    $meta["width"] = $m->width;
+                }
+                if (isset($m->height)) {
+                    $meta["height"] = $m->height;
+                }
+                if (isset($m->npages)) {
+                    $meta["npages"] = $m->npages;
                 }
             }
             $user_data = ["hotcrp" => json_encode_db($meta)];
