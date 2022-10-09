@@ -987,6 +987,12 @@ class Unit_Tester {
         xassert_eqq(str_list_lower_bound("af", ["0", "1", "2", "ab", "ac", "ad"]), 6);
     }
 
+    function test_glob_to_regex() {
+        xassert_eqq(glob_to_regex("*foo{a,b}?"), ".*foo\\{a,b\\}.");
+        xassert_eqq(glob_to_regex("*foo{a,b}?|", GLOB_BRACE), ".*foo(?:a|b).\\|");
+        xassert_eqq(glob_to_regex("x.txt", GLOB_BRACE), "x\\.txt");
+    }
+
     function test_topic_set() {
         $ts = new TopicSet($this->conf);
         $ts->__add(1, "None of the above");

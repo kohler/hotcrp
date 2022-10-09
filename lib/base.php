@@ -259,6 +259,58 @@ function count_words($text) {
     return preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*/', $text);
 }
 
+/** @param string $s
+ * @param int $flags
+ * @return string */
+function glob_to_regex($s, $flags = 0) {
+    $t = "";
+    while (preg_match('/\A(.*?)([-.\\\\+*?\\[^\\]$(){}=!<>|:#\\/])([\s\S]*)\z/', $s, $m)) {
+        $t .= $m[1];
+        if ($m[2] === "\\") {
+            if ($m[3] === "") {
+                $t .= "\\\\";
+            } else {
+                $t .= "\\" . $m[3][0];
+                $m[3] = (string) substr($m[3], 1);
+            }
+        } else if ($m[2] === "*") {
+            $t .= ".*";
+        } else if ($m[2] === "?") {
+            $t .= ".";
+        } else if ($m[2] === "["
+                   && ($pos = strpos($m[3], "]")) !== false
+                   && $pos > 0) {
+            $x = substr($m[3], 0, $pos);
+            $m[3] = (string) substr($m[3], $pos + 1);
+            if ($x[0] === "!") {
+                $t .= "[^" . (string) substr($x, 1) . "]";
+            } else {
+                $t .= "[{$x}]";
+            }
+        } else if ($m[2] === "{"
+                   && ($pos = strpos($m[3], "}")) !== false
+                   && ($flags & GLOB_BRACE) !== 0) {
+            $x = substr($m[3], 0, $pos);
+            $m[3] = (string) substr($m[3], $pos + 1);
+            $sep = "(?:";
+            while ($x !== "") {
+                $comma = strpos($x, ",");
+                $pos = $comma === false ? strlen($x) : $comma;
+                $t .= $sep . substr($x, 0, $pos);
+                $sep = "|";
+                $x = $comma === false ? "" : (string) substr($x, $comma + 1);
+            }
+            if ($sep !== "(?:") {
+                $t .= ")";
+            }
+        } else {
+            $t .= "\\" . $m[2];
+        }
+        $s = $m[3];
+    }
+    return $t . $s;
+}
+
 /** @param mixed $x
  * @return ?bool */
 function friendly_boolean($x) {
