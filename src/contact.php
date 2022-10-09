@@ -309,7 +309,8 @@ class Contact implements JsonSerializable {
         return $u;
     }
 
-    /** @return ?Contact */
+    /** @param mysqli_result|Dbl_Result $result
+     * @return ?Contact */
     static function fetch($result, Conf $conf) {
         if (($u = $result->fetch_object("Contact", [$conf]))) {
             $u->conf = $conf;

@@ -105,7 +105,7 @@ class CleanDocstore_Batch {
      * @return bool */
     private function check_match($fm) {
         $doc = new DocumentInfo([
-            "sha1" => $fm->algohash,
+            "hash" => $fm->algohash,
             "mimetype" => Mimetype::type($fm->extension)
         ], $this->conf);
         $hashalg = $doc->hash_algorithm();
