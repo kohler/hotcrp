@@ -43,7 +43,7 @@ class UpdateContactdb_Batch {
         $result = Dbl::ql($cdb, "select * from Conferences where `dbname`=?", $this->conf->dbname);
         $this->confrow = Dbl::fetch_first_object($result);
         if (!$this->confrow) {
-            throw new RuntimeException("Conference is not recorded in contactdb");
+            throw new ErrorException("Conference is not recorded in contactdb");
         }
         $this->cdb_confid = $this->confrow->confid = (int) $this->confrow->confid;
         if ($this->confrow->shortName !== $this->conf->short_name
@@ -59,7 +59,7 @@ class UpdateContactdb_Batch {
     private function cdb() {
         $cdb = $this->try_cdb();
         if (!$cdb) {
-            throw new RuntimeException("Conference has no contactdb");
+            throw new ErrorException("Conference has no contactdb");
         }
         return $cdb;
     }

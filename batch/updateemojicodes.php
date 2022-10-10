@@ -31,7 +31,7 @@ class UpdateEmojiCodes_Batch {
                         : (isset($arg["regex"]) ? "regex" : "parse")))));
         if ($this->mode === "absent") {
             if (count($arg["_"])) {
-                throw new RuntimeException("Expected arguments `EMOJIDATA.TXT NAMESLIST.TXT`");
+                throw new ErrorException("Expected arguments `EMOJIDATA.TXT NAMESLIST.TXT`");
             }
             $this->args = $arg["_"];
         }
@@ -126,7 +126,7 @@ class UpdateEmojiCodes_Batch {
         }
         if ($s === false
             || !preg_match('/\A\# emoji-data/', $s)) {
-            throw new RuntimeException("input should be emoji-data.txt");
+            throw new ErrorException("input should be emoji-data.txt");
         }
 
         $this->emojiprop = [];

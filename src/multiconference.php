@@ -262,7 +262,7 @@ class Multiconference {
             && $ex->getopt instanceof Getopt) {
             $s .= $ex->getopt->short_usage();
         }
-        if (defined("HOTCRP_TESTHARNESS") || $ex instanceof AssertionError) {
+        if (defined("HOTCRP_TESTHARNESS") || $ex instanceof Error) {
             $s .= debug_string_backtrace($ex) . "\n";
         }
         fwrite(STDERR, $s);

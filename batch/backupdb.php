@@ -98,7 +98,7 @@ class BackupDB_Batch {
                     file_put_contents($fn, "[client]\npassword={$this->connp->password}\n");
                     register_shutdown_function("unlink", $fn);
                 } else {
-                    throw new RuntimeException("Cannot create temporary file");
+                    throw new ErrorException("Cannot create temporary file");
                 }
             }
             $cmd .= " --defaults-extra-file=" . escapeshellarg($this->_pwfile);

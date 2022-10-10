@@ -18,7 +18,7 @@ class FakeNames_Batch {
     function __construct(Conf $conf) {
         $this->conf = $conf;
         if (!$this->load()) {
-            throw new RuntimeException("Can't load fake names database");
+            throw new ErrorException("Can't load fake names database");
         }
     }
 

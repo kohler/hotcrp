@@ -253,7 +253,7 @@ class Xassert {
     static function fail() {
         ++self::$n;
         if (self::$stop) {
-            throw new RuntimeException("error at assertion #" . self::$n);
+            throw new ErrorException("error at assertion #" . self::$n);
         }
     }
 

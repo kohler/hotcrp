@@ -142,7 +142,7 @@ class CleanDocstore_Batch {
         }
 
         if (empty($this->docstores) || !$this->conf->docstore()) {
-            throw new RuntimeException("No docstore to clean");
+            throw new ErrorException("No docstore to clean");
         }
 
         preg_match('/\A((?:\/[^\/%]*(?=\/|\z))+)/', $this->docstores[0], $m);
@@ -153,7 +153,7 @@ class CleanDocstore_Batch {
             $ts = disk_total_space($usage_directory);
             $fs = disk_free_space($usage_directory);
             if ($ts === false || $fs === false) {
-                throw new RuntimeException("{$usage_directory}: Cannot evaluate free space");
+                throw new ErrorException("{$usage_directory}: Cannot evaluate free space");
             } else if ($fs >= $ts * (1 - ($this->max_usage ?? $this->min_usage))) {
                 if (!$this->quiet) {
                     fwrite(STDOUT, "{$usage_directory}: free space sufficient\n");
@@ -170,7 +170,7 @@ class CleanDocstore_Batch {
 
         foreach ($this->docstores as $i => $dp) {
             if (!str_starts_with($dp, "/") || strpos($dp, "%") === false) {
-                throw new RuntimeException("{$dp}: Bad docstore pattern");
+                throw new ErrorException("{$dp}: Bad docstore pattern");
             }
             $this->ftrees[] = new DocumentFileTree($dp, $this->hash_matcher, count($this->ftrees));
             if (!$this->keep_temp) {

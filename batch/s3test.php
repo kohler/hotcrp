@@ -89,7 +89,7 @@ Usage: php batch/s3test.php [-q] [--extensions] FILE...")
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
         if (!$conf->setting_data("s3_bucket")) {
-            throw new RuntimeException("S3 is not configured for this conference");
+            throw new ErrorException("S3 is not configured for this conference");
         }
         return new S3Test_Batch($conf, $arg);
     }

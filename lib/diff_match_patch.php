@@ -2307,7 +2307,7 @@ class histogram_state {
 }
 
 
-class diff_exception extends \RuntimeException {
+class diff_exception extends \ErrorException {
     /** @var ?string */
     public $expected;
     /** @var ?string */
