@@ -10,9 +10,12 @@ if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
 class UpdateDocMetadata_Batch {
     /** @var Conf */
     public $conf;
+    /** @var bool */
+    public $verbose;
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
+        $this->verbose = isset($arg["verbose"]);
     }
 
 
@@ -23,6 +26,22 @@ class UpdateDocMetadata_Batch {
             $docs[] = $doc;
         }
         Dbl::free($result);
+        while (!empty($docs)) {
+            $i = 1;
+            $sz = $docs[0]->size;
+            while ($i !== count($docs) && $sz < (64 << 20)) {
+                $sz += $docs[$i]->size;
+                ++$i;
+            }
+            $this->run_images_subset(array_splice($docs, 0, $i));
+            if (!empty($docs)) {
+                gc_collect_cycles();
+            }
+        }
+    }
+
+    /** @param list<DocumentInfo> $docs */
+    private function run_images_subset($docs) {
         DocumentInfo::prefetch_content($docs, DocumentInfo::FLAG_NO_DOCSTORE);
         foreach ($docs as $doc) {
             $info = Mimetype::content_info($doc->content(), $doc->mimetype);
@@ -36,6 +55,9 @@ class UpdateDocMetadata_Batch {
             }
             if (!empty($upd)) {
                 $doc->update_metadata($upd);
+            }
+            if ($this->verbose) {
+                fwrite(STDERR, $doc->export_filename() . " [{$doc->filename} #{$doc->paperId}/{$doc->paperStorageId}]: " . (empty($upd) ? "-" : json_encode($upd)) . "\n");
             }
         }
     }
@@ -52,7 +74,8 @@ class UpdateDocMetadata_Batch {
         $arg = (new Getopt)->long(
             "name:,n: !",
             "config: !",
-            "help,h !"
+            "help,h !",
+            "verbose,V Be verbose."
         )->description("Update HotCRP document metadata.
 Usage: php batch/updatedocmetadata.php [-n CONFID | --config CONFIG]")
          ->helpopt("help")
