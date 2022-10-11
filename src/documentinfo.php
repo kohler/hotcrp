@@ -215,6 +215,7 @@ class DocumentInfo implements JsonSerializable {
             "crc32" => $capd->crc32 ?? null
         ];
         $doc = new DocumentInfo($args, $conf);
+        $doc->analyze_content();
         $doc->_prefer_s3 = !!($capd->s3_status ?? false);
         return $doc;
     }
