@@ -71,6 +71,7 @@ class CurlS3Result extends S3Result {
     }
 
     function prepare() {
+        assert($this->runindex > 0 || $this->curlh === null);
         $this->clear_result();
         if ($this->curlh === null) {
             $this->curlh = curl_init();
@@ -78,6 +79,8 @@ class CurlS3Result extends S3Result {
             curl_setopt($this->curlh, CURLOPT_TIMEOUT, 6 + ($this->_fsize >> 19) + ($this->_xsize >> 26));
             $this->_hstream = fopen("php://memory", "w+b");
             curl_setopt($this->curlh, CURLOPT_WRITEHEADER, $this->_hstream);
+            $this->_dstream = $this->_dstream ?? fopen("php://temp/maxmemory:20971520", "w+b");
+            curl_setopt($this->curlh, CURLOPT_FILE, $this->_dstream);
         }
         if (++$this->runindex > 1) {
             curl_setopt($this->curlh, CURLOPT_FRESH_CONNECT, true);
@@ -91,9 +94,6 @@ class CurlS3Result extends S3Result {
             ftruncate($this->_hstream, 0);
             rewind($this->_dstream);
             ftruncate($this->_dstream, 0);
-        } else {
-            $this->_dstream = $this->_dstream ?? fopen("php://temp/maxmemory:20971520", "w+b");
-            curl_setopt($this->curlh, CURLOPT_FILE, $this->_dstream);
         }
         list($this->url, $hdr) = $this->s3->signed_headers($this->skey, $this->method, $this->args);
         curl_setopt($this->curlh, CURLOPT_URL, $this->url);
@@ -113,9 +113,7 @@ class CurlS3Result extends S3Result {
         $hdr[] = "Transfer-Encoding:";
         curl_setopt($this->curlh, CURLOPT_HTTPHEADER, $hdr);
         $this->start = microtime(true);
-        if ($this->first_start === null) {
-            $this->first_start = $this->start;
-        }
+        $this->first_start = $this->first_start ?? $this->start;
     }
 
     function exec() {
