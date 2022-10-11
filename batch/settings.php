@@ -114,7 +114,7 @@ class Settings_Batch {
             "dry-run,d Do not modify settings.",
             "diff Output unified settings diff.",
             "expr:,e: =JSON Apply settings changes from JSON."
-        )->description("Output or modify HotCRP settings in JSON format.
+        )->description("Query or modify HotCRP settings in JSON format.
 Usage: php batch/settings.php [FILE]")
          ->maxarg(1)
          ->helpopt("help")

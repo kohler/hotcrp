@@ -63,6 +63,8 @@ class DocumentInfo implements JsonSerializable {
     const LINKTYPE_COMMENT_BEGIN = 0;
     const LINKTYPE_COMMENT_END = 1024;
 
+    const FLAG_NO_DOCSTORE = 1;
+
     /** @param array{paperId?:int,paperStorageId?:int,timestamp?:int,mimetype?:string,content?:string,content_base64?:string,content_file?:string,hash?:?string,crc32?:?string,documentType?:int,filename?:?string,metadata?:array|object,infoJson?:?string,size?:?int,filterType?:?int,originalStorageId?:?int,sourceHash?:?string,filters_applied?:?list<FileFilter>,sha1?:void,filestore?:void} $p */
     function __construct($p, Conf $conf, PaperInfo $prow = null) {
         $this->conf = $conf;
@@ -647,25 +649,33 @@ class DocumentInfo implements JsonSerializable {
         }
     }
 
+    /** @param string $dspath
+     * @return ?resource */
+    static private function fopen_docstore($dspath) {
+        if (!$dspath) {
+            return null;
+        }
+        $stream = @fopen("{$dspath}~", "x+b");
+        if ($stream === false
+            && @filemtime("{$dspath}~") < Conf::$now - 3600
+            && @unlink("{$dspath}~")) {
+            $stream = @fopen("{$dspath}~", "x+b");
+        }
+        return $stream ? : null;
+    }
+
     /** @return bool */
     function load_s3() {
         if (($s3 = $this->conf->s3_docstore())
             && ($s3k = $this->s3_key())) {
-            if (($dspath = Filer::docstore_path($this, Filer::FPATH_MKDIR))
-                && function_exists("curl_init")) {
-                $stream = @fopen("{$dspath}~", "x+b");
-                if ($stream === false
-                    && @filemtime("{$dspath}~") < Conf::$now - 3600
-                    && @unlink("{$dspath}~")) {
-                    $stream = @fopen("{$dspath}~", "x+b");
-                }
-                if ($stream) {
-                    $s3l = $s3->start_curl_get($s3k)
-                        ->set_response_body_stream($stream)
-                        ->set_expected_size($this->size());
-                    $s3l->run();
-                    return $this->handle_load_s3_curl($s3l, $dspath);
-                }
+            $dspath = Filer::docstore_path($this, Filer::FPATH_MKDIR);
+            if (function_exists("curl_init")) {
+                $stream = $dspath ? self::fopen_docstore($dspath) : null;
+                $s3l = $s3->start_curl_get($s3k)
+                    ->set_response_body_stream($stream)
+                    ->set_expected_size($this->size());
+                $s3l->run();
+                return $this->handle_load_s3_curl($s3l, $stream ? $dspath : null);
             }
             return $this->load_s3_direct($s3, $s3k, $dspath);
         } else {
@@ -674,37 +684,43 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @param CurlS3Result $s3l
-     * @param string $dspath
+     * @param ?string $dspath
      * @return bool */
     private function handle_load_s3_curl($s3l, $dspath) {
         if ($s3l->status === 404
             && $this->s3_upgrade_extension($s3l->s3, $s3l->skey)) {
             $s3l->reset()->run();
         }
-        fclose($s3l->dstream);
-        $unlink = true;
-        if ($s3l->status === 200) {
-            if (($sz = self::filesize_expected("{$dspath}~", $this->size)) !== $this->size) {
-                error_log("Disk error: GET $s3l->skey: expected size {$this->size}, got " . json_encode($sz));
-                $s3l->status = 500;
-            } else if (rename("{$dspath}~", $dspath)) {
-                $this->filestore = $dspath;
-                $unlink = false;
-            } else {
-                $this->content = file_get_contents("{$dspath}~");
-            }
-        } else {
+        if ($s3l->status !== 200) {
             error_log("S3 error: GET $s3l->skey: $s3l->status $s3l->status_text " . json_encode_db($s3l->response_headers));
+            $s3l->close_response_body_stream();
+            if ($dspath) {
+                @unlink("{$dspath}~");
+            }
+            return false;
         }
-        if ($unlink) {
-            @unlink("{$dspath}~");
+        if (!$dspath) {
+            $this->content = $s3l->response_body();
+            $s3l->close_response_body_stream();
+            return true;
         }
+        $s3l->close_response_body_stream();
+        if (($sz = self::filesize_expected("{$dspath}~", $this->size)) !== $this->size) {
+            error_log("Disk error: GET $s3l->skey: expected size {$this->size}, got " . json_encode($sz));
+            $s3l->status = 500;
+        } else if (rename("{$dspath}~", $dspath)) {
+            $this->filestore = $dspath;
+            return true;
+        } else {
+            $this->content = file_get_contents("{$dspath}~");
+        }
+        @unlink("{$dspath}~");
         return $s3l->status === 200;
     }
 
     /** @param S3Client $s3
      * @param string $s3k
-     * @param string $dspath
+     * @param ?string $dspath
      * @return bool */
     private function load_s3_direct($s3, $s3k, $dspath) {
         $r = $s3->start_get($s3k)->run();
@@ -712,20 +728,20 @@ class DocumentInfo implements JsonSerializable {
             && $this->s3_upgrade_extension($s3, $s3k)) {
             $r = $s3->start_get($s3k)->run();
         }
-        if ($r->status === 200 && ($b = $r->response_body() ?? "") !== "") {
-            if ($dspath
-                && file_put_contents($dspath, $b) === $this->size) {
-                $this->filestore = $dspath;
-            } else {
-                $this->content = $b;
-            }
-            return true;
-        } else {
-            if ($r->status !== 200) {
-                error_log("S3 error: GET $s3k: $r->status $r->status_text " . json_encode_db($r->response_headers));
-            }
+        if ($r->status !== 200) {
+            error_log("S3 error: GET $s3k: $r->status $r->status_text " . json_encode_db($r->response_headers));
             return false;
         }
+        $b = $r->response_body();
+        if (($b ?? "") === "") {
+            return false;
+        }
+        if ($dspath && file_put_contents($dspath, $b) === $this->size) {
+            $this->filestore = $dspath;
+        } else {
+            $this->content = $b;
+        }
+        return true;
     }
 
     /** @return bool */
@@ -954,8 +970,9 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
-    /** @param iterable<DocumentInfo> $docs */
-    static function prefetch_content($docs) {
+    /** @param iterable<DocumentInfo> $docs
+     * @param int $flags */
+    static function prefetch_content($docs, $flags = 0) {
         $pfdocs = [];
         foreach ($docs as $doc) {
             if ($doc->need_prefetch_content()) {
@@ -969,6 +986,7 @@ class DocumentInfo implements JsonSerializable {
         $adocs = [];
         $curlm = curl_multi_init();
         $starttime = $stoptime = null;
+        $docstore = ($flags & self::FLAG_NO_DOCSTORE) === 0;
 
         while (true) {
             // check time
@@ -989,11 +1007,13 @@ class DocumentInfo implements JsonSerializable {
             while (count($adocs) < 8 && !empty($pfdocs)) {
                 $doc = array_pop($pfdocs);
                 $s3 = $doc->conf->s3_docstore();
-                if (($s3k = $doc->s3_key())
-                    && ($dspath = Filer::docstore_path($doc, Filer::FPATH_MKDIR))
-                    && ($stream = @fopen("{$dspath}~", "x+b"))) {
-                    $s3l = $s3->start_curl_get($s3k)->set_response_body_stream($stream)->set_expected_size($doc->size());
-                    $adocs[] = [$doc, $s3l, 0, $dspath];
+                if (($s3k = $doc->s3_key())) {
+                    $dspath = $docstore ? Filer::docstore_path($doc, Filer::FPATH_MKDIR) : null;
+                    $stream = $dspath ? self::fopen_docstore($dspath) : null;
+                    $s3l = $s3->start_curl_get($s3k)
+                        ->set_response_body_stream($stream)
+                        ->set_expected_size($doc->size());
+                    $adocs[] = [$doc, $s3l, 0, $stream ? $dspath : null];
                 }
             }
             if (empty($adocs)) {

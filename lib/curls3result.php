@@ -8,9 +8,11 @@ class CurlS3Result extends S3Result {
     /** @var ?CurlHandle */
     public $curlh;
     /** @var resource */
-    public $hstream;
+    private $_hstream;
     /** @var ?resource */
-    public $dstream;
+    private $_dstream;
+    /** @var bool */
+    private $_dstream_local = true;
     /** @var ?resource */
     private $_fstream;
     /** @var int */
@@ -46,8 +48,11 @@ class CurlS3Result extends S3Result {
     /** @param resource $stream
      * @return $this */
     function set_response_body_stream($stream) {
-        assert($this->dstream === null);
-        $this->dstream = $stream;
+        assert($this->_dstream === null);
+        if ($stream) {
+            $this->_dstream = $stream;
+            $this->_dstream_local = false;
+        }
         return $this;
     }
 
@@ -71,8 +76,8 @@ class CurlS3Result extends S3Result {
             $this->curlh = curl_init();
             curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 3);
             curl_setopt($this->curlh, CURLOPT_TIMEOUT, 6 + ($this->_fsize >> 19) + ($this->_xsize >> 26));
-            $this->hstream = fopen("php://memory", "w+b");
-            curl_setopt($this->curlh, CURLOPT_WRITEHEADER, $this->hstream);
+            $this->_hstream = fopen("php://memory", "w+b");
+            curl_setopt($this->curlh, CURLOPT_WRITEHEADER, $this->_hstream);
         }
         if (++$this->runindex > 1) {
             curl_setopt($this->curlh, CURLOPT_FRESH_CONNECT, true);
@@ -82,13 +87,13 @@ class CurlS3Result extends S3Result {
             }
             curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 6 * $tf);
             curl_setopt($this->curlh, CURLOPT_TIMEOUT, 15 * $tf + ($this->_xsize >> 26));
-            rewind($this->hstream);
-            ftruncate($this->hstream, 0);
-            rewind($this->dstream);
-            ftruncate($this->dstream, 0);
+            rewind($this->_hstream);
+            ftruncate($this->_hstream, 0);
+            rewind($this->_dstream);
+            ftruncate($this->_dstream, 0);
         } else {
-            $this->dstream = $this->dstream ?? fopen("php://memory", "w+b");
-            curl_setopt($this->curlh, CURLOPT_FILE, $this->dstream);
+            $this->_dstream = $this->_dstream ?? fopen("php://temp/maxmemory:20971520", "w+b");
+            curl_setopt($this->curlh, CURLOPT_FILE, $this->_dstream);
         }
         list($this->url, $hdr) = $this->s3->signed_headers($this->skey, $this->method, $this->args);
         curl_setopt($this->curlh, CURLOPT_URL, $this->url);
@@ -118,8 +123,8 @@ class CurlS3Result extends S3Result {
     }
 
     function parse_result() {
-        rewind($this->hstream);
-        $hstr = stream_get_contents($this->hstream);
+        rewind($this->_hstream);
+        $hstr = stream_get_contents($this->_hstream);
         $hstr = preg_replace('/(?:\r\n?|\n)[ \t]+/s', " ", $hstr);
         $this->parse_response_lines(preg_split('/\r\n?|\n/', $hstr));
         $this->status = curl_getinfo($this->curlh, CURLINFO_RESPONSE_CODE);
@@ -175,19 +180,29 @@ class CurlS3Result extends S3Result {
     /** @return string */
     function response_body() {
         $this->run();
-        rewind($this->dstream);
-        return stream_get_contents($this->dstream);
+        rewind($this->_dstream);
+        return stream_get_contents($this->_dstream);
     }
 
     function close() {
         if ($this->curlh !== null) {
             curl_close($this->curlh);
-            fclose($this->hstream);
+            fclose($this->_hstream);
             if ($this->_fstream) {
                 fclose($this->_fstream);
             }
-            $this->curlh = $this->hstream = $this->_fstream = null;
-            fflush($this->dstream);
+            $this->curlh = $this->_hstream = $this->_fstream = null;
+            if ($this->_dstream) {
+                fflush($this->_dstream);
+            }
+        }
+    }
+
+    function close_response_body_stream() {
+        if ($this->_dstream) {
+            fclose($this->_dstream);
+            $this->_dstream = null;
+            $this->_dstream_local = true;
         }
     }
 }
