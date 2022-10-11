@@ -56,7 +56,7 @@ class UpdateDocMetadata_Batch {
             if (!empty($upd)) {
                 $doc->update_metadata($upd);
             }
-            if ($this->verbose) {
+            if ($this->verbose && !empty($upd)) {
                 fwrite(STDERR, $doc->export_filename() . " [{$doc->filename} #{$doc->paperId}/{$doc->paperStorageId}]: " . (empty($upd) ? "-" : json_encode($upd)) . "\n");
             }
         }
