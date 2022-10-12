@@ -1606,7 +1606,7 @@ function input_default_value(elt) {
 }
 
 function input_set_default_value(elt, val) {
-    var cb = input_is_checkboxlike(elt), upd, j;
+    var cb = input_is_checkboxlike(elt);
     if (cb) {
         elt.removeAttribute("data-default-checked");
         // set dirty checkedness flag:
@@ -3376,7 +3376,7 @@ var hotcrp_load = (function ($) {
     }
     function show_usertimes() {
         $(".need-usertime").each(function () {
-            var d = new Date(+this.getAttribute("data-time") * 1000), s, n, m;
+            var d = new Date(+this.getAttribute("data-time") * 1000), m;
             if ((m = this.textContent.match(/(\d+) (\S+) (\d{4})/))) {
                 if (+m[3] !== d.getFullYear())
                     append_span(this, " (%#e %b %Y %#q your time)", d);
@@ -3413,10 +3413,9 @@ function fold_storage() {
         $(".need-fold-storage").each(fold_storage);
     } else {
         removeClass(this, "need-fold-storage");
-        var sn = this.getAttribute("data-fold-storage"), smap, k, flip = false;
-        if (sn.charAt(0) === "-") {
+        var sn = this.getAttribute("data-fold-storage"), smap, k;
+        if (sn.charAt(0) === "-") { // XXX backward compat
             sn = sn.substring(1);
-            flip = true;
         }
         if (sn.charAt(0) === "{" || sn.charAt(0) === "[") {
             smap = parse_json(sn) || {};
