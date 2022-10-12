@@ -95,7 +95,7 @@ function settings_disable_children(e) {
 }
 
 function settings_field_order(parentid) {
-    var i = 0, j, orde, n, pos,
+    var i = 0, curorder, defaultorder, orde, n, pos,
         form = document.getElementById("settingsform"),
         c = document.getElementById(parentid),
         moveup = null, movedown = null;
@@ -105,17 +105,20 @@ function settings_field_order(parentid) {
             orde.value = 0;
             continue;
         }
+        ++i;
         moveup = n.querySelector(".moveup");
         moveup.disabled = movedown === null;
         movedown = n.querySelector(".movedown");
         movedown.disabled = false;
-        ++i;
-        j = +orde.value;
-        if (j !== j || j < i) {
-            orde.value = i;
-        } else {
-            i = j;
+        curorder = +orde.value;
+        defaultorder = +input_default_value(orde);
+        if (defaultorder > 0 && defaultorder < curorder) {
+            curorder = defaultorder;
         }
+        if (i === 1 || curorder !== curorder || curorder < i) {
+            curorder = i;
+        }
+        orde.value = i = curorder;
     }
     movedown && (movedown.disabled = true);
     form_highlight(form);
@@ -165,6 +168,7 @@ handle_ui.on("js-settings-sf-move", function (evt) {
         settings_delete(sf, msg);
         foldup.call(sf, evt, {n: 2, f: false});
     }
+    tooltip.erase(this);
     settings_sf_order();
 });
 
@@ -593,15 +597,13 @@ function rf_render_view(fld) {
 }
 
 function rf_move() {
-    var isup = $(this).hasClass("moveup"),
-        $field = $(this).closest(".settings-rf").detach(),
-        pos = $field.find(".is-order").val() | 0,
-        rf = $$("settings-rform"), n, i;
-    for (i = 1, n = rf.firstChild;
-         n && i < (isup ? pos - 1 : pos + 1);
-         ++i, n = n.nextSibling) {
+    var rf = this.closest(".settings-rf");
+    if (hasClass(this, "moveup") && rf.previousSibling) {
+        rf.parentNode.insertBefore(rf, rf.previousSibling);
+    } else if (hasClass(this, "movedown") && rf.nextSibling) {
+        rf.parentNode.insertBefore(rf, rf.nextSibling.nextSibling);
     }
-    rf.insertBefore($field[0], n);
+    tooltip.erase(this);
     rf_order();
 }
 
