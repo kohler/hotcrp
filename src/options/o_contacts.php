@@ -274,8 +274,9 @@ class Contacts_PaperOption extends PaperOption {
                 echo Ht::hidden("contacts:active_{$cidx}", 1),
                     Ht::checkbox(null, 1, true, ["disabled" => true, "id" => false]);
             } else {
-                echo Ht::checkbox("contacts:active_{$cidx}", 1, !$rau || $rau->conflictType !== 0,
-                    ["data-default-checked" => $au->contactId > 0 && $au->conflictType >= CONFLICT_AUTHOR, "id" => false, "disabled" => $readonly]);
+                $dchecked = $au->contactId > 0 && $au->conflictType >= CONFLICT_AUTHOR;
+                echo Ht::checkbox("contacts:active_{$cidx}", 1, $rau ? $rau->conflictType !== 0 : $dchecked,
+                    ["data-default-checked" => $dchecked, "id" => false, "disabled" => $readonly]);
             }
             echo '</span>', Text::nameo_h($au, NAME_E);
             if (($au->conflictType & CONFLICT_AUTHOR) === 0
