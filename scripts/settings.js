@@ -2677,6 +2677,9 @@ handle_ui.on("dragstart.js-settings-drag", function (evt) {
 function settings_drag(draghandle, draggable, group, evt) {
     var pos, posy0, posy1, contains = 0, sep, changed = false, scrollt = null;
     function drag(evt) {
+        evt.preventDefault();
+        evt.dropEffect = "move";
+
         if (contains === 0) {
             sep && sep.remove();
             pos = posy0 = posy1 = sep = null;
@@ -2737,10 +2740,6 @@ function settings_drag(draghandle, draggable, group, evt) {
         toggleClass(draggable, "drag-would-move", changed);
         toggleClass(draggable, "drag-would-keep", !changed);
     }
-    function dragover(evt) {
-        evt.preventDefault();
-        evt.dropEffect = "move";
-    }
     function drop() {
         if (contains !== 0) {
             changed && group.insertBefore(draggable, sep);
@@ -2767,12 +2766,13 @@ function settings_drag(draghandle, draggable, group, evt) {
         removeClass(draggable, "dragging");
         removeClass(draggable, "drag-would-move");
         removeClass(draggable, "drag-would-keep");
-        draghandle.removeEventListener("drag", drag);
+        window.removeEventListener("dragover", drag);
         draghandle.removeEventListener("dragend", dragend);
         group.removeEventListener("drop", drop);
-        group.removeEventListener("dragover", dragover);
         group.removeEventListener("dragenter", dragenter);
         group.removeEventListener("dragleave", dragenter);
+        window.removeEventListener("scroll", scroll);
+        window.removeEventListener("resize", scroll);
     }
     function dragenter(evt) {
         if (group.contains(evt.target)) {
@@ -2789,10 +2789,9 @@ function settings_drag(draghandle, draggable, group, evt) {
 
     dragstart(evt);
     evt = null;
-    draghandle.addEventListener("drag", drag);
+    window.addEventListener("dragover", drag);
     draghandle.addEventListener("dragend", dragend);
     group.addEventListener("drop", drop);
-    group.addEventListener("dragover", dragover);
     group.addEventListener("dragenter", dragenter);
     group.addEventListener("dragleave", dragenter);
     window.addEventListener("scroll", scroll);
