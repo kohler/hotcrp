@@ -5,6 +5,8 @@
 class UpdateSchema {
     /** @var Conf */
     private $conf;
+    /** @var bool */
+    private $need_run = false;
 
     /** @param Conf $conf */
     function __construct($conf) {
@@ -855,6 +857,67 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $this->conf->ql_ok("alter table PaperReview add `reviewTime` bigint(11) NOT NULL DEFAULT 0");
     }
 
+    /** @return bool */
+    private function v271_action_log_paper_actions() {
+        $result = $this->conf->ql_ok("update ActionLog
+            set action=(case action when 'Updated' then 'Paper saved' when 'Updated final' then 'Paper saved final' when 'Registered' then 'Paper started' when 'Registered new' then 'Paper started' when 'Submitted' then 'Paper submitted' when 'Submitted final copy for' then 'Paper saved final' else action end)
+            where paperId>0 and (action='Updated' or action='Updated final' or action='Registered' or action='Registered new' or action='Submitted' or action='Submitted final copy for')
+            limit 10000");
+        if (!$result) {
+            return false;
+        } else if ($result->affected_rows === 10000) {
+            $this->need_run = true;
+            return false;
+        }
+
+        $result = $this->conf->ql_ok("update ActionLog
+            set action=concat('Paper edited final: ', substring(action from 15))
+            where paperId>0 and left(action, 14)='Updated final '
+            limit 10000");
+        if (!$result) {
+            return false;
+        } else if ($result->affected_rows === 10000) {
+            $this->need_run = true;
+            return false;
+        }
+
+        $result = $this->conf->ql_ok("update ActionLog
+            set action=concat('Paper edited: ', substring(action from 9))
+            where paperId>0 and left(action, 8)='Updated ' and left(action, 15)!='Updated review ' and left(action, 21)!='Updated draft review '
+            limit 10000");
+        if (!$result) {
+            return false;
+        } else if ($result->affected_rows === 10000) {
+            $this->need_run = true;
+            return false;
+        }
+
+        $result = $this->conf->ql_ok("update ActionLog
+            set action=concat('Paper started: ', substring(action from 12))
+            where paperId>0 and left(action, 11)='Registered '
+            limit 10000");
+        if (!$result) {
+            return false;
+        } else if ($result->affected_rows === 10000) {
+            $this->need_run = true;
+            return false;
+        }
+
+        $result = $this->conf->ql_ok("update ActionLog
+            set action=concat('Paper submitted: ', substring(action from 11))
+            where paperId>0 and left(action, 10)='Submitted ' and left(action, 17)!='Submitted review ' and left(action, 17)!='Submitted ACM TOC'
+            limit 10000");
+        if (!$result) {
+            return false;
+        } else if ($result->affected_rows === 10000) {
+            $this->need_run = true;
+            return false;
+        }
+
+        return true;
+    }
+
+    /** @return bool */
     function run() {
         $conf = $this->conf;
 
@@ -2540,8 +2603,13 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 269) {
             $conf->update_schema_version(270);
         }
+        if ($conf->sversion === 270
+            && $this->v271_action_log_paper_actions()) {
+            $conf->update_schema_version(271);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;
+        return $this->need_run;
     }
 }

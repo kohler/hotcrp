@@ -332,9 +332,11 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 270) {
+        if ($this->sversion < 271) {
             $old_nerrors = Dbl::$nerrors;
-            (new UpdateSchema($this))->run();
+            while ((new UpdateSchema($this))->run()) {
+                usleep(50000);
+            }
             Dbl::$nerrors = $old_nerrors;
         }
         if ($this->sversion < 200) {

@@ -1343,7 +1343,7 @@ class PaperStatus extends MessageSet {
         if (($this->_save_status & self::SAVE_STATUS_NEWSUBMIT) !== 0) {
             $actions[] = "submitted";
         } else if (($this->_save_status & self::SAVE_STATUS_NEW) === 0
-                   && !empty($this->_xdiffs)) {
+                   && (!empty($this->_fdiffs) || !empty($this->_xdiffs))) {
             $actions[] = "edited";
         }
         if (empty($actions)) {
