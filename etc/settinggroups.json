@@ -373,7 +373,7 @@
         "name": "decisions/decision-visibility", "order": 300,
         "title": "Decision visibility",
         "print_function": "DecisionVisibility_SettingParser::print_author",
-        "settings": ["decision_visibility_author"]
+        "settings": ["decision_visibility_author", "decision_visibility_author_condition"]
     },
     {
         "name": "decisions/decision-visibility-reviewer", "order": 310,
