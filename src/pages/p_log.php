@@ -548,14 +548,11 @@ class Log_Page {
                     . '</a>' . substr($word, $hash);
             }
         } else if ($row->paperId > 0
-                   && (substr($act, 0, 8) === "Updated " /* XXX */
-                       || substr($act, 0, 6) === "Saved "
-                       || substr($act, 0, 10) === "Submitted "
-                       || substr($act, 0, 11) === "Registered ")
-                   && preg_match('/\A(\S+(?: final)?)(.*)\z/', $act, $m)
-                   && preg_match('/\A(.* )(final|submission)((?:,| |\z).*)\z/', $m[2], $mm)) {
-            $at = $m[1] . $mm[1] . "<a href=\"" . $conf->hoturl("doc", "p={$row->paperId}&amp;dt={$mm[2]}&amp;at={$row->timestamp}") . "\">{$mm[2]}</a>";
-            $act = $mm[3];
+                   && str_starts_with($act, "Paper ")
+                   && strpos($act, ":") !== false
+                   && preg_match('/\A(.*?:.* )(final|submission)((?:,| |\z).*)\z/', $act, $m)) {
+            $at = $m[1] . "<a href=\"" . $conf->hoturl("doc", "p={$row->paperId}&amp;dt={$m[2]}&amp;at={$row->timestamp}") . "\">{$m[2]}</a>";
+            $act = $m[3];
         }
         $at .= htmlspecialchars($act);
         if (($pids = $leg->paper_ids($row))) {
