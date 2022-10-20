@@ -2220,7 +2220,7 @@ class PaperInfo {
                     $dids = array_merge($dids, $ov->option->value_dids($ov));
                 }
             }
-            $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType>=? and paperStorageId?A", $this->paperId, DTYPE_FINAL, $dids);
+            $this->conf->qe("update PaperStorage set inactive=(paperStorageId?A) where paperId=? and documentType>=?", $dids, $this->paperId, DTYPE_FINAL);
             $this->_pause_mark_inactive_documents = null;
         } else {
             $this->_pause_mark_inactive_documents = 2;
