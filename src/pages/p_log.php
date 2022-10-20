@@ -21,11 +21,19 @@ class Log_Page {
     private $include_pids;
     /** @var ?array<int,mixed> */
     private $exclude_pids;
+    /** @var string */
+    private $document_regexp;
 
     function __construct(Contact $viewer, Qrequest $qreq) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
         $this->qreq = $qreq;
+        $x = [];
+        foreach ($this->conf->options()->form_fields() as $opt) {
+            if ($opt->is_document())
+                $x[] = $opt->json_key();
+        }
+        $this->document_regexp = join("|", $x);
     }
 
 
@@ -549,10 +557,16 @@ class Log_Page {
             }
         } else if ($row->paperId > 0
                    && str_starts_with($act, "Paper ")
-                   && strpos($act, ":") !== false
-                   && preg_match('/\A(.*?:.* )(final|submission)((?:,| |\z).*)\z/', $act, $m)) {
-            $at = $m[1] . "<a href=\"" . $conf->hoturl("doc", "p={$row->paperId}&amp;dt={$m[2]}&amp;at={$row->timestamp}") . "\">{$m[2]}</a>";
-            $act = $m[3];
+                   && ($colon = strpos($act, ":")) !== false
+                   && $this->document_regexp !== "") {
+            $at = substr($act, 0, $colon);
+            $act = substr($act, $colon);
+            while (preg_match("/\\A(.* )({$this->document_regexp})((?:,| |\\z).*)\\z/", $act, $m)) {
+                $at .= htmlspecialchars($m[1])
+                    . "<a href=\"" . $conf->hoturl("doc", ["p" => $row->paperId, "dt" => $m[2], "at" => $row->timestamp])
+                    . "\">{$m[2]}</a>";
+                $act = $m[3];
+            }
         }
         $at .= htmlspecialchars($act);
         if (($pids = $leg->paper_ids($row))) {
