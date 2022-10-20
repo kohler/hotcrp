@@ -21,6 +21,7 @@ class LogEntry {
     public $paperId;
     public $data;
 
+    /** @var ?string */
     public $cleanedAction;
     /** @var ?list<int> */
     public $paperIdArray;
@@ -42,13 +43,18 @@ class LogEntryGenerator {
     private $lower_offset_bound;
     /** @var int|float */
     private $upper_offset_bound;
+    /** @var int */
     private $rows_offset;
+    /** @var int */
     private $rows_max_offset;
     /** @var list<LogEntry> */
     private $rows = [];
+    /** @var ?LogEntryFilter */
     private $filter;
+    /** @var array<int,int> */
     private $page_to_offset;
     private $log_url_base;
+    /** @var bool */
     private $explode_mail = false;
     private $mail_stash;
     /** @var array<int,Contact> */
@@ -68,6 +74,7 @@ class LogEntryGenerator {
         $this->need_users = [];
     }
 
+    /** @param ?LogEntryFilter $filter */
     function set_filter($filter) {
         $this->filter = $filter;
         $this->rows = [];
@@ -76,27 +83,34 @@ class LogEntryGenerator {
         $this->page_to_offset = [];
     }
 
+    /** @param bool $explode_mail */
     function set_explode_mail($explode_mail) {
         $this->explode_mail = $explode_mail;
     }
 
+    /** @return bool */
     function has_filter() {
         return !!$this->filter;
     }
 
+    /** @return int */
     function page_size() {
         return $this->page_size;
     }
 
+    /** @return int */
     function page_delta() {
         return $this->delta;
     }
 
+    /** @param int $delta */
     function set_page_delta($delta) {
         assert(is_int($delta) && $delta >= 0 && $delta < $this->page_size);
         $this->delta = $delta;
     }
 
+    /** @param int $pageno
+     * @return int */
     private function page_offset($pageno) {
         $offset = ($pageno - 1) * $this->page_size;
         if ($offset > 0 && $this->delta > 0) {
@@ -234,16 +248,20 @@ class LogEntryGenerator {
         return array_slice($this->rows, $offset - $this->rows_offset, $this->page_size);
     }
 
+    /** @param string $url */
     function set_log_url_base($url) {
         $this->log_url_base = $url;
     }
 
+    /** @param int|'earliest' $pageno
+     * @param int|string $html
+     * @return string */
     function page_link_html($pageno, $html) {
         $url = $this->log_url_base;
         if ($pageno !== 1 && $this->delta > 0) {
             $url .= "&amp;offset=" . $this->delta;
         }
-        return '<a href="' . $url . '&amp;page=' . $pageno . '">' . $html . '</a>';
+        return "<a href=\"{$url}&amp;page={$pageno}\">{$html}</a>";
     }
 
     private function _make_users() {

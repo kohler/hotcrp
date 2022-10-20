@@ -2798,6 +2798,7 @@ div:hover > span.hoveronly, tr:hover > td > span.hoveronly {
 table.pltable {
 	line-height: 1.25;
 	border-collapse: separate;
+	overflow-wrap: break-word;
 }
 .pltable-fullw-container {
 	overflow-x: auto;

@@ -434,86 +434,7 @@ class Log_Page {
         $conf = $this->conf;
         $conf->header("Log", "actionlog");
 
-        $trs = [];
-        foreach ($leg->page_rows($page) as $row) {
-            $time = $conf->unparse_time_log((int) $row->timestamp);
-            $t = ["<td class=\"pl pl_logtime\">{$time}</td>"];
-
-            $xusers = $leg->users_for($row, "contactId");
-            $xusers_html = $this->users_html($xusers, (int) $row->trueContactId);
-            $xdest_users = $leg->users_for($row, "destContactId");
-
-            if ($xdest_users && $xusers != $xdest_users) {
-                $xdestusers_html = $this->users_html($xdest_users, 0);
-                $t[] = "<td class=\"pl pl_logname\">{$xusers_html}</td><td class=\"pl pl_logname\">{$xdestusers_html}</td>";
-            } else {
-                $t[] = "<td class=\"pl pl_logname\" colspan=\"2\">{$xusers_html}</td>";
-            }
-
-            // XXX users that aren't in contactId slot
-            // if (preg_match(',\A(.*)<([^>]*@[^>]*)>\s*(.*)\z,', $act, $m)) {
-            //     $t .= htmlspecialchars($m[2]);
-            //     $act = $m[1] . $m[3];
-            // } else
-            //     $t .= "[None]";
-
-            $act = $leg->cleaned_action($row);
-            $at = "";
-            if (strpos($act, "eview ") !== false
-                && preg_match('/\A(.* |)([Rr]eview )(\d+)( .*|)\z/', $act, $m)) {
-                $at = htmlspecialchars($m[1])
-                    . Ht::link($m[2] . $m[3], $conf->hoturl("review", ["p" => $row->paperId, "r" => $m[3]]))
-                    . "</a>";
-                $act = $m[4];
-            } else if (substr($act, 0, 7) === "Comment"
-                       && preg_match('/\AComment (\d+)(.*)\z/s', $act, $m)) {
-                $at = "<a href=\"" . $conf->hoturl("paper", "p={$row->paperId}#cid{$m[1]}") . "\">Comment " . $m[1] . "</a>";
-                $act = $m[2];
-            } else if (substr($act, 0, 8) === "Response"
-                       && preg_match('/\AResponse (\d+)(.*)\z/s', $act, $m)) {
-                $at = "<a href=\"" . $conf->hoturl("paper", "p={$row->paperId}#cid{$m[1]}") . "\">Response " . $m[1] . "</a>";
-                $act = $m[2];
-            } else if (strpos($act, " mail ") !== false
-                       && preg_match('/\A(Sending|Sent|Account was sent) mail #(\d+)(.*)\z/s', $act, $m)) {
-                $at = $m[1] . " <a href=\"" . $conf->hoturl("mail", "mailid=$m[2]") . "\">mail #$m[2]</a>";
-                $act = $m[3];
-            } else if (substr($act, 0, 3) === "Tag"
-                       && preg_match('{\ATag:? ((?:[-+]#[^\s#]*(?:#[-+\d.]+|)(?: |\z))+)(.*)\z}s', $act, $m)) {
-                $at = "Tag";
-                $act = $m[2];
-                foreach (explode(" ", rtrim($m[1])) as $word) {
-                    if (($hash = strpos($word, "#", 2)) === false) {
-                        $hash = strlen($word);
-                    }
-                    $at .= " " . $word[0] . '<a href="'
-                        . $conf->hoturl("search", ["q" => substr($word, 1, $hash - 1)])
-                        . '">' . htmlspecialchars(substr($word, 1, $hash - 1))
-                        . '</a>' . substr($word, $hash);
-                }
-            } else if ($row->paperId > 0
-                       && (substr($act, 0, 8) === "Updated "
-                           || substr($act, 0, 10) === "Submitted "
-                           || substr($act, 0, 11) === "Registered ")
-                       && preg_match('/\A(\S+(?: final)?)(.*)\z/', $act, $m)
-                       && preg_match('/\A(.* )(final|submission)((?:,| |\z).*)\z/', $m[2], $mm)) {
-                $at = $m[1] . $mm[1] . "<a href=\"" . $conf->hoturl("doc", "p={$row->paperId}&amp;dt={$mm[2]}&amp;at={$row->timestamp}") . "\">{$mm[2]}</a>";
-                $act = $mm[3];
-            }
-            $at .= htmlspecialchars($act);
-            if (($pids = $leg->paper_ids($row))) {
-                if (count($pids) === 1)
-                    $at .= ' (<a class="track" href="' . $conf->hoturl("paper", "p=" . $pids[0]) . '">paper ' . $pids[0] . "</a>)";
-                else {
-                    $at .= ' (<a href="' . $conf->hoturl("search", "t=all&amp;q=" . join("+", $pids)) . '">papers</a>';
-                    foreach ($pids as $i => $p) {
-                        $at .= ($i ? ', ' : ' ') . '<a class="track" href="' . $conf->hoturl("paper", "p=" . $p) . '">' . $p . '</a>';
-                    }
-                    $at .= ')';
-                }
-            }
-            $t[] = "<td class=\"pl pl_logaction\">{$at}</td>";
-            $trs[] = '    <tr class="plnx k' . (count($trs) % 2) . '">' . join("", $t) . "</tr>\n";
-        }
+        $trs = $leg->page_rows($page);
 
         if (!$this->viewer->privChair || !empty($this->exclude_pids)) {
             echo '<div class="msgs-wide">';
@@ -541,6 +462,7 @@ class Log_Page {
         }
 
         $this->print_searchbar($leg, $page);
+
         if (!empty($trs)) {
             echo "<table class=\"pltable fullw pltable-log\">\n",
                 '  <thead><tr class="pl_headrow">',
@@ -548,14 +470,107 @@ class Log_Page {
                 '<th class="pll plh pl_logname">User</th>',
                 '<th class="pll plh pl_logname">Affected user</th>',
                 '<th class="pll plh pl_logaction">Action</th></tr></thead>',
-                "\n  <tbody class=\"pltable\">\n",
-                join("", $trs),
-                "  </tbody>\n</table>\n";
+                "\n  <tbody class=\"pltable\">\n";
+            foreach ($trs as $n => $row) {
+                $this->print_entry($row, $n, $leg);
+            }
+            echo "  </tbody>\n</table>\n";
         } else {
             echo "No records\n";
         }
 
         $conf->footer();
+    }
+
+    /** @param LogEntry $row
+     * @param int $n
+     * @param LogEntryGenerator $leg */
+    private function print_entry($row, $n, $leg) {
+        $conf = $this->conf;
+        echo '<tr class="plnx k', $n % 2, '">';
+
+        // timestamp
+        $time = $conf->unparse_time_log((int) $row->timestamp);
+        echo '<td class="pl pl_logtime">', $time, '</td>';
+
+        // users
+        $xusers = $leg->users_for($row, "contactId");
+        $xusers_html = $this->users_html($xusers, (int) $row->trueContactId);
+        $xdest_users = $leg->users_for($row, "destContactId");
+
+        if ($xdest_users && $xusers != $xdest_users) {
+            $xdestusers_html = $this->users_html($xdest_users, 0);
+            echo '<td class="pl pl_logname">', $xusers_html, '</td>',
+                '<td class="pl pl_logname">', $xdestusers_html, '</td>';
+        } else {
+            echo '<td class="pl pl_logname" colspan="2">', $xusers_html, '</td>';
+        }
+
+        // XXX users that aren't in contactId slot
+        // if (preg_match(',\A(.*)<([^>]*@[^>]*)>\s*(.*)\z,', $act, $m)) {
+        //     $t .= htmlspecialchars($m[2]);
+        //     $act = $m[1] . $m[3];
+        // } else
+        //     $t .= "[None]";
+
+        // action
+        $act = $leg->cleaned_action($row);
+        $at = "";
+        if (strpos($act, "eview ") !== false
+            && preg_match('/\A(.* |)([Rr]eview )(\d+)( .*|)\z/', $act, $m)) {
+            $at = htmlspecialchars($m[1])
+                . Ht::link($m[2] . $m[3], $conf->hoturl("review", ["p" => $row->paperId, "r" => $m[3]]))
+                . "</a>";
+            $act = $m[4];
+        } else if (substr($act, 0, 7) === "Comment"
+                   && preg_match('/\AComment (\d+)(.*)\z/s', $act, $m)) {
+            $at = "<a href=\"" . $conf->hoturl("paper", "p={$row->paperId}#cid{$m[1]}") . "\">Comment " . $m[1] . "</a>";
+            $act = $m[2];
+        } else if (substr($act, 0, 8) === "Response"
+                   && preg_match('/\AResponse (\d+)(.*)\z/s', $act, $m)) {
+            $at = "<a href=\"" . $conf->hoturl("paper", "p={$row->paperId}#cid{$m[1]}") . "\">Response " . $m[1] . "</a>";
+            $act = $m[2];
+        } else if (strpos($act, " mail ") !== false
+                   && preg_match('/\A(Sending|Sent|Account was sent) mail #(\d+)(.*)\z/s', $act, $m)) {
+            $at = $m[1] . " <a href=\"" . $conf->hoturl("mail", "mailid=$m[2]") . "\">mail #$m[2]</a>";
+            $act = $m[3];
+        } else if (substr($act, 0, 3) === "Tag"
+                   && preg_match('{\ATag:? ((?:[-+]#[^\s#]*(?:#[-+\d.]+|)(?: |\z))+)(.*)\z}s', $act, $m)) {
+            $at = "Tag";
+            $act = $m[2];
+            foreach (explode(" ", rtrim($m[1])) as $word) {
+                if (($hash = strpos($word, "#", 2)) === false) {
+                    $hash = strlen($word);
+                }
+                $at .= " " . $word[0] . '<a href="'
+                    . $conf->hoturl("search", ["q" => substr($word, 1, $hash - 1)])
+                    . '">' . htmlspecialchars(substr($word, 1, $hash - 1))
+                    . '</a>' . substr($word, $hash);
+            }
+        } else if ($row->paperId > 0
+                   && (substr($act, 0, 8) === "Updated " /* XXX */
+                       || substr($act, 0, 6) === "Saved "
+                       || substr($act, 0, 10) === "Submitted "
+                       || substr($act, 0, 11) === "Registered ")
+                   && preg_match('/\A(\S+(?: final)?)(.*)\z/', $act, $m)
+                   && preg_match('/\A(.* )(final|submission)((?:,| |\z).*)\z/', $m[2], $mm)) {
+            $at = $m[1] . $mm[1] . "<a href=\"" . $conf->hoturl("doc", "p={$row->paperId}&amp;dt={$mm[2]}&amp;at={$row->timestamp}") . "\">{$mm[2]}</a>";
+            $act = $mm[3];
+        }
+        $at .= htmlspecialchars($act);
+        if (($pids = $leg->paper_ids($row))) {
+            if (count($pids) === 1)
+                $at .= ' (<a class="track" href="' . $conf->hoturl("paper", "p=" . $pids[0]) . '">paper ' . $pids[0] . "</a>)";
+            else {
+                $at .= ' (<a href="' . $conf->hoturl("search", "t=all&amp;q=" . join("+", $pids)) . '">papers</a>';
+                foreach ($pids as $i => $p) {
+                    $at .= ($i ? ', ' : ' ') . '<a class="track" href="' . $conf->hoturl("paper", "p=" . $p) . '">' . $p . '</a>';
+                }
+                $at .= ')';
+            }
+        }
+
+        echo '<td class="pl pl_logaction">', $at, '</td></tr>';
     }
 
     static function go(Contact $viewer, Qrequest $qreq) {
