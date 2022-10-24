@@ -995,22 +995,27 @@ class Conf {
     }
 
     /** @return ?S3Client */
-    function s3_docstore() {
+    function s3_client() {
         if ($this->_s3_client === false) {
-            if ($this->setting_data("s3_bucket")) {
-                $opts = [
+            if (($bucket = $this->setting_data("s3_bucket"))) {
+                $this->_s3_client = S3Client::make([
                     "key" => $this->setting_data("s3_key"),
                     "secret" => $this->setting_data("s3_secret"),
-                    "bucket" => $this->setting_data("s3_bucket"),
+                    "bucket" => $bucket,
                     "setting_cache" => $this,
                     "setting_cache_prefix" => "__s3"
-                ];
-                $this->_s3_client = S3Client::make($opts);
+                ]);
             } else {
                 $this->_s3_client = null;
             }
         }
         return $this->_s3_client;
+    }
+
+    /** @return ?S3Client
+     * @deprecated */
+    function s3_docstore() {
+        return $this->s3_client();
     }
 
 
@@ -5745,7 +5750,8 @@ class Conf {
         return $this->_mail_keyword_map;
     }
 
-    /** @return list<object> */
+    /** @param string $name
+     * @return list<object> */
     function mail_keywords($name) {
         $uf = $this->xt_search_name($this->mail_keyword_map(), $name, null);
         $ufs = $this->xt_search_factories($this->_mail_keyword_factories, $name, null, $uf);

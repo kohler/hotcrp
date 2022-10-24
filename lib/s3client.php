@@ -9,20 +9,34 @@ class S3Client {
         "content-encoding" => true, "expires" => true
     ];
 
+    /** @var string */
     private $s3_bucket;
+    /** @var string */
     private $s3_key;
+    /** @var string */
     private $s3_secret;
+    /** @var string */
     private $s3_region;
+    /** @var ?Conf */
     private $setting_cache;
+    /** @var string */
     private $setting_cache_prefix;
+    /** @var ?string */
     private $s3_scope;
+    /** @var ?string */
     private $s3_signing_key;
+    /** @var ?int */
     private $fixed_time;
+    /** @var bool */
     private $reset_key = false;
+    /** @var class-string<S3Result> */
     public $result_class = "StreamS3Result";
 
+    /** @var int */
     static public $retry_timeout_allowance = 10; // in seconds
+    /** @var list<S3Client> */
     static private $instances = [];
+    /** @var bool */
     static public $verbose = false;
 
     function __construct($opt = []) {
@@ -54,7 +68,8 @@ class S3Client {
             && $this->s3_bucket === $bucket;
     }
 
-    /** @return array{string,string} */
+    /** @param int $time
+     * @return array{string,string} */
     function scope_and_signing_key($time) {
         if ($this->s3_scope === null
             && $this->setting_cache) {

@@ -419,7 +419,7 @@ class DocumentInfo implements JsonSerializable {
                 || $this->load_docstore()
                 || (!$this->conf->opt("dbNoPapers") && $this->load_database())
                 || !$this->check_s3()
-                || ($size = $this->conf->s3_docstore()->head_size($this->s3_key())) === false) {
+                || ($size = $this->conf->s3_client()->head_size($this->s3_key())) === false) {
                 $size = (int) $this->content_size();
             }
             $this->size = $size;
@@ -476,7 +476,7 @@ class DocumentInfo implements JsonSerializable {
             if ($this->size != 0) {
                 $sz = self::filesize_expected($path, $this->size);
                 if ($sz !== $this->size
-                    && ($s3 = $this->conf->s3_docstore())
+                    && ($s3 = $this->conf->s3_client())
                     && ($s3k = $this->s3_key())
                     && $s3->head_size($s3k) === $this->size()) {
                     unlink($path);
@@ -498,7 +498,7 @@ class DocumentInfo implements JsonSerializable {
             && $this->content_file === null
             && !$this->filestore
             && !$this->load_docstore()
-            && $this->conf->s3_docstore();
+            && $this->conf->s3_client();
     }
 
     /** @return bool */
@@ -641,7 +641,7 @@ class DocumentInfo implements JsonSerializable {
     function s3_accel_redirect() {
         if (($s3as = $this->conf->opt("s3AccelRedirectThreshold"))
             && $this->size >= $s3as
-            && $this->conf->s3_docstore()
+            && $this->conf->s3_client()
             && $this->s3_key()
             && ($s3ap = $this->conf->opt("s3AccelRedirect"))) {
             return $s3ap;
@@ -667,7 +667,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return bool */
     function load_s3() {
-        if (($s3 = $this->conf->s3_docstore())
+        if (($s3 = $this->conf->s3_client())
             && ($s3k = $this->s3_key())) {
             $dspath = Filer::docstore_path($this, Filer::FPATH_MKDIR);
             if (function_exists("curl_init")) {
@@ -747,7 +747,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return bool */
     function check_s3() {
-        return ($s3 = $this->conf->s3_docstore())
+        return ($s3 = $this->conf->s3_client())
             && ($s3k = $this->s3_key())
             && ($s3->head($s3k)
                 || ($this->s3_upgrade_extension($s3, $s3k) && $s3->head($s3k)));
@@ -755,7 +755,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return ?bool */
     function store_s3() {
-        if (($s3 = $this->conf->s3_docstore())
+        if (($s3 = $this->conf->s3_client())
             && ($s3k = $this->s3_key())) {
             $meta = ["conf" => $this->conf->dbname, "pid" => $this->paperId, "dtype" => $this->documentType];
             if ($this->filterType) {
@@ -1007,7 +1007,7 @@ class DocumentInfo implements JsonSerializable {
             // add documents to sliding window
             while (count($adocs) < 8 && !empty($pfdocs)) {
                 $doc = array_pop($pfdocs);
-                $s3 = $doc->conf->s3_docstore();
+                $s3 = $doc->conf->s3_client();
                 if (($s3k = $doc->s3_key())) {
                     $dspath = $docstore ? Filer::docstore_path($doc, Filer::FPATH_MKDIR) : null;
                     $stream = $dspath ? self::fopen_docstore($dspath) : null;
@@ -1551,7 +1551,7 @@ class DocumentInfo implements JsonSerializable {
         if ($s3_accel) {
             header("Content-Type: $mimetype");
             header("ETag: " . $opts["etag"]);
-            $this->conf->s3_docstore()->get_accel_redirect($this->s3_key(), $s3_accel);
+            $this->conf->s3_client()->get_accel_redirect($this->s3_key(), $s3_accel);
         } else if (($path = $this->available_content_file())) {
             Filer::download_file($path, $mimetype, $opts);
         } else {

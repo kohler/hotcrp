@@ -32,7 +32,7 @@ class S3Test_Batch {
 
     /** @return int */
     function run() {
-        $s3doc = $this->conf->s3_docstore();
+        $s3doc = $this->conf->s3_client();
         $status = 0;
 
         foreach ($this->files as $fn) {

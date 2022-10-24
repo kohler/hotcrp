@@ -45,11 +45,10 @@ class S3VerifyAll_Batch {
             "sha2-" => '{/(sha2-[0-9a-f]{64})(?:\.[^/]*|)\z}'
         ];
 
-        $s3doc = $this->conf->s3_docstore();
+        $s3doc = $this->conf->s3_client();
 
         $algo_pos = -1;
         $algo_pfx = $last_key = $continuation_token = null;
-        $args = ["max-keys" => 100];
         $doc = new DocumentInfo([], $this->conf);
         $xml = null;
         $xmlpos = 0;

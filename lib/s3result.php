@@ -18,9 +18,12 @@ abstract class S3Result {
     protected $args;
     /** @var ?int */
     public $status;
+    /** @var ?string */
     public $status_text;
-    public $response_headers;
-    public $user_data;
+    /** @var array<string,string> */
+    public $response_headers = [];
+    /** @var array<string,string> */
+    public $user_data = [];
     /** @var callable(S3Result):T */
     private $finisher;
 
@@ -36,7 +39,6 @@ abstract class S3Result {
         if (!is_string($skey) || $skey === "") {
             $this->status = 404;
             $this->status_text = "Filename missing";
-            $this->response_headers = $this->user_data = [];
         }
         $this->finisher = $finisher;
     }
@@ -100,6 +102,7 @@ abstract class S3Result {
 /** @template T
  * @inherits S3Result<T> */
 class StreamS3Result extends S3Result {
+    /** @var ?string */
     private $body;
 
     /** @param string $skey
