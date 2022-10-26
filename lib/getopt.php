@@ -3,7 +3,7 @@
 // Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
 
 class Getopt {
-    /** @var array<string,array{string,0|1|2,?string,?string}> */
+    /** @var array<string,array{string,0|1|2|3|5,?string,?string}> */
     private $po = [];
     /** @var ?string */
     private $helpopt;
@@ -34,7 +34,10 @@ class Getopt {
                         ++$i;
                         $type = 2;
                     }
-                } else if ($i + 1 < $olen && $options[$i] === "[" && $options[$i+1] === "]") {
+                } else if ($i + 2 < $olen && $options[$i] === "[" && $options[$i+1] === "]" && $options[$i+2] === "+") {
+                    $i += 3;
+                    $type = 5;
+                } else if ($i + 2 < $olen && $options[$i] === "[" && $options[$i+1] === "]") {
                     $i += 2;
                     $type = 3;
                 }
@@ -75,6 +78,9 @@ class Getopt {
                 } else if ($p + 2 < $co && $s[$co-2] === "[" && $s[$co-1] === "]") {
                     $d = 2;
                     $t = 3;
+                } else if ($p + 3 < $co && $s[$co-3] === "[" && $s[$co-2] === "]" && $s[$co-1] === "+") {
+                    $d = 3;
+                    $t = 5;
                 }
                 if ($p + $d >= $co) {
                     throw new ErrorException("Getopt \$longopts");
@@ -205,13 +211,23 @@ class Getopt {
     function parse($argv) {
         $res = [];
         $pot = 0;
+        $active_po = null;
+        $oname = "";
         for ($i = 1; $i < count($argv); ++$i) {
             $arg = $argv[$i];
             if ($arg === "--") {
                 ++$i;
                 break;
-            } else if ($arg === "-" || $arg[0] !== "-") {
+            } else if ($arg === "-") {
                 break;
+            } else if ($arg[0] !== "-") {
+                if (!$active_po) {
+                    break;
+                }
+                $po = $active_po;
+                $name = $po[0];
+                $pot = $po[1];
+                $value = $arg;
             } else if ($arg[1] === "-") {
                 $eq = strpos($arg, "=");
                 $name = substr($arg, 2, ($eq ? $eq : strlen($arg)) - 2);
@@ -235,7 +251,7 @@ class Getopt {
                 }
                 if ($eq !== false) {
                     $value = substr($arg, $eq + 1);
-                } else if ($pot === 1 || $pot === 3) {
+                } else if ($pot === 1 || $pot === 3 || $pot === 5) {
                     $value = $argv[$i + 1];
                     ++$i;
                 } else {
@@ -282,27 +298,26 @@ class Getopt {
                      && "{$v}" !== preg_replace('/\A(|-)\+?0*(?=\d)/', '$1', $value))
                     || ($poty === "n" && $v < 0)) {
                     throw new CommandLineException("`{$oname}` out of range", $this);
-                } else {
-                    $value = $v;
                 }
+                $value = $v;
             } else if ($poty === "f") {
                 if (!is_numeric($value)) {
                     throw new CommandLineException("`{$oname}` requires decimal number", $this);
-                } else {
-                    $value = floatval($value);
                 }
+                $value = floatval($value);
             } else if ($poty !== null && $poty !== "s") {
                 throw new ErrorException("Bad Getopt type `{$poty}` for `{$oname}`");
             }
             if (!array_key_exists($name, $res)) {
-                $res[$name] = $pot === 3 ? [$value] : $value;
-            } else if ($pot === 1 && !$this->allmulti) {
+                $res[$name] = $pot === 3 || $pot === 5 ? [$value] : $value;
+            } else if ($pot <= 2 && !$this->allmulti) {
                 $res[$name] = $value;
             } else if (is_array($res[$name])) {
                 $res[$name][] = $value;
             } else {
                 $res[$name] = [$res[$name], $value];
             }
+            $active_po = $pot === 5 ? $po : null;
         }
         if ($this->helpopt !== null && isset($res[$this->helpopt])) {
             fwrite(STDOUT, $this->help());

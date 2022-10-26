@@ -1029,4 +1029,22 @@ class Unit_Tester {
         $ts->sort_by_name();
         xassert_eqq(json_encode($ts->as_array()), '{"3":"Fudge","9":"Fudge: All of them","5":"Fudge: Opening","4":"Fudge: Packing","7":"Fudge: Really","10":"Fudge:Questions","6":"Fudge: Others","8":"Fudgey","1":"None of the above","2":"Other"}');
     }
+
+    function test_getopt() {
+        $arg = (new Getopt)->long("a", "ano", "b[]", "c[]", "d:", "e[]+")
+            ->parse(["fart", "-a", "-c", "x", "-cy", "-d=a", "-e", "a", "b", "c"]);
+        xassert_eqq(json_encode($arg), '{"a":false,"c":["x","y"],"d":"a","e":["a","b","c"],"_":[]}');
+
+        $arg = (new Getopt)->short("ab[]c[]d:e[]+")->long("ano")
+            ->parse(["fart", "-a", "-c", "x", "-cy", "-d=a", "-e", "a", "b", "c"]);
+        xassert_eqq(json_encode($arg), '{"a":false,"c":["x","y"],"d":"a","e":["a","b","c"],"_":[]}');
+
+        $arg = (new Getopt)->short("ab[]c[]d:e[]+")->long("ano")
+            ->parse(["fart", "-a", "-c", "x", "-cy", "-d=a", "-e", "a", "b", "--", "c"]);
+        xassert_eqq(json_encode($arg), '{"a":false,"c":["x","y"],"d":"a","e":["a","b"],"_":["c"]}');
+
+        $arg = (new Getopt)->short("ab[]c[]d:e[]+")->long("ano")
+            ->parse(["fart", "-a", "-c", "x", "-cy", "-d=a", "-e", "a", "b", "-a", "c"]);
+        xassert_eqq(json_encode($arg), '{"a":false,"c":["x","y"],"d":"a","e":["a","b"],"_":["c"]}');
+    }
 }
