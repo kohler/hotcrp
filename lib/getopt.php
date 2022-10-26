@@ -18,6 +18,13 @@ class Getopt {
     /** @var ?int */
     private $maxarg;
 
+    // values matter
+    const NOARG = 0;   // no argument
+    const ARG = 1;     // mandatory argument
+    const OPTARG = 2;  // optional argument
+    const MARG = 3;    // multiple argument options (e.g., `-n a -n b -n c`)
+    const MARG2 = 5;   // multiple arguments (e.g., `-n a -n b c`)
+
     /** @param string $options
      * @return $this */
     function short($options) {
@@ -25,21 +32,21 @@ class Getopt {
         for ($i = 0; $i !== $olen; ) {
             if (ctype_alnum($options[$i])) {
                 $opt = $options[$i];
-                $type = 0;
+                $type = self::NOARG;
                 ++$i;
                 if ($i < $olen && $options[$i] === ":") {
                     ++$i;
-                    $type = 1;
+                    $type = self::ARG;
                     if ($i < $olen && $options[$i] === ":") {
                         ++$i;
-                        $type = 2;
+                        $type = self::OPTARG;
                     }
                 } else if ($i + 2 < $olen && $options[$i] === "[" && $options[$i+1] === "]" && $options[$i+2] === "+") {
                     $i += 3;
-                    $type = 5;
+                    $type = self::MARG2;
                 } else if ($i + 2 < $olen && $options[$i] === "[" && $options[$i+1] === "]") {
                     $i += 2;
-                    $type = 3;
+                    $type = self::MARG;
                 }
                 $this->po[$opt] = [$opt, $type, null, null];
             } else {
@@ -72,15 +79,16 @@ class Getopt {
                 if (($co = strpos($s, ",", $p)) === false) {
                     $co = $l;
                 }
-                $t = $d = 0;
+                $t = self::NOARG;
+                $d = 0;
                 if ($p + 1 < $co && $s[$co-1] === ":") {
                     $d = $t = $p + 2 < $co && $s[$co-2] === ":" ? 2 : 1;
                 } else if ($p + 2 < $co && $s[$co-2] === "[" && $s[$co-1] === "]") {
                     $d = 2;
-                    $t = 3;
+                    $t = self::MARG;
                 } else if ($p + 3 < $co && $s[$co-3] === "[" && $s[$co-2] === "]" && $s[$co-1] === "+") {
                     $d = 3;
-                    $t = 5;
+                    $t = self::MARG2;
                 }
                 if ($p + $d >= $co) {
                     throw new ErrorException("Getopt \$longopts");
@@ -163,9 +171,11 @@ class Getopt {
                 } else {
                     $argname = "ARG";
                 }
-                if ($po[1] === 1 || $po[1] === 3) {
+                if ($po[1] === self::ARG || $po[1] === self::MARG) {
                     $arg = " {$argname}";
-                } else if ($po[1] === 2) {
+                } else if ($po[1] === self::MARG2) {
+                    $arg = " {$argname}...";
+                } else if ($po[1] === self::OPTARG) {
                     $arg = "[={$argname}]";
                 } else {
                     $arg = "";
@@ -244,14 +254,14 @@ class Getopt {
                 $oname = "--{$name}";
                 $name = $po[0];
                 $pot = $po[1];
-                if ($eq !== false && $pot === 0) {
+                if ($eq !== false && $pot === self::NOARG) {
                     throw new CommandLineException("`{$oname}` takes no arguments", $this);
                 } else if ($eq === false && $i === count($argv) - 1 && ($pot & 1) === 1) {
                     throw new CommandLineException("Missing argument for `{$oname}`", $this);
                 }
                 if ($eq !== false) {
                     $value = substr($arg, $eq + 1);
-                } else if ($pot === 1 || $pot === 3 || $pot === 5) {
+                } else if ($pot === self::ARG || $pot >= self::MARG) {
                     $value = $argv[$i + 1];
                     ++$i;
                 } else {
@@ -271,7 +281,7 @@ class Getopt {
                 $pot = $po[1];
                 if (strlen($arg) === 2 && ($pot & 1) === 1 && $i === count($argv) - 1) {
                     throw new CommandLineException("Missing argument for `{$oname}`", $this);
-                } else if ($pot === 0 || ($pot === 2 && strlen($arg) === 2)) {
+                } else if ($pot === self::NOARG || ($pot === self::OPTARG && strlen($arg) === 2)) {
                     $value = false;
                 } else if (strlen($arg) > 2 && $arg[2] === "=") {
                     $value = substr($arg, 3);
@@ -281,7 +291,7 @@ class Getopt {
                     $value = $argv[$i + 1];
                     ++$i;
                 }
-                if ($pot === 0 && strlen($arg) > 2) {
+                if ($pot === self::NOARG && strlen($arg) > 2) {
                     $argv[$i] = "-" . substr($arg, 2);
                     --$i;
                 }
@@ -309,15 +319,15 @@ class Getopt {
                 throw new ErrorException("Bad Getopt type `{$poty}` for `{$oname}`");
             }
             if (!array_key_exists($name, $res)) {
-                $res[$name] = $pot === 3 || $pot === 5 ? [$value] : $value;
-            } else if ($pot <= 2 && !$this->allmulti) {
+                $res[$name] = $pot >= self::MARG ? [$value] : $value;
+            } else if ($pot < self::MARG && !$this->allmulti) {
                 $res[$name] = $value;
             } else if (is_array($res[$name])) {
                 $res[$name][] = $value;
             } else {
                 $res[$name] = [$res[$name], $value];
             }
-            $active_po = $pot === 5 ? $po : null;
+            $active_po = $pot === self::MARG2 ? $po : null;
         }
         if ($this->helpopt !== null && isset($res[$this->helpopt])) {
             fwrite(STDOUT, $this->help());
