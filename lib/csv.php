@@ -681,6 +681,8 @@ class CsvGenerator {
     private $stream_length = 0;
     /** @var ?list<int|string> */
     private $selection;
+    /** @var ?list<list<int|string>> */
+    private $aliases;
     /** @var bool */
     private $selection_is_names = false;
     /** @var string */
@@ -700,7 +702,7 @@ class CsvGenerator {
     /** @param string $text
      * @return string */
     static function quote($text, $quote_empty = false) {
-        if ($text === "") {
+        if (($text ?? "") === "") {
             return $quote_empty ? '""' : $text;
         } else if (preg_match('/\A[-_@\/\$+A-Za-z0-9.](?:[-_@\/\$+A-Za-z0-9. \t]*[-_@\/\$+A-Za-z0-9.]|)\z/', $text)) {
             return $text;
@@ -739,6 +741,7 @@ class CsvGenerator {
         assert(($this->flags & self::FLAG_TYPE) !== self::TYPE_STRING);
         $this->selection = $selection;
         $this->selection_is_names = true;
+        $this->aliases = null;
         foreach ($this->selection as $s) {
             if (is_int($s) || ctype_digit($s)) {
                 $this->selection_is_names = false;
@@ -782,6 +785,24 @@ class CsvGenerator {
      * @return $this */
     function set_inline($inline) {
         $this->inline = $inline;
+        return $this;
+    }
+
+    /** @param int|string $dst
+     * @param string $src
+     * @return $this */
+    function set_alias($dst, $src) {
+        assert($this->selection !== null);
+        foreach ($this->selection as $i => $key) {
+            if ($key === $dst) {
+                while (count($this->aliases ?? []) <= $i) {
+                    $this->aliases[] = [];
+                }
+                $this->aliases[$i][] = $src;
+                return $this;
+            }
+        }
+        assert(false);
         return $this;
     }
 
@@ -873,6 +894,16 @@ class CsvGenerator {
         return $this;
     }
 
+    /** @param int $i
+     * @return ?string */
+    private function apply_aliases($row, $i) {
+        foreach ($this->aliases[$i] ?? [] as $key) {
+            if (array_key_exists($key, $row))
+                return $key;
+        }
+        return null;
+    }
+
     private function apply_selection($row) {
         if (!$this->selection
             || empty($row)
@@ -882,15 +913,20 @@ class CsvGenerator {
             return $row;
         }
         $selected = [];
-        $i = 0;
+        $i = -1;
         foreach ($this->selection as $key) {
-            if (isset($row[$key])) {
-                while (count($selected) < $i) {
-                    $selected[] = "";
-                }
-                $selected[] = $row[$key];
-            }
             ++$i;
+            if (array_key_exists($key, $row)) {
+                $value = $row[$key];
+            } else if ($this->aliases && ($xkey = $this->apply_aliases($row, $i)) !== null) {
+                $value = $row[$xkey];
+            } else {
+                continue;
+            }
+            while (count($selected) < $i) {
+                $selected[] = "";
+            }
+            $selected[] = $value;
         }
         if (empty($selected)) {
             for ($i = 0;
