@@ -1590,6 +1590,9 @@ class Contact implements JsonSerializable {
         $this->conf->log_for($this, $this, "Account edited: email ($old_email to $email)");
     }
 
+    /** @param string $email
+     * @param object $reg
+     * @return list<int> */
     static function email_authored_papers(Conf $conf, $email, $reg) {
         $aupapers = [];
         $result = $conf->q("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t?ls\t%'"), $email);
@@ -1615,6 +1618,7 @@ class Contact implements JsonSerializable {
         return $aupapers;
     }
 
+    /** @param list<int> $aupapers */
     private function save_authored_papers($aupapers) {
         if (!empty($aupapers) && $this->contactId) {
             $this->conf->ql("insert into PaperConflict (paperId, contactId, conflictType) values ?v on duplicate key update conflictType=(conflictType|" . CONFLICT_AUTHOR . ")", array_map(function ($pid) {
