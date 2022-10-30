@@ -1098,7 +1098,7 @@ class Conf {
         if ($xt
             && isset($xt->require)
             && !isset(self::$xt_require_resolved[$xt->require])) {
-            foreach (SiteLoader::expand_includes($xt->require, ["autoload" => true]) as $f) {
+            foreach (SiteLoader::expand_includes(null, $xt->require, ["autoload" => true]) as $f) {
                 require_once($f);
             }
             self::$xt_require_resolved[$xt->require] = true;

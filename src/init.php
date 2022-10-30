@@ -107,7 +107,7 @@ function expand_json_includes_callback($includelist, $callback, $parser = null) 
             }
         }
         if ($expandable !== null) {
-            foreach (SiteLoader::expand_includes($expandable) as $f) {
+            foreach (SiteLoader::expand_includes(null, $expandable) as $f) {
                 if (($x = file_get_contents($f)))
                     $includes[] = [$x, $f];
             }

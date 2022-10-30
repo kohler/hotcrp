@@ -127,10 +127,11 @@ class SiteLoader {
         return $s;
     }
 
-    /** @param string|list<string> $files
+    /** @param ?string $root
+     * @param string|list<string> $files
      * @param array<string,string> $expansions
      * @return list<string> */
-    static function expand_includes($files, $expansions = []) {
+    static function expand_includes($root, $files, $expansions = []) {
         global $Opt;
         if (!is_array($files)) {
             $files = [$files];
@@ -138,7 +139,7 @@ class SiteLoader {
         $confname = $Opt["confid"] ?? $Opt["dbName"] ?? null;
         $expansions["confid"] = $expansions["confname"] = $confname;
         $expansions["siteclass"] = $Opt["siteclass"] ?? null;
-        $root = self::$root;
+        $root = $root ?? self::$root;
 
         if (isset($expansions["autoload"]) && strpos($files[0], "/") === false) {
             $includepath = ["{$root}/src/", "{$root}/lib/"];
@@ -206,14 +207,16 @@ class SiteLoader {
         self::read_options_file($file);
     }
 
-    static function read_included_options() {
+    /** @param ?string $root */
+    static function read_included_options($root = null) {
         global $Opt;
         '@phan-var array<string,mixed> $Opt';
         if (is_string($Opt["include"])) {
             $Opt["include"] = [$Opt["include"]];
         }
+        $root = $root ?? self::$root;
         for ($i = 0; $i !== count($Opt["include"]); ++$i) {
-            foreach (self::expand_includes($Opt["include"][$i]) as $f) {
+            foreach (self::expand_includes($root, $Opt["include"][$i]) as $f) {
                 if (!in_array($f, $Opt["loaded"])) {
                     self::read_options_file($f);
                 }
@@ -223,7 +226,7 @@ class SiteLoader {
 
     static function autoloader($class_name) {
         $f = self::$map[$class_name] ?? strtolower($class_name) . ".php";
-        foreach (self::expand_includes($f, ["autoload" => true]) as $fx) {
+        foreach (self::expand_includes(self::$root, $f, ["autoload" => true]) as $fx) {
             require_once($fx);
         }
     }
