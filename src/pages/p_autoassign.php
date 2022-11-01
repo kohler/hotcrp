@@ -157,7 +157,7 @@ class Autoassign_Page {
         $assignset = new AssignmentSet($this->user, true);
         $assignset->enable_papers($this->ssel->selection());
         $assignset->parse($this->qreq->assignment);
-        $csvg = $this->conf->make_csvg("assignmnets");
+        $csvg = $this->conf->make_csvg("assignments");
         $assignset->make_acsv()->unparse_into($csvg);
         $csvg->sort(SORT_NATURAL)->emit();
     }
