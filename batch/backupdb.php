@@ -177,7 +177,7 @@ class BackupDB_Batch {
     private function fflush() {
         if (strlen($this->_buf) > 0) {
             if (@fwrite($this->out, $this->_buf) === false) {
-                throw new CommandLineException((error_get_last())["msg"]);
+                throw new CommandLineException((error_get_last())["message"]);
             }
             $this->_buf = "";
         }
