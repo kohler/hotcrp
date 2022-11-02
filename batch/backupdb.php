@@ -44,6 +44,12 @@ class BackupDB_Batch {
     private $_fields;
     /** @var string */
     private $_separator;
+    /** @var int */
+    private $_maybe_ephemeral = 0;
+    /** @var string */
+    private $_buf = "";
+
+    const BUFSZ = 16384;
 
     function __construct(Dbl_ConnectionParams $cp, $arg = []) {
         $this->connp = $cp;
@@ -125,17 +131,24 @@ class BackupDB_Batch {
         return $cmd . " " . escapeshellarg($this->connp->name);
     }
 
-    /** @param string $m
+    private function update_maybe_ephemeral() {
+        $this->_maybe_ephemeral = 0;
+        if ($this->_inserting === $this->_created) {
+            if ($this->_inserting === "Settings"
+                && $this->_fields[0] === "name") {
+                $this->_maybe_ephemeral = 1;
+            } else if ($this->_inserting === "Capability"
+                       && $this->_fields[0] === "capabilityType") {
+                $this->_maybe_ephemeral = 2;
+            }
+        }
+    }
+
+    /** @param string $s
      * @return bool */
-    private function should_include($m) {
-        return ($this->_inserting !== "Settings"
-                || !str_starts_with($m, "('__")
-                || $this->_created !== "Settings"
-                || $this->_fields[0] !== "name")
-            && ($this->_inserting !== "Capability"
-                || !str_starts_with($m, "(1,")
-                || $this->_created !== "Capability"
-                || $this->_fields[0] !== "capabilityType");
+    private function is_ephemeral($s) {
+        return ($this->_maybe_ephemeral === 1 && str_starts_with($s, "('__"))
+            || ($this->_maybe_ephemeral === 2 && str_starts_with($s, "(1,"));
     }
 
     /** @param string $s
@@ -161,13 +174,30 @@ class BackupDB_Batch {
         }
     }
 
+    private function fflush() {
+        if (strlen($this->_buf) > 0) {
+            if (@fwrite($this->out, $this->_buf) === false) {
+                throw new CommandLineException((error_get_last())["msg"]);
+            }
+            $this->_buf = "";
+        }
+    }
+
+    /** @param string $s */
+    private function fwrite($s) {
+        if (strlen($this->_buf) + strlen($s) >= self::BUFSZ) {
+            $this->fflush();
+        }
+        $this->_buf .= $s;
+    }
+
     private function process_line($s, $line) {
         if ($this->schema) {
             if (str_starts_with($line, "--")) {
                 return $s;
             } else if (str_starts_with($s, "--") && str_ends_with($line, "\n")) {
                 if (strpos($s, "Dump") === false) {
-                    fwrite($this->out, substr($s, 0, -strlen($line)));
+                    $this->fwrite(substr($s, 0, -strlen($line)));
                 }
                 $s = $line;
             }
@@ -195,6 +225,7 @@ class BackupDB_Batch {
             $this->_created = $m[1];
             $this->_fields = [];
             $this->_creating = true;
+            $this->_maybe_ephemeral = 0;
         } else if ($this->_creating) {
             if (str_ends_with($s, ";\n")) {
                 $this->_creating = false;
@@ -209,9 +240,10 @@ class BackupDB_Batch {
         if ($this->_inserting === null
             && str_starts_with($s, "INSERT")
             && preg_match('/\G(INSERT INTO `?([^`\s]*)`? VALUES)\s*(?=[(,]|$)/', $s, $m, 0, $p)) {
-            $p = strlen($m[0]);
             $this->_inserting = $m[2];
             $this->_separator = "{$m[1]}\n";
+            $this->update_maybe_ephemeral();
+            $p = strlen($m[0]);
         }
         if ($this->_inserting !== null) {
             while (true) {
@@ -236,9 +268,10 @@ class BackupDB_Batch {
                         break;
                     }
                     $x = substr($s, $p, $rp + 1 - $p);
-                    if (!$this->skip_ephemeral
-                        || $this->should_include($x)) {
-                        fwrite($this->out, $this->_separator . $x);
+                    if ($this->_maybe_ephemeral === 0
+                        || !$this->is_ephemeral($x)) {
+                        $this->fwrite($this->_separator);
+                        $this->fwrite($x);
                         $this->_separator = "";
                     }
                     $p = $rp + 1;
@@ -249,7 +282,7 @@ class BackupDB_Batch {
                     ++$p;
                 } else if ($s[$p] === ";") {
                     if ($this->_separator === "") {
-                        fwrite($this->out, ";");
+                        $this->fwrite(";");
                     }
                     $this->_inserting = null;
                     ++$p;
@@ -261,7 +294,7 @@ class BackupDB_Batch {
             }
         }
         if (str_ends_with($s, "\n")) {
-            fwrite($this->out, $p === 0 ? $s : substr($s, $p));
+            $this->fwrite($p === 0 ? $s : substr($s, $p));
             return "";
         } else {
             return substr($s, $p);
@@ -293,14 +326,15 @@ class BackupDB_Batch {
         if ($this->schema) {
             $this->_sversion = $this->_sversion ?? Dbl::fetch_ivalue($this->dblink(), "select value from Settings where name='allowPaperOption'");
             if ($this->_sversion !== null) {
-                fwrite($this->out, "INSERT INTO `Settings` (`name`,`value`,`data`) VALUES ('allowPaperOption',{$this->_sversion},NULL);\n");
+                $this->fwrite("INSERT INTO `Settings` (`name`,`value`,`data`) VALUES ('allowPaperOption',{$this->_sversion},NULL);\n");
             }
         } else {
-            fwrite($this->out, "\n--\n-- Force HotCRP to invalidate server caches\n--\nINSERT INTO `Settings` (`name`,`value`,`data`) VALUES\n('frombackup',UNIX_TIMESTAMP(),NULL)\nON DUPLICATE KEY UPDATE value=greatest(value,UNIX_TIMESTAMP());\n");
+            $this->fwrite("\n--\n-- Force HotCRP to invalidate server caches\n--\nINSERT INTO `Settings` (`name`,`value`,`data`) VALUES\n('frombackup',UNIX_TIMESTAMP(),NULL)\nON DUPLICATE KEY UPDATE value=greatest(value,UNIX_TIMESTAMP());\n");
         }
         if ($proc) {
             proc_close($proc);
         }
+        $this->fflush();
         return 0;
     }
 
@@ -349,6 +383,7 @@ Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
             $f = STDOUT;
         }
         if ($f !== false) {
+            stream_set_write_buffer($f, 0);
             $bdb->set_output($f);
         } else {
             throw error_get_last_as_exception((($arg["output"] ?? "-") === "-" ? "<stdout>" : $arg["output"]) . ": ");
