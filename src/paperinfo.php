@@ -2287,7 +2287,11 @@ class PaperInfo {
 
     function mark_inactive_linked_documents() {
         // see also DocumentInfo::active_document_map
-        $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType<=? and paperStorageId not in (select documentId from DocumentLink where paperId=?)", $this->paperId, DTYPE_COMMENT, $this->paperId);
+        $this->conf->qe("update PaperStorage ps
+            left join DocumentLink dl on (dl.paperId=? and dl.documentId=ps.paperStorageId)
+            set inactive=(dl.documentId is null)
+            where ps.paperId=? and ps.documentType<=?",
+            $this->paperId, $this->paperId, DTYPE_COMMENT);
     }
 
 
