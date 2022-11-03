@@ -410,10 +410,13 @@ Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
             && ($arg["output-md5"] ?? $arg["output-sha1"] ?? $arg["output-sha256"] ?? null) !== null) {
             throw new CommandLineException("Cannout output both result and hash to stdout");
         }
+        if ($output === "-" && posix_isatty(STDOUT)) {
+            throw new CommandLineException("Cowardly refusing to output to a terminal");
+        }
 
         if (isset($arg["z"])) {
             if ($output !== "-") {
-                $f = @gzopen($output, "wb");
+                $f = @gzopen($output, "wb9");
             } else {
                 $f = @fopen("compress.zlib://php://stdout", "wb");
             }

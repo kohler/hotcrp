@@ -741,7 +741,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         return $this->fix_type($ctype);
     }
 
-    /** @param array $req
+    /** @param array{docs?:list<DocumentInfo>,tags?:?string} $req
      * @return bool */
     function save_comment($req, Contact $acting_user) {
         $this->saved_mentions = [];
@@ -764,8 +764,8 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         // tags
         $expected_tags = $this->commentTags;
         if (!$is_response
-            && ($req["tags"] ?? null)
-            && preg_match_all('/\S+/', (string) $req["tags"], $m)
+            && ($req["tags"] ?? "")
+            && preg_match_all('/\S+/', $req["tags"] ?? "", $m)
             && !$user->act_author_view($this->prow)) {
             $tagger = new Tagger($user);
             $ts = [];
@@ -802,7 +802,8 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $displayed = ($ctype & self::CT_DRAFT) === 0;
 
         // text
-        if (($text = $req["text"] ?? null) !== false) {
+        $text = $req["text"] ?? null;
+        if ($text !== false) {
             $text = (string) $text;
         }
 

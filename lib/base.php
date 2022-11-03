@@ -624,6 +624,7 @@ function tempdir($mode = 0700) {
 }
 
 
+/** @return Exception */
 function error_get_last_as_exception($prefix) {
     $msg = preg_replace('/.*: /', "", error_get_last()["message"]);
     return new ErrorException($prefix . $msg);
