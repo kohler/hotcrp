@@ -48,6 +48,8 @@ class BackupDB_Batch {
     private $_maybe_ephemeral = 0;
     /** @var string */
     private $_buf = "";
+    /** @var ?HashContext */
+    private $_hash;
 
     const BUFSZ = 16384;
 
@@ -57,6 +59,16 @@ class BackupDB_Batch {
         $this->skip_ephemeral = isset($arg["no-ephemeral"]);
         $this->tablespaces = isset($arg["tablespaces"]);
         $this->my_opts = $arg["-"] ?? [];
+        if (isset($arg["skip-comments"])) {
+            $this->my_opts[] = "--skip-comments";
+        }
+        if (isset($arg["output-sha256"])) {
+            $this->_hash = hash_init("sha256");
+        } else if (isset($arg["output-sha1"])) {
+            $this->_hash = hash_init("sha1");
+        } else if (isset($arg["output-md5"])) {
+            $this->_hash = hash_init("md5");
+        }
     }
 
     /** @param ?resource $input
@@ -176,6 +188,9 @@ class BackupDB_Batch {
 
     private function fflush() {
         if (strlen($this->_buf) > 0) {
+            if ($this->_hash) {
+                hash_update($this->_hash, $this->_buf);
+            }
             if (@fwrite($this->out, $this->_buf) === false) {
                 throw new CommandLineException((error_get_last())["message"]);
             }
@@ -335,6 +350,9 @@ class BackupDB_Batch {
             proc_close($proc);
         }
         $this->fflush();
+        if ($this->_hash) {
+            fwrite(STDOUT, hash_final($this->_hash) . "\n");
+        }
         return 0;
     }
 
@@ -349,7 +367,11 @@ class BackupDB_Batch {
             "z,compress Compress output",
             "schema Output schema only",
             "no-ephemeral Omit ephemeral settings and values",
+            "skip-comments Omit comments",
             "tablespaces Include tablespaces",
+            "output-md5 Output MD5 hash of uncompressed dump to stdout",
+            "output-sha1",
+            "output-sha256",
             "help,h"
         )->description("Back up HotCRP database.
 Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
@@ -370,25 +392,29 @@ Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
                 throw error_get_last_as_exception($arg["input"] . ": ");
             }
         }
+        $output = $arg["output"] ?? "-";
+        if ($output === "-"
+            && ($arg["output-md5"] ?? $arg["output-sha1"] ?? $arg["output-sha256"] ?? null) !== null) {
+            throw new CommandLineException("Cannout output both result and hash to stdout");
+        }
 
         if (isset($arg["z"])) {
-            if (($arg["output"] ?? "-") === "-") {
-                $f = @fopen("compress.zlib://php://stdout", "wb");
+            if ($output !== "-") {
+                $f = @gzopen($output, "wb");
             } else {
-                $f = @gzopen($arg["output"], "wb");
+                $f = @fopen("compress.zlib://php://stdout", "wb");
             }
-        } else if (isset($arg["output"]) && $arg["output"] !== "-") {
-            $f = @fopen("file://" . $arg["output"], "wb");
+        } else if ($output !== "-") {
+            $f = @fopen("file://{$output}", "wb");
         } else {
             $f = STDOUT;
         }
-        if ($f !== false) {
-            stream_set_write_buffer($f, 0);
-            $bdb->set_output($f);
-        } else {
-            throw error_get_last_as_exception((($arg["output"] ?? "-") === "-" ? "<stdout>" : $arg["output"]) . ": ");
+        if ($f === false) {
+            throw error_get_last_as_exception(($output === "-" ? "<stdout>" : $output) . ": ");
         }
 
+        stream_set_write_buffer($f, 0);
+        $bdb->set_output($f);
         return $bdb;
     }
 }
