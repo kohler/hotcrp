@@ -50,6 +50,8 @@ class BackupDB_Batch {
     private $_buf = "";
     /** @var ?HashContext */
     private $_hash;
+    /** @var list<string> */
+    private $_check_table = [];
 
     const BUFSZ = 16384;
 
@@ -69,6 +71,7 @@ class BackupDB_Batch {
         } else if (isset($arg["output-md5"])) {
             $this->_hash = hash_init("md5");
         }
+        $this->_check_table = $arg["check-table"] ?? [];
     }
 
     /** @param ?resource $input
@@ -241,6 +244,10 @@ class BackupDB_Batch {
             $this->_fields = [];
             $this->_creating = true;
             $this->_maybe_ephemeral = 0;
+            if (!empty($this->_check_table)
+                && ($p = array_search($m[1], $this->_check_table)) !== false) {
+                array_splice($this->_check_table, $p, 1);
+            }
         } else if ($this->_creating) {
             if (str_ends_with($s, ";\n")) {
                 $this->_creating = false;
@@ -338,6 +345,11 @@ class BackupDB_Batch {
         }
         $this->process_line($s, "\n");
 
+        if (!empty($this->_check_table)) {
+            fwrite(STDERR,  $this->connp->name . " backup: table(s) " . join(", ", $this->_check_table) . " not found\n");
+            exit(1);
+        }
+
         if ($this->schema) {
             $this->_sversion = $this->_sversion ?? Dbl::fetch_ivalue($this->dblink(), "select value from Settings where name='allowPaperOption'");
             if ($this->_sversion !== null) {
@@ -369,6 +381,7 @@ class BackupDB_Batch {
             "no-ephemeral Omit ephemeral settings and values",
             "skip-comments Omit comments",
             "tablespaces Include tablespaces",
+            "check-table[] =TABLE Exit with error if TABLE is not present",
             "output-md5 Output MD5 hash of uncompressed dump to stdout",
             "output-sha1",
             "output-sha256",
