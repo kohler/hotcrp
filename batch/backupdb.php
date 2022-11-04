@@ -10,6 +10,8 @@ if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
 class BackupDB_Batch {
     /** @var Dbl_ConnectionParams */
     public $connp;
+    /** @var string */
+    public $confid;
     /** @var bool */
     public $schema;
     /** @var bool */
@@ -57,6 +59,7 @@ class BackupDB_Batch {
 
     function __construct(Dbl_ConnectionParams $cp, $arg = []) {
         $this->connp = $cp;
+        $this->confid = $arg["name"] ?? "";
         $this->schema = isset($arg["schema"]);
         $this->skip_ephemeral = isset($arg["no-ephemeral"]);
         $this->tablespaces = isset($arg["tablespaces"]);
@@ -321,6 +324,35 @@ class BackupDB_Batch {
         } else {
             return substr($s, $p);
         }
+    }
+
+    /** @param string $pat
+     * @param int $time
+     * @return string */
+    function expand_file_pattern($pat, $time) {
+        $pat = preg_replace_callback('/%\{(?:dbname|confid)\}/',
+            function ($m) {
+                $m = $m[0];
+                if ($m === "%{dbname}") {
+                    return $this->connp->name;
+                } else if ($m === "%{confid}") {
+                    return $this->confid;
+                } else {
+                    return $m;
+                }
+            }, $pat);
+        if ($time > 0) {
+            $pat = preg_replace_callback('/(?:%[YmdHMSs%]|[-.])+/',
+                function ($m) use ($time) {
+                    $m = $m[0];
+                    return gmdate(
+                        str_replace(["%Y", "%m", "%d", "%H", "%M", "%S", "%s", "%%"],
+                                    ["Y",  "m",  "d",  "H",  "i",  "s",  "U",  "%"], $m),
+                        $time
+                    );
+                }, $pat);
+        }
+        return $pat;
     }
 
     /** @return int */
