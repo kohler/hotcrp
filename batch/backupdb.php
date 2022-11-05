@@ -28,8 +28,6 @@ class BackupDB_Batch {
     private $_dblink;
     /** @var bool */
     private $_has_dblink = false;
-    /** @var ?int */
-    private $_sversion;
     /** @var ?resource */
     private $_pwtmp;
     /** @var ?string */
@@ -54,6 +52,8 @@ class BackupDB_Batch {
     private $_hash;
     /** @var list<string> */
     private $_check_table = [];
+    /** @var ?int */
+    private $_check_sversion;
 
     const BUFSZ = 16384;
 
@@ -91,11 +91,17 @@ class BackupDB_Batch {
         return $this;
     }
 
-    /** @param ?int $sversion
+    /** @param int $sversion
      * @return $this */
-    function set_sversion($sversion) {
-        $this->_sversion = $sversion;
+    function set_check_sversion($sversion) {
+        $this->_check_sversion = $sversion;
         return $this;
+    }
+
+    /** @param string $msg
+     * @return never */
+    function throw_error($msg) {
+        throw new CommandLineException("{$this->connp->name}: $msg");
     }
 
     /** @return ?\mysqli */
@@ -105,6 +111,26 @@ class BackupDB_Batch {
             $this->_dblink = $this->connp->connect();
         }
         return $this->_dblink;
+    }
+
+    /** @return array{int,bool,string} */
+    function sversion_lockstate() {
+        $dbl = $this->dblink();
+        if (!$dbl) {
+            return [0, true, ""];
+        }
+        $result = Dbl::qe($dbl, "select name, value from Settings where name='allowPaperOption' or name='sversion' or name='__schema_lock'");
+        $ans = [];
+        while (($row = $result->fetch_row())) {
+            $ans[$row[0]] = (int) $row[1];
+        }
+        Dbl::free($result);
+        if (isset($ans["allowPaperOption"]) && isset($ans["sversion"])) {
+            return [0, true, ""];
+        } else {
+            $key = isset($ans["allowPaperOption"]) ? "allowPaperOption" : "sversion";
+            return [$ans[$key], !!($ans["__schema_lock"] ?? false), $key];
+        }
     }
 
     /** @return string */
@@ -122,7 +148,7 @@ class BackupDB_Batch {
                     file_put_contents($fn, "[client]\npassword={$this->connp->password}\n");
                     register_shutdown_function("unlink", $fn);
                 } else {
-                    throw new ErrorException("Cannot create temporary file");
+                    $this->throw_error("Cannot create temporary file");
                 }
             }
             $cmd .= " --defaults-extra-file=" . escapeshellarg($this->_pwfile);
@@ -169,36 +195,13 @@ class BackupDB_Batch {
             || ($this->_maybe_ephemeral === 2 && str_starts_with($s, "(1,"));
     }
 
-    /** @param string $s
-     * @param int|false $sq
-     * @return int|false */
-    static function find_eq($s, $sq) {
-        if ($sq === false) {
-            return false;
-        }
-        $eq = $sq;
-        while (true) {
-            $eq = strpos($s, "'", $eq + 1);
-            if ($eq === false) {
-                return strlen($s);
-            }
-            $sbs = $eq - 1;
-            while ($sbs > $sq && $s[$sbs] === "\\") {
-                --$sbs;
-            }
-            if ((($eq - $sbs) & 1) !== 0) {
-                return $eq;
-            }
-        }
-    }
-
     private function fflush() {
         if (strlen($this->_buf) > 0) {
             if ($this->_hash) {
                 hash_update($this->_hash, $this->_buf);
             }
             if (@fwrite($this->out, $this->_buf) === false) {
-                throw new CommandLineException((error_get_last())["message"]);
+                $this->throw_error((error_get_last())["message"]);
             }
             $this->_buf = "";
         }
@@ -261,7 +264,6 @@ class BackupDB_Batch {
 
         $p = 0;
         $l = strlen($s);
-        $sq = $eq = -1;
         if ($this->_inserting === null
             && str_starts_with($s, "INSERT")
             && preg_match('/\G(INSERT INTO `?([^`\s]*)`? VALUES)\s*(?=[(,]|$)/', $s, $m, 0, $p)) {
@@ -272,50 +274,37 @@ class BackupDB_Batch {
         }
         if ($this->_inserting !== null) {
             while (true) {
-                while ($p !== $l && ctype_space($s[$p])) {
+                while ($p !== $l && ctype_space(($ch = $s[$p]))) {
                     ++$p;
                 }
                 if ($p === $l) {
                     break;
-                } else if ($s[$p] === "(") {
-                    $rp = strpos($s, ")", $p);
-                    while ($rp !== false) {
-                        while ($eq !== false && $eq < $rp) {
-                            $sq = strpos($s, "'", $eq + 1);
-                            $eq = self::find_eq($s, $sq);
-                        }
-                        if ($sq === false || $sq > $rp) {
-                            break;
-                        }
-                        $rp = strpos($s, ")", $rp + 1);
-                    }
-                    if ($rp === false) {
+                } else if ($ch === "(") {
+                    if (!preg_match('/\G\((?:[^\\\\\')]|\'(?:[^\\\\\']|\\\\.)*+\')*+\)/s', $s, $m, 0, $p)) {
                         break;
                     }
-                    $x = substr($s, $p, $rp + 1 - $p);
                     if ($this->_maybe_ephemeral === 0
-                        || !$this->is_ephemeral($x)) {
+                        || !$this->is_ephemeral($m[0])) {
                         $this->fwrite($this->_separator);
-                        $this->fwrite($x);
+                        $this->fwrite($m[0]);
                         $this->_separator = "";
                     }
-                    $p = $rp + 1;
-                } else if ($s[$p] === ",") {
+                    $p += strlen($m[0]);
+                    continue;
+                } else if ($ch === ",") {
                     if ($this->_separator === "") {
                         $this->_separator = ",\n";
                     }
                     ++$p;
-                } else if ($s[$p] === ";") {
+                    continue;
+                } else if ($ch === ";") {
                     if ($this->_separator === "") {
                         $this->fwrite(";");
                     }
-                    $this->_inserting = null;
                     ++$p;
-                    break;
-                } else {
-                    $this->_inserting = null;
-                    break;
                 }
+                $this->_inserting = null;
+                break;
             }
         }
         if (str_ends_with($s, "\n")) {
@@ -381,11 +370,17 @@ class BackupDB_Batch {
             fwrite(STDERR,  $this->connp->name . " backup: table(s) " . join(", ", $this->_check_table) . " not found\n");
             exit(1);
         }
+        if ($this->_check_sversion) {
+            $svlk = $this->sversion_lockstate();
+            if ($svlk[0] !== $this->_check_sversion || $svlk[1]) {
+                $this->throw_error("Schema locked or changed");
+            }
+        }
 
         if ($this->schema) {
-            $this->_sversion = $this->_sversion ?? Dbl::fetch_ivalue($this->dblink(), "select value from Settings where name='allowPaperOption'");
-            if ($this->_sversion !== null) {
-                $this->fwrite("INSERT INTO `Settings` (`name`,`value`,`data`) VALUES ('allowPaperOption',{$this->_sversion},NULL);\n");
+            $svlk = $this->sversion_lockstate();
+            if ($svlk[0] !== 0) {
+                $this->fwrite("INSERT INTO `Settings` (`name`,`value`,`data`) VALUES ('{$svlk[2]}',{$svlk[0]},NULL);\n");
             }
         } else {
             $this->fwrite("\n--\n-- Force HotCRP to invalidate server caches\n--\nINSERT INTO `Settings` (`name`,`value`,`data`) VALUES\n('frombackup',UNIX_TIMESTAMP(),NULL)\nON DUPLICATE KEY UPDATE value=greatest(value,UNIX_TIMESTAMP());\n");
@@ -436,14 +431,20 @@ Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
             } else {
                 throw error_get_last_as_exception($arg["input"] . ": ");
             }
+        } else {
+            $svlk = $bdb->sversion_lockstate();
+            if ($svlk[0] === 0 || $svlk[1]) {
+                $bdb->throw_error("Schema is locked");
+            }
+            $bdb->set_check_sversion($svlk[0]);
         }
         $output = $arg["output"] ?? "-";
         if ($output === "-"
             && ($arg["output-md5"] ?? $arg["output-sha1"] ?? $arg["output-sha256"] ?? null) !== null) {
-            throw new CommandLineException("Cannout output both result and hash to stdout");
+            $bdb->throw_error("Cannout output both result and hash to stdout");
         }
         if ($output === "-" && posix_isatty(STDOUT)) {
-            throw new CommandLineException("Cowardly refusing to output to a terminal");
+            $bdb->throw_error("Cowardly refusing to output to a terminal");
         }
 
         if (isset($arg["z"])) {
@@ -453,7 +454,8 @@ Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
                 $f = @fopen("compress.zlib://php://stdout", "wb");
             }
         } else if ($output !== "-") {
-            $f = @fopen("file://{$output}", "wb");
+            $output = str_starts_with($output, "/") ? $output : "./{$output}";
+            $f = fopen($output, "wb");
         } else {
             $f = STDOUT;
         }
