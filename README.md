@@ -133,12 +133,12 @@ You can set up everything else through the web site itself.
 Database access
 ---------------
 
-Run `lib/backupdb.sh` at the shell prompt to back up the database.
+Run `php batch/backupdb.php` at the shell prompt to back up the database.
 This will write the database’s current structure and comments to the
 standard output. As typically configured, HotCRP stores all paper
 submissions in the database, so the backup file may be quite large.
 
-Run `lib/restoredb.sh BACKUPFILE` at the shell prompt to restore the
+Run `php batch/backupdb.php -r BACKUPFILE` at the shell prompt to restore the
 database from a backup stored in `BACKUPFILE`.
 
 Run `lib/runsql.sh` at the shell prompt to get a SQL command prompt for the
