@@ -92,11 +92,11 @@ class PaperStatus_Tester {
 
     function test_paper_save_document() {
         $ps = new PaperStatus($this->conf, $this->u_estrin);
-        $doc = DocumentInfo::make_uploaded_file([
+        $doc = DocumentInfo::make_uploaded_file(new QrequestFile([
                 "error" => UPLOAD_ERR_OK, "name" => "amazing-sample.pdf",
                 "tmp_name" => SiteLoader::find("etc/sample.pdf"),
                 "type" => "application/pdf"
-            ], -1, DTYPE_SUBMISSION, $this->conf);
+            ]), -1, DTYPE_SUBMISSION, $this->conf);
         xassert_eqq($doc->content_text_signature(), "starts with “%PDF-1.2”");
         $ps->save_paper_json((object) ["id" => 1, "submission" => $doc]);
         xassert_paper_status($ps);

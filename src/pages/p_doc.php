@@ -151,7 +151,7 @@ class Doc_Page {
         if ($qreq->fn === "listing" || $qreq->fn === "consolidatedlisting") {
             if (!$doc->is_archive()) {
                 json_exit(MessageItem::make_error_json("<0>That file is not an archive"));
-            } else if (($listing = $doc->archive_listing(65536)) === false) {
+            } else if (($listing = $doc->archive_listing(65536)) === null) {
                 $ml = $doc->message_list();
                 if (empty($ml)) {
                     $ml[] = new MessageItem(null, "<0>Internal error", 2);

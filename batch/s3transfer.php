@@ -49,12 +49,12 @@ class S3Transfer_Batch {
                 from PaperStorage where paperStorageId={$did}");
             $doc = DocumentInfo::fetch($result, $this->conf);
             Dbl::free($result);
-            if ($doc->content === null && !$doc->load_docstore()) {
+            if (!$doc->ensure_content()) {
                 continue;
             }
 
             $front = "[" . $this->conf->unparse_time_log($doc->timestamp) . "] "
-                . $doc->export_filename(DocumentInfo::ANY_MEMBER_FILENAME) . " ({$did})";
+                . $doc->export_filename(null, DocumentInfo::ANY_MEMBER_FILENAME) . " ({$did})";
 
             $chash = $doc->content_binary_hash($doc->binary_hash());
             if ($chash !== $doc->binary_hash()) {

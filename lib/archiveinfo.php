@@ -4,10 +4,10 @@
 
 class ArchiveInfo {
     /** @param int $max_length
-     * @return false|list<string> */
+     * @return ?list<string> */
     static function archive_listing(DocumentInfo $doc, $max_length = -1) {
         if (!($path = $doc->content_file())) {
-            return false;
+            return null;
         }
         $type = null;
         if ($doc->filename === null || $doc->filename === "") {
@@ -32,7 +32,7 @@ class ArchiveInfo {
             $type = "tar";
         }
         if (!$type) {
-            return false;
+            return null;
         } else if ($type === "zip") {
             $cmd = "zipinfo -1 ";
         } else {

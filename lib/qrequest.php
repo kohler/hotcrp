@@ -475,7 +475,7 @@ class QrequestFile {
     /** @var int */
     public $error;
 
-    /** @param array $a */
+    /** @param array{name?:string,type?:string,size?:int,tmp_name?:?string,content?:?string,error?:int} $a */
     function __construct($a) {
         $this->name = $a["name"] ?? "";
         $this->type = $a["type"] ?? "application/octet-stream";
@@ -485,7 +485,8 @@ class QrequestFile {
         $this->error = $a["error"] ?? 0;
     }
 
-    /** @return array{name:string,type:string,size:int,tmp_name?:string,content?:string,error:int} */
+    /** @return array{name:string,type:string,size:int,tmp_name?:string,content?:string,error:int}
+     * @deprecated */
     function as_array() {
         $a = ["name" => $this->name, "type" => $this->type, "size" => $this->size];
         if ($this->tmp_name !== null) {
