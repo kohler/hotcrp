@@ -47,6 +47,8 @@ class DocumentInfo implements JsonSerializable {
     private $filestore;
     /** @var bool */
     private $_prefer_s3 = false;
+    /** @var ?string */
+    private $_content_prefix;
 
     /** @var ?object */
     private $_metadata;
@@ -260,21 +262,19 @@ class DocumentInfo implements JsonSerializable {
     }
 
     function analyze_content() {
-        $content = $this->content;
-        if ($content === null && $this->content_file) {
-            $content = file_get_contents($this->content_file, false, null, 0, 4096);
+        $pfx = $this->content_prefix(4096);
+        if ($pfx === false) {
+            return;
         }
-        if ($content !== null) {
-            $info = Mimetype::content_info($content, $this->mimetype);
-            $this->mimetype = $info["type"];
-            if (isset($info["width"]) || isset($info["height"])) {
-                $this->_metadata = $this->metadata() ?? (object) [];
-                if (isset($info["width"])) {
-                    $this->_metadata->width = $info["width"];
-                }
-                if (isset($info["height"])) {
-                    $this->_metadata->height = $info["height"];
-                }
+        $info = Mimetype::content_info($pfx, $this->mimetype);
+        $this->mimetype = $info["type"];
+        if (isset($info["width"]) || isset($info["height"])) {
+            $this->_metadata = $this->metadata() ?? (object) [];
+            if (isset($info["width"])) {
+                $this->_metadata->width = $info["width"];
+            }
+            if (isset($info["height"])) {
+                $this->_metadata->height = $info["height"];
             }
         }
     }
@@ -324,15 +324,18 @@ class DocumentInfo implements JsonSerializable {
     function has_error() {
         return $this->_ms && $this->_ms->has_error();
     }
+
     /** @return MessageSet */
     function message_set() {
         $this->_ms = $this->_ms ?? (new MessageSet)->set_want_ftext(true, 5);
         return $this->_ms;
     }
+
     /** @return list<MessageItem> */
     function message_list() {
         return $this->_ms ? $this->_ms->message_list() : [];
     }
+
     /** @param string $msg
      * @return MessageItem */
     function error($msg) {
@@ -340,11 +343,12 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @param string $content
-     * @param ?string $mimetype */
+     * @param ?string $mimetype
+     * @return $this */
     function set_content($content, $mimetype = null) {
         assert(is_string($content));
         $this->content = $content;
-        $this->content_file = $this->filestore = null;
+        $this->content_file = $this->filestore = $this->_content_prefix = null;
         $this->size = strlen($content);
         $this->mimetype = $mimetype;
         $this->sha1 = $this->crc32 = "";
@@ -457,7 +461,7 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @return bool */
-    function load_database() {
+    private function load_database() {
         if ($this->paperStorageId <= 1) {
             return false;
         }
@@ -474,7 +478,7 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @return bool */
-    function load_docstore() {
+    private function load_docstore() {
         $path = Filer::docstore_path($this, Filer::FPATH_EXISTS);
         if (!$path) {
             return false;
@@ -696,7 +700,7 @@ class DocumentInfo implements JsonSerializable {
             $s3l->reset()->run();
         }
         if ($s3l->status !== 200) {
-            error_log("S3 error: GET $s3l->skey: $s3l->status $s3l->status_text " . json_encode_db($s3l->response_headers));
+            error_log("S3 error: GET {$s3l->skey}: {$s3l->status} {$s3l->status_text} " . json_encode_db($s3l->response_headers));
             $s3l->close_response_body_stream();
             if ($dspath) {
                 @unlink("{$dspath}~");
@@ -710,7 +714,7 @@ class DocumentInfo implements JsonSerializable {
         }
         $s3l->close_response_body_stream();
         if (($sz = self::filesize_expected("{$dspath}~", $this->size)) !== $this->size) {
-            error_log("Disk error: GET $s3l->skey: expected size {$this->size}, got " . json_encode($sz));
+            error_log("Disk error: GET {$s3l->skey}: expected size {$this->size}, got " . json_encode($sz));
             $s3l->status = 500;
         } else if (rename("{$dspath}~", $dspath)) {
             $this->filestore = $dspath;
@@ -733,7 +737,7 @@ class DocumentInfo implements JsonSerializable {
             $r = $s3->start_get($s3k)->run();
         }
         if ($r->status !== 200) {
-            error_log("S3 error: GET $s3k: $r->status $r->status_text " . json_encode_db($r->response_headers));
+            error_log("S3 error: GET {$s3k}: {$r->status} {$r->status_text} " . json_encode_db($r->response_headers));
             return false;
         }
         $b = $r->response_body();
@@ -874,7 +878,7 @@ class DocumentInfo implements JsonSerializable {
         $this->ensure_content();
         if ($this->content !== null) {
             return $this->content;
-        } else if (($path = $this->content_file ?? $this->filestore) !== null) {
+        } else if (($path = $this->available_content_file()) !== false) {
             return @file_get_contents($path);
         } else {
             return false;
@@ -929,50 +933,54 @@ class DocumentInfo implements JsonSerializable {
         return Filer::$tempdir . "/" . $base . Mimetype::extension($this->mimetype);
     }
 
+    /** @param int $prefix_len
+     * @return string|false */
+    function content_prefix($prefix_len = 4096) {
+        if (!$this->ensure_content()) {
+            return false;
+        } else if ($this->content !== null) {
+            return $this->content;
+        } else if ($prefix_len <= 4096 && $this->_content_prefix !== null) {
+            return $this->_content_prefix;
+        } else if (!($path = $this->available_content_file())) {
+            return false;
+        }
+        $prefix_len = max($prefix_len, 4096);
+        $s = @file_get_contents($path, false, null, 0, $prefix_len);
+        if ($s !== false && strlen($s) <= 4096) {
+            $this->_content_prefix = $s;
+        }
+        return $s;
+    }
+
     /** @return string */
     function content_text_signature() {
-        $s = false;
-        if ($this->content === null
-            && ($path = $this->available_content_file())) {
-            $s = file_get_contents($path, false, null, 0, 16);
-        }
-        if ($s === false) {
-            $s = $this->content();
-        }
-        if ($s === false) {
+        $pfx = $this->content_prefix(16);
+        if ($pfx === false) {
             return "cannot be loaded";
-        } else if ($s === "") {
+        } else if ($pfx === "") {
             return "is empty";
-        } else {
-            $t = substr($s, 0, 8);
-            if (!is_valid_utf8($s)) {
-                $t = UnicodeHelper::utf8_prefix(UnicodeHelper::utf8_truncate_invalid($s), 8);
-                if (strlen($t) < 7) {
-                    $t = join("", array_map(function ($ch) {
-                        $c = ord($ch);
-                        if ($c >= 0x20 && $c <= 0x7E) {
-                            return $ch;
-                        } else {
-                            return sprintf("\\x%02X", $c);
-                        }
-                    }, str_split(substr($s, 0, 8))));
-                }
-            }
-            return "starts with “{$t}”";
         }
+        $t = substr($pfx, 0, 8);
+        if (!is_valid_utf8($t)) {
+            $t = UnicodeHelper::utf8_prefix(UnicodeHelper::utf8_truncate_invalid($t), 8);
+            if (strlen($t) < 6) {
+                $t = join("", array_map(function ($ch) {
+                    $c = ord($ch);
+                    if ($c >= 0x20 && $c <= 0x7E) {
+                        return $ch;
+                    } else {
+                        return sprintf("\\x%02X", $c);
+                    }
+                }, str_split(substr($pfx, 0, 8))));
+            }
+        }
+        return "starts with “{$t}”";
     }
 
     /** @return string */
     function content_mimetype() {
-        $s = false;
-        if ($this->content === null
-            && ($path = $this->available_content_file())) {
-            $s = file_get_contents($path, false, null, 0, 2048);
-        }
-        if ($s === false) {
-            $s = $this->content();
-        }
-        return Mimetype::content_type($s, $this->mimetype);
+        return Mimetype::content_type($this->content_prefix(), $this->mimetype);
     }
 
 
@@ -1363,6 +1371,7 @@ class DocumentInfo implements JsonSerializable {
     const L_NOSIZE = 2;
     const L_FINALTITLE = 4;
     const L_REQUIREFORMAT = 8;
+
     /** @param string $html
      * @param int $flags
      * @param ?list<FileFilter> $filters
@@ -1414,6 +1423,7 @@ class DocumentInfo implements JsonSerializable {
         }
         return $x . "</a>" . ($info ? "&nbsp;$info" : "");
     }
+
     /** @param int $flags
      * @param string $suffix
      * @return array{string,string,bool} */
@@ -1493,6 +1503,7 @@ class DocumentInfo implements JsonSerializable {
         return $this->filename
             && preg_match('/\.(?:zip|tar|tgz|tar\.[gx]?z|tar\.bz2)\z/i', $this->filename);
     }
+
     /** @param int $max_length
      * @return ?list<string> */
     function archive_listing($max_length = -1) {
@@ -1605,6 +1616,7 @@ class DocumentInfo implements JsonSerializable {
         $x["siteurl"] = $this->url(null, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
         return (object) $x;
     }
+
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $x = [];
