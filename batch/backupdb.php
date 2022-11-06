@@ -13,6 +13,8 @@ class BackupDB_Batch {
     /** @var string */
     public $confid;
     /** @var bool */
+    public $restore;
+    /** @var bool */
     public $schema;
     /** @var bool */
     public $skip_ephemeral;
@@ -60,6 +62,7 @@ class BackupDB_Batch {
     function __construct(Dbl_ConnectionParams $cp, $arg = []) {
         $this->connp = $cp;
         $this->confid = $arg["name"] ?? "";
+        $this->restore = isset($arg["restore"]);
         $this->schema = isset($arg["schema"]);
         $this->skip_ephemeral = isset($arg["no-ephemeral"]);
         $this->tablespaces = isset($arg["tablespaces"]);
@@ -75,6 +78,10 @@ class BackupDB_Batch {
             $this->_hash = hash_init("md5");
         }
         $this->_check_table = $arg["check-table"] ?? [];
+        if ($this->restore
+            && ($this->schema || $this->skip_ephemeral || $this->_hash || $this->_check_table)) {
+            $this->throw_error("At least one option incompatible with `--restore`");
+        }
     }
 
     /** @param ?resource $input
@@ -87,6 +94,9 @@ class BackupDB_Batch {
     /** @param resource $output
      * @return $this */
     function set_output($output) {
+        if ($this->restore) {
+            $this->throw_error("`-o` is incompatible with `--restore`");
+        }
         $this->out = $output;
         return $this;
     }
@@ -344,8 +354,43 @@ class BackupDB_Batch {
         return $pat;
     }
 
+    private function transfer() {
+        $s = "";
+        while (!feof($this->in)) {
+            $line = fgets($this->in, 32768);
+            if ($line === false) {
+                break;
+            }
+            $s = $this->process_line($s . $line, $line);
+        }
+        $this->process_line($s, "\n");
+        $this->fflush();
+    }
+
+    /** @return int */
+    private function run_restore() {
+        $cmd = $this->mysqlcmd("mysql", "");
+        $descriptors = [0 => ["pipe", "rb"], 1 => ["file", "/dev/null", "w"]];
+        $pipes = null;
+        $proc = proc_open($cmd, $descriptors, $pipes, SiteLoader::$root, ["PATH" => getenv("PATH")]);
+        if (!$proc) {
+            $this->throw_error("Cannot run mysql");
+        }
+        $this->out = $pipes[0];
+
+        Dbl::qx($this->dblink(), "insert into Settings set name='__schema_lock', value=1 on duplicate key update value=value");
+
+        $this->transfer();
+
+        return proc_close($proc);
+    }
+
     /** @return int */
     function run() {
+        if ($this->restore) {
+            return $this->run_restore();
+        }
+
         if (!$this->in) {
             $cmd = $this->mysqlcmd("mysqldump", "");
             $descriptors = [0 => ["file", "/dev/null", "r"], 1 => ["pipe", "wb"]];
@@ -356,15 +401,7 @@ class BackupDB_Batch {
             $proc = null;
         }
 
-        $s = "";
-        while (!feof($this->in)) {
-            $line = fgets($this->in, 32768);
-            if ($line === false) {
-                break;
-            }
-            $s = $this->process_line($s . $line, $line);
-        }
-        $this->process_line($s, "\n");
+        $this->transfer();
 
         if (!empty($this->_check_table)) {
             fwrite(STDERR,  $this->connp->name . " backup: table(s) " . join(", ", $this->_check_table) . " not found\n");
@@ -385,10 +422,11 @@ class BackupDB_Batch {
         } else {
             $this->fwrite("\n--\n-- Force HotCRP to invalidate server caches\n--\nINSERT INTO `Settings` (`name`,`value`,`data`) VALUES\n('frombackup',UNIX_TIMESTAMP(),NULL)\nON DUPLICATE KEY UPDATE value=greatest(value,UNIX_TIMESTAMP());\n");
         }
+        $this->fflush();
+
         if ($proc) {
             proc_close($proc);
         }
-        $this->fflush();
         if ($this->_hash) {
             fwrite(STDOUT, hash_final($this->_hash) . "\n");
         }
@@ -398,9 +436,11 @@ class BackupDB_Batch {
     /** @return BackupDB_Batch */
     static function make_args($argv) {
         global $Opt;
-        $arg = (new Getopt)->long(
+        $getopt = new Getopt;
+        $arg = $getopt->long(
             "name:,n: =CONFID Set conference ID",
             "config:,c: =FILE Set configuration file [conf/options.php]",
+            "restore,r Restore from named backup",
             "input:,in:,i: =FILE Read (and fix) backup FILE",
             "output:,out:,o: =FILE Set output file [stdout]",
             "z,compress Compress output",
@@ -410,26 +450,35 @@ class BackupDB_Batch {
             "tablespaces Include tablespaces",
             "check-table[] =TABLE Exit with error if TABLE is not present",
             "output-md5 Output MD5 hash of uncompressed dump to stdout",
-            "output-sha1",
-            "output-sha256",
+            "output-sha1 Same for SHA-1 hash",
+            "output-sha256 Same for SHA-256 hash",
             "help,h"
-        )->description("Back up HotCRP database.
-Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
+        )->description("Back up HotCRP database or restore from backup.
+Usage: php batch/backupdb.php [-c FILE | -n CONFID] [OPTS...] [-z] [-o FILE]
+       php batch/backupdb.php [-c FILE | -n CONFID] -r [OPTS...] DUMPFILE")
          ->helpopt("help")
          ->otheropt(true)
+         ->maxarg(1)
          ->parse($argv);
 
         $Opt["__no_main"] = true;
         initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
         $bdb = new BackupDB_Batch(Dbl::parse_connection_params($Opt), $arg);
 
-        if (isset($arg["input"])) {
-            if ($arg["input"] === "-") {
+        if (!empty($arg["_"])) {
+            if (!$bdb->restore || isset($arg["input"])) {
+                throw new CommandLineException("Too many arguments", $getopt);
+            }
+            $arg["input"] = $arg["_"][0];
+        }
+        $input = $arg["input"] ?? null;
+        if ($input !== null || $bdb->restore) {
+            if ($input === null || $input === "-") {
                 $bdb->set_input(@fopen("compress.zlib://php://stdin", "rb"));
-            } else if (($inf = @gzopen($arg["input"], "rb")) !== false) {
+            } else if (($inf = @gzopen($input, "rb")) !== false) {
                 $bdb->set_input($inf);
             } else {
-                throw error_get_last_as_exception($arg["input"] . ": ");
+                throw error_get_last_as_exception("{$input}: ");
             }
         } else {
             $svlk = $bdb->sversion_lockstate();
@@ -438,10 +487,18 @@ Usage: php batch/backupdb.php [-c FILE] [-n CONFID] [-z] [-o FILE]")
             }
             $bdb->set_check_sversion($svlk[0]);
         }
+
+        if (isset($arg["restore"])) {
+            if (isset($arg["output"]) || isset($arg["z"])) {
+                $bdb->throw_error("`-o` is incompatible with `--restore`");
+            }
+            return $bdb;
+        }
+
         $output = $arg["output"] ?? "-";
         if ($output === "-"
             && ($arg["output-md5"] ?? $arg["output-sha1"] ?? $arg["output-sha256"] ?? null) !== null) {
-            $bdb->throw_error("Cannout output both result and hash to stdout");
+            $bdb->throw_error("Cannot output both result and hash to stdout");
         }
         if ($output === "-" && posix_isatty(STDOUT)) {
             $bdb->throw_error("Cowardly refusing to output to a terminal");

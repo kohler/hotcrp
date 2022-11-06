@@ -327,7 +327,7 @@ class Conf {
         }
         Dbl::free($result);
 
-        $this->sversion = $this->settings["allowPaperOption"];
+        $this->sversion = $this->settings["allowPaperOption"] ?? 0;
     }
 
     function load_settings() {
