@@ -1002,6 +1002,7 @@ class Conf {
                     "key" => $this->setting_data("s3_key"),
                     "secret" => $this->setting_data("s3_secret"),
                     "bucket" => $bucket,
+                    "region" => $this->setting_data("s3_region"),
                     "setting_cache" => $this,
                     "setting_cache_prefix" => "__s3"
                 ]);

@@ -149,7 +149,16 @@ class S3Client {
                     $h = hash("sha256", $hdr["content"]);
                 }
             } else if (isset($hdr["content_file"])) {
-                $h = hash_file("sha256", $hdr["content_file"]);
+                $hctx = hash_init("sha256");
+                $file = $hdr["content_file"];
+                if (is_string($file)) {
+                    hash_update_file($hctx, $file);
+                } else {
+                    rewind($file);
+                    hash_update_stream($hctx, $file);
+                    rewind($file);
+                }
+                $h = hash_final($hctx);
             }
             $chdr["x-amz-content-sha256"] = $h;
         }
@@ -204,7 +213,7 @@ class S3Client {
             if ($key === "user_data") {
                 foreach ($value as $xkey => $xvalue) {
                     if (!(self::$known_headers[strtolower($xkey)] ?? null)) {
-                        $xkey = "x-amz-meta-$xkey";
+                        $xkey = "x-amz-meta-{$xkey}";
                     }
                     $hdr[$xkey] = $xvalue;
                 }
@@ -257,7 +266,7 @@ class S3Client {
             return $s3r->response_body();
         } else {
             if ($s3r->status !== 404 && $s3r->status !== 500) {
-                trigger_error("S3 warning: GET $s3r->skey: status $s3r->status", E_USER_WARNING);
+                trigger_error("S3 warning: GET {$s3r->skey}: status {$s3r->status}", E_USER_WARNING);
                 if (self::$verbose) {
                     trigger_error("S3 response: " . var_export($s3r->response_headers, true), E_USER_WARNING);
                 }
@@ -283,18 +292,18 @@ class S3Client {
      * @param string $content_type
      * @param array<string,string> $user_data
      * @return S3Result<bool> */
-    function start_put($skey, $content, $content_type, $user_data = null) {
+    function start_put($skey, $content, $content_type, $user_data = []) {
         return $this->start($skey, "PUT", ["content" => $content,
                                            "content_type" => $content_type,
                                            "user_data" => $user_data]);
     }
 
     /** @param string $skey
-     * @param string $content_file
+     * @param string|resource $content_file
      * @param string $content_type
      * @param array<string,string> $user_data
      * @return S3Result<bool> */
-    function start_put_file($skey, $content_file, $content_type, $user_data = null) {
+    function start_put_file($skey, $content_file, $content_type, $user_data = []) {
         return $this->start($skey, "PUT", ["content_file" => $content_file,
                                            "content_type" => $content_type,
                                            "user_data" => $user_data]);
@@ -390,16 +399,16 @@ class S3Client {
      * @param string $content_type
      * @param array<string,string> $user_data
      * @return bool */
-    function put($skey, $content, $content_type, $user_data = null) {
+    function put($skey, $content, $content_type, $user_data = []) {
         return $this->start_put($skey, $content, $content_type, $user_data)->finish();
     }
 
     /** @param string $skey
-     * @param string $content_file
+     * @param string|resource $content_file
      * @param string $content_type
      * @param array<string,string> $user_data
      * @return bool */
-    function put_file($skey, $content_file, $content_type, $user_data = null) {
+    function put_file($skey, $content_file, $content_type, $user_data = []) {
         return $this->start_put_file($skey, $content_file, $content_type, $user_data)->finish();
     }
 

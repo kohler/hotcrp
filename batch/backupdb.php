@@ -4,6 +4,7 @@
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
+    date_default_timezone_set("GMT");
     exit(BackupDB_Batch::make_args($argv)->run());
 }
 
@@ -12,8 +13,13 @@ class BackupDB_Batch {
     public $connp;
     /** @var string */
     public $confid;
+    /** @var 0|1|2|3|4|5
+     * @readonly */
+    public $subcommand = 0;
     /** @var bool */
-    public $restore;
+    public $verbose;
+    /** @var bool */
+    public $compress;
     /** @var bool */
     public $schema;
     /** @var bool */
@@ -54,15 +60,37 @@ class BackupDB_Batch {
     private $_hash;
     /** @var list<string> */
     private $_check_table = [];
+    /** @var bool */
+    private $_hotcrp_comment = false;
     /** @var ?int */
     private $_check_sversion;
+    /** @var ?S3Client */
+    private $_s3_client;
+    /** @var ?string */
+    private $_s3_dbname;
+    /** @var ?string */
+    private $_s3_confid;
+    /** @var ?int */
+    private $_before;
+    /** @var ?int */
+    private $_after;
 
+    const BACKUP = 0;
+    const RESTORE = 1; // see code in constructor
+    const S3_LIST = 2;
+    const S3_GET = 3;
+    const S3_PUT = 4;
+    const S3_RESTORE = 5;
     const BUFSZ = 16384;
 
-    function __construct(Dbl_ConnectionParams $cp, $arg = []) {
+    /** @param array<string,mixed> $arg
+     * @param ?Getopt $getopt */
+    function __construct(Dbl_ConnectionParams $cp, $arg, $getopt = null) {
         $this->connp = $cp;
         $this->confid = $arg["name"] ?? "";
-        $this->restore = isset($arg["restore"]);
+
+        $this->verbose = isset($arg["V"]);
+        $this->compress = isset($arg["z"]);
         $this->schema = isset($arg["schema"]);
         $this->skip_ephemeral = isset($arg["no-ephemeral"]);
         $this->tablespaces = isset($arg["tablespaces"]);
@@ -78,34 +106,120 @@ class BackupDB_Batch {
             $this->_hash = hash_init("md5");
         }
         $this->_check_table = $arg["check-table"] ?? [];
-        if ($this->restore
-            && ($this->schema || $this->skip_ephemeral || $this->_hash || $this->_check_table)) {
-            $this->throw_error("At least one option incompatible with `--restore`");
+
+        $this->_s3_dbname = $arg["s3-dbname"] ?? null;
+        $this->_s3_confid = $arg["s3-confid"] ?? $arg["s3-name"] ?? null;
+        $this->_before = isset($arg["before"]) ? strtotime($arg["before"]) : null;
+        $this->_after = isset($arg["after"]) ? strtotime($arg["after"]) : null;
+        if ($this->_before === false || $this->_after === false) {
+            $this->throw_error("Bad time format");
         }
-    }
 
-    /** @param ?resource $input
-     * @return $this */
-    function set_input($input) {
-        $this->in = $input;
-        return $this;
-    }
-
-    /** @param resource $output
-     * @return $this */
-    function set_output($output) {
-        if ($this->restore) {
-            $this->throw_error("`-o` is incompatible with `--restore`");
+        foreach (["restore", "s3-list", "s3-get", "s3-put", "s3-restore"] as $i => $key) {
+            if (isset($arg[$key]))
+                $this->subcommand = $this->subcommand * 10 + $i + 1;
         }
-        $this->out = $output;
-        return $this;
-    }
+        if ($this->schema || $this->skip_ephemeral || $this->_hash || $this->_check_table) {
+            $this->subcommand *= 10;
+        }
+        if ($this->subcommand > self::S3_RESTORE) {
+            $this->throw_error("Incompatible options");
+        }
+        if ($this->subcommand >= self::S3_LIST && !$this->s3_client()) {
+            $this->throw_error("S3 not configured or not available");
+        }
 
-    /** @param int $sversion
-     * @return $this */
-    function set_check_sversion($sversion) {
-        $this->_check_sversion = $sversion;
-        return $this;
+        // Check input and output arguments
+        if (!empty($arg["_"])) {
+            if ($this->subcommand !== self::RESTORE || isset($arg["input"])) {
+                throw new CommandLineException("Too many arguments", $getopt);
+            }
+            $arg["input"] = $arg["_"][0];
+        }
+        $input = $arg["input"] ?? null;
+        $output = $arg["output"] ?? null;
+        if ($input !== null
+            && in_array($this->subcommand, [self::S3_LIST, self::S3_GET, self::S3_RESTORE])) {
+            $this->throw_error("Mode incompatible with `-i`");
+        }
+        if ($output !== null
+            && in_array($this->subcommand, [self::RESTORE, self::S3_LIST, self::S3_PUT, self::S3_RESTORE])) {
+            $this->throw_error("Mode incompatible with `-o`");
+        }
+
+        // Check input and output modes
+        if ($input !== null) {
+            $input_mode = $input === "-" ? "stdin" : "file";
+        } else if ($this->subcommand === self::BACKUP || $this->subcommand === self::S3_PUT) {
+            $input_mode = "database";
+        } else if ($this->subcommand === self::S3_GET || $this->subcommand === self::S3_RESTORE) {
+            $input_mode = "s3";
+        } else if ($this->subcommand === self::RESTORE) {
+            $input_mode = "stdin";
+        } else {
+            $input_mode = "none";
+        }
+        if ($output !== null) {
+            $output_mode = $output === "-" ? "stdout" : "file";
+        } else if ($this->subcommand === self::RESTORE || $this->subcommand === self::S3_RESTORE) {
+            $output_mode = "database";
+        } else if ($this->subcommand === self::S3_PUT) {
+            $output_mode = "s3";
+        } else if ($this->subcommand === self::BACKUP || $this->subcommand === self::S3_GET) {
+            $output_mode = "stdout";
+        } else {
+            $output_mode = "none";
+        }
+        if ($output_mode === "stdout") {
+            if (posix_isatty(STDOUT)
+                && ($this->subcommand === self::BACKUP || $this->subcommand === self::S3_GET)) {
+                $this->throw_error("Cowardly refusing to output to a terminal");
+            }
+            if ($this->_hash) {
+                $this->throw_error("Hash output incompatible with other standard output use");
+            }
+        }
+
+        // Set input stream
+        if ($input_mode === "file") {
+            $this->in = @gzopen($input, "rb");
+        } else if ($input_mode === "stdin") {
+            $this->in = @fopen("compress.zlib://php://stdin", "rb");
+        } else if ($input_mode === "s3") {
+            $this->set_s3_input();
+        } else if ($input_mode === "database") {
+            $svlk = $this->sversion_lockstate();
+            if ($svlk[0] === 0 || $svlk[1]) {
+                $this->throw_error("Schema is locked");
+            }
+            $this->_check_sversion = $svlk[0];
+        }
+        if ($this->in === false) {
+            throw error_get_last_as_exception("{$input}: ");
+        }
+
+        // Set output stream
+        if ($output_mode === "file") {
+            $outx = str_starts_with($output, "/") ? $output : "./{$output}";
+            if ($this->compress) {
+                $this->out = @gzopen($outx, "wb9");
+            } else {
+                $this->out = @fopen($outx, "wb");
+            }
+        } else if ($output_mode === "stdout") {
+            if ($this->compress) {
+                $this->out = @fopen("compress.zlib://php://stdout", "wb");
+            } else {
+                $this->out = STDOUT;
+            }
+        } else if ($output_mode === "s3") {
+            $this->out = fopen("php://temp", "w+b");
+        }
+        if ($this->out === false) {
+            throw error_get_last_as_exception("{$input}: ");
+        } else if ($this->out !== null) {
+            stream_set_write_buffer($this->out, 0);
+        }
     }
 
     /** @param string $msg
@@ -121,6 +235,90 @@ class BackupDB_Batch {
             $this->_dblink = $this->connp->connect();
         }
         return $this->_dblink;
+    }
+
+    /** @return ?S3Client */
+    private function s3_client() {
+        if (!$this->_s3_client) {
+            global $Opt;
+            $s3b = $Opt["s3_bucket"] ?? null;
+            $s3c = $Opt["s3_secret"] ?? null;
+            $s3k = $Opt["s3_key"] ?? null;
+            $s3bp = $Opt["s3_backup_pattern"] ?? null;
+            if (!is_string($s3b) || !is_string($s3c) || !is_string($s3k) || !is_string($s3bp)) {
+                return null;
+            }
+            $this->_s3_client = new S3Client([
+                "key" => $s3k, "secret" => $s3c, "bucket" => $s3b,
+                "region" => $Opt["s3_region"] ?? null
+            ]);
+        }
+        return $this->_s3_client;
+    }
+
+    /** @return array<int,string> */
+    private function s3_list($max = -1) {
+        global $Opt;
+        $bp = new BackupPattern($Opt["s3_backup_pattern"] ?? "");
+        $pfx = $bp->expand($this->_s3_dbname ?? $this->connp->name, $this->_s3_confid ?? $this->confid);
+        $s3 = $this->s3_client();
+
+        $args = ["max-keys" => 500];
+        $xml = null;
+        $xmlpos = 0;
+        $ans = [];
+        while (true) {
+            if ($xml === null || $xmlpos >= count($xml->Contents)) {
+                if (($xml && !isset($args["continuation_token"]))
+                    || ($max > 0 && count($ans) > $max)) {
+                    break;
+                }
+                $content = $s3->ls($pfx, $args);
+                $xml = new SimpleXMLElement($content);
+                $xmlpos = 0;
+                if (!isset($xml->Contents) || $xmlpos >= count($xml->Contents)) {
+                    throw new CommandLineException("Bad response from S3");
+                }
+                if (isset($xml->IsTruncated) && (string) $xml->IsTruncated === "true") {
+                    $args["continuation_token"] = (string) $xml->NextContinuationToken;
+                } else {
+                    unset($args["continuation_token"]);
+                }
+            }
+            $key = (string) $xml->Contents[$xmlpos]->Key;
+            ++$xmlpos;
+            if (!$bp->match($key)
+                || ($this->_before !== null && $bp->timestamp === null)
+                || ($this->_before !== null && $bp->timestamp > $this->_before)
+                || ($this->_after !== null && $bp->timestamp === null)
+                || ($this->_after !== null && $bp->timestamp < $this->_after)) {
+                continue;
+            }
+            if ($bp->timestamp !== null) {
+                $ans[$bp->timestamp] = $key;
+            } else {
+                $ans[] = $key;
+            }
+        }
+
+        krsort($ans);
+        return $ans;
+    }
+
+    function set_s3_input() {
+        $keys = array_values($this->s3_list(1));
+        if (empty($keys)) {
+            $this->throw_error("No matching backup found");
+        }
+        $content = $this->s3_client()->get($keys[0]);
+        if ($content === null) {
+            $this->throw_error("S3 error reading {$keys[0]}");
+        } else if ($this->verbose) {
+            fwrite(STDERR, "Reading {$keys[0]}\n");
+        }
+        $this->in = fopen("php://temp", "w+b");
+        fwrite($this->in, str_starts_with($content, "\x1F\x8B") ? gzdecode($content) : $content);
+        rewind($this->in);
     }
 
     /** @return array{int,bool,string} */
@@ -270,6 +468,8 @@ class BackupDB_Batch {
             } else if (preg_match('/\A\s*`(.*?)`/', $s, $m)) {
                 $this->_fields[] = $m[1];
             }
+        } else if (str_starts_with($s, "-- Force HotCRP")) {
+            $this->_hotcrp_comment = true;
         }
 
         $p = 0;
@@ -325,35 +525,6 @@ class BackupDB_Batch {
         }
     }
 
-    /** @param string $pat
-     * @param int $time
-     * @return string */
-    function expand_file_pattern($pat, $time) {
-        $pat = preg_replace_callback('/%\{(?:dbname|confid)\}/',
-            function ($m) {
-                $m = $m[0];
-                if ($m === "%{dbname}") {
-                    return $this->connp->name;
-                } else if ($m === "%{confid}") {
-                    return $this->confid;
-                } else {
-                    return $m;
-                }
-            }, $pat);
-        if ($time > 0) {
-            $pat = preg_replace_callback('/(?:%[YmdHMSs%]|[-.])+/',
-                function ($m) use ($time) {
-                    $m = $m[0];
-                    return gmdate(
-                        str_replace(["%Y", "%m", "%d", "%H", "%M", "%S", "%s", "%%"],
-                                    ["Y",  "m",  "d",  "H",  "i",  "s",  "U",  "%"], $m),
-                        $time
-                    );
-                }, $pat);
-        }
-        return $pat;
-    }
-
     private function transfer() {
         $s = "";
         while (!feof($this->in)) {
@@ -367,15 +538,25 @@ class BackupDB_Batch {
         $this->fflush();
     }
 
-    /** @return int */
-    private function run_restore() {
-        $cmd = $this->mysqlcmd("mysql", "");
-        $descriptors = [0 => ["pipe", "rb"], 1 => ["file", "/dev/null", "w"]];
-        $pipes = null;
-        $proc = proc_open($cmd, $descriptors, $pipes, SiteLoader::$root, ["PATH" => getenv("PATH")]);
+    /** @param string $cmd
+     * @param array<int,list<string>> $descriptors
+     * @param array<int,resource> &$pipes
+     * @return resource */
+    private function my_proc_open($cmd, $descriptors, &$pipes) {
+        $proc = proc_open($cmd, $descriptors, $pipes, SiteLoader::$root, [
+            "PATH" => getenv("PATH"), "LC_ALL" => "C"
+        ]);
         if (!$proc) {
             $this->throw_error("Cannot run mysql");
         }
+        return $proc;
+    }
+
+    /** @return int */
+    private function run_restore() {
+        $cmd = $this->mysqlcmd("mysql", "");
+        $pipes = [];
+        $proc = $this->my_proc_open($cmd, [0 => ["pipe", "rb"], 1 => ["file", "/dev/null", "w"]], $pipes);
         $this->out = $pipes[0];
 
         Dbl::qx($this->dblink(), "insert into Settings set name='__schema_lock', value=1 on duplicate key update value=value");
@@ -386,16 +567,46 @@ class BackupDB_Batch {
     }
 
     /** @return int */
+    private function run_s3_list() {
+        foreach ($this->s3_list() as $key) {
+            fwrite(STDOUT, "{$key}\n");
+        }
+        return 0;
+    }
+
+    private function s3_save() {
+        global $Opt;
+        $bp = new BackupPattern($Opt["s3_backup_pattern"] ?? "");
+        $bpk = $bp->expand($this->_s3_dbname ?? $this->connp->name,
+                           $this->_s3_confid ?? $this->confid,
+                           time());
+        if ($this->compress || str_ends_with($bpk, ".gz")) {
+            rewind($this->out);
+            $x = gzencode(stream_get_contents($this->out), 9);
+            $ok = $this->s3_client()->put($bpk, $x, "application/gzip");
+        } else {
+            $ok = $this->s3_client()->put_file($bpk, $this->out, "application/sql");
+        }
+        if (!$ok) {
+            $this->throw_error("S3 error saving backup");
+        } else if ($this->verbose) {
+            fwrite(STDERR, "Wrote {$bpk}\n");
+        }
+    }
+
+    /** @return int */
     function run() {
-        if ($this->restore) {
+        if ($this->subcommand === self::RESTORE
+            || $this->subcommand === self::S3_RESTORE) {
             return $this->run_restore();
+        } else if ($this->subcommand === self::S3_LIST) {
+            return $this->run_s3_list();
         }
 
         if (!$this->in) {
             $cmd = $this->mysqlcmd("mysqldump", "");
-            $descriptors = [0 => ["file", "/dev/null", "r"], 1 => ["pipe", "wb"]];
-            $pipes = null;
-            $proc = proc_open($cmd, $descriptors, $pipes, SiteLoader::$root, ["PATH" => getenv("PATH")]);
+            $pipes = [];
+            $proc = $this->my_proc_open($cmd, [0 => ["file", "/dev/null", "r"], 1 => ["pipe", "wb"]], $pipes);
             $this->in = $pipes[1];
         } else {
             $proc = null;
@@ -419,7 +630,7 @@ class BackupDB_Batch {
             if ($svlk[0] !== 0) {
                 $this->fwrite("INSERT INTO `Settings` (`name`,`value`,`data`) VALUES ('{$svlk[2]}',{$svlk[0]},NULL);\n");
             }
-        } else {
+        } else if (!$this->_hotcrp_comment) {
             $this->fwrite("\n--\n-- Force HotCRP to invalidate server caches\n--\nINSERT INTO `Settings` (`name`,`value`,`data`) VALUES\n('frombackup',UNIX_TIMESTAMP(),NULL)\nON DUPLICATE KEY UPDATE value=greatest(value,UNIX_TIMESTAMP());\n");
         }
         $this->fflush();
@@ -430,6 +641,9 @@ class BackupDB_Batch {
         if ($this->_hash) {
             fwrite(STDOUT, hash_final($this->_hash) . "\n");
         }
+        if ($this->subcommand === self::S3_PUT) {
+            $this->s3_save();
+        }
         return 0;
     }
 
@@ -438,11 +652,11 @@ class BackupDB_Batch {
         global $Opt;
         $getopt = new Getopt;
         $arg = $getopt->long(
+            "restore,r Restore from backup",
             "name:,n: =CONFID Set conference ID",
             "config:,c: =FILE Set configuration file [conf/options.php]",
-            "restore,r Restore from named backup",
-            "input:,in:,i: =FILE Read (and fix) backup FILE",
-            "output:,out:,o: =FILE Set output file [stdout]",
+            "input:,in:,i: =DUMP Read input from file",
+            "output:,out:,o: =DUMP Send output to file",
             "z,compress Compress output",
             "schema Output schema only",
             "no-ephemeral Omit ephemeral settings and values",
@@ -452,10 +666,20 @@ class BackupDB_Batch {
             "output-md5 Output MD5 hash of uncompressed dump to stdout",
             "output-sha1 Same for SHA-1 hash",
             "output-sha256 Same for SHA-256 hash",
+            "s3-get !",
+            "s3-put !",
+            "s3-restore !",
+            "s3-list !",
+            "s3-dbname: !",
+            "s3-confid: !",
+            "s3-name: !",
+            "before: !",
+            "after: !",
+            "V,verbose Be verbose",
             "help,h"
         )->description("Back up HotCRP database or restore from backup.
-Usage: php batch/backupdb.php [-c FILE | -n CONFID] [OPTS...] [-z] [-o FILE]
-       php batch/backupdb.php [-c FILE | -n CONFID] -r [OPTS...] DUMPFILE")
+Usage: php batch/backupdb.php [-c FILE | -n CONFID] [OPTS...] [-z] -o DUMP
+       php batch/backupdb.php [-c FILE | -n CONFID] -r [OPTS...] DUMP")
          ->helpopt("help")
          ->otheropt(true)
          ->maxarg(1)
@@ -463,65 +687,6 @@ Usage: php batch/backupdb.php [-c FILE | -n CONFID] [OPTS...] [-z] [-o FILE]
 
         $Opt["__no_main"] = true;
         initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
-        $bdb = new BackupDB_Batch(Dbl::parse_connection_params($Opt), $arg);
-
-        if (!empty($arg["_"])) {
-            if (!$bdb->restore || isset($arg["input"])) {
-                throw new CommandLineException("Too many arguments", $getopt);
-            }
-            $arg["input"] = $arg["_"][0];
-        }
-        $input = $arg["input"] ?? null;
-        if ($input !== null || $bdb->restore) {
-            if ($input === null || $input === "-") {
-                $bdb->set_input(@fopen("compress.zlib://php://stdin", "rb"));
-            } else if (($inf = @gzopen($input, "rb")) !== false) {
-                $bdb->set_input($inf);
-            } else {
-                throw error_get_last_as_exception("{$input}: ");
-            }
-        } else {
-            $svlk = $bdb->sversion_lockstate();
-            if ($svlk[0] === 0 || $svlk[1]) {
-                $bdb->throw_error("Schema is locked");
-            }
-            $bdb->set_check_sversion($svlk[0]);
-        }
-
-        if (isset($arg["restore"])) {
-            if (isset($arg["output"]) || isset($arg["z"])) {
-                $bdb->throw_error("`-o` is incompatible with `--restore`");
-            }
-            return $bdb;
-        }
-
-        $output = $arg["output"] ?? "-";
-        if ($output === "-"
-            && ($arg["output-md5"] ?? $arg["output-sha1"] ?? $arg["output-sha256"] ?? null) !== null) {
-            $bdb->throw_error("Cannot output both result and hash to stdout");
-        }
-        if ($output === "-" && posix_isatty(STDOUT)) {
-            $bdb->throw_error("Cowardly refusing to output to a terminal");
-        }
-
-        if (isset($arg["z"])) {
-            if ($output !== "-") {
-                $f = @gzopen($output, "wb9");
-            } else {
-                $f = @fopen("compress.zlib://php://stdout", "wb");
-            }
-        } else if ($output !== "-") {
-            $output = str_starts_with($output, "/") ? $output : "./{$output}";
-            $f = fopen($output, "wb");
-        } else {
-            $f = STDOUT;
-        }
-        if ($f === false) {
-            throw error_get_last_as_exception(($output === "-" ? "<stdout>" : $output) . ": ");
-        }
-
-        stream_set_write_buffer($f, 0);
-        $bdb->set_output($f);
-        return $bdb;
+        return new BackupDB_Batch(Dbl::parse_connection_params($Opt), $arg, $getopt);
     }
 }

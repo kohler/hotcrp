@@ -77,6 +77,11 @@ abstract class S3Result {
     /** @return $this */
     abstract function run();
 
+    /** @return bool */
+    function success() {
+        return $this->status >= 200 && $this->status < 300;
+    }
+
     /** @param string $k
      * @return ?string */
     function response_header($k) {
@@ -89,7 +94,7 @@ abstract class S3Result {
 
     /** @return bool */
     static function success_finisher(S3Result $s3r) {
-        return $s3r->status >= 200 && $s3r->status < 300;
+        return $s3r->success();
     }
 
     /** @return T */
@@ -111,8 +116,14 @@ class StreamS3Result extends S3Result {
      * @param callable(S3Result):T $finisher */
     function __construct(S3Client $s3, $skey, $method, $args, $finisher) {
         parent::__construct($s3, $skey, $method, $args, $finisher);
-        if (isset($this->args["content_file"]) && !isset($this->args["content"])) {
-            $this->args["content"] = file_get_contents($this->args["content_file"]);
+        if (!isset($this->args["content"]) && isset($this->args["content_file"])) {
+            $file = $this->args["content_file"];
+            if (is_string($file)) {
+                $this->args["content"] = file_get_contents($file);
+            } else {
+                rewind($file);
+                $this->args["content"] = stream_get_contents($file);
+            }
         }
     }
 

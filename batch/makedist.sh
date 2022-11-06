@@ -212,6 +212,7 @@ src/author.php
 src/authormatcher.php
 src/autoassigner.php
 src/autoassignerinterface.php
+src/backuppattern.php
 src/banal
 src/capabilities/cap_authorview.php
 src/capabilities/cap_bearer.php
