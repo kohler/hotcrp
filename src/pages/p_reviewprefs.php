@@ -143,6 +143,11 @@ class ReviewPrefs_Page {
         echo Ht::form($conf->hoturl("=reviewprefs", $hoturl_args), ["id" => "sel", "class" => "ui-submit js-submit-paperlist assignpc"]),
             Ht::hidden("defaultfn", ""),
             Ht::hidden_default_submit("default", 1);
+        if ($search->has_message()) {
+            echo '<div class="msgs-wide">',
+                Ht::msg($search->full_feedback_html(), min($search->problem_status(), MessageSet::WARNING)),
+                '</div>';
+        }
         echo '<noscript><div style="text-align:center">',
             Ht::submit("fn", "Save changes", ["value" => "saveprefs", "class" => "btn-primary"]),
             '</div></noscript><div class="pltable-fullw-container demargin">';

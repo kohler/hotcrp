@@ -1455,8 +1455,8 @@ class PaperOption implements JsonSerializable {
                     $txts = array_map(function ($t) { return "‘{$t}’"; }, $ts->as_array());
                     $srch->msg_at(null, "<0>Choices are " . commajoin($txts, " and ") . ".", MessageSet::INFORM);
                 }
-                return null;
             }
+            return null;
         }
 
         if (!in_array($sword->compar, ["", "=", "!="], true)) {
