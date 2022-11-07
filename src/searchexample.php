@@ -20,7 +20,7 @@ class SearchExample {
      * @param ?string $param_q
      * @param string $description
      * @param string|FmtArg ...$params */
-    function __construct($q, $param_q, $description, ...$params) {
+    function __construct($q, $param_q, $description = "", ...$params) {
         $this->q = $q;
         $this->param_q = $param_q;
         $this->description = $description;

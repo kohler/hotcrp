@@ -1737,11 +1737,19 @@ class Selector_PaperOption extends PaperOption {
 
     function search_examples(Contact $viewer, $context) {
         $a = [$this->has_search_example()];
-        if (($q = $this->value_search_keyword(2))) {
-            $a[] = new SearchExample(
-                $this->search_keyword() . ":<value>", $q,
-                "<0>submission’s {title} field has value ‘{0}’", $this->values[1]
-            );
+        if ($context === self::EXAMPLE_HELP) {
+            if (($q = $this->value_search_keyword(2))) {
+                $a[] = new SearchExample(
+                    $this->search_keyword() . ":<value>", $q,
+                    "<0>submission’s {title} field has value ‘{0}’", $this->values[1]
+                );
+            }
+        } else {
+            foreach ($this->values as $s) {
+                $a[] = new SearchExample(
+                    $this->search_keyword() . ":" . SearchWord::quote($s), $s
+                );
+            }
         }
         return $a;
     }
