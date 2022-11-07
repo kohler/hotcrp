@@ -18,6 +18,8 @@ class CheckInvariants_Batch {
     public $fix_inactive;
     /** @var ?string */
     public $regex;
+    /** @var ?bool */
+    public $color;
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
@@ -31,6 +33,11 @@ class CheckInvariants_Batch {
             }
             $this->regex = "/" . join("|", $r) . "/";
         }
+        if (isset($arg["color"])) {
+            $this->color = true;
+        } else if (isset($arg["no-color"])) {
+            $this->color = false;
+        }
     }
 
     /** @return int */
@@ -38,22 +45,38 @@ class CheckInvariants_Batch {
         $ic = new ConfInvariants($this->conf);
         $ncheck = 0;
         $ro = new ReflectionObject($ic);
+        $color = $this->color ?? posix_isatty(STDERR);
         foreach ($ro->getMethods() as $m) {
             if (str_starts_with($m->name, "check_")
                 && $m->name !== "check_all"
                 && (!$this->regex || preg_match($this->regex, $m->name))) {
                 if ($this->verbose) {
-                    fwrite(STDERR, "Checking {$m->name}...\n");
+                    if ($color) {
+                        fwrite(STDERR, "{$this->conf->dbname}: \x1b[01;36mRUN\x1b[m  {$m->name}");
+                    } else {
+                        fwrite(STDERR, "{$this->conf->dbname}: {$m->name} ");
+                    }
+                    $ic->buffer_messages();
+                    $ic->{$m->name}();
+                    $msgs = $ic->take_buffered_messages();
+                    if ($color && $msgs !== "") {
+                        fwrite(STDERR, "\r{$this->conf->dbname}: \x1b[01;31mFAIL\x1b[m {$m->name}\n{$msgs}");
+                    } else if ($color) {
+                        fwrite(STDERR, "\r{$this->conf->dbname}:  \x1b[01;32mOK\x1b[m  {$m->name}\n");
+                    } else if ($msgs !== "") {
+                        fwrite(STDERR, "fail\n{$msgs}");
+                    } else {
+                        fwrite(STDERR, "ok\n");
+                    }
+                } else {
+                    $ic->{$m->name}();
                 }
-                $ic->{$m->name}();
                 ++$ncheck;
             }
         }
         if ($this->regex && $ncheck === 0) {
             fwrite(STDERR, "No matching invariants\n");
             return 1;
-        } else if ($this->verbose) {
-            fwrite(STDERR, "Done\n");
         }
 
         if (isset($ic->problems["autosearch"]) && $this->fix_autosearch) {
@@ -89,7 +112,9 @@ class CheckInvariants_Batch {
             "help,h !",
             "verbose,V Be verbose",
             "fix-autosearch Repair any incorrect autosearch tags",
-            "fix-inactive Repair any inappropriately inactive documents"
+            "fix-inactive Repair any inappropriately inactive documents",
+            "color",
+            "no-color !"
         )->helpopt("help")
          ->description("Check invariants in a HotCRP database.
 Usage: php batch/checkinvariants.php [-n CONFID] [--fix-autosearch] [INVARIANT...]\n")

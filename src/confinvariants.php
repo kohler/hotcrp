@@ -11,10 +11,24 @@ class ConfInvariants {
     public $prefix;
     /** @var ?list<string> */
     private $irow;
+    /** @var ?list<string> */
+    private $msgbuf;
 
     function __construct(Conf $conf, $prefix = "") {
         $this->conf = $conf;
         $this->prefix = $prefix;
+    }
+
+    function buffer_messages() {
+        $this->msgbuf = $this->msgbuf ?? [];
+    }
+
+    /** @return string */
+    function take_buffered_messages() {
+        assert($this->msgbuf !== null);
+        $m = $this->msgbuf;
+        $this->msgbuf = null;
+        return join("", $m);
     }
 
     /** @param string $q
@@ -51,7 +65,12 @@ class ConfInvariants {
         foreach ($this->irow ?? [] as $i => $v) {
             $text = str_replace("{{$i}}", $v, $text);
         }
-        trigger_error("{$this->prefix}{$this->conf->dbname} invariant error: {$text}");
+        $msg = "{$this->prefix}{$this->conf->dbname} invariant violation: {$text}";
+        if ($this->msgbuf !== null) {
+            $this->msgbuf[] = $msg . "\n";
+        } else {
+            error_log($msg);
+        }
     }
 
     /** @return bool */
