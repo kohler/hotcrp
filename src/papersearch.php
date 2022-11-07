@@ -19,9 +19,9 @@ class SearchWord {
     /** @var ?string */
     public $cword;
     /** @var ?int */
-    public $pos1;
-    /** @var ?int */
     public $pos1w;
+    /** @var ?int */
+    public $pos1;
     /** @var ?int */
     public $pos2;
     /** @param string $qword
@@ -132,7 +132,7 @@ class SearchScope {
     /** @var ?string */
     public $defkw;
     /** @var ?int */
-    public $defkw_pos1;
+    public $defkw_pos1w;
     /** @var ?SearchScope */
     public $defkw_scope;
     /** @var bool */
@@ -152,7 +152,7 @@ class SearchScope {
         $this->pos2 = $pos2;
         if (($this->next = $next)) {
             $this->defkw = $next->defkw;
-            $this->defkw_pos1 = $next->defkw_pos1;
+            $this->defkw_pos1w = $next->defkw_pos1w;
             $this->defkw_scope = $next->defkw_scope;
         }
     }
@@ -718,25 +718,23 @@ class PaperSearch extends MessageSet {
      * @param string $source
      * @param ?SearchScope $scope
      * @param bool $is_defkw
-     * @param int $pos1
      * @param int $pos1w
+     * @param int $pos1
      * @param int $pos2
      * @return ?SearchTerm */
-    private function _search_keywordx($kw, $arg, $source, $scope, $is_defkw, $pos1, $pos1w, $pos2) {
+    private function _search_keywordx($kw, $arg, $source, $scope, $is_defkw, $pos1w, $pos1, $pos2) {
         $kwdef = $this->conf->search_keyword($kw, $this->user);
         if (!$kwdef || !($kwdef->parse_function ?? null)) {
             if ($scope
                 && (!$is_defkw || !$scope->defkw_scope->defkw_error)
                 && $scope->ignore_unknown === 0) {
                 $sword = new SearchWord($kw, $source);
-                if ($is_defkw) {
-                    $sword->pos1 = $scope->defkw_scope->defkw_pos1;
-                    $scope->defkw_scope->defkw_error = true;
-                } else {
-                    $sword->pos1 = $pos1;
-                }
-                $sword->pos2 = $sword->pos1 + strlen($kw) + 1;
+                $sword->pos1 = $pos1w;
+                $sword->pos2 = $pos1w + strlen($kw) + 1;
                 $this->lwarning($sword, "<0>Unknown search ‘{$kw}:’ won’t match anything");
+                if ($is_defkw) {
+                    $scope->defkw_scope->defkw_error = true;
+                }
             }
             return null;
         }
@@ -829,19 +827,19 @@ class PaperSearch extends MessageSet {
             }
             $arg = substr($arg, $argpos);
             if ($wordbrk[1][0] === ":") {
-                $qe = $this->_search_keywordx($kw, $arg, $source, $scope, false, $pos1 + $kwlen + $argpos, $pos1, $pos2);
+                $qe = $this->_search_keywordx($kw, $arg, $source, $scope, false, $pos1, $pos1 + $kwlen + $argpos, $pos2);
                 return $qe ?? new False_SearchTerm;
             } else {
                 // Allow searches like "ovemer>2"; parse as "ovemer:>2".
                 ++$scope->ignore_unknown;
-                $qe = $this->_search_keywordx($kw, $arg, $source, $scope, false, $pos1 + $kwlen + $argpos, $pos1, $pos2);
+                $qe = $this->_search_keywordx($kw, $arg, $source, $scope, false, $pos1, $pos1 + $kwlen + $argpos, $pos2);
                 --$scope->ignore_unknown;
                 if ($qe) {
                     return $qe;
                 }
             }
         } else if ($scope->defkw !== null) {
-            $qe = $this->_search_keywordx($scope->defkw, $word, $source, $scope, true, $pos1, $scope->defkw_scope->defkw_pos1, $pos2);
+            $qe = $this->_search_keywordx($scope->defkw, $word, $source, $scope, true, $scope->defkw_scope->defkw_pos1w, $pos1, $pos2);
             return $qe ?? new False_SearchTerm;
         }
 
@@ -966,7 +964,7 @@ class PaperSearch extends MessageSet {
                 $scope = new SearchScope($op, null, $pos1, $pos2, $scope);
                 if ($next_defkw) {
                     $scope->defkw = $next_defkw[0];
-                    $scope->defkw_pos1 = $next_defkw[1];
+                    $scope->defkw_pos1w = $next_defkw[1];
                     $scope->defkw_scope = $scope;
                     $next_defkw = null;
                 }
