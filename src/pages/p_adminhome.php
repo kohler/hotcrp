@@ -72,7 +72,7 @@ class AdminHome_Page {
             foreach (array_merge($conf->track_tags(), ["_"]) as $tt) {
                 $tr = $conf->track($tt);
                 if ($tr && $tr->perm[Track::VIEW] !== "+none")
-                    $any_visible === true;
+                    $any_visible = true;
             }
             if (!$any_visible) {
                 $ml[] = new MessageItem(null, '<5>PC members cannot view any submissions (see <a href="' . $conf->hoturl("settings", "group=tags#tracks") . "\">track settings</a>)", MessageSet::URGENT_NOTE);
