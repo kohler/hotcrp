@@ -49,19 +49,18 @@ class CheckInvariants_Batch {
         $ncheck = 0;
         $ro = new ReflectionObject($ic);
         $color = $this->color ?? posix_isatty(STDERR);
-        $pfx = "{$this->conf->dbname}: ";
-        if ($this->pad_prefix) {
-            $pfx = str_pad($pfx, 16);
-        }
+        $dbname = $this->conf->dbname;
+        $width = 47;
         foreach ($ro->getMethods() as $m) {
             if (str_starts_with($m->name, "check_")
                 && $m->name !== "check_all"
                 && (!$this->regex || preg_match($this->regex, $m->name))) {
                 if ($this->verbose) {
+                    $mpfx = str_pad("{$dbname}: {$m->name} ", $width, ".") . " ";
                     if ($color) {
-                        fwrite(STDERR, "{$pfx}\x1b[01;36mRUN\x1b[m  {$m->name}");
+                        fwrite(STDERR, "{$mpfx}\x1b[01;36mRUN\x1b[m");
                     } else {
-                        fwrite(STDERR, "{$pfx}{$m->name} ");
+                        fwrite(STDERR, $mpfx);
                     }
                     $ic->buffer_messages();
                     $ic->{$m->name}();
@@ -69,13 +68,13 @@ class CheckInvariants_Batch {
                     if ($color && $msgs !== "") {
                         $msgs = preg_replace('/^' . preg_quote($this->conf->dbname) . ' invariant violation:/m',
                             "\x1b[0;31m{$this->conf->dbname} invariant violation:\x1b[m", $msgs);
-                        fwrite(STDERR, "\r{$pfx}\x1b[01;31mFAIL\x1b[m {$m->name}\n{$msgs}");
+                        fwrite(STDERR, "\r{$mpfx}\x1b[01;31mFAIL\x1b[m\n{$msgs}");
                     } else if ($color) {
-                        fwrite(STDERR, "\r{$pfx} \x1b[01;32mOK\x1b[m  {$m->name}\n");
+                        fwrite(STDERR, "\r{$mpfx}\x1b[01;32m OK\x1b[m\x1b[K\n");
                     } else if ($msgs !== "") {
-                        fwrite(STDERR, "fail\n{$msgs}");
+                        fwrite(STDERR, "FAIL\n{$msgs}");
                     } else {
-                        fwrite(STDERR, "ok\n");
+                        fwrite(STDERR, "OK\n");
                     }
                 } else {
                     $ic->{$m->name}();
@@ -88,16 +87,16 @@ class CheckInvariants_Batch {
             return 1;
         }
 
-        $fix = $pfx . ($color ? "\x1b[01;36mFIX\x1b[m " : "FIX ");
+        $fix = $color ? " \x1b[01;36mFIX\x1b[m\n" : " FIX\n";
         if (isset($ic->problems["autosearch"]) && $this->fix_autosearch) {
             if ($this->verbose) {
-                fwrite(STDERR, $fix . "automatic tags\n");
+                fwrite(STDERR, str_pad("{$dbname}: automatic tags ", $width, ".") . $fix);
             }
             $this->conf->update_automatic_tags();
         }
         if (isset($ic->problems["inactive"]) && $this->fix_inactive) {
             if ($this->verbose) {
-                fwrite(STDERR, $fix . "inactive documents\n");
+                fwrite(STDERR, str_pad("{$dbname}: inactive documents ", $width, ".") . $fix);
             }
             $this->fix_inactive_documents();
         }
