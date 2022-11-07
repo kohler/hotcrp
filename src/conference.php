@@ -1623,6 +1623,11 @@ class Conf {
         return null;
     }
 
+    /** @return list<Track> */
+    function all_tracks() {
+        return $this->_tracks ?? [];
+    }
+
     /** @param int $ttype
      * @return ?string */
     function permissive_track_tag_for(Contact $user, $ttype) {
