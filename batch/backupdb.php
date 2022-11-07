@@ -268,7 +268,7 @@ class BackupDB_Batch {
         $xmlpos = 0;
         $ans = [];
         while (true) {
-            if ($xml === null || $xmlpos >= count($xml->Contents)) {
+            if ($xml === null || $xmlpos >= count($xml->Contents ?? [])) {
                 if (($xml && !isset($args["continuation_token"]))
                     || ($max > 0 && count($ans) > $max)) {
                     break;
@@ -276,7 +276,8 @@ class BackupDB_Batch {
                 $content = $s3->ls($pfx, $args);
                 $xml = new SimpleXMLElement($content);
                 $xmlpos = 0;
-                if (!isset($xml->Contents) || $xmlpos >= count($xml->Contents)) {
+                if ((!isset($xml->Contents) || $xmlpos >= count($xml->Contents))
+                    && (!isset($xml->KeyCount) || (string) $xml->KeyCount !== "0")) {
                     throw new CommandLineException("Bad response from S3");
                 }
                 if (isset($xml->IsTruncated) && (string) $xml->IsTruncated === "true") {
@@ -284,20 +285,21 @@ class BackupDB_Batch {
                 } else {
                     unset($args["continuation_token"]);
                 }
-            }
-            $key = (string) $xml->Contents[$xmlpos]->Key;
-            ++$xmlpos;
-            if (!$bp->match($key)
-                || ($this->_before !== null && $bp->timestamp === null)
-                || ($this->_before !== null && $bp->timestamp > $this->_before)
-                || ($this->_after !== null && $bp->timestamp === null)
-                || ($this->_after !== null && $bp->timestamp < $this->_after)) {
-                continue;
-            }
-            if ($bp->timestamp !== null) {
-                $ans[$bp->timestamp] = $key;
             } else {
-                $ans[] = $key;
+                $key = (string) $xml->Contents[$xmlpos]->Key;
+                ++$xmlpos;
+                if (!$bp->match($key)
+                    || ($this->_before !== null && $bp->timestamp === null)
+                    || ($this->_before !== null && $bp->timestamp > $this->_before)
+                    || ($this->_after !== null && $bp->timestamp === null)
+                    || ($this->_after !== null && $bp->timestamp < $this->_after)) {
+                    continue;
+                }
+                if ($bp->timestamp !== null) {
+                    $ans[$bp->timestamp] = $key;
+                } else {
+                    $ans[] = $key;
+                }
             }
         }
 
