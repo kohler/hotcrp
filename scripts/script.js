@@ -2794,7 +2794,7 @@ function tracker_paper_columns(tr, idx, wwidth) {
             title = title.replace(/^(\S+\s+\S+\s+\S+).*$/, "$1").substring(0, 50) + "…";
         else if (wwidth <= 768 && title.length > 50)
             title = title.replace(/^(\S+\s+\S+\s+\S+\s+\S+\s+\S+).*$/, "$1").substring(0, 75) + "…";
-        x.push('<a class="tracker-title q'.concat(f, '" href="', url, '">', text_to_html(title), '</a>'));
+        x.push('<a class="tracker-title q'.concat(f, '" href="', url, '">', escape_html(title), '</a>'));
         if (paper.format)
             tracker_has_format = true;
     }
@@ -2822,7 +2822,7 @@ function tracker_html(tr) {
         t += '<div class="'.concat(logo_class, '">', logo, '</div>');
     var rows = [], i, wwidth = $(window).width();
     if (!tr.papers || !tr.papers[0]) {
-        rows.push('<td><a href="' + text_to_html(siteinfo.site_relative + tr.url) + '">Discussion list</a></td>');
+        rows.push('<td><a href="' + escape_html(siteinfo.site_relative + tr.url) + '">Discussion list</a></td>');
     } else {
         for (i = tr.paper_offset; i < tr.papers.length; ++i)
             rows.push(tracker_paper_columns(tr, i, wwidth));
@@ -3285,7 +3285,7 @@ function comet_tracker() {
 // deadline loading
 function load(dlx, is_initial) {
     if (dlx)
-        window.hotcrp_status = dl = dlx;
+        window.hotcrp_status = window.hotcrp.status = dl = dlx;
     dl.load = dl.load || now_sec();
     dl.perm = dl.perm || {};
     dl.myperm = dl.perm[siteinfo.paperid] || {};
@@ -3360,10 +3360,7 @@ function reload() {
     });
 }
 
-return {
-    init: function (dlx) { load(dlx, true); },
-    tracker_show_elapsed: tracker_show_elapsed
-};
+return { load: load, tracker_show_elapsed: tracker_show_elapsed };
 })(jQuery);
 
 
@@ -5468,13 +5465,13 @@ function render_edit_attachment(i, doc) {
 }
 
 function render_attachment_link(hc, doc) {
-    hc.push('<a href="' + text_to_html(siteinfo.site_relative + doc.siteurl) + '" class="q">', '</a>');
+    hc.push('<a href="' + escape_html(siteinfo.site_relative + doc.siteurl) + '" class="q">', '</a>');
     if (doc.mimetype === "application/pdf") {
         hc.push('<img src="' + siteinfo.assets + 'images/pdf.png" alt="[PDF]" class="sdlimg">');
     } else {
         hc.push('<img src="' + siteinfo.assets + 'images/generic.png" alt="[Attachment]" class="sdlimg">');
     }
-    hc.push(' ' + text_to_html(doc.unique_filename || doc.filename || "Attachment"));
+    hc.push(' ' + escape_html(doc.unique_filename || doc.filename || "Attachment"));
     if (doc.size != null) {
         hc.push(' <span class="dlsize">(' + unparse_byte_size(doc.size) + ')</span>');
     }
@@ -11201,7 +11198,7 @@ window.hotcrp = {
     handle_ui: handle_ui,
     highlight_form_children: hiliter_children,
     hoturl: hoturl,
-    init_deadlines: hotcrp_deadlines.init,
+    init_deadlines: function (dlx) { hotcrp_deadlines.load(dlx, true); },
     load_editable_paper: edit_paper_ui.load,
     load_editable_review: edit_paper_ui.load_review,
     onload: hotcrp_load,
@@ -11209,9 +11206,11 @@ window.hotcrp = {
     prepare_editable_paper: edit_paper_ui.prepare,
     render_list: plinfo.render_needed,
     render_text_page: render_text.on_page,
+    render_user: render_user,
     replace_editable_field: edit_paper_ui.replace_field,
     scorechart: scorechart,
     set_response_round: papercomment.set_resp_round,
     set_review_form: review_form.set_form,
+    tracker_show_elapsed: hotcrp_deadlines.tracker_show_elapsed,
     shortcut: shortcut
 };
