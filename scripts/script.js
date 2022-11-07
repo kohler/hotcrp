@@ -6440,15 +6440,16 @@ try {
 }
 
 function suggest() {
-    var elt = this, hintdiv, hintinfo, suggdata,
-        blurring = false, hiding = false, lastpos = false,
-        wasnav = 0, spacestate = -1;
+    var elt = this, suggdata,
+        hintdiv, hintinfo, blurring = false, hiding = false,
+        wasnav = 0, spacestate = -1, wasmouse = null;
 
     function kill() {
         hintdiv && hintdiv.remove();
-        hintdiv = hintinfo = null;
-        blurring = hiding = lastpos = false;
+        hintdiv = hintinfo = wasmouse = null;
+        blurring = hiding = false;
         wasnav = 0;
+        spacestate = -1;
     }
 
     function render_item(titem, prepend) {
@@ -6497,6 +6498,7 @@ function suggest() {
             hintdiv.self().on("mousedown", function (evt) { evt.preventDefault(); })
                 .on("click", ".suggestion", click)
                 .on("mousemove", ".suggestion", hover);
+            wasmouse = 0;
         }
 
         var i, clist = cinfo.list, same_list = false;
@@ -6658,14 +6660,14 @@ function suggest() {
     }
 
     function kp(evt) {
-        var k = event_key(evt), m = event_modkey(evt), result = true,
+        var k = event_key(evt), m = event_modkey(evt),
             pspacestate = spacestate;
         if (k === "Escape" && !m) {
             if (hintinfo) {
                 hiding = this.value.substring(hintinfo.pcpos, hintinfo.pcpos + hintinfo.lengths[0]);
                 kill();
+                evt.preventDefault();
                 handle_ui.stopImmediatePropagation(evt);
-                result = false;
             }
         } else if ((k === "Tab" || k === "Enter") && !m && hintdiv) {
             var $active = hintdiv.self().find(".s9y");
@@ -6675,7 +6677,6 @@ function suggest() {
             if ($active.length || this.selectionEnd !== this.value.length) {
                 evt.preventDefault();
                 handle_ui.stopImmediatePropagation(evt);
-                result = false;
             }
         } else if (k.substring(0, 5) === "Arrow" && !m && hintdiv && move_active(k)) {
             evt.preventDefault();
@@ -6688,7 +6689,7 @@ function suggest() {
                 && punctre.test(k)) {
                 elt.setRangeText(k, pspacestate - 1, pspacestate, "end");
                 evt.preventDefault();
-                result = false;
+                handle_ui.stopPropagation(evt);
             }
             if (hintdiv || event_key.printable(evt) || k === "Backspace") {
                 spacestate = 0;
@@ -6696,7 +6697,7 @@ function suggest() {
             }
         }
         wasnav = Math.max(wasnav - 1, 0);
-        return result;
+        wasmouse = null;
     }
 
     function click(evt) {
@@ -6706,13 +6707,16 @@ function suggest() {
     }
 
     function hover(evt) {
-        if (lastpos && (Math.abs(lastpos.x - evt.screenX) > 1
-                        || Math.abs(lastpos.y - evt.screenY) > 1)) {
-            hintdiv.self().find(".s9y").removeClass("s9y");
-            $(this).addClass("s9y");
+        if (wasmouse === null) {
+            wasmouse = {x: evt.screenX, y: evt.screenY};
+        } else if (wasmouse === true
+                   || Math.abs(wasmouse.x - evt.screenX) > 1
+                   || Math.abs(wasmouse.y - evt.screenY) > 1) {
+            wasmouse = true;
             wasnav = 1;
+            hintdiv.self().find(".s9y").removeClass("s9y");
+            addClass(this, "s9y");
         }
-        lastpos = {x: evt.screenX, y: evt.screenY};
     }
 
     function blur() {
