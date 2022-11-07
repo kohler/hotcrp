@@ -238,8 +238,6 @@ abstract class SearchTerm {
 }
 
 class False_SearchTerm extends SearchTerm {
-    /** @var ?MessageItem */
-    public $score_warning;
     function __construct() {
         parent::__construct("false");
     }

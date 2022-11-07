@@ -1439,13 +1439,13 @@ class PaperOption implements JsonSerializable {
     function parse_topic_set_search(SearchWord $sword, PaperSearch $srch, TopicSet $ts,
                                     $allow_ambiguous) {
         if ($sword->cword === "") {
-            $srch->lwarning($sword, "<0>Match required");
+            $srch->lwarning($sword, "<0>Subject missing");
             return null;
         }
 
         $vs = $allow_ambiguous ? $ts->find_all($sword->cword) : $ts->findp($sword->cword);
         if (empty($vs)) {
-            if (($vs2 = $ts->find_all($sword->cword))) {
+            if (($vs2 = $ts->find_all($sword->cword, ~TopicSet::MFLAG_SPECIAL))) {
                 $srch->lwarning($sword, $this->conf->_("<0>{title} ‘{0}’ is ambiguous", $sword->cword, new FmtArg("title", $this->title()), new FmtArg("id", $this->readable_formid())));
                 $txts = array_map(function ($x) use ($ts) { return "‘{$ts[$x]}’"; }, $vs2);
                 $srch->msg_at(null, "<0>Try " . commajoin($txts, " or ") . ", or use ‘{$sword->cword}*’ to match them all.", MessageSet::INFORM);

@@ -732,9 +732,7 @@ class Review_SearchTerm extends SearchTerm {
     private static function impossible_score_match(Score_ReviewField $f, SearchWord $sword, PaperSearch $srch) {
         $r = $f->full_score_range();
         $mi = $srch->lwarning($sword, "<0>{$f->name} scores range from {$r[0]} to {$r[1]}");
-        $ft = new False_SearchTerm;
-        $ft->score_warning = $mi;
-        return $ft;
+        return new False_SearchTerm;
     }
     /** @return int|false */
     private static function parse_score(Score_ReviewField $f, $str) {

@@ -44,6 +44,7 @@ class AbbreviationEntry {
     const TFLAG_USER = 0x0FFFFFFF;
     const TFLAG_KW = 0x10000000;
     const TFLAG_DP = 0x20000000;
+    const TFLAG_BAD = 0x40000000;
 
     /** @param string $name
      * @param T $value
@@ -444,6 +445,13 @@ class AbbreviationMatcher {
         return count($this->data);
     }
 
+    /** @param int $tflags
+     * @return int */
+    private function fix_tflags($tflags) {
+        // The presence of TFLAG_BAD means user did ~[SOMETHING USEFUL].
+        return $tflags & AbbreviationEntry::TFLAG_BAD ? $tflags & AbbreviationEntry::TFLAG_USER : $tflags;
+    }
+
     /** @param string $pattern
      * @param int $tflags
      * @return list<AbbreviationEntry> */
@@ -451,7 +459,7 @@ class AbbreviationMatcher {
         if (!array_key_exists($pattern, $this->xmatches)) {
             $this->_xfind_all($pattern);
         }
-        return $this->match_entries($this->xmatches[$pattern], $tflags);
+        return $this->match_entries($this->xmatches[$pattern], $this->fix_tflags($tflags));
     }
 
     /** @param string $pattern
@@ -462,6 +470,7 @@ class AbbreviationMatcher {
             $this->_xfind_all($pattern);
         }
         $results = [];
+        $tflags = $this->fix_tflags($tflags);
         $prio = $tflags ? ($this->prio[$tflags] ?? false) : false;
         foreach ($this->xmatches[$pattern] as $i) {
             $d = $this->data[$i];
