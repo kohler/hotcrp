@@ -33,7 +33,8 @@ class AdminHome_Page {
             && !$conf->opt("dbNoPapers")) {
             $ml[] = new MessageItem(null, "<5>MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is {$max_file_size}&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers", MessageSet::URGENT_NOTE);
         }
-        if ($max_file_size < ini_get_bytes(null, $conf->opt("uploadMaxFilesize") ?? "10M")) {
+        if ($max_file_size < ini_get_bytes(null, "10M")
+            && $max_file_size < $conf->upload_max_filesize()) {
             $ml[] = new MessageItem(null, "<5>PHP’s <code>upload_max_filesize</code> setting, which is <code>" . htmlspecialchars(ini_get("upload_max_filesize")) . "</code>, will limit submissions to at most {$max_file_size}&nbsp;bytes. Usually a larger limit is appropriate. Change this setting in HotCRP’s <code>.user.ini</code> or <code>.htaccess</code> file, change it in your global <code>php.ini</code> file, or silence this message by setting <code>\$Opt[\"uploadMaxFilesize\"] = \"" . htmlspecialchars(ini_get("upload_max_filesize")) . "\"</code> in <code>conf/options.php</code>", MessageSet::URGENT_NOTE);
         }
         $post_max_size = ini_get_bytes("post_max_size");

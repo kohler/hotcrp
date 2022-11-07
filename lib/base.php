@@ -333,7 +333,7 @@ function ini_get_bytes($varname, $value = null) {
         $len = strlen($value);
         $last = $len > 0 ? strtolower($value[$len - 1]) : ".";
         /** @phan-suppress-next-line PhanParamSuspiciousOrder */
-        return floatval($value) * (1 << (+strpos(".kmg", $last) * 10));
+        $value = floatval($value) * (1 << (+strpos(".kmg", $last) * 10));
     }
     return (int) ceil($value);
 }
