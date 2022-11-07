@@ -1931,7 +1931,7 @@ class Document_PaperOption extends PaperOption {
         }
 
         $readonly = !$this->test_editable($ov->prow);
-        $max_size = $this->max_size ?? $this->conf->opt("uploadMaxFilesize") ?? ini_get_bytes("upload_max_filesize") / 1.024;
+        $max_size = $this->max_size ?? $this->conf->upload_max_filesize(true);
         $fk = $this->field_key();
 
         // heading
@@ -1957,7 +1957,7 @@ class Document_PaperOption extends PaperOption {
         if ($mimetypes) {
             echo ' data-document-accept="', htmlspecialchars(join(",", array_map(function ($m) { return $m->mimetype; }, $mimetypes))), '"';
         }
-        if ($this->max_size !== null) {
+        if ($this->max_size > 0) {
             echo ' data-document-max-size="', (int) $this->max_size, '"';
         }
         if ($this->id === DTYPE_SUBMISSION && $noPapers) {
@@ -2268,15 +2268,15 @@ class Attachments_PaperOption extends PaperOption {
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         // XXX does not consider $reqov
-        $max_size = $this->max_size ?? $this->conf->opt("uploadMaxFilesize") ?? ini_get_bytes("upload_max_filesize") / 1.024;
+        $max_size = $this->max_size ?? $this->conf->upload_max_filesize(true);
         $title = $this->title_html();
         if ($max_size > 0) {
             $title .= ' <span class="n">(max ' . unparse_byte_size($max_size) . ' per file)</span>';
         }
         $pt->print_editable_option_papt($this, $title, ["id" => $this->readable_formid(), "for" => false]);
         echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" data-dtype="', $this->id, '" id="', $this->formid, ':attachments"';
-        if ($max_size > 0) {
-            echo ' data-document-max-size="', (int) $max_size, '"';
+        if ($this->max_size > 0) {
+            echo ' data-document-max-size="', (int) $this->max_size, '"';
         }
         echo '>';
         $readonly = !$this->test_editable($ov->prow);

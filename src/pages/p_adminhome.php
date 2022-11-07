@@ -33,16 +33,16 @@ class AdminHome_Page {
             && !$conf->opt("dbNoPapers")) {
             $ml[] = new MessageItem(null, "<5>MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is {$max_file_size}&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers", MessageSet::URGENT_NOTE);
         }
-        if ($max_file_size < ini_get_bytes(null, $conf->opt("upload_max_filesize") ?? "10M")) {
-            $ml[] = new MessageItem(null, "<5>PHP’s <code>upload_max_filesize</code> setting, which is <code>" . htmlspecialchars(ini_get("upload_max_filesize")) . "</code>, will limit submissions to at most $max_file_size&nbsp;bytes. Usually a larger limit, such as <code>10M</code>, is appropriate. Change this setting in HotCRP’s <code>.htaccess</code> and <code>.user.ini</code> files, change it in your global <code>php.ini</code> file, or silence this message by setting <code>\$Opt[\"upload_max_filesize\"] = \"" . htmlspecialchars(ini_get("upload_max_filesize")) . "\"</code> in <code>conf/options.php</code>", MessageSet::URGENT_NOTE);
+        if ($max_file_size < ini_get_bytes(null, $conf->opt("uploadMaxFilesize") ?? "10M")) {
+            $ml[] = new MessageItem(null, "<5>PHP’s <code>upload_max_filesize</code> setting, which is <code>" . htmlspecialchars(ini_get("upload_max_filesize")) . "</code>, will limit submissions to at most {$max_file_size}&nbsp;bytes. Usually a larger limit is appropriate. Change this setting in HotCRP’s <code>.user.ini</code> or <code>.htaccess</code> file, change it in your global <code>php.ini</code> file, or silence this message by setting <code>\$Opt[\"uploadMaxFilesize\"] = \"" . htmlspecialchars(ini_get("upload_max_filesize")) . "\"</code> in <code>conf/options.php</code>", MessageSet::URGENT_NOTE);
         }
         $post_max_size = ini_get_bytes("post_max_size");
         if ($post_max_size < $max_file_size) {
-            $ml[] = new MessageItem(null, "<5>PHP’s <code>post_max_size</code> setting is smaller than its <code>upload_max_filesize</code> setting. The <code>post_max_size</code> value should be at least as big. Change this setting in HotCRP’s <code>.htaccess</code> and <code>.user.ini</code> files or change it in your global <code>php.ini</code> file", MessageSet::WARNING_NOTE);
+            $ml[] = new MessageItem(null, "<5>PHP’s <code>post_max_size</code> setting is smaller than its <code>upload_max_filesize</code> setting. The <code>post_max_size</code> value should be at least as big. Change this setting in HotCRP’s <code>.user.ini</code> or <code>.htaccess</code> file or change it in your global <code>php.ini</code> file", MessageSet::WARNING_NOTE);
         }
         $memory_limit = ini_get_bytes("memory_limit");
         if ($post_max_size >= $memory_limit) {
-            $ml[] = new MessageItem(null, "<5>PHP’s <code>memory_limit</code> setting is smaller than its <code>post_max_size</code> setting. The <code>memory_limit</code> value should be at least as big. Change this setting in HotCRP’s <code>.htaccess</code> and <code>.user.ini</code> files or change it in your global <code>php.ini</code> file", MessageSet::URGENT_NOTE);
+            $ml[] = new MessageItem(null, "<5>PHP’s <code>memory_limit</code> setting is smaller than its <code>post_max_size</code> setting. The <code>memory_limit</code> value should be at least as big. Change this setting in HotCRP’s <code>.user.ini</code> or <code>.htaccess</code> file or change it in your global <code>php.ini</code> file", MessageSet::URGENT_NOTE);
         }
         if (defined("JSON_HOTCRP")) {
             $ml[] = new MessageItem(null, "<0>Your PHP was built without JSON functionality. HotCRP is using its built-in replacements; the native functions would be faster", MessageSet::WARNING_NOTE);
@@ -60,9 +60,22 @@ class AdminHome_Page {
         } else if (simplify_whitespace($conf->short_name) != $conf->short_name) {
             $ml[] = new MessageItem(null, "<5>The <a href=\"" . $conf->hoturl("settings", "group=basics") . "\">conference abbreviation</a> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more)", MessageSet::WARNING);
         }
+        // Site contact
         $site_contact = $conf->site_contact();
         if (!$site_contact->email || $site_contact->email == "you@example.com") {
             $ml[] = new MessageItem(null, "<5><a href=\"" . $conf->hoturl("settings", "group=basics") . "\">Set the conference contact’s name and email</a> so submitters can reach someone if things go wrong", MessageSet::URGENT_NOTE);
+        }
+        // Can anyone view submissions?
+        if ($conf->has_tracks()) {
+            $any_visible = false;
+            foreach (array_merge($conf->track_tags(), ["_"]) as $tt) {
+                $tr = $conf->track($tt);
+                if ($tr && $tr->perm[Track::VIEW] !== "+none")
+                    $any_visible === true;
+            }
+            if (!$any_visible) {
+                $ml[] = new MessageItem(null, '<5>PC members cannot view any submissions (see <a href="' . $conf->hoturl("settings", "group=tags#tracks") . "\">track settings</a>)", MessageSet::URGENT_NOTE);
+            }
         }
         // Any -100 preferences around?
         $result = $conf->preference_conflict_result("s", "limit 1");

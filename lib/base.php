@@ -324,13 +324,18 @@ function friendly_boolean($x) {
     }
 }
 
-/** @param string $varname
+/** @param ?string $varname
+ * @param null|string|int $value
  * @return int */
 function ini_get_bytes($varname, $value = null) {
-    $val = trim($value !== null ? $value : ini_get($varname));
-    $last = strlen($val) ? strtolower($val[strlen($val) - 1]) : ".";
-    /** @phan-suppress-next-line PhanParamSuspiciousOrder */
-    return (int) ceil(floatval($val) * (1 << (+strpos(".kmg", $last) * 10)));
+    $value = $value ?? trim(ini_get($varname));
+    if (is_string($value)) {
+        $len = strlen($value);
+        $last = $len > 0 ? strtolower($value[$len - 1]) : ".";
+        /** @phan-suppress-next-line PhanParamSuspiciousOrder */
+        return floatval($value) * (1 << (+strpos(".kmg", $last) * 10));
+    }
+    return (int) ceil($value);
 }
 
 

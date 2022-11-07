@@ -4873,6 +4873,18 @@ class Conf {
         }
     }
 
+    /** @param $round_ini bool
+     * @return int|float */
+    function upload_max_filesize($round_ini = false) {
+        if (($x = $this->opt["uploadMaxFilesize"] ?? null) !== null) {
+            return ini_get_bytes(null, $x);
+        } else if ($round_ini) {
+            return ini_get_bytes("upload_max_filesize") / 1.024;
+        } else {
+            return ini_get_bytes("upload_max_filesize");
+        }
+    }
+
     function header_body($title, $id, $extra = []) {
         $user = Contact::$main_user;
         $qreq = Qrequest::$main_request;
@@ -4891,8 +4903,8 @@ class Conf {
             echo ' data-hotlist="', htmlspecialchars($list->info_string()), '"';
         }
         echo ' data-upload-limit="', ini_get_bytes("upload_max_filesize");
-        if (($s = $this->opt("uploadMaxFilesize"))) {
-            echo '" data-document-max-size="', (int) $s;
+        if (($x = $this->opt["uploadMaxFilesize"] ?? null) !== null) {
+            echo '" data-document-max-size="', ini_get_bytes(null, $x);
         }
         echo '"><div id="top">';
 
