@@ -10,7 +10,7 @@ class SiteContact_SettingParser extends SettingParser {
         $sv->print_entry_group("site_contact_email", null, null, "The site contact is the contact point for users if something goes wrong. It defaults to the chair.");
     }
 
-    /** @param ?string $v
+    /** @param string $v
      * @param Si $si */
     static private function cleanstr($v, $si) {
         $iv = $si->name === "site_contact_email" ? "you@example.com" : "Your Name";
@@ -24,8 +24,10 @@ class SiteContact_SettingParser extends SettingParser {
     }
 
     function apply_req(Si $si, SettingValues $sv) {
-        $sv->save($si, self::cleanstr($sv->base_parse_req($si), $si));
-        $sv->request_store_value($si);
+        if (($creqv = $sv->base_parse_req($si)) !== null) {
+            $sv->save($si, self::cleanstr($creqv, $si));
+            $sv->request_store_value($si);
+        }
         return true;
     }
 
