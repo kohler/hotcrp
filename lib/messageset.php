@@ -51,9 +51,15 @@ class MessageItem implements JsonSerializable {
         }
         if (array_key_exists("pos1", $updates)) {
             $mi->pos1 = $updates["pos1"];
+        } else if ($mi->pos1 !== null
+                   && array_key_exists("pos_offset", $updates)) {
+            $mi->pos1 += $updates["pos_offset"];
         }
         if (array_key_exists("pos2", $updates)) {
             $mi->pos2 = $updates["pos2"];
+        } else if ($mi->pos2 !== null
+                   && array_key_exists("pos_offset", $updates)) {
+            $mi->pos2 += $updates["pos_offset"];
         }
         if (array_key_exists("context", $updates)) {
             $mi->context = $updates["context"];

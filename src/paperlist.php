@@ -306,9 +306,9 @@ class PaperList implements XtContext {
             $this->_then_map = $this->search->groups_by_paper_id();
             $this->_highlight_map = $this->search->highlights_by_paper_id();
         }
-        foreach (PaperSearch::view_generator($qe->view_anno()) as $akd) {
-            if ($akd[0] !== "sort") {
-                $this->set_view($akd[1], substr($akd[0], 0, 4), null, $akd[2]);
+        foreach (PaperSearch::view_generator($qe->view_anno()) as $sve) {
+            if (($show_action = $sve->show_action())) {
+                $this->set_view($sve->keyword, $show_action, null, $sve->decorations);
             }
         }
 
@@ -575,13 +575,13 @@ class PaperList implements XtContext {
      * @param ?int $origin */
     function parse_view($str, $origin = null) {
         $groups = SearchSplitter::split_balanced_parens($str ?? "");
-        foreach (PaperSearch::view_generator($groups) as $akd) {
-            if ($akd[0] !== "sort") {
-                $this->set_view($akd[1], substr($akd[0], 0, 4), $origin, $akd[2]);
+        foreach (PaperSearch::view_generator($groups) as $sve) {
+            if (($show_action = $sve->show_action())) {
+                $this->set_view($sve->keyword, $show_action, $origin, $sve->decorations);
             }
-            if (str_ends_with($akd[0], "sort")
-                && ($akd[1] !== "id" || !empty($akd[1]) || $this->_sortcol)) {
-                $this->_add_sorter($akd[1], $akd[2], -1, $akd[3], $akd[4]);
+            if ($sve->sort_action()
+                && ($sve->nondefault_sort_action() || $this->_sortcol)) {
+                $this->_add_sorter($sve->keyword, $sve->decorations, $sve->pos1w, $sve->pos1, $sve->pos2);
             }
         }
     }
@@ -710,10 +710,10 @@ class PaperList implements XtContext {
     /** @param int $sort_subset */
     private function _add_view_sorters(SearchTerm $qe, $sort_subset) {
         $nsortcol = count($this->_sortcol);
-        foreach (PaperSearch::view_generator($qe->view_anno()) as $akd) {
-            if (str_ends_with($akd[0], "sort")
-                && ($akd[1] !== "id" || !empty($akd[1]) || $this->_sortcol)) {
-                $this->_add_sorter($akd[1], $akd[2], $sort_subset, $akd[3], $akd[4]);
+        foreach (PaperSearch::view_generator($qe->view_anno()) as $sve) {
+            if ($sve->sort_action()
+                && ($sve->nondefault_sort_action() || $this->_sortcol)) {
+                $this->_add_sorter($sve->keyword, $sve->decorations, $sort_subset, $sve->pos1, $sve->pos2);
             }
         }
         if (count($this->_sortcol) === $nsortcol

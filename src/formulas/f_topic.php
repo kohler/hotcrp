@@ -21,8 +21,7 @@ class Topic_Fexpr extends Fexpr {
             if (str_starts_with($arg, ":")) {
                 $arg = substr($arg, 1);
             }
-            $w = new SearchWord($arg, $arg);
-            $ff->modifier = $formula->conf->topic_set()->find_all($w->word);
+            $ff->modifier = $formula->conf->topic_set()->find_all(SearchWord::unquote($arg));
             // XXX warn if no match
             return true;
         } else {

@@ -4,8 +4,6 @@
 
 class SearchWord {
     /** @var string */
-    public $source;
-    /** @var string */
     public $qword;
     /** @var string */
     public $word;
@@ -24,37 +22,50 @@ class SearchWord {
     public $pos1;
     /** @var ?int */
     public $pos2;
-    /** @param string $qword
-     * @param string $source */
-    function __construct($qword, $source) {
-        $this->source = $source;
-        $this->qword = $qword;
-        $this->word = self::unquote($qword);
-        $this->quoted = strlen($qword) !== strlen($this->word);
+
+    /** @param string $word
+     * @return SearchWord */
+    static function make_simple($word) {
+        $sw = new SearchWord;
+        $sw->qword = $sw->word = $word;
+        $sw->quoted = false;
+        return $sw;
     }
-    /** @param string $text
+    /** @param string $kwarg
+     * @param int $pos1w
+     * @param int $pos1
+     * @param int $pos2 */
+    static function make_kwarg($kwarg, $pos1w, $pos1, $pos2) {
+        $sw = new SearchWord;
+        $sw->qword = $kwarg;
+        $sw->quoted = self::is_quoted($kwarg);
+        $sw->word = $sw->quoted ? substr($kwarg, 1, -1) : $kwarg;
+        $sw->pos1w = $pos1w;
+        $sw->pos1 = $pos1;
+        $sw->pos2 = $pos2;
+        return $sw;
+    }
+
+    /** @param string $str
      * @return string */
-    static function quote($text) {
-        if ($text === ""
-            || !preg_match('/\A[-A-Za-z0-9_.@\/]+\z/', $text)) {
-            $text = "\"" . str_replace("\"", "\\\"", $text) . "\"";
+    static function quote($str) {
+        if ($str === ""
+            || !preg_match('/\A[-A-Za-z0-9_.@\/]+\z/', $str)) {
+            $str = "\"" . str_replace("\"", "\\\"", $str) . "\"";
         }
-        return $text;
+        return $str;
     }
-    /** @param string $text
+    /** @param string $str
+     * @return bool */
+    static function is_quoted($str) {
+        return $str !== ""
+            && $str[0] === "\""
+            && strpos($str, "\"", 1) === strlen($str) - 1;
+    }
+    /** @param string $str
      * @return string */
-    static function unquote($text) {
-        if ($text !== ""
-            && $text[0] === "\""
-            && strpos($text, "\"", 1) === strlen($text) - 1) {
-            return substr($text, 1, -1);
-        } else {
-            return $text;
-        }
-    }
-    /** @return string */
-    function source_html() {
-        return htmlspecialchars($this->source);
+    static function unquote($str) {
+        return self::is_quoted($str) ? substr($str, 1, -1) : $str;
     }
     /** @param ?string $cword */
     function set_compar_word($cword) {
@@ -307,6 +318,41 @@ class SearchQueryInfo {
     }
 }
 
+class SearchViewElement {
+    /** @var 'show'|'hide'|'edit'|'showsort'|'editsort'|'sort' */
+    public $action;
+    /** @var string */
+    public $keyword;
+    /** @var list<string> */
+    public $decorations = [];
+    /** @var ?int */
+    public $pos1w;
+    /** @var ?int */
+    public $pos1;
+    /** @var ?int */
+    public $pos2;
+
+    /** @return ?string */
+    function show_action() {
+        if (in_array($this->action, ["show", "hide", "edit", "showsort", "editsort"])) {
+            return substr($this->action, 0, 4);
+        } else {
+            return null;
+        }
+    }
+
+    /** @return bool */
+    function sort_action() {
+        return str_ends_with($this->action, "sort");
+    }
+
+    /** @return bool */
+    function nondefault_sort_action() {
+        return str_ends_with($this->action, "sort")
+            && ($this->keyword !== "id" || !empty($this->decorations));
+    }
+}
+
 class PaperSearch extends MessageSet {
     /** @var Conf
      * @readonly */
@@ -437,7 +483,7 @@ class PaperSearch extends MessageSet {
                 $limit = "ar";
             }
         }
-        $lword = new SearchWord($limit, "in:{$limit}");
+        $lword = SearchWord::make_simple($limit);
         $this->_limit_qe = Limit_SearchTerm::parse($limit, $lword, $this);
     }
 
@@ -657,12 +703,9 @@ class PaperSearch extends MessageSet {
             if ($kwdef->parse_has_function ?? null) {
                 $qe = call_user_func($kwdef->parse_has_function, $word, $sword, $srch);
             } else if ($kwdef->has ?? null) {
-                $sword2 = new SearchWord($kwdef->has, $sword->source);
+                $sword2 = SearchWord::make_kwarg($kwdef->has, $sword->pos1w, $sword->pos1, $sword->pos2);
                 $sword2->kwexplicit = true;
                 $sword2->kwdef = $kwdef;
-                $sword2->pos1 = $sword->pos1;
-                $sword2->pos1w = $sword->pos1w;
-                $sword2->pos2 = $sword->pos2;
                 $qe = call_user_func($kwdef->parse_function, $kwdef->has, $sword2, $srch);
             } else {
                 $qe = null;
@@ -714,24 +757,19 @@ class PaperSearch extends MessageSet {
     }
 
     /** @param string $kw
-     * @param string $arg
-     * @param string $source
+     * @param SearchWord $sword
      * @param ?SearchScope $scope
      * @param bool $is_defkw
-     * @param int $pos1w
-     * @param int $pos1
-     * @param int $pos2
      * @return ?SearchTerm */
-    private function _search_keywordx($kw, $arg, $source, $scope, $is_defkw, $pos1w, $pos1, $pos2) {
+    private function _search_keyword($kw, $sword, $scope, $is_defkw) {
+        $kw = $kw[0] === "\"" ? trim(substr($kw, 1, -1)) : $kw;
         $kwdef = $this->conf->search_keyword($kw, $this->user);
         if (!$kwdef || !($kwdef->parse_function ?? null)) {
             if ($scope
                 && (!$is_defkw || !$scope->defkw_scope->defkw_error)
                 && $scope->ignore_unknown === 0) {
-                $sword = new SearchWord($kw, $source);
-                $sword->pos1 = $pos1w;
-                $sword->pos2 = $pos1w + strlen($kw) + 1;
-                $this->lwarning($sword, "<0>Unknown search ‘{$kw}:’ won’t match anything");
+                $xsword = SearchWord::make_kwarg($kw, $sword->pos1w, $sword->pos1w, $sword->pos1);
+                $this->lwarning($xsword, "<0>Unknown search ‘{$kw}:’ won’t match anything");
                 if ($is_defkw) {
                     $scope->defkw_scope->defkw_error = true;
                 }
@@ -739,10 +777,6 @@ class PaperSearch extends MessageSet {
             return null;
         }
 
-        $sword = new SearchWord($arg, $source);
-        $sword->pos1 = $pos1;
-        $sword->pos1w = $pos1w;
-        $sword->pos2 = $pos2;
         $sword->kwexplicit = !!$scope;
         $sword->kwdef = $kwdef;
         $qx = call_user_func($kwdef->parse_function, $sword->word, $sword, $this);
@@ -755,23 +789,31 @@ class PaperSearch extends MessageSet {
         }
     }
 
-    /** @param string $word
-     * @param string $defkw
-     * @return array{string,string} */
-    static private function _search_word_breakdown($word, $defkw = "") {
-        $ch = substr($word, 0, 1);
-        if ($ch !== ""
-            && $defkw === ""
-            && (ctype_digit($ch) || ($ch === "#" && ctype_digit((string) substr($word, 1, 1))))
-            && preg_match('/\A(?:#?\d+(?:(?:-|–|—)#?\d+)?(?:\s*,\s*|\z))+\z/s', $word)) {
-            return ["=", $word];
-        } else if ($ch === "#"
-                   && $defkw === "") {
-            return ["#", substr($word, 1)];
-        } else if (preg_match('/\A([-_.a-zA-Z0-9]+|"[^"]")((?:[=!<>]=?|≠|≤|≥)[^:]+|:.*)\z/s', $word, $m)) {
-            return [$m[1], $m[2]];
+    /** @param string $str
+     * @return bool */
+    static private function _search_word_is_paperid($str) {
+        $ch = substr($str, 0, 1);
+        return ($ch === "#" || ctype_digit($ch))
+            && preg_match('/\A(?:#?\d+(?:(?:-|–|—)#?\d+)?(?:\s*,\s*|\z))+\z/s', $str);
+    }
+
+    /** @param SearchWord $sword
+     * @param SearchScope $scope
+     * @return ?SearchTerm */
+    private function _check_octothorpe($sword, $scope) {
+        $ignored = $this->swap_ignore_messages(true);
+        $qe = $this->_search_keyword("hashtag", $sword, $scope, false);
+        $this->swap_ignore_messages($ignored);
+        return $qe instanceof False_SearchTerm ? null : $qe;
+    }
+
+    /** @param string $str
+     * @return string */
+    static private function _search_word_inferred_keyword($str) {
+        if (preg_match('/\A([-_.a-zA-Z0-9]+|"[^"]")(?:[=!<>]=?|≠|≤|≥)[^:]+\z/s', $str, $m)) {
+            return $m[1];
         } else {
-            return ["", $word];
+            return "";
         }
     }
 
@@ -784,77 +826,70 @@ class PaperSearch extends MessageSet {
         }
     }
 
-    /** @param string $source
+    /** @param string $kw
+     * @param SearchWord $sword
      * @param SearchScope $scope
-     * @param int $pos1
-     * @param int $pos2
      * @return ?SearchTerm */
-    private function _search_word($source, $scope, $pos1, $pos2) {
-        $word = $source;
-        $wordbrk = self::_search_word_breakdown($word, $scope->defkw ?? "");
-        $keyword = null;
-
-        if ($wordbrk[0] === "=") {
-            // paper numbers
-            $st = new PaperID_SearchTerm;
-            while (preg_match('/\A#?(\d+)(?:(?:-|–|—)#?(\d+))?\s*,?\s*(.*)\z/s', $word, $m)) {
-                $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
-                $st->add_range(intval($m[1]), intval($m[2]));
-                $word = $m[3];
-            }
-            return $st;
-        }
-
-        if ($wordbrk[0] === "#") {
-            // `#TAG`
-            $ignored = $this->swap_ignore_messages(true);
-            $qe = $this->_search_keywordx("hashtag", $wordbrk[1], $source, $scope, false, $pos1, $pos1, $pos2);
-            $this->swap_ignore_messages($ignored);
-            if (!($qe instanceof False_SearchTerm)) {
-                return $qe;
-            }
-        } else if ($wordbrk[0] !== "") {
-            // `keyword:word` or (potentially) `keyword>word`
-            $kw = $wordbrk[0];
-            $kwlen = strlen($kw);
-            if (str_starts_with($kw, '"')) {
-                $kw = trim(substr($kw, 1, -2));
-            }
-            $arg = $wordbrk[1];
-            $argpos = str_starts_with($arg, ":") ? 1 : 0;
-            while ($argpos < strlen($arg) && ctype_space($arg[$argpos])) {
-                ++$argpos;
-            }
-            $arg = substr($arg, $argpos);
-            if ($wordbrk[1][0] === ":") {
-                $qe = $this->_search_keywordx($kw, $arg, $source, $scope, false, $pos1, $pos1 + $kwlen + $argpos, $pos2);
-                return $qe ?? new False_SearchTerm;
-            } else {
-                // Allow searches like "ovemer>2"; parse as "ovemer:>2".
-                ++$scope->ignore_unknown;
-                $qe = $this->_search_keywordx($kw, $arg, $source, $scope, false, $pos1, $pos1 + $kwlen + $argpos, $pos2);
-                --$scope->ignore_unknown;
-                if ($qe) {
-                    return $qe;
-                }
-            }
-        } else if ($scope->defkw !== null) {
-            $qe = $this->_search_keywordx($scope->defkw, $word, $source, $scope, true, $scope->defkw_scope->defkw_pos1w, $pos1, $pos2);
+    private function _search_word($kw, $sword, $scope) {
+        // Explicitly provided keyword
+        if ($kw !== "") {
+            $qe = $this->_search_keyword(substr($kw, 0, -1), $sword, $scope, false);
             return $qe ?? new False_SearchTerm;
         }
 
-        // Special-case unquoted "*", "ANY", "ALL", "NONE", "".
-        if ($word === "*" || $word === "ANY" || $word === "ALL"
-            || $word === "") {
-            return new True_SearchTerm;
-        } else if ($word === "NONE") {
-            return new False_SearchTerm;
+        $has_defkw = !empty($scope->defkw);
+        // Paper ID search term (`1-2`, `#1-#2`, etc.)
+        if (!$sword->quoted
+            && !$has_defkw
+            && self::_search_word_is_paperid($sword->word)) {
+            return PaperID_SearchTerm::parse_normal($sword->word);
         }
 
-        // Otherwise check known keywords.
+        // Tag search term
+        if (!$sword->quoted
+            && !$has_defkw
+            && str_starts_with($sword->word, "#")) {
+            $qe = $this->_check_octothorpe($sword, $scope);
+            if ($qe) {
+                return $qe;
+            }
+        }
+
+        // Inferred keyword: user wrote `ovemer>2`, meant `ovemer:>2`
+        if (!$sword->quoted
+            && ($kw = self::_search_word_inferred_keyword($sword->word))) {
+            ++$scope->ignore_unknown;
+            $kwlen = strlen($kw);
+            $swordi = SearchWord::make_kwarg(substr($sword->word, $kwlen), $sword->pos1, $sword->pos1 + $kwlen, $sword->pos2);
+            $qe = $this->_search_keyword($kw, $swordi, $scope, false);
+            --$scope->ignore_unknown;
+            if ($qe) {
+                return $qe;
+            }
+        }
+
+        // Default keyword (`ti:(xxx OR yyy)`, etc.)
+        if ($has_defkw) {
+            $sword->pos1w = $scope->defkw_pos1w;
+            $qe = $this->_search_keyword($scope->defkw, $sword, $scope, true);
+            return $qe ?? new False_SearchTerm;
+        }
+
+        // Special words: unquoted `*`, `ANY`, `ALL`, `NONE`; empty string
+        if ($sword->qword === "NONE") {
+            return new False_SearchTerm;
+        }
+        if ($sword->word === ""
+            || $sword->qword === "*"
+            || $sword->qword === "ANY"
+            || $sword->qword === "ALL") {
+            return new True_SearchTerm;
+        }
+
+        // Last case: check preconfigured keywords
         $qt = [];
         foreach ($this->_qt_fields() as $kw) {
-            if (($qe = $this->_search_keywordx($kw, $word, $source, null, false, $pos1, $pos1, $pos2)))
+            if (($qe = $this->_search_keyword($kw, $sword, null, false)))
                 $qt[] = $qe;
         }
         return SearchTerm::combine("or", ...$qt);
@@ -889,16 +924,17 @@ class PaperSearch extends MessageSet {
         return $op;
     }
 
-    /** @return string */
-    static private function _shift_word(SearchSplitter $splitter, Conf $conf) {
-        if (($t = $splitter->shift_keyword()) !== "") {
-            $kwx = $t[0] === '"' ? substr($t, 1, -2) : substr($t, 0, -1);
+    /** @param string $kw
+     * @return string */
+    static private function _shift_kwarg($kw, SearchSplitter $splitter, Conf $conf) {
+        if ($kw !== "") {
+            $kwx = $kw[0] === '"' ? substr($kw, 1, -2) : substr($kw, 0, -1);
             $kwd = $conf->search_keyword($kwx);
             if ($kwd && ($kwd->allow_parens ?? false)) {
-                return $t . $splitter->shift_balanced_parens(null, true);
+                return $splitter->shift_balanced_parens(null, true);
             }
         }
-        return $t . $splitter->shift("()");
+        return $splitter->shift("()");
     }
 
     /** @param string $str
@@ -923,31 +959,35 @@ class PaperSearch extends MessageSet {
             }
 
             if (!$op) {
+                $pos1w = $splitter->pos;
+                $kw = $splitter->shift_keyword();
                 $pos1 = $splitter->pos;
-                $word = self::_shift_word($splitter, $this->conf);
+                $kwarg = self::_shift_kwarg($kw, $splitter, $this->conf);
                 $pos2 = $splitter->last_pos;
-                // Bare any-case "all", "any", "none" are treated as keywords.
-                if (!$curqe
-                    && (!$scope->op || $scope->op->precedence <= 2)
-                    && ($uword = strtoupper($word))
-                    && ($uword === "ALL" || $uword === "ANY" || $uword === "NONE")
-                    && $splitter->match('/\G(?:|(?:THEN|then|HIGHLIGHT(?::\w+)?)(?:\s|\().*)\z/')) {
-                    $word = $uword;
-                }
-                if ($word === "") {
+                if ($kw === "" && $kwarg === "") {
                     error_log("problem: no op, str “{$str}” in “{$this->q}”");
                     break;
                 }
+                // Bare any-case "all", "any", "none" are treated as keywords.
+                if (!$curqe
+                    && (!$scope->op || $scope->op->precedence <= 2)
+                    && $kw === ""
+                    && strlen($kwarg) <= 4) {
+                    $uword = strtoupper($kwarg);
+                    if (($uword === "ALL" || $uword === "ANY" || $uword === "NONE")
+                        && $splitter->match('/\G(?:|(?:THEN|then|HIGHLIGHT(?::\w+)?)(?:\s|\().*)\z/')) {
+                        $kwarg = $uword;
+                    }
+                }
                 // Search like "ti:(foo OR bar)" adds a default keyword.
-                if ($word[strlen($word) - 1] === ":"
-                    && preg_match('/\A(?:[-_.a-zA-Z0-9]+:|"[^"]+":)\z/s', $word)
-                    && $splitter->starts_with("(")) {
-                    $next_defkw = [substr($word, 0, strlen($word) - 1), $pos1];
+                if ($kw !== "" && $kwarg === "" && $splitter->starts_with("(")) {
+                    $next_defkw = [substr($kw, 0, strlen($kw) - 1), $pos1w];
                 } else {
                     // The heart of the matter.
-                    $curqe = $this->_search_word($word, $scope, $pos1, $pos2);
+                    $sword = SearchWord::make_kwarg($kwarg, $pos1w, $pos1, $pos2);
+                    $curqe = $this->_search_word($kw, $sword, $scope);
                     if (!$curqe->is_uninteresting()) {
-                        $curqe->set_strspan($pos1, $pos2);
+                        $curqe->set_strspan($pos1w, $pos2);
                     }
                 }
             } else if ($op->op === ")") {
@@ -1023,6 +1063,26 @@ class PaperSearch extends MessageSet {
         }
     }
 
+    /** @param string $word
+     * @param string $defkw
+     * @return array{string,string} */
+    static private function _search_word_breakdown($word, $defkw = "") {
+        $ch = substr($word, 0, 1);
+        if ($ch !== ""
+            && $defkw === ""
+            && (ctype_digit($ch) || ($ch === "#" && ctype_digit((string) substr($word, 1, 1))))
+            && preg_match('/\A(?:#?\d+(?:(?:-|–|—)#?\d+)?(?:\s*,\s*|\z))+\z/s', $word)) {
+            return ["=", $word];
+        } else if ($ch === "#"
+                   && $defkw === "") {
+            return ["#", substr($word, 1)];
+        } else if (preg_match('/\A([-_.a-zA-Z0-9]+|"[^"]")((?:[=!<>]=?|≠|≤|≥)[^:]+|:.*)\z/s', $word, $m)) {
+            return [$m[1], $m[2]];
+        } else {
+            return ["", $word];
+        }
+    }
+
     static private function _canonical_expression($str, $type, $qt, Conf $conf) {
         $str = trim((string) $str);
         if ($str === "") {
@@ -1042,7 +1102,8 @@ class PaperSearch extends MessageSet {
                 $op = SearchOperator::get($parens ? "SPACE" : $defaultop);
             }
             if (!$op) {
-                $curqe = self::_shift_word($splitter, $conf);
+                $kw = $splitter->shift_keyword();
+                $curqe = $kw . self::_shift_kwarg($kw, $splitter, $conf);
                 if ($qt !== "n") {
                     $wordbrk = self::_search_word_breakdown($curqe, "");
                     if ($wordbrk[0] === "") {
@@ -1416,15 +1477,15 @@ class PaperSearch extends MessageSet {
     }
 
     /** @param iterable<string>|iterable<array{string,?int,?int,?int}> $words
-     * @return Generator<array{string,string,list<string>,?int,?int}> */
+     * @return Generator<SearchViewElement> */
     static function view_generator($words) {
         foreach ($words as $w) {
+            $sve = new SearchViewElement;
             if (is_array($w)) {
-                $pos1 = $w[1];
-                $pos2 = $w[3];
+                $sve->pos1w = $w[1];
+                $sve->pos1 = $w[2];
+                $sve->pos2 = $w[3];
                 $w = $w[0];
-            } else {
-                $pos1 = $pos2 = null;
             }
 
             $colon = strpos($w, ":");
@@ -1434,35 +1495,46 @@ class PaperSearch extends MessageSet {
                 $colon = 4;
             }
 
-            $action = substr($w, 0, $colon);
+            $sve->action = substr($w, 0, $colon);
             $d = substr($w, $colon + 1);
             $keyword = null;
             if (str_starts_with($d, "[")) { /* XXX backward compat */
-                $d = substr($d, 1, strlen($d) - (str_ends_with($d, "]") ? 2 : 1));
+                $dlen = strlen($d);
+                for ($ltrim = 1; $ltrim !== $dlen && ctype_space($d[$ltrim]); ++$ltrim) {
+                }
+                $rtrim = $dlen;
+                if ($rtrim > $ltrim && $d[$rtrim - 1] === "]") {
+                    for (--$rtrim; $rtrim > $ltrim && ctype_space($d[$rtrim - 1]); --$rtrim) {
+                    }
+                }
+                $sve->pos1 = $sve->pos1 !== null ? $sve->pos1 + $ltrim : null;
+                $sve->pos2 = $sve->pos2 !== null ? $sve->pos2 - ($dlen - $rtrim) : null;
+                $d = substr($d, $ltrim, $rtrim - $ltrim);
             } else if (str_ends_with($d, "]")
                        && ($lbrack = strrpos($d, "[")) !== false) {
                 $keyword = substr($d, 0, $lbrack);
                 $d = substr($d, $lbrack + 1, strlen($d) - $lbrack - 2);
             }
 
-            $decorations = [];
             if ($d !== "") {
                 $splitter = new SearchSplitter($d);
                 while ($splitter->skip_span(" \n\r\t\v\f,")) {
-                    $decorations[] = $splitter->shift_balanced_parens(" \n\r\t\v\f,");
+                    $sve->decorations[] = $splitter->shift_balanced_parens(" \n\r\t\v\f,");
                 }
             }
 
-            $keyword = $keyword ?? array_shift($decorations) ?? "";
+            $keyword = $keyword ?? array_shift($sve->decorations) ?? "";
             if ($keyword !== "") {
                 if ($keyword[0] === "-") {
+                    array_unshift($sve->decorations, "reverse");
+                }
+                if ($keyword[0] === "-" || $keyword[0] === "+") {
                     $keyword = substr($keyword, 1);
-                    array_unshift($decorations, "reverse");
-                } else if ($keyword[0] === "+") {
-                    $keyword = substr($keyword, 1);
+                    $sve->pos1 = $sve->pos1 !== null ? $sve->pos1 + 1 : null;
                 }
                 if ($keyword !== "") {
-                    yield [$action, $keyword, $decorations, $pos1, $pos2];
+                    $sve->keyword = $keyword;
+                    yield $sve;
                 }
             }
         }
@@ -1490,9 +1562,9 @@ class PaperSearch extends MessageSet {
     /** @return list<string> */
     private function sort_field_list() {
         $r = [];
-        foreach (self::view_generator($this->term()->view_anno() ?? []) as $akd) {
-            if (str_ends_with($akd[0], "sort")) {
-                $r[] = $akd[1];
+        foreach (self::view_generator($this->term()->view_anno() ?? []) as $sve) {
+            if ($sve->sort_action()) {
+                $r[] = $sve->keyword;
             }
         }
         return $r;

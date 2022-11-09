@@ -167,9 +167,9 @@ class ReviewForm {
             return $f ? [$f] : [];
         }
         $fs = [];
-        foreach (PaperSearch::view_generator(SearchSplitter::split_balanced_parens($s)) as $v) {
-            if (($v[0] === "show" || $v[0] === "showsort")
-                && ($x = $this->conf->find_all_fields($v[1]))
+        foreach (PaperSearch::view_generator(SearchSplitter::split_balanced_parens($s)) as $sve) {
+            if (($sve->action === "show" || $sve->action === "showsort")
+                && ($x = $this->conf->find_all_fields($sve->keyword))
                 && count($x) === 1
                 && $x[0] instanceof Score_ReviewField
                 && $x[0]->view_score >= VIEWSCORE_PC

@@ -2194,6 +2194,7 @@ select.has-warning {
 }
 .msg-context {
 	font-size: smaller;
+	white-space: pre-wrap;
 }
 li:last-child > .msg-context:last-child {
 	padding-bottom: 0.3rem;

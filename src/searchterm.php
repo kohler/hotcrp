@@ -63,23 +63,16 @@ abstract class SearchTerm {
      * @param SearchWord $sword
      * @return $this */
     function add_view_anno($view, $sword) {
-        if ($sword->pos1 !== null) {
-            $pos1x = $sword->pos1 + strpos($sword->source, ":") + 1;
-        } else {
-            $pos1x = null;
-        }
-        $this->float["view"][] = [$view, $sword->pos1, $pos1x, $sword->pos2];
+        $this->float["view"][] = [$view, $sword->pos1w, $sword->pos1, $sword->pos2];
         return $this;
     }
 
     /** @param string $field
      * @return ?array{int,int,int} */
     function view_anno_pos($field) {
-        foreach ($this->float["view"] ?? [] as $vx) {
-            foreach (PaperSearch::view_generator([$vx[0]]) as $akd) {
-                if ($field === $akd[1])
-                    return [$vx[1], $vx[2], $vx[3]];
-            }
+        foreach (PaperSearch::view_generator($this->float["view"] ?? []) as $sve) {
+            if ($field === $sve->keyword)
+                return [$sve->pos1w, $sve->pos1, $sve->pos2];
         }
         return null;
     }
@@ -1442,12 +1435,22 @@ class PaperID_SearchTerm extends SearchTerm {
         if (($ids = SessionList::decode_ids($word)) === null) {
             $srch->lwarning($sword, "<0>Invalid pidcode");
             return new False_SearchTerm;
-        } else {
-            $pt = new PaperID_SearchTerm;
-            foreach ($ids as $id) {
-                $pt->add_range($id, $id);
-            }
-            return $pt;
         }
+        $st = new PaperID_SearchTerm;
+        foreach ($ids as $id) {
+            $st->add_range($id, $id);
+        }
+        return $st;
+    }
+    /** @param string $word
+     * @return PaperID_SearchTerm */
+    static function parse_normal($word) {
+        $st = new PaperID_SearchTerm;
+        while (preg_match('/\A#?(\d+)(?:(?:-|–|—)#?(\d+))?\s*,?\s*(.*)\z/s', $word, $m)) {
+            $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
+            $st->add_range(intval($m[1]), intval($m[2]));
+            $word = $m[3];
+        }
+        return $st;
     }
 }

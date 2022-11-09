@@ -1570,6 +1570,10 @@ class Permission_Tester {
         assert_search_papers($this->u_shenker, "au:berkeley (fountain)", "24");
         assert_search_papers($this->u_shenker, "au:berkeley (fountain", "24");
         assert_search_papers($this->u_shenker, "au:berkeley fountain)", "24");
+        assert_search_papers($this->u_shenker, "fountain au:berkeley", "24");
+        assert_search_papers($this->u_shenker, "(fountain) au:berkeley", "24");
+        assert_search_papers($this->u_shenker, "(fountain au:berkeley", "24");
+        assert_search_papers($this->u_shenker, "fountain) au:berkeley", "24");
 
         // more complex author searches
         assert_search_papers($this->u_shenker, "au:estrin@usc.edu", "1");
