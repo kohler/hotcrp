@@ -4294,22 +4294,20 @@ class Conf {
     /** @param string $text
      * @param int $type */
     static function msg_on(Conf $conf = null, $text, $type) {
+        assert(is_int($type));
         if (PHP_SAPI === "cli") {
             if (is_array($text)) {
                 $text = join("\n", $text);
             }
-            if ($type === "xmerror" || $type === "merror" || $type === 2) {
+            if ($type >= 2) {
                 fwrite(STDERR, "$text\n");
-            } else if ($type === "xwarning" || $type === "warning" || $type === 1
-                       || !defined("HOTCRP_TESTHARNESS")) {
+            } else if ($type === 1 || !defined("HOTCRP_TESTHARNESS")) {
                 fwrite(STDOUT, "$text\n");
             }
         } else if ($conf && !$conf->_header_printed) {
             $conf->_save_msgs[] = [$text, $type];
-        } else if (is_int($type)) {
-            echo Ht::msg($text, $type);
         } else {
-            error_log("bad Conf::msg_on: " . debug_string_backtrace());
+            echo Ht::msg($text, $type);
         }
     }
 

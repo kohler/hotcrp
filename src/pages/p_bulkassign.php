@@ -44,8 +44,10 @@ class BulkAssign_Page {
         } else if ($time - $this->csv_started > 1) {
             if (!$this->csv_preparing) {
                 echo '<div id="foldmail" class="foldc fold2o">',
-                    '<div class="fn fx2 merror">Preparing assignments.<br><span id="mailcount"></span></div>',
-                    "</div>";
+                    '<div class="fn fx2 msg msg-warning">',
+                      '<p class="feedback is-warning">Preparing assignments</p>',
+                      '<p class="feedback is-inform" id="mailcount"></p>',
+                    '</div></div>';
                 $this->csv_preparing = true;
             }
             $text = '<span class="lineno">' . htmlspecialchars($aset->landmark()) . ':</span>';

@@ -806,58 +806,6 @@ body.paper > #body {
 
 
 /* messages */
-div.info, div.warning, div.confirm, div.merror {
-	background: #eeeeff url(../images/info45.png) 10px 10px no-repeat;
-	padding: 8px 0.5em 8px 65px;
-	border: 1px solid #ccccee;
-	margin: 0.5em 0;
-	min-height: 47px;
-}
-div.help {
-	padding: 0.5em;
-	border: 1px solid #cccccc;
-	margin-top: 0.5em;
-	margin-bottom: 0.5em;
-	max-width: 100em;
-	background: #f8f8f8;
-}
-div.confirm {
-	background: #eeffee url(../images/info45.png) 10px 10px no-repeat;
-	border: 1px solid #cceecc;
-}
-div.warning {
-	background: #ffffdd url(../images/info45.png) 10px 10px no-repeat;
-	border: 1px solid #ddddcc;
-}
-div.merror {
-	background: #ffeeee url(../images/stophand45.png) 10px 10px no-repeat;
-	border: 2px solid #ee2222;
-}
-/*div.merror > p:first-child, div.info > p:first-child, div.warning > p:first-child, div.confirm > p:first-child, div.help > p:first-child {
-	margin-top: 0;
-}
-div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
-	margin-top: 0.75em;
-	margin-bottom: 0;
-}*/
-
-.xinfo {
-	background: #f9f9fd;
-	border-color: #ccccee;
-}
-.xconfirm {
-	background: #eeffee;
-	border-color: #cceecc;
-}
-.xwarning {
-	background: #ffffdd;
-	border-color: #ddddcc;
-}
-.xmerror {
-	background: #ffeeee;
-	border-color: #eecccc;
-}
-
 .msg {
 	margin-top: 0.5rem;
 	margin-bottom: 1rem;
@@ -2049,11 +1997,8 @@ label.f-c, .f-i > label {
 	display: table;
 }
 .f-c, .f-i > label {
-	margin-bottom: 0.3rem;
+	margin-bottom: 0.3em;
 	font-weight: 500;
-}
-.strong {
-	font-weight: bold;
 }
 .f-c.n, .f-i > label.n {
 	font-weight: normal;
@@ -3044,12 +2989,6 @@ div.bigid {
 	padding: 0 0 0 3em;
 }
 span.lineno {
-}
-
-div.merror pre {
-	padding: 0.5em;
-	background: #fff2f2;
-	border: 1px dashed #eecccc;
 }
 
 hr {
