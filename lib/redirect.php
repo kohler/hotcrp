@@ -142,11 +142,11 @@ function ensure_session($flags = 0) {
 
     // avoid session fixation
     if (empty($_SESSION)) {
-        if ($has_cookie && !($flags & ENSURE_SESSION_REGENERATE_ID)) {
+        if ($has_cookie && ($flags & ENSURE_SESSION_REGENERATE_ID) === 0) {
             session_regenerate_id();
         }
-        $_SESSION["testsession"] = false;
         $_SESSION["v"] = 2;
+        $_SESSION["testsession"] = [$_SERVER["REMOTE_ADDR"], caller_landmark()];
     } else if (Conf::$main->_session_handler
                && is_callable([Conf::$main->_session_handler, "refresh_cookie"])) {
         call_user_func([Conf::$main->_session_handler, "refresh_cookie"], $sn, session_id());

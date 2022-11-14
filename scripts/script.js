@@ -363,10 +363,28 @@ function check_message_list(data, options) {
             log_jserror(options.url + ": bad message_list");
             data.message_list = [{message: "<0>Internal error", status: 2}];
         } else if (data.error && !data.message_list) {
+            log_jserror(options.url + ": `error` obsolete"); // XXX backward compat
             data.message_list = [{message: "<0>" + data.error, status: 2}];
         } else if (data.warning) {
             log_jserror(options.url + ": `warning` obsolete"); // XXX backward compat
         }
+    }
+}
+
+function check_sessioninfo(data, options) {
+    if (siteinfo.user.cid == data.sessioninfo.cid) {
+        siteinfo.postvalue = data.sessioninfo.postvalue;
+        $("form").each(function () {
+            var m = /^([^#]*[&?;]post=)([^&?;#]*)/.exec(this.action);
+            if (m) {
+                this.action = m[1].concat(siteinfo.postvalue, this.action.substring(m[0].length));
+            }
+            this.elements.post && (this.elements.post.value = siteinfo.postvalue);
+        });
+    } else {
+        $("form").each(function () {
+            this.elements.sessionreport && (this.elements.sessionreport = options.url.concat(": bad response ", JSON.stringify(data.sessioninfo), ", current user ", JSON.stringify(siteinfo.user)));
+        });
     }
 }
 
@@ -411,19 +429,9 @@ $.ajaxPrefilter(function (options) {
         check_message_list(data, options);
         if (typeof data === "object"
             && data.sessioninfo
-            && siteinfo.user.cid == data.sessioninfo.cid
             && options.url.startsWith(siteinfo.site_relative)
-            && (siteinfo.site_relative !== "" || !/^[a-z]+:|^\//.test(options.url))) {
-            siteinfo.postvalue = data.sessioninfo.postvalue;
-            $("form").each(function () {
-                var m = /^([^#]*[&?;]post=)([^&?;#]*)/.exec(this.action);
-                if (m) {
-                    this.action = m[1].concat(siteinfo.postvalue, this.action.substring(m[0].length));
-                }
-                if (this.elements.post) {
-                    this.elements.post.value = siteinfo.postvalue;
-                }
-            })
+            && (siteinfo.site_relative !== "" || !/^(?:[a-z][-a-z0-9+.]*:|\/|\.\.(?:\/|\z))/i.test(options.url))) {
+            check_sessioninfo(data, options);
         }
     }
     function onerror(jqxhr, status, errormsg) {

@@ -186,7 +186,6 @@
     {   "name": "resetpassword", "allow_disabled": true   },
     {
         "name": "resetpassword/request", "order": 100,
-        "allow_any_request": true,
         "request_function": "*Signin_Page::reset_request"
     },
     [   "resetpassword/head", 1000, "Signin_Page::print_reset_head"   ],

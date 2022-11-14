@@ -141,7 +141,6 @@ class LoginHelper {
         // store authentication
         ensure_session(ENSURE_SESSION_REGENERATE_ID);
         self::change_session_users([$xuser->email => 1]);
-        $_SESSION["testsession"] = true;
 
         // activate
         $user = $xuser->activate($qreq);
@@ -203,10 +202,9 @@ class LoginHelper {
 
     static function check_postlogin(Contact $user, Qrequest $qreq) {
         // Check for the cookie
-        if (!isset($_SESSION["testsession"]) || !$_SESSION["testsession"]) {
+        if (!isset($_SESSION["v"])) {
             $user->conf->feedback_msg([
-                MessageItem::error("<0>Cookies required"),
-                MessageItem::inform("<0>You appear to have disabled cookies in your browser. This site requires cookies to function.")
+                MessageItem::error($user->conf->_id("session_failed_error", ""))
             ]);
             return;
         }
