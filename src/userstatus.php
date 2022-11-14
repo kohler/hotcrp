@@ -111,7 +111,6 @@ class UserStatus extends MessageSet {
         if ($user !== $this->user) {
             $this->user = $user;
             $auth_user = $this->viewer->base_user();
-            assert($auth_user === $this->viewer || $auth_user === Contact::$base_auth_user);
             $this->is_auth_user = $auth_user->has_email()
                 && strcasecmp($auth_user->email, $user->email) === 0;
             if ($this->_cs) {

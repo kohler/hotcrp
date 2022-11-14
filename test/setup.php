@@ -934,6 +934,27 @@ class TestRunner {
         }
     }
 
+    /** @param Contact $user
+     * @param string $urlpart
+     * @param 'GET'|'PUT' $method
+     * @return Qrequest */
+    static function make_qreq($user, $urlpart, $method = "GET") {
+        $qreq = (new Qrequest($method))->set_user($user)->set_navigation(Navigation::get());
+        if (preg_match('/\A\/?([^\/?#]+)(\/.*?|)(?:\?|(?=#)|\z)([^#]*)(?:#.*|)\z/', $urlpart, $m)) {
+            $qreq->set_page($m[1], $m[2]);
+            if ($m[3] !== "") {
+                preg_match_all('/([^&;=]*)=([^&;]*)/', $m[3], $n, PREG_SET_ORDER);
+                foreach ($n as $x) {
+                    $qreq->set_req(urldecode($x[1]), urldecode($x[2]));
+                }
+            }
+        }
+        if ($method === "POST") {
+            $qreq->approve_token();
+        }
+        return $qreq;
+    }
+
     /** @param string $url */
     static function set_navigation_base($url) {
         Navigation::analyze();

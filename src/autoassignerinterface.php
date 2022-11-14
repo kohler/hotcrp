@@ -372,7 +372,7 @@ class AutoassignerInterface extends MessageSet {
                     '</div></form>',
                     Ht::unstash_script('$("#autoassign-form .btn-primary").addClass("hidden").click()');
             }
-            $this->conf->footer();
+            $this->qreq->print_footer();
             return true;
         }
     }
@@ -381,7 +381,7 @@ class AutoassignerInterface extends MessageSet {
         $assignments = explode("\n", $this->qreq->assignment);
         $profile_json = json_decode($this->qreq->profile_json ?? "null");
         $this->print_result_html($assignments, $profile_json);
-        $this->conf->footer();
+        $this->qreq->print_footer();
         exit;
     }
 }

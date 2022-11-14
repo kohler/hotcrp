@@ -440,7 +440,7 @@ class Log_Page {
      * @param int $page */
     function print_page($leg, $page) {
         $conf = $this->conf;
-        $conf->header("Log", "actionlog");
+        $this->qreq->print_header("Log", "actionlog");
 
         $trs = $leg->page_rows($page);
 
@@ -487,7 +487,7 @@ class Log_Page {
             echo "No records\n";
         }
 
-        $conf->footer();
+        $this->qreq->print_footer();
     }
 
     /** @param LogEntry $row
@@ -592,7 +592,7 @@ class Log_Page {
         // clean request
         unset($qreq->forceShow, $_GET["forceShow"], $_POST["forceShow"]);
 
-        if ($qreq->page === "earliest") {
+        if ($qreq->page === "earliest") { // NB `page` URL PARAMETER
             $page = null;
         } else {
             $page = max(cvtint($qreq->page, -1), 1);

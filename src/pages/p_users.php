@@ -475,7 +475,9 @@ class Users_Page {
         } else {
             $title = "Users";
         }
-        $this->conf->header($title, "users", ["action_bar" => actionBar("account")]);
+        $this->qreq->print_header($title, "users", [
+            "action_bar" => QuicklinksRenderer::make($this->qreq, "account")
+        ]);
 
 
         $pl = new ContactList($this->viewer, true, $this->qreq);
@@ -514,7 +516,7 @@ class Users_Page {
             echo Ht::unstash(), $pl_text;
         }
 
-        $this->conf->footer();
+        $this->qreq->print_footer();
     }
 
 

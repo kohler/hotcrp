@@ -289,7 +289,7 @@ class Autoassign_Page {
         // start page
         $conf = $this->conf;
         $qreq = $this->qreq;
-        $conf->header("Assignments", "autoassign", ["subtitle" => "Automatic"]);
+        $qreq->print_header("Assignments", "autoassign", ["subtitle" => "Automatic"]);
         echo '<nav class="papmodes mb-5 clearfix"><ul>',
             '<li class="papmode active"><a href="', $conf->hoturl("autoassign"), '">Automatic</a></li>',
             '<li class="papmode"><a href="', $conf->hoturl("manualassign"), '">Manual</a></li>',
@@ -465,7 +465,7 @@ class Autoassign_Page {
 
         // done
         echo "</div></form>";
-        $conf->footer();
+        $qreq->print_footer();
     }
 
     function run() {

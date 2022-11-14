@@ -177,7 +177,7 @@ class Revpref_ListAction extends ListAction {
             $aset->execute(true);
             return new Redirection($conf->site_referrer_url($qreq));
         } else {
-            $conf->header("Review preferences", "revpref");
+            $qreq->print_header("Review preferences", "revpref");
             $conf->feedback_msg($aset->message_list());
 
             echo Ht::form($conf->hoturl("=reviewprefs", ["reviewer" => $reviewer_arg]), ["class" => "alert need-unload-protection"]),
@@ -193,7 +193,7 @@ class Revpref_ListAction extends ListAction {
                 Ht::submit("Apply changes", ["class" => "btn-success"]),
                 Ht::submit("cancel", "Cancel", ["formnovalidate" => true])
             ], ["class" => "aab aabig"]), "</form>\n";
-            $conf->footer();
+            $qreq->print_footer();
             exit;
         }
     }

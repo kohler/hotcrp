@@ -160,7 +160,7 @@ class PaperTable {
      * @param Qrequest $qreq
      * @param bool $error */
     static function print_header($paperTable, $qreq, $error = false) {
-        $conf = $paperTable ? $paperTable->conf : Conf::$main;
+        $conf = $paperTable ? $paperTable->conf : $qreq->conf();
         $prow = $paperTable ? $paperTable->prow : null;
         $format = 0;
 
@@ -249,8 +249,8 @@ class PaperTable {
             $body_class .= " fold5c";
         }
 
-        $conf->header($title, $id, [
-            "action_bar" => actionBar($amode, $qreq),
+        $qreq->print_header($title, $id, [
+            "action_bar" => QuicklinksRenderer::make($qreq, $amode),
             "title_div" => $t,
             "body_class" => $body_class,
             "paperId" => $qreq->paperId,
@@ -262,12 +262,12 @@ class PaperTable {
     }
 
     private function initialize_list() {
-        assert(!$this->conf->has_active_list());
+        assert(!$this->qreq->has_active_list());
         $list = $this->find_session_list();
-        $this->conf->set_active_list($list);
+        $this->qreq->set_active_list($list);
 
         $this->matchPreg = [];
-        if (($list = $this->conf->active_list())
+        if (($list = $this->qreq->active_list())
             && $list->highlight
             && preg_match('/\Ap\/([^\/]*)\/([^\/]*)(?:\/|\z)/', $list->listid, $m)) {
             $hlquery = is_string($list->highlight) ? $list->highlight : urldecode($m[2]);

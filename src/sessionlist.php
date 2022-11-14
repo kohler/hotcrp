@@ -315,9 +315,10 @@ class SessionList {
         return null;
     }
 
-    /** @return ?string */
-    function full_site_relative_url() {
-        $args = Conf::$hoturl_defaults ? : [];
+    /** @param Contact $user
+     * @return ?string */
+    function full_site_relative_url($user) {
+        $args = $user->hoturl_defaults();
         if ($this->url !== null) {
             $url = $this->url;
         } else if ($this->urlbase !== null) {

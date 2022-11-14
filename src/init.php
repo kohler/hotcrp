@@ -242,7 +242,7 @@ function initialize_request($kwarg = null) {
     }
 
     // collect $qreq
-    $qreq = Qrequest::make_global();
+    $qreq = Qrequest::make_global($nav);
 
     // check method
     if ($qreq->method() !== "GET"
@@ -271,6 +271,7 @@ function initialize_request($kwarg = null) {
         && ($token = Bearer_Capability::header_token($conf, $_SERVER["HTTP_AUTHORIZATION"]))
         && ($user = $token->local_user())) {
         $conf->disable_session();
+        $qreq->set_user($user);
         $qreq->approve_token();
         $user->set_bearer_authorized();
         Contact::set_main_user($user);
@@ -355,6 +356,7 @@ function initialize_request($kwarg = null) {
     }
     $muser = $muser->activate($qreq, true);
     Contact::set_main_user($muser);
+    $qreq->set_user($muser);
 
     // author view capability documents should not be indexed
     if (!$muser->email

@@ -177,7 +177,7 @@ class OAuth_Page {
         } else {
             $oap->start();
         }
-        $user->conf->header("Authentication", "oauth", ["action_bar" => false]);
-        $user->conf->footer();
+        $qreq->print_header("Authentication", "oauth", ["action_bar" => ""]);
+        $qreq->print_footer();
     }
 }

@@ -74,7 +74,7 @@ class MailSender {
             "</form>",
             Ht::unstash_script('$("#mailform").submit()'),
             Ht::msg("About to send mail.", 1);
-        $user->conf->footer();
+        $qreq->print_footer();
         exit;
     }
 
@@ -462,7 +462,7 @@ class MailSender {
         }
         echo "</form>";
         echo Ht::unstash_script("hotcrp.fold('mail', null);");
-        $this->conf->footer();
+        $this->qreq->print_footer();
         exit;
     }
 }

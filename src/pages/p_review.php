@@ -49,14 +49,14 @@ class Review_Page {
         $this->print_header(true);
         Ht::stash_script("hotcrp.shortcut().add()");
         $this->conf->feedback_msg(...$mls);
-        $this->conf->footer();
+        $this->qreq->print_footer();
         throw new PageCompletion;
     }
 
     function load_prow() {
         // determine whether request names a paper
         try {
-            $pr = new PaperRequest($this->user, $this->qreq, true);
+            $pr = new PaperRequest($this->qreq, true);
             $this->prow = $this->conf->paper = $pr->prow;
             if ($pr->rrow) {
                 $this->rrow = $pr->rrow;
@@ -359,7 +359,7 @@ class Review_Page {
         }
 
         echo "</article>\n";
-        $this->conf->footer();
+        $this->qreq->print_footer();
     }
 
     static function go(Contact $user, Qrequest $qreq) {

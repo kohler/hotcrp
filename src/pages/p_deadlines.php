@@ -10,7 +10,7 @@ class Deadlines_Page {
             "</dt>\n<dd>", $conf->_($description, $arg), "</dd>";
     }
 
-    static function go(Contact $user) {
+    static function go(Contact $user, Qrequest $qreq) {
         if ($user->contactId && $user->is_disabled()) {
             $user = Contact::make_email($user->conf, $user->email);
         }
@@ -19,7 +19,7 @@ class Deadlines_Page {
         $conf = $user->conf;
         $dl = $user->my_deadlines();
 
-        $conf->header("Deadlines", "deadlines");
+        $qreq->print_header("Deadlines", "deadlines");
 
         if ($user->privChair) {
             echo "<p>As PC chair, you can <a href=\"", $conf->hoturl("settings"), "\">change the deadlines</a>.</p>\n";
@@ -127,6 +127,6 @@ class Deadlines_Page {
         }
 
         echo "</table>\n";
-        $conf->footer();
+        $qreq->print_footer();
     }
 }

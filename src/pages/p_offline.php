@@ -96,7 +96,7 @@ class Offline_Page {
 
     function print() {
         $conf = $this->conf;
-        $conf->header("Offline reviewing", "offline");
+        $this->qreq->print_header("Offline reviewing", "offline");
 
         echo '<p>Use this page to download review forms, or to upload review forms you’ve already filled out.</p>';
         if (!$this->user->can_clickthrough("review")) {
@@ -157,7 +157,7 @@ class Offline_Page {
                 '</form></fieldset></div>';
         }
 
-        $conf->footer();
+        $this->qreq->print_footer();
     }
 
     static function go(Contact $user, Qrequest $qreq) {

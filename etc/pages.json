@@ -1,6 +1,6 @@
 [
     {
-        "name": "__footer", "print_function": "*Conf::footer"
+        "name": "__footer", "print_function": "Qrequest::print_footer_hook"
     },
 
 

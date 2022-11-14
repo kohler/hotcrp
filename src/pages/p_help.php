@@ -39,7 +39,7 @@ class Help_Page {
         }
         $topicj = $help_topics->get($topic);
 
-        $conf->header("Help", "help", ["title_div" => '<hr class="c">', "body_class" => "leftmenu"]);
+        $qreq->print_header("Help", "help", ["title_div" => '<hr class="c">', "body_class" => "leftmenu"]);
 
         $hth = new HelpRenderer($help_topics, $user);
 
@@ -71,6 +71,6 @@ class Help_Page {
         $hth->print_group($topic, true);
         echo "</main>\n";
 
-        $conf->footer();
+        $qreq->print_footer();
     }
 }

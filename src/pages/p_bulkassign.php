@@ -141,7 +141,7 @@ class BulkAssign_Page {
             Ht::submit("cancel", "Cancel")
         ], ["class" => "aab aabig"]),
             "</form>\n";
-        $this->conf->footer();
+        $this->qreq->print_footer();
         return true;
     }
 
@@ -195,7 +195,7 @@ secondary review for submission #2:</p>
 
 
         // header
-        $conf->header("Assignments", "bulkassign", ["subtitle" => "Bulk update"]);
+        $qreq->print_header("Assignments", "bulkassign", ["subtitle" => "Bulk update"]);
         echo '<nav class="papmodes mb-5 clearfix"><ul>',
             '<li class="papmode"><a href="', $conf->hoturl("autoassign"), '">Automatic</a></li>',
             '<li class="papmode"><a href="', $conf->hoturl("manualassign"), '">Manual</a></li>',
@@ -315,7 +315,7 @@ hotcrp.foldup.call(this,null,{f:!/^(?:primary|secondary|(?:pc|meta)?review)$/.te
         $this->print_instructions();
 
         Ht::stash_script('$("#tsel").trigger("change")');
-        $conf->footer();
+        $qreq->print_footer();
     }
 
     static function go(Contact $user, Qrequest $qreq) {

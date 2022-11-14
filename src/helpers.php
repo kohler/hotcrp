@@ -341,43 +341,6 @@ function actas_link($userlike) {
 }
 
 
-function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
-    if ($listtype == "u") {
-        $result = Dbl::ql("select email from ContactInfo where contactId=?", $id);
-        $row = $result->fetch_row();
-        Dbl::free($result);
-        $paperText = htmlspecialchars($row ? $row[0] : $id);
-        $urlrest["u"] = urlencode((string) $id);
-    } else {
-        $paperText = "#$id";
-        $urlrest["p"] = $id;
-    }
-    return "<a id=\"quicklink-" . ($isprev ? "prev" : "next")
-        . "\" class=\"ulh pnum\" href=\"" . Conf::$main->hoturl($baseUrl, $urlrest) . "\">"
-        . ($isprev ? Icons::ui_linkarrow(3) : "")
-        . $paperText
-        . ($isprev ? "" : Icons::ui_linkarrow(1))
-        . "</a>";
-}
-
-function goPaperForm($baseUrl = null, $args = []) {
-    global $Me;
-    if ($Me->is_empty()) {
-        return "";
-    }
-    $x = Ht::form(Conf::$main->hoturl($baseUrl ? : "paper"), ["method" => "get", "class" => "gopaper"]);
-    if ($baseUrl == "profile") {
-        $x .= Ht::entry("u", "", ["id" => "quicklink-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow", "spellcheck" => false]);
-    } else {
-        $x .= Ht::entry("q", "", ["id" => "quicklink-search", "size" => 10, "placeholder" => "(All)", "aria-label" => "Search", "class" => "papersearch need-suggest need-autogrow", "spellcheck" => false]);
-    }
-    foreach ($args as $k => $v) {
-        $x .= Ht::hidden($k, $v);
-    }
-    $x .= "&nbsp; " . Ht::submit("Search") . "</form>";
-    return $x;
-}
-
 function clean_tempdirs() {
     $dir = sys_get_temp_dir() ? : "/";
     while (substr($dir, -1) === "/") {
@@ -563,73 +526,6 @@ function unparse_byte_size_binary($n) {
     } else {
         return "0B";
     }
-}
-
-/** @param ?string $mode
- * @param ?Qrequest $qreq
- * @return string */
-function actionBar($mode = null, $qreq = null) {
-    global $Me;
-    if ($Me->is_disabled()) {
-        return "";
-    }
-
-    $xmode = [];
-    $listtype = "p";
-
-    $goBase = "paper";
-    if ($mode === "assign") {
-        $goBase = "assign";
-    } else if ($mode === "re") {
-        $goBase = "review";
-    } else if ($mode === "account") {
-        $listtype = "u";
-        if ($Me->privChair) {
-            $goBase = "profile";
-            $xmode["search"] = 1;
-        }
-    } else if ($mode === "edit") {
-        $xmode["m"] = "edit";
-    } else if ($qreq && ($qreq->m || $qreq->mode)) {
-        $xmode["m"] = $qreq->m ? : $qreq->mode;
-    }
-
-    // quicklinks
-    $x = "";
-    if (($list = Conf::$main->active_list())) {
-        $x .= '<td class="vbar quicklinks"';
-        if ($xmode || $goBase !== "paper") {
-            $x .= ' data-link-params="' . htmlspecialchars(json_encode_browser(["page" => $goBase] + $xmode)) . '"';
-        }
-        $x .= '>';
-        if (($prev = $list->neighbor_id(-1)) !== false) {
-            $x .= _one_quicklink($prev, $goBase, $xmode, $listtype, true) . " ";
-        }
-        if ($list->description) {
-            $d = htmlspecialchars($list->description);
-            $url = $list->full_site_relative_url();
-            if ($url) {
-                $x .= '<a id="quicklink-list" class="ulh" href="' . htmlspecialchars(Navigation::siteurl() . $url) . "\">{$d}</a>";
-            } else {
-                $x .= "<span id=\"quicklink-list\">{$d}</span>";
-            }
-        }
-        if (($next = $list->neighbor_id(1)) !== false) {
-            $x .= " " . _one_quicklink($next, $goBase, $xmode, $listtype, false);
-        }
-        $x .= '</td>';
-
-        if ($Me->is_track_manager() && $listtype === "p") {
-            $x .= '<td id="tracker-connect" class="vbar"><a id="tracker-connect-btn" class="ui js-tracker tbtn need-tooltip" href="" aria-label="Start meeting tracker">&#9759;</a><td>';
-        }
-    }
-
-    // paper search form
-    if ($Me->isPC || $Me->is_reviewer() || $Me->is_author()) {
-        $x .= '<td class="vbar gopaper">' . goPaperForm($goBase, $xmode) . '</td>';
-    }
-
-    return '<table class="vbar"><tr>' . $x . '</tr></table>';
 }
 
 /** @param string $t

@@ -387,6 +387,7 @@ src/paperstatus.php
 src/papertable.php
 src/paperrank.php
 src/permissionproblem.php
+src/quicklinksrenderer.php
 src/responseround.php
 src/reviewdiffinfo.php
 src/reviewfield.php

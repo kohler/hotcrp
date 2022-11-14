@@ -1113,28 +1113,28 @@ Phil Porras.");
     }
 
     function test_paper_page_redirects() {
-        $pr = PaperRequest::make($this->u_estrin, Qrequest::make_url("/paper/0123"), false);
+        $pr = PaperRequest::make(TestRunner::make_qreq($this->u_estrin, "/paper/0123"), false);
         xassert($pr instanceof Redirection);
         xassert_eqq($pr->url, "/paper/123");
-        $pr = PaperRequest::make($this->u_estrin, Qrequest::make_url("/paper?p=0123"), false);
+        $pr = PaperRequest::make(TestRunner::make_qreq($this->u_estrin, "/paper?p=0123"), false);
         xassert($pr instanceof Redirection);
         xassert_eqq($pr->url, "/paper/123");
-        $pr = PaperRequest::make($this->u_estrin, Qrequest::make_url("/review/0123"), false);
+        $pr = PaperRequest::make(TestRunner::make_qreq($this->u_estrin, "/review/0123"), false);
         xassert($pr instanceof Redirection);
         xassert_eqq($pr->url, "/review/123");
-        $pr = PaperRequest::make($this->u_estrin, Qrequest::make_url("/review?p=0123"), false);
+        $pr = PaperRequest::make(TestRunner::make_qreq($this->u_estrin, "/review?p=0123"), false);
         xassert($pr instanceof Redirection);
         xassert_eqq($pr->url, "/review/123");
-        $pr = PaperRequest::make($this->u_estrin, Qrequest::make_url("/paper/3"), false);
+        $pr = PaperRequest::make(TestRunner::make_qreq($this->u_estrin, "/paper/3"), false);
         xassert($pr instanceof PaperRequest);
         $estrin_14_rid = $this->conf->checked_paper_by_id(14)->checked_review_by_user($this->u_estrin)->reviewId;
-        $pr = PaperRequest::make($this->u_estrin, Qrequest::make_url("/paper?r={$estrin_14_rid}"), false);
+        $pr = PaperRequest::make(TestRunner::make_qreq($this->u_estrin, "/paper?r={$estrin_14_rid}"), false);
         xassert($pr instanceof Redirection);
         xassert_eqq($pr->url, "/paper/14?r={$estrin_14_rid}");
-        $pr = PaperRequest::make($this->u_varghese, Qrequest::make_url("/paper?r={$estrin_14_rid}"), false);
+        $pr = PaperRequest::make(TestRunner::make_qreq($this->u_varghese, "/paper?r={$estrin_14_rid}"), false);
         xassert($pr instanceof Redirection);
         xassert_eqq($pr->url, "/paper/14?r={$estrin_14_rid}");
-        $pr = PaperRequest::make($this->u_nobody, Qrequest::make_url("/paper?r={$estrin_14_rid}"), false);
+        $pr = PaperRequest::make(TestRunner::make_qreq($this->u_nobody, "/paper?r={$estrin_14_rid}"), false);
         xassert($pr instanceof PermissionProblem);
         xassert($pr["missingId"]);
     }

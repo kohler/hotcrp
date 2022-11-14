@@ -12,7 +12,7 @@ class Signin_Page {
 
     static private function bad_post_error(Contact $user, Qrequest $qreq, $action) {
         $sid = session_id();
-        $msg = "{$user->conf->dbname}: ignoring unvalidated $action"
+        $msg = "{$user->conf->dbname}: ignoring unvalidated {$action}"
             . ", sid=" . ($sid === "" ? ".empty" : $sid);
         if ($qreq->email) {
             $msg .= ", email=" . $qreq->email;
@@ -112,7 +112,7 @@ class Signin_Page {
     /** @param ComponentSet $cs */
     static function print_signin_head(Contact $user, Qrequest $qreq, $cs) {
         ensure_session();
-        $user->conf->header("Sign in", "home");
+        $qreq->print_header("Sign in", "home");
         $cs->push_print_cleanup("__footer");
         if ($qreq->is_get() && $qreq->redirect) {
             $user->conf->error_msg("<0>You need to sign in to access that page");
@@ -154,7 +154,7 @@ class Signin_Page {
 
     static function print_signin_form_description(Contact $user, Qrequest $qreq) {
         if (($su = Contact::session_users())) {
-            $nav = Navigation::get();
+            $nav = $qreq->navigation();
             $links = [];
             foreach ($su as $i => $email) {
                 $usuf = count($su) > 1 ? "u/{$i}/" : "";
@@ -244,7 +244,7 @@ class Signin_Page {
     /** @param ComponentSet $cs */
     static function print_signout_head(Contact $user, Qrequest $qreq, $cs) {
         ensure_session();
-        $user->conf->header("Sign out", "signout", ["action_bar" => false]);
+        $qreq->print_header("Sign out", "signout", ["action_bar" => ""]);
         $cs->push_print_cleanup("__footer");
     }
     /** @param ComponentSet $cs */
@@ -340,7 +340,7 @@ class Signin_Page {
     /** @param ComponentSet $cs */
     static function print_newaccount_head(Contact $user, Qrequest $qreq, $cs) {
         ensure_session();
-        $user->conf->header("New account", "newaccount", ["action_bar" => false]);
+        $qreq->print_header("New account", "newaccount", ["action_bar" => ""]);
         $cs->push_print_cleanup("__footer");
         if (!$user->conf->allow_user_self_register()) {
             $user->conf->error_msg("<0>User self-registration is disabled on this site.");
@@ -398,7 +398,7 @@ class Signin_Page {
     }
     static function print_forgot_head(Contact $user, Qrequest $qreq, $cs) {
         ensure_session();
-        $user->conf->header("Forgot password", "resetpassword", ["action_bar" => false]);
+        $qreq->print_header("Forgot password", "resetpassword", ["action_bar" => ""]);
         $cs->push_print_cleanup("__footer");
         if ($user->conf->external_login()) {
             return $cs->print("forgotpassword/__externallogin");
@@ -513,7 +513,7 @@ class Signin_Page {
     }
     static function print_reset_head(Contact $user, Qrequest $qreq, $cs) {
         ensure_session();
-        $user->conf->header("Reset password", "resetpassword", ["action_bar" => false]);
+        $qreq->print_header("Reset password", "resetpassword", ["action_bar" => ""]);
         $cs->push_print_cleanup("__footer");
         if ($user->conf->external_login()) {
             return $cs->print("forgotpassword/__externallogin");
@@ -521,7 +521,7 @@ class Signin_Page {
     }
     function print_reset_body(Contact $user, Qrequest $qreq, $cs) {
         echo '<div class="homegrp" id="homeaccount">',
-            Ht::form($user->conf->hoturl("resetpassword"), ["class" => "compact-form"]),
+            Ht::form($user->conf->hoturl("resetpassword"), ["class" => "compact-form uin ui-submit js-signin"]),
             Ht::hidden("post", post_value());
         if ($this->_reset_user) {
             echo Ht::hidden("resetcap", $this->_reset_tokstr);

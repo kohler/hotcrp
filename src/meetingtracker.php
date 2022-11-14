@@ -709,11 +709,7 @@ class MeetingTracker_Config implements JsonSerializable {
         $tc->trackerid = $trackerid;
         $tc->listid = $xlist->listid;
         $tc->ids = $xlist->ids;
-        if ($xlist instanceof SessionList) {
-            $tc->url = $xlist->full_site_relative_url();
-        } else {
-            $tc->url = $xlist->url;
-        }
+        $tc->url = $xlist->full_site_relative_url($user);
         $tc->description = $xlist->description;
         $tc->start_at = $start_at;
         $tc->position_at = $position_at;

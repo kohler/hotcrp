@@ -323,7 +323,7 @@ class Search_Page {
         }
 
         // echo form
-        $this->conf->header("Search", "search", [
+        $qreq->print_header("Search", "search", [
             "body_class" => $pl_text === null ? "want-hash-focus" : null
         ]);
         echo Ht::unstash(), // need the JS right away
@@ -401,7 +401,7 @@ class Search_Page {
             echo '<hr class="g">';
         }
 
-        $this->conf->footer();
+        $qreq->print_footer();
     }
 
 
@@ -436,8 +436,9 @@ class Search_Page {
 
         // paper group
         if (!PaperSearch::viewable_limits($user, $qreq->t)) {
-            $conf->header("Search", "search");
+            $qreq->print_header("Search", "search");
             $conf->error_msg("<0>You aren’t allowed to search submissions");
+            $qreq->print_footer();
             exit;
         }
 

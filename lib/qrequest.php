@@ -3,7 +3,16 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {
-    // NB see also count()
+    /** @var ?Conf */
+    private $_conf;
+    /** @var ?Contact */
+    private $_user;
+    /** @var ?NavigationState */
+    private $_navigation;
+    /** @var ?string */
+    private $_page;
+    /** @var ?string */
+    private $_path;
     /** @var string */
     private $_method;
     /** @var array<string,string> */
@@ -18,11 +27,9 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @var bool */
     private $_post_empty = false;
     /** @var ?string */
-    private $_page;
-    /** @var ?string */
-    private $_path;
-    /** @var ?string */
     private $_referrer;
+    /** @var null|false|SessionList */
+    private $_active_list = false;
 
     /** @var Qrequest */
     static public $main_request;
@@ -35,31 +42,16 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         $this->_method = $method;
         $this->_v = $data;
     }
-    /** @param Qrequest $qreq
-     * @return Qrequest */
-    static function empty_clone($qreq) {
-        $qreq2 = new Qrequest($qreq->_method);
-        return $qreq2->set_page($qreq->_page, $qreq->_path);
+
+    /** @param NavigationState $nav
+     * @return $this */
+    function set_navigation($nav) {
+        $this->_navigation = $nav;
+        $this->_page = $nav->page;
+        $this->_path = $nav->path;
+        return $this;
     }
-    /** @param string $urlpart
-     * @param ?string $method
-     * @return Qrequest */
-    static function make_url($urlpart, $method = "GET") {
-        $qreq = new Qrequest($method);
-        if (preg_match('/\A\/?([^\/?#]+)(\/.*?|)(?:\?|(?=#)|\z)([^#]*)(?:#.*|)\z/', $urlpart, $m)) {
-            $qreq->set_page($m[1], $m[2]);
-            if ($m[3] !== "") {
-                preg_match_all('/([^&;=]*)=([^&;]*)/', $m[3], $n, PREG_SET_ORDER);
-                foreach ($n as $x) {
-                    $qreq->set_req(urldecode($x[1]), urldecode($x[2]));
-                }
-            }
-        }
-        if ($method === "POST") {
-            $qreq->approve_token();
-        }
-        return $qreq;
-    }
+
     /** @param string $page
      * @param ?string $path
      * @return $this */
@@ -68,12 +60,31 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         $this->_path = $path;
         return $this;
     }
+
     /** @param ?string $referrer
      * @return $this */
     function set_referrer($referrer) {
         $this->_referrer = $referrer;
         return $this;
     }
+
+    /** @param Conf $conf
+     * @return $this */
+    function set_conf($conf) {
+        $this->_conf = $conf;
+        return $this;
+    }
+
+    /** @param ?Contact $user
+     * @return $this */
+    function set_user($user) {
+        if ($user) {
+            $this->_conf = $user->conf;
+        }
+        $this->_user = $user;
+        return $this;
+    }
+
     /** @return string */
     function method() {
         return $this->_method;
@@ -90,6 +101,20 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function is_head() {
         return $this->_method === "HEAD";
     }
+
+    /** @return Conf */
+    function conf() {
+        return $this->_conf;
+    }
+    /** @return ?Contact */
+    function user() {
+        return $this->_user;
+    }
+    /** @return NavigationState */
+    function navigation() {
+        return $this->_navigation;
+    }
+
     /** @return ?string */
     function page() {
         return $this->_page;
@@ -104,12 +129,13 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         if ((string) $this->_path !== "") {
             $p = explode("/", substr($this->_path, 1));
             if ($n + 1 < count($p)
-                || ($n + 1 == count($p) && $p[$n] !== "")) {
+                || ($n + 1 === count($p) && $p[$n] !== "")) {
                 return $decoded ? urldecode($p[$n]) : $p[$n];
             }
         }
         return null;
     }
+
     /** @return ?string */
     function referrer() {
         return $this->_referrer;
@@ -338,11 +364,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     /** @param string $name */
     function annex($name) {
-        $x = null;
-        if (array_key_exists($name, $this->_annexes)) {
-            $x = $this->_annexes[$name];
-        }
-        return $x;
+        return $this->_annexes[$name] ?? null;
     }
     /** @template T
      * @param string $name
@@ -402,10 +424,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
     }
 
-    static function make_global() : Qrequest {
+    /** @param NavigationState $nav */
+    static function make_global($nav) : Qrequest {
         global $Qreq;
         $qreq = new Qrequest($_SERVER["REQUEST_METHOD"]);
-        $qreq->set_page(Navigation::page(), Navigation::path());
+        $qreq->set_navigation($nav);
         foreach ($_GET as $k => $v) {
             $qreq->set_req($k, $v);
         }
@@ -458,6 +481,60 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         Qrequest::$main_request = $Qreq = $qreq;
         return $qreq;
+    }
+
+
+    /** @param string|list<string> $title
+     * @param string $id
+     * @param array{paperId?:int|string,body_class?:string,action_bar?:string,title_div?:string,subtitle?:string,save_messages?:bool} $extra */
+    function print_header($title, $id, $extra = []) {
+        if (!$this->_conf->_header_printed) {
+            $this->_conf->print_head_tag($this, $title, $extra);
+            $this->_conf->print_body_entry($this, $title, $id, $extra);
+        }
+    }
+
+    function print_footer() {
+        echo "<hr class=\"c\"></div>", // class='body'
+            '<div id="footer">',
+            $this->_conf->opt("extraFooter") ?? "",
+            '<a class="noq" href="https://hotcrp.com/">HotCRP</a>';
+        if (!$this->_conf->opt("noFooterVersion")) {
+            if ($this->_user->privChair) {
+                echo " v", HOTCRP_VERSION, " [";
+                if (($git_data = Conf::git_status())
+                    && $git_data[0] !== $git_data[1]) {
+                    echo substr($git_data[0], 0, 7), "... ";
+                }
+                echo round(memory_get_peak_usage() / (1 << 20)), "M]";
+            } else {
+                echo "<!-- Version ", HOTCRP_VERSION, " -->";
+            }
+        }
+        echo '</div>', Ht::unstash(), "</body>\n</html>\n";
+    }
+
+    static function print_footer_hook(Contact $user, Qrequest $qreq) {
+        $qreq->print_footer();
+    }
+
+
+    /** @return bool */
+    function has_active_list() {
+        return !!$this->_active_list;
+    }
+
+    /** @return ?SessionList */
+    function active_list() {
+        if ($this->_active_list === false) {
+            $this->_active_list = null;
+        }
+        return $this->_active_list;
+    }
+
+    function set_active_list(SessionList $list = null) {
+        assert($this->_active_list === false);
+        $this->_active_list = $list;
     }
 }
 

@@ -22,9 +22,9 @@ class Home_Page {
 
     static function disabled_request(Contact $user, Qrequest $qreq) {
         if (!$user->is_empty() && $user->is_disabled()) {
-            $user->conf->header("Account disabled", "home", ["action_bar" => false]);
+            $qreq->print_header("Account disabled", "home", ["action_bar" => ""]);
             $user->conf->warning_msg("<0>Your account on this site has been disabled by a site administrator. Please contact them with questions.");
-            $user->conf->footer();
+            $qreq->print_footer();
             exit;
         }
     }
@@ -76,9 +76,9 @@ class Home_Page {
 
     function print_head(Contact $user, Qrequest $qreq, $gx) {
         if ($user->is_empty()) {
-            $user->conf->header("Sign in", "home");
+            $qreq->print_header("Sign in", "home");
         } else {
-            $user->conf->header("Home", "home");
+            $qreq->print_header("Home", "home");
         }
         if ($qreq->signedout && $user->is_empty()) {
             $user->conf->success_msg("<0>You have been signed out of the site");

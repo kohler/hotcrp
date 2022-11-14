@@ -57,7 +57,7 @@ class Graph_Page {
         }
 
         // Header and body
-        $user->conf->header("Graph", "graphbody", ["subtitle" => $gj ? htmlspecialchars($gj->title) : null]);
+        $qreq->print_header("Graph", "graphbody", ["subtitle" => $gj ? htmlspecialchars($gj->title) : null]);
 
         echo '<nav class="papmodes mb-5 clearfix"><ul>';
         foreach ($gtypes as $gjx) {
@@ -73,7 +73,7 @@ class Graph_Page {
             $user->conf->make_script_file("scripts/graph.js");
         $gx->print_group($gj->name, true);
 
-        $user->conf->footer();
+        $qreq->print_footer();
         return false;
     }
 }

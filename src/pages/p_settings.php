@@ -73,7 +73,7 @@ class Settings_Page {
         $sv = $this->sv;
         $conf = $this->conf;
 
-        $conf->header("Settings", "settings", [
+        $qreq->print_header("Settings", "settings", [
             "subtitle" => $sv->group_title($group),
             "title_div" => '<hr class="c">',
             "body_class" => "leftmenu",
@@ -125,7 +125,7 @@ class Settings_Page {
             '<hr class="c"></div></main></form>', "\n";
 
         Ht::stash_script('hiliter_children("#settingsform")');
-        $conf->footer();
+        $qreq->print_footer();
     }
 
     static function go(Contact $user, Qrequest $qreq) {

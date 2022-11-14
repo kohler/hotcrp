@@ -42,14 +42,14 @@ class Paper_Page {
         $this->print_header(true);
         Ht::stash_script("hotcrp.shortcut().add()");
         $this->conf->feedback_msg(...$mls);
-        $this->conf->footer();
+        $this->qreq->print_footer();
         throw new PageCompletion;
     }
 
     function load_prow() {
         // determine whether request names a paper
         try {
-            $pr = new PaperRequest($this->user, $this->qreq, false);
+            $pr = new PaperRequest($this->qreq, false);
             $this->prow = $this->conf->paper = $pr->prow;
         } catch (Redirection $redir) {
             assert(PaperRequest::simple_qreq($this->qreq));
@@ -467,7 +467,7 @@ class Paper_Page {
         }
 
         echo "</article>\n";
-        $this->conf->footer();
+        $this->qreq->print_footer();
     }
 
     static function go(Contact $user, Qrequest $qreq) {

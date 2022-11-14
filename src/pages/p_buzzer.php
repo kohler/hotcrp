@@ -79,7 +79,7 @@ class Buzzer_Page {
         }
 
 
-        $conf->header("Discussion status", "buzzer", ["action_bar" => false, "body_class" => "hide-tracker"]);
+        $qreq->print_header("Discussion status", "buzzer", ["action_bar" => "", "body_class" => "hide-tracker"]);
         $conf->stash_hotcrp_pc($user, true);
 
         echo '<div id="tracker-table" class="demargin mt-3"></div>',
@@ -133,6 +133,6 @@ class Buzzer_Page {
             Ht::unstash_script('hotcrp.start_buzzer_page(' . json_encode_browser($buzzer_status) . ')'),
             "</tr></table></form>\n";
 
-        $conf->footer();
+        $qreq->print_footer();
     }
 }

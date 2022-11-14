@@ -79,6 +79,7 @@ function set_session_name(Conf $conf) {
 const ENSURE_SESSION_ALLOW_EMPTY = 1;
 const ENSURE_SESSION_REGENERATE_ID = 2;
 
+/** @param int $flags */
 function ensure_session($flags = 0) {
     if (Conf::$test_mode) {
         return;
@@ -97,12 +98,12 @@ function ensure_session($flags = 0) {
 
     $sn = session_name();
     $has_cookie = isset($_COOKIE[$sn]);
-    if (!$has_cookie && ($flags & ENSURE_SESSION_ALLOW_EMPTY)) {
+    if (!$has_cookie && ($flags & ENSURE_SESSION_ALLOW_EMPTY) !== 0) {
         return;
     }
 
     $session_data = [];
-    if ($has_cookie && ($flags & ENSURE_SESSION_REGENERATE_ID)) {
+    if ($has_cookie && ($flags & ENSURE_SESSION_REGENERATE_ID) !== 0) {
         // choose new id, mark old session as deleted
         if (session_id() === "") {
             session_start();

@@ -424,6 +424,11 @@ class PaperList implements XtContext {
         return $this->search->message_set();
     }
 
+    /** @return string */
+    function siteurl() {
+        return $this->qreq->navigation()->siteurl();
+    }
+
     /** @param string $name */
     function add_column($name, PaperColumn $col) {
         $this->_columns_by_name[$name][] = $col;
@@ -1515,7 +1520,7 @@ class PaperList implements XtContext {
         }
 
         $sort_name = $fdef->sort_name();
-        $sort_url = htmlspecialchars(Navigation::siteurl() . $sort_url)
+        $sort_url = htmlspecialchars($this->siteurl() . $sort_url)
             . (strpos($sort_url, "?") ? "&amp;" : "?") . "sort=" . urlencode($sort_name);
 
         $sort_class = "pl_sort";
@@ -1836,7 +1841,7 @@ class PaperList implements XtContext {
                 $altqh = htmlspecialchars($altq);
                 $url = $this->search->url_site_relative_raw($altq);
                 if (substr($url, 0, 5) == "search") {
-                    $altqh = "<a href=\"" . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $altqh . "</a>";
+                    $altqh = "<a href=\"" . htmlspecialchars($this->siteurl() . $url) . "\">" . $altqh . "</a>";
                 }
                 return PaperListTableRender::make_error("No matches. Did you mean ‘{$altqh}’?");
             } else {
@@ -1903,7 +1908,7 @@ class PaperList implements XtContext {
             $this->table_attr["data-hotlist"] = $this->session_list_object()->info_string();
         }
         if ($this->_sortable && ($url = $this->search->url_site_relative_raw())) {
-            $url = Navigation::siteurl() . $url . (strpos($url, "?") ? "&" : "?") . "sort={sort}";
+            $url = $this->siteurl() . $url . (strpos($url, "?") ? "&" : "?") . "sort={sort}";
             $this->table_attr["data-sort-url-template"] = $url;
         }
 

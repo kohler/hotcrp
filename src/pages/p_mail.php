@@ -453,9 +453,9 @@ $(function () { $("#to").trigger("change"); })');
         $mp->request();
 
         if (isset($qreq->monreq)) {
-            $mp->conf->header("Monitor external reviews", "mail");
+            $qreq->print_header("Monitor external reviews", "mail");
         } else {
-            $mp->conf->header("Mail", "mail");
+            $qreq->print_header("Mail", "mail");
         }
 
         if (!$qreq->recheck
@@ -478,6 +478,6 @@ $(function () { $("#to").trigger("change"); })');
             $mp->print_form();
         }
 
-        $mp->conf->footer();
+        $qreq->print_footer();
     }
 }

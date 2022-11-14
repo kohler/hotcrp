@@ -30,12 +30,12 @@ class LoginHelper {
         // check HTTP auth
         if (!isset($_SERVER["REMOTE_USER"]) || !$_SERVER["REMOTE_USER"]) {
             header("HTTP/1.0 401 Unauthorized");
-            $conf->header("Error", "home");
+            $qreq->print_header("Error", "home");
             $conf->feedback_msg([
                 MessageItem::error("<0>Authentication required"),
                 MessageItem::inform("<0>This site is using HTTP authentication to manage its users, but you have not provided authentication data. This usually indicates a server configuration error.")
             ]);
-            $conf->footer();
+            $qreq->print_footer();
             exit;
         }
         $qreq->email = $_SERVER["REMOTE_USER"];
@@ -51,12 +51,12 @@ class LoginHelper {
             $conf->redirect($info["redirect"] ?? "");
         } else {
             header("HTTP/1.0 401 Unauthorized");
-            $conf->header("Error", "home");
+            $qreq->print_header("Error", "home");
             $conf->feedback_msg([
                 MessageItem::error("<0>Authentication error"),
                 MessageItem::inform("<0>This site is using HTTP authentication to manage its users. You have provided incorrect authentication data.")
             ]);
-            $conf->footer();
+            $qreq->print_footer();
             exit;
         }
     }
@@ -147,7 +147,7 @@ class LoginHelper {
         $user = $xuser->activate($qreq);
         $user->save_session("password_reset", null);
 
-        $nav = Navigation::get();
+        $nav = $qreq->navigation();
         $url = $nav->server . $nav->base_path;
         if (isset($_SESSION["us"])) {
             $url .= "u/" . Contact::session_user_index($user->email) . "/";

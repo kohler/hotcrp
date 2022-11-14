@@ -9,18 +9,18 @@ class PaperRequest {
     public $rrow;
 
     /** @param bool $review */
-    function __construct(Contact $user, Qrequest $qreq, $review) {
-        $this->normalize($user->conf, $qreq, $review);
-        $this->prow = $this->find_paper($user->conf, $user, $qreq);
+    function __construct(Qrequest $qreq, $review) {
+        $this->normalize($qreq, $review);
+        $this->prow = $this->find_paper($qreq);
         if ($review && $this->prow->paperId > 0) {
-            $this->rrow = $this->find_review($user, $qreq);
+            $this->rrow = $this->find_review($qreq->user(), $qreq);
         }
     }
 
     /** @return PaperRequest|Redirection|PermissionProblem */
-    static function make(Contact $user, Qrequest $qreq, $review) {
+    static function make(Qrequest $qreq, $review) {
         try {
-            return new PaperRequest($user, $qreq, $review);
+            return new PaperRequest($qreq, $review);
         } catch (PermissionProblem $perm) {
             return $perm;
         } catch (Redirection $redir) {
@@ -33,8 +33,9 @@ class PaperRequest {
             && !array_diff($qreq->keys(), ["p", "paperId", "m", "mode", "forceShow", "t", "q", "r", "reviewId", "cap", "actas", "accept", "decline"]);
     }
 
-    private function normalize(Conf $conf, Qrequest $qreq, $review) {
+    private function normalize(Qrequest $qreq, $review) {
         // standardize on paperId, reviewId, commentId
+        $conf = $qreq->conf();
         if (!isset($qreq->paperId) && isset($qreq->p)) {
             $qreq->paperId = $qreq->p;
         }
@@ -142,11 +143,11 @@ class PaperRequest {
         }
     }
 
-    /** @param Conf $conf
-     * @param Qrequest $qreq
+    /** @param Qrequest $qreq
      * @param int $pid
      * @return Redirection */
-    private function signin_redirection($conf, $qreq, $pid) {
+    private function signin_redirection($qreq, $pid) {
+        $conf = $qreq->conf();
         return new Redirection($conf->hoturl("signin", ["redirect" => $conf->selfurl($qreq, ["p" => $pid ? : "new"], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW)]));
     }
 
@@ -196,36 +197,35 @@ class PaperRequest {
         return false;
     }
 
-    /** @param Conf $conf
-     * @param Contact $user
-     * @param Qrequest $qreq
+    /** @param Qrequest $qreq
      * @return PaperInfo */
-    function find_paper($conf, $user, $qreq) {
-        $pid = $this->find_pid($conf, $user, $qreq);
+    function find_paper($qreq) {
+        $user = $qreq->user();
+        $pid = $this->find_pid($user->conf, $user, $qreq);
         if ($pid === 0) {
             if ($user->has_email()) {
                 return PaperInfo::make_new($user);
             } else {
-                throw $this->signin_redirection($conf, $qreq, 0);
+                throw $this->signin_redirection($qreq, 0);
             }
         } else {
             $options = ["topics" => true, "options" => true];
             if ($user->privChair
-                || ($user->isPC && $conf->timePCReviewPreferences())) {
+                || ($user->isPC && $user->conf->timePCReviewPreferences())) {
                 $options["reviewerPreference"] = true;
             }
             $prow = $user->paper_by_id($pid, $options);
             if (!self::check_prow($prow, $user, $qreq)) {
                 self::try_other_user($prow, $user, $qreq);
                 if (!isset($qreq->paperId) && isset($qreq->reviewId)) {
-                    throw new PermissionProblem($conf, ["missingId" => "paper"]);
+                    throw new PermissionProblem($user->conf, ["missingId" => "paper"]);
                 } else if (!$user->has_email()) {
-                    throw $this->signin_redirection($conf, $qreq, $pid);
+                    throw $this->signin_redirection($qreq, $pid);
                 } else {
                     throw $user->perm_view_paper($prow, false, $pid);
                 }
             } else if (!isset($qreq->paperId) && isset($qreq->reviewId)) {
-                throw new Redirection($conf->selfurl($qreq, ["p" => $prow->paperId]));
+                throw new Redirection($user->conf->selfurl($qreq, ["p" => $prow->paperId]));
             }
             return $prow;
         }

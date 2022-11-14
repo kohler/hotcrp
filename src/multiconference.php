@@ -76,8 +76,28 @@ class Multiconference {
         return $newconf;
     }
 
+    /** @param 403|404|array{title?:string,nolink?:bool}|Qrequest|string ...$arg */
     static function fail(...$arg) {
         global $Opt;
+
+        $qreq = null;
+        $errors = [];
+        $title = "Error";
+        $status = 404;
+        $nolink = false;
+        foreach ($arg as $x) {
+            if (is_int($x)) {
+                $status = $x;
+            } else if (is_string($x)) {
+                $errors[] = $x;
+            } else if ($x instanceof Qrequest) {
+                $qreq = $x;
+            } else {
+                assert(is_array($x));
+                $title = $x["title"] ?? $title;
+                $nolink = $x["nolink"] ?? $nolink;
+            }
+        }
 
         $maintenance = $Opt["maintenance"] ?? null;
         if ($maintenance) {
@@ -85,28 +105,14 @@ class Multiconference {
             $title = "Maintenance";
             $errors = ["The site is down for maintenance. " . (is_string($maintenance) ? $maintenance : "Please check back later.")];
             $nolink = true;
-        } else {
-            $errors = [];
-            $title = "Error";
-            $status = 404;
-            $nolink = false;
-            foreach ($arg as $x) {
-                if (is_int($x)) {
-                    $status = $x;
-                } else if (is_string($x)) {
-                    $errors[] = $x;
-                } else {
-                    assert(is_array($x));
-                    $title = $x["title"] ?? $title;
-                    $nolink = $x["nolink"] ?? $nolink;
-                }
-            }
         }
 
         if (PHP_SAPI === "cli") {
             fwrite(STDERR, join("\n", $errors) . "\n");
             exit(1);
-        } else if (Navigation::page() === "api" || ($_GET["ajax"] ?? null)) {
+        }
+
+        if (Navigation::page() === "api" || ($_GET["ajax"] ?? null)) {
             http_response_code($status);
             header("Content-Type: application/json; charset=utf-8");
             if ($maintenance) {
@@ -114,31 +120,43 @@ class Multiconference {
             } else {
                 echo "{\"ok\":false,\"error\":\"unconfigured installation\"}\n";
             }
-        } else {
-            if (!Conf::$main) {
-                Conf::set_main_instance(new Conf($Opt, false));
-                $nolink = true;
-            }
-            if ($nolink) {
-                Contact::set_main_user(null);
-            }
-            http_response_code($status);
-            Conf::$main->header($title, "", ["action_bar" => false]);
-            if (empty($errors)) {
-                $errors[] = "Internal error.";
-            }
-            echo '<div class="msg msg-error">';
-            foreach ($errors as $i => $e) {
-                echo '<p>', htmlspecialchars($e);
-                if (!$nolink && $i === 0) {
-                    echo ' ', Ht::link("Return to site", Conf::$main->hoturl("index"));
-                }
-                echo '</p>';
-            }
-            echo '</div>';
-            Conf::$main->footer();
         }
+
+        $qreq = $qreq ?? self::make_qrequest();
+        if ($nolink) {
+            $qreq->set_user(null);
+        }
+        http_response_code($status);
+        $qreq->print_header($title, "", ["action_bar" => ""]);
+        if (empty($errors)) {
+            $errors[] = "Internal error.";
+        }
+        echo '<div class="msg msg-error">';
+        foreach ($errors as $i => $e) {
+            echo '<p>', htmlspecialchars($e);
+            if (!$nolink && $qreq->user() && $i === 0) {
+                echo ' ', Ht::link("Return to site", $qreq->conf()->hoturl("index"));
+            }
+            echo '</p>';
+        }
+        echo '</div>';
+        $qreq->print_footer();
         exit;
+    }
+
+    /** @return Qrequest */
+    static private function make_qrequest() {
+        if (Qrequest::$main_request) {
+            return Qrequest::$main_request;
+        }
+        $qreq = (new Qrequest("GET"))->set_navigation(Navigation::get());
+        if (Contact::$main_user) {
+            $qreq->set_user(Contact::$main_user);
+        } else {
+            global $Opt;
+            $qreq->set_conf(Conf::$main ?? new Conf($Opt, false));
+        }
+        return $qreq;
     }
 
     /** @return string */

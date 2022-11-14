@@ -70,7 +70,7 @@ class ChangeEmail_Page {
             }
             $conf->redirect_hoturl("profile");
         } else {
-            $conf->header("Change email", "account", ["action_bar" => false]);
+            $qreq->print_header("Change email", "account", ["action_bar" => ""]);
             if ($chuser) {
                 echo '<p class="mb-5">Complete the email change using this form.</p>';
             } else {
@@ -99,7 +99,7 @@ class ChangeEmail_Page {
                 Ht::submit("cancel", "Cancel", ["formnovalidate" => true]),
                 '</div></form>';
             Ht::stash_script("hotcrp.focus_within(\$(\"#changeemailform\"));window.scroll(0,0)");
-            $conf->footer();
+            $qreq->print_footer();
             exit;
         }
     }

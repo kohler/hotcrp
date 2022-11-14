@@ -25,13 +25,13 @@ class Assign_Page {
     function error_exit(...$mls) {
         PaperTable::print_header($this->pt, $this->qreq, true);
         $this->conf->feedback_msg(...$mls);
-        $this->conf->footer();
+        $this->qreq->print_footer();
         throw new PageCompletion;
     }
 
     function assign_load() {
         try {
-            $pr = new PaperRequest($this->user, $this->qreq, true);
+            $pr = new PaperRequest($this->qreq, true);
             $this->prow = $this->conf->paper = $pr->prow;
             if (($whynot = $this->user->perm_request_review($this->prow, null, false))) {
                 $this->pt = new PaperTable($this->user, $this->qreq, $this->prow);
@@ -646,7 +646,7 @@ class Assign_Page {
 
         echo "</div></div></form></div></article>\n";
 
-        $this->conf->footer();
+        $this->qreq->print_footer();
     }
 
     static function go(Contact $user, Qrequest $qreq) {

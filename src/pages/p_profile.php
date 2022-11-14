@@ -562,7 +562,7 @@ class Profile_Page {
         if ($this->page_type === 0
             && ($list = SessionList::load_cookie($this->viewer, "u"))
             && $list->set_current_id($this->user->contactId)) {
-            $this->conf->set_active_list($list);
+            $this->qreq->set_active_list($list);
         }
 
         // check $use_req
@@ -585,10 +585,10 @@ class Profile_Page {
         } else {
             $title = $this->viewer->name_html_for($this->user) . " profile";
         }
-        $this->conf->header($title, "account", [
+        $this->qreq->print_header($title, "account", [
             "title_div" => '<hr class="c">',
             "body_class" => "leftmenu",
-            "action_bar" => actionBar("account"),
+            "action_bar" => QuicklinksRenderer::make($this->qreq, "account"),
             "save_messages" => true
         ]);
 
@@ -721,7 +721,7 @@ class Profile_Page {
         if ($this->page_type === 0) {
             Ht::stash_script('hotcrp.highlight_form_children("#form-profile")');
         }
-        $this->conf->footer();
+        $this->qreq->print_footer();
     }
 
 

@@ -85,7 +85,7 @@ class MergeAccounts_Page {
 
 
     private function print() {
-        $this->conf->header("Merge accounts", "mergeaccounts");
+        $this->qreq->print_header("Merge accounts", "mergeaccounts");
 
         echo '<div class="w-text"><p>',
             'You may have multiple accounts registered; perhaps you were asked to review
@@ -117,7 +117,7 @@ transfer will only affect information currently stored in this conference.)</p><
             Ht::actions([Ht::submit("merge", "Merge accounts", ["class" => "btn-primary"])]),
             '</form>';
 
-        $this->conf->footer();
+        $this->qreq->print_footer();
     }
 
     static function go(Contact $user, Qrequest $qreq) {

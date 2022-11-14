@@ -51,7 +51,7 @@ class ReviewPrefs_Page {
     static function print($user, $reviewer, $qreq) {
         $conf = $user->conf;
 
-        $conf->header("Review preferences", "revpref");
+        $qreq->print_header("Review preferences", "revpref");
 
         if (($prefdesc = $conf->_id("revprefdescription", "", $conf->has_topics()))) {
             echo '<div class="msg demargin remargin-left remargin-right">',
@@ -154,7 +154,7 @@ class ReviewPrefs_Page {
         $pl->print_table_html();
         echo "</div></form>\n";
 
-        $conf->footer();
+        $qreq->print_footer();
     }
 
     /** @param Contact $user

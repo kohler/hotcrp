@@ -10,9 +10,6 @@ class Contact implements JsonSerializable {
     static public $main_user;
     /** @var bool */
     static public $no_main_user = false;
-    /** The base authenticated user when "acting as"; otherwise null.
-     * @var ?Contact */
-    static public $base_auth_user;
     /** @var int */
     static public $next_xid = -2;
     /** @var ?list<string> */
@@ -169,11 +166,15 @@ class Contact implements JsonSerializable {
     /** @var ?array<string,true> */
     private $_author_perm_tags;
 
+    // $_activated values: 0: no, 1: yes; 2: is actas; 4: is token
     /** @var int */
     private $_activated = 0;
-    // 0: no, 1: yes, 2: actas, 4: token
+    // $_admin_base_user: base authenticated user in case of actas
     /** @var ?Contact */
     private $_admin_base_user;
+    // defaults for hoturl
+    /** @var ?array<string,string> */
+    private $_hoturl_defaults;
 
     /** @var ?non-empty-list<AuthorMatcher> */
     private $_aucollab_matchers;
@@ -613,8 +614,6 @@ class Contact implements JsonSerializable {
 
     /** @return Contact */
     private function actas_user($x) {
-        assert(!self::$base_auth_user || self::$base_auth_user === $this);
-
         // translate to email
         if (ctype_digit($x)) {
             $acct = $this->conf->user_by_id(intval($x));
@@ -669,16 +668,15 @@ class Contact implements JsonSerializable {
         if ($qreq && $qreq->actas && $signin && $this->email) {
             $actas = $qreq->actas;
             unset($qreq->actas, $_GET["actas"], $_POST["actas"]);
-            $actascontact = $this->actas_user($actas);
-            if ($actascontact !== $this) {
-                Conf::$hoturl_defaults["actas"] = urlencode($actascontact->email);
+            $actasuser = $this->actas_user($actas);
+            if ($actasuser !== $this) {
                 if ($this->conf->session_key !== null) {
-                    $_SESSION["last_actas"] = $actascontact->email;
+                    $_SESSION["last_actas"] = $actasuser->email;
                 }
-                self::$base_auth_user = $this;
-                $actascontact->_activated |= 2;
-                $actascontact->_admin_base_user = $this;
-                return $actascontact->activate($qreq, true);
+                $actasuser->_activated |= 2;
+                $actasuser->_admin_base_user = $this;
+                $actasuser->_hoturl_defaults["actas"] = urlencode($actasuser->email);
+                return $actasuser->activate($qreq, true);
             }
         }
 
@@ -935,8 +933,6 @@ class Contact implements JsonSerializable {
 
     /** @return Contact */
     function base_user() {
-        assert((!$this->is_actas_user() && $this->_admin_base_user === null)
-               || self::$base_auth_user === $this->_admin_base_user);
         return $this->_admin_base_user ?? $this;
     }
 
@@ -1512,19 +1508,21 @@ class Contact implements JsonSerializable {
     /** @param string $text
      * @param bool $add */
     function set_default_cap_param($text, $add) {
-        if ($this->_activated !== 0) {
-            Conf::$hoturl_defaults = Conf::$hoturl_defaults ?? [];
-            $cap = urldecode(Conf::$hoturl_defaults["cap"] ?? "");
-            $a = array_diff(explode(" ", $cap), [$text, ""]);
-            if ($add) {
-                $a[] = $text;
-            }
-            if (empty($a)) {
-                unset(Conf::$hoturl_defaults["cap"]);
-            } else {
-                Conf::$hoturl_defaults["cap"] = urlencode(join(" ", $a));
-            }
+        $cap = urldecode($this->_hoturl_defaults["cap"] ?? "");
+        $a = array_diff(explode(" ", $cap), [$text, ""]);
+        if ($add) {
+            $a[] = $text;
         }
+        if (empty($a)) {
+            unset($this->_hoturl_defaults["cap"]);
+        } else {
+            $this->_hoturl_defaults["cap"] = urlencode(join(" ", $a));
+        }
+    }
+
+    /** @return array<string,string> -- Note that return values are urlencoded */
+    function hoturl_defaults() {
+        return $this->_hoturl_defaults ?? [];
     }
 
 

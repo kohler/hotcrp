@@ -203,8 +203,6 @@ class Conf {
 
     /** @var ?PaperInfo */
     public $paper; // current paper row
-    /** @var SessionList|null|false */
-    private $_active_list = false;
 
     /** @var Conf */
     static public $main;
@@ -243,8 +241,6 @@ class Conf {
     const PCSEEREV_UNLESSANYINCOMPLETE = 4;
 
     static public $review_deadlines = ["pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard"];
-
-    static public $hoturl_defaults = null;
 
     /** @param array<string,mixed> $options
      * @param bool $connect */
@@ -3635,41 +3631,49 @@ class Conf {
         $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
         // parse options, separate anchor
         $anchor = "";
+        $defaults = [];
+        if (($flags & self::HOTURL_NO_DEFAULTS) === 0
+            && Qrequest::$main_request
+            && Qrequest::$main_request->user()) {
+            $defaults = Qrequest::$main_request->user()->hoturl_defaults();
+        }
         if (is_array($params)) {
-            $x = "";
+            $param = $sep = "";
             foreach ($params as $k => $v) {
                 if ($v === null || $v === false) {
-                    // skip
-                } else if ($k === "anchor" /* XXX deprecated */ || $k === "#") {
-                    $anchor = "#" . urlencode($v);
+                    continue;
+                }
+                $v = urlencode($v);
+                if ($k === "anchor" /* XXX deprecated */ || $k === "#") {
+                    $anchor = "#{$v}";
                 } else {
-                    $x .= ($x === "" ? "" : $amp) . $k . "=" . urlencode($v);
+                    $param .= "{$sep}{$k}={$v}";
+                    $sep = $amp;
                 }
             }
-            if (Conf::$hoturl_defaults && !($flags & self::HOTURL_NO_DEFAULTS)) {
-                foreach (Conf::$hoturl_defaults as $k => $v) {
-                    if (!array_key_exists($k, $params)) {
-                        $x .= ($x === "" ? "" : $amp) . $k . "=" . $v;
-                    }
+            foreach ($defaults as $k => $v) {
+                if (!array_key_exists($k, $params)) {
+                    $param .= "{$sep}{$k}={$v}";
+                    $sep = $amp;
                 }
             }
-            $param = $x;
         } else {
             $param = (string) $params;
             if (($pos = strpos($param, "#"))) {
                 $anchor = substr($param, $pos);
                 $param = substr($param, 0, $pos);
             }
-            if (Conf::$hoturl_defaults && !($flags & self::HOTURL_NO_DEFAULTS)) {
-                foreach (Conf::$hoturl_defaults as $k => $v) {
-                    if (!preg_match($are . preg_quote($k) . '=/', $param)) {
-                        $param .= ($param === "" ? "" : $amp) . $k . "=" . $v;
-                    }
+            $sep = $param === "" ? "" : $amp;
+            foreach ($defaults as $k => $v) {
+                if (!preg_match($are . preg_quote($k) . '=/', $param)) {
+                    $param .= "{$sep}{$k}={$v}";
+                    $sep = $amp;
                 }
             }
         }
         if ($flags & self::HOTURL_POST) {
-            $param .= ($param === "" ? "" : $amp) . "post=" . post_value();
+            $param .= "{$sep}post=" . post_value();
+            $sep = $amp;
         }
         // append forceShow to links to same paper if appropriate
         $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
@@ -3869,9 +3873,6 @@ class Conf {
         if (!$qreq->page() || $qreq->page() === "api") {
             error_log("selfurl for bad page: " . debug_string_backtrace());
         }
-        if (($p = Navigation::page()) !== null && $p !== $qreq->page()) {
-            error_log("selfurl on different page: " . debug_string_backtrace());
-        }
         return $this->qrequrl($qreq, $param ?? [], $flags);
     }
 
@@ -3885,6 +3886,7 @@ class Conf {
             $path = $rf["path"] ?? "";
             if ($path !== "" && str_starts_with($path, $sup)) {
                 $xqreq = new Qrequest("GET");
+                $xqreq->set_user($qreq->user());
                 $p = substr($path, strlen($sup));
                 if (($slash = strpos($p, "/"))) {
                     $xqreq->set_page(substr($p, $slash), substr($p, $slash + 1));
@@ -4360,24 +4362,6 @@ class Conf {
     // Conference header, footer
     //
 
-    /** @return bool */
-    function has_active_list() {
-        return !!$this->_active_list;
-    }
-
-    /** @return ?SessionList */
-    function active_list() {
-        if ($this->_active_list === false) {
-            $this->_active_list = null;
-        }
-        return $this->_active_list;
-    }
-
-    function set_active_list(SessionList $list = null) {
-        assert($this->_active_list === false);
-        $this->_active_list = $list;
-    }
-
     /** @param array $x
      * @return string */
     function make_css_link($x) {
@@ -4491,7 +4475,9 @@ class Conf {
         }
     }
 
-    function header_head($title, $extra = []) {
+    /** @param Qrequest $qreq
+     * @param string|list<string> $title */
+    function print_head_tag($qreq, $title, $extra = []) {
         // clear session list cookies
         foreach ($_COOKIE as $k => $v) {
             if (str_starts_with($k, "hotlist-info")
@@ -4547,7 +4533,7 @@ class Conf {
                 if ($this->opt["assetsUrl"] && substr($favicon, 0, 7) === "images/") {
                     $favicon = $this->opt["assetsUrl"] . $favicon;
                 } else {
-                    $favicon = Navigation::siteurl() . $favicon;
+                    $favicon = $qreq->navigation()->siteurl() . $favicon;
                 }
             }
             if (substr($favicon, -4) == ".png") {
@@ -4596,7 +4582,7 @@ class Conf {
         }
 
         // Javascript settings to set before script.js
-        $nav = Navigation::get();
+        $nav = $qreq->navigation();
         $siteinfo = [
             "site_relative" => $nav->site_path_relative,
             "base" => $nav->base_path,
@@ -4615,13 +4601,13 @@ class Conf {
         if (($samesite = $this->opt("sessionSameSite") ?? "Lax")) {
             $siteinfo["cookie_params"] .= "; SameSite={$samesite}";
         }
-        if (self::$hoturl_defaults) {
+        if (($defaults = $qreq->user()->hoturl_defaults())) {
             $siteinfo["defaults"] = [];
-            foreach (self::$hoturl_defaults as $k => $v) {
+            foreach ($defaults as $k => $v) {
                 $siteinfo["defaults"][$k] = urldecode($v);
             }
         }
-        if (($user = Contact::$main_user)) {
+        if (($user = $qreq->user())) {
             if ($user->email) {
                 $siteinfo["user"]["email"] = $user->email;
             }
@@ -4718,7 +4704,7 @@ class Conf {
                 && $this->session_key !== null) {
                 $actas_email = $_SESSION["last_actas"] ?? null;
             }
-            $nav = Navigation::get();
+            $nav = $qreq->navigation();
             foreach (Contact::session_users() as $i => $email) {
                 if ($actas_email !== null && strcasecmp($email, $actas_email) === 0) {
                     $actas_email = null;
@@ -4784,62 +4770,6 @@ class Conf {
         }
     }
 
-    private function print_header_profile_old($id, Qrequest $qreq, Contact $user) {
-        if (!$user || $user->is_empty()) {
-            return;
-        }
-
-        $profile_parts = [];
-        if ($user->has_email() && !$user->is_disabled()) {
-            if (!$user->is_anonymous_user()) {
-                $purl = $this->hoturl("profile");
-                $link = "<a class=\"q\" href=\"{$purl}\"><strong>" . htmlspecialchars($user->email) . "</strong></a>";
-                if ($user->is_actas_user()) {
-                    $link = "<span class=\"header-actas\"><span class=\"warning-mark\"></span> Acting as {$link}</span>";
-                }
-                $profile_parts[] = "{$link} &nbsp; <a href=\"{$purl}\">Profile</a>";
-            } else {
-                $profile_parts[] = "<strong>" . htmlspecialchars($user->email) . "</strong>";
-            }
-        }
-
-        // "act as" link
-        if ($user->is_actas_user()) {
-            $link = $this->selfurl($qreq, ["actas" => null]);
-            $profile_parts[] = "<a href=\"{$link}\">Admin&nbsp;"
-                . Ht::img('viewas.png', 'Act as ' . htmlspecialchars($user->base_user()->email)) . '</a>';
-        } else if ($this->session_key !== null
-                   && ($actas = $_SESSION["last_actas"] ?? null)
-                   && $user->privChair
-                   && strcasecmp($user->email, $actas) !== 0) {
-            $actas_html = htmlspecialchars($actas);
-            $link = $this->selfurl($qreq, ["actas" => $actas]);
-            $profile_parts[] = "<a href=\"{$link}\">{$actas_html}&nbsp;"
-                . Ht::img('viewas.png', "Act as {$actas_html}") . '</a>';
-        }
-
-        // help
-        if (!$user->is_disabled()) {
-            $helpargs = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
-            $profile_parts[] = '<a href="' . $this->hoturl("help", $helpargs) . '">Help</a>';
-        }
-
-        // sign in and out
-        if (!$user->is_signed_in()
-            && !($this->opt["httpAuthLogin"] ?? false)
-            && $id !== "signin") {
-            $profile_parts[] = '<a href="' . $this->hoturl("signin", ["cap" => null]) . '" class="nw">Sign in</a>';
-        }
-        if ((!$user->is_empty() || ($this->opt["httpAuthLogin"] ?? false))
-            && $id !== "signout") {
-            $profile_parts[] = Ht::form($this->hoturl("=signout", ["cap" => null]), ["class" => "d-inline"])
-                . Ht::button("Sign out", ["type" => "submit", "class" => "btn btn-link"])
-                . "</form>";
-        }
-
-        echo join(' <span class="barsep">·</span> ', $profile_parts);
-    }
-
     /** @param string $id */
     private function print_header_profile($id, Qrequest $qreq, Contact $user) {
         assert($user && !$user->is_empty());
@@ -4888,15 +4818,16 @@ class Conf {
         }
     }
 
-    function header_body($title, $id, $extra = []) {
-        $user = Contact::$main_user;
-        $qreq = Qrequest::$main_request;
+    /** @param Qrequest $qreq
+     * @param string|list<string> $title */
+    function print_body_entry($qreq, $title, $id, $extra = []) {
+        $user = $qreq->user();
         echo "<body";
         if ($id) {
             echo ' id="body-', $id, '"';
         }
         $class = $extra["body_class"] ?? null;
-        if (($list = $this->active_list())) {
+        if (($list = $qreq->active_list())) {
             $class = ($class ? $class . " " : "") . "has-hotlist";
         }
         if ($class) {
@@ -4921,10 +4852,7 @@ class Conf {
             Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
         }
 
-        $action_bar = $extra["action_bar"] ?? null;
-        if ($action_bar === null) {
-            $action_bar = actionBar();
-        }
+        $action_bar = $extra["action_bar"] ?? QuicklinksRenderer::make($qreq);
 
         $title_div = $extra["title_div"] ?? null;
         if ($title_div === null) {
@@ -4954,7 +4882,7 @@ class Conf {
         if ($user && !$user->is_empty()) {
             $this->print_header_profile($id, $qreq, $user);
         }
-        echo '</div>', ($title_div ? : ""), ($action_bar ? : "");
+        echo '</div>', ($title_div ? : ""), $action_bar;
 
         echo "  <hr class=\"c\">\n";
 
@@ -5013,10 +4941,11 @@ class Conf {
         }
     }
 
+    /** @deprecated */
     function header($title, $id, $extra = []) {
         if (!$this->_header_printed) {
-            $this->header_head($title, $extra);
-            $this->header_body($title, $id, $extra);
+            $this->print_head_tag(Qrequest::$main_request, $title, $extra);
+            $this->print_body_entry(Qrequest::$main_request, $title, $id, $extra);
         }
     }
 
@@ -5028,24 +4957,9 @@ class Conf {
         return count($args) == 2 ? $args : null;
     }
 
+    /** @deprecated */
     function footer() {
-        echo "<hr class=\"c\"></div>", // class='body'
-            '<div id="footer">',
-            $this->opt("extraFooter") ?? "",
-            '<a class="noq" href="https://hotcrp.com/">HotCRP</a>';
-        if (!$this->opt("noFooterVersion")) {
-            if (Contact::$main_user && Contact::$main_user->privChair) {
-                echo " v", HOTCRP_VERSION, " [";
-                if (($git_data = self::git_status())
-                    && $git_data[0] !== $git_data[1]) {
-                    echo substr($git_data[0], 0, 7), "... ";
-                }
-                echo round(memory_get_peak_usage() / (1 << 20)), "M]";
-            } else {
-                echo "<!-- Version ", HOTCRP_VERSION, " -->";
-            }
-        }
-        echo '</div>', Ht::unstash(), "</body>\n</html>\n";
+        Qrequest::$main_request->print_footer();
     }
 
     /** @param Contact $viewer
