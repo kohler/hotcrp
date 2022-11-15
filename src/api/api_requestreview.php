@@ -274,8 +274,9 @@ class RequestReview_API {
             return JsonResult::make_parameter_error("r");
         }
         $r = intval($qreq->r);
+        $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
         if ($qreq->redirect === "1") {
-            $qreq->redirect = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
+            $qreq->redirect = $review_site_relative;
         }
 
         $rrow = $prow->review_by_id($r);
@@ -317,7 +318,11 @@ class RequestReview_API {
             }
         }
 
-        return new JsonResult(["ok" => true, "action" => "accept"]);
+        return new JsonResult([
+            "ok" => true,
+            "action" => "accept",
+            "review_site_relative" => $review_site_relative
+        ]);
     }
 
     /** @param Contact $user
@@ -339,9 +344,10 @@ class RequestReview_API {
             return JsonResult::make_parameter_error("r");
         }
         $r = intval($qreq->r);
+        $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
         $redirect_in = $qreq->redirect;
         if ($redirect_in === "1") {
-            $qreq->redirect = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
+            $qreq->redirect = $review_site_relative;
         }
 
         $reason = trim($qreq->reason ?? "");
@@ -402,9 +408,11 @@ class RequestReview_API {
             // maybe add capability to URL; otherwise user will immediately be
             // denied access
             if ($user->contactXid === $rrow->contactId
-                && $redirect_in === "1"
                 && ($tok = ReviewAccept_Capability::make($rrow, true))) {
-                $qreq->redirect = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r, "cap" => $tok->salt], Conf::HOTURL_SITEREL);
+                $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r, "cap" => $tok->salt], Conf::HOTURL_SITEREL);
+                if ($redirect_in === "1") {
+                    $qreq->redirect = $review_site_relative;
+                }
             }
         } else if (isset($qreq->reason)) {
             $prow->conf->qe("update PaperReviewRefused set reason=? where paperId=? and refusedReviewId=?", $reason, $prow->paperId, $rrid);
@@ -412,7 +420,12 @@ class RequestReview_API {
             $reason = $refrow->reason;
         }
 
-        return new JsonResult(["ok" => true, "action" => "decline", "reason" => $reason]);
+        return new JsonResult([
+            "ok" => true,
+            "action" => "decline",
+            "reason" => $reason,
+            "review_site_relative" => $review_site_relative
+        ]);
     }
 
     /** @param Contact $user
@@ -424,9 +437,10 @@ class RequestReview_API {
             return JsonResult::make_parameter_error("r");
         }
         $r = intval($qreq->r);
+        $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
         $redirect_in = $qreq->redirect;
         if ($redirect_in === "1") {
-            $qreq->redirect = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
+            $qreq->redirect = $review_site_relative;
         }
 
         $rrow = $prow->review_by_id($r);
@@ -463,11 +477,17 @@ class RequestReview_API {
         $oldu = $user->conf->user_by_id($rrow->contactId, USER_SLICE);
         $user->log_activity_for($destu->contactId, "Review {$rrow->reviewId} reassigned from " . ($oldu ? $oldu->email : "<user {$rrow->contactId}>"), $prow);
 
-        if ($redirect_in === "1"
-            && $destu->contactXid !== $user->contactXid) {
-            $qreq->redirect = "u/{$useridx}/{$qreq->redirect}";
+        if ($destu->contactXid !== $user->contactXid) {
+            $review_site_relative = "u/{$useridx}/{$review_site_relative}";
+            if ($redirect_in === "1") {
+                $qreq->redirect = $review_site_relative;
+            }
         }
-        return new JsonResult(["ok" => true, "action" => "claim"]);
+        return new JsonResult([
+            "ok" => true,
+            "action" => "claim",
+            "review_site_relative" => $review_site_relative
+        ]);
     }
 
     /** @param Contact $user

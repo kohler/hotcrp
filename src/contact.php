@@ -681,7 +681,7 @@ class Contact implements JsonSerializable {
             }
         }
 
-        // add capabilities from session and request
+        // add capabilities from request
         if (isset($qreq->cap)) {
             $this->apply_capability_text($qreq->cap);
             unset($qreq->cap, $_GET["cap"], $_POST["cap"]);
@@ -693,6 +693,25 @@ class Contact implements JsonSerializable {
                 $this->_review_tokens[] = (int) $t;
             }
             ++self::$rights_version;
+        }
+
+        // print and/or gc named saved messages
+        if (($smsgs = $qreq->gsession("smsg"))) {
+            $nsmsgs = [];
+            foreach ($smsgs as $ml) {
+                if ($ml[0] === $qreq->_smsg) {
+                    for ($i = 2; $i !== count($ml); ++$i) {
+                        Conf::msg_on($this->conf, $ml[$i][0], $ml[$i][1]);
+                    }
+                } else if ($ml[1] >= Conf::$now - 30) {
+                    $nsmsgs[] = $ml;
+                }
+            }
+            if (empty($nsmsgs)) {
+                $qreq->unset_gsession("smsg");
+            } else if (count($nsmsgs) !== count($smsgs)) {
+                $qreq->set_gsession("smsg", $nsmsgs);
+            }
         }
 
         // maybe auto-create a user

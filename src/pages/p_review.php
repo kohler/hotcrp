@@ -310,10 +310,14 @@ class Review_Page {
                 $mx = "You’re accessing this review using a special link for reviewer {$hemail}. (You are signed in as " . htmlspecialchars($this->user->email) . ".)";
                 if ($this->rrow->reviewStatus <= ReviewInfo::RS_DRAFTED) {
                     $m = "<5><p class=\"mb-0\">{$mx} If you wish, you can reassign the linked review to one your current accounts.</p>"
-                        . Ht::form($this->conf->hoturl("=api/claimreview", ["p" => $this->prow->paperId, "r" => $this->rrow->reviewId, "redirect" => 1]), ["class" => "has-fold foldo", "id" => "claimreview-form"])
+                        . Ht::form("", ["class" => "has-fold foldo"])
                         . '<div class="aab mt-2 fx">';
                     foreach ($this->user->session_users($this->qreq) as $e) {
-                        $m .= '<div class="aabut">' . Ht::submit("Reassign to " . htmlspecialchars($e), ["name" => "email", "value" => $e]) . '</div>';
+                        $url = $this->conf->hoturl("=api/claimreview", ["p" => $this->prow->paperId, "r" => $this->rrow->reviewId, "email" => $e, "smsg" => 1]);
+                        $m .= '<div class="aabut">'
+                            . Ht::submit("Reassign to " . htmlspecialchars($e), [
+                                "formaction" => $url, "class" => "ui js-acceptish-review"
+                            ]) . '</div>';
                     }
                     $m .= '</div></form>';
                 } else {

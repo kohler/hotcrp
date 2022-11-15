@@ -201,24 +201,6 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     }
 
 
-    function export_messages(Conf $conf) {
-        $ml = [];
-        foreach ($this->content["message_list"] ?? [] as $mi) {
-            if ($mi instanceof MessageItem) {
-                $ml[] = $mi;
-            } else {
-                error_log("message_list is not MessageItem: " . debug_string_backtrace());
-            }
-        }
-        if (empty($ml) && isset($this->content["error"])) {
-            $ml[] = new MessageItem(null, "<0>" . $this->content["error"], 2);
-        }
-        if (empty($ml) && !($this->content["ok"] ?? ($this->status <= 299))) {
-            $ml[] = new MessageItem(null, "<0>Internal error", 2);
-        }
-        $conf->feedback_msg($ml);
-    }
-
     /** @param ?bool $validated */
     function emit($validated = null) {
         if ($this->status) {

@@ -23,42 +23,95 @@ class API_Page {
             $conf->set_paper_request($qreq, $user);
         }
 
-        // requests
+        // handle requests
         $fn = $qreq->fn;
-        $prow = $conf->paper;
-        $is_track = $fn === "track";
-        if ((!$is_track && $fn !== "status")
-            || $user->is_disabled()) {
-            JsonCompletion::$allow_short_circuit = true;
-            $uf = $conf->api($fn, $user, $qreq->method());
-            $jr = $conf->call_api_on($uf, $fn, $user, $qreq, $prow);
-            if ($uf
-                && $qreq->redirect
-                && ($uf->redirect ?? false)
-                && preg_match('/\A(?![a-z]+:|\/)./', $qreq->redirect)) {
-                $jr->export_messages($conf);
-                $conf->redirect($conf->make_absolute_site($qreq->redirect));
-            }
-        } else if ($is_track
-                   && ($jr = MeetingTracker::track_api($user, $qreq)) !== null) {
-            // OK
-        } else {
-            $jr = new JsonResult($user->my_deadlines($prow ? [$prow] : []));
-            $jr["ok"] = true;
-            if ($is_track && ($new_trackerid = $qreq->annex("new_trackerid"))) {
-                $jr["new_trackerid"] = $new_trackerid;
-            }
-            if ($prow && $user->can_view_tags($prow)) {
-                $pj = new TagMessageReport;
-                $pj->pid = $prow->paperId;
-                $prow->add_tag_info_json($pj, $user);
-                if (count((array) $pj) > 1) {
-                    $jr["p"] = [$prow->paperId => $pj];
-                }
+        $jr = null;
+        if ($user->is_disabled()
+            || ($fn !== "track" && $fn !== "status")) {
+            $jr = self::normal_api($fn, $user, $qreq);
+        } else if ($fn === "track") {
+            $jr = MeetingTracker::track_api($user, $qreq);
+        }
+        $jr = $jr ?? self::status_api($fn, $user, $qreq);
+
+        // maybe save messages in session under a token
+        if ($qreq->smsg
+            && !isset($jr->content["_smsg"])) {
+            $conf->feedback_msg(self::export_messages($jr));
+            $ml = $conf->take_saved_messages();
+            if (empty($ml)) {
+                $jr->content["_smsg"] = false;
+            } else {
+                $jr->content["_smsg"] = $smsg = base48_encode(random_bytes(6));
+                $qreq->open_session();
+                $smsgs = $qreq->gsession("smsg") ?? [];
+                array_unshift($ml, $smsg, Conf::$now);
+                $smsgs[] = $ml;
+                $qreq->set_gsession("smsg", $smsgs);
             }
         }
+
         json_exit($jr);
     }
+
+    /** @param string $fn
+     * @param Contact $user
+     * @param Qrequest $qreq
+     * @return JsonResult */
+    static private function normal_api($fn, $user, $qreq) {
+        JsonCompletion::$allow_short_circuit = true;
+        $conf = $user->conf;
+        $uf = $conf->api($fn, $user, $qreq->method());
+        $jr = $conf->call_api_on($uf, $fn, $user, $qreq, $conf->paper);
+        if ($uf
+            && ($uf->redirect ?? false)
+            && $qreq->redirect
+            && preg_match('/\A(?:[a-z][-a-z0-9+.]*:|\/)./i', $qreq->redirect)) {
+            $conf->feedback_msg(self::export_messages($jr));
+            $conf->redirect($conf->make_absolute_site($qreq->redirect));
+        }
+        return $jr;
+    }
+
+    /** @param string $fn
+     * @param Contact $user
+     * @param Qrequest $qreq
+     * @return JsonResult */
+    static private function status_api($fn, $user, $qreq) {
+        $prow = $user->conf->paper;
+        $jr = new JsonResult($user->my_deadlines($prow ? [$prow] : []));
+        $jr["ok"] = true;
+        if ($fn === "track" && ($new_trackerid = $qreq->annex("new_trackerid"))) {
+            $jr["new_trackerid"] = $new_trackerid;
+        }
+        if ($prow && $user->can_view_tags($prow)) {
+            $pj = new TagMessageReport;
+            $pj->pid = $prow->paperId;
+            $prow->add_tag_info_json($pj, $user);
+            if (count((array) $pj) > 1) {
+                $jr["p"] = [$prow->paperId => $pj];
+            }
+        }
+        return $jr;
+    }
+
+    /** @return list<MessageItem> */
+    static function export_messages(JsonResult $jr) {
+        $ml = [];
+        foreach ($jr->content["message_list"] ?? [] as $mi) {
+            if ($mi instanceof MessageItem) {
+                $ml[] = $mi;
+            }
+        }
+        if (empty($ml) && isset($jr->content["error"])) {
+            $ml[] = new MessageItem(null, "<0>" . $jr->content["error"], 2);
+        }
+        if (empty($ml) && !($jr->content["ok"] ?? ($jr->status <= 299))) {
+            $ml[] = new MessageItem(null, "<0>Internal error", 2);
+        }
+        return $ml;
+    }
+
 
     /** @param NavigationState $nav
      * @param Conf $conf */

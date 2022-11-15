@@ -10102,6 +10102,23 @@ handle_ui.on("js-profile-token-delete", function () {
 
 
 // review UI
+handle_ui.on("js-acceptish-review", function () {
+    $.ajax(this.formAction || this.action, {
+        method: "POST", data: $(this.form).serialize(),
+        success: function (data) {
+            var url = location.href, rsr = data && data.review_site_relative;
+            if (rsr) {
+                url = rsr.startsWith("u/") ? siteinfo.base : siteinfo.site_relative;
+                url += rsr;
+            }
+            if (data && data._smsg) {
+                url = hoturl_add(url, "_smsg=" + urlencode(data._smsg));
+            }
+            location = url;
+        }
+    });
+});
+
 handle_ui.on("js-deny-review-request", function () {
     var f = this.form,
         hc = popup_skeleton({near: this, action: f});

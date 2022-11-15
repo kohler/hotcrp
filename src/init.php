@@ -401,7 +401,9 @@ function initialize_request($kwarg = null) {
 
     // remember recent addresses in session
     $addr = $_SERVER["REMOTE_ADDR"];
-    if ($addr && $qreq->qsid() && (!$muser->is_empty() || $qreq->has_gsession("addrs"))) {
+    if ($addr
+        && $qreq->qsid()
+        && (!$muser->is_empty() || $qreq->has_gsession("addrs"))) {
         $addrs = $qreq->gsession("addrs");
         if (!is_array($addrs) || empty($addrs)) {
             $addrs = [];

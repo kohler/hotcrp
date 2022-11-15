@@ -3871,16 +3871,25 @@ class Conf {
     }
 
 
-    /** @return int */
-    function report_saved_messages() {
-        $max_status = 0;
-        foreach ($this->_save_msgs ?? [] as $m) {
-            if (is_string($m[0] ?? null) && is_int($m[1] ?? null)) {
-                self::msg_on($this, $m[0], $m[1]);
-                $max_status = max($max_status, $m[1]);
+    /** @return list<array{string,int}> */
+    function take_saved_messages() {
+        $ml = [];
+        foreach ($this->_save_msgs ?? [] as $mx) {
+            if (is_string($mx[0] ?? null) && is_int($mx[1] ?? null)) {
+                $ml[] = [$mx[0], $mx[1]];
             }
         }
         $this->_save_msgs = null;
+        return $ml;
+    }
+
+    /** @return int */
+    function report_saved_messages() {
+        $max_status = 0;
+        foreach ($this->take_saved_messages() as $mx) {
+            self::msg_on($this, $mx[0], $mx[1]);
+            $max_status = max($max_status, $mx[1]);
+        }
         return $max_status;
     }
 
