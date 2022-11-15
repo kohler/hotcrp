@@ -513,7 +513,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             $this->_conf->opt("extraFooter") ?? "",
             '<a class="noq" href="https://hotcrp.com/">HotCRP</a>';
         if (!$this->_conf->opt("noFooterVersion")) {
-            if ($this->_user->privChair) {
+            if ($this->_user && $this->_user->privChair) {
                 echo " v", HOTCRP_VERSION, " [";
                 if (($git_data = Conf::git_status())
                     && $git_data[0] !== $git_data[1]) {
