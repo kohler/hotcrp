@@ -4562,12 +4562,6 @@ class Conf {
         if (($samesite = $this->opt("sessionSameSite") ?? "Lax")) {
             $siteinfo["cookie_params"] .= "; SameSite={$samesite}";
         }
-        if (($defaults = $qreq->user()->hoturl_defaults())) {
-            $siteinfo["defaults"] = [];
-            foreach ($defaults as $k => $v) {
-                $siteinfo["defaults"][$k] = urldecode($v);
-            }
-        }
         if (($user = $qreq->user())) {
             if ($user->email) {
                 $siteinfo["user"]["email"] = $user->email;
@@ -4584,6 +4578,12 @@ class Conf {
             $susers = Contact::session_users($qreq);
             if ($user->is_actas_user() || count($susers) > 1) {
                 $siteinfo["user"]["session_users"] = $susers;
+            }
+            if (($defaults = $user->hoturl_defaults())) {
+                $siteinfo["defaults"] = [];
+                foreach ($defaults as $k => $v) {
+                    $siteinfo["defaults"][$k] = urldecode($v);
+                }
             }
         }
 
