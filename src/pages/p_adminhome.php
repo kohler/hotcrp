@@ -49,7 +49,8 @@ class AdminHome_Page {
             $ml[] = new MessageItem(null, "<0>Your PHP was built without JSON functionality. HotCRP is using its built-in replacements; the native functions would be faster", MessageSet::WARNING_NOTE);
         }
         if ((int) ini_get("session.gc_maxlifetime") < ($conf->opt("sessionLifetime") ?? 86400)
-            && !isset($conf->opt["sessionHandler"])) {
+            && !isset($conf->opt["sessionHandler"])
+            && !isset($conf->opt["qsessionFunction"])) {
             $ml[] = new MessageItem(null, "<5>PHP’s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars(ini_get("session.gc_maxlifetime")) . " seconds, is less than HotCRP’s preferred session expiration time, which is " . ($conf->opt("sessionLifetime") ?? 86400) . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect", MessageSet::WARNING_NOTE);
         }
         if (!function_exists("imagecreate") && $conf->setting("__gd_required")) {
