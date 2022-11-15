@@ -23,8 +23,8 @@ class AdminHome_Page {
     static function print(Contact $user) {
         $conf = $user->conf;
         $ml = [];
-        if (preg_match("/^(?:[1-5]\\.)/", phpversion())) {
-            $ml[] = new MessageItem(null, "<0>HotCRP requires PHP version 7.0 or higher.  You are running PHP version " . phpversion(), 2);
+        if (PHP_VERSION_ID <= 70100) {
+            $ml[] = new MessageItem(null, "<0>HotCRP requires PHP version 7.1 or higher.  You are running PHP version " . phpversion(), 2);
         }
         $result = Dbl::qx($conf->dblink, "show variables like 'max_allowed_packet'");
         $max_file_size = ini_get_bytes("upload_max_filesize");

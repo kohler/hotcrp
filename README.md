@@ -22,7 +22,7 @@ software:
 
 * Nginx, https://nginx.org/ \
   (Or [Apache](https://httpd.apache.org), or another web server that works with PHP)
-* PHP version 7.0 or higher, http://php.net/
+* PHP version 7.1 or higher, http://php.net/
   - Including MySQL support, php-fpm, and php-intl
 * MariaDB, https://mariadb.org/
 * Poppler’s version of pdftohtml, https://poppler.freedesktop.org/ (only
