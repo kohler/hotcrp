@@ -2509,7 +2509,7 @@ function popup_skeleton(options) {
             }
             if (f.getAttribute("method") === "post"
                 && !/post=/.test(f.getAttribute("action"))
-                && !/^(?:[a-z]*:|\/\/)/.test(f.getAttribute("action"))) {
+                && !/^(?:[a-z][-a-z0-9+.]*:|\/\/)/i.test(f.getAttribute("action"))) {
                 $(f).prepend(hidden_input("post", siteinfo.postvalue));
             }
         }
@@ -7020,7 +7020,7 @@ function set_cookie(info, pid) {
     var cstr = info.cookie_at(pid);
     cookie_set_at = now_msec();
     var p = "; Max-Age=20", m;
-    if (siteinfo.site_relative && (m = /^[a-z]+:\/\/[^/]*(\/.*)/.exec(hoturl_absolute_base())))
+    if (siteinfo.site_relative && (m = /^[a-z][-a-z0-9+.]*:\/\/[^/]*(\/.*)/i.exec(hoturl_absolute_base())))
         p += "; Path=" + m[1];
     document.cookie = "hotlist-info-".concat(cookie_set_at, "=", encodeURIComponent(cstr), siteinfo.cookie_params, p);
 }
