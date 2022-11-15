@@ -139,7 +139,7 @@ class Review_SettingParser extends SettingParser {
         }
         if ($id > 0 && ($round_map[$id - 1] ?? 0) > 0) {
             echo '<span class="ml-3 d-inline-block">',
-                '<a href="', $sv->conf->hoturl("search", "q=" . urlencode("re:" . ($id > 1 ? $sv->conf->round_name($id - 1) : "unnamed"))), '" target="_blank">',
+                '<a href="', $sv->conf->hoturl("search", ["q" => "re:" . ($id > 1 ? $sv->conf->round_name($id - 1) : "unnamed")]), '" target="_blank">',
                 plural($round_map[$id - 1], "review"), '</a></span>';
         }
         if ($ctr === '$') {

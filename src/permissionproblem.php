@@ -216,7 +216,7 @@ class PermissionProblem extends Exception
         if (isset($this->_a["reviewsOutstanding"])) {
             $ms[] = $this->conf->_("You will get access to the reviews once you complete your assigned reviews. If you can’t complete your reviews, please inform the organizers.");
             if ($format === 5) {
-                $ms[] = $this->conf->_("<a href=\"%s\">List assigned reviews</a>", $this->conf->hoturl("search", "q=&amp;t=r"));
+                $ms[] = $this->conf->_("<a href=\"%s\">List assigned reviews</a>", $this->conf->hoturl("search", ["q" => "", "t" => "r"]));
             }
         }
         if (isset($this->_a["reviewNotAssigned"])) {

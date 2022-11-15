@@ -109,9 +109,9 @@ class Offline_Page {
         echo '<div class="f-eqcol">';
         echo '<fieldset class="f-i"><legend>Download forms</legend>',
             '<ul class="x mb-2">',
-            '<li><a href="', $conf->hoturl("search", "fn=get&amp;getfn=revform&amp;q=&amp;t=r&amp;p=all"), '">Your reviews</a></li>';
+            '<li><a href="', $conf->hoturl("search", ["fn" => "get", "getfn" => "revform", "q" => "", "t" => "r", "p" => "all"]), '">Your reviews</a></li>';
         if ($this->user->has_outstanding_review()) {
-            echo '<li><a href="', $conf->hoturl("search", "fn=get&amp;getfn=revform&amp;q=&amp;t=rout&amp;p=all"), '">Your incomplete reviews</a></li>';
+            echo '<li><a href="', $conf->hoturl("search", ["fn" => "get", "getfn" => "revform", "q" => "", "t" => "rout", "p" => "all"]), '">Your incomplete reviews</a></li>';
         }
         echo '<li><a href="', $conf->hoturl("offline", "download=1"), '">Blank form</a></li>',
             '</ul>
@@ -138,9 +138,9 @@ class Offline_Page {
             echo '<div class="f-eqcol">',
                 '<fieldset class="f-i"><legend>Download ranking file</legend>',
                 '<ul class="x mb-2">',
-                '<li><a href="', $conf->hoturl("search", "fn=get&amp;getfn=rank&amp;tag=%7E{$ranktag}&amp;q=&amp;t=r&amp;p=all"), '">Your reviews</a></li>';
+                '<li><a href="', $conf->hoturl("search", ["fn" => "get", "getfn" => "rank", "tag" => "~{$ranktag}", "q" => "", "t" => "r", "p" => "all"]), '">Your reviews</a></li>';
             if ($this->user->isPC) {
-                echo "<li><a href=\"", $conf->hoturl("search", "fn=get&amp;getfn=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=s&amp;p=all"), "\">All submitted papers</a></li>";
+                echo "<li><a href=\"", $conf->hoturl("search", ["fn" => "get", "getfn" => "rank", "tag" => "~{$ranktag}", "q" => "", "t" => "s", "p" => "all"]), "\">All submitted papers</a></li>";
             }
             echo '</ul></fieldset>', "\n";
 
