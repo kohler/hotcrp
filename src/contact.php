@@ -1546,7 +1546,7 @@ class Contact implements JsonSerializable {
             $this->conf->feedback_msg($ml);
             $this->conf->redirect();
         } else {
-            Multiconference::fail(403, "Page inaccessible.");
+            Multiconference::fail($qreq, 403, "Page inaccessible.");
         }
     }
 

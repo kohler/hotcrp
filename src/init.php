@@ -158,17 +158,17 @@ function initialize_conf($config_file = null, $confid = null) {
                 $Opt["confid"] = $confid;
             } else if ($Opt["confid"] !== $confid) {
                 $Opt["missing"][] = "__invalid__";
-                Multiconference::fail_bad_options();
             }
         }
-        if ($Opt["include"] ?? null) {
+        if (empty($Opt["missing"]) && !empty($Opt["include"])) {
             SiteLoader::read_included_options();
         }
     }
-    if ($Opt["missing"] ?? null) {
+    if (!empty($Opt["missing"])) {
         Multiconference::fail_bad_options();
     }
-    if ($Opt["dbLogQueries"] ?? null) {
+
+    if (!empty($Opt["dbLogQueries"])) {
         Dbl::log_queries($Opt["dbLogQueries"], $Opt["dbLogQueryFile"] ?? null);
     }
 

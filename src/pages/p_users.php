@@ -525,7 +525,7 @@ class Users_Page {
 
         // check list type
         if (empty($up->limits)) {
-            Multiconference::fail(403, ["title" => "Users"], "You can’t list users for this site.");
+            Multiconference::fail($qreq, 403, ["title" => "Users"], "You can’t list users for this site.");
             return;
         }
         if (!isset($qreq->t) && $qreq->path_component(0)) {
@@ -548,7 +548,7 @@ class Users_Page {
             $qreq->t = key($up->limits);
         }
         if (!isset($up->limits[$qreq->t])) {
-            Multiconference::fail(403, ["title" => "Users"], "User list not found.");
+            Multiconference::fail($qreq, 403, ["title" => "Users"], "User list not found.");
             return;
         }
 

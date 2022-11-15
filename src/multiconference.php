@@ -76,7 +76,8 @@ class Multiconference {
         return $newconf;
     }
 
-    /** @param 403|404|array{title?:string,nolink?:bool}|Qrequest|string ...$arg */
+    /** @param 403|404|array{title?:string,nolink?:bool}|Qrequest|string|null ...$arg
+     * @return never */
     static function fail(...$arg) {
         global $Opt;
 
@@ -86,7 +87,9 @@ class Multiconference {
         $status = 404;
         $nolink = false;
         foreach ($arg as $x) {
-            if (is_int($x)) {
+            if ($x === null) {
+                // skip
+            } else if (is_int($x)) {
                 $status = $x;
             } else if (is_string($x)) {
                 $errors[] = $x;
@@ -122,7 +125,10 @@ class Multiconference {
             }
         }
 
-        $qreq = $qreq ?? self::make_qrequest();
+        $qreq = $qreq ?? Qrequest::$main_request ?? Qrequest::make_global(Navigation::get());
+        if (!$qreq->conf) {
+            $qreq->set_conf(Conf::$main ?? new Conf($Opt, false));
+        }
         if ($nolink) {
             $qreq->set_user(null);
         }
@@ -168,10 +174,14 @@ class Multiconference {
         }
     }
 
+    /** @return never */
     static function fail_bad_options() {
         global $Opt;
-        if (isset($Opt["multiconferenceFailureCallback"])) {
-            call_user_func($Opt["multiconferenceFailureCallback"], "options");
+        $qreq = null;
+        if (isset($Opt["multiconferenceFailureCallback"])
+            && PHP_SAPI !== "cli") {
+            $qreq = Qrequest::make_global(Navigation::get());
+            call_user_func($Opt["multiconferenceFailureCallback"], "options", $qreq);
         }
 
         $errors = [];
@@ -223,13 +233,17 @@ class Multiconference {
             }
         }
 
-        self::fail(["nolink" => true], ...$errors);
+        self::fail($qreq, ["nolink" => true], ...$errors);
     }
 
+    /** @return never */
     static function fail_bad_database() {
         global $Opt;
-        if (isset($Opt["multiconferenceFailureCallback"])) {
-            call_user_func($Opt["multiconferenceFailureCallback"], "database");
+        $qreq = null;
+        if (isset($Opt["multiconferenceFailureCallback"])
+            && PHP_SAPI !== "cli") {
+            $qreq = Qrequest::make_global(Navigation::get());
+            call_user_func($Opt["multiconferenceFailureCallback"], "database", $qreq);
         }
         $errors = [];
         $confid = $Opt["confid"] ?? null;
@@ -249,7 +263,7 @@ class Multiconference {
                 error_log("Unable to connect to database");
             }
         }
-        self::fail(["nolink" => true], ...$errors);
+        self::fail($qreq, ["nolink" => true], ...$errors);
     }
 
     /** @param Throwable $ex

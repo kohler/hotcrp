@@ -2007,6 +2007,10 @@ label.f-c, .f-i > label {
 .feedback, .feedback-group {
 	font-size: 92%;
 }
+.f-h {
+	margin-top: 0.25rem;
+	margin-bottom: 0.25rem;
+}
 .feedback-list {
 	margin: 0 0 0.3rem;
 	padding-left: 0 !important;
@@ -2032,10 +2036,6 @@ label.f-c, .f-i > label {
 .feedback-list + input.has-error,
 .feedback-list + input.has-warning {
 	margin-top: -0.3rem;
-}
-.f-h {
-	margin-top: 0.25rem;
-	margin-bottom: 0.25rem;
 }
 .entry > .f-h:last-child {
 	margin-bottom: 0;
