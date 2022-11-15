@@ -30,6 +30,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     private $_referrer;
     /** @var null|false|SessionList */
     private $_active_list = false;
+    /** @var Qsession */
+    private $_qsession;
 
     /** @var Qrequest */
     static public $main_request;
@@ -41,6 +43,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function __construct($method, $data = []) {
         $this->_method = $method;
         $this->_v = $data;
+        $this->_qsession = new Qsession;
     }
 
     /** @param NavigationState $nav
@@ -85,6 +88,12 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $this;
     }
 
+    /** @return $this */
+    function set_qsession(Qsession $qsession) {
+        $this->_qsession = $qsession;
+        return $this;
+    }
+
     /** @return string */
     function method() {
         return $this->_method;
@@ -113,6 +122,10 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @return NavigationState */
     function navigation() {
         return $this->_navigation;
+    }
+    /** @return Qsession */
+    function qsession() {
+        return $this->_qsession;
     }
 
     /** @return ?string */
@@ -535,6 +548,86 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function set_active_list(SessionList $list = null) {
         assert($this->_active_list === false);
         $this->_active_list = $list;
+    }
+
+
+    /** @return void */
+    function open_session() {
+        $this->_qsession->open();
+    }
+
+    /** @param string $key
+     * @return bool */
+    function has_gsession($key) {
+        return $this->_qsession->has($key);
+    }
+
+    function clear_gsession() {
+        $this->_qsession->clear();
+    }
+
+    /** @param string $key
+     * @return mixed */
+    function gsession($key) {
+        return $this->_qsession->get($key);
+    }
+
+    /** @param string $key
+     * @param mixed $value */
+    function set_gsession($key, $value) {
+        $this->_qsession->set($key, $value);
+    }
+
+    /** @param string $key */
+    function unset_gsession($key) {
+        $this->_qsession->unset($key);
+    }
+
+    /** @param string $key
+     * @return bool */
+    function has_csession($key) {
+        return $this->_conf
+            && $this->_conf->session_key !== null
+            && $this->_qsession->has2($this->_conf->session_key, $key);
+    }
+
+    /** @param string $key
+     * @return mixed */
+    function csession($key) {
+        if ($this->_conf && $this->_conf->session_key !== null) {
+            return $this->_qsession->get2($this->_conf->session_key, $key);
+        } else {
+            return null;
+        }
+    }
+
+    /** @param string $key
+     * @param mixed $value */
+    function set_csession($key, $value) {
+        if ($this->_conf && $this->_conf->session_key !== null) {
+            $this->_qsession->set2($this->_conf->session_key, $key, $value);
+        }
+    }
+
+    /** @param string $key */
+    function unset_csession($key) {
+        if ($this->_conf && $this->_conf->session_key !== null) {
+            $this->_qsession->unset2($this->_conf->session_key, $key);
+        }
+    }
+
+    /** @param bool $allow_empty
+     * @return string */
+    function post_value($allow_empty = false) {
+        $sid = $this->_qsession->sid;
+        if ($sid === null && !$allow_empty) {
+            $this->_qsession->open();
+            $sid = $this->_qsession->sid;
+        }
+        if ($sid === null || $sid === "") {
+            return ".empty";
+        }
+        return urlencode(substr($sid, strlen($sid) > 16 ? 8 : 0, 12));
     }
 }
 

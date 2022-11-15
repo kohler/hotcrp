@@ -3,51 +3,58 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class UpdateSession {
-    static function run() {
-        if (($_SESSION["v"] ?? 0) < 1) {
-            $keys = array_keys($_SESSION);
+    /** @param Qsession $qs */
+    static function run($qs) {
+        if (($qs->get("v") ?? 0) < 1) {
+            $keys = array_keys($qs->all());
             foreach ($keys as $key) {
                 if (substr_compare($key, "mysql://", 0, 8) === 0
                     && ($slash = strrpos($key, "/")) !== false) {
-                    $_SESSION[urldecode(substr($key, $slash + 1))] = $_SESSION[$key];
-                    unset($_SESSION[$key]);
-                } else if ($key === "login_bounce"
-                           && is_array($_SESSION[$key])
-                           && is_string($_SESSION[$key][0] ?? null)
-                           && substr_compare($_SESSION[$key][0] ?? "", "mysql://", 0, 8) === 0
-                           && ($slash = strrpos($_SESSION[$key][0], "/")) !== false) {
-                    $_SESSION[$key][0] = urldecode(substr($_SESSION[$key][0], $slash + 1));
-                }
-            }
-            $_SESSION["v"] = 1;
-        }
-
-        if (($_SESSION["v"] ?? 0) < 2) {
-            $keys = array_keys($_SESSION);
-            foreach ($keys as $key) {
-                if ($key === "") {
-                    unset($_SESSION[$key]);
-                    continue;
-                }
-                if (is_array($_SESSION[$key])
-                    && isset($_SESSION[$key]["contactdb_roles"])) {
-                    unset($_SESSION[$key]["contactdb_roles"]);
-                    if (empty($_SESSION[$key])) {
-                        unset($_SESSION[$key]);
-                        continue;
+                    $qs->set(urldecode(substr($key, $slash + 1)), $qs->get($key));
+                    $qs->unset($key);
+                } else if ($key === "login_bounce") {
+                    $login_bounce = $qs->get($key);
+                    if (is_array($login_bounce)
+                        && is_string($login_bounce[0])
+                        && str_starts_with($login_bounce[0] ?? "", "mysql://")
+                        && ($slash = strrpos($login_bounce[0], "/")) !== false) {
+                        $login_bounce[0] = urldecode(substr($login_bounce[0], $slash + 1));
+                        $qs->set("login_bounce", $login_bounce);
                     }
                 }
-                if (is_array($_SESSION[$key])
-                    && $key !== "login_bounce"
+            }
+            $qs->set("v", 1);
+        }
+
+        if ($qs->get("v") === 1) {
+            $keys = array_keys($qs->all());
+            foreach ($keys as $key) {
+                if ($key === "") {
+                    $qs->unset($key);
+                    continue;
+                }
+                $v = $qs->get($key);
+                if (!is_array($v)) {
+                    continue;
+                }
+                if (isset($v["contactdb_roles"])) {
+                    unset($v["contactdb_roles"]);
+                    if (empty($v)) {
+                        $qs->unset($key);
+                        continue;
+                    }
+                    $qs->unset2($key, "contactdb_roles");
+                }
+                if ($key !== "login_bounce"
                     && $key !== "us"
                     && $key !== "addrs"
                     && $key[0] !== "@"
-                    && !isset($_SESSION["@{$key}"])) {
-                    $_SESSION["@{$key}"] = $_SESSION[$key];
-                    unset($_SESSION[$key]);
+                    && !$qs->has("@{$key}")) {
+                    $qs->set("@{$key}", $v);
+                    $qs->unset($key);
                 }
             }
-            $_SESSION["v"] = 2;
+            $qs->set("v", 2);
         }
     }
 }

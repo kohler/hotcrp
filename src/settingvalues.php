@@ -273,11 +273,11 @@ class SettingValues extends MessageSet {
         }
     }
 
-    function session_highlight() {
-        foreach ($this->user->session("settings_highlight") ?? [] as $f => $v) {
+    function session_highlight(Qrequest $qreq) {
+        foreach ($qreq->csession("settings_highlight") ?? [] as $f => $v) {
             $this->msg_at($f, null, $v);
         }
-        $this->user->save_session("settings_highlight", null);
+        $qreq->unset_csession("settings_highlight");
     }
 
     /** @return bool */

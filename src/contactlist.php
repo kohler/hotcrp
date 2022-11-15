@@ -79,6 +79,7 @@ class ContactList {
         $this->user = $user;
         if (!$qreq || !($qreq instanceof Qrequest)) {
             $qreq = new Qrequest("GET", $qreq);
+            $qreq->set_user($user);
         }
         $this->qreq = $qreq;
 
@@ -350,7 +351,7 @@ class ContactList {
             break;
         default:
             $f = $this->_rfields[$this->sortField - self::FIELD_SCORE];
-            $scoresort = $this->user->session("ulscoresort") ?? "A";
+            $scoresort = $this->qreq->csession("ulscoresort") ?? "A";
             if (!in_array($scoresort, ["A", "V", "D"], true)) {
                 $scoresort = "A";
             }
@@ -816,10 +817,10 @@ class ContactList {
     }
 
     /** @return string */
-    static function uldisplay(Contact $user, $no_session = false) {
-        if ($no_session || ($uldisplay = $user->session("uldisplay")) === null) {
+    static function uldisplay(Qrequest $qreq, $no_session = false) {
+        if ($no_session || ($uldisplay = $qreq->csession("uldisplay")) === null) {
             $uldisplay = " tags ";
-            foreach ($user->conf->review_form()->highlighted_main_scores() as $rf) {
+            foreach ($qreq->conf()->review_form()->highlighted_main_scores() as $rf) {
                 $uldisplay .= "{$rf->short_id} ";
             }
         }
@@ -830,7 +831,7 @@ class ContactList {
      * @return list<int> */
     private function addScores($a) {
         if ($this->user->isPC) {
-            $uldisplay = self::uldisplay($this->user);
+            $uldisplay = self::uldisplay($this->qreq);
             foreach ($this->_rfields as $i => $f) {
                 if (strpos($uldisplay, " {$f->short_id} ") !== false)
                     $a[] = self::FIELD_SCORE + $i;
@@ -1081,7 +1082,7 @@ class ContactList {
             $body .= $t . $tt;
         }
 
-        $uldisplay = self::uldisplay($this->user);
+        $uldisplay = self::uldisplay($this->qreq);
         $foldclasses = [];
         foreach (self::$folds as $k => $fold) {
             if (($this->have_folds[$fold] ?? null) !== null) {

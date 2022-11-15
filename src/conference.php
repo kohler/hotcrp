@@ -2870,40 +2870,6 @@ class Conf {
     }
 
 
-    // session data
-
-    /** @suppress PhanAccessReadOnlyProperty */
-    function disable_session() {
-        $this->session_key = null;
-    }
-
-    /** @param string $name */
-    function session($name) {
-        if ($this->session_key !== null) {
-            return $_SESSION[$this->session_key][$name] ?? null;
-        } else {
-            return null;
-        }
-    }
-
-    /** @param string $name */
-    function save_session($name, $value) {
-        if ($this->session_key !== null) {
-            if ($value !== null) {
-                if (empty($_SESSION)) {
-                    ensure_session();
-                }
-                $_SESSION[$this->session_key][$name] = $value;
-            } else if (isset($_SESSION[$this->session_key])) {
-                unset($_SESSION[$this->session_key][$name]);
-                if (empty($_SESSION[$this->session_key])) {
-                    unset($_SESSION[$this->session_key]);
-                }
-            }
-        }
-    }
-
-
     /** @param string $name
      * @param string $existsq
      * @param int $adding */
@@ -3620,7 +3586,7 @@ class Conf {
      * @param int $flags
      * @return string */
     function hoturl($page, $params = null, $flags = 0) {
-        $nav = Navigation::get();
+        $qreq = Qrequest::$main_request;
         $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
         if (str_starts_with($page, "=")) {
             $page = substr($page, 1);
@@ -3633,9 +3599,9 @@ class Conf {
         $anchor = "";
         $defaults = [];
         if (($flags & self::HOTURL_NO_DEFAULTS) === 0
-            && Qrequest::$main_request
-            && Qrequest::$main_request->user()) {
-            $defaults = Qrequest::$main_request->user()->hoturl_defaults();
+            && $qreq
+            && $qreq->user()) {
+            $defaults = $qreq->user()->hoturl_defaults();
         }
         if (is_array($params)) {
             $param = $sep = "";
@@ -3672,7 +3638,7 @@ class Conf {
             }
         }
         if ($flags & self::HOTURL_POST) {
-            $param .= "{$sep}post=" . post_value();
+            $param .= "{$sep}post=" . $qreq->post_value();
             $sep = $amp;
         }
         // append forceShow to links to same paper if appropriate
@@ -3756,6 +3722,7 @@ class Conf {
             }
             $param = preg_replace('/&(?:amp;)?\z/', "", $param);
         }
+        $nav = $qreq ? $qreq->navigation() : Navigation::get();
         if ($nav->php_suffix !== "") {
             if (($slash = strpos($t, "/")) !== false) {
                 $a = substr($t, 0, $slash);
@@ -3917,27 +3884,21 @@ class Conf {
         return $max_status;
     }
 
-    function transfer_messages_to_session() {
-        if ($this->_save_msgs && $this->session_key !== null) {
-            ensure_session();
-            foreach ($this->_save_msgs as $m) {
-                $_SESSION[$this->session_key]["msgs"][] = $m;
-            }
-            $this->_save_msgs = null;
-        }
-    }
-
     /** @param ?string $url
      * @return never
      * @throws Redirection */
     function redirect($url = null) {
-        $nav = Navigation::get();
         if (self::$test_mode) {
+            $nav = Navigation::get();
             throw new Redirection($nav->make_absolute($url ?? $this->hoturl("index")));
         } else {
-            $this->transfer_messages_to_session();
-            session_write_close();
-            Navigation::redirect_absolute($nav->make_absolute($url ?? $this->hoturl("index")));
+            $qreq = Qrequest::$main_request;
+            if ($this->_save_msgs) {
+                $qreq->open_session();
+                $qreq->set_csession("msgs", $this->_save_msgs);
+            }
+            $qreq->qsession()->commit();
+            Navigation::redirect_absolute($qreq->navigation()->make_absolute($url ?? $this->hoturl("index")));
         }
     }
 
@@ -4589,7 +4550,7 @@ class Conf {
             "suffix" => $nav->php_suffix,
             "assets" => $this->opt["assetsUrl"],
             "cookie_params" => "",
-            "postvalue" => post_value(true),
+            "postvalue" => $qreq->post_value(true),
             "user" => []
         ];
         if (($x = $this->opt("sessionDomain"))) {
@@ -4619,8 +4580,10 @@ class Conf {
             }
             if ($user->is_actas_user()) {
                 $siteinfo["user"]["is_actas"] = true;
-            } else if (count(Contact::session_users()) > 1) {
-                $siteinfo["user"]["session_users"] = Contact::session_users();
+            }
+            $susers = Contact::session_users($qreq);
+            if ($user->is_actas_user() || count($susers) > 1) {
+                $siteinfo["user"]["session_users"] = $susers;
             }
         }
 
@@ -4700,12 +4663,11 @@ class Conf {
             $base_email = $user->base_user()->email;
             $actas_email = null;
             if ($user->privChair
-                && !$user->is_actas_user()
-                && $this->session_key !== null) {
-                $actas_email = $_SESSION["last_actas"] ?? null;
+                && !$user->is_actas_user()) {
+                $actas_email = $qreq->gsession("last_actas");
             }
             $nav = $qreq->navigation();
-            foreach (Contact::session_users() as $i => $email) {
+            foreach (Contact::session_users($qreq) as $i => $email) {
                 if ($actas_email !== null && strcasecmp($email, $actas_email) === 0) {
                     $actas_email = null;
                 }
@@ -4891,8 +4853,8 @@ class Conf {
         if (($x = $this->opt("maintenance"))) {
             echo Ht::msg(is_string($x) ? $x : "<strong>The site is down for maintenance.</strong> Please check back later.", 2);
         }
-        if ($user && ($msgs = $user->session("msgs"))) {
-            $user->save_session("msgs", null);
+        if ($user && ($msgs = $qreq->csession("msgs"))) {
+            $qreq->unset_csession("msgs");
             $this->_save_msgs = array_merge($msgs, $this->_save_msgs ?? []);
         }
         if ($this->_save_msgs && !($extra["save_messages"] ?? false)) {
@@ -4915,8 +4877,8 @@ class Conf {
         if ($user
             && $user->privChair
             && $this->session_key !== null
-            && (!isset($_SESSION["updatecheck"])
-                || $_SESSION["updatecheck"] + 3600 <= Conf::$now)
+            && (!$qreq->has_gsession("updatecheck")
+                || $qreq->gsession("updatecheck") + 3600 <= Conf::$now)
             && (!isset($this->opt["updatesSite"]) || $this->opt["updatesSite"])) {
             $m = isset($this->opt["updatesSite"]) ? $this->opt["updatesSite"] : "//hotcrp.lcdf.org/updates";
             $m .= (strpos($m, "?") === false ? "?" : "&")
@@ -4937,7 +4899,7 @@ class Conf {
                 }
             }
             Ht::stash_script("hotcrp.check_version(\"$m\",\"$v\")");
-            $_SESSION["updatecheck"] = Conf::$now;
+            $qreq->set_gsession("updatecheck", Conf::$now);
         }
     }
 

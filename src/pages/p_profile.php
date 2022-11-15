@@ -410,7 +410,7 @@ class Profile_Page {
             if ($this->ustatus->has_problem()) {
                 $xcj["warning_fields"] = $this->ustatus->problem_fields();
             }
-            $this->viewer->save_session("profile_redirect", $xcj);
+            $this->qreq->set_csession("profile_redirect", $xcj);
             if ($this->user !== $this->viewer && $this->page_type === 0) {
                 $this->conf->redirect_self($this->qreq, ["u" => $this->user->email]);
             } else {
@@ -509,11 +509,9 @@ class Profile_Page {
         }
 
         // handle session, adjust request
-        if ($this->user->session("freshlogin")) {
-            $this->user->save_session("freshlogin", null);
-        }
-        if (($prdj = $this->user->session("profile_redirect"))) {
-            $this->user->save_session("profile_redirect", null);
+        $this->qreq->unset_csession("freshlogin");
+        if (($prdj = $this->qreq->csession("profile_redirect"))) {
+            $this->qreq->unset_csession("profile_redirect");
             foreach ($prdj as $k => $v) {
                 if ($k === "warning_fields") {
                     foreach ($v as $k) {

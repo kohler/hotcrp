@@ -18,27 +18,27 @@ class ReviewToken_API {
                 if ($t === "") {
                 } else if (!($token = decode_token($t, "V"))) {
                     $ml[] = MessageItem::error("<0>Invalid review token ‘{$t}’");
-                } else if (($user->session("rev_token_fail") ?? 0) >= 5) {
+                } else if (($qreq->csession("rev_token_fail") ?? 0) >= 5) {
                     break;
                 } else if (($pid = $user->conf->fetch_ivalue("select paperId from PaperReview where reviewToken=?", $token))) {
                     $tval[] = $token;
                     $ml[] = MessageItem::success("<5>Review token ‘" . htmlspecialchars($t) . "’ lets you review <a href=\"" . $user->conf->hoturl("paper", "p=$pid") . "\">submission #{$pid}</a>");
                 } else {
                     $ml[] = MessageItem::error("<0>Review token ‘{$t}’ not found");
-                    $nfail = ($user->session("rev_token_fail") ?? 0) + 1;
-                    $user->save_session("rev_token_fail", $nfail);
+                    $nfail = ($qreq->csession("rev_token_fail") ?? 0) + 1;
+                    $qreq->set_csession("rev_token_fail", $nfail);
                 }
             }
-            if (($user->session("rev_token_fail") ?? 0) >= 5) {
+            if (($qreq->csession("rev_token_fail") ?? 0) >= 5) {
                 $ml[] = MessageItem::error("<0>Too many failed attempts to use a review token. You need to sign out to try again");
             }
             if (MessageSet::list_status($ml) >= 2) {
                 return ["ok" => false, "message_list" => $ml];
             }
 
-            $cleared = $user->change_review_token(false, false);
+            $cleared = $user->change_review_token(false, false, $qreq);
             foreach ($tval as $token) {
-                $user->change_review_token($token, true);
+                $user->change_review_token($token, true, $qreq);
             }
             if ($cleared && !$tval) {
                 $ml[] = MessageItem::success("<0>Review tokens cleared");

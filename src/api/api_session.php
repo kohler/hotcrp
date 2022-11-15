@@ -3,35 +3,30 @@
 // Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
 class Session_API {
-    static private function session_result(Contact $user, $ok) {
-        $si = ["postvalue" => post_value()];
+    static private function session_result(Contact $user, Qrequest $qreq, $ok) {
+        $si = ["postvalue" => $qreq->post_value()];
         if ($user->contactId) {
             $si["cid"] = $user->contactId;
         }
-        return ["ok" => $ok, "postvalue" => post_value(), "sessioninfo" => $si];
+        return ["ok" => $ok, "postvalue" => $qreq->post_value(), "sessioninfo" => $si];
     }
 
-    static function getsession(Contact $user) {
-        ensure_session();
-        return self::session_result($user, true);
+    static function getsession(Contact $user, Qrequest $qreq) {
+        $qreq->open_session();
+        return self::session_result($user, $qreq, true);
     }
 
-    /** @param string|Qrequest $qreq
-     * @return array{ok:bool,postvalue:string} */
-    static function setsession(Contact $user, $qreq) {
-        ensure_session();
-        if (is_string($qreq)) {
-            $v = $qreq;
-        } else {
-            $v = (string) $qreq->v;
-        }
-
-        $error = false;
+    /** @param Qrequest $qreq
+     * @param string $v
+     * @return bool */
+    static function change_session($qreq, $v) {
+        $qreq->open_session();
+        $ok = true;
         preg_match_all('/(?:\A|\s)(foldpaper|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|(?:|ul)scoresort)(|\.[^=]*)(=\S*|)(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
         foreach ($ms as $m) {
             $unfold = intval(substr($m[3], 1) ? : "0") === 0;
             if ($m[1] === "foldpaper" && $m[2] !== "") {
-                $x = $user->session($m[1]) ?? [];
+                $x = $qreq->csession($m[1]) ?? [];
                 if (is_string($x)) {
                     $x = explode(" ", $x);
                 }
@@ -41,60 +36,83 @@ class Session_API {
                 }
                 $v = join(" ", $x);
                 if ($v === "") {
-                    $user->save_session($m[1], null);
+                    $qreq->unset_csession("foldpaper");
                 } else if (substr_count($v, " ") === count($x) - 1) {
-                    $user->save_session($m[1], $v);
+                    $qreq->set_csession("foldpaper", $v);
                 } else {
-                    $user->save_session($m[1], $x);
+                    $qreq->set_csession("foldpaper", $x);
                 }
                 // XXX backwards compat
-                $user->save_session("foldpapera", null);
-                $user->save_session("foldpaperb", null);
-                $user->save_session("foldpaperp", null);
-                $user->save_session("foldpapert", null);
+                $qreq->unset_csession("foldpapera");
+                $qreq->unset_csession("foldpaperb");
+                $qreq->unset_csession("foldpaperp");
+                $qreq->unset_csession("foldpapert");
             } else if ($m[1] === "scoresort" && $m[2] === "" && $m[3] !== "") {
                 $want = substr($m[3], 1);
-                $default = ListSorter::default_score_sort($user, true);
-                $user->save_session($m[1], $want === $default ? null : $want);
+                $default = $qreq->conf()->opt("defaultScoreSort") ?? "C";
+                if ($want !== $default) {
+                    $qreq->set_csession("scoresort", $want);
+                } else {
+                    $qreq->unset_csession("scoresort");
+                }
             } else if ($m[1] === "ulscoresort" && $m[2] === "" && $m[3] !== "") {
                 $want = substr($m[3], 1);
-                if (in_array($want, ["A", "V", "D"], true)) {
-                    $user->save_session($m[1], $want === "A" ? null : $want);
+                if ($want === "V" || $want === "D") {
+                    $qreq->set_csession("ulscoresort", $want);
+                } else if ($want === "A") {
+                    $qreq->unset_csession("ulscoresort");
                 }
             } else if (($m[1] === "pldisplay" || $m[1] === "pfdisplay")
                        && $m[2] !== "") {
-                self::change_display($user, substr($m[1], 0, 2), [substr($m[2], 1) => $unfold]);
+                self::change_display($qreq, substr($m[1], 0, 2), [substr($m[2], 1) => $unfold]);
             } else if ($m[1] === "uldisplay"
                        && preg_match('/\A\.[-a-zA-Z0-9_:]+\z/', $m[2])) {
-                self::change_uldisplay($user, [substr($m[2], 1) => $unfold]);
+                self::change_uldisplay($qreq, [substr($m[2], 1) => $unfold]);
             } else if (substr($m[1], 0, 4) === "fold" && $m[2] === "") {
-                $user->save_session($m[1], $unfold ? 0 : null);
+                if ($unfold) {
+                    $qreq->set_csession($m[1], 0);
+                } else {
+                    $qreq->unset_csession($m[1]);
+                }
             } else {
-                $error = true;
+                $ok = false;
             }
         }
-        return self::session_result($user, !$error);
+        return $ok;
+    }
+
+    /** @param Qrequest $qreq
+     * @return array{ok:bool,postvalue:string} */
+    static function setsession(Contact $user, $qreq) {
+        assert($user === $qreq->user());
+        $qreq->open_session();
+        $ok = self::change_session($qreq, $qreq->v);
+        return self::session_result($user, $qreq, $ok);
     }
 
     /** @param string $report
      * @param array<string,bool> $settings */
-    static function change_display(Contact $user, $report, $settings) {
-        $search = new PaperSearch($user, "NONE");
+    static function change_display(Qrequest $qreq, $report, $settings) {
+        $search = new PaperSearch($qreq->user(), "NONE");
         $pl = new PaperList($report, $search, ["sort" => true]);
-        $pl->apply_view_report_default();
+        $pl->apply_view_report_default(PaperList::VIEWORIGIN_REPORT);
         $pl->apply_view_session();
         foreach ($settings as $k => $v) {
             $pl->set_view($k, $v);
         }
         $vd = array_filter($pl->unparse_view(true), function ($x) { return !str_starts_with($x, "sort:"); });
-        $user->save_session("{$report}display", join(" ", $vd));
+        if (!empty($vd)) {
+            $qreq->set_csession("{$report}display", join(" ", $vd));
+        } else {
+            $qreq->unset_csession("{$report}display");
+        }
     }
 
     /** @param array<string,bool> $settings */
-    static private function change_uldisplay(Contact $user, $settings) {
-        $curl = explode(" ", trim(ContactList::uldisplay($user)));
+    static private function change_uldisplay(Qrequest $qreq, $settings) {
+        $curl = explode(" ", trim(ContactList::uldisplay($qreq)));
         foreach ($settings as $name => $setting) {
-            if (($f = $user->conf->review_field($name))) {
+            if (($f = $qreq->conf()->review_field($name))) {
                 $terms = [$f->short_id];
                 if ($f->main_storage !== null && $f->main_storage !== $f->short_id) {
                     $terms[] = $f->main_storage;
@@ -114,15 +132,15 @@ class Session_API {
             }
         }
 
-        $defaultl = explode(" ", trim(ContactList::uldisplay($user, true)));
+        $defaultl = explode(" ", trim(ContactList::uldisplay($qreq, true)));
         sort($defaultl);
         sort($curl);
         if ($curl === $defaultl) {
-            $user->save_session("uldisplay", null);
+            $qreq->unset_csession("uldisplay");
         } else if ($curl === [] || $curl === [""]) {
-            $user->save_session("uldisplay", " ");
+            $qreq->set_csession("uldisplay", " ");
         } else {
-            $user->save_session("uldisplay", " " . join(" ", $curl) . " ");
+            $qreq->set_csession("uldisplay", " " . join(" ", $curl) . " ");
         }
     }
 }

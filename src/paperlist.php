@@ -227,6 +227,8 @@ class PaperList implements XtContext {
     private $_sortcol_fixed = 0;
     /** @var ?string */
     private $_sort_etag;
+    /** @var ?string */
+    private $_default_score_sort;
 
     // columns access
     public $qopts; // set by PaperColumn::prepare
@@ -262,21 +264,19 @@ class PaperList implements XtContext {
 
     static private $stats = [ScoreInfo::SUM, ScoreInfo::MEAN, ScoreInfo::MEDIAN, ScoreInfo::STDDEV_P, ScoreInfo::COUNT];
 
-    /** @param array<string,mixed> $args
+    /** @param array{sort?:true|string} $args
      * @param null|array|Qrequest $qreq */
     function __construct(string $report, PaperSearch $search, $args = [], $qreq = null) {
         $this->conf = $search->conf;
         $this->user = $search->user;
         if (!$qreq || !($qreq instanceof Qrequest)) {
             $qreq = new Qrequest("GET", $qreq);
+            $qreq->set_user($this->user);
         }
         $this->qreq = $qreq;
         $this->search = $search;
         $this->_reviewer_user = $search->reviewer_user();
         $this->_rowset = $args["rowset"] ?? null;
-
-        $sortarg = $args["sort"] ?? null;
-        $this->_sortable = !!$sortarg;
 
         if (in_array($qreq->linkto, ["paper", "assign", "paperedit", "finishreview"])) {
             $this->set_view("linkto", true, null, [$qreq->linkto]);
@@ -293,11 +293,14 @@ class PaperList implements XtContext {
         $this->_report_id = $report;
         $this->parse_view($this->_list_columns(), self::VIEWORIGIN_REPORT);
 
+        $sortarg = $args["sort"] ?? false;
+        $this->_sortable = $sortarg !== false;
         if ($this->_sortable) {
-            if (is_string($sortarg)) {
+            if ($sortarg === true) {
+                $sortarg = $qreq->sort ?? "";
+            }
+            if (trim($sortarg) !== "") {
                 $this->parse_view("sort:[" . $sortarg . "]", null);
-            } else if ($qreq->sort) {
-                $this->parse_view("sort:[" . $qreq->sort . "]", null);
             }
         }
 
@@ -591,25 +594,30 @@ class PaperList implements XtContext {
         }
     }
 
-    function apply_view_report_default($no_settings = false) {
+    /** @return string */
+    function unparse_baseline_view() {
+        if ($this->_report_id === "pl"
+            && ($f = $this->conf->review_form()->default_highlighted_score())) {
+            return "show:" . $f->search_keyword();
+        }
+        return "";
+    }
+
+    /** @param ?int $origin */
+    function apply_view_report_default($origin = null) {
         $s = null;
-        if (($this->_report_id === "pl" || $this->_report_id === "pf")
-            && !$no_settings) {
+        if ($this->_report_id === "pl" || $this->_report_id === "pf") {
             $s = $this->conf->setting_data("{$this->_report_id}display_default");
         }
-        if ($this->_report_id === "pl"
-            && $s === null
-            && ($f = $this->conf->review_form()->default_highlighted_score())) {
-            $s = "show:" . $f->search_keyword();
-        }
-        $this->parse_view($s, self::VIEWORIGIN_DEFAULT_DISPLAY);
+        $this->parse_view($s ?? $this->unparse_baseline_view(), $origin ?? self::VIEWORIGIN_DEFAULT_DISPLAY);
     }
 
     function apply_view_session() {
         if ($this->_report_id === "pl" || $this->_report_id === "pf") {
-            $s = $this->user->session("{$this->_report_id}display");
+            $s = $this->qreq->csession("{$this->_report_id}display");
             $this->parse_view($s, self::VIEWORIGIN_SESSION);
         }
+        $this->_default_score_sort = $this->qreq->csession("scoresort");
     }
 
     function apply_view_qreq() {
@@ -765,6 +773,11 @@ class PaperList implements XtContext {
             $this->sorters();
         }
         return $this->_sort_etag;
+    }
+
+    /** @return string */
+    function default_score_sort() {
+        return $this->_default_score_sort ?? $this->conf->opt("defaultScoreSort") ?? "C";
     }
 
     private function _sort(PaperInfoSet $rowset) {

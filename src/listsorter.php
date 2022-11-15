@@ -35,12 +35,4 @@ class ListSorter {
                 "median" => "Median", "variance" => "Variance",
                 "maxmin" => "Max &minus; min", "my" => "My score"];
     }
-
-    static function default_score_sort(Contact $user, $nosession = false) {
-        if (!$nosession && ($x = $user->session("scoresort"))) {
-            return $x;
-        } else {
-            return $user->conf->opt("defaultScoreSort") ?? "C";
-        }
-    }
 }

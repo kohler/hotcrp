@@ -299,7 +299,7 @@ class Review_Page {
     function add_capability_user_message($capuid) {
         if (($u = $this->conf->user_by_id($capuid, USER_SLICE))) {
             if (PaperRequest::simple_qreq($this->qreq)
-                && ($i = $this->user->session_user_index($u->email)) >= 0) {
+                && ($i = $this->user->session_user_index($this->qreq, $u->email)) >= 0) {
                 $selfurl = $this->conf->selfurl($this->qreq, null, Conf::HOTURL_SITEREL | Conf::HOTURL_RAW);
                 $this->conf->redirect(Navigation::base_absolute() . "u/{$i}/{$selfurl}");
                 return;
@@ -312,7 +312,7 @@ class Review_Page {
                     $m = "<5><p class=\"mb-0\">{$mx} If you wish, you can reassign the linked review to one your current accounts.</p>"
                         . Ht::form($this->conf->hoturl("=api/claimreview", ["p" => $this->prow->paperId, "r" => $this->rrow->reviewId, "redirect" => 1]), ["class" => "has-fold foldo", "id" => "claimreview-form"])
                         . '<div class="aab mt-2 fx">';
-                    foreach ($this->user->session_users() as $e) {
+                    foreach ($this->user->session_users($this->qreq) as $e) {
                         $m .= '<div class="aabut">' . Ht::submit("Reassign to " . htmlspecialchars($e), ["name" => "email", "value" => $e]) . '</div>';
                     }
                     $m .= '</div></form>';
@@ -379,8 +379,8 @@ class Review_Page {
             $qreq->update = 1;
             unset($qreq->ready);
         }
-        if (session_id() === "" && $user->is_reviewer()) {
-            ensure_session();
+        if ($user->is_reviewer()) {
+            $qreq->open_session();
         }
 
         $pp = new Review_Page($user, $qreq);

@@ -270,7 +270,6 @@ function initialize_request($kwarg = null) {
         && isset($_SERVER["HTTP_AUTHORIZATION"])
         && ($token = Bearer_Capability::header_token($conf, $_SERVER["HTTP_AUTHORIZATION"]))
         && ($user = $token->local_user())) {
-        $conf->disable_session();
         $qreq->set_user($user);
         $qreq->approve_token();
         $user->set_bearer_authorized();
@@ -301,17 +300,18 @@ function initialize_request($kwarg = null) {
             $qreq->approve_token();
         }
     }
-    ensure_session(ENSURE_SESSION_ALLOW_EMPTY);
+    $qreq->set_qsession(new PHPQsession);
+    $qreq->qsession()->maybe_open();
 
     // upgrade session format
-    if (!isset($_SESSION["u"]) && isset($_SESSION["trueuser"])) {
-        $_SESSION["u"] = $_SESSION["trueuser"]->email;
-        unset($_SESSION["trueuser"]);
+    if (!$qreq->has_gsession("u") && $qreq->has_gsession("trueuser")) {
+        $qreq->set_gsession("u", $qreq->gsession("trueuser")->email);
+        $qreq->unset_gsession("trueuser");
     }
 
     // determine user
-    $trueemail = $_SESSION["u"] ?? null;
-    $userset = $_SESSION["us"] ?? ($trueemail ? [$trueemail] : []);
+    $trueemail = $qreq->gsession("u");
+    $userset = $qreq->gsession("us") ?? ($trueemail ? [$trueemail] : []);
     $usercount = count($userset);
     '@phan-var list<string> $userset';
 
@@ -374,42 +374,40 @@ function initialize_request($kwarg = null) {
     }
 
     // if bounced through login, add post data
-    if (isset($_SESSION["login_bounce"][4])
-        && $_SESSION["login_bounce"][4] <= Conf::$now) {
-        unset($_SESSION["login_bounce"]);
+    $login_bounce = $qreq->gsession("login_bounce");
+    if (isset($login_bounce[4]) && $login_bounce[4] <= Conf::$now) {
+        $qreq->unset_gsession("login_bounce");
+        $login_bounce = null;
     }
 
-    if (!$muser->is_empty()
-        && isset($_SESSION["login_bounce"])
-        && !isset($_SESSION["testsession"])) {
-        $lb = $_SESSION["login_bounce"];
-        if ($lb[0] === $conf->dbname
-            && $lb[2] !== "index"
-            && $lb[2] === Navigation::page()) {
-            foreach ($lb[3] as $k => $v) {
+    if (!$muser->is_empty() && $login_bounce !== null) {
+        if ($login_bounce[0] === $conf->dbname
+            && $login_bounce[2] !== "index"
+            && $login_bounce[2] === $nav->page) {
+            foreach ($login_bounce[3] as $k => $v) {
                 if (!isset($qreq[$k]))
                     $qreq[$k] = $v;
             }
             $qreq->set_annex("after_login", true);
         }
-        unset($_SESSION["login_bounce"]);
+        $qreq->unset_gsession("login_bounce");
     }
 
-    // set $_SESSION["addrs"]
-    if ($_SERVER["REMOTE_ADDR"]
-        && (!$muser->is_empty()
-            || isset($_SESSION["addrs"]))
-        && (!isset($_SESSION["addrs"])
-            || !is_array($_SESSION["addrs"])
-            || $_SESSION["addrs"][0] !== $_SERVER["REMOTE_ADDR"])) {
-        $as = [$_SERVER["REMOTE_ADDR"]];
-        if (isset($_SESSION["addrs"]) && is_array($_SESSION["addrs"])) {
-            foreach ($_SESSION["addrs"] as $a) {
-                if ($a !== $_SERVER["REMOTE_ADDR"] && count($as) < 5)
-                    $as[] = $a;
-            }
+    // remember recent addresses in session
+    $addr = $_SERVER["REMOTE_ADDR"];
+    if ($addr && (!$muser->is_empty() || $qreq->has_gsession("addrs"))) {
+        $addrs = $qreq->gsession("addrs");
+        if (!is_array($addrs) || empty($addrs)) {
+            $addrs = [];
         }
-        $_SESSION["addrs"] = $as;
+        if (($addrs[0] ?? null) !== $_SERVER["REMOTE_ADDR"]) {
+            $naddrs = [$addr];
+            foreach ($addrs as $a) {
+                if ($a !== $addr && count($naddrs) < 5)
+                    $naddrs[] = $a;
+            }
+            $qreq->set_gsession("addrs", $naddrs);
+        }
     }
 
     return [$muser, $qreq];

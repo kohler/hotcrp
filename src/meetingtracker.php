@@ -326,7 +326,7 @@ class MeetingTracker {
                 $start_at = Conf::$now;
             }
 
-            ensure_session();
+            $qreq->open_session();
             $tr = MeetingTracker_Config::make($user, $trackerid, $xlist, $start_at, $position, $position_at);
             if ($trmatch !== null) {
                 $tr->name = $trmatch->name;
@@ -369,7 +369,7 @@ class MeetingTracker {
         $message_list = [];
         $changed = false;
         $new_trackerid = false;
-        ensure_session();
+        $qreq->open_session();
 
         for ($i = 1; isset($qreq["tr{$i}-id"]); ++$i) {
             // Parse arguments

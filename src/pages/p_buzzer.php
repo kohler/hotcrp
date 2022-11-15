@@ -36,8 +36,9 @@ class Buzzer_Page {
         }
         // maybe sign out to kiosk
         if ($qreq->signout_to_kiosk && $qreq->valid_post()) {
-            $user = LoginHelper::logout($user, false);
-            ensure_session(ENSURE_SESSION_REGENERATE_ID);
+            $user = LoginHelper::logout($user, $qreq, false);
+            $qreq->set_user($user);
+            $qreq->qsession()->reopen();
             $key = $kiosk_keys[$qreq->buzzer_showpapers ? 1 : 0];
             $user->conf->redirect_self($qreq, ["__PATH__" => $key]);
         }

@@ -53,7 +53,7 @@ class Search_API {
             "message_list" => $pl->message_set()->message_list()
         ] + $response;
         if ($j["ok"] && $qreq->session && $qreq->valid_token() && !$qreq->is_head()) {
-            Session_API::setsession($user, $qreq->session);
+            Session_API::change_session($qreq, $qreq->session);
         }
         return $j;
     }

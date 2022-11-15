@@ -169,18 +169,22 @@ class PaperRequest {
      * @param Contact $user
      * @param Qrequest $qreq */
     static private function try_other_user($prow, $user, $qreq) {
-        if ($prow
-            && ($qreq->method() === "GET" || $qreq->method() === "HEAD")
-            && count(Contact::session_users()) > 1
+        if (!$prow
+            || ($qreq->method() !== "GET" && $qreq->method() !== "HEAD")) {
+            return;
+        }
+        $susers = Contact::session_users($qreq);
+        if (count($susers) > 1
+            && !$user->is_actas_user()
             && self::other_user_redirectable()) {
-            foreach (Contact::session_users() as $email) {
+            foreach ($susers as $email) {
                 $user->conf->prefetch_user_by_email($email);
             }
-            foreach (Contact::session_users() as $i => $email) {
+            foreach ($susers as $i => $email) {
                 if (strcasecmp($user->email, $email) !== 0
                     && ($u = $user->conf->user_by_email($email, USER_SLICE))
                     && self::check_prow($prow, $u, $qreq)) {
-                    $nav = Navigation::get();
+                    $nav = $qreq->navigation();
                     throw new Redirection($user->conf->make_absolute_site("u/{$i}/{$nav->raw_page}{$nav->path}{$nav->query}"));
                 }
             }

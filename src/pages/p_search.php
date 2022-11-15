@@ -131,7 +131,7 @@ class Search_Page {
             $this->set_header(30, "<strong>Scores:</strong>");
             $sortitem = '<div class="mt-2">Sort by: &nbsp;'
                 . Ht::select("scoresort", ListSorter::score_sort_selector_options(),
-                             ListSorter::canonical_long_score_sort(ListSorter::default_score_sort($user)),
+                             ListSorter::canonical_long_score_sort($pl->default_score_sort()),
                              ["id" => "scoresort"])
                 . '<a class="help" href="' . $this->conf->hoturl("help", "t=scoresort") . '" target="_blank" title="Learn more">?</a></div>';
             $this->item(30, $sortitem);
@@ -260,7 +260,7 @@ class Search_Page {
         echo "<div class=\"maintabsep\"></div>\n\n";
 
         if ($this->pl->has("sel")) {
-            echo Ht::form($this->conf->selfurl($qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel", "class" => "ui-submit js-submit-paperlist"]),
+            echo Ht::form($this->conf->selfurl($qreq, ["forceShow" => null], Conf::HOTURL_POST), ["id" => "sel", "class" => "ui-submit js-submit-paperlist"]),
                 Ht::hidden("defaultfn", ""),
                 Ht::hidden("forceShow", (string) $qreq->forceShow, ["id" => "forceShow"]),
                 Ht::hidden_default_submit("default", 1);
@@ -319,7 +319,7 @@ class Search_Page {
             $pl_text = null;
         }
         if ($this->pl->has("sel")) {
-            ensure_session();
+            $qreq->open_session();
         }
 
         // echo form
@@ -463,11 +463,11 @@ class Search_Page {
                     $settings[substr($k, 4)] = true;
                 }
             }
-            Session_API::change_display($user, "pl", $settings);
+            Session_API::change_display($qreq, "pl", $settings);
         }
         if ($qreq->scoresort) {
             $qreq->scoresort = ListSorter::canonical_short_score_sort($qreq->scoresort);
-            Session_API::setsession($user, "scoresort=" . $qreq->scoresort);
+            Session_API::change_session($qreq, "scoresort=" . $qreq->scoresort);
         }
         if ($qreq->redisplay) {
             if (isset($qreq->forceShow) && !$qreq->forceShow && $qreq->showforce) {
@@ -479,7 +479,7 @@ class Search_Page {
         }
         if ($user->privChair
             && !isset($qreq->forceShow)
-            && preg_match('/\b(show:|)force\b/', $user->session("pldisplay") ?? "")) {
+            && preg_match('/\b(show:|)force\b/', $qreq->csession("pldisplay") ?? "")) {
             $qreq->forceShow = 1;
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }

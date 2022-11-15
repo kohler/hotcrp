@@ -5,7 +5,7 @@
 class ChangeEmail_Page {
     static function go(Contact $user, Qrequest $qreq) {
         $conf = $user->conf;
-        ensure_session();
+        $qreq->open_session();
         $capdata = TokenInfo::find(trim($qreq->changeemail), $conf);
         $capcontent = null;
         if (!$capdata
@@ -63,8 +63,8 @@ class ChangeEmail_Page {
             if (!$user->has_account_here() || $user->contactId == $chuser->contactId) {
                 Contact::set_main_user($chuser->activate($qreq));
             }
-            if (Contact::session_user_index($capcontent->oldemail) >= 0) {
-                LoginHelper::change_session_users([
+            if (Contact::session_user_index($qreq, $capcontent->oldemail) >= 0) {
+                LoginHelper::change_session_users($qreq, [
                     $capcontent->oldemail => -1, $newemail => 1
                 ]);
             }
@@ -77,7 +77,7 @@ class ChangeEmail_Page {
                 echo '<p class="mb-5">Enter an email change code.</p>';
             }
             echo Ht::form($conf->hoturl("profile", "changeemail=1"), ["class" => "compact-form", "id" => "changeemailform"]),
-                Ht::hidden("post", post_value());
+                Ht::hidden("post", $qreq->post_value());
             if ($chuser) {
                 echo '<div class="f-i"><label>Old email</label>', htmlspecialchars($chuser->email), '</div>',
                     '<div class="f-i"><label>New email</label>',

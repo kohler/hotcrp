@@ -75,7 +75,7 @@ class CheckUpdates_Page {
                         $m .= "</div>";
                     }
                     $messages[] = $m . "</div>\n";
-                    $_SESSION["updatecheck"] = 0;
+                    $qreq->set_gsession("updatecheck", 0);
                 }
             }
         }

@@ -161,8 +161,10 @@ lib/mimetext.php
 lib/mimetype.php
 lib/mincostmaxflow.php
 lib/navigation.php
+lib/phpqsession.php
 lib/polyfills.php
 lib/qrequest.php
+lib/qsession.php
 lib/redirect.php
 lib/restoredb.sh
 lib/runsql.sh

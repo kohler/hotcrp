@@ -309,7 +309,7 @@ class Autoassign_Page {
                 if ($ai->check() && $ai->run()) {
                     return;
                 }
-                ensure_session();
+                $qreq->open_session();
             }
         }
 

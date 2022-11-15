@@ -55,7 +55,7 @@ class OAuth_Page {
     }
 
     function start() {
-        ensure_session();
+        $this->qreq->open_session();
         if (($authi = OAuthInstance::find($this->conf, $this->qreq->authtype))) {
             $tok = new TokenInfo($this->conf, TokenInfo::OAUTHSIGNIN);
             $tok->set_contactdb(!!$this->conf->contactdb())
@@ -160,7 +160,7 @@ class OAuth_Page {
             }
 
             $user->conf->feedback_msg(new MessageItem(null, "<0>Login successful", MessageSet::SUCCESS));
-            LoginHelper::change_session_users([$user->email => 1]);
+            LoginHelper::change_session_users($this->qreq, [$user->email => 1]);
             throw new Redirection(hoturl_add_raw($jdata->site_uri, "i=" . urlencode($user->email)));
         } else {
             $this->conf->error_msg("<0>OAuth authentication internal error");

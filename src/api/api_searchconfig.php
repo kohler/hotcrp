@@ -24,27 +24,24 @@ class SearchConfig_API {
                 return new JsonResult(["ok" => false, "message_list" => $pl->message_set()->message_list()]);
             }
 
-            $pl = new PaperList($report, $search, ["sort" => true]);
-            $pl->apply_view_report_default(true);
-            $baseline_view = $pl->unparse_view(true);
-
-            if ($parsed_view === $baseline_view) {
-                $user->conf->save_setting("{$report}display_default", null);
-            } else {
+            $want = join(" ", $parsed_view);
+            if ($want !== $pl->unparse_baseline_view()) {
                 $user->conf->save_setting("{$report}display_default", 1, join(" ", $parsed_view));
+            } else {
+                $user->conf->save_setting("{$report}display_default", null);
             }
-            $user->save_session("{$report}display", null);
+            $qreq->unset_csession("{$report}display");
             if ($report === "pl") {
-                $user->save_session("uldisplay", null);
+                $qreq->unset_csession("uldisplay");
             }
         }
 
-        $pl = new PaperList($report, $search, ["sort" => true]);
+        $pl = new PaperList($report, $search, ["sort" => ""], $qreq);
         $pl->apply_view_report_default();
         $vd = $pl->unparse_view(true);
 
         $search = new PaperSearch($user, $qreq->q ?? "NONE");
-        $pl = new PaperList($report, $search, ["sort" => $qreq->sort ?? true]);
+        $pl = new PaperList($report, $search, ["sort" => true], $qreq);
         $pl->apply_view_report_default();
         $pl->apply_view_session();
         $vr = $pl->unparse_view(true);

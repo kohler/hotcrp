@@ -340,7 +340,7 @@ class Users_Page {
         if (isset($this->qreq->scoresort)) {
             $sv[] = "ulscoresort=" . ListSorter::canonical_short_score_sort($this->qreq->scoresort);
         }
-        Session_API::setsession($this->viewer, join(" ", $sv));
+        Session_API::change_session($this->qreq, join(" ", $sv));
         $this->conf->redirect_self($this->qreq);
         return true;
     }
@@ -423,7 +423,7 @@ class Users_Page {
         }
         if (!empty($viewable_fields)) {
             echo '<td class="pad">';
-            $uldisplay = ContactList::uldisplay($this->viewer);
+            $uldisplay = ContactList::uldisplay($this->qreq);
             foreach ($viewable_fields as $f) {
                 $checked = strpos($uldisplay, " {$f->short_id} ") !== false;
                 echo Ht::checkbox("show{$f->short_id}", 1, $checked),
@@ -442,7 +442,7 @@ class Users_Page {
                     $ss[$k] = $v;
             }
             echo '<tr><td colspan="3"><hr class="g"><b>Sort scores by:</b> &nbsp;',
-                Ht::select("scoresort", $ss, ListSorter::canonical_long_score_sort($this->viewer->session("ulscoresort") ?? "A")),
+                Ht::select("scoresort", $ss, ListSorter::canonical_long_score_sort($this->qreq->csession("ulscoresort") ?? "A")),
                 "</td></tr>";
         }
         echo "</table></form>";

@@ -445,7 +445,7 @@ class RequestReview_API {
 
         $email = $qreq->email;
         if (!$email
-            || ($useridx = $user->session_user_index($email)) < 0) {
+            || ($useridx = $user->session_user_index($qreq, $email)) < 0) {
             return JsonResult::make_permission_error("email", "<0>Reassigning reviews is only possible for accounts to which you are currently signed in");
         }
 

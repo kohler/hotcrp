@@ -589,22 +589,25 @@ class Contact implements JsonSerializable {
 
     // initialization
 
-    /** @return list<string> */
-    static function session_users() {
+    /** @param Qrequest $qreq
+     * @return list<string> */
+    static function session_users($qreq) {
         if (isset(self::$session_users)) {
             return self::$session_users;
-        } else if (isset($_SESSION["us"])) {
-            return $_SESSION["us"];
-        } else if (isset($_SESSION["u"])) {
-            return [$_SESSION["u"]];
+        } else if (($us = $qreq->gsession("us")) !== null) {
+            return $us;
+        } else if (($u = $qreq->gsession("u")) !== null) {
+            return [$u];
         } else {
             return [];
         }
     }
 
-    /** @return int */
-    static function session_user_index($email) {
-        foreach (self::session_users() as $i => $u) {
+    /** @param Qrequest $qreq
+     * @param string $email
+     * @return int */
+    static function session_user_index($qreq, $email) {
+        foreach (self::session_users($qreq) as $i => $u) {
             if (strcasecmp($u, $email) === 0) {
                 return $i;
             }
@@ -659,20 +662,18 @@ class Contact implements JsonSerializable {
         $this->_activated |= 4;
     }
 
-    /** @param ?Qrequest $qreq
+    /** @param Qrequest $qreq
      * @return Contact */
     function activate($qreq, $signin = false) {
         $this->_activated |= 1;
 
         // Handle actas requests
-        if ($qreq && $qreq->actas && $signin && $this->email) {
+        if ($qreq->actas && $signin && $this->email) {
             $actas = $qreq->actas;
             unset($qreq->actas, $_GET["actas"], $_POST["actas"]);
             $actasuser = $this->actas_user($actas);
             if ($actasuser !== $this) {
-                if ($this->conf->session_key !== null) {
-                    $_SESSION["last_actas"] = $actasuser->email;
-                }
+                $qreq->set_gsession("last_actas", $actasuser->email);
                 $actasuser->_activated |= 2;
                 $actasuser->_admin_base_user = $this;
                 $actasuser->_hoturl_defaults["actas"] = urlencode($actasuser->email);
@@ -681,13 +682,13 @@ class Contact implements JsonSerializable {
         }
 
         // add capabilities from session and request
-        if ($qreq && isset($qreq->cap)) {
+        if (isset($qreq->cap)) {
             $this->apply_capability_text($qreq->cap);
             unset($qreq->cap, $_GET["cap"], $_POST["cap"]);
         }
 
         // add review tokens from session
-        if (($rtokens = $this->session("rev_tokens"))) {
+        if (($rtokens = $qreq->csession("rev_tokens"))) {
             foreach ($rtokens as $t) {
                 $this->_review_tokens[] = (int) $t;
             }
@@ -700,10 +701,10 @@ class Contact implements JsonSerializable {
                 $this->activate_placeholder_prop();
                 $this->save_prop();
             }
-            $trueuser_aucheck = $this->session("trueuser_author_check") ?? 0;
+            $trueuser_aucheck = $qreq->csession("trueuser_author_check") ?? 0;
             if (!$this->has_account_here()
                 && $trueuser_aucheck + 600 < Conf::$now) {
-                $this->save_session("trueuser_author_check", Conf::$now);
+                $qreq->set_csession("trueuser_author_check", Conf::$now);
                 $aupapers = self::email_authored_papers($this->conf, $this->email, $this);
                 if (!empty($aupapers)) {
                     $this->ensure_account_here();
@@ -730,10 +731,10 @@ class Contact implements JsonSerializable {
 
         // check forceShow
         $this->_overrides = 0;
-        if ($qreq && $qreq->forceShow && $this->is_manager()) {
+        if ($qreq->forceShow && $this->is_manager()) {
             $this->_overrides |= self::OVERRIDE_CONFLICT;
         }
-        if ($qreq && $qreq->override) {
+        if ($qreq->override) {
             $this->_overrides |= self::OVERRIDE_TIME;
         }
 
@@ -912,17 +913,6 @@ class Contact implements JsonSerializable {
      * @deprecated */
     function contactdb_update() {
         return $this->update_cdb();
-    }
-
-
-    /** @param string $name */
-    function session($name) {
-        return $this->conf->session($name);
-    }
-
-    /** @param string $name */
-    function save_session($name, $value) {
-        $this->conf->save_session($name, $value);
     }
 
 
@@ -1540,16 +1530,15 @@ class Contact implements JsonSerializable {
             }
         }
 
-        if (!$this->is_signed_in()
-            && $this->conf->session_key !== null) {
+        if (!$this->is_signed_in()) {
             // Preserve post values across session expiration.
-            ensure_session();
+            $qreq->open_session();
             $x = [];
             if (($path = Navigation::path())) {
                 $x["__PATH__"] = preg_replace('/^\/+/', "", $path);
             }
             $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
-            $_SESSION["login_bounce"] = [$this->conf->dbname, $url, Navigation::page(), $_POST, Conf::$now + 120];
+            $qreq->set_gsession("login_bounce", [$this->conf->dbname, $url, Navigation::page(), $_POST, Conf::$now + 120]);
             $ml = [MessageItem::error("<0>You must sign in to access that page")];
             if ($qreq->valid_token()) {
                 $ml[] = MessageItem::inform("<0>Your changes were not saved. After signing in, you may try to submit them again");
@@ -2674,8 +2663,9 @@ class Contact implements JsonSerializable {
     }
 
     /** @param false|int $token
-     * @param bool $on */
-    function change_review_token($token, $on) {
+     * @param bool $on
+     * @param ?Qrequest $qreq */
+    function change_review_token($token, $on, $qreq = null) {
         assert(($token === false && $on === false) || is_int($token));
         $this->_review_tokens = $this->_review_tokens ?? [];
         $old_ntokens = count($this->_review_tokens);
@@ -2695,8 +2685,13 @@ class Contact implements JsonSerializable {
         }
         if ($new_ntokens !== $old_ntokens) {
             $this->update_my_rights();
-            if ($this->_activated !== 0) {
-                $this->save_session("rev_tokens", $this->_review_tokens);
+            if ($qreq) {
+                assert($qreq->user() === $this);
+                if ($this->_review_tokens !== null) {
+                    $qreq->set_csession("rev_tokens", $this->_review_tokens);
+                } else {
+                    $qreq->unset_csession("rev_tokens");
+                }
             }
         }
         return $new_ntokens !== $old_ntokens;

@@ -241,7 +241,7 @@ class ReviewPrefs_Page {
                 if (substr($k, 0, 4) == "show" && $v)
                     $pfd .= substr($k, 4) . " ";
             }
-            $user->save_session("pfdisplay", $pfd);
+            $qreq->set_csession("pfdisplay", $pfd);
             $conf->redirect_self($qreq);
         }
 

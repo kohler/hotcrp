@@ -27,8 +27,8 @@ class Settings_Page {
             $req_group = $qreq->path_component(0);
         }
         $want_group = $req_group;
-        if (!$want_group && isset($_SESSION["sg"])) { // NB not conf-specific session, global
-            $want_group = $_SESSION["sg"];
+        if (!$want_group && $qreq->has_gsession("sg")) { // NB not conf-specific session, global
+            $want_group = $qreq->gsession("sg");
         }
         $want_group = $this->sv->canonical_group($want_group);
         if (!$want_group || !$this->sv->group_title($want_group)) {
@@ -56,7 +56,7 @@ class Settings_Page {
     /** @param Qrequest $qreq */
     function handle_update($qreq) {
         if ($this->sv->execute()) {
-            $this->user->save_session("settings_highlight", $this->sv->message_field_map());
+            $qreq->set_csession("settings_highlight", $this->sv->message_field_map());
             if (!empty($this->sv->updated_fields())) {
                 $this->conf->success_msg("<0>Changes saved");
             } else {
@@ -135,13 +135,14 @@ class Settings_Page {
 
         $sv = SettingValues::make_request($user, $qreq);
         $sv->set_use_req(isset($qreq->update) && $qreq->valid_post());
-        $sv->session_highlight();
+        $sv->session_highlight($qreq);
         if (!$sv->viewable_by_user()) {
             $user->escape();
         }
 
         $sp = new Settings_Page($sv, $user);
-        $_SESSION["sg"] = $group = $qreq->group = $sp->choose_setting_group($qreq);
+        $group = $qreq->group = $sp->choose_setting_group($qreq);
+        $qreq->set_gsession("sg", $group);
 
         if ($sv->use_req()) {
             $sp->handle_update($qreq);

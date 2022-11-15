@@ -11,8 +11,8 @@ class LoginHelper {
         assert($conf->opt("httpAuthLogin") !== null);
 
         // if user signed out of HTTP authentication, send a reauth request
-        if (isset($_SESSION["reauth"])) {
-            unset($_SESSION["reauth"]);
+        if ($qreq->has_gsession("reauth")) {
+            $qreq->unset_gsession("reauth");
             header("HTTP/1.0 401 Unauthorized");
             if (is_string($conf->opt("httpAuthLogin"))) {
                 header("WWW-Authenticate: " . $conf->opt("httpAuthLogin"));
@@ -139,17 +139,17 @@ class LoginHelper {
         $xuser->mark_login();
 
         // store authentication
-        ensure_session(ENSURE_SESSION_REGENERATE_ID);
-        self::change_session_users([$xuser->email => 1]);
+        $qreq->qsession()->reopen();
+        self::change_session_users($qreq, [$xuser->email => 1]);
 
         // activate
         $user = $xuser->activate($qreq);
-        $user->save_session("password_reset", null);
+        $qreq->unset_csession("password_reset");
 
         $nav = $qreq->navigation();
         $url = $nav->server . $nav->base_path;
-        if (isset($_SESSION["us"])) {
-            $url .= "u/" . Contact::session_user_index($user->email) . "/";
+        if ($qreq->has_gsession("us")) {
+            $url .= "u/" . Contact::session_user_index($qreq, $user->email) . "/";
         }
         $url .= "?postlogin=1";
         if ($qreq->redirect !== null && $qreq->redirect !== "1") {
@@ -164,8 +164,10 @@ class LoginHelper {
         return $info;
     }
 
-    static function change_session_users($uinstr) {
-        $us = Contact::session_users();
+    /** @param Qrequest $qreq
+     * @param array<string,1|-1> $uinstr */
+    static function change_session_users($qreq, $uinstr) {
+        $us = Contact::session_users($qreq);
         foreach ($uinstr as $e => $delta) {
             for ($i = 0; $i !== count($us); ++$i) {
                 if (strcasecmp($us[$i], $e) === 0)
@@ -178,14 +180,14 @@ class LoginHelper {
             }
         }
         if (count($us) > 1) {
-            $_SESSION["us"] = $us;
+            $qreq->set_gsession("us", $us);
         } else {
-            unset($_SESSION["us"]);
+            $qreq->unset_gsession("us");
         }
         if (empty($us)) {
-            unset($_SESSION["u"]);
-        } else if (!isset($_SESSION["u"]) || $us[0] !== $_SESSION["u"]) {
-            $_SESSION["u"] = $us[0];
+            $qreq->unset_gsession("u");
+        } else if ($qreq->gsession("u") !== $us[0]) {
+            $qreq->set_gsession("u", $us[0]);
         }
     }
 
@@ -202,22 +204,22 @@ class LoginHelper {
 
     static function check_postlogin(Contact $user, Qrequest $qreq) {
         // Check for the cookie
-        if (!isset($_SESSION["v"])) {
+        if (!$qreq->has_gsession("v")) {
             $user->conf->feedback_msg([
                 MessageItem::error($user->conf->_id("session_failed_error", ""))
             ]);
             return;
         }
-        unset($_SESSION["testsession"]);
+        $qreq->unset_gsession("testsession");
 
         // Go places
         if (isset($qreq->redirect)) {
             $where = $qreq->redirect;
-        } else if (isset($_SESSION["login_bounce"])
-                   && $_SESSION["login_bounce"][0] == $user->conf->dbname) {
-            $where = $_SESSION["login_bounce"][1];
+        } else if (($login_bounce = $qreq->gsession("login_bounce"))
+                   && $login_bounce[0] === $user->conf->dbname) {
+            $where = $login_bounce[1];
         } else {
-            $user->save_session("freshlogin", true);
+            $qreq->set_csession("freshlogin", true);
             $where = $user->conf->hoturl_raw("index");
         }
         $user->conf->redirect($where);
@@ -296,24 +298,30 @@ class LoginHelper {
     }
 
 
-    static function logout(Contact $user, $explicit) {
-        if (isset($_SESSION)) {
-            $_SESSION = [];
-            session_commit();
+    /** @param bool $explicit
+     * @return Contact */
+    static function logout(Contact $user, Qrequest $qreq, $explicit) {
+        $qsess = $qreq->qsession();
+        if ($qsess->maybe_open()) {
+            $qsess->clear();
+            $qsess->commit();
         }
-        if ($explicit && $user->conf->opt("httpAuthLogin")) {
-            ensure_session(ENSURE_SESSION_REGENERATE_ID);
-            $_SESSION["reauth"] = true;
-        } else if ($explicit) {
-            kill_session();
+        if ($explicit) {
+            if ($user->conf->opt("httpAuthLogin")) {
+                $qsess->reopen();
+                $qsess->set("reauth", true);
+            } else {
+                unlink_session();
+            }
         }
         $user = Contact::make($user->conf);
-        return $user->activate(null);
+        unset($qreq->actas, $qreq->cap, $qreq->forceShow, $qreq->override);
+        return $user->activate($qreq);
     }
 
 
     static function login_error(Conf $conf, Qrequest $qreq, $info) {
-        $email = trim($qreq->email);
+        $email = trim($qreq->email ?? "");
         if (self::DEBUG) {
             error_log("{$conf->dbname} login failure: $email " . json_encode($info) . " " . json_encode($qreq));
         }

@@ -29,7 +29,7 @@ class Signin_Page {
         if ($sid !== "" || $action !== "signin") {
             error_log($msg);
         }
-        ensure_session();
+        $qreq->open_session();
         if ($qreq->post_retry) {
             $user->conf->error_msg($user->conf->_id("session_failed_error", ""));
         } else {
@@ -106,7 +106,7 @@ class Signin_Page {
     /** @param Qrequest $qreq
      * @return string|false */
     static function check_password_as_reset_code(Contact $user, $qreq) {
-        $pw = trim($qreq->password);
+        $pw = trim($qreq->password ?? "");
         if (($cap = self::_find_reset_token($user->conf, $pw))
             && ($capuser = $cap->user())
             && strcasecmp($capuser->email, trim($qreq->email)) === 0) {
@@ -129,7 +129,7 @@ class Signin_Page {
         echo '<div class="', $extraclass ? Ht::add_tokens("homegrp", $extraclass) : "homegrp",
             '" id="homeaccount">',
             Ht::form($qreq->conf()->hoturl($page), ["class" => "compact-form ui-submit uin js-signin"]),
-            Ht::hidden("post", post_value(true));
+            Ht::hidden("post", $qreq->post_value(true));
         if ($qreq->is_post() && !$qreq->valid_token()) {
             echo Ht::hidden("post_retry", "1");
         }
@@ -138,9 +138,9 @@ class Signin_Page {
     /** @param ComponentSet $cs */
     static function print_signin_form(Contact $user, Qrequest $qreq, $cs) {
         $conf = $user->conf;
-        if (($password_reset = $user->session("password_reset"))) {
+        if (($password_reset = $qreq->csession("password_reset"))) {
             if ($password_reset->time < Conf::$now - 900) {
-                $user->save_session("password_reset", null);
+                $qreq->unset_csession("password_reset");
             } else if (!isset($qreq->email)) {
                 $qreq->email = $password_reset->email;
             }
@@ -166,7 +166,7 @@ class Signin_Page {
     }
 
     static function print_signin_form_description(Contact $user, Qrequest $qreq) {
-        if (($su = Contact::session_users())) {
+        if (($su = Contact::session_users($qreq))) {
             $nav = $qreq->navigation();
             $links = [];
             foreach ($su as $i => $email) {
@@ -192,7 +192,7 @@ class Signin_Page {
                 "type" => !$is_external_login && !str_ends_with($email, "@_.com") ? "email" : "text",
                 "autofocus" => Ht::problem_status_at("email")
                     || $email === ""
-                    || (!Ht::problem_status_at("password") && !$user->session("password_reset"))
+                    || (!Ht::problem_status_at("password") && !$qreq->csession("password_reset"))
             ]), '</div>';
     }
 
@@ -204,7 +204,7 @@ class Signin_Page {
                 $user->conf->hoturl("forgotpassword"),
                 '" class="n ulh small uic js-href-add-email">Forgot your password?</a></div>';
         }
-        $password_reset = $user->session("password_reset");
+        $password_reset = $qreq->csession("password_reset");
         echo Ht::label("Password", "signin_password"),
             Ht::feedback_html_at("password"),
             Ht::password("password",
@@ -245,9 +245,9 @@ class Signin_Page {
         if ($qreq->cancel) {
             $user->conf->redirect();
         } else if ($qreq->valid_post()) {
-            LoginHelper::logout($user, true);
+            LoginHelper::logout($user, $qreq, true);
             $user->conf->redirect_hoturl("index", "signedout=1");
-        } else if (!isset($_SESSION) || $user->is_empty()) {
+        } else if ($user->is_empty()) {
             $user->conf->redirect_hoturl("index", "signedout=1");
         } else {
             self::bad_post_error($user, $qreq, "signout");
@@ -511,7 +511,7 @@ class Signin_Page {
             $accthere->log_activity("Password reset via " . substr($this->_reset_tokstr, 0, 8) . "...");
             $user->conf->success_msg("<0>Password changed. Use the new password to sign in below.");
             $this->_reset_token->delete();
-            $user->save_session("password_reset", (object) [
+            $qreq->set_csession("password_reset", (object) [
                 "time" => Conf::$now,
                 "email" => $this->_reset_user->email,
                 "password" => $p1

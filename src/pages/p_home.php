@@ -49,12 +49,12 @@ class Home_Page {
             LoginHelper::check_postlogin($user, $qreq);
         }
         if ($user->has_account_here()
-            && $user->session("freshlogin") === true) {
+            && $qreq->csession("freshlogin") === true) {
             if (self::need_profile_redirect($user)) {
-                $user->save_session("freshlogin", "redirect");
+                $qreq->set_csession("freshlogin", "redirect");
                 $user->conf->redirect_hoturl("profile", "redirect=1");
             } else {
-                $user->save_session("freshlogin", null);
+                $qreq->unset_csession("freshlogin");
             }
         }
     }

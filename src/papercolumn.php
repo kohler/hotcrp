@@ -824,7 +824,7 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
         }
     }
     function score_sort(PaperList $pl) {
-        $this->score_sort = $this->score_sort ?? ListSorter::default_score_sort($pl->user);
+        $this->score_sort = $this->score_sort ?? $pl->default_score_sort();
         return $this->score_sort;
     }
     function prepare(PaperList $pl, $visible) {
