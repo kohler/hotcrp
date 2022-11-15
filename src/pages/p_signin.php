@@ -40,7 +40,7 @@ class Signin_Page {
     }
 
     /** @return MessageSet */
-    private function ms() {
+    function ms() {
         $this->_ms = $this->_ms ?? new MessageSet;
         return $this->_ms;
     }
