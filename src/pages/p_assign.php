@@ -15,11 +15,14 @@ class Assign_Page {
     public $pt;
     /** @var bool */
     public $allow_view_authors;
+    /** @var MessageSet */
+    private $ms;
 
     function __construct(Contact $user, Qrequest $qreq) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->qreq = $qreq;
+        $this->ms = new MessageSet;
     }
 
     function error_exit(...$mls) {
@@ -134,7 +137,7 @@ class Assign_Page {
                     $emx->message .= "<p>To request a review anyway, either retract the refusal or submit again with “Override” checked.</p>";
                 }
             }
-            $result->export_messages($this->conf);
+            $this->ms->append_list($result->content["message_list"] ?? []);
             $this->assign_load();
         }
     }
@@ -145,7 +148,7 @@ class Assign_Page {
             $this->conf->success_msg("<0>Proposed reviewer denied");
             $this->conf->redirect_self($this->qreq, ["email" => null, "firstName" => null, "lastName" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "deny" => null, "denyreview" => null]);
         } else {
-            $result->export_messages($this->conf);
+            $this->ms->append_list($result->content["message_list"] ?? []);
             $this->assign_load();
         }
     }
@@ -163,7 +166,7 @@ class Assign_Page {
             }
             $this->conf->redirect_self($this->qreq, ["email" => null, "firstName" => null, "lastName" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "retractreview" => null]);
         } else {
-            $result->export_messages($this->conf);
+            $this->ms->append_list($result->content["message_list"] ?? []);
             $this->assign_load();
         }
     }
@@ -178,7 +181,7 @@ class Assign_Page {
             );
             $this->conf->redirect_self($this->qreq, ["email" => null, "firstName" => null, "lastName" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "undeclinereview" => null]);
         } else {
-            $result->export_messages($this->conf);
+            $this->ms->append_list($result->content["message_list"] ?? []);
             $this->assign_load();
         }
     }
@@ -208,6 +211,7 @@ class Assign_Page {
             && $qreq->valid_post()) {
             $this->handle_undeclinereview();
         }
+        $this->conf->feedback_msg($this->ms);
     }
 
     /** @param ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rrow */
@@ -602,20 +606,24 @@ class Assign_Page {
             }
         }
         echo '<div class="w-text g">',
-            '<div class="', Ht::control_class("email", "f-i"), '">',
+            '<div class="', $this->ms->control_class("email", "f-i"), '">',
             Ht::label("Email", "revreq_email"),
+            $this->ms->feedback_html_at("email"),
             Ht::entry("email", (string) $this->qreq->email, ["id" => "revreq_email", "size" => 52, "class" => $email_class, "autocomplete" => "off", "type" => "email"]),
             '</div>',
             '<div class="f-mcol">',
-            '<div class="', Ht::control_class("firstName", "f-i"), '">',
+            '<div class="', $this->ms->control_class("firstName", "f-i"), '">',
             Ht::label("First name (given name)", "revreq_firstName"),
+            $this->ms->feedback_html_at("firstName"),
             Ht::entry("firstName", (string) $this->qreq->firstName, ["id" => "revreq_firstName", "size" => 24, "class" => "fullw", "autocomplete" => "off"]),
-            '</div><div class="', Ht::control_class("lastName", "f-i"), '">',
+            '</div><div class="', $this->ms->control_class("lastName", "f-i"), '">',
             Ht::label("Last name (family name)", "revreq_lastName"),
+            $this->ms->feedback_html_at("lastName"),
             Ht::entry("lastName", (string) $this->qreq->lastName, ["id" => "revreq_lastName", "size" => 24, "class" => "fullw", "autocomplete" => "off"]),
             '</div></div>',
-            '<div class="', Ht::control_class("affiliation", "f-i"), '">',
+            '<div class="', $this->ms->control_class("affiliation", "f-i"), '">',
             Ht::label("Affiliation", "revreq_affiliation"),
+            $this->ms->feedback_html_at("affiliation"),
             Ht::entry("affiliation", (string) $this->qreq->affiliation, ["id" => "revreq_affiliation", "size" => 52, "class" => "fullw", "autocomplete" => "off"]),
             '</div>';
         if ($this->allow_view_authors) {
@@ -634,7 +642,7 @@ class Assign_Page {
         }
 
         if ($user->can_administer($prow)) {
-            echo '<label class="', Ht::control_class("override", "checki"), '"><span class="checkc">',
+            echo '<label class="', $this->ms->control_class("override", "checki"), '"><span class="checkc">',
                 Ht::checkbox("override"),
                 ' </span>Override deadlines and declined requests</label>';
         }

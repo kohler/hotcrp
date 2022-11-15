@@ -9,20 +9,23 @@ class MergeAccounts_Page {
     public $user;
     /** @var Qrequest */
     public $qreq;
+    /** @var MessageSet */
+    private $ms;
 
     function __construct(Contact $user, Qrequest $qreq) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->qreq = $qreq;
+        $this->ms = new MessageSet;
     }
 
     private function handle_merge() {
         if (!$this->qreq->email) {
-            Ht::error_at("email", "Enter the other account’s email address");
+            $this->ms->error_at("email", "Enter the other account’s email address");
             return false;
         }
         if (!$this->qreq->password) {
-            Ht::error_at("password", "Enter the other account’s password");
+            $this->ms->error_at("password", "Enter the other account’s password");
             return false;
         }
         if ($this->user->is_actas_user()) {
@@ -33,11 +36,11 @@ class MergeAccounts_Page {
         $other = $this->conf->user_by_email($this->qreq->email)
             ?? $this->conf->cdb_user_by_email($this->qreq->email);
         if (!$other) {
-            Ht::error_at("email", "<0>Account ‘{$this->qreq->email}’ not found; please check the email address");
+            $this->ms->error_at("email", "<0>Account ‘{$this->qreq->email}’ not found; please check the email address");
             return false;
         }
         if (!$other->check_password($this->qreq->password)) {
-            Ht::error_at("password", "<0>Incorrect password");
+            $this->ms->error_at("password", "<0>Incorrect password");
             return false;
         }
         if (!$this->user->contactId && !$other->contactId) {
@@ -94,15 +97,15 @@ between accounts, including authorship, reviews, and PC status. (Note that the
 transfer will only affect information currently stored in this conference.)</p></div>';
 
         echo Ht::form($this->conf->hoturl("=mergeaccounts")),
-            '<div class="', Ht::control_class("email", "f-i"), '">',
+            '<div class="', $this->ms->control_class("email", "f-i"), '">',
             Ht::label("Other email", "merge_email"),
-            Ht::feedback_html_at("email"),
+            $this->ms->feedback_html_at("email"),
             Ht::entry("email", (string) $this->qreq->email,
                       ["size" => 36, "id" => "merge_email", "autocomplete" => "username"]),
             '</div>
-    <div class="', Ht::control_class("password", "f-i fx"), '">',
+    <div class="', $this->ms->control_class("password", "f-i fx"), '">',
             Ht::label("Other password", "merge_password"),
-            Ht::feedback_html_at("password"),
+            $this->ms->feedback_html_at("password"),
             Ht::password("password", "",
                          ["size" => 36, "id" => "merge_password", "autocomplete" => "current-password"]),
         '</div>

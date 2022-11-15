@@ -134,9 +134,6 @@ class AutoassignerInterface extends MessageSet {
     /** @return bool */
     function check() {
         $this->conf->feedback_msg($this);
-        foreach ($this->error_fields() as $field) {
-            Ht::error_at($field);
-        }
         return !$this->has_error();
     }
 

@@ -6,6 +6,7 @@ class ChangeEmail_Page {
     static function go(Contact $user, Qrequest $qreq) {
         $conf = $user->conf;
         $qreq->open_session();
+        $ms = new MessageSet;
         $capdata = TokenInfo::find(trim($qreq->changeemail), $conf);
         $capcontent = null;
         if (!$capdata
@@ -16,17 +17,17 @@ class ChangeEmail_Page {
             || !is_object($capcontent)
             || !($capcontent->uemail ?? null)) {
             if (trim($qreq->changeemail) !== "1") {
-                Ht::error_at("changeemail", "<0>That email change code has expired, or you didn’t enter it correctly");
+                $ms->error_at("changeemail", "<0>That email change code has expired, or you didn’t enter it correctly");
             }
             $capdata = false;
         }
 
         $chuser = null;
         if ($capdata && !($chuser = $conf->user_by_id($capdata->contactId))) {
-            Ht::error_at("changeemail", "<0>The account associated with that email change code no longer exists");
+            $ms->error_at("changeemail", "<0>The account associated with that email change code no longer exists");
         }
         if ($chuser && strcasecmp($chuser->email, $capcontent->oldemail) !== 0) {
-            Ht::error_at("changeemail", "<0>You have changed your email address since creating that email change code");
+            $ms->error_at("changeemail", "<0>You have changed your email address since creating that email change code");
             $chuser = null;
         }
 
@@ -42,13 +43,12 @@ class ChangeEmail_Page {
         $newcdbu = $newemail ? $conf->cdb_user_by_email($newemail) : null;
         if ($newcdbu) {
             if ($newcdbu->contactdb_disabled()) { // NB do not use is_disabled()
-                Ht::error_at("changeemail", "<0>That user is disabled on all sites");
+                $ms->error_at("changeemail", "<0>That user is disabled on all sites");
             } else if ($qreq->go && $qreq->valid_post()) {
                 $qreq->password = trim((string) $qreq->password);
                 $info = $newcdbu->check_password_info($qreq->password);
                 if (!$info["ok"]) {
-                    $qreqa = ["email" => $newemail] + $qreq->as_array();
-                    LoginHelper::login_error($conf, new Qrequest("POST", $qreqa), $info);
+                    LoginHelper::login_error($conf, $newemail, $info, $ms);
                     unset($qreq->go);
                 }
             }
@@ -84,13 +84,13 @@ class ChangeEmail_Page {
                     Ht::entry("email", $newemail, ["autocomplete" => "username", "readonly" => true, "class" => "fullw"]),
                     '</div>';
             }
-            echo '<div class="', Ht::control_class("changeemail", "f-i"), '"><label for="changeemail">Change code</label>',
-                Ht::feedback_html_at("changeemail"),
+            echo '<div class="', $ms->control_class("changeemail", "f-i"), '"><label for="changeemail">Change code</label>',
+                $ms->feedback_html_at("changeemail"),
                 Ht::entry("changeemail", $qreq->changeemail == "1" ? "" : $qreq->changeemail, ["id" => "changeemail", "class" => "fullw", "autocomplete" => "one-time-code"]),
                 '</div>';
             if ($newcdbu) {
-                echo '<div class="', Ht::control_class("password", "f-i"), '"><label for="password">Password for ', htmlspecialchars($newemail), '</label>',
-                Ht::feedback_html_at("password"),
+                echo '<div class="', $ms->control_class("password", "f-i"), '"><label for="password">Password for ', htmlspecialchars($newemail), '</label>',
+                $ms->feedback_html_at("password"),
                 Ht::password("password", "", ["autocomplete" => "password", "class" => "fullw"]),
                 '</div>';
             }

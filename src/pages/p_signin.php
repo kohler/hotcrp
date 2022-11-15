@@ -9,6 +9,8 @@ class Signin_Page {
     public $_reset_token;
     /** @var ?Contact */
     public $_reset_user;
+    /** @var ?MessageSet */
+    private $_ms;
 
     static private function bad_post_error(Contact $user, Qrequest $qreq, $action) {
         $sid = $qreq->qsid();
@@ -37,10 +39,32 @@ class Signin_Page {
         }
     }
 
+    /** @return MessageSet */
+    private function ms() {
+        $this->_ms = $this->_ms ?? new MessageSet;
+        return $this->_ms;
+    }
+    /** @param string $field
+     * @param string $rest
+     * @return string */
+    private function control_class($field, $rest = "") {
+        return $this->_ms ? $this->_ms->control_class($field, $rest) : $rest;
+    }
+    /** @param string $field
+     * @return string */
+    private function feedback_html_at($field) {
+        return $this->_ms ? $this->_ms->feedback_html_at($field) : "";
+    }
+    /** @param string $field
+     * @return int */
+    private function problem_status_at($field) {
+        return $this->_ms ? $this->_ms->problem_status_at($field) : 0;
+    }
+
 
     // Signin request
     /** @param ComponentSet $cs */
-    static function signin_request(Contact $user, Qrequest $qreq, $cs) {
+    function signin_request(Contact $user, Qrequest $qreq, $cs) {
         assert($qreq->method() === "POST");
         if ($qreq->cancel) {
             $info = ["ok" => false];
@@ -63,7 +87,7 @@ class Signin_Page {
                 } else if (($code = self::check_password_as_reset_code($user, $qreq))) {
                     $user->conf->redirect_hoturl("resetpassword", ["__PATH__" => $code]);
                 } else {
-                    LoginHelper::login_error($user->conf, $qreq, $info);
+                    LoginHelper::login_error($user->conf, $qreq->email, $info, $this->ms());
                 }
             }
         } else {
@@ -180,25 +204,25 @@ class Signin_Page {
         }
     }
 
-    static function print_signin_form_email(Contact $user, Qrequest $qreq) {
+    function print_signin_form_email(Contact $user, Qrequest $qreq) {
         $is_external_login = $user->conf->external_login();
         $email = $qreq->email ?? "";
-        echo '<div class="', Ht::control_class("email", "f-i fx"), '">',
+        echo '<div class="', $this->control_class("email", "f-i fx"), '">',
             Ht::label($is_external_login ? "Username" : "Email", "signin_email"),
-            Ht::feedback_html_at("email"),
+            $this->feedback_html_at("email"),
             Ht::entry("email", $email, [
                 "size" => 36, "id" => "signin_email", "class" => "fullw",
                 "autocomplete" => "username", "tabindex" => 1,
                 "type" => !$is_external_login && !str_ends_with($email, "@_.com") ? "email" : "text",
-                "autofocus" => Ht::problem_status_at("email")
+                "autofocus" => $this->problem_status_at("email")
                     || $email === ""
-                    || (!Ht::problem_status_at("password") && !$qreq->csession("password_reset"))
+                    || (!$this->problem_status_at("password") && !$qreq->csession("password_reset"))
             ]), '</div>';
     }
 
-    static function print_signin_form_password(Contact $user, Qrequest $qreq) {
+    function print_signin_form_password(Contact $user, Qrequest $qreq) {
         $is_external_login = $user->conf->external_login();
-        echo '<div class="', Ht::control_class("password", "f-i fx"), '">';
+        echo '<div class="', $this->control_class("password", "f-i fx"), '">';
         if (!$is_external_login) {
             echo '<div class="float-right"><a href="',
                 $user->conf->hoturl("forgotpassword"),
@@ -206,14 +230,14 @@ class Signin_Page {
         }
         $password_reset = $qreq->csession("password_reset");
         echo Ht::label("Password", "signin_password"),
-            Ht::feedback_html_at("password"),
+            $this->feedback_html_at("password"),
             Ht::password("password",
-                Ht::problem_status_at("password") !== 1 ? "" : $qreq->password, [
+                $this->problem_status_at("password") !== 1 ? "" : $qreq->password, [
                 "size" => 36, "id" => "signin_password", "class" => "fullw",
                 "autocomplete" => "current-password", "tabindex" => 1,
-                "autofocus" => !Ht::problem_status_at("email")
+                "autofocus" => !$this->problem_status_at("email")
                     && $qreq->email
-                    && (Ht::problem_status_at("password") || $password_reset)
+                    && ($this->problem_status_at("password") || $password_reset)
             ]), '</div>';
         if ($password_reset) {
             echo Ht::unstash_script("\$(function(){\$(\"#signin_password\").val(" . json_encode_browser($password_reset->password) . ")})");
@@ -282,13 +306,13 @@ class Signin_Page {
     // newaccount
     /** @param array $info
      * @return ?HotCRPMailPreparation */
-    static function mail_user(Conf $conf, $info) {
+    function mail_user(Conf $conf, $info) {
         $user = $info["user"];
         $prep = $user->send_mail($info["mailtemplate"], $info["mailrest"] ?? null);
         if (!$prep)  {
             if ($conf->opt("sendEmail")) {
                 $conf->error_msg("<0>The email address you provided seems invalid. Please try again.");
-                Ht::error_at("email");
+                $this->ms()->error_at("email");
             } else {
                 $conf->error_msg("<0>The system cannot send email at this time. You’ll need help from the site administrator to sign in.");
             }
@@ -303,13 +327,13 @@ class Signin_Page {
         return $prep;
     }
 
-    static private function _print_email_entry($user, $qreq, $k) {
-        echo '<div class="', Ht::control_class($k, "f-i"), '">',
+    private function _print_email_entry($user, $qreq, $k) {
+        echo '<div class="', $this->control_class($k, "f-i"), '">',
             '<label for="', $k, '">',
             ($k === "email" ? "Email" : "Email or password reset code"),
             '</label>',
-            Ht::feedback_html_at("resetcap"),
-            Ht::feedback_html_at("email"),
+            $this->feedback_html_at("resetcap"),
+            $this->feedback_html_at("email"),
             Ht::entry($k, $qreq[$k], [
                 "size" => 36, "id" => $k, "class" => "fullw",
                 "autocomplete" => $k === "email" ? $k : null,
@@ -331,7 +355,7 @@ class Signin_Page {
         } else if ($qreq->valid_post()) {
             $info = LoginHelper::new_account_info($user->conf, $qreq);
             if ($info["ok"]) {
-                $prep = self::mail_user($user->conf, $info);
+                $prep = $this->mail_user($user->conf, $info);
                 if ($prep
                     && $prep->reset_capability
                     && isset($info["firstuser"])) {
@@ -341,7 +365,7 @@ class Signin_Page {
                     $conf->redirect_hoturl("signin");
                 }
             } else {
-                LoginHelper::login_error($user->conf, $qreq, $info);
+                LoginHelper::login_error($user->conf, $qreq->email, $info, $this->ms());
             }
         } else {
             self::bad_post_error($user, $qreq, "newaccount");
@@ -370,8 +394,8 @@ class Signin_Page {
             echo '<p class="mb-5">', $m, '</p>';
         }
     }
-    static function print_newaccount_form_email(Contact $user, Qrequest $qreq) {
-        self::_print_email_entry($user, $qreq, "email");
+    function print_newaccount_form_email(Contact $user, Qrequest $qreq) {
+        $this->_print_email_entry($user, $qreq, "email");
     }
     static function print_newaccount_form_actions(Contact $user, Qrequest $qreq) {
         echo '<div class="popup-actions">',
@@ -387,17 +411,17 @@ class Signin_Page {
         echo '<p class="mb-5">', Ht::link("Return home", $user->conf->hoturl("index")), '</p>';
         return false;
     }
-    static function forgot_request(Contact $user, Qrequest $qreq) {
+    function forgot_request(Contact $user, Qrequest $qreq) {
         assert($qreq->method() === "POST");
         if ($qreq->cancel) {
             $user->conf->redirect();
         } else if ($qreq->valid_post()) {
             $info = LoginHelper::forgot_password_info($user->conf, $qreq, false);
             if ($info["ok"]) {
-                self::mail_user($user->conf, $info);
+                $this->mail_user($user->conf, $info);
                 $user->conf->redirect($info["redirect"] ?? $qreq->annex("redirect"));
             } else {
-                LoginHelper::login_error($user->conf, $qreq, $info);
+                LoginHelper::login_error($user->conf, $qreq->email, $info, $this->ms());
             }
         } else if ($qreq->is_post()) {
             self::bad_post_error($user, $qreq, "forgotpassword");
@@ -423,8 +447,8 @@ class Signin_Page {
         }
         echo '</p>';
     }
-    static function print_forgot_form_email(Contact $user, Qrequest $qreq, $cs) {
-        self::_print_email_entry($user, $qreq,
+    function print_forgot_form_email(Contact $user, Qrequest $qreq, $cs) {
+        $this->_print_email_entry($user, $qreq,
             $cs->root === "resetpassword" ? "resetcap" : "email");
     }
     function print_forgot_form_actions() {
@@ -459,8 +483,8 @@ class Signin_Page {
                 $nqreq->approve_token();
                 $nqreq->set_annex("redirect", $user->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_SERVERREL));
                 $this->forgot_request($user, $nqreq); // may redirect
-                if (Ht::problem_status_at("email")) {
-                    Ht::error_at("resetcap");
+                if ($this->problem_status_at("email")) {
+                    $this->ms()->error_at("resetcap");
                 }
             }
         }
@@ -471,7 +495,7 @@ class Signin_Page {
                 $this->_reset_token = $tok;
                 $this->_reset_user = $tok->user();
             } else {
-                Ht::error_at("resetcap", "Unknown or expired password reset code. Please check that you entered the code correctly.");
+                $this->ms()->error_at("resetcap", "Unknown or expired password reset code. Please check that you entered the code correctly.");
             }
         }
 
@@ -483,7 +507,7 @@ class Signin_Page {
                 self::bad_post_error($user, $qreq, "resetpassword");
             }
         } else if ($this->_reset_token) {
-            Ht::error_at("resetcap", "This password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
+            $this->ms()->error_at("resetcap", "This password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
         }
     }
     private function reset_valid_post_request(Contact $user, Qrequest $qreq) {
@@ -491,20 +515,20 @@ class Signin_Page {
         $p2 = (string) $qreq->password2;
         if ($p1 === "") {
             if ($p2 !== "" || $qreq->autopassword) {
-                Ht::error_at("password", "Password required.");
+                $this->ms()->error_at("password", "Password required.");
             }
         } else if (trim($p1) !== $p1) {
-            Ht::error_at("password", "Passwords cannot begin or end with spaces.");
-            Ht::error_at("password2");
+            $this->ms()->error_at("password", "Passwords cannot begin or end with spaces.");
+            $this->ms()->error_at("password2");
         } else if (strlen($p1) <= 5) {
-            Ht::error_at("password", "Passwords must be at least six characters long.");
-            Ht::error_at("password2");
+            $this->ms()->error_at("password", "Passwords must be at least six characters long.");
+            $this->ms()->error_at("password2");
         } else if (!Contact::valid_password($p1)) {
-            Ht::error_at("password", "Invalid password.");
-            Ht::error_at("password2");
+            $this->ms()->error_at("password", "Invalid password.");
+            $this->ms()->error_at("password2");
         } else if ($p1 !== $p2) {
-            Ht::error_at("password", "The passwords you entered did not match.");
-            Ht::error_at("password2");
+            $this->ms()->error_at("password", "The passwords you entered did not match.");
+            $this->ms()->error_at("password2");
         } else {
             $accthere = $this->_reset_user->ensure_account_here();
             $accthere->change_password($p1);
@@ -555,16 +579,16 @@ class Signin_Page {
             Ht::entry("autopassword", $qreq->autopassword, ["class" => "fullw", "size" => 36, "id" => "autopassword", "readonly" => true]),
             '</div>';
     }
-    static function print_reset_form_password() {
-        echo '<div class="', Ht::control_class("password", "f-i"), '">',
+    function print_reset_form_password() {
+        echo '<div class="', $this->control_class("password", "f-i"), '">',
             '<label for="password">New password</label>',
-            Ht::feedback_html_at("password"),
+            $this->feedback_html_at("password"),
             Ht::password("password", "", ["class" => "fullw", "size" => 36, "id" => "password", "autocomplete" => "new-password", "autofocus" => true]),
             '</div>',
 
-            '<div class="', Ht::control_class("password2", "f-i"), '">',
+            '<div class="', $this->control_class("password2", "f-i"), '">',
             '<label for="password2">Repeat new password</label>',
-            Ht::feedback_html_at("password2"),
+            $this->feedback_html_at("password2"),
             Ht::password("password2", "", ["class" => "fullw", "size" => 36, "id" => "password2", "autocomplete" => "new-password"]),
             '</div>';
     }

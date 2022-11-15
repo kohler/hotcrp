@@ -747,7 +747,8 @@ class Ht {
     }
 
 
-    /** @param string $field */
+    /** @param string $field
+     * @deprecated */
     static function control_class($field, $rest = "", $prefix = "has-") {
         if (self::$_msgset) {
             return self::$_msgset->control_class($field, $rest, $prefix);
@@ -755,30 +756,30 @@ class Ht {
             return $rest;
         }
     }
-    /** @return MessageSet */
+    /** @return MessageSet
+     * @deprecated */
     static function message_set() {
         self::$_msgset || (self::$_msgset = new MessageSet);
         return self::$_msgset;
     }
-    /** @param string $field */
+    /** @param string $field
+     * @deprecated */
     static function error_at($field, $msg = "") {
         self::message_set()->error_at($field, $msg);
     }
-    /** @param string $field */
+    /** @param string $field
+     * @deprecated */
     static function warning_at($field, $msg = "") {
         self::message_set()->warning_at($field, $msg);
     }
-    /** @param string $field */
+    /** @param string $field
+     * @deprecated */
     static function problem_status_at($field) {
         return self::$_msgset ? self::$_msgset->problem_status_at($field) : 0;
     }
     /** @param string $field
-     * @return iterable<MessageItem> */
-    static function message_list_at($field) {
-        return self::$_msgset ? self::$_msgset->message_list_at($field) : [];
-    }
-    /** @param string $field
-     * @return string */
+     * @return string
+     * @deprecated */
     static function feedback_html_at($field) {
         return self::$_msgset ? self::$_msgset->feedback_html_at($field) : "";
     }

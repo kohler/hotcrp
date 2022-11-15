@@ -217,10 +217,6 @@ class JsonResult implements JsonSerializable, ArrayAccess {
             $ml[] = new MessageItem(null, "<0>Internal error", 2);
         }
         $conf->feedback_msg($ml);
-        foreach ($ml as $mi) {
-            if ($mi->field)
-                Ht::message_set()->append_item($mi);
-        }
     }
 
     /** @param ?bool $validated */

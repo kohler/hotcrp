@@ -42,7 +42,8 @@ class Login_Tester {
         $u = $info["user"];
         xassert($u->contactId > 0);
         xassert(!$this->cdb || $u->cdb_user()->contactDbId > 0);
-        $prep = Signin_Page::mail_user($this->conf, $info);
+        $signinp = new Signin_Page;
+        $prep = $signinp->mail_user($this->conf, $info);
         // reset capability set, is in cdb
         xassert(is_string($prep->reset_capability));
         xassert(str_starts_with($prep->reset_capability, "hcpw"));
@@ -112,7 +113,8 @@ class Login_Tester {
         $u = $info["user"];
         xassert($u->contactId > 0);
         xassert(!$this->cdb || $u->cdb_user()->contactDbId > 0);
-        $prep = Signin_Page::mail_user($this->conf, $info);
+        $signinp = new Signin_Page;
+        $prep = $signinp->mail_user($this->conf, $info);
         // reset capability set, is in cdb
         xassert(is_string($prep->reset_capability));
         xassert(str_starts_with($prep->reset_capability, "hcpw"));
@@ -167,7 +169,8 @@ class Login_Tester {
         xassert_eqq($info["ok"], true);
         $u = $info["user"];
         xassert($u->contactId > 0);
-        $prep = Signin_Page::mail_user($this->conf, $info);
+        $signinp = new Signin_Page;
+        $prep = $signinp->mail_user($this->conf, $info);
         // reset capability set, is in cdb
         xassert(is_string($prep->reset_capability));
         xassert(str_starts_with($prep->reset_capability, "hcpw"));

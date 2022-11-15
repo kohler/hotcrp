@@ -127,7 +127,7 @@
     [   "newaccount/welcome", 2500, "home/welcome"   ],
     [   "newaccount/body", 3000, "Signin_Page::print_newaccount_body"   ],
     [   "newaccount/form/description", 10, "Signin_Page::print_newaccount_form_description"   ],
-    [   "newaccount/form/email", 20, "Signin_Page::print_newaccount_form_email"   ],
+    [   "newaccount/form/email", 20, "*Signin_Page::print_newaccount_form_email"   ],
     [   "newaccount/form/actions", 100, "Signin_Page::print_newaccount_form_actions"   ],
 
 
@@ -135,7 +135,7 @@
     {
         "name": "signin/request", "order": 100,
         "allow_request_if": "anypost",
-        "request_function": "Signin_Page::signin_request"
+        "request_function": "*Signin_Page::signin_request"
     },
     {
         "name": "signin/request/basic", "order": 100,
@@ -150,8 +150,8 @@
     [   "signin/welcome", 2500, "home/welcome"   ],
     [   "signin/body", 3000, "Signin_Page::print_signin_form"   ],
     [   "signin/form/description", 10, "Signin_Page::print_signin_form_description"   ],
-    [   "signin/form/email", 20, "Signin_Page::print_signin_form_email"   ],
-    [   "signin/form/password", 30, "Signin_Page::print_signin_form_password"   ],
+    [   "signin/form/email", 20, "*Signin_Page::print_signin_form_email"   ],
+    [   "signin/form/password", 30, "*Signin_Page::print_signin_form_password"   ],
     [   "signin/form/actions", 100, "Signin_Page::print_signin_form_actions"   ],
     [   "signin/form/create", 150, "Signin_Page::print_signin_form_create"   ],
 
@@ -170,12 +170,12 @@
     {
         "name": "forgotpassword/request", "order": 100,
         "allow_request_if": "anypost",
-        "request_function": "Signin_Page::forgot_request"
+        "request_function": "*Signin_Page::forgot_request"
     },
     [   "forgotpassword/head", 1000, "Signin_Page::print_forgot_head"   ],
     [   "forgotpassword/body", 3000, "Signin_Page::print_forgot_body"   ],
     [   "forgotpassword/form/description", 10, "Signin_Page::print_forgot_form_description"   ],
-    [   "forgotpassword/form/email", 20, "Signin_Page::print_forgot_form_email"   ],
+    [   "forgotpassword/form/email", 20, "*Signin_Page::print_forgot_form_email"   ],
     [   "forgotpassword/form/actions", 100, "*Signin_Page::print_forgot_form_actions"   ],
     {
         "name": "forgotpassword/externallogin", "order": false,
@@ -195,7 +195,7 @@
     [   "resetpassword/form/description", 10, "Signin_Page::print_reset_form_description"   ],
     [   "resetpassword/form/email", 20, "*Signin_Page::print_reset_form_email"   ],
     [   "resetpassword/form/autopassword", 29, "Signin_Page::print_reset_form_autopassword"   ],
-    [   "resetpassword/form/password", 30, "Signin_Page::print_reset_form_password"   ],
+    [   "resetpassword/form/password", 30, "*Signin_Page::print_reset_form_password"   ],
     [   "resetpassword/form/actions", 100, "forgotpassword/form/actions"   ],
 
 

@@ -320,11 +320,12 @@ class LoginHelper {
     }
 
 
-    static function login_error(Conf $conf, Qrequest $qreq, $info) {
-        $email = trim($qreq->email ?? "");
-        if (self::DEBUG) {
-            error_log("{$conf->dbname} login failure: $email " . json_encode($info) . " " . json_encode($qreq));
-        }
+    /** @param ?string $email
+     * @param array $info
+     * @param MessageSet $ms
+     * @return void */
+    static function login_error(Conf $conf, $email, $info, $ms) {
+        $email = trim($email ?? "");
         $xemail = $email === "" ? null : $email;
         if (isset($info["ldap"]) && isset($info["detail_html"])) {
             $e = $info["detail_html"];
@@ -365,10 +366,9 @@ class LoginHelper {
             "forgotpassword" => $conf->hoturl_raw("forgotpassword", ["email" => $xemail]),
             "newaccount" => $conf->hoturl_raw("newaccount", ["email" => $xemail])
         ]);
-        Ht::error_at(isset($info["email"]) ? "email" : "password", $e);
+        $ms->error_at(isset($info["email"]) ? "email" : "password", $e);
         if (isset($info["password"])) {
-            Ht::error_at("password");
+            $ms->error_at("password");
         }
-        return false;
     }
 }

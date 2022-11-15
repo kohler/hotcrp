@@ -9,11 +9,14 @@ class Offline_Page {
     public $user;
     /** @var Qrequest */
     public $qreq;
+    /** @var MessageSet */
+    private $ms;
 
     function __construct(Contact $user, Qrequest $qreq) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->qreq = $qreq;
+        $this->ms = new MessageSet;
     }
 
     function handle_download() {
@@ -29,7 +32,7 @@ class Offline_Page {
     function handle_upload() {
         if (!$this->qreq->has_file("file")) {
             $this->conf->error_msg("<0>File upload required");
-            Ht::error_at("file");
+            $this->ms->error_at("file");
             return false;
         }
         $rf = $this->conf->review_form();
@@ -55,7 +58,7 @@ class Offline_Page {
             $filename = "";
         } else {
             $this->conf->error_msg("<0>File upload required");
-            Ht::error_at("file");
+            $this->ms->error_at("file");
             return false;
         }
 

@@ -11,6 +11,8 @@ class Autoassign_Page {
     public $qreq;
     /** @var SearchSelection */
     public $ssel;
+    /** @var MessageSet */
+    public $ms;
 
     function __construct(Contact $user, Qrequest $qreq) {
         assert($user->is_manager());
@@ -18,6 +20,7 @@ class Autoassign_Page {
         $this->user = $user;
         $this->qreq = $qreq;
         $this->clean_qreq($qreq);
+        $this->ms = new MessageSet;
     }
 
     /** @param Qrequest $qreq */
@@ -179,7 +182,7 @@ class Autoassign_Page {
         $divclass = $extra["divclass"] ?? "";
         unset($extra["open"], $extra["divclass"]);
         echo '<div class="',
-            Ht::control_class("{$name}-{$value}", "js-radio-focus checki" . ($divclass === "" ? "" : " $divclass")),
+            $this->ms->control_class("{$name}-{$value}", "js-radio-focus checki" . ($divclass === "" ? "" : " $divclass")),
             '"><label><span class="checkc">', Ht::radio($name, $value, $checked, $extra), '</span>',
             $text, '</label>', $is_open ? "" : "</div>\n";
     }
@@ -191,14 +194,14 @@ class Autoassign_Page {
         $this->print_radio_row("a", "rev", "Ensure each selected paper has <i>at least</i>", ["open" => true]);
         echo "&nbsp; ",
             Ht::entry("revct", $qreq->revct ?? 1,
-                      ["size" => 3, "class" => Ht::control_class("revct", "js-autosubmit")]), "&nbsp; ",
+                      ["size" => 3, "class" => $this->ms->control_class("revct", "js-autosubmit")]), "&nbsp; ",
             Ht::select("revtype", [REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"], $qreq->revtype),
             "&nbsp; review(s)</div>\n";
 
         $this->print_radio_row("a", "revadd", "Assign", ["open" => true]);
         echo "&nbsp; ",
             Ht::entry("revaddct", $qreq->revaddct ?? 1,
-                      ["size" => 3, "class" => Ht::control_class("revaddct", "js-autosubmit")]),
+                      ["size" => 3, "class" => $this->ms->control_class("revaddct", "js-autosubmit")]),
             "&nbsp; <i>additional</i>&nbsp; ",
             Ht::select("revaddtype", [REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"], $qreq->revaddtype),
             "&nbsp; review(s) per selected paper</div>\n";
@@ -206,7 +209,7 @@ class Autoassign_Page {
         $this->print_radio_row("a", "revpc", "Assign each PC member", ["open" => true]);
         echo "&nbsp; ",
             Ht::entry("revpcct", $qreq->revpcct ?? 1,
-                      ["size" => 3, "class" => Ht::control_class("revpcct", "js-autosubmit")]),
+                      ["size" => 3, "class" => $this->ms->control_class("revpcct", "js-autosubmit")]),
             "&nbsp; additional&nbsp; ",
             Ht::select("revpctype", [REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"], $qreq->revpctype),
             "&nbsp; review(s) from this paper selection";
@@ -215,7 +218,7 @@ class Autoassign_Page {
         $rev_rounds = $this->conf->round_selector_options(null);
         if (count($rev_rounds) > 1 || !($rev_rounds["unnamed"] ?? false)) {
             echo '<div';
-            if (($c = Ht::control_class("rev_round"))) {
+            if (($c = $this->ms->control_class("rev_round"))) {
                 echo ' class="', trim($c), '"';
             }
             echo ' style="font-size:smaller">Review round: ';
@@ -254,7 +257,7 @@ class Autoassign_Page {
         echo '<div class="form-g">';
         $this->print_radio_row("a", "discorder", "Create discussion order in tag #", ["open" => true, "divclass" => "mt-3"]);
         echo Ht::entry("discordertag", $this->qreq->discordertag ?? "discuss",
-                       ["size" => 12, "class" => Ht::control_class("discordertag", "js-autosubmit")]),
+                       ["size" => 12, "class" => $this->ms->control_class("discordertag", "js-autosubmit")]),
             ", grouping papers with similar PC conflicts</div></div>";
     }
 
@@ -309,6 +312,7 @@ class Autoassign_Page {
                 if ($ai->check() && $ai->run()) {
                     return;
                 }
+                $this->ms = $ai;
                 $qreq->open_session();
             }
         }
@@ -336,11 +340,11 @@ class Autoassign_Page {
 
         // paper selection
         echo '<div class="form-section">',
-            '<h3 class="', Ht::control_class("pap", "form-h", "is-"), '">Paper selection</h3>',
+            '<h3 class="', $this->ms->control_class("pap", "form-h", "is-"), '">Paper selection</h3>',
             Ht::entry("q", $qreq->q, [
                 "id" => "autoassignq", "placeholder" => "(All)",
                 "size" => 40, "aria-label" => "Search",
-                "class" => Ht::control_class("q", "papersearch js-autosubmit need-suggest"),
+                "class" => $this->ms->control_class("q", "papersearch js-autosubmit need-suggest"),
                 "data-submit-fn" => "requery", "spellcheck" => false
             ]), " &nbsp;in &nbsp;",
             PaperSearch::limit_selector($conf, PaperSearch::viewable_manager_limits($this->user), $qreq->t),
@@ -354,7 +358,8 @@ class Autoassign_Page {
             }
             echo '<div class="g"></div>';
             $plist->print_table_html();
-            echo Ht::hidden("prevt", $qreq->t), Ht::hidden("prevq", $qreq->q),
+            echo Ht::hidden("prevt", $qreq->t),
+                Ht::hidden("prevq", $qreq->q),
                 Ht::hidden("has_pap", 1);
         }
         echo "</div>\n";
@@ -362,7 +367,7 @@ class Autoassign_Page {
 
         // action
         echo '<div class="form-section">',
-            '<h3 class="', Ht::control_class("ass", "form-h", "is-"), "\">Action</h3>\n";
+            '<h3 class="', $this->ms->control_class("ass", "form-h", "is-"), "\">Action</h3>\n";
         $this->print_review_actions();
         $this->print_conflict_actions();
         $this->print_lead_actions();

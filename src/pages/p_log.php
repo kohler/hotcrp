@@ -23,11 +23,14 @@ class Log_Page {
     private $exclude_pids;
     /** @var string */
     private $document_regexp;
+    /** @var MessageSet */
+    private $ms;
 
     function __construct(Contact $viewer, Qrequest $qreq) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
         $this->qreq = $qreq;
+        $this->ms = new MessageSet;
         $x = [];
         foreach ($this->conf->options()->form_fields() as $opt) {
             if ($opt->is_document())
@@ -44,7 +47,7 @@ class Log_Page {
         $search->set_allow_deleted(true);
         $pids = $search->paper_ids();
         if ($search->has_problem()) {
-            Ht::warning_at($field, $search->full_feedback_html());
+            $this->ms->warning_at($field, $search->full_feedback_html());
         }
         if (!empty($pids)) {
             $w = [];
@@ -57,7 +60,7 @@ class Log_Page {
             $this->include_pids = array_flip($pids);
         } else {
             if (!$search->has_problem()) {
-                Ht::warning_at($field, "No papers match that search.");
+                $this->ms->warning_at($field, "No papers match that search.");
             }
             $this->lef_clauses[] = "false";
         }
@@ -90,7 +93,7 @@ class Log_Page {
         if (!empty($w)) {
             $this->lef_clauses[] = "(" . join(" or ", $w) . ")";
         } else {
-            Ht::warning_at("u", "No matching users.");
+            $this->ms->warning_at("u", "No matching users.");
             $this->lef_clauses[] = "false";
         }
     }
@@ -116,7 +119,7 @@ class Log_Page {
     private function set_date() {
         $this->first_timestamp = $this->conf->parse_time($this->qreq->date);
         if ($this->first_timestamp === false) {
-            Ht::error_at("date", "Invalid date. Try format “YYYY-MM-DD HH:MM:SS”.");
+            $this->ms->error_at("date", "Invalid date. Try format “YYYY-MM-DD HH:MM:SS”.");
         }
     }
 
@@ -258,7 +261,7 @@ class Log_Page {
     function print_searchbar(LogEntryGenerator $leg, $page) {
         $date = "";
         $dplaceholder = null;
-        if (Ht::problem_status_at("date")) {
+        if ($this->ms->problem_status_at("date")) {
             $date = $this->qreq->date;
         } else if ($page === 1) {
             $dplaceholder = "now";
@@ -273,26 +276,26 @@ class Log_Page {
             echo Ht::hidden("forceShow", 1);
         }
         echo '<div class="d-inline-block" style="padding-right:2rem">',
-            '<div class="', Ht::control_class("q", "entryi medium"),
+            '<div class="', $this->ms->control_class("q", "entryi medium"),
             '"><label for="q">Concerning action(s)</label><div class="entry">',
-            Ht::feedback_html_at("q"),
+            $this->ms->feedback_html_at("q"),
             Ht::entry("q", $this->qreq->q, ["id" => "q", "size" => 40]),
-            '</div></div><div class="', Ht::control_class("p", "entryi medium"),
+            '</div></div><div class="', $this->ms->control_class("p", "entryi medium"),
             '"><label for="p">Concerning paper(s)</label><div class="entry">',
-            Ht::feedback_html_at("p"),
+            $this->ms->feedback_html_at("p"),
             Ht::entry("p", $this->qreq->p, ["id" => "p", "class" => "need-suggest papersearch", "autocomplete" => "off", "size" => 40, "spellcheck" => false]),
-            '</div></div><div class="', Ht::control_class("u", "entryi medium"),
+            '</div></div><div class="', $this->ms->control_class("u", "entryi medium"),
             '"><label for="u">Concerning user(s)</label><div class="entry">',
-            Ht::feedback_html_at("u"),
+            $this->ms->feedback_html_at("u"),
             Ht::entry("u", $this->qreq->u, ["id" => "u", "size" => 40]),
-            '</div></div><div class="', Ht::control_class("n", "entryi medium"),
+            '</div></div><div class="', $this->ms->control_class("n", "entryi medium"),
             '"><label for="n">Show</label><div class="entry">',
             Ht::entry("n", $this->qreq->n, ["id" => "n", "size" => 4, "placeholder" => 50]),
             '  records at a time',
-            Ht::feedback_html_at("n"),
-            '</div></div><div class="', Ht::control_class("date", "entryi medium"),
+            $this->ms->feedback_html_at("n"),
+            '</div></div><div class="', $this->ms->control_class("date", "entryi medium"),
             '"><label for="date">Starting at</label><div class="entry">',
-            Ht::feedback_html_at("date"),
+            $this->ms->feedback_html_at("date"),
             Ht::entry("date", $date, ["id" => "date", "size" => 40, "placeholder" => $dplaceholder]),
             '</div></div></div>',
             Ht::submit("Show"),
@@ -601,12 +604,9 @@ class Log_Page {
         $count = 50;
         if (isset($qreq->n) && trim($qreq->n) !== "") {
             $count = cvtint($qreq->n, -1);
-            if ($count <= 0) {
-                $count = 50;
-                Ht::error_at("n", "Show records: Expected a number greater than 0.");
-            }
         }
-        $count = min($count, 200);
+        $bad_count = $count <= 0;
+        $count = $bad_count ? 50 : min($count, 200);
 
         $qreq->q = trim((string) $qreq->q);
         $qreq->p = trim((string) $qreq->p);
@@ -621,6 +621,9 @@ class Log_Page {
 
         // parse filter parts
         $lp = new Log_Page($viewer, $qreq);
+        if ($bad_count) {
+            $lp->ms->error_at("n", "Expected a number greater than 0");
+        }
         if ($qreq->p !== "") {
             $lp->add_search_clause($qreq->p, "p");
         }
