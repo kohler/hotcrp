@@ -11,7 +11,7 @@ class Signin_Page {
     public $_reset_user;
 
     static private function bad_post_error(Contact $user, Qrequest $qreq, $action) {
-        $sid = session_id();
+        $sid = $qreq->qsid();
         $msg = "{$user->conf->dbname}: ignoring unvalidated {$action}"
             . ", sid=" . ($sid === "" ? ".empty" : $sid);
         if ($qreq->email) {

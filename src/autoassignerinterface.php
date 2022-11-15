@@ -311,7 +311,7 @@ class AutoassignerInterface extends MessageSet {
     /** @return bool */
     function run() {
         assert(!$this->has_error());
-        session_write_close(); // this might take a long time
+        $this->qreq->qsession()->commit(); // this might take a long time
         set_time_limit(240);
 
         // prepare autoassigner

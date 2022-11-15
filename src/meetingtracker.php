@@ -35,9 +35,9 @@ class MeetingTracker {
     }
 
     /** @return bool */
-    static function session_owns_tracker(Conf $conf) {
+    static function session_owns_tracker(Conf $conf, Qrequest $qreq) {
         foreach (self::lookup($conf)->ts as $tc) {
-            if ($tc->sessionid === session_id())
+            if ($tc->sessionid === $qreq->qsid())
                 return true;
         }
         return false;
@@ -327,7 +327,7 @@ class MeetingTracker {
             }
 
             $qreq->open_session();
-            $tr = MeetingTracker_Config::make($user, $trackerid, $xlist, $start_at, $position, $position_at);
+            $tr = MeetingTracker_Config::make($user, $qreq, $trackerid, $xlist, $start_at, $position, $position_at);
             if ($trmatch !== null) {
                 $tr->name = $trmatch->name;
                 $tr->logo = $trmatch->logo;
@@ -467,7 +467,7 @@ class MeetingTracker {
                         $new_trackerid = mt_rand(1, 9999999);
                     } while ($tracker->search($new_trackerid) !== false);
 
-                    $tr = MeetingTracker_Config::make($user, $new_trackerid, $xlist, Conf::$now, $position, $position_at);
+                    $tr = MeetingTracker_Config::make($user, $qreq, $new_trackerid, $xlist, Conf::$now, $position, $position_at);
                     $tr->name = $name ?? "";
                     if (($vis ?? "") === "" && $admin_perm && count($admin_perm) === 1) {
                         $vis = self::compute_default_visibility($user, $admin_perm);
@@ -703,7 +703,7 @@ class MeetingTracker_Config implements JsonSerializable {
      * @param int $position
      * @param float $position_at
      * @return MeetingTracker_Config */
-    static function make(Contact $user, $trackerid, $xlist,
+    static function make(Contact $user, Qrequest $qreq, $trackerid, $xlist,
                          $start_at, $position, $position_at) {
         $tc = new MeetingTracker_Config;
         $tc->trackerid = $trackerid;
@@ -715,7 +715,7 @@ class MeetingTracker_Config implements JsonSerializable {
         $tc->position_at = $position_at;
         $tc->update_at = max(Conf::$now, $position_at);
         $tc->owner = $user->contactId;
-        $tc->sessionid = session_id();
+        $tc->sessionid = $qreq->qsid();
         $tc->position = $position;
         return $tc;
     }

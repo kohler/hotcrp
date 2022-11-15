@@ -63,7 +63,7 @@ class OAuth_Page {
                 ->set_token_pattern("hcoa[20]");
             $tok->data = json_encode_db([
                 "authtype" => $authi->authtype,
-                "session" => session_id(),
+                "session" => $this->qreq->qsid(),
                 "site_uri" => $this->conf->opt("paperSite")
             ]);
             if ($tok->create()) {
@@ -96,7 +96,7 @@ class OAuth_Page {
         } else if ($tok->capabilityType !== TokenInfo::OAUTHSIGNIN
                    || !($jdata = json_decode($tok->data ?? "0"))) {
             return MessageItem::error("<0>Invalid OAuth authentication request ‘{$state}’, internal error");
-        } else if (($jdata->session ?? "<NO SESSION>") !== session_id()) {
+        } else if (($jdata->session ?? "<NO SESSION>") !== $this->qreq->qsid()) {
             return MessageItem::error("<0>OAuth authentication request ‘{$state}’ was for a different session");
         } else if (($authi = OAuthInstance::find($this->conf, $jdata->authtype ?? null))) {
             $authtitle = $authi->title ?? $authi->authtype;

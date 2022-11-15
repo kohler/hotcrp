@@ -4869,7 +4869,7 @@ class Conf {
 
         // If browser owns tracker, send it the script immediately
         if ($this->setting("tracker")
-            && MeetingTracker::session_owns_tracker($this)) {
+            && MeetingTracker::session_owns_tracker($this, $qreq)) {
             echo Ht::unstash();
         }
 

@@ -16,9 +16,9 @@ class PHPQsession extends Qsession {
     }
 
     function commit() {
-        if ($this->sstate > 0) {
+        if ($this->sopen) {
             session_commit();
-            $this->sstate = 0;
+            $this->sopen = false;
         }
     }
 
@@ -27,43 +27,43 @@ class PHPQsession extends Qsession {
     }
 
     function clear() {
-        assert($this->sstate > 0);
+        assert($this->sopen);
         $_SESSION = [];
     }
 
     function has($key) {
-        return $this->sstate > 0 && isset($_SESSION[$key]);
+        return $this->sopen && isset($_SESSION[$key]);
     }
 
     function get($key) {
-        return $this->sstate > 0 ? $_SESSION[$key] ?? null : null;
+        return $this->sopen ? $_SESSION[$key] ?? null : null;
     }
 
     function set($key, $value) {
-        assert($this->sstate > 0);
+        assert($this->sopen);
         $_SESSION[$key] = $value;
     }
 
     function unset($key) {
-        assert($this->sstate > 0);
+        assert($this->sopen);
         unset($_SESSION[$key]);
     }
 
     function has2($key1, $key2) {
-        return $this->sstate > 0 && isset($_SESSION[$key1][$key2]);
+        return $this->sopen && isset($_SESSION[$key1][$key2]);
     }
 
     function get2($key1, $key2) {
-        return $this->sstate > 0 ? $_SESSION[$key1][$key2] ?? null : null;
+        return $this->sopen ? $_SESSION[$key1][$key2] ?? null : null;
     }
 
     function set2($key1, $key2, $value) {
-        assert($this->sstate > 0);
+        assert($this->sopen);
         $_SESSION[$key1][$key2] = $value;
     }
 
     function unset2($key1, $key2) {
-        assert($this->sstate > 0);
+        assert($this->sopen);
         if (isset($_SESSION[$key1])) {
             unset($_SESSION[$key1][$key2]);
             if (empty($_SESSION[$key1])) {

@@ -556,6 +556,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         $this->_qsession->open();
     }
 
+    /** @return ?string */
+    function qsid() {
+        return $this->_qsession->sid;
+    }
+
     /** @param string $key
      * @return bool */
     function has_gsession($key) {

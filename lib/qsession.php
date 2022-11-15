@@ -5,39 +5,39 @@
 class Qsession {
     /** @var ?string */
     public $sid;
-    /** @var -1|0|1 */
-    protected $sstate = 0;
+    /** @var bool */
+    protected $sopen = false;
 
     function maybe_open() {
-        if ($this->sstate === 0 && isset($_COOKIE[session_name()])) {
+        if (!$this->sopen && isset($_COOKIE[session_name()])) {
             $this->open();
         }
-        return $this->sstate > 0;
+        return $this->sopen;
     }
 
     function reopen() {
-        $this->sstate = -1;
-        $this->open();
+        $this->open(true);
     }
 
-    function open() {
+    /** @param bool $reopen */
+    function open($reopen = false) {
         if (headers_sent($hsfn, $hsln)) {
             error_log("$hsfn:$hsln: headers sent: " . debug_string_backtrace());
         }
-        if ($this->sstate > 0) {
+        if ($this->sopen && !$reopen) {
             return;
         }
-        $reopen = $this->sstate < 0;
-        $this->sstate = 0;
 
         // start session named in cookie
         $sn = session_name();
         $cookie_sid = $_COOKIE[$sn] ?? null;
-        $this->sid = $this->start($cookie_sid);
-        if ($this->sid === null) {
-            return;
+        if (!$this->sopen) {
+            $this->sid = $this->start($cookie_sid);
+            if ($this->sid === null) {
+                return;
+            }
+            $this->sopen = true;
         }
-        $this->sstate = 1;
 
         // if reopened, empty [session fixation], or old, reset session
         $curv = $this->all();
@@ -51,19 +51,12 @@ class Qsession {
                 $this->set("deletedat", Conf::$now);
             }
             $this->commit();
-            $this->sstate = 0;
 
-            if ($cookie_sid !== $nsid) {
-                $params = session_get_cookie_params();
-                $params["expires"] = Conf::$now + $params["lifetime"];
-                unset($params["lifetime"]);
-                hotcrp_setcookie($sn, $nsid, $params);
-            }
             $this->sid = $this->start($nsid);
             if ($this->sid === null) {
                 return;
             }
-            $this->sstate = 1;
+            $this->sopen = true;
             foreach ($curv as $k => $v) {
                 $this->set($k, $v);
             }
@@ -77,9 +70,9 @@ class Qsession {
             if (($this->get("v") ?? 0) < 2) {
                 UpdateSession::run($this);
             }
-            if (Conf::$main->_session_handler) {
-                Conf::$main->_session_handler->refresh_cookie($sn, $this->sid);
-            }
+        }
+        if ($this->get("u") || $cookie_sid !== $this->sid) {
+            $this->refresh();
         }
     }
 
@@ -93,6 +86,16 @@ class Qsession {
     /** @return ?string */
     function new_sid() {
         return null;
+    }
+
+    /** @return void */
+    function refresh() {
+        $params = session_get_cookie_params();
+        if ($params["lifetime"] > 0) {
+            $params["expires"] = Conf::$now + $params["lifetime"];
+        }
+        unset($params["lifetime"]);
+        hotcrp_setcookie(session_name(), $this->sid, $params);
     }
 
     /** @return void */

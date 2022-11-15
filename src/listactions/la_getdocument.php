@@ -49,7 +49,7 @@ class GetDocument_ListAction extends ListAction {
                 $docset->message_list()
             );
         } else {
-            session_write_close();
+            $qreq->qsession()->commit();
             if ($docset->download(DocumentRequest::add_connection_options(["attachment" => true, "single" => true]))) {
                 DocumentInfo::log_download_activity($docset->as_list(), $user);
                 exit;

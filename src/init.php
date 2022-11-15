@@ -300,7 +300,13 @@ function initialize_request($kwarg = null) {
             $qreq->approve_token();
         }
     }
-    $qreq->set_qsession(new PHPQsession);
+    $qsessionf = $conf->opt["qsessionFunction"] ?? "+PHPQsession";
+    if (str_starts_with($qsessionf, "+")) {
+        $class = substr($qsessionf, 1);
+        $qreq->set_qsession(new $class($conf, $qreq));
+    } else if ($qsessionf) {
+        $qreq->set_qsession(call_user_func($qsessionf, $conf, $qreq));
+    }
     $qreq->qsession()->maybe_open();
 
     // upgrade session format
