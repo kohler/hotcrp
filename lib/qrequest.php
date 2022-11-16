@@ -74,6 +74,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @param Conf $conf
      * @return $this */
     function set_conf($conf) {
+        assert(!$this->_conf || $this->_conf === $conf);
         $this->_conf = $conf;
         return $this;
     }
@@ -81,6 +82,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @param ?Contact $user
      * @return $this */
     function set_user($user) {
+        assert(!$user || !$this->_conf || $this->_conf === $user->conf);
         if ($user) {
             $this->_conf = $user->conf;
         }

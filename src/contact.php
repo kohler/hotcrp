@@ -695,7 +695,15 @@ class Contact implements JsonSerializable {
             ++self::$rights_version;
         }
 
-        // print and/or gc named saved messages
+        // print, resave, and/or gc named saved messages
+        if (($cmsgs = $qreq->csession("msgs"))) {
+            foreach ($cmsgs as $mx) {
+                if (is_array($mx) && is_string($mx[0] ?? null) && is_int($mx[1] ?? null)) {
+                    Conf::msg_on($this->conf, $mx[0], $mx[1]);
+                }
+            }
+            $qreq->unset_csession("msgs");
+        }
         if (($smsgs = $qreq->gsession("smsg"))) {
             $nsmsgs = [];
             foreach ($smsgs as $ml) {

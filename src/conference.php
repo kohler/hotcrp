@@ -3871,26 +3871,29 @@ class Conf {
     }
 
 
+    /** @return int */
+    function saved_messages_status() {
+        $st = 0;
+        foreach ($this->_save_msgs ?? [] as $mx) {
+            $st = max($st, $mx[1]);
+        }
+        return $st;
+    }
+
     /** @return list<array{string,int}> */
     function take_saved_messages() {
-        $ml = [];
-        foreach ($this->_save_msgs ?? [] as $mx) {
-            if (is_string($mx[0] ?? null) && is_int($mx[1] ?? null)) {
-                $ml[] = [$mx[0], $mx[1]];
-            }
-        }
+        $ml = $this->_save_msgs ?? [];
         $this->_save_msgs = null;
         return $ml;
     }
 
     /** @return int */
     function report_saved_messages() {
-        $max_status = 0;
+        $st = $this->saved_messages_status();
         foreach ($this->take_saved_messages() as $mx) {
             self::msg_on($this, $mx[0], $mx[1]);
-            $max_status = max($max_status, $mx[1]);
         }
-        return $max_status;
+        return $st;
     }
 
     /** @param ?string $url
@@ -4861,10 +4864,6 @@ class Conf {
         echo "<div id=\"msgs-initial\">\n";
         if (($x = $this->opt("maintenance"))) {
             echo Ht::msg(is_string($x) ? $x : "<strong>The site is down for maintenance.</strong> Please check back later.", 2);
-        }
-        if ($user && ($msgs = $qreq->csession("msgs"))) {
-            $qreq->unset_csession("msgs");
-            $this->_save_msgs = array_merge($msgs, $this->_save_msgs ?? []);
         }
         if ($this->_save_msgs && !($extra["save_messages"] ?? false)) {
             $this->report_saved_messages();

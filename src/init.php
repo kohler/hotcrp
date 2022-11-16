@@ -243,6 +243,7 @@ function initialize_request($kwarg = null) {
 
     // collect $qreq
     $qreq = Qrequest::make_global($nav);
+    $qreq->set_conf($conf);
 
     // check method
     if ($qreq->method() !== "GET"
