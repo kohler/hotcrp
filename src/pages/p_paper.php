@@ -37,11 +37,9 @@ class Paper_Page {
         PaperTable::print_header($this->pt, $this->qreq, $error);
     }
 
-    /** @param MessageItem ...$mls */
-    function error_exit(...$mls) {
+    function error_exit() {
         $this->print_header(true);
         Ht::stash_script("hotcrp.shortcut().add()");
-        $this->conf->feedback_msg(...$mls);
         $this->qreq->print_footer();
         throw new PageCompletion;
     }
@@ -55,7 +53,11 @@ class Paper_Page {
             assert(PaperRequest::simple_qreq($this->qreq));
             throw $redir;
         } catch (PermissionProblem $perm) {
-            $this->error_exit(MessageItem::error("<5>" . $perm->set("listViewable", true)->unparse_html()));
+            $perm->set("listViewable", $this->user->is_author() || $this->user->is_reviewer());
+            if (!$perm->secondary || $this->conf->saved_messages_status() < 2) {
+                $this->conf->error_msg("<5>" . $perm->unparse_html());
+            }
+            $this->error_exit();
         }
     }
 

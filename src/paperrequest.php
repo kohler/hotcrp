@@ -145,10 +145,14 @@ class PaperRequest {
 
     /** @param Qrequest $qreq
      * @param int $pid
-     * @return Redirection */
+     * @return PermissionProblem */
     private function signin_redirection($qreq, $pid) {
         $conf = $qreq->conf();
-        return new Redirection($conf->hoturl("signin", ["redirect" => $conf->selfurl($qreq, ["p" => $pid ? : "new"], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW)]));
+        return new PermissionProblem($conf, [
+            "signin" => true,
+            "signinUrl" => $conf->hoturl_raw("signin", ["redirect" => $conf->selfurl($qreq, ["p" => $pid ? : "new"], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW)]),
+            "secondary" => true
+        ]);
     }
 
     /** @param ?PaperInfo $prow
