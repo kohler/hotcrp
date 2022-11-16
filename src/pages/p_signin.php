@@ -142,9 +142,10 @@ class Signin_Page {
 
     /** @param ComponentSet $cs */
     static function print_signin_head(Contact $user, Qrequest $qreq, $cs) {
+        $st = $user->conf->saved_messages_status();
         $qreq->print_header("Sign in", "home");
         $cs->push_print_cleanup("__footer");
-        if ($qreq->is_get() && $qreq->redirect) {
+        if ($qreq->is_get() && $qreq->redirect && $st < 2) {
             $user->conf->error_msg("<0>You need to sign in to access that page");
         }
     }

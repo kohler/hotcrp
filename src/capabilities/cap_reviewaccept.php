@@ -65,7 +65,7 @@ class ReviewAccept_Capability {
             }
             if ((!$rrow || $rrow->contactId !== $user->contactId)
                 && (!$refused || $refused->contactId !== $user->contactId)) {
-                $t = "<5>You followed a review link to get here, but that link has expired.";
+                $t = "<5>The review link you followed to get here is invalid or expired.";
                 if (!$user->contactId) {
                     $t .= " <a href=\"" . $user->conf->hoturl("signin") . "\">Sign in to the site</a> to view or edit your reviews.";
                 }
