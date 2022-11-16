@@ -108,7 +108,7 @@ class BackupDB_Batch {
         $this->_check_table = $arg["check-table"] ?? [];
 
         $this->_s3_dbname = $arg["s3-dbname"] ?? null;
-        $this->_s3_confid = $arg["s3-confid"] ?? $arg["s3-name"] ?? null;
+        $this->_s3_confid = $arg["s3-confid"] ?? null;
         $this->_before = isset($arg["before"]) ? strtotime($arg["before"]) : null;
         $this->_after = isset($arg["after"]) ? strtotime($arg["after"]) : null;
         if ($this->_before === false || $this->_after === false) {
@@ -668,17 +668,16 @@ class BackupDB_Batch {
             "output-md5 Output MD5 hash of uncompressed dump to stdout",
             "output-sha1 Same for SHA-1 hash",
             "output-sha256 Same for SHA-256 hash",
-            "s3-get !",
-            "s3-put !",
-            "s3-restore !",
-            "s3-list !",
-            "s3-dbname: !",
-            "s3-confid: !",
-            "s3-name: !",
-            "before: !",
-            "after: !",
+            "s3-get !s3 Read a backup from S3",
+            "s3-put !s3 Write a backup to S3",
+            "s3-restore !s3 Restore from backup on S3",
+            "s3-list !s3 List backups on S3",
+            "s3-dbname: =DBNAME !s3 Set dbname component of S3 path",
+            "s3-confid:,s3-name: =CONFID !s3 Set confid component of S3 path",
+            "before: =DATE !s3 Include S3 backups before DATE",
+            "after: =DATE !s3 Include S3 backups after DATE",
             "V,verbose Be verbose",
-            "help,h"
+            "help::,h:: Print help"
         )->description("Back up HotCRP database or restore from backup.
 Usage: php batch/backupdb.php [-c FILE | -n CONFID] [OPTS...] [-z] -o DUMP
        php batch/backupdb.php [-c FILE | -n CONFID] -r [OPTS...] DUMP")

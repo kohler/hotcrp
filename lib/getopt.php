@@ -3,7 +3,7 @@
 // Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
 
 class Getopt {
-    /** @var array<string,array{string,0|1|2|3|5,?string,?string}> */
+    /** @var array<string,GetoptOption> */
     private $po = [];
     /** @var ?string */
     private $helpopt;
@@ -32,23 +32,23 @@ class Getopt {
         for ($i = 0; $i !== $olen; ) {
             if (ctype_alnum($options[$i])) {
                 $opt = $options[$i];
-                $type = self::NOARG;
+                $arg = self::NOARG;
                 ++$i;
                 if ($i < $olen && $options[$i] === ":") {
                     ++$i;
-                    $type = self::ARG;
+                    $arg = self::ARG;
                     if ($i < $olen && $options[$i] === ":") {
                         ++$i;
-                        $type = self::OPTARG;
+                        $arg = self::OPTARG;
                     }
                 } else if ($i + 2 < $olen && $options[$i] === "[" && $options[$i+1] === "]" && $options[$i+2] === "+") {
                     $i += 3;
-                    $type = self::MARG2;
+                    $arg = self::MARG2;
                 } else if ($i + 2 < $olen && $options[$i] === "[" && $options[$i+1] === "]") {
                     $i += 2;
-                    $type = self::MARG;
+                    $arg = self::MARG;
                 }
-                $this->po[$opt] = [$opt, $type, null, null];
+                $this->po[$opt] = new GetoptOption($opt, $arg, null, null);
             } else {
                 throw new ErrorException("Getopt \$options");
             }
@@ -94,8 +94,8 @@ class Getopt {
                     throw new ErrorException("Getopt \$longopts");
                 }
                 $n = substr($s, $p, $co - $p - $d);
-                $po = $po ?? [$n, $t, $type, $help];
-                if ($t !== $po[1]) {
+                $po = $po ?? new GetoptOption($n, $t, $type, $help);
+                if ($t !== $po->arg) {
                     throw new ErrorException("Getopt \$longopts");
                 }
                 $this->po[$n] = $po;
@@ -147,8 +147,9 @@ class Getopt {
         return $this;
     }
 
-    /** @return string */
-    function help() {
+    /** @param null|false|string $subtype
+     * @return string */
+    function help($subtype = null) {
         $s = [];
         if ($this->description) {
             $s[] = $this->description;
@@ -160,9 +161,9 @@ class Getopt {
         }
         $od = [];
         foreach ($this->po as $t => $po) {
-            $maint = $po[0];
+            $maint = $po->name;
             if (!isset($od[$maint])) {
-                $help = $po[3];
+                $help = $po->help;
                 if (($help ?? "") !== ""
                     && $help[0] === "="
                     && preg_match('/\A=([A-Z]\S*)\s*/', $help, $m)) {
@@ -171,11 +172,11 @@ class Getopt {
                 } else {
                     $argname = "ARG";
                 }
-                if ($po[1] === self::ARG || $po[1] === self::MARG) {
+                if ($po->arg === self::ARG || $po->arg === self::MARG) {
                     $arg = " {$argname}";
-                } else if ($po[1] === self::MARG2) {
+                } else if ($po->arg === self::MARG2) {
                     $arg = " {$argname}...";
-                } else if ($po[1] === self::OPTARG) {
+                } else if ($po->arg === self::OPTARG) {
                     $arg = "[={$argname}]";
                 } else {
                     $arg = "";
@@ -190,26 +191,35 @@ class Getopt {
             $od[$maint][$offset] = $od[$maint][$offset] ?? ($offset === 0 ? "-{$t}" : "--{$t}");
         }
         if (!empty($od)) {
-            $s[] = "Options:\n";
+            $s[] = $subtype ? "{$subtype} options:\n" : "Options:\n";
             foreach ($od as $tx) {
                 $help = $tx[3] ?? "";
-                if ($help !== "!") {
-                    if ($tx[0] !== null && $tx[1] !== null) {
-                        $s[] = $oax = "  {$tx[0]}, {$tx[1]}{$tx[2]}";
-                    } else {
-                        $oa = $tx[0] ?? $tx[1];
-                        $s[] = $oax = "  {$oa}{$tx[2]}";
-                    }
-                    if ($help !== "") {
-                        if (strlen($oax) <= 24) {
-                            $s[] = str_repeat(" ", 26 - strlen($oax));
-                        } else {
-                            $s[] = "\n" . str_repeat(" ", 26);
-                        }
-                        $s[] = $help;
-                    }
-                    $s[] = "\n";
+                if ($help === "!"
+                    || ($subtype ? !str_starts_with($help, "!{$subtype}") : str_starts_with($help, "!"))) {
+                    continue;
                 }
+                if ($subtype) {
+                    $help = substr($help, strlen($subtype) + 1);
+                    if ($help !== "" && !str_starts_with($help, " ")) {
+                        continue;
+                    }
+                    $help = ltrim($help);
+                }
+                if ($tx[0] !== null && $tx[1] !== null) {
+                    $s[] = $oax = "  {$tx[0]}, {$tx[1]}{$tx[2]}";
+                } else {
+                    $oa = $tx[0] ?? $tx[1];
+                    $s[] = $oax = "  {$oa}{$tx[2]}";
+                }
+                if ($help !== "") {
+                    if (strlen($oax) <= 24) {
+                        $s[] = str_repeat(" ", 26 - strlen($oax));
+                    } else {
+                        $s[] = "\n" . str_repeat(" ", 26);
+                    }
+                    $s[] = $help;
+                }
+                $s[] = "\n";
             }
             $s[] = "\n";
         }
@@ -235,8 +245,8 @@ class Getopt {
                     break;
                 }
                 $po = $active_po;
-                $name = $po[0];
-                $pot = $po[1];
+                $name = $po->name;
+                $pot = $po->arg;
                 $value = $arg;
             } else if ($arg[1] === "-") {
                 $eq = strpos($arg, "=");
@@ -252,8 +262,8 @@ class Getopt {
                     }
                 }
                 $oname = "--{$name}";
-                $name = $po[0];
-                $pot = $po[1];
+                $name = $po->name;
+                $pot = $po->arg;
                 if ($eq !== false && $pot === self::NOARG) {
                     throw new CommandLineException("`{$oname}` takes no arguments", $this);
                 } else if ($eq === false && $i === count($argv) - 1 && ($pot & 1) === 1) {
@@ -277,8 +287,8 @@ class Getopt {
                         break;
                     }
                 }
-                $name = $po[0];
-                $pot = $po[1];
+                $name = $po->name;
+                $pot = $po->arg;
                 if (strlen($arg) === 2 && ($pot & 1) === 1 && $i === count($argv) - 1) {
                     throw new CommandLineException("Missing argument for `{$oname}`", $this);
                 } else if ($pot === self::NOARG || ($pot === self::OPTARG && strlen($arg) === 2)) {
@@ -298,7 +308,7 @@ class Getopt {
             } else {
                 break;
             }
-            $poty = $po[2];
+            $poty = $po->argtype;
             if ($poty === "n" || $poty === "i") {
                 if (!ctype_digit($value) && !preg_match('/\A[-+]\d+\z/', $value)) {
                     throw new CommandLineException("`{$oname}` requires integer", $this);
@@ -330,7 +340,7 @@ class Getopt {
             $active_po = $pot === self::MARG2 ? $po : null;
         }
         if ($this->helpopt !== null && isset($res[$this->helpopt])) {
-            fwrite(STDOUT, $this->help());
+            fwrite(STDOUT, $this->help($res[$this->helpopt]));
             exit(0);
         }
         $res["_"] = array_slice($argv, $i);
@@ -362,6 +372,28 @@ class Getopt {
      * @return array<string,string|list<string>> */
     static function rest($argv, $options, $longopts) {
         return (new Getopt)->short($options)->long($longopts)->parse($argv);
+    }
+}
+
+class GetoptOption {
+    /** @var string */
+    public $name;
+    /** @var 0|1|2|3|5 */
+    public $arg;
+    /** @var ?string */
+    public $argtype;
+    /** @var ?string */
+    public $help;
+
+    /** @param string $name
+     * @param 0|1|2|3|5 $arg
+     * @param ?string $argtype
+     * @param ?string $help */
+    function __construct($name, $arg, $argtype, $help) {
+        $this->name = $name;
+        $this->arg = $arg;
+        $this->argtype = $argtype;
+        $this->help = $help;
     }
 }
 
