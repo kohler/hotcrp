@@ -21,50 +21,47 @@ class UnicodeHelper {
 
     /** @var array<string,int> */
     private static $deaccent_map;
-    /** @var string */
-    private static $deaccent_result;
 
-    private static function add_deaccent_map($ins, $outs, $step) {
+    private static function add_deaccent_map($ins, $step) {
         $l = strlen($ins);
+        $tag = $step === 3 ? 1 : 0;
         for ($i = 0; $i < $l; $i += $step) {
             $in = substr($ins, $i, $step);
-            $out = rtrim(substr($outs, $i, $step));
-            if ($out === "") {
-                self::$deaccent_map[$in] = 0;
-            } else {
-                self::$deaccent_map[$in] = (strlen(self::$deaccent_result) << 2) | strlen($out);
-                self::$deaccent_result .= $out;
-            }
+            self::$deaccent_map[$in] = ($i << 1) | $tag;
         }
     }
+
     private static function make_deaccent_map() {
         if (self::$deaccent_map === null) {
             self::$deaccent_map = [];
-            self::$deaccent_result = "";
-            self::add_deaccent_map(UTF8_ALPHA_TRANS_2, UTF8_ALPHA_TRANS_2_OUT, 2);
-            self::add_deaccent_map(UTF8_ALPHA_TRANS_3, UTF8_ALPHA_TRANS_3_OUT, 3);
+            self::add_deaccent_map(UTF8_ALPHA_TRANS_2, 2);
+            self::add_deaccent_map(UTF8_ALPHA_TRANS_3, 3);
+        }
+    }
+
+    private static function deaccent_result($di) {
+        if ($di & 1) {
+            return trim(substr(UTF8_ALPHA_TRANS_3_OUT, $di >> 1, 3));
+        } else {
+            return trim(substr(UTF8_ALPHA_TRANS_2_OUT, $di >> 1, 2));
         }
     }
 
     /** @param string $x
      * @return string */
     static function deaccent($x) {
-        if (self::$deaccent_map === null) {
-            self::make_deaccent_map();
-        }
         if (preg_match_all("/[\xC0-\xFF]/", $x, $m, PREG_OFFSET_CAPTURE)) {
+            if (self::$deaccent_map === null) {
+                self::make_deaccent_map();
+            }
             $first = 0;
             $out = "";
             foreach ($m[0] as $mx) {
                 $i = $mx[1];
                 $l = ord($mx[0]) < 0xE0 ? 2 : 3;
                 $ch = substr($x, $i, $l);
-                if (isset(self::$deaccent_map[$ch])) {
-                    $out .= substr($x, $first, $i - $first);
-                    $m = self::$deaccent_map[$ch];
-                    if ($m) {
-                        $out .= substr(self::$deaccent_result, $m >> 2, $m & 3);
-                    }
+                if (($di = self::$deaccent_map[$ch] ?? null) !== null) {
+                    $out .= substr($x, $first, $i - $first) . self::deaccent_result($di);
                     $first = $i + $l;
                 }
             }
@@ -74,23 +71,19 @@ class UnicodeHelper {
     }
 
     static function deaccent_offsets($x) {
-        if (self::$deaccent_map === null) {
-            self::make_deaccent_map();
-        }
         $offsetmap = [[0, 0]];
         if (preg_match_all("/[\xC0-\xFF]/", $x, $m, PREG_OFFSET_CAPTURE)) {
+            if (self::$deaccent_map === null) {
+                self::make_deaccent_map();
+            }
             $first = 0;
             $out = "";
             foreach ($m[0] as $mx) {
                 $i = $mx[1];
                 $l = ord($mx[0]) < 0xE0 ? 2 : 3;
                 $ch = substr($x, $i, $l);
-                if (isset(self::$deaccent_map[$ch])) {
-                    $out .= substr($x, $first, $i - $first);
-                    $m = self::$deaccent_map[$ch];
-                    if ($m) {
-                        $out .= substr(self::$deaccent_result, $m >> 2, $m & 3);
-                    }
+                if (($di = self::$deaccent_map[$ch] ?? null) !== null) {
+                    $out .= substr($x, $first, $i - $first) . self::deaccent_result($di);
                     $first = $i + $l;
                     $offsetmap[] = [strlen($out), $first];
                 }
