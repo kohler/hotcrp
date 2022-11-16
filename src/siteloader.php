@@ -94,11 +94,21 @@ class SiteLoader {
     /** @return list<string> */
     static private function expand_includes_once($file, $includepath, $globby) {
         foreach ($file[0] === "/" ? [""] : $includepath as $idir) {
-            $try = $idir . $file;
+            if ($file[0] === "/") {
+                $try = $file;
+            } else if (!$idir) {
+                continue;
+            } else if (str_ends_with($idir, "/")) {
+                $try = "{$idir}{$file}";
+            } else {
+                $try = "{$idir}/{$file}";
+            }
             if (!$globby && is_readable($try)) {
                 return [$try];
             } else if ($globby && ($m = glob($try, GLOB_BRACE))) {
                 return $m;
+            } else if ($file[0] === "/") {
+                return [];
             }
         }
         return [];
@@ -107,23 +117,32 @@ class SiteLoader {
     /** @param string $s
      * @param array<string,string> $expansions
      * @param int $pos
+     * @param bool $useOpt
      * @return string */
-    static function substitute($s, $expansions, $pos = 0) {
+    static function substitute($s, $expansions, $pos = 0, $useOpt = false) {
+        global $Opt;
         while (($pos = strpos($s, '${', $pos)) !== false) {
             $rbrace = strpos($s, '}', $pos + 2);
-            if ($rbrace !== false
-                && ($key = substr($s, $pos + 2, $rbrace - $pos - 2)) !== ""
-                && array_key_exists($key, $expansions)) {
+            if ($rbrace === false
+                || ($key = substr($s, $pos + 2, $rbrace - $pos - 2)) === "") {
+                $pos += 2;
+                continue;
+            }
+            if (array_key_exists($key, $expansions)) {
                 $value = $expansions[$key];
-                if ($value !== false && $value !== null) {
-                    $s = substr($s, 0, $pos) . $value . substr($s, $rbrace + 1);
-                    $pos += strlen($value);
-                } else {
-                    return "";
-                }
+            } else if ($useOpt && ($key === "confid" || $key === "confname")) {
+                $value = $Opt["confid"] ?? $Opt["dbName"] ?? null;
+            } else if ($useOpt && $key === "siteclass") {
+                $value = $Opt["siteclass"] ?? null;
             } else {
                 $pos += 2;
+                continue;
             }
+            if ($value === false || $value === null) {
+                return "";
+            }
+            $s = substr($s, 0, $pos) . $value . substr($s, $rbrace + 1);
+            $pos += strlen($value);
         }
         return $s;
     }
@@ -134,57 +153,67 @@ class SiteLoader {
      * @return list<string> */
     static function expand_includes($root, $files, $expansions = []) {
         global $Opt;
-        if (!is_array($files)) {
-            $files = [$files];
-        }
-        $confname = $Opt["confid"] ?? $Opt["dbName"] ?? null;
-        $expansions["confid"] = $expansions["confname"] = $confname;
-        $expansions["siteclass"] = $Opt["siteclass"] ?? null;
+
         $root = $root ?? self::$root;
-
-        if (isset($expansions["autoload"]) && strpos($files[0], "/") === false) {
-            $includepath = ["{$root}/src/", "{$root}/lib/"];
-        } else {
-            $includepath = ["{$root}/"];
-        }
-
-        $oincludepath = $Opt["includePath"] ?? $Opt["includepath"] ?? null;
-        if (is_array($oincludepath)) {
-            foreach ($oincludepath as $i) {
-                if ($i)
-                    $includepath[] = str_ends_with($i, "/") ? $i : $i . "/";
-            }
-        }
+        $autoload = $expansions["autoload"] ?? 0;
+        $includepath = null;
 
         $results = [];
-        foreach ($files as $f) {
+        foreach (is_array($files) ? $files : [$files] as $f) {
             $f = (string) $f;
-            if ($f !== "" && ($pos = strpos($f, '${')) !== false) {
-                $f = self::substitute($f, $expansions, $pos);
+            if ($f !== "" && !$autoload && ($pos = strpos($f, '${')) !== false) {
+                $f = self::substitute($f, $expansions, $pos, true);
             }
             if ($f === "") {
                 continue;
             }
-            $ignore_not_found = $globby = false;
-            if ($f[0] === "?") {
-                $ignore_not_found = true;
+
+            $ignore_not_found = !$autoload && $f[0] === "?";
+            $globby = false;
+            if ($ignore_not_found) {
                 $f = substr($f, 1);
             }
-            if (strpbrk($f, "[]*?{}") !== false) {
+            if (!$autoload && strpbrk($f, "[]*?{}") !== false) {
                 $ignore_not_found = $globby = true;
             }
-            $matches = self::expand_includes_once($f, $includepath, $globby);
-            if (empty($matches)
-                && isset($expansions["autoload"])
-                && ($underscore = strrpos($f, "_"))
-                && ($f2 = SiteLoader::$suffix_map[substr($f, $underscore)] ?? null)) {
-                $xincludepath = array_merge($f2[1] ? ["{$root}/{$f2[1]}/"] : [], $includepath);
-                $matches = self::expand_includes_once($f2[0] . substr($f, 0, $underscore) . ".php", $xincludepath, $globby);
+
+            $f2 = null;
+            $matches = [];
+            if ($autoload && strpos($f, "/") === false) {
+                if (($underscore = strrpos($f, "_"))
+                    && ($pfxsubdir = SiteLoader::$suffix_map[substr($f, $underscore)] ?? null)) {
+                    $f2 = $pfxsubdir[0] . substr($f, 0, $underscore) . ".php";
+                    if (is_readable(($fx = "{$root}/{$pfxsubdir[1]}/{$f2}"))) {
+                        return [$fx];
+                    }
+                }
+                if (is_readable(($fx = "{$root}/lib/{$f}"))
+                    || is_readable(($fx = "{$root}/src/{$f}"))) {
+                    return [$fx];
+                }
+            } else if (!$globby
+                       && !str_starts_with($f, "/")
+                       && is_readable(($fx = "{$root}/{$f}"))) {
+                $matches = [$fx];
+            } else {
+                $matches = self::expand_includes_once($f, [$root], $globby);
+            }
+            if (empty($matches) && $includepath === null) {
+                global $Opt;
+                $includepath = $Opt["includePath"] ?? $Opt["includepath"] ?? [];
+            }
+            if (empty($matches) && !empty($includepath)) {
+                if ($f2 !== null) {
+                    $matches = self::expand_includes_once($f2, $includepath, false);
+                }
+                if (empty($matches)) {
+                    $matches = self::expand_includes_once($f, $includepath, $globby);
+                }
+            }
+            if (empty($matches) && !$ignore_not_found) {
+                $matches = [$f[0] === "/" ? $f :$root . $f];
             }
             $results = array_merge($results, $matches);
-            if (empty($matches) && !$ignore_not_found) {
-                $results[] = $f[0] === "/" ? $f : $includepath[0] . $f;
-            }
         }
         return $results;
     }
