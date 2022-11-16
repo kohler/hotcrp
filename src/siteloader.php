@@ -211,7 +211,7 @@ class SiteLoader {
                 }
             }
             if (empty($matches) && !$ignore_not_found) {
-                $matches = [$f[0] === "/" ? $f :$root . $f];
+                $matches = [$f[0] === "/" ? $f : $root . $f];
             }
             $results = array_merge($results, $matches);
         }
