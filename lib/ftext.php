@@ -55,7 +55,7 @@ class Ftext {
         list($format, $s) = self::parse($ftext);
         if (($format ?? 0) === 5 && $want_format !== 5) {
             // XXX <p>, <ul>, <ol>
-            return html_entity_decode(preg_replace_callback('/<\s*(\/?)\s*(a|b|i|u|strong|em|code|samp|pre|tt|span|br)(?=[>\s]).*?>/i',
+            return html_entity_decode(preg_replace_callback('/<\s*(\/?)\s*(a|b|i|u|strong|em|code|samp|pre|tt|span|br)(?=[>\s])(?:[^>"\']|"[^"]*+"|\'[^\']*+\')*+>/i',
                 function ($m) {
                     $tag = strtolower($m[2]);
                     if ($tag === "code" || $tag === "samp" || $tag === "tt") {

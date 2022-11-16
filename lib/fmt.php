@@ -494,10 +494,20 @@ class Fmt {
                 $fa = self::find_arg($args, strtolower($m[1]));
             }
             if ($fa) {
-                return [$pos + strlen($m[0]), $fa->value];
+                $value = $fa->value;
             } else if (($imt = $this->find($context, strtolower($m[1]), [$m[1]], null))
                        && $imt->template) {
-                return [$pos + strlen($m[0]), $this->expand($imt->otext, $args, null, null)];
+                $value = $this->expand($imt->otext, $args, null, null);
+            } else {
+                $value = null;
+            }
+            if ($value !== null) {
+                if ($m[2] === ":url") {
+                    $value = urlencode($value);
+                } else if ($m[2] === ":html") {
+                    $value = htmlspecialchars($value);
+                }
+                return [$pos + strlen($m[0]), $value];
             }
         }
         return [$pos + 1, null];
