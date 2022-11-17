@@ -63,6 +63,18 @@ class Getopt {
                 $this->long(...$s);
                 continue;
             }
+            // Format of a `long` string:
+            // "option[,option,option] ['{'ARGTYPE'}'] ['='ARGNAME] HELPSTRING"
+            // Each `option` can be followed by:
+            // * `:` - single mandatory argument
+            // * `::` - single optional argument
+            // * `[]` - mandatory argument, option can be given multiple times
+            // * `[]+` - mandatory argument, multiple times, can take multiple
+            //   command line arguments (e.g., `-a a1 a2 a3 a4`)
+            // All `option`s must have the same argument description.
+            // * `{ARGTYPE}` checks & transforms arguments. `{i}` means
+            //    int, `{n}` means nonnegative int.
+            // * `=ARGNAME` is used when generating help strings.
             $help = $type = null;
             if (($sp = strpos($s, " ")) !== false) {
                 $help = substr($s, $sp + 1);
