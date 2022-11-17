@@ -559,18 +559,29 @@ function assert_callback() {
 
 /** @param ?Throwable $ex
  * @return string */
-function debug_string_backtrace($ex = null) {
-    $s = ($ex ?? new Exception)->getTraceAsString();
-    if (!$ex) {
-        $s = substr($s, strpos($s, "\n") + 1);
-        $s = preg_replace_callback('/^\#(\d+)/m', function ($m) {
-            return "#" . ($m[1] - 1);
-        }, $s);
+function debug_string_backtrace($ex = null, $limit = 32) {
+    $tr = $ex ? $ex->getTrace() : debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $limit + 2);
+    $s = [];
+    $delta = $ex ? 0 : 1;
+    for ($i = $delta; $i !== count($tr); ++$i) {
+        $frame = $i - $delta;
+        if ($frame === $limit) {
+            $s[] = "#{$frame} [...]\n";
+            break;
+        }
+        $fi = $tr[$i]["file"] ?? "<internal>";
+        if (SiteLoader::$root && str_starts_with($fi, SiteLoader::$root)) {
+            $fi = "[" . (Conf::$main ? Conf::$main->dbname : "HotCRP") . "]" . substr($fi, strlen(SiteLoader::$root));
+        }
+        $ln = isset($tr[$i]["line"]) ? ":" . $tr[$i]["line"] : "";
+        if (($fn = $tr[$i]["function"] ?? "") !== "") {
+            $cl = $tr[$i]["class"] ?? "";
+            $ty = $tr[$i]["type"] ?? "";
+            $fn = ": {$cl}{$ty}{$fn}()";
+        }
+        $s[] = "#{$frame} {$fi}{$ln}{$fn}\n";
     }
-    if (SiteLoader::$root) {
-        $s = str_replace(SiteLoader::$root, "[" . (Conf::$main ? Conf::$main->dbname : "HotCRP") . "]", $s);
-    }
-    return $s;
+    return join("", $s);
 }
 
 
