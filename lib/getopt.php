@@ -102,13 +102,12 @@ class Getopt {
                     $d = 3;
                     $t = self::MARG2;
                 }
-                if ($p + $d >= $co) {
-                    throw new ErrorException("Getopt \$longopts");
-                }
                 $n = substr($s, $p, $co - $p - $d);
                 $po = $po ?? new GetoptOption($n, $t, $type, $help);
                 if ($t !== $po->arg) {
-                    throw new ErrorException("Getopt \$longopts");
+                    throw new ErrorException("Getopt::long: option {$n} has conflicting argspec");
+                } else if ($t === 0 && ($type !== null || str_starts_with($help, "="))) {
+                    throw new ErrorException("Getopt::long: option {$n} should take argument");
                 }
                 $this->po[$n] = $po;
                 $p = $co + 1;
