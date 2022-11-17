@@ -75,6 +75,7 @@ if (defined("HOTCRP_TESTHARNESS")) {
 }
 if (PHP_SAPI === "cli") {
     set_exception_handler("Multiconference::batch_exception_handler");
+    pcntl_signal(SIGPIPE, SIG_DFL);
 }
 
 
