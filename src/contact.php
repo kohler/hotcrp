@@ -4380,6 +4380,7 @@ class Contact implements JsonSerializable {
                 && $ctype === "review"
                 && $this->_capabilities !== null
                 && ($user = $this->reviewer_capability_user($prow->paperId))
+                && $user->contactId !== $this->contactId
                 && $user->can_clickthrough($ctype, $prow));
     }
 
