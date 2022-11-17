@@ -91,7 +91,10 @@ class SiteLoader {
     }
 
     // Set up conference options
-    /** @return list<string> */
+    /** @param string $file
+     * @param list<string> $includepath
+     * @param bool $globby
+     * @return list<string> */
     static private function expand_includes_once($file, $includepath, $globby) {
         foreach ($file[0] === "/" ? [""] : $includepath as $idir) {
             if ($file[0] === "/") {
@@ -211,7 +214,7 @@ class SiteLoader {
                 }
             }
             if (empty($matches) && !$ignore_not_found) {
-                $matches = [$f[0] === "/" ? $f : $root . $f];
+                $matches = [$f[0] === "/" ? $f : "{$root}/{$f}"];
             }
             $results = array_merge($results, $matches);
         }
@@ -254,6 +257,7 @@ class SiteLoader {
         }
     }
 
+    /** @param string $class_name */
     static function autoloader($class_name) {
         $f = self::$map[$class_name] ?? strtolower($class_name) . ".php";
         foreach (self::expand_includes(self::$root, $f, ["autoload" => true]) as $fx) {
