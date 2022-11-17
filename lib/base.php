@@ -396,7 +396,7 @@ function rfc2822_words_quote($words) {
 function html_id_encode($text) {
     $x = preg_split('/([^-a-zA-Z0-9])/', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
     for ($i = 1; $i < count($x); $i += 2) {
-        $x[$i] = "_" . dechex(ord($x[$i]));
+        $x[$i] = sprintf("_%02X", ord($x[$i]));
     }
     return join("", $x);
 }
@@ -425,9 +425,9 @@ function base64url_decode($text) {
 
 /** @param string $text
  * @return bool */
- function is_base64url_string($text) {
+function is_base64url_string($text) {
     return preg_match('/\A[-_A-Za-z0-9]*\z/', $text);
- }
+}
 
 
 // JSON encoding helpers

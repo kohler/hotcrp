@@ -106,7 +106,7 @@ class Getopt {
                 $po = $po ?? new GetoptOption($n, $t, $type, $help);
                 if ($t !== $po->arg) {
                     throw new ErrorException("Getopt::long: option {$n} has conflicting argspec");
-                } else if ($t === 0 && ($type !== null || str_starts_with($help, "="))) {
+                } else if ($t === 0 && ($type !== null || ($help !== null && str_starts_with($help, "=")))) {
                     throw new ErrorException("Getopt::long: option {$n} should take argument");
                 }
                 $this->po[$n] = $po;
