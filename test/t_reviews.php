@@ -974,8 +974,50 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         MailChecker::check_db("test06-external2-request17");
         xassert($result instanceof JsonResult);
         xassert($result->content["ok"]);
-
         $user_external2 = $conf->checked_user_by_email("external2@_.com");
+        $conf->invalidate_user($user_external2);
+        $user_external2 = $conf->user_by_email("external2@_.com"); // ensure cached user
+        assert($user_external2 !== null);
+        $paper17->load_reviews(true);
+
+        // check for review accept capability
+        $rrow = $paper17->review_by_user($user_external2);
+        $tok = ReviewAccept_Capability::make($rrow, false);
+        xassert(!!$tok);
+        xassert(str_starts_with($tok->salt, "hcra"));
+
+        // check that review accept capability works
+        $emptyuser = Contact::make($conf);
+        assert(!$emptyuser->can_view_paper($paper17));
+        $emptyuser->apply_capability_text($tok->salt); // had an infinite loop here
+        assert(!!$emptyuser->can_view_paper($paper17));
+        xassert_eqq($emptyuser->reviewer_capability_user(17)->contactId, $user_external2->contactId);
+
+        // check clickthrough
+        assert($emptyuser->can_clickthrough("review", $paper17));
+        $conf->set_opt("clickthrough_review", 1);
+        $conf->fmt()->add_override("clickthrough_review", "fart");
+        assert(!$emptyuser->can_clickthrough("review", $paper17));
+        assert(!$user_external2->can_clickthrough("review", $paper17));
+        xassert_eqq($user_external2->reviewer_capability_user(17), null);
+        $user_external2->apply_capability_text($tok->salt);
+        xassert_neqq($user_external2->reviewer_capability_user(17), null);
+        assert(!$user_external2->can_clickthrough("review", $paper17));
+
+        $user_external2->merge_and_save_data(["clickthrough" => ["de1027d6806d42584748f76733d55a9ca1c41f3a" => true]]); // sha1("fart")
+        $conf->invalidate_user($user_external2);
+
+        assert($user_external2->can_clickthrough("review", $paper17));
+        $user_external2->clear_capabilities();
+        assert($user_external2->can_clickthrough("review", $paper17));
+        assert($emptyuser->can_clickthrough("review", $paper17));
+        $emptyuser->clear_capabilities();
+        assert(!$emptyuser->can_clickthrough("review", $paper17));
+
+        // no longer want clickthrough
+        $conf->set_opt("clickthrough_review", null);
+
+        // save review, check mail
         save_review(17, $user_external2, [
             "ready" => true, "ovemer" => 3, "revexp" => 3
         ]);

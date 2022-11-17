@@ -1522,6 +1522,12 @@ class Contact implements JsonSerializable {
         }
     }
 
+    function clear_capabilities() {
+        $this->_capabilities = null;
+        unset($this->_hoturl_defaults["cap"]);
+        $this->update_my_rights();
+    }
+
     /** @param string $text
      * @param bool $add */
     function set_default_cap_param($text, $add) {
