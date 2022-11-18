@@ -46,11 +46,32 @@ class UpdateContactdb_Batch {
             throw new ErrorException("Conference is not recorded in contactdb");
         }
         $this->cdb_confid = $this->confrow->confid = (int) $this->confrow->confid;
-        if ($this->confrow->shortName !== $this->conf->short_name
-            || $this->confrow->longName !== $this->conf->long_name) {
-            Dbl::ql($cdb, "update Conferences set shortName=?, longName=? where confid=?",
-                $this->conf->short_name ? : $this->confrow->shortName,
-                $this->conf->long_name ? : $this->confrow->longName, $this->cdb_confid);
+        $qf = $qv = [];
+        if ($this->conf->short_name !== $this->confrow->shortName) {
+            $qf[] = "shortName=?";
+            $qv[] = $this->conf->short_name;
+        }
+        if ($this->conf->long_name !== $this->confrow->longName) {
+            $qf[] = "longName=?";
+            $qv[] = $this->conf->long_name;
+        }
+        if ($this->conf->opt("paperSite") !== $this->confrow->url) {
+            $qf[] = "url=?";
+            $qv[] = $this->conf->opt("paperSite");
+        }
+        $email = $this->conf->opt_override["emailReplyTo"] ?? $this->conf->opt("emailReplyTo");
+        if ($email && $email !== $this->confrow->requester_email) {
+            $qf[] = "requester_email=?";
+            $qv[] = $email;
+        }
+        if (($sub = $this->conf->setting("sub_sub"))
+            && $sub !== $this->confrow->submission_deadline_at) {
+            $qf[] = "submission_deadline_at=?";
+            $qv[] = $sub;
+        }
+        if (!empty($qf)) {
+            $qv[] = $this->cdb_confid;
+            Dbl::ql($cdb, "update Conferences set " . join(", ", $qf) . " where confid=?", ...$qv);
         }
         return $cdb;
     }
@@ -179,12 +200,16 @@ class UpdateContactdb_Batch {
     private function run_papers($cdb) {
         $result = Dbl::ql($this->conf->dblink, "select paperId, title, timeSubmitted from Paper");
         $max_submitted = 0;
+        $nsubmitted = 0;
         $pids = [];
         $qv = [];
         while (($row = $result->fetch_row())) {
-            $qv[] = [$this->cdb_confid, $row[0], $row[1]];
-            $pids[] = $row[0];
-            $max_submitted = max($max_submitted, (int) $row[2]);
+            $pid = (int) $row[0];
+            $st = (int) $row[2];
+            $qv[] = [$this->cdb_confid, $pid, $row[1]];
+            $pids[] = $pid;
+            $max_submitted = max($max_submitted, $st);
+            $nsubmitted += $max_submitted !== 0 ? 1 : 0;
         }
         Dbl::free($result);
 
@@ -192,8 +217,9 @@ class UpdateContactdb_Batch {
             Dbl::ql($cdb, "insert into ConferencePapers (confid,paperId,title) values ?v ?U on duplicate key update title=?U(title)", $qv);
         }
         Dbl::ql($cdb, "delete from ConferencePapers where confid=? and paperId?A", $this->cdb_confid, $pids);
-        if ($this->confrow->last_submission_at != $max_submitted) {
-            Dbl::ql($cdb, "update Conferences set last_submission_at=greatest(coalesce(last_submission_at,0), ?) where confid=?", $max_submitted, $this->cdb_confid);
+        if ($this->confrow->last_submission_at != $max_submitted
+            || $this->confrow->submission_count != $nsubmitted) {
+            Dbl::ql($cdb, "update Conferences set submission_count=?, last_submission_at=greatest(coalesce(last_submission_at,0), ?) where confid=?", $nsubmitted, $max_submitted, $this->cdb_confid);
         }
     }
 
