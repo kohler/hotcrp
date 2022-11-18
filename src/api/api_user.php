@@ -19,7 +19,7 @@ class User_API {
         $users = [];
         if ($user->privChair || $user->can_view_pc()) {
             $roles = $user->is_manager() ? "" : " and roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
-            $result = $user->conf->qe("select contactId, email, firstName, lastName, affiliation, collaborators from ContactInfo where email>=? and email<? and not disabled$roles order by email asc limit 2", $email, $email . "~");
+            $result = $user->conf->qe("select contactId, email, firstName, lastName, affiliation, collaborators, country, orcid from ContactInfo where email>=? and email<? and not disabled$roles order by email asc limit 2", $email, $email . "~");
             while (($u = Contact::fetch($result, $user->conf))) {
                 $users[] = $u;
             }

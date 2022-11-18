@@ -4106,17 +4106,35 @@ handle_ui.on("js-assignment-autosave", function () {
 
 (function () {
 var email_info = [], email_info_at = 0;
+
+function populate(e, v, placeholder) {
+    if (placeholder) {
+        if (v !== "")
+            e.setAttribute("placeholder", v);
+    } else if (input_default_value(e) === "") {
+        if (e.value !== "" && e.getAttribute("data-populated-value") !== e.value) {
+            addClass(e, "stop-populate");
+            e.removeAttribute("data-populated-value");
+        } else if (e.value === "" || !hasClass(e, "stop-populate")) {
+            e.value = v;
+            e.setAttribute("data-populated-value", v);
+            removeClass(e, "stop-populate");
+        }
+    }
+}
+
 handle_ui.on("input.js-email-populate", function () {
     var self = this,
         v = self.value.toLowerCase().trim(),
         f = this.form,
         fn = null, ln = null, nn = null, af = null,
-        orcid = null,
+        country = null, orcid = null,
         placeholder = false;
     if (this.name === "email" || this.name === "uemail") {
         fn = f.elements.firstName;
         ln = f.elements.lastName;
         af = f.elements.affiliation;
+        country = f.elements.country;
         orcid = f.elements.orcid;
         placeholder = true;
     } else if (this.name.substring(0, 13) === "authors:email") {
@@ -4156,25 +4174,12 @@ handle_ui.on("input.js-email-populate", function () {
             else
                 data.name = data.firstName;
         }
-        function handle(e, v) {
-            if (placeholder)
-                e.setAttribute("placeholder", v);
-            else if (e.defaultValue === "") {
-                if (e.value !== "" && e.getAttribute("data-populated-value") !== e.value) {
-                    addClass(e, "stop-populate");
-                    e.removeAttribute("data-populated-value");
-                } else if (e.value === "" || !hasClass(e, "stop-populate")) {
-                    e.value = v;
-                    e.setAttribute("data-populated-value", v);
-                    removeClass(e, "stop-populate");
-                }
-            }
-        }
-        fn && handle(fn, data.firstName || "");
-        ln && handle(ln, data.lastName || "");
-        nn && handle(nn, data.name || "");
-        af && handle(af, data.affiliation || "");
-        orcid && handle(orcid, data.orcid || "");
+        fn && populate(fn, data.firstName || "", placeholder);
+        ln && populate(ln, data.lastName || "", placeholder);
+        nn && populate(nn, data.name || "", placeholder);
+        af && populate(af, data.affiliation || "", placeholder);
+        country && populate(country, data.country || "", false);
+        orcid && populate(orcid, data.orcid || "", placeholder);
         if (hasClass(self, "want-potential-conflict")) {
             $(f).find(".potential-conflict").html(data.potential_conflict || "");
             $(f).find(".potential-conflict-container").toggleClass("hidden", !data.potential_conflict);
