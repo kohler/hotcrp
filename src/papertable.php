@@ -1151,7 +1151,7 @@ class PaperTable {
             $refusals = $capu ? $this->prow->review_refusals_by_user($capu) : [];
             if ($refusals && $refusals[0]->refusedReviewId) {
                 $this->_print_decline_reason($capu, $refusals[0]);
-            } else if ($capu) {
+            } else if ($capuid) {
                 echo '<div class="msg msg-warning demargin remargin-left remargin-right"><p>You have declined to complete a review. Thank you for informing us.</p></div>';
             }
         }
