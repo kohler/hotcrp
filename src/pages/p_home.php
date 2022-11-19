@@ -379,7 +379,7 @@ class Home_Page {
             echo $sep, '<a href="', $conf->hoturl("search", "q=lead%3Ame"), '" class="nw">Your discussion leads</a>';
             $sep = $xsep;
         }
-        if ($conf->time_after_setting("rev_open") || $user->privChair) {
+        if ($conf->time_review_open() || $user->privChair) {
             echo $sep, '<a href="', $conf->hoturl("offline"), '">Offline reviewing</a>';
             $sep = $xsep;
         }

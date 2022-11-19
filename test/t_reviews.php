@@ -73,7 +73,7 @@ class Reviews_Tester {
         assert_search_papers($this->u_chair, "cre:mgbaker", "");
         assert_search_papers($this->u_chair, "-cre:mgbaker", "1-30");
 
-        $this->conf->save_setting("rev_open", 1);
+        $this->conf->save_refresh_setting("rev_open", 1);
     }
 
     function test_add_incomplete_review() {

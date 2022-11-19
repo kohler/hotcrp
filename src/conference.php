@@ -31,21 +31,31 @@ class Conf {
     /** @var int */
     private $_pc_see_cache;
 
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $short_name;
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $long_name;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $default_format;
     /** @var string */
     public $download_prefix;
-    /** @var ?SearchTerm */
+    /** @var bool
+     * @readonly */
+    public $rev_open;
+    /** @var ?SearchTerm
+     * @readonly */
     public $_au_seerev;
-    /** @var ?SearchTerm */
+    /** @var ?SearchTerm
+     * @readonly */
     public $_au_seedec;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $disable_non_pc;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $tag_seeall;
     /** @var int */
     public $ext_subreviews;
@@ -355,6 +365,7 @@ class Conf {
         $this->refresh_options();
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
     function refresh_settings() {
         // enforce invariants
         $this->settings["pcrev_any"] = $this->settings["pcrev_any"] ?? 0;
@@ -465,6 +476,7 @@ class Conf {
         $this->refresh_time_settings();
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
     private function refresh_time_settings() {
         $tf = $this->time_between_settings("sub_open", "sub_sub", "sub_grace");
         $this->_pc_see_cache = (($this->settings["sub_freeze"] ?? 0) > 0 ? 1 : 0)
@@ -475,6 +487,9 @@ class Conf {
             && ($this->_pc_see_cache & 4) !== 0) {
             $this->_pc_see_cache |= 8;
         }
+
+        $rot = $this->settings["rev_open"] ?? 0;
+        $this->rev_open = $rot > 0 && $rot <= Conf::$now;
 
         $this->any_response_open = 0;
         if (($this->settings["resp_active"] ?? 0) > 0) {
@@ -558,6 +573,7 @@ class Conf {
         $this->_tracks[] = $trest;
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
     function refresh_options() {
         // set longName, downloadPrefix, etc.
         $confid = $this->opt["confid"];
@@ -3416,8 +3432,7 @@ class Conf {
     }
     /** @return bool */
     function time_review_open() {
-        $rev_open = $this->settings["rev_open"] ?? 0;
-        return 0 < $rev_open && $rev_open <= Conf::$now;
+        return $this->rev_open;
     }
     /** @param ?int $round
      * @param bool|int $reviewType
@@ -3438,8 +3453,7 @@ class Conf {
      * @param bool $hard
      * @return string|false */
     function missed_review_deadline($round, $reviewType, $hard) {
-        $rev_open = $this->settings["rev_open"] ?? 0;
-        if (!(0 < $rev_open && $rev_open <= Conf::$now)) {
+        if (!$this->time_review_open()) {
             return "rev_open";
         }
         $dn = $this->review_deadline_name($round, $reviewType, $hard);

@@ -5265,8 +5265,7 @@ class Contact implements JsonSerializable {
         }
 
         // reviewer deadlines
-        $rev_open = +$this->conf->setting("rev_open");
-        $rev_open = $rev_open > 0 && $rev_open <= Conf::$now;
+        $rev_open = $this->conf->time_review_open();
         if ($this->is_reviewer() && $rev_open) {
             $dl->rev = (object) ["open" => true];
         } else if ($this->privChair) {
