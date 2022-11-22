@@ -313,7 +313,7 @@ class Autoassign_Page {
                     return;
                 }
                 $this->ms = $ai;
-                $qreq->open_session();
+                $qreq->qsession()->reopen();
             }
         }
 

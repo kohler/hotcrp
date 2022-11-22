@@ -3,10 +3,13 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Qsession {
-    /** @var ?string */
+    /** @var ?string
+     * @readonly */
     public $sid;
     /** @var bool */
     protected $sopen = false;
+    /** @var 0|1|2 */
+    protected $opentype = 0;
 
     function maybe_open() {
         if (!$this->sopen && isset($_COOKIE[session_name()])) {
@@ -15,23 +18,39 @@ class Qsession {
         return $this->sopen;
     }
 
-    function reopen() {
-        $this->open(true);
+    function open() {
+        $this->opentype = 0;
+        $this->handle_open();
     }
 
-    /** @param bool $reopen */
-    function open($reopen = false) {
-        if (headers_sent($hsfn, $hsln)) {
-            error_log("$hsfn:$hsln: headers sent: " . debug_string_backtrace());
-        }
-        if ($this->sopen && !$reopen) {
+    function open_new_sid() {
+        $this->opentype = 1;
+        $this->handle_open();
+    }
+
+    function reopen() {
+        $this->opentype = 2;
+        $this->handle_open();
+    }
+
+    function handle_open() {
+        if ($this->sopen && $this->opentype !== 1) {
             return;
+        }
+        if ($this->sid !== null && $this->opentype === 2) {
+            $sid = $this->start($this->sid);
+            assert($sid === $this->sid);
+            return;
+        }
+        if (headers_sent($hsfn, $hsln)) {
+            error_log("{$hsfn}:{$hsln}: headers sent: " . debug_string_backtrace());
         }
 
         // start session named in cookie
         $sn = session_name();
         $cookie_sid = $_COOKIE[$sn] ?? null;
         if (!$this->sopen) {
+            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $this->sid = $this->start($cookie_sid);
             if ($this->sid === null) {
                 return;
@@ -43,15 +62,16 @@ class Qsession {
         $curv = $this->all();
         if (empty($curv)
             || ($curv["deletedat"] ?? Conf::$now) < Conf::$now - 30) {
-            $reopen = true;
+            $this->opentype = 1;
         }
-        if ($this->sid === $cookie_sid && $reopen) {
+        if ($this->sid === $cookie_sid && $this->opentype === 1) {
             $nsid = $this->new_sid();
             if (!isset($curv["deletedat"])) {
                 $this->set("deletedat", Conf::$now);
             }
             $this->commit();
 
+            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $this->sid = $this->start($nsid);
             if ($this->sid === null) {
                 return;

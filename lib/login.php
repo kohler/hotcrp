@@ -139,7 +139,7 @@ class LoginHelper {
         $xuser->mark_login();
 
         // store authentication
-        $qreq->qsession()->reopen();
+        $qreq->qsession()->open_new_sid();
         self::change_session_users($qreq, [$xuser->email => 1]);
 
         // activate
@@ -308,7 +308,7 @@ class LoginHelper {
         }
         if ($explicit) {
             if ($user->conf->opt("httpAuthLogin")) {
-                $qsess->reopen();
+                $qsess->open_new_sid();
                 $qsess->set("reauth", true);
             } else {
                 unlink_session();
