@@ -26,6 +26,8 @@ class BackupDB_Batch {
     public $skip_ephemeral;
     /** @var bool */
     public $tablespaces;
+    /** @var bool */
+    private $pc_only;
     /** @var list<string> */
     private $my_opts;
     /** @var ?resource */
@@ -94,6 +96,7 @@ class BackupDB_Batch {
         $this->schema = isset($arg["schema"]);
         $this->skip_ephemeral = isset($arg["no-ephemeral"]);
         $this->tablespaces = isset($arg["tablespaces"]);
+        $this->pc_only = isset($arg["pc"]);
         $this->my_opts = $arg["-"] ?? [];
         if (isset($arg["skip-comments"])) {
             $this->my_opts[] = "--skip-comments";
@@ -169,6 +172,9 @@ class BackupDB_Batch {
             $output_mode = "stdout";
         } else {
             $output_mode = "none";
+        }
+        if ($input_mode !== "database" && $this->pc_only) {
+            $this->throw_error("`--pc` works only when reading from a database");
         }
         if ($output_mode === "stdout") {
             if (posix_isatty(STDOUT)
@@ -388,10 +394,10 @@ class BackupDB_Batch {
     private function update_maybe_ephemeral() {
         $this->_maybe_ephemeral = 0;
         if ($this->_inserting === $this->_created) {
-            if ($this->_inserting === "Settings"
+            if ($this->_inserting === "settings"
                 && $this->_fields[0] === "name") {
                 $this->_maybe_ephemeral = 1;
-            } else if ($this->_inserting === "Capability"
+            } else if ($this->_inserting === "capability"
                        && $this->_fields[0] === "capabilityType") {
                 $this->_maybe_ephemeral = 2;
             }
@@ -456,13 +462,16 @@ class BackupDB_Batch {
 
         if (str_starts_with($s, "CREATE")
             && preg_match('/\ACREATE TABLE `?([^`\s]*)/', $s, $m)) {
-            $this->_created = $m[1];
+            $this->_created = strtolower($m[1]);
             $this->_fields = [];
             $this->_creating = true;
             $this->_maybe_ephemeral = 0;
-            if (!empty($this->_check_table)
-                && ($p = array_search($m[1], $this->_check_table)) !== false) {
-                array_splice($this->_check_table, $p, 1);
+            for ($ctpos = 0; $ctpos !== count($this->_check_table); ) {
+                if ($this->_created === $this->_check_table[$ctpos]) {
+                    array_splice($this->_check_table, $ctpos, 1);
+                } else {
+                    ++$ctpos;
+                }
             }
         } else if ($this->_creating) {
             if (str_ends_with($s, ";\n")) {
@@ -479,7 +488,7 @@ class BackupDB_Batch {
         if ($this->_inserting === null
             && str_starts_with($s, "INSERT")
             && preg_match('/\G(INSERT INTO `?([^`\s]*)`? VALUES)\s*(?=[(,]|$)/', $s, $m, 0, $p)) {
-            $this->_inserting = $m[2];
+            $this->_inserting = strtolower($m[2]);
             $this->_separator = "{$m[1]}\n";
             $this->update_maybe_ephemeral();
             $p = strlen($m[0]);
@@ -596,6 +605,28 @@ class BackupDB_Batch {
         }
     }
 
+    /** @param string $args
+     * @param string $tables */
+    private function run_mysqldump_transfer($args, $tables) {
+        $cmd = $this->mysqlcmd("mysqldump", $args) . ($tables ? " {$tables}" : "");
+        $pipes = [];
+        $proc = $this->my_proc_open($cmd, [["file", "/dev/null", "r"], ["pipe", "wb"]], $pipes);
+        $this->in = $pipes[1];
+        $this->transfer();
+        proc_close($proc);
+    }
+
+    private function run_pc_only_transfer() {
+        $pc = Dbl::fetch_first_columns($this->dblink(), "select contactId from ContactInfo where roles!=0 and (roles&7)!=0");
+        if (empty($pc)) {
+            $pc[] = -1;
+        }
+        $where = "contactId in (" . join(",", $pc) . ")";
+        $this->run_mysqldump_transfer("--where='{$where}'", "ContactInfo");
+        $this->run_mysqldump_transfer("", "Settings TopicArea");
+        $this->run_mysqldump_transfer("--where='{$where}'", "TopicInterest");
+    }
+
     /** @return int */
     function run() {
         if ($this->subcommand === self::RESTORE
@@ -605,16 +636,13 @@ class BackupDB_Batch {
             return $this->run_s3_list();
         }
 
-        if (!$this->in) {
-            $cmd = $this->mysqlcmd("mysqldump", "");
-            $pipes = [];
-            $proc = $this->my_proc_open($cmd, [0 => ["file", "/dev/null", "r"], 1 => ["pipe", "wb"]], $pipes);
-            $this->in = $pipes[1];
+        if ($this->in) {
+            $this->transfer();
+        } else if ($this->pc_only) {
+            $this->run_pc_only_transfer();
         } else {
-            $proc = null;
+            $this->run_mysqldump_transfer("", "");
         }
-
-        $this->transfer();
 
         if (!empty($this->_check_table)) {
             fwrite(STDERR,  $this->connp->name . " backup: table(s) " . join(", ", $this->_check_table) . " not found\n");
@@ -626,7 +654,6 @@ class BackupDB_Batch {
                 $this->throw_error("Schema locked or changed");
             }
         }
-
         if ($this->schema) {
             $svlk = $this->sversion_lockstate();
             if ($svlk[0] !== 0) {
@@ -637,9 +664,6 @@ class BackupDB_Batch {
         }
         $this->fflush();
 
-        if ($proc) {
-            proc_close($proc);
-        }
         if ($this->_hash) {
             fwrite(STDOUT, hash_final($this->_hash) . "\n");
         }
@@ -665,6 +689,7 @@ class BackupDB_Batch {
             "skip-comments Omit comments",
             "tablespaces Include tablespaces",
             "check-table[] =TABLE Exit with error if TABLE is not present",
+            "pc Restrict to PC information",
             "output-md5 Output MD5 hash of uncompressed dump to stdout",
             "output-sha1 Same for SHA-1 hash",
             "output-sha256 Same for SHA-256 hash",
