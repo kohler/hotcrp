@@ -630,6 +630,12 @@ class Conf {
             $this->opt["scriptAssetsUrl"] = $this->opt["assetsUrl"];
         }
 
+        // check passwordHashMethod
+        if (isset($this->opt["passwordHashMethod"])
+            && !in_array($this->opt["passwordHashMethod"], password_algos())) {
+            unset($this->opt["passwordHashMethod"]);
+        }
+
         // set docstore
         $docstore = $this->opt["docstore"] ?? null;
         $dpath = "";

@@ -2142,8 +2142,7 @@ class Contact implements JsonSerializable {
 
     /** @return int|string */
     private function password_hash_method() {
-        $m = $this->conf->opt("passwordHashMethod");
-        return is_int($m) ? $m : PASSWORD_DEFAULT;
+        return $this->conf->opt("passwordHashMethod") ?? PASSWORD_DEFAULT;
     }
 
     /** @param string $hash
