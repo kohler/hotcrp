@@ -714,11 +714,11 @@ class Dbl {
 
     /** @param \mysqli $dblink
      * @param int $flags
-     * @return callable(?string,?list=):void */
+     * @return callable(?string,string|int|null...):void */
     static function make_multi_query_stager($dblink, $flags) {
         // NB $q argument as `true` is deprecated but might still be present
         $qs = $qvs = [];
-        return function ($q, $qv = []) use ($dblink, $flags, &$qs, &$qvs) {
+        return function ($q, ...$qv) use ($dblink, $flags, &$qs, &$qvs) {
             if ($q && $q !== true) {
                 $qs[] = $q;
                 $qvs = array_merge($qvs, $qv);
@@ -733,13 +733,13 @@ class Dbl {
     }
 
     /** @param ?\mysqli $dblink
-     * @return callable(?string,?list=):void */
+     * @return callable(?string,string|int|null...):void */
     static function make_multi_ql_stager($dblink = null) {
         return self::make_multi_query_stager($dblink ?? self::$default_dblink, self::F_LOG);
     }
 
     /** @param ?\mysqli $dblink
-     * @return callable(?string,?list=):void */
+     * @return callable(?string,string|int|null...):void */
     static function make_multi_qe_stager($dblink = null) {
         return self::make_multi_query_stager($dblink ?? self::$default_dblink, self::F_ERROR);
     }
@@ -758,7 +758,6 @@ class Dbl {
             || ($result instanceof Dbl_Result && $result->errno);
     }
 
-    // array of all first columns
     static private function do_make_result($args, $flags = self::F_ERROR) {
         if (count($args) == 1 && !is_string($args[0])) {
             return $args[0];

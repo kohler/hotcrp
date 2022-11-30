@@ -353,11 +353,11 @@ class ReviewForm_SettingParser extends SettingParser {
             $stext = empty($sfields) ? null : json_encode_db($sfields);
             $ttext = empty($tfields) ? null : json_encode_db($tfields);
             if ($update === 3) {
-                $clearf("update PaperReview set sfields=?, tfields=? where paperId=? and reviewId=?", [$stext, $ttext, $rrow->paperId, $rrow->reviewId]);
+                $clearf("update PaperReview set sfields=?, tfields=? where paperId=? and reviewId=?", $stext, $ttext, $rrow->paperId, $rrow->reviewId);
             } else if ($update === 2) {
-                $clearf("update PaperReview set tfields=? where paperId=? and reviewId=?", [$ttext, $rrow->paperId, $rrow->reviewId]);
+                $clearf("update PaperReview set tfields=? where paperId=? and reviewId=?", $ttext, $rrow->paperId, $rrow->reviewId);
             } else if ($update === 1) {
-                $clearf("update PaperReview set sfields=? where paperId=? and reviewId=?", [$stext, $rrow->paperId, $rrow->reviewId]);
+                $clearf("update PaperReview set sfields=? where paperId=? and reviewId=?", $stext, $rrow->paperId, $rrow->reviewId);
             }
         }
         $clearf(null);
@@ -405,7 +405,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 }
                 if ($update) {
                     $stext = empty($sfields) ? null : json_encode_db($sfields);
-                    $clearf("update PaperReview set sfields=? where paperId=? and reviewId=?", [$stext, $rrow->paperId, $rrow->reviewId]);
+                    $clearf("update PaperReview set sfields=? where paperId=? and reviewId=?", $stext, $rrow->paperId, $rrow->reviewId);
                 }
             }
             $clearf(null);

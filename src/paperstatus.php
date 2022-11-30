@@ -1159,14 +1159,14 @@ class PaperStatus extends MessageSet {
             foreach ($this->_conflict_ins as $ci) {
                 if (($ci[1] & CONFLICT_PCMASK) === (CONFLICT_PCMASK & ~1)) {
                     $cfltf("insert into PaperConflict set paperId=?, contactId=?, conflictType=? on duplicate key update conflictType=if(conflictType&1,((conflictType&~?)|?),((conflictType&~?)|?))",
-                        [$this->paperId, $ci[0], $ci[2],
-                         $ci[1] & $auflags, $ci[2] & $auflags, $ci[1], $ci[2]]);
+                        $this->paperId, $ci[0], $ci[2],
+                        $ci[1] & $auflags, $ci[2] & $auflags, $ci[1], $ci[2]);
                 } else {
                     $cfltf("insert into PaperConflict set paperId=?, contactId=?, conflictType=? on duplicate key update conflictType=((conflictType&~?)|?)",
-                        [$this->paperId, $ci[0], $ci[2], $ci[1], $ci[2]]);
+                        $this->paperId, $ci[0], $ci[2], $ci[1], $ci[2]);
                 }
             }
-            $cfltf("delete from PaperConflict where paperId=? and conflictType=0", [$this->paperId]);
+            $cfltf("delete from PaperConflict where paperId=? and conflictType=0", $this->paperId);
             $cfltf(null);
         }
 

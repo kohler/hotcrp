@@ -279,7 +279,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $result = $this->conf->ql("select * from PaperReview where reviewWordCount is null limit 32");
             $cleanf = Dbl::make_multi_ql_stager($this->conf->dblink);
             while (($rrow = $result->fetch_object())) {
-                $cleanf("update PaperReview set reviewWordCount=? where paperId=? and reviewId=?", [$rf->word_count($rrow), $rrow->paperId, $rrow->reviewId]);
+                $cleanf("update PaperReview set reviewWordCount=? where paperId=? and reviewId=?", $rf->word_count($rrow), $rrow->paperId, $rrow->reviewId);
                 ++$n;
             }
             Dbl::free($result);
@@ -358,7 +358,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
                 }
             }
             if (!empty($tfields)) {
-                $cleanf("update PaperReview set `tfields`=? where paperId=? and reviewId=?", [json_encode_db($tfields), $row["paperId"], $row["reviewId"]]);
+                $cleanf("update PaperReview set `tfields`=? where paperId=? and reviewId=?", json_encode_db($tfields), $row["paperId"], $row["reviewId"]);
             }
         }
         Dbl::free($result);
@@ -398,9 +398,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         $cleanf = Dbl::make_multi_ql_stager($this->conf->dblink);
         while (($row = $result->fetch_object())) {
             list($first, $last) = Text::split_name($row->name);
-            $cleanf("update ReviewRequest set firstName=?, lastName=? where paperId=? and email=?", [(string) $first === "" ? null : $first,
+            $cleanf("update ReviewRequest set firstName=?, lastName=? where paperId=? and email=?", (string) $first === "" ? null : $first,
                        (string) $last === "" ? null : $last,
-                       $row->paperId, $row->email]);
+                       $row->paperId, $row->email);
         }
         Dbl::free($result);
         $cleanf(null);
@@ -414,11 +414,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         while (($doc = DocumentInfo::fetch($result, $this->conf))) {
             /* XXX relies on DocumentInfo understanding v191 schema */
             $hash = $doc->content_binary_hash();
-            $cleanf("update PaperStorage set sha1=? where paperId=? and paperStorageId=?", [$hash, $doc->paperId, $doc->paperStorageId]);
+            $cleanf("update PaperStorage set sha1=? where paperId=? and paperStorageId=?", $hash, $doc->paperId, $doc->paperStorageId);
             if ($doc->documentType == 0 /* DTYPE_SUBMISSION */) {
-                $cleanf("update Paper set sha1=? where paperId=? and paperStorageId=? and finalPaperStorageId<=0", [$hash, $doc->paperId, $doc->paperStorageId]);
+                $cleanf("update Paper set sha1=? where paperId=? and paperStorageId=? and finalPaperStorageId<=0", $hash, $doc->paperId, $doc->paperStorageId);
             } else if ($doc->documentType == -1 /* DTYPE_FINAL */) {
-                $cleanf("update Paper set sha1=? where paperId=? and finalPaperStorageId=?", [$hash, $doc->paperId, $doc->paperStorageId]);
+                $cleanf("update Paper set sha1=? where paperId=? and finalPaperStorageId=?", $hash, $doc->paperId, $doc->paperStorageId);
             }
         }
         Dbl::free($result);
@@ -516,7 +516,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
                     for ($j = $i + 1; $j < count($rrows); ++$j) {
                         $t = min($t, $rt[$j]);
                     }
-                    $cleanf("update PaperReview set timeDisplayed=? where paperId=? and reviewId=?", [$t, $prow->paperId, $rrow->reviewId]);
+                    $cleanf("update PaperReview set timeDisplayed=? where paperId=? and reviewId=?", $t, $prow->paperId, $rrow->reviewId);
                     $rrow->timeDisplayed = $t;
                 }
                 $last = +$rrow->timeDisplayed;
@@ -547,8 +547,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         $result = $this->conf->ql_ok("select contactId, firstName, lastName, affiliation from ContactInfo where firstName regexp $regex or lastName regexp $regex or affiliation regexp $regex");
         while (($row = $result->fetch_object())) {
             $cleanf("update ContactInfo set firstName=?, lastName=?, affiliation=? where contactId=?",
-                [simplify_whitespace($row->firstName), simplify_whitespace($row->lastName),
-                 simplify_whitespace($row->affiliation), $row->contactId]);
+                simplify_whitespace($row->firstName), simplify_whitespace($row->lastName),
+                simplify_whitespace($row->affiliation), $row->contactId);
         }
         $cleanf(null);
         Dbl::free($result);
@@ -783,7 +783,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
 
         $cleanf = Dbl::make_multi_ql_stager($this->conf->dblink);
         foreach ($users as $u) {
-            $cleanf("update {$table} set unaccentedName=? where contactId=?", [strtolower(UnicodeHelper::deaccent($u->searchable_name())), $u->contactId]);
+            $cleanf("update {$table} set unaccentedName=? where contactId=?", strtolower(UnicodeHelper::deaccent($u->searchable_name())), $u->contactId);
         }
         $cleanf(null);
         $this->conf->qe("unlock tables");

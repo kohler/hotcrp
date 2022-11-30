@@ -1967,7 +1967,7 @@ class AssignmentSet {
         if (!$this->qe_stager) {
             $this->qe_stager = Dbl::make_multi_qe_stager($this->conf->dblink);
         }
-        call_user_func($this->qe_stager, $query, $args);
+        call_user_func($this->qe_stager, $query, ...$args);
     }
 
     /** @param string $name

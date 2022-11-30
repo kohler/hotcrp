@@ -789,7 +789,7 @@ $blind\n";
                     $vs = $this->nonempty_view_score($rrow);
                     if ($last_view_score !== $vs) {
                         if (!empty($rids)) {
-                            $updatef("update PaperReview set reviewViewScore=? where paperId?a and reviewId?a and reviewViewScore=?", [$last_view_score, $pids, $rids, ReviewInfo::VIEWSCORE_RECOMPUTE]);
+                            $updatef("update PaperReview set reviewViewScore=? where paperId?a and reviewId?a and reviewViewScore=?", $last_view_score, $pids, $rids, ReviewInfo::VIEWSCORE_RECOMPUTE);
                         }
                         $pids = $rids = [];
                         $last_view_score = $vs;
@@ -802,7 +802,7 @@ $blind\n";
             }
         }
         if (!empty($rids)) {
-            $updatef("update PaperReview set reviewViewScore=? where paperId?a and reviewId?a and reviewViewScore=?", [$last_view_score, $pids, $rids, ReviewInfo::VIEWSCORE_RECOMPUTE]);
+            $updatef("update PaperReview set reviewViewScore=? where paperId?a and reviewId?a and reviewViewScore=?", $last_view_score, $pids, $rids, ReviewInfo::VIEWSCORE_RECOMPUTE);
         }
         $updatef(null);
     }

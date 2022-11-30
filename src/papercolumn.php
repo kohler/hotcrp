@@ -173,7 +173,7 @@ class Id_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $href = $pl->_paperLink($row);
-        return "<a href=\"$href\" class=\"pnum taghl\">#$row->paperId</a>";
+        return "<a href=\"{$href}\" class=\"pnum taghl\">#{$row->paperId}</a>";
     }
     function text(PaperList $pl, PaperInfo $row) {
         return (string) $row->paperId;
