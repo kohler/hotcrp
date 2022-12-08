@@ -204,7 +204,7 @@ class UpdateContactdb_Batch {
 
     /** @param \mysqli $cdb */
     private function run_papers($cdb) {
-        $result = Dbl::ql($this->conf->dblink, "select paperId, title, timeSubmitted from Paper");
+        $result = Dbl::ql($this->conf->dblink, "select paperId, title, timeSubmitted, exists (select * from PaperReview where paperId=Paper.paperId and reviewModified>0) from Paper");
         $max_submitted = 0;
         $nsubmitted = 0;
         $pids = [];
@@ -215,7 +215,9 @@ class UpdateContactdb_Batch {
             $qv[] = [$this->cdb_confid, $pid, $row[1], $st];
             $pids[] = $pid;
             $max_submitted = max($max_submitted, $st);
-            $nsubmitted += $st !== 0 ? 1 : 0;
+            if ($st > 0 || ($st < 0 && (int) $row[3] > 0)) {
+                ++$nsubmitted;
+            }
         }
         Dbl::free($result);
 
