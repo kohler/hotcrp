@@ -215,7 +215,7 @@ class UpdateContactdb_Batch {
             $qv[] = [$this->cdb_confid, $pid, $row[1], $st];
             $pids[] = $pid;
             $max_submitted = max($max_submitted, $st);
-            $nsubmitted += $st > 0 ? 1 : 0;
+            $nsubmitted += $st !== 0 ? 1 : 0;
         }
         Dbl::free($result);
 
