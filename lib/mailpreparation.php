@@ -44,7 +44,8 @@ class MailPreparation implements JsonSerializable {
         }
     }
 
-    /** @param string $email */
+    /** @param string $email
+     * @return bool */
     static function valid_email($email) {
         return ($at = strpos($email, "@")) !== false
             && ((($ch = $email[$at + 1]) !== "_" && $ch !== "e" && $ch !== "E")

@@ -10,6 +10,8 @@ if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
 class UpdateContactdb_Batch {
     /** @var Conf */
     public $conf;
+    /** @var string */
+    public $conftid;
     /** @var int */
     public $cdb_confid;
     /** @var object */
@@ -22,13 +24,17 @@ class UpdateContactdb_Batch {
     public $collaborators;
     /** @var bool */
     public $authors;
+    /** @var bool */
+    public $verbose;
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
+        $this->conftid = $conf->opt["confid"] ?? "<conf>";
         $this->papers = isset($arg["papers"]);
         $this->users = isset($arg["users"]);
         $this->collaborators = isset($arg["collaborators"]);
         $this->authors = isset($arg["authors"]);
+        $this->verbose = isset($arg["V"]);
         if (!$this->papers && !$this->users && !$this->collaborators && !$this->authors) {
             $this->papers = $this->users = true;
         }
@@ -206,20 +212,23 @@ class UpdateContactdb_Batch {
         while (($row = $result->fetch_row())) {
             $pid = (int) $row[0];
             $st = (int) $row[2];
-            $qv[] = [$this->cdb_confid, $pid, $row[1]];
+            $qv[] = [$this->cdb_confid, $pid, $row[1], $st];
             $pids[] = $pid;
             $max_submitted = max($max_submitted, $st);
-            $nsubmitted += $max_submitted !== 0 ? 1 : 0;
+            $nsubmitted += $st > 0 ? 1 : 0;
         }
         Dbl::free($result);
 
         if (!empty($qv)) {
-            Dbl::ql($cdb, "insert into ConferencePapers (confid,paperId,title) values ?v ?U on duplicate key update title=?U(title)", $qv);
+            Dbl::ql($cdb, "insert into ConferencePapers (confid,paperId,title,timeSubmitted) values ?v ?U on duplicate key update title=?U(title), timeSubmitted=?U(timeSubmitted)", $qv);
         }
         Dbl::ql($cdb, "delete from ConferencePapers where confid=? and paperId?A", $this->cdb_confid, $pids);
         if ($this->confrow->last_submission_at != $max_submitted
             || $this->confrow->submission_count != $nsubmitted) {
             Dbl::ql($cdb, "update Conferences set submission_count=?, last_submission_at=greatest(coalesce(last_submission_at,0), ?) where confid=?", $nsubmitted, $max_submitted, $this->cdb_confid);
+        }
+        if ($this->verbose) {
+            fwrite(STDERR, "{$this->conftid} [#{$this->confrow->confid}]: {$this->confrow->submission_count} -> {$nsubmitted} submissions\n");
         }
     }
 
@@ -254,7 +263,8 @@ class UpdateContactdb_Batch {
             "papers,p",
             "users,u",
             "collaborators",
-            "authors"
+            "authors",
+            "V,verbose"
         )->description("Update HotCRP contactdb for a conference.
 Usage: php batch/updatecontactdb.php [-n CONFID | --config CONFIG] [--papers] [--users] [--collaborators] [--authors]")
          ->helpopt("help")
