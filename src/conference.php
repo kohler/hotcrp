@@ -4694,8 +4694,7 @@ class Conf {
             $pagecs->trigger_separator();
             $base_email = $user->base_user()->email;
             $actas_email = null;
-            if ($user->privChair
-                && !$user->is_actas_user()) {
+            if ($user->privChair && !$user->is_actas_user()) {
                 $actas_email = $qreq->gsession("last_actas");
             }
             $nav = $qreq->navigation();
@@ -4820,21 +4819,21 @@ class Conf {
         if ($id) {
             echo ' id="body-', $id, '"';
         }
-        $class = $extra["body_class"] ?? null;
+        $class = $extra["body_class"] ?? "";
         if (($list = $qreq->active_list())) {
-            $class = ($class ? $class . " " : "") . "has-hotlist";
+            $class = $class === "" ? "has-hotlist" : "{$class} has-hotlist";
         }
-        if ($class) {
+        if ($class !== "") {
             echo ' class="', $class, '"';
         }
         if ($list) {
             echo ' data-hotlist="', htmlspecialchars($list->info_string()), '"';
         }
-        echo ' data-upload-limit="', ini_get_bytes("upload_max_filesize");
+        echo ' data-upload-limit="', ini_get_bytes("upload_max_filesize"), '"';
         if (($x = $this->opt["uploadMaxFilesize"] ?? null) !== null) {
-            echo '" data-document-max-size="', ini_get_bytes(null, $x);
+            echo ' data-document-max-size="', ini_get_bytes(null, $x), '"';
         }
-        echo '"><div id="top">';
+        echo '><div id="top">';
 
         // initial load (JS's timezone offsets are negative of PHP's)
         Ht::stash_script("hotcrp.onload.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");

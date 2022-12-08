@@ -389,7 +389,7 @@ function initialize_request($kwarg = null) {
     }
 
     if (!$muser->is_empty() && $login_bounce !== null) {
-        if ($login_bounce[0] === $conf->dbname
+        if ($login_bounce[0] === $conf->session_key
             && $login_bounce[2] !== "index"
             && $login_bounce[2] === $nav->page) {
             foreach ($login_bounce[3] as $k => $v) {

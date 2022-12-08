@@ -216,7 +216,7 @@ class LoginHelper {
         if (isset($qreq->redirect)) {
             $where = $qreq->redirect;
         } else if (($login_bounce = $qreq->gsession("login_bounce"))
-                   && $login_bounce[0] === $user->conf->dbname) {
+                   && $login_bounce[0] === $user->conf->session_key) {
             $where = $login_bounce[1];
         } else {
             $qreq->set_csession("freshlogin", true);
