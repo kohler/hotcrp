@@ -467,7 +467,7 @@ class BackupDB_Batch {
             $this->_creating = true;
             $this->_maybe_ephemeral = 0;
             for ($ctpos = 0; $ctpos !== count($this->_check_table); ) {
-                if ($this->_created === $this->_check_table[$ctpos]) {
+                if (strcasecmp($this->_created, $this->_check_table[$ctpos]) === 0) {
                     array_splice($this->_check_table, $ctpos, 1);
                 } else {
                     ++$ctpos;
