@@ -9,6 +9,8 @@ class Settings_Page {
     public $user;
     /** @var SettingValues */
     public $sv;
+    /** @var string */
+    public $reqsg;
 
     /** @param SettingValues $sv
      * @param Contact $user */
@@ -22,35 +24,41 @@ class Settings_Page {
     /** @param Qrequest $qreq
      * @return string */
     function choose_setting_group($qreq) {
-        $req_group = $qreq->group;
-        if (!$req_group && preg_match('/\A\/\w+\/*\z/', $qreq->path())) {
-            $req_group = $qreq->path_component(0);
+        $this->reqsg = $qreq->group;
+        if (!$this->reqsg && preg_match('/\A\/\w+\/*\z/', $qreq->path())) {
+            $this->reqsg = $qreq->path_component(0);
         }
-        $want_group = $req_group;
-        if (!$want_group && $qreq->has_gsession("sg")) { // NB not conf-specific session, global
+        $want_group = $this->reqsg;
+        if (!$want_group) {
+            // try previous global group (NB not conf-specific)
             $want_group = $qreq->gsession("sg");
-        }
-        $want_group = $this->sv->canonical_group($want_group);
-        if (!$want_group || !$this->sv->group_title($want_group)) {
-            if ($this->conf->time_some_author_view_review()) {
-                $want_group = $this->sv->canonical_group("decisions");
-            } else if ($this->conf->time_after_setting("sub_sub")
-                       || $this->conf->time_review_open()) {
-                $want_group = $this->sv->canonical_group("reviews");
-            } else {
-                $want_group = $this->sv->canonical_group("submissions");
+            if ($want_group && !$this->sv->canonical_group($want_group)) {
+                $want_group = null;
             }
         }
         if (!$want_group) {
-            $this->user->escape();
+            if ($this->conf->time_some_author_view_review()) {
+                $want_group = "decisions";
+            } else if ($this->conf->time_after_setting("sub_sub")
+                       || $this->conf->time_review_open()) {
+                $want_group = "reviews";
+            } else {
+                $want_group = "submissions";
+            }
         }
-        if ($want_group !== $req_group && !$qreq->post && $qreq->post_empty()) {
+        $canon_group = $this->sv->canonical_group($want_group);
+        if (!$canon_group) {
+            return "error404";
+        }
+        if ($canon_group !== $this->reqsg
+            && !$qreq->post
+            && $qreq->post_empty()) {
             $this->conf->redirect_self($qreq, [
-                "group" => $want_group, "#" => $this->sv->group_hashid($req_group)
+                "group" => $canon_group, "#" => $this->sv->group_hashid($want_group)
             ]);
         }
-        $this->sv->set_canonical_page($want_group);
-        return $want_group;
+        $this->sv->set_canonical_page($canon_group);
+        return $canon_group;
     }
 
     /** @param Qrequest $qreq */
@@ -70,39 +78,57 @@ class Settings_Page {
     /** @param string $group
      * @param Qrequest $qreq */
     function print($group, $qreq) {
-        $sv = $this->sv;
-        $conf = $this->conf;
+        if ($group === "error404") {
+            http_response_code(404);
+        }
 
         $qreq->print_header("Settings", "settings", [
-            "subtitle" => $sv->group_title($group),
+            "subtitle" => $this->sv->group_title($group),
             "title_div" => '<hr class="c">',
             "body_class" => "leftmenu",
             "save_messages" => true
         ]);
         Icons::stash_defs("movearrow0", "movearrow2", "trash");
         echo Ht::unstash(), // clear out other script references
-            $conf->make_script_file("scripts/settings.js"), "\n",
+            $this->conf->make_script_file("scripts/settings.js"), "\n",
 
-            Ht::form($conf->hoturl("=settings", "group={$group}"),
+            Ht::form($this->conf->hoturl("=settings", "group={$group}"),
                      ["id" => "settingsform", "class" => "need-unload-protection"]),
 
             '<div class="leftmenu-left"><nav class="leftmenu-menu">',
             '<h1 class="leftmenu"><a href="" class="uic js-leftmenu q">Settings</a></h1>',
             '<ul class="leftmenu-list">';
-        foreach ($sv->group_members("") as $gj) {
+        foreach ($this->sv->group_members("") as $gj) {
             $title = $gj->short_title ?? $gj->title;
             if ($gj->name === $group) {
                 echo '<li class="leftmenu-item active">', $title, '</li>';
             } else if ($gj->title) {
                 echo '<li class="leftmenu-item ui js-click-child">',
-                    '<a href="', $conf->hoturl("settings", "group={$gj->name}"), '">', $title, '</a></li>';
+                    '<a href="', $this->conf->hoturl("settings", "group={$gj->name}"), '">', $title, '</a></li>';
             }
         }
         echo '</ul><div class="leftmenu-if-left if-alert mt-5">',
             Ht::submit("update", "Save changes", ["class" => "btn-primary"]),
             "</div></nav></div>\n",
-            '<main class="leftmenu-content main-column">',
-            '<h2 class="leftmenu">', $sv->group_title($group);
+            '<main class="leftmenu-content main-column">';
+
+        if ($group !== "error404") {
+            $this->print_extant_group($group, $qreq);
+        } else {
+            echo '<h2 class="leftmenu">Error</h2>';
+            $this->conf->feedback_msg(MessageItem::error("<0>Settings group not found"));
+        }
+
+        echo "</main></form>\n";
+        Ht::stash_script('hiliter_children("#settingsform")');
+        $qreq->print_footer();
+    }
+
+    /** @param string $group
+     * @param Qrequest $qreq */
+    private function print_extant_group($group, $qreq) {
+        $sv = $this->sv;
+        echo '<h2 class="leftmenu">', $sv->group_title($group);
         $gj = $sv->cs()->get($group);
         if ($gj && isset($gj->title_help_group)) {
             echo " ", Ht::link(Icons::ui_solid_question(), $sv->conf->hoturl("help", "t={$gj->title_help_group}"), ["class" => "ml-1"]);
@@ -112,7 +138,7 @@ class Settings_Page {
         if (!$sv->use_req()) {
             $sv->crosscheck();
         }
-        if ($conf->report_saved_messages() < 1 || $sv->use_req()) {
+        if ($sv->conf->report_saved_messages() < 1 || $sv->use_req()) {
             // XXX this is janky (if there are any warnings saved in the session,
             // don't crosscheck) but reduces duplicate warnings
             $sv->report();
@@ -122,10 +148,7 @@ class Settings_Page {
         echo '<div class="aab aabig mt-7">',
             '<div class="aabut">', Ht::submit("update", "Save changes", ["class" => "btn-primary"]), '</div>',
             '<div class="aabut">', Ht::submit("cancel", "Cancel", ["formnovalidate" => true]), '</div>',
-            '<hr class="c"></div></main></form>', "\n";
-
-        Ht::stash_script('hiliter_children("#settingsform")');
-        $qreq->print_footer();
+            '<hr class="c"></div>';
     }
 
     static function go(Contact $user, Qrequest $qreq) {

@@ -35,7 +35,7 @@ class Graph_Page {
     static function go(Contact $user, Qrequest $qreq, $gx) {
         $gtypes = $gx->members("graph");
         if (empty($gtypes)) {
-            Multiconference::fail($qreq, 403, ["title" => "Graph"], "There are no graphs you can view.");
+            Multiconference::fail($qreq, 403, ["title" => "Graph"], "<0>There are no graphs you can view");
             return false;
         }
 
@@ -52,7 +52,7 @@ class Graph_Page {
             return false;
         }
         if (!$gj) {
-            Multiconference::fail($qreq, 404, ["title" => "Graph"], "Graph not found.");
+            Multiconference::fail($qreq, 404, ["title" => "Graph"], "<0>Graph not found");
             return false;
         }
 

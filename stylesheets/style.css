@@ -209,6 +209,9 @@ body {
 body.paper {
 	background: linear-gradient(to right, #e2e9ec, #e2e9ec 15.5rem, white 15.5rem, white);
 }
+body.body-error {
+	background: #dfd0d3;
+}
 body.paper-error {
 	background: #dce4e8;
 }
@@ -780,13 +783,6 @@ body.paper > #body {
 	margin-left: 24px;
 	margin-right: 24px;
 }
-#msgs-initial > .msg,
-.msgs-wide > .msg {
-	margin-left: auto;
-	margin-right: auto;
-	max-width: 80%;
-	width: fit-content;
-}
 
 
 /* footer */
@@ -818,24 +814,22 @@ body.paper > #body {
 	padding: 0.5em 0.85em;
 	max-width: 720px;
 }
-.msgx {
-	max-width: 720px;
-}
+#msgs-initial > .msg,
+.msgs-wide > .msg,
 .msg.mx-auto,
-.msgx.mx-auto,
 body.paper-error .msg {
-	width: fit-content;
 	margin-left: auto;
 	margin-right: auto;
+	max-width: 80%;
+	width: fit-content;
 }
 .msg + .msg {
 	margin-top: -0.5rem;
 }
-.msg > p, .msgx > p {
+.msg > p {
 	margin-bottom: 0.3em;
 }
-.msg > p:last-child, .msg > ul:last-child, .msg > ol:last-child, .msg > dl:last-child,
-.msgx > p:last-child, .msgx > ul:last-child, .msgx > ol:last-child, .msgx > dl:last-child {
+.msg > p:last-child, .msg > ul:last-child, .msg > ol:last-child, .msg > dl:last-child {
 	margin-bottom: 0;
 }
 .msg {

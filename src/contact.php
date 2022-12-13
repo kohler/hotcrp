@@ -1555,31 +1555,38 @@ class Contact implements JsonSerializable {
 
         if ($qreq->ajax) {
             if ($this->is_empty()) {
-                json_exit(["ok" => false, "error" => "You have been signed out", "loggedout" => true]);
+                $m = "<0>You have been signed out";
             } else if (!$this->is_signed_in()) {
-                json_exit(["ok" => false, "error" => "You must sign in to access that function", "loggedout" => true]);
+                $m = "<0>You must sign in to access this function";
             } else {
-                json_exit(["ok" => false, "error" => "You don’t have permission to access that page"]);
+                $m = "<0>You don’t have permission to access this function";
             }
+            $j = MessageItem::make_error_json($m);
+            if (!$this->is_signed_in()) {
+                $j["loggedout"] = true;
+            }
+            json_exit($j);
         }
 
-        if (!$this->is_signed_in()) {
-            // Preserve post values across session expiration.
-            $qreq->open_session();
+        if ($this->is_signed_in()) {
+            Multiconference::fail($qreq, 403, ["link" => true], "<0>Page inaccessible");
+        } else {
             $x = [];
-            if (($path = Navigation::path())) {
+            if (($path = $qreq->path())) {
                 $x["__PATH__"] = preg_replace('/^\/+/', "", $path);
             }
             $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
-            $qreq->set_gsession("login_bounce", [$this->conf->session_key, $url, Navigation::page(), $_POST, Conf::$now + 120]);
-            $ml = [MessageItem::error("<0>You must sign in to access that page")];
-            if ($qreq->valid_token()) {
+            if ($qreq->valid_post()) {
+                // Preserve post values across session expiration.
+                $qreq->open_session();
+                $qreq->set_gsession("login_bounce", [$this->conf->session_key, $url, Navigation::page(), $_POST, Conf::$now + 120]);
+                $ml = [MessageItem::error("<0>You must sign in to access that page")];
                 $ml[] = MessageItem::inform("<0>Your changes were not saved. After signing in, you may try to submit them again");
+                $this->conf->feedback_msg($ml);
+                $this->conf->redirect();
+            } else {
+                Multiconference::fail($qreq, 403, "<5>You must <a href=\"" . $this->conf->hoturl("signin", ["redirect" => $url]) . "\">sign in</a> to access this page");
             }
-            $this->conf->feedback_msg($ml);
-            $this->conf->redirect();
-        } else {
-            Multiconference::fail($qreq, 403, "Page inaccessible.");
         }
     }
 

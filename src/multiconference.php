@@ -76,29 +76,31 @@ class Multiconference {
         return $newconf;
     }
 
-    /** @param 403|404|array{title?:string,nolink?:bool}|Qrequest|string|null ...$arg
+    /** @param 403|404|array{title?:string,link?:bool}|Qrequest|MessageItem|string|null ...$arg
      * @return never */
     static function fail(...$arg) {
         global $Opt;
 
         $qreq = null;
-        $errors = [];
-        $title = "Error";
+        $mis = [];
+        $title = "";
         $status = 404;
-        $nolink = false;
+        $link = null;
         foreach ($arg as $x) {
             if ($x === null) {
                 // skip
             } else if (is_int($x)) {
                 $status = $x;
             } else if (is_string($x)) {
-                $errors[] = $x;
+                $mis[] = MessageItem::error($x);
+            } else if ($x instanceof MessageItem) {
+                $mis[] = $x;
             } else if ($x instanceof Qrequest) {
                 $qreq = $x;
             } else {
                 assert(is_array($x));
                 $title = $x["title"] ?? $title;
-                $nolink = $x["nolink"] ?? $nolink;
+                $link = $x["link"] ?? $link;
             }
         }
 
@@ -106,46 +108,46 @@ class Multiconference {
         if ($maintenance) {
             $status = 503;
             $title = "Maintenance";
-            $errors = ["The site is down for maintenance. " . (is_string($maintenance) ? $maintenance : "Please check back later.")];
-            $nolink = true;
+            $mis = [Messageitem::error(Ftext::concat("<0>The site is down for maintenance. ", is_string($maintenance) ? $maintenance : "<0>Please check back later."))];
+            $link = false;
         }
 
         if (PHP_SAPI === "cli") {
-            fwrite(STDERR, join("\n", $errors) . "\n");
+            fwrite(STDERR, MessageSet::feedback_text($mis));
             exit(1);
         }
 
         if (Navigation::page() === "api" || ($_GET["ajax"] ?? null)) {
             http_response_code($status);
             header("Content-Type: application/json; charset=utf-8");
+            $j = ["ok" => false, "message_list" => $mis];
             if ($maintenance) {
-                echo "{\"ok\":false,\"error\":\"maintenance\"}\n";
-            } else {
-                echo "{\"ok\":false,\"error\":\"unconfigured installation\"}\n";
+                $j["maintenance"] = true;
             }
+            echo json_encode($j), "\n";
+            exit;
         }
 
-        $qreq = $qreq ?? Qrequest::$main_request ?? Qrequest::make_global(Navigation::get());
+        $qreq = $qreq ?? Qrequest::$main_request ?? Qrequest::make_minimal();
         if (!$qreq->conf) {
             $qreq->set_conf(Conf::$main ?? new Conf($Opt, false));
         }
-        if ($nolink) {
+        if ($link === false) {
             $qreq->set_user(null);
         }
         http_response_code($status);
-        $qreq->print_header($title, "", ["action_bar" => ""]);
-        if (empty($errors)) {
-            $errors[] = "Internal error.";
+        $qreq->print_header($title, "", ["action_bar" => "", "body_class" => "body-error"]);
+        if (empty($mis)) {
+            $mis[] = MessageItem::error("<0>Internal error");
         }
-        echo '<div class="msg msg-error">';
-        foreach ($errors as $i => $e) {
-            echo '<p>', htmlspecialchars($e);
-            if (!$nolink && $qreq->user() && $i === 0) {
-                echo ' ', Ht::link("Return to site", $qreq->conf()->hoturl("index"));
+        if ($link && $mis[0]->status >= 2) {
+            $m = $mis[0]->message;
+            if (!is_string($link)) {
+                $link = Conf::$main->hoturl_raw("index");
             }
-            echo '</p>';
+            $mis[0] = $mis[0]->with(["message" => Ftext::concat($m, preg_match('/[^.?!\s]\z/', $m) ? "<0>. " : "<0> ", "<5><a href=\"" . htmlspecialchars($link) . "\">Go to " . htmlspecialchars(Conf::$main->long_name) . " site</a>")]);
         }
-        echo '</div>';
+        echo '<div class="msg mx-auto msg-error">', MessageSet::feedback_html($mis), '</div>';
         $qreq->print_footer();
         exit;
     }
@@ -233,7 +235,7 @@ class Multiconference {
             }
         }
 
-        self::fail($qreq, ["nolink" => true], ...$errors);
+        Multiconference::fail($qreq, ["link" => false], ...$errors);
     }
 
     /** @return never */
@@ -263,7 +265,7 @@ class Multiconference {
                 error_log("Unable to connect to database");
             }
         }
-        self::fail($qreq, ["nolink" => true], ...$errors);
+        Multiconference::fail($qreq, ["link" => false], ...$errors);
     }
 
     /** @param Throwable $ex
