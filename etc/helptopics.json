@@ -1,7 +1,7 @@
 [
     {
         "name": "chair", "title": "Chair’s guide", "order": 0,
-        "description": "How to run a conference using HotCRP."
+        "description": "<0>How to run a conference using HotCRP."
     },
     {
         "name": "chair/presubmission", "order": 0,
@@ -189,20 +189,20 @@
     },
     {
         "name": "search", "title": "Search",
-        "description": "About paper searching.",
+        "description": "<0>About paper searching.",
         "print_function": "Search_HelpTopic::print",
         "order": 1000
     },
     {
         "name": "keywords", "title": "Search keywords",
-        "description": "Quick reference to search keywords and syntax.",
+        "description": "<0>Quick reference to search keywords and syntax.",
         "print_function": "Keywords_HelpTopic::print",
         "order": 2000
     },
     {   "name": "syntax", "alias": "keywords"   },
     {
         "name": "tags", "title": "Tags",
-        "description": "How to use tags to define paper sets and discussion orders.",
+        "description": "<0>How to use tags to define paper sets and discussion orders.",
         "print_function": "*Tags_HelpTopic::print_intro",
         "order": 3000
     },
@@ -261,44 +261,44 @@
     },
     {
         "name": "scoresort", "title": "Sorting scores",
-        "description": "How scores are sorted in paper lists.",
+        "description": "<0>How scores are sorted in paper lists.",
         "print_function": "ScoreSort_HelpTopic::print",
         "order": 5000
     },
     {
         "name": "revround", "title": "Review rounds",
-        "description": "Sets of reviews with different deadlines and forms.",
+        "description": "<0>Sets of reviews with different deadlines and forms.",
         "print_function": "RevRound_HelpTopic::print",
         "order": 6000
     },
     {
         "name": "reviewratings", "title": "Review ratings",
-        "description": "Rating the quality of reviews.",
+        "description": "<0>Rating the quality of reviews.",
         "print_function": "RevRate_HelpTopic::print",
         "order": 7000
     },
     {   "name": "revrate", "alias": "reviewratings"   },
     {
         "name": "votetags", "title": "Voting",
-        "description": "PC members can vote for papers using tags.",
+        "description": "<0>PC members can vote for papers using tags.",
         "print_function": "VoteTags_HelpTopic::print",
         "order": 8000
     },
     {
         "name": "ranking", "title": "Ranking",
-        "description": "PC members can rank papers using tags.",
+        "description": "<0>PC members can rank papers using tags.",
         "print_function": "Ranking_HelpTopic::print",
         "order": 9000
     },
     {
         "name": "formulas", "title": "Formulas",
-        "description": "Create and display formulas in search orders.",
+        "description": "<0>Create and display formulas in search orders.",
         "print_function": "Formulas_HelpTopic::print",
         "order": 10000
     },
     {
         "name": "bulkassign", "title": "Bulk assignments",
-        "description": "Control the site by uploading CSV assignment files.",
+        "description": "<0>Control the site by uploading CSV assignment files.",
         "print_function": "BulkAssign_HelpTopic::print",
         "order": 11000
     },
@@ -325,7 +325,7 @@
     {
         "name": "jsonsettings", "short_title": "Advanced settings",
         "title": "Advanced settings in JSON",
-        "description": "Advanced control of site configuration.",
+        "description": "<0>Advanced control of site configuration.",
         "print_function": "*JSONSettings_HelpTopic::print",
         "order": 12000
     }

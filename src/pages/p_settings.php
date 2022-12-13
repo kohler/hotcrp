@@ -46,9 +46,14 @@ class Settings_Page {
                 $want_group = "submissions";
             }
         }
+        if ($want_group === "list") {
+            return "list";
+        }
         $canon_group = $this->sv->canonical_group($want_group);
         if (!$canon_group) {
-            return "error404";
+            http_response_code(404);
+            $this->conf->error_msg("<0>Settings group not found");
+            return "list";
         }
         if ($canon_group !== $this->reqsg
             && !$qreq->post
@@ -112,11 +117,10 @@ class Settings_Page {
             "</div></nav></div>\n",
             '<main class="leftmenu-content main-column">';
 
-        if ($group !== "error404") {
+        if ($group !== "list") {
             $this->print_extant_group($group, $qreq);
         } else {
-            echo '<h2 class="leftmenu">Error</h2>';
-            $this->conf->feedback_msg(MessageItem::error("<0>Settings group not found"));
+            $this->print_list();
         }
 
         echo "</main></form>\n";
@@ -149,6 +153,20 @@ class Settings_Page {
             '<div class="aabut">', Ht::submit("update", "Save changes", ["class" => "btn-primary"]), '</div>',
             '<div class="aabut">', Ht::submit("cancel", "Cancel", ["formnovalidate" => true]), '</div>',
             '<hr class="c"></div>';
+    }
+
+    private function print_list() {
+        echo '<h2 class="leftmenu">Settings list</h2>';
+        $this->conf->report_saved_messages();
+        echo "<dl>\n";
+        foreach ($this->sv->group_members("") as $gj) {
+            if (isset($gj->title)) {
+                echo '<dt><strong><a href="', $this->conf->hoturl("settings", "group={$gj->name}"), '">',
+                    $gj->title, '</a></strong></dt><dd>',
+                    Ftext::unparse_as($gj->description ?? "", 5), "</dd>\n";
+            }
+        }
+        echo "</dl>\n";
     }
 
     static function go(Contact $user, Qrequest $qreq) {

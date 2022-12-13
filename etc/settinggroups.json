@@ -1,6 +1,7 @@
 [
     {
-        "name": "basics", "order": 0, "title": "Basics"
+        "name": "basics", "order": 0, "title": "Basics",
+        "description": "<0>Conference name, site contact, and email."
     },
     {   "name": "info", "alias": "basics"   },
     {
@@ -34,7 +35,8 @@
 
 
     {
-        "name": "users", "order": 100, "title": "Accounts"
+        "name": "users", "order": 100, "title": "Accounts",
+        "description": "<0>Program committee accounts."
     },
     {
         "name": "users/pc", "order": 10,
@@ -44,7 +46,8 @@
 
 
     {
-        "name": "messages", "order": 200, "title": "Messages"
+        "name": "messages", "order": 200, "title": "Messages",
+        "description": "<0>Welcome messages and submission terms."
     },
     {   "name": "msg", "alias": "messages"   },
     {
@@ -68,7 +71,8 @@
 
 
     {
-        "name": "submissions", "order": 300, "title": "Submissions"
+        "name": "submissions", "order": 300, "title": "Submissions",
+        "description": "<0>Submission deadlines and anonymity."
     },
     {   "name": "sub", "alias": "submissions"   },
     {
@@ -112,7 +116,8 @@
 
 
     {
-        "name": "subform", "order": 400, "title": "Submission form"
+        "name": "subform", "order": 400, "title": "Submission form",
+        "description": "<0>Submission fields and topics."
     },
     {
         "name": "subform/abstract", "order": 10,
@@ -167,7 +172,8 @@
 
 
     {
-        "name": "reviews", "order": 500, "title": "Reviews"
+        "name": "reviews", "order": 500, "title": "Reviews",
+        "description": "<0>Review deadlines, rounds, and visibility."
     },
     {   "name": "rev", "alias": "reviews"   },
     {   "name": "review", "alias": "reviews"   },
@@ -227,7 +233,8 @@
 
 
     {
-        "name": "reviewform", "order": 600, "title": "Review form"
+        "name": "reviewform", "order": 600, "title": "Review form",
+        "description": "<0>Review form fields."
     },
     {
         "name": "reviewform/main", "order": 10,
@@ -249,7 +256,8 @@
 
 
     {
-        "name": "tags", "order": 700, "title": "Tags & tracks"
+        "name": "tags", "order": 700, "title": "Tags & tracks",
+        "description": "<0>Tags settings, tag colors and styles, and tracks."
     },
     {
         "name": "tags/main", "order": 10,
@@ -321,7 +329,8 @@
 
 
     {
-        "name": "decisions", "order": 800, "title": "Decisions"
+        "name": "decisions", "order": 800, "title": "Decisions",
+        "description": "<0>Responses to the reviews, decisions, and final versions."
     },
     {   "name": "dec", "alias": "decisions"   },
     {   "name": "final", "alias": "decisions"   },
@@ -413,6 +422,7 @@
     {
         "name": "json", "order": 2000,
         "short_title": "Advanced", "title": "JSON site configuration",
+        "description": "<0>Full site configuration in JSON.",
         "title_help_group": "jsonsettings",
         "print_function": "JSON_SettingParser::print"
     },

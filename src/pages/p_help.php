@@ -4,15 +4,13 @@
 
 class Help_Page {
     /** @param HelpRenderer $hth */
-    static function show_help_topics($hth) {
+    static function show_list($hth) {
         echo "<dl>\n";
         foreach ($hth->groups() as $ht) {
-            if ($ht->name !== "topics" && isset($ht->title)) {
-                echo '<dt><strong><a href="', $hth->conf->hoturl("help", "t=$ht->name"), '">', $ht->title, '</a></strong></dt>';
-                if (isset($ht->description)) {
-                    echo '<dd>', $ht->description ?? "", '</dd>';
-                }
-                echo "\n";
+            if ($ht->name !== "list" && isset($ht->title)) {
+                echo '<dt><strong><a href="', $hth->conf->hoturl("help", "t=$ht->name"), '">',
+                    $ht->title, '</a></strong></dt><dd>',
+                    Ftext::unparse_as($ht->description ?? "", 5), "</dd>\n";
             }
         }
         echo "</dl>\n";
@@ -22,24 +20,31 @@ class Help_Page {
         $conf = $user->conf;
 
         $help_topics = new ComponentSet($user, [
-            '{"name":"topics","title":"Help topics","order":-1000000,"priority":1000000,"print_function":"Help_Page::show_help_topics"}',
+            '{"name":"list","title":"Help topics","order":-1000000,"priority":1000000,"print_function":"Help_Page::show_list"}',
+            '{"name":"topics","alias":"list"}',
             "etc/helptopics.json"
         ], $conf->opt("helpTopics"));
 
         if (!$qreq->t && preg_match('/\A\/\w+\/*\z/i', $qreq->path())) {
             $qreq->t = $qreq->path_component(0);
         }
-        $topic = $qreq->t ? : "topics";
-        $want_topic = $help_topics->canonical_group($topic);
-        if (!$want_topic) {
-            $want_topic = "topics";
-        }
-        if ($want_topic !== $topic) {
-            $conf->redirect_self($qreq, ["t" => $want_topic]);
+        $topic = $qreq->t ? : "list";
+        if ($topic !== "list") {
+            $want_topic = $help_topics->canonical_group($topic);
+            if ($want_topic && $want_topic !== $topic) {
+                $conf->redirect_self($qreq, ["t" => $want_topic]);
+            } else if (!$want_topic) {
+                $topic = "list";
+                http_response_code(404);
+                $conf->error_msg("<0>Help topic not found.");
+            }
         }
         $topicj = $help_topics->get($topic);
 
-        $qreq->print_header("Help", "help", ["title_div" => '<hr class="c">', "body_class" => "leftmenu"]);
+        $qreq->print_header("Help", "help", [
+            "title_div" => '<hr class="c">', "body_class" => "leftmenu",
+            "save_messages" => true
+        ]);
 
         $hth = new HelpRenderer($help_topics, $user);
 
@@ -62,12 +67,13 @@ class Help_Page {
                     echo Ht::link($title, $conf->hoturl("help", "t=$gj->name"));
                 }
                 echo '</li>';
-                $gap = $gj->name === "topics";
+                $gap = $gj->name === "list";
             }
         }
         echo "</ul></nav></div>\n",
             '<main id="helpcontent" class="leftmenu-content main-column">',
             '<h2 class="leftmenu">', $topicj->title, '</h2>';
+        $conf->report_saved_messages();
         $hth->print_group($topic, true);
         echo "</main>\n";
 
