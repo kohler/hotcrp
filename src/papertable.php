@@ -2242,12 +2242,13 @@ class PaperTable {
         }
         echo '</a>', $close, '</h4><ul class="pslcard"></ul></nav></div>';
 
-        if ($this->allow_admin) {
+        if ($this->allow_admin && $this->prow->paperId > 0) {
             if (!$this->admin) {
                 echo '<div class="pcard notecard override-conflict off"><p class="sd">',
                     '<a class="noul" href="', $this->conf->selfurl($this->qreq, ["forceShow" => 1]), '">',
                     '🔒&nbsp;<u>Override conflict</u></a> for administrator view</p></div>';
-            } else if ($this->user->is_admin_force() && $this->prow->has_conflict($this->user)) {
+            } else if ($this->user->is_admin_force()
+                       && $this->prow->has_conflict($this->user)) {
                 $unprivurl = $this->mode === "assign"
                     ? $this->conf->hoturl("paper", ["p" => $this->prow->paperId, "forceShow" => null])
                     : $this->conf->selfurl($this->qreq, ["forceShow" => null]);

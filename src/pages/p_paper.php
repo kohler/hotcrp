@@ -488,7 +488,9 @@ class Paper_Page {
             // XXX escape unless update && can_start_paper???
         }
         $user->add_overrides(Contact::OVERRIDE_CHECK_TIME);
-        if ($pp->prow->paperId == 0 && $user->privChair && !$user->conf->time_start_paper()) {
+        if ($pp->prow->paperId == 0
+            && $user->privChair
+            && !$user->conf->time_start_paper()) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
 
