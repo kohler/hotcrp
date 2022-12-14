@@ -559,7 +559,7 @@ class Dbl {
             $result = Dbl_Result::make_empty();
             $result->errno = 1002;
         }
-        if ($dblink->errno) {
+        if ($dblink->errno && !($result instanceof \mysqli_result)) {
             $result->query_string = $qstr;
             if (!($flags & self::F_ALLOWERROR)) {
                 ++self::$nerrors;

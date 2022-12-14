@@ -705,26 +705,26 @@ class Unit_Tester {
 
     function test_star_text_pregexes() {
         $pregex = Text::star_text_pregexes("foo");
-        xassert(Text::match_pregexes($pregex, "foo", false));
+        xassert(Text::match_pregexes($pregex, "foo", null));
         xassert(Text::match_pregexes($pregex, "foo", "foo"));
         xassert(Text::match_pregexes($pregex, "fóo", "foo"));
-        xassert(!Text::match_pregexes($pregex, "foobar", false));
+        xassert(!Text::match_pregexes($pregex, "foobar", null));
         xassert(!Text::match_pregexes($pregex, "foobar", "foobar"));
         xassert(!Text::match_pregexes($pregex, "fóobar", "foobar"));
 
         $pregex = Text::star_text_pregexes("foo*");
-        xassert(Text::match_pregexes($pregex, "foo", false));
+        xassert(Text::match_pregexes($pregex, "foo", null));
         xassert(Text::match_pregexes($pregex, "foo", "foo"));
         xassert(Text::match_pregexes($pregex, "fóo", "foo"));
-        xassert(Text::match_pregexes($pregex, "foobar", false));
+        xassert(Text::match_pregexes($pregex, "foobar", null));
         xassert(Text::match_pregexes($pregex, "foobar", "foobar"));
         xassert(Text::match_pregexes($pregex, "fóobar", "foobar"));
-        xassert(!Text::match_pregexes($pregex, "ffoobar", false));
+        xassert(!Text::match_pregexes($pregex, "ffoobar", null));
         xassert(!Text::match_pregexes($pregex, "ffoobar", "ffoobar"));
         xassert(!Text::match_pregexes($pregex, "ffóobar", "ffoobar"));
 
         $pregex = Text::star_text_pregexes("foo@butt.com");
-        xassert(Text::match_pregexes($pregex, "it's foo@butt.com and friends", false));
+        xassert(Text::match_pregexes($pregex, "it's foo@butt.com and friends", null));
         xassert(Text::match_pregexes($pregex, "it's foo@butt.com and friends", "it's foo@butt.com and friends"));
         xassert(Text::match_pregexes($pregex, "it's fóo@butt.com and friends", "it's foo@butt.com and friends"));
     }

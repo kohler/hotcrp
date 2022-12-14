@@ -431,6 +431,8 @@ class PaperInfo {
     /** @var ?string */
     public $collaborators;
     /** @var ?int */
+    public $timeModified;
+    /** @var ?int */
     public $timeFinalSubmitted;
     /** @var ?string */
     public $withdrawReason;
@@ -527,6 +529,8 @@ class PaperInfo {
     private $_rights_version = 0;
     /** @var ?list<Author> */
     private $_author_array;
+    /** @var ?array<string,string> */
+    private $_deaccents;
     /** @var ?string */
     private $_full_collaborators;
     /** @var ?list<AuthorMatcher> */
@@ -627,6 +631,9 @@ class PaperInfo {
         $this->managerContactId = (int) $this->managerContactId;
         if (isset($this->blind)) {
             $this->blind = (bool) $this->blind;
+        }
+        if (isset($this->timeModified)) {
+            $this->timeModified = (int) $this->timeModified;
         }
         if (isset($this->timeFinalSubmitted)) {
             $this->timeFinalSubmitted = (int) $this->timeFinalSubmitted;
@@ -1336,22 +1343,18 @@ class PaperInfo {
     }
 
 
-    /** @return string|false */
+    /** @return ?string */
     private function deaccented_field($field) {
-        $data = $this->$field;
-        if ((string) $data !== "") {
-            $field_deaccent = $field . "_deaccent";
-            if (!isset($this->$field_deaccent)) {
-                if (is_usascii($data)) {
-                    $this->$field_deaccent = false;
-                } else {
-                    $this->$field_deaccent = UnicodeHelper::deaccent($data);
-                }
+        $this->_deaccents = $this->_deaccents ?? [];
+        if (!array_key_exists($field, $this->_deaccents)) {
+            $str = $this->$field ?? "";
+            if ($str !== "" && !is_usascii($str)) {
+                $this->_deaccents[$field] = UnicodeHelper::deaccent($str);
+            } else {
+                $this->_deaccents[$field] = null;
             }
-            return $this->$field_deaccent;
-        } else {
-            return false;
         }
+        return $this->_deaccents[$field];
     }
 
     /** @param TextPregexes $reg
