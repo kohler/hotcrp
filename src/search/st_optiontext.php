@@ -20,7 +20,7 @@ class OptionText_SearchTerm extends Option_SearchTerm {
             && ($ov = $row->option($this->option))
             && ($ov->data() ?? "") !== "") {
             $this->pregexes = $this->pregexes ?? Text::star_text_pregexes($this->match);
-            return Text::match_pregexes($this->pregexes, (string) $ov->data(), false);
+            return Text::match_pregexes($this->pregexes, (string) $ov->data(), null);
         } else {
             return false;
         }

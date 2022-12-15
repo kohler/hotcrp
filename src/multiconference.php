@@ -137,9 +137,7 @@ class Multiconference {
         }
         http_response_code($status);
         $qreq->print_header($title, "", ["action_bar" => "", "body_class" => "body-error"]);
-        if (empty($mis)) {
-            $mis[] = MessageItem::error("<0>Internal error");
-        }
+        $mis[0] = $mis[0] ?? MessageItem::error("<0>Internal error");
         if ($link && $mis[0]->status >= 2) {
             $m = $mis[0]->message;
             if (!is_string($link)) {
@@ -182,7 +180,7 @@ class Multiconference {
         $qreq = null;
         if (isset($Opt["multiconferenceFailureCallback"])
             && PHP_SAPI !== "cli") {
-            $qreq = Qrequest::make_global(Navigation::get());
+            $qreq = Qrequest::make_minimal();
             call_user_func($Opt["multiconferenceFailureCallback"], "options", $qreq);
         }
 
@@ -244,7 +242,7 @@ class Multiconference {
         $qreq = null;
         if (isset($Opt["multiconferenceFailureCallback"])
             && PHP_SAPI !== "cli") {
-            $qreq = Qrequest::make_global(Navigation::get());
+            $qreq = Qrequest::make_minimal();
             call_user_func($Opt["multiconferenceFailureCallback"], "database", $qreq);
         }
         $errors = [];

@@ -726,10 +726,12 @@ class Conf {
         }
     }
 
+    /** @return Conf */
     static function set_main_instance(Conf $conf) {
         global $Conf;
         $Conf = Conf::$main = $conf;
         $conf->refresh_globals();
+        return $conf;
     }
 
 

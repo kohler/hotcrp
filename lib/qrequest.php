@@ -439,11 +439,19 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
     }
 
-    /** @param NavigationState $nav */
-    static function make_global($nav) : Qrequest {
-        global $Qreq;
+    /** @param ?NavigationState $nav */
+    static function make_minimal($nav = null) : Qrequest {
         $qreq = new Qrequest($_SERVER["REQUEST_METHOD"]);
-        $qreq->set_navigation($nav);
+        $qreq->set_navigation($nav ?? Navigation::get());
+        if (array_key_exists("post", $_GET)) {
+            $qreq->set_req("post", $_GET["post"]);
+        }
+        return $qreq;
+    }
+
+    /** @param ?NavigationState $nav */
+    static function make_global($nav = null) : Qrequest {
+        $qreq = self::make_minimal($nav);
         foreach ($_GET as $k => $v) {
             $qreq->set_req($k, $v);
         }
@@ -494,6 +502,13 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         if (!empty($errors)) {
             $qreq->set_annex("upload_errors", $errors);
         }
+
+        return $qreq;
+    }
+
+    /** @return Qrequest */
+    static function set_main_request(Qrequest $qreq) {
+        global $Qreq;
         Qrequest::$main_request = $Qreq = $qreq;
         return $qreq;
     }

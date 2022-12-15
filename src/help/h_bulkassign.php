@@ -152,7 +152,7 @@ a conflict type, such as “advisor” or “institutional”.</p>";
             $n = '<code>' . htmlspecialchars($uf->name) . '</code>';
             if ($hth
                 && ($hashid = $hth->hashid("bulkassignactions/{$uf->name}"))) {
-                $n = "<a href=\"#${hashid}\">{$n}</a>";
+                $n = "<a href=\"#{$hashid}\">{$n}</a>";
             }
             $t .= $n . '</td><td class="pad"><code>paper</code>';
             foreach ($uf->parameters ?? [] as $param) {
