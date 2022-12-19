@@ -251,8 +251,10 @@ class UserStatus extends MessageSet {
     function autocomplete($what) {
         if ($this->is_auth_self()) {
             return $what;
-        } else if ($what === "email" || $what === "username" || $what === "current-password") {
+        } else if ($what === "email" || $what === "username") {
             return "nope";
+        } else if ($what === "current-password") {
+            return "new-password";
         } else {
             return "off";
         }
@@ -736,7 +738,7 @@ class UserStatus extends MessageSet {
                    && ($old_user->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) !== 0
                    && ($roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) === 0) {
             $what = $old_user->roles & Contact::ROLE_CHAIR ? "chair" : "system administration";
-            $this->warning_at("roles", "<0>You can’t drop your own $what privileges. Ask another administrator to do it for you");
+            $this->warning_at("roles", "<0>You can’t drop your own {$what} privileges. Ask another administrator to do it for you");
             $roles |= $old_user->roles & Contact::ROLE_PCLIKE;
         }
         return $roles;

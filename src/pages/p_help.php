@@ -36,7 +36,7 @@ class Help_Page {
             } else if (!$want_topic) {
                 $topic = "list";
                 http_response_code(404);
-                $conf->error_msg("<0>Help topic not found.");
+                $conf->error_msg("<0>Help topic ‘{$qreq->t}’ not found");
             }
         }
         $topicj = $help_topics->get($topic);

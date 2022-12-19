@@ -262,8 +262,8 @@ class Users_Page {
                 /* nada */
             } else if (!($t = $tagger->check($t, Tagger::NOPRIVATE))) {
                 $ms->error_at(null, "<5>" . $tagger->error_html());
-            } else if (Tagger::base($t) === "pc") {
-                $ms->error_at(null, "<0>The ‘pc’ user tag is reserved to identify PC members and cannot be set");
+            } else if (in_array(strtolower(Tagger::base($t)), ["pc", "admin", "chair"])) {
+                $ms->error_at(null, $this->conf->_("<0>User tag ‘{}’ reserved", Tagger::base($t)));
             } else {
                 $t1[] = $t;
             }
