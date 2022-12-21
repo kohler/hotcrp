@@ -5,6 +5,8 @@
 class Getopt {
     /** @var array<string,GetoptOption> */
     private $po = [];
+    /** @var ?list<string> */
+    private $subcommand;
     /** @var ?string */
     private $helpopt;
     /** @var ?string */
@@ -56,7 +58,8 @@ class Getopt {
         return $this;
     }
 
-    /** @return $this */
+    /** @param string|list<string> ...$longopts
+     * @return $this */
     function long(...$longopts) {
         foreach ($longopts as $s) {
             if (is_array($s)) {
@@ -158,6 +161,34 @@ class Getopt {
         return $this;
     }
 
+    /** @param string|list<string> ...$subcommands
+     * @return $this */
+    function subcommand(...$subcommands) {
+        $this->subcommand = [];
+        foreach ($subcommands as $s) {
+            if (is_array($s)) {
+                array_push($this->subcommand, ...$s);
+            } else {
+                $this->subcommand[] = $s;
+            }
+        }
+        return $this;
+    }
+
+    /** @param string $opt
+     * @param string $help
+     * @return string */
+    static private function format_help_line($opt, $help) {
+        if ($help === "") {
+            $sep = "";
+        } else if (strlen($opt) <= 24) {
+            $sep = str_repeat(" ", 26 - strlen($opt));
+        } else {
+            $sep = "\n                          ";
+        }
+        return "{$opt}{$sep}{$help}\n";
+    }
+
     /** @param null|false|string $subtype
      * @return string */
     function help($subtype = null) {
@@ -169,6 +200,23 @@ class Getopt {
             } else {
                 $s[] = "\n";
             }
+        }
+        if (!empty($this->subcommand)) {
+            $s[] = "Subcommands:\n";
+            foreach ($this->subcommand as $sc) {
+                if (($space = strpos($sc, " ")) !== false) {
+                    ++$space;
+                } else {
+                    $space = strlen($sc);
+                }
+                if (($comma = strpos($sc, ",")) === false
+                    || $comma >= $space) {
+                    $comma = $space;
+                }
+                $on = substr($sc, 0, $comma);
+                $s[] = self::format_help_line("  {$on}", ltrim(substr($sc, $space)));
+            }
+            $s[] = "\n";
         }
         $od = [];
         foreach ($this->po as $t => $po) {
@@ -217,24 +265,49 @@ class Getopt {
                     $help = ltrim($help);
                 }
                 if ($tx[0] !== null && $tx[1] !== null) {
-                    $s[] = $oax = "  {$tx[0]}, {$tx[1]}{$tx[2]}";
+                    $oax = "  {$tx[0]}, {$tx[1]}{$tx[2]}";
                 } else {
                     $oa = $tx[0] ?? $tx[1];
-                    $s[] = $oax = "  {$oa}{$tx[2]}";
+                    $oax = "  {$oa}{$tx[2]}";
                 }
-                if ($help !== "") {
-                    if (strlen($oax) <= 24) {
-                        $s[] = str_repeat(" ", 26 - strlen($oax));
-                    } else {
-                        $s[] = "\n" . str_repeat(" ", 26);
-                    }
-                    $s[] = $help;
-                }
-                $s[] = "\n";
+                $s[] = self::format_help_line($oax, $help);
             }
             $s[] = "\n";
         }
         return join("", $s);
+    }
+
+    /** @param string $arg
+     * @return ?string */
+    function find_subcommand($arg) {
+        $len = strlen($arg);
+        foreach ($this->subcommand as $sc) {
+            $sclen = strpos($sc, " ");
+            if ($sclen === false) {
+                $sclen = strlen($sc);
+            }
+            $pos = 0;
+            $epos1 = null;
+            while ($pos !== $sclen) {
+                $epos = strpos($sc, ",", $pos);
+                if ($epos === false || $epos > $sclen) {
+                    $epos = $sclen;
+                }
+                $epos1 = $epos1 ?? $epos;
+                if ($epos - $pos === $len
+                    && substr_compare($sc, $arg, $pos, $len) === 0) {
+                    return $pos === 0 ? $arg : substr($sc, 0, $epos1);
+                }
+                $pos = $epos;
+                if ($epos !== $sclen && $sc[$epos] === ",") {
+                    ++$pos;
+                }
+            }
+        }
+        if ($this->helpopt && $arg === "help") {
+            return "{help}";
+        }
+        return null;
     }
 
     /** @param list<string> $argv
@@ -252,6 +325,12 @@ class Getopt {
             } else if ($arg === "-") {
                 break;
             } else if ($arg[0] !== "-") {
+                if ($this->subcommand !== null
+                    && !array_key_exists("_subcommand", $res)
+                    && ($x = $this->find_subcommand($arg)) !== null) {
+                    $res["_subcommand"] = $x;
+                    continue;
+                }
                 if (!$active_po) {
                     break;
                 }
@@ -294,6 +373,8 @@ class Getopt {
                     if ($this->otheropt) {
                         $res["-"][] = $arg;
                         continue;
+                    } else if ($this->otheropt === false) {
+                        throw new CommandLineException("Unknown option `{$arg}`", $this);
                     } else {
                         break;
                     }
@@ -350,8 +431,9 @@ class Getopt {
             }
             $active_po = $pot === self::MARG2 ? $po : null;
         }
-        if ($this->helpopt !== null && isset($res[$this->helpopt])) {
-            fwrite(STDOUT, $this->help($res[$this->helpopt]));
+        if ($this->helpopt !== null
+            && (isset($res[$this->helpopt]) || ($res["_subcommand"] ?? null) === "{help}")) {
+            fwrite(STDOUT, $this->help($res[$this->helpopt] ?? false));
             exit(0);
         }
         $res["_"] = array_slice($argv, $i);
@@ -411,10 +493,16 @@ class GetoptOption {
 class CommandLineException extends Exception {
     /** @var ?Getopt */
     public $getopt;
+    /** @var int */
+    public $exitStatus;
+    /** @var int */
+    static public $default_exit_status = 1;
     /** @param string $message
-     * @param ?Getopt $getopt */
-    function __construct($message, $getopt = null) {
+     * @param ?Getopt $getopt
+     * @param ?int $exit_status */
+    function __construct($message, $getopt = null, $exit_status = null) {
         parent::__construct($message);
         $this->getopt = $getopt;
+        $this->exitStatus = $exit_status ?? self::$default_exit_status;
     }
 }

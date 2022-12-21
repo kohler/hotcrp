@@ -298,6 +298,11 @@ class Multiconference {
             $s .= debug_string_backtrace($ex) . "\n";
         }
         fwrite(STDERR, $s);
-        exit(1);
+        if (property_exists($ex, "exitStatus")
+            && is_int($ex->exitStatus)) {
+            exit($ex->exitStatus);
+        } else {
+            exit(3);
+        }
     }
 }
