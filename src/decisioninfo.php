@@ -52,6 +52,12 @@ class DecisionInfo {
         return $dec;
     }
 
+    /** @param 0|5 $format
+     * @return string */
+    function name_as($format) {
+        return $format === 5 ? htmlspecialchars($this->name) : $this->name;
+    }
+
     /** @return string */
     function status_class() {
         return self::$class_name[$this->category] ?? "dec-maybe";

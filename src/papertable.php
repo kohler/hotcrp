@@ -1547,13 +1547,13 @@ class PaperTable {
         }
         $opts = [];
         foreach ($this->conf->decision_set() as $dec) {
-            $opts[$dec->id] = $dec->name;
+            $opts[$dec->id] = $dec->name_as(5);
         }
         echo Ht::select("decision", $opts,
                         (string) $this->prow->outcome,
                         ["class" => "w-99 want-focus", "id" => $id]),
             '</form><p class="fn odname js-psedit-result">',
-            htmlspecialchars($this->prow->decision()->name),
+            $this->prow->decision()->name_as(5),
             "</p></div>\n";
     }
 

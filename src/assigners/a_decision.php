@@ -109,7 +109,7 @@ class Decision_Assigner extends Assigner {
     static function decision_html(Conf $conf, $decid) {
         $dec = $conf->decision_set()->get($decid);
         $class = $dec->status_class();
-        $name_h = htmlspecialchars($dec->id === 0 ? "No decision" : $dec->name);
+        $name_h = $dec->id === 0 ? "No decision" : $dec->name_as(5);
         return "<span class=\"pstat {$class}\">{$name_h}</span>";
     }
     function unparse_display(AssignmentSet $aset) {

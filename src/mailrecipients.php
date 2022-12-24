@@ -147,7 +147,7 @@ class MailRecipients extends MessageSet {
             foreach ($this->conf->decision_set() as $dec) {
                 if ($dec->id !== 0) {
                     $hide = ($this->_dcounts[$dec->id] ?? 0) === 0;
-                    $this->defsel("dec:{$dec->name}", "Contact authors of " . htmlspecialchars($dec->name) . " papers", $hide ? self::F_HIDE : 0);
+                    $this->defsel("dec:{$dec->name}", "Contact authors of " . $dec->name_as(5) . " papers", $hide ? self::F_HIDE : 0);
                 }
             }
             $this->defsel("dec:yes", "Contact authors of accept-class papers", $this->_has_dt[2] ? 0 : self::F_HIDE);

@@ -198,7 +198,7 @@ class Keywords_HelpTopic {
                 if (strpos($qdname, " ") !== false) {
                     $qdname = "\"{$qdname}\"";
                 }
-                echo $hth->search_trow("dec:{$qdname}", "decision is “" . htmlspecialchars($dec->name) . "” (partial matches OK)");
+                echo $hth->search_trow("dec:{$qdname}", "decision is “" . $dec->name_as(5) . "” (partial matches OK)");
                 break;
             }
         }

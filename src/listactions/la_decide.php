@@ -9,7 +9,7 @@ class Decide_ListAction extends ListAction {
     static function render(PaperList $pl, Qrequest $qreq) {
         $opts = [];
         foreach ($pl->conf->decision_set() as $dec) {
-            $opts[$dec->id] = $dec->name;
+            $opts[$dec->id] = $dec->name_as(5);
         }
         return ["Set to &nbsp;"
                 . Ht::select("decision", $opts, "", ["class" => "want-focus js-submit-action-info-decide"])

@@ -18,7 +18,7 @@ class Decision_API {
             $prow->load_decision();
         }
         $dec = $prow->viewable_decision($user);
-        $jr = new JsonResult(["ok" => true, "value" => $dec->id, "result" => htmlspecialchars($dec->name)]);
+        $jr = new JsonResult(["ok" => true, "value" => $dec->id, "result" => $dec->name_as(5)]);
         if ($user->can_set_decision($prow)) {
             $jr->content["editable"] = true;
         }
