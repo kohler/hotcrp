@@ -728,7 +728,8 @@ class PaperOption implements JsonSerializable {
         "separator" => "+Separator_PaperOption",
         "checkbox" => "+Checkbox_PaperOption",
         "radio" => "+Selector_PaperOption",
-        "selector" => "+Selector_PaperOption",
+        "dropdown" => "+Selector_PaperOption",
+        "selector" => "+Selector_PaperOption", /* XXX backward compat */
         "checkboxes" => "+Checkboxes_PaperOption",
         "numeric" => "+Numeric_PaperOption",
         "realnumber" => "+RealNumber_PaperOption",
@@ -754,6 +755,9 @@ class PaperOption implements JsonSerializable {
             $this->title = $this->name;
         }
         $this->type = $args->type ?? null;
+        if ($this->type === "selector") { /* XXX backward compat */
+            $this->type = "dropdown";
+        }
 
         $this->_json_key = $this->_readable_formid = $args->json_key ?? null;
         $this->_search_keyword = $args->search_keyword ?? $this->_json_key;
@@ -1693,12 +1697,12 @@ class Selector_PaperOption extends PaperOption {
 
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $pt->print_editable_option_papt($this, null,
-            $this->type === "selector"
+            $this->type === "dropdown"
             ? ["for" => $this->readable_formid()]
             : ["id" => $this->readable_formid(), "for" => false]);
         echo '<div class="papev">';
         $readonly = !$this->test_editable($ov->prow);
-        if ($this->type === "selector") {
+        if ($this->type === "dropdown") {
             $sel = [];
             if (!$ov->value) {
                 $sel[0] = "(Select one)";
@@ -1759,7 +1763,7 @@ class Selector_PaperOption extends PaperOption {
     }
 
     function present_script_expression() {
-        return ["type" => "selector", "formid" => $this->formid];
+        return ["type" => "dropdown", "formid" => $this->formid];
     }
 
     function value_script_expression() {
