@@ -173,7 +173,7 @@ $Opt["emailSender"] = null;
 //                   for scores better than B (i.e., A), rather than scores
 //                   alphabetically after B (i.e., C or D).
 //   noFooterVersion Set to true to avoid a version comment in footer HTML.
-//   strictJavascript  If true, send Javascript with "use strict".
+//   strictJavascript If true, send Javascript with "use strict".
 //   hideManager     If set, PC members are not shown paper managers.
 //   disableCapabilities If set, emails to authors will not have a
 //                   token enabling them to view their papers without logging in.

@@ -450,15 +450,15 @@ function rf_fill_control(form, name, value, setdefault) {
 }
 
 function rf_color() {
-    var c = this, sv = $(this).val(), i, scanal = make_score_info(9, false, sv);
+    var c = this, sv = $(this).val(), i, scheme = make_color_scheme(9, sv, false);
     hasClass(c.parentElement, "select") && (c = c.parentElement);
     while (c && !hasClass(c, "rf-scheme-example")) {
         c = c.nextSibling;
     }
-    for (i = 1; i <= scanal.max && c; ++i) {
+    for (i = 1; i <= scheme.max && c; ++i) {
         if (c.children.length < i)
             $(c).append('<svg width="0.5em" height="0.75em" viewBox="0 0 1 1"><path d="M0 0h1v1h-1z" fill="currentColor" /></svg>');
-        c.children[i - 1].setAttribute("class", scanal.className(i));
+        c.children[i - 1].setAttribute("class", scheme.className(i));
     }
     while (c && i <= c.children.length) {
         c.removeChild(c.lastChild);
@@ -540,13 +540,6 @@ tooltip.add_builder("settings-rf", function (info) {
     }, info);
 });
 
-function option_value_html(fld, value) {
-    if (!value || value < 0)
-        return ["", "No entry"];
-    else
-        return [make_score_info(fld.values.length, fld.start, fld.scheme).unparse_revnum(value), escape_html(fld.values[value - 1] || "Unknown")];
-}
-
 function rf_visibility_text(visibility) {
     if ((visibility || "re") === "re")
         return "(hidden from authors)";
@@ -583,10 +576,9 @@ function rf_render_view(fld) {
 
     hc.push('<div class="revev">', '</div>');
     if (fld.values) {
-        for (i = 0; i !== fld.values.length; ++i) {
-            var n = fld.start && fld.start !== 1 ? fld.values.length - i : i + 1;
-            hc.push('<label class="checki"><span class="checkc"><input type="radio" disabled></span>'.concat(option_value_html(fld, n).join(" "), '</label>'));
-        }
+        fld.each_value(function (fv) {
+            hc.push('<label class="checki"><span class="checkc"><input type="radio" disabled></span><span class="rev_num sv '.concat(fv.className, '">', fv.symbol, fv.sp1, '</span>', fv.sp2, escape_html(fv.title), '</label>'));
+        });
         if (!fld.required) {
             hc.push('<label class="checki mt-1"><span class="checkc"><input type="radio" disabled></span>No entry</label>');
         }
@@ -620,6 +612,7 @@ function rf_append(fld) {
         || fieldorder.indexOf(fld.id) >= 0) {
         throw new Error("rf_append error on " + fld.id + " " + (document.getElementById("rf/" + pos + "/id") ? "1 " : "0 ") + fieldorder.join(","));
     }
+    fld = new hotcrp.ReviewField(fld);
     fieldorder.push(fld.id);
     $f = $($("#rf_template").html().replace(/\$/g, pos));
     if (fld.type === "radio") {
@@ -649,7 +642,7 @@ function rf_add(fld) {
 }
 
 function rfs(data) {
-    var i, fld, mi, pfx, e, m, entryi;
+    var i, t, fld, mi, pfx, e, m, entryi;
     samples = data.samples;
 
     // construct form for original fields
@@ -663,10 +656,15 @@ function rfs(data) {
     // amend form for new fields
     while (data.req) {
         pfx = "rf/".concat(fieldorder.length + 1);
-        if (!data.req[pfx + "/id"] || !/^[st]/.test(data.req[pfx + "/id"])) {
+        i = data.req[pfx + "/id"];
+        if (!i || !/^[st]\d+$/.test(i)) {
             break;
         }
-        rf_add({id: data.req[pfx + "/id"], type: data.req[pfx + "/type"]});
+        t = data.req[pfx + "/type"];
+        if (t === "radio" || t === "dropdown")
+            rf_add({id: i, type: t, name: "", values: []});
+        else
+            rf_add({id: i, type: t, name: ""});
     }
 
     $("#settings-rform").on("unfold", ".settings-rf", settings_field_unfold);
@@ -676,7 +674,7 @@ function rfs(data) {
         if (/^rf\/\d+\//.test(i)
             && (e = document.getElementById(i))
             && !text_eq($(e).val(), data.req[i])) {
-            $(e).val(data.req[i]);
+            $(e).val(data.req[i]).change();
             foldup.call(e, null, {n: 2, f: false});
         }
     }
@@ -701,7 +699,11 @@ function rfs(data) {
 function add_dialog() {
     var $d, sel;
     function cur_sample() {
-        return samples[sel.options[sel.selectedIndex].value | 0] || samples[0];
+        var i = sel.options[sel.selectedIndex].value | 0;
+        i = (samples[i] ? i : 0);
+        if (!samples[i].parse_value)
+            samples[i] = new hotcrp.ReviewField(samples[i]);
+        return samples[i];
     }
     function render_template() {
         var rft = $d.find(".settings-rf-template-view")[0], ex;
@@ -730,8 +732,9 @@ function add_dialog() {
         hc.push('<h2>Add field</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
         hc.push('<select name="rf_template" class="w-99 want-focus" size="5">', '</select>');
-        for (i = 0; i !== samples.length; ++i)
+        for (i = 0; i !== samples.length; ++i) {
             hc.push('<option value="'.concat(i, i ? '">' : '" selected>', escape_html(samples[i].selector), '</option>'));
+        }
         hc.pop();
         hc.push('<fieldset class="settings-rf-template-view mt-4" style="min-width:500px;max-width:90%;min-height:10em"><legend>Example</legend></fieldset>');
         hc.push_actions(['<button type="submit" name="add" class="btn-primary">Add field</button>',

@@ -4731,10 +4731,11 @@ var formj, form_order;
 
 tooltip.add_builder("rf-score", function (info) {
     var $self = $(this), fieldj = formj[$self.data("rf")], score;
-    if (fieldj && fieldj.score_info
-        && (score = fieldj.score_info.parse($self.find("span.sv").text())))
+    if (fieldj
+        && fieldj.parse_value
+        && (score = fieldj.parse_value($self.find("span.sv").text())))
         info = $.extend({
-            content: fieldj.values[score - 1],
+            content: escape_html(score.title),
             anchor: "w", near: $self.find("span")[0]
         }, info);
     return info;
@@ -4754,9 +4755,9 @@ tooltip.add_builder("rf-description", function (info) {
             }
             if (fieldj.values) {
                 d += "<div class=\"od\">Choices are:</div>";
-                for (si = 0, vo = fieldj.score_info.value_order();
-                     si < vo.length; ++si)
-                    d += "<div class=\"od\"><strong class=\"rev_num " + fieldj.score_info.className(vo[si]) + "\">" + fieldj.score_info.unparse(vo[si]) + ".</strong>&nbsp;" + escape_html(fieldj.values[vo[si] - 1] || "") + "</div>";
+                fieldj.each_value(function (fv) {
+                    d = d.concat('<div class="od"><strong class="sv ', fv.className, '">', fv.symbol, fv.sp1, '</strong>', fv.sp2, escape_html(fv.title), '</div>');
+                });
             }
             info = $.extend({content: d, anchor: "w"}, info);
         }
@@ -4810,10 +4811,8 @@ function render_review_body(rrow) {
 
         if (!f.values) {
             t += '<div class="revv revtext"></div>';
-        } else if (rrow[f.uid] && (x = f.score_info.parse(rrow[f.uid]))) {
-            t += '<p class="revv revscore"><span class="revscorenum">' +
-                f.score_info.unparse_revnum(x) + ' </span><span class="revscoredesc">' +
-                escape_html(f.values[x - 1] || "") + '</span></p>';
+        } else if (rrow[f.uid] && (x = f.parse_value(rrow[f.uid]))) {
+            t = t.concat('<p class="revv revscore"><span class="revscorenum"><strong class="rev_num sv ', x.className, '">', x.symbol, x.sp1, '</strong>', x.sp2, '</span><span class="revscoredesc">', escape_html(x.title), '</span></p>');
         } else {
             t += '<p class="revv revnoscore">' + (f.required ? "Unknown" : "No entry") + '</p>';
         }
@@ -5063,19 +5062,93 @@ function add_review(rrow) {
     navsidebar.set("r" + rid, rdesc);
 }
 
+function ReviewField(f) {
+    var i, n, step, sym, ch;
+    // uid, name, type, description, order, visibility, required, exists_if
+    // scores: values, symbols, start, flip, scheme
+    Object.assign(this, f);
+    this.name_html = escape_html(f.name);
+    if (!this.type
+        || ((this.type === "radio" || this.type === "dropdown") !== !!this.values)) {
+        throw new Error("bad ReviewField");
+    }
+    if (this.values && !this.symbols) {
+        sym = this.symbols = [];
+        n = this.values.length;
+        step = this.flip ? -1 : 1;
+        ch = this.start ? this.start.charCodeAt(0) : 0;
+        for (i = this.flip ? n - 1 : 0; i >= 0 && i < n; i += step) {
+            sym.push(ch ? String.fromCharCode(ch + i) : i + 1);
+        }
+    }
+    if (this.values) {
+        this.scheme_info = make_color_scheme(this.values.length, this.scheme || "sv", this.flip);
+        this.default_numeric = true;
+        for (i = 0; i !== n; ++i) {
+            if (this.symbols[i] !== i + 1) {
+                this.default_numeric = false;
+                break;
+            }
+        }
+    }
+}
+
+ReviewField.prototype.value_at = function (val) {
+    var j = val - 1, title = this.values[j];
+    if (title == null)
+        return null;
+    return {
+        value: val, symbol: this.symbols[j], title: title,
+        sp1: title === "" ? "" : ".", sp2: title === "" ? "" : " ",
+        className: this.scheme_info.className(val)
+    };
+};
+
+ReviewField.prototype.each_value = function (fn) {
+    var i, n = this.values.length, step = this.flip ? -1 : 1;
+    for (i = this.flip ? n : 1; i >= 1 && i <= n; i += step) {
+        fn(this.value_at(i));
+    }
+};
+
+ReviewField.prototype.parse_value = function (txt) {
+    var i, n = this.values.length;
+    for (i = 0; i !== n; ++i) {
+        if (this.symbols[i] == txt)
+            return this.value_at(i + 1);
+    }
+    return null;
+};
+
+ReviewField.prototype.rgb = function (val) {
+    return this.scheme_info.rgb(val);
+};
+
+ReviewField.prototype.className = function (val) {
+    return this.scheme_info.className(val);
+};
+
+ReviewField.prototype.unparse_symbol = function (val, split) {
+    if (val === (val | 0) && this.symbols[val - 1] != null)
+        return this.symbols[val - 1];
+    var rval = split ? Math.round(val * 2) / 2 - 1 : val - 1;
+    if (this.default_numeric || rval < 0 || rval > this.symbols.length - 1)
+        return val.toFixed(2);
+    else if (rval === (rval | 0))
+        return this.symbols[rval];
+    else if (this.flip)
+        return this.symbols[rval + 0.5].concat("/", this.symbols[rval - 0.5]);
+    else
+        return this.symbols[rval - 0.5].concat("/", this.symbols[rval + 0.5]);
+};
+
 return {
+    ReviewField: ReviewField,
     set_form: function (j) {
         var i, f;
         formj = formj || {};
         for (i in j) {
-            f = j[i];
-            f.uid = f.uid || i;
-            f.name_html = escape_html(f.name);
-            if (f.options)
-                f.values = f.options;
-            if (f.values)
-                f.score_info = make_score_info(f.values.length, f.start, f.scheme);
-            formj[f.uid] = f;
+            formj[j.uid] = new ReviewField(j[i]);
         }
         form_order = $.map(formj, function (v) { return v; });
         form_order.sort(function (a, b) { return a.order - b.order; });
@@ -10701,7 +10774,7 @@ $(function () {
 
 
 // score information
-var make_score_info = (function () {
+var make_color_scheme = (function () {
 var scheme_info = {
     sv: [0, 9], svr: [1, 9, "sv"], bupu: [0, 9], pubu: [1, 9, "bupu"],
     orbu: [0, 9], buor: [1, 9, "orbu"], viridis: [0, 9], viridisr: [1, 9, "viridis"],
@@ -10709,75 +10782,21 @@ var scheme_info = {
     catx: [2, 10], none: [2, 1]
 }, sccolor = {}, info = {};
 
-function make_fm9(n, max, rev, categorical) {
+function make_fm9(n, max, flip, categorical) {
     if (n <= 1 || max <= 1) {
-        return function () { return rev ? 1 : max; };
+        return function () { return flip ? 1 : max; };
     } else if (categorical) {
         return function (i) {
             var x = Math.round(+i - 1) % max;
-            return rev ? max - x : x + 1;
+            return flip ? max - x : x + 1;
         };
     } else {
         var f = (max - 1) / (n - 1);
         return function (i) {
             var x = Math.max(Math.min(Math.round((+i - 1) * f), max - 1), 0);
-            return rev ? max - x : x + 1;
+            return flip ? max - x : x + 1;
         };
     }
-}
-
-function numeric_unparser(val) {
-    return val.toFixed(val == Math.round(val) ? 0 : 2);
-}
-
-function numeric_parser(text) {
-    return parseInt(text, 10);
-}
-
-function gcd(a, b) {
-    if (a == b)
-        return a;
-    else if (a > b)
-        return gcd(a - b, b);
-    else
-        return gcd(a, b - a);
-}
-
-function make_letter_unparser(n, c) {
-    return function (val, count) {
-        if (val < 0.8 || val > n + 0.2)
-            return val.toFixed(2);
-        var ival = Math.ceil(val), ch1 = String.fromCharCode(c + n - ival);
-        if (val == ival)
-            return ch1;
-        var ch2 = String.fromCharCode(c + n - ival + 1);
-        count = count || 2;
-        val = Math.floor((ival - val) * count + 0.5);
-        if (val <= 0 || val >= count)
-            return val <= 0 ? ch1 : ch2;
-        var g = gcd(val, count);
-        for (var i = 0, s = ""; i < count; i += g)
-            s += i < val ? ch1 : ch2;
-        return s;
-    };
-}
-
-function make_letter_parser(n, c) {
-    return function (text) {
-        var ch;
-        text = text.toUpperCase();
-        if (text.length == 1 && (ch = text.charCodeAt(0)) >= c && ch < c + n)
-            return n - (ch - c);
-        else
-            return null;
-    };
-}
-
-function make_value_order(n, c) {
-    var o = [], i;
-    for (i = c ? n : 1; i >= 1 && i <= n; i += (c ? -1 : 1))
-        o.push(i);
-    return o;
 }
 
 function rgb_array_for(svx) {
@@ -10794,13 +10813,10 @@ function rgb_array_for(svx) {
     return sccolor[svx];
 }
 
-function make_info(n, c, sv) {
-    if (c === 1)
-        c = null;
-    var unparse = c ? make_letter_unparser(n, c) : numeric_unparser,
-        sci = scheme_info[sv],
-        fm9 = make_fm9(n, sci[1], !sci[2] !== !c, (sci[0] & 2) !== 0),
-        svk = sci[2] || sv;
+return function (n, scheme, flip) {
+    var sci = scheme_info[scheme],
+        fm9 = make_fm9(n, sci[1], !sci[2] !== !flip, (sci[0] & 2) !== 0),
+        svk = sci[2] || scheme;
     if (svk !== "sv")
         svk = "sv-" + svk;
     function rgb_array(val) {
@@ -10814,39 +10830,10 @@ function make_info(n, c, sv) {
             var x = rgb_array(val);
             return sprintf("#%02x%02x%02x", x[0], x[1], x[2]);
         },
-        unparse: unparse,
-        unparse_html: function (val) {
-            if (val >= 0.95 && val <= n + 0.05)
-                return '<span class="sv '.concat(svk, fm9(val), '">', unparse(val), '</span>');
-            else
-                return numeric_unparser(val);
-        },
-        unparse_revnum: function (val) {
-            if (val >= 1 && val <= n)
-                return '<strong class="rev_num sv '.concat(svk, fm9(val), '">', unparse(val), '.</strong>');
-            else
-                return '<strong class="rev_num">?'.concat(numeric_unparser(val), '.</strong>');
-        },
-        parse: c ? make_letter_parser(n, c) : numeric_parser,
-        value_order: function () {
-            return make_value_order(n, c);
-        },
         className: function (val) {
             return svk + fm9(val);
         }
     };
-}
-
-return function (n, c, sv) {
-    if (typeof c === "string")
-        c = c.charCodeAt(0);
-    if (sv && sv.startsWith("sv-"))
-        sv = sv.substring(3);
-    sv = sv && scheme_info[sv] ? sv : "sv";
-    var name = "".concat(n, "/", c || "", "/", sv);
-    if (!info[name])
-        info[name] = make_info(n || 1, c || "", sv);
-    return info[name];
 };
 })();
 
@@ -10906,7 +10893,7 @@ function analyze_sc(sc) {
     if ((m = /(?:^|[&;])sv=([^;&]*)(?:[&;]|$)/.exec(sc)))
         anal.sv = decodeURIComponent(m[1]);
 
-    anal.fx = make_score_info(vs.length, x, anal.sv);
+    anal.fx = make_color_scheme(vs.length, anal.sv, x);
     return anal;
 }
 
@@ -11242,6 +11229,7 @@ window.hotcrp = {
     render_text_page: render_text.on_page,
     render_user: render_user,
     replace_editable_field: edit_paper_ui.replace_field,
+    ReviewField: review_form.ReviewField,
     scorechart: scorechart,
     set_response_round: papercomment.set_resp_round,
     set_review_form: review_form.set_form,

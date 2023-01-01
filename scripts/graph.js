@@ -450,7 +450,7 @@ function make_axis(ticks) {
     if (ticks && ticks[0] === "named")
         ticks = named_integer_ticks(ticks[1]);
     else if (ticks && ticks[0] === "score")
-        ticks = score_ticks(ticks[1], ticks[2], ticks[3]);
+        ticks = score_ticks(new hotcrp.ReviewField(ticks[1]));
     else if (ticks && ticks[0] === "time")
         ticks = time_ticks();
     else
@@ -1431,33 +1431,35 @@ function graph_boxplot(selector, args) {
     }
 }
 
-function score_ticks(n, c, sv) {
-    var info = make_score_info(n, c, sv), split = 2;
+function score_ticks(rf) {
+    var split = true;
     return {
         prepare: function (extent) {
             var count = Math.floor(extent[1] * 2) - Math.ceil(extent[0] * 2) + 1;
             if (count > 11) {
-                split = 1;
+                split = false;
                 count = Math.floor(extent[1]) - Math.ceil(extent[0]) + 1;
             }
-            if (c)
+            if (!rf.default_numeric)
                 this.ticks(count);
         },
         rewrite: function () {
             this.selectAll("g.tick text").each(function () {
                 var d = d3.select(this), value = +d.text();
-                d.attr("fill", info.rgb(value));
-                if (c && value)
-                    d.text(info.unparse(value, split));
+                d.attr("fill", rf.rgb(value));
+                if (!rf.default_numeric && value)
+                    d.text(rf.unparse_symbol(value, split));
             });
         },
         unparse_html: function (value, include_numeric) {
-            var t = info.unparse_html(value);
+            var k = rf.className(value), t = rf.unparse_symbol(value, split);
+            if (!k)
+                return t;
+            t = '<span class="sv '.concat(k, '">', t, '</span>');
             if (include_numeric
-                && c
-                && t.charAt(0) === "<"
+                && !rf.default_numeric
                 && value !== Math.round(value * 2) / 2)
-                t += " (" + value.toFixed(2).replace(/\.00$/, "") + ")";
+                t = t.concat(' (', value.toFixed(2).replace(/\.00$/, ""), ')');
             return t;
         },
         type: "score"

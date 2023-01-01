@@ -972,7 +972,7 @@ class FormulaGraph extends MessageSet {
             '@phan-var-force Score_ReviewField $field';
             $n = $field->nvalues();
             $ol = $field->option_letter ? chr($field->option_letter - $n) : null;
-            $ticks = ["score", $n, $ol, $field->scheme];
+            $ticks = ["score", $field->unparse_json(ReviewField::UJ_EXPORT)];
             if ($field->flip && $isx) {
                 $j["flip"] = true;
             }
