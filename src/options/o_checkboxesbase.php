@@ -7,6 +7,8 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
     protected $min_count = 0;
     /** @var int */
     protected $max_count = 0;
+    /** @var bool */
+    protected $compact = false;
 
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
@@ -142,7 +144,8 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
             "id" => $this->readable_formid(),
             "context_args" => [$this->min_count, $this->max_count]
         ]);
-        echo '<fieldset class="papev fieldset-covert" name="', $this->formid, '"><ul class="ctable">';
+        echo '<fieldset class="papev fieldset-covert" name="', $this->formid,
+            '"><ul class="ctable', $this->compact ? ' compact' : '', '">';
         $topicset = $this->topic_set();
         $readonly = !$this->test_editable($ov->prow);
         foreach ($topicset->group_list() as $tg) {

@@ -2503,6 +2503,9 @@ ul.ctable {
 .ctable-wide > .ctelt {
 	padding-bottom: 12px;
 }
+.compact > .ctelt {
+	padding-bottom: 0;
+}
 dl.ctelt {
 	padding-bottom: 16px;
 	margin-bottom: 0;
@@ -2513,6 +2516,9 @@ dl.ctelt {
 }
 .cteltx {
 	padding-bottom: 3px;
+}
+.compact .cteltx {
+	padding-bottom: 0;
 }
 .checki.ctelti {
 	padding-left: 26px;

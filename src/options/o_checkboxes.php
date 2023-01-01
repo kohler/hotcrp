@@ -10,6 +10,7 @@ class Checkboxes_PaperOption extends CheckboxesBase_PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
         $this->assign_values($args->values ?? [], $args->ids ?? null);
+        $this->compact = true;
     }
 
 
