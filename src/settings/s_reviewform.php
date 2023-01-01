@@ -19,12 +19,13 @@ class ReviewForm_SettingParser extends SettingParser {
                 $finfo = ReviewFieldInfo::find($sv->conf, $fid);
             }
             $isnew = $finfo === null;
+            $type = $sv->reqstr("{$si->name}/type") ?? "radio";
             if ($finfo === null) {
-                $type = $sv->reqstr("{$si->name}/type") ?? "radio";
-                $finfo = ReviewFieldInfo::find($sv->conf, $type === "text" ? "t99" : "s99");
+                $textlike = strpos($type, "text") !== false;
+                $finfo = ReviewFieldInfo::find($sv->conf, $textlike ? "t99" : "s99");
             }
             $rfs = new Rf_Setting;
-            ReviewField::make($sv->conf, $finfo)->unparse_setting($rfs);
+            ReviewField::make_json($sv->conf, $finfo, (object) [])->unparse_setting($rfs);
             $rfs->id = $isnew ? "new" : $rfs->id;
             $rfs->required = false;
             $sv->set_oldv($si->name, $rfs);

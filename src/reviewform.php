@@ -61,9 +61,8 @@ class ReviewForm {
                 $fid = $j->id;
             }
             if (($finfo = ReviewFieldInfo::find($conf, $fid))) {
-                $f = ReviewField::make($conf, $finfo);
+                $f = ReviewField::make_json($conf, $finfo, $j);
                 $this->fmap[$f->short_id] = $f;
-                $f->assign_json($j);
             }
         }
         uasort($this->fmap, "ReviewField::order_compare");

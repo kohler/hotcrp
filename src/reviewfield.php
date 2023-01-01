@@ -142,27 +142,14 @@ abstract class ReviewField implements JsonSerializable {
         VIEWSCORE_AUTHOR => "au"
     ];
 
-    function __construct(Conf $conf, ReviewFieldInfo $finfo) {
+    function __construct(Conf $conf, ReviewFieldInfo $finfo, $j) {
         $this->short_id = $finfo->short_id;
         $this->main_storage = $finfo->main_storage;
         $this->json_storage = $finfo->json_storage;
         $this->is_sfield = $finfo->is_sfield;
         $this->conf = $conf;
-    }
 
-    /** @param ReviewFieldInfo $rfi
-     * @return ReviewField */
-    static function make(Conf $conf, $rfi) {
-        if ($rfi->is_sfield) {
-            return new Score_ReviewField($conf, $rfi);
-        } else {
-            return new Text_ReviewField($conf, $rfi);
-        }
-    }
-
-    /** @param object $j */
-    function assign_json($j) {
-        $this->name = $j->name ?? "Field name";
+        $this->name = $j->name ?? "";
         $this->name_html = htmlspecialchars($this->name);
         $this->type = $j->type ?? ($this->is_sfield ? "radio" : "text");
         $this->description = $j->description ?? "";
@@ -188,6 +175,16 @@ abstract class ReviewField implements JsonSerializable {
             $this->_need_exists_search = ($this->exists_if ?? "") !== "";
         }
         $this->required = !!($j->required ?? false);
+    }
+
+    /** @param ReviewFieldInfo $rfi
+     * @return ReviewField */
+    static function make_json(Conf $conf, $rfi, $j) {
+        if ($rfi->is_sfield) {
+            return new Score_ReviewField($conf, $rfi, $j);
+        } else {
+            return new Text_ReviewField($conf, $rfi, $j);
+        }
     }
 
     /** @param ReviewField $a
@@ -278,6 +275,7 @@ abstract class ReviewField implements JsonSerializable {
     /** @param Rf_Setting $rfs */
     function unparse_setting($rfs) {
         $rfs->id = $this->short_id;
+        $rfs->type = $this->type;
         $rfs->name = $this->name;
         $rfs->order = $this->order;
         $rfs->description = $this->description;
@@ -528,15 +526,10 @@ class Score_ReviewField extends ReviewField {
         "catx" => [2, 10, null], "none" => [2, 1, null]
     ];
 
-    function __construct(Conf $conf, ReviewFieldInfo $finfo) {
+    function __construct(Conf $conf, ReviewFieldInfo $finfo, $j) {
         assert($finfo->is_sfield);
-        parent::__construct($conf, $finfo);
-        $this->type = "radio";
-    }
+        parent::__construct($conf, $finfo, $j);
 
-    /** @param object $j */
-    function assign_json($j) {
-        parent::assign_json($j);
         $this->values = $j->values ?? $j->options ?? [];
         $nvalues = count($this->values);
         $ol = $j->start ?? $j->option_letter ?? null;
@@ -623,7 +616,6 @@ class Score_ReviewField extends ReviewField {
 
     function unparse_setting($rfs) {
         parent::unparse_setting($rfs);
-        $rfs->type = "radio";
         $n = count($this->values);
         $rfs->values = $this->values;
         $rfs->ids = $this->ids();
@@ -945,15 +937,10 @@ class Text_ReviewField extends ReviewField {
     /** @var int */
     public $display_space;
 
-    function __construct(Conf $conf, ReviewFieldInfo $finfo) {
+    function __construct(Conf $conf, ReviewFieldInfo $finfo, $j) {
         assert(!$finfo->is_sfield);
-        parent::__construct($conf, $finfo);
-        $this->type = "text";
-    }
+        parent::__construct($conf, $finfo, $j);
 
-    /** @param object $j */
-    function assign_json($j) {
-        parent::assign_json($j);
         $this->display_space = max($this->display_space ?? 0, 3);
     }
 
@@ -963,11 +950,6 @@ class Text_ReviewField extends ReviewField {
             $j->display_space = $this->display_space;
         }
         return $j;
-    }
-
-    function unparse_setting($rfs) {
-        parent::unparse_setting($rfs);
-        $rfs->type = "text";
     }
 
     function value_empty($fval) {
