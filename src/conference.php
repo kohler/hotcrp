@@ -173,6 +173,10 @@ class Conf {
     public $_xt_allow_callback;
     /** @var ?object */
     private $_xt_last_match;
+    /** @var ?array<string,list<object>> */
+    private $_xtbuild_map;
+    /** @var ?list<object> */
+    private $_xtbuild_factories;
 
     /** @var ?array<string,list<object>> */
     private $_formula_functions;
@@ -5297,23 +5301,35 @@ class Conf {
 
     // search keywords
 
-    function _add_search_keyword_json($kwj) {
-        if (isset($kwj->name) && is_string($kwj->name)) {
-            return self::xt_add($this->_search_keyword_base, $kwj->name, $kwj);
-        } else if (is_string($kwj->match) && is_string($kwj->expand_function)) {
-            $this->_search_keyword_factories[] = $kwj;
+    function _xtbuild_add($j) {
+        if (is_string($j->name ?? null)) {
+            $this->_xtbuild_map[$j->name][] = $j;
+            return true;
+        } else if (is_string($j->match ?? null)) {
+            $this->_xtbuild_factories[] = $j;
             return true;
         } else {
             return false;
         }
     }
-    private function make_search_keyword_map() {
-        $this->_search_keyword_base = $this->_search_keyword_factories = [];
-        expand_json_includes_callback(["etc/searchkeywords.json"], [$this, "_add_search_keyword_json"]);
-        if (($olist = $this->opt("searchKeywords"))) {
-            expand_json_includes_callback($olist, [$this, "_add_search_keyword_json"]);
+    /** @param list<string> $defaults
+     * @param ?string $optname
+     * @return array{array<string,list<object>>,list<object>} */
+    private function _xtbuild($defaults, $optname) {
+        $this->_xtbuild_map = $this->_xtbuild_factories = [];
+        expand_json_includes_callback($defaults, [$this, "_xtbuild_add"]);
+        if ($optname && ($olist = $this->opt($optname))) {
+            expand_json_includes_callback($olist, [$this, "_xtbuild_add"]);
         }
-        usort($this->_search_keyword_factories, "Conf::xt_priority_compare");
+        usort($this->_xtbuild_factories, "Conf::xt_priority_compare");
+        $a = [$this->_xtbuild_map, $this->_xtbuild_factories];
+        $this->_xtbuild_map = $this->_xtbuild_factories = null;
+        return $a;
+    }
+
+    private function make_search_keyword_map() {
+        list($this->_search_keyword_base, $this->_search_keyword_factories) =
+            $this->_xtbuild(["etc/searchkeywords.json"], "searchKeywords");
     }
     /** @return ?object */
     function search_keyword($keyword, Contact $user = null) {
@@ -5328,22 +5344,12 @@ class Conf {
 
     // assignment parsers
 
-    function _add_assignment_parser_json($uf) {
-        if (isset($uf->name) && is_string($uf->name)) {
-            return self::xt_add($this->_assignment_parsers, $uf->name, $uf);
-        } else {
-            return false;
-        }
-    }
     /** @return ?AssignmentParser */
     function assignment_parser($keyword, Contact $user = null) {
         require_once("assignmentset.php");
         if ($this->_assignment_parsers === null) {
-            $this->_assignment_parsers = [];
-            expand_json_includes_callback(["etc/assignmentparsers.json"], [$this, "_add_assignment_parser_json"]);
-            if (($olist = $this->opt("assignmentParsers"))) {
-                expand_json_includes_callback($olist, [$this, "_add_assignment_parser_json"]);
-            }
+            list($this->_assignment_parsers, $unused) =
+                $this->_xtbuild(["etc/assignmentparsers.json"], "assignmentParsers");
         }
         $uf = $this->xt_search_name($this->_assignment_parsers, $keyword, $user);
         $uf = self::xt_resolve_require($uf);
@@ -5357,21 +5363,11 @@ class Conf {
 
     // formula functions
 
-    function _add_formula_function_json($fj) {
-        if (isset($fj->name) && is_string($fj->name)) {
-            return self::xt_add($this->_formula_functions, $fj->name, $fj);
-        } else {
-            return false;
-        }
-    }
     /** @return ?object */
     function formula_function($fname, Contact $user) {
         if ($this->_formula_functions === null) {
-            $this->_formula_functions = [];
-            expand_json_includes_callback(["etc/formulafunctions.json"], [$this, "_add_formula_function_json"]);
-            if (($olist = $this->opt("formulaFunctions"))) {
-                expand_json_includes_callback($olist, [$this, "_add_formula_function_json"]);
-            }
+            list($this->_formula_functions, $unused) =
+                $this->_xtbuild(["etc/formulafunctions.json"], "formulaFunctions");
         }
         $uf = $this->xt_search_name($this->_formula_functions, $fname, $user);
         return self::xt_resolve_require($uf);
@@ -5380,20 +5376,10 @@ class Conf {
 
     // API
 
-    function _add_api_json($fj) {
-        if (isset($fj->name) && is_string($fj->name)) {
-            return self::xt_add($this->_api_map, $fj->name, $fj);
-        } else {
-            return false;
-        }
-    }
     private function api_map() {
         if ($this->_api_map === null) {
-            $this->_api_map = [];
-            expand_json_includes_callback(["etc/apifunctions.json"], [$this, "_add_api_json"]);
-            if (($olist = $this->opt("apiFunctions"))) {
-                expand_json_includes_callback($olist, [$this, "_add_api_json"]);
-            }
+            list($this->_api_map, $unused) =
+                $this->_xtbuild(["etc/apifunctions.json"], "apiFunctions");
         }
         return $this->_api_map;
     }
@@ -5482,30 +5468,12 @@ class Conf {
 
     // paper columns
 
-    function _add_paper_column_json($fj) {
-        $ok = false;
-        if (isset($fj->name) && is_string($fj->name)) {
-            $ok = self::xt_add($this->_paper_column_map, $fj->name, $fj);
-        }
-        if (isset($fj->match)
-            && is_string($fj->match)
-            && isset($fj->expand_function)
-            && is_string($fj->expand_function)) {
-            $this->_paper_column_factories[] = $fj;
-            $ok = true;
-        }
-        return $ok;
-    }
     /** @return array<string,list<object>> */
     function paper_column_map() {
         if ($this->_paper_column_map === null) {
             require_once("papercolumn.php");
-            $this->_paper_column_map = $this->_paper_column_factories = [];
-            expand_json_includes_callback(["etc/papercolumns.json"], [$this, "_add_paper_column_json"]);
-            if (($olist = $this->opt("paperColumns"))) {
-                expand_json_includes_callback($olist, [$this, "_add_paper_column_json"]);
-            }
-            usort($this->_paper_column_factories, "Conf::xt_priority_compare");
+            list($this->_paper_column_map, $this->_paper_column_factories) =
+                $this->_xtbuild(["etc/papercolumns.json"], "paperColumns");
         }
         return $this->_paper_column_map;
     }
@@ -5533,30 +5501,17 @@ class Conf {
 
     // option types
 
-    function _add_option_type_json($fj) {
-        if (isset($fj->name) && is_string($fj->name)
-            && isset($fj->function) && is_string($fj->function)) {
-            return self::xt_add($this->_option_type_map, $fj->name, $fj);
-        } else {
-            return false;
-        }
-    }
-
     /** @return array<string,object> */
     function option_type_map() {
         if ($this->_option_type_map === null) {
             require_once("paperoption.php");
+            list($otypes, $unused) =
+                $this->_xtbuild(["etc/optiontypes.json"], "optionTypes");
             $this->_option_type_map = [];
-            expand_json_includes_callback(["etc/optiontypes.json"], [$this, "_add_option_type_json"]);
-            if (($olist = $this->opt("optionTypes"))) {
-                expand_json_includes_callback($olist, [$this, "_add_option_type_json"]);
+            foreach (array_keys($otypes) as $name) {
+                if (($uf = $this->xt_search_name($otypes, $name, null)))
+                    $this->_option_type_map[$name] = $uf;
             }
-            $m = [];
-            foreach (array_keys($this->_option_type_map) as $name) {
-                if (($uf = $this->xt_search_name($this->_option_type_map, $name, null)))
-                    $m[$name] = $uf;
-            }
-            $this->_option_type_map = $m;
             uasort($this->_option_type_map, "Conf::xt_order_compare");
         }
         return $this->_option_type_map;
@@ -5571,24 +5526,10 @@ class Conf {
 
     // tokens
 
-    function _add_token_json($fj) {
-        if ((isset($fj->match) && is_string($fj->match))
-            || (isset($fj->type) && is_int($fj->type))) {
-            $this->_token_factories[] = $fj;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     private function load_token_types() {
         if ($this->_token_factories === null) {
-            $this->_token_factories = $this->_token_types = [];
-            expand_json_includes_callback(["etc/capabilityhandlers.json"], [$this, "_add_token_json"]);
-            if (($olist = $this->opt("capabilityHandlers"))) {
-                expand_json_includes_callback($olist, [$this, "_add_token_json"]);
-            }
-            usort($this->_token_factories, "Conf::xt_priority_compare");
+            list($unused, $this->_token_factories) =
+                $this->_xtbuild(["etc/capabilityhandlers.json"], "capabilityHandlers");
         }
     }
 
@@ -5647,26 +5588,11 @@ class Conf {
 
     // mail: keywords, templates, DKIM
 
-    function _add_mail_keyword_json($fj) {
-        if (isset($fj->name) && is_string($fj->name)) {
-            return self::xt_add($this->_mail_keyword_map, $fj->name, $fj);
-        } else if (is_string($fj->match)) {
-            $this->_mail_keyword_factories[] = $fj;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     /** @return array<string,list<object>> */
     private function mail_keyword_map() {
         if ($this->_mail_keyword_map === null) {
-            $this->_mail_keyword_map = $this->_mail_keyword_factories = [];
-            expand_json_includes_callback(["etc/mailkeywords.json"], [$this, "_add_mail_keyword_json"]);
-            if (($mks = $this->opt("mailKeywords"))) {
-                expand_json_includes_callback($mks, [$this, "_add_mail_keyword_json"]);
-            }
-            usort($this->_mail_keyword_factories, "Conf::xt_priority_compare");
+            list($this->_mail_keyword_map, $this->_mail_keyword_factories) =
+                $this->_xtbuild(["etc/mailkeywords.json"], "mailKeywords");
         }
         return $this->_mail_keyword_map;
     }
@@ -5680,24 +5606,16 @@ class Conf {
     }
 
 
-    function _add_mail_template_json($fj) {
-        if (isset($fj->name) && is_string($fj->name)) {
-            if (isset($fj->body) && is_array($fj->body)) {
-                $fj->body = join("", $fj->body);
-            }
-            return self::xt_add($this->_mail_template_map, $fj->name, $fj);
-        } else {
-            return false;
-        }
-    }
-
     /** @return array<string,list<object>> */
     function mail_template_map() {
         if ($this->_mail_template_map === null) {
-            $this->_mail_template_map = [];
-            expand_json_includes_callback(["etc/mailtemplates.json"], [$this, "_add_mail_template_json"]);
-            if (($mts = $this->opt("mailTemplates"))) {
-                expand_json_includes_callback($mts, [$this, "_add_mail_template_json"]);
+            list($this->_mail_template_map, $unused) =
+                $this->_xtbuild(["etc/mailtemplates.json"], "mailTemplates");
+            foreach ($this->_mail_template_map as $olist) {
+                foreach ($olist as $j) {
+                    if (isset($j->body) && is_array($j->body))
+                        $j->body = join("", $j->body);
+                }
             }
         }
         return $this->_mail_template_map;
