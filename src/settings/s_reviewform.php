@@ -509,7 +509,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         $sv->print_textarea_group("rf/\$/description", "Description", [
             "horizontal" => true, "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus",
-            "group_class" => "is-property-description"
+            "group_attr" => ["data-property" => "description"]
         ]);
     }
 
@@ -530,19 +530,25 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-rf",
             "data-tooltip-type" => "focus",
-            "group_class" => "is-property-values"
+            "group_class" => "property-optional",
+            "group_attr" => ["data-property" => "values_text"]
         ]);
     }
 
     static function print_required(SettingValues $sv) {
         $sv->print_select_group("rf/\$/required", "Required", ["0" => "No", "1" => "Yes"], [
-            "horizontal" => true, "group_class" => "is-property-values"
+            "horizontal" => true,
+            "group_class" => "property-optional",
+            "group_attr" => ["data-property" => "required"]
         ]);
     }
 
     static function print_display(SettingValues $sv) {
         $sv->print_select_group("rf/\$/scheme", "Colors", [], [
-            "horizontal" => true, "group_class" => "is-property-values", "class" => "uich rf-scheme",
+            "horizontal" => true,
+            "group_class" => "property-optional",
+            "group_attr" => ["data-property" => "scheme"],
+            "class" => "uich rf-scheme",
             "control_after" => '<span class="d-inline-block ml-2 rf-scheme-example"></span>'
         ]);
     }
@@ -555,7 +561,8 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             "pconly" => "Hidden from authors and external reviewers",
             "admin" => "Administrators only"
         ], [
-            "horizontal" => true, "group_class" => "is-property-visibility"
+            "horizontal" => true,
+            "group_attr" => ["data-property" => "visibility"]
         ]);
     }
 
@@ -565,8 +572,9 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             . '</div>', "settings-rf-caption-condition");
         $sv->print_select_group("rf/\$/presence", "Present on",
             ReviewFieldCondition_SettingParser::presence_options($sv->conf), [
-                "horizontal" => true, "group_class" => "is-property-editing",
-                "fold_values" => ["custom"], "group_open" => true
+                "horizontal" => true,
+                "fold_values" => ["custom"], "group_open" => true,
+                "group_attr" => ["data-property" => "presence"]
             ]);
         echo ' &nbsp;';
         $sv->print_entry("rf/\$/condition", [
@@ -577,20 +585,14 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
     }
 
     static function print_actions(SettingValues $sv) {
-        echo '<div class="f-i entryi mb-0 settings-rf-actions"><label></label><div class="btnp entry"><span class="btnbox">',
+        echo '<div class="entryi mb-0 settings-rf-actions" data-property="actions"><label></label><div class="btnp entry"><span class="btnbox">',
             Ht::button(Icons::ui_use("movearrow0"), ["id" => "rf/\$/moveup", "class" => "btn-licon ui js-settings-rf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
             Ht::button(Icons::ui_use("movearrow2"), ["id" => "rf/\$/movedown", "class" => "btn-licon ui js-settings-rf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
             Ht::button(Icons::ui_use("trash"), ["class" => "btn-licon ui js-settings-rf-delete need-tooltip", "aria-label" => "Delete"]),
             Ht::hidden("rf/\$/order", "0", ["id" => "rf/\$/order", "class" => "is-order"]),
             Ht::hidden("rf/\$/id", "", ["id" => "rf/\$/id", "class" => "rf-id"]),
-            Ht::hidden("rf/\$/type", "", ["id" => "rf/\$/type", "class" => "rf-id ignore-diff"]),
             "</div></div>";
-    }
-
-    private function print_property_button($property, $icon, $label) {
-        $all_open = false;
-        echo Ht::button($icon, ["class" => "btn-licon ui js-settings-show-property need-tooltip" . ($all_open ? " btn-disabled" : ""), "aria-label" => $label, "data-property" => $property]);
     }
 
     static function print(SettingValues $sv) {
@@ -611,9 +613,13 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             '</div>',
             '<div id="rf/$/view" class="settings-rf-view fn2 ui js-foldup"></div>',
             '<fieldset id="rf/$/edit" class="fieldset-covert settings-rf-edit fx2">',
-              '<div class="entryi mb-3"><div class="entry">',
+              '<div class="entryi mb-3" data-property="name"><div class="entry">',
                 '<input name="rf/$/name" id="rf/$/name" type="text" size="50" class="font-weight-bold want-focus" placeholder="Field name">',
               '</div></div>';
+        $sv->print_select_group("rf/\$/type", "Type", [], [
+                "horizontal" => true,
+                "group_attr" => ["data-property" => "type"]
+            ]);
         $sv->print_group("reviewfield/properties");
         echo '</fieldset>', // rf/$/edit
             '</div></template>';
@@ -635,6 +641,29 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
         $sj["samples"] = json_decode(file_get_contents(SiteLoader::find("etc/reviewformlibrary.json")));
         $sj["message_list"] = $sv->message_list();
+
+        $typelist = [];
+        $rftype_map = $sv->conf->review_field_type_map();
+        foreach ($rftype_map as $rf) {
+            $j = ["name" => $rf->name, "title" => $rf->title];
+            foreach ($rf->properties ?? (object) [] as $k => $v) {
+                $j["properties"][$k] = !!$v;
+            }
+            $j["convertible_to"] = [$rf->name];
+            $typelist[$rf->name] = $j;
+        }
+        foreach ($rftype_map as $rf) {
+            foreach ($rf->convert_from_functions ?? (object) [] as $k => $v) {
+                if ($v) {
+                    $a = &$typelist[$k]["convertible_to"];
+                    for ($i = 0; $i !== count($a) && $rftype_map[$a[$i]]->order < $rf->order; ++$i) {
+                    }
+                    array_splice($a, $i, 0, [$rf->name]);
+                    unset($a);
+                }
+            }
+        }
+        $sj["types"] = array_values($typelist);
 
         $req = [];
         if ($sv->use_req()) {

@@ -614,7 +614,7 @@
     },
     {
         "name_pattern": "rf/$/type", "title": "/Field type",
-        "type": "radio", "values": ["text", "radio"]
+        "type": "radio", "values": ["text", "radio", "dropdown"]
     },
     {
         "name_pattern": "rf/$/description",

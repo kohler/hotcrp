@@ -194,6 +194,8 @@ class Conf {
     private $_paper_column_factories;
     /** @var ?array<string,list<object>> */
     private $_option_type_map;
+    /** @var ?array<string,list<object>> */
+    private $_rfield_type_map;
     /** @var ?list<object> */
     private $_token_factories;
     /** @var ?array<int,object> */
@@ -5521,6 +5523,30 @@ class Conf {
      * @return ?object */
     function option_type($name) {
         return ($this->option_type_map())[$name] ?? null;
+    }
+
+
+    // review field types
+
+    /** @return array<string,object> */
+    function review_field_type_map() {
+        if ($this->_rfield_type_map === null) {
+            list($rftypes, $unused) =
+                $this->_xtbuild(["etc/reviewfieldtypes.json"], "reviewFieldTypes");
+            $this->_rfield_type_map = [];
+            foreach (array_keys($rftypes) as $name) {
+                if (($uf = $this->xt_search_name($rftypes, $name, null)))
+                    $this->_rfield_type_map[$name] = $uf;
+            }
+            uasort($this->_rfield_type_map, "Conf::xt_order_compare");
+        }
+        return $this->_rfield_type_map;
+    }
+
+    /** @param string $name
+     * @return ?object */
+    function review_field_type($name) {
+        return ($this->review_field_type_map())[$name] ?? null;
     }
 
 

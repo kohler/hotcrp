@@ -430,7 +430,7 @@ $.ajaxPrefilter(function (options) {
         if (typeof data === "object"
             && data.sessioninfo
             && options.url.startsWith(siteinfo.site_relative)
-            && (siteinfo.site_relative !== "" || !/^(?:[a-z][-a-z0-9+.]*:|\/|\.\.(?:\/|\z))/i.test(options.url))) {
+            && (siteinfo.site_relative !== "" || !/^(?:[a-z][-a-z0-9+.]*:|\/|\.\.(?:\/|$))/i.test(options.url))) {
             check_sessioninfo(data, options);
         }
     }
@@ -4746,7 +4746,7 @@ tooltip.add_builder("rf-description", function (info) {
     if (rv.length) {
         var fieldj = formj[rv.data("rf")];
         if (fieldj && (fieldj.description || fieldj.values)) {
-            var d = "", si, vo;
+            var d = "";
             if (fieldj.description) {
                 if (/<(?:p|div|table)/i.test(fieldj.description))
                     d += fieldj.description;
@@ -5145,7 +5145,7 @@ ReviewField.prototype.unparse_symbol = function (val, split) {
 return {
     ReviewField: ReviewField,
     set_form: function (j) {
-        var i, f;
+        var i;
         formj = formj || {};
         for (i in j) {
             formj[j.uid] = new ReviewField(j[i]);
@@ -10780,7 +10780,7 @@ var scheme_info = {
     orbu: [0, 9], buor: [1, 9, "orbu"], viridis: [0, 9], viridisr: [1, 9, "viridis"],
     pkrd: [0, 9], rdpk: [1, 9, "pkrd"], turbo: [0, 9], turbor: [1, 9, "turbo"],
     catx: [2, 10], none: [2, 1]
-}, sccolor = {}, info = {};
+}, sccolor = {};
 
 function make_fm9(n, max, flip, categorical) {
     if (n <= 1 || max <= 1) {

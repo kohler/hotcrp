@@ -116,6 +116,7 @@ etc/optiontypes.json
 etc/pages.json
 etc/papercolumns.json
 etc/profilegroups.json
+etc/reviewfieldtypes.json
 etc/reviewformlibrary.json
 etc/sample.pdf
 etc/searchkeywords.json

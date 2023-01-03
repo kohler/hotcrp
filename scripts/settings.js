@@ -31,6 +31,13 @@ handle_ui.on("js-settings-show-property", function () {
     }
 });
 
+function make_option_element(value, text) {
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.append(text);
+    return opt;
+}
+
 
 function settings_delete(elt, message) {
     var form = elt.closest("form");
@@ -95,7 +102,7 @@ function settings_disable_children(e) {
 }
 
 function settings_field_order(parentid) {
-    var i = 0, curorder, defaultorder, orde, n, pos,
+    var i = 0, curorder, defaultorder, orde, n,
         form = document.getElementById("settingsform"),
         c = document.getElementById(parentid),
         moveup = null, movedown = null;
@@ -334,15 +341,12 @@ handle_ui.on("js-settings-topics-copy", function () {
 
 function settings_review_round_selectors() {
     var a = [], ch, form = $$("settingsform");
-    for (ch = $("#settings-review-rounds")[0].firstChild; ch; ch = ch.nextSibling) {
+    for (ch = $$("settings-review-rounds").firstChild; ch; ch = ch.nextSibling) {
         if (!hasClass(ch, "deleted")) {
             var ne = form.elements[ch.id + "/name"],
                 n = ne ? ne.value.trim() : "(unknown)";
-            if (n.toLowerCase() === "unnamed") {
-                n = "";
-            }
-            if (n === "" && hasClass(ch, "is-new")) {
-                n = "(new round)";
+            if (/^(?:|unnamed)$/i.test(n)) {
+                n = hasClass(ch, "is-new") ? "(new round)" : "unnamed";
             }
             a.push({value: ch.id.substring(7)|0, name: n});
         }
@@ -353,8 +357,8 @@ function settings_review_round_selectors() {
             if (cur && cur.value === "0") {
                 cur = cur.nextSibling;
             } else if (cur && a[j] && cur.value === a[j].value) {
-                if (opt.textContent !== a[j].name)
-                    opt.textContent = a[j].name;
+                if (cur.textContent !== a[j].name)
+                    cur.textContent = a[j].name;
                 cur = cur.nextSibling;
                 ++j;
             } else if (cur && (!a[j] || (cur.value|0) < a[j].value)) {
@@ -368,10 +372,7 @@ function settings_review_round_selectors() {
                 if (cur && selidx >= cur.index) {
                     ++selidx;
                 }
-                var opt = document.createElement("option");
-                opt.value = a[j].value;
-                opt.textContent = a[j].name;
-                this.insertBefore(opt, cur);
+                this.insertBefore(make_option_element(a[j].value, a[j].name), cur);
                 ++j;
             }
         }
@@ -409,7 +410,8 @@ handle_ui.on("js-settings-review-round-delete", function () {
 
 
 var review_form_settings = (function () {
-var fieldorder = [], samples,
+
+var fieldorder = [], samples, rftypes,
     colors = ["sv", "Red to green", "svr", "Green to red",
               "bupu", "Blue to purple", "pubu", "Purple to blue",
               "rdpk", "Red to pink", "pkrd", "Pink to red",
@@ -560,7 +562,7 @@ function rf_render_view(fld) {
 
     hc.push('<h3 class="rfehead">', '</h3>');
     hc.push('<label class="revfn'.concat(fld.required ? " field-required" : "", '">', escape_html(fld.name || "<unnamed>"), '</label>'));
-    var t = rf_visibility_text(fld.visibility), i;
+    var t = rf_visibility_text(fld.visibility);
     if (t)
         hc.push('<div class="field-visibility">'.concat(t, '</div>'));
     hc.pop();
@@ -575,7 +577,14 @@ function rf_render_view(fld) {
         hc.push('<div class="field-d">'.concat(fld.description, '</div>'));
 
     hc.push('<div class="revev">', '</div>');
-    if (fld.values) {
+    if (fld.type === "dropdown") {
+        hc.push('<span class="select"><select>', '</select></span>');
+        hc.push('<option value="0">'.concat(fld.required ? "(Choose one)" : "No entry", '</option>'));
+        fld.each_value(function (fv) {
+            hc.push('<option>'.concat(escape_html(fv.title), '</option>'));
+        });
+        hc.pop();
+    } else if (fld.values) {
         fld.each_value(function (fv) {
             hc.push('<label class="checki"><span class="checkc"><input type="radio" disabled></span><span class="rev_num sv '.concat(fv.className, '">', fv.symbol, fv.sp1, '</span>', fv.sp2, escape_html(fv.title), '</label>'));
         });
@@ -599,13 +608,41 @@ function rf_move() {
     rf_order();
 }
 
-function rf_append(fld) {
-    var pos = fieldorder.length + 1, $f, i, $j;
-    if (!fld.id) {
-        var pat = /text/.test(fld.type || "radio") ? "t%02d" : "s%02d";
-        for (i = 0; i === 0 || fieldorder.indexOf(fld.id) >= 0; ) {
-            fld.id = sprintf(pat, ++i);
+function find_rftype(name) {
+    for (let t of rftypes) {
+        if (t.name === name)
+            return t;
+    }
+    return null;
+}
+
+var rfproperties = {
+    "type": function (e, rftype) {
+        const select = e.querySelector("select");
+        if (rftype.convertible_to.length === 1) {
+            select.closest(".entry").replaceChildren(rftype.title, hidden_input(select.name, rftype.name, {id: select.id}));
+        } else {
+            for (const ct of rftype.convertible_to) {
+                select.add(make_option_element(ct, find_rftype(ct).title));
+            }
+            select.value = rftype.name;
         }
+    },
+    scheme: function (e) {
+        const select = e.querySelector("select");
+        for (let i = 0; i < colors.length; i += 2) {
+            select.add(make_option_element(colors[i], colors[i + 1]));
+        }
+    }
+}
+
+function rf_append(fld) {
+    var pos = fieldorder.length + 1, $f, i, e, ne, prop, $j,
+        rftype = find_rftype(fld.type || "radio");
+    if (!fld.id) {
+        var pat = /text/.test(rftype.name) ? "t%02d" : "s%02d";
+        for (i = 0; i === 0 || fieldorder.indexOf(fld.id) >= 0; )
+            fld.id = sprintf(pat, ++i);
     }
     if (document.getElementById("rf/" + pos + "/id")
         || !/^[st]\d\d$/.test(fld.id)
@@ -615,12 +652,19 @@ function rf_append(fld) {
     fld = new hotcrp.ReviewField(fld);
     fieldorder.push(fld.id);
     $f = $($("#rf_template").html().replace(/\$/g, pos));
-    if (fld.type === "radio") {
-        $j = $f.find("select.rf-scheme");
-        for (i = 0; i < colors.length; i += 2)
-            $j.append("<option value=\"" + colors[i] + "\">" + colors[i+1] + "</option>");
-    } else {
-        $f.find(".is-property-values").remove();
+    e = $f.children(".settings-rf-edit")[0].firstChild;
+    while (e) {
+        ne = e.nextElementSibling;
+        prop = e.getAttribute("data-property");
+        if (hasClass(e, "property-optional")
+            ? (rftype.properties || {})[prop]
+            : (rftype.properties || {})[prop] !== false) {
+            if (rfproperties[prop])
+                rfproperties[prop](e, rftype, fld);
+        } else {
+            e.remove();
+        }
+        e = ne;
     }
     $f.find(".js-settings-rf-delete").on("click", rf_delete);
     $f.find(".js-settings-rf-move").on("click", rf_move);
@@ -644,6 +688,7 @@ function rf_add(fld) {
 function rfs(data) {
     var i, t, fld, mi, pfx, e, m, entryi;
     samples = data.samples;
+    rftypes = data.types;
 
     // construct form for original fields
     data.fields.sort(function (a, b) {
@@ -717,8 +762,8 @@ function add_dialog() {
     function submit(evt) {
         var fld = Object.assign({}, cur_sample());
         delete fld.id;
-        for (var i of fld.instantiate_blank || []) {
-            delete fld[i];
+        for (const i of Object.keys(fld.instantiate || {})) {
+            fld[i] = fld.instantiate[i];
         }
         rf_add(fld);
         document.getElementById("rf/" + fieldorder.length + "/name").focus();

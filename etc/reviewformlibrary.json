@@ -1,7 +1,7 @@
 [
     {
         "selector": "Score",
-        "instantiate_blank": ["name", "values"],
+        "instantiate": {"name": "", "values": []},
         "name": "Field name",
         "type": "radio",
         "values": [
@@ -13,7 +13,7 @@
     },
     {
         "selector": "Text field",
-        "instantiate_blank": ["name"],
+        "instantiate": {"name": ""},
         "name": "Field name",
         "type": "text",
         "visibility": "au"
