@@ -595,6 +595,34 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             "</div></div>";
     }
 
+    /** @return list<mixed> */
+    static function make_types_json($tmap) {
+        $typelist = [];
+        foreach ($tmap as $rf) {
+            $j = ["name" => $rf->name, "title" => $rf->title];
+            foreach ($rf->properties ?? (object) [] as $k => $v) {
+                $j["properties"][$k] = !!$v;
+            }
+            $j["convertible_to"] = [$rf->name];
+            if (!empty($rf->placeholders)) {
+                $j["placeholders"] = $rf->placeholders;
+            }
+            $typelist[$rf->name] = $j;
+        }
+        foreach ($tmap as $rf) {
+            foreach ($rf->convert_from_functions ?? (object) [] as $k => $v) {
+                if ($v) {
+                    $a = &$typelist[$k]["convertible_to"];
+                    for ($i = 0; $i !== count($a) && $tmap[$a[$i]]->order < $rf->order; ++$i) {
+                    }
+                    array_splice($a, $i, 0, [$rf->name]);
+                    unset($a);
+                }
+            }
+        }
+        return array_values($typelist);
+    }
+
     static function print(SettingValues $sv) {
         echo Ht::hidden("has_rf", 1);
         $rfedit = $sv->editable("rf");
@@ -641,29 +669,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
         $sj["samples"] = json_decode(file_get_contents(SiteLoader::find("etc/reviewformlibrary.json")));
         $sj["message_list"] = $sv->message_list();
-
-        $typelist = [];
-        $rftype_map = $sv->conf->review_field_type_map();
-        foreach ($rftype_map as $rf) {
-            $j = ["name" => $rf->name, "title" => $rf->title];
-            foreach ($rf->properties ?? (object) [] as $k => $v) {
-                $j["properties"][$k] = !!$v;
-            }
-            $j["convertible_to"] = [$rf->name];
-            $typelist[$rf->name] = $j;
-        }
-        foreach ($rftype_map as $rf) {
-            foreach ($rf->convert_from_functions ?? (object) [] as $k => $v) {
-                if ($v) {
-                    $a = &$typelist[$k]["convertible_to"];
-                    for ($i = 0; $i !== count($a) && $rftype_map[$a[$i]]->order < $rf->order; ++$i) {
-                    }
-                    array_splice($a, $i, 0, [$rf->name]);
-                    unset($a);
-                }
-            }
-        }
-        $sj["types"] = array_values($typelist);
+        $sj["types"] = self::make_types_json($sv->conf->review_field_type_map());
 
         $req = [];
         if ($sv->use_req()) {

@@ -52,30 +52,10 @@ class Options_SettingRenderer {
 
     function print_type(SettingValues $sv) {
         $curt = $sv->oldv("sf/{$this->ctr}/type");
-        $otypes = [];
-        foreach ($sv->conf->option_type_map() as $uf) {
-            if (($uf->name === $curt
-                 || !isset($uf->display_if)
-                 || $sv->conf->xt_check($uf->display_if, $uf, $sv->user))
-                && ($uf->name === $curt
-                    || $curt === "none"
-                    || ($uf->convert_from_functions->{$curt} ?? false))) {
-                $otypes[$uf->name] = $uf->title;
-            }
-        }
-
-        $name = "sf/{$this->ctr}/type";
-        if (count($otypes) === 1) {
-            $sv->print_control_group($name, "Type",
-                Ht::hidden($name, $curt, ["id" => $name, "class" => "uich js-settings-sf-type"])
-                . $otypes[$curt], [
-                "horizontal" => true
-            ]);
-        } else {
-            $sv->print_select_group($name, "Type", $otypes, [
-                "horizontal" => true, "class" => "uich js-settings-sf-type"
-            ]);
-        }
+        $sv->print_select_group("sf/{$this->ctr}/type", "Type", [$curt => $curt], [
+            "horizontal" => true,
+            "group_attr" => ["data-property" => "type"]
+        ]);
     }
 
     static private function make_array(...$x) {
@@ -90,6 +70,7 @@ class Options_SettingRenderer {
             "data-tooltip-info" => "settings-sf",
             "data-tooltip-type" => "focus",
             "group_attr" => ["data-property" => "values"],
+            "group_class" => "property-optional",
             "feedback_items" => self::make_array(
                 ...$sv->message_list_at("sf/{$this->ctr}/values_text"),
                 ...$sv->message_list_at("sf/{$this->ctr}/values"),
@@ -159,7 +140,10 @@ class Options_SettingRenderer {
     }
 
     function print_actions(SettingValues $sv) {
-        echo '<div class="f-i entryi mb-0"><label></label><div class="btnp entry"><span class="btnbox">',
+        echo '<div class="entryi mb-0" data-property="actions"><label></label><div class="btnp entry">',
+            Ht::hidden("sf/{$this->ctr}/id", $this->io ? $this->io->id : "new", ["class" => "settings-sf-id", "data-default-value" => $this->io ? $this->io->id : ""]),
+            Ht::hidden("sf/{$this->ctr}/order", $sv->newv("sf/{$this->ctr}/order"), ["class" => "is-order", "data-default-value" => $this->io ? $sv->oldv("sf/{$this->ctr}/order") : ""]),
+            '<span class="btnbox">',
             Ht::button(Icons::ui_use("movearrow0"), ["class" => "btn-licon ui js-settings-sf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
             Ht::button(Icons::ui_use("movearrow2"), ["class" => "btn-licon ui js-settings-sf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
@@ -206,9 +190,7 @@ class Options_SettingRenderer {
             $this->print_one_option_view($this->io, $ctr);
         }
 
-        echo '<div id="sf/', $ctr, '/edit" class="settings-sf-edit fx2">',
-            Ht::hidden("sf/{$ctr}/id", $this->io ? $this->io->id : "new", ["class" => "settings-sf-id", "data-default-value" => $this->io ? $this->io->id : ""]),
-            Ht::hidden("sf/{$ctr}/order", $sv->newv("sf/{$ctr}/order"), ["class" => "is-order", "data-default-value" => $this->io ? $sv->oldv("sf/{$ctr}/order") : ""]);
+        echo '<div id="sf/', $ctr, '/edit" class="settings-sf-edit fx2">';
         $sv->print_group("submissionfield/properties");
         echo '</div>';
 
@@ -224,31 +206,6 @@ class Options_SettingRenderer {
     }
 
     function print(SettingValues $sv) {
-        // Collect and export type properties
-        $properties = [];
-        foreach ($sv->group_members("submissionfield/properties") as $pj) {
-            if (str_starts_with($pj->name, "submissionfield/properties/"))
-                $properties[substr($pj->name, 27)] = $pj->is_default ?? true;
-        }
-        $type_properties = $type_name_placeholders = [];
-        foreach ($sv->conf->option_type_map() as $uf) {
-            if (!isset($uf->display_if)
-                || $sv->conf->xt_check($uf->display_if, $uf, $sv->user)) {
-                $addprop = $uf->add_properties ?? [];
-                $remprop = $uf->remove_properties ?? [];
-                $prop = [];
-                foreach ($properties as $name => $include) {
-                    if (!in_array($name, $remprop)
-                        && ($include || in_array($name, $addprop)))
-                        $prop[] = $name;
-                }
-                $type_properties[$uf->name] = $prop;
-            }
-            if (isset($uf->field_name_placeholder)) {
-                $type_name_placeholders[$uf->name] = $uf->field_name_placeholder;
-            }
-        }
-
         echo "<hr class=\"g\">\n",
             Ht::hidden("has_sf", 1),
             Ht::hidden("options_version", (int) $sv->conf->setting("options")),
@@ -263,10 +220,8 @@ class Options_SettingRenderer {
             echo '<div class="feedback is-note mb-4">Click on a field to edit it.</div>';
         }
 
-        echo '<div id="settings-sform" class="c" data-type-properties="',
-            htmlspecialchars(json_encode_browser($type_properties)),
-            '" data-type-name-placeholders="',
-            htmlspecialchars(json_encode_browser($type_name_placeholders)),
+        echo '<div id="settings-sform" class="c" data-sf-types="',
+            htmlspecialchars(json_encode_browser(ReviewForm_SettingParser::make_types_json($sv->conf->option_type_map()))),
             '">';
         // NB: div#settings-sform must ONLY contain fields
         foreach ($sv->oblist_keys("sf") as $ctr) {

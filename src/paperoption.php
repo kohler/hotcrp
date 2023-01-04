@@ -1705,7 +1705,7 @@ class Selector_PaperOption extends PaperOption {
         if ($this->type === "dropdown") {
             $sel = [];
             if (!$ov->value) {
-                $sel[0] = "(Select one)";
+                $sel[0] = "(Choose one)";
             }
             foreach ($this->values() as $i => $s) {
                 if ($s !== null)
