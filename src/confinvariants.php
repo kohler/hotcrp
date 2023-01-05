@@ -89,7 +89,7 @@ class ConfInvariants {
     }
 
     /** @return $this */
-    function check_setting_invariants() {
+    function check_summary_settings() {
         // settings correctly materialize database facts
 
         // `no_papersub` === no submitted papers
@@ -556,9 +556,9 @@ class ConfInvariants {
 
     /** @param ?string $prefix
      * @return bool */
-    static function test_setting_invariants(Conf $conf, $prefix = null) {
+    static function test_summary_settings(Conf $conf, $prefix = null) {
         $prefix = $prefix ?? caller_landmark() . ": ";
-        return (new ConfInvariants($conf, $prefix))->check_setting_invariants()->ok();
+        return (new ConfInvariants($conf, $prefix))->check_summary_settings()->ok();
     }
 
     /** @param ?string $prefix

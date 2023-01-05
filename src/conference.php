@@ -192,9 +192,9 @@ class Conf {
     private $_paper_column_map;
     /** @var ?list<object> */
     private $_paper_column_factories;
-    /** @var ?array<string,list<object>> */
+    /** @var ?array<string,object> */
     private $_option_type_map;
-    /** @var ?array<string,list<object>> */
+    /** @var ?array<string,object> */
     private $_rfield_type_map;
     /** @var ?list<object> */
     private $_token_factories;
@@ -5635,8 +5635,8 @@ class Conf {
     /** @return array<string,list<object>> */
     function mail_template_map() {
         if ($this->_mail_template_map === null) {
-            list($this->_mail_template_map, $unused) =
-                $this->_xtbuild(["etc/mailtemplates.json"], "mailTemplates");
+            $this->_mail_template_map =
+                ($this->_xtbuild(["etc/mailtemplates.json"], "mailTemplates"))[0];
             foreach ($this->_mail_template_map as $olist) {
                 foreach ($olist as $j) {
                     if (isset($j->body) && is_array($j->body))

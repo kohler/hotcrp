@@ -218,7 +218,7 @@ class Settings_Tester {
     }
 
     function test_decision_types() {
-        xassert(ConfInvariants::test_setting_invariants($this->conf));
+        xassert(ConfInvariants::test_summary_settings($this->conf));
 
         $this->conf->save_refresh_setting("outcome_map", null);
         xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
@@ -243,7 +243,7 @@ class Settings_Tester {
         ]);
         xassert($sv->execute());
         xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","2":"Newly accepted","-1":"Rejected"}');
-        xassert(ConfInvariants::test_setting_invariants($this->conf));
+        xassert(ConfInvariants::test_summary_settings($this->conf));
 
         // accept-category with “reject” in the name is rejected by default
         $sv = SettingValues::make_request($this->u_chair, [
@@ -295,7 +295,7 @@ class Settings_Tester {
             "decision/1/id" => "new"
         ]);
         xassert(!$sv->execute());
-        xassert(ConfInvariants::test_setting_invariants($this->conf));
+        xassert(ConfInvariants::test_summary_settings($this->conf));
 
         // restore default decisions => no database setting
         $sv = SettingValues::make_request($this->u_chair, [
@@ -310,7 +310,7 @@ class Settings_Tester {
         xassert($sv->execute());
         xassert_eqq($this->json_decision_map(), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
         xassert_eqq($this->conf->setting("outcome_map"), null);
-        xassert(ConfInvariants::test_setting_invariants($this->conf));
+        xassert(ConfInvariants::test_summary_settings($this->conf));
     }
 
     function test_decision_setting_as_list() {
