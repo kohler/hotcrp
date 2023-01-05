@@ -230,18 +230,13 @@ abstract class Fexpr implements JsonSerializable {
     abstract function compile(FormulaCompiler $state);
 
     /** @param ?Fexpr $other_expr */
-    function compiled_comparator($cmp, Conf $conf, $other_expr = null) {
+    function compiled_relation($cmp, $other_expr = null) {
         if ($this->_format === Fexpr::FREVIEWFIELD
-            && $this->_format_detail->option_letter
-            && !$conf->opt("smartScoreCompare")
+            && $this->_format_detail->flip_relation()
             && (!$other_expr
                 || ($other_expr->format() === Fexpr::FREVIEWFIELD
-                    || $other_expr->_format_detail === $this->_format_detail))) {
-            if ($cmp[0] == "<") {
-                return ">" . substr($cmp, 1);
-            } else if ($cmp[0] == ">") {
-                return "<" . substr($cmp, 1);
-            }
+                    && $other_expr->_format_detail === $this->_format_detail))) {
+            return CountMatcher::flip_unparsed_relation($cmp);
         }
         return $cmp;
     }
@@ -422,8 +417,8 @@ class Inequality_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
         $t2 = $state->_addltemp($this->args[1]->compile($state));
-        $op = $this->args[0]->compiled_comparator($this->op, $state->conf, $this->args[1]);
-        return "($t1 !== null && $t2 !== null ? $t1 $op $t2 : null)";
+        $op = $this->args[0]->compiled_relation($this->op, $this->args[1]);
+        return "({$t1} !== null && {$t2} !== null ? {$t1} {$op} {$t2} : null)";
     }
 }
 
@@ -621,16 +616,16 @@ class Extremum_Fexpr extends Fexpr {
         return $this->args;
     }
     function compile(FormulaCompiler $state) {
-        $cmp = $this->compiled_comparator($this->op === "greatest" ? ">" : "<", $state->conf);
+        $cmp = $this->compiled_relation($this->op === "greatest" ? ">" : "<");
         $t1 = "null";
         for ($i = 0; $i < count($this->args); ++$i) {
             $t2 = $state->_addltemp($this->args[$i]->compile($state));
             if ($i === 0) {
                 $t1 = $t2;
             } else if ($this->op === "coalesce") {
-                $state->lstmt[] = "$t1 = $t1 ?? $t2;";
+                $state->lstmt[] = "{$t1} = {$t1} ?? {$t2};";
             } else {
-                $state->lstmt[] = "$t1 = ($t1 === null || ($t2 !== null && $t2 $cmp $t1) ? $t2 : $t1);";
+                $state->lstmt[] = "{$t1} = ({$t1} === null || ({$t2} !== null && {$t2} {$cmp} {$t1}) ? {$t2} : {$t1});";
             }
         }
         return $t1;
@@ -836,10 +831,10 @@ class Aggregate_Fexpr extends Fexpr {
 if (~r~ !== null && ~r~ !== false)
   break;"];
         } else if ($this->op === "min" || $this->op === "max") {
-            $cmp = $this->compiled_comparator($this->op === "min" ? "<" : ">", $state->conf);
+            $cmp = $this->compiled_relation($this->op === "min" ? "<" : ">");
             return ["null", "(~l~ !== null && (~r~ === null || ~l~ $cmp ~r~) ? ~l~ : ~r~)"];
         } else if ($this->op === "argmin" || $this->op === "argmax") {
-            $cmp = $this->args[1]->compiled_comparator($this->op === "argmin" ? "<" : ">", $state->conf);
+            $cmp = $this->args[1]->compiled_relation($this->op === "argmin" ? "<" : ">");
             return ["[null, [null]]",
 "if (~l1~ !== null && (~r~[0] === null || ~l1~ $cmp ~r~[0])) {
   ~r~[0] = ~l1~;
@@ -859,7 +854,7 @@ if (~r~ !== null && ~r~ !== false)
                 $q = "0.5";
             } else {
                 $q = $state->_addltemp($this->args[1]->compile($state));
-                if ($this->compiled_comparator("<", $state->conf) === ">") {
+                if ($this->compiled_relation("<") === ">") {
                     $q = "1 - $q";
                 }
             }
@@ -2513,12 +2508,11 @@ class Formula implements JsonSerializable {
     function result_format_is_numeric() {
         if (!$this->check()) {
             return null;
-        } else if ($this->_format === Fexpr::FREVIEWFIELD) {
-            return !$this->_format_detail->option_letter;
-        } else {
-            return $this->_format === Fexpr::FNULL
-                || $this->_format === Fexpr::FNUMERIC;
         }
+        return $this->_format === Fexpr::FNULL
+            || $this->_format === Fexpr::FNUMERIC
+            || ($this->_format === Fexpr::FREVIEWFIELD
+                && $this->_format_detail->is_numeric());
     }
 
     /** @return string */

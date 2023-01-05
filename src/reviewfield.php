@@ -506,7 +506,7 @@ class Score_ReviewField extends ReviewField {
     /** @var ?list<int> */
     private $ids;
     /** @var int */
-    public $option_letter = 0;
+    private $option_letter = 0;
     /** @var bool */
     public $flip = false;
     /** @var string */
@@ -573,6 +573,11 @@ class Score_ReviewField extends ReviewField {
         return count($this->values);
     }
 
+    /** @return list<int|string> */
+    function symbols() {
+        return $this->symbols;
+    }
+
     /** @return list<string> */
     function values() {
         return $this->values;
@@ -591,6 +596,17 @@ class Score_ReviewField extends ReviewField {
     /** @return list<int> */
     function ids() {
         return $this->ids ?? range(1, count($this->values));
+    }
+
+    /** @return bool */
+    function is_numeric() {
+        return $this->option_letter === 0;
+    }
+
+    /** @return bool */
+    function flip_relation() {
+        return $this->option_letter !== 0
+            && $this->flip === !$this->conf->opt("smartScoreCompare");
     }
 
     function unparse_json($style) {

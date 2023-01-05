@@ -734,19 +734,17 @@ class Review_SearchTerm extends SearchTerm {
         $mi = $srch->lwarning($sword, "<0>{$f->name} scores range from {$r[0]} to {$r[1]}");
         return new False_SearchTerm;
     }
-    /** @return int|false */
+    /** @param string $str
+     * @return int|false */
     private static function parse_score(Score_ReviewField $f, $str) {
-        if (strcasecmp($str, "none") === 0) {
+        if (strcasecmp($str, "none") === 0 || $str === "0") {
             return 0;
-        } else if ($f->option_letter != (ctype_digit($str) === false)) { // `!=` matters
-            return false;
-        } else if ($f->option_letter) {
-            $val = $f->option_letter - ord(strtoupper($str));
-            return $val > 0 && $val <= $f->nvalues() ? $val : false;
-        } else {
-            $val = intval($str);
-            return $val >= 0 && $val <= $f->nvalues() ? $val : false;
         }
+        foreach ($f->symbols() as $i => $sym) {
+            if (strcasecmp((string) $sym, $str) === 0)
+                return $i + 1;
+        }
+        return false;
     }
     /** @return SearchTerm */
     private static function parse_score_field(ReviewSearchMatcher $rsm, $word, SearchWord $sword, Score_ReviewField $f, PaperSearch $srch) {
@@ -757,7 +755,7 @@ class Review_SearchTerm extends SearchTerm {
             $rsm->apply_score_field($f, 0, 0, 4);
         } else if (preg_match('/\A([=!<>]=?|≠|≤|≥|)\s*([A-Z]|\d+|none)\z/si', $word, $m)) {
             $relation = CountMatcher::$opmap[$m[1]];
-            if ($f->option_letter && !$srch->conf->opt("smartScoreCompare")) {
+            if ($f->flip_relation()) {
                 $relation = CountMatcher::flip_relation($relation);
             }
             $score = self::parse_score($f, $m[2]);

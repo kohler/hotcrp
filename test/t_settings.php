@@ -593,8 +593,11 @@ class Settings_Tester {
         ]);
         $u_floyd = $this->conf->checked_user_by_email("floyd@ee.lbl.gov");
         save_review(30, $u_floyd, [
-            "ovemer" => 2, "revexp" => 1, "mf" => "C", "jf" => "C"
+            "ovemer" => 2, "revexp" => 1, "mf" => "C", "jf" => "C", "ready" => true
         ]);
+
+        assert_search_papers($this->u_chair, "mf:C", "30");
+        assert_search_papers($this->u_chair, "mf:<B", "30"); // XXX
 
         $rrow = checked_fresh_review(30, $this->u_mgbaker);
         xassert_eqq($rrow->fval("s05"), 3);

@@ -190,6 +190,7 @@ class Reviews_Tester {
         xassert(!$tf->has_problem_at("reviewerEmail"));
         assert_search_papers($this->u_chair, "ovemer:4", "");
         assert_search_papers($this->u_chair, "ovemer:5", "1");
+        assert_search_papers($this->u_chair, "ovemer:>4", "1");
         //error_log(var_export($tf->message_list(), true));
     }
 

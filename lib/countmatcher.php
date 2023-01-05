@@ -141,6 +141,13 @@ class CountMatcher {
         return $relation & 5 ? $relation ^ 5 : $relation;
     }
 
+    /** @param string $relation
+     * @return string */
+    static function flip_unparsed_relation($relation) {
+        $xr = self::parse_relation($relation);
+        return ($xr ?? 0) & 5 ? self::$oparray[$xr ^ 5] : $relation;
+    }
+
 
     /** @param string $s
      * @return ?array{int,float} */
