@@ -5552,10 +5552,23 @@ class Conf {
 
     // tokens
 
+    function _add_token_json($j) {
+        if (is_string($j->match ?? null) || is_int($j->type ?? null)) {
+            $this->_token_factories[] = $j;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     private function load_token_types() {
         if ($this->_token_factories === null) {
-            list($unused, $this->_token_factories) =
-                $this->_xtbuild(["etc/capabilityhandlers.json"], "capabilityHandlers");
+            $this->_token_factories = [];
+            expand_json_includes_callback(["etc/capabilityhandlers.json"], [$this, "_add_token_json"]);
+            if (($olist = $this->opt("capabilityHandlers"))) {
+                expand_json_includes_callback($olist, [$this, "_add_token_json"]);
+            }
+            usort($this->_token_factories, "Conf::xt_priority_compare");
         }
     }
 
