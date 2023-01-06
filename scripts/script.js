@@ -5148,7 +5148,7 @@ return {
         var i;
         formj = formj || {};
         for (i in j) {
-            formj[j.uid] = new ReviewField(j[i]);
+            formj[j[i].uid] = new ReviewField(j[i]);
         }
         form_order = $.map(formj, function (v) { return v; });
         form_order.sort(function (a, b) { return a.order - b.order; });
