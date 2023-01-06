@@ -473,10 +473,11 @@ class Navigation {
     /** @param string $url
      * @return never */
     static function redirect_absolute($url) {
-        assert(str_starts_with($url, "https://") || str_starts_with($url, "http://"));
+        assert(substr_compare($url, "https://", 0, 8) === 0
+               || substr_compare($url, "http://", 0, 7) === 0);
         // Might have an HTML-encoded URL; decode at least &amp;.
         $url = str_replace("&amp;", "&", $url);
-        header("Location: $url");
+        header("Location: {$url}");
         echo "<!DOCTYPE html>
 <html lang=\"en\"><head>
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
