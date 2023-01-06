@@ -203,8 +203,8 @@ class SavePapers_Batch {
             }
             // make room for large files in memory
             if ($stat["size"] > 50000000
-                && $stat["size"] >= ini_get_bytes("memory_limit") * 0.8) {
-                ini_set("memory_limit", floor($stat["size"] * 1.25 / (1 << 20)) . "M");
+                && $stat["size"] >= ini_get_bytes("memory_limit") * 0.3) {
+                ini_set("memory_limit", floor($stat["size"] * 3.25 / (1 << 20)) . "M");
             }
             $content = $this->ziparchive->getFromIndex($stat["index"]);
             if ($content === false) {
