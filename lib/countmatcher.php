@@ -145,7 +145,7 @@ class CountMatcher {
      * @return string */
     static function flip_unparsed_relation($relation) {
         $xr = self::parse_relation($relation);
-        return ($xr ?? 0) & 5 ? self::$oparray[$xr ^ 5] : $relation;
+        return $xr !== null && ($xr & 5) ? self::$oparray[$xr ^ 5] : $relation;
     }
 
 

@@ -66,6 +66,9 @@ class SavePapers_Batch {
         $this->add_topics = isset($arg["add-topics"]);
         $this->reviews = isset($arg["r"]);
         $this->log = !isset($arg["no-log"]);
+        if (isset($arg["z"])) {
+            $this->set_zipfile($arg["z"]);
+        }
         foreach ($arg["f"] ?? [] as $f) {
             if (($colon = strpos($f, ":")) !== false
                 && $colon + 1 < strlen($f)
@@ -78,22 +81,50 @@ class SavePapers_Batch {
         return $this;
     }
 
+    /** @param string $file */
+    function set_zipfile($file) {
+        assert(!$this->ziparchive);
+        $this->ziparchive = new ZipArchive;
+        if ($this->ziparchive->open($file) !== true) {
+            throw new CommandLineException("{$file}: Invalid zip");
+        }
+        // find common directory prefix
+        $slashpos = strrpos($this->ziparchive->getNameIndex(0), "/");
+        if ($slashpos === false || $slashpos === 0) {
+            $dirprefix = "";
+        } else {
+            $dirprefix = substr($this->ziparchive->getNameIndex(0), 0, $slashpos + 1);
+            for ($i = 1; $i < $this->ziparchive->numFiles; ++$i) {
+                $name = $this->ziparchive->getNameIndex($i);
+                while (!str_starts_with($name, $dirprefix)) {
+                    $slashpos = strrpos($dirprefix, "/", -1);
+                    if ($slashpos === false || $slashpos === 0) {
+                        $dirprefix = "";
+                    } else {
+                        $dirprefix = substr($dirprefix, 0, $slashpos + 1);
+                    }
+                }
+            }
+        }
+        $this->document_directory = $dirprefix;
+    }
+
     /** @return string */
     function set_file($file) {
         // allow uploading a whole zip archive
-        $zipfile = null;
+        $content = null;
+        $this->errprefix = "{$file}: ";
         if ($file === "-") {
+            if (posix_isatty(STDIN)) {
+                throw new CommandLineException("Cowardly refusing to read JSON from a terminal");
+            }
             $content = stream_get_contents(STDIN);
             $this->errprefix = "";
         } else if (str_ends_with(strtolower($file), ".zip")) {
-            $content = false;
-            $this->ziparchive = new ZipArchive;
-            $zipfile = $file;
-            $this->errprefix = "{$file}: ";
+            $this->set_zipfile($file);
         } else {
             $content = file_get_contents($file);
-            $this->document_directory = dirname($file) . "/";
-            $this->errprefix = "{$file}: ";
+            $this->document_directory = $this->document_directory ?? (dirname($file) . "/");
         }
 
         if (!$this->ziparchive
@@ -103,58 +134,15 @@ class SavePapers_Batch {
             } else if (file_put_contents("{$tmpdir}/data.zip", $content) !== strlen($content)) {
                 throw new CommandLineException("{$this->errprefix}{$tmpdir}/data.zip: Cannot write file");
             }
-            $this->ziparchive = new ZipArchive;
-            $zipfile = "{$tmpdir}/data.zip";
-            $this->document_directory = null;
+            $this->set_zipfile("{$tmpdir}/data.zip");
+            $content = null;
         }
 
-        if ($this->ziparchive) {
-            if ($this->ziparchive->open($zipfile) !== true) {
-                throw new CommandLineException("{$this->errprefix}Invalid zip");
-            } else if ($this->ziparchive->numFiles == 0) {
-                throw new CommandLineException("{$this->errprefix}Empty zipfile");
-            }
-            // find common directory prefix
-            $slashpos = strrpos($this->ziparchive->getNameIndex(0), "/");
-            if ($slashpos === false || $slashpos === 0) {
-                $dirprefix = "";
-            } else {
-                $dirprefix = substr($this->ziparchive->getNameIndex(0), 0, $slashpos + 1);
-                for ($i = 1; $i < $this->ziparchive->numFiles; ++$i) {
-                    $name = $this->ziparchive->getNameIndex($i);
-                    while (!str_starts_with($name, $dirprefix)) {
-                        $slashpos = strrpos($dirprefix, "/", -1);
-                        if ($slashpos === false || $slashpos === 0) {
-                            $dirprefix = "";
-                        } else {
-                            $dirprefix = substr($dirprefix, 0, $slashpos + 1);
-                        }
-                    }
-                }
-            }
-            $this->document_directory = $dirprefix;
-            // find "*-data.json" file
-            $data_filename = $json_filename = [];
-            for ($i = 0; $i < $this->ziparchive->numFiles; ++$i) {
-                $filename = $this->ziparchive->getNameIndex($i);
-                if (str_starts_with($filename, $dirprefix)
-                    && !str_starts_with($filename, "{$dirprefix}.")) {
-                    $dirname = substr($filename, strlen($dirprefix));
-                    if (preg_match('/\A[^\/]*(?:\A|[-_])data\.json\z/', $dirname)) {
-                        $data_filename[] = $filename;
-                    }
-                    if (str_ends_with($dirname, ".json")) {
-                        $json_filename[] = $filename;
-                    }
-                }
-            }
-            if (count($data_filename) === 0 && count($json_filename) === 1) {
-                $data_filename = $json_filename;
-            } else if (count($data_filename) !== 1) {
+        if ($content === null && $this->ziparchive) {
+            $content = $this->default_content();
+            if ($content === null) {
                 throw new CommandLineException("{$this->errprefix}Should contain exactly one `*-data.json` file");
             }
-            $content = $this->ziparchive->getFromName($data_filename[0]);
-            $this->errprefix = ($this->errprefix ? $file : "<stdin>") . "/" . $data_filename[0] . ": ";
         }
 
         if (is_string($content)) {
@@ -162,6 +150,41 @@ class SavePapers_Batch {
         } else {
             throw new CommandLineException("{$this->errprefix}Read error");
         }
+    }
+
+    /** @return ?string */
+    function default_content() {
+        if (!$this->ziparchive) {
+            return null;
+        }
+        // find "*-data.json" file
+        $data_filename = $json_filename = [];
+        $dirprefix = $this->document_directory;
+        for ($i = 0; $i < $this->ziparchive->numFiles; ++$i) {
+            $filename = $this->ziparchive->getNameIndex($i);
+            if (str_starts_with($filename, $dirprefix)
+                && !str_starts_with($filename, "{$dirprefix}.")) {
+                $dirname = substr($filename, strlen($dirprefix));
+                if (preg_match('/\A[^\/]*(?:\A|[-_])data\.json\z/', $dirname)) {
+                    $data_filename[] = $filename;
+                }
+                if (str_ends_with($dirname, ".json")) {
+                    $json_filename[] = $filename;
+                }
+            }
+        }
+        if (count($data_filename) === 0 && count($json_filename) === 1) {
+            $data_filename = $json_filename;
+        }
+        if (count($data_filename) === 1) {
+            if ($this->errprefix === "") {
+                $this->errprefix = "<stdin>/{$data_filename[0]}: ";
+            } else {
+                $this->errprefix = preg_replace('/: \z/', "/{$data_filename[0]}: ", $this->errprefix);
+            }
+            return $this->ziparchive->getFromName($data_filename[0]);
+        }
+        return null;
     }
 
     function on_document_import($docj, PaperOption $o, PaperStatus $pstatus) {
@@ -337,6 +360,7 @@ class SavePapers_Batch {
             "help,h !",
             "r,reviews Save reviews as well as paper information",
             "f[],filter[] =FUNCTION Pass JSON through FUNCTION",
+            "z:,zipfile: =FILE Read documents from FILE",
             "q,quiet Don’t print progress information",
             "ignore-errors Don’t exit after first error",
             "disable-users,disable Disable all newly created users",
@@ -352,7 +376,11 @@ Usage: php batch/savepapers.php [OPTIONS] [FILE]")
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
         $bf = (new SavePapers_Batch($conf))->set_args($arg);
-        $content = $bf->set_file(count($arg["_"]) ? $arg["_"][0] : "-");
+        if (empty($arg["_"])) {
+            $content = $bf->default_content() ?? $bf->set_file("-");
+        } else {
+            $content = $bf->set_file($arg["_"][0]);
+        }
         return $bf->run($content);
     }
 }
