@@ -507,7 +507,7 @@ class Score_ReviewField extends ReviewField {
     /** @var list<string> */
     private $values = [];
     /** @var list<int|string> */
-    private $symbols = [];
+    private $symbols = []; // NB strings must by URL-safe and HTML-safe
     /** @var ?list<int> */
     private $ids;
     /** @var int */
@@ -521,8 +521,9 @@ class Score_ReviewField extends ReviewField {
     /** @var ?string */
     private $_typical_score;
 
-    // colors
-    /** @var array<string,list> */
+    // color schemes; NB keys must be URL-safe
+    /** @var array<string,list>
+     * @readonly */
     static public $scheme_info = [
         "sv" => [0, 9, "svr"], "svr" => [1, 9, "sv"],
         "bupu" => [0, 9, "pubu"], "pubu" => [1, 9, "bupu"],
@@ -531,6 +532,12 @@ class Score_ReviewField extends ReviewField {
         "orbu" => [0, 9, "buor"], "buor" => [1, 9, "orbu"],
         "turbo" => [0, 9, "turbor"], "turbor" => [1, 9, "turbo"],
         "catx" => [2, 10, null], "none" => [2, 1, null]
+    ];
+
+    /** @var array<string,string>
+     * @readonly */
+    static public $scheme_alias = [
+        "publ" => "pubu", "blpu" => "bupu"
     ];
 
     function __construct(Conf $conf, ReviewFieldInfo $finfo, $j) {
@@ -559,10 +566,11 @@ class Score_ReviewField extends ReviewField {
         if (isset($j->ids) && count($j->ids) === $nvalues) {
             $this->ids = $j->ids;
         }
-        if (isset($j->scheme)) {
-            $this->scheme = $j->scheme;
-            if ($this->scheme === "blpu" || $this->scheme === "publ") {
-                $this->scheme = $this->scheme[0] === "b" ? "bupu" : "pubu";
+        if (($sch = $j->scheme ?? null) !== null) {
+            if (isset(self::$scheme_info[$sch])) {
+                $this->scheme = $sch;
+            } else {
+                $this->scheme = self::$scheme_alias[$sch] ?? null;
             }
         }
         if (!isset($j->required)) {
@@ -786,27 +794,31 @@ class Score_ReviewField extends ReviewField {
      * @param 1|2 $style
      * @return string */
     function unparse_graph($sci, $style) {
-        $max = count($this->values);
+        $n = count($this->values);
 
         $avgtext = $this->unparse_average($sci->mean());
         if ($sci->count() > 1 && ($stddev = $sci->stddev_s())) {
             $avgtext .= sprintf(" ± %.2f", $stddev);
         }
 
-        $counts = $sci->counts($max);
+        $counts = $sci->counts($n);
         $args = "v=" . join(",", $counts);
         if ($sci->my_score() && $counts[$sci->my_score() - 1] > 0) {
             $args .= "&amp;h=" . $sci->my_score();
         }
-        if ($this->option_letter !== 0) {
-            $args .= "&amp;c=" . chr($this->option_letter - 1);
+        if ($this->option_letter !== 0 || $this->flip) {
+            $args .= "&amp;lo=" . $this->symbols[$this->flip ? $n - 1 : 0]
+                . "&amp;hi=" . $this->symbols[$this->flip ? 0 : $n - 1];
+        }
+        if ($this->flip) {
+            $args .= "&amp;flip=1";
         }
         if ($this->scheme !== "sv") {
-            $args .= "&amp;sv=" . urlencode($this->scheme);
+            $args .= "&amp;sv=" . $this->scheme;
         }
 
         if ($style === 1) {
-            $width = 5 * $max + 3;
+            $width = 5 * $n + 3;
             $height = 5 * max(3, max($counts)) + 3;
             $retstr = "<div class=\"need-scorechart\" style=\"width:{$width}px;height:{$height}px\" data-scorechart=\"{$args}&amp;s=1\" title=\"{$avgtext}\"></div>";
         } else {
@@ -814,7 +826,7 @@ class Score_ReviewField extends ReviewField {
                 . "<div class=\"need-scorechart\" style=\"width:64px;height:8px\" data-scorechart=\"{$args}&amp;s=2\" title=\"{$avgtext}\"></div><br>";
             $step = $this->flip ? -1 : 1;
             $sep = "";
-            for ($i = $this->flip ? $max - 1 : 0; $i >= 0 && $i < $max; $i += $step) {
+            for ($i = $this->flip ? $n - 1 : 0; $i >= 0 && $i < $n; $i += $step) {
                 $vc = $this->value_class($i + 1);
                 $retstr .= "{$sep}<span class=\"{$vc}\">{$counts[$i]}</span>";
                 $sep = " ";

@@ -10877,7 +10877,9 @@ function setup_canvas(canvas, w, h) {
 }
 
 function analyze_sc(sc) {
-    var anal = {v: [], max: 0, h: 0, c: 0, sum: 0, sv: "sv"}, m, i, vs, x;
+    var anal = {
+        v: [], max: 0, h: 0, lo: 0, hi: 0, flip: false, sum: 0, sv: "sv"
+    }, m, i, vs, x;
 
     m = /(?:^|[&;])v=(.*?)(?:[&;]|$)/.exec(sc);
     vs = m[1].split(/,/);
@@ -10886,24 +10888,20 @@ function analyze_sc(sc) {
             x = parseInt(vs[i], 10);
         else
             x = 0;
-        anal.v[i + 1] = x;
+        anal.v.push(x);
         anal.max = Math.max(anal.max, x);
         anal.sum += x;
     }
 
     if ((m = /(?:^|[&;])h=(\d+)(?:[&;]|$)/.exec(sc)))
         anal.h = parseInt(m[1], 10);
-
-    x = 0;
-    if ((m = /(?:^|[&;])c=([A-Z])(?:[&;]|$)/.exec(sc))) {
-        anal.c = m[1].charCodeAt(0);
-        x = String.fromCharCode(anal.c + 2 - anal.v.length);
-    }
-
+    anal.lo = (m = /(?:^|[&;])lo=(\w+)/.exec(sc)) ? m[1] : 1;
+    anal.hi = (m = /(?:^|[&;])hi=(\w+)/.exec(sc)) ? m[1] : vs.length;
+    anal.flip = /(?:^|[&;])flip=[^0&;]/.test(sc);
     if ((m = /(?:^|[&;])sv=([^;&]*)(?:[&;]|$)/.exec(sc)))
         anal.sv = decodeURIComponent(m[1]);
 
-    anal.fx = make_color_scheme(vs.length, anal.sv, x);
+    anal.fx = make_color_scheme(vs.length, anal.sv, anal.flip);
     return anal;
 }
 
@@ -10917,36 +10915,33 @@ function color_unparse(a) {
 }
 
 function scorechart1_s1(sc) {
-    var anal = analyze_sc(sc), blocksize = 3, blockpad = 2, blockfull = blocksize + blockpad;
-    var cwidth = blockfull * (anal.v.length - 1) + blockpad + 1;
-    var cheight = blockfull * Math.max(anal.max, 1) + blockpad + 1;
+    var anal = analyze_sc(sc), n = anal.v.length,
+        blocksize = 3, blockpad = 2, blockfull = blocksize + blockpad,
+        cwidth = blockfull * n + blockpad + 1,
+        cheight = blockfull * Math.max(anal.max, 1) + blockpad + 1,
+        gray = color_unparse(graycolor);
 
-    var t = '<svg width="' + cwidth + '" height="' + cheight + '" style="font:6.5px Menlo, Monaco, source-code-pro, Consolas, Terminal, monospace;user-select:none">';
-    var gray = color_unparse(graycolor);
-    t += '<path style="stroke:' + gray + ';fill:none" d="M0.5 ' + (cheight - blockfull - 1) + 'v' + (blockfull + 0.5) + 'h' + (cwidth - 1) + 'v' + -(blockfull + 0.5) + '" />';
+    var t = '<svg width="'.concat(cwidth, '" height="', cheight, '" style="font:6.5px Menlo, Monaco, source-code-pro, Consolas, Terminal, monospace;user-select:none"><path style="stroke:', gray, ';fill:none" d="M0.5 ', cheight - blockfull - 1, 'v', blockfull + 0.5, 'h', cwidth - 1, 'v', -(blockfull + 0.5), '" />');
 
-    if (anal.c ? !anal.v[anal.v.length - 1] : !anal.v[1])
-        t += '<text x="' + blockpad + '" y="' + (cheight - 2) + '" fill="' + gray + '">' +
-            (anal.c ? String.fromCharCode(anal.c - anal.v.length + 2) : 1) + '</text>';
-    if (anal.c ? !anal.v[1] : !anal.v[anal.v.length - 1])
-        t += '<text x="' + (cwidth - 1.75) + '" y="' + (cheight - 2) + '" text-anchor="end" fill="' + gray + '">' +
-            (anal.c ? String.fromCharCode(anal.c) : anal.v.length - 1) + '</text>';
+    if (!anal.v[anal.flip ? n - 1 : 0])
+        t = t.concat('<text x="', blockpad, '" y="', cheight - 2, '" fill="', gray, '">', anal.lo, '</text>');
+    if (!anal.v[anal.flip ? 0 : n - 1])
+        t = t.concat('<text x="', cwidth - 1.75, '" y="', cheight - 2, '" text-anchor="end" fill="', gray, '">', anal.hi, '</text>');
 
     function rectd(x, y) {
-        return 'M' + (blockfull * x - blocksize) + ' ' + (cheight - 1 - blockfull * y)
-            + 'h' + (blocksize + 1) + 'v' + (blocksize + 1) + 'h' + -(blocksize + 1) + 'z';
+        return 'M'.concat(blockfull * x + blockpad, ' ', cheight - 1 - blockfull * y, 'h', blocksize + 1, 'v', blocksize + 1, 'h', -(blocksize + 1), 'z');
     }
 
-    for (var x = 1; x < anal.v.length; ++x) {
-        var vindex = anal.c ? anal.v.length - x : x;
+    for (var x = 0; x < n; ++x) {
+        var vindex = anal.flip ? n - x - 1 : x;
         if (!anal.v[vindex])
             continue;
-        var color = anal.fx.rgb_array(vindex);
-        var y = vindex == anal.h ? 2 : 1;
-        if (y == 2)
-            t += '<path style="fill:' + color_unparse(rgb_interp(blackcolor, color, 0.5)) + '" d="' + rectd(x, 1) + '" />';
+        var color = anal.fx.rgb_array(vindex + 1);
+        var y = vindex + 1 === anal.h ? 2 : 1;
+        if (y === 2)
+            t = t.concat('<path style="fill:', color_unparse(rgb_interp(blackcolor, color, 0.5)), '" d="', rectd(x, 1), '" />');
         if (y <= anal.v[vindex]) {
-            t += '<path style="fill:' + color_unparse(color) + '" d="';
+            t += t.concat('<path style="fill:', color_unparse(color), '" d="');
             for (; y <= anal.v[vindex]; ++y)
                 t += rectd(x, y);
             t += '" />';
@@ -10962,11 +10957,11 @@ function scorechart1_s2(sc) {
         cwidth = 64, cheight = 8,
         x, vindex, pos = 0, x1 = 0, x2;
     ctx = setup_canvas(canvas, cwidth, cheight);
-    for (x = 1; x < anal.v.length; ++x) {
-        vindex = anal.c ? anal.v.length - x : x;
+    for (x = 0; x < anal.v.length; ++x) {
+        vindex = anal.flip ? anal.v.length - x - 1 : x;
         if (!anal.v[vindex])
             continue;
-        ctx.fillStyle = color_unparse(anal.fx.rgb_array(vindex));
+        ctx.fillStyle = color_unparse(anal.fx.rgb_array(vindex + 1));
         pos += anal.v[vindex];
         x2 = Math.round((cwidth + 1) * pos / anal.sum);
         if (x2 > x1)

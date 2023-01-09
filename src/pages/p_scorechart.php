@@ -18,8 +18,12 @@ class Scorechart_Page {
     private $sum = 0;
     /** @var int */
     private $valLight = 0;
-    /** @var int */
-    private $levelChar = 0;
+    /** @var string */
+    private $loLabel;
+    /** @var string */
+    private $hiLabel;
+    /** @var bool */
+    private $flip;
 
     /** @param array{int,int,int} $c1
      * @param array{int,int,int} $c2
@@ -31,7 +35,7 @@ class Scorechart_Page {
                 (int) ($c2[2] * $f + $c1[2] * (1 - $f) + 0.5)];
     }
 
-    function __construct($v, $h, $c) {
+    function __construct($v, $h, $lo, $hi, $flip) {
         foreach (explode(",", $v) as $value) {
             if ($value !== "") {
                 $value = intval($value);
@@ -44,9 +48,9 @@ class Scorechart_Page {
         if ($h !== null && $h >= 1 && $h < $this->valMax) {
             $this->valLight = $h;
         }
-        if ($c !== null) {
-            $this->levelChar = ord($c);
-        }
+        $this->loLabel = $lo ?? "1";
+        $this->hiLabel = $hi ?? (string) $this->valMax;
+        $this->flip = $flip;
     }
 
     static function cacheable_headers() {
@@ -70,17 +74,15 @@ class Scorechart_Page {
         echo $text, "\r\n";
     }
 
-    private function make_s01($s) {
+    private function make_s1() {
         // set shape constants
-        $blockHeight = $blockWidth = $s ? 3 : 8;
+        $blockHeight = $blockWidth = 3;
         $blockSkip = 2;
-        $blockPad = $s ? 2 : 4;
-        $textWidth = $s ? 0 : 12;
+        $blockPad = 2;
 
         $maxY = max($this->maxY, 3);
         $picWidth = ($blockWidth + $blockPad) * ($this->valMax - 1)
-            + $blockPad
-            + 2 * $textWidth;
+            + $blockPad;
         $picHeight = $blockHeight * $maxY + $blockSkip * ($maxY + 1);
         $pic = @imagecreate($picWidth + 1, $picHeight + 1);
 
@@ -88,15 +90,10 @@ class Scorechart_Page {
         $cBlack = imagecolorallocate($pic, 0, 0, 0);
         $cgray = imagecolorallocate($pic, 190, 190, 255);
 
-        if ($s == 0) {
-            imagefilledrectangle($pic, 0, 0, $picWidth + 1, $picHeight + 1, $cBlack);
-            imagefilledrectangle($pic, 1, 1, $picWidth - 1, $picHeight - 1, $cWhite);
-        } else {
-            imagecolortransparent($pic, $cWhite);
-            imagefilledrectangle($pic, 0, $picHeight, $picWidth + 1, $picHeight + 1, $cgray);
-            imagefilledrectangle($pic, 0, $picHeight - $blockHeight - $blockPad, 0, $picHeight + 1, $cgray);
-            imagefilledrectangle($pic, $picWidth, $picHeight - $blockHeight - $blockPad, $picWidth + 1, $picHeight + 1, $cgray);
-        }
+        imagecolortransparent($pic, $cWhite);
+        imagefilledrectangle($pic, 0, $picHeight, $picWidth + 1, $picHeight + 1, $cgray);
+        imagefilledrectangle($pic, 0, $picHeight - $blockHeight - $blockPad, 0, $picHeight + 1, $cgray);
+        imagefilledrectangle($pic, $picWidth, $picHeight - $blockHeight - $blockPad, $picWidth + 1, $picHeight + 1, $cgray);
 
         $cv_black = [0, 0, 0];
         $cv_bad = [200, 128, 128];
@@ -104,14 +101,13 @@ class Scorechart_Page {
         $pos = 0;
 
         for ($value = 1; $value < $this->valMax; $value++) {
-            $vpos = ($this->levelChar ? $this->valMax - $value : $value);
+            $vpos = $this->flip ? $this->valMax - $value : $value;
             $height = $this->values[$vpos];
             $frac = ($vpos - 1) / ($this->valMax - 1);
             $cv_cur = self::quality_color($cv_bad, $cv_good, $frac);
             $cFill = imagecolorallocate($pic, $cv_cur[0], $cv_cur[1], $cv_cur[2]);
 
-            $curX = $blockWidth * ($value - 1)
-                + $blockPad * $value + $textWidth;
+            $curX = $blockWidth * ($value - 1) + $blockPad * $value;
             $curY = $picHeight - ($blockHeight + $blockSkip) * $height + $blockHeight;
 
             for ($h = 1; $h <= $height; $h++) {
@@ -125,28 +121,14 @@ class Scorechart_Page {
             }
         }
 
-        if ($s == 0) {
-            imagestringup($pic, 2, 0, 30, "Bad", $cBlack);
-            imagestringup($pic, 2, $picWidth - $textWidth, 30, "Good", $cBlack);
-        } else {
-            $lx = $textWidth + $blockPad;
-            $rx = $picWidth - $blockWidth - $textWidth - $blockPad;
-            $y = $picHeight - $blockHeight - $blockSkip - 3;
-            if ($this->levelChar) {
-                if ($this->values[1] == 0) {
-                    imagestring($pic, 1, $rx, $y, chr($this->levelChar), $cgray);
-                }
-                if ($this->values[$this->valMax - 1] == 0) {
-                    imagestring($pic, 1, $lx, $y, chr($this->levelChar - $this->valMax + 2), $cgray);
-                }
-            } else {
-                if ($this->values[1] == 0) {
-                    imagestring($pic, 1, $lx, $y, "1", $cgray);
-                }
-                if ($this->values[$this->valMax - 1] == 0) {
-                    imagestring($pic, 1, $rx, $y, (string) ($this->valMax - 1), $cgray);
-                }
-            }
+        $lx = $blockPad;
+        $rx = $picWidth - $blockWidth - $blockPad;
+        $y = $picHeight - $blockHeight - $blockSkip - 3;
+        if ($this->values[$this->flip ? $this->valMax - 1 : 1] === 0) {
+            imagestring($pic, 1, $lx, $y, $this->loLabel, $cgray);
+        }
+        if ($this->values[$this->flip ? 1 : $this->valMax - 1] === 0) {
+            imagestring($pic, 1, $rx, $y, $this->hiLabel, $cgray);
         }
 
         return $pic;
@@ -183,18 +165,19 @@ class Scorechart_Page {
 
     static function go_param($params) {
         $v = $params["v"] ?? null;
-        $s = $params["s"] ?? "0";
+        $s = $params["s"] ?? "1";
         $h = $params["h"] ?? null;
-        $c = $params["c"] ?? "";
+        $lo = $params["lo"] ?? null;
+        $hi = $params["hi"] ?? null;
+        $flip = !!($params["flip"] ?? null);
 
         if ($v === null
             || ($v !== "" && !preg_match('/\A\d+(,\d+)*\z/', $v))
             || $s === ""
             || !ctype_digit($s)
-            || ($sn = intval($s)) < 0
+            || ($sn = intval($s)) < 1
             || $sn > 2
-            || ($h !== null && !ctype_digit($h))
-            || ($c !== "" && (strlen($c) !== 1 || $c < "A" || $c > "Z"))) {
+            || ($h !== null && !ctype_digit($h))) {
             self::fail("400 Bad Request", "Invalid parameters", true);
             return;
         }
@@ -214,9 +197,9 @@ class Scorechart_Page {
         self::cacheable_headers();
         header("Content-Type: image/png");
 
-        $sc = new Scorechart_Page($v, $h !== null ? intval($h) : null, $c);
+        $sc = new Scorechart_Page($v, $h !== null ? intval($h) : null, $lo, $hi, $flip);
         if ($sn !== 2) {
-            imagepng($sc->make_s01($sn));
+            imagepng($sc->make_s1());
         } else {
             imagepng($sc->make_s2());
         }
