@@ -447,9 +447,8 @@ class ContactList {
             $this->_rect_data[$cid][1] += 1;
             if ($this->user->can_view_review($prow, $rrow)) {
                 foreach ($forders as $i) {
-                    if ($rrow->fields[$i]) {
+                    if ($rrow->fields[$i] !== 0)
                         $this->_score_data[$i][$cid][] = $rrow->fields[$i];
-                    }
                 }
             }
         } else if ($rrow->reviewNeedsSubmit && $prow->timeSubmitted > 0) {

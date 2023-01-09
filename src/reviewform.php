@@ -180,10 +180,10 @@ class ReviewForm {
     }
 
     /** @return list<object> */
-    function unparse_storage_json() {
+    function export_storage_json() {
         $rj = [];
         foreach ($this->fmap as $f) {
-            $rj[] = $f->unparse_json(ReviewField::UJ_STORAGE);
+            $rj[] = $f->export_json(ReviewField::UJ_STORAGE);
         }
         return $rj;
     }
@@ -832,7 +832,10 @@ class ReviewValues extends MessageSet {
     public $reviewId;
     /** @var ?string */
     public $review_ordinal_id;
+    /** @var array<string,mixed> */
     public $req;
+    /** @var ?bool */
+    public $req_json;
 
     private $finished = 0;
     /** @var ?list<string> */
@@ -916,6 +919,7 @@ class ReviewValues extends MessageSet {
         $this->field_lineno = [];
         $this->garbage_lineno = null;
         $this->req = [];
+        $this->req_json = false;
         $this->paperId = 0;
         if ($override !== null) {
             $this->req["override"] = $override;
@@ -1058,12 +1062,11 @@ class ReviewValues extends MessageSet {
 
     function parse_json($j) {
         assert($this->text === null && $this->finished === 0);
-
         if (!is_object($j) && !is_array($j)) {
             return false;
         }
         $this->req = [];
-
+        $this->req_json = true;
         // XXX validate more
         foreach ($j as $k => $v) {
             if ($k === "round") {
@@ -1097,15 +1100,13 @@ class ReviewValues extends MessageSet {
                 if (is_int($v))
                     $this->req["version"] = $v;
             } else if (($f = $this->conf->find_review_field($k))) {
-                if ((is_string($v) || is_int($v) || $v === null)
-                    && !isset($this->req[$f->short_id]))
-                    $this->req[$f->short_id] = (string) $v;
+                if (!isset($this->req[$f->short_id]))
+                    $this->req[$f->short_id] = $v;
             }
         }
         if (!empty($this->req) && !isset($this->req["ready"])) {
             $this->req["ready"] = 1;
         }
-
         return !empty($this->req);
     }
 
@@ -1123,6 +1124,7 @@ class ReviewValues extends MessageSet {
         assert($this->text === null && $this->finished === 0);
         $rf = $this->conf->review_form();
         $this->req = [];
+        $this->req_json = false;
         foreach ($qreq as $k => $v) {
             if (isset(self::$ignore_web_keys[$k]) || !is_scalar($v)) {
                 /* skip */
@@ -1262,10 +1264,13 @@ class ReviewValues extends MessageSet {
      * @return array{int|string,int|string} */
     private function fvalues($f, $rrow) {
         $oldval = $rrow->fields[$f->order] ?? ($f->is_sfield ? 0 : "");
-        if (isset($this->req[$f->short_id])) {
-            return [$oldval, $f->parse_string($this->req[$f->short_id])];
-        } else {
+        $reqv = $this->req[$f->short_id] ?? null;
+        if ($reqv === null) {
             return [$oldval, $oldval];
+        } else if ($this->req_json) {
+            return [$oldval, $f->parse_json($reqv)];
+        } else {
+            return [$oldval, $f->parse_string($reqv)];
         }
     }
 
@@ -1273,7 +1278,7 @@ class ReviewValues extends MessageSet {
         $submit = $this->req["ready"] ?? null;
         $msgcount = $this->message_count();
         $missingfields = [];
-        $unready = $anydiff = $anynonempty = false;
+        $unready = $anydiff = $anyvalues = false;
 
         foreach ($this->rf->forder as $fid => $f) {
             if (!isset($this->req[$fid])
@@ -1285,25 +1290,23 @@ class ReviewValues extends MessageSet {
                 $this->rmsg($fid, $this->conf->_("<0>%s cannot be ‘%s’.", $f->name, UnicodeHelper::utf8_abbreviate(trim($this->req[$fid]), 100)), self::WARNING);
                 unset($this->req[$fid]);
                 $unready = true;
-            } else {
-                if (!$anydiff
-                    && $old_fval !== $fval
-                    && (!is_string($old_fval) || cleannl($old_fval) !== cleannl($fval))) {
-                    $anydiff = true;
-                }
-                if (!$f->value_empty($fval)
-                    || ($fval === 0
-                        && isset($this->req[$f->short_id])
-                        && $f->parse_is_explicit_empty($this->req[$f->short_id]))) {
-                    $anynonempty = true;
-                } else if ($f->required && $f->view_score >= VIEWSCORE_PC) {
+            } else if ($f->value_empty($fval)) {
+                if ($f->required && $f->view_score >= VIEWSCORE_PC) {
                     $missingfields[] = $f;
                     $unready = $unready || $submit;
+                } else {
+                    $anydiff = $anydiff || $old_fval !== $fval;
                 }
+                $anyvalues = $anyvalues || $f->value_explicit_empty($fval);
+            } else {
+                $anydiff = $anydiff
+                    || ($old_fval !== $fval
+                        && (!is_string($old_fval) || cleannl($old_fval) !== cleannl($fval)));
+                $anyvalues = true;
             }
         }
 
-        if ($missingfields && $submit && $anynonempty) {
+        if ($missingfields && $submit && $anyvalues) {
             foreach ($missingfields as $f) {
                 $this->rmsg($f->short_id, $this->conf->_("<0>%s: Entry required.", $f->name), self::WARNING);
             }
@@ -1327,16 +1330,16 @@ class ReviewValues extends MessageSet {
             $this->rmsg($this->first_lineno, "<0>This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.", self::ERROR);
             $this->rmsg($this->first_lineno, "<5>If you want to override your online edits, add a line “<code class=\"nw\">==+== Version {$rrow->reviewEditVersion}</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::INFORM);
         } else if ($unready) {
-            if ($submit && $anynonempty) {
+            if ($submit && $anyvalues) {
                 $what = $this->req["adoptreview"] ?? null ? "approved" : "submitted";
-                $this->rmsg("ready", $this->conf->_("<0>This review can’t be $what until entries are provided for all required fields."), self::WARNING);
+                $this->rmsg("ready", $this->conf->_("<0>This review can’t be {$what} until entries are provided for all required fields."), self::WARNING);
             }
             $this->req["ready"] = 0;
         }
 
         if ($this->has_error_since($msgcount)) {
             return false;
-        } else if ($anynonempty || ($this->req["adoptreview"] ?? null)) {
+        } else if ($anyvalues || ($this->req["adoptreview"] ?? null)) {
             return true;
         } else {
             $this->blank[] = "#" . $this->paperId;
@@ -1455,7 +1458,7 @@ class ReviewValues extends MessageSet {
                 $fval = cleannl(convert_to_utf8($fval));
                 $fval_diffs = $fval !== $old_fval && $fval !== cleannl($old_fval);
             } else {
-                if ($fval === 0 && $rrow->reviewId && $f->required) {
+                if ($fval <= 0 && $rrow->reviewId && $f->required) {
                     $fval = $old_fval;
                 }
                 $fval_diffs = $fval !== $old_fval;

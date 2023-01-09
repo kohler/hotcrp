@@ -898,7 +898,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $sci = new ScoreInfo(null, true);
         foreach ($row->viewable_reviews_as_display($pl->user) as $rrow) {
             if ($rrow->reviewSubmitted
-                && $rrow->fields[$f->order]
+                && $rrow->fields[$f->order] !== 0
                 && ($f->view_score >= VIEWSCORE_REVIEWER
                     || $f->view_score > $pl->user->view_score_bound($row, $rrow))) {
                 $sci->add($rrow->fields[$f->order]);

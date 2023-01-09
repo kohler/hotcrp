@@ -283,6 +283,12 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     function apply_score_field(ReviewField $field, $value1, $value2, $valuet) {
         assert(!$this->rfield && $field instanceof Score_ReviewField);
         $this->rfield = $field;
+        // -1 (explicit no entry) means same as 0 (no entry) in search
+        if ($value1 === 0 && $valuet === CountMatcher::RELNE) {
+            $valuet = CountMatcher::RELGT;
+        } else if ($value1 === 0 && $valuet === CountMatcher::RELEQ) {
+            $valuet = CountMatcher::RELLE;
+        }
         $this->rfield_score1 = $value1;
         $this->rfield_score2 = $value2;
         $this->rfield_scoret = $valuet;
@@ -749,10 +755,10 @@ class Review_SearchTerm extends SearchTerm {
     /** @return SearchTerm */
     private static function parse_score_field(ReviewSearchMatcher $rsm, $word, SearchWord $sword, Score_ReviewField $f, PaperSearch $srch) {
         if ($word === "any") {
-            $rsm->apply_score_field($f, 0, 0, 4);
+            $rsm->apply_score_field($f, 0, 0, CountMatcher::RELGT);
         } else if ($word === "none" && $rsm->can_test_review()) {
             $rsm->apply_relation_value(2, 0);
-            $rsm->apply_score_field($f, 0, 0, 4);
+            $rsm->apply_score_field($f, 0, 0, CountMatcher::RELGT);
         } else if (preg_match('/\A([=!<>]=?|≠|≤|≥|)\s*([A-Z]|\d+|none)\z/si', $word, $m)) {
             $relation = CountMatcher::$opmap[$m[1]];
             if ($f->flip_relation()) {
@@ -760,8 +766,8 @@ class Review_SearchTerm extends SearchTerm {
             }
             $score = self::parse_score($f, $m[2]);
             if ($score === false
-                || ($score === 0 && $relation === 1)
-                || ($score === $f->nvalues() && $relation === 4)) {
+                || ($score === 0 && $relation === CountMatcher::RELLT)
+                || ($score === $f->nvalues() && $relation === CountMatcher::RELGT)) {
                 return self::impossible_score_match($f, $sword, $srch);
             }
             $rsm->apply_score_field($f, $score, 0, $relation);

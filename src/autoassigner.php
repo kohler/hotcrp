@@ -374,7 +374,7 @@ class Autoassigner {
                 if ($prow->has_conflict($cid)
                     || !($rrow = $prow->review_by_user($cid))
                     || ($scoreinfo !== "xa" && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED)
-                    || ($scoreorder && !$rrow->fields[$scoreorder])) {
+                    || ($scoreorder && $rrow->fields[$scoreorder] <= 0)) {
                     $scorearr[$prow->paperId][$cid] = -1;
                 } else {
                     $s = $score ? $rrow->fields[$scoreorder] : 1;

@@ -918,7 +918,7 @@ class Score_Fexpr extends Fexpr {
         $state->_ensure_rrow_score($field);
         $rrow = $state->_rrow();
         $rrow_vsb = $state->_rrow_view_score_bound(true);
-        return "({$field->view_score} > {$rrow_vsb} ? ({$rrow}->fields[{$field->order}] ? : null) : null)";
+        return "({$field->view_score} > {$rrow_vsb} && {$rrow}->fields[{$field->order}] > 0 ? {$rrow}->fields[{$field->order}] : null)";
     }
 }
 

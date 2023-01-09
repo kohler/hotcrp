@@ -8,6 +8,14 @@ class CountMatcher {
     /** @var float */
     private $value = 0.0;
 
+    const RELLT = 1;
+    const RELEQ = 2;
+    const RELGT = 4;
+
+    const RELLE = 3;
+    const RELNE = 5;
+    const RELGE = 6;
+
     static public $opmap = ["" => 2, "#" => 2, "=" => 2, "==" => 2,
                             "!" => 5, "!=" => 5, "≠" => 5,
                             "<" => 1, "<=" => 3, "≤" => 3,

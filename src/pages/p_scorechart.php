@@ -147,7 +147,7 @@ class Scorechart_Page {
         $pos = 0;
 
         for ($value = 1; $value < $this->valMax; $value++) {
-            $vpos = ($this->levelChar ? $this->valMax - $value : $value);
+            $vpos = $this->flip ? $this->valMax - $value : $value;
             $height = $this->values[$vpos];
             if ($height > 0) {
                 $frac = ($vpos - 1) / ($this->valMax - 1);

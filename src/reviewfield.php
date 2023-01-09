@@ -233,7 +233,7 @@ abstract class ReviewField implements JsonSerializable {
 
     /** @param 0|1|2 $style
      * @return object */
-    function unparse_json($style) {
+    function export_json($style) {
         $j = (object) [];
         if ($style > 0) {
             $j->id = $this->short_id;
@@ -272,8 +272,9 @@ abstract class ReviewField implements JsonSerializable {
         return $j;
     }
 
-    /** @param Rf_Setting $rfs */
-    function unparse_setting($rfs) {
+    /** @return Rf_Setting */
+    function export_setting() {
+        $rfs = new Rf_Setting;
         $rfs->id = $this->short_id;
         $rfs->type = $this->type;
         $rfs->name = $this->name;
@@ -290,11 +291,12 @@ abstract class ReviewField implements JsonSerializable {
         } else {
             $rfs->presence = $rfs->exists_if = "all";
         }
+        return $rfs;
     }
 
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
-        return $this->unparse_json(self::UJ_EXPORT);
+        return $this->export_json(self::UJ_EXPORT);
     }
 
     /** @return string */
@@ -333,6 +335,12 @@ abstract class ReviewField implements JsonSerializable {
     /** @param ?int|?string $fval
      * @return bool */
     abstract function value_empty($fval);
+
+    /** @param ?int|?string $fval
+     * @return bool */
+    function value_explicit_empty($fval) {
+        return false;
+    }
 
     /** @return bool */
     function include_word_count() {
@@ -384,11 +392,9 @@ abstract class ReviewField implements JsonSerializable {
      * @return int|string|false */
     abstract function parse_string($s);
 
-    /** @param string $s
-     * @return bool */
-    function parse_is_explicit_empty($s) {
-        return false;
-    }
+    /** @param mixed $j
+     * @return int|string|false */
+    abstract function parse_json($j);
 
     /** @param ?string $id
      * @param string $label_for
@@ -624,8 +630,8 @@ class Score_ReviewField extends ReviewField {
             && $this->flip === !$this->conf->opt("smartScoreCompare");
     }
 
-    function unparse_json($style) {
-        $j = parent::unparse_json($style);
+    function export_json($style) {
+        $j = parent::export_json($style);
         $j->values = $this->values;
         if (!empty($this->ids)
             && ($style !== self::UJ_STORAGE
@@ -645,8 +651,8 @@ class Score_ReviewField extends ReviewField {
         return $j;
     }
 
-    function unparse_setting($rfs) {
-        parent::unparse_setting($rfs);
+    function export_setting() {
+        $rfs = parent::export_setting();
         $n = count($this->values);
         $rfs->values = $this->values;
         $rfs->ids = $this->ids();
@@ -668,6 +674,7 @@ class Score_ReviewField extends ReviewField {
             $rfv->name = $this->values[$idx];
             $rfv->old_value = $idx + 1;
         }
+        return $rfs;
     }
 
     function want_column_display() {
@@ -675,7 +682,14 @@ class Score_ReviewField extends ReviewField {
     }
 
     function value_empty($fval) {
-        return $fval === null || $fval === "" || $fval === 0;
+        if (!is_int($fval ?? 0)) {
+            error_log("not int: " . debug_string_backtrace());
+        }
+        return ($fval ?? 0) <= 0;
+    }
+
+    function value_explicit_empty($fval) {
+        return $fval === -1;
     }
 
     /** @return ?string */
@@ -731,6 +745,9 @@ class Score_ReviewField extends ReviewField {
     /** @param int|float $fval
      * @return string */
     function value_class($fval) {
+        if ($fval < 0.8) {
+            return "sv";
+        }
         list($schfl, $nsch, $schrev) = self::$scheme_info[$this->scheme];
         $sclass = ($schfl & 1) !== 0 ? $schrev : $this->scheme;
         $schflip = $this->flip !== (($schfl & 1) !== 0);
@@ -756,8 +773,10 @@ class Score_ReviewField extends ReviewField {
 
     function value_unparse_json($fval) {
         assert($fval === null || is_int($fval));
-        if ($fval === null || $fval <= 0) {
+        if (($fval ?? 0) === 0) {
             return null;
+        } else if ($fval < 0) {
+            return false;
         } else {
             return $this->symbols[$fval - 1];
         }
@@ -768,6 +787,9 @@ class Score_ReviewField extends ReviewField {
      * @param ?string $real_format
      * @return ?string */
     function value_unparse($fval, $flags = 0, $real_format = null) {
+        if (is_string($fval)) {
+            error_log("bad value_unparse: " . debug_string_backtrace());
+        }
         if (!$fval || is_string($fval) || $fval <= 0.8) {
             return null;
         }
@@ -838,35 +860,59 @@ class Score_ReviewField extends ReviewField {
         return $retstr;
     }
 
-    /** @param string $text
-     * @return int|false */
+    /** @param string $s
+     * @return string */
+    static function clean_string($s) {
+        $s = trim((string) $s);
+        if ($s === "" || $s[0] === "(") {
+            return "";
+        }
+        $dot = 0;
+        while (($dot = strpos($s, ".", $dot)) !== false
+               && $dot + 1 < strlen($s)
+               && !ctype_space($s[$dot + 1])
+               && $s[$dot + 1] !== ".") {
+            ++$dot;
+        }
+        if ($dot !== false) {
+            $s = trim(substr($s, 0, $dot));
+        }
+        if ($s === "0") {
+            return "";
+        } else if (strcasecmp($s, "no entry") === 0
+                   || strcasecmp($s, "none") === 0
+                   || $s === "-"
+                   || $s === "–"
+                   || $s === "—") {
+            return "none";
+        }
+        return $s;
+    }
+
     function parse_string($text) {
-        $text = trim($text);
+        $text = self::clean_string($text);
         if ($text === "") {
             return 0;
+        } else if ($text === "none") {
+            return -1;
         }
-        if (!ctype_alnum($text)) {
-            if (preg_match('/\A([A-Z]|[0-9]+)(?:[\s\.]|\z)/', $text, $m)) {
-                $text = $m[1];
-            } else if ($text[0] === "(" || strcasecmp($text, "No entry") === 0) {
-                return 0;
-            } else {
-                return false;
-            }
+        foreach ($this->symbols as $i => $sym) {
+            if (strcasecmp($text, $sym) === 0)
+                return $i + 1;
         }
-        if (($i = array_search($text, $this->symbols)) !== false) {
-            return $i + 1;
-        } else if ($text === "0") {
+        return false;
+    }
+
+    function parse_json($j) {
+        if ($j === null || $j === 0) {
             return 0;
+        } else if ($j === false) {
+            return -1;
+        } else if (($i = array_search($j, $this->symbols, true)) !== false) {
+            return $i + 1;
         } else {
             return false;
         }
-    }
-
-    /** @param string $text
-     * @return bool */
-    function parse_is_explicit_empty($text) {
-        return $text === "0" || strcasecmp($text, "No entry") === 0;
     }
 
     /** @param int $i
@@ -973,8 +1019,8 @@ class Text_ReviewField extends ReviewField {
         $this->display_space = max($this->display_space ?? 0, 3);
     }
 
-    function unparse_json($style) {
-        $j = parent::unparse_json($style);
+    function export_json($style) {
+        $j = parent::export_json($style);
         if ($this->display_space > 3) {
             $j->display_space = $this->display_space;
         }
@@ -1005,14 +1051,22 @@ class Text_ReviewField extends ReviewField {
         return $fval;
     }
 
-    /** @param string $text
-     * @return int|string|false */
     function parse_string($text) {
         $text = rtrim($text);
         if ($text !== "") {
             $text .= "\n";
         }
         return $text;
+    }
+
+    function parse_json($j) {
+        if ($j === null) {
+            return null;
+        } else if (is_string($j)) {
+            return rtrim($j);
+        } else {
+            return false;
+        }
     }
 
     function print_web_edit($fval, $reqstr, $args) {

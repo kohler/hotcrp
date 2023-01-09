@@ -1243,8 +1243,9 @@ class PaperOption implements JsonSerializable {
         return $j;
     }
 
-    /** @param Sf_Setting $sfs */
-    function unparse_setting($sfs) {
+    /** @return Sf_Setting */
+    function export_setting() {
+        $sfs = new Sf_Setting;
         $sfs->id = $this->id;
         $sfs->name = $this->name;
         $sfs->type = $this->type;
@@ -1260,6 +1261,7 @@ class PaperOption implements JsonSerializable {
             $sfs->presence = $this->final ? "final" : "all";
             $sfs->exists_if = null;
         }
+        return $sfs;
     }
 
 
@@ -1651,9 +1653,10 @@ class Selector_PaperOption extends PaperOption {
         }
         return $j;
     }
-    function unparse_setting($sfs) {
-        parent::unparse_setting($sfs);
+    function export_setting() {
+        $sfs = parent::export_setting();
         $this->unparse_values_setting($sfs);
+        return $sfs;
     }
 
     function value_compare($av, $bv) {
@@ -2164,11 +2167,12 @@ class Text_PaperOption extends PaperOption {
         }
         return $j;
     }
-    function unparse_setting($sfs) {
-        parent::unparse_setting($sfs);
+    function export_setting() {
+        $sfs = parent::export_setting();
         if ($this->display_space > 3) {
             $sfs->type = "mtext";
         }
+        return $sfs;
     }
 }
 

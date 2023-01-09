@@ -162,10 +162,11 @@ class Reviews_Tester {
         $tf = ReviewValues::make_text($this->conf->review_form(), preg_replace('/^4/m', 'No entry', $this->review1A), "review1A-3.txt");
         xassert($tf->parse_text(false));
         xassert($tf->check_and_save($this->u_mgbaker));
-        xassert_eqq(join(" ", $tf->unchanged), "#1A");
+        xassert_eqq(join(" ", $tf->unchanged ?? []), "#1A");
         xassert($tf->has_problem_at("s01"));
         xassert_str_contains($tf->feedback_text_at("s01"), "Entry required");
         //error_log(var_export($tf->message_list(), true));
+        //error_log(json_encode($tf->json_report()));
     }
 
     function test_offline_review_different_reviewer() {

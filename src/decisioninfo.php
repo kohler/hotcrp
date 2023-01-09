@@ -63,10 +63,12 @@ class DecisionInfo {
         return self::$class_name[$this->category] ?? "dec-maybe";
     }
 
-    /** @param Decision_Setting $ds */
-    function unparse_setting($ds) {
+    /** @return Decision_Setting */
+    function export_setting() {
+        $ds = new Decision_Setting;
         $ds->id = $this->id;
         $ds->name = $this->name;
         $ds->category = self::$category_name[$this->category] ?? "maybe";
+        return $ds;
     }
 }

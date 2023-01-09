@@ -38,8 +38,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 $textlike = strpos($type, "text") !== false;
                 $finfo = ReviewFieldInfo::find($sv->conf, $textlike ? "t99" : "s99");
             }
-            $rfs = new Rf_Setting;
-            ReviewField::make_json($sv->conf, $finfo, (object) [])->unparse_setting($rfs);
+            $rfs = ReviewField::make_json($sv->conf, $finfo, (object) [])->export_setting();
             $rfs->id = $isnew ? "new" : $rfs->id;
             $rfs->required = false;
             $sv->set_oldv($si->name, $rfs);
@@ -69,8 +68,7 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($si->name === "rf") {
             $rfss = [];
             foreach ($sv->conf->all_review_fields() as $rf) {
-                $rfss[] = $rfs = new Rf_Setting;
-                $rf->unparse_setting($rfs);
+                $rfss[] = $rf->export_setting();
             }
             $sv->append_oblist("rf", $rfss, "name");
         } else if ($si->name2 === "/values") {
@@ -302,13 +300,13 @@ class ReviewForm_SettingParser extends SettingParser {
             }
         }
         $this->_new_form = new ReviewForm($sv->conf, $nrfj);
-        $newv = json_encode_db($this->_new_form->unparse_storage_json());
+        $newv = json_encode_db($this->_new_form->export_storage_json());
         if ($sv->update("review_form", $newv)) {
             $sv->request_write_lock("PaperReview");
             $sv->request_store_value($si);
             $sv->mark_invalidate_caches(["rf" => true]);
             // don’t claim there’s a diff if there’s no real diff, just a format change
-            if (json_encode_db($sv->conf->review_form()->unparse_storage_json())
+            if (json_encode_db($sv->conf->review_form()->export_storage_json())
                 === $newv) {
                 $sv->mark_no_diff("review_form");
             }
@@ -687,7 +685,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
         $rfj = [];
         foreach ($sv->conf->review_form()->all_fields() as $f) {
-            $rfj[] = $fj = $f->unparse_json(ReviewField::UJ_TEMPLATE);
+            $rfj[] = $fj = $f->export_json(ReviewField::UJ_TEMPLATE);
             $fj->search_keyword = $f->search_keyword();
             $fj->configurable = $rfedit;
         }

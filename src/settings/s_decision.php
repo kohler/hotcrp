@@ -25,9 +25,7 @@ class Decision_SettingParser extends SettingParser {
         $m = [];
         foreach ($sv->conf->decision_set() as $dec) {
             if ($dec->id !== 0) {
-                $ds = new Decision_Setting;
-                $dec->unparse_setting($ds);
-                $m[] = $ds;
+                $m[] = $dec->export_setting();
             }
         }
         $sv->append_oblist("decision", $m, "name");

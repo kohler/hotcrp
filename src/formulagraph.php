@@ -970,7 +970,7 @@ class FormulaGraph extends MessageSet {
         } else if ($format === Fexpr::FREVIEWFIELD) {
             $field = $isx ? $this->fxs[0]->result_format_detail() : $this->fy->result_format_detail();
             '@phan-var-force Score_ReviewField $field';
-            $ticks = ["score", $field->unparse_json(ReviewField::UJ_EXPORT)];
+            $ticks = ["score", $field->export_json(ReviewField::UJ_EXPORT)];
             if ($field->flip && $isx) {
                 $j["flip"] = true;
             }
