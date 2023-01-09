@@ -926,7 +926,8 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         }
         $vsbound = $user->permissive_view_score_bound();
         return array_filter($fs, function ($f) use ($vsbound) {
-            return $f instanceof Score_ReviewField
+            return $f
+                && $f->want_column_display()
                 && $f->order > 0
                 && $f->view_score > $vsbound;
         });
@@ -939,6 +940,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
             $cj["review_field_id"] = $f->short_id;
             $cj["title"] = $f->search_keyword();
             $cj["title_html"] = $f->web_abbreviation();
+            $cj["order"] = $xfj->order + $f->order;
             return (object) $cj;
         }, self::user_viewable_fields($name, $user));
     }
@@ -950,7 +952,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $cs = array_map(function ($f) {
             return $f->search_keyword();
         }, array_filter($user->conf->all_review_fields(), function ($f) use ($vsbound) {
-            return $f instanceof Score_ReviewField
+            return $f->want_column_display()
                 && $f->order > 0
                 && $f->view_score > $vsbound;
         }));

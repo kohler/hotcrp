@@ -406,8 +406,8 @@ class Users_Page {
                   "topics" => "Topics"] as $fold => $text) {
             if (($pl->have_folds[$fold] ?? null) !== null) {
                 $k = array_search($fold, ContactList::$folds) + 1;
-                echo Ht::checkbox("show$fold", 1, $pl->have_folds[$fold],
-                                  ["data-fold-target" => "foldul#$k", "class" => "uich js-foldup"]),
+                echo Ht::checkbox("show{$fold}", 1, $pl->have_folds[$fold],
+                                  ["data-fold-target" => "foldul#{$k}", "class" => "uich js-foldup"]),
                     "&nbsp;", Ht::label($text), "<br />\n";
             }
         }
@@ -418,7 +418,7 @@ class Users_Page {
         foreach ($this->conf->all_review_fields() as $f) {
             if ($f->view_score > $revViewScore
                 && $f->main_storage
-                && $f instanceof Score_ReviewField)
+                && $f->want_column_display())
                 $viewable_fields[] = $f;
         }
         if (!empty($viewable_fields)) {

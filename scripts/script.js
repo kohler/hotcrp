@@ -4786,7 +4786,7 @@ function render_review_body(rrow) {
         for (++foidx; (nextf = form_order[foidx]) && !field_visible(nextf, rrow); ++foidx) {
         }
 
-        if (last_display != 1 && f.values && nextf && nextf.values) {
+        if (last_display != 1 && f.type !== "text" && nextf && nextf.type !== "text") {
             display = 1;
         } else {
             display = last_display == 1 ? 2 : 0;
@@ -4809,7 +4809,7 @@ function render_review_body(rrow) {
         }
         t += '</h3></div>';
 
-        if (!f.values) {
+        if (f.type === "text") {
             t += '<div class="revv revtext"></div>';
         } else if (rrow[f.uid] && (x = f.parse_value(rrow[f.uid]))) {
             t = t.concat('<p class="revv revscore"><span class="revscorenum"><strong class="rev_num sv ', x.className, '">', x.symbol, x.sp1, '</strong>', x.sp2, '</span><span class="revscoredesc">', escape_html(x.title), '</span></p>');
@@ -10982,9 +10982,9 @@ function scorechart1() {
         && this.firstChild.getAttribute("data-scorechart") === sc)
         return;
     this.replaceChildren();
-    if (/.*&s=1$/.test(sc) && has_canvas)
+    if (sc.endsWith("&s=1") && has_canvas)
         e = scorechart1_s1(sc);
-    else if (/.*&s=2$/.test(sc) && has_canvas)
+    else if (sc.endsWith("&s=2") && has_canvas)
         e = scorechart1_s2(sc);
     else {
         e = document.createElement("img");

@@ -85,7 +85,7 @@ class ContactList {
 
         $this->tagger = new Tagger($this->user);
         foreach ($this->conf->review_form()->viewable_fields($this->user) as $f) {
-            if ($f instanceof Score_ReviewField)
+            if ($f->want_column_display())
                 $this->_rfields[] = $f;
         }
 

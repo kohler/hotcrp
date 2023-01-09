@@ -2463,7 +2463,7 @@ class PaperTable {
             if ($want_my_scores && $canView) {
                 $view_score = $user->view_score_bound($prow, $rr);
                 foreach ($conf->review_form()->forder as $f) {
-                    if ($f instanceof Score_ReviewField
+                    if ($f->want_column_display()
                         && $f->view_score > $view_score
                         && $rr->has_nonempty_field($f)) {
                         if ($score_header[$f->short_id] === "") {

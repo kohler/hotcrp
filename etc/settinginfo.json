@@ -614,7 +614,8 @@
     },
     {
         "name_pattern": "rf/$/type", "title": "/Field type",
-        "type": "radio", "values": ["text", "radio", "dropdown"]
+        "type": "radio", "values": "auto",
+        "parser_class": "ReviewForm_SettingParser"
     },
     {
         "name_pattern": "rf/$/description",

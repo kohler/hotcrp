@@ -10,6 +10,20 @@ class ReviewForm_SettingParser extends SettingParser {
     /** @var array<string,array<int,int>> */
     private $_score_renumberings = [];
 
+    function values(Si $si, SettingValues $sv) {
+        if ($si->name_matches("rf/", "*", "/type")) {
+            $ot = [];
+            foreach ($sv->conf->review_field_type_map() as $uf) {
+                if (!isset($uf->display_if)
+                    || $sv->conf->xt_check($uf->display_if, $uf, $sv->user))
+                    $ot[] = $uf->name;
+            }
+            return $ot;
+        } else {
+            return null;
+        }
+    }
+
     function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name_matches("rf/", "*")) {
             $finfo = null;
@@ -79,6 +93,22 @@ class ReviewForm_SettingParser extends SettingParser {
             $sv->save($si, $name);
         }
         $sv->error_if_duplicate_member($si->name0, $si->name1, $si->name2, "Field name");
+        return true;
+    }
+
+    /** @return true */
+    private function _apply_req_type(Si $si, Rf_Setting $rfs, SettingValues $sv) {
+        assert($sv->has_req($si->name));
+        $v = $sv->base_parse_req($si);
+        $rft = $sv->conf->review_field_type($v);
+        if (!$rft) {
+            $sv->error_at($si, "<0>Unknown field type");
+        } else if ($rfs->id !== "new"
+                   && !str_starts_with($rfs->id, $rft->id_prefix)) {
+            $sv->error_at($si, "<0>Type doesn’t match with ID");
+        } else {
+            $sv->save($si, $v);
+        }
         return true;
     }
 
@@ -305,11 +335,7 @@ class ReviewForm_SettingParser extends SettingParser {
             } else if ($si->name2 === "/name") {
                 return $this->_apply_req_name($si, $sv);
             } else if ($si->name2 === "/type") {
-                assert($sv->has_req($si->name));
-                $v = $sv->base_parse_req($si);
-                if ($v !== $rfs->type) {
-                    $sv->error_at($si, "<0>Type doesn’t match with ID");
-                }
+                return $this->_apply_req_type($si, $rfs, $sv);
             }
             return true;
         }
@@ -321,7 +347,7 @@ class ReviewForm_SettingParser extends SettingParser {
         $clear_jfields = [];
         foreach ($fields as $f) {
             if ($f->main_storage) {
-                if ($f instanceof Score_ReviewField) {
+                if ($f->is_sfield) {
                     $result = $conf->qe("update PaperReview set {$f->main_storage}=0");
                 } else { // NB dead code, all current fields with main_storage are scores
                     $result = $conf->qe("update PaperReview set {$f->main_storage}=null");

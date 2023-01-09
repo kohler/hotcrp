@@ -365,6 +365,11 @@ abstract class ReviewField implements JsonSerializable {
         return $this->search_keyword();
     }
 
+    /** @return bool */
+    function want_column_display() {
+        return false;
+    }
+
     /** @param ?int|?float|?string $fval
      * @return mixed */
     abstract function value_unparse_json($fval);
@@ -657,6 +662,10 @@ class Score_ReviewField extends ReviewField {
         }
     }
 
+    function want_column_display() {
+        return true;
+    }
+
     function value_empty($fval) {
         return $fval === null || $fval === "" || $fval === 0;
     }
@@ -681,7 +690,7 @@ class Score_ReviewField extends ReviewField {
         $n = count($this->values);
         if ($n < 2) {
             return null;
-        } else if ($this->option_letter !== 0) {
+        } else if ($this->flip) {
             return [$this->value_unparse($n - ($n > 2 ? 1 : 0)), $this->value_unparse($n - 1 - ($n > 2 ? 1 : 0) - ($n > 3 ? 1 : 0))];
         } else {
             return [$this->value_unparse(1 + ($n > 2 ? 1 : 0)), $this->value_unparse(2 + ($n > 2 ? 1 : 0) + ($n > 3 ? 1 : 0))];
@@ -751,17 +760,7 @@ class Score_ReviewField extends ReviewField {
      * @param ?string $real_format
      * @return ?string */
     function value_unparse($fval, $flags = 0, $real_format = null) {
-        if (!$fval) {
-            return null;
-        }
-        if ($this->option_letter === 0 || is_numeric($fval)) {
-            $fval = (float) $fval;
-        } else if (strlen($fval) === 1) {
-            $fval = (float) $this->option_letter - ord($fval);
-        } else if (ord($fval[0]) + 1 === ord($fval[1])) {
-            $fval = ($this->option_letter - ord($fval[0])) - 0.5;
-        }
-        if (!is_float($fval) || $fval <= 0.8) {
+        if (!$fval || is_string($fval) || $fval <= 0.8) {
             return null;
         }
         if ($this->option_letter !== 0) {
@@ -806,21 +805,19 @@ class Score_ReviewField extends ReviewField {
             $args .= "&amp;sv=" . urlencode($this->scheme);
         }
 
-        if ($style == 1) {
+        if ($style === 1) {
             $width = 5 * $max + 3;
             $height = 5 * max(3, max($counts)) + 3;
             $retstr = "<div class=\"need-scorechart\" style=\"width:{$width}px;height:{$height}px\" data-scorechart=\"{$args}&amp;s=1\" title=\"{$avgtext}\"></div>";
         } else {
             $retstr = "<div class=\"sc\">"
                 . "<div class=\"need-scorechart\" style=\"width:64px;height:8px\" data-scorechart=\"{$args}&amp;s=2\" title=\"{$avgtext}\"></div><br>";
-            if ($this->flip) {
-                for ($key = $max; $key >= 1; --$key) {
-                    $retstr .= ($key < $max ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $counts[$key - 1] . "</span>";
-                }
-            } else {
-                for ($key = 1; $key <= $max; ++$key) {
-                    $retstr .= ($key > 1 ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $counts[$key - 1] . "</span>";
-                }
+            $step = $this->flip ? -1 : 1;
+            $sep = "";
+            for ($i = $this->flip ? $max - 1 : 0; $i >= 0 && $i < $max; $i += $step) {
+                $vc = $this->value_class($i + 1);
+                $retstr .= "{$sep}<span class=\"{$vc}\">{$counts[$i]}</span>";
+                $sep = " ";
             }
             $retstr .= "<br><span class=\"sc_sum\">{$avgtext}</span></div>";
         }
@@ -875,7 +872,7 @@ class Score_ReviewField extends ReviewField {
             $vc = $this->value_class($i + 1);
             echo '<strong class="rev_num ', $vc, '">', $symstr;
             if ($this->values[$i] !== "") {
-                echo '.</strong> ', htmlspecialchars($this->values[$i]);
+                echo '.</strong> ', htmlspecialchars($this->values[$i]);
             } else {
                 echo '</strong>';
             }

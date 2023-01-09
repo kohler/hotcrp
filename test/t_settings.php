@@ -816,6 +816,7 @@ class Settings_Tester {
             "rf/2/required" => "1"
         ]);
         xassert($sv->execute());
+        xassert_eqq(trim($sv->full_feedback_text()), "");
 
         $rf1 = $this->conf->find_review_field("NudFee");
         xassert(!!$rf1);
