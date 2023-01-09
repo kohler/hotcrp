@@ -10784,18 +10784,28 @@ var scheme_info = {
 
 function make_fm9(n, max, flip, categorical) {
     if (n <= 1 || max <= 1) {
-        return function () { return flip ? 1 : max; };
+        return function () {
+            return flip ? 1 : max;
+        };
+    } else if (categorical && flip) {
+        return function (i) {
+            return Math.round(n - i) % max + 1;
+        };
     } else if (categorical) {
         return function (i) {
-            var x = Math.round(+i - 1) % max;
-            return flip ? max - x : x + 1;
+            return Math.round(+i - 1) % max + 1;
         };
     } else {
         var f = (max - 1) / (n - 1);
-        return function (i) {
-            var x = Math.max(Math.min(Math.round((+i - 1) * f), max - 1), 0);
-            return flip ? max - x : x + 1;
-        };
+        if (flip) {
+            return function (i) {
+                return Math.max(Math.min(Math.round((+i - 1) * f) + 1, max), 1);
+            };
+        } else {
+            return function (i) {
+                return Math.max(Math.min(Math.round((n - i) * f) + 1, max), 1);
+            };
+        }
     }
 }
 

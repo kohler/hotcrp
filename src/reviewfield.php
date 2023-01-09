@@ -507,9 +507,11 @@ class Score_ReviewField extends ReviewField {
     private $ids;
     /** @var int */
     private $option_letter = 0;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $flip = false;
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $scheme = "sv";
     /** @var ?string */
     private $_typical_score;
@@ -712,24 +714,26 @@ class Score_ReviewField extends ReviewField {
     /** @param int|float $fval
      * @return string */
     function value_class($fval) {
-        $info = self::$scheme_info[$this->scheme];
-        if (count($this->values) <= 1) {
-            $n = $info[1] - 1;
-        } else if ($info[0] & 2) {
-            $n = (int) round($fval - 1) % $info[1];
+        list($schfl, $nsch, $schrev) = self::$scheme_info[$this->scheme];
+        $sclass = ($schfl & 1) !== 0 ? $schrev : $this->scheme;
+        $schflip = $this->flip !== (($schfl & 1) !== 0);
+        $n = count($this->values);
+        if ($n <= 1) {
+            $x = $schflip ? 1 : $nsch;
         } else {
-            $n = (int) round(($fval - 1) * ($info[1] - 1) / (count($this->values) - 1));
-        }
-        $sclass = $info[0] & 1 ? $info[2] : $this->scheme;
-        if ((($info[0] & 1) !== 0) !== $this->flip) {
-            $n = $info[1] - $n;
-        } else {
-            $n += 1;
+            if ($schflip) {
+                $fval = $n + 1 - $fval;
+            }
+            if (($schfl & 2) !== 0) {
+                $x = (int) round($fval - 1) % $nsch + 1;
+            } else {
+                $x = (int) round(($fval - 1) * ($nsch - 1) / ($n - 1)) + 1;
+            }
         }
         if ($sclass === "sv") {
-            return "sv sv{$n}";
+            return "sv sv{$x}";
         } else {
-            return "sv sv-{$sclass}{$n}";
+            return "sv sv-{$sclass}{$x}";
         }
     }
 
