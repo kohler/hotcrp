@@ -195,12 +195,8 @@ class ReviewForm {
         echo '<div class="rve">';
         foreach ($rrow->viewable_fields($contact) as $f) {
             $fval = $rrow->fields[$f->order];
-            if ($rvalues && isset($rvalues->req[$f->short_id])) {
-                $reqstr = $rvalues->req[$f->short_id];
-            } else {
-                $reqstr = $f->value_unparse($fval);
-            }
-            $f->print_web_edit($fval, $reqstr, ["format" => $fi, "rvalues" => $rvalues]);
+            $reqstr = $rvalues ? $rvalues->req[$f->short_id] ?? null : null;
+            $f->print_web_edit($fval, $reqstr, $rvalues, ["format" => $fi]);
         }
         echo "</div>\n";
     }
@@ -295,7 +291,7 @@ class ReviewForm {
         return $x;
     }
 
-    function text_form(PaperInfo $prow_in = null, ReviewInfo $rrow_in = null, Contact $contact, $req = null) {
+    function text_form(PaperInfo $prow_in = null, ReviewInfo $rrow_in = null, Contact $contact) {
         $prow = $prow_in ?? PaperInfo::make_new($contact);
         $rrow = $rrow_in ?? ReviewInfo::make_blank($prow, $contact);
         $revViewScore = $prow->paperId > 0 ? $contact->view_score_bound($prow, $rrow) : $contact->permissive_view_score_bound();
@@ -308,9 +304,7 @@ class ReviewForm {
         $t[] = "==+== Begin Review";
         if ($prow->paperId > 0) {
             $t[] = " #" . $prow->paperId;
-            if ($req && isset($req["reviewOrdinal"]) && $req["reviewOrdinal"]) {
-                $t[] = unparse_latin_ordinal($req["reviewOrdinal"]);
-            } else if ($rrow->reviewOrdinal) {
+            if ($rrow->reviewOrdinal) {
                 $t[] = unparse_latin_ordinal($rrow->reviewOrdinal);
             }
         }
@@ -360,15 +354,8 @@ $blind\n";
         foreach ($this->forder as $fid => $f) {
             if ($f->view_score > $revViewScore
                 && ($prow->paperId <= 0 || $f->test_exists($rrow))) {
-                if ($req && isset($req[$fid])) {
-                    $fstr = rtrim($req[$fid]);
-                } else if (isset($rrow->fields[$f->order])) {
-                    $fstr = $f->value_unparse($rrow->fields[$f->order], ReviewField::VALUE_TRIM);
-                } else {
-                    $fstr = "";
-                }
                 $t[] = "\n";
-                $f->unparse_offline_field($t, $fstr, $args);
+                $f->unparse_offline($t, $rrow->fields[$f->order], $args);
             }
         }
         $t[] = "\n==+== Scratchpad (for unsaved private notes)\n\n==+== End Review\n";
@@ -1261,17 +1248,22 @@ class ReviewValues extends MessageSet {
 
     /** @param ReviewField $f
      * @param ReviewInfo $rrow
+     * @param bool $clean
      * @return array{int|string,int|string} */
-    private function fvalues($f, $rrow) {
-        $oldval = $rrow->fields[$f->order] ?? ($f->is_sfield ? 0 : "");
+    private function fvalues($f, $rrow, $clean) {
+        $v0 = $v1 = $rrow->fields[$f->order] ?? ($f->is_sfield ? 0 : "");
         $reqv = $this->req[$f->short_id] ?? null;
-        if ($reqv === null) {
-            return [$oldval, $oldval];
-        } else if ($this->req_json) {
-            return [$oldval, $f->parse_json($reqv)];
-        } else {
-            return [$oldval, $f->parse_string($reqv)];
+        if ($reqv !== null) {
+            if ($this->req_json) {
+                $v1 = $f->parse_json($reqv);
+            } else {
+                $v1 = $f->parse_string($reqv);
+            }
+            if ($clean) {
+                $v1 = $v1 === false ? $v0 : $f->value_clean($v1);
+            }
         }
+        return [$v0, $v1];
     }
 
     private function check(ReviewInfo $rrow) {
@@ -1285,7 +1277,7 @@ class ReviewValues extends MessageSet {
                 && (!$submit || !$f->test_exists($rrow))) {
                 continue;
             }
-            list($old_fval, $fval) = $this->fvalues($f, $rrow);
+            list($old_fval, $fval) = $this->fvalues($f, $rrow, false);
             if ($fval === false) {
                 $this->rmsg($fid, $this->conf->_("<0>%s cannot be ‘%s’.", $f->name, UnicodeHelper::utf8_abbreviate(trim($this->req[$fid]), 100)), self::WARNING);
                 unset($this->req[$fid]);
@@ -1449,10 +1441,7 @@ class ReviewValues extends MessageSet {
             if (!$f->test_exists($rrow)) {
                 continue;
             }
-            list($old_fval, $fval) = $this->fvalues($f, $rrow);
-            if ($fval === false) {
-                $fval = $old_fval;
-            }
+            list($old_fval, $fval) = $this->fvalues($f, $rrow, true);
             if (is_string($fval)) {
                 // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
                 $fval = cleannl(convert_to_utf8($fval));

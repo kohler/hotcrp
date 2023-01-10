@@ -187,7 +187,8 @@ class Formula_PaperColumnFactory {
             $cj["name"] = "formula:" . $f->expression;
             $cj["title"] = $f->expression;
         }
-        return new Formula_PaperColumn($f->conf, (object) $cj);
+        $cj["function"] = "+Formula_PaperColumn";
+        return (object) $cj;
     }
     static function expand($name, Contact $user, $xfj, $m) {
         if ($name === "formulas") {

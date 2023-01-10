@@ -24,7 +24,7 @@ class Offline_Page {
         $this->conf->make_csvg("review", CsvGenerator::TYPE_STRING)
             ->set_inline(false)
             ->add_string($rf->text_form_header(false)
-                . $rf->text_form(null, null, $this->user, null) . "\n")
+                . $rf->text_form(null, null, $this->user) . "\n")
             ->emit();
     }
 

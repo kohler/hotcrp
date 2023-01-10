@@ -4771,10 +4771,7 @@ function score_header_tooltips($j) {
 }
 
 function field_visible(f, rrow) {
-    if (f.values && !f.required)
-        return f.uid in rrow;
-    else
-        return !!rrow[f.uid];
+    return rrow[f.uid] != null && rrow[f.uid] !== "";
 }
 
 function render_review_body(rrow) {
@@ -4813,8 +4810,10 @@ function render_review_body(rrow) {
             t += '<div class="revv revtext"></div>';
         } else if (rrow[f.uid] && (x = f.parse_value(rrow[f.uid]))) {
             t = t.concat('<p class="revv revscore"><span class="revscorenum"><strong class="rev_num sv ', x.className, '">', x.symbol, x.sp1, '</strong>', x.sp2, '</span><span class="revscoredesc">', escape_html(x.title), '</span></p>');
+        } else if (!f.required && rrow[f.uid] === false) {
+            t += '<p class="revv revnoscore">N/A</p>';
         } else {
-            t += '<p class="revv revnoscore">' + (f.required ? "Unknown" : "No entry") + '</p>';
+            t += '<p class="revv revnoscore">Unknown</p>';
         }
 
         t += '</div>';

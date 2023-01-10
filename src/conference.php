@@ -1110,8 +1110,9 @@ class Conf {
         foreach (get_object_vars($xt2) as $k => $v) {
             if (!property_exists($xt1, $k)
                 && $k !== "match"
-                && $k !== "expand_function")
+                && $k !== "expand_function") {
                 $xt1->$k = $v;
+            }
         }
     }
     /** @param ?object $xt

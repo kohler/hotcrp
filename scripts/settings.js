@@ -613,18 +613,21 @@ function rf_render_view(fld) {
 
     if (fld.type === "dropdown") {
         hc.push('<div class="revev"><span class="select"><select>', '</select></span></div>');
-        hc.push('<option value="0">'.concat(fld.required ? "(Choose one)" : "No entry", '</option>'));
+        hc.push('<option value="0">(Choose one)</option>');
         fld.each_value(function (fv) {
-            hc.push('<option>'.concat(escape_html(fv.title), '</option>'));
+            hc.push('<option>'.concat(fv.symbol, fv.sp1, fv.sp2, escape_html(fv.title), '</option>'));
         });
+        if (!fld.required) {
+            hc.push('<option value="none">N/A</option>');
+        }
         hc.pop();
     } else if (fld.type === "radio") {
         hc.push('<div class="revev">', '</div>');
         fld.each_value(function (fv) {
-            hc.push('<label class="checki"><span class="checkc"><input type="radio" disabled></span><span class="rev_num sv '.concat(fv.className, '">', fv.symbol, fv.sp1, '</span>', fv.sp2, escape_html(fv.title), '</label>'));
+            hc.push('<label class="checki svline"><span class="checkc"><input type="radio" disabled></span><span class="rev_num sv '.concat(fv.className, '">', fv.symbol, fv.sp1, '</span>', fv.sp2, escape_html(fv.title), '</label>'));
         });
         if (!fld.required) {
-            hc.push('<label class="checki mt-1"><span class="checkc"><input type="radio" disabled></span>No entry</label>');
+            hc.push('<label class="checki svline"><span class="checkc"><input type="radio" disabled></span>None of the above</label>');
         }
     } else if (fld.type === "text") {
         hc.push('<div class="revev"><textarea class="w-text" rows="' + Math.max(fld.display_space || 0, 3) + '" disabled>Text field</textarea></div>');

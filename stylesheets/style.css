@@ -3090,10 +3090,14 @@ hr.g, hr.mg, hr.ug {
 .rev_num {
 	font-size: larger;
 }
-.checki > .rev_num {
+.svline {
+	line-height: 1.68;
+}
+.svline > .rev_num {
 	display: inline-block;
 	text-indent: 0;
 	min-width: 1em;
+	line-height: 100%;
 }
 
 .pl_sort {

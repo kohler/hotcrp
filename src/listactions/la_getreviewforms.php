@@ -17,7 +17,7 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
             // blank form
             return $user->conf->make_csvg("review", CsvGenerator::TYPE_STRING)
                 ->set_inline(false)
-                ->add_string($rf->text_form_header(false) . $rf->text_form(null, null, $user, null) . "\n");
+                ->add_string($rf->text_form_header(false) . $rf->text_form(null, null, $user) . "\n");
         }
 
         $texts = [];
@@ -48,7 +48,7 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
                     $rrows[] = null;
                 }
                 foreach ($rrows as $rrow) {
-                    $t .= $rf->text_form($prow, $rrow, $user, null) . "\n";
+                    $t .= $rf->text_form($prow, $rrow, $user) . "\n";
                     if ($rrow) {
                         $time = max($time ?? 0, $rrow->mtime($user));
                     }
