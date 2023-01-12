@@ -149,6 +149,18 @@ class Keywords_HelpTopic {
             echo $hth->search_trow("rate:good:me", "has a positively-rated review by you");
         }
 
+        // review fields
+        $exs = [];
+        foreach ($hth->conf->review_form()->viewable_fields($hth->user) as $rf) {
+            foreach ($rf->search_examples($hth->user, SearchExample::HELP) as $ex) {
+                $exs[] = $ex;
+            }
+        }
+        if (!empty($exs)) {
+            echo $hth->tgroup("Review fields");
+            self::print_search_examples($hth, $exs);
+        }
+
         echo $hth->tgroup("Comments");
         echo $hth->search_trow("has:cmt", "at least one visible reviewer comment (not including authors’ response)");
         echo $hth->search_trow("cmt:>=3", "at least <em>three</em> visible reviewer comments");
@@ -203,61 +215,10 @@ class Keywords_HelpTopic {
 
         // find names of review fields to demonstrate syntax
         $scoref = [];
-        $textf = [];
         foreach ($hth->conf->review_form()->viewable_fields($hth->user) as $f) {
             if ($f instanceof Score_ReviewField) {
                 $scoref[] = $f;
-            } else if ($f instanceof Text_ReviewField) {
-                $textf[] = $f;
             }
-        }
-        if (!empty($scoref) || !empty($textf)) {
-            echo $hth->tgroup("Review fields");
-        }
-        if (count($scoref)) {
-            $r = $scoref[0];
-            echo $hth->search_trow("{$r->abbreviation1()}:{$r->typical_score()}", "at least one completed review has {$r->name_html} score {$r->typical_score()}");
-            echo $hth->search_trow("{$r->search_keyword()}:{$r->typical_score()}", "other abbreviations accepted");
-            if (count($scoref) > 1) {
-                $r2 = $scoref[1];
-                echo $hth->search_trow(strtolower($r2->search_keyword()) . ":{$r2->typical_score()}", "other fields accepted (here, {$r2->name_html})");
-            }
-            if (($range = $r->typical_score_range())) {
-                echo $hth->search_trow("{$r->search_keyword()}:all:{$range[0]}-{$range[1]}", "completed reviews’ {$r->name_html} scores are all in the {$range[0]}–{$range[1]} range<br><div class=\"hint\">(nonempty scores between {$range[0]} and {$range[1]})</div>"),
-                    $hth->search_trow("{$r->search_keyword()}:span:{$range[0]}-{$range[1]}", "completed reviews’ {$r->name_html} scores <em>span</em> the {$range[0]}–{$range[1]} range<br><div class=\"hint\">(at least one {$range[0]}, at least one {$range[1]}, and all nonempty scores between {$range[0]} and {$range[1]})</div>");
-            }
-            $hint = "";
-            if ($r->is_numeric()) {
-                $gt_typical = "above {$r->typical_score()}";
-                $le_typical = "of {$r->typical_score()} or below";
-            } else {
-                $s1 = $r->parse_string($r->typical_score());
-                if ($hth->conf->opt("smartScoreCompare")) {
-                    $s1le = range($s1, 1);
-                    $s1gt = range($r->nvalues(), $s1 + 1);
-                    $hint = "<br><div class=\"hint\">(scores “better than” {$r->typical_score()} are earlier in the alphabet)</div>";
-                } else {
-                    $s1le = range($r->nvalues(), $s1);
-                    $s1gt = range($s1 - 1, 1);
-                }
-                $gt_typical = commajoin(array_map([$r, "value_unparse"], $s1gt), " or ");
-                $le_typical = commajoin(array_map([$r, "value_unparse"], $s1le), " or ");
-            }
-            echo $hth->search_trow("{$r->search_keyword()}:>{$r->typical_score()}", "at least one completed review has {$r->name_html} score {$gt_typical}" . $hint);
-            echo $hth->search_trow("{$r->search_keyword()}:2<={$r->typical_score()}", "at least two completed reviews have {$r->name_html} score {$le_typical}");
-            echo $hth->search_trow("{$r->search_keyword()}:=2<={$r->typical_score()}", "<em>exactly</em> two completed reviews have {$r->name_html} score {$le_typical}");
-            if ($roundname) {
-                echo $hth->search_trow("{$r->search_keyword()}:{$roundname}>{$r->typical_score()}", "at least one completed review in round " . htmlspecialchars($roundname) . " has {$r->name_html} score {$gt_typical}");
-            }
-            echo $hth->search_trow("{$r->search_keyword()}:ext>{$r->typical_score()}", "at least one completed external review has {$r->name_html} score {$gt_typical}");
-            echo $hth->search_trow("{$r->search_keyword()}:pc:2>{$r->typical_score()}", "at least two completed PC reviews have {$r->name_html} score {$gt_typical}");
-            echo $hth->search_trow("{$r->search_keyword()}:sylvia={$r->typical_score()}", "“sylvia” (reviewer name/email) gave {$r->name_html} score {$r->typical_score()}");
-        }
-        if (count($textf)) {
-            $r = $textf[0];
-            echo $hth->search_trow($r->abbreviation1() . ":finger", "at least one completed review has “finger” in the $r->name_html field");
-            echo $hth->search_trow("{$r->search_keyword()}:finger", "other abbreviations accepted");
-            echo $hth->search_trow("{$r->search_keyword()}:any", "at least one completed review has text in the $r->name_html field");
         }
 
         if (count($scoref)) {
