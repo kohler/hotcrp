@@ -244,11 +244,22 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     /** @param string $word
      * @return bool */
     function apply_countexpr($word, $default_op = "=") {
-        if (ctype_digit($word)) {
-            $word = $default_op . $word;
+        if (($this->sensitivity & self::HAS_COUNT) !== 0) {
+            return false;
         }
-        $a = CountMatcher::unpack_search_comparison($word);
-        return $a[0] === "" && $this->apply_relation_value($a[1], $a[2]);
+        if ($word === "all") {
+            $this->rfield_scoret |= self::RELALL;
+            return $this->apply_relation_value(CountMatcher::RELGE, 1);
+        } else if ($word === "span") {
+            $this->rfield_scoret |= self::RELALL | self::RELSPAN;
+            return $this->apply_relation_value(CountMatcher::RELGE, 1);
+        } else {
+            if (ctype_digit($word)) {
+                $word = $default_op . $word;
+            }
+            $a = CountMatcher::unpack_search_comparison($word);
+            return $a[0] === "" && $this->apply_relation_value($a[1], $a[2]);
+        }
     }
     /** @param int $cid */
     function apply_requester($cid) {
@@ -299,7 +310,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         }
         $this->rfield_score1 = $value1;
         $this->rfield_score2 = $value2;
-        $this->rfield_scoret = $valuet;
+        $this->rfield_scoret |= $valuet;
         $this->sensitivity |= self::HAS_FIELD;
     }
     function finish() {
@@ -759,53 +770,52 @@ class Review_SearchTerm extends SearchTerm {
         $r = $f->full_score_range();
         $mi = $srch->lwarning($sword, "<0>{$f->name} scores range from {$r[0]} to {$r[1]}");
     }
-    /** @param string $str
-     * @return int|false */
-    private static function parse_score(Score_ReviewField $f, $str) {
-        if (strcasecmp($str, "none") === 0 || $str === "0") {
-            return 0;
-        }
-        foreach ($f->symbols() as $i => $sym) {
-            if (strcasecmp((string) $sym, $str) === 0)
-                return $i + 1;
-        }
-        return false;
-    }
     /** @return bool */
     private static function parse_score_field(ReviewSearchMatcher $rsm, $word, SearchWord $sword, Score_ReviewField $f, PaperSearch $srch) {
-        if ($word === "any") {
-            $rsm->apply_score_field($f, 0, 0, CountMatcher::RELGT);
-        } else if ($word === "none" && !$rsm->has_count()) {
-            $rsm->apply_relation_value(CountMatcher::RELEQ, 0);
-            $rsm->apply_score_field($f, 0, 0, CountMatcher::RELGT);
-        } else if (preg_match('/\A([=!<>]=?|≠|≤|≥|)\s*([A-Z]|\d+|none)\z/si', $word, $m)) {
-            $relation = CountMatcher::$opmap[$m[1]];
-            if ($f->flip_relation()) {
-                $relation = CountMatcher::flip_relation($relation);
-            }
-            $score = self::parse_score($f, $m[2]);
-            if ($score === false
-                || ($score === 0 && $relation === CountMatcher::RELLT)
-                || ($score === $f->nvalues() && $relation === CountMatcher::RELGT)) {
-                self::impossible_score_match($f, $sword, $srch);
-                return false;
-            }
-            $rsm->apply_score_field($f, $score, 0, $relation);
-        } else if (preg_match('/\A(\d+|[A-Z])\s*(|-|–|—|\.\.\.?|…)\s*(\d+|[A-Z])\s*\z/si', $word, $m)) {
-            $score1 = self::parse_score($f, $m[1]);
-            $score2 = self::parse_score($f, $m[3]);
-            if ($score1 === false || $score2 === false) {
-                self::impossible_score_match($f, $sword, $srch);
-                return false;
-            }
-            if ($score1 > $score2) {
-                list($score1, $score2) = [$score2, $score1];
-            }
-            $precise = $m[2] !== ".." && $m[2] !== "..." && $m[2] !== "…";
-            $rsm->apply_score_field($f, $score1, $score2, ($precise ? ReviewSearchMatcher::RELSPAN : 0) | ReviewSearchMatcher::RELALL | ReviewSearchMatcher::RELRANGE);
-        } else {             // XXX
+        if (!preg_match('/\A(\w*+)\s*(|[=!<>]=?+|≠|≤|≥)(|\.\.\.?+|…|-|–|—)\s*(\w*)\z/', $word, $m)
+            || ($m[1] === "" && $m[4] === "")
+            || ($m[2] !== "" && ($m[1] !== "" || $m[3] !== "" || $m[4] === ""))
+            || ($m[3] !== "" && ($m[1] === "" || $m[4] === ""))) {
             return false;
         }
+        if ($m[1] === "any" && $m[3] === "") {
+            $rsm->apply_score_field($f, 0, 0, CountMatcher::RELGT);
+            return true;
+        }
+        if ($m[3] !== "") {
+            $v0 = $f->parse_string($m[1]);
+            $v1 = $f->parse_string($m[4]);
+        } else {
+            $v0 = $v1 = $f->parse_string($m[1] === "" ? $m[4] : $m[1]);
+        }
+        $rel = CountMatcher::parse_relation($m[2]);
+        '@phan-var-force int $rel';
+        if ($f->flip_relation()) {
+            $rel = CountMatcher::flip_relation($rel);
+        }
+        if ($m[3] !== "") {
+            $rel |= ReviewSearchMatcher::RELRANGE;
+            if (!$rsm->has_count()) { // XXX
+                //error_log(debug_string_backtrace());
+                $rel |= ReviewSearchMatcher::RELALL;
+                if ($m[3] !== ".." && $m[3] !== "..." && $m[3] !== "…") {
+                    $rel |= ReviewSearchMatcher::RELSPAN;
+                }
+            }
+        }
+        if ($v0 === false
+            || $v1 === false
+            || ($rel !== CountMatcher::RELEQ
+                && $rel !== CountMatcher::RELNE
+                && ($v0 <= 0 || $v1 <= 0))
+            || (($rel & ReviewSearchMatcher::RELRANGE) !== 0
+                && ($f->flip ? $v0 < $v1 : $v0 > $v1))) {
+            self::impossible_score_match($f, $sword, $srch);
+            return false;
+        }
+        $x0 = $f->value_clean_search($f->flip ? $v1 : $v0);
+        $x1 = $f->value_clean_search($f->flip ? $v0 : $v1);
+        $rsm->apply_score_field($f, $x0, $x1, $rel);
         return true;
     }
 

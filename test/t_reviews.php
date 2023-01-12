@@ -1000,12 +1000,43 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         // 20    1,4,5        1,1,1
         // 21    none,4,5     3,3,3
 
+        assert_search_papers($this->u_chair, "ovemer:1", "17 20");
+        assert_search_papers($this->u_chair, "ovemer:2", "17 18 19");
+        assert_search_papers($this->u_chair, "ovemer:3", "1 19");
+        assert_search_papers($this->u_chair, "ovemer:4", "19 20 21");
+        assert_search_papers($this->u_chair, "ovemer:5", "20 21");
+        assert_search_papers($this->u_chair, "ovemer:none", "21");
+
+        assert_search_papers($this->u_chair, "ovemer:any ovemer:none:1", "1 18 19 21");
+        assert_search_papers($this->u_chair, "ovemer:any ovemer:=0:1", "1 18 19 21");
+        assert_search_papers($this->u_chair, "ovemer:>1:1", "17");
+        assert_search_papers($this->u_chair, "ovemer:>2:1", "");
+        assert_search_papers($this->u_chair, "ovemer:any ovemer:<2:1", "1 18 19 20 21");
+        assert_search_papers($this->u_chair, "ovemer:any ovemer:≤2:1", "1 17 18 19 20 21");
+
+        assert_search_papers($this->u_chair, "ovemer:any:1..2", "17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:all:1..2", "17 18");
+        assert_search_papers($this->u_chair, "ovemer:span:1..2", "17");
+        assert_search_papers($this->u_chair, "ovemer:any:1…2", "17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:any:1-2", "17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:any:1—2", "17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:any ovemer:none:2-3", "20 21");
+
+        assert_search_papers($this->u_chair, "ovemer:any:1-5", "1 17 18 19 20 21");
+        assert_search_papers($this->u_chair, "ovemer:all:1-5", "1 17 18 19 20 21");
+        assert_search_papers($this->u_chair, "ovemer:span:1-5", "20");
+
         assert_search_papers($this->u_chair, "ovemer:1..2", "17 18");
         assert_search_papers($this->u_chair, "ovemer:1..3", "1 17 18");
-        assert_search_papers($this->u_chair, "ovemer:1–2", "17");
+        assert_search_papers($this->u_chair, "ovemer:any:1..3", "1 17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:any:1-3", "1 17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:all:1..3", "1 17 18");
+        assert_search_papers($this->u_chair, "ovemer:all:1—3", "1 17 18");
+        assert_search_papers($this->u_chair, "ovemer:span:1..3", "");
+        assert_search_papers($this->u_chair, "ovemer:any:1–2", "17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:all:1-2", "17 18");
+        assert_search_papers($this->u_chair, "ovemer:span:1–2", "17");
         assert_search_papers($this->u_chair, "ovemer:1-3", "");
-        assert_search_papers($this->u_chair, "ovemer:2..1", "17 18");
-        assert_search_papers($this->u_chair, "ovemer:3..1", "1 17 18");
     }
 
     function test_new_external_reviewer() {

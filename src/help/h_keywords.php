@@ -223,8 +223,8 @@ class Keywords_HelpTopic {
                 echo $hth->search_trow(strtolower($r2->search_keyword()) . ":{$r2->typical_score()}", "other fields accepted (here, {$r2->name_html})");
             }
             if (($range = $r->typical_score_range())) {
-                echo $hth->search_trow("{$r->search_keyword()}:{$range[0]}..{$range[1]}", "completed reviews’ {$r->name_html} scores are all in the {$range[0]}–{$range[1]} range<br><div class=\"hint\">(nonempty scores between {$range[0]} and {$range[1]})</div>"),
-                    $hth->search_trow("{$r->search_keyword()}:{$range[0]}-{$range[1]}", "completed reviews’ {$r->name_html} scores <em>span</em> the {$range[0]}–{$range[1]} range<br><div class=\"hint\">(at least one {$range[0]}, at least one {$range[1]}, and all nonempty scores between {$range[0]} and {$range[1]})</div>");
+                echo $hth->search_trow("{$r->search_keyword()}:all:{$range[0]}-{$range[1]}", "completed reviews’ {$r->name_html} scores are all in the {$range[0]}–{$range[1]} range<br><div class=\"hint\">(nonempty scores between {$range[0]} and {$range[1]})</div>"),
+                    $hth->search_trow("{$r->search_keyword()}:span:{$range[0]}-{$range[1]}", "completed reviews’ {$r->name_html} scores <em>span</em> the {$range[0]}–{$range[1]} range<br><div class=\"hint\">(at least one {$range[0]}, at least one {$range[1]}, and all nonempty scores between {$range[0]} and {$range[1]})</div>");
             }
             $hint = "";
             if ($r->is_numeric()) {
