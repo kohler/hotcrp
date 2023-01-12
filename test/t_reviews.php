@@ -17,7 +17,7 @@ class Reviews_Tester {
     public $u_lixia;
     /** @var Contact
      * @readonly */
-    public $u_mjh; // pc
+    public $u_mjh;
     /** @var string */
     private $review1A;
 
@@ -941,44 +941,83 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         assert_search_papers($user_chair, "re:mgbaker", "1 13 17");
         assert_search_papers($this->u_lixia, "re:mgbaker", "1");
 
+        $this->conf->save_refresh_setting("round_settings", null);
+        Contact::update_rights();
+    }
+
+    function print_scores() {
+        $result = $this->conf->qe("select paperId, group_concat(s01), group_concat(s02) from PaperReview where reviewSubmitted>0 group by paperId");
+        while (($row = $result->fetch_row())) {
+            fwrite(STDOUT, sprintf("%-5s %-12s %s\n", ...$row));
+        }
+        $result->free();
+    }
+
+    function test_search_ranges() {
+        $user_external = $this->conf->checked_user_by_email("external@_.com");
+        $user_pdruschel = $this->conf->checked_user_by_email("pdruschel@cs.rice.edu");
+        $user_danzig = $this->conf->checked_user_by_email("peter.danzig@usc.edu");
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s01", "rf/1/values_text" => "1. Reject\n2. Weak reject\n3. Weak accept\n4. Accept\n5. Strong accept\n"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+
         save_review(17, $user_external, [
             "ovemer" => 1
         ]);
-        assert_search_papers($user_chair, "17 ovemer:2<=1", "");
-        assert_search_papers($user_chair, "17 ovemer:=1<=1", "17");
-        assert_search_papers($user_chair, "17 ovemer=1<=1", "17");
+        assert_search_papers($this->u_chair, "17 ovemer:2<=1", "");
+        assert_search_papers($this->u_chair, "17 ovemer:=1<=1", "17");
+        assert_search_papers($this->u_chair, "17 ovemer=1<=1", "17");
 
         save_review(17, $user_pdruschel, [
             "ready" => true, "ovemer" => 1, "revexp" => 1
         ]);
-        assert_search_papers($user_chair, "17 ovemer:2<=1", "17");
-        assert_search_papers($user_chair, "17 ovemer:=2<=1", "17");
-        assert_search_papers($user_chair, "17 ovemer:1<=1", "17");
-        assert_search_papers($user_chair, "17 ovemer:=1<=1", "");
-        assert_search_papers($user_chair, "17 ovemer=1<=1", "");
+        assert_search_papers($this->u_chair, "17 ovemer:2<=1", "17");
+        assert_search_papers($this->u_chair, "17 ovemer:=2<=1", "17");
+        assert_search_papers($this->u_chair, "17 ovemer:1<=1", "17");
+        assert_search_papers($this->u_chair, "17 ovemer:=1<=1", "");
+        assert_search_papers($this->u_chair, "17 ovemer=1<=1", "");
 
-        assert_search_papers($user_chair, "ovemer:1..2", "17 18");
-        assert_search_papers($user_chair, "ovemer:1..3", "1 17 18");
-        assert_search_papers($user_chair, "ovemer:1–2", "17");
-        assert_search_papers($user_chair, "ovemer:1-3", "");
-        assert_search_papers($user_chair, "ovemer:2..1", "17 18");
-        assert_search_papers($user_chair, "ovemer:3..1", "1 17 18");
+        save_review(19, $this->u_lixia, ["ready" => true, "ovemer" => 2, "revexp" => 2]);
+        save_review(19, $user_danzig, ["ready" => true, "ovemer" => 3, "revexp" => 2]);
+        save_review(19, $user_pdruschel, ["ready" => true, "ovemer" => 4, "revexp" => 3]);
+        save_review(20, $this->u_lixia, ["ready" => true, "ovemer" => 1, "revexp" => 1]);
+        save_review(20, $user_danzig, ["ready" => true, "ovemer" => 3, "revexp" => 1]);
+        save_review(20, $user_pdruschel, ["ready" => true, "ovemer" => 4, "revexp" => 1]);
+
+        // Submitted reviews:
+        // pid   ovemer       revexp
+        // 1     3            1
+        // 17    2,2,1,1      1,1,1,1
+        // 18    2            1
+        // 19    2,3,4        2,2,3
+        // 20    1,3,4        1,1,1
+
+        assert_search_papers($this->u_chair, "ovemer:1..2", "17 18");
+        assert_search_papers($this->u_chair, "ovemer:1..3", "1 17 18");
+        assert_search_papers($this->u_chair, "ovemer:1–2", "17");
+        assert_search_papers($this->u_chair, "ovemer:1-3", "");
+        assert_search_papers($this->u_chair, "ovemer:2..1", "17 18");
+        assert_search_papers($this->u_chair, "ovemer:3..1", "1 17 18");
 
         // new external reviewer does not get combined email
-        $conf->save_refresh_setting("round_settings", null);
-        $conf->save_refresh_setting("extrev_view", 1);
-        $conf->save_refresh_setting("pcrev_editdelegate", 2);
+        $this->conf->save_refresh_setting("extrev_view", 1);
+        $this->conf->save_refresh_setting("pcrev_editdelegate", 2);
         Contact::update_rights();
         MailChecker::clear();
 
         $xqreq = new Qrequest("POST", ["email" => "external2@_.com", "name" => "Jo March", "affiliation" => "Concord"]);
+        $paper17 = $this->conf->checked_paper_by_id(17);
         $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
         MailChecker::check_db("test06-external2-request17");
         xassert($result instanceof JsonResult);
         xassert($result->content["ok"]);
-        $user_external2 = $conf->checked_user_by_email("external2@_.com");
-        $conf->invalidate_user($user_external2);
-        $user_external2 = $conf->user_by_email("external2@_.com"); // ensure cached user
+        $user_external2 = $this->conf->checked_user_by_email("external2@_.com");
+        $this->conf->invalidate_user($user_external2);
+        $user_external2 = $this->conf->user_by_email("external2@_.com"); // ensure cached user
         assert($user_external2 !== null);
         $paper17->load_reviews(true);
 
@@ -989,7 +1028,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert(str_starts_with($tok->salt, "hcra"));
 
         // check that review accept capability works
-        $emptyuser = Contact::make($conf);
+        $emptyuser = Contact::make($this->conf);
         assert(!$emptyuser->can_view_paper($paper17));
         $emptyuser->apply_capability_text($tok->salt); // had an infinite loop here
         assert(!!$emptyuser->can_view_paper($paper17));
@@ -997,8 +1036,8 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         // check clickthrough
         assert($emptyuser->can_clickthrough("review", $paper17));
-        $conf->set_opt("clickthrough_review", 1);
-        $conf->fmt()->add_override("clickthrough_review", "fart");
+        $this->conf->set_opt("clickthrough_review", 1);
+        $this->conf->fmt()->add_override("clickthrough_review", "fart");
         assert(!$emptyuser->can_clickthrough("review", $paper17));
         assert(!$user_external2->can_clickthrough("review", $paper17));
         xassert_eqq($user_external2->reviewer_capability_user(17), null);
@@ -1007,7 +1046,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         assert(!$user_external2->can_clickthrough("review", $paper17));
 
         $user_external2->merge_and_save_data(["clickthrough" => ["de1027d6806d42584748f76733d55a9ca1c41f3a" => true]]); // sha1("fart")
-        $conf->invalidate_user($user_external2);
+        $this->conf->invalidate_user($user_external2);
 
         assert($user_external2->can_clickthrough("review", $paper17));
         $user_external2->clear_capabilities();
@@ -1017,7 +1056,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         assert(!$emptyuser->can_clickthrough("review", $paper17));
 
         // no longer want clickthrough
-        $conf->set_opt("clickthrough_review", null);
+        $this->conf->set_opt("clickthrough_review", null);
 
         // save review, check mail
         save_review(17, $user_external2, [
