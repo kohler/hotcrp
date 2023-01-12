@@ -950,7 +950,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         while (($row = $result->fetch_row())) {
             fwrite(STDOUT, sprintf("%-5s %-12s %s\n", ...$row));
         }
-        $result->free();
+        Dbl::free($result);
     }
 
     function test_search_ranges() {
@@ -985,8 +985,11 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         save_review(19, $user_danzig, ["ready" => true, "ovemer" => 3, "revexp" => 2]);
         save_review(19, $user_pdruschel, ["ready" => true, "ovemer" => 4, "revexp" => 3]);
         save_review(20, $this->u_lixia, ["ready" => true, "ovemer" => 1, "revexp" => 1]);
-        save_review(20, $user_danzig, ["ready" => true, "ovemer" => 3, "revexp" => 1]);
-        save_review(20, $user_pdruschel, ["ready" => true, "ovemer" => 4, "revexp" => 1]);
+        save_review(20, $user_danzig, ["ready" => true, "ovemer" => 4, "revexp" => 1]);
+        save_review(20, $user_pdruschel, ["ready" => true, "ovemer" => 5, "revexp" => 1]);
+        save_review(21, $this->u_lixia, ["ready" => true, "ovemer" => 0, "revexp" => 3]);
+        save_review(21, $user_danzig, ["ready" => true, "ovemer" => 4, "revexp" => 3]);
+        save_review(21, $user_pdruschel, ["ready" => true, "ovemer" => 5, "revexp" => 3]);
 
         // Submitted reviews:
         // pid   ovemer       revexp
@@ -994,7 +997,8 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         // 17    2,2,1,1      1,1,1,1
         // 18    2            1
         // 19    2,3,4        2,2,3
-        // 20    1,3,4        1,1,1
+        // 20    1,4,5        1,1,1
+        // 21    none,4,5     3,3,3
 
         assert_search_papers($this->u_chair, "ovemer:1..2", "17 18");
         assert_search_papers($this->u_chair, "ovemer:1..3", "1 17 18");
@@ -1002,7 +1006,9 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         assert_search_papers($this->u_chair, "ovemer:1-3", "");
         assert_search_papers($this->u_chair, "ovemer:2..1", "17 18");
         assert_search_papers($this->u_chair, "ovemer:3..1", "1 17 18");
+    }
 
+    function test_new_external_reviewer() {
         // new external reviewer does not get combined email
         $this->conf->save_refresh_setting("extrev_view", 1);
         $this->conf->save_refresh_setting("pcrev_editdelegate", 2);
