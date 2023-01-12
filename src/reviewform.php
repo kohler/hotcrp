@@ -1248,9 +1248,8 @@ class ReviewValues extends MessageSet {
 
     /** @param ReviewField $f
      * @param ReviewInfo $rrow
-     * @param bool $clean
      * @return array{int|string,int|string} */
-    private function fvalues($f, $rrow, $clean) {
+    private function fvalues($f, $rrow) {
         $v0 = $v1 = $rrow->fields[$f->order] ?? ($f->is_sfield ? 0 : "");
         $reqv = $this->req[$f->short_id] ?? null;
         if ($reqv !== null) {
@@ -1258,9 +1257,6 @@ class ReviewValues extends MessageSet {
                 $v1 = $f->parse_json($reqv);
             } else {
                 $v1 = $f->parse_string($reqv);
-            }
-            if ($clean) {
-                $v1 = $v1 === false ? $v0 : $f->value_clean($v1);
             }
         }
         return [$v0, $v1];
@@ -1277,7 +1273,7 @@ class ReviewValues extends MessageSet {
                 && (!$submit || !$f->test_exists($rrow))) {
                 continue;
             }
-            list($old_fval, $fval) = $this->fvalues($f, $rrow, false);
+            list($old_fval, $fval) = $this->fvalues($f, $rrow);
             if ($fval === false) {
                 $this->rmsg($fid, $this->conf->_("<0>%s cannot be ‘%s’.", $f->name, UnicodeHelper::utf8_abbreviate(trim($this->req[$fid]), 100)), self::WARNING);
                 unset($this->req[$fid]);
@@ -1441,7 +1437,8 @@ class ReviewValues extends MessageSet {
             if (!$f->test_exists($rrow)) {
                 continue;
             }
-            list($old_fval, $fval) = $this->fvalues($f, $rrow, true);
+            list($old_fval, $fval) = $this->fvalues($f, $rrow);
+            $fval = $fval === false ? $old_fval : $f->value_clean_storage($fval);
             if (is_string($fval)) {
                 // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
                 $fval = cleannl(convert_to_utf8($fval));
@@ -1689,7 +1686,7 @@ class ReviewValues extends MessageSet {
             $log_fields = [];
             foreach ($diffinfo->fields() as $f) {
                 if ($f instanceof Score_ReviewField) {
-                    $log_fields[] = $f->search_keyword() . ":" . $f->value_unparse($new_rrow->fields[$f->order]);
+                    $log_fields[] = $f->search_keyword() . ":" . $f->value_unparse_search($new_rrow->fields[$f->order]);
                 } else {
                     $log_fields[] = $f->search_keyword();
                 }

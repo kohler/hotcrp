@@ -216,15 +216,15 @@ class Keywords_HelpTopic {
         }
         if (count($scoref)) {
             $r = $scoref[0];
-            echo $hth->search_trow("{$r->abbreviation1()}:{$r->typical_score()}", "at least one completed review has $r->name_html score {$r->typical_score()}");
+            echo $hth->search_trow("{$r->abbreviation1()}:{$r->typical_score()}", "at least one completed review has {$r->name_html} score {$r->typical_score()}");
             echo $hth->search_trow("{$r->search_keyword()}:{$r->typical_score()}", "other abbreviations accepted");
             if (count($scoref) > 1) {
                 $r2 = $scoref[1];
                 echo $hth->search_trow(strtolower($r2->search_keyword()) . ":{$r2->typical_score()}", "other fields accepted (here, {$r2->name_html})");
             }
             if (($range = $r->typical_score_range())) {
-                echo $hth->search_trow("{$r->search_keyword()}:{$range[0]}..{$range[1]}", "completed reviews’ {$r->name_html} scores are in the {$range[0]}–{$range[1]} range<br /><small>(all scores between {$range[0]} and {$range[1]})</small>"),
-                    $hth->search_trow("{$r->search_keyword()}:{$range[0]}-{$range[1]}", "completed reviews’ {$r->name_html} scores <em>fill</em> the {$range[0]}–{$range[1]} range<br /><small>(all scores between {$range[0]} and {$range[1]}, with at least one {$range[0]} and at least one {$range[1]})</small>");
+                echo $hth->search_trow("{$r->search_keyword()}:{$range[0]}..{$range[1]}", "completed reviews’ {$r->name_html} scores are all in the {$range[0]}–{$range[1]} range<br><div class=\"hint\">(nonempty scores between {$range[0]} and {$range[1]})</div>"),
+                    $hth->search_trow("{$r->search_keyword()}:{$range[0]}-{$range[1]}", "completed reviews’ {$r->name_html} scores <em>span</em> the {$range[0]}–{$range[1]} range<br><div class=\"hint\">(at least one {$range[0]}, at least one {$range[1]}, and all nonempty scores between {$range[0]} and {$range[1]})</div>");
             }
             $hint = "";
             if ($r->is_numeric()) {
@@ -235,7 +235,7 @@ class Keywords_HelpTopic {
                 if ($hth->conf->opt("smartScoreCompare")) {
                     $s1le = range($s1, 1);
                     $s1gt = range($r->nvalues(), $s1 + 1);
-                    $hint = "<br><small>(scores “better than” {$r->typical_score()} are earlier in the alphabet)</small>";
+                    $hint = "<br><div class=\"hint\">(scores “better than” {$r->typical_score()} are earlier in the alphabet)</div>";
                 } else {
                     $s1le = range($r->nvalues(), $s1);
                     $s1gt = range($s1 - 1, 1);

@@ -240,7 +240,7 @@ class Reviews_Tester {
         xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
         // overall-merit 4 has been removed, revexp has not
-        assert_search_papers($this->u_chair, "ovemer:4", "");
+        assert_search_papers_ignore_warnings($this->u_chair, "ovemer:4", "");
         assert_search_papers($this->u_chair, "revexp:2", "1");
         assert_search_papers($this->u_chair, "has:revexp", "1");
     }

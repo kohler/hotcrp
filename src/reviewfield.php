@@ -79,7 +79,6 @@ class ReviewFieldInfo {
 abstract class ReviewField implements JsonSerializable {
     const VALUE_NONE = 0;
     const VALUE_SC = 1;
-    const VALUE_TRIM = 2;
 
     /** @var non-empty-string
      * @readonly */
@@ -344,7 +343,13 @@ abstract class ReviewField implements JsonSerializable {
 
     /** @param ?int|?string $fval
      * @return ?int|?string */
-    function value_clean($fval) {
+    function value_clean_storage($fval) {
+        return $fval;
+    }
+
+    /** @param ?int|?string $fval
+     * @return ?int|?string */
+    function value_clean_search($fval) {
         return $fval;
     }
 
@@ -391,7 +396,7 @@ abstract class ReviewField implements JsonSerializable {
     /** @param int|float|string $fval
      * @param int $flags
      * @param ?string $real_format
-     * @return ?string */
+     * @return string */
     abstract function value_unparse($fval, $flags = 0, $real_format = null);
 
     /** @param string $s
@@ -699,6 +704,10 @@ class Score_ReviewField extends ReviewField {
         return $fval === -1;
     }
 
+    function value_clean_search($fval) {
+        return $fval <= 0 ? 0 : $fval;
+    }
+
     /** @return ?string */
     function typical_score() {
         if ($this->_typical_score === null) {
@@ -778,6 +787,14 @@ class Score_ReviewField extends ReviewField {
         }
     }
 
+    function value_unparse_search($fval) {
+        if ($fval > 0) {
+            return (string) $this->symbols[$fval - 1];
+        } else {
+            return "none";
+        }
+    }
+
     function value_unparse_json($fval) {
         assert($fval === null || is_int($fval));
         if (($fval ?? 0) === 0) {
@@ -798,7 +815,7 @@ class Score_ReviewField extends ReviewField {
             error_log("bad value_unparse: " . debug_string_backtrace());
         }
         if ($fval <= 0.8) {
-            return null;
+            return "";
         }
         if ($this->option_letter !== 0) {
             $text = self::unparse_letter($this->option_letter, $fval);
@@ -814,9 +831,10 @@ class Score_ReviewField extends ReviewField {
         return $text;
     }
 
-    /** @param int|float $fval */
+    /** @param int|float $fval
+     * @return string */
     function unparse_average($fval) {
-        return (string) $this->value_unparse($fval, 0, "%.2f");
+        return $this->value_unparse($fval, 0, "%.2f");
     }
 
     /** @param ScoreInfo $sci
@@ -1079,6 +1097,18 @@ class Text_ReviewField extends ReviewField {
         return $fval === null || $fval === "";
     }
 
+    function value_clean_storage($fval) {
+        if ($fval === null || $fval === "" || ctype_space($fval)) {
+            return "";
+        } else {
+            return $fval;
+        }
+    }
+
+    function value_clean_search($fval) {
+        return $fval ?? "";
+    }
+
     /** @return bool */
     function include_word_count() {
         return $this->order && $this->view_score >= VIEWSCORE_AUTHORDEC;
@@ -1091,12 +1121,9 @@ class Text_ReviewField extends ReviewField {
     /** @param int|float|string $fval
      * @param int $flags
      * @param ?string $real_format
-     * @return ?string */
+     * @return string */
     function value_unparse($fval, $flags = 0, $real_format = null) {
-        if ($flags === self::VALUE_TRIM) {
-            $fval = rtrim($fval ?? "");
-        }
-        return $fval;
+        return $fval ?? "";
     }
 
     function parse_string($text) {

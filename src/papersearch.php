@@ -67,6 +67,11 @@ class SearchWord {
     static function unquote($str) {
         return self::is_quoted($str) ? substr($str, 1, -1) : $str;
     }
+    /** @param string $str
+     * @return array{string,bool} */
+    static function maybe_unquote($str) {
+        return self::is_quoted($str) ? [substr($str, 1, -1), true] : [$str, false];
+    }
     /** @param ?string $cword */
     function set_compar_word($cword) {
         $cword = $cword ?? $this->word;

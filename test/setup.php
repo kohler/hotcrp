@@ -529,10 +529,14 @@ function xassert_int_list_eqq($actual, $expected) {
 /** @param Contact $user
  * @param string|array $query
  * @param string $cols
+ * @param bool $allow_warnings
  * @return array<int,array> */
-function search_json($user, $query, $cols = "id") {
+function search_json($user, $query, $cols = "id", $allow_warnings = false) {
     $pl = new PaperList("empty", new PaperSearch($user, $query));
     $pl->parse_view($cols);
+    if ($pl->search->has_problem() && !$allow_warnings) {
+        error_log(assert_location() . ": Search reports warnings: " . $pl->search->full_feedback_text());
+    }
     return $pl->text_json();
 }
 
@@ -553,9 +557,19 @@ function search_text_col($user, $query, $col = "id") {
 }
 
 /** @param Contact $user
+ * @param string|array $query
+ * @param list<int|string>|string $expected
  * @return bool */
 function assert_search_papers($user, $query, $expected) {
     return xassert_int_list_eqq(array_keys(search_json($user, $query)), $expected);
+}
+
+/** @param Contact $user
+ * @param string|array $query
+ * @param list<int|string>|string $expected
+ * @return bool */
+function assert_search_papers_ignore_warnings($user, $query, $expected) {
+    return xassert_int_list_eqq(array_keys(search_json($user, $query, "id", true)), $expected);
 }
 
 /** @param Contact $user

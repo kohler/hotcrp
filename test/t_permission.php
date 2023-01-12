@@ -53,7 +53,7 @@ class Permission_Tester {
         assert_search_papers($this->u_chair, "\"many applications\"", "8");
         assert_search_papers($this->u_chair, "“many applications”", "8");
         assert_search_papers($this->u_chair, "“many applications“", "8");
-        assert_search_papers($this->u_chair, "status:mis[take", "");
+        assert_search_papers_ignore_warnings($this->u_chair, "status:mis[take", "");
     }
 
     // check permissions on paper

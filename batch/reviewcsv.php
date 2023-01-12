@@ -206,7 +206,7 @@ class ReviewCSV_Batch {
                 || ($this->no_text && $f instanceof Text_ReviewField)) {
                 continue;
             }
-            $fv = $f->value_unparse($rrow->fields[$f->order], ReviewField::VALUE_TRIM);
+            $fv = rtrim($f->value_unparse($rrow->fields[$f->order]));
             if ($fv === "") {
                 // ignore
             } else if ($this->narrow) {
