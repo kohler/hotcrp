@@ -54,8 +54,9 @@ class Checkboxes_PaperOption extends CheckboxesBase_PaperOption {
         $a = [$this->has_search_example()];
         if (($q = $this->value_search_keyword(2))) {
             $a[] = new SearchExample(
-                $this->search_keyword() . ":<value>", $q,
-                "<0>submission’s {title} field has value ‘{}’", $this->values[1]
+                $this, $this->search_keyword() . ":{value}",
+                "<0>submission’s {title} field has value ‘{value}’",
+                new FmtArg("value", $this->values[1])
             );
         }
         return $a;

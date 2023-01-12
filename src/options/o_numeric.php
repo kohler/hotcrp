@@ -61,8 +61,9 @@ class Numeric_PaperOption extends PaperOption {
         return [
             $this->has_search_example(),
             new SearchExample(
-                $this->search_keyword() . ":<comparator>", ">100",
-                "<0>submission’s {title} field is greater than 100"
+                $this, $this->search_keyword() . ":{comparator}",
+                "<0>submission’s {title} field is greater than 100",
+                new FmtArg("comparator", ">100")
             )
         ];
     }

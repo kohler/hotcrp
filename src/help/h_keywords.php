@@ -3,14 +3,33 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Keywords_HelpTopic {
+    /** @param list<SearchExample> $exs */
+    static function print_search_examples(HelpRenderer $hth, $exs) {
+        while (($ex = array_shift($exs))) {
+            $desc = Ftext::unparse_as($hth->conf->_($ex->description, ...$ex->all_arguments()), 5);
+            $qs = [];
+            foreach (SearchExample::remove_category($exs, $ex) as $oex) {
+                if (!$oex->primary_only)
+                    $qs[] = preg_replace('/\{(\w+)\}/', '<i>$1</i>', htmlspecialchars($oex->q));
+            }
+            foreach ($ex->hints ?? [] as $h) {
+                $desc .= '<div class="hint">' . Ftext::unparse_as($hth->conf->_($h, ...$ex->all_arguments()), 5) . '</div>';
+            }
+            if ($qs) {
+                $desc .= '<div class="hint">Also ' . join(", ", $qs) . '</div>';
+            }
+            echo $hth->search_trow($ex->expanded_query(), $desc);
+        }
+    }
+
     static function print(HelpRenderer $hth) {
         // how to report author searches?
         if ($hth->conf->submission_blindness() === Conf::BLIND_NEVER) {
             $aunote = "";
         } else if ($hth->conf->submission_blindness() === Conf::BLIND_ALWAYS) {
-            $aunote = "<br><span class=\"hint\">Search uses fields visible to the searcher. For example, PC member searches do not examine authors.</span>";
+            $aunote = "<br><div class=\"hint\">Search uses fields visible to the searcher. For example, PC member searches do not examine authors.</div>";
         } else {
-            $aunote = "<br><span class=\"hint\">Search uses fields visible to the searcher. For example, PC member searches do not examine anonymous authors.</span>";
+            $aunote = "<br><div class=\"hint\">Search uses fields visible to the searcher. For example, PC member searches do not examine anonymous authors.</div>";
         }
 
         // does a reviewer tag exist?
@@ -58,41 +77,16 @@ class Keywords_HelpTopic {
                 return PaperOption::compare($a, $b);
             }
         });
-        $oexs = [];
+        $exs = [];
         foreach ($opts as $o) {
-            foreach ($o->search_examples($hth->user, PaperOption::EXAMPLE_HELP) as $ex) {
-                if ($ex) {
-                    $ex->opt = $o;
-                    $oexs[] = $ex;
-                }
+            foreach ($o->search_examples($hth->user, SearchExample::HELP) as $ex) {
+                $exs[] = $ex;
             }
         }
 
-        if (!empty($oexs)) {
+        if (!empty($exs)) {
             echo $hth->tgroup("Submission fields");
-            for ($i = 0; $i !== count($oexs); ++$i) {
-                if (($ex = $oexs[$i]) && $ex->description) {
-                    $others = [];
-                    for ($j = $i + 1; $j !== count($oexs); ++$j) {
-                        if ($oexs[$j] && $oexs[$j]->description === $ex->description) {
-                            $others[] = htmlspecialchars($oexs[$j]->q);
-                            $oexs[$j] = null;
-                        }
-                    }
-                    $q = $ex->q;
-                    if ($ex->param_q) {
-                        $q = preg_replace('/<.*?>(?=\z|"\z)/', $ex->param_q, $q);
-                    }
-                    $args = $ex->params;
-                    $args[] = new FmtArg("title", $ex->opt->title());
-                    $args[] = new FmtArg("id", $ex->opt->readable_formid());
-                    $desc = Ftext::unparse_as($hth->conf->_($ex->description, ...$args), 5);
-                    if (!empty($others)) {
-                        $desc .= '<div class="hint">Also ' . join(", ", $others) . '</div>';
-                    }
-                    echo $hth->search_trow($q, $desc);
-                }
-            }
+            self::print_search_examples($hth, $exs);
         }
 
         echo $hth->tgroup($hth->help_link("Tags", "tags"));
@@ -131,7 +125,7 @@ class Keywords_HelpTopic {
         if ($retag) {
             echo $hth->search_trow("re:#$retag>1", "at least two reviewers (assigned and/or completed) tagged “#" . $retag . "”");
         }
-        echo $hth->search_trow("re:complete<3", "less than three completed reviews<br /><span class=\"hint\">Use “cre:<3” for short.</span>");
+        echo $hth->search_trow("re:complete<3", "less than three completed reviews<br><div class=\"hint\">Use “cre:<3” for short.</div>");
         echo $hth->search_trow("re:incomplete>0", "at least one incomplete review");
         echo $hth->search_trow("re:inprogress", "at least one in-progress review (started, but not completed)");
         echo $hth->search_trow("re:primary>=2", "at least two primary reviewers");
@@ -177,14 +171,14 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("shep:fdabek", "“fdabek” (in name/email) is shepherd (“none” and “any” also work)");
         echo $hth->tgroup("Conflicts");
         echo $hth->search_trow("conflict:me", "you have a conflict with the submission");
-        echo $hth->search_trow("conflict:fdabek", "“fdabek” (in name/email) has a conflict with the submission<br /><span class=\"hint\">This search is only available to chairs and to PC members who can see the submission’s author list.</span>");
+        echo $hth->search_trow("conflict:fdabek", "“fdabek” (in name/email) has a conflict with the submission<br><div class=\"hint\">This search is only available to chairs and to PC members who can see the submission’s author list.</div>");
         echo $hth->search_trow("conflict:pc", "some PC member has a conflict with the submission");
         echo $hth->search_trow("conflict:pc>2", "at least three PC members have conflicts with the submission");
         echo $hth->search_trow("reconflict:\"1 2 3\"", "a reviewer of submission 1, 2, or 3 has a conflict with the submission");
         echo $hth->tgroup("Preferences");
         echo $hth->search_trow("pref:3", "you have preference 3");
         echo $hth->search_trow("pref:pc:X", "a PC member’s preference has expertise “X” (expert)");
-        echo $hth->search_trow("pref:fdabek>0", "“fdabek” (in name/email) has preference &gt;&nbsp;0<br /><span class=\"hint\">Administrators can search preferences by name; PC members can only search preferences for the PC as a whole.</span>");
+        echo $hth->search_trow("pref:fdabek>0", "“fdabek” (in name/email) has preference &gt;&nbsp;0<br><div class=\"hint\">Administrators can search preferences by name; PC members can only search preferences for the PC as a whole.</div>");
         echo $hth->tgroup("Status");
         echo $hth->search_trow(["q" => "status:ready", "t" => "all"], "submission is ready for review");
         echo $hth->search_trow(["q" => "status:incomplete", "t" => "all"], "submission is incomplete (neither ready nor withdrawn)");
@@ -270,8 +264,8 @@ class Keywords_HelpTopic {
             $r = $scoref[0];
             echo $hth->tgroup($hth->help_link("Formulas", "formulas"));
             echo $hth->search_trow("formula:all({$r->search_keyword()}={$r->typical_score()})",
-                "all reviews have $r->name_html score {$r->typical_score()}<br />" .
-                "<span class=\"hint\">" . $hth->help_link("Formulas", "formulas") . " can express complex numerical queries across review scores and preferences.</span>");
+                "all reviews have $r->name_html score {$r->typical_score()}<br>" .
+                "<div class=\"hint\">" . $hth->help_link("Formulas", "formulas") . " can express complex numerical queries across review scores and preferences.</div>");
             echo $hth->search_trow("f:all({$r->search_keyword()}={$r->typical_score()})", "“f” is shorthand for “formula”");
             echo $hth->search_trow("formula:var({$r->search_keyword()})>0.5", "variance in {$r->search_keyword()} is above 0.5");
             echo $hth->search_trow("formula:any({$r->search_keyword()}={$r->typical_score()} && pref<0)", "at least one reviewer had $r->name_html score {$r->typical_score()} and review preference &lt; 0");

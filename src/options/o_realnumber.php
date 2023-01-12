@@ -75,8 +75,9 @@ class RealNumber_PaperOption extends PaperOption {
         return [
             $this->has_search_example(),
             new SearchExample(
-                $this->search_keyword() . ":<comparator>", ">12.5",
-                "<0>submission’s {title} field is greater than 12.5"
+                $this, $this->search_keyword() . ":{comparator}",
+                "<0>submission’s {title} field is greater than 12.5",
+                new FmtArg("comparator", ">12.5")
             )
         ];
     }

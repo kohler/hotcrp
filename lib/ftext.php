@@ -21,6 +21,23 @@ class Ftext {
     }
 
     /** @param ?string $s
+     * @return ?int */
+    static function format($s) {
+        if ($s !== null
+            && ($len = strlen($s)) >= 3
+            && $s[0] === "<") {
+            $i = 1;
+            while ($i !== $len && ctype_digit($s[$i])) {
+                ++$i;
+            }
+            if ($i !== 1 && $i !== $len && $s[$i] === ">") {
+                return intval(substr($s, 1, $i - 1));
+            }
+        }
+        return null;
+    }
+
+    /** @param ?string $s
      * @return array{?int,string} */
     static function parse($s) {
         if ($s !== null
@@ -48,12 +65,12 @@ class Ftext {
         }
     }
 
-    /** @param string $ftext
-     * @param int $want_format
+    /** @param string $s
+     * @param int $from_format
+     * @param int $to_format
      * @return string */
-    static function unparse_as($ftext, $want_format) {
-        list($format, $s) = self::parse($ftext);
-        if (($format ?? 0) === 5 && $want_format !== 5) {
+    static function convert($s, $from_format, $to_format) {
+        if ($from_format === 5 && $to_format !== 5) {
             // XXX <p>, <ul>, <ol>
             return html_entity_decode(preg_replace_callback('/<\s*(\/?)\s*(a|b|i|u|strong|em|code|samp|pre|tt|span|br)(?=[>\s])(?:[^>"\']|"[^"]*+"|\'[^\']*+\')*+>/i',
                 function ($m) {
@@ -74,11 +91,19 @@ class Ftext {
                         return "";
                     }
                 }, $s), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, "UTF-8");
-        } else if (($format ?? 5) !== 5 && $want_format === 5) {
+        } else if ($from_format !== 5 && $to_format === 5) {
             return htmlspecialchars($s);
         } else {
             return $s;
         }
+    }
+
+    /** @param string $ftext
+     * @param int $want_format
+     * @return string */
+    static function unparse_as($ftext, $want_format) {
+        list($format, $s) = self::parse($ftext);
+        return $format === null ? $s : self::convert($s, $format, $want_format);
     }
 
     /** @param string ...$ftexts

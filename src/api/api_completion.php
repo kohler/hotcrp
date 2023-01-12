@@ -101,7 +101,7 @@ class Completion_API {
         foreach ($user->user_option_list() as $o) {
             if ($user->can_view_some_option($o)
                 && $o->search_keyword() !== false) {
-                foreach ($o->search_examples($user, PaperOption::EXAMPLE_COMPLETION) as $sex) {
+                foreach ($o->search_examples($user, SearchExample::COMPLETION) as $sex) {
                     $comp[] = $sex->q;
                 }
             }

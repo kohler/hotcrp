@@ -1381,8 +1381,6 @@ class PaperOption implements JsonSerializable {
         return null;
     }
 
-    const EXAMPLE_HELP = 0;
-    const EXAMPLE_COMPLETION = 1;
     /** @param int $context
      * @return list<SearchExample> */
     function search_examples(Contact $viewer, $context) {
@@ -1392,7 +1390,7 @@ class PaperOption implements JsonSerializable {
     function has_search_example() {
         assert($this->search_keyword() !== false);
         return new SearchExample(
-            "has:" . $this->search_keyword(), "",
+            $this, "has:" . $this->search_keyword(),
             "<0>submission’s {title} field is set"
         );
     }
@@ -1744,17 +1742,18 @@ class Selector_PaperOption extends PaperOption {
 
     function search_examples(Contact $viewer, $context) {
         $a = [$this->has_search_example()];
-        if ($context === self::EXAMPLE_HELP) {
+        if ($context === SearchExample::HELP) {
             if (($q = $this->value_search_keyword(2))) {
                 $a[] = new SearchExample(
-                    $this->search_keyword() . ":<value>", $q,
-                    "<0>submission’s {title} field has value ‘{0}’", $this->values[1]
+                    $this, $this->search_keyword() . ":{value}",
+                    "<0>submission’s {title} field has value ‘{value}’",
+                    new FmtArg("value", $this->values[1])
                 );
             }
         } else {
             foreach ($this->values as $s) {
                 $a[] = new SearchExample(
-                    $this->search_keyword() . ":" . SearchWord::quote($s), $s
+                    $this, $this->search_keyword() . ":" . SearchWord::quote($s)
                 );
             }
         }
@@ -2144,8 +2143,9 @@ class Text_PaperOption extends PaperOption {
         return [
             $this->has_search_example(),
             new SearchExample(
-                $this->search_keyword() . ":<text>", "hello",
-                "submission’s {title} field contains ‘hello’"
+                $this, $this->search_keyword() . ":{text}",
+                "submission’s {title} field contains ‘{text}’",
+                new FmtArg("text", "hello")
             )
         ];
     }
@@ -2367,12 +2367,14 @@ class Attachments_PaperOption extends PaperOption {
         return [
             $this->has_search_example(),
             new SearchExample(
-                $this->search_keyword() . ":<count>", ">2",
-                "<0>submission has three or more {title} attachments"
+                $this, $this->search_keyword() . ":{comparator}",
+                "<0>submission has three or more {title} attachments",
+                new FmtArg("comparator", ">2")
             ),
             new SearchExample(
-                $this->search_keyword() . ":\"<filename>\"", "*.gif",
-                "<0>submission has {title} attachment matching “*.gif”"
+                $this, $this->search_keyword() . ":\"{filename}\"",
+                "<0>submission has {title} attachment matching “{filename}”",
+                new FmtArg("filename", "*.gif")
             )
         ];
     }
