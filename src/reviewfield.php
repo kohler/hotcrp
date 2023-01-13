@@ -643,6 +643,11 @@ class Score_ReviewField extends ReviewField {
     }
 
     /** @return bool */
+    function is_single_character() {
+        return $this->option_letter !== 0;
+    }
+
+    /** @return bool */
     function flip_relation() {
         return $this->option_letter !== 0
             && $this->flip === !$this->conf->opt("smartScoreCompare");

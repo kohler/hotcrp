@@ -1026,8 +1026,6 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         assert_search_papers($this->u_chair, "ovemer:all:1-5", "1 17 18 19 20 21");
         assert_search_papers($this->u_chair, "ovemer:span:1-5", "20");
 
-        assert_search_papers($this->u_chair, "ovemer:1..2", "17 18");
-        assert_search_papers($this->u_chair, "ovemer:1..3", "1 17 18");
         assert_search_papers($this->u_chair, "ovemer:any:1..3", "1 17 18 19 20");
         assert_search_papers($this->u_chair, "ovemer:any:1-3", "1 17 18 19 20");
         assert_search_papers($this->u_chair, "ovemer:all:1..3", "1 17 18");
@@ -1036,7 +1034,71 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         assert_search_papers($this->u_chair, "ovemer:any:1–2", "17 18 19 20");
         assert_search_papers($this->u_chair, "ovemer:all:1-2", "17 18");
         assert_search_papers($this->u_chair, "ovemer:span:1–2", "17");
+
+        $this->conf->set_opt("allowObsoleteScoreSearch", 1);
+        assert_search_papers($this->u_chair, "ovemer:1..2", "17 18");
+        assert_search_papers($this->u_chair, "ovemer:1..3", "1 17 18");
         assert_search_papers($this->u_chair, "ovemer:1-3", "");
+        $this->conf->set_opt("allowObsoleteScoreSearch", null);
+    }
+
+    function test_search_alpha_ranges() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s01", "rf/1/values_text" => "E. Reject\nD. Weak reject\nC. Weak accept\nB. Accept\nA. Strong accept\n"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+
+        assert_search_papers($this->u_chair, "ovemer:E", "17 20");
+        assert_search_papers($this->u_chair, "ovemer:D", "17 18 19");
+        assert_search_papers($this->u_chair, "ovemer:C", "1 19");
+        assert_search_papers($this->u_chair, "ovemer:B", "19 20 21");
+        assert_search_papers($this->u_chair, "ovemer:A", "20 21");
+        assert_search_papers($this->u_chair, "ovemer:none", "21");
+
+        assert_search_papers($this->u_chair, "ovemer:any ovemer:none:E", "1 18 19 21");
+        assert_search_papers($this->u_chair, "ovemer:any ovemer:=0:E", "1 18 19 21");
+        //assert_search_papers($this->u_chair, "ovemer:>1:1", "17");
+        //assert_search_papers($this->u_chair, "ovemer:>2:1", "");
+        assert_search_papers($this->u_chair, "ovemer:any ovemer:<2:E", "1 18 19 20 21");
+        assert_search_papers($this->u_chair, "ovemer:any ovemer:≤2:E", "1 17 18 19 20 21");
+
+        assert_search_papers($this->u_chair, "ovemer:any:DE", "17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:all:DE", "17 18");
+        assert_search_papers($this->u_chair, "ovemer:span:DE", "17");
+        assert_search_papers($this->u_chair, "ovemer:any:D..E", "17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:any:D…E", "17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:any:D-E", "17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:any:D-E", "17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:any ovemer:none:C-D", "20 21");
+
+        assert_search_papers($this->u_chair, "ovemer:any:A-E", "1 17 18 19 20 21");
+        assert_search_papers($this->u_chair, "ovemer:all:A-E", "1 17 18 19 20 21");
+        assert_search_papers($this->u_chair, "ovemer:span:A-E", "20");
+
+        assert_search_papers($this->u_chair, "ovemer:any:C..E", "1 17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:any:C-E", "1 17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:all:C..E", "1 17 18");
+        assert_search_papers($this->u_chair, "ovemer:all:C—E", "1 17 18");
+        assert_search_papers($this->u_chair, "ovemer:span:C..E", "");
+        assert_search_papers($this->u_chair, "ovemer:any:D–E", "17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:all:D-E", "17 18");
+        assert_search_papers($this->u_chair, "ovemer:span:D–E", "17");
+
+        $this->conf->set_opt("allowObsoleteScoreSearch", 1);
+        assert_search_papers($this->u_chair, "ovemer:D..E", "17 18");
+        assert_search_papers($this->u_chair, "ovemer:C..E", "1 17 18");
+        assert_search_papers($this->u_chair, "ovemer:C-E", "");
+        assert_search_papers($this->u_chair, "ovemer:CE", "");
+        $this->conf->set_opt("allowObsoleteScoreSearch", null);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => "s01", "rf/1/values_text" => "1. Reject\n2. Weak reject\n3. Weak accept\n4. Accept\n5. Strong accept\n"
+        ]);
+        xassert($sv->execute());
+        xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
     }
 
     function test_new_external_reviewer() {
