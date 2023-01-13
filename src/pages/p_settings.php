@@ -176,10 +176,10 @@ class Settings_Page {
 
         $sv = SettingValues::make_request($user, $qreq);
         $sv->set_use_req(isset($qreq->update) && $qreq->valid_post());
-        $sv->session_highlight($qreq);
         if (!$sv->viewable_by_user()) {
             $user->escape();
         }
+        $sv->session_highlight($qreq);
 
         $sp = new Settings_Page($sv, $user);
         $group = $qreq->group = $sp->choose_setting_group($qreq);
