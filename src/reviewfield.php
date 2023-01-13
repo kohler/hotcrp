@@ -1123,7 +1123,7 @@ class Score_ReviewField extends ReviewField {
         if (!$this->required) {
             $ex[] = new SearchExample(
                 $this, "{$kw}:none",
-                "<0>at least one completed review has an empty {value} field",
+                "<0>at least one completed review has an empty {value} field"
             );
         }
 
