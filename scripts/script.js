@@ -9839,7 +9839,7 @@ edit_conditions.checkboxes = function (ec, form) {
     }
     return false;
 };
-edit_conditions.selector = function (ec, form) {
+edit_conditions.dropdown = function (ec, form) {
     var e = form.elements[ec.formid];
     return e && e.value ? +e.value : false;
 };
