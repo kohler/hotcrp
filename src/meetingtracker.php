@@ -81,7 +81,7 @@ class MeetingTracker {
                 fclose($f);
                 return;
             } else {
-                trigger_error("$comet_dir not writable", E_USER_WARNING);
+                trigger_error("{$comet_dir} not writable", E_USER_WARNING);
             }
         }
 

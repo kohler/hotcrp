@@ -337,7 +337,7 @@ function initialize_request($kwarg = null) {
             && $nav->page !== "api"
             && ($_SERVER["REQUEST_METHOD"] === "GET" || $_SERVER["REQUEST_METHOD"] === "HEAD")) {
             // redirect to `/u` version
-            $nav->query = preg_replace('/[?&]i=[^&]+(?=&|\z)/', '', $nav->query);
+            $nav->query = preg_replace('/[?&;]i=[^&;]++/', '', $nav->query);
             if (str_starts_with($nav->query, "&")) {
                 $nav->query = "?" . substr($nav->query, 1);
             }
@@ -363,7 +363,7 @@ function initialize_request($kwarg = null) {
     if (!$muser) {
         $muser = Contact::make_email($conf, $trueemail);
     }
-    $muser = $muser->activate($qreq, true);
+    $muser = $muser->activate($qreq, true, $uindex);
     Contact::set_main_user($muser);
     $qreq->set_user($muser);
 

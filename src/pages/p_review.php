@@ -301,7 +301,7 @@ class Review_Page {
     function add_capability_user_message($capuid) {
         if (($u = $this->conf->user_by_id($capuid, USER_SLICE))) {
             if (PaperRequest::simple_qreq($this->qreq)
-                && ($i = $this->user->session_user_index($this->qreq, $u->email)) >= 0) {
+                && ($i = Contact::session_index_by_email($this->qreq, $u->email)) >= 0) {
                 $selfurl = $this->conf->selfurl($this->qreq, null, Conf::HOTURL_SITEREL | Conf::HOTURL_RAW);
                 $this->conf->redirect(Navigation::base_absolute() . "u/{$i}/{$selfurl}");
                 return;

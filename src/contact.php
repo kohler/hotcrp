@@ -167,6 +167,7 @@ class Contact implements JsonSerializable {
     private $_author_perm_tags;
 
     // $_activated values: 0: no, 1: yes; 2: is actas; 4: is token
+    // higher bits: user index
     /** @var int */
     private $_activated = 0;
     // $_admin_base_user: base authenticated user in case of actas
@@ -606,7 +607,7 @@ class Contact implements JsonSerializable {
     /** @param Qrequest $qreq
      * @param string $email
      * @return int */
-    static function session_user_index($qreq, $email) {
+    static function session_index_by_email($qreq, $email) {
         foreach (self::session_users($qreq) as $i => $u) {
             if (strcasecmp($u, $email) === 0) {
                 return $i;
@@ -664,8 +665,8 @@ class Contact implements JsonSerializable {
 
     /** @param Qrequest $qreq
      * @return Contact */
-    function activate($qreq, $signin = false) {
-        $this->_activated |= 1;
+    function activate($qreq, $signin, $userindex = 0) {
+        $this->_activated |= 1 | ($userindex << 8);
 
         // Handle actas requests
         if ($qreq->actas && $signin && $this->email) {
@@ -677,7 +678,7 @@ class Contact implements JsonSerializable {
                 $actasuser->_activated |= 2;
                 $actasuser->_admin_base_user = $this;
                 $actasuser->_hoturl_defaults["actas"] = urlencode($actasuser->email);
-                return $actasuser->activate($qreq, true);
+                return $actasuser->activate($qreq, true, $userindex);
             }
         }
 
@@ -992,6 +993,11 @@ class Contact implements JsonSerializable {
     function contactdb_disabled() {
         $cdbu = $this->cdb_user();
         return $cdbu && ($cdbu->disablement & ~self::DISABLEMENT_PLACEHOLDER) !== 0;
+    }
+
+    /** @return int */
+    function session_index() {
+        return $this->_activated > 0 ? $this->_activated >> 8 : -1;
     }
 
     /** @param int $flags
@@ -3105,7 +3111,7 @@ class Contact implements JsonSerializable {
             || ($acct
                 && $this->contactId > 0
                 && $this->contactId === $acct->contactId
-                && $this->_activated === 1);
+                && ($this->_activated & 7) === 1);
     }
 
     /** @return bool */
@@ -5283,8 +5289,8 @@ class Contact implements JsonSerializable {
             $k = $this->isPC ? "pcrev" : "extrev";
             foreach ($this->conf->defined_rounds() as $i => $round_name) {
                 $isuf = $i ? "_$i" : "";
-                $s = +$this->conf->setting("{$k}_soft$isuf");
-                $h = +$this->conf->setting("{$k}_hard$isuf");
+                $s = +$this->conf->setting("{$k}_soft{$isuf}");
+                $h = +$this->conf->setting("{$k}_hard{$isuf}");
                 $dl->revs[$round_name] = $dlround = (object) [];
                 if ($rev_open) {
                     $dlround->open = true;

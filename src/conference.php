@@ -4592,8 +4592,8 @@ class Conf {
             "assets" => $this->opt["assetsUrl"],
             "cookie_params" => "",
             "postvalue" => $qreq->post_value(true),
-            "user" => []
         ];
+        $userinfo = [];
         if (($x = $this->opt("sessionDomain"))) {
             $siteinfo["cookie_params"] .= "; Domain=$x";
         }
@@ -4605,20 +4605,24 @@ class Conf {
         }
         if (($user = $qreq->user())) {
             if ($user->email) {
-                $siteinfo["user"]["email"] = $user->email;
+                $userinfo["email"] = $user->email;
             }
             if ($user->is_pclike()) {
-                $siteinfo["user"]["is_pclike"] = true;
+                $userinfo["is_pclike"] = true;
             }
             if ($user->has_account_here()) {
-                $siteinfo["user"]["cid"] = $user->contactId;
+                $userinfo["cid"] = $user->contactId;
             }
             if ($user->is_actas_user()) {
-                $siteinfo["user"]["is_actas"] = true;
+                $userinfo["is_actas"] = true;
+            }
+            if (($uindex = $user->session_index()) > 0
+                || $qreq->navigation()->shifted_path !== "") {
+                $userinfo["session_index"] = $uindex;
             }
             $susers = Contact::session_users($qreq);
             if ($user->is_actas_user() || count($susers) > 1) {
-                $siteinfo["user"]["session_users"] = $susers;
+                $userinfo["session_users"] = $susers;
             }
             if (($defaults = $user->hoturl_defaults())) {
                 $siteinfo["defaults"] = [];
@@ -4627,6 +4631,7 @@ class Conf {
                 }
             }
         }
+        $siteinfo["user"] = $userinfo;
 
         $pid = $extra["paperId"] ?? 0;
         if (!is_int($pid)) {

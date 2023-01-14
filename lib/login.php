@@ -143,13 +143,13 @@ class LoginHelper {
         self::change_session_users($qreq, [$xuser->email => 1]);
 
         // activate
-        $user = $xuser->activate($qreq);
+        $user = $xuser->activate($qreq, false);
         $qreq->unset_csession("password_reset");
 
         $nav = $qreq->navigation();
         $url = $nav->server . $nav->base_path;
         if ($qreq->has_gsession("us")) {
-            $url .= "u/" . Contact::session_user_index($qreq, $user->email) . "/";
+            $url .= "u/" . Contact::session_index_by_email($qreq, $user->email) . "/";
         }
         $url .= "?postlogin=1";
         if ($qreq->redirect !== null && $qreq->redirect !== "1") {
@@ -316,7 +316,7 @@ class LoginHelper {
         }
         $user = Contact::make($user->conf);
         unset($qreq->actas, $qreq->cap, $qreq->forceShow, $qreq->override);
-        return $user->activate($qreq);
+        return $user->activate($qreq, false);
     }
 
 

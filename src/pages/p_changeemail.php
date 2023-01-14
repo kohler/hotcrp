@@ -61,9 +61,9 @@ class ChangeEmail_Page {
             $capdata->delete();
             $conf->success_msg("<0>Your email address has been changed");
             if (!$user->has_account_here() || $user->contactId == $chuser->contactId) {
-                Contact::set_main_user($chuser->activate($qreq));
+                Contact::set_main_user($chuser->activate($qreq, false));
             }
-            if (Contact::session_user_index($qreq, $capcontent->oldemail) >= 0) {
+            if (Contact::session_index_by_email($qreq, $capcontent->oldemail) >= 0) {
                 LoginHelper::change_session_users($qreq, [
                     $capcontent->oldemail => -1, $newemail => 1
                 ]);

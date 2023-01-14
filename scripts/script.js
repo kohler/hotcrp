@@ -3279,11 +3279,14 @@ function comet_tracker() {
         success(null, status, xhr);
     }
 
-    $.ajax(hoturl_add(dl.tracker_site + "poll",
-                      "conference=" + encodeURIComponent(hoturl_absolute_base())
-                      + "&poll=" + encodeURIComponent(dl.tracker_status)
-                      + "&tracker_status_at=" + encodeURIComponent(dl.tracker_status_at || 0)
-                      + "&timeout=" + timeout), {
+    var param = "conference=".concat(encodeURIComponent(hoturl_absolute_base()),
+            "&poll=", encodeURIComponent(dl.tracker_status),
+            "&tracker_status_at=", encodeURIComponent(dl.tracker_status_at || 0),
+            "&timeout=", timeout);
+    if (siteinfo.user && siteinfo.user.session_index != null) {
+        param = param.concat("&session_index=", siteinfo.user.session_index);
+    }
+    $.ajax(hoturl_add(dl.tracker_site + "poll", param), {
             method: "GET", timeout: timeout + 2000, success: success, complete: complete
         });
     return true;
