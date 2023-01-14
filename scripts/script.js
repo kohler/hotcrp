@@ -10827,7 +10827,7 @@ function rgb_array_for(svx) {
 
 return function (n, scheme, flip) {
     var sci = scheme_info[scheme],
-        fm9 = make_fm9(n, sci[1], !sci[2] !== !flip, (sci[0] & 2) !== 0),
+        fm9 = make_fm9(n, sci[1], !sci[2] === !flip, (sci[0] & 2) !== 0),
         svk = sci[2] || scheme;
     if (svk !== "sv")
         svk = "sv-" + svk;
