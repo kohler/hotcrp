@@ -2607,6 +2607,13 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $this->v271_action_log_paper_actions()) {
             $conf->update_schema_version(271);
         }
+        if ($conf->setting("tracker") !== null) {
+            $conf->save_setting("__tracker", $conf->setting("tracker"), $conf->setting_data("tracker"));
+            $conf->save_setting("tracker", null);
+        }
+        if ($conf->sversion === 271) {
+            $conf->update_schema_version(272);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

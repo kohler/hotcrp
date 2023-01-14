@@ -344,7 +344,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 271) {
+        if ($this->sversion < 272) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -4665,6 +4665,11 @@ class Conf {
     }
 
     /** @return bool */
+    function has_active_tracker() {
+        return (($this->settings["__tracker"] ?? 0) & 1) !== 0;
+    }
+
+    /** @return bool */
     function has_interesting_deadline($my_deadlines) {
         if ($my_deadlines->sub->open ?? false) {
             if (Conf::$now <= ($my_deadlines->sub->reg ?? 0)
@@ -4909,7 +4914,7 @@ class Conf {
         echo "<div id=\"body\" class=\"body\">\n";
 
         // If browser owns tracker, send it the script immediately
-        if ($this->setting("tracker")
+        if ($this->has_active_tracker()
             && MeetingTracker::session_owns_tracker($this, $qreq)) {
             echo Ht::unstash();
         }

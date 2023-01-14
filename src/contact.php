@@ -3644,7 +3644,7 @@ class Contact implements JsonSerializable {
             return $pccv === 2
                 || (!$pccv
                     && ($this->can_view_authors($prow)
-                        || ($this->conf->setting("tracker")
+                        || ($this->conf->has_active_tracker()
                             && MeetingTracker::can_view_tracker_at($this, $prow))));
         }
     }
@@ -3657,7 +3657,7 @@ class Contact implements JsonSerializable {
                 && (($pccv = $this->conf->setting("sub_pcconfvis")) === 2
                     || (!$pccv
                         && ($this->can_view_some_authors()
-                            || ($this->conf->setting("tracker")
+                            || ($this->conf->has_active_tracker()
                                 && MeetingTracker::can_view_some_tracker($this))))));
     }
 

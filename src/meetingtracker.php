@@ -6,10 +6,10 @@ class MeetingTracker {
     /** @return MeetingTracker_ConfigSet */
     static function lookup(Conf $conf) {
         $ts = new MeetingTracker_ConfigSet;
-        if (($tracker_data = $conf->setting_data("tracker"))) {
+        if (($tracker_data = $conf->setting_data("__tracker"))) {
             $ts->parse_array(json_decode($tracker_data, true));
-            if (empty($ts->ts) && $conf->setting("tracker")) {
-                $conf->save_setting("tracker", 0, $tracker_data);
+            if (empty($ts->ts) && $conf->has_active_tracker()) {
+                $conf->save_setting("__tracker", 0, json_encode_db($ts));
             }
         }
         return $ts;
@@ -130,10 +130,10 @@ class MeetingTracker {
 
 
     static function clear(Conf $conf) {
-        if ($conf->setting("tracker")) {
+        if ($conf->setting("__tracker")) {
             $ts = self::lookup($conf);
             $ts->clear();
-            $conf->save_setting("tracker", 0, json_encode_db($ts));
+            $conf->save_setting("__tracker", 0, json_encode_db($ts));
             self::contact_tracker_comet($conf);
         }
     }
@@ -207,11 +207,11 @@ class MeetingTracker {
         return "";
     }
 
-    /** @param MeetingTracker_ConfigSet $tracker */
-    static private function tracker_save(Conf $conf, $tracker, $position_at) {
-        $tracker->position_at = $position_at;
-        $tracker->update_at = max(Conf::$now, $position_at);
-        $conf->save_setting("tracker", 1, json_encode_db($tracker));
+    /** @param MeetingTracker_ConfigSet $ts */
+    static private function tracker_save(Conf $conf, $ts, $position_at) {
+        $ts->position_at = $position_at;
+        $ts->update_at = max(Conf::$now, $position_at);
+        $conf->save_setting("__tracker", 1, json_encode_db($ts));
         self::contact_tracker_comet($conf);
     }
 
