@@ -636,22 +636,28 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
     public $update_at = 0.0;
     /** @var list<MeetingTracker_Config> */
     public $ts = [];
+    /** @var bool */
+    private $_was_empty;
+    /** @var ?string */
+    private $_original_data;
 
     const SNAME = "__tracker";
 
-    /** @param int $eventid */
+    /** @param ?int $eventid */
     function __construct(Conf $conf, $eventid) {
         $this->conf = $conf;
-        $this->eventid = $eventid;
+        $this->eventid = $eventid ?? 0;
+        $this->_was_empty = $eventid === null;
     }
 
     /** @return MeetingTracker_ConfigSet */
     static function load(Conf $conf) {
         while (true) {
             // load from settings
-            $tcs = new MeetingTracker_ConfigSet($conf, $conf->setting(self::SNAME) ?? 0);
-            if ($tcs->eventid !== 0) {
-                $a = json_decode($conf->setting_data(self::SNAME) ?? "", true);
+            $tcs = new MeetingTracker_ConfigSet($conf, $conf->setting(self::SNAME));
+            if (!$tcs->_was_empty) {
+                $tcs->_original_data = $conf->setting_data(self::SNAME);
+                $a = json_decode($tcs->_original_data ?? "", true);
                 if (is_array($a) && !empty($a)) {
                     $tcs->parse_array($a);
                 }
@@ -719,30 +725,34 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
 
     /** @param float $position_at */
     function set_position_at($position_at) {
-        $this->position_at = $position_at;
-        $this->update_at = max(Conf::$now, $position_at);
+        $this->position_at = max($position_at, $this->position_at);
+        $this->update_at = max(Conf::$now, $this->position_at);
     }
 
     /** @param int $new_eventid
      * @return bool
      * @suppress PhanAccessReadOnlyProperty */
     function update($new_eventid) {
-        if ($new_eventid === $this->eventid) {
-            return false;
-        }
         $new_data = json_encode_db($this);
-        if ($this->eventid > 0 || $this->position_at > 0) {
-            $result = $this->conf->qe("update Settings set value=?, data=? where name=? and value=?",
-                                      $new_eventid, $new_data, self::SNAME, $this->eventid);
-        } else {
+        if ($this->_was_empty) {
             $result = $this->conf->qe("insert ignore into Settings set name=?, value=?, data=?",
-                                      self::SNAME, $new_eventid, $new_data);
+                    self::SNAME, $new_eventid, $new_data);
+        } else if ($new_eventid !== $this->eventid) {
+            $result = $this->conf->qe("update Settings set value=?, data=? where name=? and value=?",
+                        $new_eventid, $new_data, self::SNAME, $this->eventid);
+        } else if ($new_data !== $this->_original_data) {
+            $result = $this->conf->qe("update Settings set data=? where name=? and value=? and data?e",
+                        $new_data, self::SNAME, $this->eventid, $this->_original_data);
+        } else {
+            // no change, do not retry
+            return true;
         }
         if (($updated = $result->affected_rows > 0)) {
             $this->eventid = $new_eventid;
             $this->mark_change();
         }
-        $row = $this->conf->fetch_first_row("select value, data from Settings where name=?", self::SNAME);
+        $row = $this->conf->fetch_first_row("select value, data from Settings where name=?",
+                    self::SNAME);
         $this->conf->change_setting(self::SNAME, $row ? (int) $row[0] : null, $row[1] ?? null);
         return $updated;
     }
@@ -815,8 +825,10 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
             }
         }
 
+        // assign position
         $new_trackerid = false;
         $position_at = $this->next_position_at();
+        $changed = true;
         if ($position !== "stop") {
             // Default: start now, position now.
             // If update is to same list as old tracker, keep `start_at`.
@@ -830,6 +842,7 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
                 }
                 if ($trmatch->position == $position) {
                     $position_at = $trmatch->position_at;
+                    $changed = false;
                 }
             } else {
                 $start_at = Conf::$now;
@@ -864,7 +877,7 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
             $qreq->set_annex("new_trackerid", $new_trackerid);
         }
         $this->set_position_at($position_at);
-        return $this->update($this->next_eventid());
+        return $this->update($changed ? $this->next_eventid() : $this->eventid);
     }
 
     function mark_change($pids = null) {
