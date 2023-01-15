@@ -51,7 +51,7 @@ class Options_SettingRenderer {
     }
 
     function print_type(SettingValues $sv) {
-        $curt = $sv->oldv("sf/{$this->ctr}/type");
+        $curt = $sv->vstr("sf/{$this->ctr}/type");
         $sv->print_select_group("sf/{$this->ctr}/type", "Type", [$curt => $curt], [
             "horizontal" => true,
             "group_attr" => ["data-property" => "type"]

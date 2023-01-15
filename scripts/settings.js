@@ -268,8 +268,7 @@ handle_ui.on("js-settings-sf-add", add_dialog);
 
 $(document).on("hotcrpsettingssf", ".settings-sf", function () {
     var view = document.getElementById(this.id + "/view"),
-        edit = document.getElementById(this.id + "/edit"),
-        type = document.getElementById(this.id + "/type");
+        edit = document.getElementById(this.id + "/edit");
     settings_disable_children(view);
     if (edit) {
         sf_instantiate(edit);
