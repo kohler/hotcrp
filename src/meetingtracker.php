@@ -5,14 +5,7 @@
 class MeetingTracker {
     /** @return MeetingTracker_ConfigSet */
     static function lookup(Conf $conf) {
-        $ts = new MeetingTracker_ConfigSet;
-        if (($tracker_data = $conf->setting_data("__tracker"))) {
-            $ts->parse_array(json_decode($tracker_data, true));
-            if (empty($ts->ts) && $conf->has_active_tracker()) {
-                $conf->save_setting("__tracker", 0, json_encode_db($ts));
-            }
-        }
-        return $ts;
+        return MeetingTracker_ConfigSet::load($conf);
     }
 
     /** @return bool */
@@ -45,98 +38,12 @@ class MeetingTracker {
 
 
     static function contact_tracker_comet(Conf $conf, $pids = null) {
-        $comet_dir = $conf->opt("trackerCometUpdateDirectory");
-        $comet_url = $conf->opt("trackerCometSite");
-        if (!$comet_dir && !$comet_url) {
-            return;
-        }
-
-        // calculate status
-        $url = Navigation::base_absolute();
-        $tracker = self::lookup($conf);
-
-        // first drop notification json in trackerCometUpdateDirectory
-        if ($comet_dir) {
-            $j = [
-                "ok" => true,
-                "conference" => $url,
-                "tracker_status" => $tracker->status(),
-                "tracker_status_at" => $tracker->position_at
-            ];
-            if ($pids) {
-                $j["pulse"] = true;
-            }
-            if (!str_ends_with($comet_dir, "/")) {
-                $comet_dir .= "/";
-            }
-            $suffix = "";
-            $count = 0;
-            while (($f = @fopen($comet_dir . Conf::$now . $suffix, "x")) === false
-                   && $count < 20) {
-                $suffix = "x" . mt_rand(0, 65535);
-                ++$count;
-            }
-            if ($f !== false) {
-                fwrite($f, json_encode_db($j));
-                fclose($f);
-                return;
-            } else {
-                trigger_error("{$comet_dir} not writable", E_USER_WARNING);
-            }
-        }
-
-        // second contact trackerCometSite
-        if (!$comet_url) {
-            return;
-        }
-
-        if (!preg_match('/\Ahttps?:/', $comet_url)) {
-            preg_match('/\A(.*:)(\/\/[^\/]*)/', $url, $m);
-            if ($comet_url[0] !== "/") {
-                $comet_url = "/" . $comet_url;
-            }
-            if (preg_match('/\A\/\//', $comet_url)) {
-                $comet_url = $m[1] . $comet_url;
-            } else {
-                $comet_url = $m[1] . $m[2] . $comet_url;
-            }
-        }
-        if (!str_ends_with($comet_url, "/")) {
-            $comet_url .= "/";
-        }
-
-        $context = stream_context_create(["http" => [
-            "method" => "GET", "ignore_errors" => true,
-            "content" => "", "timeout" => 1.0
-        ]]);
-        $comet_url .= "update?conference=" . urlencode($url)
-            . "&tracker_status=" . urlencode($tracker->status())
-            . "&tracker_status_at=" . $tracker->position_at;
-        if ($pids) {
-            $comet_url .= "&pulse=1";
-        }
-        $stream = @fopen($comet_url, "r", false, $context);
-        if (!$stream) {
-            $e = error_get_last();
-            error_log($comet_url . ": " . $e["message"]);
-            return false;
-        }
-        if (!($data = stream_get_contents($stream))
-            || !($data = json_decode($data))) {
-            error_log($comet_url . ": read failure");
-        }
-        fclose($stream);
-    }
-
-
-    static function clear(Conf $conf) {
-        if ($conf->setting("__tracker")) {
-            $ts = self::lookup($conf);
-            $ts->clear();
-            $conf->save_setting("__tracker", 0, json_encode_db($ts));
-            self::contact_tracker_comet($conf);
+        if ($conf->opt("trackerCometUpdateDirectory")
+            || $conf->opt("trackerCometSite")) {
+            MeetingTracker_ConfigSet::load($conf)->mark_change($pids);
         }
     }
+
 
 
     /** @param Qrequest $qreq */
@@ -145,7 +52,8 @@ class MeetingTracker {
         json_exit([
             "ok" => true,
             "tracker_status" => $tracker->status(),
-            "tracker_status_at" => $tracker->position_at
+            "tracker_status_at" => $tracker->position_at,
+            "tracker_eventid" => $tracker->eventid
         ]);
     }
 
@@ -158,7 +66,7 @@ class MeetingTracker {
         return false;
     }
 
-    static private function compute_xlist_admin_perm(Conf $conf, $ids) {
+    static function compute_xlist_admin_perm(Conf $conf, $ids) {
         $tags = $perms = [];
         foreach ($conf->track_tags() as $tag) {
             if (($perm = $conf->track_permission($tag, Track::ADMIN))) {
@@ -207,14 +115,6 @@ class MeetingTracker {
         return "";
     }
 
-    /** @param MeetingTracker_ConfigSet $ts */
-    static private function tracker_save(Conf $conf, $ts, $position_at) {
-        $ts->position_at = $position_at;
-        $ts->update_at = max(Conf::$now, $position_at);
-        $conf->save_setting("__tracker", 1, json_encode_db($ts));
-        self::contact_tracker_comet($conf);
-    }
-
     /** @param Qrequest $qreq
      * @return ?JsonResult */
     static function track_api(Contact $user, $qreq) {
@@ -229,7 +129,7 @@ class MeetingTracker {
 
         if ($qreq->track === "stop") {
             if ($user->privChair) {
-                self::clear($user->conf);
+                MeetingTracker_ConfigSet::load($user->conf)->update_clear();
             }
             return null;
         }
@@ -245,116 +145,11 @@ class MeetingTracker {
             return JsonResult::make_error(400, "<0>Parameter error");
         }
 
-        // look up trackers
-        $tracker = self::lookup($user->conf);
-
-        // look up tracker id
-        $trackerid = $args[0];
-        if (ctype_digit($trackerid)) {
-            $trackerid = intval($trackerid);
-        } else if ($trackerid === "new") {
-            do {
-                $trackerid = mt_rand(1, 9999999);
-            } while ($tracker->search($trackerid) !== false);
-        }
-
-        // find matching tracker
-        $match = $tracker->search($trackerid);
-        $trmatch = $match !== false ? $tracker->ts[$match] : null;
-
-        // use tracker_start_at to avoid recreating a tracker that was
-        // shut in another window
-        if ($qreq->tracker_start_at
-            && ($trmatch === null
-                ? $qreq->tracker_start_at < $tracker->position_at
-                : $qreq->tracker_start_at < $trmatch->start_at)) {
-            return null;
-        }
-
-        // check admin perms
-        if (!$user->privChair
-            && $trmatch !== null
-            && !self::check_tracker_admin_perm($user, $trmatch->admin_perm ?? null)) {
-            return JsonResult::make_permission_error(null, "<0>You can’t administer that tracker");
-        }
-
-        $admin_perm = null;
-        if ($user->conf->check_track_admin_sensitivity()) {
-            if ($trmatch !== null && $xlist->ids == $trmatch->ids) {
-                $admin_perm = $trmatch->admin_perm ?? null;
-            } else {
-                $admin_perm = self::compute_xlist_admin_perm($user->conf, $xlist->ids);
-                if (!$user->privChair
-                    && !self::check_tracker_admin_perm($user, $admin_perm)) {
-                    if ($trmatch === null) {
-                        return JsonResult::make_permission_error(null, "<0>You can’t administer all the submissions on that list");
-                    } else {
-                        $xlist = $trmatch;
-                    }
-                }
-            }
-        }
-
-        // update tracker
-        $position = false;
-        $i = count($args) === 3 ? 2 : 1;
-        if (count($args) >= $i && isset($args[$i])) {
-            if (ctype_digit($args[$i])) {
-                $position = array_search((int) $args[$i], $xlist->ids);
-            } else if ($args[$i] === "stop") {
-                $position = "stop";
-            }
-        }
-
-        $new_trackerid = false;
-        $position_at = $tracker->next_position_at();
-        if ($position !== "stop") {
-            // Default: start now, position now.
-            // If update is to same list as old tracker, keep `start_at`.
-            // If update is off-list, keep old position.
-            // If update is to same position as old tracker, keep `position_at`.
-            if ($trmatch !== null) {
-                $start_at = $trmatch->start_at;
-                if ($trmatch->listid !== $xlist->listid
-                    || $position === false) {
-                    $position = $trmatch->position;
-                }
-                if ($trmatch->position == $position) {
-                    $position_at = $trmatch->position_at;
-                }
-            } else {
-                $start_at = Conf::$now;
-            }
-
-            $qreq->open_session();
-            $tr = MeetingTracker_Config::make($user, $qreq, $trackerid, $xlist, $start_at, $position, $position_at);
-            if ($trmatch !== null) {
-                $tr->name = $trmatch->name;
-                $tr->logo = $trmatch->logo;
-                $tr->visibility = $trmatch->visibility;
-                $tr->hide_conflicts = $trmatch->hide_conflicts;
-            }
-            if ($admin_perm) {
-                $tr->admin_perm = $admin_perm;
-            }
-
-            if ($trmatch !== null) {
-                $tracker->ts[$match] = $tr;
-            } else {
-                $tracker->ts[] = $tr;
-                $new_trackerid = $trackerid;
-            }
-        } else if ($match !== false) {
-            array_splice($tracker->ts, $match, 1);
-        }
-
-        if (!empty($tracker->ts) || $tracker->trackerid) {
-            self::tracker_save($user->conf, $tracker, $position_at);
-            if ($new_trackerid !== false) {
-                $qreq->set_annex("new_trackerid", $new_trackerid);
-            }
-        }
-        return null;
+        // apply change; may require multiple tries on concurrent update
+        do {
+            $x = MeetingTracker_ConfigSet::load($user->conf)->apply_track_api($args, $xlist, $user, $qreq);
+        } while ($x === false);
+        return $x === true ? null : $x;
     }
 
     /** @param Qrequest $qreq
@@ -511,19 +306,22 @@ class MeetingTracker {
             }
         }
 
-        if (empty($message_list)) {
-            if ($changed) {
-                self::tracker_save($user->conf, $tracker, $position_at);
+        if (empty($message_list) && $changed) {
+            $tracker->set_position_at($position_at);
+            if (!$tracker->update($tracker->next_eventid())) {
+                $message_list[] = new MessageItem(null, "Your changes were ignored because another user has changed the tracker settings. Please reload and try again.", 2);
             }
+        }
+        if (empty($message_list)) {
             $j = (object) ["ok" => true];
             if ($new_trackerid !== false) {
                 $j->new_trackerid = $new_trackerid;
             }
-            self::my_deadlines($j, $user);
-            return new JsonResult($j);
         } else {
-            return new JsonResult(["ok" => false, "message_list" => $message_list]);
+            $j = (object) ["ok" => false, "message_list" => $message_list];
         }
+        self::my_deadlines($j, $user);
+        return new JsonResult($j);
     }
 
 
@@ -651,6 +449,9 @@ class MeetingTracker {
         }
         if ($tracker->position_at) {
             $dl->tracker_status_at = $tracker->position_at;
+        }
+        if ($tracker->eventid > 0) {
+            $dl->tracker_eventid = $tracker->eventid;
         }
         if (($tcs = $user->conf->opt("trackerCometSite"))) {
             $dl->tracker_site = $tcs;
@@ -821,6 +622,12 @@ class MeetingTracker_Config implements JsonSerializable {
 }
 
 class MeetingTracker_ConfigSet implements JsonSerializable {
+    /** @var Conf
+     * @readonly */
+    public $conf;
+    /** @var int
+     * @readonly */
+    public $eventid;
     /** @var int|false */
     public $trackerid = false;
     /** @var float */
@@ -830,27 +637,52 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
     /** @var list<MeetingTracker_Config> */
     public $ts = [];
 
-    /** @param array $a */
-    function parse_array($a) {
-        if ($a && isset($a["ts"])) {
-            $this->trackerid = $a["trackerid"];
-            $this->position_at = $a["position_at"];
-            $this->update_at = $a["update_at"];
+    const SNAME = "__tracker";
+
+    /** @param int $eventid */
+    function __construct(Conf $conf, $eventid) {
+        $this->conf = $conf;
+        $this->eventid = $eventid;
+    }
+
+    /** @return MeetingTracker_ConfigSet */
+    static function load(Conf $conf) {
+        while (true) {
+            // load from settings
+            $tcs = new MeetingTracker_ConfigSet($conf, $conf->setting(self::SNAME) ?? 0);
+            if ($tcs->eventid !== 0) {
+                $a = json_decode($conf->setting_data(self::SNAME) ?? "", true);
+                if (is_array($a) && !empty($a)) {
+                    $tcs->parse_array($a);
+                }
+            }
+            // if idle or running with at least one active tracker, return
+            if (($tcs->eventid & 1) === 0 || !empty($tcs->ts)) {
+                return $tcs;
+            }
+            // otherwise, become idle
+            $tcs->trackerid = false;
+            $newtime = $tcs->update_at ? $tcs->update_at + 0.1 : Conf::$now - 30;
+            $tcs->position_at = $tcs->update_at = $newtime;
+            $tcs->update($tcs->eventid + 1);
+        }
+    }
+
+    /** @param non-empty-array $a */
+    private function parse_array($a) {
+        $this->trackerid = $a["trackerid"];
+        $this->position_at = $a["position_at"];
+        $this->update_at = $a["update_at"];
+        if (isset($a["ts"])) {
             foreach ($a["ts"] as $ta) {
                 if ($ta["update_at"] >= Conf::$now - 150) {
                     $this->ts[] = $tc = new MeetingTracker_Config;
                     $tc->parse_array($ta);
                 }
             }
-        } else if ($a && $a["trackerid"] && $a["update_at"] >= Conf::$now - 150) {
-            $this->trackerid = $a["trackerid"];
-            $this->position_at = $a["position_at"];
-            $this->update_at = $a["update_at"];
+        } else if ($this->trackerid && $a["update_at"] >= Conf::$now - 150) {
             $this->ts[] = $tc = new MeetingTracker_Config;
             $tc->parse_array($a);
-        } else {
-            $this->trackerid = false;
-            $this->update_at = $this->position_at = $a ? $a["update_at"] + 0.1 : 0.0;
         }
     }
 
@@ -863,17 +695,6 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
         }
     }
 
-    /** @return float */
-    function next_position_at() {
-        return max(microtime(true), $this->update_at + 0.2);
-    }
-
-    function clear() {
-        $this->trackerid = false;
-        $this->position_at = $this->update_at = $this->next_position_at();
-        $this->ts = [];
-    }
-
     /** @return int|false */
     function search($trid) {
         foreach ($this->ts as $i => $tc) {
@@ -881,6 +702,254 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
                 return $i;
         }
         return false;
+    }
+
+    /** @return int */
+    function next_eventid() {
+        if ($this->eventid === 0) {
+            return empty($this->ts) ? 0 : (mt_rand(0, 16383) << 1) + 1025;
+        }
+        return ($this->eventid | 1) + (mt_rand(0, 63) << 1) + (empty($this->ts) ? 1 : 2);
+    }
+
+    /** @return float */
+    function next_position_at() {
+        return max(microtime(true), $this->update_at + 0.2);
+    }
+
+    /** @param float $position_at */
+    function set_position_at($position_at) {
+        $this->position_at = $position_at;
+        $this->update_at = max(Conf::$now, $position_at);
+    }
+
+    /** @param int $new_eventid
+     * @return bool
+     * @suppress PhanAccessReadOnlyProperty */
+    function update($new_eventid) {
+        if ($new_eventid === $this->eventid) {
+            return false;
+        }
+        $new_data = json_encode_db($this);
+        if ($this->eventid > 0 || $this->position_at > 0) {
+            $result = $this->conf->qe("update Settings set value=?, data=? where name=? and value=?",
+                                      $new_eventid, $new_data, self::SNAME, $this->eventid);
+        } else {
+            $result = $this->conf->qe("insert ignore into Settings set name=?, value=?, data=?",
+                                      self::SNAME, $new_eventid, $new_data);
+        }
+        if (($updated = $result->affected_rows > 0)) {
+            $this->eventid = $new_eventid;
+            $this->mark_change();
+        }
+        $row = $this->conf->fetch_first_row("select value, data from Settings where name=?", self::SNAME);
+        $this->conf->change_setting(self::SNAME, $row ? (int) $row[0] : null, $row[1] ?? null);
+        return $updated;
+    }
+
+    function update_clear() {
+        $this->trackerid = false;
+        $this->position_at = $this->update_at = $this->next_position_at();
+        $this->ts = [];
+        $this->update($this->next_eventid());
+    }
+
+    /** @param list<string> $args
+     * @return bool|JsonResult */
+    function apply_track_api($args, SessionList $xlist, Contact $user, Qrequest $qreq) {
+        // look up tracker id
+        $trackerid = $args[0];
+        if (ctype_digit($trackerid)) {
+            $trackerid = intval($trackerid);
+        } else if ($trackerid === "new") {
+            do {
+                $trackerid = mt_rand(1, 9999999);
+            } while ($this->search($trackerid) !== false);
+        }
+
+        // find matching tracker
+        $match = $this->search($trackerid);
+        $trmatch = $match !== false ? $this->ts[$match] : null;
+
+        // use tracker_start_at to avoid recreating a tracker that was
+        // shut in another window
+        if ($qreq->tracker_start_at
+            && ($trmatch === null
+                ? $qreq->tracker_start_at < $this->position_at
+                : $qreq->tracker_start_at < $trmatch->start_at)) {
+            return true;
+        }
+
+        // check admin perms
+        if (!$user->privChair
+            && $trmatch !== null
+            && !MeetingTracker::check_tracker_admin_perm($user, $trmatch->admin_perm ?? null)) {
+            return JsonResult::make_permission_error(null, "<0>You can’t administer that tracker");
+        }
+
+        $admin_perm = null;
+        if ($this->conf->check_track_admin_sensitivity()) {
+            if ($trmatch !== null && $xlist->ids == $trmatch->ids) {
+                $admin_perm = $trmatch->admin_perm ?? null;
+            } else {
+                $admin_perm = MeetingTracker::compute_xlist_admin_perm($user->conf, $xlist->ids);
+                if (!$user->privChair
+                    && !MeetingTracker::check_tracker_admin_perm($user, $admin_perm)) {
+                    if ($trmatch === null) {
+                        return JsonResult::make_permission_error(null, "<0>You can’t administer all the submissions on that list");
+                    } else {
+                        $xlist = $trmatch;
+                    }
+                }
+            }
+        }
+
+        // update tracker
+        $position = false;
+        $i = count($args) === 3 ? 2 : 1;
+        if (count($args) >= $i && isset($args[$i])) {
+            if (ctype_digit($args[$i])) {
+                $position = array_search((int) $args[$i], $xlist->ids);
+            } else if ($args[$i] === "stop") {
+                $position = "stop";
+            }
+        }
+
+        $new_trackerid = false;
+        $position_at = $this->next_position_at();
+        if ($position !== "stop") {
+            // Default: start now, position now.
+            // If update is to same list as old tracker, keep `start_at`.
+            // If update is off-list, keep old position.
+            // If update is to same position as old tracker, keep `position_at`.
+            if ($trmatch !== null) {
+                $start_at = $trmatch->start_at;
+                if ($trmatch->listid !== $xlist->listid
+                    || $position === false) {
+                    $position = $trmatch->position;
+                }
+                if ($trmatch->position == $position) {
+                    $position_at = $trmatch->position_at;
+                }
+            } else {
+                $start_at = Conf::$now;
+            }
+
+            $qreq->open_session();
+            $tr = MeetingTracker_Config::make($user, $qreq, $trackerid, $xlist, $start_at, $position, $position_at);
+            if ($trmatch !== null) {
+                $tr->name = $trmatch->name;
+                $tr->logo = $trmatch->logo;
+                $tr->visibility = $trmatch->visibility;
+                $tr->hide_conflicts = $trmatch->hide_conflicts;
+            }
+            if ($admin_perm) {
+                $tr->admin_perm = $admin_perm;
+            }
+
+            if ($trmatch !== null) {
+                $this->ts[$match] = $tr;
+            } else {
+                $this->ts[] = $tr;
+                $new_trackerid = $trackerid;
+            }
+        } else if ($match !== false) {
+            array_splice($this->ts, $match, 1);
+        }
+
+        if (empty($this->ts) && !$this->trackerid) {
+            return true;
+        }
+        if ($new_trackerid !== false) {
+            $qreq->set_annex("new_trackerid", $new_trackerid);
+        }
+        $this->set_position_at($position_at);
+        return $this->update($this->next_eventid());
+    }
+
+    function mark_change($pids = null) {
+        $comet_dir = $this->conf->opt("trackerCometUpdateDirectory");
+        $comet_url = $this->conf->opt("trackerCometSite");
+        if (!$comet_dir && !$comet_url) {
+            return;
+        }
+
+        // calculate status
+        $url = Navigation::base_absolute();
+
+        // first drop notification json in trackerCometUpdateDirectory
+        if ($comet_dir) {
+            $j = [
+                "ok" => true,
+                "conference" => $url,
+                "tracker_status" => $this->status(),
+                "tracker_status_at" => $this->position_at,
+                "tracker_eventid" => $this->eventid
+            ];
+            if ($pids) {
+                $j["pulse"] = true;
+            }
+            if (!str_ends_with($comet_dir, "/")) {
+                $comet_dir .= "/";
+            }
+            $suffix = "";
+            $count = 0;
+            while (($f = @fopen($comet_dir . Conf::$now . $suffix, "x")) === false
+                   && $count < 20) {
+                $suffix = "x" . mt_rand(0, 65535);
+                ++$count;
+            }
+            if ($f !== false) {
+                fwrite($f, json_encode_db($j));
+                fclose($f);
+                return;
+            } else {
+                trigger_error("{$comet_dir} not writable", E_USER_WARNING);
+            }
+        }
+
+        // second contact trackerCometSite
+        if (!$comet_url) {
+            return;
+        }
+
+        if (!preg_match('/\Ahttps?:/', $comet_url)) {
+            preg_match('/\A(.*:)(\/\/[^\/]*)/', $url, $m);
+            if ($comet_url[0] !== "/") {
+                $comet_url = "/" . $comet_url;
+            }
+            if (preg_match('/\A\/\//', $comet_url)) {
+                $comet_url = $m[1] . $comet_url;
+            } else {
+                $comet_url = $m[1] . $m[2] . $comet_url;
+            }
+        }
+        if (!str_ends_with($comet_url, "/")) {
+            $comet_url .= "/";
+        }
+
+        $context = stream_context_create(["http" => [
+            "method" => "GET", "ignore_errors" => true,
+            "content" => "", "timeout" => 1.0
+        ]]);
+        $comet_url .= "update?conference=" . urlencode($url)
+            . "&tracker_status=" . urlencode($this->status())
+            . "&tracker_status_at=" . $this->position_at
+            . "&tracker_eventid=" . $this->eventid;
+        if ($pids) {
+            $comet_url .= "&pulse=1";
+        }
+        $stream = @fopen($comet_url, "r", false, $context);
+        if (!$stream) {
+            $e = error_get_last();
+            error_log($comet_url . ": " . $e["message"]);
+            return false;
+        }
+        if (!($data = stream_get_contents($stream))
+            || !($data = json_decode($data))) {
+            error_log($comet_url . ": read failure");
+        }
+        fclose($stream);
     }
 
     #[\ReturnTypeWillChange]
@@ -897,7 +966,12 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
                            && $this->ts[0]->position_at === $this->position_at))) {
             return $this->ts[0];
         } else {
-            return get_object_vars($this);
+            return [
+                "trackerid" => $this->trackerid,
+                "position_at" => $this->position_at,
+                "update_at" => $this->update_at,
+                "ts" => $this->ts
+            ];
         }
     }
 }
