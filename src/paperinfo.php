@@ -2714,7 +2714,7 @@ class PaperInfo {
             $lastLogins = Dbl::fetch_iimap($result);
             foreach ($row_set as $prow) {
                 foreach ($prow->all_reviews() as $rrow) {
-                    $rrow->lastLogin = $lastLogins[$rrow->contactId];
+                    $rrow->lastLogin = $lastLogins[$rrow->contactId] ?? 0;
                 }
             }
         }
