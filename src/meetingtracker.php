@@ -37,13 +37,15 @@ class MeetingTracker {
     }
 
 
-    static function contact_tracker_comet(Conf $conf, $pids = null) {
+    static function notify_tracker(Conf $conf, $pids = null) {
         if ($conf->opt("trackerCometUpdateDirectory")
             || $conf->opt("trackerCometSite")) {
-            MeetingTracker_ConfigSet::load($conf)->mark_change($pids);
+            $tracker = self::lookup($conf);
+            if ($tracker->eventid > 0 && $tracker->recent()) {
+                $tracker->update_pulse();
+            }
         }
     }
-
 
 
     /** @param Qrequest $qreq */
@@ -453,6 +455,9 @@ class MeetingTracker {
         if ($tracker->eventid > 0) {
             $dl->tracker_eventid = $tracker->eventid;
         }
+        if ($tracker->recent()) {
+            $dl->tracker_recent = true;
+        }
         if (($tcs = $user->conf->opt("trackerCometSite"))) {
             $dl->tracker_site = $tcs;
         }
@@ -710,6 +715,11 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
         return false;
     }
 
+    /** @return bool */
+    function recent() {
+        return Conf::$now < $this->update_at + 259200 /* 72hr */;
+    }
+
     /** @return int */
     function next_eventid() {
         if ($this->eventid === 0) {
@@ -752,7 +762,7 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
             $this->mark_change();
         }
         $row = $this->conf->fetch_first_row("select value, data from Settings where name=?",
-                    self::SNAME);
+                self::SNAME);
         $this->conf->change_setting(self::SNAME, $row ? (int) $row[0] : null, $row[1] ?? null);
         return $updated;
     }
@@ -762,6 +772,19 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
         $this->position_at = $this->update_at = $this->next_position_at();
         $this->ts = [];
         $this->update($this->next_eventid());
+    }
+
+    /** @suppress PhanAccessReadOnlyProperty */
+    function update_pulse() {
+        assert($this->eventid > 0 && !$this->_was_empty);
+        $this->conf->qe("update Settings set value=value+? where name=?",
+                mt_rand(0, 31) << 1, self::SNAME);
+        $row = $this->conf->fetch_first_row("select value, data from Settings where name=?",
+                self::SNAME);
+        '@phan-var-force array{string,?string} $row';
+        $this->conf->change_setting(self::SNAME, (int) $row[0], $row[1]);
+        $this->eventid = (int) $row[0];
+        $this->mark_change();
     }
 
     /** @param list<string> $args
@@ -880,7 +903,7 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
         return $this->update($changed ? $this->next_eventid() : $this->eventid);
     }
 
-    function mark_change($pids = null) {
+    private function mark_change() {
         $comet_dir = $this->conf->opt("trackerCometUpdateDirectory");
         $comet_url = $this->conf->opt("trackerCometSite");
         if (!$comet_dir && !$comet_url) {
@@ -899,9 +922,6 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
                 "tracker_status_at" => $this->position_at,
                 "tracker_eventid" => $this->eventid
             ];
-            if ($pids) {
-                $j["pulse"] = true;
-            }
             if (!str_ends_with($comet_dir, "/")) {
                 $comet_dir .= "/";
             }
@@ -949,9 +969,6 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
             . "&tracker_status=" . urlencode($this->status())
             . "&tracker_status_at=" . $this->position_at
             . "&tracker_eventid=" . $this->eventid;
-        if ($pids) {
-            $comet_url .= "&pulse=1";
-        }
         $stream = @fopen($comet_url, "r", false, $context);
         if (!$stream) {
             $e = error_get_last();

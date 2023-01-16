@@ -1953,7 +1953,7 @@ class AssignmentSet {
         }
         if (!empty($this->_cleanup_notify_tracker)
             && $this->conf->opt("trackerCometSite")) {
-            MeetingTracker::contact_tracker_comet($this->conf, array_keys($this->_cleanup_notify_tracker));
+            MeetingTracker::notify_tracker($this->conf, array_keys($this->_cleanup_notify_tracker));
         }
         $this->conf->release_logs();
 
