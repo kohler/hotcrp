@@ -10880,11 +10880,12 @@ function setup_canvas(canvas, w, h) {
 
 function analyze_sc(sc) {
     var anal = {
-        v: [], max: 0, h: 0, lo: 0, hi: 0, flip: false, sum: 0, sv: "sv"
+        v: [], max: 0, h: 0, lo: 1, hi: 0, flip: false, sum: 0, sv: "sv"
     }, m, i, vs, x;
 
     m = /(?:^|[&;])v=(.*?)(?:[&;]|$)/.exec(sc);
     vs = m[1].split(/,/);
+    anal.hi = vs.length;
     for (i = 0; i < vs.length; ++i) {
         if (/^\d+$/.test(vs[i]))
             x = parseInt(vs[i], 10);
@@ -10897,8 +10898,10 @@ function analyze_sc(sc) {
 
     if ((m = /(?:^|[&;])h=(\d+)(?:[&;]|$)/.exec(sc)))
         anal.h = parseInt(m[1], 10);
-    anal.lo = (m = /(?:^|[&;])lo=(\w+)/.exec(sc)) ? m[1] : 1;
-    anal.hi = (m = /(?:^|[&;])hi=(\w+)/.exec(sc)) ? m[1] : vs.length;
+    if ((m = /(?:^|[&;])lo=(\w+)/.exec(sc)))
+        anal.lo = m[1];
+    if ((m = /(?:^|[&;])hi=(\w+)/.exec(sc)))
+        anal.hi = m[1];
     anal.flip = /(?:^|[&;])flip=[^0&;]/.test(sc);
     if ((m = /(?:^|[&;])sv=([^;&]*)(?:[&;]|$)/.exec(sc)))
         anal.sv = decodeURIComponent(m[1]);
