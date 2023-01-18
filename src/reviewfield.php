@@ -137,6 +137,8 @@ abstract class ReviewField implements JsonSerializable {
         VIEWSCORE_AUTHORDEC => "audec",
         VIEWSCORE_AUTHOR => "au"
     ];
+    /** @var ?Score_ReviewField */
+    static public $expertise_field;
 
     function __construct(Conf $conf, ReviewFieldInfo $finfo, $j) {
         $this->short_id = $finfo->short_id;
@@ -206,6 +208,15 @@ abstract class ReviewField implements JsonSerializable {
             $s = rtrim(substr($s, 0, $lparen));
         }
         return $s;
+    }
+
+    /** @return Score_ReviewField */
+    static function make_expertise(Conf $conf) {
+        if (self::$expertise_field === null) {
+            $rfi = new ReviewFieldInfo("s98", true, null, "s98");
+            self::$expertise_field = new Score_ReviewField($conf, $rfi, json_decode('{"name":"Expertise","symbols":["X","Y","Z"],"flip":true,"scheme":"none"}'));
+        }
+        return self::$expertise_field;
     }
 
     /** @return string */
@@ -538,21 +549,25 @@ abstract class ReviewField implements JsonSerializable {
 
 class Score_ReviewField extends ReviewField {
     /** @var list<string> */
-    private $values = [];
+    private $values;
     /** @var list<int|string> */
     private $symbols = []; // NB strings must by URL-safe and HTML-safe
     /** @var ?list<int> */
     private $ids;
-    /** @var int */
-    private $option_letter = 0;
+    /** @var int
+     * @readonly */
+    private $flags = 0;
     /** @var bool
      * @readonly */
     public $flip = false;
     /** @var string
      * @readonly */
     public $scheme = "sv";
-    /** @var ?string */
-    private $_typical_score;
+
+    const FLAG_NUMERIC = 1;
+    const FLAG_LETTER = 2;
+    const FLAG_SINGLE_CHAR = 4;
+    const FLAG_DEFAULT_SYMBOLS = 8;
 
     // color schemes; NB keys must be URL-safe
     /** @var array<string,list>
@@ -577,23 +592,28 @@ class Score_ReviewField extends ReviewField {
         assert($finfo->is_sfield);
         parent::__construct($conf, $finfo, $j);
 
-        $this->values = $j->values ?? $j->options ?? [];
+        if (isset($j->symbols) && !isset($j->values)) {
+            $this->values = array_fill(0, count($j->symbols), "");
+        } else {
+            $this->values = $j->values ?? $j->options ?? [];
+        }
         $nvalues = count($this->values);
-        $ol = $j->start ?? $j->option_letter ?? null;
-        $this->option_letter = 0;
-        $this->symbols = [];
-        $this->flip = false;
         if (isset($j->symbols) && count($j->symbols) === $nvalues) {
             $this->symbols = $j->symbols;
-        } else if ($ol && is_string($ol) && ctype_upper($ol) && strlen($ol) === 1) {
-            $this->option_letter = ord($ol) + $nvalues;
-            $this->flip = true;
-            for ($i = 0; $i !== $nvalues; ++$i) {
-                $this->symbols[] = chr($this->option_letter - $i - 1);
-            }
+            $this->flip = $this->flip ?? false;
+            $this->flags = self::analyze_symbols($this->symbols, $this->flip);
+        } else if ($nvalues === 0) {
+            $this->flags = self::FLAG_NUMERIC | self::FLAG_DEFAULT_SYMBOLS;
         } else {
-            for ($i = 0; $i !== $nvalues; ++$i) {
-                $this->symbols[] = $i + 1;
+            $ch = $j->start ?? $j->option_letter ?? null;
+            if ($ch && is_string($ch) && ctype_upper($ch) && strlen($ch) === 1) {
+                $chx = chr(ord($ch) + $nvalues - 1);
+                $this->symbols = range($chx, $ch);
+                $this->flip = true;
+                $this->flags = self::FLAG_SINGLE_CHAR | self::FLAG_LETTER | self::FLAG_DEFAULT_SYMBOLS;
+            } else {
+                $this->symbols = range(1, $nvalues);
+                $this->flags = self::FLAG_NUMERIC | self::FLAG_DEFAULT_SYMBOLS;
             }
         }
         if (isset($j->ids) && count($j->ids) === $nvalues) {
@@ -613,7 +633,44 @@ class Score_ReviewField extends ReviewField {
                 $this->required = true;
             }
         }
-        $this->_typical_score = null;
+    }
+
+    /** @param list<int|string> $symbols
+     * @param bool $flip
+     * @return int */
+    static function analyze_symbols($symbols, $flip) {
+        if (empty($symbols)) {
+            return self::FLAG_NUMERIC | self::FLAG_DEFAULT_SYMBOLS;
+        }
+        if ($symbols[0] === 1 && !$flip) {
+            $f = self::FLAG_NUMERIC | self::FLAG_DEFAULT_SYMBOLS;
+        } else if (is_string($symbols[0]) && ctype_upper($symbols[0])) {
+            $f = self::FLAG_LETTER | self::FLAG_SINGLE_CHAR | ($flip ? self::FLAG_DEFAULT_SYMBOLS : 0);
+        } else {
+            $f = self::FLAG_LETTER | self::FLAG_SINGLE_CHAR;
+        }
+        foreach ($symbols as $i => $sym) {
+            if (($f & self::FLAG_NUMERIC) !== 0
+                && $sym !== $i + 1) {
+                return 0;
+            }
+            if (($f & self::FLAG_LETTER) !== 0
+                && (is_int($sym) || strlen($sym) !== 1 || !ctype_alpha($sym))) {
+                $f &= ~(self::FLAG_LETTER | self::FLAG_DEFAULT_SYMBOLS);
+            }
+            if (($f & self::FLAG_SINGLE_CHAR) !== 0
+                && (is_int($sym)
+                    || (strlen($sym) !== 1
+                        && UnicodeHelper::utf8_glyphlen((string) $sym) !== 1))) {
+                $f &= ~self::FLAG_SINGLE_CHAR;
+            }
+            if (($f & self::FLAG_DEFAULT_SYMBOLS) !== 0
+                && $flip
+                && $sym !== chr(ord($symbols[0]) - $i)) {
+                $f &= ~self::FLAG_DEFAULT_SYMBOLS;
+            }
+        }
+        return $f;
     }
 
     /** @return int */
@@ -648,17 +705,17 @@ class Score_ReviewField extends ReviewField {
 
     /** @return bool */
     function is_numeric() {
-        return $this->option_letter === 0;
+        return ($this->flags & self::FLAG_NUMERIC) !== 0;
     }
 
     /** @return bool */
     function is_single_character() {
-        return $this->option_letter !== 0;
+        return ($this->flags & self::FLAG_SINGLE_CHAR) !== 0;
     }
 
     /** @return bool */
     function flip_relation() {
-        return $this->option_letter !== 0
+        return ($this->flags & (self::FLAG_LETTER | self::FLAG_DEFAULT_SYMBOLS)) === (self::FLAG_LETTER | self::FLAG_DEFAULT_SYMBOLS)
             && $this->flip === !$this->conf->opt("smartScoreCompare");
     }
 
@@ -670,8 +727,10 @@ class Score_ReviewField extends ReviewField {
                 || $this->ids !== range(1, count($this->values)))) {
             $j->ids = $this->ids;
         }
-        if ($this->option_letter !== 0) {
-            $j->start = chr($this->option_letter - count($this->values));
+        if (($this->flags & self::FLAG_DEFAULT_SYMBOLS) === 0) {
+            $j->symbols = $this->symbols;
+        } else if (($this->flags & self::FLAG_LETTER) !== 0) {
+            $j->start = $this->symbols[count($this->symbols) - 1];
         }
         if ($this->flip) {
             $j->flip = true;
@@ -688,8 +747,8 @@ class Score_ReviewField extends ReviewField {
         $n = count($this->values);
         $rfs->values = $this->values;
         $rfs->ids = $this->ids();
-        if ($this->option_letter !== 0) {
-            $rfs->start = chr($this->option_letter - $n);
+        if (($this->flags & self::FLAG_NUMERIC) === 0) {
+            $rfs->start = $this->symbols[$n - 1];
         } else {
             $rfs->start = 1;
         }
@@ -713,19 +772,11 @@ class Score_ReviewField extends ReviewField {
         return true;
     }
 
-    /** @return ?string */
+    /** @return string */
     function typical_score() {
-        if ($this->_typical_score === null) {
-            $n = count($this->values);
-            if ($n === 1) {
-                $this->_typical_score = $this->unparse(1);
-            } else if ($this->option_letter !== 0) {
-                $this->_typical_score = $this->unparse(1 + (int) (($n - 1) / 2));
-            } else {
-                $this->_typical_score = $this->unparse(2);
-            }
-        }
-        return $this->_typical_score;
+        $n = count($this->values);
+        $d1 = $n > 3 ? 2 : ($n > 2 ? 1 : 0);
+        return $this->symbols[$n === 1 ? 0 : ($this->flip ? $n - $d1 : $d1)] ?? "";
     }
 
     /** @return ?array{string,string} */
@@ -747,22 +798,6 @@ class Score_ReviewField extends ReviewField {
         $f = $this->flip ? count($this->values) : 1;
         $l = $this->flip ? 1 : count($this->values);
         return [$this->unparse($f), $this->unparse($l)];
-    }
-
-    /** @param int $option_letter
-     * @param int|float $fval
-     * @return string */
-    static function unparse_letter($option_letter, $fval) {
-        // see also `unparse_json`
-        $ivalue = (int) $fval;
-        $ch = $option_letter - $ivalue;
-        if ($fval < $ivalue + 0.25) {
-            return chr($ch);
-        } else if ($fval < $ivalue + 0.75) {
-            return chr($ch - 1) . "~" . chr($ch);
-        } else {
-            return chr($ch - 1);
-        }
     }
 
     /** @param int|float $fval
@@ -821,7 +856,8 @@ class Score_ReviewField extends ReviewField {
         if ($fval <= 0.8) {
             return "";
         }
-        if ($this->option_letter !== 0 && $fval <= count($this->values) + 0.2) {
+        if (($this->flags & self::FLAG_NUMERIC) === 0
+            && $fval <= count($this->values) + 0.2) {
             $ival = (int) round($fval);
             if ($fval >= $ival + 0.25 || $fval <= $ival - 0.25) {
                 $ival = (int) $fval;
@@ -849,7 +885,9 @@ class Score_ReviewField extends ReviewField {
      * @param ?string $real_format
      * @return string */
     function unparse_real_format($fval, $real_format = null) {
-        if ($fval > 0.8 && $real_format !== null && $this->option_letter === 0) {
+        if ($fval > 0.8
+            && $real_format !== null
+            && ($this->flags & self::FLAG_NUMERIC) !== 0) {
             return sprintf($real_format, $fval);
         }
         return $this->unparse($fval);
@@ -879,7 +917,7 @@ class Score_ReviewField extends ReviewField {
         if ($sci->my_score() > 0 && $counts[$sci->my_score() - 1] > 0) {
             $args .= "&amp;h=" . $sci->my_score();
         }
-        if ($this->option_letter !== 0 || $this->flip) {
+        if (($this->flags & self::FLAG_NUMERIC) === 0) {
             $args .= "&amp;lo=" . $this->symbols[$this->flip ? $n - 1 : 0]
                 . "&amp;hi=" . $this->symbols[$this->flip ? 0 : $n - 1];
         }
@@ -1079,10 +1117,12 @@ class Score_ReviewField extends ReviewField {
         }
         if (!$this->required) {
             $t[] = "==-==    None of the above\n==-== Enter your choice:\n";
-        } else if ($this->option_letter !== 0) {
+        } else if (($this->flags & self::FLAG_LETTER) !== 0) {
             $t[] = "==-== Enter the letter of your choice:\n";
-        } else {
+        } else if (($this->flags & self::FLAG_NUMERIC) !== 0) {
             $t[] = "==-== Enter the number of your choice:\n";
+        } else {
+            $t[] = "==-== Enter the symbol of your choice:\n";
         }
         $t[] = "\n";
         if (($fval ?? 0) > 0 && $fval <= count($this->symbols)) {
@@ -1113,7 +1153,7 @@ class Score_ReviewField extends ReviewField {
             $varg
         );
         if (count($this->values) > 2
-            && !$this->option_letter) {
+            && ($this->flags & self::FLAG_NUMERIC) !== 0) {
             $ex[] = new SearchExample(
                 $this, "{$kw}:{comparison}",
                 "<0>at least one completed review has {title} greater than {value}",

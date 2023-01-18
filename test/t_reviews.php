@@ -1320,4 +1320,18 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_str_contains($sv->full_feedback_text(), "Entry required");
         xassert($sv->has_error_at("sf/1/name"));
     }
+
+    function test_review_symbols() {
+        $FNUM = Score_ReviewField::FLAG_NUMERIC;
+        $FLET = Score_ReviewField::FLAG_LETTER;
+        $FCHR = Score_ReviewField::FLAG_SINGLE_CHAR;
+        $FDEF = Score_ReviewField::FLAG_DEFAULT_SYMBOLS;
+        xassert_eqq(Score_ReviewField::analyze_symbols([], false), $FNUM|$FDEF);
+        xassert_eqq(Score_ReviewField::analyze_symbols([1, 2, 3], false), $FNUM|$FDEF);
+        xassert_eqq(Score_ReviewField::analyze_symbols([1, 2, 3], true), 0);
+        xassert_eqq(Score_ReviewField::analyze_symbols(["←", "B"], true), $FCHR);
+        xassert_eqq(Score_ReviewField::analyze_symbols(["C", "B", "A"], true), $FLET|$FCHR|$FDEF);
+        xassert_eqq(Score_ReviewField::analyze_symbols(["C", "B", "A", "@"], true), $FCHR);
+        xassert_eqq(Score_ReviewField::analyze_symbols(["C", "B", "A"], false), $FLET|$FCHR);
+    }
 }

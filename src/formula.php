@@ -2414,7 +2414,7 @@ class Formula implements JsonSerializable {
             if ($this->_format === Fexpr::FREVIEWFIELD) {
                 return $this->_format_detail->unparse_span_html($rx, $real_format);
             } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
-                return Score_ReviewField::unparse_letter(91, $x + 2);
+                return ReviewField::make_expertise($this->conf)->unparse_span_html($x + 2, $real_format);
             } else if ($this->_format === Fexpr::FREVIEWER) {
                 return $this->user->reviewer_html_for($x);
             } else if ($this->_format === Fexpr::FDATE
@@ -2443,7 +2443,7 @@ class Formula implements JsonSerializable {
             if ($this->_format === Fexpr::FREVIEWFIELD) {
                 return $this->_format_detail->unparse_real_format($rx, $real_format);
             } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
-                return Score_ReviewField::unparse_letter(91, $x + 2);
+                return ReviewField::make_expertise($this->conf)->unparse_real_format($x + 2, $real_format);
             } else if ($this->_format === Fexpr::FREVIEWER) {
                 return $this->user->name_text_for($x);
             } else if ($this->_format === Fexpr::FDATE

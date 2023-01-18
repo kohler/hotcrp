@@ -4792,7 +4792,7 @@ div.sc {
 .dark .sv-turbo1 { color: #944c62; }
 .dark .sv-turbo5 { color: #95fb51; } /* actual turbo color */
 .dark .sv-turbo9 { color: #cc1100; }
-.sv-none1 { color: inherit; }
+.sv-none1 { color: inherit; font-weight: inherit; }
 
 .sc_sum {
 	font-size: smaller;
