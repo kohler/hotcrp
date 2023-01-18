@@ -709,7 +709,7 @@ $blind\n";
         foreach ($rrow->viewable_fields($viewer) as $f) {
             if ($f->view_score > VIEWSCORE_REVIEWERONLY
                 || ($flags & self::RJ_NO_REVIEWERONLY) === 0) {
-                $rj[$f->uid()] = $f->value_unparse_json($rrow->fields[$f->order]);
+                $rj[$f->uid()] = $f->unparse_json($rrow->fields[$f->order]);
             }
         }
         if (($fmt = $this->conf->default_format)) {
@@ -753,8 +753,8 @@ $blind\n";
         foreach ($rrow->viewable_fields($contact) as $f) {
             if ($f instanceof Score_ReviewField
                 && !$f->value_empty($rrow->fields[$f->order])) {
-                $t .= $xbarsep . $f->name_html . "&nbsp;"
-                    . $f->value_unparse($rrow->fields[$f->order], ReviewField::VALUE_SC);
+                $fh = $f->unparse_span_html($rrow->fields[$f->order]);
+                $t = "{$t}{$xbarsep}{$f->name_html} {$fh}";
                 $xbarsep = $barsep;
             }
         }
@@ -1256,7 +1256,7 @@ class ReviewValues extends MessageSet {
             if ($this->req_json) {
                 $v1 = $f->parse_json($reqv);
             } else {
-                $v1 = $f->parse_string($reqv);
+                $v1 = $f->parse($reqv);
             }
         }
         return [$v0, $v1];
@@ -1686,7 +1686,7 @@ class ReviewValues extends MessageSet {
             $log_fields = [];
             foreach ($diffinfo->fields() as $f) {
                 if ($f instanceof Score_ReviewField) {
-                    $log_fields[] = $f->search_keyword() . ":" . $f->value_unparse_search($new_rrow->fields[$f->order]);
+                    $log_fields[] = $f->search_keyword() . ":" . $f->unparse_search($new_rrow->fields[$f->order]);
                 } else {
                     $log_fields[] = $f->search_keyword();
                 }

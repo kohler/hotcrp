@@ -77,9 +77,6 @@ class ReviewFieldInfo {
 }
 
 abstract class ReviewField implements JsonSerializable {
-    const VALUE_NONE = 0;
-    const VALUE_SC = 1;
-
     /** @var non-empty-string
      * @readonly */
     public $short_id;
@@ -331,28 +328,6 @@ abstract class ReviewField implements JsonSerializable {
             && (!$this->_exists_search || $this->_exists_search->test($rrow->prow, $rrow));
     }
 
-    /** @param ?int|?string $fval
-     * @return bool */
-    abstract function value_empty($fval);
-
-    /** @param ?int|?string $fval
-     * @return bool */
-    function value_explicit_empty($fval) {
-        return false;
-    }
-
-    /** @param ?int|?string $fval
-     * @return ?int|?string */
-    function value_clean_storage($fval) {
-        return $fval;
-    }
-
-    /** @param ?int|?string $fval
-     * @return ?int|?string */
-    function value_clean_search($fval) {
-        return $fval;
-    }
-
     /** @return bool */
     function include_word_count() {
         return false;
@@ -389,19 +364,53 @@ abstract class ReviewField implements JsonSerializable {
         return false;
     }
 
-    /** @param ?int|?float|?string $fval
-     * @return mixed */
-    abstract function value_unparse_json($fval);
+    /** @param ?int|?string $fval
+     * @return bool */
+    abstract function value_empty($fval);
+
+    /** @param ?int|?string $fval
+     * @return bool */
+    function value_explicit_empty($fval) {
+        return false;
+    }
+
+    /** @param ?int|?string $fval
+     * @return ?int|?string */
+    function value_clean_storage($fval) {
+        return $fval;
+    }
+
+    /** @param ?int|?string $fval
+     * @return ?int|?string */
+    function value_clean_search($fval) {
+        return $fval;
+    }
 
     /** @param int|float|string $fval
-     * @param int $flags
+     * @return string */
+    abstract function unparse($fval);
+
+    /** @param ?int|?float|?string $fval
+     * @return mixed */
+    abstract function unparse_json($fval);
+
+    /** @param int|float $fval
      * @param ?string $real_format
      * @return string */
-    abstract function value_unparse($fval, $flags = 0, $real_format = null);
+    function unparse_span_html($fval, $real_format = null) {
+        return "";
+    }
+
+    const VALUE_NONE = 0;
+    const VALUE_SC = 1;
+    /** @deprecated */
+    function value_unparse($fval, $flags = 0, $real_format = null) {
+        return $flags & self::VALUE_SC ? $this->unparse_span_html($fval, $real_format) : $this->unparse($fval);
+    }
 
     /** @param string $s
      * @return int|string|false */
-    abstract function parse_string($s);
+    abstract function parse($s);
 
     /** @param mixed $j
      * @return int|string|false */
@@ -704,31 +713,16 @@ class Score_ReviewField extends ReviewField {
         return true;
     }
 
-    function value_empty($fval) {
-        if (!is_int($fval ?? 0)) {
-            error_log("not int: " . debug_string_backtrace());
-        }
-        return ($fval ?? 0) <= 0;
-    }
-
-    function value_explicit_empty($fval) {
-        return $fval === -1;
-    }
-
-    function value_clean_search($fval) {
-        return $fval <= 0 ? 0 : $fval;
-    }
-
     /** @return ?string */
     function typical_score() {
         if ($this->_typical_score === null) {
             $n = count($this->values);
             if ($n === 1) {
-                $this->_typical_score = $this->value_unparse(1);
+                $this->_typical_score = $this->unparse(1);
             } else if ($this->option_letter !== 0) {
-                $this->_typical_score = $this->value_unparse(1 + (int) (($n - 1) / 2));
+                $this->_typical_score = $this->unparse(1 + (int) (($n - 1) / 2));
             } else {
-                $this->_typical_score = $this->value_unparse(2);
+                $this->_typical_score = $this->unparse(2);
             }
         }
         return $this->_typical_score;
@@ -739,31 +733,33 @@ class Score_ReviewField extends ReviewField {
         $n = count($this->values);
         if ($n < 2) {
             return null;
-        } else if ($this->flip) {
-            return [$this->value_unparse($n - ($n > 2 ? 1 : 0)), $this->value_unparse($n - 1 - ($n > 2 ? 1 : 0) - ($n > 3 ? 1 : 0))];
-        } else {
-            return [$this->value_unparse(1 + ($n > 2 ? 1 : 0)), $this->value_unparse(2 + ($n > 2 ? 1 : 0) + ($n > 3 ? 1 : 0))];
         }
+        $d0 = $n > 2 ? 1 : 0;
+        $d1 = $n > 3 ? 2 : $d0;
+        return [
+            $this->unparse($this->flip ? $n - $d0 : 1 + $d0),
+            $this->unparse($this->flip ? $n - 1 - $d1 : 2 + $d1)
+        ];
     }
 
     /** @return ?array{string,string} */
     function full_score_range() {
         $f = $this->flip ? count($this->values) : 1;
         $l = $this->flip ? 1 : count($this->values);
-        return [$this->value_unparse($f), $this->value_unparse($l)];
+        return [$this->unparse($f), $this->unparse($l)];
     }
 
     /** @param int $option_letter
      * @param int|float $fval
      * @return string */
     static function unparse_letter($option_letter, $fval) {
-        // see also `value_unparse_json`
+        // see also `unparse_json`
         $ivalue = (int) $fval;
         $ch = $option_letter - $ivalue;
         if ($fval < $ivalue + 0.25) {
             return chr($ch);
         } else if ($fval < $ivalue + 0.75) {
-            return chr($ch - 1) . chr($ch);
+            return chr($ch - 1) . "~" . chr($ch);
         } else {
             return chr($ch - 1);
         }
@@ -798,7 +794,22 @@ class Score_ReviewField extends ReviewField {
         }
     }
 
-    function value_unparse_search($fval) {
+    function value_empty($fval) {
+        if (!is_int($fval ?? 0)) {
+            error_log("not int: " . debug_string_backtrace());
+        }
+        return ($fval ?? 0) <= 0;
+    }
+
+    function value_explicit_empty($fval) {
+        return $fval === -1;
+    }
+
+    function value_clean_search($fval) {
+        return $fval <= 0 ? 0 : $fval;
+    }
+
+    function unparse_search($fval) {
         if ($fval > 0) {
             return (string) $this->symbols[$fval - 1];
         } else {
@@ -806,7 +817,24 @@ class Score_ReviewField extends ReviewField {
         }
     }
 
-    function value_unparse_json($fval) {
+    function unparse($fval) {
+        if ($fval <= 0.8) {
+            return "";
+        }
+        if ($this->option_letter !== 0 && $fval <= count($this->values) + 0.2) {
+            $ival = (int) round($fval);
+            if ($fval >= $ival + 0.25 || $fval <= $ival - 0.25) {
+                $ival = (int) $fval;
+                $vl = $this->symbols[$ival - 1];
+                $vh = $this->symbols[$ival];
+                return $this->flip ? "{$vh}~{$vl}" : "{$vl}~{$vh}";
+            }
+            return $this->symbols[$ival - 1];
+        }
+        return (string) $fval;
+    }
+
+    function unparse_json($fval) {
         assert($fval === null || is_int($fval));
         if (($fval ?? 0) === 0) {
             return null;
@@ -817,35 +845,22 @@ class Score_ReviewField extends ReviewField {
         }
     }
 
-    /** @param int|float|string $fval
-     * @param int $flags
+    /** @param int|float $fval
      * @param ?string $real_format
-     * @return ?string */
-    function value_unparse($fval, $flags = 0, $real_format = null) {
-        if (is_string($fval)) {
-            error_log("bad value_unparse: " . debug_string_backtrace());
+     * @return string */
+    function unparse_real_format($fval, $real_format = null) {
+        if ($fval > 0.8 && $real_format !== null && $this->option_letter === 0) {
+            return sprintf($real_format, $fval);
         }
-        if ($fval <= 0.8) {
-            return "";
-        }
-        if ($this->option_letter !== 0) {
-            $text = self::unparse_letter($this->option_letter, $fval);
-        } else if ($real_format) {
-            $text = sprintf($real_format, $fval);
-        } else {
-            $text = (string) $fval;
-        }
-        if ($flags === self::VALUE_SC) {
-            $vc = $this->value_class($fval);
-            $text = "<span class=\"{$vc}\">{$text}</span>";
-        }
-        return $text;
+        return $this->unparse($fval);
     }
 
-    /** @param int|float $fval
-     * @return string */
-    function unparse_average($fval) {
-        return $this->value_unparse($fval, 0, "%.2f");
+    function unparse_span_html($fval, $format = null) {
+        $s = $this->unparse_real_format($fval, $format);
+        if ($s !== "" && ($vc = $this->value_class($fval)) !== "") {
+            $s = "<span class=\"{$vc}\">{$s}</span>";
+        }
+        return $s;
     }
 
     /** @param ScoreInfo $sci
@@ -854,7 +869,7 @@ class Score_ReviewField extends ReviewField {
     function unparse_graph($sci, $style) {
         $n = count($this->values);
 
-        $avgtext = $this->unparse_average($sci->mean());
+        $avgtext = $this->unparse_real_format($sci->mean(), "%.2f");
         if ($sci->count() > 1 && ($stddev = $sci->stddev_s())) {
             $avgtext .= sprintf(" ± %.2f", $stddev);
         }
@@ -925,7 +940,7 @@ class Score_ReviewField extends ReviewField {
         return $s;
     }
 
-    function parse_string($text) {
+    function parse($text) {
         $text = self::clean_string($text);
         if ($text === "") {
             return 0;
@@ -953,7 +968,7 @@ class Score_ReviewField extends ReviewField {
 
     /** @param int $fval
      * @return string */
-    private function value_unparse_web($fval) {
+    private function unparse_choice($fval) {
         if ($fval === -1) {
             return "none";
         } else if ($fval > 0 && isset($this->symbols[$fval - 1])) {
@@ -967,7 +982,7 @@ class Score_ReviewField extends ReviewField {
      * @param int $fval
      * @param int $reqval */
     private function print_choice($choiceval, $fval, $reqval) {
-        $symstr = $this->value_unparse_web($choiceval);
+        $symstr = $this->unparse_choice($choiceval);
         echo '<label class="checki svline"><span class="checkc">',
             Ht::radio($this->short_id, $symstr, $choiceval === $reqval, [
                 "id" => "{$this->short_id}_{$symstr}",
@@ -993,7 +1008,7 @@ class Score_ReviewField extends ReviewField {
         if (($fval ?? 0) === 0) {
             $forval = $this->flip ? $n - 1 : 0;
         }
-        $this->print_web_edit_open($this->short_id, "{$this->short_id}_" . $this->value_unparse_web($forval), $rvalues);
+        $this->print_web_edit_open($this->short_id, "{$this->short_id}_" . $this->unparse_choice($forval), $rvalues);
         echo '<div class="revev">';
         $step = $this->flip ? -1 : 1;
         for ($i = $this->flip ? $n - 1 : 0; $i >= 0 && $i < $n; $i += $step) {
@@ -1022,14 +1037,14 @@ class Score_ReviewField extends ReviewField {
         if (!$this->required) {
             $opt["none"] = "N/A";
         }
-        echo Ht::select($this->short_id, $opt, $this->value_unparse_web($reqval), [
-            "data-default-value" => $this->value_unparse_web($fval)
+        echo Ht::select($this->short_id, $opt, $this->unparse_choice($reqval), [
+            "data-default-value" => $this->unparse_choice($fval)
         ]);
         echo '</div></div>';
     }
 
     function print_web_edit($fval, $reqstr, $rvalues, $args) {
-        $reqval = $reqstr === null ? $fval : $this->parse_string($reqstr);
+        $reqval = $reqstr === null ? $fval : $this->parse($reqstr);
         if ($this->type === "dropdown") {
             $this->print_web_edit_dropdown($fval, $reqval, $rvalues);
         } else {
@@ -1218,19 +1233,15 @@ class Text_ReviewField extends ReviewField {
         return $this->order && $this->view_score >= VIEWSCORE_AUTHORDEC;
     }
 
-    function value_unparse_json($fval) {
-        return $fval;
-    }
-
-    /** @param int|float|string $fval
-     * @param int $flags
-     * @param ?string $real_format
-     * @return string */
-    function value_unparse($fval, $flags = 0, $real_format = null) {
+    function unparse($fval) {
         return $fval ?? "";
     }
 
-    function parse_string($text) {
+    function unparse_json($fval) {
+        return $fval;
+    }
+
+    function parse($text) {
         $text = rtrim($text);
         if ($text !== "") {
             $text .= "\n";

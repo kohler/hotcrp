@@ -308,7 +308,7 @@ class Constant_Fexpr extends Fexpr {
             $this->x = 89 - ord($letter);
         } else if ($format === Fexpr::FREVIEWFIELD
                    && $letter
-                   && ($x = $format_detail->parse_string($letter))) {
+                   && ($x = $format_detail->parse($letter))) {
             $this->x = $x;
         } else if ($format === Fexpr::FROUND
                    && ($round = $formula->conf->round_number($this->x, false)) !== null) {
@@ -2412,7 +2412,7 @@ class Formula implements JsonSerializable {
         $rx = round($x * 100) / 100;
         if ($this->_format > Fexpr::FNUMERIC) {
             if ($this->_format === Fexpr::FREVIEWFIELD) {
-                return $this->_format_detail->value_unparse($rx, ReviewField::VALUE_SC, $real_format);
+                return $this->_format_detail->unparse_span_html($rx, $real_format);
             } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
                 return Score_ReviewField::unparse_letter(91, $x + 2);
             } else if ($this->_format === Fexpr::FREVIEWER) {
@@ -2441,7 +2441,7 @@ class Formula implements JsonSerializable {
         $rx = round($x * 100) / 100;
         if ($this->_format > Fexpr::FNUMERIC) {
             if ($this->_format === Fexpr::FREVIEWFIELD) {
-                return $this->_format_detail->value_unparse($rx, 0, $real_format);
+                return $this->_format_detail->unparse_real_format($rx, $real_format);
             } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
                 return Score_ReviewField::unparse_letter(91, $x + 2);
             } else if ($this->_format === Fexpr::FREVIEWER) {

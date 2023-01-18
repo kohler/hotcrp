@@ -783,16 +783,16 @@ class Review_SearchTerm extends SearchTerm {
             return true;
         }
         if ($m[3] !== "") {
-            $v0 = $f->parse_string($m[1]);
-            $v1 = $f->parse_string($m[4]);
+            $v0 = $f->parse($m[1]);
+            $v1 = $f->parse($m[4]);
         } else {
-            $v0 = $v1 = $f->parse_string($m[1] === "" ? $m[4] : $m[1]);
+            $v0 = $v1 = $f->parse($m[1] === "" ? $m[4] : $m[1]);
             if ($v0 === false
                 && $m[2] === ""
                 && $f->is_single_character()
                 && strlen($m[1]) === 2
-                && ($x0 = $f->parse_string($m[1][0])) !== false
-                && ($x1 = $f->parse_string($m[1][1])) !== false) {
+                && ($x0 = $f->parse($m[1][0])) !== false
+                && ($x1 = $f->parse($m[1][1])) !== false) {
                 // XXX backward compat
                 $v0 = $x0;
                 $v1 = $x1;
@@ -822,7 +822,7 @@ class Review_SearchTerm extends SearchTerm {
                     && $v0 !== false) {
                     $kw = $sword->kwdef->name;
                     $want = "{$kw}:" . ($rel & ReviewSearchMatcher::RELSPAN ? "span:" : "all:")
-                        . $f->value_unparse_search($v0) . "-" . $f->value_unparse_search($v1);
+                        . $f->unparse_search($v0) . "-" . $f->unparse_search($v1);
                     error_log("{$srch->conf->dbname}: {$srch->q}: search syntax `{$kw}:{$sword->qword}` is obsolete, use `{$want}` instead");
                 }
             }

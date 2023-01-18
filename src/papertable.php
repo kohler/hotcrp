@@ -2470,7 +2470,7 @@ class PaperTable {
                             $score_header[$f->short_id] = '<th class="rlscore">' . $f->web_abbreviation() . "</th>";
                         }
                         $scores[$f->short_id] = '<td class="rlscore need-tooltip" data-rf="' . $f->uid() . '" data-tooltip-info="rf-score">'
-                            . $f->value_unparse($rr->fields[$f->order], ReviewField::VALUE_SC)
+                            . $f->unparse_span_html($rr->fields[$f->order])
                             . '</td>';
                     }
                 }

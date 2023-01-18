@@ -868,7 +868,7 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
     }
     function text(PaperList $pl, PaperInfo $row) {
         $si = $this->score_info($pl, $row);
-        $values = array_map([$this->format_field, "value_unparse"], $si->as_sorted_list());
+        $values = array_map([$this->format_field, "unparse"], $si->as_sorted_list());
         return join(" ", array_values($values));
     }
 }

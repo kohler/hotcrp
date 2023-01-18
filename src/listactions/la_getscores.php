@@ -36,7 +36,7 @@ class GetScores_ListAction extends ListAction {
                             if ($f instanceof Score_ReviewField) {
                                 $v = $rrow->fields[$f->order];
                                 if ($v !== 0 || !$f->required) {
-                                    $b[$f->search_keyword()] = $f->value_unparse($v);
+                                    $b[$f->search_keyword()] = $f->unparse($v);
                                     $any_scores[$f->search_keyword()] = $this_scores = true;
                                 }
                             }
