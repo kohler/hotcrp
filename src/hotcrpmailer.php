@@ -295,7 +295,8 @@ class HotCRPMailer extends Mailer {
         if ($isbool) {
             return $args && $this->conf->setting($args) > 0;
         } else if ($args) {
-            return $this->conf->unparse_setting_time($args);
+            $t = $this->conf->setting($args) ?? 0;
+            return $this->conf->unparse_time_long($t);
         } else {
             return null;
         }

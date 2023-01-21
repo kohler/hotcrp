@@ -3325,24 +3325,6 @@ class Conf {
         }
     }
 
-    /** @param string $name
-     * @return string */
-    function unparse_setting_time($name) {
-        $t = $this->settings[$name] ?? 0;
-        return $this->unparse_time_long($t);
-    }
-    /** @param string $name
-     * @param string $suffix
-     * @return string */
-    function unparse_setting_time_span($name, $suffix = "") {
-        $t = $this->settings[$name] ?? 0;
-        if ($t > 0) {
-            return $this->unparse_time_with_local_span($t, $suffix);
-        } else {
-            return "N/A";
-        }
-    }
-
     /** @param string $lo
      * @param ?int $time
      * @return bool */
@@ -5450,7 +5432,7 @@ class Conf {
             }
         }
     }
-    /** @param PermissionProblem $whynot
+    /** @param ?PermissionProblem $whynot
      * @return JsonResult */
     static function paper_error_json_result($whynot) {
         $result = ["ok" => false, "message_list" => []];

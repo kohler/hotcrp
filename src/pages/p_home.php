@@ -3,6 +3,12 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Home_Page {
+    /** @var Conf
+     * @readonly */
+    public $conf;
+    /** @var Contact
+     * @readonly */
+    public $user;
     /** @var int */
     private $_nh2 = 0;
     /** @var bool */
@@ -19,6 +25,11 @@ class Home_Page {
     /** @var list<int|float> */
     private $_rf_means;
     private $_tokens_done;
+
+    function __construct(Contact $user) {
+        $this->conf = $user->conf;
+        $this->user = $user;
+    }
 
     static function disabled_request(Contact $user, Qrequest $qreq) {
         if (!$user->is_empty() && $user->is_disabled()) {
@@ -162,18 +173,18 @@ class Home_Page {
         }
     }
 
-    function print_message(Contact $user) {
-        if (($t = $user->conf->_id("home", ""))) {
+    function print_message() {
+        if (($t = $this->conf->_id("home", ""))) {
             echo '<div class="msg ',
                 $this->_has_sidebar ? 'avoid-home-sidebar' : 'maxw-auto',
                 ' mb-5">', $t, '</div>';
         }
     }
 
-    function print_welcome(Contact $user) {
-        echo '<div class="homegrp">Welcome to the ', htmlspecialchars($user->conf->full_name()), " submissions site.";
-        if (($site = $user->conf->opt("conferenceSite"))
-            && $site !== $user->conf->opt("paperSite"))
+    function print_welcome() {
+        echo '<div class="homegrp">Welcome to the ', htmlspecialchars($this->conf->full_name()), " submissions site.";
+        if (($site = $this->conf->opt("conferenceSite"))
+            && $site !== $this->conf->opt("paperSite"))
             echo " For general conference information, see ", Ht::link(htmlspecialchars($site), htmlspecialchars($site)), ".";
         echo '</div>';
     }
@@ -185,34 +196,39 @@ class Home_Page {
     }
 
     function print_search(Contact $user, Qrequest $qreq, $gx) {
-        $conf = $user->conf;
         if (!$user->privChair
             && ($user->isPC
-                ? !$conf->setting("pc_seeall") && !$conf->has_any_submitted()
+                ? !$this->conf->setting("pc_seeall") && !$this->conf->has_any_submitted()
                 : !$user->is_reviewer())) {
             return;
         }
 
         $limits = PaperSearch::viewable_limits($user);
         echo '<div class="homegrp d-table" id="homelist">',
-            $this->print_h2_home('<a class="q" href="' . $conf->hoturl("search") . '" id="homesearch-label">Search</a>'),
-            Ht::form($conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
+            $this->print_h2_home('<a class="q" href="' . $this->conf->hoturl("search") . '" id="homesearch-label">Search</a>'),
+            Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
             Ht::entry("q", (string) $qreq->q, [
                 "id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
                 "class" => "papersearch need-suggest flex-grow-1",
                 "placeholder" => "(All)", "spellcheck" => false,
                 "aria-labelledby" => "homesearch-label"
             ]), '<div class="form-basic-search-in"> in ',
-            PaperSearch::limit_selector($conf, $limits, $limits[0], ["class" => "ml-1"]),
+            PaperSearch::limit_selector($this->conf, $limits, $limits[0], ["class" => "ml-1"]),
             Ht::submit("Search", ["class" => "ml-3"]),
             "</div></form></div>\n";
     }
 
-    /** @param Conf $conf
-     * @return list<Score_ReviewField> */
-    private function default_review_fields($conf) {
-        $this->_rfs = $this->_rfs ?? $conf->review_form()->highlighted_main_scores();
+    /** @return list<Score_ReviewField> */
+    private function default_review_fields() {
+        $this->_rfs = $this->_rfs ?? $this->conf->review_form()->highlighted_main_scores();
         return $this->_rfs;
+    }
+
+    /** @param string $setting
+     * @return ?string */
+    private function setting_time_span($setting) {
+        $t = $this->conf->setting($setting) ?? 0;
+        return $t > 0 ? $this->conf->unparse_time_with_local_span($t) : null;
     }
 
     function print_reviews(Contact $user, Qrequest $qreq, $gx) {
@@ -233,7 +249,7 @@ class Home_Page {
             $where[] = "reviewToken in (" . join(",", $tokens) . ")";
         }
         if (!empty($where)) {
-            $rfs = $this->default_review_fields($conf);
+            $rfs = $this->default_review_fields();
             $q = "select reviewType, reviewSubmitted, reviewNeedsSubmit, timeApprovalRequested, reviewRound";
             $missing_rounds = $scores = [];
             foreach ($rfs as $rf) {
@@ -267,7 +283,7 @@ class Home_Page {
         $npc = $sumpc_submit = $npc_submit = 0;
         $pc_rf_means = [];
         if ($user->isPC || $user->privChair) {
-            $rfs = $this->default_review_fields($conf);
+            $rfs = $this->default_review_fields();
             $q = "select count(reviewId) num_submitted";
             $scores = [];
             foreach ($rfs as $rf) {
@@ -298,7 +314,7 @@ class Home_Page {
         echo $this->print_h2_home("Reviews");
         if ($has_rinfo) {
             $score_texts = [];
-            foreach ($this->default_review_fields($conf) as $i => $rf) {
+            foreach ($this->default_review_fields() as $i => $rf) {
                 if ($this->_rf_means[$i] !== null) {
                     $score_texts[] = $conf->_("average %1\$s score %2\$s", $rf->name_html, $rf->unparse_real_format($this->_rf_means[$i], "%.2f"), $this->_r_num_submitted);
                 }
@@ -310,7 +326,7 @@ class Home_Page {
         }
         if (($user->isPC || $user->privChair) && $npc) {
             $score_texts = [];
-            foreach ($this->default_review_fields($conf) as $i => $rf) {
+            foreach ($this->default_review_fields() as $i => $rf) {
                 if ($pc_rf_means[$i] !== null) {
                     $score_texts[] = $conf->_("average %1\$s score %2\$s", $rf->name_html, $rf->unparse_real_format($pc_rf_means[$i], "%.2f"), null);
                 }
@@ -339,13 +355,12 @@ class Home_Page {
                     if ($conf->setting($dn) <= 0) {
                         $dn = $conf->review_deadline_name($round, $user->isPC, true);
                     }
-                    $d = $conf->unparse_setting_time_span($dn);
-                    if ($d != "N/A") {
-                        echo ' <em class="deadline">Please submit your ', $rname, ($this->_r_num_needs_submit == 1 ? "review" : "reviews"), " by $d.</em><br>\n";
+                    if (($d = $this->setting_time_span($dn))) {
+                        echo ' <em class="deadline">Please submit your ', $rname, ($this->_r_num_needs_submit == 1 ? "review" : "reviews"), " by {$d}.</em><br>\n";
                     }
                 } else if ($conf->time_review($round, $user->isPC, true)) {
                     $dn = $conf->review_deadline_name($round, $user->isPC, false);
-                    $d = $conf->unparse_setting_time_span($dn);
+                    $d = $this->setting_time_span($dn);
                     echo ' <em class="deadline"><strong class="overdue">', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $d, ".</em><br>\n";
                 } else {
                     echo ' <em class="deadline"><strong class="overdue">The <a href="', $conf->hoturl("deadlines"), '">deadline</a> for submitting ', $rname, "reviews has passed.</strong></em><br>\n";
@@ -353,9 +368,8 @@ class Home_Page {
             }
         } else if ($user->isPC && $user->can_review_any()) {
             $dn = $conf->review_deadline_name(null, $user->isPC, false);
-            $d = $conf->unparse_setting_time_span($dn);
-            if ($d != "N/A") {
-                echo " <em class=\"deadline\">The review deadline is $d.</em><br>\n";
+            if (($d = $this->setting_time_span($dn))) {
+                echo " <em class=\"deadline\">The review deadline is {$d}.</em><br>\n";
             }
         }
         if ($user->isPC && $user->can_review_any()) {
@@ -553,14 +567,12 @@ class Home_Page {
                 }
             } else if (!$conf->time_edit_paper(null)) {
                 $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">update deadline</a> has passed, but you can still submit.';
-                $time = $conf->unparse_setting_time_span("sub_sub", " to submit papers");
-                if ($time != "N/A") {
-                    $deadlines[] = "You have until $time.";
+                if (($d = $this->setting_time_span("sub_sub"))) {
+                    $deadlines[] = "You have until {$d} to submit papers.";
                 }
             } else {
-                $time = $conf->unparse_setting_time_span("sub_update", " to submit papers");
-                if ($time != "N/A") {
-                    $deadlines[] = "You have until $time.";
+                if (($d = $this->setting_time_span("sub_update"))) {
+                    $deadlines[] = "You have until {$d} to submit papers.";
                 }
             }
         }
@@ -573,11 +585,11 @@ class Home_Page {
         }
         // NB only has("accepted") if author can see an accepted paper
         if ($plist && $plist->has("accepted")) {
-            $time = $conf->unparse_setting_time_span("final_soft");
+            $d = $this->setting_time_span("final_soft");
             if ($conf->time_after_setting("final_soft") && $plist->has("need_final")) {
-                $deadlines[] = "<strong class=\"overdue\">Final versions are overdue.</strong> They were requested by $time.";
-            } else if ($time != "N/A") {
-                $deadlines[] = "Submit final versions of your accepted papers by $time.";
+                $deadlines[] = "<strong class=\"overdue\">Final versions are overdue.</strong> They were requested by {$d}.";
+            } else if ($d) {
+                $deadlines[] = "Submit final versions of your accepted papers by {$d}.";
             }
         }
         if (!empty($deadlines)) {
