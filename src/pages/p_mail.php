@@ -444,7 +444,7 @@ $(function () { $("#to").trigger("change"); })');
 
     static function go(Contact $user, Qrequest $qreq) {
         if (isset($qreq->cancel)) {
-            $user->conf->redirect_self($qreq);
+            $user->conf->redirect_self($qreq, $qreq->subset_as_array("monreq", "to", "plimit", "q", "t", "cc", "reply-to", "subject", "body"));
         } else if (!$user->is_manager() && !$user->isPC) {
             $user->escape();
         }
