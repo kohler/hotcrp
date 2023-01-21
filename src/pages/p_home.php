@@ -486,6 +486,34 @@ class Home_Page {
         echo '<a href="', $conf->hoturl("mail", "monreq=1"), '">Monitor requested reviews</a></div>', "\n";
     }
 
+    private function print_new_submission(Contact $user, $startable) {
+        $conf = $user->conf;
+        $regdl = $conf->setting("sub_reg");
+        $subdl = $conf->setting("sub_sub");
+        $dlt = "";
+        if ($regdl > 0 || $subdl > 0) {
+            $isreg = $regdl >= Conf::$now && $regdl < $subdl;
+            $dltype = $isreg ? "Registration" : "Submission";
+            $dlspan = $conf->unparse_time_with_local_span($isreg ? $regdl : $subdl);
+            $dlt = "<em class=\"deadline\">{$dltype} deadline: {$dlspan}</em>";
+        }
+        if (!$user->has_email()) {
+            echo '<p>', Ht::link("Sign in", $conf->hoturl("signin")),
+                ' to start a submission.', $dlt ? " " : "", $dlt, '</p>';
+        } else {
+            $url = $conf->hoturl("paper", "p=new");
+            $actions = [[
+                "<a class=\"btn\" href=\"{$url}\">New submission</a>",
+                $startable ? "" : "(admin only)"
+            ]];
+            if ($regdl > 0 || $subdl > 0) {
+                $actions[] = [$dlt];
+            }
+            echo Ht::actions($actions, ["class" => "aab mt-0 mb-0 align-items-baseline"]);
+        }
+
+    }
+
     function print_submissions(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->is_author()
@@ -499,15 +527,8 @@ class Home_Page {
             $this->print_h2_home($user->is_author() ? "Your Submissions" : "Submissions");
 
         $startable = $conf->time_start_paper();
-        if ($startable && !$user->has_email()) {
-            echo '<p><em class="deadline">', $conf->unparse_setting_deadline_span("sub_reg"), "</em><br>\n<small>You must sign in to start a submission.</small></p>";
-        } else if ($startable || $user->privChair) {
-            $url = $conf->hoturl("paper", "p=new");
-            $dl = $conf->unparse_setting_deadline_span("sub_reg");
-            echo Ht::actions([
-                ["<a class=\"btn\" href=\"{$url}\">New submission</a>", $startable ? "" : "(admin only)"],
-                ["<em class=\"deadline\">{$dl}</em>"]
-            ], ["class" => "aab mt-0 mb-0 align-items-baseline"]);
+        if ($startable || $user->privChair) {
+            $this->print_new_submission($user, $startable);
         }
 
         $plist = null;

@@ -3342,16 +3342,6 @@ class Conf {
             return "N/A";
         }
     }
-    /** @param string $name
-     * @return string */
-    function unparse_setting_deadline_span($name) {
-        $t = $this->settings[$name] ?? 0;
-        if ($t > 0) {
-            return "Deadline: " . $this->unparse_time_with_local_span($t);
-        } else {
-            return "No deadline";
-        }
-    }
 
     /** @param string $lo
      * @param ?int $time
@@ -3550,7 +3540,7 @@ class Conf {
 
     /** @return array{int,int} */
     function count_submitted_accepted() {
-        $dlt = max($this->setting("sub_sub"), $this->setting("sub_close"));
+        $dlt = $this->setting("sub_sub");
         $result = $this->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome");
         $n = $nyes = 0;
         while (($row = $result->fetch_row())) {
