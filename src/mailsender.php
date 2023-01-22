@@ -224,12 +224,6 @@ class MailSender {
         echo Ht::unstash_script($s);
     }
 
-    private static function fix_body($prep) {
-        if (preg_match('^\ADear (author|reviewer)\(s\)([,;!.\s].*)\z^s', $prep->body, $m)) {
-            $prep->body = "Dear " . $m[1] . (count($prep->to) == 1 ? "" : "s") . $m[2];
-        }
-    }
-
     /** @param HotCRPMailPreparation $prep
      * @param HotCRPMailPreparation &$last_prep
      * @param ?Contact $recipient
@@ -276,7 +270,7 @@ class MailSender {
         set_time_limit(30);
         $this->print_prologue();
 
-        self::fix_body($prep);
+        $prep->finalize();
         if ($this->sending) {
             $prep->send();
         }
@@ -295,7 +289,7 @@ class MailSender {
         if ($prep->censored_preparation) {
             $show_prep = $prep->censored_preparation;
             $show_prep->to = $prep->to;
-            self::fix_body($show_prep);
+            $show_prep->finalize();
         }
 
         echo '<div class="mail"><table>';

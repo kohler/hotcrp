@@ -43,6 +43,8 @@ class Mailer {
     protected $preparation;
     /** @var int */
     protected $context = 0;
+    /** @var ?string */
+    protected $line_prefix;
 
     /** @var array<string,true> */
     private $_unexpanded = [];
@@ -425,7 +427,7 @@ class Mailer {
         return $text . $rest;
     }
 
-    private function _lineexpand($info, $line, $indent) {
+    private function _lineexpand($line, $indent) {
         $text = "";
         while (preg_match('/^(.*?)(%(#?[-a-zA-Z0-9!@_:.\/]+(?:|\([^\)]*\)))%)(.*)$/s', $line, $m)) {
             if (($s = $this->expandvar($m[3], false)) !== null) {
@@ -436,7 +438,8 @@ class Mailer {
             $line = $m[4];
         }
         $text .= $line;
-        return prefix_word_wrap($info, $text, $indent, $this->width, $this->flowed);
+        return prefix_word_wrap($this->line_prefix ?? "", $text, $indent,
+                                $this->width, $this->flowed);
     }
 
     /** @param string $text
@@ -451,6 +454,7 @@ class Mailer {
         // width, expansion type based on field
         $old_context = $this->context;
         $old_width = $this->width;
+        $old_line_prefix = $this->line_prefix;
         if (isset(self::$email_fields[$field])) {
             $this->context = self::CONTEXT_EMAIL;
             $this->width = 10000000;
@@ -491,18 +495,20 @@ class Mailer {
                 if (($line[0] === " " || $line[0] === "\t" || $line[0] === "*")
                     && preg_match('/\A([ \t]*\*[ \t]+|[ \t]*.*?: (?=%))(.*?: |)(%(\w+(?:|\([^\)]*\)))%)\s*\z/s', $line, $m)
                     && ($tl = tab_width($m[1], true)) <= 20) {
+                    $this->line_prefix = $m[1] . $m[2];
                     if (str_starts_with($m[4] ?? "", "OPT(")) {
                         if (($yes = $this->expandvar($m[4], true))) {
-                            $text .= prefix_word_wrap($m[1] . $m[2], $this->expandvar($m[4], false), $tl, $this->width, $this->flowed);
+                            $text .= prefix_word_wrap($this->line_prefix, $this->expandvar($m[4], false), $tl, $this->width, $this->flowed);
                         } else if ($yes === null) {
                             $text .= $line . "\n";
                         }
                     } else {
-                        $text .= $this->_lineexpand($m[1] . $m[2], $m[3], $tl);
+                        $text .= $this->_lineexpand($m[3], $tl);
                     }
                     continue;
                 }
-                $text .= $this->_lineexpand("", $line, 0);
+                $this->line_prefix = "";
+                $text .= $this->_lineexpand($line, 0);
             }
         }
 
@@ -513,6 +519,7 @@ class Mailer {
 
         $this->context = $old_context;
         $this->width = $old_width;
+        $this->line_prefix = $old_line_prefix;
         return $text;
     }
 

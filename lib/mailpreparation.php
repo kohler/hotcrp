@@ -29,6 +29,8 @@ class MailPreparation implements JsonSerializable {
     public $reset_capability;
     /** @var ?string */
     public $landmark;
+    /** @var bool */
+    public $finalized = false;
 
     /** @param Conf $conf
      * @param Contact|Author $recipient */
@@ -103,8 +105,16 @@ class MailPreparation implements JsonSerializable {
             || $this->conf->opt("debugShowSensitiveEmail");
     }
 
+    function finalize() {
+        assert(!$this->finalized);
+        $this->finalized = true;
+    }
+
     /** @return bool */
     function send() {
+        if (!$this->finalized) {
+            $this->finalize();
+        }
         if ($this->conf->call_hooks("send_mail", null, $this) === false) {
             return false;
         }

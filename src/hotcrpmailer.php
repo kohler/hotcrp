@@ -36,6 +36,13 @@ class HotCRPMailPreparation extends MailPreparation {
                 || ($this->author_recipient === $p->author_recipient
                     && $this->to === $p->to));
     }
+    function finalize() {
+        parent::finalize();
+        if (preg_match('/\ADear (author|reviewer)(?:|s|\(s\))(?=[,;!.\s])/', $this->body, $m)) {
+            $pl = count($this->to) === 1 ? "" : "s";
+            $this->body = "Dear {$m[1]}{$pl}" . substr($this->body, strlen($m[0]));
+        }
+    }
 }
 
 class HotCRPMailer extends Mailer {
@@ -357,7 +364,22 @@ class HotCRPMailer extends Mailer {
             && !$this->permuser->can_view_authors($this->row)) {
             return $isbool ? false : "Hidden for anonymous review";
         }
-        $t = array_map(function ($a) { return $a->name(NAME_P|NAME_A); }, $this->row->author_list());
+        $t = [];
+        foreach ($this->row->author_list() as $au) {
+            $t[] = $au->name(NAME_P|NAME_A);
+        }
+        if ($this->line_prefix !== ""
+            && preg_match('/\A([\s*]*)Author(|s|\(s\))(:\s*)\z/', $this->line_prefix, $m)) {
+            $m2rep = count($t) === 1 ? "" : "s";
+            if ($m[1] !== "" && ctype_space($m[1])) {
+                if ($m2rep === "s" && $m[2] === "") {
+                    $m[1] = substr($m[1], 1);
+                } else if (strlen($m2rep) !== strlen($m[2])) {
+                    $m[1] .= str_repeat(" ", strlen($m[2]) - strlen($m2rep));
+                }
+            }
+            $this->line_prefix = "{$m[1]}Author{$m2rep}{$m[3]}";
+        }
         return join(";\n", $t);
     }
     function kw_authorviewcapability($args, $isbool) {

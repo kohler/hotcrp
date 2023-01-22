@@ -5653,10 +5653,10 @@ class Conf {
             return null;
         }
         if (!$default_only) {
-            $se = $this->has_setting("mailsubj_$name");
-            $s = $se ? $this->setting_data("mailsubj_$name") : null;
-            $be = $this->has_setting("mailbody_$name");
-            $b = $be ? $this->setting_data("mailbody_$name") : null;
+            $se = $this->has_setting("mailsubj_{$name}");
+            $s = $se ? $this->setting_data("mailsubj_{$name}") : null;
+            $be = $this->has_setting("mailbody_{$name}");
+            $b = $be ? $this->setting_data("mailbody_{$name}") : null;
             if (($se && $s !== $uf->subject)
                 || ($be && $b !== $uf->body)) {
                 $uf = clone $uf;

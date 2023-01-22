@@ -1715,7 +1715,7 @@ Subject: [Testconf I] Rejected submission #14 "Network Performance Effects of
  HTTP/1.1,..."
 X-Landmark: test/test05.php:821
 
-Dear author(s),
+Dear authors,
 
 The Test Conference I (Testconf I) program committee is sorry to inform
 you that your submission #14 was rejected, and will not appear in the
@@ -1766,7 +1766,7 @@ Subject: [Testconf I] Rejected submission #14 "Network Performance Effects of
  HTTP/1.1,..."
 X-Landmark: test/test05.php:821
 
-Dear author(s),
+Dear authors,
 
 The Test Conference I (Testconf I) program committee is sorry to inform
 you that your submission #14 was rejected, and will not appear in the
