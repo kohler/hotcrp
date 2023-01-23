@@ -438,10 +438,12 @@ span.sep {
 .pw {
 	white-space: pre-wrap;
 	overflow-wrap: break-word;
+	overflow-wrap: anywhere;
 }
 .ibw {
 	display: inline-block;
 	overflow-wrap: break-word;
+	overflow-wrap: anywhere;
 }
 .text-break-line {
 	white-space: pre-line;
@@ -2394,6 +2396,7 @@ pre.sample {
 	border: 1px solid #ddd;
 	border-radius: 4px;
 	overflow-wrap: break-word;
+	overflow-wrap: anywhere;
 	white-space: pre-wrap;
 	margin-bottom: 1.2em;
 	color: #223355;
@@ -3386,6 +3389,7 @@ a.badge-white:hover {
 	font-size: inherit;
 	font-weight: inherit;
 	overflow-wrap: break-word;
+	overflow-wrap: anywhere;
 	color: #d41743;
 }
 .pslcard-home-tag.tagbg {
@@ -3528,6 +3532,7 @@ a.badge-white:hover {
 	text-indent: -12px;
 	cursor: pointer;
 	overflow-wrap: break-word;
+	overflow-wrap: anywhere;
 	font-weight: 500;
 	min-width: 8rem;
 }
@@ -3662,6 +3667,7 @@ a.badge-white:hover {
 	grid-template-columns: repeat(2, 50%);
 	word-wrap: break-word;
 	overflow-wrap: break-word;
+	overflow-wrap: anywhere;
 }
 .paperinfo-c:first-child:last-child {
 	grid-column-start: 1;
@@ -4176,6 +4182,7 @@ a:hover .t-editor,
 .pavb, .revtext, .cmttext, .cmtattachments {
 	word-wrap: break-word;
 	overflow-wrap: break-word;
+	overflow-wrap: anywhere;
 }
 .cmtattachments {
 	margin-top: 0.5em;
@@ -4647,18 +4654,19 @@ a.help {
 }
 .modal-dialog {
 	position: relative;
-	min-width: 15em;
-	max-width: 32em;
 	z-index: 60;
 	pointer-events: none;
+	min-width: 15em;
+	max-width: 32em;
+}
+.modal-dialog-w40 {
+	width: 40rem;
+	max-width: 80vw;
 }
 .modal-dialog-centered {
 	margin: 5vh auto;
 	position: relative;
 	display: flex;
-}
-.modal-dialog.modal-medium {
-	max-width: 40em;
 }
 .modal-content {
 	border: 1px solid rgba(0, 0, 0, 0.6);
@@ -4667,6 +4675,14 @@ a.help {
 	padding: 0.75em 1em;
 	background: #fbfbfa;
 	pointer-events: auto;
+}
+.modal-dialog-w40 > .modal-content {
+	width: 100%;
+}
+.modal-demo-fieldset {
+	min-height: 10rem;
+	max-height: 60vh;
+	overflow-y: auto;
 }
 
 .popup-actions {
@@ -4831,6 +4847,7 @@ th.pl_logname {
 }
 td.pl_logname {
 	overflow-wrap: break-word;
+	overflow-wrap: anywhere;
 }
 th.pl_logaction {
 	width: 40%;

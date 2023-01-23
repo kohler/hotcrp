@@ -3086,7 +3086,7 @@ handle_ui.on("js-tracker", function (evt) {
         $d.find("form").submit();
     }
     function start() {
-        var hc = popup_skeleton({minWidth: "38rem"});
+        var hc = popup_skeleton({className: "modal-dialog-w40"});
         hc.push('<h2>Meeting tracker</h2>');
         var trackers, nshown = 0;
         if (!dl.tracker) {
@@ -4272,13 +4272,13 @@ handle_ui.on("js-request-review-preview-email", function (evt) {
         if (x !== "")
             a[field] = x;
     }
-    fv("email", "<email>");
+    fv("email", "<EMAIL>");
     fv("firstName", "");
     fv("lastName", "");
     fv("affiliation", "Affiliation");
     fv("reason", "");
     if (a.firstName == null && a.lastName == null)
-        a.lastName = "<Name>";
+        a.lastName = "<NAME>";
     $.ajax(hoturl("api/mailtext", a), {
         method: "GET", success: function (data) {
             if (data.ok && data.subject && data.body) {
@@ -7887,7 +7887,7 @@ handle_ui.on("js-annotate-order", function () {
     function show_dialog(rv) {
         if (!rv.ok || !rv.editable)
             return;
-        var hc = popup_skeleton({minWidth: "32rem"}),
+        var hc = popup_skeleton({className: "modal-dialog-w40"}),
             dtag = mytag.replace(/^\d+~/, "~"), i;
         hc.push('<h2>Annotate #' + dtag + ' order</h2>');
         hc.push('<p>These annotations will appear in searches such as “order:' + dtag + '”.</p>');
@@ -10353,7 +10353,7 @@ handle_ui.on("js-edit-formulas", function () {
             });
     }
     function create(formulas) {
-        var hc = popup_skeleton({className: "modal-medium"}), i;
+        var hc = popup_skeleton({className: "modal-dialog-w40"}), i;
         hc.push('<h2>Named formulas</h2>');
         hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank">Formulas</a>, such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”.</p>');
         hc.push('<div class="editformulas">', '</div>');
@@ -10399,7 +10399,7 @@ handle_ui.on("js-edit-view-options", function () {
         evt.preventDefault();
     }
     function create(display_default, display_current) {
-        var hc = popup_skeleton({className: "modal-medium"});
+        var hc = popup_skeleton({className: "modal-dialog-w40"});
         hc.push('<h2>View options</h2>');
         hc.push('<div class="f-i"><div class="f-c">Default view options</div>', '</div>');
         hc.push('<div class="reportdisplay-default">' + escape_html(display_default || "(none)") + '</div>');
@@ -10477,7 +10477,7 @@ handle_ui.on("js-edit-namedsearches", function () {
             });
     }
     function create(searches) {
-        var hc = popup_skeleton({className: "modal-medium"}), i;
+        var hc = popup_skeleton({className: "modal-dialog-w40"}), i;
         hc.push('<h2>Saved searches</h2>');
         hc.push('<p>Invoke a saved search with “ss:NAME”. Saved searches are shared with the PC.</p>');
         hc.push('<div class="editsearches">', '</div>');
