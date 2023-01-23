@@ -120,8 +120,11 @@ table {
 .p-sqz + .p-sqz {
 	margin-top: -0.5em;
 }
-tr, textarea, select {
+tr, select {
 	vertical-align: baseline;
+}
+textarea {
+	vertical-align: top;
 }
 input, textarea, .textarea, select, button, .btn {
 	font-family: inherit;
@@ -505,9 +508,6 @@ label.checki {
 	flex: 1 1 0;
 	flex-basis: min-content;
 }
-.entry > textarea:first-child {
-	vertical-align: top;
-}
 .checki, .entryi, .entryg, .break-avoid {
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
@@ -648,6 +648,10 @@ label.checki {
 	padding-left: 1.5em !important;
 	padding-left: 1.5rem !important;
 }
+.pr-2 {
+	padding-right: 0.5em !important;
+	padding-right: 0.5rem !important;
+}
 
 .text-start {
 	text-align: start;
@@ -669,6 +673,10 @@ label.checki {
 }
 .align-middle {
 	vertical-align: middle;
+}
+.position-ta-adjust {
+	position: relative;
+	top: 0.15em;
 }
 
 .position-absolute {
@@ -703,6 +711,9 @@ label.checki {
 }
 .flex-wrap {
 	flex-wrap: wrap !important;
+}
+.flex-fill-0 {
+	flex: 1 1 0 !important;
 }
 .flex-grow-0 {
 	flex-grow: 0 !important;
@@ -974,7 +985,7 @@ span.hastitle {
 	min-width: 50%;
 }
 .form-basic-search {
-	display: inline-flex;
+	display: flex;
 	align-items: baseline;
 	flex-wrap: wrap;
 	justify-content: flex-end;
@@ -985,6 +996,12 @@ span.hastitle {
 }
 .form-basic-search .papersearch {
 	min-width: 20rem;
+}
+.form-basic-search-in > .select {
+	margin-left: 0.25rem;
+}
+.form-basic-search-in > button {
+	margin-left: 1rem;
 }
 
 
@@ -1644,10 +1661,11 @@ th.settings-simplehead {
 	transition: opacity 0.5s;
 	background-color: white;
 }
-.settings-rf.fold2c, .settings-sf.fold2c {
+.settings-rf.fold2c, .settings-sf.fold2c, .mail-preview-send,
+.mail-editor {
 	background-color: #f9fbfb;
 }
-.settings-rf.fold2c:hover, .settings-sf.fold2c:hover {
+.settings-rf.fold2c:hover, .settings-sf.fold2c:hover, .mail-preview-send:hover {
 	border-color: #a5a5a5;
 	background-color: #ecf2f4;
 }
@@ -2006,7 +2024,7 @@ label.f-c, .f-i > label {
 	margin-top: 0.25rem;
 	margin-bottom: 0.25rem;
 }
-.f-h .feedback-list {
+.f-h .feedback-list, .small .feedback-list {
 	font-size: 100%;
 }
 .entry > .f-h:last-child {
@@ -4503,39 +4521,48 @@ body {
 }
 
 /* mail */
-.mail {
-	background-color: #e6e1cf;
-	margin: 8px 0;
-	padding: 8px 12px 2px;
-	border-radius: 5px;
-	display: table;
-}
-.mhx {
-	padding: 0 1em;
-}
-.mhn, .mhnp {
-	text-align: right;
-	font-weight: bold;
-}
-.mhnp, .mhdd {
+.mhdd {
 	padding: 2px 4px;
 }
-.mhcb {
+.mail-preview {
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+	overflow-wrap: anywhere;
+}
+.modal .mail-preview {
+	max-height: 75vh;
+	width: 100%;
+}
+.mail-editor {
+	padding: 0.75em 1em;
+}
+.mail-field {
+	display: flex;
+	align-items: baseline;
+	margin-bottom: 0.2rem;
+}
+.mail-field > label {
+	font-weight: 500;
 	padding-right: 0.5em;
 }
-.mhb {
-	padding: 4px;
+.mail-preview-body {
+	font-size: 92%;
+	margin-top: 0.5rem;
+	margin-bottom: 0.25rem;
 }
-.mhb pre {
-	background-color: #ffffff;
-	padding: 4px 8px;
-	display: table-cell;
+.mail-preview-send {
+	padding-top: 0.75rem;
+	margin-bottom: 2rem;
 }
-.mail tbody.pltable {
-	background-color: #ffffff;
+.mail-preview-send.mail-preview-unchoose {
+	border-color: #c5c5c5;
+	background-color: rgba(222, 222, 222, 0.5);
+	color: #777777;
 }
-.mhpad {
-	padding: 4px;
+.mail-preview-send.mail-preview-unchoose .mail-preview-body {
+	height: 0;
+	margin-bottom: 0;
+	overflow-y: clip;
 }
 
 

@@ -213,8 +213,8 @@ class Home_Page {
                 "placeholder" => "(All)", "spellcheck" => false,
                 "aria-labelledby" => "homesearch-label"
             ]), '<div class="form-basic-search-in"> in ',
-            PaperSearch::limit_selector($this->conf, $limits, $limits[0], ["class" => "ml-1"]),
-            Ht::submit("Search", ["class" => "ml-3"]),
+            PaperSearch::limit_selector($this->conf, $limits, $limits[0]),
+            Ht::submit("Search"),
             "</div></form></div>\n";
     }
 

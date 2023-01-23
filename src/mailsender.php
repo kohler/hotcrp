@@ -91,7 +91,7 @@ class MailSender {
     }
 
     private function print_actions($extra_class = "") {
-        echo '<div class="aab aabig mt-3', $extra_class, '">',
+        echo '<div class="aab aabig mt-3 mb-5', $extra_class, '">',
             '<div class="aabut">', Ht::submit("send", "Send", ["class" => "btn-success"]), '</div>',
             '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
             '<div class="aabut ml-3 need-tooltip', $this->groupable ? " hidden" : "", '" id="mail-group-disabled" data-tooltip="These messages cannot be gathered because their contents differ.">', Ht::submit("group", "Gather recipients", ["disabled" => true]), '</div>',
@@ -107,9 +107,8 @@ class MailSender {
 
     private function print_request_form($include_cb) {
         echo Ht::form($this->conf->hoturl("=mail"), ["id" => "mailform"]);
-        foreach (["to", "subject", "body", "cc", "reply-to", "q", "t", "plimit", "newrev_since"] as $x) {
-            if (isset($this->qreq[$x]))
-                echo Ht::hidden($x, $this->qreq[$x]);
+        foreach ($this->qreq->subset_as_array("to", "subject", "body", "cc", "reply-to", "q", "t", "plimit", "has_plimit", "newrev_since", "template") as $k => $v) {
+            echo Ht::hidden($k, $v);
         }
         if (!$this->group) {
             echo Ht::hidden("ungroup", 1);
@@ -143,7 +142,7 @@ class MailSender {
                     '</p>',
                   '</div>',
                   '<div class="aab aabig mt-1 mb-3">',
-                    '<div class="aabut">', Ht::submit("again", "Prepare more mail"), '</div>',
+                    '<div class="aabut">', Ht::submit("again", "Prepare more mail", ["class" => "btn btn-primary"]), '</div>',
                   '</div>',
                 '</div>',
                 // This next is only displayed when Javascript is off
@@ -292,15 +291,23 @@ class MailSender {
             $show_prep->finalize();
         }
 
-        echo '<div class="mail"><table>';
-        $nprintrows = 0;
+        echo '<fieldset class="mail-preview-send uimd ui js-click-child';
+        if (!$this->sending) {
+            echo ' d-flex"><div class="pr-2">',
+                Ht::checkbox($cbkey, 1, true, [
+                    "class" => "uic js-range-click js-choose-mail-preview",
+                    "data-range-type" => "mhcb", "id" => "psel{$this->cbcount}"
+                ]), '</div><div class="flex-grow-0">';
+        } else {
+            echo '">';
+        }
         foreach (["To", "cc", "bcc", "reply-to", "Subject"] as $k) {
             if ($k == "To") {
                 $vh = [];
                 foreach ($show_prep->to as $to) {
                     $vh[] = htmlspecialchars(MimeText::decode_header($to));
                 }
-                $vh = '<div style="max-width:60em"><span class="nw">' . join(',</span> <span class="nw">', $vh) . '</span></div>';
+                $vh = '<span class="nw">' . join(',</span> <span class="nw">', $vh) . '</span>';
             } else if ($k == "Subject") {
                 $vh = htmlspecialchars(MimeText::decode_header($show_prep->subject));
             } else if (($line = $show_prep->headers[$k] ?? null)) {
@@ -309,26 +316,13 @@ class MailSender {
             } else {
                 continue;
             }
-            echo " <tr>";
-            if (++$nprintrows > 1) {
-                echo '<td class="mhpad"></td>';
-            } else if ($this->sending) {
-                echo '<td class="mhx"></td>';
-            } else {
-                ++$this->cbcount;
-                echo '<td class="mhcb"><input type="checkbox" class="uic js-range-click" name="', $cbkey,
-                    '" value="1" checked="checked" data-range-type="mhcb" id="psel', $this->cbcount,
-                    '" /></td>';
-            }
-            echo '<td class="mhnp nw">', $k, ":</td>",
-                '<td class="mhdp text-monospace">', $vh, "</td></tr>\n";
+            echo '<div class="mail-field">',
+                '<label>', $k, ':</label>',
+                '<div class="flex-grow-0">', $vh, '</div></div>';
         }
-
-        echo ' <tr><td></td><td class="mhb" colspan="2"><pre class="email">',
+        echo '<div class="mail-preview mail-preview-body">',
             Ht::link_urls(htmlspecialchars($show_prep->body)),
-            "</pre></td></tr>\n",
-            '<tr><td class="mhpad"></td><td></td><td class="mhpad"></td></tr>',
-            "</table></div>\n";
+            '</div>', $this->sending ? "" : '</div>', "</fieldset>\n";
     }
 
     private function run() {

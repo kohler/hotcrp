@@ -341,8 +341,8 @@ class Search_Page {
                 "class" => "papersearch want-focus need-suggest flex-grow-1",
                 "placeholder" => "(All)", "aria-label" => "Search"
             ]), '<div class="form-basic-search-in"> in ',
-            PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["tabindex" => 1, "class" => "ml-1", "select" => !$search->limit_explicit() && count($limits) > 1]),
-            Ht::submit("Search", ["tabindex" => 1, "class" => "ml-3"]), "</div></form>";
+            PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["tabindex" => 1, "select" => !$search->limit_explicit() && count($limits) > 1]),
+            Ht::submit("Search", ["tabindex" => 1]), "</div></form>";
 
         echo '</div>';
 

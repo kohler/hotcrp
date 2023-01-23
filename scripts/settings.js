@@ -244,7 +244,7 @@ function add_dialog() {
         evt.preventDefault();
     }
     function create() {
-        var hc = popup_skeleton(), i;
+        var hc = popup_skeleton({className: "modal-dialog-w40"}), i;
         hc.push('<h2>Add field</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
         hc.push('<select name="sf_template" class="w-100 want-focus" size="5">', '</select>');
@@ -252,7 +252,7 @@ function add_dialog() {
             hc.push('<option value="'.concat(i, i ? '">' : '" selected>', escape_html(samps[i].getAttribute("data-title")), '</option>'));
         }
         hc.pop();
-        hc.push('<fieldset class="settings-sf-template-view mt-4" style="min-width:500px;max-width:90%;min-height:10em"><legend>Example</legend></fieldset>');
+        hc.push('<fieldset class="settings-sf-template-view mt-4 modal-demo-fieldset"><legend>Example</legend></fieldset>');
         hc.push_actions(['<button type="submit" name="add" class="btn-primary">Add field</button>',
             '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
@@ -779,7 +779,7 @@ function add_dialog() {
         evt.preventDefault();
     }
     function create() {
-        var hc = popup_skeleton(), i;
+        var hc = popup_skeleton({className: "modal-dialog-w40"}), i;
         hc.push('<h2>Add field</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
         hc.push('<select name="rf_template" class="w-99 want-focus" size="5">', '</select>');
@@ -787,7 +787,7 @@ function add_dialog() {
             hc.push('<option value="'.concat(i, i ? '">' : '" selected>', escape_html(samples[i].selector), '</option>'));
         }
         hc.pop();
-        hc.push('<fieldset class="settings-rf-template-view mt-4" style="min-width:500px;max-width:90%;min-height:10em"><legend>Example</legend></fieldset>');
+        hc.push('<fieldset class="settings-rf-template-view mt-4 modal-demo-fieldset"><legend>Example</legend></fieldset>');
         hc.push_actions(['<button type="submit" name="add" class="btn-primary">Add field</button>',
             '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();

@@ -4270,6 +4270,39 @@ handle_ui.on("input.js-email-populate", function () {
 });
 })();
 
+function render_mail_preview(e, mp, fields) {
+    var i, f, e1, recip;
+    e.replaceChildren();
+    function make_field_div(label, text) {
+        var e1 = document.createElement("div"),
+            e2 = document.createElement("label"),
+            e3 = document.createElement("div");
+        e1.className = "mail-field";
+        e2.append(label);
+        e3.className = "flex-fill-0";
+        e3.append(text);
+        e1.append(e2, e3);
+        return e1;
+    }
+    for (i = 0; i !== fields.length; ++i) {
+        f = fields[i];
+        if (!mp[f])
+            continue;
+        if (f === "recipients") {
+            if (!mp.recipient_description)
+                continue;
+            e1 = make_field_div("Recipients:", mp.recipient_description);
+        } if (f === "subject" || f === "to" || f === "cc" || f === "reply-to") {
+            e1 = make_field_div({subject: "Subject:", to: "To:", cc: "Cc:", "reply-to": "Reply-to:"}[f], mp[f]);
+        } else if (f === "body") {
+            e1 = document.createElement("div");
+            e1.className = "mail-preview-body";
+            e1.append(mp[f]);
+        }
+        e.appendChild(e1);
+    }
+}
+
 handle_ui.on("js-request-review-preview-email", function (evt) {
     var f = this.closest("form"),
         a = {p: siteinfo.paperid, template: "requestreview"};
@@ -4294,15 +4327,19 @@ handle_ui.on("js-request-review-preview-email", function (evt) {
             if (data.ok && data.subject && data.body) {
                 var hc = popup_skeleton();
                 hc.push('<h2>External review request email preview</h2>');
-                hc.push('<pre></pre>');
+                hc.push('<div class="mail-preview"></div>');
                 hc.push_actions(['<button type="button" class="btn-primary no-focus" name="cancel">Close</button>']);
                 var $d = hc.show(false);
-                $d.find("pre").text("Subject: " + data.subject + "\n\n" + data.body);
+                render_mail_preview($d.find("div.mail-preview")[0], data, ["subject", "body"]);
                 hc.show(true);
             }
         }
     });
     handle_ui.stopPropagation(evt);
+});
+
+handle_ui.on("js-choose-mail-preview", function (evt) {
+    toggleClass(this.closest("fieldset"), "mail-preview-unchoose", !this.checked);
 });
 
 
@@ -4315,14 +4352,55 @@ handle_ui.on("change.js-mail-recipients", function () {
     foldup.call(this, null, {f: !sopt.hasClass("mail-want-since"), n: 10});
 });
 
-handle_ui.on(".js-mail-populate-template", function () {
-    var i = -1, defv = input_default_value(this);
-    for (var j = 0; j !== this.options.length; ++j) {
-        if (this.options[j].value === defv)
-            i = j;
+handle_ui.on(".js-mail-set-template", function () {
+    var $d, f, templatelist;
+    function selected_tm(tn) {
+        tn = tn || f.elements.template.value;
+        var i = 0;
+        while (templatelist[i] && templatelist[i].name !== tn) {
+            ++i;
+        }
+        return templatelist[i] || null;
     }
-    document.location = hoturl("mail", {template: this.value});
-    this.selectedIndex = i;
+    function render() {
+        var fl = f.querySelector("fieldset").lastChild, tm = selected_tm();
+        fl.replaceChildren();
+        tm && render_mail_preview(fl, tm, ["recipients", "cc", "reply-to", "subject", "body"]);
+    }
+    function submitter() {
+        document.location = hoturl("mail", {template: selected_tm().name});
+    }
+    demand_load.mail_templates().then(function (tl) {
+        var hc = popup_skeleton({className: "modal-dialog-w40"}), i, mf;
+        templatelist = tl;
+        hc.push('<h2>Mail templates</h2>');
+        if (tl.length) {
+            hc.push('<select name="template" class="w-100 want-focus" size="5">', '</select>');
+            for (i = 0; tl[i]; ++i) {
+                hc.push('<option value="'.concat(tl[i].name, i ? '">' : '" selected>', escape_html(tl[i].title), '</option>'));
+            }
+            hc.pop();
+            hc.push('<fieldset class="mt-4 modal-demo-fieldset"><div class="mail-preview"></div></fieldset>');
+            hc.push_actions(['<button type="submit" name="go" class="btn-primary">Use template</button>',
+                '<button type="button" name="cancel">Cancel</button>']);
+        } else {
+            hc.push('<p>There are no template you can load.</p>');
+            hc.push_actions(['<button type="button"> name="cancel">OK</button>']);
+        }
+        $d = hc.show(false);
+        f = $d.find("form")[0];
+        if (f.elements.template) {
+            mf = document.getElementById("mailform");
+            if (mf && mf.elements.template && mf.elements.template.value
+                && selected_tm(mf.elements.template.value))
+                f.elements.template.value = mf.elements.template.value;
+            $(f.elements.template).on("input", render);
+            $(f).on("submit", submitter);
+            $(f.elements.go).on("click")
+            render();
+        }
+        hc.show(true);
+    });
 });
 
 
@@ -6288,6 +6366,13 @@ demand_load.alltag_info = demand_load.make(function (resolve) {
 
 demand_load.tags = demand_load.make(function (resolve) {
     demand_load.alltag_info().then(function (v) { resolve(v.tags); });
+});
+
+demand_load.mail_templates = demand_load.make(function (resolve, reject) {
+    $.get(hoturl("api/mailtext", {template: "all"}), null, function (v) {
+        var tl = v && v.ok && v.templates;
+        resolve(tl || []);
+    });
 });
 
 (function () {

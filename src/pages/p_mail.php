@@ -81,7 +81,7 @@ class Mail_Page {
         }
 
         // paper selection
-        if (!isset($qreq->q) || trim($qreq->q) == "(All)") {
+        if (!isset($qreq->q) || strcasecmp(trim($qreq->q), "(All)") === 0) {
             $qreq->q = "";
         }
         if (isset($qreq->p) && !$qreq->has_a("p")) {
@@ -100,7 +100,14 @@ class Mail_Page {
                 $qreq->recheck = "1";
             }
         }
-        if ($qreq->has_a("p") && !isset($qreq->recheck)) {
+        $papersel = null;
+        if ($qreq->has_plimit || $qreq->plimit) {
+            if ($qreq->plimit) {
+                $search = new PaperSearch($this->viewer, ["t" => $qreq->t, "q" => $qreq->q]);
+                $papersel = $search->paper_ids();
+                sort($papersel);
+            }
+        } else if ($qreq->has_a("p") && !isset($qreq->recheck)) {
             $papersel = [];
             foreach ($qreq->get_a("p") as $p) {
                 if (($p = cvtint($p)) > 0)
@@ -108,11 +115,8 @@ class Mail_Page {
             }
             sort($papersel);
             $qreq->q = join(" ", $papersel);
+            error_log("XXXX");
             $qreq->plimit = 1;
-        } else if (isset($qreq->plimit)) {
-            $search = new PaperSearch($this->viewer, ["t" => $qreq->t, "q" => $qreq->q]);
-            $papersel = $search->paper_ids();
-            sort($papersel);
         } else {
             $qreq->q = "";
             $papersel = null;
@@ -125,19 +129,21 @@ class Mail_Page {
         if (isset($qreq->template) && !isset($qreq->check) && !isset($qreq->default)) {
             $t = $qreq->template ?? "generic";
             $template = (array) $this->conf->mail_template($t);
-            if (((!isset($template["title"]) || $template["title"] === false)
-                 && !isset($template["allow_template"]))
-                || (isset($template["allow_template"]) && $template["allow_template"] === false)) {
+            if (!($template["allow_template"] ?? false)) {
                 $template = (array) $this->conf->mail_template("generic");
             }
             if (!isset($qreq->to) || $qreq->loadtmpl != -1) {
                 $qreq->to = $template["default_recipients"] ?? "s";
             }
-            if (isset($template["default_search_type"])) {
+            if (!isset($qreq->t) && isset($template["default_search_type"])) {
                 $qreq->t = $template["default_search_type"];
             }
-            $qreq->subject = $null_mailer->expand($template["subject"]);
-            $qreq->body = $null_mailer->expand($template["body"]);
+            if (!isset($qreq->subject)) {
+                $qreq->subject = $null_mailer->expand($template["subject"]);
+            }
+            if (!isset($qreq->body)) {
+                $qreq->body = $null_mailer->expand($template["body"]);
+            }
         }
 
         // fields: subject, body, cc, reply-to
@@ -180,7 +186,7 @@ class Mail_Page {
             && $this->recip->has_paper_ids()
             && empty($this->recip->paper_ids())
             && !isset($this->qreq->recheck)) {
-            $this->conf->error_msg("<0>No papers match that search");
+            $this->recip->error_at("q", "<0>No papers match that search");
             $this->recip->set_paper_ids(null);
             unset($this->qreq->check, $this->qreq->send);
         }
@@ -286,29 +292,18 @@ class Mail_Page {
     }
 
     function print_template() {
-        echo '<div class="aab aabig mt-0">',
-            '<div class="aabut mr-2"><strong>Template:</strong></div>',
-            '<div class="aabut">';
-        $tmpl = $tmploptions = [];
-        foreach (array_keys($this->conf->mail_template_map()) as $tname) {
-            if (($template = $this->conf->mail_template($tname))
-                && (isset($template->title) && $template->title !== false)
-                && (!isset($template->allow_template) || $template->allow_template)
-                && ($this->viewer->privChair || ($template->allow_pc ?? false)))
-                $tmpl[] = $template;
+        echo '<div class="mail-field mb-2">';
+        if (isset($this->qreq->template)
+            && ($tmpl = $this->conf->mail_template($this->qreq->template))) {
+            echo '<label for="template-changer">Template:</label>',
+                '<div class="mr-3">', htmlspecialchars($tmpl->title), '</div>',
+                '<div>', Ht::hidden("template", $tmpl->name),
+                    Ht::button("Change template", ["id" => "template-changer", "class" => "ui js-mail-set-template"]), '</div>';
+        } else {
+            echo '<div class="mr-2">', Ht::button("Load template", ["class" => "ui js-mail-set-template"]), '</div>',
+                '<div class="small">Templates are mail texts tailored for common conference tasks.</div>';
         }
-        usort($tmpl, "Conf::xt_order_compare");
-        foreach ($tmpl as $t) {
-            $tmploptions[$t->name] = $t->title;
-        }
-        if (!isset($this->qreq->template)
-            || !isset($tmploptions[$this->qreq->template])) {
-            $this->qreq->template = "generic";
-        }
-        echo Ht::select("template", $tmploptions, $this->qreq->template, ["class" => "uich js-mail-populate-template"]),
-            '</div>',
-            '<div class="aabut"><span class="hint">Templates are mail texts tailored for common conference tasks.</span></div>',
-            '</div>';
+        echo '</div>';
     }
 
     function print_mail_log() {
@@ -328,106 +323,134 @@ class Mail_Page {
         Dbl::free($result);
     }
 
+    private function print_paper_selection() {
+        if ($this->viewer->privChair) {
+            echo '<div class="fx9 checki mt-1"><span class="checkc">',
+                Ht::hidden("has_plimit", 1),
+                Ht::checkbox("plimit", 1, !!$this->qreq->plimit, ["id" => "plimit"]),
+                '</span>',
+                '<label for="plimit">Choose papers<span class="fx8">:</span></label>';
+        } else {
+            echo '<div class="fx9">',
+                Ht::hidden("has_plimit", 1),
+                Ht::checkbox("plimit", 1, true, ["id" => "plimit", "class" => "hidden"]);
+        }
+        $plist = null;
+        if ($this->qreq->recheck && $this->qreq->plimit) {
+            $plist = new PaperList($this->qreq->t === "req" ? "reqrevs" : "reviewers",
+                new PaperSearch($this->viewer, ["t" => $this->qreq->t, "q" => $this->qreq->q]));
+            foreach ($plist->search->message_list() as $mi) {
+                $this->recip->append_item_at("q", $mi);
+            }
+            if ($plist->is_empty()) {
+                $this->recip->warning_at("q", "<0>No papers match that search.");
+            }
+        }
+        echo '<div class="', $this->recip->control_class("q", "fx8 mt-1 d-flex"), '">';
+        if (!$this->viewer->privChair) {
+            echo '<label for="q" class="mr-2">Papers:</label>';
+        }
+        echo Ht::entry("q", (string) $this->qreq->q, [
+                "id" => "q", "placeholder" => "(All)", "spellcheck" => false,
+                "class" => "papersearch need-suggest js-autosubmit",
+                "size" => $this->viewer->privChair ? 36 : 32,
+                "data-submit-fn" => "psearch"
+            ]), '<div class="form-basic-search-in"> in ';
+        if (count($this->search_topt) === 1) {
+            echo htmlspecialchars($this->search_topt[$this->qreq->t]);
+        } else {
+            echo Ht::select("t", $this->search_topt, $this->qreq->t, ["id" => "t"]);
+        }
+        echo Ht::submit("psearch", "Search"), '</div></div>',
+            $this->recip->feedback_html_at("q");
+        if ($plist && !$plist->is_empty()) {
+            echo '<div class="fx8 mt-2">';
+            $plist->print_table_html();
+            echo Ht::hidden("prevt", $this->qreq->t), Ht::hidden("prevq", $this->qreq->q), '</div>';
+        }
+        echo "</div>"; // <div class="fx9...
+    }
+
+    private function print_new_assignments_since() {
+        if (!$this->qreq->newrev_since
+            && ($t = $this->conf->setting("pcrev_informtime"))) {
+            $this->qreq->newrev_since = $this->conf->parseableTime($t, true);
+        }
+        echo '<div class="', $this->recip->control_class("newrev_since", "mt-2 fx10"), '">',
+            '<label>Assignment cutoff: ',
+            Ht::entry("newrev_since", $this->qreq->newrev_since, [
+                "placeholder" => "(All)", "size" => 30,
+                "class" => "js-autosubmit ml-2", "data-submit-fn" => "psearch"
+            ]), '</label>',
+            $this->recip->feedback_html_at("newrev_since"),
+            '</div>';
+    }
+
     function print_form() {
-        echo Ht::form($this->conf->hoturl("=mail", ["check" => 1, "monreq" => $this->qreq->monreq])),
+        echo Ht::form($this->conf->hoturl("=mail", ["check" => 1, "monreq" => $this->qreq->monreq]), ["id" => "mailform"]),
             Ht::hidden("defaultfn", ""),
             Ht::hidden_default_submit("default", 1);
 
         $this->print_template();
 
-        echo '<div class="mail" style="float:left;margin:4px 1em 1em 0"><table id="foldpsel" class="fold8c fold9o fold10c">', "\n";
+        echo '<fieldset class="mail-editor fold8c fold9o fold10c" style="float:left;margin:4px 1em 1em 0" id="foldpsel">';
 
         // ** TO
-        echo '<tr><td class="mhnp nw"><label for="to">To:</label></td><td class="mhdd">',
-            $this->recip->selectors(),
-            "<div class=\"g\"></div>\n";
-
-        // paper selection
-        echo '<table class="fx9"><tr>';
-        if ($this->viewer->privChair) {
-            echo '<td class="nw">',
-                Ht::checkbox("plimit", 1, isset($this->qreq->plimit), ["id" => "plimit"]),
-                "&nbsp;</td><td>", Ht::label("Choose papers", "plimit"),
-                "<span class=\"fx8\">:&nbsp; ";
-        } else {
-            echo '<td class="nw">Papers: &nbsp;</td><td>',
-                Ht::checkbox("plimit", 1, true, ["id" => "plimit", "class" => "hidden"]),
-                '<span>';
+        echo '<div class="mail-field mb-3">',
+            '<label for="to">To:</label>',
+            '<div class="flex-fill-0">',
+            $this->recip->recipient_selector_html("to");
+        if ($this->viewer->is_manager()) {
+            $this->print_new_assignments_since();
         }
-        echo Ht::entry("q", (string) $this->qreq->q, [
-                "id" => "q", "placeholder" => "(All)", "spellcheck" => false,
-                "class" => "papersearch need-suggest js-autosubmit", "size" => 36,
-                "data-submit-fn" => "psearch"
-            ]), " &nbsp;in&nbsp;";
-        if (count($this->search_topt) === 1) {
-            echo htmlspecialchars($this->search_topt[$this->qreq->t]);
-        } else {
-            echo " ", Ht::select("t", $this->search_topt, $this->qreq->t, ["id" => "t"]);
-        }
-        echo " &nbsp;", Ht::submit("psearch", "Search"), "</span>";
-        if ($this->qreq->recheck) {
-            $plist = new PaperList($this->qreq->t === "req" ? "reqrevs" : "reviewers",
-                new PaperSearch($this->viewer, ["t" => $this->qreq->t, "q" => $this->qreq->q]));
-            echo "<div class=\"fx8";
-            if ($plist->is_empty()) {
-                echo "\">No papers match that search.";
-            } else {
-                echo " g\">";
-                $plist->print_table_html();
-            }
-            echo '</div>', Ht::hidden("prevt", $this->qreq->t),
-                Ht::hidden("prevq", $this->qreq->q);
-        }
-        echo "</td></tr></table>\n";
-
-        echo '<div class="fx10" style="margin-top:0.35em">';
-        if (!$this->qreq->newrev_since
-            && ($t = $this->conf->setting("pcrev_informtime"))) {
-            $this->qreq->newrev_since = $this->conf->parseableTime($t, true);
-        }
-        echo 'Assignments since:&nbsp; ',
-            Ht::entry("newrev_since", $this->qreq->newrev_since,
-                      ["placeholder" => "(all)", "size" => 30, "class" => "js-autosubmit", "data-submit-fn" => "psearch"]),
-            '</div>';
-
-        echo '<div class="fx9 g"></div>';
-
-        Ht::stash_script('function mail_recipients_fold(event) {
-    var plimit = document.getElementById("plimit");
-    hotcrp.foldup.call(this, null, {f: !!plimit && !plimit.checked, n: 8});
-    var sopt = $(this).find("option[value=\'" + this.value + "\']");
-    hotcrp.foldup.call(this, null, {f: sopt.hasClass("mail-want-no-papers"), n: 9});
-    hotcrp.foldup.call(this, null, {f: !sopt.hasClass("mail-want-since"), n: 10});
-}
-$("#to, #plimit").on("change", mail_recipients_fold);
-$(function () { $("#to").trigger("change"); })');
-
-        echo "</td></tr>\n";
+        $this->print_paper_selection();
+        echo "</div></div>\n";
 
         // ** CC, REPLY-TO
         if ($this->viewer->is_manager()) {
-            foreach (Mailer::$email_fields as $lcfield => $field)
+            foreach (Mailer::$email_fields as $lcfield => $field) {
                 if ($lcfield !== "to" && $lcfield !== "bcc") {
-                    echo "  <tr><td class=\"",
-                        $this->recip->control_class($lcfield, "mhnp nw"),
-                        "\"><label for=\"$lcfield\">$field:</label></td><td class=\"mhdp\">",
+                    echo '<div class="', $this->recip->control_class($lcfield, "mail-field small"), '">',
+                        "<label class=\"position-ta-adjust\" for=\"{$lcfield}\">{$field}:</label>",
+                        '<div class="flex-fill-0">',
                         $this->recip->feedback_html_at($lcfield),
-                        Ht::entry($lcfield, $this->qreq[$lcfield], ["size" => 64, "class" => $this->recip->control_class($lcfield, "text-monospace js-autosubmit"), "id" => $lcfield, "data-submit-fn" => "false"]),
-                        ($lcfield == "reply-to" ? "<hr class=\"g\">" : ""),
-                        "</td></tr>\n\n";
+                        Ht::textarea($lcfield, $this->qreq[$lcfield], [
+                            "id" => $lcfield, "rows" => 1, "data-submit-fn" => "false",
+                            "class" => $this->recip->control_class($lcfield, "js-autosubmit need-autogrow w-100")
+                        ]), "</div></div>\n";
                 }
+            }
         }
 
         // ** SUBJECT
-        echo "  <tr><td class=\"mhnp nw\"><label for=\"subject\">Subject:</label></td><td class=\"mhdp\">",
-            "<samp>[", htmlspecialchars($this->conf->short_name), "]&nbsp;</samp>",
-            Ht::entry("subject", $this->qreq->subject, ["size" => 64, "class" => $this->recip->control_class("subject", "text-monospace js-autosubmit"), "id" => "subject", "data-submit-fn" => "false"]),
-            "</td></tr>
+        echo '<div class="mail-field mt-3 mb-3">',
+            '<label class="position-ta-adjust" for="subject">Subject:</label>',
+            '<div class="position-ta-adjust pr-2">[', htmlspecialchars($this->conf->short_name), ']</div>',
+            '<div class="flex-fill-0">',
+            $this->recip->feedback_html_at("subject"),
+            Ht::textarea("subject", $this->qreq->subject, [
+                "id" => "subject", "rows" => 1, "data-submit-fn" => "false",
+                "class" => $this->recip->control_class("subject", "js-autosubmit need-autogrow w-100")
+            ]), "</div></div>\n";
 
- <tr><td></td><td class=\"mhb\">\n",
-            Ht::textarea("body", $this->qreq->body, ["class" => "text-monospace", "rows" => 20, "cols" => 80, "spellcheck" => "true"]),
-            "</td></tr>
-</table></div>\n\n";
+        // ** BODY
+        echo Ht::textarea("body", $this->qreq->body, [
+            "id" => "email-body", "rows" => 12, "cols" => 70,
+            "class" => "w-100 need-autogrow", "spellcheck" => "true"
+        ]);
+
+        echo "</fieldset>\n\n";
+        Ht::stash_script('function mail_recipients_fold() {
+    var plimit = document.getElementById("plimit"),
+        toe = document.getElementById("to");
+    hotcrp.foldup.call(toe, null, {f: !plimit || !plimit.checked, n: 8});
+    var sopt = $(toe).find("option[value=\'" + toe.value + "\']");
+    hotcrp.foldup.call(toe, null, {f: sopt.hasClass("mail-want-no-papers"), n: 9});
+    hotcrp.foldup.call(toe, null, {f: !sopt.hasClass("mail-want-since"), n: 10});
+}
+$("#to, #plimit").on("change", mail_recipients_fold);
+$(mail_recipients_fold)');
+
 
         if ($this->viewer->privChair) {
             $this->print_mail_log();
@@ -444,7 +467,7 @@ $(function () { $("#to").trigger("change"); })');
 
     static function go(Contact $user, Qrequest $qreq) {
         if (isset($qreq->cancel)) {
-            $user->conf->redirect_self($qreq, $qreq->subset_as_array("monreq", "to", "plimit", "q", "t", "cc", "reply-to", "subject", "body"));
+            $user->conf->redirect_self($qreq, $qreq->subset_as_array("monreq", "to", "has_plimit", "plimit", "q", "t", "cc", "reply-to", "subject", "body", "template"));
         } else if (!$user->is_manager() && !$user->isPC) {
             $user->escape();
         }

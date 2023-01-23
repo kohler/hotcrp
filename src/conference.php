@@ -5635,8 +5635,12 @@ class Conf {
                 ($this->_xtbuild(["etc/mailtemplates.json"], "mailTemplates"))[0];
             foreach ($this->_mail_template_map as $olist) {
                 foreach ($olist as $j) {
-                    if (isset($j->body) && is_array($j->body))
+                    if (isset($j->body) && is_array($j->body)) {
                         $j->body = join("", $j->body);
+                    }
+                    if (!isset($j->allow_template) && ($j->title ?? null)) {
+                        $j->allow_template = true;
+                    }
                 }
             }
         }

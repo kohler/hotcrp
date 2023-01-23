@@ -17,6 +17,7 @@ class Mail_API {
         $mailinfo = [
             "prow" => $prow,
             "requester_contact" => $user,
+            "width" => $qreq->width ?? 10000,
             "censor" => Mailer::CENSOR_DISPLAY
         ];
         if (isset($qreq->reason)) {
@@ -30,31 +31,57 @@ class Mail_API {
             && $user->can_view_review($prow, $rrow)) {
             $mailinfo["rrow"] = $rrow;
         }
-
         $mailer = new HotCRPMailer($user->conf, $recipient, $mailinfo);
-        $j = ["ok" => true];
+
         if (isset($qreq->text) || isset($qreq->subject) || isset($qreq->body)) {
+            $j = ["ok" => true];
             foreach (["text", "subject", "body"] as $k) {
                 $j[$k] = $mailer->expand($qreq[$k], $k);
             }
             return $j;
-        } else if (isset($qreq->template)) {
-            if (!($mt = $user->conf->mail_template($qreq->template, false, $user))) {
-                return JsonResult::make_error(404, "<0>Template not found");
-            }
-            $j["subject"] = $mailer->expand($mt->subject, "subject");
-            $j["body"] = $mailer->expand($mt->body, "body");
-            if ($mt->default_recipients ?? null) {
-                $recip = new MailRecipients($user);
-                $j["recipients"] = $recip->canonical_recipients($mt->default_recipients);
-            }
-            if ($mt->default_search_type ?? null) {
-                $j["t"] = $mt->default_search_type;
-            }
-            return $j;
-        } else {
+        } else if (!$qreq->template) {
             return JsonResult::make_error(400, "<0>Parameter error");
         }
+
+        $recip = new MailRecipients($user);
+        if ($qreq->template === "all") {
+            $mtjs = [];
+            foreach (array_keys($user->conf->mail_template_map()) as $k) {
+                if (($mt = $user->conf->mail_template($k, false, $user))
+                    && ($mt->allow_template ?? false)
+                    && !isset($mtjs[$mt->name])) {
+                    $mtjs[$mt->name] = ["name" => $mt->name, "title" => $mt->title]
+                        + self::expand_template($user, $mailer, $recip, $mt);
+                }
+            }
+            return ["ok" => true, "templates" => array_values($mtjs)];
+        } else if (($mt = $user->conf->mail_template($qreq->template, false, $user))) {
+            return ["ok" => true] + self::expand_template($user, $mailer, $recip, $mt);
+        } else {
+            return JsonResult::make_error(404, "<0>Template not found");
+        }
+    }
+
+    /** @param HotCRPMailer $mailer
+     * @param MailRecipients $recip
+     * @param object $mt
+     * @return array */
+    static private function expand_template(Contact $user, $mailer, $recip, $mt) {
+        $mj = [
+            "subject" => $mailer->expand($mt->subject, "subject"),
+            "body" => $mailer->expand($mt->body, "body")
+        ];
+        if ($mt->default_recipients ?? null) {
+            $rtype = $recip->canonical_recipients($mt->default_recipients);
+            $mj["recipients"] = $rtype;
+            if (($desc = $recip->recipient_description($rtype))) {
+                $mj["recipient_description"] = $desc;
+            }
+        }
+        if ($mt->default_search_type ?? null) {
+            $mj["t"] = $mt->default_search_type;
+        }
+        return $mj;
     }
 
     /** @param Contact $user

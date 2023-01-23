@@ -3,12 +3,18 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class MailRecipients extends MessageSet {
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     private $conf;
-    /** @var Contact */
+    /** @var Contact
+     * @readonly */
     private $user;
+    /** @var list<array{string,string,int}> */
+    private $recipts = [];
     /** @var string */
     private $type;
+    /** @var int */
+    private $tindex = 0;
     /** @var ?list<int> */
     private $paper_ids;
     /** @var int */
@@ -17,10 +23,6 @@ class MailRecipients extends MessageSet {
     private $_dcounts;
     /** @var ?array{bool,bool,bool} */
     private $_has_dt;
-    /** @var array<string,string> */
-    private $sel = [];
-    /** @var array<string,int> */
-    private $selflags = [];
 
     const F_ANYPC = 1;
     const F_GROUP = 2;
@@ -28,56 +30,13 @@ class MailRecipients extends MessageSet {
     const F_NOPAPERS = 8;
     const F_SINCE = 16;
 
-    private function defsel($name, $description, $flags = 0) {
-        assert(!isset($this->sel[$name]));
-        $this->sel[$name] = $description;
-        $this->selflags[$name] = $flags;
-    }
-
     /** @param Contact $user */
     function __construct($user) {
         assert(!!$user->isPC);
         $this->conf = $user->conf;
         $this->user = $user;
         $this->set_ignore_duplicates(true);
-    }
-
-    /** @return bool */
-    function has_paper_ids() {
-        return $this->paper_ids !== null;
-    }
-
-    /** @return list<int> */
-    function paper_ids() {
-        return $this->paper_ids ?? [];
-    }
-
-    /** @param ?list<int> $paper_ids
-     * @return $this */
-    function set_paper_ids($paper_ids) {
-        $this->paper_ids = $paper_ids;
-        return $this;
-    }
-
-    /** @param ?string $newrev_since
-     * @return $this */
-    function set_newrev_since($newrev_since) {
-        $newrev_since = trim($newrev_since ?? "");
-        if ($newrev_since !== ""
-            && !preg_match('/\A(?:|n\/a|\(?all\)?|0)\z/i', $newrev_since)) {
-            $t = $this->conf->parse_time($newrev_since);
-            if ($t === false) {
-                $this->error_at("newrev_since", "Invalid date.");
-            } else {
-                $this->newrev_since = $t;
-                if ($t > Conf::$now) {
-                    $this->warning_at("newrev_since", "That time is in the future.");
-                }
-            }
-        } else {
-            $this->newrev_since = null;
-        }
-        return $this;
+        $this->enumerate_recipients();
     }
 
     private function dcounts() {
@@ -129,11 +88,15 @@ class MailRecipients extends MessageSet {
         }
     }
 
-    /** @param ?string $type
-     * @return $this */
-    function set_recipients($type) {
+    /** @param string $name
+     * @param string $description
+     * @param int $flags */
+    private function defsel($name, $description, $flags = 0) {
+        $this->recipts[] = [$name, $description, $flags];
+    }
+
+    private function enumerate_recipients() {
         $user = $this->user;
-        $this->type = $this->canonical_recipients($type);
         assert(!!$user->isPC);
 
         if ($user->is_manager()) {
@@ -207,80 +170,128 @@ class MailRecipients extends MessageSet {
             $this->defsel("shepherd", "Shepherds", $any_shepherd ? 0 : self::F_HIDE);
         }
 
-        $this->defsel("pc_group", "Program committee", self::F_GROUP);
-        $selcount = count($this->sel);
-        $this->defsel("pc", "Program committee", self::F_ANYPC | self::F_NOPAPERS);
+        $tags = [];
         foreach ($this->conf->viewable_user_tags($this->user) as $t) {
             if ($t !== "pc")
-                $this->defsel("pc:$t", "#$t program committee", self::F_ANYPC | self::F_NOPAPERS);
+                $tags[] = $t;
         }
-        if (count($this->sel) == $selcount + 1) {
-            unset($this->sel["pc_group"]);
+        if (empty($tags)) {
+            $this->defsel("pc", "Program committee", self::F_ANYPC | self::F_NOPAPERS);
         } else {
+            $this->defsel("pc_group", "Program committee", self::F_GROUP);
+            $this->defsel("pc", "Program committee", self::F_ANYPC | self::F_NOPAPERS);
+            foreach ($tags as $t) {
+                $this->defsel("pc:{$t}", "#{$t} program committee", self::F_ANYPC | self::F_NOPAPERS);
+            }
             $this->defsel("pc_group_end", null, self::F_GROUP);
         }
 
         if ($user->privChair) {
             $this->defsel("all", "Active users", self::F_NOPAPERS);
         }
+    }
 
-        if (isset($this->sel[$type])
-            && !($this->selflags[$type] & self::F_GROUP)) {
-            $this->type = $type;
-        } else {
-            $this->type = key($this->sel);
-            if ($type !== null && $type !== "") {
-                $this->error_at("to", "Invalid recipients.");
-            }
+    /** @param string $type
+     * @return ?string */
+    function recipient_description($type) {
+        foreach ($this->recipts as $rec) {
+            if ($rec[0] === $type)
+                return $rec[1];
         }
+        return null;
+    }
 
+    /** @param ?list<int> $paper_ids
+     * @return $this */
+    function set_paper_ids($paper_ids) {
+        $this->paper_ids = $paper_ids;
         return $this;
     }
 
-    function selectors() {
+    /** @param ?string $newrev_since
+     * @return $this */
+    function set_newrev_since($newrev_since) {
+        $newrev_since = trim($newrev_since ?? "");
+        if ($newrev_since !== ""
+            && !preg_match('/\A(?:|n\/a|\(?all\)?|0)\z/i', $newrev_since)) {
+            $t = $this->conf->parse_time($newrev_since);
+            if ($t === false) {
+                $this->error_at("newrev_since", "Invalid date.");
+            } else {
+                $this->newrev_since = $t;
+                if ($t > Conf::$now) {
+                    $this->warning_at("newrev_since", "That time is in the future.");
+                }
+            }
+        } else {
+            $this->newrev_since = null;
+        }
+        return $this;
+    }
+
+    /** @param ?string $type
+     * @return $this */
+    function set_recipients($type) {
+        $type = $this->canonical_recipients($type);
+        foreach ($this->recipts as $i => $rec) {
+            if ($rec[0] === $type && ($rec[2] & self::F_GROUP) === 0) {
+                $this->type = $type;
+                $this->tindex = $i;
+                return $this;
+            }
+        }
+        $this->type = $this->recipts[0][0];
+        $this->tindex = 0;
+        if (($type ?? "") !== "") {
+            $this->error_at("to", "Invalid recipients");
+        }
+        return $this;
+    }
+
+    /** @return bool */
+    function has_paper_ids() {
+        return $this->paper_ids !== null;
+    }
+
+    /** @return list<int> */
+    function paper_ids() {
+        return $this->paper_ids ?? [];
+    }
+
+    /** @param string $id
+     * @return string */
+    function recipient_selector_html($id) {
         $sel = [];
         $last = null;
-        foreach ($this->sel as $n => $d) {
-            $flags = $this->selflags[$n];
-            if ($flags & self::F_GROUP) {
+        $lastflags = 0;
+        foreach ($this->recipts as $rec) {
+            list($n, $d, $flags) = $rec;
+            if (($flags & self::F_GROUP) !== 0) {
                 if ($d !== null) {
                     $sel[$n] = ["optgroup", $d];
-                } else if ($last !== null
-                           && ($this->selflags[$last] & self::F_GROUP)) {
+                } else if (($lastflags & self::F_GROUP) !== 0) {
                     unset($sel[$last]);
                 } else {
                     $sel[$n] = ["optgroup"];
                 }
-            } else if (!($flags & self::F_HIDE) || $n == $this->type) {
+            } else {
+                if (($flags & self::F_HIDE) !== 0 && $n !== $this->type) {
+                    continue;
+                }
                 if (is_string($d)) {
                     $d = ["label" => $d];
                 }
-                $k = [];
-                if ($flags & self::F_NOPAPERS) {
-                    $k[] = "mail-want-no-papers";
-                }
-                if ($flags & self::F_SINCE) {
-                    $k[] = "mail-want-since";
-                }
-                if (!empty($k)) {
-                    $d["class"] = join(" ", $k);
+                $k = ($flags & self::F_NOPAPERS ? " mail-want-no-papers" : "")
+                    . ($flags & self::F_SINCE ? " mail-want-since" : "");
+                if ($k !== "") {
+                    $d["class"] = substr($k, 1);
                 }
                 $sel[$n] = $d;
-            } else {
-                continue;
             }
             $last = $n;
+            $lastflags = $flags;
         }
-        return Ht::select("to", $sel, $this->type, ["id" => "to", "class" => "uich js-mail-recipients"]);
-    }
-
-    /** @return string */
-    function unparse() {
-        $t = $this->sel[$this->type];
-        if ($this->type == "newpcrev" && $this->newrev_since) {
-            $t .= " since " . htmlspecialchars($this->conf->parseableTime($this->newrev_since, false));
-        }
-        return $t;
+        return Ht::select($id, $sel, $this->type, ["id" => $id, "class" => "uich js-mail-recipients"]);
     }
 
     /** @return bool */
@@ -306,6 +317,15 @@ class MailRecipients extends MessageSet {
         } else {
             return 0;
         }
+    }
+
+    /** @return string */
+    function unparse() {
+        $t = $this->recipts[$this->tindex][1];
+        if ($this->type == "newpcrev" && $this->newrev_since) {
+            $t .= " since " . htmlspecialchars($this->conf->parseableTime($this->newrev_since, false));
+        }
+        return $t;
     }
 
     /** @return ?PaperInfoSet */
@@ -344,7 +364,7 @@ class MailRecipients extends MessageSet {
         // additional manager limit
         $paper_ids = $this->paper_ids;
         if (!$this->user->privChair
-            && !($this->selflags[$this->type] & self::F_ANYPC)) {
+            && ($this->recipts[$this->tindex][2] & self::F_ANYPC) !== 0) {
             if ($this->conf->check_any_admin_tracks($this->user)) {
                 $ps = new PaperSearch($this->user, ["q" => "", "t" => "admin"]);
                 if ($paper_ids === null) {
