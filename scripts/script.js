@@ -143,6 +143,11 @@ if (!Element.prototype.closest) {
         return $(this).closest(s)[0];
     };
 }
+if (!Element.prototype.querySelector) {
+    Element.prototype.querySelector = function (s) {
+        return $(this).find(s)[0] || null;
+    };
+}
 if (!Element.prototype.append) {
     Element.prototype.append = function () {
         for (var i = 0; i !== arguments.length; ++i) {
@@ -1578,6 +1583,7 @@ return handle_ui;
 $(document).on("click", ".ui, .uic", handle_ui);
 $(document).on("change", ".uich", handle_ui);
 $(document).on("keydown", ".uikd", handle_ui);
+$(document).on("mousedown", ".uimd", handle_ui);
 $(document).on("input", ".uii", handle_ui);
 $(document).on("beforeinput", ".ui-beforeinput", handle_ui);
 $(document).on("fold", ".ui-fold", handle_ui);
@@ -3659,17 +3665,21 @@ handle_ui.on("js-aufoldup", function (evt) {
 });
 
 handle_ui.on("js-click-child", function (evt) {
-    var a = $(this).find("a")[0]
-        || $(this).find("input[type=checkbox], input[type=radio]")[0];
-    if (a && evt.target !== a && !a.disabled) {
+    if (evt.target.closest("a[href], input, select, textarea, button"))
+        return;
+    var a = this.querySelector("a[href], input[type=checkbox], input[type=radio]");
+    if (!a || a.disabled)
+        return;
+    if (evt.type === "click") {
         var newEvent = new MouseEvent("click", {
+            view: window, bubbles: true, cancelable: true,
             button: evt.button, buttons: evt.buttons,
             ctrlKey: evt.ctrlKey, shiftKey: evt.shiftKey,
             altKey: evt.altKey, metaKey: evt.metaKey
         });
         a.dispatchEvent(newEvent);
-        evt.preventDefault();
     }
+    evt.preventDefault();
 });
 
 
