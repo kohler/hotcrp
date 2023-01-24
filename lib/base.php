@@ -256,7 +256,7 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $width = 75, $flowed = f
 /** @param string $text
  * @return int */
 function count_words($text) {
-    return preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*/', $text);
+    return preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*/u', $text);
 }
 
 /** @param string $s
