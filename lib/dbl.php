@@ -992,3 +992,7 @@ function sql_in_int_list($set) {
         return " in (" . join(", ", $set) . ")";
     }
 }
+
+if (function_exists("mysqli_report")) {
+    mysqli_report(MYSQLI_REPORT_OFF);
+}

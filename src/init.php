@@ -64,7 +64,6 @@ require_once(SiteLoader::find("lib/navigation.php"));
 require_once(SiteLoader::find("lib/polyfills.php"));
 require_once(SiteLoader::find("lib/base.php"));
 require_once(SiteLoader::find("lib/redirect.php"));
-mysqli_report(MYSQLI_REPORT_OFF);
 require_once(SiteLoader::find("lib/dbl.php"));
 require_once(SiteLoader::find("src/helpers.php"));
 require_once(SiteLoader::find("src/conference.php"));
@@ -75,7 +74,9 @@ if (defined("HOTCRP_TESTHARNESS")) {
 }
 if (PHP_SAPI === "cli") {
     set_exception_handler("Multiconference::batch_exception_handler");
-    pcntl_signal(SIGPIPE, SIG_DFL);
+    if (function_exists("pcntl_signal")) {
+        pcntl_signal(SIGPIPE, SIG_DFL);
+    }
 }
 
 
