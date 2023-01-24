@@ -129,6 +129,7 @@ function commajoin($what, $joinword = "and") {
  * @return bool */
 function is_usascii($str) {
     return !preg_match('/[\x80-\xFF]/', $str);
+    // 2023: this is faster than iconv, iconv_strlen, or mb_check_encoding
 }
 
 /** @param string $str
@@ -256,7 +257,10 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $width = 75, $flowed = f
 /** @param string $text
  * @return int */
 function count_words($text) {
-    return preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*/', $text);
+    return is_usascii($text)
+        ? preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*/', $text)
+        : preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*/u', $text);
+    // 2023 benchmark on 223MB: Without /u = 1.76, with /u = 2.52, with is_usascii = 2.40.
 }
 
 /** @param string $s
