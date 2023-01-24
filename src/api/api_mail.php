@@ -49,6 +49,7 @@ class Mail_API {
             foreach (array_keys($user->conf->mail_template_map()) as $k) {
                 if (($mt = $user->conf->mail_template($k, false, $user))
                     && ($mt->allow_template ?? false)
+                    && isset($mt->title)
                     && !isset($mtjs[$mt->name])) {
                     $mtjs[$mt->name] = ["name" => $mt->name, "title" => $mt->title]
                         + self::expand_template($user, $mailer, $recip, $mt);
