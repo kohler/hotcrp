@@ -5546,7 +5546,7 @@ class Conf {
 
     private function load_token_types() {
         if ($this->_token_factories === null) {
-            $this->_token_factories = [];
+            $this->_token_types = $this->_token_factories = [];
             expand_json_includes_callback(["etc/capabilityhandlers.json"], [$this, "_add_token_json"]);
             if (($olist = $this->opt("capabilityHandlers"))) {
                 expand_json_includes_callback($olist, [$this, "_add_token_json"]);
