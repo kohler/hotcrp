@@ -979,8 +979,8 @@ class Conf {
     }
 
     /** @return callable(Contact|Author,Contact|Author):int */
-    function user_comparator() {
-        $sortspec = $this->sort_by_last ? 0312 : 0321;
+    function user_comparator($sort_by_last = null) {
+        $sortspec = $sort_by_last ?? $this->sort_by_last ? 0312 : 0321;
         $pcollator = $this->punctuation_collator();
         return function ($a, $b) use ($sortspec, $pcollator) {
             $as = Contact::get_sorter($a, $sortspec);

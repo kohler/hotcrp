@@ -21,6 +21,8 @@ class ContactList {
     const FIELD_SHEPHERDS = 14;
     const FIELD_TAGS = 15;
     const FIELD_COLLABORATORS = 16;
+    const FIELD_FIRST = 40;
+    const FIELD_LAST = 41;
     const FIELD_SCORE = 50;
 
     /** @var list<string> */
@@ -118,19 +120,25 @@ class ContactList {
             return ["sel", 1, 0, self::FIELD_SELECTOR, "selon"];
         case self::FIELD_NAME:
         case "name":
-            return ['name', 1, 1, self::FIELD_NAME, "name"];
+            return ["name", 1, 1, self::FIELD_NAME, "name"];
+        case self::FIELD_FIRST:
+        case "first":
+            return ["", 0, 0, self::FIELD_FIRST, "first"];
+        case self::FIELD_LAST:
+        case "last":
+            return ["", 0, 0, self::FIELD_LAST, "last"];
         case self::FIELD_EMAIL:
         case "email":
-            return ['email', 1, 1, self::FIELD_EMAIL, "email"];
+            return ["email", 1, 1, self::FIELD_EMAIL, "email"];
         case self::FIELD_AFFILIATION:
         case "aff":
-            return ['affiliation', 1, 1, self::FIELD_AFFILIATION, "aff"];
+            return ["affiliation", 1, 1, self::FIELD_AFFILIATION, "aff"];
         case self::FIELD_AFFILIATION_ROW:
         case "affrow":
-            return ['affrow', 4, 0, self::FIELD_AFFILIATION_ROW, "affrow"];
+            return ["affrow", 4, 0, self::FIELD_AFFILIATION_ROW, "affrow"];
         case self::FIELD_LASTVISIT:
         case "lastvisit":
-            return ['lastvisit', 1, 1, self::FIELD_LASTVISIT, "lastvisit"];
+            return ["lastvisit", 1, 1, self::FIELD_LASTVISIT, "lastvisit"];
         case self::FIELD_HIGHTOPICS:
         case "topicshi":
             return ['topics', 3, 0, self::FIELD_HIGHTOPICS, "topicshi"];
@@ -320,6 +328,11 @@ class ContactList {
         switch ($this->sortField) {
         case self::FIELD_NAME:
             usort($rows, [$this, "_sortBase"]);
+            break;
+        case self::FIELD_FIRST:
+        case self::FIELD_LAST:
+            $compar = $this->conf->user_comparator($this->sortField === self::FIELD_LAST);
+            usort($rows, $compar);
             break;
         case self::FIELD_EMAIL:
             usort($rows, [$this, "_sortEmail"]);
@@ -943,6 +956,19 @@ class ContactList {
         return $rows;
     }
 
+    private function _next_sort_link($sortUrl) {
+        $fld = $this->sortField;
+        if ($fld === self::FIELD_NAME) {
+            $fld = $this->conf->sort_by_last ? self::FIELD_LAST : self::FIELD_FIRST;
+        }
+        if (($fld === self::FIELD_LAST || $fld === self::FIELD_FIRST)
+            && $this->reverseSort) {
+            $fld = $fld === self::FIELD_LAST ? self::FIELD_FIRST : self::FIELD_LAST;
+        }
+        $fspec = $this->_fieldspec($fld);
+        return $sortUrl . ($this->reverseSort ? "" : "-") . $fspec[4];
+    }
+
     function table_html($listname, $url, $listtitle = "", $foldsession = null) {
         // PC tags
         $listquery = $listname;
@@ -983,7 +1009,9 @@ class ContactList {
 
         // sort rows
         if (!$this->sortField
-            || !($acceptable_fields[$this->sortField] ?? false)) {
+            || (!($acceptable_fields[$this->sortField] ?? false)
+                && $this->sortField !== self::FIELD_FIRST
+                && $this->sortField !== self::FIELD_LAST)) {
             $this->sortField = self::FIELD_NAME;
         }
         $srows = $this->_sort($rows);
@@ -1107,20 +1135,24 @@ class ContactList {
 
         if ($this->sortable && $url) {
             $sortUrl = $url . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
+            $sortField = $this->sortField;
+            if ($sortField === self::FIELD_FIRST || $sortField === self::FIELD_LAST) {
+                $sortField = self::FIELD_NAME;
+            }
             $q = '<a class="pl_sort" rel="nofollow" href="' . $sortUrl;
             foreach ($fieldDef as $fieldId => $fdef) {
                 if ($fdef[1] != 1) {
                     continue;
                 } else if (!isset($anyData[$fieldId])) {
-                    $x .= "    <th class=\"pl plh pl_$fdef[0]\"></th>\n";
+                    $x .= "    <th class=\"pl plh pl_{$fdef[0]}\"></th>\n";
                     continue;
                 }
-                $x .= "    <th class=\"pl plh pl_$fdef[0]\">";
+                $x .= "    <th class=\"pl plh pl_{$fdef[0]}\">";
                 $ftext = $this->header($fieldId);
-                if ($fieldId === $this->sortField) {
-                    $rev = $this->reverseSort ? "" : "-";
-                    $x .= '<a class="pl_sort pl_sorting' . ($this->reverseSort ? "_rev" : "_fwd")
-                        . "\" rel=\"nofollow\" href=\"{$sortUrl}{$rev}{$fdef[4]}\">{$ftext}</a>";
+                if ($fieldId === $sortField) {
+                    $klass = $this->reverseSort ? "pl_sorting_rev" : "pl_sorting_fwd";
+                    $qx = $this->_next_sort_link($sortUrl);
+                    $x .= "<a class=\"pl_sort {$klass}\" rel=\"nofollow\" href=\"{$qx}\">{$ftext}</a>";
                 } else if ($fdef[2]) {
                     $x .= "{$q}{$fdef[4]}\">{$ftext}</a>";
                 } else {
