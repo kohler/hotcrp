@@ -17,7 +17,7 @@ class NavigationState {
     /** @var string */
     public $base_path_relative; // "/BASEPATH/", "../"+, or ""
     /** @var string */
-    public $site_path;          // "/SITEPATH/"; always ends in /; suffix of $site_path;
+    public $site_path;          // "/SITEPATH/"; always ends in /; suffix of $base_path;
                                 // may end in `/u/NNN/`
     /** @var string */
     public $site_path_relative; // "/SITEPATH/", "../"+, or ""
@@ -28,11 +28,13 @@ class NavigationState {
     /** @var string */
     public $path;               // "/PATH" or ""
     /** @var string */
-    public $shifted_path;
+    public $shifted_path = "";
     /** @var string */
     public $query;              // "?QUERY" or ""
     /** @var string */
     public $php_suffix = "";
+    /** @var bool */
+    public $unproxied = false;
     /** @var string */
     public $request_uri;
 
@@ -40,7 +42,7 @@ class NavigationState {
     //   required: SERVER_PORT, SCRIPT_FILENAME, SCRIPT_NAME, REQUEST_URI
     //   optional: HTTP_HOST, SERVER_NAME, HTTPS, REQUEST_SCHEME
 
-    function __construct($server, $index_name = "index") {
+    function __construct($server) {
         if (!$server) {
             return;
         }
@@ -123,7 +125,7 @@ class NavigationState {
             $this->raw_page = $this->page = substr($m[1], 1);
         } else {
             $this->raw_page = "";
-            $this->page = $index_name;
+            $this->page = "index";
         }
         $this->apply_php_suffix();
         $this->path = $m[2];
@@ -349,9 +351,9 @@ class Navigation {
     /** @var ?NavigationState */
     static private $s;
 
-    static function analyze($index_name = "index") {
+    static function analyze() {
         if (PHP_SAPI !== "cli") {
-            self::$s = new NavigationState($_SERVER, $index_name);
+            self::$s = new NavigationState($_SERVER);
         } else {
             self::$s = new NavigationState(null);
         }

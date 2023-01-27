@@ -299,8 +299,8 @@ function xassert_error_handler($errno, $emsg, $file, $line) {
 
 set_error_handler("xassert_error_handler");
 
-function assert_location() {
-    return caller_landmark('/^(?:x?assert|MailChecker::check)/');
+function assert_location($position = 1) {
+    return caller_landmark($position, '/(?:^x?assert|^MailChecker::check|::x?assert)/');
 }
 
 /** @param mixed $x
