@@ -34,39 +34,76 @@ php73-intl, php73-mysqlnd, zip, poppler-utils, and sendmail or postfix.
 Installation
 ------------
 
-1. Run `lib/createdb.sh` to create the database. Use
-`lib/createdb.sh OPTIONS` to pass options to MariaDB, such as `--user`
-and `--password`. Many MariaDB installations require privilege to create
-tables, so you may need `sudo lib/createdb.sh OPTIONS`. Run
-`lib/createdb.sh --help` for more information. You will need to
-decide on a name for your database (no spaces allowed).
+1. Run `lib/createdb.sh` to create the database. Use `lib/createdb.sh OPTIONS`
+   to pass options to MariaDB, such as `--user` and `--password`. Many MariaDB
+   installations require privilege to create tables, so you may need `sudo
+   lib/createdb.sh OPTIONS`. Run `lib/createdb.sh --help` for more
+   information. You will need to decide on a name for your database (no spaces
+   allowed).
 
-    The username and password information for the conference database is
-stored in `conf/options.php`, which HotCRP marks as world-unreadable. You must
-ensure that your PHP can read this file.
+   The username and password information for the conference database is stored
+   in `conf/options.php`. You must ensure that your PHP can read this file; it
+   is marked as world-unreadable by default.
 
-    If you don’t want to run `lib/createdb.sh`, you will have to create your
-own database and user, initialize the database with the contents of
-`src/schema.sql`, and create `conf/options.php` (using `etc/distoptions.php`
-as a guide).
+   If you don’t want to run `lib/createdb.sh`, you will have to create your
+   own database and user, initialize the database with the contents of
+   `src/schema.sql`, and create `conf/options.php` (using
+   `etc/distoptions.php` as a guide).
 
 2. Edit `conf/options.php`, which is annotated to guide you.
 
-3. Configure your web server to access HotCRP. For Nginx, all accesses under
-the HotCRP directory should be handled by `php-fpm` on `index.php`. For
-example, this `location` makes `/testconf` access a HotCRP installation
-in /home/kohler/hotcrp (assuming `php-fpm` is listening on port 9000):
+3. Configure your web server so that all accesses to the HotCRP site are
+   handled by HotCRP’s `index.php` script. The right way to do this depends on
+   your choice of server. We recommend using `php-fpm` with Nginx, but Apache
+   also works. In the following examples, `SITE/testconf` is configured for a
+   HotCRP installation in `/home/kohler/hotcrp`.
 
-        location /testconf/ {
-            fastcgi_pass 127.0.0.1:9000;
-            fastcgi_split_path_info ^(/testconf)(/.*)$;
-            fastcgi_param PATH_INFO $fastcgi_path_info;
-            fastcgi_param SCRIPT_FILENAME /home/kohler/hotcrp/index.php;
-            include fastcgi_params;
-        }
+   **Nginx**: Configure Nginx to redirect accesses to `php-fpm` and the HotCRP
+   `index.php` script. This example code would go in a `server` block, and
+   assumes that `php-fpm` is listening on port 9000:
 
-    You may also add `location` blocks for Nginx to serve static files under
-`images/`, `scripts/`, and `stylesheets/` itself.
+   ```
+   location /testconf/ {
+       fastcgi_pass 127.0.0.1:9000;
+       fastcgi_split_path_info ^(/testconf)(/.*)$;
+       fastcgi_param SCRIPT_FILENAME /home/kohler/hotcrp/index.php;
+       include fastcgi_params;
+   }
+   ```
+
+   **Apache with mod_proxy and `php-fpm`**: Add a `ProxyPass`.
+
+   ```
+   ProxyPass "/testconf" "fcgi://localhost:9000/home/kohler/hotcrp/index.php"
+   ```
+
+   (If your site path is `"/"`, you will need something like `ProxyPass "/"
+   "fcgi://localhost:9000/home/kohler/hotcrp/index.php/"`—note the trailing
+   slash.)
+
+   **Apache with mod_php _(not recommended)_**: Add a `ScriptAlias` for the
+   Peteramati script and a `<Directory>` for the installation.
+
+   ```
+   ScriptAlias "/testconf" "/home/kohler/hotcrp/index.php"
+   <Directory "/home/kohler/hotcrp">
+     Options None
+     AllowOverride none
+     Require all denied
+     <Files "index.php">
+       Require all granted
+     </Files>
+   </Directory>
+   ```
+
+   **General notes**: Everything under the site path (here, `/testconf`)
+   should be served by HotCRP. This normally happens automatically, but if the
+   site path is `/`, you may need to turn off your server’s default handlers
+   for subdirectories such as `/doc`.
+
+   The `images`, `scripts`, and `stylesheets` subdirectories contain static
+   files that any user may access. It is safe to configure your server to
+   serve those directories directly, without involving PHP.
 
 4. Update PHP settings.
 
