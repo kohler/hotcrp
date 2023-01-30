@@ -35,6 +35,8 @@ class NavigationState {
     public $php_suffix = "";
     /** @var bool */
     public $unproxied = false;
+    /** @var bool */
+    public $above_base = false;
     /** @var string */
     public $request_uri;
 
@@ -111,6 +113,7 @@ class NavigationState {
                 }
             }
         }
+        $this->above_base = strlen($this->base_path) > strlen($uri);
 
         // $this->php_suffix: ".php" or ""
         if (isset($server["HOTCRP_PHP_SUFFIX"])) {

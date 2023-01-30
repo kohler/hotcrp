@@ -238,8 +238,10 @@ function initialize_request($kwarg = null) {
         $nav->set_php_suffix($php_suffix);
     }
 
-    // maybe redirect to https
-    if ($conf->opt("redirectToHttps")) {
+    // maybe redirect to base or to https
+    if ($nav->above_base) {
+        Navigation::redirect_absolute($nav->self());
+    } else if ($conf->opt("redirectToHttps") && $nav->protocol === "http://") {
         $nav->redirect_http_to_https($conf->opt("allowLocalHttp"));
     }
 
