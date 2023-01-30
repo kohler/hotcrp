@@ -12,7 +12,7 @@ class NavigationState {
     public $host;               // "HOST"
     /** @var string */
     public $server;             // "PROTOCOL://HOST[:PORT]"
-    /** @var string */
+    /** @var non-empty-string */
     public $base_path;          // "/BASEPATH/"; always ends in /
     /** @var string */
     public $base_path_relative; // "/BASEPATH/", "../"+, or ""
@@ -47,14 +47,6 @@ class NavigationState {
             return;
         }
 
-        // php_suffix
-        if (isset($server["HOTCRP_PHP_SUFFIX"])) {
-            $this->php_suffix = $server["HOTCRP_PHP_SUFFIX"];
-        } else if (function_exists("apache_get_modules")
-                   && array_search("mod_rewrite", apache_get_modules()) === false) {
-            $this->php_suffix = ".php";
-        }
-
         // host, protocol, server
         $this->host = $server["HTTP_HOST"] ?? $server["SERVER_NAME"] ?? null;
         if ((isset($server["HTTPS"])
@@ -76,90 +68,182 @@ class NavigationState {
             $x .= ":" . $port;
         }
         $this->server = $x;
+        $this->request_uri = $server["REQUEST_URI"];
+        $pct = strpos($this->request_uri, "%") !== false;
 
-        // detect $site_path
-        $sfilename = $server["SCRIPT_FILENAME"]; // pathname
-        $sfile = substr($sfilename, strrpos($sfilename, "/") + 1);
-
-        $sname = $server["SCRIPT_NAME"]; // URL-decoded
-        $sname_slash = strrpos($sname, "/");
-        if (substr($sname, $sname_slash + 1) !== $sfile) {
-            if ($sname === "" || $sname[strlen($sname) - 1] !== "/") {
-                $sname .= "/";
-            }
-            $sname_slash = strlen($sname) - 1;
+        // $this->query: easy-urldecoded portion including and after [?#];
+        // $uri: encoded portion preceding $query
+        $qpos = strpos($this->request_uri, "?");
+        if (($hpos = strpos($this->request_uri, "#")) !== false) {
+            $qpos = $qpos === false ? $hpos : min($qpos, $hpos);
         }
-
-        $this->request_uri = $uri = $server["REQUEST_URI"]; // URL-encoded
-        if (substr($uri, 0, $sname_slash) === substr($sname, 0, $sname_slash)) {
-            $uri_slash = $sname_slash;
+        if ($qpos !== false) {
+            $this->query = substr($this->request_uri, $qpos);
+            if ($pct) {
+                $this->query = self::easy_urldecode($this->query);
+            }
+            $uri = substr($this->request_uri, 0, $qpos);
         } else {
-            // URL-encoded prefix != URL-decoded prefix
-            for ($nslash = substr_count(substr($sname, 0, $sname_slash), "/"),
-                 $uri_slash = 0;
-                 $nslash > 0; --$nslash) {
-                $uri_slash = strpos($uri, "/", $uri_slash + 1);
+            $this->query = "";
+            $uri = $this->request_uri;
+        }
+
+        // $this->base_path: encoded path to root of site; nonempty, ends in /
+        $bp = $this->find_base($uri, $server);
+        if ($bp === "/"
+            || strlen($bp) > strlen($uri)
+            || substr($uri, 0, strlen($bp)) === $bp) {
+            $this->base_path = $bp;
+        } else {
+            $nsl = substr_count($bp, "/");
+            $pos = -1;
+            while ($nsl > 0 && $pos !== false) {
+                $pos = strpos($uri, "/", $pos + 1);
+                --$nsl;
             }
-        }
-        if ($uri_slash === false || $uri_slash > strlen($uri)) {
-            $uri_slash = strlen($uri);
-        }
-
-        $this->site_path = substr($uri, 0, $uri_slash) . "/";
-
-        // separate $page, $path, $query
-        $uri_suffix = substr($uri, $uri_slash);
-        // Semi-URL-decode $uri_suffix, only decoding safe characters.
-        // (This is generally already done for us but just to be safe.)
-        $uri_suffix = preg_replace_callback('/%[2-7][0-9a-f]/i', function ($m) {
-            $x = urldecode($m[0]);
-            /** @phan-suppress-next-line PhanParamSuspiciousOrder */
-            if (ctype_alnum($x) || strpos("._,-=@~", $x) !== false) {
-                return $x;
+            if ($pos !== false) {
+                $this->base_path = substr($uri, 0, $pos + 1);
             } else {
-                return $m[0];
+                error_log("FAJNDFNASJDNASJ");
+                $this->base_path = $uri;
+                if ($uri === "" || $uri[strlen($uri) - 1] !== "/") {
+                    $this->base_path .= "/";
+                }
             }
-        }, $uri_suffix);
-        preg_match('/\A(\/[^\/\?\#]*|)([^\?\#]*)(.*)\z/', $uri_suffix, $m);
-        if ($m[1] !== "" && $m[1] !== "/") {
-            $this->raw_page = $this->page = substr($m[1], 1);
-        } else {
+        }
+
+        // $this->php_suffix: ".php" or ""
+        if (isset($server["HOTCRP_PHP_SUFFIX"])) {
+            $this->php_suffix = $server["HOTCRP_PHP_SUFFIX"];
+        } else if ($this->unproxied && function_exists("apache_get_modules")) {
+            $this->php_suffix = ".php";
+        }
+
+        // separate $this->page and $this->path
+        $nbp = strlen($this->base_path);
+        $uri_suffix = (string) substr($uri, min($nbp, strlen($uri)));
+        if ($pct) {
+            $uri_suffix = self::easy_urldecode($uri_suffix);
+        }
+        if (($n = strpos($uri_suffix, "/")) === false) {
+            $n = strlen($uri_suffix);
+        }
+        if ($n === 0) {
             $this->raw_page = "";
             $this->page = "index";
-        }
-        $this->apply_php_suffix();
-        $this->path = $m[2];
-        $this->shifted_path = "";
-        $this->query = $m[3];
-
-        // detect $site_path_relative
-        $path_slash = substr_count($this->path, "/");
-        if ($path_slash) {
-            $this->site_path_relative = str_repeat("../", $path_slash);
-        } else if ($uri_slash >= strlen($uri)) {
-            $this->site_path_relative = $this->site_path;
+            $this->path = "";
         } else {
-            $this->site_path_relative = "";
+            $this->raw_page = substr($uri_suffix, 0, $n);
+            $this->page = $this->raw_page;
+            $this->path = substr($uri_suffix, $n);
+            $this->apply_php_suffix();
         }
 
-        // set $base_path
-        $this->base_path = $this->site_path;
-        $this->base_path_relative = $this->site_path_relative;
+        // compute $this->base_path_relative
+        $path_slash = substr_count($this->path, "/");
+        if ($path_slash > 0) {
+            $this->base_path_relative = str_repeat("../", $path_slash);
+        } else if ($this->raw_page === "") {
+            $this->base_path_relative = $this->base_path;
+        } else {
+            $this->base_path_relative = "";
+        }
+
+        // $this->site_path: initially $this->base_path
+        $this->site_path = $this->base_path;
+        $this->site_path_relative = $this->base_path_relative;
+
+/*
+        $serverm = ["REQUEST_URI" => $server["REQUEST_URI"],
+            "SCRIPT_FILENAME" => $server["SCRIPT_FILENAME"],
+            "SCRIPT_NAME" => $server["SCRIPT_NAME"]];
+        foreach (["ORIG_SCRIPT_FILENAME", "ORIG_SCRIPT_NAME", "PATH_INFO"] as $k) {
+            if (array_key_exists($k, $server))
+                $serverm[$k] = $server[$k];
+        }
+        $serverm["~BASE_PATH"] = $this->base_path;
+        $serverm["~PAGE"] = $this->page;
+        $serverm["~PATH"] = $this->path;
+        $serverfx = $this->server . $this->request_uri . " " . substr(json_encode($serverm, JSON_PRETTY_PRINT), 0, -1) . "\n";
+        file_put_contents("/tmp/check.txt", $serverfx);
+        if (defined("STDERR")) { fwrite(STDERR, $serverfx); } */
+    }
+
+    /** @param string $uri
+     * @param array $server
+     * @return non-empty-string */
+    private function find_base($uri, $server) {
+        // $sn: URI-decoded path by which server found this script.
+        // $this->base_path is a prefix of $sn (but $sn might be decoded)
+        $sn = $server["SCRIPT_NAME"];
+        if ($sn === "" || $sn === "/") {
+            return "/";
+        }
+
+        // Detect direct mapping within Apache (i.e., no proxying;
+        // unlikely/not recommended configuration)
+        $sfn = $server["SCRIPT_FILENAME"];
+        $origsn = $server["ORIG_SCRIPT_NAME"] ?? null;
+        $origsfn = $server["ORIG_SCRIPT_FILENAME"] ?? null;
+        if ($origsn === null && $origsfn === null) {
+            $nsn = strlen($sn);
+            $sfx = substr($sfn, strrpos($sfn, "/") + 1);
+            $npfx = strlen($sn) - strlen($sfx);
+            if ($npfx > 0
+                && $sn[$npfx - 1] === "/"
+                && substr($sn, $npfx) === $sfx) {
+                $this->unproxied = true;
+                return substr($sn, 0, $npfx);
+            }
+        }
+
+        // $path_info is URI-decoded path following base; detect it
+        // and remove it from $sn if appropriate
+        if ($origsn === null) {
+            $path_info = $server["PATH_INFO"] ?? null;
+            if ($path_info === null && $origsfn !== null) {
+                $n1 = strlen($sfn);
+                $n2 = strlen($origsfn);
+                if ($n1 < $n2 && substr($origsfn, 0, $n1) === $sfn) {
+                    $path_info = substr($origsfn, $n1);
+                }
+            }
+            if ($path_info !== null) {
+                $np = strlen($sn) - strlen($path_info);
+                if ($np >= 0 && substr($sn, $np) === $path_info) {
+                    $sn = substr($sn, 0, $np);
+                }
+            }
+        }
+
+        // Ensure base_path ends with slash
+        if ($sn === "" || $sn[strlen($sn) - 1] !== "/") {
+            $sn .= "/";
+        }
+        return $sn;
     }
 
     private function apply_php_suffix() {
         if ($this->page === $this->raw_page) {
             $pagelen = strlen($this->page);
             if ($pagelen > 4
-                && substr_compare($this->page, ".php", $pagelen - 4) === 0) {
+                && substr($this->page, $pagelen - 4) === ".php") {
                 $this->page = substr($this->page, 0, $pagelen - 4);
             } else if ($this->php_suffix !== ""
                        && $this->php_suffix !== ".php"
                        && $pagelen > ($sfxlen = strlen($this->php_suffix))
-                       && substr_compare($this->page, $this->php_suffix, $pagelen - $sfxlen) === 0) {
+                       && substr($this->page, $pagelen - $sfxlen) === $this->php_suffix) {
                 $this->page = substr($this->page, 0, $pagelen - $sfxlen);
             }
         }
+    }
+
+    /** @param string $s
+     * @return string */
+    static function easy_urldecode($s) {
+        return preg_replace_callback('/%(?:2[CDEcde]|3[0-9]|4[0-9A-Fa-f]|5[0-9AaFf]|6[1-9A-Fa-f]|7[0-9AEae])/', function ($m) {
+            return urldecode($m[0]);
+        }, $s);
     }
 
     /** @param string $suffix
@@ -337,7 +421,7 @@ class NavigationState {
     /** @param bool $allow_http_if_localhost
      * @return void */
     function redirect_http_to_https($allow_http_if_localhost = false) {
-        if ($this->protocol == "http://"
+        if ($this->protocol === "http://"
             && (!$allow_http_if_localhost
                 || ($_SERVER["REMOTE_ADDR"] !== "127.0.0.1"
                     && $_SERVER["REMOTE_ADDR"] !== "::1"))) {
