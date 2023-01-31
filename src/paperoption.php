@@ -265,8 +265,8 @@ class PaperOptionList implements IteratorAggregate {
     private $_nonpaper_am;
     private $_accumulator;
 
-    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"submission","form_order":1001,"type":"document"}';
-    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","form_order":1002,"type":"document"}';
+    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"submission","form_order":1001,"type":"document","configurable":false}';
+    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","form_order":1002,"type":"document","configurable":false}';
 
     function __construct(Conf $conf) {
         $this->conf = $conf;

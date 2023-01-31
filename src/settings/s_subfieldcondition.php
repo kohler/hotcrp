@@ -41,7 +41,7 @@ class SubFieldCondition_SettingParser extends SettingParser {
     static function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("sf")) {
             $opts = Options_SettingParser::configurable_options($sv->conf);
-            foreach (array_values($opts) as $ctrz => $f) {
+            foreach ($opts as $ctrz => $f) {
                 if ($f->exists_condition())
                     self::validate1($sv, "sf/" . ($ctrz + 1), $f, $f->exists_condition(), 1);
             }
@@ -51,7 +51,7 @@ class SubFieldCondition_SettingParser extends SettingParser {
     static function validate(SettingValues $sv) {
         $opts = Options_SettingParser::configurable_options($sv->conf);
         $osp = $sv->cs()->callable("Options_SettingParser");
-        foreach (array_values($opts) as $f) {
+        foreach ($opts as $f) {
             if ($f->exists_condition() && isset($osp->option_id_to_ctr[$f->id]))
                 self::validate1($sv, "sf/" . $osp->option_id_to_ctr[$f->id], $f, $f->exists_condition(), 2);
         }

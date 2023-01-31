@@ -324,12 +324,13 @@ class Options_SettingParser extends SettingParser {
         }
     }
 
-    /** @return array<int,PaperOption> */
+    /** @return list<PaperOption> */
     static function configurable_options(Conf $conf) {
-        $opts = array_filter($conf->options()->normal(), function ($opt) {
-            return $opt->configurable;
-        });
-        uasort($opts, "Conf::xt_order_compare");
+        $opts = [];
+        foreach ($conf->options()->form_fields() as $opt) {
+            if ($opt->configurable)
+                $opts[] = $opt;
+        }
         return $opts;
     }
 
@@ -615,7 +616,7 @@ class Options_SettingParser extends SettingParser {
         if (($sv->has_interest("sf") || $sv->has_interest("author_visibility"))
             && $sv->oldv("author_visibility") == Conf::BLIND_ALWAYS) {
             $opts = Options_SettingParser::configurable_options($sv->conf);
-            foreach (array_values($opts) as $ctrz => $f) {
+            foreach ($opts as $ctrz => $f) {
                 if ($f->visibility() === PaperOption::VIS_AUTHOR) {
                     $visname = "sf/" . ($ctrz + 1) . "/visibility";
                     $sv->warning_at($visname, "<5>" . $sv->setting_link("All submissions are anonymous", "author_visibility") . ", so this field is always hidden");
