@@ -187,13 +187,13 @@ class Text {
             if ($name === "") {
                 /* do nothing */;
             } else if ($name[strlen($name) - 1] === ">"
-                       && preg_match('{\A\"?(.*?)\"?\s*<([^<>]+)>\z}', $name, $m)) {
-                list($name, $email) = [$m[1], $m[2]];
-            } else if ($name[0] === "\""
-                       && preg_match('{\A\s*\"(.*)\"\s+(\S+)\z}', $name, $m)) {
-                list($name, $email) = [$m[1], $m[2]];
+                       && preg_match('/\A(?:\"(.*?)\"|(.*?))\s*<([^<>]+)>\z/', $name, $m)) {
+                list($name, $email) = [$m[1] . $m[2], $m[3]];
             } else if (strpos($name, "@") === false) {
                 /* skip */;
+            } else if ($name[0] === "\""
+                       && preg_match('{\A\s*\"(.*)\"\s+(\S+@\S+)\z}', $name, $m)) {
+                list($name, $email) = [$m[1], $m[2]];
             } else if (!preg_match('{\A(.*?)\s+(\S+)\z}', $name, $m)) {
                 return ["", "", trim($name)];
             } else if (strpos($m[2], "@") !== false) {
