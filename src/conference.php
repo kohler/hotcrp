@@ -968,25 +968,39 @@ class Conf {
     }
 
     /** @return Collator */
-    function punctuation_collator() {
-        if (!$this->_pcollator) {
-            $this->_pcollator = new Collator("en_US.utf8");
-            $this->_pcollator->setAttribute(Collator::NUMERIC_COLLATION, Collator::ON);
-            $this->_pcollator->setAttribute(Collator::ALTERNATE_HANDLING, Collator::SHIFTED);
-            $this->_pcollator->setStrength(Collator::QUATERNARY);
-        }
+    static function make_name_collator() {
+        $coll = new Collator("en_US.utf8");
+        $coll->setAttribute(Collator::NUMERIC_COLLATION, Collator::ON);
+        //$coll->setAttribute(Collator::ALTERNATE_HANDLING, Collator::SHIFTED);
+        $coll->setStrength(Collator::QUATERNARY);
+        return $coll;
+    }
+
+    /** @return Collator */
+    function name_collator() {
+        $this->_pcollator = $this->_pcollator ?? self::make_name_collator();
         return $this->_pcollator;
     }
 
-    /** @return callable(Contact|Author,Contact|Author):int */
-    function user_comparator($sort_by_last = null) {
-        $sortspec = $sort_by_last ?? $this->sort_by_last ? 0312 : 0321;
-        $pcollator = $this->punctuation_collator();
+    /** @param int|bool $sortspec
+     * @param ?Collator $pcollator
+     * @return callable(Contact|Author,Contact|Author):int */
+    static function make_user_comparator($sortspec, $pcollator = null) {
+        if (!is_int($sortspec)) {
+            $sortspec = $sortspec ? 0312 : 0321;
+        }
+        $pcollator = $pcollator ?? self::make_name_collator();
         return function ($a, $b) use ($sortspec, $pcollator) {
             $as = Contact::get_sorter($a, $sortspec);
             $bs = Contact::get_sorter($b, $sortspec);
             return $pcollator->compare($as, $bs);
         };
+    }
+
+    /** @return callable(Contact|Author,Contact|Author):int */
+    function user_comparator($sort_by_last = null) {
+        return self::make_user_comparator($sort_by_last ?? $this->sort_by_last,
+                                          $this->name_collator());
     }
 
 

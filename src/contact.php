@@ -563,13 +563,16 @@ class Contact implements JsonSerializable {
                 $s = "";
             }
             if ($s !== "") {
+                if ($bit !== 3 && !ctype_alpha($s)) {
+                    $s = trim(preg_replace('/(?:[()\[\]{}".\s]|“|”)+/', " ", $s));
+                }
                 $r[] = $s;
             }
         }
         if ($von !== "") {
             $r[] = $von;
         }
-        return join(",", $r);
+        return join(" \x00 ", $r);
     }
 
     /** @param Contact|Author $c
