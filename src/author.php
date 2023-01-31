@@ -126,11 +126,11 @@ class Author {
                 }
             }
         }
-        $this->_name = trim($s);
         if (strlen($s) > 4
             || ($s !== "" && strcasecmp($s, "all") !== 0 && strcasecmp($s, "none") !== 0)) {
             list($this->firstName, $this->lastName, $this->email) = Text::split_name($s, true);
         }
+        $this->_name = $this->email === null ? trim($s) : null;
     }
 
     /** @param string $s */
