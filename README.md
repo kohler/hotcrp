@@ -82,7 +82,7 @@ Installation
    slash.)
 
    **Apache with mod_php _(not recommended)_**: Add a `ScriptAlias` for the
-   Peteramati script and a `<Directory>` for the installation.
+   HotCRP `index.php` script and a `<Directory>` for the installation.
 
    ```
    ScriptAlias "/testconf" "/home/kohler/hotcrp/index.php"
