@@ -1047,8 +1047,8 @@ class Contact implements JsonSerializable {
     }
 
     /** @return array{email?:string,first?:string,last?:string,affiliation?:string} */
-    function unparse_nae_json() {
-        return Author::unparse_nae_json_for($this);
+    function unparse_nea_json() {
+        return Author::unparse_nea_json_for($this);
     }
 
     /** @return array<string,1|2> */

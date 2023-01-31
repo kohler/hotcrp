@@ -239,7 +239,7 @@ class PaperStatus extends MessageSet {
         if ($this->user->can_view_authors($prow)) {
             $pj->authors = [];
             foreach ($prow->author_list() as $au) {
-                $pj->authors[] = (object) $au->unparse_nae_json();
+                $pj->authors[] = (object) $au->unparse_nea_json();
             }
         }
 
@@ -859,7 +859,7 @@ class PaperStatus extends MessageSet {
     /** @param Author $au */
     private function create_user($au) {
         $conflictType = self::new_conflict_value($this->_conflict_values[strtolower($au->email)] ?? null);
-        $j = $au->unparse_nae_json();
+        $j = $au->unparse_nea_json();
         $j["disablement"] = ($this->disable_users ? Contact::DISABLEMENT_USER : 0)
             | ($conflictType & CONFLICT_CONTACTAUTHOR ? 0 : Contact::DISABLEMENT_PLACEHOLDER);
         $u = Contact::make_keyed($this->conf, $j)->store(0, $this->user);

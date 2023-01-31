@@ -260,7 +260,7 @@ class Author {
 
     /** @param Author|Contact $x
      * @return bool */
-    function nae_equals($x) {
+    function nea_equals($x) {
         return $this->email === $x->email
             && $this->firstName === $x->firstName
             && $this->lastName === $x->lastName
@@ -273,13 +273,13 @@ class Author {
     }
 
     /** @return array{email?:string,first?:string,last?:string,affiliation?:string} */
-    function unparse_nae_json() {
-        return self::unparse_nae_json_for($this);
+    function unparse_nea_json() {
+        return self::unparse_nea_json_for($this);
     }
 
     /** @param Author|Contact $x
      * @return array{email?:string,first?:string,last?:string,affiliation?:string} */
-    static function unparse_nae_json_for($x) {
+    static function unparse_nea_json_for($x) {
         $j = [];
         if ($x->email !== "") {
             $j["email"] = $x->email;

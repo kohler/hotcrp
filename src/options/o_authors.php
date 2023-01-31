@@ -20,7 +20,7 @@ class Authors_PaperOption extends PaperOption {
         }
         $au = [];
         foreach (PaperInfo::parse_author_list($ov->data_by_index(0) ?? "") as $auth) {
-            $au[] = $j = (object) $auth->unparse_nae_json();
+            $au[] = $j = (object) $auth->unparse_nea_json();
             if ($auth->email !== "" && in_array(strtolower($auth->email), $lemails)) {
                 $j->contact = true;
             }
@@ -242,7 +242,7 @@ class Authors_PaperOption extends PaperOption {
         if ($n === 1
             && !$au
             && !$pt->user->can_administer($pt->prow)
-            && (!$reqau || $reqau->nae_equals($pt->user))) {
+            && (!$reqau || $reqau->nea_equals($pt->user))) {
             $reqau = new Author($pt->user);
             $ignore_diff = true;
         }
