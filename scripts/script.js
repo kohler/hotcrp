@@ -5293,9 +5293,59 @@ Score_ReviewField.prototype.unparse_symbol = function (val, split) {
         return this.symbols[rval - 0.5].concat("~", this.symbols[rval + 0.5]);
 };
 
+function Checkbox_ReviewField(fj) {
+    var i, n, step, sym, ch;
+    ReviewField.call(this, fj);
+    this.scheme = fj.scheme || "sv";
+    this.scheme_info = make_color_scheme(2, this.scheme || "sv", false);
+}
+
+Object.setPrototypeOf(Checkbox_ReviewField.prototype, ReviewField.prototype);
+
+Checkbox_ReviewField.prototype.value_at = function (b) {
+    return {
+        value: !!b, symbol: b ? "✓" : "✗", title: b ? "Yes" : "No",
+        sp1: "", sp2: " ", className: this.scheme_info.className(b ? 2 : 1)
+    };
+};
+
+Checkbox_ReviewField.prototype.parse_value = function (txt) {
+    if (typeof txt === "boolean" || !txt)
+        return this.value_at(txt);
+    var m = txt.match(/^\s*(|✓|1|yes|on|true|y|t)(|✗|0|no|none|off|false|n|f|-|–|—)\s*$/i);
+    if (m && (m[1] === "" || m[2] === ""))
+        return this.value_at(m[1] !== "");
+    return null;
+};
+
+Checkbox_ReviewField.prototype.rgb = function (val) {
+    return this.scheme_info.rgb(val ? 2 : 1);
+};
+
+Checkbox_ReviewField.prototype.className = function (val) {
+    return this.scheme_info.className(val ? 2 : 1);
+};
+
+Checkbox_ReviewField.prototype.unparse_symbol = function (val, split) {
+    if (val === true || val === false)
+        return val ? "✓" : "✗";
+    else if (val < 0.125)
+        return "✗";
+    else if (val < 0.375)
+        return "¼✓";
+    else if (val < 0.625)
+        return "½✓";
+    else if (val < 0.875)
+        return "¾✓";
+    else
+        return "✓";
+};
+
 function make_review_field(fj) {
     if (fj.type === "radio" || fj.type === "dropdown")
         return new Score_ReviewField(fj);
+    else if (fj.type === "checkbox")
+        return new Checkbox_ReviewField(fj);
     else
         return new ReviewField(fj);
 }
@@ -11061,9 +11111,9 @@ function analyze_sc(sc) {
 
     if ((m = /(?:^|[&;])h=(\d+)(?:[&;]|$)/.exec(sc)))
         anal.h = parseInt(m[1], 10);
-    if ((m = /(?:^|[&;])lo=(\w+)/.exec(sc)))
+    if ((m = /(?:^|[&;])lo=([^&;\s]+)/.exec(sc)))
         anal.lo = m[1];
-    if ((m = /(?:^|[&;])hi=(\w+)/.exec(sc)))
+    if ((m = /(?:^|[&;])hi=([^&;\s]+)/.exec(sc)))
         anal.hi = m[1];
     anal.flip = /(?:^|[&;])flip=[^0&;]/.test(sc);
     if ((m = /(?:^|[&;])sv=([^;&]*)(?:[&;]|$)/.exec(sc)))

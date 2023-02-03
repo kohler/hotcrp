@@ -595,7 +595,12 @@ function rf_render_view(fld) {
     var hc = new HtmlCollector;
 
     hc.push('<h3 class="rfehead">', '</h3>');
-    hc.push('<label class="revfn'.concat(fld.required ? " field-required" : "", '">', escape_html(fld.name || "<unnamed>"), '</label>'));
+    if (fld.type === "checkbox") {
+        hc.push('<label class="revfn checki'.concat(fld.required ? " field-required" : "", '"><span class="checkc"><input type="checkbox" disabled></span>'), '</label>');
+    } else {
+        hc.push('<label class="revfn'.concat(fld.required ? " field-required" : "", '">'), '</label>');
+    }
+    hc.push_pop(fld.name_html || "&lt;unnamed&gt;");
     var t = rf_visibility_text(fld.visibility);
     if (t)
         hc.push('<div class="field-visibility">'.concat(t, '</div>'));

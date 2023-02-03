@@ -176,16 +176,14 @@ class ScoreInfo {
         return sqrt($this->variance_p());
     }
 
-    /** @return list<int> */
-    function counts($max = 0) {
-        $counts = $max ? array_fill(0, $max, 0) : [];
-        foreach ($this->_scores as $i) {
-            while ($i > count($counts)) {
-                $counts[] = 0;
-            }
-            if ($i > 0) {
-                ++$counts[$i - 1];
-            }
+    /** @param int $min
+     * @param int $max
+     * @return list<int> */
+    function counts($min, $max) {
+        $counts = array_fill(0, $max - $min + 1, 0);
+        foreach ($this->_scores as $s) {
+            if ($s >= $min && $s <= $max)
+                ++$counts[$s - $min];
         }
         return $counts;
     }

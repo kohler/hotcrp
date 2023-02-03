@@ -19,6 +19,25 @@
         "visibility": "au"
     },
     {
+        "selector": "Dropdown score",
+        "instantiate": {"name": "", "values": []},
+        "name": "Field name",
+        "type": "dropdown",
+        "values": [
+            "Option 1",
+            "Option 2"
+        ],
+        "required": true,
+        "visibility": "au"
+    },
+    {
+        "selector": "Checkbox",
+        "instantiate": {"name": ""},
+        "name": "Field name",
+        "type": "checkbox",
+        "visibility": "au"
+    },
+    {
         "selector": "Overall merit (1–5, Reject through Strong Accept)",
         "name": "Overall merit",
         "type": "radio",

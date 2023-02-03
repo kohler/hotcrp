@@ -495,7 +495,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             }
             $fv = $rrow->fval($this->rfield);
             if ($this->rfield instanceof Discrete_ReviewField) {
-                if (($valempty = ($fv ?? 0) <= 0)) {
+                if (($valempty = $fv === null)) {
                     $match = $this->rfield_score1 === 0
                         && ($this->rfield_scoret & CountMatcher::RELEQ) !== 0;
                 } else if (($this->rfield_scoret & self::RELRANGE) !== 0) {
@@ -751,6 +751,10 @@ class Review_SearchTerm extends SearchTerm {
             if (!self::parse_score_field($rsm, $word, $sword, $f, $srch)) {
                 return new False_SearchTerm;
             }
+        } else if ($f instanceof Checkbox_ReviewField) {
+            if (!self::parse_checkbox_field($rsm, $word, $sword, $f, $srch)) {
+                return new False_SearchTerm;
+            }
         } else {
             if ($word === "any" && !$quoted) {
                 $val = true;
@@ -763,10 +767,12 @@ class Review_SearchTerm extends SearchTerm {
         }
         return new Review_SearchTerm($srch->user, $rsm);
     }
+
     private static function impossible_score_match(Score_ReviewField $f, SearchWord $sword, PaperSearch $srch) {
         $r = $f->full_score_range();
-        $mi = $srch->lwarning($sword, "<0>{$f->name} scores range from {$r[0]} to {$r[1]}");
+        $srch->lwarning($sword, "<0>{$f->name} scores range from {$r[0]} to {$r[1]}");
     }
+
     /** @return bool */
     private static function parse_score_field(ReviewSearchMatcher $rsm, $word, SearchWord $sword, Score_ReviewField $f, PaperSearch $srch) {
         if (!preg_match('/\A(\w*+)\s*(|[=!<>]=?+|≠|≤|≥)(|\.\.\.?+|…|-|–|—)\s*(\w*)\z/', $word, $m)
@@ -833,6 +839,17 @@ class Review_SearchTerm extends SearchTerm {
             return false;
         }
         $rsm->apply_score_field($f, $f->flip ? $v1 : $v0, $f->flip ? $v0 : $v1, $rel);
+        return true;
+    }
+
+    /** @return bool */
+    private static function parse_checkbox_field(ReviewSearchMatcher $rsm, $word, SearchWord $sword, Checkbox_ReviewField $f, PaperSearch $srch) {
+        $v = $f->parse($word) ?? 0;
+        if ($v === false) {
+            $mi = $srch->lwarning($sword, "<0>{$f->name} fields can be ‘yes’ or ‘no’");
+            return false;
+        }
+        $rsm->apply_score_field($f, $v, $v, CountMatcher::RELEQ);
         return true;
     }
 

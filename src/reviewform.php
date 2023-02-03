@@ -1108,6 +1108,7 @@ class ReviewValues extends MessageSet {
     function parse_qreq(Qrequest $qreq, $override) {
         assert($this->text === null && $this->finished === 0);
         $rf = $this->conf->review_form();
+        $hasreqs = [];
         $this->req = [];
         $this->req_json = false;
         foreach ($qreq as $k => $v) {
@@ -1119,11 +1120,20 @@ class ReviewValues extends MessageSet {
                 $this->req["override"] = !!$v;
             } else if ($k === "blind" || $k === "version" || $k === "ready") {
                 $this->req[$k] = is_bool($v) ? (int) $v : cvtint($v);
+            } else if (str_starts_with($k, "has_")) {
+                $hasreqs[] = substr($k, 4);
             } else if (array_key_exists($k, $this->rf->fmap)) {
                 $this->req[$k] = (string) $v;
             } else if (($f = $rf->field($k) ?? $this->conf->find_review_field($k))
                        && !isset($this->req[$f->short_id])) {
                 $this->req[$f->short_id] = (string) $v;
+            }
+        }
+        foreach ($hasreqs as $k) {
+            if (array_key_exists($k, $this->rf->fmap)) {
+                $this->req[$k] = $this->req[$k] ?? "";
+            } else if (($f = $rf->field($k) ?? $this->conf->find_review_field($k))) {
+                $this->req[$f->short_id] = $this->req[$f->short_id] ?? "";
             }
         }
         if (!empty($this->req)) {

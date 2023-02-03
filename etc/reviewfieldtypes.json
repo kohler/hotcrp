@@ -16,5 +16,10 @@
         "function": "+Text_PaperOption",
         "sample": {"value": "Text entry"},
         "id_prefix": "t"
+    },
+    {
+        "name": "checkbox", "title": "Checkbox", "order": 600,
+        "properties": {"scheme": true, "required": true},
+        "id_prefix": "s"
     }
 ]
