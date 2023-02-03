@@ -10938,11 +10938,11 @@ function make_fm9(n, max, flip, categorical) {
         var f = (max - 1) / (n - 1);
         if (flip) {
             return function (i) {
-                return Math.max(Math.min(Math.round((+i - 1) * f) + 1, max), 1);
+                return Math.max(Math.min(Math.round((n - i) * f) + 1, max), 1);
             };
         } else {
             return function (i) {
-                return Math.max(Math.min(Math.round((n - i) * f) + 1, max), 1);
+                return Math.max(Math.min(Math.round((+i - 1) * f) + 1, max), 1);
             };
         }
     }
@@ -10964,7 +10964,7 @@ function rgb_array_for(svx) {
 
 return function (n, scheme, flip) {
     var sci = scheme_info[scheme],
-        fm9 = make_fm9(n, sci[1], !sci[2] === !flip, (sci[0] & 2) !== 0),
+        fm9 = make_fm9(n, sci[1], !sci[2] !== !flip, (sci[0] & 2) !== 0),
         svk = sci[2] || scheme;
     if (svk !== "sv")
         svk = "sv-" + svk;
