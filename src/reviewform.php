@@ -122,7 +122,7 @@ class ReviewForm {
         $hpos = 0;
         $fs = [];
         foreach ($this->viewable_fields($user) as $f) {
-            if ($f instanceof Score_ReviewField && $f->search_keyword()) {
+            if (!($f instanceof Text_ReviewField) && $f->search_keyword()) {
                 if (in_array($f, $hfs)) {
                     array_splice($fs, $hpos, 0, [$f]);
                     ++$hpos;
@@ -751,9 +751,7 @@ $blind\n";
             $xbarsep = "";
         }
         foreach ($rrow->viewable_fields($contact) as $f) {
-            if ($f instanceof Score_ReviewField
-                && !$f->value_empty($rrow->fields[$f->order])) {
-                $fh = $f->unparse_span_html($rrow->fields[$f->order]);
+            if (($fh = $f->unparse_span_html($rrow->fields[$f->order])) !== "") {
                 $t = "{$t}{$xbarsep}{$f->name_html} {$fh}";
                 $xbarsep = $barsep;
             }
@@ -1685,11 +1683,11 @@ class ReviewValues extends MessageSet {
             }
             $log_fields = [];
             foreach ($diffinfo->fields() as $f) {
-                if ($f instanceof Score_ReviewField) {
-                    $log_fields[] = $f->search_keyword() . ":" . $f->unparse_search($new_rrow->fields[$f->order]);
-                } else {
-                    $log_fields[] = $f->search_keyword();
+                $t = $f->search_keyword();
+                if (($fs = $f->unparse_search($new_rrow->fields[$f->order])) !== "") {
+                    $t = "{$t}:{$fs}";
                 }
+                $log_fields[] = $t;
             }
             if (($wc = $this->rf->full_word_count($new_rrow)) !== null) {
                 $log_fields[] = plural($wc, "word");

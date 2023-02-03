@@ -202,8 +202,7 @@ class ReviewCSV_Batch {
         $x["status"] = $rrow->status_description();
         $x["format"] = $prow->conf->default_format;
         foreach ($rrow->viewable_fields($this->user) as $f) {
-            if (($this->no_score && $f instanceof Score_ReviewField)
-                || ($this->no_text && $f instanceof Text_ReviewField)) {
+            if ($f instanceof Text_ReviewField ? $this->no_text : $this->no_score) {
                 continue;
             }
             $fv = rtrim($f->unparse($rrow->fields[$f->order]));

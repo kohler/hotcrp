@@ -546,8 +546,8 @@ class ReviewInfo implements JsonSerializable {
 
     /** @return bool */
     function has_nonempty_field(ReviewField $f) {
-        return $f->test_exists($this)
-            && ($fval = $this->fields[$f->order]) !== null
+        return ($fval = $this->fields[$f->order]) !== null
+            && $f->test_exists($this)
             && !$f->value_empty($fval);
     }
 

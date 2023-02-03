@@ -300,7 +300,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
      * @param int $value2
      * @param int $valuet */
     function apply_score_field(ReviewField $field, $value1, $value2, $valuet) {
-        assert(!$this->rfield && $field instanceof Score_ReviewField);
+        assert(!$this->rfield && $field instanceof Discrete_ReviewField);
         $this->rfield = $field;
         // -1 (explicit no entry) means same as 0 (no entry) in search
         if ($value1 === 0 && $valuet === CountMatcher::RELNE) {
@@ -362,7 +362,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             $where[] = $cm;
         }
         if ($this->rfield) {
-            if ($this->rfield instanceof Score_ReviewField) {
+            if ($this->rfield instanceof Discrete_ReviewField) {
                 if ($this->rfield->main_storage) {
                     if ($this->rfield_scoret >= self::RELRANGE) {
                         $ce = ">=";
@@ -497,7 +497,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 return false;
             }
             $val = $this->rfield->value_clean_search($rrow->fields[$this->rfield->order]);
-            if ($this->rfield instanceof Score_ReviewField) {
+            if ($this->rfield instanceof Discrete_ReviewField) {
                 if (($valempty = $val <= 0)) {
                     $match = $this->rfield_score1 === 0
                         && ($this->rfield_scoret & CountMatcher::RELEQ) !== 0;

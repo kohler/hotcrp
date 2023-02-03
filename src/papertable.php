@@ -2463,15 +2463,13 @@ class PaperTable {
             if ($want_my_scores && $canView) {
                 $view_score = $user->view_score_bound($prow, $rr);
                 foreach ($conf->review_form()->forder as $f) {
-                    if ($f->want_column_display()
-                        && $f->view_score > $view_score
-                        && $rr->has_nonempty_field($f)) {
+                    if ($f->view_score > $view_score
+                        && $rr->has_nonempty_field($f)
+                        && ($fh = $f->unparse_span_html($rr->fields[$f->order])) !== "") {
                         if ($score_header[$f->short_id] === "") {
                             $score_header[$f->short_id] = '<th class="rlscore">' . $f->web_abbreviation() . "</th>";
                         }
-                        $scores[$f->short_id] = '<td class="rlscore need-tooltip" data-rf="' . $f->uid() . '" data-tooltip-info="rf-score">'
-                            . $f->unparse_span_html($rr->fields[$f->order])
-                            . '</td>';
+                        $scores[$f->short_id] = '<td class="rlscore need-tooltip" data-rf="' . $f->uid() . "\" data-tooltip-info=\"rf-score\">{$fh}</td>";
                     }
                 }
             }

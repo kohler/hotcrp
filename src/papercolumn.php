@@ -805,7 +805,7 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
     protected $cid;
     /** @var string */
     protected $score_sort;
-    /** @var Score_ReviewField */
+    /** @var Discrete_ReviewField */
     protected $format_field;
     /** @var array<int,null|int|float|list<int>> */
     private $sortmap;
@@ -878,7 +878,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         $this->format_field = $conf->checked_review_field($cj->review_field_id);
-        assert($this->format_field instanceof Score_ReviewField);
+        assert($this->format_field instanceof Discrete_ReviewField);
     }
     function prepare(PaperList $pl, $visible) {
         $bound = $pl->user->permissive_view_score_bound($pl->search->limit_author());
@@ -927,7 +927,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $vsbound = $user->permissive_view_score_bound();
         return array_filter($fs, function ($f) use ($vsbound) {
             return $f
-                && $f->want_column_display()
+                && $f instanceof Discrete_ReviewField
                 && $f->order > 0
                 && $f->view_score > $vsbound;
         });
@@ -952,7 +952,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $cs = array_map(function ($f) {
             return $f->search_keyword();
         }, array_filter($user->conf->all_review_fields(), function ($f) use ($vsbound) {
-            return $f->want_column_display()
+            return $f instanceof Discrete_ReviewField
                 && $f->order > 0
                 && $f->view_score > $vsbound;
         }));

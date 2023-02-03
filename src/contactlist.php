@@ -65,9 +65,9 @@ class ContactList {
     private $_lead_data;
     /** @var array<int,int> */
     private $_shepherd_data;
-    /** @var list<Score_ReviewField> */
+    /** @var list<Discrete_ReviewField> */
     private $_rfields = [];
-    /** @var list<Score_ReviewField> */
+    /** @var list<Discrete_ReviewField> */
     private $_wfields = [];
     /** @var array<int,list<int>> */
     private $_score1_data = [];
@@ -91,7 +91,7 @@ class ContactList {
 
         $this->tagger = new Tagger($this->user);
         foreach ($this->conf->review_form()->viewable_fields($this->user) as $f) {
-            if ($f->want_column_display())
+            if ($f instanceof Discrete_ReviewField)
                 $this->_rfields[] = $f;
         }
 

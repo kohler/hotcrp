@@ -370,11 +370,6 @@ abstract class ReviewField implements JsonSerializable {
         return $this->search_keyword();
     }
 
-    /** @return bool */
-    function want_column_display() {
-        return false;
-    }
-
     /** @param ?int|?string $fval
      * @return bool */
     abstract function value_empty($fval);
@@ -405,10 +400,16 @@ abstract class ReviewField implements JsonSerializable {
      * @return mixed */
     abstract function unparse_json($fval);
 
-    /** @param int|float $fval
+    /** @param int|float|string $fval
      * @param ?string $real_format
      * @return string */
     function unparse_span_html($fval, $real_format = null) {
+        return "";
+    }
+
+    /** @param int|float|string $fval
+     * @return string */
+    function unparse_search($fval) {
         return "";
     }
 
@@ -547,7 +548,25 @@ abstract class ReviewField implements JsonSerializable {
 }
 
 
-class Score_ReviewField extends ReviewField {
+abstract class Discrete_ReviewField extends ReviewField {
+    function __construct(Conf $conf, ReviewFieldInfo $finfo, $j) {
+        assert($finfo->is_sfield);
+        parent::__construct($conf, $finfo, $j);
+    }
+
+    function value_empty($fval) {
+        // assert(is_int($fval)); <- should hold
+        return ($fval ?? 0) <= 0;
+    }
+
+    /** @param ScoreInfo $sci
+     * @param 1|2 $style
+     * @return string */
+    abstract function unparse_graph($sci, $style);
+}
+
+
+class Score_ReviewField extends Discrete_ReviewField {
     /** @var list<string> */
     private $values;
     /** @var list<int|string> */
@@ -768,10 +787,6 @@ class Score_ReviewField extends ReviewField {
         return $rfs;
     }
 
-    function want_column_display() {
-        return true;
-    }
-
     /** @return string */
     function typical_score() {
         $n = count($this->values);
@@ -829,13 +844,6 @@ class Score_ReviewField extends ReviewField {
         }
     }
 
-    function value_empty($fval) {
-        if (!is_int($fval ?? 0)) {
-            error_log("not int: " . debug_string_backtrace());
-        }
-        return ($fval ?? 0) <= 0;
-    }
-
     function value_explicit_empty($fval) {
         return $fval === -1;
     }
@@ -885,12 +893,14 @@ class Score_ReviewField extends ReviewField {
      * @param ?string $real_format
      * @return string */
     function unparse_real_format($fval, $real_format = null) {
-        if ($fval > 0.8
-            && $real_format !== null
-            && ($this->flags & self::FLAG_NUMERIC) !== 0) {
+        if ($fval <= 0.8) {
+            return "";
+        } else if ($real_format !== null
+                   && ($this->flags & self::FLAG_NUMERIC) !== 0) {
             return sprintf($real_format, $fval);
+        } else {
+            return $this->unparse($fval);
         }
-        return $this->unparse($fval);
     }
 
     function unparse_span_html($fval, $format = null) {
