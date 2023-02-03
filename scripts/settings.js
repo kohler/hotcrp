@@ -668,7 +668,7 @@ function rf_append(fld) {
         || fieldorder.indexOf(fld.id) >= 0) {
         throw new Error("rf_append error on " + fld.id + " " + (document.getElementById("rf/" + pos + "/id") ? "1 " : "0 ") + fieldorder.join(","));
     }
-    fld = new hotcrp.ReviewField(fld);
+    fld = hotcrp.make_review_field(fld);
     fieldorder.push(fld.id);
     $f = $($("#rf_template").html().replace(/\$/g, pos));
     field_instantiate($f.children(".settings-rf-edit")[0], rftypes, rftype.name, rfproperties);
@@ -753,7 +753,7 @@ function add_dialog() {
         var i = sel.options[sel.selectedIndex].value | 0;
         i = (samples[i] ? i : 0);
         if (!samples[i].parse_value)
-            samples[i] = new hotcrp.ReviewField(samples[i]);
+            samples[i] = hotcrp.make_review_field(samples[i]);
         return samples[i];
     }
     function render_template() {

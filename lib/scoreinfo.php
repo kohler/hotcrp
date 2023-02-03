@@ -19,8 +19,6 @@ class ScoreInfo {
     private $_max = 0;
     /** @var int */
     private $_n = 0;
-    /** @var bool */
-    private $_positive;
 
     const COUNT = 0;
     const MEAN = 1;
@@ -46,10 +44,8 @@ class ScoreInfo {
         return $stat === self::MEDIAN || $stat === self::MIN || $stat === self::MAX;
     }
 
-    /** @param null|list<int|float>|string $data
-     * @param bool $positive */
-    function __construct($data = null, $positive = false) {
-        $this->_positive = $positive;
+    /** @param null|list<int|float>|string $data */
+    function __construct($data = null) {
         if (is_array($data)) {
             foreach ($data as $x) {
                 $this->add($x);
@@ -90,21 +86,22 @@ class ScoreInfo {
 
     /** @param int|float $x */
     function add($x) {
+        if ($x === null) {
+            return;
+        }
         if (is_bool($x)) {
             $x = $x ? 1 : 0;
         }
-        if ($x !== null && (!$this->_positive || $x > 0)) {
-            $this->_scores[] = $x;
-            $this->_sum += $x;
-            $this->_sumsq += $x * $x;
-            ++$this->_n;
-            $this->_sorted = false;
-            if ($this->_n === 1 || $this->_min > $x) {
-                $this->_min = $x;
-            }
-            if ($this->_n === 1 || $this->_max < $x) {
-                $this->_max = $x;
-            }
+        $this->_scores[] = $x;
+        $this->_sum += $x;
+        $this->_sumsq += $x * $x;
+        ++$this->_n;
+        $this->_sorted = false;
+        if ($this->_n === 1 || $this->_min > $x) {
+            $this->_min = $x;
+        }
+        if ($this->_n === 1 || $this->_max < $x) {
+            $this->_max = $x;
         }
     }
 

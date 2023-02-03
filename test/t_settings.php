@@ -608,14 +608,14 @@ class Settings_Tester {
         assert_search_papers($this->u_chair, "mf:<B", "30"); // XXX
 
         $rrow = checked_fresh_review(30, $this->u_mgbaker);
-        xassert_eqq($rrow->fval("s05"), 3);
-        xassert_eqq($rrow->fval("s90"), 3);
+        xassert_eqq($rrow->fidval("s05"), 3);
+        xassert_eqq($rrow->fidval("s90"), 3);
         $rrow = checked_fresh_review(30, $u_jj);
-        xassert_eqq($rrow->fval("s05"), 2);
-        xassert_eqq($rrow->fval("s90"), 2);
+        xassert_eqq($rrow->fidval("s05"), 2);
+        xassert_eqq($rrow->fidval("s90"), 2);
         $rrow = checked_fresh_review(30, $u_floyd);
-        xassert_eqq($rrow->fval("s05"), 1);
-        xassert_eqq($rrow->fval("s90"), 1);
+        xassert_eqq($rrow->fidval("s05"), 1);
+        xassert_eqq($rrow->fidval("s90"), 1);
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
@@ -629,14 +629,14 @@ class Settings_Tester {
         xassert($sv->execute());
 
         $rrow = checked_fresh_review(30, $this->u_mgbaker);
-        xassert_eqq($rrow->fval("s05"), 1);
-        xassert_eqq($rrow->fval("s90"), 1);
+        xassert_eqq($rrow->fidval("s05"), 1);
+        xassert_eqq($rrow->fidval("s90"), 1);
         $rrow = checked_fresh_review(30, $u_jj);
-        xassert_eqq($rrow->fval("s05"), 2);
-        xassert_eqq($rrow->fval("s90"), 3);
+        xassert_eqq($rrow->fidval("s05"), 2);
+        xassert_eqq($rrow->fidval("s90"), 3);
         $rrow = checked_fresh_review(30, $u_floyd);
-        xassert_eqq($rrow->fval("s05"), 3);
-        xassert_eqq($rrow->fval("s90"), 2);
+        xassert_eqq($rrow->fidval("s05"), 3);
+        xassert_eqq($rrow->fidval("s90"), 2);
 
         xassert_eqq(review_score($this->conf, "s05")->ids(), [3, 2, 1]);
         xassert_eqq(review_score($this->conf, "s90")->ids(), [3, 1, 2]);
@@ -664,11 +664,11 @@ class Settings_Tester {
         xassert_eqq(review_score($this->conf, "s05")->values(), ["It's bad", "Yep", "Problem"]);
 
         $rrow = checked_fresh_review(30, $this->u_mgbaker);
-        xassert_eqq($rrow->fval("s05"), 2);
+        xassert_eqq($rrow->fidval("s05"), 2);
         $rrow = checked_fresh_review(30, $u_jj);
-        xassert_eqq($rrow->fval("s05"), 1);
+        xassert_eqq($rrow->fidval("s05"), 1);
         $rrow = checked_fresh_review(30, $u_floyd);
-        xassert_eqq($rrow->fval("s05"), 3);
+        xassert_eqq($rrow->fidval("s05"), 3);
 
         xassert_eqq(review_score($this->conf, "s05")->ids(), [2, 3, 1]);
 
@@ -694,11 +694,11 @@ class Settings_Tester {
         xassert_eqq(review_score($this->conf, "s05")->values(), ["Problem", "It's bad", "Yep"]);
 
         $rrow = checked_fresh_review(30, $this->u_mgbaker);
-        xassert_eqq($rrow->fval("s05"), 3);
+        xassert_eqq($rrow->fidval("s05"), 3);
         $rrow = checked_fresh_review(30, $u_jj);
-        xassert_eqq($rrow->fval("s05"), 2);
+        xassert_eqq($rrow->fidval("s05"), 2);
         $rrow = checked_fresh_review(30, $u_floyd);
-        xassert_eqq($rrow->fval("s05"), 1);
+        xassert_eqq($rrow->fidval("s05"), 1);
 
         xassert_eqq(review_score($this->conf, "s05")->ids(), [1, 2, 3]);
         foreach ($this->conf->setting_json("review_form") as $rj) {
@@ -716,14 +716,14 @@ class Settings_Tester {
         xassert($sv->execute());
 
         $rrow = checked_fresh_review(30, $this->u_mgbaker);
-        xassert_eqq($rrow->fval("s05"), null);
-        xassert_eqq($rrow->fval("s90"), null);
+        xassert_eqq($rrow->fidval("s05"), null);
+        xassert_eqq($rrow->fidval("s90"), null);
         $rrow = checked_fresh_review(30, $u_jj);
-        xassert_eqq($rrow->fval("s05"), null);
-        xassert_eqq($rrow->fval("s90"), null);
+        xassert_eqq($rrow->fidval("s05"), null);
+        xassert_eqq($rrow->fidval("s90"), null);
         $rrow = checked_fresh_review(30, $u_floyd);
-        xassert_eqq($rrow->fval("s05"), null);
-        xassert_eqq($rrow->fval("s90"), null);
+        xassert_eqq($rrow->fidval("s05"), null);
+        xassert_eqq($rrow->fidval("s90"), null);
 
         $this->conf->qe("delete from PaperReview where paperId=30");
     }

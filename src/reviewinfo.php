@@ -544,18 +544,26 @@ class ReviewInfo implements JsonSerializable {
     }
 
 
-    /** @return bool */
-    function has_nonempty_field(ReviewField $f) {
-        return ($fval = $this->fields[$f->order]) !== null
-            && $f->test_exists($this)
-            && !$f->value_empty($fval);
+    /** @param ReviewField $f
+     * @return null|int|string */
+    function fval($f) {
+        $fval = $this->fields[$f->order];
+        if ($fval !== null && $f->test_exists($this)) {
+            return $fval;
+        } else {
+            return null;
+        }
     }
 
-    /** @param string|ReviewField $field
+    /** @param string $fid
      * @return null|int|string */
-    function fval($field) {
-        $f = is_string($field) ? $this->conf->review_field($field) : $field;
-        return $f && $f->order ? $this->fields[$f->order] : null;
+    function fidval($fid) {
+        $f = $this->conf->review_field($fid);
+        if ($f && $f->order && $f->test_exists($this)) {
+            return $this->fields[$f->order];
+        } else {
+            return null;
+        }
     }
 
     /** @param ReviewFieldInfo $finfo
@@ -576,7 +584,7 @@ class ReviewInfo implements JsonSerializable {
      * @param null|int|string $v */
     function set_finfoval($finfo, $v) {
         if ($finfo->main_storage) {
-            $this->{$finfo->main_storage} = $v;
+            $this->{$finfo->main_storage} = is_int($v) ? (string) $v : $v;
         }
         if ($finfo->json_storage) {
             $this->fstorage($finfo->is_sfield);

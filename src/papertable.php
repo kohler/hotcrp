@@ -2464,8 +2464,8 @@ class PaperTable {
                 $view_score = $user->view_score_bound($prow, $rr);
                 foreach ($conf->review_form()->forder as $f) {
                     if ($f->view_score > $view_score
-                        && $rr->has_nonempty_field($f)
-                        && ($fh = $f->unparse_span_html($rr->fields[$f->order])) !== "") {
+                        && ($fv = $rr->fval($f)) !== null
+                        && ($fh = $f->unparse_span_html($fv)) !== "") {
                         if ($score_header[$f->short_id] === "") {
                             $score_header[$f->short_id] = '<th class="rlscore">' . $f->web_abbreviation() . "</th>";
                         }
@@ -2936,7 +2936,8 @@ class PaperTable {
                     $bound = $this->user->view_score_bound($this->prow, $rrow);
                     $this_resolved_fields = [];
                     foreach ($unresolved_fields as $f) {
-                        if ($f->view_score > $bound && $rrow->has_nonempty_field($f))
+                        if ($f->view_score > $bound
+                            && ($fv = $rrow->fval($f)) !== null)
                             $this_resolved_fields[] = $f;
                     }
                     foreach ($this_resolved_fields as $f) {

@@ -375,12 +375,6 @@ abstract class ReviewField implements JsonSerializable {
     abstract function value_empty($fval);
 
     /** @param ?int|?string $fval
-     * @return bool */
-    function value_explicit_empty($fval) {
-        return false;
-    }
-
-    /** @param ?int|?string $fval
      * @return ?int|?string */
     function value_clean_storage($fval) {
         return $fval;
@@ -390,6 +384,12 @@ abstract class ReviewField implements JsonSerializable {
      * @return ?int|?string */
     function value_clean_search($fval) {
         return $fval;
+    }
+
+    /** @param ?int|?string $fval
+     * @return ?int|?string */
+    function value_clean_graph($fval) {
+        return null;
     }
 
     /** @param int|float|string $fval
@@ -549,6 +549,26 @@ abstract class ReviewField implements JsonSerializable {
 
 
 abstract class Discrete_ReviewField extends ReviewField {
+    // color schemes; NB keys must be URL-safe
+    /** @var array<string,list>
+     * @readonly */
+    static public $scheme_info = [
+        "sv" => [0, 9, "svr"], "svr" => [1, 9, "sv"],
+        "bupu" => [0, 9, "pubu"], "pubu" => [1, 9, "bupu"],
+        "rdpk" => [1, 9, "pkrd"], "pkrd" => [0, 9, "rdpk"],
+        "viridisr" => [1, 9, "viridis"], "viridis" => [0, 9, "viridisr"],
+        "orbu" => [0, 9, "buor"], "buor" => [1, 9, "orbu"],
+        "turbo" => [0, 9, "turbor"], "turbor" => [1, 9, "turbo"],
+        "catx" => [2, 10, null], "none" => [2, 1, null]
+    ];
+
+    /** @var array<string,string>
+     * @readonly */
+    static public $scheme_alias = [
+        "publ" => "pubu", "blpu" => "bupu"
+    ];
+
+
     function __construct(Conf $conf, ReviewFieldInfo $finfo, $j) {
         assert($finfo->is_sfield);
         parent::__construct($conf, $finfo, $j);
@@ -558,6 +578,42 @@ abstract class Discrete_ReviewField extends ReviewField {
         // assert(is_int($fval)); <- should hold
         return ($fval ?? 0) <= 0;
     }
+
+    /** @param string $scheme
+     * @param int|float $fval
+     * @param int $n
+     * @param bool $flip
+     * @return string */
+    static function scheme_value_class($scheme, $fval, $n, $flip) {
+        if ($fval < 0.8) {
+            return "sv";
+        }
+        list($schfl, $nsch, $schrev) = Discrete_ReviewField::$scheme_info[$scheme];
+        $sclass = ($schfl & 1) !== 0 ? $schrev : $scheme;
+        $schflip = $flip !== (($schfl & 1) !== 0);
+        if ($n <= 1) {
+            $x = $schflip ? 1 : $nsch;
+        } else {
+            if ($schflip) {
+                $fval = $n + 1 - $fval;
+            }
+            if (($schfl & 2) !== 0) {
+                $x = (int) round($fval - 1) % $nsch + 1;
+            } else {
+                $x = (int) round(($fval - 1) * ($nsch - 1) / ($n - 1)) + 1;
+            }
+        }
+        if ($sclass === "sv") {
+            return "sv sv{$x}";
+        } else {
+            return "sv sv-{$sclass}{$x}";
+        }
+    }
+
+    /** @param int|float $fval
+     * @param ?string $real_format
+     * @return string */
+    abstract function unparse_real_format($fval, $real_format = null);
 
     /** @param ScoreInfo $sci
      * @param 1|2 $style
@@ -587,25 +643,6 @@ class Score_ReviewField extends Discrete_ReviewField {
     const FLAG_LETTER = 2;
     const FLAG_SINGLE_CHAR = 4;
     const FLAG_DEFAULT_SYMBOLS = 8;
-
-    // color schemes; NB keys must be URL-safe
-    /** @var array<string,list>
-     * @readonly */
-    static public $scheme_info = [
-        "sv" => [0, 9, "svr"], "svr" => [1, 9, "sv"],
-        "bupu" => [0, 9, "pubu"], "pubu" => [1, 9, "bupu"],
-        "rdpk" => [1, 9, "pkrd"], "pkrd" => [0, 9, "rdpk"],
-        "viridisr" => [1, 9, "viridis"], "viridis" => [0, 9, "viridisr"],
-        "orbu" => [0, 9, "buor"], "buor" => [1, 9, "orbu"],
-        "turbo" => [0, 9, "turbor"], "turbor" => [1, 9, "turbo"],
-        "catx" => [2, 10, null], "none" => [2, 1, null]
-    ];
-
-    /** @var array<string,string>
-     * @readonly */
-    static public $scheme_alias = [
-        "publ" => "pubu", "blpu" => "bupu"
-    ];
 
     function __construct(Conf $conf, ReviewFieldInfo $finfo, $j) {
         assert($finfo->is_sfield);
@@ -639,10 +676,10 @@ class Score_ReviewField extends Discrete_ReviewField {
             $this->ids = $j->ids;
         }
         if (($sch = $j->scheme ?? null) !== null) {
-            if (isset(self::$scheme_info[$sch])) {
+            if (isset(Discrete_ReviewField::$scheme_info[$sch])) {
                 $this->scheme = $sch;
             } else {
-                $this->scheme = self::$scheme_alias[$sch] ?? null;
+                $this->scheme = Discrete_ReviewField::$scheme_alias[$sch] ?? null;
             }
         }
         if (!isset($j->required)) {
@@ -818,46 +855,15 @@ class Score_ReviewField extends Discrete_ReviewField {
     /** @param int|float $fval
      * @return string */
     function value_class($fval) {
-        if ($fval < 0.8) {
-            return "sv";
-        }
-        list($schfl, $nsch, $schrev) = self::$scheme_info[$this->scheme];
-        $sclass = ($schfl & 1) !== 0 ? $schrev : $this->scheme;
-        $schflip = $this->flip !== (($schfl & 1) !== 0);
-        $n = count($this->values);
-        if ($n <= 1) {
-            $x = $schflip ? 1 : $nsch;
-        } else {
-            if ($schflip) {
-                $fval = $n + 1 - $fval;
-            }
-            if (($schfl & 2) !== 0) {
-                $x = (int) round($fval - 1) % $nsch + 1;
-            } else {
-                $x = (int) round(($fval - 1) * ($nsch - 1) / ($n - 1)) + 1;
-            }
-        }
-        if ($sclass === "sv") {
-            return "sv sv{$x}";
-        } else {
-            return "sv sv-{$sclass}{$x}";
-        }
-    }
-
-    function value_explicit_empty($fval) {
-        return $fval === -1;
+        return Discrete_ReviewField::scheme_value_class($this->scheme, $fval, count($this->values), $this->flip);
     }
 
     function value_clean_search($fval) {
-        return $fval <= 0 ? 0 : $fval;
+        return $fval > 0 ? $fval : 0;
     }
 
-    function unparse_search($fval) {
-        if ($fval > 0) {
-            return (string) $this->symbols[$fval - 1];
-        } else {
-            return "none";
-        }
+    function value_clean_graph($fval) {
+        return $fval > 0 ? $fval : null;
     }
 
     function unparse($fval) {
@@ -886,6 +892,14 @@ class Score_ReviewField extends Discrete_ReviewField {
             return false;
         } else {
             return $this->symbols[$fval - 1];
+        }
+    }
+
+    function unparse_search($fval) {
+        if ($fval > 0) {
+            return (string) $this->symbols[$fval - 1];
+        } else {
+            return "none";
         }
     }
 

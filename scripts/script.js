@@ -4941,7 +4941,7 @@ function render_review_body(rrow) {
 
         if (f.type === "text") {
             t += '<div class="revv revtext"></div>';
-        } else if (rrow[f.uid] && (x = f.parse_value(rrow[f.uid]))) {
+        } else if ((x = f.parse_value(rrow[f.uid]))) {
             t = t.concat('<p class="revv revscore"><span class="revscorenum"><strong class="rev_num sv ', x.className, '">', x.symbol, x.sp1, '</strong>', x.sp2, '</span><span class="revscoredesc">', escape_html(x.title), '</span></p>');
         } else if (!f.required && rrow[f.uid] === false) {
             t += '<p class="revv revnoscore">N/A</p>';
@@ -5194,17 +5194,32 @@ function add_review(rrow) {
     navsidebar.set("r" + rid, rdesc);
 }
 
-function ReviewField(f) {
+function ReviewField(fj) {
+    this.uid = fj.uid;
+    this.name = fj.name;
+    this.name_html = escape_html(this.name);
+    this.type = fj.type;
+    if (fj.description != null)
+        this.description = fj.description;
+    if (fj.order != null)
+        this.order = fj.order;
+    if (fj.visibility != null)
+        this.visibility = fj.visibility;
+    if (fj.required != null)
+        this.required = fj.required;
+    if (fj.exists_if != null)
+        this.exists_if = fj.exists_if;
+}
+
+function Score_ReviewField(fj) {
     var i, n, step, sym, ch;
-    // uid, name, type, description, order, visibility, required, exists_if
-    // scores: values, symbols, start, flip, scheme
-    Object.assign(this, f);
-    this.name_html = escape_html(f.name);
-    if (!this.type
-        || ((this.type === "radio" || this.type === "dropdown") !== !!this.values)) {
-        throw new Error("bad ReviewField");
-    }
-    if (this.values && !this.symbols) {
+    ReviewField.call(this, fj);
+    this.values = fj.values;
+    this.symbols = fj.symbols;
+    this.start = fj.start || null;
+    this.scheme = fj.scheme || "sv";
+    this.flip = !!fj.flip;
+    if (!this.symbols) {
         sym = this.symbols = [];
         n = this.values.length;
         step = this.flip ? -1 : 1;
@@ -5213,19 +5228,19 @@ function ReviewField(f) {
             sym.push(ch ? String.fromCharCode(ch + i) : i + 1);
         }
     }
-    if (this.values) {
-        this.scheme_info = make_color_scheme(this.values.length, this.scheme || "sv", this.flip);
-        this.default_numeric = true;
-        for (i = 0; i !== n; ++i) {
-            if (this.symbols[i] !== i + 1) {
-                this.default_numeric = false;
-                break;
-            }
+    this.scheme_info = make_color_scheme(this.values.length, this.scheme, this.flip);
+    this.default_numeric = true;
+    for (i = 0; i !== n; ++i) {
+        if (this.symbols[i] !== i + 1) {
+            this.default_numeric = false;
+            break;
         }
     }
 }
 
-ReviewField.prototype.value_at = function (val) {
+Object.setPrototypeOf(Score_ReviewField.prototype, ReviewField.prototype);
+
+Score_ReviewField.prototype.value_at = function (val) {
     var j = val - 1, title = this.values[j];
     if (title == null)
         return null;
@@ -5236,14 +5251,16 @@ ReviewField.prototype.value_at = function (val) {
     };
 };
 
-ReviewField.prototype.each_value = function (fn) {
+Score_ReviewField.prototype.each_value = function (fn) {
     var i, n = this.values.length, step = this.flip ? -1 : 1;
     for (i = this.flip ? n : 1; i >= 1 && i <= n; i += step) {
         fn(this.value_at(i));
     }
 };
 
-ReviewField.prototype.parse_value = function (txt) {
+Score_ReviewField.prototype.parse_value = function (txt) {
+    if (!txt)
+        return null;
     var i, n = this.values.length;
     for (i = 0; i !== n; ++i) {
         if (this.symbols[i] == txt)
@@ -5252,15 +5269,15 @@ ReviewField.prototype.parse_value = function (txt) {
     return null;
 };
 
-ReviewField.prototype.rgb = function (val) {
+Score_ReviewField.prototype.rgb = function (val) {
     return this.scheme_info.rgb(val);
 };
 
-ReviewField.prototype.className = function (val) {
+Score_ReviewField.prototype.className = function (val) {
     return this.scheme_info.className(val);
 };
 
-ReviewField.prototype.unparse_symbol = function (val, split) {
+Score_ReviewField.prototype.unparse_symbol = function (val, split) {
     if (val === (val | 0) && this.symbols[val - 1] != null)
         return this.symbols[val - 1];
     var rval = split ? Math.round(val * 2) / 2 - 1 : val - 1;
@@ -5269,23 +5286,32 @@ ReviewField.prototype.unparse_symbol = function (val, split) {
     else if (rval === (rval | 0))
         return this.symbols[rval];
     else if (this.flip)
-        return this.symbols[rval + 0.5].concat("/", this.symbols[rval - 0.5]);
+        return this.symbols[rval + 0.5].concat("~", this.symbols[rval - 0.5]);
     else
-        return this.symbols[rval - 0.5].concat("/", this.symbols[rval + 0.5]);
+        return this.symbols[rval - 0.5].concat("~", this.symbols[rval + 0.5]);
 };
 
+function make_review_field(fj) {
+    if (fj.type === "radio" || fj.type === "dropdown")
+        return new Score_ReviewField(fj);
+    else if (fj.type === "checkbox")
+        return new Checkbox_ReviewField(fj);
+    else
+        return new ReviewField(fj);
+}
+
 return {
-    ReviewField: ReviewField,
+    add_review: add_review,
+    make_review_field: make_review_field,
     set_form: function (j) {
         var i;
         formj = formj || {};
         for (i in j) {
-            formj[j[i].uid] = new ReviewField(j[i]);
+            formj[j[i].uid] = make_review_field(j[i]);
         }
         form_order = $.map(formj, function (v) { return v; });
         form_order.sort(function (a, b) { return a.order - b.order; });
-    },
-    add_review: add_review
+    }
 };
 })($);
 
@@ -11369,6 +11395,7 @@ window.hotcrp = {
     init_deadlines: hotcrp_deadlines.initialize,
     load_editable_paper: edit_paper_ui.load,
     load_editable_review: edit_paper_ui.load_review,
+    make_review_field: review_form.make_review_field,
     onload: hotcrp_load,
     paper_edit_conditions: edit_paper_ui.edit_condition,
     prepare_editable_paper: edit_paper_ui.prepare,
@@ -11376,7 +11403,6 @@ window.hotcrp = {
     render_text_page: render_text.on_page,
     render_user: render_user,
     replace_editable_field: edit_paper_ui.replace_field,
-    ReviewField: review_form.ReviewField,
     scorechart: scorechart,
     set_response_round: papercomment.set_resp_round,
     set_review_form: review_form.set_form,

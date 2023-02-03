@@ -205,8 +205,11 @@ class ReviewForm {
     function nonempty_view_score(ReviewInfo $rrow) {
         $view_score = VIEWSCORE_EMPTY;
         foreach ($this->forder as $f) {
-            if ($rrow->has_nonempty_field($f)) {
-                $view_score = max($view_score, $f->view_score);
+            if ($f->view_score > $view_score
+                && ($fv = $rrow->fval($f)) !== null
+                && $fv !== 0 /* XXX */
+                && $fv !== "") {
+                $view_score = $f->view_score;
             }
         }
         return $view_score;
@@ -216,8 +219,9 @@ class ReviewForm {
     function word_count(ReviewInfo $rrow) {
         $wc = 0;
         foreach ($this->forder as $f) {
-            if ($f->include_word_count() && $rrow->has_nonempty_field($f)) {
-                $wc += count_words($rrow->fields[$f->order]);
+            if ($f->include_word_count()
+                && ($fv = $rrow->fval($f)) !== null) {
+                $wc += count_words($fv);
             }
         }
         return $wc;
@@ -227,11 +231,10 @@ class ReviewForm {
     function full_word_count(ReviewInfo $rrow) {
         $wc = null;
         foreach ($this->forder as $f) {
-            if ($f instanceof Text_ReviewField && $f->test_exists($rrow)) {
-                $wc = $wc ?? 0;
-                if (!$f->value_empty($rrow->fields[$f->order])) {
-                    $wc += count_words($rrow->fields[$f->order]);
-                }
+            if ($f instanceof Text_ReviewField
+                && $f->test_exists($rrow)
+                && ($t = $rrow->fields[$f->order]) !== null) {
+                $wc = ($wc ?? 0) + count_words($t);
             }
         }
         return $wc;
@@ -1120,10 +1123,10 @@ class ReviewValues extends MessageSet {
             } else if ($k === "blind" || $k === "version" || $k === "ready") {
                 $this->req[$k] = is_bool($v) ? (int) $v : cvtint($v);
             } else if (array_key_exists($k, $this->rf->fmap)) {
-                $this->req[$k] = $v;
+                $this->req[$k] = (string) $v;
             } else if (($f = $rf->field($k) ?? $this->conf->find_review_field($k))
                        && !isset($this->req[$f->short_id])) {
-                $this->req[$f->short_id] = $v;
+                $this->req[$f->short_id] = (string) $v;
             }
         }
         if (!empty($this->req)) {
@@ -1276,20 +1279,21 @@ class ReviewValues extends MessageSet {
                 $this->rmsg($fid, $this->conf->_("<0>%s cannot be ‘%s’.", $f->name, UnicodeHelper::utf8_abbreviate(trim($this->req[$fid]), 100)), self::WARNING);
                 unset($this->req[$fid]);
                 $unready = true;
-            } else if ($f->value_empty($fval)) {
+                continue;
+            }
+            if ($f->value_empty($fval)) {
                 if ($f->required && $f->view_score >= VIEWSCORE_PC) {
                     $missingfields[] = $f;
                     $unready = $unready || $submit;
                 } else {
                     $anydiff = $anydiff || $old_fval !== $fval;
                 }
-                $anyvalues = $anyvalues || $f->value_explicit_empty($fval);
             } else {
                 $anydiff = $anydiff
                     || ($old_fval !== $fval
                         && (!is_string($old_fval) || cleannl($old_fval) !== cleannl($fval)));
-                $anyvalues = true;
             }
+            $anyvalues = true;
         }
 
         if ($missingfields && $submit && $anyvalues) {

@@ -450,7 +450,7 @@ function make_axis(ticks) {
     if (ticks && ticks[0] === "named")
         ticks = named_integer_ticks(ticks[1]);
     else if (ticks && ticks[0] === "score")
-        ticks = score_ticks(new hotcrp.ReviewField(ticks[1]));
+        ticks = score_ticks(hotcrp.make_review_field(ticks[1]));
     else if (ticks && ticks[0] === "time")
         ticks = time_ticks();
     else

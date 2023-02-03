@@ -895,13 +895,13 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $f = $this->format_field;
         $vs = $f->view_score;
         $row->ensure_review_field_order($f->order);
-        $sci = new ScoreInfo(null, true);
+        $sci = new ScoreInfo;
         foreach ($row->viewable_reviews_as_display($pl->user) as $rrow) {
             if ($rrow->reviewSubmitted
-                && $rrow->fields[$f->order] !== 0
+                && ($fv = $f->value_clean_graph($rrow->fields[$f->order])) !== null
                 && ($f->view_score >= VIEWSCORE_REVIEWER
                     || $f->view_score > $pl->user->view_score_bound($row, $rrow))) {
-                $sci->add($rrow->fields[$f->order]);
+                $sci->add($fv);
                 if ($rrow->contactId === $this->cid
                     && $pl->user->can_view_review_identity($row, $rrow)) {
                     $sci->set_my_score($rrow->fields[$f->order]);
