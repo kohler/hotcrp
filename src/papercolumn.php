@@ -860,11 +860,7 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $sci = $this->score_info($pl, $row);
-        if (!$sci->is_empty()) {
-            return $this->format_field->unparse_graph($sci, 1);
-        } else {
-            return "";
-        }
+        return $this->format_field->unparse_graph($sci, Discrete_ReviewField::GRAPH_STACK);
     }
     function text(PaperList $pl, PaperInfo $row) {
         $si = $this->score_info($pl, $row);
@@ -898,13 +894,13 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $sci = new ScoreInfo;
         foreach ($row->viewable_reviews_as_display($pl->user) as $rrow) {
             if ($rrow->reviewSubmitted
-                && ($fv = $f->value_clean_graph($rrow->fields[$f->order])) !== null
+                && ($fv = $rrow->fval($f)) !== null
                 && ($f->view_score >= VIEWSCORE_REVIEWER
                     || $f->view_score > $pl->user->view_score_bound($row, $rrow))) {
                 $sci->add($fv);
                 if ($rrow->contactId === $this->cid
                     && $pl->user->can_view_review_identity($row, $rrow)) {
-                    $sci->set_my_score($rrow->fields[$f->order]);
+                    $sci->set_my_score($fv);
                 }
             }
         }

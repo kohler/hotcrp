@@ -60,8 +60,8 @@ class ReviewFieldInfo {
                 && ($d1 = ord($id[1])) >= 48
                 && $d1 <= 57
                 && ($d2 = ord($id[2])) >= 48
-                && $d2 <= 57
-                && ($n = ($d1 - 48) * 10 + $d2 - 48) > 0) {
+                && $d2 <= 57) {
+                $n = ($d1 - 48) * 10 + $d2 - 48;
                 if ($id[0] === "s" && $n < 12) {
                     $storage = $sv >= 260 ? $id : self::$new_sfields[$n - 1];
                     $m = new ReviewFieldInfo($id, true, $storage, null);
@@ -372,24 +372,12 @@ abstract class ReviewField implements JsonSerializable {
 
     /** @param ?int|?string $fval
      * @return bool */
-    abstract function value_empty($fval);
+    abstract function value_present($fval);
 
     /** @param ?int|?string $fval
      * @return ?int|?string */
     function value_clean_storage($fval) {
         return $fval;
-    }
-
-    /** @param ?int|?string $fval
-     * @return ?int|?string */
-    function value_clean_search($fval) {
-        return $fval;
-    }
-
-    /** @param ?int|?string $fval
-     * @return ?int|?string */
-    function value_clean_graph($fval) {
-        return null;
     }
 
     /** @param int|float|string $fval
@@ -421,11 +409,11 @@ abstract class ReviewField implements JsonSerializable {
     }
 
     /** @param string $s
-     * @return int|string|false */
+     * @return null|int|string|false */
     abstract function parse($s);
 
     /** @param mixed $j
-     * @return int|string|false */
+     * @return null|int|string|false */
     abstract function parse_json($j);
 
     /** @param ?string $id
@@ -574,9 +562,9 @@ abstract class Discrete_ReviewField extends ReviewField {
         parent::__construct($conf, $finfo, $j);
     }
 
-    function value_empty($fval) {
+    function value_present($fval) {
         // assert(is_int($fval)); <- should hold
-        return ($fval ?? 0) <= 0;
+        return ($fval ?? 0) > 0;
     }
 
     /** @param string $scheme
@@ -615,8 +603,12 @@ abstract class Discrete_ReviewField extends ReviewField {
      * @return string */
     abstract function unparse_real_format($fval, $real_format = null);
 
+    const GRAPH_STACK = 1;
+    const GRAPH_PROPORTIONS = 2;
+    const GRAPH_STACK_REQUIRED = 3;
+
     /** @param ScoreInfo $sci
-     * @param 1|2 $style
+     * @param 1|2|3 $style
      * @return string */
     abstract function unparse_graph($sci, $style);
 }
@@ -858,14 +850,6 @@ class Score_ReviewField extends Discrete_ReviewField {
         return Discrete_ReviewField::scheme_value_class($this->scheme, $fval, count($this->values), $this->flip);
     }
 
-    function value_clean_search($fval) {
-        return $fval > 0 ? $fval : 0;
-    }
-
-    function value_clean_graph($fval) {
-        return $fval > 0 ? $fval : null;
-    }
-
     function unparse($fval) {
         if ($fval <= 0.8) {
             return "";
@@ -926,9 +910,13 @@ class Score_ReviewField extends Discrete_ReviewField {
     }
 
     /** @param ScoreInfo $sci
-     * @param 1|2 $style
+     * @param 1|2|3 $style
      * @return string */
     function unparse_graph($sci, $style) {
+        $sci = $sci->excluding(0);
+        if ($sci->is_empty() && $style !== self::GRAPH_STACK_REQUIRED) {
+            return "";
+        }
         $n = count($this->values);
 
         $avgtext = $this->unparse_real_format($sci->mean(), "%.2f");
@@ -952,7 +940,7 @@ class Score_ReviewField extends Discrete_ReviewField {
             $args .= "&amp;sv=" . $this->scheme;
         }
 
-        if ($style === 1) {
+        if ($style !== self::GRAPH_PROPORTIONS) {
             $width = 5 * $n + 3;
             $height = 5 * max(3, max($counts)) + 3;
             $retstr = "<div class=\"need-scorechart\" style=\"width:{$width}px;height:{$height}px\" data-scorechart=\"{$args}&amp;s=1\" title=\"{$avgtext}\"></div>";
@@ -1002,12 +990,13 @@ class Score_ReviewField extends Discrete_ReviewField {
         return $s;
     }
 
+    /** @return null|int|false */
     function parse($text) {
         $text = self::clean_string($text);
         if ($text === "") {
-            return 0;
+            return null;
         } else if ($text === "none") {
-            return -1;
+            return $this->required ? null : 0;
         }
         foreach ($this->symbols as $i => $sym) {
             if (strcasecmp($text, $sym) === 0)
@@ -1018,9 +1007,9 @@ class Score_ReviewField extends Discrete_ReviewField {
 
     function parse_json($j) {
         if ($j === null || $j === 0) {
-            return 0;
+            return null;
         } else if ($j === false) {
-            return -1;
+            return $this->required ? null : 0;
         } else if (($i = array_search($j, $this->symbols, true)) !== false) {
             return $i + 1;
         } else {
@@ -1028,12 +1017,12 @@ class Score_ReviewField extends Discrete_ReviewField {
         }
     }
 
-    /** @param int $fval
+    /** @param ?int $fval
      * @return string */
     private function unparse_choice($fval) {
-        if ($fval === -1) {
+        if ($fval === 0) {
             return "none";
-        } else if ($fval > 0 && isset($this->symbols[$fval - 1])) {
+        } else if (($fval ?? 0) > 0 && isset($this->symbols[$fval - 1])) {
             return (string) $this->symbols[$fval - 1];
         } else {
             return "0";
@@ -1041,9 +1030,9 @@ class Score_ReviewField extends Discrete_ReviewField {
     }
 
     /** @param int $choiceval
-     * @param int $fval
-     * @param int $reqval */
-    private function print_choice($choiceval, $fval, $reqval) {
+     * @param ?int $fval
+     * @param ?int $reqval */
+    private function print_radio_choice($choiceval, $fval, $reqval) {
         $symstr = $this->unparse_choice($choiceval);
         echo '<label class="checki svline"><span class="checkc">',
             Ht::radio($this->short_id, $symstr, $choiceval === $reqval, [
@@ -1066,18 +1055,15 @@ class Score_ReviewField extends Discrete_ReviewField {
 
     private function print_web_edit_radio($fval, $reqval, $rvalues) {
         $n = count($this->values);
-        $forval = $fval;
-        if (($fval ?? 0) === 0) {
-            $forval = $this->flip ? $n - 1 : 0;
-        }
+        $forval = $fval ?? ($this->flip ? $n : 1);
         $this->print_web_edit_open($this->short_id, "{$this->short_id}_" . $this->unparse_choice($forval), $rvalues);
         echo '<div class="revev">';
         $step = $this->flip ? -1 : 1;
         for ($i = $this->flip ? $n - 1 : 0; $i >= 0 && $i < $n; $i += $step) {
-            $this->print_choice($i + 1, $fval, $reqval);
+            $this->print_radio_choice($i + 1, $fval, $reqval);
         }
         if (!$this->required) {
-            $this->print_choice(-1, $fval, $reqval);
+            $this->print_radio_choice(0, $fval, $reqval);
         }
         echo '</div></div>';
     }
@@ -1087,7 +1073,7 @@ class Score_ReviewField extends Discrete_ReviewField {
         $this->print_web_edit_open($this->short_id, null, $rvalues);
         echo '<div class="revev">';
         $opt = [];
-        if (($fval ?? 0) === 0) {
+        if ($fval === null) {
             $opt[0] = "(Choose one)";
         }
         $step = $this->flip ? -1 : 1;
@@ -1276,20 +1262,16 @@ class Text_ReviewField extends ReviewField {
         return $j;
     }
 
-    function value_empty($fval) {
-        return $fval === null || $fval === "";
+    function value_present($fval) {
+        return $fval !== null && $fval !== "";
     }
 
     function value_clean_storage($fval) {
-        if ($fval === null || $fval === "" || ctype_space($fval)) {
-            return "";
-        } else {
+        if ($fval !== null && $fval !== "" && !ctype_space($fval)) {
             return $fval;
+        } else {
+            return null;
         }
-    }
-
-    function value_clean_search($fval) {
-        return $fval ?? "";
     }
 
     /** @return bool */
@@ -1307,17 +1289,17 @@ class Text_ReviewField extends ReviewField {
 
     function parse($text) {
         $text = rtrim($text);
-        if ($text !== "") {
-            $text .= "\n";
+        if ($text === "") {
+            return null;
         }
-        return $text;
+        return $text . "\n";
     }
 
     function parse_json($j) {
         if ($j === null) {
             return null;
         } else if (is_string($j)) {
-            return rtrim($j);
+            return $this->parse($j);
         } else {
             return false;
         }

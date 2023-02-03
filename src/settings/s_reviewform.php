@@ -345,11 +345,8 @@ class ReviewForm_SettingParser extends SettingParser {
         $clear_jfields = [];
         foreach ($fields as $f) {
             if ($f->main_storage) {
-                if ($f->is_sfield) {
-                    $result = $conf->qe("update PaperReview set {$f->main_storage}=0");
-                } else { // NB dead code, all current fields with main_storage are scores
-                    $result = $conf->qe("update PaperReview set {$f->main_storage}=null");
-                }
+                assert($f->is_sfield);
+                $conf->qe("update PaperReview set {$f->main_storage}=0");
             }
             if ($f->json_storage) {
                 $clear_jfields[] = $f;

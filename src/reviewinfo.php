@@ -288,14 +288,14 @@ class ReviewInfo implements JsonSerializable {
         $tfields = isset($this->tfields) ? json_decode($this->tfields, true) : null;
         foreach ($rform->all_fields() as $f) {
             if ($f->main_storage) {
-                $x = $this->{$f->main_storage};
-                if ($x !== null) {
-                    $this->fields[$f->order] = $f->is_sfield ? (int) $x : $x;
-                }
+                $fv = intval($this->{$f->main_storage} ?? "0");
+                $fv = $fv > 0 ? $fv : ($fv < 0 ? 0 : null);
+            } else if ($f->is_sfield) {
+                $fv = $sfields[$f->json_storage] ?? null;
             } else {
-                $xfields = $f->is_sfield ? $sfields : $tfields;
-                $this->fields[$f->order] = $xfields[$f->json_storage] ?? null;
+                $fv = $tfields[$f->json_storage] ?? null;
             }
+            $this->fields[$f->order] = $fv;
         }
 
         if ($this->roles !== null) {
@@ -356,7 +356,9 @@ class ReviewInfo implements JsonSerializable {
             for ($i = 15; isset($vals[$i]); ++$i) {
                 $eq = strpos($vals[$i], "=");
                 $order = intval(substr($vals[$i], 0, $eq));
-                $rrow->fields[$order] = (int) substr($vals[$i], $eq + 1);
+                $fv = intval(substr($vals[$i], $eq + 1));
+                $fv = $fv > 0 ? $fv : ($fv < 0 ? 0 : null);
+                $rrow->fields[$order] = $fv;
                 $prow->_mark_has_review_field_order($order);
             }
         }
@@ -570,11 +572,8 @@ class ReviewInfo implements JsonSerializable {
      * @return null|int|string */
     function finfoval($finfo) {
         if ($finfo->main_storage) {
-            $v = $this->{$finfo->main_storage};
-            if ($finfo->is_sfield && $v !== null) {
-                $v = intval($v);
-            }
-            return $v;
+            $v = intval($this->{$finfo->main_storage} ?? "0");
+            return $v > 0 ? $v : ($v < 0 ? 0 : null);
         } else {
             return ($this->fstorage($finfo->is_sfield))[$finfo->json_storage] ?? null;
         }
@@ -584,7 +583,8 @@ class ReviewInfo implements JsonSerializable {
      * @param null|int|string $v */
     function set_finfoval($finfo, $v) {
         if ($finfo->main_storage) {
-            $this->{$finfo->main_storage} = is_int($v) ? (string) $v : $v;
+            $xv = is_int($v) ? ($v > 0 ? $v : -1) : 0;
+            $this->{$finfo->main_storage} = (string) $xv;
         }
         if ($finfo->json_storage) {
             $this->fstorage($finfo->is_sfield);

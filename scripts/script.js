@@ -5294,8 +5294,6 @@ Score_ReviewField.prototype.unparse_symbol = function (val, split) {
 function make_review_field(fj) {
     if (fj.type === "radio" || fj.type === "dropdown")
         return new Score_ReviewField(fj);
-    else if (fj.type === "checkbox")
-        return new Checkbox_ReviewField(fj);
     else
         return new ReviewField(fj);
 }

@@ -205,7 +205,7 @@ class ReviewCSV_Batch {
             if ($f instanceof Text_ReviewField ? $this->no_text : $this->no_score) {
                 continue;
             }
-            $fv = rtrim($f->unparse($rrow->fields[$f->order]));
+            $fv = rtrim($f->unparse($rrow->fval($f)));
             if ($fv === "") {
                 // ignore
             } else if ($this->narrow) {

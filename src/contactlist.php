@@ -483,15 +483,13 @@ class ContactList {
                 if (count($this->_wfields) === 1) {
                     $f = $this->_wfields[0];
                     if ($f->view_score > $bound
-                        && ($fv = $rrow->fval($f)) !== null
-                        && ($fv = $f->value_clean_graph($fv)) !== null) {
+                        && ($fv = $rrow->fval($f)) !== null) {
                         $this->_score1_data[$cid][] = $fv;
                     }
                 } else {
                     foreach ($this->_wfields as $f) {
                         if ($f->view_score > $bound
-                            && ($fv = $rrow->fval($f)) !== null
-                            && ($fv = $f->value_clean_graph($fv)) !== null) {
+                            && ($fv = $rrow->fval($f)) !== null) {
                             $this->_scorex_data[$cid][] = $f->order;
                             $this->_scorex_data[$cid][] = $fv;
                         }
@@ -850,7 +848,7 @@ class ContactList {
                 || $this->limit === "req") {
                 $f = $this->_rfields[$fieldId - self::FIELD_SCORE];
                 if (($scores = $this->_extract_scores($row->contactId, $f))) {
-                    return $f->unparse_graph(new ScoreInfo($scores), 2);
+                    return $f->unparse_graph(new ScoreInfo($scores), Discrete_ReviewField::GRAPH_PROPORTIONS);
                 }
             }
             return "";

@@ -2736,8 +2736,8 @@ class PaperInfo {
         foreach ($this->_row_set as $prow) {
             $prow->$k = "";
         }
-        $select = $maybe_null ? "coalesce($main_storage,'.')" : $main_storage;
-        $result = $this->conf->qe("select paperId, group_concat($select order by reviewId) from PaperReview where paperId?a group by paperId", $this->_row_set->paper_ids());
+        $select = $maybe_null ? "coalesce({$main_storage},'.')" : $main_storage;
+        $result = $this->conf->qe("select paperId, group_concat({$select} order by reviewId) from PaperReview where paperId?a group by paperId", $this->_row_set->paper_ids());
         while ($result && ($row = $result->fetch_row())) {
             $prow = $this->_row_set->get((int) $row[0]);
             $prow->$k = $row[1];
@@ -2768,17 +2768,6 @@ class PaperInfo {
                 foreach ($this->reviews_as_list() as $i => $rrow) {
                     $rrow->fields[$order] = (int) $x[$i];
                 }
-            }
-        }
-    }
-
-    /** @param string|ReviewField $field
-     * @deprecated */
-    function ensure_review_score($field) {
-        if (!($this->_reviews_flags & self::REVIEW_HAS_FULL)) {
-            $f = is_string($field) ? $this->conf->review_field($field) : $field;
-            if ($f && $f->order) {
-                $this->ensure_review_field_order($f->order);
             }
         }
     }

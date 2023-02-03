@@ -8,7 +8,7 @@ class ScoreInfo {
     /** @var null|int|float */
     private $_my_score;
     /** @var bool */
-    private $_sorted = false;
+    private $_sorted = true;
     /** @var int|float */
     private $_sum = 0;
     /** @var int|float */
@@ -96,18 +96,34 @@ class ScoreInfo {
         $this->_sum += $x;
         $this->_sumsq += $x * $x;
         ++$this->_n;
-        $this->_sorted = false;
         if ($this->_n === 1 || $this->_min > $x) {
             $this->_min = $x;
         }
         if ($this->_n === 1 || $this->_max < $x) {
             $this->_max = $x;
         }
+        if ($this->_sorted && $this->_max !== $x) {
+            $this->_sorted = false;
+        }
     }
 
     /** @param null|int|float $s */
     function set_my_score($s) {
         $this->_my_score = $s;
+    }
+
+    /** @param int|float $x
+     * @return ScoreInfo */
+    function excluding($x) {
+        if ($this->_n === 0 || $x < $this->_min || $x > $this->_max) {
+            return $this;
+        }
+        $sci = new ScoreInfo;
+        foreach ($this->_scores as $xx) {
+            if ($xx !== $x)
+                $sci->add($xx);
+        }
+        return $sci;
     }
 
     /** @return bool */

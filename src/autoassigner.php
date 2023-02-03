@@ -354,13 +354,13 @@ class Autoassigner {
         $all_fields = $this->conf->all_review_fields();
         $score = null;
         $scoredir = 1;
-        $scoreorder = 0;
+        $scoreorder = null;
         if ((substr($scoreinfo, 0, 1) === "-"
              || substr($scoreinfo, 0, 1) === "+")
             && isset($all_fields[substr($scoreinfo, 1)])) {
             $score = substr($scoreinfo, 1);
             $scoredir = substr($scoreinfo, 0, 1) === "-" ? -1 : 1;
-            $scoreorder = $all_fields[substr($scoreinfo, 1)]->order;
+            $scoreorder = $all_fields[substr($scoreinfo, 1)];
         }
 
         $set = $this->conf->paper_set(["paperId" => $this->papersel, "allConflictType" => true, "reviewSignatures" => true, "scores" => $score ? [$all_fields[$score]] : []]);
@@ -368,21 +368,22 @@ class Autoassigner {
         $scorearr = [];
         foreach ($set as $prow) {
             if ($scoreorder) {
-                $prow->ensure_review_field_order($scoreorder);
+                $prow->ensure_review_field_order($scoreorder->order);
             }
             foreach ($this->acs as $cid => $ac) {
-                if ($prow->has_conflict($cid)
-                    || !($rrow = $prow->review_by_user($cid))
-                    || ($scoreinfo !== "xa" && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED)
-                    || ($scoreorder && $rrow->fields[$scoreorder] <= 0)) {
-                    $scorearr[$prow->paperId][$cid] = -1;
-                } else {
-                    $s = $score ? $rrow->fields[$scoreorder] : 1;
-                    if ($scoredir == -1) {
-                        $s = 1000 - $s;
+                if (!$prow->has_conflict($cid)
+                    && ($rrow = $prow->review_by_user($cid))
+                    && ($scoreinfo === "xa" || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED)) {
+                    $s = $scoreorder ? $rrow->fval($scoreorder) ?? 0 : 1;
+                    if ($s <= 0) {
+                        $s = -1;
+                    } else if ($scoredir === -1) {
+                        $s = max(1000 - $s, 1);
                     }
-                    $scorearr[$prow->paperId][$cid] = $s;
+                } else {
+                    $s = -1;
                 }
+                $scorearr[$prow->paperId][$cid] = $s;
             }
         }
 

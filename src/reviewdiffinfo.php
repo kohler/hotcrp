@@ -91,10 +91,10 @@ class ReviewDiffInfo {
         $patch = [];
         foreach ($this->fields as $i => $f) {
             $sn = $f->short_id;
-            $v = [$this->rrow->fields[$f->order] ?? "", $this->newv[$i]];
+            $v = [$this->rrow->fields[$f->order], $this->newv[$i]];
             if (!($f instanceof Text_ReviewField)) {
                 $v[$dir] = (int) $v[$dir];
-            } else if (($v[$dir] ?? "") !== "") {
+            } else if (is_string($v[0]) && is_string($v[1])) {
                 if ($use_xdiff) {
                     $bdiff = xdiff_string_bdiff($v[1 - $dir], $v[$dir]);
                     if (strlen($bdiff) < strlen($v[$dir]) - 32) {
@@ -200,25 +200,28 @@ class ReviewDiffInfo {
         $has_xpatch = null;
         $dmp = null;
         foreach ($patch as $n => $v) {
-            if (str_ends_with($n, ":x")
+            $nl = strlen($n);
+            if ($nl > 2
+                && $n[$nl - 2] === ":"
+                && ($n[$nl - 1] === "p" || $n[$nl - 1] === "x")
                 && is_string($v)
-                && ($has_xpatch = $has_xpatch ?? function_exists("xdiff_string_bpatch"))
                 && ($fi = ReviewFieldInfo::find($rrow->conf, substr($n, 0, -2)))
                 && !$fi->is_sfield) {
-                $oldv = $rrow->finfoval($fi);
-                $rrow->set_finfoval($fi, xdiff_string_bpatch($oldv, $v));
-            } else if (str_ends_with($n, ":p")
-                       && is_string($v)
-                       && ($fi = ReviewFieldInfo::find($rrow->conf, substr($n, 0, -2)))
-                       && !$fi->is_sfield) {
-                $dmp = $dmp ?? new dmp\diff_match_patch;
-                $oldv = $rrow->finfoval($fi);
-                $rrow->set_finfoval($fi, $dmp->diff_applyHCDelta($oldv, $v));
+                $oldv = $rrow->finfoval($fi) ?? "";
+                if ($n[$nl - 1] === "p") {
+                    $dmp = $dmp ?? new dmp\diff_match_patch;
+                    $rrow->set_finfoval($fi, $dmp->diff_applyHCDelta($oldv, $v));
+                    continue;
+                }
+                if (($has_xpatch = $has_xpatch ?? function_exists("xdiff_string_bpatch"))) {
+                    $rrow->set_finfoval($fi, xdiff_string_bpatch($oldv, $v));
+                    continue;
+                }
             } else if (($fi = ReviewFieldInfo::find($rrow->conf, $n))) {
                 $rrow->set_finfoval($fi, $v);
-            } else {
-                $ok = false;
+                continue;
             }
+            $ok = false;
         }
         return $ok;
     }

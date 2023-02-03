@@ -301,6 +301,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
      * @param int $valuet */
     function apply_score_field(ReviewField $field, $value1, $value2, $valuet) {
         assert(!$this->rfield && $field instanceof Discrete_ReviewField);
+        assert(is_int($value1) && is_int($value2));
         $this->rfield = $field;
         // -1 (explicit no entry) means same as 0 (no entry) in search
         if ($value1 === 0 && $valuet === CountMatcher::RELNE) {
@@ -377,12 +378,8 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                     }
                 }
             } else {
-                if ($this->rfield->main_storage) {
-                    $where[] = $this->rfield->main_storage . "!=''";
-                } else {
-                    if ($this->rfield_text)
-                        $where[] = "tfields is not null";
-                }
+                if ($this->rfield_text)
+                    $where[] = "tfields is not null";
             }
         }
         if ($this->rate_bits > 0) {
@@ -496,18 +493,18 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 || $this->rfield_match < 0) {
                 return false;
             }
-            $val = $this->rfield->value_clean_search($rrow->fields[$this->rfield->order]);
+            $fv = $rrow->fval($this->rfield);
             if ($this->rfield instanceof Discrete_ReviewField) {
-                if (($valempty = $val <= 0)) {
+                if (($valempty = ($fv ?? 0) <= 0)) {
                     $match = $this->rfield_score1 === 0
                         && ($this->rfield_scoret & CountMatcher::RELEQ) !== 0;
                 } else if (($this->rfield_scoret & self::RELRANGE) !== 0) {
-                    $match = $val >= $this->rfield_score1 && $val <= $this->rfield_score2;
+                    $match = $fv >= $this->rfield_score1 && $fv <= $this->rfield_score2;
                 } else {
-                    $match = CountMatcher::compare($val, $this->rfield_scoret, $this->rfield_score1);
+                    $match = CountMatcher::compare($fv, $this->rfield_scoret, $this->rfield_score1);
                 }
             } else {
-                if (($valempty = $val === "")) {
+                if (($valempty = ($fv ?? "") === "")) {
                     $match = $this->rfield_text === false;
                 } else {
                     $match = $this->rfield_text === true
@@ -521,8 +518,8 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 return false;
             }
             if ($this->rfield_match !== 3) {
-                $this->rfield_match |= ($val === $this->rfield_score1 ? 1 : 0)
-                    | ($val === $this->rfield_score2 ? 2 : 0);
+                $this->rfield_match |= ($fv === $this->rfield_score1 ? 1 : 0)
+                    | ($fv === $this->rfield_score2 ? 2 : 0);
             }
         }
         return true;
@@ -783,16 +780,16 @@ class Review_SearchTerm extends SearchTerm {
             return true;
         }
         if ($m[3] !== "") {
-            $v0 = $f->parse($m[1]);
-            $v1 = $f->parse($m[4]);
+            $v0 = $f->parse($m[1]) ?? 0;
+            $v1 = $f->parse($m[4]) ?? 0;
         } else {
-            $v0 = $v1 = $f->parse($m[1] === "" ? $m[4] : $m[1]);
+            $v0 = $v1 = $f->parse($m[1] === "" ? $m[4] : $m[1]) ?? 0;
             if ($v0 === false
                 && $m[2] === ""
                 && $f->is_single_character()
                 && strlen($m[1]) === 2
-                && ($x0 = $f->parse($m[1][0])) !== false
-                && ($x1 = $f->parse($m[1][1])) !== false) {
+                && ($x0 = $f->parse($m[1][0]) ?? 0) !== false
+                && ($x1 = $f->parse($m[1][1]) ?? 0) !== false) {
                 // XXX backward compat
                 $v0 = $x0;
                 $v1 = $x1;
@@ -835,9 +832,7 @@ class Review_SearchTerm extends SearchTerm {
             self::impossible_score_match($f, $sword, $srch);
             return false;
         }
-        $x0 = $f->value_clean_search($f->flip ? $v1 : $v0);
-        $x1 = $f->value_clean_search($f->flip ? $v0 : $v1);
-        $rsm->apply_score_field($f, $x0, $x1, $rel);
+        $rsm->apply_score_field($f, $f->flip ? $v1 : $v0, $f->flip ? $v0 : $v1, $rel);
         return true;
     }
 
