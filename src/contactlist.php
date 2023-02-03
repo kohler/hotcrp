@@ -67,8 +67,12 @@ class ContactList {
     private $_shepherd_data;
     /** @var list<Score_ReviewField> */
     private $_rfields = [];
-    /** @var list<array<int,list<int>>> */
-    private $_score_data;
+    /** @var list<Score_ReviewField> */
+    private $_wfields = [];
+    /** @var array<int,list<int>> */
+    private $_score1_data = [];
+    /** @var array<int,list<int>> */
+    private $_scorex_data = [];
     /** @var array<int,array{int,int}> */
     private $_rating_data;
     /** @var array<int,true> */
@@ -237,10 +241,28 @@ class ContactList {
                 return false;
             }
             $this->qopt["reviews"] = true;
-            $this->qopt["scores"][] = $f;
+            if (!in_array($f, $this->_wfields)) {
+                $this->_wfields[] = $f;
+            }
             break;
         }
         return true;
+    }
+
+    /** @param int $uid
+     * @param ReviewField $f
+     * @return list<int> */
+    private function _extract_scores($uid, $f) {
+        if (count($this->_wfields) === 1 && $f === $this->_wfields[0]) {
+            return $this->_score1_data[$uid] ?? [];
+        }
+        $s = [];
+        $sx = $this->_scorex_data[$uid] ?? [];
+        for ($i = 0; $i !== count($sx); $i += 2) {
+            if ($sx[$i] === $f->order)
+                $s[] = $sx[$i + 1];
+        }
+        return $s;
     }
 
     function _sortBase($a, $b) {
@@ -369,8 +391,7 @@ class ContactList {
                 $scoresort = "A";
             }
             foreach ($rows as $row) {
-                $scores = $this->_score_data[$f->order][$row->contactId] ?? [];
-                $scoreinfo = new ScoreInfo($scores, true);
+                $scoreinfo = new ScoreInfo($this->_extract_scores($row->contactId, $f), true);
                 $this->_sort_data[$row->contactId] =
                     [$scoreinfo->sort_data($scoresort), $scoreinfo->mean()];
             }
@@ -435,9 +456,8 @@ class ContactList {
     }
 
     /** @param PaperInfo $prow
-     * @param ReviewInfo $rrow
-     * @param list<int> $forders */
-    private function collect_review_data($prow, $rrow, $repapers, $review_limit, $forders) {
+     * @param ReviewInfo $rrow */
+    private function collect_review_data($prow, $rrow, $repapers, $review_limit) {
         $cid = $rrow->contactId;
         if ($repapers) {
             $this->_re_data[$cid][] = $rrow->paperId;
@@ -459,9 +479,21 @@ class ContactList {
             $this->_rect_data[$cid][0] += 1;
             $this->_rect_data[$cid][1] += 1;
             if ($this->user->can_view_review($prow, $rrow)) {
-                foreach ($forders as $i) {
-                    if ($rrow->fields[$i] !== 0)
-                        $this->_score_data[$i][$cid][] = $rrow->fields[$i];
+                $bound = $this->user->view_score_bound($prow, $rrow);
+                if (count($this->_wfields) === 1) {
+                    $f = $this->_wfields[0];
+                    if ($rrow->has_nonempty_field($f)
+                        && $f->view_score > $bound) {
+                        $this->_score1_data[$cid][] = $rrow->fields[$f->order];
+                    }
+                } else {
+                    foreach ($this->_wfields as $f) {
+                        if ($rrow->has_nonempty_field($f)
+                            && $f->view_score > $bound) {
+                            $this->_scorex_data[$cid][] = $f->order;
+                            $this->_scorex_data[$cid][] = $rrow->fields[$f->order];
+                        }
+                    }
                 }
             }
         } else if ($rrow->reviewNeedsSubmit && $prow->timeSubmitted > 0) {
@@ -497,8 +529,8 @@ class ContactList {
         }
         if (isset($this->qopt["reviews"]) || $review_limit) {
             $args["reviewSignatures"] = true;
-            if (isset($this->qopt["scores"])) {
-                $args["scores"] = $this->qopt["scores"];
+            if ($this->_wfields) {
+                $args["scores"] = $this->_wfields;
             }
         }
         if ($limit === "req") {
@@ -560,18 +592,13 @@ class ContactList {
             if ($repapers) {
                 $this->_re_data = $this->_reord_data = [];
             }
-            $forders = [];
-            foreach ($this->qopt["scores"] ?? [] as $f) {
-                $forders[] = $f->order;
-            }
-            $this->_score_data = $this->conf->review_form()->order_array([]);
             foreach ($prows as $prow) {
                 if ($this->user->can_view_review_assignment($prow, null)
                     && $this->user->can_view_review_identity($prow, null)) {
                     foreach ($prow->all_reviews() as $rrow) {
                         if ($this->user->can_view_review_assignment($prow, $rrow)
                             && $this->user->can_view_review_identity($prow, $rrow)) {
-                            $this->collect_review_data($prow, $rrow, $repapers, $review_limit, $forders);
+                            $this->collect_review_data($prow, $rrow, $repapers, $review_limit);
                         }
                     }
                 }
@@ -820,7 +847,7 @@ class ContactList {
                 || $this->user->privChair
                 || $this->limit === "req") {
                 $f = $this->_rfields[$fieldId - self::FIELD_SCORE];
-                if (($scores = $this->_score_data[$f->order][$row->contactId] ?? [])) {
+                if (($scores = $this->_extract_scores($row->contactId, $f))) {
                     return $f->unparse_graph(new ScoreInfo($scores, true), 2);
                 }
             }
