@@ -3159,7 +3159,7 @@ handle_ui.on("js-tracker-stop", function (evt) {
     if (e && e.hasAttribute("data-trackerid"))
         $.post(hoturl("=api/trackerconfig"),
             {"tr1-id": e.getAttribute("data-trackerid"), "tr1-stop": 1},
-            streload);
+            function () { streload(); });
 });
 
 
