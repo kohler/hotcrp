@@ -5199,6 +5199,8 @@ function ReviewField(fj) {
     this.name = fj.name;
     this.name_html = escape_html(this.name);
     this.type = fj.type;
+    if (fj.id != null)
+        this.id = fj.id;
     if (fj.description != null)
         this.description = fj.description;
     if (fj.order != null)
