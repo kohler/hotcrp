@@ -316,7 +316,7 @@ class Home_Page {
             $score_texts = [];
             foreach ($this->default_review_fields() as $i => $rf) {
                 if ($this->_rf_means[$i] !== null) {
-                    $score_texts[] = $conf->_("average %1\$s score %2\$s", $rf->name_html, $rf->unparse_real_format($this->_rf_means[$i], "%.2f"), $this->_r_num_submitted);
+                    $score_texts[] = $conf->_("average %1\$s score %2\$s", $rf->name_html, $rf->unparse_computed($this->_rf_means[$i], "%.2f"), $this->_r_num_submitted);
                 }
             }
             echo $conf->_("You have submitted %1\$d of <a href=\"%3\$s\">%2\$d reviews</a> with %4\$#As.",
@@ -328,7 +328,7 @@ class Home_Page {
             $score_texts = [];
             foreach ($this->default_review_fields() as $i => $rf) {
                 if ($pc_rf_means[$i] !== null) {
-                    $score_texts[] = $conf->_("average %1\$s score %2\$s", $rf->name_html, $rf->unparse_real_format($pc_rf_means[$i], "%.2f"), null);
+                    $score_texts[] = $conf->_("average %1\$s score %2\$s", $rf->name_html, $rf->unparse_computed($pc_rf_means[$i], "%.2f"), null);
                 }
             }
             echo $conf->_("The average PC member has submitted %1\$.1f reviews with %2\$#As.",

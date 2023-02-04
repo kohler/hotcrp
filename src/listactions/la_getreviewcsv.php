@@ -45,7 +45,7 @@ class GetReviewCSV_ListAction extends ListAction {
                     foreach ($rrow->viewable_fields($viewer) as $f) {
                         $fields[$f->short_id] = true;
                         $fv = $rrow->fval($f);
-                        $text[$f->name] = rtrim($f->unparse($fv));
+                        $text[$f->name] = rtrim($f->unparse_value($fv));
                     }
                     $items[] = $text;
                     $pids[$prow->paperId] = true;

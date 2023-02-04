@@ -382,7 +382,12 @@ abstract class ReviewField implements JsonSerializable {
 
     /** @param int|float|string $fval
      * @return string */
-    abstract function unparse($fval);
+    abstract function unparse_value($fval);
+
+    /** @deprecated */
+    function unparse($fval) {
+        return $this->unparse_value($fval);
+    }
 
     /** @param ?int|?float|?string $fval
      * @return mixed */
@@ -405,7 +410,7 @@ abstract class ReviewField implements JsonSerializable {
     const VALUE_SC = 1;
     /** @deprecated */
     function value_unparse($fval, $flags = 0, $real_format = null) {
-        return $flags & self::VALUE_SC ? $this->unparse_span_html($fval, $real_format) : $this->unparse($fval);
+        return $flags & self::VALUE_SC ? $this->unparse_span_html($fval, $real_format) : $this->unparse_value($fval);
     }
 
     /** @param string $s
@@ -601,7 +606,7 @@ abstract class Discrete_ReviewField extends ReviewField {
     /** @param int|float $fval
      * @param ?string $real_format
      * @return string */
-    abstract function unparse_real_format($fval, $real_format = null);
+    abstract function unparse_computed($fval, $real_format = null);
 
     const GRAPH_STACK = 1;
     const GRAPH_PROPORTIONS = 2;
@@ -832,8 +837,8 @@ class Score_ReviewField extends Discrete_ReviewField {
         $d0 = $n > 2 ? 1 : 0;
         $d1 = $n > 3 ? 2 : $d0;
         return [
-            $this->unparse($this->flip ? $n - $d0 : 1 + $d0),
-            $this->unparse($this->flip ? $n - 1 - $d1 : 2 + $d1)
+            $this->unparse_value($this->flip ? $n - $d0 : 1 + $d0),
+            $this->unparse_value($this->flip ? $n - 1 - $d1 : 2 + $d1)
         ];
     }
 
@@ -841,7 +846,7 @@ class Score_ReviewField extends Discrete_ReviewField {
     function full_score_range() {
         $f = $this->flip ? count($this->values) : 1;
         $l = $this->flip ? 1 : count($this->values);
-        return [$this->unparse($f), $this->unparse($l)];
+        return [$this->unparse_value($f), $this->unparse_value($l)];
     }
 
     /** @param int|float $fval
@@ -850,32 +855,20 @@ class Score_ReviewField extends Discrete_ReviewField {
         return Discrete_ReviewField::scheme_value_class($this->scheme, $fval, count($this->values), $this->flip);
     }
 
-    function unparse($fval) {
-        if ($fval <= 0.8) {
+    function unparse_value($fval) {
+        if ($fval > 0) {
+            return (string) $this->symbols[$fval - 1];
+        } else {
             return "";
         }
-        if (($this->flags & self::FLAG_NUMERIC) === 0
-            && $fval <= count($this->values) + 0.2) {
-            $ival = (int) round($fval);
-            if ($fval >= $ival + 0.25 || $fval <= $ival - 0.25) {
-                $ival = (int) $fval;
-                $vl = $this->symbols[$ival - 1];
-                $vh = $this->symbols[$ival];
-                return $this->flip ? "{$vh}~{$vl}" : "{$vl}~{$vh}";
-            }
-            return $this->symbols[$ival - 1];
-        }
-        return (string) $fval;
     }
 
     function unparse_json($fval) {
         assert($fval === null || is_int($fval));
-        if (($fval ?? 0) === 0) {
-            return null;
-        } else if ($fval < 0) {
-            return false;
+        if ($fval !== null) {
+            return $fval > 0 ? $this->symbols[$fval - 1] : false;
         } else {
-            return $this->symbols[$fval - 1];
+            return null;
         }
     }
 
@@ -890,19 +883,32 @@ class Score_ReviewField extends Discrete_ReviewField {
     /** @param int|float $fval
      * @param ?string $real_format
      * @return string */
-    function unparse_real_format($fval, $real_format = null) {
-        if ($fval <= 0.8) {
+    function unparse_computed($fval, $real_format = null) {
+        if ($fval === null) {
             return "";
-        } else if ($real_format !== null
-                   && ($this->flags & self::FLAG_NUMERIC) !== 0) {
-            return sprintf($real_format, $fval);
-        } else {
-            return $this->unparse($fval);
         }
+        $numeric = ($this->flags & self::FLAG_NUMERIC) !== 0;
+        if ($real_format !== null && $numeric) {
+            return sprintf($real_format, $fval);
+        }
+        if ($fval <= 0.8) {
+            return "–";
+        }
+        if (!$numeric && $fval <= count($this->values) + 0.2) {
+            $rval = (int) round($fval);
+            if ($fval >= $rval + 0.25 || $fval <= $rval - 0.25) {
+                $ival = (int) $fval;
+                $vl = $this->symbols[$ival - 1];
+                $vh = $this->symbols[$ival];
+                return $this->flip ? "{$vh}~{$vl}" : "{$vl}~{$vh}";
+            }
+            return $this->symbols[$rval - 1];
+        }
+        return (string) $fval;
     }
 
     function unparse_span_html($fval, $format = null) {
-        $s = $this->unparse_real_format($fval, $format);
+        $s = $this->unparse_computed($fval, $format);
         if ($s !== "" && ($vc = $this->value_class($fval)) !== "") {
             $s = "<span class=\"{$vc}\">{$s}</span>";
         }
@@ -919,7 +925,7 @@ class Score_ReviewField extends Discrete_ReviewField {
         }
         $n = count($this->values);
 
-        $avgtext = $this->unparse_real_format($sci->mean(), "%.2f");
+        $avgtext = $this->unparse_computed($sci->mean(), "%.2f");
         if ($sci->count() > 1 && ($stddev = $sci->stddev_s())) {
             $avgtext .= sprintf(" ± %.2f", $stddev);
         }
@@ -978,13 +984,17 @@ class Score_ReviewField extends Discrete_ReviewField {
         if ($dot !== false) {
             $s = trim(substr($s, 0, $dot));
         }
-        if ($s === "0" || $s === "-" || $s === "–" || $s === "—") {
+        if ($s === "0") {
             return "";
-        } else if (strlen($s) > 2
-                   && (strcasecmp($s, "no entry") === 0
-                       || strcasecmp($s, "none") === 0
-                       || strcasecmp($s, "n/a") === 0
-                       || substr_compare($s, "none ", 0, 5, true) === 0)) {
+        }
+        if ($s === "-"
+            || $s === "–"
+            || $s === "—"
+            || (strlen($s) > 2
+                && (strcasecmp($s, "no entry") === 0
+                    || strcasecmp($s, "none") === 0
+                    || strcasecmp($s, "n/a") === 0
+                    || substr_compare($s, "none ", 0, 5, true) === 0))) {
             return "none";
         }
         return $s;
@@ -1243,6 +1253,7 @@ class Score_ReviewField extends Discrete_ReviewField {
     }
 }
 
+
 class Text_ReviewField extends ReviewField {
     /** @var int */
     public $display_space;
@@ -1279,7 +1290,7 @@ class Text_ReviewField extends ReviewField {
         return $this->order && $this->view_score >= VIEWSCORE_AUTHORDEC;
     }
 
-    function unparse($fval) {
+    function unparse_value($fval) {
         return $fval ?? "";
     }
 

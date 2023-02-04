@@ -35,7 +35,7 @@ class GetScores_ListAction extends ListAction {
                         foreach ($rrow->viewable_fields($user) as $f) {
                             if ($f instanceof Discrete_ReviewField
                                 && ($fv = $rrow->fval($f)) !== null) {
-                                $b[$f->search_keyword()] = $f->unparse($fv);
+                                $b[$f->search_keyword()] = $f->unparse_value($fv);
                                 $any_scores[$f->search_keyword()] = $this_scores = true;
                             }
                         }
