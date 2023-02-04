@@ -13,7 +13,6 @@
     },
     {
         "name": "text", "title": "Text", "order": 500,
-        "function": "+Text_PaperOption",
         "sample": {"value": "Text entry"},
         "id_prefix": "t"
     },

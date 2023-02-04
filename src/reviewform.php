@@ -122,7 +122,8 @@ class ReviewForm {
         $hpos = 0;
         $fs = [];
         foreach ($this->viewable_fields($user) as $f) {
-            if (!($f instanceof Text_ReviewField) && $f->search_keyword()) {
+            if (!($f instanceof Text_ReviewField)
+                && $f->search_keyword()) {
                 if (in_array($f, $hfs)) {
                     array_splice($fs, $hpos, 0, [$f]);
                     ++$hpos;
@@ -148,14 +149,16 @@ class ReviewForm {
     /** @return ?Score_ReviewField */
     function default_highlighted_score() {
         $f = $this->fmap["s01"] ?? null;
-        if ($f && $f->order && $f->view_score >= VIEWSCORE_PC) {
-            assert($f instanceof Score_ReviewField);
+        if ($f
+            && $f->order
+            && $f instanceof Score_ReviewField
+            && $f->view_score >= VIEWSCORE_PC) {
             return $f;
         }
         foreach ($this->forder as $f) {
-            if ($f->view_score >= VIEWSCORE_PC
-                && $f->main_storage
-                && $f instanceof Score_ReviewField)
+            if ($f instanceof Score_ReviewField
+                && $f->view_score >= VIEWSCORE_PC
+                && $f->main_storage)
                 return $f;
         }
         return null;
@@ -172,9 +175,9 @@ class ReviewForm {
             if (($sve->action === "show" || $sve->action === "showsort")
                 && ($x = $this->conf->find_all_fields($sve->keyword))
                 && count($x) === 1
+                && $x[0] instanceof Score_ReviewField
                 && $x[0]->view_score >= VIEWSCORE_PC
-                && $x[0]->main_storage
-                && $x[0] instanceof Score_ReviewField) {
+                && $x[0]->main_storage) {
                 $fs[] = $x[0];
             }
         }
