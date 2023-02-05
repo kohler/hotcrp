@@ -495,16 +495,21 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             }
             $fv = $rrow->fval($this->rfield);
             if ($this->rfield instanceof Discrete_ReviewField) {
-                if (($valempty = $fv === null)) {
+                if ($fv === null) {
                     $match = $this->rfield_score1 === 0
                         && ($this->rfield_scoret & CountMatcher::RELEQ) !== 0;
+                } else if ($fv === 0) {
+                    $match = $this->rfield_score1 === 0
+                        ? ($this->rfield_scoret & CountMatcher::RELEQ) !== 0
+                        : $this->rfield_scoret === CountMatcher::RELNE;
                 } else if (($this->rfield_scoret & self::RELRANGE) !== 0) {
                     $match = $fv >= $this->rfield_score1 && $fv <= $this->rfield_score2;
                 } else {
                     $match = CountMatcher::compare($fv, $this->rfield_scoret, $this->rfield_score1);
                 }
             } else {
-                if (($valempty = ($fv ?? "") === "")) {
+                $fv = $fv !== "" ? $fv : null;
+                if ($fv === null) {
                     $match = $this->rfield_text === false;
                 } else {
                     $match = $this->rfield_text === true
@@ -512,7 +517,8 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 }
             }
             if (!$match) {
-                if (($this->rfield_scoret & self::RELALL) !== 0 && !$valempty) {
+                if (($this->rfield_scoret & self::RELALL) !== 0
+                    && $fv !== null) {
                     $this->rfield_match = -1;
                 }
                 return false;
@@ -717,6 +723,7 @@ class Review_SearchTerm extends SearchTerm {
             return null;
         }
     }
+
     /** @return SearchTerm */
     static function parse_review_field($word, SearchWord $sword, PaperSearch $srch) {
         $f = $sword->kwdef->review_field;
