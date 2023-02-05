@@ -1023,7 +1023,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         assert_search_papers($this->u_chair, "ovemer:any ovemer:none:2-3", "20 21");
 
         assert_search_papers($this->u_chair, "ovemer:any:1-5", "1 17 18 19 20 21");
-        assert_search_papers($this->u_chair, "ovemer:all:1-5", "1 17 18 19 20 21");
+        assert_search_papers($this->u_chair, "ovemer:all:1-5", "1 17 18 19 20");
         assert_search_papers($this->u_chair, "ovemer:span:1-5", "20");
 
         assert_search_papers($this->u_chair, "ovemer:any:1..3", "1 17 18 19 20");
@@ -1074,7 +1074,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         assert_search_papers($this->u_chair, "ovemer:any ovemer:none:C-D", "20 21");
 
         assert_search_papers($this->u_chair, "ovemer:any:A-E", "1 17 18 19 20 21");
-        assert_search_papers($this->u_chair, "ovemer:all:A-E", "1 17 18 19 20 21");
+        assert_search_papers($this->u_chair, "ovemer:all:A-E", "1 17 18 19 20");
         assert_search_papers($this->u_chair, "ovemer:span:A-E", "20");
 
         assert_search_papers($this->u_chair, "ovemer:any:C..E", "1 17 18 19 20");
