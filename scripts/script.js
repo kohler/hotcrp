@@ -158,6 +158,16 @@ if (!Element.prototype.append) {
         }
     };
 }
+if (!Element.prototype.prepend) {
+    Element.prototype.prepend = function () {
+        for (var i = arguments.length; i !== 0; --i) {
+            var e = arguments[i - 1];
+            if (typeof e === "string")
+                e = document.createTextNode(e);
+            this.insertBefore(e, this.firstChild);
+        }
+    };
+}
 if (!Element.prototype.replaceChildren) {
     Element.prototype.replaceChildren = function () {
         var i;
@@ -3648,6 +3658,33 @@ $(function () {
 });
 
 
+function make_expander_element(foldnum) {
+    var svgns = "http://www.w3.org/2000/svg", e, sp0, sp1;
+    function mksvgp(d) {
+        var sv = document.createElementNS(svgns, "svg"), p;
+        sv.className = "licon";
+        sv.setAttribute("width", "0.75em");
+        sv.setAttribute("height", "0.75em");
+        sv.setAttribute("viewBox", "0 0 16 16");
+        sv.setAttribute("preserveAspectRatio", "none");
+        p = document.createElementNS(svgns, "path");
+        p.setAttribute("d", d);
+        sv.appendChild(p);
+        return sv;
+    }
+    sp0 = document.createElement("span");
+    sp0.className = "in0 fx" + foldnum;
+    sp0.appendChild(mksvgp("M1 1L8 15L15 1z"));
+    sp1 = document.createElement("span");
+    sp1.className = "in1 fn" + foldnum;
+    sp1.appendChild(mksvgp("M1 1L15 8L1 15z"));
+    e = document.createElement("span");
+    e.className = "expander";
+    e.append(sp0, sp1);
+    return e;
+}
+
+
 // special-case folding for author table
 handle_ui.on("js-aufoldup", function (evt) {
     if (evt.target === this || evt.target.tagName !== "A") {
@@ -4271,7 +4308,7 @@ handle_ui.on("input.js-email-populate", function () {
 })();
 
 function render_mail_preview(e, mp, fields) {
-    var i, f, e1, recip;
+    var i, f, e1;
     e.replaceChildren();
     function make_field_div(label, text) {
         var e1 = document.createElement("div"),
@@ -4338,7 +4375,7 @@ handle_ui.on("js-request-review-preview-email", function (evt) {
     handle_ui.stopPropagation(evt);
 });
 
-handle_ui.on("js-choose-mail-preview", function (evt) {
+handle_ui.on("js-choose-mail-preview", function () {
     toggleClass(this.closest("fieldset"), "mail-preview-unchoose", !this.checked);
 });
 
@@ -4907,8 +4944,8 @@ function field_visible(f, rrow) {
     return rrow[f.uid] != null && rrow[f.uid] !== "";
 }
 
-function render_review_body(rrow) {
-    var t = "", foidx = 0, f, x, nextf, last_display = 0, display;
+function render_review_body_in(rrow, bodye) {
+    var foidx = 0, f, x, nextf, last_display = 0, display, fe, h3, e;
     for (foidx = 0; (nextf = form_order[foidx]) && !field_visible(nextf, rrow); ++foidx) {
     }
     while (nextf) {
@@ -4922,37 +4959,42 @@ function render_review_body(rrow) {
             display = last_display == 1 ? 2 : 0;
         }
 
-        t = t.concat('<div class="rf rfd', display, '" data-rf="', f.uid,
-            '"><div class="revvt"><h3 class="rfehead"><label class="revfn">',
-            f.name_html, '</label>');
+        fe = document.createElement("div");
+        fe.className = "rf rfd" + display;
+        fe.setAttribute("data-rf", f.uid);
+        bodye.appendChild(fe);
+
+        e = document.createElement("label");
+        e.className = "revfn";
+        e.append(f.name);
+        h3 = document.createElement("h3");
+        h3.className = "rfehead";
+        h3.appendChild(e);
         x = f.visibility || "re";
         if (x === "audec" && hotcrp_status && hotcrp_status.myperm
             && hotcrp_status.myperm.some_author_can_view_decision) {
             x = "au";
         }
         if (x !== "au") {
-            t += '<div class="field-visibility">(' +
-                (({secret: "secret", admin: "administrators only",
-                   re: "hidden from authors", audec: "hidden from authors until decision",
-                   pconly: "hidden from authors and external reviewers"})[x] || x) +
-                ')</div>';
+            e = document.createElement("div");
+            e.className = "field-visibility";
+            x = ({
+                secret: "secret", admin: "administrators only",
+                re: "hidden from authors", audec: "hidden from authors until decision",
+                pconly: "hidden from authors and external reviewers"
+            })[x] || x;
+            e.append("(" + x + ")");
+            h3.appendChild(e);
         }
-        t += '</h3></div>';
+        e = document.createElement("div");
+        e.className = "revvt";
+        e.appendChild(h3);
+        fe.appendChild(e);
 
-        if (f.type === "text") {
-            t += '<div class="revv revtext"></div>';
-        } else if ((x = f.parse_value(rrow[f.uid]))) {
-            t = t.concat('<p class="revv revscore"><span class="revscorenum"><strong class="rev_num sv ', x.className, '">', x.symbol, x.sp1, '</strong>', x.sp2, '</span><span class="revscoredesc">', escape_html(x.title), '</span></p>');
-        } else if (!f.required && rrow[f.uid] === false) {
-            t += '<p class="revv revnoscore">N/A</p>';
-        } else {
-            t += '<p class="revv revnoscore">Unknown</p>';
-        }
+        f.render_in(rrow[f.uid], rrow, fe);
 
-        t += '</div>';
         last_display = display;
     }
-    return t;
 }
 
 function ratings_counts(ratings) {
@@ -5091,106 +5133,150 @@ function revrating_key(evt) {
     }
 }
 
+function make_review_h2(rrow, rlink, rdesc) {
+    var h2 = document.createElement("h2"),
+        ma = document.createElement("a"),
+        rd = document.createElement("span"), ed;
+    if (rrow.folded) {
+        ma.className = "qo ui js-foldup";
+        ma.setAttribute("href", "");
+        ma.setAttribute("data-fold-target", 20);
+        ma.appendChild(make_expander_element(20));
+    } else {
+        ma.className = "qo";
+        ma.setAttribute("href", hoturl("review", rlink));
+    }
+    rd.className = "revcard-header-name";
+    rd.append(rdesc);
+    ma.append(rd);
+    h2.append(ma);
+    if (rrow.editable) {
+        if (rrow.folded) {
+            ma = document.createElement("a");
+            ma.className = "qo";
+            ma.setAttribute("href", hoturl("review", rlink));
+            h2.append(" ", ma);
+        } else {
+            ma.append(" ");
+        }
+        ed = document.createElement("span");
+        ed.className = "t-editor";
+        ed.append("✎");
+        ma.append(ed);
+    }
+    return h2;
+}
+
+function append_review_id(rrow, eheader) {
+    var rth = null, ad = null, e, xc;
+    function add_rth(e) {
+        if (!rth) {
+            rth = document.createElement("div")
+            rth.className = "revthead";
+            eheader.appendChild(rth);
+        }
+        rth.append(e);
+    }
+    function add_ad(s) {
+        if (!ad) {
+            ad = document.createElement("address");
+            ad.className = "revname";
+            ad.setAttribute("itemprop", "author");
+            add_rth(ad);
+        }
+        ad.append(s);
+    }
+    if (rrow.review_token) {
+        add_ad("Review token " + rrow.review_token);
+    } else if (rrow.reviewer) {
+        e = document.createElement("span");
+        e.innerHTML = rrow.blind ? "[" + rrow.reviewer + "]" : rrow.reviewer;
+        rrow.reviewer_email && (e.title = rrow.reviewer_email);
+        add_ad(e);
+    }
+    if (rrow.rtype) {
+        xc = (rrow.submitted || rrow.approved ? "" : " rtinc") +
+            (rrow.subreview ? " rtsubrev" : "");
+        ad && ad.append(" ");
+        add_ad(review_types.make_icon(rrow.rtype, xc));
+        if (rrow.round) {
+            e = document.createElement("span");
+            e.className = "revround";
+            e.title = "Review round";
+            e.append(rrow.round);
+            ad.append(e);
+        }
+    }
+    if (rrow.modified_at) {
+        e = document.createElement("time");
+        e.className = "revtime";
+        e.dateTime = (new Date(rrow.modified_at * 1000)).toISOString();
+        e.append(rrow.modified_at_text);
+        add_rth(e);
+    }
+}
+
 function add_review(rrow) {
-    var hc = new HtmlCollector,
-        rid = rrow.pid + (rrow.ordinal || "r" + rrow.rid),
-        rlink = "p=".concat(rrow.pid, "&r=", rid),
-        has_user_rating = false, i;
+    var rid = rrow.pid + (rrow.ordinal || "r" + rrow.rid), rlink, rdesc,
+        has_user_rating = false,
+        e, earticle, eheader;
+
+    // review link and description
+    rlink = "p=".concat(rrow.pid, "&r=", rid);
     if (siteinfo.want_override_conflict)
         rlink += "&forceShow=1";
-
-    i = rrow.ordinal ? '" data-review-ordinal="' + rrow.ordinal : '';
-    hc.push('<article id="r'.concat(rid,
-                '" class="pcard revcard need-anchor-unfold has-fold ',
-                rrow.folded ? "fold20c" : "fold20o", '" data-pid="', rrow.pid,
-                '" data-rid="', rrow.rid, i, '">'), '</article>');
-
-    // HEADER
-    hc.push('<header class="revcard-head">', '</header>');
-
-    // review description
-    var rdesc = rrow.subreview ? "Subreview" : "Review";
+    rdesc = rrow.subreview ? "Subreview" : "Review";
     if (rrow.draft)
         rdesc = "Draft " + rdesc;
     if (rrow.ordinal)
         rdesc += " #" + rid;
 
-    // edit/text links
-    if (rrow.folded) {
-        hc.push('<h2><a class="qo ui js-foldup" href="" data-fold-target="20"><span class="expander"><span class="in0 fx20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L8 15L15 1z" /></svg></span><span class="in1 fn20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span></span>', '</a></h2>');
-    } else {
-        hc.push('<h2><a class="qo" href="' + hoturl_html("review", rlink) + '">', '</a></h2>');
-    }
-    hc.push('<span class="revcard-header-name">' + rdesc + '</span>');
-    if (rrow.editable && rrow.folded) {
-        hc.push('</a> <a class="qo" href="' + hoturl_html("review", rlink) + '"><span class="t-editor">✎</span>');
-    } else if (rrow.editable) {
-        hc.push(' <span class="t-editor">✎</span>');
-    }
-    hc.pop();
+    earticle = document.createElement("article");
+    earticle.id = "r" + rid;
+    earticle.className = "pcard revcard need-anchor-unfold has-fold fold20" + (rrow.folded ? "c" : "o");
+    earticle.setAttribute("data-pid", rrow.pid);
+    earticle.setAttribute("data-rid", rrow.rid);
+    rrow.ordinal && earticle.setAttribute("data-review-ordinal", rrow.ordinal);
+    $(".pcontainer")[0].appendChild(earticle);
 
-    // author info
-    var revname = "", revtime;
-    if (rrow.review_token) {
-        revname = 'Review token ' + rrow.review_token;
-    } else if (rrow.reviewer) {
-        revname = rrow.reviewer;
-        if (rrow.blind)
-            revname = '[' + revname + ']';
-        if (rrow.reviewer_email)
-            revname = '<span title="' + rrow.reviewer_email + '">' + revname + '</span>';
-    }
-    if (rrow.rtype) {
-        var xc = (rrow.submitted || rrow.approved ? "" : " rtinc") +
-            (rrow.subreview ? " rtsubrev" : "");
-        revname += (revname ? " " : "") + review_types.unparse_icon_html(rrow.rtype, xc);
-        if (rrow.round)
-            revname += '<span class="revround" title="Review round">' + escape_html(rrow.round) + '</span>';
-    }
-    if (rrow.modified_at) {
-        revtime = '<time class="revtime" datetime="' + (new Date(rrow.modified_at * 1000)).toISOString() + '">' + rrow.modified_at_text + '</time>';
-    }
-    if (revname || revtime) {
-        hc.push('<div class="revthead">');
-        if (revname)
-            hc.push('<address class="revname" itemprop="author">' + revname + '</address>');
-        if (revtime)
-            hc.push(revtime);
-        hc.push('</div>');
-    }
-    hc.push_pop('<hr class="c">');
+    // header
+    eheader = document.createElement("header");
+    eheader.className = "revcard-head";
+    eheader.appendChild(make_review_h2(rrow, rlink, rdesc));
+    append_review_id(rrow, eheader);
+    e = document.createElement("hr");
+    e.className = "c";
+    eheader.appendChild(e);
+    earticle.appendChild(eheader);
 
+    // messages
     if (rrow.message_list) {
-        hc.push('<div class="revcard-feedback fx20"><ul class="feedback-list"></ul></div>');
+        e = document.createElement("div");
+        e.className = "revcard-feedback fx20";
+        e.appendChild(render_feedback_list(rrow.message_list));
+        earticle.appendChild(e);
     }
 
     // body
-    hc.push('<div class="revcard-render fx20">', '</div>');
-    hc.push_pop(render_review_body(rrow));
+    e = document.createElement("div");
+    e.className = "revcard-render fx20";
+    earticle.appendChild(e);
+    render_review_body_in(rrow, e);
 
     // ratings
     has_user_rating = "user_rating" in rrow;
     if ((rrow.ratings && rrow.ratings.length) || has_user_rating) {
-        hc.push('<div class="revcard-rating fx20">', '</div>');
-        hc.push(unparse_ratings(rrow.ratings || [], rrow.user_rating || 0, has_user_rating));
+        e = document.createElement("div");
+        e.className = "revcard-rating fx20";
+        earticle.appendChild(e);
+        e.innerHTML = unparse_ratings(rrow.ratings || [], rrow.user_rating || 0, has_user_rating);
     }
 
     // complete render
-    var $j = $(hc.render()).appendTo($(".pcontainer"));
-    $j.find(".revtext").each(function () {
-        var fuid = this.closest(".rf").getAttribute("data-rf");
-        render_text.onto(this, rrow.format, rrow[fuid]);
-    });
-    if (rrow.message_list) {
-        var ul = $j.find(".revcard-feedback")[0].firstChild;
-        for (i = 0; i !== rrow.message_list.length; ++i) {
-            append_feedback_to(ul, rrow.message_list[i]);
-        }
-    }
     if (has_user_rating) {
-        $j.find(".revrating.editable").on("keydown", "button.js-revrating", revrating_key);
+        $(earticle).find(".revrating.editable").on("keydown", "button.js-revrating", revrating_key);
     }
-    score_header_tooltips($j);
+    score_header_tooltips($(earticle));
     navsidebar.set("r" + rid, rdesc);
 }
 
@@ -5213,7 +5299,14 @@ function ReviewField(fj) {
         this.exists_if = fj.exists_if;
 }
 
-function Score_ReviewField(fj) {
+ReviewField.prototype.render_in = function (fv, rrow, fe) {
+    var e = document.createElement("div");
+    e.className = "revv revtext";
+    fe.appendChild(e);
+    render_text.onto(e, rrow.format, fv);
+}
+
+function DiscreteValues_ReviewField(fj) {
     var i, n, step, sym, ch;
     ReviewField.call(this, fj);
     this.values = fj.values;
@@ -5240,43 +5333,82 @@ function Score_ReviewField(fj) {
     }
 }
 
-Object.setPrototypeOf(Score_ReviewField.prototype, ReviewField.prototype);
+Object.assign(DiscreteValues_ReviewField.prototype, ReviewField.prototype);
 
-Score_ReviewField.prototype.value_at = function (val) {
-    var j = val - 1, title = this.values[j];
+DiscreteValues_ReviewField.prototype.indexOfSymbol = function (s) {
+    if (s == null || s === 0 || s === "")
+        return -1;
+    var i, n = this.values.length;
+    for (i = 0; i !== n; ++i) {
+        if (this.symbols[i] == s)
+            return i;
+    }
+    return -1;
+};
+
+DiscreteValues_ReviewField.prototype.value_info = function (sidx) {
+    var j = sidx - 1, title = this.values[j];
     if (title == null)
         return null;
     return {
-        value: val, symbol: this.symbols[j], title: title,
+        value: sidx, symbol: this.symbols[j], title: title,
         sp1: title === "" ? "" : ".", sp2: title === "" ? "" : " ",
-        className: this.scheme_info.className(val)
+        className: this.scheme_info.className(sidx)
     };
 };
 
-Score_ReviewField.prototype.each_value = function (fn) {
+DiscreteValues_ReviewField.prototype.each_value = function (fn) {
     var i, n = this.values.length, step = this.flip ? -1 : 1;
     for (i = this.flip ? n : 1; i >= 1 && i <= n; i += step) {
-        fn(this.value_at(i));
+        fn(this.value_info(i));
     }
 };
 
-Score_ReviewField.prototype.parse_value = function (txt) {
-    if (!txt)
-        return null;
-    var i, n = this.values.length;
-    for (i = 0; i !== n; ++i) {
-        if (this.symbols[i] == txt)
-            return this.value_at(i + 1);
-    }
-    return null;
-};
-
-Score_ReviewField.prototype.rgb = function (val) {
+DiscreteValues_ReviewField.prototype.rgb = function (val) {
     return this.scheme_info.rgb(val);
 };
 
-Score_ReviewField.prototype.className = function (val) {
+DiscreteValues_ReviewField.prototype.className = function (val) {
     return this.scheme_info.className(val);
+};
+
+
+function make_score_no_value(txt) {
+    var pe = document.createElement("p");
+    pe.className = "revv revnoscore";
+    pe.append(txt);
+    return pe;
+}
+
+function make_score_value(val) {
+    var pe = document.createElement("p"), e, es;
+    pe.className = "revv revscore";
+    e = document.createElement("span");
+    e.className = "revscorenum";
+    es = document.createElement("strong");
+    es.className = "rev_num sv " + val.className;
+    es.append(val.symbol, val.sp1);
+    e.append(es, val.sp2);
+    pe.appendChild(e);
+    if (val.title) {
+        e = document.createElement("span");
+        e.className = "revscoredesc";
+        e.append(val.title);
+        pe.appendChild(e);
+    }
+    return pe;
+}
+
+
+function Score_ReviewField(fj) {
+    DiscreteValues_ReviewField.call(this, fj);
+}
+
+Object.assign(Score_ReviewField.prototype, DiscreteValues_ReviewField.prototype);
+
+Score_ReviewField.prototype.parse_value = function (txt) {
+    var si = this.indexOfSymbol(txt);
+    return si >= 0 ? this.value_info(si + 1) : null;
 };
 
 Score_ReviewField.prototype.unparse_symbol = function (val, split) {
@@ -5293,16 +5425,25 @@ Score_ReviewField.prototype.unparse_symbol = function (val, split) {
         return this.symbols[rval - 0.5].concat("~", this.symbols[rval + 0.5]);
 };
 
+Score_ReviewField.prototype.render_in = function (fv, rrow, fe) {
+    var val;
+    if (fv !== false && (val = this.parse_value(fv))) {
+        fe.appendChild(make_score_value(val));
+    } else {
+        fe.appendChild(make_score_no_value(fv === false ? "N/A" : "Unknown"));
+    }
+}
+
+
 function Checkbox_ReviewField(fj) {
-    var i, n, step, sym, ch;
     ReviewField.call(this, fj);
     this.scheme = fj.scheme || "sv";
     this.scheme_info = make_color_scheme(2, this.scheme || "sv", false);
 }
 
-Object.setPrototypeOf(Checkbox_ReviewField.prototype, ReviewField.prototype);
+Object.assign(Checkbox_ReviewField.prototype, ReviewField.prototype);
 
-Checkbox_ReviewField.prototype.value_at = function (b) {
+Checkbox_ReviewField.prototype.value_info = function (b) {
     return {
         value: !!b, symbol: b ? "✓" : "✗", title: b ? "Yes" : "No",
         sp1: "", sp2: " ", className: this.scheme_info.className(b ? 2 : 1)
@@ -5311,10 +5452,10 @@ Checkbox_ReviewField.prototype.value_at = function (b) {
 
 Checkbox_ReviewField.prototype.parse_value = function (txt) {
     if (typeof txt === "boolean" || !txt)
-        return this.value_at(txt);
+        return this.value_info(txt);
     var m = txt.match(/^\s*(|✓|1|yes|on|true|y|t)(|✗|0|no|none|off|false|n|f|-|–|—)\s*$/i);
     if (m && (m[1] === "" || m[2] === ""))
-        return this.value_at(m[1] !== "");
+        return this.value_info(m[1] !== "");
     return null;
 };
 
@@ -5326,7 +5467,7 @@ Checkbox_ReviewField.prototype.className = function (val) {
     return this.scheme_info.className(val ? 2 : 1);
 };
 
-Checkbox_ReviewField.prototype.unparse_symbol = function (val, split) {
+Checkbox_ReviewField.prototype.unparse_symbol = function (val) {
     if (val === true || val === false)
         return val ? "✓" : "✗";
     else if (val < 0.125)
@@ -5340,6 +5481,16 @@ Checkbox_ReviewField.prototype.unparse_symbol = function (val, split) {
     else
         return "✓";
 };
+
+Checkbox_ReviewField.prototype.render_in = function (fv, rrow, fe) {
+    var val;
+    if ((val = this.parse_value(fv))) {
+        fe.appendChild(make_score_value(val));
+    } else {
+        fe.appendChild(make_score_no_value("Unknown"));
+    }
+}
+
 
 function make_review_field(fj) {
     if (fj.type === "radio" || fj.type === "dropdown")
@@ -6444,7 +6595,7 @@ demand_load.tags = demand_load.make(function (resolve) {
     demand_load.alltag_info().then(function (v) { resolve(v.tags); });
 });
 
-demand_load.mail_templates = demand_load.make(function (resolve, reject) {
+demand_load.mail_templates = demand_load.make(function (resolve) {
     $.get(hoturl("api/mailtext", {template: "all"}), null, function (v) {
         var tl = v && v.ok && v.templates;
         resolve(tl || []);
@@ -7896,7 +8047,7 @@ function add_draghandle() {
     removeClass(this, "need-draghandle");
     var x = document.createElement("span");
     x.className = "draghandle js-drag-tag";
-    x.setAttribute("title", "Drag to change order");
+    x.title = "Drag to change order";
     if (this.tagName === "TD") {
         x.style.float = "right";
         x.style.position = "static";
@@ -11093,13 +11244,13 @@ function setup_canvas(canvas, w, h) {
 
 function analyze_sc(sc) {
     var anal = {
-        v: [], max: 0, h: 0, lo: 1, hi: 0, flip: false, sum: 0, sv: "sv"
+        v: [], max: 0, h: null, lo: 1, hi: 0, flip: false, sum: 0, sv: "sv"
     }, m, i, vs, x;
 
     m = /(?:^|[&;])v=(.*?)(?:[&;]|$)/.exec(sc);
     vs = m[1].split(/,/);
     anal.hi = vs.length;
-    for (i = 0; i < vs.length; ++i) {
+    for (i = 0; i !== vs.length; ++i) {
         if (/^\d+$/.test(vs[i]))
             x = parseInt(vs[i], 10);
         else
@@ -11109,8 +11260,12 @@ function analyze_sc(sc) {
         anal.sum += x;
     }
 
-    if ((m = /(?:^|[&;])h=(\d+)(?:[&;]|$)/.exec(sc)))
-        anal.h = parseInt(m[1], 10);
+    if ((m = /(?:^|[&;])h=(\d+(?:,\d+)*)(?:[&;]|$)/.exec(sc))) {
+        x = m[1].split(",");
+        anal.h = [];
+        for (i = 0; i !== x.length; ++i)
+            anal.h.push(parseInt(x[i], 10))
+    }
     if ((m = /(?:^|[&;])lo=([^&;\s]+)/.exec(sc)))
         anal.lo = m[1];
     if ((m = /(?:^|[&;])hi=([^&;\s]+)/.exec(sc)))
@@ -11155,11 +11310,11 @@ function scorechart1_s1(sc) {
         if (!anal.v[vindex])
             continue;
         var color = anal.fx.rgb_array(vindex + 1);
-        var y = vindex + 1 === anal.h ? 2 : 1;
+        var y = anal.h && anal.h.indexOf(vindex + 1) >= 0 ? 2 : 1;
         if (y === 2)
-            t = t.concat('<path style="fill:', color_unparse(rgb_interp(blackcolor, color, 0.5)), '" d="', rectd(x, 1), '" />');
+            t = t.concat('<path fill="', color_unparse(rgb_interp(blackcolor, color, 0.5)), '" d="', rectd(x, 1), '" />');
         if (y <= anal.v[vindex]) {
-            t += t.concat('<path style="fill:', color_unparse(color), '" d="');
+            t += t.concat('<path fill="', color_unparse(color), '" d="');
             for (; y <= anal.v[vindex]; ++y)
                 t += rectd(x, y);
             t += '" />';

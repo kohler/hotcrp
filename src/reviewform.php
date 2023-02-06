@@ -70,7 +70,7 @@ class ReviewForm {
         // assign field order
         $do = 0;
         foreach ($this->fmap as $f) {
-            if ($f->order) {
+            if ($f->order > 0) {
                 $f->order = ++$do;
                 $this->forder[$f->short_id] = $f;
                 if ($f->main_storage !== null) {
@@ -1124,32 +1124,29 @@ class ReviewValues extends MessageSet {
             } else if ($k === "blind" || $k === "version" || $k === "ready") {
                 $this->req[$k] = is_bool($v) ? (int) $v : cvtint($v);
             } else if (str_starts_with($k, "has_")) {
-                $hasreqs[] = substr($k, 4);
-            } else if (array_key_exists($k, $this->rf->fmap)) {
-                $this->req[$k] = (string) $v;
+                if ($k !== "has_blind" && $k !== "has_override" && $k !== "has_ready") {
+                    $hasreqs[] = substr($k, 4);
+                }
             } else if (($f = $rf->field($k) ?? $this->conf->find_review_field($k))
                        && !isset($this->req[$f->short_id])) {
-                $this->req[$f->short_id] = (string) $v;
+                $this->req[$f->short_id] = $f->extract_qreq($qreq, $k);
             }
         }
         foreach ($hasreqs as $k) {
-            if (array_key_exists($k, $this->rf->fmap)) {
-                $this->req[$k] = $this->req[$k] ?? "";
-            } else if (($f = $rf->field($k) ?? $this->conf->find_review_field($k))) {
+            if (($f = $rf->field($k) ?? $this->conf->find_review_field($k))) {
                 $this->req[$f->short_id] = $this->req[$f->short_id] ?? "";
             }
         }
-        if (!empty($this->req)) {
-            if (!$qreq->has_blind && !isset($this->req["blind"])) {
-                $this->req["blind"] = 1;
-            }
-            if ($override) {
-                $this->req["override"] = 1;
-            }
-            return true;
-        } else {
+        if (empty($this->req)) {
             return false;
         }
+        if (!$qreq->has_blind) {
+            $this->req["blind"] = $this->req["blind"] ?? 1;
+        }
+        if ($override) {
+            $this->req["override"] = 1;
+        }
+        return true;
     }
 
     function set_ready($ready) {

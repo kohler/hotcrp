@@ -179,7 +179,8 @@ abstract class ReviewField implements JsonSerializable {
      * @return ReviewField */
     static function make_json(Conf $conf, $rfi, $j) {
         if ($rfi->is_sfield) {
-            if (($j->type ?? "radio") === "checkbox") {
+            $t = $j->type ?? "radio";
+            if ($t === "checkbox") {
                 return new Checkbox_ReviewField($conf, $rfi, $j);
             } else {
                 return new Score_ReviewField($conf, $rfi, $j);
@@ -417,6 +418,13 @@ abstract class ReviewField implements JsonSerializable {
         return $flags & self::VALUE_SC ? $this->unparse_span_html($fval, $real_format) : $this->unparse_value($fval);
     }
 
+    /** @param Qrequest $qreq
+     * @param string $key
+     * @return ?string */
+    function extract_qreq($qreq, $key) {
+        return $qreq[$key];
+    }
+
     /** @param string $s
      * @return null|int|string|false */
     abstract function parse($s);
@@ -426,7 +434,7 @@ abstract class ReviewField implements JsonSerializable {
     abstract function parse_json($j);
 
     /** @param ?string $id
-     * @param string $label_for
+     * @param ?string $label_for
      * @param ?ReviewValues $rvalues
      * @param ?array{name_html?:string,label_class?:string} $args */
     protected function print_web_edit_open($id, $label_for, $rvalues, $args = null) {
@@ -440,7 +448,10 @@ abstract class ReviewField implements JsonSerializable {
         if ($this->required) {
             echo ' field-required';
         }
-        echo '" for="', $label_for, '">', $args["name_html"] ?? $this->name_html, '</label>';
+        if ($label_for) {
+            echo '" for="', $label_for;
+        }
+        echo '">', $args["name_html"] ?? $this->name_html, '</label>';
         if ($this->view_score < VIEWSCORE_AUTHOR) {
             echo '<div class="field-visibility">';
             if ($this->view_score < VIEWSCORE_REVIEWERONLY) {
@@ -492,14 +503,6 @@ abstract class ReviewField implements JsonSerializable {
      * @param array{flowed:bool} $args */
     abstract function unparse_text_field(&$t, $fval, $args);
 
-    /** @param int|string $fval
-     * @return string */
-    function unparse_text_field_content($fval) {
-        $t = [];
-        $this->unparse_text_field($t, $fval, ["flowed" => false]);
-        return join("", $t);
-    }
-
     /** @param list<string> &$t */
     protected function unparse_offline_field_header(&$t, $args) {
         $t[] = prefix_word_wrap("==*== ", $this->name, "==*==    ");
@@ -546,6 +549,10 @@ abstract class ReviewField implements JsonSerializable {
 
 
 abstract class Discrete_ReviewField extends ReviewField {
+    /** @var string
+     * @readonly */
+    public $scheme = "sv";
+
     // color schemes; NB keys must be URL-safe
     /** @var array<string,list>
      * @readonly */
@@ -565,10 +572,23 @@ abstract class Discrete_ReviewField extends ReviewField {
         "publ" => "pubu", "blpu" => "bupu"
     ];
 
+    const FLAG_NUMERIC = 1;
+    const FLAG_LETTER = 2;
+    const FLAG_SINGLE_CHAR = 4;
+    const FLAG_DEFAULT_SYMBOLS = 8;
+
 
     function __construct(Conf $conf, ReviewFieldInfo $finfo, $j) {
         assert($finfo->is_sfield);
         parent::__construct($conf, $finfo, $j);
+
+        if (($sch = $j->scheme ?? null) !== null) {
+            if (isset(self::$scheme_info[$sch])) {
+                $this->scheme = $sch;
+            } else {
+                $this->scheme = self::$scheme_alias[$sch] ?? null;
+            }
+        }
     }
 
     function value_present($fval) {
@@ -607,6 +627,20 @@ abstract class Discrete_ReviewField extends ReviewField {
         }
     }
 
+    function export_json($style) {
+        $j = parent::export_json($style);
+        if ($this->scheme !== "sv") {
+            $j->scheme = $this->scheme;
+        }
+        return $j;
+    }
+
+    function export_setting() {
+        $rfs = parent::export_setting();
+        $rfs->scheme = $this->scheme;
+        return $rfs;
+    }
+
     /** @param int|float $fval
      * @param ?string $real_format
      * @return string */
@@ -636,9 +670,6 @@ class Score_ReviewField extends Discrete_ReviewField {
     /** @var bool
      * @readonly */
     public $flip = false;
-    /** @var string
-     * @readonly */
-    public $scheme = "sv";
 
     const FLAG_NUMERIC = 1;
     const FLAG_LETTER = 2;
@@ -674,13 +705,6 @@ class Score_ReviewField extends Discrete_ReviewField {
         }
         if (isset($j->ids) && count($j->ids) === $nvalues) {
             $this->ids = $j->ids;
-        }
-        if (($sch = $j->scheme ?? null) !== null) {
-            if (isset(Discrete_ReviewField::$scheme_info[$sch])) {
-                $this->scheme = $sch;
-            } else {
-                $this->scheme = Discrete_ReviewField::$scheme_alias[$sch] ?? null;
-            }
         }
         if (!isset($j->required)) {
             if (isset($j->allow_empty) /* XXX backward compat */) {
@@ -791,9 +815,6 @@ class Score_ReviewField extends Discrete_ReviewField {
         if ($this->flip) {
             $j->flip = true;
         }
-        if ($this->scheme !== "sv") {
-            $j->scheme = $this->scheme;
-        }
         $j->required = $this->required; // want `required: false`
         return $j;
     }
@@ -809,7 +830,6 @@ class Score_ReviewField extends Discrete_ReviewField {
             $rfs->start = 1;
         }
         $rfs->flip = $this->flip;
-        $rfs->scheme = $this->scheme;
 
         $rfs->xvalues = [];
         foreach ($this->ordered_symbols() as $i => $symbol) {
@@ -828,7 +848,8 @@ class Score_ReviewField extends Discrete_ReviewField {
     function typical_score() {
         $n = count($this->values);
         $d1 = $n > 3 ? 2 : ($n > 2 ? 1 : 0);
-        return $this->symbols[$n === 1 ? 0 : ($this->flip ? $n - $d1 : $d1)] ?? "";
+        $sym = $this->symbols[$this->flip ? $n - $d1 - 1 : $d1] ?? "";
+        return (string) $sym;
     }
 
     /** @return ?array{string,string} */
@@ -840,8 +861,8 @@ class Score_ReviewField extends Discrete_ReviewField {
         $d0 = $n > 2 ? 1 : 0;
         $d1 = $n > 3 ? 2 : $d0;
         return [
-            $this->unparse_value($this->flip ? $n - $d0 : 1 + $d0),
-            $this->unparse_value($this->flip ? $n - 1 - $d1 : 2 + $d1)
+            (string) $this->symbols[$this->flip ? $n - $d0 - 1 : $d0],
+            (string) $this->symbols[$this->flip ? $n - $d1 - 2 : $d1 + 1]
         ];
     }
 
@@ -849,7 +870,10 @@ class Score_ReviewField extends Discrete_ReviewField {
     function full_score_range() {
         $f = $this->flip ? count($this->values) : 1;
         $l = $this->flip ? 1 : count($this->values);
-        return [$this->unparse_value($f), $this->unparse_value($l)];
+        return [
+            (string) $this->symbols[$f - 1],
+            (string) $this->symbols[$l - 1]
+        ];
     }
 
     /** @param int|float $fval
@@ -1114,13 +1138,18 @@ class Score_ReviewField extends Discrete_ReviewField {
     }
 
     function unparse_text_field(&$t, $fval, $args) {
+        if ($fval <= 0 && $this->required) {
+            return;
+        }
+        $this->unparse_text_field_header($t, $args);
         if ($fval > 0 && ($sym = $this->symbols[$fval - 1] ?? null) !== null) {
-            $this->unparse_text_field_header($t, $args);
-            if ($this->values[$fval - 1] !== "") {
-                $t[] = prefix_word_wrap("{$sym}. ", $this->values[$fval - 1], strlen($sym) + 2, null, $args["flowed"]);
+            if (($val = $this->values[$fval - 1]) !== "") {
+                $t[] = prefix_word_wrap("{$sym}. ", $val, strlen($sym) + 2, null, $args["flowed"]);
             } else {
                 $t[] = "{$sym}\n";
             }
+        } else {
+            $t[] = "N/A\n";
         }
     }
 
@@ -1258,34 +1287,8 @@ class Score_ReviewField extends Discrete_ReviewField {
 
 
 class Checkbox_ReviewField extends Discrete_ReviewField {
-    /** @var string
-     * @readonly */
-    public $scheme = "sv";
-
     function __construct(Conf $conf, ReviewFieldInfo $finfo, $j) {
         parent::__construct($conf, $finfo, $j);
-
-        if (($sch = $j->scheme ?? null) !== null) {
-            if (isset(Discrete_ReviewField::$scheme_info[$sch])) {
-                $this->scheme = $sch;
-            } else {
-                $this->scheme = Discrete_ReviewField::$scheme_alias[$sch] ?? null;
-            }
-        }
-    }
-
-    function export_json($style) {
-        $j = parent::export_json($style);
-        if ($this->scheme !== "sv") {
-            $j->scheme = $this->scheme;
-        }
-        return $j;
-    }
-
-    function export_setting() {
-        $rfs = parent::export_setting();
-        $rfs->scheme = $this->scheme;
-        return $rfs;
     }
 
     /** @param int|float $fval
@@ -1419,10 +1422,9 @@ class Checkbox_ReviewField extends Discrete_ReviewField {
     }
 
     function unparse_text_field(&$t, $fval, $args) {
-        $on = ($fval ?? 0) > 0;
-        if ($on || !$this->required) {
+        if ($fval > 0 || !$this->required) {
             $this->unparse_text_field_header($t, $args);
-            $t[] = $on ? "Yes\n" : "No\n";
+            $t[] = $fval > 0 ? "Yes\n" : "No\n";
         }
     }
 

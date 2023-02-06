@@ -334,21 +334,22 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             return null;
         }
         $where = [];
+        $swhere = [];
         if (($this->status & self::SUBMITTED) !== 0) {
-            $where[] = "reviewSubmitted is not null";
+            $swhere[] = "reviewSubmitted is not null";
         } else if (($this->status & self::COMPLETE) !== 0) {
-            $where[] = "reviewSubmitted is not null or timeApprovalRequested<0";
+            $swhere[] = "reviewSubmitted is not null or timeApprovalRequested<0";
         }
         if (($this->status & self::PENDINGAPPROVAL) !== 0) {
-            $where[] = "(reviewSubmitted is null and timeApprovalRequested>0)";
+            $swhere[] = "(reviewSubmitted is null and timeApprovalRequested>0)";
         }
         if (($this->status & self::NOTACCEPTED) !== 0) {
-            $where[] = "reviewModified<1";
+            $swhere[] = "reviewModified<1";
         } else if (($this->status & self::NOTSTARTED) !== 0) {
-            $where[] = "reviewModified<2";
+            $swhere[] = "reviewModified<2";
         }
-        if (!empty($where)) {
-            $where = ["(" . join(" or ", $where) . ")"];
+        if (!empty($swhere)) {
+            $where[] = "(" . join(" or ", $swhere) . ")";
         }
         if ($this->review_type === 0) {
             $where[] = "reviewType>0";

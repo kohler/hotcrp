@@ -321,6 +321,15 @@ class Settings_Tester {
         $this->conf->save_refresh_setting("outcome_map", 1, $x);
     }
 
+    /** @param ReviewField $rf
+     * @param int|string $fval
+     * @return string */
+    static function unparse_text_field_content($rf, $fval) {
+        $t = [];
+        $rf->unparse_text_field($t, $fval, ["flowed" => false]);
+        return join("", $t);
+    }
+
     function test_scores() {
         xassert(!$this->conf->find_review_field("B5"));
         xassert(!$this->conf->find_review_field("B9"));
@@ -340,12 +349,14 @@ class Settings_Tester {
             "rf/3/values_text" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J",
             "rf/4/name" => "B5",
             "rf/4/id" => "s07",
-            "rf/4/values_text" => "A. A\nB. B\nC. C\nD. D\nE. E"
+            "rf/4/values_text" => "A. A\nB. B\nC. C\nD. D\nE. E",
+            "rf/4/required" => 1
         ]);
         xassert($sv->execute());
 
         $rf = $this->conf->find_review_field("B5");
         assert($rf instanceof Score_ReviewField);
+        xassert($rf->required);
         xassert_array_eqq($rf->ordered_symbols(), ["A", "B", "C", "D", "E"]);
         xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E"]);
         xassert_eqq($rf->unparse_value(1), "E");
@@ -358,12 +369,12 @@ class Settings_Tester {
         xassert_eqq($rf->unparse_json(3), "C");
         xassert_eqq($rf->unparse_json(4), "B");
         xassert_eqq($rf->unparse_json(5), "A");
-        xassert_eqq($rf->unparse_text_field_content(5), "\nB5\n--\nA. A\n");
-        xassert_eqq($rf->unparse_text_field_content(4), "\nB5\n--\nB. B\n");
-        xassert_eqq($rf->unparse_text_field_content(3), "\nB5\n--\nC. C\n");
-        xassert_eqq($rf->unparse_text_field_content(2), "\nB5\n--\nD. D\n");
-        xassert_eqq($rf->unparse_text_field_content(1), "\nB5\n--\nE. E\n");
-        xassert_eqq($rf->unparse_text_field_content(0), "");
+        xassert_eqq(self::unparse_text_field_content($rf, 5), "\nB5\n--\nA. A\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 4), "\nB5\n--\nB. B\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 3), "\nB5\n--\nC. C\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 2), "\nB5\n--\nD. D\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 1), "\nB5\n--\nE. E\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 0), "");
         xassert_eqq($rf->value_class(1), "sv sv9");
         xassert_eqq($rf->value_class(2), "sv sv7");
         xassert_eqq($rf->value_class(3), "sv sv5");
@@ -391,15 +402,15 @@ class Settings_Tester {
         xassert_eqq($rf->unparse_json(7), 7);
         xassert_eqq($rf->unparse_json(8), 8);
         xassert_eqq($rf->unparse_json(9), 9);
-        xassert_eqq($rf->unparse_text_field_content(1), "\nB9\n--\n1. A\n");
-        xassert_eqq($rf->unparse_text_field_content(2), "\nB9\n--\n2. B\n");
-        xassert_eqq($rf->unparse_text_field_content(3), "\nB9\n--\n3. C\n");
-        xassert_eqq($rf->unparse_text_field_content(4), "\nB9\n--\n4. D\n");
-        xassert_eqq($rf->unparse_text_field_content(5), "\nB9\n--\n5. E\n");
-        xassert_eqq($rf->unparse_text_field_content(6), "\nB9\n--\n6. F\n");
-        xassert_eqq($rf->unparse_text_field_content(7), "\nB9\n--\n7. G\n");
-        xassert_eqq($rf->unparse_text_field_content(8), "\nB9\n--\n8. H\n");
-        xassert_eqq($rf->unparse_text_field_content(9), "\nB9\n--\n9. I\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 1), "\nB9\n--\n1. A\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 2), "\nB9\n--\n2. B\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 3), "\nB9\n--\n3. C\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 4), "\nB9\n--\n4. D\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 5), "\nB9\n--\n5. E\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 6), "\nB9\n--\n6. F\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 7), "\nB9\n--\n7. G\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 8), "\nB9\n--\n8. H\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 9), "\nB9\n--\n9. I\n");
         xassert_eqq($rf->value_class(1), "sv sv1");
         xassert_eqq($rf->value_class(2), "sv sv2");
         xassert_eqq($rf->value_class(3), "sv sv3");
