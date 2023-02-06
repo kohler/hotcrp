@@ -84,7 +84,8 @@ class ScoreInfo {
         return $n ? $sum / $n : null;
     }
 
-    /** @param int|float $x */
+    /** @param int|float $x
+     * @return $this */
     function add($x) {
         if ($x === null) {
             return;
@@ -105,11 +106,14 @@ class ScoreInfo {
         if ($this->_sorted && $this->_max !== $x) {
             $this->_sorted = false;
         }
+        return $this;
     }
 
-    /** @param null|int|float $s */
+    /** @param null|int|float $s
+     * @return $this */
     function set_my_score($s) {
         $this->_my_score = $s;
+        return $this;
     }
 
     /** @param int|float $x
@@ -119,6 +123,9 @@ class ScoreInfo {
             return $this;
         }
         $sci = new ScoreInfo;
+        if (($this->_my_score ?? $x) !== $x) {
+            $sci->set_my_score($this->_my_score);
+        }
         foreach ($this->_scores as $xx) {
             if ($xx !== $x)
                 $sci->add($xx);
@@ -237,6 +244,11 @@ class ScoreInfo {
         } else if ($stat === self::MAX) {
             return $this->max();
         }
+    }
+
+    /** @return list<int|float> */
+    function as_list() {
+        return $this->_scores;
     }
 
     /** @return list<int|float> */
