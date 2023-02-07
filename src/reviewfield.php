@@ -998,7 +998,7 @@ class Score_ReviewField extends Discrete_ReviewField {
      * @return string */
     static function clean_string($s) {
         $s = trim((string) $s);
-        if ($s === "" || $s[0] === "(") {
+        if ($s === "" || $s[0] === "(" || $s === "undefined") {
             return "";
         }
         $dot = 0;
@@ -1011,10 +1011,8 @@ class Score_ReviewField extends Discrete_ReviewField {
         if ($dot !== false) {
             $s = trim(substr($s, 0, $dot));
         }
-        if ($s === "0") {
-            return "";
-        }
-        if ($s === "-"
+        if ($s === "0"
+            || $s === "-"
             || $s === "–"
             || $s === "—"
             || (strlen($s) > 2
@@ -1062,7 +1060,7 @@ class Score_ReviewField extends Discrete_ReviewField {
         } else if (($fval ?? 0) > 0 && isset($this->symbols[$fval - 1])) {
             return (string) $this->symbols[$fval - 1];
         } else {
-            return "0";
+            return "undefined";
         }
     }
 

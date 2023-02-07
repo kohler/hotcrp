@@ -501,8 +501,8 @@ class Reviews_Tester {
         // check handling of sfields and tfields: clear extension fields
         save_review(1, $this->u_mgbaker, [
             "ovemer" => 2, "revexp" => 1, "papsum" => "",
-            "comaut" => "", "compc" => "", "sco12" => 0,
-            "sco13" => 0, "sco14" => 0, "sco15" => 0, "sco16" => 0,
+            "comaut" => "", "compc" => "", "sco12" => "",
+            "sco13" => "", "sco14" => "", "sco15" => "", "sco16" => "",
             "tex4" => "", "tex5" => "", "tex6" => "", "tex7" => "",
             "tex8" => "", "tex9" => "", "tex10" => "", "tex11" => "",
             "ready" => true
@@ -516,9 +516,9 @@ class Reviews_Tester {
         save_review(1, $this->u_mgbaker, [
             "ovemer" => 2, "revexp" => 1, "papsum" => "This is the summary",
             "comaut" => "Comments for äuthor", "compc" => "Comments for PC",
-            "sco3" => 1, "sco4" => 2, "sco5" => 3, "sco6" => 0, "sco7" => 1,
-            "sco8" => 2, "sco9" => 3, "sco10" => 0, "sco11" => 2,
-            "sco12" => 2, "sco13" => 3, "sco14" => 0, "sco15" => 0, "sco16" => 1,
+            "sco3" => 1, "sco4" => 2, "sco5" => 3, "sco6" => "", "sco7" => 1,
+            "sco8" => 2, "sco9" => 3, "sco10" => "", "sco11" => 2,
+            "sco12" => 2, "sco13" => 3, "sco14" => "", "sco15" => "", "sco16" => 1,
             "tex4" => "bobcat", "tex5" => "", "tex6" => "fishercat", "tex7" => "tiger",
             "tex8" => "leopard", "tex9" => "tremolo", "tex10" => "", "tex11" => "butt",
             "ready" => true
@@ -960,10 +960,11 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
-            "rf/1/id" => "s01", "rf/1/values_text" => "1. Reject\n2. Weak reject\n3. Weak accept\n4. Accept\n5. Strong accept\n"
+            "rf/1/id" => "s01", "rf/1/values_text" => "1. Reject\n2. Weak reject\n3. Weak accept\n4. Accept\n5. Strong accept\n", "rf/1/required" => 0
         ]);
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+        xassert_eqq($this->conf->checked_review_field("s01")->required, false);
 
         save_review(17, $user_external, [
             "ovemer" => 1
