@@ -41,7 +41,10 @@ class ReviewForm_SettingParser extends SettingParser {
             $rfs = ReviewField::make_json($sv->conf, $finfo, (object) [])->export_setting();
             $rfs->id = $isnew ? "new" : $rfs->id;
             $rfs->required = false;
-            $sv->set_oldv($si->name, $rfs);
+            $sv->set_oldv($si, $rfs);
+        } else if ($si->name_matches("rf/", "*", "/title")) {
+            $n = $sv->oldv("rf/{$si->name1}/name");
+            $sv->set_oldv($si, $n === "" ? "[Review field]" : $n);
         } else if ($si->name_matches("rf/", "*", "/values_text")) {
             $rfs = $sv->oldv("rf/{$si->name1}");
             $vs = [];

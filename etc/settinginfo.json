@@ -188,7 +188,7 @@
         "name_pattern": "sf/$",
         "type": "object", "subtype": "Sf_Setting",
         "parser_class": "Options_SettingParser",
-        "title": "Submission field", "title_pattern": "‘${sv sf/$/name}’"
+        "title": "Submission field", "title_pattern": "‘${sv sf/$/title}’"
     },
     {
         "name_pattern": "sf/$/id", "type": "int",
@@ -198,6 +198,10 @@
         "name_pattern": "sf/$/name", "title": "Submission field name",
         "type": "simplestring",
         "placeholder": "Field name", "size": 50, "parser_class": "Options_SettingParser"
+    },
+    {
+        "name_pattern": "sf/$/title",
+        "internal": true, "parser_class": "Options_SettingParser"
     },
     {
         "name_pattern": "sf/$/order",
@@ -595,7 +599,7 @@
     {
         "name_pattern": "rf/$",
         "type": "object", "subtype": "Rf_Setting",
-        "title_pattern": "‘${sv rf/$/name}’",
+        "title_pattern": "‘${sv rf/$/title}’",
         "parser_class": "ReviewForm_SettingParser"
     },
     {
@@ -606,6 +610,10 @@
         "name_pattern": "rf/$/name", "title": "Review field name",
         "type": "simplestring", "required": true,
         "placeholder": "Field name", "size": 50, "parser_class": "ReviewForm_SettingParser"
+    },
+    {
+        "name_pattern": "rf/$/title",
+        "internal": true, "parser_class": "ReviewForm_SettingParser"
     },
     {
         "name_pattern": "rf/$/order",
