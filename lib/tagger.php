@@ -1374,9 +1374,13 @@ class Tagger {
         if ($m[3] !== "" && ($flags & self::NOVALUE) !== 0) {
             return $this->set_error_code($tag, self::NOVALUE);
         }
-        if (($flags & self::ALLOWRESERVED) === 0
-            && (strcasecmp("none", $m[2]) === 0 || strcasecmp("any", $m[2]) === 0)) {
-            return $this->set_error_code($tag, self::ALLOWRESERVED);
+        if (($flags & self::ALLOWRESERVED) === 0) {
+            $l2 = strlen($m[2]);
+            if (($l2 === 4 && strcasecmp($m[2], "none")) === 0
+                || ($l2 === 3 && strcasecmp($m[2], "any")) === 0
+                || ($l2 === 9 && strcasecmp($m[2], "undefined") === 0)) {
+                return $this->set_error_code($tag, self::ALLOWRESERVED);
+            }
         }
         $t = $m[1] . $m[2];
         if (strlen($t) > TAG_MAXLEN) {

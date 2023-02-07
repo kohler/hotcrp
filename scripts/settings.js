@@ -847,7 +847,7 @@ handle_ui.on("input.js-settings-response-name", function () {
         helt.replaceChildren("Example display: ‘Response’; example search: ‘has:response’");
     } else if (!/^[A-Za-z][-_A-Za-z0-9]*$/.test(s)) {
         helt.replaceChildren(render_feedback_list([{status: 2, message: "<0>Round names must start with a letter and can contain only letters, numbers, and dashes"}]));
-    } else if (/^(?:none|any|all|default|unnamed|.*response|response.*|draft.*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc(?:review)|ext(?:ernal)|meta(?:review))$/i.test(s)) {
+    } else if (/^(?:none|any|all|default|undefined|unnamed|.*response|response.*|draft.*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc(?:review)|ext(?:ernal)|meta(?:review))$/i.test(s)) {
         helt.replaceChildren(render_feedback_list([{status: 2, message: "<0>Round name ‘".concat(s, "’ is reserved")}]));
     } else {
         helt.replaceChildren("Example display: ‘", s, " Response’; example search: ‘has:", s, "response’");
