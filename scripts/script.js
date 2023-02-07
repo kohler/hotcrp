@@ -3489,7 +3489,7 @@ function fold_storage() {
     } else {
         removeClass(this, "need-fold-storage");
         var sn = this.getAttribute("data-fold-storage"), smap, k;
-        if (sn.charAt(0) === "-") { // XXX backward compat
+        if (sn.charAt(0) === "-") { // default is open, use storage to close
             sn = sn.substring(1);
         }
         if (sn.charAt(0) === "{" || sn.charAt(0) === "[") {
