@@ -5294,8 +5294,6 @@ function ReviewField(fj) {
     this.name = fj.name;
     this.name_html = escape_html(this.name);
     this.type = fj.type;
-    if (fj.id != null)
-        this.id = fj.id;
     if (fj.description != null)
         this.description = fj.description;
     if (fj.order != null)
@@ -5306,6 +5304,13 @@ function ReviewField(fj) {
         this.required = fj.required;
     if (fj.exists_if != null)
         this.exists_if = fj.exists_if;
+    // settings only
+    if (fj.id != null)
+        this.id = fj.id;
+    if (fj.selector != null)
+        this.selector = fj.selector;
+    if (fj.instantiate != null)
+        this.instantiate = fj.instantiate;
 }
 
 ReviewField.prototype.render_in = function (fv, rrow, fe) {

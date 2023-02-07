@@ -2,7 +2,7 @@
     {
         "selector": "Score",
         "instantiate": {"name": "", "values": []},
-        "name": "Field name",
+        "name": "Score field",
         "type": "radio",
         "values": [
             "Option 1",
@@ -14,14 +14,14 @@
     {
         "selector": "Text field",
         "instantiate": {"name": ""},
-        "name": "Field name",
+        "name": "Text field",
         "type": "text",
         "visibility": "au"
     },
     {
         "selector": "Dropdown score",
         "instantiate": {"name": "", "values": []},
-        "name": "Field name",
+        "name": "Dropdown score field",
         "type": "dropdown",
         "values": [
             "Option 1",
@@ -33,9 +33,18 @@
     {
         "selector": "Checkbox",
         "instantiate": {"name": ""},
-        "name": "Field name",
+        "name": "Checkbox field",
         "type": "checkbox",
         "visibility": "au"
+    },
+    {
+        "selector": "Attestation",
+        "instantiate": {"name": "", "description": ""},
+        "name": "Attestation",
+        "description": "The reviewer must check this box before submitting the review.",
+        "type": "checkbox",
+        "visibility": "au",
+        "required": true
     },
     {
         "selector": "Overall merit (1–5, Reject through Strong Accept)",
