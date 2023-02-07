@@ -47,6 +47,20 @@
         "required": true
     },
     {
+        "selector": "Checkboxes",
+        "instantiate": {"name": "", "description": "", "values": []},
+        "name": "Checkboxes",
+        "type": "checkboxes",
+        "description": "Select zero or more options.",
+        "values": [
+            "Option 1",
+            "Option 2",
+            "Option 3"
+        ],
+        "start": "A",
+        "visibility": "au"
+    },
+    {
         "selector": "Overall merit (1–5, Reject through Strong Accept)",
         "name": "Overall merit",
         "type": "radio",

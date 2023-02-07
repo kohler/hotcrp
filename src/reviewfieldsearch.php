@@ -1,5 +1,5 @@
 <?php
-// search/reviewfieldsearch.php -- HotCRP classes for searching review fields
+// reviewfieldsearch.php -- HotCRP classes for searching review fields
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 /** @template T */

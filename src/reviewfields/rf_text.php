@@ -1,5 +1,5 @@
 <?php
-// search/reviewfields/rf_text.php -- HotCRP search helper for text review fields
+// reviewfields/rf_text.php -- HotCRP search helper for text review fields
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 /** @inherits ReviewFieldSearch<Text_ReviewField> */

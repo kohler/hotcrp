@@ -20,5 +20,10 @@
         "name": "checkbox", "title": "Checkbox", "order": 600,
         "properties": {"scheme": true, "required": true},
         "id_prefix": "s"
+    },
+    {
+        "name": "checkboxes", "title": "Checkboxes", "order": 700,
+        "properties": {"values_text": true, "scheme": true, "required": true},
+        "id_prefix": "s"
     }
 ]

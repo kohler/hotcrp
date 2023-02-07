@@ -182,6 +182,8 @@ abstract class ReviewField implements JsonSerializable {
             $t = $j->type ?? "radio";
             if ($t === "checkbox") {
                 return new Checkbox_ReviewField($conf, $rfi, $j);
+            } else if ($t === "checkboxes") {
+                return new Checkboxes_ReviewField($conf, $rfi, $j);
             } else {
                 return new Score_ReviewField($conf, $rfi, $j);
             }
@@ -659,6 +661,10 @@ abstract class Discrete_ReviewField extends ReviewField {
      * @param 1|2|3 $style
      * @return string */
     abstract function unparse_graph($sci, $style);
+
+    /** @param array<int,int> $fmap */
+    function renumber_values($fmap) {
+    }
 }
 
 
@@ -1304,6 +1310,12 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
 
     function parse_search(SearchWord $sword, ReviewSearchMatcher $rsm, PaperSearch $srch) {
         return Discrete_ReviewFieldSearch::parse_score($sword, $this, $rsm, $srch);
+    }
+
+    function renumber_values($fmap) {
+        ReviewForm_SettingParser::renumber_values($this, function ($v) use ($fmap) {
+            return $fmap[$v] ?? $v;
+        });
     }
 }
 

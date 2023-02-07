@@ -4056,16 +4056,6 @@ return {
         } else {
             return null;
         }
-    },
-    unparse_icon_html: function (s, xc) {
-        var t = parse(s);
-        if (t > 1) {
-            return '<span class="rto rt'.concat(
-                canon[t], xc || "", '"><span class="rti" title="', tooltips[t],
-                '">', icon_texts[t], '</span></span>');
-        } else {
-            return "";
-        }
     }
 };
 })();
@@ -4909,14 +4899,17 @@ handle_ui.on("js-review-tokens", function () {
 var formj, form_order;
 
 tooltip.add_builder("rf-score", function (info) {
-    var $self = $(this), fieldj = formj[$self.data("rf")], score;
-    if (fieldj
-        && fieldj.parse_value
-        && (score = fieldj.parse_value($self.find("span.sv").text())))
-        info = $.extend({
-            content: escape_html(score.title),
-            anchor: "w", near: $self.find("span")[0]
-        }, info);
+    var fieldj = formj[this.getAttribute("data-rf")];
+    if (fieldj && fieldj.parse_value) {
+        var svs = this.querySelectorAll("span.sv"), i, ts = [];
+        for (i = 0; i !== svs.length; ++i) {
+            var score = fieldj.parse_value(svs[i].textContent.replace(/\s*[.,]$/, ""));
+            score && ts.push(escape_html(score.title));
+        }
+        ts.length && (info = $.extend({
+            content: ts.join(", "), anchor: "w", near: svs[svs.length - 1]
+        }, info));
+    }
     return info;
 });
 
@@ -5378,6 +5371,11 @@ DiscreteValues_ReviewField.prototype.each_value = function (fn) {
     }
 };
 
+DiscreteValues_ReviewField.prototype.parse_value = function (txt) {
+    var si = this.indexOfSymbol(txt);
+    return si >= 0 ? this.value_info(si + 1) : null;
+};
+
 DiscreteValues_ReviewField.prototype.rgb = function (val) {
     return this.scheme_info.rgb(val);
 };
@@ -5419,11 +5417,6 @@ function Score_ReviewField(fj) {
 }
 
 Object.setPrototypeOf(Score_ReviewField.prototype, DiscreteValues_ReviewField.prototype);
-
-Score_ReviewField.prototype.parse_value = function (txt) {
-    var si = this.indexOfSymbol(txt);
-    return si >= 0 ? this.value_info(si + 1) : null;
-};
 
 Score_ReviewField.prototype.unparse_symbol = function (val, split) {
     if (val === (val | 0) && this.symbols[val - 1] != null)
@@ -5506,11 +5499,47 @@ Checkbox_ReviewField.prototype.render_in = function (fv, rrow, fe) {
 }
 
 
+function Checkboxes_ReviewField(fj) {
+    DiscreteValues_ReviewField.call(this, fj);
+}
+
+Object.setPrototypeOf(Checkboxes_ReviewField.prototype, DiscreteValues_ReviewField.prototype);
+
+Checkboxes_ReviewField.prototype.unparse_symbol = function (val) {
+    if (!val || val !== (val | 0))
+        return "";
+    var s, b, t = [];
+    for (s = b = 1; b <= val; b <<= 1, ++s) {
+        if (val & b)
+            t.push(this.symbols[s - 1]);
+    }
+    return t.join(",");
+};
+
+Checkboxes_ReviewField.prototype.render_in = function (fv, rrow, fe) {
+    if (fv && fv.length === 0) {
+        fe.appendChild(make_score_no_value("None"));
+    } else if (fv) {
+        var i, si, unk;
+        for (i = 0; i !== fv.length; ++i) {
+            if ((si = this.indexOfSymbol(fv[i])) >= 0) {
+                fe.appendChild(make_score_value(this.value_info(si + 1)));
+            } else if (!unk) {
+                fe.appendChild(make_score_no_value("Unknown"));
+                unk = true;
+            }
+        }
+    }
+};
+
+
 hotcrp.make_review_field = function (fj) {
     if (fj.type === "radio" || fj.type === "dropdown")
         return new Score_ReviewField(fj);
     else if (fj.type === "checkbox")
         return new Checkbox_ReviewField(fj);
+    else if (fj.type === "checkboxes")
+        return new Checkboxes_ReviewField(fj);
     else
         return new ReviewField(fj);
 };

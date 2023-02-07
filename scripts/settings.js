@@ -635,6 +635,11 @@ function rf_render_view(fld) {
         }
     } else if (fld.type === "text") {
         hc.push('<div class="revev"><textarea class="w-text" rows="' + Math.max(fld.display_space || 0, 3) + '" disabled>Text field</textarea></div>');
+    } else if (fld.type === "checkboxes") {
+        hc.push('<div class="revev">', '</div>');
+        fld.each_value(function (fv) {
+            hc.push('<label class="checki svline"><span class="checkc"><input type="checkbox" disabled></span><span class="rev_num sv '.concat(fv.className, '">', fv.symbol, fv.sp1, '</span>', fv.sp2, escape_html(fv.title), '</label>'));
+        });
     }
 
     return hc.render();
@@ -717,7 +722,7 @@ function rfs(data) {
             break;
         }
         t = data.req[pfx + "/type"];
-        if (t === "radio" || t === "dropdown")
+        if (t === "radio" || t === "dropdown" || t === "checkboxes")
             rf_add({id: i, type: t, name: "", values: []});
         else
             rf_add({id: i, type: t, name: ""});

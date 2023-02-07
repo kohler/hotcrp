@@ -1339,4 +1339,19 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq(Score_ReviewField::analyze_symbols(["C", "B", "A", "@"], true), $FCHR);
         xassert_eqq(Score_ReviewField::analyze_symbols(["C", "B", "A"], false), $FLET|$FCHR);
     }
+
+    function test_checkboxes_review_field() {
+        xassert_eqq(Checkboxes_ReviewField::unpack_value(0), []);
+        xassert_eqq(Checkboxes_ReviewField::unpack_value(1), [1]);
+        xassert_eqq(Checkboxes_ReviewField::unpack_value(2), [2]);
+        xassert_eqq(Checkboxes_ReviewField::unpack_value(3), [1, 2]);
+        xassert_eqq(Checkboxes_ReviewField::unpack_value(4), [3]);
+        xassert_eqq(Checkboxes_ReviewField::unpack_value(5), [1, 3]);
+        xassert_eqq(Checkboxes_ReviewField::unpack_value(6), [2, 3]);
+        xassert_eqq(Checkboxes_ReviewField::unpack_value(7), [1, 2, 3]);
+        xassert_eqq(Checkboxes_ReviewField::unpack_value(8), [4]);
+        xassert_eqq(Checkboxes_ReviewField::unpack_value(16), [5]);
+        xassert_eqq(Checkboxes_ReviewField::unpack_value(32), [6]);
+        xassert_eqq(Checkboxes_ReviewField::unpack_value(64), [7]);
+    }
 }

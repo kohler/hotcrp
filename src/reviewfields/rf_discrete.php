@@ -61,11 +61,11 @@ class Discrete_ReviewFieldSearch extends ReviewFieldSearch {
 
     /** @param string $word
      * @param bool $has_count
-     * @return array{int,int|list<int>} */
-    private static function parse_score_matcher($word, DiscreteValues_ReviewField $f, $has_count) {
+     * @return array{int,list<int>} */
+    static function parse_score_matcher($word, DiscreteValues_ReviewField $f, $has_count) {
         // common case: exact match of single score
         if (($sym = $f->find_symbol($word)) !== null) {
-            return [CountMatcher::RELEQ, $sym];
+            return [CountMatcher::RELEQ, [$sym]];
         }
         // match with relation
         if (preg_match('/\A([=!<>]=?+|≠|≤|≥)\s*(.*)\z/', $word, $m)) {
@@ -74,7 +74,7 @@ class Discrete_ReviewFieldSearch extends ReviewFieldSearch {
                 || ($sym === 0 && $op !== CountMatcher::RELEQ && $op !== CountMatcher::RELNE)) {
                 return null;
             }
-            return [$op, $sym];
+            return self::expand_score_matcher($f, $op, $sym);
         }
         // comma-separated, possibly ranges
         $rel = CountMatcher::RELEQ;
@@ -96,7 +96,8 @@ class Discrete_ReviewFieldSearch extends ReviewFieldSearch {
                     if (empty($r)
                         && $m[4] === ""
                         && ($m[2] === "-" || $m[2] === "–" || $m[2] === "—")
-                        && $f->conf->opt("allowObsoleteScoreSearch")) {
+                        && $f->conf->opt("allowObsoleteScoreSearch")
+                        && $f instanceof Score_ReviewField) {
                         $rel |= ReviewSearchMatcher::RELSPAN;
                     }
                 }
@@ -128,44 +129,43 @@ class Discrete_ReviewFieldSearch extends ReviewFieldSearch {
         return empty($r) ? null : [$rel, array_values(array_unique($r))];
     }
 
+    /** @param int $op
+     * @param int $fv
+     * @return ?array{int,list<int>} */
+    static function expand_score_matcher(DiscreteValues_ReviewField $f, $op, $fv) {
+        if ($f->flip_relation()) {
+            $op = CountMatcher::flip_relation($op);
+        }
+        if (($op === CountMatcher::RELLT && $fv <= 1)
+            || ($op === CountMatcher::RELGT && $fv >= $f->nvalues())) {
+            return null;
+        }
+        if ($op === CountMatcher::RELLT) {
+            $fva = range(1, $fv - 1);
+        } else if ($op === CountMatcher::RELLE) {
+            $fva = range(1, $fv);
+        } else if ($op === CountMatcher::RELGE) {
+            $fva = range($fv, $f->nvalues());
+        } else if ($op === CountMatcher::RELGT) {
+            $fva = range($fv + 1, $f->nvalues());
+        } else if ($op === CountMatcher::RELNE) {
+            $x = range($fv === 0 || !$f->required ? 0 : 1, $f->nvalues());
+            $fva = array_values(array_diff($x, [$fv]));
+        } else {
+            $fva = [$fv];
+        }
+        return [$op, $fva];
+    }
+
     /** @return ?ReviewFieldSearch */
     static function parse_score(SearchWord $sword, Score_ReviewField $f,
                                 ReviewSearchMatcher $rsm, PaperSearch $srch) {
         $word = SearchWord::unquote($sword->cword);
-        list($op, $fvs) = self::parse_score_matcher($word, $f, $rsm->has_count()) ?? [0, 0];
+        list($op, $fva) = self::parse_score_matcher($word, $f, $rsm->has_count()) ?? [0, []];
         if ($op === 0) {
             return null;
         }
-        if (is_array($fvs)) {
-            $fva = $fvs;
-            $xop = $op;
-        } else {
-            if ($f->flip_relation()) {
-                $op = CountMatcher::flip_relation($op);
-            }
-            if (($op === CountMatcher::RELLT && $fvs <= 1)
-                || ($op === CountMatcher::RELGT && $fvs >= $f->nvalues())) {
-                self::impossible_score_match($f, $sword, $srch);
-                return null;
-            }
-            if ($op === CountMatcher::RELLT) {
-                $fva = range(1, $fvs - 1);
-            } else if ($op === CountMatcher::RELLE) {
-                $fva = range(1, $fvs);
-            } else if ($op === CountMatcher::RELGE) {
-                $fva = range($fvs, $f->nvalues());
-            } else if ($op === CountMatcher::RELGT) {
-                $fva = range($fvs + 1, $f->nvalues());
-            } else if ($op === CountMatcher::RELNE) {
-                $x = range($fvs === 0 || !$f->required ? 0 : 1, $f->nvalues());
-                $fva = array_values(array_diff($x, [$fvs]));
-            } else {
-                $fva = [$fvs];
-            }
-            $xop = CountMatcher::RELEQ;
-        }
-        //error_log("{$word}: {$op} " . json_encode($fvs) . " $xop " . json_encode($fva));
-        return new Discrete_ReviewFieldSearch($f, $xop | $rsm->rfop, $fva);
+        return new Discrete_ReviewFieldSearch($f, $op | $rsm->rfop, $fva);
     }
 
     private static function impossible_score_match(Score_ReviewField $f, SearchWord $sword, PaperSearch $srch) {
