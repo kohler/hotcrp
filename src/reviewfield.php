@@ -573,7 +573,7 @@ abstract class Discrete_ReviewField extends ReviewField {
     ];
 
     const FLAG_NUMERIC = 1;
-    const FLAG_LETTER = 2;
+    const FLAG_ALPHA = 2;
     const FLAG_SINGLE_CHAR = 4;
     const FLAG_DEFAULT_SYMBOLS = 8;
 
@@ -657,24 +657,20 @@ abstract class Discrete_ReviewField extends ReviewField {
 }
 
 
-class Score_ReviewField extends Discrete_ReviewField {
+abstract class DiscreteValues_ReviewField extends Discrete_ReviewField {
     /** @var list<string> */
-    private $values;
+    protected $values;
     /** @var list<int|string> */
-    private $symbols = []; // NB strings must by URL-safe and HTML-safe
+    protected $symbols = [];
+    // Symbols must be URL-safe, HTML-safe, no punctuation or reserved words
     /** @var ?list<int> */
-    private $ids;
+    protected $ids;
     /** @var int
      * @readonly */
-    private $flags = 0;
+    protected $flags = 0;
     /** @var bool
      * @readonly */
     public $flip = false;
-
-    const FLAG_NUMERIC = 1;
-    const FLAG_LETTER = 2;
-    const FLAG_SINGLE_CHAR = 4;
-    const FLAG_DEFAULT_SYMBOLS = 8;
 
     function __construct(Conf $conf, ReviewFieldInfo $finfo, $j) {
         parent::__construct($conf, $finfo, $j);
@@ -697,7 +693,7 @@ class Score_ReviewField extends Discrete_ReviewField {
                 $chx = chr(ord($ch) + $nvalues - 1);
                 $this->symbols = range($chx, $ch);
                 $this->flip = true;
-                $this->flags = self::FLAG_SINGLE_CHAR | self::FLAG_LETTER | self::FLAG_DEFAULT_SYMBOLS;
+                $this->flags = self::FLAG_SINGLE_CHAR | self::FLAG_ALPHA | self::FLAG_DEFAULT_SYMBOLS;
             } else {
                 $this->symbols = range(1, $nvalues);
                 $this->flags = self::FLAG_NUMERIC | self::FLAG_DEFAULT_SYMBOLS;
@@ -705,13 +701,6 @@ class Score_ReviewField extends Discrete_ReviewField {
         }
         if (isset($j->ids) && count($j->ids) === $nvalues) {
             $this->ids = $j->ids;
-        }
-        if (!isset($j->required)) {
-            if (isset($j->allow_empty) /* XXX backward compat */) {
-                $this->required = !$j->allow_empty;
-            } else {
-                $this->required = true;
-            }
         }
     }
 
@@ -725,18 +714,18 @@ class Score_ReviewField extends Discrete_ReviewField {
         if ($symbols[0] === 1 && !$flip) {
             $f = self::FLAG_NUMERIC | self::FLAG_DEFAULT_SYMBOLS;
         } else if (is_string($symbols[0]) && ctype_upper($symbols[0])) {
-            $f = self::FLAG_LETTER | self::FLAG_SINGLE_CHAR | ($flip ? self::FLAG_DEFAULT_SYMBOLS : 0);
+            $f = self::FLAG_ALPHA | self::FLAG_SINGLE_CHAR | ($flip ? self::FLAG_DEFAULT_SYMBOLS : 0);
         } else {
-            $f = self::FLAG_LETTER | self::FLAG_SINGLE_CHAR;
+            $f = self::FLAG_ALPHA | self::FLAG_SINGLE_CHAR;
         }
         foreach ($symbols as $i => $sym) {
             if (($f & self::FLAG_NUMERIC) !== 0
                 && $sym !== $i + 1) {
                 return 0;
             }
-            if (($f & self::FLAG_LETTER) !== 0
+            if (($f & self::FLAG_ALPHA) !== 0
                 && (is_int($sym) || strlen($sym) !== 1 || !ctype_alpha($sym))) {
-                $f &= ~(self::FLAG_LETTER | self::FLAG_DEFAULT_SYMBOLS);
+                $f &= ~(self::FLAG_ALPHA | self::FLAG_DEFAULT_SYMBOLS);
             }
             if (($f & self::FLAG_SINGLE_CHAR) !== 0
                 && (is_int($sym)
@@ -789,14 +778,29 @@ class Score_ReviewField extends Discrete_ReviewField {
     }
 
     /** @return bool */
+    function is_alpha() {
+        return ($this->flags & self::FLAG_ALPHA) !== 0;
+    }
+
+    /** @return bool */
     function is_single_character() {
         return ($this->flags & self::FLAG_SINGLE_CHAR) !== 0;
     }
 
     /** @return bool */
     function flip_relation() {
-        return ($this->flags & (self::FLAG_LETTER | self::FLAG_DEFAULT_SYMBOLS)) === (self::FLAG_LETTER | self::FLAG_DEFAULT_SYMBOLS)
+        return ($this->flags & (self::FLAG_ALPHA | self::FLAG_DEFAULT_SYMBOLS)) === (self::FLAG_ALPHA | self::FLAG_DEFAULT_SYMBOLS)
             && $this->flip === !$this->conf->opt("smartScoreCompare");
+    }
+
+    /** @param int|string $x
+     * @return ?int */
+    function find_symbol($x) {
+        foreach ($this->symbols as $i => $sym) {
+            if (strcasecmp($x, $sym) === 0)
+                return $i + 1;
+        }
+        return null;
     }
 
     function export_json($style) {
@@ -809,13 +813,12 @@ class Score_ReviewField extends Discrete_ReviewField {
         }
         if (($this->flags & self::FLAG_DEFAULT_SYMBOLS) === 0) {
             $j->symbols = $this->symbols;
-        } else if (($this->flags & self::FLAG_LETTER) !== 0) {
+        } else if (($this->flags & self::FLAG_ALPHA) !== 0) {
             $j->start = $this->symbols[count($this->symbols) - 1];
         }
         if ($this->flip) {
             $j->flip = true;
         }
-        $j->required = $this->required; // want `required: false`
         return $j;
     }
 
@@ -880,6 +883,57 @@ class Score_ReviewField extends Discrete_ReviewField {
      * @return string */
     function value_class($fval) {
         return Discrete_ReviewField::scheme_value_class($this->scheme, $fval, count($this->values), $this->flip);
+    }
+
+    /** @param string $args
+     * @return string */
+    protected function annotate_graph_arguments($args) {
+        if (($this->flags & self::FLAG_NUMERIC) === 0) {
+            $n = count($this->values);
+            $args .= "&amp;lo=" . $this->symbols[$this->flip ? $n - 1 : 0]
+                . "&amp;hi=" . $this->symbols[$this->flip ? 0 : $n - 1];
+        }
+        if ($this->flip) {
+            $args .= "&amp;flip=1";
+        }
+        if ($this->scheme !== "sv") {
+            $args .= "&amp;sv=" . $this->scheme;
+        }
+        return $args;
+    }
+
+    /** @param string $s
+     * @return null|0|false */
+    static function check_none($s) {
+        if ($s === "" || $s[0] === "(" || $s === "undefined") {
+            return null;
+        } else if (in_array(strtolower($s), ["none", "n/a", "0", "-", "–", "—", "no entry"])
+                   || substr_compare($s, "none ", 0, 5, true) === 0) {
+            return 0;
+        } else {
+            return false;
+        }
+    }
+}
+
+
+class Score_ReviewField extends DiscreteValues_ReviewField {
+    function __construct(Conf $conf, ReviewFieldInfo $finfo, $j) {
+        parent::__construct($conf, $finfo, $j);
+
+        if (!isset($j->required)) {
+            if (isset($j->allow_empty) /* XXX backward compat */) {
+                $this->required = !$j->allow_empty;
+            } else {
+                $this->required = true;
+            }
+        }
+    }
+
+    function export_json($style) {
+        $j = parent::export_json($style);
+        $j->required = $this->required; // want `required: false`
+        return $j;
     }
 
     function unparse_value($fval) {
@@ -959,19 +1013,10 @@ class Score_ReviewField extends Discrete_ReviewField {
 
         $counts = $sci->counts(1, $n);
         $args = "v=" . join(",", $counts);
-        if ($sci->my_score() > 0 && $counts[$sci->my_score() - 1] > 0) {
-            $args .= "&amp;h=" . $sci->my_score();
+        if (($ms = $sci->my_score()) > 0) {
+            $args .= "&amp;h={$ms}";
         }
-        if (($this->flags & self::FLAG_NUMERIC) === 0) {
-            $args .= "&amp;lo=" . $this->symbols[$this->flip ? $n - 1 : 0]
-                . "&amp;hi=" . $this->symbols[$this->flip ? 0 : $n - 1];
-        }
-        if ($this->flip) {
-            $args .= "&amp;flip=1";
-        }
-        if ($this->scheme !== "sv") {
-            $args .= "&amp;sv=" . $this->scheme;
-        }
+        $args = $this->annotate_graph_arguments($args);
 
         if ($style !== self::GRAPH_PROPORTIONS) {
             $width = 5 * $n + 3;
@@ -994,50 +1039,15 @@ class Score_ReviewField extends Discrete_ReviewField {
         return $retstr;
     }
 
-    /** @param string $s
-     * @return string */
-    static function clean_string($s) {
-        $s = trim((string) $s);
-        if ($s === "" || $s[0] === "(" || $s === "undefined") {
-            return "";
-        }
-        $dot = 0;
-        while (($dot = strpos($s, ".", $dot)) !== false
-               && $dot + 1 < strlen($s)
-               && !ctype_space($s[$dot + 1])
-               && $s[$dot + 1] !== ".") {
-            ++$dot;
-        }
-        if ($dot !== false) {
-            $s = trim(substr($s, 0, $dot));
-        }
-        if ($s === "0"
-            || $s === "-"
-            || $s === "–"
-            || $s === "—"
-            || (strlen($s) > 2
-                && (strcasecmp($s, "no entry") === 0
-                    || strcasecmp($s, "none") === 0
-                    || strcasecmp($s, "n/a") === 0
-                    || substr_compare($s, "none ", 0, 5, true) === 0))) {
-            return "none";
-        }
-        return $s;
-    }
-
-    /** @return null|int|false */
     function parse($text) {
-        $text = self::clean_string($text);
-        if ($text === "") {
-            return null;
-        } else if ($text === "none") {
-            return $this->required ? null : 0;
+        if (preg_match('/\A\s*+(\z|[^.,;()](?:[^.,;()]|\.[^\s.,;()])*+)/s', $text, $m)) {
+            $text = rtrim($m[1]);
         }
-        foreach ($this->symbols as $i => $sym) {
-            if (strcasecmp($text, $sym) === 0)
-                return $i + 1;
+        $sc = $this->find_symbol($text) ?? self::check_none($text);
+        if ($sc === 0 && $this->required) {
+            $sc = null;
         }
-        return false;
+        return $sc;
     }
 
     function parse_json($j) {
@@ -1167,7 +1177,7 @@ class Score_ReviewField extends Discrete_ReviewField {
         }
         if (!$this->required) {
             $t[] = "==-==    None of the above\n==-== Enter your choice:\n";
-        } else if (($this->flags & self::FLAG_LETTER) !== 0) {
+        } else if (($this->flags & self::FLAG_ALPHA) !== 0) {
             $t[] = "==-== Enter the letter of your choice:\n";
         } else if (($this->flags & self::FLAG_NUMERIC) !== 0) {
             $t[] = "==-== Enter the number of your choice:\n";
@@ -1353,8 +1363,8 @@ class Checkbox_ReviewField extends Discrete_ReviewField {
 
         $counts = $sci->counts(0, 1);
         $args = "v=" . join(",", $counts);
-        if ($sci->my_score() !== null && $counts[$sci->my_score()] > 0) {
-            $args .= "&amp;h=" . $sci->my_score();
+        if (($ms = $sci->my_score()) !== null) {
+            $args .= "&amp;h={$ms}";
         }
         $args .= "&amp;lo=✗&amp;hi=✓";
         if ($this->scheme !== "sv") {

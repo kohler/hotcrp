@@ -1324,7 +1324,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
     function test_review_symbols() {
         $FNUM = Score_ReviewField::FLAG_NUMERIC;
-        $FLET = Score_ReviewField::FLAG_LETTER;
+        $FLET = Score_ReviewField::FLAG_ALPHA;
         $FCHR = Score_ReviewField::FLAG_SINGLE_CHAR;
         $FDEF = Score_ReviewField::FLAG_DEFAULT_SYMBOLS;
         xassert_eqq(Score_ReviewField::analyze_symbols([], false), $FNUM|$FDEF);
