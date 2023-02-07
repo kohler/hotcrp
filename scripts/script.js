@@ -6311,7 +6311,7 @@ function add_comment_sidebar(celt, cj) {
 }
 
 function edit_this(evt) {
-    edit(find_cj(this));
+    hotcrp.edit_comment(find_cj(this));
     evt.preventDefault();
     handle_ui.stopPropagation(evt);
 }
