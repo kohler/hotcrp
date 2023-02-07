@@ -2661,7 +2661,7 @@ handle_ui.on("js-mark-submit", function () {
 
 
 // initialization
-var hotcrp_deadlines = (function ($) {
+(function ($) {
 var dl, dlname, dltime, redisplay_timeout,
     reload_outstanding = 0, reload_nerrors = 0;
 
@@ -3433,12 +3433,12 @@ function streload(trackparam, trackdata) {
     }
 }
 
-return {
-    initialize: function (dl) {
-        load(dl, null, true);
-    },
-    tracker_show_elapsed: tracker_show_elapsed
+hotcrp.init_deadlines = function (dl) {
+    load(dl, null, true);
 };
+
+hotcrp.tracker_show_elapsed = tracker_show_elapsed;
+
 })(jQuery);
 
 
@@ -4905,7 +4905,7 @@ handle_ui.on("js-review-tokens", function () {
     });
 });
 
-var review_form = (function ($) {
+(function ($) {
 var formj, form_order;
 
 tooltip.add_builder("rf-score", function (info) {
@@ -5225,7 +5225,7 @@ function append_review_id(rrow, eheader) {
     }
 }
 
-function add_review(rrow) {
+hotcrp.add_review = function (rrow) {
     var rid = rrow.pid + (rrow.ordinal || "r" + rrow.rid), rlink, rdesc,
         has_user_rating = false,
         e, earticle, eheader;
@@ -5287,7 +5287,7 @@ function add_review(rrow) {
     }
     score_header_tooltips($(earticle));
     navsidebar.set("r" + rid, rdesc);
-}
+};
 
 function ReviewField(fj) {
     this.uid = fj.uid;
@@ -5501,33 +5501,30 @@ Checkbox_ReviewField.prototype.render_in = function (fv, rrow, fe) {
 }
 
 
-function make_review_field(fj) {
+hotcrp.make_review_field = function (fj) {
     if (fj.type === "radio" || fj.type === "dropdown")
         return new Score_ReviewField(fj);
     else if (fj.type === "checkbox")
         return new Checkbox_ReviewField(fj);
     else
         return new ReviewField(fj);
-}
+};
 
-return {
-    add_review: add_review,
-    make_review_field: make_review_field,
-    set_form: function (j) {
-        var i;
-        formj = formj || {};
-        for (i in j) {
-            formj[j[i].uid] = make_review_field(j[i]);
-        }
+hotcrp.set_review_form = function (j) {
+    var i;
+    formj = formj || {};
+    for (i in j) {
+        formj[j[i].uid] = hotcrp.make_review_field(j[i]);
         form_order = $.map(formj, function (v) { return v; });
         form_order.sort(function (a, b) { return a.order - b.order; });
     }
 };
+
 })($);
 
 
 // comments
-var papercomment = (function ($) {
+(function ($) {
 var vismap = {
         rev: "hidden from authors",
         pc: "hidden from authors and external reviewers",
@@ -6314,7 +6311,15 @@ function edit_this(evt) {
     handle_ui.stopPropagation(evt);
 }
 
-function edit(cj) {
+
+hotcrp.add_comment = add_comment;
+
+hotcrp.edit_comment = function (cj) {
+    if (typeof cj === "string") {
+        if (!cmts[cj])
+            return;
+        cj = cmts[cj];
+    }
     var cid = cj_cid(cj), elt = $$(cid);
     if (!elt && (cj.is_new || cj.response)) {
         add_comment(cj, true);
@@ -6332,18 +6337,12 @@ function edit(cj) {
     $(function () { te.focus(); });
     has_unload || $(window).on("beforeunload.papercomment", beforeunload);
     has_unload = true;
-}
-
-return {
-    add: add_comment,
-    set_resp_round: function (rname, rinfo) {
-        resp_rounds[rname] = rinfo;
-    },
-    edit: edit,
-    edit_id: function (cid) {
-        cmts[cid] && edit(cmts[cid]);
-    }
 };
+
+hotcrp.set_response_round = function (rname, rinfo) {
+    resp_rounds[rname] = rinfo;
+};
+
 })(jQuery);
 
 handle_ui.on("js-overlong-expand", function () {
@@ -6406,7 +6405,7 @@ function quicklink_shortcut(evt) {
 }
 
 function comment_shortcut(evt) {
-    papercomment.edit_id("cnew");
+    hotcrp.edit_comment("cnew");
     if ($$("cnew"))
         evt.preventDefault();
 }
@@ -7532,7 +7531,7 @@ function row_click(evt) {
 handle_ui.on("js-edit-comment", function (evt) {
     if (this.tagName !== "A" || event_key.is_default_a(evt)) {
         evt.preventDefault();
-        papercomment.edit_id(this.hash.substring(1));
+        hotcrp.edit_comment(this.hash.substring(1));
     }
 });
 
@@ -7640,69 +7639,67 @@ function hotlist_search_params(x, ids) {
 
 
 // review preferences
-var add_revpref_ajax = (function () {
-    var blurred_at = 0;
+(function () {
+var blurred_at = 0;
 
-    function rp(selector, on_unload) {
-        var $e = $(selector);
-        if ($e.is("input")) {
-            var rpf = wstorage.site(true, "revpref_focus");
-            if (rpf && now_msec() - rpf < 3000)
-                focus_at($e[0]);
-            $e = $e.parent();
-        }
-        $e.off(".revpref_ajax")
-            .on("blur.revpref_ajax", "input.revpref", rp_blur)
-            .on("change.revpref_ajax", "input.revpref", rp_change)
-            .on("keydown.revpref_ajax", "input.revpref", make_onkey("Enter", rp_change));
-        if (on_unload) {
-            $(window).on("beforeunload", rp_unload);
+hotcrp.add_preference_ajax = function (selector, on_unload) {
+    var $e = $(selector);
+    if ($e.is("input")) {
+        var rpf = wstorage.site(true, "revpref_focus");
+        if (rpf && now_msec() - rpf < 3000)
+            focus_at($e[0]);
+        $e = $e.parent();
+    }
+    $e.off(".revpref_ajax")
+        .on("blur.revpref_ajax", "input.revpref", rp_blur)
+        .on("change.revpref_ajax", "input.revpref", rp_change)
+        .on("keydown.revpref_ajax", "input.revpref", make_onkey("Enter", rp_change));
+    if (on_unload) {
+        $(window).on("beforeunload", rp_unload);
+    }
+};
+
+function rp_blur() {
+    blurred_at = now_msec();
+}
+
+function rp_change() {
+    var self = this, pid = this.name.substr(7), data = {pref: self.value}, pos;
+    if ((pos = pid.indexOf("u")) > 0) {
+        data.u = pid.substr(pos + 1);
+        pid = pid.substr(0, pos);
+    }
+    function success(rv) {
+        minifeedback(self, rv);
+        if (rv && rv.ok && rv.value != null) {
+            self.value = rv.value === "0" ? "" : rv.value;
+            input_set_default_value(self, self.value);
         }
     }
-
-    function rp_blur() {
-        blurred_at = now_msec();
-    }
-
-    function rp_change() {
-        var self = this, pid = this.name.substr(7), data = {pref: self.value}, pos;
-        if ((pos = pid.indexOf("u")) > 0) {
-            data.u = pid.substr(pos + 1);
-            pid = pid.substr(0, pos);
-        }
-        function success(rv) {
-            minifeedback(self, rv);
-            if (rv && rv.ok && rv.value != null) {
-                self.value = rv.value === "0" ? "" : rv.value;
-                input_set_default_value(self, self.value);
-            }
-        }
-        $ajax.condition(function () {
-            $.ajax(hoturl("=api/revpref", {p: pid}), {
-                method: "POST", data: data,
-                success: success, trackOutstanding: true
-            });
+    $ajax.condition(function () {
+        $.ajax(hoturl("=api/revpref", {p: pid}), {
+            method: "POST", data: data,
+            success: success, trackOutstanding: true
         });
-    }
-
-    function rp_unload() {
-        if ((blurred_at && now_msec() - blurred_at < 1000)
-            || $(":focus").is("input.revpref"))
-            wstorage.site(true, "revpref_focus", blurred_at || now_msec());
-    }
-
-    handle_ui.on("revpref", function (evt) {
-        if (evt.type === "keydown") {
-            if (!event_modkey(evt) && event_key(evt) === "Enter") {
-                rp_change.call(this);
-                evt.preventDefault();
-                handle_ui.stopImmediatePropagation(evt);
-            }
-        } else if (evt.type === "change")
-            rp_change.call(this, evt);
     });
+}
 
-    return rp;
+function rp_unload() {
+    if ((blurred_at && now_msec() - blurred_at < 1000)
+        || $(":focus").is("input.revpref"))
+        wstorage.site(true, "revpref_focus", blurred_at || now_msec());
+}
+
+handle_ui.on("revpref", function (evt) {
+    if (evt.type === "keydown") {
+        if (!event_modkey(evt) && event_key(evt) === "Enter") {
+            rp_change.call(this);
+            evt.preventDefault();
+            handle_ui.stopImmediatePropagation(evt);
+        }
+    } else if (evt.type === "change")
+        rp_change.call(this, evt);
+});
 })();
 
 
@@ -8004,7 +8001,7 @@ function search_scoresort_change() {
     var scoresort = $(this).val(),
         re = / (?:counts|average|median|variance|maxmin|my)\b/;
     $.post(hoturl("=api/session"), {v: "scoresort=" + scoresort});
-    plinfo.set_scoresort(scoresort);
+    hotcrp.set_scoresort(scoresort);
     $("#foldpl > thead").find("a.pl_sort").each(function () {
         var href = this.getAttribute("href"), sorter = href_sorter(href);
         if (re.test(sorter)) {
@@ -8713,7 +8710,7 @@ function render_user(u) {
 
 
 // ajax loading of paper information
-var plinfo = (function () {
+(function () {
 
 function prownear(e) {
     while (e && e.nodeName !== "TR") {
@@ -9026,7 +9023,7 @@ function make_tag_column_callback(f) {
     };
 }
 
-function render_needed() {
+hotcrp.render_list = function () {
     self || initialize();
     scorechart();
     $(".need-allpref").each(render_allpref);
@@ -9103,7 +9100,7 @@ function make_callback(dofold, type) {
                 }
                 ++n;
             }
-        render_needed();
+        hotcrp.render_list();
         if (tr)
             setTimeout(render_some, 8);
     }
@@ -9223,7 +9220,7 @@ function initialize() {
         add_field(fs[i]);
 }
 
-plinfo.set_scoresort = function (ss) {
+hotcrp.set_scoresort = function (ss) {
     self || initialize();
     var re = / (?:counts|average|median|variance|minmax|my)$/;
     for (var i = 0; i < field_order.length; ++i) {
@@ -9233,9 +9230,7 @@ plinfo.set_scoresort = function (ss) {
     }
 };
 
-plinfo.render_needed = render_needed;
-
-plinfo.update_tag_decoration = function ($title, html) {
+hotcrp.update_tag_decoration = function ($title, html) {
     $title.find(".tagdecoration").remove();
     if (html) {
         $title.append(html);
@@ -9282,7 +9277,7 @@ $(window).on("hotcrptags", function (evt, rv) {
     }).addClass(cc);
 
     // set tag decoration
-    plinfo.update_tag_decoration($ptr.find(".pl_title"), rv.tag_decoration_html);
+    hotcrp.update_tag_decoration($ptr.find(".pl_title"), rv.tag_decoration_html);
 
     // set actual tags
     if (fields.tags && !fields.tags.missing)
@@ -9341,7 +9336,6 @@ handle_ui.on("js-plinfo", function (evt) {
     evt.preventDefault();
 });
 
-return plinfo;
 })();
 
 
@@ -9965,7 +9959,7 @@ handle_ui.on("pspcard-fold", function (evt) {
     }
 });
 
-var edit_paper_ui = (function ($) {
+(function ($) {
 var edit_conditions = {};
 
 function prepare_paper_select() {
@@ -10346,68 +10340,72 @@ function fieldchange(evt) {
         .trigger({type: "fieldchange", changeTarget: evt.target});
 }
 
-return {
-    edit_condition: function () {
-        $("#form-paper").on("fieldchange", ".has-edit-condition", run_edit_conditions)
-            .find(".has-edit-condition").each(run_edit_conditions);
-    },
-    evaluate_edit_condition: function (ec) {
-        return evaluate_edit_condition(typeof ec === "string" ? parse_json(ec) : ec, $("#form-paper")[0]);
-    },
-    load: function () {
-        var f = document.getElementById("form-paper");
-        hiliter_children(f);
-        f.elements.submitpaper && $(f.elements.submitpaper).change();
-        $(".pfe").each(add_pslitem_pfe);
-        var h = $(".btn-savepaper").first(),
-            k = hasClass(f, "alert") ? "" : " hidden";
-        $(".pslcard-nav").append('<div class="paper-alert mt-5'.concat(k,
-            '"><button class="ui btn-highlight btn-savepaper">', h.html(),
-            '</button></div>'))
-            .find(".btn-savepaper").click(function () {
-                $("#form-paper .btn-savepaper").first().trigger({type: "click", sidebarTarget: this});
-            });
-        $(f).on("change", "input, select, textarea", fieldchange)
-            .on("click", "input[type=checkbox], input[type=radio]", fieldchange);
-    },
-    prepare: function () {
-        $(".need-tag-index-form").each(function () {
-            $(this).removeClass("need-tag-index-form").on("submit", save_pstagindex)
-                .find("input").on("change", save_pstagindex);
+hotcrp.load_editable_paper = function () {
+    var f = document.getElementById("form-paper");
+    hiliter_children(f);
+    f.elements.submitpaper && $(f.elements.submitpaper).change();
+    $(".pfe").each(add_pslitem_pfe);
+    var h = $(".btn-savepaper").first(),
+        k = hasClass(f, "alert") ? "" : " hidden";
+    $(".pslcard-nav").append('<div class="paper-alert mt-5'.concat(k,
+        '"><button class="ui btn-highlight btn-savepaper">', h.html(),
+        '</button></div>'))
+        .find(".btn-savepaper").click(function () {
+            $("#form-paper .btn-savepaper").first().trigger({type: "click", sidebarTarget: this});
         });
-        $(".need-tag-form").each(prepare_pstags);
-        $(".need-paper-select-api").each(function () {
-            removeClass(this, "need-paper-select-api");
-            prepare_paper_select.call(this);
-        });
-    },
-    load_review: function () {
-        hiliter_children("#form-review");
-        $(".rfehead").each(add_pslitem_header);
-        if ($(".rfehead").length) {
-            $(".pslcard > .pslitem:last-child").addClass("mb-3");
-        }
-        var h = $(".btn-savereview").first(),
-            k = $("#form-review").hasClass("alert") ? "" : " hidden";
-        $(".pslcard-nav").append('<div class="review-alert mt-5'.concat(k,
-            '"><button class="ui btn-highlight btn-savereview">', h.html(),
-            '</button></div>'))
-            .find(".btn-savereview").click(function () {
-                $("#form-review .btn-savereview").first().trigger({type: "click", sidebarTarget: this});
-            });
-    },
-    replace_field: function (field, elt) {
-        var pfe = $$(field).closest(".pfe");
-        if (elt.tagName !== "DIV" || !hasClass(elt, "pfe")) {
-            throw new Error("bad DIV");
-        }
-        pfe.className = elt.className;
-        pfe.replaceChildren();
-        while (elt.firstChild)
-            pfe.appendChild(elt.firstChild);
-        add_pslitem_pfe.call(pfe);
-    }
+    $(f).on("change", "input, select, textarea", fieldchange)
+        .on("click", "input[type=checkbox], input[type=radio]", fieldchange);
 };
+
+hotcrp.load_editable_review = function () {
+    hiliter_children("#form-review");
+    $(".rfehead").each(add_pslitem_header);
+    if ($(".rfehead").length) {
+        $(".pslcard > .pslitem:last-child").addClass("mb-3");
+    }
+    var h = $(".btn-savereview").first(),
+        k = $("#form-review").hasClass("alert") ? "" : " hidden";
+    $(".pslcard-nav").append('<div class="review-alert mt-5'.concat(k,
+        '"><button class="ui btn-highlight btn-savereview">', h.html(),
+        '</button></div>'))
+        .find(".btn-savereview").click(function () {
+            $("#form-review .btn-savereview").first().trigger({type: "click", sidebarTarget: this});
+        });
+};
+
+hotcrp.prepare_editable_paper = function () {
+    $(".need-tag-index-form").each(function () {
+        $(this).removeClass("need-tag-index-form").on("submit", save_pstagindex)
+            .find("input").on("change", save_pstagindex);
+    });
+    $(".need-tag-form").each(prepare_pstags);
+    $(".need-paper-select-api").each(function () {
+        removeClass(this, "need-paper-select-api");
+        prepare_paper_select.call(this);
+    });
+};
+
+hotcrp.replace_editable_field = function (field, elt) {
+    var pfe = $$(field).closest(".pfe");
+    if (elt.tagName !== "DIV" || !hasClass(elt, "pfe")) {
+        throw new Error("bad DIV");
+    }
+    pfe.className = elt.className;
+    pfe.replaceChildren();
+    while (elt.firstChild)
+        pfe.appendChild(elt.firstChild);
+    add_pslitem_pfe.call(pfe);
+};
+
+hotcrp.paper_edit_conditions = function () {
+    $("#form-paper").on("fieldchange", ".has-edit-condition", run_edit_conditions)
+        .find(".has-edit-condition").each(run_edit_conditions);
+};
+
+/*hotcrp.evaluate_edit_condition = function (ec) {
+    return evaluate_edit_condition(typeof ec === "string" ? parse_json(ec) : ec, $("#form-paper")[0]);
+};*/
+
 })($);
 
 
@@ -10456,7 +10454,7 @@ if (siteinfo.paperid) {
         $(".is-tag-index").each(function () {
             set_tag_index(this, data.tags);
         });
-        plinfo.update_tag_decoration($("h1.paptitle"), data.tag_decoration_html);
+        hotcrp.update_tag_decoration($("h1.paptitle"), data.tag_decoration_html);
     });
 }
 
@@ -11591,12 +11589,12 @@ $(function () {
 
 
 Object.assign(window.hotcrp, {
-    add_comment: papercomment.add,
-    add_review: review_form.add_review,
-    add_preference_ajax: add_revpref_ajax,
+    // add_comment
+    // add_review
+    // add_preference_ajax
     check_version: check_version,
     demand_load: demand_load,
-    edit_comment: papercomment.edit,
+    // edit_comment
     ensure_pattern: ensure_pattern,
     escape_html: escape_html,
     focus_within: focus_within,
@@ -11606,20 +11604,22 @@ Object.assign(window.hotcrp, {
     handle_ui: handle_ui,
     highlight_form_children: hiliter_children,
     hoturl: hoturl,
-    init_deadlines: hotcrp_deadlines.initialize,
-    load_editable_paper: edit_paper_ui.load,
-    load_editable_review: edit_paper_ui.load_review,
-    make_review_field: review_form.make_review_field,
+    // init_deadlines
+    // load_editable_paper
+    // load_editable_review
+    // make_review_field
     // onload
-    paper_edit_conditions: edit_paper_ui.edit_condition,
-    prepare_editable_paper: edit_paper_ui.prepare,
-    render_list: plinfo.render_needed,
+    // paper_edit_conditions
+    // prepare_editable_paper
+    // render_list
     render_text_page: render_text.on_page,
     render_user: render_user,
-    replace_editable_field: edit_paper_ui.replace_field,
-    scorechart: scorechart,
-    set_response_round: papercomment.set_resp_round,
-    set_review_form: review_form.set_form,
+    // replace_editable_field
+    scorechart: scorechart
+    // set_response_round
+    // set_review_form
+    // set_scoresort
     // shortcut
-    tracker_show_elapsed: hotcrp_deadlines.tracker_show_elapsed
+    // tracker_show_elapsed
+    // update_tag_decoration
 });
