@@ -3,6 +3,7 @@
 
 "use strict";
 var siteinfo, hotcrp, hotcrp_status;
+hotcrp = {};
 
 function $$(id) {
     return document.getElementById(id);
@@ -44,6 +45,14 @@ if (typeof Object.assign !== "function") {
                 }
             }
             return d;
+        }, writable: true, configurable: true
+    });
+}
+if (typeof Object.setPrototypeOf !== "function") {
+    Object.defineProperty(Object, "setPrototypeOf", {
+        value: function setPrototypeOf(obj, proto) {
+            obj && typeof obj === "object" && (obj.__proto__ = proto);
+            return obj;
         }, writable: true, configurable: true
     });
 }
@@ -3433,7 +3442,7 @@ return {
 })(jQuery);
 
 
-var hotcrp_load = (function ($) {
+hotcrp.onload = (function ($) {
     function append_span(e, fmt, d) {
         var span = document.createElement("span");
         span.textContent = strftime(fmt, d);
@@ -3662,7 +3671,7 @@ function make_expander_element(foldnum) {
     var svgns = "http://www.w3.org/2000/svg", e, sp0, sp1;
     function mksvgp(d) {
         var sv = document.createElementNS(svgns, "svg"), p;
-        sv.className = "licon";
+        sv.setAttribute("className", "licon");
         sv.setAttribute("width", "0.75em");
         sv.setAttribute("height", "0.75em");
         sv.setAttribute("viewBox", "0 0 16 16");
@@ -5333,7 +5342,7 @@ function DiscreteValues_ReviewField(fj) {
     }
 }
 
-Object.assign(DiscreteValues_ReviewField.prototype, ReviewField.prototype);
+Object.setPrototypeOf(DiscreteValues_ReviewField.prototype, ReviewField.prototype);
 
 DiscreteValues_ReviewField.prototype.indexOfSymbol = function (s) {
     if (s == null || s === 0 || s === "")
@@ -5404,7 +5413,7 @@ function Score_ReviewField(fj) {
     DiscreteValues_ReviewField.call(this, fj);
 }
 
-Object.assign(Score_ReviewField.prototype, DiscreteValues_ReviewField.prototype);
+Object.setPrototypeOf(Score_ReviewField.prototype, DiscreteValues_ReviewField.prototype);
 
 Score_ReviewField.prototype.parse_value = function (txt) {
     var si = this.indexOfSymbol(txt);
@@ -5441,7 +5450,7 @@ function Checkbox_ReviewField(fj) {
     this.scheme_info = make_color_scheme(2, this.scheme || "sv", false);
 }
 
-Object.assign(Checkbox_ReviewField.prototype, ReviewField.prototype);
+Object.setPrototypeOf(Checkbox_ReviewField.prototype, ReviewField.prototype);
 
 Checkbox_ReviewField.prototype.value_info = function (b) {
     return {
@@ -6451,7 +6460,7 @@ function make_selector_shortcut(type) {
     }
 }
 
-function shortcut(top_elt) {
+hotcrp.shortcut = function (top_elt) {
     var self, main_keys = {}, current_keys = null, last_key_at = now_msec() - 1000;
 
     function keypress(evt) {
@@ -11581,7 +11590,7 @@ $(function () {
 });
 
 
-window.hotcrp = {
+Object.assign(window.hotcrp, {
     add_comment: papercomment.add,
     add_review: review_form.add_review,
     add_preference_ajax: add_revpref_ajax,
@@ -11601,7 +11610,7 @@ window.hotcrp = {
     load_editable_paper: edit_paper_ui.load,
     load_editable_review: edit_paper_ui.load_review,
     make_review_field: review_form.make_review_field,
-    onload: hotcrp_load,
+    // onload
     paper_edit_conditions: edit_paper_ui.edit_condition,
     prepare_editable_paper: edit_paper_ui.prepare,
     render_list: plinfo.render_needed,
@@ -11611,6 +11620,6 @@ window.hotcrp = {
     scorechart: scorechart,
     set_response_round: papercomment.set_resp_round,
     set_review_form: review_form.set_form,
-    tracker_show_elapsed: hotcrp_deadlines.tracker_show_elapsed,
-    shortcut: shortcut
-};
+    // shortcut
+    tracker_show_elapsed: hotcrp_deadlines.tracker_show_elapsed
+});
