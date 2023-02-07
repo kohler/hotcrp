@@ -146,14 +146,19 @@ class CountMatcher {
     /** @param int $relation
      * @return int */
     static function flip_relation($relation) {
-        return $relation & 5 ? $relation ^ 5 : $relation;
+        // flip iff RELGT bit ≠ RELLT bit
+        $relasym = (($relation >> 2) ^ $relation) & 1;
+        return $relation ^ (5 & -$relasym);
     }
 
-    /** @param string $relation
+    /** @param string $relstr
      * @return string */
-    static function flip_unparsed_relation($relation) {
-        $xr = self::parse_relation($relation);
-        return $xr !== null && ($xr & 5) ? self::$oparray[$xr ^ 5] : $relation;
+    static function flip_unparsed_relation($relstr) {
+        if (($xr = self::parse_relation($relstr)) !== null
+            && ((($xr >> 2) ^ $xr) & 1) === 1) {
+            return self::$oparray[$xr ^ 5];
+        }
+        return $relstr;
     }
 
 

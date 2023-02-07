@@ -581,6 +581,18 @@ class Unit_Tester {
         xassert_eqq(CountMatcher::unpack_comparison("x 200"), null);
     }
 
+    function test_flip_relation() {
+        xassert_eqq(CountMatcher::flip_relation(CountMatcher::RELEQ), CountMatcher::RELEQ);
+        xassert_eqq(CountMatcher::flip_relation(CountMatcher::RELNE), CountMatcher::RELNE);
+        xassert_eqq(CountMatcher::flip_relation(CountMatcher::RELGT), CountMatcher::RELLT);
+        xassert_eqq(CountMatcher::flip_relation(CountMatcher::RELLT), CountMatcher::RELGT);
+        xassert_eqq(CountMatcher::flip_relation(CountMatcher::RELGE), CountMatcher::RELLE);
+        xassert_eqq(CountMatcher::flip_relation(CountMatcher::RELLE), CountMatcher::RELGE);
+        xassert_eqq(CountMatcher::flip_unparsed_relation("="), "=");
+        xassert_eqq(CountMatcher::flip_unparsed_relation("=="), "==");
+        xassert_eqq(CountMatcher::flip_unparsed_relation("≤"), ">=");
+    }
+
     function test_simplify_whitespace() {
         xassert_eqq(simplify_whitespace("abc def GEH îjk"), "abc def GEH îjk");
         xassert_eqq(simplify_whitespace("\x7Fabc\x7Fdef       GEH îjk"), "abc def GEH îjk");
