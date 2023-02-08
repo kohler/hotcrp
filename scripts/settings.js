@@ -580,7 +580,7 @@ function rf_visibility_text(visibility) {
     if ((visibility || "re") === "re")
         return "(hidden from authors)";
     else if (visibility === "admin")
-        return "(administrators only)";
+        return "(shown only to administrators)";
     else if (visibility === "secret")
         return "(secret)";
     else if (visibility === "audec")

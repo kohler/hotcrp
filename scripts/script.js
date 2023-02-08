@@ -4981,8 +4981,10 @@ function render_review_body_in(rrow, bodye) {
             e = document.createElement("div");
             e.className = "field-visibility";
             x = ({
-                secret: "secret", admin: "administrators only",
-                re: "hidden from authors", audec: "hidden from authors until decision",
+                secret: "secret",
+                admin: "shown only to administrators",
+                re: "hidden from authors",
+                audec: "hidden from authors until decision",
                 pconly: "hidden from authors and external reviewers"
             })[x] || x;
             e.append("(" + x + ")");

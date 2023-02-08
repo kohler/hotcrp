@@ -211,7 +211,7 @@ abstract class ReviewField implements JsonSerializable {
         while ($s !== ""
                && $s[strlen($s) - 1] === ")"
                && ($lparen = strrpos($s, "(")) !== false
-               && preg_match('/\A\((?:(?:hidden|invisible|visible|shown)(?:| (?:from|to|from the|to the) authors?)|pc only|shown only to chairs|secret|private)(?:| until decision| and external reviewers)[.?!]?\)\z/', substr($s, $lparen))) {
+               && preg_match('/\G\((?:hidden|shown|invisible|visible|secret|private|pc only)(?:(?: only)?+(?: from| to)?+(?: the)?+| field)(?:| authors?+| chairs?+| administrators?+)(?:| until decision| and external reviewers| only)[.?!]?\)\z/i', $s, $m, 0, $lparen)) {
             $s = rtrim(substr($s, 0, $lparen));
         }
         return $s;
@@ -316,6 +316,24 @@ abstract class ReviewField implements JsonSerializable {
     /** @return string */
     function unparse_visibility() {
         return self::$view_score_rmap[$this->view_score] ?? (string) $this->view_score;
+    }
+
+    /** @param int $view_score
+     * @return string */
+    static function visibility_description($view_score) {
+        if ($view_score >= VIEWSCORE_AUTHOR) {
+            return "";
+        } else if ($view_score < VIEWSCORE_REVIEWERONLY) {
+            return "secret";
+        } else if ($view_score < VIEWSCORE_PC) {
+            return "shown only to administrators";
+        } else if ($view_score < VIEWSCORE_REVIEWER) {
+            return "hidden from authors and external reviewers";
+        } else if ($view_score < VIEWSCORE_AUTHORDEC) {
+            return "hidden from authors";
+        } else {
+            return "hidden from authors until decision";
+        }
     }
 
 
@@ -454,20 +472,8 @@ abstract class ReviewField implements JsonSerializable {
             echo '" for="', $label_for;
         }
         echo '">', $args["name_html"] ?? $this->name_html, '</label>';
-        if ($this->view_score < VIEWSCORE_AUTHOR) {
-            echo '<div class="field-visibility">';
-            if ($this->view_score < VIEWSCORE_REVIEWERONLY) {
-                echo '(secret)';
-            } else if ($this->view_score < VIEWSCORE_PC) {
-                echo '(shown only to chairs)';
-            } else if ($this->view_score < VIEWSCORE_REVIEWER) {
-                echo '(hidden from authors and external reviewers)';
-            } else if ($this->view_score < VIEWSCORE_AUTHORDEC) {
-                echo '(hidden from authors)';
-            } else {
-                echo '(hidden from authors until decision)';
-            }
-            echo '</div>';
+        if (($rd = self::visibility_description($this->view_score)) !== "") {
+            echo '<div class="field-visibility">(', $rd, ')</div>';
         }
         echo '</h3>';
         if ($rvalues) {
@@ -508,16 +514,8 @@ abstract class ReviewField implements JsonSerializable {
     /** @param list<string> &$t */
     protected function unparse_offline_field_header(&$t, $args) {
         $t[] = prefix_word_wrap("==*== ", $this->name, "==*==    ");
-        if ($this->view_score < VIEWSCORE_REVIEWERONLY) {
-            $t[] = "==-== (secret field)\n";
-        } else if ($this->view_score < VIEWSCORE_PC) {
-            $t[] = "==-== (shown only to chairs)\n";
-        } else if ($this->view_score < VIEWSCORE_REVIEWER) {
-            $t[] = "==-== (hidden from authors and external reviewers)\n";
-        } else if ($this->view_score < VIEWSCORE_AUTHORDEC) {
-            $t[] = "==-== (hidden from authors)\n";
-        } else if ($this->view_score < VIEWSCORE_AUTHOR) {
-            $t[] = "==-== (hidden from authors until decision)\n";
+        if (($rd = self::visibility_description($this->view_score)) !== "") {
+            $t[] = "==-== ({$rd})\n";
         }
         if (($args["include_presence"] ?? false)
             && ($this->exists_if || $this->round_mask)) {

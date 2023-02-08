@@ -1354,4 +1354,12 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq(Checkboxes_ReviewField::unpack_value(32), [6]);
         xassert_eqq(Checkboxes_ReviewField::unpack_value(64), [7]);
     }
+
+    function test_clean_name() {
+        xassert_eqq(ReviewField::clean_name("Fudge (shown only to administrator)"), "Fudge");
+        xassert_eqq(ReviewField::clean_name("Fudge (shown only to chair)"), "Fudge");
+        xassert_eqq(ReviewField::clean_name("Fudge (shown only to chairs)"), "Fudge");
+        xassert_eqq(ReviewField::clean_name("Fudge (secret)"), "Fudge");
+        xassert_eqq(ReviewField::clean_name("Fudge (shown only to Emmanuel Macron)"), "Fudge (shown only to Emmanuel Macron)");
+    }
 }
