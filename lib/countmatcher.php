@@ -16,6 +16,10 @@ class CountMatcher {
     const RELNE = 5;
     const RELGE = 6;
 
+    // other bits not used here; see ReviewFieldSearch
+    const RELALL = 16;
+    const RELSPAN = 32;
+
     static public $opmap = ["" => 2, "#" => 2, "=" => 2, "==" => 2,
                             "!" => 5, "!=" => 5, "≠" => 5,
                             "<" => 1, "<=" => 3, "≤" => 3,

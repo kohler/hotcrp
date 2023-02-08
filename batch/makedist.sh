@@ -394,6 +394,9 @@ src/quicklinksrenderer.php
 src/responseround.php
 src/reviewdiffinfo.php
 src/reviewfield.php
+src/reviewfields/rf_checkbox.php
+src/reviewfields/rf_discrete.php
+src/reviewfields/rf_text.php
 src/reviewform.php
 src/reviewhistoryinfo.php
 src/reviewinfo.php
@@ -435,6 +438,7 @@ src/searchexample.php
 src/searchselection.php
 src/searchsplitter.php
 src/searchterm.php
+src/searchword.php
 src/sessionlist.php
 src/settinginfoset.php
 src/settingparser.php

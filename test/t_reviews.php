@@ -1017,6 +1017,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         assert_search_papers($this->u_chair, "ovemer:any:1..2", "17 18 19 20");
         assert_search_papers($this->u_chair, "ovemer:all:1..2", "17 18");
+        assert_search_papers($this->u_chair, "ovemer:1..2", "17 18");
         assert_search_papers($this->u_chair, "ovemer:span:1..2", "17");
         assert_search_papers($this->u_chair, "ovemer:any:1…2", "17 18 19 20");
         assert_search_papers($this->u_chair, "ovemer:any:1-2", "17 18 19 20");
@@ -1025,12 +1026,14 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         assert_search_papers($this->u_chair, "ovemer:any:1-5", "1 17 18 19 20 21");
         assert_search_papers($this->u_chair, "ovemer:all:1-5", "1 17 18 19 20");
+        assert_search_papers($this->u_chair, "ovemer:1-5", "1 17 18 19 20");
         assert_search_papers($this->u_chair, "ovemer:span:1-5", "20");
 
         assert_search_papers($this->u_chair, "ovemer:any:1..3", "1 17 18 19 20");
         assert_search_papers($this->u_chair, "ovemer:any:1-3", "1 17 18 19 20");
         assert_search_papers($this->u_chair, "ovemer:all:1..3", "1 17 18");
         assert_search_papers($this->u_chair, "ovemer:all:1—3", "1 17 18");
+        assert_search_papers($this->u_chair, "ovemer:1—3", "1 17 18");
         assert_search_papers($this->u_chair, "ovemer:span:1..3", "");
         assert_search_papers($this->u_chair, "ovemer:any:1–2", "17 18 19 20");
         assert_search_papers($this->u_chair, "ovemer:all:1-2", "17 18");
@@ -1081,7 +1084,9 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         assert_search_papers($this->u_chair, "ovemer:any:C..E", "1 17 18 19 20");
         assert_search_papers($this->u_chair, "ovemer:any:C-E", "1 17 18 19 20");
         assert_search_papers($this->u_chair, "ovemer:all:C..E", "1 17 18");
+        assert_search_papers($this->u_chair, "ovemer:C..E", "1 17 18");
         assert_search_papers($this->u_chair, "ovemer:all:C—E", "1 17 18");
+        assert_search_papers($this->u_chair, "ovemer:C—E", "1 17 18");
         assert_search_papers($this->u_chair, "ovemer:span:C..E", "");
         assert_search_papers($this->u_chair, "ovemer:any:D–E", "17 18 19 20");
         assert_search_papers($this->u_chair, "ovemer:all:D-E", "17 18");
@@ -1091,7 +1096,6 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         assert_search_papers($this->u_chair, "ovemer:D..E", "17 18");
         assert_search_papers($this->u_chair, "ovemer:C..E", "1 17 18");
         assert_search_papers($this->u_chair, "ovemer:C-E", "");
-        assert_search_papers($this->u_chair, "ovemer:CE", "");
         $this->conf->set_opt("allowObsoleteScoreSearch", null);
 
         $sv = SettingValues::make_request($this->u_chair, [
