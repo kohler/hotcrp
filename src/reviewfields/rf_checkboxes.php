@@ -12,8 +12,9 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
     }
 
     /** @param ?int $fval
+     * @param bool $flip
      * @return ?list<int> */
-    static function unpack_value($fval) {
+    static function unpack_value($fval, $flip = false) {
         if ($fval === null) {
             return null;
         }
@@ -26,7 +27,7 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
             if (($fval & $b) !== 0)
                 $r[] = $s;
         }
-        return $r;
+        return $flip && count($r) > 1 ? array_reverse($r) : $r;
     }
 
     /** @param ?int $fval
@@ -95,7 +96,7 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
     }
 
     function unparse_span_html($fval, $format = null) {
-        $r = self::unpack_value($fval);
+        $r = self::unpack_value($fval, $this->flip);
         if ($r === null) {
             return "";
         } else if ($r === []) {
@@ -105,7 +106,6 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
             $vc = $this->value_class($r[0]);
             return "<span class=\"{$vc}\">{$this->symbols[$r[0] - 1]}</span>";
         }
-        $r = $this->flip ? array_reverse($r) : $r;
         $x = [];
         for ($i = 0; $i !== count($r); ++$i) {
             $sym = $this->symbols[$r[$i] - 1];
@@ -264,7 +264,14 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
         if ($fval === 0) {
             $t[] = "None\n";
         } else {
-            $t[] = join(", ", $this->unpack_value_symbols($fval)) . "\n";
+            foreach (self::unpack_value($fval, $this->flip) as $s) {
+                $sym = $this->symbols[$s - 1];
+                if (($val = $this->values[$s - 1]) !== "") {
+                    $t[] = prefix_word_wrap("{$sym}. ", $val, strlen($sym) + 2, null, $args["flowed"]);
+                } else {
+                    $t[] = "{$sym}\n";
+                }
+            }
         }
     }
 
