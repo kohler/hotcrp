@@ -470,10 +470,16 @@ class HotCRPMailer extends Mailer {
         }
     }
     function kw_reviewacceptor() {
-        if ($this->rrow && ($tok = ReviewAccept_Capability::make($this->rrow, true))) {
+        if (!$this->rrow || $this->censor === self::CENSOR_ALL) {
+            return null;
+        }
+        $this->sensitive = true;
+        if ($this->censor) {
+            return "HIDDEN";
+        } else if (($tok = ReviewAccept_Capability::make($this->rrow, true))) {
             return $tok->salt;
         } else {
-            return false;
+            return null;
         }
     }
     function kw_reviews() {

@@ -264,11 +264,12 @@ class Mailer {
     }
 
     function kw_needpassword($args, $isbool, $uf) {
-        $external_login = $this->conf->external_login();
-        if (!$this->recipient) {
-            return $external_login ? false : null;
+        if ($this->conf->external_login() || $this->censor) {
+            return false;
+        } else if ($this->recipient) {
+            return $this->recipient->password_unset();
         } else {
-            return !$external_login && $this->recipient->password_unset();
+            return null;
         }
     }
 
@@ -279,8 +280,7 @@ class Mailer {
             return null;
         }
         $this->sensitive = true;
-        $token = $this->censor ? "HIDDEN" : $this->preparation->reset_capability;
-        if (!$token) {
+        if (!$this->censor && !$this->preparation->reset_capability) {
             $capinfo = new TokenInfo($this->conf, TokenInfo::RESETPASSWORD);
             if (($cdbu = $this->recipient->cdb_user())) {
                 $capinfo->set_user($cdbu)->set_token_pattern("hcpw1[20]");
@@ -291,6 +291,7 @@ class Mailer {
             $token = $capinfo->create();
             $this->preparation->reset_capability = $token;
         }
+        $token = $this->censor ? "HIDDEN" : $this->preparation->reset_capability;
         return $this->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($token);
     }
 
