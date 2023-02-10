@@ -7,6 +7,10 @@ class ReviewAccept_Capability {
      * @param bool $create
      * @return ?TokenInfo */
     static function make($rrow, $create) {
+        if ($rrow->reviewId <= 0) {
+            return null;
+        }
+
         $result = $rrow->conf->qe("select * from Capability where salt>=? and salt<?",
             "hcra{$rrow->reviewId}@", "hcra{$rrow->reviewId}~");
         $tok = null;

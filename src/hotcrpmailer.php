@@ -160,7 +160,7 @@ class HotCRPMailer extends Mailer {
         $rf = $this->conf->review_form();
         foreach ($rrows as $rrow) {
             if (($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED
-                 || ($rrow == $this->rrow && $this->rrow_unsubmitted))
+                 || ($rrow === $this->rrow && $this->rrow_unsubmitted))
                 && $this->permuser->can_view_review($this->row, $rrow)) {
                 if ($text !== "") {
                     $text .= "\n\n*" . str_repeat(" *", 37) . "\n\n\n";
@@ -255,6 +255,9 @@ class HotCRPMailer extends Mailer {
     }
 
     private function guess_reviewdeadline() {
+        if ($this->rrow) {
+            return $this->rrow->deadline_name();
+        }
         if ($this->row
             && ($rrows = $this->row->reviews_by_user($this->recipient))) {
             $rrow0 = $rrow1 = null;
@@ -308,6 +311,7 @@ class HotCRPMailer extends Mailer {
             return null;
         }
     }
+
     function kw_statistic($args, $isbool, $uf) {
         if ($this->_statistics === null) {
             $this->_statistics = $this->conf->count_submitted_accepted();

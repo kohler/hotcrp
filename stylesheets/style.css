@@ -4532,6 +4532,7 @@ body {
 .modal .mail-preview {
 	max-height: 75vh;
 	width: 100%;
+	overflow-y: auto;
 }
 .mail-editor {
 	padding: 0.75em 1em;

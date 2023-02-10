@@ -24,12 +24,16 @@ class Mail_API {
             $mailinfo["reason"] = $qreq->reason;
         }
         $rid = $qreq->r;
-        if (isset($rid)
-            && ctype_digit($rid)
-            && $prow
-            && ($rrow = $prow->review_by_id((int) $rid))
-            && $user->can_view_review($prow, $rrow)) {
-            $mailinfo["rrow"] = $rrow;
+        if ($prow) {
+            if (isset($rid)
+                && ctype_digit($rid)
+                && ($rrow = $prow->review_by_id(intval($rid)))
+                && $user->can_view_review($prow, $rrow)) {
+                $mailinfo["rrow"] = $rrow;
+            } else if ($qreq->template === "requestreview") {
+                $rrow = ReviewInfo::make_blank($prow, $recipient ?? Contact::make_email("<EMAIL>"));
+                $mailinfo["rrow"] = $rrow;
+            }
         }
         $mailer = new HotCRPMailer($user->conf, $recipient, $mailinfo);
 

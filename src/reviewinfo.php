@@ -218,10 +218,10 @@ class ReviewInfo implements JsonSerializable {
         $rrow->contactId = $user->contactId;
         $rrow->requestedBy = 0;
         $rrow->reviewToken = 0;
-        $rrow->reviewRound = $user->conf->assignment_round(!$user->isPC);
+        $rrow->reviewRound = $rrow->conf->assignment_round(!$user->isPC);
         $rrow->reviewOrdinal = 0;
         $rrow->reviewType = $user->isPC ? REVIEW_PC : REVIEW_EXTERNAL;
-        $rrow->reviewBlind = $user->conf->review_blindness() !== Conf::BLIND_NEVER ? 1 : 0;
+        $rrow->reviewBlind = $rrow->conf->review_blindness() !== Conf::BLIND_NEVER ? 1 : 0;
         $rrow->reviewTime = 0;
         $rrow->reviewModified = 0;
         $rrow->timeDisplayed = 0;
@@ -229,7 +229,7 @@ class ReviewInfo implements JsonSerializable {
         $rrow->reviewNeedsSubmit = 0;
         $rrow->reviewViewScore = -3;
         $rrow->reviewStatus = self::RS_EMPTY;
-        $rrow->fields = $user->conf->review_form()->order_array(null);
+        $rrow->fields = $rrow->conf->review_form()->order_array(null);
         return $rrow;
     }
 
