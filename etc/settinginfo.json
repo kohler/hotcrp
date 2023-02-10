@@ -54,13 +54,13 @@
     {
         "name_pattern": "decision/$/name",
         "title": "Decision name",
-        "type": "simplestring", "size": 35, "placeholder": "Decision name",
+        "type": "simplestring", "size": 30, "placeholder": "Decision name",
         "required": true
     },
     {
         "name_pattern": "decision/$/category",
         "title": "Decision category", "type": "radio",
-        "values": ["accept", "reject", "maybe"]
+        "values": ["accept", "reject", "deskreject", "maybe"]
     },
 
     {

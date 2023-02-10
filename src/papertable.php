@@ -968,8 +968,8 @@ class PaperTable {
                 $mailt = "all";
             } else if ($this->prow->outcome !== 0 && $this->prow->can_author_view_decision()) {
                 $dec = $this->prow->decision();
-                if ($dec->category !== DecisionInfo::CAT_NONE) {
-                    $mailt = $dec->category === DecisionInfo::CAT_YES ? "dec:yes" : "dec:no";
+                if ($dec->catbits !== DecisionInfo::CAT_OTHER) {
+                    $mailt = $dec->catbits & DecisionInfo::CAT_YES ? "dec:yes" : "dec:no";
                 }
             }
             $fr->value .= ' <a class="fx9 q" href="'

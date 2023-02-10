@@ -1388,8 +1388,9 @@ class PaperInfo {
     /** @return bool */
     function can_author_view_decision() {
         return $this->outcome !== 0
-            && $this->conf->_au_seedec
-            && $this->conf->_au_seedec->test($this, null);
+            && ($this->outcome_sign === -2
+                || ($this->conf->_au_seedec
+                    && $this->conf->_au_seedec->test($this, null)));
     }
 
     /** @return bool */

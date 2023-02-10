@@ -733,6 +733,9 @@ label.checki {
 .align-self-center {
 	align-self: center !important;
 }
+.justify-content-end {
+	justify-content: flex-end !important;
+}
 .relative {
 	position: relative;
 }

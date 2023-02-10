@@ -6,7 +6,7 @@ class Decision_Setting {
     public $id;
     /** @var string */
     public $name;
-    /** @var 'accept'|'reject'|'maybe' */
+    /** @var 'accept'|'reject'|'deskreject'|'maybe' */
     public $category;
     /** @var bool */
     public $deleted = false;
@@ -38,12 +38,33 @@ class Decision_SettingParser extends SettingParser {
         $isnew = $did === "" || $did === "new" || $did === "\$";
         $count = $countmap[$did] ?? 0;
         $editable = $sv->editable("decision");
-        echo '<div id="decision/', $ctr, '" class="has-fold foldo settings-decision',
-            $isnew ? ' is-new' : '', '"><div class="entryi">',
+        echo '<div id="decision/', $ctr, '" class="d-table mb-2 settings-decision',
+            $isnew ? ' is-new' : '', '">',
             $sv->feedback_at("decision/{$ctr}/name"),
             $sv->feedback_at("decision/{$ctr}/category"),
             Ht::hidden("decision/{$ctr}/id", $isnew ? "new" : $did, ["data-default-value" => $isnew ? "" : null]),
-            $sv->entry("decision/{$ctr}/name", ["data-exists-count" => $count, "class" => $isnew ? "uii js-settings-decision-new-name" : ""]);
+            '<div class="entryi mb-0 justify-content-end">',
+            $sv->entry("decision/{$ctr}/name", ["data-exists-count" => $count, "class" => "flex-grow-1 mb-1 " . ($isnew ? " uii js-settings-decision-new-name" : "")]),
+            '<div class="ml-2" style="min-width:24rem">';
+        $class = $sv->vstr("decision/{$ctr}/category");
+        $cats = [];
+        if ($isnew || $class === "accept") {
+            $cats["accept"] = "Accept category";
+        }
+        if ($isnew || $class !== "accept") {
+            $cats["reject"] = "Reject category";
+            $cats["deskreject"] = "Desk-reject category";
+            $cats["maybe"] = "Other category";
+        }
+        if (count($cats) > 1) {
+            echo Ht::select("decision/{$ctr}/category", $cats, $class,
+                $sv->sjs("decision/{$ctr}/category", [
+                    "class" => "uich js-settings-decision-category",
+                    "data-default-value" => $isnew ? "accept" : $class
+                ]));
+        } else {
+            echo '<span class="d-inline-block ', DecisionInfo::unparse_category_class(DecisionInfo::parse_category($class)), '" style="min-width:11.6rem">', join("", $cats), '</span>';
+        }
         if ($sv->reqstr("decision/{$ctr}/delete")) {
             echo Ht::hidden("decision/{$ctr}/delete", "1", ["data-default-value" => ""]);
         }
@@ -52,30 +73,15 @@ class Decision_SettingParser extends SettingParser {
         if ($editable) {
             echo Ht::button(Icons::ui_use("trash"), ["class" => "fx ui js-settings-decision-delete ml-2 need-tooltip", "name" => "decision/{$ctr}/deleter", "aria-label" => "Delete decision", "tabindex" => "-1"]);
         }
-        echo '<span class="ml-2 d-inline-block fx">';
-        $class = $sv->vstr("decision/{$ctr}/category");
-        if ($isnew) {
-            echo Ht::select("decision/{$ctr}/category",
-                    ["accept" => "Accept category", "reject" => "Reject category"], $class,
-                    $sv->sjs("decision/{$ctr}/category", ["data-default-value" => "accept"]));
-        } else {
-            if ($class === "accept") {
-                echo '<span class="dec-yes">Accept</span> category';
-            } else if ($class === "reject") {
-                echo '<span class="dec-no">Reject</span> category';
-            } else {
-                echo '<span class="dec-maybe">Maybe</span> category';
-            }
-            if ($count) {
-                echo ", ", plural($count, "submission");
-            }
+        if ($count) {
+            echo '<span class="ml-2">', plural($count, "submission"), '</span>';
         }
         if ($sv->has_error_at("decision/{$ctr}/category")) {
             echo '<label class="d-inline-block checki ml-2"><span class="checkc">',
                 Ht::checkbox("decision/{$ctr}/name_force", 1, false),
                 '</span><span class="is-error">Confirm</span></label>';
         }
-        echo "</span></div></div>";
+        echo "</div></div></div>";
     }
 
     static function print(SettingValues $sv) {

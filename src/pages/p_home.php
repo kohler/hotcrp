@@ -208,8 +208,9 @@ class Home_Page {
             $this->print_h2_home('<a class="q" href="' . $this->conf->hoturl("search") . '" id="homesearch-label">Search</a>'),
             Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
             Ht::entry("q", (string) $qreq->q, [
-                "id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
-                "class" => "papersearch need-suggest flex-grow-1",
+                "id" => "homeq", "size" => 32,
+                "title" => "Enter paper numbers or search terms",
+                "class" => "papersearch need-suggest flex-grow-1 mb-1",
                 "placeholder" => "(All)", "spellcheck" => false,
                 "aria-labelledby" => "homesearch-label"
             ]), '<div class="form-basic-search-in"> in ',

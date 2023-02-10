@@ -247,8 +247,8 @@ class PaperStatus extends MessageSet {
         $dec = $prow->viewable_decision($this->user);
         if ($dec->id !== 0) {
             $pj->decision = $dec->placeholder ? $dec->name : $dec->id;
-            if ($dec->category !== DecisionInfo::CAT_NONE) {
-                $submitted_status = $dec->category === DecisionInfo::CAT_YES ? "accepted" : "rejected";
+            if ($dec->catbits !== DecisionInfo::CAT_OTHER) {
+                $submitted_status = ($dec->catbits & DecisionInfo::CAT_YES) !== 0 ? "accepted" : "rejected";
             }
         }
 

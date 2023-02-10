@@ -7,9 +7,9 @@ class DecisionInfo {
     public $id;
     /** @var string */
     public $name;
-    /** @var 1|2|4 */
-    public $category; // must be suitable for masking
-    /** @var -1|0|1 */
+    /** @var int */
+    public $catbits;
+    /** @var -2|-1|0|1 */
     public $sign;
     /** @var bool */
     public $placeholder = false;
@@ -17,30 +17,36 @@ class DecisionInfo {
     public $order = 0;
 
 
-    const CAT_NONE = 1;
-    const CAT_YES = 2;
-    const CAT_NO = 4;
-    const CAT_ALL = 7;
+    const CAT_YES = 0x10;
+    const CAT_NO = 0x20;
+    const CAT_OTHER = 0x40;
+    const CAT_SUBTYPE = 0x0F;
+    const CAT_DESKREJECT = 0x21;
     // see also DecisionSet::matchexpr
-
-    static private $class_name = [null, null, "dec-yes", null, "dec-no"];
-    static private $category_name = [null, null, "accept", null, "reject"];
 
 
     /** @param int $id
-     * @param string $name */
-    function __construct($id, $name) {
+     * @param string $name
+     * @param ?string $category */
+    function __construct($id, $name, $category = null) {
         $this->id = $id;
         $this->name = $name;
-        if ($this->id === 0) {
-            $this->category = self::CAT_NONE;
-            $this->sign = 0;
-        } else if ($this->id > 0) {
-            $this->category = self::CAT_YES;
+        if ($category !== null) {
+            $this->catbits = self::parse_category($category);
+        }
+        if ($this->catbits === null) {
+            if ($this->id === 0) {
+                $this->catbits = self::CAT_OTHER;
+            } else {
+                $this->catbits = $this->id > 0 ? self::CAT_YES : self::CAT_NO;
+            }
+        }
+        if (($this->catbits & self::CAT_YES) !== 0) {
             $this->sign = 1;
+        } else if (($this->catbits & self::CAT_NO) !== 0) {
+            $this->sign = $this->catbits === self::CAT_DESKREJECT ? -2 : -1;
         } else {
-            $this->category = self::CAT_NO;
-            $this->sign = -1;
+            $this->sign = 0;
         }
     }
 
@@ -58,9 +64,52 @@ class DecisionInfo {
         return $format === 5 ? htmlspecialchars($this->name) : $this->name;
     }
 
+    /** @param string $s
+     * @return ?int */
+    static function parse_category($s) {
+        if ($s === "maybe") {
+            return self::CAT_OTHER;
+        } else if ($s === "accept") {
+            return self::CAT_YES;
+        } else if ($s === "reject") {
+            return self::CAT_NO;
+        } else if ($s === "deskreject") {
+            return self::CAT_DESKREJECT;
+        } else {
+            return null;
+        }
+    }
+
+    /** @param int $catbits
+     * @return string */
+    static function unparse_category($catbits) {
+        if (($catbits & self::CAT_YES) !== 0) {
+            return "accept";
+        } else if (($catbits & self::CAT_NO) !== 0) {
+            return $catbits === self::CAT_DESKREJECT ? "deskreject" : "reject";
+        } else {
+            return "maybe";
+        }
+    }
+
+    /** @param int $catbits
+     * @return string */
+    static function unparse_category_class($catbits) {
+        if (($catbits & (self::CAT_YES | self::CAT_NO)) === 0) {
+            return "dec-maybe";
+        } else {
+            return ($catbits & self::CAT_YES) !== 0 ? "dec-yes" : "dec-no";
+        }
+    }
+
+    /** @return string */
+    function category_name() {
+        return self::unparse_category($this->catbits);
+    }
+
     /** @return string */
     function status_class() {
-        return self::$class_name[$this->category] ?? "dec-maybe";
+        return self::unparse_category_class($this->catbits);
     }
 
     /** @return Decision_Setting */
@@ -68,7 +117,7 @@ class DecisionInfo {
         $ds = new Decision_Setting;
         $ds->id = $this->id;
         $ds->name = $this->name;
-        $ds->category = self::$category_name[$this->category] ?? "maybe";
+        $ds->category = $this->category_name();
         return $ds;
     }
 }

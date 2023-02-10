@@ -308,28 +308,6 @@ handle_ui.on("js-settings-banal-pagelimit", function (evt) {
 });
 
 
-handle_ui.on("js-settings-decision-add", function () {
-    var form = this.form, ctr = 1;
-    while (form.elements["decision/" + ctr + "/id"])
-        ++ctr;
-    $("#settings-decision-type-notes").removeClass("hidden");
-    var h = $("#settings-new-decision-type").html().replace(/\/\$/g, "/" + ctr),
-        $r = $(h).appendTo("#settings-decision-types");
-    $r.find("input[type=text]").autogrow();
-    form.elements["decision/" + ctr + "/name"].focus();
-    form_highlight(form);
-});
-
-handle_ui.on("js-settings-decision-delete", function () {
-    var dec = this.closest(".settings-decision"),
-        ne = this.form.elements[dec.id + "/name"],
-        sc = ne.getAttribute("data-exists-count")|0;
-    settings_delete(dec, "This decision will be removed"
-        + (sc ? ' and <a href="'.concat(hoturl_html("search", {q: "dec:\"" + ne.defaultValue + "\""}), '" target="_blank">', plural(sc, "submission"), '</a> set to undecided') : '')
-        + '.');
-    form_highlight(this.form);
-});
-
 handle_ui.on("js-settings-automatic-tag-new", function () {
     var odiv = this.closest(".settings-automatic-tag"), h, ctr = 1;
     while ($$("automatic_tag/" + ctr))
@@ -859,16 +837,64 @@ handle_ui.on("input.js-settings-response-name", function () {
     }
 });
 
+handle_ui.on("js-settings-decision-add", function () {
+    var form = this.form, ctr = 1;
+    while (form.elements["decision/" + ctr + "/id"])
+        ++ctr;
+    $("#settings-decision-type-notes").removeClass("hidden");
+    var h = $("#settings-new-decision-type").html().replace(/\/\$/g, "/" + ctr),
+        $r = $(h).appendTo("#settings-decision-types");
+    $r.find("input[type=text]").autogrow();
+    $(form.elements["decision/" + ctr + "/category"]).trigger("change");
+    form.elements["decision/" + ctr + "/name"].focus();
+    form_highlight(form);
+});
+
+handle_ui.on("js-settings-decision-delete", function () {
+    var dec = this.closest(".settings-decision"),
+        ne = this.form.elements[dec.id + "/name"],
+        sc = ne.getAttribute("data-exists-count")|0;
+    if (settings_delete(dec, "This decision will be removed"
+            + (sc ? ' and <a href="'.concat(hoturl_html("search", {q: "dec:\"" + ne.defaultValue + "\""}), '" target="_blank">', plural(sc, "submission"), '</a> set to undecided.') : '.'))) {
+        addClass(this.closest("div"), "hidden");
+    }
+    form_highlight(this.form);
+});
+
 handle_ui.on("js-settings-decision-new-name", function () {
-    var d = this.closest(".settings-decision");
+    var d = this.closest(".settings-decision"), w, e;
     if (/accept/i.test(this.value)) {
-        this.form.elements[d.id + "/category"].selectedIndex = 0;
+        w = "accept";
     } else if (/reject/i.test(this.value)) {
-        this.form.elements[d.id + "/category"].selectedIndex = 1;
+        w = "reject";
     } else if (/revis/i.test(this.value)) {
-        this.form.elements[d.id + "/category"].selectedIndex = 0;
+        w = "accept";
+    } else {
+        return;
+    }
+    e = this.form.elements[d.id + "/category"];
+    if ((w === "accept" ? /reject/ : /accept/).test(w.value)) {
+        e.value = w;
     }
 });
+
+handle_ui.on("change.js-settings-decision-category", function () {
+    var k = "dec-maybe";
+    if (/accept/.test(this.value)) {
+        k = "dec-yes";
+    } else if (/reject/.test(this.value)) {
+        k = "dec-no";
+    }
+    removeClass(this, "dec-maybe");
+    removeClass(this, "dec-yes");
+    removeClass(this, "dec-no");
+    addClass(this, k);
+    if (this.value === "deskreject") {
+        $(".if-settings-decision-desk-reject").removeClass("hidden");
+    }
+});
+
+$(function () { $(".js-settings-decision-category").trigger("change"); });
 
 
 // JSON contenteditable support
