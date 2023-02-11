@@ -890,10 +890,8 @@ class Limit_SearchTerm extends SearchTerm {
         }
         $this->limit = $limit;
         // mark flags
-        if (in_array($limit, ["a", "ar", "viewable", "all", "none"], true)) {
+        if (in_array($limit, ["a", "ar", "r", "req", "viewable", "all", "none"], true)) {
             $this->lflag = 0;
-        } else if (in_array($limit, ["r", "rout", "req"], true)) {
-            $this->lflag = $this->reviewer_lflag();
         } else if (in_array($limit, ["act", "unsub", "actadmin"], true)
                    || ($this->user->conf->time_pc_view_active_submissions()
                        && !in_array($limit, ["s", "acc"], true))) {
@@ -916,15 +914,6 @@ class Limit_SearchTerm extends SearchTerm {
     /** @return bool */
     function is_author() {
         return $this->limit === "a";
-    }
-
-    /** @return int */
-    function reviewer_lflag() {
-        if ($this->user->isPC && $this->user->conf->time_pc_view_active_submissions()) {
-            return self::LFLAG_ACTIVE;
-        } else {
-            return self::LFLAG_SUBMITTED;
-        }
     }
 
     function simple_search(&$options) {
@@ -975,7 +964,6 @@ class Limit_SearchTerm extends SearchTerm {
         case "ar":
             return false;
         case "r":
-            assert(($options["active"] ?? false) || ($options["finalized"] ?? false));
             $options["myReviews"] = true;
             return true;
         case "rout":
@@ -1003,7 +991,6 @@ class Limit_SearchTerm extends SearchTerm {
         case "admin":
             return false;
         case "req":
-            assert(($options["active"] ?? false) || ($options["finalized"] ?? false));
             $options["myReviewRequests"] = true;
             return true;
         default:
@@ -1073,18 +1060,17 @@ class Limit_SearchTerm extends SearchTerm {
             } else if ($sqi->depth === 0) {
                 $r = "MyReviews.reviewType is not null";
             } else {
-                $r = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and $act_reviewer_sql)";
+                $r = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$act_reviewer_sql})";
             }
-            $ff[] = "(" . $this->user->act_author_view_sql($sqi->conflict_table($this->user)) . " or (Paper.timeWithdrawn<=0 and $r))";
+            $ff[] = "(" . $this->user->act_author_view_sql($sqi->conflict_table($this->user)) . " or {$r})";
             break;
         case "r":
-            // if top, the straight join suffices
             if ($act_reviewer_sql === "false") {
                 $ff[] = "false";
             } else if ($sqi->depth === 0) {
                 // the `join` with MyReviews suffices
             } else {
-                $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and $act_reviewer_sql)";
+                $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$act_reviewer_sql})";
             }
             break;
         case "rout":

@@ -1168,8 +1168,7 @@ class PaperSearch extends MessageSet {
     /** @return SearchTerm */
     function term() {
         if ($this->_qe === null) {
-            if ($this->q === "re:me"
-                && $this->_limit_qe->lflag === $this->_limit_qe->reviewer_lflag()) {
+            if ($this->q === "re:me") {
                 $this->_qe = new Limit_SearchTerm($this->user, $this->user, "r", true);
             } else if (($qe = $this->_search_expression($this->q))) {
                 $this->_qe = $qe;
