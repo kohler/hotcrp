@@ -342,9 +342,6 @@ class PaperSearch extends MessageSet {
 
     static private $ss_recursion = 0;
 
-    const LFLAG_SUBMITTED = 1;
-    const LFLAG_ACTIVE = 2;
-
 
     // NB: `$options` can come from an unsanitized user request.
     /** @param string|array|Qrequest $options */
@@ -454,26 +451,18 @@ class PaperSearch extends MessageSet {
         return $this;
     }
 
+    /** @return Limit_SearchTerm */
+    function limit_term() {
+        return $this->_limit_qe;
+    }
     /** @return string */
     function limit() {
         return $this->_limit_qe->limit;
     }
     /** @return bool */
-    function limit_submitted() {
-        return ($this->_limit_qe->lflag & self::LFLAG_SUBMITTED) !== 0;
-    }
-    /** @return bool */
-    function limit_author() {
-        return $this->_limit_qe->limit === "a";
-    }
-    /** @return bool */
     function show_submitted_status() {
         return in_array($this->_limit_qe->limit, ["a", "act", "all"])
             && $this->q !== "re:me";
-    }
-    /** @return bool */
-    function limit_accepted() {
-        return $this->_limit_qe->limit === "acc";
     }
     /** @return bool */
     function limit_explicit() {

@@ -903,6 +903,21 @@ class Limit_SearchTerm extends SearchTerm {
         }
     }
 
+    /** @return bool */
+    function is_submitted() {
+        return ($this->lflag & self::LFLAG_SUBMITTED) !== 0;
+    }
+
+    /** @return bool */
+    function is_accepted() {
+        return $this->limit === "acc";
+    }
+
+    /** @return bool */
+    function is_author() {
+        return $this->limit === "a";
+    }
+
     /** @return int */
     function reviewer_lflag() {
         if ($this->user->isPC && $this->user->conf->time_pc_view_active_submissions()) {

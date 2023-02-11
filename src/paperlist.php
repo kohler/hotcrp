@@ -1233,9 +1233,9 @@ class PaperList implements XtContext {
         // Bit 2: If set, then some authors may be plainly visible.
         // Bit 1: If set, then some authors may be visible through deblinding.
         $sb = $this->conf->submission_blindness();
-        if ($this->search->limit_author()
+        if ($this->search->limit_term()->is_author()
             || $sb === Conf::BLIND_NEVER
-            || ($this->search->limit_accepted()
+            || ($this->search->limit_term()->is_accepted()
                 && $this->conf->time_all_author_view_decision()
                 && !$this->conf->setting("seedec_hideau"))) {
             return 2;

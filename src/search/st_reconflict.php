@@ -21,7 +21,11 @@ abstract class Reconflict_SearchTerm extends SearchTerm {
 
         $old_overrides = $srch->user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $cids = [];
-        foreach ($srch->user->paper_set(["paperId" => $st, "reviewSignatures" => true, "finalized" => $srch->limit_submitted()]) as $prow) {
+        foreach ($srch->user->paper_set([
+                "paperId" => $st,
+                "reviewSignatures" => true,
+                "finalized" => $srch->limit_term()->is_submitted()
+            ]) as $prow) {
             if ($srch->user->can_view_paper($prow)) {
                 foreach ($prow->all_reviews() as $rrow) {
                     if ($rrow->reviewToken === 0

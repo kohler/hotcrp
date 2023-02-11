@@ -877,7 +877,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         assert($this->format_field instanceof Discrete_ReviewField);
     }
     function prepare(PaperList $pl, $visible) {
-        $bound = $pl->user->permissive_view_score_bound($pl->search->limit_author());
+        $bound = $pl->user->permissive_view_score_bound($pl->search->limit_term()->is_author());
         if ($this->format_field->view_score <= $bound) {
             return false;
         }
