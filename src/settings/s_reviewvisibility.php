@@ -36,7 +36,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
             $sv->append_item_at($name, $mi);
             $parent_setting && $sv->msg_at($parent_setting, "", $mi->status);
         }
-        foreach ($srch->term()->preorder() as $qe) {
+        foreach ($srch->main_term()->preorder() as $qe) {
             if ($qe instanceof Tag_SearchTerm) {
                 foreach ($qe->tsm->tag_patterns() as $tag) {
                     if (strpos($tag, "*") === false

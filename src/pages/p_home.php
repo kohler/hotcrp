@@ -566,7 +566,7 @@ class Home_Page {
                 } else {
                     $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">submission deadline</a> has passed.';
                 }
-            } else if (!$conf->time_edit_paper(null)) {
+            } else if (!$conf->can_edit_some_paper()) {
                 $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">update deadline</a> has passed, but you can still submit.';
                 if (($d = $this->setting_time_span("sub_sub"))) {
                     $deadlines[] = "You have until {$d} to submit papers.";

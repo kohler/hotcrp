@@ -29,7 +29,7 @@ class Conf {
     /** @var int */
     public $sversion;
     /** @var int */
-    private $_pc_see_cache;
+    private $permbits;
 
     /** @var string
      * @readonly */
@@ -485,13 +485,13 @@ class Conf {
     /** @suppress PhanAccessReadOnlyProperty */
     private function refresh_time_settings() {
         $tf = $this->time_between_settings("sub_open", "sub_sub", "sub_grace");
-        $this->_pc_see_cache = (($this->settings["sub_freeze"] ?? 0) > 0 ? 1 : 0)
+        $this->permbits = (($this->settings["sub_freeze"] ?? 0) > 0 ? 1 : 0)
             | ($tf === 1 ? 2 : 0)
             | ($tf > 0 ? 4 : 0)
             | (($this->settings["pc_seeallpdf"] ?? 0) > 0 ? 16 : 0);
         if (($this->settings["pc_seeall"] ?? 0) > 0
-            && ($this->_pc_see_cache & 4) !== 0) {
-            $this->_pc_see_cache |= 8;
+            && ($this->permbits & 4) !== 0) {
+            $this->permbits |= 8;
         }
 
         $rot = $this->settings["rev_open"] ?? 0;
@@ -3393,17 +3393,25 @@ class Conf {
     function time_start_paper() {
         return $this->time_between_settings("sub_open", "sub_reg", "sub_grace") > 0;
     }
+    /** @return bool */
+    function can_edit_some_paper() {
+        return $this->time_between_settings("sub_open", "sub_update", "sub_grace") > 0;
+    }
+    /** @return bool */
+    function can_edit_after_submit() {
+        return ($this->permbits & 1) === 0;
+    }
     /** @param ?PaperInfo $prow
      * @return bool */
     function time_edit_paper($prow = null) {
         return $this->time_between_settings("sub_open", "sub_update", "sub_grace") > 0
-            && (!$prow || $prow->timeSubmitted <= 0 || ($this->_pc_see_cache & 1) === 0);
+            && (!$prow || $prow->timeSubmitted <= 0 || ($this->permbits & 1) === 0);
     }
     /** @param ?PaperInfo $prow
      * @return bool */
     function time_finalize_paper($prow = null) {
-        return ($this->_pc_see_cache & 4) !== 0
-            && (!$prow || $prow->timeSubmitted <= 0 || ($this->_pc_see_cache & 1) === 0);
+        return ($this->permbits & 4) !== 0
+            && (!$prow || $prow->timeSubmitted <= 0 || ($this->permbits & 1) === 0);
     }
     /** @return bool */
     function allow_final_versions() {
@@ -3474,12 +3482,12 @@ class Conf {
     function time_pc_view(PaperInfo $prow, $pdf) {
         if ($prow->timeSubmitted > 0) {
             return !$pdf
-                || ($this->_pc_see_cache & 18) !== 2
+                || ($this->permbits & 18) !== 2
                    // 16 = all submitted PDFs viewable, 2 = some submissions open
                 || $prow->timeSubmitted < ($this->settings["sub_open"] ?? 0);
         } else if ($prow->timeWithdrawn <= 0) {
             return !$pdf
-                && ($this->_pc_see_cache & 8) !== 0
+                && ($this->permbits & 8) !== 0
                 && $this->time_finalize_paper($prow);
         } else {
             return false;
@@ -3573,12 +3581,12 @@ class Conf {
     /** @return bool
      * @deprecated */
     function time_pc_view_active_submissions() {
-        return ($this->_pc_see_cache & 8) !== 0;
+        return ($this->permbits & 8) !== 0;
     }
 
     /** @return bool */
     function can_pc_view_incomplete() {
-        return ($this->_pc_see_cache & 8) !== 0;
+        return ($this->permbits & 8) !== 0;
     }
 
 

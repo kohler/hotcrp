@@ -389,7 +389,7 @@ class PaperSearch extends MessageSet {
             // Empty limit should be the plausible limit for a default search,
             // as in entering text into a quicksearch box.
             if ($user->privChair
-                && ($user->is_root_user() || $this->conf->time_edit_paper())) {
+                && ($user->is_root_user() || $this->conf->can_edit_some_paper())) {
                 $limit = "all";
             } else if ($user->isPC) {
                 $limit = $this->conf->can_pc_view_incomplete() ? "act" : "s";
@@ -488,13 +488,13 @@ class PaperSearch extends MessageSet {
 
     /** @return bool */
     function has_problem() {
-        $this->_qe || $this->term();
+        $this->_qe || $this->main_term();
         return parent::has_problem();
     }
 
     /** @return list<MessageItem> */
     function message_list() {
-        $this->_qe || $this->term();
+        $this->_qe || $this->main_term();
         return parent::message_list();
     }
 
@@ -1166,7 +1166,7 @@ class PaperSearch extends MessageSet {
     // BASIC QUERY FUNCTION
 
     /** @return SearchTerm */
-    function term() {
+    function main_term() {
         if ($this->_qe === null) {
             if ($this->q === "re:me") {
                 $this->_qe = new Limit_SearchTerm($this->user, $this->user, "r", true);
@@ -1182,11 +1182,17 @@ class PaperSearch extends MessageSet {
         return $this->_qe;
     }
 
+    /** @return SearchTerm
+     * @deprecated */
+    function term() {
+        return $this->main_term();
+    }
+
     /** @return SearchTerm */
     function full_term() {
         assert($this->user->is_root_user());
         // returns SearchTerm that includes effect of the limit
-        $this->_qe || $this->term();
+        $this->_qe || $this->main_term();
         if ($this->_limit_qe->limit === "all") {
             return $this->_qe;
         } else {
@@ -1281,7 +1287,7 @@ class PaperSearch extends MessageSet {
             return;
         }
 
-        $qe = $this->term();
+        $qe = $this->main_term();
         //Conf::msg_debugt(json_encode($qe->debug_json()));
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
 
@@ -1471,7 +1477,7 @@ class PaperSearch extends MessageSet {
     /** @return list<string> */
     private function sort_field_list() {
         $r = [];
-        foreach (self::view_generator($this->term()->view_anno() ?? []) as $sve) {
+        foreach (self::view_generator($this->main_term()->view_anno() ?? []) as $sve) {
             if ($sve->sort_action()) {
                 $r[] = $sve->keyword;
             }
@@ -1494,10 +1500,9 @@ class PaperSearch extends MessageSet {
     /** @return bool */
     function test(PaperInfo $prow) {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $qe = $this->term();
         $x = $this->user->can_view_paper($prow)
             && $this->_limit_qe->test($prow, null)
-            && $qe->test($prow, null);
+            && $this->main_term()->test($prow, null);
         $this->user->set_overrides($old_overrides);
         return $x;
     }
@@ -1507,7 +1512,7 @@ class PaperSearch extends MessageSet {
      * @deprecated */
     function filter($prows) {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $qe = $this->term();
+        $qe = $this->main_term();
         $results = [];
         foreach ($prows as $prow) {
             if ($this->user->can_view_paper($prow)
@@ -1523,10 +1528,9 @@ class PaperSearch extends MessageSet {
     /** @return bool */
     function test_review(PaperInfo $prow, ReviewInfo $rrow) {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $qe = $this->term();
         $x = $this->user->can_view_paper($prow)
             && $this->_limit_qe->test($prow, $rrow)
-            && $qe->test($prow, $rrow);
+            && $this->main_term()->test($prow, $rrow);
         $this->user->set_overrides($old_overrides);
         return $x;
     }
@@ -1536,7 +1540,7 @@ class PaperSearch extends MessageSet {
         $queryOptions = [];
         if ($this->_matches === null
             && $this->_limit_qe->simple_search($queryOptions)
-            && $this->term()->simple_search($queryOptions)) {
+            && $this->main_term()->simple_search($queryOptions)) {
             return $queryOptions;
         } else {
             return false;
@@ -1596,10 +1600,10 @@ class PaperSearch extends MessageSet {
             return $lx;
         } else if (str_starts_with($this->q, "au:")
                    && strlen($this->q) <= 36
-                   && $this->term() instanceof Author_SearchTerm) {
+                   && $this->main_term() instanceof Author_SearchTerm) {
             return "$lx by " . ltrim(substr($this->q, 3));
         } else if (strlen($this->q) <= 24
-                   || $this->term() instanceof Tag_SearchTerm) {
+                   || $this->main_term() instanceof Tag_SearchTerm) {
             return "{$this->q} in $lx";
         } else {
             return "$lx search";
@@ -1664,7 +1668,7 @@ class PaperSearch extends MessageSet {
     /** @return list<string> */
     function highlight_tags() {
         $this->_prepare();
-        $ht = $this->term()->get_float("tags") ?? [];
+        $ht = $this->main_term()->get_float("tags") ?? [];
         foreach ($this->sort_field_list() as $s) {
             if (($tag = Tagger::check_tag_keyword($s, $this->user)))
                 $ht[] = $tag;
@@ -1682,7 +1686,7 @@ class PaperSearch extends MessageSet {
 
     /** @return array<string,TextPregexes> */
     function field_highlighters() {
-        $this->term();
+        $this->main_term();
         return $this->_match_preg ?? [];
     }
 

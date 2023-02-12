@@ -3231,10 +3231,8 @@ class Contact implements JsonSerializable {
     function can_edit_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
         return $rights->allow_author_edit
-            && $prow->timeWithdrawn <= 0
-            && (($rights->perm_tag_allows("author-write")
-                 ?? ($prow->outcome_sign >= 0 && $this->conf->time_edit_paper($prow)))
-                || $this->override_deadlines($rights));
+            && $prow->timeWithdrawn <= 0 /* non-overridable */
+            && ($prow->can_author_edit_paper() || $this->override_deadlines($rights));
     }
 
     /** @return PermissionProblem */

@@ -350,7 +350,7 @@ abstract class ReviewField implements JsonSerializable {
 
     /** @return ?SearchTerm */
     private function exists_term() {
-        $st = (new PaperSearch($this->conf->root_user(), $this->exists_if ?? ""))->term();
+        $st = (new PaperSearch($this->conf->root_user(), $this->exists_if ?? ""))->full_term();
         return $st instanceof True_SearchTerm ? null : $st;
     }
 
