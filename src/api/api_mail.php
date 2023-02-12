@@ -31,7 +31,7 @@ class Mail_API {
                 && $user->can_view_review($prow, $rrow)) {
                 $mailinfo["rrow"] = $rrow;
             } else if ($qreq->template === "requestreview") {
-                $rrow = ReviewInfo::make_blank($prow, $recipient ?? Contact::make_email("<EMAIL>"));
+                $rrow = ReviewInfo::make_blank($prow, $recipient ?? Contact::make_email($user->conf, "<EMAIL>"));
                 $mailinfo["rrow"] = $rrow;
             }
         }
