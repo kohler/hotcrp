@@ -3467,7 +3467,7 @@ class Conf {
     }
     /** @return bool */
     function timePCReviewPreferences() {
-        return $this->time_pc_view_active_submissions() || $this->has_any_submitted();
+        return $this->can_pc_view_incomplete() || $this->has_any_submitted();
     }
     /** @param bool $pdf
      * @return bool */
@@ -3570,8 +3570,14 @@ class Conf {
         return !!($this->settings["metareviews"] ?? false);
     }
 
-    /** @return bool */
+    /** @return bool
+     * @deprecated */
     function time_pc_view_active_submissions() {
+        return ($this->_pc_see_cache & 8) !== 0;
+    }
+
+    /** @return bool */
+    function can_pc_view_incomplete() {
         return ($this->_pc_see_cache & 8) !== 0;
     }
 

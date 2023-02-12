@@ -29,7 +29,7 @@ class Autoassign_Page {
         if ($this->user->privChair
             && !isset($qreq->t)
             && $qreq->a === "prefconflict"
-            && $this->conf->time_pc_view_active_submissions()) {
+            && $this->conf->can_pc_view_incomplete()) {
             $qreq->t = "all";
         }
         $limits = PaperSearch::viewable_manager_limits($this->user);

@@ -874,7 +874,7 @@ class Limit_SearchTerm extends SearchTerm {
         if ($limit === "reviewable") {
             if ($this->user->privChair || $this->user === $this->reviewer) {
                 if ($this->reviewer->can_accept_some_review_assignment()) {
-                    if ($this->user->conf->time_pc_view_active_submissions()) {
+                    if ($this->user->conf->can_pc_view_incomplete()) {
                         $limit = "act";
                     } else {
                         $limit = "s";
@@ -893,7 +893,7 @@ class Limit_SearchTerm extends SearchTerm {
         if (in_array($limit, ["a", "ar", "r", "req", "viewable", "all", "none"], true)) {
             $this->lflag = 0;
         } else if (in_array($limit, ["act", "unsub", "actadmin"], true)
-                   || ($this->user->conf->time_pc_view_active_submissions()
+                   || ($conf->can_pc_view_incomplete()
                        && !in_array($limit, ["s", "acc"], true))) {
             $this->lflag = self::LFLAG_ACTIVE;
         } else {
@@ -946,7 +946,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "act":
             assert(!!($options["active"] ?? false));
             return $this->user->privChair
-                || ($this->user->isPC && $conf->time_pc_view_active_submissions());
+                || ($this->user->isPC && $conf->can_pc_view_incomplete());
         case "reviewable":
             assert(($options["active"] ?? false) || ($options["finalized"] ?? false));
             if (($this->user !== $this->reviewer && !$this->user->allow_administer_all())
