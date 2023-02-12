@@ -4154,8 +4154,7 @@ class Contact implements JsonSerializable {
             return true;
         } else {
             $rights = $this->rights($prow);
-            return $rights->allow_administer
-                || ($this->isPC && $rights->reviewType > 0);
+            return $rights->allow_administer || $rights->reviewType > 0;
         }
     }
 
