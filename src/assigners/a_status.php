@@ -235,7 +235,8 @@ class Status_Assigner extends Assigner {
         }
 
         // if after submission deadline, email administrators
-        if (!$aset->conf->time_finalize_paper($prow)) {
+        if ($this->item->pre("_submitted") > 0
+            && !$prow->submission_round()->time_submit(true)) {
             foreach ($prow->late_withdrawal_followers() as $minic) {
                 if (!in_array($minic->contactId, $sent)
                     && ($p = HotCRPMailer::prepare_to($minic, $tmpl, $rest))) {

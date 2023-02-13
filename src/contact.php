@@ -3206,15 +3206,13 @@ class Contact implements JsonSerializable {
         }
     }
 
-    /** @return bool */
-    function can_start_paper() {
-        return $this->email
-            && ($this->conf->time_start_paper() || $this->override_deadlines(null));
-    }
-
     /** @return ?PermissionProblem */
-    function perm_start_paper() {
-        if ($this->can_start_paper()) {
+    function perm_start_paper(PaperInfo $prow) {
+        if (!$this->email) {
+            return new PermissionProblem($this->conf, ["signin" => true]);
+        }
+        $sr = $prow->submission_round();
+        if ($sr->time_register(true) || $this->override_deadlines(null)) {
             return null;
         } else {
             return new PermissionProblem($this->conf, ["deadline" => "sub_reg", "override" => $this->privChair]);
@@ -3251,7 +3249,7 @@ class Contact implements JsonSerializable {
         }
         if ($prow->timeSubmitted > 0
             && strpos($kind, "f") !== false
-            && $prow->can_update_until_deadline()) {
+            && $prow->submission_round()->freeze) {
             $whyNot["updateSubmitted"] = true;
         }
         if ($rights->allow_administer) {
@@ -3271,7 +3269,7 @@ class Contact implements JsonSerializable {
             && $rights->can_view_decision) {
             $whyNot["rejected"] = true;
         }
-        if (!$this->conf->time_edit_paper($prow)
+        if (!$prow->submission_round()->time_update(true)
             && !$this->override_deadlines($rights)) {
             $whyNot["deadline"] = "sub_update";
         }
@@ -3281,11 +3279,13 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_finalize_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        return $rights->allow_author_edit
-            && $prow->timeWithdrawn <= 0
-            && (($rights->perm_tag_allows("author-write")
-                 ?? $this->conf->time_finalize_paper($prow))
-                || $this->override_deadlines($rights));
+        if (!$rights->allow_author_edit || $prow->timeWithdrawn > 0) {
+            return false;
+        }
+        $sr = $prow->submission_round();
+        return (($prow->timeSubmitted <= 0 || !$sr->freeze)
+                && $sr->time_submit(true))
+            || $this->override_deadlines($rights);
     }
 
     /** @return ?PermissionProblem */
@@ -3295,7 +3295,8 @@ class Contact implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         $whyNot = $this->perm_edit_paper_failure($prow, $rights, "f");
-        if (!$this->conf->time_finalize_paper($prow)
+        $sr = $prow->submission_round();
+        if (!$sr->time_submit(true)
             && !$this->override_deadlines($rights)) {
             $whyNot["deadline"] = "sub_sub";
         }
@@ -3341,11 +3342,12 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_revive_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        return $rights->allow_author_edit
-            && $prow->timeWithdrawn > 0
-            && (($rights->perm_tag_allows("author-write")
-                 ?? $this->conf->time_finalize_paper($prow))
-                || $this->override_deadlines($rights));
+        if (!$rights->allow_author_edit || $prow->timeWithdrawn <= 0) {
+            return false;
+        }
+        $sr = $prow->submission_round();
+        return $sr->time_submit(true)
+            || $this->override_deadlines($rights);
     }
 
     /** @return ?PermissionProblem */
@@ -3358,9 +3360,10 @@ class Contact implements JsonSerializable {
         if ($prow->timeWithdrawn <= 0) {
             $whyNot["notWithdrawn"] = true;
         }
-        if (!$this->conf->time_edit_paper($prow)
+        $sr = $prow->submission_round();
+        if (!$sr->time_submit(true)
             && !$this->override_deadlines($rights)) {
-            $whyNot["deadline"] = "sub_update";
+            $whyNot["deadline"] = "sub_sub";
         }
         return $whyNot;
     }
@@ -5215,26 +5218,25 @@ class Contact implements JsonSerializable {
         $graces = [];
 
         // submissions
-        $sub_reg = $this->conf->setting("sub_reg");
-        $sub_update = $this->conf->setting("sub_update");
-        $sub_sub = $this->conf->setting("sub_sub");
-        $dl->sub->open = +$this->conf->setting("sub_open") > 0;
-        $dl->sub->sub = +$sub_sub;
+        $sr = $prows ? $prows[0]->submission_round() : $this->conf->submission_round();
+        $dl->sub->open = $sr->open > 0 && $sr->open <= Conf::$now;
+        $dl->sub->sub = $sr->submit;
         $sub_graces = [];
-        if ($sub_reg
-            && (!$sub_update || $sub_reg < $sub_update)) {
-            $dl->sub->reg = $sub_reg;
+        if ($sr->register > 0
+            && ($sr->update <= 0 || $sr->register < $sr->update)) {
+            $dl->sub->reg = $sr->register;
             $sub_graces[] = "reg";
         }
-        if ($sub_update
-            && $sub_update != $sub_sub) {
-            $dl->sub->update = $sub_update;
+        if ($sr->update > 0
+            && $sr->update != $sr->submit) {
+            $dl->sub->update = $sr->update;
             $sub_graces[] = "update";
         }
-        if ($dl->sub->open
-            && ($g = $this->conf->setting("sub_grace"))) {
+        if ($sr->open > 0
+            && $sr->open <= Conf::$now
+            && $sr->grace > 0) {
             $sub_graces[] = "sub";
-            array_push($graces, $dl->sub, $g, $sub_graces);
+            array_push($graces, $dl->sub, $sr->grace, $sub_graces);
         }
 
         $sb = $this->conf->submission_blindness();

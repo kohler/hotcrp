@@ -20,7 +20,7 @@ class Options_SettingRenderer {
 
     function __construct(SettingValues $sv) {
         $this->conf = $sv->conf;
-        $this->pt = new PaperTable($sv->user, new Qrequest("GET"));
+        $this->pt = new PaperTable($sv->user, new Qrequest("GET"), PaperInfo::make_new($sv->user));
         $this->pt->edit_show_all_visibility = true;
     }
 

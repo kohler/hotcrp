@@ -169,7 +169,7 @@ class Paper_Page {
         // check deadlines
         if ($is_new) {
             // we know that can_start_paper implies can_finalize_paper
-            $whynot = $this->user->perm_start_paper();
+            $whynot = $this->user->perm_start_paper($this->prow);
         } else if ($action === "final") {
             $whynot = $this->user->perm_edit_final_paper($this->prow);
         } else {
@@ -204,6 +204,7 @@ class Paper_Page {
             $new_prow->anno["is_new"] = true;
         }
         $newsubmit = $new_prow->timeSubmitted > 0 && !$was_submitted;
+        $sr = $conf->submission_round();
 
         // confirmation message
         if ($action === "final") {
@@ -234,13 +235,13 @@ class Paper_Page {
         } else if ($new_prow->timeSubmitted > 0) {
             $note_status = MessageSet::SUCCESS;
             $notes[] = $conf->_("<0>The submission is ready for review.");
-            if ($new_prow->can_update_until_deadline()) {
-                $notes[] = $this->time_note($new_prow->update_deadline(),
+            if (!$sr->freeze) {
+                $notes[] = $this->time_note($sr->update,
                     "<5>You have until %s to make further changes.", "");
             }
         } else {
             $note_status = MessageSet::URGENT_NOTE;
-            if (!$new_prow->can_update_until_deadline()) {
+            if ($sr->freeze) {
                 $notes[] = $conf->_("<0>The submission has not yet been completed.");
             } else if (($missing = PaperTable::missing_required_fields($new_prow))) {
                 $notes[] = $conf->_("<5>The submission is not ready for review. Required fields %#s are missing.", PaperTable::field_title_links($missing, "missing_title"));
@@ -248,10 +249,10 @@ class Paper_Page {
                 $first = $conf->_("This submission is marked as not ready for review.");
                 $notes[] = "<5><strong>" . Ftext::unparse_as(Ftext::ensure($first, 0), 5) . "</strong>";
             }
-            $notes[] = $this->time_note($new_prow->update_deadline(),
+            $notes[] = $this->time_note($sr->update,
                 "<5>You have until %s to make further changes.",
                 "<5>The deadline for updating submissions was %s.");
-            if (($msg = $this->time_note($new_prow->submission_deadline(),
+            if (($msg = $this->time_note($sr->submit,
                 "<5>Submissions incomplete as of %s will not be considered.", "")) !== "") {
                 $notes[] = $msg;
             }
@@ -276,7 +277,7 @@ class Paper_Page {
             } else {
                 $this->ps->splice_msg($msgpos++, $conf->_("<0>Please correct these issues and save again."), MessageSet::URGENT_NOTE);
             }
-        } else if ($this->ps->has_problem() && $new_prow->can_update_until_deadline()) {
+        } else if ($this->ps->has_problem() && !$sr->freeze) {
             $this->ps->splice_msg($msgpos++, $conf->_("<0>Please check these issues before completing the submission:"), MessageSet::WARNING_NOTE);
         }
         $notes = array_filter($notes, function ($n) { return $n !== ""; });
@@ -490,7 +491,7 @@ class Paper_Page {
         $user->add_overrides(Contact::OVERRIDE_CHECK_TIME);
         if ($pp->prow->paperId == 0
             && $user->privChair
-            && !$user->conf->time_start_paper()) {
+            && !$user->conf->submission_round()->time_register(true)) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
 

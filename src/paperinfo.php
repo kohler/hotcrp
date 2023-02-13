@@ -869,34 +869,45 @@ class PaperInfo {
     }
 
 
-    /** @return int */
+    /** @return SubmissionRound */
+    function submission_round() {
+        return $this->conf->submission_round();
+    }
+
+    /** @return int
+     * @deprecated */
     function open_time() {
-        return $this->conf->setting("sub_open") ?? 0;
+        return $this->submission_round()->open;
     }
 
-    /** @return int */
+    /** @return int
+     * @deprecated */
     function registration_deadline() {
-        return $this->conf->setting("sub_reg") ?? 0;
+        return $this->submission_round()->register;
     }
 
-    /** @return int */
+    /** @return int
+     * @deprecated */
     function update_deadline() {
-        return $this->conf->setting("sub_update") ?? 0;
+        return $this->submission_round()->update;
     }
 
-    /** @return int */
+    /** @return int
+     * @deprecated */
     function submission_deadline() {
-        return $this->conf->setting("sub_sub") ?? 0;
+        return $this->submission_round()->submit;
     }
 
-    /** @return int */
+    /** @return int
+     * @deprecated */
     function submission_grace() {
-        return $this->conf->setting("sub_grace") ?? 0;
+        return $this->submission_round()->grace;
     }
 
-    /** @return bool */
+    /** @return bool
+     * @deprecated */
     function can_update_until_deadline() {
-        return ($this->conf->setting("sub_freeze") ?? 0) <= 0;
+        return !$this->submission_round()->freeze;
     }
 
 
@@ -1395,10 +1406,12 @@ class PaperInfo {
 
     /** @return bool */
     function can_author_edit_paper() {
-        return $this->timeWithdrawn <= 0
-            && $this->outcome_sign >= 0
-            && ($this->conf->time_edit_paper($this)
-                || $this->perm_tag_allows("author-write"));
+        if ($this->timeWithdrawn > 0 || $this->outcome_sign < 0) {
+            return false;
+        }
+        $sr = $this->submission_round();
+        return ($this->timeSubmitted <= 0 || !$sr->freeze)
+            && $sr->time_update(true);
     }
 
     /** @return bool */

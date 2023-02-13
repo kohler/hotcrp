@@ -501,27 +501,27 @@ class Home_Page {
         echo '<a href="', $conf->hoturl("mail", "monreq=1"), '">Monitor requested reviews</a></div>', "\n";
     }
 
-    private function print_new_submission(Contact $user, $startable) {
+    private function print_new_submission(Contact $user, SubmissionRound $sr) {
         $conf = $user->conf;
-        $regdl = $conf->setting("sub_reg");
-        $subdl = $conf->setting("sub_sub");
         $dlt = "";
-        if ($regdl > 0 || $subdl > 0) {
-            $isreg = $regdl >= Conf::$now && $regdl < $subdl;
+        if ($sr->register > 0 || $sr->submit > 0) {
+            $isreg = $sr->register >= Conf::$now && $sr->register < $sr->submit;
             $dltype = $isreg ? "Registration" : "Submission";
-            $dlspan = $conf->unparse_time_with_local_span($isreg ? $regdl : $subdl);
+            $dlspan = $conf->unparse_time_with_local_span($isreg ? $sr->register : $sr->submit);
             $dlt = "<em class=\"deadline\">{$dltype} deadline: {$dlspan}</em>";
         }
         if (!$user->has_email()) {
             echo '<p>', Ht::link("Sign in", $conf->hoturl("signin")),
                 ' to start a submission.', $dlt ? " " : "", $dlt, '</p>';
         } else {
-            $url = $conf->hoturl("paper", "p=new");
+            $url = $conf->hoturl("paper", [
+                "p" => "new", "sclass" => $sr->unnamed ? null : $sr->tag
+            ]);
             $actions = [[
                 "<a class=\"btn\" href=\"{$url}\">New submission</a>",
-                $startable ? "" : "(admin only)"
+                $sr->time_register(true) ? "" : "(admin only)"
             ]];
-            if ($regdl > 0 || $subdl > 0) {
+            if ($dlt !== "") {
                 $actions[] = [$dlt];
             }
             echo Ht::actions($actions, ["class" => "aab mt-0 mb-0 align-items-baseline"]);
@@ -532,7 +532,7 @@ class Home_Page {
     function print_submissions(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->is_author()
-            && $conf->time_start_paper() <= 0
+            && !$conf->submission_round()->time_register(true)
             && !$user->privChair
             && $user->is_reviewer()) {
             return;
@@ -541,9 +541,9 @@ class Home_Page {
         echo '<div class="homegrp" id="homeau">',
             $this->print_h2_home($user->is_author() ? "Your Submissions" : "Submissions");
 
-        $startable = $conf->time_start_paper();
-        if ($startable || $user->privChair) {
-            $this->print_new_submission($user, $startable);
+        $sr = $conf->submission_round();
+        if ($sr->time_register(true) || $user->privChair) {
+            $this->print_new_submission($user, $sr);
         }
 
         $plist = null;
@@ -558,27 +558,29 @@ class Home_Page {
 
         $deadlines = [];
         if ($plist && $plist->has("need_submit")) {
-            if (!$conf->time_finalize_paper(null)) {
+            if (!$sr->time_submit(true)) {
                 // Be careful not to refer to a future deadline; perhaps an admin
                 // just turned off submissions.
-                if ($conf->time_between_settings("", "sub_sub", "sub_grace") > 0) {
+                if (!$sr->submit || $sr->submit + $sr->grace > Conf::$now) {
                     $deadlines[] = "The site is not open for submissions at the moment.";
                 } else {
                     $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">submission deadline</a> has passed.';
                 }
-            } else if (!$conf->can_edit_some_paper()) {
+            } else if (!$sr->time_update(true)) {
                 $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">update deadline</a> has passed, but you can still submit.';
-                if (($d = $this->setting_time_span("sub_sub"))) {
+                if ($sr->submit > Conf::$now) {
+                    $d = $conf->unparse_time_with_local_span($sr->submit);
                     $deadlines[] = "You have until {$d} to submit papers.";
                 }
             } else {
-                if (($d = $this->setting_time_span("sub_update"))) {
+                if ($sr->update > Conf::$now) {
+                    $d = $conf->unparse_time_with_local_span($sr->update);
                     $deadlines[] = "You have until {$d} to submit papers.";
                 }
             }
         }
-        if (!$startable && !count($deadlines)) {
-            if ($conf->time_after_setting("sub_open")) {
+        if (!$sr->time_register(true) && !count($deadlines)) {
+            if ($sr->open > 0) {
                 $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">deadline</a> for registering submissions has passed.';
             } else {
                 $deadlines[] = "The site is not open for submissions at the moment.";

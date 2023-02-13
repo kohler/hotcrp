@@ -389,7 +389,8 @@ class PaperSearch extends MessageSet {
             // Empty limit should be the plausible limit for a default search,
             // as in entering text into a quicksearch box.
             if ($user->privChair
-                && ($user->is_root_user() || $this->conf->can_edit_some_paper())) {
+                && ($user->is_root_user()
+                    || $this->conf->submission_round()->time_update(true))) {
                 $limit = "all";
             } else if ($user->isPC) {
                 $limit = $this->conf->can_pc_view_incomplete() ? "act" : "s";
