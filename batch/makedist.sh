@@ -459,6 +459,7 @@ src/settings/s_rf.php
 src/settings/s_sf.php
 src/settings/s_shepherds.php
 src/settings/s_sitecontact.php
+src/settings/s_sround.php
 src/settings/s_subfieldcondition.php
 src/settings/s_subform.php
 src/settings/s_submissions.php

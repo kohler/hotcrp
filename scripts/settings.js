@@ -421,6 +421,30 @@ handle_ui.on("js-settings-review-round-delete", function () {
 });
 
 
+handle_ui.on("js-settings-submission-round-new", function () {
+    var i, h = $$("settings-submission-round-new").innerHTML, $n;
+    for (i = 1; $$("submission/" + i); ++i) {
+    }
+    $n = $(h.replace(/\/\$/g, "/" + i));
+    $("#settings-submission-rounds").append($n);
+    $n.awaken();
+    form_highlight(this.form);
+    this.form.elements["submission/" + i + "/tag"].focus();
+});
+
+handle_ui.on("js-settings-submission-round-delete", function () {
+    var div = this.closest(".js-settings-submission-round"),
+        ne = this.form.elements[div.id + "/tag"],
+        n = div.getAttribute("div-exists-count")|0;
+    if (!n) {
+        settings_delete(div, "This submission class will be removed.");
+    } else {
+        settings_delete(div, "This submission class will be removed. The <a href=\"".concat(hoturl_html("search", {q: "#" + (ne ? ne.defaultValue : "<invalid>")}), '" target="_blank">', plural(n, "submission"), '</a> associated with this class will remain in the system, and will still have the #', escape_html(ne ? ne.defaultValue : "<invalid>"), ' tag.'));
+    }
+    form_highlight(this.form);
+});
+
+
 var review_form_settings = (function () {
 
 var fieldorder = [], samples, rftypes,

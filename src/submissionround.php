@@ -41,7 +41,7 @@ class SubmissionRound {
     }
 
     /** @return SubmissionRound */
-    static function make_json($j, Conf $conf) {
+    static function make_json($j, SubmissionRound $main_sr, Conf $conf) {
         $sr = new SubmissionRound;
         $sr->tag = $j->tag;
         $sr->title1 = $sr->tag . " ";
@@ -49,8 +49,8 @@ class SubmissionRound {
         $sr->register = $j->register ?? 0;
         $sr->submit = $j->submit ?? 0;
         $sr->update = $j->update ?? $sr->submit;
-        $sr->grace = $j->grace ?? 0;
-        $sr->freeze = $j->freeze ?? false;
+        $sr->grace = $j->grace ?? $main_sr->grace;
+        $sr->freeze = $j->freeze ?? $main_sr->freeze;
         $sr->initialize($conf);
         return $sr;
     }
@@ -89,5 +89,22 @@ class SubmissionRound {
             && $this->open <= Conf::$now
             && ($this->submit <= 0
                 || $this->submit + ($with_grace ? $this->grace : 0) >= Conf::$now);
+    }
+
+    /** @param SubmissionRound|Sround_Setting $a
+     * @param SubmissionRound|Sround_Setting $b
+     * @return -1|0|1 */
+    static function compare($a, $b) {
+        $as = $a->open > 0 && ($a->submit <= 0 || $a->submit >= Conf::$now);
+        $bs = $b->open > 0 && ($b->submit <= 0 || $b->submit >= Conf::$now);
+        if ($as !== $bs) {
+            return $as ? -1 : 1;
+        }
+        if ($a->submit > 0
+            && $b->submit > 0
+            && abs($a->submit - $b->submit) >= 86400) {
+            return $a->submit > $b->submit ? 1 : -1;
+        }
+        return strcasecmp($a->tag, $b->tag);
     }
 }

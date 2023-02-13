@@ -344,6 +344,47 @@
 
 
     {
+        "name": "submission_rounds", "internal": true, "type": "string"
+    },
+    {
+        "name": "submission",
+        "type": "oblist", "parser_class": "Sround_SettingParser",
+        "title": "Submission classes and deadlines"
+    },
+    {
+        "name_pattern": "submission/$",
+        "type": "object", "subtype": "Sround_Setting",
+        "title": "Submission class", "title_pattern": "${sv submission/$/title}",
+        "parser_class": "Sround_SettingParser"
+    },
+    {   "name_pattern": "submission/$/id", "internal": true, "type": "string"   },
+    {
+        "name_pattern": "submission/$/tag",
+        "title": "Submission tag",
+        "type": "tag", "size": 20, "autogrow": true,
+        "placeholder": "(Tag)"
+    },
+    {
+        "name_pattern": "submission/$/title", "internal": true, "parser_class": "Sround_SettingParser"
+    },
+    {
+        "name_pattern": "submission/$/open",
+        "title": "/Enable submissions",
+        "type": "cdate"
+    },
+    {
+        "name_pattern": "submission/$/registration", "storage": "member.register",
+        "title": "/Registration deadline",
+        "type": "date", "placeholder": "none"
+    },
+    {
+        "name_pattern": "submission/$/done", "storage": "member.submit",
+        "title": "/Submission deadline",
+        "type": "date", "placeholder": "none"
+    },
+
+
+    {
         "name": "draft_submission_early_visibility", "storage": "pc_seeall",
         "title": "PC can see incomplete submissions",
         "type": "checkbox"

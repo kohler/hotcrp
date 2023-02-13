@@ -3416,15 +3416,16 @@ class Conf {
     function submission_round_list() {
         if ($this->_sub_rounds === null) {
             $this->_sub_rounds = [];
+            $main_sr = $this->submission_round();
             if (($t = $this->settingTexts["submission_rounds"] ?? null)
                 && ($j = json_decode($t))
                 && is_array($j)) {
                 foreach ($j as $jx) {
-                    if (($sr = SubmissionRound::make_json($jx, $this)))
+                    if (($sr = SubmissionRound::make_json($jx, $main_sr, $this)))
                         $this->_sub_rounds[] = $sr;
                 }
             }
-            $this->_sub_rounds[] = $this->submission_round();
+            $this->_sub_rounds[] = $main_sr;
         }
         return $this->_sub_rounds;
     }

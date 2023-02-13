@@ -574,17 +574,11 @@ class Home_Page {
             $this->print_h2_home($user->is_author() ? "Your Submissions" : "Submissions");
 
         if (!empty($srlist)) {
-            usort($srlist, function ($a, $b) {
-                if ($a->submit > 0 && $b->submit > 0 && $a->submit !== $b->submit) {
-                    return $a->submit <=> $b->submit;
-                } else {
-                    return strcasecmp($a->tag, $b->tag);
-                }
-            });
             if (!$user->has_email()) {
                 echo '<p>', Ht::link("Sign in", $conf->hoturl("signin")),
                     ' to start submissions.</p>';
             }
+            usort($srlist, "SubmissionRound::compare");
             foreach ($srlist as $sr) {
                 $this->print_new_submission($user, $sr);
             }
