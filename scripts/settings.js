@@ -811,8 +811,13 @@ handle_ui.on("js-settings-response-new", function () {
 });
 
 handle_ui.on("js-settings-response-delete", function () {
-    var rr = this.closest(".settings-response");
-    settings_delete(rr, "This response will be deleted.");
+    var rr = this.closest(".settings-response"),
+        sc = rr.getAttribute("data-exists-count")|0;
+    if (sc) {
+        settings_delete(rr, "This response round will be removed and ".concat(plural(sc, "response"), " permanently changed to frozen comments that only administrators can see."));
+    } else {
+        settings_delete(rr, "This response round will be removed.");
+    }
     form_highlight(this.form);
 });
 

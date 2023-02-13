@@ -411,7 +411,7 @@
         "name_pattern": "response/$/condition",
         "title": "/Condition",
         "type": "string", "subtype": "search", "size": 40, "placeholder": "(All)",
-        "parser_class": "Response_SettingParser"
+        "default_value": "all", "parser_class": "Response_SettingParser"
     },
     {
         "name_pattern": "response/$/wordlimit",

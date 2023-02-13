@@ -4516,8 +4516,9 @@ class Contact implements JsonSerializable {
         $rights = $this->rights($prow);
         $author = $rights->conflictType >= CONFLICT_AUTHOR
             && $this->conf->setting("cmt_author") > 0;
-        $time = $this->conf->setting("cmt_always") > 0
-            || $this->conf->time_review_open();
+        $time = ($this->conf->setting("cmt_always") > 0
+                 || $this->conf->time_review_open())
+            && ($crow->commentType & CommentInfo::CT_FROZEN) === 0;
         if ($crow->contactId !== 0
             && !$rights->allow_administer
             && !$this->is_my_comment($prow, $crow)
@@ -4595,7 +4596,8 @@ class Contact implements JsonSerializable {
                 || $rights->conflictType >= CONFLICT_AUTHOR)
             && (($rights->allow_administer
                  && ($newctype === null || $this->override_deadlines($rights)))
-                || $rrd->time_allowed(true))
+                || ($rrd->time_allowed(true)
+                    && ($crow->commentType & CommentInfo::CT_FROZEN) === 0))
             && $rrd->test_condition($prow);
     }
 
