@@ -112,8 +112,8 @@ class Sround_SettingParser extends SettingParser {
 
         // deadlines
         echo "<div class=\"ml-5\" id=\"submission/{$ctr}/edit\"><div class=\"flex-grow-0\">";
-        $sv->print_entry_group("submission/{$ctr}/register", "Registration deadline", ["horizontal" => true, "group_class" => "medium"]);
-        $sv->print_entry_group("submission/{$ctr}/submit", "Submission deadline", ["horizontal" => true, "group_class" => "medium"]);
+        $sv->print_entry_group("submission/{$ctr}/registration", "Registration deadline", ["horizontal" => true, "group_class" => "medium"]);
+        $sv->print_entry_group("submission/{$ctr}/done", "Submission deadline", ["horizontal" => true, "group_class" => "medium"]);
         echo '</div></div></div>';
         if ($deleted) {
             echo Ht::unstash_script("\$(function(){\$(\"#submission\\\\/{$ctr}\\\\/deleter\").click()})");
@@ -157,9 +157,9 @@ class Sround_SettingParser extends SettingParser {
         $srs = [];
         foreach ($sv->oblist_nondeleted_keys("submission") as $ctr) {
             $pfx = "submission/{$ctr}";
-            if ($sv->oldv("{$pfx}/register") !== $sv->newv("{$pfx}/register")
-                || $sv->oldv("{$pfx}/submit") !== $sv->newv("{$pfx}/submit")) {
-                $sv->check_date_before("submission/{$ctr}/register", "submission/{$ctr}/submit", false);
+            if ($sv->oldv("{$pfx}/registration") !== $sv->newv("{$pfx}/registration")
+                || $sv->oldv("{$pfx}/done") !== $sv->newv("{$pfx}/done")) {
+                $sv->check_date_before("submission/{$ctr}/registration", "submission/{$ctr}/done", false);
             }
             $srs[] = $sv->newv($pfx);
         }
