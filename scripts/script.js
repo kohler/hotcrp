@@ -5299,13 +5299,6 @@ function ReviewField(fj) {
         this.required = fj.required;
     if (fj.exists_if != null)
         this.exists_if = fj.exists_if;
-    // settings only
-    if (fj.id != null)
-        this.id = fj.id;
-    if (fj.selector != null)
-        this.selector = fj.selector;
-    if (fj.instantiate != null)
-        this.instantiate = fj.instantiate;
 }
 
 ReviewField.prototype.render_in = function (fv, rrow, fe) {

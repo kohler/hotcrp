@@ -44,7 +44,7 @@ class Decision_SettingParser extends SettingParser {
             $sv->feedback_at("decision/{$ctr}/category"),
             Ht::hidden("decision/{$ctr}/id", $isnew ? "new" : $did, ["data-default-value" => $isnew ? "" : null]),
             '<div class="entryi mb-0 justify-content-end">',
-            $sv->entry("decision/{$ctr}/name", ["data-exists-count" => $count, "class" => "flex-grow-1 mb-1 " . ($isnew ? " uii js-settings-decision-new-name" : "")]),
+            $sv->entry("decision/{$ctr}/name", ["data-exists-count" => $count, "class" => "flex-grow-1 mb-1 want-delete-marker" . ($isnew ? " uii js-settings-decision-new-name" : "")]),
             '<div class="ml-2" style="min-width:24rem">';
         $class = $sv->vstr("decision/{$ctr}/category");
         $cats = [];

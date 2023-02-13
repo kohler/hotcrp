@@ -42,7 +42,7 @@ class Options_SettingRenderer {
             '<div class="entry">',
             $sv->feedback_at("sf/{$this->ctr}/name");
         $sv->print_entry("sf/{$this->ctr}/name", [
-            "class" => "need-tooltip font-weight-bold want-focus",
+            "class" => "need-tooltip font-weight-bold want-focus want-delete-marker",
             "aria-label" => "Field name",
             "data-tooltip-info" => "settings-sf",
             "data-tooltip-type" => "focus"

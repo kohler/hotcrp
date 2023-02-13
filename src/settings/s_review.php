@@ -133,7 +133,7 @@ class Review_SettingParser extends SettingParser {
         $namesi = $sv->si("review/{$ctr}/name");
         $sv->print_feedback_at($namesi->name);
         echo $sv->label($namesi->name, "Round name"), ' &nbsp;',
-            $sv->entry($namesi->name, ["class" => "uii uich js-settings-review-round-name"]);
+            $sv->entry($namesi->name, ["class" => "uii uich js-settings-review-round-name want-delete-marker"]);
         if ($id > 1 || count($sv->conf->defined_rounds()) > 1) {
             echo Ht::button(Icons::ui_use("trash"), ["id" => "review/{$ctr}/deleter", "class" => "ui js-settings-review-round-delete ml-2 need-tooltip", "aria-label" => "Delete review round", "tabindex" => -1]);
         }

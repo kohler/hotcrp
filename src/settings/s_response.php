@@ -153,7 +153,7 @@ class Response_SettingParser extends SettingParser {
             $t .= '<span class="ml-3 d-inline-block">' . plural($n, "response") . '</span>';
         }
         $sv->print_entry_group("response/{$this->ctr}/name", "Response name", [
-            "class" => "uii js-settings-response-name",
+            "class" => "uii js-settings-response-name want-delete-marker",
             "horizontal" => true, "control_after" => $t
         ], is_int($this->ctr) && $this->ctr > 1 ? null : "Use no name or a short name like ‘Rebuttal’.");
     }

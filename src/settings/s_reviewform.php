@@ -657,7 +657,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             '<div id="rf/$/view" class="settings-rf-view fn2 ui js-foldup"></div>',
             '<fieldset id="rf/$/edit" class="fieldset-covert settings-rf-edit fx2">',
               '<div class="entryi mb-3" data-property="name"><div class="entry">',
-                '<input name="rf/$/name" id="rf/$/name" type="text" size="50" class="font-weight-bold want-focus" placeholder="Field name">',
+                '<input name="rf/$/name" id="rf/$/name" type="text" size="50" class="font-weight-bold want-focus want-delete-marker" placeholder="Field name">',
               '</div></div>';
         $sv->print_select_group("rf/\$/type", "Type", [], [
                 "horizontal" => true,
@@ -677,7 +677,6 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         $rfj = [];
         foreach ($sv->conf->review_form()->all_fields() as $f) {
             $rfj[] = $fj = $f->export_json(ReviewField::UJ_TEMPLATE);
-            $fj->search_keyword = $f->search_keyword();
             $fj->configurable = $rfedit;
         }
         $sj["fields"] = $rfj;

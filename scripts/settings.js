@@ -62,24 +62,24 @@ function settings_delete(elt, message) {
         addClass(elt, "hidden");
         $(elt).find("input, select, textarea").addClass("ignore-diff");
         return false;
-    } else {
-        var edit = document.getElementById(elt.id + "/edit") || elt;
-        $(edit).children().addClass("hidden");
-        $(edit).append('<div class="feedback is-warning" id="'.concat(elt.id, '/delete_message">', message, '</div>'));
-        $(edit).find("input").each(function () {
-            if (this.type !== "hidden" && !hasClass(this, "hidden")) {
-                this.disabled = true;
-                addClass(this, "text-decoration-line-through");
-                var parent = this.closest(".entryi");
-                if (parent) {
-                    removeClass(parent, "hidden");
-                    removeClass(parent, "mb-3");
-                }
-                return false;
-            }
-        });
-        return true;
     }
+    var edit = document.getElementById(elt.id + "/edit") || elt,
+        msg = '<div class="feedback is-warning" id="'.concat(elt.id, '/delete_message">', message, '</div>');
+    $(edit).children().addClass("hidden");
+    $(elt).find(".want-delete-marker").each(function () {
+        this.disabled = true;
+        addClass(this, "text-decoration-line-through");
+        var parent = this.closest(".entryi, .entryg");
+        if (parent) {
+            removeClass(parent, "hidden");
+            removeClass(parent, "mb-3");
+            $(parent).after(msg);
+            msg = null;
+        }
+        return false;
+    });
+    msg && $(edit).append(msg);
+    return true;
 }
 
 function settings_field_unfold() {
@@ -516,8 +516,8 @@ function rf_fill(pos, fld, setdefault) {
     if (setdefault) {
         rf_fill_control(form, rfid + "/order", fld.order || 0, setdefault);
     }
-    if (fld.search_keyword) {
-        $("#rf\\/" + pos).attr("data-rf", fld.search_keyword);
+    if (fld.uid) {
+        $("#rf\\/" + pos).attr("data-rf", fld.uid);
     }
     if (fld.configurable === false) {
         $("#rf\\/" + pos + " .settings-draghandle, #rf\\/" + pos + " .settings-rf-actions").addClass("hidden");
@@ -643,6 +643,19 @@ var rfproperties = {
     }
 }
 
+function rf_make(fj) {
+    var fld = hotcrp.make_review_field(fj);
+    if (fj.id != null)
+        fld.id = fj.id;
+    if (fj.selector != null)
+        fld.selector = fj.selector;
+    if (fj.instantiate != null)
+        fld.instantiate = fj.instantiate;
+    if (fj.configurable != null)
+        fld.configurable = fj.configurable;
+    return fld;
+}
+
 function rf_append(fld) {
     var pos = fieldorder.length + 1, $f, i, e, ne, prop, $j,
         rftype = field_find(rftypes, fld.type || "radio");
@@ -656,7 +669,7 @@ function rf_append(fld) {
         || fieldorder.indexOf(fld.id) >= 0) {
         throw new Error("rf_append error on " + fld.id + " " + (document.getElementById("rf/" + pos + "/id") ? "1 " : "0 ") + fieldorder.join(","));
     }
-    fld = hotcrp.make_review_field(fld);
+    fld = rf_make(fld);
     fieldorder.push(fld.id);
     $f = $($("#rf_template").html().replace(/\$/g, pos));
     field_instantiate($f.children(".settings-rf-edit")[0], rftypes, rftype.name, rfproperties);

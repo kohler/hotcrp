@@ -251,7 +251,8 @@ abstract class ReviewField implements JsonSerializable {
         $j = (object) [];
         if ($style > 0) {
             $j->id = $this->short_id;
-        } else {
+        }
+        if ($style !== 2) {
             $j->uid = $this->uid();
         }
         $j->name = $this->name;
