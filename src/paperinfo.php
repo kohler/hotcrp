@@ -527,6 +527,8 @@ class PaperInfo {
     private $_contact_info = [];
     /** @var int */
     private $_rights_version = 0;
+    /** @var ?SubmissionRound */
+    private $_submission_round;
     /** @var ?list<Author> */
     private $_author_array;
     /** @var ?array<string,string> */
@@ -718,8 +720,9 @@ class PaperInfo {
         return $prow;
     }
 
-    /** @return PaperInfo */
-    static function make_new(Contact $user) {
+    /** @param ?string $stag
+     * @return PaperInfo */
+    static function make_new(Contact $user, $stag) {
         $prow = new PaperInfo($user->conf);
         $prow->abstract = $prow->title = $prow->collaborators =
             $prow->authorInformation = $prow->paperTags = $prow->optionIds =
@@ -733,6 +736,10 @@ class PaperInfo {
         $prow->_contact_info[$user->contactXid] = $ci;
         $prow->_comment_skeleton_array = $prow->_comment_array = [];
         $prow->_row_set->add_paper($prow);
+        if ($stag && ($sr = $user->conf->submission_round_by_tag($stag))) {
+            $prow->paperTags = " {$stag}#0";
+            $prow->_submission_round = $sr;
+        }
         return $prow;
     }
 
@@ -871,7 +878,15 @@ class PaperInfo {
 
     /** @return SubmissionRound */
     function submission_round() {
-        return $this->conf->submission_round();
+        if (!$this->_submission_round) {
+            foreach ($this->conf->submission_round_list() as $sr) {
+                if ($sr->unnamed || $this->has_tag($sr->tag)) {
+                    $this->_submission_round = $sr;
+                    break;
+                }
+            }
+        }
+        return $this->_submission_round;
     }
 
     /** @return int

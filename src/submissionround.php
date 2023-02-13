@@ -7,6 +7,8 @@ class SubmissionRound {
     public $unnamed = false;
     /** @var string */
     public $tag = "";
+    /** @var string */
+    public $title1 = "";
     /** @var int */
     public $open = 0;
     /** @var int */
@@ -34,12 +36,32 @@ class SubmissionRound {
         $sr->update = $conf->setting("sub_update") ?? $sr->submit;
         $sr->grace = $conf->setting("sub_grace") ?? 0;
         $sr->freeze = $conf->setting("sub_freeze") > 0;
-        if ($sr->time_submit(true)) {
-            $sr->incomplete_viewable = $conf->setting("pc_seeall") > 0;
-            $sr->pdf_viewable = $conf->setting("pc_seeallpdf") > 0
-                || $sr->submit <= 0;
-        }
+        $sr->initialize($conf);
         return $sr;
+    }
+
+    /** @return SubmissionRound */
+    static function make_json($j, Conf $conf) {
+        $sr = new SubmissionRound;
+        $sr->tag = $j->tag;
+        $sr->title1 = $sr->tag . " ";
+        $sr->open = $j->open ?? 0;
+        $sr->register = $j->register ?? 0;
+        $sr->submit = $j->submit ?? 0;
+        $sr->update = $j->update ?? $sr->submit;
+        $sr->grace = $j->grace ?? 0;
+        $sr->freeze = $j->freeze ?? false;
+        $sr->initialize($conf);
+        return $sr;
+    }
+
+    /** @param Conf $conf */
+    private function initialize($conf) {
+        if ($this->time_submit(true)) {
+            $this->incomplete_viewable = $conf->setting("pc_seeall") > 0;
+            $this->pdf_viewable = $conf->setting("pc_seeallpdf") > 0
+                || $this->submit <= 0;
+        }
     }
 
     /** @param bool $with_grace

@@ -1003,10 +1003,6 @@ class PaperList implements XtContext {
                 return $row->has_nonempty_collaborators()
                     && $this->user->can_view_authors($row);
             });
-        } else if ($key === "need_submit") {
-            return $this->rowset()->any(function ($row) {
-                return $row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0;
-            });
         } else if ($key === "accepted") {
             return $this->rowset()->any(function ($row) {
                 return $row->outcome > 0 && $this->user->can_view_decision($row);

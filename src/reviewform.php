@@ -295,7 +295,7 @@ class ReviewForm {
     }
 
     function text_form(PaperInfo $prow_in = null, ReviewInfo $rrow_in = null, Contact $contact) {
-        $prow = $prow_in ?? PaperInfo::make_new($contact);
+        $prow = $prow_in ?? PaperInfo::make_new($contact, null);
         $rrow = $rrow_in ?? ReviewInfo::make_blank($prow, $contact);
         $revViewScore = $prow->paperId > 0 ? $contact->view_score_bound($prow, $rrow) : $contact->permissive_view_score_bound();
         self::check_review_author_seen($prow, $rrow, $contact);

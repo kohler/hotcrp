@@ -558,7 +558,7 @@ class PaperStatus extends MessageSet {
         }
         foreach ((array) $ipj as $k => $v) {
             if (!isset($xpj->$k) && !isset($ikeys[$k]) && !isset($xstatus->$k)
-                && !in_array($k, ["pid", "id", "options", "status", "decision", "reviews"])
+                && !in_array($k, ["pid", "id", "options", "status", "decision", "reviews", "submission_class"])
                 && $k[0] !== "_" && $k[0] !== "\$") {
                 $matches = $this->conf->options()->find_all($k);
                 if (count($matches) === 1) {
@@ -944,8 +944,15 @@ class PaperStatus extends MessageSet {
      * @param string $action
      * @return bool */
     function prepare_save_paper_web(Qrequest $qreq, $prow, $action) {
+        $nnprow = $prow ?? PaperInfo::make_new($this->user, $qreq->sclass);
+        $sr = $nnprow->submission_round();
+
+        // Submission ID and type
         $pj = (object) [];
-        $pj->pid = $prow && $prow->paperId > 0 ? $prow->paperId : -1;
+        $pj->pid = $nnprow->paperId > 0 ? $nnprow->paperId : -1;
+        if (!$sr->unnamed) {
+            $pj->submission_class = $sr->tag;
+        }
 
         // Status
         $updatecontacts = $action === "updatecontacts";
@@ -962,7 +969,6 @@ class PaperStatus extends MessageSet {
         }
 
         // Fields
-        $nnprow = $prow ?? PaperInfo::make_new($this->user);
         foreach ($nnprow->form_fields() as $o) {
             if (($qreq["has_{$o->formid}"] || isset($qreq[$o->formid]))
                 && (!$o->final || $action === "final")
@@ -1004,7 +1010,7 @@ class PaperStatus extends MessageSet {
             $this->error_at("pid", $this->_("<0>Saving submission with different ID"));
             return false;
         }
-        $this->_nnprow = $this->prow ?? PaperInfo::make_new($this->user);
+        $this->_nnprow = $this->prow ?? PaperInfo::make_new($this->user, $pj->submission_class ?? null);
 
         // normalize and check format
         $pj = $this->_normalize($pj);
@@ -1289,6 +1295,15 @@ class PaperStatus extends MessageSet {
                 }
                 $this->paperId = (int) $result->insert_id;
                 $this->_save_status |= self::SAVE_STATUS_NEW;
+                // save initial tags
+                if (($t = $this->_nnprow->all_tags_text()) !== "") {
+                    error_log($t);
+                    $qv = [];
+                    foreach (Tagger::split_unpack($t) as $ti) {
+                        $qv[] = [$this->paperId, $ti[0], $ti[1]];
+                    }
+                    $this->conf->qe("insert into PaperTag (paperId, tag, tagIndex) values ?v", $qv);
+                }
             }
         }
 

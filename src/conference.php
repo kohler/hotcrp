@@ -88,6 +88,8 @@ class Conf {
     private $_pcollator;
     /** @var ?SubmissionRound */
     private $_main_sub_round;
+    /** @var ?list<SubmissionRound> */
+    private $_sub_rounds;
     /** @var list<string> */
     private $rounds;
     /** @var ?array<int,string> */
@@ -434,6 +436,7 @@ class Conf {
         $this->_paper_opts->invalidate_options();
         $this->_review_form = null;
         $this->_main_sub_round = null;
+        $this->_sub_rounds = null;
         $this->_defined_rounds = null;
         $this->_resp_rounds = null;
         $this->_formatspec_cache = [];
@@ -496,6 +499,13 @@ class Conf {
         if ($sub > Conf::$now
             && ($this->settings["pc_seeall"] ?? 0) > 0) {
             $this->permbits |= self::PB_INCOMPLETE_VIEWABLE;
+        }
+        if (($this->settings["submission_rounds"] ?? 0)
+            && ($this->permbits & self::PB_ALL_PDF_VIEWABLE) !== 0) {
+            foreach ($this->submission_round_list() as $sr) {
+                if (!$sr->pdf_viewable)
+                    $this->permbits &= ~self::PB_ALL_PDF_VIEWABLE;
+            }
         }
 
         $rot = $this->settings["rev_open"] ?? 0;
@@ -3404,7 +3414,32 @@ class Conf {
 
     /** @return list<SubmissionRound> */
     function submission_round_list() {
-        return [$this->submission_round()];
+        if ($this->_sub_rounds === null) {
+            $this->_sub_rounds = [];
+            if (($t = $this->settingTexts["submission_rounds"] ?? null)
+                && ($j = json_decode($t))
+                && is_array($j)) {
+                foreach ($j as $jx) {
+                    if (($sr = SubmissionRound::make_json($jx, $this)))
+                        $this->_sub_rounds[] = $sr;
+                }
+            }
+            $this->_sub_rounds[] = $this->submission_round();
+        }
+        return $this->_sub_rounds;
+    }
+
+    /** @param ?string $t
+     * @return ?SubmissionRound */
+    function submission_round_by_tag($t) {
+        if ($t === null || $t === "" || strcasecmp($t, "unnamed") === 0) {
+            return $this->submission_round();
+        }
+        foreach ($this->submission_round_list() as $sr) {
+            if (strcasecmp($t, $sr->tag) === 0)
+                return $sr;
+        }
+        return null;
     }
 
     /** @return bool

@@ -175,7 +175,8 @@ class PaperTable {
             }
             $t .= '">' . $title;
         } else if (!$prow->paperId) {
-            $title = $conf->_c("paper_title", "New submission");
+            $sr = $prow->submission_round();
+            $title = $conf->_c("paper_title", "New {$sr->title1}submission");
             $t .= '">' . $title;
         } else {
             $paperTable->initialize_list();
@@ -2148,6 +2149,10 @@ class PaperTable {
         $form_url = [
             "p" => $this->prow->paperId ? : "new", "m" => "edit"
         ];
+        $sr = $this->prow->submission_round();
+        if (!$sr->unnamed) {
+            $form_url["sclass"] = $sr->tag;
+        }
         // This is normally added automatically, but isn't for new papers
         if ($this->user->is_admin_force()) {
             $form_url["forceShow"] = 1;
@@ -2173,9 +2178,14 @@ class PaperTable {
     private function _print_editable_body() {
         $this->_print_editable_form();
         $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
-        echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">',
-            $this->conf->_($this->prow->paperId ? "Edit Submission" : "New Submission"),
-            '</span></h2></div>';
+        echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">';
+        if ($this->prow->paperId) {
+            echo "Edit Submission";
+        } else {
+            $sr = $this->prow->submission_round();
+            echo "New ", $sr->title1, "Submission";
+        }
+        echo '</span></h2></div>';
 
         $this->edit_fields = array_values(array_filter(
             $this->prow->form_fields(),
@@ -2230,7 +2240,8 @@ class PaperTable {
         echo '<a href="#top" class="q"><span class="header-site-name">',
             htmlspecialchars($this->conf->short_name), '</span> ';
         if ($this->prow->paperId <= 0) {
-            echo "new submission";
+            $sr = $this->prow->submission_round();
+            echo "new {$sr->title1}submission";
         } else if ($this->mode !== "re") {
             echo "#", $this->prow->paperId;
         } else if ($this->editrrow && $this->editrrow->reviewOrdinal) {
