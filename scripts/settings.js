@@ -444,12 +444,14 @@ handle_ui.on("js-settings-submission-round-new", function () {
 
 handle_ui.on("js-settings-submission-round-delete", function () {
     var div = this.closest(".js-settings-submission-round"),
-        ne = this.form.elements[div.id + "/tag"],
-        n = div.getAttribute("div-exists-count")|0;
-    if (!n) {
-        settings_delete(div, "This submission class will be removed.");
-    } else {
-        settings_delete(div, "This submission class will be removed. The <a href=\"".concat(hoturl_html("search", {q: "#" + (ne ? ne.defaultValue : "<invalid>")}), '" target="_blank">', plural(n, "submission"), '</a> associated with this class will remain in the system, and will still have the #', escape_html(ne ? ne.defaultValue : "<invalid>"), ' tag.'));
+        ne = this.form.elements[div.id + "/tag"];
+    if (settings_delete(div, "This submission class will be removed.")
+        && ne) {
+        var search = {q: "sclass:" + ne.defaultValue, t: "all", forceShow: 1};
+        $.get(hoturl("api/search", search), null, function (v) {
+            if (v && v.ok && v.ids && v.ids.length)
+                $$(div.id + '/delete_message').innerHTML = 'This submission class will be removed. The <a href="'.concat(hoturl_html("search", {q: "sclass:" + ne.defaultValue, t: "all"}), '" target="_blank">', plural(v.ids.length, "submission"), '</a> associated with this class will remain in the system, and will still have the #', escape_html(ne.defaultValue), ' tag, but will be reassigned to other submission classes.');
+        });
     }
     form_highlight(this.form);
 });
