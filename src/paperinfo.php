@@ -1267,12 +1267,20 @@ class PaperInfo {
                 . "</em> " . $userm->highlight($cflt);
         } else if ($cflt->nonauthor) {
             $order = $cflt->author_index | (2 << 24);
-            $aucflt = $this->author_by_index($cflt->author_index);
-            $cfltdesc = "<em>author " . $aucflt->name_h() . " collaborator</em> " . $userm->highlight($cflt);
+            if (($aucflt = $this->author_by_index($cflt->author_index))) {
+                $cfltdesc = "<em>author " . $aucflt->name_h() . "’s collaborator</em> " . $userm->highlight($cflt);
+            } else {
+                error_log("#{$this->paperId}: cannot find {$cflt->author_index}");
+                $cfltdesc = "<em>author #{$cflt->author_index}’s collaborator</em> " . $userm->highlight($cflt);
+            }
         } else if ($why === AuthorMatcher::MATCH_AFFILIATION) {
             $order = $cflt->author_index | (1 << 24);
-            $aucflt = $this->author_by_index($cflt->author_index);
-            $cfltdesc = "<em>author</em> " . $aucflt->name_h() . " (" . $userm->highlight($cflt->affiliation) . ")";
+            if (($aucflt = $this->author_by_index($cflt->author_index))) {
+                $cfltdesc = "<em>author</em> " . $aucflt->name_h() . " (" . $userm->highlight($cflt->affiliation) . ")";
+            } else {
+                error_log("#{$this->paperId}: cannot find {$cflt->author_index}");
+                $cfltdesc = "<em>author #{$cflt->author_index}’s affiliation</em> " . $userm->highlight($cflt->affiliation);
+            }
         } else {
             $order = $cflt->author_index;
             $cfltdesc = "<em>author</em> " . $userm->highlight($cflt);
