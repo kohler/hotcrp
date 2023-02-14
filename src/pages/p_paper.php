@@ -204,7 +204,7 @@ class Paper_Page {
             $new_prow->anno["is_new"] = true;
         }
         $newsubmit = $new_prow->timeSubmitted > 0 && !$was_submitted;
-        $sr = $conf->submission_round();
+        $sr = $new_prow->submission_round();
 
         // confirmation message
         if ($action === "final") {
@@ -489,9 +489,9 @@ class Paper_Page {
             // XXX escape unless update && can_start_paper???
         }
         $user->add_overrides(Contact::OVERRIDE_CHECK_TIME);
-        if ($pp->prow->paperId == 0
+        if ($pp->prow->paperId === 0
             && $user->privChair
-            && !$user->conf->submission_round()->time_register(true)) {
+            && !$pp->prow->submission_round()->time_register(true)) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
 
