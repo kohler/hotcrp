@@ -25,11 +25,13 @@ class Assignable {
 }
 
 class AssignmentItem implements ArrayAccess, JsonSerializable {
-    /** @var Assignable */
+    /** @var Assignable
+     * @readonly */
     public $before;
     /** @var ?Assignable */
     public $after;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $existed;
     /** @var bool */
     public $deleted = false;
@@ -40,6 +42,10 @@ class AssignmentItem implements ArrayAccess, JsonSerializable {
     function __construct($before, $existed) {
         $this->before = $before;
         $this->existed = $existed;
+    }
+    /** @return string */
+    function type() {
+        return $this->before->type;
     }
     /** @return int */
     function pid() {
@@ -157,6 +163,8 @@ class AssignmentState extends MessageSet {
     public $overrides = 0;
     /** @var int */
     public $flags = 0;
+    /** @var int */
+    public $potential_conflict_warnings = 0;
     /** @var AssignerContacts */
     private $cmap;
     /** @var ?array<int,Contact> */

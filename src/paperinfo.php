@@ -994,6 +994,12 @@ class PaperInfo {
         return self::search_author_list_by_email($this->author_list(), $email);
     }
 
+    /** @param int $index
+     * @return ?Author */
+    function author_by_index($index) {
+        return ($this->author_list())[$index - 1] ?? null;
+    }
+
 
     /** @param bool $with_email */
     function load_conflicts($with_email) {
@@ -1261,13 +1267,15 @@ class PaperInfo {
                 . "</em> " . $userm->highlight($cflt);
         } else if ($cflt->nonauthor) {
             $order = $cflt->author_index | (2 << 24);
-            $cfltdesc = "<em>author #{$cflt->author_index} collaborator</em> " . $userm->highlight($cflt);
+            $aucflt = $this->author_by_index($cflt->author_index);
+            $cfltdesc = "<em>author " . $aucflt->name_h() . " collaborator</em> " . $userm->highlight($cflt);
         } else if ($why === AuthorMatcher::MATCH_AFFILIATION) {
             $order = $cflt->author_index | (1 << 24);
-            $cfltdesc = "<em>author #{$cflt->author_index} affiliation</em> " . $userm->highlight($cflt->affiliation);
+            $aucflt = $this->author_by_index($cflt->author_index);
+            $cfltdesc = "<em>author</em> " . $aucflt->name_h() . " (" . $userm->highlight($cflt->affiliation) . ")";
         } else {
             $order = $cflt->author_index;
-            $cfltdesc = "<em>author #{$cflt->author_index}</em> " . $userm->highlight($cflt->nonauthor ? $cflt : $cflt->name());
+            $cfltdesc = "<em>author</em> " . $userm->highlight($cflt);
         }
         $this->_potential_conflicts[] = [$order0, $userdesc, $order, $cfltdesc];
     }
