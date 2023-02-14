@@ -3405,18 +3405,24 @@ class Conf {
 
 
     /** @return SubmissionRound */
-    function submission_round() {
+    function unnamed_submission_round() {
         if (!$this->_main_sub_round) {
             $this->_main_sub_round = SubmissionRound::make_main($this);
         }
         return $this->_main_sub_round;
     }
 
+    /** @return SubmissionRound
+     * @deprecated */
+    function submission_round() {
+        return $this->unnamed_submission_round();
+    }
+
     /** @return list<SubmissionRound> */
     function submission_round_list() {
         if ($this->_sub_rounds === null) {
             $this->_sub_rounds = [];
-            $main_sr = $this->submission_round();
+            $main_sr = $this->unnamed_submission_round();
             if (($t = $this->settingTexts["submission_rounds"] ?? null)
                 && ($j = json_decode($t))
                 && is_array($j)) {
@@ -3433,47 +3439,19 @@ class Conf {
     /** @param ?string $t
      * @return ?SubmissionRound */
     function submission_round_by_tag($t) {
-        if ($t === null || $t === "" || strcasecmp($t, "unnamed") === 0) {
-            return $this->submission_round();
+        if ($t === null || $t === "") {
+            return $this->unnamed_submission_round();
         }
         foreach ($this->submission_round_list() as $sr) {
             if (strcasecmp($t, $sr->tag) === 0)
                 return $sr;
         }
+        if (in_array(strtolower($t), ["unnamed", "undefined", "default", "none"])) {
+            return $this->unnamed_submission_round();
+        }
         return null;
     }
 
-    /** @return bool
-     * @deprecated */
-    function time_start_paper() {
-        return $this->submission_round()->time_register(true);
-    }
-    /** @return bool
-     * @deprecated */
-    function can_edit_some_paper() {
-        return $this->submission_round()->time_update(true);
-    }
-    /** @return bool
-     * @deprecated */
-    function can_edit_after_submit() {
-        return !$this->submission_round()->freeze;
-    }
-    /** @param ?PaperInfo $prow
-     * @return bool
-     * @deprecated */
-    function time_edit_paper($prow = null) {
-        $sr = $prow ? $prow->submission_round() : $this->submission_round();
-        return $sr->time_update(true)
-            && (!$prow || $prow->timeSubmitted <= 0 || !$sr->freeze);
-    }
-    /** @param ?PaperInfo $prow
-     * @return bool
-     * @deprecated */
-    function time_finalize_paper($prow = null) {
-        $sr = $prow ? $prow->submission_round() : $this->submission_round();
-        return $sr->time_submit(true)
-            && (!$prow || $prow->timeSubmitted <= 0 || !$sr->freeze);
-    }
     /** @return bool */
     function allow_final_versions() {
         return $this->setting("final_open") > 0;

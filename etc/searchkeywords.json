@@ -164,6 +164,11 @@
         "negated": false, "sorting": false, "is_hash": false, "has": "any"
     },
     {
+        "name": "sclass",
+        "parse_function": "Sclass_SearchTerm::parse", "has": "any"
+    },
+    {   "name": "subclass", "alias": "sclass"   },
+    {
         "name": "hashtag",
         "parse_function": "Tag_SearchTerm::parse",
         "negated": false, "sorting": false, "is_hash": true, "has": "any"

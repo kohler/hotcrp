@@ -390,7 +390,7 @@ class PaperSearch extends MessageSet {
             // as in entering text into a quicksearch box.
             if ($user->privChair
                 && ($user->is_root_user()
-                    || $this->conf->submission_round()->time_update(true))) {
+                    || $this->conf->unnamed_submission_round()->time_update(true))) {
                 $limit = "all";
             } else if ($user->isPC) {
                 $limit = $this->conf->can_pc_view_incomplete() ? "act" : "s";

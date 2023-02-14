@@ -5220,7 +5220,7 @@ class Contact implements JsonSerializable {
         $graces = [];
 
         // submissions
-        $sr = $prows ? $prows[0]->submission_round() : $this->conf->submission_round();
+        $sr = $prows ? $prows[0]->submission_round() : $this->conf->unnamed_submission_round();
         $dl->sub->open = $sr->open > 0 && $sr->open <= Conf::$now;
         $dl->sub->sub = $sr->submit;
         $sub_graces = [];
