@@ -592,7 +592,7 @@ class TagList_Sitype extends Sitype {
     /** @param string $type
      * @param string $subtype */
     function __construct($type, $subtype) {
-        if (str_starts_with($subtype, "wildcard")) { // XXX
+        if ($subtype && str_starts_with($subtype, "wildcard")) { // XXX
             $subtype = "allow_{$subtype}";
         }
         if ($subtype === "allow_wildcard" || $subtype === "allow_wildcard_chair") {
