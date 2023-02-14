@@ -87,7 +87,7 @@ class AutoassignerInterface extends MessageSet {
             $this->reviewround = $qreq->rev_round;
             if ($this->reviewround !== ""
                 && ($err = Conf::round_name_error($this->reviewround))) {
-                $this->error_at("rev_round", "<0>$err");
+                $this->error_at("rev_round", "<0>{$err}");
             }
         }
 
@@ -105,7 +105,7 @@ class AutoassignerInterface extends MessageSet {
         $this->pcsel = [];
         if (isset($qreq->has_pcc)) {
             foreach ($this->conf->pc_members() as $cid => $p) {
-                if ($qreq["pcc$cid"])
+                if ($qreq["pcc{$cid}"])
                     $this->pcsel[] = $cid;
             }
         } else if (isset($qreq->pcs)) {
@@ -121,9 +121,9 @@ class AutoassignerInterface extends MessageSet {
     /** @return list<array{Contact,Contact}> */
     private function qreq_badpairs() {
         $bp = [];
-        for ($i = 1; isset($this->qreq["bpa$i"]); ++$i) {
-            if (($bpa = $this->qreq["bpa$i"])
-                && ($bpb = $this->qreq["bpb$i"])
+        for ($i = 1; isset($this->qreq["bpa{$i}"]); ++$i) {
+            if (($bpa = $this->qreq["bpa{$i}"])
+                && ($bpb = $this->qreq["bpb{$i}"])
                 && ($pca = $this->conf->pc_member_by_email($bpa))
                 && ($pcb = $this->conf->pc_member_by_email($bpb)))
                 $bp[] = [$pca, $pcb];
@@ -258,12 +258,14 @@ class AutoassignerInterface extends MessageSet {
     }
 
     private function make_autoassigner() {
-        $this->autoassigner = new Autoassigner($this->conf, $this->ssel->selection());
         if ($this->qreq->pctyp === "sel") {
-            $this->autoassigner->select_pc($this->pcsel);
+            $pcids = $this->pcsel;
         } else if ($this->qreq->pctyp === "enabled") {
-            $this->autoassigner->select_pc(array_keys($this->conf->enabled_pc_members()));
+            $pcids = array_keys($this->conf->enabled_pc_members());
+        } else {
+            $pcids = null;
         }
+        $this->autoassigner = new Autoassigner($this->conf, $pcids, $this->ssel->selection());
         if ($this->qreq->balance === "all") {
             $this->autoassigner->set_balance(Autoassigner::BALANCE_ALL);
         }
