@@ -45,7 +45,7 @@ class SubmissionRound {
         $sr = new SubmissionRound;
         $sr->tag = $j->tag;
         $sr->title1 = $sr->tag . " ";
-        $sr->open = $j->open ?? 0;
+        $sr->open = $j->open ?? $main_sr->open;
         $sr->register = $j->register ?? 0;
         $sr->submit = $j->submit ?? 0;
         $sr->update = $j->update ?? $sr->submit;
