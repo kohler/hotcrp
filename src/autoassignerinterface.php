@@ -267,8 +267,10 @@ class AutoassignerInterface extends MessageSet {
         if ($this->qreq->balance === "all") {
             $this->autoassigner->set_balance(Autoassigner::BALANCE_ALL);
         }
-        foreach ($this->qreq_badpairs() as $pair) {
-            $this->autoassigner->avoid_pair_assignment($pair[0]->contactId, $pair[1]->contactId);
+        if ($this->qreq->badpairs) {
+            foreach ($this->qreq_badpairs() as $pair) {
+                $this->autoassigner->avoid_pair_assignment($pair[0]->contactId, $pair[1]->contactId);
+            }
         }
         if ($this->qreq->method === "random") {
             $this->autoassigner->set_method(Autoassigner::METHOD_RANDOM);
