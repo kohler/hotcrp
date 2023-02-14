@@ -481,7 +481,7 @@ class SettingValues extends MessageSet {
                         $loc = "<a href=\"\" class=\"ui js-settings-jpath noul\">{$loc}</a>";
                     }
                 } else if ($loc && $si->has_hashid()) {
-                    $loc = Ht::link($loc, $si->sv_hoturl($this));
+                    $loc = $this->setting_link($loc, $si);
                 }
             }
             if ($lastmi

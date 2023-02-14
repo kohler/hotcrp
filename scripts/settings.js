@@ -5,6 +5,16 @@
 
 (function () {
 
+handle_ui.on("hashjump.js-hash", function (hashc, focus) {
+    var e, fx, fp;
+    if (hashc.length === 1
+        && (e = document.getElementById(decodeURIComponent(hashc[0])))
+        && (fx = e.closest(".fx2"))
+        && (fp = fx.closest(".fold2c"))) {
+        fold(fp, false, 2);
+    }
+});
+
 handle_ui.on("js-settings-radioitem-click", function () {
     let e = this.closest(".settings-radioitem"), re;
     if (e
@@ -273,7 +283,7 @@ $(document).on("hotcrpsettingssf", ".settings-sf", function () {
     if (edit) {
         sf_instantiate(edit);
         if (!form_differs(edit)
-            && !$(edit).find(".is-warning, .is-error, .has-warning, .has-error").length)
+            && !$(edit).find(".is-error, .has-error").length)
             fold(this, true, 2);
     }
     removeClass(this, "hidden");
@@ -608,11 +618,13 @@ function rf_render_view(fld) {
         hc.push('<div class="field-visibility">'.concat(t, '</div>'));
     hc.pop();
 
+    hc.push('<ul class="feedback-list">', '</ul>');
     if (fld.exists_if && /^round:[a-zA-Z][-_a-zA-Z0-9]*$/.test(fld.exists_if)) {
-        hc.push('<p class="feedback is-warning-note">Present on ' + fld.exists_if.substring(6) + ' reviews</p>');
+        hc.push('<li class="is-diagnostic format-inline is-warning-note">Present on ' + fld.exists_if.substring(6) + ' reviews</li>');
     } else if (fld.exists_if) {
-        hc.push('<p class="feedback is-warning-note">Present on reviews matching “' + escape_html(fld.exists_if) + '”</p>');
+        hc.push('<li class="is-diagnostic format-inline is-warning-note">Present on reviews matching “' + escape_html(fld.exists_if) + '”</li>');
     }
+    hc.pop();
 
     if (fld.description)
         hc.push('<div class="field-d">'.concat(fld.description, '</div>'));
@@ -763,7 +775,13 @@ function rfs(data) {
             }
             if (e && (entryi = e.closest(".entryi"))) {
                 append_feedback_near(entryi, mi);
-                foldup.call(entryi, null, {n: 2, f: false});
+                if (mi.status > 1)
+                    foldup.call(entryi, null, {n: 2, f: false});
+            }
+            if ((m = mi.field.match(/^([^/]*\/\d+)(?=$|\/)/))
+                && (e = document.getElementById(m[1] + "/view"))
+                && (e = e.querySelector("ul.feedback-list"))) {
+                append_feedback_to(e, mi);
             }
         }
     }
