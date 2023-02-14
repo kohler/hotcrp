@@ -556,10 +556,13 @@ class Html_Sitype extends Sitype {
 class Tag_Sitype extends Sitype {
     use Data_Sitype;
     /** @var int */
-    private $flags = Tagger::NOVALUE;
+    private $flags = Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE;
     function __construct($name, $subtype = null) {
-        if ($subtype === "allow_reserved") {
+        if ($subtype === "allow_reserved" || $subtype === "allow_reserved_chair") {
             $this->flags |= Tagger::ALLOWRESERVED;
+        }
+        if ($subtype === "allow_chair" || $subtype === "allow_reserved_chair") {
+            $this->flags &= ~Tagger::NOCHAIR;
         }
     }
     function initialize_si(Si $si) {
@@ -583,21 +586,24 @@ class Tag_Sitype extends Sitype {
 class TagList_Sitype extends Sitype {
     use Data_Sitype;
     /** @var int */
-    private $flags;
+    private $flags = Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE;
     /** @var ?float */
     private $min_idx;
     /** @param string $type
      * @param string $subtype */
     function __construct($type, $subtype) {
-        if ($subtype === "wildcard") {
-            $this->flags = Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR;
-        } else if ($subtype === "wildcard_chair") {
-            $this->flags = Tagger::NOPRIVATE | Tagger::NOVALUE | Tagger::ALLOWSTAR;
-        } else if ($subtype === "allotment") {
-            $this->flags = Tagger::NOPRIVATE | Tagger::NOCHAIR;
+        if (str_starts_with($subtype, "wildcard")) { // XXX
+            $subtype = "allow_{$subtype}";
+        }
+        if ($subtype === "allow_wildcard" || $subtype === "allow_wildcard_chair") {
+            $this->flags |= Tagger::ALLOWSTAR;
+        }
+        if ($subtype === "allow_chair" || $subtype === "allow_wildcard_chair") {
+            $this->flags &= ~Tagger::NOCHAIR;
+        }
+        if ($subtype === "allotment") {
+            $this->flags &= ~Tagger::NOVALUE;
             $this->min_idx = 1.0;
-        } else {
-            $this->flags = Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE;
         }
     }
     function parse_reqv($vstr, Si $si, SettingValues $sv) {

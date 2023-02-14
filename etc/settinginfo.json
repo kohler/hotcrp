@@ -886,7 +886,7 @@
     {
         "name": "tag_readonly", "storage": "tag_chair",
         "title": "Read-only tags",
-        "type": "taglist", "subtype": "wildcard", "size": 50, "autogrow": true,
+        "type": "taglist", "subtype": "allow_wildcard", "size": 50, "autogrow": true,
         "parser_class": "Tags_SettingParser", "initial_value": "accept pcpaper reject"
     },
     {   "name": "tag_color", "internal": true, "type": "string"   },
@@ -910,7 +910,7 @@
     {
         "name_pattern": "tag_style/$/tags",
         "title": "/Tag list",
-        "type": "taglist", "subtype": "wildcard_chair", "size": 40, "autogrow": true
+        "type": "taglist", "subtype": "allow_wildcard_chair", "size": 40, "autogrow": true
     },
     {
         "name": "tag_rank",
@@ -924,7 +924,7 @@
     },
     {
         "name": "tag_sitewide", "title": "Site-wide tags",
-        "type": "taglist", "subtype": "wildcard", "size": 50, "autogrow": true,
+        "type": "taglist", "subtype": "allow_wildcard", "size": 50, "autogrow": true,
         "parser_class": "Tags_SettingParser"
     },
     {
@@ -995,7 +995,7 @@
     {
         "name_pattern": "track/$/tag",
         "title": "Track tag",
-        "type": "tag", "subtype": "allow_reserved", "size": 20, "autogrow": true
+        "type": "tag", "subtype": "allow_reserved_chair", "size": 20, "autogrow": true
     },
     {   "name_pattern": "track/$/title", "internal": true, "parser_class": "Track_SettingParser"   },
     {
@@ -1019,7 +1019,7 @@
     {
         "name_pattern": "track/$/perm/$$/tag",
         "title_pattern": "${sv track/$/title} ${sv track/$/perm/$$/title} permission",
-        "type": "tag",
+        "type": "tag", "subtype": "allow_chair",
         "parser_class": "Track_SettingParser"
     },
     {
