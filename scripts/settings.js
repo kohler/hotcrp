@@ -798,7 +798,7 @@ function add_dialog() {
         var i = sel.options[sel.selectedIndex].value | 0;
         i = (samples[i] ? i : 0);
         if (!samples[i].parse_value)
-            samples[i] = hotcrp.make_review_field(samples[i]);
+            samples[i] = rf_make(samples[i]);
         return samples[i];
     }
     function render_template() {
