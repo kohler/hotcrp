@@ -1300,7 +1300,7 @@ class PaperInfo {
         $authors = [];
         foreach ($this->_potential_conflicts as $x) {
             if ($x[2] < PHP_INT_MAX - 2) {
-                $au = $x[2] & ((1 << 24) - 1);
+                $au = $x[2] & 0xFFFFFF;
                 $authors[$au] = "#{$au}";
             }
         }
