@@ -78,13 +78,6 @@ class Autoassign_Page {
             }
         }
 
-        // rev_round
-        if (($rev_round = $this->conf->sanitize_round_name($qreq->rev_round)) !== false) {
-            $qreq->rev_round = $rev_round;
-        } else {
-            unset($qreq->rev_round);
-        }
-
         // bad pairs
         // load defaults from last autoassignment or save entry to default
         if (!isset($qreq->badpairs)
@@ -97,8 +90,8 @@ class Autoassign_Page {
                 $xa = cvtint($x[$i]);
                 $xb = cvtint($x[$i + 1]);
                 if (isset($pcm[$xa]) && isset($pcm[$xb])) {
-                    $qreq["bpa$bpnum"] = $pcm[$xa]->email;
-                    $qreq["bpb$bpnum"] = $pcm[$xb]->email;
+                    $qreq["bpa{$bpnum}"] = $pcm[$xa]->email;
+                    $qreq["bpb{$bpnum}"] = $pcm[$xb]->email;
                     ++$bpnum;
                 }
             }
@@ -127,19 +120,22 @@ class Autoassign_Page {
     }
 
     function scoreselector_options() {
-        $opt = ["+s01" => "", "-s01" => ""];
+        $opt = [];
+        if (($f = $this->conf->review_form()->default_highlighted_score())
+            && $f instanceof Score_ReviewField) {
+            $kw = $f->search_keyword();
+            $opt["+{$kw}"] = "";
+            $opt["-{$kw}"] = "";
+        }
         foreach ($this->conf->all_review_fields() as $f) {
             if ($f instanceof Score_ReviewField) {
-                $opt["+" . $f->short_id] = "high $f->name_html scores";
-                $opt["-" . $f->short_id] = "low $f->name_html scores";
+                $kw = $f->search_keyword();
+                $opt["+{$kw}"] = $f->name_html . " " . $f->unparse_value($f->nvalues());
+                $opt["-{$kw}"] = $f->name_html . " " . $f->unparse_value(1);
             }
         }
-        if ($opt["+s01"] === "") {
-            unset($opt["+s01"], $opt["-s01"]);
-        }
-        $opt["__break"] = null;
-        $opt["x"] = "random submitted reviews";
-        $opt["xa"] = "random reviews";
+        $opt["random"] = "random completed reviews";
+        $opt["allow_incomplete"] = "random reviews";
         return $opt;
     }
 
@@ -179,11 +175,16 @@ class Autoassign_Page {
         $checked = $this->qreq[$name] === $value;
         $extra["id"] = "{$name}_{$value}";
         $is_open = $extra["open"] ?? false;
-        $divclass = $extra["divclass"] ?? "";
+        $divclass = $extra["divclass"] ?? ($name === "a" ? "mb-1" : "");
         unset($extra["open"], $extra["divclass"]);
-        echo '<div class="',
-            $this->ms->control_class("{$name}-{$value}", "js-radio-focus checki" . ($divclass === "" ? "" : " $divclass")),
-            '"><label><span class="checkc">', Ht::radio($name, $value, $checked, $extra), '</span>',
+        $klass = Ht::add_tokens("js-radio-focus checki", $divclass);
+        if ($name === "a") {
+            $klass = $this->ms->prefix_control_class("{$value}:", $klass);
+        } else {
+            $klass = $this->ms->control_class($name, $klass);
+        }
+        echo '<div class="', $klass, '"><label><span class="checkc">',
+            Ht::radio($name, $value, $checked, $extra), '</span>',
             $text, '</label>', $is_open ? "" : "</div>\n";
     }
 
@@ -191,40 +192,40 @@ class Autoassign_Page {
         $qreq = $this->qreq;
         echo '<div class="form-g">';
 
-        $this->print_radio_row("a", "rev", "Ensure each selected paper has <i>at least</i>", ["open" => true]);
+        $this->print_radio_row("a", "review", "Assign", ["open" => true]);
         echo "&nbsp; ",
-            Ht::entry("revct", $qreq->revct ?? 1,
-                      ["size" => 3, "class" => $this->ms->control_class("revct", "js-autosubmit")]), "&nbsp; ",
-            Ht::select("revtype", [REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"], $qreq->revtype),
-            "&nbsp; review(s)</div>\n";
-
-        $this->print_radio_row("a", "revadd", "Assign", ["open" => true]);
-        echo "&nbsp; ",
-            Ht::entry("revaddct", $qreq->revaddct ?? 1,
-                      ["size" => 3, "class" => $this->ms->control_class("revaddct", "js-autosubmit")]),
+            Ht::entry("review:count", $qreq["review:count"] ?? 1,
+                      ["size" => 3, "class" => $this->ms->control_class("review:count", "js-autosubmit")]),
             "&nbsp; <i>additional</i>&nbsp; ",
-            Ht::select("revaddtype", [REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"], $qreq->revaddtype),
+            Ht::select("review:rtype", ["primary" => "primary", "secondary" => "secondary", "optional" => "optional", "metareview" => "metareview"], $qreq["review:type"]),
             "&nbsp; review(s) per selected paper</div>\n";
 
-        $this->print_radio_row("a", "revpc", "Assign each PC member", ["open" => true]);
+        $this->print_radio_row("a", "review_ensure", "Ensure each selected paper has <i>at least</i>", ["open" => true]);
         echo "&nbsp; ",
-            Ht::entry("revpcct", $qreq->revpcct ?? 1,
-                      ["size" => 3, "class" => $this->ms->control_class("revpcct", "js-autosubmit")]),
+            Ht::entry("review_ensure:count", $qreq["review_ensure:count"] ?? 1,
+                      ["size" => 3, "class" => $this->ms->control_class("review_ensure:count", "js-autosubmit")]), "&nbsp; ",
+            Ht::select("review_ensure:rtype", ["primary" => "primary", "secondary" => "secondary", "optional" => "optional", "metareview" => "metareview"], $qreq["review_ensure:rtype"]),
+            "&nbsp; review(s)</div>\n";
+
+        $this->print_radio_row("a", "review_per_pc", "Assign each PC member", ["open" => true]);
+        echo "&nbsp; ",
+            Ht::entry("review_per_pc:count", $qreq["review_per_pc:count"] ?? 1,
+                      ["size" => 3, "class" => $this->ms->control_class("review_per_pc:count", "js-autosubmit")]),
             "&nbsp; additional&nbsp; ",
-            Ht::select("revpctype", [REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"], $qreq->revpctype),
+            Ht::select("review_per_pc:rtype", ["primary" => "primary", "secondary" => "secondary", "optional" => "optional", "metareview" => "metareview"], $qreq["review_per_pc:rtype"]),
             "&nbsp; review(s) from this paper selection";
 
         // Review round
         $rev_rounds = $this->conf->round_selector_options(null);
         if (count($rev_rounds) > 1 || !($rev_rounds["unnamed"] ?? false)) {
             echo '<div';
-            if (($c = $this->ms->control_class("rev_round"))) {
+            if (($c = $this->ms->suffix_control_class(":round"))) {
                 echo ' class="', trim($c), '"';
             }
             echo ' style="font-size:smaller">Review round: ';
-            $expected_round = $qreq->rev_round ? : $this->conf->assignment_round_option(false);
+            $expected_round = $qreq["all:round"] ? : $this->conf->assignment_round_option(false);
             if (count($rev_rounds) > 1) {
-                echo '&nbsp;', Ht::select("rev_round", $rev_rounds, $expected_round);
+                echo '&nbsp;', Ht::select("all:round", $rev_rounds, $expected_round);
             } else {
                 echo $expected_round;
             }
@@ -237,38 +238,39 @@ class Autoassign_Page {
 
     private function print_conflict_actions() {
         echo '<div class="form-g">';
-        $this->print_radio_row("a", "prefconflict", "Assign conflicts when PC members have review preferences of &minus;100 or less", ["divclass" => "mt-3"]);
+        $this->print_radio_row("a", "prefconflict", "Assign conflicts when PC members have review preferences of &minus;100 or less");
         $this->print_radio_row("a", "clear", "Clear all &nbsp;", ["open" => true]);
-        echo Ht::select("cleartype", [REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview", "conflict" => "conflict", "lead" => "discussion lead", "shepherd" => "shepherd"], $this->qreq->cleartype),
+        echo Ht::select("clear:type", ["primary" => "primary", "secondary" => "secondary", "optional" => "optional", "metareview" => "metareview", "conflict" => "conflict", "lead" => "discussion lead", "shepherd" => "shepherd"], $this->qreq["clear:type"]),
             " &nbsp;assignments for selected papers and PC members</div></div>\n";
     }
 
     private function print_lead_actions() {
         $scoreselector = $this->scoreselector_options();
         echo '<div class="form-g">';
-        $this->print_radio_row("a", "lead", "Assign discussion lead from reviewers, preferring&nbsp; ", ["open" => true, "divclass" => "mt-3"]);
-        echo Ht::select("leadscore", $scoreselector, $this->qreq->leadscore), "</div>\n";
+        $this->print_radio_row("a", "lead", "Assign discussion lead from reviewers, preferring&nbsp; ", ["open" => true]);
+        echo Ht::select("lead:score", $scoreselector, $this->qreq["lead:score"]), "</div>\n";
 
         $this->print_radio_row("a", "shepherd", "Assign shepherd from reviewers, preferring&nbsp; ", ["open" => true]);
-        echo Ht::select("shepherdscore", $scoreselector, $this->qreq->shepherdscore), "</div></div>\n";
+        echo Ht::select("shepherd:score", $scoreselector, $this->qreq["shepherd:score"]), "</div></div>\n";
     }
 
     private function print_discussion_actions() {
         echo '<div class="form-g">';
-        $this->print_radio_row("a", "discorder", "Create discussion order in tag #", ["open" => true, "divclass" => "mt-3"]);
-        echo Ht::entry("discordertag", $this->qreq->discordertag ?? "discuss",
-                       ["size" => 12, "class" => $this->ms->control_class("discordertag", "js-autosubmit")]),
+        $this->print_radio_row("a", "discussion_order", "Create discussion order in tag #", ["open" => true]);
+        echo Ht::entry("discussion_order:tag", $this->qreq["discussion_order:tag"] ?? "discuss",
+                       ["size" => 12, "class" => $this->ms->control_class("discussion_order:tag", "js-autosubmit")]),
             ", grouping papers with similar PC conflicts</div></div>";
     }
 
     private function bp_selector($i, $which) {
-        return Ht::select("bp$which$i", [], 0,
-            ["class" => "need-pcselector uich badpairs", "data-pcselector-selected" => $this->qreq["bp$which$i"], "data-pcselector-options" => "[\"(PC member)\",\"*\"]", "data-default-value" => $this->qreq["bp$which$i"]]);
+        $n = "bp{$which}{$i}";
+        return Ht::select($n, [], 0,
+            ["class" => "need-pcselector uich badpairs", "data-pcselector-selected" => $this->qreq[$n], "data-pcselector-options" => "[\"(PC member)\",\"*\"]", "data-default-value" => $this->qreq[$n]]);
     }
 
     private function print_bad_pairs() {
         echo '<div class="g"></div><div class="relative"><table id="bptable"><tbody>', "\n";
-        for ($i = 1; $i == 1 || isset($this->qreq["bpa$i"]); ++$i) {
+        for ($i = 1; $i == 1 || isset($this->qreq["bpa{$i}"]); ++$i) {
             echo '    <tr><td class="entry nw">';
             if ($i == 1) {
                 echo '<label class="d-inline-block checki"><span class="checkc">',
@@ -306,10 +308,14 @@ class Autoassign_Page {
             if (isset($qreq->assignment) && isset($qreq->showassignment)) {
                 $ai = new AutoassignerInterface($this->user, $qreq, $this->ssel);
                 $ai->print_result();
+                $qreq->print_footer();
                 return;
             } else if (isset($qreq->assign)) {
                 $ai = new AutoassignerInterface($this->user, $qreq, $this->ssel);
-                if ($ai->check() && $ai->run()) {
+                if (!$ai->prepare()) {
+                    $conf->feedback_msg($ai);
+                } else if ($ai->run()) {
+                    $qreq->print_footer();
                     return;
                 }
                 $this->ms = $ai;
@@ -419,8 +425,8 @@ class Autoassign_Page {
         $nrev = AssignmentCountSet::load($this->user, AssignmentCountSet::HAS_REVIEW);
         foreach ($conf->pc_members() as $id => $p) {
             $t = '<div class="ctelt"><label class="checki ctelti"><span class="checkc">'
-                . Ht::checkbox("pcc$id", 1, isset($qreq["pcc$id"]), [
-                    "id" => "pcc$id", "data-range-type" => "pcc",
+                . Ht::checkbox("pcc{$id}", 1, isset($qreq["pcc{$id}"]), [
+                    "id" => "pcc{$id}", "data-range-type" => "pcc",
                     "class" => "uic js-range-click js-pcsel-tag"
                 ]) . '</span>' . $this->user->reviewer_html_for($p)
                 . $nrev->unparse_counts_for($p)
@@ -437,15 +443,15 @@ class Autoassign_Page {
 
         // load balancing
         echo '<div class="form-section"><h3 class="form-h">Load balancing</h3>';
-        $this->print_radio_row("balance", "new", "New assignments—spread new assignments equally among selected PC members");
-        $this->print_radio_row("balance", "all", "All assignments—spread assignments so that selected PC members have roughly equal overall load");
+        $this->print_radio_row("all:balance", "new", "New assignments—spread new assignments equally among selected PC members");
+        $this->print_radio_row("all:balance", "all", "All assignments—spread assignments so that selected PC members have roughly equal overall load");
         echo '</div>';
 
 
         // method
         echo '<div class="form-section"><h3 class="form-h">Assignment method</h3>';
-        $this->print_radio_row("method", "mcmf", "Globally optimal assignment");
-        $this->print_radio_row("method", "random", "Random good assignment");
+        $this->print_radio_row("all:method", "default", "Globally optimal assignment");
+        $this->print_radio_row("all:method", "random", "Random good assignment");
 
         if ($conf->opt("autoassignReviewGadget") === "expertise") {
             echo "<div><strong>Costs:</strong> ";
@@ -462,9 +468,9 @@ class Autoassign_Page {
 
 
         // submit
-        echo '<div class="aab aabig">',
+        echo '<div class="aab aabig align-self-center">',
             Ht::submit("assign", "Prepare assignments", ["class" => "btn-primary"]),
-            ' &nbsp; <span class="hint">You’ll be able to check the assignment before it is saved.</span>',
+            '<div class="small ml-3">You’ll be able to check the assignment before it is saved.</div>',
             '</div>';
 
 

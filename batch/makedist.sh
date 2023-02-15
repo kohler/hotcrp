@@ -81,6 +81,7 @@ users.php
 
 batch/.htaccess
 batch/assign.php
+batch/autoassign.php
 batch/backupdb.php
 batch/checkinvariants.php
 batch/deletepapers.php
@@ -103,6 +104,7 @@ etc/.htaccess
 etc/affiliationmatchers.json
 etc/apifunctions.json
 etc/assignmentparsers.json
+etc/autoassigners.json
 etc/capabilityhandlers.json
 etc/distoptions.php
 etc/formulafunctions.json
@@ -215,6 +217,11 @@ src/author.php
 src/authormatcher.php
 src/autoassigner.php
 src/autoassignerinterface.php
+src/autoassigners/aa_clear.php
+src/autoassigners/aa_discussionorder.php
+src/autoassigners/aa_paperpc.php
+src/autoassigners/aa_prefconflict.php
+src/autoassigners/aa_review.php
 src/backuppattern.php
 src/banal
 src/capabilities/cap_authorview.php

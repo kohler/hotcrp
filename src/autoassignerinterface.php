@@ -1,24 +1,28 @@
 <?php
 // autoassignerinterface.php -- HotCRP helper classes for autoassignment
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class AutoassignerInterface extends MessageSet {
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     private $conf;
-    /** @var Contact */
+    /** @var Contact
+     * @readonly */
     private $user;
     /** @var Qrequest */
     private $qreq;
-    /** @var SearchSelection */
+    /** @var SearchSelection
+     * @readonly */
     private $ssel;
-    /** @var list<int> */
+    /** @var list<int>
+     * @readonly */
     private $pcsel;
+    /** @var string
+     * @readonly */
     private $atype;
+    /** @var bool
+     * @readonly */
     private $atype_review;
-    private $reviewtype;
-    private $reviewcount;
-    private $reviewround;
-    private $discordertag;
     /** @var Autoassigner */
     private $autoassigner;
     /** @var float */
@@ -47,59 +51,10 @@ class AutoassignerInterface extends MessageSet {
         $this->qreq = $qreq;
         $this->ssel = $ssel;
 
-        $atypes = [
-            "rev" => "r", "revadd" => "r", "revpc" => "r",
-            "lead" => true, "shepherd" => true,
-            "prefconflict" => true, "clear" => true,
-            "discorder" => true, "" => null
-        ];
         $this->atype = $qreq->a;
-        if (!$this->atype || !isset($atypes[$this->atype])) {
-            $this->error_at("ass", "<0>Malformed request!");
+        if (!$this->atype || !$this->conf->autoassigner($this->atype)) {
+            $this->error_at("a", "<0>No such autoassigner");
             $this->atype = "";
-        }
-        $this->atype_review = $atypes[$this->atype] === "r";
-
-        $r = false;
-        if ($this->atype_review) {
-            $r = $qreq[$this->atype . "type"];
-            if ($r != REVIEW_META && $r != REVIEW_PRIMARY
-                && $r != REVIEW_SECONDARY && $r != REVIEW_PC) {
-                $this->error_at("ass", "<0>Malformed request!");
-            }
-        } else if ($this->atype === "clear") {
-            $r = $qreq->cleartype;
-            if ($r != REVIEW_META && $r != REVIEW_PRIMARY
-                && $r != REVIEW_SECONDARY && $r != REVIEW_PC
-                && $r !== "conflict"
-                && $r !== "lead" && $r !== "shepherd") {
-                $this->error_at("a-clear", "<0>Malformed request!");
-            }
-        }
-        $this->reviewtype = $r;
-
-        if ($this->atype_review) {
-            $this->reviewcount = cvtint($qreq[$this->atype . "ct"], -1);
-            if ($this->reviewcount <= 0) {
-                $this->error_at("{$this->atype}ct", "<0>You must assign at least one review");
-            }
-
-            $this->reviewround = $qreq->rev_round;
-            if ($this->reviewround !== ""
-                && ($err = Conf::round_name_error($this->reviewround))) {
-                $this->error_at("rev_round", "<0>{$err}");
-            }
-        }
-
-        if ($this->atype === "discorder") {
-            $tag = trim((string) $qreq->discordertag);
-            $tag = $tag === "" ? "discuss" : $tag;
-            $tagger = new Tagger($user);
-            if (($tag = $tagger->check($tag, Tagger::NOVALUE))) {
-                $this->discordertag = $tag;
-            } else {
-                $this->error_at("discordertag", "<5>" . $tagger->error_html());
-            }
         }
 
         $this->pcsel = [];
@@ -131,19 +86,13 @@ class AutoassignerInterface extends MessageSet {
         return $bp;
     }
 
-    /** @return bool */
-    function check() {
-        $this->conf->feedback_msg($this);
-        return !$this->has_error();
-    }
-
     private function profile_json() {
         if ($this->qreq->profile) {
             $j = ["time" => microtime(true) - $this->start_at];
             foreach ($this->autoassigner->profile as $name => $t) {
                 $j[$name] = $t;
             }
-            if ($this->atype_review) {
+            if ($this->autoassigner instanceof Review_Autoassigner) {
                 $umap = $this->autoassigner->pc_unhappiness();
                 sort($umap);
                 $usum = 0;
@@ -204,9 +153,14 @@ class AutoassignerInterface extends MessageSet {
         $urlarg["XDEBUG_PROFILE"] = $this->qreq->XDEBUG_PROFILE;
         $urlarg["seed"] = $this->qreq->seed;
         echo Ht::form($this->conf->hoturl("=autoassign", $urlarg), $attr);
-        foreach (["t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "rev_round", "method", "has_pap"] as $t) {
+        foreach (["t", "q", "a", "pctyp", "badpairs", "has_pap"] as $t) {
             if (isset($this->qreq[$t]))
                 echo Ht::hidden($t, $this->qreq[$t]);
+        }
+        $prefix = "{$this->atype}:";
+        foreach ($this->qreq as $k => $v) {
+            if (str_starts_with($k, $prefix) || str_starts_with($k, "all:"))
+                echo Ht::hidden($k, $v);
         }
         echo Ht::hidden("pcs", join(" ", $this->pcsel));
         foreach ($this->qreq_badpairs() as $i => $pair) {
@@ -216,12 +170,13 @@ class AutoassignerInterface extends MessageSet {
         echo Ht::hidden("p", join(" ", $this->ssel->selection()));
     }
 
-    /** @return Assignment_PaperColumn */
-    private function print_result_html_1($assignments) {
+    /** @param string $assignmenttext
+     * @return Assignment_PaperColumn */
+    private function print_result_html_1($assignmenttext) {
         // Divided into separate functions to facilitate garbage collection
         $assignset = new AssignmentSet($this->user, true);
         $assignset->set_search_type($this->qreq->t);
-        $assignset->parse(join("\n", $assignments));
+        $assignset->parse($assignmenttext);
 
         $atypes = $assignset->assigned_types();
         $apids = SessionList::encode_ids($assignset->assigned_pids());
@@ -241,9 +196,10 @@ class AutoassignerInterface extends MessageSet {
         return $assignset->unparse_paper_column();
     }
 
-    private function print_result_html($assignments, $profile_json) {
+    /** @param string $assignmenttext */
+    private function print_result_html($assignmenttext, $profile_json) {
         // prepare assignment, print form entry, extract unparsed assignment
-        $pc = $this->print_result_html_1($assignments);
+        $pc = $this->print_result_html_1($assignmenttext);
         // echo paper list
         gc_collect_cycles();
         Assignment_PaperColumn::print_unparse_display($pc);
@@ -253,11 +209,18 @@ class AutoassignerInterface extends MessageSet {
             Ht::submit("submit", "Apply changes", ["class" => "btn-primary"]),
             Ht::submit("download", "Download assignment file"),
             Ht::submit("cancel", "Cancel"),
-            Ht::hidden("assignment", join("\n", $assignments)),
+            Ht::hidden("assignment", $assignmenttext),
             "\n</div></form>";
     }
 
-    private function make_autoassigner() {
+    /** @return bool */
+    function prepare() {
+        assert(!$this->autoassigner);
+        if ($this->has_error()) {
+            return false;
+        }
+
+        // prepare autoassigner
         if ($this->qreq->pctyp === "sel") {
             $pcids = $this->pcsel;
         } else if ($this->qreq->pctyp === "enabled") {
@@ -265,26 +228,59 @@ class AutoassignerInterface extends MessageSet {
         } else {
             $pcids = null;
         }
-        $this->autoassigner = new Autoassigner($this->conf, $pcids, $this->ssel->selection());
-        if ($this->qreq->balance === "all") {
-            $this->autoassigner->set_balance(Autoassigner::BALANCE_ALL);
-        }
-        if ($this->qreq->badpairs) {
-            foreach ($this->qreq_badpairs() as $pair) {
-                $this->autoassigner->avoid_pair_assignment($pair[0]->contactId, $pair[1]->contactId);
+
+        $papersel = $this->ssel->selection();
+
+        $pfx = "{$this->atype}:";
+        $subreq = [];
+        foreach ($this->qreq as $k => $v) {
+            if (str_starts_with($k, $pfx)) {
+                $subreq[substr($k, strlen($pfx))] = $v;
+            } else if (str_starts_with($k, "all:")) {
+                $subreq[substr($k, 4)] = $v;
             }
         }
-        if ($this->qreq->method === "random") {
-            $this->autoassigner->set_method(Autoassigner::METHOD_RANDOM);
+
+        $gj = $this->conf->autoassigner($this->atype);
+        if (!$gj || !is_string($gj->function)) {
+            $this->error_at("a", "<0>Invalid autoassigner");
+            return false;
+        }
+        $afunc = $gj->function;
+        if ($afunc[0] === "+") {
+            $class = substr($afunc, 1);
+            /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
+            $aa = new $class($this->user, $pcids, $papersel, $subreq, $gj);
         } else {
-            $this->autoassigner->set_method(Autoassigner::METHOD_MCMF);
+            $aa = call_user_func($afunc, $this->user, $pcids, $papersel, $subreq, $gj);
+        }
+
+        assert($aa instanceof Autoassigner);
+        foreach ($aa->message_list() as $mi) {
+            if ($mi->field) {
+                $mi = $mi->with_field("{$this->atype}:{$mi->field}");
+            }
+            $this->append_item($mi);
+        }
+        if (count($aa->user_ids()) === 0) {
+            $this->error_at("has_pcc", "<0>Select one or more PC members to assign.");
+        }
+        if ($this->has_error()) {
+            return false;
+        }
+
+        // configure
+        if ($this->qreq->badpairs) {
+            foreach ($this->qreq_badpairs() as $pair) {
+                $aa->avoid_pair_assignment($pair[0]->contactId, $pair[1]->contactId);
+            }
         }
         if ($this->conf->opt("autoassignReviewGadget") === "expertise") {
-            $this->autoassigner->set_review_gadget(Autoassigner::REVIEW_GADGET_EXPERTISE);
+            $aa->set_review_gadget(Autoassigner::REVIEW_GADGET_EXPERTISE);
         }
         // save costs
-        $this->autoassigner->costs = self::current_costs($this->conf, $this->qreq);
-        $costs_json = json_encode($this->autoassigner->costs);
+        $aa->costs = self::current_costs($this->conf, $this->qreq);
+        $costs_json = json_encode($aa->costs);
         if ($costs_json !== $this->conf->opt("autoassignCosts")) {
             if ($costs_json === json_encode(new AutoassignerCosts)) {
                 $this->conf->save_setting("opt.autoassignCosts", null);
@@ -292,6 +288,8 @@ class AutoassignerInterface extends MessageSet {
                 $this->conf->save_setting("opt.autoassignCosts", 1, $costs_json);
             }
         }
+        $this->autoassigner = $aa;
+        return true;
     }
 
     function progress($status) {
@@ -311,19 +309,12 @@ class AutoassignerInterface extends MessageSet {
 
     /** @return bool */
     function run() {
-        assert(!$this->has_error());
+        assert(!$this->has_error() && $this->autoassigner);
         $this->qreq->qsession()->commit(); // this might take a long time
         set_time_limit(240);
-
-        // prepare autoassigner
         if ($this->qreq->seed
             && is_numeric($this->qreq->seed)) {
             srand((int) $this->qreq->seed);
-        }
-        $this->make_autoassigner();
-        if (count($this->autoassigner->selected_pc_ids()) === 0) {
-            $this->conf->error_msg("<0>Select one or more PC members to assign.");
-            return false;
         }
 
         // start running
@@ -332,20 +323,25 @@ class AutoassignerInterface extends MessageSet {
         echo '<div id="propass" class="propass">';
 
         $this->start_at = microtime(true);
-        if ($this->atype === "prefconflict") {
-            $this->autoassigner->run_prefconflict($this->qreq->t);
-        } else if ($this->atype === "clear") {
-            $this->autoassigner->run_clear($this->reviewtype);
-        } else if ($this->atype === "lead" || $this->atype === "shepherd") {
-            $this->autoassigner->run_paperpc($this->atype, $this->qreq["{$this->atype}score"]);
-        } else if ($this->atype === "revpc") {
-            $this->autoassigner->run_reviews_per_pc($this->reviewtype, $this->reviewround, $this->reviewcount);
-        } else if ($this->atype === "revadd") {
-            $this->autoassigner->run_more_reviews($this->reviewtype, $this->reviewround, $this->reviewcount);
-        } else if ($this->atype === "rev") {
-            $this->autoassigner->run_ensure_reviews($this->reviewtype, $this->reviewround, $this->reviewcount);
-        } else if ($this->atype === "discorder") {
-            $this->autoassigner->run_discussion_order($this->discordertag);
+        $this->autoassigner->run();
+
+        if (($badpids = $this->autoassigner->incompletely_assigned_paper_ids())) {
+            sort($badpids);
+            $b = [];
+            $pidx = join("+", $badpids);
+            foreach ($badpids as $pid) {
+                $b[] = $this->conf->hotlink((string) $pid, "assign", "p={$pid}&amp;ls={$pidx}");
+            }
+            if ($this->autoassigner instanceof Review_Autoassigner) {
+                $x = ", possibly because of conflicts or previously declined reviews in the PC members you selected";
+            } else {
+                $x = ", possibly because the selected PC members didn’t review these submissions";
+            }
+            $y = (count($b) > 1 ? ' (' . $this->conf->hotlink("list them", "search", "q={$pidx}", ["class" => "nw"]) . ')' : '');
+            $this->conf->feedback_msg(
+                MessageItem::warning("<0>The assignment could not be completed{$x}"),
+                MessageItem::inform("<5>The following submissions got fewer than the required number of assignments: " . join(", ", $b) . $y . ".")
+            );
         }
 
         $assignments = $this->autoassigner->assignments();
@@ -361,10 +357,10 @@ class AutoassignerInterface extends MessageSet {
             if ($this->live) {
                 $pj = $this->profile_json();
                 $this->autoassigner = null;
-                $this->print_result_html($assignments, $this->profile_json());
+                $this->print_result_html(join("", $assignments), $this->profile_json());
             } else {
                 $this->print_form_start([], ["id" => "autoassign-form"]);
-                echo Ht::hidden("assignment", join("\n", $assignments));
+                echo Ht::hidden("assignment", join("", $assignments));
                 if ($pj = $this->profile_json()) {
                     echo Ht::hidden("profile_json", json_encode($pj));
                 }
@@ -373,16 +369,13 @@ class AutoassignerInterface extends MessageSet {
                     '</div></form>',
                     Ht::unstash_script('$("#autoassign-form .btn-primary").addClass("hidden").click()');
             }
-            $this->qreq->print_footer();
             return true;
         }
     }
 
     function print_result() {
-        $assignments = explode("\n", $this->qreq->assignment);
+        $assignmenttext = $this->qreq->assignment;
         $profile_json = json_decode($this->qreq->profile_json ?? "null");
-        $this->print_result_html($assignments, $profile_json);
-        $this->qreq->print_footer();
-        exit;
+        $this->print_result_html($assignmenttext, $profile_json);
     }
 }

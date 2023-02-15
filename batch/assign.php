@@ -36,6 +36,7 @@ class Assign_Batch {
         $assignset->parse($this->text, $this->filename);
         if ($assignset->has_error()) {
             fwrite(STDERR, $assignset->full_feedback_text());
+            return 1;
         } else if ($assignset->is_empty()) {
             fwrite(STDERR, "{$this->filename}: Assignment makes no changes\n");
         } else if ($this->dry_run) {

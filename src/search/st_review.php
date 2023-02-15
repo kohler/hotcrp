@@ -487,7 +487,7 @@ class Review_SearchTerm extends SearchTerm {
         return (object) [
             "name" => $keyword,
             "parse_function" => "Review_SearchTerm::parse",
-            "retype" => $t,
+            "rtype" => $t,
             "recompleteness" => self::$recompleteness_map[$c] ?? $c,
             "reblank" => $c === "" && $t === "",
             "has" => ">0"
@@ -582,8 +582,8 @@ class Review_SearchTerm extends SearchTerm {
             return Proposal_SearchTerm::parse(SearchWord::unquote($sword->qword), $sword, $srch);
         }
         $rsm = new ReviewSearchMatcher;
-        if ($sword->kwdef->retype) {
-            $rsm->apply_review_type($sword->kwdef->retype);
+        if ($sword->kwdef->rtype) {
+            $rsm->apply_review_type($sword->kwdef->rtype);
         }
         if ($sword->kwdef->recompleteness) {
             $rsm->apply_completeness($sword->kwdef->recompleteness);

@@ -218,6 +218,8 @@ class Conf {
     private $_mail_keyword_factories;
     /** @var ?array<string,list<object>> */
     private $_mail_template_map;
+    /** @var ?array<string,object> */
+    private $_autoassigners;
     /** @var DKIMSigner|null|false */
     private $_dkim_signer = false;
     /** @var ?ComponentSet */
@@ -4313,24 +4315,6 @@ class Conf {
     }
 
 
-    function preference_conflict_result($type, $extra) {
-        $q = "select PRP.paperId, PRP.contactId, PRP.preference
-                from PaperReviewPreference PRP
-                join ContactInfo c on (c.contactId=PRP.contactId and c.roles!=0 and (c.roles&" . Contact::ROLE_PC . ")!=0)
-                join Paper P on (P.paperId=PRP.paperId)
-                left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId)
-                where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=" . CONFLICT_MAXUNCONFLICTED . "
-                  and P.timeWithdrawn<=0";
-        if ($type !== "all" && $type !== "act") {
-            $q .= " and P.timeSubmitted>0";
-        }
-        if ($extra) {
-            $q .= " " . $extra;
-        }
-        return $this->ql_raw($q);
-    }
-
-
     //
     // Message routines
     //
@@ -5397,7 +5381,8 @@ class Conf {
 
     // assignment parsers
 
-    /** @return ?AssignmentParser */
+    /** @param string $keyword
+     * @return ?AssignmentParser */
     function assignment_parser($keyword, Contact $user = null) {
         require_once("assignmentset.php");
         if ($this->_assignment_parsers === null) {
@@ -5411,6 +5396,30 @@ class Conf {
             $uf->__parser = new $p($this, $uf);
         }
         return $uf ? $uf->__parser : null;
+    }
+
+
+    // autoassigners
+
+    /** @return array<string,object> */
+    function autoassigner_map() {
+        if ($this->_autoassigners === null) {
+            list($aatypes, $unused) =
+                $this->_xtbuild(["etc/autoassigners.json"], "autoassigners");
+            $this->_autoassigners = [];
+            foreach (array_keys($aatypes) as $name) {
+                if (($uf = $this->xt_search_name($aatypes, $name, null)))
+                    $this->_autoassigners[$name] = $uf;
+            }
+            uasort($this->_autoassigners, "Conf::xt_order_compare");
+        }
+        return $this->_autoassigners;
+    }
+
+    /** @param string $name
+     * @return ?object */
+    function autoassigner($name) {
+        return ($this->autoassigner_map())[$name] ?? null;
     }
 
 
