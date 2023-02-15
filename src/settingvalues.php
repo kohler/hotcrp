@@ -471,16 +471,8 @@ class SettingValues extends MessageSet {
                 $loc = $si ? $si->title_html($this) : "";
                 if ($this->link_json) {
                     $jpath = ($si ? $si->json_path() : null) ?? Si::json_path_for($mi->field);
-                    if ($jpath) {
-                        $hjpath = htmlspecialchars($jpath);
-                        if ($loc) {
-                            $loc = "<u>{$loc}</u> <code class=\"settings-jpath\">{$hjpath}</code>";
-                        } else {
-                            $loc = "<code class=\"settings-jpath\">{$hjpath}</code>";
-                        }
-                        $loc = "<a href=\"\" class=\"ui js-settings-jpath noul\">{$loc}</a>";
-                    }
-                } else if ($loc && $si->has_hashid()) {
+                    $loc = $this->json_path_link($loc, $jpath);
+                } else if ($loc !== "" && $si->has_hashid()) {
                     $loc = $this->setting_link($loc, $si);
                 }
             }
@@ -1504,11 +1496,21 @@ class SettingValues extends MessageSet {
      * @return string */
     function setting_link($html, $id, $js = null) {
         $si = is_string($id) ? $this->si($id) : $id;
-        $link = Ht::link($html, $si->sv_hoturl($this), $js);
         if ($this->link_json && ($jpath = $si->json_path())) {
-            $link .= " <code class=\"settings-jpath\">" . htmlspecialchars($jpath) . "</code>";
+            return $this->json_path_link($html, $jpath, $js);
+        } else {
+            return Ht::link($html, $si->sv_hoturl($this), $js);
         }
-        return $link;
+    }
+
+    /** @param string $html
+     * @param string $jpath
+     * @return string */
+    function json_path_link($html, $jpath, $js = null) {
+        $lpfx = $html !== "" ? "<u>{$html}</u> " : "";
+        $hjpath = htmlspecialchars($jpath);
+        $lpath = "<code class=\"settings-jpath\">{$hjpath}</code>";
+        return "<a href=\"\" class=\"ui js-settings-jpath noul\">{$lpfx}{$lpath}</a>";
     }
 
     /** @param string $html
