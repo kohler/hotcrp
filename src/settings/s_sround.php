@@ -92,15 +92,13 @@ class Sround_SettingParser extends SettingParser {
             $idv = "new";
         }
 
-        echo '<div id="submission/', $ctr,
+        echo '<fieldset id="submission/', $ctr,
             '" class="js-settings-submission-round mt-3 mb-2 form-g',
-            $idv !== "new" ? "" : " is-new", $deleted ? " deleted" : "",
-            '"><div class="entryg">',
+            $idv !== "new" ? "" : " is-new", $deleted ? " deleted" : "", '">',
             Ht::hidden("submission/{$ctr}/id", $idv, ["data-default-value" => $idv === "new" ? "" : $idv]),
             Ht::hidden("submission/{$ctr}/delete", $deleted ? "1" : "", ["data-default-value" => ""]);
         $namesi = $sv->si("submission/{$ctr}/tag");
-        $sv->print_feedback_at($namesi->name);
-        echo $sv->label($namesi->name, "Submission tag"), ' &nbsp;',
+        echo '<legend>', $sv->label($namesi->name, "Submission class"), ' &nbsp;',
             $sv->entry($namesi->name, ["class" => "uii uich js-settings-submission-round-name want-focus want-delete-marker"]),
             Ht::button(Icons::ui_use("trash"), ["id" => "submission/{$ctr}/deleter", "class" => "ui js-settings-submission-round-delete ml-2 need-tooltip", "aria-label" => "Delete review round", "tabindex" => -1]);
         /*if ($id > 0 && ($round_map[$id - 1] ?? 0) > 0) {
@@ -108,13 +106,14 @@ class Sround_SettingParser extends SettingParser {
                 '<a href="', $sv->conf->hoturl("search", ["q" => "re:" . ($id > 1 ? $sv->conf->round_name($id - 1) : "unnamed")]), '" target="_blank">',
                 plural($round_map[$id - 1], "review"), '</a></span>';
         }*/
-        echo '</div>';
+        echo '</legend>';
+        $sv->print_feedback_at($namesi->name);
 
         // deadlines
-        echo "<div class=\"ml-5\" id=\"submission/{$ctr}/edit\"><div class=\"flex-grow-0\">";
+        echo "<div id=\"submission/{$ctr}/edit\"><div class=\"flex-grow-0\">";
         $sv->print_entry_group("submission/{$ctr}/registration", "Registration deadline", ["horizontal" => true, "group_class" => "medium"]);
         $sv->print_entry_group("submission/{$ctr}/done", "Submission deadline", ["horizontal" => true, "group_class" => "medium"]);
-        echo '</div></div></div>';
+        echo '</div></div></fieldset>';
         if ($deleted) {
             echo Ht::unstash_script("\$(function(){\$(\"#submission\\\\/{$ctr}\\\\/deleter\").click()})");
         }

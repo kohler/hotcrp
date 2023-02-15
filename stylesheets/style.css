@@ -1680,6 +1680,9 @@ th.settings-simplehead {
 	padding: 20px 16px 16px;
 	border-radius: 5px;
 }
+.settings-sf-view h3, .settings-rf-view h3 {
+	max-width: 768px;
+}
 .settings-draghandle {
 	position: absolute;
 	display: inline-block;
@@ -1827,6 +1830,12 @@ hr.form-sep, hr.form-sep-2 {
 }
 .form-g + .form-nearby {
 	margin-top: -1em;
+}
+fieldset.form-g > legend {
+	margin-bottom: 0.35rem;
+}
+fieldset.form-g > legend + ul.feedback-list{
+	margin-top: -0.35rem;
 }
 
 /* help pages */
