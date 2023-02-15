@@ -2435,8 +2435,10 @@ class Contact implements JsonSerializable {
         // Load from database
         $this->_conflict_types = [];
         if ($this->contactId > 0) {
-            $qs = ["(select group_concat(paperId, ' ', conflictType) from PaperConflict where contactId=?)",
-                   "exists (select * from PaperReview where contactId=? and reviewType>0)"];
+            $qs = [
+                "(select group_concat(paperId, ' ', conflictType) from PaperConflict where contactId=?)",
+                "exists (select * from PaperReview where contactId=? and reviewType>0)"
+            ];
             $qv = [$this->contactId, $this->contactId];
             if ($this->isPC) {
                 $qs[] = "exists (select * from PaperReview where requestedBy=? and reviewType>0 and reviewType<=" . REVIEW_PC . " and contactId!=?)";

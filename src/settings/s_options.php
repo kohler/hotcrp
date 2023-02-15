@@ -625,8 +625,7 @@ class Options_SettingParser extends SettingParser {
             foreach ($opts as $ctrz => $f) {
                 if ($f->visibility() === PaperOption::VIS_AUTHOR) {
                     $visname = "sf/" . ($ctrz + 1) . "/visibility";
-                    $sv->warning_at($visname, "<5>" . $sv->setting_link("All submissions are anonymous", "author_visibility") . ", so this field is always hidden");
-                    $sv->inform_at($visname, "<0>“Hidden until review” or “Hidden from reviewers” might be more appropriate.");
+                    $sv->warning_at($visname, "<5>" . $sv->setting_link("All submissions are anonymous", "author_visibility") . ", so this field is always hidden from reviewers");
                 }
             }
         }
