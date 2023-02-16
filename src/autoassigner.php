@@ -322,7 +322,7 @@ abstract class Autoassigner extends MessageSet {
         }
         if (($m = $this->mcmf)) {
             foreach ($this->acs as $cid => $p) {
-                foreach ($m->reachable("u{$cid}", "p") as $v) {
+                foreach ($m->downstream("u{$cid}", "p") as $v) {
                     $a[$cid][(int) substr($v->name, 1)] = true;
                 }
             }
@@ -763,7 +763,7 @@ abstract class Autoassigner extends MessageSet {
         $nassigned = 0;
         if (!$m->infeasible) {
             foreach ($this->acs as $cid => $ac) {
-                foreach ($m->reachable("u{$cid}", "p") as $v) {
+                foreach ($m->downstream("u{$cid}", "p") as $v) {
                     $pid = (int) substr($v->name, 1);
                     if ($this->ainfo[$cid][$pid]->eass === 0) {
                         $this->assign1($ac, $pid);
