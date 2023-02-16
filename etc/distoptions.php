@@ -203,13 +203,30 @@ $Opt["smartScoreCompare"] = true;
 //                   HotCRP will *not* redirect HTTP connections that
 //                   originate from localhost.
 
-
-// EXTERNAL SOFTWARE CONFIGURATION
+// EXTENDED DATABASE OPTIONS
 //
 //   dbHost          Database host. Defaults to localhost.
+//   dbSsl           If true, other options prefixed with 'dbSsl' will apply.
+//                   Defaults to false.
+//   dbSslKey        The location of the key for the SSL certficate for mTLS
+//                   authentication. Defaults to null.
+//   dbSslCert       The location of the SSL certificate for mTLS
+//                   authentication. Defaults to null.
+//   dbSslCa         The location of the CA certificate to validate the server
+//                   certificate against. Defaults to null.
+//   dbSslCapath     The location of the folder that contains CA certificates
+//                   to validate the server certificate against.
+//                   Defaults to null.
+//   dbSslCipher     A list of allowable ciphers to use for SSL encryption.
+//                   Defaults to null, i.e. system defaults apply.
+//   dbSslVerify     If true, verifies the server's certificate.
+//                   Defaults to true.
 //   dsn             Database configuration string in the format
 //                   "mysql://DBUSER:DBPASSWORD@DBHOST/DBNAME".
 //                   The default is derived from $Opt["dbName"], etc.
+
+// EXTERNAL SOFTWARE CONFIGURATION
+//
 //   memoryLimit     Maximum amount of memory a PHP script can use. Defaults
 //                   to 128MB.
 //   pdftohtmlCommand  Pathname to pdftohtml executable (used by the `banal`
