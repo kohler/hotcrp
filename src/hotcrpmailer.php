@@ -228,9 +228,9 @@ class HotCRPMailer extends Mailer {
             "p.timeSubmitted>0"
         ];
         if (($flags & self::GA_SINCE) !== 0) {
-            $flags[] = "r.timeRequested>r.timeRequestNotified";
+            $where[] = "r.timeRequested>r.timeRequestNotified";
             if ($this->newrev_since) {
-                $flags[] = "r.timeRequested>={$this->newrev_since}";
+                $where[] = "r.timeRequested>={$this->newrev_since}";
             }
         }
         if (($flags & self::GA_NEEDS_SUBMIT) !== 0) {
