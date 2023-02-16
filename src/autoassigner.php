@@ -85,6 +85,9 @@ class AutoassignerPaper {
     }
 }
 
+class AutoassignerComputed {
+}
+
 abstract class Autoassigner extends MessageSet {
     /** @var Conf
      * @readonly */
@@ -106,10 +109,8 @@ abstract class Autoassigner extends MessageSet {
     protected $ass = [];
     /** @var string */
     protected $ass_action = "";
-    /** @var string */
-    private $ass_suffix_columns = "";
-    /** @var string */
-    private $ass_suffix = "";
+    /** @var array<string,string|AutoassignerComputed> */
+    private $ass_extra = [];
     /** @var bool */
     private $has_pref_index = false;
     /** @var int */
@@ -132,7 +133,7 @@ abstract class Autoassigner extends MessageSet {
     /** @var ?int */
     private $ndesired = -2;
     /** @var int */
-    private $nassigned = 0;
+    protected $nassigned = 0;
     public $profile = ["maxflow" => 0, "mincost" => 0];
 
     const METHOD_MCMF = 0;
@@ -216,12 +217,22 @@ abstract class Autoassigner extends MessageSet {
         $this->ass_action = $action;
     }
 
-    /** @param string $columns
-     * @param string $values */
-    function set_assignment_suffix($columns, $values) {
-        assert(empty($this->ass) || $this->ass_suffix_columns === $columns);
-        $this->ass_suffix_columns = $columns;
-        $this->ass_suffix = ($values ?? "") !== "" ? ",{$values}" : "";
+    /** @param string $column
+     * @param null|string|AutoassignerComputed $value */
+    function set_assignment_column($column, $value) {
+        assert(empty($this->ass) || $value === null || isset($this->ass_extra[$column]));
+        if ($value === null) {
+            if (empty($this->ass)) {
+                unset($this->ass_extra[$column]);
+            } else if (isset($this->ass_extra[$column])) {
+                $this->ass_extra[$column] = ",";
+            }
+        } else {
+            if (is_string($value)) {
+                $value = "," . CsvGenerator::quote($value);
+            }
+            $this->ass_extra[$column] = $value;
+        }
     }
 
 
@@ -240,6 +251,11 @@ abstract class Autoassigner extends MessageSet {
         return $this->ass_action;
     }
 
+    /** @return int */
+    function user_count() {
+        return count($this->acs);
+    }
+
     /** @return array<int,AutoassignerUser> */
     protected function aausers() {
         return $this->acs;
@@ -247,14 +263,14 @@ abstract class Autoassigner extends MessageSet {
 
     /** @param int $uid
      * @return ?AutoassignerUser */
-    protected function aauser_by_id($uid) {
+    protected function aauser($uid) {
         return $this->acs[$uid] ?? null;
     }
 
     /** @param int $uid
      * @param int $load */
     protected function set_aauser_load($uid, $load) {
-        if (($ac = $this->aauser_by_id($uid))) {
+        if (($ac = $this->aauser($uid))) {
             $ac->load = $load;
         }
     }
@@ -266,17 +282,28 @@ abstract class Autoassigner extends MessageSet {
 
     /** @param int $pid
      * @return ?AutoassignerPaper */
-    protected function aapaper_by_id($pid) {
+    protected function aapaper($pid) {
         return $this->aps[$pid] ?? null;
     }
 
     /** @param int $pid
      * @param int $ndesired */
     protected function set_aapaper_ndesired($pid, $ndesired) {
-        if (($ap = $this->aapaper_by_id($pid))) {
+        if (($ap = $this->aapaper($pid))) {
             $ap->ndesired = $ndesired;
             $this->ndesired = -1;
         }
+    }
+
+    /** @return array<int,array<int,AutoassignerElement>> */
+    protected function ae_map() {
+        return $this->ainfo;
+    }
+
+    /** @param int $cid
+     * @return array<int,AutoassignerElement> */
+    protected function ae_map_for($cid) {
+        return $this->ainfo[$cid] ?? [];
     }
 
     /** @param int $cid
@@ -376,15 +403,39 @@ abstract class Autoassigner extends MessageSet {
         if (!$ac || !($ap = $this->aps[$pid] ?? null)) {
             return;
         }
+        $a = $this->ainfo[$ac->cid][$pid] ?? null;
+
         if (empty($this->ass)) {
-            $s = $this->ass_suffix_columns ? ",{$this->ass_suffix_columns}" : "";
-            $this->ass = ["paper,action,email{$s}\n"];
+            $t = "paper,action,email";
+            foreach ($this->ass_extra as $k => $v) {
+                $t .= "," . CsvGenerator::quote($k);
+            }
+            $this->ass = [$t . "\n"];
         }
-        $this->ass[] = "{$pid},{$this->ass_action},{$ac->user->email}{$this->ass_suffix}\n";
+        $t = "{$pid},{$this->ass_action},{$ac->user->email}";
+        foreach ($this->ass_extra as $k => $v) {
+            if (is_string($v)) {
+                $t .= $v;
+            } else if ($k === "preference") {
+                $t .= "," . ($a->pref ?? "");
+            } else if ($k === "expertise") {
+                $t .= "," . unparse_expertise($a->exp);
+            } else if ($k === "topic_score") {
+                $t .= "," . ($a->topicscore ?? "");
+            } else if ($k === "unhappiness") {
+                $t .= sprintf(",%.3f", $a->pref_index / $ac->pref_index_bound);
+            } else if ($k === "name") {
+                $t .= "," . CsvGenerator::quote($ac->user->name());
+            } else {
+                $t .= ",???";
+            }
+        }
+        $this->ass[] = $t . "\n";
+
         $ac->newass[] = $pid;
         ++$ac->load;
         ++$ap->nassigned;
-        if (($a = $this->ainfo[$ac->cid][$pid] ?? null)) {
+        if ($a) {
             $a->eass = self::ENEWASSIGN;
             $ac->unhappiness += $a->pref_index;
         }
@@ -394,9 +445,6 @@ abstract class Autoassigner extends MessageSet {
             }
         }
         ++$this->nassigned;
-        if ($this->nassigned % 10 === 0) {
-
-        }
     }
 
 
@@ -648,7 +696,7 @@ abstract class Autoassigner extends MessageSet {
         $this->mcmf_max_cost = null;
         $this->mark_progress("Preparing assignment optimizer" . $this->mcmf_round_descriptor);
         // existing assignment counts
-        $ceass = array_fill_keys(array_keys($this->acs), 0);
+        $ceass = array_fill_keys($this->user_ids(), 0);
         $peass = array_fill_keys($this->paper_ids(), 0);
         foreach ($this->ainfo as $cid => $alist) {
             foreach ($alist as $a) {
@@ -680,7 +728,7 @@ abstract class Autoassigner extends MessageSet {
             $nass += $ap->ndesired - $ap->nassigned;
         }
         // user nodes
-        $assperpc = ceil($nass / count($this->acs));
+        $assperpc = ceil($nass / $this->user_count());
         $minload = PHP_INT_MAX;
         $maxload = $assperpc;
         foreach ($this->acs as $ac) {
@@ -754,7 +802,6 @@ abstract class Autoassigner extends MessageSet {
         }
         // run MCMF
         $this->mcmf = $m;
-        file_put_contents("/tmp/x", $m->debug_info());
         $m->shuffle();
         $m->run();
         // make assignments
@@ -762,9 +809,13 @@ abstract class Autoassigner extends MessageSet {
         $time = microtime(true);
         $nassigned = 0;
         if (!$m->infeasible) {
-            foreach ($this->acs as $cid => $ac) {
+            foreach ($this->aausers() as $cid => $ac) {
+                $pids = [];
                 foreach ($m->downstream("u{$cid}", "p") as $v) {
-                    $pid = (int) substr($v->name, 1);
+                    $pids[] = (int) substr($v->name, 1);
+                }
+                sort($pids);
+                foreach ($pids as $pid) {
                     if ($this->ainfo[$cid][$pid]->eass === 0) {
                         $this->assign1($ac, $pid);
                         ++$nassigned;

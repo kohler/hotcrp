@@ -34,9 +34,11 @@ class Review_Autoassigner extends Autoassigner {
             if (($err = Conf::round_name_error($round))) {
                 $this->error_at("round", "<0>{$err}");
             } else {
-                $this->set_assignment_suffix("round", $round);
+                $this->set_assignment_column("round", $round);
             }
         }
+        $this->set_assignment_column("preference", new AutoassignerComputed);
+        $this->set_assignment_column("topic_score", new AutoassignerComputed);
 
         $this->extract_balance_method($subreq);
 
@@ -101,7 +103,7 @@ class Review_Autoassigner extends Autoassigner {
         if ($this->kind === self::KIND_ENSURE) {
             $result = $this->conf->qe("select paperId, count(reviewId) from PaperReview where reviewType={$this->rtype} group by paperId");
             while (($row = $result->fetch_row())) {
-                if (($ap = $this->aapaper_by_id((int) $row[0]))) {
+                if (($ap = $this->aapaper((int) $row[0]))) {
                     $ap->ndesired = max($ap->ndesired - (int) $row[1], 0);
                 }
             }
