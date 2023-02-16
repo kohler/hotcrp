@@ -1388,15 +1388,17 @@ a.btn-disabled, a.btn-disabled:hover {
 	padding: 1px 7px 1px;
 }
 .aab {
-	margin: 2em 0 0.7em;
 	display: flex;
-	justify-content: flex-start;
 	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: flex-start;
+	margin: 2em 0 0.7em;
 }
 .aabr {
-	flex-grow: 1;
 	display: flex;
+	align-items: baseline;
 	justify-content: flex-end;
+	flex-grow: 1;
 }
 .aab:first-child {
 	margin-top: 0;
