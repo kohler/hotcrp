@@ -1285,7 +1285,7 @@ class Contact implements JsonSerializable {
             return true;
         }
         if ($this->contactTags) {
-            return stripos($this->contactTags, " $t#") !== false;
+            return stripos($this->contactTags, " {$t}#") !== false;
         }
         if ($this->contactTags === false) {
             trigger_error("Contact $this->email contactTags missing\n" . debug_string_backtrace());
@@ -1300,7 +1300,7 @@ class Contact implements JsonSerializable {
         if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0) {
             return 0.0;
         } else if ($this->contactTags
-                   && ($p = stripos($this->contactTags, " $t#")) !== false) {
+                   && ($p = stripos($this->contactTags, " {$t}#")) !== false) {
             return (float) substr($this->contactTags, $p + strlen($t) + 2);
         } else {
             return null;
