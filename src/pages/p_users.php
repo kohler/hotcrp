@@ -418,7 +418,7 @@ class Users_Page {
         foreach ($this->conf->all_review_fields() as $f) {
             if ($f->view_score > $revViewScore
                 && $f->main_storage
-                && $f->want_column_display())
+                && $f instanceof Discrete_ReviewField)
                 $viewable_fields[] = $f;
         }
         if (!empty($viewable_fields)) {

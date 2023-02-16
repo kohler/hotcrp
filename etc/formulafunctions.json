@@ -79,6 +79,7 @@
     {"name": "date:now", "function": "+Now_Fexpr", "is_time": false},
 
     {"name": "topicscore", "function": "+TopicScore_Fexpr"},
+    {"name": "topic_score", "alias": "topicscore"},
     {"name": "conf", "function": "+Conflict_Fexpr", "is_pc": false},
     {"name": "conflict", "alias": "conf"},
     {"name": "pcconf", "function": "+Conflict_Fexpr", "is_pc": true},

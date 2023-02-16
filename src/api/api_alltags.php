@@ -36,17 +36,20 @@ class AllTags_API {
     }
 
     static private function easy_alltags_api(Contact $user) {
-        $dt = $user->conf->tags();
-        $hidden = false;
         $q = "select distinct tag from PaperTag join Paper using (paperId)";
-        $qwhere = ["timeSubmitted>0"];
-        if (!$user->privChair) {
-            if (!$user->conf->tag_seeall) {
-                $q .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId={$user->contactId})";
-                $qwhere[] = "coalesce(conflictType,0)<=" . CONFLICT_MAXUNCONFLICTED;
-            }
-            $hidden = $dt->has_hidden;
+        $qwhere = [];
+        if ($user->privChair || $user->conf->can_pc_view_incomplete()) {
+            $qwhere[] = "timeWithdrawn<=0";
+        } else {
+            $qwhere[] = "timeSubmitted>0";
         }
+        if (!$user->privChair && !$user->conf->tag_seeall) {
+            $q .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId={$user->contactId})";
+            $qwhere[] = "coalesce(conflictType,0)<=" . CONFLICT_MAXUNCONFLICTED;
+        }
+        $dt = $user->conf->tags();
+        $hidden = !$user->privChair && $dt->has_hidden;
+
         $tags = [];
         $result = $user->conf->qe($q . " where " . join(" and ", $qwhere));
         while ($result && ($row = $result->fetch_row())) {
@@ -56,12 +59,19 @@ class AllTags_API {
             }
         }
         Dbl::free($result);
+
         return self::finish_alltags_api($tags, $dt, $user);
     }
 
     static private function hard_alltags_api(Contact $user) {
+        $args = ["minimal" => true, "tags" => "require"];
+        if ($user->privChair || $user->conf->can_pc_view_incomplete()) {
+            $args["active"] = true;
+        } else {
+            $args["finalized"] = true;
+        }
         $tags = [];
-        foreach ($user->paper_set(["minimal" => true, "finalized" => true, "tags" => "require"]) as $prow) {
+        foreach ($user->paper_set($args) as $prow) {
             if ($user->can_view_paper($prow)) {
                 foreach (Tagger::split_unpack($prow->all_tags_text()) as $ti) {
                     $lt = strtolower($ti[0]);

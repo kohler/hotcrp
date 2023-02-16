@@ -63,7 +63,7 @@ class Tag_SearchTerm extends SearchTerm {
                     $nomatch[] = " " . preg_quote($t->tag) . "#";
                     if ($tsm->test_value(0.0)) {
                         $asrch = new PaperSearch($srch->conf->root_user(), ["q" => $t->automatic_search(), "t" => "all"]);
-                        $allterms[] = $asrch->term();
+                        $allterms[] = $asrch->full_term();
                     }
                 }
             }

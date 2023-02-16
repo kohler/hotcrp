@@ -450,7 +450,7 @@ function make_axis(ticks) {
     if (ticks && ticks[0] === "named")
         ticks = named_integer_ticks(ticks[1]);
     else if (ticks && ticks[0] === "score")
-        ticks = score_ticks(new hotcrp.ReviewField(ticks[1]));
+        ticks = score_ticks(hotcrp.make_review_field(ticks[1]));
     else if (ticks && ticks[0] === "time")
         ticks = time_ticks();
     else
@@ -1663,7 +1663,7 @@ return function (selector, args) {
             var $err = $('<div class="msg msg-error"></div>').appendTo(selector);
             append_feedback_near($err[0], {message: "<0>Graphs are not supported on this browser", status: 2});
             if (document.documentMode) {
-                append_feedback_near($err[0], {message: "<5>You appear to be using a version of Internet Explorer, which is no longer supported. <a href=\"https://browsehappy.com\">Edge, Firefox, Chrome, and Safari</a> are supported, among others.", status: -5});
+                append_feedback_near($err[0], {message: "<5>You appear to be using a version of Internet Explorer, which is no longer supported. <a href=\"https://browsehappy.com\">Edge, Firefox, Chrome, and Safari</a> are supported, among others.", status: -5 /*MessageSet::INFORM*/});
             }
             return null;
         } else if (g.filter)

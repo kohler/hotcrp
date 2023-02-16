@@ -319,7 +319,7 @@ class Log_Page {
             }
             echo "</div></td><td><div class=\"lognavdr\">";
             if ($page - $this->nlinks > 1) {
-                echo "&nbsp;...";
+                echo "&nbsp;…";
             }
             for ($p = max($page - $this->nlinks, 1); $p < $page; ++$p) {
                 echo "&nbsp;", $leg->page_link_html($p, $p);
@@ -329,7 +329,7 @@ class Log_Page {
                 echo $leg->page_link_html($p, $p), "&nbsp;";
             }
             if ($leg->has_page($page + $this->nlinks + 1)) {
-                echo "...&nbsp;";
+                echo "…&nbsp;";
             }
             echo "</div></td><td><div class=\"lognavx\">";
             if ($leg->has_page($page + 1)) {

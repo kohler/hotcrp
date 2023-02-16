@@ -193,6 +193,7 @@ class Permission_Tester {
         // change submission date
         $this->conf->save_setting("sub_update", Conf::$now - 5);
         $this->conf->save_refresh_setting("sub_sub", Conf::$now - 5);
+        $paper1 = $user_chair->checked_paper_by_id(1);
         xassert($user_chair->can_edit_paper($paper1));
         xassert(!$user_chair->call_with_overrides(Contact::OVERRIDE_CHECK_TIME, "can_edit_paper", $paper1));
         xassert(!$user_estrin->can_edit_paper($paper1));
@@ -454,24 +455,24 @@ class Permission_Tester {
         // check AssignmentSet conflict checking
         $assignset = new AssignmentSet($user_chair, false);
         $assignset->parse("paper,action,email\n1,pri,estrin@usc.edu\n");
-        xassert_eqq($assignset->full_feedback_text(), "Deborah Estrin <estrin@usc.edu> has a conflict with #1\n");
+        xassert_eqq($assignset->full_feedback_text(), "Deborah Estrin <estrin@usc.edu> cannot review #1 because they are conflicted\n");
         $assignset->execute();
         assert_query("select email from PaperReview r join ContactInfo c on (c.contactId=r.contactId) where paperId=1 order by email", "lixia@cs.ucla.edu\nmgbaker@cs.stanford.edu\nvarghese@ccrc.wustl.edu");
 
         // check AssignmentSet error messages and landmarks
         $assignset = new AssignmentSet($user_chair, false);
         $assignset->parse("paper,action,email\n1,pri,estrin@usc.edu\n", "fart.txt");
-        xassert_eqq($assignset->full_feedback_text(), "fart.txt:2: Deborah Estrin <estrin@usc.edu> has a conflict with #1\n");
+        xassert_eqq($assignset->full_feedback_text(), "fart.txt:2: Deborah Estrin <estrin@usc.edu> cannot review #1 because they are conflicted\n");
         xassert(!$assignset->execute());
 
         $assignset = new AssignmentSet($user_chair, false);
         $assignset->parse("paper,action,email,landmark\n1,pri,estrin@usc.edu,butt.txt:740\n", "fart.txt");
-        xassert_eqq($assignset->full_feedback_text(), "butt.txt:740: Deborah Estrin <estrin@usc.edu> has a conflict with #1\n");
+        xassert_eqq($assignset->full_feedback_text(), "butt.txt:740: Deborah Estrin <estrin@usc.edu> cannot review #1 because they are conflicted\n");
         xassert(!$assignset->execute());
 
         $assignset = new AssignmentSet($user_chair, false);
         $assignset->parse("paper,action,email,landmark,message\n1,pri,estrin@usc.edu,butt.txt:740\n1,error,none,butt.txt/10,GODDAMNIT", "fart.txt");
-        xassert_eqq($assignset->full_feedback_text(), "butt.txt/10: GODDAMNIT\nbutt.txt:740: Deborah Estrin <estrin@usc.edu> has a conflict with #1\n");
+        xassert_eqq($assignset->full_feedback_text(), "butt.txt/10: GODDAMNIT\nbutt.txt:740: Deborah Estrin <estrin@usc.edu> cannot review #1 because they are conflicted\n");
         xassert(!$assignset->execute());
 
         assert_search_papers($user_chair, "#testo", "");

@@ -65,7 +65,7 @@ Installation
    ```
    location /testconf/ {
        fastcgi_pass 127.0.0.1:9000;
-       fastcgi_split_path_info ^(/testconf)(/.*)$;
+       fastcgi_split_path_info ^(/testconf)(/[\s\S]*)$;
        fastcgi_param SCRIPT_FILENAME /home/kohler/hotcrp/index.php;
        include fastcgi_params;
    }

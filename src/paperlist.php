@@ -304,7 +304,7 @@ class PaperList implements XtContext {
             }
         }
 
-        $qe = $this->search->term();
+        $qe = $this->search->main_term();
         if ($qe instanceof Then_SearchTerm) {
             $this->_then_map = $this->search->groups_by_paper_id();
             $this->_highlight_map = $this->search->highlights_by_paper_id();
@@ -743,7 +743,7 @@ class PaperList implements XtContext {
         if ($this->_sortcol_fixed === 0) {
             $this->_sortcol_fixed = 1;
             // apply sorters from search terms
-            $qe = $this->search->term();
+            $qe = $this->search->main_term();
             if ($qe instanceof Then_SearchTerm) {
                 for ($i = 0; $i < $qe->nthen; ++$i) {
                     $this->_add_view_sorters($qe->child[$i], $i);
@@ -1003,10 +1003,6 @@ class PaperList implements XtContext {
                 return $row->has_nonempty_collaborators()
                     && $this->user->can_view_authors($row);
             });
-        } else if ($key === "need_submit") {
-            return $this->rowset()->any(function ($row) {
-                return $row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0;
-            });
         } else if ($key === "accepted") {
             return $this->rowset()->any(function ($row) {
                 return $row->outcome > 0 && $this->user->can_view_decision($row);
@@ -1036,7 +1032,7 @@ class PaperList implements XtContext {
             } else {
                 $mi = $message;
             }
-            if (($pos = $this->search->term()->view_anno_pos($name))
+            if (($pos = $this->search->main_term()->view_anno_pos($name))
                 && ($mi->status !== MessageSet::INFORM || empty($this->_finding_column_errors))) {
                 if ($mi->pos1 !== null) {
                     $mi->pos1 += $pos[1];
@@ -1233,9 +1229,9 @@ class PaperList implements XtContext {
         // Bit 2: If set, then some authors may be plainly visible.
         // Bit 1: If set, then some authors may be visible through deblinding.
         $sb = $this->conf->submission_blindness();
-        if ($this->search->limit_author()
+        if ($this->search->limit_term()->is_author()
             || $sb === Conf::BLIND_NEVER
-            || ($this->search->limit_accepted()
+            || ($this->search->limit_term()->is_accepted()
                 && $this->conf->time_all_author_view_decision()
                 && !$this->conf->setting("seedec_hideau"))) {
             return 2;

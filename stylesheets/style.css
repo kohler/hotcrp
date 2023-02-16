@@ -733,6 +733,9 @@ label.checki {
 .align-self-center {
 	align-self: center !important;
 }
+.justify-content-end {
+	justify-content: flex-end !important;
+}
 .relative {
 	position: relative;
 }
@@ -1385,15 +1388,17 @@ a.btn-disabled, a.btn-disabled:hover {
 	padding: 1px 7px 1px;
 }
 .aab {
-	margin: 2em 0 0.7em;
 	display: flex;
-	justify-content: flex-start;
 	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: flex-start;
+	margin: 2em 0 0.7em;
 }
 .aabr {
-	flex-grow: 1;
 	display: flex;
+	align-items: baseline;
 	justify-content: flex-end;
+	flex-grow: 1;
 }
 .aab:first-child {
 	margin-top: 0;
@@ -1677,6 +1682,9 @@ th.settings-simplehead {
 	padding: 20px 16px 16px;
 	border-radius: 5px;
 }
+.settings-sf-view h3, .settings-rf-view h3 {
+	max-width: 768px;
+}
 .settings-draghandle {
 	position: absolute;
 	display: inline-block;
@@ -1824,6 +1832,12 @@ hr.form-sep, hr.form-sep-2 {
 }
 .form-g + .form-nearby {
 	margin-top: -1em;
+}
+fieldset.form-g > legend {
+	margin-bottom: 0.35rem;
+}
+fieldset.form-g > legend + ul.feedback-list{
+	margin-top: -0.35rem;
 }
 
 /* help pages */
@@ -4532,6 +4546,7 @@ body {
 .modal .mail-preview {
 	max-height: 75vh;
 	width: 100%;
+	overflow-y: auto;
 }
 .mail-editor {
 	padding: 0.75em 1em;

@@ -33,12 +33,10 @@ class GetScores_ListAction extends ListAction {
                         $this_scores = false;
                         $b = $a;
                         foreach ($rrow->viewable_fields($user) as $f) {
-                            if ($f instanceof Score_ReviewField) {
-                                $v = $rrow->fields[$f->order];
-                                if ($v !== 0 || !$f->required) {
-                                    $b[$f->search_keyword()] = $f->unparse($v);
-                                    $any_scores[$f->search_keyword()] = $this_scores = true;
-                                }
+                            if ($f instanceof Discrete_ReviewField
+                                && ($fv = $rrow->fval($f)) !== null) {
+                                $b[$f->search_keyword()] = $f->unparse_value($fv);
+                                $any_scores[$f->search_keyword()] = $this_scores = true;
                             }
                         }
                         if ($this_scores) {

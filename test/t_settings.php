@@ -321,6 +321,15 @@ class Settings_Tester {
         $this->conf->save_refresh_setting("outcome_map", 1, $x);
     }
 
+    /** @param ReviewField $rf
+     * @param int|string $fval
+     * @return string */
+    static function unparse_text_field_content($rf, $fval) {
+        $t = [];
+        $rf->unparse_text_field($t, $fval, ["flowed" => false]);
+        return join("", $t);
+    }
+
     function test_scores() {
         xassert(!$this->conf->find_review_field("B5"));
         xassert(!$this->conf->find_review_field("B9"));
@@ -340,30 +349,32 @@ class Settings_Tester {
             "rf/3/values_text" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J",
             "rf/4/name" => "B5",
             "rf/4/id" => "s07",
-            "rf/4/values_text" => "A. A\nB. B\nC. C\nD. D\nE. E"
+            "rf/4/values_text" => "A. A\nB. B\nC. C\nD. D\nE. E",
+            "rf/4/required" => 1
         ]);
         xassert($sv->execute());
 
         $rf = $this->conf->find_review_field("B5");
         assert($rf instanceof Score_ReviewField);
+        xassert($rf->required);
         xassert_array_eqq($rf->ordered_symbols(), ["A", "B", "C", "D", "E"]);
         xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E"]);
-        xassert_eqq($rf->unparse(1), "E");
-        xassert_eqq($rf->unparse(2), "D");
-        xassert_eqq($rf->unparse(3), "C");
-        xassert_eqq($rf->unparse(4), "B");
-        xassert_eqq($rf->unparse(5), "A");
+        xassert_eqq($rf->unparse_value(1), "E");
+        xassert_eqq($rf->unparse_value(2), "D");
+        xassert_eqq($rf->unparse_value(3), "C");
+        xassert_eqq($rf->unparse_value(4), "B");
+        xassert_eqq($rf->unparse_value(5), "A");
         xassert_eqq($rf->unparse_json(1), "E");
         xassert_eqq($rf->unparse_json(2), "D");
         xassert_eqq($rf->unparse_json(3), "C");
         xassert_eqq($rf->unparse_json(4), "B");
         xassert_eqq($rf->unparse_json(5), "A");
-        xassert_eqq($rf->unparse_text_field_content(5), "\nB5\n--\nA. A\n");
-        xassert_eqq($rf->unparse_text_field_content(4), "\nB5\n--\nB. B\n");
-        xassert_eqq($rf->unparse_text_field_content(3), "\nB5\n--\nC. C\n");
-        xassert_eqq($rf->unparse_text_field_content(2), "\nB5\n--\nD. D\n");
-        xassert_eqq($rf->unparse_text_field_content(1), "\nB5\n--\nE. E\n");
-        xassert_eqq($rf->unparse_text_field_content(0), "");
+        xassert_eqq(self::unparse_text_field_content($rf, 5), "\nB5\n--\nA. A\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 4), "\nB5\n--\nB. B\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 3), "\nB5\n--\nC. C\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 2), "\nB5\n--\nD. D\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 1), "\nB5\n--\nE. E\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 0), "");
         xassert_eqq($rf->value_class(1), "sv sv9");
         xassert_eqq($rf->value_class(2), "sv sv7");
         xassert_eqq($rf->value_class(3), "sv sv5");
@@ -373,15 +384,15 @@ class Settings_Tester {
         assert($rf instanceof Score_ReviewField);
         xassert_array_eqq($rf->ordered_symbols(), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
         xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E", "F", "G", "H", "I"]);
-        xassert_eqq($rf->unparse(1), "1");
-        xassert_eqq($rf->unparse(2), "2");
-        xassert_eqq($rf->unparse(3), "3");
-        xassert_eqq($rf->unparse(4), "4");
-        xassert_eqq($rf->unparse(5), "5");
-        xassert_eqq($rf->unparse(6), "6");
-        xassert_eqq($rf->unparse(7), "7");
-        xassert_eqq($rf->unparse(8), "8");
-        xassert_eqq($rf->unparse(9), "9");
+        xassert_eqq($rf->unparse_value(1), "1");
+        xassert_eqq($rf->unparse_value(2), "2");
+        xassert_eqq($rf->unparse_value(3), "3");
+        xassert_eqq($rf->unparse_value(4), "4");
+        xassert_eqq($rf->unparse_value(5), "5");
+        xassert_eqq($rf->unparse_value(6), "6");
+        xassert_eqq($rf->unparse_value(7), "7");
+        xassert_eqq($rf->unparse_value(8), "8");
+        xassert_eqq($rf->unparse_value(9), "9");
         xassert_eqq($rf->unparse_json(1), 1);
         xassert_eqq($rf->unparse_json(2), 2);
         xassert_eqq($rf->unparse_json(3), 3);
@@ -391,15 +402,15 @@ class Settings_Tester {
         xassert_eqq($rf->unparse_json(7), 7);
         xassert_eqq($rf->unparse_json(8), 8);
         xassert_eqq($rf->unparse_json(9), 9);
-        xassert_eqq($rf->unparse_text_field_content(1), "\nB9\n--\n1. A\n");
-        xassert_eqq($rf->unparse_text_field_content(2), "\nB9\n--\n2. B\n");
-        xassert_eqq($rf->unparse_text_field_content(3), "\nB9\n--\n3. C\n");
-        xassert_eqq($rf->unparse_text_field_content(4), "\nB9\n--\n4. D\n");
-        xassert_eqq($rf->unparse_text_field_content(5), "\nB9\n--\n5. E\n");
-        xassert_eqq($rf->unparse_text_field_content(6), "\nB9\n--\n6. F\n");
-        xassert_eqq($rf->unparse_text_field_content(7), "\nB9\n--\n7. G\n");
-        xassert_eqq($rf->unparse_text_field_content(8), "\nB9\n--\n8. H\n");
-        xassert_eqq($rf->unparse_text_field_content(9), "\nB9\n--\n9. I\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 1), "\nB9\n--\n1. A\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 2), "\nB9\n--\n2. B\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 3), "\nB9\n--\n3. C\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 4), "\nB9\n--\n4. D\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 5), "\nB9\n--\n5. E\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 6), "\nB9\n--\n6. F\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 7), "\nB9\n--\n7. G\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 8), "\nB9\n--\n8. H\n");
+        xassert_eqq(self::unparse_text_field_content($rf, 9), "\nB9\n--\n9. I\n");
         xassert_eqq($rf->value_class(1), "sv sv1");
         xassert_eqq($rf->value_class(2), "sv sv2");
         xassert_eqq($rf->value_class(3), "sv sv3");
@@ -413,21 +424,21 @@ class Settings_Tester {
         assert($rf instanceof Score_ReviewField);
         xassert_array_eqq($rf->ordered_symbols(), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
         xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"]);
-        xassert_eqq($rf->unparse(1), "1");
-        xassert_eqq($rf->unparse(2), "2");
-        xassert_eqq($rf->unparse(3), "3");
-        xassert_eqq($rf->unparse(4), "4");
-        xassert_eqq($rf->unparse(5), "5");
-        xassert_eqq($rf->unparse(6), "6");
-        xassert_eqq($rf->unparse(7), "7");
-        xassert_eqq($rf->unparse(8), "8");
-        xassert_eqq($rf->unparse(9), "9");
-        xassert_eqq($rf->unparse(10), "10");
-        xassert_eqq($rf->unparse(11), "11");
-        xassert_eqq($rf->unparse(12), "12");
-        xassert_eqq($rf->unparse(13), "13");
-        xassert_eqq($rf->unparse(14), "14");
-        xassert_eqq($rf->unparse(15), "15");
+        xassert_eqq($rf->unparse_value(1), "1");
+        xassert_eqq($rf->unparse_value(2), "2");
+        xassert_eqq($rf->unparse_value(3), "3");
+        xassert_eqq($rf->unparse_value(4), "4");
+        xassert_eqq($rf->unparse_value(5), "5");
+        xassert_eqq($rf->unparse_value(6), "6");
+        xassert_eqq($rf->unparse_value(7), "7");
+        xassert_eqq($rf->unparse_value(8), "8");
+        xassert_eqq($rf->unparse_value(9), "9");
+        xassert_eqq($rf->unparse_value(10), "10");
+        xassert_eqq($rf->unparse_value(11), "11");
+        xassert_eqq($rf->unparse_value(12), "12");
+        xassert_eqq($rf->unparse_value(13), "13");
+        xassert_eqq($rf->unparse_value(14), "14");
+        xassert_eqq($rf->unparse_value(15), "15");
         xassert_eqq($rf->value_class(1), "sv sv1");
         xassert_eqq($rf->value_class(2), "sv sv2");
         xassert_eqq($rf->value_class(3), "sv sv2");
@@ -447,16 +458,16 @@ class Settings_Tester {
         assert($rf instanceof Score_ReviewField);
         xassert_array_eqq($rf->ordered_symbols(), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
         xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]);
-        xassert_eqq($rf->unparse(1), "1");
-        xassert_eqq($rf->unparse(2), "2");
-        xassert_eqq($rf->unparse(3), "3");
-        xassert_eqq($rf->unparse(4), "4");
-        xassert_eqq($rf->unparse(5), "5");
-        xassert_eqq($rf->unparse(6), "6");
-        xassert_eqq($rf->unparse(7), "7");
-        xassert_eqq($rf->unparse(8), "8");
-        xassert_eqq($rf->unparse(9), "9");
-        xassert_eqq($rf->unparse(10), "10");
+        xassert_eqq($rf->unparse_value(1), "1");
+        xassert_eqq($rf->unparse_value(2), "2");
+        xassert_eqq($rf->unparse_value(3), "3");
+        xassert_eqq($rf->unparse_value(4), "4");
+        xassert_eqq($rf->unparse_value(5), "5");
+        xassert_eqq($rf->unparse_value(6), "6");
+        xassert_eqq($rf->unparse_value(7), "7");
+        xassert_eqq($rf->unparse_value(8), "8");
+        xassert_eqq($rf->unparse_value(9), "9");
+        xassert_eqq($rf->unparse_value(10), "10");
         xassert_eqq($rf->value_class(1), "sv sv1");
         xassert_eqq($rf->value_class(2), "sv sv2");
         xassert_eqq($rf->value_class(3), "sv sv3");
@@ -484,16 +495,16 @@ class Settings_Tester {
         assert($rf instanceof Score_ReviewField);
         xassert_array_eqq($rf->ordered_symbols(), ["A", "B", "C", "D", "E"]);
         xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E"]);
-        xassert_eqq($rf->unparse(0.81), "E");
-        xassert_eqq($rf->unparse(1), "E");
-        xassert_eqq($rf->unparse(1.2), "E");
-        xassert_eqq($rf->unparse(1.4), "D~E");
-        xassert_eqq($rf->unparse(1.5), "D~E");
-        xassert_eqq($rf->unparse(1.6), "D~E");
-        xassert_eqq($rf->unparse(1.8), "D");
-        xassert_eqq($rf->unparse(2), "D");
-        xassert_eqq($rf->unparse(2.2), "D");
-        xassert_eqq($rf->unparse(5), "A");
+        xassert_eqq($rf->unparse_computed(0.81), "E");
+        xassert_eqq($rf->unparse_computed(1), "E");
+        xassert_eqq($rf->unparse_computed(1.2), "E");
+        xassert_eqq($rf->unparse_computed(1.4), "D~E");
+        xassert_eqq($rf->unparse_computed(1.5), "D~E");
+        xassert_eqq($rf->unparse_computed(1.6), "D~E");
+        xassert_eqq($rf->unparse_computed(1.8), "D");
+        xassert_eqq($rf->unparse_computed(2), "D");
+        xassert_eqq($rf->unparse_computed(2.2), "D");
+        xassert_eqq($rf->unparse_computed(5), "A");
         xassert_eqq($rf->value_class(1), "sv sv1");
         xassert_eqq($rf->value_class(2), "sv sv3");
         xassert_eqq($rf->value_class(3), "sv sv5");
@@ -503,8 +514,8 @@ class Settings_Tester {
         assert($rf instanceof Score_ReviewField);
         xassert_array_eqq($rf->ordered_symbols(), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
         xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E", "F", "G", "H", "I"]);
-        xassert_eqq($rf->unparse(1), "1");
-        xassert_eqq($rf->unparse(9), "9");
+        xassert_eqq($rf->unparse_value(1), "1");
+        xassert_eqq($rf->unparse_value(9), "9");
         xassert_eqq($rf->value_class(1), "sv sv9");
         xassert_eqq($rf->value_class(2), "sv sv8");
         xassert_eqq($rf->value_class(3), "sv sv7");
@@ -518,8 +529,8 @@ class Settings_Tester {
         assert($rf instanceof Score_ReviewField);
         xassert_array_eqq($rf->ordered_symbols(), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
         xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"]);
-        xassert_eqq($rf->unparse(1), "1");
-        xassert_eqq($rf->unparse(15), "15");
+        xassert_eqq($rf->unparse_value(1), "1");
+        xassert_eqq($rf->unparse_value(15), "15");
         xassert_eqq($rf->value_class(15), "sv sv1");
         xassert_eqq($rf->value_class(14), "sv sv2");
         xassert_eqq($rf->value_class(13), "sv sv2");
@@ -539,8 +550,8 @@ class Settings_Tester {
         assert($rf instanceof Score_ReviewField);
         xassert_array_eqq($rf->ordered_symbols(), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
         xassert_array_eqq($rf->ordered_values(), ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]);
-        xassert_eqq($rf->unparse(1), "1");
-        xassert_eqq($rf->unparse(10), "10");
+        xassert_eqq($rf->unparse_value(1), "1");
+        xassert_eqq($rf->unparse_value(10), "10");
         xassert_eqq($rf->value_class(10), "sv sv1");
         xassert_eqq($rf->value_class(9), "sv sv2");
         xassert_eqq($rf->value_class(8), "sv sv3");
@@ -608,14 +619,14 @@ class Settings_Tester {
         assert_search_papers($this->u_chair, "mf:<B", "30"); // XXX
 
         $rrow = checked_fresh_review(30, $this->u_mgbaker);
-        xassert_eqq($rrow->fval("s05"), 3);
-        xassert_eqq($rrow->fval("s90"), 3);
+        xassert_eqq($rrow->fidval("s05"), 3);
+        xassert_eqq($rrow->fidval("s90"), 3);
         $rrow = checked_fresh_review(30, $u_jj);
-        xassert_eqq($rrow->fval("s05"), 2);
-        xassert_eqq($rrow->fval("s90"), 2);
+        xassert_eqq($rrow->fidval("s05"), 2);
+        xassert_eqq($rrow->fidval("s90"), 2);
         $rrow = checked_fresh_review(30, $u_floyd);
-        xassert_eqq($rrow->fval("s05"), 1);
-        xassert_eqq($rrow->fval("s90"), 1);
+        xassert_eqq($rrow->fidval("s05"), 1);
+        xassert_eqq($rrow->fidval("s90"), 1);
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
@@ -629,14 +640,14 @@ class Settings_Tester {
         xassert($sv->execute());
 
         $rrow = checked_fresh_review(30, $this->u_mgbaker);
-        xassert_eqq($rrow->fval("s05"), 1);
-        xassert_eqq($rrow->fval("s90"), 1);
+        xassert_eqq($rrow->fidval("s05"), 1);
+        xassert_eqq($rrow->fidval("s90"), 1);
         $rrow = checked_fresh_review(30, $u_jj);
-        xassert_eqq($rrow->fval("s05"), 2);
-        xassert_eqq($rrow->fval("s90"), 3);
+        xassert_eqq($rrow->fidval("s05"), 2);
+        xassert_eqq($rrow->fidval("s90"), 3);
         $rrow = checked_fresh_review(30, $u_floyd);
-        xassert_eqq($rrow->fval("s05"), 3);
-        xassert_eqq($rrow->fval("s90"), 2);
+        xassert_eqq($rrow->fidval("s05"), 3);
+        xassert_eqq($rrow->fidval("s90"), 2);
 
         xassert_eqq(review_score($this->conf, "s05")->ids(), [3, 2, 1]);
         xassert_eqq(review_score($this->conf, "s90")->ids(), [3, 1, 2]);
@@ -664,11 +675,11 @@ class Settings_Tester {
         xassert_eqq(review_score($this->conf, "s05")->values(), ["It's bad", "Yep", "Problem"]);
 
         $rrow = checked_fresh_review(30, $this->u_mgbaker);
-        xassert_eqq($rrow->fval("s05"), 2);
+        xassert_eqq($rrow->fidval("s05"), 2);
         $rrow = checked_fresh_review(30, $u_jj);
-        xassert_eqq($rrow->fval("s05"), 1);
+        xassert_eqq($rrow->fidval("s05"), 1);
         $rrow = checked_fresh_review(30, $u_floyd);
-        xassert_eqq($rrow->fval("s05"), 3);
+        xassert_eqq($rrow->fidval("s05"), 3);
 
         xassert_eqq(review_score($this->conf, "s05")->ids(), [2, 3, 1]);
 
@@ -694,11 +705,11 @@ class Settings_Tester {
         xassert_eqq(review_score($this->conf, "s05")->values(), ["Problem", "It's bad", "Yep"]);
 
         $rrow = checked_fresh_review(30, $this->u_mgbaker);
-        xassert_eqq($rrow->fval("s05"), 3);
+        xassert_eqq($rrow->fidval("s05"), 3);
         $rrow = checked_fresh_review(30, $u_jj);
-        xassert_eqq($rrow->fval("s05"), 2);
+        xassert_eqq($rrow->fidval("s05"), 2);
         $rrow = checked_fresh_review(30, $u_floyd);
-        xassert_eqq($rrow->fval("s05"), 1);
+        xassert_eqq($rrow->fidval("s05"), 1);
 
         xassert_eqq(review_score($this->conf, "s05")->ids(), [1, 2, 3]);
         foreach ($this->conf->setting_json("review_form") as $rj) {
@@ -716,14 +727,14 @@ class Settings_Tester {
         xassert($sv->execute());
 
         $rrow = checked_fresh_review(30, $this->u_mgbaker);
-        xassert_eqq($rrow->fval("s05"), null);
-        xassert_eqq($rrow->fval("s90"), null);
+        xassert_eqq($rrow->fidval("s05"), null);
+        xassert_eqq($rrow->fidval("s90"), null);
         $rrow = checked_fresh_review(30, $u_jj);
-        xassert_eqq($rrow->fval("s05"), null);
-        xassert_eqq($rrow->fval("s90"), null);
+        xassert_eqq($rrow->fidval("s05"), null);
+        xassert_eqq($rrow->fidval("s90"), null);
         $rrow = checked_fresh_review(30, $u_floyd);
-        xassert_eqq($rrow->fval("s05"), null);
-        xassert_eqq($rrow->fval("s90"), null);
+        xassert_eqq($rrow->fidval("s05"), null);
+        xassert_eqq($rrow->fidval("s90"), null);
 
         $this->conf->qe("delete from PaperReview where paperId=30");
     }

@@ -302,40 +302,85 @@ class MinCostMaxFlow {
         return $cost;
     }
 
+    /** @param MinCostMaxFlow_Node|string $v
+     * @return MinCostMaxFlow_Node */
+    private function start_dfs($v) {
+        foreach ($this->v as $vx) {
+            $vx->npos = 0;
+        }
+        if (!$this->has_edges) {
+            $this->initialize_edges();
+        }
+        return is_string($v) ? $this->vmap[$v] : $v;
+    }
+
     /** @param MinCostMaxFlow_Node $v
+     * @param ?string $klass
      * @param list<MinCostMaxFlow_Node> &$a */
-    private function add_reachable($v, $klass, &$a) {
+    private function add_downstream($v, $klass, &$a) {
+        $v->npos = 1;
         if ($v->klass === $klass) {
             $a[] = $v;
         } else if ($v !== $this->sink) {
             foreach ($v->e as $e) {
-                if ($e->src === $v && $e->flow > 0)
-                    $this->add_reachable($e->dst, $klass, $a);
+                if ($e->src === $v
+                    && $e->flow > 0
+                    && $e->dst->npos === 0)
+                    $this->add_downstream($e->dst, $klass, $a);
             }
         }
     }
 
     /** @param MinCostMaxFlow_Node|string $v
+     * @param ?string $klass
      * @return list<MinCostMaxFlow_Node> */
-    function reachable($v, $klass) {
-        if (is_string($v)) {
-            $v = $this->vmap[$v];
-        }
-        if (!$this->has_edges) {
-            $this->initialize_edges();
-        }
+    function downstream($v, $klass) {
         $a = [];
-        $this->add_reachable($v, $klass, $a);
+        $this->add_downstream($this->start_dfs($v), $klass, $a);
         return $a;
+    }
+
+    /** @param MinCostMaxFlow_Node $v
+     * @param ?string $klass
+     * @param list<MinCostMaxFlow_Node> &$a */
+    private function add_upstream($v, $klass, &$a) {
+        $v->npos = 1;
+        if ($v->klass === $klass) {
+            $a[] = $v;
+        } else if ($v !== $this->source) {
+            foreach ($v->e as $e) {
+                if ($e->dst === $v
+                    && $e->flow > 0
+                    && $e->src->npos === 0)
+                    $this->add_upstream($e->src, $klass, $a);
+            }
+        }
+    }
+
+    /** @param MinCostMaxFlow_Node|string $v
+     * @param ?string $klass
+     * @return list<MinCostMaxFlow_Node> */
+    function upstream($v, $klass) {
+        $a = [];
+        $this->add_downstream($this->start_dfs($v), $klass, $a);
+        return $a;
+    }
+
+    /** @param MinCostMaxFlow_Node|string $v
+     * @param ?string $klass
+     * @return list<MinCostMaxFlow_Node>
+     * @deprecated */
+    function reachable($v, $klass) {
+        return $this->downstream($v, $klass);
     }
 
     /** @param MinCostMaxFlow_Node $v
      * @param list<MinCostMaxFlow_Node> &$a */
     private function topological_sort_visit($v, $klass, &$a) {
-        if ($v !== $this->sink && !$v->npos) {
+        if ($v !== $this->sink && $v->npos === 0) {
             $v->npos = 1;
             foreach ($v->e as $e) {
-                if ($e->src === $v && $e->flow > 0 && !$e->dst->npos)
+                if ($e->src === $v && $e->flow > 0 && $e->dst->npos === 0)
                     $this->topological_sort_visit($e->dst, $klass, $a);
             }
             if ($v->klass === $klass) {
@@ -438,7 +483,7 @@ class MinCostMaxFlow {
         $ne = count($v->e);
         $relabeled = false;
         while ($v->excess > 0 && $v->distance < INF) {
-            if ($v->npos == $ne) {
+            if ($v->npos === $ne) {
                 $this->pushrelabel_relabel($v);
                 $relabeled = true;
             } else {
@@ -601,7 +646,7 @@ class MinCostMaxFlow {
     private function cspushrelabel_discharge($v) {
         $ne = count($v->e);
         while ($v->excess > 0) {
-            if ($v->npos == $ne || !$v->n_outgoing_admissible) {
+            if ($v->npos === $ne || !$v->n_outgoing_admissible) {
                 $this->cspushrelabel_relabel($v);
             } else {
                 $e = $v->e[$v->npos];
@@ -902,8 +947,8 @@ class MinCostMaxFlow {
         $ex = [];
         $cost = 0;
         foreach ($this->e as $e) {
-            if ($e->flow || $e->mincap || !$only_flow) {
-                $ex[] = "{$e->src->name} {$e->dst->name} $e->mincap $e->cap $e->cost $e->flow\n";
+            if ($e->flow > 0 || $e->mincap > 0 || !$only_flow) {
+                $ex[] = "{$e->src->name} {$e->dst->name} [{$e->mincap} {$e->flow} {$e->cap}] {$e->cost}\n";
             }
             if ($e->flow) {
                 $cost += $e->flow * $e->cost;

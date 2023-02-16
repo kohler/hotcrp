@@ -870,32 +870,20 @@ class Limit_SearchTerm extends SearchTerm {
     function set_limit($limit) {
         $limit = PaperSearch::canonical_limit($limit) ?? "none";
         $this->named_limit = $limit;
+        $conf = $this->user->conf;
         // optimize SQL for some limits
-        if ($limit === "reviewable") {
-            if ($this->user->privChair || $this->user === $this->reviewer) {
-                if ($this->reviewer->can_accept_some_review_assignment()) {
-                    if ($this->user->conf->time_pc_view_active_submissions()) {
-                        $limit = "act";
-                    } else {
-                        $limit = "s";
-                    }
-                } else if (!$this->reviewer->isPC) {
-                    $limit = "r";
-                }
-            }
-        } else if ($limit === "viewable") {
-            if ($this->user->can_view_all()) {
-                $limit = "all";
-            }
+        if ($limit === "viewable" && $this->user->can_view_all()) {
+            $limit = "all";
+        } else if ($limit === "reviewable" && !$this->reviewer->isPC) {
+            $limit = "r";
         }
         $this->limit = $limit;
         // mark flags
-        if (in_array($limit, ["a", "ar", "viewable", "all", "none"], true)) {
+        if (in_array($limit, ["a", "ar", "r", "req", "viewable", "reviewable",
+                              "all", "none"], true)) {
             $this->lflag = 0;
-        } else if (in_array($limit, ["r", "rout", "req"], true)) {
-            $this->lflag = $this->reviewer_lflag();
         } else if (in_array($limit, ["act", "unsub", "actadmin"], true)
-                   || ($this->user->conf->time_pc_view_active_submissions()
+                   || ($conf->can_pc_view_incomplete()
                        && !in_array($limit, ["s", "acc"], true))) {
             $this->lflag = self::LFLAG_ACTIVE;
         } else {
@@ -903,13 +891,19 @@ class Limit_SearchTerm extends SearchTerm {
         }
     }
 
-    /** @return int */
-    function reviewer_lflag() {
-        if ($this->user->isPC && $this->user->conf->time_pc_view_active_submissions()) {
-            return self::LFLAG_ACTIVE;
-        } else {
-            return self::LFLAG_SUBMITTED;
-        }
+    /** @return bool */
+    function is_submitted() {
+        return ($this->lflag & self::LFLAG_SUBMITTED) !== 0;
+    }
+
+    /** @return bool */
+    function is_accepted() {
+        return $this->limit === "acc";
+    }
+
+    /** @return bool */
+    function is_author() {
+        return $this->limit === "a";
     }
 
     function simple_search(&$options) {
@@ -927,32 +921,26 @@ class Limit_SearchTerm extends SearchTerm {
             return false;
         }
         // otherwise go by limit
-        if (($this->lflag & self::LFLAG_SUBMITTED) !== 0) {
-            $options["finalized"] = true;
-        } else if (($this->lflag & self::LFLAG_ACTIVE) !== 0) {
-            $options["active"] = true;
-        }
+        $fin = $options["finalized"] = ($this->lflag & self::LFLAG_SUBMITTED) !== 0;
+        $act = $options["active"] = ($this->lflag & self::LFLAG_ACTIVE) !== 0;
         switch ($this->limit) {
         case "all":
         case "viewable":
             return $this->user->privChair;
         case "s":
-            assert(!!($options["finalized"] ?? false));
+            assert($fin);
             return $this->user->isPC;
         case "act":
             assert(!!($options["active"] ?? false));
             return $this->user->privChair
-                || ($this->user->isPC && $conf->time_pc_view_active_submissions());
+                || ($this->user->isPC && $conf->can_pc_view_incomplete());
         case "reviewable":
-            assert(($options["active"] ?? false) || ($options["finalized"] ?? false));
-            if (($this->user !== $this->reviewer && !$this->user->allow_administer_all())
-                || $conf->has_tracks()) {
-                return false;
-            }
             if (!$this->reviewer->isPC) {
                 $options["myReviews"] = true;
+                return true;
+            } else {
+                return false;
             }
-            return true;
         case "a":
             $options["author"] = true;
             // If complex author SQL, always do search the long way
@@ -960,23 +948,27 @@ class Limit_SearchTerm extends SearchTerm {
         case "ar":
             return false;
         case "r":
-            assert(($options["active"] ?? false) || ($options["finalized"] ?? false));
             $options["myReviews"] = true;
             return true;
         case "rout":
-            assert(($options["active"] ?? false) || ($options["finalized"] ?? false));
+            assert($act || $fin);
             $options["myOutstandingReviews"] = true;
             return true;
+        case "act":
+            assert($act || $fin);
+            $options["dec:active"] = true;
+            return $this->user->can_view_all_decision()
+                && ($this->user->privChair || $conf->can_pc_view_incomplete());
         case "acc":
-            assert($options["finalized"] ?? false);
+            assert($fin);
             $options["dec:yes"] = true;
             return $this->user->can_view_all_decision();
         case "undecided":
-            assert($options["finalized"] ?? false);
+            assert($fin);
             $options["dec:none"] = true;
             return $this->user->can_view_all_decision();
         case "unsub":
-            assert($options["active"] ?? false);
+            assert($act);
             $options["unsub"] = true;
             return $this->user->allow_administer_all();
         case "lead":
@@ -988,7 +980,6 @@ class Limit_SearchTerm extends SearchTerm {
         case "admin":
             return false;
         case "req":
-            assert(($options["active"] ?? false) || ($options["finalized"] ?? false));
             $options["myReviewRequests"] = true;
             return true;
         default:
@@ -997,18 +988,21 @@ class Limit_SearchTerm extends SearchTerm {
     }
 
     function is_sqlexpr_precise() {
-        // hidden papers => imprecise
+        // hidden papers, view limits => imprecise
         if (($this->user->dangerous_track_mask() & Track::BITS_VIEW) !== 0) {
             return false;
         }
         switch ($this->limit) {
-        case "acc":
         case "viewable":
-        case "undecided":
         case "alladmin":
         case "actadmin":
             // broad limits are precise only if allowed to administer all
             return $this->user->allow_administer_all();
+        case "act":
+        case "acc":
+        case "undecided":
+            // decision limits are precise only if user can see all decisions
+            return $this->user->can_view_all_decision();
         case "reviewable":
         case "admin":
             // never precise
@@ -1028,6 +1022,7 @@ class Limit_SearchTerm extends SearchTerm {
             $ff[] = "Paper.timeWithdrawn<=0";
         }
 
+        $act_reviewer_sql = "error";
         if (in_array($this->limit, ["ar", "r", "rout"], true)) {
             $sqi->add_reviewer_columns();
             if ($sqi->depth === 0) {
@@ -1038,16 +1033,15 @@ class Limit_SearchTerm extends SearchTerm {
             } else {
                 $act_reviewer_sql = $this->user->act_reviewer_sql("PaperReview");
             }
-        } else {
-            $act_reviewer_sql = "error";
         }
 
         switch ($this->limit) {
         case "all":
         case "viewable":
         case "s":
-        case "act":
+            break;
         case "reviewable":
+            $sqi->add_reviewer_columns();
             break;
         case "a":
             $ff[] = $this->user->act_author_view_sql($sqi->conflict_table($this->user));
@@ -1058,18 +1052,17 @@ class Limit_SearchTerm extends SearchTerm {
             } else if ($sqi->depth === 0) {
                 $r = "MyReviews.reviewType is not null";
             } else {
-                $r = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and $act_reviewer_sql)";
+                $r = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$act_reviewer_sql})";
             }
-            $ff[] = "(" . $this->user->act_author_view_sql($sqi->conflict_table($this->user)) . " or (Paper.timeWithdrawn<=0 and $r))";
+            $ff[] = "(" . $this->user->act_author_view_sql($sqi->conflict_table($this->user)) . " or {$r})";
             break;
         case "r":
-            // if top, the straight join suffices
             if ($act_reviewer_sql === "false") {
                 $ff[] = "false";
             } else if ($sqi->depth === 0) {
                 // the `join` with MyReviews suffices
             } else {
-                $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and $act_reviewer_sql)";
+                $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$act_reviewer_sql})";
             }
             break;
         case "rout":
@@ -1081,11 +1074,16 @@ class Limit_SearchTerm extends SearchTerm {
                 $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and $act_reviewer_sql and reviewNeedsSubmit!=0)";
             }
             break;
+        case "act":
+            if ($this->user->can_view_all_decision()) {
+                $ff[] = "Paper." . $this->user->conf->decision_set()->sqlexpr("active");
+            }
+            break;
         case "acc":
             $ff[] = "Paper.outcome>0";
             break;
         case "undecided":
-            if ($this->user->allow_administer_all()) {
+            if ($this->user->can_view_all_decision()) {
                 $ff[] = "Paper.outcome=0";
             }
             break;
@@ -1130,7 +1128,6 @@ class Limit_SearchTerm extends SearchTerm {
         case "all":
         case "viewable":
         case "s":
-        case "act":
             return true;
         case "a":
             return $row->has_author_view($user);
@@ -1145,16 +1142,27 @@ class Limit_SearchTerm extends SearchTerm {
                     return true;
             }
             return false;
+        case "reviewable":
+            if (($this->reviewer !== $user && !$user->allow_administer($row))
+                || !$this->reviewer->can_accept_review_assignment_ignore_conflict($row)) {
+                return false;
+            } else if ($row->has_reviewer($this->reviewer)) {
+                return true;
+            } else {
+                return ($row->timeSubmitted > 0
+                        || ($row->timeWithdrawn <= 0 && $user->conf->can_pc_view_incomplete()))
+                    && ($row->outcome_sign >= 0
+                        || !$user->can_view_decision($row));
+            }
+        case "act":
+            return $row->outcome_sign >= 0
+                || !$user->can_view_decision($row);
         case "acc":
             return $row->outcome > 0
                 && $user->can_view_decision($row);
         case "undecided":
             return $row->outcome === 0
                 || !$user->can_view_decision($row);
-        case "reviewable":
-            return $this->reviewer->can_accept_review_assignment_ignore_conflict($row)
-                && ($this->reviewer === $user
-                    || $user->allow_administer($row));
         case "unsub":
             return $row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0;
         case "lead":

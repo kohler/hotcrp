@@ -1,0 +1,41 @@
+[
+    {
+        "name": "prefconflict",
+        "function": "+PrefConflict_Autoassigner"
+    },
+    {
+        "name": "clear",
+        "function": "+Clear_Autoassigner",
+        "parameters": ["type"]
+    },
+    {
+        "name": "lead",
+        "function": "+PaperPC_Autoassigner",
+        "parameters": ["score", "allow_incomplete", "method", "balance"]
+    },
+    {
+        "name": "shepherd",
+        "function": "+PaperPC_Autoassigner",
+        "parameters": ["score", "allow_incomplete", "method", "balance"]
+    },
+    {
+        "name": "review",
+        "function": "+Review_Autoassigner",
+        "parameters": ["count", "rtype", "round", "method", "balance"]
+    },
+    {
+        "name": "review_ensure",
+        "function": "+Review_Autoassigner",
+        "parameters": ["count", "rtype", "round", "method", "balance"]
+    },
+    {
+        "name": "review_per_pc",
+        "function": "+Review_Autoassigner",
+        "parameters": ["count", "rtype", "round", "method", "balance"]
+    },
+    {
+        "name": "discussion_order",
+        "function": "+DiscussionOrder_Autoassigner",
+        "parameters": ["tag"]
+    }
+]

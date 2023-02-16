@@ -10,7 +10,9 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @var ?AbbreviationMatcher */
     private $_decision_matcher;
     /** @var bool */
-    private $_complex = false;
+    private $_has_desk_reject = false;
+    /** @var bool */
+    private $_has_other = false;
 
 
     function __construct(Conf $conf, $j = null) {
@@ -37,8 +39,8 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
         uasort($this->_decision_map, function ($da, $db) use ($collator) {
             if ($da->id === 0 || $db->id === 0) {
                 return $da->id === 0 ? -1 : 1;
-            } else if ($da->category !== $db->category) {
-                return $da->category <=> $db->category;
+            } else if ($da->catbits !== $db->catbits) {
+                return $da->catbits <=> $db->catbits;
             } else {
                 return $collator->compare($da->name, $db->name);
             }
@@ -58,21 +60,17 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
         if (is_object($dj) && is_int($dj->id ?? null)) {
             $id = $dj->id;
         }
-        $dinfo = new DecisionInfo($id, is_object($dj) ? $dj->name : $dj);
-        if (is_object($dj) && isset($dj->category)) {
-            if ($dj->category === "accept" || $dj->category === DecisionInfo::CAT_YES) {
-                $dinfo->category = DecisionInfo::CAT_YES;
-                $dinfo->sign = 1;
-            } else if ($dj->category === "reject" || $dj->category === DecisionInfo::CAT_NO) {
-                $dinfo->category = DecisionInfo::CAT_NO;
-                $dinfo->sign = -1;
-            }
+        if (is_object($dj)) {
+            $dinfo = new DecisionInfo($id, $dj->name, $dj->category ?? null);
+        } else {
+            $dinfo = new DecisionInfo($id, $dj);
         }
         $this->_decision_map[$id] = $dinfo;
 
-        $ecat = $dinfo->id > 0 ? DecisionInfo::CAT_YES : DecisionInfo::CAT_NO;
-        if ($ecat !== $dinfo->category) {
-            $this->_complex = true;
+        if ($id !== 0 && ($dinfo->catbits & DecisionInfo::CAT_OTHER) !== 0) {
+            $this->_has_other = true;
+        } else if ($dinfo->catbits === DecisionInfo::CAT_DESKREJECT) {
+            $this->_has_desk_reject = true;
         }
 
         // XXX assert no abbrevmatcher, etc.
@@ -142,12 +140,24 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
         return $this->_decision_map[$decid] ?? DecisionInfo::make_placeholder($decid);
     }
 
-    /** @param int $filter
+    /** @return list<int> */
+    function ids() {
+        return array_keys($this->_decision_map);
+    }
+
+    /** @return list<int> */
+    function desk_reject_ids() {
+        return $this->_has_desk_reject ? $this->cat_ids(DecisionInfo::CAT_NO | DecisionInfo::CAT_SUBTYPE, DecisionInfo::CAT_DESKREJECT) : [];
+    }
+
+    /** @param int $mask
+     * @param ?int $value
      * @return list<int> */
-    function ids($filter = DecisionInfo::CAT_ALL) {
+    private function cat_ids($mask, $value = null) {
         $decids = [];
+        $value = $value ?? $mask;
         foreach ($this->_decision_map as $dec) {
-            if (($filter & $dec->category) !== 0)
+            if (($dec->catbits & $mask) === $value)
                 $decids[] = $dec->id;
         }
         return $decids;
@@ -178,11 +188,13 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
      * @return string|list<int> */
     function matchexpr($word, $list = false) {
         if (strcasecmp($word, "yes") === 0) {
-            return $list ? $this->ids(DecisionInfo::CAT_YES) : ">0";
+            return $list ? $this->cat_ids(DecisionInfo::CAT_YES) : ">0";
         } else if (strcasecmp($word, "no") === 0) {
-            return $list || $this->_complex ? $this->ids(DecisionInfo::CAT_NO) : "<0";
+            return $list || $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_NO) : "<0";
         } else if (strcasecmp($word, "maybe") === 0 || $word === "?") {
-            return $list || $this->_complex ? $this->ids(DecisionInfo::CAT_NONE) : "=0";
+            return $list || $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_OTHER) : "=0";
+        } else if (strcasecmp($word, "active") === 0) {
+            return $list || $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_OTHER | DecisionInfo::CAT_YES) : ">=0";
         } else if (strcasecmp($word, "any") === 0) {
             return $list ? array_values(array_diff($this->ids(), [0])) : "!=0";
         } else {
@@ -208,13 +220,14 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
     function unparse_database() {
         $x = [];
         foreach ($this->_decision_map as $dinfo) {
-            if ($dinfo->id !== 0) {
-                $ecat = $dinfo->id > 0 ? DecisionInfo::CAT_YES : DecisionInfo::CAT_NO;
-                if ($ecat === $dinfo->category) {
-                    $x[$dinfo->id] = $dinfo->name;
-                } else {
-                    $x[$dinfo->id] = (object) ["name" => $dinfo->name, "category" => $dinfo->category];
-                }
+            if ($dinfo->id === 0) {
+                continue;
+            }
+            $ecat = $dinfo->id > 0 ? DecisionInfo::CAT_YES : DecisionInfo::CAT_NO;
+            if ($ecat === $dinfo->catbits) {
+                $x[$dinfo->id] = $dinfo->name;
+            } else {
+                $x[$dinfo->id] = (object) ["name" => $dinfo->name, "category" => $dinfo->category_name()];
             }
         }
         return json_encode_db((object) $x);

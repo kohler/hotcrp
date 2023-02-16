@@ -1536,8 +1536,7 @@ Zhang <lixia@cs.ucla.edu> has asked you to review Test Conference I
 
 Once you have viewed the submission and decided whether you are willing
 to review it, please accept or decline this review request at the
-submission site. Should you accept, your review will also be entered on
-that site.
+submission site.
 
 You haven't used the site as external2@_.com before, so you may need to
 create a password to sign in. Use this link to set one up:

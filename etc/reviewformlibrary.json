@@ -2,7 +2,7 @@
     {
         "selector": "Score",
         "instantiate": {"name": "", "values": []},
-        "name": "Field name",
+        "name": "Score field",
         "type": "radio",
         "values": [
             "Option 1",
@@ -14,8 +14,50 @@
     {
         "selector": "Text field",
         "instantiate": {"name": ""},
-        "name": "Field name",
+        "name": "Text field",
         "type": "text",
+        "visibility": "au"
+    },
+    {
+        "selector": "Dropdown score",
+        "instantiate": {"name": "", "values": []},
+        "name": "Dropdown score field",
+        "type": "dropdown",
+        "values": [
+            "Option 1",
+            "Option 2"
+        ],
+        "required": true,
+        "visibility": "au"
+    },
+    {
+        "selector": "Checkbox",
+        "instantiate": {"name": ""},
+        "name": "Checkbox field",
+        "type": "checkbox",
+        "visibility": "au"
+    },
+    {
+        "selector": "Attestation",
+        "instantiate": {"name": "", "description": ""},
+        "name": "Attestation",
+        "description": "The reviewer must check this box before submitting the review.",
+        "type": "checkbox",
+        "visibility": "au",
+        "required": true
+    },
+    {
+        "selector": "Checkboxes",
+        "instantiate": {"name": "", "description": "", "values": []},
+        "name": "Checkboxes",
+        "type": "checkboxes",
+        "description": "Select zero or more options.",
+        "values": [
+            "Option 1",
+            "Option 2",
+            "Option 3"
+        ],
+        "start": "A",
         "visibility": "au"
     },
     {

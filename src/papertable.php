@@ -82,16 +82,16 @@ class PaperTable {
     /** @var bool */
     private $quit = false;
 
-    function __construct(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
+    function __construct(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->qreq = $qreq;
-        $this->prow = $prow ?? PaperInfo::make_new($user);
+        $this->prow = $prow;
         $this->allow_admin = $user->allow_administer($this->prow);
         $this->admin = $user->can_administer($this->prow);
         $this->allow_edit_final = $this->user->allow_edit_final_paper($this->prow);
 
-        if (!$prow || !$this->prow->paperId) {
+        if (!$this->prow->paperId) {
             $this->can_view_reviews = false;
             $this->mode = "edit";
             return;
@@ -153,7 +153,8 @@ class PaperTable {
     /** @return bool */
     function paper_page_prefers_edit_mode() {
         return $this->prow->paperId === 0
-            || ($this->prow->has_author($this->user) && $this->conf->time_finalize_paper($this->prow));
+            || ($this->prow->has_author($this->user)
+                && $this->prow->submission_round()->time_submit(true));
     }
 
     /** @param ?PaperTable $paperTable
@@ -174,7 +175,8 @@ class PaperTable {
             }
             $t .= '">' . $title;
         } else if (!$prow->paperId) {
-            $title = $conf->_c("paper_title", "New submission");
+            $sr = $prow->submission_round();
+            $title = $conf->_c("paper_title", "New {$sr->title1}submission");
             $t .= '">' . $title;
         } else {
             $paperTable->initialize_list();
@@ -715,7 +717,7 @@ class PaperTable {
         } else {
             return $this->prow->timeSubmitted > 0
                 || ($checkbox
-                    && $this->prow->can_update_until_deadline()
+                    && !$this->prow->submission_round()->freeze
                     && (!$this->prow->paperId
                         || (!$this->conf->opt("noPapers") && $this->prow->paperStorageId <= 1)));
         }
@@ -727,8 +729,7 @@ class PaperTable {
             return;
         }
 
-        $can_upd = $this->prow->can_update_until_deadline();
-        $upd = $can_upd ? $this->prow->update_deadline() : 0;
+        $sr = $this->prow->submission_round();
 
         $checked = $this->is_ready(true);
         $ready_open = $this->prow->paperStorageId > 1 || $this->conf->opt("noPapers");
@@ -740,22 +741,22 @@ class PaperTable {
 
         // script.js depends on the HTML here
         $upd_html = "";
-        if (Conf::$now <= $upd) {
+        if ($sr->freeze) {
+            echo Ht::label("<strong>" . $this->conf->_("The submission is complete") . "</strong>", null, ["class" => $checked ? null : "is-error"]),
+                '<p class="feedback is-urgent-note">You must complete the submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</p>';
+        } else if (Conf::$now <= $sr->update) {
             // can update until future deadline
-            $upd_html = $this->conf->unparse_time_with_local_span($upd);
+            $upd_html = $this->conf->unparse_time_with_local_span($sr->update);
             echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review") . "</strong>", null, ["class" => $checked ? null : "is-error"]),
                 '<p class="feedback is-urgent-note if-unready ', $checked ? "hidden" : "",
                 '">Submissions not marked ready for review by the deadline will not be considered.</p>';
-        } else if ($can_upd) {
-            echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review") . "</strong>");
         } else {
-            echo Ht::label("<strong>" . $this->conf->_("The submission is complete") . "</strong>", null, ["class" => $checked ? null : "is-error"]),
-                '<p class="feedback is-urgent-note">You must complete the submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</p>';
+            echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review") . "</strong>");
         }
         echo "</div></div>\n";
 
         // update message
-        if (Conf::$now <= $upd) {
+        if (!$sr->freeze && Conf::$now <= $sr->update) {
             echo '<div class="mt-2 feedback is-note">You can update the submission until ', $upd_html, '.</div>';
         }
     }
@@ -968,8 +969,8 @@ class PaperTable {
                 $mailt = "all";
             } else if ($this->prow->outcome !== 0 && $this->prow->can_author_view_decision()) {
                 $dec = $this->prow->decision();
-                if ($dec->category !== DecisionInfo::CAT_NONE) {
-                    $mailt = $dec->category === DecisionInfo::CAT_YES ? "dec:yes" : "dec:no";
+                if ($dec->catbits !== DecisionInfo::CAT_OTHER) {
+                    $mailt = $dec->catbits & DecisionInfo::CAT_YES ? "dec:yes" : "dec:no";
                 }
             }
             $fr->value .= ' <a class="fx9 q" href="'
@@ -1364,7 +1365,7 @@ class PaperTable {
         }
         $data = $this->highlight($this->prow->collaborators(), "co", $match);
         $option = $this->conf->option_by_id(PaperOption::COLLABORATORSID);
-        $this->_papstripBegin("pscollab", false, ["data-fold-storage" => "p.collab", "class" => "need-fold-storage"]);
+        $this->_papstripBegin("pscollab", false, ["data-fold-storage" => "-p.collab", "class" => "need-fold-storage"]);
         echo Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"foldpscollab\"))"),
             $this->papt("collaborators", $option->title_html(),
                         ["type" => "ps", "fold" => "pscollab"]),
@@ -1390,7 +1391,7 @@ class PaperTable {
         }
         ksort($pcconf);
         $option = $this->conf->option_by_id(PaperOption::PCCONFID);
-        $this->_papstripBegin("pspcconf", $this->allow_folds, ["data-fold-storage" => "p.pcconf", "class" => "need-fold-storage"]);
+        $this->_papstripBegin("pspcconf", $this->allow_folds, ["data-fold-storage" => "-p.pcconf", "class" => "need-fold-storage"]);
         echo Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"foldpspcconf\"))"),
             $this->papt("pc_conflicts", $option->title_html(),
                         ["type" => "ps", "fold" => "pspcconf"]),
@@ -1733,28 +1734,26 @@ class PaperTable {
         $this->edit_status->msg_at(":main", $m, $status);
     }
 
-    private function _edit_message_new_paper_deadline() {
-        $opent = $this->prow->open_time();
-        if ($opent <= 0 || $opent > Conf::$now) {
+    private function _edit_message_new_paper_deadline(SubmissionRound $sr) {
+        if ($sr->open <= 0 || $sr->open > Conf::$now) {
             $msg = "<5>The site is not open for submissions." . $this->_deadline_override_message();
         } else {
-            $msg = '<5>The <a href="' . $this->conf->hoturl("deadlines") . '">deadline</a> for registering submissions has passed.' . $this->deadline_is($this->prow->registration_deadline()) . $this->_deadline_override_message();
+            $msg = '<5>The <a href="' . $this->conf->hoturl("deadlines") . '">deadline</a> for registering submissions has passed.' . $this->deadline_is($sr->register) . $this->_deadline_override_message();
         }
         $this->_main_message($msg, $this->admin ? 1 : 2);
     }
 
     private function _edit_message_new_paper() {
-        if ($this->admin || $this->conf->time_start_paper()) {
+        $sr = $this->prow->submission_round();
+        if ($this->admin || $sr->time_register(true)) {
             $t = [$this->conf->_("Enter information about your submission.")];
-            $reg_dl = $this->prow->registration_deadline();
-            $upd_dl = $this->prow->update_deadline();
-            if ($reg_dl > 0 && $upd_dl > 0 && $reg_dl < $upd_dl) {
-                $t[] = $this->conf->_("Submissions must be registered by %s and completed by %s.", $this->conf->unparse_time_long($reg_dl), $this->conf->unparse_time_long($this->prow->submission_deadline()));
+            if ($sr->register > 0 && $sr->update > 0 && $sr->register < $sr->update) {
+                $t[] = $this->conf->_("Submissions must be registered by %s and completed by %s.", $this->conf->unparse_time_long($sr->register), $this->conf->unparse_time_long($sr->update));
                 if (!$this->conf->opt("noPapers")) {
                     $t[] = $this->conf->_("PDF upload is not required to register.");
                 }
-            } else if ($upd_dl > 0) {
-                $t[] = $this->conf->_("Submissions must be completed by %s.", $this->conf->unparse_time_long($upd_dl));
+            } else if ($sr->update > 0) {
+                $t[] = $this->conf->_("Submissions must be completed by %s.", $this->conf->unparse_time_long($sr->update));
             }
             $this->_main_message("<5>" . join(" ", $t), 0);
             if (($v = $this->conf->_id("submit", ""))) {
@@ -1764,46 +1763,46 @@ class PaperTable {
                 $this->_main_message($v, 0);
             }
         }
-        if (!$this->conf->time_start_paper()) {
-            $this->_edit_message_new_paper_deadline();
+        if (!$sr->time_register(true)) {
+            $this->_edit_message_new_paper_deadline($sr);
             $this->quit = $this->quit || !$this->admin;
         }
     }
 
     private function _edit_message_for_author() {
+        $sr = $this->prow->submission_round();
         $viewable_decision = $this->prow->viewable_decision($this->user);
         if ($viewable_decision->sign < 0) {
             $this->_main_message("<5>This submission was not accepted." . $this->_forceShow_message(), 1);
         } else if ($this->prow->timeWithdrawn > 0) {
             if ($this->user->can_revive_paper($this->prow)) {
-                $this->_main_message("<5>This submission has been withdrawn, but you can still revive it." . $this->deadline_is($this->prow->update_deadline()), 1);
+                $this->_main_message("<5>This submission has been withdrawn, but you can still revive it." . $this->deadline_is($sr->update), 1);
             } else {
                 $this->_main_message("<5>This submission has been withdrawn." . $this->_forceShow_message(), 1);
             }
         } else if ($this->prow->timeSubmitted <= 0) {
             $whyNot = $this->user->perm_edit_paper($this->prow);
-            $sub_dl = $this->prow->submission_deadline();
             if (!$whyNot) {
                 if (($missing = PaperTable::missing_required_fields($this->prow))) {
-                    $first = $this->conf->_("<5>This submission is not ready for review. Required fields %#s are missing.", PaperTable::field_title_links($missing, "missing_title"));
+                    $first = $this->conf->_("This submission is not ready for review. Required fields %#s are missing.", PaperTable::field_title_links($missing, "missing_title"));
                 } else {
-                    $first = $this->conf->_("<5>This submission is marked as not ready for review.");
+                    $first = $this->conf->_("This submission is marked as not ready for review.");
                     $first = "<strong>" . Ftext::unparse_as($first, 5) . "</strong>";
                 }
-                if (($upd_dl = $this->prow->update_deadline()) > 0) {
-                    $rest = $this->conf->_("Submissions incomplete as of %s will not be considered.", $this->conf->unparse_time_long($upd_dl));
+                if ($sr->update > 0) {
+                    $rest = $this->conf->_("Submissions incomplete as of %s will not be considered.", $this->conf->unparse_time_long($sr->update));
                 } else {
                     $rest = $this->conf->_("Incomplete submissions will not be considered.");
                 }
                 $this->_main_message("<5>{$first} {$rest}", MessageSet::URGENT_NOTE);
             } else if (isset($whyNot["updateSubmitted"])
                        && $this->user->can_finalize_paper($this->prow)) {
-                $this->_main_message('<5>This submission is not ready for review. Although you cannot make further changes, the current version can be still be submitted for review.' . $this->deadline_is($sub_dl) . $this->_deadline_override_message(), 1);
+                $this->_main_message('<5>This submission is not ready for review. Although you cannot make further changes, the current version can be still be submitted for review.' . $this->deadline_is($sr->submit) . $this->_deadline_override_message(), 1);
             } else if (isset($whyNot["deadline"])) {
-                if ($this->conf->time_between(null, $sub_dl, $this->prow->submission_grace()) > 0) {
+                if ($this->conf->time_between(null, $sr->submit, $sr->grace) > 0) {
                     $this->_main_message('<5>The site is not open for updates at the moment.' . $this->_deadline_override_message(), 1);
                 } else {
-                    $this->_main_message('<5>The <a href="' . $this->conf->hoturl("deadlines") . '">submission deadline</a> has passed and this submission will not be reviewed.' . $this->deadline_is($sub_dl) . $this->_deadline_override_message(), 1);
+                    $this->_main_message('<5>The <a href="' . $this->conf->hoturl("deadlines") . '">submission deadline</a> has passed and this submission will not be reviewed.' . $this->deadline_is($sr->submit) . $this->_deadline_override_message(), 1);
                 }
             } else {
                 $this->_main_message('<5>This submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message(), MessageSet::URGENT_NOTE);
@@ -1820,7 +1819,7 @@ class PaperTable {
         } else if ($this->user->can_edit_paper($this->prow)) {
             if ($this->mode === "edit"
                 && (!$this->edit_status || !$this->edit_status->has_error())) {
-                $this->_main_message('<5>This submission is ready for review. You do not need to take further action, but you can still make changes if you wish.' . $this->deadline_is($this->prow->update_deadline(), "submission deadline"), MessageSet::SUCCESS);
+                $this->_main_message('<5>This submission is ready for review. You do not need to take further action, but you can still make changes if you wish.' . $this->deadline_is($sr->update, "submission deadline"), MessageSet::SUCCESS);
             }
         } else if ($this->mode === "edit") {
             if ($this->user->can_withdraw_paper($this->prow, true)) {
@@ -1914,7 +1913,7 @@ class PaperTable {
     private function _collect_actions() {
         // Withdrawn papers can be revived
         if ($this->prow->timeWithdrawn > 0) {
-            $revivable = $this->conf->time_finalize_paper($this->prow);
+            $revivable = $this->prow->submission_round()->time_submit(true);
             if ($revivable) {
                 return [Ht::submit("revive", "Revive submission", ["class" => "btn-primary"])];
             } else if ($this->admin) {
@@ -1935,7 +1934,7 @@ class PaperTable {
             } else if ($this->prow->paperId) {
                 $whyNot = $this->user->perm_edit_paper($this->prow);
             } else {
-                $whyNot = $this->user->perm_start_paper();
+                $whyNot = $this->user->perm_start_paper($this->prow);
             }
             $this->user->set_overrides($old_overrides);
             // produce button
@@ -1971,7 +1970,7 @@ class PaperTable {
                 $args["data-withdrawable"] = "true";
             }
             if (($this->admin && !$this->prow->has_author($this->user))
-                || $this->conf->time_finalize_paper($this->prow)) {
+                || $this->prow->submission_round()->time_submit(true)) {
                 $args["data-revivable"] = "true";
             }
             $b = Ht::button("Withdraw", $args);
@@ -2150,6 +2149,10 @@ class PaperTable {
         $form_url = [
             "p" => $this->prow->paperId ? : "new", "m" => "edit"
         ];
+        $sr = $this->prow->submission_round();
+        if (!$sr->unnamed) {
+            $form_url["sclass"] = $sr->tag;
+        }
         // This is normally added automatically, but isn't for new papers
         if ($this->user->is_admin_force()) {
             $form_url["forceShow"] = 1;
@@ -2175,9 +2178,14 @@ class PaperTable {
     private function _print_editable_body() {
         $this->_print_editable_form();
         $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
-        echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">',
-            $this->conf->_($this->prow->paperId ? "Edit Submission" : "New Submission"),
-            '</span></h2></div>';
+        echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">';
+        if ($this->prow->paperId) {
+            echo "Edit Submission";
+        } else {
+            $sr = $this->prow->submission_round();
+            echo "New ", $sr->title1, "Submission";
+        }
+        echo '</span></h2></div>';
 
         $this->edit_fields = array_values(array_filter(
             $this->prow->form_fields(),
@@ -2232,7 +2240,8 @@ class PaperTable {
         echo '<a href="#top" class="q"><span class="header-site-name">',
             htmlspecialchars($this->conf->short_name), '</span> ';
         if ($this->prow->paperId <= 0) {
-            echo "new submission";
+            $sr = $this->prow->submission_round();
+            echo "new {$sr->title1}submission";
         } else if ($this->mode !== "re") {
             echo "#", $this->prow->paperId;
         } else if ($this->editrrow && $this->editrrow->reviewOrdinal) {
@@ -2463,15 +2472,13 @@ class PaperTable {
             if ($want_my_scores && $canView) {
                 $view_score = $user->view_score_bound($prow, $rr);
                 foreach ($conf->review_form()->forder as $f) {
-                    if ($f->want_column_display()
-                        && $f->view_score > $view_score
-                        && $rr->has_nonempty_field($f)) {
+                    if ($f->view_score > $view_score
+                        && ($fv = $rr->fval($f)) !== null
+                        && ($fh = $f->unparse_span_html($fv)) !== "") {
                         if ($score_header[$f->short_id] === "") {
                             $score_header[$f->short_id] = '<th class="rlscore">' . $f->web_abbreviation() . "</th>";
                         }
-                        $scores[$f->short_id] = '<td class="rlscore need-tooltip" data-rf="' . $f->uid() . '" data-tooltip-info="rf-score">'
-                            . $f->unparse_span_html($rr->fields[$f->order])
-                            . '</td>';
+                        $scores[$f->short_id] = '<td class="rlscore need-tooltip" data-rf="' . $f->uid() . "\" data-tooltip-info=\"rf-score\">{$fh}</td>";
                     }
                 }
             }
@@ -2938,7 +2945,8 @@ class PaperTable {
                     $bound = $this->user->view_score_bound($this->prow, $rrow);
                     $this_resolved_fields = [];
                     foreach ($unresolved_fields as $f) {
-                        if ($f->view_score > $bound && $rrow->has_nonempty_field($f))
+                        if ($f->view_score > $bound
+                            && ($fv = $rrow->fval($f)) !== null)
                             $this_resolved_fields[] = $f;
                     }
                     foreach ($this_resolved_fields as $f) {
@@ -3008,8 +3016,8 @@ class PaperTable {
             && !$this->allow_admin
             && $this->qreq->page() === "paper"
             && ($this->allow_admin || $this->allow_edit())
-            && ($this->conf->time_finalize_paper($this->prow)
-                || $this->prow->timeSubmitted <= 0)) {
+            && ($this->prow->timeSubmitted <= 0
+                || $this->prow->submission_round()->time_submit(true))) {
             $this->mode = "edit";
         }
     }

@@ -763,12 +763,14 @@ class Ht {
         return self::$_msgset;
     }
     /** @param string $field
-     * @deprecated */
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     static function error_at($field, $msg = "") {
         self::message_set()->error_at($field, $msg);
     }
     /** @param string $field
-     * @deprecated */
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     static function warning_at($field, $msg = "") {
         self::message_set()->warning_at($field, $msg);
     }

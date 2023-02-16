@@ -13,8 +13,17 @@
     },
     {
         "name": "text", "title": "Text", "order": 500,
-        "function": "+Text_PaperOption",
         "sample": {"value": "Text entry"},
         "id_prefix": "t"
+    },
+    {
+        "name": "checkbox", "title": "Checkbox", "order": 600,
+        "properties": {"scheme": true, "required": true},
+        "id_prefix": "s"
+    },
+    {
+        "name": "checkboxes", "title": "Checkboxes", "order": 700,
+        "properties": {"values_text": true, "scheme": true, "required": true},
+        "id_prefix": "s"
     }
 ]

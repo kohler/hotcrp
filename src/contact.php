@@ -1285,7 +1285,7 @@ class Contact implements JsonSerializable {
             return true;
         }
         if ($this->contactTags) {
-            return stripos($this->contactTags, " $t#") !== false;
+            return stripos($this->contactTags, " {$t}#") !== false;
         }
         if ($this->contactTags === false) {
             trigger_error("Contact $this->email contactTags missing\n" . debug_string_backtrace());
@@ -1300,7 +1300,7 @@ class Contact implements JsonSerializable {
         if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0) {
             return 0.0;
         } else if ($this->contactTags
-                   && ($p = stripos($this->contactTags, " $t#")) !== false) {
+                   && ($p = stripos($this->contactTags, " {$t}#")) !== false) {
             return (float) substr($this->contactTags, $p + strlen($t) + 2);
         } else {
             return null;
@@ -2435,8 +2435,10 @@ class Contact implements JsonSerializable {
         // Load from database
         $this->_conflict_types = [];
         if ($this->contactId > 0) {
-            $qs = ["(select group_concat(paperId, ' ', conflictType) from PaperConflict where contactId=?)",
-                   "exists (select * from PaperReview where contactId=? and reviewType>0)"];
+            $qs = [
+                "(select group_concat(paperId, ' ', conflictType) from PaperConflict where contactId=?)",
+                "exists (select * from PaperReview where contactId=? and reviewType>0)"
+            ];
             $qv = [$this->contactId, $this->contactId];
             if ($this->isPC) {
                 $qs[] = "exists (select * from PaperReview where requestedBy=? and reviewType>0 and reviewType<=" . REVIEW_PC . " and contactId!=?)";
@@ -2950,7 +2952,7 @@ class Contact implements JsonSerializable {
                            && ($prow->timeSubmitted != 0
                                || ($ci->allow_pc_broad
                                    && $prow->timeWithdrawn <= 0
-                                   && $this->conf->time_pc_view_active_submissions()))) {
+                                   && $this->conf->can_pc_view_incomplete()))) {
                     $ci->view_authors_state = 2;
                 } else {
                     $ci->view_authors_state = 0;
@@ -3206,15 +3208,13 @@ class Contact implements JsonSerializable {
         }
     }
 
-    /** @return bool */
-    function can_start_paper() {
-        return $this->email
-            && ($this->conf->time_start_paper() || $this->override_deadlines(null));
-    }
-
     /** @return ?PermissionProblem */
-    function perm_start_paper() {
-        if ($this->can_start_paper()) {
+    function perm_start_paper(PaperInfo $prow) {
+        if (!$this->email) {
+            return new PermissionProblem($this->conf, ["signin" => true]);
+        }
+        $sr = $prow->submission_round();
+        if ($sr->time_register(true) || $this->override_deadlines(null)) {
             return null;
         } else {
             return new PermissionProblem($this->conf, ["deadline" => "sub_reg", "override" => $this->privChair]);
@@ -3231,10 +3231,8 @@ class Contact implements JsonSerializable {
     function can_edit_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
         return $rights->allow_author_edit
-            && $prow->timeWithdrawn <= 0
-            && (($rights->perm_tag_allows("author-write")
-                 ?? ($prow->outcome_sign >= 0 && $this->conf->time_edit_paper($prow)))
-                || $this->override_deadlines($rights));
+            && $prow->timeWithdrawn <= 0 /* non-overridable */
+            && ($prow->can_author_edit_paper() || $this->override_deadlines($rights));
     }
 
     /** @return PermissionProblem */
@@ -3253,7 +3251,7 @@ class Contact implements JsonSerializable {
         }
         if ($prow->timeSubmitted > 0
             && strpos($kind, "f") !== false
-            && $prow->can_update_until_deadline()) {
+            && $prow->submission_round()->freeze) {
             $whyNot["updateSubmitted"] = true;
         }
         if ($rights->allow_administer) {
@@ -3273,7 +3271,7 @@ class Contact implements JsonSerializable {
             && $rights->can_view_decision) {
             $whyNot["rejected"] = true;
         }
-        if (!$this->conf->time_edit_paper($prow)
+        if (!$prow->submission_round()->time_update(true)
             && !$this->override_deadlines($rights)) {
             $whyNot["deadline"] = "sub_update";
         }
@@ -3283,11 +3281,13 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_finalize_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        return $rights->allow_author_edit
-            && $prow->timeWithdrawn <= 0
-            && (($rights->perm_tag_allows("author-write")
-                 ?? $this->conf->time_finalize_paper($prow))
-                || $this->override_deadlines($rights));
+        if (!$rights->allow_author_edit || $prow->timeWithdrawn > 0) {
+            return false;
+        }
+        $sr = $prow->submission_round();
+        return (($prow->timeSubmitted <= 0 || !$sr->freeze)
+                && $sr->time_submit(true))
+            || $this->override_deadlines($rights);
     }
 
     /** @return ?PermissionProblem */
@@ -3297,7 +3297,8 @@ class Contact implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         $whyNot = $this->perm_edit_paper_failure($prow, $rights, "f");
-        if (!$this->conf->time_finalize_paper($prow)
+        $sr = $prow->submission_round();
+        if (!$sr->time_submit(true)
             && !$this->override_deadlines($rights)) {
             $whyNot["deadline"] = "sub_sub";
         }
@@ -3343,11 +3344,12 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_revive_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        return $rights->allow_author_edit
-            && $prow->timeWithdrawn > 0
-            && (($rights->perm_tag_allows("author-write")
-                 ?? $this->conf->time_finalize_paper($prow))
-                || $this->override_deadlines($rights));
+        if (!$rights->allow_author_edit || $prow->timeWithdrawn <= 0) {
+            return false;
+        }
+        $sr = $prow->submission_round();
+        return $sr->time_submit(true)
+            || $this->override_deadlines($rights);
     }
 
     /** @return ?PermissionProblem */
@@ -3360,9 +3362,10 @@ class Contact implements JsonSerializable {
         if ($prow->timeWithdrawn <= 0) {
             $whyNot["notWithdrawn"] = true;
         }
-        if (!$this->conf->time_edit_paper($prow)
+        $sr = $prow->submission_round();
+        if (!$sr->time_submit(true)
             && !$this->override_deadlines($rights)) {
-            $whyNot["deadline"] = "sub_update";
+            $whyNot["deadline"] = "sub_sub";
         }
         return $whyNot;
     }
@@ -4156,8 +4159,7 @@ class Contact implements JsonSerializable {
             return true;
         } else {
             $rights = $this->rights($prow);
-            return $rights->allow_administer
-                || ($this->isPC && $rights->reviewType > 0);
+            return $rights->allow_administer || $rights->reviewType > 0;
         }
     }
 
@@ -4207,7 +4209,7 @@ class Contact implements JsonSerializable {
                     || (!$careful
                         && $prow->timeWithdrawn > 0
                         && ($prow->timeSubmitted < 0
-                            || $this->conf->time_pc_view_active_submissions())));
+                            || $this->conf->can_pc_view_incomplete())));
         } else {
             return $u->isPC
                 && $this->can_administer($prow)
@@ -4518,8 +4520,9 @@ class Contact implements JsonSerializable {
         $rights = $this->rights($prow);
         $author = $rights->conflictType >= CONFLICT_AUTHOR
             && $this->conf->setting("cmt_author") > 0;
-        $time = $this->conf->setting("cmt_always") > 0
-            || $this->conf->time_review_open();
+        $time = ($this->conf->setting("cmt_always") > 0
+                 || $this->conf->time_review_open())
+            && ($crow->commentType & CommentInfo::CT_FROZEN) === 0;
         if ($crow->contactId !== 0
             && !$rights->allow_administer
             && !$this->is_my_comment($prow, $crow)
@@ -4597,7 +4600,8 @@ class Contact implements JsonSerializable {
                 || $rights->conflictType >= CONFLICT_AUTHOR)
             && (($rights->allow_administer
                  && ($newctype === null || $this->override_deadlines($rights)))
-                || $rrd->time_allowed(true))
+                || ($rrd->time_allowed(true)
+                    && ($crow->commentType & CommentInfo::CT_FROZEN) === 0))
             && $rrd->test_condition($prow);
     }
 
@@ -5220,26 +5224,25 @@ class Contact implements JsonSerializable {
         $graces = [];
 
         // submissions
-        $sub_reg = $this->conf->setting("sub_reg");
-        $sub_update = $this->conf->setting("sub_update");
-        $sub_sub = $this->conf->setting("sub_sub");
-        $dl->sub->open = +$this->conf->setting("sub_open") > 0;
-        $dl->sub->sub = +$sub_sub;
+        $sr = $prows ? $prows[0]->submission_round() : $this->conf->unnamed_submission_round();
+        $dl->sub->open = $sr->open > 0 && $sr->open <= Conf::$now;
+        $dl->sub->sub = $sr->submit;
         $sub_graces = [];
-        if ($sub_reg
-            && (!$sub_update || $sub_reg < $sub_update)) {
-            $dl->sub->reg = $sub_reg;
+        if ($sr->register > 0
+            && ($sr->update <= 0 || $sr->register < $sr->update)) {
+            $dl->sub->reg = $sr->register;
             $sub_graces[] = "reg";
         }
-        if ($sub_update
-            && $sub_update != $sub_sub) {
-            $dl->sub->update = $sub_update;
+        if ($sr->update > 0
+            && $sr->update != $sr->submit) {
+            $dl->sub->update = $sr->update;
             $sub_graces[] = "update";
         }
-        if ($dl->sub->open
-            && ($g = $this->conf->setting("sub_grace"))) {
+        if ($sr->open > 0
+            && $sr->open <= Conf::$now
+            && $sr->grace > 0) {
             $sub_graces[] = "sub";
-            array_push($graces, $dl->sub, $g, $sub_graces);
+            array_push($graces, $dl->sub, $sr->grace, $sub_graces);
         }
 
         $sb = $this->conf->submission_blindness();

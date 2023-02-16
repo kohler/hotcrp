@@ -41,7 +41,10 @@ class ReviewForm_SettingParser extends SettingParser {
             $rfs = ReviewField::make_json($sv->conf, $finfo, (object) [])->export_setting();
             $rfs->id = $isnew ? "new" : $rfs->id;
             $rfs->required = false;
-            $sv->set_oldv($si->name, $rfs);
+            $sv->set_oldv($si, $rfs);
+        } else if ($si->name_matches("rf/", "*", "/title")) {
+            $n = $sv->oldv("rf/{$si->name1}/name");
+            $sv->set_oldv($si, $n === "" ? "[Review field]" : $n);
         } else if ($si->name_matches("rf/", "*", "/values_text")) {
             $rfs = $sv->oldv("rf/{$si->name1}");
             $vs = [];
@@ -104,6 +107,10 @@ class ReviewForm_SettingParser extends SettingParser {
         } else if ($rfs->id !== "new"
                    && !str_starts_with($rfs->id, $rft->id_prefix)) {
             $sv->error_at($si, "<0>Type doesn’t match with ID");
+        } else if ($rfs->id !== "new"
+                   && $rfs->type !== $v
+                   && !($rft->convert_from_functions->{$rfs->type} ?? null)) {
+            $sv->error_at($si, "<0>Cannot convert review field to this type");
         } else {
             $sv->save($si, $v);
         }
@@ -345,11 +352,8 @@ class ReviewForm_SettingParser extends SettingParser {
         $clear_jfields = [];
         foreach ($fields as $f) {
             if ($f->main_storage) {
-                if ($f->is_sfield) {
-                    $result = $conf->qe("update PaperReview set {$f->main_storage}=0");
-                } else { // NB dead code, all current fields with main_storage are scores
-                    $result = $conf->qe("update PaperReview set {$f->main_storage}=null");
-                }
+                assert($f->is_sfield);
+                $conf->qe("update PaperReview set {$f->main_storage}=0");
             }
             if ($f->json_storage) {
                 $clear_jfields[] = $f;
@@ -388,53 +392,40 @@ class ReviewForm_SettingParser extends SettingParser {
         $clearf(null);
     }
 
-    /** @param list<array{ReviewField,array<int,int>}> $renumberings */
-    private function _renumber_choices($renumberings, Conf $conf) {
-        // main storage first
-        $jrenumberings = [];
-        $maincases = [];
-        foreach ($renumberings as $fmap) {
-            if ($fmap[0]->main_storage) {
-                $case = ["{$fmap[0]->main_storage}=case {$fmap[0]->main_storage}"];
-                foreach ($fmap[1] as $i => $j) {
-                    $case[] = "when {$i} then {$j}";
-                }
-                $case[] = "else {$fmap[0]->main_storage} end";
-                $maincases[] = join(" ", $case);
-            }
-            if ($fmap[0]->json_storage) {
-                $jrenumberings[] = $fmap;
-            }
-        }
-        if (!empty($maincases)) {
-            $conf->qe("update PaperReview set " . join(", ", $maincases));
-        }
 
-        // json storage second
-        if (!empty($jrenumberings)) {
-            $clearf = Dbl::make_multi_qe_stager($conf->dblink);
-            $result = $conf->qe("select paperId, reviewId, sfields from PaperReview where sfields is not null");
-            while (($rrow = $result->fetch_object())) {
-                $sfields = json_decode($rrow->sfields, true) ?? [];
-                $update = false;
-                foreach ($jrenumberings as $fmap) {
-                    if (($v = $sfields[$fmap[0]->json_storage] ?? null) > 0
-                        && ($v1 = $fmap[1][$v] ?? $v) !== $v) {
-                        if ($v1 !== 0) {
-                            $sfields[$fmap[0]->json_storage] = $v1;
-                        } else {
-                            unset($sfields[$fmap[0]->json_storage]);
-                        }
-                        $update = true;
-                    }
+    /** @param callable(int):int $remapf */
+    static function renumber_values(Discrete_ReviewField $f, $remapf) {
+        $renumf = Dbl::make_multi_qe_stager($f->conf->dblink);
+        if ($f->main_storage) {
+            $result = $f->conf->qe("select paperId, reviewId, {$f->main_storage} from PaperReview where {$f->main_storage}>0");
+        } else {
+            $result = $f->conf->qe("select paperId, reviewId, sfields from PaperReview where sfields is not null");
+        }
+        $fvmain = [];
+        while (($rrow = $result->fetch_object())) {
+            if ($f->main_storage) {
+                $fval = intval($rrow->{$f->main_storage});
+                if ($fval > 0 && ($nfval = $remapf($fval)) !== $fval) {
+                    $renumf("update PaperReview set {$f->main_storage}=? where paperId=? and reviewId=? and {$f->main_storage}=?",
+                        $nfval ?? 0, $rrow->paperId, $rrow->reviewId, $fval);
                 }
-                if ($update) {
-                    $stext = empty($sfields) ? null : json_encode_db($sfields);
-                    $clearf("update PaperReview set sfields=? where paperId=? and reviewId=?", $stext, $rrow->paperId, $rrow->reviewId);
+            } else {
+                $sfields = json_decode($rrow->sfields ?? "{}", true);
+                $fval = $sfields[$f->json_storage] ?? null;
+                if ($fval !== null && ($nfval = $remapf($fval)) !== $fval) {
+                    if ($nfval !== null) {
+                        $sfields[$f->json_storage] = $nfval;
+                    } else {
+                        unset($sfields[$f->json_storage]);
+                    }
+                    $nsfields = empty($sfields) ? null : json_encode_db($sfields);
+                    $renumf("update PaperReview set sfields=? where paperId=? and reviewId=? and sfields?e",
+                        $nsfields, $rrow->paperId, $rrow->reviewId, $rrow->sfields);
                 }
             }
-            $clearf(null);
         }
+        Dbl::free($result);
+        $renumf(null);
     }
 
     static private function _compute_review_ordinals(Conf $conf) {
@@ -474,8 +465,8 @@ class ReviewForm_SettingParser extends SettingParser {
             $of = $oform->fmap[$nf->short_id] ?? null;
             if (!$of || !$of->order) {
                 $clear_fields[] = $nf;
-            } else if ($nf instanceof Score_ReviewField) {
-                assert($of instanceof Score_ReviewField);
+            } else if ($nf instanceof Discrete_ReviewField) {
+                assert($of instanceof Discrete_ReviewField);
                 if (!empty($this->_score_renumberings[$nf->short_id])) {
                     $renumber_choices[] = [$nf, $this->_score_renumberings[$nf->short_id]];
                 }
@@ -498,8 +489,8 @@ class ReviewForm_SettingParser extends SettingParser {
             $this->_clear_existing_fields($clear_fields, $sv->conf);
         }
         // renumber existing review scores
-        if (!empty($renumber_choices)) {
-            $this->_renumber_choices($renumber_choices, $sv->conf);
+        foreach ($renumber_choices as $renumx) {
+            $renumx[0]->renumber_values($renumx[1]);
         }
         // assign review ordinals if necessary
         if ($assign_ordinal) {
@@ -666,7 +657,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             '<div id="rf/$/view" class="settings-rf-view fn2 ui js-foldup"></div>',
             '<fieldset id="rf/$/edit" class="fieldset-covert settings-rf-edit fx2">',
               '<div class="entryi mb-3" data-property="name"><div class="entry">',
-                '<input name="rf/$/name" id="rf/$/name" type="text" size="50" class="font-weight-bold want-focus" placeholder="Field name">',
+                '<input name="rf/$/name" id="rf/$/name" type="text" size="50" class="font-weight-bold want-focus want-delete-marker" placeholder="Field name">',
               '</div></div>';
         $sv->print_select_group("rf/\$/type", "Type", [], [
                 "horizontal" => true,
@@ -686,7 +677,6 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         $rfj = [];
         foreach ($sv->conf->review_form()->all_fields() as $f) {
             $rfj[] = $fj = $f->export_json(ReviewField::UJ_TEMPLATE);
-            $fj->search_keyword = $f->search_keyword();
             $fj->configurable = $rfedit;
         }
         $sj["fields"] = $rfj;

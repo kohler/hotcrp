@@ -70,7 +70,7 @@ class ReviewForm {
         // assign field order
         $do = 0;
         foreach ($this->fmap as $f) {
-            if ($f->order) {
+            if ($f->order > 0) {
                 $f->order = ++$do;
                 $this->forder[$f->short_id] = $f;
                 if ($f->main_storage !== null) {
@@ -122,7 +122,8 @@ class ReviewForm {
         $hpos = 0;
         $fs = [];
         foreach ($this->viewable_fields($user) as $f) {
-            if ($f instanceof Score_ReviewField && $f->search_keyword()) {
+            if (!($f instanceof Text_ReviewField)
+                && $f->search_keyword()) {
                 if (in_array($f, $hfs)) {
                     array_splice($fs, $hpos, 0, [$f]);
                     ++$hpos;
@@ -148,12 +149,16 @@ class ReviewForm {
     /** @return ?Score_ReviewField */
     function default_highlighted_score() {
         $f = $this->fmap["s01"] ?? null;
-        if ($f && $f->order && $f->view_score >= VIEWSCORE_PC) {
-            assert($f instanceof Score_ReviewField);
+        if ($f
+            && $f->order
+            && $f instanceof Score_ReviewField
+            && $f->view_score >= VIEWSCORE_PC) {
             return $f;
         }
         foreach ($this->forder as $f) {
-            if ($f->view_score >= VIEWSCORE_PC && $f->main_storage && $f instanceof Score_ReviewField)
+            if ($f instanceof Score_ReviewField
+                && $f->view_score >= VIEWSCORE_PC
+                && $f->main_storage)
                 return $f;
         }
         return null;
@@ -194,9 +199,9 @@ class ReviewForm {
         $fi = $this->conf->format_info(null);
         echo '<div class="rve">';
         foreach ($rrow->viewable_fields($contact) as $f) {
-            $fval = $rrow->fields[$f->order];
+            $fv = $rrow->fields[$f->order];
             $reqstr = $rvalues ? $rvalues->req[$f->short_id] ?? null : null;
-            $f->print_web_edit($fval, $reqstr, $rvalues, ["format" => $fi]);
+            $f->print_web_edit($fv, $reqstr, $rvalues, ["format" => $fi]);
         }
         echo "</div>\n";
     }
@@ -205,9 +210,8 @@ class ReviewForm {
     function nonempty_view_score(ReviewInfo $rrow) {
         $view_score = VIEWSCORE_EMPTY;
         foreach ($this->forder as $f) {
-            if ($rrow->has_nonempty_field($f)) {
-                $view_score = max($view_score, $f->view_score);
-            }
+            if ($f->view_score > $view_score && $rrow->fval($f) !== null)
+                $view_score = $f->view_score;
         }
         return $view_score;
     }
@@ -216,8 +220,9 @@ class ReviewForm {
     function word_count(ReviewInfo $rrow) {
         $wc = 0;
         foreach ($this->forder as $f) {
-            if ($f->include_word_count() && $rrow->has_nonempty_field($f)) {
-                $wc += count_words($rrow->fields[$f->order]);
+            if ($f->include_word_count()
+                && ($fv = $rrow->fval($f)) !== null) {
+                $wc += count_words($fv);
             }
         }
         return $wc;
@@ -227,11 +232,9 @@ class ReviewForm {
     function full_word_count(ReviewInfo $rrow) {
         $wc = null;
         foreach ($this->forder as $f) {
-            if ($f instanceof Text_ReviewField && $f->test_exists($rrow)) {
-                $wc = $wc ?? 0;
-                if (!$f->value_empty($rrow->fields[$f->order])) {
-                    $wc += count_words($rrow->fields[$f->order]);
-                }
+            if ($f instanceof Text_ReviewField
+                && ($fv = $rrow->fval($f)) !== null) {
+                $wc = ($wc ?? 0) + count_words($fv);
             }
         }
         return $wc;
@@ -292,7 +295,7 @@ class ReviewForm {
     }
 
     function text_form(PaperInfo $prow_in = null, ReviewInfo $rrow_in = null, Contact $contact) {
-        $prow = $prow_in ?? PaperInfo::make_new($contact);
+        $prow = $prow_in ?? PaperInfo::make_new($contact, null);
         $rrow = $rrow_in ?? ReviewInfo::make_blank($prow, $contact);
         $revViewScore = $prow->paperId > 0 ? $contact->view_score_bound($prow, $rrow) : $contact->permissive_view_score_bound();
         self::check_review_author_seen($prow, $rrow, $contact);
@@ -397,8 +400,8 @@ $blind\n";
 
         $args = ["flowed" => ($flags & self::UNPARSE_FLOWED) !== 0];
         foreach ($rrow->viewable_fields($contact) as $f) {
-            if (isset($rrow->fields[$f->order])) {
-                $f->unparse_text_field($t, $rrow->fields[$f->order], $args);
+            if (($fv = $rrow->fval($f)) !== null) {
+                $f->unparse_text_field($t, $fv, $args);
             }
         }
         return join("", $t);
@@ -751,9 +754,7 @@ $blind\n";
             $xbarsep = "";
         }
         foreach ($rrow->viewable_fields($contact) as $f) {
-            if ($f instanceof Score_ReviewField
-                && !$f->value_empty($rrow->fields[$f->order])) {
-                $fh = $f->unparse_span_html($rrow->fields[$f->order]);
+            if (($fh = $f->unparse_span_html($rrow->fields[$f->order])) !== "") {
                 $t = "{$t}{$xbarsep}{$f->name_html} {$fh}";
                 $xbarsep = $barsep;
             }
@@ -1110,6 +1111,7 @@ class ReviewValues extends MessageSet {
     function parse_qreq(Qrequest $qreq, $override) {
         assert($this->text === null && $this->finished === 0);
         $rf = $this->conf->review_form();
+        $hasreqs = [];
         $this->req = [];
         $this->req_json = false;
         foreach ($qreq as $k => $v) {
@@ -1121,24 +1123,30 @@ class ReviewValues extends MessageSet {
                 $this->req["override"] = !!$v;
             } else if ($k === "blind" || $k === "version" || $k === "ready") {
                 $this->req[$k] = is_bool($v) ? (int) $v : cvtint($v);
-            } else if (array_key_exists($k, $this->rf->fmap)) {
-                $this->req[$k] = $v;
+            } else if (str_starts_with($k, "has_")) {
+                if ($k !== "has_blind" && $k !== "has_override" && $k !== "has_ready") {
+                    $hasreqs[] = substr($k, 4);
+                }
             } else if (($f = $rf->field($k) ?? $this->conf->find_review_field($k))
                        && !isset($this->req[$f->short_id])) {
-                $this->req[$f->short_id] = $v;
+                $this->req[$f->short_id] = $f->extract_qreq($qreq, $k);
             }
         }
-        if (!empty($this->req)) {
-            if (!$qreq->has_blind && !isset($this->req["blind"])) {
-                $this->req["blind"] = 1;
+        foreach ($hasreqs as $k) {
+            if (($f = $rf->field($k) ?? $this->conf->find_review_field($k))) {
+                $this->req[$f->short_id] = $this->req[$f->short_id] ?? "";
             }
-            if ($override) {
-                $this->req["override"] = 1;
-            }
-            return true;
-        } else {
+        }
+        if (empty($this->req)) {
             return false;
         }
+        if (!$qreq->has_blind) {
+            $this->req["blind"] = $this->req["blind"] ?? 1;
+        }
+        if ($override) {
+            $this->req["override"] = 1;
+        }
+        return true;
     }
 
     function set_ready($ready) {
@@ -1250,14 +1258,10 @@ class ReviewValues extends MessageSet {
      * @param ReviewInfo $rrow
      * @return array{int|string,int|string} */
     private function fvalues($f, $rrow) {
-        $v0 = $v1 = $rrow->fields[$f->order] ?? ($f->is_sfield ? 0 : "");
-        $reqv = $this->req[$f->short_id] ?? null;
-        if ($reqv !== null) {
-            if ($this->req_json) {
-                $v1 = $f->parse_json($reqv);
-            } else {
-                $v1 = $f->parse($reqv);
-            }
+        $v0 = $v1 = $rrow->fields[$f->order];
+        if (isset($this->req[$f->short_id])) {
+            $reqv = $this->req[$f->short_id];
+            $v1 = $this->req_json ? $f->parse_json($reqv) : $f->parse($reqv);
         }
         return [$v0, $v1];
     }
@@ -1278,25 +1282,23 @@ class ReviewValues extends MessageSet {
                 $this->rmsg($fid, $this->conf->_("<0>%s cannot be ‘%s’.", $f->name, UnicodeHelper::utf8_abbreviate(trim($this->req[$fid]), 100)), self::WARNING);
                 unset($this->req[$fid]);
                 $unready = true;
-            } else if ($f->value_empty($fval)) {
-                if ($f->required && $f->view_score >= VIEWSCORE_PC) {
-                    $missingfields[] = $f;
-                    $unready = $unready || $submit;
-                } else {
-                    $anydiff = $anydiff || $old_fval !== $fval;
-                }
-                $anyvalues = $anyvalues || $f->value_explicit_empty($fval);
-            } else {
-                $anydiff = $anydiff
-                    || ($old_fval !== $fval
-                        && (!is_string($old_fval) || cleannl($old_fval) !== cleannl($fval)));
-                $anyvalues = true;
+                continue;
             }
+            if ($f->required
+                && !$f->value_present($fval)
+                && $f->view_score >= VIEWSCORE_PC) {
+                $missingfields[] = $f;
+                $unready = $unready || $submit;
+            }
+            $anydiff = $anydiff
+                || ($old_fval !== $fval
+                    && (!is_string($fval) || cleannl($fval) !== cleannl($old_fval ?? "")));
+            $anyvalues = true;
         }
 
         if ($missingfields && $submit && $anyvalues) {
             foreach ($missingfields as $f) {
-                $this->rmsg($f->short_id, $this->conf->_("<0>%s: Entry required.", $f->name), self::WARNING);
+                $this->rmsg($f->short_id, $this->conf->_("<0>%s: Entry required", $f->name), self::WARNING);
             }
         }
 
@@ -1438,40 +1440,46 @@ class ReviewValues extends MessageSet {
                 continue;
             }
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
-            $fval = $fval === false ? $old_fval : $f->value_clean_storage($fval);
-            if (is_string($fval)) {
-                // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
-                $fval = cleannl(convert_to_utf8($fval));
-                $fval_diffs = $fval !== $old_fval && $fval !== cleannl($old_fval);
+            if ($fval === false) {
+                $fval = $old_fval;
             } else {
-                if ($fval <= 0 && $rrow->reviewId && $f->required) {
+                $fval = $f->value_clean_storage($fval);
+                if ($rrow->reviewId > 0 && $f->required && !$f->value_present($fval)) {
                     $fval = $old_fval;
+                } else if (is_string($fval)) {
+                    // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
+                    $fval = cleannl(convert_to_utf8($fval));
                 }
-                $fval_diffs = $fval !== $old_fval;
             }
+            $fval_diffs = $fval !== $old_fval
+                && (!is_string($fval) || $fval !== cleannl($old_fval ?? ""));
             if ($fval_diffs) {
                 $diffinfo->add_field($f, $fval);
             }
             if ($fval_diffs || !$rrow->reviewId) {
                 if ($f->main_storage) {
                     $qf[] = "{$f->main_storage}=?";
-                    $qv[] = $fval;
+                    if ($fval !== null) {
+                        $qv[] = $fval > 0 ? $fval : -1;
+                    } else {
+                        $qv[] = 0;
+                    }
                 }
                 if ($f->json_storage) {
                     $fchanges[$f->is_sfield ? 0 : 1][] = [$f, $fval];
                 }
             }
             if ($f->include_word_count()) {
-                $wc += count_words($fval);
+                $wc += count_words($fval ?? "");
             }
-            if (!$f->value_empty($fval)) {
-                $view_score = max($view_score, $f->view_score);
+            if ($f->view_score > $view_score && $fval !== null) {
+                $view_score = $f->view_score;
             }
         }
         if (!empty($fchanges[0])) {
             $sfields = $rrow->fstorage(true);
             foreach ($fchanges[0] as $fv) {
-                if ($fv[1] != 0) {
+                if ($fv[1] !== null) {
                     $sfields[$fv[0]->json_storage] = $fv[1];
                 } else {
                     unset($sfields[$fv[0]->json_storage]);
@@ -1483,7 +1491,7 @@ class ReviewValues extends MessageSet {
         if (!empty($fchanges[1])) {
             $tfields = $rrow->fstorage(false);
             foreach ($fchanges[1] as $fv) {
-                if ($fv[1] !== "") {
+                if ($fv[1] !== null) {
                     $tfields[$fv[0]->json_storage] = $fv[1];
                 } else {
                     unset($tfields[$fv[0]->json_storage]);
@@ -1685,11 +1693,11 @@ class ReviewValues extends MessageSet {
             }
             $log_fields = [];
             foreach ($diffinfo->fields() as $f) {
-                if ($f instanceof Score_ReviewField) {
-                    $log_fields[] = $f->search_keyword() . ":" . $f->unparse_search($new_rrow->fields[$f->order]);
-                } else {
-                    $log_fields[] = $f->search_keyword();
+                $t = $f->search_keyword();
+                if (($fs = $f->unparse_search($new_rrow->fields[$f->order])) !== "") {
+                    $t = "{$t}:{$fs}";
                 }
+                $log_fields[] = $t;
             }
             if (($wc = $this->rf->full_word_count($new_rrow)) !== null) {
                 $log_fields[] = plural($wc, "word");

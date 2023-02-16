@@ -271,7 +271,7 @@ class Multiconference {
     static function batch_exception_handler($ex) {
         global $argv;
         $s = $ex->getMessage();
-        if (defined("HOTCRP_TESTHARNESS")) {
+        if (defined("HOTCRP_TESTHARNESS") || $ex instanceof Error) {
             $s = $ex->getFile() . ":" . $ex->getLine() . ": " . $s;
         }
         if (strpos($s, ":") === false) {

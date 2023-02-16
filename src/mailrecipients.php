@@ -70,7 +70,7 @@ class MailRecipients extends MessageSet {
             $dmaxcount = 0;
             $dmaxname = "";
             foreach ($this->conf->decision_set() as $dinfo) {
-                if ($dinfo->category === $category
+                if (($dinfo->catbits & $category) !== 0
                     && ($dcount = $this->_dcounts[$dinfo->id] ?? 0) > $dmaxcount) {
                     $dmaxcount = $dcount;
                     $dmaxname = $dinfo->name;

@@ -212,7 +212,7 @@ class PaperRequest {
         $pid = $this->find_pid($user->conf, $user, $qreq);
         if ($pid === 0) {
             if ($user->has_email()) {
-                return PaperInfo::make_new($user);
+                return PaperInfo::make_new($user, $qreq->sclass);
             } else {
                 throw $this->signin_redirection($qreq, 0);
             }

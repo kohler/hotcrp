@@ -71,6 +71,7 @@ class CommentInfo {
     const CT_TOPIC_PAPER = 0x40;
     const CT_TOPIC_REVIEW = 0x80; // only used internally, not in database
     const CT_TOPICS = 0xC0;
+    const CT_FROZEN = 0x4000;
     const CT_SUBMIT = 0x8000; // only used internally, not in database
     const CT_ADMINONLY = 0x00000;
     const CT_PCONLY = 0x10000;

@@ -3,6 +3,7 @@
 
 "use strict";
 var siteinfo, hotcrp, hotcrp_status;
+hotcrp = {};
 
 function $$(id) {
     return document.getElementById(id);
@@ -44,6 +45,14 @@ if (typeof Object.assign !== "function") {
                 }
             }
             return d;
+        }, writable: true, configurable: true
+    });
+}
+if (typeof Object.setPrototypeOf !== "function") {
+    Object.defineProperty(Object, "setPrototypeOf", {
+        value: function setPrototypeOf(obj, proto) {
+            obj && typeof obj === "object" && (obj.__proto__ = proto);
+            return obj;
         }, writable: true, configurable: true
     });
 }
@@ -155,6 +164,16 @@ if (!Element.prototype.append) {
             if (typeof e === "string")
                 e = document.createTextNode(e);
             this.appendChild(e);
+        }
+    };
+}
+if (!Element.prototype.prepend) {
+    Element.prototype.prepend = function () {
+        for (var i = arguments.length; i !== 0; --i) {
+            var e = arguments[i - 1];
+            if (typeof e === "string")
+                e = document.createTextNode(e);
+            this.insertBefore(e, this.firstChild);
         }
     };
 }
@@ -1372,8 +1391,8 @@ return {
 function message_list_status(ml) {
     var i, status = 0;
     for (i = 0; i !== (ml || []).length; ++i) {
-        if (ml[i].status === -3 && status === 0) {
-            status = -3;
+        if (ml[i].status === -3 /*MessageSet::SUCCESS*/ && status === 0) {
+            status = -3 /*MessageSet::SUCCESS*/;
         } else if (ml[i].status >= 1 && ml[i].status > status) {
             status = ml[i].status;
         }
@@ -1384,7 +1403,7 @@ function message_list_status(ml) {
 function render_message_list(ml) {
     var status = message_list_status(ml),
         div = document.createElement("div");
-    if (status === -3) {
+    if (status === -3 /*MessageSet::SUCCESS*/) {
         div.className = "msg msg-success";
     } else if (status >= 2) {
         div.className = "msg msg-error";
@@ -1412,10 +1431,10 @@ function append_feedback_to(ul, mi) {
         if (ul.tagName !== "UL")
             throw new Error("bad append_feedback");
         sklass = "";
-        if (mi.status != null && mi.status >= -4 && mi.status <= 3)
-            sklass = ["warning-note", "success", "urgent-note", "note", "", "warning", "error", "error"][mi.status + 4];
+        if (mi.status != null && mi.status >= -4 /*MessageSet::MARKED_NOTE*/ && mi.status <= 3)
+            sklass = ["note", "success", "warning-note", "urgent-note", "", "warning", "error", "error"][mi.status + 4];
         div = document.createElement("div");
-        if (mi.status !== -5 || !ul.firstChild) {
+        if (mi.status !== -5 /*MessageSet::INFORM*/ || !ul.firstChild) {
             li = document.createElement("li");
             ul.appendChild(li);
             div.className = sklass ? "is-diagnostic format-inline is-" + sklass : "is-diagnostic format-inline";
@@ -2642,7 +2661,7 @@ handle_ui.on("js-mark-submit", function () {
 
 
 // initialization
-var hotcrp_deadlines = (function ($) {
+(function ($) {
 var dl, dlname, dltime, redisplay_timeout,
     reload_outstanding = 0, reload_nerrors = 0;
 
@@ -3159,7 +3178,7 @@ handle_ui.on("js-tracker-stop", function (evt) {
     if (e && e.hasAttribute("data-trackerid"))
         $.post(hoturl("=api/trackerconfig"),
             {"tr1-id": e.getAttribute("data-trackerid"), "tr1-stop": 1},
-            streload);
+            function () { streload(); });
 });
 
 
@@ -3414,16 +3433,16 @@ function streload(trackparam, trackdata) {
     }
 }
 
-return {
-    initialize: function (dl) {
-        load(dl, null, true);
-    },
-    tracker_show_elapsed: tracker_show_elapsed
+hotcrp.init_deadlines = function (dl) {
+    load(dl, null, true);
 };
+
+hotcrp.tracker_show_elapsed = tracker_show_elapsed;
+
 })(jQuery);
 
 
-var hotcrp_load = (function ($) {
+hotcrp.onload = (function ($) {
     function append_span(e, fmt, d) {
         var span = document.createElement("span");
         span.textContent = strftime(fmt, d);
@@ -3470,7 +3489,7 @@ function fold_storage() {
     } else {
         removeClass(this, "need-fold-storage");
         var sn = this.getAttribute("data-fold-storage"), smap, k;
-        if (sn.charAt(0) === "-") { // XXX backward compat
+        if (sn.charAt(0) === "-") { // default is open, use storage to close
             sn = sn.substring(1);
         }
         if (sn.charAt(0) === "{" || sn.charAt(0) === "[") {
@@ -3646,6 +3665,33 @@ handle_ui.on("fold.js-fold-focus", function (evt) {
 $(function () {
     $(".uich.js-foldup").each(function () { foldup.call(this, null, {nofocus: true}); });
 });
+
+
+function make_expander_element(foldnum) {
+    var svgns = "http://www.w3.org/2000/svg", e, sp0, sp1;
+    function mksvgp(d) {
+        var sv = document.createElementNS(svgns, "svg"), p;
+        sv.setAttribute("className", "licon");
+        sv.setAttribute("width", "0.75em");
+        sv.setAttribute("height", "0.75em");
+        sv.setAttribute("viewBox", "0 0 16 16");
+        sv.setAttribute("preserveAspectRatio", "none");
+        p = document.createElementNS(svgns, "path");
+        p.setAttribute("d", d);
+        sv.appendChild(p);
+        return sv;
+    }
+    sp0 = document.createElement("span");
+    sp0.className = "in0 fx" + foldnum;
+    sp0.appendChild(mksvgp("M1 1L8 15L15 1z"));
+    sp1 = document.createElement("span");
+    sp1.className = "in1 fn" + foldnum;
+    sp1.appendChild(mksvgp("M1 1L15 8L1 15z"));
+    e = document.createElement("span");
+    e.className = "expander";
+    e.append(sp0, sp1);
+    return e;
+}
 
 
 // special-case folding for author table
@@ -4010,16 +4056,6 @@ return {
         } else {
             return null;
         }
-    },
-    unparse_icon_html: function (s, xc) {
-        var t = parse(s);
-        if (t > 1) {
-            return '<span class="rto rt'.concat(
-                canon[t], xc || "", '"><span class="rti" title="', tooltips[t],
-                '">', icon_texts[t], '</span></span>');
-        } else {
-            return "";
-        }
     }
 };
 })();
@@ -4271,7 +4307,7 @@ handle_ui.on("input.js-email-populate", function () {
 })();
 
 function render_mail_preview(e, mp, fields) {
-    var i, f, e1, recip;
+    var i, f, e1;
     e.replaceChildren();
     function make_field_div(label, text) {
         var e1 = document.createElement("div"),
@@ -4338,7 +4374,7 @@ handle_ui.on("js-request-review-preview-email", function (evt) {
     handle_ui.stopPropagation(evt);
 });
 
-handle_ui.on("js-choose-mail-preview", function (evt) {
+handle_ui.on("js-choose-mail-preview", function () {
     toggleClass(this.closest("fieldset"), "mail-preview-unchoose", !this.checked);
 });
 
@@ -4859,18 +4895,21 @@ handle_ui.on("js-review-tokens", function () {
     });
 });
 
-var review_form = (function ($) {
+(function ($) {
 var formj, form_order;
 
 tooltip.add_builder("rf-score", function (info) {
-    var $self = $(this), fieldj = formj[$self.data("rf")], score;
-    if (fieldj
-        && fieldj.parse_value
-        && (score = fieldj.parse_value($self.find("span.sv").text())))
-        info = $.extend({
-            content: escape_html(score.title),
-            anchor: "w", near: $self.find("span")[0]
-        }, info);
+    var fieldj = formj[this.getAttribute("data-rf")];
+    if (fieldj && fieldj.parse_value) {
+        var svs = this.querySelectorAll("span.sv"), i, ts = [];
+        for (i = 0; i !== svs.length; ++i) {
+            var score = fieldj.parse_value(svs[i].textContent.replace(/\s*[.,]$/, ""));
+            score && ts.push(escape_html(score.title));
+        }
+        ts.length && (info = $.extend({
+            content: ts.join(", "), anchor: "w", near: svs[svs.length - 1]
+        }, info));
+    }
     return info;
 });
 
@@ -4907,8 +4946,8 @@ function field_visible(f, rrow) {
     return rrow[f.uid] != null && rrow[f.uid] !== "";
 }
 
-function render_review_body(rrow) {
-    var t = "", foidx = 0, f, x, nextf, last_display = 0, display;
+function render_review_body_in(rrow, bodye) {
+    var foidx = 0, f, x, nextf, last_display = 0, display, fe, h3, e;
     for (foidx = 0; (nextf = form_order[foidx]) && !field_visible(nextf, rrow); ++foidx) {
     }
     while (nextf) {
@@ -4922,37 +4961,44 @@ function render_review_body(rrow) {
             display = last_display == 1 ? 2 : 0;
         }
 
-        t = t.concat('<div class="rf rfd', display, '" data-rf="', f.uid,
-            '"><div class="revvt"><h3 class="rfehead"><label class="revfn">',
-            f.name_html, '</label>');
+        fe = document.createElement("div");
+        fe.className = "rf rfd" + display;
+        fe.setAttribute("data-rf", f.uid);
+        bodye.appendChild(fe);
+
+        e = document.createElement("label");
+        e.className = "revfn";
+        e.append(f.name);
+        h3 = document.createElement("h3");
+        h3.className = "rfehead";
+        h3.appendChild(e);
         x = f.visibility || "re";
         if (x === "audec" && hotcrp_status && hotcrp_status.myperm
             && hotcrp_status.myperm.some_author_can_view_decision) {
             x = "au";
         }
         if (x !== "au") {
-            t += '<div class="field-visibility">(' +
-                (({secret: "secret", admin: "administrators only",
-                   re: "hidden from authors", audec: "hidden from authors until decision",
-                   pconly: "hidden from authors and external reviewers"})[x] || x) +
-                ')</div>';
+            e = document.createElement("div");
+            e.className = "field-visibility";
+            x = ({
+                secret: "secret",
+                admin: "shown only to administrators",
+                re: "hidden from authors",
+                audec: "hidden from authors until decision",
+                pconly: "hidden from authors and external reviewers"
+            })[x] || x;
+            e.append("(" + x + ")");
+            h3.appendChild(e);
         }
-        t += '</h3></div>';
+        e = document.createElement("div");
+        e.className = "revvt";
+        e.appendChild(h3);
+        fe.appendChild(e);
 
-        if (f.type === "text") {
-            t += '<div class="revv revtext"></div>';
-        } else if (rrow[f.uid] && (x = f.parse_value(rrow[f.uid]))) {
-            t = t.concat('<p class="revv revscore"><span class="revscorenum"><strong class="rev_num sv ', x.className, '">', x.symbol, x.sp1, '</strong>', x.sp2, '</span><span class="revscoredesc">', escape_html(x.title), '</span></p>');
-        } else if (!f.required && rrow[f.uid] === false) {
-            t += '<p class="revv revnoscore">N/A</p>';
-        } else {
-            t += '<p class="revv revnoscore">Unknown</p>';
-        }
+        f.render_in(rrow[f.uid], rrow, fe);
 
-        t += '</div>';
         last_display = display;
     }
-    return t;
 }
 
 function ratings_counts(ratings) {
@@ -5091,120 +5137,186 @@ function revrating_key(evt) {
     }
 }
 
-function add_review(rrow) {
-    var hc = new HtmlCollector,
-        rid = rrow.pid + (rrow.ordinal || "r" + rrow.rid),
-        rlink = "p=".concat(rrow.pid, "&r=", rid),
-        has_user_rating = false, i;
+function make_review_h2(rrow, rlink, rdesc) {
+    var h2 = document.createElement("h2"),
+        ma = document.createElement("a"),
+        rd = document.createElement("span"), ed;
+    if (rrow.folded) {
+        ma.className = "qo ui js-foldup";
+        ma.setAttribute("href", "");
+        ma.setAttribute("data-fold-target", 20);
+        ma.appendChild(make_expander_element(20));
+    } else {
+        ma.className = "qo";
+        ma.setAttribute("href", hoturl("review", rlink));
+    }
+    rd.className = "revcard-header-name";
+    rd.append(rdesc);
+    ma.append(rd);
+    h2.append(ma);
+    if (rrow.editable) {
+        if (rrow.folded) {
+            ma = document.createElement("a");
+            ma.className = "qo";
+            ma.setAttribute("href", hoturl("review", rlink));
+            h2.append(" ", ma);
+        } else {
+            ma.append(" ");
+        }
+        ed = document.createElement("span");
+        ed.className = "t-editor";
+        ed.append("✎");
+        ma.append(ed);
+    }
+    return h2;
+}
+
+function append_review_id(rrow, eheader) {
+    var rth = null, ad = null, e, xc;
+    function add_rth(e) {
+        if (!rth) {
+            rth = document.createElement("div")
+            rth.className = "revthead";
+            eheader.appendChild(rth);
+        }
+        rth.append(e);
+    }
+    function add_ad(s) {
+        if (!ad) {
+            ad = document.createElement("address");
+            ad.className = "revname";
+            ad.setAttribute("itemprop", "author");
+            add_rth(ad);
+        }
+        ad.append(s);
+    }
+    if (rrow.review_token) {
+        add_ad("Review token " + rrow.review_token);
+    } else if (rrow.reviewer) {
+        e = document.createElement("span");
+        e.innerHTML = rrow.blind ? "[" + rrow.reviewer + "]" : rrow.reviewer;
+        rrow.reviewer_email && (e.title = rrow.reviewer_email);
+        add_ad(e);
+    }
+    if (rrow.rtype) {
+        xc = (rrow.submitted || rrow.approved ? "" : " rtinc") +
+            (rrow.subreview ? " rtsubrev" : "");
+        ad && ad.append(" ");
+        add_ad(review_types.make_icon(rrow.rtype, xc));
+        if (rrow.round) {
+            e = document.createElement("span");
+            e.className = "revround";
+            e.title = "Review round";
+            e.append(rrow.round);
+            ad.append(e);
+        }
+    }
+    if (rrow.modified_at) {
+        e = document.createElement("time");
+        e.className = "revtime";
+        e.dateTime = (new Date(rrow.modified_at * 1000)).toISOString();
+        e.append(rrow.modified_at_text);
+        add_rth(e);
+    }
+}
+
+hotcrp.add_review = function (rrow) {
+    var rid = rrow.pid + (rrow.ordinal || "r" + rrow.rid), rlink, rdesc,
+        has_user_rating = false,
+        e, earticle, eheader;
+
+    // review link and description
+    rlink = "p=".concat(rrow.pid, "&r=", rid);
     if (siteinfo.want_override_conflict)
         rlink += "&forceShow=1";
-
-    i = rrow.ordinal ? '" data-review-ordinal="' + rrow.ordinal : '';
-    hc.push('<article id="r'.concat(rid,
-                '" class="pcard revcard need-anchor-unfold has-fold ',
-                rrow.folded ? "fold20c" : "fold20o", '" data-pid="', rrow.pid,
-                '" data-rid="', rrow.rid, i, '">'), '</article>');
-
-    // HEADER
-    hc.push('<header class="revcard-head">', '</header>');
-
-    // review description
-    var rdesc = rrow.subreview ? "Subreview" : "Review";
+    rdesc = rrow.subreview ? "Subreview" : "Review";
     if (rrow.draft)
         rdesc = "Draft " + rdesc;
     if (rrow.ordinal)
         rdesc += " #" + rid;
 
-    // edit/text links
-    if (rrow.folded) {
-        hc.push('<h2><a class="qo ui js-foldup" href="" data-fold-target="20"><span class="expander"><span class="in0 fx20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L8 15L15 1z" /></svg></span><span class="in1 fn20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span></span>', '</a></h2>');
-    } else {
-        hc.push('<h2><a class="qo" href="' + hoturl_html("review", rlink) + '">', '</a></h2>');
-    }
-    hc.push('<span class="revcard-header-name">' + rdesc + '</span>');
-    if (rrow.editable && rrow.folded) {
-        hc.push('</a> <a class="qo" href="' + hoturl_html("review", rlink) + '"><span class="t-editor">✎</span>');
-    } else if (rrow.editable) {
-        hc.push(' <span class="t-editor">✎</span>');
-    }
-    hc.pop();
+    earticle = document.createElement("article");
+    earticle.id = "r" + rid;
+    earticle.className = "pcard revcard need-anchor-unfold has-fold fold20" + (rrow.folded ? "c" : "o");
+    earticle.setAttribute("data-pid", rrow.pid);
+    earticle.setAttribute("data-rid", rrow.rid);
+    rrow.ordinal && earticle.setAttribute("data-review-ordinal", rrow.ordinal);
+    $(".pcontainer")[0].appendChild(earticle);
 
-    // author info
-    var revname = "", revtime;
-    if (rrow.review_token) {
-        revname = 'Review token ' + rrow.review_token;
-    } else if (rrow.reviewer) {
-        revname = rrow.reviewer;
-        if (rrow.blind)
-            revname = '[' + revname + ']';
-        if (rrow.reviewer_email)
-            revname = '<span title="' + rrow.reviewer_email + '">' + revname + '</span>';
-    }
-    if (rrow.rtype) {
-        var xc = (rrow.submitted || rrow.approved ? "" : " rtinc") +
-            (rrow.subreview ? " rtsubrev" : "");
-        revname += (revname ? " " : "") + review_types.unparse_icon_html(rrow.rtype, xc);
-        if (rrow.round)
-            revname += '<span class="revround" title="Review round">' + escape_html(rrow.round) + '</span>';
-    }
-    if (rrow.modified_at) {
-        revtime = '<time class="revtime" datetime="' + (new Date(rrow.modified_at * 1000)).toISOString() + '">' + rrow.modified_at_text + '</time>';
-    }
-    if (revname || revtime) {
-        hc.push('<div class="revthead">');
-        if (revname)
-            hc.push('<address class="revname" itemprop="author">' + revname + '</address>');
-        if (revtime)
-            hc.push(revtime);
-        hc.push('</div>');
-    }
-    hc.push_pop('<hr class="c">');
+    // header
+    eheader = document.createElement("header");
+    eheader.className = "revcard-head";
+    eheader.appendChild(make_review_h2(rrow, rlink, rdesc));
+    append_review_id(rrow, eheader);
+    e = document.createElement("hr");
+    e.className = "c";
+    eheader.appendChild(e);
+    earticle.appendChild(eheader);
 
+    // messages
     if (rrow.message_list) {
-        hc.push('<div class="revcard-feedback fx20"><ul class="feedback-list"></ul></div>');
+        e = document.createElement("div");
+        e.className = "revcard-feedback fx20";
+        e.appendChild(render_feedback_list(rrow.message_list));
+        earticle.appendChild(e);
     }
 
     // body
-    hc.push('<div class="revcard-render fx20">', '</div>');
-    hc.push_pop(render_review_body(rrow));
+    e = document.createElement("div");
+    e.className = "revcard-render fx20";
+    earticle.appendChild(e);
+    render_review_body_in(rrow, e);
 
     // ratings
     has_user_rating = "user_rating" in rrow;
     if ((rrow.ratings && rrow.ratings.length) || has_user_rating) {
-        hc.push('<div class="revcard-rating fx20">', '</div>');
-        hc.push(unparse_ratings(rrow.ratings || [], rrow.user_rating || 0, has_user_rating));
+        e = document.createElement("div");
+        e.className = "revcard-rating fx20";
+        earticle.appendChild(e);
+        e.innerHTML = unparse_ratings(rrow.ratings || [], rrow.user_rating || 0, has_user_rating);
     }
 
     // complete render
-    var $j = $(hc.render()).appendTo($(".pcontainer"));
-    $j.find(".revtext").each(function () {
-        var fuid = this.closest(".rf").getAttribute("data-rf");
-        render_text.onto(this, rrow.format, rrow[fuid]);
-    });
-    if (rrow.message_list) {
-        var ul = $j.find(".revcard-feedback")[0].firstChild;
-        for (i = 0; i !== rrow.message_list.length; ++i) {
-            append_feedback_to(ul, rrow.message_list[i]);
-        }
-    }
     if (has_user_rating) {
-        $j.find(".revrating.editable").on("keydown", "button.js-revrating", revrating_key);
+        $(earticle).find(".revrating.editable").on("keydown", "button.js-revrating", revrating_key);
     }
-    score_header_tooltips($j);
+    score_header_tooltips($(earticle));
     navsidebar.set("r" + rid, rdesc);
+};
+
+function ReviewField(fj) {
+    this.uid = fj.uid;
+    this.name = fj.name;
+    this.name_html = escape_html(this.name);
+    this.type = fj.type;
+    if (fj.description != null)
+        this.description = fj.description;
+    if (fj.order != null)
+        this.order = fj.order;
+    if (fj.visibility != null)
+        this.visibility = fj.visibility;
+    if (fj.required != null)
+        this.required = fj.required;
+    if (fj.exists_if != null)
+        this.exists_if = fj.exists_if;
 }
 
-function ReviewField(f) {
+ReviewField.prototype.render_in = function (fv, rrow, fe) {
+    var e = document.createElement("div");
+    e.className = "revv revtext";
+    fe.appendChild(e);
+    render_text.onto(e, rrow.format, fv);
+}
+
+function DiscreteValues_ReviewField(fj) {
     var i, n, step, sym, ch;
-    // uid, name, type, description, order, visibility, required, exists_if
-    // scores: values, symbols, start, flip, scheme
-    Object.assign(this, f);
-    this.name_html = escape_html(f.name);
-    if (!this.type
-        || ((this.type === "radio" || this.type === "dropdown") !== !!this.values)) {
-        throw new Error("bad ReviewField");
-    }
-    if (this.values && !this.symbols) {
+    ReviewField.call(this, fj);
+    this.values = fj.values;
+    this.symbols = fj.symbols;
+    this.start = fj.start || null;
+    this.scheme = fj.scheme || "sv";
+    this.flip = !!fj.flip;
+    if (!this.symbols) {
         sym = this.symbols = [];
         n = this.values.length;
         step = this.flip ? -1 : 1;
@@ -5213,54 +5325,95 @@ function ReviewField(f) {
             sym.push(ch ? String.fromCharCode(ch + i) : i + 1);
         }
     }
-    if (this.values) {
-        this.scheme_info = make_color_scheme(this.values.length, this.scheme || "sv", this.flip);
-        this.default_numeric = true;
-        for (i = 0; i !== n; ++i) {
-            if (this.symbols[i] !== i + 1) {
-                this.default_numeric = false;
-                break;
-            }
+    this.scheme_info = make_color_scheme(this.values.length, this.scheme, this.flip);
+    this.default_numeric = true;
+    for (i = 0; i !== n; ++i) {
+        if (this.symbols[i] !== i + 1) {
+            this.default_numeric = false;
+            break;
         }
     }
 }
 
-ReviewField.prototype.value_at = function (val) {
-    var j = val - 1, title = this.values[j];
+Object.setPrototypeOf(DiscreteValues_ReviewField.prototype, ReviewField.prototype);
+
+DiscreteValues_ReviewField.prototype.indexOfSymbol = function (s) {
+    if (s == null || s === 0 || s === "")
+        return -1;
+    var i, n = this.values.length;
+    for (i = 0; i !== n; ++i) {
+        if (this.symbols[i] == s)
+            return i;
+    }
+    return -1;
+};
+
+DiscreteValues_ReviewField.prototype.value_info = function (sidx) {
+    var j = sidx - 1, title = this.values[j];
     if (title == null)
         return null;
     return {
-        value: val, symbol: this.symbols[j], title: title,
+        value: sidx, symbol: this.symbols[j], title: title,
         sp1: title === "" ? "" : ".", sp2: title === "" ? "" : " ",
-        className: this.scheme_info.className(val)
+        className: this.scheme_info.className(sidx)
     };
 };
 
-ReviewField.prototype.each_value = function (fn) {
+DiscreteValues_ReviewField.prototype.each_value = function (fn) {
     var i, n = this.values.length, step = this.flip ? -1 : 1;
     for (i = this.flip ? n : 1; i >= 1 && i <= n; i += step) {
-        fn(this.value_at(i));
+        fn(this.value_info(i));
     }
 };
 
-ReviewField.prototype.parse_value = function (txt) {
-    var i, n = this.values.length;
-    for (i = 0; i !== n; ++i) {
-        if (this.symbols[i] == txt)
-            return this.value_at(i + 1);
-    }
-    return null;
+DiscreteValues_ReviewField.prototype.parse_value = function (txt) {
+    var si = this.indexOfSymbol(txt);
+    return si >= 0 ? this.value_info(si + 1) : null;
 };
 
-ReviewField.prototype.rgb = function (val) {
+DiscreteValues_ReviewField.prototype.rgb = function (val) {
     return this.scheme_info.rgb(val);
 };
 
-ReviewField.prototype.className = function (val) {
+DiscreteValues_ReviewField.prototype.className = function (val) {
     return this.scheme_info.className(val);
 };
 
-ReviewField.prototype.unparse_symbol = function (val, split) {
+
+function make_score_no_value(txt) {
+    var pe = document.createElement("p");
+    pe.className = "revv revnoscore";
+    pe.append(txt);
+    return pe;
+}
+
+function make_score_value(val) {
+    var pe = document.createElement("p"), e, es;
+    pe.className = "revv revscore";
+    e = document.createElement("span");
+    e.className = "revscorenum";
+    es = document.createElement("strong");
+    es.className = "rev_num sv " + val.className;
+    es.append(val.symbol, val.sp1);
+    e.append(es, val.sp2);
+    pe.appendChild(e);
+    if (val.title) {
+        e = document.createElement("span");
+        e.className = "revscoredesc";
+        e.append(val.title);
+        pe.appendChild(e);
+    }
+    return pe;
+}
+
+
+function Score_ReviewField(fj) {
+    DiscreteValues_ReviewField.call(this, fj);
+}
+
+Object.setPrototypeOf(Score_ReviewField.prototype, DiscreteValues_ReviewField.prototype);
+
+Score_ReviewField.prototype.unparse_symbol = function (val, split) {
     if (val === (val | 0) && this.symbols[val - 1] != null)
         return this.symbols[val - 1];
     var rval = split ? Math.round(val * 2) / 2 - 1 : val - 1;
@@ -5269,29 +5422,138 @@ ReviewField.prototype.unparse_symbol = function (val, split) {
     else if (rval === (rval | 0))
         return this.symbols[rval];
     else if (this.flip)
-        return this.symbols[rval + 0.5].concat("/", this.symbols[rval - 0.5]);
+        return this.symbols[rval + 0.5].concat("~", this.symbols[rval - 0.5]);
     else
-        return this.symbols[rval - 0.5].concat("/", this.symbols[rval + 0.5]);
+        return this.symbols[rval - 0.5].concat("~", this.symbols[rval + 0.5]);
 };
 
-return {
-    ReviewField: ReviewField,
-    set_form: function (j) {
-        var i;
-        formj = formj || {};
-        for (i in j) {
-            formj[j[i].uid] = new ReviewField(j[i]);
+Score_ReviewField.prototype.render_in = function (fv, rrow, fe) {
+    var val;
+    if (fv !== false && (val = this.parse_value(fv))) {
+        fe.appendChild(make_score_value(val));
+    } else {
+        fe.appendChild(make_score_no_value(fv === false ? "N/A" : "Unknown"));
+    }
+}
+
+
+function Checkbox_ReviewField(fj) {
+    ReviewField.call(this, fj);
+    this.scheme = fj.scheme || "sv";
+    this.scheme_info = make_color_scheme(2, this.scheme || "sv", false);
+}
+
+Object.setPrototypeOf(Checkbox_ReviewField.prototype, ReviewField.prototype);
+
+Checkbox_ReviewField.prototype.value_info = function (b) {
+    return {
+        value: !!b, symbol: b ? "✓" : "✗", title: b ? "Yes" : "No",
+        sp1: "", sp2: " ", className: this.scheme_info.className(b ? 2 : 1)
+    };
+};
+
+Checkbox_ReviewField.prototype.parse_value = function (txt) {
+    if (typeof txt === "boolean" || !txt)
+        return this.value_info(txt);
+    var m = txt.match(/^\s*(|✓|1|yes|on|true|y|t)(|✗|0|no|none|off|false|n|f|-|–|—)\s*$/i);
+    if (m && (m[1] === "" || m[2] === ""))
+        return this.value_info(m[1] !== "");
+    return null;
+};
+
+Checkbox_ReviewField.prototype.rgb = function (val) {
+    return this.scheme_info.rgb(val ? 2 : 1);
+};
+
+Checkbox_ReviewField.prototype.className = function (val) {
+    return this.scheme_info.className(val ? 2 : 1);
+};
+
+Checkbox_ReviewField.prototype.unparse_symbol = function (val) {
+    if (val === true || val === false)
+        return val ? "✓" : "✗";
+    else if (val < 0.125)
+        return "✗";
+    else if (val < 0.375)
+        return "¼✓";
+    else if (val < 0.625)
+        return "½✓";
+    else if (val < 0.875)
+        return "¾✓";
+    else
+        return "✓";
+};
+
+Checkbox_ReviewField.prototype.render_in = function (fv, rrow, fe) {
+    var val;
+    if ((val = this.parse_value(fv))) {
+        fe.appendChild(make_score_value(val));
+    } else {
+        fe.appendChild(make_score_no_value("Unknown"));
+    }
+}
+
+
+function Checkboxes_ReviewField(fj) {
+    DiscreteValues_ReviewField.call(this, fj);
+}
+
+Object.setPrototypeOf(Checkboxes_ReviewField.prototype, DiscreteValues_ReviewField.prototype);
+
+Checkboxes_ReviewField.prototype.unparse_symbol = function (val) {
+    if (!val || val !== (val | 0))
+        return "";
+    var s, b, t = [];
+    for (s = b = 1; b <= val; b <<= 1, ++s) {
+        if (val & b)
+            t.push(this.symbols[s - 1]);
+    }
+    return t.join(",");
+};
+
+Checkboxes_ReviewField.prototype.render_in = function (fv, rrow, fe) {
+    if (fv && fv.length === 0) {
+        fe.appendChild(make_score_no_value("None"));
+    } else if (fv) {
+        var i, si, unk;
+        for (i = 0; i !== fv.length; ++i) {
+            if ((si = this.indexOfSymbol(fv[i])) >= 0) {
+                fe.appendChild(make_score_value(this.value_info(si + 1)));
+            } else if (!unk) {
+                fe.appendChild(make_score_no_value("Unknown"));
+                unk = true;
+            }
         }
+    }
+};
+
+
+hotcrp.make_review_field = function (fj) {
+    if (fj.type === "radio" || fj.type === "dropdown")
+        return new Score_ReviewField(fj);
+    else if (fj.type === "checkbox")
+        return new Checkbox_ReviewField(fj);
+    else if (fj.type === "checkboxes")
+        return new Checkboxes_ReviewField(fj);
+    else
+        return new ReviewField(fj);
+};
+
+hotcrp.set_review_form = function (j) {
+    var i;
+    formj = formj || {};
+    for (i in j) {
+        formj[j[i].uid] = hotcrp.make_review_field(j[i]);
         form_order = $.map(formj, function (v) { return v; });
         form_order.sort(function (a, b) { return a.order - b.order; });
-    },
-    add_review: add_review
+    }
 };
+
 })($);
 
 
 // comments
-var papercomment = (function ($) {
+(function ($) {
 var vismap = {
         rev: "hidden from authors",
         pc: "hidden from authors and external reviewers",
@@ -5580,11 +5842,11 @@ function activate_editing_messages(cj, form) {
     }
     if (cj.response
         && !hotcrp_status.myperm.is_author) {
-        append_feedback_to(ul, {message: '<0>You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.', status: -1});
+        append_feedback_to(ul, {message: '<0>You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.', status: -4 /*MessageSet::MARKED_NOTE*/});
     } else if (cj.review_token
                && hotcrp_status.myperm.review_tokens
                && hotcrp_status.myperm.review_tokens.indexOf(cj.review_token) >= 0) {
-        append_feedback_to(ul, {message: '<0>You have a review token for this paper, so your comment will be anonymous.', status: -1});
+        append_feedback_to(ul, {message: '<0>You have a review token for this paper, so your comment will be anonymous.', status: -4 /*MessageSet::MARKED_NOTE*/});
     } else if (!cj.response
                && cj.author_email
                && siteinfo.user.email
@@ -5593,18 +5855,18 @@ function activate_editing_messages(cj, form) {
             msg = "<0>You didn’t write this comment, but as a fellow author you can edit it.";
         else
             msg = "<0>You didn’t write this comment, but as an administrator you can edit it.";
-        append_feedback_to(ul, {message: msg, status: -1});
+        append_feedback_to(ul, {message: msg, status: -4 /*MessageSet::MARKED_NOTE*/});
     }
     if (cj.response) {
         if (resp_rounds[cj.response].done > now_sec()) {
-            append_feedback_to(ul, {message: strftime("<0>The response deadline is %X your time.", new Date(resp_rounds[cj.response].done * 1000)), status: -4});
+            append_feedback_to(ul, {message: strftime("<0>The response deadline is %X your time.", new Date(resp_rounds[cj.response].done * 1000)), status: -2 /*MessageSet::WARNING_NOTE*/});
         } else if (cj.draft) {
             append_feedback_to(ul, {message: "<0>The response deadline has passed and this draft response will not be shown to reviewers.", status: 2});
         }
     }
     if (siteinfo.user
         && (siteinfo.user.is_actas || (siteinfo.user.session_users || []).length > 1)) {
-        append_feedback_to(ul, {message: "<0>Commenting as " + siteinfo.user.email, status: -4});
+        append_feedback_to(ul, {message: "<0>Commenting as " + siteinfo.user.email, status: -2 /*MessageSet::WARNING_NOTE*/});
     }
     if (ul.firstChild) {
         form.parentElement.insertBefore(ul, form);
@@ -6073,12 +6335,20 @@ function add_comment_sidebar(celt, cj) {
 }
 
 function edit_this(evt) {
-    edit(find_cj(this));
+    hotcrp.edit_comment(find_cj(this));
     evt.preventDefault();
     handle_ui.stopPropagation(evt);
 }
 
-function edit(cj) {
+
+hotcrp.add_comment = add_comment;
+
+hotcrp.edit_comment = function (cj) {
+    if (typeof cj === "string") {
+        if (!cmts[cj])
+            return;
+        cj = cmts[cj];
+    }
     var cid = cj_cid(cj), elt = $$(cid);
     if (!elt && (cj.is_new || cj.response)) {
         add_comment(cj, true);
@@ -6096,18 +6366,12 @@ function edit(cj) {
     $(function () { te.focus(); });
     has_unload || $(window).on("beforeunload.papercomment", beforeunload);
     has_unload = true;
-}
-
-return {
-    add: add_comment,
-    set_resp_round: function (rname, rinfo) {
-        resp_rounds[rname] = rinfo;
-    },
-    edit: edit,
-    edit_id: function (cid) {
-        cmts[cid] && edit(cmts[cid]);
-    }
 };
+
+hotcrp.set_response_round = function (rname, rinfo) {
+    resp_rounds[rname] = rinfo;
+};
+
 })(jQuery);
 
 handle_ui.on("js-overlong-expand", function () {
@@ -6170,7 +6434,7 @@ function quicklink_shortcut(evt) {
 }
 
 function comment_shortcut(evt) {
-    papercomment.edit_id("cnew");
+    hotcrp.edit_comment("cnew");
     if ($$("cnew"))
         evt.preventDefault();
 }
@@ -6224,7 +6488,7 @@ function make_selector_shortcut(type) {
     }
 }
 
-function shortcut(top_elt) {
+hotcrp.shortcut = function (top_elt) {
     var self, main_keys = {}, current_keys = null, last_key_at = now_msec() - 1000;
 
     function keypress(evt) {
@@ -6368,7 +6632,7 @@ demand_load.tags = demand_load.make(function (resolve) {
     demand_load.alltag_info().then(function (v) { resolve(v.tags); });
 });
 
-demand_load.mail_templates = demand_load.make(function (resolve, reject) {
+demand_load.mail_templates = demand_load.make(function (resolve) {
     $.get(hoturl("api/mailtext", {template: "all"}), null, function (v) {
         var tl = v && v.ok && v.templates;
         resolve(tl || []);
@@ -7296,7 +7560,7 @@ function row_click(evt) {
 handle_ui.on("js-edit-comment", function (evt) {
     if (this.tagName !== "A" || event_key.is_default_a(evt)) {
         evt.preventDefault();
-        papercomment.edit_id(this.hash.substring(1));
+        hotcrp.edit_comment(this.hash.substring(1));
     }
 });
 
@@ -7404,69 +7668,67 @@ function hotlist_search_params(x, ids) {
 
 
 // review preferences
-var add_revpref_ajax = (function () {
-    var blurred_at = 0;
+(function () {
+var blurred_at = 0;
 
-    function rp(selector, on_unload) {
-        var $e = $(selector);
-        if ($e.is("input")) {
-            var rpf = wstorage.site(true, "revpref_focus");
-            if (rpf && now_msec() - rpf < 3000)
-                focus_at($e[0]);
-            $e = $e.parent();
-        }
-        $e.off(".revpref_ajax")
-            .on("blur.revpref_ajax", "input.revpref", rp_blur)
-            .on("change.revpref_ajax", "input.revpref", rp_change)
-            .on("keydown.revpref_ajax", "input.revpref", make_onkey("Enter", rp_change));
-        if (on_unload) {
-            $(window).on("beforeunload", rp_unload);
+hotcrp.add_preference_ajax = function (selector, on_unload) {
+    var $e = $(selector);
+    if ($e.is("input")) {
+        var rpf = wstorage.site(true, "revpref_focus");
+        if (rpf && now_msec() - rpf < 3000)
+            focus_at($e[0]);
+        $e = $e.parent();
+    }
+    $e.off(".revpref_ajax")
+        .on("blur.revpref_ajax", "input.revpref", rp_blur)
+        .on("change.revpref_ajax", "input.revpref", rp_change)
+        .on("keydown.revpref_ajax", "input.revpref", make_onkey("Enter", rp_change));
+    if (on_unload) {
+        $(window).on("beforeunload", rp_unload);
+    }
+};
+
+function rp_blur() {
+    blurred_at = now_msec();
+}
+
+function rp_change() {
+    var self = this, pid = this.name.substr(7), data = {pref: self.value}, pos;
+    if ((pos = pid.indexOf("u")) > 0) {
+        data.u = pid.substr(pos + 1);
+        pid = pid.substr(0, pos);
+    }
+    function success(rv) {
+        minifeedback(self, rv);
+        if (rv && rv.ok && rv.value != null) {
+            self.value = rv.value === "0" ? "" : rv.value;
+            input_set_default_value(self, self.value);
         }
     }
-
-    function rp_blur() {
-        blurred_at = now_msec();
-    }
-
-    function rp_change() {
-        var self = this, pid = this.name.substr(7), data = {pref: self.value}, pos;
-        if ((pos = pid.indexOf("u")) > 0) {
-            data.u = pid.substr(pos + 1);
-            pid = pid.substr(0, pos);
-        }
-        function success(rv) {
-            minifeedback(self, rv);
-            if (rv && rv.ok && rv.value != null) {
-                self.value = rv.value === "0" ? "" : rv.value;
-                input_set_default_value(self, self.value);
-            }
-        }
-        $ajax.condition(function () {
-            $.ajax(hoturl("=api/revpref", {p: pid}), {
-                method: "POST", data: data,
-                success: success, trackOutstanding: true
-            });
+    $ajax.condition(function () {
+        $.ajax(hoturl("=api/revpref", {p: pid}), {
+            method: "POST", data: data,
+            success: success, trackOutstanding: true
         });
-    }
-
-    function rp_unload() {
-        if ((blurred_at && now_msec() - blurred_at < 1000)
-            || $(":focus").is("input.revpref"))
-            wstorage.site(true, "revpref_focus", blurred_at || now_msec());
-    }
-
-    handle_ui.on("revpref", function (evt) {
-        if (evt.type === "keydown") {
-            if (!event_modkey(evt) && event_key(evt) === "Enter") {
-                rp_change.call(this);
-                evt.preventDefault();
-                handle_ui.stopImmediatePropagation(evt);
-            }
-        } else if (evt.type === "change")
-            rp_change.call(this, evt);
     });
+}
 
-    return rp;
+function rp_unload() {
+    if ((blurred_at && now_msec() - blurred_at < 1000)
+        || $(":focus").is("input.revpref"))
+        wstorage.site(true, "revpref_focus", blurred_at || now_msec());
+}
+
+handle_ui.on("revpref", function (evt) {
+    if (evt.type === "keydown") {
+        if (!event_modkey(evt) && event_key(evt) === "Enter") {
+            rp_change.call(this);
+            evt.preventDefault();
+            handle_ui.stopImmediatePropagation(evt);
+        }
+    } else if (evt.type === "change")
+        rp_change.call(this, evt);
+});
 })();
 
 
@@ -7768,7 +8030,7 @@ function search_scoresort_change() {
     var scoresort = $(this).val(),
         re = / (?:counts|average|median|variance|maxmin|my)\b/;
     $.post(hoturl("=api/session"), {v: "scoresort=" + scoresort});
-    plinfo.set_scoresort(scoresort);
+    hotcrp.set_scoresort(scoresort);
     $("#foldpl > thead").find("a.pl_sort").each(function () {
         var href = this.getAttribute("href"), sorter = href_sorter(href);
         if (re.test(sorter)) {
@@ -7820,7 +8082,7 @@ function add_draghandle() {
     removeClass(this, "need-draghandle");
     var x = document.createElement("span");
     x.className = "draghandle js-drag-tag";
-    x.setAttribute("title", "Drag to change order");
+    x.title = "Drag to change order";
     if (this.tagName === "TD") {
         x.style.float = "right";
         x.style.position = "static";
@@ -8477,7 +8739,7 @@ function render_user(u) {
 
 
 // ajax loading of paper information
-var plinfo = (function () {
+(function () {
 
 function prownear(e) {
     while (e && e.nodeName !== "TR") {
@@ -8790,7 +9052,7 @@ function make_tag_column_callback(f) {
     };
 }
 
-function render_needed() {
+hotcrp.render_list = function () {
     self || initialize();
     scorechart();
     $(".need-allpref").each(render_allpref);
@@ -8867,7 +9129,7 @@ function make_callback(dofold, type) {
                 }
                 ++n;
             }
-        render_needed();
+        hotcrp.render_list();
         if (tr)
             setTimeout(render_some, 8);
     }
@@ -8987,7 +9249,7 @@ function initialize() {
         add_field(fs[i]);
 }
 
-plinfo.set_scoresort = function (ss) {
+hotcrp.set_scoresort = function (ss) {
     self || initialize();
     var re = / (?:counts|average|median|variance|minmax|my)$/;
     for (var i = 0; i < field_order.length; ++i) {
@@ -8997,9 +9259,7 @@ plinfo.set_scoresort = function (ss) {
     }
 };
 
-plinfo.render_needed = render_needed;
-
-plinfo.update_tag_decoration = function ($title, html) {
+hotcrp.update_tag_decoration = function ($title, html) {
     $title.find(".tagdecoration").remove();
     if (html) {
         $title.append(html);
@@ -9046,7 +9306,7 @@ $(window).on("hotcrptags", function (evt, rv) {
     }).addClass(cc);
 
     // set tag decoration
-    plinfo.update_tag_decoration($ptr.find(".pl_title"), rv.tag_decoration_html);
+    hotcrp.update_tag_decoration($ptr.find(".pl_title"), rv.tag_decoration_html);
 
     // set actual tags
     if (fields.tags && !fields.tags.missing)
@@ -9105,7 +9365,6 @@ handle_ui.on("js-plinfo", function (evt) {
     evt.preventDefault();
 });
 
-return plinfo;
 })();
 
 
@@ -9431,7 +9690,7 @@ handle_ui.on("js-check-format", function () {
     if (this && "tagName" in this && this.tagName === "A")
         $self.addClass("hidden");
     var running = setTimeout(function () {
-        $cf.html(render_message_list([{message: "<0>Checking format (this can take a while)...", status: -1}]));
+        $cf.html(render_message_list([{message: "<0>Checking format (this can take a while)...", status: -4 /*MessageSet::MARKED_NOTE*/}]));
     }, 1000);
     $.ajax(hoturl("=api/formatcheck", {p: siteinfo.paperid}), {
         timeout: 20000, data: {
@@ -9729,7 +9988,7 @@ handle_ui.on("pspcard-fold", function (evt) {
     }
 });
 
-var edit_paper_ui = (function ($) {
+(function ($) {
 var edit_conditions = {};
 
 function prepare_paper_select() {
@@ -9880,7 +10139,7 @@ function save_pstags(evt) {
                 addClass(f.elements.tags, "has-error");
                 addClass(f.elements.save, "btn-highlight");
                 data.message_list = data.message_list || [];
-                data.message_list.unshift({message: "Your changes were not saved. Please correct these errors and try again.", status: -4});
+                data.message_list.unshift({message: "Your changes were not saved. Please correct these errors and try again.", status: -2 /*MessageSet::WARNING_NOTE*/});
             }
             if (data.message_list)
                 render_tag_messages.call($f[0], data.message_list);
@@ -10110,68 +10369,72 @@ function fieldchange(evt) {
         .trigger({type: "fieldchange", changeTarget: evt.target});
 }
 
-return {
-    edit_condition: function () {
-        $("#form-paper").on("fieldchange", ".has-edit-condition", run_edit_conditions)
-            .find(".has-edit-condition").each(run_edit_conditions);
-    },
-    evaluate_edit_condition: function (ec) {
-        return evaluate_edit_condition(typeof ec === "string" ? parse_json(ec) : ec, $("#form-paper")[0]);
-    },
-    load: function () {
-        var f = document.getElementById("form-paper");
-        hiliter_children(f);
-        f.elements.submitpaper && $(f.elements.submitpaper).change();
-        $(".pfe").each(add_pslitem_pfe);
-        var h = $(".btn-savepaper").first(),
-            k = hasClass(f, "alert") ? "" : " hidden";
-        $(".pslcard-nav").append('<div class="paper-alert mt-5'.concat(k,
-            '"><button class="ui btn-highlight btn-savepaper">', h.html(),
-            '</button></div>'))
-            .find(".btn-savepaper").click(function () {
-                $("#form-paper .btn-savepaper").first().trigger({type: "click", sidebarTarget: this});
-            });
-        $(f).on("change", "input, select, textarea", fieldchange)
-            .on("click", "input[type=checkbox], input[type=radio]", fieldchange);
-    },
-    prepare: function () {
-        $(".need-tag-index-form").each(function () {
-            $(this).removeClass("need-tag-index-form").on("submit", save_pstagindex)
-                .find("input").on("change", save_pstagindex);
+hotcrp.load_editable_paper = function () {
+    var f = document.getElementById("form-paper");
+    hiliter_children(f);
+    f.elements.submitpaper && $(f.elements.submitpaper).change();
+    $(".pfe").each(add_pslitem_pfe);
+    var h = $(".btn-savepaper").first(),
+        k = hasClass(f, "alert") ? "" : " hidden";
+    $(".pslcard-nav").append('<div class="paper-alert mt-5'.concat(k,
+        '"><button class="ui btn-highlight btn-savepaper">', h.html(),
+        '</button></div>'))
+        .find(".btn-savepaper").click(function () {
+            $("#form-paper .btn-savepaper").first().trigger({type: "click", sidebarTarget: this});
         });
-        $(".need-tag-form").each(prepare_pstags);
-        $(".need-paper-select-api").each(function () {
-            removeClass(this, "need-paper-select-api");
-            prepare_paper_select.call(this);
-        });
-    },
-    load_review: function () {
-        hiliter_children("#form-review");
-        $(".rfehead").each(add_pslitem_header);
-        if ($(".rfehead").length) {
-            $(".pslcard > .pslitem:last-child").addClass("mb-3");
-        }
-        var h = $(".btn-savereview").first(),
-            k = $("#form-review").hasClass("alert") ? "" : " hidden";
-        $(".pslcard-nav").append('<div class="review-alert mt-5'.concat(k,
-            '"><button class="ui btn-highlight btn-savereview">', h.html(),
-            '</button></div>'))
-            .find(".btn-savereview").click(function () {
-                $("#form-review .btn-savereview").first().trigger({type: "click", sidebarTarget: this});
-            });
-    },
-    replace_field: function (field, elt) {
-        var pfe = $$(field).closest(".pfe");
-        if (elt.tagName !== "DIV" || !hasClass(elt, "pfe")) {
-            throw new Error("bad DIV");
-        }
-        pfe.className = elt.className;
-        pfe.replaceChildren();
-        while (elt.firstChild)
-            pfe.appendChild(elt.firstChild);
-        add_pslitem_pfe.call(pfe);
-    }
+    $(f).on("change", "input, select, textarea", fieldchange)
+        .on("click", "input[type=checkbox], input[type=radio]", fieldchange);
 };
+
+hotcrp.load_editable_review = function () {
+    hiliter_children("#form-review");
+    $(".rfehead").each(add_pslitem_header);
+    if ($(".rfehead").length) {
+        $(".pslcard > .pslitem:last-child").addClass("mb-3");
+    }
+    var h = $(".btn-savereview").first(),
+        k = $("#form-review").hasClass("alert") ? "" : " hidden";
+    $(".pslcard-nav").append('<div class="review-alert mt-5'.concat(k,
+        '"><button class="ui btn-highlight btn-savereview">', h.html(),
+        '</button></div>'))
+        .find(".btn-savereview").click(function () {
+            $("#form-review .btn-savereview").first().trigger({type: "click", sidebarTarget: this});
+        });
+};
+
+hotcrp.prepare_editable_paper = function () {
+    $(".need-tag-index-form").each(function () {
+        $(this).removeClass("need-tag-index-form").on("submit", save_pstagindex)
+            .find("input").on("change", save_pstagindex);
+    });
+    $(".need-tag-form").each(prepare_pstags);
+    $(".need-paper-select-api").each(function () {
+        removeClass(this, "need-paper-select-api");
+        prepare_paper_select.call(this);
+    });
+};
+
+hotcrp.replace_editable_field = function (field, elt) {
+    var pfe = $$(field).closest(".pfe");
+    if (elt.tagName !== "DIV" || !hasClass(elt, "pfe")) {
+        throw new Error("bad DIV");
+    }
+    pfe.className = elt.className;
+    pfe.replaceChildren();
+    while (elt.firstChild)
+        pfe.appendChild(elt.firstChild);
+    add_pslitem_pfe.call(pfe);
+};
+
+hotcrp.paper_edit_conditions = function () {
+    $("#form-paper").on("fieldchange", ".has-edit-condition", run_edit_conditions)
+        .find(".has-edit-condition").each(run_edit_conditions);
+};
+
+/*hotcrp.evaluate_edit_condition = function (ec) {
+    return evaluate_edit_condition(typeof ec === "string" ? parse_json(ec) : ec, $("#form-paper")[0]);
+};*/
+
 })($);
 
 
@@ -10220,7 +10483,7 @@ if (siteinfo.paperid) {
         $(".is-tag-index").each(function () {
             set_tag_index(this, data.tags);
         });
-        plinfo.update_tag_decoration($("h1.paptitle"), data.tag_decoration_html);
+        hotcrp.update_tag_decoration($("h1.paptitle"), data.tag_decoration_html);
     });
 }
 
@@ -10938,11 +11201,11 @@ function make_fm9(n, max, flip, categorical) {
         var f = (max - 1) / (n - 1);
         if (flip) {
             return function (i) {
-                return Math.max(Math.min(Math.round((+i - 1) * f) + 1, max), 1);
+                return Math.max(Math.min(Math.round((n - i) * f) + 1, max), 1);
             };
         } else {
             return function (i) {
-                return Math.max(Math.min(Math.round((n - i) * f) + 1, max), 1);
+                return Math.max(Math.min(Math.round((+i - 1) * f) + 1, max), 1);
             };
         }
     }
@@ -10964,7 +11227,7 @@ function rgb_array_for(svx) {
 
 return function (n, scheme, flip) {
     var sci = scheme_info[scheme],
-        fm9 = make_fm9(n, sci[1], !sci[2] === !flip, (sci[0] & 2) !== 0),
+        fm9 = make_fm9(n, sci[1], !sci[2] !== !flip, (sci[0] & 2) !== 0),
         svk = sci[2] || scheme;
     if (svk !== "sv")
         svk = "sv-" + svk;
@@ -11017,13 +11280,13 @@ function setup_canvas(canvas, w, h) {
 
 function analyze_sc(sc) {
     var anal = {
-        v: [], max: 0, h: 0, lo: 1, hi: 0, flip: false, sum: 0, sv: "sv"
+        v: [], max: 0, h: null, lo: 1, hi: 0, flip: false, sum: 0, sv: "sv"
     }, m, i, vs, x;
 
     m = /(?:^|[&;])v=(.*?)(?:[&;]|$)/.exec(sc);
     vs = m[1].split(/,/);
     anal.hi = vs.length;
-    for (i = 0; i < vs.length; ++i) {
+    for (i = 0; i !== vs.length; ++i) {
         if (/^\d+$/.test(vs[i]))
             x = parseInt(vs[i], 10);
         else
@@ -11033,11 +11296,15 @@ function analyze_sc(sc) {
         anal.sum += x;
     }
 
-    if ((m = /(?:^|[&;])h=(\d+)(?:[&;]|$)/.exec(sc)))
-        anal.h = parseInt(m[1], 10);
-    if ((m = /(?:^|[&;])lo=(\w+)/.exec(sc)))
+    if ((m = /(?:^|[&;])h=(\d+(?:,\d+)*)(?:[&;]|$)/.exec(sc))) {
+        x = m[1].split(",");
+        anal.h = [];
+        for (i = 0; i !== x.length; ++i)
+            anal.h.push(parseInt(x[i], 10))
+    }
+    if ((m = /(?:^|[&;])lo=([^&;\s]+)/.exec(sc)))
         anal.lo = m[1];
-    if ((m = /(?:^|[&;])hi=(\w+)/.exec(sc)))
+    if ((m = /(?:^|[&;])hi=([^&;\s]+)/.exec(sc)))
         anal.hi = m[1];
     anal.flip = /(?:^|[&;])flip=[^0&;]/.test(sc);
     if ((m = /(?:^|[&;])sv=([^;&]*)(?:[&;]|$)/.exec(sc)))
@@ -11079,11 +11346,11 @@ function scorechart1_s1(sc) {
         if (!anal.v[vindex])
             continue;
         var color = anal.fx.rgb_array(vindex + 1);
-        var y = vindex + 1 === anal.h ? 2 : 1;
+        var y = anal.h && anal.h.indexOf(vindex + 1) >= 0 ? 2 : 1;
         if (y === 2)
-            t = t.concat('<path style="fill:', color_unparse(rgb_interp(blackcolor, color, 0.5)), '" d="', rectd(x, 1), '" />');
+            t = t.concat('<path fill="', color_unparse(rgb_interp(blackcolor, color, 0.5)), '" d="', rectd(x, 1), '" />');
         if (y <= anal.v[vindex]) {
-            t += t.concat('<path style="fill:', color_unparse(color), '" d="');
+            t += t.concat('<path fill="', color_unparse(color), '" d="');
             for (; y <= anal.v[vindex]; ++y)
                 t += rectd(x, y);
             t += '" />';
@@ -11345,18 +11612,18 @@ $(function () {
     if (document.documentMode || window.attachEvent) {
         var msg = $('<div class="msg msg-error"></div>').appendTo("#msgs-initial");
         append_feedback_near(msg[0], {message: "<0>This site no longer supports Internet Explorer", status: 2});
-        append_feedback_near(msg[0], {message: "<5>Please use <a href=\"https://browsehappy.com/\">a modern browser</a> if you can.", status: -5});
+        append_feedback_near(msg[0], {message: "<5>Please use <a href=\"https://browsehappy.com/\">a modern browser</a> if you can.", status: -5 /*MessageSet::INFORM*/});
     }
 });
 
 
-window.hotcrp = {
-    add_comment: papercomment.add,
-    add_review: review_form.add_review,
-    add_preference_ajax: add_revpref_ajax,
+Object.assign(window.hotcrp, {
+    // add_comment
+    // add_review
+    // add_preference_ajax
     check_version: check_version,
     demand_load: demand_load,
-    edit_comment: papercomment.edit,
+    // edit_comment
     ensure_pattern: ensure_pattern,
     escape_html: escape_html,
     focus_within: focus_within,
@@ -11366,20 +11633,22 @@ window.hotcrp = {
     handle_ui: handle_ui,
     highlight_form_children: hiliter_children,
     hoturl: hoturl,
-    init_deadlines: hotcrp_deadlines.initialize,
-    load_editable_paper: edit_paper_ui.load,
-    load_editable_review: edit_paper_ui.load_review,
-    onload: hotcrp_load,
-    paper_edit_conditions: edit_paper_ui.edit_condition,
-    prepare_editable_paper: edit_paper_ui.prepare,
-    render_list: plinfo.render_needed,
+    // init_deadlines
+    // load_editable_paper
+    // load_editable_review
+    // make_review_field
+    // onload
+    // paper_edit_conditions
+    // prepare_editable_paper
+    // render_list
     render_text_page: render_text.on_page,
     render_user: render_user,
-    replace_editable_field: edit_paper_ui.replace_field,
-    ReviewField: review_form.ReviewField,
-    scorechart: scorechart,
-    set_response_round: papercomment.set_resp_round,
-    set_review_form: review_form.set_form,
-    tracker_show_elapsed: hotcrp_deadlines.tracker_show_elapsed,
-    shortcut: shortcut
-};
+    // replace_editable_field
+    scorechart: scorechart
+    // set_response_round
+    // set_review_form
+    // set_scoresort
+    // shortcut
+    // tracker_show_elapsed
+    // update_tag_decoration
+});

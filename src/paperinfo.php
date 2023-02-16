@@ -527,6 +527,8 @@ class PaperInfo {
     private $_contact_info = [];
     /** @var int */
     private $_rights_version = 0;
+    /** @var ?SubmissionRound */
+    private $_submission_round;
     /** @var ?list<Author> */
     private $_author_array;
     /** @var ?array<string,string> */
@@ -718,8 +720,9 @@ class PaperInfo {
         return $prow;
     }
 
-    /** @return PaperInfo */
-    static function make_new(Contact $user) {
+    /** @param ?string $stag
+     * @return PaperInfo */
+    static function make_new(Contact $user, $stag) {
         $prow = new PaperInfo($user->conf);
         $prow->abstract = $prow->title = $prow->collaborators =
             $prow->authorInformation = $prow->paperTags = $prow->optionIds =
@@ -733,6 +736,10 @@ class PaperInfo {
         $prow->_contact_info[$user->contactXid] = $ci;
         $prow->_comment_skeleton_array = $prow->_comment_array = [];
         $prow->_row_set->add_paper($prow);
+        if ($stag && ($sr = $user->conf->submission_round_by_tag($stag))) {
+            $prow->paperTags = " {$stag}#0";
+            $prow->_submission_round = $sr;
+        }
         return $prow;
     }
 
@@ -869,34 +876,53 @@ class PaperInfo {
     }
 
 
-    /** @return int */
+    /** @return SubmissionRound */
+    function submission_round() {
+        if (!$this->_submission_round) {
+            foreach ($this->conf->submission_round_list() as $sr) {
+                if ($sr->unnamed || $this->has_tag($sr->tag)) {
+                    $this->_submission_round = $sr;
+                    break;
+                }
+            }
+        }
+        return $this->_submission_round;
+    }
+
+    /** @return int
+     * @deprecated */
     function open_time() {
-        return $this->conf->setting("sub_open") ?? 0;
+        return $this->submission_round()->open;
     }
 
-    /** @return int */
+    /** @return int
+     * @deprecated */
     function registration_deadline() {
-        return $this->conf->setting("sub_reg") ?? 0;
+        return $this->submission_round()->register;
     }
 
-    /** @return int */
+    /** @return int
+     * @deprecated */
     function update_deadline() {
-        return $this->conf->setting("sub_update") ?? 0;
+        return $this->submission_round()->update;
     }
 
-    /** @return int */
+    /** @return int
+     * @deprecated */
     function submission_deadline() {
-        return $this->conf->setting("sub_sub") ?? 0;
+        return $this->submission_round()->submit;
     }
 
-    /** @return int */
+    /** @return int
+     * @deprecated */
     function submission_grace() {
-        return $this->conf->setting("sub_grace") ?? 0;
+        return $this->submission_round()->grace;
     }
 
-    /** @return bool */
+    /** @return bool
+     * @deprecated */
     function can_update_until_deadline() {
-        return ($this->conf->setting("sub_freeze") ?? 0) <= 0;
+        return !$this->submission_round()->freeze;
     }
 
 
@@ -966,6 +992,12 @@ class PaperInfo {
      * @return ?Author */
     function author_by_email($email) {
         return self::search_author_list_by_email($this->author_list(), $email);
+    }
+
+    /** @param int $index
+     * @return ?Author */
+    function author_by_index($index) {
+        return ($this->author_list())[$index - 1] ?? null;
     }
 
 
@@ -1235,13 +1267,23 @@ class PaperInfo {
                 . "</em> " . $userm->highlight($cflt);
         } else if ($cflt->nonauthor) {
             $order = $cflt->author_index | (2 << 24);
-            $cfltdesc = "<em>author #{$cflt->author_index} collaborator</em> " . $userm->highlight($cflt);
+            if (($aucflt = $this->author_by_index($cflt->author_index))) {
+                $cfltdesc = "<em>author " . $aucflt->name_h() . "’s collaborator</em> " . $userm->highlight($cflt);
+            } else {
+                error_log("#{$this->paperId}: cannot find {$cflt->author_index}");
+                $cfltdesc = "<em>author #{$cflt->author_index}’s collaborator</em> " . $userm->highlight($cflt);
+            }
         } else if ($why === AuthorMatcher::MATCH_AFFILIATION) {
             $order = $cflt->author_index | (1 << 24);
-            $cfltdesc = "<em>author #{$cflt->author_index} affiliation</em> " . $userm->highlight($cflt->affiliation);
+            if (($aucflt = $this->author_by_index($cflt->author_index))) {
+                $cfltdesc = "<em>author</em> " . $aucflt->name_h() . " (" . $userm->highlight($cflt->affiliation) . ")";
+            } else {
+                error_log("#{$this->paperId}: cannot find {$cflt->author_index}");
+                $cfltdesc = "<em>author #{$cflt->author_index}’s affiliation</em> " . $userm->highlight($cflt->affiliation);
+            }
         } else {
             $order = $cflt->author_index;
-            $cfltdesc = "<em>author #{$cflt->author_index}</em> " . $userm->highlight($cflt->nonauthor ? $cflt : $cflt->name());
+            $cfltdesc = "<em>author</em> " . $userm->highlight($cflt);
         }
         $this->_potential_conflicts[] = [$order0, $userdesc, $order, $cfltdesc];
     }
@@ -1258,7 +1300,7 @@ class PaperInfo {
         $authors = [];
         foreach ($this->_potential_conflicts as $x) {
             if ($x[2] < PHP_INT_MAX - 2) {
-                $au = $x[2] & ((1 << 24) - 1);
+                $au = $x[2] & 0xFFFFFF;
                 $authors[$au] = "#{$au}";
             }
         }
@@ -1388,16 +1430,19 @@ class PaperInfo {
     /** @return bool */
     function can_author_view_decision() {
         return $this->outcome !== 0
-            && $this->conf->_au_seedec
-            && $this->conf->_au_seedec->test($this, null);
+            && ($this->outcome_sign === -2
+                || ($this->conf->_au_seedec
+                    && $this->conf->_au_seedec->test($this, null)));
     }
 
     /** @return bool */
     function can_author_edit_paper() {
-        return $this->timeWithdrawn <= 0
-            && $this->outcome_sign >= 0
-            && ($this->conf->time_edit_paper($this)
-                || $this->perm_tag_allows("author-write"));
+        if ($this->timeWithdrawn > 0 || $this->outcome_sign < 0) {
+            return false;
+        }
+        $sr = $this->submission_round();
+        return ($this->timeSubmitted <= 0 || !$sr->freeze)
+            && $sr->time_update(true);
     }
 
     /** @return bool */
@@ -2736,9 +2781,9 @@ class PaperInfo {
         foreach ($this->_row_set as $prow) {
             $prow->$k = "";
         }
-        $select = $maybe_null ? "coalesce($main_storage,'.')" : $main_storage;
-        $result = $this->conf->qe("select paperId, group_concat($select order by reviewId) from PaperReview where paperId?a group by paperId", $this->_row_set->paper_ids());
-        while ($result && ($row = $result->fetch_row())) {
+        $select = $maybe_null ? "coalesce({$main_storage},'.')" : $main_storage;
+        $result = $this->conf->qe("select paperId, group_concat({$select} order by reviewId) from PaperReview where paperId?a group by paperId", $this->_row_set->paper_ids());
+        while (($row = $result->fetch_row())) {
             $prow = $this->_row_set->get((int) $row[0]);
             $prow->$k = $row[1];
         }
@@ -2750,9 +2795,7 @@ class PaperInfo {
         if (!($this->_reviews_flags & self::REVIEW_HAS_FULL)
             && ($this->_reviews_have[$order] ?? null) === null) {
             $rform = $this->conf->review_form();
-            if ($this->_reviews_have === null) {
-                $this->_reviews_have = $rform->order_array(null);
-            }
+            $this->_reviews_have = $this->_reviews_have ?? $rform->order_array(null);
             $f = $rform->field_by_order($order);
             if (!$f) {
                 $this->_reviews_have[$order] = false;
@@ -2766,19 +2809,10 @@ class PaperInfo {
                 }
                 $x = explode(",", $this->$k);
                 foreach ($this->reviews_as_list() as $i => $rrow) {
-                    $rrow->fields[$order] = (int) $x[$i];
+                    $rrow->fields = $rrow->fields ?? $rform->order_array(null);
+                    $fv = (int) $x[$i];
+                    $rrow->fields[$order] = $fv > 0 ? $fv : ($fv < 0 ? 0 : null);
                 }
-            }
-        }
-    }
-
-    /** @param string|ReviewField $field
-     * @deprecated */
-    function ensure_review_score($field) {
-        if (!($this->_reviews_flags & self::REVIEW_HAS_FULL)) {
-            $f = is_string($field) ? $this->conf->review_field($field) : $field;
-            if ($f && $f->order) {
-                $this->ensure_review_field_order($f->order);
             }
         }
     }

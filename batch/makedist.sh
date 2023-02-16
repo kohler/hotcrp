@@ -81,6 +81,7 @@ users.php
 
 batch/.htaccess
 batch/assign.php
+batch/autoassign.php
 batch/backupdb.php
 batch/checkinvariants.php
 batch/deletepapers.php
@@ -103,6 +104,7 @@ etc/.htaccess
 etc/affiliationmatchers.json
 etc/apifunctions.json
 etc/assignmentparsers.json
+etc/autoassigners.json
 etc/capabilityhandlers.json
 etc/distoptions.php
 etc/formulafunctions.json
@@ -215,6 +217,11 @@ src/author.php
 src/authormatcher.php
 src/autoassigner.php
 src/autoassignerinterface.php
+src/autoassigners/aa_clear.php
+src/autoassigners/aa_discussionorder.php
+src/autoassigners/aa_paperpc.php
+src/autoassigners/aa_prefconflict.php
+src/autoassigners/aa_review.php
 src/backuppattern.php
 src/banal
 src/capabilities/cap_authorview.php
@@ -394,6 +401,9 @@ src/quicklinksrenderer.php
 src/responseround.php
 src/reviewdiffinfo.php
 src/reviewfield.php
+src/reviewfields/rf_checkbox.php
+src/reviewfields/rf_discrete.php
+src/reviewfields/rf_text.php
 src/reviewform.php
 src/reviewhistoryinfo.php
 src/reviewinfo.php
@@ -429,12 +439,14 @@ src/search/st_reconflict.php
 src/search/st_review.php
 src/search/st_reviewtoken.php
 src/search/st_revpref.php
+src/search/st_sclass.php
 src/search/st_tag.php
 src/search/st_topic.php
 src/searchexample.php
 src/searchselection.php
 src/searchsplitter.php
 src/searchterm.php
+src/searchword.php
 src/sessionlist.php
 src/settinginfoset.php
 src/settingparser.php
@@ -455,6 +467,7 @@ src/settings/s_rf.php
 src/settings/s_sf.php
 src/settings/s_shepherds.php
 src/settings/s_sitecontact.php
+src/settings/s_sround.php
 src/settings/s_subfieldcondition.php
 src/settings/s_subform.php
 src/settings/s_submissions.php
@@ -467,6 +480,7 @@ src/settingvalues.php
 src/si.php
 src/siteloader.php
 src/sitype.php
+src/submissionround.php
 src/tagmessagereport.php
 src/tagrankparser.php
 src/tagsearchmatcher.php

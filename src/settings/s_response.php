@@ -92,6 +92,8 @@ class Response_SettingParser extends SettingParser {
     private $round_counts;
     /** @var list<string> */
     private $round_transform = [];
+    /** @var list<int> */
+    private $round_delete = [];
 
     function placeholder(Si $si, SettingValues $sv) {
         if ($si->name0 === "response/" && $si->name2 === "/name") {
@@ -133,22 +135,25 @@ class Response_SettingParser extends SettingParser {
         $sv->append_oblist("response", $m, "name");
     }
 
-    private function ensure_round_counts(Conf $conf) {
+    /** @param ?int $ctrid
+     * @return ?int */
+    private function exists_count(Conf $conf, $ctrid) {
+        if ($ctrid === null) {
+            return null;
+        }
         if ($this->round_counts === null) {
             $this->round_counts = Dbl::fetch_iimap($conf->dblink, "select commentRound, count(*) from PaperComment where commentType>=" . CommentInfo::CT_AUTHOR . " and (commentType&" . CommentInfo::CT_RESPONSE . ")!=0 group by commentRound");
         }
+        return $this->round_counts[$ctrid] ?? null;
     }
 
     function print_name(SettingValues $sv) {
         $t = Ht::button(Icons::ui_use("trash"), ["class" => "ui js-settings-response-delete ml-2 need-tooltip", "name" => "response/{$this->ctr}/deleter", "aria-label" => "Delete response", "tabindex" => -1]);
-        if ($this->ctrid !== null) {
-            $this->ensure_round_counts($sv->conf);
-            if (($n = $this->round_counts[$this->ctrid] ?? null)) {
-                $t .= '<span class="ml-3 d-inline-block">' . plural($n, "response") . '</span>';
-            }
+        if (($n = $this->exists_count($sv->conf, $this->ctrid))) {
+            $t .= '<span class="ml-3 d-inline-block">' . plural($n, "response") . '</span>';
         }
         $sv->print_entry_group("response/{$this->ctr}/name", "Response name", [
-            "class" => "uii js-settings-response-name",
+            "class" => "uii js-settings-response-name want-delete-marker",
             "horizontal" => true, "control_after" => $t
         ], is_int($this->ctr) && $this->ctr > 1 ? null : "Use no name or a short name like ‘Rebuttal’.");
     }
@@ -178,9 +183,13 @@ class Response_SettingParser extends SettingParser {
         } else {
             $this->ctrid = null;
         }
-        echo '<div id="response/', $ctr, '" class="form-g settings-response',
-            $this->ctrid === null ? " is-new" : "", '">',
-            Ht::hidden("response/{$ctr}/id", $this->ctrid ?? "new", ["data-default-value" => $this->ctrid === null ? "" : null]);
+        echo '<div id="response/', $ctr, '" class="form-g settings-response';
+        if ($this->ctrid === null) {
+            echo ' is-new';
+        } else {
+            echo '" data-exists-count="', $this->exists_count($sv->conf, $this->ctrid) ?? 0;
+        }
+        echo '">', Ht::hidden("response/{$ctr}/id", $this->ctrid ?? "new", ["data-default-value" => $this->ctrid === null ? "" : null]);
         if ($sv->has_req("response/{$ctr}/delete")) {
             Ht::hidden("response/{$ctr}/delete", "1", ["data-default-value" => ""]);
         }
@@ -249,9 +258,7 @@ class Response_SettingParser extends SettingParser {
             $rs = $sv->newv("response/{$ctr}");
             '@phan-var-force Response_Setting $rs';
             if ($rs->deleted) {
-                if ($rs->id > 1) {
-                    $this->round_transform[] = "when {$rs->id} then 1";
-                }
+                $this->round_delete[] = $rs->id;
             } else {
                 $sv->check_date_before("response/{$ctr}/open", "response/{$ctr}/done", false);
                 array_splice($rss, $rs->name === "" ? 0 : count($rss), 0, [$rs]);
@@ -272,8 +279,8 @@ class Response_SettingParser extends SettingParser {
         }
 
         $jrt = json_encode_db($jrl);
-        if ($sv->update("responses", $jrt === "[{}]" || $jrt === "[]" ? "" : $jrt)
-            && !empty($this->round_transform)) {
+        $sv->update("responses", $jrt === "[{}]" || $jrt === "[]" ? "" : $jrt);
+        if (!empty($this->round_transform) || !empty($this->round_delete)) {
             $sv->request_write_lock("PaperComment");
             $sv->request_store_value($si);
         }
@@ -281,7 +288,20 @@ class Response_SettingParser extends SettingParser {
     }
 
     function store_value(Si $si, SettingValues $sv) {
-        $sv->conf->qe("update PaperComment set commentRound=case commentRound " . join(" ", $this->round_transform) . " else commentRound end where commentType>=" . CommentInfo::CT_AUTHOR . " and (commentType&" . CommentInfo::CT_RESPONSE . ")!=0");
+        if (!empty($this->round_delete)) {
+            $sv->conf->qe("update PaperComment set commentRound=0, commentType=(commentType&~?)|? where commentType>=? and (commentType&?)!=0 and commentRound?a",
+                CommentInfo::CT_RESPONSE | CommentInfo::CT_VISIBILITY,
+                CommentInfo::CT_FROZEN | CommentInfo::CT_ADMINONLY,
+                CommentInfo::CT_AUTHOR,
+                CommentInfo::CT_RESPONSE,
+                $this->round_delete);
+            $sv->mark_diff("response_deleted");
+        }
+        if (!empty($this->round_transform)) {
+            $sv->conf->qe("update PaperComment set commentRound=case commentRound " . join(" ", $this->round_transform) . " else commentRound end where commentType>=? and (commentType&?)!=0",
+                CommentInfo::CT_AUTHOR,
+                CommentInfo::CT_RESPONSE);
+        }
     }
 
     static function crosscheck(SettingValues $sv) {
@@ -297,5 +317,3 @@ class Response_SettingParser extends SettingParser {
         }
     }
 }
-
-class_alias("Response_SettingParser", "Responses_SettingParser"); // XXX

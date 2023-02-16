@@ -160,7 +160,7 @@ class HotCRPMailer extends Mailer {
         $rf = $this->conf->review_form();
         foreach ($rrows as $rrow) {
             if (($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED
-                 || ($rrow == $this->rrow && $this->rrow_unsubmitted))
+                 || ($rrow === $this->rrow && $this->rrow_unsubmitted))
                 && $this->permuser->can_view_review($this->row, $rrow)) {
                 if ($text !== "") {
                     $text .= "\n\n*" . str_repeat(" *", 37) . "\n\n\n";
@@ -214,19 +214,35 @@ class HotCRPMailer extends Mailer {
         return $text;
     }
 
-    private function get_new_assignments($contact) {
-        $since = "";
-        if ($this->newrev_since) {
-            $since = " and r.timeRequested>=$this->newrev_since";
+    const GA_SINCE = 1;
+    const GA_ROUND = 2;
+    const GA_NEEDS_SUBMIT = 4;
+
+    /** @param Contact $user
+     * @param int $flags
+     * @param ?int $review_round
+     * @return string */
+    private function get_assignments($user, $flags, $review_round) {
+        $where = [
+            "r.contactId={$user->contactId}",
+            "p.timeSubmitted>0"
+        ];
+        if (($flags & self::GA_SINCE) !== 0) {
+            $where[] = "r.timeRequested>r.timeRequestNotified";
+            if ($this->newrev_since) {
+                $where[] = "r.timeRequested>={$this->newrev_since}";
+            }
+        }
+        if (($flags & self::GA_NEEDS_SUBMIT) !== 0) {
+            $where[] = "r.reviewSubmitted is null";
+            $where[] = "r.reviewNeedsSubmit!=0";
+        }
+        if (($flags & self::GA_ROUND) !== 0 && $review_round !== null) {
+            $where[] = "r.reviewRound={$review_round}";
         }
         $result = $this->conf->qe("select r.paperId, p.title
                 from PaperReview r join Paper p using (paperId)
-                where r.contactId=" . $contact->contactId . "
-                and r.timeRequested>r.timeRequestNotified$since
-                and r.reviewSubmitted is null
-                and r.reviewNeedsSubmit!=0
-                and p.timeSubmitted>0
-                order by r.paperId");
+                where " . join(" and ", $where) . " order by r.paperId");
         $text = "";
         while (($row = $result->fetch_row())) {
             $text .= ($text ? "\n#" : "#") . $row[0] . " " . $row[1];
@@ -255,6 +271,9 @@ class HotCRPMailer extends Mailer {
     }
 
     private function guess_reviewdeadline() {
+        if ($this->rrow) {
+            return $this->rrow->deadline_name();
+        }
         if ($this->row
             && ($rrows = $this->row->reviews_by_user($this->recipient))) {
             $rrow0 = $rrow1 = null;
@@ -308,6 +327,7 @@ class HotCRPMailer extends Mailer {
             return null;
         }
     }
+
     function kw_statistic($args, $isbool, $uf) {
         if ($this->_statistics === null) {
             $this->_statistics = $this->conf->count_submitted_accepted();
@@ -325,8 +345,21 @@ class HotCRPMailer extends Mailer {
         return $isbool ? false : null;
     }
 
+    function kw_assignments($args, $isbool, $uf) {
+        $flags = 0;
+        $round = null;
+        if ($args || isset($uf->match_data)) {
+            $rname = trim(isset($uf->match_data) ? $uf->match_data[1] : $args);
+            $round = $this->conf->round_number($rname, false);
+            if ($round === null) {
+                return $isbool ? false : null;
+            }
+            $flags |= self::GA_ROUND;
+        }
+        return $this->get_assignments($this->recipient, $flags, $round);
+    }
     function kw_newassignments() {
-        return $this->get_new_assignments($this->recipient);
+        return $this->get_assignments($this->recipient, self::GA_SINCE | self::GA_NEEDS_SUBMIT, null);
     }
     function kw_haspaper() {
         if ($this->row && $this->row->paperId > 0) {
@@ -470,10 +503,16 @@ class HotCRPMailer extends Mailer {
         }
     }
     function kw_reviewacceptor() {
-        if ($this->rrow && ($tok = ReviewAccept_Capability::make($this->rrow, true))) {
+        if (!$this->rrow || $this->censor === self::CENSOR_ALL) {
+            return null;
+        }
+        $this->sensitive = true;
+        if ($this->censor) {
+            return "HIDDEN";
+        } else if (($tok = ReviewAccept_Capability::make($this->rrow, true))) {
             return $tok->salt;
         } else {
-            return false;
+            return null;
         }
     }
     function kw_reviews() {

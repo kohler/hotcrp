@@ -957,7 +957,7 @@ class FormulaGraph extends MessageSet {
             $named_ticks = [];
             foreach ($this->queries as $i => $q) {
                 if ($this->searches[$i]) {
-                    $named_ticks[] = $this->searches[$i]->term()->get_float("legend") ?? $q;
+                    $named_ticks[] = $this->searches[$i]->main_term()->get_float("legend") ?? $q;
                 } else {
                     $named_ticks[] = "(All)";
                 }

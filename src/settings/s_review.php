@@ -124,16 +124,15 @@ class Review_SettingParser extends SettingParser {
         $id = $ctr !== "\$" && ctype_digit($idv) ? intval($idv) : -1;
         $deleted = ($sv->reqstr("review/{$ctr}/delete") ?? "") !== "";
 
-        echo '<div class="js-settings-review-round mt-3 mb-2 form-g',
+        echo '<fieldset id="review/', $ctr, '" class="js-settings-review-round mt-3 mb-2 form-g',
             $id > 0 ? "" : " is-new", $deleted ? " deleted" : "",
-            '" data-exists-count="', $id > 0 ? $round_map[$id - 1] ?? 0 : 0,
-            '" id="review/', $ctr, '"><div class="mb-2">',
+            '" data-exists-count="', $id > 0 ? $round_map[$id - 1] ?? 0 : 0, '">',
             Ht::hidden("review/{$ctr}/id", $id > 0 ? $id : "new", ["data-default-value" => $id > 0 ? $id : ""]),
             Ht::hidden("review/{$ctr}/delete", $deleted ? "1" : "", ["data-default-value" => ""]);
         $namesi = $sv->si("review/{$ctr}/name");
-        $sv->print_feedback_at($namesi->name);
-        echo $sv->label($namesi->name, "Round name"), ' &nbsp;',
-            $sv->entry($namesi->name, ["class" => "uii uich js-settings-review-round-name"]);
+        echo '<legend>';
+        echo $sv->label($namesi->name, "Review round"), ' &nbsp;',
+            $sv->entry($namesi->name, ["class" => "uii uich js-settings-review-round-name want-delete-marker"]);
         if ($id > 1 || count($sv->conf->defined_rounds()) > 1) {
             echo Ht::button(Icons::ui_use("trash"), ["id" => "review/{$ctr}/deleter", "class" => "ui js-settings-review-round-delete ml-2 need-tooltip", "aria-label" => "Delete review round", "tabindex" => -1]);
         }
@@ -145,16 +144,17 @@ class Review_SettingParser extends SettingParser {
         if ($ctr === '$') {
             echo '<div class="f-h fx">Names like “R1” and “R2” work well.</div>';
         }
-        echo '</div>';
+        echo '</legend>';
+        $sv->print_feedback_at($namesi->name);
 
         // deadlines
-        echo "<div class=\"f-mcol ml-5\" id=\"review/{$ctr}/edit\"><div class=\"flex-grow-0\">";
+        echo "<div id=\"review/{$ctr}/edit\" class=\"f-mcol\"><div class=\"flex-grow-0\">";
         $sv->print_entry_group("review/{$ctr}/soft", "PC deadline", ["horizontal" => true]);
         $sv->print_entry_group("review/{$ctr}/done", "Hard deadline", ["horizontal" => true]);
         echo '</div><div class="flex-grow-0">';
         $sv->print_entry_group("review/{$ctr}/external_soft", "External deadline", ["horizontal" => true]);
         $sv->print_entry_group("review/{$ctr}/external_done", "Hard deadline", ["horizontal" => true]);
-        echo "</div></div></div>";
+        echo "</div></div></fieldset>";
         if ($deleted) {
             echo Ht::unstash_script("\$(function(){\$(\"#review\\\\/{$ctr}\\\\/deleter\").click()})");
         }

@@ -20,7 +20,7 @@ class Options_SettingRenderer {
 
     function __construct(SettingValues $sv) {
         $this->conf = $sv->conf;
-        $this->pt = new PaperTable($sv->user, new Qrequest("GET"));
+        $this->pt = new PaperTable($sv->user, new Qrequest("GET"), PaperInfo::make_new($sv->user, null));
         $this->pt->edit_show_all_visibility = true;
     }
 
@@ -42,7 +42,7 @@ class Options_SettingRenderer {
             '<div class="entry">',
             $sv->feedback_at("sf/{$this->ctr}/name");
         $sv->print_entry("sf/{$this->ctr}/name", [
-            "class" => "need-tooltip font-weight-bold want-focus",
+            "class" => "need-tooltip font-weight-bold want-focus want-delete-marker",
             "aria-label" => "Field name",
             "data-tooltip-info" => "settings-sf",
             "data-tooltip-type" => "focus"
@@ -152,7 +152,7 @@ class Options_SettingRenderer {
     }
 
 
-    private function print_one_option_view(PaperOption $io, $ctr) {
+    private function print_one_option_view(PaperOption $io, SettingValues $sv, $ctr) {
         echo '<div id="sf/', $ctr, '/view" class="settings-sf-view settings-sf-example fn2 ui js-foldup">';
         if ($io->exists_condition()) {
             $this->pt->msg_at($io->formid, "<0>Present on submissions matching ‘" . $io->exists_condition() . "’", MessageSet::WARNING_NOTE);
@@ -162,6 +162,9 @@ class Options_SettingRenderer {
         }
         if ($io->editable_condition()) {
             $this->pt->msg_at($io->formid, "<0>Editable on submissions matching ‘" . $io->editable_condition() . "’", MessageSet::WARNING_NOTE);
+        }
+        foreach ($sv->message_list_at_prefix("sf/{$ctr}/") as $mi) {
+            $this->pt->msg_at($io->formid, $mi->message, $mi->status > 0 ? MessageSet::WARNING_NOTE : $mi->status);
         }
         $ei = $io->editable_condition();
         $xi = $io->exists_condition();
@@ -187,7 +190,7 @@ class Options_SettingRenderer {
             '</div>';
 
         if ($this->io) {
-            $this->print_one_option_view($this->io, $ctr);
+            $this->print_one_option_view($this->io, $sv, $ctr);
         }
 
         echo '<div id="sf/', $ctr, '/edit" class="settings-sf-edit fx2">';
@@ -312,6 +315,9 @@ class Options_SettingParser extends SettingParser {
     function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name_matches("sf/", "*")) {
             $sv->set_oldv($si, self::make_placeholder_option($sv)->export_setting());
+        } else if ($si->name_matches("sf/", "*", "/title")) {
+            $n = $sv->oldv("sf/{$si->name1}/name");
+            $sv->set_oldv($si, $n === "" ? "[Submission field]" : $n);
         } else if ($si->name_matches("sf/", "*", "/values_text")) {
             $sfs = $sv->oldv("sf/{$si->name1}");
             $vs = [];
@@ -619,8 +625,7 @@ class Options_SettingParser extends SettingParser {
             foreach ($opts as $ctrz => $f) {
                 if ($f->visibility() === PaperOption::VIS_AUTHOR) {
                     $visname = "sf/" . ($ctrz + 1) . "/visibility";
-                    $sv->warning_at($visname, "<5>" . $sv->setting_link("All submissions are anonymous", "author_visibility") . ", so this field is always hidden");
-                    $sv->inform_at($visname, "<0>Would “hidden until review” visibility be better?");
+                    $sv->warning_at($visname, "<5>" . $sv->setting_link("All submissions are anonymous", "author_visibility") . ", so this field is always hidden from reviewers");
                 }
             }
         }

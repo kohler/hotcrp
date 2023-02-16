@@ -5,6 +5,16 @@
 
 (function () {
 
+handle_ui.on("hashjump.js-hash", function (hashc, focus) {
+    var e, fx, fp;
+    if (hashc.length === 1
+        && (e = document.getElementById(decodeURIComponent(hashc[0])))
+        && (fx = e.closest(".fx2"))
+        && (fp = fx.closest(".fold2c"))) {
+        fold(fp, false, 2);
+    }
+});
+
 handle_ui.on("js-settings-radioitem-click", function () {
     let e = this.closest(".settings-radioitem"), re;
     if (e
@@ -62,24 +72,24 @@ function settings_delete(elt, message) {
         addClass(elt, "hidden");
         $(elt).find("input, select, textarea").addClass("ignore-diff");
         return false;
-    } else {
-        var edit = document.getElementById(elt.id + "/edit") || elt;
-        $(edit).children().addClass("hidden");
-        $(edit).append('<div class="feedback is-warning" id="'.concat(elt.id, '/delete_message">', message, '</div>'));
-        $(edit).find("input").each(function () {
-            if (this.type !== "hidden" && !hasClass(this, "hidden")) {
-                this.disabled = true;
-                addClass(this, "text-decoration-line-through");
-                var parent = this.closest(".entryi");
-                if (parent) {
-                    removeClass(parent, "hidden");
-                    removeClass(parent, "mb-3");
-                }
-                return false;
-            }
-        });
-        return true;
     }
+    var edit = document.getElementById(elt.id + "/edit") || elt,
+        msg = '<div class="feedback is-warning" id="'.concat(elt.id, '/delete_message">', message, '</div>');
+    $(edit).children().addClass("hidden");
+    $(elt).find(".want-delete-marker").each(function () {
+        this.disabled = true;
+        addClass(this, "text-decoration-line-through");
+        var parent = this.closest(".entryi, .entryg");
+        if (parent) {
+            removeClass(parent, "hidden");
+            removeClass(parent, "mb-3");
+            $(parent).after(msg);
+            msg = null;
+        }
+        return false;
+    });
+    msg && $(edit).append(msg);
+    return true;
 }
 
 function settings_field_unfold() {
@@ -273,7 +283,7 @@ $(document).on("hotcrpsettingssf", ".settings-sf", function () {
     if (edit) {
         sf_instantiate(edit);
         if (!form_differs(edit)
-            && !$(edit).find(".is-warning, .is-error, .has-warning, .has-error").length)
+            && !$(edit).find(".is-error, .has-error").length)
             fold(this, true, 2);
     }
     removeClass(this, "hidden");
@@ -307,28 +317,6 @@ handle_ui.on("js-settings-banal-pagelimit", function (evt) {
         $ur.find("input").prop("checked", false);
 });
 
-
-handle_ui.on("js-settings-decision-add", function () {
-    var form = this.form, ctr = 1;
-    while (form.elements["decision/" + ctr + "/id"])
-        ++ctr;
-    $("#settings-decision-type-notes").removeClass("hidden");
-    var h = $("#settings-new-decision-type").html().replace(/\/\$/g, "/" + ctr),
-        $r = $(h).appendTo("#settings-decision-types");
-    $r.find("input[type=text]").autogrow();
-    form.elements["decision/" + ctr + "/name"].focus();
-    form_highlight(form);
-});
-
-handle_ui.on("js-settings-decision-delete", function () {
-    var dec = this.closest(".settings-decision"),
-        ne = this.form.elements[dec.id + "/name"],
-        sc = ne.getAttribute("data-exists-count")|0;
-    settings_delete(dec, "This decision will be removed"
-        + (sc ? ' and <a href="'.concat(hoturl_html("search", {q: "dec:\"" + ne.defaultValue + "\""}), '" target="_blank">', plural(sc, "submission"), '</a> set to undecided') : '')
-        + '.');
-    form_highlight(this.form);
-});
 
 handle_ui.on("js-settings-automatic-tag-new", function () {
     var odiv = this.closest(".settings-automatic-tag"), h, ctr = 1;
@@ -443,6 +431,32 @@ handle_ui.on("js-settings-review-round-delete", function () {
 });
 
 
+handle_ui.on("js-settings-submission-round-new", function () {
+    var i, h = $$("settings-submission-round-new").innerHTML, $n;
+    for (i = 1; $$("submission/" + i); ++i) {
+    }
+    $n = $(h.replace(/\/\$/g, "/" + i));
+    $("#settings-submission-rounds").append($n);
+    $n.awaken();
+    form_highlight(this.form);
+    this.form.elements["submission/" + i + "/tag"].focus();
+});
+
+handle_ui.on("js-settings-submission-round-delete", function () {
+    var div = this.closest(".js-settings-submission-round"),
+        ne = this.form.elements[div.id + "/tag"];
+    if (settings_delete(div, "This submission class will be removed.")
+        && ne) {
+        var search = {q: "sclass:" + ne.defaultValue, t: "all", forceShow: 1};
+        $.get(hoturl("api/search", search), null, function (v) {
+            if (v && v.ok && v.ids && v.ids.length)
+                $$(div.id + '/delete_message').innerHTML = 'This submission class will be removed. The <a href="'.concat(hoturl_html("search", {q: "sclass:" + ne.defaultValue, t: "all"}), '" target="_blank">', plural(v.ids.length, "submission"), '</a> associated with this class will remain in the system, and will still have the #', escape_html(ne.defaultValue), ' tag, but will be reassigned to other submission classes.');
+        });
+    }
+    form_highlight(this.form);
+});
+
+
 var review_form_settings = (function () {
 
 var fieldorder = [], samples, rftypes,
@@ -538,8 +552,8 @@ function rf_fill(pos, fld, setdefault) {
     if (setdefault) {
         rf_fill_control(form, rfid + "/order", fld.order || 0, setdefault);
     }
-    if (fld.search_keyword) {
-        $("#rf\\/" + pos).attr("data-rf", fld.search_keyword);
+    if (fld.uid) {
+        $("#rf\\/" + pos).attr("data-rf", fld.uid);
     }
     if (fld.configurable === false) {
         $("#rf\\/" + pos + " .settings-draghandle, #rf\\/" + pos + " .settings-rf-actions").addClass("hidden");
@@ -580,7 +594,7 @@ function rf_visibility_text(visibility) {
     if ((visibility || "re") === "re")
         return "(hidden from authors)";
     else if (visibility === "admin")
-        return "(administrators only)";
+        return "(shown only to administrators)";
     else if (visibility === "secret")
         return "(secret)";
     else if (visibility === "audec")
@@ -595,17 +609,24 @@ function rf_render_view(fld) {
     var hc = new HtmlCollector;
 
     hc.push('<h3 class="rfehead">', '</h3>');
-    hc.push('<label class="revfn'.concat(fld.required ? " field-required" : "", '">', escape_html(fld.name || "<unnamed>"), '</label>'));
+    if (fld.type === "checkbox") {
+        hc.push('<label class="revfn checki'.concat(fld.required ? " field-required" : "", '"><span class="checkc"><input type="checkbox" disabled></span>'), '</label>');
+    } else {
+        hc.push('<label class="revfn'.concat(fld.required ? " field-required" : "", '">'), '</label>');
+    }
+    hc.push_pop(fld.name_html || "&lt;unnamed&gt;");
     var t = rf_visibility_text(fld.visibility);
     if (t)
         hc.push('<div class="field-visibility">'.concat(t, '</div>'));
     hc.pop();
 
+    hc.push('<ul class="feedback-list">', '</ul>');
     if (fld.exists_if && /^round:[a-zA-Z][-_a-zA-Z0-9]*$/.test(fld.exists_if)) {
-        hc.push('<p class="feedback is-warning-note">Present on ' + fld.exists_if.substring(6) + ' reviews</p>');
+        hc.push('<li class="is-diagnostic format-inline is-warning-note">Present on ' + fld.exists_if.substring(6) + ' reviews</li>');
     } else if (fld.exists_if) {
-        hc.push('<p class="feedback is-warning-note">Present on reviews matching “' + escape_html(fld.exists_if) + '”</p>');
+        hc.push('<li class="is-diagnostic format-inline is-warning-note">Present on reviews matching “' + escape_html(fld.exists_if) + '”</li>');
     }
+    hc.pop();
 
     if (fld.description)
         hc.push('<div class="field-d">'.concat(fld.description, '</div>'));
@@ -630,6 +651,11 @@ function rf_render_view(fld) {
         }
     } else if (fld.type === "text") {
         hc.push('<div class="revev"><textarea class="w-text" rows="' + Math.max(fld.display_space || 0, 3) + '" disabled>Text field</textarea></div>');
+    } else if (fld.type === "checkboxes") {
+        hc.push('<div class="revev">', '</div>');
+        fld.each_value(function (fv) {
+            hc.push('<label class="checki svline"><span class="checkc"><input type="checkbox" disabled></span><span class="rev_num sv '.concat(fv.className, '">', fv.symbol, fv.sp1, '</span>', fv.sp2, escape_html(fv.title), '</label>'));
+        });
     }
 
     return hc.render();
@@ -655,6 +681,19 @@ var rfproperties = {
     }
 }
 
+function rf_make(fj) {
+    var fld = hotcrp.make_review_field(fj);
+    if (fj.id != null)
+        fld.id = fj.id;
+    if (fj.selector != null)
+        fld.selector = fj.selector;
+    if (fj.instantiate != null)
+        fld.instantiate = fj.instantiate;
+    if (fj.configurable != null)
+        fld.configurable = fj.configurable;
+    return fld;
+}
+
 function rf_append(fld) {
     var pos = fieldorder.length + 1, $f, i, e, ne, prop, $j,
         rftype = field_find(rftypes, fld.type || "radio");
@@ -668,7 +707,7 @@ function rf_append(fld) {
         || fieldorder.indexOf(fld.id) >= 0) {
         throw new Error("rf_append error on " + fld.id + " " + (document.getElementById("rf/" + pos + "/id") ? "1 " : "0 ") + fieldorder.join(","));
     }
-    fld = new hotcrp.ReviewField(fld);
+    fld = rf_make(fld);
     fieldorder.push(fld.id);
     $f = $($("#rf_template").html().replace(/\$/g, pos));
     field_instantiate($f.children(".settings-rf-edit")[0], rftypes, rftype.name, rfproperties);
@@ -712,7 +751,7 @@ function rfs(data) {
             break;
         }
         t = data.req[pfx + "/type"];
-        if (t === "radio" || t === "dropdown")
+        if (t === "radio" || t === "dropdown" || t === "checkboxes")
             rf_add({id: i, type: t, name: "", values: []});
         else
             rf_add({id: i, type: t, name: ""});
@@ -738,7 +777,13 @@ function rfs(data) {
             }
             if (e && (entryi = e.closest(".entryi"))) {
                 append_feedback_near(entryi, mi);
-                foldup.call(entryi, null, {n: 2, f: false});
+                if (mi.status > 1)
+                    foldup.call(entryi, null, {n: 2, f: false});
+            }
+            if ((m = mi.field.match(/^([^/]*\/\d+)(?=$|\/)/))
+                && (e = document.getElementById(m[1] + "/view"))
+                && (e = e.querySelector("ul.feedback-list"))) {
+                append_feedback_to(e, mi);
             }
         }
     }
@@ -753,7 +798,7 @@ function add_dialog() {
         var i = sel.options[sel.selectedIndex].value | 0;
         i = (samples[i] ? i : 0);
         if (!samples[i].parse_value)
-            samples[i] = new hotcrp.ReviewField(samples[i]);
+            samples[i] = rf_make(samples[i]);
         return samples[i];
     }
     function render_template() {
@@ -823,8 +868,13 @@ handle_ui.on("js-settings-response-new", function () {
 });
 
 handle_ui.on("js-settings-response-delete", function () {
-    var rr = this.closest(".settings-response");
-    settings_delete(rr, "This response will be deleted.");
+    var rr = this.closest(".settings-response"),
+        sc = rr.getAttribute("data-exists-count")|0;
+    if (sc) {
+        settings_delete(rr, "This response round will be removed and ".concat(plural(sc, "response"), " permanently changed to frozen comments that only administrators can see."));
+    } else {
+        settings_delete(rr, "This response round will be removed.");
+    }
     form_highlight(this.form);
 });
 
@@ -842,23 +892,71 @@ handle_ui.on("input.js-settings-response-name", function () {
         helt.replaceChildren("Example display: ‘Response’; example search: ‘has:response’");
     } else if (!/^[A-Za-z][-_A-Za-z0-9]*$/.test(s)) {
         helt.replaceChildren(render_feedback_list([{status: 2, message: "<0>Round names must start with a letter and can contain only letters, numbers, and dashes"}]));
-    } else if (/^(?:none|any|all|default|unnamed|.*response|response.*|draft.*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc(?:review)|ext(?:ernal)|meta(?:review))$/i.test(s)) {
+    } else if (/^(?:none|any|all|default|undefined|unnamed|.*response|response.*|draft.*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc(?:review)|ext(?:ernal)|meta(?:review))$/i.test(s)) {
         helt.replaceChildren(render_feedback_list([{status: 2, message: "<0>Round name ‘".concat(s, "’ is reserved")}]));
     } else {
         helt.replaceChildren("Example display: ‘", s, " Response’; example search: ‘has:", s, "response’");
     }
 });
 
+handle_ui.on("js-settings-decision-add", function () {
+    var form = this.form, ctr = 1;
+    while (form.elements["decision/" + ctr + "/id"])
+        ++ctr;
+    $("#settings-decision-type-notes").removeClass("hidden");
+    var h = $("#settings-new-decision-type").html().replace(/\/\$/g, "/" + ctr),
+        $r = $(h).appendTo("#settings-decision-types");
+    $r.find("input[type=text]").autogrow();
+    $(form.elements["decision/" + ctr + "/category"]).trigger("change");
+    form.elements["decision/" + ctr + "/name"].focus();
+    form_highlight(form);
+});
+
+handle_ui.on("js-settings-decision-delete", function () {
+    var dec = this.closest(".settings-decision"),
+        ne = this.form.elements[dec.id + "/name"],
+        sc = ne.getAttribute("data-exists-count")|0;
+    if (settings_delete(dec, "This decision will be removed"
+            + (sc ? ' and <a href="'.concat(hoturl_html("search", {q: "dec:\"" + ne.defaultValue + "\""}), '" target="_blank">', plural(sc, "submission"), '</a> set to undecided.') : '.'))) {
+        addClass(this.closest("div"), "hidden");
+    }
+    form_highlight(this.form);
+});
+
 handle_ui.on("js-settings-decision-new-name", function () {
-    var d = this.closest(".settings-decision");
+    var d = this.closest(".settings-decision"), w, e;
     if (/accept/i.test(this.value)) {
-        this.form.elements[d.id + "/category"].selectedIndex = 0;
+        w = "accept";
     } else if (/reject/i.test(this.value)) {
-        this.form.elements[d.id + "/category"].selectedIndex = 1;
+        w = "reject";
     } else if (/revis/i.test(this.value)) {
-        this.form.elements[d.id + "/category"].selectedIndex = 0;
+        w = "accept";
+    } else {
+        return;
+    }
+    e = this.form.elements[d.id + "/category"];
+    if ((w === "accept" ? /reject/ : /accept/).test(w.value)) {
+        e.value = w;
     }
 });
+
+handle_ui.on("change.js-settings-decision-category", function () {
+    var k = "dec-maybe";
+    if (/accept/.test(this.value)) {
+        k = "dec-yes";
+    } else if (/reject/.test(this.value)) {
+        k = "dec-no";
+    }
+    removeClass(this, "dec-maybe");
+    removeClass(this, "dec-yes");
+    removeClass(this, "dec-no");
+    addClass(this, k);
+    if (this.value === "deskreject") {
+        $(".if-settings-decision-desk-reject").removeClass("hidden");
+    }
+});
+
+$(function () { $(".js-settings-decision-category").trigger("change"); });
 
 
 // JSON contenteditable support

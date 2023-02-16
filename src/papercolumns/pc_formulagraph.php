@@ -35,7 +35,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         $indexesf = $this->indexes_function;
         $indexes = $indexesf ? $indexesf($row, $pl->user) : [null];
         $formulaf = $this->formula_function;
-        $sci = new ScoreInfo(null, true);
+        $sci = new ScoreInfo;
         foreach ($indexes as $i) {
             if (($v = $formulaf($row, $i, $pl->user)) !== null
                 && $v > 0) {

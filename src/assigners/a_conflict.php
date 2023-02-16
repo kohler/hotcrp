@@ -168,27 +168,43 @@ class Conflict_Assigner extends Assigner {
     /** @param AssignmentItem $item */
     static function check_unconflicted($item, AssignmentState $state) {
         $pid = $item["pid"];
-        $cid = isset($item["cid"]) ? $item["cid"] : $item["_cid"];
+        $cid = $item["cid"] ?? $item["_cid"];
+        $u = $state->user_by_id($cid);
+        $prow = $state->prow($pid);
+        if (!$u) {
+            error_log("cannot find user for {$cid}\n" . debug_string_backtrace());
+            return;
+        }
+
         $cflt = $state->query(new Conflict_Assignable($pid, $cid));
-        if ($cflt && Conflict::is_conflicted($cflt[0]->_ctype)) {
-            $uname = $state->user_by_id($cid)->name(NAME_E);
-            if (isset($item["_override"])
-                && $state->user->can_administer($state->prow($pid))) {
-                $state->msg_near($item->landmark, "<0>Overriding {$uname} conflict with #{$pid}", 1);
-            } else {
-                $state->msg_near($item->landmark, "<0>{$uname} has a conflict with #{$pid}", 2);
-                if (($state->flags & AssignmentState::FLAG_CSV_CONTEXT) !== 0
-                    && $state->user->allow_administer($state->prow($pid))) {
-                    $state->msg_near($item->landmark, "<0>Set an “override” column to “yes” to assign the " . $item["type"] . " anyway.", MessageSet::INFORM);
-                }
-                throw new AssignmentError("");
+        $has_conflict = $cflt && Conflict::is_conflicted($cflt[0]->_ctype);
+        $potconf = $has_conflict ? null : $prow->potential_conflict_html($u);
+        if (!$has_conflict && !$potconf) {
+            return;
+        }
+
+        $uname = $u->name(NAME_E);
+        $type = $item->type();
+
+        if ($has_conflict
+            && isset($item["_override"])
+            && $state->user->can_administer($prow)) {
+            $state->msg_near($item->landmark, "<0>Overriding conflict for #{$pid} {$type} assignment {$uname}", 1);
+        } else if ($has_conflict) {
+            $state->msg_near($item->landmark, "<0>{$uname} cannot {$type} #{$pid} because they are conflicted", 2);
+            if (($state->flags & AssignmentState::FLAG_CSV_CONTEXT) !== 0
+                && $state->user->allow_administer($prow)) {
+                $state->msg_near($item->landmark, "<0>Set an “override” column to “yes” to force this assignment.", MessageSet::INFORM);
             }
-        } else if (($u = $state->user_by_id($cid))
-                   && ($potconf = $state->prow($pid)->potential_conflict_html($u))) {
-            $uname = $u->name(NAME_E);
-            $state->msg_near($item->landmark, "<0>{$uname} has a potential conflict with #{$pid}", 1);
+            throw new AssignmentError("");
+        } else {
+            $state->msg_near($item->landmark, "<0>Warning: #{$pid} {$type} assignment {$uname} has a potential conflict", 1);
             foreach ($potconf->messages as $msglist) {
                 $state->msg_near($item->landmark, "<5>" . $potconf->render_ul_item(null, null, $msglist), MessageSet::INFORM);
+            }
+            if ($state->potential_conflict_warnings < 1) {
+                $state->msg_near($item->landmark, "<5>You may want to <a href=\"" . $state->conf->hoturl("conflictassign") . "\" target=\"_blank\">confirm potential conflicts</a> before proceeding further.", MessageSet::INFORM);
+                ++$state->potential_conflict_warnings;
             }
         }
     }

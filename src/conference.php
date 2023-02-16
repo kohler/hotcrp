@@ -29,7 +29,9 @@ class Conf {
     /** @var int */
     public $sversion;
     /** @var int */
-    private $_pc_see_cache;
+    private $permbits;
+    const PB_ALL_PDF_VIEWABLE = 1;
+    const PB_INCOMPLETE_VIEWABLE = 2;
 
     /** @var string
      * @readonly */
@@ -84,6 +86,10 @@ class Conf {
     private $_collator;
     /** @var ?Collator */
     private $_pcollator;
+    /** @var ?SubmissionRound */
+    private $_main_sub_round;
+    /** @var ?list<SubmissionRound> */
+    private $_sub_rounds;
     /** @var list<string> */
     private $rounds;
     /** @var ?array<int,string> */
@@ -212,6 +218,8 @@ class Conf {
     private $_mail_keyword_factories;
     /** @var ?array<string,list<object>> */
     private $_mail_template_map;
+    /** @var ?array<string,object> */
+    private $_autoassigners;
     /** @var DKIMSigner|null|false */
     private $_dkim_signer = false;
     /** @var ?ComponentSet */
@@ -429,6 +437,8 @@ class Conf {
         // clear caches
         $this->_paper_opts->invalidate_options();
         $this->_review_form = null;
+        $this->_main_sub_round = null;
+        $this->_sub_rounds = null;
         $this->_defined_rounds = null;
         $this->_resp_rounds = null;
         $this->_formatspec_cache = [];
@@ -484,14 +494,20 @@ class Conf {
 
     /** @suppress PhanAccessReadOnlyProperty */
     private function refresh_time_settings() {
-        $tf = $this->time_between_settings("sub_open", "sub_sub", "sub_grace");
-        $this->_pc_see_cache = (($this->settings["sub_freeze"] ?? 0) > 0 ? 1 : 0)
-            | ($tf === 1 ? 2 : 0)
-            | ($tf > 0 ? 4 : 0)
-            | (($this->settings["pc_seeallpdf"] ?? 0) > 0 ? 16 : 0);
-        if (($this->settings["pc_seeall"] ?? 0) > 0
-            && ($this->_pc_see_cache & 4) !== 0) {
-            $this->_pc_see_cache |= 8;
+        $this->permbits = 0;
+        if (($sub = $this->settings["sub_sub"] ?? 0) < Conf::$now) {
+            $this->permbits |= self::PB_ALL_PDF_VIEWABLE;
+        }
+        if ($sub > Conf::$now
+            && ($this->settings["pc_seeall"] ?? 0) > 0) {
+            $this->permbits |= self::PB_INCOMPLETE_VIEWABLE;
+        }
+        if (($this->settings["submission_rounds"] ?? 0)
+            && ($this->permbits & self::PB_ALL_PDF_VIEWABLE) !== 0) {
+            foreach ($this->submission_round_list() as $sr) {
+                if (!$sr->pdf_viewable)
+                    $this->permbits &= ~self::PB_ALL_PDF_VIEWABLE;
+            }
         }
 
         $rot = $this->settings["rev_open"] ?? 0;
@@ -1932,7 +1948,7 @@ class Conf {
             return "Round names must start with a letter and contain only letters, numbers, and dashes";
         } else if (str_ends_with($rname, "_") || str_ends_with($rname, "-")) {
             return "Round names must not end in a dash";
-        } else if (preg_match('/\A(?:none|any|all|span|default|unnamed|.*(?:draft|response|review)|(?:draft|response).*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc|ext(?:ernal)|meta)\z/i', $rname)) {
+        } else if (preg_match('/\A(?:none|any|all|span|default|undefined|unnamed|.*(?:draft|response|review)|(?:draft|response).*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc|ext(?:ernal)|meta)\z/i', $rname)) {
             return "Round name ‘{$rname}’ is reserved";
         } else {
             return false;
@@ -3389,22 +3405,55 @@ class Conf {
         }
     }
 
-    /** @return bool */
-    function time_start_paper() {
-        return $this->time_between_settings("sub_open", "sub_reg", "sub_grace") > 0;
+
+    /** @return SubmissionRound */
+    function unnamed_submission_round() {
+        if (!$this->_main_sub_round) {
+            $this->_main_sub_round = SubmissionRound::make_main($this);
+        }
+        return $this->_main_sub_round;
     }
-    /** @param ?PaperInfo $prow
-     * @return bool */
-    function time_edit_paper($prow = null) {
-        return $this->time_between_settings("sub_open", "sub_update", "sub_grace") > 0
-            && (!$prow || $prow->timeSubmitted <= 0 || ($this->_pc_see_cache & 1) === 0);
+
+    /** @return SubmissionRound
+     * @deprecated */
+    function submission_round() {
+        return $this->unnamed_submission_round();
     }
-    /** @param ?PaperInfo $prow
-     * @return bool */
-    function time_finalize_paper($prow = null) {
-        return ($this->_pc_see_cache & 4) !== 0
-            && (!$prow || $prow->timeSubmitted <= 0 || ($this->_pc_see_cache & 1) === 0);
+
+    /** @return list<SubmissionRound> */
+    function submission_round_list() {
+        if ($this->_sub_rounds === null) {
+            $this->_sub_rounds = [];
+            $main_sr = $this->unnamed_submission_round();
+            if (($t = $this->settingTexts["submission_rounds"] ?? null)
+                && ($j = json_decode($t))
+                && is_array($j)) {
+                foreach ($j as $jx) {
+                    if (($sr = SubmissionRound::make_json($jx, $main_sr, $this)))
+                        $this->_sub_rounds[] = $sr;
+                }
+            }
+            $this->_sub_rounds[] = $main_sr;
+        }
+        return $this->_sub_rounds;
     }
+
+    /** @param ?string $t
+     * @return ?SubmissionRound */
+    function submission_round_by_tag($t) {
+        if ($t === null || $t === "") {
+            return $this->unnamed_submission_round();
+        }
+        foreach ($this->submission_round_list() as $sr) {
+            if (strcasecmp($t, $sr->tag) === 0)
+                return $sr;
+        }
+        if (in_array(strtolower($t), ["unnamed", "undefined", "default", "none"])) {
+            return $this->unnamed_submission_round();
+        }
+        return null;
+    }
+
     /** @return bool */
     function allow_final_versions() {
         return $this->setting("final_open") > 0;
@@ -3467,20 +3516,21 @@ class Conf {
     }
     /** @return bool */
     function timePCReviewPreferences() {
-        return $this->time_pc_view_active_submissions() || $this->has_any_submitted();
+        return $this->can_pc_view_incomplete() || $this->has_any_submitted();
     }
     /** @param bool $pdf
      * @return bool */
     function time_pc_view(PaperInfo $prow, $pdf) {
         if ($prow->timeSubmitted > 0) {
             return !$pdf
-                || ($this->_pc_see_cache & 18) !== 2
-                   // 16 = all submitted PDFs viewable, 2 = some submissions open
-                || $prow->timeSubmitted < ($this->settings["sub_open"] ?? 0);
+                || ($this->permbits & self::PB_ALL_PDF_VIEWABLE) !== 0
+                || (($sr = $prow->submission_round())
+                    && ($sr->pdf_viewable
+                        || $prow->timeSubmitted < $sr->open));
         } else if ($prow->timeWithdrawn <= 0) {
             return !$pdf
-                && ($this->_pc_see_cache & 8) !== 0
-                && $this->time_finalize_paper($prow);
+                && ($this->permbits & self::PB_INCOMPLETE_VIEWABLE) !== 0
+                && $prow->submission_round()->incomplete_viewable;
         } else {
             return false;
         }
@@ -3570,9 +3620,15 @@ class Conf {
         return !!($this->settings["metareviews"] ?? false);
     }
 
-    /** @return bool */
+    /** @return bool
+     * @deprecated */
     function time_pc_view_active_submissions() {
-        return ($this->_pc_see_cache & 8) !== 0;
+        return ($this->permbits & self::PB_INCOMPLETE_VIEWABLE) !== 0;
+    }
+
+    /** @return bool */
+    function can_pc_view_incomplete() {
+        return ($this->permbits & self::PB_INCOMPLETE_VIEWABLE) !== 0;
     }
 
 
@@ -4154,7 +4210,7 @@ class Conf {
         if ($options["active"] ?? false) {
             $where[] = "timeWithdrawn<=0";
         }
-        foreach (["yes", "no", "any", "none", "maybe"] as $word) {
+        foreach (["yes", "no", "any", "none", "maybe", "active"] as $word) {
             if ($options["dec:{$word}"] ?? false) {
                 $where[] = $this->decision_set()->sqlexpr($word);
             }
@@ -4256,24 +4312,6 @@ class Conf {
             }
         }
         return ($this->paper = $prow);
-    }
-
-
-    function preference_conflict_result($type, $extra) {
-        $q = "select PRP.paperId, PRP.contactId, PRP.preference
-                from PaperReviewPreference PRP
-                join ContactInfo c on (c.contactId=PRP.contactId and c.roles!=0 and (c.roles&" . Contact::ROLE_PC . ")!=0)
-                join Paper P on (P.paperId=PRP.paperId)
-                left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId)
-                where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=" . CONFLICT_MAXUNCONFLICTED . "
-                  and P.timeWithdrawn<=0";
-        if ($type !== "all" && $type !== "act") {
-            $q .= " and P.timeSubmitted>0";
-        }
-        if ($extra) {
-            $q .= " " . $extra;
-        }
-        return $this->ql_raw($q);
     }
 
 
@@ -5343,7 +5381,8 @@ class Conf {
 
     // assignment parsers
 
-    /** @return ?AssignmentParser */
+    /** @param string $keyword
+     * @return ?AssignmentParser */
     function assignment_parser($keyword, Contact $user = null) {
         require_once("assignmentset.php");
         if ($this->_assignment_parsers === null) {
@@ -5357,6 +5396,30 @@ class Conf {
             $uf->__parser = new $p($this, $uf);
         }
         return $uf ? $uf->__parser : null;
+    }
+
+
+    // autoassigners
+
+    /** @return array<string,object> */
+    function autoassigner_map() {
+        if ($this->_autoassigners === null) {
+            list($aatypes, $unused) =
+                $this->_xtbuild(["etc/autoassigners.json"], "autoassigners");
+            $this->_autoassigners = [];
+            foreach (array_keys($aatypes) as $name) {
+                if (($uf = $this->xt_search_name($aatypes, $name, null)))
+                    $this->_autoassigners[$name] = $uf;
+            }
+            uasort($this->_autoassigners, "Conf::xt_order_compare");
+        }
+        return $this->_autoassigners;
+    }
+
+    /** @param string $name
+     * @return ?object */
+    function autoassigner($name) {
+        return ($this->autoassigner_map())[$name] ?? null;
     }
 
 

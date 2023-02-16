@@ -36,6 +36,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
 
 
     static function print_author(SettingValues $sv) {
+        echo '<p class="hidden feedback is-note mb-3 if-settings-decision-desk-reject">Decisions in the desk-reject category are always visible to authors and reviewers.</p>';
         $dva = '<div class="d-inline-flex flex-wrap">'
             . Ht::label("Yes, for submissions matching this search:", "decision_visibility_author_condition", ["class" => "mr-2 uic js-settings-radioitem-click"])
             . '<div>' . $sv->feedback_at("decision_visibility_author_condition")
