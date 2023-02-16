@@ -163,10 +163,10 @@ class MessageSet {
     const DEFAULT_FTEXT_HTML = 16;
 
     const INFORM = -5;
-    const WARNING_NOTE = -4;
+    const MARKED_NOTE = -4;
     const SUCCESS = -3;
-    const URGENT_NOTE = -2;
-    const MARKED_NOTE = -1;
+    const WARNING_NOTE = -2;
+    const URGENT_NOTE = -1;
     const PLAIN = 0;
     const WARNING = 1;
     const ERROR = 2;
@@ -507,7 +507,48 @@ class MessageSet {
      * @param string $prefix
      * @return string */
     function control_class($field, $rest = "", $prefix = "has-") {
-        return self::status_class($field ? $this->errf[$field] ?? 0 : 0, $rest, $prefix);
+        if ($field && ($st = $this->errf[$field] ?? 0) !== 0) {
+            return self::status_class($st, $rest, $prefix);
+        } else {
+            return $rest;
+        }
+    }
+    /** @param ?int $st1
+     * @param int $st2
+     * @return int */
+    static function combine_status($st1, $st2) {
+        if ($st1 === null
+            || $st1 === $st2
+            || ($st1 === 0 && $st2 !== self::INFORM)
+            || ($st1 < $st2 && ($st2 !== 0 || $st1 === self::INFORM))) {
+            return $st2;
+        } else {
+            return $st1;
+        }
+    }
+    /** @param string $field_prefix
+     * @param string $rest
+     * @param string $prefix
+     * @return string */
+    function prefix_control_class($field_prefix, $rest = "", $prefix = "has-") {
+        $gst = null;
+        foreach ($this->errf as $field => $st) {
+            if (str_starts_with($field, $field_prefix))
+                $gst = self::combine_status($gst, $st);
+        }
+        return $gst ? self::status_class($gst, $rest, $prefix) : $rest;
+    }
+    /** @param string $field_suffix
+     * @param string $rest
+     * @param string $prefix
+     * @return string */
+    function suffix_control_class($field_suffix, $rest = "", $prefix = "has-") {
+        $gst = null;
+        foreach ($this->errf as $field => $st) {
+            if (str_ends_with($field, $field_suffix))
+                $gst = self::combine_status($gst, $st);
+        }
+        return $gst ? self::status_class($gst, $rest, $prefix) : $rest;
     }
 
     /** @return array<string,int> */

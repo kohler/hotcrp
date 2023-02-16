@@ -1391,8 +1391,8 @@ return {
 function message_list_status(ml) {
     var i, status = 0;
     for (i = 0; i !== (ml || []).length; ++i) {
-        if (ml[i].status === -3 && status === 0) {
-            status = -3;
+        if (ml[i].status === -3 /*MessageSet::SUCCESS*/ && status === 0) {
+            status = -3 /*MessageSet::SUCCESS*/;
         } else if (ml[i].status >= 1 && ml[i].status > status) {
             status = ml[i].status;
         }
@@ -1403,7 +1403,7 @@ function message_list_status(ml) {
 function render_message_list(ml) {
     var status = message_list_status(ml),
         div = document.createElement("div");
-    if (status === -3) {
+    if (status === -3 /*MessageSet::SUCCESS*/) {
         div.className = "msg msg-success";
     } else if (status >= 2) {
         div.className = "msg msg-error";
@@ -1431,10 +1431,10 @@ function append_feedback_to(ul, mi) {
         if (ul.tagName !== "UL")
             throw new Error("bad append_feedback");
         sklass = "";
-        if (mi.status != null && mi.status >= -4 && mi.status <= 3)
-            sklass = ["warning-note", "success", "urgent-note", "note", "", "warning", "error", "error"][mi.status + 4];
+        if (mi.status != null && mi.status >= -4 /*MessageSet::MARKED_NOTE*/ && mi.status <= 3)
+            sklass = ["note", "success", "warning-note", "urgent-note", "", "warning", "error", "error"][mi.status + 4];
         div = document.createElement("div");
-        if (mi.status !== -5 || !ul.firstChild) {
+        if (mi.status !== -5 /*MessageSet::INFORM*/ || !ul.firstChild) {
             li = document.createElement("li");
             ul.appendChild(li);
             div.className = sklass ? "is-diagnostic format-inline is-" + sklass : "is-diagnostic format-inline";
@@ -5842,11 +5842,11 @@ function activate_editing_messages(cj, form) {
     }
     if (cj.response
         && !hotcrp_status.myperm.is_author) {
-        append_feedback_to(ul, {message: '<0>You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.', status: -1});
+        append_feedback_to(ul, {message: '<0>You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.', status: -4 /*MessageSet::MARKED_NOTE*/});
     } else if (cj.review_token
                && hotcrp_status.myperm.review_tokens
                && hotcrp_status.myperm.review_tokens.indexOf(cj.review_token) >= 0) {
-        append_feedback_to(ul, {message: '<0>You have a review token for this paper, so your comment will be anonymous.', status: -1});
+        append_feedback_to(ul, {message: '<0>You have a review token for this paper, so your comment will be anonymous.', status: -4 /*MessageSet::MARKED_NOTE*/});
     } else if (!cj.response
                && cj.author_email
                && siteinfo.user.email
@@ -5855,18 +5855,18 @@ function activate_editing_messages(cj, form) {
             msg = "<0>You didn’t write this comment, but as a fellow author you can edit it.";
         else
             msg = "<0>You didn’t write this comment, but as an administrator you can edit it.";
-        append_feedback_to(ul, {message: msg, status: -1});
+        append_feedback_to(ul, {message: msg, status: -4 /*MessageSet::MARKED_NOTE*/});
     }
     if (cj.response) {
         if (resp_rounds[cj.response].done > now_sec()) {
-            append_feedback_to(ul, {message: strftime("<0>The response deadline is %X your time.", new Date(resp_rounds[cj.response].done * 1000)), status: -4});
+            append_feedback_to(ul, {message: strftime("<0>The response deadline is %X your time.", new Date(resp_rounds[cj.response].done * 1000)), status: -2 /*MessageSet::WARNING_NOTE*/});
         } else if (cj.draft) {
             append_feedback_to(ul, {message: "<0>The response deadline has passed and this draft response will not be shown to reviewers.", status: 2});
         }
     }
     if (siteinfo.user
         && (siteinfo.user.is_actas || (siteinfo.user.session_users || []).length > 1)) {
-        append_feedback_to(ul, {message: "<0>Commenting as " + siteinfo.user.email, status: -4});
+        append_feedback_to(ul, {message: "<0>Commenting as " + siteinfo.user.email, status: -2 /*MessageSet::WARNING_NOTE*/});
     }
     if (ul.firstChild) {
         form.parentElement.insertBefore(ul, form);
@@ -9690,7 +9690,7 @@ handle_ui.on("js-check-format", function () {
     if (this && "tagName" in this && this.tagName === "A")
         $self.addClass("hidden");
     var running = setTimeout(function () {
-        $cf.html(render_message_list([{message: "<0>Checking format (this can take a while)...", status: -1}]));
+        $cf.html(render_message_list([{message: "<0>Checking format (this can take a while)...", status: -4 /*MessageSet::MARKED_NOTE*/}]));
     }, 1000);
     $.ajax(hoturl("=api/formatcheck", {p: siteinfo.paperid}), {
         timeout: 20000, data: {
@@ -10139,7 +10139,7 @@ function save_pstags(evt) {
                 addClass(f.elements.tags, "has-error");
                 addClass(f.elements.save, "btn-highlight");
                 data.message_list = data.message_list || [];
-                data.message_list.unshift({message: "Your changes were not saved. Please correct these errors and try again.", status: -4});
+                data.message_list.unshift({message: "Your changes were not saved. Please correct these errors and try again.", status: -2 /*MessageSet::WARNING_NOTE*/});
             }
             if (data.message_list)
                 render_tag_messages.call($f[0], data.message_list);
@@ -11612,7 +11612,7 @@ $(function () {
     if (document.documentMode || window.attachEvent) {
         var msg = $('<div class="msg msg-error"></div>').appendTo("#msgs-initial");
         append_feedback_near(msg[0], {message: "<0>This site no longer supports Internet Explorer", status: 2});
-        append_feedback_near(msg[0], {message: "<5>Please use <a href=\"https://browsehappy.com/\">a modern browser</a> if you can.", status: -5});
+        append_feedback_near(msg[0], {message: "<5>Please use <a href=\"https://browsehappy.com/\">a modern browser</a> if you can.", status: -5 /*MessageSet::INFORM*/});
     }
 });
 
