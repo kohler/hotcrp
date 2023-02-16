@@ -34,8 +34,9 @@
         "sort": true, "completion": true, "className": "pl_topicscore", "function": "+TopicScore_PaperColumn",
         "order": 400
     },
+    {   "name": "topic_score", "alias": "topicscore"   },
     {
-        "match": "topicscore:(.+?)", "priority": -1, "allow_if": "manager",
+        "match": "topic_?score:(.+?)", "priority": -1, "allow_if": "manager",
         "expand_function": "TopicScore_PaperColumn::expand"
     },
     {
