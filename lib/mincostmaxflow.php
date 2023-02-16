@@ -947,8 +947,8 @@ class MinCostMaxFlow {
         $ex = [];
         $cost = 0;
         foreach ($this->e as $e) {
-            if ($e->flow || $e->mincap || !$only_flow) {
-                $ex[] = "{$e->src->name} {$e->dst->name} $e->mincap $e->cap $e->cost $e->flow\n";
+            if ($e->flow > 0 || $e->mincap > 0 || !$only_flow) {
+                $ex[] = "{$e->src->name} {$e->dst->name} [{$e->mincap} {$e->flow} {$e->cap}] {$e->cost}\n";
             }
             if ($e->flow) {
                 $cost += $e->flow * $e->cost;
