@@ -214,19 +214,35 @@ class HotCRPMailer extends Mailer {
         return $text;
     }
 
-    private function get_new_assignments($contact) {
-        $since = "";
-        if ($this->newrev_since) {
-            $since = " and r.timeRequested>=$this->newrev_since";
+    const GA_SINCE = 1;
+    const GA_ROUND = 2;
+    const GA_NEEDS_SUBMIT = 4;
+
+    /** @param Contact $user
+     * @param int $flags
+     * @param ?int $review_round
+     * @return string */
+    private function get_assignments($user, $flags, $review_round) {
+        $where = [
+            "r.contactId={$user->contactId}",
+            "p.timeSubmitted>0"
+        ];
+        if (($flags & self::GA_SINCE) !== 0) {
+            $flags[] = "r.timeRequested>r.timeRequestNotified";
+            if ($this->newrev_since) {
+                $flags[] = "r.timeRequested>={$this->newrev_since}";
+            }
+        }
+        if (($flags & self::GA_NEEDS_SUBMIT) !== 0) {
+            $where[] = "r.reviewSubmitted is null";
+            $where[] = "r.reviewNeedsSubmit!=0";
+        }
+        if (($flags & self::GA_ROUND) !== 0 && $review_round !== null) {
+            $where[] = "r.reviewRound={$review_round}";
         }
         $result = $this->conf->qe("select r.paperId, p.title
                 from PaperReview r join Paper p using (paperId)
-                where r.contactId=" . $contact->contactId . "
-                and r.timeRequested>r.timeRequestNotified$since
-                and r.reviewSubmitted is null
-                and r.reviewNeedsSubmit!=0
-                and p.timeSubmitted>0
-                order by r.paperId");
+                where " . join(" and ", $where) . " order by r.paperId");
         $text = "";
         while (($row = $result->fetch_row())) {
             $text .= ($text ? "\n#" : "#") . $row[0] . " " . $row[1];
@@ -329,8 +345,21 @@ class HotCRPMailer extends Mailer {
         return $isbool ? false : null;
     }
 
+    function kw_assignments($args, $isbool, $uf) {
+        $flags = 0;
+        $round = null;
+        if ($args || isset($uf->match_data)) {
+            $rname = trim(isset($uf->match_data) ? $uf->match_data[1] : $args);
+            $round = $this->conf->round_number($rname, false);
+            if ($round === null) {
+                return $isbool ? false : null;
+            }
+            $flags |= self::GA_ROUND;
+        }
+        return $this->get_assignments($this->recipient, $flags, $round);
+    }
     function kw_newassignments() {
-        return $this->get_new_assignments($this->recipient);
+        return $this->get_assignments($this->recipient, self::GA_SINCE | self::GA_NEEDS_SUBMIT, null);
     }
     function kw_haspaper() {
         if ($this->row && $this->row->paperId > 0) {

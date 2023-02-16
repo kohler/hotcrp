@@ -53,6 +53,7 @@
     {"name": "REVIEWID", "function": "*kw_reviewid", "expand_if": "*kw_haspaper"},
     {"name": "REVIEWAUTHOR", "function": "*kw_reviewercontact", "global": true, "match_data": [null, "REVIEWER", "CONTACT"]},
     {"name": "REVIEWACCEPTOR", "function": "*kw_reviewacceptor", "expand_if": "*kw_hasreview"},
+    {"name": "ASSIGNMENTS", "function": "*kw_assignments"},
     {"name": "NEWASSIGNMENTS", "function": "*kw_newassignments"},
     {"name": "AUTHORS", "function": "*kw_authors", "expand_if": "*kw_haspaper"},
     {"name": "AUTHOR", "alias": "AUTHORS"},
