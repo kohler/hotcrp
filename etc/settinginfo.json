@@ -478,6 +478,12 @@
         "json_values": ["assignment_complete", "all", "assignment_not_incomplete", "all_assignments_complete"]
     },
     {
+        "name": "review_identity_nevervisible_for_pc", "storage": "pc_alwaysblind",
+        "title": "PC can never see anonymous reviewers’ identities (overwrites other related settings)",
+        "type": "radio",
+        "values": [0, 1], "default_value": 0
+    },
+    {
         "name": "review_identity_visibility_pc", "storage": "pc_seeblindrev",
         "title": "PC can see anonymous reviewers’ identities",
         "type": "radio",

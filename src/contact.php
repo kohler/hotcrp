@@ -4021,6 +4021,8 @@ class Contact implements JsonSerializable {
             || ($rbase && $this->is_owned_review($rbase))) {
             return true;
         }
+        if($this->conf->settings["pc_alwaysblind"] ?? null)
+            return false;
         $seerevid_setting = $this->seerevid_setting($prow, $rbase, $rights);
         return ($rights->allow_pc
                 && $seerevid_setting == Conf::PCSEEREV_YES)

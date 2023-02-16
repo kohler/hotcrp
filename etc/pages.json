@@ -19,6 +19,46 @@
 
     {   "name": "index", "alias": "home"   },
 
+    {   "name": "imprint", "allow_disabled": true   },
+    {
+        "name": "imprint/sidebar/home", "order": 0,
+        "print_function": "Home_Page::print_homelink"
+    },
+    {
+        "name": "imprint/head", "order": 1000,
+        "print_function": "*Imprint_Page::print_head"
+    },
+    {
+        "name": "imprint/content", "order": 1500,
+        "print_function": "*Imprint_Page::print_content"
+    },
+    {
+        "name": "imprint/sidebar/techinfo", "order": 200,
+        "print_function": "Home_Page::print_techinfo_sidebar"
+    },
+    [   "imprint/sidebar/techinfo/data", 10, "Home_Page::print_techinfo_data"   ],
+    [   "imprint/sidebar/techinfo/imprint", 20, "Home_Page::print_techinfo_imprint"   ],
+
+    {   "name": "dataprivacy", "allow_disabled": true   },
+    {
+        "name": "dataprivacy/sidebar/home", "order": 0,
+        "print_function": "Home_Page::print_homelink"
+    },
+    {
+        "name": "dataprivacy/head", "order": 1000,
+        "print_function": "*Dataprivacy_Page::print_head"
+    },
+    {
+        "name": "dataprivacy/content", "order": 1500,
+        "print_function": "*Dataprivacy_Page::print_content"
+    },
+    {
+        "name": "dataprivacy/sidebar/techinfo", "order": 200,
+        "print_function": "Home_Page::print_techinfo_sidebar"
+    },
+    [   "dataprivacy/sidebar/techinfo/data", 10, "Dataprivacy_Page::print_techinfo_data"   ],
+    [   "dataprivacy/sidebar/techinfo/imprint", 20, "Dataprivacy_Page::print_techinfo_imprint"   ],
+
 
     {   "name": "home", "allow_disabled": true   },
     {
@@ -86,6 +126,12 @@
         "allow_if": "conf.time_all_author_view_decision",
         "print_function": "Home_Page::print_info_accepted"
     },
+    {
+        "name": "home/sidebar/techinfo", "order": 200,
+        "print_function": "Home_Page::print_techinfo_sidebar"
+    },
+    [   "home/sidebar/techinfo/data", 10, "Home_Page::print_techinfo_data"   ],
+    [   "home/sidebar/techinfo/imprint", 20, "Home_Page::print_techinfo_imprint"   ],
 
 
     [   "home/main/message", 1100, "*Home_Page::print_message"   ],
@@ -118,6 +164,10 @@
 
     {   "name": "newaccount", "allow_disabled": true   },
     {
+        "name": "newaccount/sidebar/home", "order": 0,
+        "print_function": "Home_Page::print_homelink"
+    },
+    {
         "name": "newaccount/request", "order": 100,
         "allow_request_if": "anypost",
         "request_function": "*Signin_Page::create_request"
@@ -132,6 +182,10 @@
 
 
     {   "name": "signin", "allow_disabled": true   },
+    {
+        "name": "signin/sidebar/home", "order": 0,
+        "print_function": "Home_Page::print_homelink"
+    },
     {
         "name": "signin/request", "order": 100,
         "allow_request_if": "anypost",
@@ -158,6 +212,10 @@
 
     {   "name": "signout", "allow_disabled": true   },
     {
+        "name": "signout/sidebar/home", "order": 0,
+        "print_function": "Home_Page::print_homelink"
+    },
+    {
         "name": "signout/request", "order": 100,
         "allow_request_if": "anypost",
         "request_function": "Signin_Page::signout_request"
@@ -167,6 +225,10 @@
 
 
     {   "name": "forgotpassword", "allow_disabled": true   },
+    {
+        "name": "forgotpassword/sidebar/home", "order": 0,
+        "print_function": "Home_Page::print_homelink"
+    },
     {
         "name": "forgotpassword/request", "order": 100,
         "allow_request_if": "anypost",
@@ -184,6 +246,10 @@
 
 
     {   "name": "resetpassword", "allow_disabled": true   },
+    {
+        "name": "resetpassword/sidebar/home", "order": 0,
+        "print_function": "Home_Page::print_homelink"
+    },
     {
         "name": "resetpassword/request", "order": 100,
         "request_function": "*Signin_Page::reset_request"

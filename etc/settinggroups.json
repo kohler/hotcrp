@@ -198,6 +198,7 @@
         "print_function": "Review_SettingParser::print_pc",
         "settings": [
             "review_self_assign",
+            "review_identity_nevervisible_for_pc",
             "review_identity_visibility_pc",
             "review_visibility_pc",
             "review_visibility_lead",

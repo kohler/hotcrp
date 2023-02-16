@@ -211,11 +211,17 @@ class Review_SettingParser extends SettingParser {
         }
         echo "</div>\n";
 
+        $hint = '<p class="settings-ag f-h">This setting overwrites next setting ("Can PC members see ... except for conflicts") as well as possible track settings.</p>';
+        $sv->print_radio_table("review_identity_nevervisible_for_pc", [0 => "No",
+                1 => "Yes (always blind)"],
+            'Are PC members always restricted from seeing <strong>reviewer names<span class="fn2"> and comments</span></strong> (always blind)?',
+            ["after" => $hint]);
+        echo '<hr class="form-sep">';
 
         $hint = "";
-        if ($sv->conf->check_track_sensitivity(Track::VIEWREVID)) {
-            $hint = '<p class="settings-ag f-h">' . $sv->setting_group_link("Current track settings", "tracks") . ' restrict reviewer name visibility.</p>';
-        }
+            if ($sv->conf->check_track_sensitivity(Track::VIEWREVID)) {
+                $hint = '<p class="settings-ag f-h">' . $sv->setting_group_link("Current track settings", "tracks") . ' restrict reviewer name visibility.</p>';
+            }
         $sv->print_radio_table("review_identity_visibility_pc", [0 => "Yes",
                 1 => "Only after completing a review for the same submission"],
             'Can PC members see <strong>reviewer names<span class="fn2"> and comments</span></strong> except for conflicts?',

@@ -173,6 +173,27 @@ class Home_Page {
         }
     }
 
+    static function print_techinfo_sidebar(Contact $user, Qrequest $qreq, $gx) {
+        ob_start();
+        $gx->print_group("home/sidebar/techinfo");
+        if (($t = ob_get_clean())) {
+            echo '<div class="homegrp"><h2 class="home">',
+                $user->conf->_c("home", "Technical information"),
+                '</h2><ul>', $t, '</ul></div>';
+        }
+    }
+    static function print_techinfo_data(Contact $user) {
+        echo '<li>', Ht::link("Data Protection Policy", $user->conf->hoturl("dataprivacy")), '</li>';
+    }
+    static function print_techinfo_imprint(Contact $user) {
+        echo '<li>', Ht::link("Imprint", $user->conf->hoturl("imprint")), '</li>';
+    }
+    static function print_homelink(Contact $user) {
+        echo '<div class="homegrp">';
+        echo Ht::link("Home", $user->conf->hoturl("index"));
+        echo '</div>';
+    }
+
     function print_message() {
         if (($t = $this->conf->_id("home", ""))) {
             echo '<div class="msg ',
