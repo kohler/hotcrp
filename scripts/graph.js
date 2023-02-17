@@ -1025,29 +1025,34 @@ function data_to_barchart(data, yaxis) {
             || (a[3] || "").localeCompare(b[3] || "");
     });
 
-    var i, maxy;
+    var i, maxy, cur, last, ndata = [];
     for (i = 0; i != data.length; ++i) {
-        if (i && data[i-1][0] == data[i][0] && data[i-1][4] == data[i][4]) {
-            data[i].yoff = data[i-1].yoff + data[i-1][1];
-            if (data[i-1].i0 == null)
-                data[i-1].i0 = i - 1;
-            data[i].i0 = data[i-1].i0;
+        cur = data[i];
+        if (cur[1] == null) {
+            continue;
+        }
+        ndata.push(cur);
+        if (last && cur[0] == last[0] && cur[4] == last[4]) {
+            cur.yoff = last.yoff + last[1];
+            if (last.i0 == null)
+                last.i0 = ndata.length - 1;
+            cur.i0 = last.i0;
         } else {
-            data[i].yoff = 0;
+            cur.yoff = 0;
         }
     }
 
-    if (yaxis.fraction && data.some(function (d) { return d[4] != data[0][4]; })) {
+    if (yaxis.fraction && ndata.some(function (d) { return d[4] != data[0][4]; })) {
         maxy = {};
-        data.forEach(function (d) { maxy[d[0]] = d[1] + d.yoff; });
-        data.forEach(function (d) { d.yoff /= maxy[d[0]]; d[1] /= maxy[d[0]]; });
+        ndata.forEach(function (d) { maxy[d[0]] = d[1] + d.yoff; });
+        ndata.forEach(function (d) { d.yoff /= maxy[d[0]]; d[1] /= maxy[d[0]]; });
     } else if (yaxis.fraction) {
         maxy = 0;
-        data.forEach(function (d) { maxy += d[1]; });
-        data.forEach(function (d) { d.yoff /= maxy; d[1] /= maxy; });
+        ndata.forEach(function (d) { maxy += d[1]; });
+        ndata.forEach(function (d) { d.yoff /= maxy; d[1] /= maxy; });
     }
 
-    return data;
+    return ndata;
 }
 
 function graph_bars(selector, args) {
