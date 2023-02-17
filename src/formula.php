@@ -53,7 +53,7 @@ abstract class Fexpr implements JsonSerializable {
     const IDX_PC = 1;
     const IDX_REVIEW = 2;
     const IDX_MY = 4;
-    const IDX_TAGPC = 8;
+    const IDX_PC_SET_PRIVATE_TAG = 8;
 
     const FUNKNOWN = 0;
     const FNULL = 1;
@@ -763,7 +763,7 @@ class Aggregate_Fexpr extends Fexpr {
             $formula->fexpr_lerror($this->args[1], $this->args[1]->disallowed_use_error());
             $ok = false;
         }
-        if ($ok && !$this->index_type) {
+        if ($ok && $this->index_type === 0) {
             $lt = parent::inferred_index();
             if ($lt === 0 || ($lt & ($lt - 1)) === 0) {
                 $this->index_type = $lt;
@@ -777,7 +777,7 @@ class Aggregate_Fexpr extends Fexpr {
             && ($this->op === "sum" || $this->op === "count")
             && $this->args[0] instanceof Tag_Fexpr
             && $this->args[0]->inferred_index()) {
-            $this->index_type = self::IDX_TAGPC;
+            $this->index_type = self::IDX_PC_SET_PRIVATE_TAG;
         }
         return $ok;
     }
@@ -1160,13 +1160,13 @@ class FormulaCompiler {
     }
 
     /** @return string */
-    function _add_tag_pc() {
+    function _add_pc_set_private_tag() {
         if ($this->check_gvar('$tag_pc')) {
             $tags = $this->_add_tags();
             $pc = $this->_add_pc();
             $this->gstmt[] = "\$tag_pc = [];";
             $this->gstmt[] = "if ({$tags} !== \"\") {";
-            $this->gstmt[] = "  preg_match_all(\"/(?<= )\d+/\", {$tags}, \$m);";
+            $this->gstmt[] = "  preg_match_all(\"/ \d+/\", {$tags}, \$m);";
             $this->gstmt[] = "  foreach (\$m[0] as \$c) {";
             $this->gstmt[] = "    if ((\$p = {$pc}[(int) \$c] ?? null))";
             $this->gstmt[] = "      \$tag_pc[\$p->contactId] = \$p;";
@@ -1301,8 +1301,8 @@ class FormulaCompiler {
     /** @param int $index_types
      * @return string */
     function loop_variable($index_types) {
-        if ($index_types === Fexpr::IDX_TAGPC) {
-            return $this->_add_tag_pc();
+        if ($index_types === Fexpr::IDX_PC_SET_PRIVATE_TAG) {
+            return $this->_add_pc_set_private_tag();
         } else if ($index_types === Fexpr::IDX_REVIEW) {
             return $this->_add_vreviews();
         } else if ($index_types === Fexpr::IDX_PC) {
@@ -2309,16 +2309,16 @@ class Formula implements JsonSerializable {
                 . join("\n  ", $state->gstmt) . "\n";
             if ($index_types === Fexpr::IDX_REVIEW) {
                 $t .= "  \$cids = [];\n"
-                    . "  foreach ($g as \$rrow) {\n"
+                    . "  foreach ({$g} as \$rrow) {\n"
                     . "    \$cids[] = \$rrow->contactId;\n"
                     . "  }\n"
                     . "  return \$cids;\n";
             } else {
-                $t .= "  return array_keys($g);\n";
+                $t .= "  return array_keys({$g});\n";
             }
             $args = '$prow, $contact';
-            self::DEBUG && Conf::msg_debugt("function ($args) {\n  $t}\n");
-            return eval("return function ($args) {\n  $t};");
+            self::DEBUG && error_log("function ({$args}) {\n  {$t}}\n");
+            return eval("return function ({$args}) {\n  {$t}};");
         } else {
             return null;
         }
@@ -2345,16 +2345,16 @@ class Formula implements JsonSerializable {
         $this->support_combiner();
         $t = $this->_extractorf ? : "  return null;\n";
         $args = '$prow, $rrow_cid, $contact';
-        self::DEBUG && Conf::msg_debugt("function ($args) {\n  // extractor " . simplify_whitespace($this->expression) . "\n  $t}\n");
-        return eval("return function ($args) {\n  $t};");
+        self::DEBUG && error_log("function ({$args}) {\n  // extractor " . simplify_whitespace($this->expression) . "\n  {$t}}\n");
+        return eval("return function ({$args}) {\n  {$t}};");
     }
 
     function compile_combiner_function() {
         $this->support_combiner();
         $t = $this->_combinerf ? : "  return null;\n";
         $args = '$extractor_results';
-        self::DEBUG && Conf::msg_debugt("function ($args) {\n  // combiner " . simplify_whitespace($this->expression) . "\n  $t}\n");
-        return eval("return function ($args) {\n  $t};");
+        self::DEBUG && error_log("function ({$args}) {\n  // combiner " . simplify_whitespace($this->expression) . "\n  {$t}}\n");
+        return eval("return function ({$args}) {\n  {$t}};");
     }
 
 /*    function _unparse_iso_duration($x) {
