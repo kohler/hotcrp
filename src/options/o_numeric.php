@@ -82,6 +82,8 @@ class Numeric_PaperOption extends PaperOption {
     }
 
     function parse_fexpr(FormulaCall $fcall, &$t) {
-        return new OptionValue_Fexpr($this);
+        $fex = new OptionValue_Fexpr($this);
+        $fex->set_format(Fexpr::FNUMERIC);
+        return $fex;
     }
 }

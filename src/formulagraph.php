@@ -952,6 +952,7 @@ class FormulaGraph extends MessageSet {
 
         $format = $isx ? $this->fx_type : $this->fy->result_format();
         $ticks = $named_ticks = null;
+        $rotate_y = null;
         if ($isx && $this->fx_type === Fexpr::FSEARCH) {
             $named_ticks = [];
             foreach ($this->queries as $i => $q) {
@@ -968,10 +969,20 @@ class FormulaGraph extends MessageSet {
             }, array_keys($this->tags));
         } else if ($format === Fexpr::FREVIEWFIELD) {
             $field = $isx ? $this->fxs[0]->result_format_detail() : $this->fy->result_format_detail();
-            '@phan-var-force Score_ReviewField $field';
+            assert($field instanceof Score_ReviewField);
             $ticks = ["score", $field->export_json(ReviewField::UJ_EXPORT)];
             if ($field->flip && $isx) {
                 $j["flip"] = true;
+            }
+            if ($field->is_numeric() || $field->is_single_character()) {
+                $rotate_y = false;
+            }
+        } else if ($format === Fexpr::FSUBFIELD) {
+            $field = $isx ? $this->fxs[0]->result_format_detail() : $this->fy->result_format_detail();
+            assert($field instanceof Selector_PaperOption);
+            $named_ticks = [];
+            foreach ($field->values() as $i => $v) {
+                $named_ticks[$i + 1] = $v;
             }
         } else {
             if ($format === Fexpr::FTAGVALUE
@@ -1012,9 +1023,10 @@ class FormulaGraph extends MessageSet {
                     $j["label"] = "order";
                 }
             }
-            if (!$isx && ($ticks !== null || $named_ticks !== null)) {
-                $j["rotate_ticks"] = -90;
-            }
+        }
+
+        if (!$isx && ($rotate_y ?? $ticks !== null || $named_ticks !== null)) {
+            $j["rotate_ticks"] = -90;
         }
 
         if ($isx && $this->_xorder_map && $named_ticks !== null) {

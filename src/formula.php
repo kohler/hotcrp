@@ -73,6 +73,7 @@ abstract class Fexpr implements JsonSerializable {
     const FTIME = 15;
     const FDATEDELTA = 16;
     const FTIMEDELTA = 17;
+    const FSUBFIELD = 18;
 
     const FORMAT_DESCRIPTIONS = [
         "unknown", "null", "error", "number", "bool",
@@ -116,7 +117,8 @@ abstract class Fexpr implements JsonSerializable {
     }
     /** @return bool */
     function math_format() {
-        return $this->_format !== Fexpr::FREVIEWER;
+        return $this->_format !== Fexpr::FREVIEWER
+            && $this->_format !== Fexpr::FSUBFIELD;
     }
     /** @return mixed */
     function format_detail() {
@@ -125,6 +127,8 @@ abstract class Fexpr implements JsonSerializable {
     /** @return string */
     function format_description() {
         if ($this->_format === Fexpr::FREVIEWFIELD) {
+            return $this->_format_detail->name;
+        } else if ($this->_format === Fexpr::FSUBFIELD) {
             return $this->_format_detail->name;
         } else {
             return Fexpr::FORMAT_DESCRIPTIONS[$this->_format];
@@ -294,31 +298,46 @@ class Constant_Fexpr extends Fexpr {
             || !$e->typecheck($formula)) {
             return;
         }
+        $conf = $formula->conf;
         $format = $e->format();
         $format_detail = $e->format_detail();
-        $letter = "";
-        if (is_string($this->x)
-            && strlen($this->x) === 1
-            && ctype_alpha($this->x)) {
-            $letter = strtoupper($this->x);
-        }
-        if ($format === Fexpr::FPREFEXPERTISE
-            && $letter >= "X"
-            && $letter <= "Z") {
-            $this->x = 89 - ord($letter);
-        } else if ($format === Fexpr::FREVIEWFIELD
-                   && $letter
-                   && ($x = $format_detail->parse($letter))) {
-            $this->x = $x;
-        } else if ($format === Fexpr::FROUND
-                   && ($round = $formula->conf->round_number($this->x, false)) !== null) {
-            $this->x = $round;
-        } else if ($format === Fexpr::FREVTYPE
-                   && $this->_check_revtype()) {
-            /* OK */
-        } else {
+        switch ($format) {
+        case Fexpr::FPREFEXPERTISE:
+            $f = Reviewfield::make_expertise($conf);
+            $x = $f->parse($this->x);
+            if (!$x) {
+                return;
+            }
+            $x -= 2;
+            break;
+        case Fexpr::FREVIEWFIELD:
+            $x = $format_detail->parse($this->x);
+            if (!$x) {
+                return;
+            }
+            break;
+        case Fexpr::FSUBFIELD:
+            $pv = $format_detail->parse_json($formula->placeholder_prow(), $this->x);
+            if (!$pv || $pv->has_error()) {
+                return;
+            }
+            $x = $pv->value;
+            break;
+        case Fexpr::ROUND:
+            $x = $conf->round_number($this->x, false);
+            if ($x === null) {
+                return;
+            }
+            break;
+        case Fexpr::FREVTYPE:
+            if (!$this->_check_revtype()) {
+                return;
+            }
+            $x = $this->x;
+        default:
             return;
         }
+        $this->x = $x;
         $this->set_format($format, $format_detail);
     }
     function viewable_by(Contact $user) {
@@ -1452,6 +1471,9 @@ class Formula implements JsonSerializable {
     private $_extractorf;
     private $_combinerf;
 
+    /** @var ?PaperInfo */
+    private $_placeholder_prow;
+
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
     /** @var bool */
@@ -1649,6 +1671,14 @@ class Formula implements JsonSerializable {
     function message_list() {
         $this->check();
         return $this->_parse->lerrors ?? [];
+    }
+
+    /** @return PaperInfo */
+    function placeholder_prow() {
+        if ($this->_placeholder_prow === null) {
+            $this->_placeholder_prow = PaperInfo::make_placeholder($this->conf, -1);
+        }
+        return $this->_placeholder_prow;
     }
 
     /** @param string $t
@@ -2429,6 +2459,11 @@ class Formula implements JsonSerializable {
         if ($this->_format > Fexpr::FNUMERIC) {
             if ($this->_format === Fexpr::FREVIEWFIELD) {
                 return $this->_format_detail->unparse_span_html($rx, $real_format);
+            } else if ($this->_format === Fexpr::FSUBFIELD) {
+                $prow = $this->placeholder_prow();
+                $fr = new FieldRender(FieldRender::CFHTML);
+                $this->_format_detail->render($fr, new PaperValue($prow, $x));
+                return $fr->value_html();
             } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
                 return ReviewField::make_expertise($this->conf)->unparse_span_html($x + 2, $real_format);
             } else if ($this->_format === Fexpr::FREVIEWER) {
@@ -2458,6 +2493,11 @@ class Formula implements JsonSerializable {
         if ($this->_format > Fexpr::FNUMERIC) {
             if ($this->_format === Fexpr::FREVIEWFIELD) {
                 return $this->_format_detail->unparse_computed($rx, $real_format);
+            } else if ($this->_format === Fexpr::FSUBFIELD) {
+                $prow = $this->placeholder_prow();
+                $fr = new FieldRender(FieldRender::CFCSV);
+                $this->_format_detail->render($fr, new PaperValue($prow, $x));
+                return $fr->value; // XXX
             } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
                 return ReviewField::make_expertise($this->conf)->unparse_computed($x + 2, $real_format);
             } else if ($this->_format === Fexpr::FREVIEWER) {

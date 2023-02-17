@@ -1637,12 +1637,6 @@ class Selector_PaperOption extends PaperOption {
         $this->assign_values($args->values ?? /* XXX */ $args->selector ?? [], $args->ids ?? null);
     }
 
-    /** @return list<string>
-     * @deprecated */
-    function selector_options() {
-        return $this->values();
-    }
-
     function jsonSerialize() {
         $j = parent::jsonSerialize();
         $j->values = $this->values();
@@ -1770,6 +1764,12 @@ class Selector_PaperOption extends PaperOption {
 
     function value_script_expression() {
         return $this->present_script_expression();
+    }
+
+    function parse_fexpr(FormulaCall $fcall, &$t) {
+        $fex = new OptionValue_Fexpr($this);
+        $fex->set_format(Fexpr::FSUBFIELD, $this);
+        return $fex;
     }
 }
 
