@@ -1043,6 +1043,14 @@ class Unit_Tester {
         xassert_eqq(json_encode($ts->as_array()), '{"3":"Fudge","9":"Fudge: All of them","5":"Fudge: Opening","4":"Fudge: Packing","7":"Fudge: Really","10":"Fudge:Questions","6":"Fudge: Others","8":"Fudgey","1":"None of the above","2":"Other"}');
     }
 
+    static function getopt_parse($getopt, $argv) {
+        try {
+            return $getopt->parse($argv);
+        } catch (CommandLineException $ex) {
+            return $ex->getMessage();
+        }
+    }
+
     function test_getopt() {
         $arg = (new Getopt)->long("a", "ano", "b[]", "c[]", "d:", "e[]+")
             ->parse(["fart", "-a", "-c", "x", "-cy", "-d=a", "-e", "a", "b", "c"]);
@@ -1059,5 +1067,29 @@ class Unit_Tester {
         $arg = (new Getopt)->short("ab[]c[]d:e[]+")->long("ano")
             ->parse(["fart", "-a", "-c", "x", "-cy", "-d=a", "-e", "a", "b", "-a", "c"]);
         xassert_eqq(json_encode($arg), '{"a":false,"c":["x","y"],"d":"a","e":["a","b"],"_":["c"]}');
+
+        $arg = (new Getopt)->short("ab[]c[]d:e[]+")->long("ano")
+            ->parse(["fart", "-a", "-c", "x", "-cy", "d=a", "-e", "a", "b", "-a", "c"]);
+        xassert_eqq(json_encode($arg), '{"a":false,"c":["x","y"],"_":["d=a","-e","a","b","-a","c"]}');
+
+        $arg = (new Getopt)->short("ab[]c[]d:e[]+")->long("ano")->interleave(true)
+            ->parse(["fart", "-a", "-c", "x", "-cy", "d=a", "-e", "a", "b", "-a", "c"]);
+        xassert_eqq(json_encode($arg), '{"a":false,"c":["x","y"],"e":["a","b"],"_":["d=a","c"]}');
+
+        $arg = (new Getopt)->short("ab[]c[]d:e[]+")->long("ano")->interleave(true)
+            ->parse(["fart", "-a", "--", "-c", "x", "-cy", "d=a", "-e", "a", "b", "-a", "c"]);
+        xassert_eqq(json_encode($arg), '{"a":false,"_":["-c","x","-cy","d=a","-e","a","b","-a","c"]}');
+
+        $arg = self::getopt_parse((new Getopt)->short("ab[]c[]d:e[]+")->long("ano")->interleave(true),
+            ["fart", "-a", "--", "-c", "x", "-cy", "d=a", "-e", "a", "b", "-a", "c"]);
+        xassert_eqq(json_encode($arg), '{"a":false,"_":["-c","x","-cy","d=a","-e","a","b","-a","c"]}');
+
+        $arg = self::getopt_parse((new Getopt)->short("ab[]c[]d:e[]+")->long("ano")->interleave(true),
+            ["fart", "-a=xxxx", "--", "-c", "x", "-cy", "d=a", "-e", "a", "b", "-a", "c"]);
+        xassert_eqq(json_encode($arg), '"`-a` takes no argument"');
+
+        $arg = self::getopt_parse((new Getopt)->short("ab[]c[]d:e[]+")->long("ano")->interleave(true),
+            ["fart", "-axxxx", "--", "-c", "x", "-cy", "d=a", "-e", "a", "b", "-a", "c"]);
+        xassert_eqq(json_encode($arg), '"Unknown option `-x`"');
     }
 }

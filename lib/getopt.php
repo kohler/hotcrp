@@ -15,6 +15,8 @@ class Getopt {
     private $allmulti = false;
     /** @var ?bool */
     private $otheropt = false;
+    /** @var bool */
+    private $interleave = false;
     /** @var ?int */
     private $minarg;
     /** @var ?int */
@@ -130,6 +132,13 @@ class Getopt {
      * @return $this */
     function otheropt($otheropt) {
         $this->otheropt = $otheropt;
+        return $this;
+    }
+
+    /** @param bool $interleave
+     * @return $this */
+    function interleave($interleave) {
+        $this->interleave = $interleave;
         return $this;
     }
 
@@ -310,96 +319,105 @@ class Getopt {
         return null;
     }
 
+    /** @param ?string $s
+     * @return bool */
+    static function value_allowed($s) {
+        return $s !== null;
+    }
+
     /** @param list<string> $argv
      * @return array<string,string|int|float|list<string>> */
     function parse($argv) {
         $res = [];
+        $rest = [];
         $pot = 0;
         $active_po = null;
         $oname = "";
-        for ($i = 1; $i < count($argv); ++$i) {
+        $odone = false;
+        for ($i = 1; $i !== count($argv); ++$i) {
             $arg = $argv[$i];
-            if ($arg === "--") {
-                ++$i;
-                break;
-            } else if ($arg === "-") {
-                break;
-            } else if ($arg[0] !== "-") {
+            $po = null;
+            $wantpo = $value = false;
+
+            if ($odone) {
+                // skip
+            } else if ($arg === "--") {
+                $odone = true;
+                continue;
+            } else if ($arg[0] !== "-" || $arg === "-") { // non-option
                 if ($this->subcommand !== null
                     && !array_key_exists("_subcommand", $res)
                     && ($x = $this->find_subcommand($arg)) !== null) {
                     $res["_subcommand"] = $x;
                     continue;
                 }
-                if (!$active_po) {
-                    break;
+                if ($active_po) {
+                    $po = $active_po;
+                    $name = $po->name;
+                    $pot = $po->arg;
+                    $value = $arg;
                 }
-                $po = $active_po;
-                $name = $po->name;
-                $pot = $po->arg;
-                $value = $arg;
-            } else if ($arg[1] === "-") {
+            } else if ($arg[1] === "-") { // long option
                 $eq = strpos($arg, "=");
                 $name = substr($arg, 2, ($eq ? $eq : strlen($arg)) - 2);
-                if (!($po = $this->po[$name] ?? null)) {
-                    if ($this->otheropt === true) {
-                        $res["-"][] = $arg;
-                        continue;
-                    } else if ($this->otheropt === false) {
-                        throw new CommandLineException("Unknown option `{$arg}`", $this);
-                    } else {
-                        break;
-                    }
-                }
                 $oname = "--{$name}";
-                $name = $po->name;
-                $pot = $po->arg;
-                if ($eq !== false && $pot === self::NOARG) {
-                    throw new CommandLineException("`{$oname}` takes no arguments", $this);
-                } else if ($eq === false && $i === count($argv) - 1 && ($pot & 1) === 1) {
-                    throw new CommandLineException("Missing argument for `{$oname}`", $this);
-                }
-                if ($eq !== false) {
-                    $value = substr($arg, $eq + 1);
-                } else if ($pot === self::ARG || $pot >= self::MARG) {
-                    $value = $argv[$i + 1];
-                    ++$i;
-                } else {
-                    $value = false;
-                }
-            } else if (ctype_alnum($arg[1])) {
-                $oname = "-{$arg[1]}";
-                if (!($po = $this->po[$arg[1]] ?? null)) {
-                    if ($this->otheropt) {
-                        $res["-"][] = $arg;
-                        continue;
-                    } else if ($this->otheropt === false) {
-                        throw new CommandLineException("Unknown option `{$arg}`", $this);
-                    } else {
-                        break;
+                $po = $this->po[$name] ?? null;
+                if ($po) {
+                    $name = $po->name;
+                    $pot = $po->arg;
+                    if ($eq !== false) {
+                        $value = substr($arg, $eq + 1);
+                    } else if (($pot === self::ARG || $pot >= self::MARG)
+                               && self::value_allowed($argv[$i + 1] ?? null)) {
+                        $value = $argv[$i + 1];
+                        ++$i;
                     }
                 }
-                $name = $po->name;
-                $pot = $po->arg;
-                if (strlen($arg) === 2 && ($pot & 1) === 1 && $i === count($argv) - 1) {
-                    throw new CommandLineException("Missing argument for `{$oname}`", $this);
-                } else if ($pot === self::NOARG || ($pot === self::OPTARG && strlen($arg) === 2)) {
-                    $value = false;
-                } else if (strlen($arg) > 2 && $arg[2] === "=") {
-                    $value = substr($arg, 3);
-                } else if (strlen($arg) > 2) {
-                    $value = substr($arg, 2);
-                } else {
-                    $value = $argv[$i + 1];
-                    ++$i;
+                $wantpo = true;
+            } else if (ctype_alnum($arg[1])) { // short option
+                $oname = "-{$arg[1]}";
+                $po = $this->po[$arg[1]] ?? null;
+                if ($po) {
+                    $name = $po->name;
+                    $pot = $po->arg;
+                    if (strlen($arg) > 2) {
+                        if ($arg[2] === "=") {
+                            $value = (string) substr($arg, 3);
+                        } else if ($pot !== self::NOARG) {
+                            $value = substr($arg, 2);
+                        } else {
+                            $argv[$i] = "-" . substr($arg, 2);
+                            --$i;
+                        }
+                    } else if (($pot === self::ARG || $pot >= self::MARG)
+                               && self::value_allowed($argv[$i + 1] ?? null)) {
+                        $value = $argv[$i + 1];
+                        ++$i;
+                    }
                 }
-                if ($pot === self::NOARG && strlen($arg) > 2) {
-                    $argv[$i] = "-" . substr($arg, 2);
-                    --$i;
-                }
+                $wantpo = true;
             } else {
-                break;
+                // skip
             }
+
+            if (!$po) {
+                if (!$wantpo || $this->otheropt === null) {
+                    $rest[] = $arg;
+                    $odone = $odone || !$this->interleave;
+                } else if ($this->otheropt === false) {
+                    throw new CommandLineException("Unknown option `{$oname}`", $this);
+                } else {
+                    $res["-"][] = $arg;
+                }
+                continue;
+            }
+
+            if ($value !== false && $pot === self::NOARG) {
+                throw new CommandLineException("`{$oname}` takes no argument", $this);
+            } else if ($value === false && ($pot & 1) === 1) {
+                throw new CommandLineException("Missing argument for `{$oname}`", $this);
+            }
+
             $poty = $po->argtype;
             if ($poty === "n" || $poty === "i") {
                 if (!ctype_digit($value) && !preg_match('/\A[-+]\d+\z/', $value)) {
@@ -420,6 +438,7 @@ class Getopt {
             } else if ($poty !== null && $poty !== "s") {
                 throw new ErrorException("Bad Getopt type `{$poty}` for `{$oname}`");
             }
+
             if (!array_key_exists($name, $res)) {
                 $res[$name] = $pot >= self::MARG ? [$value] : $value;
             } else if ($pot < self::MARG && !$this->allmulti) {
@@ -429,6 +448,7 @@ class Getopt {
             } else {
                 $res[$name] = [$res[$name], $value];
             }
+
             $active_po = $pot === self::MARG2 ? $po : null;
         }
         if ($this->helpopt !== null
@@ -436,10 +456,10 @@ class Getopt {
             fwrite(STDOUT, $this->help($res[$this->helpopt] ?? false));
             exit(0);
         }
-        $res["_"] = array_slice($argv, $i);
-        if ($this->maxarg !== null && count($res["_"]) > $this->maxarg) {
+        $res["_"] = $rest;
+        if ($this->maxarg !== null && count($rest) > $this->maxarg) {
             throw new CommandLineException("Too many arguments", $this);
-        } else if ($this->minarg !== null && count($res["_"]) < $this->minarg) {
+        } else if ($this->minarg !== null && count($rest) < $this->minarg) {
             throw new CommandLineException("Too few arguments", $this);
         }
         return $res;
