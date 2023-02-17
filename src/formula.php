@@ -2301,6 +2301,22 @@ class Formula implements JsonSerializable {
         return $this->_compile_function(2);
     }
 
+    /** @param int ...$index_types
+     * @return int */
+    static function combine_index_types(...$index_types) {
+        $rit = 0;
+        foreach ($index_types as $it) {
+            if ($it === 0 || $it === Fexpr::IDX_MY || $it === $rit) {
+                // nothing
+            } else if ($rit === 0) {
+                $rit = $it;
+            } else {
+                $rit = Fexpr::IDX_PC;
+            }
+        }
+        return $rit;
+    }
+
     static function compile_indexes_function(Contact $user, $index_types) {
         if ($index_types !== 0) {
             $state = new FormulaCompiler($user);

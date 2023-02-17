@@ -573,8 +573,8 @@ class FormulaGraph extends MessageSet {
         if ($this->fx->indexed()
             || $this->fy->indexed()
             || ($this->fxorder && $this->fxorder->indexed())) {
-            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->index_type());
-            // XXX $reviewf = Formula::compile_indexes_function($this->user, $this->fx->index_type() | $this->fy->index_type() | ($this->fxorder ? $this->fxorder->index_type() : 0));
+            $index_type = Formula::combine_index_types($this->fx->index_type(), $this->fxorder ? $this->fxorder->index_type() : 0, $this->fy->index_type());
+            $reviewf = Formula::compile_indexes_function($this->user, $index_type);
         }
         $orderf = $ordercf = $order_data = null;
         if ($this->fxorder) {
@@ -648,8 +648,7 @@ class FormulaGraph extends MessageSet {
         $fxf = $this->fx->compile_json_function();
         $fytrack = $this->fy->compile_extractor_function();
         $fycombine = $this->fy->compile_combiner_function();
-        $index_type = $this->fx->index_type();
-        // XXX | $this->fy->index_type() | ($this->fxorder ? $this->fxorder->index_type() : 0);
+        $index_type = Formula::combine_index_types($this->fx->index_type(), $this->fxorder ? $this->fxorder->index_type() : 0, $this->fy->index_type());
         $reviewf = Formula::compile_indexes_function($this->user, $index_type);
         $orderf = $ordercf = $order_data = null;
         if ($this->fxorder) {
