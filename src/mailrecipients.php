@@ -156,6 +156,7 @@ class MailRecipients extends MessageSet {
             $hide = $any_extrev ? 0 : self::F_HIDE;
             $this->defsel("extrev", "External reviewers", $hide);
             $this->defsel("uncextrev", "External reviewers with incomplete reviews", $hide);
+            $this->defsel("extrev-not-accepted", "External reviewers with outstanding requests", $hide);
             $this->defsel("rev_group_end", null, self::F_GROUP);
         } else {
             $any_lead = $any_shepherd = 0;
@@ -354,7 +355,7 @@ class MailRecipients extends MessageSet {
             $options["anyLead"] = $options["reviewSignatures"] = true;
         } else if ($this->type === "shepherd") {
             $options["anyShepherd"] = $options["reviewSignatures"] = true;
-        } else if (str_ends_with($this->type, "rev")) {
+        } else if (strpos($this->type, "rev") !== false) {
             $options["reviewSignatures"] = true;
         } else {
             assert(!$this->need_papers());
@@ -393,7 +394,7 @@ class MailRecipients extends MessageSet {
         $joins = ["ContactInfo"];
 
         // reviewer limit
-        if (!preg_match('/\A(new|unc|c|allc|)(pc|ext|myext|)rev\z/',
+        if (!preg_match('/\A(new|unc|c|allc|)(pc|ext|myext|)rev(|-not-accepted)\z/',
                         $this->type, $revmatch)) {
             $revmatch = false;
         }
@@ -459,6 +460,10 @@ class MailRecipients extends MessageSet {
                 $where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
             } else if ($revmatch[2] === "pc") {
                 $where[] = "PaperReview.reviewType>" . REVIEW_EXTERNAL;
+            }
+            // Not accepted
+            if ($revmatch[3] === "-not-accepted") {
+                $where[] = "PaperReview.reviewModified=0";
             }
         }
 

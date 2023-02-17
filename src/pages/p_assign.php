@@ -216,7 +216,7 @@ class Assign_Page {
 
     /** @param ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rrow */
     private function print_reqrev_main($rrow, $namex, $time) {
-        $rname = "Review " . ($rrow->reviewStatus > 0 ? " (accepted)" : " (not started)");
+        $rname = $rrow->status_title(true) . " (" . $rrow->status_description() . ")";
         if ($this->user->can_view_review($this->prow, $rrow)) {
             $rname = Ht::link($rname, $this->prow->reviewurl(["r" => $rrow->reviewId]));
         }

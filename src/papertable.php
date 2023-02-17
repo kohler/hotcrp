@@ -2378,7 +2378,7 @@ class PaperTable {
             }
 
             // review ID
-            $id = $rr->subject_to_approval() ? "Subreview" : "Review";
+            $id = $rr->status_title(true);
             if ($rr->reviewOrdinal && !$isdelegate) {
                 $id .= " #" . $rr->unparse_ordinal_id();
             }

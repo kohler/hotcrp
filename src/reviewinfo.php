@@ -447,9 +447,8 @@ class ReviewInfo implements JsonSerializable {
 
     /** @return string */
     function icon_h() {
-        if ($this->subject_to_approval()) {
-            $title = "Subreview";
-        } else {
+        $title = $this->status_title(true);
+        if ($title === "Review") {
             $title = ReviewForm::$revtype_names_full[$this->reviewType];
         }
         $t = '<span class="rto rt' . $this->reviewType;
@@ -486,6 +485,18 @@ class ReviewInfo implements JsonSerializable {
     }
 
     /** @return string */
+    function status_title($ucfirst = false) {
+        if ($this->reviewStatus === ReviewInfo::RS_EMPTY
+            && $this->reviewType < REVIEW_PC) {
+            return $ucfirst ? "Request" : "request";
+        } else if ($this->subject_to_approval()) {
+            return $ucfirst ? "Subreview" : "subreview";
+        } else {
+            return $ucfirst ? "Review" : "review";
+        }
+    }
+
+    /** @return string */
     function status_description() {
         if ($this->reviewStatus >= ReviewInfo::RS_COMPLETED) {
             return "complete";
@@ -500,7 +511,9 @@ class ReviewInfo implements JsonSerializable {
                    && $this->conf->ext_subreviews < 3) {
             return "delegated";
         } else if ($this->reviewStatus === ReviewInfo::RS_ACCEPTED) {
-            return "started";
+            return "accepted";
+        } else if ($this->reviewType < REVIEW_PC) {
+            return "not accepted";
         } else {
             return "not started";
         }
