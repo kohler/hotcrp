@@ -29,7 +29,7 @@ class Users_Page {
         }
         foreach ($this->conf->viewable_user_tags($viewer) as $t) {
             if ($t !== "pc")
-                $this->limits["#$t"] = "#$t program committee";
+                $this->limits["#{$t}"] = "#{$t} program committee";
         }
         if ($viewer->can_view_pc()
             && $viewer->isPC) {
@@ -40,7 +40,7 @@ class Users_Page {
             && ($qreq->t === "pcadmin" || $qreq->t === "pcadminx")) {
             $this->limits["pcadmin"] = "PC and system administrators";
         }
-        if ($viewer->privChair
+        if ($viewer->is_manager()
             || ($viewer->isPC && $this->conf->setting("pc_seeallrev"))) {
             $this->limits["re"] = "All reviewers";
             $this->limits["ext"] = "External reviewers";
