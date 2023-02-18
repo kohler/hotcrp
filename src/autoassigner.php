@@ -44,7 +44,7 @@ class AutoassignerUser {
     public $user;
     /** @var int */
     public $load = 0;
-    /** @var int|float */
+    /** @var int */
     public $max_load = PHP_INT_MAX;
     /** @var int */
     public $unhappiness = 0;
@@ -228,8 +228,20 @@ abstract class Autoassigner extends MessageSet {
     function extract_max_load($args) {
         if (($ml = $this->extract_tag($args, "max_load_tag"))) {
             foreach ($this->acs as $ac) {
-                if (($tv = $ac->user->tag_value($ml)) > 0) {
-                    $ac->max_load = $tv;
+                if (($tv = $ac->user->tag_value($ml)) >= 0) {
+                    $ac->max_load = min((int) $tv, $ac->max_load);
+                }
+            }
+        }
+        if (($m = $args["max_load"] ?? null) !== null) {
+            if (is_string($m)) {
+                $m = cvtint($m);
+            }
+            if (!is_int($m) || $m <= 0) {
+                $this->error_at("max_load", "<0>Maximum load should be a positive number");
+            } else {
+                foreach ($this->acs as $ac) {
+                    $ac->max_load = min($m, $ac->max_load);
                 }
             }
         }
