@@ -128,7 +128,8 @@ class Home_Page {
         echo '<li>', Ht::link("Settings", $user->conf->hoturl("settings")), '</li>';
     }
     static function print_admin_users(Contact $user) {
-        echo '<li>', Ht::link("Users", $user->conf->hoturl("users", "t=all")), '</li>';
+        $t = $user->privChair ? "all" : "re";
+        echo '<li>', Ht::link("Users", $user->conf->hoturl("users", ["t" => $t])), '</li>';
     }
     static function print_admin_assignments(Contact $user) {
         echo '<li>', Ht::link("Assignments", $user->conf->hoturl("autoassign")), '</li>';

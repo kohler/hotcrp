@@ -46,25 +46,27 @@ class Users_Page {
         if ($viewer->isPC) {
             $this->limits["req"] = ["label" => "External reviewers you requested", "exclude" => !$viewer->is_requester()];
         }
-        if ($viewer->privChair
+        if ($viewer->is_manager()
             || ($viewer->isPC
                 && $this->conf->submission_blindness() !== Conf::BLIND_ALWAYS)) {
             $this->limits["au"] = "Contact authors of submitted papers";
         }
-        if ($viewer->privChair
+        if ($viewer->is_manager()
             || ($viewer->isPC
                 && $viewer->can_view_some_decision()
                 && $viewer->can_view_some_authors())) {
             $this->limits["auacc"] = ["label" => "Contact authors of accepted papers", "exclude" => !$this->conf->has_any_accepted()];
         }
-        if ($viewer->privChair
+        if ($viewer->is_manager()
             || ($viewer->isPC
                 && $viewer->can_view_some_decision()
                 && $this->conf->submission_blindness() !== Conf::BLIND_ALWAYS)) {
             $this->limits["aurej"] = "Contact authors of rejected papers";
         }
-        if ($viewer->privChair) {
+        if ($viewer->is_manager()) {
             $this->limits["auuns"] = "Contact authors of non-submitted papers";
+        }
+        if ($viewer->privChair) {
             $this->limits["all"] = "Active users";
         }
     }
@@ -327,7 +329,7 @@ class Users_Page {
     private function handle_redisplay() {
         $sv = [];
         foreach (ContactList::$folds as $key) {
-            $sv[] = "uldisplay.$key=" . ($this->qreq->get("show$key") ? 0 : 1);
+            $sv[] = "uldisplay.{$key}=" . ($this->qreq->get("show$key") ? 0 : 1);
         }
         foreach ($this->conf->all_review_fields() as $f) {
             if ($this->qreq["has_show{$f->short_id}"])
