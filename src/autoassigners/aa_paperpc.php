@@ -23,6 +23,7 @@ class PaperPC_Autoassigner extends Autoassigner {
         }
         $this->set_assignment_action($t);
         $this->extract_balance_method($subreq);
+        $this->extract_max_load($subreq);
 
         $this->allow_incomplete = $subreq["allow_incomplete"] ?? false;
 
@@ -50,7 +51,7 @@ class PaperPC_Autoassigner extends Autoassigner {
         $q = "select {$this->ass_action}ContactId, count(paperId) from Paper where paperId ?A group by {$this->ass_action}ContactId";
         $result = $this->conf->qe($q, $this->paper_ids());
         while (($row = $result->fetch_row())) {
-            $this->set_aauser_load((int) $row[0], (int) $row[1]);
+            $this->add_aauser_load((int) $row[0], (int) $row[1]);
         }
         Dbl::free($result);
     }
@@ -101,9 +102,7 @@ class PaperPC_Autoassigner extends Autoassigner {
     }
 
     function run() {
-        if ($this->balance === self::BALANCE_ALL) {
-            $this->set_load();
-        }
+        $this->set_load();
         $result = $this->conf->qe("select paperId from Paper where {$this->ass_action}ContactId=0");
         while (($row = $result->fetch_row())) {
             $this->set_aapaper_ndesired((int) $row[0], 1);

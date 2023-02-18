@@ -122,6 +122,9 @@ class BackupDB_Batch {
             if (isset($arg[$key]))
                 $this->subcommand = $this->subcommand * 10 + $i + 1;
         }
+        if ($this->subcommand === self::RESTORE * 10 + self::S3_GET) {
+            $this->subcommand = self::S3_RESTORE;
+        }
         if ($this->schema || $this->skip_ephemeral || $this->_hash || $this->_check_table) {
             $this->subcommand *= 10;
         }

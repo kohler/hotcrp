@@ -46,6 +46,8 @@ class AutoassignerUser {
     public $load = 0;
     /** @var int */
     public $max_load = PHP_INT_MAX;
+    /** @var int|float */
+    public $balance = 0;
     /** @var int */
     public $unhappiness = 0;
     /** @var int */
@@ -182,30 +184,6 @@ abstract class Autoassigner extends MessageSet {
         }
     }
 
-    /** @param array<string,mixed> $args */
-    function extract_balance_method($args) {
-        if (($b = $args["balance"] ?? null) !== null) {
-            if ($b === "all") {
-                $this->balance = self::BALANCE_ALL;
-            } else if ($b === "new") {
-                $this->balance = self::BALANCE_NEW;
-            } else {
-                $this->error_at("balance", "<0>Balance should be ‘all’ or ‘new’");
-            }
-        }
-        if (($m = $args["method"] ?? null) !== null) {
-            if ($m === "default" || $m === "mincost") {
-                $this->method = self::METHOD_MCMF;
-            } else if ($m === "random") {
-                $this->method = self::METHOD_RANDOM;
-            } else if ($m === "stupid") {
-                $this->method = self::METHOD_STUPID;
-            } else {
-                $this->error_at("method", "<0>Method should be ‘default’ or ‘random’");
-            }
-        }
-    }
-
     /** @param array<string,mixed> $args
      * @param string $field
      * @return ?non-empty-string */
@@ -225,10 +203,42 @@ abstract class Autoassigner extends MessageSet {
     }
 
     /** @param array<string,mixed> $args */
+    function extract_balance_method($args) {
+        if (($b = $args["balance"] ?? null) !== null) {
+            if ($b === "all") {
+                $this->balance = self::BALANCE_ALL;
+            } else if ($b === "new") {
+                $this->balance = self::BALANCE_NEW;
+            } else {
+                $this->error_at("balance", "<0>Balance should be ‘all’ or ‘new’");
+            }
+        }
+        if (($bt = $this->extract_tag($args, "balance_offset_tag")) !== null) {
+            foreach ($this->acs as $ac) {
+                if (($tv = $ac->user->tag_value($bt))) {
+                    $ac->balance += $tv;
+                }
+            }
+        }
+        if (($m = $args["method"] ?? null) !== null) {
+            if ($m === "default" || $m === "mincost") {
+                $this->method = self::METHOD_MCMF;
+            } else if ($m === "random") {
+                $this->method = self::METHOD_RANDOM;
+            } else if ($m === "stupid") {
+                $this->method = self::METHOD_STUPID;
+            } else {
+                $this->error_at("method", "<0>Method should be ‘default’ or ‘random’");
+            }
+        }
+    }
+
+    /** @param array<string,mixed> $args */
     function extract_max_load($args) {
         if (($ml = $this->extract_tag($args, "max_load_tag"))) {
             foreach ($this->acs as $ac) {
-                if (($tv = $ac->user->tag_value($ml)) >= 0) {
+                $tv = $ac->user->tag_value($ml);
+                if ($tv !== null && $tv >= 0) {
                     $ac->max_load = min((int) $tv, $ac->max_load);
                 }
             }
@@ -320,9 +330,12 @@ abstract class Autoassigner extends MessageSet {
 
     /** @param int $uid
      * @param int $load */
-    protected function set_aauser_load($uid, $load) {
+    protected function add_aauser_load($uid, $load) {
         if (($ac = $this->aauser($uid))) {
-            $ac->load = $load;
+            $ac->load += $load;
+            if ($this->balance === self::BALANCE_ALL) {
+                $ac->balance += $load;
+            }
         }
     }
 
@@ -485,6 +498,7 @@ abstract class Autoassigner extends MessageSet {
 
         $ac->newass[] = $pid;
         ++$ac->load;
+        ++$ac->balance;
         ++$ap->nassigned;
         if ($a) {
             $a->eass = self::ENEWASSIGN;
@@ -685,9 +699,9 @@ abstract class Autoassigner extends MessageSet {
         $this->make_work_lists(false);
         $acs = $this->acs;
         while (!empty($acs)) {
-            // choose a pc member at random, equalizing load
+            // choose a least-balanced pc member
             $ac = self::choose_aauser($acs, function ($ac, $bc) {
-                return $ac->load <=> $bc->load;
+                return $ac->balance <=> $bc->balance;
             });
 
             // choose a paper from the work list
@@ -704,9 +718,10 @@ abstract class Autoassigner extends MessageSet {
         $this->make_work_lists(true);
         $acs = $this->acs;
         while (!empty($acs)) {
-            // choose a pc member at random, equalizing load, min unhappiness
+            // choose a least-balanced pc member, min unhappiness
             $ac = self::choose_aauser($acs, function ($ac, $bc) {
-                return $ac->load <=> $bc->load ? : $ac->unhappiness <=> $bc->unhappiness;
+                return $ac->balance <=> $bc->balance
+                    ? : $ac->unhappiness <=> $bc->unhappiness;
             });
 
             // choose a paper from the work list
@@ -780,19 +795,21 @@ abstract class Autoassigner extends MessageSet {
         }
         // user nodes
         $assperpc = ceil($nass / $this->user_count());
-        $minload = PHP_INT_MAX;
+        $minload = $minbalance = PHP_INT_MAX;
         $maxload = $assperpc;
         foreach ($this->acs as $ac) {
             $minload = min($minload, $ac->load);
             $maxload = max($maxload, $ac->load + $assperpc);
+            $minbalance = min($minbalance, $ac->balance);
         }
         foreach ($this->acs as $cid => $ac) {
             $m->add_node("u{$cid}", "u");
             if ($ac->ndesired >= 0) {
                 $m->add_edge(".source", "u{$cid}", $ac->ndesired, 0, count($ac->newass ?? []));
             } else {
-                for ($l = $ac->load; $l < min($maxload, $ac->max_load); ++$l) {
-                    $m->add_edge(".source", "u{$cid}", 1, $this->costs->assignment * ($l - $minload));
+                for ($ld = 0; $ac->load + $ld < min($maxload, $ac->max_load); ++$ld) {
+                    $c = $ac->balance + $ld - $minbalance;
+                    $m->add_edge(".source", "u{$cid}", 1, $this->costs->assignment * $c);
                 }
             }
             if ($ceass[$cid]) {

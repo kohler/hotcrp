@@ -25,11 +25,14 @@ class Autoassign_Batch {
     /** @var list<string> */
     public $users;
     /** @var bool */
+    public $quiet;
+    /** @var bool */
     public $dry_run;
 
     function __construct(Contact $user, $arg) {
         $this->conf = $user->conf;
         $this->user = $user;
+        $this->quiet = isset($arg["quiet"]);
         $this->dry_run = isset($arg["dry-run"]);
         if (!isset($arg["a"])) {
             throw new CommandLineException("An autoassigner must be specified with `-a`.\nValid choices are " . join(", ", array_keys($this->conf->autoassigner_map())));
@@ -115,7 +118,15 @@ class Autoassign_Batch {
 
         $aa->run();
 
-        if ($this->dry_run) {
+        if (!$aa->has_assignment()) {
+            if ($this->quiet) {
+                // do nothing
+            } else if ($this->dry_run) {
+                fwrite(STDOUT, "# No changes\n");
+            } else {
+                fwrite(STDERR, "Nothing to do\n");
+            }
+        } else if ($this->dry_run) {
             fwrite(STDOUT, join("", $aa->assignments()));
         } else {
             $assignset = new AssignmentSet($this->user, true);
@@ -124,14 +135,18 @@ class Autoassign_Batch {
                 fwrite(STDERR, $assignset->full_feedback_text());
                 return 1;
             } else if ($assignset->is_empty()) {
-                fwrite(STDERR, "Autoassignment makes no changes\n");
+                if (!$this->quiet) {
+                    fwrite(STDERR, "Autoassignment makes no changes\n");
+                }
             } else {
                 $assignset->execute();
-                $pids = $assignset->assigned_pids();
-                $pidt = $assignset->numjoin_assigned_pids(", #");
-                fwrite(STDERR, "Assigned "
-                    . join(", ", $assignset->assigned_types())
-                    . " to " . plural_word($pids, "paper") . " #" . $pidt . "\n");
+                if (!$this->quiet) {
+                    $pids = $assignset->assigned_pids();
+                    $pidt = $assignset->numjoin_assigned_pids(", #");
+                    fwrite(STDERR, "Assigned "
+                        . join(", ", $assignset->assigned_types())
+                        . " to " . plural_word($pids, "paper") . " #" . $pidt . "\n");
+                }
             }
         }
         return 0;
@@ -149,6 +164,7 @@ class Autoassign_Batch {
             "u[],user[] =USER Include users matching USER (`-USER` excludes).",
             "c:,count: {n} =N Set `count` parameter to N.",
             "t:,type: =TYPE Set `type`/`rtype` parameter to TYPE.",
+            "quiet Don’t warn on empty assignment.",
             "help,h !"
         )->description("Run a HotCRP autoassigner.
 Usage: php batch/autoassign.php [--dry-run] -a AA [PARAM=VALUE]...")

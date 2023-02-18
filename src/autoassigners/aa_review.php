@@ -41,6 +41,7 @@ class Review_Autoassigner extends Autoassigner {
         $this->set_computed_assignment_column("topic_score");
 
         $this->extract_balance_method($subreq);
+        $this->extract_max_load($subreq);
 
         $n = $subreq["count"] ?? $gj->count ?? 1;
         if (is_string($n)) {
@@ -68,7 +69,7 @@ class Review_Autoassigner extends Autoassigner {
         return parent::incompletely_assigned_paper_ids();
     }
 
-    private function balance_reviews() {
+    private function set_load() {
         $q = "select contactId, count(reviewId) from PaperReview where contactId?a";
         if ($this->rtype > 0) {
             $q .= " and reviewType={$this->rtype}";
@@ -77,18 +78,14 @@ class Review_Autoassigner extends Autoassigner {
         }
         $result = $this->conf->qe($q . " group by contactId", $this->user_ids());
         while (($row = $result->fetch_row())) {
-            $this->set_aauser_load((int) $row[0], (int) $row[1]);
+            $this->add_aauser_load((int) $row[0], (int) $row[1]);
         }
         Dbl::free($result);
     }
 
     function run() {
         $this->load_review_preferences($this->rtype);
-
-        if ($this->kind !== self::KIND_PER_USER
-            && $this->balance !== self::BALANCE_NEW) {
-            $this->balance_reviews();
-        }
+        $this->set_load();
 
         $count = $this->count;
         if ($this->kind === self::KIND_PER_USER) {
