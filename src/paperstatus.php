@@ -1297,7 +1297,6 @@ class PaperStatus extends MessageSet {
                 $this->_save_status |= self::SAVE_STATUS_NEW;
                 // save initial tags
                 if (($t = $this->_nnprow->all_tags_text()) !== "") {
-                    error_log($t);
                     $qv = [];
                     foreach (Tagger::split_unpack($t) as $ti) {
                         $qv[] = [$this->paperId, $ti[0], $ti[1]];

@@ -332,7 +332,7 @@ class Getopt {
         $rest = [];
         $pot = 0;
         $active_po = null;
-        $oname = "";
+        $oname = $name = "";
         $odone = false;
         for ($i = 1; $i !== count($argv); ++$i) {
             $arg = $argv[$i];

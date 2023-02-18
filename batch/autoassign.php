@@ -153,6 +153,7 @@ class Autoassign_Batch {
         )->description("Run a HotCRP autoassigner.
 Usage: php batch/autoassign.php [--dry-run] -a AA [PARAM=VALUE]...")
          ->helpopt("help")
+         ->interleave(true)
          ->parse($argv);
         // XXX bad pairs?
 

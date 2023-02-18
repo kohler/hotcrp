@@ -323,7 +323,7 @@ class Constant_Fexpr extends Fexpr {
             }
             $x = $pv->value;
             break;
-        case Fexpr::ROUND:
+        case Fexpr::FROUND:
             $x = $conf->round_number($this->x, false);
             if ($x === null) {
                 return;

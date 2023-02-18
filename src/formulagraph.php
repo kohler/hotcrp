@@ -936,16 +936,16 @@ class FormulaGraph extends MessageSet {
         if ($isx) {
             $j["label"] = $this->fx_expression;
         } else if ($this->type === self::FBARCHART) {
-            $j["label"] = "fraction of $counttype";
+            $j["label"] = "fraction of {$counttype}";
             $j["fraction"] = true;
         } else if ($this->type === self::BARCHART
                    && $this->fy->expression === "sum(1)") {
             $j["label"] = "# $counttype";
         } else if ($this->type === self::RAWCDF) {
-            $j["label"] = "Cumulative count of $counttype";
+            $j["label"] = "Cumulative count of {$counttype}";
             $j["raw"] = true;
         } else if ($this->type & self::CDF) {
-            $j["label"] = "CDF of $counttype";
+            $j["label"] = "CDF of {$counttype}";
         } else {
             $j["label"] = $this->fy->expression;
         }
