@@ -45,6 +45,8 @@ class AutoassignerUser {
     /** @var int */
     public $load = 0;
     /** @var int */
+    public $max_load = PHP_INT_MAX;
+    /** @var int */
     public $unhappiness = 0;
     /** @var int */
     public $pref_index_bound = -1;
@@ -66,6 +68,7 @@ class AutoassignerUser {
     /** @return bool */
     function assignments_complete() {
         return ($this->ndesired >= 0 && count($this->newass) >= $this->ndesired)
+            || $this->load >= $this->max_load
             || $this->work_list === [];
     }
 }
@@ -203,6 +206,35 @@ abstract class Autoassigner extends MessageSet {
         }
     }
 
+    /** @param array<string,mixed> $args
+     * @param string $field
+     * @return ?non-empty-string */
+    function extract_tag($args, $field) {
+        $tag = trim((string) ($args[$field] ?? ""));
+        if ($tag === "") {
+            return null;
+        }
+        $tagger = new Tagger($this->user);
+        $tag = $tagger->check($tag, Tagger::NOVALUE);
+        if ($tag === null || $tag === "") {
+            $this->error_at($field, "<5>" . $tagger->error_html(true));
+            return null;
+        } else {
+            return $tag;
+        }
+    }
+
+    /** @param array<string,mixed> $args */
+    function extract_max_load($args) {
+        if (($ml = $this->extract_tag($args, "max_load_tag"))) {
+            foreach ($this->acs as $ac) {
+                if (($tv = $ac->user->tag_value($ml)) > 0) {
+                    $ac->max_load = $tv;
+                }
+            }
+        }
+    }
+
     function set_review_gadget($review_gadget) {
         $this->review_gadget = $review_gadget;
     }
@@ -218,7 +250,7 @@ abstract class Autoassigner extends MessageSet {
     }
 
     /** @param string $column
-     * @param null|string|AutoassignerComputed $value */
+     * @param null|string $value */
     function set_assignment_column($column, $value) {
         assert(empty($this->ass) || $value === null || isset($this->ass_extra[$column]));
         if ($value === null) {
@@ -233,6 +265,13 @@ abstract class Autoassigner extends MessageSet {
             }
             $this->ass_extra[$column] = $value;
         }
+    }
+
+    /** @param string $column */
+    function set_computed_assignment_column($column) {
+        assert(in_array($column, ["preference", "expertise", "topic_score", "unhappiness", "name"]));
+        /** @phan-suppress-next-line PhanTypeMismatchArgumentProbablyReal */
+        $this->set_assignment_column($column, new AutoassignerComputed);
     }
 
 
@@ -367,7 +406,7 @@ abstract class Autoassigner extends MessageSet {
             $nu = 0;
             foreach ($this->acs as $ac) {
                 if ($ac->ndesired >= 0) {
-                    $nu += $ac->ndesired;
+                    $nu += min($ac->ndesired, max($ac->max_load - $ac->load, 0));
                 } else {
                     $nu = PHP_INT_MAX;
                     break;
@@ -611,7 +650,7 @@ abstract class Autoassigner extends MessageSet {
 
     /** @param AutoassignerUser $ac */
     protected function assign_from_work_list($ac) {
-        while (!empty($ac->work_list)) {
+        while (!empty($ac->work_list) && $ac->load < $ac->max_load) {
             $pid = array_pop($ac->work_list);
             // skip if not assignable
             if (!($ap = $this->aps[$pid] ?? null)
@@ -740,7 +779,7 @@ abstract class Autoassigner extends MessageSet {
             if ($ac->ndesired >= 0) {
                 $m->add_edge(".source", "u{$cid}", $ac->ndesired, 0, count($ac->newass ?? []));
             } else {
-                for ($l = $ac->load; $l < $maxload; ++$l) {
+                for ($l = $ac->load; $l < min($maxload, $ac->max_load); ++$l) {
                     $m->add_edge(".source", "u{$cid}", 1, $this->costs->assignment * ($l - $minload));
                 }
             }

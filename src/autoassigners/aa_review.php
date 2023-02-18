@@ -37,8 +37,8 @@ class Review_Autoassigner extends Autoassigner {
                 $this->set_assignment_column("round", $round);
             }
         }
-        $this->set_assignment_column("preference", new AutoassignerComputed);
-        $this->set_assignment_column("topic_score", new AutoassignerComputed);
+        $this->set_computed_assignment_column("preference");
+        $this->set_computed_assignment_column("topic_score");
 
         $this->extract_balance_method($subreq);
 
