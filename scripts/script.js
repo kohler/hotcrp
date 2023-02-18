@@ -2731,10 +2731,13 @@ function display_main(is_initial) {
             divelt.className = "d-inline-block";
             elt = document.createElement("span");
             elt.id = "header-deadline";
-            sepelt = document.createElement("span");
-            sepelt.className = "barsep ml-1 mr-1";
-            sepelt.textContent = "·";
-            divelt.append(elt, sepelt);
+            divelt.appendChild(elt);
+            if (hdrelt.firstChild) {
+                sepelt = document.createElement("span");
+                sepelt.className = "barsep ml-1 mr-1";
+                sepelt.textContent = "·";
+                divelt.append(sepelt);
+            }
             hdrelt.insertBefore(divelt, hdrelt.firstChild);
         }
         elt.innerHTML = s;
