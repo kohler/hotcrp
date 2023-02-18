@@ -21,6 +21,7 @@ class ContactList {
     const FIELD_SHEPHERDS = 14;
     const FIELD_TAGS = 15;
     const FIELD_COLLABORATORS = 16;
+    const FIELD_INCOMPLETE_REVIEWS = 17;
     const FIELD_FIRST = 40;
     const FIELD_LAST = 41;
     const FIELD_SCORE = 50;
@@ -152,6 +153,9 @@ class ContactList {
         case self::FIELD_REVIEWS:
         case "reviews":
             return ['revstat', 1, 1, self::FIELD_REVIEWS, "reviews"];
+        case self::FIELD_INCOMPLETE_REVIEWS:
+        case "ire":
+            return ['revstat', 1, 1, self::FIELD_INCOMPLETE_REVIEWS, "ire"];
         case self::FIELD_REVIEW_RATINGS:
         case "revratings":
             return ['revstat', 1, 1, self::FIELD_REVIEW_RATINGS, "revratings"];
@@ -206,6 +210,7 @@ class ContactList {
             $this->have_folds["topics"] = $this->qopt["topics"] = true;
             break;
         case self::FIELD_REVIEWS:
+        case self::FIELD_INCOMPLETE_REVIEWS:
             $this->qopt["reviews"] = true;
             break;
         case self::FIELD_LEADS:
@@ -286,6 +291,12 @@ class ContactList {
         $ac = $this->_rect_data[$a->contactId] ?? [0, 0];
         $bc = $this->_rect_data[$b->contactId] ?? [0, 0];
         return $bc[1] <=> $ac[1] ? : ($bc[0] <=> $ac[0] ? : $this->_sortBase($a, $b));
+    }
+
+    function _sortIncompleteReviews($a, $b) {
+        $ac = $this->_rect_data[$a->contactId] ?? [0, 0];
+        $bc = $this->_rect_data[$b->contactId] ?? [0, 0];
+        return $bc[0] <=> $ac[0] ? : $this->_sortBase($a, $b);
     }
 
     function _sortLeads($a, $b) {
@@ -369,6 +380,9 @@ class ContactList {
         case self::FIELD_REVIEWS:
             usort($rows, [$this, "_sortReviews"]);
             break;
+        case self::FIELD_INCOMPLETE_REVIEWS:
+            usort($rows, [$this, "_sortIncompleteReviews"]);
+            break;
         case self::FIELD_LEADS:
             usort($rows, [$this, "_sortLeads"]);
             break;
@@ -423,12 +437,16 @@ class ContactList {
         case self::FIELD_LOWTOPICS:
             return "Low-interest topics";
         case self::FIELD_REVIEWS:
-            if ($this->limit === "extrev-not-accepted") {
-                return "Outstanding review requests";
-            } else if ($this->limit === "extsub") {
+            if ($this->limit === "extsub") {
                 return "Completed reviews";
             } else {
                 return '<span class="hastitle" title="“1/2” means 1 complete review out of 2 assigned reviews">Reviews</span>';
+            }
+        case self::FIELD_INCOMPLETE_REVIEWS:
+            if ($this->limit === "extrev-not-accepted") {
+                return "Outstanding review requests";
+            } else {
+                return "Incomplete reviews";
             }
         case self::FIELD_LEADS:
             return "Leads";
@@ -760,6 +778,12 @@ class ContactList {
             } else {
                 return "";
             }
+        case self::FIELD_INCOMPLETE_REVIEWS:
+            if (($ct = $this->_rect_data[$row->contactId] ?? null)) {
+                return "<a href=\"" . $this->conf->hoturl("search", "t=s&amp;q=ire:" . urlencode($row->email)) . "\">{$ct[0]}</a>";
+            } else {
+                return "";
+            }
         case self::FIELD_LEADS:
             if (($c = $this->_lead_data[$row->contactId] ?? null)) {
                 return "<a href=\"" . $this->conf->hoturl("search", "t=s&amp;q=lead:" . urlencode($row->email)) . "\">$c</a>";
@@ -906,7 +930,7 @@ class ContactList {
         case "extsub":
             return $this->addScores([self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS]);
         case "extrev-not-accepted":
-            return $this->addScores([self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_PAPERS]);
+            return $this->addScores([self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_INCOMPLETE_REVIEWS, self::FIELD_REVIEW_PAPERS]);
         case "req":
             return $this->addScores([self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS]);
         case "au":
