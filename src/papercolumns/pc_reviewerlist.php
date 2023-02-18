@@ -7,6 +7,8 @@ class ReviewerList_PaperColumn extends PaperColumn {
     private $pref = false;
     /** @var bool */
     private $topics = false;
+    /** @var ?SearchTerm */
+    private $hlterm;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
@@ -41,6 +43,10 @@ class ReviewerList_PaperColumn extends PaperColumn {
         } else {
             $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         }
+        $st = $pl->search->main_term();
+        if ($st->about_reviews() === SearchTerm::ABOUT_SELF) {
+            $this->hlterm = $st;
+        }
         return true;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
@@ -57,11 +63,12 @@ class ReviewerList_PaperColumn extends PaperColumn {
                 if ($pref) {
                     $t .= unparse_preference_span($row->preference($xrow->contactId, $this->topics), true);
                 }
-                $x[] = $t;
+                $k = $this->hlterm && $this->hlterm->test($row, $xrow) ? " highlightmark taghh" : "";
+                $x[] = "<span class=\"nb{$k}\">{$t}";
             }
         }
         if ($x) {
-            return '<span class="nb">' . join(',</span> <span class="nb">', $x) . '</span>';
+            return join(',</span> ', $x) . '</span>';
         } else {
             return "";
         }
