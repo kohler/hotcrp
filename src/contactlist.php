@@ -423,7 +423,13 @@ class ContactList {
         case self::FIELD_LOWTOPICS:
             return "Low-interest topics";
         case self::FIELD_REVIEWS:
-            return '<span class="hastitle" title="“1/2” means 1 complete review out of 2 assigned reviews">Reviews</span>';
+            if ($this->limit === "extrev-not-accepted") {
+                return "Outstanding review requests";
+            } else if ($this->limit === "extsub") {
+                return "Completed reviews";
+            } else {
+                return '<span class="hastitle" title="“1/2” means 1 complete review out of 2 assigned reviews">Reviews</span>';
+            }
         case self::FIELD_LEADS:
             return "Leads";
         case self::FIELD_SHEPHERDS:
@@ -466,14 +472,19 @@ class ContactList {
         if ($review_limit
             && ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED || $prow->timeSubmitted > 0 || $review_limit === "all")) {
             if ($this->limit === "re"
-                || ($this->limit === "req" && $rrow->reviewType == REVIEW_EXTERNAL && $rrow->requestedBy == $this->user->contactId)
-                || ($this->limit === "ext" && $rrow->reviewType == REVIEW_EXTERNAL)
-                || ($this->limit === "extsub" && $rrow->reviewType == REVIEW_EXTERNAL && $rrow->reviewStatus >= ReviewInfo::RS_ADOPTED)) {
+                || ($this->limit === "req" && $rrow->reviewType === REVIEW_EXTERNAL && $rrow->requestedBy == $this->user->contactId)
+                || ($this->limit === "ext" && $rrow->reviewType === REVIEW_EXTERNAL)
+                || ($this->limit === "extsub" && $rrow->reviewType === REVIEW_EXTERNAL && $rrow->reviewStatus >= ReviewInfo::RS_ADOPTED)
+                || ($this->limit === "extrev-not-accepted" && $rrow->reviewType === REVIEW_EXTERNAL && $rrow->reviewStatus === ReviewInfo::RS_EMPTY)) {
                 $this->_limit_cids[$cid] = true;
             }
         }
         if (!isset($this->_rect_data[$cid])) {
             $this->_rect_data[$cid] = [0, 0];
+        }
+        if (($this->limit === "extsub" && $rrow->reviewStatus < ReviewInfo::RS_ADOPTED)
+            || ($this->limit === "extrev-not-accepted" && $rrow->reviewStatus !== ReviewInfo::RS_EMPTY)) {
+            return;
         }
         if ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED) {
             $this->_rect_data[$cid][0] += 1;
@@ -521,7 +532,7 @@ class ContactList {
 
     private function collect_paper_data() {
         $limit = $this->limit;
-        $review_limit = in_array($limit, ["re", "req", "ext", "extsub", "all"]) ? $limit : null;
+        $review_limit = in_array($limit, ["re", "req", "ext", "extsub", "extrev-not-accepted", "all"]) ? $limit : null;
 
         $args = [];
         if (isset($this->qopt["papers"])) {
@@ -894,6 +905,8 @@ class ContactList {
         case "ext":
         case "extsub":
             return $this->addScores([self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS]);
+        case "extrev-not-accepted":
+            return $this->addScores([self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_PAPERS]);
         case "req":
             return $this->addScores([self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS]);
         case "au":

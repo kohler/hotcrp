@@ -9,7 +9,7 @@ class Users_Page {
     public $viewer;
     /** @var Qrequest */
     public $qreq;
-    /** @var array<string,string> */
+    /** @var array<string,string|array{label:string}> */
     public $limits;
     /** @var list<int> */
     private $papersel;
@@ -29,37 +29,33 @@ class Users_Page {
         }
         foreach ($this->conf->viewable_user_tags($viewer) as $t) {
             if ($t !== "pc")
-                $this->limits["#{$t}"] = "#{$t} program committee";
+                $this->limits["#{$t}"] = ["optgroup" => "PC tags", "label" => "#{$t} program committee"];
         }
-        if ($viewer->can_view_pc()
-            && $viewer->isPC) {
+        if ($viewer->isPC
+            && $viewer->can_view_pc()) {
             $this->limits["admin"] = "System administrators";
-        }
-        if ($viewer->can_view_pc()
-            && $viewer->isPC
-            && ($qreq->t === "pcadmin" || $qreq->t === "pcadminx")) {
-            $this->limits["pcadmin"] = "PC and system administrators";
+            $this->limits["pcadmin"] = ["label" => "PC and system administrators", "exclude" => true];
         }
         if ($viewer->is_manager()
             || ($viewer->isPC && $this->conf->setting("pc_seeallrev"))) {
             $this->limits["re"] = "All reviewers";
             $this->limits["ext"] = "External reviewers";
             $this->limits["extsub"] = "External reviewers who completed a review";
+            $this->limits["extrev-not-accepted"] = "External reviewers with outstanding requests";
         }
         if ($viewer->isPC) {
-            $this->limits["req"] = "External reviewers you requested";
+            $this->limits["req"] = ["label" => "External reviewers you requested", "exclude" => !$viewer->is_requester()];
         }
         if ($viewer->privChair
             || ($viewer->isPC
                 && $this->conf->submission_blindness() !== Conf::BLIND_ALWAYS)) {
             $this->limits["au"] = "Contact authors of submitted papers";
         }
-        if ($this->conf->has_any_accepted()
-            && ($viewer->privChair
-                || ($viewer->isPC
-                    && $viewer->can_view_some_decision()
-                    && $viewer->can_view_some_authors()))) {
-            $this->limits["auacc"] = "Contact authors of accepted papers";
+        if ($viewer->privChair
+            || ($viewer->isPC
+                && $viewer->can_view_some_decision()
+                && $viewer->can_view_some_authors())) {
+            $this->limits["auacc"] = ["label" => "Contact authors of accepted papers", "exclude" => !$this->conf->has_any_accepted()];
         }
         if ($viewer->privChair
             || ($viewer->isPC
@@ -480,10 +476,15 @@ class Users_Page {
         ]);
 
 
+        $limit_title = $this->limits[$this->qreq->t];
+        if (!is_string($limit_title)) {
+            $limit_title = $limit_title["label"];
+        }
+
         $pl = new ContactList($this->viewer, true, $this->qreq);
         $pl_text = $pl->table_html($this->qreq->t,
             $this->conf->hoturl("users", ["t" => $this->qreq->t]),
-            $this->limits[$this->qreq->t], 'uldisplay.');
+            $limit_title, 'uldisplay.');
 
         echo '<hr class="g">';
         if (count($this->limits) > 1) {

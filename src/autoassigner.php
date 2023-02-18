@@ -44,7 +44,7 @@ class AutoassignerUser {
     public $user;
     /** @var int */
     public $load = 0;
-    /** @var int */
+    /** @var int|float */
     public $max_load = PHP_INT_MAX;
     /** @var int */
     public $unhappiness = 0;

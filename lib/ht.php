@@ -197,7 +197,8 @@ class Ht {
             unset($js["disabled"]);
         }
 
-        $x = $optgroup = "";
+        $in_optgroup = "";
+        $opts = [];
         $first_value = null;
         $has_selected = false;
         foreach ($opt as $key => $info) {
@@ -213,30 +214,42 @@ class Ht {
             }
 
             if ($info === null) {
-                $x .= '<option label=" " disabled></option>';
-            } else if (($info["type"] ?? null) === "optgroup") {
-                $x .= $optgroup;
-                if ($info["label"] ?? null) {
-                    $x .= '<optgroup label="' . htmlspecialchars($info["label"]) . '">';
-                    $optgroup = "</optgroup>";
-                } else {
-                    $optgroup = "";
+                $opts[] = '<option label=" " disabled></option>';
+                continue;
+            } else if ($info["exclude"] ?? false) {
+                if (strcmp($info["value"] ?? $key, $selected) !== 0) {
+                    continue;
                 }
-            } else {
-                $label = $info["label"];
-                unset($info["label"]);
-                $info["value"] = $info["value"] ?? (string) $key;
-                if (!isset($first_value)) {
-                    $first_value = $info["value"];
-                }
-                if ($selected !== null
-                    && strcmp($info["value"], $selected) === 0
-                    && !$has_selected) {
-                    $info["selected"] = true;
-                    $has_selected = true;
-                }
-                $x .= '<option' . self::extra($info) . ">{$label}</option>";
             }
+
+            if (($info["type"] ?? null) === "optgroup") {
+                $opts[] = $in_optgroup === "" ? "" : "</optgroup>";
+                $in_optgroup = $info["label"] ?? "";
+                if ($in_optgroup !== "") {
+                    $opts[] = '<optgroup label="' . htmlspecialchars($in_optgroup) . '">';
+                }
+                continue;
+            } else if (($info["optgroup"] ?? "") !== $in_optgroup) {
+                $opts[] = $in_optgroup === "" ? "" : "</optgroup>";
+                $in_optgroup = $info["optgroup"] ?? "";
+                if ($in_optgroup !== "") {
+                    $opts[] = '<optgroup label="' . htmlspecialchars($in_optgroup) . '">';
+                }
+            }
+
+            $label = $info["label"];
+            unset($info["label"], $info["type"], $info["optgroup"], $info["exclude"]);
+            $info["value"] = $info["value"] ?? (string) $key;
+            if (!isset($first_value)) {
+                $first_value = $info["value"];
+            }
+            if ($selected !== null
+                && strcmp($info["value"], $selected) === 0
+                && !$has_selected) {
+                $info["selected"] = true;
+                $has_selected = true;
+            }
+            $opts[] = '<option' . self::extra($info) . ">{$label}</option>";
         }
 
         $t = '<span class="select"><select name="' . $name . '"' . self::extra($js);
@@ -244,7 +257,10 @@ class Ht {
             && ($has_selected || isset($first_value))) {
             $t .= ' data-default-value="' . htmlspecialchars($has_selected ? $selected : $first_value) . '"';
         }
-        return "{$t}>{$x}{$optgroup}</select></span>";
+        if ($in_optgroup !== "") {
+            $opts[] = "</optgroup>";
+        }
+        return "{$t}>" . join("", $opts) . "</select></span>";
     }
 
     /** @param string $name

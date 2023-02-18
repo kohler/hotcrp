@@ -73,6 +73,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         "notaccepted" => self::NOTACCEPTED,
         "notdone" => self::INCOMPLETE,
         "notstarted" => self::NOTSTARTED,
+        "outstanding" => self::NOTACCEPTED,
         "partial" => self::INPROGRESS,
         "pending" => self::PENDINGAPPROVAL,
         "pendingapproval" => self::PENDINGAPPROVAL,
