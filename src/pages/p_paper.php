@@ -1,6 +1,6 @@
 <?php
 // pages/p_paper.php -- HotCRP paper view and edit page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Paper_Page {
     /** @var Conf */
@@ -201,7 +201,7 @@ class Paper_Page {
         $_GET["paperId"] = $_GET["p"] = $this->qreq->paperId = $this->qreq->p = $this->ps->paperId;
 
         if ($is_new) {
-            $new_prow->anno["is_new"] = true;
+            $new_prow->set_is_new(true);
         }
         $newsubmit = $new_prow->timeSubmitted > 0 && !$was_submitted;
         $sr = $new_prow->submission_round();

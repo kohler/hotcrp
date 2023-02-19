@@ -1,6 +1,6 @@
 <?php
 // contact.php -- HotCRP helper class representing system users
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Contact implements JsonSerializable {
     /** @var int */
@@ -5185,7 +5185,7 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function following_submission(PaperInfo $prow) {
-        $fl = ($prow->anno["is_new"] ?? false ? self::WATCH_PAPER_REGISTER_ALL : 0)
+        $fl = ($prow->is_new() ? self::WATCH_PAPER_REGISTER_ALL : 0)
             | ($prow->timeSubmitted > 0 ? self::WATCH_PAPER_NEWSUBMIT_ALL : 0);
         return $this->allow_administer($prow)
             && ($this->defaultWatch & $fl) !== 0;

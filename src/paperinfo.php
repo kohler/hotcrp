@@ -1,6 +1,6 @@
 <?php
 // paperinfo.php -- HotCRP paper objects
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class PaperContactInfo {
     /** @var int
@@ -527,6 +527,8 @@ class PaperInfo {
     private $_contact_info = [];
     /** @var int */
     private $_rights_version = 0;
+    /** @var int */
+    private $_flags = 0;
     /** @var ?SubmissionRound */
     private $_submission_round;
     /** @var ?list<Author> */
@@ -573,8 +575,6 @@ class PaperInfo {
     private $_review_array;
     /** @var int */
     private $_review_array_version = 0;
-    /** @var int */
-    private $_reviews_flags = 0;
     /** @var ?list<?bool> */
     private $_reviews_have;
     /** @var ?list<ReviewInfo> */
@@ -599,18 +599,19 @@ class PaperInfo {
     private $_author_view_user;
     /** @var ?int */
     public $_sort_subset;
-    /** @var ?bool */
-    private $_allow_absent;
-    /** @var ?int */
-    private $_pause_mark_inactive_documents;
 
-    /** @var ?array */
-    public $anno;
-
-    const REVIEW_HAS_FULL = 1;
-    const REVIEW_HAS_NAMES = 2;
-    const REVIEW_HAS_LASTLOGIN = 4;
-    const REVIEW_HAS_WORDCOUNT = 8;
+    const REVIEW_HAS_FULL = 0x01;
+    const REVIEW_HAS_NAMES = 0x02;
+    const REVIEW_HAS_LASTLOGIN = 0x04;
+    const REVIEW_HAS_WORDCOUNT = 0x08;
+    const REVIEW_FLAGS = 0xFF;
+    const MARK_INACTIVE_PAUSE_1 = 0x100;
+    const MARK_INACTIVE_PAUSE_2 = 0x200;
+    const MARK_INACTIVE_PAUSE = 0x300;
+    const ALLOW_ABSENT = 0x400;
+    const IS_NEW = 0x800;
+    const HAS_WANT_SUBMITTED = 0x1000;
+    const WANT_SUBMITTED = 0x2000;
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
     static private $next_uid = 0;
@@ -802,7 +803,7 @@ class PaperInfo {
     private function check_rights_version() {
         if ($this->_rights_version !== Contact::$rights_version) {
             if ($this->_rights_version) {
-                $this->_reviews_flags = 0;
+                $this->_flags &= ~self::REVIEW_FLAGS;
                 $this->_contact_info = [];
                 $this->reviewSignatures = $this->_review_array = $this->allConflictType = $this->_conflict_array = $this->_reviews_have = null;
                 ++$this->_review_array_version;
@@ -866,13 +867,49 @@ class PaperInfo {
 
     /** @return bool */
     function allow_absent() {
-        return !!$this->_allow_absent;
+        return ($this->_flags & self::ALLOW_ABSENT) !== 0;
     }
 
     /** @param bool $allow_absent */
     function set_allow_absent($allow_absent) {
         assert(!$allow_absent || $this->paperId === 0);
-        $this->_allow_absent = $allow_absent;
+        $this->_flags &= ~self::ALLOW_ABSENT;
+        if ($allow_absent) {
+            $this->_flags |= self::ALLOW_ABSENT;
+        }
+    }
+
+    /** @return bool */
+    function is_new() {
+        return ($this->_flags & self::IS_NEW) !== 0;
+    }
+
+    /** @param bool $is_new */
+    function set_is_new($is_new) {
+        $this->_flags &= ~self::IS_NEW;
+        if ($is_new) {
+            $this->_flags |= self::IS_NEW;
+        }
+    }
+
+    /** @return bool */
+    function want_submitted() {
+        if (($this->_flags & self::HAS_WANT_SUBMITTED) !== 0) {
+            return ($this->_flags & self::WANT_SUBMITTED) !== 0;
+        } else {
+            return $this->timeSubmitted > 0;
+        }
+    }
+
+    /** @param ?bool $want_submitted */
+    function set_want_submitted($want_submitted) {
+        $this->_flags &= ~(self::HAS_WANT_SUBMITTED | self::WANT_SUBMITTED);
+        if ($want_submitted !== null) {
+            $this->_flags |= self::HAS_WANT_SUBMITTED;
+        }
+        if ($want_submitted) {
+            $this->_flags |= self::WANT_SUBMITTED;
+        }
     }
 
 
@@ -887,42 +924,6 @@ class PaperInfo {
             }
         }
         return $this->_submission_round;
-    }
-
-    /** @return int
-     * @deprecated */
-    function open_time() {
-        return $this->submission_round()->open;
-    }
-
-    /** @return int
-     * @deprecated */
-    function registration_deadline() {
-        return $this->submission_round()->register;
-    }
-
-    /** @return int
-     * @deprecated */
-    function update_deadline() {
-        return $this->submission_round()->update;
-    }
-
-    /** @return int
-     * @deprecated */
-    function submission_deadline() {
-        return $this->submission_round()->submit;
-    }
-
-    /** @return int
-     * @deprecated */
-    function submission_grace() {
-        return $this->submission_round()->grace;
-    }
-
-    /** @return bool
-     * @deprecated */
-    function can_update_until_deadline() {
-        return !$this->submission_round()->freeze;
     }
 
 
@@ -2239,23 +2240,21 @@ class PaperInfo {
     }
 
     function pause_mark_inactive_documents() {
-        if ($this->_pause_mark_inactive_documents !== 2) {
-            $this->_pause_mark_inactive_documents = 1;
-        }
+        $this->_flags |= self::MARK_INACTIVE_PAUSE_1;
     }
 
     function resume_mark_inactive_documents() {
-        $paused = $this->_pause_mark_inactive_documents;
-        $this->_pause_mark_inactive_documents = null;
-        if ($paused === 2) {
+        $old_flags = $this->_flags;
+        $this->_flags &= ~self::MARK_INACTIVE_PAUSE;
+        if (($old_flags & self::MARK_INACTIVE_PAUSE_2) !== 0) {
             $this->mark_inactive_documents();
         }
     }
 
     function mark_inactive_documents() {
         // see also DocumentInfo::active_document_map
-        if (!$this->_pause_mark_inactive_documents) {
-            $this->_pause_mark_inactive_documents = 2;
+        if (($this->_flags & self::MARK_INACTIVE_PAUSE) === 0) {
+            $this->_flags |= self::MARK_INACTIVE_PAUSE_2;
             $dids = [];
             if ($this->paperStorageId > 1) {
                 $dids[] = $this->paperStorageId;
@@ -2269,9 +2268,9 @@ class PaperInfo {
                 }
             }
             $this->conf->qe("update PaperStorage set inactive=(paperStorageId?A) where paperId=? and documentType>=?", $dids, $this->paperId, DTYPE_FINAL);
-            $this->_pause_mark_inactive_documents = null;
+            $this->_flags &= ~self::MARK_INACTIVE_PAUSE;
         } else {
-            $this->_pause_mark_inactive_documents = 2;
+            $this->_flags |= self::MARK_INACTIVE_PAUSE_2;
         }
     }
 
@@ -2350,7 +2349,7 @@ class PaperInfo {
             && $this->_review_array === null
             && !$always) {
             $this->_review_array = [];
-            $this->_reviews_flags = 0;
+            $this->_flags &= ~self::REVIEW_FLAGS;
             $this->_reviews_have = null;
             if ($this->reviewSignatures !== "") {
                 foreach (explode(",", $this->reviewSignatures) as $rs) {
@@ -2370,8 +2369,8 @@ class PaperInfo {
         foreach ($row_set as $prow) {
             $prow->_review_array = [];
             $prow->_reviews_have = null;
-            $had |= $prow->_reviews_flags;
-            $prow->_reviews_flags = self::REVIEW_HAS_FULL;
+            $had |= $prow->_flags;
+            $prow->_flags = ($prow->_flags & ~self::REVIEW_FLAGS) | self::REVIEW_HAS_FULL;
         }
 
         $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
@@ -2582,7 +2581,7 @@ class PaperInfo {
     /** @return ?ReviewInfo */
     function full_review_by_id($id) {
         if ($this->_full_review_key === null
-            && !($this->_reviews_flags & self::REVIEW_HAS_FULL)) {
+            && ($this->_flags & self::REVIEW_HAS_FULL) === 0) {
             $this->_full_review_key = "r$id";
             $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId=? and reviewId=?", $this->paperId, $id);
             $rrow = ReviewInfo::fetch($result, $this, $this->conf);
@@ -2602,7 +2601,7 @@ class PaperInfo {
     function full_reviews_by_user($contact) {
         $cid = self::contact_to_cid($contact);
         if ($this->_full_review_key === null
-            && !($this->_reviews_flags & self::REVIEW_HAS_FULL)) {
+            && ($this->_flags & self::REVIEW_HAS_FULL) === 0) {
             foreach ($this->_row_set as $prow) {
                 $prow->_full_review = [];
                 $prow->_full_review_key = "u$cid";
@@ -2624,7 +2623,7 @@ class PaperInfo {
     /** @return ?ReviewInfo */
     function full_review_by_ordinal($ordinal) {
         if ($this->_full_review_key === null
-            && !($this->_reviews_flags & self::REVIEW_HAS_FULL)) {
+            && ($this->_flags & self::REVIEW_HAS_FULL) === 0) {
             $this->_full_review_key = "o$ordinal";
             $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId=? and reviewOrdinal=?", $this->paperId, $ordinal);
             $rrow = ReviewInfo::fetch($result, $this, $this->conf);
@@ -2714,7 +2713,7 @@ class PaperInfo {
     }
 
     function ensure_full_reviews() {
-        if (!($this->_reviews_flags & self::REVIEW_HAS_FULL)) {
+        if (($this->_flags & self::REVIEW_HAS_FULL) === 0) {
             $this->load_reviews(true);
         }
     }
@@ -2727,7 +2726,7 @@ class PaperInfo {
             }
         }
         foreach ($row_set as $prow) {
-            $prow->_reviews_flags |= self::REVIEW_HAS_NAMES;
+            $prow->_flags |= self::REVIEW_HAS_NAMES;
             $names = [];
             foreach ($prow->all_reviews() as $rrow) {
                 if (($u = $this->conf->user_by_id($rrow->contactId, USER_SLICE))) {
@@ -2740,7 +2739,7 @@ class PaperInfo {
     function ensure_reviewer_names() {
         $this->ensure_reviews();
         if (!empty($this->_review_array)
-            && !($this->_reviews_flags & self::REVIEW_HAS_NAMES)) {
+            && ($this->_flags & self::REVIEW_HAS_NAMES) === 0) {
             $this->ensure_reviewer_names_set($this->_row_set);
         }
     }
@@ -2749,7 +2748,7 @@ class PaperInfo {
     private function ensure_reviewer_last_login_set($row_set) {
         $users = [];
         foreach ($row_set as $prow) {
-            $prow->_reviews_flags |= self::REVIEW_HAS_LASTLOGIN;
+            $prow->_flags |= self::REVIEW_HAS_LASTLOGIN;
             foreach ($prow->all_reviews() as $rrow) {
                 $users[$rrow->contactId] = true;
             }
@@ -2768,7 +2767,7 @@ class PaperInfo {
     function ensure_reviewer_last_login() {
         $this->ensure_reviews();
         if (!empty($this->_review_array)
-            && !($this->_reviews_flags & self::REVIEW_HAS_LASTLOGIN)) {
+            && ($this->_flags & self::REVIEW_HAS_LASTLOGIN) === 0) {
             $this->ensure_reviewer_last_login_set($this->_row_set);
         }
     }
@@ -2792,7 +2791,7 @@ class PaperInfo {
 
     /** @param int $order */
     function ensure_review_field_order($order) {
-        if (!($this->_reviews_flags & self::REVIEW_HAS_FULL)
+        if (($this->_flags & self::REVIEW_HAS_FULL) === 0
             && ($this->_reviews_have[$order] ?? null) === null) {
             $rform = $this->conf->review_form();
             $this->_reviews_have = $this->_reviews_have ?? $rform->order_array(null);
@@ -2846,8 +2845,8 @@ class PaperInfo {
     }
 
     function ensure_review_word_counts() {
-        if (!($this->_reviews_flags & self::REVIEW_HAS_WORDCOUNT)) {
-            $this->_reviews_flags |= self::REVIEW_HAS_WORDCOUNT;
+        if (($this->_flags & self::REVIEW_HAS_WORDCOUNT) === 0) {
+            $this->_flags |= self::REVIEW_HAS_WORDCOUNT;
             if ($this->reviewWordCountSignature === null) {
                 $this->load_review_fields("reviewWordCount", "reviewWordCount", true);
             }
@@ -3302,7 +3301,7 @@ class PaperInfo {
 
     /** @return list<Contact> */
     function submission_followers() {
-        $fl = ($this->anno["is_new"] ?? false ? Contact::WATCH_PAPER_REGISTER_ALL : 0)
+        $fl = ($this->is_new() ? Contact::WATCH_PAPER_REGISTER_ALL : 0)
             | ($this->timeSubmitted > 0 ? Contact::WATCH_PAPER_NEWSUBMIT_ALL : 0);
         return $this->generic_followers([], "(defaultWatch&{$fl})!=0 and roles!=0", "following_submission");
     }

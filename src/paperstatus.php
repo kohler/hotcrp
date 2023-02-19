@@ -1,6 +1,6 @@
 <?php
 // paperstatus.php -- HotCRP helper for reading/storing papers as JSON
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
 
 class PaperStatus extends MessageSet {
     /** @var Conf
@@ -1019,6 +1019,7 @@ class PaperStatus extends MessageSet {
         }
 
         // save parts and track diffs
+        $this->_nnprow->set_want_submitted($pj->status->submitted && !$pj->status->withdrawn);
         $this->_check_fields($pj);
         $this->_check_status($pj);
         $this->_check_final_status($pj);
