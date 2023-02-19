@@ -1,6 +1,6 @@
 <?php
 // messageset.php -- HotCRP sets of messages by fields
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class MessageItem implements JsonSerializable {
     /** @var ?string */
@@ -239,9 +239,9 @@ class MessageSet {
     /** @param MessageItem $mi
      * @return int|false */
     private function message_index($mi) {
-        if ($mi->field === null
-            ? $this->problem_status >= $mi->status
-            : ($this->errf[$mi->field] ?? -5) >= $mi->status) {
+        if ($this->problem_status >= $mi->status
+            && ($mi->field === null
+                || ($this->errf[$mi->field] ?? -5) >= $mi->status)) {
             foreach ($this->msgs as $i => $m) {
                 if ($m->field === $mi->field
                     && $m->message === $mi->message
@@ -256,37 +256,34 @@ class MessageSet {
      * @param MessageItem $mi
      * @return MessageItem */
     function splice_item($pos, $mi) {
-        if (!($this->_ms_flags & self::IGNORE_MSGS)) {
-            if ($mi->field !== null) {
-                $old_status = $this->errf[$mi->field] ?? -5;
-                $this->errf[$mi->field] = max($this->errf[$mi->field] ?? 0, $mi->status);
-            } else {
-                $old_status = $this->problem_status;
-            }
-            $this->problem_status = max($this->problem_status, $mi->status);
-            if ($mi->message !== ""
-                && (($this->_ms_flags & self::IGNORE_DUPS) === 0
-                    || $old_status < $mi->status
-                    || $this->message_index($mi) === false)) {
-                if ($pos < 0 || $pos >= count($this->msgs)) {
-                    $this->msgs[] = $mi;
-                } else if ($pos === 0) {
-                    array_unshift($this->msgs, $mi);
-                } else {
-                    array_splice($this->msgs, $pos, 0, [$mi]);
-                }
-                if (($this->_ms_flags & self::WANT_FTEXT) !== 0
-                    && $mi->message !== ""
-                    && !Ftext::is_ftext($mi->message)) {
-                    error_log("not ftext: " . debug_string_backtrace());
-                    if ($this->_ms_flags & self::DEFAULT_FTEXT_TEXT) {
-                        $mi->message = "<0>{$mi->message}";
-                    } else if ($this->_ms_flags & self::DEFAULT_FTEXT_HTML) {
-                        $mi->message = "<5>{$mi->message}";
-                    }
-                }
+        if (($this->_ms_flags & self::IGNORE_MSGS) !== 0) {
+            return $mi;
+        }
+        if ($mi->message !== ""
+            && ($this->_ms_flags & self::WANT_FTEXT) !== 0
+            && !Ftext::is_ftext($mi->message)) {
+            error_log("not ftext: " . debug_string_backtrace());
+            if (($this->_ms_flags & self::DEFAULT_FTEXT_TEXT) !== 0) {
+                $mi->message = "<0>{$mi->message}";
+            } else if (($this->_ms_flags & self::DEFAULT_FTEXT_HTML) !== 0) {
+                $mi->message = "<5>{$mi->message}";
             }
         }
+        if ($mi->message !== ""
+            && (($this->_ms_flags & self::IGNORE_DUPS) === 0
+                || $this->message_index($mi) === false)) {
+            if ($pos < 0 || $pos >= count($this->msgs)) {
+                $this->msgs[] = $mi;
+            } else if ($pos === 0) {
+                array_unshift($this->msgs, $mi);
+            } else {
+                array_splice($this->msgs, $pos, 0, [$mi]);
+            }
+        }
+        if ($mi->field !== null) {
+            $this->errf[$mi->field] = max($this->errf[$mi->field] ?? 0, $mi->status);
+        }
+        $this->problem_status = max($this->problem_status, $mi->status);
         return $mi;
     }
 
