@@ -10,7 +10,7 @@ class GetJson_ListAction extends ListAction {
     function __construct($conf, $fj) {
         $this->iszip = $fj->name === "get/jsonattach";
     }
-    function document_callback($dj, DocumentInfo $doc, $dtype, PaperStatus $pstatus) {
+    function document_callback($dj, DocumentInfo $doc, $dtype, PaperExport $pex) {
         if ($doc->ensure_content()) {
             $dj->content_file = $doc->export_filename();
             $this->zipdoc->add_as($doc, $dj->content_file);
@@ -22,13 +22,13 @@ class GetJson_ListAction extends ListAction {
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $pj = [];
-        $ps = new PaperStatus($user->conf, $user, ["hide_docids" => true]);
+        $pex = new PaperExport($user);
         if ($this->iszip) {
             $this->zipdoc = new DocumentInfoSet($user->conf->download_prefix . "data.zip");
-            $ps->on_document_export([$this, "document_callback"]);
+            $pex->on_document_export([$this, "document_callback"]);
         }
         foreach ($ssel->paper_set($user, ["topics" => true, "options" => true]) as $prow) {
-            $pj1 = $ps->paper_json($prow);
+            $pj1 = $pex->paper_json($prow);
             if ($pj1) {
                 $pj[] = $pj1;
             } else {

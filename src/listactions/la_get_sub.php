@@ -9,7 +9,7 @@ class GetCheckFormat_ListAction extends ListAction {
             if ($user->can_view_pdf($prow))
                 $papers[$prow->paperId] = $prow;
         }
-        $csvg = $user->conf->make_csvg("formatcheck")->select(["paper", "title", "pages", "format", "messages"]);
+        $csvg = $user->conf->make_csvg("formatcheck")->select(["paper", "title", "pages", "format_status", "format", "messages"]);
         $csvg->export_headers();
         header("Content-Type: " . $csvg->mimetype_with_charset());
         echo $csvg->unparse();
@@ -22,18 +22,21 @@ class GetCheckFormat_ListAction extends ListAction {
                 $pages = $cf->npages ?? "?";
                 $errf = $cf->problem_fields();
                 if (empty($errf)) {
+                    $status = "ok";
                     $format = "ok";
                     $messages = "";
                 } else {
+                    $status = $cf->has_error() ? "error" : "warning";
                     $format = join(" ", $errf);
                     $messages = rtrim($cf->full_feedback_text());
                 }
             } else {
+                $status = "";
                 $pages = "";
                 $format = "notpdf";
                 $messages = "";
             }
-            echo $prow->paperId, ",", CsvGenerator::quote($prow->title), ",", $pages, ",", CsvGenerator::quote($format), ",", CsvGenerator::quote($messages), "\n";
+            echo $prow->paperId, ",", CsvGenerator::quote($prow->title), ",", $pages, ",", $status, ",", CsvGenerator::quote($format), ",", CsvGenerator::quote($messages), "\n";
             ob_flush();
             flush();
         }

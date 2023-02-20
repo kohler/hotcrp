@@ -537,12 +537,13 @@ class CheckFormat extends MessageSet {
         return $xj;
     }
 
+    /** @return bool */
     function check_document(DocumentInfo $doc) {
         $this->clear();
         $this->run_flags |= CheckFormat::RUN_STARTED;
         if ($doc->mimetype !== "application/pdf") {
             $this->error_at("error", "<0>The format checker only works on PDF files");
-            return;
+            return false;
         }
 
         $spec = $doc->conf->format_spec($doc->documentType);
@@ -576,6 +577,8 @@ class CheckFormat extends MessageSet {
                 $doc->conf->qe("update Paper set pdfFormatStatus=? where paperId=?", $doc->prow->pdfFormatStatus, $doc->paperId);
             }
         }
+
+        return !$this->has_error_at("error");
     }
 
     /** @return bool */

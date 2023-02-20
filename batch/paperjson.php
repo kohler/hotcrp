@@ -54,10 +54,10 @@ class PaperJson_Batch {
         ]);
 
         $apj = [];
-        $ps = new PaperStatus($conf, $this->user, ["hide_docids" => true]);
+        $pex = new PaperExport($this->user);
         $rf = $conf->review_form();
         foreach ($pset as $prow) {
-            $pj1 = $ps->paper_json($prow);
+            $pj1 = $pex->paper_json($prow);
             if ($this->reviews) {
                 foreach ($prow->reviews_as_display() as $rrow) {
                     $pj1->reviews[] = $rf->unparse_review_json($this->user, $prow, $rrow);

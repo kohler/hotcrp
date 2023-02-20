@@ -12,7 +12,7 @@ class Authors_PaperOption extends PaperOption {
     function value_force(PaperValue $ov) {
         $ov->set_value_data([1], [$ov->prow->authorInformation]);
     }
-    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_export_json(PaperValue $ov, PaperExport $pex) {
         $contacts_ov = $ov->prow->option(PaperOption::CONTACTSID);
         $lemails = [];
         foreach ($contacts_ov->data_list() as $email) {

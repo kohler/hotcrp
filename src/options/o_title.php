@@ -16,7 +16,7 @@ class Title_PaperOption extends PaperOption {
             && (strlen($ov->data()) > 6
                 || !preg_match('/\A(?:|N\/?A|TB[AD])\z/i', $ov->data()));
     }
-    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_export_json(PaperValue $ov, PaperExport $pex) {
         return (string) $ov->data();
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {

@@ -14,12 +14,6 @@ class PaperStatus extends MessageSet {
     /** @var int */
     public $paperId;
     /** @var bool */
-    private $export_ids = false;
-    /** @var bool */
-    private $hide_docids = false;
-    /** @var bool */
-    private $export_content = false;
-    /** @var bool */
     private $disable_users = false;
     /** @var bool */
     private $allow_any_content_file = false;
@@ -27,8 +21,6 @@ class PaperStatus extends MessageSet {
     private $content_file_prefix = null;
     /** @var bool */
     private $add_topics = false;
-    /** @var list<callable> */
-    private $_on_document_export = [];
     /** @var list<callable> */
     private $_on_document_import = [];
     /** @var ?CheckFormat */
@@ -68,6 +60,8 @@ class PaperStatus extends MessageSet {
     private $_documents_changed;
     /** @var int */
     private $_save_status;
+    /** @var ?int */
+    private $_saving_pid;
     /** @var list<int> */
     private $_update_pid_dids;
     /** @var list<DocumentInfo> */
@@ -82,8 +76,7 @@ class PaperStatus extends MessageSet {
     function __construct(Conf $conf, Contact $user = null, $options = []) {
         $this->conf = $conf;
         $this->user = $user ?? $conf->root_user();
-        foreach (["export_ids", "hide_docids", "add_topics",
-                  "export_content", "disable_users",
+        foreach (["add_topics", "disable_users",
                   "allow_any_content_file", "content_file_prefix"] as $k) {
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
@@ -117,11 +110,6 @@ class PaperStatus extends MessageSet {
         $this->_save_status = 0;
     }
 
-    /** @param callable(object,DocumentInfo,int,PaperStatus):(?bool) $cb */
-    function on_document_export($cb) {
-        $this->_on_document_export[] = $cb;
-    }
-
     /** @param callable(object,PaperInfo,PaperStatus):(?bool) $cb */
     function on_document_import($cb) {
         $this->_on_document_import[] = $cb;
@@ -129,9 +117,6 @@ class PaperStatus extends MessageSet {
 
     function user() {
         return $this->user;
-    }
-    function export_ids() {
-        return $this->export_ids;
     }
     function add_topics() {
         return $this->add_topics;
@@ -142,7 +127,8 @@ class PaperStatus extends MessageSet {
     }
 
     /** @param PaperOption $o
-     * @param int|DocumentInfo $docid */
+     * @param int|DocumentInfo $docid
+     * @deprecated */
     function document_to_json(PaperOption $o, $docid) {
         if (is_int($docid)) {
             $doc = $this->prow ? $this->prow->document($o->id, $docid) : null;
@@ -152,131 +138,15 @@ class PaperStatus extends MessageSet {
         }
         if (!$doc) {
             return null;
+        } else {
+            return (new PaperExport($this->user))->document_json($doc);
         }
-        assert($doc instanceof DocumentInfo);
-
-        $d = (object) [];
-        if ($docid && !$this->hide_docids) {
-            $d->docid = $docid;
-        }
-        if ($doc->mimetype) {
-            $d->mimetype = $doc->mimetype;
-        }
-        if ($doc->has_hash()) {
-            $d->hash = $doc->text_hash();
-        }
-        if ($doc->timestamp) {
-            $d->timestamp = $doc->timestamp;
-        }
-        if (($sz = $doc->size()) > 0) {
-            $d->size = $sz;
-        }
-        if ($doc->filename) {
-            $d->filename = $doc->filename;
-        }
-        if (($meta = $doc->metadata()) !== null) {
-            $d->metadata = $meta;
-        }
-        if ($this->export_content
-            && ($content = $doc->content()) !== false) {
-            $d->content_base64 = base64_encode($content);
-        }
-        foreach ($this->_on_document_export as $cb) {
-            if (call_user_func($cb, $d, $doc, $o->id, $this) === false)
-                return null;
-        }
-        if (!count(get_object_vars($d))) {
-            $d = null;
-        }
-
-        // maybe warn about format check
-        if ($d
-            && $doc->mimetype === "application/pdf"
-            && ($spec = $this->conf->format_spec($doc->documentType))
-            && !$spec->is_empty()) {
-            if (!$this->_cf) {
-                $this->_cf = new CheckFormat($this->conf, CheckFormat::RUN_NEVER);
-            }
-            $this->_cf->check_document($doc);
-            if ($this->_cf->has_problem()) {
-                $this->msg_at($o->field_key(), null, $this->_cf->problem_status());
-            }
-        }
-
-        return $d;
     }
 
-    /** @param int|PaperInfo $prow */
+    /** @param int|PaperInfo $prow
+     * @deprecated */
     function paper_json($prow) {
-        if (is_int($prow)) {
-            $prow = $this->conf->paper_by_id($prow, $this->user, ["topics" => true, "options" => true]);
-        }
-        if (!$prow || !$this->user->can_view_paper($prow)) {
-            return null;
-        }
-        $original_no_msgs = $this->swap_ignore_messages(true);
-
-        $this->prow = $prow;
-        $this->paperId = $prow->paperId;
-
-        $pj = (object) [];
-        $pj->pid = (int) $prow->paperId;
-
-        foreach ($this->prow->form_fields() as $opt) {
-            if ($this->user->can_view_option($this->prow, $opt)) {
-                $ov = $prow->force_option($opt);
-                $oj = $opt->value_unparse_json($ov, $this);
-                if ($oj !== null) {
-                    if ($this->export_ids) {
-                        $pj->{$opt->field_key()} = $oj;
-                    } else {
-                        $pj->{$opt->json_key()} = $oj;
-                    }
-                }
-            }
-        }
-
-        if ($this->user->can_view_authors($prow)) {
-            $pj->authors = [];
-            foreach ($prow->author_list() as $au) {
-                $pj->authors[] = (object) $au->unparse_nea_json();
-            }
-        }
-
-        $submitted_status = "submitted";
-        $dec = $prow->viewable_decision($this->user);
-        if ($dec->id !== 0) {
-            $pj->decision = $dec->placeholder ? $dec->name : $dec->id;
-            if ($dec->catbits !== DecisionInfo::CAT_OTHER) {
-                $submitted_status = ($dec->catbits & DecisionInfo::CAT_YES) !== 0 ? "accepted" : "rejected";
-            }
-        }
-
-        if ($prow->timeWithdrawn > 0) {
-            $pj->status = "withdrawn";
-            $pj->withdrawn = true;
-            $pj->withdrawn_at = (int) $prow->timeWithdrawn;
-            if ($prow->withdrawReason) {
-                $pj->withdraw_reason = $prow->withdrawReason;
-            }
-        } else if ($prow->timeSubmitted > 0) {
-            $pj->status = $submitted_status;
-            $pj->submitted = true;
-        } else {
-            $pj->status = "draft";
-            $pj->draft = true;
-        }
-        if (($t = $prow->submitted_at())) {
-            $pj->submitted_at = $t;
-        }
-
-        if ($prow->timeFinalSubmitted > 0) {
-            $pj->final_submitted = true;
-            $pj->final_submitted_at = $prow->timeFinalSubmitted;
-        }
-
-        $this->swap_ignore_messages($original_no_msgs);
-        return $pj;
+        return (new PaperExport($this->user))->paper_json($prow);
     }
 
 
@@ -984,7 +854,6 @@ class PaperStatus extends MessageSet {
     /** @param object $pj
      * @return bool */
     function prepare_save_paper_json($pj) {
-        assert(!$this->hide_docids);
         assert(is_object($pj));
 
         $paperid = $pj->pid ?? $pj->id ?? null;

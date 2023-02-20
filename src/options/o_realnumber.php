@@ -19,7 +19,7 @@ class RealNumber_PaperOption extends PaperOption {
         }
     }
 
-    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_export_json(PaperValue $ov, PaperExport $pex) {
         return $ov->value !== null ? floatval($ov->data()) : null;
     }
 

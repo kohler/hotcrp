@@ -1175,8 +1175,14 @@ class PaperOption implements JsonSerializable {
     function value_dids(PaperValue $ov) {
         return [];
     }
+    /** @deprecated */
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return null;
+    }
+    /** @suppress PhanDeprecatedFunction */
+    function value_export_json(PaperValue $ov, PaperExport $pex) {
+        $ps = PaperStatus::make_prow($pex->user, $ov->prow);
+        return $this->value_unparse_json($ov, $ps);
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {
     }
@@ -1499,7 +1505,7 @@ class Checkbox_PaperOption extends PaperOption {
         return ($bv && $bv->value ? 1 : 0) - ($av && $av->value ? 1 : 0);
     }
 
-    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_export_json(PaperValue $ov, PaperExport $pex) {
         return $ov->value ? true : false;
     }
 
@@ -1654,7 +1660,7 @@ class Selector_PaperOption extends PaperOption {
     function value_compare($av, $bv) {
         return PaperOption::basic_value_compare($av, $bv);
     }
-    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_export_json(PaperValue $ov, PaperExport $pex) {
         return $this->values[$ov->value - 1] ?? null;
     }
 
@@ -1831,13 +1837,11 @@ class Document_PaperOption extends PaperOption {
             return [];
         }
     }
-    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_export_json(PaperValue $ov, PaperExport $pex) {
         if (!$this->value_present($ov)) {
             return null;
-        } else if (($doc = $ps->document_to_json($this, $ov->value))) {
-            return $doc;
         } else {
-            return false;
+            return $pex->document_json($ov->document(0)) ?? false;
         }
     }
     function value_check(PaperValue $ov, Contact $user) {
@@ -2115,7 +2119,7 @@ class Text_PaperOption extends PaperOption {
         }
     }
 
-    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_export_json(PaperValue $ov, PaperExport $pex) {
         $x = $ov->data();
         return $x !== "" ? $x : null;
     }
@@ -2210,11 +2214,11 @@ class Attachments_PaperOption extends PaperOption {
             return $values;
         }
     }
-    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_export_json(PaperValue $ov, PaperExport $pex) {
         $attachments = [];
         foreach ($ov->documents() as $doc) {
-            if (($doc = $ps->document_to_json($this, $doc)))
-                $attachments[] = $doc;
+            if (($dj = $pex->document_json($doc)))
+                $attachments[] = $dj;
         }
         return empty($attachments) ? null : $attachments;
     }

@@ -12,7 +12,7 @@ class Nonblind_PaperOption extends PaperOption {
             $ov->set_value_data([1], [null]);
         }
     }
-    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+    function value_export_json(PaperValue $ov, PaperExport $ps) {
         return !!$ov->value;
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {

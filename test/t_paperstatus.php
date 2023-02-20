@@ -59,13 +59,13 @@ class PaperStatus_Tester {
         $paper1 = $this->conf->checked_paper_by_id(1);
         xassert_eqq($paper1->conflict_type($this->u_estrin), CONFLICT_AUTHOR);
 
-        $ps = new PaperStatus($this->conf, $this->u_estrin);
-        $this->paper1a = $ps->paper_json(1);
+        $this->paper1a = (new PaperExport($this->u_estrin))->paper_json(1);
         xassert_eqq($this->paper1a->title, "Scalable Timers for Soft State Protocols");
         $paper1a_pcc = $this->paper1a->pc_conflicts;
         '@phan-var-force object $paper1a_pcc';
         xassert_eqq($paper1a_pcc->{"estrin@usc.edu"}, "author");
 
+        $ps = new PaperStatus($this->conf, $this->u_estrin);
         $ps->save_paper_json((object) ["id" => 1, "title" => "Scalable Timers? for Soft State Protocols"]);
         xassert_paper_status($ps);
         $paper1->invalidate_conflicts();
@@ -73,8 +73,7 @@ class PaperStatus_Tester {
     }
 
     function test_paper_json_identity() {
-        $ps = new PaperStatus($this->conf, $this->u_estrin);
-        $paper1b = $ps->paper_json(1);
+        $paper1b = (new PaperExport($this->u_estrin))->paper_json(1);
         xassert_eqq($paper1b->title, "Scalable Timers? for Soft State Protocols");
         $paper1b->title = $this->paper1a->title;
         $paper1b->submitted_at = $this->paper1a->submitted_at;
@@ -100,25 +99,26 @@ class PaperStatus_Tester {
         xassert_eqq($doc->content_text_signature(), "starts with “%PDF-1.2”");
         $ps->save_paper_json((object) ["id" => 1, "submission" => $doc]);
         xassert_paper_status($ps);
-        $paper1c = $ps->paper_json(1);
+        $paper1c = (new PaperExport($this->u_estrin))->paper_json(1);
         xassert_eqq($paper1c->submission->hash, "2f1bccbf1e0e98004c01ef5b26eb9619f363e38e");
     }
 
     function test_paper_replace_document() {
-        $ps = new PaperStatus($this->conf);
-        $paper2a = $ps->paper_json(2);
+        $pex = new PaperExport($this->conf->root_user());
+        $paper2a = $pex->paper_json(2);
+        $ps = new PaperStatus($this->conf, $this->conf->root_user());
         $ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"%PDF-hello\\n\",\"type\":\"application/pdf\"}}"));
         xassert_paper_status($ps);
         xassert(ConfInvariants::test_document_inactive($this->conf));
 
-        $paper2b = $ps->paper_json(2);
+        $paper2b = $pex->paper_json(2);
         xassert_eqq($paper2b->submission->hash, "24aaabecc9fac961d52ae62f620a47f04facc2ce");
 
         $ps->save_paper_json(json_decode("{\"id\":2,\"final\":{\"content\":\"%PDF-goodbye\\n\",\"type\":\"application/pdf\"}}"));
         xassert_paper_status($ps);
         xassert(ConfInvariants::test_document_inactive($this->conf));
 
-        $paper2 = $ps->paper_json(2);
+        $paper2 = $pex->paper_json(2);
         xassert_eqq($paper2->submission->hash, "24aaabecc9fac961d52ae62f620a47f04facc2ce");
         xassert_eqq($paper2->final->hash, "e04c778a0af702582bb0e9345fab6540acb28e45");
 
@@ -126,7 +126,7 @@ class PaperStatus_Tester {
         xassert_paper_status($ps);
         xassert(ConfInvariants::test_document_inactive($this->conf));
 
-        $paper2 = $ps->paper_json(2);
+        $paper2 = $pex->paper_json(2);
         xassert_eqq($paper2->submission->hash, "30240fac8417b80709c72156b7f7f7ad95b34a2b");
         xassert_eqq($paper2->final->hash, "e04c778a0af702582bb0e9345fab6540acb28e45");
         $paper2 = $this->u_estrin->checked_paper_by_id(2);
@@ -207,7 +207,7 @@ class PaperStatus_Tester {
         xassert_eqq($paper3->sha1, "sha2-" . hex2bin("38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4"));
         xassert_eqq($paper3->document(DTYPE_SUBMISSION)->text_hash(), "sha2-38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4");
 
-        $paper3b = $ps->paper_json(3);
+        $paper3b = (new PaperExport($this->conf->root_user()))->paper_json(3);
         xassert_eqq($paper3b->submission->hash, "sha2-38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4");
     }
 

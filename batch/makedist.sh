@@ -388,6 +388,7 @@ src/papercolumns/pc_topics.php
 src/papercolumns/pc_topicscore.php
 src/papercolumns/pc_wordcount.php
 src/paperevents.php
+src/paperexport.php
 src/paperinfo.php
 src/paperlist.php
 src/paperoption.php
