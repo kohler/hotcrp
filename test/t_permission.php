@@ -1062,7 +1062,7 @@ class Permission_Tester {
         xassert_eqq(sorted_conflicts($paper3, TESTSC_ENABLED), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
 
         // change author list => remove conflict
-        $ps = new PaperStatus($this->conf);
+        $ps = new PaperStatus($this->conf->root_user());
         xassert($ps->save_paper_json(json_decode('{"id":3,"authors":[{"name":"Nick McKeown", "email": "nickm@ee.stanford.edu", "affiliation": "Stanford University"}]}')));
         $paper3->load_conflicts(false);
         xassert_eqq($paper3->conflict_type($user_sclin), 0);
@@ -1254,7 +1254,7 @@ class Permission_Tester {
         // check content upload
         $paper30 = $this->u_chair->checked_paper_by_id(30);
         $old_hash = $paper30->document(DTYPE_SUBMISSION)->text_hash();
-        $ps = new PaperStatus($this->conf);
+        $ps = new PaperStatus($this->conf->root_user());
         $ps->save_paper_json(json_decode('{"id":30,"submission":{"content_file":"/etc/passwd","mimetype":"application/pdf"}}'));
         xassert($ps->has_error_at("submission"));
         $paper30 = $this->u_chair->checked_paper_by_id(30);

@@ -1,6 +1,6 @@
 <?php
 // t_cdb.php -- HotCRP tests
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Cdb_Tester {
     /** @var Conf
@@ -233,7 +233,7 @@ class Cdb_Tester {
         $user_van = user("van@ee.lbl.gov");
         xassert(!maybe_user("akhmatova@poema.ru")); // but she is in cdb
 
-        $ps = new PaperStatus($this->conf);
+        $ps = new PaperStatus($this->conf->root_user());
         $ps->save_paper_json((object) [
             "id" => 1,
             "authors" => ["puneet@catarina.usc.edu", $user_estrin->email,

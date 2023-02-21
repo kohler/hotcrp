@@ -1,6 +1,6 @@
 <?php
 // test/setup.php -- HotCRP helper file to initialize tests
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 require_once(dirname(__DIR__) . "/src/siteloader.php");
 define("HOTCRP_OPTIONS", SiteLoader::find("test/options.php"));
@@ -911,7 +911,7 @@ class TestRunner {
         }
         $timer->mark("users");
         foreach ($json->papers as $p) {
-            $ps = new PaperStatus($conf);
+            $ps = new PaperStatus($conf->root_user());
             if (!$ps->save_paper_json($p)) {
                 $t = join("", array_map(function ($mx) {
                     return "    {$mx->field}: {$mx->message}\n";

@@ -402,7 +402,7 @@ class PaperInfo {
     // Always available, even in "minimal" paper skeletons
     /** @var int
      * @readonly */
-    public $paperId = 0;
+    public $paperId;
     /** @var int
      * @readonly */
     public $paperXid;      // unique among all PaperInfos
@@ -722,9 +722,12 @@ class PaperInfo {
     }
 
     /** @param ?string $stag
-     * @return PaperInfo */
+     * @return PaperInfo
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_new(Contact $user, $stag) {
         $prow = new PaperInfo($user->conf);
+        $prow->paperId = 0;
+        $prow->timeModified = 0;
         $prow->abstract = $prow->title = $prow->collaborators =
             $prow->authorInformation = $prow->paperTags = $prow->optionIds =
             $prow->topicIds = "";
@@ -1345,7 +1348,7 @@ class PaperInfo {
         if ($this->timeSubmitted > 0) {
             return $this->timeSubmitted;
         } else if ($this->timeWithdrawn > 0) {
-            if ($this->timeSubmitted == -100) {
+            if ($this->timeSubmitted === -100) {
                 return self::SUBMITTED_AT_FOR_WITHDRAWN;
             } else if ($this->timeSubmitted < -100) {
                 return -$this->timeSubmitted;
@@ -2076,10 +2079,11 @@ class PaperInfo {
     }
 
     function override_option(PaperValue $ov) {
-        if (!isset($this->_base_option_array[$ov->id])) {
-            $this->_base_option_array[$ov->id] = $this->force_option($ov->option);
+        $id = $ov->option_id();
+        if (!isset($this->_base_option_array[$id])) {
+            $this->_base_option_array[$id] = $this->force_option($ov->option);
         }
-        $this->_option_array[$ov->id] = $ov;
+        $this->_option_array[$id] = $ov;
     }
 
     function remove_option_overrides() {

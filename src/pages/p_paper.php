@@ -153,7 +153,7 @@ class Paper_Page {
         $was_submitted = $this->prow->timeSubmitted > 0;
         $this->useRequest = true;
 
-        $this->ps = new PaperStatus($conf, $this->user);
+        $this->ps = new PaperStatus($this->user);
         $prepared = $this->ps->prepare_save_paper_web($this->qreq, $this->prow, $action);
 
         if (!$prepared) {
@@ -344,7 +344,7 @@ class Paper_Page {
             return;
         }
 
-        $this->ps = new PaperStatus($this->conf, $this->user);
+        $this->ps = new PaperStatus($this->user);
         if (!$this->ps->prepare_save_paper_web($this->qreq, $this->prow, "updatecontacts")) {
             $conf->feedback_msg($this->ps);
             return;

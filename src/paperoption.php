@@ -1,12 +1,13 @@
 <?php
 // paperoption.php -- HotCRP helper class for paper options
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class PaperValue implements JsonSerializable {
     /** @var PaperInfo
      * @readonly */
     public $prow;
     /** @var int
+     * @deprecated
      * @readonly */
     public $id;
     /** @var PaperOption
@@ -27,7 +28,8 @@ class PaperValue implements JsonSerializable {
 
     const NEWDOC_VALUE = -142398;
 
-    /** @param PaperInfo $prow */
+    /** @param PaperInfo $prow
+     * @suppress PhanDeprecatedProperty */
     function __construct($prow, PaperOption $o) { // XXX should be private
         $this->prow = $prow;
         $this->id = $o->id;
@@ -68,8 +70,9 @@ class PaperValue implements JsonSerializable {
         $o->value_force($ov);
         return $ov;
     }
+
     function load_value_data() {
-        $ovd = $this->prow->option_value_data($this->id);
+        $ovd = $this->prow->option_value_data($this->option->id);
         $this->set_value_data($ovd[0], $ovd[1]);
     }
     /** @param list<int> $values
@@ -82,6 +85,19 @@ class PaperValue implements JsonSerializable {
         $this->value = $this->_values[0] ?? null;
         $this->_data = $datas;
     }
+
+    /** @return int */
+    function option_id() {
+        return $this->option->id;
+    }
+    /** @return int */
+    function value_count() {
+        return count($this->_values);
+    }
+    /** @return list<int> */
+    function value_list() {
+        return $this->_values;
+    }
     /** @return ?string */
     function data() {
         if ($this->_data === null) {
@@ -92,14 +108,6 @@ class PaperValue implements JsonSerializable {
         } else {
             return null;
         }
-    }
-    /** @return int */
-    function value_count() {
-        return count($this->_values);
-    }
-    /** @return list<int> */
-    function value_list() {
-        return $this->_values;
     }
     /** @return list<?string> */
     function data_list() {
@@ -121,7 +129,7 @@ class PaperValue implements JsonSerializable {
             // NB that $this->_docset might be invalidated by value_dids
             $docset = new DocumentInfoSet;
             foreach ($this->option->value_dids($this) as $did) {
-                if (($d = $this->prow->document($this->id, $did))) {
+                if (($d = $this->prow->document($this->option->id, $did))) {
                     $docset->add($d);
                 }
             }
