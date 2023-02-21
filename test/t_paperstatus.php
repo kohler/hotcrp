@@ -367,8 +367,11 @@ class PaperStatus_Tester {
     }
 
     function test_save_options() {
+        $this->newpaper1 = $this->newpaper1->reload();
+        xassert($this->newpaper1->timeSubmitted > 0);
+
         $ps = new PaperStatus($this->u_estrin);
-        xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "10", "has_opt1" => "1"]), $this->newpaper1, "update"));
+        xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "10", "has_opt1" => "1", "has_submitpaper" => 1]), $this->newpaper1, "update"));
         xassert_array_eqq($ps->change_keys(), ["calories", "status"], true);
         xassert($ps->execute_save());
         xassert_paper_status($ps);

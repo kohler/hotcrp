@@ -1191,15 +1191,11 @@ class PaperOption implements JsonSerializable {
     function value_dids(PaperValue $ov) {
         return [];
     }
-    /** @deprecated */
-    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+    /** @return mixed */
+    function value_export_json(PaperValue $ov, PaperExport $pex) {
         return null;
     }
-    /** @suppress PhanDeprecatedFunction */
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
-        $ps = PaperStatus::make_prow($pex->user, $ov->prow);
-        return $this->value_unparse_json($ov, $ps);
-    }
+    /** @return void */
     function value_store(PaperValue $ov, PaperStatus $ps) {
     }
     /** @return bool */

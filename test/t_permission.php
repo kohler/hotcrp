@@ -1259,7 +1259,6 @@ class Permission_Tester {
         xassert($ps->has_error_at("submission"));
         $paper30 = $this->u_chair->checked_paper_by_id(30);
         xassert_eqq($paper30->document(DTYPE_SUBMISSION)->text_hash(), $old_hash);
-        $ps->clear();
         $ps->save_paper_json(json_decode('{"id":30,"submission":{"content_file":"./../../../../etc/passwd","mimetype":"application/pdf"}}'));
         xassert($ps->has_error_at("submission"));
         $paper30 = $this->u_chair->checked_paper_by_id(30);

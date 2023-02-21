@@ -24,6 +24,8 @@ class PaperStatus extends MessageSet {
     private $prow;
     /** @var int */
     public $paperId;
+    /** @var ?int */
+    private $_desired_pid;
     /** @var list<PaperOption> */
     private $_fdiffs;
     /** @var list<string> */
@@ -54,8 +56,6 @@ class PaperStatus extends MessageSet {
     private $_paper_submitted;
     /** @var bool */
     private $_documents_changed;
-    /** @var ?int */
-    private $_desired_pid;
     /** @var list<int> */
     private $_update_pid_dids;
     /** @var list<DocumentInfo> */
@@ -63,11 +63,12 @@ class PaperStatus extends MessageSet {
     /** @var int */
     private $_save_status;
 
-    const SAVE_STATUS_ANY = 1;
-    const SAVE_STATUS_NEW = 2;
-    const SAVE_STATUS_SUBMIT = 4;
-    const SAVE_STATUS_NEWSUBMIT = 8;
-    const SAVE_STATUS_FINALSUBMIT = 16;
+    const SAVE_STATUS_PREPARED = 1;
+    const SAVE_STATUS_SAVED = 2;
+    const SAVE_STATUS_NEW = 4;
+    const SAVE_STATUS_SUBMIT = 8;
+    const SAVE_STATUS_NEWSUBMIT = 16;
+    const SAVE_STATUS_FINALSUBMIT = 32;
 
     function __construct(Contact $user, $options = []) {
         $this->conf = $user->conf;
@@ -78,7 +79,6 @@ class PaperStatus extends MessageSet {
                 $this->$k = $options[$k];
         }
         $this->_on_document_import[] = [$this, "document_import_check_filename"];
-        $this->clear();
         $this->set_want_ftext(true, 5);
         $this->set_ignore_duplicates(true);
     }
@@ -88,21 +88,6 @@ class PaperStatus extends MessageSet {
         $ps = new PaperStatus($user);
         $ps->prow = $prow;
         return $ps;
-    }
-
-    function clear() {
-        parent::clear();
-        $this->prow = $this->paperId = $this->_desired_pid = null;
-        $this->_fdiffs = $this->_xdiffs = [];
-        $this->_paper_upd = $this->_paper_overflow_upd = [];
-        $this->_topic_ins = null;
-        $this->_field_values = $this->_option_delid = $this->_option_ins = [];
-        $this->_conflict_values = [];
-        $this->_conflict_ins = $this->_register_users = $this->_created_contacts = null;
-        $this->_author_change_cids = null;
-        $this->_paper_submitted = $this->_documents_changed = false;
-        $this->_update_pid_dids = $this->_joindocs = [];
-        $this->_save_status = 0;
     }
 
     /** @param callable(object,PaperInfo,PaperStatus):(?bool) $cb */
@@ -122,29 +107,6 @@ class PaperStatus extends MessageSet {
 
     function _($itext, ...$args) {
         return $this->conf->_($itext, ...$args);
-    }
-
-    /** @param PaperOption $o
-     * @param int|DocumentInfo $docid
-     * @deprecated */
-    function document_to_json(PaperOption $o, $docid) {
-        if (is_int($docid)) {
-            $doc = $this->prow->document($o->id, $docid);
-        } else {
-            $doc = $docid;
-            $docid = $doc->paperStorageId;
-        }
-        if (!$doc) {
-            return null;
-        } else {
-            return (new PaperExport($this->user))->document_json($doc);
-        }
-    }
-
-    /** @param int|PaperInfo $prow
-     * @deprecated */
-    function paper_json($prow) {
-        return (new PaperExport($this->user))->paper_json($prow);
     }
 
 
@@ -342,7 +304,7 @@ class PaperStatus extends MessageSet {
             } else if ($v === false) {
                 $v = 0.0;
             } else if ($v !== null) {
-                $this->syntax_error_at("status.$k", $v);
+                $this->syntax_error_at("status.{$k}", $v);
             }
             $xstatus->$k = $v;
         }
@@ -359,7 +321,7 @@ class PaperStatus extends MessageSet {
         }
         $xstatus->submitted = $xstatus->submitted ?? $this->prow->timeSubmitted !== 0;
         $xstatus->draft = $xstatus->draft ?? !$xstatus->submitted;
-        $xstatus->withdrawn = $xstatus->withdrawn ?? $this->prow->timeWithdrawn !== 0;
+        $xstatus->withdrawn = $xstatus->withdrawn ?? $this->prow->timeWithdrawn > 0;
         if ($xstatus->submitted !== !$xstatus->draft) {
             $this->error_at("status.draft", "<0>Draft status conflicts with submitted status");
         }
@@ -534,18 +496,13 @@ class PaperStatus extends MessageSet {
     private function _check_status($pj) {
         $pj_withdrawn = $pj->status->withdrawn;
         $pj_submitted = $pj->status->submitted;
+        $submitted_at = $pj->status->submitted_at ?? $this->prow->submitted_at();
 
         if ($this->has_error()
             && $pj_submitted
             && !$pj_withdrawn
             && $this->prow->timeSubmitted === 0) {
             $pj_submitted = false;
-        }
-
-        if (isset($pj->status->submitted_at)) {
-            $submitted_at = $pj->status->submitted_at;
-        } else {
-            $submitted_at = $this->prow->submitted_at();
         }
 
         if ($pj_withdrawn) {
@@ -618,6 +575,7 @@ class PaperStatus extends MessageSet {
                 if ($oj === null) {
                     $ov = null;
                 } else if ($oj instanceof PaperValue) {
+                    assert($oj->prow === $this->prow);
                     $ov = $oj;
                 } else {
                     $ov = $opt->parse_json($this->prow, $oj);
@@ -812,19 +770,30 @@ class PaperStatus extends MessageSet {
         }
     }
 
+    private function _reset(PaperInfo $prow) {
+        assert($prow->paperId !== -1);
+        parent::clear();
+        $this->prow = $prow;
+        $this->paperId = null;
+        $this->_desired_pid = $prow->paperId !== 0 ? $prow->paperId : null;
+        $this->_fdiffs = $this->_xdiffs = [];
+        $this->_paper_upd = $this->_paper_overflow_upd = [];
+        $this->_topic_ins = null;
+        $this->_field_values = $this->_option_delid = $this->_option_ins = [];
+        $this->_conflict_values = [];
+        $this->_conflict_ins = $this->_register_users = $this->_created_contacts = null;
+        $this->_author_change_cids = null;
+        $this->_paper_submitted = $this->_documents_changed = false;
+        $this->_update_pid_dids = $this->_joindocs = [];
+        $this->_save_status = 0;
+    }
+
     /** @param ?PaperInfo $prow
      * @param string $action
      * @return bool */
     function prepare_save_paper_web(Qrequest $qreq, $prow, $action) {
-        $nnprow = $prow ?? PaperInfo::make_new($this->user, $qreq->sclass);
-        $sr = $nnprow->submission_round();
-
-        // Submission ID and type
+        $this->_reset($prow ?? PaperInfo::make_new($this->user, $qreq->sclass));
         $pj = (object) [];
-        $pj->pid = $nnprow->paperId > 0 ? $nnprow->paperId : -1;
-        if (!$sr->unnamed) {
-            $pj->submission_class = $sr->tag;
-        }
 
         // Status
         $updatecontacts = $action === "updatecontacts";
@@ -835,22 +804,22 @@ class PaperStatus extends MessageSet {
         } else if ($action === "final") {
             $pj->final_submitted = $pj->submitted = true;
             $pj->draft = false;
-        } else if (!$updatecontacts) {
+        } else if (!$updatecontacts && $qreq->has_submitpaper) {
             $pj->submitted = false;
             $pj->draft = true;
         }
 
         // Fields
-        foreach ($nnprow->form_fields() as $o) {
+        foreach ($this->prow->form_fields() as $o) {
             if (($qreq["has_{$o->formid}"] || isset($qreq[$o->formid]))
                 && (!$o->final || $action === "final")
                 && (!$updatecontacts || $o->id === PaperOption::CONTACTSID)) {
                 // XXX test_editable
-                $pj->{$o->json_key()} = $o->parse_qreq($nnprow, $qreq);
+                $pj->{$o->json_key()} = $o->parse_qreq($this->prow, $qreq);
             }
         }
 
-        return $this->prepare_save_paper_json($pj);
+        return $this->_finish_prepare($pj);
     }
 
     /** @param object $pj
@@ -858,13 +827,14 @@ class PaperStatus extends MessageSet {
     function prepare_save_paper_json($pj) {
         assert(is_object($pj));
 
-        $paperid = $pj->pid ?? $pj->id ?? null;
-        if ($paperid === "new" || (is_int($paperid) && $paperid <= 0)) {
-            $paperid = null;
-        } else if ($paperid !== null && !is_int($paperid)) {
+        $pid = $pj->pid ?? $pj->id ?? null;
+        if ($pid !== null && !is_int($pid) && $pid !== "new") {
             $key = isset($pj->pid) ? "pid" : "id";
-            $this->syntax_error_at($key, $paperid);
+            $this->syntax_error_at($key, $pid);
             return false;
+        }
+        if ($pid === "new" || (is_int($pid) && $pid <= 0)) {
+            $pid = null;
         }
 
         if (($pj->error ?? null) || ($pj->error_html ?? null)) {
@@ -872,16 +842,21 @@ class PaperStatus extends MessageSet {
             return false;
         }
 
-        $this->clear();
-        $this->_desired_pid = $paperid !== 0 && $paperid !== -1 ? $paperid : null;
-        if ($this->_desired_pid !== null) {
-            $this->prow = $this->conf->paper_by_id($this->_desired_pid, $this->user, ["topics" => true, "options" => true]);
+        $prow = null;
+        if ($pid !== null) {
+            $prow = $this->conf->paper_by_id($pid, $this->user, ["topics" => true, "options" => true]);
         }
-        $this->prow = $this->prow ?? PaperInfo::make_new($this->user, $pj->submission_class ?? null);
-        if ($this->prow->paperId !== 0 && $this->_desired_pid !== $this->prow->paperId) {
-            $this->error_at("pid", $this->_("<0>Saving submission with different ID"));
-            return false;
-        }
+        $this->_reset($prow ?? PaperInfo::make_new($this->user, $pj->submission_class ?? null));
+        $this->_desired_pid = $pid;
+        assert($this->prow->paperId === 0 || $this->prow->paperId === $pid);
+
+        return $this->_finish_prepare($pj);
+    }
+
+    /** @param object $pj
+     * @return bool */
+    private function _finish_prepare($pj) {
+        assert($this->_save_status === 0);
 
         // normalize and check format
         $pj = $this->_normalize($pj);
@@ -927,6 +902,7 @@ class PaperStatus extends MessageSet {
         if ($ok) {
             $this->_check_contacts_last($pj);
             $this->_ensure_creator_contact();
+            $this->_save_status |= self::SAVE_STATUS_PREPARED;
         }
 
         $this->prow->remove_option_overrides();
@@ -1155,8 +1131,9 @@ class PaperStatus extends MessageSet {
 
     /** @return bool */
     function execute_save() {
-        assert($this->_save_status === 0 && $this->paperId === null);
-        $this->_save_status = self::SAVE_STATUS_ANY;
+        assert($this->_save_status === self::SAVE_STATUS_PREPARED);
+        assert($this->paperId === null);
+        $this->_save_status = self::SAVE_STATUS_SAVED;
 
         $dataOverflow = $this->prow->dataOverflow;
         if (!empty($this->_paper_overflow_upd)) {
@@ -1212,7 +1189,10 @@ class PaperStatus extends MessageSet {
 
         // track submit-type flags
         if ($this->_paper_submitted) {
-            $this->_save_status |= self::SAVE_STATUS_SUBMIT | ($was_submitted ? 0 : self::SAVE_STATUS_NEWSUBMIT);
+            $this->_save_status |= self::SAVE_STATUS_SUBMIT;
+            if (!$was_submitted) {
+                $this->_save_status |= self::SAVE_STATUS_NEWSUBMIT;
+            }
         }
         if (isset($this->_paper_upd["timeFinalSubmitted"])
             ? $this->_paper_upd["timeFinalSubmitted"] > 0
@@ -1229,12 +1209,17 @@ class PaperStatus extends MessageSet {
             $prow->mark_inactive_documents();
         }
 
+        // The caller should not use `$this->prow` any more, but in case they
+        // do (e.g. in old tests), invalidate it when convenient.
+        $this->prow->invalidate_options();
+        $this->prow->invalidate_conflicts();
+        $this->prow = null;
         return true;
     }
 
     function log_save_activity(Contact $user, $action, $via = null) {
         // log message
-        assert($this->_save_status !== 0);
+        assert(($this->_save_status & self::SAVE_STATUS_SAVED) !== 0);
         $actions = [];
         if (($this->_save_status & self::SAVE_STATUS_NEW) !== 0) {
             $actions[] = "started";

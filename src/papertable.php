@@ -735,7 +735,8 @@ class PaperTable {
         $ready_open = $this->prow->paperStorageId > 1 || $this->conf->opt("noPapers");
         echo '<div class="ready-container ',
             $ready_open ? "foldo" : "foldc",
-            '"><div class="checki fx"><span class="checkc">',
+            '">', Ht::hidden("has_submitpaper", 1),
+            '<div class="checki fx"><span class="checkc">',
             Ht::checkbox("submitpaper", 1, $checked, ["disabled" => !$ready_open]),
             "</span>";
 

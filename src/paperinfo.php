@@ -767,6 +767,12 @@ class PaperInfo {
         return $prow;
     }
 
+    /** @return ?PaperInfo */
+    function reload() {
+        return $this->conf->paper_by_id($this->paperId);
+    }
+
+
     /** @param string $prefix
      * @return string */
     static function my_review_permissions_sql($prefix = "") {
