@@ -133,6 +133,9 @@ class PaperExport {
 
         $pj = (object) [];
         $pj->pid = (int) $prow->paperId;
+        if (($sr = $prow->submission_round()) && !$sr->unnamed) {
+            $pj->submission_class = $sr->tag;
+        }
 
         foreach ($prow->form_fields() as $opt) {
             if ($this->user->can_view_option($prow, $opt)) {
