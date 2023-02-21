@@ -2129,7 +2129,6 @@ class PaperInfo {
      * @param int $did
      * @return ?DocumentInfo */
     function document($dtype, $did = 0, $full = false) {
-        assert(is_int($dtype)); // XXX remove later
         if ($did <= 0) {
             if ($dtype === DTYPE_SUBMISSION) {
                 $did = $this->paperStorageId;

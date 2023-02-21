@@ -148,6 +148,17 @@ class DocumentInfo implements JsonSerializable {
         return $result->fetch_object("DocumentInfo", [null, $conf, $prow]);
     }
 
+    /** @return DocumentInfo */
+    static function make_empty(Conf $conf, PaperInfo $prow = null) {
+        // matches paperStorageId 1 in schema
+        return new DocumentInfo([
+            "paperStorageId" => 1, "paperId" => 0, "timestamp" => 0,
+            "mimetype" => "text/plain", "content" => "",
+            "hash" => "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+            "size" => 0
+        ], $conf, $prow);
+    }
+
     /** @param QrequestFile $upload
      * @param int $paperId
      * @param int $documentType

@@ -632,6 +632,7 @@ insert into Settings (name, value) values ('extrev_chairreq', 2);
 -- `pcrev_soft` setting starts at explicit 0
 insert into Settings (name, value) values ('pcrev_soft', 0);
 
+-- matches DocumentInfo::make_empty()
 insert ignore into PaperStorage set
     paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain',
     paper='', sha1=x'da39a3ee5e6b4b0d3255bfef95601890afd80709',

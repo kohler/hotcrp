@@ -21,7 +21,7 @@ class PaperValue implements JsonSerializable {
     private $_values = [];
     /** @var list<?string> */
     private $_data = [];
-    /** @var ?DocumentInfoSet */
+    /** @var null|false|DocumentInfoSet */
     private $_docset;
     /** @var ?MessageSet */
     private $_ms;
@@ -80,7 +80,9 @@ class PaperValue implements JsonSerializable {
     function set_value_data($values, $datas) {
         if ($this->_values != $values) {
             $this->_values = $values;
-            $this->_docset = null;
+            if ($this->_docset !== false) {
+                $this->_docset = null;
+            }
         }
         $this->value = $this->_values[0] ?? null;
         $this->_data = $datas;
@@ -125,15 +127,16 @@ class PaperValue implements JsonSerializable {
     function document_set() {
         assert($this->prow || empty($this->_values));
         assert($this->option->has_document());
+        assert($this->_docset !== false);
         if ($this->_docset === null) {
-            // NB that $this->_docset might be invalidated by value_dids
+            $this->_docset = false;
             $docset = new DocumentInfoSet;
+            // NB value_dids() might call set_value_data
             foreach ($this->option->value_dids($this) as $did) {
-                if (($d = $this->prow->document($this->option->id, $did))) {
-                    $docset->add($d);
-                }
+                $d = $this->prow->document($this->option->id, $did);
+                $docset->add($d ?? DocumentInfo::make_empty($this->prow->conf, $this->prow));
             }
-            assert(!$this->_docset);
+            assert($this->_docset === false);
             $this->_docset = $docset;
         }
         return $this->_docset;
@@ -152,6 +155,11 @@ class PaperValue implements JsonSerializable {
     function document_content($index) {
         $doc = $this->document($index);
         return $doc ? $doc->content() : false;
+    }
+    /** @param int $did
+     * @return ?DocumentInfo */
+    function document_by_id($did) {
+        return $this->prow->document($this->option->id, $did);
     }
     /** @param string $name
      * @return ?DocumentInfo */
@@ -1848,9 +1856,8 @@ class Document_PaperOption extends PaperOption {
     function value_export_json(PaperValue $ov, PaperExport $pex) {
         if (!$this->value_present($ov)) {
             return null;
-        } else {
-            return $pex->document_json($ov->document(0)) ?? false;
         }
+        return $pex->document_json($ov->document(0)) ?? false;
     }
     function value_check(PaperValue $ov, Contact $user) {
         if ($this->test_required($ov->prow)
