@@ -242,12 +242,12 @@ class Paper_Page {
         } else {
             $note_status = MessageSet::URGENT_NOTE;
             if ($sr->freeze) {
-                $notes[] = $conf->_("<0>The submission has not yet been completed.");
+                $notes[] = $conf->_("<0>This submission has not yet been completed.");
             } else if (($missing = PaperTable::missing_required_fields($new_prow))) {
-                $notes[] = $conf->_("<5>The submission is not ready for review. Required fields %#s are missing.", PaperTable::field_title_links($missing, "missing_title"));
+                $notes[] = $conf->_("<5>This submission is not ready for review. Required fields %#s are missing.", PaperTable::field_title_links($missing, "missing_title"));
             } else {
-                $first = $conf->_("This submission is marked as not ready for review.");
-                $notes[] = "<5><strong>" . Ftext::unparse_as(Ftext::ensure($first, 0), 5) . "</strong>";
+                $first = $conf->_("<5>This submission is marked as not ready for review.");
+                $notes[] = "<5><strong>" . Ftext::unparse_as($first, 5) . "</strong>";
             }
             $notes[] = $this->time_note($sr->update,
                 "<5>You have until %s to make further changes.",
@@ -278,7 +278,7 @@ class Paper_Page {
                 $this->ps->splice_msg($msgpos++, $conf->_("<0>Please correct these issues and save again."), MessageSet::URGENT_NOTE);
             }
         } else if ($this->ps->has_problem() && !$sr->freeze) {
-            $this->ps->splice_msg($msgpos++, $conf->_("<0>Please check these issues before completing the submission:"), MessageSet::WARNING_NOTE);
+            $this->ps->splice_msg($msgpos++, $conf->_("<0>Please check these issues before completing the submission."), MessageSet::WARNING_NOTE);
         }
         $notes = array_filter($notes, function ($n) { return $n !== ""; });
         if (!empty($notes)) {

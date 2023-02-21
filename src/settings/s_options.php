@@ -100,7 +100,7 @@ class Options_SettingRenderer {
 
     function print_required(SettingValues $sv) {
         $sv->print_select_group("sf/{$this->ctr}/required", "Required", [
-            "0" => "No", "1" => "Yes"
+            "0" => "No", "1" => "At registration", "2" => "At submission"
         ], [
             "horizontal" => true,
             "group_attr" => ["data-property" => "required"]

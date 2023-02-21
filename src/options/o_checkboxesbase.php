@@ -1,6 +1,6 @@
 <?php
 // o_checkboxesbase.php -- HotCRP helper class for checkboxes & topics options
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 abstract class CheckboxesBase_PaperOption extends PaperOption {
     /** @var int */
@@ -12,13 +12,15 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
 
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        if (!isset($args->min) && $this->required) {
+        if (!isset($args->min) && $this->required > 0) {
             $this->min_count = 1;
         } else {
             $this->min_count = $args->min ?? 0;
         }
         $this->max_count = $args->max ?? 0;
-        $this->required = $this->min_count > 0;
+        if ($this->min_count > 0 && $this->required === 0) {
+            $this->set_required(self::REQ_SUBMIT);
+        }
     }
 
 

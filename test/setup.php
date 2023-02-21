@@ -642,9 +642,22 @@ function xassert_assign_fail($who, $what, $override = false) {
     return xassert(!$assignset->execute());
 }
 
-/** @param int $maxstatus */
-function xassert_paper_status(PaperStatus $ps, $maxstatus = MessageSet::PLAIN) {
-    if (!xassert($ps->problem_status() <= $maxstatus)) {
+/** @param ?int $maxstatus */
+function xassert_paper_status(PaperStatus $ps, $maxstatus = null) {
+    $xmaxstatus = $maxstatus ?? MessageSet::PLAIN;
+    $ok = true;
+    foreach ($ps->message_list() as $mx) {
+        if ($mx->status > $maxstatus
+            && ($maxstatus !== null
+                || $mx->status !== MessageSet::WARNING
+                || $mx->field !== "submission"
+                || $mx->message !== "<0>Entry required to complete submission")) {
+            $ok = false;
+            break;
+        }
+    }
+    if (!$ok) {
+        xassert($ps->problem_status() <= $xmaxstatus);
         foreach ($ps->message_list() as $mx) {
             if ($mx->status === MessageSet::INFORM && $mx->message) {
                 error_log("!     {$mx->message}");

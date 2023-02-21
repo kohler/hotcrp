@@ -1104,27 +1104,23 @@ class PaperStatus extends MessageSet {
     }
 
     private function _postexecute_check_required_options() {
-        $prow = null;
+        $prow = $this->conf->paper_by_id($this->paperId, $this->user, ["options" => true]);
         $required_failure = false;
-        foreach ($this->prow->form_fields() as $o) {
-            if (!$o->required) {
-                continue;
-            }
-            if (!$prow) {
-                $prow = $this->conf->paper_by_id($this->paperId, $this->user, ["options" => true]);
-            }
-            if ($this->user->can_edit_option($prow, $o)
-                && $o->test_required($prow)
-                && !$o->value_present($prow->force_option($o))) {
-                $this->error_at_option($o, "<0>Entry required");
-                $required_failure = true;
+        foreach ($prow->form_fields() as $o) {
+            if ($o->required
+                && $this->user->can_edit_option($prow, $o)) {
+                $ov = $prow->force_option($o);
+                if (!$o->value_check_required($ov, true)) {
+                    $ov->append_messages_to($this);
+                    $required_failure = true;
+                }
             }
         }
-        if ($required_failure
-            && $this->prow->timeSubmitted === 0) {
+        if ($required_failure && $this->prow->timeSubmitted <= 0) {
             // Some required option was missing and the paper was not submitted
             // before, so it shouldn't be submitted now.
-            $this->conf->qe("update Paper set timeSubmitted=0 where paperId=?", $this->paperId);
+            $this->conf->qe("update Paper set timeSubmitted=? where paperId=?",
+                            $this->prow->timeSubmitted, $this->paperId);
             $this->_paper_submitted = false;
         }
     }

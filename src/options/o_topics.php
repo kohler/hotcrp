@@ -1,6 +1,6 @@
 <?php
 // o_topics.php -- HotCRP helper class for topics intrinsic
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Topics_PaperOption extends CheckboxesBase_PaperOption {
     function __construct(Conf $conf, $args) {
@@ -8,7 +8,9 @@ class Topics_PaperOption extends CheckboxesBase_PaperOption {
         if ($conf->setting("has_topics")) {
             $this->min_count = $conf->setting("topic_min") ?? $this->min_count;
             $this->max_count = $conf->setting("topic_max") ?? 0;
-            $this->required = $this->min_count > 0;
+            if ($this->min_count > 0 && $this->required === 0) {
+                $this->required = self::REQ_REGISTER;
+            }
         } else {
             $this->set_exists_condition(false);
         }

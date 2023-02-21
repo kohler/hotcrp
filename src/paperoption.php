@@ -698,7 +698,7 @@ class PaperOption implements JsonSerializable {
     /** @var bool
      * @readonly */
     public $nonpaper;
-    /** @var bool
+    /** @var 0|1|2
      * @readonly */
     public $required;
     /** @var bool
@@ -732,6 +732,10 @@ class PaperOption implements JsonSerializable {
     /** @var int */
     private $_recursion = 0;
     public $max_size;
+
+    const REQ_NO = 0;
+    const REQ_REGISTER = 1;
+    const REQ_SUBMIT = 2;
 
     const VIS_SUB = 0;         // visible if paper is visible (= all)
     const VIS_AUTHOR = 1;      // visible if authors are visible
@@ -779,13 +783,22 @@ class PaperOption implements JsonSerializable {
         $this->_search_keyword = $args->search_keyword ?? $this->_json_key;
         $this->formid = $this->id > 0 ? "opt{$this->id}" : $this->_json_key;
 
-        $this->description = $args->description ?? "";
-        $this->description_format = $args->description_format ?? null;
         $this->nonpaper = ($args->nonpaper ?? false) === true;
-        $this->required = !!($args->required ?? false);
-        $this->final = ($args->final ?? false) === true;
         $this->configurable = ($args->configurable ?? null) !== false;
         $this->include_empty = ($args->include_empty ?? false) === true;
+
+        $this->description = $args->description ?? "";
+        $this->description_format = $args->description_format ?? null;
+        $this->final = ($args->final ?? false) === true;
+
+        $req = $args->required ?? false;
+        if (!$req) {
+            $this->required = self::REQ_NO;
+        } else if ($req === "submit" || $req === self::REQ_SUBMIT) {
+            $this->required = self::REQ_SUBMIT;
+        } else {
+            $this->required = self::REQ_REGISTER;
+        }
 
         $vis = $args->visibility ?? $args->view_type ?? null;
         if ($vis === null || $vis === "all" || $vis === "rev") {
@@ -1123,12 +1136,13 @@ class PaperOption implements JsonSerializable {
 
     /** @return bool */
     function test_required(PaperInfo $prow) {
-        // Invariant: `$o->test_required($prow)` implies `$o->required`.
-        return $this->required && $this->test_exists($prow);
+        // Invariant: `$o->test_required($prow)` implies `$o->required > 0`.
+        return $this->required > 0 && $this->test_exists($prow);
     }
-    protected function set_required($x) {
+    /** @param 0|1|2 $req */
+    protected function set_required($req) {
         /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-        $this->required = $x;
+        $this->required = $req;
     }
 
     /** @return bool */
@@ -1180,12 +1194,24 @@ class PaperOption implements JsonSerializable {
             return $av <=> $bv;
         }
     }
-    function value_check(PaperValue $ov, Contact $user) {
+    /** @return bool */
+    function value_check_required(PaperValue $ov) {
         if ($this->test_required($ov->prow)
             && !$this->value_present($ov)
             && !$ov->prow->allow_absent()) {
-            $ov->error("<0>Entry required");
+            if ($this->required === self::REQ_SUBMIT) {
+                $m = $this->conf->_("<0>Entry required to complete submission");
+                $ov->msg($m, $ov->prow->want_submitted() ? MessageSet::ERROR : MessageSet::WARNING);
+            } else {
+                $ov->error("<0>Entry required");
+            }
+            return false;
+        } else {
+            return true;
         }
+    }
+    function value_check(PaperValue $ov, Contact $user) {
+        $this->value_check_required($ov);
     }
     /** @return list<int> */
     function value_dids(PaperValue $ov) {
@@ -1252,7 +1278,9 @@ class PaperOption implements JsonSerializable {
         if ($this->editable_if !== null) {
             $j->editable_if = $this->editable_if;
         }
-        if ($this->required) {
+        if ($this->required === self::REQ_SUBMIT) {
+            $j->required = "submit";
+        } else if ($this->required) {
             $j->required = true;
         }
         if ($this->max_size !== null) {
@@ -1795,7 +1823,7 @@ class Document_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
         if ($this->id === DTYPE_SUBMISSION && !$conf->opt("noPapers")) {
-            $this->set_required(true);
+            $this->set_required(self::REQ_SUBMIT);
         }
     }
 
@@ -1856,15 +1884,7 @@ class Document_PaperOption extends PaperOption {
         return $pex->document_json($ov->document(0)) ?? false;
     }
     function value_check(PaperValue $ov, Contact $user) {
-        if ($this->test_required($ov->prow)
-            && !$this->value_present($ov)
-            && !$ov->prow->allow_absent()) {
-            if ($this->id === DTYPE_SUBMISSION) {
-                $ov->msg($this->conf->_("<0>Entry required to complete submission"), MessageSet::WARNING_NOTE);
-            } else {
-                $ov->error("<0>Entry required");
-            }
-        }
+        parent::value_check($ov, $user);
         if ($this->value_present($ov)
             && ($doc = $ov->document(0))
             && $doc->mimetype === "application/pdf"

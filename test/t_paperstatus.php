@@ -279,7 +279,7 @@ class PaperStatus_Tester {
 
         $ps = new PaperStatus($this->u_estrin);
         xassert($ps->prepare_save_paper_web(new Qrequest("POST", []), $newpaper, "submit"));
-        xassert_array_eqq($ps->change_keys(), ["status"], true);
+        xassert_array_eqq($ps->change_keys(), [], true);
         xassert($ps->execute_save());
         xassert_paper_status_saved_nonrequired($ps, MessageSet::WARNING);
 
@@ -352,7 +352,7 @@ class PaperStatus_Tester {
 
     function test_save_draft_new_paper() {
         $ps = new PaperStatus($this->u_estrin);
-        xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com", "has_submission" => 1]), null, "update"));
+        xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com", "has_submission" => 1]), null, "update"));
         xassert_paper_status($ps);
         xassert($ps->has_change_at("title"));
         xassert($ps->has_change_at("abstract"));

@@ -88,7 +88,7 @@
     ["field_description/edit", "collaborators", "<p>List people and institutions with which the authors have conflicts of interest. %conflictdef% Be sure to include conflicted PC members. We use this information when assigning PC and external reviews. Collaborators declared on the authors’ HotCRP profiles need not be repeated here.</p><p><strong>Enter one conflict per line.</strong> Use parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p>", ["!setting.sub_pcconf"]],
 
     ["paper_edit", "<5>Please check %s before completing your submission.", "<5>Please check the issues highlighted below before completing your submission.", ["!$1"]],
-    ["<5>The submission is not ready for review. Required fields %#s are missing.", "<5>The submission is not ready for review. Required field %#s is missing.", ["#$1=1"]],
+    ["<5>This submission is not ready for review. Required fields %#s are missing.", "<5>This submission is not ready for review. Required field %#s is missing.", ["#$1=1"]],
 
     ["You’ll be able to see %d other reviews once you complete your own.", "You’ll be able to see %d other review once you complete your own.", ["$1=1"]],
     ["You’ll be able to see %d other reviews once yours is approved.", "You’ll be able to see %d other review once yours is approved.", ["$1=1"]],

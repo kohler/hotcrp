@@ -257,7 +257,8 @@
     {
         "name_pattern": "sf/$/required",
         "title": "/Requirement",
-        "type": "radio", "values": [0, 1]
+        "type": "radio", "values": [0, 1, 2],
+        "json_values": ["no", "register", "submit"]
     },
     {
         "name_pattern": "sf/$/display",

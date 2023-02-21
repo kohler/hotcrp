@@ -1,11 +1,11 @@
 <?php
 // o_abstract.php -- HotCRP helper class for abstract intrinsic
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Abstract_PaperOption extends PaperOption {
     function __construct($conf, $args) {
         parent::__construct($conf, $args);
-        $this->set_required(!$conf->opt("noAbstract"));
+        $this->set_required($conf->opt("noAbstract") ? self::REQ_NO : self::REQ_REGISTER);
     }
     function value_force(PaperValue $ov) {
         if (($ab = $ov->prow->abstract_text()) !== "") {
