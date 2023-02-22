@@ -5210,6 +5210,9 @@ class Contact implements JsonSerializable {
     function my_deadlines($prows = null) {
         // Return cleaned deadline-relevant settings that this user can see.
         $dl = (object) ["now" => Conf::$unow, "email" => $this->email ? : null];
+        if (($disabled = $this->is_disabled())) {
+            $dl->disabled = true;
+        }
         if ($this->privChair) {
             $dl->is_admin = true;
         } else if ($this->is_track_manager()) {
@@ -5254,6 +5257,7 @@ class Contact implements JsonSerializable {
 
         // responses
         if ($this->conf->setting("resp_active") > 0
+            && !$disabled
             && ($this->isPC || $this->is_author())) {
             $dlresps = [];
             foreach ($this->relevant_response_rounds() as $rrd) {
@@ -5269,7 +5273,8 @@ class Contact implements JsonSerializable {
         }
 
         // final copy deadlines
-        if ($this->conf->setting("final_open") > 0) {
+        if ($this->conf->setting("final_open") > 0
+            && !$disabled) {
             $dl->final = (object) ["open" => true];
             $final_soft = +$this->conf->setting("final_soft");
             if ($final_soft > Conf::$now) {
@@ -5285,7 +5290,9 @@ class Contact implements JsonSerializable {
 
         // reviewer deadlines
         $rev_open = $this->conf->time_review_open();
-        if ($this->is_reviewer() && $rev_open) {
+        if ($disabled) {
+            // do not show reviewer deadlines
+        } else if ($this->is_reviewer() && $rev_open) {
             $dl->rev = (object) ["open" => true];
         } else if ($this->privChair) {
             $dl->rev = (object) [];
@@ -5336,12 +5343,14 @@ class Contact implements JsonSerializable {
 
         // add meeting tracker
         if (($this->isPC || $this->tracker_kiosk_state > 0)
+            && !$disabled
             && $this->can_view_tracker()) {
             MeetingTracker::my_deadlines($dl, $this);
         }
 
         // permissions
-        if ($prows) {
+        if ($prows
+            && !$disabled) {
             $dl->perm = [];
             foreach ($prows as $prow) {
                 if (!$this->can_view_paper($prow)) {

@@ -26,11 +26,12 @@ class API_Page {
         // handle requests
         $fn = $qreq->fn;
         $jr = null;
-        if ($user->is_disabled()
-            || ($fn !== "track" && $fn !== "status")) {
-            $jr = self::normal_api($fn, $user, $qreq);
-        } else if ($fn === "track") {
-            $jr = MeetingTracker::track_api($user, $qreq);
+        if ($fn !== "status") {
+            if ($fn !== "track" || $user->is_disabled()) {
+                $jr = self::normal_api($fn, $user, $qreq);
+            } else {
+                $jr = MeetingTracker::track_api($user, $qreq);
+            }
         }
         $jr = $jr ?? self::status_api($fn, $user, $qreq);
 
@@ -84,7 +85,9 @@ class API_Page {
         if ($fn === "track" && ($new_trackerid = $qreq->annex("new_trackerid"))) {
             $jr["new_trackerid"] = $new_trackerid;
         }
-        if ($prow && $user->can_view_tags($prow)) {
+        if ($prow
+            && $user->can_view_tags($prow)
+            && !$user->is_disabled()) {
             $pj = new TagMessageReport;
             $pj->pid = $prow->paperId;
             $prow->add_tag_info_json($pj, $user);
