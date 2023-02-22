@@ -3263,7 +3263,10 @@ function trevent_react() {
 
     // no comet: reload now
     if (!dl.tracker_site) {
+        // reserve next 0.5sec in local storage, but don’t reschedule µtask
+        ++trmicrotask;
         trevent_store({eventid: tre.eventid, expiry: now + 0.5}, tre.eventid);
+        --trmicrotask;
         streload();
         return;
     }
