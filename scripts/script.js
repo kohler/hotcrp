@@ -1643,17 +1643,21 @@ function input_default_value(elt) {
 }
 
 function input_set_default_value(elt, val) {
-    var cb = input_is_checkboxlike(elt);
+    var cb = input_is_checkboxlike(elt), curval;
     if (cb) {
         elt.removeAttribute("data-default-checked");
-        // set dirty checkedness flag:
-        elt.checked = elt.checked; // eslint-disable-line no-self-assign
+        curval = elt.checked;
         elt.defaultChecked = val != null && val != "";
-    } else {
-        elt.removeAttribute("data-default-value");
-        // set dirty value flag:
-        elt.value = elt.value; // eslint-disable-line no-self-assign
+        elt.checked = curval; // set dirty checkedness flag
+    } else if (elt.type !== "file") {
+        curval = elt.value;
+        if (elt.type === "hidden" && curval !== val) {
+            elt.setAttribute("data-default-value", val);
+        } else {
+            elt.removeAttribute("data-default-value");
+        }
         elt.defaultValue = val;
+        elt.value = curval; // set dirty value flag
     }
 }
 
@@ -4234,12 +4238,13 @@ handle_ui.on("input.js-email-populate", function () {
         country = f.elements.country;
         orcid = f.elements.orcid;
         placeholder = true;
-    } else if (this.name.substring(0, 13) === "authors:email") {
-        var idx = this.name.substring(13);
-        nn = f.elements["authors:name" + idx];
-        af = f.elements["authors:affiliation" + idx];
-    } else if (this.name.substring(0, 14) === "contacts:email") {
-        nn = f.elements["contacts:name" + this.name.substring(14)];
+    } else if (this.name.substring(0, 8) === "authors:") {
+        var idx = parseInt(this.name.substring(8));
+        nn = f.elements["authors:" + idx + ":name"];
+        af = f.elements["authors:" + idx + ":affiliation"];
+    } else if (this.name.substring(0, 9) === "contacts:") {
+        var idx = parseInt(this.name.substring(9));
+        nn = f.elements["contacts:" + idx + ":name"];
     }
     if (!fn && !ln && !nn && !af)
         return;
@@ -4609,24 +4614,25 @@ function row_order_change(e, delta, action) {
 
     var changes = [];
     for (var i = 1; i <= trs.length; ++i) {
-        var $tr = $(trs[i - 1]),
-            td0h = $($tr[0].firstChild).html(),
+        var tr = trs[i - 1],
+            td0c = tr.firstChild.firstChild,
             new_index = null;
-        if (td0h !== i + "." && /^(?:\d+|\$).$/.test(td0h))
-            $($tr[0].firstChild).html(i + ".");
-        $tr.find("input, select, textarea").each(function () {
-            var m = /^(.*?)(\d+|\$)$/.exec(this.getAttribute("name"));
+        if (td0c && td0c.nodeType === 3 && td0c.data !== i + "."
+            && /^(?:\d+|\$).$/.test(td0c.data))
+            td0c.data = i + ".";
+        $(tr).find("input, select, textarea").each(function () {
+            var m = /^(.*?)(\d+|\$)(|:.*)$/.exec(this.getAttribute("name"));
             if (m && new_index === null) {
                 if (m[2] === '$') {
                     var f = this.form;
                     new_index = 1;
-                    while (f.elements[m[1] + new_index])
+                    while (f.elements[m[1] + new_index + m[3]])
                         ++new_index;
                 } else
                     new_index = i;
             }
             if (m && m[2] != new_index) {
-                this.name = m[1] + new_index;
+                this.name = m[1] + new_index + m[3];
                 if (this.name in defaults) {
                     input_set_default_value(this, defaults[this.name]);
                 }

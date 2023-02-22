@@ -130,16 +130,29 @@ class Contacts_PaperOption extends PaperOption {
             $ov->set_anno("modified", true);
         }
     }
+    static private function translate_qreq(Qrequest $qreq) {
+        $n = 1;
+        while (isset($qreq["contacts:email_{$n}"])) {
+            $qreq["contacts:{$n}:email"] = $qreq["contacts:email_{$n}"];
+            $qreq["contacts:{$n}:name"] = $qreq["contacts:name_{$n}"];
+            $qreq["contacts:{$n}:affiliation"] = $qreq["contacts:affiliation_{$n}"];
+            $qreq["contacts:{$n}:active"] = $qreq["contacts:active_{$n}"];
+            ++$n;
+        }
+    }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
+        if (!isset($qreq["contacts:1:email"])) {
+            self::translate_qreq($qreq);
+        }
         $ov = PaperValue::make_force($prow, $this);
         // collect values
         $specau = $reqau = [];
-        for ($n = 1; isset($qreq["contacts:email_{$n}"]); ++$n) {
-            $email = trim($qreq["contacts:email_{$n}"]);
-            $name = simplify_whitespace((string) $qreq["contacts:name_{$n}"]);
-            $affiliation = simplify_whitespace((string) $qreq["contacts:affiliation_{$n}"]);
+        for ($n = 1; isset($qreq["contacts:{$n}:email"]); ++$n) {
+            $email = trim($qreq["contacts:{$n}:email"]);
+            $name = simplify_whitespace((string) $qreq["contacts:{$n}:name"]);
+            $affiliation = simplify_whitespace((string) $qreq["contacts:{$n}:affiliation"]);
             $au = Author::make_keyed(["email" => $email, "name" => $name, "affiliation" => $affiliation]);
-            $au->conflictType = $qreq["contacts:active_{$n}"] ? CONFLICT_CONTACTAUTHOR : 0;
+            $au->conflictType = $qreq["contacts:{$n}:active"] ? CONFLICT_CONTACTAUTHOR : 0;
             $au->author_index = $n;
             $reqau[] = $au;
             if (validate_email($email)) {
@@ -221,16 +234,16 @@ class Contacts_PaperOption extends PaperOption {
         }
         $reqidx = $au && $au->author_index ? $au->author_index : '$';
         return '<div class="'
-            . ($reqov ? $reqov->message_set()->control_class("contacts:$reqidx", "checki") : "checki")
+            . ($reqov ? $reqov->message_set()->control_class("contacts:{$reqidx}", "checki") : "checki")
             . '"><span class="checkc">'
-            . Ht::checkbox("contacts:active_{$anum}", 1, true, ["data-default-checked" => false, "id" => false, "class" => "ignore-diff"])
+            . Ht::checkbox("contacts:{$anum}:active", 1, true, ["data-default-checked" => false, "id" => false, "class" => "ignore-diff"])
             . '</span>'
-            . Ht::entry("contacts:email_{$anum}", $email, ["size" => 30, "placeholder" => "Email", "class" => $pt->control_class("contacts:email_$reqidx", "want-focus js-autosubmit uii js-email-populate"), "autocomplete" => "off", "data-default-value" => ""])
+            . Ht::entry("contacts:{$anum}:email", $email, ["size" => 30, "placeholder" => "Email", "class" => $pt->control_class("contacts:{$reqidx}:email", "want-focus js-autosubmit uii js-email-populate"), "autocomplete" => "off", "data-default-value" => ""])
             . '  '
-            . Ht::entry("contacts:name_{$anum}", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit", "autocomplete" => "off", "data-default-value" => ""])
+            . Ht::entry("contacts:{$anum}:name", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit", "autocomplete" => "off", "data-default-value" => ""])
             . $pt->messages_at("contacts:{$reqidx}")
-            . $pt->messages_at("contacts:name_{$reqidx}")
-            . $pt->messages_at("contacts:email_{$reqidx}")
+            . $pt->messages_at("contacts:{$reqidx}:name")
+            . $pt->messages_at("contacts:{$reqidx}:email")
             . '</div>';
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -265,17 +278,17 @@ class Contacts_PaperOption extends PaperOption {
                     ? $pt->control_class("contacts:{$rau->author_index}", "checki")
                     : "checki",
                 '"><label><span class="checkc">',
-                Ht::hidden("contacts:email_{$cidx}", $au->email);
+                Ht::hidden("contacts:{$cidx}:email", $au->email);
             if (($au->contactId > 0
                  && ($au->conflictType & CONFLICT_AUTHOR) !== 0
                  && ($au->disablement & Contact::DISABLEMENT_PLACEHOLDER) === 0)
                 || ($au->contactId === $pt->user->contactId
                     && $ov->prow->paperId <= 0)) {
-                echo Ht::hidden("contacts:active_{$cidx}", 1),
+                echo Ht::hidden("contacts:{$cidx}:active", 1),
                     Ht::checkbox(null, 1, true, ["disabled" => true, "id" => false]);
             } else {
                 $dchecked = $au->contactId > 0 && $au->conflictType >= CONFLICT_AUTHOR;
-                echo Ht::checkbox("contacts:active_{$cidx}", 1, $rau ? $rau->conflictType !== 0 : $dchecked,
+                echo Ht::checkbox("contacts:{$cidx}:active", 1, $rau ? $rau->conflictType !== 0 : $dchecked,
                     ["data-default-checked" => $dchecked, "id" => false, "disabled" => $readonly]);
             }
             echo '</span>', Text::nameo_h($au, NAME_E);

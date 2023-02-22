@@ -122,10 +122,10 @@ class Authors_PaperOption extends PaperOption {
     }
     static private function translate_qreq(Qrequest $qreq) {
         $n = 1;
-        while (isset($qreq["auemail{$n}"])) {
-            $qreq["authors:email_{$n}"] = $qreq["auemail{$n}"];
-            $qreq["authors:name_{$n}"] = $qreq["auname{$n}"];
-            $qreq["authors:affiliation_{$n}"] = $qreq["auaff{$n}"];
+        while (isset($qreq["authors:email_{$n}"]) || isset($qreq["auemail{$n}"])) {
+            $qreq["authors:{$n}:email"] = $qreq["authors:email_{$n}"] ?? $qreq["auemail{$n}"];
+            $qreq["authors:{$n}:name"] = $qreq["authors:name_{$n}"] ?? $qreq["auname{$n}"];
+            $qreq["authors:{$n}:affiliation"] = $qreq["authors:affiliation_{$n}"] ?? $qreq["auaff{$n}"];
             ++$n;
         }
     }
@@ -142,15 +142,15 @@ class Authors_PaperOption extends PaperOption {
         }
     }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
-        if (isset($qreq["auemail1"]) && !isset($qreq["authors:email_1"])) {
+        if (!isset($qreq["authors:1:email"])) {
             self::translate_qreq($qreq);
         }
         $v = [];
         $auth = new Author;
         for ($n = 1; true; ++$n) {
-            $email = $qreq["authors:email_$n"];
-            $name = $qreq["authors:name_$n"];
-            $aff = $qreq["authors:affiliation_$n"];
+            $email = $qreq["authors:{$n}:email"];
+            $name = $qreq["authors:{$n}:name"];
+            $aff = $qreq["authors:{$n}:affiliation"];
             if ($email === null && $name === null && $aff === null) {
                 break;
             }
@@ -224,7 +224,7 @@ class Authors_PaperOption extends PaperOption {
             $val = $reqau ? $reqau->affiliation : "";
         }
 
-        $js["class"] = $pt->max_control_class(["authors:{$n}", "authors:{$component}_{$n}"], "need-autogrow js-autosubmit editable-author editable-author-{$component}" . ($ignore_diff ? " ignore-diff" : ""));
+        $js["class"] = $pt->max_control_class(["authors:{$n}", "authors:{$n}:{$component}"], "need-autogrow js-autosubmit editable-author editable-author-{$component}" . ($ignore_diff ? " ignore-diff" : ""));
         if ($component === "email" && $pt->user->can_lookup_user()) {
             $js["class"] .= " uii js-email-populate";
         }
@@ -234,7 +234,7 @@ class Authors_PaperOption extends PaperOption {
         if ($readonly) {
             $js["readonly"] = true;
         }
-        return Ht::entry("authors:{$component}_{$n}", $val, $js);
+        return Ht::entry("authors:{$n}:{$component}", $val, $js);
     }
     private function editable_authors_tr($pt, $n, $au, $reqau, $shownum, $readonly) {
         // on new paper, default to editing user as first author
@@ -262,10 +262,10 @@ class Authors_PaperOption extends PaperOption {
                 . Icons::ui_triangle(2)
                 . '</button><button type="button" class="ui need-tooltip row-order-ui delete" aria-label="Delete" tabindex="-1">✖</button></span>';
         }
-        return $t . $pt->messages_at("authors:$n")
-            . $pt->messages_at("authors:email_$n")
-            . $pt->messages_at("authors:name_$n")
-            . $pt->messages_at("authors:affiliation_$n")
+        return $t . $pt->messages_at("authors:{$n}")
+            . $pt->messages_at("authors:{$n}:email")
+            . $pt->messages_at("authors:{$n}:name")
+            . $pt->messages_at("authors:{$n}:affiliation")
             . '</td></tr>';
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {

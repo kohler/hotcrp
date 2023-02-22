@@ -1,6 +1,6 @@
 <?php
 // pages/p_graph_formula.php -- HotCRP review preference graph drawing page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Graph_Formula_Page {
     /** @var Conf */
@@ -31,9 +31,9 @@ class Graph_Formula_Page {
         $klass = $ms->control_class($field, "need-suggest papersearch want-focus");
         return '<tr><td class="lentry">'
             . $ms->feedback_html_at($field)
-            . Ht::entry("q$i", $q, ["size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q$i", "spellcheck" => false, "autocomplete" => "off", "aria-label" => "Search"])
+            . Ht::entry("q{$i}", $q, ["size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q{$i}", "spellcheck" => false, "autocomplete" => "off", "aria-label" => "Search"])
             . " <span class=\"pl-3\">Style:</span> &nbsp;"
-            . Ht::select("s$i", ["default" => "default", "plain" => "plain", "tag-red" => "red", "tag-orange" => "orange", "tag-yellow" => "yellow", "tag-green" => "green", "tag-blue" => "blue", "tag-purple" => "purple", "tag-gray" => "gray"], $s !== "" ? $s : "by-tag")
+            . Ht::select("s{$i}", ["default" => "default", "plain" => "plain", "tag-red" => "red", "tag-orange" => "orange", "tag-yellow" => "yellow", "tag-green" => "green", "tag-blue" => "blue", "tag-purple" => "purple", "tag-gray" => "gray"], $s !== "" ? $s : "by-tag")
             . ' <span class="nb btnbox aumovebox ml-3"><button type="button" class="ui row-order-ui moveup" tabindex="-1">'
             . Icons::ui_triangle(0)
             . '</button><button type="button" class="ui row-order-ui movedown" tabindex="-1">'
@@ -46,7 +46,7 @@ class Graph_Formula_Page {
      * @param list<string> $styles */
     private function print_graph($fg, $queries, $styles) {
         for ($i = 0; $i < count($queries); ++$i) {
-            $fg->add_query($queries[$i], $styles[$i], "q$i");
+            $fg->add_query($queries[$i], $styles[$i], "q{$i}");
         }
 
         if ($fg->has_message()) {
@@ -61,16 +61,16 @@ class Graph_Formula_Page {
         if ($fg->fx_format() === Fexpr::FSEARCH) {
             $h2 = "";
         } else if ($fg->type === FormulaGraph::RAWCDF) {
-            $h2 = "Cumulative count of $xhtml";
+            $h2 = "Cumulative count of {$xhtml}";
         } else if ($fg->type & FormulaGraph::CDF) {
-            $h2 = "$xhtml CDF";
+            $h2 = "{$xhtml} CDF";
         } else if (($fg->type & FormulaGraph::BARCHART)
                    && $fg->fy->expression === "sum(1)") {
             $h2 = $xhtml;
         } else if ($fg->type & FormulaGraph::BARCHART) {
-            $h2 = htmlspecialchars($fg->fy->expression) . " by $xhtml";
+            $h2 = htmlspecialchars($fg->fy->expression) . " by {$xhtml}";
         } else {
-            $h2 = htmlspecialchars($fg->fy->expression) . " vs. $xhtml";
+            $h2 = htmlspecialchars($fg->fy->expression) . " vs. {$xhtml}";
         }
         $highlightable = ($fg->type & (FormulaGraph::SCATTER | FormulaGraph::BOXPLOT))
             && $fg->fx_combinable();
