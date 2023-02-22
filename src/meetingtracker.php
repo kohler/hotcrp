@@ -1,6 +1,6 @@
 <?php
 // meetingtracker.php -- HotCRP meeting tracker support
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class MeetingTracker {
     /** @return MeetingTracker_ConfigSet */

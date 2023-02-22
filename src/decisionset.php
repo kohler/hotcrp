@@ -1,6 +1,6 @@
 <?php
 // decisionset.php -- HotCRP helper class for set of decisions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @var Conf */

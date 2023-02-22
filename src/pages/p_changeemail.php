@@ -1,6 +1,6 @@
 <?php
 // pages/p_changeemail.php -- HotCRP profile page for email changes
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class ChangeEmail_Page {
     static function go(Contact $user, Qrequest $qreq) {

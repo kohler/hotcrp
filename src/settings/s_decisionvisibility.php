@@ -1,6 +1,6 @@
 <?php
 // settings/s_decisionvisibility.php -- HotCRP settings > decisions page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class DecisionVisibility_SettingParser extends SettingParser {
     function set_oldv(Si $si, SettingValues $sv) {

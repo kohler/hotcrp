@@ -1,6 +1,6 @@
 <?php
 // settings/s_sround.php -- HotCRP settings > submission rounds page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Sround_Setting {
     // used by ReviewForm constructor

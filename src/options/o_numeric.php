@@ -1,6 +1,6 @@
 <?php
 // o_numeric.php -- HotCRP helper class for whole-number options
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Numeric_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {

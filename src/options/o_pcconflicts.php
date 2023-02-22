@@ -1,6 +1,6 @@
 <?php
 // o_pcconflicts.php -- HotCRP helper class for PC conflicts intrinsic
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class PCConflicts_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {

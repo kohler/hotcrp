@@ -1,6 +1,6 @@
 <?php
 // pages/p_mail.php -- HotCRP mail tool
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Mail_Page {
     /** @var Conf */

@@ -1,6 +1,6 @@
 <?php
 // reviewinfo.php -- HotCRP class representing reviews
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class ReviewInfo implements JsonSerializable {
     /** @var Conf */

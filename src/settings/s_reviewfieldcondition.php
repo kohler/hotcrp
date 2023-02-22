@@ -1,6 +1,6 @@
 <?php
 // settings/s_reviewfieldcondition.php -- HotCRP review field conditions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class ReviewFieldCondition_SettingParser extends SettingParser {
     /** @param Conf $conf

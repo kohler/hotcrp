@@ -1,6 +1,6 @@
 <?php
 // pages/p_offline.php -- HotCRP offline review management page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Offline_Page {
     /** @var Conf */

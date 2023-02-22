@@ -1,6 +1,6 @@
 <?php
 // hotcrpmailer.php -- HotCRP mail template manager
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class HotCRPMailPreparation extends MailPreparation {
     /** @var int */

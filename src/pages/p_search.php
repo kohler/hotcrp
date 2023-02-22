@@ -1,6 +1,6 @@
 <?php
 // pages/p_search.php -- HotCRP paper search page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Search_Page {
     /** @var Conf */

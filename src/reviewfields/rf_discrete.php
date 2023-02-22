@@ -1,6 +1,6 @@
 <?php
 // reviewfields/rf_discrete.php -- HotCRP search for discrete fields
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 /** @inherits ReviewFieldSearch<Discrete_ReviewField> */
 class Discrete_ReviewFieldSearch extends ReviewFieldSearch {

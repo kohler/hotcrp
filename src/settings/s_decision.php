@@ -1,6 +1,6 @@
 <?php
 // settings/s_decision.php -- HotCRP settings > decisions page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Decision_Setting {
     public $id;

@@ -1,6 +1,6 @@
 <?php
 // api_completion.php -- HotCRP completion API calls
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
 
 class Completion_API {
     /** @param list &$comp

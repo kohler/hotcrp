@@ -77,7 +77,7 @@
     ["field_description/edit", "contacts", "These users can view and edit the submission. All listed authors with site accounts are contacts. You can add contacts who aren’t in the author list or create accounts for authors who haven’t yet signed in."],
     ["field_description/edit", "nonblind", "Check this to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!"],
     ["field_description/edit", "topics", "Select any topics that apply to your submission."],
-    ["field_description/edit", "topics", "Select between %d and %d topics that apply to your submission.", ["$1>0", "$2>0"]],
+    ["field_description/edit", "topics", "Select between {0} and {1} topics that apply to your submission.", ["{0}>0", "{1}>0"]],
     ["field_description/edit", "topics", "Select exactly one topic that applies to your submission.", ["{0}=1", "{1}=1"]],
     ["field_description/edit", "topics", "Select at least {0} topics that apply to your submission.", ["{0}>0", "!{1}"]],
     ["field_description/edit", "topics", "Select at least one topic that applies to your submission.", ["{0}=1", "!{1}"]],

@@ -1,6 +1,6 @@
 <?php
 // pages/p_users.php -- HotCRP people listing/editing page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Users_Page {
     /** @var Conf */
