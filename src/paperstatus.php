@@ -1110,7 +1110,7 @@ class PaperStatus extends MessageSet {
             if ($o->required
                 && $this->user->can_edit_option($prow, $o)) {
                 $ov = $prow->force_option($o);
-                if (!$o->value_check_required($ov, true)) {
+                if (!$o->value_check_required($ov)) {
                     $ov->append_messages_to($this);
                     $required_failure = true;
                 }
