@@ -1,6 +1,6 @@
 <?php
 // api_user.php -- HotCRP user-related API calls
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
 
 class User_API {
     static function whoami(Contact $user, Qrequest $qreq) {
@@ -19,7 +19,7 @@ class User_API {
         $users = [];
         if ($user->privChair || $user->can_view_pc()) {
             $roles = $user->is_manager() ? "" : " and roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
-            $result = $user->conf->qe("select contactId, email, firstName, lastName, affiliation, collaborators, country, orcid from ContactInfo where email>=? and email<? and not disabled$roles order by email asc limit 2", $email, $email . "~");
+            $result = $user->conf->qe("select contactId, email, firstName, lastName, affiliation, collaborators, country, orcid from ContactInfo where email>=? and email<? and not disabled{$roles} order by email asc limit 2", $email, $email . "~");
             while (($u = Contact::fetch($result, $user->conf))) {
                 $users[] = $u;
             }
@@ -34,7 +34,7 @@ class User_API {
                 $db = $user->conf->dblink;
                 $idk = "contactId";
             }
-            $result = Dbl::qe($db, "select $idk, email, firstName, lastName, affiliation, collaborators, country, orcid from ContactInfo where email>=? and email<? and not disabled order by email asc limit 2", $email, $email . "~");
+            $result = Dbl::qe($db, "select {$idk}, email, firstName, lastName, affiliation, collaborators, country, orcid from ContactInfo where email>=? and email<? and not disabled order by email asc limit 2", $email, $email . "~");
             $users = [];
             while (($u = Contact::fetch($result, $user->conf))) {
                 $users[] = $u;

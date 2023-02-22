@@ -1,19 +1,19 @@
 <?php
 // api_paperpc.php -- HotCRP paper PC API
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
 
 class PaperPC_API {
     private static function run(Contact $user, Qrequest $qreq, PaperInfo $prow, $type) {
-        if ($qreq->method() !== "GET" && isset($qreq->$type)) {
+        if ($qreq->method() === "POST" && isset($qreq->$type)) {
             $aset = new AssignmentSet($user);
             $aset->enable_papers($prow);
-            $aset->parse("paper,action,user\n{$prow->paperId},$type," . CsvGenerator::quote($qreq->$type));
+            $aset->parse("paper,action,user\n{$prow->paperId},{$type}," . CsvGenerator::quote($qreq->$type));
             if (!$aset->execute()) {
                 return $aset->json_result();
             }
             $cid = $user->conf->fetch_ivalue("select {$type}ContactId from Paper where paperId=?", $prow->paperId);
         } else {
-            $k = "can_view_$type";
+            $k = "can_view_{$type}";
             if (!$user->$k($prow)) {
                 return JsonResult::make_permission_error();
             }

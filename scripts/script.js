@@ -5699,8 +5699,8 @@ function render_editing(hc, cj) {
     hc.push('<div class="cmteditinfo fold3c">', '</div>');
 
     // attachments
-    hc.push('<div class="entryi has-editable-attachments hidden" id="' + cid + '-attachments" data-dtype="-2" data-document-prefix="cmtdoc"><label for="' + cid + '-attachments">Attachments</label></div>');
-    btnbox.push('<button type="button" name="attach" class="btn-licon need-tooltip ui js-add-attachment" aria-label="Attach file" data-editable-attachments="' + cid + '-attachments">' + $("#licon-attachment").html() + '</button>');
+    hc.push('<div class="entryi has-editable-attachments hidden" id="'.concat(cid, '-attachments" data-dtype="-2" data-document-prefix="attachment"><label for="', cid, '-attachments">Attachments</label></div>'));
+    btnbox.push('<button type="button" name="attach" class="btn-licon need-tooltip ui js-add-attachment" aria-label="Attach file" data-editable-attachments="'.concat(cid, '-attachments">', $("#licon-attachment").html(), '</button>'));
 
     // visibility
     if (!cj.response && (!cj.by_author || cj.by_author_visibility)) {
@@ -5921,7 +5921,7 @@ function activate_editing(celt, cj) {
     if (cj.docs && cj.docs.length) {
         $(celt).find(".has-editable-attachments").removeClass("hidden").append('<div class="entry"></div>');
         for (i in cj.docs || [])
-            $(celt).find(".has-editable-attachments .entry").append(render_edit_attachment(i, cj.docs[i]));
+            $(celt).find(".has-editable-attachments .entry").append(render_edit_attachment(+i + 1, cj.docs[i]));
     }
 
     if (!cj.visibility || cj.blind) {
@@ -5946,13 +5946,13 @@ function activate_editing(celt, cj) {
     $(celt).awaken();
 }
 
-function render_edit_attachment(i, doc) {
+function render_edit_attachment(ctr, doc) {
     var hc = new HtmlCollector;
-    hc.push('<div class="has-document compact" data-dtype="-2" data-document-name="cmtdoc_' + doc.docid + '_' + i + '">', '</div>');
+    hc.push('<div class="has-document compact" data-dtype="-2" data-document-name="attachment:'.concat(ctr, '">'), '</div>');
     hc.push('<div class="document-file">', '</div>');
     render_attachment_link(hc, doc);
     hc.pop();
-    hc.push('<div class="document-actions"><a class="ui js-remove-document document-action" href="">Delete</a></div>');
+    hc.push('<div class="document-actions"><a class="ui js-remove-document document-action" href="">Delete</a><input type="hidden" name="attachment:'.concat(ctr, '" value="', doc.docid, '"></div>'));
     return hc.render();
 }
 
@@ -9839,19 +9839,18 @@ handle_ui.on("js-add-attachment", function () {
     }
     do {
         ++n;
-        name = attache.getAttribute("data-document-prefix") + "_new_" + n;
-    } while (f.elements["has_" + name]);
+        name = attache.getAttribute("data-document-prefix") + ":" + n;
+    } while (f.elements[name]);
     var max_size = attache.getAttribute("data-document-max-size"),
-        $na = $('<div class="has-document document-new-instance hidden'
-            + '" data-dtype="' + attache.getAttribute("data-dtype")
-            + '" data-document-name="' + name
-            + (max_size == null ? "" : '" data-document-max-size="' + max_size)
-            + '"><div class="document-upload"><input type="file" name="' + name + '" size="15" class="uich document-uploader"></div>'
-            + '<div class="document-actions"><a href="" class="ui js-cancel-document document-action">Cancel</a></div>'
-            + '</div>');
+        $na = $('<div class="has-document document-new-instance hidden" data-dtype="'.concat(attache.getAttribute("data-dtype"),
+            '" data-document-name="', name,
+            max_size == null ? "" : '" data-document-max-size="' + max_size,
+            '"><div class="document-upload"><input type="file" name="', name,
+            ':file" size="15" class="uich document-uploader"></div>',
+            '<div class="document-actions"><a href="" class="ui js-cancel-document document-action">Cancel</a></div></div>'));
     if (this.id === name)
         this.removeAttribute("id");
-    $(f).append(hidden_input("has_" + name, "1", {"class": "ignore-diff"}));
+    $(f).append(hidden_input(name, "new", {"class": "ignore-diff"}));
     $na.appendTo($ei).find(".document-uploader")[0].click();
 });
 
@@ -9867,12 +9866,10 @@ handle_ui.on("js-replace-document", function () {
     } else {
         var docid = +doce.getAttribute("data-dtype"),
             name = doce.getAttribute("data-document-name") || "opt" + docid,
-            t = '<div class="document-upload hidden"><input id="' + name + '" type="file" name="' + name + '"';
+            t = '<div class="document-upload hidden"><input id="'.concat(name, ':file" type="file" name="', name, ':file"');
         if (doce.hasAttribute("data-document-accept"))
             t += ' accept="' + doce.getAttribute("data-document-accept") + '"';
         t += ' class="uich document-uploader"></div>';
-        if (this.id === name)
-            this.removeAttribute("id");
         $u = $(t).insertBefore($actions).find(".document-uploader");
         $actions.append('<a href="" class="ui js-cancel-document document-action hidden">Cancel</a>');
     }
@@ -9925,7 +9922,7 @@ handle_ui.on("js-remove-document", function () {
         $doc.find(".document-stamps, .document-shortformat").removeClass("hidden");
         $(this).removeClass("undelete").html("Delete");
     } else {
-        $(hidden_input($doc.data("documentName") + ":remove", "1", {"class": "document-remover", "data-default-value": ""})).appendTo($doc.find(".document-actions")).trigger("change");
+        $(hidden_input(doce.getAttribute("data-document-name") + ":remove", "1", {"class": "document-remover", "data-default-value": ""})).appendTo($doc.find(".document-actions")).trigger("change");
         if (!$en.find("del").length)
             $en.wrapInner("<del></del>");
         $doc.find(".document-uploader").trigger("hotcrp-change-document");

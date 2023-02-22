@@ -11,8 +11,8 @@ class Comment_API {
     private $prow;
     /** @var int */
     private $status = 200;
-    /** @var list<MessageItem> */
-    private $ms = [];
+    /** @var MessageSet */
+    private $ms;
 
     const RESPONSE_REPLACED = 492;
 
@@ -20,6 +20,7 @@ class Comment_API {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->prow = $prow;
+        $this->ms = new MessageSet;
     }
 
     /** @return ?CommentInfo */
@@ -69,8 +70,7 @@ class Comment_API {
             "topic" => $qreq->topic,
             "submit" => $response && !$qreq->draft,
             "text" => rtrim(cleannl((string) $qreq->text)),
-            "blind" => $qreq->blind,
-            "docs" => $crow ? $crow->attachments()->as_list() : []
+            "blind" => $qreq->blind
         ];
 
         // tags
@@ -79,28 +79,24 @@ class Comment_API {
         }
 
         // attachments in request
-        for ($i = count($req["docs"]) - 1; $i >= 0; --$i) {
-            if ($qreq["cmtdoc_{$req["docs"][$i]->paperStorageId}_{$i}:remove"]) {
-                array_splice($req["docs"], $i, 1);
-            }
-        }
-        for ($i = 1; $qreq["has_cmtdoc_new_$i"] && count($req["docs"]) < 1000; ++$i) {
-            if (($doc = DocumentInfo::make_request($qreq, "cmtdoc_new_$i", $this->prow->paperId, DTYPE_COMMENT, $this->conf))) {
-                if ($doc->save()) {
-                    $req["docs"][] = $doc;
-                } else {
-                    $this->status = 400;
-                    $this->ms[] = MessageItem::error("<0>Error uploading attachment");
-                    return null;
-                }
+        $docs = Attachments_PaperOption::parse_qreq_prefix(
+            $this->prow, $qreq, "attachment", DTYPE_COMMENT,
+            $crow ? $crow->attachments()->as_list() : [],
+            $this->ms
+        );
+        foreach ($docs as $doc) {
+            if ($doc->paperStorageId === 0 && !$doc->save()) {
+                $this->status = 400;
+                $this->ms->error_at(null, "<0>Error uploading attachment");
+                return null;
             }
         }
 
         // empty
-        if ($req["text"] === "" && empty($req["docs"])) {
+        if ($req["text"] === "" && empty($docs)) {
             if (!$qreq->delete && (!$xcrow->commentId || !isset($qreq->text))) {
                 $this->status = 400;
-                $this->ms[] = MessageItem::error("<0>Comment text required");
+                $this->ms->error_at(null, "<0>Comment text required");
                 return null;
             } else {
                 $qreq->delete = true;
@@ -112,7 +108,7 @@ class Comment_API {
         $whyNot = $this->user->perm_edit_comment($this->prow, $xcrow, $newctype);
         if ($whyNot) {
             $this->status = 403;
-            $this->ms[] = MessageItem::error("<5>" . $whyNot->unparse_html());
+            $this->ms->error_at(null, "<5>" . $whyNot->unparse_html());
             return null;
         }
 
@@ -129,6 +125,8 @@ class Comment_API {
         if ($qreq->delete) {
             $req["text"] = false;
             $req["docs"] = [];
+        } else {
+            $req["docs"] = $docs;
         }
 
         // save
@@ -146,26 +144,26 @@ class Comment_API {
                 $xcrow = $ocrow;
             } else {
                 $this->status = 400;
-                $this->ms[] = MessageItem::error("<0>Error saving comment");
+                $this->ms->error_at(null, "<0>Error saving comment");
                 return null;
             }
         }
 
         // save success messages
-        $this->ms[] = self::save_success_message($xcrow);
+        $this->ms->append_item(self::save_success_message($xcrow));
         if ($xcrow->notified_authors
             && !$this->prow->has_author($suser)) {
             if ($this->user->allow_view_authors($this->prow)) {
-                $this->ms[] = MessageItem::success($this->conf->_("<0>Notified submission authors", count($this->prow->author_list())));
+                $this->ms->success($this->conf->_("<0>Notified submission authors", count($this->prow->author_list())));
             } else {
-                $this->ms[] = MessageItem::success($this->conf->_("<0>Notified submission author(s)"));
+                $this->ms->success($this->conf->_("<0>Notified submission author(s)"));
             }
         }
         if ($xcrow->saved_mentions) {
-            $this->ms[] = MessageItem::success($this->conf->_("<5>Notified mentioned users %#s", array_values($xcrow->saved_mentions)));
+            $this->ms->success($this->conf->_("<5>Notified mentioned users %#s", array_values($xcrow->saved_mentions)));
         }
         if ($xcrow->saved_mentions_missing) {
-            $this->ms[] = new MessageItem(null, $this->conf->_("<0>Some users mentioned in the comment cannot see the comment yet, so they were not notified."), MessageSet::WARNING_NOTE);
+            $this->ms->msg_at(null, $this->conf->_("<0>Some users mentioned in the comment cannot see the comment yet, so they were not notified."), MessageSet::WARNING_NOTE);
         }
         return $xcrow;
     }
@@ -258,8 +256,8 @@ class Comment_API {
             $jr["conflict"] = true;
         } else {
             $jr = new JsonResult($this->status, ["ok" => $this->status <= 299]);
-            if (!empty($this->ms)) {
-                $jr["message_list"] = $this->ms;
+            if ($this->ms->has_message()) {
+                $jr["message_list"] = $this->ms->message_list();
             }
         }
         if ($crow && $crow->commentId > 0) {

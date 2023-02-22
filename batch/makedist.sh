@@ -317,6 +317,7 @@ src/mentionparser.php
 src/mergecontacts.php
 src/multiconference.php
 src/options/o_abstract.php
+src/options/o_attachments.php
 src/options/o_authors.php
 src/options/o_checkboxes.php
 src/options/o_checkboxesbase.php

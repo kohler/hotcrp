@@ -762,6 +762,7 @@ class PaperTable {
         }
     }
 
+    /** @deprecated */
     static function document_upload_input($inputid, $dtype, $accepts) {
         $t = '<input id="' . $inputid . '" type="file" name="' . $inputid . '"';
         if ($accepts !== null && count($accepts) == 1) {
