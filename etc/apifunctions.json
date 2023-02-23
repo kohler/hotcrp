@@ -1,42 +1,49 @@
 [
     {
-        "name": "account", "get": true, "post": true,
-        "function": "User_API::account"
-    },
-    {
-        "name": "administrator", "paper": true, "get": true, "post": true,
-        "function": "PaperPC_API::manager_api"
-    },
-    {
-        "name": "manager", "alias": "administrator"
-    },
-    {
         "name": "acceptreview", "post": true, "redirect": true,
-        "function": "RequestReview_API::acceptreview"
+        "function": "RequestReview_API::acceptreview",
+        "parameters": ["r"]
+    },
+    {
+        "name": "account", "get": true,
+        "function": "User_API::account",
+        "parameters": ["email"]
+    },
+    {
+        "name": "account", "post": true,
+        "function": "User_API::account",
+        "parameters": ["email", "?disable", "?enable", "?sendinfo"]
     },
     {
         "name": "alltags", "get": true,
-        "function": "AllTags_API::run"
+        "function": "AllTags_API::run",
+        "parameters": []
     },
     {
         "name": "assign", "post": true, "redirect": true,
-        "function": "Assign_API::assign"
+        "function": "Assign_API::assign",
+        "parameters": ["assignments"]
     },
     {
         "name": "claimreview", "paper": true, "post": true, "redirect": true,
-        "function": "RequestReview_API::claimreview"
+        "function": "RequestReview_API::claimreview",
+        "parameters": ["r", "email"]
     },
     {
         "name": "clickthrough", "post": true,
-        "function": "User_API::clickthrough"
+        "function": "User_API::clickthrough",
+        "parameters": ["accept", "clickthrough_id"]
     },
     {
         "name": "comment", "paper": true, "get": true, "post": true,
-        "function": "Comment_API::run"
+        "function": "Comment_API::run",
+        "get_parameters": ["c"],
+        "post_parameters": ["c", "text", "topic", "draft", "blind", "tags", "visibility"]
     },
     {
         "name": "declinereview", "post": true, "redirect": true,
-        "function": "RequestReview_API::declinereview"
+        "function": "RequestReview_API::declinereview",
+        "parameters": ["r", "?reason"]
     },
     {
         "name": "decision", "paper": true, "get": true, "post": true,
@@ -77,6 +84,14 @@
     {
         "name": "mailtext", "get": true, "post": true,
         "function": "Mail_API::mailtext"
+    },
+    {
+        "name": "manager", "paper": true, "get": true, "post": true,
+        "function": "PaperPC_API::manager_api",
+        "post_parameters": ["manager"]
+    },
+    {
+        "name": "administrator", "alias": "manager"
     },
     {
         "name": "namedformula", "get": true,
@@ -145,8 +160,7 @@
         "function": "Session_API::setsession"
     },
     {
-        "name": "settags", "post": true,
-        "function": "Tags_API::run"
+        "name": "settags", "alias": "tags"
     },
     {
         "name": "tags", "get": true, "post": true,
@@ -189,7 +203,8 @@
     },
     {
         "name": "user", "get": true,
-        "function": "User_API::user"
+        "function": "User_API::user",
+        "parameters": ["email"]
     },
     {
         "name": "viewoptions", "get": true, "post": true,
@@ -204,6 +219,7 @@
     },
     {
         "name": "whoami", "get": true,
-        "function": "User_API::whoami"
+        "function": "User_API::whoami",
+        "parameters": []
     }
 ]

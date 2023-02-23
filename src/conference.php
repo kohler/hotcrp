@@ -5438,7 +5438,8 @@ class Conf {
 
     // API
 
-    private function api_map() {
+    /** @return array<string,list<object>> */
+    function api_map() {
         if ($this->_api_map === null) {
             list($this->_api_map, $unused) =
                 $this->_xtbuild(["etc/apifunctions.json"], "apiFunctions");
