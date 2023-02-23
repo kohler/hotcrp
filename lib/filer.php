@@ -1,11 +1,11 @@
 <?php
 // filer.php -- generic document helper class
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class HashAnalysis {
     /** @var string */
     private $prefix;
-    /** @var ?string */
+    /** @var ?non-empty-string */
     private $hash;
     /** @var ?bool */
     private $binary;
@@ -98,15 +98,15 @@ class HashAnalysis {
     function prefix() {
         return $this->prefix;
     }
-    /** @return string */
+    /** @return non-empty-string */
     function text() {
         return $this->prefix . ($this->binary ? bin2hex($this->hash) : strtolower($this->hash));
     }
-    /** @return string */
+    /** @return non-empty-string */
     function binary() {
         return $this->prefix . ($this->binary ? $this->hash : hex2bin($this->hash));
     }
-    /** @return string */
+    /** @return non-empty-string */
     function text_data() {
         return $this->binary ? bin2hex($this->hash) : strtolower($this->hash);
     }
@@ -301,16 +301,19 @@ class Filer {
     }
 
     // hash helpers
+    /** @return non-empty-string|false */
     static function hash_as_text($hash) {
         assert(is_string($hash));
         $ha = new HashAnalysis($hash);
         return $ha->ok() ? $ha->text() : false;
     }
+    /** @return non-empty-string|false */
     static function hash_as_binary($hash) {
         assert(is_string($hash));
         $ha = new HashAnalysis($hash);
         return $ha->ok() ? $ha->binary() : false;
     }
+    /** @return non-empty-string|false */
     static function sha1_hash_as_text($str) {
         $ha = new HashAnalysis($str);
         return $ha->ok() && $ha->prefix() === "" ? $ha->text() : false;

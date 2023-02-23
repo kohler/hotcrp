@@ -133,7 +133,7 @@ class PaperStatus extends MessageSet {
      * @param mixed $value
      * @return MessageItem */
     function syntax_error_at($key, $value) {
-        error_log($this->conf->dbname . ": PaperStatus: syntax error $key " . gettype($value));
+        error_log($this->conf->dbname . ": PaperStatus: syntax error {$key} " . gettype($value));
         return $this->error_at($key, "<0>Validation error [{$key}]");
     }
 
@@ -203,62 +203,93 @@ class PaperStatus extends MessageSet {
         if ($docj instanceof DocumentInfo) {
             $doc = $docj;
         } else {
-            $doc = $dochash = null;
-            if (isset($docj->hash) && is_string($docj->hash)) {
-                $dochash = Filer::hash_as_text($docj->hash);
-            } else if (!isset($docj->hash) && isset($docj->sha1) && is_string($docj->sha1)) {
-                $dochash = Filer::sha1_hash_as_text($docj->sha1);
-            }
-
-            if (!$this->will_insert()
-                && ($docid = $docj->docid ?? null)
-                && is_int($docid)) {
-                $result = $this->conf->qe("select * from PaperStorage where paperId=? and paperStorageId=? and documentType=?", $this->prow->paperId, $docid, $o->id);
-                $doc = DocumentInfo::fetch($result, $this->conf, $this->prow);
-                Dbl::free($result);
-                if ($doc && ($dochash ?? "") !== "" && $dochash !== $doc->text_hash()) {
-                    $doc = null;
-                }
-            }
-
-            if (!$doc) {
-                $args = [
-                    "paperId" => $this->_desired_pid ?? -1,
-                    "hash" => $dochash,
-                    "documentType" => $o->id
-                ];
-                foreach (["timestamp", "mimetype", "content", "content_base64",
-                          "content_file", "metadata"] as $k) {
-                    if (isset($docj->$k))
-                        $args[$k] = $docj->$k;
-                }
-                if (isset($docj->filename)) {
-                    $args["filename"] = DocumentInfo::sanitize_filename($docj->filename);
-                }
-                $doc = new DocumentInfo($args, $this->conf, $this->prow);
-                $doc->analyze_content();
-            }
+            $doc = $this->_upload_json_document($docj, $o);
         }
 
         // save
-        if ($doc->paperStorageId > 1 || $doc->save()) {
-            if ($doc->documentType <= 0) {
-                $this->_joindocs[] = $doc;
-            }
-            if ($doc->paperId === 0 || $doc->paperId === -1) {
-                $this->_update_pid_dids[] = $doc->paperStorageId;
-            } else {
-                assert($doc->paperId === $this->prow->paperId);
-            }
-            return $doc;
-        } else {
+        if ($doc->paperStorageId === 0
+            && ($doc->has_error() || !$doc->save())) {
             foreach ($doc->message_list() as $mi) {
                 $mi = $this->msg_at_option($o, $mi->message, $mi->status);
                 $mi->landmark = $doc->export_filename();
             }
             return null;
         }
+
+        if ($doc->documentType <= 0) {
+            $this->_joindocs[] = $doc;
+        }
+        if ($doc->paperId === 0 || $doc->paperId === -1) {
+            $this->_update_pid_dids[] = $doc->paperStorageId;
+        } else {
+            assert($doc->paperId === $this->prow->paperId);
+        }
+        return $doc;
     }
+
+    /** @return DocumentInfo */
+    private function _upload_json_document($docj, PaperOption $o) {
+        $hash = null;
+        if (isset($docj->hash) && is_string($docj->hash)) {
+            $hash = Filer::hash_as_text($docj->hash);
+        } else if (!isset($docj->hash) && isset($docj->sha1) && is_string($docj->sha1)) {
+            $hash = Filer::sha1_hash_as_text($docj->sha1);
+        }
+        $docid = $docj->docid ?? null;
+
+        // make new document
+        $args = [
+            "paperId" => $this->_desired_pid ?? -1,
+            "hash" => $hash, "documentType" => $o->id
+        ];
+        foreach (["timestamp", "mimetype",
+                  "content", "content_base64", "content_file"] as $k) {
+            if (isset($docj->$k))
+                $args[$k] = $docj->$k;
+        }
+        if (isset($docj->filename)) {
+            $args["filename"] = DocumentInfo::sanitize_filename($docj->filename);
+        }
+        $doc = new DocumentInfo($args, $this->conf, $this->prow);
+
+        // check for existing document with same did and/or hash
+        if (!$this->will_insert()
+            && (($hash && !$doc->content_available())
+                || (is_int($docid) && $docid > 0))) {
+            $qx = ["paperId=?" => $this->prow->paperId, "documentType=?" => $o->id];
+            if (is_int($docid) && $docid > 0) {
+                $qx["paperStorageId=?"] = $docid;
+            }
+            if ($hash) {
+                $qx["sha1=?"] = Filer::hash_as_binary($hash);
+            }
+            if (isset($docj->mimetype)) {
+                $qx["mimetype=?"] = $docj->mimetype;
+            }
+            $result = $this->conf->qe_apply("select * from PaperStorage where " . join(" and ", array_keys($qx)), array_values($qx));
+            $edoc = DocumentInfo::fetch($result, $this->conf, $this->prow);
+            Dbl::free($result);
+            if ($edoc) {
+                return $edoc;
+            }
+        }
+
+        // document upload requires available content
+        // Chair users can upload using *only* a hash; other users must
+        // provide the relevant content.
+        if ($doc->content_available()
+            || ($hash
+                && isset($docj->mimetype)
+                && $this->user->privChair
+                && $doc->ensure_content())) {
+            $doc->analyze_content();
+        } else {
+            $doc->error("<0>Document has no content");
+        }
+
+        return $doc;
+    }
+
 
     private function _normalize($ipj) {
         // Errors prevent saving
@@ -930,16 +961,12 @@ class PaperStatus extends MessageSet {
         }
 
         if ($new_joindoc) {
-            if ($new_joindoc->ensure_size()) {
-                $this->save_paperf("size", $new_joindoc->size);
-            } else {
-                $this->save_paperf("size", 0);
-            }
+            $this->save_paperf("size", $new_joindoc->size());
             $this->save_paperf("mimetype", $new_joindoc->mimetype);
             $this->save_paperf("sha1", $new_joindoc->binary_hash());
             $this->save_paperf("timestamp", $new_joindoc->timestamp);
         } else {
-            $this->save_paperf("size", 0);
+            $this->save_paperf("size", -1);
             $this->save_paperf("mimetype", "");
             $this->save_paperf("sha1", "");
             $this->save_paperf("timestamp", 0);

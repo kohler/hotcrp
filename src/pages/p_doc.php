@@ -1,6 +1,6 @@
 <?php
 // pages/doc.php -- HotCRP document download page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Doc_Page {
     /** @param string $status
@@ -36,8 +36,8 @@ class Doc_Page {
      * @return object */
     static private function history_element(DocumentInfo $doc, $active) {
         $pj = ["hash" => $doc->text_hash(), "at" => $doc->timestamp, "mimetype" => $doc->mimetype];
-        if ($active ? $doc->size() : $doc->size) {
-            $pj["size"] = $doc->size;
+        if (($sz = $doc->size()) >= 0) {
+            $pj["size"] = $sz;
         }
         if ($doc->filename) {
             $pj["filename"] = $doc->filename;

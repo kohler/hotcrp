@@ -79,7 +79,7 @@ class PaperExport {
         if ($doc->timestamp) {
             $d->timestamp = $doc->timestamp;
         }
-        if (($sz = $doc->size()) > 0) {
+        if (($sz = $doc->size()) >= 0) {
             $d->size = $sz;
         }
         if ($doc->filename) {

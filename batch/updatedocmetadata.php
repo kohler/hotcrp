@@ -1,6 +1,6 @@
 <?php
 // updatedocmetadata.php -- HotCRP maintenance script
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -28,9 +28,9 @@ class UpdateDocMetadata_Batch {
         Dbl::free($result);
         while (!empty($docs)) {
             $i = 1;
-            $sz = $docs[0]->size;
+            $sz = $docs[0]->size();
             while ($i !== count($docs) && $sz < (64 << 20)) {
-                $sz += $docs[$i]->size;
+                $sz += $docs[$i]->size();
                 ++$i;
             }
             $this->run_images_subset(array_splice($docs, 0, $i));

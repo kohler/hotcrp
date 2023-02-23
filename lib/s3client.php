@@ -1,6 +1,6 @@
 <?php
 // s3client.php -- helper class for S3 access papers
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class S3Client {
     const EMPTY_SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
@@ -238,13 +238,13 @@ class S3Client {
         return new $klass($this, $skey, $method, $args, $finisher);
     }
 
-    /** @return int|false */
+    /** @return int */
     static function finish_head_size(S3Result $s3r) {
         if ($s3r->status === 200
             && ($fs = $s3r->response_header("content-length")) !== null) {
             return intval($fs);
         } else {
-            return false;
+            return -1;
         }
     }
 
@@ -255,7 +255,7 @@ class S3Client {
     }
 
     /** @param string $skey
-     * @return S3Result<int|false> */
+     * @return S3Result<int> */
     function start_head_size($skey) {
         return $this->start($skey, "HEAD", [], "S3Client::finish_head_size");
     }
@@ -373,7 +373,7 @@ class S3Client {
     }
 
     /** @param string $skey
-     * @return int|false */
+     * @return int */
     function head_size($skey) {
         return $this->start_head_size($skey)->finish();
     }

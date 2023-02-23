@@ -247,7 +247,7 @@ CREATE TABLE `Paper` (
   `managerContactId` int(11) NOT NULL DEFAULT 0,
   `capVersion` int(1) NOT NULL DEFAULT 0,
   # next 3 fields copied from PaperStorage to reduce joins
-  `size` int(11) NOT NULL DEFAULT 0,
+  `size` bigint(11) NOT NULL DEFAULT -1,
   `mimetype` varbinary(80) NOT NULL DEFAULT '',
   `timestamp` bigint(11) NOT NULL DEFAULT 0,
   `pdfFormatStatus` bigint(11) NOT NULL DEFAULT 0,
@@ -470,7 +470,7 @@ CREATE TABLE `PaperStorage` (
   `documentType` int(3) NOT NULL DEFAULT 0,
   `filename` varbinary(255) DEFAULT NULL,
   `infoJson` varbinary(32768) DEFAULT NULL,
-  `size` bigint(11) DEFAULT NULL,
+  `size` bigint(11) NOT NULL DEFAULT -1,
   `filterType` int(3) DEFAULT NULL,
   `originalStorageId` int(11) DEFAULT NULL,
   `inactive` tinyint(1) NOT NULL DEFAULT 0,
@@ -615,7 +615,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 272);
+insert into Settings (name, value) values ('allowPaperOption', 273);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

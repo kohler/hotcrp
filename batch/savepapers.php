@@ -231,11 +231,10 @@ class SavePapers_Batch {
             }
         }
 
-        if (isset($j->pid) && is_int($j->pid) && $j->pid > 0) {
-            $pidtext = "#{$j->pid}";
-        } else if (!isset($j->pid) && isset($j->id) && is_int($j->id) && $j->id > 0) {
-            $pidtext = "#{$j->id}";
-        } else if (!isset($j->pid) && !isset($j->id)) {
+        $pid = $j->pid ?? $j->id ?? null;
+        if (is_int($pid) && $pid > 0) {
+            $pidtext = "#{$pid}";
+        } else if ($pid === null || $pid === "new") {
             $pidtext = "new paper @{$this->index}";
         } else {
             fwrite(STDERR, "paper @{$this->index}: bad pid\n");
@@ -271,8 +270,8 @@ class SavePapers_Batch {
 
         $pid = $ps->save_paper_json($j);
         if ($pid && str_starts_with($pidtext, "new")) {
-            fwrite(STDERR, "-> #" . $pid . ": ");
-            $pidtext = "#$pid";
+            fwrite(STDERR, "-> #{$pid}: ");
+            $pidtext = "#{$pid}";
         }
         if (!$this->quiet) {
             fwrite(STDERR, $pid ? ($ps->has_change() ? "saved\n" : "unchanged\n") : "failed\n");

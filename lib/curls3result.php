@@ -1,6 +1,6 @@
 <?php
 // curls3result.php -- S3 access using curl functions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 /** @template T
  * @inherits S3Result<T> */
@@ -59,7 +59,7 @@ class CurlS3Result extends S3Result {
     /** @param int $xsize
      * @return $this */
     function set_expected_size($xsize) {
-        $this->_xsize = $xsize;
+        $this->_xsize = max($xsize, 0);
         return $this;
     }
 

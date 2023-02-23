@@ -451,8 +451,8 @@ class PaperInfo {
     public $finalPaperStorageId;
     /** @var ?string */
     public $pdfFormatStatus;
-    /** @var null|int|string */
-    public $size;
+    /** @var ?int */
+    private $size;
     /** @var ?string */
     public $mimetype;
     /** @var ?string */
@@ -652,6 +652,9 @@ class PaperInfo {
         }
         if (isset($this->finalPaperStorageId)) {
             $this->finalPaperStorageId = (int) $this->finalPaperStorageId;
+        }
+        if (isset($this->size)) {
+            $this->size = (int) $this->size;
         }
         if (isset($this->dataOverflow) && is_string($this->dataOverflow)) {
             $this->dataOverflow = json_decode($this->dataOverflow, true);
@@ -2165,7 +2168,7 @@ class PaperInfo {
                 "paperStorageId" => $did, "paperId" => $this->paperId,
                 "documentType" => $dtype, "timestamp" => (int) $this->timestamp,
                 "mimetype" => $this->mimetype, "hash" => $this->sha1,
-                "size" => (int) $this->size
+                "size" => $this->size ?? -1
             ];
             $infokey = $dtype === DTYPE_SUBMISSION ? "paper_infoJson" : "final_infoJson";
             if (isset($this->$infokey)) {
@@ -2198,23 +2201,24 @@ class PaperInfo {
     /** @return bool */
     function is_primary_document(DocumentInfo $doc) {
         return $doc->paperStorageId > 1
-            && (($doc->paperStorageId == $this->paperStorageId
+            && (($doc->paperStorageId === $this->paperStorageId
                  && $this->finalPaperStorageId <= 0
                  && $doc->documentType === DTYPE_SUBMISSION)
-                || ($doc->paperStorageId == $this->finalPaperStorageId
+                || ($doc->paperStorageId === $this->finalPaperStorageId
                     && $doc->documentType === DTYPE_FINAL));
     }
 
     /** @return int */
     function primary_document_size() {
         // ensure `Paper.size` exists (might not due to import bugs)
-        if ($this->size == 0
-            && $this->paperStorageId > 1
-            && ($doc = $this->primary_document())
-            && ($this->size = $doc->size()) > 0) {
-            $this->conf->qe("update Paper set size=? where paperId=? and paperStorageId=? and size=0", $this->size, $this->paperId, $this->paperStorageId);
+        if (($this->size ?? -1) < 0 && ($doc = $this->primary_document())) {
+            $this->size = $doc->size();
+            if ($this->size >= 0) {
+                $key = $doc->documentType === DTYPE_SUBMISSION ? "paperStorageId" : "finalPaperStorageId";
+                $this->conf->qe("update Paper set size=? where paperId=? and {$key}=? and size<=0", $this->size, $this->paperId, $doc->paperStorageId);
+            }
         }
-        return (int) $this->size;
+        return $this->size ?? -1;
     }
 
     /** @param int $dtype

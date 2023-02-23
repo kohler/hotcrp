@@ -181,7 +181,8 @@ class BackupDB_Batch {
         }
         if ($output_mode === "stdout") {
             if (posix_isatty(STDOUT)
-                && ($this->subcommand === self::BACKUP || $this->subcommand === self::S3_GET)) {
+                && ($this->subcommand === self::BACKUP || $this->subcommand === self::S3_GET)
+                && !$this->schema) {
                 $this->throw_error("Cowardly refusing to output to a terminal");
             }
             if ($this->_hash) {

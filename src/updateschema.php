@@ -2614,6 +2614,12 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 271) {
             $conf->update_schema_version(272);
         }
+        if ($conf->sversion === 272
+            && $conf->ql_ok("alter table Paper change `size` `size` bigint(11) NOT NULL DEFAULT -1")
+            && $conf->ql_ok("update PaperStorage set size=-1 where size is null or (size=0 and sha1!=x'da39a3ee5e6b4b0d3255bfef95601890afd80709' and sha1!=x'736861322de3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')")
+            && $conf->ql_ok("alter table PaperStorage change `size` `size` bigint(11) NOT NULL DEFAULT -1")) {
+            $conf->update_schema_version(273);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;
