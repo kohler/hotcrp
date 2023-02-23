@@ -5957,13 +5957,13 @@ function render_edit_attachment(ctr, doc) {
 }
 
 function render_attachment_link(hc, doc) {
-    hc.push('<a href="' + escape_html(siteinfo.site_relative + doc.siteurl) + '" class="q">', '</a>');
+    hc.push('<a href="' + escape_html(siteinfo.site_relative + doc.siteurl) + '" class="qo">', '</a>');
     if (doc.mimetype === "application/pdf") {
-        hc.push('<img src="' + siteinfo.assets + 'images/pdf.png" alt="[PDF]" class="sdlimg">');
+        hc.push('<img src="' + siteinfo.assets + 'images/pdf.png" alt="[PDF]" class="sdlimg"> ');
     } else {
-        hc.push('<img src="' + siteinfo.assets + 'images/generic.png" alt="[Attachment]" class="sdlimg">');
+        hc.push('<img src="' + siteinfo.assets + 'images/generic.png" alt="[Attachment]" class="sdlimg"> ');
     }
-    hc.push(' ' + escape_html(doc.unique_filename || doc.filename || "Attachment"));
+    hc.push('<u class="x">' + escape_html(doc.unique_filename || doc.filename || "Attachment") + '</u>');
     if (doc.size != null) {
         hc.push(' <span class="dlsize">(' + unparse_byte_size(doc.size) + ')</span>');
     }

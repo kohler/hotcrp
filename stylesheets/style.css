@@ -40,7 +40,7 @@ select, button {
 	color: #b655e6;
 }
 
-.hint, .f-h, .f-hx, .field-d {
+.hint, .f-h, .f-hx, .field-d, .dlsize {
 	color: #555555;
 }
 .dark .hint, .dark .f-h, .dark .f-hx, .dark .field-d {
@@ -362,7 +362,8 @@ td.quicklinks, #tracker-connect {
    * a.ulh: underline inherit/link
    * a.noul: underline inherit/inherit
    * a.q: color inherit/link + underline inherit/link (a.qh.ulh)
-   * a.qo: color inherit/link + underline inherit/inherit (a.qh.noul) */
+   * a.qo: color inherit/link + underline inherit/inherit (a.qh.noul)
+   * u.x: underline when in a:hover */
 a.qh, a.noq, a.noq:hover, a.q, a.qo, a.btn, a.btn:hover,
 .is-error a, .is-warning a, .is-note a, .is-warning-note a, .is-urgent-note a,
 .btn-qlink, .btn-ulink {
