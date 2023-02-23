@@ -46,7 +46,6 @@ class Attachments_PaperOption extends PaperOption {
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {
         $docs = $ov->anno("documents") ?? [];
-        '@phan-var list<int|object> $fups';
         $dids = [];
         foreach ($docs as $dj) {
             if (is_int($dj)) {

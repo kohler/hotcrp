@@ -27,7 +27,7 @@ use Phan\Config;
 return (function () {
 $config = [
     "minimum_target_php_version" => "7.0",
-    "target_php_version" => "8.1",
+    "target_php_version" => "8.2",
 
     // If true, missing properties will be created when
     // they are first seen. If false, we'll report an
