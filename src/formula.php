@@ -161,15 +161,14 @@ abstract class Fexpr implements JsonSerializable {
     function typecheck_arguments(Formula $formula, $ismath = false) {
         $ok = true;
         foreach ($this->args as $a) {
-            if ($a->typecheck($formula)) {
-                if ($ismath && !$a->math_format()) {
-                    $formula->fexpr_lerror($a, $a->disallowed_use_error());
-                    $ok = false;
-                }
-            } else {
-                $ok = false;
+            $aok = $a->typecheck($formula);
+            if ($aok && $ismath && !$a->math_format()) {
+                $formula->fexpr_lerror($a, $a->disallowed_use_error());
+                $aok = false;
             }
+            $ok = $ok && $aok;
         }
+
         if ($ok && $this->_format === Fexpr::FUNKNOWN) {
             $commonf = null;
             foreach ($this->typecheck_format() ?? [] as $fe) {
@@ -183,12 +182,15 @@ abstract class Fexpr implements JsonSerializable {
                     break;
                 }
             }
-            if ($commonf) {
+            if ($this->_format !== Fexpr::FUNKNOWN) {
+                // already have format
+            } else if ($commonf) {
                 $this->set_format($commonf->_format, $commonf->_format_detail);
             } else {
                 $this->set_format(Fexpr::FNUMERIC);
             }
         }
+
         return $ok;
     }
 
