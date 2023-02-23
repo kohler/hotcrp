@@ -625,7 +625,7 @@ class PaperSearch extends MessageSet {
                 return $qe;
             }
         }
-        $srch->lwarning($sword, "<0>Unknown search ‘has:{$word}’ won’t match anything");
+        $srch->lwarning($sword, "<0>Unknown search ‘has:{$word}’");
         return new False_SearchTerm;
     }
 
@@ -680,7 +680,7 @@ class PaperSearch extends MessageSet {
                 && (!$is_defkw || !$scope->defkw_scope->defkw_error)
                 && $scope->ignore_unknown === 0) {
                 $xsword = SearchWord::make_kwarg($kw, $sword->pos1w, $sword->pos1w, $sword->pos1);
-                $this->lwarning($xsword, "<0>Unknown search ‘{$kw}:’ won’t match anything");
+                $this->lwarning($xsword, "<0>Unknown search keyword ‘{$kw}:’");
                 if ($is_defkw) {
                     $scope->defkw_scope->defkw_error = true;
                 }

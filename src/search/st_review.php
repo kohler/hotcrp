@@ -651,6 +651,11 @@ class Review_SearchTerm extends SearchTerm {
 
         // split into parts
         $parts = preg_split('/((?::(?:[=!<>]=?+|≠|≤|≥)?+|[=!<>]=?+|≠|≤|≥)(?:[^:=!<>\"\xe2]|\xe2(?!\x89[\xa0\xa4\xa5])[\x80-\xBF][\x80-\xBF]|\"[^\"]*+\"?)++)/', $sword->qword, 0, PREG_SPLIT_DELIM_CAPTURE);
+        if (count($parts) === 1 && trim($parts[0]) === "") {
+            $srch->lwarning($sword, "<0>Missing expression (did you mean ‘{$sword->kwdef->name}:any’?)");
+            return new False_SearchTerm;
+        }
+
         $i = $parts[0] === "" ? 1 : 0;
         while ($i < count($parts) - 2) {
             $part = $i === 0 ? $parts[$i] : $parts[$i] . $parts[$i + 1];
