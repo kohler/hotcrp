@@ -426,7 +426,7 @@ class MailRecipients extends MessageSet {
         }
 
         assert(!!$paper_set === $needpaper);
-        if ($paper_set) {
+        if ($needpaper && $paper_set) {
             $where[] = "Paper.paperId" . sql_in_int_list($paper_set->paper_ids());
         }
 
