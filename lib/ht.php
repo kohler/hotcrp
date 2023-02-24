@@ -229,7 +229,8 @@ class Ht {
                     $opts[] = '<optgroup label="' . htmlspecialchars($in_optgroup) . '">';
                 }
                 continue;
-            } else if (($info["optgroup"] ?? "") !== $in_optgroup) {
+            } else if (isset($info["optgroup"])
+                       && $info["optgroup"] !== $in_optgroup) {
                 $opts[] = $in_optgroup === "" ? "" : "</optgroup>";
                 $in_optgroup = $info["optgroup"] ?? "";
                 if ($in_optgroup !== "") {
