@@ -125,13 +125,16 @@ class Mail_Page {
         $null_mailer = new HotCRPMailer($this->conf, null, [
             "requester_contact" => $this->viewer, "width" => false
         ]);
-        if (isset($qreq->template) && !isset($qreq->check) && !isset($qreq->default)) {
+        if (isset($qreq->template)
+            && !isset($qreq->check)
+            && !isset($qreq->send)
+            && !isset($qreq->default)) {
             $t = $qreq->template ?? "generic";
             $template = (array) $this->conf->mail_template($t);
             if (!($template["allow_template"] ?? false)) {
                 $template = (array) $this->conf->mail_template("generic");
             }
-            if (!isset($qreq->to) || $qreq->loadtmpl != -1) {
+            if (!isset($qreq->to)) {
                 $qreq->to = $template["default_recipients"] ?? "s";
             }
             if (!isset($qreq->t) && isset($template["default_search_type"])) {
