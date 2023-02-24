@@ -1554,7 +1554,7 @@ handle_ui.on = function (s, callback, priority) {
             dot = dot >= 0 ? dot : len;
         }
         if (dot < sp) {
-            type = s.substring(pos, dot);
+            type = pos === dot ? null : s.substring(pos, dot);
             className = s.substring(dot + 1, sp);
         } else {
             type = null;
@@ -4448,6 +4448,13 @@ handle_ui.on(".js-mail-set-template", function () {
         }
         hc.show(true);
     });
+});
+
+handle_ui.on(".js-mail-send-phase-1", function () {
+    var send = this.querySelector("button");
+    send.disabled = true;
+    send.textContent = "Sending mail…";
+    addClass(document.body, "wait");
 });
 
 

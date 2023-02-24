@@ -115,7 +115,6 @@ class Mail_Page {
             }
             sort($papersel);
             $qreq->q = join(" ", $papersel);
-            error_log("XXXX");
             $qreq->plimit = 1;
         } else {
             $qreq->q = "";
@@ -468,7 +467,8 @@ $(mail_recipients_fold)');
     static function go(Contact $user, Qrequest $qreq) {
         if (isset($qreq->cancel)) {
             $user->conf->redirect_self($qreq, $qreq->subset_as_array("monreq", "to", "has_plimit", "plimit", "q", "t", "cc", "reply-to", "subject", "body", "template"));
-        } else if (!$user->is_manager() && !$user->isPC) {
+        }
+        if (!$user->is_manager() && !$user->isPC) {
             $user->escape();
         }
 

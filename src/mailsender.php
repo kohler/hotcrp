@@ -67,13 +67,12 @@ class MailSender {
             $user->contactId, (string) $qreq->to, $qreq->cc, $qreq["reply-to"],
             $qreq->subject, $qreq->body, $qreq->q, $qreq->t,
             $user->privChair ? 0 : 1);
-        $ms->print_request_form(true);
+        $ms->print_request_form();
         echo Ht::hidden("mailid", $result->insert_id),
             Ht::hidden("send", 1),
             Ht::submit("Send mail", ["class" => "btn-highlight"]),
             "</form>",
-            Ht::unstash_script('$("#mailform").submit()'),
-            Ht::msg("About to send mail.", 1);
+            Ht::unstash_script('$("#mailform").submit()');
         $qreq->print_footer();
         exit;
     }
@@ -105,17 +104,20 @@ class MailSender {
         Ht::stash_script('$(".need-tooltip").each(tooltip)');
     }
 
-    private function print_request_form($include_cb) {
-        echo Ht::form($this->conf->hoturl("=mail"), ["id" => "mailform"]);
+    private function print_request_form() {
+        echo Ht::form($this->conf->hoturl("=mail"), [
+            "id" => "mailform",
+            "class" => $this->phase === 1 ? "ui-submit js-mail-send-phase-1" : null
+        ]);
         foreach ($this->qreq->subset_as_array("to", "subject", "body", "cc", "reply-to", "q", "t", "plimit", "has_plimit", "newrev_since", "template") as $k => $v) {
             echo Ht::hidden($k, $v);
         }
         if (!$this->group) {
             echo Ht::hidden("ungroup", 1);
         }
-        if ($include_cb) {
+        if ($this->phase === 1) {
             foreach ($this->qreq as $k => $v) {
-                if ($k[0] === "c" && preg_match('{\Ac[\d_]+p-?\d+\z}', $k))
+                if ($k[0] === "c" && preg_match('/\Ac[\d_]+p-?\d+\z/', $k))
                     echo Ht::hidden($k, $v);
             }
         }
@@ -125,7 +127,7 @@ class MailSender {
         if ($this->started) {
             return;
         }
-        $this->print_request_form(false);
+        $this->print_request_form();
         if ($this->phase === 2) {
             echo '<div id="foldmail" class="foldc fold2c">',
                 '<div class="fn fx2 msg msg-warning">',
@@ -358,7 +360,7 @@ class MailSender {
         if ($this->sending) {
             $this->mailid_text = " #" . intval($this->qreq->mailid);
             // Mail format matters
-            $this->user->log_activity("Sending mail$this->mailid_text \"$subject\"");
+            $this->user->log_activity("Sending mail{$this->mailid_text} \"{$subject}\"");
             $rest["censor"] = Mailer::CENSOR_NONE;
         } else {
             $rest["no_send"] = true;
