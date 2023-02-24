@@ -533,6 +533,9 @@ class Dbl {
         return $result;
     }
 
+    // NB The following functions are intentionally misdeclared to return
+    // `Dbl_Result`. The true return type is `Dbl_Result|\mysqli_result`.
+
     /** @return Dbl_Result */
     static private function do_query_with($dblink, $qstr, $argv, $flags) {
         if (!($flags & self::F_RAW)) {

@@ -137,6 +137,10 @@ class CheckInvariants_Batch {
             $this->report_fix("inactive documents");
             $this->fix_inactive_documents();
         }
+        if (isset($ic->problems["paper_denormalization"]) && $this->want_fix("document-match")) {
+            $this->report_fix("document match");
+            $this->fix_document_match();
+        }
         return 0;
     }
 
@@ -156,6 +160,17 @@ class CheckInvariants_Batch {
         }
     }
 
+    private function fix_document_match() {
+        $result = $this->conf->qe("select * from PaperStorage where paperStorageId>1 and size<0");
+        while (($doc = DocumentInfo::fetch($result, $this->conf))) {
+            $doc->size();
+        }
+        $result->close();
+
+        $this->conf->qe("update Paper p join PaperStorage s on (s.paperId=p.paperId and s.paperStorageId=p.paperStorageId) set p.size=s.size where p.size<0 and p.finalPaperStorageId<=1");
+        $this->conf->qe("update Paper p join PaperStorage s on (s.paperId=p.paperId and s.paperStorageId=p.finalPaperStorageId) set p.size=s.size where p.size<0 and p.finalPaperStorageId>1");
+    }
+
     /** @return CheckInvariants_Batch */
     static function make_args($argv) {
         $arg = (new Getopt)->long(
@@ -165,7 +180,7 @@ class CheckInvariants_Batch {
             "verbose,V Be verbose",
             "fix-autosearch ! Repair any incorrect autosearch tags",
             "fix-inactive ! Repair any inappropriately inactive documents",
-            "fix[] =PROBLEM Repair PROBLEM [all, autosearch, inactive, setting]",
+            "fix[] =PROBLEM Repair PROBLEM [all, autosearch, inactive, setting, document-match]",
             "color",
             "no-color !",
             "pad-prefix !"
