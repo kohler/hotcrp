@@ -4552,6 +4552,21 @@ handle_ui.on(".js-badpairs-row", function (evt) {
 
 })();
 
+handle_ui.on(".js-autoassign-prepare", function (evt) {
+    var k, v, a;
+    if (!this.elements.a || !(a = this.elements.a.value)) {
+        return;
+    }
+    this.action = hoturl_add(this.action, "a=" + encodeURIComponent(a));
+    for (k in this.elements) {
+        if (k.startsWith(a + ":")) {
+            v = this.elements[k].value;
+            if (v && typeof v === "string" && v.length < 100)
+                this.action = hoturl_add(this.action, encodeURIComponent(k) + "=" + encodeURIComponent(v));
+        }
+    }
+});
+
 
 // author entry
 (function ($) {

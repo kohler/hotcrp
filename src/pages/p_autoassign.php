@@ -325,7 +325,7 @@ class Autoassign_Page {
 
 
         // open form
-        echo Ht::form($conf->hoturl("=autoassign", ["profile" => $qreq->profile, "seed" => $qreq->seed, "XDEBUG_PROFILE" => $qreq->XDEBUG_PROFILE]), ["id" => "autoassignform"]),
+        echo Ht::form($conf->hoturl("=autoassign", ["profile" => $qreq->profile, "seed" => $qreq->seed, "XDEBUG_PROFILE" => $qreq->XDEBUG_PROFILE]), ["id" => "autoassignform", "class" => "ui-submit js-autoassign-prepare"]),
             '<div class="helpside"><div class="helpinside">
         Assignment methods:
         <ul><li><a href="', $conf->hoturl("autoassign"), '" class="q"><strong>Automatic</strong></a></li>
