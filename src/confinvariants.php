@@ -62,9 +62,16 @@ class ConfInvariants {
         } else if ($text === null) {
             $text = $abbrev;
         }
-        foreach ($this->irow ?? [] as $i => $v) {
-            $text = str_replace("{{$i}}", $v, $text);
-        }
+        $text = preg_replace_callback('/\{(\d+)\}/', function ($m) {
+            $v = $this->irow[$m[1]] ?? "";
+            if (!is_usascii($v)) {
+                $v = bin2hex($v);
+                if (str_starts_with($v, "736861322d") && strlen($v) === 74) {
+                    $v = "sha2-" . substr($v, 10);
+                }
+            }
+            return $v;
+        }, $text);
         $msg = "{$this->prefix}{$this->conf->dbname} invariant violation: {$text}";
         if ($this->msgbuf !== null) {
             $this->msgbuf[] = $msg . "\n";
@@ -358,13 +365,17 @@ class ConfInvariants {
         if ($any) {
             $this->invariant_error("paper_id_denormalization", "bad PaperStorage link, paper #{0} (storage paper #{1})");
         }
-        $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.finalPaperStorageId<=0 and p.paperStorageId>1 and (p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
+        $any = $this->invariantq("select p.paperId, ps.paperStorageId, p.sha1, p.size, p.mimetype, p.timestamp, ps.sha1, ps.size, ps.mimetype, ps.timestamp from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.finalPaperStorageId<=0 and p.paperStorageId>1 and (p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
         if ($any) {
-            $this->invariant_error("paper_denormalization", "bad Paper denormalization, paper #{0}");
+            for ($n = 2; $n !== 6 && $this->irow[$n] === $this->irow[$n + 4]; ++$n) {
+            }
+            $this->invariant_error("paper_denormalization", "bad Paper denormalization, document #{0}.{1} ({{$n}}!={" . ($n+4) . "})");
         }
-        $any = $this->invariantq("select p.paperId, ps.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.finalPaperStorageId) where p.finalPaperStorageId>1 and (p.paperId!=ps.paperId or p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
+        $any = $this->invariantq("select p.paperId, ps.paperStorageId, p.sha1, p.size, p.mimetype, p.timestamp, ps.sha1, ps.size, ps.mimetype, ps.timestamp from Paper p join PaperStorage ps on (ps.paperStorageId=p.finalPaperStorageId) where p.finalPaperStorageId>1 and (p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
         if ($any) {
-            $this->invariant_error("paper_final_denormalization", "bad Paper final denormalization, paper #{0} (storage paper #{1})");
+            for ($n = 2; $n !== 6 && $this->irow[$n] === $this->irow[$n + 4]; ++$n) {
+            }
+            $this->invariant_error("paper_denormalization", "bad Paper final denormalization, document #{0}.{1} ({{$n}}!={" . ($n+4) . "})");
         }
 
         // filterType is never zero
