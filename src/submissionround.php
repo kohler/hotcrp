@@ -13,6 +13,8 @@ class SubmissionRound {
     public $open = 0;
     /** @var int */
     public $register = 0;
+    /** @var bool */
+    public $inferred_register = false;
     /** @var int */
     public $update = 0;
     /** @var int */
@@ -57,6 +59,10 @@ class SubmissionRound {
 
     /** @param Conf $conf */
     private function initialize($conf) {
+        if ($this->register <= 0 && $this->update > 0) {
+            $this->register = $this->update;
+            $this->inferred_register = true;
+        }
         if ($this->time_submit(true)) {
             $this->incomplete_viewable = $conf->setting("pc_seeall") > 0;
             $this->pdf_viewable = $conf->setting("pc_seeallpdf") > 0

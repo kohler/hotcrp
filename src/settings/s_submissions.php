@@ -8,9 +8,8 @@ class Submissions_SettingParser extends SettingParser {
     }
     static function print_deadlines(SettingValues $sv) {
         // maybe sub_reg was overridden
-        if (($sub_reg = $sv->conf->setting("__sub_reg")) !== null) {
-            $sv->set_oldv("submission_registration", $sub_reg);
-        } else if ($sv->oldv("submission_registration") === $sv->oldv("submission_done")) {
+        $main_sr = $sv->conf->unnamed_submission_round();
+        if ($main_sr->inferred_register || $main_sr->register === $main_sr->submit) {
             $sv->set_oldv("submission_registration", null);
         }
         $sv->print_entry_group("submission_registration", "Registration deadline", null, "New submissions can be started until this deadline.");
