@@ -273,6 +273,9 @@ class AssignmentState extends MessageSet {
     function load($x) {
         $st = $this->pidstate($x->pid);
         $k = $this->extract_key($x);
+        if (!$k || isset($st->items[$k])) { // XXXX
+            error_log(json_encode($k) . " / " . debug_string_backtrace());
+        }
         assert($k && !isset($st->items[$k]));
         $st->items[$k] = new AssignmentItem($x, true);
     }
