@@ -97,7 +97,7 @@ class Attachments_PaperOption extends PaperOption {
             if ($qreq["{$name}:remove"]) {
                 continue;
             }
-            if ($qreq->has_file("{$name}:file")) {
+            if ($qreq->has_file("{$name}:file") || $qreq["{$name}:upload"]) {
                 $thisdoc = DocumentInfo::make_request($qreq, "{$name}:file", $prow->paperId, $documentType, $prow->conf);
                 if ($thisdoc && $thisdoc->has_error()) {
                     foreach ($thisdoc->message_list() as $mi) {

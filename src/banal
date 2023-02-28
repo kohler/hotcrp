@@ -498,6 +498,27 @@ sub column_gap_overlap {
     return $gap;
 }
 
+sub heading_number ($) {
+    my ($t) = @_;
+    if ($t =~ /\A(\d+)((?:\.\d+)*)/) {
+        (+$1, +$1, $1 . $2, 1);
+    } elsif ($t =~ /\A(X*)(I+|IV|VI*|IX|)((?:\.\d+)*)/ && ($1 || $2)) {
+        my ($n) = length($1) * 10;
+        if ($2 eq "IX") {
+            $n += 9;
+        } elsif ($2 eq "IV") {
+            $n += 4;
+        } elsif (substr($2, 0, 1) eq "V") {
+            $n += 5 + length($2) - 1;
+        } else {
+            $n += length($2);
+        }
+        ($n, $1 . $2, $1 . $2 . $3, 0);
+    } else {
+        (0, 0, 0, 0);
+    }
+}
+
 sub calc_page_headings ($$$$) {
     my ($doc, $page, $texts, $bodyfontsize) = @_;
     my ($colpos) = $page->{colpos};
@@ -506,6 +527,8 @@ sub calc_page_headings ($$$$) {
     my ($near_top) = 1;
     my ($in_refs_top) = $doc->{in_references};
     my ($contents) = 0;
+    my ($min_section) = $doc->{max_section};
+    my ($max_section) = $min_section;
 
     TPOS: for (my $tpos = 0; $tpos < @$texts; ) {
         my ($tpos1) = $tpos;
@@ -593,28 +616,33 @@ sub calc_page_headings ($$$$) {
         }
 
         # skip if already seen or unexpected
-        if ($content =~ /\A(\d+)((?:\.\d+)*)/) {
-            if ($1 > 99 && $doc->{max_numeric_heading} > 0 && $doc->{max_numeric_heading} < 20) {
+        my($hnum, $htxt, $hstxt, $hisnum) = heading_number($content);
+        if ($hisnum) {
+            if ($hnum > 99 && $doc->{max_numeric_heading} > 0 && $doc->{max_numeric_heading} < 20) {
                 next TPOS;
             }
-            if (exists($doc->{headings}->{$1 . $2})) {
+            if (exists($doc->{headings}->{$hstxt})) {
                 next TPOS;
             }
-            $doc->{max_numeric_heading} = +$1 if $1 > $doc->{max_numeric_heading};
-            $doc->{headings}->{$1} = 1;
+            $doc->{max_numeric_heading} = $hnum if $hnum > $doc->{max_numeric_heading};
+            $doc->{headings}->{$hstxt} = 1;
         }
 
         if (!exists($page->{headings})) {
             $page->{headings} = [];
             $page->{heading_texts} = [];
         }
-        $page->{headings} = [] if !exists $page->{headings};
         push @{$page->{headings}}, $content;
         $text->{coll} = $coll;
         $text->{colr} = $colr;
         $text->{is_references} = $content =~ /\A(?:References?|Bibliography)\z/i;
         $page->{heading1} = $text->{heading1} = 1 if $was_near_top;
         push @{$page->{heading_texts}}, $text;
+        $page->{max_heading_fontsize} = $text->{sz} if $text->{sz} > $page->{max_heading_fontsize};
+        if ($hnum > 0 && $hnum > $min_section) {
+            $page->{first_section} = $hnum if !exists($page->{first_section}) || $page->{first_section} > $hnum;
+            $max_section = $hnum if $hnum > $max_section;
+        }
 
         # skip rest if saw contents
         if (@{$page->{headings}} == 1
@@ -622,6 +650,8 @@ sub calc_page_headings ($$$$) {
             last TPOS;
         }
     }
+
+    $doc->{max_section} = $max_section;
 }
 
 sub calc_doc_body_font ($) {
@@ -760,13 +790,18 @@ sub calc_doc_page_types ($) {
                 } elsif ($h =~ /\AAppendix/i) {
                     $see_appendix = "yes";
                     $saw_appendix = $see_appendix if $saw_acks_refs || $is_first;
-                } elsif (!$see_appendix || $h =~ /\A[\dIVX]+[\. ]/) {
+                } elsif ((!$see_appendix
+                          || $h =~ /\A[\dIVX]+[\. ]/)
+                         && (!$saw_appendix
+                             || (exists($page->{bodyfont_pt})
+                                 && $page->{max_heading_fontsize} > pt2pdf($page->{bodyfont_pt})))) {
                     $see_acks_refs = $saw_acks_refs = $saw_appendix = $saw_conclusion = 0;
                 }
                 $is_first = 0;
             }
         }
 
+        # see CheckFormat if you change these names
         my ($type) = "body";
         if (!exists $page->{nchars} || $page->{nchars} == 0) {
             $type = "blank";
@@ -964,6 +999,9 @@ sub report_json ($) {
                     push @ht, json_quote($heading);
                 }
                 push @val, "\"headings\": [" . join(",", @ht) . "]";
+            }
+            if (exists $page->{first_section}) {
+                push @val, "\"fs\": " . $page->{first_section};
             }
         }
 
@@ -1516,6 +1554,7 @@ sub parse_p2h_page ($) {
         doc => $doc,
         num => $1,
         pagebb => $pagebb,
+        max_heading_fontsize => 0,
     };
 
     # check for optional fontspecs at start of page
@@ -1581,6 +1620,7 @@ sub banal_file ($) {
         pages => {},
         headings => {},
         max_numeric_heading => 0,
+        max_section => 0,
         app => '',
         fullpath => $file,
         filename => basename($file),

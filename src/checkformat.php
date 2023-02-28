@@ -201,10 +201,14 @@ class CheckFormat extends MessageSet {
         }
     }
 
+    /** @return 'body'|'blank'|'cover'|'appendix'|'bib'|'figure' */
+    static function banal_page_type($pg) {
+        return $pg->type ?? $pg->pagetype ?? "body"; /* XXX pagetype obsolete */
+    }
+
     /** @return bool */
     static function banal_page_is_body($pg) {
-        // Modern banal already includes the `pg->c` test
-        return ($pg->type ?? $pg->pagetype ?? "body") === "body"; /* XXX pagetype obsolete */
+        return self::banal_page_type($pg) === "body";
     }
 
     /** @return string */
@@ -268,22 +272,7 @@ class CheckFormat extends MessageSet {
 
         // number of pages
         if ($spec->pagelimit) {
-            $pages = $this->npages;
-            assert(is_int($pages));
-            if ($pages < $spec->pagelimit[0]) {
-                $this->problem_at("pagelimit", "<0>Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found {$pages}", 1);
-            }
-            if ($pages > $spec->pagelimit[1]
-                && $spec->unlimitedref
-                && count($bj->pages) === $pages) {
-                while ($pages > 0
-                       && !CheckFormat::banal_page_is_body($bj->pages[$pages - 1])) {
-                    --$pages;
-                }
-            }
-            if ($pages > $spec->pagelimit[1]) {
-                $this->problem_at("pagelimit", "<0>Too many pages: the limit is " . plural($spec->pagelimit[1], $spec->unlimitedref ? "non-reference page" : "page") . ", found {$pages}", 2);
-            }
+            $this->check_pagelimit($bj, $spec);
         }
         $this->body_pages = count(array_filter($bj->pages, function ($pg) {
             return CheckFormat::banal_page_is_body($pg);
@@ -439,11 +428,55 @@ class CheckFormat extends MessageSet {
                 $this->warning_at(null, "<0>Warning: Only {$this->body_pages} of " . plural($this->npages, "page") . " contain body text; results may be off");
             }
             $nd0_pages = count(array_filter($bj->pages, function ($pg) {
-                return ($pg->type ?? $pg->pagetype ?? "body") === "blank";
+                return CheckFormat::banal_page_type($pg) === "blank";
             }));
             if ($nd0_pages == $this->npages) {
                 $this->problem_at("notext", "<0>This document appears to contain no text", 2);
-                $this->msg_at("notext", "<0>The PDF software used renders pages as images. PDFs like this are less efficient to transfer and harder to search.", MessageSet::INFORM);
+                $this->msg_at("notext", "<0>The PDF software has rendered pages as images. PDFs like this are less efficient to transfer and harder to search.", MessageSet::INFORM);
+            }
+        }
+    }
+
+    private function check_pagelimit($bj, FormatSpec $spec) {
+        $pages = $this->npages;
+        assert(is_int($pages));
+        if ($pages < $spec->pagelimit[0]) {
+            $this->problem_at("pagelimit", "<0>Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found {$pages}", 1);
+        }
+        if ($pages > $spec->pagelimit[1]
+            && $spec->unlimitedref
+            && count($bj->pages) === $pages) {
+            while ($pages > 0
+                   && !CheckFormat::banal_page_is_body($bj->pages[$pages - 1])) {
+                --$pages;
+            }
+        }
+        if ($pages <= $spec->pagelimit[1]) {
+            return;
+        } else if (!$spec->unlimitedref) {
+            $this->problem_at("pagelimit", "<0>Too many pages: the limit is " . plural($spec->pagelimit[1], "page") . ", found {$pages}", 2);
+            return;
+        }
+        $this->problem_at("pagelimit", "<0>Too many pages: the limit is " . plural($spec->pagelimit[1], "non-reference page") . ", found {$pages}", 2);
+        if (count($bj->pages) !== $this->npages) {
+            return;
+        }
+        $p = 0;
+        $last_fs = 0;
+        while ($p < $pages
+               && ($pt = CheckFormat::banal_page_type($bj->pages[$p])) !== "bib"
+               && $pt !== "appendix") {
+            $last_fs = $bj->pages[$p]->fs ?? $last_fs;
+            ++$p;
+        }
+        if ($p <= $spec->pagelimit[1] && $last_fs > 0) {
+            while ($p < $pages
+                   && !CheckFormat::banal_page_is_body($bj->pages[$p])) {
+                ++$p;
+            }
+            if ($p < $pages
+                && ($bj->pages[$p]->fs ?? $last_fs) > $last_fs) {
+                $this->msg_at("pagelimit", "<5>It looks like this PDF might use normal section numbers for its appendixes. Appendix sections should use letters, like ‘A’ and ‘B’. If using LaTeX, start the appendixes with the <code>\appendix</code> command.", MessageSet::INFORM);
             }
         }
     }
@@ -501,6 +534,9 @@ class CheckFormat extends MessageSet {
         }
         $xj->pages = [];
         $bjpages = $bj->pages ?? [];
+        $saw_refbreak = 0;
+        $last_fs_page = 0;
+        $last_fs = 0;
         '@phan-var-force list<object> $bjpages';
         for ($i = 0; $i !== 48 && $i !== count($bjpages); ++$i) {
             $pg = $bjpages[$i];
@@ -520,8 +556,24 @@ class CheckFormat extends MessageSet {
             if (isset($pg->columns)) {
                 $xg["columns"] = $pg->columns;
             }
-            if (isset($pg->type) || isset($pg->pagetype)) {
-                $xg["type"] = $pg->type ?? $pg->pagetype;
+            $pt = self::banal_page_type($pg);
+            if ($pt !== "body") {
+                $xg["type"] = $pt;
+            }
+            if ($saw_refbreak === 0) {
+                if ($pt === "bib" || $pt === "appendix") {
+                    $saw_refbreak = 1;
+                } else if (isset($pg->fs)) {
+                    $last_fs_page = $i;
+                    $last_fs = $pg->fs;
+                }
+            } else if ($saw_refbreak === 1
+                       && $pt === "body") {
+                if ($last_fs && isset($pg->fs)) {
+                    $xj->pages[$last_fs_page]->fs = $last_fs;
+                    $xg["fs"] = $pg->fs;
+                }
+                $saw_refbreak = 2;
             }
             $xj->pages[] = (object) $xg;
         }
@@ -672,6 +724,6 @@ class Default_FormatChecker implements FormatChecker {
         if ($cf->has_problem()) {
             $msgs[] = new MessageItem(null, "<5>Submissions that violate the requirements will not be considered. However, some violation reports may be false positives (for instance, the checker can miscalculate margins and text sizes for figures). If you are confident that the current document respects all format requirements, keep it as is.", MessageSet::INFORM);
         }
-        return Ht::feedback_msg(array_merge($msgs, iterator_to_array($cf->problem_list())));
+        return Ht::feedback_msg(array_merge($msgs, $cf->message_list()));
     }
 }

@@ -169,6 +169,8 @@ class MessageSet {
     const DEFAULT_FTEXT_TEXT = 8;
     const DEFAULT_FTEXT_HTML = 16;
 
+    // These numbers are stored in databases (e.g., PaperStorage.infoJson.cfmsg)
+    // and should be changed only with great care.
     const INFORM = -5;
     const MARKED_NOTE = -4;
     const SUCCESS = -3;

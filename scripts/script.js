@@ -188,6 +188,17 @@ if (!Element.prototype.replaceChildren) {
         }
     };
 }
+if (!Element.prototype.after) {
+    Element.prototype.after = function () {
+        var p = this.parentNode, n = this.nextSibling;
+        for (var i = 0; i !== arguments.length; ++i) {
+            var e = arguments[i];
+            if (typeof e === "string")
+                e = document.createTextNode(e);
+            p.insertBefore(e, n);
+        }
+    };
+}
 if (!HTMLInputElement.prototype.setRangeText) {
     HTMLInputElement.prototype.setRangeText =
     HTMLTextAreaElement.prototype.setRangeText = function (t, s, e, m) {
