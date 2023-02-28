@@ -582,6 +582,8 @@ class CheckFormat extends MessageSet {
             foreach ($this->message_list() as $mx) {
                 $xj->cfmsg[] = [$mx->field, $mx->message, $mx->status];
             }
+        } else {
+            $xj->cfmsg = null;
         }
         if ($spec->timestamp) {
             $xj->spects = $spec->timestamp;

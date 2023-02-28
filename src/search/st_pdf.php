@@ -122,7 +122,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
             $this->cf->check_document($doc);
             if ($this->cf->need_recheck()) {
                 if (!$this->cf_warn) {
-                    $this->srch->warning("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
+                    $this->srch->warning("<0>I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
                     $this->cf_warn = true;
                 }
                 return true;
