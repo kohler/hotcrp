@@ -116,6 +116,18 @@ class CheckFormat extends MessageSet {
         return json_decode($this->banal_stdout);
     }
 
+    /** @param mixed $x
+     * @return ?object */
+    private function check_banal($x) {
+        if (!is_object($x)
+            || !is_int($x->at ?? null)
+            || !is_array($x->pages ?? [])
+            || !is_int($x->npages ?? null)) {
+            return null;
+        }
+        return $x;
+    }
+
     function banal_json(DocumentInfo $doc, FormatSpec $spec) {
         if ($this->allow_run === CheckFormat::RUN_IF_NECESSARY_TIMEOUT
             && Conf::$blocked_time >= CheckFormat::TIMEOUT) {
@@ -124,12 +136,8 @@ class CheckFormat extends MessageSet {
             $allow_run = $this->allow_run;
         }
 
-        $bj = null;
-        if (($m = $doc->metadata()) && isset($m->banal)) {
-            $bj = $m->banal;
-            $this->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
-            $this->nwords = is_int($bj->w ?? null) ? $bj->w : null;
-        }
+        $metadata = $doc->metadata();
+        $bj = $metadata ? $this->check_banal($metadata->banal ?? null) : null;
         $bj_ok = $bj
             && $bj->at >= @filemtime(SiteLoader::find("src/banal"))
             && ($bj->args ?? null) == self::$banal_args
@@ -590,6 +598,7 @@ class CheckFormat extends MessageSet {
         } else {
             $xj->spects = null;
         }
+        $xj->{OBJECT_REPLACE_NO_RECURSE} = true;
         return $xj;
     }
 

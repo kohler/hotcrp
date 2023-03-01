@@ -499,19 +499,29 @@ function object_replace($a, $b) {
     }
 }
 
+const OBJECT_REPLACE_NO_RECURSE = "norecurse\000";
+
 /** @param object $a
  * @param array|object $b
  * @return void */
 function object_replace_recursive($a, $b) {
-    foreach (is_object($b) ? get_object_vars($b) : $b as $k => $v) {
-        if ($v === null) {
-            unset($a->$k);
-        } else if (!property_exists($a, $k)
-                   || !is_object($a->$k)
-                   || !is_object($v)) {
+    $ba = is_object($b) ? get_object_vars($b) : $b;
+    if ($ba[OBJECT_REPLACE_NO_RECURSE] ?? null) {
+        foreach (array_keys(get_object_vars($a)) as $ak) {
+            unset($a->$ak);
+        }
+    }
+    unset($ba[OBJECT_REPLACE_NO_RECURSE]);
+    foreach ($ba as $k => $v) {
+        if (is_object($v) || is_associative_array($v)) {
+            if (!is_object($a->$k ?? null)) {
+                $a->$k = (object) [];
+            }
+            object_replace_recursive($a->$k, $v);
+        } else if ($v !== null) {
             $a->$k = $v;
         } else {
-            object_replace_recursive($a->$k, $v);
+            unset($a->$k);
         }
     }
 }
@@ -520,11 +530,10 @@ function object_replace_recursive($a, $b) {
  * @param array|object $b
  * @return ?string */
 function json_object_replace_recursive($a, $b) {
-    $obj = $a ? json_decode($a) : (object) [];
-    if (is_object($obj)) {
-        object_replace_recursive($obj, $b);
-    }
-    $s = json_encode_db($obj ?? (object) []);
+    $ax = $a ? json_decode($a) : (object) [];
+    $ao = is_object($ax) ? $ax : (object) [];
+    object_replace_recursive($ao, $b);
+    $s = json_encode_db($ao);
     return $s !== "{}" ? $s : null;
 }
 

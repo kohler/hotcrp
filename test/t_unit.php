@@ -384,6 +384,10 @@ class Unit_Tester {
     function test_json_object_replace_recursive() {
         xassert_eqq(json_object_replace_recursive(null, ["a" => 1]), '{"a":1}');
         xassert_eqq(json_object_replace_recursive('{"a":1}', (object) ["a" => 2]), '{"a":2}');
+        xassert_eqq(json_object_replace_recursive('{"a":1}', (object) ["b" => 2]), '{"a":1,"b":2}');
+        xassert_eqq(json_object_replace_recursive('{"a":1}', (object) ["b" => 2, OBJECT_REPLACE_NO_RECURSE => true]), '{"b":2}');
+        xassert_eqq(json_object_replace_recursive('{"a":1}', (object) ["b" => 2, OBJECT_REPLACE_NO_RECURSE => false]), '{"a":1,"b":2}');
+        xassert_eqq(json_object_replace_recursive('{"a":1,"b":{"x":1},"c":{"y":1}}', (object) ["b" => ["y" => 2], "c" => [OBJECT_REPLACE_NO_RECURSE => true]]), '{"a":1,"b":{"x":1,"y":2},"c":{}}');
         xassert_eqq(json_object_replace_recursive('{"a":1}', ["a" => 2]), '{"a":2}');
         xassert_eqq(json_object_replace_recursive('{"a":1}', ["a" => null]), null);
     }
