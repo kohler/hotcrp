@@ -122,7 +122,7 @@ class CheckFormat extends MessageSet {
         if (!is_object($x)
             || !is_int($x->at ?? null)
             || !is_array($x->pages ?? [])
-            || !is_int($x->npages ?? null)) {
+            || !is_int($x->npages ?? 1)) {
             return null;
         }
         return $x;
