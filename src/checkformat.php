@@ -587,6 +587,8 @@ class CheckFormat extends MessageSet {
         }
         if ($spec->timestamp) {
             $xj->spects = $spec->timestamp;
+        } else {
+            $xj->spects = null;
         }
         return $xj;
     }

@@ -96,7 +96,7 @@ class Comment_API {
         if ($req["text"] === "" && empty($docs)) {
             if (!$qreq->delete && (!$xcrow->commentId || !isset($qreq->text))) {
                 $this->status = 400;
-                $this->ms->error_at(null, "<0>Comment text required");
+                $this->ms->error_at(null, "<0>Refusing to save empty comment");
                 return null;
             } else {
                 $qreq->delete = true;

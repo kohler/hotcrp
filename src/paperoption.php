@@ -1921,8 +1921,7 @@ class Document_PaperOption extends PaperOption {
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $fk = $this->field_key();
-        $fname = $qreq->has_file("{$fk}:file") ? "{$fk}:file" : $fk;
-        if (($doc = DocumentInfo::make_request($qreq, $fname, $prow->paperId, $this->id, $this->conf))) {
+        if (($doc = DocumentInfo::make_request($qreq, $fk, $prow->paperId, $this->id, $this->conf))) {
             $ov = PaperValue::make($prow, $this, PaperValue::NEWDOC_VALUE);
             $ov->set_anno("document", $doc);
             if ($doc->has_error()) {

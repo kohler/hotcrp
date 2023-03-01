@@ -230,15 +230,23 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @param string $name
+     * @return bool */
+    static function has_request_for(Qrequest $qreq, $name) {
+        return $qreq["{$name}:upload"]
+            || $qreq->has_file("{$name}:file")
+            || $qreq->has_file($name);
+    }
+
+    /** @param string $name
      * @param int $paperId
      * @param int $documentType
      * @return ?DocumentInfo */
     static function make_request(Qrequest $qreq, $name, $paperId,
                                  $documentType, Conf $conf) {
-        if (($f1 = $qreq->file($name))) {
-            return self::make_uploaded_file($f1, $paperId, $documentType, $conf);
-        } else if (($f2 = $qreq["{$name}:upload"])) {
-            return self::make_capability($f2, $paperId, $documentType, $conf);
+        if (($fu = $qreq["{$name}:upload"])) {
+            return self::make_capability($fu, $paperId, $documentType, $conf);
+        } if (($fi = $qreq->file("{$name}:file") ?? $qreq->file($name))) {
+            return self::make_uploaded_file($fi, $paperId, $documentType, $conf);
         } else {
             return null;
         }

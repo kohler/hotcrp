@@ -9864,27 +9864,47 @@ handle_ui.on("change.js-submit-paper", function (evt) {
 handle_ui.on("js-add-attachment", function () {
     var attache = $$(this.getAttribute("data-editable-attachments")),
         f = attache.closest("form"),
+        ee = attache,
         $ei = $(attache), name, n = 0;
-    if (hasClass(attache, "entryi")) {
-        if (!$ei.find(".entry").length)
-            $ei.append('<div class="entry"></div>');
-        $ei = $ei.find(".entry");
+    if (hasClass(ee, "entryi") && !(ee = attache.querySelector(".entry"))) {
+        ee = document.createElement("div");
+        ee.className = "entry";
+        attache.appendChild(ee);
     }
     do {
         ++n;
         name = attache.getAttribute("data-document-prefix") + ":" + n;
     } while (f.elements[name]);
-    var max_size = attache.getAttribute("data-document-max-size"),
-        $na = $('<div class="has-document document-new-instance hidden" data-dtype="'.concat(attache.getAttribute("data-dtype"),
-            '" data-document-name="', name,
-            max_size == null ? "" : '" data-document-max-size="' + max_size,
-            '"><div class="document-upload"><input type="file" name="', name,
-            ':file" size="15" class="uich document-uploader"></div>',
-            '<div class="document-actions"><a href="" class="ui js-cancel-document document-action">Cancel</a></div></div>'));
     if (this.id === name)
         this.removeAttribute("id");
-    $(f).append(hidden_input(name, "new", {"class": "ignore-diff"}));
-    $na.appendTo($ei).find(".document-uploader")[0].click();
+    var filee = document.createElement("input");
+    filee.type = "file";
+    filee.name = name + ":file";
+    filee.size = 15;
+    filee.className = "uich document-uploader";
+    var uploade = document.createElement("div");
+    uploade.className = "document-upload";
+    uploade.appendChild(filee);
+    var cancele = document.createElement("button");
+    cancele.className = "ui js-cancel-document btn-link document-action";
+    cancele.type = "button";
+    cancele.textContent = "Cancel";
+    var actionse = document.createElement("div");
+    actionse.className = "document-actions";
+    actionse.appendChild(cancele);
+    var max_size = attache.getAttribute("data-document-max-size"),
+        doce = document.createElement("div");
+    doce.className = "has-document document-new-instance hidden";
+    doce.setAttribute("data-dtype", attache.getAttribute("data-dtype"));
+    doce.setAttribute("data-document-name", name);
+    if (max_size != null)
+        doce.setAttribute("data-document-max-size", max_size);
+    doce.append(uploade, actionse);
+    ee.appendChild(doce);
+    // this hidden_input cannot be in the document-uploader: the uploader
+    // might be removed later, but we need to hold the place
+    f.appendChild(hidden_input(name, "new", {"class": "ignore-diff"}));
+    filee.click();
 });
 
 handle_ui.on("js-replace-document", function () {
