@@ -116,6 +116,6 @@ class Comments_Tester {
 
         $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => ""], $paper1);
         xassert(!$j->ok);
-        xassert_match($j->message_list[0]->message, '/required/');
+        xassert_match($j->message_list[0]->message, '/empty|required/');
     }
 }
