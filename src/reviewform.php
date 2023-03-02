@@ -1293,7 +1293,8 @@ class ReviewValues extends MessageSet {
             $anydiff = $anydiff
                 || ($old_fval !== $fval
                     && (!is_string($fval) || cleannl($fval) !== cleannl($old_fval ?? "")));
-            $anyvalues = true;
+            $anyvalues = $anyvalues
+                || $f->value_present($fval);
         }
 
         if ($missingfields && $submit && $anyvalues) {
