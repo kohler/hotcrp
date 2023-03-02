@@ -64,4 +64,23 @@ class Fmt_Tester {
         xassert_eqq($ms->_c("hello/ye", "Hello"), "Hello1");
         xassert_eqq($ms->_c("hello/yesp", "Hello"), "Hello1");
     }
+
+    function test_braces() {
+        $ms = new Fmt;
+        $ms->add("Hello", "Bonjour");
+        $ms->add(["{} friend", "{} amis", ["$1 ≠ 1"]]);
+        $ms->add("{} friend", "{} ami");
+        xassert_eqq($ms->_("Hello"), "Bonjour");
+        xassert_eqq($ms->_("{} friend", 1), "1 ami");
+        xassert_eqq($ms->_("{} friend", 0), "0 amis");
+        xassert_eqq($ms->_("{} friend", 2), "2 amis");
+        xassert_eqq($ms->_("{0[foo]} friend", ["foo" => 3]), "3 friend");
+        xassert_eqq($ms->_("{0[foo]} friend", ["foo" => "&"]), "& friend");
+        xassert_eqq($ms->_("{:html} friend", "&"), "&amp; friend");
+        xassert_eqq($ms->_("{:url} friend", "&"), "%26 friend");
+        xassert_eqq($ms->_("{:list} friend", ["a", "b"]), "a and b friend");
+        xassert_eqq($ms->_("{0[foo]:html} friend", ["foo" => "&"]), "&amp; friend");
+        xassert_eqq($ms->_("{0[foo]:url} friend", ["foo" => "&"]), "%26 friend");
+        xassert_eqq($ms->_("{0[foo]:list} friend", ["foo" => ["a", "b"]]), "a and b friend");
+    }
 }

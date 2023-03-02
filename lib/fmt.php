@@ -531,10 +531,17 @@ class Fmt {
                 $value = null;
             }
             if ($value !== null) {
-                if ($m[2] === ":url") {
+                if ($m[2]) {
+                    assert(is_array($value));
+                    $value = $value[substr($m[2], 1, -1)] ?? null;
+                }
+                if ($m[3] === ":url") {
                     $value = urlencode($value);
-                } else if ($m[2] === ":html") {
+                } else if ($m[3] === ":html") {
                     $value = htmlspecialchars($value);
+                } else if ($m[3] === ":list") {
+                    assert(is_array($value));
+                    $value = commajoin($value);
                 }
                 return [$pos + strlen($m[0]), $value];
             }
