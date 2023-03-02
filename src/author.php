@@ -295,4 +295,14 @@ class Author {
         }
         return $j;
     }
+
+    /** @return array<string,string> */
+    function unparse_debug_json() {
+        $j = [];
+        foreach (get_object_vars($this) as $k => $v) {
+            if (!str_starts_with($k, "_") && $v !== null && $v !== "")
+                $j[$k] = $v;
+        }
+        return $j;
+    }
 }

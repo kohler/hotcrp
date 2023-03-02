@@ -1283,7 +1283,7 @@ class PaperInfo {
             if (($aucflt = $this->author_by_index($cflt->author_index))) {
                 $cfltdesc = "<em>author " . $aucflt->name_h() . "’s collaborator</em> " . $userm->highlight($cflt);
             } else {
-                error_log("#{$this->paperId}: cannot find {$cflt->author_index}");
+                error_log("#{$this->paperId}: cannot find {$cflt->author_index} " . json_encode($cflt->unparse_debug_json()) . " " . json_encode(array_map(function ($a) { return $a->unparse_debug_json(); }, $this->author_list())));
                 $cfltdesc = "<em>author #{$cflt->author_index}’s collaborator</em> " . $userm->highlight($cflt);
             }
         } else if ($why === AuthorMatcher::MATCH_AFFILIATION) {
