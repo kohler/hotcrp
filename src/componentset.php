@@ -33,6 +33,8 @@ class ComponentSet implements XtContext {
     /** @var bool */
     private $_need_separator = false;
     /** @var ?string */
+    private $_separator_group;
+    /** @var ?string */
     private $_section_closer;
     /** @var ComponentContext */
     private $_ctx;
@@ -309,6 +311,7 @@ class ComponentSet implements XtContext {
     function set_separator($separator) {
         $this->_separator = $separator;
         $this->_need_separator = false;
+        $this->_separator_group = null;
         return $this;
     }
 
@@ -318,6 +321,7 @@ class ComponentSet implements XtContext {
         $old_separator = $this->_separator;
         $this->_separator = $separator;
         $this->_need_separator = false;
+        $this->_separator_group = null;
         return $old_separator;
     }
 
@@ -464,24 +468,35 @@ class ComponentSet implements XtContext {
         if (is_string($gj)) {
             $gj = $this->get($gj);
         }
-        if ($gj) {
-            $title = ($gj->print_title ?? true) ? $gj->title ?? "" : "";
-            $hashid = $gj->hashid ?? null;
-            if ($gj->separator_before ?? false) {
-                $this->mark_separator();
-            }
-            if ($title !== ""
-                || ($this->_section_closer === null && $this->_next_section_class !== "")
-                || (string) $hashid !== "") {
-                // create default hashid from title
-                $this->print_start_section($title, $hashid);
-            } else {
-                $this->trigger_separator();
-            }
-            return $this->_print_body($gj);
-        } else {
+        if (!$gj) {
             return null;
         }
+
+        $sepgroup = $gj->separator_group ?? null;
+        if ($sepgroup !== null
+            && $this->_separator_group !== null
+            && $this->_separator_group !== $sepgroup) {
+            $this->mark_separator();
+            $this->trigger_separator();
+        } else if ($gj->separator_before ?? false) {
+            $this->mark_separator();
+        }
+
+        $title = ($gj->print_title ?? true) ? $gj->title ?? "" : "";
+        $hashid = $gj->hashid ?? null;
+        if ($title !== ""
+            || ($this->_section_closer === null && $this->_next_section_class !== "")
+            || (string) $hashid !== "") {
+            // create default hashid from title
+            $this->print_start_section($title, $hashid);
+        } else {
+            $this->trigger_separator();
+        }
+
+        if ($sepgroup !== null) {
+            $this->_separator_group = $sepgroup;
+        }
+        return $this->_print_body($gj);
     }
 
     /** @param object $gj
@@ -537,6 +552,7 @@ class ComponentSet implements XtContext {
             echo $this->_separator;
         }
         $this->_need_separator = false;
+        $this->_separator_group = null;
     }
 
     /** @param string $name

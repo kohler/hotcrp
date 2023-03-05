@@ -1945,6 +1945,7 @@ input.wide {
 	border-radius: 8px;
 	z-index: 60;
 	cursor: default;
+	box-shadow: 0px 1.5px 5px 1px rgba(0, 0, 0, 0.2);
 }
 .dropmenu-container::before, .dropmenu-container::after {
 	position: absolute;

@@ -1183,8 +1183,16 @@ class Conf {
             return !$user || $user->can_view_some_review();
         } else if ($s === "lead" || $s === "shepherd") {
             return $this->has_any_lead_or_shepherd();
+        } else if ($s === "!empty") {
+            return !$user || !$user->is_empty();
         } else if ($s === "empty") {
             return $user && $user->is_empty();
+        } else if ($s === "email") {
+            return !$user || $user->has_email();
+        } else if ($s === "disabled") {
+            return $user && $user->is_disabled();
+        } else if ($s === "!disabled") {
+            return !$user || !$user->is_disabled();
         } else if ($s === "allow" || $s === "true") {
             return true;
         } else if ($s === "deny" || $s === "false") {
@@ -4710,6 +4718,18 @@ class Conf {
         return false;
     }
 
+    /** @param Contact $user
+     * @param string $html
+     * @param string $page
+     * @param null|string|array $args */
+    private function _print_profilemenu_link_if_enabled($user, $html, $page, $args = null) {
+        if (!$user->is_disabled()) {
+            echo '<li class="has-link">', Ht::link($html, $this->hoturl($page, $args)), '</li>';
+        } else {
+            echo '<li class="dim">', $html, '</li>';
+        }
+    }
+
     /** @param ComponentSet $pagecs */
     function print_profilemenu_item(Contact $user, Qrequest $qreq, $pagecs, $gj) {
         $itemid = substr($gj->name, 14); // NB 14 === strlen("__profilemenu/")
@@ -4717,7 +4737,6 @@ class Conf {
             if (!$user->has_email()) {
                 return;
             }
-            $pagecs->trigger_separator();
             $ouser = $user;
             if ($user->is_actas_user()) {
                 echo '<li class="has-quiet-link">', Ht::link("Acting as " . htmlspecialchars($user->email), $this->hoturl("profile")), '</li>';
@@ -4727,9 +4746,7 @@ class Conf {
             } else {
                 echo '<li>Signed in as <strong>', htmlspecialchars($user->email), '</strong></li>';
             }
-            $pagecs->mark_separator();
         } else if ($itemid === "other_accounts") {
-            $pagecs->trigger_separator();
             $base_email = $user->base_user()->email;
             $actas_email = null;
             if ($user->privChair && !$user->is_actas_user()) {
@@ -4751,45 +4768,29 @@ class Conf {
             $t = $user->is_empty() ? "Sign in" : "Add account";
             echo '<li class="has-link">', Ht::link($t, $this->hoturl("signin")), '</li>';
         } else if ($itemid === "profile") {
-            if (!$user->has_email()) {
-                return;
-            }
-            $pagecs->trigger_separator();
-            if (!$user->is_disabled()) {
-                echo '<li class="has-link">', Ht::link("Your profile", $this->hoturl("profile")), '</li>';
-            } else {
-                echo '<li class="dim">Your profile</li>';
+            if ($user->has_email()) {
+                $this->_print_profilemenu_link_if_enabled($user, "Your profile", "profile");
             }
         } else if ($itemid === "my_submissions") {
-            $pagecs->trigger_separator();
-            echo '<li class="has-link">', Ht::link("Your submissions", $this->hoturl("search", "t=a")), '</li>';
+            $this->_print_profilemenu_link_if_enabled($user, "Your submissions", "search", "t=a");
         } else if ($itemid === "my_reviews") {
-            $pagecs->trigger_separator();
-            echo '<li class="has-link">', Ht::link("Your reviews", $this->hoturl("search", "t=r")), '</li>';
+            $this->_print_profilemenu_link_if_enabled($user, "Your reviews", "search", "t=r");
         } else if ($itemid === "search") {
-            $pagecs->trigger_separator();
-            echo '<li class="has-link">', Ht::link("Search", $this->hoturl("search")), '</li>';
+            $this->_print_profilemenu_link_if_enabled($user, "Search", "search");
         } else if ($itemid === "help") {
-            if ($user->is_disabled()) {
-                return;
+            if (!$user->is_disabled()) {
+                $this->_print_profilemenu_link_if_enabled($user, "Help", "help");
             }
-            $pagecs->trigger_separator();
-            echo '<li class="has-link">', Ht::link("Help", $this->hoturl("help")), '</li>';
         } else if ($itemid === "settings") {
-            $pagecs->trigger_separator();
-            echo '<li class="has-link">', Ht::link("Settings", $this->hoturl("settings")), '</li>';
+            $this->_print_profilemenu_link_if_enabled($user, "Settings", "settings");
         } else if ($itemid === "users") {
-            $pagecs->trigger_separator();
-            echo '<li class="has-link">', Ht::link("Users", $this->hoturl("users")), '</li>';
+            $this->_print_profilemenu_link_if_enabled($user, "Users", "users");
         } else if ($itemid === "assignments") {
-            $pagecs->trigger_separator();
-            echo '<li class="has-link">', Ht::link("Assignments", $this->hoturl("autoassign")), '</li>';
+            $this->_print_profilemenu_link_if_enabled($user, "Assignments", "autoassign");
         } else if ($itemid === "signout") {
             if (!$user->has_email()) {
                 return;
             }
-            $pagecs->mark_separator();
-            $pagecs->trigger_separator();
             if ($user->is_actas_user()) {
                 echo '<li class="has-link">', Ht::link("Return to main account", $this->selfurl($qreq, ["actas" => null])), '</li>';
                 return;
