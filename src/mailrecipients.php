@@ -468,8 +468,9 @@ class MailRecipients extends MessageSet {
         }
 
         // query construction
+        assert((Contact::SLICE_MINIMAL & ~Contact::SLICE_NO_PASSWORD) === 5);
         $q = "select ContactInfo.contactId, firstName, lastName, affiliation,
-            email, roles, contactTags, disabled, primaryContactId, 3 _slice,
+            email, roles, contactTags, disabled, primaryContactId, 5 _slice,
             password, preferredEmail, "
             . ($needpaper ? "Paper.paperId" : "-1") . " paperId
             from " . join("\n", $joins)

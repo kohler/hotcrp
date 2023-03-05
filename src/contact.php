@@ -54,6 +54,10 @@ class Contact implements JsonSerializable {
     /** @var int */
     public $_slice = 0;
 
+    const SLICE_MINIMAL = 7;
+    const SLICE_NO_COLLABORATORS = 1;
+    const SLICE_NO_PASSWORD = 2;
+
     /** @var ?bool */
     public $nameAmbiguous;
     /** @var string */
@@ -348,7 +352,7 @@ class Contact implements JsonSerializable {
         $this->_slice = (int) $this->_slice;
 
         // handle unsliced properties
-        if (!$this->_slice) {
+        if ($this->_slice === 0) {
             foreach (self::$props as $prop => $shape) {
                 if (($shape & (self::PROP_SLICE | self::PROP_DATA | self::PROP_STRING)) === 0
                     && isset($this->$prop)) {
@@ -420,7 +424,7 @@ class Contact implements JsonSerializable {
 
     /** @return string */
     function collaborators() {
-        if (($this->_slice & 1) !== 0) {
+        if (($this->_slice & self::SLICE_NO_COLLABORATORS) !== 0) {
             $this->unslice();
         }
         return $this->collaborators ?? "";
@@ -428,7 +432,7 @@ class Contact implements JsonSerializable {
 
     /** @param ?string $x */
     function set_collaborators($x) {
-        $this->_slice &= ~1;
+        $this->_slice &= ~self::SLICE_NO_COLLABORATORS;
         $this->collaborators = $x;
     }
 
@@ -455,19 +459,19 @@ class Contact implements JsonSerializable {
 
     /** @return string */
     function country() {
-        $this->_slice && $this->unslice();
+        $this->_slice !== 0 && $this->unslice();
         return $this->country ?? "";
     }
 
     /** @return ?string */
     function phone() {
-        $this->_slice && $this->unslice();
+        $this->_slice !== 0 && $this->unslice();
         return $this->phone;
     }
 
     /** @return string */
     function orcid() {
-        $this->_slice && $this->unslice();
+        $this->_slice !== 0 && $this->unslice();
         return $this->orcid ?? "";
     }
 
@@ -1366,7 +1370,7 @@ class Contact implements JsonSerializable {
 
     /** @return object */
     private function make_data() {
-        $this->_slice && $this->unslice();
+        $this->_slice !== 0 && $this->unslice();
         if ($this->_jdata === null) {
             if (is_string($this->data)) {
                 $x = json_decode($this->data);
@@ -1444,7 +1448,7 @@ class Contact implements JsonSerializable {
 
     /** @return ?string */
     function data_str() {
-        $this->_slice && $this->unslice();
+        $this->_slice !== 0 && $this->unslice();
         if ($this->_jdata === null
             && ($this->data === null || is_string($this->data))) {
             return $this->data === "{}" ? null : $this->data;
@@ -1667,7 +1671,7 @@ class Contact implements JsonSerializable {
     /** @param string $prop
      * @param int $shape */
     private function prop1($prop, $shape) {
-        if ($this->_slice && ($shape & self::PROP_SLICE) === 0) {
+        if ($this->_slice !== 0 && ($shape & self::PROP_SLICE) === 0) {
             $this->unslice();
         }
         if (($shape & self::PROP_DATA) !== 0) {
@@ -2090,7 +2094,7 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function password_unset() {
-        assert($this->_slice === 0);
+        assert(($this->_slice & self::SLICE_NO_PASSWORD) === 0);
         $cdbu = $this->cdb_user();
         return (!$cdbu
                 || (string) $cdbu->password === ""
@@ -2102,7 +2106,7 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function can_reset_password() {
-        assert($this->_slice === 0);
+        assert(($this->_slice & self::SLICE_NO_PASSWORD) === 0);
         $cdbu = $this->cdb_user();
         return !$this->conf->external_login()
             && !str_starts_with((string) $this->password, " nologin")

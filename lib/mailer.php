@@ -255,7 +255,7 @@ class Mailer {
             $loginparts = "email=" . urlencode($this->recipient->email);
         }
         if ($uf->name === "LOGINURL") {
-            return $this->conf->opt("paperSite") . "/signin" . ($loginparts ? "/?" . $loginparts : "/");
+            return $this->conf->opt("paperSite") . "/signin/" . ($loginparts ? "?{$loginparts}" : "");
         } else if ($uf->name === "LOGINURLPARTS") {
             return $loginparts;
         } else {

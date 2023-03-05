@@ -128,7 +128,7 @@ class Conf {
     /** @var ?array<string,Contact> */
     private $_user_email_cache;
     /** @var int */
-    private $_slice = 3;
+    private $_slice = Contact::SLICE_MINIMAL;
     /** @var ?array<int,Contact> */
     private $_pc_user_cache;
     /** @var ?array<int,Contact> */
@@ -2260,13 +2260,13 @@ class Conf {
 
     /** @return string */
     private function _cached_user_query() {
-        if ($this->_slice === 3) {
+        if ($this->_slice === Contact::SLICE_MINIMAL) {
             // see also MailRecipients
-            return "contactId, firstName, lastName, affiliation, email, roles, contactTags, disabled, primaryContactId, 3 _slice";
-        } else if ($this->_slice === 2) {
-            return "contactId, firstName, lastName, affiliation, email, roles, contactTags, disabled, primaryContactId, collaborators, 2 _slice";
+            return "contactId, firstName, lastName, affiliation, email, roles, contactTags, disabled, primaryContactId, " . Contact::SLICE_MINIMAL . " _slice";
+        } else if ($this->_slice === (Contact::SLICE_MINIMAL & ~Contact::SLICE_NO_COLLABORATORS)) {
+            return "contactId, firstName, lastName, affiliation, email, roles, contactTags, disabled, primaryContactId, collaborators, " . (Contact::SLICE_MINIMAL & ~Contact::SLICE_NO_COLLABORATORS) . " _slice";
         } else {
-            return "*";
+            return "*, 0 _slice";
         }
     }
 
@@ -2450,8 +2450,8 @@ class Conf {
     }
 
     function ensure_cached_user_collaborators() {
-        if (($this->_slice & 1) !== 0) {
-            $this->_slice &= ~1;
+        if (($this->_slice & Contact::SLICE_NO_COLLABORATORS) !== 0) {
+            $this->_slice &= ~Contact::SLICE_NO_COLLABORATORS;
             $this->_user_cache = $this->_user_cache ?? $this->_pc_user_cache;
             if (!empty($this->_user_cache)) {
                 $result = $this->qe("select contactId, collaborators from ContactInfo where contactId?a", array_keys($this->_user_cache));
@@ -2495,7 +2495,7 @@ class Conf {
     function unslice_user($u) {
         if ($this->_user_cache !== null
             && $u === $this->_user_cache[$u->contactId]
-            && $this->_slice) {
+            && $this->_slice !== 0) {
             // assume we'll need to unslice all cached users (likely the PC)
             $result = $this->qe("select * from ContactInfo where contactId?a", array_keys($this->_user_cache));
             while (($m = $result->fetch_object())) {
@@ -2677,7 +2677,7 @@ class Conf {
     /** @return array<int,Contact>
      * @deprecated */
     function full_pc_members() {
-        if ($this->_user_cache && $this->_slice) {
+        if ($this->_user_cache && $this->_slice !== 0) {
             $u = (array_values($this->_user_cache))[0];
             $this->unslice_user($u);
         }
