@@ -511,7 +511,7 @@ class Fmt {
      * @param FmtContext $fctx
      * @return array{int,?string} */
     private function expand_brace($s, $pos, $fctx) {
-        if (preg_match('/\{(|0|[1-9]\d*|[a-zA-Z_]\w*)(|\[[^\]]*\])(|:(?:[^\}]|\}\})*)\}/A', $s, $m, 0, $pos)
+        if (preg_match('/\{(|0|[1-9]\d*+|[a-zA-Z_]\w*+)(|\[[^\]]*+\])(|:(?:[^\}]|\}\})*+)\}/A', $s, $m, 0, $pos)
             && ($m[1] !== "" || ($fctx->argnum !== null && $m[2] === ""))
             && !($fctx->im && $fctx->im->no_conversions && ($m[1] === "" || ctype_digit($m[1])))) {
             if ($m[1] === "") {
