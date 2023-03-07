@@ -250,7 +250,7 @@ class ReviewCSV_Batch {
 
         $pset = $this->conf->paper_set(["paperId" => $search->paper_ids()]);
         foreach ($search->sorted_paper_ids() as $pid) {
-            $prow = $pset[$pid];
+            $prow = $pset->get($pid);
             $prow->ensure_full_reviews();
             $prow->ensure_reviewer_names();
             $px = [

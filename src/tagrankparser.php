@@ -106,10 +106,10 @@ class TagRankParser {
         $landmarks = [];
         foreach ($settings as $a) {
             list($pid, $idx, $landmark, $error, $title) = $a;
-            if ($pid === null) {
+            if ($pid === null || !ctype_digit($pid)) {
                 $csva[] = ["", "error", "", $landmark, $error];
             } else {
-                if (($prow = $pset[$pid] ?? null)
+                if (($prow = $pset->get(intval($pid)))
                     && $title !== null
                     && $title !== ""
                     && $title !== $prow->title

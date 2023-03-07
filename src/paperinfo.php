@@ -225,7 +225,7 @@ class PaperContactInfo {
     }
 }
 
-class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
+class PaperInfoSet implements IteratorAggregate, Countable {
     /** @var list<PaperInfo> */
     private $prows = [];
     /** @var array<int,PaperInfo> */
@@ -314,6 +314,11 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     function get($pid) {
         return $this->by_pid[$pid] ?? null;
     }
+    /** @param int $pid
+     * @return bool */
+    function contains($pid) {
+        return isset($this->by_pid[$pid]);
+    }
     /** @param callable(PaperInfo):bool $func
      * @return PaperInfoSet|Iterable<PaperInfo> */
     function filter($func) {
@@ -350,25 +355,6 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @return Iterator<PaperInfo> */
     function getIterator() {
         return new ArrayIterator($this->prows);
-    }
-    #[\ReturnTypeWillChange]
-    /** @param int $offset */
-    function offsetExists($offset) {
-        return isset($this->by_pid[$offset]);
-    }
-    #[\ReturnTypeWillChange]
-    /** @param int $offset
-     * @return ?PaperInfo */
-    function offsetGet($offset) {
-        return $this->by_pid[$offset] ?? null;
-    }
-    #[\ReturnTypeWillChange]
-    function offsetSet($offset, $value) {
-        throw new Exception("invalid PaperInfoSet::offsetSet");
-    }
-    #[\ReturnTypeWillChange]
-    function offsetUnset($offset) {
-        throw new Exception("invalid PaperInfoSet::offsetUnset");
     }
     function ensure_full_reviews() {
         if (!empty($this->prows)) {
