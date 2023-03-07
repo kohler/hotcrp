@@ -129,12 +129,10 @@ class Conf {
     private $_user_email_cache;
     /** @var int */
     private $_slice = Contact::SLICE_MINIMAL;
-    /** @var ?array<int,Contact> */
-    private $_pc_user_cache;
+    /** @var ?ContactSet */
+    private $_pc_set;
     /** @var ?array<int,Contact> */
     private $_pc_members_cache;
-    /** @var ?array<int,Contact> */
-    private $_pc_chairs_cache;
     /** @var ?array<string,string> */
     private $_pc_tags_cache;
     /** @var bool */
@@ -2333,9 +2331,15 @@ class Conf {
 
     // user cache
 
+    private function _ensure_user_cache() {
+        if ($this->_user_cache === null) {
+            $this->_user_cache = $this->_pc_set ? $this->_pc_set->all() : [];
+        }
+    }
+
     private function _ensure_user_email_cache() {
         if ($this->_user_email_cache === null) {
-            $this->_user_cache = $this->_user_cache ?? $this->_pc_user_cache ?? [];
+            $this->_ensure_user_cache();
             $this->_user_email_cache = [];
             foreach ($this->_user_cache as $u) {
                 $this->_user_email_cache[strtolower($u->email)] = $u;
@@ -2368,7 +2372,7 @@ class Conf {
     }
 
     private function _refresh_user_cache() {
-        $this->_user_cache = $this->_user_cache ?? $this->_pc_user_cache ?? [];
+        $this->_ensure_user_cache();
         $reqids = $reqemails = [];
         foreach ($this->_user_cache_missing as $req) {
             if (is_int($req)) {
@@ -2458,17 +2462,7 @@ class Conf {
     }
 
     function ensure_cached_user_collaborators() {
-        if (($this->_slice & Contact::SLICE_NO_COLLABORATORS) !== 0) {
-            $this->_slice &= ~Contact::SLICE_NO_COLLABORATORS;
-            $this->_user_cache = $this->_user_cache ?? $this->_pc_user_cache;
-            if (!empty($this->_user_cache)) {
-                $result = $this->qe("select contactId, collaborators from ContactInfo where contactId?a", array_keys($this->_user_cache));
-                while (($row = $result->fetch_row())) {
-                    $this->_user_cache[intval($row[0])]->set_collaborators($row[1]);
-                }
-                Dbl::free($result);
-            }
-        }
+        $this->_slice &= ~Contact::SLICE_NO_COLLABORATORS;
     }
 
     /** @param ?Contact $u */
@@ -2590,163 +2584,141 @@ class Conf {
 
     // program committee
 
-    /** @return array<int,Contact> */
-    function pc_members() {
-        if ($this->_pc_members_cache === null) {
-            $result = $this->qe("select " . $this->_cached_user_query() . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
-            $this->_pc_user_cache = $by_name_text = [];
-            $this->_pc_members_all_enabled = true;
-            $expected_by_name_count = 0;
-            while (($u = Contact::fetch($result, $this))) {
-                $this->_pc_user_cache[$u->contactId] = $u;
-                if (($name = $u->name()) !== "") {
-                    $by_name_text[$name][] = $u;
-                    $expected_by_name_count += 1;
-                }
-                if ($u->is_disabled()) {
-                    $this->_pc_members_all_enabled = false;
-                }
-            }
-            Dbl::free($result);
+    /** @return ContactSet */
+    function pc_set() {
+        if ($this->_pc_set !== null) {
+            return $this->_pc_set;
+        }
 
-            if ($expected_by_name_count > count($by_name_text)) {
-                foreach ($by_name_text as $us) {
-                    if (count($us) > 1) {
-                        $npcus = 0;
-                        foreach ($us as $u) {
-                            $npcus += ($u->roles & Contact::ROLE_PC ? 1 : 0);
-                        }
-                        foreach ($us as $u) {
-                            if ($npcus > 1 || ($u->roles & Contact::ROLE_PC) == 0) {
-                                $u->nameAmbiguous = true;
-                            }
-                        }
+        $result = $this->qe("select " . $this->_cached_user_query() . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
+        $this->_pc_set = ContactSet::make_result($result, $this);
+
+        // analyze set for ambiguous names, disablement
+        $this->_pc_members_all_enabled = true;
+        $by_name_text = [];
+        $expected_by_name_count = 0;
+        foreach ($this->_pc_set as $u) {
+            if (($name = $u->name()) !== "") {
+                $by_name_text[strtolower($name)][] = $u;
+                ++$expected_by_name_count;
+            }
+            if ($u->is_disabled()) {
+                $this->_pc_members_all_enabled = false;
+            }
+        }
+        if ($expected_by_name_count !== count($by_name_text)) {
+            foreach ($by_name_text as $us) {
+                if (count($us) === 1) {
+                    continue;
+                }
+                $npcus = 0;
+                foreach ($us as $u) {
+                    $npcus += ($u->roles & Contact::ROLE_PC ? 1 : 0);
+                }
+                foreach ($us as $u) {
+                    if ($npcus > 1 || ($u->roles & Contact::ROLE_PC) === 0) {
+                        $u->nameAmbiguous = true;
                     }
                 }
             }
+        }
 
-            uasort($this->_pc_user_cache, $this->user_comparator());
+        // sort
+        $this->_pc_set->sort_by($this->user_comparator());
 
-            $this->_pc_members_cache = $this->_pc_chairs_cache = [];
-            $next_pc_index = 0;
-            foreach ($this->_pc_user_cache as $u) {
-                if ($u->roles & Contact::ROLE_PC) {
-                    $u->pc_index = $next_pc_index;
-                    ++$next_pc_index;
-                    $this->_pc_members_cache[$u->contactId] = $u;
-                }
-                if ($u->roles & Contact::ROLE_CHAIR) {
-                    $this->_pc_chairs_cache[$u->contactId] = $u;
-                }
-                if ($this->_user_cache !== null) {
-                    $this->_user_cache[$u->contactId] = $u;
-                }
-                if ($this->_user_email_cache !== null) {
-                    $this->_user_email_cache[strtolower($u->email)] = $u;
-                }
+        // populate other caches
+        $this->_pc_members_cache = [];
+        $next_pc_index = 0;
+        foreach ($this->_pc_set as $u) {
+            if ($u->roles & Contact::ROLE_PC) {
+                $u->pc_index = $next_pc_index;
+                ++$next_pc_index;
+                $this->_pc_members_cache[$u->contactId] = $u;
+            }
+            if ($this->_user_cache !== null) {
+                $this->_user_cache[$u->contactId] = $u;
+            }
+            if ($this->_user_email_cache !== null) {
+                $this->_user_email_cache[strtolower($u->email)] = $u;
             }
         }
-        return $this->_pc_members_cache;
+
+        return $this->_pc_set;
     }
 
     /** @return array<int,Contact> */
-    function pc_chairs() {
-        if ($this->_pc_chairs_cache === null) {
-            $this->pc_members();
-        }
-        return $this->_pc_chairs_cache;
+    function pc_members() {
+        $this->_pc_set || $this->pc_set();
+        return $this->_pc_members_cache;
     }
 
     /** @return bool */
     function has_disabled_pc_members() {
-        if ($this->_pc_members_cache === null) {
-            $this->pc_members();
-        }
+        $this->_pc_set || $this->pc_set();
         return !$this->_pc_members_all_enabled;
     }
 
     /** @return array<int,Contact> */
     function enabled_pc_members() {
-        if ($this->_pc_members_cache === null) {
-            $this->pc_members();
-        }
+        $this->_pc_set || $this->pc_set();
         if ($this->_pc_members_all_enabled) {
             return $this->_pc_members_cache;
-        } else {
-            $pcm = [];
-            foreach ($this->_pc_members_cache as $cid => $u) {
-                if (!$u->is_disabled())
-                    $pcm[$cid] = $u;
-            }
-            return $pcm;
         }
+        $pcm = [];
+        foreach ($this->_pc_members_cache as $cid => $u) {
+            if (!$u->is_disabled())
+                $pcm[$cid] = $u;
+        }
+        return $pcm;
     }
 
-    /** @return array<int,Contact>
-     * @deprecated */
-    function full_pc_members() {
-        if ($this->_user_cache && $this->_slice !== 0) {
-            $u = (array_values($this->_user_cache))[0];
-            $this->unslice_user($u);
-        }
-        $this->_slice = 0;
-        return $this->pc_members();
-    }
-
-    /** @param int $cid
+    /** @param int $uid
      * @return ?Contact */
-    function pc_member_by_id($cid) {
-        return ($this->pc_members())[$cid] ?? null;
+    function pc_member_by_id($uid) {
+        $u = $this->pc_set()->get($uid);
+        return $u && ($u->roles & Contact::ROLE_PC) !== 0 ? $u : null;
     }
 
     /** @param string $email
      * @return ?Contact */
     function pc_member_by_email($email) {
-        if ($this->_pc_members_cache === null) {
-            $this->pc_members();
-        }
+        $this->_pc_set || $this->pc_set();
         if ($this->_user_email_cache === null) {
             $this->_ensure_user_email_cache();
         }
         /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
-        if (($u = $this->_user_email_cache[strtolower($email)] ?? null)
-            && ($u->roles & Contact::ROLE_PC) !== 0) {
-            return $u;
-        } else {
-            return null;
-        }
+        $u = $this->_user_email_cache[strtolower($email)] ?? null;
+        return $u && ($u->roles & Contact::ROLE_PC) !== 0 ? $u : null;
     }
 
     /** @return array<int,Contact> */
     function pc_users() {
-        if ($this->_pc_user_cache === null) {
-            $this->pc_members();
-        }
-        return $this->_pc_user_cache;
+        return $this->pc_set()->all();
     }
 
-    /** @param int $cid
+    /** @param int $uid
      * @return ?Contact */
-    function pc_user_by_id($cid) {
-        return ($this->pc_users())[$cid] ?? null;
+    function pc_user_by_id($uid) {
+        return $this->pc_set()->get($uid);
     }
 
     /** @return array<string,string> */
     private function pc_tagmap() {
-        if ($this->_pc_tags_cache === null) {
-            $this->_pc_tags_cache = ["pc" => "pc"];
-            foreach ($this->pc_users() as $u) {
-                if ($u->contactTags !== null) {
-                    foreach (explode(" ", $u->contactTags) as $tv) {
-                        list($tag, $unused) = Tagger::unpack($tv);
-                        if ($tag) {
-                            $this->_pc_tags_cache[strtolower($tag)] = $tag;
-                        }
+        if ($this->_pc_tags_cache !== null) {
+            return $this->_pc_tags_cache;
+        }
+        $this->_pc_tags_cache = ["pc" => "pc"];
+        foreach ($this->pc_users() as $u) {
+            if ($u->contactTags !== null) {
+                foreach (explode(" ", $u->contactTags) as $tv) {
+                    list($tag, $unused) = Tagger::unpack($tv);
+                    if ($tag) {
+                        $this->_pc_tags_cache[strtolower($tag)] = $tag;
                     }
                 }
             }
-            $this->collator()->asort($this->_pc_tags_cache);
         }
+        $this->collator()->asort($this->_pc_tags_cache);
         return $this->_pc_tags_cache;
     }
 
@@ -3067,7 +3039,8 @@ class Conf {
     function invalidate_caches($caches) {
         if (!self::$no_invalidate_caches) {
             if (!$caches || isset($caches["pc"]) || isset($caches["users"])) {
-                $this->_pc_members_cache = $this->_pc_tags_cache = $this->_pc_user_cache = $this->_pc_chairs_cache = null;
+                $this->_pc_set = null;
+                $this->_pc_members_cache = $this->_pc_tags_cache = null;
                 $this->_user_cache = $this->_user_email_cache = null;
             }
             if (!$caches || isset($caches["users"]) || isset($caches["cdb"])) {

@@ -356,6 +356,7 @@ class MailSender {
         if (Dbl::is_error($result)) {
             return;
         }
+        $recip_set = ContactSet::make_result($result, $this->conf);
 
         if ($this->sending) {
             $this->mailid_text = " #" . intval($this->qreq->mailid);
@@ -378,7 +379,7 @@ class MailSender {
         $has_decoration = false;
         $revinform = ($this->recipients === "newpcrev" ? [] : null);
 
-        while (($contact = Contact::fetch($result, $this->conf))) {
+        foreach ($recip_set as $contact) {
             ++$nrows_done;
 
             $rest["prow"] = $prow = $paper_set ? $paper_set->get((int) $contact->paperId) : null;

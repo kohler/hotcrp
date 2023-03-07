@@ -1359,20 +1359,21 @@ class PaperInfo {
             return $u ? [$u] : [];
         }
 
-        $chairs = true;
+        $has_track_admin = false;
         if ($this->conf->check_track_admin_sensitivity()) {
             foreach ($this->conf->track_tags() as $ttag) {
                 if ($this->conf->track_permission($ttag, Track::ADMIN)
                     && $this->has_tag($ttag)) {
-                    $chairs = false;
+                    $has_track_admin = true;
                     break;
                 }
             }
         }
 
         $as = $cas = [];
-        foreach ($chairs ? $this->conf->pc_chairs() : $this->conf->pc_members() as $u) {
-            if ($u->is_primary_administrator($this)) {
+        foreach ($this->conf->pc_members() as $u) {
+            if (($has_track_admin || $u->privChair)
+                && $u->is_primary_administrator($this)) {
                 if ($u->can_administer($this)) {
                     $as[] = $u;
                 } else {

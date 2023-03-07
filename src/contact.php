@@ -51,8 +51,11 @@ class Contact implements JsonSerializable {
     public $disablement = 0;
     /** @var ?int */
     public $primaryContactId;
+
     /** @var int */
     public $_slice = 0;
+    /** @var ?ContactSet */
+    public $_row_set;
 
     const SLICE_MINIMAL = 7;
     const SLICE_NO_COLLABORATORS = 1;
@@ -424,9 +427,19 @@ class Contact implements JsonSerializable {
 
     /** @return string */
     function collaborators() {
-        if (($this->_slice & self::SLICE_NO_COLLABORATORS) !== 0) {
-            $this->unslice();
+        if (($this->_slice & self::SLICE_NO_COLLABORATORS) === 0) {
+            return $this->collaborators ?? "";
         }
+        $set = $this->_row_set ?? ContactSet::make_singleton($this);
+        foreach ($set as $u) {
+            $u->collaborators = null;
+            $u->_slice &= ~self::SLICE_NO_COLLABORATORS;
+        }
+        $result = $this->conf->qe("select contactId, collaborators from ContactInfo where contactId?a", $set->user_ids());
+        while (($row = $result->fetch_row())) {
+            $set->get(intval($row[0]))->collaborators = $row[1];
+        }
+        $result->close();
         return $this->collaborators ?? "";
     }
 
@@ -838,22 +851,18 @@ class Contact implements JsonSerializable {
         if ($this->cdb_confid !== 0) {
             assert($this->contactDbId !== 0 && $this->contactId <= 0);
             return $this;
-        } else {
-            $u = $this->_cdb_user;
-            if ($u === false) {
-                $u = $this->_cdb_user = $this->conf->cdb_user_by_email($this->email);
-            }
-            if ($u && $this->contactId > 0) {
-                $u->contactXid = $this->contactId;
-            }
-            return $u;
+        } else if ($this->_cdb_user !== false) {
+            return $this->_cdb_user;
         }
-    }
-
-    /** @return ?Contact
-     * @deprecated */
-    function contactdb_user() {
-        return $this->cdb_user();
+        foreach ($this->_row_set ?? ContactSet::make_singleton($this) as $u) {
+            if ($u->email)
+                $this->conf->prefetch_cdb_user_by_email($u->email);
+        }
+        $this->_cdb_user = $this->conf->cdb_user_by_email($this->email);
+        if ($this->_cdb_user && $this->contactId > 0) {
+            $this->_cdb_user->contactXid = $this->contactId;
+        }
+        return $this->_cdb_user;
     }
 
     /** @return ?Contact */
@@ -862,22 +871,18 @@ class Contact implements JsonSerializable {
         if ($this->cdb_confid !== 0) {
             assert($this->contactDbId !== 0 && $this->contactId <= 0);
             return $this;
-        } else {
-            $u = $this->_cdb_user;
-            if ($u === false) {
-                $u = $this->_cdb_user = $this->conf->cdb_user_by_email($this->email);
-            }
-            if ($u === null
-                && $this->conf->contactdb()
-                && $this->has_email()
-                && !self::is_anonymous_email($this->email)) {
-                $u = $this->_cdb_user = Contact::make_cdb_email($this->conf, $this->email);
-            }
-            if ($u && $this->contactId > 0) {
+        }
+        $u = $this->cdb_user();
+        if (!$u
+            && $this->conf->contactdb()
+            && $this->has_email()
+            && !self::is_anonymous_email($this->email)) {
+            $u = $this->_cdb_user = Contact::make_cdb_email($this->conf, $this->email);
+            if ($this->contactId > 0) {
                 $u->contactXid = $this->contactId;
             }
-            return $u;
         }
+        return $u;
     }
 
     /** @param ?Contact $cdbu */

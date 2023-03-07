@@ -238,6 +238,7 @@ src/contactcounter.php
 src/contactcountmatcher.php
 src/contactlist.php
 src/contactsearch.php
+src/contactset.php
 src/decisioninfo.php
 src/decisionset.php
 src/documentfiletree.php
