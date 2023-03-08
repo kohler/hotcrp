@@ -61,6 +61,7 @@ class PaperColumn extends Column {
         return true;
     }
     function field_json(PaperList $pl) {
+        assert($this->is_visible);
         $j = [
             "name" => $this->name,
             "title" => $this->header($pl, false),
@@ -76,17 +77,9 @@ class PaperColumn extends Column {
             if ($this->has_statistics()) {
                 $j["has_statistics"] = true;
             }
-            if ($this->sort) {
-                $j["sort_name"] = $this->sort_name();
-            }
         }
-        if (!$this->is_visible) {
-            error_log("missing .. " . json_encode($j) . " .. " . debug_string_backtrace());
-            $j["missing"] = true;
-        }
-        if ($this->has_content && !$this->is_visible) {
-            error_log("loadable .. " . json_encode($j));
-            $j["loadable"] = true;
+        if ($this->sort) {
+            $j["sort_name"] = $this->sort_name();
         }
         if ($this->fold) {
             $j["foldnum"] = $this->fold;

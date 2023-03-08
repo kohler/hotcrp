@@ -9127,23 +9127,28 @@ function add_column(f) {
     $j.find("thead > tr.pl_headrow:first-child").each(function () {
         this.insertBefore($(h)[0], this.childNodes[index] || null);
     });
-    h = '<td' + classEnd + '></td>';
+    var dclasses = "pl " + classes;
     $j.find("tr.pl").each(function () {
-        this.insertBefore($(h)[0], this.childNodes[index] || null);
+        var td = document.createElement("td");
+        td.className = dclasses;
+        this.insertBefore(td, this.childNodes[index] || null);
     });
-    h = '<td class="plstat ' + classes + '"></td>';
+    dclasses = "plstat " + classes;
     $j.find("tfoot > tr.pl_statrow").each(function () {
-        this.insertBefore($(h)[0], this.childNodes[index] || null);
+        var td = document.createElement("td");
+        td.className = dclasses;
+        this.insertBefore(td, this.childNodes[index] || null);
     });
     f.missing = false;
 }
 
 function add_row(f) {
     var index = field_index(f),
-        h = '<div class="' + (f.className || "pl_" + f.name) +
-            " fx" + f.foldnum + '"></div>';
+        classes = (f.className || "pl_" + f.name).concat(" fx", f.foldnum);
     $(self).find("tr.plx > td.plx").each(function () {
-        this.insertBefore($(h)[0], this.childNodes[index] || null);
+        var div = document.createElement("div");
+        div.className = classes;
+        this.insertBefore(div, this.childNodes[index] || null);
     });
     f.missing = false;
 }
@@ -9208,9 +9213,6 @@ function make_callback(dofold, type) {
             add_field(f);
             addClass(self, "fold" + f.foldnum + "c");
         }
-        if (f) {
-            f.loadable = false;
-        }
         if (type === "authors") {
             aufull[rv.fields[type].aufull] = rv;
         }
@@ -9252,7 +9254,7 @@ function plinfo(type, dofold) {
             sesv = ses + type + (dofold ? "=1" : "=0");
     }
 
-    if (!f || f.loadable || (type === "aufull" && !aufull[!dofold])) {
+    if (!f || (type === "aufull" && !aufull[!dofold])) {
         // initiate load
         var loadargs = {fn: "fieldhtml", f: xtype};
         if (type === "aufull")
