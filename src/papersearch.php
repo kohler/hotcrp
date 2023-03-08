@@ -1420,7 +1420,9 @@ class PaperSearch extends MessageSet {
                 }
                 $rtrim = $dlen;
                 if ($rtrim > $ltrim && $d[$rtrim - 1] === "]") {
-                    for (--$rtrim; $rtrim > $ltrim && ctype_space($d[$rtrim - 1]); --$rtrim) {
+                    --$rtrim;
+                    while ($rtrim > $ltrim && ctype_space($d[$rtrim - 1])) {
+                        --$rtrim;
                     }
                 }
                 $sve->pos1 = $sve->pos1 !== null ? $sve->pos1 + $ltrim : null;

@@ -300,7 +300,7 @@ class PaperList implements XtContext {
                 $sortarg = $qreq->sort ?? "";
             }
             if (trim($sortarg) !== "") {
-                $this->parse_view("sort:[" . $sortarg . "]", null);
+                $this->parse_view("sort:[{$sortarg}]", null);
             }
         }
 
@@ -589,7 +589,7 @@ class PaperList implements XtContext {
             }
             if ($sve->sort_action()
                 && ($sve->nondefault_sort_action() || $this->_sortcol)) {
-                $this->_add_sorter($sve->keyword, $sve->decorations, $sve->pos1w, $sve->pos1, $sve->pos2);
+                $this->_add_sorter($sve->keyword, $sve->decorations, -1, $sve->pos1, $sve->pos2);
             }
         }
     }
@@ -1454,18 +1454,18 @@ class PaperList implements XtContext {
         if ($this->_row_id_pattern) {
             $t .= " id=\"" . str_replace("#", (string) $row->paperId, $this->_row_id_pattern) . "\"";
         }
-        $t .= " class=\"pl $trclass\" data-pid=\"$row->paperId";
+        $t .= " class=\"pl {$trclass}\" data-pid=\"{$row->paperId}";
         foreach ($this->row_attr as $k => $v) {
-            $t .= "\" $k=\"" . htmlspecialchars($v);
+            $t .= "\" {$k}=\"" . htmlspecialchars($v);
         }
         $t .= "\">" . $tm . "</tr>\n";
 
         if ($want_plx) {
-            $t .= "  <tr class=\"plx $trclass\" data-pid=\"$row->paperId\">";
+            $t .= "  <tr class=\"plx {$trclass}\" data-pid=\"{$row->paperId}\">";
             if ($rstate->skipcallout > 0) {
-                $t .= "<td colspan=\"$rstate->skipcallout\"></td>";
+                $t .= "<td colspan=\"{$rstate->skipcallout}\"></td>";
             }
-            $t .= "<td class=\"plx\" colspan=\"" . ($rstate->ncol - $rstate->skipcallout) . "\">$tt</td></tr>\n";
+            $t .= "<td class=\"plx\" colspan=\"" . ($rstate->ncol - $rstate->skipcallout) . "\">{$tt}</td></tr>\n";
         }
 
         return $t;
@@ -1553,7 +1553,7 @@ class PaperList implements XtContext {
             assert(!!$fdef->is_visible);
             $jscol[] = $j = $fdef->field_json($this);
             if ($fdef->fold) {
-                $classes[] = "fold" . $fdef->fold . "o";
+                $classes[] = "fold{$fdef->fold}o";
             }
             if ($fdef instanceof Selector_PaperColumn) {
                 $has_sel = true;
