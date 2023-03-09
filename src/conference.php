@@ -393,28 +393,14 @@ class Conf {
         $this->refresh_round_settings();
 
         // S3 settings
-        foreach (["s3_bucket", "s3_key", "s3_secret"] as $k) {
-            if (!($this->settingTexts[$k] ?? null)
-                && ($x = $this->opt[$k] ?? null)) {
-                $this->settingTexts[$k] = $x;
-            }
-        }
-        if (!($this->settingTexts["s3_key"] ?? null)
-            || !($this->settingTexts["s3_secret"] ?? null)
-            || !($this->settingTexts["s3_bucket"] ?? null)) {
-            unset($this->settingTexts["s3_key"], $this->settingTexts["s3_secret"],
-                  $this->settingTexts["s3_bucket"]);
-        }
         if (($this->opt["dbNoPapers"] ?? null)
             && !($this->opt["docstore"] ?? null)
             && !($this->opt["filestore"] ?? null)
             && !($this->settingTexts["s3_bucket"] ?? null)) {
             unset($this->opt["dbNoPapers"]);
         }
-        if ($this->_s3_client
-            && (!isset($this->settingTexts["s3_bucket"])
-                || !$this->_s3_client->check_key_secret_bucket($this->settingTexts["s3_key"], $this->settingTexts["s3_secret"], $this->settingTexts["s3_bucket"]))) {
-            $this->_s3_client = false;
+        if ($this->_s3_client) {
+            $this->_s3_client = $this->_refresh_s3_client();
         }
 
         // tracks settings
@@ -1044,20 +1030,27 @@ class Conf {
     }
 
     /** @return ?S3Client */
+    private function _refresh_s3_client() {
+        if (!($k = $this->settingTexts["s3_key"] ?? $this->opt["s3_key"] ?? null)
+            || !($s = $this->settingTexts["s3_secret"] ?? $this->opt["s3_secret"] ?? null)
+            || !($b = $this->settingTexts["s3_bucket"] ?? $this->opt["s3_bucket"] ?? null)) {
+            return null;
+        } else if ($this->_s3_client
+                   && $this->_s3_client->check_key_secret_bucket($k, $s, $b)) {
+            return $this->_s3_client;
+        } else {
+            return S3Client::make([
+                "key" => $k, "secret" => $s, "bucket" => $b,
+                "region" => $this->setting_data("s3_region"),
+                "setting_cache" => $this, "setting_cache_prefix" => "__s3"
+            ]);
+        }
+    }
+
+    /** @return ?S3Client */
     function s3_client() {
         if ($this->_s3_client === false) {
-            if (($bucket = $this->setting_data("s3_bucket"))) {
-                $this->_s3_client = S3Client::make([
-                    "key" => $this->setting_data("s3_key"),
-                    "secret" => $this->setting_data("s3_secret"),
-                    "bucket" => $bucket,
-                    "region" => $this->setting_data("s3_region"),
-                    "setting_cache" => $this,
-                    "setting_cache_prefix" => "__s3"
-                ]);
-            } else {
-                $this->_s3_client = null;
-            }
+            $this->_s3_client = $this->_refresh_s3_client();
         }
         return $this->_s3_client;
     }
@@ -4539,13 +4532,13 @@ class Conf {
                 }
             }
             if (substr($favicon, -4) == ".png") {
-                echo "<link rel=\"icon\" type=\"image/png\" href=\"$favicon\">\n";
+                echo "<link rel=\"icon\" type=\"image/png\" href=\"{$favicon}\">\n";
             } else if (substr($favicon, -4) == ".ico") {
-                echo "<link rel=\"shortcut icon\" href=\"$favicon\">\n";
+                echo "<link rel=\"shortcut icon\" href=\"{$favicon}\">\n";
             } else if (substr($favicon, -4) == ".gif") {
-                echo "<link rel=\"icon\" type=\"image/gif\" href=\"$favicon\">\n";
+                echo "<link rel=\"icon\" type=\"image/gif\" href=\"{$favicon}\">\n";
             } else {
-                echo "<link rel=\"icon\" href=\"$favicon\">\n";
+                echo "<link rel=\"icon\" href=\"{$favicon}\">\n";
             }
         }
 
@@ -4611,7 +4604,8 @@ class Conf {
                 $userinfo["is_pclike"] = true;
             }
             if ($user->has_account_here()) {
-                $userinfo["cid"] = $user->contactId;
+                $userinfo["cid"] = $user->contactId; // XXX backward compat
+                $userinfo["uid"] = $user->contactId;
             }
             if ($user->is_actas_user()) {
                 $userinfo["is_actas"] = true;

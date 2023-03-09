@@ -638,7 +638,7 @@ function procrastination_filter(revdata) {
             if (u.email)
                 d.click = make_reviewer_clicker(u.email);
         }
-        if (cid && cid == siteinfo.user.cid) {
+        if (cid && cid == siteinfo.user.uid) {
             d.className = "gcdf-highlight";
             d.priority = 1;
         } else if (u && u.light)

@@ -412,7 +412,7 @@ function check_message_list(data, options) {
 }
 
 function check_sessioninfo(data, options) {
-    if (siteinfo.user.cid == data.sessioninfo.cid) {
+    if (siteinfo.user.uid == data.sessioninfo.uid) {
         siteinfo.postvalue = data.sessioninfo.postvalue;
         $("form").each(function () {
             var m = /^([^#]*[&?;]post=)([^&?;#]*)/.exec(this.action);
@@ -1093,23 +1093,28 @@ function hoturl_add(url, component) {
     return url + (url.indexOf("?") < 0 ? "?" : "&") + component;
 }
 
-function hoturl_remove(url, component) {
-    var hash = url.indexOf("#"), pos = url.indexOf("?");
+function hoturl_set(url, component, value) {
+    var hash = url.indexOf("#"), question = url.indexOf("?"), pos = question;
+    hash = hash < 0 ? url.length : hash;
     component += "=";
-    while (pos >= 0 && (pos = url.indexOf(component, pos)) > 0 && (hash < 0 || pos < hash)) {
-        if (url.charAt(pos - 1) === "?" || url.charAt(pos - 1) === ";" || url.charAt(pos - 1) === "&") {
-            var amp = url.indexOf("&", pos), semi = url.indexOf(";", pos),
-                stop = Math.min(hash < 0 ? url.length : hash,
-                                amp < 0 ? url.length : amp + 1,
-                                semi < 0 ? url.length : semi + 1);
-            if (stop === (hash < 0 ? url.length : hash))
-                --pos;
-            url = url.substring(0, pos) + url.substring(stop);
-            if (hash >= 0)
-                hash = url.indexOf("#", pos);
+    while (pos >= 0 && (pos = url.indexOf(component, pos)) > 0 && pos < hash) {
+        var ch = url.charAt(pos - 1);
+        if (ch === "?" || ch === ";" || ch === "&") {
+            var amp = url.indexOf("&", pos),
+                semi = url.indexOf(";", pos),
+                stop = Math.min(hash,
+                                amp < 0 ? url.length : amp,
+                                semi < 0 ? url.length : semi);
+            if (value != null)
+                url = url.substring(0, pos + component.length).concat(urlencode(value), url.substring(stop));
+            else
+                url = url.substring(0, pos - (stop === hash)) + url.substring(stop + (stop < hash));
+            return url;
         } else
             ++pos;
     }
+    if (value != null)
+        url = url.substring(0, hash).concat(question < 0 ? "?" : "&", component, urlencode(value), url.substring(hash));
     return url;
 }
 
@@ -1164,7 +1169,7 @@ function hoturl(page, options) {
             else if (k === "#")
                 anchor = "#" + v;
             else
-                xv.push(encodeURIComponent(k).concat("=", encodeURIComponent(v).replace(/%20/g, "+")));
+                xv.push(encodeURIComponent(k).concat("=", urlencode(v)));
         }
     }
 
@@ -5606,7 +5611,7 @@ var vismap = {
     },
     emojiregex = /^(?:(?:\ud83c[\udde6-\uddff]\ud83c[\udde6-\uddff]|(?:(?:[\u231a\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd\u25fe\u2614\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa\u26ab\u26bd\u26be\u26c4\u26c5\u26ce\u26d4\u26ea\u26f2\u26f3\u26f5\u26fa\u26fd\u2705\u270a\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedd-\udedf\udeeb\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude74\ude78-\ude7c\ude80-\ude86\ude90-\udeac\udeb0-\udeba\udec0-\udec5\uded0-\uded9\udee0-\udee7\udef0-\udef6])\ufe0f?|(?:[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1\u23f2\u23f8-\u23fa\u24c2\u25aa\u25ab\u25b6\u25c0\u25fb\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622\u2623\u2626\u262a\u262e\u262f\u2638-\u263a\u2640\u2642\u265f\u2660\u2663\u2665\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b\u269c\u26a0\u26a7\u26b0\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0\u26f1\u26f4\u26f7-\u26f9\u2702\u2708\u2709\u270c\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733\u2734\u2744\u2747\u2763\u2764\u27a1\u2934\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70\udd71\udd7e\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96\udf97\udf99-\udf9b\udf9e\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49\udd4a\udd6f\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3])\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?(?:\u200d(?:(?:[\u231a\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd\u25fe\u2614\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa\u26ab\u26bd\u26be\u26c4\u26c5\u26ce\u26d4\u26ea\u26f2\u26f3\u26f5\u26fa\u26fd\u2705\u270a\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedd-\udedf\udeeb\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude74\ude78-\ude7c\ude80-\ude86\ude90-\udeac\udeb0-\udeba\udec0-\udec5\uded0-\uded9\udee0-\udee7\udef0-\udef6])\ufe0f?|(?:[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1\u23f2\u23f8-\u23fa\u24c2\u25aa\u25ab\u25b6\u25c0\u25fb\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622\u2623\u2626\u262a\u262e\u262f\u2638-\u263a\u2640\u2642\u265f\u2660\u2663\u2665\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b\u269c\u26a0\u26a7\u26b0\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0\u26f1\u26f4\u26f7-\u26f9\u2702\u2708\u2709\u270c\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733\u2734\u2744\u2747\u2763\u2764\u27a1\u2934\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70\udd71\udd7e\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96\udf97\udf99-\udf9b\udf9e\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49\udd4a\udd6f\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3])\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?)*)*[ \t]*){1,3}$/,
     cmts = {}, has_unload = false, resp_rounds = {},
-    twiddle_start = siteinfo.user && siteinfo.user.cid ? siteinfo.user.cid + "~" : "###";
+    twiddle_start = siteinfo.user && siteinfo.user.uid ? siteinfo.user.uid + "~" : "###";
 
 function unparse_tag(tag, strip_value) {
     var pos;
@@ -7780,7 +7785,7 @@ handle_ui.on("revpref", function (evt) {
 var paperlist_tag_ui = (function () {
 
 function tag_canonicalize(tag) {
-    return tag && /^~[^~]/.test(tag) ? siteinfo.user.cid + tag : tag;
+    return tag && /^~[^~]/.test(tag) ? siteinfo.user.uid + tag : tag;
 }
 
 function tagvalue_parse(s) {
@@ -8992,7 +8997,7 @@ function make_tagmap() {
         for (i = 0; i !== tl.length; ++i) {
             t = tl[i].toLowerCase();
             if (t.charAt(0) === "~" && t.charAt(1) !== "~")
-                t = siteinfo.user.cid + t;
+                t = siteinfo.user.uid + t;
             p = t.indexOf("*");
             t = t.replace(/([^-A-Za-z_0-9])/g, "\\$1");
             if (p === 0)
@@ -9000,7 +9005,7 @@ function make_tagmap() {
             else if (p > 0)
                 x.push(t.replace('\\*', '.*'));
             else if (t === "any")
-                x.push('(?:' + (siteinfo.user.cid || 0) + '~.*|~~.*|(?!\\d+~).*)');
+                x.push('(?:' + (siteinfo.user.uid || 0) + '~.*|~~.*|(?!\\d+~).*)');
             else
                 x.push(t);
         }
@@ -9011,7 +9016,7 @@ function make_tagmap() {
         for (i = 0; i !== tl.length; ++i) {
             t = tl[i].toLowerCase();
             tagmap[t] = (tagmap[t] || 0) | 2;
-            t = siteinfo.user.cid + "~" + t;
+            t = siteinfo.user.uid + "~" + t;
             tagmap[t] = (tagmap[t] || 0) | 2;
         }
         if ($.isEmptyObject(tagmap))
@@ -9025,7 +9030,7 @@ function compute_row_tagset(tagstr, editable) {
     var t = [], tags = (tagstr || "").split(/ /);
     for (var i = 0; i !== tags.length; ++i) {
         var text = tags[i], twiddle = text.indexOf("~"), hash = text.indexOf("#");
-        if (text !== "" && (twiddle <= 0 || text.substr(0, twiddle) == siteinfo.user.cid)) {
+        if (text !== "" && (twiddle <= 0 || text.substr(0, twiddle) == siteinfo.user.uid)) {
             twiddle = Math.max(twiddle, 0);
             var tbase = text.substring(0, hash), tindex = text.substr(hash + 1),
                 tagx = tagmap ? tagmap[tbase.toLowerCase()] || 0 : 0, h, q;
@@ -9073,7 +9078,7 @@ function render_row_tags(div) {
 function make_tag_column_callback(f) {
     var tag = /^(?:#|tag:|tagval:)(\S+)/.exec(f.name)[1];
     if (/^~[^~]/.test(tag))
-        tag = siteinfo.user.cid + tag;
+        tag = siteinfo.user.uid + tag;
     return function (evt, rv) {
         var e = pidfield(rv.pid, f)[0];
         if (!e || f.missing)
@@ -10354,8 +10359,8 @@ edit_conditions.collaborators = function (ec, form) {
 };
 edit_conditions.pc_conflict = function (ec, form) {
     var n = 0, elt;
-    for (var i = 0; i !== ec.cids.length; ++i)
-        if ((elt = form.elements["pcconf:" + ec.cids[i]])
+    for (var i = 0; i !== ec.uids.length; ++i)
+        if ((elt = form.elements["pcconf:" + ec.uids[i]])
             && (elt.type === "checkbox" ? elt.checked : +elt.value > 1)) {
             ++n;
             if (n > ec.value)
@@ -10504,7 +10509,7 @@ hotcrp.paper_edit_conditions = function () {
 
 function tag_value(taglist, t) {
     if (t.charCodeAt(0) === 126 /* ~ */ && t.charCodeAt(1) !== 126)
-        t = siteinfo.user.cid + t;
+        t = siteinfo.user.uid + t;
     t = t.toLowerCase();
     var tlen = t.length;
     for (var i = 0; i !== taglist.length; ++i) {
@@ -11050,10 +11055,10 @@ handle_ui.on("js-submit-list", function (evt) {
         bgform.setAttribute("enctype", "multipart/form-data");
         bgform.setAttribute("accept-charset", "UTF-8");
         if (chkval.length < 20) {
-            action = hoturl_add(hoturl_remove(action, "p"), "p=" + encodeURIComponent(chkval.join(" ")));
+            action = hoturl_set(action, "p", chkval.join(" "));
             chkval = null;
         }
-        bgform.action = hoturl_add(hoturl_remove(action, "fn"), "fn=" + encodeURIComponent(fn));
+        bgform.action = hoturl_set(action, "fn", fn);
     }
     bgform.className = "is-background-form";
     if (fnbutton && fnbutton.hasAttribute("formtarget"))

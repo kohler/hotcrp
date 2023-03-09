@@ -505,49 +505,52 @@ class PaperList implements XtContext {
         if ($origin === self::VIEWORIGIN_REPORT) {
             $flags = ($flags & ~self::VIEW_REPORTSHOW) | ($v ? self::VIEW_REPORTSHOW : 0);
         }
-        if (($flags & self::VIEWORIGIN_MASK) <= $origin
-            && (!$v || $this->_view_hide_all <= $origin)) {
-            $flags = ($flags & self::VIEW_REPORTSHOW)
-                | $origin
-                | ($v ? self::VIEW_SHOW : 0);
-            if ($v === "edit") {
-                $decorations[] = "edit";
-            }
-            if (!empty($decorations)) {
-                $this->_view_decorations[$k] = $decorations;
-            } else {
-                unset($this->_view_decorations[$k]);
-            }
+        if (($flags & self::VIEWORIGIN_MASK) > $origin
+            || ($v && $this->_view_hide_all > $origin)) {
+            return;
+        }
+        $flags = ($flags & self::VIEW_REPORTSHOW)
+            | $origin
+            | ($v ? self::VIEW_SHOW : 0);
+        if ($v === "edit") {
+            $decorations[] = "edit";
+        }
+        if (!empty($decorations)) {
+            $this->_view_decorations[$k] = $decorations;
+        } else {
+            unset($this->_view_decorations[$k]);
+        }
 
-            if ($k === "force") {
-                $this->_view_force = $v;
-            } else if ($k === "kanban") {
-                $this->_view_kanban = $v;
-            } else if ($k === "linkto") {
-                if (!empty($decorations)
-                    && in_array($decorations[0], ["paper", "paperedit", "assign", "finishreview"])) {
-                    $this->_paper_linkto = $decorations[0];
-                }
-            } else if (($k === "aufull" || $k === "anonau")
-                       && $origin === self::VIEWORIGIN_EXPLICIT
-                       && $v
-                       && $this->view_origin("authors") < $origin) {
-                $this->set_view("authors", true, $origin, null);
+        if ($k === "force") {
+            $this->_view_force = $v;
+        } else if ($k === "kanban") {
+            $this->_view_kanban = $v;
+        } else if ($k === "linkto") {
+            if (!empty($decorations)
+                && in_array($decorations[0], ["paper", "paperedit", "assign", "finishreview"])) {
+                $this->_paper_linkto = $decorations[0];
             }
+        } else if (($k === "aufull" || $k === "anonau")
+                   && $origin >= self::VIEWORIGIN_EXPLICIT
+                   && $v
+                   && $this->view_origin("authors") < $origin) {
+            $this->set_view("authors", true, $origin, null);
         }
     }
 
-    /** @param string $name
+
+
+    /** @param string $k
      * @param ?list<string> $decorations
      * @param int $sort_subset
      * @param ?int $pos1
      * @param ?int $pos2 */
-    private function _add_sorter($name, $decorations, $sort_subset, $pos1, $pos2) {
+    private function _add_sorter($k, $decorations, $sort_subset, $pos1, $pos2) {
         assert($this->_sortcol_fixed < 2);
         // Do not use ensure_columns_by_name(), because decorations for sorters
         // might differ.
         $old_context = $this->conf->xt_swap_context($this);
-        $fs = $this->conf->paper_columns($name, $this->user);
+        $fs = $this->conf->paper_columns($k, $this->user);
         $this->conf->xt_swap_context($old_context);
         $mi = null;
         if (count($fs) === 1) {
@@ -557,20 +560,20 @@ class PaperList implements XtContext {
                 $col->sort_subset = $sort_subset;
                 $this->_sortcol[] = $col;
             } else {
-                $mi = $this->search->warning("<0>‘{$name}’ cannot be sorted");
+                $mi = $this->search->warning("<0>‘{$k}’ cannot be sorted");
             }
         } else if (empty($fs)) {
             if ($this->user->can_view_tags(null)
                 && ($tagger = new Tagger($this->user))
-                && ($tag = $tagger->check($name))
+                && ($tag = $tagger->check($k))
                 && ($ps = new PaperSearch($this->user, ["q" => "#$tag", "t" => "vis"]))
                 && $ps->paper_ids()) {
-                $mi = $this->search->warning("<0>‘{$name}’ cannot be sorted; did you mean “sort:#{$name}”?");
+                $mi = $this->search->warning("<0>‘{$k}’ cannot be sorted; did you mean “sort:#{$k}”?");
             } else {
-                $mi = $this->search->warning("<0>‘{$name}’ cannot be sorted");
+                $mi = $this->search->warning("<0>‘{$k}’ cannot be sorted");
             }
         } else {
-            $mi = $this->search->warning("<0>Sort ‘{$name}’ is ambiguous");
+            $mi = $this->search->warning("<0>Sort ‘{$k}’ is ambiguous");
         }
         if ($mi) {
             $mi->pos1 = $pos1;
@@ -635,6 +638,8 @@ class PaperList implements XtContext {
      * @return list<string> */
     function unparse_view($report_diff = false) {
         $this->_prepare();
+
+        // views
         $res = [];
         $nextpos = 1000000;
         foreach ($this->_viewf as $name => $v) {
@@ -651,12 +656,8 @@ class PaperList implements XtContext {
                         $pos = $nextpos++;
                     }
                 }
-                $key = "$pos $name";
-                if ($v >= self::VIEW_SHOW) {
-                    $kw = "show";
-                } else {
-                    $kw = "hide";
-                }
+                $key = "{$pos} {$name}";
+                $kw = $v >= self::VIEW_SHOW ? "show" : "hide";
                 $res[$key] = PaperSearch::unparse_view($kw, $name, $this->_view_decorations[$name] ?? null);
             }
         }
@@ -668,6 +669,7 @@ class PaperList implements XtContext {
         ksort($res, SORT_NATURAL);
         $res = array_values($res);
 
+        // sorters
         foreach ($this->sorters() as $s) {
             $res[] = PaperSearch::unparse_view("sort", $s->name, $s->decorations());
             if ($s->name === "id") {
@@ -834,7 +836,7 @@ class PaperList implements XtContext {
         $dt = $this->conf->tags()->add(Tagger::base($etag));
         if (!$dt->has_order_anno()) {
             $any = false;
-            foreach (["#$etag", "#$alt_etag", "tagval:$etag", "tagval:$alt_etag"] as $x) {
+            foreach (["#{$etag}", "#{$alt_etag}", "tagval:{$etag}", "tagval:{$alt_etag}"] as $x) {
                 $any = $any || in_array("edit", $this->_view_decorations[$x] ?? []);
             }
             if (!$any) {

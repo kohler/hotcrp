@@ -1440,14 +1440,14 @@ class Contact implements JsonSerializable {
         assert($cid > 0);
         Dbl::compare_and_swap(
             $cdb ? $this->conf->contactdb() : $this->conf->dblink,
-            "select `data` from ContactInfo where $key=?", [$cid],
+            "select `data` from ContactInfo where {$key}=?", [$cid],
             function ($old) use ($change) {
                 $this->data = $old;
                 $this->_jdata = null;
                 object_replace_recursive($this->make_data(), $change);
                 return $this->encode_data();
             },
-            "update ContactInfo set data=?{desired} where $key=? and data?{expected}e", [$cid]
+            "update ContactInfo set data=?{desired} where {$key}=? and data?{expected}e", [$cid]
         );
     }
 
@@ -5622,7 +5622,7 @@ class Contact implements JsonSerializable {
         if ($direction > 0) {
             $this->conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=? and reviewSubmitted is null and reviewNeedsSubmit=1", $pid, $cid);
         } else {
-            $row = Dbl::fetch_first_row($this->conf->qe("select sum(contactId=$cid and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null), sum(reviewType>0 and reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid and reviewSubmitted is not null), sum(reviewType>0 and reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid) from PaperReview where paperId=$pid"));
+            $row = Dbl::fetch_first_row($this->conf->qe("select sum(contactId={$cid} and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null), sum(reviewType>0 and reviewType<" . REVIEW_SECONDARY . " and requestedBy={$cid} and reviewSubmitted is not null), sum(reviewType>0 and reviewType<" . REVIEW_SECONDARY . " and requestedBy={$cid}) from PaperReview where paperId={$pid}"));
             if ($row && $row[0]) {
                 $rns = $row[1] ? 0 : ($row[2] ? -1 : 1);
                 if ($direction == 0 || $rns != 0)

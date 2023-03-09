@@ -1,6 +1,6 @@
 <?php
 // search/st_conflict.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 final class Conflict_SearchTerm extends SearchTerm {
     /** @var Contact */
@@ -55,9 +55,9 @@ final class Conflict_SearchTerm extends SearchTerm {
         $cidsql = $this->ccm->contact_match_sql("contactId");
         if ($snc === ">0" || $snc === "=0") {
             $n = $snc === "=0" ? "not exists" : "exists";
-            return "$n (select * from PaperConflict where paperId=Paper.paperId and $cidsql)";
+            return "{$n} (select * from PaperConflict where paperId=Paper.paperId and {$cidsql})";
         } else {
-            return "coalesce((select count(*) from PaperConflict where paperId=Paper.paperId and $cidsql),0){$snc}";
+            return "coalesce((select count(*) from PaperConflict where paperId=Paper.paperId and {$cidsql}),0){$snc}";
         }
     }
     function is_sqlexpr_precise() {
@@ -83,7 +83,7 @@ final class Conflict_SearchTerm extends SearchTerm {
         } else if (!$this->user->conf->setting("sub_pcconf")) {
             return $this->test($row, null);
         } else {
-            return ["type" => "pc_conflict", "cids" => $this->ccm->contact_set(), "compar" => $this->ccm->relation(), "value" => $this->ccm->value()];
+            return ["type" => "pc_conflict", "uids" => $this->ccm->contact_set(), "compar" => $this->ccm->relation(), "value" => $this->ccm->value()];
         }
     }
     function about_reviews() {

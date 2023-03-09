@@ -45,12 +45,12 @@ class ContactSet implements IteratorAggregate {
     function sort_by($compare) {
         uasort($this->by_uid, $compare);
     }
-    /** @param int $pid
+    /** @param int $uid
      * @return ?Contact */
     function user_by_id($uid) {
         return $this->by_uid[$uid] ?? null;
     }
-    /** @param int $pid
+    /** @param int $uid
      * @return Contact */
     function checked_user_by_id($uid) {
         $u = $this->by_uid[$uid] ?? null;

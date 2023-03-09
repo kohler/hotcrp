@@ -1,6 +1,6 @@
 <?php
 // column.php -- HotCRP helper class for list content
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Column {
     /** @var string */
@@ -102,7 +102,7 @@ class Column {
         if (!empty($remove)) {
             $this->decorations = array_values(array_diff($this->decorations ?? [], $remove));
         }
-        if ($add !== null && !in_array($add, $this->decorations ?? [])) {
+        if ($add !== null && $add !== "" && !in_array($add, $this->decorations ?? [])) {
             $this->decorations[] = $add;
         }
         return true;

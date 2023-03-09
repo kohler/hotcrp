@@ -1,12 +1,13 @@
 <?php
 // api_session.php -- HotCRP session API calls
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
 
 class Session_API {
     static private function session_result(Contact $user, Qrequest $qreq, $ok) {
         $si = ["postvalue" => $qreq->post_value()];
         if ($user->contactId) {
-            $si["cid"] = $user->contactId;
+            $si["cid"] = $user->contactId; // XXX backward compat
+            $si["uid"] = $user->contactId;
         }
         return ["ok" => $ok, "postvalue" => $qreq->post_value(), "sessioninfo" => $si];
     }

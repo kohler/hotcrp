@@ -44,6 +44,7 @@ class ScoreInfo {
         return $stat === self::MEDIAN || $stat === self::MIN || $stat === self::MAX;
     }
 
+
     /** @param null|list<int|float>|string $data */
     function __construct($data = null) {
         if (is_array($data)) {
