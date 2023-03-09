@@ -1186,13 +1186,10 @@ class PaperOption implements JsonSerializable {
     static function basic_value_compare($av, $bv) {
         $av = $av ? $av->value : null;
         $bv = $bv ? $bv->value : null;
-        if ($av === $bv) {
-            return 0;
-        } else if ($av === null || $bv === null) {
-            return $av === null ? -1 : 1;
-        } else {
-            return $av <=> $bv;
+        if ($av === null || $bv === null) {
+            return ($av === null ? 0 : 1) <=> ($bv === null ? 0 : 1);
         }
+        return $av <=> $bv;
     }
     /** @return bool */
     function value_check_required(PaperValue $ov) {
@@ -1544,7 +1541,7 @@ class Checkbox_PaperOption extends PaperOption {
     }
 
     function value_compare($av, $bv) {
-        return ($bv && $bv->value ? 1 : 0) - ($av && $av->value ? 1 : 0);
+        return ($av && $av->value ? 1 : 0) <=> ($bv && $bv->value ? 1 : 0);
     }
 
     function value_export_json(PaperValue $ov, PaperExport $pex) {
@@ -1868,8 +1865,8 @@ class Document_PaperOption extends PaperOption {
         return ($ov->value ?? 0) > 1 || $ov->value === PaperValue::NEWDOC_VALUE;
     }
     function value_compare($av, $bv) {
-        return (int) ($bv && $this->value_present($bv))
-            <=> (int) ($av && $this->value_present($av));
+        return (int) ($av && $this->value_present($av))
+            <=> (int) ($bv && $this->value_present($bv));
     }
     function value_dids(PaperValue $ov) {
         if (($ov->value ?? 0) > 1) {
@@ -2145,11 +2142,10 @@ class Text_PaperOption extends PaperOption {
     function value_compare($av, $bv) {
         $av = $av ? (string) $av->data() : "";
         $bv = $bv ? (string) $bv->data() : "";
-        if ($av !== "" && $bv !== "") {
-            return $this->conf->collator()->compare($av, $bv);
-        } else {
-            return ($bv !== "" ? 1 : 0) - ($av !== "" ? 1 : 0);
+        if ($av === "" || $bv === "") {
+            return ($av === "" ? 1 : 0) <=> ($bv === "" ? 1 : 0);
         }
+        return $this->conf->collator()->compare($av, $bv);
     }
 
     function value_export_json(PaperValue $ov, PaperExport $pex) {

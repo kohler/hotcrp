@@ -17,14 +17,15 @@ class Column {
     /** @var bool
      * @readonly */
     public $as_row;
+    /** @var 0|1|2
+     * @readonly */
+    public $sort = 0;
     /** @var ?int */
     public $fold;
-    /** @var bool */
-    public $sort = false;
     /** @var bool|string */
     public $completion = false;
     /** @var bool */
-    public $sort_reverse = false;
+    public $sort_descending;
     /** @var int */
     public $sort_subset = -1;
     /** @var null|int|float */
@@ -56,9 +57,13 @@ class Column {
             $this->prefer_row = true;
         }
         $this->as_row = $this->prefer_row;
-        if ($arg->sort ?? false) {
-            $this->sort = true;
+        $s = $arg->sort ?? false;
+        if ($s === "desc" || $s === "descending") {
+            $this->sort = 2;
+        } else if ($s) {
+            $this->sort = 1;
         }
+        $this->sort_descending = $this->default_sort_descending();
         if (isset($arg->completion)) {
             $this->completion = $arg->completion;
         }
@@ -81,18 +86,44 @@ class Column {
         if ($decor === "row" || $decor === "column") {
             /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $this->as_row = $decor === "row";
-            return $this->__add_decoration($this->prefer_row !== $this->as_row ? $decor : null, ["column", "row"]);
-        } else if ($decor === "up" || $decor === "forward") {
-            $this->sort_reverse = false;
-            return $this->__add_decoration(null, ["down"]);
-        } else if ($decor === "down" || $decor === "reverse") {
-            $this->sort_reverse = true;
-            return $this->__add_decoration("down");
-        } else if ($decor === "by") {
+            $dd = $this->prefer_row !== $this->as_row ? $decor : null;
+            return $this->__add_decoration($dd, ["column", "row"]);
+        }
+
+        $sp = array_search($decor, [
+            "up", "asc", "ascending", "down", "desc", "descending", "forward", "reverse"
+        ]);
+        if ($sp !== false) {
+            if ($sp < 3) {
+                $this->sort_descending = false;
+            } else if ($sp < 6) {
+                $this->sort_descending = true;
+            } else if ($sp === 6) {
+                $this->sort_descending = $this->default_sort_descending();
+            } else {
+                $this->sort_descending = !$this->default_sort_descending();
+            }
+            return $this->__add_decoration($this->sort_decoration(), ["asc", "desc"]);
+        }
+
+        if ($decor === "by") {
             return true;
         } else {
             return false;
         }
+    }
+
+    /** @return bool */
+    function default_sort_descending() {
+        return $this->sort === 2;
+    }
+
+    /** @return string */
+    function sort_decoration() {
+        if ($this->sort_descending === $this->default_sort_descending()) {
+            return "";
+        }
+        return $this->sort_descending ? "desc" : "asc";
     }
 
     /** @param ?string $add

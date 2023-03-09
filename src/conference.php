@@ -685,9 +685,15 @@ class Conf {
             $this->_docstore = null;
         }
 
-        // set defaultFormat
+        // defaultFormat
         $this->default_format = (int) ($this->opt["defaultFormat"] ?? 0);
         $this->_format_info = null;
+
+        // defaultScoreSort should be long
+        if (isset($this->opt["defaultScoreSort"])
+            && strlen($this->opt["defaultScoreSort"]) === 1) {
+            $this->opt["defaultScoreSort"] = ScoreInfo::parse_score_sort($this->opt["defaultScoreSort"]);
+        }
 
         // emails
         if (($eol = $this->opt["postfixMailer"] ?? $this->opt["postfixEOL"] ?? false)) {

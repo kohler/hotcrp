@@ -130,9 +130,7 @@ class Search_Page {
         if (!empty($this->items[30])) {
             $this->set_header(30, "<strong>Scores:</strong>");
             $sortitem = '<div class="mt-2">Sort by: &nbsp;'
-                . Ht::select("scoresort", ListSorter::score_sort_selector_options(),
-                             ListSorter::canonical_long_score_sort($pl->default_score_sort()),
-                             ["id" => "scoresort"])
+                . Ht::select("scoresort", ScoreInfo::score_sort_selector_options(), $pl->score_sort(), ["id" => "scoresort"])
                 . '<a class="help" href="' . $this->conf->hoturl("help", "t=scoresort") . '" target="_blank" title="Learn more">?</a></div>';
             $this->item(30, $sortitem);
         }
@@ -457,17 +455,17 @@ class Search_Page {
 
         // request and session parsing
         if ($qreq->redisplay) {
-            $settings = [];
+            $viewlist = [];
             foreach ($qreq as $k => $v) {
                 if ($v && substr($k, 0, 4) === "show") {
-                    $settings[substr($k, 4)] = true;
+                    $viewlist[] = "show:" . substr($k, 0, 4);
                 }
             }
-            Session_API::change_display($qreq, "pl", $settings);
-        }
-        if ($qreq->scoresort) {
-            $qreq->scoresort = ListSorter::canonical_short_score_sort($qreq->scoresort);
-            Session_API::change_session($qreq, "scoresort=" . $qreq->scoresort);
+            if ($qreq->scoresort
+                && ($ss = ScoreInfo::parse_score_sort($qreq->scoresort))) {
+                $viewlist[] = "sort:[score {$ss}]";
+            }
+            Session_API::parse_view($qreq, "pl", join(" ", $viewlist));
         }
         if ($qreq->redisplay) {
             if (isset($qreq->forceShow) && !$qreq->forceShow && $qreq->showforce) {

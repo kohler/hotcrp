@@ -18,8 +18,7 @@ class PaperIDOrder_PaperColumn extends PaperColumn {
             return $ap <=> $bp;
         } else if ($ap !== false || $bp !== false) {
             return $ap === false ? 1 : -1;
-        } else {
-            return $a->paperId <=> $b->paperId;
         }
+        return $a->paperId <=> $b->paperId;
     }
 }

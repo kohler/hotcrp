@@ -32,6 +32,39 @@ class ScoreInfo {
     static public $stat_names = ["Count", "Mean", "Median", "Total", "Variance", "Standard deviation", "Minimum", "Maximum"];
     static public $stat_keys = ["count", "mean", "median", "total", "var_p", "stddev_p", "min", "max"];
 
+
+    static private $score_sorts = [
+        "counts", "average", "median", "variance", "maxmin", "my"
+    ];
+    static private $score_sort_parser = "0 C 0 M 0 count 0 counts 1 A 1 average 1 avg 1 av 1 ave 2 E 2 median 2 med 3 V 3 variance 3 var 4 D 4 maxmin 4 max-min 5 Y 5 my 5 myscore ";
+
+    /** @param string $x
+     * @return null|'count'|'average'|'median'|'variance'|'maxmin'|'my' */
+    static function parse_score_sort($x) {
+        if (in_array($x, self::$score_sorts)) {
+            return $x;
+        } else if (($p = strpos(self::$score_sort_parser, " {$x} ")) !== false
+                   && strpos($x, " ") === false) {
+            return self::$score_sorts[(int) $x[$p - 1]];
+        } else {
+            return null;
+        }
+    }
+
+    /** @return list<string> */
+    static function score_sort_list() {
+        return self::$score_sorts;
+    }
+
+    /** @return array<string,string> */
+    static function score_sort_selector_options() {
+        return [
+            "counts" => "Counts", "average" => "Average", "median" => "Median",
+            "variance" => "Variance", "maxmin" => "Max − min", "my" => "My score"
+        ];
+    }
+
+
     /** @param int $stat
      * @return bool */
     static function statistic_is_int($stat) {
@@ -258,19 +291,19 @@ class ScoreInfo {
         return $this->_scores;
     }
 
-    /** @param 'C'|'M'|'E'|'V'|'D'|'A'|'Y' $sorter
+    /** @param 'counts'|'median'|'variance'|'maxmin'|'my'|'average' $score_sort
      * @return null|int|float|list<int> */
-    function sort_data($sorter) {
-        if ($sorter === "Y") {
+    function sort_data($score_sort) {
+        if ($score_sort === "my") {
             return $this->_my_score ?? -1000000;
-        } else if ($sorter === "C" || $sorter === "M") {
+        } else if ($score_sort === "counts") {
             $this->sort();
             return $this->_scores ? array_values($this->_scores) : null;
-        } else if ($sorter === "E") {
+        } else if ($score_sort === "median") {
             return $this->median();
-        } else if ($sorter === "V") {
+        } else if ($score_sort === "variance") {
             return $this->variance_p();
-        } else if ($sorter === "D") {
+        } else if ($score_sort === "maxmin") {
             return $this->max() - $this->min();
         } else {
             return $this->mean();
@@ -312,9 +345,9 @@ class ScoreInfo {
         return 0;
     }
 
-    /** @param 'C'|'M'|'E'|'V'|'D'|'A'|'Y' $sorter
+    /** @param 'counts'|'median'|'variance'|'maxmin'|'my'|'average' $score_sort
      * @return -1|0|1 */
-    function compare_by(ScoreInfo $b, $sorter) {
-        return self::compare($this->sort_data($sorter), $b->sort_data($sorter));
+    function compare_by(ScoreInfo $b, $score_sort) {
+        return self::compare($this->sort_data($score_sort), $b->sort_data($score_sort));
     }
 }

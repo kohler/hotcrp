@@ -87,14 +87,14 @@ class Preference_PaperColumn extends PaperColumn {
         list($ap, $ae) = $this->sortable_preference($a);
         list($bp, $be) = $this->sortable_preference($b);
         if ($ap !== $bp) {
-            return $bp <=> $ap;
+            return $ap <=> $bp;
         } else if ($ae !== $be) {
             if (($ae === null) !== ($be === null)) {
                 return $ae === null ? 1 : -1;
             }
-            return (int) $be <=> (int) $ae;
+            return (int) $ae <=> (int) $be;
         } else if ($this->secondary_sort_topic_score) {
-            return $b->topic_interest_score($this->user) <=> $a->topic_interest_score($this->user);
+            return $a->topic_interest_score($this->user) <=> $b->topic_interest_score($this->user);
         } else {
             return 0;
         }

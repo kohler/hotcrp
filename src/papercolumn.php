@@ -79,7 +79,10 @@ class PaperColumn extends Column {
             }
         }
         if ($this->sort) {
-            $j["sort_name"] = $this->sort_name();
+            $j["sort"] = $this->default_sort_descending() ? "descending" : "ascending";
+            if (($sn = $this->sort_name()) !== $this->name) {
+                $j["sort_name"] = $sn;
+            }
         }
         if ($this->fold) {
             $j["foldnum"] = $this->fold;
@@ -96,7 +99,7 @@ class PaperColumn extends Column {
     /** @return int */
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         error_log("unexpected " . get_class($this) . "::compare");
-        return $a->paperId - $b->paperId;
+        return $a->paperId <=> $b->paperId;
     }
 
     function analyze(PaperList $pl) {
@@ -129,7 +132,7 @@ class PaperColumn extends Column {
     function sort_name() {
         $decor = $this->decorations;
         if (!empty($decor)) {
-            $decor = array_diff($decor, ["down"]);
+            $decor = array_diff($decor, ["asc", "desc"]);
         }
         return empty($decor) ? $this->name : $this->name . " " . join(" ", $decor);
     }
@@ -162,7 +165,7 @@ class Id_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        return $a->paperId - $b->paperId;
+        return $a->paperId <=> $b->paperId;
     }
     function content(PaperList $pl, PaperInfo $row) {
         $href = $pl->_paperLink($row);
@@ -370,9 +373,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $av = $this->sortmap[$a->paperXid];
-        $bv = $this->sortmap[$b->paperXid];
-        return ($av < $bv ? 1 : ($av == $bv ? 0 : -1));
+        return $this->sortmap[$a->paperXid] <=> $this->sortmap[$b->paperXid];
     }
     function header(PaperList $pl, $is_text) {
         $round_name = "";
@@ -434,10 +435,8 @@ class Authors_PaperColumn extends PaperColumn {
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $au1 = $pl->user->allow_view_authors($a) ? $a->author_list() : [];
         $au2 = $pl->user->allow_view_authors($b) ? $b->author_list() : [];
-        if (empty($au1) && empty($au2)) {
-            return 0;
-        } else if (empty($au1) || empty($au2)) {
-            return empty($au1) ? 1 : -1;
+        if (empty($au1) || empty($au2)) {
+            return (int) empty($au1) <=> (int) empty($au0);
         }
         for ($i = 0; $i < count($au1) && $i < count($au2); ++$i) {
             $s1 = Contact::make_sorter($au1[$i], $this->ianno);
@@ -446,11 +445,7 @@ class Authors_PaperColumn extends PaperColumn {
                 return $v;
             }
         }
-        if (count($au1) === count($au2)) {
-            return 0;
-        } else {
-            return count($au1) < count($au2) ? -1 : 1;
-        }
+        return count($au1) <=> count($au2);
     }
     private function affiliation_map($row) {
         $nonempty_count = 0;
@@ -682,7 +677,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        return $this->sortmap[$b->paperXid] - $this->sortmap[$a->paperXid];
+        return $this->sortmap[$a->paperXid] <=> $this->sortmap[$b->paperXid];
     }
     function header(PaperList $pl, $is_text) {
         if (!$this->not_me || $this->basicheader) {
@@ -808,17 +803,12 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
     }
     function add_decoration($decor) {
-        if (($d = ListSorter::canonical_short_score_sort($decor))) {
+        if (($d = ScoreInfo::parse_score_sort($decor))) {
             $this->score_sort = $d;
-            return $this->__add_decoration(ListSorter::canonical_long_score_sort($d),
-                                           ListSorter::long_score_sort_list());
+            return $this->__add_decoration($d, ScoreInfo::score_sort_list());
         } else {
             return parent::add_decoration($decor);
         }
-    }
-    function score_sort(PaperList $pl) {
-        $this->score_sort = $this->score_sort ?? $pl->default_score_sort();
-        return $this->score_sort;
     }
     function prepare(PaperList $pl, $visible) {
         $ruser = $pl->reviewer_user();
@@ -828,28 +818,23 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
             && (!$pl->user->privChair || $pl->conf->has_any_manager())) {
             $pl->qopts["reviewSignatures"] = true;
         }
-        if ($visible === PaperColumn::PREP_SORT) {
-            $this->score_sort($pl);
-        }
     }
     /** @return ScoreInfo */
     abstract function score_info(PaperList $pl, PaperInfo $row);
     function prepare_sort(PaperList $pl, $sortindex) {
+        $ss = $this->score_sort ?? $pl->score_sort();
         $this->sortmap = $this->avgmap = [];
         foreach ($pl->rowset() as $row) {
             $sci = $this->score_info($pl, $row);
             if (!$sci->is_empty()) {
-                $this->sortmap[$row->paperXid] = $sci->sort_data($this->score_sort);
+                $this->sortmap[$row->paperXid] = $sci->sort_data($ss);
                 $this->avgmap[$row->paperXid] = $sci->mean();
             }
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $x = ScoreInfo::compare($this->sortmap[$b->paperXid] ?? null, $this->sortmap[$a->paperXid] ?? null, -1);
-        if (!$x) {
-            $x = ScoreInfo::compare($this->avgmap[$b->paperXid] ?? null, $this->avgmap[$a->paperXid] ?? null);
-        }
-        return $x;
+        $x = ScoreInfo::compare($this->sortmap[$a->paperXid] ?? null, $this->sortmap[$b->paperXid] ?? null, -1);
+        return $x ? : ScoreInfo::compare($this->avgmap[$a->paperXid] ?? null, $this->avgmap[$b->paperXid] ?? null);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $sci = $this->score_info($pl, $row);

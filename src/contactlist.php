@@ -400,9 +400,9 @@ class ContactList {
             break;
         default:
             $f = $this->_rfields[$this->sortField - self::FIELD_SCORE];
-            $scoresort = $this->qreq->csession("ulscoresort") ?? "A";
-            if (!in_array($scoresort, ["A", "V", "D"], true)) {
-                $scoresort = "A";
+            $scoresort = $this->qreq->csession("ulscoresort") ?? "average";
+            if (!in_array($scoresort, ["average", "variance", "maxmin"], true)) {
+                $scoresort = "average";
             }
             foreach ($rows as $row) {
                 $scoreinfo = new ScoreInfo($this->_extract_scores($row->contactId, $f));
@@ -1214,7 +1214,7 @@ class ContactList {
                 $x .= "    <th class=\"pl plh pl_{$fdef[0]}\">";
                 $ftext = $this->header($fieldId);
                 if ($fieldId === $sortField) {
-                    $klass = $this->reverseSort ? "pl_sorting_rev" : "pl_sorting_fwd";
+                    $klass = $this->reverseSort ? "sort-descending" : "sort-ascending";
                     $qx = $this->_next_sort_link($sortUrl);
                     $x .= "<a class=\"pl_sort {$klass}\" rel=\"nofollow\" href=\"{$qx}\">{$ftext}</a>";
                 } else if ($fdef[2]) {
@@ -1281,5 +1281,4 @@ class ContactList {
         // run query
         return $this->_rows();
     }
-
 }

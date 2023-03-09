@@ -49,23 +49,21 @@ class Session_API {
                 $qreq->unset_csession("foldpaperp");
                 $qreq->unset_csession("foldpapert");
             } else if ($m[1] === "scoresort" && $m[2] === "" && $m[3] !== "") {
-                $want = substr($m[3], 1);
-                $default = $qreq->conf()->opt("defaultScoreSort") ?? "C";
-                if ($want !== $default) {
-                    $qreq->set_csession("scoresort", $want);
-                } else {
-                    $qreq->unset_csession("scoresort");
+                $ss = ScoreInfo::parse_score_sort(substr($m[3], 1));
+                if ($ss !== null) {
+                    self::parse_view($qreq, "pl", "sort:[score {$ss}]");
                 }
             } else if ($m[1] === "ulscoresort" && $m[2] === "" && $m[3] !== "") {
-                $want = substr($m[3], 1);
-                if ($want === "V" || $want === "D") {
+                $want = ScoreInfo::parse_score_sort(substr($m[3], 1));
+                if ($want === "variance" || $want === "maxmin") {
                     $qreq->set_csession("ulscoresort", $want);
-                } else if ($want === "A") {
+                } else if ($want === "average") {
                     $qreq->unset_csession("ulscoresort");
                 }
             } else if (($m[1] === "pldisplay" || $m[1] === "pfdisplay")
                        && $m[2] !== "") {
-                self::change_display($qreq, substr($m[1], 0, 2), [substr($m[2], 1) => $unfold]);
+                $view = ($unfold ? "show:" : "hide:") . substr($m[2], 1);
+                self::parse_view($qreq, substr($m[1], 0, 2), $view);
             } else if ($m[1] === "uldisplay"
                        && preg_match('/\A\.[-a-zA-Z0-9_:]+\z/', $m[2])) {
                 self::change_uldisplay($qreq, [substr($m[2], 1) => $unfold]);
@@ -92,16 +90,17 @@ class Session_API {
     }
 
     /** @param string $report
-     * @param array<string,bool> $settings */
-    static function change_display(Qrequest $qreq, $report, $settings) {
+     * @param string $view */
+    static function parse_view(Qrequest $qreq, $report, $view) {
         $search = new PaperSearch($qreq->user(), "NONE");
         $pl = new PaperList($report, $search, ["sort" => true]);
         $pl->apply_view_report_default(PaperList::VIEWORIGIN_REPORT);
         $pl->apply_view_session();
-        foreach ($settings as $k => $v) {
-            $pl->set_view($k, $v);
-        }
-        $vd = array_filter($pl->unparse_view(true), function ($x) { return !str_starts_with($x, "sort:"); });
+        $pl->parse_view($view);
+        $vd = array_filter($pl->unparse_view(true), function ($x) {
+            return !str_starts_with($x, "sort:")
+                || str_starts_with($x, "sort:score[");
+        });
         if (!empty($vd)) {
             $qreq->set_csession("{$report}display", join(" ", $vd));
         } else {

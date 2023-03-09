@@ -7964,23 +7964,48 @@ function same_ids(tbl, ids) {
     return tbl_ids.join(" ") === ids.join(" ");
 }
 
+function foldpl_active_sorter() {
+    var s = "";
+    $("#foldpl").children("thead").find("th[aria-sort]").each(function () {
+        s = this.getAttribute("data-pc");
+        if (this.ariaSort !== this.getAttribute("data-pc-sort"))
+            s += this.ariaSort === "ascending" ? " asc" : " desc";
+    });
+    return s;
+}
+
+function current_sort_location() {
+    var h = hoturl_set(window.location.href, "sort", foldpl_active_sorter()), e;
+    if ((e = document.getElementById("scoresort")))
+        h = hoturl_set(h, "scoresort", e.value);
+    if ((e = document.getElementById("showforce")))
+        h = hoturl_set(h, "forceShow", e.checked ? 1 : null);
+    return h;
+}
+
 function href_sorter(href, newval) {
-    var re = /^([^#]*[?&;]sort=)([^=&;#]*)(.*)$/,
-        m = re.exec(href);
     if (newval == null) {
+        var re = /^([^#]*[?&;]sort=)([^=&;#]*)(.*)$/,
+            m = re.exec(href);
         return m ? urldecode(m[2]) : null;
-    } else if (m) {
-        return m[1] + urlencode(newval) + m[3];
     } else {
-        return hoturl_add(href, "sort=" + urlencode(newval));
+        return hoturl_set(href, "sort", newval);
     }
 }
 
-function sorter_toggle_reverse(sorter, toggle) {
-    var xsorter = sorter.replace(/[ +]+(?:reverse|down)\b/, "");
-    if (toggle == null)
-        toggle = xsorter == sorter;
-    return xsorter + (toggle ? " down" : "");
+function sorter_analyze(sorter) {
+    var m = sorter.match(/^(.*)[ +]+(asc(?:ending|)|desc(?:ending|)|up|down|reverse|forward)\b(.*)$/), dir = null;
+    if (m) {
+        sorter = m[1] + m[3];
+        if (m[2] === "asc" || m[2] === "ascending" || m[2] === "up") {
+            dir = "ascending";
+        } else if (m[2] === "desc" || m[2] === "descending" || m[2] === "down") {
+            dir = "descending";
+        } else if (m[2] === "reverse") {
+            dir = "reverse";
+        }
+    }
+    return {s: sorter, d: dir};
 }
 
 function search_sort_success(tbl, data_href, data) {
@@ -7996,23 +8021,33 @@ function search_sort_success(tbl, data_href, data) {
         tbl.removeAttribute("data-groups");
     tbl.setAttribute("data-hotlist", data.hotlist || "");
     var want_sorter = data.fwd_sorter || href_sorter(data_href) || "id",
-        want_fwd_sorter = want_sorter && sorter_toggle_reverse(want_sorter, false);
-    var $sorters = $(tbl).children("thead").find("a.pl_sort");
-    $sorters.removeClass("pl_sorting_fwd pl_sorting_rev")
-        .each(function () {
-            var href = this.getAttribute("href"),
-                sorter = sorter_toggle_reverse(href_sorter(href), false);
-            if (sorter === want_fwd_sorter) {
-                var reversed = want_sorter !== want_fwd_sorter;
-                if (reversed)
-                    $(this).addClass("pl_sorting_rev");
-                else {
-                    $(this).addClass("pl_sorting_fwd");
-                    sorter = sorter_toggle_reverse(sorter, true);
-                }
+        sortanal = sorter_analyze(want_sorter);
+    $(tbl).children("thead").find("th.sortable").each(function () {
+        var defdir, a, href, pc = this.getAttribute("data-pc");
+        if (this.hasAttribute("aria-sort")) {
+            this.removeAttribute("aria-sort");
+            removeClass(this, "sort-ascending");
+            removeClass(this, "sort-descending");
+            a = this.querySelector("a.pl_sort");
+        }
+        if (this.getAttribute("data-pc") === sortanal.s) {
+            defdir = this.getAttribute("data-pc-sort");
+            if (sortanal.d === "reverse") {
+                sortanal.d = defdir === "ascending" ? "descending" : "ascending";
             }
-            this.setAttribute("href", href_sorter(href, sorter));
-        });
+            sortanal.d = sortanal.d || defdir;
+            this.setAttribute("aria-sort", sortanal.d);
+            addClass(this, "sort-" + sortanal.d);
+            a = a || this.querySelector("a.pl_sort");
+        }
+        if (a) {
+            var pcx = pc;
+            if (defdir && defdir === sortanal.d) {
+                pcx += sortanal.d === "ascending" ? " desc" : " asc";
+            }
+            a.setAttribute("href", href_sorter(a.getAttribute("href"), pcx));
+        }
+    });
     var form = tbl.closest("form");
     if (form) {
         var action;
@@ -8034,11 +8069,8 @@ $(document).on("collectState", function (evt, state) {
     var groups = tbl.getAttribute("data-groups");
     if (groups && (groups = parse_json(groups)) && groups.length)
         data.groups = groups;
-    if (!href_sorter(state.href)) {
-        var active_href = $(tbl).children("thead").find("a.pl_sorting_fwd").attr("href");
-        if (active_href && (active_href = href_sorter(active_href)))
-            data.fwd_sorter = sorter_toggle_reverse(active_href, false);
-    }
+    if (!href_sorter(state.href))
+        data.fwd_sorter = foldpl_active_sorter();
 });
 
 function search_sort_url(self, href) {
@@ -8047,6 +8079,9 @@ function search_sort_url(self, href) {
     if ((e = document.getElementById("showforce"))) {
         var v = e.type === "checkbox" ? (e.checked ? 1 : 0) : e.value;
         api = api.replace(/&forceShow=[^&#;]*/, "") + "&forceShow=" + v;
+    }
+    if ((e = document.getElementById("scoresort"))) {
+        api = api.replace(/&scoresort=[^&#;]*/, "") + "&scoresort=" + e.value;
     }
     if (!/[&?]q=/.test(api)) {
         api += "&q=";
@@ -8077,19 +8112,8 @@ function search_sort_click(evt) {
 }
 
 function search_scoresort_change() {
-    var scoresort = $(this).val(),
-        re = / (?:counts|average|median|variance|maxmin|my)\b/;
-    $.post(hoturl("=api/session"), {v: "scoresort=" + scoresort});
-    hotcrp.set_scoresort(scoresort);
-    $("#foldpl > thead").find("a.pl_sort").each(function () {
-        var href = this.getAttribute("href"), sorter = href_sorter(href);
-        if (re.test(sorter)) {
-            sorter = sorter.replace(re, " " + scoresort);
-            this.setAttribute("href", href_sorter(href, sorter));
-            if (/\bpl_sorting_(?:fwd|rev)/.test(this.className))
-                search_sort_url(this, href_sorter(href, sorter_toggle_reverse(sorter)));
-        }
-    });
+    $.post(hoturl("=api/session"), {v: "scoresort=" + this.value});
+    search_sort_url($("#foldpl"), current_sort_location());
     return false;
 }
 
@@ -8101,17 +8125,11 @@ function search_showforce_click() {
             href = href.replace(/^([^#]*?)(#.*|)$/, "$1&forceShow=1$2");
         return href;
     }
-    var xhref = apply_force(window.location.href);
-    $("#foldpl > thead").find("a.pl_sort").each(function () {
-        var href = apply_force(this.getAttribute("href"));
-        this.setAttribute("href", href);
-        if (/\bpl_sorting_(?:fwd|rev)/.test(this.className)
-            && !$(this).closest("th").hasClass("pl_id")) {
-            var sorter = href_sorter(href);
-            xhref = href_sorter(href, sorter_toggle_reverse(sorter));
-        }
+    $("#foldpl > thead").find("th.sortable").each(function () {
+        var a = this.querySelector("a.pl_sort");
+        a && a.setAttribute("href", apply_force(a.getAttribute("href")));
     });
-    search_sort_url($("#foldpl"), xhref);
+    search_sort_url($("#foldpl"), current_sort_location());
 }
 
 if ("pushState" in window.history) {
@@ -9123,14 +9141,21 @@ function add_column(f) {
         this.setAttribute("colspan", +this.getAttribute("colspan") + 1);
     });
     var classes = (f.className || 'pl_' + f.name) + ' fx' + f.foldnum,
-        classEnd = ' class="pl ' + classes + '"', h = f.title, stmpl;
-    if (f.sort_name && (stmpl = self.getAttribute("data-sort-url-template"))) {
-        stmpl = stmpl.replace(/\{sort\}/, urlencode(f.sort_name));
-        h = '<a class="pl_sort" rel="nofollow" href="' + escape_html(stmpl) + '">' + h + '</a>';
-    }
-    h = '<th class="pl plh ' + classes + '">' + h + '</th>';
+        stmpl = f.sort && self.getAttribute("data-sort-url-template");
     $j.find("thead > tr.pl_headrow:first-child").each(function () {
-        this.insertBefore($(h)[0], this.childNodes[index] || null);
+        var th = document.createElement("th"), x = th;
+        th.className = "pl plh ".concat(classes, f.sort ? " sortable" : "");
+        th.setAttribute("data-pc", f.sort_name || f.name);
+        if (f.sort && stmpl) {
+            th.setAttribute("data-pc-sort", f.sort);
+            x = document.createElement("a");
+            th.appendChild(x);
+            x.className = "pl_sort";
+            x.rel = "nofollow";
+            x.setAttribute("href", stmpl.replace(/\{sort\}/, urlencode(f.sort_name || f.name)));
+        }
+        x.innerHTML = f.title;
+        this.insertBefore(th, this.childNodes[index] || null);
     });
     var dclasses = "pl " + classes;
     $j.find("tr.pl").each(function () {
@@ -9300,16 +9325,6 @@ function initialize() {
     for (var i = 0; i !== fs.length; ++i)
         add_field(fs[i]);
 }
-
-hotcrp.set_scoresort = function (ss) {
-    self || initialize();
-    var re = / (?:counts|average|median|variance|minmax|my)$/;
-    for (var i = 0; i < field_order.length; ++i) {
-        var f = field_order[i];
-        if (f.sort_name)
-            f.sort_name = f.sort_name.replace(re, " " + ss);
-    }
-};
 
 hotcrp.update_tag_decoration = function ($title, html) {
     $title.find(".tagdecoration").remove();

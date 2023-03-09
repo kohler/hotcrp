@@ -59,7 +59,7 @@ class AssignReview_PaperColumn extends PaperColumn {
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        return $this->sortmap[$b->paperXid] - $this->sortmap[$a->paperXid];
+        return $this->sortmap[$a->paperXid] <=> $this->sortmap[$b->paperXid];
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->allow_administer($row);

@@ -64,9 +64,9 @@ class Conflict_PaperColumn extends PaperColumn {
         $act = $this->conflict_type($pl, $a);
         $bct = $this->conflict_type($pl, $b);
         if ($this->show_description) {
-            return $bct - $act;
+            return $act <=> $bct;
         } else {
-            return ($bct ? 1 : 0) - ($act ? 1 : 0);
+            return ($act ? 1 : 0) <=> ($bct ? 1 : 0);
         }
     }
     function header(PaperList $pl, $is_text) {

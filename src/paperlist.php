@@ -228,7 +228,7 @@ class PaperList implements XtContext {
     /** @var ?string */
     private $_sort_etag;
     /** @var ?string */
-    private $_default_score_sort;
+    private $_score_sort;
 
     // columns access
     public $qopts; // set by PaperColumn::prepare
@@ -294,13 +294,21 @@ class PaperList implements XtContext {
         $this->parse_view($this->_list_columns(), self::VIEWORIGIN_REPORT);
 
         $sortarg = $args["sort"] ?? false;
-        $this->_sortable = $sortarg !== false;
-        if ($this->_sortable) {
-            if ($sortarg === true) {
-                $sortarg = $qreq->sort ?? "";
+        if (($this->_sortable = $sortarg !== false)) {
+            // XXX `"sort" => true` imports sort information from qreq
+            if (is_string($sortarg)) {
+                $st = trim($sortarg);
+            } else if ($sortarg === true) {
+                $st = trim($qreq->sort ?? "");
+                if (isset($qreq->scoresort)
+                    && ($ss = ScoreInfo::parse_score_sort($qreq->scoresort))) {
+                    $this->parse_view("sort:[score {$ss}]");
+                }
+            } else {
+                $st = "";
             }
-            if (trim($sortarg) !== "") {
-                $this->parse_view("sort:[{$sortarg}]", null);
+            if ($st !== "") {
+                $this->parse_view("sort:[{$st}]");
             }
         }
 
@@ -452,8 +460,9 @@ class PaperList implements XtContext {
     ];
 
     static private $view_fake = [
-        "anonau" => 150, "aufull" => 150, "force" => 180,
-        "kanban" => -2, "rownum" => -1, "statistics" => -1, "all" => -4, "linkto" => -4
+        "anonau" => 150, "aufull" => 150, "force" => 180, "score" => 190,
+        "kanban" => -2, "rownum" => -1, "statistics" => -1,
+        "all" => -4, "linkto" => -4,
     ];
 
 
@@ -541,11 +550,27 @@ class PaperList implements XtContext {
 
 
     /** @param string $k
+     * @param ?int $origin
      * @param ?list<string> $decorations
      * @param int $sort_subset
      * @param ?int $pos1
      * @param ?int $pos2 */
-    private function _add_sorter($k, $decorations, $sort_subset, $pos1, $pos2) {
+    private function _add_sorter($k, $origin, $decorations,
+                                 $sort_subset, $pos1, $pos2) {
+        // `sort:score` is a special case.
+        if ($k === "score") {
+            $origin = $origin ?? self::VIEWORIGIN_EXPLICIT;
+            $flags = &$this->_viewf[$k];
+            $flags = $flags ?? 0;
+            if (($flags & self::VIEWORIGIN_MASK) <= $origin
+                && !empty($decorations)
+                && ($x = ScoreInfo::parse_score_sort($decorations[0])) !== null) {
+                $flags = ($flags & ~self::VIEWORIGIN_MASK) | $origin;
+                $this->_score_sort = $x;
+            }
+            return;
+        }
+
         assert($this->_sortcol_fixed < 2);
         // Do not use ensure_columns_by_name(), because decorations for sorters
         // might differ.
@@ -592,7 +617,8 @@ class PaperList implements XtContext {
             }
             if ($sve->sort_action()
                 && ($sve->nondefault_sort_action() || $this->_sortcol)) {
-                $this->_add_sorter($sve->keyword, $sve->decorations, -1, $sve->pos1, $sve->pos2);
+                $this->_add_sorter($sve->keyword, $origin, $sve->decorations,
+                                   -1, $sve->pos1, $sve->pos2);
             }
         }
     }
@@ -620,7 +646,6 @@ class PaperList implements XtContext {
             $s = $this->qreq->csession("{$this->_report_id}display");
             $this->parse_view($s, self::VIEWORIGIN_SESSION);
         }
-        $this->_default_score_sort = $this->qreq->csession("scoresort");
     }
 
     function apply_view_qreq() {
@@ -679,6 +704,11 @@ class PaperList implements XtContext {
         while (!empty($res) && $res[count($res) - 1] === "sort:id") {
             array_pop($res);
         }
+        if ($this->_score_sort
+            && (!$report_diff || $this->_score_sort !== self::default_score_sort($this->conf))) {
+            $res[] = PaperSearch::unparse_view("sort", "score", [$this->_score_sort]);
+        }
+
         return $res;
     }
 
@@ -700,7 +730,7 @@ class PaperList implements XtContext {
     function _sort_compare($a, $b) {
         foreach ($this->_sortcol as $s) {
             if (($x = $s->compare($a, $b, $this))) {
-                return ($x < 0) === $s->sort_reverse ? 1 : -1;
+                return ($x < 0) === $s->sort_descending ? 1 : -1;
             }
         }
         return $a->paperId <=> $b->paperId;
@@ -716,7 +746,7 @@ class PaperList implements XtContext {
         foreach ($this->_sortcol as $s) {
             if (($s->sort_subset === -1 || $s->sort_subset === $a->_sort_subset)
                 && ($x = $s->compare($a, $b, $this))) {
-                return ($x < 0) === $s->sort_reverse ? 1 : -1;
+                return ($x < 0) === $s->sort_descending ? 1 : -1;
             }
         }
         return $a->paperId <=> $b->paperId;
@@ -728,13 +758,13 @@ class PaperList implements XtContext {
         foreach (PaperSearch::view_generator($qe->view_anno()) as $sve) {
             if ($sve->sort_action()
                 && ($sve->nondefault_sort_action() || $this->_sortcol)) {
-                $this->_add_sorter($sve->keyword, $sve->decorations, $sort_subset, $sve->pos1, $sve->pos2);
+                $this->_add_sorter($sve->keyword, null, $sve->decorations, $sort_subset, $sve->pos1, $sve->pos2);
             }
         }
         if (count($this->_sortcol) === $nsortcol
             && ($dspc = $qe->default_sort_column(true, $this))
             && $dspc->prepare($this, PaperColumn::PREP_SORT)) {
-            assert(!!$dspc->sort);
+            assert($dspc->sort > 0);
             $dspc->sort_subset = $sort_subset;
             $this->_sortcol[] = $dspc;
         }
@@ -760,7 +790,7 @@ class PaperList implements XtContext {
             $this->_sort_etag = "";
             if ($this->_then_map === null
                 && $this->_sortcol[0] instanceof Tag_PaperColumn
-                && !$this->_sortcol[0]->sort_reverse) {
+                && !$this->_sortcol[0]->sort_descending) {
                 $this->_sort_etag = $this->_sortcol[0]->etag();
             }
             // done
@@ -777,9 +807,15 @@ class PaperList implements XtContext {
         return $this->_sort_etag;
     }
 
+    /** @param Conf $conf
+     * @return string */
+    static function default_score_sort($conf) {
+        return $conf->opt("defaultScoreSort") ?? "counts";
+    }
+
     /** @return string */
-    function default_score_sort() {
-        return $this->_default_score_sort ?? $this->conf->opt("defaultScoreSort") ?? "C";
+    function score_sort() {
+        return $this->_score_sort ?? self::default_score_sort($this->conf);
     }
 
     private function _sort(PaperInfoSet $rowset) {
@@ -907,8 +943,9 @@ class PaperList implements XtContext {
         $s0 = ($this->sorters())[0];
         if ($s0->sort_subset === -1
             && ($always || (string) $this->qreq->sort != "")
-            && ($s0->name !== "id" || $s0->sort_reverse)) {
-            return $s0->sort_name() . ($s0->sort_reverse ? " down" : "");
+            && ($s0->name !== "id" || $s0->sort_decoration())) {
+            $d = $s0->sort_decoration();
+            return $s0->sort_name() . ($d ? " {$d}" : "");
         } else {
             return "";
         }
@@ -1521,30 +1558,49 @@ class PaperList implements XtContext {
 
     /** @param PaperColumn $fdef
      * @return string */
-    private function _field_title($fdef) {
-        $t = $fdef->header($this, false);
-        if ($fdef->as_row
-            || !$fdef->sort
+    private function _field_th($fdef) {
+        $sort_name = $fdef->sort_name();
+        $sort_name_h = htmlspecialchars($sort_name);
+        // empty header
+        if (!$fdef->has_content
+            && ($this->_table_decor & self::DECOR_EVERYHEADER) === 0) {
+            $class = $fdef->fold ? " class=\"fx{$fdef->fold}\"" : "";
+            return "<th{$class} data-pc=\"{$sort_name_h}\"></th>";
+        }
+
+        // non-sortable header
+        $thclass = "pl plh {$fdef->className}" . ($fdef->fold ? " fx{$fdef->fold}" : "");
+        $title = $fdef->header($this, false);
+        if (!$fdef->sort
             || !$this->_sortable
             || !($sort_url = $this->search->url_site_relative_raw())) {
-            return $t;
+            return "<th class=\"{$thclass}\" data-pc=\"{$sort_name_h}\">{$title}</th>";
         }
 
-        $sort_name = $fdef->sort_name();
-        $sort_url = htmlspecialchars($this->siteurl() . $sort_url)
-            . (strpos($sort_url, "?") ? "&amp;" : "?") . "sort=" . urlencode($sort_name);
-
-        $sort_class = "pl_sort";
+        // sortable header
+        $thclass .= " sortable";
+        $sortattr = $fdef->default_sort_descending() ? "descending" : "ascending";
+        $aria_sort = "";
+        $aclass = "pl_sort";
         $s0 = ($this->sorters())[0];
         if ($s0->sort_subset === -1 && $sort_name === $s0->sort_name()) {
-            $sort_class = "pl_sort pl_sorting" . ($s0->sort_reverse ? "_rev" : "_fwd");
-            $sort_url .= $s0->sort_reverse ? "" : urlencode(" down");
+            $active_sort = $s0->sort_descending ? "descending" : "ascending";
+            $aria_sort = " aria-sort=\"{$active_sort}\"";
+            $thclass .= " sort-{$active_sort}";
         }
 
-        if ($this->user->overrides() & Contact::OVERRIDE_CONFLICT) {
+
+        $sort_url = htmlspecialchars($this->siteurl() . $sort_url)
+            . (strpos($sort_url, "?") ? "&amp;" : "?")
+            . "sort=" . urlencode($sort_name);
+        if ($aria_sort && $s0->sort_descending === $s0->default_sort_descending()) {
+            $sort_url .= $s0->sort_descending ? "+asc" : "+desc";
+        }
+        if (($this->user->overrides() & Contact::OVERRIDE_CONFLICT) !== 0) {
             $sort_url .= "&amp;forceShow=1";
         }
-        return '<a class="' . $sort_class . '" rel="nofollow" href="' . $sort_url . '">' . $t . '</a>';
+
+        return "<th class=\"{$thclass}\" data-pc=\"{$sort_name_h}\" data-pc-sort=\"{$sortattr}\"{$aria_sort}><a class=\"{$aclass}\" href=\"{$sort_url}\" rel=\"nofollow\">{$title}</a></th>";
     }
 
     private function _analyze_folds() {
@@ -1972,22 +2028,8 @@ class PaperList implements XtContext {
         if (($this->_table_decor & (self::DECOR_HEADER | self::DECOR_EVERYHEADER)) !== 0) {
             $ths = "";
             foreach ($this->_vcolumns as $fdef) {
-                if ($fdef->as_row) {
-                    continue;
-                }
-                if ($fdef->has_content
-                    || ($this->_table_decor & self::DECOR_EVERYHEADER) !== 0) {
-                    $ths .= "<th class=\"pl plh " . $fdef->className;
-                    if ($fdef->fold) {
-                        $ths .= " fx" . $fdef->fold;
-                    }
-                    $ths .= "\">" . $this->_field_title($fdef) . "</th>";
-                } else {
-                    $ths .= "<th";
-                    if ($fdef->fold) {
-                        $ths .= " class=\"fx{$fdef->fold}\"";
-                    }
-                    $ths .= "></th>";
+                if (!$fdef->as_row) {
+                    $ths .= $this->_field_th($fdef);
                 }
             }
 

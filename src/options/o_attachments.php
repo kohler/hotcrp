@@ -19,7 +19,7 @@ class Attachments_PaperOption extends PaperOption {
     }
 
     function value_compare($av, $bv) {
-        return ($av && $av->value_count() ? 1 : 0) - ($bv && $bv->value_count() ? 1 : 0);
+        return ($av && $av->value_count() ? 1 : 0) <=> ($bv && $bv->value_count() ? 1 : 0);
     }
     function value_dids(PaperValue $ov) {
         $j = null;

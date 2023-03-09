@@ -69,10 +69,9 @@ class Formula_PaperColumn extends PaperColumn {
         $as = $this->sortmap[$a->paperXid];
         $bs = $this->sortmap[$b->paperXid];
         if ($as === null || $bs === null) {
-            return $as === $bs ? 0 : ($as === null ? 1 : -1);
-        } else {
-            return $as == $bs ? 0 : ($as < $bs ? -1 : 1);
+            return ($as === null ? 1 : 0) <=> ($bs === null ? 1 : 0);
         }
+        return $as <=> $bs;
     }
     function analyze(PaperList $pl) {
         $formulaf = $this->formula_function;

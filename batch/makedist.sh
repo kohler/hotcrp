@@ -308,7 +308,6 @@ src/listactions/la_get_sub.php
 src/listactions/la_mail.php
 src/listactions/la_revpref.php
 src/listactions/la_tag.php
-src/listsorter.php
 src/logentry.php
 src/logentryfilter.php
 src/mailrecipients.php

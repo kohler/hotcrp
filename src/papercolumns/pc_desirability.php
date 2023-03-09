@@ -14,7 +14,7 @@ class Desirability_PaperColumn extends PaperColumn {
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        return $b->desirability() <=> $a->desirability();
+        return $a->desirability() <=> $b->desirability();
     }
     function content(PaperList $pl, PaperInfo $row) {
         return str_replace("-", "−" /* U+2122 */, (string) $row->desirability());

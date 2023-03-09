@@ -3145,12 +3145,19 @@ hr.g, hr.mg, hr.ug {
 	text-decoration: underline;
 	color: black;
 }
-.pl_sorting_fwd::after {
-	content: "\25bc";
+.sortable > a {
+	cursor: ns-resize;
+}
+.sort-ascending::after {
+	content: "⏷";
+	font-weight: normal;
+	padding-left: 0.125em;
 	font-size: 90%;
 }
-.pl_sorting_rev::after {
-	content: "\25b2";
+.sort-descending::after {
+	content: "⏶";
+	font-weight: normal;
+	padding-left: 0.125em;
 	font-size: 90%;
 }
 

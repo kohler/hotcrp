@@ -31,7 +31,7 @@
     },
     {
         "name": "topicscore", "title": "Topic score",
-        "sort": true, "completion": true, "className": "pl_topicscore", "function": "+TopicScore_PaperColumn",
+        "sort": "descending", "completion": true, "className": "pl_topicscore", "function": "+TopicScore_PaperColumn",
         "order": 400
     },
     {   "name": "topic_score", "alias": "topicscore"   },
@@ -41,12 +41,12 @@
     },
     {
         "name": "desirability", "title": "Desirability",
-        "sort": true, "completion": true, "function": "+Desirability_PaperColumn",
+        "sort": "descending", "completion": true, "function": "+Desirability_PaperColumn",
         "order": 410
     },
     {
         "name": "mypref",
-        "sort": true, "completion": true, "className": "pl_revpref", "function": "+Preference_PaperColumn",
+        "sort": "descending", "completion": true, "className": "pl_revpref", "function": "+Preference_PaperColumn",
         "order": 500
     },
     {   "name": "mypreference", "alias": "mypref"   },
@@ -56,7 +56,7 @@
     {   "name": "preference", "alias": "mypref"   },
     {
         "name": "editmypref",
-        "edit": true, "sort": true, "className": "pl_editrevpref", "function": "+Preference_PaperColumn",
+        "edit": true, "sort": "descending", "className": "pl_editrevpref", "function": "+Preference_PaperColumn",
         "order": 500
     },
     {   "name": "editpreference", "alias": "editmypref"   },
@@ -73,37 +73,37 @@
     },
     {
         "name": "revtype",
-        "sort": true, "completion": true, "className": "pl_revtype", "function": "+ReviewerType_PaperColumn",
+        "sort": "descending", "completion": true, "className": "pl_revtype", "function": "+ReviewerType_PaperColumn",
         "order": 820
     },
     {
         "name": "revstat",
-        "sort": true, "completion": true, "className": "pl_revstat",
+        "sort": "descending", "completion": true, "className": "pl_revstat",
         "function": "+ReviewStatus_PaperColumn", "allow_if": "reviewer",
         "order": 830
     },
     {
         "name": "assignment",
-        "sort": true, "completion": true, "function": "+AssignReview_PaperColumn",
+        "sort": "descending", "completion": true, "function": "+AssignReview_PaperColumn",
         "order": 840
     },
     {   "name": "assrev", "alias": "assignment", "deprecated": true   },
     {   "name": "assign", "alias": "assignment", "deprecated": true   },
     {
         "name": "conf",
-        "sort": true, "completion": false, "className": "plc", "function": "+Conflict_PaperColumn",
+        "sort": "descending", "completion": false, "className": "plc", "function": "+Conflict_PaperColumn",
         "order": 855, "is_pc": false
     },
     {   "name": "conflict", "alias": "conf"   },
     {
         "name": "editconf",
-        "className": "plc", "function": "+Conflict_PaperColumn",
+        "sort": "descending", "className": "plc", "function": "+Conflict_PaperColumn",
         "order": 855, "is_pc": true, "edit": true
     },
     {   "name": "editconflict", "alias": "editconf"   },
     {
         "name": "confdesc",
-        "sort": true, "completion": false, "className": "plc", "function": "+Conflict_PaperColumn",
+        "sort": "descending", "completion": false, "className": "plc", "function": "+Conflict_PaperColumn",
         "order": 856, "is_pc": false, "show_description": true
     },
     {   "name": "conflictdesc", "alias": "confdesc"   },
@@ -121,7 +121,7 @@
     },
     {
         "name": "timestamp", "title": "Timestamp",
-        "sort": true, "completion": true, "function": "+Timestamp_PaperColumn",
+        "sort": "descending", "completion": true, "function": "+Timestamp_PaperColumn",
         "order": 920
     },
     {
@@ -138,7 +138,7 @@
     {   "name": "words", "alias": "wordcount"   },
     {
         "match": ".*", "priority": -2100,
-        "sort": true, "completion": true,
+        "sort": "descending", "completion": true,
         "className": "pl_score",
         "function": "+Score_PaperColumn",
         "order": 1100,

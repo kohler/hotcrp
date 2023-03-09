@@ -40,10 +40,9 @@ class WordCount_PaperColumn extends PaperColumn {
         $ac = $this->sortmap[$a->paperXid];
         $bc = $this->sortmap[$b->paperXid];
         if ($ac === null || $bc === null) {
-            return $ac === $bc ? 0 : ($ac === null ? -1 : 1);
-        } else {
-            return $ac <=> $bc;
+            return ($ac === null ? 1 : 0) <=> ($bc === null ? 1 : 0);
         }
+        return $ac <=> $bc;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->can_view_pdf($row);

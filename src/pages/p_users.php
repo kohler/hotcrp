@@ -336,7 +336,7 @@ class Users_Page {
                 $sv[] = "uldisplay.{$f->short_id}=" . ($this->qreq["show{$f->short_id}"] ? 0 : 1);
         }
         if (isset($this->qreq->scoresort)) {
-            $sv[] = "ulscoresort=" . ListSorter::canonical_short_score_sort($this->qreq->scoresort);
+            $sv[] = "ulscoresort=" . ScoreInfo::parse_score_sort($this->qreq->scoresort);
         }
         Session_API::change_session($this->qreq, join(" ", $sv));
         $this->conf->redirect_self($this->qreq);
@@ -435,12 +435,12 @@ class Users_Page {
 
         if (!empty($viewable_fields)) {
             $ss = [];
-            foreach (ListSorter::score_sort_selector_options() as $k => $v) {
+            foreach (ScoreInfo::score_sort_selector_options() as $k => $v) {
                 if (in_array($k, ["average", "variance", "maxmin"]))
                     $ss[$k] = $v;
             }
             echo '<tr><td colspan="3"><hr class="g"><b>Sort scores by:</b> &nbsp;',
-                Ht::select("scoresort", $ss, ListSorter::canonical_long_score_sort($this->qreq->csession("ulscoresort") ?? "A")),
+                Ht::select("scoresort", $ss, ScoreInfo::parse_score_sort($this->qreq->csession("ulscoresort") ?? "average")),
                 "</td></tr>";
         }
         echo "</table></form>";

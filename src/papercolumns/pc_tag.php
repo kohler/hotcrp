@@ -83,16 +83,16 @@ class Tag_PaperColumn extends PaperColumn {
         return true;
     }
     function completion_name() {
-        return "#$this->dtag";
+        return "#{$this->dtag}";
     }
     function sort_name() {
-        return "#$this->dtag";
+        return "#{$this->dtag}";
     }
     function prepare_sort(PaperList $pl, $sortindex) {
         $this->sortmap = [];
-        $unviewable = $empty = TAG_INDEXBOUND * ($this->sort_reverse ? -1 : 1);
+        $unviewable = $empty = TAG_INDEXBOUND * ($this->sort_descending ? -1 : 1);
         if ($this->editable) {
-            $empty = (TAG_INDEXBOUND - 1) * ($this->sort_reverse ? -1 : 1);
+            $empty = (TAG_INDEXBOUND - 1) * ($this->sort_descending ? -1 : 1);
         }
         foreach ($pl->rowset() as $row) {
             if (!$pl->user->can_view_tag($row, $this->etag)) {
