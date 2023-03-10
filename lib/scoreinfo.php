@@ -45,7 +45,7 @@ class ScoreInfo {
             return $x;
         } else if (($p = strpos(self::$score_sort_parser, " {$x} ")) !== false
                    && strpos($x, " ") === false) {
-            return self::$score_sorts[(int) $x[$p - 1]];
+            return self::$score_sort_parser[(int) $x[$p - 1]];
         } else {
             return null;
         }
