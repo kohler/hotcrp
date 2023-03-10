@@ -2,7 +2,7 @@
 // contactset.php -- HotCRP class for sets of users
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
-class ContactSet implements IteratorAggregate {
+class ContactSet implements IteratorAggregate, Countable {
     /** @var array<int,Contact> */
     private $by_uid = [];
 
@@ -40,6 +40,15 @@ class ContactSet implements IteratorAggregate {
     /** @return array<int,Contact> */
     function all() {
         return $this->by_uid;
+    }
+    /** @return int */
+    function size() {
+        return count($this->by_uid);
+    }
+    #[\ReturnTypeWillChange]
+    /** @return int */
+    function count() {
+        return count($this->by_uid);
     }
     /** @param callable(Contact,Contact):int $compare */
     function sort_by($compare) {

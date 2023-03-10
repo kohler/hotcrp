@@ -374,7 +374,7 @@ class MailSender {
         $fake_prep->fake = true;
         $last_prep = $fake_prep;
         $nrows_done = 0;
-        $nrows_total = $result->num_rows;
+        $nrows_total = count($recip_set);
         $nwarnings = 0;
         $has_decoration = false;
         $revinform = ($this->recipients === "newpcrev" ? [] : null);
