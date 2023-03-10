@@ -969,6 +969,11 @@ class Unit_Tester {
         xassert($s[3]->compare_by($s[2], "counts") > 0);
         xassert($s[3]->compare_by($s[3], "counts") == 0);
         xassert($s[3]->compare_by($s[4], "counts") > 0);
+
+        xassert_eqq(ScoreInfo::parse_score_sort("avg"), "average");
+        xassert_eqq(ScoreInfo::parse_score_sort("A"), "average");
+        xassert_eqq(ScoreInfo::parse_score_sort("myscore"), "my");
+        xassert_eqq(ScoreInfo::parse_score_sort("C"), "counts");
     }
 
     function test_qreq_make_url() {
