@@ -622,8 +622,9 @@ class Conf {
         }
 
         // remove final slash from $Opt["paperSite"]
+        $nav = Navigation::get();
         if (!isset($this->opt["paperSite"]) || $this->opt["paperSite"] === "") {
-            $this->opt["paperSite"] = Navigation::base_absolute();
+            $this->opt["paperSite"] = $nav->base_absolute();
         }
         if ($this->opt["paperSite"] == "" && isset($this->opt["defaultPaperSite"])) {
             $this->opt["paperSite"] = $this->opt["defaultPaperSite"];
@@ -633,7 +634,7 @@ class Conf {
         }
 
         // assert URLs (general assets, scripts, jQuery)
-        $this->opt["assetsUrl"] = $this->opt["assetsUrl"] ?? $this->opt["assetsURL"] ?? (string) Navigation::siteurl();
+        $this->opt["assetsUrl"] = $this->opt["assetsUrl"] ?? $this->opt["assetsURL"] ?? (string) $nav->siteurl();
         if ($this->opt["assetsUrl"] !== "" && !str_ends_with($this->opt["assetsUrl"], "/")) {
             $this->opt["assetsUrl"] .= "/";
         }
@@ -641,7 +642,7 @@ class Conf {
         if (!isset($this->opt["scriptAssetsUrl"])
             && isset($_SERVER["HTTP_USER_AGENT"])
             && strpos($_SERVER["HTTP_USER_AGENT"], "MSIE") !== false) {
-            $this->opt["scriptAssetsUrl"] = Navigation::siteurl();
+            $this->opt["scriptAssetsUrl"] = $nav->siteurl();
         }
         if (!isset($this->opt["scriptAssetsUrl"])) {
             $this->opt["scriptAssetsUrl"] = $this->opt["assetsUrl"];
@@ -3608,8 +3609,9 @@ class Conf {
 
 
     function set_siteurl($base) {
-        $old_siteurl = Navigation::siteurl();
-        $base = Navigation::set_siteurl($base);
+        $nav = Navigation::get();
+        $old_siteurl = $nav->siteurl();
+        $base = $nav->set_siteurl($base);
         if ($this->opt["assetsUrl"] === $old_siteurl) {
             $this->opt["assetsUrl"] = $base;
             Ht::$img_base = $this->opt["assetsUrl"] . "images/";
@@ -3895,7 +3897,7 @@ class Conf {
      * @return string */
     function site_referrer_url(Qrequest $qreq, $param = null, $flags = 0) {
         if (($r = $qreq->referrer()) && ($rf = parse_url($r))) {
-            $sup = Navigation::siteurl_path();
+            $sup = Navigation::get()->siteurl_path();
             $path = $rf["path"] ?? "";
             if ($path !== "" && str_starts_with($path, $sup)) {
                 $xqreq = new Qrequest("GET");
@@ -4395,7 +4397,7 @@ class Conf {
             } else {
                 $url = $this->opt["scriptAssetsUrl"] . $url . ($post ? "?$post" : "");
             }
-            if ($this->opt["scriptAssetsUrl"] === Navigation::siteurl()) {
+            if ($this->opt["scriptAssetsUrl"] === Navigation::get()->siteurl()) {
                 return Ht::script_file($url);
             }
         }
@@ -4464,7 +4466,7 @@ class Conf {
         $samesite = $this->opt("sessionSameSite") ?? "Lax";
         $opt = [
             "expires" => $expires_at,
-            "path" => Navigation::base_path(),
+            "path" => Navigation::get()->base_path,
             "domain" => $this->opt("sessionDomain") ?? "",
             "secure" => $secure
         ];
@@ -4922,7 +4924,7 @@ class Conf {
             $m = isset($this->opt["updatesSite"]) ? $this->opt["updatesSite"] : "//hotcrp.lcdf.org/updates";
             $m .= (strpos($m, "?") === false ? "?" : "&")
                 . "addr=" . urlencode($_SERVER["SERVER_ADDR"])
-                . "&base=" . urlencode(Navigation::siteurl())
+                . "&base=" . urlencode($qreq->navigation()->siteurl())
                 . "&version=" . HOTCRP_VERSION;
             $v = HOTCRP_VERSION;
             if (is_dir(SiteLoader::find(".git"))) {

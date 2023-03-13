@@ -984,7 +984,6 @@ class TestRunner {
 
     /** @param string $url */
     static function set_navigation_base($url) {
-        Navigation::analyze();
         $nav = Navigation::get();
         $urlp = parse_url($url);
         $nav->protocol = ($urlp["scheme"] ?? "http") . "://";

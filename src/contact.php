@@ -1597,7 +1597,7 @@ class Contact implements JsonSerializable {
             if ($qreq->valid_post()) {
                 // Preserve post values across session expiration.
                 $qreq->open_session();
-                $qreq->set_gsession("login_bounce", [$this->conf->session_key, $url, Navigation::page(), $_POST, Conf::$now + 120]);
+                $qreq->set_gsession("login_bounce", [$this->conf->session_key, $url, $qreq->page(), $_POST, Conf::$now + 120]);
                 $ml = [MessageItem::error("<0>You must sign in to access that page")];
                 $ml[] = MessageItem::inform("<0>Your changes were not saved. After signing in, you may try to submit them again");
                 $this->conf->feedback_msg($ml);

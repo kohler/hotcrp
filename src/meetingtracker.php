@@ -911,7 +911,7 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
         }
 
         // calculate status
-        $url = Navigation::base_absolute();
+        $url = Navigation::get()->base_absolute();
 
         // first drop notification json in trackerCometUpdateDirectory
         if ($comet_dir) {

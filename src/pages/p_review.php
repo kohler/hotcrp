@@ -303,7 +303,7 @@ class Review_Page {
             if (PaperRequest::simple_qreq($this->qreq)
                 && ($i = Contact::session_index_by_email($this->qreq, $u->email)) >= 0) {
                 $selfurl = $this->conf->selfurl($this->qreq, null, Conf::HOTURL_SITEREL | Conf::HOTURL_RAW);
-                $this->conf->redirect(Navigation::base_absolute() . "u/{$i}/{$selfurl}");
+                $this->conf->redirect(Navigation::get()->base_absolute() . "u/{$i}/{$selfurl}");
                 return;
             }
 
