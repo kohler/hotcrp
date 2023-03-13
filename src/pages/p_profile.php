@@ -331,7 +331,7 @@ class Profile_Page {
             $ms->splice_item($mpos++, MessageItem::success($this->conf->_("<5>Activated accounts with email notification %#s", $notified)));
         }
         if (!empty($nochanges)) {
-            $ms->splice_item($mpos++, new MessageItem(null, $this->conf->_("<5>No changes to accounts %#s", $nochanges), MessageSet::MARKED_NOTE));
+            $ms->splice_item($mpos++, new MessageItem(null, $this->conf->_("<5>No changes to accounts %#s", $nochanges), MessageSet::WARNING_NOTE));
         } else if (!$ms->has_message()) {
             $ms->splice_item($mpos++, new MessageItem(null, "<0>No changes", MessageSet::WARNING_NOTE));
         }
@@ -380,7 +380,7 @@ class Profile_Page {
             }
             if (empty($this->ustatus->diffs)) {
                 if (!$this->ustatus->has_message_at("email_confirm")) {
-                    $this->ustatus->splice_msg($pos++, "<0>No changes", MessageSet::MARKED_NOTE);
+                    $this->ustatus->splice_msg($pos++, "<0>No changes", MessageSet::WARNING_NOTE);
                 }
             } else if ($this->ustatus->notified) {
                 $this->ustatus->splice_msg($pos++, "<0>Changes saved{$diffs} and user notified", MessageSet::SUCCESS);
@@ -443,7 +443,7 @@ class Profile_Page {
                 $this->conf->redirect_self($this->qreq);
             }
         } else {
-            $this->conf->feedback_msg(new MessageItem(null, "<0>No changes", MessageSet::MARKED_NOTE));
+            $this->conf->feedback_msg(new MessageItem(null, "<0>No changes", MessageSet::WARNING_NOTE));
         }
     }
 

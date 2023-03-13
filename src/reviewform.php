@@ -1842,10 +1842,10 @@ class ReviewValues extends MessageSet {
                 if ($this->unchanged == $this->unchanged_draft) {
                     $single = $this->_single_approval_state();
                 }
-                $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>No changes to reviews {:list}", $this->unchanged, $single);
+                $this->_confirm_message(MessageSet::WARNING_NOTE, "<5>No changes to reviews {:list}", $this->unchanged, $single);
             }
             if ($this->blank) {
-                $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>Ignored blank reviews for {:list}", $this->blank);
+                $this->_confirm_message(MessageSet::WARNING_NOTE, "<5>Ignored blank reviews for {:list}", $this->blank);
             }
         }
         $this->finished = $confirm ? 2 : 1;

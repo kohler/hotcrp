@@ -23,7 +23,7 @@ class UserActions {
         $users = self::load_users($conf, "select * from ContactInfo where contactId?a and disabled=0 and contactId!=?", [$ids, $user->contactId]);
         $j = (object) ["ok" => true, "message_list" => []];
         if (empty($users)) {
-            $j->message_list[] = new MessageItem(null, "<0>No changes (those accounts were already disabled)", MessageSet::MARKED_NOTE);
+            $j->message_list[] = new MessageItem(null, "<0>No changes (those accounts were already disabled)", MessageSet::WARNING_NOTE);
         } else {
             $conf->qe("update ContactInfo set disabled=1 where contactId?a and disabled=0", array_keys($users));
             $conf->delay_logs();
@@ -41,7 +41,7 @@ class UserActions {
         $users = self::load_users($conf, "select * from ContactInfo where contactId?a and disabled=1", [$ids]);
         $j = (object) ["ok" => true, "message_list" => []];
         if (empty($users)) {
-            $j->message_list[] = new MessageItem(null, "<0>No changes (those accounts were already enabled)", MessageSet::MARKED_NOTE);
+            $j->message_list[] = new MessageItem(null, "<0>No changes (those accounts were already enabled)", MessageSet::WARNING_NOTE);
         } else {
             $conf->qe("update ContactInfo set disabled=0 where contactId?a", array_keys($users));
             $conf->delay_logs();

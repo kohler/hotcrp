@@ -22,7 +22,7 @@ class ReviewPrefs_Page {
             }
         }
         if ($csvg->is_empty()) {
-            $user->conf->feedback_msg([new MessageItem(null, "<0>No changes", MessageSet::MARKED_NOTE)]);
+            $user->conf->feedback_msg([new MessageItem(null, "<0>No changes", MessageSet::WARNING_NOTE)]);
             return;
         }
 

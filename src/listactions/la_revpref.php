@@ -110,7 +110,7 @@ class Revpref_ListAction extends ListAction {
             return $aset->json_result();
         } else if ($ok) {
             if ($aset->is_empty()) {
-                $aset->prepend_msg("<0>No changes", MessageSet::MARKED_NOTE);
+                $aset->prepend_msg("<0>No changes", MessageSet::WARNING_NOTE);
             } else {
                 $aset->prepend_msg("<0>Preference changes saved", MessageSet::SUCCESS);
             }
@@ -169,7 +169,7 @@ class Revpref_ListAction extends ListAction {
             if ($aset->has_error()) {
                 $aset->prepend_msg("<0>Changes not saved; please correct these errors and try again", 2);
             } else {
-                $aset->prepend_msg("<0>No changes", MessageSet::WARNING);
+                $aset->prepend_msg("<0>No changes", MessageSet::WARNING_NOTE);
             }
             $conf->feedback_msg($aset->message_list());
             return new Redirection($conf->site_referrer_url($qreq));

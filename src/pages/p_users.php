@@ -271,7 +271,7 @@ class Users_Page {
             $this->conf->feedback_msg($ms);
             return false;
         } else if (!count($t1)) {
-            $ms->warning_at(null, "No changes");
+            $ms->msg_at(null, "No changes", MessageSet::WARNING_NOTE);
             $this->conf->feedback_msg($ms);
             return false;
         }

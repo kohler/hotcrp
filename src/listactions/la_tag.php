@@ -106,7 +106,7 @@ class Tag_ListAction extends ListAction {
         if ($assignset->is_empty() && $assignset->has_message()) {
             $assignset->prepend_msg("<0>Changes not saved due to errors", 2);
         } else if ($assignset->is_empty()) {
-            $assignset->prepend_msg("<0>No changes", MessageSet::MARKED_NOTE);
+            $assignset->prepend_msg("<0>No changes", MessageSet::WARNING_NOTE);
         } else if ($assignset->has_message()) {
             $assignset->prepend_msg("<0>Some tag assignments ignored because of errors", MessageSet::MARKED_NOTE);
         } else {

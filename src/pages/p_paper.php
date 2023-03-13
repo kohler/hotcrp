@@ -262,7 +262,7 @@ class Paper_Page {
         $msgpos = 0;
         if (!$this->ps->has_change()) {
             if (!$this->ps->has_error()) {
-                $this->ps->splice_msg($msgpos++, $conf->_("<0>No changes"), MessageSet::MARKED_NOTE);
+                $this->ps->splice_msg($msgpos++, $conf->_("<0>No changes"), MessageSet::WARNING_NOTE);
             }
         } else if ($is_new) {
             $this->ps->splice_msg($msgpos++, $conf->_("<0>Registered submission as #%d", $new_prow->paperId), MessageSet::SUCCESS);
@@ -351,7 +351,7 @@ class Paper_Page {
         }
 
         if (!$this->ps->has_change()) {
-            $this->ps->prepend_msg($conf->_("<0>No changes", $this->prow->paperId), MessageSet::MARKED_NOTE);
+            $this->ps->prepend_msg($conf->_("<0>No changes", $this->prow->paperId), MessageSet::WARNING_NOTE);
             $this->ps->warning_at(null, "");
             $conf->feedback_msg($this->ps);
         } else if ($this->ps->execute_save()) {

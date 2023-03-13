@@ -73,7 +73,7 @@ class Settings_Page {
             if (!empty($this->sv->updated_fields())) {
                 $this->conf->success_msg("<0>Changes saved");
             } else {
-                $this->conf->feedback_msg(new MessageItem(null, "<0>No changes", MessageSet::MARKED_NOTE));
+                $this->conf->feedback_msg(new MessageItem(null, "<0>No changes", MessageSet::WARNING_NOTE));
             }
             $this->sv->report();
             $this->conf->redirect_self($qreq);
