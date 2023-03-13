@@ -105,7 +105,6 @@ class Review_SettingParser extends SettingParser {
 
 
     static function print(SettingValues $sv) {
-        echo '<hr class="form-sep">';
         $sv->print_checkbox("review_open", "<b>Enable reviewing</b>");
         $sv->print_checkbox("comment_allow_always", "Allow comments even if reviewing is closed");
 

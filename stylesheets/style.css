@@ -1628,6 +1628,9 @@ h3.form-h, h3.helppage, h4.helppage {
 	border-radius: 5px;
 	padding: 8px 15px 12px;
 }
+.msg + .form-section {
+	margin-top: 2.25em;
+}
 h3.helppage {
 	margin: 2em 0 1em;
 }
