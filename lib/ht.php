@@ -703,18 +703,14 @@ class Ht {
     /** @param string $msg
      * @param int $status */
     static function msg($msg, $status) {
-        if (is_int($status)) {
-            if ($status >= 2) {
-                $status = "error";
-            } else if ($status > 0) {
-                $status = "warning";
-            } else if ($status === -3) {
-                $status = "confirm";
-            } else {
-                $status = "info";
-            }
+        assert(is_int($status));
+        if ($status >= 2 || $status === -1 /* MessageSet::URGENT_NOTE */) {
+            $status = "error";
+        } else if ($status > 0 || $status === -2 /* MessageSet::WARNING_NOTE */) {
+            $status = "warning";
+        } else if ($status === -3 /* MessageSet::SUCCESS */) {
+            $status = "confirm";
         } else {
-            error_log("not a string " . var_export($status, true) . ": " . debug_string_backtrace());
             $status = "info";
         }
         $mx = "";

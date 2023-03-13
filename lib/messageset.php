@@ -498,14 +498,12 @@ class MessageSet {
         } else if ($status === self::WARNING_NOTE) {
             $sclass = "warning-note";
         } else {
-            $sclass = "";
-        }
-        if ($sclass !== "" && $rest !== "") {
-            return "$rest $prefix$sclass";
-        } else if ($sclass !== "") {
-            return "$prefix$sclass";
-        } else {
             return $rest;
+        }
+        if ($rest !== "") {
+            return "{$rest} {$prefix}{$sclass}";
+        } else {
+            return "{$prefix}{$sclass}";
         }
     }
     /** @param ?string|false $field
@@ -668,15 +666,18 @@ class MessageSet {
     /** @param iterable<MessageItem> $message_list
      * @return int */
     static function list_status($message_list) {
-        $status = 0;
+        $status = null;
         foreach ($message_list as $mi) {
-            if ($mi->status === self::SUCCESS && $status === 0) {
-                $status = self::SUCCESS;
-            } else if ($mi->status > 0 && $mi->status > $status) {
+            if ($mi->status === self::INFORM || $mi->status === self::PLAIN) {
+                continue;
+            }
+            if ($status === null
+                || ($status <= 0 && $mi->status === self::SUCCESS)
+                || ($mi->status > 0 && $mi->status > $status)) {
                 $status = $mi->status;
             }
         }
-        return $status;
+        return $status ?? 0;
     }
 
 
