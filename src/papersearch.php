@@ -316,6 +316,8 @@ class PaperSearch extends MessageSet {
     private $_match_preg_query;
     /** @var ?list<ContactSearch> */
     private $_contact_searches;
+    /** @var ?list<array{SearchWord,string}> */
+    private $_saved_search_stack;
     /** @var list<int> */
     private $_matches;
     /** @var ?array<int,int> */
@@ -339,8 +341,6 @@ class PaperSearch extends MessageSet {
         "undecided" => "Undecided",
         "viewable" => "Submissions you can view"
     ];
-
-    static private $ss_recursion = 0;
 
 
     // NB: `$options` can come from an unsanitized user request.
@@ -509,10 +509,17 @@ class PaperSearch extends MessageSet {
      * @param string $message
      * @return MessageItem */
     function lwarning($sw, $message) {
-        $mi = $this->warning($message);
+        $mi = $mix = $this->warning($message);
         $mi->pos1 = $sw->pos1;
         $mi->pos2 = $sw->pos2;
-        $mi->context = $this->q;
+        for ($i = count($this->_saved_search_stack ?? []); $i > 0; --$i) {
+            list($swx, $textx) = $this->_saved_search_stack[$i - 1];
+            $mix->context = $textx;
+            $mix = $this->inform_at(null, "<0>…while evaluating saved search");
+            $mix->pos1 = $swx->pos1;
+            $mix->pos2 = $swx->pos2;
+        }
+        $mix->context = $this->q;
         return $mi;
     }
 
@@ -636,7 +643,7 @@ class PaperSearch extends MessageSet {
         if ($sj && is_object($sj) && isset($sj->q)) {
             $q = $sj->q;
             if (isset($sj->t) && $sj->t !== "" && $sj->t !== "s") {
-                $q = "($q) in:{$sj->t}";
+                $q = "({$q}) in:{$sj->t}";
             }
             return $q;
         } else {
@@ -651,19 +658,19 @@ class PaperSearch extends MessageSet {
             return null;
         }
         $qe = null;
-        ++self::$ss_recursion;
-        if (!$srch->conf->setting_data("ss:$word")) {
+        if (!$srch->conf->setting_data("ss:{$word}")) {
             $srch->lwarning($sword, "<0>Saved search not found");
-        } else if (self::$ss_recursion > 10) {
-            $srch->lwarning($sword, "<0>Saved search defined in terms of itself");
-        } else if (($nextq = $srch->_expand_saved_search($word))) {
+        } else if (!($nextq = $srch->_expand_saved_search($word))) {
+            $srch->lwarning($sword, "<0>Saved search defined incorrectly");
+        } else if (count($srch->_saved_search_stack ?? []) >= 10) {
+            $srch->lwarning($sword, "<0>Saved search definition depends on itself");
+        } else {
+            $srch->_saved_search_stack[] = [$sword, $nextq];
             if (($qe = $srch->_search_expression($nextq))) {
                 $qe->set_strspan_owner($nextq);
             }
-        } else {
-            $srch->lwarning($sword, "<0>Saved search defined incorrectly");
+            array_pop($srch->_saved_search_stack);
         }
-        --self::$ss_recursion;
         return $qe ?? new False_SearchTerm;
     }
 
