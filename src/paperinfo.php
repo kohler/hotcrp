@@ -369,9 +369,6 @@ class PaperInfoSet implements IteratorAggregate, Countable {
         if ($ms === null) {
             $ms = [];
             foreach (Contact::make_collaborator_generator($cflt->collaborators ?? "") as $m) {
-                $m->paperId = $cflt->paperId;
-                $m->contactId = $cflt->contactId;
-                $m->author_index = $cflt->author_index;
                 $ms[] = $m;
             }
             $this->collaborator_matchers_by_uid[$cflt->contactId] = $ms;
@@ -1181,8 +1178,14 @@ class PaperInfo {
         yield from $this->_collaborator_array;
         foreach ($this->conflicts(true) as $cflt) {
             if ($cflt->conflictType >= CONFLICT_AUTHOR
-                && ($cflt->collaborators ?? "") !== null) {
-                yield from $this->_row_set->collaborator_matchers($cflt);
+                && ($cflt->collaborators ?? "") !== "") {
+                foreach ($this->_row_set->collaborator_matchers($cflt) as $m) {
+                    $m->paperId = $this->paperId;
+                    $m->contactId = $cflt->contactId;
+                    $m->nonauthor = true;
+                    $m->author_index = $cflt->author_index;
+                    yield $m;
+                }
             }
         }
     }
@@ -1216,13 +1219,6 @@ class PaperInfo {
                         return true;
                     }
                     ++$nproblems;
-                    if ($co->paperId !== $this->paperId) {
-                        $co->paperId = $this->paperId;
-                        if ($co->contactId > 0) {
-                            $cox = $this->conflict_by_id($co->contactId, true);
-                            $co->author_index = $cox->author_index;
-                        }
-                    }
                     call_user_func($callback, $user, $userm, $co, $why);
                 }
             }
