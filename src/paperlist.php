@@ -2115,7 +2115,7 @@ class PaperList implements XtContext {
                 "</table>";
         } else {
             if (strpos($this->_table_class, 'remargin') !== false) {
-                echo '<div class="msg demargined remargin-left remargin-right"><div class="mx-auto">',
+                echo '<div class="msg in-demargin remargin-left remargin-right"><div class="mx-auto">',
                     '<ul class="inline"><li>', $render->error, '</li></ul>',
                     '</div></div>';
             } else {

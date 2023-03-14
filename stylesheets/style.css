@@ -870,13 +870,14 @@ body.paper-error .msg {
 	background: padding-box linear-gradient(#ffeeee, #ffeeee),
 		border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiI+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YwMCIgLz48cG9seWxpbmUgcG9pbnRzPSItNiwxMiw2LDAsMTIsMCwwLDEyIiBmaWxsPSIjNDAwIiAvPjxwb2x5bGluZSBwb2ludHM9IjYsMTIsMTIsNiwxOCw2LDEyLDEyIiBmaWxsPSIjNDAwIiAvPjwvc3ZnPg==) repeat;
 }
-.msg.demargin, .msg.demargined {
+.msg.demargin, .msg.in-demargin {
 	border-left-width: 0;
 	border-right-width: 0;
 	border-radius: 0;
-	max-width: initial;
 	margin-top: 1rem;
 	margin-bottom: 1.5rem;
+	max-width: initial;
+	width: auto;
 }
 .msgs-small-inline {
 	margin: 0.25rem 0 0;
