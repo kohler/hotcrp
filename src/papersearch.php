@@ -510,14 +510,16 @@ class PaperSearch extends MessageSet {
      * @return MessageItem */
     function lwarning($sw, $message) {
         $mi = $mix = $this->warning($message);
-        $mi->pos1 = $sw->pos1;
-        $mi->pos2 = $sw->pos2;
-        for ($i = count($this->_saved_search_stack ?? []); $i > 0; --$i) {
-            list($swx, $textx) = $this->_saved_search_stack[$i - 1];
-            $mix->context = $textx;
-            $mix = $this->inform_at(null, "<0>…while evaluating saved search");
-            $mix->pos1 = $swx->pos1;
-            $mix->pos2 = $swx->pos2;
+        $mix->pos1 = $sw->pos1;
+        $mix->pos2 = $sw->pos2;
+        if (!empty($this->_saved_search_stack)) {
+            for ($i = count($this->_saved_search_stack); $i > 0; --$i) {
+                list($swx, $textx) = $this->_saved_search_stack[$i - 1];
+                $mix->context = $textx;
+                $mix = $this->inform_at(null, "<0>…while evaluating saved search");
+                $mix->pos1 = $swx->pos1;
+                $mix->pos2 = $swx->pos2;
+            }
         }
         $mix->context = $this->q;
         return $mi;

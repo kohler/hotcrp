@@ -1180,6 +1180,7 @@ class PaperInfo {
             if ($cflt->conflictType >= CONFLICT_AUTHOR
                 && ($cflt->collaborators ?? "") !== "") {
                 foreach ($this->_row_set->collaborator_matchers($cflt) as $m) {
+                    $m = clone $m;
                     $m->paperId = $this->paperId;
                     $m->contactId = $cflt->contactId;
                     $m->nonauthor = true;

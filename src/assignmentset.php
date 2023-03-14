@@ -1166,7 +1166,7 @@ class AssignmentSet {
             }
             $this->conf->feedback_msg($this->astate->message_list());
         } else if (empty($this->assigners)) {
-            $this->conf->feedback_msg([new MessageItem(null, "<0>No changes", MessageItem::WARNING_NOTE)]);
+            $this->conf->feedback_msg([new MessageItem(null, "<0>No changes", MessageSet::WARNING_NOTE)]);
         }
     }
     /** @return JsonResult */
