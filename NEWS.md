@@ -1,6 +1,45 @@
 HotCRP NEWS
 ===========
 
+## Version 3.0xx
+
+* Upgrade notes
+
+    * PHP 8.2 and 8.3 are supported, PHP 7.0 is not.
+
+* Batch scripts
+
+    * `php batch/backupdb.php` backs up the database (not `lib/backupdb.sh`).
+    * `php batch/autoassign.php` runs the autoassigner.
+
+* Submissions
+
+    * Add support for multiple submission classes! Different deadlines for
+      different kinds of submission.
+
+* Reviews
+
+    * Add more review field types: dropdowns, checkboxes, and multiple
+      checkboxes.
+    * Accepting or declining a review does not use magic links, since Outlook
+      and other systems may “click” those links automatically.
+    * Fix longstanding bug with accepting a review with clickthrough terms.
+      (Infinite recursion.)
+
+* Search
+
+    * Deprecated shorthand score searches `ovemer:X...Y`, `ovemer:X-Y`.
+      Instead be explicit: `ovemer:all:X-Y` and `ovemer:span:X-Y`.
+
+* Navigation: Support deployment within Apache, proxied or not.
+
+* Support decision variants: “Desk-reject” decisions are immediately visible
+  to authors, regardless of other settings. There is also support for “other”
+  decisions, which are neither acceptish nor rejectish.
+
+* More internal improvements; for example, the autoassigner is extensible.
+
+
 ## Version 3.0b3 – 30.Aug.2022
 
 * Fix bugs in v3.0b2.
