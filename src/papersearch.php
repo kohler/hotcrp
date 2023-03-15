@@ -9,13 +9,16 @@ class SearchOperator {
     public $unary;
     /** @var int */
     public $precedence;
+    /** @var ?string */
     public $opinfo;
 
+    /** @var ?array<string,SearchOperator> */
     static private $list = null;
 
     /** @param string $op
      * @param bool $unary
-     * @param int $precedence */
+     * @param int $precedence
+     * @param ?string $opinfo */
     function __construct($op, $unary, $precedence, $opinfo = null) {
         $this->op = $op;
         $this->unary = $unary;
@@ -26,7 +29,7 @@ class SearchOperator {
     /** @return string */
     function unparse() {
         $x = strtoupper($this->op);
-        return $this->opinfo === null ? $x : $x . ":" . $this->opinfo;
+        return $this->opinfo === null ? $x : "{$x}:{$this->opinfo}";
     }
 
     /** @return ?SearchOperator */

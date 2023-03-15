@@ -2264,12 +2264,13 @@ class Conf {
 
     // database users
 
-    /** @return string */
-    private function _cached_user_query() {
-        if ($this->_slice === Contact::SLICE_MINIMAL) {
+    /** @param int $slice
+     * @return string */
+    static function user_query_fields($slice) {
+        if ($slice === Contact::SLICE_MINIMAL) {
             // see also MailRecipients
             return "contactId, firstName, lastName, affiliation, email, roles, contactTags, disabled, primaryContactId, " . Contact::SLICE_MINIMAL . " _slice";
-        } else if ($this->_slice === (Contact::SLICE_MINIMAL & ~Contact::SLICE_NO_COLLABORATORS)) {
+        } else if ($slice === (Contact::SLICE_MINIMAL & ~Contact::SLICE_NO_COLLABORATORS)) {
             return "contactId, firstName, lastName, affiliation, email, roles, contactTags, disabled, primaryContactId, collaborators, " . (Contact::SLICE_MINIMAL & ~Contact::SLICE_NO_COLLABORATORS) . " _slice";
         } else {
             return "*, 0 _slice";
@@ -2391,7 +2392,7 @@ class Conf {
             }
         }
         $this->_user_cache_missing = null;
-        foreach ($this->_fresh_user_list($this->_cached_user_query(), $reqids, $reqemails) as $u) {
+        foreach ($this->_fresh_user_list(self::user_query_fields($this->_slice), $reqids, $reqemails) as $u) {
             $this->_user_cache[$u->contactId] = $u;
             if ($this->_user_email_cache !== null) {
                 $this->_user_email_cache[strtolower($u->email)] = $u;
@@ -2590,7 +2591,7 @@ class Conf {
             return $this->_pc_set;
         }
 
-        $result = $this->qe("select " . $this->_cached_user_query() . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
+        $result = $this->qe("select " . self::user_query_fields($this->_slice) . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
         $this->_pc_set = ContactSet::make_result($result, $this);
 
         // analyze set for ambiguous names, disablement

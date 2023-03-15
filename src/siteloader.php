@@ -27,7 +27,6 @@ class SiteLoader {
         "MessageItem" => "lib/messageset.php",
         "PaperInfoSet" => "src/paperinfo.php",
         "PaperOptionList" => "src/paperoption.php",
-        "PaperValue" => "src/paperoption.php",
         "QrequestFile" => "lib/qrequest.php",
         "ReviewFieldInfo" => "src/reviewfield.php",
         "ReviewSearchMatcher" => "src/search/st_review.php",

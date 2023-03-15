@@ -398,14 +398,17 @@ src/papersearch.php
 src/paperstatus.php
 src/papertable.php
 src/paperrank.php
+src/papervalue.php
 src/permissionproblem.php
 src/quicklinksrenderer.php
 src/responseround.php
 src/reviewdiffinfo.php
 src/reviewfield.php
 src/reviewfields/rf_checkbox.php
+src/reviewfields/rf_checkboxes.php
 src/reviewfields/rf_discrete.php
 src/reviewfields/rf_text.php
+src/reviewfieldsearch.php
 src/reviewform.php
 src/reviewhistoryinfo.php
 src/reviewinfo.php
