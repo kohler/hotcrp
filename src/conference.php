@@ -76,11 +76,18 @@ class Conf {
 
     /** @var bool */
     public $_header_printed = false;
+    /** @var ?SessionHandler */
     public $_session_handler;
     /** @var ?list<array{string,int}> */
     private $_save_msgs;
     /** @var ?array<string,array<int,true>> */
     private $_save_logs;
+    /** @var string */
+    private $_assets_url;
+    /** @var ?string */
+    private $_script_assets_url;
+    /** @var bool */
+    private $_script_assets_site;
 
     /** @var ?Collator */
     private $_collator;
@@ -634,19 +641,14 @@ class Conf {
         }
 
         // assert URLs (general assets, scripts, jQuery)
-        $this->opt["assetsUrl"] = $this->opt["assetsUrl"] ?? $this->opt["assetsURL"] ?? (string) $nav->siteurl();
-        if ($this->opt["assetsUrl"] !== "" && !str_ends_with($this->opt["assetsUrl"], "/")) {
-            $this->opt["assetsUrl"] .= "/";
+        $siteurl = (string) $nav->siteurl();
+        $this->_assets_url = $this->opt["assetsUrl"] ?? $this->opt["assetsURL"] ?? $siteurl;
+        if ($this->_assets_url !== "" && !str_ends_with($this->_assets_url, "/")) {
+            $this->_assets_url .= "/";
         }
-
-        if (!isset($this->opt["scriptAssetsUrl"])
-            && isset($_SERVER["HTTP_USER_AGENT"])
-            && strpos($_SERVER["HTTP_USER_AGENT"], "MSIE") !== false) {
-            $this->opt["scriptAssetsUrl"] = $nav->siteurl();
-        }
-        if (!isset($this->opt["scriptAssetsUrl"])) {
-            $this->opt["scriptAssetsUrl"] = $this->opt["assetsUrl"];
-        }
+        $this->_script_assets_url = $this->opt["scriptAssetsUrl"]
+            ?? (strpos($_SERVER["HTTP_USER_AGENT"] ?? "", "MSIE") === false ? $this->_assets_url : $siteurl);
+        $this->_script_assets_site = $this->_script_assets_url === $siteurl;
 
         // check passwordHashMethod
         if (isset($this->opt["passwordHashMethod"])
@@ -722,7 +724,7 @@ class Conf {
     }
 
     function refresh_globals() {
-        Ht::$img_base = $this->opt["assetsUrl"] . "images/";
+        Ht::$img_base = $this->_assets_url . "images/";
 
         if (isset($this->opt["timezone"])) {
             if (!date_default_timezone_set($this->opt["timezone"])) {
@@ -3613,12 +3615,12 @@ class Conf {
         $nav = Navigation::get();
         $old_siteurl = $nav->siteurl();
         $base = $nav->set_siteurl($base);
-        if ($this->opt["assetsUrl"] === $old_siteurl) {
-            $this->opt["assetsUrl"] = $base;
-            Ht::$img_base = $this->opt["assetsUrl"] . "images/";
+        if ($this->_assets_url === $old_siteurl) {
+            $this->_assets_url = $base;
+            Ht::$img_base = "{$base}images/";
         }
-        if ($this->opt["scriptAssetsUrl"] === $old_siteurl) {
-            $this->opt["scriptAssetsUrl"] = $base;
+        if ($this->_script_assets_site) {
+            $this->_script_assets_url = $base;
         }
     }
 
@@ -4376,9 +4378,9 @@ class Conf {
                 || (strtolower(substr($url, 0, 5)) !== "http:"
                     && strtolower(substr($url, 0, 6)) !== "https:"))) {
             if (($mtime = @filemtime(SiteLoader::find($url))) !== false) {
-                $url .= "?mtime=$mtime";
+                $url .= "?mtime={$mtime}";
             }
-            $x["href"] = $this->opt["assetsUrl"] . $url;
+            $x["href"] = $this->_assets_url . $url;
         }
         return "<link" . Ht::extra($x) . ">";
     }
@@ -4389,16 +4391,16 @@ class Conf {
         if (str_starts_with($url, "scripts/")) {
             $post = "";
             if (($mtime = @filemtime(SiteLoader::find($url))) !== false) {
-                $post = "mtime=$mtime";
+                $post = "mtime={$mtime}";
             }
             if (($this->opt["strictJavascript"] ?? false) && !$no_strict) {
-                $url = $this->opt["scriptAssetsUrl"] . "cacheable.php/"
+                $url = $this->_script_assets_url . "cacheable.php/"
                     . str_replace("%2F", "/", urlencode($url))
-                    . "?strictjs=1" . ($post ? "&$post" : "");
+                    . "?strictjs=1" . ($post ? "&{$post}" : "");
             } else {
-                $url = $this->opt["scriptAssetsUrl"] . $url . ($post ? "?$post" : "");
+                $url = $this->_script_assets_url . $url . ($post ? "?{$post}" : "");
             }
-            if ($this->opt["scriptAssetsUrl"] === Navigation::get()->siteurl()) {
+            if ($this->_script_assets_site) {
                 return Ht::script_file($url, ["integrity" => $integrity]);
             }
         }
@@ -4536,8 +4538,8 @@ class Conf {
         $favicon = $this->opt("favicon") ?? "images/review48.png";
         if ($favicon) {
             if (strpos($favicon, "://") === false && $favicon[0] != "/") {
-                if ($this->opt["assetsUrl"] && substr($favicon, 0, 7) === "images/") {
-                    $favicon = $this->opt["assetsUrl"] . $favicon;
+                if (substr($favicon, 0, 7) === "images/") {
+                    $favicon = $this->_assets_url . $favicon;
                 } else {
                     $favicon = $qreq->navigation()->siteurl() . $favicon;
                 }
@@ -4593,7 +4595,7 @@ class Conf {
             "site_relative" => $nav->site_path_relative,
             "base" => $nav->base_path,
             "suffix" => $nav->php_suffix,
-            "assets" => $this->opt["assetsUrl"],
+            "assets" => $this->_assets_url,
             "cookie_params" => "",
             "postvalue" => $qreq->post_value(true),
         ];
