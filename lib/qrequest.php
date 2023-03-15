@@ -514,6 +514,27 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
 
 
+    /** @param string $name
+     * @param string $value
+     * @param int $expires_at */
+    function set_cookie($name, $value, $expires_at) {
+        $secure = $this->_conf->opt("sessionSecure") ?? false;
+        $samesite = $this->_conf->opt("sessionSameSite") ?? "Lax";
+        $opt = [
+            "expires" => $expires_at,
+            "path" => $this->_navigation->base_path,
+            "domain" => $this->_conf->opt("sessionDomain") ?? "",
+            "secure" => $secure
+        ];
+        if ($samesite && ($secure || $samesite !== "None")) {
+            $opt["samesite"] = $samesite;
+        }
+        if (!hotcrp_setcookie($name, $value, $opt)) {
+            error_log(debug_string_backtrace());
+        }
+    }
+
+
     /** @param string|list<string> $title
      * @param string $id
      * @param array{paperId?:int|string,body_class?:string,action_bar?:string,title_div?:string,subtitle?:string,save_messages?:bool} $extra */

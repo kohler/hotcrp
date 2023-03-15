@@ -126,7 +126,7 @@ class PaperRequest {
                 if (count($ps) === 1) {
                     // DISABLED: check if the paper is in the current list
                     $list = $search->session_list_object();
-                    $list->set_cookie($user);
+                    $list->set_cookie($qreq);
                     throw new Redirection($conf->selfurl($qreq, ["q" => null, "p" => $ps[0]]));
                 } else {
                     throw new Redirection($conf->hoturl("search", ["q" => $q, "t" => $qreq->t]));

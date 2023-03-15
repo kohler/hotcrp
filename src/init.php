@@ -197,11 +197,12 @@ function initialize_conf($config_file = null, $confid = null) {
 }
 
 
-/** @param NavigationState $nav
+/** @param Qrequest $qreq
  * @param int $uindex
  * @param int $nusers
  * @param bool $cookie */
-function initialize_user_redirect($nav, $uindex, $nusers, $cookie) {
+function initialize_user_redirect($qreq, $uindex, $nusers, $cookie) {
+    $nav = $qreq->navigation();
     if ($nav->page === "api") {
         if ($nusers === 0) {
             $jr = JsonResult::make_error(401, "<0>You have been signed out");
@@ -209,7 +210,7 @@ function initialize_user_redirect($nav, $uindex, $nusers, $cookie) {
             $jr = JsonResult::make_error(400, "<0>Bad user specification");
         }
         $jr->complete();
-    } else if ($_SERVER["REQUEST_METHOD"] === "GET" || $_SERVER["REQUEST_METHOD"] === "HEAD") {
+    } else if ($qreq->is_get() || $qreq->is_head()) {
         $page = $nav->base_absolute();
         if ($nusers > 0) {
             $page = "{$page}u/$uindex/";
@@ -219,7 +220,7 @@ function initialize_user_redirect($nav, $uindex, $nusers, $cookie) {
         }
         $page .= $nav->query;
         if ($cookie) {
-            Conf::$main->set_cookie("hc-uredirect-" . Conf::$now, $page, Conf::$now + 20);
+            $qreq->set_cookie("hc-uredirect-" . Conf::$now, $page, Conf::$now + 20);
         }
         Navigation::redirect_absolute($page);
     } else {
@@ -345,7 +346,7 @@ function initialize_request($kwarg = null) {
             if (str_starts_with($nav->query, "&")) {
                 $nav->query = "?" . substr($nav->query, 1);
             }
-            initialize_user_redirect($nav, $uindex, count($userset), !isset($_GET["i"]));
+            initialize_user_redirect($qreq, $uindex, count($userset), !isset($_GET["i"]));
         }
     } else if (str_starts_with($nav->shifted_path, "u/")) {
         $uindex = $usercount === 0 ? -1 : (int) substr($nav->shifted_path, 2);
@@ -353,7 +354,7 @@ function initialize_request($kwarg = null) {
     if ($uindex >= 0 && $uindex < $usercount) {
         $trueemail = $userset[$uindex];
     } else if ($uindex !== 0) {
-        initialize_user_redirect($nav, 0, $usercount, false);
+        initialize_user_redirect($qreq, 0, $usercount, false);
     }
 
     if (isset($_GET["i"])

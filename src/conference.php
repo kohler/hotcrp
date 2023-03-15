@@ -3900,7 +3900,7 @@ class Conf {
      * @return string */
     function site_referrer_url(Qrequest $qreq, $param = null, $flags = 0) {
         if (($r = $qreq->referrer()) && ($rf = parse_url($r))) {
-            $sup = Navigation::get()->siteurl_path();
+            $sup = $qreq->navigation()->siteurl_path();
             $path = $rf["path"] ?? "";
             if ($path !== "" && str_starts_with($path, $sup)) {
                 $xqreq = new Qrequest("GET");
@@ -4463,26 +4463,6 @@ class Conf {
         }
     }
 
-    /** @param string $name
-     * @param string $value
-     * @param int $expires_at */
-    function set_cookie($name, $value, $expires_at) {
-        $secure = $this->opt("sessionSecure") ?? false;
-        $samesite = $this->opt("sessionSameSite") ?? "Lax";
-        $opt = [
-            "expires" => $expires_at,
-            "path" => Navigation::get()->base_path,
-            "domain" => $this->opt("sessionDomain") ?? "",
-            "secure" => $secure
-        ];
-        if ($samesite && ($secure || $samesite !== "None")) {
-            $opt["samesite"] = $samesite;
-        }
-        if (!hotcrp_setcookie($name, $value, $opt)) {
-            error_log(debug_string_backtrace());
-        }
-    }
-
     /** @param Qrequest $qreq
      * @param string|list<string> $title */
     function print_head_tag($qreq, $title, $extra = []) {
@@ -4490,7 +4470,7 @@ class Conf {
         foreach ($_COOKIE as $k => $v) {
             if (str_starts_with($k, "hotlist-info")
                 || str_starts_with($k, "hc-uredirect-"))
-                $this->set_cookie($k, "", Conf::$now - 86400);
+                $qreq->set_cookie($k, "", Conf::$now - 86400);
         }
 
         echo "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n",

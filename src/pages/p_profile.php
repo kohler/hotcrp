@@ -58,7 +58,7 @@ class Profile_Page {
             if ($cs->user_ids()) {
                 $list = (new SessionList("u/all/" . urlencode($this->qreq->search), $cs->user_ids(), "“{$u}”"))
                     ->set_urlbase($this->conf->hoturl_raw("users", ["t" => "all"], Conf::HOTURL_SITEREL));
-                $list->set_cookie($this->viewer);
+                $list->set_cookie($this->qreq);
                 $user = $this->conf->user_by_id($cs->user_ids()[0]);
                 $this->conf->redirect_hoturl("profile", ["u" => $user->email]);
             } else {
