@@ -4761,6 +4761,10 @@ a.help {
 div.scorechart {
 	display: inline-block;
 }
+.scorechart-s1 {
+	font: 6.5px Menlo, Monaco, source-code-pro, Consolas, Terminal, monospace;
+	user-select: none;
+}
 div.sc {
 	font-size: smaller;
 	padding-bottom: 2px;
