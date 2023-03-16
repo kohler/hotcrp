@@ -331,9 +331,9 @@ class Filer {
         if (!($path = self::_expand_docstore($pattern, $doc, true))) {
             return null;
         }
-        if ($flags & self::FPATH_EXISTS) {
+        if (($flags & self::FPATH_EXISTS) !== 0) {
             if (!is_readable($path)) {
-                // clean up presence of old files saved w/o extension
+                // clean up old files saved w/o extension
                 $g = self::_expand_docstore($pattern, $doc, false);
                 if ($path && $g !== $path && is_readable($g)) {
                     if (!@rename($g, $path)) {
@@ -347,7 +347,7 @@ class Filer {
                 @touch($path, Conf::$now);
             }
         }
-        if (($flags & self::FPATH_MKDIR)
+        if (($flags & self::FPATH_MKDIR) !== 0
             && !self::prepare_docstore(self::docstore_fixed_prefix($pattern), $path)) {
             $doc->message_set()->warning_at(null, "<0>File system storage cannot be initialized");
             return null;
