@@ -3,6 +3,8 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class ContactSet implements IteratorAggregate, Countable {
+    /** @var list<Contact> */
+    private $urows = [];
     /** @var array<int,Contact> */
     private $by_uid = [];
 
@@ -22,37 +24,50 @@ class ContactSet implements IteratorAggregate, Countable {
         return $set;
     }
     function add_user(Contact $u) {
-        $this->by_uid[$u->contactXid] = $u;
+        $this->urows[] = $this->by_uid[$u->contactXid] = $u;
     }
     /** @param Dbl_Result $result
      * @param Conf $conf */
     function add_result($result, $conf) {
         while (($u = Contact::fetch($result, $conf))) {
-            $this->by_uid[$u->contactXid] = $u;
+            $this->urows[] = $this->by_uid[$u->contactXid] = $u;
             $u->_row_set = $this;
         }
         Dbl::free($result);
+    }
+    /** @return list<Contact> */
+    function as_list() {
+        return $this->urows;
+    }
+    /** @return array<int,Contact> */
+    function as_map() {
+        return $this->by_uid;
+    }
+    /** @return array<int,Contact>
+     * @deprecated */
+    function all() {
+        return $this->by_uid;
     }
     /** @return list<int> */
     function user_ids() {
         return array_keys($this->by_uid);
     }
-    /** @return array<int,Contact> */
-    function all() {
-        return $this->by_uid;
-    }
     /** @return int */
     function size() {
-        return count($this->by_uid);
+        return count($this->urows);
     }
     #[\ReturnTypeWillChange]
     /** @return int */
     function count() {
-        return count($this->by_uid);
+        return count($this->urows);
     }
     /** @param callable(Contact,Contact):int $compare */
     function sort_by($compare) {
-        uasort($this->by_uid, $compare);
+        usort($this->urows, $compare);
+        $this->by_uid = [];
+        foreach ($this->urows as $u) {
+            $this->by_uid[$u->contactXid] = $u;
+        }
     }
     /** @param int $uid
      * @return ?Contact */
@@ -81,6 +96,6 @@ class ContactSet implements IteratorAggregate, Countable {
     #[\ReturnTypeWillChange]
     /** @return Iterator<Contact> */
     function getIterator() {
-        return new ArrayIterator($this->by_uid);
+        return new ArrayIterator($this->urows);
     }
 }

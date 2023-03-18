@@ -2336,7 +2336,7 @@ class Conf {
 
     private function _ensure_user_cache() {
         if ($this->_user_cache === null) {
-            $this->_user_cache = $this->_pc_set ? $this->_pc_set->all() : [];
+            $this->_user_cache = $this->_pc_set ? $this->_pc_set->as_map() : [];
         }
     }
 
@@ -2696,7 +2696,7 @@ class Conf {
 
     /** @return array<int,Contact> */
     function pc_users() {
-        return $this->pc_set()->all();
+        return $this->pc_set()->as_map();
     }
 
     /** @param int $uid
