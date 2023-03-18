@@ -738,7 +738,9 @@ class Ht {
             if ($ml instanceof MessageItem) {
                 $mlx[] = $ml;
             } else if ($ml instanceof MessageSet) {
-                array_push($mlx, ...$ml->message_list());
+                if ($ml->has_message()) { // old PHPs require at least 2 args
+                    array_push($mlx, ...$ml->message_list());
+                }
             } else {
                 foreach ($ml as $mi) {
                     $mlx[] = $mi;
