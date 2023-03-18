@@ -940,6 +940,34 @@
         "type": "taglist", "size": 50, "autogrow": true,
         "parser_class": "Tags_SettingParser"
     },
+    {   "name": "tag_autosearch", "internal": true, "type": "string"   },
+    {
+        "name": "automatic_tag",
+        "type": "oblist", "parser_class": "AutomaticTag_SettingParser",
+        "title": "Automatic tags", "priority": -1
+    },
+    {
+        "name_pattern": "automatic_tag/$", "internal": true,
+        "type": "object", "subtype": "AutomaticTag_Setting",
+        "title_pattern": "Automatic tag ‘#${sv automatic_tag/$/tag}’",
+        "parser_class": "AutomaticTag_SettingParser"
+    },
+    {   "name_pattern": "automatic_tag/$/id", "internal": true   },
+    {
+        "name_pattern": "automatic_tag/$/tag", "storage": "member.tag",
+        "title": "Automatic tag name",
+        "type": "tag", "size": 28, "placeholder": "Tag"
+    },
+    {
+        "name_pattern": "automatic_tag/$/search", "storage": "member.q",
+        "title": "/Search",
+        "type": "string", "subtype": "search", "size": 50, "placeholder": "Search", "autogrow": true
+    },
+    {
+        "name_pattern": "automatic_tag/$/value", "storage": "member.v",
+        "title": "/Value formula",
+        "type": "string", "subtype": "formula", "size": 10, "placeholder": "none", "autogrow": true
+    },
 
 
     {   "name": "has_topics", "internal": true, "type": "checkbox"   },

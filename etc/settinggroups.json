@@ -318,6 +318,10 @@
         "settings": ["tag_color", "tag_style"]
     },
     {
+        "name": "__crosscheck/autosearch", "order": 730,
+        "crosscheck_function": "AutomaticTag_SettingParser::crosscheck"
+    },
+    {
         "name": "tracks", "group": "tags", "order": 750,
         "print_function": "*Track_SettingParser::print",
         "title": "Tracks", "hashid": "tracks",

@@ -455,6 +455,7 @@ src/searchword.php
 src/sessionlist.php
 src/settinginfoset.php
 src/settingparser.php
+src/settings/s_automatictag.php
 src/settings/s_banal.php
 src/settings/s_basics.php
 src/settings/s_decision.php
