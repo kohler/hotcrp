@@ -5,10 +5,10 @@
 class MailRecipients extends MessageSet {
     /** @var Conf
      * @readonly */
-    private $conf;
+    public $conf;
     /** @var Contact
      * @readonly */
-    private $user;
+    public $user;
     /** @var list<array{string,string,int}> */
     private $recipts = [];
     /** @var string */

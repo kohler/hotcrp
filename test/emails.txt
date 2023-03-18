@@ -1712,7 +1712,7 @@ Visit the assignment page to approve or deny the proposal.
 To: Henrik Frystyk Nielsen <frystyk@w3.org>, James Gettys <jg@pa.dec.com>, Anselm Baird-Smith <abaird@w3.org>
 Subject: [Testconf I] Rejected submission #14 "Network Performance Effects of
  HTTP/1.1,..."
-X-Landmark: test/test05.php:821
+X-Landmark: test/t_paperstatus.php:1114
 
 Dear authors,
 
@@ -1763,7 +1763,7 @@ Comments V
 To: Henrik Frystyk Nielsen <frystyk@w3.org>, James Gettys <jg@pa.dec.com>, Anselm Baird-Smith <abaird@w3.org>, George Varghese <varghese@ccrc.wustl.edu>
 Subject: [Testconf I] Rejected submission #14 "Network Performance Effects of
  HTTP/1.1,..."
-X-Landmark: test/test05.php:821
+X-Landmark: test/t_paperstatus.php:821
 
 Dear authors,
 
@@ -1810,3 +1810,71 @@ Comments for authors
 --------------------
 Comments V
 
+******** t_mailer-send-1
+To: Vern Paxson <vern@ee.lbl.gov>
+Subject: [Testconf I] Submission #13 "End-to-end Internet Packet Dynamics"
+X-Landmark: test/t_mailer.php:25
+
+Dear author,
+
+Your message here.
+
+* Title: End-to-end Internet Packet Dynamics
+* Site: http://hotcrp.lcdf.org/test/paper/13
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** t_mailer-send-1
+To: Anselm Baird-Smith <abaird@w3.org>, Henrik Frystyk Nielsen <frystyk@w3.org>, James Gettys <jg@pa.dec.com>
+Subject: [Testconf I] Submission #14 "Network Performance Effects of
+ HTTP/1.1,..."
+X-Landmark: test/t_mailer.php:25
+
+Dear authors,
+
+Your message here.
+
+* Title: Network Performance Effects of HTTP/1.1, CSS1, and PNG
+* Site: http://hotcrp.lcdf.org/test/paper/14
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** t_mailer-send-1
+To: Vern Paxson <vern@ee.lbl.gov>
+Subject: [Testconf I] Submission #15 "Automated Packet Trace Analysis of
+ TCP..."
+X-Landmark: test/t_mailer.php:25
+
+Dear author,
+
+Your message here.
+
+* Title: Automated Packet Trace Analysis of TCP Implementations
+* Site: http://hotcrp.lcdf.org/test/paper/15
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** t_mailer-send-1
+To: "A. Feldmann" <anja@research.att.com>, Balachander Krishnamurthy <bala@research.att.com>, "Jeffrey C. Mogul" <mogul@wrl.dec.com>
+Subject: [Testconf I] Submission #16 "Potential Benefits of Delta Encoding
+ and..."
+X-Landmark: test/t_mailer.php:25
+
+Dear authors,
+
+Your message here.
+
+* Title: Potential Benefits of Delta Encoding and Data Compression for
+  HTTP
+* Site: http://hotcrp.lcdf.org/test/paper/16
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions

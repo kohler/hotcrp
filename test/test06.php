@@ -7,5 +7,6 @@ require_once(__DIR__ . '/setup.php');
 TestRunner::run(
     "Reviews_Tester",
     "Comments_Tester",
-    "UserAPI_Tester"
+    "UserAPI_Tester",
+    "Mailer_Tester"
 );

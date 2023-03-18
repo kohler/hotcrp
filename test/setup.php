@@ -30,7 +30,8 @@ class MailChecker {
         if (self::$disabled === 0) {
             $prep->landmark = "";
             foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $trace) {
-                if (isset($trace["file"]) && preg_match('/\/test\d/', $trace["file"])) {
+                if (isset($trace["file"])
+                    && preg_match('/\/(?:test\d|t_)/', $trace["file"])) {
                     if (str_starts_with($trace["file"], SiteLoader::$root)) {
                         $trace["file"] = substr($trace["file"], strlen(SiteLoader::$root) + 1);
                     }
@@ -43,7 +44,7 @@ class MailChecker {
                 fwrite(STDOUT, "********\n"
                        . "To: " . join(", ", $prep->to) . "\n"
                        . "Subject: " . str_replace("\r", "", $prep->subject) . "\n"
-                       . ($prep->landmark ? "X-Landmark: $prep->landmark\n" : "") . "\n"
+                       . ($prep->landmark ? "X-Landmark: {$prep->landmark}\n" : "") . "\n"
                        . $prep->body);
             }
         }

@@ -122,57 +122,13 @@ class Mail_Page {
         }
 
         // template
-        $null_mailer = new HotCRPMailer($this->conf, null, [
-            "requester_contact" => $this->viewer, "width" => false
-        ]);
         if (isset($qreq->template)
             && !isset($qreq->check)
             && !isset($qreq->send)
             && !isset($qreq->default)) {
-            $t = $qreq->template ?? "generic";
-            $template = (array) $this->conf->mail_template($t);
-            if (!($template["allow_template"] ?? false)) {
-                $template = (array) $this->conf->mail_template("generic");
-            }
-            if (!isset($qreq->to)) {
-                $qreq->to = $template["default_recipients"] ?? "s";
-            }
-            if (!isset($qreq->t) && isset($template["default_search_type"])) {
-                $qreq->t = $template["default_search_type"];
-            }
-            if (!isset($qreq->subject)) {
-                $qreq->subject = $null_mailer->expand($template["subject"]);
-            }
-            if (!isset($qreq->body)) {
-                $qreq->body = $null_mailer->expand($template["body"]);
-            }
+            MailSender::load_template($qreq, $qreq->template, false);
         }
-
-        // fields: subject, body, cc, reply-to
-        if (!isset($qreq->subject)) {
-            $tmpl = $this->conf->mail_template("generic");
-            $qreq->subject = $null_mailer->expand($tmpl->subject, "subject");
-        }
-        $qreq->subject = trim($qreq->subject);
-        if (str_starts_with($qreq->subject, "[{$this->conf->short_name}] ")) {
-            $qreq->subject = substr($qreq->subject, strlen($this->conf->short_name) + 3);
-        }
-        if (!isset($qreq->body)) {
-            $tmpl = $this->conf->mail_template("generic");
-            $qreq->body = $null_mailer->expand($tmpl->body, "body");
-        }
-        if (isset($qreq->cc) && $this->viewer->is_manager()) {
-            // XXX should only apply to papers you administer
-            $qreq->cc = simplify_whitespace($qreq->cc);
-        } else {
-            $qreq->cc = $this->conf->opt("emailCc") ?? "";
-        }
-        if (isset($qreq["reply-to"]) && $this->viewer->is_manager()) {
-            // XXX should only apply to papers you administer
-            $qreq["reply-to"] = simplify_whitespace($qreq["reply-to"]);
-        } else {
-            $qreq["reply-to"] = $this->conf->opt("emailReplyTo") ?? "";
-        }
+        MailSender::clean_request($qreq);
 
         // set MailRecipients properties
         $this->recip->set_newrev_since($this->qreq->newrev_since);
@@ -489,11 +445,11 @@ $(mail_recipients_fold)');
             && !$mp->recip->has_error()
             && $qreq->valid_token()) {
             if ($qreq->send && $qreq->mailid && $qreq->is_post()) {
-                MailSender::send2($user, $mp->recip, $qreq);
+                MailSender::send2($mp->recip, $qreq);
             } else if ($qreq->send && $qreq->is_post()) {
-                MailSender::send1($user, $mp->recip, $qreq);
+                MailSender::send1($mp->recip, $qreq);
             } else if ($qreq->check || $qreq->group || $qreq->ungroup) {
-                MailSender::check($user, $mp->recip, $qreq);
+                MailSender::check($mp->recip, $qreq);
             }
         }
 
