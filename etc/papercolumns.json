@@ -146,8 +146,7 @@
         "completion_function": "Score_PaperColumn::completions"
     },
     {
-        "name": "?graph",
-        "match": "(?:g|graph):?\\((.*)\\)", "priority": -1,
+        "match": "(?:g|graph):?\\((.*)\\)", "priority": -2200,
         "sort": true, "className": "pl_score",
         "function": "+FormulaGraph_PaperColumn",
         "order": 1200,

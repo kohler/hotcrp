@@ -4048,7 +4048,7 @@ class Contact implements JsonSerializable {
             $this->role_mask |= self::ROLE_VIEW_SOME_REVIEW_ID;
             $tags = "";
             if (($t = $this->conf->permissive_track_tag_for($this, Track::VIEWREVID))) {
-                $tags = " $t#0 ";
+                $tags = " {$t}#0 ";
             }
             if ($this->isPC) {
                 $rtype = $this->is_metareviewer() ? REVIEW_META : REVIEW_PC;
