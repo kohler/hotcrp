@@ -1143,8 +1143,7 @@ class PaperList implements XtContext {
         return $this->_vcolumns;
     }
 
-    /** @param int $prep */
-    private function _set_vcolumns($prep = 0) {
+    private function _set_vcolumns() {
         $this->need_tag_attr = false;
         $this->table_attr = [];
         assert(empty($this->row_attr));
@@ -1168,7 +1167,7 @@ class PaperList implements XtContext {
             $f->is_visible = true;
             $f->has_content = false;
             $this->_finding_column = $k;
-            if ($f->prepare($this, PaperColumn::PREP_VISIBLE | $prep)) {
+            if ($f->prepare($this, PaperColumn::PREP_VISIBLE)) {
                 $this->_vcolumns[] = $f;
             }
         }
@@ -1301,13 +1300,13 @@ class PaperList implements XtContext {
     /** @return string */
     private function _column_html(PaperColumn $fdef, PaperInfo $row) {
         assert(!!$fdef->is_visible);
-        $content = "";
         $override = $fdef->override;
         if ($override & PaperColumn::OVERRIDE_NONCONFLICTED) {
             $override &= ~PaperColumn::OVERRIDE_NONCONFLICTED;
         } else if (!$this->row_overridable) {
             $override = 0;
         }
+        $content = "";
         if ($override <= 0) {
             if (!$fdef->content_empty($this, $row)) {
                 $content = $fdef->content($this, $row);
@@ -1392,7 +1391,7 @@ class PaperList implements XtContext {
         // main columns
         $tm = "";
         foreach ($this->_vcolumns as $fdef) {
-            if ($fdef->as_row) {
+            if ($fdef->as_row || !$fdef->has_content) {
                 continue;
             }
             $content = $this->_column_html($fdef, $row);
@@ -1412,7 +1411,7 @@ class PaperList implements XtContext {
         // extension columns
         $tt = "";
         foreach ($this->_vcolumns as $fdef) {
-            if (!$fdef->as_row) {
+            if (!$fdef->as_row || !$fdef->has_content) {
                 continue;
             }
             $content = $this->_column_html($fdef, $row);
@@ -1609,6 +1608,9 @@ class PaperList implements XtContext {
         $has_sel = $has_statistics = false;
         foreach ($this->_vcolumns as $fdef) {
             assert(!!$fdef->is_visible);
+            if (!$fdef->has_content) {
+                continue;
+            }
             $jscol[] = $j = $fdef->field_json($this);
             if ($fdef->fold) {
                 $classes[] = "fold{$fdef->fold}o";
@@ -1693,7 +1695,7 @@ class PaperList implements XtContext {
             $t .= ' class="pl_statrow fx7 fx8" data-statistic="' . ScoreInfo::$stat_keys[$stat] . '">';
             $col = 0;
             foreach ($this->_vcolumns as $fdef) {
-                if ($fdef->as_row) {
+                if ($fdef->as_row || !$fdef->has_content) {
                     continue;
                 }
                 $class = "plstat " . $fdef->className;
@@ -1916,12 +1918,21 @@ class PaperList implements XtContext {
             }
         }
 
-        // get field array
+        // analyze columns and folds
         $ncol = $titlecol = 0;
         // folds: anonau:2, fullrow:3, aufull:4, force:5, rownum:6, statistics:7,
         // statistics-exist:8, [fields]
         $next_fold = 9;
         foreach ($this->_vcolumns as $fdef) {
+            foreach ($rows as $row) {
+                if ($this->_column_html($fdef, $row) !== "") {
+                    $fdef->has_content = true;
+                    break;
+                }
+            }
+            if (!$fdef->has_content) {
+                continue;
+            }
             if ($this->view_origin($fdef->name) !== self::VIEWORIGIN_REPORT) {
                 $fdef->fold = $next_fold;
                 ++$next_fold;
@@ -1937,7 +1948,7 @@ class PaperList implements XtContext {
         // count non-callout columns
         $skipcallout = 0;
         foreach ($this->_vcolumns as $fdef) {
-            if (!$fdef->as_row) {
+            if (!$fdef->as_row && $fdef->has_content) {
                 if ($fdef->order === null || $fdef->order >= 100) {
                     break;
                 } else {
@@ -1993,7 +2004,7 @@ class PaperList implements XtContext {
                 Ht::stash_script('$(hotcrp.render_list)', 'plist_render_needed');
                 $need_render = true;
             }
-            if ($this->need_render && $this->count % 16 == 15) {
+            if ($this->need_render && $this->count % 16 === 15) {
                 $body[count($body) - 1] .= "  " . Ht::script('hotcrp.render_list()') . "\n";
                 $this->need_render = false;
             }
@@ -2028,7 +2039,7 @@ class PaperList implements XtContext {
         if (($this->_table_decor & (self::DECOR_HEADER | self::DECOR_EVERYHEADER)) !== 0) {
             $ths = "";
             foreach ($this->_vcolumns as $fdef) {
-                if (!$fdef->as_row) {
+                if (!$fdef->as_row && $fdef->has_content) {
                     $ths .= $this->_field_th($fdef);
                 }
             }
@@ -2220,12 +2231,12 @@ class PaperList implements XtContext {
     private function _row_text_csv_data(PaperInfo $row) {
         $csv = [];
         foreach ($this->_vcolumns as $fdef) {
-            $empty = $fdef->content_empty($this, $row);
-            $c = $empty ? "" : $fdef->text($this, $row);
-            if ($c !== "") {
-                $fdef->has_content = true;
+            $t = "";
+            if (!$fdef->content_empty($this, $row)) {
+                $t = $fdef->text($this, $row);
             }
-            $csv[$fdef->name] = $c;
+            $csv[$fdef->name] = $t;
+            $fdef->has_content = $fdef->has_content || $t !== "";
         }
         return $csv;
     }

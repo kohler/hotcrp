@@ -2788,27 +2788,28 @@ class PaperInfo {
 
     /** @param int $order */
     function ensure_review_field_order($order) {
-        if (($this->_flags & self::REVIEW_HAS_FULL) === 0
-            && ($this->_reviews_have[$order] ?? null) === null) {
-            $rform = $this->conf->review_form();
-            $this->_reviews_have = $this->_reviews_have ?? $rform->order_array(null);
-            $f = $rform->field_by_order($order);
-            if (!$f) {
-                $this->_reviews_have[$order] = false;
-            } else if (!$f->main_storage) {
-                $this->ensure_full_reviews();
-            } else {
-                $this->_reviews_have[$order] = true;
-                $k = $f->short_id . "Signature";
-                if ($this->$k === null) {
-                    $this->load_review_fields($f->short_id, $f->main_storage, false);
-                }
-                $x = explode(",", $this->$k);
-                foreach ($this->reviews_as_list() as $i => $rrow) {
-                    $rrow->fields = $rrow->fields ?? $rform->order_array(null);
-                    $fv = (int) $x[$i];
-                    $rrow->fields[$order] = $fv > 0 ? $fv : ($fv < 0 ? 0 : null);
-                }
+        if (($this->_flags & self::REVIEW_HAS_FULL) !== 0
+            || ($this->_reviews_have[$order] ?? null) !== null) {
+            return;
+        }
+        $rform = $this->conf->review_form();
+        $this->_reviews_have = $this->_reviews_have ?? $rform->order_array(null);
+        $f = $rform->field_by_order($order);
+        if (!$f) {
+            $this->_reviews_have[$order] = false;
+        } else if (!$f->main_storage) {
+            $this->ensure_full_reviews();
+        } else {
+            $this->_reviews_have[$order] = true;
+            $k = $f->short_id . "Signature";
+            if ($this->$k === null) {
+                $this->load_review_fields($f->short_id, $f->main_storage, false);
+            }
+            $x = explode(",", $this->$k);
+            foreach ($this->reviews_as_list() as $i => $rrow) {
+                $rrow->fields = $rrow->fields ?? $rform->order_array(null);
+                $fv = (int) $x[$i];
+                $rrow->fields[$order] = $fv > 0 ? $fv : ($fv < 0 ? 0 : null);
             }
         }
     }
