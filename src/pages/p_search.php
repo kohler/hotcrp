@@ -247,7 +247,7 @@ class Search_Page {
 
         if (!empty($this->user->hidden_papers)
             && $this->user->is_actas_user()) {
-            $this->pl->message_set()->warning_at(null, $this->conf->_("<0>Submissions %#Ns are totally hidden when viewing the site as another user.", array_map(function ($n) { return "#$n"; }, array_keys($this->user->hidden_papers))));
+            $this->pl->message_set()->warning_at(null, $this->conf->_("<0>Submissions %#Ns are totally hidden when viewing the site as another user.", array_map(function ($n) { return "#{$n}"; }, array_keys($this->user->hidden_papers))));
         }
         if ($search->has_message()) {
             echo '<div class="msgs-wide">',
@@ -272,7 +272,7 @@ class Search_Page {
             $a = [];
             foreach (["q", "qa", "qo", "qx", "qt", "sort", "showtags"] as $xa) {
                 if (isset($qreq[$xa]) && ($xa !== "q" || !isset($qreq->qa))) {
-                    $a[] = "$xa=" . urlencode($qreq[$xa]);
+                    $a[] = "{$xa}=" . urlencode($qreq[$xa]);
                 }
             }
             if ($limits[0] !== $search->limit()
@@ -300,8 +300,8 @@ class Search_Page {
         assert(!isset($qreq->display));
         $this->pl = new PaperList("pl", $search, ["sort" => true], $qreq);
         $this->pl->apply_view_report_default();
-        $this->pl->apply_view_session();
-        $this->pl->apply_view_qreq();
+        $this->pl->apply_view_session($qreq);
+        $this->pl->apply_view_qreq($qreq);
         if (isset($qreq->q)) {
             $this->pl->set_table_id_class("foldpl", "pltable-fullw remargin-left remargin-right", "p#");
             $this->pl->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_FOOTER | PaperList::DECOR_STATISTICS | PaperList::DECOR_LIST);

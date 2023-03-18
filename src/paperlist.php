@@ -641,15 +641,15 @@ class PaperList implements XtContext {
         $this->parse_view($s ?? $this->unparse_baseline_view(), $origin ?? self::VIEWORIGIN_DEFAULT_DISPLAY);
     }
 
-    function apply_view_session() {
+    function apply_view_session(Qrequest $qreq) {
         if ($this->_report_id === "pl" || $this->_report_id === "pf") {
-            $s = $this->qreq->csession("{$this->_report_id}display");
+            $s = $qreq->csession("{$this->_report_id}display");
             $this->parse_view($s, self::VIEWORIGIN_SESSION);
         }
     }
 
-    function apply_view_qreq() {
-        foreach ($this->qreq as $k => $v) {
+    function apply_view_qreq(Qrequest $qreq) {
+        foreach ($qreq as $k => $v) {
             if (str_starts_with($k, "show") && $v) {
                 $name = substr($k, 4);
                 $this->set_view($name, true, self::VIEWORIGIN_SESSION, $this->_view_decorations[$name] ?? null);
@@ -1425,7 +1425,7 @@ class PaperList implements XtContext {
             }
             $tt .= "<div class=\"" . $fdef->className;
             if ($fdef->fold) {
-                $tt .= " fx" . $fdef->fold;
+                $tt .= " fx{$fdef->fold}";
             }
             $tt .= "\">" . $content . "</div>";
             $fdef->has_content = $fdef->has_content || $content !== "";
@@ -1709,7 +1709,7 @@ class PaperList implements XtContext {
                 }
                 $t .= '<td class="' . $class;
                 if ($fdef->fold) {
-                    $t .= ' fx' . $fdef->fold;
+                    $t .= " fx{$fdef->fold}";
                 }
                 $t .= '">' . $content . '</td>';
                 ++$col;

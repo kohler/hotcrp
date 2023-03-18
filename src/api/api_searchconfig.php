@@ -43,7 +43,7 @@ class SearchConfig_API {
         $search = new PaperSearch($user, $qreq->q ?? "NONE");
         $pl = new PaperList($report, $search, ["sort" => true], $qreq);
         $pl->apply_view_report_default();
-        $pl->apply_view_session();
+        $pl->apply_view_session($qreq);
         $vr = $pl->unparse_view(true);
 
         return new JsonResult([

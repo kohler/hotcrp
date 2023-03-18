@@ -63,8 +63,8 @@ class ReviewPrefs_Page {
         ]))->set_urlbase("reviewprefs");
         $pl = new PaperList("pf", $search, ["sort" => true], $qreq);
         $pl->apply_view_report_default();
-        $pl->apply_view_session();
-        $pl->apply_view_qreq();
+        $pl->apply_view_session($qreq);
+        $pl->apply_view_qreq($qreq);
         $pl->set_table_id_class("foldpl", "pltable-fullw remargin-left remargin-right", "p#");
         $pl->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_FOOTER | PaperList::DECOR_LIST);
         $pl->set_table_fold_session("pfdisplay.");

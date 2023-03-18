@@ -171,8 +171,8 @@ class ManualAssign_Page {
             $search->set_field_highlighter_query(join(" OR ", $hlsearch));
         }
         $pl = new PaperList("reviewAssignment", $search, ["sort" => true], $this->qreq);
-        $pl->apply_view_session();
-        $pl->apply_view_qreq();
+        $pl->apply_view_session($this->qreq);
+        $pl->apply_view_qreq($this->qreq);
         echo Ht::form($this->conf->hoturl("=manualassign", ["reviewer" => $reviewer->email, "sort" => $this->qreq->sort]), ["class" => "assignpc ignore-diff"]),
             Ht::hidden("t", $this->qreq->t),
             Ht::hidden("q", $this->qreq->q);

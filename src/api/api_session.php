@@ -93,9 +93,9 @@ class Session_API {
      * @param string $view */
     static function parse_view(Qrequest $qreq, $report, $view) {
         $search = new PaperSearch($qreq->user(), "NONE");
-        $pl = new PaperList($report, $search, ["sort" => true]);
+        $pl = new PaperList($report, $search, ["sort" => true], $qreq);
         $pl->apply_view_report_default(PaperList::VIEWORIGIN_REPORT);
-        $pl->apply_view_session();
+        $pl->apply_view_session($qreq);
         $pl->parse_view($view);
         $vd = array_filter($pl->unparse_view(true), function ($x) {
             return !str_starts_with($x, "sort:")
