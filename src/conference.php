@@ -2978,7 +2978,7 @@ class Conf {
         if ($paper === null) {
             foreach ($this->tags()->filter("automatic") as $dt) {
                 $csv[] = CsvGenerator::quote("#{$dt->tag}") . "," . CsvGenerator::quote($dt->tag) . ",clear";
-                $csv[] = CsvGenerator::quote($dt->automatic_search()) . "," . CsvGenerator::quote($dt->tag) . "," . CsvGenerator::quote($dt->automatic_formula_expression());
+                $csv[] = CsvGenerator::quote("searchoption:expand_automatic " . $dt->automatic_search()) . "," . CsvGenerator::quote($dt->tag) . "," . CsvGenerator::quote($dt->automatic_formula_expression());
             }
         } else if (!empty($paper)) {
             if (is_int($paper)) {
@@ -2991,6 +2991,7 @@ class Conf {
             $rowset = $this->paper_set(["paperId" => $pids]);
             foreach ($this->tags()->filter("automatic") as $dt) {
                 $search = new PaperSearch($this->root_user(), ["q" => $dt->automatic_search(), "t" => "all"]);
+                $search->set_expand_automatic(true);
                 $fexpr = $dt->automatic_formula_expression();
                 foreach ($rowset as $prow) {
                     $test = $search->test($prow);

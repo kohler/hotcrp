@@ -54,16 +54,31 @@ class Tag_SearchTerm extends SearchTerm {
 
         // expand automatic tags if requested
         $allterms = [];
-        if ($srch->expand_automatic
+        if ($srch->expand_automatic > 0
             && ($dt = $srch->conf->tags())->has_automatic) {
             $nomatch = [];
             foreach ($dt->filter("automatic") as $t) {
-                if ($tsm->test_ignore_value(" {$t->tag}#")
-                    && $t->automatic_formula_expression() === "0") {
-                    $nomatch[] = " " . preg_quote($t->tag) . "#";
-                    if ($tsm->test_value(0.0)) {
-                        $asrch = new PaperSearch($srch->conf->root_user(), ["q" => $t->automatic_search(), "t" => "all"]);
-                        $allterms[] = $asrch->full_term();
+                if (!$tsm->test_ignore_value(" {$t->tag}#")) {
+                    continue;
+                }
+                if ($t->automatic_formula_expression() !== "0") {
+                    error_log("{$srch->conf->dbname}: refusing to expand_automatic #{$t->tag} for {$sword->qword} (unimplemented)");
+                    continue;
+                }
+                if ($srch->expand_automatic >= 10) {
+                    $srch->warning_at("circular_automatic");
+                    continue;
+                }
+                $nomatch[] = " " . preg_quote($t->tag) . "#";
+                if ($tsm->test_value(0.0)) {
+                    $asrch = new PaperSearch($srch->conf->root_user(), ["q" => $t->automatic_search(), "t" => "all"]);
+                    $asrch->set_expand_automatic($srch->expand_automatic + 1);
+                    $allterms[] = $asrch->full_term();
+                    if ($asrch->has_problem_at("circular_automatic")) {
+                        $srch->warning_at("circular_automatic");
+                        if ($srch->expand_automatic === 1) {
+                            $srch->lwarning($sword, "<0>Circular reference in automatic tag #{$t->tag}");
+                        }
                     }
                 }
             }
@@ -87,9 +102,8 @@ class Tag_SearchTerm extends SearchTerm {
             }
         }
 
-        // return
         foreach ($tsm->error_texts() as $e) {
-            $srch->lwarning($sword, "<5>$e");
+            $srch->lwarning($sword, "<5>{$e}");
         }
         return SearchTerm::combine("or", ...$allterms)->negate_if($negated);
     }

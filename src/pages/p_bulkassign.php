@@ -99,7 +99,7 @@ class BulkAssign_Page {
         }
 
         $aset = new AssignmentSet($this->user, true);
-        $aset->set_flags(AssignmentState::FLAG_CSV_CONTEXT);
+        $aset->set_csv_context(true);
         $aset->add_progress_handler([$this, "keep_browser_alive"]);
         $defaults = $this->assignment_defaults();
         $text = convert_to_utf8($text);

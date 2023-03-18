@@ -302,9 +302,9 @@ class PaperSearch extends MessageSet {
     /** @var bool */
     private $_limit_explicit = false;
 
-    /** @var bool
+    /** @var int
      * @readonly */
-    public $expand_automatic = false;
+    public $expand_automatic = 0;
     /** @var bool */
     private $_allow_deleted = false;
     /** @var ?string */
@@ -446,12 +446,16 @@ class PaperSearch extends MessageSet {
         return $this;
     }
 
-    /** @param bool $x
+    /** @param bool|int $x
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
     function set_expand_automatic($x) {
-        $this->_qe === null || $this->clear_compilation();
-        $this->expand_automatic = $x;
+        $n = (int) $x;
+        if ($this->_qe !== null
+            && ($this->expand_automatic > 0) !== ($n > 0)) {
+            $this->clear_compilation();
+        }
+        $this->expand_automatic = $n;
         return $this;
     }
 
@@ -641,6 +645,19 @@ class PaperSearch extends MessageSet {
         return new False_SearchTerm;
     }
 
+    /** @return SearchTerm */
+    static function parse_searchoption($word, SearchWord $sword, PaperSearch $srch) {
+        if (strcasecmp($word, "expand_automatic")) {
+            if ($srch->expand_automatic === 0) {
+                /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
+                $srch->expand_automatic = 1;
+            }
+            return new True_SearchTerm;
+        }
+        $srch->lwarning($sword, "<0>Unknown search option ‘{$word}’");
+        return new True_SearchTerm;
+    }
+
     /** @param string $word
      * @return ?string */
     private function _expand_saved_search($word) {
@@ -668,7 +685,7 @@ class PaperSearch extends MessageSet {
         } else if (!($nextq = $srch->_expand_saved_search($word))) {
             $srch->lwarning($sword, "<0>Saved search defined incorrectly");
         } else if (count($srch->_saved_search_stack ?? []) >= 10) {
-            $srch->lwarning($sword, "<0>Saved search definition depends on itself");
+            $srch->lwarning($sword, "<0>Circular reference in saved search definitions");
         } else {
             $srch->_saved_search_stack[] = [$sword, $nextq];
             if (($qe = $srch->_search_expression($nextq))) {
@@ -720,16 +737,6 @@ class PaperSearch extends MessageSet {
             && preg_match('/\A(?:#?\d+(?:(?:-|–|—)#?\d+)?(?:\s*,\s*|\z))+\z/s', $str);
     }
 
-    /** @param SearchWord $sword
-     * @param SearchScope $scope
-     * @return ?SearchTerm */
-    private function _check_octothorpe($sword, $scope) {
-        $ignored = $this->swap_ignore_messages(true);
-        $qe = $this->_search_keyword("hashtag", $sword, $scope, false);
-        $this->swap_ignore_messages($ignored);
-        return $qe instanceof False_SearchTerm ? null : $qe;
-    }
-
     /** @param string $str
      * @return string */
     static private function _search_word_inferred_keyword($str) {
@@ -772,10 +779,7 @@ class PaperSearch extends MessageSet {
         if (!$sword->quoted
             && !$has_defkw
             && str_starts_with($sword->word, "#")) {
-            $qe = $this->_check_octothorpe($sword, $scope);
-            if ($qe) {
-                return $qe;
-            }
+            return $this->_search_keyword("hashtag", $sword, null, false);
         }
 
         // Inferred keyword: user wrote `ovemer>2`, meant `ovemer:>2`

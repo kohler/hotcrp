@@ -192,8 +192,7 @@ class Conflict_Assigner extends Assigner {
             $state->msg_near($item->landmark, "<0>Overriding conflict for #{$pid} {$type} assignment {$uname}", 1);
         } else if ($has_conflict) {
             $state->msg_near($item->landmark, "<0>{$uname} cannot {$type} #{$pid} because they are conflicted", 2);
-            if (($state->flags & AssignmentState::FLAG_CSV_CONTEXT) !== 0
-                && $state->user->allow_administer($prow)) {
+            if ($state->csv_context && $state->user->allow_administer($prow)) {
                 $state->msg_near($item->landmark, "<0>Set an “override” column to “yes” to force this assignment.", MessageSet::INFORM);
             }
             throw new AssignmentError("");

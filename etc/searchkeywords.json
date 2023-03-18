@@ -277,31 +277,38 @@
         "match": "[-_.a-zA-Z0-9\\s\\x80-\\xFF]+", "priority": -1,
         "expand_function": "Option_SearchTerm::parse_factory"
     },
+
     {
         "name": "show",
-        "parse_function": "Show_SearchTerm::parse", "allow_parens": true
+        "parse_function": "Show_SearchTerm::parse", "allow_parens": true,
+        "priority": 100
     },
     {
         "name": "hide",
-        "parse_function": "Show_SearchTerm::parse", "allow_parens": true
+        "parse_function": "Show_SearchTerm::parse", "allow_parens": true,
+        "priority": 100
     },
     {
         "name": "edit",
-        "parse_function": "Show_SearchTerm::parse", "allow_parens": true
+        "parse_function": "Show_SearchTerm::parse", "allow_parens": true,
+        "priority": 100
     },
     {
         "name": "showsort",
-        "parse_function": "Show_SearchTerm::parse", "allow_parens": true
+        "parse_function": "Show_SearchTerm::parse", "allow_parens": true,
+        "priority": 100
     },
     {   "name": "sortshow", "alias": "showsort"   },
     {
         "name": "editsort",
-        "parse_function": "Show_SearchTerm::parse", "allow_parens": true
+        "parse_function": "Show_SearchTerm::parse", "allow_parens": true,
+        "priority": 100
     },
     {   "name": "sortedit", "alias": "editsort"   },
     {
         "name": "sort",
-        "parse_function": "Show_SearchTerm::parse", "allow_parens": true
+        "parse_function": "Show_SearchTerm::parse", "allow_parens": true,
+        "priority": 100
     },
     {
         "name": "LEGEND",
@@ -317,6 +324,12 @@
     {   "name": "search", "alias": "ss"   },
     {
         "name": "has",
-        "parse_function": "PaperSearch::parse_has"
+        "parse_function": "PaperSearch::parse_has",
+        "priority": 100
+    },
+    {
+        "name": "searchoption",
+        "parse_function": "PaperSearch::parse_searchoption",
+        "priority": 100
     }
 ]

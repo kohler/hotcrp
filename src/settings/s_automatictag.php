@@ -80,6 +80,7 @@ class AutomaticTag_SettingParser extends SettingParser {
                 $sv->error_at($si, "<0>Entry required");
             } else {
                 $search = new PaperSearch($sv->conf->root_user(), ["q" => $q, "t" => "all"]);
+                $search->set_expand_automatic(true);
                 $search->full_term();
                 if ($search->has_problem()) {
                     $old = $sv->oldv($si->name0 . $si->name1);
@@ -118,7 +119,7 @@ class AutomaticTag_SettingParser extends SettingParser {
             $csv = ["paper,tag,tag value"];
             foreach (json_decode($sv->oldv("tag_autosearch") ?? "", true) ?? [] as $t => $v) {
                 if (!isset($newt[strtolower($t)]))
-                    $csv[] = CsvGenerator::quote("#$t") . "," . CsvGenerator::quote($t) . ",clear";
+                    $csv[] = CsvGenerator::quote("#{$t}") . "," . CsvGenerator::quote($t) . ",clear";
             }
             if (count($csv) > 1) {
                 $sv->register_cleanup_function("tag_autosearch", function () use ($sv, $csv) {
@@ -134,6 +135,7 @@ class AutomaticTag_SettingParser extends SettingParser {
             $atr = $sv->oldv("automatic_tag/{$ctr}");
             if ($atr && simplify_whitespace($atr->q) !== "") {
                 $search = new PaperSearch($sv->conf->root_user(), ["q" => $atr->q, "t" => "all"]);
+                $search->set_expand_automatic(true);
                 $search->full_term();
                 foreach ($search->message_list() as $mi) {
                     $sv->append_item_at("automatic_tag/{$ctr}/search", $mi);

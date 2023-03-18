@@ -161,8 +161,8 @@ class AssignmentState extends MessageSet {
     public $reviewer; // default contact
     /** @var int */
     public $overrides = 0;
-    /** @var int */
-    public $flags = 0;
+    /** @var bool */
+    public $csv_context = false;
     /** @var int */
     public $potential_conflict_warnings = 0;
     /** @var AssignerContacts */
@@ -189,8 +189,6 @@ class AssignmentState extends MessageSet {
     public $has_user_error = false;
     /** @var array<string,AssignmentPreapplyFunction> */
     private $preapply_functions = [];
-
-    const FLAG_CSV_CONTEXT = 1;
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
@@ -1001,6 +999,12 @@ class AssignmentSet {
     /** @var Contact
      * @readonly */
     public $user;
+    /** @var string */
+    private $search_type = "s";
+    /** @var ?array<int,true> */
+    private $enabled_pids;
+    /** @var ?array<string,true> */
+    private $enabled_actions;
     /** @var int */
     private $request_count = 0;
     /** @var list<callable> */
@@ -1009,18 +1013,12 @@ class AssignmentSet {
     private $assigners = [];
     /** @var array<int,int> */
     private $assigners_pidhead = [];
-    /** @var ?array<int,true> */
-    private $enabled_pids;
-    /** @var ?array<string,true> */
-    private $enabled_actions;
     /** @var AssignmentState */
     private $astate;
     /** @var array<string,list<int>> */
     private $searches = [];
     /** @var array<string,list<MessageItem>> */
     private $search_messages = [];
-    /** @var string */
-    private $search_type = "s";
     /** @var ?string */
     private $unparse_search;
     /** @var array<string,bool> */
@@ -1067,10 +1065,10 @@ class AssignmentSet {
         $this->astate->overrides = (int) $overrides;
         return $this;
     }
-    /** @param int $flags
+    /** @param bool $csv_context
      * @return $this */
-    function set_flags($flags) {
-        $this->astate->flags = $flags;
+    function set_csv_context($csv_context) {
+        $this->astate->csv_context = $csv_context;
         return $this;
     }
 
