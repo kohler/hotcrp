@@ -54,10 +54,10 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     }
 
     static function expand($name, Contact $user, $xfj, $m) {
-        $formula = new Formula($m[1], Formula::ALLOW_INDEXED);
+        $formula = new Formula($m[2], Formula::ALLOW_INDEXED);
         if (!$formula->check($user)) {
             foreach ($formula->message_list() as $mi) {
-                PaperColumn::column_error($user, $mi);
+                PaperColumn::column_error($user, $mi->with(["pos_offset" => strlen($m[1])]));
             }
             return null;
         } else if ($formula->result_format() !== Fexpr::FREVIEWFIELD) {
@@ -65,7 +65,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
             return null;
         } else {
             $cj = (array) $xfj;
-            $cj["name"] = "graph(" . $m[1] . ")";
+            $cj["name"] = "graph(" . $m[2] . ")";
             $cj["formula"] = $formula;
             return [(object) $cj];
         }

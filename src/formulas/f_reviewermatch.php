@@ -43,7 +43,8 @@ class ReviewerMatch_Fexpr extends Fexpr {
             return "null";
         }
         $state->queryOptions["reviewSignatures"] = true;
-        return '(' . $state->_prow() . '->can_view_review_identity_of(' . $state->loop_cid() . ', $contact) ? array_search(' . $state->loop_cid() . ", [" . join(", ", $this->csearch->user_ids()) . "]) !== false : null)";
+        $t = $state->review_identity_loop_cid();
+        return "({$t} !== null ? array_search({$t}, [" . join(", ", $this->csearch->user_ids()) . "]) !== false : null)";
     }
     function matches_at_most_once() {
         return count($this->csearch->user_ids()) <= 1;

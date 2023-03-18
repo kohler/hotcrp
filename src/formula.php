@@ -1226,6 +1226,20 @@ class FormulaCompiler {
     }
 
     /** @return string */
+    function review_identity_loop_cid() {
+        $this->indexed = true;
+        if ($this->index_type === Fexpr::IDX_NONE) {
+            $rrow = $this->_rrow();
+            return $this->define_gvar("rrow_vcid", "({$rrow} && \$contact->can_view_review_identity(\$prow, {$rrow}) ? \$rrow_cid : null)");
+        } else if ($this->index_type === Fexpr::IDX_MY) {
+            return (string) $this->user->contactId;
+        } else {
+            $this->_lflags |= self::LFLAG_ANYCID;
+            return '~i~';
+        }
+    }
+
+    /** @return string */
     function _prow() {
         if ($this->term_compiler) {
             $this->term_error = true;
@@ -1373,11 +1387,11 @@ class FormulaCompiler {
             }
             if ($this->_lflags & self::LFLAG_RROW) {
                 if ($this->index_type === Fexpr::IDX_REVIEW) {
-                    $v = "\$v$p";
+                    $v = "\$v{$p}";
                 } else {
-                    $v = "\$prow->viewable_review_by_user(\$i$p, \$contact)";
+                    $v = "\$prow->viewable_review_by_user(\$i{$p}, \$contact)";
                 }
-                array_unshift($this->lstmt, "\$rrow_{$p} = $v;");
+                array_unshift($this->lstmt, "\$rrow_{$p} = {$v};");
             }
             if (($this->_lflags & self::LFLAG_ANYCID)
                 && $this->index_type === Fexpr::IDX_REVIEW) {
@@ -1395,12 +1409,12 @@ class FormulaCompiler {
         } else {
             $g = $this->loop_variable($this->index_type);
             if ($this->index_type === Fexpr::IDX_REVIEW) {
-                $loop = "foreach ($g as \$v$p) ";
+                $loop = "foreach ({$g} as \$v{$p}) ";
             } else {
-                $loop = "foreach ($g as \$i$p => \$v$p) ";
+                $loop = "foreach ({$g} as \$i{$p} => \$v{$p}) ";
             }
-            $loop .= str_replace("~i~", "\$i$p", $this->_join_lstmt(true));
-            $loop = str_replace("({$g}[\$i$p] ?? null)", "\$v$p", $loop);
+            $loop .= str_replace("~i~", "\$i{$p}", $this->_join_lstmt(true));
+            $loop = str_replace("({$g}[\$i{$p}] ?? null)", "\$v{$p}", $loop);
         }
         $loopstmt[] = $loop;
 
@@ -2314,7 +2328,7 @@ class Formula implements JsonSerializable {
         }
 
         $args = '$prow, $rrow_cid, $contact';
-        self::DEBUG && Conf::msg_debugt("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n");
+        self::DEBUG && Conf::msg_debugt("function ({$args}) {\n  // " . simplify_whitespace($this->expression) . "\n  {$t}}\n");
         return eval("return function ($args) {\n  $t};");
     }
 

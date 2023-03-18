@@ -205,14 +205,16 @@ class Formula_PaperColumnFactory {
             $ff = ($user->conf->named_formulas())[(int) substr($name, 7)] ?? null;
         }
 
-        $want_error = strpos($name, "(") !== false;
-        if (!$ff && str_starts_with($name, "f:")) {
-            $name = substr($name, 2);
-            $want_error = true;
-        } else if (!$ff && str_starts_with($name, "formula:")) {
-            $name = substr($name, 8);
-            $want_error = true;
+        $pos_offset = 0;
+        if (!$ff) {
+            if (str_starts_with($name, "f:")) {
+                $pos_offset = 2;
+            } else if (str_starts_with($name, "formula:")) {
+                $pos_offset = 8;
+            }
         }
+        $want_error = $pos_offset > 0 || strpos($name, "(") !== false;
+        $name = substr($name, $pos_offset);
 
         if (!$ff) {
             $ff = $user->conf->find_named_formula($name);
@@ -230,7 +232,7 @@ class Formula_PaperColumnFactory {
             }
         } else if ($ff && $want_error) {
             foreach ($ff->message_list() as $mi) {
-                PaperColumn::column_error($user, $mi);
+                PaperColumn::column_error($user, $mi->with(["pos_offset" => $pos_offset]));
             }
         }
         return null;

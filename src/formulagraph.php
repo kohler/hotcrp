@@ -269,7 +269,7 @@ class FormulaGraph extends MessageSet {
         } else if (strcasecmp($fx, "tag") === 0) {
             $this->fxs[] = new Formula("0", Formula::ALLOW_INDEXED);
             $this->fx_type = Fexpr::FTAG;
-        } else if (!($this->type & self::CDF)) {
+        } else if (($this->type & self::CDF) === 0) {
             $this->fxs[] = new Formula($fx, Formula::ALLOW_INDEXED);
         } else {
             while (true) {
@@ -680,7 +680,7 @@ class FormulaGraph extends MessageSet {
                 $id = $prow->paperId;
                 if ($rrow
                     && $rrow->reviewOrdinal
-                    && !($index_type & Fexpr::IDX_PC)) {
+                    && ($index_type & Fexpr::IDX_PC) === 0) {
                     $id .= unparse_latin_ordinal($rrow->reviewOrdinal);
                 }
                 foreach ($queries as $q) {
@@ -746,7 +746,8 @@ class FormulaGraph extends MessageSet {
             || ($this->fx_type === Fexpr::FREVIEWER && $format === Fexpr::FREVIEWER)) {
             $axes |= 1;
         }
-        if (!($this->type & self::CDF) && $this->fy->result_format() === $format) {
+        if (($this->type & self::CDF) === 0
+            && $this->fy->result_format() === $format) {
             $axes |= 2;
         }
         return $axes;

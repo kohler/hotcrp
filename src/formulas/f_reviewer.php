@@ -15,6 +15,6 @@ class Reviewer_Fexpr extends Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $state->queryOptions["reviewSignatures"] = true;
-        return '(' . $state->_prow() . '->can_view_review_identity_of(' . $state->loop_cid() . ', $contact) ? ' . $state->loop_cid() . ' : null)';
+        return $state->review_identity_loop_cid();
     }
 }
