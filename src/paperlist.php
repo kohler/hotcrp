@@ -756,8 +756,7 @@ class PaperList implements XtContext {
     private function _add_view_sorters(SearchTerm $qe, $sort_subset) {
         $nsortcol = count($this->_sortcol);
         foreach (PaperSearch::view_generator($qe->view_anno()) as $sve) {
-            if ($sve->sort_action()
-                && ($sve->nondefault_sort_action() || $this->_sortcol)) {
+            if ($sve->sort_action()) {
                 $this->_add_sorter($sve->keyword, null, $sve->decorations, $sort_subset, $sve->pos1, $sve->pos2);
             }
         }
