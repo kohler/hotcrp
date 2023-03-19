@@ -647,7 +647,7 @@ class PaperSearch extends MessageSet {
 
     /** @return SearchTerm */
     static function parse_searchoption($word, SearchWord $sword, PaperSearch $srch) {
-        if (strcasecmp($word, "expand_automatic")) {
+        if (strcasecmp($word, "expand_automatic") === 0) {
             if ($srch->expand_automatic === 0) {
                 /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
                 $srch->expand_automatic = 1;

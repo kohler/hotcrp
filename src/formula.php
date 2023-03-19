@@ -361,22 +361,28 @@ class Constant_Fexpr extends Fexpr {
             return $this->x;
         }
     }
+    /** @return Constant_Fexpr */
     static function cerror($pos1 = null, $pos2 = null) {
         return new Constant_Fexpr("null", Fexpr::FERROR, $pos1, $pos2);
     }
+    /** @return Constant_Fexpr */
     static function make_error_call(FormulaCall $ff) {
         $ff->formula->lerror($ff->pos1, $ff->pos1 + strlen($ff->name), "<0>Function ‘{$ff->name}’ not found");
         return self::cerror($ff->pos1, $ff->pos2);
     }
+    /** @return Constant_Fexpr */
     static function cnull() {
         return new Constant_Fexpr("null", Fexpr::FNULL);
     }
+    /** @return Constant_Fexpr */
     static function czero() {
         return new Constant_Fexpr("0", Fexpr::FNUMERIC);
     }
+    /** @return Constant_Fexpr */
     static function cfalse() {
         return new Constant_Fexpr("false", Fexpr::FBOOL);
     }
+    /** @return Constant_Fexpr */
     static function ctrue() {
         return new Constant_Fexpr("true", Fexpr::FBOOL);
     }
@@ -668,16 +674,26 @@ class Math_Fexpr extends Fexpr {
             $t2 = null;
         }
         if ($this->op === "log" && $t2) {
-            return "($t1 !== null && $t2 !== null ? log($t1, $t2) : null)";
+            return "({$t1} !== null && {$t2} !== null ? log({$t1}, {$t2}) : null)";
         } else if ($this->op === "log10") {
-            return "($t1 !== null ? log10($t1) : null)";
+            return "({$t1} !== null ? log10({$t1}) : null)";
         } else if ($this->op === "log2" || $this->op === "lg") {
-            return "($t1 !== null ? log($t1, 2.0) : null)";
+            return "({$t1} !== null ? log({$t1}, 2.0) : null)";
         } else if ($this->op === "log" || $this->op === "ln") {
-            return "($t1 !== null ? log($t1) : null)";
+            return "({$t1} !== null ? log({$t1}) : null)";
         } else {
-            return "($t1 !== null ? {$this->op}($t1) : null)";
+            return "({$t1} !== null ? {$this->op}({$t1}) : null)";
         }
+    }
+}
+
+class IsNull_Fexpr extends Fexpr {
+    function __construct($ff) {
+        parent::__construct($ff);
+    }
+    function compile(FormulaCompiler $state) {
+        $t1 = $state->_addltemp($this->args[0]->compile($state));
+        return "({$t1} !== null)";
     }
 }
 
@@ -1689,6 +1705,11 @@ class Formula implements JsonSerializable {
         return $this->_parse->lerrors ?? [];
     }
 
+    /** @return string */
+    function full_feedback_text() {
+        return MessageSet::feedback_text($this->message_list());
+    }
+
     /** @return PaperInfo */
     function placeholder_prow() {
         if ($this->_placeholder_prow === null) {
@@ -2111,7 +2132,7 @@ class Formula implements JsonSerializable {
             $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
         } else if ($t[0] === "l"
-                   && preg_match('/\Alet\s+([A-Za-z][A-Za-z0-9_]*)(\s*=\s*)(.*)\z/si', $t, $m)) {
+                   && preg_match('/\Alet\s+([A-Za-z_][A-Za-z0-9_]*)(\s*=\s*)(.*)\z/si', $t, $m)) {
             $var = $m[1];
             $varpos = -(strlen($m[1]) + strlen($m[2]) + strlen($m[3]));
             if (preg_match('/\A(?:null|true|false|let|and|or|not|in)\z/', $var)) {
@@ -2154,7 +2175,7 @@ class Formula implements JsonSerializable {
             }
             $t = $m[2];
         } else if (!empty($this->_bind)
-                   && preg_match('/\A([A-Za-z][A-Za-z0-9_]*)/', $t, $m)
+                   && preg_match('/\A([A-Za-z_][A-Za-z0-9_]*)/', $t, $m)
                    && isset($this->_bind[$m[1]])) {
             $e = new VarUse_Fexpr($this->_bind[$m[1]]);
             $t = substr($t, strlen($m[1]));

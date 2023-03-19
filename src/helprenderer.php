@@ -60,7 +60,7 @@ class HelpRenderer extends Ht {
     function table($tabletype = false) {
         $this->_rowidx = 0;
         $this->_tabletype = $tabletype;
-        return $this->_tabletype ? "" : '<table class="demargin"><tbody>';
+        return $this->_tabletype ? "" : '<table class="sentry-demargin"><tbody>';
     }
 
     /** @param string $title
@@ -71,7 +71,7 @@ class HelpRenderer extends Ht {
         if ($this->_tabletype) {
             return $this->subhead($title, $id);
         } else {
-            return '<tr><td class="sentry nw remargin-left remargin-right" colspan="2"><h4 class="helppage"'
+            return '<tr><td class="sentry nw" colspan="2"><h4 class="helppage"'
                 . ($id ? " id=\"{$id}\"" : "") . '>'
                 . $title . "</h4></td></tr>\n";
         }
@@ -89,11 +89,11 @@ class HelpRenderer extends Ht {
                 . "</td><td class=\"helplist-dd remargin-right\">"
                 . $entry . "</td></tr></tbody></table></div>\n";
         } else {
-            $t = '<tr class="k' . $this->_rowidx . '"><td class="sentry remargin-left';
+            $t = '<tr class="k' . $this->_rowidx . '"><td class="sentry';
             if ((string) $entry === "") {
-                $t .= ' remargin-right" colspan="2">' . $caption;
+                $t .= '" colspan="2">' . $caption;
             } else {
-                $t .= '">' . $caption . '</td><td class="sentry remargin-right">' . $entry;
+                $t .= '">' . $caption . '</td><td class="sentry">' . $entry;
             }
             $t .= "</td></tr>\n";
         }

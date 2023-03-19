@@ -151,6 +151,11 @@ class TagSearchMatcher {
         $this->_valm[] = $valm;
     }
 
+    /** @return list<CountMatcher> */
+    function value_matchers() {
+        return $this->_valm;
+    }
+
 
     /** @return string|false */
     function single_tag() {
@@ -212,7 +217,7 @@ class TagSearchMatcher {
             }
             $regex = count($res) > 1 ? "^(" . join("|", $res) . ")$" : "^{$res[0]}$";
             $dbl = $this->user->conf->dblink;
-            return Dbl::format_query($dbl, "$table.tag regexp " . Dbl::utf8ci($dbl, "?"), $regex);
+            return Dbl::format_query($dbl, "{$table}.tag regexp " . Dbl::utf8ci($dbl, "?"), $regex);
         } else {
             return null;
         }
@@ -223,7 +228,7 @@ class TagSearchMatcher {
         if (($setp = $this->sqlexpr_tagpart($table)) !== null) {
             $s = [$setp];
             foreach ($this->_valm as $valm) {
-                $s[] = "$table.tagIndex" . $valm->comparison();
+                $s[] = "{$table}.tagIndex" . $valm->comparison();
             }
             return "(" . join(" and ", $s) . ")";
         } else {

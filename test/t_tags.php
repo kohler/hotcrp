@@ -51,4 +51,32 @@ class Tags_Tester {
         assert_search_papers($this->u_chair, "#up", "");
         assert_search_papers($this->u_chair, "#withdrawn", "");
     }
+
+    function test_mutual_valued_automatic_search() {
+        assert_search_papers($this->u_chair, "#nau", "");
+        assert_search_papers($this->u_chair, "#lotsau", "");
+
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "automatic_tag": [
+                {"tag": "nau", "search": "", "value": "au"},
+                {"tag": "lotsau", "search": "#nau>3"}
+            ]
+        }');
+        xassert($sv->execute());
+
+        assert_search_papers($this->u_chair, "#nau 1-10 sort:id", "1 2 3 4 5 6 7 8 9 10");
+        xassert_eqq($this->conf->checked_paper_by_id(1)->tag_value("nau"), 4.0);
+        assert_search_papers($this->u_chair, "#lotsau 1-10 sort:id", "1 2 4 6 10");
+
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "automatic_tag": [
+                {"tag": "nau", "delete": true},
+                {"tag": "lotsau", "delete": true}
+            ]
+        }');
+        xassert($sv->execute());
+
+        assert_search_papers($this->u_chair, "#nau", "");
+        assert_search_papers($this->u_chair, "#lotsau", "");
+    }
 }

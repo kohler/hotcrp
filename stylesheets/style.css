@@ -1574,6 +1574,9 @@ table.paper {
 	width: 100%;
 	position: relative;
 }
+table.sentry-demargin {
+	margin-left: -0.75em;
+}
 td.textarea, td.top {
 	vertical-align: top;
 }

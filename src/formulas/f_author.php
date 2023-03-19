@@ -52,7 +52,11 @@ class Author_Fexpr extends Fexpr {
         } else {
             $v = "Author_Fexpr::count_matches({$prow}, " . $this->matchidx . ')';
         }
-        return "(\$contact->allow_view_authors({$prow}) ? " . $v . ' : null)';
+        if ($state->user->is_root_user()) {
+            return $v;
+        } else {
+            return "(\$contact->allow_view_authors({$prow}) ? {$v} : null)";
+        }
     }
     static function count_matches(PaperInfo $prow, $matchidx) {
         $mf = self::$matchers[$matchidx];
