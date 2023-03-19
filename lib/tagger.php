@@ -162,7 +162,7 @@ class TagInfo {
     }
     /** @return ?string */
     function automatic_search() {
-        if ($this->autosearch) {
+        if ($this->autosearch !== null) {
             return $this->autosearch;
         } else if ($this->votish) {
             return "#*~" . $this->tag;
@@ -172,7 +172,7 @@ class TagInfo {
     }
     /** @return ?string */
     function automatic_formula_expression() {
-        if ($this->autosearch) {
+        if ($this->autosearch !== null) {
             return $this->autosearch_value ?? "0";
         } else if ($this->approval) {
             return "count.pc(#_~{$this->tag}) || null";
