@@ -79,7 +79,7 @@ abstract class Fexpr implements JsonSerializable {
         "unknown", "null", "error", "number", "bool",
         "review round", "review type", "decision", "expertise", "reviewer",
         "review field", "tag", "search", "tag value", "date",
-        "time", "duration", "duration"
+        "time", "duration", "duration", "submission field"
     ];
 
     /** @param list<Fexpr> $args */
@@ -107,23 +107,39 @@ abstract class Fexpr implements JsonSerializable {
         return $this;
     }
 
+
     /** @return int */
     function format() {
         return $this->_format;
     }
+
     /** @return bool */
     function has_format() {
         return $this->_format !== Fexpr::FUNKNOWN;
     }
+
     /** @return bool */
     function math_format() {
         return $this->_format !== Fexpr::FREVIEWER
             && $this->_format !== Fexpr::FSUBFIELD;
     }
+
+    /** @return bool */
+    function nonnullable_format() {
+        return $this->_format === Fexpr::FNUMERIC
+               || $this->_format === Fexpr::FBOOL;
+    }
+
+    /** @return bool */
+    function nonnull_format() {
+        return $this->nonnullable_format() && $this->_format_detail;
+    }
+
     /** @return mixed */
     function format_detail() {
         return $this->_format_detail;
     }
+
     /** @return string */
     function format_description() {
         if ($this->_format === Fexpr::FREVIEWFIELD) {
@@ -134,6 +150,7 @@ abstract class Fexpr implements JsonSerializable {
             return Fexpr::FORMAT_DESCRIPTIONS[$this->_format];
         }
     }
+
     /** @param int $format
      * @param mixed $format_detail */
     function set_format($format, $format_detail = null) {
@@ -141,6 +158,7 @@ abstract class Fexpr implements JsonSerializable {
         $this->_format = $format;
         $this->_format_detail = $format_detail;
     }
+
     /** @return string */
     function disallowed_use_error() {
         return "<0>Expression of type " . $this->format_description() . " can’t be used here";
@@ -168,30 +186,37 @@ abstract class Fexpr implements JsonSerializable {
             }
             $ok = $ok && $aok;
         }
+        if ($ok
+            && ($this->_format === Fexpr::FUNKNOWN
+                || ($this->nonnullable_format() && $this->_format_detail === null))) {
+            $this->_do_typecheck_format();
+        }
+        return $ok;
+    }
 
-        if ($ok && $this->_format === Fexpr::FUNKNOWN) {
-            $commonf = null;
-            foreach ($this->typecheck_format() ?? [] as $fe) {
-                if ($fe->format() < Fexpr::FNUMERIC) {
-                    /* ignore it */
-                } else if (!$commonf) {
-                    $commonf = $fe;
-                } else if ($commonf->_format !== $fe->_format
-                           || $commonf->_format_detail !== $fe->_format_detail) {
-                    $commonf = null;
-                    break;
-                }
-            }
-            if ($this->_format !== Fexpr::FUNKNOWN) {
-                // already have format
-            } else if ($commonf) {
-                $this->set_format($commonf->_format, $commonf->_format_detail);
-            } else {
-                $this->set_format(Fexpr::FNUMERIC);
+    private function _do_typecheck_format() {
+        $commonf = null;
+        $nonnull = true;
+        foreach ($this->typecheck_format() ?? [] as $fe) {
+            $nonnull = $nonnull && $fe->nonull_format();
+            if ($fe->format() < Fexpr::FNUMERIC) {
+                /* ignore it */
+            } else if (!$commonf) {
+                $commonf = $fe;
+            } else if ($commonf->_format !== $fe->_format
+                       || (!$commonf->nonnullable_format()
+                           && $commonf->_format_detail !== $fe->_format_detail)) {
+                $commonf = null;
+                break;
             }
         }
-
-        return $ok;
+        if ($this->_format === Fexpr::FUNKNOWN) {
+            $this->_format = $commonf ? $commonf->_format : Fexpr::FNUMERIC;
+            $this->_format_detail = $commonf && !$commonf->nonnullable_format() ? $commonf->_format_detail : $nonnull;
+        }
+        if ($this->nonnullable_format() && $this->_format_detail === null) {
+            $this->_format_detail = $nonnull;
+        }
     }
 
     /** @return bool */
@@ -225,7 +250,24 @@ abstract class Fexpr implements JsonSerializable {
     /** @param string $t
      * @return string */
     static function cast_bool($t) {
-        return "($t !== null ? (bool) $t : null)";
+        return "({$t} !== null ? (bool) {$t} : null)";
+    }
+
+    /** @param string $expr
+     * @param ...string $ts
+     * @return string */
+    protected function check_null_args($expr, ...$ts) {
+        assert(count($ts) === count($this->args));
+        $nc = [];
+        foreach ($this->args as $i => $e) {
+            if (!$e->nonnull_format())
+                $nc[] = "{$ts[$i]} !== null";
+        }
+        if (empty($nc)) {
+            return $expr;
+        } else {
+            return "(" . join(" && ", $nc) . " ? {$expr} : null)";
+        }
     }
 
     /** @return bool */
@@ -262,14 +304,16 @@ abstract class Fexpr implements JsonSerializable {
 }
 
 class Constant_Fexpr extends Fexpr {
-    /** @var int|float|string */
+    /** @var null|int|float|string */
     private $x;
-    /** @param int $format
+    /** @param null|int|float|string $x
+     * @param int $format
      * @param ?int $pos1
      * @param ?int $pos2 */
     function __construct($x, $format, $pos1 = null, $pos2 = null) {
         $this->x = $x;
-        $this->set_format($format);
+        $fd = $format === self::FNUMERIC || $format === self::FBOOL ? true : null;
+        $this->set_format($format, $fd);
         $this->set_landmark($pos1, $pos2);
     }
     private function _check_revtype() {
@@ -406,7 +450,7 @@ class Ternary_Fexpr extends Fexpr {
         $t = $state->_addltemp($this->args[0]->compile($state));
         $tt = $state->_addltemp($this->args[1]->compile($state));
         $tf = $state->_addltemp($this->args[2]->compile($state));
-        return "($t ? $tt : $tf)";
+        return "({$t} ? {$tt} : {$tf})";
     }
     function matches_at_most_once() {
         return $this->args[0]->matches_at_most_once()
@@ -427,7 +471,7 @@ class Equality_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
         $t2 = $state->_addltemp($this->args[1]->compile($state));
-        return "($t1 !== null && $t2 !== null ? $t1 {$this->op} $t2 : null)";
+        return $this->check_null_args("{$t1} {$this->op} {$t2}", $t1, $t2);
     }
 }
 
@@ -445,7 +489,7 @@ class Inequality_Fexpr extends Fexpr {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
         $t2 = $state->_addltemp($this->args[1]->compile($state));
         $op = $this->args[0]->compiled_relation($this->op, $this->args[1]);
-        return "({$t1} !== null && {$t2} !== null ? {$t1} {$op} {$t2} : null)";
+        return $this->check_null_args("{$t1} {$op} {$t2}", $t1, $t2);
     }
 }
 
@@ -459,7 +503,7 @@ class And_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
         $t2 = $state->_addltemp($this->args[1]->compile($state));
-        return "($t1 ? $t2 : $t1)";
+        return "({$t1} ? {$t2} : {$t1})";
     }
     function matches_at_most_once() {
         return $this->args[0]->matches_at_most_once() || $this->args[1]->matches_at_most_once();
@@ -479,18 +523,18 @@ class Or_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
         $t2 = $state->_addltemp($this->args[1]->compile($state));
-        return "($t1 ? : $t2)";
+        return "({$t1} ? : {$t2})";
     }
 }
 
 class Not_Fexpr extends Fexpr {
     function __construct(Fexpr $e) {
         parent::__construct("!", [$e]);
-        $this->set_format(Fexpr::FBOOL);
+        $this->set_format(Fexpr::FBOOL, true);
     }
     function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
-        return "!$t";
+        return "!{$t}";
     }
 }
 
@@ -498,14 +542,14 @@ class Unary_Fexpr extends Fexpr {
     function __construct($op, Fexpr $e) {
         assert($op === "+" || $op === "-");
         parent::__construct($op, [$e]);
-        $this->set_format(Fexpr::FNUMERIC);
+        $this->set_format(Fexpr::FNUMERIC, true);
     }
     function typecheck(Formula $formula) {
         return $this->typecheck_arguments($formula, true);
     }
     function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
-        return "{$this->op}$t";
+        return "{$this->op}{$t}";
     }
 }
 
@@ -547,7 +591,7 @@ class Additive_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
         $t2 = $state->_addltemp($this->args[1]->compile($state));
-        return "($t1 !== null || $t2 !== null ? $t1 {$this->op} $t2 : null)";
+        return $this->check_null_args("{$t1} {$this->op} {$t2}", $t1, $t2);
     }
 }
 
@@ -562,8 +606,11 @@ class Multiplicative_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
         $t2 = $state->_addltemp($this->args[1]->compile($state));
-        $t2check = $this->op === "*" ? "$t2 !== null" : "$t2";
-        return "($t1 !== null && $t2check ? $t1 {$this->op} $t2 : null)";
+        if ($this->op === "*") {
+            return $this->check_null_args("{$t1} * {$t2}", $t1, $t2);
+        } else {
+            return "({$t1} !== null && {$t2} ? {$t1} {$this->op} {$t2} : null)";
+        }
     }
 }
 
@@ -578,7 +625,7 @@ class Shift_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
         $t2 = $state->_addltemp($this->args[1]->compile($state));
-        return "($t1 !== null && $t2 !== null ? $t1 {$this->op} $t2 : null)";
+        return $this->check_null_args("{$t1} {$this->op} {$t2}", $t1, $t2);
     }
 }
 
@@ -593,7 +640,7 @@ class Bitwise_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
         $t2 = $state->_addltemp($this->args[1]->compile($state));
-        return "($t1 !== null && $t2 !== null ? $t1 {$this->op} $t2 : null)";
+        return $this->check_null_args("{$t1} {$this->op} {$t2}", $t1, $t2);
     }
 }
 
@@ -607,7 +654,7 @@ class Pow_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
         $t2 = $state->_addltemp($this->args[1]->compile($state));
-        return "($t1 !== null && $t2 !== null ? pow($t1, $t2) : null)";
+        return $this->check_null_args("pow({$t1}, {$t2})", $t1, $t2);
     }
 }
 
@@ -674,15 +721,15 @@ class Math_Fexpr extends Fexpr {
             $t2 = null;
         }
         if ($this->op === "log" && $t2) {
-            return "({$t1} !== null && {$t2} !== null ? log({$t1}, {$t2}) : null)";
+            return $this->check_null_args("log({$t1}, {$t2})", $t1, $t2);
         } else if ($this->op === "log10") {
-            return "({$t1} !== null ? log10({$t1}) : null)";
+            return $this->check_null_args("log10({$t1})", $t1);
         } else if ($this->op === "log2" || $this->op === "lg") {
-            return "({$t1} !== null ? log({$t1}, 2.0) : null)";
+            return $this->check_null_args("log({$t1}, 2.0)", $t1);
         } else if ($this->op === "log" || $this->op === "ln") {
-            return "({$t1} !== null ? log({$t1}) : null)";
+            return $this->check_null_args("log({$t1})", $t1);
         } else {
-            return "({$t1} !== null ? {$this->op}({$t1}) : null)";
+            return $this->check_null_args("{$this->op}({$t1})", $t1);
         }
     }
 }
@@ -690,6 +737,7 @@ class Math_Fexpr extends Fexpr {
 class IsNull_Fexpr extends Fexpr {
     function __construct($ff) {
         parent::__construct($ff);
+        $this->set_format(self::FBOOL, true);
     }
     function compile(FormulaCompiler $state) {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
@@ -708,10 +756,10 @@ class Round_Fexpr extends Fexpr {
         $op = $this->op === "trunc" ? "(int) " : $this->op;
         $t1 = $state->_addltemp($this->args[0]->compile($state));
         if (count($this->args) === 1) {
-            return "($t1 !== null ? $op($t1) : null)";
+            return $this->check_null_args("{$op}({$t1})", $t1);
         } else {
             $t2 = $state->_addltemp($this->args[1]->compile($state));
-            return "($t1 !== null && $t2 ? $op($t1 / $t2) * $t2 : null)";
+            return "({$t1} !== null && {$t2} ? {$op}({$t1} / {$t2}) * {$t2} : null)";
         }
     }
 }

@@ -20,6 +20,6 @@ class ReviewWordCount_Fexpr extends Fexpr {
         $state->_ensure_review_word_counts();
         $rrow = $state->_rrow();
         $rrow_vsb = $state->_rrow_view_score_bound();
-        return "(" . VIEWSCORE_AUTHORDEC . " > $rrow_vsb ? {$rrow}->reviewWordCount : null)";
+        return "(" . VIEWSCORE_AUTHORDEC . " > {$rrow_vsb} ? {$rrow}->reviewWordCount : null)";
     }
 }

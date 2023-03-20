@@ -41,7 +41,7 @@ class Pref_Fexpr extends Fexpr {
         $e = "((" . $state->_add_preferences() . "[" . $state->loop_cid(true) . "] ?? [])"
             . "[" . ($this->is_expertise ? 1 : 0) . "] ?? null)";
         if ($this->cids) {
-            $e = "(in_array(" . $state->loop_cid() . ", [" . join(",", $this->cids) . "]) ? $e : null)";
+            $e = "(in_array(" . $state->loop_cid() . ", [" . join(",", $this->cids) . "]) ? {$e} : null)";
         }
         return $e;
     }

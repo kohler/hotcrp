@@ -75,7 +75,7 @@ class Tag_Fexpr extends Fexpr {
             } else {
                 $str = json_encode(" {$tag}#");
             }
-            return "Tag_Fexpr::tag_value($tags,$str,$jvalue)";
+            return "Tag_Fexpr::tag_value({$tags},{$str},{$jvalue})";
         } else {
             $regex = $this->tsm->regex();
             if (str_starts_with($this->tag, "_~")) {
@@ -86,7 +86,7 @@ class Tag_Fexpr extends Fexpr {
             } else {
                 $regex = json_encode($regex);
             }
-            return "Tag_Fexpr::tag_regex_value($tags,$regex,$jvalue)";
+            return "Tag_Fexpr::tag_regex_value({$tags},{$regex},{$jvalue})";
         }
     }
 }
