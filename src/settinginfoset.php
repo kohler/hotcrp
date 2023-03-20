@@ -372,9 +372,9 @@ class SettingInfoSet {
                 $x[strpos($key, "\$") === false ? "name" : "name_pattern"] = $key;
                 $d = cleannl(ltrim($m[$i + 1]));
                 if (str_starts_with($d, "> ")) {
-                    preg_match('/\A(?:^> .*?\n)+/m', $d, $m);
-                    $x["summary"] = "<3>" . simplify_whitespace(str_replace("\n> ", "", substr($m[0], 2)));
-                    $d = ltrim(substr($d, strlen($m[0])));
+                    preg_match('/\A(?:^> .*?\n)+/m', $d, $mx);
+                    $x["summary"] = "<3>" . simplify_whitespace(str_replace("\n> ", "", substr($mx[0], 2)));
+                    $d = ltrim(substr($d, strlen($mx[0])));
                 }
                 if ($d !== "") {
                     $x["description"] = "<3>" . $d;
