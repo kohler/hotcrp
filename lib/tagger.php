@@ -730,7 +730,7 @@ class TagMap implements IteratorAggregate {
     private function color_regex() {
         if (!$this->color_re) {
             $rex = [
-                "{(?:\\A| )(?:(?:\\d*~|~~|)(font-[^\s#]+|weight-(?:[a-z]+|\d+)|(?:text-)rgb-[0-9a-f]{3}(?:|[0-9a-f]{3})|",
+                "{(?:\\A| )(?:(?:\\d*~|~~|)(font-[^\s#]+|weight-(?:[a-z]+|\d+)|(?:text-|)rgb-[0-9a-f]{3}(?:|[0-9a-f]{3})|",
                 join("|", array_keys($this->style_lmap))
             ];
             $any = false;
@@ -805,8 +805,9 @@ class TagMap implements IteratorAggregate {
         $key = is_array($classes) ? join(" ", $classes) : $classes;
         if (!isset(self::$multicolor_map[$key])) {
             $arg = json_encode_browser($key);
-            if (str_starts_with($key, "badge-"))
+            if (str_starts_with($key, "badge-")) {
                 $arg .= ",\"badge\"";
+            }
             Ht::stash_script("hotcrp.ensure_pattern({$arg})");
             self::$multicolor_map[$key] = true;
         }
