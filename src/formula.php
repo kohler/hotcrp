@@ -198,7 +198,7 @@ abstract class Fexpr implements JsonSerializable {
         $commonf = null;
         $nonnull = true;
         foreach ($this->typecheck_format() ?? [] as $fe) {
-            $nonnull = $nonnull && $fe->nonull_format();
+            $nonnull = $nonnull && $fe->nonnull_format();
             if ($fe->format() < Fexpr::FNUMERIC) {
                 /* ignore it */
             } else if (!$commonf) {
@@ -254,7 +254,7 @@ abstract class Fexpr implements JsonSerializable {
     }
 
     /** @param string $expr
-     * @param ...string $ts
+     * @param string ...$ts
      * @return string */
     protected function check_null_args($expr, ...$ts) {
         assert(count($ts) === count($this->args));
