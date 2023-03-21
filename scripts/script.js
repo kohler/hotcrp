@@ -2709,9 +2709,7 @@ function display_main(is_initial) {
     // See also the version in `Conf`
     dlname = "";
     dltime = 0;
-    if (!dl.sub)
-        log_jserror("bad dl " + JSON.stringify(dl));
-    if (dl.sub.open) {
+    if (dl.sub && dl.sub.open) {
         if (checkdl(now, +dl.sub.reg, dl.sub.reg_ingrace))
             dlname = "Registration";
         else if (checkdl(now, +dl.sub.update, dl.sub.update_ingrace))
@@ -2781,7 +2779,7 @@ function redisplay_main() {
 
 
 // tracker
-var had_tracker_display = false, last_tracker_html,
+var ever_tracker_display = false, last_tracker_html,
     tracker_has_format, tracker_timer, tracker_refresher,
     tracker_configured = false;
 
@@ -2911,7 +2909,7 @@ function tracker_html(tr) {
 
 function display_tracker() {
     var mne = $$("tracker"), mnspace = $$("tracker-space"),
-        mnpl = $("nav.pslcard-nav")[0], t, i, e;
+        mnpl = $("nav.pslcard-nav")[0], t, i, e, first_tracker_display = false;
 
     // tracker button
     if ((e = $$("tracker-connect-btn"))) {
@@ -2954,9 +2952,9 @@ function display_tracker() {
         document.body.insertBefore(mne, document.body.firstChild);
         last_tracker_html = null;
     }
-    if (!had_tracker_display) {
+    if (!ever_tracker_display) {
         $(window).on("resize", display_tracker);
-        had_tracker_display = true;
+        ever_tracker_display = first_tracker_display = true;
     }
     addClass(document.body, "has-tracker");
 
@@ -2980,6 +2978,8 @@ function display_tracker() {
     mnspace.style.height = mne.offsetHeight + "px";
     if (mnpl)
         mnpl.style.top = (mne.offsetHeight + 104) + "px";
+    else if (first_tracker_display)
+        $(display_tracker);
     if (dl.tracker)
         tracker_show_elapsed();
 }
