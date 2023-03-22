@@ -63,7 +63,7 @@
     },
     {
         "name": "follow", "paper": true, "post": true, "xxx": true,
-        "function": "PaperApi::follow_api"
+        "function": "Follow_API::run"
     },
     {
         "name": "formatcheck", "get": true, "post": true,
@@ -119,15 +119,15 @@
     },
     {
         "name": "review", "paper": true, "get": true, "post": true,
-        "function": "PaperApi::review_api"
+        "function": "Review_API::review"
     },
     {
         "name": "reviewrating", "paper": true, "get": true, "post": true,
-        "function": "PaperApi::reviewrating_api"
+        "function": "Review_API::reviewrating"
     },
     {
         "name": "reviewround", "paper": true, "post": true, "xxx": true,
-        "function": "PaperApi::reviewround_api"
+        "function": "Review_API::reviewround"
     },
     {
         "name": "reviewtoken", "get": true, "post": true,

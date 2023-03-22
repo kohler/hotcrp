@@ -187,12 +187,14 @@ src/api/api_completion.php
 src/api/api_decision.php
 src/api/api_error.php
 src/api/api_events.php
+src/api/api_follow.php
 src/api/api_formatcheck.php
 src/api/api_graphdata.php
 src/api/api_mail.php
 src/api/api_paperpc.php
 src/api/api_preference.php
 src/api/api_requestreview.php
+src/api/api_review.php
 src/api/api_reviewtoken.php
 src/api/api_search.php
 src/api/api_searchconfig.php
@@ -201,6 +203,7 @@ src/api/api_settings.php
 src/api/api_taganno.php
 src/api/api_tags.php
 src/api/api_user.php
+src/apihelpers.php
 src/assigners/a_conflict.php
 src/assigners/a_decision.php
 src/assigners/a_error.php
@@ -362,7 +365,6 @@ src/pages/p_search.php
 src/pages/p_settings.php
 src/pages/p_signin.php
 src/pages/p_users.php
-src/paperapi.php
 src/papercolumn.php
 src/papercolumns/pc_administrator.php
 src/papercolumns/pc_assignreview.php

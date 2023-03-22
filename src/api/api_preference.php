@@ -1,11 +1,11 @@
 <?php
 // api_preference.php -- HotCRP preference API call
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Preference_API {
     static function pref_api(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $u = PaperAPI::get_reviewer($user, $qreq, $prow);
+        $u = APIHelpers::parse_reviewer_for($qreq->u ?? $qreq->reviewer, $user, $prow);
         $user->set_overrides($overrides);
 
         // PC members may enter preferences for withdrawn papers,
