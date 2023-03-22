@@ -11682,7 +11682,7 @@ $(function () { $(document.body).awaken(); });
 
 $(function () {
     var err = [], elt = [];
-    $("div.info,div.warning,div.confirm,div.merror,div.help,.xinfo,.xconfirm,.xwarning,.xmerror,.aa,.strong").each(function () {
+    $(".xinfo,.xconfirm,.xwarning,.xmerror,.aa,.strong,td.textarea").each(function () {
         err.push(this.tagName.concat(".", this.className.replace(/\s+/g, ".")));
     });
     $("a.btn[href='']").each(function () {

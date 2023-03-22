@@ -1577,7 +1577,7 @@ table.paper {
 table.sentry-demargin {
 	margin-left: -0.75em;
 }
-td.textarea, td.top {
+td.top {
 	vertical-align: top;
 }
 td.rxcaption {

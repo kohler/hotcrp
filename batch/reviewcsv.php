@@ -285,44 +285,26 @@ class ReviewCSV_Batch {
     /** @return int */
     static function run_args($argv) {
         $arg = (new Getopt)->long(
-            "name:,n:",
-            "config:",
-            "help,h",
-            "type:,t:",
-            "narrow,x",
-            "wide,w",
-            "all,a",
-            "reviews,r",
-            "comments,c",
-            "fields,f",
-            "sitename,N",
-            "version:,time:",
-            "no-header",
-            "no-text",
-            "no-score",
-            "format:"
-        )->parse($argv);
-
-        if (isset($arg["help"])) {
-            fwrite(STDOUT, "Usage: php batch/reviewcsv.php [-n CONFID] [-t COLLECTION] [-acx] [QUERY...]
-Output a CSV file containing all reviews for the papers matching QUERY.
-
-Options include:
-  -t, --type COLLECTION  Search COLLECTION “s” (submitted) or “all” [s].
-  -x, --narrow           Narrow output.
-  -a, --all              Include all reviews, not just submitted reviews.
-  -r, --reviews          Include reviews (default unless -c or -f).
-  -c, --comments         Include comments.
-  -f, --fields           Include paper fields.
-  -N, --sitename         Include site name and class in CSV.
-  --version TIME         Return reviews as of time TIME.
-  --no-text              Omit text fields.
-  --no-score             Omit score fields.
-  --no-header            Omit CSV header.
-  --format=FMT           Only output text fields with format FMT.
-  QUERY...               A search term.\n");
-            return 0;
-        }
+            "name:,n: !",
+            "config: !",
+            "help,h !",
+            "type:,t: =COLLECTION Search COLLECTION “s” (submitted) or “all” [s]",
+            "narrow,x Narrow output",
+            "wide,w !",
+            "all,a Include all reviews, not just submitted ones",
+            "reviews,r Include reviews (default unless -c or -f)",
+            "comments,c Include comments",
+            "fields,f Include paper fields",
+            "sitename,N Include site name and class in CSV",
+            "version:,time: =TIME Return reviews as of TIME",
+            "no-text Omit text fields",
+            "no-score Omit score fields",
+            "no-header Omit CSV header",
+            "format: =FMT Only output text fields with format FMT"
+        )->description("Output CSV containing all reviews for papers matching QUERY.
+Usage: php batch/reviewcsv.php [-acx] [QUERY...]")
+         ->helpopt("help")
+         ->parse($argv);
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
         $fcsv = new ReviewCSV_Batch($conf);
