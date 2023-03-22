@@ -114,6 +114,10 @@
         "function": "Completion_API::mentioncompletion_api"
     },
     {
+        "name": "paper", "get": true, "post": true,
+        "function": "Paper_API::run"
+    },
+    {
         "name": "pc", "get": true, "post": true,
         "function": "PaperPC_API::pc_api"
     },

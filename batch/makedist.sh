@@ -191,6 +191,7 @@ src/api/api_follow.php
 src/api/api_formatcheck.php
 src/api/api_graphdata.php
 src/api/api_mail.php
+src/api/api_paper.php
 src/api/api_paperpc.php
 src/api/api_preference.php
 src/api/api_requestreview.php

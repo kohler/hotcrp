@@ -10,13 +10,11 @@ class PaperStatus extends MessageSet {
      * @readonly */
     public $user;
     /** @var bool */
-    private $disable_users = false;
+    private $disable_users;
     /** @var bool */
     private $allow_any_content_file = false;
-    /** @var ?string */
-    private $content_file_prefix = null;
     /** @var bool */
-    private $add_topics = false;
+    private $add_topics;
     /** @var list<callable> */
     private $_on_document_import = [];
 
@@ -24,6 +22,8 @@ class PaperStatus extends MessageSet {
     private $prow;
     /** @var int */
     public $paperId;
+    /** @var ?string */
+    public $title;
     /** @var ?int */
     private $_desired_pid;
     /** @var list<PaperOption> */
@@ -73,12 +73,11 @@ class PaperStatus extends MessageSet {
     function __construct(Contact $user, $options = []) {
         $this->conf = $user->conf;
         $this->user = $user;
-        foreach (["add_topics", "disable_users",
-                  "allow_any_content_file", "content_file_prefix"] as $k) {
-            if (array_key_exists($k, $options))
-                $this->$k = $options[$k];
+        $this->disable_users = $options["disable_users"] ?? false;
+        $this->add_topics = $options["add_topics"] ?? false;
+        if (($options["check_content_file"] ?? null) !== false) {
+            $this->_on_document_import[] = [$this, "document_import_check_filename"];
         }
-        $this->_on_document_import[] = [$this, "document_import_check_filename"];
         $this->set_want_ftext(true, 5);
         $this->set_ignore_duplicates(true);
     }
@@ -90,9 +89,11 @@ class PaperStatus extends MessageSet {
         return $ps;
     }
 
-    /** @param callable(object,PaperInfo,PaperStatus):(?bool) $cb */
+    /** @param callable(object,PaperOption,PaperStatus):(?bool) $cb
+     * @return $this */
     function on_document_import($cb) {
         $this->_on_document_import[] = $cb;
+        return $this;
     }
 
     /** @return Contact */
@@ -164,16 +165,11 @@ class PaperStatus extends MessageSet {
 
 
     function document_import_check_filename($docj, PaperOption $o, PaperStatus $pstatus) {
-        if (isset($docj->content_file)
-            && is_string($docj->content_file)
-            && !($docj instanceof DocumentInfo)) {
-            if (!$this->allow_any_content_file && preg_match('/\A\/|(?:\A|\/)\.\.(?:\/|\z)/', $docj->content_file)) {
-                $pstatus->error_at_option($o, "<0>Bad content_file: only simple filenames allowed");
-                return false;
-            }
-            if (($this->content_file_prefix ?? "") !== "") {
-                $docj->content_file = $this->content_file_prefix . $docj->content_file;
-            }
+        if (is_string($docj->content_file ?? null)
+            && !($docj instanceof DocumentInfo)
+            && preg_match('/\A\/|(?:\A|\/)\.\.(?:\/|\z)/', $docj->content_file)) {
+            $pstatus->error_at_option($o, "<0>Bad content_file: only simple filenames allowed");
+            return false;
         }
     }
 
@@ -339,11 +335,15 @@ class PaperStatus extends MessageSet {
             }
             $xstatus->$k = $v;
         }
-        if ($istatusstr === "submitted" || $istatusstr === "accepted" || $istatusstr === "rejected") {
+        if ($istatusstr === "submitted"
+            || $istatusstr === "accepted"
+            || $istatusstr === "deskrejected"
+            || $istatusstr === "rejected") {
             $xstatus->submitted = $xstatus->submitted ?? true;
             $xstatus->draft = $xstatus->draft ?? false;
             $xstatus->withdrawn = $xstatus->withdrawn ?? false;
-        } else if ($istatusstr === "draft" || $istatusstr === "inprogress") {
+        } else if ($istatusstr === "draft"
+                   || $istatusstr === "inprogress") {
             $xstatus->submitted = $xstatus->submitted ?? false;
             $xstatus->draft = $xstatus->draft ?? true;
             $xstatus->withdrawn = $xstatus->withdrawn ?? false;
@@ -805,7 +805,7 @@ class PaperStatus extends MessageSet {
         assert($prow->paperId !== -1);
         parent::clear();
         $this->prow = $prow;
-        $this->paperId = null;
+        $this->paperId = $this->title = null;
         $this->_desired_pid = $prow->paperId !== 0 ? $prow->paperId : null;
         $this->_fdiffs = $this->_xdiffs = [];
         $this->_paper_upd = $this->_paper_overflow_upd = [];
@@ -1236,6 +1236,7 @@ class PaperStatus extends MessageSet {
         // do (e.g. in old tests), invalidate it when convenient.
         $this->prow->invalidate_options();
         $this->prow->invalidate_conflicts();
+        $this->title = $this->_paper_upd["title"] ?? $this->prow->title;
         $this->prow = null;
         return true;
     }

@@ -1002,7 +1002,12 @@ Phil Porras.");
         $this->conf->invalidate_caches(["options" => true]);
         xassert_eq($this->conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);
 
-        $ps = new PaperStatus($this->conf->root_user(), ["content_file_prefix" => SiteLoader::$root . "/"]);
+        $ps = new PaperStatus($this->conf->root_user());
+        $ps->on_document_import(function ($dj, $opt, $pstatus) {
+            if (is_string($dj->content_file ?? null) && !($dj instanceof DocumentInfo)) {
+                $dj->content_file = SiteLoader::$root . "/" . $dj->content_file;
+            }
+        });
         $ps->save_paper_json(json_decode("{\"id\":3,\"submission\":{\"content_file\":\"test/sample50pg.pdf\",\"type\":\"application/pdf\"}}"));
         xassert_paper_status($ps);
         xassert(ConfInvariants::test_document_inactive($this->conf));

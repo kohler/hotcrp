@@ -85,25 +85,23 @@ class PaperExport {
         if ($doc->filename) {
             $d->filename = $doc->filename;
         }
-        if (($meta = $doc->metadata()) !== null) {
-            $d->metadata = $meta;
-        }
         if ($this->include_content
             && ($content = $doc->content()) !== false) {
             $d->content_base64 = base64_encode($content);
+        }
+        if ($doc->mimetype === "application/pdf") {
+            $this->decorate_pdf_document_json($d, $doc);
         }
         foreach ($this->_on_document_export as $cb) {
             if (call_user_func($cb, $d, $doc, $doc->documentType, $this) === false)
                 return null;
         }
-        if (!count(get_object_vars($d))) {
-            return null;
-        }
+        return count(get_object_vars($d)) ? $d : null;
+    }
 
-        // maybe warn about format check
-        if ($d
-            && $doc->mimetype === "application/pdf"
-            && ($spec = $this->conf->format_spec($doc->documentType))
+    /** @param object $d */
+    private function decorate_pdf_document_json($d, DocumentInfo $doc) {
+        if (($spec = $this->conf->format_spec($doc->documentType))
             && !$spec->is_empty()) {
             $this->_cf = $this->_cf ?? new CheckFormat($this->conf, CheckFormat::RUN_NEVER);
             if ($this->_cf->check_document($doc)) {
@@ -117,9 +115,9 @@ class PaperExport {
                     $d->format_status = "ok";
                 }
             }
+        } else if (($np = $doc->npages()) !== null) {
+            $d->pages = $np;
         }
-
-        return $d;
     }
 
     /** @param int|PaperInfo $prow */
@@ -161,9 +159,13 @@ class PaperExport {
         $submitted_status = "submitted";
         $dec = $prow->viewable_decision($this->user);
         if ($dec->id !== 0) {
-            $pj->decision = $dec->placeholder ? $dec->name : $dec->id;
-            if ($dec->catbits !== DecisionInfo::CAT_OTHER) {
-                $submitted_status = ($dec->catbits & DecisionInfo::CAT_YES) !== 0 ? "accepted" : "rejected";
+            $pj->decision = $dec->name;
+            if (($dec->catbits & DecisionInfo::CAT_YES) !== 0) {
+                $submitted_status = "accepted";
+            } else if ($dec->catbits === DecisionInfo::CAT_DESKREJECT) {
+                $submitted_status = "deskrejected";
+            } else if (($dec->catbits & DecisionInfo::CAT_NO) !== 0) {
+                $submitted_status = "rejected";
             }
         }
 

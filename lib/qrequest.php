@@ -15,6 +15,10 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     private $_path;
     /** @var string */
     private $_method;
+    /** @var ?array<string,string> */
+    private $_headers;
+    /** @var ?string */
+    private $_content_filename;
     /** @var array<string,string> */
     private $_v;
     /** @var array<string,list> */
@@ -154,6 +158,28 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @return ?string */
     function referrer() {
         return $this->_referrer;
+    }
+
+    /** @param string $k
+     * @return ?string */
+    function header($k) {
+        return $this->_headers["HTTP_" . strtoupper(str_replace("-", "_", $k))] ?? null;
+    }
+
+    /** @param string $k
+     * @param ?string $v */
+    function set_header($k, $v) {
+        $this->_headers["HTTP_" . strtoupper(str_replace("-", "_", $k))] = $v;
+    }
+
+    /** @return ?string */
+    function content_filename() {
+        return $this->_content_filename;
+    }
+
+    /** @param string $fn */
+    function set_content_filename($fn) {
+        $this->_content_filename = $fn;
     }
 
     #[\ReturnTypeWillChange]
@@ -462,9 +488,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         if (empty($_POST)) {
             $qreq->set_post_empty();
         }
+        $qreq->_headers = $_SERVER;
         if (isset($_SERVER["HTTP_REFERER"])) {
             $qreq->set_referrer($_SERVER["HTTP_REFERER"]);
         }
+        $qreq->_content_filename = "php://input";
 
         // $_FILES requires special processing since we want error messages.
         $errors = [];

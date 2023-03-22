@@ -19,10 +19,8 @@ class SavePapers_Batch {
     public $quiet = false;
     /** @var bool */
     public $ignore_errors = false;
-    /** @var bool */
-    public $ignore_pid = false;
-    /** @var bool */
-    public $match_title = false;
+    /** @var 0|1|2|3 */
+    private $pidflags = 0;
     /** @var bool */
     public $disable_users = false;
     /** @var bool */
@@ -41,9 +39,9 @@ class SavePapers_Batch {
     public $ziparchive;
     /** @var ?string */
     public $document_directory;
+    /** @var ?string */
+    private $_ziparchive_json;
 
-    /** @var int */
-    public $index = 0;
     /** @var int */
     public $nerrors = 0;
     /** @var int */
@@ -60,8 +58,12 @@ class SavePapers_Batch {
     function set_args($arg) {
         $this->quiet = isset($arg["q"]);
         $this->ignore_errors = isset($arg["ignore-errors"]);
-        $this->ignore_pid = isset($arg["ignore-pid"]);
-        $this->match_title = isset($arg["match-title"]);
+        if (isset($args["ignore-pid"])) {
+            $this->pidflags |= Paper_API::PIDFLAG_IGNORE_PID;
+        }
+        if (isset($args["match-title"])) {
+            $this->pidflags |= Paper_API::PIDFLAG_MATCH_TITLE;
+        }
         $this->disable_users = isset($arg["disable-users"]);
         $this->add_topics = isset($arg["add-topics"]);
         $this->reviews = isset($arg["r"]);
@@ -88,25 +90,8 @@ class SavePapers_Batch {
         if ($this->ziparchive->open($file) !== true) {
             throw new CommandLineException("{$file}: Invalid zip");
         }
-        // find common directory prefix
-        $slashpos = strrpos($this->ziparchive->getNameIndex(0), "/");
-        if ($slashpos === false || $slashpos === 0) {
-            $dirprefix = "";
-        } else {
-            $dirprefix = substr($this->ziparchive->getNameIndex(0), 0, $slashpos + 1);
-            for ($i = 1; $i < $this->ziparchive->numFiles; ++$i) {
-                $name = $this->ziparchive->getNameIndex($i);
-                while (!str_starts_with($name, $dirprefix)) {
-                    $slashpos = strrpos($dirprefix, "/", -1);
-                    if ($slashpos === false || $slashpos === 0) {
-                        $dirprefix = "";
-                    } else {
-                        $dirprefix = substr($dirprefix, 0, $slashpos + 1);
-                    }
-                }
-            }
-        }
-        $this->document_directory = $dirprefix;
+        list($this->document_directory, $this->_ziparchive_json) =
+            Paper_API::analyze_zip_contents($this->ziparchive);
     }
 
     /** @return string */
@@ -154,93 +139,38 @@ class SavePapers_Batch {
 
     /** @return ?string */
     function default_content() {
-        if (!$this->ziparchive) {
+        if (!$this->_ziparchive_json) {
             return null;
         }
-        // find "*-data.json" file
-        $data_filename = $json_filename = [];
-        $dirprefix = $this->document_directory;
-        for ($i = 0; $i < $this->ziparchive->numFiles; ++$i) {
-            $filename = $this->ziparchive->getNameIndex($i);
-            if (str_starts_with($filename, $dirprefix)
-                && !str_starts_with($filename, "{$dirprefix}.")) {
-                $dirname = substr($filename, strlen($dirprefix));
-                if (preg_match('/\A[^\/]*(?:\A|[-_])data\.json\z/', $dirname)) {
-                    $data_filename[] = $filename;
-                }
-                if (str_ends_with($dirname, ".json")) {
-                    $json_filename[] = $filename;
-                }
-            }
+        if ($this->errprefix === "") {
+            $this->errprefix = "<stdin>/{$this->_ziparchive_json}: ";
+        } else {
+            $this->errprefix = preg_replace('/: \z/', "/{$this->_ziparchive_json}: ", $this->errprefix);
         }
-        if (count($data_filename) === 0 && count($json_filename) === 1) {
-            $data_filename = $json_filename;
-        }
-        if (count($data_filename) === 1) {
-            if ($this->errprefix === "") {
-                $this->errprefix = "<stdin>/{$data_filename[0]}: ";
-            } else {
-                $this->errprefix = preg_replace('/: \z/', "/{$data_filename[0]}: ", $this->errprefix);
-            }
-            return $this->ziparchive->getFromName($data_filename[0]);
-        }
-        return null;
+        return $this->ziparchive->getFromName($this->_ziparchive_json);
     }
 
     function on_document_import($docj, PaperOption $o, PaperStatus $pstatus) {
-        if (isset($docj->content_file)
-            && is_string($docj->content_file)
-            && $this->ziparchive) {
-            $name = $docj->content_file;
-            $stat = $this->ziparchive->statName($name);
-            if (!$stat) {
-                $name = $this->document_directory . $docj->content_file;
-                $stat = $this->ziparchive->statName($name);
-            }
-            if (!$stat) {
-                $pstatus->error_at_option($o, "{$docj->content_file}: Could not read");
-                return false;
-            }
-            // make room for large files in memory
-            if ($stat["size"] > 50000000
-                && $stat["size"] >= ini_get_bytes("memory_limit") * 0.3) {
-                ini_set("memory_limit", floor($stat["size"] * 3.25 / (1 << 20)) . "M");
-            }
-            $content = $this->ziparchive->getFromIndex($stat["index"]);
-            if ($content === false) {
-                $pstatus->error_at_option($o, "{$docj->content_file}: Could not read");
-                return false;
-            }
-            $docj->content = $content;
-            $docj->content_file = null;
+        if (!is_string($docj->content_file ?? null)
+            || $docj instanceof DocumentInfo) {
+            return;
+        }
+        if ($this->ziparchive) {
+            $fname = $this->document_directory . $docj->content_file;
+            return Paper_API::apply_zip_content_file($docj, $fname, $this->ziparchive, $o, $pstatus);
+        } else if ($this->document_directory) {
+            $docj->content_file = $this->document_directory . $docj->content_file;
         }
     }
 
-    function run_one($j) {
-        ++$this->index;
-        if ($this->ignore_pid) {
-            if (isset($j->pid)) {
-                $j->__original_pid = $j->pid;
-            }
-            unset($j->pid, $j->id);
-        }
-        if (!isset($j->pid) && !isset($j->id) && isset($j->title) && is_string($j->title)) {
-            $pids = Dbl::fetch_first_columns("select paperId from Paper where title=?", simplify_whitespace($j->title));
-            if (count($pids) == 1) {
-                $j->pid = (int) $pids[0];
-            }
-        }
-
-        $pid = $j->pid ?? $j->id ?? null;
-        if (is_int($pid) && $pid > 0) {
-            $pidtext = "#{$pid}";
-        } else if ($pid === null || $pid === "new") {
-            $pidtext = "new paper @{$this->index}";
-        } else {
-            fwrite(STDERR, "paper @{$this->index}: bad pid\n");
+    function run_one($index, $j) {
+        $pidish = Paper_API::analyze_json_pid($this->conf, $j, $this->pidflags);
+        if (!$pidish) {
+            fwrite(STDERR, "paper @{$index}: bad pid\n");
             ++$this->nerrors;
             return false;
         }
+        $pidtext = is_int($pidish) ? "#{$pidish}" : "new paper @{$index}";
 
         $title = $titletext = "";
         if (isset($j->title) && is_string($j->title)) {
@@ -263,13 +193,12 @@ class SavePapers_Batch {
 
         $ps = new PaperStatus($this->conf->root_user(), [
             "disable_users" => $this->disable_users,
-            "add_topics" => $this->add_topics,
-            "content_file_prefix" => $this->document_directory
+            "add_topics" => $this->add_topics
         ]);
         $ps->on_document_import([$this, "on_document_import"]);
 
         $pid = $ps->save_paper_json($j);
-        if ($pid && str_starts_with($pidtext, "new")) {
+        if ($pid && $pidish === "new") {
             fwrite(STDERR, "-> #{$pid}: ");
             $pidtext = "#{$pid}";
         }
@@ -334,8 +263,8 @@ class SavePapers_Batch {
             if (is_object($jp)) {
                 $jp = [$jp];
             }
-            foreach ($jp as &$j) {
-                $this->run_one($j);
+            foreach ($jp as $index => &$j) {
+                $this->run_one($index, $j);
                 if ($this->nerrors && !$this->ignore_errors) {
                     break;
                 }

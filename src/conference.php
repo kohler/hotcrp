@@ -4091,9 +4091,9 @@ class Conf {
                 $where[] = $aujoinwhere;
             }
             if (($options["author"] ?? false) && !$aujoinwhere) {
-                $joins[] = "join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$cxid and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")";
+                $joins[] = "join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId={$cxid} and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")";
             } else {
-                $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$cxid)";
+                $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId={$cxid})";
             }
             $cols[] = "PaperConflict.conflictType";
         } else if ($options["author"] ?? false) {
@@ -4104,12 +4104,12 @@ class Conf {
         $no_paperreview = $paperreview_is_my_reviews = false;
         $reviewjoin = "PaperReview.paperId=Paper.paperId and " . ($user ? $user->act_reviewer_sql("PaperReview") : "false");
         if ($options["myReviews"] ?? false) {
-            $joins[] = "join PaperReview on ($reviewjoin)";
+            $joins[] = "join PaperReview on ({$reviewjoin})";
             $paperreview_is_my_reviews = true;
         } else if ($options["myOutstandingReviews"] ?? false) {
-            $joins[] = "join PaperReview on ($reviewjoin and reviewNeedsSubmit!=0)";
+            $joins[] = "join PaperReview on ({$reviewjoin} and reviewNeedsSubmit!=0)";
         } else if ($options["myReviewRequests"] ?? false) {
-            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and requestedBy=$cxid and reviewType=" . REVIEW_EXTERNAL . ")";
+            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and requestedBy={$cxid} and reviewType=" . REVIEW_EXTERNAL . ")";
         } else {
             $no_paperreview = true;
         }
@@ -4125,18 +4125,22 @@ class Conf {
         } else if ($user) {
             // need myReviewPermissions
             if ($no_paperreview) {
-                $joins[] = "left join PaperReview on ($reviewjoin)";
+                $joins[] = "left join PaperReview on ({$reviewjoin})";
             }
             if ($no_paperreview || $paperreview_is_my_reviews) {
                 $cols[] = "coalesce(" . PaperInfo::my_review_permissions_sql("PaperReview.") . ", '') myReviewPermissions";
             } else {
-                $cols[] = "coalesce((select " . PaperInfo::my_review_permissions_sql() . " from PaperReview force index (primary) where $reviewjoin group by paperId), '') myReviewPermissions";
+                $cols[] = "coalesce((select " . PaperInfo::my_review_permissions_sql() . " from PaperReview force index (primary) where {$reviewjoin} group by paperId), '') myReviewPermissions";
             }
         }
 
         // fields
         if ($options["topics"] ?? false) {
-            $cols[] = "coalesce((select group_concat(topicId) from PaperTopic force index (primary) where PaperTopic.paperId=Paper.paperId), '') topicIds";
+            if ($this->has_topics()) {
+                $cols[] = "coalesce((select group_concat(topicId) from PaperTopic force index (primary) where PaperTopic.paperId=Paper.paperId), '') topicIds";
+            } else {
+                $cols[] = "'' as topicIds";
+            }
         }
 
         if ($options["options"] ?? false) {
@@ -4155,7 +4159,7 @@ class Conf {
         }
 
         if ($options["reviewerPreference"] ?? false) {
-            $joins[] = "left join PaperReviewPreference force index (primary) on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$cxid)";
+            $joins[] = "left join PaperReviewPreference force index (primary) on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId={$cxid})";
             $cols[] = "coalesce(PaperReviewPreference.preference, 0) as myReviewerPreference";
             $cols[] = "PaperReviewPreference.expertise as myReviewerExpertise";
         }
@@ -4170,7 +4174,7 @@ class Conf {
         }
 
         if (($options["watch"] ?? false) && $cxid > 0) {
-            $joins[] = "left join PaperWatch on (PaperWatch.paperId=Paper.paperId and PaperWatch.contactId=$cxid)";
+            $joins[] = "left join PaperWatch on (PaperWatch.paperId=Paper.paperId and PaperWatch.contactId={$cxid})";
             $cols[] = "PaperWatch.watch";
         }
 
@@ -4216,14 +4220,14 @@ class Conf {
             $owhere = [
                 "PaperConflict.conflictType>=" . CONFLICT_AUTHOR,
                 "PaperReview.reviewType>0",
-                "exists (select * from PaperComment where paperId=Paper.paperId and contactId=$cxid)",
+                "exists (select * from PaperComment where paperId=Paper.paperId and contactId={$cxid})",
                 "(PaperWatch.watch&" . Contact::WATCH_REVIEW . ")!=0"
             ];
             if ($this->has_any_lead_or_shepherd()) {
-                $owhere[] = "leadContactId=$cxid";
+                $owhere[] = "leadContactId={$cxid}";
             }
             if ($this->has_any_manager() && $user->is_explicit_manager()) {
-                $owhere[] = "managerContactId=$cxid";
+                $owhere[] = "managerContactId={$cxid}";
             }
             $where[] = "(" . join(" or ", $owhere) . ")";
         }

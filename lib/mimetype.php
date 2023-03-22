@@ -256,7 +256,8 @@ class Mimetype {
             // do not sniff
         } else if (substr($content, 0, 5) === "%PDF-") {
             return self::PDF_TYPE;
-        } else if (strlen($content) > 516 && substr($content, 512, 4) === "\x00\x6E\x1E\xF0") {
+        } else if (strlen($content) > 516
+                   && substr($content, 512, 4) === "\x00\x6E\x1E\xF0") {
             return self::PPT_TYPE;
         } else if (substr($content, 0, 4) === "\xFF\xD8\xFF\xD8"
                    || (substr($content, 0, 4) === "\xFF\xD8\xFF\xE0"
