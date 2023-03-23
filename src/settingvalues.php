@@ -1491,7 +1491,7 @@ class SettingValues extends MessageSet {
     }
 
     /** @return list<string> */
-    function updated_fields() {
+    function changed_keys() {
         return array_keys($this->_diffs);
     }
 

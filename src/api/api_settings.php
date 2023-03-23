@@ -23,7 +23,7 @@ class Settings_API {
             }
             $content["ok"] = !$sv->has_error();
             $content["message_list"] = $sv->message_list();
-            $content["updates"] = $sv->updated_fields();
+            $content["changes"] = $sv->changed_keys();
             if ($dry_run || $sv->has_error()) {
                 return new JsonResult($content);
             }

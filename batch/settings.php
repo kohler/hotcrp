@@ -80,7 +80,7 @@ class Settings_Batch {
         }
         $fb = $this->sv->full_feedback_text();
         if ($fb === "" && !$this->diff) {
-            if (empty($this->sv->updated_fields())) {
+            if (empty($this->sv->changed_keys())) {
                 $fb = "No changes\n";
             } else if ($this->dry_run) {
                 $fb = "No errors\n";

@@ -283,7 +283,7 @@ class Paper_API extends MessageSet {
         $p = [
             "pid" => $pid,
             "title" => $ps->title,
-            "changes" => $ps->change_keys()
+            "changes" => $ps->changed_keys()
         ];
         if (($ps->save_status() & PaperStatus::SAVE_STATUS_NEW) !== 0) {
             $p["inserted"] = true;

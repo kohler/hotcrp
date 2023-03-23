@@ -70,7 +70,7 @@ class Settings_Page {
     function handle_update($qreq) {
         if ($this->sv->execute()) {
             $qreq->set_csession("settings_highlight", $this->sv->message_field_map());
-            if (!empty($this->sv->updated_fields())) {
+            if (!empty($this->sv->changed_keys())) {
                 $this->conf->success_msg("<0>Changes saved");
             } else {
                 $this->conf->feedback_msg(new MessageItem(null, "<0>No changes", MessageSet::WARNING_NOTE));

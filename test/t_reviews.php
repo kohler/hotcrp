@@ -207,7 +207,7 @@ class Reviews_Tester {
             "rf/1/values_text" => "1. Reject\n2. Weak reject\n3. Weak accept\n4. Accept\n5. Strong accept\nNo entry\n"
         ]);
         xassert($sv->execute());
-        xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+        xassert_eqq($sv->changed_keys(), ["review_form"]);
         $rfield = $this->conf->checked_review_field("s01");
         xassert(!$rfield->required);
 
@@ -237,7 +237,7 @@ class Reviews_Tester {
             "rf/1/values_text" => "1. Reject\n2. Weak reject\n3. Weak accept\nNo entry\n"
         ]);
         xassert($sv->execute());
-        xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+        xassert_eqq($sv->changed_keys(), ["review_form"]);
 
         // overall-merit 4 has been removed, revexp has not
         assert_search_papers_ignore_warnings($this->u_chair, "ovemer:4", "");
@@ -256,7 +256,7 @@ class Reviews_Tester {
             "rf/1/order" => 0
         ]);
         xassert($sv->execute());
-        xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+        xassert_eqq($sv->changed_keys(), ["review_form"]);
 
         // Add reviewer expertise back
         $sv = SettingValues::make_request($this->u_chair, [
@@ -268,7 +268,7 @@ class Reviews_Tester {
             "rf/1/order" => 1.5
         ]);
         xassert($sv->execute());
-        xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+        xassert_eqq($sv->changed_keys(), ["review_form"]);
 
         // It has been removed from the review
         assert_search_papers($this->u_chair, "has:revexp", "");
@@ -328,7 +328,7 @@ class Reviews_Tester {
             "rf/22/name" => "Text 11", "rf/22/order" => 5.11, "rf/22/id" => "t11"
         ]);
         xassert($sv->execute());
-        xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+        xassert_eqq($sv->changed_keys(), ["review_form"]);
 
         save_review(1, $this->u_mgbaker, [
             "ovemer" => 2, "revexp" => 1, "papsum" => "This is the summary",
@@ -377,7 +377,7 @@ class Reviews_Tester {
             "rf/3/name" => "Text 10", "rf/3/order" => 0, "rf/3/id" => "t10"
         ]);
         xassert($sv->execute());
-        xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+        xassert_eqq($sv->changed_keys(), ["review_form"]);
 
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
@@ -385,7 +385,7 @@ class Reviews_Tester {
             "rf/2/name" => "Text 10", "rf/2/order" => 101, "rf/2/id" => "t10"
         ]);
         xassert($sv->execute());
-        xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+        xassert_eqq($sv->changed_keys(), ["review_form"]);
 
         $rrow = fresh_review(1, $this->u_mgbaker);
         xassert($rrow->fidval("s15") === null || (string) $rrow->fidval("s15") === "0");
@@ -584,7 +584,7 @@ class Reviews_Tester {
         }
         $sv = SettingValues::make_request($this->u_chair, $sx);
         xassert($sv->execute());
-        xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+        xassert_eqq($sv->changed_keys(), ["review_form"]);
     }
 
     function test_body() {
@@ -963,7 +963,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             "rf/1/id" => "s01", "rf/1/values_text" => "1. Reject\n2. Weak reject\n3. Weak accept\n4. Accept\n5. Strong accept\n", "rf/1/required" => 0
         ]);
         xassert($sv->execute());
-        xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+        xassert_eqq($sv->changed_keys(), ["review_form"]);
         xassert_eqq($this->conf->checked_review_field("s01")->required, false);
 
         save_review(17, $user_external, [
@@ -1052,7 +1052,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             "rf/1/id" => "s01", "rf/1/values_text" => "E. Reject\nD. Weak reject\nC. Weak accept\nB. Accept\nA. Strong accept\n"
         ]);
         xassert($sv->execute());
-        xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+        xassert_eqq($sv->changed_keys(), ["review_form"]);
 
         assert_search_papers($this->u_chair, "ovemer:E", "17 20");
         assert_search_papers($this->u_chair, "ovemer:D", "17 18 19");
@@ -1103,7 +1103,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             "rf/1/id" => "s01", "rf/1/values_text" => "1. Reject\n2. Weak reject\n3. Weak accept\n4. Accept\n5. Strong accept\n"
         ]);
         xassert($sv->execute());
-        xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+        xassert_eqq($sv->changed_keys(), ["review_form"]);
     }
 
     function test_new_external_reviewer() {
@@ -1253,7 +1253,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             "sf/1/type" => "numeric"
         ]);
         xassert($sv->execute());
-        xassert_eqq(join(" ", $sv->updated_fields()), "options");
+        xassert_eqq($sv->changed_keys(), ["options"]);
         assert_search_papers($this->u_chair, "has:fudge", "1 2 3 4 5");
         assert_search_papers($this->u_mgbaker, "has:fudge", "1 2 3 4 5");
 
@@ -1281,7 +1281,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             "sf/2/order" => 2
         ]);
         xassert($sv->execute());
-        xassert_eqq(join(" ", $sv->updated_fields()), "options");
+        xassert_eqq($sv->changed_keys(), ["options"]);
         assert_search_papers($this->u_mgbaker, "has:fudge", "");
 
         // new field
@@ -1293,7 +1293,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             "sf/1/type" => "numeric"
         ]);
         xassert($sv->execute());
-        xassert_eqq(join(" ", $sv->updated_fields()), "options");
+        xassert_eqq($sv->changed_keys(), ["options"]);
         assert_search_papers($this->u_mgbaker, "has:brownies", "");
 
         // `order` is obeyed

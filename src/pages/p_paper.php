@@ -176,7 +176,7 @@ class Paper_Page {
             $whynot = $this->user->perm_edit_paper($this->prow);
             if ($whynot
                 && $action === "update"
-                && !count(array_diff($this->ps->change_keys(), ["contacts", "status"]))) {
+                && !count(array_diff($this->ps->changed_keys(), ["contacts", "status"]))) {
                 $whynot = $this->user->perm_finalize_paper($this->prow);
             }
         }
@@ -268,7 +268,7 @@ class Paper_Page {
             $this->ps->splice_msg($msgpos++, $conf->_("<0>Registered submission as #%d", $new_prow->paperId), MessageSet::SUCCESS);
         } else {
             $t = $action === "final" ? "<0>Updated final version (changed %#s)" : "<0>Updated submission (changed %#s)";
-            $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->change_fields());
+            $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->changed_fields());
             $this->ps->splice_msg($msgpos++, $conf->_($t, $chf), MessageSet::SUCCESS);
         }
         if ($this->ps->has_error()) {
@@ -303,7 +303,7 @@ class Paper_Page {
                     $options["notes"] = Ftext::unparse_as(Ftext::join(" ", $notes), 0) . "\n\n";
                 }
                 if (!$is_new) {
-                    $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->change_fields());
+                    $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->changed_fields());
                     if (!empty($chf)) {
                         $options["change"] = $conf->_("%#s were changed.", $chf);
                     }

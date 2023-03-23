@@ -508,7 +508,7 @@ class PaperStatus extends MessageSet {
     }
 
     /** @return list<string> */
-    function change_keys() {
+    function changed_keys() {
         $s = [];
         foreach ($this->_fdiffs as $field) {
             $s[] = $field->json_key();
@@ -520,7 +520,7 @@ class PaperStatus extends MessageSet {
     }
 
     /** @return list<PaperOption> */
-    function change_fields() {
+    function changed_fields() {
         return $this->_fdiffs;
     }
 
@@ -1270,7 +1270,7 @@ class PaperStatus extends MessageSet {
             $logtext .= " " . trim($via);
         }
         if (!empty($this->_fdiffs) || !empty($this->_xdiffs)) {
-            $logtext .= ": " . join(", ", $this->change_keys());
+            $logtext .= ": " . join(", ", $this->changed_keys());
         }
         $user->log_activity($logtext, $this->paperId);
     }

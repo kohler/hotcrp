@@ -192,7 +192,7 @@ class Settings_Tester {
             "topic": [{"id": 1, "name": "Berf"}], "reset": true
         }');
         xassert($sv->execute());
-        xassert_eqq($sv->updated_fields(), ["topics"]);
+        xassert_eqq($sv->changed_keys(), ["topics"]);
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Berf"}');
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
@@ -945,7 +945,7 @@ class Settings_Tester {
             "response/1/wordlimit" => "0"
         ]);
         xassert($sv->execute());
-        xassert_array_eqq($sv->updated_fields(), ["responses"]);
+        xassert_array_eqq($sv->changed_keys(), ["responses"]);
 
         $rrds = $this->conf->response_rounds();
         xassert_eqq(count($rrds), 1);
@@ -976,7 +976,7 @@ class Settings_Tester {
             "response/1/done" => "@" . ($t0 + 10001)
         ]);
         xassert($sv->execute());
-        xassert_array_eqq($sv->updated_fields(), []);
+        xassert_array_eqq($sv->changed_keys(), []);
         $rrd = $this->conf->response_round_by_id(1);
         xassert_eqq($rrd->name, "Butt");
         xassert_eqq($rrd->open, $t0);
@@ -992,7 +992,7 @@ class Settings_Tester {
             "response/1/wordlimit" => "0"
         ]);
         xassert($sv->execute());
-        xassert_array_eqq($sv->updated_fields(), ["responses"]);
+        xassert_array_eqq($sv->changed_keys(), ["responses"]);
 
         $rrds = $this->conf->response_rounds();
         xassert_eqq(count($rrds), 2);
@@ -1019,7 +1019,7 @@ class Settings_Tester {
             "response/2/name" => "unnamed"
         ]);
         xassert($sv->execute());
-        xassert_array_eqq($sv->updated_fields(), ["responses"]);
+        xassert_array_eqq($sv->changed_keys(), ["responses"]);
 
         $rrds = $this->conf->response_rounds();
         xassert_eqq(count($rrds), 2);
@@ -1051,7 +1051,7 @@ class Settings_Tester {
             "response/2/instructions" => $definstrux
         ]);
         xassert($sv->execute());
-        xassert_array_eqq($sv->updated_fields(), ["responses"]);
+        xassert_array_eqq($sv->changed_keys(), ["responses"]);
 
         $rrds = $this->conf->response_rounds();
         xassert_eqq($rrds[0]->instructions, "PANTS");
@@ -1065,7 +1065,7 @@ class Settings_Tester {
             "response/1/instructions" => $definstrux
         ]);
         xassert($sv->execute());
-        xassert_array_eqq($sv->updated_fields(), ["responses"]);
+        xassert_array_eqq($sv->changed_keys(), ["responses"]);
 
         $rrds = $this->conf->response_rounds();
         xassert_eqq($rrds[0]->instructions, null);
@@ -1265,14 +1265,14 @@ class Settings_Tester {
     function test_json_settings_api() {
         $x = call_api("settings", $this->u_chair, []);
         xassert($x->ok);
-        xassert(!isset($x->updates));
+        xassert(!isset($x->changes));
         xassert(is_object($x->settings));
         xassert_eqq($x->settings->review_blind, "blind");
 
         $x = call_api("=settings", $this->u_chair, ["settings" => "{}"]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
-        xassert_eqq($x->updates, []);
+        xassert_eqq($x->changes, []);
 
         $x = call_api("=settings", $this->u_chair, ["settings" => "{\"notgood\":true}"]);
         xassert($x->ok);
@@ -1292,13 +1292,13 @@ class Settings_Tester {
 
         $x = call_api("=settings", $this->u_chair, ["settings" => "{\"review_blind\":\"open\"}"]);
         xassert($x->ok);
-        xassert_eqq($x->updates, ["rev_blind"]);
+        xassert_eqq($x->changes, ["rev_blind"]);
         xassert_eqq($x->settings->review_blind, "open");
         xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), 0);
 
         $x = call_api("=settings", $this->u_chair, ["settings" => "{\"review_blind\":\"blind\"}"]);
         xassert($x->ok);
-        xassert_eqq($x->updates, ["rev_blind"]);
+        xassert_eqq($x->changes, ["rev_blind"]);
         xassert_eqq($x->settings->review_blind, "blind");
         xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), null);
 
@@ -1315,7 +1315,7 @@ class Settings_Tester {
             "submission_terms" => ""
         ]);
         xassert($sv->execute());
-        xassert_eqq($sv->updated_fields(), []);
+        xassert_eqq($sv->changed_keys(), []);
         xassert_eqq($this->conf->opt("clickthrough_submit"), null);
         xassert_eqq($this->conf->_id("clickthrough_submit", ""), "");
 
@@ -1323,7 +1323,7 @@ class Settings_Tester {
             "submission_terms" => "xxx"
         ]);
         xassert($sv->execute());
-        xassert_eqq($sv->updated_fields(), ["opt.clickthrough_submit", "msg.clickthrough_submit"]);
+        xassert_eqq($sv->changed_keys(), ["opt.clickthrough_submit", "msg.clickthrough_submit"]);
         xassert_neqq($this->conf->opt("clickthrough_submit"), null);
         xassert_eqq($this->conf->_id("clickthrough_submit", ""), "xxx");
 
@@ -1331,7 +1331,7 @@ class Settings_Tester {
             "submission_terms" => "xxx"
         ]);
         xassert($sv->execute());
-        xassert_eqq($sv->updated_fields(), []);
+        xassert_eqq($sv->changed_keys(), []);
         xassert_neqq($this->conf->opt("clickthrough_submit"), null);
         xassert_eqq($this->conf->_id("clickthrough_submit", ""), "xxx");
 
@@ -1339,7 +1339,7 @@ class Settings_Tester {
             "submission_terms" => ""
         ]);
         xassert($sv->execute());
-        xassert_eqq($sv->updated_fields(), ["opt.clickthrough_submit", "msg.clickthrough_submit"]);
+        xassert_eqq($sv->changed_keys(), ["opt.clickthrough_submit", "msg.clickthrough_submit"]);
         xassert_eqq($this->conf->opt("clickthrough_submit"), null);
         xassert_eqq($this->conf->_id("clickthrough_submit", ""), "");
     }
@@ -1358,7 +1358,7 @@ class Settings_Tester {
 
         $x = call_api("settings", $this->u_chair, []);
         xassert($x->ok);
-        xassert(!isset($x->updates));
+        xassert(!isset($x->changes));
         xassert(is_object($x->settings));
         xassert_eqq($x->settings->review_blind, "blind");
         xassert_eqq($x->settings->rf[5]["required"], false);
@@ -1368,7 +1368,7 @@ class Settings_Tester {
         $x = call_api("=settings", $this->u_chair, ["settings" => $sa]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
-        xassert_eqq($x->updates, []);
+        xassert_eqq($x->changes, []);
         xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), null);
 
         $sb = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
@@ -1379,7 +1379,7 @@ class Settings_Tester {
         $x = call_api("=settings", $this->u_chair, ["settings" => $sb]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
-        xassert_eqq($x->updates, []);
+        xassert_eqq($x->changes, []);
         xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), null);
 
         $sc = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
@@ -1391,7 +1391,7 @@ class Settings_Tester {
         $x = call_api("=settings", $this->u_chair, ["settings" => json_encode_browser($x->settings)]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
-        xassert_eqq($x->updates, []);
+        xassert_eqq($x->changes, []);
 
         $sd = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
         if ($sc !== $sd) {
