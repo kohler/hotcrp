@@ -94,7 +94,11 @@ class SettingValues extends MessageSet {
 
     /** @param Qrequest|array<string,string|int|float> $qreq */
     static function make_request(Contact $user, $qreq) {
-        return (new SettingValues($user))->add_request($qreq);
+        $sv = (new SettingValues($user))->add_request($qreq);
+        if (!$sv->has_req("reset")) {
+            $sv->set_req("reset", "");
+        }
+        return $sv;
     }
 
     /** @param string $page
@@ -827,7 +831,8 @@ class SettingValues extends MessageSet {
         // decide whether to mark unmentioned objects as deleted
         if ($this->_use_req) {
             $resetn = $this->has_req("{$pfx}_reset") ? "{$pfx}_reset" : "reset";
-            $reset = ($this->reqstr($resetn) ?? "") !== "";
+            $resets = $this->reqstr($resetn) ?? "1";
+            $reset = $resets !== "" && $resets !== "0";
         } else {
             $reset = false;
         }

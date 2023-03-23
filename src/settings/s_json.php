@@ -64,6 +64,7 @@ class JSON_SettingParser extends SettingParser {
                 $sv->inform_at($si, "<0>Lengths: " . json_encode([strlen($v), strlen($v2)]));
             } else {
                 $sv->set_link_json(true);
+                $sv->set_req("reset", "1"); // JSON settings reset by default
                 $sv->add_json_string($v);
             }
         }

@@ -175,12 +175,14 @@ class Settings_Tester {
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Barf","2":"Fart","3":"Money"}');
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "reset": false,
             "topic": []
         }');
         xassert($sv->execute());
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Barf","2":"Fart","3":"Money"}');
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "topic_reset": false,
             "topic": [{"id": 1, "name": "Berf"}]
         }');
         xassert($sv->execute());
@@ -194,13 +196,13 @@ class Settings_Tester {
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Berf"}');
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
-            "topic": [{"id": "new", "name": "Berf"}]
+            "topic": [{"id": "new", "name": "Berf"}], "topic_reset": false
         }');
         xassert(!$sv->execute());
         xassert_str_contains($sv->full_feedback_text(), "is not unique");
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
-            "topic": [{"name": "Bingle"}, {"name": "Bongle"}]
+            "topic": [{"name": "Bingle"}, {"name": "Bongle"}], "reset": false
         }');
         xassert($sv->execute());
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Berf","4":"Bingle","5":"Bongle"}');
