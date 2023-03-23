@@ -328,5 +328,16 @@
         "description": "<0>Advanced control of site configuration.",
         "print_function": "*JSONSettings_HelpTopic::print",
         "order": 12000
+    },
+    {
+        "name": "developer", "short_title": "Developer",
+        "title": "Developer tools",
+        "description": "<0>Using HotCRP’s API.",
+        "print_function": "*Developer_HelpTopic::print",
+        "order": false
+    },
+    {
+        "name": "developer/tokens", "title": "API tokens",
+        "print_function": "*Developer_HelpTopic::print_tokens"
     }
 ]
