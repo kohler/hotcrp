@@ -107,39 +107,13 @@ class Paper_API extends MessageSet {
         }
     }
 
-    /** @param string $cf
-     * @param string $extension
-     * @return ?string */
-    static function make_content_filename($cf, $extension = "") {
-        if (strpos($cf, "://") === false) {
-            return $cf;
-        }
-        $fn = strtolower(encode_token(random_bytes(5))) . $extension;
-        if (($tmpdir = tempdir())
-            && copy($cf, "{$tmpdir}/{$fn}")) {
-            return "{$tmpdir}/{$fn}";
-        }
-        return null;
-    }
-
     private function run_post(Qrequest $qreq, PaperInfo $prow = null) {
-        $ct = $qreq->header("Content-Type");
-        $instr = null;
-        if ($ct === null) {
-            $instr = (string) file_get_contents($qreq->content_filename());
-            if (preg_match('/\A\s*[\[\{]/s', $instr)) {
-                $ct = "application/json";
-            } else if (str_starts_with($instr, "\x50\x4B\x03\x04")) {
-                $ct = "application/zip";
-            }
-        }
-
+        $ct = $qreq->body_content_type();
         if ($ct === "application/json") {
-            $instr = $instr ?? (string) file_get_contents($qreq->content_filename());
-            $jsonstr = $instr;
+            $jsonstr = $qreq->body();
         } else if ($ct === "application/zip") {
             $this->ziparchive = new ZipArchive;
-            $cf = self::make_content_filename($qreq->content_filename(), ".zip");
+            $cf = $qreq->body_filename(".zip");
             if (!$cf) {
                 return JsonResult::make_error(500, "<0>Cannot read uploaded content");
             }
@@ -153,7 +127,7 @@ class Paper_API extends MessageSet {
             }
             $jsonstr = $this->ziparchive->getFromName($jsonname);
         } else {
-            return JsonResult::make_error(400, "<0>POST data must be JSON");
+            return JsonResult::make_error(400, "<0>POST data must be JSON or ZIP");
         }
 
         $jp = Json::try_decode($jsonstr);
