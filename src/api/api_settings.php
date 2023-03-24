@@ -6,14 +6,18 @@ class Settings_API {
     static function run(Contact $user, Qrequest $qreq) {
         $content = ["ok" => true];
         if ($qreq->valid_post()) {
-            if (!isset($qreq->settings)) {
+            if (isset($qreq->settings)) {
+                $jtext = $qreq->settings;
+            } else if ($qreq->body_content_type() === Mimetype::JSON_TYPE) {
+                $jtext = $qreq->body();
+            } else {
                 return JsonResult::make_missing_error("settings");
             }
             $sv = (new SettingValues($user))->set_use_req(true);
             if (!$sv->viewable_by_user()) {
                 return JsonResult::make_permission_error();
             }
-            $sv->add_json_string($qreq->settings, $qreq->filename);
+            $sv->add_json_string($jtext, $qreq->filename);
             $sv->parse();
             $dry_run = $qreq->dryrun || $qreq->dry_run;
             if ($dry_run) {

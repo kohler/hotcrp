@@ -31,14 +31,62 @@ Any HotCRP user can create bearer tokens using ",
     ". To use a bearer token, supply it in an HTTP Authorization header, as in
 this <code>curl</code> example:</p>
 
-<pre class=\"sample\">$ curl -H \"Authorization: Bearer hct_SksHaeRYmWEfgQnsFcGSJUpCFtYpWayPYTgsDBCrAMpF\" \\
+<pre class=\"sample\"><code class=\"language-shellsession\">$ curl -H \"Authorization: Bearer hct_SksHaeRYmWEfgQnsFcGSJUpCFtYpWayPYTgsDBCrAMpF\" \\
         http://site.hotcrp.com/api/whoami
 {
     \"ok\": true,
     \"email\": \"ekohler@gmail.com\"
-}</pre>
+}</code></pre>
 
 <p>A token has the same rights and permissions as the
 user who created it.</p>";
+    }
+
+    function print_usage() {
+        echo "<p>HotCRP API functions generally use GET or POST methods.
+Parameters are read from the URL and, for most POST methods, in the request
+body using <code>application/x-www-form-urlencoded</code> or
+<code>multipart/form-data</code> encoding. (Some API functions take a JSON
+request body.)</p>
+
+<p>Responses are returned as JSON objects. Common components include:<p>
+
+<dl>
+<dt><code>ok</code> (boolean)</dt>
+<dd>Whether the API request succeeded.</dd>
+<dt><code>message_list</code> (list of objects)</dt>
+<dd>Error messages, warnings, and other messages about the API request.</dd>
+</dl>";
+    }
+
+    function print_settings() {
+        echo "<p>The <code>api/settings</code> endpoint, accessible only to
+conference chairs, accesses to conference settings in ",
+    $this->hth->hotlink("JSON format", "help", ["t" => "jsonsettings"]) . ".
+To modify settings, use the POST method and provide a JSON request body.
+Examples:</p>
+
+<pre class=\"sample\"><code class=\"language-shellsession\">$ curl -H \"Authorization: Bearer hct_SksHaeRYmWEfgQnsFcGSJUpCFtYpWayPYTgsDBCrAMpF\" \\
+        http://site.hotcrp.com/api/settings
+{
+    \"ok\": true,
+    \"settings\": {
+        \"accepted_author_visibility\": false,
+        \"author_visibility\": \"blind\", ...
+    }
+}
+$ curl -H \"Authorization: Bearer hct_SksHaeRYmWEfgQnsFcGSJUpCFtYpWayPYTgsDBCrAMpF\" \\
+        --data-binary '{\"accepted_author_visibility\": true}' \\
+        -H \"Content-Type: application/json\" \\
+        http://site.hotcrp.com/api/settings
+{
+    \"ok\": true,
+    \"message_list\": [],
+    \"changes\": [\"seedec_hideau\"],
+    \"settings\": {
+        \"accepted_author_visibility\": true,
+        \"author_visibility\": \"blind\", ...
+    }
+}</code></pre>";
     }
 }

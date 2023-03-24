@@ -338,6 +338,17 @@
     },
     {
         "name": "developer/tokens", "title": "API tokens",
-        "print_function": "*Developer_HelpTopic::print_tokens"
+        "print_function": "*Developer_HelpTopic::print_tokens",
+        "order": 100
+    },
+    {
+        "name": "developer/general", "title": "General API usage",
+        "print_function": "*Developer_HelpTopic::print_usage",
+        "order": 200
+    },
+    {
+        "name": "developer/settings", "title": "Site settings",
+        "print_function": "*Developer_HelpTopic::print_settings",
+        "order": 300
     }
 ]
