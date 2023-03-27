@@ -114,7 +114,11 @@
         "function": "Completion_API::mentioncompletion_api"
     },
     {
-        "name": "paper", "get": true, "post": true,
+        "name": "paper", "get": true,
+        "function": "Paper_API::run"
+    },
+    {
+        "name": "paper", "post": true, "allow_if": "chair",
         "function": "Paper_API::run"
     },
     {
