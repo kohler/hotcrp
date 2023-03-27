@@ -5477,15 +5477,14 @@ class Conf {
         $result = ["ok" => false, "message_list" => []];
         if ($whynot) {
             $status = isset($whynot["noPaper"]) ? 404 : 403;
-            $m = "<5>" . $whynot->unparse_html();
+            array_push($result["message_list"], ...$whynot->message_list(null, 2));
             if (isset($whynot["signin"])) {
                 $result["loggedout"] = true;
             }
         } else {
             $status = 400;
-            $m = "<0>Bad request, missing submission";
+            $result["message_list"][] = MessageItem::error("<0>Bad request, missing submission");
         }
-        $result["message_list"][] = new MessageItem(null, $m, 2);
         return new JsonResult($status, $result);
     }
 

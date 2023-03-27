@@ -33,7 +33,7 @@ class GetDocument_ListAction extends ListAction {
         $docset = new DocumentInfoSet($dn);
         foreach ($ssel->paper_set($user) as $row) {
             if (($whyNot = $user->perm_view_option($row, $opt))) {
-                $docset->error("<5>" . $whyNot->unparse_html());
+                $whyNot->append_to($docset->message_set(), null, 2);
             } else if (($docs = $row->documents($opt->id))) {
                 foreach ($docs as $doc) {
                     $docset->add_as($doc, $doc->export_filename());

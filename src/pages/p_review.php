@@ -127,7 +127,7 @@ class Review_Page {
         if (($whynot = ($this->rrow
                         ? $this->user->perm_edit_review($this->prow, $this->rrow, true)
                         : $this->user->perm_create_review($this->prow)))) {
-            $rv->msg_at(null, "<5>" . $whynot->unparse_html(), MessageSet::ERROR);
+            $whynot->append_to($rv, null, MessageSet::ERROR);
         } else if ($rv->parse_qreq($this->qreq, !!$this->qreq->override)) {
             if (isset($this->qreq->approvesubreview)
                 && $this->rrow

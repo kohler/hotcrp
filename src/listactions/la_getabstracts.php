@@ -79,7 +79,7 @@ class GetAbstracts_ListAction extends ListAction {
         $ml = [];
         foreach ($ssel->paper_set($user, ["topics" => 1]) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
-                $ml[] = MessageItem::error("<5>" . $whyNot->unparse_html());
+                array_push($ml, ...$whyNot->message_list(null, 2));
             } else {
                 $texts[] = $this->render($prow, $user);
                 $lastpid = $prow->paperId;

@@ -14,43 +14,43 @@ class GetScores_ListAction extends ListAction {
         $ms = new MessageSet;
         $any_decision = $any_reviewer_identity = $any_ordinal = false;
         foreach ($ssel->paper_set($user) as $row) {
-            if (($whyNot = $user->perm_view_paper($row))) {
-                $mi = $ms->error_at(null, "<5>" . $whyNot->unparse_html());
-                $mi->landmark = "#{$row->paperId}";
-            } else if (($whyNot = $user->perm_view_review($row, null))) {
-                $mi = $ms->error_at(null, "<5>" . $whyNot->unparse_html());
-                $mi->landmark = "#{$row->paperId}";
-            } else {
-                $row->ensure_full_reviews();
-                $a = ["paper" => $row->paperId, "title" => $row->title];
-                $dec = $row->viewable_decision($user);
-                if ($dec->id !== 0) {
-                    $a["decision"] = $dec->name;
-                    $any_decision = true;
+            if (($whyNot = $user->perm_view_paper($row))
+                || ($whyNot = $user->perm_view_review($row, null))) {
+                foreach ($whyNot->message_list(null, 2) as $mi) {
+                    $mi->landmark = "#{$row->paperId}";
+                    $ms->append_item($mi);
                 }
-                foreach ($row->viewable_reviews_as_display($user) as $rrow) {
-                    if ($rrow->reviewSubmitted) {
-                        $this_scores = false;
-                        $b = $a;
-                        foreach ($rrow->viewable_fields($user) as $f) {
-                            if ($f instanceof Discrete_ReviewField
-                                && ($fv = $rrow->fval($f)) !== null) {
-                                $b[$f->search_keyword()] = $f->unparse_value($fv);
-                                $any_scores[$f->search_keyword()] = $this_scores = true;
-                            }
+                continue;
+            }
+            $row->ensure_full_reviews();
+            $a = ["paper" => $row->paperId, "title" => $row->title];
+            $dec = $row->viewable_decision($user);
+            if ($dec->id !== 0) {
+                $a["decision"] = $dec->name;
+                $any_decision = true;
+            }
+            foreach ($row->viewable_reviews_as_display($user) as $rrow) {
+                if ($rrow->reviewSubmitted) {
+                    $this_scores = false;
+                    $b = $a;
+                    foreach ($rrow->viewable_fields($user) as $f) {
+                        if ($f instanceof Discrete_ReviewField
+                            && ($fv = $rrow->fval($f)) !== null) {
+                            $b[$f->search_keyword()] = $f->unparse_value($fv);
+                            $any_scores[$f->search_keyword()] = $this_scores = true;
                         }
-                        if ($this_scores) {
-                            if ($rrow->reviewOrdinal > 0) {
-                                $any_ordinal = true;
-                                $b["review"] = $rrow->unparse_ordinal_id();
-                            }
-                            if ($user->can_view_review_identity($row, $rrow)) {
-                                $any_reviewer_identity = true;
-                                $b["reviewername"] = trim("{$rrow->firstName} {$rrow->lastName}");
-                                $b["email"] = $rrow->email;
-                            }
-                            $texts[] = $b;
+                    }
+                    if ($this_scores) {
+                        if ($rrow->reviewOrdinal > 0) {
+                            $any_ordinal = true;
+                            $b["review"] = $rrow->unparse_ordinal_id();
                         }
+                        if ($user->can_view_review_identity($row, $rrow)) {
+                            $any_reviewer_identity = true;
+                            $b["reviewername"] = trim("{$rrow->firstName} {$rrow->lastName}");
+                            $b["email"] = $rrow->email;
+                        }
+                        $texts[] = $b;
                     }
                 }
             }

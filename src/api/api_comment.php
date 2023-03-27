@@ -108,7 +108,7 @@ class Comment_API {
         $whyNot = $this->user->perm_edit_comment($this->prow, $xcrow, $newctype);
         if ($whyNot) {
             $this->status = 403;
-            $this->ms->error_at(null, "<5>" . $whyNot->unparse_html());
+            $whyNot->append_to($this->ms, null, 2);
             return null;
         }
 

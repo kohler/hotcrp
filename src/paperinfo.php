@@ -1434,7 +1434,8 @@ class PaperInfo {
 
     /** @return bool */
     function can_author_edit_paper() {
-        if ($this->timeWithdrawn > 0 || $this->outcome_sign < 0) {
+        if ($this->timeWithdrawn > 0
+            || $this->outcome_sign < 0) {
             return false;
         }
         $sr = $this->submission_round();
