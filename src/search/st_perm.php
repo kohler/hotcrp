@@ -34,9 +34,9 @@ class Perm_SearchTerm extends SearchTerm {
     }
     function test(PaperInfo $row, $xinfo) {
         if ($this->perm === "author-write") {
-            return $row->can_author_edit_paper();
+            return $row->author_edit_state() !== 0;
         } else if ($this->perm === "author-write-final") {
-            return $row->can_author_edit_final_paper()
+            return $row->author_edit_state() === 2
                 && $this->user->can_view_decision($row);
         } else {
             return false;

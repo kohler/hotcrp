@@ -167,11 +167,10 @@ class Paper_Page {
         }
 
         // check deadlines
+        // NB At this point, PaperStatus also checks deadlines.
         if ($is_new) {
             // we know that can_start_paper implies can_finalize_paper
             $whynot = $this->user->perm_start_paper($this->prow);
-        } else if ($action === "final") {
-            $whynot = $this->user->perm_edit_final_paper($this->prow);
         } else {
             $whynot = $this->user->perm_edit_paper($this->prow);
             if ($whynot
@@ -382,8 +381,7 @@ class Paper_Page {
         }
 
         $old_overrides = $this->user->remove_overrides(Contact::OVERRIDE_CHECK_TIME);
-        $editable = $this->user->can_edit_paper($this->prow)
-            || $this->user->can_edit_final_paper($this->prow);
+        $editable = $this->user->can_edit_paper($this->prow);
         $this->user->set_overrides($old_overrides);
         $this->pt->set_edit_status($this->ps, $editable, $editable && $this->useRequest);
     }

@@ -646,7 +646,11 @@ class PaperStatus extends MessageSet {
             : $pj->status->submitted && (!$this->has_error() || $old_submitted);
         if ($pj_submitted !== $old_submitted
             || $this->_noncontacts_changed) {
-            $whynot = $this->user->perm_edit_paper($this->prow);
+            if ($this->prow->paperId <= 0) {
+                $whynot = $this->user->perm_start_paper($this->prow);
+            } else {
+                $whynot = $this->user->perm_edit_paper($this->prow);
+            }
             if ($whynot
                 && $pj_submitted
                 && !$this->_noncontacts_changed) {
@@ -709,15 +713,32 @@ class PaperStatus extends MessageSet {
         $this->status_change_at("status");
     }
 
+    private function _prepare_decision($pj) {
+        if (!isset($pj->decision)
+            || !$this->user->can_set_decision($this->prow)) {
+            return;
+        }
+        if ($this->prow->outcome !== $pj->decision) {
+            $this->save_paperf("outcome", $pj->decision);
+            $this->status_change_at("decision");
+        }
+    }
+
     private function _prepare_final_status($pj) {
-        if (!isset($pj->status->final_submitted)) {
+        if (!isset($pj->status->final_submitted)
+            || !$this->conf->allow_final_versions()
+            || ($this->_paper_upd["outcome"] ?? $this->prow->outcome) <= 0
+            || !$this->user->can_view_decision($this->prow)
+            || /* XXX not exactly the same check as override_deadlines */
+               (!$this->conf->time_edit_final_paper()
+                && !$this->user->allow_administer($this->prow))) {
             return;
         }
 
         $old_finalsub = ($this->prow->timeFinalSubmitted ?? 0) > 0;
         $pj_finalsub = $pj->status->final_submitted;
         if ($pj_finalsub !== $old_finalsub
-            && ($whynot = $this->user->perm_edit_final_paper($this->prow))) {
+            && ($whynot = $this->user->perm_edit_paper($this->prow))) {
             $whynot->append_to($this, "final_status", 3);
             $finalsub = $old_finalsub;
         }
@@ -741,17 +762,6 @@ class PaperStatus extends MessageSet {
         }
         $this->save_paperf("timeFinalSubmitted", $finalsub_at);
         $this->status_change_at("final_status");
-    }
-
-    private function _prepare_decision($pj) {
-        if (!isset($pj->decision)
-            || !$this->user->can_set_decision($this->prow)) {
-            return;
-        }
-        if ($this->prow->outcome !== $pj->decision) {
-            $this->save_paperf("outcome", $pj->decision);
-            $this->status_change_at("decision");
-        }
     }
 
     /** @param int $bit */
@@ -910,7 +920,8 @@ class PaperStatus extends MessageSet {
         $this->_conflict_values = [];
         $this->_conflict_ins = $this->_register_users = $this->_created_contacts = null;
         $this->_author_change_cids = null;
-        $this->_paper_submitted = $this->_documents_changed = $this->_noncontacts_changed = false;
+        $this->_paper_submitted = $this->_documents_changed = false;
+        $this->_noncontacts_changed = $prow->paperId <= 0;
         $this->_update_pid_dids = $this->_joindocs = [];
         $this->_save_status = 0;
     }
@@ -1023,8 +1034,8 @@ class PaperStatus extends MessageSet {
 
         // prepare non-fields for saving
         $this->_prepare_status($pj);
-        $this->_prepare_final_status($pj);
         $this->_prepare_decision($pj);
+        $this->_prepare_final_status($pj);
         if ($this->problem_status() >= MessageSet::ESTOP) {
             return false;
         }

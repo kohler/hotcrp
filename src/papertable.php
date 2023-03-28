@@ -89,7 +89,7 @@ class PaperTable {
         $this->prow = $prow;
         $this->allow_admin = $user->allow_administer($this->prow);
         $this->admin = $user->can_administer($this->prow);
-        $this->allow_edit_final = $this->user->allow_edit_final_paper($this->prow);
+        $this->allow_edit_final = $user->edit_paper_state($this->prow, true) === 2;
 
         if (!$this->prow->paperId) {
             $this->can_view_reviews = false;
@@ -683,7 +683,7 @@ class PaperTable {
             && !$this->prow->has_conflict($this->user)
             && $this->mode !== "assign"
             && $this->mode !== "contact"
-            && $this->prow->can_author_edit_paper()) {
+            && $this->prow->author_edit_state() === 1) {
             $fr->value .= Ht::msg('The authors still have <a href="' . $this->conf->hoturl("deadlines") . '">time</a> to make changes.', 1);
         }
 
@@ -1812,7 +1812,7 @@ class PaperTable {
             }
         } else if ($this->conf->allow_final_versions()
                    && $viewable_decision->sign > 0) {
-            if ($this->user->can_edit_final_paper($this->prow)) {
+            if ($this->user->can_edit_paper($this->prow)) {
                 if (($t = $this->conf->_id("finalsubmit", "", new FmtArg("deadline", $this->deadline_setting_is("final_soft"))))) {
                     $this->_main_message("<5>" . $t, MessageSet::SUCCESS);
                 }
@@ -1932,9 +1932,7 @@ class PaperTable {
         if ($this->mode === "edit") {
             // check whether we can save
             $old_overrides = $this->user->set_overrides(Contact::OVERRIDE_CHECK_TIME);
-            if ($this->allow_edit_final) {
-                $whyNot = $this->user->perm_edit_final_paper($this->prow);
-            } else if ($this->prow->paperId) {
+            if ($this->prow->paperId) {
                 $whyNot = $this->user->perm_edit_paper($this->prow);
             } else {
                 $whyNot = $this->user->perm_start_paper($this->prow);
@@ -2180,7 +2178,7 @@ class PaperTable {
 
     private function _print_editable_body() {
         $this->_print_editable_form();
-        $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
+        $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS | Contact::OVERRIDE_TIME);
         echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">';
         if ($this->prow->paperId) {
             echo "Edit Submission";

@@ -1694,7 +1694,7 @@ class Document_PaperOption extends PaperOption {
             $noPapers = $this->conf->opt("noPapers");
             if ($noPapers === 1
                 || $noPapers === true
-                || ($this->id === DTYPE_FINAL) !== $pt->user->allow_edit_final_paper($ov->prow)) {
+                || ($this->id === DTYPE_FINAL) !== ($pt->user->edit_paper_state($ov->prow) === 2)) {
                 return;
             }
         } else {

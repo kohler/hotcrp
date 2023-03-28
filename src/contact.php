@@ -3236,12 +3236,31 @@ class Contact implements JsonSerializable {
         return $rights->allow_administer || $prow->has_author($this);
     }
 
+    /** @param bool $allow
+     * @return 0|1|2 */
+    function edit_paper_state(PaperInfo $prow, $allow = false) {
+        $rights = $this->rights($prow);
+        if (!$rights->allow_author_edit
+            || $prow->timeWithdrawn > 0 /* non-overridable */) {
+            return 0;
+        }
+        if ($allow
+            ? $rights->can_administer
+            : $this->override_deadlines($rights)) {
+            if ($prow->outcome_sign > 0
+                && $rights->can_view_decision
+                && $this->conf->allow_final_versions()) {
+                return 2;
+            } else {
+                return 1;
+            }
+        }
+        return $prow->author_edit_state();
+    }
+
     /** @return bool */
     function can_edit_paper(PaperInfo $prow) {
-        $rights = $this->rights($prow);
-        return $rights->allow_author_edit
-            && $prow->timeWithdrawn <= 0 /* non-overridable */
-            && ($prow->can_author_edit_paper() || $this->override_deadlines($rights));
+        return $this->edit_paper_state($prow) !== 0;
     }
 
     /** @return PermissionProblem */
@@ -3280,9 +3299,15 @@ class Contact implements JsonSerializable {
             && $rights->can_view_decision) {
             $whyNot["rejected"] = true;
         }
-        if (!$prow->submission_round()->time_update(true)
-            && !$this->override_deadlines($rights)) {
-            $whyNot["deadline"] = "sub_update";
+        if (!$this->override_deadlines($rights)) {
+            if ($prow->outcome_sign > 0
+                && $rights->can_view_decision
+                && $this->conf->allow_final_versions()
+                && !$this->conf->time_edit_final_paper()) {
+                $whyNot["deadline"] = "final_done";
+            } else if (!$prow->submission_round()->time_update(true)) {
+                $whyNot["deadline"] = "sub_update";
+            }
         }
         return $whyNot;
     }
@@ -3375,57 +3400,6 @@ class Contact implements JsonSerializable {
         if (!$sr->time_submit(true)
             && !$this->override_deadlines($rights)) {
             $whyNot["deadline"] = "sub_sub";
-        }
-        return $whyNot;
-    }
-
-    /** @return bool */
-    function allow_edit_final_paper(PaperInfo $prow) {
-        // see also PaperInfo::can_author_edit_final_paper
-        if ($prow->timeWithdrawn > 0
-            || $prow->outcome_sign <= 0
-            || !$this->conf->allow_final_versions()) {
-            return false;
-        }
-        $rights = $this->rights($prow);
-        return $rights->allow_author_edit
-            && $rights->can_view_decision
-            && ($rights->allow_administer
-                || $this->conf->time_edit_final_paper());
-    }
-
-    /** @return bool */
-    function can_edit_final_paper(PaperInfo $prow) {
-        if ($prow->timeWithdrawn > 0
-            || $prow->outcome_sign <= 0
-            || !$this->conf->allow_final_versions()) {
-            return false;
-        }
-        $rights = $this->rights($prow);
-        return $rights->allow_author_edit
-            && $rights->can_view_decision
-            && ($this->conf->time_edit_final_paper()
-                || $this->override_deadlines($rights));
-    }
-
-    /** @return ?PermissionProblem */
-    function perm_edit_final_paper(PaperInfo $prow) {
-        if ($this->can_edit_final_paper($prow)) {
-            return null;
-        }
-        $rights = $this->rights($prow);
-        $whyNot = $this->perm_edit_paper_failure($prow, $rights);
-        // NB logic order here is important elsewhere
-        // Don’t report “rejected” error to admins
-        if ($prow->outcome_sign <= 0
-            || (!$rights->allow_administer
-                && !$rights->can_view_decision)) {
-            $whyNot["rejected"] = true;
-        } else if (!$this->conf->allow_final_versions()) {
-            $whyNot["deadline"] = "final_open";
-        } else if (!$this->conf->time_edit_final_paper()
-                   && !$this->override_deadlines($rights)) {
-            $whyNot["deadline"] = "final_done";
         }
         return $whyNot;
     }
@@ -3736,8 +3710,8 @@ class Contact implements JsonSerializable {
         if ($opt->form_order() === false
             || !$opt->test_editable($prow)
             || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))
-            || ($opt->final && !$this->allow_edit_final_paper($prow))
-            || ($opt->id === 0 && $this->allow_edit_final_paper($prow))) {
+            || ($opt->final && $this->edit_paper_state($prow, true) !== 2)
+            || ($opt->id === 0 && $this->edit_paper_state($prow, true) === 2)) {
             return 0;
         } else if (!$opt->test_exists($prow)) {
             return $opt->exists_script_expression($prow) ? 1 : 0;

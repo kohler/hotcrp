@@ -1432,23 +1432,24 @@ class PaperInfo {
                     && $this->conf->_au_seedec->test($this, null)));
     }
 
-    /** @return bool */
-    function can_author_edit_paper() {
+    /** @return 0|1|2 */
+    function author_edit_state() {
         if ($this->timeWithdrawn > 0
             || $this->outcome_sign < 0) {
-            return false;
+            return 0;
+        }
+        if ($this->outcome_sign > 0
+            && $this->conf->time_edit_final_paper()
+            && $this->can_author_view_decision()) {
+            return 2;
         }
         $sr = $this->submission_round();
-        return ($this->timeSubmitted <= 0 || !$sr->freeze)
-            && $sr->time_update(true);
-    }
-
-    /** @return bool */
-    function can_author_edit_final_paper() {
-        return $this->timeWithdrawn <= 0
-            && $this->outcome_sign > 0
-            && $this->can_author_view_decision()
-            && $this->conf->time_edit_final_paper();
+        if (($this->timeSubmitted <= 0 || !$sr->freeze)
+            && $sr->time_update(true)) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
 
 
