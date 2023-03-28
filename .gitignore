@@ -7,3 +7,4 @@ filestore
 logs
 conf/*
 Code/options.inc
+php_errors.log

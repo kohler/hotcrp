@@ -284,6 +284,7 @@ class Title_PaperColumn extends PaperColumn {
             } else {
                 $highlight_text = Text::highlight($row->title, $this->highlight, $highlight_count);
             }
+            $hightlight_count = 0;
         } else {
             $highlight_text = "[No title]";
             $highlight_count = 0;

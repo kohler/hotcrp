@@ -208,7 +208,15 @@ class PaperTable {
             } else if ($prow->title === "") {
                 $t .= "[No title]";
             } else {
-                $t .= htmlspecialchars($prow->title);
+                if(($prow->conf->settings["conflict_completelyhide"] ?? null) && $prow->conflictType > 0) {
+                    if($paperTable->user->privChair) {
+                        $t .= htmlspecialchars($prow->title) . " [conflict overwritten as chair]";
+                    } else {
+                        $t .= "[CONFLICT]";
+                    }
+                } else {
+                    $t .= htmlspecialchars($prow->title);
+                }
             }
 
             $t .= '</span></span></a>';
@@ -1177,13 +1185,15 @@ class PaperTable {
 
         // status
         list($class, $name) = $this->prow->status_class_and_name($this->user);
-        if(!($this->prow->has_conflict($this->user)
+        if(($this->prow->has_conflict($this->user)
                 && ($this->conf->settings["conflict_completelyhide"] ?? null)
                 && !$this->prow->has_author($this->user)
                 && !$this->user->is_admin_force())) {
-                    echo '<p class="pgsm"><span class="pstat ', $class, '">',
-                    htmlspecialchars($name), "</span></p>";
+                    return;
         }
+
+        echo '<p class="pgsm"><span class="pstat ', $class, '">',
+                    htmlspecialchars($name), "</span></p>";
 
         $renders = [];
         $fr = new FieldRender(FieldRender::CPAGE, $this->user);
