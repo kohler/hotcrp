@@ -238,6 +238,10 @@ class Home_Page {
             PaperSearch::limit_selector($this->conf, $limits, $limits[0]),
             Ht::submit("Search"),
             "</div></form></div>\n";
+        echo '<div class="homegrp d-table" id="homelist">',
+            Ht::form($this->conf->hoturl("search?q=&t=all"), ["method" => "get", "class" => "form-basic-search"]),
+            Ht::submit("Overview - all papers"),
+            "</div></form></div>\n";
     }
 
     /** @return list<Score_ReviewField> */
