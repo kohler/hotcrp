@@ -173,7 +173,11 @@ class Id_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $href = $pl->_paperLink($row);
-        return "<a href=\"{$href}\" class=\"pnum taghl\">#{$row->paperId}</a>";
+        if(($row->conf->settings["conflict_completelyhide"] ?? null) && ($pl->user->privChair != 1) && ($row->conflictType > 0)) {
+            return "#{$row->paperId}";
+        } else {
+            return "<a href=\"{$href}\" class=\"pnum taghl\">#{$row->paperId}</a>";
+        }
     }
     function text(PaperList $pl, PaperInfo $row) {
         return (string) $row->paperId;
@@ -297,6 +301,10 @@ class Title_PaperColumn extends PaperColumn {
         }
 
         $t .= '">' . $highlight_text . '</a>';
+
+        if($highlight_text === "[CONFLICT]")
+            $t = "[CONFLICT]";
+
         if(!(($row->conf->settings["conflict_completelyhide"] ?? null) && $flags & self::F_CONFLICT && $this->contact->privChair != 1)) {
             $t .= $pl->_contentDownload($row);
         }
