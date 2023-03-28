@@ -341,6 +341,11 @@
         "title": "Collect other conflicts and collaborators",
         "type": "checkbox"
     },
+    {
+        "name": "conflict_completelyhide", "storage": "conflict_completelyhide",
+        "title": "Hide submission information (title, abstract and PDF) from PC members with conflict",
+        "type": "checkbox"
+    },
 
 
     {

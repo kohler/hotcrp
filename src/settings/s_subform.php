@@ -33,6 +33,7 @@ class SubForm_SettingRenderer {
         }
         $sv->print_checkbox("sf_pc_conflict_types", "Collect PC conflict descriptions (" . commajoin($cflt, "or") . ")", ["group_class" => "fx"]);
         $sv->print_checkbox("sf_collaborators", "Collect authors’ other conflicts and collaborators as text");
+        $sv->print_checkbox("conflict_completelyhide", "Hide submission information (title, abstract and PDF) from PC members with conflict");
         echo "</div>\n";
 
         echo '<hr class="form-sep">';

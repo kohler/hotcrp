@@ -34,6 +34,8 @@ class GetDocument_ListAction extends ListAction {
         foreach ($ssel->paper_set($user) as $row) {
             if (($whyNot = $user->perm_view_option($row, $opt))) {
                 $docset->error("<5>" . $whyNot->unparse_html());
+            } else if (($row->conf->settings["conflict_completelyhide"] ?? null) && $row->conflictType > 0 & $user->privChair != 1) {
+                $docset->error("<5> #" . $row->paperId . ": conflict");
             } else if (($docs = $row->documents($opt->id))) {
                 foreach ($docs as $doc) {
                     $docset->add_as($doc, $doc->export_filename());
@@ -50,7 +52,7 @@ class GetDocument_ListAction extends ListAction {
             );
         } else {
             $qreq->qsession()->commit();
-            if ($docset->download(DocumentRequest::add_connection_options(["attachment" => true, "single" => true]))) {
+            if ($docset->download(DocumentRequest::add_connection_options(["attachment" => true, "single" => true, "isPrivChair" => $user->privChair]))) {
                 DocumentInfo::log_download_activity($docset->as_list(), $user);
                 exit;
             } else {

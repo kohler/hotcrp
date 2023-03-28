@@ -673,6 +673,14 @@ class PaperTable {
 
     /** @param PaperOption $o */
     function render_submission(FieldRender $fr, $o) {
+        if(($this->conf->settings["conflict_completelyhide"] ?? null)
+                && ($this->prow->has_conflict($this->user)
+                && !$this->prow->has_author($this->user)
+                && !$this->user->is_admin_force())) {
+                    $html = "";
+                    return;
+        }
+
         assert(!$this->editable && $o->id == 0);
         $fr->title = false;
         $fr->value = "";
@@ -772,6 +780,14 @@ class PaperTable {
     function render_abstract(FieldRender $fr, PaperOption $o) {
         $fr->title = false;
         $fr->value_format = 5;
+
+        if(($this->conf->settings["conflict_completelyhide"] ?? null)
+                && ($this->prow->has_conflict($this->user)
+                && !$this->prow->has_author($this->user)
+                && !$this->user->is_admin_force())) {
+                    $html = "";
+                    return;
+                }
 
         $html = $this->highlight($this->prow->abstract_text(), "ab", $match);
         if (trim($html) === "") {
@@ -1161,8 +1177,13 @@ class PaperTable {
 
         // status
         list($class, $name) = $this->prow->status_class_and_name($this->user);
-        echo '<p class="pgsm"><span class="pstat ', $class, '">',
-            htmlspecialchars($name), "</span></p>";
+        if(!($this->prow->has_conflict($this->user)
+                && ($this->conf->settings["conflict_completelyhide"] ?? null)
+                && !$this->prow->has_author($this->user)
+                && !$this->user->is_admin_force())) {
+                    echo '<p class="pgsm"><span class="pstat ', $class, '">',
+                    htmlspecialchars($name), "</span></p>";
+        }
 
         $renders = [];
         $fr = new FieldRender(FieldRender::CPAGE, $this->user);

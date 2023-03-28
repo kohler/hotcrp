@@ -229,17 +229,59 @@ class Title_PaperColumn extends PaperColumn {
             $pl->qopts["tags"] = 1;
         }
         $this->highlight = $pl->search->field_highlighter("ti");
+        $this->contact = $this->contact ?? $pl->reviewer_user();
+        $this->not_me = $this->contact->contactXid !== $pl->user->contactXid;
         return true;
+    }
+    const F_CONFLICT = 1;
+    const F_LEAD = 2;
+    const F_SHEPHERD = 4;
+    /** @return array{?PaperListReviewAnalysis,int} */
+    private function analysis(PaperList $pl, PaperInfo $row) {
+        $rrow = $row->review_by_user($this->contact);
+        if ($rrow && (!$this->not_me || $pl->user->can_view_review_identity($row, $rrow))) {
+            $ranal = $pl->make_review_analysis($rrow, $row);
+        } else {
+            $ranal = null;
+        }
+        if ($ranal && $ranal->rrow->reviewStatus < ReviewInfo::RS_DELIVERED) {
+            $pl->mark_has("need_review");
+        }
+        $flags = 0;
+        if ($row->has_conflict($this->contact)
+            && (!$this->not_me || $pl->user->can_view_conflicts($row))) {
+            $flags |= self::F_CONFLICT;
+        }
+        if ($row->leadContactId === $this->contact->contactXid
+            && (!$this->not_me || $pl->user->can_view_lead($row))) {
+            $flags |= self::F_LEAD;
+        }
+        if ($row->shepherdContactId === $this->contact->contactXid
+            && (!$this->not_me || $pl->user->can_view_shepherd($row))) {
+            $flags |= self::F_SHEPHERD;
+        }
+        return [$ranal, $flags];
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $collator = $a->conf->collator();
         return $collator->compare($a->title, $b->title);
     }
     function content(PaperList $pl, PaperInfo $row) {
+        list($ranal, $flags) = $this->analysis($pl, $row);
+        
         $t = '<a href="' . $pl->_paperLink($row) . '" class="ptitle taghl';
 
         if ($row->title !== "") {
-            $highlight_text = Text::highlight($row->title, $this->highlight, $highlight_count);
+            if(($row->conf->settings["conflict_completelyhide"] ?? null) && ($flags & self::F_CONFLICT)) {
+                if($this->contact->privChair != 1) {
+                    $highlight_text = "[CONFLICT]";
+                }
+                else {
+                    $highlight_text = Text::highlight($row->title, $this->highlight, $highlight_count) . " [conflict overwritten as chair]";
+                }
+            } else {
+                $highlight_text = Text::highlight($row->title, $this->highlight, $highlight_count);
+            }
         } else {
             $highlight_text = "[No title]";
             $highlight_count = 0;
@@ -251,8 +293,10 @@ class Title_PaperColumn extends PaperColumn {
                 . '" data-title="' . htmlspecialchars($row->title);
         }
 
-        $t .= '">' . $highlight_text . '</a>'
-            . $pl->_contentDownload($row);
+        $t .= '">' . $highlight_text . '</a>';
+        if(!(($row->conf->settings["conflict_completelyhide"] ?? null) && $flags & self::F_CONFLICT && $this->contact->privChair != 1)) {
+            $t .= $pl->_contentDownload($row);
+        }
 
         if ($this->has_decoration && (string) $row->paperTags !== "") {
             if ($pl->row_tags_overridable !== ""

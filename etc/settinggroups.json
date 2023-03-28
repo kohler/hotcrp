@@ -139,7 +139,7 @@
         "name": "subform/conflicts", "order": 20,
         "title": "Conflicts and collaborators",
         "print_function": "SubForm_SettingRenderer::print_conflicts",
-        "settings": ["sf_pc_conflicts", "sf_pc_conflict_types", "sf_collaborators", "conflict_description", "conflict_visibility"]
+        "settings": ["sf_pc_conflicts", "sf_pc_conflict_types", "sf_collaborators", "conflict_completelyHide", "conflict_description", "conflict_visibility"]
     },
     {
         "name": "options", "group": "subform", "order": 440,
