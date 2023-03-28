@@ -217,7 +217,7 @@ class PaperContactInfo {
      * @return ?bool */
     function perm_tag_allows($perm) {
         if ($this->perm_tags !== null
-            && ($pos = stripos($this->perm_tags, " perm:$perm#")) !== false) {
+            && ($pos = stripos($this->perm_tags, " perm:{$perm}#")) !== false) {
             return $this->perm_tags[$pos + strlen($perm) + 7] !== "-";
         } else {
             return null;
@@ -1495,7 +1495,7 @@ class PaperInfo {
             $this->load_tags();
         }
         return $this->paperTags !== ""
-            && stripos($this->paperTags, " $tag#") !== false;
+            && stripos($this->paperTags, " {$tag}#") !== false;
     }
 
     /** @return bool */
@@ -1505,7 +1505,7 @@ class PaperInfo {
         }
         if ($this->paperTags !== "") {
             foreach ($tags as $tag) {
-                if (stripos($this->paperTags, " $tag#") !== false)
+                if (stripos($this->paperTags, " {$tag}#") !== false)
                     return true;
             }
         }
@@ -1515,7 +1515,7 @@ class PaperInfo {
     /** @return bool */
     function has_viewable_tag($tag, Contact $user) {
         $tags = $this->viewable_tags($user);
-        return $tags !== "" && stripos(" " . $tags, " $tag#") !== false;
+        return $tags !== "" && stripos(" " . $tags, " {$tag}#") !== false;
     }
 
     /** @param string $tag
@@ -1525,7 +1525,7 @@ class PaperInfo {
             $this->load_tags();
         }
         if ($this->paperTags !== ""
-            && ($pos = stripos($this->paperTags, " $tag#")) !== false) {
+            && ($pos = stripos($this->paperTags, " {$tag}#")) !== false) {
             return (float) substr($this->paperTags, $pos + strlen($tag) + 2);
         } else {
             return null;
@@ -1537,7 +1537,7 @@ class PaperInfo {
     function perm_tag_allows($perm) {
         if ($this->paperTags !== null
             && $this->paperTags !== ""
-            && ($pos = stripos($this->paperTags, " perm:$perm#")) !== false) {
+            && ($pos = stripos($this->paperTags, " perm:{$perm}#")) !== false) {
             return $this->paperTags[$pos + strlen($perm) + 7] !== "-";
         } else {
             return null;

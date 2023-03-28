@@ -2405,9 +2405,9 @@ class PaperTable {
                     && $user->can_edit_review($prow, $rr)) {
                     $link = $prow->reviewurl(["r" => $rlink]);
                 } else if ($this->qreq->page() === "paper") {
-                    $link = "#r$rlink";
+                    $link = "#r{$rlink}";
                 } else {
-                    $link = $prow->hoturl(["#" => "r$rlink"]);
+                    $link = $prow->hoturl(["#" => "r{$rlink}"]);
                 }
                 $t .= '<a href="' . $link . '">' . $id . '</a>';
                 if ($show_ratings

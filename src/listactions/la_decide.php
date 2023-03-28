@@ -19,7 +19,7 @@ class Decide_ListAction extends ListAction {
         $aset = new AssignmentSet($user, true);
         $did = $qreq->decision;
         if (is_numeric($did)
-            && ($dec = ($user->conf->decision_set())[+$did])) {
+            && ($dec = $user->conf->decision_set()->get(+$did))) {
             $did = $dec->name;
         }
         $aset->parse("paper,action,decision\n" . join(" ", $ssel->selection()) . ",decision," . CsvGenerator::quote($did));

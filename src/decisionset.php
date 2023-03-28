@@ -2,7 +2,7 @@
 // decisionset.php -- HotCRP helper class for set of decisions
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
-class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
+class DecisionSet implements IteratorAggregate, Countable {
     /** @var Conf */
     public $conf;
     /** @var array<int,DecisionInfo> */
@@ -109,23 +109,6 @@ class DecisionSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @return Iterator<int,DecisionInfo> */
     function getIterator() {
         return new ArrayIterator($this->_decision_map);
-    }
-    #[\ReturnTypeWillChange]
-    function offsetExists($offset) {
-        return isset($this->_decision_map[$offset]);
-    }
-    /** @return ?DecisionInfo */
-    #[\ReturnTypeWillChange]
-    function offsetGet($offset) {
-        return $this->_decision_map[$offset] ?? null;
-    }
-    #[\ReturnTypeWillChange]
-    function offsetSet($offset, $value) {
-        throw new Exception("invalid DecisionSet::offsetSet");
-    }
-    #[\ReturnTypeWillChange]
-    function offsetUnset($offset) {
-        throw new Exception("invalid DecisionSet::offsetUnset");
     }
 
     /** @param int $decid

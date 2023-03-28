@@ -70,6 +70,7 @@ class PCConflicts_PaperOption extends PaperOption {
         ksort($vm);
         ksort($old_vm);
         if ($vm !== $old_vm) {
+            /** @phan-suppress-next-line PhanTypeMismatchArgument */
             $ov->set_value_data(array_keys($old_vm), array_values($old_vm));
             $ov->error("<0>Changes ignored");
         }

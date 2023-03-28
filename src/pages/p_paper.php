@@ -431,46 +431,51 @@ class Paper_Page {
             }
             // restore comment across logout bounce
             if ($this->qreq->editcomment) {
-                $cid = $this->qreq->c;
-                $preferred_resp_round = null;
-                if (($x = $this->qreq->response)) {
-                    $preferred_resp_round = $this->conf->response_round($x);
-                }
-                if ($preferred_resp_round === null) {
-                    $preferred_resp_round = $this->user->preferred_response_round($this->prow);
-                }
-                $j = null;
-                foreach ($this->prow->viewable_comments($this->user) as $crow) {
-                    if ($crow->commentId == $cid
-                        || ($cid === null
-                            && ($crow->commentType & CommentInfo::CT_RESPONSE) != 0
-                            && $preferred_resp_round
-                            && $crow->commentRound === $preferred_resp_round->id))
-                        $j = $crow->unparse_json($this->user);
-                }
-                if (!$j) {
-                    $j = (object) ["is_new" => true, "editable" => true];
-                    if ($this->user->act_author_view($this->prow)) {
-                        $j->by_author = true;
-                    }
-                    if ($preferred_resp_round) {
-                        $j->response = $preferred_resp_round->name;
-                    }
-                }
-                if (($x = $this->qreq->text) !== null) {
-                    $j->text = $x;
-                    $j->visibility = $this->qreq->visibility;
-                    $tags = trim((string) $this->qreq->tags);
-                    $j->tags = $tags === "" ? [] : preg_split('/\s+/', $tags);
-                    $j->blind = !!$this->qreq->blind;
-                    $j->draft = !!$this->qreq->draft;
-                }
-                Ht::stash_script("hotcrp.edit_comment(" . json_encode_browser($j) . ")");
+                $this->_stash_edit_comment();
             }
         }
 
         echo "</article>\n";
         $this->qreq->print_footer();
+    }
+
+    private function _stash_edit_comment() {
+        $cid = $this->qreq->c;
+        $preferred_resp_round = null;
+        if (($x = $this->qreq->response)) {
+            $preferred_resp_round = $this->conf->response_round($x);
+        }
+        if ($preferred_resp_round === null) {
+            $preferred_resp_round = $this->user->preferred_response_round($this->prow);
+        }
+        $j = null;
+        foreach ($this->prow->viewable_comments($this->user) as $crow) {
+            if ($crow->commentId == $cid
+                || ($cid === null
+                    && ($crow->commentType & CommentInfo::CT_RESPONSE) != 0
+                    && $preferred_resp_round
+                    && $crow->commentRound === $preferred_resp_round->id)) {
+                $j = $crow->unparse_json($this->user);
+            }
+        }
+        if (!$j) {
+            $j = (object) ["is_new" => true, "editable" => true];
+            if ($this->user->act_author_view($this->prow)) {
+                $j->by_author = true;
+            }
+            if ($preferred_resp_round) {
+                $j->response = $preferred_resp_round->name;
+            }
+        }
+        if (($x = $this->qreq->text) !== null) {
+            $j->text = $x;
+            $j->visibility = $this->qreq->visibility;
+            $tags = trim((string) $this->qreq->tags);
+            $j->tags = $tags === "" ? [] : preg_split('/\s+/', $tags);
+            $j->blind = !!$this->qreq->blind;
+            $j->draft = !!$this->qreq->draft;
+        }
+        Ht::stash_script("hotcrp.edit_comment(" . json_encode_browser($j) . ")");
     }
 
     static function go(Contact $user, Qrequest $qreq) {
