@@ -1853,7 +1853,7 @@ class Conf {
     /** @param string $tag
      * @return bool */
     function is_known_perm_tag($tag) {
-        return preg_match('/\A(?:perm:)?(?:author-read-review|author-write)\z/i', $tag);
+        return preg_match('/\A(?:perm:)?(?:author-read-review)\z/i', $tag);
     }
 
 

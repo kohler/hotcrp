@@ -6,6 +6,8 @@ HotCRP NEWS
 * Upgrade notes
 
     * PHP 8.2 and 8.3 are supported, PHP 7.0 is not.
+    * Remove support for `#perm:author-write` tag—this needs to be done
+      another way.
 
 * Batch scripts
 

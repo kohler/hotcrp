@@ -3391,8 +3391,7 @@ class Contact implements JsonSerializable {
         return $rights->allow_author_edit
             && $rights->can_view_decision
             && ($rights->allow_administer
-                || ($rights->perm_tag_allows("author-write")
-                    ?? $this->conf->time_edit_final_paper()));
+                || $this->conf->time_edit_final_paper());
     }
 
     /** @return bool */
@@ -3405,8 +3404,7 @@ class Contact implements JsonSerializable {
         $rights = $this->rights($prow);
         return $rights->allow_author_edit
             && $rights->can_view_decision
-            && (($rights->perm_tag_allows("author-write")
-                 ?? $this->conf->time_edit_final_paper())
+            && ($this->conf->time_edit_final_paper()
                 || $this->override_deadlines($rights));
     }
 

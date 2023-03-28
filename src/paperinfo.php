@@ -1448,8 +1448,7 @@ class PaperInfo {
         return $this->timeWithdrawn <= 0
             && $this->outcome_sign > 0
             && $this->can_author_view_decision()
-            && ($this->conf->time_edit_final_paper()
-                || $this->perm_tag_allows("author-write"));
+            && $this->conf->time_edit_final_paper();
     }
 
 
