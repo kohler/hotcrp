@@ -367,6 +367,22 @@ class PaperStatus_Tester {
         xassert($newpaperx->timeSubmitted <= 0);
     }
 
+    function test_save_draft_paper_fail_deadline() {
+        $old_sub_update = $this->conf->setting("sub_update");
+        $this->conf->save_refresh_setting("sub_update", Conf::$now - 1000);
+        xassert(!$this->conf->unnamed_submission_round()->time_update(true));
+
+        $ps = new PaperStatus($this->u_estrin);
+        xassert(!$ps->user->privChair);
+        // NB old style of entries
+        xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com", "has_submission" => 1]), null, "update"));
+        xassert($ps->has_change_at("title"));
+        xassert($ps->has_change_at("abstract"));
+        xassert($ps->has_change_at("authors"));
+
+        $this->conf->save_refresh_setting("sub_update", $old_sub_update);
+    }
+
     function test_save_options() {
         $this->newpaper1 = $this->newpaper1->reload();
         xassert($this->newpaper1->timeSubmitted > 0);
