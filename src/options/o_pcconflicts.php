@@ -5,7 +5,6 @@
 class PCConflicts_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        $this->set_exists_condition(!!$this->conf->setting("sub_pcconf"));
     }
     /** @return array<int,int> */
     static private function paper_value_map(PaperInfo $prow) {
@@ -44,6 +43,8 @@ class PCConflicts_PaperOption extends PaperOption {
     function value_check(PaperValue $ov, Contact $user) {
         if ($this->conf->setting("sub_pcconf")) {
             $this->_warn_missing_conflicts($ov, $user);
+        } else if ($user->act_author_view($ov->prow)) {
+            $this->_warn_changes($ov);
         }
     }
     private function _warn_missing_conflicts(PaperValue $ov, Contact $user) {
@@ -61,6 +62,16 @@ class PCConflicts_PaperOption extends PaperOption {
         }
         if (!empty($pcs)) {
             $ov->warning($this->conf->_("<5>You may have missed conflicts of interest with {:list}. Please verify that all conflicts are correctly marked.", $pcs) . $this->conf->_(" Hover over “possible conflict” labels for more information."));
+        }
+    }
+    private function _warn_changes(PaperValue $ov) {
+        $vm = self::value_map($ov);
+        $old_vm = self::paper_value_map($ov->prow);
+        ksort($vm);
+        ksort($old_vm);
+        if ($vm !== $old_vm) {
+            $ov->set_value_data(array_keys($old_vm), array_values($old_vm));
+            $ov->error("<0>Changes ignored");
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {

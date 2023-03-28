@@ -417,6 +417,9 @@ class PaperStatus extends MessageSet {
 
         $ikeys = [];
         foreach ($this->prow->form_fields() as $o) {
+            if (!$this->user->allow_view_option($this->prow, $o)) {
+                continue;
+            }
             $k = $xk = $o->json_key();
             $j = $ipj->$xk ?? $ioptions->$xk ?? null;
             if ($j === null) {
@@ -440,6 +443,7 @@ class PaperStatus extends MessageSet {
             }
             $omatch = $this->conf->options()->find($k);
             if ($omatch
+                && $this->user->allow_view_option($this->prow, $omatch)
                 && !isset($xpj->{$omatch->json_key()})) {
                 $xpj->{$omatch->json_key()} = $v;
             } else {
@@ -458,6 +462,7 @@ class PaperStatus extends MessageSet {
             }
             $omatch = $this->conf->options()->find($k);
             if ($omatch
+                && $this->user->allow_view_option($this->prow, $omatch)
                 && !isset($xpj->{$omatch->json_key()})) {
                 $xpj->{$omatch->json_key()} = $v;
             } else {

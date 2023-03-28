@@ -872,6 +872,54 @@ Phil Porras.");
         xassert_eqq($nprow1->conflict_type($this->u_varghese), 5);
     }
 
+    function test_save_pc_conflicts_disabled() {
+        xassert_eqq($this->conf->setting("sub_pcconf"), 1);
+        $this->conf->save_refresh_setting("sub_pcconf", null);
+
+        $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
+        xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId]);
+
+        // chair can change conflicts
+        $psc = new PaperStatus($this->u_chair);
+        $psc->save_paper_json((object) [
+            "id" => $this->pid2, "pc_conflicts" => [$this->u_sally->email => "collaborator", $this->u_varghese->email => "pinned collaborator"]
+        ]);
+        xassert(!$psc->has_problem());
+        xassert_eqq($psc->decorated_feedback_text(), "");
+
+        $nprow1->invalidate_conflicts();
+        xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId, $this->u_sally->contactId]);
+
+        // author cannot change conflicts
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_json((object) [
+            "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email => "pinned collaborator"]
+        ]);
+        xassert($ps->has_problem());
+        xassert_eqq($ps->decorated_feedback_text(), "PC conflicts: Changes ignored\n");
+
+        $nprow1->invalidate_conflicts();
+        xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId, $this->u_sally->contactId]);
+
+        // author can list conflicts without warning if no change
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_json((object) [
+            "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email => "pinned collaborator", $this->u_sally->email => "collaborator"]
+        ]);
+        xassert(!$ps->has_problem());
+
+        $nprow1->invalidate_conflicts();
+        xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId, $this->u_sally->contactId]);
+
+        // restore expected conflicts
+        $this->conf->save_refresh_setting("sub_pcconf", 1);
+        $psc = new PaperStatus($this->u_chair);
+        $psc->save_paper_json((object) [
+            "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email => "pinned collaborator"]
+        ]);
+        xassert(!$psc->has_problem());
+    }
+
     function test_save_contacts_no_remove_self() {
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS), "estrin@usc.edu");

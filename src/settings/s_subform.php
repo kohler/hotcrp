@@ -39,7 +39,7 @@ class SubForm_SettingRenderer {
         $sv->print_message_minor("conflict_description", "Definition of conflict of interest");
 
         echo '<hr class="form-sep">',
-            $sv->label("conflict_visibility", "When can reviewers see conflict information?"),
+            $sv->label("conflict_visibility", "When can reviewers see PC conflict information?"),
             '&nbsp; ',
             $sv->select("conflict_visibility", [1 => "Never", 0 => "When authors or tracker are visible", 2 => "Always"]);
     }

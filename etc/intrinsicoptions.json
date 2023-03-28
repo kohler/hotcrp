@@ -51,7 +51,7 @@
     {
         "name": "PC conflicts", "id": -1006,
         "json_key": "pc_conflicts",
-        "form_order": 5001, "page_order": false, "visibility": "nonblind",
+        "form_order": 5001, "page_order": false, "visibility": "conflict",
         "type": "pc_conflicts", "include_empty": true, "configurable": false,
         "function": "+PCConflicts_PaperOption"
     },
