@@ -1373,7 +1373,7 @@ class PaperStatus extends MessageSet {
         return true;
     }
 
-    function log_save_activity(Contact $user, $action, $via = null) {
+    function log_save_activity(Contact $user, $via = null) {
         // log message
         assert(($this->_save_status & self::SAVE_STATUS_SAVED) !== 0);
         $actions = [];
@@ -1390,12 +1390,13 @@ class PaperStatus extends MessageSet {
             $actions[] = "saved";
         }
         $logtext = "Paper " . join(", ", $actions);
-        if ($action === "final") {
+        if ($user->edit_paper_state($this->prow) === 2) {
             $logtext .= " final";
-            if (($this->_save_status & self::SAVE_STATUS_FINALSUBMIT) === 0) {
-                $logtext .= " draft";
-            }
-        } else if (($this->_save_status & self::SAVE_STATUS_SUBMIT) === 0) {
+            $subbit = self::SAVE_STATUS_FINALSUBMIT;
+        } else {
+            $subbit = self::SAVE_STATUS_SUBMIT;
+        }
+        if (($this->_save_status & $subbit) === 0) {
             $logtext .= " draft";
         }
         if ($via) {

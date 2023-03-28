@@ -252,7 +252,7 @@ class Paper_API extends MessageSet {
         }
 
         if ($ps->has_change()) {
-            $ps->log_save_activity($this->user, "save", "via API");
+            $ps->log_save_activity($this->user, "via API");
         }
         $p = [
             "pid" => $pid,

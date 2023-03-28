@@ -3280,7 +3280,7 @@ class Contact implements JsonSerializable {
         if ($prow->timeSubmitted > 0
             && strpos($kind, "f") !== false
             && $prow->submission_round()->freeze) {
-            $whyNot["updateSubmitted"] = true;
+            $whyNot["frozen"] = true;
         }
         if ($rights->allow_administer) {
             $whyNot["override"] = true;
@@ -3297,9 +3297,8 @@ class Contact implements JsonSerializable {
         $whyNot = $this->perm_edit_paper_failure($prow, $rights, "f");
         if ($prow->outcome_sign < 0
             && $rights->can_view_decision) {
-            $whyNot["rejected"] = true;
-        }
-        if (!$this->override_deadlines($rights)) {
+            $whyNot["frozen"] = true;
+        } else if (!$this->override_deadlines($rights)) {
             if ($prow->outcome_sign > 0
                 && $rights->can_view_decision
                 && $this->conf->allow_final_versions()

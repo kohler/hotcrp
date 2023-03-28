@@ -244,7 +244,7 @@ class SavePapers_Batch {
         }
 
         if ($ps->has_change() && $this->log) {
-            $ps->log_save_activity($this->user, "save", "via CLI");
+            $ps->log_save_activity($this->user, "via CLI");
         }
         ++$this->nsuccesses;
         return true;

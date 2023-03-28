@@ -730,6 +730,7 @@ class PaperInfo {
             $prow->paperTags = " {$stag}#0";
             $prow->_submission_round = $sr;
         }
+        $prow->set_is_new(true);
         return $prow;
     }
 

@@ -189,17 +189,14 @@ class PermissionProblem extends Exception
         if ($this->_a["notSubmitted"] ?? false) {
             $ms[] = $this->conf->_("<0>Submission #{} is only a draft.", $paperId);
         }
-        if ($this->_a["rejected"] ?? false) {
-            $ms[] = $this->conf->_("<0>Submission #{} was not accepted for publication.", $paperId);
-        }
         if ($this->_a["reviewsSeen"] ?? false) {
             $ms[] = $this->conf->_("<0>You can’t withdraw a submission after seeing its reviews.", $paperId);
         }
         if ($this->_a["decided"] ?? false) {
             $ms[] = $this->conf->_("<0>The review process for submission #{} has completed.", $paperId);
         }
-        if ($this->_a["updateSubmitted"] ?? false) {
-            $ms[] = $this->conf->_("<0>Submission #{} can no longer be updated.", $paperId);
+        if ($this->_a["frozen"] ?? false) {
+            $ms[] = $this->conf->_("<0>Submission #{} can no longer be edited.", $paperId);
         }
         if ($this->_a["notUploaded"] ?? false) {
             $ms[] = $this->conf->_("<0>A PDF upload is required to submit.");

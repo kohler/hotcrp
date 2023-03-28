@@ -217,7 +217,7 @@ class Paper_Page {
         }
 
         // log message
-        $this->ps->log_save_activity($this->user, $action);
+        $this->ps->log_save_activity($this->user);
 
         // additional information
         $notes = [];
@@ -356,7 +356,7 @@ class Paper_Page {
         } else if ($this->ps->execute_save()) {
             $this->ps->prepend_msg($conf->_("<0>Updated contacts", $this->prow->paperId), MessageSet::SUCCESS);
             $conf->feedback_msg($this->ps);
-            $this->user->log_activity("Paper edited: contacts", $this->prow->paperId);
+            $this->ps->log_save_activity($this->user);
         }
 
         if (!$this->ps->has_error()) {
