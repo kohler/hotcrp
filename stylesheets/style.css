@@ -204,6 +204,15 @@ code, kbd, pre, samp, .text-monospace {
 	font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 	font-size: 90%;
 }
+.shellsession-prompt {
+	font-weight: bold;
+	color: #777;
+	-webkit-user-select: none;
+	user-select: none;
+}
+.shellsession-typed {
+	font-weight: bold;
+}
 body {
 	margin: 0;
 	position: relative;

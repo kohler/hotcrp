@@ -350,5 +350,10 @@
         "name": "developer/settings", "title": "Site settings",
         "print_function": "*Developer_HelpTopic::print_settings",
         "order": 300
+    },
+    {
+        "name": "developer/submissions", "title": "Submissions",
+        "print_function": "*Developer_HelpTopic::print_submissions",
+        "order": 400
     }
 ]

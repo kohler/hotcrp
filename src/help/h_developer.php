@@ -31,8 +31,8 @@ Any HotCRP user can create bearer tokens using ",
     ". To use a bearer token, supply it in an HTTP Authorization header, as in
 this <code>curl</code> example:</p>
 
-<pre class=\"sample\"><code class=\"language-shellsession\">$ curl -H \"Authorization: Bearer hct_SksHaeRYmWEfgQnsFcGSJUpCFtYpWayPYTgsDBCrAMpF\" \\
-        http://site.hotcrp.com/api/whoami
+<pre class=\"sample\"><code class=\"language-shellsession\"><span class=\"shellsession-prompt\">$ </span><span class=\"shellsession-typed\">curl -H \"Authorization: Bearer hct_SksHaeRYmWEfgQnsFcGSJUpCFtYpWayPYTgsDBCrAMpF\" \\
+        http://site.hotcrp.com/api/whoami</span>
 {
     \"ok\": true,
     \"email\": \"ekohler@gmail.com\"
@@ -60,14 +60,14 @@ request body.)</p>
     }
 
     function print_settings() {
-        echo "<p>The <code>api/settings</code> endpoint, accessible only to
-conference chairs, accesses to conference settings in ",
+        echo "<p>The chair-only <code>api/settings</code> endpoint accesses
+conference settings in ",
     $this->hth->hotlink("JSON format", "help", ["t" => "jsonsettings"]) . ".
 To modify settings, use the POST method and provide a JSON request body.
 Examples:</p>
 
-<pre class=\"sample\"><code class=\"language-shellsession\">$ curl -H \"Authorization: Bearer hct_SksHaeRYmWEfgQnsFcGSJUpCFtYpWayPYTgsDBCrAMpF\" \\
-        http://site.hotcrp.com/api/settings
+<pre class=\"sample\"><code class=\"language-shellsession\"><span class=\"shellsession-prompt\">$ </span><span class=\"shellsession-typed\">curl -H \"Authorization: Bearer hct_SksHaeRYmWEfgQnsFcGSJUpCFtYpWayPYTgsDBCrAMpF\" \\
+        http://site.hotcrp.com/api/settings</span>
 {
     \"ok\": true,
     \"settings\": {
@@ -75,10 +75,10 @@ Examples:</p>
         \"author_visibility\": \"blind\", ...
     }
 }
-$ curl -H \"Authorization: Bearer hct_SksHaeRYmWEfgQnsFcGSJUpCFtYpWayPYTgsDBCrAMpF\" \\
-        --data-binary '{\"accepted_author_visibility\": true}' \\
+<span class=\"shellsession-prompt\">$ </span><span class=\"shellsession-typed\">curl -H \"Authorization: Bearer hct_SksHaeRYmWEfgQnsFcGSJUpCFtYpWayPYTgsDBCrAMpF\" \\
         -H \"Content-Type: application/json\" \\
-        http://site.hotcrp.com/api/settings
+        --data-binary '{\"accepted_author_visibility\": true}' \\
+        http://site.hotcrp.com/api/settings</span>
 {
     \"ok\": true,
     \"message_list\": [],
@@ -88,5 +88,13 @@ $ curl -H \"Authorization: Bearer hct_SksHaeRYmWEfgQnsFcGSJUpCFtYpWayPYTgsDBCrAM
         \"author_visibility\": \"blind\", ...
     }
 }</code></pre>";
+    }
+
+    function print_submissions() {
+        echo "<p>The <code>api/paper</code> endpoint accesses conference
+submissions. GET calls return paper information; use
+<code>api/PAPERID/paper</code> to return one paper, and
+<code>api/paper?q=SEARCH&amp;t=SEARCHTYPE</code> to return all papers matching
+<code>SEARCH</code>.</p>";
     }
 }
