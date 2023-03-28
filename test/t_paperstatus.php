@@ -367,18 +367,86 @@ class PaperStatus_Tester {
         xassert($newpaperx->timeSubmitted <= 0);
     }
 
-    function test_save_draft_paper_fail_deadline() {
+    function test_save_fail_deadline() {
         $old_sub_update = $this->conf->setting("sub_update");
         $this->conf->save_refresh_setting("sub_update", Conf::$now - 1000);
         xassert(!$this->conf->unnamed_submission_round()->time_update(true));
 
         $ps = new PaperStatus($this->u_estrin);
         xassert(!$ps->user->privChair);
-        // NB old style of entries
-        xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com", "has_submission" => 1]), null, "update"));
+        xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1]), null, "update"));
         xassert($ps->has_change_at("title"));
         xassert($ps->has_change_at("abstract"));
         xassert($ps->has_change_at("authors"));
+        try {
+            $ok = $ps->execute_save();
+        } catch (Exception $e) {
+            $ok = false;
+        }
+        xassert(!$ok);
+
+        $this->conf->save_refresh_setting("sub_update", $old_sub_update);
+    }
+
+    function test_save_finalize() {
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json(json_decode('{"pid":1,"draft":true,"title":"Scalable Timers for Soft State Protocols"}')));
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert($paper1->timeSubmitted === 0);
+
+        $old_sub_update = $this->conf->setting("sub_update");
+        $this->conf->save_refresh_setting("sub_update", Conf::$now - 1000);
+        xassert(!$this->conf->unnamed_submission_round()->time_update(true));
+        xassert($this->conf->unnamed_submission_round()->time_submit(true));
+
+        $ps = new PaperStatus($this->u_estrin);
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "Scalable Timers for Soft State Protocols 2"]), $paper1, "submit"));
+        xassert($ps->has_change_at("title"));
+        try {
+            $ok = $ps->execute_save();
+        } catch (Exception $e) {
+            $ok = false;
+        }
+        xassert(!$ok);
+
+        $ps = new PaperStatus($this->u_estrin);
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($paper1->title, "Scalable Timers for Soft State Protocols");
+        xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "Scalable Timers for Soft State Protocols"]), $paper1, "submit"));
+        xassert(!$ps->has_change_at("title"));
+        xassert($ps->execute_save());
+
+        $this->conf->save_refresh_setting("sub_update", $old_sub_update);
+    }
+
+    function test_save_finalize_no_edit() {
+        // Check that information is not leaked about papers by trying
+        // to save them
+
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json(json_decode('{"pid":1,"draft":true,"title":"Scalable Timers for Soft State Protocols"}')));
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert($paper1->timeSubmitted === 0);
+
+        $old_sub_update = $this->conf->setting("sub_update");
+        $this->conf->save_refresh_setting("sub_update", Conf::$now - 1000);
+        xassert(!$this->conf->unnamed_submission_round()->time_update(true));
+        xassert($this->conf->unnamed_submission_round()->time_submit(true));
+        $nonpc = $this->conf->checked_user_by_email("waldvogel@tik.ee.ethz.ch");
+
+        $ps = new PaperStatus($nonpc);
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "Scalable Timers for Soft State Protocols 2"]), $paper1, "submit"));
+        xassert(!$ps->has_change_at("title"));
+        xassert_eqq($ps->decorated_feedback_text(), "You aren’t allowed to view submission #1.\n");
+
+        $ps = new PaperStatus($nonpc);
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($paper1->title, "Scalable Timers for Soft State Protocols");
+        xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "Scalable Timers for Soft State Protocols"]), $paper1, "submit"));
+        xassert(!$ps->has_change_at("title"));
+        xassert_eqq($ps->decorated_feedback_text(), "You aren’t allowed to view submission #1.\n");
 
         $this->conf->save_refresh_setting("sub_update", $old_sub_update);
     }

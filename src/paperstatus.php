@@ -320,6 +320,10 @@ class PaperStatus extends MessageSet {
             }
             $xstatus->$k = $v;
         }
+        if ($xstatus->submitted !== null || $xstatus->draft !== null) {
+            $xstatus->draft = $xstatus->draft ?? !$xstatus->submitted;
+            $xstatus->submitted = $xstatus->submitted ?? !$xstatus->draft;
+        }
         foreach (["submitted_at", "withdrawn_at", "final_submitted_at"] as $k) {
             $v = $istatus->$k ?? null;
             if (is_numeric($v)) {
@@ -907,7 +911,7 @@ class PaperStatus extends MessageSet {
     }
 
     /** @param ?PaperInfo $prow
-     * @param string $action
+     * @param 'submit'|'update'|'final'|'updatecontacts' $action
      * @return bool */
     function prepare_save_paper_web(Qrequest $qreq, $prow, $action) {
         $this->_reset($prow ?? PaperInfo::make_new($this->user, $qreq->sclass));
@@ -983,6 +987,10 @@ class PaperStatus extends MessageSet {
      * @return bool */
     private function _normalize_and_check($pj) {
         assert($this->_save_status === 0);
+        if (($perm = $this->user->perm_view_paper($this->prow, false, $this->_desired_pid ?? "new"))) {
+            $perm->append_to($this, null, MessageSet::ESTOP);
+            return false;
+        }
 
         // normalize and check format
         $pj = $this->_normalize($pj);
@@ -1139,7 +1147,9 @@ class PaperStatus extends MessageSet {
 
     /** @return bool */
     private function _execute_update() {
-        assert($this->prow->paperId !== 0 && $this->prow->paperId !== -1 && $this->prow->paperId === $this->_desired_pid);
+        assert($this->prow->paperId !== 0
+               && $this->prow->paperId !== -1
+               && $this->prow->paperId === $this->_desired_pid);
         $qv = array_values($this->_paper_upd);
         $qv[] = $this->_desired_pid;
         $result = $this->conf->qe_apply("update Paper set " . join("=?, ", array_keys($this->_paper_upd)) . "=? where paperId=?", $qv);
@@ -1257,7 +1267,10 @@ class PaperStatus extends MessageSet {
 
     /** @return bool */
     function execute_save() {
-        assert($this->_save_status === self::SAVE_STATUS_PREPARED);
+        // refuse to save if not prepared
+        if ($this->_save_status !== self::SAVE_STATUS_PREPARED) {
+            throw new ErrorException("Refusing to save paper with errors");
+        }
         assert($this->paperId === null);
         $this->_save_status = self::SAVE_STATUS_SAVED;
 

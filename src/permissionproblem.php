@@ -320,14 +320,14 @@ class PermissionProblem extends Exception
     }
 
     /** @param ?string $field
-     * @param 1|2 $status
+     * @param 1|2|3 $status
      * @return Iterable<MessageItem> */
     function message_list($field, $status) {
         return [new MessageItem(null, "<5>" . $this->unparse_html(), $status)];
     }
 
     /** @param ?string $field
-     * @param 1|2 $status */
+     * @param 1|2|3 $status */
     function append_to(MessageSet $ms, $field, $status) {
         foreach ($this->message_list($field, $status) as $mi) {
             $ms->append_item($mi);
