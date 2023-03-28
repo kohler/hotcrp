@@ -149,13 +149,6 @@ class PaperExport {
             }
         }
 
-        if ($this->user->can_view_authors($prow)) {
-            $pj->authors = [];
-            foreach ($prow->author_list() as $au) {
-                $pj->authors[] = (object) $au->unparse_nea_json();
-            }
-        }
-
         $submitted_status = "submitted";
         $dec = $prow->viewable_decision($this->user);
         if ($dec->id !== 0) {

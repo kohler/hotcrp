@@ -37,7 +37,7 @@
     ["<0>Values %#s not found", "<0>Topic ‘%#s’ not found", ["{id}=topics", "#{0}=1"]],
     ["<0>Values %#s not found", "<0>Topics %#s not found", ["{id}=topics"]],
     ["<0>Values %#s not found", "<0>Value ‘%#s’ not found", ["#{0}=1"]],
-    ["<0>Submission fields not found (%#s)", "<0>Submission field not found (%#s)", ["#$1=1"]],
+    ["<0>Ignoring unknown fields {:list}", "<0>Ignoring unknown field {:list}", ["#{0}=1"]],
     ["<0>Notified submission authors", "<0>Notified submission author", ["$1=1"]],
     ["<5>Notified mentioned users %#s", "<5>Notified mentioned user %#s", ["#$1=1"]],
     ["<5>Notified submission contacts %#s", "<5>Notified submission contact %#s", ["#$1=1"]],

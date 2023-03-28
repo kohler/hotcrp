@@ -26,6 +26,8 @@ class PaperStatus extends MessageSet {
     public $title;
     /** @var ?int */
     private $_desired_pid;
+    /** @var ?list<string> */
+    private $_unknown_fields;
     /** @var list<PaperOption> */
     private $_fdiffs;
     /** @var list<string> */
@@ -56,6 +58,8 @@ class PaperStatus extends MessageSet {
     private $_paper_submitted;
     /** @var bool */
     private $_documents_changed;
+    /** @var bool */
+    private $_noncontacts_changed;
     /** @var list<int> */
     private $_update_pid_dids;
     /** @var list<DocumentInfo> */
@@ -134,7 +138,6 @@ class PaperStatus extends MessageSet {
      * @param mixed $value
      * @return MessageItem */
     function syntax_error_at($key, $value) {
-        error_log($this->conf->dbname . ": PaperStatus: syntax error {$key} " . gettype($value));
         return $this->error_at($key, "<0>Validation error [{$key}]");
     }
 
@@ -155,6 +158,11 @@ class PaperStatus extends MessageSet {
             }
         }
         return $ms;
+    }
+
+    /** @return string */
+    function decorated_feedback_text() {
+        return MessageSet::feedback_text($this->decorated_message_list());
     }
 
 
@@ -335,6 +343,12 @@ class PaperStatus extends MessageSet {
             }
             $xstatus->$k = $v;
         }
+        $v = $istatus->withdraw_reason ?? null;
+        if (is_string($v)) {
+            $xstatus->withdraw_reason = $v;
+        } else if ($v !== null) {
+            $this->syntax_error_at("status.withdraw_reason", $v);
+        }
         if ($istatusstr === "submitted"
             || $istatusstr === "accepted"
             || $istatusstr === "deskrejected"
@@ -383,8 +397,7 @@ class PaperStatus extends MessageSet {
             }
         }
 
-        // Features
-        $xpj->_bad_options = [];
+        // Fields
         $ioptions = (object) [];
         if (isset($ipj->options)) {
             if (is_associative_array($ipj->options) || is_object($ipj->options)) {
@@ -397,43 +410,54 @@ class PaperStatus extends MessageSet {
                 $this->syntax_error_at("options", $ipj->options);
             }
         }
+
         $ikeys = [];
         foreach ($this->prow->form_fields() as $o) {
-            $k = $o->json_key();
-            if (($j = $ipj->$k ?? $ioptions->$k ?? null) !== null) {
-                $xpj->$k = $j;
-            } else if (($j = $ipj->{$o->field_key()} ?? $ioptions->{$o->field_key()} ?? null) !== null) {
-                $xpj->$k = $j;
-                $ikeys[$o->field_key()] = true;
-            } else if (($j = $ipj->{(string) $o->id} ?? null)) {
-                $xpj->$k = $j;
-                $ikeys[(string) $o->id] = true;
-            }
-        }
-        if (isset($ipj->options)) {
-            foreach ((array) $ioptions as $k => $v) {
-                if (!isset($xpj->$k) && !isset($ikeys[$k])) {
-                    $matches = $this->conf->options()->find_all($k);
-                    if (count($matches) === 1) {
-                        $o = current($matches);
-                        $xpj->{$o->json_key()} = $v;
-                    } else {
-                        $xpj->_bad_options[] = $k;
-                    }
+            $k = $xk = $o->json_key();
+            $j = $ipj->$xk ?? $ioptions->$xk ?? null;
+            if ($j === null) {
+                $xk = $o->field_key();
+                $j = $ipj->$xk ?? $ioptions->$xk ?? null;
+                if ($j === null) {
+                    $xk = (string) $o->id;
+                    $j = $ipj->$xk ?? null;
                 }
             }
+            if ($j !== null) {
+                $xpj->$k = $j;
+                $ikeys[$xk] = true;
+            }
         }
+
+        foreach ((array) $ioptions as $k => $v) {
+            if (isset($xpj->$k)
+                || isset($ikeys[$k])) {
+                continue;
+            }
+            $omatch = $this->conf->options()->find($k);
+            if ($omatch
+                && !isset($xpj->{$omatch->json_key()})) {
+                $xpj->{$omatch->json_key()} = $v;
+            } else {
+                $this->_unknown_fields[] = $k;
+            }
+        }
+
         foreach ((array) $ipj as $k => $v) {
-            if (!isset($xpj->$k) && !isset($ikeys[$k]) && !isset($xstatus->$k)
-                && !in_array($k, ["pid", "id", "options", "status", "decision", "reviews", "submission_class"])
-                && $k[0] !== "_" && $k[0] !== "\$") {
-                $matches = $this->conf->options()->find_all($k);
-                if (count($matches) === 1) {
-                    $o = current($matches);
-                    $xpj->{$o->json_key()} = $v;
-                } else {
-                    $xpj->_bad_options[] = $k;
-                }
+            if (isset($xpj->$k)
+                || isset($ikeys[$k])
+                || isset($xstatus->$k)
+                || in_array($k, ["pid", "id", "options", "status", "decision", "reviews", "submission_class"])
+                || $k[0] === "_"
+                || $k[0] === "\$") {
+                continue;
+            }
+            $omatch = $this->conf->options()->find($k);
+            if ($omatch
+                && !isset($xpj->{$omatch->json_key()})) {
+                $xpj->{$omatch->json_key()} = $v;
+            } else {
+                $this->_unknown_fields[] = $k;
             }
         }
 
@@ -475,6 +499,12 @@ class PaperStatus extends MessageSet {
     function change_at($field) {
         if (!in_array($field, $this->_fdiffs)) {
             $this->_fdiffs[] = $field;
+        }
+        if (!$this->_documents_changed && $field->has_document()) {
+            $this->_documents_changed = true;
+        }
+        if ($field->id !== PaperOption::CONTACTSID) {
+            $this->_noncontacts_changed = true;
         }
     }
 
@@ -522,6 +552,66 @@ class PaperStatus extends MessageSet {
     /** @return list<PaperOption> */
     function changed_fields() {
         return $this->_fdiffs;
+    }
+
+    /** @param PaperOption $opt */
+    private function _check_field($pj, $opt) {
+        if (!$this->user->can_edit_option($this->prow, $opt)
+            && (!$this->user->is_root_user()
+                || !isset($pj->{$opt->json_key()}))) {
+            return;
+        }
+        $oj = $pj->{$opt->json_key()} ?? null;
+        if ($oj === null) {
+            $ov = null;
+        } else if ($oj instanceof PaperValue) {
+            assert($oj->prow === $this->prow);
+            $ov = $oj;
+        } else {
+            $ov = $opt->parse_json($this->prow, $oj);
+        }
+        if ($ov !== null) {
+            $opt->value_check($ov, $this->user);
+            if (!$ov->has_error()) {
+                $opt->value_store($ov, $this);
+                $this->prow->override_option($ov);
+                $this->_field_values[$opt->id] = $ov;
+            }
+        } else {
+            $ov = $this->prow->force_option($opt);
+            $opt->value_check($ov, $this->user);
+        }
+        $ov->append_messages_to($this);
+    }
+
+    /** @param PaperValue $ov */
+    private function _prepare_save_field($ov) {
+        // erroneous values shouldn't be saved
+        if ($ov->has_error()) { // XXX should never have errors here
+            return;
+        }
+        // return if no change
+        $v1 = $ov->value_list();
+        $d1 = $ov->data_list();
+        $oldv = $this->prow->base_option($ov->option);
+        if ($v1 === $oldv->value_list() && $d1 === $oldv->data_list()) {
+            return;
+        }
+        // option may know how to save itself
+        if ($ov->option->value_save($ov, $this)) {
+            return;
+        }
+        // otherwise, save option normal way
+        $oid = $ov->option_id();
+        $this->change_at($ov->option);
+        $this->_option_delid[] = $oid;
+        for ($i = 0; $i < count($v1); ++$i) {
+            $qv0 = [-1, $oid, $v1[$i], null, null];
+            if ($d1[$i] !== null) {
+                $qv0[strlen($d1[$i]) < 32768 ? 3 : 4] = $d1[$i];
+            }
+            $this->_option_ins[] = $qv0;
+        }
     }
 
     private function _check_status($pj) {
@@ -593,68 +683,6 @@ class PaperStatus extends MessageSet {
             if ($this->prow->outcome !== $pj->decision) {
                 $this->save_paperf("outcome", $pj->decision);
                 $this->status_change_at("decision");
-            }
-        }
-    }
-
-    private function _check_fields($pj) {
-        foreach ($this->prow->form_fields() as $opt) {
-            if ($this->user->can_edit_option($this->prow, $opt)
-                || ($this->user->is_root_user()
-                    && isset($pj->{$opt->json_key()}))) {
-                $oj = $pj->{$opt->json_key()} ?? null;
-                if ($oj === null) {
-                    $ov = null;
-                } else if ($oj instanceof PaperValue) {
-                    assert($oj->prow === $this->prow);
-                    $ov = $oj;
-                } else {
-                    $ov = $opt->parse_json($this->prow, $oj);
-                }
-                if ($ov !== null) {
-                    $opt->value_check($ov, $this->user);
-                    if (!$ov->has_error()) {
-                        $opt->value_store($ov, $this);
-                        $this->prow->override_option($ov);
-                        $this->_field_values[$opt->id] = $ov;
-                    }
-                } else {
-                    $ov = $this->prow->force_option($opt);
-                    $opt->value_check($ov, $this->user);
-                }
-                $ov->append_messages_to($this);
-            }
-        }
-        if (!empty($pj->_bad_options)) {
-            $this->warning_at("options", $this->_("<0>Submission fields not found (%#s)", $pj->_bad_options));
-        }
-    }
-
-    private function _save_fields() {
-        foreach ($this->_field_values ?? [] as $ov) {
-            if ($ov->has_error()) { // XXX should never have errors here
-                continue;
-            }
-            $v1 = $ov->value_list();
-            $d1 = $ov->data_list();
-            $oldv = $this->prow->base_option($ov->option);
-            if ($v1 !== $oldv->value_list() || $d1 !== $oldv->data_list()) {
-                if (!$ov->option->value_save($ov, $this)) {
-                    // normal option
-                    $oid = $ov->option_id();
-                    $this->change_at($ov->option);
-                    $this->_option_delid[] = $oid;
-                    for ($i = 0; $i < count($v1); ++$i) {
-                        $qv0 = [-1, $oid, $v1[$i], null, null];
-                        if ($d1[$i] !== null) {
-                            $qv0[strlen($d1[$i]) < 32768 ? 3 : 4] = $d1[$i];
-                        }
-                        $this->_option_ins[] = $qv0;
-                    }
-                }
-                if ($ov->option->has_document()) {
-                    $this->_documents_changed = true;
-                }
             }
         }
     }
@@ -809,12 +837,13 @@ class PaperStatus extends MessageSet {
         $this->_desired_pid = $prow->paperId !== 0 ? $prow->paperId : null;
         $this->_fdiffs = $this->_xdiffs = [];
         $this->_paper_upd = $this->_paper_overflow_upd = [];
+        $this->_unknown_fields = null;
         $this->_topic_ins = null;
         $this->_field_values = $this->_option_delid = $this->_option_ins = [];
         $this->_conflict_values = [];
         $this->_conflict_ins = $this->_register_users = $this->_created_contacts = null;
         $this->_author_change_cids = null;
-        $this->_paper_submitted = $this->_documents_changed = false;
+        $this->_paper_submitted = $this->_documents_changed = $this->_noncontacts_changed = false;
         $this->_update_pid_dids = $this->_joindocs = [];
         $this->_save_status = 0;
     }
@@ -887,6 +916,14 @@ class PaperStatus extends MessageSet {
     /** @param object $pj
      * @return bool */
     private function _finish_prepare($pj) {
+        $ok = $this->_normalize_and_check($pj);
+        $this->prow->remove_option_overrides();
+        return $ok;
+    }
+
+    /** @param object $pj
+     * @return bool */
+    private function _normalize_and_check($pj) {
         assert($this->_save_status === 0);
 
         // normalize and check format
@@ -897,19 +934,29 @@ class PaperStatus extends MessageSet {
 
         // save parts and track diffs
         $this->prow->set_want_submitted($pj->status->submitted && !$pj->status->withdrawn);
-        $this->_check_fields($pj);
+        foreach ($this->prow->form_fields() as $opt) {
+            $this->_check_field($pj, $opt);
+        }
         $this->_check_status($pj);
         $this->_check_final_status($pj);
         $this->_check_decision($pj);
 
+        if (!empty($this->_unknown_fields)) {
+            natcasesort($this->_unknown_fields);
+            $this->warning_at("options", $this->_("<0>Ignoring unknown fields {:list}", $this->_unknown_fields));
+        }
+
         // prepare changes for saving
-        $ok = $this->problem_status() < MessageSet::ESTOP;
-        if ($ok) {
-            $this->_save_fields();
+        if ($this->problem_status() >= MessageSet::ESTOP) {
+            return false;
+        }
+
+        foreach ($this->_field_values ?? [] as $ov) {
+            $this->_prepare_save_field($ov);
         }
 
         // correct blindness setting
-        if ($ok && $this->conf->submission_blindness() !== Conf::BLIND_OPTIONAL) {
+        if ($this->conf->submission_blindness() !== Conf::BLIND_OPTIONAL) {
             $want_blind = $this->conf->submission_blindness() !== Conf::BLIND_NEVER;
             if ($this->prow->blind !== $want_blind) {
                 $this->save_paperf("blind", $want_blind ? 1 : 0);
@@ -918,26 +965,21 @@ class PaperStatus extends MessageSet {
         }
 
         // don't save if creating a mostly-empty paper
-        if ($ok && $this->will_insert()) {
-            if (!array_diff(array_keys($this->_paper_upd), ["authorInformation", "blind"])
-                && (!isset($this->_paper_upd["authorInformation"])
-                    || $this->_paper_upd["authorInformation"] === (new Author($this->user))->unparse_tabbed())
-                && empty($this->_topic_ins)
-                && empty($this->_option_ins)) {
-                $this->error_at(null, "<0>Empty submission. Please fill out the submission fields and try again");
-                $ok = false;
-            }
+        if ($this->will_insert()
+            && !array_diff(array_keys($this->_paper_upd), ["authorInformation", "blind"])
+            && (!isset($this->_paper_upd["authorInformation"])
+                || $this->_paper_upd["authorInformation"] === (new Author($this->user))->unparse_tabbed())
+            && empty($this->_topic_ins)
+            && empty($this->_option_ins)) {
+            $this->error_at(null, "<0>Empty submission. Please fill out the submission fields and try again");
+            return false;
         }
 
         // validate contacts
-        if ($ok) {
-            $this->_check_contacts_last($pj);
-            $this->_ensure_creator_contact();
-            $this->_save_status |= self::SAVE_STATUS_PREPARED;
-        }
-
-        $this->prow->remove_option_overrides();
-        return $ok;
+        $this->_check_contacts_last($pj);
+        $this->_ensure_creator_contact();
+        $this->_save_status |= self::SAVE_STATUS_PREPARED;
+        return true;
     }
 
 

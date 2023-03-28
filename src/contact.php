@@ -3722,7 +3722,8 @@ class Contact implements JsonSerializable {
      * @return bool */
     function can_view_option(PaperInfo $prow, $opt) {
         $vos = $this->view_option_state($prow, $opt);
-        return $vos === 2 || ($vos === 1 && $this->is_admin_force());
+        return $vos === 2
+            || ($vos === 1 && $this->is_admin_force());
     }
 
     /** @param PaperOption $opt
@@ -3752,7 +3753,7 @@ class Contact implements JsonSerializable {
     function can_edit_option(PaperInfo $prow, $opt) {
         $eos = $this->edit_option_state($prow, $opt);
         return $eos === 2
-            || ($eos === 1 && ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS));
+            || ($eos === 1 && ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0);
     }
 
     /** @return array<int,PaperOption> */

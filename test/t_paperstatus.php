@@ -769,6 +769,7 @@ Phil Porras.");
             "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email => "pinned advisor"]
         ]);
         xassert(!$psc->has_problem());
+        xassert_eqq($psc->full_feedback_text(), "");
 
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId]);
