@@ -219,6 +219,8 @@ class Selector_PaperColumn extends PaperColumn {
 class Title_PaperColumn extends PaperColumn {
     private $has_decoration = false;
     private $highlight = false;
+    private $contact = null;
+    private $not_me = null;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
