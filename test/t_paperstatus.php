@@ -367,10 +367,12 @@ class PaperStatus_Tester {
         xassert($newpaperx->timeSubmitted <= 0);
     }
 
-    function test_save_fail_deadline() {
-        $old_sub_update = $this->conf->setting("sub_update");
-        $this->conf->save_refresh_setting("sub_update", Conf::$now - 1000);
-        xassert(!$this->conf->unnamed_submission_round()->time_update(true));
+    function test_save_new_fail_deadline() {
+        $old_sub_reg = $this->conf->setting("sub_reg");
+        xassert($this->conf->setting("sub_update") > Conf::$now);
+        $this->conf->save_refresh_setting("sub_reg", Conf::$now - 1000);
+        xassert(!$this->conf->unnamed_submission_round()->time_register(true));
+        xassert($this->conf->unnamed_submission_round()->time_update(true));
 
         $ps = new PaperStatus($this->u_estrin);
         xassert(!$ps->user->privChair);
@@ -385,6 +387,36 @@ class PaperStatus_Tester {
         }
         xassert(!$ok);
 
+        // updating existing paper would succeed though
+        $ps = new PaperStatus($this->u_estrin);
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert(!!$ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "Scalable Timers for Soft State Protocols???"]), $paper1, "update"));
+        xassert($ps->has_change_at("title"));
+
+        $this->conf->save_refresh_setting("sub_reg", $old_sub_reg);
+    }
+
+    function test_save_existing_fail_deadline() {
+        $old_sub_reg = $this->conf->setting("sub_reg");
+        $old_sub_update = $this->conf->setting("sub_update");
+        $this->conf->save_setting("sub_reg", Conf::$now - 1000);
+        $this->conf->save_refresh_setting("sub_update", Conf::$now - 1000);
+        xassert(!$this->conf->unnamed_submission_round()->time_register(true));
+        xassert(!$this->conf->unnamed_submission_round()->time_update(true));
+
+        $ps = new PaperStatus($this->u_estrin);
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert(!$ps->user->privChair);
+        xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "Scalable Timers for Soft State Protocols!!!!"]), $paper1, "update"));
+        xassert($ps->has_change_at("title"));
+        try {
+            $ok = $ps->execute_save();
+        } catch (Exception $e) {
+            $ok = false;
+        }
+        xassert(!$ok);
+
+        $this->conf->save_setting("sub_reg", $old_sub_reg);
         $this->conf->save_refresh_setting("sub_update", $old_sub_update);
     }
 
@@ -449,6 +481,31 @@ class PaperStatus_Tester {
         xassert_eqq($ps->decorated_feedback_text(), "You aren’t allowed to view submission #1.\n");
 
         $this->conf->save_refresh_setting("sub_update", $old_sub_update);
+    }
+
+    function test_save_decision() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($paper1->outcome, 0);
+
+        // chair can change decision
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 1, "decision" => "accepted"]));
+
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($paper1->outcome, 1);
+
+        $ps = new PaperStatus($this->u_chair);
+        xassert($ps->save_paper_json((object) ["pid" => 1, "decision" => "unknown"]));
+
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($paper1->outcome, 0);
+
+        // author can’t change decision
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->save_paper_json((object) ["pid" => 1, "decision" => "accepted"]));
+
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq($paper1->outcome, 0);
     }
 
     function test_save_options() {
