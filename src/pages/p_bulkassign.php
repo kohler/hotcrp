@@ -272,8 +272,8 @@ Assignment methods:
             '</label>';
         Ht::stash_script('$(function(){
 $("#tsel").on("change",function(){
-hotcrp.foldup.call(this,null,{f:this.value!=="review"});
-hotcrp.foldup.call(this,null,{f:!/^(?:primary|secondary|(?:pc|meta)?review)$/.test(this.value),n:2});
+hotcrp.foldup.call(this,null,{open:this.value==="review"});
+hotcrp.foldup.call(this,null,{open:/^(?:primary|secondary|(?:pc|meta)?review)$/.test(this.value),n:2});
 }).trigger("change")})');
 
         $rev_rounds = $conf->round_selector_options(null);

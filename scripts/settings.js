@@ -92,15 +92,17 @@ function settings_delete(elt, message) {
     return true;
 }
 
-function settings_field_unfold() {
-    var ch = this.parentElement.firstChild;
-    for (; ch; ch = ch.nextSibling) {
-        if (ch !== this && hasClass(ch, "fold2o") && !form_differs(ch))
-            fold(ch, true, 2);
+function settings_field_unfold(evt) {
+    if (evt.which.open) {
+        var ch = this.parentElement.firstChild;
+        for (; ch; ch = ch.nextSibling) {
+            if (ch !== this && hasClass(ch, "fold2o") && !form_differs(ch))
+                fold(ch, true, 2);
+        }
+        $(this).find("textarea").css("height", "auto").autogrow();
+        $(this).find("input[type=text]").autogrow();
+        $(this).scrollIntoView();
     }
-    $(this).find("textarea").css("height", "auto").autogrow();
-    $(this).find("input[type=text]").autogrow();
-    $(this).scrollIntoView();
 }
 
 function settings_disable_children(e) {
@@ -217,7 +219,7 @@ handle_ui.on("js-settings-sf-move", function (evt) {
         else
             msg = 'This field will be deleted from the submission form. It is not used on any submissions.';
         settings_delete(sf, msg);
-        foldup.call(sf, evt, {n: 2, f: false});
+        foldup.call(sf, evt, {n: 2, open: true});
     }
     tooltip.erase(this);
     sf_order();
@@ -290,7 +292,7 @@ $(document).on("hotcrpsettingssf", ".settings-sf", function () {
     sf_order();
 });
 
-handle_ui.on("unfold.settings-sf", settings_field_unfold, -1);
+handle_ui.on("foldtoggle.settings-sf", settings_field_unfold, -1);
 
 tooltip.add_builder("settings-sf", function (info) {
     var x = "#settings-sf-caption-values";
@@ -578,7 +580,7 @@ function rf_delete(evt) {
                 $$(rf.id + "/delete_message").innerHTML = t;
             });
         }
-        foldup.call(rf, evt, {n: 2, f: false});
+        foldup.call(rf, evt, {n: 2, open: true});
     }
     rf_order();
 }
@@ -724,7 +726,7 @@ function rf_add(fld) {
     rf_append(fld);
     var rf = document.getElementById("rf/" + pos);
     addClass(rf, "is-new");
-    foldup.call(rf, null, {n: 2, f: false});
+    foldup.call(rf, null, {n: 2, open: true});
     var ordere = document.getElementById("rf/" + pos + "/order");
     ordere.setAttribute("data-default-value", "0");
     ordere.value = pos;
@@ -757,7 +759,7 @@ function rfs(data) {
             rf_add({id: i, type: t, name: ""});
     }
 
-    $("#settings-rform").on("unfold", ".settings-rf", settings_field_unfold);
+    $("#settings-rform").on("foldtoggle", ".settings-rf", settings_field_unfold);
 
     // highlight errors, apply request
     for (i in data.req || {}) {
@@ -765,7 +767,7 @@ function rfs(data) {
             && (e = document.getElementById(i))
             && !text_eq($(e).val(), data.req[i])) {
             $(e).val(data.req[i]).change();
-            foldup.call(e, null, {n: 2, f: false});
+            foldup.call(e, null, {n: 2, open: true});
         }
     }
     for (i in data.message_list || []) {
@@ -778,7 +780,7 @@ function rfs(data) {
             if (e && (entryi = e.closest(".entryi"))) {
                 append_feedback_near(entryi, mi);
                 if (mi.status > 1)
-                    foldup.call(entryi, null, {n: 2, f: false});
+                    foldup.call(entryi, null, {n: 2, open: true});
             }
             if ((m = mi.field.match(/^([^/]*\/\d+)(?=$|\/)/))
                 && (e = document.getElementById(m[1] + "/view"))

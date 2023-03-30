@@ -1621,8 +1621,7 @@ $(document).on("keydown", ".uikd", handle_ui);
 $(document).on("mousedown", ".uimd", handle_ui);
 $(document).on("input", ".uii", handle_ui);
 $(document).on("beforeinput", ".ui-beforeinput", handle_ui);
-$(document).on("fold", ".ui-fold", handle_ui);
-$(document).on("unfold", ".ui-unfold", handle_ui);
+$(document).on("foldtoggle", ".ui-fold", handle_ui);
 $(document).on("dragstart", ".ui-drag", handle_ui);
 
 
@@ -1747,41 +1746,45 @@ $(function () {
     });
 });
 
-function focus_at(felt) {
-    felt.jquery && (felt = felt[0]);
+var focus_at = (function () {
+var ever_focused;
+return function (felt) {
+    if (felt.jquery)
+        felt = felt[0];
     felt.focus();
-    if (!felt.hotcrp_ever_focused) {
-        if (felt.select && hasClass(felt, "want-select")) {
+    if (!ever_focused && window.WeakMap)
+        ever_focused = new WeakMap;
+    if (ever_focused && !ever_focused.has(felt)) {
+        ever_focused.set(felt, true);
+        if (felt.select && hasClass(felt, "want-select"))
             felt.select();
-        } else if (felt.setSelectionRange) {
+        else if (felt.setSelectionRange) {
             try {
                 felt.setSelectionRange(felt.value.length, felt.value.length);
             } catch (e) { // ignore errors
             }
         }
-        felt.hotcrp_ever_focused = true;
     }
-}
+};
+})();
 
-function focus_within(elt, subfocus_selector) {
+function focus_within(elt, subfocus_selector, always) {
     var $wf = $(elt).find(".want-focus");
     if (subfocus_selector)
         $wf = $wf.filter(subfocus_selector);
-    if ($wf.length == 1)
-        focus_at($wf[0]);
-    return $wf.length == 1;
-}
-
-function refocus_within(elt) {
-    var focused = document.activeElement;
-    if (focused && focused.tagName !== "A" && !$(focused).is(":visible")) {
-        while (focused && focused !== elt)
-            focused = focused.parentElement;
-        if (focused) {
-            var focusable = $(elt).find("input, select, textarea, a, button").filter(":visible").first();
-            focusable.length ? focusable.focus() : $(document.activeElement).blur();
-        }
+    if ($wf.length !== 1 && always) {
+        $wf = [];
+        $(elt).find("a, input, select, textarea, button").each(function () {
+            if ((this.tagName === "A" || !this.disabled)
+                && (!subfocus_selector || this.matches(subfocus_selector))) {
+                $wf.push(this);
+                return false;
+            }
+        })
     }
+    if ($wf.length === 1)
+        focus_at($wf[0]);
+    return $wf.length === 1;
 }
 
 
@@ -3529,9 +3532,9 @@ function fold_storage() {
         sn = wstorage.json(true, "fold") || wstorage.json(false, "fold") || {};
         for (k in smap) {
             if (sn[smap[k]]) {
-                foldup.call(this, null, {f: false, n: +k});
+                foldup.call(this, null, {open: true, n: +k});
             } else if (sn[smap[k]] != null) {
-                foldup.call(this, null, {f: true, n: +k});
+                foldup.call(this, null, {open: false, n: +k});
             }
         }
     }
@@ -3597,11 +3600,14 @@ function fold(elt, dofold, foldnum) {
 }
 
 function foldup(evt, opts) {
-    var e = this, dofold = false, m, x;
+    var e = this, wantopen, m, x;
     if (typeof opts === "number") {
         opts = {n: opts};
     } else if (!opts) {
         opts = {};
+    }
+    if (!("open" in opts) && "f" in opts) {
+        opts.open = !opts.f;
     }
     if (this.tagName === "DIV"
         && evt
@@ -3616,13 +3622,13 @@ function foldup(evt, opts) {
             e = document.getElementById(m[1]);
         }
         opts.n = parseInt(m[2]) || 0;
-        if (!("f" in opts) && m[3] !== "") {
+        if (!("open" in opts) && m[3] !== "") {
             if (this.tagName === "INPUT"
                 && input_is_checkboxlike(this)
                 && (this.checked ? m[3] === "u" : m[3] === "U")) {
                 m[3] = "c";
             }
-            opts.f = m[3] === "c";
+            opts.open = m[3] !== "c";
         }
     }
     var foldname = "fold" + (opts.n || "");
@@ -3644,11 +3650,11 @@ function foldup(evt, opts) {
             }
         }
     }
-    if (!("f" in opts)
+    if (!("open" in opts)
         && (this.tagName === "INPUT" || this.tagName === "SELECT")) {
         var value = null;
         if (this.type === "checkbox") {
-            opts.f = !this.checked;
+            opts.open = this.checked;
         } else if (this.type === "radio") {
             if (!this.checked)
                 return true;
@@ -3658,17 +3664,18 @@ function foldup(evt, opts) {
         }
         if (value !== null) {
             var values = (e.getAttribute("data-" + foldname + "-values") || "").split(/\s+/);
-            opts.f = values.indexOf(value) < 0;
+            opts.open = values.indexOf(value) >= 0;
         }
     }
-    dofold = !hasClass(e, foldname + "c");
-    if (!("f" in opts) || !opts.f !== dofold) {
-        opts.f = dofold;
-        fold(e, dofold, opts.n || 0);
-        $(e).trigger($.Event(opts.f ? "fold" : "unfold", {which: opts}));
+    wantopen = hasClass(e, foldname + "c");
+    if (!("open" in opts) || !!opts.open === wantopen) {
+        opts.f = !wantopen; // XXX backward compat
+        opts.open = wantopen;
+        fold(e, !wantopen, opts.n || 0);
+        $(e).trigger($.Event("foldtoggle", {which: opts}));
     }
     if (this.hasAttribute("aria-expanded")) {
-        this.setAttribute("aria-expanded", dofold ? "false" : "true");
+        this.setAttribute("aria-expanded", wantopen ? "true" : "false");
     }
     if (evt
         && typeof evt === "object"
@@ -3680,16 +3687,21 @@ function foldup(evt, opts) {
 }
 
 handle_ui.on("js-foldup", foldup);
-handle_ui.on("unfold.js-unfold-focus", function (evt) {
-    if (!evt.which.nofocus)
-        focus_within(this, ".fx" + (evt.which.n || "") + " *");
+handle_ui.on("foldtoggle.js-fold-focus", function (evt) {
+    if (evt.which.nofocus)
+        return;
+    var fx = ".fx" + (evt.which.n || "");
+    if (evt.which.open)
+        focus_within(this, fx + " *");
+    else if (document.activeElement
+             && this.contains(document.activeElement)
+             && document.activeElement.closest(fx))
+        focus_within(this, ":not(" + fx + " *)", true);
 });
-handle_ui.on("fold.js-fold-focus", function (evt) {
-    if (!evt.which.nofocus)
-        focus_within(this, ".fn" + (evt.which.n || "") + " *");
-})
 $(function () {
-    $(".uich.js-foldup").each(function () { foldup.call(this, null, {nofocus: true}); });
+    $(".uich.js-foldup").each(function () {
+        foldup.call(this, null, {nofocus: true});
+    });
 });
 
 
@@ -3786,16 +3798,16 @@ push_history_state.ever = false;
 // line links
 
 handle_ui.on("lla", function () {
-    var e = this.closest(".linelink");
-    var f = e.closest(".linelinks");
+    var e = this.closest(".linelink"),
+        f = e.closest(".linelinks");
     $(f).find(".linelink").removeClass("active");
     addClass(e, "active");
-    $(e).trigger("unfold", {f: false});
+    $(e).trigger($.Event("foldtoggle", {which: {open: true}}));
     focus_within(e, ".lld *");
 });
 
 $(function () {
-    $(".linelink.active").trigger("unfold", {f: false, linelink: true});
+    $(".linelink.active").trigger($.Event("foldtoggle", {which: {open: true, linelink: true}}));
 });
 
 
@@ -3887,7 +3899,7 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
             return true;
         }
     } else if (hasClass(e, "need-anchor-unfold")) {
-        foldup.call(e, null, {f: false});
+        foldup.call(e, null, {open: true});
     }
 }, -1);
 
@@ -4411,11 +4423,14 @@ handle_ui.on("js-choose-mail-preview", function () {
 
 // mail
 handle_ui.on("change.js-mail-recipients", function () {
-    var plimit = this.closest("form").elements.plimit;
-    foldup.call(this, null, {f: !!plimit && !plimit.checked, n: 8});
-    var sopt = $(this).find("option[value='" + this.value + "']");
-    foldup.call(this, null, {f: sopt.hasClass("mail-want-no-papers"), n: 9});
-    foldup.call(this, null, {f: !sopt.hasClass("mail-want-since"), n: 10});
+    var plimit = this.form.elements.plimit;
+    foldup.call(this, null, {open: !plimit || plimit.checked, n: 8});
+    var toelt = this.form.elements.to,
+        sopt = toelt.options[toelt.selectedIndex];
+    if (sopt) {
+        foldup.call(this, null, {open: !hasClass(sopt, "mail-want-no-papers"), n: 9});
+        foldup.call(this, null, {open: hasClass(sopt, "mail-want-since"), n: 10});
+    }
 });
 
 handle_ui.on(".js-mail-set-template", function () {
@@ -4917,7 +4932,7 @@ $(function () {
     }
     if ($(".paperinfo-abstract").length) {
         check_abstract_height();
-        $("#foldpaper").on("fold unfold renderText", check_abstract_height);
+        $("#foldpaper").on("foldtoggle renderText", check_abstract_height);
         $(window).on("resize", check_abstract_height);
     }
 });
@@ -5111,7 +5126,7 @@ function unparse_ratings(ratings, user_rating, editable) {
 
 handle_ui.on("js-revrating-unfold", function (evt) {
     if (evt.target === this)
-        foldup.call(this, null, {f: false});
+        foldup.call(this, null, {open: true});
 });
 
 handle_ui.on("js-revrating", function () {
@@ -5174,7 +5189,7 @@ handle_ui.on("js-revrating", function () {
 function revrating_key(evt) {
     var k = event_key(evt);
     if ((k === "ArrowLeft" || k === "ArrowRight") && !event_modkey(evt)) {
-        foldup.call(this, null, {f: false});
+        foldup.call(this, null, {open: true});
         var wantbit = $(this).closest(".revrating-choice").attr("data-revrating-bit");
         if (wantbit != null) {
             if (k === "ArrowLeft" && wantbit > 0)
@@ -6528,7 +6543,7 @@ function make_selector_shortcut(type) {
         var e = $$("fold" + type);
         if (e) {
             e.className += " psfocus";
-            foldup.call(e, null, {f: false});
+            foldup.call(e, null, {open: true});
             $(e).scrollIntoView();
             if ((e = find(e))) {
                 focus_at(e);
@@ -7638,7 +7653,7 @@ function default_click(evt) {
 
 $(document).on("click", "a", function (evt) {
     if (hasClass(this, "fn5")) {
-        foldup.call(this, evt, {n: 5, f: false});
+        foldup.call(this, evt, {n: 5, open: true});
     } else if (!hasClass(this, "ui")) {
         if (!event_key.is_default_a(evt)
             || this.target
@@ -10076,7 +10091,7 @@ function prepare_paper_select() {
     function cancel(close) {
         $(ctl).val(input_default_value(ctl));
         if (close) {
-            foldup.call(self, null, {f: true});
+            foldup.call(self, null, {open: false});
             ctl.blur();
         }
     }
@@ -10085,7 +10100,7 @@ function prepare_paper_select() {
             minifeedback(ctl, data);
             if (data.ok) {
                 ctl.setAttribute("data-default-value", data.value);
-                close && foldup.call(self, null, {f: true});
+                close && foldup.call(self, null, {open: false});
                 var $p = $(self).find(".js-psedit-result").first();
                 $p.html(data.result || ctl.options[ctl.selectedIndex].innerHTML);
                 if (data.color_classes) {
@@ -10164,11 +10179,13 @@ function prepare_pstags() {
         $ta.removeClass("has-error");
         $f.find(".is-error").remove();
         $f.find(".btn-highlight").removeClass("btn-highlight");
+        foldup.call($ta[0], evt, {open: false});
         $ta[0].blur();
-        foldup.call($ta[0], evt, {f: true});
     });
     $f.on("submit", save_pstags);
-    $f.closest(".foldc, .foldo").on("unfold", function () {
+    $f.closest(".foldc, .foldo").on("foldtoggle", function (evt) {
+        if (!evt.which.open)
+            return;
         $f.data("everOpened", true);
         $f.find("input").prop("disabled", false);
         if (!$f.data("noTagReport")) {
@@ -10207,7 +10224,7 @@ function save_pstags(evt) {
             $f.find("input").prop("disabled", false);
             if (data.ok) {
                 if (message_list_status(data.message_list) < 2) {
-                    foldup.call($f[0], null, {f: true});
+                    foldup.call($f[0], null, {open: false});
                     minifeedback(f.elements.tags, {ok: true});
                 }
                 $(window).trigger("hotcrptags", [data]);
@@ -10248,7 +10265,7 @@ function save_pstagindex(evt) {
         $f.removeClass("submitting");
         minifeedback($f.find("input")[0], data);
         if (data.ok && (data.message_list || []).length === 0) {
-            foldup.call($f[0], null, {f: true});
+            foldup.call($f[0], null, {open: false});
         } else {
             focus_within($f);
         }
@@ -10627,8 +10644,8 @@ handle_ui.on("js-profile-role", function () {
     var $f = $(this.form),
         pctype = $f.find("input[name=pctype]:checked").val(),
         ass = $f.find("input[name=ass]:checked").length;
-    foldup.call(this, null, {n: 1, f: !pctype || pctype === "none"});
-    foldup.call(this, null, {n: 2, f: (!pctype || pctype === "none") && ass === 0});
+    foldup.call(this, null, {n: 1, open: pctype && pctype !== "none"});
+    foldup.call(this, null, {n: 2, open: (pctype && pctype !== "none") || ass !== 0});
 });
 
 handle_ui.on("js-profile-current-password", function () {
@@ -10938,20 +10955,24 @@ handle_ui.on("js-select-all", function () {
 });
 
 
-handle_ui.on("js-tag-list-action", function () {
+handle_ui.on("js-tag-list-action", function (evt) {
+    if (evt.type === "foldtoggle" && !evt.which.open)
+        return;
     removeClass(this, "js-tag-list-action");
     $("select.js-submit-action-info-tag").on("change", function () {
-        var $t = $(this).closest(".linelink"),
-            $ty = $t.find("select[name=tagfn]");
-        foldup.call($t[0], null, {f: $ty.val() !== "cr", n: 99});
-        foldup.call($t[0], null, {f: $ty.val() === "cr"
-            || (!$t.find("input[name=tagcr_source]").val()
-                && $t.find("input[name=tagcr_method]").val() !== "schulze"
-                && !$t.find("input[name=tagcr_gapless]").is(":checked"))});
+        var lf = this.form, ll = this.closest(".linelink"),
+            cr = lf.elements.tagfn.value === "cr";
+        foldup.call(ll, null, {open: cr, n: 98});
+        foldup.call(ll, null, {open: cr
+            && (lf.elements.tagcr_source.value
+                || lf.elements.tagcr_method.value !== "schulze"
+                || lf.elements.tagcr_gapless.checked), n: 99});
     }).trigger("change");
 });
 
-handle_ui.on("js-assign-list-action", function () {
+handle_ui.on("js-assign-list-action", function (evt) {
+    if (evt.type === "foldtoggle" && !evt.which.open)
+        return;
     var self = this;
     removeClass(self, "js-assign-list-action");
     demand_load.pc().then(function (pcs) {
@@ -10961,7 +10982,7 @@ handle_ui.on("js-assign-list-action", function () {
         $(".js-submit-action-info-assign").on("change", function () {
             var $mpc = $(self).find("select[name=markpc]"),
                 afn = $(this).val();
-            foldup.call(self, null, {f: afn === "auto"});
+            foldup.call(self, null, {open: afn !== "auto"});
             if (afn === "lead" || afn === "shepherd") {
                 $(self).find(".js-assign-for").html("to");
                 if (!$mpc.find("option[value=0]").length)
@@ -11105,13 +11126,15 @@ handle_ui.on("js-submit-list", function (evt) {
 });
 
 
-handle_ui.on("js-unfold-pcselector", function () {
-    removeClass(this, "js-unfold-pcselector");
-    var $pc = $(this).find("select[data-pcselector-options]");
-    if ($pc.length)
-        demand_load.pc().then(function (pcs) {
-            $pc.each(function () { populate_pcselector.call(this, pcs); });
-        });
+handle_ui.on("foldtoggle.js-unfold-pcselector", function (evt) {
+    if (evt.which.open) {
+        removeClass(this, "js-unfold-pcselector");
+        var $pc = $(this).find("select[data-pcselector-options]");
+        if ($pc.length)
+            demand_load.pc().then(function (pcs) {
+                $pc.each(function () { populate_pcselector.call(this, pcs); });
+            });
+    }
 });
 
 
@@ -11528,10 +11551,12 @@ function render_events(e, rows) {
         j.append("<tr><td>No recent activity in papers you’re following</td></tr>");
 }
 
-handle_ui.on("js-open-activity", function () {
-    removeClass(this, "js-open-activity");
-    $("<div class=\"fx20 has-events\"></div>").appendTo(this);
-    events ? render_events(this, events) : load_more_events();
+handle_ui.on("js-open-activity", function (evt) {
+    if (evt.which.open) {
+        removeClass(this, "js-open-activity");
+        $("<div class=\"fx20 has-events\"></div>").appendTo(this);
+        events ? render_events(this, events) : load_more_events();
+    }
 });
 })(jQuery);
 

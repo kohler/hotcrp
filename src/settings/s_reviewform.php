@@ -650,7 +650,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             echo '<div class="feedback is-note">Authors cannot see reviews at the moment.</div>';
         }
         echo '</div><template id="rf_template" class="hidden">',
-            '<div id="rf/$" class="settings-rf has-fold fold2c ui-unfold js-unfold-focus">',
+            '<div id="rf/$" class="settings-rf has-fold fold2c ui-fold js-fold-focus">',
             '<div class="settings-draghandle ui-drag js-settings-drag" draggable="true" title="Drag to reorder fields">',
             Icons::ui_move_handle_horizontal(),
             '</div>',

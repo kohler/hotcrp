@@ -184,7 +184,7 @@ class Options_SettingRenderer {
 
         echo '<div id="sf/', $ctr, '" class="settings-sf ',
             $this->io ? '' : 'is-new ',
-            'has-fold fold2o ui-unfold js-unfold-focus hidden">',
+            'has-fold fold2o ui-fold js-fold-focus hidden">',
             '<div class="settings-draghandle ui-drag js-settings-drag" draggable="true" title="Drag to reorder fields">',
             Icons::ui_move_handle_horizontal(),
             '</div>';

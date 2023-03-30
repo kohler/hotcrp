@@ -285,7 +285,7 @@ class Mail_Page {
         if ($this->viewer->privChair) {
             echo '<div class="fx9 checki mt-1"><span class="checkc">',
                 Ht::hidden("has_plimit", 1),
-                Ht::checkbox("plimit", 1, !!$this->qreq->plimit, ["id" => "plimit"]),
+                Ht::checkbox("plimit", 1, !!$this->qreq->plimit, ["id" => "plimit", "class" => "uich js-mail-recipients"]),
                 '</span>',
                 '<label for="plimit">Choose papers<span class="fx8">:</span></label>';
         } else {
@@ -398,17 +398,6 @@ class Mail_Page {
         ]);
 
         echo "</fieldset>\n\n";
-        Ht::stash_script('function mail_recipients_fold() {
-    var plimit = document.getElementById("plimit"),
-        toe = document.getElementById("to");
-    hotcrp.foldup.call(toe, null, {f: !plimit || !plimit.checked, n: 8});
-    var sopt = $(toe).find("option[value=\'" + toe.value + "\']");
-    hotcrp.foldup.call(toe, null, {f: sopt.hasClass("mail-want-no-papers"), n: 9});
-    hotcrp.foldup.call(toe, null, {f: !sopt.hasClass("mail-want-since"), n: 10});
-}
-$("#to, #plimit").on("change", mail_recipients_fold);
-$(mail_recipients_fold)');
-
 
         if ($this->viewer->privChair) {
             $this->print_mail_log();

@@ -15,15 +15,15 @@ class Tag_ListAction extends ListAction {
         // tag name cell
         $t = "";
         if ($pl->user->privChair) {
-            $t .= '<span class="fx99"><a class="ui q js-foldup" href="" data-fold-target="0">'
-                . expander(null, 0) . "</a></span>";
+            $t .= '<span class="fx98"><a class="ui q js-foldup" href="" data-fold-target="99">'
+                . expander(null, 99) . "</a></span>";
         }
-        $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
+        $t .= 'tag<span class="fn98">(s)</span> &nbsp;'
             . Ht::entry("tag", $qreq->tag,
                         ["size" => 15, "class" => "want-focus js-autosubmit js-submit-action-info-tag need-suggest tags", "data-submit-fn" => "tag"])
             . $pl->action_submit("tag");
         if ($pl->user->privChair) {
-            $t .= '<div class="fx"><div style="margin:2px 0">'
+            $t .= '<div class="fx99"><div style="margin:2px 0">'
                 . Ht::checkbox("tagcr_gapless", 1, !!$qreq->tagcr_gapless, ["class" => "ml-0"])
                 . "&nbsp;" . Ht::label("Gapless order") . "</div>"
                 . '<div style="margin:2px 0">Using: &nbsp;'
@@ -35,7 +35,7 @@ class Tag_ListAction extends ListAction {
         }
 
         return [Ht::select("tagfn", $tagopt, $qreq->tagfn, $tagextra) . " &nbsp;",
-            ["linelink-class" => "has-fold foldc fold99c ui-unfold js-tag-list-action", "content" => $t]];
+            ["linelink-class" => "has-fold fold98c fold99c ui-fold js-tag-list-action", "content" => $t]];
     }
     function allow(Contact $user, Qrequest $qreq) {
         return $user->can_edit_some_tag();

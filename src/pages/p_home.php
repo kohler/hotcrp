@@ -447,7 +447,7 @@ class Home_Page {
         }
 
         if ($user->is_reviewer()) {
-            echo "<div class=\"homesubgrp has-fold fold20c ui-unfold js-open-activity need-fold-storage\" id=\"homeactivity\" data-fold-storage=\"homeactivity\">",
+            echo "<div class=\"homesubgrp has-fold fold20c ui-fold js-open-activity need-fold-storage\" id=\"homeactivity\" data-fold-storage=\"homeactivity\">",
                 foldupbutton(20),
                 "<a href=\"\" class=\"q homeactivity ui js-foldup\" data-fold-target=\"20\">Recent activity<span class=\"fx20\">:</span></a>",
                 "</div>";

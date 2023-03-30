@@ -1415,7 +1415,7 @@ class PaperTable {
         $value = $this->prow->$field;
         $id = "{$type}_{$this->prow->paperId}";
 
-        $this->_papstripBegin($type, true, $editable ? ["class" => "ui-unfold js-unfold-pcselector js-unfold-focus need-paper-select-api"] : "");
+        $this->_papstripBegin($type, true, $editable ? ["class" => "ui-fold js-unfold-pcselector js-fold-focus need-paper-select-api"] : "");
         echo $this->papt($type, $editable ? Ht::label($name, $id) : $name,
             ["type" => "ps", "fold" => $editable ? $type : false]);
         if (!$value) {
@@ -1476,7 +1476,7 @@ class PaperTable {
         $unfolded = $editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
         $id = "tags {$this->prow->paperId}";
 
-        $this->_papstripBegin("tags", true, $editable ? ["class" => "need-tag-form ui-unfold js-unfold-focus"] : []);
+        $this->_papstripBegin("tags", true, $editable ? ["class" => "need-tag-form ui-fold js-fold-focus"] : []);
 
         if ($editable) {
             echo Ht::form($this->prow->hoturl(), ["data-pid" => $this->prow->paperId, "data-no-tag-report" => $unfolded ? 1 : null]);
@@ -1541,7 +1541,7 @@ class PaperTable {
 
     function papstripOutcomeSelector() {
         $id = "decision_{$this->prow->paperId}";
-        $this->_papstripBegin("decision", $this->qreq->atab !== "decision", ["class" => "need-paper-select-api ui-unfold js-unfold-focus"]);
+        $this->_papstripBegin("decision", $this->qreq->atab !== "decision", ["class" => "need-paper-select-api ui-fold js-fold-focus"]);
         echo $this->papt("decision", Ht::label("Decision", $id),
                 ["type" => "ps", "fold" => "decision"]),
             '<form class="ui-submit uin fx">';
@@ -1573,7 +1573,7 @@ class PaperTable {
     }
 
     private function papstrip_tag_entry($id) {
-        $this->_papstripBegin($id, !!$id, ["class" => "pste ui-unfold js-unfold-focus"]);
+        $this->_papstripBegin($id, !!$id, ["class" => "pste ui-fold js-fold-focus"]);
     }
 
     private function papstrip_tag_float($tag, $kind, $type) {
