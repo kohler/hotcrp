@@ -73,6 +73,7 @@ class PaperStatus extends MessageSet {
     const SAVE_STATUS_SUBMIT = 8;
     const SAVE_STATUS_NEWSUBMIT = 16;
     const SAVE_STATUS_FINALSUBMIT = 32;
+    const SAVE_STATUS_WASFINAL = 64;
 
     function __construct(Contact $user, $options = []) {
         $this->conf = $user->conf;
@@ -1354,6 +1355,9 @@ class PaperStatus extends MessageSet {
             : $this->prow->timeFinalSubmitted > 0) {
             $this->_save_status |= self::SAVE_STATUS_FINALSUBMIT;
         }
+        if ($this->user->edit_paper_state($this->prow) === 2) {
+            $this->_save_status |= self::SAVE_STATUS_WASFINAL;
+        }
 
         // update automatic tags
         $this->conf->update_automatic_tags($this->paperId, "paper");
@@ -1390,7 +1394,7 @@ class PaperStatus extends MessageSet {
             $actions[] = "saved";
         }
         $logtext = "Paper " . join(", ", $actions);
-        if ($user->edit_paper_state($this->prow) === 2) {
+        if (($this->_save_status & self::SAVE_STATUS_WASFINAL) !== 0) {
             $logtext .= " final";
             $subbit = self::SAVE_STATUS_FINALSUBMIT;
         } else {
