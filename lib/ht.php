@@ -124,7 +124,7 @@ class Ht {
      * @return string */
     static function stylesheet_file($src) {
         return "<link rel=\"stylesheet\" type=\"text/css\" href=\""
-            . htmlspecialchars($src) . "\" />";
+            . htmlspecialchars($src) . "\">";
     }
 
     /** @param string|array<string,mixed> $action
@@ -181,7 +181,7 @@ class Ht {
     static function hidden($name, $value = "", $extra = null) {
         return '<input type="hidden" name="' . htmlspecialchars($name)
             . '" value="' . htmlspecialchars($value) . '"'
-            . self::extra($extra) . ' />';
+            . self::extra($extra) . '>';
     }
 
     /** @param string $name
@@ -292,7 +292,7 @@ class Ht {
         if ($checked) {
             $t .= " checked";
         }
-        return $t . self::extra($js) . " />";
+        return $t . self::extra($js) . ">";
     }
 
     /** @param string $name

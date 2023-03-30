@@ -284,7 +284,6 @@ class Search_Page {
         if ($this->pl->has("sel")) {
             echo "</form>";
         }
-        echo "</div>\n";
     }
 
     /** @param Qrequest $qreq */
@@ -327,47 +326,53 @@ class Search_Page {
         echo Ht::unstash(), // need the JS right away
             '<div id="searchform" class="mb-3 clearfix" data-lquery="',
             htmlspecialchars($search->default_limited_query()),
-            '"><div class="tlx"><div class="tld is-tla active" id="tla-default">';
+            '"><div class="tlx">';
 
         $limits = PaperSearch::viewable_limits($user, $search->limit());
         $qtOpt = $this->field_search_types();
 
         // Basic search tab
-        echo Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
+        echo '<div class="tld is-tla active" id="tla-default">',
+            Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
             Ht::entry("q", (string) $qreq->q, [
                 "size" => 40, "tabindex" => 1,
                 "class" => "papersearch want-focus need-suggest flex-grow-1",
                 "placeholder" => "(All)", "aria-label" => "Search"
-            ]), '<div class="form-basic-search-in"> in ',
-            PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["tabindex" => 1, "select" => !$search->limit_explicit() && count($limits) > 1]),
-            Ht::submit("Search", ["tabindex" => 1]), "</div></form>";
-
-        echo '</div>';
+            ]),
+            '<div class="form-basic-search-in"> in ',
+              PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["tabindex" => 1, "select" => !$search->limit_explicit() && count($limits) > 1]),
+              Ht::submit("Search", ["tabindex" => 1]),
+            '</div></form></div>';
 
         // Advanced search tab
         echo '<div class="tld is-tla" id="tla-advanced">',
             Ht::form($this->conf->hoturl("search"), ["method" => "get"]),
             '<div class="d-inline-block">',
             '<div class="entryi medium"><label for="htctl-advanced-qt">Search</label><div class="entry">',
-            Ht::select("qt", $qtOpt, $qreq->qt ?? "n", ["id" => "htctl-advanced-qt"]), '</div></div>',
+              Ht::select("qt", $qtOpt, $qreq->qt ?? "n", ["id" => "htctl-advanced-qt"]),
+            '</div></div>',
             '<div class="entryi medium"><label for="htctl-advanced-qa">With <b>all</b> the words</label><div class="entry">',
-            Ht::entry("qa", $qreq->qa ?? $qreq->q ?? "", ["id" => "htctl-advanced-qa", "size" => 60, "class" => "papersearch want-focus need-suggest", "spellcheck" => false]), '</div></div>',
+              Ht::entry("qa", $qreq->qa ?? $qreq->q ?? "", ["id" => "htctl-advanced-qa", "size" => 60, "class" => "papersearch want-focus need-suggest", "spellcheck" => false]),
+            '</div></div>',
             '<div class="entryi medium"><label for="htctl-advanced-qo">With <b>any</b> of the words</label><div class="entry">',
-            Ht::entry("qo", $qreq->qo ?? "", ["id" => "htctl-advanced-qo", "size" => 60, "spellcheck" => false]), '</div></div>',
+              Ht::entry("qo", $qreq->qo ?? "", ["id" => "htctl-advanced-qo", "size" => 60, "spellcheck" => false]),
+            '</div></div>',
             '<div class="entryi medium"><label for="htctl-advanced-qx"><b>Without</b> the words</label><div class="entry">',
-            Ht::entry("qx", $qreq->qx ?? "", ["id" => "htctl-advanced-qx", "size" => 60, "spellcheck" => false]), '</div></div>';
+              Ht::entry("qx", $qreq->qx ?? "", ["id" => "htctl-advanced-qx", "size" => 60, "spellcheck" => false]),
+            '</div></div>';
         if (!$search->limit_explicit()) {
             echo '<div class="entryi medium"><label for="htctl-advanced-q">In</label><div class="entry">',
-                PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["id" => "htctl-advanced-q"]), '</div></div>';
+                  PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["id" => "htctl-advanced-q"]),
+                '</div></div>';
         }
         echo '<div class="entryi medium"><label></label><div class="entry">',
-            Ht::submit("Search"),
-            '<div class="d-inline-block padlb" style="font-size:69%">',
-            Ht::link("Search help", $this->conf->hoturl("help", "t=search")),
-            ' <span class="barsep">·</span> ',
-            Ht::link("Search keywords", $this->conf->hoturl("help", "t=keywords")),
+              Ht::submit("Search"),
+              '<div class="d-inline-block padlb" style="font-size:69%">',
+                Ht::link("Search help", $this->conf->hoturl("help", "t=search")),
+                ' <span class="barsep">·</span> ',
+                Ht::link("Search keywords", $this->conf->hoturl("help", "t=keywords")),
+              '</div>',
             '</div></div>',
-            '</div>',
             '</div></form></div>';
 
         // Saved searches tab

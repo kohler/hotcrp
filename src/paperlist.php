@@ -1793,7 +1793,7 @@ class PaperList implements XtContext {
             }
             $foot .= "   </tr></tbody></table>";
         }
-        return $foot . "<hr class=\"c\" /></td>\n </tr>";
+        return $foot . "<hr class=\"c\"></td>\n </tr>";
     }
 
     /** @param string $fn
