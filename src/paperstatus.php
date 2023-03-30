@@ -1377,7 +1377,7 @@ class PaperStatus extends MessageSet {
         return true;
     }
 
-    function log_save_activity(Contact $user, $via = null) {
+    function log_save_activity($via = null) {
         // log message
         assert(($this->_save_status & self::SAVE_STATUS_SAVED) !== 0);
         $actions = [];
@@ -1409,7 +1409,7 @@ class PaperStatus extends MessageSet {
         if (!empty($this->_fdiffs) || !empty($this->_xdiffs)) {
             $logtext .= ": " . join(", ", $this->changed_keys());
         }
-        $user->log_activity($logtext, $this->paperId);
+        $this->user->log_activity($logtext, $this->paperId);
     }
 
     /** @param object $pj

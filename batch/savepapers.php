@@ -191,7 +191,7 @@ class SavePapers_Batch {
             fwrite(STDERR, "{$pidtext}{$titletext}: ");
         }
 
-        $ps = new PaperStatus($this->conf->root_user(), [
+        $ps = new PaperStatus($this->user, [
             "disable_users" => $this->disable_users,
             "add_topics" => $this->add_topics
         ]);
@@ -244,7 +244,7 @@ class SavePapers_Batch {
         }
 
         if ($ps->has_change() && $this->log) {
-            $ps->log_save_activity($this->user, "via CLI");
+            $ps->log_save_activity("via CLI");
         }
         ++$this->nsuccesses;
         return true;
