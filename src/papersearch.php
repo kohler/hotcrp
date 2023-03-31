@@ -301,6 +301,8 @@ class PaperSearch extends MessageSet {
     private $_limit_qe;
     /** @var bool */
     private $_limit_explicit = false;
+    /** @var bool */
+    private $_has_qe = false;
 
     /** @var int
      * @readonly */
@@ -496,13 +498,13 @@ class PaperSearch extends MessageSet {
 
     /** @return bool */
     function has_problem() {
-        $this->_qe || $this->main_term();
+        $this->_has_qe || $this->main_term();
         return parent::has_problem();
     }
 
     /** @return list<MessageItem> */
     function message_list() {
-        $this->_qe || $this->main_term();
+        $this->_has_qe || $this->main_term();
         return parent::message_list();
     }
 
@@ -1185,6 +1187,7 @@ class PaperSearch extends MessageSet {
     /** @return SearchTerm */
     function main_term() {
         if ($this->_qe === null) {
+            $this->_has_qe = true;
             if ($this->q === "re:me") {
                 $this->_qe = new Limit_SearchTerm($this->user, $this->user, "r", true);
             } else if (($qe = $this->_search_expression($this->q))) {
@@ -1208,8 +1211,9 @@ class PaperSearch extends MessageSet {
     /** @return SearchTerm */
     function full_term() {
         assert($this->user->is_root_user());
+        assert(!$this->_has_qe || $this->_qe);
         // returns SearchTerm that includes effect of the limit
-        $this->_qe || $this->main_term();
+        $this->_has_qe || $this->main_term();
         if ($this->_limit_qe->limit === "all") {
             return $this->_qe;
         } else {
