@@ -393,7 +393,8 @@ class HotCRPMailer extends Mailer {
     }
     function kw_authors($args, $isbool) {
         if (!$this->permuser->is_root_user()
-            && !$this->permuser->can_view_authors($this->row)) {
+            && !$this->permuser->can_view_authors($this->row)
+            && !$this->permuser->act_author_view($this->row)) {
             return $isbool ? false : "Hidden for anonymous review";
         }
         $t = [];
