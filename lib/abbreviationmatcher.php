@@ -541,6 +541,9 @@ class AbbreviationMatcher {
      * @param int $class
      * @return Generator<string> */
     static private function phrase_subset_generator($s, $nsp, $class) {
+        if ($s === "") {
+            return;
+        }
         assert($s[0] === " ");
         if ($nsp > 3 && ($class & self::KW_FULLPHRASE) === 0) {
             $s0 = 0;
