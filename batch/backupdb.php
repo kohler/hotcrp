@@ -29,7 +29,7 @@ class BackupDB_Batch {
     /** @var bool */
     private $pc_only;
     /** @var list<string> */
-    private $my_opts;
+    private $my_opts = [];
     /** @var ?resource */
     public $in;
     /** @var resource */
@@ -97,7 +97,13 @@ class BackupDB_Batch {
         $this->skip_ephemeral = isset($arg["no-ephemeral"]);
         $this->tablespaces = isset($arg["tablespaces"]);
         $this->pc_only = isset($arg["pc"]);
-        $this->my_opts = $arg["-"] ?? [];
+
+        foreach ($arg["-"] ?? [] as $arg) {
+            if (str_starts_with($arg, "--s3-")) {
+                $this->throw_error("Bad option `{$arg}`");
+            }
+            $this->my_opts[] = $arg;
+        }
         if (isset($arg["skip-comments"])) {
             $this->my_opts[] = "--skip-comments";
         }
