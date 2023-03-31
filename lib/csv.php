@@ -760,6 +760,19 @@ class CsvGenerator {
         return join(",", $x);
     }
 
+    /** @param string $text
+     * @return string */
+    static function unquote($text) {
+        if (str_starts_with($text, '"')) {
+            $n = strlen($text);
+            if ($n > 1 && $text[$n - 1] === '"') {
+                --$n;
+            }
+            $text = substr($text, 1, $n - 1);
+        }
+        return str_replace('""', '"', $text);
+    }
+
 
     /** @param int $flags */
     function __construct($flags = self::TYPE_COMMA) {

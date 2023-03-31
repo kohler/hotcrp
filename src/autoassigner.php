@@ -272,9 +272,13 @@ abstract class Autoassigner extends MessageSet {
     }
 
     /** @param string $column
-     * @return ?string */
+     * @return null|string|AutoassignerComputed */
     function assignment_column($column) {
-        return $this->ass_extra[$column] ?? null;
+        $v = $this->ass_extra[$column] ?? null;
+        if (is_string($v)) {
+            $v = CsvGenerator::unquote(substr($v, 1));
+        }
+        return $v;
     }
 
     /** @param string $column
