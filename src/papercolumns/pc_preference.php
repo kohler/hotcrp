@@ -208,12 +208,12 @@ class Preference_PaperColumn extends PaperColumn {
         return $t;
     }
 
-    static function expand($name, Contact $user, $xfj, $m) {
-        if (!($fj = (array) $user->conf->basic_paper_column("pref", $user))) {
+    static function expand($name, XtParams $xtp, $xfj, $m) {
+        if (!($fj = (array) $xtp->conf->basic_paper_column("pref", $xtp->user))) {
             return null;
         }
         $rs = [];
-        foreach (ContactSearch::make_pc($m[1], $user)->users() as $u) {
+        foreach (ContactSearch::make_pc($m[1], $xtp->user)->users() as $u) {
             if ($u->roles & Contact::ROLE_PC) {
                 $fj["name"] = "pref:{$u->email}";
                 $fj["user"] = $u->email;
@@ -221,7 +221,7 @@ class Preference_PaperColumn extends PaperColumn {
             }
         }
         if (empty($rs)) {
-            PaperColumn::column_error($user, "<0>PC member ‘{$m[1]}’ not found");
+            PaperColumn::column_error($xtp, "<0>PC member ‘{$m[1]}’ not found");
         }
         return $rs;
     }

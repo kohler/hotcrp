@@ -35,7 +35,7 @@ class Comment_SearchTerm extends SearchTerm {
         $this->only_author = $kwdef->only_author;
         $this->commentRound = $kwdef->round;
     }
-    static function comment_factory($keyword, Contact $user, $kwfj, $m) {
+    static function comment_factory($keyword, XtParams $xtp, $kwfj, $m) {
         $tword = str_replace("-", "", $m[1]);
         return (object) [
             "name" => $keyword,
@@ -49,20 +49,20 @@ class Comment_SearchTerm extends SearchTerm {
         ];
     }
     /** @param array{string,string,string,string} $m */
-    static function response_factory($keyword, Contact $user, $kwfj, $m) {
+    static function response_factory($keyword, XtParams $xtp, $kwfj, $m) {
         if ($m[2] === "") {
             $round = 0;
         } else {
             if ($m[2] !== "-" && str_ends_with($m[2], "-")) {
                 $m[2] = substr($m[2], 0, -1);
             }
-            $rrd = $user->conf->response_round($m[2]);
+            $rrd = $xtp->conf->response_round($m[2]);
             if (!$rrd
                 && $m[1] === ""
                 && preg_match('/\A(draft-?)(.*)\z/si', $m[2], $mm)) {
                 $m[1] = $mm[1];
                 $m[2] = $mm[2];
-                $rrd = $user->conf->response_round($m[2]);
+                $rrd = $xtp->conf->response_round($m[2]);
             }
             if (!$rrd) {
                 return null;

@@ -181,8 +181,9 @@ class Completion_API {
                     $cats[$cat] = true;
                 }
             }
+            $xtp = new XtParams($conf, $user);
             foreach ($conf->paper_column_factories() as $fxj) {
-                if ($conf->xt_allowed($fxj, $user)
+                if ($xtp->allowed($fxj)
                     && Conf::xt_enabled($fxj)
                     && isset($fxj->completion_function)) {
                     Conf::xt_resolve_require($fxj);

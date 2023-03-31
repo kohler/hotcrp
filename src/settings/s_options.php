@@ -235,9 +235,9 @@ class Options_SettingRenderer {
 
         // render sample options
         echo '<template id="settings-sf-samples" class="hidden">';
+        $xtp = new XtParams($sv->conf, $sv->user);
         foreach ($sv->conf->option_type_map() as $uf) {
-            if (!isset($uf->display_if)
-                || $sv->conf->xt_check($uf->display_if, $uf, $sv->user)) {
+            if ($xtp->check($uf->display_if ?? null, $uf)) {
                 $args = [
                     "id" => 1000,
                     "name" => "{$uf->title} field",
@@ -300,10 +300,10 @@ class Options_SettingParser extends SettingParser {
 
     function values(Si $si, SettingValues $sv) {
         if ($si->name_matches("sf/", "*", "/type")) {
+            $xtp = new XtParams($sv->conf, $sv->user);
             $ot = [];
             foreach ($sv->conf->option_type_map() as $uf) {
-                if (!isset($uf->display_if)
-                    || $sv->conf->xt_check($uf->display_if, $uf, $sv->user))
+                if ($xtp->check($uf->display_if ?? null, $uf))
                     $ot[] = $uf->name;
             }
             return $ot;

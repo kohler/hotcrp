@@ -260,7 +260,7 @@ class SettingInfoSet {
                 }
             }
             // look up entry
-            $jx = $cs->conf->xt_search_list($curlist, $cs->viewer);
+            $jx = $cs->xtp->search_list($curlist);
             // check for alias
             if ($jx && isset($jx->alias) && is_string($jx->alias)) {
                 $name = $jx->alias;
@@ -353,7 +353,7 @@ class SettingInfoSet {
             if (array_key_exists($name, $this->map)) {
                 if (($si = $this->map[$name]))
                     $sis[] = $si;
-            } else if (($jx = $cs->conf->xt_search_list($curlist, $cs->viewer))
+            } else if (($jx = $cs->xtp->search_list($curlist))
                        && !isset($jx->alias)) {
                 Conf::xt_resolve_require($jx);
                 $sis[] = new Si($cs->conf, $jx);

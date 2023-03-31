@@ -128,21 +128,21 @@ class Conflict_PaperColumn extends PaperColumn {
         }
     }
 
-    static function expand($name, Contact $user, $xfj, $m) {
-        if (!($fj = (array) $user->conf->basic_paper_column($m[1], $user))) {
+    static function expand($name, XtParams $xtp, $xfj, $m) {
+        if (!($fj = (array) $xtp->conf->basic_paper_column($m[1], $xtp->user))) {
             return null;
         }
         $rs = [];
-        $cs = new ContactSearch(ContactSearch::F_PC | ContactSearch::F_TAG | ContactSearch::F_USER, $m[2], $user);
+        $cs = new ContactSearch(ContactSearch::F_PC | ContactSearch::F_TAG | ContactSearch::F_USER, $m[2], $xtp->user);
         foreach ($cs->user_ids() as $cid) {
-            if (($u = $user->conf->pc_member_by_id($cid))) {
+            if (($u = $xtp->conf->pc_member_by_id($cid))) {
                 $fj["name"] = $m[1] . ":" . $u->email;
                 $fj["user"] = $u->email;
                 $rs[] = (object) $fj;
             }
         }
         if (empty($rs)) {
-            PaperColumn::column_error($user, "<0>PC member ‘{$m[2]}’ not found");
+            PaperColumn::column_error($xtp, "<0>PC member ‘{$m[2]}’ not found");
         }
         return $rs;
     }

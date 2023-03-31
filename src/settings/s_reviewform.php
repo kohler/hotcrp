@@ -12,10 +12,10 @@ class ReviewForm_SettingParser extends SettingParser {
 
     function values(Si $si, SettingValues $sv) {
         if ($si->name_matches("rf/", "*", "/type")) {
+            $xtp = new XtParams($sv->conf, $sv->user);
             $ot = [];
             foreach ($sv->conf->review_field_type_map() as $uf) {
-                if (!isset($uf->display_if)
-                    || $sv->conf->xt_check($uf->display_if, $uf, $sv->user))
+                if ($xtp->check($uf->display_if ?? null, $uf))
                     $ot[] = $uf->name;
             }
             return $ot;

@@ -36,7 +36,7 @@ class PaperOptionList implements IteratorAggregate {
             $oj->id = intval($oj->id);
         }
         if (is_int($oj->id) && $oj->id > 0) {
-            if ($this->conf->xt_allowed($oj)
+            if (XtParams::static_allowed($oj, $this->conf, null)
                 && (!isset($this->_jmap[$oj->id])
                     || Conf::xt_priority_compare($oj, $this->_jmap[$oj->id]) <= 0)) {
                 $this->_jmap[$oj->id] = $oj;
@@ -134,9 +134,10 @@ class PaperOptionList implements IteratorAggregate {
                 if ($x)
                     expand_json_includes_callback($x, [$this, "_add_intrinsic_json"]);
             }
+            $xtp = new XtParams($this->conf, null);
             /** @phan-suppress-next-line PhanEmptyForeach */
             foreach ($this->_accumulator as $id => $x) {
-                if (($ij = $this->conf->xt_search_name($this->_accumulator, $id, null)))
+                if (($ij = $xtp->search_name($this->_accumulator, $id)))
                     $this->_ijmap[$ij->id] = $ij;
             }
             $this->_accumulator = null;
@@ -172,7 +173,7 @@ class PaperOptionList implements IteratorAggregate {
                 $this->_omap[$id] = null;
                 if (($oj = ($this->option_json_map())[$id] ?? null)
                     && Conf::xt_enabled($oj)
-                    && $this->conf->xt_allowed($oj)) {
+                    && XtParams::static_allowed($oj, $this->conf, null)) {
                     $this->_omap[$id] = PaperOption::make($this->conf, $oj);
                 }
             }

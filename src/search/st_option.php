@@ -33,8 +33,8 @@ abstract class Option_SearchTerm extends SearchTerm {
         return "true";
     }
 
-    static function parse_factory($keyword, Contact $user, $kwfj, $m) {
-        $f = $user->conf->find_all_fields($keyword);
+    static function parse_factory($keyword, XtParams $xtp, $kwfj, $m) {
+        $f = $xtp->conf->find_all_fields($keyword);
         if (count($f) === 1 && $f[0] instanceof PaperOption) {
             return (object) [
                 "name" => $keyword,

@@ -165,24 +165,24 @@ class Tag_PaperColumn extends PaperColumn {
         }
     }
 
-    static function expand($name, Contact $user, $xfj, $m) {
-        $tsm = new TagSearchMatcher($user);
+    static function expand($name, XtParams $xtp, $xfj, $m) {
+        $tsm = new TagSearchMatcher($xtp->user);
         $tsm->set_avoid_regex(true);
         $tsm->add_check_tag($m[2], true);
-        $dt = $user->conf->tags();
+        $dt = $xtp->conf->tags();
         $rs = [];
         foreach ($tsm->expand() as $t) {
             $fj = (array) $xfj;
             $fj["name"] = $m[1] . $t;
             $fj["tag"] = $t;
-            $fj["title"] = $dt->unparse($t, 0, $user, TagMap::UNPARSE_HASH | TagMap::UNPARSE_TEXT);
-            $fj["title_html"] = $dt->unparse($t, 0, $user, TagMap::UNPARSE_HASH);
+            $fj["title"] = $dt->unparse($t, 0, $xtp->user, TagMap::UNPARSE_HASH | TagMap::UNPARSE_TEXT);
+            $fj["title_html"] = $dt->unparse($t, 0, $xtp->user, TagMap::UNPARSE_HASH);
             $fj["sort"] = $fj["sort"] ?? true;
             $fj["function"] = $fj["function"] ?? "+Tag_PaperColumn";
             $rs[] = (object) $fj;
         }
         foreach ($tsm->error_texts() as $e) {
-            PaperColumn::column_error($user, $e);
+            PaperColumn::column_error($xtp, $e);
         }
         return $rs;
     }

@@ -39,11 +39,11 @@ class PaperColumn extends Column {
         }
         return $pc;
     }
-    /** @param string|MessageItem $msg */
-    static function column_error(Contact $user, $msg) {
-        $c = $user->conf->xt_context;
-        if ($c instanceof PaperList) {
-            $c->column_error($msg);
+    /** @param Contact|XtParams $ctx
+     * @param string|MessageItem $msg */
+    static function column_error($ctx, $msg) {
+        if ($ctx instanceof XtParams && $ctx->paper_list) {
+            $ctx->paper_list->column_error($msg);
         }
     }
 
@@ -61,7 +61,7 @@ class PaperColumn extends Column {
         return true;
     }
     function field_json(PaperList $pl) {
-        assert($this->is_visible);
+        //assert($this->is_visible);
         $j = [
             "name" => $this->name,
             "title" => $this->header($pl, false),
@@ -907,7 +907,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         });
     }
     /** @return array<ReviewField> */
-    static function expand($name, Contact $user, $xfj, $m) {
+    static function expand($name, XtParams $xtp, $xfj, $m) {
         return array_map(function ($f) use ($xfj) {
             $cj = (array) $xfj;
             $cj["name"] = $f->search_keyword();
@@ -916,7 +916,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
             $cj["title_html"] = $f->web_abbreviation();
             $cj["order"] = $xfj->order + $f->order;
             return (object) $cj;
-        }, self::user_viewable_fields($name, $user));
+        }, self::user_viewable_fields($name, $xtp->user));
     }
     static function completions(Contact $user, $fxt) {
         if (!$user->can_view_some_review()) {

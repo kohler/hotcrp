@@ -482,7 +482,7 @@ class Review_SearchTerm extends SearchTerm {
         return $this->rsm;
     }
 
-    static function keyword_factory($keyword, Contact $user, $kwfj, $m) {
+    static function keyword_factory($keyword, XtParams $xtp, $kwfj, $m) {
         $c = str_replace("-", "", $m[1]);
         $t = str_replace("-", "", $m[2]);
         return (object) [
@@ -630,8 +630,8 @@ class Review_SearchTerm extends SearchTerm {
         return new False_SearchTerm;
     }
 
-    static function review_field_factory($keyword, Contact $user, $kwfj, $m) {
-        $f = $user->conf->find_all_fields($keyword);
+    static function review_field_factory($keyword, XtParams $xtp, $kwfj, $m) {
+        $f = $xtp->conf->find_all_fields($keyword);
         if (count($f) == 1 && $f[0] instanceof ReviewField) {
             return (object) [
                 "name" => $keyword,

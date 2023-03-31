@@ -503,6 +503,7 @@ src/useractions.php
 src/userinfo/u_developer.php
 src/userinfo/u_security.php
 src/userstatus.php
+src/xtparams.php
 
 devel/hotcrp.vim
 

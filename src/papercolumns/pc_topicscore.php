@@ -46,8 +46,9 @@ class TopicScore_PaperColumn extends PaperColumn {
         return is_int($v) ? (string) $v : sprintf("%.2f", $v);
     }
 
-    static function expand($name, Contact $user, $xfj, $m) {
-        if (!($fj = (array) $user->conf->basic_paper_column("topicscore", $user))) {
+    static function expand($name, XtParams $xtp, $xfj, $m) {
+        $user = $xtp->user;
+        if (!($fj = (array) $xtp->conf->basic_paper_column("topicscore", $user))) {
             return null;
         }
         $rs = [];
@@ -59,7 +60,7 @@ class TopicScore_PaperColumn extends PaperColumn {
             $rs[] = (object) $fj;
         }
         if (empty($rs)) {
-            PaperColumn::column_error($user, "<0>PC member ‘{$m[1]}’ not found");
+            PaperColumn::column_error($xtp, "<0>PC member ‘{$m[1]}’ not found");
         }
         return $rs;
     }

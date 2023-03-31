@@ -79,17 +79,15 @@ class ListAction {
         }
         $conf = $user->conf;
         $gex = self::grouped_extensions($user);
-        $conf->_xt_allow_callback = $conf->make_check_api_json($qreq->method());
+        $gex->xtp->allow_checkers = [$conf->make_api_method_checker($qreq->method())];
         $uf = $gex->get($name);
         if (!$uf && ($slash = strpos($name, "/"))) {
             $uf = $gex->get(substr($name, 0, $slash));
         }
-        $conf->_xt_allow_callback = null;
         if (!$uf) {
             $gex->reset_context();
-            $conf->_xt_allow_callback = $conf->make_check_api_json(null);
+            $gex->xtp->allow_checkers = [];
             $uf1 = $gex->get($name);
-            $conf->_xt_allow_callback = null;
             if ($uf1) {
                 return JsonResult::make_error(405, "<0>Method not supported");
             }

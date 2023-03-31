@@ -175,7 +175,7 @@ class UserStatus extends MessageSet {
     }
 
     /** @return ?bool */
-    function xt_allower($e, $xt, Contact $user, Conf $conf) {
+    function xt_allower($e, $xt, $xtp) {
         if ($e === "profile_security") {
             return $this->allow_security();
         } else if ($e === "auth_self") {

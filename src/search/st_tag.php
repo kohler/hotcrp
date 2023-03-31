@@ -178,7 +178,7 @@ class Tag_SearchTerm extends SearchTerm {
      * @param ?TagInfo $dt
      * @return PaperColumn */
     private function _make_default_sort_column($pl, $tag, $dt) {
-        $xjs = Tag_PaperColumn::expand("#{$tag}", $pl->user, (object) [], ["#{$tag}", "#", $tag]);
+        $xjs = Tag_PaperColumn::expand("#{$tag}", $pl->xtp, (object) [], ["#{$tag}", "#", $tag]);
         assert(count($xjs) === 1 && $xjs[0]->function === "+Tag_PaperColumn");
         return PaperColumn::make($pl->conf, $xjs[0], $dt && $dt->votish ? ["reverse"] : []);
     }

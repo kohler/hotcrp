@@ -2,15 +2,6 @@
 // conference.php -- HotCRP central helper class (singleton)
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
-interface XtContext {
-    /** @param string $str
-     * @param object $xt
-     * @param ?Contact $user
-     * @param Conf $conf
-     * @return ?bool */
-    function xt_check_element($str, $xt, $user, Conf $conf);
-}
-
 class Conf {
     /** @var ?mysqli
      * @readonly */
@@ -178,12 +169,6 @@ class Conf {
     /** @var bool */
     private $_updating_automatic_tags = false;
 
-    /** @var ?XtContext */
-    public $xt_context;
-    /** @var ?callable(object,?Contact):bool */
-    public $_xt_allow_callback;
-    /** @var ?object */
-    private $_xt_last_match;
     /** @var ?array<string,list<object>> */
     private $_xtbuild_map;
     /** @var ?list<object> */
@@ -954,9 +939,9 @@ class Conf {
     function query_error_handler($dblink, $query) {
         $landmark = caller_landmark(1, "/^(?:Dbl::|Conf::q|call_user_func)/");
         if (PHP_SAPI === "cli") {
-            fwrite(STDERR, "$landmark: database error: $dblink->error in $query\n" . debug_string_backtrace());
+            fwrite(STDERR, "{$landmark}: database error: {$dblink->error} in {$query}\n" . debug_string_backtrace());
         } else {
-            error_log("$landmark: database error: $dblink->error in $query\n" . debug_string_backtrace());
+            error_log("{$landmark}: database error: {$dblink->error} in {$query}\n" . debug_string_backtrace());
             $this->error_msg("<5><p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
         }
     }
@@ -1129,17 +1114,6 @@ class Conf {
         $a[$name][] = $xt;
         return true;
     }
-    /** @param object $xt1
-     * @param object $xt2 */
-    static private function xt_combine($xt1, $xt2) {
-        foreach (get_object_vars($xt2) as $k => $v) {
-            if (!property_exists($xt1, $k)
-                && $k !== "match"
-                && $k !== "expand_function") {
-                $xt1->$k = $v;
-            }
-        }
-    }
     /** @param ?object $xt
      * @return bool */
     static function xt_enabled($xt) {
@@ -1158,301 +1132,26 @@ class Conf {
         }
         return $xt && (!isset($xt->disabled) || !$xt->disabled) ? $xt : null;
     }
-    /** @param XtContext $context
-     * @return ?XtContext */
-    function xt_swap_context($context) {
-        $old = $this->xt_context;
-        $this->xt_context = $context;
-        return $old;
-    }
-    /** @param string $s
-     * @param ?Contact $user
-     * @return bool */
-    function xt_check_string($s, $xt, $user) {
-        if ($s === "chair" || $s === "admin") {
-            return !$user || $user->privChair;
-        } else if ($s === "manager") {
-            return !$user || $user->is_manager();
-        } else if ($s === "pc") {
-            return !$user || $user->isPC;
-        } else if ($s === "author") {
-            return !$user || $user->is_author();
-        } else if ($s === "reviewer") {
-            return !$user || $user->is_reviewer();
-        } else if ($s === "view_review") {
-            return !$user || $user->can_view_some_review();
-        } else if ($s === "lead" || $s === "shepherd") {
-            return $this->has_any_lead_or_shepherd();
-        } else if ($s === "!empty") {
-            return !$user || !$user->is_empty();
-        } else if ($s === "empty") {
-            return $user && $user->is_empty();
-        } else if ($s === "email") {
-            return !$user || $user->has_email();
-        } else if ($s === "disabled") {
-            return $user && $user->is_disabled();
-        } else if ($s === "!disabled") {
-            return !$user || !$user->is_disabled();
-        } else if ($s === "allow" || $s === "true") {
-            return true;
-        } else if ($s === "deny" || $s === "false") {
-            return false;
-        } else if (strcspn($s, " !&|()") !== strlen($s)) {
-            $e = $this->xt_check_complex_string($s, $xt, $user);
-            if ($e === null) {
-                throw new UnexpectedValueException("xt_check syntax error in `$s`");
-            }
-            return $e;
-        } else if (strpos($s, "::") !== false) {
-            self::xt_resolve_require($xt);
-            return call_user_func($s, $xt, $user, $this);
-        } else if (str_starts_with($s, "opt.")) {
-            return !!$this->opt(substr($s, 4));
-        } else if (str_starts_with($s, "setting.")) {
-            return !!$this->setting(substr($s, 8));
-        } else if (str_starts_with($s, "conf.")) {
-            $f = substr($s, 5);
-            return !!$this->$f();
-        } else if (str_starts_with($s, "user.")) {
-            $f = substr($s, 5);
-            return !$user || $user->$f();
-        } else if ($this->xt_context
-                   && ($x = $this->xt_context->xt_check_element($s, $xt, $user, $this)) !== null) {
-            return $x;
-        } else {
-            error_log("unknown xt_check $s");
-            return false;
-        }
-    }
-    /** @param string $s
-     * @param ?Contact $user
-     * @return ?bool */
-    function xt_check_complex_string($s, $xt, $user) {
-        $stk = [];
-        $p = 0;
-        $l = strlen($s);
-        $e = null;
-        $eval = true;
-        while ($p !== $l) {
-            $ch = $s[$p];
-            if ($ch === " ") {
-                ++$p;
-            } else if ($ch === "(" || $ch === "!") {
-                if ($e !== null) {
-                    return null;
-                }
-                $stk[] = [$ch === "(" ? 0 : 9, null, $eval];
-                ++$p;
-            } else if ($ch === "&" || $ch === "|") {
-                if ($e === null || $p + 1 === $l || $s[$p + 1] !== $ch) {
-                    return null;
-                }
-                $prec = $ch === "&" ? 2 : 1;
-                $e = self::xt_check_complex_resolve_stack($stk, $e, $prec);
-                $stk[] = [$prec, $e, $eval];
-                $eval = self::xt_check_complex_want_eval($stk);
-                $e = null;
-                $p += 2;
-            } else if ($ch === ")") {
-                if ($e === null) {
-                    return null;
-                }
-                $e = self::xt_check_complex_resolve_stack($stk, $e, 1);
-                if (empty($stk)) {
-                    return null;
-                }
-                array_pop($stk);
-                $eval = self::xt_check_complex_want_eval($stk);
-                ++$p;
-            } else {
-                if ($e !== null) {
-                    return null;
-                }
-                $wl = strcspn($s, " !&|()", $p);
-                $e = $eval && self::xt_check_string(substr($s, $p, $wl), $xt, $user);
-                $p += $wl;
-            }
-        }
-        if (!empty($stk) && $e !== null) {
-            $e = self::xt_check_complex_resolve_stack($stk, $e, 1);
-        }
-        return empty($stk) ? $e : null;
-    }
-    /** @param list<array{int,?bool,bool}> &$stk
-     * @param bool $e
-     * @param int $prec
-     * @return bool */
-    static function xt_check_complex_resolve_stack(&$stk, $e, $prec) {
-        $n = count($stk) - 1;
-        while ($n >= 0 && $stk[$n][0] >= $prec) {
-            $se = array_pop($stk);
-            '@phan-var array{int,?bool,bool} $se';
-            --$n;
-            if ($se[0] === 9) {
-                $e = !$e;
-            } else if ($se[0] === 2) {
-                $e = $se[1] && $e;
-            } else {
-                $e = $se[1] || $e;
-            }
-        }
-        return $e;
-    }
-    /** @param list<array{int,?bool,bool}> $stk
-     * @return bool */
-    static function xt_check_complex_want_eval($stk) {
-        $n = count($stk);
-        $se = $n ? $stk[$n - 1] : null;
-        return !$se || ($se[2] && ($se[0] !== 1 || !$se[1]) && ($se[0] !== 2 || $se[1]));
-    }
     /** @param list<string>|string|bool $expr
-     * @param ?Contact $user
-     * @return bool */
-    function xt_check($expr, $xt = null, $user = null) {
+     * @param null|Contact|XtParams $xtp
+     * @return bool
+     * @deprecated */
+    function xt_check($expr, $xt = null, $xtp = null) {
         if (is_bool($expr)) {
             return $expr;
-        } else if (is_string($expr)) {
-            return $this->xt_check_string($expr, $xt, $user);
-        } else {
-            foreach ($expr as $e) {
-                if (!(is_bool($e) ? $e : $this->xt_check_string($e, $xt, $user)))
-                    return false;
-            }
-            return true;
         }
+        if (!$xtp || $xtp instanceof Contact) {
+            $xtp = new XtParams($this, $xtp);
+        }
+        return $xtp->check($expr, $xt);
     }
     /** @param object $xt
-     * @return bool */
+     * @return bool
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     function xt_allowed($xt, Contact $user = null) {
         return $xt && (!isset($xt->allow_if)
                        || $this->xt_check($xt->allow_if, $xt, $user));
-    }
-    /** @param object $xt
-     * @return list<string> */
-    static function xt_allow_list($xt) {
-        if ($xt && isset($xt->allow_if)) {
-            return is_array($xt->allow_if) ? $xt->allow_if : [$xt->allow_if];
-        } else {
-            return [];
-        }
-    }
-    /** @param object $xt
-     * @param ?Contact $user
-     * @return bool */
-    function xt_checkf($xt, $user) {
-        if ($this->_xt_allow_callback !== null) {
-            return call_user_func($this->_xt_allow_callback, $xt, $user);
-        } else {
-            return !isset($xt->allow_if)
-                || $this->xt_check($xt->allow_if, $xt, $user);
-        }
-    }
-    /** @param array<string,list<object>> $map
-     * @param string $name
-     * @param ?Contact $user
-     * @param bool $noalias
-     * @return ?object */
-    function xt_search_name($map, $name, $user, $noalias = false) {
-        $this->_xt_last_match = null;
-        for ($aliases = 0;
-             $aliases < 5 && $name !== null && isset($map[$name]);
-             ++$aliases) {
-            $xt = $this->xt_search_list($map[$name], $user);
-            if ($xt && isset($xt->alias) && is_string($xt->alias) && !$noalias) {
-                $name = $xt->alias;
-            } else {
-                return $xt;
-            }
-        }
-        return null;
-    }
-    /** @param list<object> $list
-     * @param ?Contact $user
-     * @return ?object */
-    function xt_search_list($list, $user) {
-        $nlist = count($list);
-        if ($nlist > 1) {
-            usort($list, "Conf::xt_priority_compare");
-        }
-        for ($i = 0; $i < $nlist; ++$i) {
-            $xt = $list[$i];
-            while ($i + 1 < $nlist && ($xt->merge ?? false)) {
-                ++$i;
-                $overlay = $xt;
-                $xt = clone $list[$i];
-                foreach (get_object_vars($overlay) as $k => $v) {
-                    if ($k === "merge" || $k === "__source_order") {
-                        // skip
-                    } else if ($v === null) {
-                        unset($xt->{$k});
-                    } else if (!property_exists($xt, $k)
-                               || !is_object($v)
-                               || !is_object($xt->{$k})) {
-                        $xt->{$k} = $v;
-                    } else {
-                        object_replace_recursive($xt->{$k}, $v);
-                    }
-                }
-            }
-            if (isset($xt->deprecated) && $xt->deprecated) {
-                $name = $xt->name ?? "<unknown>";
-                error_log("{$this->dbname}: deprecated use of `{$name}`\n" . debug_string_backtrace());
-            }
-            $this->_xt_last_match = $xt;
-            if ($this->xt_checkf($xt, $user)) {
-                return $xt;
-            }
-        }
-        return null;
-    }
-    /** @param list<object> $factories
-     * @param string $name
-     * @param ?Contact $user
-     * @param ?object $found
-     * @param string $reflags
-     * @return non-empty-list<?object> */
-    function xt_search_factories($factories, $name, $user, $found = null, $reflags = "") {
-        $xts = [$found];
-        foreach ($factories as $fxt) {
-            if (self::xt_priority_compare($fxt, $found ?? $this->_xt_last_match) > 0) {
-                break;
-            }
-            if (!isset($fxt->match)) {
-                continue;
-            } else if ($fxt->match === ".*") {
-                $m = [$name];
-            } else if (!preg_match("\1\\A(?:{$fxt->match})\\z\1{$reflags}", $name, $m)) {
-                continue;
-            }
-            if (!$this->xt_checkf($fxt, $user)) {
-                continue;
-            }
-            self::xt_resolve_require($fxt);
-            if (!$user) {
-                $user = $this->root_user();
-            }
-            if (isset($fxt->expand_function)) {
-                $r = call_user_func($fxt->expand_function, $name, $user, $fxt, $m);
-            } else {
-                $r = (object) ["name" => $name, "match_data" => $m];
-            }
-            if (is_object($r)) {
-                $r = [$r];
-            }
-            foreach ($r ? : [] as $xt) {
-                self::xt_combine($xt, $fxt);
-                $prio = self::xt_priority_compare($xt, $found);
-                if ($prio <= 0 && $this->xt_checkf($xt, $user)) {
-                    if ($prio < 0) {
-                        $xts = [$xt];
-                        $found = $xt;
-                    } else {
-                        $xts[] = $xt;
-                    }
-                }
-            }
-        }
-        return $xts;
     }
 
 
@@ -1917,7 +1616,7 @@ class Conf {
         if ($roundno > 0) {
             $rname = $this->rounds[$roundno] ?? null;
             if ($rname === null) {
-                error_log($this->dbname . ": round #$roundno undefined");
+                error_log("{$this->dbname}: round #{$roundno} undefined");
                 while (count($this->rounds) <= $roundno) {
                     $this->rounds[] = null;
                 }
@@ -5334,8 +5033,9 @@ class Conf {
         if ($this->_search_keyword_base === null) {
             $this->make_search_keyword_map();
         }
-        $uf = $this->xt_search_name($this->_search_keyword_base, $keyword, $user);
-        $ufs = $this->xt_search_factories($this->_search_keyword_factories, $keyword, $user, $uf);
+        $xtp = new XtParams($this, $user);
+        $uf = $xtp->search_name($this->_search_keyword_base, $keyword);
+        $ufs = $xtp->search_factories($this->_search_keyword_factories, $keyword, $uf);
         return self::xt_resolve_require($ufs[0]);
     }
 
@@ -5350,7 +5050,8 @@ class Conf {
             list($this->_assignment_parsers, $unused) =
                 $this->_xtbuild(["etc/assignmentparsers.json"], "assignmentParsers");
         }
-        $uf = $this->xt_search_name($this->_assignment_parsers, $keyword, $user);
+        $xtp = new XtParams($this, $user);
+        $uf = $xtp->search_name($this->_assignment_parsers, $keyword);
         $uf = self::xt_resolve_require($uf);
         if ($uf && !isset($uf->__parser)) {
             $p = $uf->parser_class;
@@ -5368,8 +5069,9 @@ class Conf {
             list($aatypes, $unused) =
                 $this->_xtbuild(["etc/autoassigners.json"], "autoassigners");
             $this->_autoassigners = [];
+            $xtp = new XtParams($this, null);
             foreach (array_keys($aatypes) as $name) {
-                if (($uf = $this->xt_search_name($aatypes, $name, null)))
+                if (($uf = $xtp->search_name($aatypes, $name)))
                     $this->_autoassigners[$name] = $uf;
             }
             uasort($this->_autoassigners, "Conf::xt_order_compare");
@@ -5392,7 +5094,8 @@ class Conf {
             list($this->_formula_functions, $unused) =
                 $this->_xtbuild(["etc/formulafunctions.json"], "formulaFunctions");
         }
-        $uf = $this->xt_search_name($this->_formula_functions, $fname, $user);
+        $xtp = new XtParams($this, $user);
+        $uf = $xtp->search_name($this->_formula_functions, $fname);
         return self::xt_resolve_require($uf);
     }
 
@@ -5407,32 +5110,36 @@ class Conf {
         }
         return $this->_api_map;
     }
-    private function check_api_json($fj, $user, $method) {
-        if (isset($fj->allow_if) && !$this->xt_allowed($fj, $user)) {
-            return false;
-        } else if (!$method || isset($fj->alias)) {
-            return true;
-        } else {
-            $k = strtolower($method);
-            $methodx = $fj->$k ?? null;
-            return $methodx
-                || (($method === "POST" || $method === "HEAD")
-                    && $methodx === null
-                    && ($fj->get ?? false));
+    /** @param object $xt
+     * @param XtParams $xtp
+     * @param string $method
+     * @return ?bool */
+    private function api_method_checker($xt, $xtp, $method) {
+        if (!$method || isset($xt->alias)) {
+            return null;
         }
+        $k = strtolower($method);
+        $methodx = $xt->$k ?? null;
+        if ($methodx === null
+            && ($method === "POST" || $method === "HEAD")) {
+            $methodx = $xt->get ?? false;
+        }
+        return $methodx ?? false;
     }
-    function make_check_api_json($method) {
-        return function ($xt, $user) use ($method) {
-            return $this->check_api_json($xt, $user, $method);
+    /** @param string $method
+     * @return callable(object,XtParams):bool */
+    function make_api_method_checker($method) {
+        return function ($xt, $xtp) use ($method) {
+            return $this->api_method_checker($xt, $xtp, $method);
         };
     }
     function has_api($fn, Contact $user = null, $method = null) {
         return !!$this->api($fn, $user, $method);
     }
     function api($fn, Contact $user = null, $method = null) {
-        $this->_xt_allow_callback = $this->make_check_api_json($method);
-        $uf = $this->xt_search_name($this->api_map(), $fn, $user);
-        $this->_xt_allow_callback = null;
+        $xtp = new XtParams($this, $user);
+        $xtp->allow_checkers[] = $this->make_api_method_checker($method);
+        $uf = $xtp->search_name($this->api_map(), $fn);
         return self::xt_enabled($uf) ? $uf : null;
     }
     /** @return JsonResult */
@@ -5502,22 +5209,34 @@ class Conf {
     }
     /** @return list<object> */
     function paper_column_factories() {
-        $this->paper_column_map();
+        if ($this->_paper_column_map === null) {
+            $this->paper_column_map();
+        }
         return $this->_paper_column_factories;
     }
     /** @return ?object */
     function basic_paper_column($name, Contact $user = null) {
-        $uf = $this->xt_search_name($this->paper_column_map(), $name, $user);
+        $xtp = new XtParams($this, $user);
+        $uf = $xtp->search_name($this->paper_column_map(), $name);
         return self::xt_enabled($uf) ? $uf : null;
     }
     /** @param string $name
+     * @param Contact|XtParams $ctx
      * @return list<object> */
-    function paper_columns($name, Contact $user) {
+    function paper_columns($name, $ctx) {
         if ($name === "" || $name[0] === "?") {
             return [];
         }
-        $uf = $this->xt_search_name($this->paper_column_map(), $name, $user);
-        $ufs = $this->xt_search_factories($this->_paper_column_factories, $name, $user, $uf, "i");
+        if ($ctx instanceof Contact) {
+            $xtp = new XtParams($this, $ctx);
+            $xtp->reflags = "i";
+        } else {
+            $xtp = $ctx;
+            $xtp->last_match = null;
+            assert($xtp->reflags === "i");
+        }
+        $uf = $xtp->search_name($this->paper_column_map(), $name);
+        $ufs = $xtp->search_factories($this->paper_column_factories(), $name, $uf);
         return array_values(array_filter($ufs, "Conf::xt_resolve_require"));
     }
 
@@ -5530,9 +5249,10 @@ class Conf {
             require_once("paperoption.php");
             list($otypes, $unused) =
                 $this->_xtbuild(["etc/optiontypes.json"], "optionTypes");
+            $xtp = new XtParams($this, null);
             $this->_option_type_map = [];
             foreach (array_keys($otypes) as $name) {
-                if (($uf = $this->xt_search_name($otypes, $name, null)))
+                if (($uf = $xtp->search_name($otypes, $name)))
                     $this->_option_type_map[$name] = $uf;
             }
             uasort($this->_option_type_map, "Conf::xt_order_compare");
@@ -5555,8 +5275,9 @@ class Conf {
             list($rftypes, $unused) =
                 $this->_xtbuild(["etc/reviewfieldtypes.json"], "reviewFieldTypes");
             $this->_rfield_type_map = [];
+            $xtp = new XtParams($this, null);
             foreach (array_keys($rftypes) as $name) {
-                if (($uf = $this->xt_search_name($rftypes, $name, null)))
+                if (($uf = $xtp->search_name($rftypes, $name)))
                     $this->_rfield_type_map[$name] = $uf;
             }
             uasort($this->_rfield_type_map, "Conf::xt_order_compare");
@@ -5599,8 +5320,8 @@ class Conf {
         if ($this->_token_factories === null) {
             $this->load_token_types();
         }
-        $this->_xt_last_match = null;
-        $ufs = $this->xt_search_factories($this->_token_factories, $token, null);
+        $xtp = new XtParams($this, null);
+        $ufs = $xtp->search_factories($this->_token_factories, $token, null);
         return $ufs[0];
     }
 
@@ -5616,8 +5337,9 @@ class Conf {
                 if (($tf->type ?? null) === $type)
                     $m[$type][] = $tf;
             }
+            $xtp = new XtParams($this, null);
             /** @phan-suppress-next-line PhanTypeMismatchArgument */
-            $this->_token_types[$type] = $this->xt_search_name($m, $type, null);
+            $this->_token_types[$type] = $xtp->search_name($m, $type);
         }
         return $this->_token_types[$type];
     }
@@ -5660,8 +5382,9 @@ class Conf {
     /** @param string $name
      * @return list<object> */
     function mail_keywords($name) {
-        $uf = $this->xt_search_name($this->mail_keyword_map(), $name, null);
-        $ufs = $this->xt_search_factories($this->_mail_keyword_factories, $name, null, $uf);
+        $xtp = new XtParams($this, null);
+        $uf = $xtp->search_name($this->mail_keyword_map(), $name);
+        $ufs = $xtp->search_factories($this->_mail_keyword_factories, $name, $uf);
         return array_values(array_filter($ufs, "Conf::xt_resolve_require"));
     }
 
@@ -5690,7 +5413,8 @@ class Conf {
      * @param ?Contact $user
      * @return ?object */
     function mail_template($name, $default_only = false, $user = null) {
-        $uf = $this->xt_search_name($this->mail_template_map(), $name, $user);
+        $xtp = new XtParams($this, $user);
+        $uf = $xtp->search_name($this->mail_template_map(), $name);
         if (!$uf || !Conf::xt_resolve_require($uf)) {
             return null;
         }
@@ -5794,7 +5518,7 @@ class Conf {
             $ids = [];
             foreach ($hs as $fj) {
                 if ((!isset($fj->id) || !isset($ids[$fj->id]))
-                    && $this->xt_allowed($fj, $user)) {
+                    && XtParams::static_allowed($fj, $this, $user)) {
                     if (isset($fj->id)) {
                         $ids[$fj->id] = true;
                     }

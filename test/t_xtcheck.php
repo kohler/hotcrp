@@ -19,20 +19,21 @@ class XtCheck_Tester {
     }
 
     function test_xt_check() {
-        xassert($this->conf->xt_check("allow"));
-        xassert(!$this->conf->xt_check("deny"));
-        xassert($this->conf->xt_check("!deny"));
-        xassert(!$this->conf->xt_check("! allow"));
-        xassert($this->conf->xt_check("!!allow"));
-        xassert($this->conf->xt_check("!!!deny"));
-        xassert($this->conf->xt_check("allow || deny"));
-        xassert(!$this->conf->xt_check("allow && deny"));
-        xassert($this->conf->xt_check("!(allow && deny)"));
-        xassert($this->conf->xt_check("!(allow && deny)"));
-        xassert($this->conf->xt_check("!opt.sendEmail"));
-        xassert(!$this->conf->xt_check("opt.sendEmail && XtCheck_Tester::check && allow"));
+        $xtp = new XtParams($this->conf, null);
+        xassert($xtp->check("allow"));
+        xassert(!$xtp->check("deny"));
+        xassert($xtp->check("!deny"));
+        xassert(!$xtp->check("! allow"));
+        xassert($xtp->check("!!allow"));
+        xassert($xtp->check("!!!deny"));
+        xassert($xtp->check("allow || deny"));
+        xassert(!$xtp->check("allow && deny"));
+        xassert($xtp->check("!(allow && deny)"));
+        xassert($xtp->check("!(allow && deny)"));
+        xassert($xtp->check("!opt.sendEmail"));
+        xassert(!$xtp->check("opt.sendEmail && XtCheck_Tester::check && allow"));
         xassert_eqq(self::$nchecks, 0);
-        xassert($this->conf->xt_check("XtCheck_Tester::check && allow"));
+        xassert($xtp->check("XtCheck_Tester::check && allow"));
         xassert_eqq(self::$nchecks, 1);
     }
 }

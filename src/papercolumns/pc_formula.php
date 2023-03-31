@@ -189,11 +189,11 @@ class Formula_PaperColumnFactory {
         $cj["function"] = "+Formula_PaperColumn";
         return (object) $cj;
     }
-    static function expand($name, Contact $user, $xfj, $m) {
+    static function expand($name, XtParams $xtp, $xfj, $m) {
         if ($name === "formulas") {
             $fs = [];
-            foreach ($user->conf->named_formulas() as $id => $f) {
-                if ($user->can_view_formula($f))
+            foreach ($xtp->conf->named_formulas() as $id => $f) {
+                if ($xtp->user->can_view_formula($f))
                     $fs[$id] = Formula_PaperColumnFactory::make($f, $xfj);
             }
             return $fs;
@@ -202,7 +202,7 @@ class Formula_PaperColumnFactory {
         $ff = null;
         if (str_starts_with($name, "formula")
             && ctype_digit(substr($name, 7))) {
-            $ff = ($user->conf->named_formulas())[(int) substr($name, 7)] ?? null;
+            $ff = ($xtp->conf->named_formulas())[(int) substr($name, 7)] ?? null;
         }
 
         $pos_offset = 0;
@@ -217,22 +217,22 @@ class Formula_PaperColumnFactory {
         $name = substr($name, $pos_offset);
 
         if (!$ff) {
-            $ff = $user->conf->find_named_formula($name);
+            $ff = $xtp->conf->find_named_formula($name);
         }
         if (!$ff && str_starts_with($name, "\"") && strpos($name, "\"", 1) === strlen($name) - 1) {
-            $ff = $user->conf->find_named_formula(substr($name, 1, -1));
+            $ff = $xtp->conf->find_named_formula(substr($name, 1, -1));
         }
         if (!$ff && $name !== "" && ($want_error || !is_numeric($name))) {
             $ff = new Formula($name);
         }
 
-        if ($ff && $ff->check($user)) {
-            if ($user->can_view_formula($ff)) {
+        if ($ff && $ff->check($xtp->user)) {
+            if ($xtp->user->can_view_formula($ff)) {
                 return [Formula_PaperColumnFactory::make($ff, $xfj)];
             }
         } else if ($ff && $want_error) {
             foreach ($ff->message_list() as $mi) {
-                PaperColumn::column_error($user, $mi->with(["pos_offset" => $pos_offset]));
+                PaperColumn::column_error($xtp, $mi->with(["pos_offset" => $pos_offset]));
             }
         }
         return null;

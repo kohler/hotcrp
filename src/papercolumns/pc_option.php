@@ -94,26 +94,26 @@ class Option_PaperColumnFactory {
         $cj["prefer_row"] = array_search("prefer-row", $opt->classes, true) !== false;
         return (object) $cj;
     }
-    static function expand($name, Contact $user, $xfj, $m) {
+    static function expand($name, XtParams $xtp, $xfj, $m) {
         list($ocolon, $oname) = [$m[1], $m[2]];
         if (!$ocolon && $oname === "options") {
             $x = [];
-            foreach ($user->user_option_list() as $opt) {
+            foreach ($xtp->user->user_option_list() as $opt) {
                 if ($opt->can_render(FieldRender::CFLIST))
                     $x[] = self::option_json($xfj, $opt);
             }
             return $x;
         }
-        $opts = $user->conf->options()->find_all($oname);
+        $opts = $xtp->conf->options()->find_all($oname);
         if (count($opts) == 1) {
             reset($opts);
             $opt = current($opts);
             if ($opt->can_render(FieldRender::CFLIST)) {
                 return self::option_json($xfj, $opt);
             }
-            PaperColumn::column_error($user, "<0>Submission field ‘{$oname}’ can’t be displayed");
+            PaperColumn::column_error($xtp, "<0>Submission field ‘{$oname}’ can’t be displayed");
         } else if ($ocolon) {
-            PaperColumn::column_error($user, "<0>Submission field ‘{$oname}’ not found");
+            PaperColumn::column_error($xtp, "<0>Submission field ‘{$oname}’ not found");
         }
         return null;
     }

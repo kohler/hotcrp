@@ -140,13 +140,16 @@ class PaperListReviewAnalysis {
     }
 }
 
-class PaperList implements XtContext {
+class PaperList {
     /** @var Conf
      * @readonly */
     public $conf;
     /** @var Contact
      * @readonly */
     public $user;
+    /** @var XtParams
+     * @readonly */
+    public $xtp;
     /** @var Tagger
      * @readonly */
     public $tagger;
@@ -269,6 +272,10 @@ class PaperList implements XtContext {
     function __construct(string $report, PaperSearch $search, $args = [], $qreq = null) {
         $this->conf = $search->conf;
         $this->user = $search->user;
+        $this->xtp = new XtParams($this->conf, $this->user);
+        $this->xtp->primitive_checkers[] = [$this, "list_checker"];
+        $this->xtp->reflags = "i";
+        $this->xtp->paper_list = $this;
         if (!$qreq || !($qreq instanceof Qrequest)) {
             $qreq = new Qrequest("GET", $qreq);
             $qreq->set_user($this->user);
@@ -334,7 +341,7 @@ class PaperList implements XtContext {
     }
 
     /** @return ?bool */
-    function xt_check_element($e, $xt, $user, Conf $conf) {
+    function list_checker($e, $xt, $xtp) {
         if (str_starts_with($e, "listhas:")) {
             return $this->has(substr($e, 8));
         } else if (str_starts_with($e, "listreport:")) {
@@ -574,9 +581,7 @@ class PaperList implements XtContext {
         assert($this->_sortcol_fixed < 2);
         // Do not use ensure_columns_by_name(), because decorations for sorters
         // might differ.
-        $old_context = $this->conf->xt_swap_context($this);
-        $fs = $this->conf->paper_columns($k, $this->user);
-        $this->conf->xt_swap_context($old_context);
+        $fs = $this->conf->paper_columns($k, $this->xtp);
         $mi = null;
         if (count($fs) === 1) {
             $col = PaperColumn::make($this->conf, $fs[0], $decorations);
@@ -591,7 +596,7 @@ class PaperList implements XtContext {
             if ($this->user->can_view_tags(null)
                 && ($tagger = new Tagger($this->user))
                 && ($tag = $tagger->check($k))
-                && ($ps = new PaperSearch($this->user, ["q" => "#$tag", "t" => "vis"]))
+                && ($ps = new PaperSearch($this->user, ["q" => "#{$tag}", "t" => "vis"]))
                 && $ps->paper_ids()) {
                 $mi = $this->search->warning("<0>‘{$k}’ cannot be sorted; did you mean “sort:#{$k}”?");
             } else {
@@ -673,7 +678,7 @@ class PaperList implements XtContext {
                 : $v >= self::VIEW_SHOW) {
                 $pos = self::$view_fake[$name] ?? null;
                 if ($pos === null) {
-                    $fs = $this->conf->paper_columns($name, $this->user);
+                    $fs = $this->conf->paper_columns($name, $this->xtp);
                     if (count($fs) && isset($fs[0]->order)) {
                         $pos = $fs[0]->order;
                         $name = $fs[0]->name;
@@ -1093,7 +1098,7 @@ class PaperList implements XtContext {
         if (!array_key_exists($name, $this->_columns_by_name)) {
             $this->_finding_column = $name;
             $nfs = [];
-            foreach ($this->conf->paper_columns($name, $this->user) as $fdef) {
+            foreach ($this->conf->paper_columns($name, $this->xtp) as $fdef) {
                 $decorations = $this->_view_decorations[$fdef->name]
                     ?? $this->_view_decorations[$name] ?? [];
                 if ($fdef->name === $name) {
@@ -1148,7 +1153,6 @@ class PaperList implements XtContext {
         assert(empty($this->row_attr));
 
         // extract columns from _viewf
-        $old_context = $this->conf->xt_swap_context($this);
         $fs1 = $viewf = [];
         foreach ($this->_viewf as $k => $v) {
             foreach ($this->_expand_view_column($k) as $f) {
@@ -1157,7 +1161,6 @@ class PaperList implements XtContext {
                 $viewf[$f->name] = $this->_viewf[$f->name] ?? $v;
             }
         }
-        $this->conf->xt_swap_context($old_context);
 
         // update _viewf, prepare, mark fields editable
         $this->_vcolumns = [];
@@ -1818,7 +1821,7 @@ class PaperList implements XtContext {
         }
 
         $gex = ListAction::grouped_extensions($this->user);
-        $gex->add_xt_checker([$this, "xt_check_element"]);
+        $gex->add_xt_checker([$this, "list_checker"]);
         $gex->apply_key_filter("display_if");
         if ($this->_footer_filter) {
             $gex->apply_filter($this->_footer_filter);
