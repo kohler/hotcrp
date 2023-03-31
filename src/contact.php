@@ -4798,7 +4798,7 @@ class Contact implements JsonSerializable {
         } else if (!$this->can_view_review($prow, $rrow)) {
             return VIEWSCORE_EMPTYBOUND;
         } else if ($rights->act_author_view
-                   && $prow->outcome_sign !== 0
+                   && $prow->outcome !== 0
                    && $rights->can_view_decision) {
             return VIEWSCORE_AUTHORDEC - 1;
         } else if ($rights->act_author_view) {

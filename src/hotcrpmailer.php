@@ -380,7 +380,7 @@ class HotCRPMailer extends Mailer {
     }
     function kw_titlehint() {
         if (($tw = UnicodeHelper::utf8_abbreviate($this->row->title, 40))) {
-            return "\"$tw\"";
+            return "\"{$tw}\"";
         } else {
             return "";
         }
