@@ -3276,7 +3276,7 @@ class PaperInfo {
      * @param ?string $fn
      * @return list<Contact> */
     function generic_followers($cids, $clause, $fn) {
-        $result = $this->conf->qe("select contactId, firstName, lastName, affiliation, email, preferredEmail, password, roles, contactTags, disabled, primaryContactId, defaultWatch from ContactInfo where (contactId?a or ($clause)) and not disabled", $cids);
+        $result = $this->conf->qe("select contactId, firstName, lastName, affiliation, email, preferredEmail, password, roles, contactTags, disabled, primaryContactId, defaultWatch from ContactInfo where (contactId?a or ({$clause})) and not disabled", $cids);
         $watchers = [];
         while (($minic = Contact::fetch($result, $this->conf))) {
             if ($minic->can_view_paper($this)
