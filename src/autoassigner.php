@@ -239,7 +239,7 @@ abstract class Autoassigner extends MessageSet {
             foreach ($this->acs as $ac) {
                 $tv = $ac->user->tag_value($ml);
                 if ($tv !== null && $tv >= 0) {
-                    $ac->max_load = min((int) $tv, $ac->max_load);
+                    $ac->max_load = min((int) round($tv), $ac->max_load);
                 }
             }
         }
@@ -269,6 +269,12 @@ abstract class Autoassigner extends MessageSet {
     /** @param string $action */
     function set_assignment_action($action) {
         $this->ass_action = $action;
+    }
+
+    /** @param string $column
+     * @return ?string */
+    function assignment_column($column) {
+        return $this->ass_extra[$column] ?? null;
     }
 
     /** @param string $column

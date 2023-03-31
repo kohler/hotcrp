@@ -21,7 +21,16 @@
     {
         "name": "review",
         "function": "+Review_Autoassigner",
-        "parameters": ["count", "rtype", "round", "method", "balance"]
+        "parameters": [
+            "count =N Number of assignments",
+            "rtype Review type",
+            "round Review round",
+            "method",
+            "balance",
+            "load",
+            "max_load",
+            "max_load_tag =TAG"
+        ]
     },
     {
         "name": "review_ensure",
