@@ -362,6 +362,7 @@ class Mail_Page {
             $this->print_new_assignments_since();
         }
         $this->print_paper_selection();
+        Ht::stash_script('$(".js-mail-recipients").trigger("change")');
         echo "</div></div>\n";
 
         // ** CC, REPLY-TO
