@@ -6484,7 +6484,7 @@ handle_ui.on("js-togglepreview", switch_preview);
 function quicklink_shortcut(evt) {
     // find the quicklink, reject if not found
     var key = event_key(evt),
-        a = $$("quicklink-" + (key === "j" ? "prev" : "next"));
+        a = $$("quicklink-" + (key === "j" || key === "[" ? "prev" : "next"));
     if (a && a.focus) {
         // focus (for visual feedback), call callback
         a.focus();
@@ -6616,6 +6616,8 @@ hotcrp.shortcut = function (top_elt) {
         } else {
             add("j", quicklink_shortcut);
             add("k", quicklink_shortcut);
+            add("[", quicklink_shortcut);
+            add("]", quicklink_shortcut);
             if (top_elt === document) {
                 add("c", comment_shortcut);
                 add(["s", "d"], make_selector_shortcut("decision"));
