@@ -24,6 +24,12 @@ class ReviewForm_SettingParser extends SettingParser {
         }
     }
 
+    /** @param string $type
+     * @return bool */
+    static function type_is_text($type) {
+        return strpos($type, "text") !== false;
+    }
+
     function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name_matches("rf/", "*")) {
             $finfo = null;
@@ -35,11 +41,11 @@ class ReviewForm_SettingParser extends SettingParser {
             $isnew = $finfo === null;
             $type = $sv->reqstr("{$si->name}/type") ?? "radio";
             if ($finfo === null) {
-                $textlike = strpos($type, "text") !== false;
-                $finfo = ReviewFieldInfo::find($sv->conf, $textlike ? "t99" : "s99");
+                $fid = self::type_is_text($type) ? "t99" : "s99";
+                $finfo = ReviewFieldInfo::find($sv->conf, $fid);
             }
             $rfs = ReviewField::make_json($sv->conf, $finfo, (object) [])->export_setting();
-            $rfs->id = $isnew ? "new" : $rfs->id;
+            $rfs->existed = false;
             $rfs->required = false;
             $sv->set_oldv($si, $rfs);
         } else if ($si->name_matches("rf/", "*", "/title")) {
@@ -104,10 +110,10 @@ class ReviewForm_SettingParser extends SettingParser {
         $rft = $sv->conf->review_field_type($v);
         if (!$rft) {
             $sv->error_at($si, "<0>Unknown field type");
-        } else if ($rfs->id !== "new"
+        } else if ($rfs->existed
                    && !str_starts_with($rfs->id, $rft->id_prefix)) {
             $sv->error_at($si, "<0>Type doesn’t match with ID");
-        } else if ($rfs->id !== "new"
+        } else if ($rfs->existed
                    && $rfs->type !== $v
                    && !($rft->convert_from_functions->{$rfs->type} ?? null)) {
             $sv->error_at($si, "<0>Cannot convert review field to this type");
@@ -284,19 +290,23 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     private function _apply_req_review_form(Si $si, SettingValues $sv) {
-        $known_ids = [];
+        $known_ids = ["new"];
         foreach ($sv->oblist_keys("rf") as $ctr) {
-            $known_ids[$sv->vstr("rf/{$ctr}/id") ?? ""] = true;
+            $rfj = $sv->oldv("rf/{$ctr}");
+            if ($rfj->existed) {
+                $known_ids[] = $rfj->id;
+            }
         }
         $nrfj = [];
         foreach ($sv->oblist_nondeleted_keys("rf") as $ctr) {
             $rfj = $sv->newv("rf/{$ctr}");
-            if ($rfj->id === "new") {
-                $pattern = $rfj->type === "text" ? "t%02d" : "s%02d";
-                for ($i = 1; isset($known_ids[$rfj->id]); ++$i) {
+            if (!$rfj->existed) {
+                $pattern = self::type_is_text($rfj->type) ? "t%02d" : "s%02d";
+                $i = 0;
+                while (in_array($rfj->id, $known_ids)) {
                     $rfj->id = sprintf($pattern, ++$i);
                 }
-                $known_ids[$rfj->id] = true;
+                $known_ids[] = $rfj->id;
             }
             if (($finfo = ReviewFieldInfo::find($sv->conf, $rfj->id))) {
                 $sv->error_if_missing("rf/{$ctr}/name");
@@ -328,12 +338,12 @@ class ReviewForm_SettingParser extends SettingParser {
             assert($si->name0 === "rf/");
             $rfs = $sv->oldv($si->name0 . $si->name1);
             if ($si->name2 === "/values") {
-                if ($rfs->type !== "text") {
+                if (!self::type_is_text($rfs->type)) {
                     $this->_apply_req_values($si, $sv);
                 }
                 return true;
             } else if ($si->name2 === "/values_text") {
-                if ($rfs->type !== "text") {
+                if (!self::type_is_text($rfs->type)) {
                     $this->_apply_req_values_text($si, $sv);
                 }
                 return true;

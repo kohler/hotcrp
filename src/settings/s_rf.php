@@ -24,6 +24,8 @@ class Rf_Setting {
     /** @var list<RfValue_Setting> */
     public $xvalues;
     /** @var bool */
+    public $existed = true;
+    /** @var bool */
     public $deleted = false;
 }
 

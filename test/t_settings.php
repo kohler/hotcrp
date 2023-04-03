@@ -493,6 +493,7 @@ class Settings_Tester {
             "rf/4/scheme" => "svr"
         ]);
         xassert($sv->execute());
+        xassert_eqq($sv->decorated_feedback_text(), "");
         $rf = $this->conf->find_review_field("B5");
         assert($rf instanceof Score_ReviewField);
         xassert_array_eqq($rf->ordered_symbols(), ["A", "B", "C", "D", "E"]);

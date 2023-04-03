@@ -508,6 +508,10 @@ class SettingValues extends MessageSet {
         $this->conf->feedback_msg($msgs);
     }
 
+    function decorated_feedback_text() {
+        return self::feedback_text($this->decorated_message_list());
+    }
+
     /** @return SettingParser */
     function si_parser(Si $si) {
         return $this->cs()->callable($si->parser_class);
