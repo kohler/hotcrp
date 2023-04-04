@@ -200,7 +200,7 @@ class Log_Page {
         array_push($headers, "affected_email", "via", $narrow ? "paper" : "papers", "action");
         $csvg->select($headers);
         foreach ($leg->page_rows(1) as $row) {
-            $date = date("Y-m-d H:i:s e", (int) $row->timestamp);
+            $date = date("Y-m-d H:i:s O", (int) $row->timestamp);
             $xusers = $leg->users_for($row, "contactId");
             $xdest_users = $leg->users_for($row, "destContactId");
             if ($xdest_users == $xusers) {
