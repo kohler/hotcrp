@@ -374,11 +374,11 @@ class Ht {
     }
 
     private static function apply_placeholder(&$value, &$js) {
-        if ($value === null || $value === ($js["placeholder"] ?? null)) {
+        if ($value === null || $value == ($js["placeholder"] ?? null)) {
             $value = "";
         }
         if (($default = $js["data-default-value"] ?? null) !== null
-            && $value === $default) {
+            && $value == $default) {
             unset($js["data-default-value"]);
         }
     }
