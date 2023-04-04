@@ -290,8 +290,8 @@ class Log_Page {
             Ht::entry("u", $this->qreq->u, ["id" => "u", "size" => 40]),
             '</div></div><div class="', $this->ms->control_class("n", "entryi medium"),
             '"><label for="n">Show</label><div class="entry">',
-            Ht::entry("n", $this->qreq->n, ["id" => "n", "size" => 4, "placeholder" => 50]),
-            '  records at a time',
+            Ht::entry("n", $this->ms->has_message_at("n") ? $this->qreq->n : ($leg->page_size() === 50 ? "" : $leg->page_size()), ["id" => "n", "size" => 4, "placeholder" => 50]),
+            ' records at a time',
             $this->ms->feedback_html_at("n"),
             '</div></div><div class="', $this->ms->control_class("date", "entryi medium"),
             '"><label for="date">Starting at</label><div class="entry">',
@@ -606,7 +606,7 @@ class Log_Page {
             $count = cvtint($qreq->n, -1);
         }
         $bad_count = $count <= 0;
-        $count = $bad_count ? 50 : min($count, 200);
+        $count = $bad_count ? 50 : min($count, 300);
 
         $qreq->q = trim((string) $qreq->q);
         $qreq->p = trim((string) $qreq->p);
