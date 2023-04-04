@@ -1055,41 +1055,63 @@ class ReviewValues extends MessageSet {
         }
         $this->req = [];
         $this->req_json = true;
+        $this->paperId = 0; // XXX annoying that this field exists
         // XXX validate more
         foreach ($j as $k => $v) {
             if ($k === "round") {
-                if ($v === null || is_string($v))
+                if ($v === null || is_string($v)) {
                     $this->req["round"] = $v;
+                }
             } else if ($k === "blind") {
-                if (is_bool($v))
+                if (is_bool($v)) {
                     $this->req["blind"] = $v ? 1 : 0;
+                }
             } else if ($k === "submitted" || $k === "ready") {
-                if (is_bool($v))
+                if (is_bool($v)) {
                     $this->req["ready"] = $v ? 1 : 0;
+                }
             } else if ($k === "draft") {
-                if (is_bool($v))
+                if (is_bool($v)) {
                     $this->req["ready"] = $v ? 0 : 1;
+                }
             } else if ($k === "name" || $k === "reviewer_name") {
-                if (is_string($v))
+                if (is_string($v)) {
                     list($this->req["reviewerFirst"], $this->req["reviewerLast"]) = Text::split_name($v);
+                }
             } else if ($k === "email" || $k === "reviewer_email") {
-                if (is_string($v))
+                if (is_string($v)) {
                     $this->req["reviewerEmail"] = trim($v);
+                }
             } else if ($k === "affiliation" || $k === "reviewer_affiliation") {
-                if (is_string($v))
+                if (is_string($v)) {
                     $this->req["reviewerAffiliation"] = $v;
+                }
             } else if ($k === "first" || $k === "firstName") {
-                if (is_string($v))
+                if (is_string($v)) {
                     $this->req["reviewerFirst"] = simplify_whitespace($v);
+                }
             } else if ($k === "last" || $k === "lastName") {
-                if (is_string($v))
+                if (is_string($v)) {
                     $this->req["reviewerLast"] = simplify_whitespace($v);
+                }
             } else if ($k === "version") {
-                if (is_int($v))
+                if (is_int($v)) {
                     $this->req["version"] = $v;
+                }
+            } else if ($k === "if_timestamp_match") {
+                if (is_string($v)) {
+                    $v = $this->conf->parse_time($v);
+                    if (is_int($v) || is_float($v)) {
+                        $v = (int) $v;
+                    }
+                }
+                if (is_int($v)) {
+                    $this->req["if_timestamp_match"] = $v;
+                }
             } else if (($f = $this->conf->find_review_field($k))) {
-                if (!isset($this->req[$f->short_id]))
+                if (!isset($this->req[$f->short_id])) {
                     $this->req[$f->short_id] = $v;
+                }
             }
         }
         if (!empty($this->req) && !isset($this->req["ready"])) {
@@ -1121,7 +1143,9 @@ class ReviewValues extends MessageSet {
                 $this->paperId = cvtint($v);
             } else if ($k === "override") {
                 $this->req["override"] = !!$v;
-            } else if ($k === "blind" || $k === "version" || $k === "ready") {
+            } else if ($k === "version") {
+                $this->req[$k] = cvtint($v);
+            } else if ($k === "blind" || $k === "ready") {
                 $this->req[$k] = is_bool($v) ? (int) $v : cvtint($v);
             } else if (str_starts_with($k, "has_")) {
                 if ($k !== "has_blind" && $k !== "has_override" && $k !== "has_ready") {
@@ -1549,13 +1573,12 @@ class ReviewValues extends MessageSet {
             $qf[] = "reviewType=?";
             $qv[] = REVIEW_PC;
         }
+        assert(is_int($this->req["version"] ?? 0)); // XXX sanity check
         if ($rrow->reviewId
             && $diffinfo->nonempty()
-            && isset($this->req["version"])
-            && (is_int($this->req["version"]) || ctype_digit($this->req["version"]))
-            && $this->req["version"] > ($rrow->reviewEditVersion ?? 0)) {
+            && ($this->req["version"] ?? 0) > ($rrow->reviewEditVersion ?? 0)) {
             $qf[] = "reviewEditVersion=?";
-            $qv[] = $this->req["version"] + 0;
+            $qv[] = $this->req["version"];
         }
         if ($diffinfo->nonempty()) {
             $qf[] = "reviewWordCount=?";
@@ -1638,19 +1661,32 @@ class ReviewValues extends MessageSet {
         }
 
         // actually affect database
+        $if_timestamp_match = $this->req["if_timestamp_match"] ?? null;
+        $fail_match = false;
         if ($rrow->reviewId) {
-            if (!empty($qf)) {
-                array_push($qv, $prow->paperId, $rrow->reviewId);
+            array_push($qv, $prow->paperId, $rrow->reviewId);
+            if (empty($qf)) {
+                $result = Dbl_Result::make_empty();
+            } else if ($if_timestamp_match === null) {
                 $result = $this->conf->qe_apply("update PaperReview set " . join(", ", $qf) . " where paperId=? and reviewId=?", $qv);
+            } else if ($if_timestamp_match === 0) {
+                $fail_match = true;
+                $result = Dbl_Result::make_empty();
             } else {
-                $result = true;
+                $qv[] = $if_timestamp_match;
+                $result = $this->conf->qe_apply("update PaperReview set " . join(", ", $qf) . " where paperId=? and reviewId=? and reviewTime=?", $qv);
             }
             $reviewId = $rrow->reviewId;
             $contactId = $rrow->contactId;
         } else {
             array_unshift($qf, "paperId=?", "contactId=?", "reviewType=?", "requestedBy=?", "reviewRound=?");
             array_unshift($qv, $prow->paperId, $user->contactId, REVIEW_PC, $user->contactId, $this->conf->assignment_round(false));
-            $result = $this->conf->qe_apply("insert into PaperReview set " . join(", ", $qf), $qv);
+            if ($if_timestamp_match > 0) {
+                $fail_match = true;
+                $result = Dbl_Result::make_empty();
+            } else {
+                $result = $this->conf->qe_apply("insert into PaperReview set " . join(", ", $qf), $qv);
+            }
             $reviewId = $result ? $result->insert_id : null;
             $contactId = $user->contactId;
         }
@@ -1659,7 +1695,12 @@ class ReviewValues extends MessageSet {
         if ($locked) {
             $this->conf->qe_raw("unlock tables");
         }
-        if (Dbl::is_error($result)) {
+        if ($result->is_error()) {
+            return false;
+        }
+        if ($if_timestamp_match !== null
+            && ($fail_match || $result->affected_rows === 0)) {
+            $this->rmsg(null, "<0>Review timestamp did not match.", self::ERROR);
             return false;
         }
 
@@ -1741,7 +1782,7 @@ class ReviewValues extends MessageSet {
         $this->do_notify($prow, $new_rrow, $newstatus, $oldstatus, $diffinfo, $reviewer, $user);
 
         // record what happened
-        $what = "#$prow->paperId";
+        $what = "#{$prow->paperId}";
         if ($new_rrow->reviewOrdinal) {
             $what .= unparse_latin_ordinal($new_rrow->reviewOrdinal);
         }
