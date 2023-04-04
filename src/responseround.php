@@ -1,6 +1,6 @@
 <?php
 // responseround.php -- HotCRP helper class for response rounds
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class ResponseRound {
     /** @var bool */
@@ -19,6 +19,8 @@ class ResponseRound {
     public $grace = 0;
     /** @var int */
     public $words = 500;
+    /** @var bool */
+    public $truncate = false;
     /** @var ?string */
     public $condition;
     /** @var ?SearchTerm */

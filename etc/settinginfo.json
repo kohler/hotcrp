@@ -461,6 +461,11 @@
         "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0
     },
     {
+        "name_pattern": "response/$/truncate",
+        "title": "/Hard word limit",
+        "type": "checkbox"
+    },
+    {
         "name_pattern": "response/$/instructions",
         "title": "/Instructions",
         "type": "htmlstring", "size": 3, "default_value": "auto",

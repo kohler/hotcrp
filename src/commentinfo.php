@@ -206,6 +206,9 @@ class CommentInfo {
             $crow->commentType = self::CT_RESPONSE;
             foreach ($prow->conf->response_rounds() as $rrd) {
                 $j = ["words" => $rrd->words];
+                if ($rrd->truncate) {
+                    $j["truncate"] = true;
+                }
                 $crow->commentRound = $rrd->id;
                 if (Contact::$main_user->can_edit_response($prow, $crow)) {
                     if (($m = $rrd->instructions($prow->conf)) !== false) {
@@ -664,7 +667,11 @@ class CommentInfo {
             $x .= " (" . plural($nwords, "word") . ")";
             if ($nwords > $rrd->words) {
                 list($ctext, $overflow) = count_words_split($ctext, $rrd->words);
-                $ctext = rtrim($ctext) . "\n- - - - - Truncated for length, full response available on website - - - - -\n";
+                if ($rrd->truncate) {
+                    $ctext = rtrim($ctext) . "…\n- - - - - - - - - - - - - - Truncated for length - - - - - - - - - - - - - -\n";
+                } else {
+                    $ctext = rtrim($ctext) . "…\n- - - - - Truncated for length, full response available on website - - - - -\n";
+                }
             }
         }
         $x .= "\n" . str_repeat("-", 75) . "\n";

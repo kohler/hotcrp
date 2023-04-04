@@ -199,6 +199,17 @@ if (!Element.prototype.after) {
         }
     };
 }
+if (!Element.prototype.before) {
+    Element.prototype.before = function () {
+        var p = this.parentNode;
+        for (var i = 0; i !== arguments.length; ++i) {
+            var e = arguments[i];
+            if (typeof e === "string")
+                e = document.createTextNode(e);
+            p.insertBefore(e, this);
+        }
+    };
+}
 if (!HTMLInputElement.prototype.setRangeText) {
     HTMLInputElement.prototype.setRangeText =
     HTMLTextAreaElement.prototype.setRangeText = function (t, s, e, m) {
@@ -6261,7 +6272,7 @@ function render_comment(cj, editing) {
     } else {
         if (cj.text !== false) {
             render_comment_text(cj.format, cj.text || "", cj.response,
-                                $(celt).find(".cmttext"), chead);
+                                $(celt).find(".cmttext")[0], chead);
         } else if (cj.response) {
             t = '<p class="feedback is-warning">';
             if (cj.word_count)
@@ -6278,31 +6289,53 @@ function render_comment(cj, editing) {
     return $(celt);
 }
 
-function render_comment_text(format, value, response, textj, chead) {
-    var wlimit, wc;
-    if (response
-        && resp_rounds[response]
-        && (wlimit = resp_rounds[response].words) > 0) {
+function render_comment_text(format, value, response, texte, chead) {
+    var wlimit, wc, rrd = response && resp_rounds[response],
+        aftertexte = null, buttone;
+    if (rrd && rrd.words > 0) {
         wc = count_words(value);
-        if (wc > 0) {
-            chead && chead.append('<div class="cmtthead words">' + plural(wc, "word") + '</div>');
+        var wordse = null;
+        if (wc > 0 && chead) {
+            wordse = document.createElement("div");
+            wordse.className = "cmtthead words";
+            wordse.textContent = plural(wc, "word");
+            chead[0].appendChild(wordse);
         }
-        if (wc > wlimit) {
-            chead && chead.find(".words").addClass("wordsover");
-            wc = count_words_split(value, wlimit);
-            textj.addClass("has-overlong overlong-collapsed").prepend('<div class="overlong-divider"><div class="overlong-allowed"></div><div class="overlong-mark"><div class="overlong-expander"><button class="ui js-overlong-expand" aria-expanded="false">Show full-length response</button></div></div></div><div class="overlong-content"></div>');
-            var e = textj.find(".overlong-allowed")[0];
-            render_text.onto(e, format, wc[0]);
-            textj = textj.find(".overlong-content");
+        if (wc > rrd.words) {
+            wordse && addClass(wordse, "wordsover");
+            wc = count_words_split(value, rrd.words);
+            if (rrd.truncate && !hotcrp_status.myperm.allow_administer) {
+                buttone = classe("button", "ui js-overlong-expand", "Truncated for length");
+                buttone.type = "button";
+                buttone.disabled = true;
+                aftertexte = classe("div", "overlong-expander", buttone);
+                value = wc[0].trimEnd() + "…";
+            } else {
+                buttone = classe("button", "ui js-overlong-expand", "Show full-length response");
+                buttone.type = "button";
+                buttone.ariaExpanded = "false";
+                var allowede = classe("div", "overlong-allowed"),
+                    dividere = classe("div", "overlong-divider",
+                        allowede,
+                        classe("div", "overlong-mark",
+                            classe("div", "overlong-expander", buttone))),
+                    contente = classe("div", "overlong-content");
+                addClass(texte, "has-overlong");
+                addClass(texte, "overlong-collapsed");
+                texte.prepend(dividere, contente);
+                texte = contente;
+                render_text.onto(allowede, format, wc[0]);
+            }
         }
     }
-    render_text.onto(textj[0], format, value);
-    toggleClass(textj[0], "emoji-only", emojiregex.test(value));
+    render_text.onto(texte, format, value);
+    aftertexte && texte.append(aftertexte);
+    toggleClass(texte, "emoji-only", emojiregex.test(value));
 }
 
 function render_preview(evt, format, value, dest) {
     var cj = find_cj(evt.target);
-    render_comment_text(format, value, cj ? cj.response : 0, $(dest), null);
+    render_comment_text(format, value, cj ? cj.response : 0, dest, null);
     return false;
 }
 

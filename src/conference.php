@@ -1777,6 +1777,7 @@ class Conf {
             $rrd->open = $rrj->open
                 ?? ($rrd->done && $rrd->done + $rrd->grace >= self::$now ? 1 : 0);
             $rrd->words = $rrj->words ?? 500;
+            $rrd->truncate = $rrj->truncate ?? false;
             if (($rrj->condition ?? "") !== "") {
                 $rrd->condition = $rrj->condition;
             }

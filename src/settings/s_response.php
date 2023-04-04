@@ -15,6 +15,8 @@ class Response_Setting {
     public $grace;
     /** @var ?int */
     public $wordlimit;
+    /** @var bool */
+    public $truncate = false;
     /** @var string */
     public $condition = "all";
     /** @var string */
@@ -38,6 +40,7 @@ class Response_Setting {
         $rs->done = $rrd->done;
         $rs->grace = $rrd->grace;
         $rs->wordlimit = $rs->old_wordlimit = $rrd->words;
+        $rs->truncate = $rrd->truncate;
         $rs->condition = $rrd->condition ?? "all";
         $rs->instructions = $rrd->instructions ?? $rs->default_instructions($conf);
         return $rs;
@@ -70,6 +73,9 @@ class Response_Setting {
         }
         if ($this->wordlimit !== 500) {
             $j->words = $this->wordlimit ?? 0;
+        }
+        if ($this->truncate) {
+            $j->truncate = true;
         }
         if (($this->condition ?? "") !== ""
             && $this->condition !== "all") {
