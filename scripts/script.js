@@ -3713,25 +3713,26 @@ function svge() {
     return e;
 }
 
+function classe() {
+    var e = document.createElement(arguments[0]), i;
+    e.className = arguments[1];
+    for (i = 2; i < arguments.length; ++i) {
+        e.append(arguments[i]);
+    }
+    return e;
+}
+
 
 function make_expander_element(foldnum) {
-    var svgns = "http://www.w3.org/2000/svg", e, sp0, sp1;
     function mksvgp(d) {
         var sv = svge("svg", "class", "licon", "width", "0.75em", "height", "0.75em", "viewBox", "0 0 16 16", "preserveAspectRatio", "none"),
             p = svge("path", "d", d);
         sv.appendChild(p);
         return sv;
     }
-    sp0 = document.createElement("span");
-    sp0.className = "in0 fx" + foldnum;
-    sp0.appendChild(mksvgp("M1 1L8 15L15 1z"));
-    sp1 = document.createElement("span");
-    sp1.className = "in1 fn" + foldnum;
-    sp1.appendChild(mksvgp("M1 1L15 8L1 15z"));
-    e = document.createElement("span");
-    e.className = "expander";
-    e.append(sp0, sp1);
-    return e;
+    return classe("span", "expander",
+        classe("span", "in0 fx" + foldnum, mksvgp("M1 1L8 15L15 1z")),
+        classe("span", "in1 fx" + foldnum, mksvgp("M1 1L15 8L1 15z")));
 }
 
 
@@ -5689,7 +5690,7 @@ function comment_identity_time(cj, editing) {
                + cj.ordinal + '</span></a></div>');
     }
     if (cj.author && cj.author_hidden) {
-        t.push('<address class="cmtname fold9c" itemprop="author"><span class="fx9' +
+        t.push('<address class="has-fold cmtname fold9c" itemprop="author"><span class="fx9' +
                (cj.author_email ? '" title="' + cj.author_email : '') +
                '">' + cj.author + ' </span><a class="ui q js-foldup" href="" data-fold-target="9" title="Toggle author"><span class="fn9"><span class="expander"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span>' +
                (cj.author_pseudonym || "<i>Hidden</i>") + '</span><span class="fx9">(deanonymized)</span></a></address>');
