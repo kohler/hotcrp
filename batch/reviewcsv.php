@@ -108,7 +108,7 @@ class ReviewCSV_Batch {
             $this->header[] = "sitename";
             $this->header[] = "siteclass";
         }
-        array_push($this->header, "pid", "review", "email", "round", "submitted_at");
+        array_push($this->header, "pid", "review", "email", "round", "submitted_at", "timestamp");
         if ($this->all_status || $this->comments) {
             $this->header[] = "status";
         }
@@ -145,6 +145,7 @@ class ReviewCSV_Batch {
         $x["email"] = "";
         $x["round"] = "";
         $x["submitted_at"] = $prow->timeSubmitted > 0 ? $prow->timeSubmitted : "";
+        $x["timestamp"] = $prow->timeModified;
         if ($prow->timeSubmitted > 0) {
             $rs = "submitted";
         } else if ($prow->timeWithdrawn > 0) {
@@ -185,6 +186,7 @@ class ReviewCSV_Batch {
             $rs .= "comment";
         }
         $x["submitted_at"] = $crow->timeDisplayed ? : ($crow->timeNotified ? : $crow->timeModified);
+        $x["timestamp"] = $crow->timeModified;
         $x["status"] = $rs;
         $x["field"] = "comment";
         $x["format"] = $crow->commentFormat ?? $prow->conf->default_format;
@@ -199,6 +201,7 @@ class ReviewCSV_Batch {
         $x["email"] = $rrow->email;
         $x["round"] = $prow->conf->round_name($rrow->reviewRound);
         $x["submitted_at"] = $rrow->reviewSubmitted;
+        $x["timestamp"] = $rrow->reviewTime;
         $x["status"] = $rrow->status_description();
         $x["format"] = $prow->conf->default_format;
         foreach ($rrow->viewable_fields($this->user) as $f) {
