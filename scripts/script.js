@@ -537,71 +537,85 @@ return {
 
 
 // geometry
-jQuery.fn.extend({
-    geometry: function (outer) {
-        var g, d;
-        if (this[0] == window) {
-            g = {left: this.scrollLeft(), top: this.scrollTop()};
-        } else if (this.length == 1 && this[0].getBoundingClientRect) {
-            g = jQuery.extend({}, this[0].getBoundingClientRect());
-            if ((d = window.pageXOffset)) {
-                g.left += d, g.right += d;
-            }
-            if ((d = window.pageYOffset)) {
-                g.top += d, g.bottom += d;
-            }
-            if (!("width" in g)) {
-                g.width = g.right - g.left;
-                g.height = g.bottom - g.top;
-            }
-            return g;
-        } else {
-            g = this.offset();
+(function () {
+
+function geometry(outer) {
+    var g, d;
+    if (this[0] == window) {
+        g = {left: this.scrollLeft(), top: this.scrollTop()};
+    } else if (this.length == 1 && this[0].getBoundingClientRect) {
+        g = jQuery.extend({}, this[0].getBoundingClientRect());
+        if ((d = window.pageXOffset)) {
+            g.left += d, g.right += d;
         }
-        if (g) {
-            g.width = outer ? this.outerWidth() : this.width();
-            g.height = outer ? this.outerHeight() : this.height();
-            g.right = g.left + g.width;
-            g.bottom = g.top + g.height;
+        if ((d = window.pageYOffset)) {
+            g.top += d, g.bottom += d;
+        }
+        if (!("width" in g)) {
+            g.width = g.right - g.left;
+            g.height = g.bottom - g.top;
         }
         return g;
-    },
-    scrollIntoView: function (opts) {
-        for (var i = 0; i !== this.length; ++i) {
-            var e = this[i],
-                root = document.documentElement,
-                eopts = opts || {};
-            while (e && e.nodeType !== 1) {
-                e = e.parentNode;
-            }
-            while (e !== root) {
-                var er = e.getBoundingClientRect(),
-                    p = e.parentNode;
-                while (p !== root && window.getComputedStyle(p).overflowY === "visible") {
-                    p = p.parentNode;
-                }
-                var pr = p.getBoundingClientRect(),
-                    mt = eopts.marginTop || 0,
-                    mb = eopts.marginBottom || 0;
-                if (mt === "auto") {
-                    mt = parseFloat(window.getComputedStyle(e).marginTop);
-                }
-                if (mb === "auto") {
-                    mb = parseFloat(window.getComputedStyle(e).marginBottom);
-                }
-                if ((er.top - mt < pr.top && !eopts.atBottom)
-                    || (er.bottom + mb > pr.bottom && eopts.atTop)) {
-                    p.scrollBy(0, er.top - mt - pr.top);
-                } else if (er.bottom + mb > pr.bottom) {
-                    p.scrollBy(0, er.bottom + mb - pr.bottom);
-                }
-                e = p;
-                eopts = {};
-            }
-        }
-        return this;
+    } else {
+        g = this.offset();
     }
-});
+    if (g) {
+        g.width = outer ? this.outerWidth() : this.width();
+        g.height = outer ? this.outerHeight() : this.height();
+        g.right = g.left + g.width;
+        g.bottom = g.top + g.height;
+    }
+    return g;
+}
+
+function scrollIntoView1(e, opts) {
+    var root = document.documentElement;
+    while (e && e.nodeType !== 1) {
+        e = e.parentNode;
+    }
+    var p = e.parentNode, pr, er, h, mt, mb, wh = window.innerHeight;
+    while (p !== root && window.getComputedStyle(p).overflowY === "visible") {
+        p = p.parentNode;
+    }
+    if (p !== root) {
+        scrollIntoView1(p, {});
+        pr = p.getBoundingClientRect();
+        if (pr.bottom < 0 || pr.top > wh) {
+            return; // it's hopeless, nothing to do
+        }
+        er = e.getBoundingClientRect();
+        if (pr.top > 0) {
+            er = {top: er.top - pr.top, bottom: er.bottom - pr.top};
+        }
+        wh = Math.min(wh, pr.bottom - pr.top);
+    } else {
+        er = e.getBoundingClientRect();
+    }
+    mt = opts.marginTop || 0;
+    if (mt === "auto") {
+        mt = parseFloat(window.getComputedStyle(e).marginTop);
+    }
+    mb = opts.marginBottom || 0;
+    if (mb === "auto") {
+        mb = parseFloat(window.getComputedStyle(e).marginBottom);
+    }
+    if ((er.top - mt < 0 && !opts.atBottom)
+        || (er.bottom + mb > wh && (opts.atTop || er.bottom - er.top > wh))) {
+        p.scrollBy(0, er.top - mt);
+    } else if (er.bottom + mb > wh) {
+        p.scrollBy(0, er.bottom + mb - wh);
+    }
+}
+
+function scrollIntoView(opts) {
+    for (var i = 0; i !== this.length; ++i) {
+        scrollIntoView1(this[i], opts || {});
+    }
+    return this;
+}
+
+jQuery.fn.extend({geometry: geometry, scrollIntoView: scrollIntoView});
+})();
 
 function geometry_translate(g, dx, dy) {
     if (typeof dx === "object")
@@ -6464,8 +6478,13 @@ hotcrp.edit_comment = function (cj) {
     }
     $(elt).scrollIntoView();
     var te = $(elt).find("form")[0].elements.text;
-    te.setSelectionRange && te.setSelectionRange(te.value.length, te.value.length);
-    $(function () { te.focus(); });
+    $(function () {
+        te.focus();
+        if (te.setSelectionRange) {
+            te.setSelectionRange(te.value.length, te.value.length);
+            te.scrollTo(0, Math.max(0, te.scrollHeight - te.clientHeight));
+        }
+    });
     has_unload || $(window).on("beforeunload.papercomment", beforeunload);
     has_unload = true;
 };
@@ -11650,7 +11669,7 @@ function make_textarea_autogrower($self) {
             val += "\n";
         shadow.css("width", width).text(val + "...");
 
-        var wh = Math.max($(window).height() - 4 * lineHeight, 4 * lineHeight);
+        var wh = Math.max($(window).height() - 10 * lineHeight, 4 * lineHeight);
         $self.height(Math.min(wh, Math.max(shadow.height(), minHeight)));
     };
 }
