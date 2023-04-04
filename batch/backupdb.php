@@ -72,6 +72,8 @@ class BackupDB_Batch {
     private $_s3_dbname;
     /** @var ?string */
     private $_s3_confid;
+    /** @var ?string */
+    private $_s3_backup_key;
     /** @var ?int */
     private $_before;
     /** @var ?int */
@@ -143,10 +145,13 @@ class BackupDB_Batch {
 
         // Check input and output arguments
         if (!empty($arg["_"])) {
-            if ($this->subcommand !== self::RESTORE || isset($arg["input"])) {
+            if ($this->subcommand === self::RESTORE && !isset($arg["input"])) {
+                $arg["input"] = $arg["_"][0];
+            } else if ($this->subcommand === self::S3_GET && !isset($arg["output"])) {
+                $arg["output"] = $arg["_"][0];
+            } else {
                 throw new CommandLineException("Too many arguments", $getopt);
             }
-            $arg["input"] = $arg["_"][0];
         }
         $input = $arg["input"] ?? null;
         $output = $arg["output"] ?? null;
@@ -217,6 +222,13 @@ class BackupDB_Batch {
         // Set output stream
         if ($output_mode === "file") {
             $outx = str_starts_with($output, "/") ? $output : "./{$output}";
+            if ($input_mode === "s3" && is_dir($outx)) {
+                $outx .= str_ends_with($outx, "/") ? "" : "/";
+                $outx .= substr($this->_s3_backup_key, strrpos($this->_s3_backup_key, "/") + 1);
+                if (!$this->compress) {
+                    $outx = preg_replace('/(?:\.gz|\.bz2|\.z)\z/', "", $outx);
+                }
+            }
             if ($this->compress) {
                 $this->out = @gzopen($outx, "wb9");
             } else {
@@ -328,11 +340,12 @@ class BackupDB_Batch {
         if (empty($keys)) {
             $this->throw_error("No matching backup found");
         }
-        $content = $this->s3_client()->get($keys[0]);
+        $this->_s3_backup_key = $keys[0];
+        $content = $this->s3_client()->get($this->_s3_backup_key);
         if ($content === null) {
-            $this->throw_error("S3 error reading {$keys[0]}");
+            $this->throw_error("S3 error reading {$this->_s3_backup_key}");
         } else if ($this->verbose) {
-            fwrite(STDERR, "Reading {$keys[0]}\n");
+            fwrite(STDERR, "Reading {$this->_s3_backup_key}\n");
         }
         $this->in = fopen("php://temp", "w+b");
         fwrite($this->in, str_starts_with($content, "\x1F\x8B") ? gzdecode($content) : $content);
