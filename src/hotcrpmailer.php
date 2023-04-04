@@ -194,7 +194,7 @@ class HotCRPMailer extends Mailer {
                 && $this->permuser->can_view_comment($this->row, $crow);
         });
 
-        $flags = ReviewForm::UNPARSE_NO_TITLE;
+        $flags = ReviewForm::UNPARSE_NO_TITLE | ReviewForm::UNPARSE_TRUNCATE;
         if ($this->flowed) {
             $flags |= ReviewForm::UNPARSE_FLOWED;
         }

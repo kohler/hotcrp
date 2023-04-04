@@ -353,17 +353,17 @@ class UnicodeHelper {
         $c = $len ? ord($str[$len - 1]) : 0;
         if ($c < 0x80) {
             return $str;
-        } else if ($c >= 0xC0 || $len == 1
+        } else if ($c >= 0xC0 || $len === 1
                    || ($d = ord($str[$len - 2])) < 0x80) {
             return substr($str, 0, $len - 1);
         } else if ($d >= 0xC0 && $d < 0xE0) {
             return $str;
-        } else if ($d >= 0xC0 || $len == 2
+        } else if ($d >= 0xC0 || $len === 2
                    || ($e = ord($str[$len - 3])) < 0x80) {
             return substr($str, 0, $len - 2);
         } else if ($e >= 0xE0 && $e < 0xF0) {
             return $str;
-        } else if ($e >= 0xC0 || $len == 3
+        } else if ($e >= 0xC0 || $len === 3
                    || ord($str[$len - 4]) < 0xF0) {
             return substr($str, 0, $len - 3);
         } else {

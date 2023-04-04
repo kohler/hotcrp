@@ -258,9 +258,21 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $width = 75, $flowed = f
  * @return int */
 function count_words($text) {
     return is_usascii($text)
-        ? preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*/', $text)
-        : preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*/u', $text);
+        ? preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*+/s', $text)
+        : preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*+/us', $text);
     // 2023 benchmark on 223MB: Without /u = 1.76, with /u = 2.52, with is_usascii = 2.40.
+}
+
+/** @param string $text
+ * @param int $wlimit
+ * @return array{string,string} */
+function count_words_split($text, $wlimit) {
+    $re = "/\\A((?:[-\\s.,;:<>!?*_~`#|]*+[^-\\s.,;:<>!?*_~`#|]\\S*+(?:\\s|\\z)\\s*+){{$wlimit}})([\\d\\D]*+)\\z/" . (is_usascii($text) ? "s" : "us");
+    if (preg_match($re, $text, $m)) {
+        return [$m[1], $m[2]];
+    } else {
+        return [$text, ""];
+    }
 }
 
 /** @param string $s

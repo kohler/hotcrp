@@ -650,7 +650,7 @@ class CommentInfo {
             $x = $rrd->unnamed ? "Response" : "{$rrd->name} Response";
         } else {
             $ordinal = $this->unparse_ordinal();
-            $x = "Comment" . ($ordinal ? " @$ordinal" : "");
+            $x = "Comment" . ($ordinal ? " @{$ordinal}" : "");
         }
         if ($contact->can_view_comment_identity($this->prow, $this)) {
             $x .= " by " . Text::nameo($this, NAME_EB);
@@ -658,8 +658,14 @@ class CommentInfo {
                    && ($p !== "Author" || !($this->commentType & self::CT_RESPONSE))) {
             $x .= " by " . $p;
         }
+        $ctext = $this->commentOverflow ?? $this->comment;
         if ($rrd && $rrd->words) {
-            $x .= " (" . plural(count_words($this->commentOverflow ?? $this->comment), "word") . ")";
+            $nwords = count_words($ctext);
+            $x .= " (" . plural($nwords, "word") . ")";
+            if ($nwords > $rrd->words) {
+                list($ctext, $overflow) = count_words_split($ctext, $rrd->words);
+                $ctext = rtrim($ctext) . "\n- - - - - Truncated for length, full response available on website - - - - -\n";
+            }
         }
         $x .= "\n" . str_repeat("-", 75) . "\n";
         $flowed = ($flags & ReviewForm::UNPARSE_FLOWED) !== 0;
@@ -674,8 +680,7 @@ class CommentInfo {
         if (!($flags & ReviewForm::UNPARSE_NO_TITLE) || $tags) {
             $x .= "\n";
         }
-        $x .= $this->commentOverflow ?? $this->comment;
-        return rtrim($x) . "\n";
+        return rtrim($x . $ctext) . "\n";
     }
 
     /** @return string */

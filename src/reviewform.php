@@ -368,6 +368,8 @@ $blind\n";
     const UNPARSE_NO_AUTHOR_SEEN = 1;
     const UNPARSE_NO_TITLE = 2;
     const UNPARSE_FLOWED = 4;
+    const UNPARSE_TRUNCATE = 8;
+
     function unparse_text(PaperInfo $prow, ReviewInfo $rrow, Contact $contact,
                           $flags = 0) {
         self::check_review_author_seen($prow, $rrow, $contact, !!($flags & self::UNPARSE_NO_AUTHOR_SEEN));
