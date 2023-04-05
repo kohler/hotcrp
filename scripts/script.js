@@ -11635,6 +11635,10 @@ function textarea_shadow($self, width) {
 
 (function ($) {
 var autogrowers = null;
+function computed_line_height(css) {
+    var lh = css.lineHeight;
+    return parseFloat(lh) * (lh.endsWith("px") ? 1 : parseFloat(css.fontSize));
+}
 function resizer() {
     for (var i = autogrowers.length - 1; i >= 0; --i)
         autogrowers[i]();
@@ -11649,28 +11653,23 @@ function remover($self, shadow) {
             autogrowers.pop();
         }
 }
-function make_textarea_autogrower($self) {
-    var shadow, minHeight, lineHeight;
+function make_textarea_autogrower(e) {
+    var shadow, minHeight, lineHeight, borderPadding;
     return function (evt) {
         if (evt === false)
-            return remover($self, shadow);
-        var width = $self.width();
-        if (width <= 0)
-            return;
+            return remover($(e), null);
         if (!shadow) {
-            shadow = textarea_shadow($self, width);
-            minHeight = $self.height();
-            lineHeight = shadow.text("!").height();
+            var css = window.getComputedStyle(e);
+            if (parseFloat(css.width) <= 0)
+                return;
+            minHeight = parseFloat(css.height);
+            lineHeight = computed_line_height(css);
+            borderPadding = parseFloat(css.borderTopWidth) + parseFloat(css.borderBottomWidth);
+            shadow = true;
         }
-
-        // Did enter get pressed?  Resize in this keydown event so that the flicker doesn't occur.
-        var val = $self[0].value;
-        if (evt && evt.type == "keydown" && evt.keyCode === 13)
-            val += "\n";
-        shadow.css("width", width).text(val + "...");
-
-        var wh = Math.max($(window).height() - 10 * lineHeight, 4 * lineHeight);
-        $self.height(Math.min(wh, Math.max(shadow.height(), minHeight)));
+        e.style.height = "auto"; // in case text shrank (scrollHeight always ≥clientHeight)
+        var wh = Math.max(0.8 * window.innerHeight, 4 * lineHeight);
+        e.style.height = Math.min(wh, Math.max(e.scrollHeight + borderPadding, minHeight)) + "px";
     };
 }
 function make_input_autogrower($self) {
@@ -11717,7 +11716,7 @@ $.fn.autogrow = function () {
         var $self = $(this), f = $self.data("autogrower");
         if (!f) {
             if (this.tagName === "TEXTAREA") {
-                f = make_textarea_autogrower($self);
+                f = make_textarea_autogrower(this);
             } else if (this.tagName === "INPUT" && this.type === "text") {
                 f = make_input_autogrower($self);
             }
