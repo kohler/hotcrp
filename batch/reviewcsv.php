@@ -37,7 +37,7 @@ class ReviewCSV_Batch {
     /** @var ?int */
     public $format;
     /** @var ?int */
-    public $version;
+    public $before;
     /** @var list<bool> */
     public $rfseen;
     /** @var list<string> */
@@ -77,11 +77,11 @@ class ReviewCSV_Batch {
         if (!in_array($this->t, PaperSearch::viewable_limits($this->user, $this->t))) {
             throw new CommandLineException("No search collection ‘{$this->t}’");
         }
-        if (isset($arg["version"])) {
-            if (($t = $this->conf->parse_time($arg["version"])) !== false) {
-                $this->version = $t;
+        if (isset($arg["before"])) {
+            if (($t = $this->conf->parse_time($arg["before"])) !== false) {
+                $this->before = $t;
             } else {
-                throw new CommandLineException("‘--version’ requires a date");
+                throw new CommandLineException("‘--before’ requires a date");
             }
         }
     }
@@ -108,7 +108,7 @@ class ReviewCSV_Batch {
             $this->header[] = "sitename";
             $this->header[] = "siteclass";
         }
-        array_push($this->header, "pid", "review", "email", "round", "submitted_at", "timestamp");
+        array_push($this->header, "pid", "review", "email", "round", "submitted_at", "vtag");
         if ($this->all_status || $this->comments) {
             $this->header[] = "status";
         }
@@ -145,7 +145,7 @@ class ReviewCSV_Batch {
         $x["email"] = "";
         $x["round"] = "";
         $x["submitted_at"] = $prow->timeSubmitted > 0 ? $prow->timeSubmitted : "";
-        $x["timestamp"] = $prow->timeModified;
+        $x["vtag"] = $prow->timeModified;
         if ($prow->timeSubmitted > 0) {
             $rs = "submitted";
         } else if ($prow->timeWithdrawn > 0) {
@@ -186,7 +186,7 @@ class ReviewCSV_Batch {
             $rs .= "comment";
         }
         $x["submitted_at"] = $crow->timeDisplayed ? : ($crow->timeNotified ? : $crow->timeModified);
-        $x["timestamp"] = $crow->timeModified;
+        $x["vtag"] = $crow->timeModified;
         $x["status"] = $rs;
         $x["field"] = "comment";
         $x["format"] = $crow->commentFormat ?? $prow->conf->default_format;
@@ -201,7 +201,7 @@ class ReviewCSV_Batch {
         $x["email"] = $rrow->email;
         $x["round"] = $prow->conf->round_name($rrow->reviewRound);
         $x["submitted_at"] = $rrow->reviewSubmitted;
-        $x["timestamp"] = $rrow->reviewTime;
+        $x["vtag"] = $rrow->reviewTime;
         $x["status"] = $rrow->status_description();
         $x["format"] = $prow->conf->default_format;
         foreach ($rrow->viewable_fields($this->user) as $f) {
@@ -271,8 +271,8 @@ class ReviewCSV_Batch {
                         $this->add_comment($prow, $xrow, $px);
                     }
                 } else if ($xrow instanceof ReviewInfo) {
-                    if ($this->version !== null) {
-                        $xrow = $xrow->version_at($this->version);
+                    if ($this->before !== null) {
+                        $xrow = $xrow->version_before($this->before);
                     }
                     if ($this->reviews
                         && $xrow !== null
@@ -299,7 +299,7 @@ class ReviewCSV_Batch {
             "comments,c Include comments",
             "fields,f Include paper fields",
             "sitename,N Include site name and class in CSV",
-            "version:,time: =TIME Return reviews as of TIME",
+            "before: =TIME Return reviews as of TIME",
             "no-text Omit text fields",
             "no-score Omit score fields",
             "no-header Omit CSV header",

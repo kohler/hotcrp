@@ -859,30 +859,17 @@ class ReviewInfo implements JsonSerializable {
         return $this->_history;
     }
 
-    /** @return list<int> */
-    function versions() {
-        if ($this->_history === null) {
-            $this->load_history();
-        }
-        $times = [];
-        foreach ($this->_history as $rhrow) {
-            if ($rhrow->reviewTime !== 0) {
-                $times[] = $rhrow->reviewTime;
-            }
-        }
-        $times[] = $this->reviewTime;
-        return $times;
-    }
-
     /** @param int $time
      * @return ?ReviewInfo */
-    function version_at($time) {
-        if ($time >= $this->reviewTime) {
+    function version_before($time) {
+        if ($time >= $this->reviewModified) {
             return $this;
         }
         $history = $this->_history ?? $this->load_history();
         $rrow = $this;
-        for ($i = count($history) - 1; $i >= 0 && $time < $rrow->reviewTime; --$i) {
+        for ($i = count($history) - 1;
+             $i >= 0 && $time < $rrow->reviewModified;
+             --$i) {
             $rhrow = $history[$i];
             if ($rhrow instanceof ReviewInfo) {
                 $rrow = $rhrow;

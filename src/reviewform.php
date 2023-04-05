@@ -505,7 +505,7 @@ $blind\n";
             ]),
             Ht::hidden_default_submit("default", "");
         if ($rrow->reviewId) {
-            echo Ht::hidden("version", ($rrow->reviewEditVersion ?? 0) + 1);
+            echo Ht::hidden("edit_version", ($rrow->reviewEditVersion ?? 0) + 1);
         }
         echo '<div class="revcard-head">';
 
@@ -969,8 +969,9 @@ class ReviewValues extends MessageSet {
                 } else if (preg_match('/\A==\+== Open Review\s*\z/i', $line)) {
                     $this->req["blind"] = 0;
                 } else if (preg_match('/\A==\+== Version\s*(\d+)\s*\z/i', $line, $match)) {
-                    if (($this->req["version"] ?? 0) < intval($match[1]))
-                        $this->req["version"] = intval($match[1]);
+                    if (($this->req["edit_version"] ?? 0) < intval($match[1])) {
+                        $this->req["edit_version"] = intval($match[1]);
+                    }
                 } else if (preg_match('/\A==\+== Review Readiness\s*/i', $line)) {
                     $field = "readiness";
                     $mode = 1;
@@ -1096,19 +1097,13 @@ class ReviewValues extends MessageSet {
                 if (is_string($v)) {
                     $this->req["reviewerLast"] = simplify_whitespace($v);
                 }
-            } else if ($k === "version") {
+            } else if ($k === "edit_version") {
                 if (is_int($v)) {
-                    $this->req["version"] = $v;
+                    $this->req["edit_version"] = $v;
                 }
-            } else if ($k === "if_timestamp_match") {
-                if (is_string($v)) {
-                    $v = $this->conf->parse_time($v);
-                    if (is_int($v) || is_float($v)) {
-                        $v = (int) $v;
-                    }
-                }
+            } else if ($k === "if_vtag_match") {
                 if (is_int($v)) {
-                    $this->req["if_timestamp_match"] = $v;
+                    $this->req["if_vtag_match"] = $v;
                 }
             } else if (($f = $this->conf->find_review_field($k))) {
                 if (!isset($this->req[$f->short_id])) {
@@ -1127,7 +1122,7 @@ class ReviewValues extends MessageSet {
         "deletereview" => true, "r" => true, "m" => true, "post" => true,
         "forceShow" => true, "update" => true, "has_blind" => true,
         "adoptreview" => true, "adoptsubmit" => true, "adoptdraft" => true,
-        "approvesubreview" => true, "default" => true
+        "approvesubreview" => true, "default" => true, "vtag" => true
     ];
 
     /** @param bool $override
@@ -1145,7 +1140,7 @@ class ReviewValues extends MessageSet {
                 $this->paperId = cvtint($v);
             } else if ($k === "override") {
                 $this->req["override"] = !!$v;
-            } else if ($k === "version") {
+            } else if ($k === "edit_version") {
                 $this->req[$k] = cvtint($v);
             } else if ($k === "blind" || $k === "ready") {
                 $this->req[$k] = is_bool($v) ? (int) $v : cvtint($v);
@@ -1341,7 +1336,7 @@ class ReviewValues extends MessageSet {
             $this->rmsg("reviewerEmail", "<0>The review form was meant for {$name1}, but this review belongs to {$name2}.", self::ERROR);
             $this->rmsg("reviewerEmail", "<5>If you want to upload the form anyway, remove the “<code class=\"nw\">==+== Reviewer</code>” line from the form.", self::INFORM);
         } else if ($rrow->reviewId
-                   && $rrow->reviewEditVersion > ($this->req["version"] ?? 0)
+                   && $rrow->reviewEditVersion > ($this->req["edit_version"] ?? 0)
                    && $anydiff
                    && $this->text !== null) {
             $this->rmsg($this->first_lineno, "<0>This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.", self::ERROR);
@@ -1457,6 +1452,12 @@ class ReviewValues extends MessageSet {
             return false;
         }
 
+        if (isset($this->req["if_vtag_match"])
+            && $this->req["if_vtag_match"] !== $rrow->reviewTime) {
+            $this->rmsg("if_vtag_match", "<0>Version mismatch", self::ERROR);
+            return false;
+        }
+
         $qf = $qv = [];
         $view_score = VIEWSCORE_EMPTY;
         $diffinfo = new ReviewDiffInfo($prow, $rrow);
@@ -1529,10 +1530,13 @@ class ReviewValues extends MessageSet {
         }
 
         // get the current time
-        $now = max(time(), $rrow->reviewModified + 1, $rrow->reviewTime + 1);
+        $now = max(time(), $rrow->reviewModified + 1);
+        $vtag = $rrow->reviewTime
+            ? $rrow->reviewTime + mt_rand(1, 10000)
+            : mt_rand(2000, 1000000);
         if ($this->conf->sversion >= 267) {
             $qf[] = "reviewTime=?";
-            $qv[] = $now;
+            $qv[] = $vtag;
         }
 
         if (($newstatus >= ReviewInfo::RS_COMPLETED)
@@ -1575,12 +1579,12 @@ class ReviewValues extends MessageSet {
             $qf[] = "reviewType=?";
             $qv[] = REVIEW_PC;
         }
-        assert(is_int($this->req["version"] ?? 0)); // XXX sanity check
+        assert(is_int($this->req["edit_version"] ?? 0)); // XXX sanity check
         if ($rrow->reviewId
             && $diffinfo->nonempty()
-            && ($this->req["version"] ?? 0) > ($rrow->reviewEditVersion ?? 0)) {
+            && ($this->req["edit_version"] ?? 0) > ($rrow->reviewEditVersion ?? 0)) {
             $qf[] = "reviewEditVersion=?";
-            $qv[] = $this->req["version"];
+            $qv[] = $this->req["edit_version"];
         }
         if ($diffinfo->nonempty()) {
             $qf[] = "reviewWordCount=?";
@@ -1663,33 +1667,20 @@ class ReviewValues extends MessageSet {
         }
 
         // actually affect database
-        $if_timestamp_match = $this->req["if_timestamp_match"] ?? null;
-        $fail_match = false;
-        if ($rrow->reviewId) {
-            array_push($qv, $prow->paperId, $rrow->reviewId);
-            if (empty($qf)) {
-                $result = Dbl_Result::make_empty();
-            } else if ($if_timestamp_match === null) {
-                $result = $this->conf->qe_apply("update PaperReview set " . join(", ", $qf) . " where paperId=? and reviewId=?", $qv);
-            } else if ($if_timestamp_match === 0) {
-                $fail_match = true;
-                $result = Dbl_Result::make_empty();
-            } else {
-                $qv[] = $if_timestamp_match;
-                $result = $this->conf->qe_apply("update PaperReview set " . join(", ", $qf) . " where paperId=? and reviewId=? and reviewTime=?", $qv);
-            }
-            $reviewId = $rrow->reviewId;
-            $contactId = $rrow->contactId;
+        $no_attempt = false;
+        $reviewId = $rrow->reviewId;
+        $contactId = $rrow->contactId;
+        if ($reviewId > 0 && empty($qf)) {
+            $result = Dbl_Result::make_empty();
+            $no_attempt = true;
+        } else if ($reviewId > 0) {
+            array_push($qv, $prow->paperId, $rrow->reviewId, $rrow->reviewTime);
+            $result = $this->conf->qe_apply("update PaperReview set " . join(", ", $qf) . " where paperId=? and reviewId=? and reviewTime=?", $qv);
         } else {
             array_unshift($qf, "paperId=?", "contactId=?", "reviewType=?", "requestedBy=?", "reviewRound=?");
             array_unshift($qv, $prow->paperId, $user->contactId, REVIEW_PC, $user->contactId, $this->conf->assignment_round(false));
-            if ($if_timestamp_match > 0) {
-                $fail_match = true;
-                $result = Dbl_Result::make_empty();
-            } else {
-                $result = $this->conf->qe_apply("insert into PaperReview set " . join(", ", $qf), $qv);
-            }
-            $reviewId = $result ? $result->insert_id : null;
+            $result = $this->conf->qe_apply("insert into PaperReview set " . join(", ", $qf), $qv);
+            $reviewId = $result->insert_id;
             $contactId = $user->contactId;
         }
 
@@ -1700,9 +1691,8 @@ class ReviewValues extends MessageSet {
         if ($result->is_error()) {
             return false;
         }
-        if ($if_timestamp_match !== null
-            && ($fail_match || $result->affected_rows === 0)) {
-            $this->rmsg(null, "<0>Review timestamp did not match.", self::ERROR);
+        if (!$no_attempt && $result->affected_rows === 0) {
+            $this->rmsg(null, "<0>Review was edited concurrently, please try again", self::ERROR);
             return false;
         }
 
