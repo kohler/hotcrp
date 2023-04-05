@@ -42,13 +42,6 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
                         $d = '<strong class="overdue">' . $d . '</strong>';
                     }
                     $pl->mark_has("need_review");
-                    $row->ensure_reviewer_last_login();
-                    if (!$rrow->lastLogin) {
-                        $login = 'never logged in';
-                    } else {
-                        $login = 'activity ' . $pl->conf->unparse_time_relative($rrow->lastLogin);
-                    }
-                    $d .= ' <span class="hint">(' . $login . ')</span>';
                 } else if ($rrow->reviewStatus === ReviewInfo::RS_DELIVERED) {
                     $d = '<strong>' . $d . '</strong>';
                 }

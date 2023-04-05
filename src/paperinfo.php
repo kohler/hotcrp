@@ -2379,9 +2379,6 @@ class PaperInfo {
         Dbl::free($result);
 
         $this->ensure_reviewer_names_set($row_set);
-        if ($had & self::REVIEW_HAS_LASTLOGIN) {
-            $this->ensure_reviewer_last_login_set($row_set);
-        }
     }
 
     /** @return int|false */
@@ -2740,34 +2737,6 @@ class PaperInfo {
         if (!empty($this->_review_array)
             && ($this->_flags & self::REVIEW_HAS_NAMES) === 0) {
             $this->ensure_reviewer_names_set($this->_row_set);
-        }
-    }
-
-    /** @param PaperInfoSet $row_set */
-    private function ensure_reviewer_last_login_set($row_set) {
-        $users = [];
-        foreach ($row_set as $prow) {
-            $prow->_flags |= self::REVIEW_HAS_LASTLOGIN;
-            foreach ($prow->all_reviews() as $rrow) {
-                $users[$rrow->contactId] = true;
-            }
-        }
-        if (!empty($users)) {
-            $result = $this->conf->qe("select contactId, lastLogin from ContactInfo where contactId?a", array_keys($users));
-            $lastLogins = Dbl::fetch_iimap($result);
-            foreach ($row_set as $prow) {
-                foreach ($prow->all_reviews() as $rrow) {
-                    $rrow->lastLogin = $lastLogins[$rrow->contactId] ?? 0;
-                }
-            }
-        }
-    }
-
-    function ensure_reviewer_last_login() {
-        $this->ensure_reviews();
-        if (!empty($this->_review_array)
-            && ($this->_flags & self::REVIEW_HAS_LASTLOGIN) === 0) {
-            $this->ensure_reviewer_last_login_set($this->_row_set);
         }
     }
 

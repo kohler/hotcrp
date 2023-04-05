@@ -110,8 +110,6 @@ class ReviewInfo implements JsonSerializable {
     public $disablement = 0;
     /** @var ?string */
     public $contactTags;
-    /** @var ?int */
-    public $lastLogin;
     /** @var ?string */
     public $ratingSignature;
 
