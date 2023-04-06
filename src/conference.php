@@ -4673,9 +4673,10 @@ class Conf {
     }
 
     /** @param Contact $viewer
-     * @param ReviewInfo $user
+     * @param ReviewInfo $rrow
      * @return stdClass */
-    private function pc_json_reviewer_item($viewer, $user) {
+    private function pc_json_reviewer_item($viewer, $rrow) {
+        $user = $rrow->reviewer();
         $j = (object) [
             "name" => Text::nameo($user, NAME_P),
             "email" => $user->email

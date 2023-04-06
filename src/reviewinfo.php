@@ -94,22 +94,8 @@ class ReviewInfo implements JsonSerializable {
     private $s11;
 
     // sometimes joined
-    /** @var ?string */
-    public $firstName;
-    /** @var ?string */
-    public $lastName;
-    /** @var ?string */
-    public $affiliation;
-    /** @var ?string */
-    public $email;
     /** @var ?bool */
     public $nameAmbiguous;
-    /** @var int */
-    public $roles = 0;
-    /** @var int */
-    public $disablement = 0;
-    /** @var ?string */
-    public $contactTags;
     /** @var ?string */
     public $ratingSignature;
 
@@ -118,6 +104,8 @@ class ReviewInfo implements JsonSerializable {
     public $message_list;
     /** @var ?list<ReviewHistoryInfo|ReviewInfo> */
     private $_history;
+    /** @var ?Contact */
+    private $_reviewer;
 
     const VIEWSCORE_RECOMPUTE = -100;
 
@@ -294,10 +282,6 @@ class ReviewInfo implements JsonSerializable {
                 $fv = $tfields[$f->json_storage] ?? null;
             }
             $this->fields[$f->order] = $fv;
-        }
-
-        if ($this->roles !== null) {
-            $this->roles = (int) $this->roles;
         }
     }
 
@@ -626,23 +610,33 @@ class ReviewInfo implements JsonSerializable {
     }
 
 
-    /** @param Contact $c
-     * @param list<Contact> &$assigned */
-    function assign_name($c, &$assigned) {
-        $this->firstName = $c->firstName;
-        $this->lastName = $c->lastName;
-        $this->affiliation = $c->affiliation;
-        $this->email = $c->email;
-        $this->roles = $c->roles;
-        $this->disablement = $c->disablement;
-        $this->contactTags = $c->contactTags;
-        $this->nameAmbiguous = false;
-        foreach ($assigned as $pc) {
-            if ($pc->firstName === $c->firstName && $pc->lastName === $c->lastName) {
-                $pc->nameAmbiguous = $c->nameAmbiguous = true;
+    /** @return Contact */
+    function reviewer() {
+        if ($this->_reviewer === null) {
+            $this->_reviewer = $this->conf->user_by_id($this->contactId, USER_SLICE)
+                ?? Contact::make_placeholder($this->conf, $this->contactId);
+        }
+        return $this->_reviewer;
+    }
+
+    /** @param list<ReviewInfo> $rrows */
+    static function check_ambiguous_names($rrows) {
+        // XXXX fuck... this exposes information about whether 2 people with
+        // the same name reviewed a paper, even if only one of their identities
+        // should be visible
+        foreach ($rrows as $i => $rrow) {
+            $rrow->nameAmbiguous = false;
+            $u1 = $rrow->reviewer();
+            for ($j = 0; $j !== $i; ++$j) {
+                $u2 = $rrows[$j]->_reviewer;
+                if ($u1->firstName === $u2->firstName
+                    && $u1->lastName === $u2->lastName
+                    && ($u1->firstName !== "" || $u1->lastName !== "")) {
+                    $rrow->nameAmbiguous = $rrows[$j]->nameAmbiguous = true;
+                    break;
+                }
             }
         }
-        $assigned[] = $c;
     }
 
     /** @param ?TextPregexes $reg

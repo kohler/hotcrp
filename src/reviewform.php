@@ -316,8 +316,8 @@ class ReviewForm {
             $t[] = "==+== Version " . $rrow->reviewEditVersion . "\n";
         }
         if ($viewable_identity) {
-            if ($rrow->email) {
-                $t[] = "==+== Reviewer: " . Text::nameo($rrow, NAME_EB) . "\n";
+            if ($rrow->contactId) {
+                $t[] = "==+== Reviewer: " . Text::nameo($rrow->reviewer(), NAME_EB) . "\n";
             } else {
                 $t[] = "==+== Reviewer: " . Text::nameo($contact, NAME_EB) . "\n";
             }
@@ -392,8 +392,9 @@ $blind\n";
         if (!($flags & self::UNPARSE_NO_TITLE)) {
             $t[] = prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2, null, $flowed);
         }
-        if ($contact->can_view_review_identity($prow, $rrow) && isset($rrow->lastName)) {
-            $t[] = "* Reviewer: " . Text::nameo($rrow, NAME_EB) . "\n";
+        if ($contact->can_view_review_identity($prow, $rrow)) {
+            $reviewer = $rrow->reviewer();
+            $t[] = "* Reviewer: " . Text::nameo($reviewer, NAME_EB) . "\n";
         }
         $time = $rrow->mtime($contact);
         if ($time > 0 && $time > $rrow->timeRequested && $time > $rrow->reviewSubmitted) {
@@ -535,12 +536,13 @@ $blind\n";
         if ($viewer->active_review_token_for($prow, $rrow)) {
             $revname = "Review token " . encode_token((int) $rrow->reviewToken);
         } else if ($rrow->reviewId && $viewer->can_view_review_identity($prow, $rrow)) {
-            $revname = $viewer->reviewer_html_for($rrow);
+            $reviewer = $rrow->reviewer();
+            $revname = $viewer->reviewer_html_for($reviewer);
             if ($rrow->reviewBlind) {
                 $revname = "[{$revname}]";
             }
-            if (!Contact::is_anonymous_email($rrow->email)) {
-                $revname = "<span title=\"{$rrow->email}\">{$revname}</span>";
+            if (!Contact::is_anonymous_email($reviewer->email)) {
+                $revname = "<span title=\"{$reviewer->email}\">{$revname}</span>";
             }
         }
         if ($viewer->can_view_review_meta($prow, $rrow)) {
@@ -665,11 +667,13 @@ $blind\n";
 
         // identity
         $showtoken = $editable && $viewer->active_review_token_for($prow, $rrow);
-        if ($viewer->can_view_review_identity($prow, $rrow)
-            && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
-            $rj["reviewer"] = $viewer->reviewer_html_for($rrow);
-            if (!Contact::is_anonymous_email($rrow->email)) {
-                $rj["reviewer_email"] = $rrow->email;
+        if ($viewer->can_view_review_identity($prow, $rrow)) {
+            $reviewer = $rrow->reviewer();
+            if (!$showtoken || !Contact::is_anonymous_email($reviewer->email)) {
+                $rj["reviewer"] = $viewer->reviewer_html_for($rrow);
+                if (!Contact::is_anonymous_email($reviewer->email)) {
+                    $rj["reviewer_email"] = $reviewer->email;
+                }
             }
         }
         if ($showtoken) {
@@ -1324,24 +1328,31 @@ class ReviewValues extends MessageSet {
             }
         }
 
+        if ($rrow->reviewId && isset($this->req["reviewerEmail"])) {
+            $reviewer = $rrow->reviewer();
+            if (strcasecmp($reviewer->email, $this->req["reviewerEmail"]) !== 0
+                && (!isset($this->req["reviewerFirst"])
+                    || !isset($this->req["reviewerLast"])
+                    || strcasecmp($this->req["reviewerFirst"], $reviewer->firstName) !== 0
+                    || strcasecmp($this->req["reviewerLast"], $reviewer->lastName) != 0)) {
+                $name1 = Text::name($this->req["reviewerFirst"] ?? "", $this->req["reviewerLast"] ?? "", $this->req["reviewerEmail"], NAME_EB);
+                $name2 = Text::nameo($reviewer, NAME_EB);
+                $this->rmsg("reviewerEmail", "<0>The review form was meant for {$name1}, but this review belongs to {$name2}.", self::ERROR);
+                $this->rmsg("reviewerEmail", "<5>If you want to upload the form anyway, remove the “<code class=\"nw\">==+== Reviewer</code>” line from the form.", self::INFORM);
+                return false;
+            }
+        }
+
         if ($rrow->reviewId
-            && isset($this->req["reviewerEmail"])
-            && strcasecmp($rrow->email, $this->req["reviewerEmail"]) != 0
-            && (!isset($this->req["reviewerFirst"])
-                || !isset($this->req["reviewerLast"])
-                || strcasecmp($this->req["reviewerFirst"], $rrow->firstName) != 0
-                || strcasecmp($this->req["reviewerLast"], $rrow->lastName) != 0)) {
-            $name1 = Text::name($this->req["reviewerFirst"] ?? "", $this->req["reviewerLast"] ?? "", $this->req["reviewerEmail"], NAME_EB);
-            $name2 = Text::nameo($rrow, NAME_EB);
-            $this->rmsg("reviewerEmail", "<0>The review form was meant for {$name1}, but this review belongs to {$name2}.", self::ERROR);
-            $this->rmsg("reviewerEmail", "<5>If you want to upload the form anyway, remove the “<code class=\"nw\">==+== Reviewer</code>” line from the form.", self::INFORM);
-        } else if ($rrow->reviewId
-                   && $rrow->reviewEditVersion > ($this->req["edit_version"] ?? 0)
-                   && $anydiff
-                   && $this->text !== null) {
+            && $rrow->reviewEditVersion > ($this->req["edit_version"] ?? 0)
+            && $anydiff
+            && $this->text !== null) {
             $this->rmsg($this->first_lineno, "<0>This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.", self::ERROR);
             $this->rmsg($this->first_lineno, "<5>If you want to override your online edits, add a line “<code class=\"nw\">==+== Version {$rrow->reviewEditVersion}</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::INFORM);
-        } else if ($unready) {
+            return false;
+        }
+
+        if ($unready) {
             if ($submit && $anyvalues) {
                 $what = $this->req["adoptreview"] ?? null ? "approved" : "submitted";
                 $this->rmsg("ready", $this->conf->_("<0>This review can’t be {$what} until entries are provided for all required fields."), self::WARNING);

@@ -2566,12 +2566,7 @@ class PaperInfo {
 
 
     private function ensure_full_review_name() {
-        $names = [];
-        foreach ($this->_full_review ?? [] as $rrow) {
-            if (($u = $this->conf->user_by_id($rrow->contactId, USER_SLICE))) {
-                $rrow->assign_name($u, $names);
-            }
-        }
+        ReviewInfo::check_ambiguous_names($this->_full_review ?? []);
     }
 
     /** @return ?ReviewInfo */
@@ -2648,7 +2643,7 @@ class PaperInfo {
 
     /** @return ?ReviewInfo */
     private function fresh_review_by($key, $value) {
-        $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.affiliation, ContactInfo.email, ContactInfo.roles, ContactInfo.contactTags from PaperReview join ContactInfo using (contactId) where paperId=? and $key=? order by paperId, reviewId", $this->paperId, $value);
+        $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId=? and {$key}=? order by paperId, reviewId", $this->paperId, $value);
         $rrow = ReviewInfo::fetch($result, $this, $this->conf);
         Dbl::free($result);
         return $rrow;
@@ -2723,12 +2718,7 @@ class PaperInfo {
         }
         foreach ($row_set as $prow) {
             $prow->_flags |= self::REVIEW_HAS_NAMES;
-            $names = [];
-            foreach ($prow->all_reviews() as $rrow) {
-                if (($u = $this->conf->user_by_id($rrow->contactId, USER_SLICE))) {
-                    $rrow->assign_name($u, $names);
-                }
-            }
+            ReviewInfo::check_ambiguous_names(array_values($prow->all_reviews()));
         }
     }
 
@@ -2901,7 +2891,7 @@ class PaperInfo {
         }
 
         $result = $this->conf->qe("select * from ReviewRequest where paperId?a", $row_set->paper_ids());
-        while (($ref = ReviewRequestInfo::fetch($result))) {
+        while (($ref = ReviewRequestInfo::fetch($result, $this->conf))) {
             $prow = $row_set->get($ref->paperId);
             $prow->_request_array[] = $ref;
         }
@@ -2928,7 +2918,7 @@ class PaperInfo {
         }
 
         $result = $this->conf->qe("select * from PaperReviewRefused where paperId?a", $row_set->paper_ids());
-        while (($ref = ReviewRefusalInfo::fetch($result))) {
+        while (($ref = ReviewRefusalInfo::fetch($result, $this->conf))) {
             $prow = $row_set->get($ref->paperId);
             $prow->_refusal_array[] = $ref;
         }

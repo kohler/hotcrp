@@ -3,6 +3,10 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ReviewRequestInfo {
+    /** @var Conf
+     * @readonly */
+    public $conf;
+
     /** @var int */
     public $paperId;
     /** @var string */
@@ -29,6 +33,13 @@ class ReviewRequestInfo {
     /** @var int */
     public $reviewType = REVIEW_REQUEST;
 
+    /** @var ?Contact */
+    private $_reviewer;
+
+    function __construct(Conf $conf) {
+        $this->conf = $conf;
+    }
+
     private function incorporate() {
         $this->paperId = (int) $this->paperId;
         $this->requestedBy = (int) $this->requestedBy;
@@ -42,21 +53,25 @@ class ReviewRequestInfo {
     }
 
     /** @return ?ReviewRequestInfo */
-    static function fetch($result) {
-        if (($row = $result->fetch_object("ReviewRequestInfo"))) {
+    static function fetch($result, Conf $conf) {
+        if (($row = $result->fetch_object("ReviewRequestInfo", [$conf]))) {
             $row->incorporate();
         }
         return $row;
     }
 
     /** @return Contact */
-    function make_user(Conf $conf) {
-        return Contact::make_keyed($conf, [
-            "contactId" => $this->contactId,
-            "email" => $this->email,
-            "firstName" => $this->firstName,
-            "lastName" => $this->lastName,
-            "affiliation" => $this->affiliation
-        ]);
+    function reviewer() {
+        if ($this->_reviewer === null) {
+            $this->_reviewer = $this->conf->user_by_email($this->email, USER_SLICE)
+                ?? Contact::make_keyed($this->conf, [
+                       "contactId" => $this->contactId ?? 0,
+                       "email" => $this->email,
+                       "firstName" => $this->firstName,
+                       "lastName" => $this->lastName,
+                       "affiliation" => $this->affiliation
+                   ]);
+        }
+        return $this->_reviewer;
     }
 }

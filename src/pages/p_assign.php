@@ -320,29 +320,17 @@ class Assign_Page {
         echo '">';
 
         // create contact-like for identity
-        $rrowid = null;
-        if (isset($rrow->contactId) && $rrow->contactId > 0) {
-            $rrowid = $this->conf->user_by_id($rrow->contactId, USER_SLICE);
-        } else if ($rrow->reviewType === REVIEW_REQUEST) {
-            $rrowid = $this->conf->user_by_email($rrow->email, USER_SLICE);
-        }
-        if ($rrowid === null) {
-            if ($rrow->reviewType === REVIEW_REQUEST) {
-                $rrowid = $rrow->make_user($this->conf);
-            } else {
-                $rrowid = $rrow;
-            }
-        }
+        $rrowid = $rrow->reviewer();
 
         // render name
         $actas = "";
         if (isset($rrow->contactId) && $rrow->contactId > 0) {
             $name = $this->user->reviewer_html_for($rrowid);
-            if ($rrow->contactId != $this->user->contactId
+            if ($rrow->contactId !== $this->user->contactId
                 && $this->user->privChair
                 && $this->user->allow_administer($this->prow)) {
                 $actas = ' ' . Ht::link(Ht::img("viewas.png", "[Act as]", ["title" => "Become user"]),
-                    $this->prow->reviewurl(["actas" => $rrow->email]));
+                    $this->prow->reviewurl(["actas" => $rrowid->email]));
             }
         } else {
             $name = Text::nameo_h($rrowid, NAME_P);
@@ -380,11 +368,14 @@ class Assign_Page {
             || ($rrow->reviewType !== REVIEW_REFUSAL
                 && $this->user->contactId > 0
                 && $rrow->requestedBy == $this->user->contactId)) {
-            echo Ht::form($this->conf->hoturl("=assign", ["p" => $this->prow->paperId, "action" => "managerequest", "email" => $rrow->email, "round" => $rrow->reviewRound]), ["class" => "fx"]);
+            echo Ht::form($this->conf->hoturl("=assign", [
+                    "p" => $this->prow->paperId, "action" => "managerequest",
+                    "email" => $rrowid->email, "round" => $rrow->reviewRound
+                ]), ["class" => "fx"]);
             if (!isset($rrow->contactId) || !$rrow->contactId) {
-                echo Ht::hidden("firstName", $rrow->firstName),
-                    Ht::hidden("lastName", $rrow->lastName),
-                    Ht::hidden("affiliation", $rrow->affiliation);
+                echo Ht::hidden("firstName", $rrowid->firstName),
+                    Ht::hidden("lastName", $rrowid->lastName),
+                    Ht::hidden("affiliation", $rrowid->affiliation);
             }
             $buttons = [];
             if ($reason) {

@@ -198,7 +198,7 @@ class ReviewCSV_Batch {
      * @param ReviewInfo $rrow */
     function add_review($prow, $rrow, $x) {
         $x["review"] = $rrow->unparse_ordinal_id();
-        $x["email"] = $rrow->email;
+        $x["email"] = $rrow->reviewer()->email;
         $x["round"] = $prow->conf->round_name($rrow->reviewRound);
         $x["submitted_at"] = $rrow->reviewSubmitted;
         $x["vtag"] = $rrow->reviewTime;

@@ -119,6 +119,7 @@ class Contact implements JsonSerializable {
 
     /** @var ?array<int,int> */
     private $_topic_interest_map;
+    /** @var array<string,string> */
     private $_name_for_map = [];
 
     // Roles
@@ -268,6 +269,18 @@ class Contact implements JsonSerializable {
         $u->email = $email ?? "";
         $u->set_roles_properties();
         $u->contactXid = self::$next_xid--;
+        return $u;
+    }
+
+    /** @param int $contactId
+     * @return Contact */
+    static function make_placeholder(Conf $conf, $contactId) {
+        $u = new Contact($conf);
+        $u->contactId = $contactId;
+        $u->contactXid = $contactId > 0 ? $contactId : self::$next_xid--;
+        $u->email = "unknown";
+        $u->disablement = self::DISABLEMENT_USER;
+        $u->set_roles_properties();
         return $u;
     }
 
@@ -1087,17 +1100,18 @@ class Contact implements JsonSerializable {
         return $items;
     }
 
-    /** @param ''|'t'|'u'|'r' $pfx
-     * @param ReviewInfo|Author|Contact $user */
+    /** @param ''|'t'|'r'|'ra' $pfx
+     * @param Author|Contact $user */
     private function calculate_name_for($pfx, $user) {
-        if ($pfx === "u") {
-            return $user;
+        $flags = NAME_P;
+        if (($user->nameAmbiguous ?? false) || $pfx === "ra") {
+            $flags |= NAME_E;
         }
-        $n = Text::nameo($user, NAME_P | ($user->nameAmbiguous ?? false ? NAME_E : 0));
-        if ($pfx !== "n") {
+        $n = Text::nameo($user, $flags);
+        if ($pfx !== "t") {
             $n = htmlspecialchars($n);
         }
-        if ($pfx === "r") {
+        if ($pfx === "r" || $pfx === "ra") {
             $dt = $this->conf->tags();
             if (($user->contactTags !== null
                  || $user->disablement !== 0
@@ -1116,70 +1130,53 @@ class Contact implements JsonSerializable {
         return $n;
     }
 
-    /** @param ''|'t'|'u'|'r' $pfx
-     * @param Contact|ReviewInfo|int $x
+    /** @param ''|'t'|'r'|'ra' $pfx
+     * @param ReviewInfo|Contact|int $x
      * @return mixed */
     private function name_for($pfx, $x) {
-        $cid = is_object($x) ? (int) $x->contactId : (int) $x;
-
-        $key = $pfx . $cid;
+        $uid = is_int($x) ? $x : $x->contactId;
+        $key = $pfx . $uid;
         if (isset($this->_name_for_map[$key])) {
             return $this->_name_for_map[$key];
         }
 
-        if ($cid === $this->contactId) {
-            $x = $this;
-        }
-
-        if (!is_object($x) || !isset($x->firstName)) {
-            if ($pfx === "u") {
-                $x = $this->conf->user_by_id($cid, USER_SLICE);
-            } else {
-                $x = $this->name_for("u", $cid);
+        if ($uid === $this->contactId) {
+            $u = $this;
+        } else if (is_int($x)) {
+            $u = $this->conf->user_by_id($uid, USER_SLICE);
+        } else if ($x instanceof ReviewInfo) {
+            $u = $x->reviewer();
+            if ($x->nameAmbiguous && $pfx === "r" && !$u->nameAmbiguous) {
+                return $this->name_for("ra", $u);
             }
-        }
-
-        if (!$x) {
-            return $pfx === "u" ? null : "";
         } else {
-            if ($pfx === "r"
-                && $this->can_view_user_tags()
-                && !isset($x->contactTags)
-                && ($pc = $this->conf->pc_member_by_id($cid))) {
-                $x = $pc;
-            }
-
-            $res = $this->calculate_name_for($pfx, $x);
-            $this->_name_for_map[$key] = $res;
-            return $res;
+            $u = $x;
         }
+
+        $n = $u ? $this->calculate_name_for($pfx, $u) : "";
+        $this->_name_for_map[$key] = $n;
+        return $n;
     }
 
-    /** @param Contact|ReviewInfo|int $x
+    /** @param int|Contact|ReviewInfo $x
      * @return string */
     function name_html_for($x) {
         return $this->name_for("", $x);
     }
 
-    /** @param Contact|ReviewInfo|int $x
+    /** @param int|Contact|ReviewInfo $x
      * @return string */
     function name_text_for($x) {
         return $this->name_for("t", $x);
     }
 
-    /** @param Contact|ReviewInfo|int $x
-     * @return Contact|Author */
-    function name_object_for($x) {
-        return $this->name_for("u", $x);
-    }
-
-    /** @param Contact|ReviewInfo|int $x
+    /** @param int|Contact|ReviewInfo $x
      * @return string */
     function reviewer_html_for($x) {
         return $this->name_for($this->isPC ? "r" : "", $x);
     }
 
-    /** @param Contact|ReviewInfo|int $x
+    /** @param int|Contact|ReviewInfo $x
      * @return string */
     function reviewer_text_for($x) {
         return $this->name_for("t", $x);

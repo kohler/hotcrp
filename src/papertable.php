@@ -2325,16 +2325,15 @@ class PaperTable {
         }
     }
 
-    /** @param ReviewInfo $rr
+    /** @param Contact $reviewer
      * @return string */
-    private function _review_table_actas($rr) {
-        if (!$rr->contactId || $rr->contactId === $this->user->contactId) {
+    private function _review_table_actas($reviewer) {
+        if (!$reviewer->contactId || $reviewer->contactId === $this->user->contactId) {
             return "";
-        } else {
-            return ' <a href="' . $this->conf->selfurl($this->qreq, ["actas" => $rr->email]) . '">'
-                . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($rr, NAME_P)])
-                . "</a>";
         }
+        $url = $this->conf->selfurl($this->qreq, ["actas" => $reviewer->email]);
+        $img = Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($reviewer, NAME_P)]);
+        return " <a href=\"{$url}\">{$img}</a>";
     }
 
     /** @return string */
@@ -2435,17 +2434,17 @@ class PaperTable {
             if (!$user->can_view_review_identity($prow, $rr)) {
                 $t .= ($rtype ? "<td class=\"rl\">{$rtype}</td>" : '<td></td>');
             } else {
-                if (!$showtoken || !Contact::is_anonymous_email($rr->email)) {
+                $reviewer = $rr->reviewer();
+                if (!$showtoken || !Contact::is_anonymous_email($reviewer->email)) {
                     $n = $user->reviewer_html_for($rr);
                 } else {
                     $n = "[Token " . encode_token((int) $rr->reviewToken) . "]";
                 }
                 if ($allow_actas) {
-                    $n .= $this->_review_table_actas($rr);
+                    $n .= $this->_review_table_actas($reviewer);
                 }
-                $t .= '<td class="rl"><span class="taghl" title="'
-                    . $rr->email . '">' . $n . '</span>'
-                    . ($rtype ? " $rtype" : "") . "</td>";
+                $rtypex = $rtype ? " {$rtype}" : "";
+                $t .= "<td class=\"rl\"><span class=\"taghl\" title=\"{$reviewer->email}\">{$n}</span>{$rtypex}</td>";
             }
 
             // requester

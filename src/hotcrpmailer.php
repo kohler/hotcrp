@@ -102,8 +102,8 @@ class HotCRPMailer extends Mailer {
         }
         // Infer reviewer contact from rrow/comment_row
         if (!$this->contacts["reviewer"]) {
-            if ($this->rrow && $this->rrow->email !== null) {
-                $this->contacts["reviewer"] = new Author($this->rrow);
+            if ($this->rrow) {
+                $this->contacts["reviewer"] = new Author($this->rrow->reviewer());
             } else if ($this->comment_row && $this->comment_row->email !== null) {
                 $this->contacts["reviewer"] = new Author($this->comment_row);
             }

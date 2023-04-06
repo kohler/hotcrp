@@ -3,6 +3,10 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ReviewRefusalInfo {
+    /** @var Conf
+     * @readonly */
+    public $conf;
+
     /** @var int */
     public $paperId;
     /** @var string */
@@ -39,6 +43,13 @@ class ReviewRefusalInfo {
     /** @var int */
     public $reviewType = REVIEW_REFUSAL;
 
+    /** @var ?Contact */
+    private $_reviewer;
+
+    function __construct(Conf $conf) {
+        $this->conf = $conf;
+    }
+
     private function fetch_incorporate() {
         $this->paperId = (int) $this->paperId;
         $this->contactId = (int) $this->contactId;
@@ -63,10 +74,25 @@ class ReviewRefusalInfo {
     }
 
     /** @return ?ReviewRefusalInfo */
-    static function fetch($result) {
-        if (($row = $result->fetch_object("ReviewRefusalInfo"))) {
+    static function fetch($result, Conf $conf) {
+        if (($row = $result->fetch_object("ReviewRefusalInfo", [$conf]))) {
             $row->fetch_incorporate();
         }
         return $row;
+    }
+
+    /** @return Contact */
+    function reviewer() {
+        if ($this->_reviewer === null) {
+            $this->_reviewer = $this->conf->user_by_id($this->contactId, USER_SLICE)
+                ?? Contact::make_keyed($this->conf, [
+                       "contactId" => $this->contactId,
+                       "email" => $this->email,
+                       "firstName" => $this->firstName,
+                       "lastName" => $this->lastName,
+                       "affiliation" => $this->affiliation
+                   ]);
+        }
+        return $this->_reviewer;
     }
 }

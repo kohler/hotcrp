@@ -16,7 +16,7 @@ class GetLead_ListAction extends ListAction {
         $texts = [];
         foreach ($ssel->paper_set($user) as $row) {
             if ($row->$key && $user->$can_view($row, true)) {
-                $name = $user->name_object_for($row->$key);
+                $name = $user->conf->user_by_id($row->$key, USER_SLICE);
                 $texts[] = [$row->paperId, $row->title, $name->firstName, $name->lastName, $name->email];
             }
         }

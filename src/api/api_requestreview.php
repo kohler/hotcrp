@@ -379,7 +379,7 @@ class RequestReview_API {
         if ($rrow) {
             $prow->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, refusedReviewType=?, refusedReviewId=?, reviewRound=?, data=?
                 on duplicate key update reason=coalesce(?,reason)",
-                $prow->paperId, $rrow->email, $rrow->contactId,
+                $prow->paperId, $rrow->reviewer()->email, $rrow->contactId,
                 $rrow->requestedBy, $rrow->timeRequested,
                 $user->contactId, Conf::$now, $reason, $rrow->reviewType,
                 $rrid, $rrow->reviewRound, $rrow->data_string(),
@@ -506,7 +506,7 @@ class RequestReview_API {
         }
         $result = $user->conf->qe("select * from ReviewRequest where paperId=? and email=?",
             $prow->paperId, $email);
-        while (($req = ReviewRequestInfo::fetch($result))) {
+        while (($req = ReviewRequestInfo::fetch($result, $user->conf))) {
             $xrequests[] = $req;
         }
         Dbl::free($result);
