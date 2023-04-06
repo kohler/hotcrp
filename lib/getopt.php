@@ -230,15 +230,32 @@ class Getopt {
         $od = [];
         foreach ($this->po as $t => $po) {
             $maint = $po->name;
+            if ($po->help === null
+                && $maint === $this->helpopt) {
+                $help = "Print this message";
+            } else {
+                $help = $po->help ?? "";
+            }
             if (!isset($od[$maint])) {
-                $help = $po->help;
-                if (($help ?? "") !== ""
+                if ($help !== ""
                     && $help[0] === "="
                     && preg_match('/\A=([A-Z]\S*)\s*/', $help, $m)) {
                     $argname = $m[1];
                     $help = substr($help, strlen($m[0]));
                 } else {
                     $argname = "ARG";
+                }
+                if ($help === "!"
+                    || ($subtype && !str_starts_with($help, "!{$subtype}"))
+                    || (!$subtype && str_starts_with($help, "!"))) {
+                    continue;
+                }
+                if ($subtype) {
+                    $help = substr($help, strlen($subtype) + 1);
+                    if ($help !== "" && !str_starts_with($help, " ")) {
+                        continue;
+                    }
+                    $help = ltrim($help);
                 }
                 if ($po->arg === self::ARG || $po->arg === self::MARG) {
                     $arg = " {$argname}";
@@ -249,39 +266,31 @@ class Getopt {
                 } else {
                     $arg = "";
                 }
-                if ($help === null
-                    && $this->helpopt === $maint) {
-                    $help = "Print this message";
-                }
                 $od[$maint] = [null, null, $arg, $help];
             }
-            $offset = strlen($t) === 1 ? 0 : 1;
-            $od[$maint][$offset] = $od[$maint][$offset] ?? ($offset === 0 ? "-{$t}" : "--{$t}");
+            if ($help !== "" && $od[$maint][3] === "") {
+                $od[$maint][3] = $help;
+            }
+            if (strlen($t) === 1 && $od[$maint][0] === null) {
+                $od[$maint][0] = "-{$t}";
+            } else if (strlen($t) !== 1 && $od[$maint][1] === null) {
+                $od[$maint][1] = "--{$t}";
+            }
         }
         if (!empty($od)) {
             $s[] = $subtype ? "{$subtype} options:\n" : "Options:\n";
             foreach ($od as $tx) {
-                $help = $tx[3] ?? "";
-                if ($help === "!"
-                    || ($subtype ? !str_starts_with($help, "!{$subtype}") : str_starts_with($help, "!"))) {
-                    continue;
-                }
-                if ($subtype) {
-                    $help = substr($help, strlen($subtype) + 1);
-                    if ($help !== "" && !str_starts_with($help, " ")) {
-                        continue;
-                    }
-                    $help = ltrim($help);
-                }
                 if ($tx[0] !== null && $tx[1] !== null) {
                     $oax = "  {$tx[0]}, {$tx[1]}{$tx[2]}";
                 } else {
                     $oa = $tx[0] ?? $tx[1];
                     $oax = "  {$oa}{$tx[2]}";
                 }
-                $s[] = self::format_help_line($oax, $help);
+                $s[] = self::format_help_line($oax, $tx[3]);
             }
             $s[] = "\n";
+        } else {
+            $s[] = "There are no {$subtype} options.\n\n";
         }
         return join("", $s);
     }
@@ -362,6 +371,16 @@ class Getopt {
                 $name = substr($arg, 2, ($eq ? $eq : strlen($arg)) - 2);
                 $oname = "--{$name}";
                 $po = $this->po[$name] ?? null;
+                // `--help-subtype` translates to `--help=subtype`.
+                if (!$po
+                    && $eq === false
+                    && $this->helpopt
+                    && str_starts_with($name, $this->helpopt . "-")
+                    && isset($this->po[$this->helpopt])
+                    && $this->po[$this->helpopt]->arg > 0) {
+                    $po = $this->po[$this->helpopt];
+                    $eq = 2 + strlen($this->helpopt);
+                }
                 if ($po) {
                     $name = $po->name;
                     $pot = $po->arg;
