@@ -1457,7 +1457,7 @@ function score_ticks(rf) {
             });
         },
         unparse_html: function (value, include_numeric) {
-            var k = rf.className(value), t = rf.unparse_symbol(value, split);
+            var k = rf.className(value), t = rf.unparse_symbol(value, true);
             if (!k)
                 return t;
             t = '<span class="sv '.concat(k, '">', t, '</span>');

@@ -5510,7 +5510,7 @@ Object.setPrototypeOf(Score_ReviewField.prototype, DiscreteValues_ReviewField.pr
 Score_ReviewField.prototype.unparse_symbol = function (val, split) {
     if (val === (val | 0) && this.symbols[val - 1] != null)
         return this.symbols[val - 1];
-    var rval = split ? Math.round(val * 2) / 2 - 1 : val - 1;
+    var rval = split ? Math.round(val * 2) / 2 - 1 : Math.round(val) - 1;
     if (this.default_numeric || rval < 0 || rval > this.symbols.length - 1)
         return val.toFixed(2);
     else if (rval === (rval | 0))
