@@ -68,7 +68,7 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("topic:link", "selected topics match “link”");
 
         $opts = array_filter($hth->conf->options()->normal(), function ($o) {
-            return $o->form_order() !== false && $o->search_keyword() !== false;
+            return $o->on_form() && $o->search_keyword() !== false;
         });
         usort($opts, function ($a, $b) {
             if ($a->final !== $b->final) {

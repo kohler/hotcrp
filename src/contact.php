@@ -3703,7 +3703,7 @@ class Contact implements JsonSerializable {
     /** @param PaperOption $opt
      * @return 0|1|2 */
     function edit_option_state(PaperInfo $prow, $opt) {
-        if ($opt->form_order() === false
+        if (!$opt->on_form()
             || !$opt->test_editable($prow)
             || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))
             || ($opt->final && $this->edit_paper_state($prow, true) !== 2)

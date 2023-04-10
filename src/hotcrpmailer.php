@@ -457,7 +457,7 @@ class HotCRPMailer extends Mailer {
     }
     function kw_is_paperfield($uf) {
         $uf->option = $this->conf->options()->find($uf->match_data[1]);
-        return !!$uf->option && $uf->option->can_render(FieldRender::CFMAIL);
+        return !!$uf->option && $uf->option->on_render_context(FieldRender::CFMAIL);
     }
     function kw_paperfield($args, $isbool, $uf) {
         if (!$this->permuser->can_view_option($this->row, $uf->option)

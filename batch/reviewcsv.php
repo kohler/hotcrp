@@ -158,7 +158,7 @@ class ReviewCSV_Batch {
             if (($o->type === "title"
                  || $o->type === "abstract"
                  || $o->type === "text")
-                && $o->can_render($this->fr->context)
+                && $o->on_render_context($this->fr->context)
                 && ($v = $prow->option($o))) {
                 $o->render($this->fr, $v);
                 $x["field"] = $o->title();

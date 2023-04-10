@@ -228,6 +228,7 @@ class Getopt {
             $s[] = "\n";
         }
         $od = [];
+        '@phan-var array<string,array{?string,?string,string,string}> $od';
         foreach ($this->po as $t => $po) {
             $maint = $po->name;
             if ($po->help === null
@@ -280,6 +281,7 @@ class Getopt {
         if (!empty($od)) {
             $s[] = $subtype ? "{$subtype} options:\n" : "Options:\n";
             foreach ($od as $tx) {
+                '@phan-var array{?string,?string,string,string} $tx';
                 if ($tx[0] !== null && $tx[1] !== null) {
                     $oax = "  {$tx[0]}, {$tx[1]}{$tx[2]}";
                 } else {

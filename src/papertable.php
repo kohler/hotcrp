@@ -375,8 +375,7 @@ class PaperTable {
         // other expansions
         $next_foldnum = 10;
         foreach ($this->prow->page_fields() as $o) {
-            if ($o->page_order() !== false
-                && $o->page_order() >= 1000
+            if ($o->page_order() >= 1000
                 && $o->page_order() < 5000
                 && ($o->id <= 0 || $this->user->allow_view_option($this->prow, $o))
                 && $o->page_group !== null) {
@@ -1170,8 +1169,7 @@ class PaperTable {
         $fr = new FieldRender(FieldRender::CPAGE, $this->user);
         $fr->table = $this;
         foreach ($this->prow->page_fields() as $o) {
-            if ($o->page_order() === false
-                || $o->page_order() < 1000
+            if ($o->page_order() < 1000
                 || $o->page_order() >= 5000
                 || ($vos = $this->user->view_option_state($this->prow, $o)) === 0) {
                 continue;

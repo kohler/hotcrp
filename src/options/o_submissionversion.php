@@ -20,7 +20,7 @@ class SubmissionVersion_PaperOption extends PaperOption {
         if ($fr->user->can_view_pdf($ov->prow) && $ov->value > 1) {
             $fr->title = false;
             $dname = $this->conf->_c("field", "Submission version");
-            $fr->set_html('<p class="pgsm"><small>' . $ov->prow->document(DTYPE_SUBMISSION)->link_html(htmlspecialchars($dname), DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) . "</small></p>");
+            $fr->set_html('<p class="pgsm"><small>' . $ov->prow->document(DTYPE_SUBMISSION)->link_html(htmlspecialchars($dname), DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) . '</small></p>');
         }
     }
 }

@@ -204,7 +204,7 @@ class Mail_Page {
 
         $opts = array_filter($this->conf->options()->normal(), function ($o) {
             return $o->search_keyword() !== false
-                && $o->can_render(FieldRender::CFMAIL);
+                && $o->on_render_context(FieldRender::CFMAIL);
         });
         usort($opts, function ($a, $b) {
             if ($a->final !== $b->final) {

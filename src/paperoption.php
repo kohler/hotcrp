@@ -186,7 +186,7 @@ class PaperOptionList implements IteratorAggregate {
     function checked_option_by_id($id) {
         $o = $this->option_by_id($id);
         if (!$o) {
-            throw new ErrorException("PaperOptionList::checked_option_by_id($id) failed");
+            throw new ErrorException("PaperOptionList::checked_option_by_id({$id}) failed");
         }
         return $o;
     }
@@ -277,35 +277,43 @@ class PaperOptionList implements IteratorAggregate {
     }
 
     /** @param ?string $key
-     * @return array<int,PaperOption> */
+     * @return list<PaperOption> */
     private function unsorted_field_list(PaperInfo $prow = null, $key = null) {
         $nonfinal = $prow && $prow->outcome_sign <= 0;
         $olist = [];
         foreach ($this->intrinsic_json_map() as $id => $oj) {
             if ((!$key || ($oj->$key ?? null) !== false)
                 && ($o = $this->_get_field($id, $oj, $nonfinal)))
-                $olist[$id] = $o;
+                $olist[] = $o;
         }
         foreach ($this->option_json_map() as $id => $oj) {
             if ((!$key || ($oj->$key ?? null) !== false)
                 && ($o = $this->_get_field($id, $oj, $nonfinal)))
-                $olist[$id] = $o;
+                $olist[] = $o;
         }
         return $olist;
     }
 
     /** @return array<int,PaperOption> */
     function form_fields(PaperInfo $prow = null) {
-        $olist = $this->unsorted_field_list($prow, "form_order");
-        uasort($olist, "PaperOption::form_compare");
-        return $olist;
+        $omap = [];
+        foreach ($this->unsorted_field_list($prow, "form_order") as $o) {
+            if ($o->on_form())
+                $omap[$o->id] = $o;
+        }
+        uasort($omap, "PaperOption::form_compare");
+        return $omap;
     }
 
     /** @return array<int,PaperOption> */
     function page_fields(PaperInfo $prow = null) {
-        $olist = $this->unsorted_field_list($prow, "page_order");
-        uasort($olist, "PaperOption::compare");
-        return $olist;
+        $omap = [];
+        foreach ($this->unsorted_field_list($prow, "page_order") as $o) {
+            if ($o->on_page())
+                $omap[$o->id] = $o;
+        }
+        uasort($omap, "PaperOption::compare");
+        return $omap;
     }
 
     function invalidate_options() {
@@ -599,6 +607,8 @@ class PaperOption implements JsonSerializable {
                 $this->render_contexts &= ~FieldRender::CFPAGE;
             } else if ($k === "no-form") {
                 $this->render_contexts &= ~FieldRender::CFFORM;
+            } else if ($k === "only-page") {
+                $this->render_contexts &= FieldRender::CFPAGE;
             } else if ($k === "only-form") {
                 $this->render_contexts &= FieldRender::CFFORM;
             } else if ($k === "no-list") {
@@ -656,9 +666,9 @@ class PaperOption implements JsonSerializable {
     /** @param PaperOption $a
      * @param PaperOption $b */
     static function form_compare($a, $b) {
-        $ap = $a->form_order();
+        $ap = $a->form_order;
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
-        $bp = $b->form_order();
+        $bp = $b->form_order;
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
         return $ap <=> $bp ? : (strcasecmp($a->title, $b->title) ? : $a->id <=> $b->id);
     }
@@ -777,10 +787,6 @@ class PaperOption implements JsonSerializable {
         return $this->json_key();
     }
 
-    /** @return int|float|false */
-    function form_order() {
-        return $this->form_order;
-    }
     /** @return int|float|false */
     function page_order() {
         return $this->page_order;
@@ -1153,10 +1159,18 @@ class PaperOption implements JsonSerializable {
         $prow->mark_inactive_documents();
     }
 
+    /** @return bool */
+    function on_form() {
+        return ($this->render_contexts & FieldRender::CFFORM) !== 0;
+    }
+    /** @return bool */
+    function on_page() {
+        return ($this->render_contexts & FieldRender::CFPAGE) !== 0;
+    }
     /** @param int $context
      * @return bool */
-    function can_render($context) {
-        return ($context & $this->render_contexts) !== 0;
+    function on_render_context($context) {
+        return ($this->render_contexts & $context) !== 0;
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
