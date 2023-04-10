@@ -853,7 +853,7 @@ class ReviewInfo implements JsonSerializable {
 
     /** @param int $time
      * @return ?ReviewInfo */
-    function version_before($time) {
+    function version_at($time) {
         if ($time >= $this->reviewModified) {
             return $this;
         }
@@ -866,6 +866,7 @@ class ReviewInfo implements JsonSerializable {
             if ($rhrow instanceof ReviewInfo) {
                 $rrow = $rhrow;
             } else if ($rhrow->reviewNextTime !== $rrow->reviewTime) {
+                error_log("#{$this->paperId}/{$this->reviewId}: break in review history chain @{$rhrow->reviewTime} {$rhrow->reviewNextTime} {$rrow->reviewTime}");
                 return null;
             } else {
                 $rrow = $this->_history[$i] = $rrow->apply_history($rhrow);

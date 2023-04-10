@@ -1756,7 +1756,7 @@ class ReviewValues extends MessageSet {
             } else {
                 $statusword = "";
             }
-            $user->log_activity_for($new_rrow->contactId, "Review $reviewId "
+            $user->log_activity_for($new_rrow->contactId, "Review {$reviewId} "
                 . join(", ", $log_actions)
                 . $statusword
                 . (empty($log_fields) ? "" : ": ")
@@ -1764,7 +1764,7 @@ class ReviewValues extends MessageSet {
         }
 
         if ($this->conf->sversion >= 269) {
-            $diffinfo->save_history($new_rrow, $now);
+            $diffinfo->save_history($new_rrow);
         }
 
         // if external, forgive the requester from finishing their review

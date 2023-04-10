@@ -116,8 +116,7 @@ class ReviewDiffInfo {
         return $patch;
     }
 
-    /** @param int $now */
-    function save_history(ReviewInfo $rrow, $now) {
+    function save_history(ReviewInfo $rrow) {
         assert($this->rrow->paperId === $rrow->paperId
                && ($this->rrow->reviewId === 0 || $this->rrow->reviewId === $rrow->reviewId));
         $patch = $this->make_patch(0);
@@ -131,7 +130,7 @@ class ReviewDiffInfo {
             reviewNotified=?, reviewAuthorNotified=?,
             reviewEditVersion=?,
             revdelta=?",
-            $rrow->paperId, $rrow->reviewId, $this->rrow->reviewTime, $now,
+            $rrow->paperId, $rrow->reviewId, $this->rrow->reviewTime, $rrow->reviewTime,
             $this->rrow->contactId, $this->rrow->reviewRound, $this->rrow->reviewOrdinal,
             $this->rrow->reviewType, $this->rrow->reviewBlind,
             $this->rrow->reviewModified ?? 0, $this->rrow->reviewSubmitted ?? 0,

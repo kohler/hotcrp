@@ -272,7 +272,7 @@ class ReviewCSV_Batch {
                     }
                 } else if ($xrow instanceof ReviewInfo) {
                     if ($this->before !== null) {
-                        $xrow = $xrow->version_before($this->before);
+                        $xrow = $xrow->version_at($this->before);
                     }
                     if ($this->reviews
                         && $xrow !== null
