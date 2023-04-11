@@ -146,6 +146,18 @@ class MessageItem implements JsonSerializable {
 
     /** @param ?string $msg
      * @return MessageItem */
+    static function plain($msg) {
+        return new MessageItem(null, $msg, MessageSet::PLAIN);
+    }
+
+    /** @param ?string $msg
+     * @return MessageItem */
+    static function marked_note($msg) {
+        return new MessageItem(null, $msg, MessageSet::MARKED_NOTE);
+    }
+
+    /** @param ?string $msg
+     * @return MessageItem */
     static function inform($msg) {
         return new MessageItem(null, $msg, MessageSet::INFORM);
     }
@@ -735,10 +747,14 @@ class MessageSet {
     }
 
     /** @param iterable<MessageItem> $message_list
+     * @param ?string $rest
      * @return string */
-    static function feedback_html($message_list) {
+    static function feedback_html($message_list, $rest = "") {
         $t = join("</li><li>", self::feedback_html_items($message_list));
-        return $t !== "" ? "<ul class=\"feedback-list\"><li>{$t}</li></ul>" : "";
+        if ($t === "") {
+            return "";
+        }
+        return "<ul class=\"feedback-list\"><li>{$t}</li></ul>";
     }
 
     /** @param string $field

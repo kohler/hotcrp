@@ -190,6 +190,11 @@ function field_instantiate(ee, ftypes, tname, instantiators) {
         }
         pe = npe;
     }
+    let ifprop = ee.querySelectorAll(".if-property");
+    for (let e of ifprop) {
+        if (!(ftype.properties || {})[e.getAttribute("data-property")])
+            e.remove();
+    }
 }
 
 

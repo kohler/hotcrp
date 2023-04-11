@@ -1,7 +1,8 @@
 [
     {
         "name": "checkbox", "title": "Checkbox", "order": 100,
-        "function": "+Checkbox_PaperOption"
+        "function": "+Checkbox_PaperOption",
+        "properties": {"checkbox": true}
     },
     {
         "name": "dropdown", "title": "Dropdown", "order": 200,

@@ -1813,8 +1813,15 @@ class SettingValues extends MessageSet {
             echo '</div>';
         }
         if (!($js["group_open"] ?? null)) {
-            echo $horizontal ? "</div></div>\n" : "</div>\n";
+            $this->print_close_control_group($js);
         }
+    }
+
+    /** @param ?array<string,mixed> $js
+     * @return void */
+    function print_close_control_group($js) {
+        $horizontal = !!($js["horizontal"] ?? false);
+        echo $horizontal ? "</div></div>\n" : "</div>\n";
     }
 
     /** @param string $name

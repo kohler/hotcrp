@@ -519,9 +519,19 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
     static function print_required(SettingValues $sv) {
         $sv->print_select_group("rf/\$/required", "Required", ["0" => "No", "1" => "Yes"], [
             "horizontal" => true,
-            "group_class" => "property-optional",
-            "group_attr" => ["data-property" => "required"]
+            "group_class" => "property-optional has-fold foldc",
+            "group_attr" => [
+                "data-property" => "required",
+                "data-fold-values" => 1
+            ],
+            "group_open" => true,
+            "class" => "uich js-foldup"
         ]);
+        echo '<ul class="fx mt-1 feedback-list if-property" data-property="checkbox"><li>',
+            join("", MessageSet::feedback_html_items([
+                MessageItem::marked_note("Reviewers will be required to check this field to complete their reviews.")
+            ])), '</li></ul>';
+        $sv->print_close_control_group(["horizontal" => true]);
     }
 
     static function print_display(SettingValues $sv) {

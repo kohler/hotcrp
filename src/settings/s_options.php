@@ -103,8 +103,19 @@ class Options_SettingRenderer {
             "0" => "No", "1" => "At registration", "2" => "At submission"
         ], [
             "horizontal" => true,
-            "group_attr" => ["data-property" => "required"]
+            "group_class" => "has-fold foldc",
+            "group_attr" => [
+                "data-property" => "required",
+                "data-fold-values" => "1 2"
+            ],
+            "group_open" => true,
+            "class" => "uich js-foldup"
         ]);
+        echo '<ul class="fx mt-1 feedback-list if-property" data-property="checkbox"><li>',
+            join("", MessageSet::feedback_html_items([
+                MessageItem::marked_note("Submitters will be required to check this field to complete their submissions.")
+            ])), '</li></ul>';
+        $sv->print_close_control_group(["horizontal" => true]);
     }
 
     function print_visibility(SettingValues $sv) {
