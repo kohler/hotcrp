@@ -1235,6 +1235,12 @@ fieldset {
 	border: 1px solid #9999cc;
 	border-radius: 4px;
 }
+@media screen and (min-width: 1024px) {
+fieldset {
+	width: min-content;
+	min-width: 800px;
+}
+}
 legend {
 	font-weight: 500;
 	padding-left: 4px;
@@ -1854,7 +1860,7 @@ hr.form-sep, hr.form-sep-2 {
 fieldset.form-g > legend {
 	margin-bottom: 0.35rem;
 }
-fieldset.form-g > legend + ul.feedback-list{
+fieldset.form-g > legend + ul.feedback-list {
 	margin-top: -0.35rem;
 }
 
