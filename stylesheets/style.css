@@ -749,8 +749,11 @@ label.checki {
 .relative {
 	position: relative;
 }
+.column-count-1 {
+	column-width: auto;
+	column-count: 1 !important;
+}
 .column-count-3 {
-	-webkit-column-count: 3 !important;
 	column-count: 3 !important;
 }
 
@@ -1096,20 +1099,16 @@ span.hastitle {
 	display: block;
 	padding-left: 0;
 	list-style: none;
-	-webkit-column-gap: 18px;
 	column-gap: 18px;
 }
 .topict {
-	-webkit-columns: 10rem 4;
 	columns: 10rem 4;
 	margin: 0 0 -0.2em;
 }
 .topict.topict-medium {
-	-webkit-columns: 15rem 4;
 	columns: 15rem 4;
 }
 .topict.topict-long {
-	-webkit-columns: 20rem 4;
 	columns: 20rem 4;
 }
 .topicti {
@@ -2518,15 +2517,12 @@ pre.email {
 	white-space: nowrap;
 }
 .namelist-columns {
-	-webkit-columns: 12em 4;
 	columns: 12em 4;
 	column-gap: 18px;
 }
 .ctable, .pc-ctable {
 	display: block;
-	-webkit-columns: 300px 4;
 	columns: 300px 4;
-	-webkit-column-gap: 18px;
 	column-gap: 18px;
 	margin: 0 -12px -6px;
 	padding: 0;
@@ -2536,9 +2532,7 @@ ul.ctable {
 	padding-left: 0;
 }
 .ctable-wide {
-	-webkit-columns: 450px 4;
 	columns: 450px 4;
-	-webkit-column-gap: 18px;
 	column-gap: 18px;
 	margin: 0 -12px -12px;
 }
@@ -2549,11 +2543,7 @@ ul.ctable {
 .ctable.compact {
 	margin-bottom: 0;
 }
-.ctable.onecolumn {
-	column-width: auto;
-}
 .search-ctable {
-	-webkit-column-width: 150px;
 	column-width: 150px;
 	max-width: 800px;
 	margin: 0 -6px -6px;
@@ -2593,9 +2583,7 @@ dl.ctelt {
 	margin-bottom: 0.5rem;
 }
 .assignment-ui-options {
-	-webkit-columns: 8rem 3;
 	columns: 8rem 3;
-	-webkit-column-gap: 0.5rem;
 	column-gap: 0.5rem;
 }
 .assignment-ui-choice {
@@ -3006,9 +2994,7 @@ td.pl_formula, td.plrd {
 	margin-bottom: 4px;
 }
 .pl_longtext {
-	-webkit-columns: 23rem 3;
 	columns: 23rem 3;
-	-webkit-column-gap: 18px;
 	column-gap: 18px;
 }
 .pl_longtext > p:last-child, .pl_shorttext > p:last-child {
@@ -3023,9 +3009,7 @@ th.pl-status-long {
 	margin-bottom: -0.375rem;
 }
 .potentialconflict-many {
-	-webkit-columns: 33rem 3;
 	columns: 33rem 3;
-	-webkit-column-gap: 18px;
 	column-gap: 18px;
 }
 .potentialconflict-one > ul, .potentialconflict-many > ul {
@@ -3568,27 +3552,21 @@ a.badge-white:hover {
 
 /* suggestions */
 .suggesttable {
-	-webkit-column-gap: 18px;
 	column-gap: 18px;
 }
 .suggesttable2 {
-	-webkit-columns: 100px 2;
 	columns: 100px 2;
 }
 .suggesttable3 {
-	-webkit-columns: 100px 3;
 	columns: 100px 3;
 }
 .suggesttable4 {
-	-webkit-columns: 100px 4;
 	columns: 100px 4;
 }
 .suggesttable5 {
-	-webkit-columns: 100px 5;
 	columns: 100px 5;
 }
 .suggesttable6 {
-	-webkit-columns: 100px 6;
 	columns: 100px 6;
 }
 .suggestion {
@@ -4402,7 +4380,6 @@ body {
 	border-bottom: 1px solid #f33360; /*#b2a584;*/
 }
 .pspcard {
-	-webkit-columns: 200px 2;
 	columns: 200px 2;
 }
 .pslcard-nav {

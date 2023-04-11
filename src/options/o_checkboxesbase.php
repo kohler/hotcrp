@@ -150,7 +150,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         echo '<fieldset class="papev fieldset-covert" name="', $this->formid,
             '"><ul class="ctable',
             $this->compact ? ' compact' : '',
-            count($topicset) < 7 ? ' onecolumn' : '',
+            count($topicset) < 7 ? ' column-count-1' : '',
             '">';
         $readonly = !$this->test_editable($ov->prow);
         foreach ($topicset->group_list() as $tg) {
