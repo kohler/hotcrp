@@ -32,7 +32,9 @@ body.paper {
 .paperinfo-c {
 	padding-right: 0;
 }
-.settings-rf-view, .settings-sf-view {
+.settings-sf, .settings-rf,
+.settings-sf-view, .settings-rf-view {
+	width: initial;
 	min-width: initial;
 }
 }
@@ -215,6 +217,10 @@ td.pl.pl_title, td.pl.pl_text {
 .rfd1, .rfd2 {
 	max-width: none;
 }
+.settings-sf-view, .settings-rf-view,
+.settings-sf-edit, .settings-rf-edit {
+	padding: 6px 8px;
+}
 .settings-json-panels {
 	grid-template-columns: 100% 0%;
 }
@@ -223,6 +229,12 @@ td.pl.pl_title, td.pl.pl_text {
 }
 .settings-json-panel-info {
 	display: none;
+}
+.feedback, .feedback-list, .field-d,
+.main-column p, .main-column dl, .main-column pre.sample,
+.main-column ul, .main-column ol,
+.w-text {
+	max-width: initial;
 }
 }
 

@@ -750,7 +750,7 @@ label.checki {
 	position: relative;
 }
 .column-count-1 {
-	column-width: auto;
+	column-width: auto !important;
 	column-count: 1 !important;
 }
 .column-count-3 {
@@ -1684,7 +1684,7 @@ th.settings-simplehead {
 	border-radius: 5px;
 	margin-top: 1.5em;
 	margin-bottom: 1.5em;
-	width: fit-content;
+	width: min-content;
 	min-width: 800px;
 	transition: opacity 0.5s;
 	background-color: white;
@@ -2530,6 +2530,9 @@ pre.email {
 }
 ul.ctable {
 	padding-left: 0;
+}
+.main-column ul.ctable {
+	max-width: 732px;
 }
 .ctable-wide {
 	columns: 450px 4;
