@@ -213,7 +213,7 @@ class Completion_API {
     /** @param Contact $user
      * @param ?PaperInfo $prow
      * @param int $cvis
-     * @return list<array<Contact|Author>> */
+     * @return list<list<Contact|Author>> */
     static function mention_lists($user, $prow, $cvis) {
         $lists = [];
         if ($prow && $user->can_view_review_assignment($prow, null)) {
@@ -239,9 +239,7 @@ class Completion_API {
                     && $rrow->contactId !== $user->contactId
                     && ($cvis >= CommentInfo::CT_REVIEWER || $rrow->reviewType >= REVIEW_PC)
                     && !$rrow->reviewer()->disablement) {
-                    $au = new Author($rrow);
-                    $au->contactId = $rrow->contactId;
-                    $rlist[] = $au;
+                    $rlist[] = $rrow->reviewer();
                 }
             }
             // XXX todo: list previous commentees in privileged position?
