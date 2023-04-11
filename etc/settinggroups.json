@@ -438,7 +438,8 @@
         "short_title": "Advanced", "title": "JSON site configuration",
         "description": "<0>Full site configuration in JSON.",
         "title_help_group": "jsonsettings",
-        "print_function": "JSON_SettingParser::print"
+        "print_function": "JSON_SettingParser::print",
+        "settings": ["json_settings"]
     },
     {
         "name": "__crosscheck/json", "order": -1000,

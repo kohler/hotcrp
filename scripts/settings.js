@@ -2569,9 +2569,12 @@ function make_json_validate() {
 
         // display tooltip
         var lineel = mainel.childNodes[lineno];
-        if (lineel && lineel.hasAttribute("data-highlight-tips")) {
+        if (lineel && lineel.nodeType === 1 && lineel.hasAttribute("data-highlight-tips")) {
             set_msgbub(lineel, sel);
         } else {
+            if (lineel && lineel.nodeType !== 1) {
+                log_jserror("bad lineel in json settings [".concat(lineel, "///", lineel.nodeType === 3 ? lineel.data + "///" : "", lineno, "/", mainel.childNodes.length, "]"));
+            }
             clear_msgbub();
         }
     }
