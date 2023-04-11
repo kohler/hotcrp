@@ -3724,7 +3724,7 @@ handle_ui.on("foldtoggle.js-fold-focus", function (evt) {
         }
     } else if (document.activeElement
                && this.contains(document.activeElement)
-               && document.activeElement.closest(fx)) {
+               && document.activeElement.closest(".fx" + ns)) {
         focus_within(this, ":not(.fx".concat(ns, " *)"), true);
     }
     evt.which.nofocus = true;
