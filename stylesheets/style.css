@@ -2549,6 +2549,9 @@ ul.ctable {
 .ctable.compact {
 	margin-bottom: 0;
 }
+.ctable.onecolumn {
+	column-width: auto;
+}
 .search-ctable {
 	-webkit-column-width: 150px;
 	column-width: 150px;

@@ -146,9 +146,12 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
             "id" => $this->readable_formid(),
             "context_args" => [$this->min_count, $this->max_count]
         ]);
-        echo '<fieldset class="papev fieldset-covert" name="', $this->formid,
-            '"><ul class="ctable', $this->compact ? ' compact' : '', '">';
         $topicset = $this->topic_set();
+        echo '<fieldset class="papev fieldset-covert" name="', $this->formid,
+            '"><ul class="ctable',
+            $this->compact ? ' compact' : '',
+            count($topicset) < 7 ? ' onecolumn' : '',
+            '">';
         $readonly = !$this->test_editable($ov->prow);
         foreach ($topicset->group_list() as $tg) {
             $arg = ["class" => "uic js-range-click topic-entry", "id" => false,
