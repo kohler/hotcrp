@@ -246,7 +246,12 @@ class Review_SettingParser extends SettingParser {
 
 
         echo '<hr class="form-sep">';
-        $sv->print_checkbox("comment_visibility_anonymous", "PC can see comments when reviews are anonymous", ["class" => "uich js-foldup", "data-fold-target" => "2", "hint_class" => "fx2"], "Commenter names are hidden when reviews are anonymous.");
+        $sv->print_checkbox("comment_visibility_anonymous", "PC can see comments when reviews are anonymous", [
+            "class" => "uich js-foldup",
+            "data-fold-target" => "2",
+            "hint_class" => "fx2",
+            "hint" => "Commenter names are hidden when reviews are anonymous."
+        ]);
         echo "</div>\n";
     }
 

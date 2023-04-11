@@ -4,9 +4,15 @@
 
 class Basics_SettingParser extends SettingParser {
     static function print_names(SettingValues $sv) {
-        $sv->print_entry_group("conference_abbreviation", null, null, "Examples: “HotOS XIV”, “NSDI '14”");
-        $sv->print_entry_group("conference_name", null, null, "Example: “14th Workshop on Hot Topics in Operating Systems”");
-        $sv->print_entry_group("conference_url", null, null, "Example: “https://yourconference.org/”");
+        $sv->print_entry_group("conference_abbreviation", null, [
+            "hint" => "Examples: “HotOS XIV”, “NSDI '14”"
+        ]);
+        $sv->print_entry_group("conference_name", null, [
+            "hint" => "Example: “14th Workshop on Hot Topics in Operating Systems”"
+        ]);
+        $sv->print_entry_group("conference_url", null, [
+            "hint" => "Example: “https://yourconference.org/”"
+        ]);
     }
 
     static function print_email(SettingValues $sv) {

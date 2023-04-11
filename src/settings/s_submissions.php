@@ -12,8 +12,12 @@ class Submissions_SettingParser extends SettingParser {
         if ($main_sr->inferred_register || $main_sr->register === $main_sr->submit) {
             $sv->set_oldv("submission_registration", null);
         }
-        $sv->print_entry_group("submission_registration", "Registration deadline", null, "New submissions can be started until this deadline.");
-        $sv->print_entry_group("submission_done", "Submission deadline", null, "Submissions must be complete by this deadline.");
+        $sv->print_entry_group("submission_registration", "Registration deadline", [
+            "hint" => "New submissions can be started until this deadline."
+        ]);
+        $sv->print_entry_group("submission_done", "Submission deadline", [
+            "hint" => "Submissions must be complete by this deadline."
+        ]);
         $sv->print_entry_group("submission_grace", "Grace period");
     }
     static function print_updates(SettingValues $sv) {
@@ -29,7 +33,9 @@ class Submissions_SettingParser extends SettingParser {
             '<strong>Submission anonymity:</strong> Are author names hidden from reviewers?');
     }
     static function print_pcseeall(SettingValues $sv) {
-        $sv->print_checkbox("draft_submission_early_visibility", "PC can view incomplete submissions before submission deadline", null, "Check this box to collect review preferences before the submission deadline. After the submission deadline, PC members can only see completed submissions.");
+        $sv->print_checkbox("draft_submission_early_visibility", "PC can view incomplete submissions before submission deadline",[
+            "hint" => "Check this box to collect review preferences before the submission deadline. After the submission deadline, PC members can only see completed submissions."
+        ]);
     }
     static function print_pcseeallpdf(SettingValues $sv) {
         $sv->print_checkbox("submitted_document_early_visibility", "PC can view submitted PDFs before submission deadline");

@@ -7,7 +7,9 @@ class SiteContact_SettingParser extends SettingParser {
 
     static function print_site_contact(SettingValues $sv) {
         $sv->print_entry_group("site_contact_name", null);
-        $sv->print_entry_group("site_contact_email", null, null, "The site contact is the contact point for users if something goes wrong. It defaults to the chair.");
+        $sv->print_entry_group("site_contact_email", null, [
+            "hint" => "The site contact is the contact point for users if something goes wrong. It defaults to the chair."
+        ]);
     }
 
     /** @param string $v
