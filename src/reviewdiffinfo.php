@@ -25,8 +25,7 @@ class ReviewDiffInfo {
         $this->rrow = $rrow;
     }
 
-    /** @param ReviewField $f
-     * @param null|int|string $newv */
+    /** @param ReviewField $f */
     function mark_field($f) {
         $this->_fields[] = $f;
         $this->mark_view_score($f->view_score);
@@ -113,11 +112,13 @@ class ReviewDiffInfo {
         return $patch;
     }
 
-    function save_history() {
+    /** @param ?callable(?string,string|int|null...):void $stager */
+    function save_history($stager = null) {
         assert($this->rrow->reviewId > 0);
         $patch = $this->make_patch(0);
         $rrow = $this->rrow;
-        $rrow->conf->qe("insert into PaperReviewHistory set
+        $xstager = $stager ?? [$rrow->conf, "qe"];
+        $result = $xstager("insert into PaperReviewHistory set
             paperId=?, reviewId=?, reviewTime=?, reviewNextTime=?,
             contactId=?, reviewRound=?, reviewOrdinal=?, reviewType=?, reviewBlind=?,
             reviewModified=?, reviewSubmitted=?, timeDisplayed=?, timeApprovalRequested=?,
@@ -140,6 +141,7 @@ class ReviewDiffInfo {
               $rrow->base_prop("reviewAuthorNotified") ?? 0,
             $rrow->base_prop("reviewEditVersion") ?? 0,
             empty($patch) ? null : json_encode_db($patch));
+        $result && $result->close();
     }
 
     /** @param array $patch

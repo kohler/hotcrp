@@ -320,6 +320,7 @@ class ReviewForm_SettingParser extends SettingParser {
         $newv = json_encode_db($this->_new_form->export_storage_json());
         if ($sv->update("review_form", $newv)) {
             $sv->request_write_lock("PaperReview");
+            $sv->request_write_lock("PaperReviewHistory");
             $sv->request_store_value($si);
             $sv->mark_invalidate_caches(["rf" => true]);
             // don’t claim there’s a diff if there’s no real diff, just a format change
@@ -357,85 +358,40 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
 
-    private function _clear_existing_fields($fields, Conf $conf) {
-        // clear fields from main storage
-        $clear_jfields = [];
-        foreach ($fields as $f) {
+    /** @param list<array{ReviewField,?array<int,int>}> $changes */
+    private function _change_existing_fields($changes, Conf $conf) {
+        // find affected reviews
+        $interests = [];
+        foreach ($changes as $ch) {
+            $f = $ch[0];
             if ($f->main_storage) {
-                assert($f->is_sfield);
-                $conf->qe("update PaperReview set {$f->main_storage}=0");
-            }
-            if ($f->json_storage) {
-                $clear_jfields[] = $f;
-            }
-        }
-        if (empty($clear_jfields)) {
-            return;
-        }
-
-        // clear fields from json storage
-        $clearf = Dbl::make_multi_qe_stager($conf->dblink);
-        $result = $conf->qe("select paperId, reviewId, sfields, tfields from PaperReview where sfields is not null or tfields is not null");
-        while (($rrow = $result->fetch_object())) {
-            $sfields = json_decode($rrow->sfields ?? "{}", true) ?? [];
-            $tfields = json_decode($rrow->tfields ?? "{}", true) ?? [];
-            $update = 0;
-            foreach ($clear_jfields as $f) {
-                if ($f->is_sfield && isset($sfields[$f->json_storage])) {
-                    unset($sfields[$f->json_storage]);
-                    $update |= 1;
-                } else if (!$f->is_sfield && isset($tfields[$f->json_storage])) {
-                    unset($tfields[$f->json_storage]);
-                    $update |= 2;
-                }
-            }
-            $stext = empty($sfields) ? null : json_encode_db($sfields);
-            $ttext = empty($tfields) ? null : json_encode_db($tfields);
-            if ($update === 3) {
-                $clearf("update PaperReview set sfields=?, tfields=? where paperId=? and reviewId=?", $stext, $ttext, $rrow->paperId, $rrow->reviewId);
-            } else if ($update === 2) {
-                $clearf("update PaperReview set tfields=? where paperId=? and reviewId=?", $ttext, $rrow->paperId, $rrow->reviewId);
-            } else if ($update === 1) {
-                $clearf("update PaperReview set sfields=? where paperId=? and reviewId=?", $stext, $rrow->paperId, $rrow->reviewId);
-            }
-        }
-        $clearf(null);
-    }
-
-
-    /** @param callable(int):int $remapf */
-    static function renumber_values(Discrete_ReviewField $f, $remapf) {
-        $renumf = Dbl::make_multi_qe_stager($f->conf->dblink);
-        if ($f->main_storage) {
-            $result = $f->conf->qe("select paperId, reviewId, {$f->main_storage} from PaperReview where {$f->main_storage}>0");
-        } else {
-            $result = $f->conf->qe("select paperId, reviewId, sfields from PaperReview where sfields is not null");
-        }
-        $fvmain = [];
-        while (($rrow = $result->fetch_object())) {
-            if ($f->main_storage) {
-                $fval = intval($rrow->{$f->main_storage});
-                if ($fval > 0 && ($nfval = $remapf($fval)) !== $fval) {
-                    $renumf("update PaperReview set {$f->main_storage}=? where paperId=? and reviewId=? and {$f->main_storage}=?",
-                        $nfval ?? 0, $rrow->paperId, $rrow->reviewId, $fval);
-                }
+                $interests[$f->main_storage] = "{$f->main_storage}!=0";
+            } else if ($f->is_sfield) {
+                $interests["sfields"] = "sfields is not null";
             } else {
-                $sfields = json_decode($rrow->sfields ?? "{}", true);
-                $fval = $sfields[$f->json_storage] ?? null;
-                if ($fval !== null && ($nfval = $remapf($fval)) !== $fval) {
-                    if ($nfval !== null) {
-                        $sfields[$f->json_storage] = $nfval;
-                    } else {
-                        unset($sfields[$f->json_storage]);
-                    }
-                    $nsfields = empty($sfields) ? null : json_encode_db($sfields);
-                    $renumf("update PaperReview set sfields=? where paperId=? and reviewId=? and sfields?e",
-                        $nsfields, $rrow->paperId, $rrow->reviewId, $rrow->sfields);
-                }
+                $interests["tfields"] = "tfields is not null";
             }
         }
-        Dbl::free($result);
-        $renumf(null);
+
+        $stager = Dbl::make_multi_qe_stager($conf->dblink);
+        $result = $conf->qe("select * from PaperReview where " . join(" or ", $interests));
+        while (($rrow = ReviewInfo::fetch($result, null, $conf))) {
+            foreach ($changes as $ch) {
+                list($f, $renumberer) = $ch;
+                // must use `finfoval` because removed fields are not exposed
+                if (($fval = $rrow->finfoval($f)) !== null) {
+                    $nfval = $renumberer !== null ? $renumberer[$fval] ?? $fval : null;
+                    if ($nfval !== $fval) {
+                        $rrow->set_fval_prop($f, $nfval, true);
+                    }
+                }
+            }
+            if ($rrow->prop_changed()) {
+                $rrow->save_prop($stager);
+                $rrow->prop_diff()->save_history($stager);
+            }
+        }
+        $stager(null);
     }
 
     static private function _compute_review_ordinals(Conf $conf) {
@@ -467,18 +423,17 @@ class ReviewForm_SettingParser extends SettingParser {
     function store_value(Si $si, SettingValues $sv) {
         $oform = $sv->conf->review_form();
         $nform = $this->_new_form;
-        $clear_fields = [];
-        $renumber_choices = [];
+        $changes = [];
         $reset_wordcount = $assign_ordinal = $reset_view_score = false;
         foreach ($nform->all_fields() as $nf) {
             assert($nf->order > 0);
             $of = $oform->fmap[$nf->short_id] ?? null;
             if (!$of || !$of->order) {
-                $clear_fields[] = $nf;
+                $changes[] = [$nf, null];
             } else if ($nf instanceof Discrete_ReviewField) {
                 assert($of instanceof Discrete_ReviewField);
                 if (!empty($this->_score_renumberings[$nf->short_id])) {
-                    $renumber_choices[] = [$nf, $this->_score_renumberings[$nf->short_id]];
+                    $changes[] = [$nf, $this->_score_renumberings[$nf->short_id]];
                 }
             }
             if ($of && $of->include_word_count() !== $nf->include_word_count()) {
@@ -495,12 +450,8 @@ class ReviewForm_SettingParser extends SettingParser {
             }
         }
         // reset existing review values
-        if (!empty($clear_fields)) {
-            $this->_clear_existing_fields($clear_fields, $sv->conf);
-        }
-        // renumber existing review scores
-        foreach ($renumber_choices as $renumx) {
-            $renumx[0]->renumber_values($renumx[1]);
+        if (!empty($changes)) {
+            $this->_change_existing_fields($changes, $sv->conf);
         }
         // assign review ordinals if necessary
         if ($assign_ordinal) {

@@ -1513,11 +1513,6 @@ class ReviewValues extends MessageSet {
 
         // get the current time
         $now = max(time(), $rrow->reviewModified + 1);
-        $vtag = $rrow->reviewTime
-            ? $rrow->reviewTime + mt_rand(1, 10000)
-            : mt_rand(2000, 1000000);
-        assert(!$rrow->prop_changed("reviewTime"));
-        $rrow->set_prop("reviewTime", $vtag);
 
         if (($newstatus >= ReviewInfo::RS_COMPLETED)
             !== ($oldstatus >= ReviewInfo::RS_COMPLETED)) {

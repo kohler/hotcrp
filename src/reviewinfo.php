@@ -686,38 +686,53 @@ class ReviewInfo implements JsonSerializable {
             && (!$prop || array_key_exists($prop, $this->_diff->_old_prop));
     }
 
+    const SAVE_PROP_STAGED = 2;
     const SAVE_PROP_OK = 1;
     const SAVE_PROP_EMPTY = 0;
     const SAVE_PROP_CONFLICT = -1;
     const SAVE_PROP_ERROR = -2;
 
-    /** @return -2|-1|0|1 */
-    function save_prop() {
+    /** @param ?callable(?string,string|int|null...):void $stager
+     * @return -2|-1|0|1|2 */
+    function save_prop($stager = null) {
+        // do not save if no changes
         if ($this->reviewId > 0 && !$this->prop_changed()) {
             return self::SAVE_PROP_EMPTY;
         }
+
+        // update reviewTime, set required fields
         $this->_diff = $this->_diff ?? new ReviewDiffInfo($this);
+        assert(!isset($this->_diff->_old_prop["reviewTime"]));
         $this->_seal_fstorage();
         if ($this->reviewId <= 0) {
             foreach (["paperId", "contactId", "reviewType", "requestedBy", "reviewRound"] as $k) {
                 assert(!array_key_exists($k, $this->_diff->_old_prop));
                 $this->_diff->_old_prop[$k] = $this->$k;
             }
+            $this->set_prop("reviewTime", mt_rand(2000, 1000000));
+        } else {
+            $this->set_prop("reviewTime", $this->reviewTime + mt_rand(1, 10000));
         }
+
+        // construct query
         $qf = $qv = [];
         foreach ($this->_diff->_old_prop as $prop => $v) {
             $qf[] = "{$prop}=?";
             $qv[] = $this->$prop;
         }
         //error_log("PaperReview {$this->paperId}/{$this->reviewId} " . json_encode($this->_diff->_old_prop));
+        $xstager = $stager ?? [$this->conf, "qe"];
         if ($this->reviewId <= 0) {
-            $result = $this->conf->qe_apply("insert into PaperReview set " . join(", ", $qf), $qv);
+            $result = $xstager("insert into PaperReview set " . join(", ", $qf), ...$qv);
         } else {
             array_push($qv, $this->paperId, $this->reviewId, $this->base_prop("reviewTime"));
-            $result = $this->conf->qe_apply("update PaperReview set " . join(", ", $qf)
-                . " where paperId=? and reviewId=? and reviewTime=?", $qv);
+            $result = $xstager("update PaperReview set " . join(", ", $qf)
+                . " where paperId=? and reviewId=? and reviewTime=?", ...$qv);
         }
-        if ($result->is_error()) {
+        if ($stager) {
+            $this->reviewStatus = $this->compute_review_status();
+            $r = self::SAVE_PROP_STAGED;
+        } else if ($result->is_error()) {
             $r = self::SAVE_PROP_ERROR;
         } else if ($result->affected_rows === 0) {
             $r = self::SAVE_PROP_CONFLICT;
@@ -728,7 +743,7 @@ class ReviewInfo implements JsonSerializable {
             $this->reviewStatus = $this->compute_review_status();
             $r = self::SAVE_PROP_OK;
         }
-        $result->close();
+        $result && $result->close();
         return $r;
     }
 
