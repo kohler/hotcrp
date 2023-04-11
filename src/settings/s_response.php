@@ -160,8 +160,10 @@ class Response_SettingParser extends SettingParser {
         }
         $sv->print_entry_group("response/{$this->ctr}/name", "Response name", [
             "class" => "uii js-settings-response-name want-delete-marker",
-            "horizontal" => true, "control_after" => $t
-        ], is_int($this->ctr) && $this->ctr > 1 ? null : "Use no name or a short name like ‘Rebuttal’.");
+            "horizontal" => true,
+            "control_after" => $t,
+            "hint" => is_int($this->ctr) && $this->ctr > 1 ? null : "Use no name or a short name like ‘Rebuttal’."
+        ]);
     }
 
     function print_deadline(SettingValues $sv) {
@@ -175,7 +177,10 @@ class Response_SettingParser extends SettingParser {
     }
 
     function print_wordlimit(SettingValues $sv) {
-        $sv->print_entry_group("response/{$this->ctr}/wordlimit", "Word limit", ["horizontal" => true], is_int($this->ctr) && $this->ctr > 1 ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
+        $sv->print_entry_group("response/{$this->ctr}/wordlimit", "Word limit", [
+            "horizontal" => true,
+            "hint" => is_int($this->ctr) && $this->ctr > 1 ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit."
+        ]);
     }
 
     function print_instructions(SettingValues $sv) {

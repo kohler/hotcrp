@@ -1603,8 +1603,9 @@ class SettingValues extends MessageSet {
             }
         }
         foreach ($js ?? [] as $k => $v) {
-            if (strlen($k) < 10
-                || ($k !== "horizontal" && strpos($k, "_") === false))
+            if (strlen($k) >= 10
+                ? $k !== "horizontal" && strpos($k, "_") === false
+                : $k !== "hint")
                 $x[$k] = $v;
         }
         if ($this->has_problem_at($name)) {
@@ -1663,12 +1664,17 @@ class SettingValues extends MessageSet {
      * @param string $hint
      * @return void */
     function print_checkbox($name, $text, $js = null, $hint = "") {
+        // XXX $hint deprecated
+        if ($hint !== "") {
+            error_log(debug_string_backtrace());
+        }
         $js = $js ?? [];
         $this->print_group_open($name, "checki", $js + ["no_control_class" => true]);
         echo '<span class="checkc">';
         $this->print_checkbox_only($name, $js);
         echo '</span>', $this->label($name, $text, ["for" => $name, "class" => $js["label_class"] ?? null]);
         $this->print_feedback_at($name);
+        $hint = (string) $hint === "" ? $js["hint"] ?? "" : $hint;
         if ($hint) {
             echo '<div class="', Ht::add_tokens("settings-ap f-hx", $js["hint_class"] ?? null), '">', $hint, '</div>';
         }
@@ -1770,10 +1776,11 @@ class SettingValues extends MessageSet {
     /** @param string|Si $id
      * @param string $description
      * @param string $control
-     * @param ?array<string,mixed> $js
-     * @param string $hint */
-    function print_control_group($id, $description, $control,
-                                 $js = null, $hint = "") {
+     * @param ?array<string,mixed> $js */
+    function print_control_group($id, $description, $control, $js = null, $hint = "") {
+        if ($hint !== "") {
+            error_log(debug_string_backtrace());
+        }
         $si = is_string($id) ? $this->si($id) : $id;
         $horizontal = !!($js["horizontal"] ?? false);
         $this->print_group_open($si->name, $horizontal ? "entryi" : "f-i", $js);
@@ -1793,7 +1800,8 @@ class SettingValues extends MessageSet {
         } else {
             $this->print_feedback_at($si->name);
         }
-        echo $control, ($js["control_after"] ?? "");
+        echo $control, $js["control_after"] ?? "";
+        $hint = (string) $hint === "" ? $js["hint"] ?? "" : $hint;
         $thint = $this->type_hint($si->type);
         if ($hint || $thint) {
             echo '<div class="f-h">';
@@ -1811,12 +1819,11 @@ class SettingValues extends MessageSet {
 
     /** @param string $name
      * @param ?array<string,mixed> $js
-     * @param string $hint
      * @return void */
     function print_entry_group($name, $description, $js = null, $hint = "") {
+        // XXX $hint deprecated
         $this->print_control_group($name, $description,
-            $this->entry($name, $js),
-            $js, $hint);
+            $this->entry($name, $js), $js, $hint);
     }
 
     /** @param string $name
@@ -1832,12 +1839,11 @@ class SettingValues extends MessageSet {
     /** @param string $name
      * @param string $description
      * @param array $values
-     * @param ?array<string,mixed> $js
-     * @param string $hint */
+     * @param ?array<string,mixed> $js */
     function print_select_group($name, $description, $values, $js = null, $hint = "") {
+        // XXX $hint deprecated
         $this->print_control_group($name, $description,
-            $this->select($name, $values, $js),
-            $js, $hint);
+            $this->select($name, $values, $js), $js, $hint);
     }
 
     /** @param string $name
@@ -1866,12 +1872,11 @@ class SettingValues extends MessageSet {
 
     /** @param string $name
      * @param ?array<string,mixed> $js
-     * @param string $hint
      * @return void */
     function print_textarea_group($name, $description, $js = null, $hint = "") {
+        // XXX $hint deprecated
         $this->print_control_group($name, $description,
-            $this->textarea($name, $js),
-            $js, $hint);
+            $this->textarea($name, $js), $js, $hint);
     }
 
     /** @param string $name

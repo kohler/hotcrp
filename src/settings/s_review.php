@@ -190,10 +190,10 @@ class Review_SettingParser extends SettingParser {
             $n = $sv->vstr("review/{$ctr}/name");
             $sel[$ctr] = $n === "" ? "unnamed" : $n;
         }
-        $sv->print_select_group("review_default_round_index", null,
-            $sel,
-            ["class" => "settings-review-round-selector"],
-            "New review assignments will use this round unless otherwise specified.");
+        $sv->print_select_group("review_default_round_index", null, $sel, [
+                "class" => "settings-review-round-selector",
+                "hint" => "New review assignments will use this round unless otherwise specified."
+            ]);
         $sv->print_select_group("review_default_external_round_index", null,
             [0 => "same as PC"] + $sel,
             ["class" => "settings-review-round-selector"]);

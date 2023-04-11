@@ -46,12 +46,27 @@ class Banal_SettingParser extends SettingParser {
             Ht::hidden("format/{$ctr}/id", $id);
         $sv->print_checkbox("format/{$ctr}/active", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "form-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
         echo '<div class="f-mcol mt-3 fx"><div class="flex-grow-0">';
-        $sv->print_entry_group("format/{$ctr}/papersize", "Paper size", ["horizontal" => true, "readonly" => !$editable], "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>");
-        $sv->print_entry_group("format/{$ctr}/textblock", "Text block", ["horizontal" => true, "readonly" => !$editable], "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
-        $sv->print_entry_group("format/{$ctr}/columns", "Columns", ["horizontal" => true, "readonly" => !$editable]);
+        $sv->print_entry_group("format/{$ctr}/papersize", "Paper size", [
+            "horizontal" => true,
+            "readonly" => !$editable,
+            "hint" => "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>"
+        ]);
+        $sv->print_entry_group("format/{$ctr}/textblock", "Text block", [
+            "horizontal" => true,
+            "readonly" => !$editable,
+            "hint" => "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"
+        ]);
+        $sv->print_entry_group("format/{$ctr}/columns", "Columns", [
+            "horizontal" => true,
+            "readonly" => !$editable
+        ]);
         echo '</div>';
         echo '<div class="flex-grow-0">';
-        $sv->print_entry_group("format/{$ctr}/pagelimit", "Page limit", ["horizontal" => true, "class" => "uii uich js-settings-banal-pagelimit", "readonly" => !$editable]);
+        $sv->print_entry_group("format/{$ctr}/pagelimit", "Page limit", [
+            "horizontal" => true,
+            "class" => "uii uich js-settings-banal-pagelimit",
+            "readonly" => !$editable
+        ]);
         echo '<div class="entryi fx2"><label></label><div class="entry settings-banal-unlimitedref">';
         $sv->print_checkbox("format/{$ctr}/unlimitedref", "Unlimited reference pages", ["disabled" => !$uropen || !$editable, "label_class" => $uropen ? null : "dim"]);
         echo '</div></div>';
