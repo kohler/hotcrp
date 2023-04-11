@@ -661,8 +661,11 @@ abstract class Discrete_ReviewField extends ReviewField {
      * @return string */
     abstract function unparse_graph($sci, $style);
 
-    /** @param array<int,int> $fmap */
-    function renumber_values($fmap) {
+    /** @param array<int,int> $fmap
+     * @param int $fval
+     * @return ?int */
+    function renumber_value($fmap, $fval) {
+        return $fval;
     }
 }
 
@@ -1311,10 +1314,8 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
         return Discrete_ReviewFieldSearch::parse_score($sword, $this, $rsm, $srch);
     }
 
-    function renumber_values($fmap) {
-        ReviewForm_SettingParser::renumber_values($this, function ($v) use ($fmap) {
-            return $fmap[$v] ?? $v;
-        });
+    function renumber_value($fmap, $fval) {
+        return $fmap[$fval] ?? $fval;
     }
 }
 

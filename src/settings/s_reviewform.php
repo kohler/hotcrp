@@ -377,10 +377,15 @@ class ReviewForm_SettingParser extends SettingParser {
         $result = $conf->qe("select * from PaperReview where " . join(" or ", $interests));
         while (($rrow = ReviewInfo::fetch($result, null, $conf))) {
             foreach ($changes as $ch) {
-                list($f, $renumberer) = $ch;
+                list($f, $valmap) = $ch;
                 // must use `finfoval` because removed fields are not exposed
                 if (($fval = $rrow->finfoval($f)) !== null) {
-                    $nfval = $renumberer !== null ? $renumberer[$fval] ?? $fval : null;
+                    if ($valmap !== null) {
+                        '@phan-var-force Discrete_ReviewField $f';
+                        $nfval = $f->renumber_value($valmap, $fval);
+                    } else {
+                        $nfval = null;
+                    }
                     if ($nfval !== $fval) {
                         $rrow->set_fval_prop($f, $nfval, true);
                     }
