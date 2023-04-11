@@ -100,7 +100,11 @@ class ReviewVisibility_SettingParser extends SettingParser {
         } else {
             $hint = "Visible reviewer comments will be identified by “Reviewer A”, “Reviewer B”, etc.";
         }
-        $sv->print_checkbox("comment_allow_author", "Authors can <strong>exchange comments</strong> with reviewers", ["class" => "uich js-foldup", "hint_class" => "fx"], $hint);
+        $sv->print_checkbox("comment_allow_author", "Authors can <strong>exchange comments</strong> with reviewers", [
+            "class" => "uich js-foldup",
+            "hint_class" => "fx",
+            "hint" => $hint
+        ]);
         echo "</div>\n";
     }
 
