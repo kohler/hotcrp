@@ -65,10 +65,6 @@ class ReviewInfo implements JsonSerializable {
     private $tfields;
     /** @var ?string */
     private $sfields;
-    /** @var ?array */
-    private $_tfields;
-    /** @var ?array */
-    private $_sfields;
     /** @var ?string */
     private $data;
     /** @var ?object */
@@ -102,10 +98,16 @@ class ReviewInfo implements JsonSerializable {
     // other
     /** @var ?list<MessageItem> */
     public $message_list;
+    /** @var ?array */
+    private $_sfields;
+    /** @var ?array */
+    private $_tfields;
     /** @var ?list<ReviewHistoryInfo|ReviewInfo> */
     private $_history;
     /** @var ?Contact */
     private $_reviewer;
+    /** @var ?ReviewDiffInfo */
+    private $_diff;
 
     const VIEWSCORE_RECOMPUTE = -100;
 
@@ -219,7 +221,7 @@ class ReviewInfo implements JsonSerializable {
         return $rrow;
     }
 
-    private function incorporate(PaperInfo $prow = null, Conf $conf = null) {
+    private function _incorporate(PaperInfo $prow = null, Conf $conf = null) {
         $this->conf = $conf ?? $prow->conf;
         $this->prow = $prow;
         $this->paperId = (int) $this->paperId;
@@ -268,6 +270,11 @@ class ReviewInfo implements JsonSerializable {
             $this->reviewWordCount = (int) $this->reviewWordCount;
         }
 
+        $this->_assign_fields();
+    }
+
+    function _assign_fields() {
+        assert($this->_sfields === null && $this->_tfields === null);
         $rform = $this->conf->review_form();
         $this->fields = $rform->order_array(null);
         $sfields = isset($this->sfields) ? json_decode($this->sfields, true) : null;
@@ -292,7 +299,7 @@ class ReviewInfo implements JsonSerializable {
         '@phan-var ?ReviewInfo $rrow';
         if ($rrow) {
             $prow = $prowx instanceof PaperInfoSet ? $prowx->get((int) $rrow->paperId) : $prowx;
-            $rrow->incorporate($prow, $conf);
+            $rrow->_incorporate($prow, $conf);
         }
         return $rrow;
     }
@@ -529,18 +536,6 @@ class ReviewInfo implements JsonSerializable {
     }
 
 
-    /** @param bool $is_sfield
-     * @return array */
-    function fstorage($is_sfield) {
-        if ($is_sfield && $this->_sfields === null) {
-            $this->_sfields = json_decode($this->sfields ?? "{}", true) ?? [];
-        } else if (!$is_sfield && $this->_tfields === null) {
-            $this->_tfields = json_decode($this->tfields ?? "{}", true) ?? [];
-        }
-        return $is_sfield ? $this->_sfields : $this->_tfields;
-    }
-
-
     /** @param ReviewField $f
      * @return null|int|string */
     function fval($f) {
@@ -563,39 +558,190 @@ class ReviewInfo implements JsonSerializable {
         }
     }
 
-    /** @param ReviewFieldInfo $finfo
+    /** @param bool $sfield
+     * @return &array */
+    private function &_fstorage($sfield) {
+        $k = $sfield ? "_sfields" : "_tfields";
+        if ($this->$k === null) {
+            $xk = $sfield ? "sfields" : "tfields";
+            $this->$k = json_decode($this->$xk ?? "{}", true) ?? [];
+        }
+        return $this->$k;
+    }
+
+    function _seal_fstorage() {
+        if ($this->_sfields !== null) {
+            $this->sfields = empty($this->_sfields) ? null : json_encode_db($this->_sfields);
+        }
+        if ($this->_tfields !== null) {
+            $this->tfields = empty($this->_tfields) ? null : json_encode_db($this->_tfields);
+        }
+        $this->_sfields = $this->_tfields = null;
+    }
+
+    /** @param ReviewField|ReviewFieldInfo $finfo
      * @return null|int|string */
     function finfoval($finfo) {
         if ($finfo->main_storage) {
             $v = intval($this->{$finfo->main_storage} ?? "0");
             return $v > 0 ? $v : ($v < 0 ? 0 : null);
         } else {
-            return ($this->fstorage($finfo->is_sfield))[$finfo->json_storage] ?? null;
+            $a = &$this->_fstorage($finfo->is_sfield);
+            return $a[$finfo->json_storage] ?? null;
         }
     }
 
-    /** @param ReviewFieldInfo $finfo
+    /** @param ReviewField|ReviewFieldInfo $finfo
      * @param null|int|string $v */
-    function set_finfoval($finfo, $v) {
+    function _set_finfoval($finfo, $v) {
         if ($finfo->main_storage) {
             $xv = is_int($v) ? ($v > 0 ? $v : -1) : 0;
             $this->{$finfo->main_storage} = (string) $xv;
         }
         if ($finfo->json_storage) {
-            $this->fstorage($finfo->is_sfield);
-            $k = $finfo->is_sfield ? "_sfields" : "_tfields";
+            $a = &$this->_fstorage($finfo->is_sfield);
             if ($v === null) {
-                unset($this->$k[$finfo->json_storage]);
+                unset($a[$finfo->json_storage]);
             } else {
-                $this->$k[$finfo->json_storage] = $v;
+                $a[$finfo->json_storage] = $v;
             }
         }
-        if ($this->fields !== null
-            && ($f = $this->conf->review_form()->field($finfo->short_id))
-            && $f->order) {
+    }
+
+    /** @param ReviewField $f
+     * @param null|int|string $v
+     * @param bool $diff */
+    function set_fval_prop($f, $v, $diff) {
+        $this->_diff = $this->_diff ?? new ReviewDiffInfo($this);
+        if ($f->main_storage) {
+            if (!array_key_exists($f->main_storage, $this->_diff->_old_prop)) {
+                $this->_diff->_old_prop[$f->main_storage] = $this->{$f->main_storage};
+            }
+            $xv = is_int($v) ? ($v > 0 ? $v : -1) : 0;
+            $this->{$f->main_storage} = (string) $xv;
+        }
+        if ($f->json_storage) {
+            $k = $f->is_sfield ? "sfields" : "tfields";
+            if (!array_key_exists($k, $this->_diff->_old_prop)) {
+                $this->_diff->_old_prop[$k] = $this->$k;
+            }
+            $a = &$this->_fstorage($f->is_sfield);
+            if ($v === null) {
+                unset($a[$f->json_storage]);
+            } else {
+                $a[$f->json_storage] = $v;
+            }
+        }
+        if ($f->order) {
             $this->fields[$f->order] = $v;
         }
+        if ($diff) {
+            $this->_diff->mark_field($f);
+        }
     }
+
+    /** @param string $prop
+     * @param null|int|string $v */
+    function set_prop($prop, $v) {
+        $this->_diff = $this->_diff ?? new ReviewDiffInfo($this);
+        if (!array_key_exists($prop, $this->_diff->_old_prop)) {
+            $this->_diff->_old_prop[$prop] = $this->$prop;
+        }
+        $this->$prop = $v;
+    }
+
+    /** @param int $view_score */
+    function mark_prop_view_score($view_score) {
+        $this->_diff = $this->_diff ?? new ReviewDiffInfo($this);
+        $this->_diff->mark_view_score($view_score);
+    }
+
+    /** @return ReviewDiffInfo */
+    function prop_diff() {
+        $this->_diff = $this->_diff ?? new ReviewDiffInfo($this);
+        return $this->_diff;
+    }
+
+    /** @param string $prop
+     * @return mixed */
+    function prop($prop) {
+        return $this->$prop;
+    }
+
+    /** @param string $prop
+     * @return mixed */
+    function base_prop($prop) {
+        if ($this->_diff !== null
+            && array_key_exists($prop, $this->_diff->_old_prop)) {
+            return $this->_diff->_old_prop[$prop];
+        }
+        return $this->$prop;
+    }
+
+    /** @param ?string $prop
+     * @return bool */
+    function prop_changed($prop = null) {
+        return $this->_diff
+            && $this->_diff->view_score > VIEWSCORE_EMPTY
+            && (!$prop || array_key_exists($prop, $this->_diff->_old_prop));
+    }
+
+    const SAVE_PROP_OK = 1;
+    const SAVE_PROP_EMPTY = 0;
+    const SAVE_PROP_CONFLICT = -1;
+    const SAVE_PROP_ERROR = -2;
+
+    /** @return -2|-1|0|1 */
+    function save_prop() {
+        if ($this->reviewId > 0 && !$this->prop_changed()) {
+            return self::SAVE_PROP_EMPTY;
+        }
+        $this->_diff = $this->_diff ?? new ReviewDiffInfo($this);
+        $this->_seal_fstorage();
+        if ($this->reviewId <= 0) {
+            foreach (["paperId", "contactId", "reviewType", "requestedBy", "reviewRound"] as $k) {
+                assert(!array_key_exists($k, $this->_diff->_old_prop));
+                $this->_diff->_old_prop[$k] = $this->$k;
+            }
+        }
+        $qf = $qv = [];
+        foreach ($this->_diff->_old_prop as $prop => $v) {
+            $qf[] = "{$prop}=?";
+            $qv[] = $this->$prop;
+        }
+        //error_log("PaperReview {$this->paperId}/{$this->reviewId} " . json_encode($this->_diff->_old_prop));
+        if ($this->reviewId <= 0) {
+            $result = $this->conf->qe_apply("insert into PaperReview set " . join(", ", $qf), $qv);
+        } else {
+            array_push($qv, $this->paperId, $this->reviewId, $this->base_prop("reviewTime"));
+            $result = $this->conf->qe_apply("update PaperReview set " . join(", ", $qf)
+                . " where paperId=? and reviewId=? and reviewTime=?", $qv);
+        }
+        if ($result->is_error()) {
+            $r = self::SAVE_PROP_ERROR;
+        } else if ($result->affected_rows === 0) {
+            $r = self::SAVE_PROP_CONFLICT;
+        } else {
+            if ($result->insert_id) {
+                $this->reviewId = $result->insert_id;
+            }
+            $this->reviewStatus = $this->compute_review_status();
+            $r = self::SAVE_PROP_OK;
+        }
+        $result->close();
+        return $r;
+    }
+
+    function abort_prop() {
+        if ($this->_diff) {
+            foreach ($this->_diff->_old_prop as $prop => $v) {
+                $this->$prop = $v;
+            }
+            $this->_sfields = $this->_tfields = null;
+            $this->_assign_fields();
+        }
+    }
+
 
     /** @return array<string,ReviewField> */
     function viewable_fields(Contact $user) {

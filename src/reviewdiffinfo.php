@@ -3,16 +3,13 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class ReviewDiffInfo {
-    /** @var Conf */
-    public $conf;
-    /** @var PaperInfo */
-    public $prow;
-    /** @var ReviewInfo */
+    /** @var ReviewInfo
+     * @readonly */
     public $rrow;
+    /** @var array<string,mixed> */
+    public $_old_prop = [];
     /** @var list<ReviewField> */
-    private $fields = [];
-    /** @var list<null|int|string> */
-    private $newv = [];
+    private $_fields = [];
     /** @var int */
     public $view_score = VIEWSCORE_EMPTY;
     /** @var bool */
@@ -24,35 +21,27 @@ class ReviewDiffInfo {
 
     const VALIDATE_PATCH = true;
 
-    function __construct(PaperInfo $prow, ReviewInfo $rrow) {
-        $this->conf = $prow->conf;
-        $this->prow = $prow;
+    function __construct(ReviewInfo $rrow) {
         $this->rrow = $rrow;
     }
+
     /** @param ReviewField $f
      * @param null|int|string $newv */
-    function add_field($f, $newv) {
-        $this->fields[] = $f;
-        $this->newv[] = $newv;
-        $this->add_view_score($f->view_score);
+    function mark_field($f) {
+        $this->_fields[] = $f;
+        $this->mark_view_score($f->view_score);
     }
+
     /** @param int $view_score */
-    function add_view_score($view_score) {
-        if ($view_score > $this->view_score) {
-            if ($view_score === VIEWSCORE_AUTHORDEC
-                && $this->prow->can_author_view_decision()) {
-                $view_score = VIEWSCORE_AUTHOR;
-            }
+    function mark_view_score($view_score) {
+        if ($this->view_score < $view_score) {
             $this->view_score = $view_score;
         }
     }
-    /** @return bool */
-    function nonempty() {
-        return $this->view_score > VIEWSCORE_EMPTY;
-    }
+
     /** @return list<ReviewField> */
     function fields() {
-        return $this->fields;
+        return $this->_fields;
     }
 
     /** @param string $s1
@@ -87,11 +76,19 @@ class ReviewDiffInfo {
     /** @param 0|1 $dir
      * @return array */
     function make_patch($dir) {
-        $use_xdiff = $this->conf->opt("diffMethod") === "xdiff";
+        $use_xdiff = $this->rrow->conf->opt("diffMethod") === "xdiff";
+        $sfields = json_decode($this->_old_prop["sfields"] ?? "{}", true) ?? [];
+        $tfields = json_decode($this->_old_prop["tfields"] ?? "{}", true) ?? [];
         $patch = [];
-        foreach ($this->fields as $i => $f) {
+        foreach ($this->_fields as $i => $f) {
             $sn = $f->short_id;
-            $v = [$this->rrow->fields[$f->order], $this->newv[$i]];
+            if ($f->main_storage) {
+                $oldv = $this->_old_prop[$f->main_storage];
+                $oldv = $oldv > 0 ? $oldv : ($oldv < 0 ? 0 : null);
+            } else {
+                $oldv = ($f->is_sfield ? $sfields : $tfields)[$f->json_storage] ?? null;
+            }
+            $v = [$oldv, $this->rrow->finfoval($f)];
             if (!($f instanceof Text_ReviewField)) {
                 $v[$dir] = (int) $v[$dir];
             } else if (is_string($v[0]) && is_string($v[1])) {
@@ -116,28 +113,32 @@ class ReviewDiffInfo {
         return $patch;
     }
 
-    function save_history(ReviewInfo $rrow) {
-        assert($this->rrow->paperId === $rrow->paperId
-               && ($this->rrow->reviewId === 0 || $this->rrow->reviewId === $rrow->reviewId));
+    function save_history() {
+        assert($this->rrow->reviewId > 0);
         $patch = $this->make_patch(0);
-        $this->conf->qe("insert into PaperReviewHistory set
+        $rrow = $this->rrow;
+        $rrow->conf->qe("insert into PaperReviewHistory set
             paperId=?, reviewId=?, reviewTime=?, reviewNextTime=?,
-            contactId=?, reviewRound=?, reviewOrdinal=?,
-            reviewType=?, reviewBlind=?,
-            reviewModified=?, reviewSubmitted=?,
-            timeDisplayed=?, timeApprovalRequested=?,
+            contactId=?, reviewRound=?, reviewOrdinal=?, reviewType=?, reviewBlind=?,
+            reviewModified=?, reviewSubmitted=?, timeDisplayed=?, timeApprovalRequested=?,
             reviewAuthorSeen=?, reviewAuthorModified=?,
             reviewNotified=?, reviewAuthorNotified=?,
             reviewEditVersion=?,
             revdelta=?",
-            $rrow->paperId, $rrow->reviewId, $this->rrow->reviewTime, $rrow->reviewTime,
-            $this->rrow->contactId, $this->rrow->reviewRound, $this->rrow->reviewOrdinal,
-            $this->rrow->reviewType, $this->rrow->reviewBlind,
-            $this->rrow->reviewModified ?? 0, $this->rrow->reviewSubmitted ?? 0,
-            $this->rrow->timeDisplayed ?? 0, $this->rrow->timeApprovalRequested ?? 0,
-            $this->rrow->reviewAuthorSeen ?? 0, $this->rrow->reviewAuthorModified ?? 0,
-            $this->rrow->reviewNotified ?? 0, $this->rrow->reviewAuthorNotified ?? 0,
-            $this->rrow->reviewEditVersion ?? 0,
+            $rrow->paperId, $rrow->reviewId,
+              $rrow->base_prop("reviewTime"), $rrow->reviewTime,
+            $rrow->base_prop("contactId"), $rrow->base_prop("reviewRound"),
+              $rrow->base_prop("reviewOrdinal"), $rrow->base_prop("reviewType"),
+              $rrow->base_prop("reviewBlind"),
+            $rrow->base_prop("reviewModified") ?? 0,
+              $rrow->base_prop("reviewSubmitted") ?? 0,
+              $rrow->base_prop("timeDisplayed") ?? 0,
+              $rrow->base_prop("timeApprovalRequested") ?? 0,
+            $rrow->base_prop("reviewAuthorSeen") ?? 0,
+              $rrow->base_prop("reviewAuthorModified") ?? 0,
+            $rrow->base_prop("reviewNotified") ?? 0,
+              $rrow->base_prop("reviewAuthorNotified") ?? 0,
+            $rrow->base_prop("reviewEditVersion") ?? 0,
             empty($patch) ? null : json_encode_db($patch));
     }
 
@@ -161,7 +162,7 @@ class ReviewDiffInfo {
         return $str;
     }
     /** @param string $str
-     * @return array */
+     * @return ?array */
     static function parse_patch($str) {
         $bdata = "";
         if ($str !== "" && ctype_digit($str[0])) {
@@ -209,19 +210,21 @@ class ReviewDiffInfo {
                 $oldv = $rrow->finfoval($fi) ?? "";
                 if ($n[$nl - 1] === "p") {
                     $dmp = $dmp ?? new dmp\diff_match_patch;
-                    $rrow->set_finfoval($fi, $dmp->diff_applyHCDelta($oldv, $v));
+                    $rrow->_set_finfoval($fi, $dmp->diff_applyHCDelta($oldv, $v));
                     continue;
                 }
                 if (($has_xpatch = $has_xpatch ?? function_exists("xdiff_string_bpatch"))) {
-                    $rrow->set_finfoval($fi, xdiff_string_bpatch($oldv, $v));
+                    $rrow->_set_finfoval($fi, xdiff_string_bpatch($oldv, $v));
                     continue;
                 }
             } else if (($fi = ReviewFieldInfo::find($rrow->conf, $n))) {
-                $rrow->set_finfoval($fi, $v);
+                $rrow->_set_finfoval($fi, $v);
                 continue;
             }
             $ok = false;
         }
+        $rrow->_seal_fstorage();
+        $rrow->_assign_fields();
         return $ok;
     }
 }

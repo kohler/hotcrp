@@ -1590,8 +1590,9 @@ class diff_match_patch {
     /**
      * Crush the diff into an encoded string which describes the operations
      * required to transform text1 into text2.
-     * E.g. =3|-2|+ing  -> Keep 3 bytes, delete 2 bytes, insert 'ing'.
-     * Operations are separated by |. Characters % and | are escaped using %xx notation.
+     * E.g. =3-2|+ing  -> Keep 3 bytes, delete 2 bytes, insert 'ing'.
+     * Operations may be separated by |; insertions MUST be terminated by |.
+     * Characters % and | are escaped using %xx notation.
      * @param list<diff_obj> $diffs Array of diff tuples.
      * @param bool $minimize
      * @return string Delta text.

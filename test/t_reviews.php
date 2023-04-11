@@ -132,6 +132,14 @@ class Reviews_Tester {
         assert_search_papers($this->u_chair, "ovemer:5", "1");
     }
 
+    private function print_review_history(ReviewInfo $rrow) {
+        $result = $rrow->conf->qe("select * from PaperReviewHistory where paperId=? and reviewId=? order by reviewTime asc", $rrow->paperId, $rrow->reviewId);
+        while (($rhrow = ReviewHistoryInfo::fetch($result))) {
+            error_log(json_encode($rhrow));
+        }
+        $result->close();
+    }
+
     function test_offline_review_update() {
         $paper1 = $this->conf->checked_paper_by_id(1, $this->u_chair);
         fresh_review($paper1, $this->u_mgbaker);
@@ -159,6 +167,7 @@ class Reviews_Tester {
         xassert($tf->has_problem_at("s01"));
 
         // invalid “No entry” fails
+        //$this->print_review_history($rrow);
         $tf = ReviewValues::make_text($this->conf->review_form(), preg_replace('/^4/m', 'No entry', $this->review1A), "review1A-3.txt");
         xassert($tf->parse_text(false));
         xassert($tf->check_and_save($this->u_mgbaker));
@@ -669,15 +678,15 @@ class Reviews_Tester {
         xassert($tf->check_and_save($user_diot, $paper18));
 
         $rrow18d = fresh_review($paper18, $user_diot);
-        $rd = new ReviewDiffInfo($paper18, $rrow18d);
-        $rd->add_field($conf->find_review_field("ovemer"), 3);
-        $rd->add_field($conf->find_review_field("papsum"), "There definitely is a summary in this position.");
+        $rrow18d->set_fval_prop($conf->find_review_field("ovemer"), 3, true);
+        $rrow18d->set_fval_prop($conf->find_review_field("papsum"), "There definitely is a summary in this position.", true);
+        $rd = $rrow18d->prop_diff();
         xassert_eqq(ReviewDiffInfo::unparse_patch($rd->make_patch(0)),
                     '{"s01":2,"t01":"No summary\\n"}');
         xassert_eqq(ReviewDiffInfo::unparse_patch($rd->make_patch(1)),
                     '{"s01":3,"t01":"There definitely is a summary in this position."}');
 
-        $rrow18d2 = clone $rrow18d;
+        $rrow18d2 = fresh_review($paper18, $user_diot);
         xassert_eq($rrow18d2->fidval("s01"), 2);
         xassert_eq($rrow18d2->fidval("s02"), 1);
         xassert_eqq($rrow18d2->fidval("t01"), "No summary\n");
@@ -701,12 +710,12 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         $rrow18d = fresh_review($paper18, $user_diot);
         $gettysburg = $rrow18d->fidval("t01");
-        $gettysburg2 = str_replace("by the people", "near the people", $gettysburg);
-
-        $rd = new ReviewDiffInfo($paper18, $rrow18d);
-        $rd->add_field($conf->find_review_field("papsum"), $gettysburg2);
-
         $rrow18d2 = clone $rrow18d;
+
+        $gettysburg2 = str_replace("by the people", "near the people", $gettysburg);
+        $rrow18d->set_fval_prop($conf->find_review_field("papsum"), $gettysburg2, true);
+        $rd = $rrow18d->prop_diff();
+
         xassert_eqq($rrow18d2->fidval("t01"), $gettysburg);
         ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch(1));
         xassert_eqq($rrow18d2->fidval("t01"), $gettysburg2);
