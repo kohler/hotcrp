@@ -3602,11 +3602,8 @@ function fold(elt, dofold, foldnum) {
     wasopen = hasClass(elt, opentxt);
     if (dofold == null || !dofold != wasopen) {
         // perform fold
-        if (wasopen) {
-            elt.className = elt.className.replace(opentxt, closetxt);
-        } else {
-            elt.className = elt.className.replace(closetxt, opentxt);
-        }
+        toggleClass(elt, opentxt, !wasopen);
+        toggleClass(elt, closetxt, wasopen);
 
         // check for session
         if ((s = fold_session_for.call(elt, foldnum, "storage"))) {
@@ -3715,13 +3712,22 @@ handle_ui.on("js-foldup", foldup);
 handle_ui.on("foldtoggle.js-fold-focus", function (evt) {
     if (evt.which.nofocus)
         return;
-    var fx = ".fx" + (evt.which.n || "");
-    if (evt.which.open)
-        focus_within(this, fx + " *");
-    else if (document.activeElement
-             && this.contains(document.activeElement)
-             && document.activeElement.closest(fx))
-        focus_within(this, ":not(" + fx + " *)", true);
+    var ns = evt.which.n || "";
+    if (!hasClass(this, "fold".concat(ns, "c"))
+        && !hasClass(this, "fold".concat(ns, "o")))
+        return;
+    if (evt.which.open) {
+        if (!document.activeElement
+            || !this.contains(document.activeElement)
+            || !document.activeElement.offsetParent) {
+            focus_within(this, ".fx".concat(ns, " *"));
+        }
+    } else if (document.activeElement
+               && this.contains(document.activeElement)
+               && document.activeElement.closest(fx)) {
+        focus_within(this, ":not(.fx".concat(ns, " *)"), true);
+    }
+    evt.which.nofocus = true;
 });
 $(function () {
     $(".uich.js-foldup").each(function () {

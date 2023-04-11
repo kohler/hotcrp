@@ -93,7 +93,7 @@ function settings_delete(elt, message) {
 }
 
 function settings_field_unfold(evt) {
-    if (evt.which.open) {
+    if (evt.which.open && evt.which.n === 2) {
         var ch = this.parentElement.firstChild;
         for (; ch; ch = ch.nextSibling) {
             if (ch !== this && hasClass(ch, "fold2o") && !form_differs(ch))
