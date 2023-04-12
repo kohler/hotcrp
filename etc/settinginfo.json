@@ -895,6 +895,7 @@
         "type": "taglist", "subtype": "allow_wildcard", "size": 50, "autogrow": true,
         "parser_class": "Tags_SettingParser", "initial_value": "accept pcpaper reject"
     },
+
     {   "name": "tag_color", "internal": true, "type": "string"   },
     {
         "name": "tag_style", "hashid": "colors-and-styles",
@@ -918,6 +919,30 @@
         "title": "/Tag list",
         "type": "taglist", "subtype": "allow_wildcard_chair", "size": 40, "autogrow": true
     },
+
+    {   "name": "tag_badge", "internal": true, "type": "string"   },
+    {
+        "name": "badge", "hashid": "badges", "title": "Badge tags",
+        "type": "oblist", "parser_class": "TagStyle_SettingParser"
+    },
+    {
+        "name_pattern": "badge/$", "internal": true,
+        "type": "object", "subtype": "TagStyle_Setting",
+        "title": "Badge style", "title_pattern": "‘${sv badge/$/style}’",
+        "parser_class": "TagStyle_SettingParser"
+    },
+    {   "name_pattern": "badge/$/id", "internal": true   },
+    {
+        "name_pattern": "badge/$/style",
+        "title": "/Style", "type": "simplestring", "required": true,
+        "parser_class": "TagStyle_SettingParser"
+    },
+    {
+        "name_pattern": "badge/$/tags",
+        "title": "/Tag list",
+        "type": "taglist", "subtype": "allow_wildcard_chair", "size": 40, "autogrow": true
+    },
+
     {
         "name": "tag_rank",
         "title": "Ranking tags",

@@ -284,11 +284,12 @@ class TagStyle {
     /** @var ?bool */
     public $dark;
 
-    const BG = 1;
-    const TEXT = 2;
+    const DYNAMIC = 1;
+    const UNLISTED = 2;
     const BADGE = 4;
-    const DYNAMIC = 8;
-    const SECRET = 16;
+    const BG = 8;
+    const TEXT = 16;
+    const STYLE = 24; // BG | TEXT
 
     /** @param string $s
      * @return ?string */
@@ -319,21 +320,23 @@ class TagStyle {
 
     /** @param string $text */
     function __construct($text) {
-        // $text format: [name=]style[^][@][-][*]
-        // where ^ means text mode, @ means badge mode, default is background mode;
-        // - means secret (do not show in settings by default);
+        // $text format: [name=]style[^][@][#][-][*]
+        // ^ text, # background, @ badge (default is background);
+        // - means unlisted (do not show in settings by default);
         // * means dark mode (light mode by default unless dynamic)
-        $sclass = self::BG;
+        $sclass = 0;
         $p0 = 0;
         $p1 = strlen($text);
         while (true) {
             $lch = $text[$p1 - 1];
             if ($lch === "^") {
-                $sclass = ($sclass & ~(self::BG | self::BADGE)) | self::TEXT;
+                $sclass |= self::TEXT;
+            } else if ($lch === "#") {
+                $sclass |= self::BG;
             } else if ($lch === "@") {
-                $sclass = ($sclass & ~(self::BG | self::TEXT)) | self::BADGE;
+                $sclass |= self::BADGE;
             } else if ($lch === "-") {
-                $sclass |= self::SECRET;
+                $sclass |= self::UNLISTED;
             } else if ($lch === "*") {
                 $this->dark = true;
             } else {
@@ -347,18 +350,24 @@ class TagStyle {
         }
         $this->style = substr($text, $p0, $p1 - $p0);
         $this->name = $this->name ?? $this->style;
-        if (($dstyle = self::dynamic_style($this->style)) !== null) {
+        if ($p1 === strlen($text)
+            && ($dstyle = self::dynamic_style($this->style)) !== null) {
             $this->style = $dstyle;
             $sclass |= self::DYNAMIC;
-            if ($dstyle[0] !== "r") { // not `rgb-`
-                $sclass = ($sclass & ~self::BG) | self::TEXT;
+            if ($dstyle[0] === "r") { // `rgb-`
+                $sclass |= self::BG | self::BADGE;
+            } else {
+                $sclass |= self::TEXT;
             }
         }
+        if (($sclass & (self::STYLE | self::BADGE)) === 0) {
+            $sclass |= self::BG;
+        }
+        $this->sclass = $sclass;
         if ($this->dark === null
             && (($sclass & self::DYNAMIC) === 0 || ($sclass & self::BG) === 0)) {
             $this->dark = false;
         }
-        $this->sclass = $sclass;
     }
 
     /** @return bool */
@@ -440,15 +449,13 @@ class TagMap implements IteratorAggregate {
 
     /** @var array<string,TagStyle> */
     private $style_lmap = [];
-    /** @var array<string,TagStyle> */
-    private $badge_lmap = [];
 
     private static $multicolor_map = [];
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
 
-        $known_styles = ["red orange yellow green blue purple gray white bold^ italic^ underline^ strikethrough^ big^ small^ dim^ black@ red@ orange@ yellow@ green@ blue@ purple@ gray@ white@ pink@ violet=purple grey=gray normal=black@ default=black@ violet=purple@ grey=gray@"];
+        $known_styles = ["black@ red@# orange@# yellow@# green@# blue@# purple@# gray@# white@# pink@ bold^ italic^ underline^ strikethrough^ big^ small^ dim^ violet=purple@# grey=gray@# normal=black@ default=black@"];
         $opt = $conf->opt("tagKnownStyles") ?? null;
         if (!empty($opt)) {
             $known_styles = array_merge($known_styles, is_array($opt) ? $opt : [$opt]);
@@ -457,11 +464,7 @@ class TagMap implements IteratorAggregate {
             foreach (explode(" ", $ks) as $s) {
                 if ($s !== "") {
                     $ts = new TagStyle($s);
-                    if (($ts->sclass & TagStyle::BADGE) !== 0) {
-                        $this->badge_lmap[$ts->name] = $ts;
-                    } else {
-                        $this->style_lmap[$ts->name] = $ts;
-                    }
+                    $this->style_lmap[$ts->name] = $ts;
                 }
             }
         }
@@ -692,34 +695,36 @@ class TagMap implements IteratorAggregate {
 
 
     /** @param string $s
+     * @param 4|8|12|16|20|24|28 $sclassmatch
      * @return ?TagStyle */
-    function known_style($s) {
+    function known_style($s, $sclassmatch = TagStyle::STYLE) {
         $s = strtolower($s);
-        $style = $this->style_lmap[$s] ?? null;
-        if ($style === null
+        $ks = $this->style_lmap[$s] ?? null;
+        if ($ks === null
             && ($dstyle = TagStyle::dynamic_style($s)) !== null) {
-            $style = new TagStyle($dstyle);
+            $ks = new TagStyle($dstyle);
         }
-        return $style;
+        if ($ks && ($ks->sclass & $sclassmatch) !== 0) {
+            return $ks;
+        } else {
+            return null;
+        }
     }
 
     /** @param string $s
      * @return ?TagStyle */
     function known_badge($s) {
-        $s = strtolower($s);
-        $style = $this->badge_lmap[$s] ?? null;
-        if ($style === null
-            && str_starts_with($s, "rgb-")) {
-            $style = $this->known_style($s);
-        }
-        return $style;
+        return $this->known_style($s, TagStyle::BADGE);
     }
 
-    /** @return list<TagStyle> */
-    function canonical_known_styles() {
+    /** @param 4|8|12|16|20|24|28 $sclassmatch
+     * @return list<TagStyle> */
+    function canonical_listed_styles($sclassmatch) {
         $kss = [];
         foreach ($this->style_lmap as $ltag => $ks) {
-            if ($ltag === $ks->style)
+            if (($ks->sclass & $sclassmatch) !== 0
+                && ($ks->sclass & TagStyle::UNLISTED) === 0
+                && $ks->style === $ltag)
                 $kss[] = $ks;
         }
         return $kss;
@@ -730,9 +735,12 @@ class TagMap implements IteratorAggregate {
     private function color_regex() {
         if (!$this->color_re) {
             $rex = [
-                "{(?:\\A| )(?:(?:\\d*~|~~|)(font-[^\s#]+|weight-(?:[a-z]+|\d+)|(?:text-|)rgb-[0-9a-f]{3}(?:|[0-9a-f]{3})|",
-                join("|", array_keys($this->style_lmap))
+                "{(?:\\A| )(?:(?:\\d*~|~~|)(font-[^\s#]+|weight-(?:[a-z]+|\d+)|(?:text-|)rgb-[0-9a-f]{3}(?:|[0-9a-f]{3})|"
             ];
+            foreach ($this->style_lmap as $style => $ks) {
+                if (($ks->sclass & TagStyle::STYLE) !== 0)
+                    $rex[] = $style;
+            }
             $any = false;
             if ($this->has_colors) {
                 foreach ($this->storage as $k => $t) {
@@ -747,7 +755,7 @@ class TagMap implements IteratorAggregate {
     }
 
     /** @param string|list<string> $tags
-     * @param 0|1|2|3 $sclassmatch
+     * @param 0|8|16|24 $sclassmatch
      * @return ?list<string> */
     function styles($tags, $sclassmatch = 0, $no_pattern_fill = false) {
         if (is_array($tags)) {
@@ -758,7 +766,7 @@ class TagMap implements IteratorAggregate {
             || !preg_match_all($this->color_regex(), $tags, $ms)) {
             return null;
         }
-        $sclassmatch = $sclassmatch ? : TagStyle::BG | TagStyle::TEXT;
+        $sclassmatch = $sclassmatch ? : TagStyle::STYLE;
         $classes = [];
         $sclass = 0;
         $nbg = $ndarkbg = 0;
@@ -1093,7 +1101,8 @@ class TagMap implements IteratorAggregate {
         $ct = $conf->setting_data("tag_color") ?? "";
         if ($ct !== "") {
             foreach (explode(" ", $ct) as $k) {
-                if ($k !== "" && ($p = strpos($k, "=")) !== false
+                if ($k !== ""
+                    && ($p = strpos($k, "=")) > 0
                     && ($ks = $map->known_style(substr($k, $p + 1))) !== null) {
                     $map->add(substr($k, 0, $p))->styles[] = $ks;
                     $map->has_colors = true;
@@ -1103,7 +1112,8 @@ class TagMap implements IteratorAggregate {
         $bt = $conf->setting_data("tag_badge") ?? "";
         if ($bt !== "") {
             foreach (explode(" ", $bt) as $k) {
-                if ($k !== "" && ($p = strpos($k, "=")) !== false
+                if ($k !== ""
+                    && ($p = strpos($k, "=")) > 0
                     && ($ks = $map->known_badge(substr($k, $p + 1))) !== null) {
                     $map->add(substr($k, 0, $p))->badge = $ks;
                     $map->has_badge = true;

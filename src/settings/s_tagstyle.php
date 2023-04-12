@@ -9,51 +9,90 @@ class TagStyle_Setting {
     public $style = "";
     /** @var string */
     public $tags = "";
+    /** @var int */
+    public $sclass = TagStyle::DYNAMIC;
     /** @var bool */
     public $deleted = false;
+    /** @var int */
+    public $order = PHP_INT_MAX;
 
-    static function make($style, $tags) {
+    /** @param TagStyle $ks
+     * @param int $count */
+    static function make($ks, $count) {
         $tss = new TagStyle_Setting;
-        $tss->id = $tss->style = $style;
-        $tss->tags = join(" ", $tags);
+        $tss->id = $tss->style = $ks->name;
+        $tss->sclass = $ks->sclass;
+        if (($tss->sclass & TagStyle::DYNAMIC) !== 0) {
+            $tss->order = PHP_INT_MAX;
+        } else {
+            $tss->order = $count;
+        }
         return $tss;
+    }
+
+    /** @param string $tag */
+    function add($tag) {
+        if ($tag !== "") {
+            if ($this->tags === "") {
+                $this->tags = $tag;
+            } else {
+                $this->tags .= " {$tag}";
+            }
+        }
+    }
+
+    /** @param TagStyle_Setting $a
+     * @param TagStyle_Setting $b
+     * @return int */
+    static function compare($a, $b) {
+        return ($a->sclass & TagStyle::TEXT) <=> ($b->sclass & TagStyle::TEXT)
+            ? : $a->order <=> $b->order
+            ? : strcasecmp($a->style, $b->style);
     }
 }
 
 class TagStyle_SettingParser extends SettingParser {
     function set_oldv(Si $si, SettingValues $sv) {
-        if ($si->name0 === "tag_style/" && $si->name2 === "") {
+        if (($si->name0 === "tag_style/" || $si->name0 === "badge/")
+            && $si->name2 === "") {
             $sv->set_oldv($si, new TagStyle_Setting);
         }
     }
 
     function prepare_oblist(Si $si, SettingValues $sv) {
-        $kmap = [];
+        $badge = $si->name === "badge";
+
         $dt = $sv->conf->tags();
-        foreach ($dt->canonical_known_styles() as $ks) {
-            if (($ks->sclass & TagStyle::SECRET) === 0)
-                $kmap[$ks->name] = [];
+        $kmap = [];
+        $sclassmatch = $badge ? TagStyle::BADGE : TagStyle::STYLE;
+        foreach ($dt->canonical_listed_styles($sclassmatch) as $ks) {
+            $kmap[$ks->name] = TagStyle_Setting::make($ks, count($kmap));
         }
-        $tc = $sv->conf->setting_data("tag_color") ?? "";
-        preg_match_all('/(?:\A|\s)(\S+)=(\S+)(?=\s|\z)/', $tc, $m, PREG_SET_ORDER);
+
+        $tc = $sv->conf->setting_data($badge ? "tag_badge" : "tag_color") ?? "";
+        preg_match_all('/(?:\A|\s)([^\s=]*+)=(\S++)/', $tc, $m, PREG_SET_ORDER);
         foreach ($m as $mx) {
-            if (array_key_exists($mx[2], $kmap)) {
-                $kmap[$mx[2]][] = $mx[1];
-            } else if (($ks = $dt->known_style($mx[2]))
-                       && ($ks->sclass & TagStyle::SECRET) === 0) {
-                $kmap[$ks->name][] = $mx[1];
+            $style = $mx[2];
+            if (!array_key_exists($style, $kmap)) {
+                if (!($ks = $dt->known_style($style, $sclassmatch))) {
+                    continue;
+                }
+                $style = $ks->name;
+                if (!array_key_exists($style, $kmap)) {
+                    $kmap[$style] = TagStyle_Setting::make($ks, count($kmap));
+                }
+            }
+            if ($mx[1] !== "") {
+                $kmap[$style]->add($mx[1]);
             }
         }
-        $klist = [];
-        foreach ($kmap as $style => $tags) {
-            $klist[] = TagStyle_Setting::make($style, $tags);
-        }
-        $sv->append_oblist("tag_style", $klist, "style");
+        usort($kmap, "TagStyle_Setting::compare");
+        $sv->append_oblist($si->name, $kmap, "style");
     }
 
     static function print(SettingValues $sv) {
         echo Ht::hidden("has_tag_style", 1),
-            "<p>Submissions tagged with a style name, or with an associated tag, appear in that style in lists. This also applies to PC tags.</p>",
+            "<p>Submissions and PC members tagged with a style name, or with an associated tag, appear in that style in lists.</p>",
             '<table class="demargin"><tr><th></th><th class="settings-simplehead" style="min-width:8rem">Style name</th><th class="settings-simplehead">Tags</th><th></th></tr>';
         $dt = $sv->conf->tags();
         foreach ($sv->oblist_keys("tag_style") as $ctr) {
@@ -72,32 +111,43 @@ class TagStyle_SettingParser extends SettingParser {
     }
 
     private function _apply_tag_style_req(Si $si, SettingValues $sv) {
+        $badge = $si->name === "badge";
+        $sclassmatch = $badge ? TagStyle::BADGE : TagStyle::STYLE;
         $bs = [];
-        foreach ($sv->oblist_nondeleted_keys("tag_style") as $ctr) {
-            $br = $sv->newv("tag_style/{$ctr}");
-            $ks = $sv->conf->tags()->known_style($br->style);
+        foreach ($sv->oblist_nondeleted_keys($si->name) as $ctr) {
+            $br = $sv->newv("{$si->name}/{$ctr}");
+            $ks = $sv->conf->tags()->known_style($br->style, $sclassmatch);
             $sn = $ks ? $ks->name : $br->style;
+            $bs_count = count($bs);
             foreach (explode(" ", $br->tags) as $tag) {
-                if ($tag !== "") {
+                if ($tag !== "")
                     $bs[] = "{$tag}={$sn}";
-                }
+            }
+            if ($ks
+                && ($ks->sclass & TagStyle::DYNAMIC) !== 0
+                && count($bs) === $bs_count) {
+                $bs[] = "={$sn}"; // keep it in the list
             }
         }
-        if ($sv->update("tag_color", join(" ", $bs))) {
+        if ($sv->update($badge ? "tag_badge" : "tag_color", join(" ", $bs))) {
             $sv->mark_invalidate_caches(["tags" => true]);
         }
         return true;
     }
 
     function apply_req(Si $si, SettingValues $sv) {
-        if ($si->name === "tag_style") {
+        if ($si->name === "tag_style" || $si->name === "badge") {
             return $this->_apply_tag_style_req($si, $sv);
-        } else if ($si->name0 === "tag_style/" && $si->name2 === "/style") {
+        } else if (($si->name0 === "tag_style/" || $si->name0 === "badge/")
+                   && $si->name2 === "/style") {
+            $badge = $si->name0 === "badge/";
+            $sclassmatch = $badge ? TagStyle::BADGE : TagStyle::STYLE;
             if (($v = $sv->base_parse_req($si->name)) !== null
-                && $sv->conf->tags()->known_style($v)) {
+                && $sv->conf->tags()->known_style($v, $sclassmatch)) {
                 $sv->save($si, $v);
             } else {
-                $sv->error_at($si, "<0>Unknown tag style ‘{$v}’");
+                $type = $badge ? "badge" : "tag";
+                $sv->error_at($si, "<0>Unknown {$type} style ‘{$v}’");
             }
             return true;
         } else {

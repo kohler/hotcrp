@@ -592,9 +592,6 @@ class TagList_Sitype extends Sitype {
     /** @param string $type
      * @param string $subtype */
     function __construct($type, $subtype) {
-        if ($subtype && str_starts_with($subtype, "wildcard")) { // XXX
-            $subtype = "allow_{$subtype}";
-        }
         if ($subtype === "allow_wildcard" || $subtype === "allow_wildcard_chair") {
             $this->flags |= Tagger::ALLOWSTAR;
         }

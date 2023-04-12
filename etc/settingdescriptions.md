@@ -82,6 +82,7 @@ The `tag` will be set automatically on all papers matching `search` (and
 removed from papers not matching `search`).
 
 The optional `value` is a formula that sets the tag’s value. For example, the
-formula “avg(OveMer)” would set the tag’s value to the average overall merit
-score. If the formula evaluates to null for a paper, then the tag for that
-paper is removed. If `value` is an empty string, 0 is used.
+formula “avg(OveMer)” would set the tag’s value to the relevant paper’s
+average overall merit score. If the formula evaluates to null for a paper,
+then the tag for that paper is removed. If `value` is an empty string, 0 is
+used.
