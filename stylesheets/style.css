@@ -3945,6 +3945,8 @@ h3.pavfn, h3.psfn {
 	display: inline-block;
 	margin-right: 1.5em;
 	margin-bottom: 0;
+}
+.pedcard-head h2, .revcard-head h2, h2.revcard-head {
 	font-size: 1.17em;
 	color: #d41743;
 }

@@ -10474,22 +10474,24 @@ function header_text(hdr) {
 }
 
 function add_pslitem_header() {
-    var l = this.firstChild, id;
-    if (l.tagName === "LABEL") {
-        id = this.id || l.getAttribute("for") || $(l).find("input").attr("id");
+    var l = this.firstChild, id = this.id, e, xt;
+    if (l && l.nodeType === 1 && l.tagName === "LABEL") {
+        id = id || l.getAttribute("for");
+        if (!id && (e = l.querySelector("input")))
+            id = e.id;
+    } else {
+        l = this;
     }
-    if (id) {
-        var xt = header_text(l),
-            item = xt ? navsidebar.set(this.parentElement, escape_html(xt), "#" + id) : null;
-        if (item) {
-            var e = item.element, ise = hasClass(this, "has-error"),
-                isw = hasClass(this, "has-warning");
-            toggleClass(e.firstChild, "is-diagnostic", ise || isw);
-            toggleClass(e.firstChild, "is-error", ise);
-            toggleClass(e.firstChild, "is-warning", isw);
-            toggleClass(e, "hidden", hasClass(this.parentElement, "hidden"));
-        }
+    if (!id || !(xt = header_text(l))) {
+        return;
     }
+    e = navsidebar.set(this.parentElement, escape_html(xt), "#" + id).element;
+    var ise = hasClass(this, "has-error"),
+        isw = hasClass(this, "has-warning");
+    toggleClass(e.firstChild, "is-diagnostic", ise || isw);
+    toggleClass(e.firstChild, "is-error", ise);
+    toggleClass(e.firstChild, "is-warning", isw);
+    toggleClass(e, "hidden", hasClass(this.parentElement, "hidden"));
 }
 
 function add_pslitem_pfe() {
@@ -10543,18 +10545,30 @@ hotcrp.load_editable_paper = function () {
 };
 
 hotcrp.load_editable_review = function () {
-    hiliter_children("#form-review");
-    $(".rfehead").each(add_pslitem_header);
-    if ($(".rfehead").length) {
+    var rfehead = $(".rfehead");
+    rfehead.each(add_pslitem_header);
+    if (rfehead.length) {
         $(".pslcard > .pslitem:last-child").addClass("mb-3");
     }
-    var h = $(".btn-savereview").first(),
-        k = $("#form-review").hasClass("alert") ? "" : " hidden";
+    hiliter_children("#form-review");
+    var k = $("#form-review").hasClass("alert") ? "" : " hidden",
+        h = $(".btn-savereview").first();
     $(".pslcard-nav").append('<div class="review-alert mt-5'.concat(k,
         '"><button class="ui btn-highlight btn-savereview">', h.html(),
         '</button></div>'))
         .find(".btn-savereview").click(function () {
             $("#form-review .btn-savereview").first().trigger({type: "click", sidebarTarget: this});
+        });
+};
+
+hotcrp.load_editable_pc_assignments = function () {
+    $("h2").each(add_pslitem_header);
+    hiliter_children("#form-pc-assignments");
+    var k = $("#form-pc-assignments").hasClass("alert") ? "" : " hidden";
+    $(".pslcard-nav").append('<div class="paper-alert mt-5'.concat(k,
+        '"><button class="ui btn-highlight btn-savepaper">Save assignments</button></div>'))
+        .find(".btn-savepaper").click(function () {
+            $("#form-pc-assignments .btn-primary").first().trigger({type: "click", sidebarTarget: this});
         });
 };
 

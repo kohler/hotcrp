@@ -492,7 +492,7 @@ class Assign_Page {
         $t = $this->pt->review_table();
         if ($t !== "") {
             echo '<div class="pcard revcard">',
-                '<div class="revcard-head"><h2>Reviews</h2></div>',
+                '<h2 class="revcard-head" id="current-reviews">Current reviews</h2>',
                 '<div class="revpcard-body">', $t, '</div></div>';
         }
 
@@ -522,7 +522,7 @@ class Assign_Page {
 
         if (!empty($requests)) {
             echo '<div class="pcard revcard">',
-                '<div class="revcard-head"><h2>Review requests</h2></div>',
+                '<h2 class="revcard-head" id="review-requests">Review requests</h2>',
                 '<div class="revcard-body"><div class="ctable-wide">';
             foreach ($requests as $req) {
                 $this->print_reqrev($req[3], $req[1]);
@@ -536,10 +536,14 @@ class Assign_Page {
 
             // PC conflicts row
             echo '<div class="pcard revcard">',
-                '<div class="revcard-head"><h2>PC assignments</h2></div>',
+                '<h2 class="revcard-head" id="pc-assignments">PC assignments</h2>',
                 '<div class="revcard-body">',
-                Ht::form($this->conf->hoturl("=assign", "p=$prow->paperId"), ["id" => "ass", "class" => "need-unload-protection"]);
-            Ht::stash_script('hotcrp.highlight_form_children("#ass")');
+                Ht::form($this->conf->hoturl("=assign", "p=$prow->paperId"), [
+                    "id" => "form-pc-assignments",
+                    "class" => "need-unload-protection",
+                    "data-alert-toggle" => "paper-alert"
+                ]);
+            Ht::stash_script('$(hotcrp.load_editable_pc_assignments)');
 
             if ($this->conf->has_topics()) {
                 echo "<p>Review preferences display as “P#”, topic scores as “T#”.</p>";
@@ -560,7 +564,7 @@ class Assign_Page {
             }
 
             echo "</div>\n",
-                '<div class="aab aabig">',
+                '<div class="aab">',
                 '<div class="aabut">', Ht::submit("update", "Save assignments", ["class" => "btn-primary"]), '</div>',
                 '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
                 '<div id="assresult" class="aabut"></div>',
@@ -569,14 +573,13 @@ class Assign_Page {
 
 
         // add external reviewers
-        $req = "Request an external review";
+        $req = "Request external review";
         if (!$user->allow_administer($prow) && $this->conf->setting("extrev_chairreq")) {
-            $req = "Propose an external review";
+            $req = "Propose external review";
         }
         echo '<div class="pcard revcard">',
             Ht::form($this->conf->hoturl("=assign", "p=$prow->paperId"), ["novalidate" => true]),
-            '<div class="revcard-head">',
-            "<h2>", $req, "</h2></div><div class=\"revcard-body\">";
+            "<h2 class=\"revcard-head\" id=\"external-reviews\">", $req, "</h2><div class=\"revcard-body\">";
 
         echo '<p class="w-text">', $this->conf->_id("external_review_request_description", "");
         if ($user->allow_administer($prow)) {
