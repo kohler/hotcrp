@@ -841,8 +841,6 @@ body.paper > #body {
 	border-color: transparent;
 	border-radius: 4px;
 	padding: 0.5em 0.85em;
-	max-width: 720px;
-	width: fit-content;
 }
 #msgs-initial > .msg,
 .msgs-wide > .msg,
@@ -1621,13 +1619,24 @@ div.hint {
 }
 
 
-/* column content */
+/* normal width content */
+.msg {
+	max-width: 720px;
+	width: fit-content;
+}
+.w-text,
+.feedback, .feedback-list, .field-d,
+.revtext.format0, .cmttext.format0, .revtext .format0, .cmttext .format0,
+.overlong-expander,
 .main-column p, .main-column dl, .main-column pre.sample {
 	max-width: 720px;
 }
 .main-column ul, .main-column ol {
 	max-width: 692px;
 	padding-left: 28px;
+}
+.w-entry-text {
+	max-width: 560px;
 }
 
 
@@ -2092,7 +2101,6 @@ label.f-c, .f-i > label {
 	font-size: 92%;
 }
 .feedback, .feedback-list, .field-d {
-	max-width: 720px;
 	margin-bottom: 0.3rem;
 }
 .msg .feedback-list {
@@ -2324,12 +2332,6 @@ img.check {
 	visibility: hidden;
 }
 
-.w-text {
-	max-width: 720px;
-}
-.w-entry-text {
-	max-width: 560px;
-}
 .w-fit-content {
 	width: fit-content;
 }
@@ -4247,9 +4249,6 @@ a:hover .t-editor,
 .format0 {
 	white-space: pre-wrap;
 }
-.revtext.format0, .cmttext.format0, .revtext .format0, .cmttext .format0 {
-	max-width: 720px;
-}
 .cmttext.emoji-only {
 	font-size: 200%;
 	line-height: 1.125;
@@ -4306,7 +4305,6 @@ a:hover .t-editor,
 .overlong-expander {
 	padding-top: 12px;
 	text-align: center;
-	max-width: 720px;
 }
 .overlong-expanded > .overlong-divider > .overlong-mark > .overlong-expander {
 	display: none;

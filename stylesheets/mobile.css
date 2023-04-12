@@ -230,10 +230,13 @@ td.pl.pl_title, td.pl.pl_text {
 .settings-json-panel-info {
 	display: none;
 }
+.msg,
+.w-text, .w-entry-text,
 .feedback, .feedback-list, .field-d,
+.revtext.format0, .cmttext.format0, .revtext .format0, .cmttext .format0,
+.overlong-expander,
 .main-column p, .main-column dl, .main-column pre.sample,
-.main-column ul, .main-column ol,
-.w-text {
+.main-column ul, .main-column ol {
 	max-width: initial;
 }
 }
