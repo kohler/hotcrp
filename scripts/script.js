@@ -10563,13 +10563,16 @@ hotcrp.load_editable_review = function () {
 
 hotcrp.load_editable_pc_assignments = function () {
     $("h2").each(add_pslitem_header);
-    hiliter_children("#form-pc-assignments");
-    var k = $("#form-pc-assignments").hasClass("alert") ? "" : " hidden";
-    $(".pslcard-nav").append('<div class="paper-alert mt-5'.concat(k,
-        '"><button class="ui btn-highlight btn-savepaper">Save assignments</button></div>'))
-        .find(".btn-savepaper").click(function () {
-            $("#form-pc-assignments .btn-primary").first().trigger({type: "click", sidebarTarget: this});
-        });
+    var f = $$("form-pc-assignments");
+    if (f) {
+        hiliter_children(f);
+        var k = hasClass(f, "alert") ? "" : " hidden";
+        $(".pslcard-nav").append('<div class="paper-alert mt-5'.concat(k,
+            '"><button class="ui btn-highlight btn-savepaper">Save PC assignments</button></div>'))
+            .find(".btn-savepaper").click(function () {
+                $("#form-pc-assignments .btn-primary").first().trigger({type: "click", sidebarTarget: this});
+            });
+    }
 };
 
 hotcrp.prepare_editable_paper = function () {
