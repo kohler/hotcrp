@@ -139,6 +139,7 @@ class CsvParser implements Iterator {
     const TYPE_DOUBLEBAR = 8;
     const TYPE_GUESS = 7;
     const TYPE_HEADER = 16;
+    const TYPE_COMMA_HEADER = 17; /* TYPE_COMMA | TYPE_HEADER */
 
     /** @param string $str
      * @return list<string> */

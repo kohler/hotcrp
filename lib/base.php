@@ -257,9 +257,8 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $width = 75, $flowed = f
 /** @param string $text
  * @return int */
 function count_words($text) {
-    return is_usascii($text)
-        ? preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*+/s', $text)
-        : preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*+/us', $text);
+    $refl = is_usascii($text) ? 's' : 'us';
+    return preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*+/' . $refl, $text);
     // 2023 benchmark on 223MB: Without /u = 1.76, with /u = 2.52, with is_usascii = 2.40.
 }
 
@@ -267,11 +266,26 @@ function count_words($text) {
  * @param int $wlimit
  * @return array{string,string} */
 function count_words_split($text, $wlimit) {
-    $re = "/\\A((?:[-\\s.,;:<>!?*_~`#|]*+[^-\\s.,;:<>!?*_~`#|]\\S*+(?:\\s|\\z)\\s*+){{$wlimit}})([\\d\\D]*+)\\z/" . (is_usascii($text) ? "s" : "us");
-    if (preg_match($re, $text, $m)) {
-        return [$m[1], $m[2]];
-    } else {
+    // A compiled regex in PCRE takes space proportional to the maximum repeat
+    // count, so the previous version that more straightforwardly used a repeat
+    // count equal to $wlimit failed in practice. This version is faster than
+    // preg_match_all + join.
+    $refl = is_usascii($text) ? 's' : 'us';
+    $offset = 0;
+    $len = strlen($text);
+    while ($offset < $len && $wlimit > 0) {
+        $n = min($wlimit, 50);
+        if (!preg_match('/\G(?:[-\s.,;:<>!?*_~`#|]*+[^-\s.,;:<>!?*_~`#|]\S*+){' . $n . '}\s*+/' . $refl, $text, $m, 0, $offset)) {
+            return [$text, ""];
+        }
+        $offset += strlen($m[0]);
+        $wlimit -= $n;
+    }
+    if ($wlimit > 0
+        || preg_match('/\G[-\s.,;:<>!?*_~`#|]*+\z/' . $refl, $text, $m, 0, $offset)) {
         return [$text, ""];
+    } else {
+        return [substr($text, 0, $offset), substr($text, $offset)];
     }
 }
 
