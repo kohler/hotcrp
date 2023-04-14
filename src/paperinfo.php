@@ -1268,6 +1268,7 @@ class PaperInfo {
                 $cfltdesc = "<em>author " . $aucflt->name_h() . "’s collaborator</em> " . $userm->highlight($cflt);
             } else {
                 error_log("#{$this->paperId}: cannot find {$cflt->author_index} " . json_encode($cflt->unparse_debug_json()) . " " . json_encode(array_map(function ($a) { return $a->unparse_debug_json(); }, $this->author_list())));
+                error_log(debug_string_backtrace());
                 $cfltdesc = "<em>author #{$cflt->author_index}’s collaborator</em> " . $userm->highlight($cflt);
             }
         } else if ($why === AuthorMatcher::MATCH_AFFILIATION) {
@@ -1276,6 +1277,7 @@ class PaperInfo {
                 $cfltdesc = "<em>author</em> " . $aucflt->name_h() . " (" . $userm->highlight($cflt->affiliation) . ")";
             } else {
                 error_log("#{$this->paperId}: cannot find {$cflt->author_index}");
+                error_log(debug_string_backtrace());
                 $cfltdesc = "<em>author #{$cflt->author_index}’s affiliation</em> " . $userm->highlight($cflt->affiliation);
             }
         } else {
