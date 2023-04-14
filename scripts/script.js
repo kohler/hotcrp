@@ -9801,9 +9801,10 @@ function transfer_form_values($dst, $src, names) {
 
 
 // login UI
-handle_ui.on("js-signin", function () {
+handle_ui.on("js-signin", function (evt) {
     var form = this, signin = document.getElementById("signin_signin");
     signin && (signin.disabled = true);
+    evt.preventDefault();
     $.get(hoturl("api/session"), function () { form.submit() });
 });
 
@@ -10755,7 +10756,8 @@ handle_ui.on("js-profile-token-delete", function () {
 
 
 // review UI
-handle_ui.on("js-acceptish-review", function () {
+handle_ui.on("js-acceptish-review", function (evt) {
+    evt.preventDefault();
     $.ajax(this.formAction || this.action, {
         method: "POST", data: $(this.form).serialize(),
         success: function (data) {

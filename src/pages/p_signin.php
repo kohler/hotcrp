@@ -150,7 +150,7 @@ class Signin_Page {
     static function print_form_start_for(Qrequest $qreq, $page, $extraclass = "") {
         echo '<div class="', $extraclass ? Ht::add_tokens("homegrp", $extraclass) : "homegrp",
             '" id="homeaccount">',
-            Ht::form($qreq->conf()->hoturl($page), ["class" => "compact-form ui-submit uin js-signin"]),
+            Ht::form($qreq->conf()->hoturl($page), ["class" => "compact-form ui-submit js-signin"]),
             Ht::hidden("post", $qreq->post_value(true));
         if ($qreq->is_post() && !$qreq->valid_token()) {
             echo Ht::hidden("post_retry", "1");
