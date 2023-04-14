@@ -1374,9 +1374,9 @@ class ReviewValues extends MessageSet {
                                 $newstatus, $oldstatus,
                                 Contact $reviewer, Contact $user) {
         $info = [
-            "prow" => $prow, "rrow" => $rrow,
+            "prow" => $prow,
+            "rrow" => $rrow,
             "reviewer_contact" => $reviewer,
-            "check_function" => "HotCRPMailer::check_can_view_review",
             "combination_type" => 1
         ];
         $diffinfo = $rrow->prop_diff();
@@ -1412,23 +1412,29 @@ class ReviewValues extends MessageSet {
 
         $preps = [];
         foreach ($prow->review_followers() as $minic) {
-            if ($minic->contactId !== $user->contactId
-                && $minic->can_view_review($prow, $rrow, $diff_view_score)
-                && ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED
-                    || $rrow->contactId == $minic->contactId
-                    || $rrow->requestedBy == $minic->contactId
-                    || ($prow->watch($minic) & Contact::WATCH_REVIEW) !== 0)
-                && ($p = HotCRPMailer::prepare_to($minic, $template, $info))) {
-                // Don't combine preparations unless you can see all submitted
-                // reviewer identities
-                if (!$always_combine
-                    && !$prow->has_author($minic)
-                    && (!$prow->has_reviewer($minic)
-                        || !$minic->can_view_review_identity($prow, null))) {
-                    $p->unique_preparation = true;
-                }
-                $preps[] = $p;
+            assert(($minic->overrides() & Contact::OVERRIDE_CONFLICT) === 0);
+            if ($minic->contactId === $user->contactId
+                || $minic->is_dormant()
+                || !$minic->can_view_review($prow, $rrow, $diff_view_score)
+                || ($rrow->reviewStatus < ReviewInfo::RS_COMPLETED
+                    && $rrow->contactId !== $minic->contactId
+                    && $rrow->requestedBy !== $minic->contactId
+                    && ($prow->watch($minic) & Contact::WATCH_REVIEW) === 0)) {
+                continue;
             }
+            $p = HotCRPMailer::prepare_to($minic, $template, $info);
+            if (!$p) {
+                continue;
+            }
+            // Don't combine preparations unless you can see all submitted
+            // reviewer identities
+            if (!$always_combine
+                && !$prow->has_author($minic)
+                && (!$prow->has_reviewer($minic)
+                    || !$minic->can_view_review_identity($prow, null))) {
+                $p->unique_preparation = true;
+            }
+            $preps[] = $p;
         }
 
         if (!empty($preps)) {

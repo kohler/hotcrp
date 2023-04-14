@@ -56,6 +56,7 @@ class Mailer {
     function __construct(Conf $conf, $recipient = null, $settings = []) {
         $this->conf = $conf;
         $this->eol = $conf->opt("postfixEOL") ?? "\r\n";
+        $this->flowed = !!$this->conf->opt("mailFormatFlowed");
         $this->reset($recipient, $settings);
     }
 
@@ -66,7 +67,6 @@ class Mailer {
         if ($this->width <= 0) {
             $this->width = 10000000;
         }
-        $this->flowed = !!$this->conf->opt("mailFormatFlowed");
         $this->censor = $settings["censor"] ?? self::CENSOR_NONE;
         $this->reason = $settings["reason"] ?? null;
         $this->change_message = $settings["change"] ?? null;

@@ -589,11 +589,7 @@ class HotCRPMailer extends Mailer {
         if (!$recipient->is_dormant()) {
             $old_overrides = $recipient->remove_overrides(Contact::OVERRIDE_CONFLICT);
             $mailer = new HotCRPMailer($recipient->conf, $recipient, $rest);
-            $checkf = $rest["check_function"] ?? null;
-            if (!$checkf
-                || call_user_func($checkf, $recipient, $mailer->row, $mailer->rrow)) {
-                $answer = $mailer->prepare($template, $rest);
-            }
+            $answer = $mailer->prepare($template, $rest);
             $recipient->set_overrides($old_overrides);
         }
         return $answer;
