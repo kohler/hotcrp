@@ -11114,19 +11114,27 @@ handle_ui.on("js-submit-list", function (evt) {
         fn = this.value;
         fnbutton = this;
         form = this.form;
-    } else if (form.elements.defaultfn && form.elements.defaultfn.value) {
-        fn = form.elements.defaultfn.value;
-        fnbutton = form.querySelector(".js-submit-list[name=fn,value='" + fn + "']");
-    } else if (document.activeElement) {
-        e = document.activeElement.closest(".pl-footer-part");
-        es = e ? e.querySelectorAll(".js-submit-list") : null;
+    } else if ((e = form.elements.defaultfn) && e.value) {
+        fn = e.value;
+        es = form.elements.fn;
+        for (i = 0; es && i !== es.length; ++i) {
+            if (es[i].value === fn)
+                fnbutton = es[i];
+        }
+    } else if (document.activeElement
+               && (e = document.activeElement.closest(".pl-footer-part"))) {
+        es = e.querySelectorAll(".js-submit-list");
         if (es && es.length === 1) {
             fn = es[0].value;
             fnbutton = es[0];
         }
     }
-    if (fn && fn.indexOf("/") < 0 && (e = form.elements[fn + "fn"]) && e.value)
+    if (fn
+        && fn.indexOf("/") < 0
+        && (e = form.elements[fn + "fn"])
+        && e.value) {
         fn += "/" + e.value;
+    }
 
     // find selected
     var table = (fnbutton && fnbutton.closest("table.pltable")) || form;
@@ -11136,13 +11144,15 @@ handle_ui.on("js-submit-list", function (evt) {
         allval.push(es[i].value);
         es[i].checked && chkval.push(es[i].value);
     }
-    if (!chkval.length && fnbutton && hasClass(fnbutton, "can-submit-all")) {
-        chkval = allval;
-        isdefault = true;
-    } else if (!chkval.length) {
-        alert("Select one or more rows first.");
-        evt.preventDefault();
-        return;
+    if (!chkval.length) {
+        if (fnbutton && hasClass(fnbutton, "can-submit-all")) {
+            chkval = allval;
+            isdefault = true;
+        } else if (!chkval.length) {
+            alert("Select one or more rows first.");
+            evt.preventDefault();
+            return;
+        }
     }
 
     // create a new form
@@ -11152,8 +11162,9 @@ handle_ui.on("js-submit-list", function (evt) {
             document.body.removeChild(e);
     }
     var bgform, action = form.action, need_bulkwarn = false;
-    if (fnbutton && fnbutton.hasAttribute("formaction"))
+    if (fnbutton && fnbutton.hasAttribute("formaction")) {
         action = fnbutton.getAttribute("formaction");
+    }
     if (fnbutton && fnbutton.getAttribute("formmethod") === "get" && chkval.length < 20) {
         bgform = hoturl_get_form(action);
         if (!bgform.elements.fn)
@@ -11171,8 +11182,9 @@ handle_ui.on("js-submit-list", function (evt) {
         bgform.action = hoturl_set(action, "fn", fn);
     }
     bgform.className = "is-background-form";
-    if (fnbutton && fnbutton.hasAttribute("formtarget"))
+    if (fnbutton && fnbutton.hasAttribute("formtarget")) {
         bgform.setAttribute("target", fnbutton.getAttribute("formtarget"));
+    }
     document.body.appendChild(bgform);
     if (chkval)
         bgform.appendChild(hidden_input("p", chkval.join(" ")));
@@ -11190,8 +11202,9 @@ handle_ui.on("js-submit-list", function (evt) {
                     e.setAttribute("name", es[i].name);
                     bgform.appendChild(e);
                     e.files = es[i].files;
-                } else
+                } else {
                     bgform.appendChild(hidden_input(es[i].name, es[i].value));
+                }
                 if (es[i].hasAttribute("data-bulkwarn")
                     || (es[i].tagName === "SELECT"
                         && es[i].selectedIndex >= 0

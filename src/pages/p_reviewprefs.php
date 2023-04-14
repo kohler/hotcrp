@@ -140,7 +140,7 @@ class ReviewPrefs_Page {
         if ($qreq->sort) {
             $hoturl_args["sort"] = $qreq->sort;
         }
-        echo Ht::form($conf->hoturl("=reviewprefs", $hoturl_args), ["id" => "sel", "class" => "ui-submit js-submit-paperlist assignpc"]),
+        echo Ht::form($conf->hoturl("=reviewprefs", $hoturl_args), ["id" => "sel", "class" => "ui-submit js-submit-list assignpc"]),
             Ht::hidden("defaultfn", ""),
             Ht::hidden_default_submit("default", 1);
         if ($search->has_message()) {

@@ -258,7 +258,7 @@ class Search_Page {
         echo "<div class=\"maintabsep\"></div>\n\n";
 
         if ($this->pl->has("sel")) {
-            echo Ht::form($this->conf->selfurl($qreq, ["forceShow" => null], Conf::HOTURL_POST), ["id" => "sel", "class" => "ui-submit js-submit-paperlist"]),
+            echo Ht::form($this->conf->selfurl($qreq, ["forceShow" => null], Conf::HOTURL_POST), ["id" => "sel", "class" => "ui-submit js-submit-list"]),
                 Ht::hidden("defaultfn", ""),
                 Ht::hidden("forceShow", (string) $qreq->forceShow, ["id" => "forceShow"]),
                 Ht::hidden_default_submit("default", 1);
