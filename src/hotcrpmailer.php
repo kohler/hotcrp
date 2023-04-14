@@ -69,7 +69,8 @@ class HotCRPMailer extends Mailer {
     protected $_statistics = null;
 
 
-    /** @param ?Contact $recipient */
+    /** @param ?Contact $recipient
+     * @param array{prow?:PaperInfo,rrow?:ReviewInfo,requester_contact?:Contact,reviewer_contact?:Contact} $rest */
     function __construct(Conf $conf, $recipient = null, $rest = []) {
         parent::__construct($conf);
         $this->reset($recipient, $rest);
@@ -103,7 +104,7 @@ class HotCRPMailer extends Mailer {
         // Infer reviewer contact from rrow/comment_row
         if (!$this->contacts["reviewer"]) {
             if ($this->rrow) {
-                $this->contacts["reviewer"] = new Author($this->rrow->reviewer());
+                $this->contacts["reviewer"] = $this->rrow->reviewer();
             } else if ($this->comment_row && $this->comment_row->email !== null) {
                 $this->contacts["reviewer"] = new Author($this->comment_row);
             }

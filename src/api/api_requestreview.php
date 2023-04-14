@@ -210,14 +210,16 @@ class RequestReview_API {
                 $request->reviewRound);
             Dbl::qx_raw("unlock tables");
 
-            $reviewer_contact = (object) [
+            $reviewer_contact = Author::make_keyed([
                 "firstName" => $reviewer ? $reviewer->firstName : $request->firstName,
                 "lastName" => $reviewer ? $reviewer->lastName : $request->lastName,
+                "affiliation" => $reviewer ? $reviewer->affiliation : $request->affiliation,
                 "email" => $email
-            ];
+            ]);
             HotCRPMailer::send_to($requester, "@denyreviewrequest", [
                 "prow" => $prow,
-                "reviewer_contact" => $reviewer_contact, "reason" => $reason
+                "reviewer_contact" => $reviewer_contact,
+                "reason" => $reason
             ]);
 
             $user->log_activity_for($requester, "Review proposal denied for $email", $prow);
@@ -313,7 +315,7 @@ class RequestReview_API {
             if ($rrow->requestedBy > 0
                 && ($requser = $user->conf->user_by_id($rrow->requestedBy))) {
                 HotCRPMailer::send_to($requser, "@acceptreviewrequest", [
-                    "prow" => $prow, "reviewer_contact" => $rrow
+                    "prow" => $prow, "reviewer_contact" => $rrow->reviewer()
                 ]);
             }
         }
@@ -401,7 +403,9 @@ class RequestReview_API {
             if ($rrow->requestedBy > 0
                 && ($requser = $user->conf->user_by_id($rrow->requestedBy))) {
                 HotCRPMailer::send_to($requser, "@declinereviewrequest", [
-                    "prow" => $prow, "reviewer_contact" => $rrow, "reason" => $reason
+                    "prow" => $prow,
+                    "reviewer_contact" => $rrow->reviewer(),
+                    "reason" => $reason
                 ]);
             }
 
