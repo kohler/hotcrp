@@ -266,8 +266,9 @@ class PaperStatus_Tester {
         $newpaper = $this->u_estrin->checked_paper_by_id($ps->paperId);
         xassert($newpaper);
         xassert_eqq($newpaper->title, "New paper");
+        xassert_eqq($newpaper->title(), "New paper");
         xassert_eqq($newpaper->abstract, "This is an abstract");
-        xassert_eqq($newpaper->abstract_text(), "This is an abstract");
+        xassert_eqq($newpaper->abstract(), "This is an abstract");
         xassert_eqq(count($newpaper->author_list()), 1);
         $aus = $newpaper->author_list();
         xassert_eqq($aus[0]->firstName, "Bobby");
@@ -287,7 +288,7 @@ class PaperStatus_Tester {
         xassert($newpaper);
         xassert_eqq($newpaper->title, "New paper");
         xassert_eqq($newpaper->abstract, "This is an abstract");
-        xassert_eqq($newpaper->abstract_text(), "This is an abstract");
+        xassert_eqq($newpaper->abstract(), "This is an abstract");
         xassert_eqq(count($newpaper->author_list()), 1);
         $aus = $newpaper->author_list();
         xassert_eqq($aus[0]->firstName, "Bobby");
@@ -313,7 +314,7 @@ class PaperStatus_Tester {
         xassert($newpaper);
         xassert_eqq($newpaper->title, "New paper");
         xassert_eqq($newpaper->abstract, "This is an abstract");
-        xassert_eqq($newpaper->abstract_text(), "This is an abstract");
+        xassert_eqq($newpaper->abstract(), "This is an abstract");
         xassert_eqq(count($newpaper->author_list()), 1);
         $aus = $newpaper->author_list();
         xassert_eqq($aus[0]->firstName, "Bobby");
@@ -339,7 +340,7 @@ class PaperStatus_Tester {
         xassert($newpaperx);
         xassert_eqq($newpaperx->title, "New paper");
         xassert_eqq($newpaperx->abstract, "This is an abstract");
-        xassert_eqq($newpaperx->abstract_text(), "This is an abstract");
+        xassert_eqq($newpaperx->abstract(), "This is an abstract");
         xassert_eqq(count($newpaperx->author_list()), 1);
         $aus = $newpaperx->author_list();
         xassert_eqq($aus[0]->firstName, "Bobby");
@@ -533,7 +534,7 @@ class PaperStatus_Tester {
         xassert($newpaper);
         xassert_eqq($newpaper->title, "New paper");
         xassert_eqq($newpaper->abstract, "This is an abstract");
-        xassert_eqq($newpaper->abstract_text(), "This is an abstract");
+        xassert_eqq($newpaper->abstract(), "This is an abstract");
         xassert_eqq(count($newpaper->author_list()), 1);
         $aus = $newpaper->author_list();
         xassert_eqq($aus[0]->firstName, "Bobby");
@@ -555,7 +556,7 @@ class PaperStatus_Tester {
         xassert($newpaper);
         xassert_eqq($newpaper->title, "New paper");
         xassert_eqq($newpaper->abstract, "This is an abstract");
-        xassert_eqq($newpaper->abstract_text(), "This is an abstract");
+        xassert_eqq($newpaper->abstract(), "This is an abstract");
         xassert_eqq(count($newpaper->author_list()), 1);
         $aus = $newpaper->author_list();
         xassert_eqq($aus[0]->firstName, "Robert");
@@ -584,7 +585,7 @@ class PaperStatus_Tester {
         xassert($nprow1);
         xassert_eqq($nprow1->title, "Paper about mantis shrimp");
         xassert_eqq($nprow1->abstract, "They see lots of colors.");
-        xassert_eqq($nprow1->abstract_text(), "They see lots of colors.");
+        xassert_eqq($nprow1->abstract(), "They see lots of colors.");
         xassert_eqq(count($nprow1->author_list()), 1);
         $aus = $nprow1->author_list();
         xassert_eqq($aus[0]->firstName, "David");

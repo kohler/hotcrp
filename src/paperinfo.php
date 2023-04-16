@@ -926,29 +926,48 @@ class PaperInfo {
         return $this->conf->check_format($this->paperFormat, $check_simple ? $text : null);
     }
 
+    /** @return string */
+    function title() {
+        return $this->title;
+    }
+
     /** @return int */
     function title_format() {
         return $this->format_of($this->title, true);
     }
 
     /** @return string */
-    function abstract_text() {
-        if ($this->dataOverflow && isset($this->dataOverflow["abstract"])) {
+    function abstract() {
+        if ($this->dataOverflow !== null
+            && isset($this->dataOverflow["abstract"])) {
             return $this->dataOverflow["abstract"];
         } else {
             return $this->abstract ?? "";
         }
     }
 
+    /** @return string
+     * @deprecated */
+    function abstract_text() {
+        return $this->abstract();
+    }
+
     /** @return int */
     function abstract_format() {
-        return $this->format_of($this->abstract_text(), true);
+        return $this->format_of($this->abstract(), true);
     }
 
     function edit_format() {
         return $this->conf->format_info($this->paperFormat);
     }
 
+
+    /** @return string */
+    function authorInformation() {
+        // convenience method because we need abstract(), collaborators()
+        // for overflow
+        return $this->authorInformation;
+    }
 
     /** @param string $authorInformation
      * @return list<Author> */
@@ -1136,7 +1155,8 @@ class PaperInfo {
 
     /** @return string */
     function collaborators() {
-        if ($this->dataOverflow && isset($this->dataOverflow["collaborators"])) {
+        if ($this->dataOverflow !== null
+            && isset($this->dataOverflow["collaborators"])) {
             return $this->dataOverflow["collaborators"];
         } else {
             return $this->collaborators ?? "";
@@ -1384,11 +1404,12 @@ class PaperInfo {
     }
 
 
-    /** @return ?string */
+    /** @param 'title'|'abstract'|'authorInformation'|'collaborators' $field
+     * @return ?string */
     private function deaccented_field($field) {
         $this->_deaccents = $this->_deaccents ?? [];
         if (!array_key_exists($field, $this->_deaccents)) {
-            $str = $this->$field ?? "";
+            $str = $this->{$field}();
             if ($str !== "" && !is_usascii($str)) {
                 $this->_deaccents[$field] = UnicodeHelper::deaccent($str);
             } else {
@@ -1399,9 +1420,10 @@ class PaperInfo {
     }
 
     /** @param TextPregexes $reg
+     * @param 'title'|'abstract'|'authorInformation'|'collaborators' $field
      * @return bool */
     function field_match_pregexes($reg, $field) {
-        return Text::match_pregexes($reg, $this->$field, $this->deaccented_field($field));
+        return Text::match_pregexes($reg, $this->{$field}(), $this->deaccented_field($field));
     }
 
 

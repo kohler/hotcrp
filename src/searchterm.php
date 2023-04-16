@@ -1201,7 +1201,7 @@ class Limit_SearchTerm extends SearchTerm {
 class TextMatch_SearchTerm extends SearchTerm {
     /** @var Contact */
     private $user;
-    /** @var string */
+    /** @var 'title'|'abstract'|'authorInformation'|'collaborators' */
     private $field;
     /** @var bool */
     private $authorish;
@@ -1238,6 +1238,7 @@ class TextMatch_SearchTerm extends SearchTerm {
 
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_column($this->field, "Paper.{$this->field}");
+        $sqi->add_column("dataOverflow", "Paper.dataOverflow");
         if ($this->trivial && !$this->authorish) {
             return "(Paper.{$this->field}!='' or Paper.dataOverflow is not null)";
         } else {
@@ -1248,7 +1249,7 @@ class TextMatch_SearchTerm extends SearchTerm {
         return $this->trivial && !$this->authorish;
     }
     function test(PaperInfo $row, $xinfo) {
-        $data = $row->{$this->field};
+        $data = $row->{$this->field}();
         if ($this->authorish && !$this->user->allow_view_authors($row)) {
             $data = "";
         }

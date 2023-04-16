@@ -8,7 +8,7 @@ class Abstract_PaperOption extends PaperOption {
         $this->set_required($conf->opt("noAbstract") ? self::REQ_NO : self::REQ_REGISTER);
     }
     function value_force(PaperValue $ov) {
-        if (($ab = $ov->prow->abstract_text()) !== "") {
+        if (($ab = $ov->prow->abstract()) !== "") {
             $ov->set_value_data([1], [$ab]);
         }
     }
@@ -47,7 +47,7 @@ class Abstract_PaperOption extends PaperOption {
         if ($fr->for_page()) {
             $fr->table->render_abstract($fr, $this);
         } else {
-            $text = $ov->prow->abstract_text();
+            $text = $ov->prow->abstract();
             if ($text !== "") {
                 $fr->value = $text;
                 $fr->value_format = $ov->prow->abstract_format();

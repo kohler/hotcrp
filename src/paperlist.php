@@ -1007,7 +1007,7 @@ class PaperList {
         } else if ($key === "abstract") {
             return $this->conf->opt("noAbstract") !== 1
                 && $this->rowset()->any(function ($row) {
-                    return $row->abstract_text() !== "";
+                    return $row->abstract() !== "";
                 });
         } else if ($key === "authors") {
             return $this->rowset()->any(function ($row) {

@@ -404,7 +404,7 @@ class PaperTable {
         }
         $this->foldmap[8] = $vas === 1;
         if ($this->foldmap[6]) {
-            $abstract = $this->highlight($this->prow->abstract_text(), "ab", $match);
+            $abstract = $this->highlight($this->prow->abstract(), "ab", $match);
             if ($match || !$this->abstract_foldable($abstract)) {
                 $this->foldmap[6] = false;
             }
@@ -776,7 +776,7 @@ class PaperTable {
         $fr->title = false;
         $fr->value_format = 5;
 
-        $html = $this->highlight($this->prow->abstract_text(), "ab", $match);
+        $html = $this->highlight($this->prow->abstract(), "ab", $match);
         if (trim($html) === "") {
             if ($this->conf->opt("noAbstract"))
                 return;

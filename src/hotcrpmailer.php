@@ -387,7 +387,7 @@ class HotCRPMailer extends Mailer {
         }
     }
     function kw_abstract() {
-        return $this->row->abstract_text();
+        return $this->row->abstract();
     }
     function kw_pid() {
         return $this->row->paperId;

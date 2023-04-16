@@ -9,7 +9,7 @@ class GetAbstracts_ListAction extends ListAction {
      * @param Contact $user
      * @param PaperOption $o */
     private static function render_abstract($fr, $prow, $user, $o) {
-        $fr->value = $prow->abstract_text();
+        $fr->value = $prow->abstract();
         $fr->value_format = $prow->abstract_format();
     }
     /** @param FieldRender $fr

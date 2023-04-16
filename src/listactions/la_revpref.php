@@ -80,7 +80,7 @@ class Revpref_ListAction extends ListAction {
                     $item["authors"] = join("\n", $aus);
                     $fields["authors"] = true;
                 }
-                $item["abstract"] = $prow->abstract_text();
+                $item["abstract"] = $prow->abstract();
                 if ($prow->topicIds !== "") {
                     $item["topics"] = $prow->unparse_topics_text();
                     $fields["topics"] = true;
