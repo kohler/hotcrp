@@ -518,8 +518,6 @@ class PaperInfo {
     private $_author_array;
     /** @var ?array<string,string> */
     private $_deaccents;
-    /** @var ?string */
-    private $_full_collaborators;
     /** @var ?list<AuthorMatcher> */
     private $_collaborator_array;
     /** @var ?array<int,array{int,?int}> */
@@ -1153,16 +1151,17 @@ class PaperInfo {
 
     /** @return string */
     function full_collaborators() {
-        if ($this->_full_collaborators === null) {
-            $s = $this->collaborators();
-            foreach ($this->conflicts(true) as $cflt) {
-                if ($cflt->conflictType >= CONFLICT_AUTHOR
-                    && ($cflt->collaborators ?? "") !== null)
-                    $s = str_ends_with($s, "\n") ? "{$s}{$cflt->collaborators}" : "{$s}\n{$cflt->collaborators}";
-            }
-            $this->_full_collaborators = $s;
+        $a = [];
+        if (($s = $this->collaborators()) !== "") {
+            $a[] = $s;
         }
-        return $this->_full_collaborators;
+        foreach ($this->conflicts(true) as $cflt) {
+            if ($cflt->conflictType >= CONFLICT_AUTHOR
+                && ($s = $cflt->collaborators ?? "") !== "") {
+                $a[] = $s;
+            }
+        }
+        return join("\n", $a);
     }
 
     /** @return Generator<AuthorMatcher> */
