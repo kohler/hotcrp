@@ -1239,7 +1239,7 @@ class TextMatch_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_column($this->field, "Paper.{$this->field}");
         if ($this->trivial && !$this->authorish) {
-            return "Paper.{$this->field}!=''";
+            return "(Paper.{$this->field}!='' or Paper.dataOverflow is not null)";
         } else {
             return "true";
         }
