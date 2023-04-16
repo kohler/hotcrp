@@ -1453,22 +1453,11 @@ class ReviewValues extends MessageSet {
             assert($rrow->reviewRound === $this->conf->assignment_round($rrow->reviewType < REVIEW_PC));
         }
         $old_nonempty_view_score = $this->rf->nonempty_view_score($rrow);
-
-        $oldstatus = $newstatus = $rrow->reviewStatus;
-        if (($this->req["ready"] ?? null)
-            && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED) {
-            if (!$rrow->subject_to_approval()) {
-                $newstatus = ReviewInfo::RS_COMPLETED;
-            } else if (!$user->isPC) {
-                $newstatus = max(ReviewInfo::RS_DELIVERED, $oldstatus);
-            } else if ($this->req["adoptreview"] ?? null) {
-                $newstatus = ReviewInfo::RS_ADOPTED;
-            } else {
-                $newstatus = ReviewInfo::RS_COMPLETED;
-            }
-        }
+        $oldstatus = $rrow->reviewStatus;
         $admin = $user->allow_administer($prow);
+        $usedReviewToken = $user->active_review_token_for($prow, $rrow);
 
+        // check whether we can review
         if (!$user->time_review($prow, $rrow)
             && (!isset($this->req["override"]) || !$admin)) {
             $this->rmsg(null, '<5>The <a href="' . $this->conf->hoturl("deadlines") . '">deadline</a> for entering this review has passed.', self::ERROR);
@@ -1478,15 +1467,27 @@ class ReviewValues extends MessageSet {
             return false;
         }
 
+        // check version match
         if (isset($this->req["if_vtag_match"])
             && $this->req["if_vtag_match"] !== $rrow->reviewTime) {
             $this->rmsg("if_vtag_match", "<0>Version mismatch", self::ERROR);
             return false;
         }
 
-        $qf = $qv = [];
+        // PC reviewers submit PC reviews, not external
+        // XXX this seems weird; if usedReviewToken, then review row user
+        // is never PC...
+        if ($rrow->reviewId
+            && $rrow->reviewType == REVIEW_EXTERNAL
+            && $user->contactId == $rrow->contactId
+            && $user->isPC
+            && !$usedReviewToken) {
+            $rrow->set_prop("reviewType", REVIEW_PC);
+        }
+
+        // review body
         $view_score = VIEWSCORE_EMPTY;
-        $fchanges = [[], []];
+        $any_fval_diffs = false;
         $wc = 0;
         foreach ($this->rf->all_fields() as $f) {
             if (!$f->test_exists($rrow)) {
@@ -1506,6 +1507,7 @@ class ReviewValues extends MessageSet {
             }
             $fval_diffs = $fval !== $old_fval
                 && (!is_string($fval) || $fval !== cleannl($old_fval ?? ""));
+            $any_fval_diffs = $any_fval_diffs || $fval_diffs;
             if ($fval_diffs || !$rrow->reviewId) {
                 $rrow->set_fval_prop($f, $fval, $fval_diffs);
             }
@@ -1517,58 +1519,77 @@ class ReviewValues extends MessageSet {
             }
         }
 
+        // word count, edit version
+        if ($any_fval_diffs) {
+            $rrow->set_prop("reviewWordCount", $wc);
+            assert(is_int($this->req["edit_version"] ?? 0)); // XXX sanity check
+            if ($rrow->reviewId
+                && ($this->req["edit_version"] ?? 0) > ($rrow->reviewEditVersion ?? 0)) {
+                $rrow->set_prop("reviewEditVersion", $this->req["edit_version"]);
+            }
+        }
+
+        // new status
+        if ($view_score === VIEWSCORE_EMPTY) {
+            // empty review: do not submit, adopt, or deliver
+            $newstatus = max($oldstatus, ReviewInfo::RS_ACCEPTED);
+        } else if (!($this->req["ready"] ?? null)) {
+            // unready nonempty review is at least drafted
+            $newstatus = max($oldstatus, ReviewInfo::RS_DRAFTED);
+        } else if ($oldstatus < ReviewInfo::RS_COMPLETED) {
+            $approvable = $rrow->subject_to_approval();
+            if ($approvable && !$user->isPC) {
+                $newstatus = max($oldstatus, ReviewInfo::RS_DELIVERED);
+            } else if ($approvable && ($this->req["adoptreview"] ?? null)) {
+                $newstatus = ReviewInfo::RS_ADOPTED;
+            } else {
+                $newstatus = ReviewInfo::RS_COMPLETED;
+            }
+        } else {
+            $newstatus = $oldstatus;
+        }
+
         // get the current time
         $now = max(time(), $rrow->reviewModified + 1);
 
-        if (($newstatus >= ReviewInfo::RS_COMPLETED)
-            !== ($oldstatus >= ReviewInfo::RS_COMPLETED)) {
-            $rrow->set_prop("reviewSubmitted", $newstatus >= ReviewInfo::RS_COMPLETED ? $now : null);
-            // diffinfo view_score should represent transition to submitted
-            if ($rrow->reviewId && $newstatus >= ReviewInfo::RS_COMPLETED) {
+        // set status-related fields
+        if ($newstatus === ReviewInfo::RS_ACCEPTED
+            && $rrow->reviewModified <= 0) {
+            $rrow->set_prop("reviewModified", 1);
+        } else if ($newstatus >= ReviewInfo::RS_DRAFTED
+                   && $any_fval_diffs) {
+            $rrow->set_prop("reviewModified", $now);
+        }
+        if ($newstatus === ReviewInfo::RS_DELIVERED
+            && $rrow->timeApprovalRequested <= 0) {
+            $rrow->set_prop("timeApprovalRequested", $now);
+        } else if ($newstatus === ReviewInfo::RS_ADOPTED
+                   && $rrow->timeApprovalRequested >= 0) {
+            $rrow->set_prop("timeApprovalRequested", -$now);
+        }
+        if ($newstatus >= ReviewInfo::RS_COMPLETED
+            && ($rrow->reviewSubmitted ?? 0) <= 0) {
+            $rrow->set_prop("reviewSubmitted", $now);
+            if ($rrow->reviewId) {
                 $rrow->mark_prop_view_score($old_nonempty_view_score);
             }
+        } else if ($newstatus < ReviewInfo::RS_COMPLETED
+                   && ($rrow->reviewSubmitted ?? 0) > 0) {
+            $rrow->set_prop("reviewSubmitted", null);
         }
         if ($newstatus >= ReviewInfo::RS_ADOPTED) {
             $rrow->set_prop("reviewNeedsSubmit", 0);
         }
-        if ($newstatus === ReviewInfo::RS_DELIVERED && $oldstatus <= $newstatus) {
-            $rrow->set_prop("timeApprovalRequested", $now);
-        } else if ($newstatus === ReviewInfo::RS_ADOPTED && $oldstatus !== $newstatus) {
-            $rrow->set_prop("timeApprovalRequested", -$now);
-        }
 
-        // check whether used a review token
-        $usedReviewToken = $user->active_review_token_for($prow, $rrow);
-
-        // blind? reviewer type? edit version?
+        // anonymity
         $reviewBlind = $this->conf->is_review_blind(!!($this->req["blind"] ?? null));
         if (!$rrow->reviewId
             || $reviewBlind != $rrow->reviewBlind) {
             $rrow->set_prop("reviewBlind", $reviewBlind ? 1 : 0);
             $rrow->mark_prop_view_score(VIEWSCORE_ADMINONLY);
         }
-        if ($rrow->reviewId
-            && $rrow->reviewType == REVIEW_EXTERNAL
-            && $user->contactId == $rrow->contactId
-            && $user->isPC
-            && !$usedReviewToken) {
-            $rrow->set_prop("reviewType", REVIEW_PC);
-        }
-        assert(is_int($this->req["edit_version"] ?? 0)); // XXX sanity check
-        if ($rrow->reviewId
-            && $rrow->prop_changed()
-            && ($this->req["edit_version"] ?? 0) > ($rrow->reviewEditVersion ?? 0)) {
-            $rrow->set_prop("reviewEditVersion", $this->req["edit_version"]);
-        }
-        if ($rrow->prop_changed()) {
-            $rrow->set_prop("reviewWordCount", $wc);
-        }
 
         // notification
-        if ($rrow->prop_changed()) {
-            $rrow->set_prop("reviewModified", $now);
-            $newstatus = max($newstatus, ReviewInfo::RS_DRAFTED);
-        }
         $notification_bound = $now - ReviewForm::NOTIFICATION_DELAY;
         $newsubmit = $newstatus >= ReviewInfo::RS_COMPLETED
             && $oldstatus < ReviewInfo::RS_COMPLETED;
@@ -1583,7 +1604,7 @@ class ReviewValues extends MessageSet {
                 // Author can see modification.
                 $rrow->set_prop("reviewAuthorModified", $now);
             } else if (!$rrow->reviewAuthorModified
-                       && $rrow->base_prop("reviewModified")
+                       && ($rrow->base_prop("reviewModified") ?? 0) > 1
                        && $old_nonempty_view_score >= $author_view_score) {
                 // Author cannot see current modification; record last
                 // modification they could see
@@ -1718,7 +1739,7 @@ class ReviewValues extends MessageSet {
         if ($rrow->reviewType < REVIEW_SECONDARY
             && $rrow->requestedBy
             && $newstatus >= ReviewInfo::RS_COMPLETED) {
-            $this->conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId={$rrow->requestedBy} and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
+            $this->conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId={$prow->paperId} and contactId={$rrow->requestedBy} and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
         }
 
         // notify automatic tags

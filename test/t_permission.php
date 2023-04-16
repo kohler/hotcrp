@@ -341,6 +341,9 @@ class Permission_Tester {
         xassert(!$user_wilma->can_view_review($paper1, $review1));
         xassert(!$user_wilma->can_view_review($paper1, $review2));
         save_review(3, $user_wilma, $revreq);
+        $paper3 = $this->conf->checked_paper_by_id(3);
+        $rrow3 = $paper3->checked_review_by_user($user_wilma);
+        xassert_eqq($rrow3->reviewStatus, ReviewInfo::RS_COMPLETED);
         xassert(!$user_wilma->has_outstanding_review());
         xassert($user_wilma->can_view_review($paper1, $review1));
         xassert($user_wilma->can_view_review($paper1, $review2));
