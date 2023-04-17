@@ -857,6 +857,37 @@ class PaperTable {
         }
     }
 
+    /** @param list<Author> $aulist
+     * @param Contact $u
+     * @return ?Author */
+    private function _find_matching_author($aulist, $u) {
+        // check exact email match
+        foreach ($aulist as $au) {
+            if (strcasecmp($au->email, $u->email) === 0)
+                return $au;
+        }
+        // check name match
+        if ($u->firstName === "" && $u->lastName === "") {
+            return null;
+        }
+        $contact_n = $u->firstName . " " . $u->lastName;
+        $contact_preg = str_replace("\\.", "\\S*", "{\\b" . preg_quote($u->firstName) . "\\b.*\\b" . preg_quote($u->lastName) . "\\b}i");
+        foreach ($aulist as $au) {
+            if ($au->email !== ""
+                || ($au->firstName === "" && $au->lastName === "")) {
+                continue;
+            }
+            $author_n = $au->firstName . " " . $au->lastName;
+            $author_preg = str_replace("\\.", "\\S*", "{\\b" . preg_quote($au->firstName) . "\\b.*\\b" . preg_quote($au->lastName) . "\\b}i");
+            if (preg_match($contact_preg, $author_n)
+                || preg_match($author_preg, $contact_n)) {
+                return $au;
+            }
+        }
+        // no match
+        return null;
+    }
+
     /** @return array{list<Author>,list<Author>} */
     private function _analyze_authors() {
         // clean author information
@@ -867,41 +898,18 @@ class PaperTable {
 
         // find contact author information, combine with author table
         // XXX fix this, it too aggressively combines information!!!!
-        $result = $this->conf->qe("select contactId, firstName, lastName, '' affiliation, email from ContactInfo where contactId?a", array_keys($this->prow->contacts()));
         $contacts = [];
-        while ($result && ($row = $result->fetch_object("Author"))) {
-            $match = -1;
-            for ($i = 0; $match < 0 && $i < count($aulist); ++$i) {
-                if (strcasecmp($aulist[$i]->email, $row->email) == 0)
-                    $match = $i;
-            }
-            if (($row->firstName !== "" || $row->lastName !== "") && $match < 0) {
-                $contact_n = $row->firstName . " " . $row->lastName;
-                $contact_preg = str_replace("\\.", "\\S*", "{\\b" . preg_quote($row->firstName) . "\\b.*\\b" . preg_quote($row->lastName) . "\\b}i");
-                for ($i = 0; $match < 0 && $i < count($aulist); ++$i) {
-                    $f = $aulist[$i]->firstName;
-                    $l = $aulist[$i]->lastName;
-                    if (($f !== "" || $l !== "") && $aulist[$i]->email === "") {
-                        $author_n = $f . " " . $l;
-                        $author_preg = str_replace("\\.", "\\S*", "{\\b" . preg_quote($f) . "\\b.*\\b" . preg_quote($l) . "\\b}i");
-                        if (preg_match($contact_preg, $author_n)
-                            || preg_match($author_preg, $contact_n))
-                            $match = $i;
-                    }
-                }
-            }
-            if ($match >= 0) {
-                $au = $aulist[$match];
+        foreach ($this->prow->contact_list() as $u) {
+            if (($au = $this->_find_matching_author($aulist, $u))) {
                 if ($au->email === "") {
-                    $au->email = $row->email;
+                    $au->email = $u->email;
                 }
             } else {
-                $contacts[] = $au = $row;
+                $au = $contacts[] = new Author($u);
                 $au->nonauthor = true;
             }
-            $au->contactId = (int) $row->contactId;
+            $au->contactId = $u->contactId;
         }
-        Dbl::free($result);
 
         usort($contacts, $this->conf->user_comparator());
         return [$aulist, $contacts];
@@ -1381,12 +1389,13 @@ class PaperTable {
     private function _print_ps_pc_conflicts() {
         assert(!$this->editable && $this->prow->paperId);
         $pcconf = [];
-        $pcm = $this->conf->pc_members();
-        foreach ($this->prow->pc_conflicts() as $id => $cflt) {
-            if (Conflict::is_conflicted($cflt->conflictType)) {
-                $p = $pcm[$id];
-                $pcconf[$p->pc_index] = $this->user->reviewer_html_for($p);
+        $this->conf->pc_members(); // to ensure pc_index is set
+        foreach ($this->prow->conflict_list() as $cu) {
+            if (!$cu->user->is_pc_member()
+                || !Conflict::is_conflicted($cu->conflictType)) {
+                continue;
             }
+            $pcconf[$cu->user->pc_index] = $this->user->reviewer_html_for($cu->user);
         }
         if (empty($pcconf)) {
             $pcconf[] = 'None';

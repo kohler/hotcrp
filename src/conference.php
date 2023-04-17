@@ -118,7 +118,7 @@ class Conf {
     /** @var ?TopicSet */
     private $_topic_set;
     /** @var ?Conflict */
-    private $_conflict_types;
+    private $_conflict_set;
     /** @var ?array<int,?Contact> */
     private $_user_cache;
     /** @var ?list<int|string> */
@@ -1266,11 +1266,17 @@ class Conf {
 
 
     /** @return Conflict */
-    function conflict_types() {
-        if ($this->_conflict_types === null) {
-            $this->_conflict_types = new Conflict($this);
+    function conflict_set() {
+        if ($this->_conflict_set === null) {
+            $this->_conflict_set = new Conflict($this);
         }
-        return $this->_conflict_types;
+        return $this->_conflict_set;
+    }
+
+    /** @return Conflict
+     * @deprecated */
+    function conflict_types() {
+        return $this->conflict_set();
     }
 
 
@@ -1979,46 +1985,26 @@ class Conf {
         }
     }
 
-    /** @param string $fields
-     * @param ?list<int> $ids
-     * @param ?list<string> $emails
-     * @return list<Contact> */
-    private function _fresh_user_list($fields, $ids, $emails) {
-        if (empty($ids) && empty($emails)) {
-            return [];
-        }
-        $q = "select {$fields} from ContactInfo where ";
-        $qv = [];
-        if (!empty($ids)) {
-            $q .= "contactId?a";
-            $qv[] = $ids;
-        }
-        if (!empty($emails)) {
-            $q .= (empty($ids) ? "" : " or ") . "email?a";
-            $qv[] = $emails;
-        }
-        $result = $this->qe($q, ...$qv);
-        $us = [];
-        while (($u = Contact::fetch($result, $this))) {
-            $us[] = $u;
-        }
-        Dbl::free($result);
-        return $us;
-    }
-
     /** @param int $id
      * @return ?Contact */
     function fresh_user_by_id($id) {
-        $us = $this->_fresh_user_list("*", [$id], null);
-        return $us[0] ?? null;
+        $result = $this->qe("select * from ContactInfo where contactId=?", $id);
+        $u = Contact::fetch($result, $this);
+        $result->close();
+        return $u;
     }
 
     /** @param string $email
      * @return ?Contact */
     function fresh_user_by_email($email) {
         $email = trim((string) $email);
-        $us = $email !== "" ? $this->_fresh_user_list("*", null, [$email]) : [];
-        return $us[0] ?? null;
+        if ($email === "") {
+            return null;
+        }
+        $result = $this->qe("select * from ContactInfo where email=?", $email);
+        $u = Contact::fetch($result, $this);
+        $result->close();
+        return $u;
     }
 
     /** @param string $email
@@ -2026,7 +2012,7 @@ class Conf {
     function checked_user_by_email($email) {
         $acct = $this->fresh_user_by_email($email);
         if (!$acct) {
-            throw new Exception("Contact::checked_user_by_email($email) failed");
+            throw new Exception("Contact::checked_user_by_email({$email}) failed");
         }
         return $acct;
     }
@@ -2035,16 +2021,20 @@ class Conf {
     // user cache
 
     private function _ensure_user_cache() {
-        if ($this->_user_cache === null) {
-            $this->_user_cache = $this->_pc_set ? $this->_pc_set->as_map() : [];
+        if ($this->_user_cache !== null) {
+            return;
         }
+        $this->_user_cache = $this->_pc_set ? $this->_pc_set->as_map() : [];
     }
 
     private function _ensure_user_email_cache() {
-        if ($this->_user_email_cache === null) {
-            $this->_ensure_user_cache();
-            $this->_user_email_cache = [];
-            foreach ($this->_user_cache as $u) {
+        if ($this->_user_email_cache !== null) {
+            return;
+        }
+        $this->_ensure_user_cache();
+        $this->_user_email_cache = [];
+        foreach ($this->_user_cache as $u) {
+            if ($u !== null) {
                 $this->_user_email_cache[strtolower($u->email)] = $u;
             }
         }
@@ -2094,7 +2084,20 @@ class Conf {
             }
         }
         $this->_user_cache_missing = null;
-        foreach ($this->_fresh_user_list(self::user_query_fields($this->_slice), $reqids, $reqemails) as $u) {
+        $qf = $qv = [];
+        if (!empty($reqids)) {
+            $qf[] = "contactId?a";
+            $qv[] = $reqids;
+        }
+        if (!empty($reqemails)) {
+            $qf[] = "email?a";
+            $qv[] = $reqemails;
+        }
+        if (empty($qf)) {
+            return;
+        }
+        $result = $this->qe("select " . self::user_query_fields($this->_slice) . " from ContactInfo where " . join(" or ", $qf), ...$qv);
+        foreach (ContactSet::make_result($result, $this) as $u) {
             $this->_user_cache[$u->contactId] = $u;
             if ($this->_user_email_cache !== null) {
                 $this->_user_email_cache[strtolower($u->email)] = $u;
@@ -2168,21 +2171,28 @@ class Conf {
         $this->_slice &= ~Contact::SLICE_NO_COLLABORATORS;
     }
 
-    /** @param ?Contact $u */
-    function invalidate_user($u) {
+    /** @param ?Contact $u
+     * @param bool $nonmatching */
+    function invalidate_user($u, $nonmatching = false) {
         if ($u !== null) {
             $lemail = strtolower($u->email);
             if ($u->cdb_confid === 0) {
                 $ux = $this->_user_email_cache[$lemail] ?? null;
-                if ($this->_user_email_cache !== null) {
+                if ($this->_user_email_cache !== null
+                    && (!$nonmatching || $ux !== $u)) {
                     unset($this->_user_email_cache[$lemail]);
                 }
-                if ($this->_user_cache !== null) {
-                    if ($u->contactId > 0) {
-                        unset($this->_user_cache[$u->contactId]);
-                    } else if ($ux !== null && $ux->contactId > 0) {
-                        unset($this->_user_cache[$ux->contactId]);
-                    }
+                if ($u->contactId > 0) {
+                    $uid = $u->contactId;
+                } else if ($ux !== null && $ux->contactId > 0) {
+                    $uid = $ux->contactId;
+                } else {
+                    $uid = 0;
+                }
+                if ($this->_user_cache !== null
+                    && $uid > 0
+                    && (!$nonmatching || ($this->_user_cache[$uid] ?? null) !== $u)) {
+                    unset($this->_user_cache[$uid]);
                 }
             } else if ($this->_cdb_user_cache !== null) {
                 $ux = $this->_cdb_user_cache[$lemail] ?? null;

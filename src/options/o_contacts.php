@@ -25,35 +25,36 @@ class Contacts_PaperOption extends PaperOption {
     function value_force(PaperValue $ov) {
         // $ov->value_list: contact IDs
         // $ov->data_list: emails
-        // $ov->anno("users"): list<Author>
-        // $ov->anno("bad_users"): list<Author>
+        // $ov->anno("users"): list<Contact>
         // NB fake papers start out with this user as contact
         // NB only non-placeholder users
         $ca = $va = [];
-        foreach ($ov->prow->conflicts(true) as $cflt) {
-            if ($cflt->conflictType >= CONFLICT_AUTHOR
-                && $cflt->contactId > 0
-                && $cflt->disablement !== Contact::DISABLEMENT_PLACEHOLDER) {
-                $ca[] = $cflt;
-                $va[$cflt->contactId] = $cflt->email;
+        foreach ($ov->prow->conflict_list() as $cu) {
+            if ($cu->conflictType < CONFLICT_AUTHOR
+                || $cu->contactId <= 0
+                || $cu->user->is_placeholder()) {
+                continue;
             }
+            $ca[] = $au = Author::make_user($cu->user);
+            $au->conflictType = $cu->conflictType;
+            $va[$cu->contactId] = $cu->user->email;
         }
         $ov->set_value_data(array_keys($va), array_values($va));
-        $ov->set_anno("users", array_values($ca));
+        $ov->set_anno("users", $ca);
     }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         $ca = [];
-        foreach (self::users_anno($ov) as $c) {
-            if ($c->contactId >= 0)
-                $ca[$c->contactId] = $c;
+        foreach (self::users_anno($ov) as $u) {
+            if ($u->contactId >= 0)
+                $ca[$u->contactId] = $u;
         }
-        foreach ($ov->value_list() as $cid) {
-            if (!isset($ca[$cid]))
-                $ps->conf->prefetch_user_by_id($cid);
+        foreach ($ov->value_list() as $uid) {
+            if (!isset($ca[$uid]))
+                $ps->conf->prefetch_user_by_id($uid);
         }
         $j = [];
-        foreach ($ov->value_list() as $cid) {
-            if (($u = $ca[$cid] ?? $ps->conf->user_by_id($cid, USER_SLICE)))
+        foreach ($ov->value_list() as $uid) {
+            if (($u = $ca[$uid] ?? $ps->conf->user_by_id($uid, USER_SLICE)))
                 $j[] = Author::unparse_nea_json_for($u);
         }
         return $j;
@@ -67,7 +68,7 @@ class Contacts_PaperOption extends PaperOption {
                 $ov->msg("<0>(Ask another contact to remove you.)", MessageSet::INFORM);
             } else if (empty($ov->value_list())
                        && $ov->prow->paperId > 0
-                       && empty($ov->prow->contacts())) {
+                       && empty($ov->prow->contact_list())) {
                 $ov->error($this->conf->_("<0>Each submission must have at least one contact"));
             }
         }
@@ -75,11 +76,8 @@ class Contacts_PaperOption extends PaperOption {
     function value_save(PaperValue $ov, PaperStatus $ps) {
         // do not mark diff (will be marked later)
         $ps->clear_conflict_values(CONFLICT_CONTACTAUTHOR);
-        foreach (self::users_anno($ov) as $cflt) {
-            $ps->update_conflict_value($cflt->email, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
-            if (!$cflt->contactId) {
-                $ps->register_user($cflt);
-            }
+        foreach (self::users_anno($ov) as $u) {
+            $ps->update_conflict_value($u, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
         }
         return true;
     }
@@ -110,7 +108,7 @@ class Contacts_PaperOption extends PaperOption {
                         $modified = true;
                     }
                 }
-            } else if ($j === false) {
+            } else {
                 if ($specau[$i]->conflictType !== 0) {
                     $specau[$i]->email = $pemails[$i];
                     $curau[] = $specau[$i];

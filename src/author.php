@@ -11,24 +11,20 @@ class Author {
     public $email = "";
     /** @var string */
     public $affiliation = "";
+    /** @var ?string */
+    private $_name;
+    /** @var ?array{string,string,string} */
+    private $_deaccents;
     /** @var ?int */
     public $contactId;
     /** @var int */
     public $roles = 0;
     /** @var int */
     public $disablement = 0;
-    /** @var ?string */
-    public $collaborators;
-    /** @var ?string */
-    private $_name;
-    /** @var ?array{string,string,string} */
-    private $_deaccents;
-    /** @var ?bool */
-    public $nonauthor;
-    /** @var ?int */
-    public $paperId;
     /** @var ?int */
     public $conflictType;
+    /** @var ?bool */
+    public $nonauthor;
     /** @var ?int */
     public $author_index;
 
@@ -92,6 +88,16 @@ class Author {
         return $au;
     }
 
+    /** @param Contact $u
+     * @return Author */
+    static function make_user($u) {
+        $au = new Author($u);
+        $au->contactId = $u->contactId;
+        $au->roles = $u->roles;
+        $au->disablement = $u->disablement;
+        return $au;
+    }
+
     /** @param Author|Contact $o */
     function merge($o) {
         if ($this->email === "") {
@@ -100,10 +106,12 @@ class Author {
         if ($this->firstName === "" && $this->lastName === "") {
             $this->firstName = $o->firstName;
             $this->lastName = $o->lastName;
+            $this->_name = null;
         }
         if ($this->affiliation === "") {
             $this->affiliation = $o->affiliation;
         }
+        $this->_deaccents = null;
     }
 
     /** @param string $s */

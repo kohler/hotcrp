@@ -399,14 +399,15 @@ class MeetingTracker {
                 if ($show_pc_conflicts) {
                     $pcc = [];
                     $more = false;
-                    foreach ($prow->conflicts() as $cflt) {
-                        if (($pc = $pcm[$cflt->contactId] ?? null)
-                            && $cflt->is_conflicted()) {
-                            if ($pc->include_tracker_conflict($trs[$ti_index])) {
-                                $pcc[$pc->pc_index] = $pc->contactId;
-                            } else {
-                                $more = true;
-                            }
+                    foreach ($prow->conflict_types() as $uid => $ctype) {
+                        if (!($pc = $pcm[$uid] ?? null)
+                            || !Conflict::is_conflicted($ctype)) {
+                            continue;
+                        }
+                        if ($pc->include_tracker_conflict($trs[$ti_index])) {
+                            $pcc[$pc->pc_index] = $uid;
+                        } else {
+                            $more = true;
                         }
                     }
                     ksort($pcc);

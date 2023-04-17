@@ -21,7 +21,7 @@ class PCConflicts_PaperOption extends PaperOption {
     }
     function value_export_json(PaperValue $ov, PaperExport $pex) {
         $pcm = $this->conf->pc_members();
-        $confset = $this->conf->conflict_types();
+        $confset = $this->conf->conflict_set();
         $can_view_authors = $pex->user->allow_view_authors($ov->prow);
         $pcc = [];
         foreach (self::value_map($ov) as $k => $v) {
@@ -125,7 +125,7 @@ class PCConflicts_PaperOption extends PaperOption {
         }
 
         // parse conflicts
-        $confset = $prow->conf->conflict_types();
+        $confset = $prow->conf->conflict_set();
         $pv = new PaperValue($prow, $this);
         $emails = [];
         $values = [];
@@ -182,7 +182,7 @@ class PCConflicts_PaperOption extends PaperOption {
         }
 
         $selectors = $this->conf->setting("sub_pcconfsel");
-        $confset = $this->conf->conflict_types();
+        $confset = $this->conf->conflict_set();
         $ctypes = [];
         if ($selectors) {
             $ctypes[0] = $confset->unparse_text(0);

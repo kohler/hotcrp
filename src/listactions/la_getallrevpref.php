@@ -29,26 +29,27 @@ class GetAllRevpref_ListAction extends ListAction {
             if (!$user->allow_administer($prow)) {
                 continue;
             }
-            $conflicts = $prow->conflicts();
-            foreach ($pcm as $cid => $p) {
+            $ctypes = $prow->conflict_types();
+            foreach ($pcm as $uid => $p) {
                 $pref = $prow->preference($p);
-                $cflt = $conflicts[$cid] ?? null;
-                $is_cflt = $cflt && $cflt->is_conflicted();
-                $ts = $prow->topicIds !== "" ? $prow->topic_interest_score($p) : 0;
-                if ($pref[0] !== 0 || $pref[1] !== null || $is_cflt || $ts !== 0) {
-                    $l = [
-                        $prow->paperId, $prow->title,
-                        $p->firstName, $p->lastName, $p->email,
-                        $is_cflt ? "conflict" : "", $pref[0] ? : ""
-                    ];
-                    if ($has_expertise) {
-                        $l[] = unparse_expertise($pref[1]);
-                    }
-                    if ($has_interest) {
-                        $l[] = $ts ? : "";
-                    }
-                    $csvg->add_row($l);
+                $ctype = $ctypes[$uid] ?? 0;
+                $is_cflt = Conflict::is_conflicted($ctype);
+                $ts = $prow->topic_interest_score($p);
+                if ($pref[0] === 0 && $pref[1] === null && $ts === 0 && !$is_cflt) {
+                    continue;
                 }
+                $l = [
+                    $prow->paperId, $prow->title,
+                    $p->firstName, $p->lastName, $p->email,
+                    $is_cflt ? "conflict" : "", $pref[0] ? : ""
+                ];
+                if ($has_expertise) {
+                    $l[] = unparse_expertise($pref[1]);
+                }
+                if ($has_interest) {
+                    $l[] = $ts ? : "";
+                }
+                $csvg->add_row($l);
             }
         }
         return $csvg;

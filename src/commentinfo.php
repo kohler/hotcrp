@@ -1062,10 +1062,13 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $ctype = $this->commentType;
         $nocheck = false;
         if (($ctype & self::CT_DRAFT) !== 0) {
+            $cids = [];
             if (($ctype & (self::CT_RESPONSE | self::CT_BYAUTHOR)) !== 0) {
-                $cids = array_keys($this->prow->contacts());
+                foreach ($this->prow->contact_list() as $u) {
+                    $cids[] = $u->contactId;
+                }
             } else {
-                $cids = [$this->contactId];
+                $cids[] = $this->contactId;
             }
             $us = $this->prow->generic_followers($cids, "false", null);
         } else if (($ctype & self::CT_VISIBILITY) === self::CT_ADMINONLY) {

@@ -798,12 +798,12 @@ const TESTSC_DISABLED = 4;
  * @return string */
 function sorted_conflicts(PaperInfo $prow, $flags) {
     $c = [];
-    foreach ($prow->conflicts(true) as $cflt) {
-        if (($cflt->conflictType >= CONFLICT_AUTHOR
+    foreach ($prow->conflict_list() as $cu) {
+        if (($cu->conflictType >= CONFLICT_AUTHOR
              ? ($flags & TESTSC_CONTACTS) !== 0
              : ($flags & TESTSC_CONFLICTS) !== 0)
-            && ($cflt->disablement === 0 || ($flags & TESTSC_DISABLED) !== 0))
-            $c[] = $cflt->email;
+            && ($cu->user->disablement === 0 || ($flags & TESTSC_DISABLED) !== 0))
+            $c[] = $cu->user->email;
     }
     sort($c);
     return join(" ", $c);

@@ -985,43 +985,43 @@ class Permission_Tester {
         $paper3 = $this->u_chair->checked_paper_by_id(3);
         xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::GENERAL);
         xassert_assign($this->u_chair, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,pinned\n");
-        $paper3->load_conflicts(false);
+        $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::set_pinned(Conflict::GENERAL, true));
         xassert_assign($user_sclin, "paper,action,user,conflict type\n3,conflict,rguerin@ibm.com,pinned\n");
-        $paper3->load_conflicts(false);
+        $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::set_pinned(Conflict::GENERAL, true));
         xassert_assign($this->u_chair, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,none\n");
         xassert_assign($user_sclin, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,conflict\n");
-        $paper3->load_conflicts(false);
+        $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::GENERAL);
 
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,collaborator\n");
-        $paper3->load_conflicts(false);
+        $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 2);
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,advisor\n");
-        $paper3->load_conflicts(false);
+        $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 4);
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,advisee\n");
-        $paper3->load_conflicts(false);
+        $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 4);
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin,collaborator:none\n");
-        $paper3->load_conflicts(false);
+        $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 4);
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,any,advisee:collaborator\n");
-        $paper3->load_conflicts(false);
+        $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 2);
         xassert_assign($this->u_chair, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,pin unconflicted\n");
-        $paper3->load_conflicts(false);
+        $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 1);
         xassert(!$paper3->has_conflict($user_rguerin));
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,advisee\n");
-        $paper3->load_conflicts(false);
+        $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 1);
         xassert_assign($this->u_chair, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,unpin\n");
-        $paper3->load_conflicts(false);
+        $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 0);
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,advisee\n");
-        $paper3->load_conflicts(false);
+        $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 4);
 
         $this->conf->save_setting("sub_update", Conf::$now - 5);
@@ -1067,7 +1067,7 @@ class Permission_Tester {
         // change author list => remove conflict
         $ps = new PaperStatus($this->conf->root_user());
         xassert($ps->save_paper_json(json_decode('{"id":3,"authors":[{"name":"Nick McKeown", "email": "nickm@ee.stanford.edu", "affiliation": "Stanford University"}]}')));
-        $paper3->load_conflicts(false);
+        $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_sclin), 0);
         xassert_eqq(sorted_conflicts($paper3, TESTSC_CONTACTS), "mgbaker@cs.stanford.edu");
         xassert_eqq(sorted_conflicts($paper3, TESTSC_ENABLED), "mgbaker@cs.stanford.edu");
@@ -1731,6 +1731,8 @@ class Permission_Tester {
     }
 
     function test_withdraw_notification() {
+        $u = $this->conf->checked_user_by_email("anja@research.att.com");
+        xassert_eqq($u->disablement, 0);
         MailChecker::clear();
         xassert_assign($this->u_chair, "paper,action,reason\n16,withdraw,Suckola\n");
         MailChecker::check_db("withdraw-16-admin-notify");

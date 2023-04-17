@@ -56,7 +56,7 @@ class Assign_Page {
         }
         $round = CsvGenerator::quote(":" . (string) $rname);
 
-        $confset = $this->conf->conflict_types();
+        $confset = $this->conf->conflict_set();
         $acceptable_review_types = [];
         foreach ([0, REVIEW_PC, REVIEW_SECONDARY, REVIEW_PRIMARY, REVIEW_META] as $t) {
             $acceptable_review_types[] = (string) $t;

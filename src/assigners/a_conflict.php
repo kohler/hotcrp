@@ -70,7 +70,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
             $x = strtolower(substr($req["conflict"], 0, $pos));
             if (in_array($x, ["", "any", "all", "y", "yes", "conflict", "conflicted"])) {
                 return new CountMatcher(">" . CONFLICT_MAXUNCONFLICTED);
-            } else if (($ct = $conf->conflict_types()->parse_assignment($x, 0)) !== false) {
+            } else if (($ct = $conf->conflict_set()->parse_assignment($x, 0)) !== false) {
                 return new CountMatcher("=" . $ct);
             } else {
                 return null;
@@ -119,7 +119,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
                     $ct = $old_ct_na;
                 }
             } else {
-                $ct = $state->conf->conflict_types()->parse_assignment($text, $old_ct_na);
+                $ct = $state->conf->conflict_set()->parse_assignment($text, $old_ct_na);
             }
             if ($ct === false || Conflict::is_author($ct)) {
                 return new AssignmentError("Bad conflict type “{$text}”.");
@@ -240,7 +240,7 @@ class Conflict_Assigner extends Assigner {
                 "action" => "conflict",
                 "email" => $this->contact->email,
                 "name" => $this->contact->name(),
-                "conflict" => $aset->conf->conflict_types()->unparse_assignment(Conflict::pc_part($this->ctype))
+                "conflict" => $aset->conf->conflict_set()->unparse_assignment(Conflict::pc_part($this->ctype))
             ]);
         }
         if (($old_ct ^ $this->ctype) & CONFLICT_CONTACTAUTHOR) {

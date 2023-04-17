@@ -591,11 +591,10 @@ class PaperStatus_Tester {
         xassert_eqq($aus[0]->firstName, "David");
         xassert_eqq($aus[0]->lastName, "Attenborough");
         xassert_eqq($aus[0]->email, "atten@_.com");
-        $cflt = $nprow1->conflict_by_email("atten@_.com");
-        xassert($cflt->contactId > 0);
-        xassert_eqq($cflt->conflictType, CONFLICT_AUTHOR);
-        xassert_eqq($cflt->roles, 0);
-        xassert_eqq($cflt->disablement, Contact::DISABLEMENT_PLACEHOLDER);
+        $attenu = $this->conf->user_by_email("atten@_.com");
+        xassert_eqq($nprow1->conflict_type($attenu), CONFLICT_AUTHOR);
+        xassert_eqq($attenu->roles & Contact::ROLE_DBMASK, 0);
+        xassert_eqq($attenu->disablement, Contact::DISABLEMENT_PLACEHOLDER);
         xassert($nprow1->timeSubmitted > 0);
         xassert($nprow1->timeWithdrawn <= 0);
         xassert(!$nprow1->option(1));
@@ -810,13 +809,23 @@ Phil Porras.");
     /** @param PaperInfo $prow
      * @return list<int> */
     static function pc_conflict_keys($prow) {
-        return array_keys($prow->pc_conflicts());
+        $uids = [];
+        foreach ($prow->conflict_list() as $cu) {
+            if ($cu->user->is_pc_member())
+                $uids[] = $cu->contactId;
+        }
+        return $uids;
     }
 
     /** @param PaperInfo $prow
-     * @return array<int,int> */
+     * @return associative-array<int,int> */
     static function pc_conflict_types($prow) {
-        return array_map(function ($cflt) { return $cflt->conflictType; }, $prow->pc_conflicts());
+        $ctypes = [];
+        foreach ($prow->conflict_list() as $cu) {
+            if ($cu->user->is_pc_member())
+                $ctypes[$cu->contactId] = $cu->conflictType;
+        }
+        return $ctypes;
     }
 
     function test_save_pc_conflicts() {
@@ -1068,6 +1077,8 @@ Phil Porras.");
 
         $nprow1->invalidate_conflicts();
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS | TESTSC_DISABLED), "atten@_.com estrin@usc.edu gestrin@gusc.gedu");
+        $this->u_atten = $this->conf->checked_user_by_email("atten@_.com");
+        xassert_eqq($nprow1->conflict_type($this->u_atten), CONFLICT_AUTHOR);
 
         $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1, "contacts:1:email" => "atten@_.com", "contacts:1:active" => 1]), $nprow1, "update");
         xassert(!$ps->has_problem());

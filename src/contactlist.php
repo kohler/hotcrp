@@ -591,8 +591,8 @@ class ContactList {
             $this->_limit_cids = [];
             foreach ($prows as $prow) {
                 if ($this->test_paper_authors($prow)) {
-                    foreach ($prow->contacts() as $cid => $cflt) {
-                        $this->_limit_cids[$cid] = true;
+                    foreach ($prow->contact_list() as $u) {
+                        $this->_limit_cids[$u->contactId] = true;
                     }
                 }
             }
@@ -605,10 +605,10 @@ class ContactList {
             $this->_au_unsub = [];
             foreach ($prows as $prow) {
                 if ($this->test_paper_authors($prow)) {
-                    foreach ($prow->contacts() as $cflt) {
-                        $this->_au_data[$cflt->contactId][] = $prow->paperId;
+                    foreach ($prow->contact_list() as $u) {
+                        $this->_au_data[$u->contactId][] = $prow->paperId;
                         if ($prow->timeSubmitted <= 0) {
-                            $this->_au_unsub[$cflt->contactId] = true;
+                            $this->_au_unsub[$u->contactId] = true;
                         }
                     }
                 }

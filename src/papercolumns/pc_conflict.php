@@ -96,7 +96,7 @@ class Conflict_PaperColumn extends PaperColumn {
         } else if (!$this->show_description) {
             return review_type_icon(-1);
         } else {
-            return $pl->conf->conflict_types()->unparse_html(min($ct, CONFLICT_AUTHOR));
+            return $pl->conf->conflict_set()->unparse_html(min($ct, CONFLICT_AUTHOR));
         }
     }
     function edit_content(PaperList $pl, PaperInfo $row) {
@@ -124,7 +124,7 @@ class Conflict_PaperColumn extends PaperColumn {
         } else if (!$this->show_description) {
             return "Y";
         } else {
-            return $pl->conf->conflict_types()->unparse_csv(min($ct, CONFLICT_AUTHOR));
+            return $pl->conf->conflict_set()->unparse_csv(min($ct, CONFLICT_AUTHOR));
         }
     }
 

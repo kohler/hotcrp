@@ -21,9 +21,12 @@ class PCConflicts_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         $y = [];
         $pcm = $row->conf->pc_members();
-        foreach ($row->conflicts() as $id => $cflt) {
-            if (($pc = $pcm[$id] ?? null) && $cflt->is_conflicted())
-                $y[$pc->pc_index] = $pl->user->reviewer_html_for($pc);
+        foreach ($row->conflict_types() as $uid => $ctype) {
+            if (!($pc = $pcm[$uid] ?? null)
+                || !Conflict::is_conflicted($ctype)) {
+                continue;
+            }
+            $y[$pc->pc_index] = $pl->user->reviewer_html_for($pc);
         }
         ksort($y);
         return join(", ", $y);
@@ -31,9 +34,12 @@ class PCConflicts_PaperColumn extends PaperColumn {
     function text(PaperList $pl, PaperInfo $row) {
         $y = [];
         $pcm = $row->conf->pc_members();
-        foreach ($row->conflicts() as $id => $cflt) {
-            if (($pc = $pcm[$id] ?? null) && $cflt->is_conflicted())
-                $y[$pc->pc_index] = $pl->user->reviewer_text_for($pc);
+        foreach ($row->conflict_types() as $uid => $ctype) {
+            if (!($pc = $pcm[$uid] ?? null)
+                || !Conflict::is_conflicted($ctype)) {
+                continue;
+            }
+            $y[$pc->pc_index] = $pl->user->reviewer_text_for($pc);
         }
         ksort($y);
         return join("; ", $y);

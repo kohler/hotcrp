@@ -30,7 +30,7 @@ class ManualAssign_Page {
             }
         }
 
-        $confset = $this->conf->conflict_types();
+        $confset = $this->conf->conflict_set();
         $assignments = [];
         foreach ($this->viewer->paper_set(["paperId" => $pids, "reviewSignatures" => true]) as $row) {
             $name = "assrev{$row->paperId}u{$rcid}";

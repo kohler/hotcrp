@@ -53,22 +53,22 @@ class GetAuthors_ListAction extends ListAction {
                 $texts[] = $line;
             }
             if ($admin) {
-                foreach ($prow->contacts() as $cid => $c) {
-                    if (!isset($aucid[$cid])) {
-                        $u = $users[$cid];
-                        $texts[] = $line = [
-                            "paper" => $prow->paperId,
-                            "title" => $prow->title,
-                            "first" => $u->firstName,
-                            "last" => $u->lastName,
-                            "email" => $u->email,
-                            "affiliation" => $u->affiliation,
-                            "country" => $u->country(),
-                            "iscontact" => "nonauthor"
-                        ];
-                        $has_country = $has_country || $line["country"] !== "";
-                        $has_iscontact = true;
+                foreach ($prow->contact_list() as $u) {
+                    if (isset($aucid[$u->contactId])) {
+                        continue;
                     }
+                    $texts[] = $line = [
+                        "paper" => $prow->paperId,
+                        "title" => $prow->title,
+                        "first" => $u->firstName,
+                        "last" => $u->lastName,
+                        "email" => $u->email,
+                        "affiliation" => $u->affiliation,
+                        "country" => $u->country(),
+                        "iscontact" => "nonauthor"
+                    ];
+                    $has_country = $has_country || $line["country"] !== "";
+                    $has_iscontact = true;
                 }
             }
         }

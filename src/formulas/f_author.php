@@ -62,8 +62,8 @@ class Author_Fexpr extends Fexpr {
         $mf = self::$matchers[$matchidx];
         $n = 0;
         if (is_array($mf)) {
-            foreach ($prow->contacts() as $cid => $x) {
-                if (array_search($cid, $mf) !== false)
+            foreach ($prow->contact_list() as $u) {
+                if (array_search($u->contactId, $mf) !== false)
                     ++$n;
             }
         } else {

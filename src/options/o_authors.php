@@ -7,7 +7,7 @@ class Authors_PaperOption extends PaperOption {
         parent::__construct($conf, $args);
     }
     function author_list(PaperValue $ov) {
-        return PaperInfo::parse_author_list($ov->data_by_index(0) ?? "");
+        return PaperInfo::parse_author_list($ov->data() ?? "");
     }
     function value_force(PaperValue $ov) {
         $ov->set_value_data([1], [$ov->prow->authorInformation]);
@@ -19,7 +19,7 @@ class Authors_PaperOption extends PaperOption {
             $lemails[] = strtolower($email);
         }
         $au = [];
-        foreach (PaperInfo::parse_author_list($ov->data_by_index(0) ?? "") as $auth) {
+        foreach (PaperInfo::parse_author_list($ov->data() ?? "") as $auth) {
             $au[] = $j = (object) $auth->unparse_nea_json();
             if ($auth->email !== "" && in_array(strtolower($auth->email), $lemails)) {
                 $j->contact = true;
@@ -67,56 +67,39 @@ class Authors_PaperOption extends PaperOption {
         if ($msg2) {
             $ov->warning("<0>Please enter a name and optional email address for every author");
         }
-
-        if ($ov->value_count() === 2) {
-            foreach (explode("\n", $ov->data_by_index(1)) as $email) {
-                if (!validate_email($email)
-                    && $ov->prow->conflict_type_by_email($email) < CONFLICT_AUTHOR) {
-                    $ov->estop("<0>Invalid email address ‘{$email}’");
-                }
-            }
-        }
     }
-    /** @param list<Author> $authlist */
-    private function save_conflicts_author($authlist, PaperStatus $ps) {
+    function value_save(PaperValue $ov, PaperStatus $ps) {
+        // set property
+        $authlist = $this->author_list($ov);
+        $v = "";
         $emails = [];
         foreach ($authlist as $auth) {
+            if (!$auth->is_empty()) {
+                $v .= ($v === "" ? "" : "\n") . $auth->unparse_tabbed();
+            }
             $emails[] = $auth->email;
         }
-        $pemails = $this->conf->resolve_primary_emails($emails);
+        if ($v === $ov->prow->authorInformation) {
+            return true;
+        }
+        $ps->change_at($this);
+        $ov->prow->set_prop("authorInformation", $v);
+
+        // set conflicts
         $ps->clear_conflict_values(CONFLICT_AUTHOR);
+        $pemails = $this->conf->resolve_primary_emails($emails);
         foreach ($authlist as $i => $auth) {
             if ($auth->email === "") {
                 continue;
             }
-            if ($ps->update_conflict_value($auth->email, CONFLICT_AUTHOR, CONFLICT_AUTHOR)) {
-                $ps->register_user($auth);
+            if (strcasecmp($auth->email, $pemails[$i]) !== 0) {
+                $ps->update_conflict_value($auth, CONFLICT_AUTHOR, CONFLICT_AUTHOR);
+                $auth = clone $auth;
+                $auth->email = $pemails[$i];
             }
-            if (strcasecmp($auth->email, $pemails[$i]) !== 0
-                && $ps->update_conflict_value($pemails[$i], CONFLICT_AUTHOR, CONFLICT_AUTHOR)) {
-                $auth2 = clone $auth;
-                $auth2->email = $pemails[$i];
-                $ps->register_user($auth2);
-            }
-        }
-    }
-    function value_save(PaperValue $ov, PaperStatus $ps) {
-        $authlist = $this->author_list($ov);
-        $v = "";
-        foreach ($authlist as $auth) {
-            if (!$auth->is_empty())
-                $v .= ($v === "" ? "" : "\n") . $auth->unparse_tabbed();
-        }
-        if ($v !== $ov->prow->authorInformation) {
-            $ps->change_at($this);
-            $ov->prow->set_prop("authorInformation", $v);
-            $this->save_conflicts_author($authlist, $ps);
-        }
-        if (($contacts = $ov->data_by_index(1)) !== null) {
-            $pemails = $this->conf->resolve_primary_emails(explode("\n", trim($contacts)));
-            foreach ($pemails as $email) {
-                $ps->update_conflict_value($email, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
-            }
+            $cflags = CONFLICT_AUTHOR
+                | ($ov->anno("contact:{$auth->email}") ? CONFLICT_CONTACTAUTHOR : 0);
+            $ps->update_conflict_value($auth, $cflags, $cflags);
         }
         return true;
     }
@@ -183,7 +166,7 @@ class Authors_PaperOption extends PaperOption {
         if (!is_array($j) || is_associative_array($j)) {
             return PaperValue::make_estop($prow, $this, "<0>Validation error");
         }
-        $v = $contact_lemail = [];
+        $v = $cemail = [];
         foreach ($j as $i => $auj) {
             if (is_object($auj) || is_associative_array($auj)) {
                 $auth = Author::make_keyed($auj);
@@ -196,17 +179,15 @@ class Authors_PaperOption extends PaperOption {
             }
             self::expand_author($auth, $prow);
             $v[] = $auth->unparse_tabbed();
-            if ($contact
-                && $auth->email !== ""
-                && $prow->conflict_type_by_email($auth->email) < CONFLICT_AUTHOR) {
-                $contact_lemail[] = $auth->email;
+            if ($contact && $auth->email !== "") {
+                $cemail[] = $auth->email;
             }
         }
-        if (empty($contact_lemail)) {
-            return PaperValue::make($prow, $this, 1, join("\n", $v));
-        } else {
-            return PaperValue::make_multi($prow, $this, [1, 1], [join("\n", $v), join("\n", $contact_lemail)]);
+        $ov = PaperValue::make($prow, $this, 1, join("\n", $v));
+        foreach ($cemail as $email) {
+            $ov->set_anno("contact:{$email}", true);
         }
+        return $ov;
     }
 
     private function editable_author_component_entry($pt, $n, $component, $au, $reqau, $ignore_diff, $readonly) {

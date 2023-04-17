@@ -1890,6 +1890,7 @@ class Contact implements JsonSerializable {
         if ($ok) {
             // invalidate caches
             $this->_mod_undo = null;
+            $this->conf->invalidate_user($this, true);
         } else {
             error_log("{$this->conf->dbname}: save {$this->email} fails " . debug_string_backtrace());
         }
@@ -1922,18 +1923,19 @@ class Contact implements JsonSerializable {
         foreach ([self::ROLE_PC => "pc", self::ROLE_ADMIN => "sysadmin", self::ROLE_CHAIR => "chair"]
                  as $role => $type) {
             if (($new_roles & $role) && !($old_roles & $role)) {
-                $this->conf->log_for($actor ? : $this, $this, "Added as $type");
+                $this->conf->log_for($actor ? : $this, $this, "Added as {$type}");
             } else if (!($new_roles & $role) && ($old_roles & $role)) {
-                $this->conf->log_for($actor ? : $this, $this, "Removed as $type");
+                $this->conf->log_for($actor ? : $this, $this, "Removed as {$type}");
             }
         }
         // save the roles bits
         if ($old_roles !== $new_roles) {
-            $this->conf->qe("update ContactInfo set roles=$new_roles where contactId=$this->contactId");
+            $this->conf->qe("update ContactInfo set roles={$new_roles} where contactId={$this->contactId}");
             $this->roles = $new_roles;
             $this->_session_roles = (($this->_session_roles ?? 0) & ~self::ROLE_DBMASK) | $new_roles;
             $this->set_roles_properties();
             $this->conf->invalidate_caches(["pc" => true]);
+            $this->conf->invalidate_user($this, true);
             $this->update_cdb_roles();
             return true;
         } else {

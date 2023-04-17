@@ -49,24 +49,32 @@ class GetPcconflicts_ListAction extends ListAction {
         return $user->is_manager();
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
-        $confset = $user->conf->conflict_types();
+        $confset = $user->conf->conflict_set();
         $pcm = $user->conf->pc_members();
         $csvg = $user->conf->make_csvg("pcconflicts")
             ->select(["paper", "title", "first", "last", "email", "conflicttype"]);
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         foreach ($ssel->paper_set($user, ["allConflictType" => 1]) as $prow) {
-            if ($user->can_view_conflicts($prow)) {
-                $m = [];
-                foreach ($prow->conflicts() as $cid => $cflt) {
-                    if (($pc = $pcm[$cid] ?? null) && $cflt->is_conflicted()) {
-                        $m[$pc->pc_index] = [(string) $prow->paperId, $prow->title, $pc->firstName, $pc->lastName, $pc->email, $confset->unparse_text($cflt->conflictType)];
-                    }
-                }
-                if ($m) {
-                    ksort($m);
-                    $csvg->append(array_values($m));
-                }
+            if (!$user->can_view_conflicts($prow)) {
+                continue;
             }
+            $m = [];
+            foreach ($prow->conflict_types() as $uid => $ctype) {
+                if (!($pc = $pcm[$uid] ?? null)
+                    || !Conflict::is_conflicted($ctype)) {
+                    continue;
+                }
+                $m[$pc->pc_index] = [
+                    (string) $prow->paperId,
+                    $prow->title,
+                    $pc->firstName,
+                    $pc->lastName,
+                    $pc->email,
+                    $confset->unparse_text($ctype)
+                ];
+            }
+            ksort($m);
+            $csvg->append(array_values($m));
         }
         $user->set_overrides($old_overrides);
         return $csvg;
