@@ -33,9 +33,6 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         return [];
     }
 
-    function update_value_list(PaperValue $ov, PaperStatus $ps) {
-    }
-
 
     function value_check(PaperValue $ov, Contact $user) {
         if ($this->test_exists($ov->prow)) {
@@ -62,7 +59,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
 
     function value_store(PaperValue $ov, PaperStatus $ps) {
         if ($ov->has_anno("new_values") && count($ov->anno("new_values")) > 0) {
-            $this->update_value_list($ov, $ps);
+            $this->value_store_new_values($ov, $ps);
         }
 
         $vs = $ov->value_list();
@@ -73,6 +70,9 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         if (!empty($badvs)) {
             $ov->warning($ps->_("<0>Values %#s not found", $badvs, new FmtArg("id", $this->readable_formid())));
         }
+    }
+
+    function value_store_new_values(PaperValue $ov, PaperStatus $ps) {
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {

@@ -109,7 +109,7 @@ class Authors_PaperOption extends PaperOption {
         }
         if ($v !== $ov->prow->authorInformation) {
             $ps->change_at($this);
-            $ps->save_paperf("authorInformation", $v);
+            $ov->prow->set_prop("authorInformation", $v);
             $this->save_conflicts_author($authlist, $ps);
         }
         if (($contacts = $ov->data_by_index(1)) !== null) {

@@ -710,7 +710,7 @@ Phil Porras.");
 
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert_eqq($nprow1->collaborators, null);
-        xassert_eqq(json_encode_db($nprow1->dataOverflow), json_encode_db(["collaborators" => $long_collab]));
+        xassert_eqq($nprow1->dataOverflow, '{"collaborators":' . json_encode_db($long_collab) . '}');
         xassert_eqq($nprow1->collaborators(), $long_collab);
 
         // the collaborators are short again

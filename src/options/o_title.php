@@ -21,7 +21,7 @@ class Title_PaperOption extends PaperOption {
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
         $ps->change_at($this);
-        $ps->save_paperf("title", $ov->data());
+        $ov->prow->set_prop("title", $ov->data());
         return true;
     }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {

@@ -27,11 +27,11 @@ class Collaborators_PaperOption extends PaperOption {
         $ps->change_at($this);
         $collab = $ov->data();
         if ($collab === null || strlen($collab) < 8190) {
-            $ps->save_paperf("collaborators", $collab === "" ? null : $collab);
-            $ps->update_paperf_overflow("collaborators", null);
+            $ov->prow->set_prop("collaborators", $collab === "" ? null : $collab);
+            $ov->prow->set_overflow_prop("collaborators", null);
         } else {
-            $ps->save_paperf("collaborators", null);
-            $ps->update_paperf_overflow("collaborators", $collab);
+            $ov->prow->set_prop("collaborators", null);
+            $ov->prow->set_overflow_prop("collaborators", $collab);
         }
         return true;
     }

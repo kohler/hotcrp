@@ -425,8 +425,10 @@ class PaperInfo {
     public $paperFormat;
     /** @var ?string */
     public $capVersion;
-    /** @var ?array<string,mixed> */
+    /** @var ?string */
     public $dataOverflow;
+    /** @var ?array<string,mixed> */
+    public $_dataOverflow;
 
     /** @var ?int */
     public $paperStorageId;
@@ -470,8 +472,6 @@ class PaperInfo {
     public $conflictType;
     /** @var ?int */
     public $watch;
-    /** @var ?int */
-    private $_watch_cid;
 
     /** @var ?string */
     public $reviewSignatures;
@@ -510,14 +510,20 @@ class PaperInfo {
     private $_contact_info = [];
     /** @var int */
     private $_rights_version = 0;
+    /** @var ?Contact */
+    private $_paper_creator;
     /** @var int */
     private $_flags = 0;
     /** @var ?SubmissionRound */
     private $_submission_round;
-    /** @var ?list<Author> */
-    private $_author_array;
     /** @var ?array<string,string> */
     private $_deaccents;
+    /** @var ?list<Author> */
+    private $_author_array;
+    /** @var ?array<int,Author> */
+    private $_conflict_array;
+    /** @var bool */
+    private $_conflict_array_email;
     /** @var ?list<AuthorMatcher> */
     private $_collaborator_array;
     /** @var ?array<int,array{int,?int}> */
@@ -529,7 +535,7 @@ class PaperInfo {
     /** @var ?int */
     private $_desirability;
     /** @var ?list<int> */
-    private $_topics_array;
+    private $_topic_array;
     /** @var ?array<int,float> */
     private $_topic_interest_score_array;
     /** @var ?array<int,list<int>> */
@@ -544,12 +550,6 @@ class PaperInfo {
     private $_document_array;
     /** @var ?array<int,array<int,int>> */
     private $_doclink_array;
-    /** @var ?array<int,Author> */
-    private $_conflict_array;
-    /** @var bool */
-    private $_conflict_array_email;
-    /** @var ?Contact */
-    private $_paper_creator;
     /** @var ?DecisionInfo */
     private $_decision;
     /** @var ?array<int,ReviewInfo> */
@@ -572,6 +572,8 @@ class PaperInfo {
     private $_request_array;
     /** @var ?list<ReviewRefusalInfo> */
     private $_refusal_array;
+    /** @var ?int */
+    private $_watch_cid;
     /** @var ?array<int,int> */
     private $_watch_array;
     /** @var ?TokenInfo */
@@ -580,6 +582,8 @@ class PaperInfo {
     private $_author_view_user;
     /** @var ?int */
     public $_sort_subset;
+    /** @var ?array<string,mixed> */
+    public $_old_prop;
 
     const REVIEW_HAS_FULL = 0x01;
     const REVIEW_HAS_NAMES = 0x02;
@@ -638,8 +642,8 @@ class PaperInfo {
             $this->size = (int) $this->size;
         }
         if (isset($this->dataOverflow) && is_string($this->dataOverflow)) {
-            $this->dataOverflow = json_decode($this->dataOverflow, true);
-            if ($this->dataOverflow === null) {
+            $this->_dataOverflow = json_decode($this->dataOverflow, true);
+            if ($this->_dataOverflow === null) {
                 error_log("{$this->conf->dbname}: #{$this->paperId}: bad dataOverflow");
             }
         }
@@ -907,6 +911,78 @@ class PaperInfo {
     }
 
 
+    /** @param string $prop
+     * @return mixed */
+    function prop($prop) {
+        return $this->$prop;
+    }
+
+    /** @param string $prop
+     * @param mixed $v */
+    function set_prop($prop, $v) {
+        $this->_old_prop = $this->_old_prop ?? [];
+        if (!array_key_exists($prop, $this->_old_prop)) {
+            $this->_old_prop[$prop] = $this->$prop;
+        }
+        $this->$prop = $v;
+        // clear caches, sometimes conservatively
+        $this->_deaccents = null;
+        if ($prop === "authorInformation") {
+            $this->_author_array = $this->_conflict_array = null;
+        } else if ($prop === "collaborators") {
+            $this->_collaborator_array = null;
+        } else if ($prop === "topicIds") {
+            $this->_topic_array = $this->_topic_interest_score_array = null;
+        }
+    }
+
+    /** @param string $prop
+     * @param mixed $v */
+    function set_overflow_prop($prop, $v) {
+        $this->_old_prop = $this->_old_prop ?? [];
+        if (!array_key_exists("dataOverflow", $this->_old_prop)) {
+            $this->_old_prop["dataOverflow"] = $this->dataOverflow;
+        }
+        if ($v === null) {
+            unset($this->_dataOverflow[$prop]);
+        } else {
+            $this->_dataOverflow[$prop] = $v;
+        }
+        if (empty($this->_dataOverflow)) {
+            $this->dataOverflow = null;
+        } else {
+            $this->dataOverflow = json_encode_db($this->_dataOverflow);
+        }
+    }
+
+    /** @param string $prop
+     * @return mixed */
+    function base_prop($prop) {
+        if ($this->_old_prop !== null
+            && array_key_exists($prop, $this->_old_prop)) {
+            return $this->_old_prop[$prop];
+        }
+        return $this->$prop;
+    }
+
+    /** @param ?string $prop
+     * @return bool */
+    function prop_changed($prop = null) {
+        return !empty($this->_old_prop)
+            && (!$prop || array_key_exists($prop, $this->_old_prop));
+    }
+
+    function abort_prop() {
+        foreach ($this->_old_prop ?? [] as $prop => $v) {
+            $this->set_prop($prop, $v);
+        }
+        if (array_key_exists("dataOverflow", $this->_old_prop ?? [])) {
+            $this->_dataOverflow = json_decode($this->_old_prop["dataOverflow"] ?? "null", true);
+        }
+        $this->_old_prop = null;
+    }
+
+
     /** @return SubmissionRound */
     function submission_round() {
         if (!$this->_submission_round) {
@@ -938,12 +1014,7 @@ class PaperInfo {
 
     /** @return string */
     function abstract() {
-        if ($this->dataOverflow !== null
-            && isset($this->dataOverflow["abstract"])) {
-            return $this->dataOverflow["abstract"];
-        } else {
-            return $this->abstract ?? "";
-        }
+        return $this->_dataOverflow["abstract"] ?? $this->abstract ?? "";
     }
 
     /** @return string
@@ -1155,12 +1226,7 @@ class PaperInfo {
 
     /** @return string */
     function collaborators() {
-        if ($this->dataOverflow !== null
-            && isset($this->dataOverflow["collaborators"])) {
-            return $this->dataOverflow["collaborators"];
-        } else {
-            return $this->collaborators ?? "";
-        }
+        return $this->_dataOverflow["collaborators"] ?? $this->collaborators ?? "";
     }
 
     /** @return bool */
@@ -1704,19 +1770,19 @@ class PaperInfo {
 
     /** @return list<int> */
     function topic_list() {
-        if ($this->_topics_array === null) {
+        if ($this->_topic_array === null) {
             if ($this->topicIds === null) {
                 $this->load_topics();
             }
-            $this->_topics_array = [];
+            $this->_topic_array = [];
             if ($this->topicIds !== "") {
                 foreach (explode(",", $this->topicIds) as $t) {
-                    $this->_topics_array[] = (int) $t;
+                    $this->_topic_array[] = (int) $t;
                 }
-                $this->conf->topic_set()->sort($this->_topics_array);
+                $this->conf->topic_set()->sort($this->_topic_array);
             }
         }
-        return $this->_topics_array;
+        return $this->_topic_array;
     }
 
     /** @return array<int,string> */
@@ -1741,43 +1807,41 @@ class PaperInfo {
     /** @param int|Contact $contact
      * @return int */
     function topic_interest_score($contact) {
-        $score = 0;
         if (is_int($contact)) {
             $contact = ($this->conf->pc_members())[$contact] ?? null;
         }
-        if ($contact) {
-            if ($this->_topic_interest_score_array === null) {
-                $this->_topic_interest_score_array = [];
-            }
-            if (isset($this->_topic_interest_score_array[$contact->contactId])) {
-                $score = $this->_topic_interest_score_array[$contact->contactId];
-            } else {
-                $interests = $contact->topic_interest_map();
-                $topics = $this->topic_list();
-                foreach ($topics as $t) {
-                    if (($j = $interests[$t] ?? 0)) {
-                        if ($j >= -2 && $j <= 2) {
-                            $score += self::$topic_interest_values[$j + 2];
-                        } else if ($j > 2) {
-                            $score += sqrt($j / 2);
-                        } else {
-                            $score += -sqrt(-$j / 4);
-                        }
-                    }
+        if (!$contact) {
+            return 0;
+        }
+        $this->_topic_interest_score_array = $this->_topic_interest_score_array ?? [];
+        if (array_key_exists($contact->contactId, $this->_topic_interest_score_array)) {
+            return $this->_topic_interest_score_array[$contact->contactId];
+        }
+        $score = 0;
+        $interests = $contact->topic_interest_map();
+        $topics = $this->topic_list();
+        foreach ($topics as $t) {
+            if (($j = $interests[$t] ?? 0)) {
+                if ($j >= -2 && $j <= 2) {
+                    $score += self::$topic_interest_values[$j + 2];
+                } else if ($j > 2) {
+                    $score += sqrt($j / 2);
+                } else {
+                    $score += -sqrt(-$j / 4);
                 }
-                if ($score) {
-                    // * Strong interest in the paper's single topic gets
-                    //   score 10.
-                    $score = (int) ($score / sqrt(count($topics)) * 10 + 0.5);
-                }
-                $this->_topic_interest_score_array[$contact->contactId] = $score;
             }
         }
+        if ($score) {
+            // * Strong interest in the paper's single topic gets
+            //   score 10.
+            $score = (int) ($score / sqrt(count($topics)) * 10 + 0.5);
+        }
+        $this->_topic_interest_score_array[$contact->contactId] = $score;
         return $score;
     }
 
     function invalidate_topics() {
-        $this->topicIds = $this->_topics_array = $this->_topic_interest_score_array = null;
+        $this->topicIds = $this->_topic_array = $this->_topic_interest_score_array = null;
     }
 
 
@@ -2174,9 +2238,12 @@ class PaperInfo {
                  && $did == $this->finalPaperStorageId))
             && !$full) {
             $args = [
-                "paperStorageId" => $did, "paperId" => $this->paperId,
-                "documentType" => $dtype, "timestamp" => (int) $this->timestamp,
-                "mimetype" => $this->mimetype, "hash" => $this->sha1,
+                "paperStorageId" => $did,
+                "paperId" => $this->paperId,
+                "documentType" => $dtype,
+                "timestamp" => (int) $this->timestamp,
+                "mimetype" => $this->mimetype,
+                "hash" => $this->sha1,
                 "size" => $this->size ?? -1
             ];
             $infokey = $dtype === DTYPE_SUBMISSION ? "paper_infoJson" : "final_infoJson";

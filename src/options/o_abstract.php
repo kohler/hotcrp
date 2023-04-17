@@ -24,11 +24,11 @@ class Abstract_PaperOption extends PaperOption {
         $ps->change_at($this);
         $ab = $ov->data();
         if ($ab === null || strlen($ab) < 16383) {
-            $ps->save_paperf("abstract", $ab === "" ? null : $ab);
-            $ps->update_paperf_overflow("abstract", null);
+            $ov->prow->set_prop("abstract", $ab === "" ? null : $ab);
+            $ov->prow->set_overflow_prop("abstract", null);
         } else {
-            $ps->save_paperf("abstract", null);
-            $ps->update_paperf_overflow("abstract", $ab);
+            $ov->prow->set_prop("abstract", null);
+            $ov->prow->set_overflow_prop("abstract", $ab);
         }
         return true;
     }
