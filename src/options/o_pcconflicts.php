@@ -88,6 +88,7 @@ class PCConflicts_PaperOption extends PaperOption {
         foreach (self::value_map($ov) as $k => $v) {
             $ps->update_conflict_value($pcm[$k]->email, $mask, ((int) $v) & $mask);
         }
+        $ps->checkpoint_conflict_values();
         return true;
     }
     private function update_value_map(&$vm, $k, $v) {

@@ -79,6 +79,7 @@ class Contacts_PaperOption extends PaperOption {
         foreach (self::users_anno($ov) as $u) {
             $ps->update_conflict_value($u, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
         }
+        $ps->checkpoint_conflict_values();
         return true;
     }
     /** @param list<Author> $specau */

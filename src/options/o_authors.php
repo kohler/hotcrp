@@ -101,6 +101,7 @@ class Authors_PaperOption extends PaperOption {
                 | ($ov->anno("contact:{$auth->email}") ? CONFLICT_CONTACTAUTHOR : 0);
             $ps->update_conflict_value($auth, $cflags, $cflags);
         }
+        $ps->checkpoint_conflict_values();
         return true;
     }
     static private function translate_qreq(Qrequest $qreq) {

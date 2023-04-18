@@ -464,7 +464,6 @@ class PaperStatus extends MessageSet {
         }
 
         // load previous conflicts
-        // old conflicts
         if (!$this->will_insert()) {
             foreach ($this->prow->conflict_types() as $uid => $ctype) {
                 $this->_conflict_values[$uid] = [$ctype, 0, 0];
@@ -472,6 +471,7 @@ class PaperStatus extends MessageSet {
             if (!$this->user->allow_administer($this->prow)
                 && $this->prow->conflict_type($this->user) === CONFLICT_AUTHOR) {
                 $this->update_conflict_value($this->user, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
+                $this->checkpoint_conflict_values();
             }
         }
 
@@ -751,7 +751,7 @@ class PaperStatus extends MessageSet {
     /** @param Author|Contact $au
      * @param int $ctype
      * @return ?Contact */
-    function _make_user($au, $ctype) {
+    private function _make_user($au, $ctype) {
         $uu = $this->conf->user_by_email($au->email, USER_SLICE);
         if (!$uu && $ctype >= CONFLICT_AUTHOR) {
             $j = $au->unparse_nea_json();
@@ -799,6 +799,18 @@ class PaperStatus extends MessageSet {
         }
         // return true iff `$mask` bits have changed
         return ($cv[0] & $mask) !== ((($cv[0] & ~$cv[1]) | $cv[2]) & $mask);
+    }
+
+    function checkpoint_conflict_values() {
+        $a = [];
+        foreach ($this->_conflict_values as $uid => $cv) {
+            if (($nv = self::new_conflict_value($cv)) !== 0)
+                $a[] = "{$uid} {$nv}";
+        }
+        $s = join(",", $a);
+        if ($s !== $this->prow->allConflictType) {
+            $this->prow->set_prop("allConflictType", $s);
+        }
     }
 
     /** @param ?array{int,int,int} $cv
@@ -1329,6 +1341,7 @@ class PaperStatus extends MessageSet {
 
         // The caller should not use `$this->prow` any more, but in case they
         // do (e.g. in old tests), invalidate it when convenient.
+        $this->prow->commit_prop();
         $this->prow->invalidate_options();
         $this->prow->invalidate_conflicts();
         $this->title = $this->prow->title();

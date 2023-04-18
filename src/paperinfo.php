@@ -969,6 +969,8 @@ class PaperInfo {
             $this->_collaborator_array = null;
         } else if ($prop === "topicIds") {
             $this->_topic_array = $this->_topic_interest_score_array = null;
+        } else if ($prop === "allConflictType") {
+            $this->_ctype_array = null;
         }
     }
 
@@ -1006,6 +1008,10 @@ class PaperInfo {
     function prop_changed($prop = null) {
         return !empty($this->_old_prop)
             && (!$prop || array_key_exists($prop, $this->_old_prop));
+    }
+
+    function commit_prop() {
+        $this->_old_prop = null;
     }
 
     function abort_prop() {
@@ -1135,14 +1141,11 @@ class PaperInfo {
             Dbl::free($result);
         }
         // parse conflicts into arrays
-        foreach ($this->_row_set as $prow) {
-            $prow->_ctype_array = [];
-            if ($prow->allConflictType === "") {
-                continue;
-            }
-            foreach (explode(",", $prow->allConflictType) as $x) {
+        $this->_ctype_array = [];
+        if ($this->allConflictType !== "") {
+            foreach (explode(",", $this->allConflictType) as $x) {
                 list($cid, $ctype) = explode(" ", $x);
-                $prow->_ctype_array[(int) $cid] = (int) $ctype;
+                $this->_ctype_array[(int) $cid] = (int) $ctype;
             }
         }
     }
