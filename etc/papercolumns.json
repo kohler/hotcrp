@@ -261,7 +261,7 @@
         "match": "(?:tagreport:|tagrep:|tagreports\\z)(.*)", "priority": -1,
         "prefer_row": true, "className": "pl_tagrep",
         "function": "+TagReport_PaperColumn",
-        "expand_function": "TagReport_PaperColumnFactory::expand",
+        "expand_function": "TagReport_PaperColumn::expand",
         "order": 1420
     },
     {

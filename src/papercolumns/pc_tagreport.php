@@ -53,20 +53,18 @@ class TagReport_PaperColumn extends PaperColumn {
             return '<span class="nb">' . join(',</span> <span class="nb">', $a) . '</span>';
         }
     }
-}
 
-class TagReport_PaperColumnFactory {
     static private function column_json($xfj, $tag) {
         $cj = (array) $xfj;
         $cj["name"] = "tagreport:" . $tag;
         $cj["tag"] = $tag;
         return (object) $cj;
     }
-    static function expand($name, Contact $user, $xfj, $m) {
-        if (!$user->can_view_most_tags()) {
+    static function expand($name, XtParams $xtp, $xfj, $m) {
+        if (!$xtp->user->can_view_most_tags()) {
             return null;
         }
-        $tagset = $user->conf->tags();
+        $tagset = $xtp->conf->tags();
         if ($name === "tagreports") {
             return array_map(function ($t) use ($xfj) {
                 return self::column_json($xfj, $t->tag);
