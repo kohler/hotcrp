@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 #
 # Copyright (C) 2007 Geoffrey M. Voelker
-# Copyright (c) 2016-2022 Eddie Kohler; see LICENSE.
+# Copyright (c) 2016-2023 Eddie Kohler; see LICENSE.
 #
 # banal -- analyze pdf formatting
 #
@@ -654,31 +654,6 @@ sub calc_page_headings ($$$$) {
     $doc->{max_section} = $max_section;
 }
 
-sub calc_doc_body_font ($) {
-    my ($doc) = @_;
-    my ($fonts) = {};
-
-    foreach my $i (1..$doc->{npages}) {
-        my ($page) = $doc->{pages}->{$i};
-        next if !exists $page->{bodyfont_pt};
-        $fonts->{$page->{bodyfont_pt}}++;
-    }
-
-    $doc->{bodyfont_pt} = modevalkey ($fonts);
-}
-
-sub calc_doc_leading ($) {
-    my ($doc) = @_;
-
-    my ($leads) = {};
-    foreach my $i (1..$doc->{npages}) {
-        my ($page) = $doc->{pages}->{$i};
-        next if !exists $page->{lead_pt};
-        $leads->{$page->{lead_pt}}++;
-    }
-    $doc->{lead_pt} = modevalkey ($leads);
-}
-
 sub calc_doc_text_region ($) {
     my ($doc) = @_;
 
@@ -760,7 +735,6 @@ sub version_compare ($$) {
 sub calc_doc_page_types ($) {
     my ($doc) = @_;
 
-    my ($font) = $doc->{bodyfont_pt};
     my ($saw_acks_refs) = 0;
     my ($saw_appendix) = 0;
     my ($saw_conclusion) = 0;
@@ -793,8 +767,8 @@ sub calc_doc_page_types ($) {
                 } elsif ((!$see_appendix
                           || $h =~ /\A[\dIVX]+[\. ]/)
                          && (!$saw_appendix
-                             || (exists($page->{bodyfont_pt})
-                                 && $page->{max_heading_fontsize} > pt2pdf($page->{bodyfont_pt})))) {
+                             || (exists($page->{bodyfontsize})
+                                 && $page->{max_heading_fontsize} > $page->{bodyfontsize}))) {
                     $see_acks_refs = $saw_acks_refs = $saw_appendix = $saw_conclusion = 0;
                 }
                 $is_first = 0;
@@ -850,7 +824,7 @@ sub calc_doc_columns ($) {
 sub p2h_font_bug ($) {
     my ($doc) = @_;
 
-    return 1 if !defined($doc->{bodyfont_pt}) || $doc->{bodyfont_pt} <= 0;
+    return 1 if !defined($doc->{bodyfontsize}) || $doc->{bodyfontsize} <= 0;
     return 0;
 }
 
@@ -939,7 +913,7 @@ sub report_json ($) {
         $doc_bfs = "\"bodyfontsize\": null";
         $doc_l = "\"leading\": null";
     } else {
-        $doc_bfs = sprintf "\"bodyfontsize\": %g", $doc->{bodyfont_pt};
+        $doc_bfs = sprintf "\"bodyfontsize\": %g", pdf2pt($doc->{bodyfontsize});
         $doc_l = sprintf "\"leading\": %g", $doc->{lead_pt};
     }
     my ($doc_c) = sprintf "\"columns\": %d", $doc->{ncols};
@@ -974,12 +948,13 @@ sub report_json ($) {
         if ($page->{type} ne "blank") {
             my($page_margin) = sprintf "\"margin\": [%.0f,%.0f,%.0f,%.0f]", $pd->{mt}, $pd->{pw} - ($pd->{ml} + $pd->{tw}), $pd->{ph} - ($pd->{mt} + $pd->{th}), $pd->{ml};
             push @val, $page_margin if $page_margin ne $doc_margin;
-            if (exists($page->{bodyfont_pt})) {
-                my($page_bfs) = sprintf "\"bodyfontsize\": %g", $page->{bodyfont_pt};
+            if (exists($page->{bodyfontsize})) {
+                my($page_bfs) = sprintf "\"bodyfontsize\": %g", pdf2pt($page->{bodyfontsize});
                 push @val, $page_bfs if $page_bfs ne $doc_bfs;
             }
-            if (exists($page->{reffont_pt}) && $page->{reffont_pt} != $doc->{bodyfont_pt}) {
-                push @val, sprintf "\"reffontsize\": %g", $page->{reffont_pt};
+            if (exists($page->{reffontsize})
+                && $page->{reffontsize} != $doc->{bodyfontsize}) {
+                push @val, sprintf "\"reffontsize\": %g", pdf2pt($page->{reffontsize});
             }
             if (exists($page->{lead_pt}) && $page->{lead_pt}) {
                 my($page_l) = sprintf "\"leading\": %g", $page->{lead_pt};
@@ -1031,7 +1006,7 @@ sub report_verbose ($) {
         pdf2in($doc->{textbb}->{rmarg}),
         pdf2in($doc->{textbb}->{top}),
         pdf2in($doc->{textbb}->{bmarg});
-    printf "Body font size: %.2fpt", $doc->{bodyfont_pt};
+    printf "Body font size: %.2fpt", pdf2pt($doc->{bodyfontsize});
     if (p2h_font_bug ($doc)) {
         print " (bogus)";
     }
@@ -1059,7 +1034,9 @@ sub report_verbose ($) {
             pdf2in($left_i), pdf2in($right_i),
             pdf2in($top_i), pdf2in($bot_i);
 
-        printf "  body font: %gpt\n", $page->{bodyfont_pt};
+        if (defined($page->{bodyfontsize})) {
+            printf "  body font: %gpt\n", pdf2pt($page->{bodyfontsize});
+        }
         printf "  leading: %gpt\n", $page->{lead_pt};
         printf "  columns: %d\n", $page->{ncols};
         print  "  type: ", $page->{type}, "\n";
@@ -1096,7 +1073,7 @@ sub report_stats ($) {
             pdf2in($doc->{textbb}->{top}),
             pdf2in($doc->{textbb}->{bmarg}),
             # body font
-            $doc->{bodyfont_pt},
+            pdf2pt($doc->{bodyfontsize}),
             # leading
             $doc->{lead_pt},
             # columns
@@ -1442,13 +1419,17 @@ sub parse_p2h_text ($$$) {
 
     # compute page body font: the font with the most characters
     my ($bodyfontsize) = bodyfontsize(%alens, %tlens);
+    my ($numfontsize) = $bodyfontsize;
+    if (exists($doc->{bodyfontsize}) && $doc->{bodyfontsize} > $numfontsize) {
+        $numfontsize = $doc->{bodyfontsize};
+    }
 
     # compute extent map, using extents larger than the body font
     # plus other extents that aren’t short numbers
     my ($xmap) = xmap_make($pageheight, in2pdf(1/4), in2pdf(1/16));
     my ($ymap) = xmap_make($pagewidth, in2pdf(1/4), in2pdf(1/16));
     foreach my $text (@texts) {
-        if ($text->{sz} > $bodyfontsize || !$text->{num}) {
+        if (!$text->{num} || $text->{sz} > $numfontsize) {
             xmap_add($xmap, $text->{t}, $text->{l}, $text->{w}, $text->{h});
             xmap_add($ymap, $text->{l}, $text->{t}, $text->{h}, $text->{w});
         }
@@ -1493,8 +1474,8 @@ sub parse_p2h_text ($$$) {
         $reffontsize = $bodyfontsize;
         $bodyfontsize = undef;
     }
-    $page->{bodyfont_pt} = pdf2pt($bodyfontsize) if $bodyfontsize;
-    $page->{reffont_pt} = pdf2pt($reffontsize) if $reffontsize;
+    $page->{bodyfontsize} = $bodyfontsize if $bodyfontsize;
+    $page->{reffontsize} = $reffontsize if $reffontsize;
     my($fontsize) = $bodyfontsize ? $bodyfontsize : $reffontsize;
 
     # compute leading using bodyfontsize and column specs
@@ -1596,13 +1577,28 @@ sub merge_page ($$) {
     # initialize doc spec with first page spec
     if ($page->{num} == 1) {
         $doc->{pagebb} = $page->{pagebb};
-        $doc->{bodyfont_pt} = $page->{bodyfont_pt};
         $doc->{ncols} = $page->{ncols};
     }
-    if (exists($page->{bodyfont_pt})) {
-        my($bodyfontsize) = pt2pdf($page->{bodyfont_pt});
-        if (!exists($doc->{max_bodyfontsize}) || $doc->{max_bodyfontsize} < $bodyfontsize) {
-            $doc->{max_bodyfontsize} = $bodyfontsize;
+
+    # update bodyfont, leading
+    if (exists $page->{bodyfontsize}) {
+        my($bfs) = $page->{bodyfontsize};
+        $doc->{bodyfont_counts}->{$bfs} += 1;
+        if (!exists($doc->{bodyfontsize})
+            || $doc->{bodyfontsize} != $bfs) {
+            $doc->{bodyfontsize} = modevalkey($doc->{bodyfont_counts});
+        }
+        if (!exists($doc->{max_bodyfontsize})
+            || $doc->{max_bodyfontsize} < $bfs) {
+            $doc->{max_bodyfontsize} = $bfs;
+        }
+    }
+    if (exists $page->{lead_pt}) {
+        my($l) = $page->{lead_pt};
+        $doc->{lead_counts}->{$l} += 1;
+        if (!exists($doc->{lead_pt})
+            || $doc->{lead_pt} != $l) {
+            $doc->{lead_pt} = modevalkey($doc->{lead_counts});
         }
     }
 }
@@ -1624,7 +1620,9 @@ sub banal_file ($) {
         app => '',
         fullpath => $file,
         filename => basename($file),
-        in_references => 0
+        in_references => 0,
+        bodyfont_counts => {},
+        leading_counts => {}
     };
 
     $banal_fullpath = $doc->{fullpath};
@@ -1640,8 +1638,6 @@ sub banal_file ($) {
         merge_page ($doc, $page);
     }
 
-    calc_doc_body_font ($doc);
-    calc_doc_leading ($doc);
     calc_doc_text_region ($doc);
     calc_doc_page_types ($doc);
     calc_doc_columns ($doc);
