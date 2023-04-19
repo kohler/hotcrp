@@ -1448,7 +1448,7 @@ a.btn-disabled, a.btn-disabled:hover {
 	margin-right: 0;
 	margin-left: 2.5em;
 }
-.btnp > button, .btnp > .btn, .btnp > .btnbox {
+.btnp > button, .btnp > .btn, .btnp > .btnbox, .btnp > .btnx {
 	margin-right: 0.75em;
 }
 .btnp > button:last-child, .btnp > .btn:last-child, .btnp > .btnbox:last-child {
