@@ -652,7 +652,7 @@ class PaperTable {
             $h = $ha->text_data();
             $x = '<span class="nb checksum';
             if ($tooltip) {
-                $x .= ' need-tooltip" data-tooltip="';
+                $x .= ' need-tooltip" aria-label="';
                 if ($ha->algorithm() === "sha256")  {
                     $x .= "SHA-256 checksum";
                 } else if ($ha->algorithm() === "sha1") {
@@ -1990,17 +1990,6 @@ class PaperTable {
                 $b = [$b, "(admin only)"];
             }
             $buttons[] = $b;
-        }
-
-        // override conflict button
-        if ($want_override && !$this->admin && false) {
-            if ($this->allow_admin) {
-                $buttons[] = "";
-                $buttons[] = [Ht::submit("updateoverride", "Override conflict", ["class" => "uic js-mark-submit"]), "(admin only)"];
-            } else if ($this->user->privChair) {
-                $buttons[] = "";
-                $buttons[] = Ht::submit("updateoverride", "Override conflict", ["disabled" => true, "class" => "need-tooltip uic js-mark-submit", "title" => "You cannot override your conflict because this paper has an administrator."]);
-            }
         }
 
         return $buttons;

@@ -387,7 +387,7 @@ abstract class ReviewField implements JsonSerializable {
 
     /** @return string */
     function web_abbreviation() {
-        return '<span class="need-tooltip" data-tooltip="' . $this->name_html
+        return '<span class="need-tooltip" aria-label="' . $this->name_html
             . '" data-tooltip-anchor="s">' . htmlspecialchars($this->search_keyword()) . "</span>";
     }
 

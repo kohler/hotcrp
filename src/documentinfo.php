@@ -1479,7 +1479,7 @@ class DocumentInfo implements JsonSerializable {
                 if (($flags & self::L_SMALL) || !$cf->check_ok()) {
                     return ["", $suffix, $cf->need_recheck()];
                 } else {
-                    return ['<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars($cf->full_feedback_html()) . '">ⓘ</span>', $suffix, $cf->need_recheck()];
+                    return ['<strong class="need-tooltip" aria-label="' . htmlspecialchars($cf->full_feedback_html()) . '">ⓘ</strong>', $suffix, $cf->need_recheck()];
                 }
             } else {
                 $need_run = $cf->need_recheck();

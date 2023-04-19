@@ -297,12 +297,12 @@ function expander($open, $foldnum = null, $open_tooltip = null) {
     $foldnum = ($foldnum !== 0 ? $foldnum : "");
     $t = '<span class="expander">';
     if ($open !== true) {
-        $t .= '<span class="in0' . ($f ? " fx$foldnum" : "") . '">' . Icons::ui_triangle(2) . '</span>';
+        $t .= '<span class="in0' . ($f ? " fx{$foldnum}" : "") . '">' . Icons::ui_triangle(2) . '</span>';
     }
     if ($open !== false) {
-        $t .= '<span class="in1' . ($f ? " fn$foldnum" : "");
+        $t .= '<span class="in1' . ($f ? " fn{$foldnum}" : "");
         if ($open_tooltip) {
-            $t .= ' need-tooltip" data-tooltip="' . htmlspecialchars($open_tooltip) . '" data-tooltip-anchor="e';
+            $t .= ' need-tooltip" aria-label="' . htmlspecialchars($open_tooltip) . '" data-tooltip-anchor="e';
         }
         $t .= '">' . Icons::ui_triangle(1) . '</span>';
     }
