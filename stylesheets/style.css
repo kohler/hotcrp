@@ -757,6 +757,10 @@ label.checki {
 	column-count: 3 !important;
 }
 
+.pe-none {
+	pointer-events: none !important;
+}
+
 
 /* generic vertical styles */
 .lg { /* large gap */

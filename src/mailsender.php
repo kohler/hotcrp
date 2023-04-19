@@ -214,7 +214,7 @@ class MailSender {
         echo '<div class="aab aabig mt-3 mb-5', $extra_class, '">',
             '<div class="aabut">', Ht::submit("send", "Send", ["class" => "btn-success"]), '</div>',
             '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
-            '<div class="aabut ml-3 need-tooltip', $this->groupable ? " hidden" : "", '" id="mail-group-disabled" aria-label="These messages cannot be gathered because their contents differ.">', Ht::submit("group", "Gather recipients", ["disabled" => true]), '</div>',
+            '<div class="aabut ml-3 need-tooltip', $this->groupable ? " hidden" : "", '" id="mail-group-disabled" aria-label="These messages cannot be gathered because their contents differ.">', Ht::submit("group", "Gather recipients", ["disabled" => true, "class" => "pe-none"]), '</div>',
             '<div class="aabut ml-3', $this->groupable ? "" : " hidden", '" id="mail-group-enabled">';
         if (!$this->qreq->group && $this->qreq->ungroup) {
             echo Ht::submit("group", "Gather recipients");
