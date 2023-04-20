@@ -2522,7 +2522,9 @@ return function () {
 
 // popup dialogs
 function popup_skeleton(options) {
-    var hc = new HtmlCollector, $d = null;
+    var hc = new HtmlCollector,
+        $d = null,
+        prior_focus = null;
     options = options || {};
     var near = options.near || options.anchor;
     hc.push('<div class="modal hidden" role="dialog"><div class="modal-dialog'.concat(
@@ -2560,11 +2562,18 @@ function popup_skeleton(options) {
         return $d;
     }
     function close() {
+        removeClass(document.body, "modal-open");
+        if (document.activeElement
+            && $d[0].contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
         tooltip.erase();
         $d.find("textarea, input").unautogrow();
         $d.trigger("closedialog");
         $d.remove();
-        removeClass(document.body, "modal-open");
+        if (prior_focus) {
+            prior_focus.focus({preventScroll: true});
+        }
     }
     function show() {
         $d = $(hc.render()).appendTo(document.body).awaken();
@@ -2575,6 +2584,7 @@ function popup_skeleton(options) {
         $d.on("keydown", function (evt) {
             if (event_modkey(evt) === 0 && event_key(evt) === "Escape") {
                 close();
+                evt.preventDefault();
             }
         });
         if (options.action) {
@@ -2602,7 +2612,11 @@ function popup_skeleton(options) {
             show();
         }
         if (visible !== false) {
+            var e = document.activeElement;
             popup_near($d, near || window);
+            if (e && document.activeElement !== e) {
+                prior_focus = e;
+            }
         }
         return $d;
     };
