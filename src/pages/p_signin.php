@@ -13,7 +13,7 @@ class Signin_Page {
     private $_ms;
 
     static private function bad_post_error(Contact $user, Qrequest $qreq, $action) {
-        $sid = $qreq->qsid();
+        $sid = $qreq->qsid() ?? "";
         $msg = "{$user->conf->dbname}: ignoring unvalidated {$action}"
             . ", sid=" . ($sid === "" ? ".empty" : $sid);
         if ($qreq->email) {
