@@ -6054,7 +6054,7 @@ function render_edit_attachment(ctr, doc) {
     hc.push('<div class="document-file">', '</div>');
     render_attachment_link(hc, doc);
     hc.pop();
-    hc.push('<div class="document-actions"><a class="ui js-remove-document document-action" href="">Delete</a><input type="hidden" name="attachment:'.concat(ctr, '" value="', doc.docid, '"></div>'));
+    hc.push('<div class="document-actions"><button type="button" class="btn-link ui js-remove-document">Delete</button><input type="hidden" name="attachment:'.concat(ctr, '" value="', doc.docid, '"></div>'));
     return hc.render();
 }
 
@@ -9989,24 +9989,16 @@ handle_ui.on("js-add-attachment", function () {
     filee.name = name + ":file";
     filee.size = 15;
     filee.className = "uich document-uploader";
-    var uploade = document.createElement("div");
-    uploade.className = "document-upload";
-    uploade.appendChild(filee);
-    var cancele = document.createElement("button");
-    cancele.className = "ui js-cancel-document btn-link document-action";
+    var cancele = classe("button", "ui js-cancel-document btn-link", "Cancel"),
+        actionse = classe("div", "document-actions", cancele);
     cancele.type = "button";
-    cancele.textContent = "Cancel";
-    var actionse = document.createElement("div");
-    actionse.className = "document-actions";
-    actionse.appendChild(cancele);
     var max_size = attache.getAttribute("data-document-max-size"),
-        doce = document.createElement("div");
-    doce.className = "has-document document-new-instance hidden";
+        doce = classe("div", "has-document document-new-instance hidden",
+            classe("div", "document-upload", filee), actionse);
     doce.setAttribute("data-dtype", attache.getAttribute("data-dtype"));
     doce.setAttribute("data-document-name", name);
     if (max_size != null)
         doce.setAttribute("data-document-max-size", max_size);
-    doce.append(uploade, actionse);
     ee.appendChild(doce);
     // this hidden_input cannot be in the document-uploader: the uploader
     // might be removed later, but we need to hold the place
@@ -10015,25 +10007,29 @@ handle_ui.on("js-add-attachment", function () {
 });
 
 handle_ui.on("js-replace-document", function () {
-    var doce = this.closest(".has-document"), $doc = $(doce),
-        $actions = $doc.find(".document-actions"),
-        $u = $doc.find(".document-uploader");
-    if (!$actions.length) {
-        $actions = $('<div class="document-actions hidden"></div>').insertBefore($doc.find(".document-replacer"));
+    var doce = this.closest(".has-document"),
+        actions = doce.querySelector(".document-actions"),
+        u = doce.querySelector(".document-uploader");
+    if (!actions) {
+        actions = classe("div", "document-actions hidden");
+        doce.querySelector(".document-replacer").before(actions);
     }
-    if ($u.length) {
-        $u.trigger("hotcrp-change-document");
+    if (u) {
+        $(u).trigger("hotcrp-change-document");
     } else {
-        var docid = +doce.getAttribute("data-dtype"),
-            name = doce.getAttribute("data-document-name") || "opt" + docid,
-            t = '<div class="document-upload hidden"><input id="'.concat(name, ':file" type="file" name="', name, ':file"');
+        var dname = doce.getAttribute("data-document-name") || ("opt" + doce.getAttribute("data-dtype"));
+        u = classe("input", "uich document-uploader");
+        u.id = u.name = dname + ":file";
+        u.type = "file";
         if (doce.hasAttribute("data-document-accept"))
-            t += ' accept="' + doce.getAttribute("data-document-accept") + '"';
-        t += ' class="uich document-uploader"></div>';
-        $u = $(t).insertBefore($actions).find(".document-uploader");
-        $actions.append('<a href="" class="ui js-cancel-document document-action hidden">Cancel</a>');
+            u.setAttribute("accept", "data-document-accept");
+        doce.querySelector(".document-replacer").before(classe("div", "document-upload hidden", u));
+        var cancel = classe("button", "btn-link ui js-cancel-document hidden");
+        cancel.type = "button";
+        cancel.textContent = "Cancel";
+        actions.appendChild(cancel);
     }
-    $u[0].click();
+    u.click();
 });
 
 handle_ui.on("document-uploader", function () {

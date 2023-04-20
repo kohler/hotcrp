@@ -166,7 +166,7 @@ class Attachments_PaperOption extends PaperOption {
             }
             echo '</div>';
             if (!$readonly) {
-                echo '<div class="document-actions">', Ht::link("Delete", "", ["class" => "ui js-remove-document document-action"]), '</div>';
+                echo '<div class="document-actions">', Ht::button("Delete", ["class" => "btn-link ui js-remove-document"]), '</div>';
             }
             echo '</div>';
         }

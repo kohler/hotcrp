@@ -4100,19 +4100,15 @@ a:hover .t-editor,
 .document-file, .document-upload {
 	line-height: 1.75;
 }
-.document-stamps {
+.document-stamps, .document-actions {
 	margin-left: 1.5rem;
-}
-.document-actions {
-	margin-left: 0.5rem;
 }
 .document-actions.block {
 	display: block;
 	margin-left: -1rem;
 }
-.document-action {
-	display: inline-block;
-	margin-left: 1rem;
+.document-actions > * {
+	margin-right: 1rem;
 }
 .has-document::after {
 	clear: both;
@@ -4124,7 +4120,7 @@ a:hover .t-editor,
 }
 @media screen and (min-width: 900px) {
 .document-file, .document-upload {
-	min-width: 19rem;
+	min-width: 21rem;
 }
 .document-file.nameless {
 	min-width: 6rem;
@@ -4137,11 +4133,8 @@ a:hover .t-editor,
 .document-file, .document-upload {
 	display: block;
 }
-.document-stamps {
+.document-stamps, .document-actions {
 	margin-left: 3rem;
-}
-.document-actions {
-	margin-left: 2rem;
 }
 }
 

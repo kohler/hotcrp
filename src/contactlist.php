@@ -1228,10 +1228,10 @@ class ContactList {
         } else {
             foreach ($fieldDef as $fieldId => $fdef) {
                 if ($fdef[1] == 1 && isset($anyData[$fieldId])) {
-                    $x .= "    <th class=\"pl plh pl_$fdef[0]\">"
+                    $x .= "    <th class=\"pl plh pl_{$fdef[0]}\">"
                         . $this->header($fieldId) . "</th>\n";
                 } else if ($fdef[1] == 1) {
-                    $x .= "    <th class=\"pl plh pl_$fdef[0]\"></th>\n";
+                    $x .= "    <th class=\"pl plh pl_{$fdef[0]}\"></th>\n";
                 }
             }
         }
