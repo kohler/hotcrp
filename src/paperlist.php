@@ -620,8 +620,7 @@ class PaperList {
             if (($show_action = $sve->show_action())) {
                 $this->set_view($sve->keyword, $show_action, $origin, $sve->decorations);
             }
-            if ($sve->sort_action()
-                && ($sve->nondefault_sort_action() || $this->_sortcol)) {
+            if ($sve->sort_action()) {
                 $this->_add_sorter($sve->keyword, $origin, $sve->decorations,
                                    -1, $sve->pos1, $sve->pos2);
             }
