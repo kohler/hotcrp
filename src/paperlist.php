@@ -1892,6 +1892,10 @@ class PaperList {
         return $this->search->create_session_list_object($this->paper_ids(), $this->_list_description(), $this->sortdef());
     }
 
+    private function _stash_render() {
+        Ht::stash_script('$(hotcrp.render_list)', 'plist_render_needed');
+    }
+
     /** @return PaperListTableRender */
     private function _table_render() {
         $this->_prepare();
@@ -2003,7 +2007,7 @@ class PaperList {
             }
             $body[] = $this->_row_html($rstate, $row);
             if ($this->need_render && !$need_render) {
-                Ht::stash_script('$(hotcrp.render_list)', 'plist_render_needed');
+                $this->_stash_render();
                 $need_render = true;
             }
             if ($this->need_render && $this->count % 16 === 15) {
@@ -2091,6 +2095,12 @@ class PaperList {
         }
         if ($this->has_editable_tags) {
             $rstate->tbody_class .= " need-editable-tags";
+            $this->need_render = true;
+        }
+
+        // ensure render_list call occurs
+        if ($this->need_render) {
+            $this->_stash_render();
         }
 
         // footer
