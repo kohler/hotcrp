@@ -128,9 +128,8 @@ class PaperStatus extends MessageSet {
     }
 
     /** @param string $key
-     * @param mixed $value
      * @return MessageItem */
-    function syntax_error_at($key, $value) {
+    function syntax_error_at($key) {
         return $this->error_at($key, "<0>Validation error [{$key}]");
     }
 
@@ -182,7 +181,7 @@ class PaperStatus extends MessageSet {
             $docj = $docj[0];
         }
         if (!is_object($docj)) {
-            $this->syntax_error_at($o->field_key(), $docj);
+            $this->syntax_error_at($o->field_key());
             return null;
         } else if (($docj->error ?? false) || ($docj->error_html ?? false)) {
             $this->error_at_option($o, "<5>" . ($docj->error_html ?? "Upload error"));
@@ -308,7 +307,7 @@ class PaperStatus extends MessageSet {
         foreach (["submitted", "draft", "withdrawn", "final_submitted"] as $k) {
             $v = $istatus->$k ?? null;
             if ($v !== null && !is_bool($v)) {
-                $this->syntax_error_at("status.{$k}", $v);
+                $this->syntax_error_at("status.{$k}");
                 $v = null;
             }
             $xstatus->$k = $v;
@@ -336,7 +335,7 @@ class PaperStatus extends MessageSet {
             } else if ($v === false) {
                 $v = 0.0;
             } else if ($v !== null) {
-                $this->syntax_error_at("status.{$k}", $v);
+                $this->syntax_error_at("status.{$k}");
             }
             $xstatus->$k = $v;
         }
@@ -344,7 +343,7 @@ class PaperStatus extends MessageSet {
         if (is_string($v)) {
             $xstatus->withdraw_reason = $v;
         } else if ($v !== null) {
-            $this->syntax_error_at("status.withdraw_reason", $v);
+            $this->syntax_error_at("status.withdraw_reason");
         }
         if ($istatusstr === "submitted"
             || $istatusstr === "accepted"
@@ -389,7 +388,7 @@ class PaperStatus extends MessageSet {
                 if (is_string($idecision) || is_int($idecision)) {
                     $this->warning_at("decision", "<0>Unknown decision ‘{$idecision}’");
                 } else {
-                    $this->syntax_error_at("decision", $idecision);
+                    $this->syntax_error_at("decision");
                 }
             }
         }
@@ -404,7 +403,7 @@ class PaperStatus extends MessageSet {
                        && is_object($ipj->options[0])) {
                 $ioptions = $ipj->options[0];
             } else {
-                $this->syntax_error_at("options", $ipj->options);
+                $this->syntax_error_at("options");
             }
         }
 
@@ -928,7 +927,7 @@ class PaperStatus extends MessageSet {
         $pid = $pj->pid ?? $pj->id ?? null;
         if ($pid !== null && !is_int($pid) && $pid !== "new") {
             $key = isset($pj->pid) ? "pid" : "id";
-            $this->syntax_error_at($key, $pid);
+            $this->syntax_error_at($key);
             return false;
         }
         if ($pid === "new" || (is_int($pid) && $pid <= 0)) {

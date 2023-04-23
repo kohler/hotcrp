@@ -2221,7 +2221,7 @@ class PaperTable {
             $this->_papstrip();
         }
         if ($this->npapstrip) {
-            Ht::stash_script("hotcrp.prepare_editable_paper()");
+            Ht::stash_script("hotcrp.load_paper_sidebar()");
             echo '</div></div><nav class="pslcard-nav">';
         } else {
             echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav class="pslcard-nav">';

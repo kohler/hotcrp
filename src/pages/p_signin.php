@@ -148,7 +148,7 @@ class Signin_Page {
     }
 
     static function print_form_start_for(Qrequest $qreq, $page, $extraclass = "") {
-        echo '<div class="', $extraclass ? Ht::add_tokens("homegrp", $extraclass) : "homegrp",
+        echo '<div class="', Ht::add_tokens("homegrp", $extraclass),
             '" id="homeaccount">',
             Ht::form($qreq->conf()->hoturl($page), ["class" => "compact-form ui-submit js-signin"]),
             Ht::hidden("post", $qreq->post_value(true));

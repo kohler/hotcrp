@@ -10586,7 +10586,7 @@ hotcrp.load_editable_pc_assignments = function () {
     }
 };
 
-hotcrp.prepare_editable_paper = function () {
+hotcrp.load_paper_sidebar = function () {
     $(".need-tag-index-form").each(function () {
         $(this).removeClass("need-tag-index-form").on("submit", save_pstagindex)
             .find("input").on("change", save_pstagindex);
@@ -11851,10 +11851,10 @@ Object.assign(window.hotcrp, {
     // init_deadlines
     // load_editable_paper
     // load_editable_review
+    // load_paper_sidebar
     // make_review_field
     // onload
     // paper_edit_conditions
-    // prepare_editable_paper
     // render_list
     render_text_page: render_text.on_page,
     render_user: render_user,

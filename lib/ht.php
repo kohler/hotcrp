@@ -53,7 +53,7 @@ class Ht {
         $x = "";
         foreach ($tokens as $t) {
             if (($t ?? "") !== "")
-                $x = $x === "" ? $t : "$x $t";
+                $x = $x === "" ? $t : "{$x} {$t}";
         }
         return $x;
     }

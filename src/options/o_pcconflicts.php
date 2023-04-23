@@ -236,7 +236,7 @@ class PCConflicts_PaperOption extends PaperOption {
             }
             echo '"><label>';
 
-            $js = ["id" => "pcconf:$id", "disabled" => $readonly];
+            $js = ["id" => "pcconf:{$id}", "disabled" => $readonly];
             $hidden = "";
             if (Conflict::is_author($pct)
                 || (!$admin && Conflict::is_pinned($pct))) {
