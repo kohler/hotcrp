@@ -735,7 +735,7 @@ class TagMap implements IteratorAggregate {
     private function color_regex() {
         if (!$this->color_re) {
             $rex = [
-                "{(?:\\A| )(?:(?:\\d*~|~~|)(font-[^\s#]+|weight-(?:[a-z]+|\d+)|(?:text-|)rgb-[0-9a-f]{3}(?:|[0-9a-f]{3})|"
+                "{(?:\\A| )(?:(?:\\d*~|~~|)(font-[^\s#]+|weight-(?:[a-z]+|\d+)|(?:text-|)rgb-[0-9a-f]{3}(?:|[0-9a-f]{3})"
             ];
             foreach ($this->style_lmap as $style => $ks) {
                 if (($ks->sclass & TagStyle::STYLE) !== 0)
@@ -745,11 +745,10 @@ class TagMap implements IteratorAggregate {
             if ($this->has_colors) {
                 foreach ($this->storage as $k => $t) {
                     if (!empty($t->styles))
-                        $rex[] = "|" . $t->tag_regex();
+                        $rex[] = $t->tag_regex();
                 }
             }
-            $rex[] = "))(?=\\z|[# ])}i";
-            $this->color_re = join("", $rex);
+            $this->color_re = join("|", $rex) . "))(?=\\z|[# ])}i";
         }
         return $this->color_re;
     }
