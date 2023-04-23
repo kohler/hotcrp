@@ -10010,20 +10010,23 @@ handle_ui.on("js-replace-document", function () {
     var doce = this.closest(".has-document"),
         actions = doce.querySelector(".document-actions"),
         u = doce.querySelector(".document-uploader");
-    if (!actions) {
-        actions = classe("div", "document-actions hidden");
-        doce.querySelector(".document-replacer").before(actions);
-    }
-    if (u) {
-        $(u).trigger("hotcrp-change-document");
-    } else {
+    if (!u) {
         var dname = doce.getAttribute("data-document-name") || ("opt" + doce.getAttribute("data-dtype"));
         u = classe("input", "uich document-uploader");
         u.id = u.name = dname + ":file";
         u.type = "file";
-        if (doce.hasAttribute("data-document-accept"))
+        if (doce.hasAttribute("data-document-accept")) {
             u.setAttribute("accept", "data-document-accept");
+        }
         doce.querySelector(".document-replacer").before(classe("div", "document-upload hidden", u));
+    } else {
+        $(u).trigger("hotcrp-change-document");
+    }
+    if (!actions) {
+        actions = classe("div", "document-actions hidden");
+        doce.querySelector(".document-replacer").before(actions);
+    }
+    if (!actions.querySelector(".js-cancel-document")) {
         var cancel = classe("button", "btn-link ui js-cancel-document hidden");
         cancel.type = "button";
         cancel.textContent = "Cancel";
