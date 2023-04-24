@@ -977,9 +977,9 @@ class PaperSearch extends MessageSet {
             $qe = $x->qe[0];
             if ($x->op->op === "not") {
                 if (preg_match('/\A(?:[(-]|NOT )/i', $qe)) {
-                    $qe = "NOT $qe";
+                    $qe = "NOT {$qe}";
                 } else {
-                    $qe = "-$qe";
+                    $qe = "-{$qe}";
                 }
             }
             return $qe;
@@ -1061,10 +1061,10 @@ class PaperSearch extends MessageSet {
                     $curqe = self::_pop_canonicalize_stack($curqe, $stack);
                 }
                 $top = count($stack) ? $stack[count($stack) - 1] : null;
-                if ($top && !$op->unary && $top->op->op === $op->op) {
-                    $top->qe[] = $curqe;
+                if ($op->unary || !$top || $top->op->op !== $op->op) {
+                    $stack[] = new CanonicalizeScope($op, $curqe ? [$curqe] : []);
                 } else {
-                    $stack[] = new CanonicalizeScope($op, [$curqe]);
+                    $top->qe[] = $curqe;
                 }
                 $curqe = null;
             }
