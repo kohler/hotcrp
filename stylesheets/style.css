@@ -2862,6 +2862,8 @@ table.pltable {
 }
 .pltable-fullw-container {
 	overflow-x: auto;
+	overflow-y: hidden;
+	padding-bottom: 3px; /* to accommodate focus ring; XXX overflow-clip-margin */
 }
 .pltable-fullw {
 	min-width: 100%;
