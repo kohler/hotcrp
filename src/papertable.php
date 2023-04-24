@@ -724,6 +724,12 @@ class PaperTable {
         }
     }
 
+    /** @return bool */
+    private function need_autoready() {
+        return !$this->allow_edit_final
+            && !$this->conf->opt("noPapers");
+    }
+
     private function print_editable_complete() {
         if ($this->allow_edit_final) {
             echo Ht::hidden("submitpaper", 1);
@@ -731,15 +737,18 @@ class PaperTable {
         }
 
         $sr = $this->prow->submission_round();
-
         $checked = $this->is_ready(true);
-        $ready_open = $this->prow->paperStorageId > 1 || $this->conf->opt("noPapers");
-        echo '<div class="ready-container ',
-            $ready_open ? "foldo" : "foldc",
-            '">', Ht::hidden("has_submitpaper", 1),
-            '<div class="checki fx"><span class="checkc">',
-            Ht::checkbox("submitpaper", 1, $checked, ["disabled" => !$ready_open]),
-            "</span>";
+        if ($this->need_autoready()) {
+            $ready_open = $this->prow->paperStorageId > 1;
+            echo '<div class="ready-container ', $ready_open ? "foldo" : "foldc",
+                '"><div class="checki fx"><span class="checkc">',
+                Ht::checkbox("submitpaper", 1, $checked, ["disabled" => !$ready_open]),
+                '</span>';
+        } else {
+            echo '<div class="ready-container"><div class="checki"><span class="checkc">',
+                Ht::checkbox("submitpaper", 1, $checked),
+                '</span>';
+        }
 
         // script.js depends on the HTML here
         $upd_html = "";
@@ -755,7 +764,7 @@ class PaperTable {
         } else {
             echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review") . "</strong>");
         }
-        echo "</div></div>\n";
+        echo "</div>", Ht::hidden("has_submitpaper", 1), "</div>\n";
 
         // update message
         if (!$sr->freeze && Conf::$now <= $sr->update) {
@@ -2158,9 +2167,14 @@ class PaperTable {
         }
         $form_js = [
             "id" => "form-paper",
-            "class" => "need-unload-protection uich ui-submit js-submit-paper",
+            "class" => "need-unload-protection ui-submit js-submit-paper",
             "data-alert-toggle" => "paper-alert"
         ];
+        if ($this->need_autoready()) {
+            $form_js["class"] .= " uich js-paper-autoready";
+            $opt = $this->conf->option_by_id(DTYPE_SUBMISSION);
+            $form_js["data-autoready-condition"] = json_encode_browser($opt->present_script_expression());
+        }
         if ($this->prow->timeSubmitted > 0) {
             $form_js["data-submitted"] = $this->prow->timeSubmitted;
         }

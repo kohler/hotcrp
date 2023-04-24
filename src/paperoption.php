@@ -1763,9 +1763,6 @@ class Document_PaperOption extends PaperOption {
         if ($this->max_size > 0) {
             echo ' data-document-max-size="', (int) $this->max_size, '"';
         }
-        if ($this->id === DTYPE_SUBMISSION && $noPapers) {
-            echo ' data-document-optional="true"';
-        }
         echo '>';
 
         // current version, if any
@@ -1780,6 +1777,7 @@ class Document_PaperOption extends PaperOption {
             }
 
             echo '<div class="document-file">',
+                Ht::hidden($this->formid, $doc->paperStorageId),
                 $doc->link_html(htmlspecialchars($doc->filename ?? $doc->export_filename())),
                 '</div><div class="document-stamps">';
             if (($stamps = PaperTable::pdf_stamps_html($doc))) {
@@ -1877,7 +1875,7 @@ class Document_PaperOption extends PaperOption {
         return $this->parse_boolean_search($sword, $srch);
     }
     function present_script_expression() {
-        return ["type" => "document_count", "dtype" => $this->id];
+        return ["type" => "document_count", "formid" => $this->formid, "dtype" => $this->id];
     }
 }
 

@@ -247,6 +247,6 @@ class Attachments_PaperOption extends PaperOption {
         }
     }
     function present_script_expression() {
-        return ["type" => "document_count", "dtype" => $this->id];
+        return ["type" => "document_count", "formid" => $this->formid, "dtype" => $this->id];
     }
 }

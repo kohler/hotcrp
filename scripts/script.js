@@ -9925,49 +9925,6 @@ function background_format_check() {
 $(background_format_check);
 });
 
-handle_ui.on("change.js-submit-paper", function (evt) {
-    if (evt.target && (evt.target.name === "submission" || evt.target.name === "final" || evt.target.name === "submitpaper")) {
-        var readye = this.elements.submitpaper, was, is, label;
-        was = is = this.getAttribute("data-submitted");
-        if (!was) {
-            var e0 = this.elements.final || this.elements.submission;
-            if (e0 && e0.value) {
-                is = true;
-            } else if ((e0 = this.elements.has_final || this.elements.has_submission)) {
-                e0 = e0.nextSibling;
-                if (!hasClass(e0, "has-document"))
-                    throw new Error("bad has-document");
-                is = e0.hasAttribute("data-docid") || e0.hasAttribute("data-document-optional");
-            } else {
-                is = true;
-            }
-        }
-        if (!was)
-            fold($(this).find(".ready-container"), !is);
-        if (readye && readye.type === "checkbox" && is) {
-            is = readye.checked && $(readye).is(":visible");
-            readye.disabled = readye.disabled && !!was;
-        }
-        var t;
-        if (this.hasAttribute("data-contacts-only")) {
-            t = "Save contacts";
-        } else if (!is) {
-            t = "Save draft";
-        } else if (was) {
-            t = "Save and resubmit";
-        } else {
-            t = "Save and submit";
-        }
-        $("button.btn-savepaper").html(t);
-        if (readye && (label = readye.parentElement.nextSibling) && label.tagName === "LABEL") {
-            toggleClass(label, "is-error", !is);
-            if (label.nextSibling && hasClass(label.nextSibling, "if-unready")) {
-                toggleClass(label.nextSibling, "hidden", is);
-            }
-        }
-    }
-});
-
 handle_ui.on("js-add-attachment", function () {
     var attache = $$(this.getAttribute("data-editable-attachments")),
         f = attache.closest("form"),
@@ -10053,8 +10010,9 @@ handle_ui.on("document-uploader", function () {
 handle_ui.on("js-cancel-document", function () {
     var doce = this.closest(".has-document"),
         $doc = $(doce), $actions = $doc.find(".document-actions"),
-        f = doce.closest("form");
-    $doc.find(".document-uploader").val("").change().trigger("hotcrp-change-document");
+        f = doce.closest("form"),
+        $uploader = $doc.find(".document-uploader");
+    $uploader.val("").trigger("hotcrp-change-document").trigger("change");
     if (hasClass(doce, "document-new-instance")) {
         var holder = doce.parentElement;
         $doc.remove();
@@ -10426,12 +10384,19 @@ edit_conditions.document_count = function (ec, form) {
     var n = 0;
     $(form).find(".has-document").each(function () {
         if (this.getAttribute("data-dtype") == ec.dtype) {
-            var name = this.getAttribute("data-document-name"), e;
-            if ((e = form.elements[name])) {
-                n += e.value ? 1 : 0;
-            } else if ($(this).find(".document-file").length
-                       && !form.elements[name + ":remove"]) {
-                n += 1;
+            var name = this.getAttribute("data-document-name"),
+                preve = form.elements[name],
+                removee = form.elements[name + ":remove"],
+                filee = form.elements[name + ":file"],
+                uploade = form.elements[name + ":upload"];
+            if (!removee || !removee.value) {
+                if (uploade && uploade.value) {
+                    n += 1;
+                } else if (filee && filee.files && filee.files.length > 0) {
+                    n += filee.files.length;
+                } else if (preve && preve.value) {
+                    n += 1;
+                }
             }
         }
     });
@@ -10541,10 +10506,49 @@ function fieldchange(evt) {
         .trigger({type: "fieldchange", changeTarget: evt.target});
 }
 
+function prepare_autoready_condition(f) {
+    var condition = JSON.parse(f.getAttribute("data-autoready-condition"));
+    function chf() {
+        var readye = this.elements.submitpaper, was, is, label;
+        was = this.getAttribute("data-submitted");
+        is = was || hotcrp.evaluate_edit_condition(condition, f);
+        if (!was) {
+            fold($(this).find(".ready-container"), !is);
+        }
+        if (readye && readye.type === "checkbox" && is) {
+            is = readye.checked && $(readye).is(":visible");
+            readye.disabled = readye.disabled && !!was;
+        }
+        var t;
+        if (this.hasAttribute("data-contacts-only")) {
+            t = "Save contacts";
+        } else if (!is) {
+            t = "Save draft";
+        } else if (was) {
+            t = "Save and resubmit";
+        } else {
+            t = "Save and submit";
+        }
+        $("button.btn-savepaper").text(t);
+        if (readye
+            && (label = readye.parentElement.nextSibling)
+            && label.tagName === "LABEL") {
+            toggleClass(label, "is-error", !is);
+            if (label.nextSibling && hasClass(label.nextSibling, "if-unready")) {
+                toggleClass(label.nextSibling, "hidden", is);
+            }
+        }
+    }
+    $(f).on("change", chf); // jQuery required because we `trigger` later
+    chf.call(f);
+}
+
 hotcrp.load_editable_paper = function () {
     var f = document.getElementById("form-paper");
     hiliter_children(f);
-    f.elements.submitpaper && $(f.elements.submitpaper).change();
+    if (f.hasAttribute("data-autoready-condition")) {
+        prepare_autoready_condition(f);
+    }
     $(".pfe").each(add_pslitem_pfe);
     var h = $(".btn-savepaper").first(),
         k = hasClass(f, "alert") ? "" : " hidden";
@@ -10554,8 +10558,7 @@ hotcrp.load_editable_paper = function () {
         .find(".btn-savepaper").click(function () {
             $("#form-paper .btn-savepaper").first().trigger({type: "click", sidebarTarget: this});
         });
-    $(f).on("change", "input, select, textarea", fieldchange)
-        .on("click", "input[type=checkbox], input[type=radio]", fieldchange);
+    $(f).on("change", "input, select, textarea", fieldchange);
 };
 
 hotcrp.load_editable_review = function () {
@@ -10618,9 +10621,9 @@ hotcrp.paper_edit_conditions = function () {
         .find(".has-edit-condition").each(run_edit_conditions);
 };
 
-/*hotcrp.evaluate_edit_condition = function (ec) {
+hotcrp.evaluate_edit_condition = function (ec) {
     return evaluate_edit_condition(typeof ec === "string" ? parse_json(ec) : ec, $("#form-paper")[0]);
-};*/
+};
 
 })($);
 
@@ -11844,6 +11847,7 @@ Object.assign(window.hotcrp, {
     // edit_comment
     ensure_pattern: ensure_pattern,
     escape_html: escape_html,
+    // evaluate_edit_condition
     focus_within: focus_within,
     fold: fold,
     fold_storage: fold_storage,
