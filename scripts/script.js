@@ -10382,9 +10382,8 @@ edit_conditions.dropdown = function (ec, form) {
     return e && e.value ? +e.value : false;
 };
 edit_conditions.text_present = function (ec, form) {
-    var e = form.elements[ec.formid],
-        v = $.trim(e ? e.value : "");
-    return v !== "";
+    var e = form.elements[ec.formid];
+    return $.trim(e ? e.value : "") !== "";
 };
 edit_conditions.numeric = function (ec, form) {
     var e = form.elements[ec.formid],
@@ -10424,15 +10423,15 @@ edit_conditions["in"] = function (ec, form) {
 }
 edit_conditions.title = function (ec, form) {
     var e = form.elements.title;
-    return ec.match === ($.trim(e && e.value) !== "");
+    return ec.match === ($.trim(e ? e.value : "") !== "");
 };
 edit_conditions.abstract = function (ec, form) {
     var e = form.elements.abstract;
-    return ec.match === ($.trim(e && e.value) !== "");
+    return ec.match === ($.trim(e ? e.value : "") !== "");
 };
 edit_conditions.collaborators = function (ec, form) {
     var e = form.elements.collaborators;
-    return ec.match === ($.trim(e && e.value) !== "");
+    return ec.match === ($.trim(e ? e.value : "") !== "");
 };
 edit_conditions.pc_conflict = function (ec, form) {
     var n = 0, elt;

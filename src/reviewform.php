@@ -328,7 +328,7 @@ class ReviewForm {
         }
 
         if ($prow->paperId > 0) {
-            $t[] = "\n==+== Paper #$prow->paperId\n"
+            $t[] = "\n==+== Paper #{$prow->paperId}\n"
                 . prefix_word_wrap("==-== Title: ", $prow->title, "==-==        ")
                 . "\n";
         } else {
@@ -343,10 +343,10 @@ Ready\n";
             if ($this->conf->review_blindness() === Conf::BLIND_OPTIONAL) {
                 $blind = $rrow->reviewBlind ? "Anonymous" : "Open";
                 $t[] = "\n==+== Review Anonymity
-==-== " . $this->conf->short_name . " allows either anonymous or open review.
+==-== {$this->conf->short_name} allows either anonymous or open review.
 ==-== Enter \"Open\" if you want to expose your name to authors:
 
-$blind\n";
+{$blind}\n";
             }
         }
 
