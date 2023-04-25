@@ -807,7 +807,7 @@ class PaperTable {
                 $updatem || $submitm ? "is-urgent-note" : "is-note",
                 ' if-unready-required',
                 $ready_open ? " hidden" : "", '">',
-                self::mjoin($updatem, $submitm, $requiredm, $freezem), '</p>';
+                self::mjoin($updatem, $submitm, $freezem, $requiredm), '</p>';
         }
         if ($submitm) {
             echo '<p class="feedback is-urgent-note if-unready',
@@ -821,15 +821,6 @@ class PaperTable {
         }
 
         echo Ht::hidden("has_submitpaper", 1), "</div>\n";
-    }
-
-    /** @deprecated */
-    static function document_upload_input($inputid, $dtype, $accepts) {
-        $t = '<input id="' . $inputid . '" type="file" name="' . $inputid . '"';
-        if ($accepts !== null && count($accepts) == 1) {
-            $t .= ' accept="' . $accepts[0]->mimetype . '"';
-        }
-        return $t . ' size="30" class="uich document-uploader">';
     }
 
     function render_abstract(FieldRender $fr, PaperOption $o) {
@@ -885,7 +876,7 @@ class PaperTable {
             return join(", ", $names);
         } else {
             foreach ($table as $au) {
-                $n = trim(Text::highlight("$au->firstName $au->lastName", $highpreg));
+                $n = trim(Text::highlight("{$au->firstName} {$au->lastName}", $highpreg));
                 if ($au->email !== "") {
                     $s = Text::highlight($au->email, $highpreg);
                     $ehtml = htmlspecialchars($au->email);
