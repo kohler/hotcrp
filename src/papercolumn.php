@@ -255,6 +255,7 @@ class Title_PaperColumn extends PaperColumn {
         }
         $flags = 0;
         if ($row->has_conflict($this->contact)
+            && !($row->has_author($this->contact))
             && (!$this->not_me || $pl->user->can_view_conflicts($row))) {
             $flags |= self::F_CONFLICT;
         }

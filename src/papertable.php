@@ -208,7 +208,7 @@ class PaperTable {
             } else if ($prow->title === "") {
                 $t .= "[No title]";
             } else {
-                if(($prow->conf->settings["conflict_completelyhide"] ?? null) && $prow->conflictType > 0) {
+                if(($prow->conf->settings["conflict_completelyhide"] ?? null) && !($prow->has_author($paperTable->user)) && $prow->conflictType > 0) {
                     if($paperTable->user->privChair) {
                         $t .= htmlspecialchars($prow->title) . " [conflict overwritten as chair]";
                     } else {
