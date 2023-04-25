@@ -1723,7 +1723,10 @@ function form_differs(form) {
     len = coll.length;
     for (i = 0; i !== len; ++i) {
         e = coll[i];
-        if (e.name && !hasClass(e, "ignore-diff") && input_differs(e))
+        if (e.name
+            && !hasClass(e, "ignore-diff")
+            && !e.disabled
+            && input_differs(e))
             return e;
     }
     return null;
@@ -10339,7 +10342,7 @@ function evaluate_edit_condition(ec, form) {
     } else if (edit_conditions[ec.type]) {
         return edit_conditions[ec.type](ec, form);
     } else {
-        throw new Error("unknown edit condition");
+        throw new Error("unknown edit condition " + ec.type);
     }
 }
 
@@ -10514,22 +10517,37 @@ function fieldchange(evt) {
 }
 
 function prepare_autoready_condition(f) {
-    var condition = JSON.parse(f.getAttribute("data-autoready-condition"));
+    var condition = null, readye = f.elements.submitpaper;
+    if (!readye) {
+        return;
+    }
+    if (f.hasAttribute("data-autoready-condition")) {
+        condition = JSON.parse(f.getAttribute("data-autoready-condition"));
+    }
     function chf() {
-        var readye = this.elements.submitpaper, was, is, label;
-        was = this.getAttribute("data-submitted");
-        is = was || hotcrp.evaluate_edit_condition(condition, f);
-        if (!was) {
-            fold($(this).find(".ready-container"), !is);
+        var was, is, iscond, e;
+        iscond = !condition || hotcrp.evaluate_edit_condition(condition, f);
+        readye.disabled = !iscond;
+        if (iscond && readye.hasAttribute("data-autoready")) {
+            readye.checked = true;
+            readye.removeAttribute("data-autoready");
         }
-        if (readye && readye.type === "checkbox" && is) {
-            is = readye.checked && $(readye).is(":visible");
-            readye.disabled = readye.disabled && !!was;
+        e = readye.parentElement.parentElement;
+        toggleClass(e, "hidden", !iscond);
+        toggleClass(e, "is-error", iscond && !readye.checked && readye.hasAttribute("data-urgent"));
+        for (e = e.nextSibling; e && e.tagName === "P"; e = e.nextSibling) {
+            if (hasClass(e, "if-unready-required")) {
+                toggleClass(e, "hidden", iscond);
+            } else if (hasClass(e, "if-unready")) {
+                toggleClass(e, "hidden", !iscond || readye.checked);
+            } else if (hasClass(e, "if-ready")) {
+                toggleClass(e, "hidden", !iscond || !readye.checked);
+            }
         }
         var t;
-        if (this.hasAttribute("data-contacts-only")) {
+        if (f.hasAttribute("data-contacts-only")) {
             t = "Save contacts";
-        } else if (!is) {
+        } else if (!iscond || !readye.checked) {
             t = "Save draft";
         } else if (was) {
             t = "Save and resubmit";
@@ -10537,25 +10555,19 @@ function prepare_autoready_condition(f) {
             t = "Save and submit";
         }
         $("button.btn-savepaper").text(t);
-        if (readye
-            && (label = readye.parentElement.nextSibling)
-            && label.tagName === "LABEL") {
-            toggleClass(label, "is-error", !is);
-            if (label.nextSibling && hasClass(label.nextSibling, "if-unready")) {
-                toggleClass(label.nextSibling, "hidden", is);
-            }
-        }
     }
-    $(f).on("change", chf); // jQuery required because we `trigger` later
+    if (condition) {
+        $(f).on("change", chf); // jQuery required because we `trigger` later
+    } else {
+        $(readye).on("change", chf);
+    }
     chf.call(f);
 }
 
 hotcrp.load_editable_paper = function () {
     var f = document.getElementById("form-paper");
     hiliter_children(f);
-    if (f.hasAttribute("data-autoready-condition")) {
-        prepare_autoready_condition(f);
-    }
+    prepare_autoready_condition(f);
     $(".pfe").each(add_pslitem_pfe);
     var h = $(".btn-savepaper").first(),
         k = hasClass(f, "alert") ? "" : " hidden";

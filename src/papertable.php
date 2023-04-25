@@ -76,6 +76,8 @@ class PaperTable {
     private $foldmap;
     /** @var array<string,int> */
     private $foldnumber;
+    /** @var ?array */
+    private $_autoready;
 
     /** @var ?CheckFormat */
     public $cf;
@@ -710,24 +712,46 @@ class PaperTable {
     /** @param bool $checkbox
      * @return bool */
     private function is_ready($checkbox) {
-        if ($this->useRequest) {
-            return !!$this->qreq->submitpaper
-                && ($checkbox
-                    || $this->conf->opt("noPapers")
-                    || $this->prow->paperStorageId > 1);
-        } else {
-            return $this->prow->timeSubmitted > 0
-                || ($checkbox
-                    && !$this->prow->submission_round()->freeze
-                    && (!$this->prow->paperId
-                        || (!$this->conf->opt("noPapers") && $this->prow->paperStorageId <= 1)));
-        }
+        return $this->prow->timeSubmitted > 0
+            || ($checkbox
+                && !$this->prow->submission_round()->freeze
+                && (!$this->prow->paperId
+                    || (!$this->conf->opt("noPapers") && $this->prow->paperStorageId <= 1)));
     }
 
     /** @return bool */
     private function need_autoready() {
-        return !$this->allow_edit_final
-            && !$this->conf->opt("noPapers");
+        if ($this->_autoready === null) {
+            $l = [];
+            if (!$this->allow_edit_final) {
+                foreach ($this->prow->form_fields() as $o) {
+                    if ($o->required
+                        && $o->exists_condition() === null /* XXX */
+                        && $o->editable_condition() === null
+                        && ($x = $o->present_script_expression()))
+                        $l[] = $x;
+                }
+            }
+            if (empty($l)) {
+                $this->_autoready = [];
+            } else if (count($l) === 1) {
+                $this->_autoready = $l[0];
+            } else {
+                $this->_autoready = ["type" => "and", "child" => $l];
+            }
+        }
+        return !empty($this->_autoready);
+    }
+
+    /** @param string ...$m
+     * @return string */
+    static function mjoin(...$m) {
+        $t = "";
+        foreach ($m as $s) {
+            if ($s !== null && $s !== "")
+                $t .= $t === "" ? $s : " {$s}";
+        }
+        return $t;
     }
 
     private function print_editable_complete() {
@@ -738,38 +762,65 @@ class PaperTable {
 
         $sr = $this->prow->submission_round();
         $checked = $this->is_ready(true);
-        if ($this->need_autoready()) {
-            $ready_open = $this->prow->paperStorageId > 1;
-            echo '<div class="ready-container ', $ready_open ? "foldo" : "foldc",
-                '"><div class="checki fx"><span class="checkc">',
-                Ht::checkbox("submitpaper", 1, $checked, ["disabled" => !$ready_open]),
-                '</span>';
+        $autoready = $this->need_autoready();
+        $ready_open = !$autoready || $this->prow->paperStorageId > 1;
+        if ($sr->freeze) {
+            $label_class = $checked ? null : "is-error";
+            $complete = "complete";
         } else {
-            echo '<div class="ready-container"><div class="checki"><span class="checkc">',
-                Ht::checkbox("submitpaper", 1, $checked),
-                '</span>';
+            if (Conf::$now <= $sr->update) {
+                $label_class = $ready_open ? ($checked ? null : "is-error") : "hidden";
+            } else {
+                $label_class = null;
+            }
+            $complete = "ready for review";
         }
+
+        echo '<div class="ready-container mb-3"><label class="',
+            Ht::add_tokens("checki mb-1", $label_class),
+            '"><span class="checkc">',
+            Ht::checkbox("submitpaper", 1, $checked && $ready_open, [
+                "disabled" => !$ready_open,
+                "data-autoready" => $autoready && !$ready_open,
+                "data-urgent" => Conf::$now <= $sr->submit
+            ]),
+            '</span><strong>',
+            $this->conf->_("The submission is {$complete}"),
+            '</strong></label>';
 
         // script.js depends on the HTML here
-        $upd_html = "";
+        $updatem = $submitm = $requiredm = $freezem = "";
+        if (Conf::$now <= $sr->update) {
+            $dlhtml = $this->conf->unparse_time_with_local_span($sr->update);
+            $updatem = "You can update this submission until {$dlhtml}.";
+        }
+        if (Conf::$now <= $sr->submit) {
+            $sdlhtml = $sr->update === $sr->submit ? "then" : $this->conf->unparse_time_with_local_span($sr->submit);
+            $submitm = "Submissions not marked {$complete} by {$sdlhtml} will not be evaluated.";
+        }
         if ($sr->freeze) {
-            echo Ht::label("<strong>" . $this->conf->_("The submission is complete") . "</strong>", null, ["class" => $checked ? null : "is-error"]),
-                '<p class="feedback is-urgent-note">You must complete the submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</p>';
-        } else if (Conf::$now <= $sr->update) {
-            // can update until future deadline
-            $upd_html = $this->conf->unparse_time_with_local_span($sr->update);
-            echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review") . "</strong>", null, ["class" => $checked ? null : "is-error"]),
-                '<p class="feedback is-urgent-note if-unready ', $checked ? "hidden" : "",
-                '">Submissions not marked ready for review by the deadline will not be considered.</p>';
-        } else {
-            echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review") . "</strong>");
+            $freezem = "Completed submissions are frozen and cannot be changed further.";
         }
-        echo "</div>", Ht::hidden("has_submitpaper", 1), "</div>\n";
+        if ($autoready) {
+            $requiredm = "You must fill out all required fields before marking the submission {$complete}.";
+            echo '<p class="feedback ',
+                $updatem || $submitm ? "is-urgent-note" : "is-note",
+                ' if-unready-required',
+                $ready_open ? " hidden" : "", '">',
+                self::mjoin($updatem, $submitm, $requiredm, $freezem), '</p>';
+        }
+        if ($submitm) {
+            echo '<p class="feedback is-urgent-note if-unready',
+                $ready_open ? "" : " hidden", '">',
+                self::mjoin($updatem, $submitm, $freezem), '</p>';
+        }
+        if ($updatem || $freezem) {
+            echo '<p class="feedback is-note if-ready',
+                $checked ? "" : " hidden", '">',
+                self::mjoin($updatem, $submitm, $freezem), '</p>';
+        }
 
-        // update message
-        if (!$sr->freeze && Conf::$now <= $sr->update) {
-            echo '<div class="mt-2 feedback is-note">You can update the submission until ', $upd_html, '.</div>';
-        }
+        echo Ht::hidden("has_submitpaper", 1), "</div>\n";
     }
 
     /** @deprecated */
@@ -2172,8 +2223,7 @@ class PaperTable {
         ];
         if ($this->need_autoready()) {
             $form_js["class"] .= " uich js-paper-autoready";
-            $opt = $this->conf->option_by_id(DTYPE_SUBMISSION);
-            $form_js["data-autoready-condition"] = json_encode_browser($opt->present_script_expression());
+            $form_js["data-autoready-condition"] = json_encode_browser($this->_autoready);
         }
         if ($this->prow->timeSubmitted > 0) {
             $form_js["data-submitted"] = $this->prow->timeSubmitted;

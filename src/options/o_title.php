@@ -37,4 +37,7 @@ class Title_PaperOption extends PaperOption {
         $fr->value = $ov->prow->title ? : "[No title]";
         $fr->value_format = $ov->prow->title_format();
     }
+    function present_script_expression() {
+        return ["type" => "text_present", "formid" => $this->formid];
+    }
 }

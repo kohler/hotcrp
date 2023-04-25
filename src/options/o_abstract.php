@@ -57,4 +57,7 @@ class Abstract_PaperOption extends PaperOption {
             }
         }
     }
+    function present_script_expression() {
+        return ["type" => "text_present", "formid" => $this->formid];
+    }
 }

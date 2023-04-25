@@ -1386,6 +1386,9 @@ a.btn-disabled, a.btn-disabled:hover {
 	border-color: #c5c5c5;
 	background: rgba(222, 222, 222, 0.5);
 }
+.disabled-color {
+	color: rgba(102, 102, 102, 0.5);
+}
 .btn-link, .btn-qlink, .btn-xlink,
 .btn-link:hover, .btn-qlink:hover, .btn-xlink:hover {
 	padding: 0;
