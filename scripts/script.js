@@ -4007,13 +4007,13 @@ handle_ui.on("click.js-dropmenu-open", function (evt) {
 });
 
 handle_ui.on("click.dropmenu", function (evt) {
-    var li, es, bs, i;
-    if (evt.target.tagName === "A"
-        || evt.target.tagName === "BUTTON"
-        || evt.target.closest("ul") !== this) {
+    var tgt = evt.target, li, es, bs, i;
+    if (tgt.tagName === "A"
+        || tgt.tagName === "BUTTON"
+        || tgt.closest("ul") !== this) {
         return;
     }
-    li = evt.target.closest("li");
+    li = tgt.closest("li");
     if (!li) {
         return;
     }
@@ -4027,7 +4027,14 @@ handle_ui.on("click.dropmenu", function (evt) {
                 es.push(bs[i]);
         }
     }
-    if (es.length === 1) {
+    if (es.length !== 1) {
+        return;
+    }
+    if (es[0].tagName === "A"
+        && es[0].href
+        && !event_key.is_default_a(evt)) {
+        window.open(es[0].href, "_blank");
+    } else {
         es[0].click();
         evt.preventDefault();
         handle_ui.stopPropagation(evt);
