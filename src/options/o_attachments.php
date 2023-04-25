@@ -101,7 +101,7 @@ class Attachments_PaperOption extends PaperOption {
                 $thisdoc = DocumentInfo::make_request($qreq, $name, $prow->paperId, $documentType, $prow->conf);
                 if ($thisdoc && $thisdoc->has_error()) {
                     foreach ($thisdoc->message_list() as $mi) {
-                        $ms->append_item($mi->with_landmark($thisdoc->filename ? : "(uploaded file)"));
+                        $ms->append_item($mi->with_landmark($thisdoc->error_filename()));
                     }
                 }
             }

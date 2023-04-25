@@ -1283,6 +1283,14 @@ class DocumentInfo implements JsonSerializable {
     const ANY_MEMBER_FILENAME = 1;
 
     /** @return ?string */
+    function error_filename() {
+        if ($this->filename === null || $this->filename === "") {
+            return "(uploaded file)";
+        }
+        return $this->filename;
+    }
+
+    /** @return ?string */
     function member_filename($flags = 0) {
         if (($this->_member_filename ?? "") !== "") {
             return $this->_member_filename;
