@@ -489,7 +489,7 @@ class CommentInfo {
 
     /** @return DocumentInfoSet */
     function attachments() {
-        if ($this->commentType & self::CT_HASDOC) {
+        if (($this->commentType & self::CT_HASDOC) !== 0) {
             return $this->prow->linked_documents($this->commentId, DocumentInfo::LINKTYPE_COMMENT_BEGIN, DocumentInfo::LINKTYPE_COMMENT_END, $this);
         } else {
             return new DocumentInfoSet;
@@ -720,12 +720,12 @@ class CommentInfo {
 
     private function save_ordinal($cmtid, $ctype) {
         $okey = $ctype >= self::CT_AUTHOR ? "authorOrdinal" : "ordinal";
-        $q = "update PaperComment, (select coalesce(max(PaperComment.$okey),0) maxOrdinal
+        $q = "update PaperComment, (select coalesce(max(PaperComment.{$okey}),0) maxOrdinal
     from Paper
     left join PaperComment on (PaperComment.paperId=Paper.paperId)
     where Paper.paperId={$this->prow->paperId}
     group by Paper.paperId) t
-set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
+set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         $this->conf->qe($q);
     }
 
