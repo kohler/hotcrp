@@ -9973,7 +9973,7 @@ handle_ui.on("js-replace-document", function () {
         u.id = u.name = dname + ":file";
         u.type = "file";
         if (doce.hasAttribute("data-document-accept")) {
-            u.setAttribute("accept", "data-document-accept");
+            u.setAttribute("accept", doce.getAttribute("data-document-accept"));
         }
         doce.querySelector(".document-replacer").before(classe("div", "document-upload hidden", u));
     } else {
