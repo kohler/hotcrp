@@ -1539,7 +1539,7 @@ class DocumentInfo implements JsonSerializable {
     /** @param array{attachment?:bool,no_accel?:bool,cacheable?:bool} $opts
      * @return bool */
     function download($opts = [], $user = null) {
-        if(($this->conf->settings["conflict_completelyhide"] ?? null) && $this->prow->conflictType > 0 && $opts["isPrivChair"] != 1) {
+        if(($this->conf->settings["conflict_completelyhide"] ?? null) && $this->prow->conflictType > 0 && $opts["isAuthor"] != 1 && $opts["isPrivChair"] != 1) {
             http_response_code(403);
 
             die('Error 403 - Forbidden');

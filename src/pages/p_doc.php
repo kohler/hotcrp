@@ -171,6 +171,7 @@ class Doc_Page {
         if ($doc->has_hash() && ($x = $qreq->hash) && $doc->check_text_hash($x)) {
             $opts["cacheable"] = true;
         }
+        $opts["isAuthor"] = $prow->has_author($user);
         $opts["isPrivChair"] = $user->privChair;
         if ($doc->download(DocumentRequest::add_connection_options($opts))) {
             DocumentInfo::log_download_activity([$doc], $user);
