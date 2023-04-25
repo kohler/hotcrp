@@ -10366,12 +10366,13 @@ edit_conditions.checkbox = function (ec, form) {
     return e && e.checked;
 };
 edit_conditions.checkboxes = function (ec, form) {
-    if (ec.values === false || ec.values === true) {
+    var vs = ec.values;
+    if (vs === false || vs === true || vs == null) {
         var es = form.elements[ec.formid].querySelectorAll("input:checked");
-        return ec.values === (es.length !== 0);
+        return (vs === false) === (es.length === 0);
     }
-    for (var i = 0; i !== ec.values.length; ++i) {
-        if (form.elements[ec.formid + ":" + ec.values[i]].checked)
+    for (var i = 0; i !== vs.length; ++i) {
+        if (form.elements[ec.formid + ":" + vs[i]].checked)
             return true;
     }
     return false;
