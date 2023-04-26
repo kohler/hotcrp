@@ -100,7 +100,8 @@ class PaperContactInfo {
         return $ci;
     }
 
-    private function mark_conflict($ct) {
+    /** @param int $ct */
+    function mark_conflict($ct) {
         $this->conflictType = max($ct, $this->conflictType);
     }
 
@@ -539,7 +540,7 @@ class PaperInfo {
     /** @var int */
     private $_rights_version = 0;
     /** @var ?Contact */
-    private $_paper_creator;
+    private $_author_user;
     /** @var int */
     private $_flags = 0;
     /** @var ?SubmissionRound */
@@ -604,8 +605,6 @@ class PaperInfo {
     private $_watch_array;
     /** @var ?TokenInfo */
     public $_author_view_token;
-    /** @var ?Contact */
-    private $_author_view_user;
     /** @var ?int */
     public $_sort_subset;
     /** @var ?array<string,mixed> */
@@ -748,11 +747,7 @@ class PaperInfo {
         $prow->leadContactId = $prow->shepherdContactId = 0;
         $prow->blind = true;
         $prow->allConflictType = $user->contactId . " " . CONFLICT_CONTACTAUTHOR;
-        $prow->_paper_creator = $user;
-        $prow->check_rights_version();
-        $ci = PaperContactInfo::make_empty($prow, $user);
-        $ci->conflictType = CONFLICT_CONTACTAUTHOR;
-        $prow->_contact_info[$user->contactXid] = $ci;
+        $prow->_author_user = $user;
         $prow->_comment_skeleton_array = $prow->_comment_array = [];
         $prow->_row_set->add_paper($prow);
         if ($stag && ($sr = $user->conf->submission_round_by_tag($stag))) {
@@ -760,6 +755,7 @@ class PaperInfo {
             $prow->_submission_round = $sr;
         }
         $prow->set_is_new(true);
+        $prow->check_rights_version(); // ensure _contact_info[author_user] exists
         return $prow;
     }
 
@@ -835,6 +831,10 @@ class PaperInfo {
                 ++$this->_review_array_version;
             }
             $this->_rights_version = Contact::$rights_version;
+            if ($this->_author_user) {
+                // author_user should always be in _contact_info
+                $this->contact_info($this->_author_user);
+            }
         }
     }
 
@@ -849,9 +849,12 @@ class PaperInfo {
         return $this->_contact_info[$cid];
     }
 
-    /** @param Contact $user */
+    /** @param Contact $user
+     * @return PaperContactInfo */
     function _clear_contact_info($user) {
-        $this->_contact_info[$user->contactXid] = PaperContactInfo::make_empty($this, $user);
+        $ci = PaperContactInfo::make_empty($this, $user);
+        $this->_contact_info[$user->contactXid] = $ci;
+        return $ci;
     }
 
     /** @return PaperContactInfo */
@@ -861,14 +864,18 @@ class PaperInfo {
         if (!array_key_exists($cid, $this->_contact_info)) {
             if ($this->_review_array
                 || $this->reviewSignatures !== null) {
-                $ci = PaperContactInfo::make_empty($this, $user);
-                $ci->conflictType = $this->conflict_type($cid);
+                $ci = $this->_clear_contact_info($user);
+                if ($cid > 0) {
+                    $ci->mark_conflict(($this->conflict_types())[$cid] ?? 0);
+                }
                 foreach ($this->reviews_by_user($cid, $user->review_tokens()) as $rrow) {
                     $ci->mark_review($rrow);
                 }
-                $this->_contact_info[$cid] = $ci;
             } else {
                 PaperContactInfo::load_into($this, $user);
+            }
+            if ($user === $this->_author_user) {
+                $this->_contact_info[$cid]->mark_conflict(CONFLICT_CONTACTAUTHOR);
             }
         }
         return $this->_contact_info[$cid];
@@ -879,13 +886,21 @@ class PaperInfo {
         $this->_contact_info[$ci->contactId] = $ci;
     }
 
-    /** @return Contact */
+    /** @return Contact
+     * @deprecated */
     function author_view_user() {
-        if (!$this->_author_view_user) {
-            $this->_author_view_user = Contact::make($this->conf);
-            $this->_author_view_user->set_capability("@av{$this->paperId}", true);
+        return $this->author_user();
+    }
+
+    /** @return Contact */
+    function author_user() {
+        // Return a fake user that looks like a contact for this paper, but
+        // has no special privileges
+        if (!$this->_author_user) {
+            $this->_author_user = Contact::make($this->conf);
+            $this->contact_info($this->_author_user); // contact_info must exist
         }
-        return $this->_author_view_user;
+        return $this->_author_user;
     }
 
 
@@ -1148,9 +1163,9 @@ class PaperInfo {
             $u = null;
             if ($uid > 0) {
                 $u = $this->conf->user_by_id($uid, USER_SLICE);
-            } else if ($this->_paper_creator !== null
-                       && $this->_paper_creator->contactId === $uid) {
-                $u = $this->_paper_creator;
+            } else if ($this->_author_user !== null
+                       && $this->_author_user->contactId === $uid) {
+                $u = $this->_author_user;
             }
             if ($u === null) {
                 continue;
@@ -1177,13 +1192,10 @@ class PaperInfo {
     /** @param Contact|int $c
      * @return int */
     function conflict_type($c) {
-        if (is_object($c)) {
-            if (array_key_exists($c->contactXid, $this->_contact_info)) {
-                return $this->_contact_info[$c->contactXid]->conflictType;
-            }
-            $cid = $c->contactId;
-        } else {
-            $cid = $c;
+        $this->check_rights_version();
+        $cid = is_object($c) ? $c->contactXid : $c;
+        if (array_key_exists($cid, $this->_contact_info)) {
+            return $this->_contact_info[$cid]->conflictType;
         }
         return ($this->conflict_types())[$cid] ?? 0;
     }
@@ -1199,6 +1211,8 @@ class PaperInfo {
     }
 
     function invalidate_conflicts() {
+        // XXX this does not invalidate conflict types that are loaded
+        // through the _contact_info subsystem
         $this->allConflictType = $this->_ctype_array = null;
     }
 

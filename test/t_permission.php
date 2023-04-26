@@ -150,6 +150,8 @@ class Permission_Tester {
         $paper1 = $user_chair->checked_paper_by_id(1);
         $this->check_paper1($paper1);
         $this->check_paper1($user_estrin->checked_paper_by_id(1));
+        xassert($paper1->author_user()->can_view_paper($paper1));
+        xassert($paper1->author_user()->can_edit_paper($paper1));
 
         // grant user capability to read paper 1, check it doesn't allow PC view
         $user_capability = Contact::make($this->conf);
@@ -195,7 +197,7 @@ class Permission_Tester {
         $this->conf->save_refresh_setting("sub_sub", Conf::$now - 5);
         $paper1 = $user_chair->checked_paper_by_id(1);
         xassert($user_chair->can_edit_paper($paper1));
-        xassert(!$user_chair->call_with_overrides(Contact::OVERRIDE_CHECK_TIME, "can_edit_paper", $paper1));
+        xassert(!$paper1->author_user()->can_edit_paper($paper1));
         xassert(!$user_estrin->can_edit_paper($paper1));
         xassert(!$user_marina->can_edit_paper($paper1));
         xassert(!$user_van->can_edit_paper($paper1));

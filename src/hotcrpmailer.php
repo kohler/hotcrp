@@ -97,7 +97,7 @@ class HotCRPMailer extends Mailer {
         $this->rrow_unsubmitted = !!($rest["rrow_unsubmitted"] ?? false);
         $this->no_send = !!($rest["no_send"] ?? false);
         if (($rest["author_permission"] ?? false) && $this->row) {
-            $this->permuser = $this->row->author_view_user();
+            $this->permuser = $this->row->author_user();
         } else {
             $this->permuser = $this->recipient;
         }

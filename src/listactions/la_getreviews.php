@@ -29,7 +29,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
             }
             $last_rc = null;
             $time = null;
-            $viewer = $this->author_view ? $prow->author_view_user() : $user;
+            $viewer = $this->author_view ? $prow->author_user() : $user;
             $old_viewer_overrides = $viewer->overrides();
             if ($this->author_view && $user->allow_administer($prow)) {
                 $viewer->add_overrides(Contact::OVERRIDE_AU_SEEREV);
