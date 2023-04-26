@@ -18,7 +18,7 @@ class GetReviewCSV_ListAction extends ListAction {
         $has_id = $has_ordinal = false;
         foreach ($ssel->paper_set($user) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
-                $errors["#$prow->paperId: " . $whyNot->unparse_text()] = true;
+                $errors["#{$prow->paperId}: " . $whyNot->unparse_text()] = true;
                 continue;
             }
             $viewer = $this->author_view ? $prow->author_view_user() : $user;
@@ -31,7 +31,8 @@ class GetReviewCSV_ListAction extends ListAction {
                 if (($viewer === $user || $viewer->can_view_review($prow, $rrow))
                     && $rrow->reviewSubmitted) {
                     $text = [
-                        "paper" => $prow->paperId, "title" => $prow->title
+                        "paper" => $prow->paperId,
+                        "title" => $prow->title
                     ];
                     if ($rrow->reviewOrdinal > 0) {
                         $has_ordinal = true;

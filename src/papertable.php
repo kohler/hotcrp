@@ -859,53 +859,50 @@ class PaperTable {
      * @param ?Contact $viewAs
      * @return string */
     private function authorData($table, $type, $viewAs = null) {
-        if ($this->matchPreg && isset($this->matchPreg["au"])) {
-            $highpreg = $this->matchPreg["au"];
-        } else {
-            $highpreg = false;
-        }
-        $names = [];
-
         if (empty($table)) {
             return "[No authors]";
-        } else if ($type === "last") {
+        }
+
+        $highpreg = $this->matchPreg["au"] ?? null;
+        $names = [];
+        if ($type === "last") {
             foreach ($table as $au) {
                 $n = Text::nameo($au, NAME_P|NAME_I);
                 $names[] = Text::highlight($n, $highpreg);
             }
             return join(", ", $names);
-        } else {
-            foreach ($table as $au) {
-                $n = trim(Text::highlight("{$au->firstName} {$au->lastName}", $highpreg));
-                if ($au->email !== "") {
-                    $s = Text::highlight($au->email, $highpreg);
-                    $ehtml = htmlspecialchars($au->email);
-                    $e = "&lt;<a href=\"mailto:{$ehtml}\" class=\"q\">{$s}</a>&gt;";
-                } else {
-                    $e = "";
-                }
-                $t = ($n === "" ? $e : $n);
-                if ($au->affiliation !== "") {
-                    $s = Text::highlight($au->affiliation, $highpreg);
-                    $t .= " <span class=\"auaff\">({$s})</span>";
-                }
-                if ($n !== "" && $e !== "") {
-                    $t .= " " . $e;
-                }
-                $t = trim($t);
-                if ($au->email !== ""
-                    && $au->contactId
-                    && $viewAs !== null
-                    && $viewAs->email !== $au->email
-                    && $viewAs->privChair) {
-                    $t .= " <a href=\""
-                        . $this->conf->selfurl($this->qreq, ["actas" => $au->email])
-                        . "\">" . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($au, NAME_P)]) . "</a>";
-                }
-                $names[] = '<p class="odname">' . $t . '</p>';
-            }
-            return join("\n", $names);
         }
+
+        foreach ($table as $au) {
+            $n = trim(Text::highlight("{$au->firstName} {$au->lastName}", $highpreg));
+            if ($au->email !== "") {
+                $s = Text::highlight($au->email, $highpreg);
+                $ehtml = htmlspecialchars($au->email);
+                $e = "&lt;<a href=\"mailto:{$ehtml}\" class=\"q\">{$s}</a>&gt;";
+            } else {
+                $e = "";
+            }
+            $t = ($n === "" ? $e : $n);
+            if ($au->affiliation !== "") {
+                $s = Text::highlight($au->affiliation, $highpreg);
+                $t .= " <span class=\"auaff\">({$s})</span>";
+            }
+            if ($n !== "" && $e !== "") {
+                $t .= " " . $e;
+            }
+            $t = trim($t);
+            if ($au->email !== ""
+                && $au->contactId
+                && $viewAs !== null
+                && $viewAs->email !== $au->email
+                && $viewAs->privChair) {
+                $t .= " <a href=\""
+                    . $this->conf->selfurl($this->qreq, ["actas" => $au->email])
+                    . "\">" . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($au, NAME_P)]) . "</a>";
+            }
+            $names[] = '<p class="odname">' . $t . '</p>';
+        }
+        return join("\n", $names);
     }
 
     /** @param list<Author> $aulist

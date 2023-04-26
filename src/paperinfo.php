@@ -1175,43 +1175,6 @@ class PaperInfo {
         return $cu;
     }
 
-    /** @param bool $with_email
-     * @return associative-array<int,Author>
-     * @deprecated */
-    function conflicts($with_email = false) {
-        $cflts = [];
-        foreach ($this->conflict_list() as $pci) {
-            $cflts[$pci->contactId] = $au = new Author($pci->user);
-            $au->contactId = $pci->contactId;
-            $au->conflictType = $pci->conflictType;
-            $au->roles = $pci->user->roles;
-            $au->disablement = $pci->user->disablement;
-            $au->author_index = $pci->author_index;
-        }
-        return $cflts;
-    }
-
-    /** @param int $uid
-     * @param bool $with_email
-     * @return ?Author
-     * @deprecated
-     * @suppress PhanDeprecatedFunction */
-    function conflict_by_id($uid, $with_email = false) {
-        return ($this->conflicts($with_email))[$uid] ?? null;
-    }
-
-    /** @param string $email
-     * @return ?Author
-     * @deprecated
-     * @suppress PhanDeprecatedFunction */
-    function conflict_by_email($email) {
-        foreach ($this->conflicts(true) as $cflt) {
-            if (strcasecmp($cflt->email, $email) === 0)
-                return $cflt;
-        }
-        return null;
-    }
-
 
     /** @return associative-array<int,int> */
     function conflict_types() {
@@ -1221,15 +1184,18 @@ class PaperInfo {
         return $this->_ctype_array;
     }
 
-    /** @param Contact|int $contact
+    /** @param Contact|int $c
      * @return int */
-    function conflict_type($contact) {
-        $cid = self::contact_to_cid($contact);
-        if (array_key_exists($cid, $this->_contact_info)) {
-            return $this->_contact_info[$cid]->conflictType;
+    function conflict_type($c) {
+        if (is_object($c)) {
+            if (array_key_exists($c->contactXid, $this->_contact_info)) {
+                return $this->_contact_info[$c->contactXid]->conflictType;
+            }
+            $cid = $c->contactId;
         } else {
-            return ($this->conflict_types())[$cid] ?? 0;
+            $cid = $c;
         }
+        return ($this->conflict_types())[$cid] ?? 0;
     }
 
     /** @param string $email
@@ -1882,18 +1848,6 @@ class PaperInfo {
         $this->topicIds = $this->_topic_array = $this->_topic_interest_score_array = null;
     }
 
-
-    /** @return associative-array<int,Author>
-     * @deprecated
-     * @suppress PhanDeprecatedFunction */
-    function contacts($with_email = false) {
-        $c = [];
-        foreach ($this->conflicts($with_email) as $id => $cflt) {
-            if ($cflt->conflictType >= CONFLICT_AUTHOR)
-                $c[$id] = $cflt;
-        }
-        return $c;
-    }
 
     /** @return list<Contact> */
     function contact_list() {
