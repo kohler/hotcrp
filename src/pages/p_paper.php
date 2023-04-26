@@ -382,9 +382,7 @@ class Paper_Page {
             $this->prow->set_allow_absent(false);
         }
 
-        $old_overrides = $this->user->remove_overrides(Contact::OVERRIDE_CHECK_TIME);
         $editable = $this->user->can_edit_paper($this->prow);
-        $this->user->set_overrides($old_overrides);
         $this->pt->set_edit_status($this->ps, $editable, $editable && $this->useRequest);
     }
 
@@ -493,7 +491,6 @@ class Paper_Page {
             $user->ensure_account_here();
             // XXX escape unless update && can_start_paper???
         }
-        $user->add_overrides(Contact::OVERRIDE_CHECK_TIME);
         if ($pp->prow->paperId === 0
             && $user->privChair
             && !$pp->prow->submission_round()->time_register(true)) {

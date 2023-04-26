@@ -50,7 +50,7 @@ class SavePapers_Batch {
     function __construct(Conf $conf) {
         $this->conf = $conf;
         $this->user = $conf->root_user();
-        $this->user->set_overrides(Contact::OVERRIDE_CONFLICT | Contact::OVERRIDE_TIME);
+        $this->user->set_overrides(Contact::OVERRIDE_CONFLICT);
         $this->tf = new ReviewValues($conf->review_form(), ["no_notify" => true]);
     }
 

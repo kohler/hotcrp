@@ -639,7 +639,7 @@ class Assign_Page {
         if ($user->can_administer($prow)) {
             echo '<label class="', $this->ms->control_class("override", "checki"), '"><span class="checkc">',
                 Ht::checkbox("override"),
-                ' </span>Override deadlines and declined requests</label>';
+                ' </span>Override declined requests</label>';
         }
 
         echo '<div class="aab">',

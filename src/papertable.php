@@ -91,7 +91,7 @@ class PaperTable {
         $this->prow = $prow;
         $this->allow_admin = $user->allow_administer($this->prow);
         $this->admin = $user->can_administer($this->prow);
-        $this->allow_edit_final = $user->edit_paper_state($this->prow, true) === 2;
+        $this->allow_edit_final = $user->edit_paper_state($this->prow) === 2;
 
         if (!$this->prow->paperId) {
             $this->can_view_reviews = false;
@@ -1923,7 +1923,7 @@ class PaperTable {
         } else {
             $this->_main_message("<5>You aren’t a contact for this submission, but as an administrator you can still make changes.", MessageSet::MARKED_NOTE);
         }
-        if ($this->user->call_with_overrides($this->user->overrides() | Contact::OVERRIDE_TIME, "can_edit_paper", $this->prow)
+        if ($this->user->can_edit_paper($this->prow)
             && ($v = $this->conf->_id("submit", ""))) {
             if (!Ftext::is_ftext($v)) {
                 $v = "<5>$v";
@@ -1987,14 +1987,13 @@ class PaperTable {
         $want_override = false;
 
         if ($this->mode === "edit") {
-            // check whether we can save
-            $old_overrides = $this->user->set_overrides(Contact::OVERRIDE_CHECK_TIME);
+            // check whether author can save (we know we can save)
+            $auuser = $this->prow->author_user();
             if ($this->prow->paperId) {
-                $whyNot = $this->user->perm_edit_paper($this->prow);
+                $whyNot = $auuser->perm_edit_paper($this->prow);
             } else {
-                $whyNot = $this->user->perm_start_paper($this->prow);
+                $whyNot = $auuser->perm_start_paper($this->prow, true);
             }
-            $this->user->set_overrides($old_overrides);
             // produce button
             $save_name = $this->_save_name();
             if (!$whyNot) {
@@ -2004,7 +2003,7 @@ class PaperTable {
                 $x = $revWhyNot->unparse_html() . " Are you sure you want to override the deadline?";
                 $buttons[] = [Ht::button($save_name, ["class" => "btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => "update"]), "(admin only)"];
             } else if (isset($whyNot["frozen"])
-                       && $this->user->can_finalize_paper($this->prow)) {
+                       && $auuser->can_finalize_paper($this->prow)) {
                 $buttons[] = Ht::submit("update", $save_name, ["class" => "btn-savepaper uic js-mark-submit"]);
             } else if ($this->prow->paperId) {
                 $buttons[] = Ht::submit("updatecontacts", "Save contacts", ["class" => "btn-savepaper btn-primary uic js-mark-submit", "data-contacts-only" => 1]);
@@ -2018,7 +2017,7 @@ class PaperTable {
 
         // withdraw button
         if (!$this->prow->paperId
-            || !$this->user->call_with_overrides($this->user->overrides() | Contact::OVERRIDE_TIME, "can_withdraw_paper", $this->prow, true)) {
+            || !$this->user->can_withdraw_paper($this->prow, true)) {
             $b = null;
         } else if ($this->prow->timeSubmitted <= 0) {
             $b = Ht::submit("withdraw", "Withdraw", ["class" => "uic js-mark-submit"]);
@@ -2034,7 +2033,8 @@ class PaperTable {
             $b = Ht::button("Withdraw", $args);
         }
         if ($b) {
-            if ($this->admin && !$this->user->can_withdraw_paper($this->prow)) {
+            if ($this->admin
+                && !$this->prow->author_user()->can_withdraw_paper($this->prow)) {
                 $b = [$b, "(admin only)"];
             }
             $buttons[] = $b;
@@ -2228,7 +2228,7 @@ class PaperTable {
 
     private function _print_editable_body() {
         $this->_print_editable_form();
-        $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS | Contact::OVERRIDE_TIME);
+        $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
         echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">';
         if ($this->prow->paperId) {
             echo "Edit Submission";

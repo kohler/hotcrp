@@ -162,11 +162,9 @@ class Contact implements JsonSerializable {
     /** @var ?list<int> */
     private $_review_tokens;
     const OVERRIDE_CONFLICT = 1;
-    const OVERRIDE_TIME = 2;
-    const OVERRIDE_CHECK_TIME = 4;
-    const OVERRIDE_TAG_CHECKS = 8;
-    const OVERRIDE_EDIT_CONDITIONS = 16;
-    const OVERRIDE_AU_SEEREV = 32;
+    const OVERRIDE_TAG_CHECKS = 2;
+    const OVERRIDE_EDIT_CONDITIONS = 4;
+    const OVERRIDE_AU_SEEREV = 8;
     /** @var int */
     private $_overrides = 0;
     /** @var ?array<int,bool> */
@@ -794,9 +792,6 @@ class Contact implements JsonSerializable {
         $this->_overrides = 0;
         if ($qreq->forceShow && $this->is_manager()) {
             $this->_overrides |= self::OVERRIDE_CONFLICT;
-        }
-        if ($qreq->override) {
-            $this->_overrides |= self::OVERRIDE_TIME;
         }
 
         return $this;
@@ -2987,16 +2982,10 @@ class Contact implements JsonSerializable {
     }
 
     /** @param ?PaperContactInfo $rights
-     * @return bool */
+     * @return bool
+     * @deprecated */
     function override_deadlines($rights) {
-        if (($this->_overrides & (self::OVERRIDE_CHECK_TIME | self::OVERRIDE_TIME))
-            === self::OVERRIDE_CHECK_TIME) {
-            return false;
-        } else if ($rights) {
-            return $rights->can_administer;
-        } else {
-            return $this->privChair;
-        }
+        return $rights ? $rights->can_administer : $this->privChair;
     }
 
     /** @return bool */
@@ -3216,13 +3205,14 @@ class Contact implements JsonSerializable {
         }
     }
 
-    /** @return ?PermissionProblem */
-    function perm_start_paper(PaperInfo $prow) {
-        if (!$this->email) {
+    /** @param bool $allow_no_email
+     * @return ?PermissionProblem */
+    function perm_start_paper(PaperInfo $prow, $allow_no_email = false) {
+        if (!$this->email && !$allow_no_email) {
             return new PermissionProblem($this->conf, ["signin" => true]);
         }
         $sr = $prow->submission_round();
-        if ($sr->time_register(true) || $this->override_deadlines(null)) {
+        if ($sr->time_register(true) || $this->can_administer($prow)) {
             return null;
         } else {
             return new PermissionProblem($this->conf, ["deadline" => "sub_reg", "override" => $this->privChair]);
@@ -3235,17 +3225,14 @@ class Contact implements JsonSerializable {
         return $rights->allow_administer || $prow->has_author($this);
     }
 
-    /** @param bool $allow
-     * @return 0|1|2 */
-    function edit_paper_state(PaperInfo $prow, $allow = false) {
+    /** @return 0|1|2 */
+    function edit_paper_state(PaperInfo $prow) {
         $rights = $this->rights($prow);
         if (!$rights->allow_author_edit
             || $prow->timeWithdrawn > 0 /* non-overridable */) {
             return 0;
         }
-        if ($allow
-            ? $rights->can_administer
-            : $this->override_deadlines($rights)) {
+        if ($rights->can_administer) {
             if ($prow->outcome_sign > 0
                 && $rights->can_view_decision
                 && $this->conf->allow_final_versions()) {
@@ -3297,7 +3284,7 @@ class Contact implements JsonSerializable {
         if ($prow->outcome_sign < 0
             && $rights->can_view_decision) {
             $whyNot["frozen"] = true;
-        } else if (!$this->override_deadlines($rights)) {
+        } else if (!$rights->can_administer) {
             if ($prow->outcome_sign > 0
                 && $rights->can_view_decision
                 && $this->conf->allow_final_versions()
@@ -3319,7 +3306,7 @@ class Contact implements JsonSerializable {
         $sr = $prow->submission_round();
         return (($prow->timeSubmitted <= 0 || !$sr->freeze)
                 && $sr->time_submit(true))
-            || $this->override_deadlines($rights);
+            || $rights->can_administer;
     }
 
     /** @return ?PermissionProblem */
@@ -3331,7 +3318,7 @@ class Contact implements JsonSerializable {
         $whyNot = $this->perm_edit_paper_failure($prow, $rights, "f");
         $sr = $prow->submission_round();
         if (!$sr->time_submit(true)
-            && !$this->override_deadlines($rights)) {
+            && !$rights->can_administer) {
             $whyNot["deadline"] = "sub_sub";
         }
         return $whyNot;
@@ -3340,18 +3327,18 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_withdraw_paper(PaperInfo $prow, $display_only = false) {
         $rights = $this->rights($prow);
+        if ($rights->can_administer
+            || $prow->timeWithdrawn > 0) {
+            return true;
+        }
         $sub_withdraw = $this->conf->setting("sub_withdraw") ?? 0;
-        $override = $this->override_deadlines($rights);
         return $rights->allow_author_edit
             && ($sub_withdraw !== -1
-                || $prow->timeSubmitted == 0
-                || $override)
+                || $prow->timeSubmitted == 0)
             && ($sub_withdraw !== 0
-                || !$prow->has_author_seen_any_review()
-                || $override)
+                || !$prow->has_author_seen_any_review())
             && ($prow->outcome_sign === 0
-                || ($display_only && !$prow->can_author_view_decision())
-                || $override);
+                || ($display_only && !$prow->can_author_view_decision()));
     }
 
     /** @return ?PermissionProblem */
@@ -3361,7 +3348,7 @@ class Contact implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         $whyNot = $this->perm_edit_paper_failure($prow, $rights);
-        if ($rights->allow_author_edit && !$this->override_deadlines($rights)) {
+        if ($rights->allow_author_edit && !$rights->can_administer) {
             $whyNot["permission"] = "withdraw";
             $sub_withdraw = $this->conf->setting("sub_withdraw") ?? 0;
             if ($sub_withdraw === 0 && $prow->has_author_seen_any_review()) {
@@ -3376,12 +3363,10 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_revive_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        if (!$rights->allow_author_edit || $prow->timeWithdrawn <= 0) {
-            return false;
-        }
-        $sr = $prow->submission_round();
-        return $sr->time_submit(true)
-            || $this->override_deadlines($rights);
+        return $rights->allow_author_edit
+            && $prow->timeWithdrawn > 0
+            && ($rights->can_administer
+                || $prow->submission_round()->time_submit(true));
     }
 
     /** @return ?PermissionProblem */
@@ -3394,9 +3379,8 @@ class Contact implements JsonSerializable {
         if ($prow->timeWithdrawn <= 0) {
             $whyNot["notWithdrawn"] = true;
         }
-        $sr = $prow->submission_round();
-        if (!$sr->time_submit(true)
-            && !$this->override_deadlines($rights)) {
+        if (!$rights->can_administer
+            && !$prow->submission_round()->time_submit(true)) {
             $whyNot["deadline"] = "sub_sub";
         }
         return $whyNot;
@@ -3708,8 +3692,8 @@ class Contact implements JsonSerializable {
         if (!$opt->on_form()
             || !$opt->test_editable($prow)
             || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))
-            || ($opt->final && $this->edit_paper_state($prow, true) !== 2)
-            || ($opt->id === 0 && $this->edit_paper_state($prow, true) === 2)) {
+            || ($opt->final && $this->edit_paper_state($prow) !== 2)
+            || ($opt->id === 0 && $this->edit_paper_state($prow) === 2)) {
             return 0;
         } else if (!$opt->test_exists($prow)) {
             return $opt->exists_script_expression($prow) ? 1 : 0;
@@ -4074,7 +4058,7 @@ class Contact implements JsonSerializable {
                     && ($this->conf->setting("extrev_chairreq") ?? 0) >= 0))
             && (!$check_time
                 || $this->conf->time_review($round, false, true)
-                || $this->override_deadlines($rights));
+                || $rights->can_administer);
     }
 
     /** @return ?PermissionProblem */
@@ -4261,13 +4245,8 @@ class Contact implements JsonSerializable {
         $reviewer = $reviewer ?? $this;
         $rights = $this->rights($prow);
         if ($rights->can_administer) {
-            return (!$reviewer->isPC
-                    || $reviewer->can_accept_review_assignment($prow)
-                    || ($this->override_deadlines($rights)
-                        && $reviewer->can_accept_review_assignment_ignore_conflict($prow)))
-                && (($prow->timeSubmitted > 0
-                     && $this->conf->time_review($round, $reviewer->isPC, true))
-                    || $this->override_deadlines($rights));
+            return !$reviewer->isPC
+                || $reviewer->can_accept_review_assignment_ignore_conflict($prow);
         } else {
             return $rights->reviewType === 0
                 && $rights->allow_review
@@ -4287,11 +4266,9 @@ class Contact implements JsonSerializable {
         $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
         if ($rights->can_administer) {
-            if ($reviewer->isPC && !$reviewer->can_accept_review_assignment($prow)) {
+            if ($reviewer->isPC
+                && !$reviewer->can_accept_review_assignment_ignore_conflict($prow)) {
                 $whyNot["unacceptableReviewer"] = true;
-                if ($reviewer->can_accept_review_assignment_ignore_conflict($prow)) {
-                    $whyNot["override"] = true;
-                }
             }
         } else if ($rights->allow_administer) {
             $whyNot["conflict"] = true;
@@ -4334,7 +4311,7 @@ class Contact implements JsonSerializable {
             && ($rights->can_administer
                 || $this->is_owned_review($rrow))
             && ($this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)
-                || ($rights->can_administer && (!$submit || $this->override_deadlines($rights))));
+                || $rights->can_administer);
     }
 
     /** @param bool $submit
@@ -4363,12 +4340,12 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_approve_review(PaperInfo $prow, ReviewInfo $rrow) {
         $rights = $this->rights($prow);
-        return ($prow->timeSubmitted > 0 || $this->override_deadlines($rights))
+        return ($prow->timeSubmitted > 0 || $rights->can_administer)
             && $rrow->subject_to_approval()
             && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED
             && ($rights->can_administer
                 || ($this->isPC && $rrow->requestedBy === $this->contactXid))
-            && ($this->conf->time_review(null, true, true) || $this->override_deadlines($rights));
+            && ($this->conf->time_review(null, true, true) || $rights->can_administer);
     }
 
     /** @return bool */
@@ -4513,7 +4490,7 @@ class Contact implements JsonSerializable {
                     || ($rights->allow_administer && $rights->rights_forced))
                 && ($time
                     || ($rights->allow_administer
-                        && ($newctype === null || $this->override_deadlines($rights))));
+                        && ($newctype === null || $rights->can_administer)));
         } else if ($author && $time) {
             if ((($newctype ?? $crow->commentType) & CommentInfo::CT_TOPIC_PAPER) !== 0) {
                 return $crow->commentId !== 0
@@ -4577,7 +4554,7 @@ class Contact implements JsonSerializable {
         return ($rights->can_administer
                 || $rights->conflictType >= CONFLICT_AUTHOR)
             && (($rights->allow_administer
-                 && ($newctype === null || $this->override_deadlines($rights)))
+                 && ($newctype === null || $rights->can_administer))
                 || ($rrd->time_allowed(true)
                     && ($crow->commentType & CommentInfo::CT_FROZEN) === 0))
             && $rrd->test_condition($prow);

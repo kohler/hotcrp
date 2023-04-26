@@ -393,7 +393,6 @@ class Review_Page {
         $pp->load_prow();
 
         // fix user
-        $user->add_overrides(Contact::OVERRIDE_CHECK_TIME);
         $capuid = $user->capability("@ra{$pp->prow->paperId}");
 
         // action
