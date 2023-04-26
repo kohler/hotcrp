@@ -239,8 +239,8 @@ class Home_Page {
             Ht::submit("Search"),
             "</div></form></div>\n";
         echo '<div class="homegrp d-table" id="homelist">',
-            Ht::form($this->conf->hoturl("search?q=&t=active"), ["method" => "get", "class" => "form-basic-search"]),
-            Ht::submit("Overview - all papers"),
+            Ht::form($this->conf->hoturl("search?q=%23paper&t=active"), ["method" => "get", "class" => "form-basic-search"]),
+            Ht::submit("Overview - all #paper submissions"),
             "</div></form></div>\n";
     }
 
