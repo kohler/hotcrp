@@ -238,10 +238,13 @@ class Home_Page {
             PaperSearch::limit_selector($this->conf, $limits, $limits[0]),
             Ht::submit("Search"),
             "</div></form></div>\n";
-        echo '<div class="homegrp d-table" id="homelist">',
-            Ht::form($this->conf->hoturl("search?q=%23paper&t=active"), ["method" => "get", "class" => "form-basic-search"]),
-            Ht::submit("Overview - all #paper submissions"),
-            "</div></form></div>\n";
+        echo '<div class="homegrp d-table" id="homelist">';
+        foreach($user->conf->submission_round_list() as $sr) {
+            if($sr->unnamed == "1")
+                continue;
+            echo '<a class="btn" href="search?q=%23' . htmlentities($sr->tag) . '&t=act">Overview - all #' . $sr->tag . ' submissions</a>&nbsp;';
+        }
+        echo "</div></form></div>\n";
     }
 
     /** @return list<Score_ReviewField> */
