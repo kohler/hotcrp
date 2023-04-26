@@ -15,6 +15,7 @@ class Submissions_SettingParser extends SettingParser {
         }
         $sv->print_entry_group("submission_registration", "Registration deadline", null, "New submissions can be started until this deadline.");
         $sv->print_entry_group("submission_done", "Submission deadline", null, "Submissions must be complete by this deadline.");
+        $sv->print_checkbox("submission_allowuntagged", "Allow submissions without one of the tags specified below", null, "&nbsp;");
         $sv->print_entry_group("submission_grace", "Grace period");
     }
     static function print_updates(SettingValues $sv) {

@@ -874,6 +874,11 @@
         "type": "grace"
     },
     {
+        "name": "submission_allowuntagged", "storage": "sub_allowuntagged",
+        "title": "Allow submissions without one of the tags specified below",
+        "type": "checkbox"
+    },
+    {
         "name": "submission_open", "storage": "sub_open",
         "title": "Enable submissions",
         "type": "cdate"

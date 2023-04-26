@@ -89,7 +89,7 @@
         "name": "submissions/deadlines", "order": 20,
         "separator_before": true,
         "print_function": "Submissions_SettingParser::print_deadlines",
-        "settings": ["submission_registration", "submission_done", "submission_grace"]
+        "settings": ["submission_registration", "submission_done", "submission_allowuntagged", "submission_grace"]
     },
     {
         "name": "submissions/updates", "order": 30,

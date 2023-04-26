@@ -239,7 +239,7 @@ class Home_Page {
             Ht::submit("Search"),
             "</div></form></div>\n";
         echo '<div class="homegrp d-table" id="homelist">',
-            Ht::form($this->conf->hoturl("search?q=&t=all"), ["method" => "get", "class" => "form-basic-search"]),
+            Ht::form($this->conf->hoturl("search?q=&t=active"), ["method" => "get", "class" => "form-basic-search"]),
             Ht::submit("Overview - all papers"),
             "</div></form></div>\n";
     }
@@ -539,6 +539,8 @@ class Home_Page {
             $dlt = "<em class=\"deadline\">{$sr->title1}{$dltype} deadline: {$dlspan}</em>";
         }
         if ($user->has_email()) {
+            if($sr->unnamed && !($conf->settings["sub_allowuntagged"] ?? null))
+                return;
             $url = $conf->hoturl("paper", [
                 "p" => "new", "sclass" => $sr->unnamed ? null : $sr->tag
             ]);
