@@ -137,71 +137,61 @@ class PaperContactInfo {
 
     /** @param Contact $user */
     static function load_into(PaperInfo $prow, $user) {
-        $conf = $prow->conf;
-        $pid = $prow->paperId;
-        $q = "select conflictType, reviewType, reviewSubmitted, reviewNeedsSubmit, reviewRound";
-        $cid = $user->contactXid;
+        // choose user set:
+        // normally just this user; might be whole PC
+        $user_set = [$user->contactXid => $user];
+        $only_user_id = $user->contactXid;
         $rev_tokens = $user->review_tokens();
-        if ($cid > 0
+        if ($user->contactXid > 0
             && !$rev_tokens
-            && count($prow->_row_set) > 1) {
-            $result = $conf->qe("$q, Paper.paperId paperId, ? contactId
-                from Paper
-                left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=?)
-                left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=?)
-                where Paper.paperId?a",
-                $cid, $cid, $cid, $prow->_row_set->paper_ids());
-            foreach ($prow->_row_set as $row) {
-                $row->_clear_contact_info($user);
+            && ($user->roles & Contact::ROLE_PC) !== 0) {
+            $viewer = Contact::$main_user;
+            if ($viewer !== $user
+                && (!$viewer || $viewer->privChair || $viewer->contactXid === $prow->managerContactId)
+                && $user === $prow->conf->pc_member_by_id($user->contactId)) {
+                $user_set = $prow->conf->pc_members();
+                $only_user_id = null;
             }
-            while (($local = $result->fetch_row())) {
-                $row = $prow->_row_set->get((int) $local[5]);
-                $ci = $row->_get_contact_info((int) $local[6]);
-                $ci->mark_conflict((int) $local[0]);
-                $ci->mark_review_type((int) $local[1], (int) $local[2], (int) $local[3], (int) $local[4]);
+        }
+
+        // clear contact info
+        $row_set = $prow->_row_set;
+        foreach ($row_set as $pr) {
+            foreach ($user_set as $u) {
+                $pr->_clear_contact_info($u);
             }
-            Dbl::free($result);
+        }
+
+        // return if nothing to load
+        if (($only_user_id ?? 1) <= 0
+            && !$rev_tokens) {
             return;
         }
-        if ($cid > 0
-            && !$rev_tokens
-            && (!($viewer = Contact::$main_user)
-                || ($viewer->contactId != $cid
-                    && ($viewer->privChair || $viewer->contactXid === $prow->managerContactId)))
-            && ($pcm = $conf->pc_members())
-            && isset($pcm[$cid])) {
-            foreach ($pcm as $u) {
-                $prow->_clear_contact_info($u);
-            }
-            $result = $conf->qe("$q, ContactInfo.contactId
-                from ContactInfo
-                left join PaperConflict on (PaperConflict.paperId=? and PaperConflict.contactId=ContactInfo.contactId)
-                left join PaperReview on (PaperReview.paperId=? and PaperReview.contactId=ContactInfo.contactId)
-                where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0",
-                $pid, $pid);
-        } else {
-            $prow->_clear_contact_info($user);
-            if ($cid > 0 || $rev_tokens) {
-                $q = "$q, ? contactId
-                from (select ? paperId) P
-                left join PaperConflict on (PaperConflict.paperId=? and PaperConflict.contactId=?)
-                left join PaperReview on (PaperReview.paperId=? and (PaperReview.contactId=?";
-                $qv = [$cid, $pid, $pid, $cid, $pid, $cid];
-                if ($rev_tokens) {
-                    $q .= " or PaperReview.reviewToken?a";
-                    $qv[] = $rev_tokens;
+
+        // contact database
+        $prwhere = "contactId?a";
+        $qv = [];
+        if ($rev_tokens) {
+            $prwhere = "({$prwhere} or reviewToken?a)";
+            $qv[] = $rev_tokens;
+        }
+        // two queries is marginally faster than one union query
+        $mresult = Dbl::multi_qe($prow->conf->dblink, "select paperId, contactId, conflictType from PaperConflict where paperId?a and contactId?a;
+            select paperId, contactId, null, reviewType, reviewSubmitted, reviewNeedsSubmit, reviewRound from PaperReview where paperId?a and {$prwhere}",
+            $row_set->paper_ids(), array_keys($user_set),
+            $row_set->paper_ids(), array_keys($user_set), ...$qv);
+        while (($result = $mresult->next())) {
+            while (($x = $result->fetch_row())) {
+                $pr = $row_set->get((int) $x[0]);
+                $ci = $pr->_get_contact_info($only_user_id ?? (int) $x[1]);
+                if ($x[2] !== null) {
+                    $ci->mark_conflict((int) $x[2]);
+                } else {
+                    $ci->mark_review_type((int) $x[3], (int) $x[4], (int) $x[5], (int) $x[6]);
                 }
-                $result = $conf->qe_apply("$q))", $qv);
-            } else {
-                $result = null;
             }
+            $result->close();
         }
-        while ($result && ($local = $result->fetch_row())) {
-            $ci = $prow->_get_contact_info((int) $local[5]);
-            $ci->mark_conflict((int) $local[0]);
-            $ci->mark_review_type((int) $local[1], (int) $local[2], (int) $local[3], (int) $local[4]);
-        }
-        Dbl::free($result);
     }
 
     /** @return PaperContactInfo */
