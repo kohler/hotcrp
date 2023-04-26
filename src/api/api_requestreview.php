@@ -163,7 +163,7 @@ class RequestReview_API {
         if (!$user->allow_administer($prow)) {
             return JsonResult::make_error(403, "<0>Only administrators can request anonymous reviews");
         }
-        $aset = new AssignmentSet($user, true);
+        $aset = (new AssignmentSet($user))->override_conflicts();
         $aset->enable_papers($prow);
         $aset->parse("paper,action,user\n{$prow->paperId},review,newanonymous\n");
         if ($aset->execute()) {

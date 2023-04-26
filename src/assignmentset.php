@@ -1065,6 +1065,10 @@ class AssignmentSet {
         $this->astate->overrides = (int) $overrides;
         return $this;
     }
+    /** @return $this */
+    function override_conflicts() {
+        return $this->set_overrides($this->user->overrides() | Contact::OVERRIDE_CONFLICT);
+    }
     /** @param bool $csv_context
      * @return $this */
     function set_csv_context($csv_context) {
@@ -1875,9 +1879,9 @@ class AssignmentSet {
         }
         foreach ($this->unparse_columns as $k => $v) {
             if ($v)
-                $q .= " show:$k";
+                $q .= " show:{$k}";
         }
-        $pc->search_query = "$q show:autoassignment";
+        $pc->search_query = "{$q} show:autoassignment";
 
         return $pc;
     }

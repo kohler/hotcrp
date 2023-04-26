@@ -430,7 +430,7 @@ class Permission_Tester {
         assert_search_papers($user_chair, "#red~vote", "1");
 
         // assign some tags using AssignmentSet interface
-        $assignset = new AssignmentSet($user_chair, true);
+        $assignset = (new AssignmentSet($user_chair))->override_conflicts();
         $assignset->parse("paper,action,tag,index
 1-9,tag,g*#clear
 2,tag,green,1\n");
@@ -441,7 +441,7 @@ class Permission_Tester {
         assert_search_papers($user_chair, "#green=1", "2");
         assert_search_papers($user_chair, "#green=0", "13 17");
 
-        $assignset = new AssignmentSet($user_chair, true);
+        $assignset = (new AssignmentSet($user_chair))->override_conflicts();
         $assignset->parse("paper,action,tag,index
 1,tag,~vote,clear
 2,tag,marina~vote,clear\n");
@@ -450,7 +450,7 @@ class Permission_Tester {
         assert_search_papers($user_chair, "#any~vote", "1");
 
         // check \v in AssignmentSet
-        $assignset = new AssignmentSet($user_chair, true);
+        $assignset = (new AssignmentSet($user_chair))->override_conflicts();
         $assignset->parse("paper,action,tag\n1,tag,fun#clear)nofun#clear\n");
         xassert_eqq($assignset->full_feedback_text(), "Invalid tag ‘)nofun#clear’\n");
         $assignset->execute();

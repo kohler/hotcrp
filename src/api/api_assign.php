@@ -12,7 +12,7 @@ class Assign_API {
             return JsonResult::make_parameter_error("assignments");
         }
 
-        $aset = new AssignmentSet($user, true);
+        $aset = (new AssignmentSet($user))->override_conflicts();
         if ($prow) {
             $aset->enable_papers($prow);
         }

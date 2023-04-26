@@ -75,11 +75,12 @@ class Tag_ListAction extends ListAction {
             $action = null;
         }
 
-        $assignset = new AssignmentSet($user, Contact::OVERRIDE_CONFLICT);
+        $assignset = new AssignmentSet($user);
+        $assignset->set_overrides(Contact::OVERRIDE_CONFLICT); // i.e., not other overrides
         if (!empty($papers) && $action) {
             foreach ($papers as $p) {
                 foreach ($tags as $t) {
-                    $x[] = "$action,$p,$t\n";
+                    $x[] = "{$action},{$p},{$t}\n";
                 }
             }
             $assignset->parse(join("", $x));
@@ -97,7 +98,7 @@ class Tag_ListAction extends ListAction {
                 $assignset->set_overrides(Contact::OVERRIDE_CONFLICT | Contact::OVERRIDE_TAG_CHECKS);
                 $assignset->parse($r->unparse_assignment());
                 if ($qreq->q === "") {
-                    $qreq->q = "order:$tagreq";
+                    $qreq->q = "order:{$tagreq}";
                 }
             } else {
                 $assignset->error($tagger->error_html());

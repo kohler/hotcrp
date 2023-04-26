@@ -81,7 +81,8 @@ class Paper_Page {
             $reason = (string) $this->qreq->emailNote;
         }
 
-        $aset = new AssignmentSet($this->user, true);
+        $aset = new AssignmentSet($this->user);
+        $aset->override_conflicts();
         $aset->enable_papers($this->prow);
         $aset->parse("paper,action,withdraw reason\n{$this->prow->paperId},withdraw," . CsvGenerator::quote($reason));
         if (!$aset->execute()) {
@@ -96,7 +97,8 @@ class Paper_Page {
             return;
         }
 
-        $aset = new AssignmentSet($this->user, true);
+        $aset = new AssignmentSet($this->user);
+        $aset->override_conflicts();
         $aset->enable_papers($this->prow);
         $aset->parse("paper,action\n{$this->prow->paperId},revive");
         if (!$aset->execute()) {

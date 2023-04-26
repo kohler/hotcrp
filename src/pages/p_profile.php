@@ -470,7 +470,8 @@ class Profile_Page {
                 $this->conf->qe_raw("delete from $table where contactId={$this->user->contactId}");
             }
             // delete twiddle tags
-            $assigner = new AssignmentSet($this->viewer, true);
+            $assigner = new AssignmentSet($this->viewer);
+            $assigner->override_conflicts();
             $assigner->parse("paper,tag\nall,{$this->user->contactId}~all#clear\n");
             $assigner->execute();
             // clear caches

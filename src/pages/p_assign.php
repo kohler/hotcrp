@@ -108,7 +108,8 @@ class Assign_Page {
             $t[] = "{$prow->paperId},{$revtype},{$user},{$myround}\n";
         }
 
-        $aset = new AssignmentSet($this->user, true);
+        $aset = new AssignmentSet($this->user);
+        $aset->override_conflicts();
         $aset->enable_papers($this->prow);
         $aset->parse(join("", $t));
         $ok = $aset->execute();

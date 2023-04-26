@@ -59,7 +59,8 @@ class Assign_ListAction extends ListAction {
         foreach ($ssel->selection() as $pid) {
             $text .= "$pid,$mt,$mpc\n";
         }
-        $assignset = new AssignmentSet($user, true);
+        $assignset = new AssignmentSet($user);
+        $assignset->override_conflicts();
         $assignset->enable_papers($ssel->selection());
         $assignset->parse($text);
         $assignset->execute(true);

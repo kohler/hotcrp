@@ -819,7 +819,7 @@ class TestRunner {
         if (is_array($assignments)) {
             $assignments = join("\n", $assignments);
         }
-        $assignset = new AssignmentSet($user, true);
+        $assignset = (new AssignmentSet($user))->override_conflicts();
         $assignset->parse($assignments);
         if (!$assignset->execute()) {
             error_log("* Failed to run assignments:\n" . $assignset->full_feedback_text());
