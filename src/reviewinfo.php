@@ -475,7 +475,7 @@ class ReviewInfo implements JsonSerializable {
 
     /** @return string */
     function status_title($ucfirst = false) {
-        if ($this->reviewStatus === ReviewInfo::RS_EMPTY
+        if ($this->reviewStatus <= ReviewInfo::RS_ACCEPTED
             && $this->reviewType < REVIEW_PC) {
             return $ucfirst ? "Request" : "request";
         } else if ($this->subject_to_approval()) {
@@ -502,7 +502,7 @@ class ReviewInfo implements JsonSerializable {
         } else if ($this->reviewStatus === ReviewInfo::RS_ACCEPTED) {
             return "accepted";
         } else if ($this->reviewType < REVIEW_PC) {
-            return "not accepted";
+            return "outstanding";
         } else {
             return "not started";
         }
