@@ -1570,15 +1570,16 @@ class ReviewValues extends MessageSet {
         if ($newstatus >= ReviewInfo::RS_COMPLETED
             && ($rrow->reviewSubmitted ?? 0) <= 0) {
             $rrow->set_prop("reviewSubmitted", $now);
-            if ($rrow->reviewId) {
-                $rrow->mark_prop_view_score($old_nonempty_view_score);
-            }
         } else if ($newstatus < ReviewInfo::RS_COMPLETED
                    && ($rrow->reviewSubmitted ?? 0) > 0) {
             $rrow->set_prop("reviewSubmitted", null);
         }
         if ($newstatus >= ReviewInfo::RS_ADOPTED) {
             $rrow->set_prop("reviewNeedsSubmit", 0);
+        }
+        if ($rrow->reviewId && $newstatus !== $oldstatus) {
+            // Must mark view score to ensure database is modified
+            $rrow->mark_prop_view_score($old_nonempty_view_score);
         }
 
         // anonymity
