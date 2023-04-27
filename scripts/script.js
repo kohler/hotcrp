@@ -3780,7 +3780,7 @@ function make_expander_element(foldnum) {
     }
     return classe("span", "expander",
         classe("span", "in0 fx" + foldnum, mksvgp("M1 1L8 15L15 1z")),
-        classe("span", "in1 fx" + foldnum, mksvgp("M1 1L15 8L1 15z")));
+        classe("span", "in1 fn" + foldnum, mksvgp("M1 1L15 8L1 15z")));
 }
 
 
