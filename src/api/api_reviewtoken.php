@@ -22,7 +22,7 @@ class ReviewToken_API {
                     break;
                 } else if (($pid = $user->conf->fetch_ivalue("select paperId from PaperReview where reviewToken=?", $token))) {
                     $tval[] = $token;
-                    $ml[] = MessageItem::success("<5>Review token ‘" . htmlspecialchars($t) . "’ lets you review <a href=\"" . $user->conf->hoturl("paper", "p=$pid") . "\">submission #{$pid}</a>");
+                    $ml[] = MessageItem::success("<5>Review token ‘" . htmlspecialchars($t) . "’ lets you review <a href=\"" . $user->conf->hoturl("paper", "p={$pid}") . "\">submission #{$pid}</a>");
                 } else {
                     $ml[] = MessageItem::error("<0>Review token ‘{$t}’ not found");
                     $nfail = ($qreq->csession("rev_token_fail") ?? 0) + 1;

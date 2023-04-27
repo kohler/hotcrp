@@ -4999,7 +4999,7 @@ handle_ui.on("js-review-tokens", function () {
     var $d, hc = popup_skeleton();
     hc = popup_skeleton();
     hc.push('<h2>Review tokens</h2>');
-    hc.push('<p>Enter tokens to gain access to the corresponding reviews.</p>');
+    hc.push('<p>Review tokens implement fully anonymous reviewing. If you have been given review tokens, enter them here to view the corresponding papers and edit the reviews.</p>');
     hc.push('<input type="text" size="60" name="token" value="' + escape_html(this.getAttribute("data-review-tokens") || "") + '" placeholder="Review tokens">');
     hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save tokens</button>',
         '<button type="button" name="cancel">Cancel</button>']);

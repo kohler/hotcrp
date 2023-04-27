@@ -208,7 +208,7 @@ class Developer_UserInfo {
         if ($this->_new_token !== null) {
             $this->_new_token->set_token_pattern("hct_[30]");
             if ($this->_new_token->create() !== null) {
-                $us->diffs["tokens"] = true;
+                $us->diffs["API tokens"] = true;
             } else {
                 $us->error_at(null, "<0>Error while creating new API token");
                 $this->_new_token = null;
@@ -244,7 +244,7 @@ class Developer_UserInfo {
                 foreach ($deleteables as $tok) {
                     $tok->delete();
                 }
-                $us->diffs["tokens"] = true;
+                $us->diffs["API tokens"] = true;
             }
         }
     }

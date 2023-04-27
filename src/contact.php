@@ -1624,7 +1624,7 @@ class Contact implements JsonSerializable {
         if ($this->roles & Contact::ROLE_PCLIKE) {
             $this->conf->invalidate_caches(["pc" => true]);
         }
-        $this->conf->log_for($this, $this, "Account edited: email ($old_email to $email)");
+        $this->conf->log_for($this, $this, "Account edited: email ({$old_email} to {$email})");
     }
 
     /** @param string $email
