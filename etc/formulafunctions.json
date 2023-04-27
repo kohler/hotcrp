@@ -78,6 +78,7 @@
     {"name": "date:sub", "alias": "date:submitted"},
     {"name": "time:now", "function": "+Now_Fexpr", "is_time": true},
     {"name": "date:now", "function": "+Now_Fexpr", "is_time": false},
+    {"name": "_", "function": "+Reviewer_Fexpr"},
 
     {"name": "topicscore", "function": "+TopicScore_Fexpr"},
     {"name": "topic_score", "alias": "topicscore"},

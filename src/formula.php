@@ -840,11 +840,16 @@ class Aggregate_Fexpr extends Fexpr {
         $ok = $this->typecheck_arguments($formula);
         if ($this->op !== "argmin"
             && $this->op !== "argmax"
+            && $this->op !== "any"
+            && $this->op !== "all"
+            && $this->op !== "some"
+            && $this->op !== "count"
             && !$this->args[0]->math_format()) {
             $formula->fexpr_lerror($this->args[0], $this->args[0]->disallowed_use_error());
             $ok = false;
         }
-        if (count($this->args) > 1 && !$this->args[1]->math_format()) {
+        if (count($this->args) > 1
+            && !$this->args[1]->math_format()) {
             $formula->fexpr_lerror($this->args[1], $this->args[1]->disallowed_use_error());
             $ok = false;
         }
@@ -872,7 +877,8 @@ class Aggregate_Fexpr extends Fexpr {
             $this->set_format(Fexpr::FBOOL);
             return null;
         } else if ($this->op === "min" || $this->op === "max"
-                   || $this->op === "argmin" || $this->op === "argmax") {
+                   || $this->op === "argmin" || $this->op === "argmax"
+                   || $this->op === "some") {
             return [$this->args[0]];
         } else if ($this->op === "avg" || $this->op === "wavg"
                    || $this->op === "median" || $this->op === "quantile") {
@@ -913,19 +919,21 @@ class Aggregate_Fexpr extends Fexpr {
             return ["null", "(~l~ !== null || ~r~ !== null ? ~l~ || ~r~ : ~r~)", self::cast_bool("~x~")];
         } else if ($this->op === "some") {
             return ["null", "~r~ = ~l~;
-if (~r~ !== null && ~r~ !== false)
-  break;"];
+if (~r~ !== null && ~r~ !== false) {
+  break;
+}"];
         } else if ($this->op === "min" || $this->op === "max") {
             $cmp = $this->compiled_relation($this->op === "min" ? "<" : ">");
             return ["null", "(~l~ !== null && (~r~ === null || ~l~ $cmp ~r~) ? ~l~ : ~r~)"];
         } else if ($this->op === "argmin" || $this->op === "argmax") {
             $cmp = $this->args[1]->compiled_relation($this->op === "argmin" ? "<" : ">");
             return ["[null, [null]]",
-"if (~l1~ !== null && (~r~[0] === null || ~l1~ $cmp ~r~[0])) {
+"if (~l1~ !== null && (~r~[0] === null || ~l1~ {$cmp} ~r~[0])) {
   ~r~[0] = ~l1~;
   ~r~[1] = [~l~];
-} else if (~l1~ !== null && ~l1~ == ~r~[0])
-  ~r~[1][] = ~l~;",
+} else if (~l1~ !== null && ~l1~ == ~r~[0]) {
+  ~r~[1][] = ~l~;
+}",
                     "~x~[1][count(~x~[1]) > 1 ? mt_rand(0, count(~x~[1]) - 1) : 0]"];
         } else if ($this->op === "count") {
             return ["0", "(~l~ !== null && ~l~ !== false ? ~r~ + 1 : ~r~)"];
@@ -940,7 +948,7 @@ if (~r~ !== null && ~r~ !== false)
             } else {
                 $q = $state->_addltemp($this->args[1]->compile($state));
                 if ($this->compiled_relation("<") === ">") {
-                    $q = "1 - $q";
+                    $q = "1 - {$q}";
                 }
             }
             return ["[]", "if (~l~ !== null)\n  array_push(~r~, +~l~);",
@@ -1438,7 +1446,7 @@ class FormulaCompiler {
         if (preg_match('/[;}]\s*\z/', $combiner)) {
             $this->lstmt[] = str_replace("\n", "\n" . str_repeat(" ", $this->indent), $combiner);
         } else {
-            $this->lstmt[] = "$t_result = $combiner;";
+            $this->lstmt[] = "{$t_result} = {$combiner};";
         }
 
         if ($this->_lflags) {
@@ -2227,7 +2235,7 @@ class Formula implements JsonSerializable {
                    && isset($this->_bind[$m[1]])) {
             $e = new VarUse_Fexpr($this->_bind[$m[1]]);
             $t = substr($t, strlen($m[1]));
-        } else if (preg_match('/\A(#|[A-Za-z][A-Za-z0-9_.@:]*)/is', $t, $m)
+        } else if (preg_match('/\A(#|[A-Za-z_][A-Za-z0-9_.@:]*)/is', $t, $m)
                    && ($kwdef = $this->_find_formula_function($m))) {
             $e = $this->_parse_function($t, $m[1], $kwdef);
         } else if (preg_match('/\A([-A-Za-z0-9_.@]+)(.*)\z/s', $t, $m)
