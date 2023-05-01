@@ -19,6 +19,7 @@ class PaperContactInfo {
     public $reviewRound = 0;
     /** @var int */
     public $review_status = 0;    // 0 means no review
+    const RS_NONE = 0;
     const RS_DECLINED = 1;        // declined assigned review
     const RS_UNSUBMITTED = 2;     // review not submitted, needs submit
     const RS_PROXIED = 3;         // review proxied (e.g., lead)
@@ -3317,20 +3318,17 @@ class PaperInfo {
 
     /** @param list<int> $cids
      * @param string $clause
-     * @param ?string $fn
      * @return list<Contact> */
-    function generic_followers($cids, $clause, $fn) {
+    function generic_followers($cids, $clause) {
         $result = $this->conf->qe("select contactId, firstName, lastName, affiliation, email, preferredEmail, password, roles, contactTags, disabled, primaryContactId, defaultWatch from ContactInfo where (contactId?a or ({$clause})) and not disabled", $cids);
-        $watchers = [];
+        $us = [];
         while (($minic = Contact::fetch($result, $this->conf))) {
-            if ($minic->can_view_paper($this)
-                && (!$fn || $minic->$fn($this))) {
-                $watchers[] = $minic;
-            }
+            if ($minic->can_view_paper($this))
+                $us[] = $minic;
         }
         Dbl::free($result);
-        usort($watchers, [$this, "notify_user_compare"]);
-        return $watchers;
+        usort($us, [$this, "notify_user_compare"]);
+        return $us;
     }
 
     /** @return list<Contact> */
@@ -3340,28 +3338,44 @@ class PaperInfo {
             if ($ctype >= CONFLICT_AUTHOR)
                 $cids[] = $uid;
         }
-        return $this->generic_followers($cids, "false", null);
+        return $this->generic_followers($cids, "false");
     }
 
     /** @return list<Contact> */
     function submission_followers() {
         $fl = ($this->is_new() ? Contact::WATCH_PAPER_REGISTER_ALL : 0)
             | ($this->timeSubmitted > 0 ? Contact::WATCH_PAPER_NEWSUBMIT_ALL : 0);
-        return $this->generic_followers([], "(defaultWatch&{$fl})!=0 and roles!=0", "following_submission");
+        $us = [];
+        foreach ($this->generic_followers([], "(defaultWatch&{$fl})!=0 and roles!=0") as $u) {
+            if ($u->following_submission($this))
+                $us[] = $u;
+        }
+        return $us;
     }
 
     /** @return list<Contact> */
     function late_withdrawal_followers() {
-        return $this->generic_followers([], "(defaultWatch&" . Contact::WATCH_LATE_WITHDRAWAL_ALL . ")!=0 and roles!=0", "following_late_withdrawal");
+        $us = [];
+        foreach ($this->generic_followers([], "(defaultWatch&" . Contact::WATCH_LATE_WITHDRAWAL_ALL . ")!=0 and roles!=0") as $u) {
+            if ($u->following_late_withdrawal($this))
+                $us[] = $u;
+        }
+        return $us;
     }
 
     /** @return list<Contact> */
     function final_update_followers() {
-        return $this->generic_followers([], "(defaultWatch&" . Contact::WATCH_FINAL_UPDATE_ALL . ")!=0 and roles!=0", "following_final_update");
+        $us = [];
+        foreach ($this->generic_followers([], "(defaultWatch&" . Contact::WATCH_FINAL_UPDATE_ALL . ")!=0 and roles!=0") as $u) {
+            if ($u->following_final_update($this))
+                $us[] = $u;
+        }
+        return $us;
     }
 
-    /** @return list<Contact> */
-    function review_followers() {
+    /** @param int $topic
+     * @return list<Contact> */
+    function review_followers($topic) {
         $cids = [];
         foreach ($this->conflict_types() as $uid => $ctype) {
             if ($ctype >= CONFLICT_AUTHOR)
@@ -3377,7 +3391,12 @@ class PaperInfo {
             if (($w & Contact::WATCH_REVIEW) !== 0)
                 $cids[] = $cid;
         }
-        return $this->generic_followers($cids, "(defaultWatch&" . (Contact::WATCH_REVIEW_ALL | Contact::WATCH_REVIEW_MANAGED) . ")!=0 and roles!=0", "following_reviews");
+        $us = [];
+        foreach ($this->generic_followers($cids, "(defaultWatch&" . (Contact::WATCH_REVIEW_ALL | Contact::WATCH_REVIEW_MANAGED) . ")!=0 and roles!=0") as $u) {
+            if ($u->following_reviews($this, $topic))
+                $us[] = $u;
+        }
+        return $us;
     }
 
     function delete_from_database(Contact $user = null) {
@@ -3389,7 +3408,7 @@ class PaperInfo {
 
         $qs = [];
         foreach (["PaperWatch", "PaperReviewPreference", "PaperReviewRefused", "ReviewRequest", "PaperTag", "PaperComment", "PaperReview", "PaperTopic", "PaperOption", "PaperConflict", "Paper", "PaperStorage", "Capability"] as $table) {
-            $qs[] = "delete from $table where paperId={$this->paperId}";
+            $qs[] = "delete from {$table} where paperId={$this->paperId}";
         }
         $mresult = Dbl::multi_qe($this->conf->dblink, join(";", $qs));
         $mresult->free_all();

@@ -106,14 +106,15 @@ class Contact implements JsonSerializable {
     private $data;
     /** @var ?object */
     private $_jdata;
-    const WATCH_REVIEW_EXPLICIT = 1;  // only in PaperWatch
-    const WATCH_REVIEW = 2;
-    const WATCH_REVIEW_ALL = 4;
-    const WATCH_REVIEW_MANAGED = 8;
-    const WATCH_PAPER_NEWSUBMIT_ALL = 16;
-    const WATCH_FINAL_UPDATE_ALL = 32;
-    const WATCH_PAPER_REGISTER_ALL = 64;
-    const WATCH_LATE_WITHDRAWAL_ALL = 128;
+    const WATCH_REVIEW_EXPLICIT = 0x01;  // only in PaperWatch
+    const WATCH_REVIEW = 0x02;
+    const WATCH_REVIEW_ALL = 0x04;
+    const WATCH_REVIEW_MANAGED = 0x08;
+    const WATCH_REVIEW_ANY = 0x0E; // REVIEW + REVIEW_ALL + REVIEW_MANAGED
+    const WATCH_PAPER_NEWSUBMIT_ALL = 0x10;
+    const WATCH_FINAL_UPDATE_ALL = 0x20;
+    const WATCH_PAPER_REGISTER_ALL = 0x40;
+    const WATCH_LATE_WITHDRAWAL_ALL = 0x80;
     /** @var int */
     public $defaultWatch = self::WATCH_REVIEW;
 
@@ -3871,34 +3872,46 @@ class Contact implements JsonSerializable {
         return -1;
     }
 
+    const CAN_VIEW_REVIEW_NO_ADMINISTER = 1;
+
     /** @param ?ReviewInfo $rrow
      * @param ?int $viewscore
+     * @param int $flags
      * @return bool */
-    function can_view_review(PaperInfo $prow, $rrow, $viewscore = null) {
+    function can_view_review(PaperInfo $prow, $rrow, $viewscore = null,
+                             $flags = 0) {
         assert(!$rrow || $prow->paperId == $rrow->paperId);
         $viewscore = $viewscore ?? VIEWSCORE_AUTHOR;
         $rights = $this->rights($prow);
-        if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREV)
+        // can always view if can administer, is metareviewer, own review
+        if (($this->_can_administer_for_track($prow, $rights, Track::VIEWREV)
+             && ($flags & self::CAN_VIEW_REVIEW_NO_ADMINISTER) === 0)
             || $rights->reviewType == REVIEW_META
             || ($rrow
                 && $this->is_owned_review($rrow)
                 && $viewscore >= VIEWSCORE_REVIEWERONLY)) {
             return true;
-        } else if ($rrow && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED) {
+        }
+        // otherwise, cannot view draft reviews
+        if ($rrow && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED) {
             return false;
         }
-        $seerev = $this->seerev_setting($prow, $rrow, $rights);
+        // otherwise, check author rights
+        // See also PaperInfo::can_view_review_identity_of.
         if ($rrow) {
             $viewscore = min($viewscore, $rrow->view_score());
         }
-        // See also PaperInfo::can_view_review_identity_of.
-        return ($rights->act_author_view
-                && ($viewscore >= VIEWSCORE_AUTHOR
-                    || ($viewscore >= VIEWSCORE_AUTHORDEC
-                        && $prow->outcome_sign !== 0
-                        && $rights->can_view_decision))
-                && $this->can_view_submitted_review_as_author($prow))
-            || ($rights->allow_pc
+        if ($rights->act_author_view
+            && ($viewscore >= VIEWSCORE_AUTHOR
+                || ($viewscore >= VIEWSCORE_AUTHORDEC
+                    && $prow->outcome_sign !== 0
+                    && $rights->can_view_decision))
+            && $this->can_view_submitted_review_as_author($prow)) {
+            return true;
+        }
+        // otherwise, check reviewer rights
+        $seerev = $this->seerev_setting($prow, $rrow, $rights);
+        return ($rights->allow_pc
                 && $viewscore >= VIEWSCORE_PC
                 && $seerev > 0
                 && ($seerev !== Conf::PCSEEREV_UNLESSANYINCOMPLETE
@@ -3955,6 +3968,10 @@ class Contact implements JsonSerializable {
             $whyNot["forceShow"] = true;
         }
         return $whyNot;
+    }
+
+    function can_view_submitted_review_without_administer(PaperInfo $prow) {
+        return $this->can_view_review($prow, null, null, self::CAN_VIEW_REVIEW_NO_ADMINISTER);
     }
 
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
@@ -4624,7 +4641,7 @@ class Contact implements JsonSerializable {
                         && (($ctype & CommentInfo::CT_TOPIC_PAPER) !== 0
                             || $this->can_view_submitted_review_as_author($prow)))))
             || (!$rights->view_conflict_type
-                && (!($ctype & CommentInfo::CT_DRAFT)
+                && (($ctype & CommentInfo::CT_DRAFT) === 0
                     || ($textless && ($ctype & CommentInfo::CT_RESPONSE)))
                 && ($rights->allow_pc
                     ? $ctype >= CommentInfo::CT_PCONLY
@@ -5124,20 +5141,44 @@ class Contact implements JsonSerializable {
 
     // following / email notifications
 
-    /** @return bool */
-    function following_reviews(PaperInfo $prow) {
+    /** @param int $topic
+     * @return int */
+    function review_watch(PaperInfo $prow, $topic) {
+        // use explicit watch if set
         $w = $prow->watch($this);
         if (($w & self::WATCH_REVIEW_EXPLICIT) !== 0) {
-            return ($w & self::WATCH_REVIEW) !== 0;
-        } else {
-            return ($this->defaultWatch & self::WATCH_REVIEW_ALL) !== 0
-                || (($this->defaultWatch & self::WATCH_REVIEW_MANAGED) !== 0
-                    && $this->is_primary_administrator($prow))
-                || (($this->defaultWatch & self::WATCH_REVIEW) !== 0
-                    && ($prow->has_author($this)
-                        || $prow->has_reviewer($this)
-                        || $prow->has_commenter($this)));
+            return $w;
         }
+        // otherwise, adjust default watch
+        $w = $this->defaultWatch & self::WATCH_REVIEW_ANY;
+        // if not administrator, remove MANAGED bit
+        if (($w & self::WATCH_REVIEW_MANAGED) !== 0
+            && !$this->is_primary_administrator($prow)) {
+            $w &= ~self::WATCH_REVIEW_MANAGED;
+        }
+        // if not author, reviewer, or commenter, remove REVIEW bit
+        if (($w & self::WATCH_REVIEW) !== 0
+            && !$prow->has_author($this)
+            && !$prow->has_reviewer($this)
+            && !$prow->has_commenter($this)) {
+            $w &= ~self::WATCH_REVIEW;
+        }
+        // if administrator AND reviewer, but viewing submitted reviews would
+        // require administrator privilege, remove REVIEW bit
+        if (($w & self::WATCH_REVIEW) !== 0
+            && ($topic & CommentInfo::CT_TOPIC_PAPER) === 0
+            && $this->can_administer($prow)
+            && $prow->has_reviewer($this)
+            && !$this->can_view_submitted_review_without_administer($prow)) {
+            $w &= ~self::WATCH_REVIEW;
+        }
+        return $w;
+    }
+
+    /** @param int $topic
+     * @return bool */
+    function following_reviews(PaperInfo $prow, $topic) {
+        return ($this->review_watch($prow, $topic) & self::WATCH_REVIEW_ANY) !== 0;
     }
 
     /** @return bool */

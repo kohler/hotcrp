@@ -113,7 +113,7 @@ class PaperEvents {
             if (($prow = $this->prows->get($rrow->paperId))
                 && $this->user->can_view_paper($prow)
                 && !$this->user->act_author_view($prow)
-                && $this->user->following_reviews($prow)) {
+                && $this->user->following_reviews($prow, 0)) {
                 $rrow->set_prow($prow);
                 if ($this->user->can_view_review($prow, $rrow)) {
                     return new PaperEvent($prow, $rrow, null);
@@ -154,7 +154,7 @@ class PaperEvents {
             if (($prow = $this->prows->get($crow->paperId))
                 && $this->user->can_view_paper($prow)
                 && !$this->user->act_author_view($prow)
-                && $this->user->following_reviews($prow)
+                && $this->user->following_reviews($prow, $crow->commentType)
                 && $this->user->can_view_comment($prow, $crow)) {
                 $crow->set_prow($prow);
                 return new PaperEvent($prow, null, $crow);

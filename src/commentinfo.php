@@ -66,8 +66,8 @@ class CommentInfo {
     const CT_BLIND = 2;
     const CT_RESPONSE = 4;
     const CT_BYAUTHOR = 8;
-    const CT_BYSHEPHERD = 16;
-    const CT_HASDOC = 32;
+    const CT_BYSHEPHERD = 0x10;
+    const CT_HASDOC = 0x20;
     const CT_TOPIC_PAPER = 0x40;
     const CT_TOPIC_REVIEW = 0x80; // only used internally, not in database
     const CT_TOPICS = 0xC0;
@@ -1002,17 +1002,35 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             } else {
                 $tmpl = "@commentnotify";
             }
+            $info = [
+                "prow" => $this->prow,
+                "comment_row" => $this,
+                "combination_type" => 1
+            ];
+            $preps = [];
             foreach ($this->followers() as $minic) {
-                if ($minic->contactId !== $user->contactId
-                    && !isset($this->saved_mentions[$minic->contactId])) {
-                    $sent = HotCRPMailer::send_to($minic, $tmpl, [
-                        "prow" => $this->prow, "comment_row" => $this
-                    ]);
-                    if ($this->prow->has_author($minic) && $sent) {
-                        $this->notified_authors = true;
-                    }
+                if ($minic->contactId === $user->contactId
+                    || isset($this->saved_mentions[$minic->contactId])) {
+                    continue;
                 }
+                // prepare mail
+                $p = HotCRPMailer::prepare_to($minic, $tmpl, $info);
+                if (!$p) {
+                    continue;
+                }
+                if ($this->prow->has_author($minic)) {
+                    $this->notified_authors = true;
+                }
+                // Don't combine preparations unless you can see all submitted
+                // reviewer identities
+                // XXX maybe should not combine preparations at all?
+                if (!$this->prow->has_author($minic)
+                    && !$minic->can_view_review_identity($this->prow, null)) {
+                    $p->unique_preparation = true;
+                }
+                $preps[] = $p;
             }
+            HotCRPMailer::send_combined_preparations($preps);
         }
 
         return true;
@@ -1037,16 +1055,21 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
 
         // go over mentions, send email
         foreach ($desired_mentions as $mxm) {
-            if (($mentionee = $this->conf->user_by_id($mxm[0], USER_SLICE))
-                && !$mentionee->is_dormant()
-                && $mentionee->can_view_comment($this->prow, $this)) {
-                if (!isset($this->saved_mentions[$mxm[0]])) {
-                    HotCRPMailer::send_to($mentionee, "@mentionnotify", ["prow" => $this->prow, "comment_row" => $this]);
-                    $this->saved_mentions[$mxm[0]] = htmlspecialchars(substr($text, $mxm[1] + 1, $mxm[2] - $mxm[1] - 1));
-                }
-                if ($mxm[3]) {
-                    $this->saved_mentions[$mxm[0]] = $user->reviewer_html_for($mentionee);
-                }
+            $mentionee = $this->conf->user_by_id($mxm[0], USER_SLICE);
+            if (!$mentionee
+                || $mentionee->is_dormant()
+                || !$mentionee->can_view_comment($this->prow, $this)) {
+                continue;
+            }
+            if (!isset($this->saved_mentions[$mxm[0]])) {
+                HotCRPMailer::send_to($mentionee, "@mentionnotify", [
+                    "prow" => $this->prow,
+                    "comment_row" => $this
+                ]);
+                $this->saved_mentions[$mxm[0]] = htmlspecialchars(substr($text, $mxm[1] + 1, $mxm[2] - $mxm[1] - 1));
+            }
+            if ($mxm[3]) {
+                $this->saved_mentions[$mxm[0]] = $user->reviewer_html_for($mentionee);
             }
         }
 
@@ -1070,16 +1093,16 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             } else {
                 $cids[] = $this->contactId;
             }
-            $us = $this->prow->generic_followers($cids, "false", null);
+            $us = $this->prow->generic_followers($cids, "false");
         } else if (($ctype & self::CT_VISIBILITY) === self::CT_ADMINONLY) {
             $us = $this->prow->administrators();
             $nocheck = true;
         } else {
-            $us = $this->prow->review_followers();
+            $us = $this->prow->review_followers($ctype);
         }
         for ($i = 0; $i !== count($us); ) {
             if ($us[$i]->can_view_comment($this->prow, $this)
-                && ($nocheck || $us[$i]->following_reviews($this->prow))) {
+                && ($nocheck || $us[$i]->following_reviews($this->prow, $ctype))) {
                 ++$i;
             } else {
                 array_splice($us, $i, 1);

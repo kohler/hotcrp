@@ -1383,9 +1383,9 @@ class ReviewValues extends MessageSet {
         if ($newstatus >= ReviewInfo::RS_COMPLETED
             && ($diffinfo->notify || $diffinfo->notify_author)) {
             if ($oldstatus < ReviewInfo::RS_COMPLETED) {
-                $template = "@reviewsubmit";
+                $tmpl = "@reviewsubmit";
             } else {
-                $template = "@reviewupdate";
+                $tmpl = "@reviewupdate";
             }
             $always_combine = false;
             $diff_view_score = $diffinfo->view_score;
@@ -1394,14 +1394,14 @@ class ReviewValues extends MessageSet {
                    && ($diffinfo->fields() || $newstatus !== $oldstatus)
                    && !$this->no_notify) {
             if ($newstatus >= ReviewInfo::RS_ADOPTED) {
-                $template = "@reviewapprove";
+                $tmpl = "@reviewapprove";
             } else if ($newstatus === ReviewInfo::RS_DELIVERED
                        && $oldstatus < ReviewInfo::RS_DELIVERED) {
-                $template = "@reviewapprovalrequest";
+                $tmpl = "@reviewapprovalrequest";
             } else if ($rrow->requestedBy === $user->contactId) {
-                $template = "@reviewpreapprovaledit";
+                $tmpl = "@reviewpreapprovaledit";
             } else {
-                $template = "@reviewapprovalupdate";
+                $tmpl = "@reviewapprovalupdate";
             }
             $always_combine = true;
             $diff_view_score = null;
@@ -1411,18 +1411,23 @@ class ReviewValues extends MessageSet {
         }
 
         $preps = [];
-        foreach ($prow->review_followers() as $minic) {
+        foreach ($prow->review_followers(0) as $minic) {
             assert(($minic->overrides() & Contact::OVERRIDE_CONFLICT) === 0);
+            // skip same user, dormant user, cannot view review
             if ($minic->contactId === $user->contactId
                 || $minic->is_dormant()
-                || !$minic->can_view_review($prow, $rrow, $diff_view_score)
-                || ($rrow->reviewStatus < ReviewInfo::RS_COMPLETED
-                    && $rrow->contactId !== $minic->contactId
-                    && $rrow->requestedBy !== $minic->contactId
-                    && ($prow->watch($minic) & Contact::WATCH_REVIEW) === 0)) {
+                || !$minic->can_view_review($prow, $rrow, $diff_view_score)) {
                 continue;
             }
-            $p = HotCRPMailer::prepare_to($minic, $template, $info);
+            // if draft, skip unless author, requester, or explicitly interested
+            if ($rrow->reviewStatus < ReviewInfo::RS_COMPLETED
+                && $rrow->contactId !== $minic->contactId
+                && $rrow->requestedBy !== $minic->contactId
+                && ($minic->review_watch($prow, 0) & Contact::WATCH_REVIEW_EXPLICIT) === 0) {
+                continue;
+            }
+            // prepare mail
+            $p = HotCRPMailer::prepare_to($minic, $tmpl, $info);
             if (!$p) {
                 continue;
             }
@@ -1437,9 +1442,7 @@ class ReviewValues extends MessageSet {
             $preps[] = $p;
         }
 
-        if (!empty($preps)) {
-            HotCRPMailer::send_combined_preparations($preps);
-        }
+        HotCRPMailer::send_combined_preparations($preps);
     }
 
     private function _do_save(Contact $user, PaperInfo $prow, ReviewInfo $rrow) {
