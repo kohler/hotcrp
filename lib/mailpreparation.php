@@ -57,13 +57,13 @@ class MailPreparation implements JsonSerializable {
     /** @param MailPreparation $p
      * @return bool */
     function can_merge($p) {
-        return $this->subject === $p->subject
+        return !$this->unique_preparation
+            && !$p->unique_preparation
+            && $this->subject === $p->subject
             && $this->body === $p->body
             && ($this->headers["cc"] ?? null) == ($p->headers["cc"] ?? null)
             && ($this->headers["reply-to"] ?? null) == ($p->headers["reply-to"] ?? null)
             && $this->preparation_owner === $p->preparation_owner
-            && !$this->unique_preparation
-            && !$p->unique_preparation
             && empty($this->errors)
             && empty($p->errors);
     }

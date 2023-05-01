@@ -15,6 +15,15 @@ initialize_conf();
 
 
 // Record mail in MailChecker.
+class MailCheckerExpectation {
+    /** @var string */
+    public $header;
+    /** @var string */
+    public $body;
+    /** @var string */
+    public $landmark;
+}
+
 class MailChecker {
     /** @var int */
     static public $disabled = 0;
@@ -22,7 +31,7 @@ class MailChecker {
     static public $print = false;
     /** @var list<MailPreparation> */
     static public $preps = [];
-    /** @var array<string,list<array{string,string}>> */
+    /** @var array<string,list<MailCheckerExpectation>> */
     static public $messagedb = [];
 
     /** @param MailPreparation $prep */
@@ -94,9 +103,8 @@ class MailChecker {
     /** @param ?string $name */
     static function check_db($name = null) {
         if ($name) {
-            xassert(isset(self::$messagedb[$name]));
-            xassert_eqq(count(self::$preps), count(self::$messagedb[$name]));
-            $mdb = self::$messagedb[$name];
+            $mdb = self::$messagedb[$name] ?? [];
+            xassert_eqq(count(self::$preps), count($mdb));
         } else {
             xassert(!empty(self::$preps));
             $last_landmark = null;
@@ -123,7 +131,7 @@ class MailChecker {
         self::check_match($mdb);
     }
 
-    /** @param list<string> $mdb */
+    /** @param list<string|MailCheckerExpectation> $mdb */
     static function check_match($mdb) {
         $haves = [];
         foreach (self::$preps as $prep) {
@@ -132,34 +140,33 @@ class MailChecker {
                 . "\n\n" . $prep->body;
         }
         sort($haves);
-        $wants = [];
-        foreach ($mdb as $m) {
-            if (is_string($m)) {
-                $wants[] = $m;
-            } else {
-                $wants[] = preg_replace('/^X-Landmark:.*?\n/m', "", $m[0]) . $m[1];
-            }
-        }
-        sort($wants);
-        foreach ($wants as $want) {
-            list($match, $index, $badline) = self::find_best_mail_match($want, $haves);
+
+        foreach ($mdb as $want) {
+            $wtext = is_string($want)
+                ? $want
+                : preg_replace('/^X-Landmark:.*?\n/m', "", $want->header) . $want->body;
+            list($match, $index, $badline) = self::find_best_mail_match($wtext, $haves);
             if ($match) {
                 Xassert::succeed();
             } else if ($index !== false) {
                 $have = $haves[$index];
-                error_log(assert_location() . ": Mail mismatch: " . var_export($want, true) . " !== " . var_export($have, true));
+                error_log(assert_location() . ": Mail mismatch: " . var_export($wtext, true) . " !== " . var_export($have, true));
                 $havel = explode("\n", $have);
-                $wantl = explode("\n", $want);
+                $wantl = explode("\n", $wtext);
                 fwrite(STDERR, "... line {$badline} differs near {$havel[$badline-1]}\n... expected {$wantl[$badline-1]}\n");
+                if (is_object($want) && isset($want->landmark)) {
+                    fwrite(STDERR, "... expected mail at {$want->landmark}\n");
+                }
                 Xassert::fail();
             } else {
-                error_log(assert_location() . ": Mail not found: " . var_export($want, true));
+                error_log(assert_location() . ": Mail not found: " . var_export($wtext, true));
                 Xassert::fail();
             }
             if ($index !== false) {
                 array_splice($haves, $index, 1);
             }
         }
+
         foreach ($haves as $have) {
             error_log(assert_location() . ": Unexpected mail: " . var_export($have, true));
             Xassert::fail();
@@ -171,33 +178,52 @@ class MailChecker {
         self::$preps = [];
     }
 
-    /** @param string $text */
-    static function add_messagedb($text) {
-        preg_match_all('/^\*\*\*\*\*\*\*\*(.*)\n([\s\S]*?\n)(?=^\*\*\*\*\*\*\*\*|\z)/m', $text, $ms, PREG_SET_ORDER);
-        foreach ($ms as $m) {
-            $m[1] = trim($m[1]);
-            $nlpos = strpos($m[2], "\n\n");
-            $nlpos = $nlpos === false ? strlen($m[2]) : $nlpos + 2;
-            $header = substr($m[2], 0, $nlpos);
-            $body = substr($m[2], $nlpos);
-            if ($m[1] === ""
-                && preg_match('/\nX-Landmark:\s*(\S+)/', $header, $mx)) {
-                $m[1] = $mx[1];
+    /** @param string $text
+     * @param ?string $file */
+    static function add_messagedb($text, $file = null) {
+        $l = explode("\n", $text);
+        $n = count($l);
+        if ($n > 0 && $l[$n - 1] === "") {
+            --$n;
+        }
+        for ($i = 0; $i !== $n; ) {
+            if (!str_starts_with($l[$i], "********")) {
+                ++$i;
+                continue;
             }
-            if ($m[1] !== "") {
-                if (!isset(self::$messagedb[$m[1]])) {
-                    self::$messagedb[$m[1]] = [];
+
+            $mid = trim(substr($l[$i], 8));
+            $bodypos = null;
+            $j = $i + 1;
+            while ($j !== $n && !str_starts_with($l[$j], "********")) {
+                if ($bodypos === null) {
+                    if ($mid === ""
+                        && str_starts_with($l[$j], "X-Landmark:")) {
+                        $mid = trim(substr($l[$j], 11));
+                    } else if ($l[$j] === "") {
+                        $bodypos = $j + 1;
+                    }
                 }
-                if (trim($body) !== "") {
-                    $body = preg_replace('/^\\\\\\*/m', "*", $body);
-                    self::$messagedb[$m[1]][] = [$header, $body];
-                }
+                ++$j;
             }
+            $bodypos = $bodypos ?? $j;
+
+            $body = preg_replace('/^\\\\\\*/m', "*", join("\n", array_slice($l, $bodypos, $j - $bodypos)) . "\n");
+            if ($mid !== "" && trim($body) !== "") {
+                $mex = new MailCheckerExpectation;
+                $mex->header = join("\n", array_slice($l, $i + 1, $bodypos - $i - 1)) . "\n";
+                $mex->body = preg_replace('/^\\\\\\*/m', "*", $body);
+                $lineno = $i + 1;
+                $mex->landmark = $file ? "{$file}:{$lineno}" : "line {$lineno}";
+                self::$messagedb[$mid][] = $mex;
+            }
+
+            $i = $j;
         }
     }
 }
 
-MailChecker::add_messagedb(file_get_contents(SiteLoader::find("test/emails.txt")));
+MailChecker::add_messagedb(file_get_contents(SiteLoader::find("test/emails.txt")), "test/emails.txt");
 Conf::$main->add_hook((object) [
     "event" => "send_mail",
     "function" => "MailChecker::send_hook",

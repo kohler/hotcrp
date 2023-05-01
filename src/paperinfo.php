@@ -1572,10 +1572,15 @@ class PaperInfo {
         return $this->review_type($contact) > 0;
     }
 
+    /** @return int */
+    function review_status($contact) {
+        $ci = $this->contact_info($contact);
+        return $ci ? $ci->review_status : 0;
+    }
+
     /** @return bool */
     function review_not_incomplete($contact) {
-        $ci = $this->contact_info($contact);
-        return $ci && $ci->review_status > PaperContactInfo::RS_UNSUBMITTED;
+        return $this->review_status($contact) > PaperContactInfo::RS_UNSUBMITTED;
     }
 
 
@@ -2518,16 +2523,7 @@ class PaperInfo {
             }
         }
 
-        usort($srs, function ($a, $b) {
-            // NB: all submitted reviews have timeDisplayed
-            if ($a->timeDisplayed != $b->timeDisplayed) {
-                return $a->timeDisplayed < $b->timeDisplayed ? -1 : 1;
-            } else if ($a->reviewOrdinal && $b->reviewOrdinal) {
-                return $a->reviewOrdinal < $b->reviewOrdinal ? -1 : 1;
-            } else {
-                return $a->reviewId < $b->reviewId ? -1 : 1;
-            }
-        });
+        usort($srs, "ReviewInfo::display_compare");
 
         foreach ($urs as $urow) {
             $srs[] = $urow;
@@ -3289,7 +3285,9 @@ class PaperInfo {
     /** @param Contact $a
      * @param Contact $b */
     function notify_user_compare($a, $b) {
-        // group authors together, then reviewers
+        // first, authors by position in author list;
+        // then, reviewers by display order;
+        // then others
         $aa = $this->has_author($a);
         $ba = $this->has_author($b);
         if ($aa && $ba) {
@@ -3300,15 +3298,21 @@ class PaperInfo {
             if ($aia !== $aib) {
                 return $aia < $aib ? -1 : 1;
             }
-        } else if (!$aa && !$ba) {
-            $aa = $this->has_reviewer($a);
-            $ba = $this->has_reviewer($b);
-        }
-        if ($aa !== $ba) {
+        } else if ($aa || $ba) {
             return $aa ? -1 : 1;
         } else {
-            return call_user_func($a->conf->user_comparator(), $a, $b);
+            $ar = $this->review_by_user($a);
+            $br = $this->review_by_user($b);
+            if ($ar && $br) {
+                $arc = ReviewInfo::display_compare($ar, $br);
+                if ($arc !== 0) {
+                    return $arc;
+                }
+            } else if ($ar || $br) {
+                return $ar ? -1 : 1;
+            }
         }
+        return call_user_func($a->conf->user_comparator(), $a, $b);
     }
 
     /** @param list<int> $cids

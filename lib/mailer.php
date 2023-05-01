@@ -604,9 +604,9 @@ class Mailer {
                     $mimetext->mi->field = $lcfield;
                     $mimetext->mi->landmark = "{$field} field";
                     $prep->errors[] = $mimetext->mi;
-                    $logmsg = "$lcfield: $text";
+                    $logmsg = "{$lcfield}: {$text}";
                     if (!in_array($logmsg, $this->_errors_reported)) {
-                        error_log("mailer error on $logmsg");
+                        error_log("mailer error on {$logmsg}");
                         $this->_errors_reported[] = $logmsg;
                     }
                 }
@@ -623,16 +623,22 @@ class Mailer {
 
     /** @param list<MailPreparation> $preps */
     static function send_combined_preparations($preps) {
-        $last_p = null;
-        foreach ($preps as $p) {
-            if ($last_p && $last_p->can_merge($p)) {
-                $last_p->merge($p);
-            } else {
-                $last_p && $last_p->send();
-                $last_p = $p;
+        $n = count($preps);
+        for ($i = 0; $i !== $n; ++$i) {
+            $p = $preps[$i];
+            if (!$p) {
+                continue;
             }
+            if (!$p->unique_preparation) {
+                for ($j = $i + 1; $j !== $n; ++$j) {
+                    if ($p->can_merge($preps[$j])) {
+                        $p->merge($preps[$j]);
+                        $preps[$j] = null;
+                    }
+                }
+            }
+            $p->send();
         }
-        $last_p && $last_p->send();
     }
 
 

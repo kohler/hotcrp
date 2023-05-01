@@ -1037,6 +1037,24 @@ class ReviewInfo implements JsonSerializable {
     }
 
 
+    /** @param ReviewInfo $a
+     * @param ReviewInfo $a
+     * @return -1|0|1 */
+    static function display_compare($a, $b) {
+        // NB: all submitted reviews have timeDisplayed
+        if (($a->timeDisplayed > 0) !== ($b->timeDisplayed > 0)) {
+            return $a->timeDisplayed > 0 ? -1 : 1;
+        }
+        if ($a->timeDisplayed !== $b->timeDisplayed) {
+            return $a->timeDisplayed <=> $b->timeDisplayed;
+        }
+        if ($a->reviewOrdinal !== $b->reviewOrdinal) {
+            return $a->reviewOrdinal <=> $b->reviewOrdinal;
+        }
+        return $a->reviewId <=> $b->reviewId;
+    }
+
+
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $j = ["confid" => $this->conf->dbname];

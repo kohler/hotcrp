@@ -1318,7 +1318,7 @@ Reviewer expertise
 4. Expert
 
 ******** test01-review2B
-To: Jane Chair <chair@_.com>, Jon Crowcroft <jon@cs.ucl.ac.uk>
+To: Jon Crowcroft <jon@cs.ucl.ac.uk>, Jane Chair <chair@_.com>
 Subject: [Testconf I] Submitted review #2B "Small Forwarding Tables for Fast
  Routing..."
 
@@ -1352,7 +1352,7 @@ Reviewer expertise
 4. Expert
 
 ******** test01-review2C
-To: Jane Chair <chair@_.com>, Jon Crowcroft <jon@cs.ucl.ac.uk>, Mary Baker <mgbaker@cs.stanford.edu>, Peter Druschel <pdruschel@cs.rice.edu>
+To: Jon Crowcroft <jon@cs.ucl.ac.uk>, Peter Druschel <pdruschel@cs.rice.edu>, Jane Chair <chair@_.com>, Mary Baker <mgbaker@cs.stanford.edu>
 Subject: [Testconf I] Submitted review #2C "Small Forwarding Tables for Fast
  Routing..."
 X-Landmark: test/test01.php:573
@@ -1476,7 +1476,7 @@ Comments for authors
 Bye
 
 ******** test06-17lixia
-To: External Reviewer <external@_.com>, Mary Baker <mgbaker@cs.stanford.edu>, Peter Druschel <pdruschel@cs.rice.edu>
+To: Mary Baker <mgbaker@cs.stanford.edu>, External Reviewer <external@_.com>, Peter Druschel <pdruschel@cs.rice.edu>
 Subject: [Testconf I] Submitted review #17C "Network Text Editor (NTE): A
  Scalable..."
 X-Landmark: test/test06.php:622
