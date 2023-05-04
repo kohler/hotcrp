@@ -631,7 +631,8 @@ class Mailer {
             }
             if (!$p->unique_preparation) {
                 for ($j = $i + 1; $j !== $n; ++$j) {
-                    if ($p->can_merge($preps[$j])) {
+                    if ($preps[$j]
+                        && $p->can_merge($preps[$j])) {
                         $p->merge($preps[$j]);
                         $preps[$j] = null;
                     }
