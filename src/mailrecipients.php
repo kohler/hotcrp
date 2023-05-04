@@ -365,7 +365,7 @@ class MailRecipients extends MessageSet {
         // additional manager limit
         $paper_ids = $this->paper_ids;
         if (!$this->user->privChair
-            && ($this->recipts[$this->tindex][2] & self::F_ANYPC) !== 0) {
+            && ($this->recipts[$this->tindex][2] & self::F_ANYPC) === 0) {
             if ($this->conf->check_any_admin_tracks($this->user)) {
                 $ps = new PaperSearch($this->user, ["q" => "", "t" => "admin"]);
                 if ($paper_ids === null) {
