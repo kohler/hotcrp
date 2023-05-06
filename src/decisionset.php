@@ -69,7 +69,7 @@ class DecisionSet implements IteratorAggregate, Countable {
 
         if ($id !== 0 && ($dinfo->catbits & DecisionInfo::CAT_OTHER) !== 0) {
             $this->_has_other = true;
-        } else if ($dinfo->catbits === DecisionInfo::CAT_DESKREJECT) {
+        } else if ($dinfo->catbits === DecisionInfo::CB_DESKREJECT) {
             $this->_has_desk_reject = true;
         }
 
@@ -130,17 +130,23 @@ class DecisionSet implements IteratorAggregate, Countable {
 
     /** @return list<int> */
     function desk_reject_ids() {
-        return $this->_has_desk_reject ? $this->cat_ids(DecisionInfo::CAT_NO | DecisionInfo::CAT_SUBTYPE, DecisionInfo::CAT_DESKREJECT) : [];
+        if (!$this->_has_desk_reject) {
+            return [];
+        }
+        $decids = [];
+        foreach ($this->_decision_map as $dec) {
+            if ($dec->catbits === DecisionInfo::CB_DESKREJECT)
+                $decids[] = $dec->id;
+        }
+        return $decids;
     }
 
     /** @param int $mask
-     * @param ?int $value
      * @return list<int> */
-    private function cat_ids($mask, $value = null) {
+    private function cat_ids($mask) {
         $decids = [];
-        $value = $value ?? $mask;
         foreach ($this->_decision_map as $dec) {
-            if (($dec->catbits & $mask) === $value)
+            if (($dec->catbits & $mask) !== 0)
                 $decids[] = $dec->id;
         }
         return $decids;

@@ -21,7 +21,7 @@ class DecisionInfo {
     const CAT_NO = 0x20;
     const CAT_OTHER = 0x40;
     const CAT_SUBTYPE = 0x0F;
-    const CAT_DESKREJECT = 0x21;
+    const CB_DESKREJECT = 0x21;
     // see also DecisionSet::matchexpr
 
 
@@ -44,7 +44,7 @@ class DecisionInfo {
         if (($this->catbits & self::CAT_YES) !== 0) {
             $this->sign = 1;
         } else if (($this->catbits & self::CAT_NO) !== 0) {
-            $this->sign = $this->catbits === self::CAT_DESKREJECT ? -2 : -1;
+            $this->sign = $this->catbits === self::CB_DESKREJECT ? -2 : -1;
         } else {
             $this->sign = 0;
         }
@@ -74,7 +74,7 @@ class DecisionInfo {
         } else if ($s === "reject") {
             return self::CAT_NO;
         } else if ($s === "deskreject") {
-            return self::CAT_DESKREJECT;
+            return self::CB_DESKREJECT;
         } else {
             return null;
         }
@@ -86,7 +86,7 @@ class DecisionInfo {
         if (($catbits & self::CAT_YES) !== 0) {
             return "accept";
         } else if (($catbits & self::CAT_NO) !== 0) {
-            return $catbits === self::CAT_DESKREJECT ? "deskreject" : "reject";
+            return $catbits === self::CB_DESKREJECT ? "deskreject" : "reject";
         } else {
             return "maybe";
         }
