@@ -1038,7 +1038,7 @@ class ReviewInfo implements JsonSerializable {
 
 
     /** @param ReviewInfo $a
-     * @param ReviewInfo $a
+     * @param ReviewInfo $b
      * @return -1|0|1 */
     static function display_compare($a, $b) {
         // NB: all submitted reviews have timeDisplayed

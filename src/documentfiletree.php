@@ -108,7 +108,7 @@ class DocumentFileTree implements JsonSerializable {
         $build = "";
         while (preg_match('/\A(.*?)%(\d*)([%hHjaAwx])(.*)\z/', $match, $m)) {
             if ($m[1] !== "") {
-                if (substr($text, 0, strlen($m[1])) !== $m[1]) {
+                if (!str_starts_with($text, $m[1])) {
                     return null;
                 }
                 $build .= $m[1];
@@ -117,14 +117,14 @@ class DocumentFileTree implements JsonSerializable {
 
             list($fwidth, $fn, $match) = [$m[2], $m[3], $m[4]];
             if ($fn === "%") {
-                if (substr($text, 0, 1) !== "%") {
+                if (!str_starts_with($text, "%")) {
                     return null;
                 }
                 $build .= "%";
                 $text = substr($text, 1);
             } else if ($fn === "x") {
                 if ($xext !== null) {
-                    if (substr($text, 0, strlen($xext)) != $xext) {
+                    if (!str_starts_with($text, $xext)) {
                         return null;
                     }
                     $build .= $xext;
@@ -189,8 +189,9 @@ class DocumentFileTree implements JsonSerializable {
                 $this->_need_hash = true;
                 if ($fn === "A" || $fn === "h") {
                     if ($xalgo !== null) {
-                        if ($xalgo !== (string) substr($text, 0, strlen($xalgo)))
+                        if (!str_starts_with($text, $xalgo)) {
                             return null;
+                        }
                     } else if (preg_match('/\A(sha2-|[0-9a-f]+)/', $text, $mm)) {
                         if ($mm[1] === "sha2-" || strlen($mm[1]) === 64) {
                             $xalgo = "sha2-";
@@ -208,7 +209,7 @@ class DocumentFileTree implements JsonSerializable {
                         continue;
                     }
                 }
-                if (substr($text, 0, strlen($xhash)) !== $xhash) {
+                if (!str_starts_with($text, $xhash)) {
                     return null;
                 }
                 if ($fwidth === "") {
@@ -221,8 +222,9 @@ class DocumentFileTree implements JsonSerializable {
                     }
                 }
                 if (preg_match('/\A([0-9a-f]{' . $fwidth . '})/', $text, $mm)) {
-                    if (strlen($mm[1]) > strlen($xhash))
+                    if (strlen($mm[1]) > strlen($xhash)) {
                         $xhash = $mm[1];
+                    }
                     $build .= $mm[1];
                     $text = substr($text, strlen($mm[1]));
                 } else {
@@ -231,7 +233,7 @@ class DocumentFileTree implements JsonSerializable {
             }
         }
         if ((string) $text !== $match) {
-            error_log("fail $build, have `$text`, expected `$match`");
+            error_log("fail {$build}, have `{$text}`, expected `{$match}`");
             return null;
         }
         $this->_algo = $xalgo;
