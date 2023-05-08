@@ -203,7 +203,7 @@ class DocumentRequest implements JsonSerializable {
             $vis = $this->opt->visibility();
             if (($vis === PaperOption::VIS_ADMIN && !$user->privChair)
                 || ($vis !== PaperOption::VIS_SUB && !$user->isPC)) {
-                return $this->prow->make_whynot(["permission" => "view_option", "option" => $this->opt]);
+                return $this->prow->make_whynot(["permission" => "field:view", "option" => $this->opt]);
             } else {
                 return null;
             }

@@ -1592,12 +1592,12 @@ class Contact implements JsonSerializable {
                 $qreq->open_session();
                 $qreq->set_gsession("login_bounce", [$this->conf->session_key, $url, $qreq->page(), $_POST, Conf::$now + 120]);
                 $this->conf->feedback_msg([
-                    MessageItem::error($this->conf->_i("signin_required", new FmtArg("page", $qreq->page()))),
+                    MessageItem::error($this->conf->_i("signin_required", new FmtArg("action", $qreq->page()))),
                     MessageItem::inform("<0>Your changes were not saved. After signing in, you may try to submit them again")
                 ]);
                 $this->conf->redirect();
             } else {
-                Multiconference::fail($qreq, 403, $this->conf->_i("signin_required", new FmtArg("page", $qreq->page()), new FmtArg("url", $this->conf->hoturl_raw("signin", ["redirect" => $url]), 0)));
+                Multiconference::fail($qreq, 403, $this->conf->_i("signin_required", new FmtArg("action", $qreq->page()), new FmtArg("url", $this->conf->hoturl_raw("signin", ["redirect" => $url]), 0)));
             }
         }
     }
@@ -3351,7 +3351,7 @@ class Contact implements JsonSerializable {
         $rights = $this->rights($prow);
         $whyNot = $this->perm_edit_paper_failure($prow, $rights);
         if ($rights->allow_author_edit && !$rights->can_administer) {
-            $whyNot["permission"] = "withdraw";
+            $whyNot["permission"] = "paper:withdraw";
             $sub_withdraw = $this->conf->setting("sub_withdraw") ?? 0;
             if ($sub_withdraw === 0 && $prow->has_author_seen_any_review()) {
                 $whyNot["reviewsSeen"] = true;
@@ -3409,7 +3409,7 @@ class Contact implements JsonSerializable {
         } else if ($this->can_view_missing_papers()) {
             $whynot["noPaper"] = true;
         } else {
-            $whynot["permission"] = "view_paper";
+            $whynot["permission"] = "paper:view";
             if ($this->is_empty()) {
                 $whynot["signin"] = "paper";
             }
@@ -3463,7 +3463,7 @@ class Contact implements JsonSerializable {
         if (!$rights->allow_author_view
             && $rights->review_status == 0
             && !$rights->allow_pc_broad) {
-            $whyNot["permission"] = "view_paper";
+            $whyNot["permission"] = "paper:view";
             if ($this->is_empty()) {
                 $whyNot["signin"] = "paper";
             }
@@ -3476,7 +3476,7 @@ class Contact implements JsonSerializable {
             if ($pdf
                 && count($whyNot) === $base_count
                 && $this->can_view_paper($prow)) {
-                $whyNot["permission"] = "view_doc";
+                $whyNot["permission"] = "document:view";
             }
         }
         return $whyNot;
@@ -3743,13 +3743,13 @@ class Contact implements JsonSerializable {
                   || ($oview === PaperOption::VIS_REVIEW
                       && $rights->review_status < PaperContactInfo::RS_PROXIED
                       && !$this->can_view_review($prow, null)))) {
-            $whyNot["permission"] = "view_option";
+            $whyNot["permission"] = "field:view";
             $whyNot["option"] = $opt;
         } else if (!$this->check_option_view_condition($prow, $opt)) {
             $whyNot["optionNonexistent"] = true;
             $whyNot["option"] = $opt;
         } else {
-            $whyNot["permission"] = "view_option";
+            $whyNot["permission"] = "field:view";
             $whyNot["option"] = $opt;
         }
         return $whyNot;
@@ -3939,14 +3939,14 @@ class Contact implements JsonSerializable {
         if ($rights->allow_pc
             ? !$this->conf->check_tracks($prow, $this, Track::VIEWREV)
             : !$rights->act_author_view && $rights->review_status == 0) {
-            $whyNot["permission"] = "view_review";
+            $whyNot["permission"] = "review:view";
         } else if ($prow->timeWithdrawn > 0) {
             $whyNot["withdrawn"] = true;
         } else if ($prow->timeSubmitted <= 0) {
             $whyNot["notSubmitted"] = true;
         } else if ($rights->act_author_view
                    && !$rrowSubmitted) {
-            $whyNot["permission"] = "view_review";
+            $whyNot["permission"] = "review:view";
         } else if ($rights->act_author_view) {
             $whyNot["deadline"] = "au_seerev";
         } else if ($rights->view_conflict_type) {
@@ -4091,7 +4091,7 @@ class Contact implements JsonSerializable {
                  && (!$this->isPC
                      || $prow->leadContactId !== $this->contactXid))
                 || ($this->conf->setting("extrev_chairreq") ?? 0) < 0)) {
-            $whyNot["permission"] = "request_review";
+            $whyNot["permission"] = "review:request";
         } else {
             $whyNot["deadline"] = "extrev_chairreq";
             $whyNot["reviewRound"] = $round;
@@ -4210,7 +4210,7 @@ class Contact implements JsonSerializable {
             $whynot["administer"] = true;
         } else if ($u->contactId === $this->contactId
                    && !$u->can_view_paper($prow)) {
-            $whynot["permission"] = "view_paper";
+            $whynot["permission"] = "paper:view";
         } else {
             $whynot["unacceptableReviewer"] = true;
         }
@@ -4244,7 +4244,7 @@ class Contact implements JsonSerializable {
         } else if ($rights->conflictType > CONFLICT_MAXUNCONFLICTED) {
             $whyNot["conflict"] = true;
         } else if ($rights->reviewType === 0 && !$rights->allow_pc) {
-            $whyNot["permission"] = "review";
+            $whyNot["permission"] = "review:edit";
         } else if ($prow->timeWithdrawn > 0) {
             $whyNot["withdrawn"] = true;
         } else if ($prow->timeSubmitted <= 0) {
@@ -4297,9 +4297,9 @@ class Contact implements JsonSerializable {
             } else if ($rights->reviewType > 0) {
                 $whyNot["alreadyReviewed"] = true;
             } else if (!$rights->potential_reviewer) {
-                $whyNot["permission"] = "review";
+                $whyNot["permission"] = "review:edit";
             } else if (!$rights->allow_review) {
-                $whyNot["permission"] = "review";
+                $whyNot["permission"] = "review:edit";
                 $whyNot["conflict"] = true;
             } else if ($this->conf->setting("pcrev_any") <= 0) {
                 $whyNot["reviewNotAssigned"] = true;
@@ -4539,7 +4539,7 @@ class Contact implements JsonSerializable {
                    && !$rights->allow_review
                    && ($rights->conflictType < CONFLICT_AUTHOR
                        || ($this->conf->setting("cmt_author") ?? 0) <= 0)) {
-            $whyNot["permission"] = "comment";
+            $whyNot["permission"] = "comment:edit";
         } else if ($prow->timeWithdrawn > 0) {
             $whyNot["withdrawn"] = true;
         } else if ($prow->timeSubmitted <= 0) {
@@ -4588,7 +4588,7 @@ class Contact implements JsonSerializable {
         $whyNot = $prow->make_whynot();
         if (!$rights->allow_administer
             && $rights->conflictType < CONFLICT_AUTHOR) {
-            $whyNot["permission"] = "respond";
+            $whyNot["permission"] = "response:edit";
         } else if ($prow->timeWithdrawn > 0) {
             $whyNot["withdrawn"] = true;
         } else if ($prow->timeSubmitted <= 0) {
@@ -4983,7 +4983,7 @@ class Contact implements JsonSerializable {
         $whyNot = $prow->make_whynot();
         $whyNot["tag"] = $tag;
         if (!$this->isPC) {
-            $whyNot["permission"] = "change_tag";
+            $whyNot["permission"] = "tag:edit";
         } else if ($rights->conflictType > CONFLICT_MAXUNCONFLICTED) {
             $whyNot["conflict"] = true;
             if ($rights->allow_administer) {
@@ -5041,7 +5041,7 @@ class Contact implements JsonSerializable {
         $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
         if (!$this->isPC) {
-            $whyNot["permission"] = "change_tag";
+            $whyNot["permission"] = "tag:edit";
         } else if ($rights->conflictType > CONFLICT_MAXUNCONFLICTED) {
             $whyNot["conflict"] = true;
         } else if ($prow->timeWithdrawn > 0)  {

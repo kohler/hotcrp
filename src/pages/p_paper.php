@@ -341,7 +341,7 @@ class Paper_Page {
 
         if (!$this->user->can_administer($this->prow)
             && !$this->prow->has_author($this->user)) {
-            $conf->error_msg("<5>" . $this->prow->make_whynot(["permission" => "edit_contacts"])->unparse_html());
+            $conf->error_msg("<5>" . $this->prow->make_whynot(["permission" => "contact:edit"])->unparse_html());
             return;
         }
 

@@ -39,7 +39,7 @@ class Authors_PaperOption extends PaperOption {
         }
         $max_authors = $this->conf->opt("maxAuthors");
         if ($max_authors > 0 && $nreal > $max_authors) {
-            $ov->estop($this->conf->_("<0>A submission may have at most %d authors", $max_authors));
+            $ov->estop($this->conf->_("<0>A submission may have at most {0} authors", $max_authors));
         }
 
         $msg1 = $msg2 = false;

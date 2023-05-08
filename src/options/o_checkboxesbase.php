@@ -68,7 +68,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
 
         $badvs = $ov->anno("bad_values") ?? [];
         if (!empty($badvs)) {
-            $ov->warning($ps->_("<0>Values %#s not found", $badvs, new FmtArg("id", $this->readable_formid())));
+            $ov->warning($ps->_("<0>Values {:list} not found", $badvs, new FmtArg("id", $this->readable_formid())));
         }
     }
 
