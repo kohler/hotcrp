@@ -20,7 +20,7 @@ function handle_request_components($user, $qreq, $group, $pc) {
         }
     }
     if ($not_allowed && $qreq->is_post() && !$qreq->valid_token()) {
-        $user->conf->error_msg($user->conf->_id("badpost", ""));
+        $user->conf->error_msg($user->conf->_i("badpost"));
     }
     foreach ($reqgj as $gj) {
         if ($pc->call_function($gj, $gj->request_function, $gj) === false) {

@@ -113,7 +113,7 @@
     ["<5>Ignored blank reviews for {:list}", "<5>Ignored blank review for {:list}", ["#$1=1"]],
     ["<5>Ignored blank reviews for {:list}", "<5>Blank review form ignored", ["$2"]],
 
-    ["<0>Submissions %#Ns are totally hidden when viewing the site as another user.", "<0>Submission %#Ns is totally hidden when viewing the site as another user.", ["#$1=1"]],
+    ["<0>Submissions {:numlist} are totally hidden when viewing the site as another user.", "<0>Submission {:numlist} is totally hidden when viewing the site as another user.", ["#$1=1"]],
 
     ["<0>Disabled accounts %#s", "<0>Disabled account %#s", ["#$1=1"]],
     ["<0>Enabled accounts %#s", "<0>Enabled account %#s", ["#$1=1"]],
@@ -135,7 +135,9 @@
     ["eperm", "<0>Permission error.", "<0>You aren’t allowed to change tags for submission #{1}.", ["$1=change_tag"]],
     ["eperm", "<0>Permission error.", "<0>You aren’t allowed to view the {2[option_title]} field for submission #%2$d.", ["$1=view_option"]],
     ["eperm", "<0>Permission error.", "<0>You aren’t allowed to view the {2[option_title]} field.", ["$1=view_option", "$2<0"]],
-    ["eperm", "<5>You must <a href=\"{2:html}\">sign in</a> to access this page.", "<5><a href=\"{2:html}\">Sign in to your HotCRP account</a> to make changes.", ["$1=edit_paper"]],
+    {"id": "signin_required", "itext": "<5>You must <a href=\"{url}\">sign in</a> to access this page"},
+    {"id": "signin_required", "itext": "<0>You must sign in to access this page", "require": ["!{url}"]},
+    {"id": "signin_required", "itext": "<5><a href=\"{url}\">Sign in to your HotCRP account</a> to make changes", "require": ["{page}=paper:edit"]},
 
     ["etime", "<0>Action not available.", "<0>Authors can’t view reviews for submission #{1} now.", ["$1=au_seerev"]],
     ["etime", "<0>Action not available.", "<0>The site is not open for reviewing.", ["$1=rev_open"]],
@@ -174,6 +176,10 @@
     {"id": "badpost", "otext": "<0>Your browser session has changed since you last used this tab. Please try again."},
     {"id": "session_failed_error", "otext": "<0>You appear to have disabled cookies in your browser. This site requires cookies to function."},
 
-    {"id": "signin_error", "otext": "An account already exists for %2[email]$H. If that’s your account, <a href=\"%2[signin]$H\">sign in</a> using your password, or <a href=\"%2[forgotpassword]$H\">reset your password</a> if you forgot it.", "require": ["$1[userexists]"]},
-    {"id": "signin_error", "otext": "Incorrect password. Enter your password or <a href=\"%2[forgotpassword]$H\">reset your password</a> if you forgot it.", "require": ["$1[invalid]", "$1[can_reset]"], "priority": 1}
+    {"id": "signin_error", "itext": "{message:ftext}"},
+    {"id": "signin_error", "itext": "<5>{message:ftext}. Double-check the email address, or <a href=\"{newaccount}\">create that account</a> if you’d like.", "require": ["{context}=no_account", "{newaccount}"]},
+    {"id": "signin_error", "itext": "<5>{message:ftext}. Use <a href=\"{forgotpassword}\">“Forgot your password?”</a> to reset it.", "require": ["{context}=password_expired", "{forgotpassword}"]},
+    {"id": "signin_error", "itext": "<5>{message:ftext}. If that’s your account, <a href=\"{signin}\">sign in</a> using your password.", "require": ["{context}=account_exists", "{signin}"]},
+    {"id": "signin_error", "itext": "<5>{message:ftext}. If that’s your account, <a href=\"{signin}\">sign in</a> using your password, or <a href=\"{forgotpassword}\">reset your password</a> if you have forgotten it.", "require": ["{context}=account_exists", "{forgotpassword}"]},
+    {"id": "signin_error", "itext": "<5>{message:ftext}. Enter your password or <a href=\"{forgotpassword}\">reset your password</a> if you have forgotten it.", "require": ["{context}=bad_password", "{forgotpassword}"], "priority": 1}
 ]

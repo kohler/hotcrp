@@ -17,7 +17,8 @@ class PaperRequest {
         }
     }
 
-    /** @return PaperRequest|Redirection|PermissionProblem */
+    /** @param bool $review
+     * @return PaperRequest|Redirection|PermissionProblem */
     static function make(Qrequest $qreq, $review) {
         try {
             return new PaperRequest($qreq, $review);
@@ -28,6 +29,7 @@ class PaperRequest {
         }
     }
 
+    /** @return bool */
     static function simple_qreq(Qrequest $qreq) {
         return ($qreq->is_get() || $qreq->is_head())
             && !array_diff($qreq->keys(), ["p", "paperId", "m", "mode", "forceShow", "t", "q", "r", "reviewId", "cap", "actas", "accept", "decline"]);

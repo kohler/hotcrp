@@ -206,7 +206,7 @@ class LoginHelper {
         // Check for the cookie
         if (!$qreq->has_gsession("v")) {
             $user->conf->feedback_msg([
-                MessageItem::error($user->conf->_id("session_failed_error", ""))
+                MessageItem::error($user->conf->_i("session_failed_error"))
             ]);
             return;
         }
@@ -240,9 +240,16 @@ class LoginHelper {
 
         $cdbu = $user->cdb_user();
         if ($cdbu && !$cdbu->password_unset()) {
-            return ["ok" => false, "email" => true, "userexists" => true, "contactdb" => true];
+            return [
+                "ok" => false, "email" => true, "userexists" => true,
+                "can_reset" => $cdbu->can_reset_password(),
+                "contactdb" => true
+            ];
         } else if (!$user->password_unset()) {
-            return ["ok" => false, "email" => true, "userexists" => true];
+            return [
+                "ok" => false, "email" => true, "userexists" => true,
+                "can_reset" => $user->can_reset_password()
+            ];
         } else if (!validate_email($qreq->email)) {
             return ["ok" => false, "email" => true, "invalidemail" => true];
         } else if (!$user->has_account_here() && !$user->store()) {
@@ -326,46 +333,54 @@ class LoginHelper {
      * @return void */
     static function login_error(Conf $conf, $email, $info, $ms) {
         $email = trim($email ?? "");
-        $xemail = $email === "" ? null : $email;
-        if (isset($info["ldap"]) && isset($info["detail_html"])) {
-            $e = $info["detail_html"];
+        $args = [];
+        $e = "";
+        if (isset($info["ldap"]) && isset($info["ldap_detail"])) {
+            $e = $info["ldap_detail"];
         } else if (isset($info["noemail"])) {
-            $e = $conf->opt("ldapLogin") ? "Enter your username." : "Enter your email address.";
+            $e = $conf->opt("ldapLogin") ? "<0>Enter your username" : "<0>Enter your email address";
         } else if (isset($info["invalidemail"])) {
-            $e = "Enter a valid email address.";
+            $e = "<0>Enter a valid email address";
         } else if (isset($info["nocreate"])) {
-            $e = "Users can’t self-register for this site.";
+            $e = "<0>Users can’t self-register for this site";
         } else if (isset($info["noreset"])) {
-            $e = "Password reset links aren’t used for this site. Contact your system administrator if you’ve forgotten your password.";
+            $e = "<0>Password reset links aren’t used for this site. Contact your system administrator if you’ve forgotten your password.";
         } else if (isset($info["nologin"])) {
-            $e = "User %2[email]\$H cannot sign in to the site.";
+            $e = "<0>User {$email} is not allowed to sign in to this site";
         } else if (isset($info["userexists"])) {
-            $e = "Incorrect password.";
+            $e = "<0>User {$email} already has an account on this site";
+            $args[] = new FmtArg("context", "account_exists");
         } else if (isset($info["unset"])) {
-            if ($conf->allow_user_self_register()) {
-                $e = "User %2[email]\$H does not have an account. Check the email address or <a href=\"%2[newaccount]\$H\">create that account</a>.";
-            } else {
-                $e = "User %2[email]\$H does not have an account. Check the email address.";
+            $e = "<0>User {$email} does not have an account";
+            $args[] = new FmtArg("context", "no_account");
+            if ($conf->allow_user_self_register() && $email !== "") {
+                $args[] = new FmtArg("newaccount", $conf->hoturl_raw("newaccount", ["email" => $email]));
             }
         } else if (isset($info["disabled"])) {
-            $e = "Your account on this site is disabled. Contact the site administrator for more information.";
+            $e = "<0>Your account on this site is disabled. Contact the site administrator for more information.";
         } else if (isset($info["reset"])) {
-            $e = "Your password has expired. Use <a href=\"%2[forgotpassword]\$H\">“Forgot your password?”</a> to reset it.";
+            $e = "<0>Your password has expired";
+            $args[] = new FmtArg("context", "password_expired");
         } else if (isset($info["nopw"])) {
-            $e = "Enter your password.";
+            $e = "<0>Enter your password";
         } else if (isset($info["nopost"])) {
-            $e = "Automatic login links have been disabled for security. Use this form to sign in.";
+            $e = "<0>Automatic login links have been disabled for security. Use this form to sign in.";
         } else if (isset($info["internal"])) {
-            $e = "Internal error.";
+            $e = "<0>Internal error";
         } else {
-            $e = "Incorrect password.";
+            $e = "<0>Incorrect password";
         }
-        $e = $conf->_id("signin_error", $e, $info, [
-            "email" => $email,
-            "signin" => $conf->hoturl_raw("signin", ["email" => $xemail]),
-            "forgotpassword" => $conf->hoturl_raw("forgotpassword", ["email" => $xemail]),
-            "newaccount" => $conf->hoturl_raw("newaccount", ["email" => $xemail])
-        ]);
+        if ($email !== "") {
+            $args[] = new FmtArg("email", $email, 0);
+            $args[] = new FmtArg("signin", $conf->hoturl_raw("signin", ["email" => $email]), 0);
+            if (isset($info["can_reset"])) {
+                $args[] = new FmtArg("forgotpassword", $conf->hoturl_raw("forgotpassword", ["email" => $email]), 0);
+            }
+        }
+        if (isset($info["invalid"]) && !Fmt::find_arg($args, "context")) {
+            $args[] = new FmtArg("context", "bad_password");
+        }
+        $e = $conf->_i("signin_error", new FmtArg("message", $e), ...$args);
         $ms->error_at(isset($info["email"]) ? "email" : "password", $e);
         if (isset($info["password"])) {
             $ms->error_at("password");

@@ -33,9 +33,9 @@ class Signin_Page {
         }
         $qreq->open_session();
         if ($qreq->post_retry) {
-            $user->conf->error_msg($user->conf->_id("session_failed_error", ""));
+            $user->conf->error_msg($user->conf->_i("session_failed_error"));
         } else {
-            $user->conf->warning_msg($user->conf->_id("badpost", ""));
+            $user->conf->warning_msg($user->conf->_i("badpost"));
         }
     }
 

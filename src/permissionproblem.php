@@ -178,7 +178,7 @@ class PermissionProblem extends Exception
         }
         if (isset($this->_a["signin"])) {
             $url = $this->_a["signinUrl"] ?? $this->conf->hoturl_raw("signin");
-            $ms[] = $this->conf->_c("eperm", "<5>You must <a href=\"{2:html}\">sign in</a> to access this page.", $this->_a["signin"], $paperId, $url);
+            $ms[] = $this->conf->_i("signin_required", new FmtArg("url", $url, 0), new FmtArg("page", $this->_a["signin"]));
         }
         if ($this->_a["withdrawn"] ?? false) {
             $ms[] = $this->conf->_("<0>Submission #{} has been withdrawn.", $paperId);

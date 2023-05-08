@@ -8,7 +8,7 @@ class LDAPLogin {
             $conf->opt("ldapLogin"), $m)) {
             return [
                 "ok" => false, "ldap" => true, "internal" => true, "email" => true,
-                "detail_html" => "Internal error: <code>" . htmlspecialchars($conf->opt("ldapLogin")) . "</code> syntax error; expected “<code><i>LDAP-URL</i> <i>distinguished-name</i></code>”, where <code><i>distinguished-name</i></code> contains a <code>*</code> character to be replaced by the user's email address.  Logins will fail until this error is fixed."
+                "ldap_detail" => "<5>Internal error: <code>" . htmlspecialchars($conf->opt("ldapLogin")) . "</code> syntax error; expected “<code><i>LDAP-URL</i> <i>distinguished-name</i></code>”, where <code><i>distinguished-name</i></code> contains a <code>*</code> character to be replaced by the user's email address.  Logins will fail until this error is fixed."
             ];
         }
 
@@ -21,7 +21,7 @@ class LDAPLogin {
         if (!$ldapc) {
             return [
                 "ok" => false, "ldap" => true, "internal" => true, "email" => true,
-                "detail_html" => "Internal error: ldap_connect. Logins disabled until this error is fixed."
+                "ldap_detail" => "<5>Internal error: ldap_connect. Logins disabled until this error is fixed."
             ];
         }
         @ldap_set_option($ldapc, LDAP_OPT_PROTOCOL_VERSION, 3);
@@ -70,24 +70,24 @@ class LDAPLogin {
         $lerrno = ldap_errno($ldapc);
         $suffix = "";
         if ($lerrno != 49) {
-            $suffix = "<br><span class='hint'>(LDAP error $lerrno: " . htmlspecialchars(ldap_err2str($lerrno)) . ")</span>";
+            $suffix = "<br><span class='hint'>(LDAP error {$lerrno}: " . htmlspecialchars(ldap_err2str($lerrno)) . ")</span>";
         }
 
         if ($lerrno < 5) {
             return [
                 "ok" => false, "ldap" => true, "internal" => true, "email" => true,
-                "detail_html" => "LDAP protocol error. Logins will fail until this error is fixed.$suffix"
+                "ldap_detail" => "<5>LDAP protocol error. Logins will fail until this error is fixed.$suffix"
             ];
         } else if ((string) $qreq->password === "") {
             return [
                 "ok" => false, "ldap" => true, "nopw" => true,
-                "detail_html" => "Password missing." . ($lerrno == 53 ? "" : $suffix)
+                "ldap_detail" => "<5>Password missing." . ($lerrno == 53 ? "" : $suffix)
             ];
         } else {
             return [
                 "ok" => false, "ldap" => true, "invalid" => true,
                 "email" => true, "password" => true,
-                "detail_html" => "Invalid credentials. Please use your LDAP username and password.$suffix"
+                "ldap_detail" => "<5>Invalid credentials. Please use your LDAP username and password.{$suffix}"
             ];
         }
     }

@@ -538,10 +538,23 @@ class Fmt {
                 if ($m[3] === ":url") {
                     $value = urlencode($value);
                 } else if ($m[3] === ":html") {
-                    $value = htmlspecialchars($value);
+                    if (!$fa || $fctx->format !== 5) {
+                        $value = htmlspecialchars($value);
+                    }
                 } else if ($m[3] === ":list") {
                     assert(is_array($value));
                     $value = commajoin($value);
+                } else if ($m[3] === ":numlist") {
+                    assert(is_array($value));
+                    $value = numrangejoin($value);
+                } else if ($m[3] === ":ftext") {
+                    if ($pos !== 0) {
+                        list($value_fmt, $value) = Ftext::parse($value);
+                        $my_fmt = Ftext::format($s);
+                        if ($my_fmt !== null && $my_fmt !== ($value_fmt ?? 0)) {
+                            $value = Ftext::convert($value, $value_fmt, $my_fmt);
+                        }
+                    }
                 }
                 return [$pos + strlen($m[0]), $value];
             }
@@ -624,8 +637,7 @@ class Fmt {
     }
 
     /** @param string $id
-     * @return string
-     * @deprecated */
+     * @return string */
     function _i($id, ...$args) {
         $itext = "";
         if (($im = $this->find(null, $id, $args, null))) {
@@ -636,7 +648,8 @@ class Fmt {
 
     /** @param string $id
      * @param string $itext
-     * @return string */
+     * @return string
+     * @deprecated */
     function _id($id, $itext, ...$args) {
         if (($im = $this->find(null, $id, $args, null))) {
             $itext = $im->otext;

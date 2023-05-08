@@ -53,7 +53,7 @@ class ReviewPrefs_Page {
 
         $qreq->print_header("Review preferences", "revpref");
 
-        if (($prefdesc = $conf->_id("revprefdescription", "", $conf->has_topics()))) {
+        if (($prefdesc = $conf->_i("revprefdescription", $conf->has_topics()))) {
             echo '<div class="msg demargin remargin-left remargin-right">',
                 $prefdesc, '</div>';
         }

@@ -1591,12 +1591,13 @@ class Contact implements JsonSerializable {
                 // Preserve post values across session expiration.
                 $qreq->open_session();
                 $qreq->set_gsession("login_bounce", [$this->conf->session_key, $url, $qreq->page(), $_POST, Conf::$now + 120]);
-                $ml = [MessageItem::error("<0>You must sign in to access that page")];
-                $ml[] = MessageItem::inform("<0>Your changes were not saved. After signing in, you may try to submit them again");
-                $this->conf->feedback_msg($ml);
+                $this->conf->feedback_msg([
+                    MessageItem::error($this->conf->_i("signin_required", new FmtArg("page", $qreq->page()))),
+                    MessageItem::inform("<0>Your changes were not saved. After signing in, you may try to submit them again")
+                ]);
                 $this->conf->redirect();
             } else {
-                Multiconference::fail($qreq, 403, "<5>You must <a href=\"" . $this->conf->hoturl("signin", ["redirect" => $url]) . "\">sign in</a> to access this page");
+                Multiconference::fail($qreq, 403, $this->conf->_i("signin_required", new FmtArg("page", $qreq->page()), new FmtArg("url", $this->conf->hoturl_raw("signin", ["redirect" => $url]), 0)));
             }
         }
     }
@@ -3255,7 +3256,7 @@ class Contact implements JsonSerializable {
         $whyNot = $prow->make_whynot();
         if (!$rights->allow_author_edit) {
             if ($rights->allow_author_view) {
-                $whyNot["signin"] = "edit_paper";
+                $whyNot["signin"] = "paper:edit";
             } else {
                 $whyNot["author"] = true;
             }
@@ -3410,7 +3411,7 @@ class Contact implements JsonSerializable {
         } else {
             $whynot["permission"] = "view_paper";
             if ($this->is_empty()) {
-                $whynot["signin"] = "view_paper";
+                $whynot["signin"] = "paper";
             }
         }
         return $whynot;
@@ -3464,7 +3465,7 @@ class Contact implements JsonSerializable {
             && !$rights->allow_pc_broad) {
             $whyNot["permission"] = "view_paper";
             if ($this->is_empty()) {
-                $whyNot["signin"] = "view_paper";
+                $whyNot["signin"] = "paper";
             }
         } else {
             if ($prow->timeWithdrawn > 0) {
@@ -4370,7 +4371,7 @@ class Contact implements JsonSerializable {
         if ($this->privChair || !$this->conf->opt("clickthrough_{$ctype}"))  {
             return true;
         }
-        $csha1 = sha1($this->conf->_id("clickthrough_{$ctype}", ""));
+        $csha1 = sha1($this->conf->_i("clickthrough_{$ctype}"));
         $data = $this->data("clickthrough");
         return ($data && ($data->$csha1 ?? null))
             || ($prow

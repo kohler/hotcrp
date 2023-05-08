@@ -582,7 +582,7 @@ class Assign_Page {
             Ht::form($this->conf->hoturl("=assign", "p=$prow->paperId"), ["novalidate" => true]),
             "<h2 class=\"revcard-head\" id=\"external-reviews\">", $req, "</h2><div class=\"revcard-body\">";
 
-        echo '<p class="w-text">', $this->conf->_id("external_review_request_description", "");
+        echo '<p class="w-text">', $this->conf->_i("external_review_request_description");
         if ($user->allow_administer($prow)) {
             echo "\nTo create an anonymous review with a review token, leave Name and Email blank.";
         }

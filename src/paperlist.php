@@ -2027,7 +2027,7 @@ class PaperList {
         }
         if ($this->_bulkwarn_count >= 4
             && !isset($this->table_attr["data-bulkwarn-ftext"])
-            && ($m = $this->conf->_id("submission_bulk_warning", "")) !== "") {
+            && ($m = $this->conf->_i("submission_bulk_warning")) !== "") {
             $this->table_attr["data-bulkwarn-ftext"] = Ftext::ensure($m, 5);
         }
 

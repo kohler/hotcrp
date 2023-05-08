@@ -175,7 +175,7 @@ class Home_Page {
     }
 
     function print_message() {
-        if (($t = $this->conf->_id("home", ""))) {
+        if (($t = $this->conf->_i("home"))) {
             echo '<div class="msg ',
                 $this->_has_sidebar ? 'avoid-home-sidebar' : 'maxw-auto',
                 ' mb-5">', $t, '</div>';

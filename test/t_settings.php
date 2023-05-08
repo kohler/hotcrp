@@ -1310,7 +1310,7 @@ class Settings_Tester {
 
     function test_terms_exist() {
         xassert_eqq($this->conf->opt("clickthrough_submit"), null);
-        xassert_eqq($this->conf->_id("clickthrough_submit", ""), "");
+        xassert_eqq($this->conf->_i("clickthrough_submit"), "");
 
         $sv = SettingValues::make_request($this->u_chair, [
             "submission_terms" => ""
@@ -1318,7 +1318,7 @@ class Settings_Tester {
         xassert($sv->execute());
         xassert_eqq($sv->changed_keys(), []);
         xassert_eqq($this->conf->opt("clickthrough_submit"), null);
-        xassert_eqq($this->conf->_id("clickthrough_submit", ""), "");
+        xassert_eqq($this->conf->_i("clickthrough_submit"), "");
 
         $sv = SettingValues::make_request($this->u_chair, [
             "submission_terms" => "xxx"
@@ -1326,7 +1326,7 @@ class Settings_Tester {
         xassert($sv->execute());
         xassert_eqq($sv->changed_keys(), ["opt.clickthrough_submit", "msg.clickthrough_submit"]);
         xassert_neqq($this->conf->opt("clickthrough_submit"), null);
-        xassert_eqq($this->conf->_id("clickthrough_submit", ""), "xxx");
+        xassert_eqq($this->conf->_i("clickthrough_submit"), "xxx");
 
         $sv = SettingValues::make_request($this->u_chair, [
             "submission_terms" => "xxx"
@@ -1334,7 +1334,7 @@ class Settings_Tester {
         xassert($sv->execute());
         xassert_eqq($sv->changed_keys(), []);
         xassert_neqq($this->conf->opt("clickthrough_submit"), null);
-        xassert_eqq($this->conf->_id("clickthrough_submit", ""), "xxx");
+        xassert_eqq($this->conf->_i("clickthrough_submit"), "xxx");
 
         $sv = SettingValues::make_request($this->u_chair, [
             "submission_terms" => ""
@@ -1342,7 +1342,7 @@ class Settings_Tester {
         xassert($sv->execute());
         xassert_eqq($sv->changed_keys(), ["opt.clickthrough_submit", "msg.clickthrough_submit"]);
         xassert_eqq($this->conf->opt("clickthrough_submit"), null);
-        xassert_eqq($this->conf->_id("clickthrough_submit", ""), "");
+        xassert_eqq($this->conf->_i("clickthrough_submit"), "");
     }
 
     static function unexpected_unified_diff($x, $y) {

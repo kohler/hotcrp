@@ -1815,7 +1815,7 @@ class PaperTable {
                 $t[] = $this->conf->_("Submissions must be completed by %s.", $this->conf->unparse_time_long($sr->update));
             }
             $this->_main_message("<5>" . join(" ", $t), 0);
-            if (($v = $this->conf->_id("submit", ""))) {
+            if (($v = $this->conf->_i("submit"))) {
                 if (!Ftext::is_ftext($v)) {
                     $v = "<5>$v";
                 }
@@ -1870,7 +1870,7 @@ class PaperTable {
         } else if ($this->conf->allow_final_versions()
                    && $viewable_decision->sign > 0) {
             if ($this->user->can_edit_paper($this->prow)) {
-                if (($t = $this->conf->_id("finalsubmit", "", new FmtArg("deadline", $this->deadline_setting_is("final_soft"))))) {
+                if (($t = $this->conf->_i("finalsubmit", new FmtArg("deadline", $this->deadline_setting_is("final_soft"))))) {
                     $this->_main_message("<5>" . $t, MessageSet::SUCCESS);
                 }
             } else if ($this->mode === "edit") {
@@ -1924,7 +1924,7 @@ class PaperTable {
             $this->_main_message("<5>You aren’t a contact for this submission, but as an administrator you can still make changes.", MessageSet::MARKED_NOTE);
         }
         if ($this->user->can_edit_paper($this->prow)
-            && ($v = $this->conf->_id("submit", ""))) {
+            && ($v = $this->conf->_i("submit"))) {
             if (!Ftext::is_ftext($v)) {
                 $v = "<5>$v";
             }
@@ -2177,7 +2177,7 @@ class PaperTable {
     }
 
     static private function _print_clickthrough($ctype) {
-        $data = Conf::$main->_id("clickthrough_{$ctype}", "");
+        $data = Conf::$main->_i("clickthrough_{$ctype}");
         $buttons = [Ht::submit("Agree", ["class" => "btnbig btn-success ui js-clickthrough"])];
         echo Ht::form("", ["class" => "ui"]), '<div>', $data,
             Ht::hidden("clickthrough_type", $ctype),
