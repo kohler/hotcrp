@@ -109,10 +109,10 @@ class MailSender {
         }
         $null_mailer = self::null_mailer($qreq->user());
         if ($reset_all || !isset($qreq->subject)) {
-            $qreq->subject = $null_mailer->expand($template["subject"]);
+            $qreq->subject = $null_mailer->expand($template["subject"], "subject");
         }
         if ($reset_all || !isset($qreq->body)) {
-            $qreq->body = $null_mailer->expand($template["body"]);
+            $qreq->body = $null_mailer->expand($template["body"], "body");
         }
     }
 

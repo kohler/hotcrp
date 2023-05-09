@@ -4425,7 +4425,7 @@ function render_mail_preview(e, mp, fields) {
         if (f === "recipients") {
             if (!mp.recipient_description)
                 continue;
-            e1 = make_field_div("Recipients:", mp.recipient_description);
+            e1 = make_field_div("To:", mp.recipient_description);
         } if (f === "subject" || f === "to" || f === "cc" || f === "reply-to") {
             e1 = make_field_div({subject: "Subject:", to: "To:", cc: "Cc:", "reply-to": "Reply-to:"}[f], mp[f]);
         } else if (f === "body") {
@@ -4479,13 +4479,28 @@ handle_ui.on("js-choose-mail-preview", function () {
 
 // mail
 handle_ui.on("change.js-mail-recipients", function () {
-    var plimit = this.form.elements.plimit;
+    var plimit = this.form.elements.plimit,
+        toelt = this.form.elements.to,
+        recip = toelt.options[toelt.selectedIndex],
+        subjelt = this.form.elements.subject,
+        bodyelt = this.form.elements.body;
     foldup.call(this, null, {open: !plimit || plimit.checked, n: 8});
-    var toelt = this.form.elements.to,
-        sopt = toelt.options[toelt.selectedIndex];
-    if (sopt) {
-        foldup.call(this, null, {open: !hasClass(sopt, "mail-want-no-papers"), n: 9});
-        foldup.call(this, null, {open: hasClass(sopt, "mail-want-since"), n: 10});
+    if (!recip) {
+        return;
+    }
+    foldup.call(this, null, {open: !hasClass(recip, "mail-want-no-papers"), n: 9});
+    foldup.call(this, null, {open: hasClass(recip, "mail-want-since"), n: 10});
+    if (!recip.hasAttribute("data-default-message")
+        || !subjelt || !bodyelt || input_differs(subjelt) || input_differs(bodyelt)) {
+        return;
+    }
+    var dm = JSON.parse(this.form.getAttribute("data-default-messages")),
+        dmt = recip.getAttribute("data-default-message");
+    if (dm && dm[dmt] && dm[dmt].subject !== subjelt.value) {
+        subjelt.value = subjelt.defaultValue = dm[dmt].subject;
+    }
+    if (dm && dm[dmt] && dm[dmt].body !== bodyelt.value) {
+        bodyelt.value = bodyelt.defaultValue = dm[dmt].body;
     }
 });
 

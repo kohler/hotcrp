@@ -345,7 +345,25 @@ class Mail_Page {
     }
 
     function print_form() {
-        echo Ht::form($this->conf->hoturl("=mail", ["check" => 1, "monreq" => $this->qreq->monreq]), ["id" => "mailform"]),
+        // default messages
+        $nullm = MailSender::null_mailer($this->viewer);
+        $defprefix = "[{$this->conf->short_name}] ";
+        $templates = [];
+        foreach ($this->recip->default_messages() as $dm) {
+            if (($template = $this->conf->mail_template($dm))) {
+                $s = $nullm->expand($template->subject, "subject");
+                if (str_starts_with($s, $defprefix)) {
+                    $s = substr($s, strlen($defprefix));
+                }
+                $b = $nullm->expand($template->body, "body");
+                $templates[$dm] = ["subject" => $s, "body" => $b];
+            }
+        }
+
+        echo Ht::form($this->conf->hoturl("=mail", ["check" => 1, "monreq" => $this->qreq->monreq]), [
+                "id" => "mailform",
+                "data-default-messages" => json_encode_browser((object) $templates)
+            ]),
             Ht::hidden("defaultfn", ""),
             Ht::hidden_default_submit("default", 1);
 
