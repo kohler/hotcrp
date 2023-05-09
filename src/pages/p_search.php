@@ -86,7 +86,7 @@ class Search_Page {
         foreach ($this->conf->options() as $ox) {
             if ($ox->search_keyword() !== false
                 && $ox->on_render_context(FieldRender::CFSUGGEST)
-                && $pl->has("opt$ox->id")) {
+                && $pl->has("opt{$ox->id}")) {
                 $this->checkbox_item(10, $ox->search_keyword(), $ox->name);
             }
         }

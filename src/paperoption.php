@@ -421,7 +421,7 @@ class PaperOption implements JsonSerializable {
     /** @var int
      * @readonly */
     public $id;
-    /** @var ?string
+    /** @var string
      * @readonly */
     public $name;
     /** @var string
@@ -518,9 +518,9 @@ class PaperOption implements JsonSerializable {
         assert($args->id > 0 || $args->id === -4 || isset($args->json_key));
         $this->conf = $conf;
         $this->id = (int) $args->id;
-        $this->name = $args->name ?? null;
+        $this->name = $args->name ?? "";
         $this->title = $args->title ?? null;
-        if ($this->title === null && $this->id > 0) {
+        if ($this->title === null && $this->name !== "" && $this->id > 0) {
             $this->title = $this->name;
         }
         $this->type = $args->type ?? null;
@@ -660,7 +660,7 @@ class PaperOption implements JsonSerializable {
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
         $bp = $b->page_order();
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
-        return $ap <=> $bp ? : (strcasecmp($a->title, $b->title) ? : $a->id <=> $b->id);
+        return $ap <=> $bp ? : (strcasecmp($a->name, $b->name) ? : $a->id <=> $b->id);
     }
 
     /** @param PaperOption $a
@@ -670,7 +670,7 @@ class PaperOption implements JsonSerializable {
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
         $bp = $b->form_order;
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
-        return $ap <=> $bp ? : (strcasecmp($a->title, $b->title) ? : $a->id <=> $b->id);
+        return $ap <=> $bp ? : (strcasecmp($a->name, $b->name) ? : $a->id <=> $b->id);
     }
 
     /** @param string $s
@@ -769,7 +769,7 @@ class PaperOption implements JsonSerializable {
     /** @return string */
     function json_key() {
         if ($this->_json_key === null) {
-            if ($this->name !== null) {
+            if ($this->name !== "") {
                 $am = $this->abbrev_matcher();
                 $e = AbbreviationEntry::make_lazy($this->name, [$this->conf->options(), "option_by_id"], [$this->id], Conf::MFLAG_OPTION);
                 $this->_json_key = $am->find_entry_keyword($e, AbbreviationMatcher::KW_UNDERSCORE | AbbreviationMatcher::KW_FULLPHRASE);
@@ -995,7 +995,10 @@ class PaperOption implements JsonSerializable {
     #[\ReturnTypeWillChange]
     /** @return object */
     function jsonSerialize() {
-        $j = (object) ["id" => (int) $this->id, "name" => $this->name];
+        $j = (object) ["id" => (int) $this->id];
+        if ($this->name !== "") {
+            $j->name = $this->name;
+        }
         if ($this->type !== null) {
             $j->type = $this->type;
         }
