@@ -7101,12 +7101,13 @@ function suggest() {
         hintdiv, hintinfo, blurring = false, hiding = false,
         wasnav = 0, spacestate = -1, wasmouse = null;
 
-    function kill() {
+    function kill(success) {
         hintdiv && hintdiv.remove();
         hintdiv = hintinfo = wasmouse = null;
         blurring = hiding = false;
         wasnav = 0;
-        spacestate = -1;
+        if (!success)
+            spacestate = -1;
     }
 
     function render_item(titem, prepend) {
@@ -7142,8 +7143,10 @@ function suggest() {
     }
 
     function finish_display(cinfo) {
-        if (!cinfo || !cinfo.list.length)
-            return kill();
+        if (!cinfo || !cinfo.list.length) {
+            kill();
+            return;
+        }
         var caretpos = elt.selectionStart,
             precaretpos = caretpos - cinfo.lengths[0];
         if (hiding && hiding === elt.value.substring(precaretpos, caretpos))
@@ -7263,6 +7266,8 @@ function suggest() {
         if (hintinfo.postreplace)
             hintinfo.postreplace(elt, repl, startPos);
         $(elt).trigger("input");
+
+        kill(true);
     }
 
     function move_active(k) {
@@ -7328,9 +7333,7 @@ function suggest() {
             }
         } else if ((k === "Tab" || k === "Enter") && !m && hintdiv) {
             var $active = hintdiv.self().find(".s9y");
-            if ($active.length)
-                do_complete($active[0]);
-            kill();
+            $active.length ? do_complete($active[0]) : kill();
             if ($active.length || this.selectionEnd !== this.value.length) {
                 evt.preventDefault();
                 handle_ui.stopImmediatePropagation(evt);
@@ -7342,7 +7345,7 @@ function suggest() {
                 && event_key.printable(evt)
                 && elt.selectionStart === elt.selectionEnd
                 && elt.selectionStart === pspacestate
-                && elt.value[pspacestate - 1] === " "
+                && elt.value.charCodeAt(pspacestate - 1) === 32
                 && punctre.test(k)) {
                 elt.setRangeText(k, pspacestate - 1, pspacestate, "end");
                 evt.preventDefault();
@@ -7359,7 +7362,6 @@ function suggest() {
 
     function click(evt) {
         do_complete(this);
-        kill();
         handle_ui.stopPropagation(evt);
     }
 
