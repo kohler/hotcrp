@@ -351,7 +351,7 @@ class Mail_Page {
 
         $this->print_template();
 
-        echo '<fieldset class="mail-editor fold8c fold9o fold10c" style="float:left;margin:4px 1em 1em 0" id="foldpsel">';
+        echo '<fieldset class="mail-editor fold8c fold9o fold10c main-width" style="float:left;margin:4px 1em 1em 0" id="foldpsel">';
 
         // ** TO
         echo '<div class="mail-field mb-3">',

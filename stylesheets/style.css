@@ -151,8 +151,12 @@ textarea, .textarea {
 	border: 1px solid silver;
 	padding: 3px 5px;
 }
-form {
+form, fieldset {
 	margin: 0;
+}
+fieldset {
+	border: 1px solid #9999cc;
+	border-radius: 4px;
 }
 ul.x {
 	margin: 0 0 1em;
@@ -1232,12 +1236,8 @@ a.closebtn {
 	border-radius: 0;
 }
 
-fieldset {
-	border: 1px solid #9999cc;
-	border-radius: 4px;
-}
 @media screen and (min-width: 1024px) {
-fieldset {
+fieldset.form-g, .main-width, .settings-sf, .settings-rf {
 	width: min-content;
 	min-width: 800px;
 }
@@ -1694,22 +1694,21 @@ th.settings-simplehead {
 	margin-top: 0;
 	margin-bottom: 0;
 }
-.settings-rf, .settings-sf {
+.settings-sf, .settings-rf {
 	position: relative;
 	border: 1px solid silver;
 	border-radius: 5px;
 	margin-top: 1.5em;
 	margin-bottom: 1.5em;
-	width: min-content;
-	min-width: 800px;
 	transition: opacity 0.5s;
 	background-color: white;
 }
-.settings-rf.fold2c, .settings-sf.fold2c, .mail-preview-send,
-.mail-editor {
+.settings-sf.fold2c, .settings-rf.fold2c,
+.mail-preview-send, .mail-editor {
 	background-color: #f9fbfb;
 }
-.settings-rf.fold2c:hover, .settings-sf.fold2c:hover, .mail-preview-send:hover {
+.settings-sf.fold2c:hover, .settings-rf.fold2c:hover,
+.mail-preview-send:hover {
 	border-color: #a5a5a5;
 	background-color: #ecf2f4;
 }
@@ -1745,11 +1744,11 @@ hr.dropmark {
 .settings-sf:hover .settings-draghandle, .settings-rf:hover .settings-draghandle {
 	opacity: 0.5;
 }
-.settings-rf.drag-would-keep, .settings-sf.drag-would-keep {
+.settings-sf.drag-would-keep, .settings-rf.drag-would-keep {
 	opacity: 0.75;
 	border-color: #c07700 !important;
 }
-.settings-rf.drag-would-move, .settings-sf.drag-would-move {
+.settings-sf.drag-would-move, .settings-rf.drag-would-move {
 	opacity: 0.25 !important;
 	border-color: silver !important;
 }
@@ -4562,7 +4561,6 @@ body {
 }
 .modal .mail-preview {
 	max-height: 75vh;
-	width: 100%;
 	overflow-y: auto;
 }
 .mail-editor {

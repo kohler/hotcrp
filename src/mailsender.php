@@ -405,7 +405,7 @@ class MailSender {
             $show_prep->finalize();
         }
 
-        echo '<fieldset class="mail-preview-send uimd ui js-click-child';
+        echo '<fieldset class="mail-preview-send main-width uimd ui js-click-child';
         if (!$this->sending) {
             echo ' d-flex"><div class="pr-2">',
                 Ht::checkbox(self::prep_key($prep), 1, true, [

@@ -75,13 +75,13 @@ class Ht {
                     || ($v === "" && $t === self::ATTR_NOEMPTY)) {
                     // nothing
                 } else if ($t === self::ATTR_BOOL) {
-                    $x .= ($v ? " $k" : "");
+                    $x .= ($v ? " {$k}" : "");
                 } else if ($t === self::ATTR_BOOLTEXT && is_bool($v)) {
-                    $x .= " $k=\"" . ($v ? "true" : "false") . "\"";
+                    $x .= " {$k}=\"" . ($v ? "true" : "false") . "\"";
                 } else if ($v === "") {
-                    $x .= " $k";
+                    $x .= " {$k}";
                 } else {
-                    $x .= " $k=\"" . str_replace("\"", "&quot;", $v) . "\"";
+                    $x .= " {$k}=\"" . str_replace("\"", "&quot;", $v) . "\"";
                 }
             }
         }
