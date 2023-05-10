@@ -6989,7 +6989,7 @@ function completion_item(c) {
         return {s: c[0], d: c[1]};
     else {
         if (!("s" in c) && "sm1" in c) {
-            c = $.extend({s: c.sm1, reqlen: 1}, c);
+            c = $.extend({s: c.sm1, ml: 1}, c);
             delete c.sm1;
         }
         return c;
@@ -7008,15 +7008,23 @@ function make_suggestions(precaret, postcaret, options) {
     // The region around the caret is divided into three parts:
     //     ... precaret ^ postcaret options.suffix ...
     // * `precaret`, `postcaret`: Only highlight completion items that start
-    //   with `precaret + postcaret`.
+    //   with `precaret + postcaret`. `precaret + postcaret` is collectively
+    //   called the match region.
     // * `options.suffix`: After successful completion, caret skips over this.
-    // `precaret + postcaret` is collectively called the match region.
     //
     // Other options:
-    // * `options.case_sensitive`: If truthy, match is case sensitive.
-    // * `options.reqlen`: Integer. Ignore completion items that don’t
-    //    match the first `reqlen` characters of the match region.
+    // * `options.case_sensitive`: If falsy (default), then matches are case
+    //   insensitive. If truthy, then matches are case sensitive (match region
+    //   "A" will not match completion item "a"). If `"lower"`, then matches
+    //   are case insensitive, but all completion items are assumed to be
+    //   lower-case.
+    // * `options.ml`: Integer. Ignore completion items that don’t
+    //    match the first `ml` characters of the match region.
     // * `options.prefix`: Show this before each item.
+    // * `options.max_items`: Maximum number of completion items to show.
+    // * `options.limit_replacement`: When completion succeeds, limit the
+    //   characters replaced in the input to the edit region and any following
+    //   characters that match.
     //
     // Completion items:
     // * `item.s`: Completion string -- mandatory.
@@ -7024,25 +7032,33 @@ function make_suggestions(precaret, postcaret, options) {
     // * `item.d`: Description text.
     // * `item.dh`: Description HTML.
     // * `item.r`: Replacement text (defaults to `item.s`).
-    // * `item.reqlen`: Integer. Ignore this item if it doesn’t match
-    //   the first `item.reqlen` characters of the match region.
+    // * `item.ml`: Integer. Ignore this item if it doesn’t match
+    //   the first `item.ml` characters of the match region.
     // Shorthand:
     // * A string `item` sets `item.s`.
     // * A two-element array `item` sets `item.s` and `item.d`, respectively.
-    // * A `item.sm1` component sets `item.s = item.sm1` and `item.reqlen = 1`.
+    // * A `item.sm1` component sets `item.s = item.sm1` and `item.ml = 1`.
+    //
+    // Return value:
+    // * Extends `options`.
+    // * `list`: List of matching items.
+    // * `best`: Index of best item in `list`.
+    // * `lengths`: [precaret.length, postcaret.length, options.suffix.length].
+    // Set externally:
+    // * `startpos`: Precaret position.
+    // * `editlength`: Minimum postcaret length over this completion session.
 
     options = options || {};
 
     var case_sensitive = options.case_sensitive,
         lregion = precaret + postcaret;
-    lregion = case_sensitive ? lregion : lregion.toLowerCase();
+    if (!case_sensitive || case_sensitive === "lower")
+        lregion = lregion.toLowerCase();
     if (options.region_trimmer)
         lregion = lregion.replace(options.region_trimmer, "");
-    if (options.case_sensitive_items != null)
-        case_sensitive = options.case_sensitive_items;
-    if (options.reqlen > lregion.length)
+    if (options.ml > lregion.length)
         return [];
-    var filter = options.reqlen ? lregion.substr(0, options.reqlen) : null,
+    var filter = options.ml ? lregion.substr(0, options.ml) : null,
         lengths = [precaret.length, postcaret.length, (options.suffix || "").length];
 
     return function (tlist) {
@@ -7054,7 +7070,7 @@ function make_suggestions(precaret, postcaret, options) {
             titem = completion_item(tlist[i]);
             text = titem.s;
             ltext = case_sensitive ? text : text.toLowerCase();
-            rl = titem.reqlen || 0;
+            rl = titem.ml || 0;
 
             if ((filter === null || ltext.startsWith(filter))
                 && (rl === 0
@@ -7162,6 +7178,7 @@ function suggest() {
         }
 
         var i, clist = cinfo.list, same_list = false;
+        cinfo.startpos = precaretpos;
         if (hintinfo && hintinfo.list && hintinfo.list.length === clist.length) {
             for (same_list = true, i = 0; i !== clist.length; ++i) {
                 if (hintinfo.list[i] !== clist[i]) {
@@ -7170,8 +7187,11 @@ function suggest() {
                 }
             }
         }
+        cinfo.editlength = cinfo.lengths[1];
+        if (hintinfo && hintinfo.startpos === cinfo.startpos && hintinfo.editlength < cinfo.editlength) {
+            cinfo.editlength = hintinfo.editlength;
+        }
         hintinfo = cinfo;
-        hintinfo.pcpos = precaretpos;
 
         var div;
         if (!same_list) {
@@ -7191,18 +7211,18 @@ function suggest() {
             div = hintdiv.content_node().firstChild;
             $(div).find(".s9y").removeClass("s9y");
         }
-        if (cinfo.best !== null)
+        if (cinfo.best !== null) {
             addClass(div.childNodes[cinfo.best], "s9y");
-        if (cinfo.smart_punctuation)
-            addClass(div, "s9smartpunc");
+        }
 
         var $elt = jQuery(elt),
             shadow = textarea_shadow($elt, elt.tagName === "INPUT" ? 2000 : 0),
             positionpos = precaretpos;
         if (cinfo.prefix
             && positionpos >= cinfo.prefix.length
-            && elt.value.substring(positionpos - cinfo.prefix.length, positionpos) === cinfo.prefix)
+            && elt.value.substring(positionpos - cinfo.prefix.length, positionpos) === cinfo.prefix) {
             positionpos -= cinfo.prefix.length;
+        }
         shadow.text(elt.value.substring(0, positionpos))
             .append("<span>&#x2060;</span>")
             .append(document.createTextNode(elt.value.substring(positionpos)));
@@ -7243,24 +7263,26 @@ function suggest() {
         }
 
         var val = elt.value,
-            startPos = hintinfo.pcpos,
-            endPos = startPos + hintinfo.lengths[0] + hintinfo.lengths[1] + hintinfo.lengths[2],
-            space;
-        if (hintinfo.lengths[2])
-            repl += val.substring(endPos - hintinfo.lengths[2], endPos);
-        else if ((space = repl.indexOf(" ")) > 0) {
-            // If user completes when caret is at e.g. `Jor|dan Peele`, skip over `Peele`
-            while (space < repl.length && val.charCodeAt(endPos) === repl.charCodeAt(space))
-                ++space, ++endPos;
+            startPos = hintinfo.startpos,
+            endPos = startPos + hintinfo.lengths[0] + hintinfo.lengths[1],
+            sfxLen = hintinfo.lengths[2];
+        if (sfxLen) {
+            repl += val.substring(endPos, endPos + sfxLen);
+            endPos += sfxLen;
+        }
+        if (hintinfo.limit_replacement) {
+            endPos -= hintinfo.editlength;
+            while (endPos - startPos < repl.length && val.charCodeAt(endPos) === repl.charCodeAt(endPos - startPos)) {
+                ++endPos;
+            }
         }
         var outPos = startPos + repl.length;
         if (hasClass(complete_elt, "s9nsp")) {
             spacestate = -1;
         } else {
             ++outPos;
-            if (endPos === val.length || /[\S\r\n\v\f]/.test(val.charAt(endPos)))
-                repl += " ";
-            spacestate = complete_elt.closest(".s9smartpunc") ? outPos : -1;
+            repl += " ";
+            spacestate = hintinfo.smart_punctuation ? outPos : -1;
         }
         elt.setRangeText(repl, startPos, endPos, "end");
         if (hintinfo.postreplace)
@@ -7282,8 +7304,8 @@ function suggest() {
             else
                 return false;
         } else if (k === "ArrowUp" || k === "ArrowDown") {
-            for (pos = 0; pos !== $sug.length - 1 && $sug[pos] !== $active[0]; ++pos)
-                /* nada */;
+            for (pos = 0; pos !== $sug.length - 1 && $sug[pos] !== $active[0]; ++pos) {
+            }
             pos += k === "ArrowDown" ? 1 : -1;
         } else if ((k === "ArrowLeft" && wasnav > 0)
                    || (k === "ArrowRight" && (wasnav > 0 || elt.selectionEnd === elt.value.length))) {
@@ -7326,7 +7348,7 @@ function suggest() {
             pspacestate = spacestate;
         if (k === "Escape" && !m) {
             if (hintinfo) {
-                hiding = this.value.substring(hintinfo.pcpos, hintinfo.pcpos + hintinfo.lengths[0]);
+                hiding = this.value.substring(hintinfo.startpos, hintinfo.startpos + hintinfo.lengths[0]);
                 kill();
                 evt.preventDefault();
                 handle_ui.stopImmediatePropagation(evt);
@@ -7437,7 +7459,7 @@ suggest.add_builder("papersearch", function (elt) {
         return demand_load.tags().then(make_suggestions(m[2], n[1], {prefix: m[1]}));
     } else if (x && (m = x[0].match(/.*?\b((?:[A-Za-z0-9]{3,10}):(?:[^"\s()]*|"[^"]*))$/))) {
         n = x[1].match(/^([^\s()]*)/);
-        return demand_load.search_completion().then(make_suggestions(m[1], n[1], {reqlen: m[1].indexOf(":") + 1}));
+        return demand_load.search_completion().then(make_suggestions(m[1], n[1], {ml: m[1].indexOf(":") + 1}));
     }
 });
 
@@ -7464,7 +7486,7 @@ suggest.add_builder("suggest-emoji", function (elt) {
     var x = completion_split(elt), m;
     if (x && (m = x[0].match(/(?:^|[\s(\u20e3-\u23ff\u2600-\u27ff\ufe0f\udc00-\udfff]):((?:|\+|\+?[-_0-9a-zA-Z]+):?)$/))
         && /^(?:$|[\s)\u20e3-\u23ff\u2600-\u27ff\ufe0f\ud83c-\ud83f])/.test(x[1])) {
-        return demand_load.emoji_completion(m[1].toLowerCase()).then(make_suggestions(":" + m[1], "", {case_sensitive_items: true, max_items: 8, postreplace: suggest_emoji_postreplace}));
+        return demand_load.emoji_completion(m[1].toLowerCase()).then(make_suggestions(":" + m[1], "", {case_sensitive: "lower", max_items: 8, postreplace: suggest_emoji_postreplace}));
     }
     /* eslint-enable no-misleading-character-class */
 });
@@ -7473,7 +7495,7 @@ suggest.add_builder("mentions", function (elt) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/(?:^|[-+,:;\s–—(\[\{\/])@(|\p{L}(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*)$/u))) {
         n = x[1].match(/^(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*/u);
-        return demand_load.mentions().then(make_suggestions(m[1], n[0], {prefix: "@", reqlen: Math.min(2, m[1].length), smart_punctuation: true}));
+        return demand_load.mentions().then(make_suggestions(m[1], n[0], {prefix: "@", ml: Math.min(2, m[1].length), smart_punctuation: true, limit_replacement: true}));
     } else
         return null;
 });
