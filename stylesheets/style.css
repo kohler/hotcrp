@@ -3500,8 +3500,6 @@ a.badge-white:hover {
 	margin-top: -4px;
 	margin-bottom: 8px;
 	box-shadow: 0 0 10px #9999cc;
-	-moz-box-shadow: 0 0 10px #9999cc;
-	-webkit-box-shadow: 0 0 10px #9999cc;
 	background: #fff4c0;
 }
 .pscopen {
@@ -4340,6 +4338,25 @@ a:hover .cmtnum,
 	display: inline-block;
 	padding-bottom: 2px;
 }
+.cmtcard-placeholder {
+	position: absolute;
+	height: 1rem;
+}
+@media screen and (min-width: 1024px) {
+.cmtcard.is-editing.popout {
+	position: fixed;
+	right: 0;
+	bottom: 0;
+	max-width: 1000px;
+	max-height: 60vh;
+	padding-left: 3rem;
+	padding-right: 4rem;
+	border-left: 1px solid #e6e1cf;
+	box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+	z-index: 5;
+}
+}
+
 a.tagbg, span.tagbg {
 	display: inline-block;
 	padding-left: 2px;

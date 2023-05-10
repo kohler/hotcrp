@@ -152,6 +152,11 @@ if (!Element.prototype.closest) {
         return $(this).closest(s)[0];
     };
 }
+if (!Document.prototype.querySelector) {
+    Document.prototype.querySelector = function (s) {
+        return $(s)[0] || null;
+    };
+}
 if (!Element.prototype.querySelector) {
     Element.prototype.querySelector = function (s) {
         return $(this).find(s)[0] || null;
@@ -3763,7 +3768,7 @@ function svge() {
 
 function classe() {
     var e = document.createElement(arguments[0]), i;
-    e.className = arguments[1];
+    e.className = arguments[1] || "";
     for (i = 2; i < arguments.length; ++i) {
         e.append(arguments[i]);
     }
@@ -3992,9 +3997,8 @@ handle_ui.on("click.js-dropmenu-open", function (evt) {
     edetails = esummary.parentElement;
     was_open = is_ie ? hasClass(edetails.lastChild, "hidden") : edetails.open;
     if (!was_open && !modal) {
-        modal = document.createElement("div");
+        modal = classe("div", "modal transparent");
         modal.id = "dropmenu-modal";
-        modal.className = "modal transparent";
         edetails.parentElement.insertBefore(modal, edetails.nextsibling);
         modal.addEventListener("click", dropmenu_close, false);
     } else if (modal)
@@ -4140,19 +4144,13 @@ return {
         }
     },
     make_icon: function (s, xc) {
-        var t = parse(s), span_rto, span_rti;
-        if (t > 1) {
-            span_rto = document.createElement("span");
-            span_rto.className = "rto rt" + canon[t] + (xc || "");
-            span_rti = document.createElement("span");
-            span_rto.appendChild(span_rti);
-            span_rti.className = "rti";
-            span_rti.textContent = icon_texts[t];
-            span_rti.title = tooltips[t];
-            return span_rto;
-        } else {
+        var t = parse(s);
+        if (t <= 1) {
             return null;
         }
+        var span_rti = classe("span", "rti", icon_texts[t]);
+        span_rti.title = tooltips[t];
+        return classe("span", "rto rt".concat(canon[t], xc || ""), span_rti);
     }
 };
 })();
@@ -4163,15 +4161,8 @@ return {
 (function ($) {
 function make_radio(name, value, text, revtype) {
     var rname = "assrev" + name, id = rname + "_" + value,
-        div = document.createElement("div"),
-        label = document.createElement("label"),
-        span_checkc = document.createElement("span"),
-        input = document.createElement("input");
-    div.className = "assignment-ui-choice checki";
-    div.appendChild(label);
-    label.appendChild(span_checkc);
-    span_checkc.className = "checkc";
-    span_checkc.appendChild(input);
+        input = classe("input"),
+        label = classe("label", "", classe("span", "checkc", input));
     input.type = "radio";
     input.name = rname;
     input.value = value;
@@ -4179,9 +4170,7 @@ function make_radio(name, value, text, revtype) {
     if (value == revtype) {
         input.className = "assignment-ui-radio want-focus";
         input.checked = input.defaultChecked = true;
-        var u = document.createElement("u");
-        u.append(text);
-        text = u;
+        text = classe("u", "", text);
     } else {
         input.className = "assignment-ui-radio";
     }
@@ -4189,7 +4178,7 @@ function make_radio(name, value, text, revtype) {
         label.append(review_types.make_icon(value), " ");
     }
     label.append(text);
-    return div;
+    return classe("div", "assignment-ui-choice checki", label);
 }
 function append_round_selector(name, revtype, $a, ctr) {
     var $as = $a.closest(".has-assignment-set"), rounds;
@@ -5699,7 +5688,7 @@ var vismap = {
         admin: "shown only to administrators"
     },
     emojiregex = /^(?:(?:\ud83c[\udde6-\uddff]\ud83c[\udde6-\uddff]|(?:(?:[\u231a\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd\u25fe\u2614\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa\u26ab\u26bd\u26be\u26c4\u26c5\u26ce\u26d4\u26ea\u26f2\u26f3\u26f5\u26fa\u26fd\u2705\u270a\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedd-\udedf\udeeb\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude74\ude78-\ude7c\ude80-\ude86\ude90-\udeac\udeb0-\udeba\udec0-\udec5\uded0-\uded9\udee0-\udee7\udef0-\udef6])\ufe0f?|(?:[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1\u23f2\u23f8-\u23fa\u24c2\u25aa\u25ab\u25b6\u25c0\u25fb\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622\u2623\u2626\u262a\u262e\u262f\u2638-\u263a\u2640\u2642\u265f\u2660\u2663\u2665\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b\u269c\u26a0\u26a7\u26b0\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0\u26f1\u26f4\u26f7-\u26f9\u2702\u2708\u2709\u270c\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733\u2734\u2744\u2747\u2763\u2764\u27a1\u2934\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70\udd71\udd7e\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96\udf97\udf99-\udf9b\udf9e\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49\udd4a\udd6f\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3])\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?(?:\u200d(?:(?:[\u231a\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd\u25fe\u2614\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa\u26ab\u26bd\u26be\u26c4\u26c5\u26ce\u26d4\u26ea\u26f2\u26f3\u26f5\u26fa\u26fd\u2705\u270a\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedd-\udedf\udeeb\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude74\ude78-\ude7c\ude80-\ude86\ude90-\udeac\udeb0-\udeba\udec0-\udec5\uded0-\uded9\udee0-\udee7\udef0-\udef6])\ufe0f?|(?:[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1\u23f2\u23f8-\u23fa\u24c2\u25aa\u25ab\u25b6\u25c0\u25fb\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622\u2623\u2626\u262a\u262e\u262f\u2638-\u263a\u2640\u2642\u265f\u2660\u2663\u2665\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b\u269c\u26a0\u26a7\u26b0\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0\u26f1\u26f4\u26f7-\u26f9\u2702\u2708\u2709\u270c\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733\u2734\u2744\u2747\u2763\u2764\u27a1\u2934\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70\udd71\udd7e\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96\udf97\udf99-\udf9b\udf9e\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49\udd4a\udd6f\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3])\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?)*)*[ \t]*){1,3}$/,
-    cmts = {}, has_unload = false, resp_rounds = {},
+    cmts = {}, has_unload = false, resp_rounds = {}, editor_observer,
     twiddle_start = siteinfo.user && siteinfo.user.uid ? siteinfo.user.uid + "~" : "###";
 
 function unparse_tag(tag, strip_value) {
@@ -6108,6 +6097,28 @@ function beforeunload() {
     }
 }
 
+function cmt_edit_observer(entries) {
+    for (var i = 0; i !== entries.length; ++i) {
+        var e = entries[i];
+        toggleClass(e.target.nextSibling, "popout", !e.isIntersecting);
+    }
+}
+
+function cmt_toggle_editing(celt, is_editing) {
+    if (!is_editing && celt.previousSibling && celt.previousSibling.className === "cmtcard-placeholder") {
+        editor_observer.unobserve(celt.previousSibling);
+        celt.previousSibling.remove();
+    }
+    if (is_editing && (!celt.previousSibling || celt.previousSibling.className !== "cmtcard-placeholder")
+        && window.IntersectionObserver) {
+        editor_observer = editor_observer || new IntersectionObserver(cmt_edit_observer, {rootMargin: "16px 0px"});
+        var e = classe("div", "cmtcard-placeholder");
+        celt.before(e);
+        editor_observer.observe(e);
+    }
+    toggleClass(celt, "is-editing", !!is_editing);
+}
+
 function make_save_callback(cj) {
     var cid = cj_cid(cj), celt = $$(cid), form = $(celt).find("form")[0];
     return function (data) {
@@ -6125,7 +6136,7 @@ function make_save_callback(cj) {
             $(form.elements.draft).remove();
             return;
         }
-        removeClass(celt, "is-editing");
+        cmt_toggle_editing(celt, false);
         var editing_response = cj.response
             && edit_allowed(cj, true)
             && (!data.cmt || data.cmt.draft);
@@ -6315,7 +6326,7 @@ function render_comment(cj, editing) {
 
     // render
     $(celt).append(hc.render());
-    toggleClass(celt, "is-editing", !!editing);
+    cmt_toggle_editing(celt, editing);
     if (cj.response) {
         t = cj_name(cj);
         var $chead_name = chead.find(".cmtcard-header-name");
@@ -6464,21 +6475,13 @@ function add_new_comment_button(cj, cid) {
 }
 
 function add_new_comment(cj, cid) {
-    var article = document.createElement("article");
+    var article = classe("article", "pcard cmtcard cmtid".concat(cj.editable ? " editable" : "", cj.response ? " response" : " comment"));
     article.id = cid;
-    article.className = "pcard cmtcard cmtid".concat(cj.editable ? " editable" : "", cj.response ? " response" : " comment");
     if (cj.response && cj.text !== false) {
-        var header = document.createElement("header"),
-            h2 = document.createElement("h2"),
-            h2span = document.createElement("span");
-        h2span.className = "cmtcard-header-name";
-        h2span.textContent = cj_name(cj);
-        h2.appendChild(h2span);
-        header.className = "cmtcard-head";
-        header.appendChild(h2);
-        article.appendChild(header);
+        article.appendChild(classe("header", "cmtcard-head",
+            classe("h2", "", classe("span", "cmtcard-header-name", cj_name(cj)))));
     }
-    $(".pcontainer")[0].insertBefore(article, $$("ccactions"));
+    document.querySelector(".pcontainer").insertBefore(article, $$("ccactions"));
 }
 
 function add_comment_sidebar(celt, cj) {
