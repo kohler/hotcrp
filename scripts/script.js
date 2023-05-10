@@ -7258,7 +7258,7 @@ function suggest() {
             spacestate = -1;
         } else {
             ++outPos;
-            if (endPos === val.length || /\S/.test(val.charAt(endPos)))
+            if (endPos === val.length || /[\S\r\n\v\f]/.test(val.charAt(endPos)))
                 repl += " ";
             spacestate = complete_elt.closest(".s9smartpunc") ? outPos : -1;
         }
