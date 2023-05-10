@@ -7471,7 +7471,7 @@ suggest.add_builder("suggest-emoji", function (elt) {
 
 suggest.add_builder("mentions", function (elt) {
     var x = completion_split(elt), m, n;
-    if (x && (m = x[0].match(/(?:^|[-+,;\s–—])@(|\p{L}(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*)$/u))) {
+    if (x && (m = x[0].match(/(?:^|[-+,:;\s–—(\[\{\/])@(|\p{L}(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*)$/u))) {
         n = x[1].match(/^(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*/u);
         return demand_load.mentions().then(make_suggestions(m[1], n[0], {prefix: "@", reqlen: Math.min(2, m[1].length), smart_punctuation: true}));
     } else
