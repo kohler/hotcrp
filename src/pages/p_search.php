@@ -337,7 +337,8 @@ class Search_Page {
             Ht::entry("q", (string) $qreq->q, [
                 "size" => 40, "tabindex" => 1,
                 "class" => "papersearch want-focus need-suggest flex-grow-1",
-                "placeholder" => "(All)", "aria-label" => "Search"
+                "placeholder" => "(All)", "aria-label" => "Search",
+                "spellcheck" => false, "autocomplete" => "off"
             ]),
             '<div class="form-basic-search-in"> in ',
               PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["tabindex" => 1, "select" => !$search->limit_explicit() && count($limits) > 1]),
@@ -352,13 +353,13 @@ class Search_Page {
               Ht::select("qt", $qtOpt, $qreq->qt ?? "n", ["id" => "htctl-advanced-qt"]),
             '</div></div>',
             '<div class="entryi medium"><label for="htctl-advanced-qa">With <b>all</b> the words</label><div class="entry">',
-              Ht::entry("qa", $qreq->qa ?? $qreq->q ?? "", ["id" => "htctl-advanced-qa", "size" => 60, "class" => "papersearch want-focus need-suggest", "spellcheck" => false]),
+              Ht::entry("qa", $qreq->qa ?? $qreq->q ?? "", ["id" => "htctl-advanced-qa", "size" => 60, "class" => "papersearch want-focus need-suggest", "spellcheck" => false, "autocomplete" => "off"]),
             '</div></div>',
             '<div class="entryi medium"><label for="htctl-advanced-qo">With <b>any</b> of the words</label><div class="entry">',
-              Ht::entry("qo", $qreq->qo ?? "", ["id" => "htctl-advanced-qo", "size" => 60, "spellcheck" => false]),
+              Ht::entry("qo", $qreq->qo ?? "", ["id" => "htctl-advanced-qo", "size" => 60, "spellcheck" => false, "autocomplete" => "off"]),
             '</div></div>',
             '<div class="entryi medium"><label for="htctl-advanced-qx"><b>Without</b> the words</label><div class="entry">',
-              Ht::entry("qx", $qreq->qx ?? "", ["id" => "htctl-advanced-qx", "size" => 60, "spellcheck" => false]),
+              Ht::entry("qx", $qreq->qx ?? "", ["id" => "htctl-advanced-qx", "size" => 60, "spellcheck" => false, "autocomplete" => "off"]),
             '</div></div>';
         if (!$search->limit_explicit()) {
             echo '<div class="entryi medium"><label for="htctl-advanced-q">In</label><div class="entry">',

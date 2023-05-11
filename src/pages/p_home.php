@@ -212,8 +212,9 @@ class Home_Page {
                 "id" => "homeq", "size" => 32,
                 "title" => "Enter paper numbers or search terms",
                 "class" => "papersearch need-suggest flex-grow-1 mb-1",
-                "placeholder" => "(All)", "spellcheck" => false,
-                "aria-labelledby" => "homesearch-label"
+                "placeholder" => "(All)",
+                "aria-labelledby" => "homesearch-label",
+                "spellcheck" => false, "autocomplete" => "off"
             ]), '<div class="form-basic-search-in"> in ',
             PaperSearch::limit_selector($this->conf, $limits, $limits[0]),
             Ht::submit("Search"),

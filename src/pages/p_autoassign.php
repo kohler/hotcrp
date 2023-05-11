@@ -353,7 +353,8 @@ class Autoassign_Page {
                 "id" => "autoassignq", "placeholder" => "(All)",
                 "size" => 40, "aria-label" => "Search",
                 "class" => $this->ms->control_class("q", "papersearch js-autosubmit need-suggest"),
-                "data-submit-fn" => "requery", "spellcheck" => false
+                "data-submit-fn" => "requery",
+                "spellcheck" => false, "autocomplete" => "off"
             ]), " &nbsp;in &nbsp;",
             PaperSearch::limit_selector($conf, PaperSearch::viewable_manager_limits($this->user), $qreq->t),
             " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery"]);

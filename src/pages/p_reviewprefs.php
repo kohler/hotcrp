@@ -100,7 +100,8 @@ class ReviewPrefs_Page {
         echo '<div class="entryi"><label for="htctl-prefs-q">Search</label><div class="entry">',
             Ht::entry("q", $qreq->q, [
                 "id" => "htctl-prefs-q", "size" => 32, "placeholder" => "(All)",
-                "class" => "papersearch want-focus need-suggest", "spellcheck" => false
+                "class" => "papersearch want-focus need-suggest",
+                "spellcheck" => false, "autocomplete" => "off"
             ]), '  ', Ht::submit("redisplay", "Redisplay"), '</div></div>';
 
         $show_data = [];

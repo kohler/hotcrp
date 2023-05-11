@@ -207,7 +207,7 @@ class Track_SettingParser extends SettingParser {
             '<div class="entry">',
             Ht::select("{$pfx}/type", $permts, $reqtype, $sv->sjs("{$pfx}/type", ["class" => "uich js-foldup"])),
             " &nbsp;",
-            Ht::entry("{$pfx}/tag", $reqtag, $sv->sjs("{$pfx}/tag", ["class" => "fx need-suggest pc-tags"]));
+            Ht::entry("{$pfx}/tag", $reqtag, $sv->sjs("{$pfx}/tag", ["class" => "fx need-suggest pc-tags", "spellcheck" => false, "autocomplete" => "off"]));
         $sv->print_feedback_at($pfx);
         $sv->print_feedback_at("{$pfx}/type");
         $sv->print_feedback_at("{$pfx}/tag");
@@ -246,7 +246,7 @@ class Track_SettingParser extends SettingParser {
             echo "For submissions not on other tracks:";
         } else {
             echo $sv->label("track/{$ctr}/tag", "For submissions with tag", ["class" => "mr-2"]),
-                $sv->entry("track/{$ctr}/tag", ["class" => "settings-track-name need-suggest tags", "spellcheck" => false]),
+                $sv->entry("track/{$ctr}/tag", ["class" => "settings-track-name need-suggest tags", "spellcheck" => false, "autocomplete" => "off"]),
                 ':';
         }
         echo '</div>';

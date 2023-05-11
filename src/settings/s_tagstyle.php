@@ -103,7 +103,7 @@ class TagStyle_SettingParser extends SettingParser {
                 '<td class="lentry">',
                 Ht::hidden("tag_style/{$ctr}/style", $style),
                 $sv->feedback_at("tag_style/{$ctr}/style"),
-                $sv->entry("tag_style/{$ctr}/tags", ["class" => "need-suggest tags"]),
+                $sv->entry("tag_style/{$ctr}/tags", ["class" => "need-suggest tags", "spellcheck" => false, "autocomplete" => "off"]),
                 '</td><td class="remargin-right"></td></tr>';
             $dt->mark_pattern_fill("tag-{$style}");
         }

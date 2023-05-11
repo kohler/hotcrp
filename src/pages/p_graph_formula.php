@@ -31,7 +31,7 @@ class Graph_Formula_Page {
         $klass = $ms->control_class($field, "need-suggest papersearch want-focus");
         return '<tr><td class="lentry">'
             . $ms->feedback_html_at($field)
-            . Ht::entry("q{$i}", $q, ["size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q{$i}", "spellcheck" => false, "aria-label" => "Search"])
+            . Ht::entry("q{$i}", $q, ["size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q{$i}", "spellcheck" => false, "autocomplete" => "off", "aria-label" => "Search"])
             . " <span class=\"pl-3\">Style:</span> &nbsp;"
             . Ht::select("s{$i}", ["default" => "default", "plain" => "plain", "tag-red" => "red", "tag-orange" => "orange", "tag-yellow" => "yellow", "tag-green" => "green", "tag-blue" => "blue", "tag-purple" => "purple", "tag-gray" => "gray"], $s !== "" ? $s : "by-tag")
             . ' <span class="nb btnbox aumovebox ml-3"><button type="button" class="ui row-order-ui moveup" tabindex="-1">'
@@ -105,14 +105,14 @@ class Graph_Formula_Page {
             '<div class="', $fgm->control_class("fx", "f-i maxw-480"), '">',
             '<label for="x_entry">X axis</label>',
             $fgm->feedback_html_at("fx"),
-            Ht::entry("x", (string) $this->qreq->x, ["id" => "x_entry", "size" => 32, "class" => "w-99"]),
+            Ht::entry("x", (string) $this->qreq->x, ["id" => "x_entry", "size" => 32, "class" => "w-99", "spellcheck" => false]),
             '<div class="f-h"><a href="', $this->conf->hoturl("help", "t=formulas"), '">Formula</a> or “search”</div>',
             '</div>';
         // Y axis
         echo '<div class="', $fgm->control_class("fy", "f-i maxw-480"), '">',
             '<label for="y_entry">Y axis</label>',
             $fgm->feedback_html_at("fy"),
-            Ht::entry("y", (string) $this->qreq->y, ["id" => "y_entry", "size" => 32, "class" => "w-99"]),
+            Ht::entry("y", (string) $this->qreq->y, ["id" => "y_entry", "size" => 32, "class" => "w-99", "spellcheck" => false]),
             '<div class="f-h"><a href="', $this->conf->hoturl("help", "t=formulas"), '">Formula</a> or “cdf”, “count”, “fraction”, “box <em>formula</em>”, “bar <em>formula</em>”</div>',
             '</div>',
             '</div>';

@@ -280,7 +280,7 @@ class ManualAssign_Page {
             Ht::entry("q", $this->qreq->q, [
                 "id" => "manualassignq", "size" => 40, "placeholder" => "(All)",
                 "class" => "papersearch want-focus need-suggest", "aria-label" => "Search",
-                "spellcheck" => false
+                "spellcheck" => false, "autocomplete" => "off"
             ]), " &nbsp;in &nbsp;",
             PaperSearch::limit_selector($this->conf, $this->limits, $this->qreq->t),
             "</td></tr>\n",

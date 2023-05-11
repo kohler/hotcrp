@@ -46,32 +46,37 @@ class Tags_SettingParser extends SettingParser {
     static function print_tag_chair(SettingValues $sv) {
         $sv->print_entry_group("tag_readonly", null, [
             "class" => "need-suggest tags",
-            "hint" => "PC members can see these tags, but only administrators can change them."
+            "hint" => "PC members can see these tags, but only administrators can change them.",
+            "autocomplete" => "off"
         ]);
     }
     static function print_tag_sitewide(SettingValues $sv) {
         if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager()) {
             $sv->print_entry_group("tag_sitewide", null, [
                 "class" => "need-suggest tags",
-                "hint" => "Administrators can see and change these tags for every submission."
+                "hint" => "Administrators can see and change these tags for every submission.",
+                "autocomplete" => "off"
             ]);
         }
     }
     static function print_tag_approval(SettingValues $sv) {
         $sv->print_entry_group("tag_vote_approval", null, [
             "class" => "need-suggest tags",
-            "hint" => "<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>"
+            "hint" => "<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>",
+            "autocomplete" => "off"
         ]);
     }
     static function print_tag_vote(SettingValues $sv) {
         $sv->print_entry_group("tag_vote_allotment", null, [
             "class" => "need-suggest tags",
-            "hint" => "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>)"
+            "hint" => "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>)",
+            "autocomplete" => "off"
         ]);
     }
     static function print_tag_rank(SettingValues $sv) {
         $sv->print_entry_group("tag_rank", null, [
-            "hint" => 'The <a href="' . $sv->conf->hoturl("offline") . '">offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href="' . $sv->conf->hoturl("help", "t=ranking") . '">Help</a>)'
+            "hint" => 'The <a href="' . $sv->conf->hoturl("offline") . '">offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href="' . $sv->conf->hoturl("help", "t=ranking") . '">Help</a>)',
+            "autocomplete" => "off"
         ]);
     }
     static function print_tag_seeall(SettingValues $sv) {

@@ -16,12 +16,13 @@ class QuicklinksRenderer {
             $paperText = "#{$id}";
             $urlrest["p"] = $id;
         }
-        return "<a id=\"quicklink-" . ($isprev ? "prev" : "next")
-            . "\" class=\"ulh pnum\" href=\"" . $qreq->conf()->hoturl($baseUrl, $urlrest) . "\">"
-            . ($isprev ? Icons::ui_linkarrow(3) : "")
-            . $paperText
-            . ($isprev ? "" : Icons::ui_linkarrow(1))
-            . "</a>";
+        $url = $qreq->conf()->hoturl($baseUrl, $urlrest);
+        $icon = Icons::ui_linkarrow($isprev ? 3 : 1);
+        if ($isprev) {
+            return "<a id=\"quicklink-prev\" class=\"ulh pnum\" href=\"{$url}\">{$icon}{$paperText}</a>";
+        } else {
+            return "<a id=\"quicklink-next\" class=\"ulh pnum\" href=\"{$url}\">{$paperText}{$icon}</a>";
+        }
     }
 
     /** @param Qrequest $qreq
@@ -32,9 +33,9 @@ class QuicklinksRenderer {
         }
         $x = Ht::form($qreq->conf()->hoturl($baseUrl ?? "paper"), ["method" => "get", "class" => "gopaper"]);
         if ($baseUrl === "profile") {
-            $x .= Ht::entry("u", "", ["id" => "quicklink-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow", "spellcheck" => false]);
+            $x .= Ht::entry("u", "", ["id" => "quicklink-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow", "spellcheck" => false, "autocomplete" => "off"]);
         } else {
-            $x .= Ht::entry("q", "", ["id" => "quicklink-search", "size" => 10, "placeholder" => "(All)", "aria-label" => "Search", "class" => "papersearch need-suggest need-autogrow", "spellcheck" => false]);
+            $x .= Ht::entry("q", "", ["id" => "quicklink-search", "size" => 10, "placeholder" => "(All)", "aria-label" => "Search", "class" => "papersearch need-suggest need-autogrow", "spellcheck" => false, "autocomplete" => "off"]);
         }
         foreach ($args as $k => $v) {
             $x .= Ht::hidden($k, $v);
