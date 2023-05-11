@@ -121,6 +121,11 @@ class MailRecipients extends MessageSet {
         return $dm;
     }
 
+    /** @return string */
+    function current_default_message() {
+        return $this->rect->default_message;
+    }
+
     /** @param string $name
      * @param string $description
      * @param int $flags */

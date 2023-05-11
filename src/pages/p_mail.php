@@ -59,7 +59,7 @@ class Mail_Page {
             && ctype_digit($qreq->mailid)
             && $this->viewer->privChair
             && !$qreq->send) {
-            $row = $this->conf->fetch_first_object("select * from MailLog where mailId=" . $qreq->mailid);
+            $row = $this->conf->fetch_first_object("select * from MailLog where mailId=?", $qreq->mailid);
             if ($row) {
                 foreach (["recipients", "q", "t", "cc", "subject"] as $field) {
                     if (isset($row->$field) && !isset($qreq[$field]))
@@ -359,7 +359,9 @@ class Mail_Page {
                 $templates[$dm] = ["subject" => $s, "body" => $b];
             }
         }
+        $deftemplate = $templates[$this->recip->current_default_message()] ?? null;
 
+        // form
         echo Ht::form($this->conf->hoturl("=mail", ["check" => 1, "monreq" => $this->qreq->monreq]), [
                 "id" => "mailform",
                 "data-default-messages" => json_encode_browser((object) $templates)
@@ -407,13 +409,17 @@ class Mail_Page {
             $this->recip->feedback_html_at("subject"),
             Ht::textarea("subject", $this->qreq->subject, [
                 "id" => "subject", "rows" => 1, "data-submit-fn" => "false",
-                "class" => $this->recip->control_class("subject", "js-autosubmit need-autogrow w-100")
+                "class" => $this->recip->control_class("subject", "js-autosubmit need-autogrow w-100"),
+                "spellcheck" => true,
+                "data-default-value" => $deftemplate["subject"] ?? ""
             ]), "</div></div>\n";
 
         // ** BODY
         echo Ht::textarea("body", $this->qreq->body, [
             "id" => "email-body", "rows" => 12, "cols" => 70,
-            "class" => "w-100 need-autogrow", "spellcheck" => "true"
+            "class" => "w-100 need-autogrow",
+            "spellcheck" => "true",
+            "data-default-value" => $deftemplate["body"] ?? ""
         ]);
 
         echo "</fieldset>\n\n";

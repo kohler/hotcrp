@@ -4468,22 +4468,27 @@ handle_ui.on("js-choose-mail-preview", function () {
 
 // mail
 handle_ui.on("change.js-mail-recipients", function () {
-    var plimit = this.form.elements.plimit,
-        toelt = this.form.elements.to,
+    var f = this.form,
+        plimit = f.elements.plimit,
+        toelt = f.elements.to,
         recip = toelt.options[toelt.selectedIndex],
-        subjelt = this.form.elements.subject,
-        bodyelt = this.form.elements.body;
+        subjelt = f.elements.subject,
+        bodyelt = f.elements.body;
     foldup.call(this, null, {open: !plimit || plimit.checked, n: 8});
     if (!recip) {
         return;
     }
     foldup.call(this, null, {open: !hasClass(recip, "mail-want-no-papers"), n: 9});
     foldup.call(this, null, {open: hasClass(recip, "mail-want-since"), n: 10});
+
     if (!recip.hasAttribute("data-default-message")
-        || !subjelt || !bodyelt || input_differs(subjelt) || input_differs(bodyelt)) {
+        || !subjelt
+        || (subjelt.value.trim() !== "" && input_differs(subjelt))
+        || !bodyelt
+        || (bodyelt.value.trim() !== "" && input_differs(bodyelt))) {
         return;
     }
-    var dm = JSON.parse(this.form.getAttribute("data-default-messages")),
+    var dm = JSON.parse(f.getAttribute("data-default-messages")),
         dmt = recip.getAttribute("data-default-message");
     if (dm && dm[dmt] && dm[dmt].subject !== subjelt.value) {
         subjelt.value = subjelt.defaultValue = dm[dmt].subject;
