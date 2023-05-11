@@ -4461,10 +4461,6 @@ handle_ui.on("js-request-review-preview-email", function (evt) {
     handle_ui.stopPropagation(evt);
 });
 
-handle_ui.on("js-choose-mail-preview", function () {
-    toggleClass(this.closest("fieldset"), "mail-preview-unchoose", !this.checked);
-});
-
 
 // mail
 handle_ui.on("change.js-mail-recipients", function () {
@@ -4498,7 +4494,7 @@ handle_ui.on("change.js-mail-recipients", function () {
     }
 });
 
-handle_ui.on(".js-mail-set-template", function () {
+handle_ui.on("js-mail-set-template", function () {
     var $d, f, templatelist;
     function selected_tm(tn) {
         tn = tn || f.elements.template.value;
@@ -4549,7 +4545,11 @@ handle_ui.on(".js-mail-set-template", function () {
     });
 });
 
-handle_ui.on(".js-mail-send-phase-1", function () {
+handle_ui.on("js-mail-preview-choose", function () {
+    toggleClass(this.closest("fieldset"), "mail-preview-unchoose", !this.checked);
+});
+
+handle_ui.on("js-mail-send-phase-1", function () {
     var send = this.querySelector("button");
     send.disabled = true;
     send.textContent = "Sending mail…";
@@ -7123,7 +7123,7 @@ try {
 function suggest() {
     var elt = this, suggdata,
         hintdiv, hintinfo, blurring = false, hiding = false,
-        wasnav = 0, spacestate = -1, wasmouse = null;
+        wasnav = 0, spacestate = -1, wasmouse = null, autocomplete = null;
 
     function kill(success) {
         hintdiv && hintdiv.remove();
@@ -7132,6 +7132,10 @@ function suggest() {
         wasnav = 0;
         if (!success)
             spacestate = -1;
+        if (autocomplete !== null) {
+            elt.autocomplete = autocomplete;
+            autocomplete = null;
+        }
     }
 
     function render_item(titem, prepend) {
@@ -7238,6 +7242,10 @@ function suggest() {
         $pos = geometry_translate($pos, -soff.left - $elt.scrollLeft(), -soff.top + 4 - $elt.scrollTop());
         hintdiv.near($pos, elt);
         shadow.remove();
+        if (autocomplete === null) {
+            autocomplete = elt.autocomplete;
+            elt.autocomplete = "off";
+        }
     }
 
     function display() {
@@ -7420,7 +7428,6 @@ function suggest() {
         suggdata = {promises: []};
         $.data(elt, "suggest", suggdata);
         $(elt).on("keydown", kp).on("blur", blur);
-        elt.autocomplete = "off";
     }
     $.each(classList(elt), function (i, c) {
         if (builders[c] && $.inArray(builders[c], suggdata.promises) < 0)

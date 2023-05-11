@@ -107,13 +107,13 @@ class Conflict_PaperColumn extends PaperColumn {
         if (Conflict::is_author($ct)) {
             return "Author";
         }
-        $t = '<input type="checkbox" class="uic uikd uich js-assign-review js-range-click" '
-            . 'data-range-type="assrevu' . $this->contact->contactId
-            . '" name="assrev' . $row->paperId . 'u' . $this->contact->contactId
-            . '" value="conflict" autocomplete="off"'
-            . (Conflict::is_conflicted($ct) ? " checked" : "");
+        $t = "<input type=\"checkbox\" class=\"uic uikd uich js-assign-review js-range-click\" data-range-type=\"assrevu{$this->contact->contactId}\" name=\"assrev{$row->paperId}u{$this->contact->contactId}\" value=\"conflict\" autocomplete=\"off\"";
+        if (Conflict::is_conflicted($ct)) {
+            $t .= " checked";
+        }
         if ($this->show_user) {
-            $t .= ' title="' . $pl->user->name_text_for($this->contact) . ' conflict"';
+            $n = htmlspecialchars($pl->user->name_text_for($this->contact));
+            $t .= " title=\"{$n} conflict\"";
         }
         return $t . '>';
     }

@@ -31,7 +31,7 @@ class Graph_Formula_Page {
         $klass = $ms->control_class($field, "need-suggest papersearch want-focus");
         return '<tr><td class="lentry">'
             . $ms->feedback_html_at($field)
-            . Ht::entry("q{$i}", $q, ["size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q{$i}", "spellcheck" => false, "autocomplete" => "off", "aria-label" => "Search"])
+            . Ht::entry("q{$i}", $q, ["size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q{$i}", "spellcheck" => false, "aria-label" => "Search"])
             . " <span class=\"pl-3\">Style:</span> &nbsp;"
             . Ht::select("s{$i}", ["default" => "default", "plain" => "plain", "tag-red" => "red", "tag-orange" => "orange", "tag-yellow" => "yellow", "tag-green" => "green", "tag-blue" => "blue", "tag-purple" => "purple", "tag-gray" => "gray"], $s !== "" ? $s : "by-tag")
             . ' <span class="nb btnbox aumovebox ml-3"><button type="button" class="ui row-order-ui moveup" tabindex="-1">'

@@ -283,7 +283,7 @@ class Log_Page {
             '</div></div><div class="', $this->ms->control_class("p", "entryi medium"),
             '"><label for="p">Concerning paper(s)</label><div class="entry">',
             $this->ms->feedback_html_at("p"),
-            Ht::entry("p", $this->qreq->p, ["id" => "p", "class" => "need-suggest papersearch", "autocomplete" => "off", "size" => 40, "spellcheck" => false]),
+            Ht::entry("p", $this->qreq->p, ["id" => "p", "class" => "need-suggest papersearch", "size" => 40, "spellcheck" => false]),
             '</div></div><div class="', $this->ms->control_class("u", "entryi medium"),
             '"><label for="u">Concerning user(s)</label><div class="entry">',
             $this->ms->feedback_html_at("u"),

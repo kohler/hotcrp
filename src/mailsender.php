@@ -409,7 +409,7 @@ class MailSender {
         if (!$this->sending) {
             echo ' d-flex"><div class="pr-2">',
                 Ht::checkbox(self::prep_key($prep), 1, true, [
-                    "class" => "uic js-range-click js-choose-mail-preview",
+                    "class" => "uic js-range-click js-mail-preview-choose",
                     "data-range-type" => "mhcb", "id" => "psel{$this->cbcount}"
                 ]), '</div><div class="flex-grow-0">';
         } else {

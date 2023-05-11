@@ -246,6 +246,13 @@ class MailRecipients extends MessageSet {
         return null;
     }
 
+    /** @return string */
+    function current_fold_classes(Qrequest $qreq) {
+        return "fold8" . (!!$qreq->plimit ? "o" : "c")
+            . " fold9" . ($this->rect->flags & self::F_NOPAPERS ? "c" : "o")
+            . " fold10" . ($this->rect->flags & self::F_SINCE ? "o" : "c");
+    }
+
     /** @param ?list<int> $paper_ids
      * @return $this */
     function set_paper_ids($paper_ids) {

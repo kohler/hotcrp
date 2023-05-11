@@ -309,7 +309,7 @@ class Mail_Page {
             echo '<label for="q" class="mr-2">Papers:</label>';
         }
         echo Ht::entry("q", (string) $this->qreq->q, [
-                "id" => "q", "placeholder" => "(All)", "spellcheck" => false,
+                "placeholder" => "(All)", "spellcheck" => false,
                 "class" => "papersearch need-suggest js-autosubmit",
                 "size" => $this->viewer->privChair ? 36 : 32,
                 "data-submit-fn" => "psearch"
@@ -324,7 +324,9 @@ class Mail_Page {
         if ($plist && !$plist->is_empty()) {
             echo '<div class="fx8 mt-2">';
             $plist->print_table_html();
-            echo Ht::hidden("prevt", $this->qreq->t), Ht::hidden("prevq", $this->qreq->q), '</div>';
+            echo Ht::hidden("prevt", $this->qreq->t),
+                Ht::hidden("prevq", $this->qreq->q),
+                '</div>';
         }
         echo "</div>"; // <div class="fx9...
     }
@@ -371,7 +373,9 @@ class Mail_Page {
 
         $this->print_template();
 
-        echo '<fieldset class="mail-editor fold8c fold9o fold10c main-width" style="float:left;margin:4px 1em 1em 0" id="foldpsel">';
+        echo '<fieldset class="mail-editor main-width ',
+            $this->recip->current_fold_classes($this->qreq),
+            '" style="float:left;margin:4px 1em 1em 0" id="foldpsel">';
 
         // ** TO
         echo '<div class="mail-field mb-3">',
@@ -382,7 +386,7 @@ class Mail_Page {
             $this->print_new_assignments_since();
         }
         $this->print_paper_selection();
-        Ht::stash_script('$(".js-mail-recipients").trigger("change")');
+        //Ht::stash_script('$(function(){$(".js-mail-recipients").first().change()})');
         echo "</div></div>\n";
 
         // ** CC, REPLY-TO
