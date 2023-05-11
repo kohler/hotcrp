@@ -6116,6 +6116,7 @@ function cmt_edit_observer(entries) {
     for (i = 0; i !== editing_list.length; ++i) {
         e = editing_list[i];
         if (i !== editing_list.length - 1
+            || !e.previousSibling
             || e.previousSibling.hasAttribute("data-intersecting")) {
             removeClass(e, "popout");
         } else if (!e.previousSibling.hasAttribute("data-intersecting")
@@ -6127,10 +6128,10 @@ function cmt_edit_observer(entries) {
 
 function cmt_toggle_editing(celt, is_editing) {
     if (!is_editing && celt.previousSibling && celt.previousSibling.className === "cmtcard-placeholder") {
-        editor_observer.unobserve(celt.previousSibling);
-        editor_observer.unobserve(celt);
         var i = editing_list.indexOf(celt);
         editing_list.splice(i, 1);
+        editor_observer.unobserve(celt.previousSibling);
+        editor_observer.unobserve(celt);
         celt.previousSibling.remove();
     }
     if (is_editing && (!celt.previousSibling || celt.previousSibling.className !== "cmtcard-placeholder")
@@ -6138,12 +6139,15 @@ function cmt_toggle_editing(celt, is_editing) {
         editor_observer = editor_observer || new IntersectionObserver(cmt_edit_observer, {rootMargin: "16px 0px"});
         var e = classe("div", "cmtcard-placeholder");
         celt.before(e);
-        editor_observer.observe(e);
-        editor_observer.observe(celt);
         editing_list = editing_list || [];
         editing_list.push(celt);
+        editor_observer.observe(e);
+        editor_observer.observe(celt);
     }
     toggleClass(celt, "is-editing", !!is_editing);
+    if (!is_editing) {
+        removeClass(celt, "popout");
+    }
 }
 
 function make_save_callback(cj) {
