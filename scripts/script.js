@@ -7041,6 +7041,23 @@ function completion_split(elt) {
         return null;
 }
 
+function completion_search_prefix(cinfo, str) {
+    var i, s, case_sensitive = cinfo.case_sensitive, items = cinfo.items;
+    if (!case_sensitive || case_sensitive === "lower") {
+        str = str.toLowerCase();
+    }
+    for (i = 0; i !== items.length; ++i) {
+        s = items[i].s;
+        if (!case_sensitive) {
+            s = s.toLowerCase();
+        }
+        if (s.startsWith(str)) {
+            return items[i];
+        }
+    }
+    return null;
+}
+
 function make_suggestions(precaret, postcaret, options) {
     // The region around the caret is divided into three parts:
     //     ... precaret ^ postcaret options.suffix ...
@@ -7078,8 +7095,8 @@ function make_suggestions(precaret, postcaret, options) {
     //
     // Return value:
     // * Extends `options`.
-    // * `list`: List of matching items.
-    // * `best`: Index of best item in `list`.
+    // * `items`: List of matching items.
+    // * `best`: Index of best item in `items`.
     // * `lengths`: [precaret.length, postcaret.length, options.suffix.length].
     // Set externally:
     // * `startpos`: Precaret position.
@@ -7093,8 +7110,11 @@ function make_suggestions(precaret, postcaret, options) {
         lregion = lregion.toLowerCase();
     if (options.region_trimmer)
         lregion = lregion.replace(options.region_trimmer, "");
-    if (options.ml > lregion.length)
-        return [];
+    if (options.ml > lregion.length) {
+        return function (tlist) {
+            return null;
+        };
+    }
     var filter = options.ml ? lregion.substr(0, options.ml) : null,
         lengths = [precaret.length, postcaret.length, (options.suffix || "").length];
 
@@ -7135,9 +7155,7 @@ function make_suggestions(precaret, postcaret, options) {
             }
         }
 
-        if (res.length) {
-            return $.extend({list: res, lengths: lengths, best: best}, options);
-        }
+        return res.length ? $.extend({items: res, lengths: lengths, best: best}, options) : null;
     };
 }
 
@@ -7200,7 +7218,7 @@ function suggest() {
     }
 
     function finish_display(cinfo) {
-        if (!cinfo || !cinfo.list.length) {
+        if (!cinfo || !cinfo.items.length) {
             kill();
             return;
         }
@@ -7218,11 +7236,11 @@ function suggest() {
             wasmouse = 0;
         }
 
-        var i, clist = cinfo.list, same_list = false;
+        var i, clist = cinfo.items, same_list = false;
         cinfo.startpos = precaretpos;
-        if (hintinfo && hintinfo.list && hintinfo.list.length === clist.length) {
+        if (hintinfo && hintinfo.items && hintinfo.items.length === clist.length) {
             for (same_list = true, i = 0; i !== clist.length; ++i) {
-                if (hintinfo.list[i] !== clist[i]) {
+                if (hintinfo.items[i] !== clist[i]) {
                     same_list = false;
                     break;
                 }
@@ -7284,7 +7302,7 @@ function suggest() {
             if (cinfo || i == suggdata.promises.length)
                 finish_display(cinfo);
             else {
-                var result = suggdata.promises[i](elt);
+                var result = suggdata.promises[i](elt, hintinfo);
                 if (result && $.isFunction(result.then))
                     result.then(next);
                 else
@@ -7535,13 +7553,23 @@ suggest.add_builder("suggest-emoji", function (elt) {
     /* eslint-enable no-misleading-character-class */
 });
 
-suggest.add_builder("mentions", function (elt) {
-    var x = completion_split(elt), m, n;
-    if (x && (m = x[0].match(/(?:^|[-+,:;\s–—(\[\{\/])@(|\p{L}(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*)$/u))) {
-        n = x[1].match(/^(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*/u);
-        return demand_load.mentions().then(make_suggestions(m[1], n[0], {prefix: "@", ml: Math.min(2, m[1].length), smart_punctuation: true, limit_replacement: true}));
-    } else
+suggest.add_builder("mentions", function (elt, hintinfo) {
+    var x = completion_split(elt), precaret, m;
+    if (!x) {
         return null;
+    }
+    if (hintinfo
+        && hintinfo.startpos < x[0].length - 1
+        && x[0].charCodeAt(hintinfo.startpos - 1) === 0x40
+        && completion_search_prefix(hintinfo, x[0].substring(hintinfo.startpos))) {
+        precaret = x[0].substring(hintinfo.startpos);
+    } else if ((m = x[0].match(/(?:^|[-+,:;\s–—(\[\{\/])@(|\p{L}(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*)$/u))) {
+        precaret = m[1];
+    } else {
+        return null;
+    }
+    m = x[1].match(/^(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*/u);
+    return demand_load.mentions().then(make_suggestions(precaret, m[0], {prefix: "@", ml: Math.min(2, precaret.length), smart_punctuation: true, limit_replacement: true}));
 });
 
 
