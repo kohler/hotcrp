@@ -97,13 +97,13 @@ class Formula_PaperColumn extends PaperColumn {
         return $this->formula->unparse_diff_html($x, $this->real_format);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if ($pl->overriding !== 0 && !$this->override_statistics) {
-            $this->override_statistics = clone $this->statistics;
-        }
         if ($pl->overriding === 2) {
             $v = call_user_func($this->formula_function, $row, null, $pl->user);
         } else {
             $v = $this->results[$row->paperId];
+        }
+        if ($pl->overriding !== 0 && !$this->override_statistics) {
+            $this->override_statistics = clone $this->statistics;
         }
         if ($pl->overriding <= 1) {
             $this->statistics->add($v);
@@ -143,9 +143,7 @@ class Formula_PaperColumn extends PaperColumn {
         $t = $this->unparse_statistic($this->statistics, $stat);
         if ($this->override_statistics) {
             $tt = $this->unparse_statistic($this->override_statistics, $stat);
-            if ($t !== $tt) {
-                $t = "<span class=\"fn5\">{$t}</span><span class=\"fx5\">{$tt}</span>";
-            }
+            $t = $pl->wrap_conflict($t, $tt);
         }
         return $t;
     }

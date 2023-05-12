@@ -1286,11 +1286,14 @@ class PaperList {
         }
     }
 
-    private function _wrap_conflict($main_content, $override_content, PaperColumn $fdef) {
+    /** @param string $main_content
+     * @param string $override_content
+     * @param 'div'|'span' $tag
+     * @return string */
+    function wrap_conflict($main_content, $override_content, $tag = "span") {
         if ($main_content === $override_content) {
             return $main_content;
         }
-        $tag = $fdef->as_row ? "div" : "span";
         if ((string) $main_content !== "") {
             $main_content = "<{$tag} class=\"fn5\">{$main_content}</{$tag}>";
         }
@@ -1327,7 +1330,7 @@ class PaperList {
                 $content2 = $fdef->content($this, $row);
             }
             $this->user->set_overrides($overrides);
-            $content = $this->_wrap_conflict($content1, $content2, $fdef);
+            $content = $this->wrap_conflict($content1, $content2, $fdef->as_row ? "div" : "span");
         } else if ($override === PaperColumn::OVERRIDE_FORCE) {
             $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
             if (!$fdef->content_empty($this, $row)) {
@@ -1346,7 +1349,7 @@ class PaperList {
                     if ($override === PaperColumn::OVERRIDE_IFEMPTY_LINK) {
                         $content = '<em>Hidden for conflict</em> · <a class="ui js-override-conflict" href="">Override</a>';
                     }
-                    $content = $this->_wrap_conflict($content, $fdef->content($this, $row), $fdef);
+                    $content = $this->wrap_conflict($content, $fdef->content($this, $row), $fdef->as_row ? "div" : "span");
                 }
                 $this->user->set_overrides($overrides);
             }

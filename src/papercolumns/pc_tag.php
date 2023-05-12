@@ -19,17 +19,30 @@ class Tag_PaperColumn extends PaperColumn {
     private $editsort = false;
     /** @var array<int,float> */
     private $sortmap;
+    /** @var ScoreInfo */
+    private $statistics;
+    /** @var ?ScoreInfo */
+    private $override_statistics;
+    /** @var ?string */
+    private $real_format;
+    /** @var bool */
+    private $complex = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         $this->dtag = $cj->tag;
         $this->is_value = $cj->tagvalue ?? null;
+        $this->statistics = new ScoreInfo;
     }
     function add_decoration($decor) {
         if ($decor === "edit") {
             $this->editable = true;
             $this->is_value = $this->is_value ?? true;
             return $this->__add_decoration($decor);
+        } else if (preg_match('/\A%\d*(?:\.\d*)[bdeEfFgGoxX]\z/', $decor)) {
+            $this->__add_decoration($decor, [$this->real_format]);
+            $this->real_format = $decor;
+            return true;
         } else {
             return parent::add_decoration($decor);
         }
@@ -118,13 +131,27 @@ class Tag_PaperColumn extends PaperColumn {
                 }
             }
         }
-        return "#$this->dtag";
+        return "#{$this->dtag}";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->can_view_tag($row, $this->etag);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $v = $row->tag_value($this->etag);
+        $sv = $v === 0.0 && !$this->is_value ? true : $v;
+        if ($sv !== null && $sv !== true) {
+            $this->complex = true;
+        }
+        if ($pl->overriding !== 0 && !$this->override_statistics) {
+            $this->override_statistics = clone $this->statistics;
+        }
+        if ($pl->overriding <= 1) {
+            $this->statistics->add($sv);
+        }
+        if ($pl->overriding !== 1 && $this->override_statistics) {
+            $this->override_statistics->add($sv);
+        }
+
         if ($this->editable
             && ($t = $this->edit_content($pl, $row, $v))) {
             return $t;
@@ -132,7 +159,7 @@ class Tag_PaperColumn extends PaperColumn {
             return "";
         } else if ($v >= 0.0 && $this->emoji) {
             return Tagger::unparse_emoji_html($this->emoji, $v);
-        } else if ($v === 0.0 && !$this->is_value) {
+        } else if ($sv === true) {
             return "✓";
         } else {
             return (string) $v;
@@ -144,16 +171,16 @@ class Tag_PaperColumn extends PaperColumn {
             return false;
         }
         if (!$this->is_value) {
-            return "<input type=\"checkbox\" class=\"uic js-range-click edittag\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"x\" tabindex=\"2\""
-                . ($v !== null ? ' checked="checked">' : '>');
+            $checked = $v === null ? "" : " checked";
+            return "<input type=\"checkbox\" class=\"uic js-range-click edittag\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"x\" tabindex=\"2\"{$checked}>";
         }
-        $t = '<input type="text" class="edittagval';
+        $klass = "";
         if ($this->editsort) {
-            $t .= " need-draghandle";
+            $klass = " need-draghandle";
             $pl->need_render = true;
         }
-        return $t . '" size="4" name="tag:' . "$this->dtag $row->paperId" . '" value="'
-            . ($v !== null ? htmlspecialchars((string) $v) : "") . '" tabindex="2">';
+        $vt = $v === null ? "" : ($v === true ? "0" : (string) $v);
+        return "<input type=\"text\" class=\"edittagval{$klass}\" size=\"4\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"{$vt}\" tabindex=\"2\">";
     }
     function text(PaperList $pl, PaperInfo $row) {
         if (($v = $row->tag_value($this->etag)) === null) {
@@ -163,6 +190,38 @@ class Tag_PaperColumn extends PaperColumn {
         } else {
             return (string) $v;
         }
+    }
+
+    function has_statistics() {
+        return !$this->editable;
+    }
+    private function unparse_statistic($statistics, $stat) {
+        if (!$this->complex && !$this->is_value && $stat !== ScoreInfo::SUM && $stat !== ScoreInfo::COUNT) {
+            return "";
+        }
+        $x = $statistics->statistic($stat);
+        if ($x === null) {
+            return "";
+        } else if (($stat === ScoreInfo::MEAN || $stat === ScoreInfo::MEDIAN)
+                   && $this->emoji) {
+            return Tagger::unparse_emoji_html($this->emoji, $x);
+        } else if ($stat === ScoreInfo::COUNT) {
+            return (string) $x;
+        } else if ($this->real_format) {
+            return sprintf($this->real_format, $x);
+        } else if (is_int($x) || round($x) === $x) {
+            return (string) $x;
+        } else {
+            return sprintf("%.2f", $x);
+        }
+    }
+    function statistic_html(PaperList $pl, $stat) {
+        $t = $this->unparse_statistic($this->statistics, $stat);
+        if ($this->override_statistics) {
+            $tt = $this->unparse_statistic($this->override_statistics, $stat);
+            $t = $pl->wrap_conflict($t, $tt);
+        }
+        return $t;
     }
 
     static function expand($name, XtParams $xtp, $xfj, $m) {
