@@ -214,9 +214,8 @@ class PaperTable {
             }
 
             $t .= '</span></span></a>';
-            if ($viewable_tags && $conf->tags()->has_decoration) {
-                $tagger = new Tagger($paperTable->user);
-                $t .= $tagger->unparse_decoration_html($viewable_tags);
+            if ($viewable_tags) {
+                $t .= $prow->decoration_html($paperTable->user, $viewable_tags, "");
             }
         }
 

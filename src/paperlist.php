@@ -246,7 +246,7 @@ class PaperList {
     /** @var string */
     public $row_tags;
     /** @var string */
-    public $row_tags_overridable;
+    public $row_tags_override;
     /** @var bool */
     public $need_render;
     /** @var bool */
@@ -1290,10 +1290,10 @@ class PaperList {
         }
         $tag = $fdef->as_row ? "div" : "span";
         if ((string) $main_content !== "") {
-            $main_content = "<$tag class=\"fn5\">$main_content</$tag>";
+            $main_content = "<{$tag} class=\"fn5\">{$main_content}</{$tag}>";
         }
         if ((string) $override_content !== "") {
-            $override_content = "<$tag class=\"fx5\">$override_content</$tag>";
+            $override_content = "<{$tag} class=\"fx5\">{$override_content}</{$tag}>";
         }
         return $main_content . $override_content;
     }
@@ -1351,11 +1351,11 @@ class PaperList {
         $this->row_attr = [];
         $this->row_overridable = $this->user->has_overridable_conflict($row);
 
-        $this->row_tags = $this->row_tags_overridable = "";
+        $this->row_tags = $this->row_tags_override = "";
         if (isset($row->paperTags) && $row->paperTags !== "") {
             if ($this->row_overridable) {
                 $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-                $this->row_tags_overridable = $row->sorted_viewable_tags($this->user);
+                $this->row_tags_override = $row->sorted_viewable_tags($this->user);
                 $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
                 $this->row_tags = $row->sorted_viewable_tags($this->user);
                 $this->user->set_overrides($overrides);
@@ -1363,7 +1363,7 @@ class PaperList {
                 $this->row_tags = $row->sorted_viewable_tags($this->user);
             }
         }
-        $this->mark_has("tags", $this->row_tags !== "" || $this->row_tags_overridable !== "");
+        $this->mark_has("tags", $this->row_tags !== "" || $this->row_tags_override !== "");
     }
 
     static private function _prepend_row_header($content, $ch) {
@@ -1390,27 +1390,23 @@ class PaperList {
         }
 
         // main columns
-        $tm = "";
+        $tm = [];
         foreach ($this->_vcolumns as $fdef) {
             if ($fdef->as_row || !$fdef->has_content) {
                 continue;
             }
             $content = $this->_column_html($fdef, $row);
-            $tm .= '<td class="pl';
-            if ($fdef->fold) {
-                $tm .= " fx{$fdef->fold}";
-            }
+            $fclass = $fdef->fold ? " fx{$fdef->fold}" : "";
             if ($content !== "") {
-                $tm .= " " . $fdef->className . '">' . $content;
+                $tm[] = "<td class=\"pl{$fclass} {$fdef->className}\">{$content}</td>";
+                $fdef->has_content = true;
             } else {
-                $tm .= '">';
+                $tm[] = "<td class=\"pl{$fclass}\"></td>";
             }
-            $tm .= '</td>';
-            $fdef->has_content = $fdef->has_content || $content !== "";
         }
 
         // extension columns
-        $tt = "";
+        $tt = [];
         foreach ($this->_vcolumns as $fdef) {
             if (!$fdef->as_row || !$fdef->has_content) {
                 continue;
@@ -1421,21 +1417,18 @@ class PaperList {
                 if ($content[0] === "<") {
                     $content = self::_prepend_row_header($content, $ch);
                 } else {
-                    $content = '<em class="plx">' . $ch . ':</em> ' . $content;
+                    $content = "<em class=\"plx\">{$ch}:</em> {$content}";
                 }
             }
-            $tt .= "<div class=\"" . $fdef->className;
-            if ($fdef->fold) {
-                $tt .= " fx{$fdef->fold}";
-            }
-            $tt .= "\">" . $content . "</div>";
+            $fclass = $fdef->fold ? " fx{$fdef->fold}" : "";
+            $tt[] = "<div class=\"{$fdef->className}{$fclass}\">{$content}</div>";
             $fdef->has_content = $fdef->has_content || $content !== "";
         }
 
         // tags
-        if ($this->row_tags_overridable !== ""
-            && $this->row_tags_overridable !== $this->row_tags) {
-            $this->row_attr["data-tags"] = trim($this->row_tags_overridable);
+        if ($this->row_tags_override !== ""
+            && $this->row_tags_override !== $this->row_tags) {
+            $this->row_attr["data-tags"] = trim($this->row_tags_override);
             $this->row_attr["data-tags-conflicted"] = trim($this->row_tags);
         } else if ($this->row_tags !== "") {
             $this->row_attr["data-tags"] = trim($this->row_tags);
@@ -1453,8 +1446,8 @@ class PaperList {
         $trclass = [];
         $cc = "";
         if ($row->paperTags ?? null) {
-            if ($this->row_tags_overridable !== ""
-                && ($cco = $row->conf->tags()->color_classes($this->row_tags_overridable))) {
+            if ($this->row_tags_override !== ""
+                && ($cco = $row->conf->tags()->color_classes($this->row_tags_override))) {
                 $ccx = $row->conf->tags()->color_classes($this->row_tags);
                 if ($cco !== $ccx) {
                     $this->row_attr["data-color-classes"] = $cco;
@@ -1481,7 +1474,7 @@ class PaperList {
                 $trclass[] = "highlightmark-" . $highlightclass[0];
             }
         }
-        $want_plx = $tt !== "" || $this->table_id();
+        $want_plx = !empty($tt) || $this->table_id();
         if (!$want_plx) {
             $trclass[] = "plnx";
         }
@@ -1497,14 +1490,15 @@ class PaperList {
         foreach ($this->row_attr as $k => $v) {
             $t .= "\" {$k}=\"" . htmlspecialchars($v);
         }
-        $t .= "\">" . $tm . "</tr>\n";
+        $t .= "\">" . join("", $tm) . "</tr>\n";
 
         if ($want_plx) {
             $t .= "  <tr class=\"plx {$trclass}\" data-pid=\"{$row->paperId}\">";
             if ($rstate->skipcallout > 0) {
                 $t .= "<td colspan=\"{$rstate->skipcallout}\"></td>";
             }
-            $t .= "<td class=\"plx\" colspan=\"" . ($rstate->ncol - $rstate->skipcallout) . "\">{$tt}</td></tr>\n";
+            $nc = $rstate->ncol - $rstate->skipcallout;
+            $t .= "<td class=\"plx\" colspan=\"{$nc}\">" . join("", $tt) . "</td></tr>\n";
         }
 
         return $t;

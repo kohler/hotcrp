@@ -243,26 +243,15 @@ class Title_PaperColumn extends PaperColumn {
 
         if (!$highlight_count && ($format = $row->title_format())) {
             $pl->need_render = true;
-            $t .= ' need-format" data-format="' . $format
-                . '" data-title="' . htmlspecialchars($row->title);
+            $th = htmlspecialchars($row->title);
+            $t .= " need-format\" data-format=\"{$format}\" data-title=\"{$th}";
         }
 
         $t .= '">' . $highlight_text . '</a>'
             . $pl->_contentDownload($row);
 
         if ($this->has_decoration && (string) $row->paperTags !== "") {
-            if ($pl->row_tags_overridable !== ""
-                && ($deco = $pl->tagger->unparse_decoration_html($pl->row_tags_overridable))) {
-                $decx = $pl->tagger->unparse_decoration_html($pl->row_tags);
-                if ($deco !== $decx) {
-                    $t .= str_replace('class="tagdecoration"', 'class="tagdecoration fn5"', $decx)
-                        . str_replace('class="tagdecoration"', 'class="tagdecoration fx5"', $deco);
-                } else {
-                    $t .= $deco;
-                }
-            } else if ($pl->row_tags !== "") {
-                $t .= $pl->tagger->unparse_decoration_html($pl->row_tags);
-            }
+            $t .= $row->decoration_html($pl->user, $pl->row_tags, $pl->row_tags_override);
         }
 
         return $t;
@@ -776,7 +765,7 @@ class TagList_PaperColumn extends PaperColumn {
         if ($this->editable) {
             $pl->row_attr["data-tags-editable"] = 1;
         }
-        if ($this->editable || $pl->row_tags !== "" || $pl->row_tags_overridable !== "") {
+        if ($this->editable || $pl->row_tags !== "" || $pl->row_tags_override !== "") {
             $pl->need_render = true;
             return '<span class="need-tags"></span>';
         } else {
