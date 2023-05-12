@@ -1932,6 +1932,7 @@ class PaperList {
         $next_fold = 9;
         foreach ($this->_vcolumns as $fdef) {
             foreach ($rows as $row) {
+                $this->row_overridable = $this->user->has_overridable_conflict($row);
                 if ($this->_column_html($fdef, $row) !== "") {
                     $fdef->has_content = true;
                     break;
