@@ -30,7 +30,6 @@ class Preference_PaperColumn extends PaperColumn {
         if ($cj->edit ?? false) {
             $this->mark_editable();
         }
-        $this->statistics = new ScoreInfo;
     }
     function add_decoration($decor) {
         if ($decor === "topicscore" || $decor === "topic_score" || $decor === "topicsort") {
@@ -99,19 +98,23 @@ class Preference_PaperColumn extends PaperColumn {
             return 0;
         }
     }
-    function analyze(PaperList $pl) {
-        $pfcol = $rtuid = [];
-        foreach ($pl->vcolumns() as $fdef) {
-            if ($fdef instanceof ReviewerType_PaperColumn
-                || $fdef instanceof AssignReview_PaperColumn) {
-                $rtuid[] = $fdef->contact()->contactId;
-            } else if ($fdef instanceof Preference_PaperColumn) {
-                $pfcol[] = $fdef;
+    function reset(PaperList $pl) {
+        if ($this->show_conflict === null) {
+            $pfcol = $rtuid = [];
+            foreach ($pl->vcolumns() as $fdef) {
+                if ($fdef instanceof ReviewerType_PaperColumn
+                    || $fdef instanceof AssignReview_PaperColumn) {
+                    $rtuid[] = $fdef->contact()->contactId;
+                } else if ($fdef instanceof Preference_PaperColumn) {
+                    $pfcol[] = $fdef;
+                }
             }
+            $this->show_conflict = count($pfcol) !== 1
+                || count($rtuid) !== 1
+                || $rtuid[0] !== $this->user->contactId;
         }
-        $this->show_conflict = count($pfcol) !== 1
-            || count($rtuid) !== 1
-            || $rtuid[0] !== $this->user->contactId;
+        $this->statistics = new ScoreInfo;
+        $this->override_statistics = null;
     }
     function header(PaperList $pl, $is_text) {
         if ($this->user === $this->viewer || $this->as_row) {
@@ -201,9 +204,7 @@ class Preference_PaperColumn extends PaperColumn {
         $t = $this->unparse_statistic($this->statistics, $stat);
         if ($this->override_statistics) {
             $tt = $this->unparse_statistic($this->override_statistics, $stat);
-            if ($t !== $tt) {
-                $t = "<span class=\"fn5\">{$t}</span><span class=\"fx5\">{$tt}</span>";
-            }
+            $t = $pl->wrap_conflict($t, $tt);
         }
         return $t;
     }

@@ -21,7 +21,6 @@ class Formula_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_BOTH;
         $this->formula = $cj->formula;
-        $this->statistics = new ScoreInfo;
     }
     function add_decoration($decor) {
         if (preg_match('/\A%\d*(?:\.\d*)[bdeEfFgGoxX]\z/', $decor)) {
@@ -72,21 +71,24 @@ class Formula_PaperColumn extends PaperColumn {
         }
         return $as <=> $bs;
     }
-    function analyze(PaperList $pl) {
-        $formulaf = $this->formula_function;
-        $this->results = [];
-        $isreal = $this->formula->result_format_is_numeric();
-        foreach ($pl->rowset() as $row) {
-            $v = $formulaf($row, null, $pl->user);
-            $this->results[$row->paperId] = $v;
-            if ($isreal
-                && !$this->real_format
-                && is_float($v)
-                && round($v * 100) % 100 != 0) {
-                $this->real_format = "%.2f";
+    function reset(PaperList $pl) {
+        if ($this->results === null) {
+            $formulaf = $this->formula_function;
+            $this->results = [];
+            $isreal = $this->formula->result_format_is_numeric();
+            foreach ($pl->rowset() as $row) {
+                $v = $formulaf($row, null, $pl->user);
+                $this->results[$row->paperId] = $v;
+                if ($isreal
+                    && !$this->real_format
+                    && is_float($v)
+                    && round($v * 100) % 100 != 0) {
+                    $this->real_format = "%.2f";
+                }
             }
         }
-        assert(!!$this->statistics);
+        $this->statistics = new ScoreInfo;
+        $this->override_statistics = null;
     }
     /** @return string */
     private function unparse($x) {

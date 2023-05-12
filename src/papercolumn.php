@@ -102,7 +102,7 @@ class PaperColumn extends Column {
         return $a->paperId <=> $b->paperId;
     }
 
-    function analyze(PaperList $pl) {
+    function reset(PaperList $pl) {
     }
 
     /** @param bool $is_text
@@ -266,6 +266,8 @@ class Status_PaperColumn extends PaperColumn {
     private $show_submitted;
     /** @var array<int,float> */
     private $sortmap;
+    /** @var bool */
+    private $status_analyzed = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_BOTH;
@@ -280,13 +282,16 @@ class Status_PaperColumn extends PaperColumn {
             $this->sortmap[$row->paperXid] = $row->viewable_decision($pl->user)->order ? : PHP_INT_MAX;
         }
     }
-    function analyze(PaperList $pl) {
-        foreach ($pl->rowset() as $row) {
-            if ($row->outcome !== 0 || $row->paperStorageId <= 1) {
-                list($class, $name) = $row->status_class_and_name($pl->user);
-                if (strlen($name) > 10 && strpos($name, " ") !== false) {
-                    $this->className .= " pl-status-long";
-                    break;
+    function reset(PaperList $pl) {
+        if (!$this->status_analyzed) {
+            $this->status_analyzed = true;
+            foreach ($pl->rowset() as $row) {
+                if ($row->outcome !== 0 || $row->paperStorageId <= 1) {
+                    list($class, $name) = $row->status_class_and_name($pl->user);
+                    if (strlen($name) > 10 && strpos($name, " ") !== false) {
+                        $this->className .= " pl-status-long";
+                        break;
+                    }
                 }
             }
         }

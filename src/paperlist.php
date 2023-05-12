@@ -1186,7 +1186,7 @@ class PaperList {
 
         // analyze rows and return
         foreach ($this->_vcolumns as $f) {
-            $f->analyze($this);
+            $f->reset($this);
         }
     }
 
@@ -1941,6 +1941,7 @@ class PaperList {
                     break;
                 }
             }
+            $fdef->reset($this);
             if (!$fdef->has_content) {
                 continue;
             }

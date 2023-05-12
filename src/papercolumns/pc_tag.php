@@ -32,7 +32,6 @@ class Tag_PaperColumn extends PaperColumn {
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         $this->dtag = $cj->tag;
         $this->is_value = $cj->tagvalue ?? null;
-        $this->statistics = new ScoreInfo;
     }
     function add_decoration($decor) {
         if ($decor === "edit") {
@@ -117,6 +116,10 @@ class Tag_PaperColumn extends PaperColumn {
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         return $this->sortmap[$a->paperXid] <=> $this->sortmap[$b->paperXid];
+    }
+    function reset(PaperList $pl) {
+        $this->statistics = new ScoreInfo;
+        $this->override_statistics = null;
     }
     function header(PaperList $pl, $is_text) {
         if (($twiddle = strpos($this->dtag, "~")) > 0) {
