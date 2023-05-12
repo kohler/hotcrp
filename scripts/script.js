@@ -3588,13 +3588,16 @@ function fold_storage() {
 }
 
 function fold_session_for(foldnum, type) {
-    var s = this.getAttribute("data-fold-" + type), flip = false;
+    var s = this.getAttribute("data-fold-" + type), p, flip = false;
+    if (s && (s.charAt(0) === "{" || s.charAt(0) === "[")) {
+        s = (parse_json(s) || {})[foldnum];
+    }
     if (s && s.charAt(0) === "-") {
         s = s.substring(1);
         flip = true;
     }
-    if (s && (s.charAt(0) === "{" || s.charAt(0) === "[")) {
-        s = (parse_json(s) || {})[foldnum];
+    if (s && (p = this.getAttribute("data-fold-" + type + "-prefix"))) {
+        s = p + s;
     }
     return s ? [s, flip] : null;
 }
