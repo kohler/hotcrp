@@ -13,14 +13,13 @@ class Formula_PaperColumn extends PaperColumn {
     private $override_statistics;
     /** @var array<int,mixed> */
     private $results;
-    /** @var ?array<int,mixed> */
-    private $override_results;
     /** @var ?string */
     private $real_format;
     /** @var array<int,int|float> */
     private $sortmap;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
+        $this->override = PaperColumn::OVERRIDE_BOTH;
         $this->formula = $cj->formula;
         $this->statistics = new ScoreInfo;
     }
@@ -75,9 +74,8 @@ class Formula_PaperColumn extends PaperColumn {
     }
     function analyze(PaperList $pl) {
         $formulaf = $this->formula_function;
-        $this->results = $this->override_results = [];
+        $this->results = [];
         $isreal = $this->formula->result_format_is_numeric();
-        $override_rows = [];
         foreach ($pl->rowset() as $row) {
             $v = $formulaf($row, null, $pl->user);
             $this->results[$row->paperId] = $v;
@@ -87,26 +85,6 @@ class Formula_PaperColumn extends PaperColumn {
                 && round($v * 100) % 100 != 0) {
                 $this->real_format = "%.2f";
             }
-            if ($row->has_conflict($pl->user)
-                && $pl->user->allow_administer($row)) {
-                $override_rows[] = $row;
-            }
-        }
-        if (!empty($override_rows)) {
-            $overrides = $pl->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-            foreach ($override_rows as $row) {
-                $vv = $formulaf($row, null, $pl->user);
-                if ($vv !== $this->results[$row->paperId]) {
-                    $this->override_results[$row->paperId] = $vv;
-                    if ($isreal
-                        && !$this->real_format
-                        && is_float($vv)
-                        && round($vv * 100) % 100 != 0) {
-                        $this->real_format = "%.2f";
-                    }
-                }
-            }
-            $pl->user->set_overrides($overrides);
         }
         assert(!!$this->statistics);
     }
@@ -119,23 +97,21 @@ class Formula_PaperColumn extends PaperColumn {
         return $this->formula->unparse_diff_html($x, $this->real_format);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $v = $vv = $this->results[$row->paperId];
-        $t = $this->unparse($v);
-        if (isset($this->override_results[$row->paperId])) {
-            $vv = $this->override_results[$row->paperId];
-            $tt = $this->unparse($vv);
-            if (!$this->override_statistics) {
-                $this->override_statistics = clone $this->statistics;
-            }
-            if ($t !== $tt) {
-                $t = "<span class=\"fn5\">{$t}</span><span class=\"fx5\">{$tt}</span>";
-            }
+        if ($pl->overriding !== 0 && !$this->override_statistics) {
+            $this->override_statistics = clone $this->statistics;
         }
-        $this->statistics->add($v);
-        if ($this->override_statistics) {
-            $this->override_statistics->add($vv);
+        if ($pl->overriding === 2) {
+            $v = call_user_func($this->formula_function, $row, null, $pl->user);
+        } else {
+            $v = $this->results[$row->paperId];
         }
-        return $t;
+        if ($pl->overriding <= 1) {
+            $this->statistics->add($v);
+        }
+        if ($pl->overriding !== 1 && $this->override_statistics) {
+            $this->override_statistics->add($v);
+        }
+        return $this->unparse($v);
     }
     function text(PaperList $pl, PaperInfo $row) {
         $v = $this->results[$row->paperId];

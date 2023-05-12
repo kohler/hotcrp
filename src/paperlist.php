@@ -243,6 +243,8 @@ class PaperList {
     public $row_attr;
     /** @var bool */
     public $row_overridable;
+    /** @var 0|1|2 */
+    public $overriding = 0;
     /** @var string */
     public $row_tags;
     /** @var string */
@@ -1310,15 +1312,18 @@ class PaperList {
         $content = "";
         if ($override <= 0) {
             if (!$fdef->content_empty($this, $row)) {
+                $this->overriding = 0;
                 $content = $fdef->content($this, $row);
             }
         } else if ($override === PaperColumn::OVERRIDE_BOTH) {
             $content1 = $content2 = "";
             if (!$fdef->content_empty($this, $row)) {
+                $this->overriding = 1;
                 $content1 = $fdef->content($this, $row);
             }
             $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
             if (!$fdef->content_empty($this, $row)) {
+                $this->overriding = 2;
                 $content2 = $fdef->content($this, $row);
             }
             $this->user->set_overrides($overrides);
@@ -1326,15 +1331,18 @@ class PaperList {
         } else if ($override === PaperColumn::OVERRIDE_FORCE) {
             $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
             if (!$fdef->content_empty($this, $row)) {
+                $this->overriding = 0;
                 $content = $fdef->content($this, $row);
             }
             $this->user->set_overrides($overrides);
         } else { // $override > 0
             if (!$fdef->content_empty($this, $row)) {
+                $this->overriding = 0;
                 $content = $fdef->content($this, $row);
             } else {
                 $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
                 if (!$fdef->content_empty($this, $row)) {
+                    $this->overriding = 2;
                     if ($override === PaperColumn::OVERRIDE_IFEMPTY_LINK) {
                         $content = '<em>Hidden for conflict</em> · <a class="ui js-override-conflict" href="">Override</a>';
                     }
