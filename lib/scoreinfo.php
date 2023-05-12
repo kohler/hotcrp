@@ -121,11 +121,11 @@ class ScoreInfo {
     /** @param int|float $x
      * @return $this */
     function add($x) {
-        if ($x === null) {
+        if ($x === null || $x === false) {
             return;
         }
-        if (is_bool($x)) {
-            $x = $x ? 1 : 0;
+        if ($x === true) {
+            $x = 1;
         }
         $this->_scores[] = $x;
         $this->_sum += $x;
