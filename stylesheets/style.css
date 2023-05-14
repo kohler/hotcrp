@@ -3207,6 +3207,7 @@ tr.plx {
 	-webkit-print-color-adjust: exact;
 	print-color-adjust: exact;
 }
+/* for colors, see also TagStyle */
 .tag-red {
 	background-color: #ffd8d8;
 }

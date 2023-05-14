@@ -282,7 +282,9 @@ class TagStyle {
     /** @var int */
     public $sclass;
     /** @var ?bool */
-    public $dark;
+    private $dark;
+    /** @var ?HclColor */
+    private $hcl;
 
     const DYNAMIC = 1;
     const UNLISTED = 2;
@@ -290,6 +292,9 @@ class TagStyle {
     const BG = 8;
     const TEXT = 16;
     const STYLE = 24; // BG | TEXT
+
+    // see also style.css
+    const KNOWN_COLORS = " red:ffd8d8 orange:fdebcc yellow:fdffcb green:d8ffd8 blue:d8d8ff purple:f2d8f8 gray:e2e2e2 white:ffffff";
 
     /** @param string $s
      * @return ?string */
@@ -384,6 +389,25 @@ class TagStyle {
             $this->dark = $l < 0.3;
         }
         return $this->dark;
+    }
+
+    /** @return ?HclColor
+     * @suppress PhanParamSuspiciousOrder */
+    function hcl() {
+        if (($this->sclass & self::BG) === 0) {
+            return null;
+        }
+        if ($this->hcl === null) {
+            if (($this->sclass & self::DYNAMIC) !== 0) {
+                $rgb = intval(substr($this->style, 4), 16);
+            } else if (($p = strpos(self::KNOWN_COLORS, " {$this->style}:")) !== false) {
+                $rgb = intval(substr(self::KNOWN_COLORS, $p + 2 + strlen($this->style), 6), 16);
+            } else {
+                return null;
+            }
+            $this->hcl = HclColor::from_rgb($rgb >> 16, ($rgb >> 8) & 255, $rgb & 255);
+        }
+        return $this->hcl;
     }
 }
 
@@ -755,42 +779,51 @@ class TagMap implements IteratorAggregate {
 
     /** @param string|list<string> $tags
      * @param 0|8|16|24 $sclassmatch
-     * @return ?list<string> */
-    function styles($tags, $sclassmatch = 0, $no_pattern_fill = false) {
+     * @return list<TagStyle> */
+    function unique_tagstyles($tags, $sclassmatch = 0) {
         if (is_array($tags)) {
             $tags = join(" ", $tags);
         }
         if (!$tags
             || $tags === " "
             || !preg_match_all($this->color_regex(), $tags, $ms)) {
-            return null;
+            return [];
         }
         $sclassmatch = $sclassmatch ? : TagStyle::STYLE;
-        $classes = [];
+        $kss = [];
         $sclass = 0;
-        $nbg = $ndarkbg = 0;
         foreach ($ms[1] as $m) {
             $t = $this->check(strtolower($m));
             if ($t === null || empty($t->styles)) {
                 continue;
             }
             foreach ($t->styles as $ks) {
-                if (($ks->sclass & $sclassmatch) !== 0) {
-                    $x = "tag-{$ks->style}";
-                    if (!in_array($x, $classes)) {
-                        $classes[] = $x;
-                        $sclass |= $ks->sclass;
-                        if (($ks->sclass & TagStyle::BG) !== 0) {
-                            ++$nbg;
-                            if ($ks->dark())
-                                ++$ndarkbg;
-                        }
-                    }
-                }
+                if (($ks->sclass & $sclassmatch) !== 0
+                    && !in_array($ks, $kss))
+                    $kss[] = $ks;
             }
         }
-        if (empty($classes)) {
+        return $kss;
+    }
+
+    /** @param string|list<string> $tags
+     * @param 0|8|16|24 $sclassmatch
+     * @return ?list<string> */
+    function styles($tags, $sclassmatch = 0, $no_pattern_fill = false) {
+        $kss = $this->unique_tagstyles($tags, $sclassmatch);
+        if (empty($kss)) {
             return null;
+        }
+        $classes = [];
+        $sclass = $nbg = $ndarkbg = 0;
+        foreach ($kss as $ks) {
+            $classes[] = "tag-{$ks->style}";
+            $sclass |= $ks->sclass;
+            if (($ks->sclass & TagStyle::BG) !== 0) {
+                ++$nbg;
+                if ($ks->dark())
+                    ++$ndarkbg;
+            }
         }
         if ($nbg > 0 && $ndarkbg * 2 > $nbg) {
             $classes[] = "dark";
@@ -1010,7 +1043,7 @@ class TagMap implements IteratorAggregate {
     const UNPARSE_TEXT = 2;
     function unparse($tag, $value, Contact $viewer, $flags = 0) {
         $prefix = "";
-        $suffix = $value ? "#$value" : "";
+        $suffix = $value ? "#{$value}" : "";
         $hash = ($flags & self::UNPARSE_HASH ? "#" : "");
         if (($twiddle = strpos($tag, "~")) > 0) {
             $cid = (int) substr($tag, 0, $twiddle);

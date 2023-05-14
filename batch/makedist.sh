@@ -148,12 +148,14 @@ lib/fmt.php
 lib/ftext.php
 lib/getopt.php
 lib/gmpshim.php
+lib/hclcolor.php
 lib/ht.php
 lib/icons.php
 lib/json.php
 lib/jsonexception.php
 lib/jsonparser.php
 lib/jwtparser.php
+lib/labcolor.php
 lib/ldaplogin.php
 lib/login.php
 lib/mailer.php
@@ -369,6 +371,7 @@ src/pages/p_users.php
 src/papercolumn.php
 src/papercolumns/pc_administrator.php
 src/papercolumns/pc_assignreview.php
+src/papercolumns/pc_color.php
 src/papercolumns/pc_commenters.php
 src/papercolumns/pc_conflict.php
 src/papercolumns/pc_conflictmatch.php

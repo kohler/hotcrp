@@ -265,6 +265,10 @@
         "order": 1420
     },
     {
+        "name": "color", "title": "Color",
+        "prefer_row": true, "sort": true, "function": "+Color_PaperColumn"
+    },
+    {
         "name": "administrator", "title": "Administrator",
         "prefer_row": true, "sort": true,
         "function": "+Administrator_PaperColumn",
