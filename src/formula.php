@@ -50,10 +50,13 @@ abstract class Fexpr implements JsonSerializable {
     public $pos2;
 
     const IDX_NONE = 0;
-    const IDX_PC = 1;
-    const IDX_REVIEW = 2;
-    const IDX_MY = 4;
-    const IDX_PC_SET_PRIVATE_TAG = 8;
+    const IDX_PC = 0x01;
+    const IDX_REVIEW = 0x02;
+    const IDX_MY = 0x04;
+    const IDX_PC_SET_PRIVATE_TAG = 0x08;
+    const IDX_CREVIEW = 0x12;
+    const IDX_ANYREVIEW = 0x22;
+    const IDX_REVIEW_MASK = 0x32;
 
     const FUNKNOWN = 0;
     const FNULL = 1;
@@ -783,6 +786,14 @@ class Aggregate_Fexpr extends Fexpr {
                    && !$ff->modifier[0]) {
             $ff->modifier[0] = Fexpr::IDX_REVIEW;
             return true;
+        } else if (in_array($arg, [".cre", ".creview"])
+                   && !$ff->modifier[0]) {
+            $ff->modifier[0] = Fexpr::IDX_CREVIEW;
+            return true;
+        } else if (in_array($arg, [".anyre", ".anyreview"])
+                   && !$ff->modifier[0]) {
+            $ff->modifier[0] = Fexpr::IDX_ANYREVIEW;
+            return true;
         } else if (($ff->name === "variance" || $ff->name === "stddev")
                    && !$ff->modifier[1]
                    && strpos($ff->text, "_") === false
@@ -1334,10 +1345,14 @@ class FormulaCompiler {
 
     /** @param bool $submitted
      * @return string */
-    function _rrow_view_score_bound($submitted = false) {
+    function _rrow_view_score_bound($submitted) {
         $rrow = $this->_rrow();
-        $sfx = $submitted ? "s" : "";
-        $clause = $submitted ? " && {$rrow}->reviewSubmitted" : "";
+        $sfx = $clause = "";
+        if (($submitted || $this->index_type === Fexpr::IDX_CREVIEW)
+            && $this->index_type !== Fexpr::IDX_ANYREVIEW) {
+            $sfx = "s";
+            $clause = $submitted ? " && {$rrow}->reviewSubmitted" : "";
+        }
         if ($this->index_type === Fexpr::IDX_NONE) {
             return $this->define_gvar("rrow_vsb{$sfx}", "({$rrow}{$clause} ? \$contact->view_score_bound(\$prow, {$rrow}) : " . VIEWSCORE_EMPTYBOUND . ")");
         } else if ($this->index_type === Fexpr::IDX_MY) {
@@ -1394,15 +1409,16 @@ class FormulaCompiler {
     }
 
     /** @param bool $isblock
+     * @param list<string> $prefix
      * @return string */
-    private function _join_lstmt($isblock) {
+    private function _join_lstmt($isblock, $prefix = []) {
         $indent = "\n" . str_repeat(" ", $this->indent);
-        $t = $isblock ? "{" . $indent : "";
-        $t .= join($indent, $this->lstmt);
+        $body = join($indent, array_merge($prefix, $this->lstmt));
         if ($isblock) {
-            $t .= substr($indent, 0, $this->indent - 1) . "}";
+            return "{{$indent}{$body}" . substr($indent, 0, -2) . "}";
+        } else {
+            return $body;
         }
-        return $t;
     }
 
     /** @param int $index_types
@@ -1410,7 +1426,7 @@ class FormulaCompiler {
     function loop_variable($index_types) {
         if ($index_types === Fexpr::IDX_PC_SET_PRIVATE_TAG) {
             return $this->_add_pc_set_private_tag();
-        } else if ($index_types === Fexpr::IDX_REVIEW) {
+        } else if (($index_types & Fexpr::IDX_REVIEW_MASK) === $index_types) {
             return $this->_add_vreviews();
         } else if ($index_types === Fexpr::IDX_PC) {
             return $this->_add_pc();
@@ -1449,43 +1465,42 @@ class FormulaCompiler {
             $this->lstmt[] = "{$t_result} = {$combiner};";
         }
 
-        if ($this->_lflags) {
-            if ($this->_lflags & self::LFLAG_RROW_VSBS) {
-                $result = $this->_lflags & self::LFLAG_RROW_VSB ? "\$rrow_vsb_{$p}" : "\$contact->view_score_bound(\$prow, \$rrow_{$p})";
-                array_unshift($this->lstmt, "\$rrow_vsbs_{$p} = \$rrow_{$p} && \$rrow_{$p}->reviewSubmitted ? {$result} : " . VIEWSCORE_EMPTYBOUND . ";");
+        $lprefix = [];
+        if (($this->index_type & Fexpr::IDX_REVIEW) !== 0) {
+            $lprefix[] = "\$rrow_{$p} = \$v{$p};";
+            if ($this->index_type === Fexpr::IDX_CREVIEW) {
+                $lprefix[] = "if (!\$rrow_{$p}->reviewSubmitted) { continue; }";
             }
-            if ($this->_lflags & self::LFLAG_RROW_VSB) {
-                array_unshift($this->lstmt, "\$rrow_vsb_{$p} = \$rrow_{$p} ? \$contact->view_score_bound(\$prow, \$rrow_{$p}) : " . VIEWSCORE_EMPTYBOUND . ";");
+            if (($this->_lflags & self::LFLAG_ANYCID) !== 0) {
+                $lprefix[] = "\$i{$p} = \$contact->can_view_review_identity(\$prow, \$rrow_{$p}) ? \$rrow_{$p}->contactId : null;";
             }
-            if ($this->_lflags & self::LFLAG_RROW) {
-                if ($this->index_type === Fexpr::IDX_REVIEW) {
-                    $v = "\$v{$p}";
-                } else {
-                    $v = "\$prow->viewable_review_by_user(\$i{$p}, \$contact)";
-                }
-                array_unshift($this->lstmt, "\$rrow_{$p} = {$v};");
+        } else {
+            if (($this->_lflags & self::LFLAG_RROW) !== 0) {
+                $lprefix[] = "\$rrow_{$p} = \$prow->viewable_review_by_user(\$i{$p}, \$contact);";
             }
-            if (($this->_lflags & self::LFLAG_ANYCID)
-                && $this->index_type === Fexpr::IDX_REVIEW) {
-                array_unshift($this->lstmt, "\$i{$p} = \$contact->can_view_review_identity(\$prow, \$v{$p}) ? \$v{$p}->contactId : null;");
-            }
-            if ($this->_lflags & self::LFLAG_PREFERENCES) {
-                $loopstmt[] = "\$preferences_{$p} = \$prow->viewable_preferences(\$contact"
-                    . ($this->_lflags & self::LFLAG_CID ? "" : ", true")
-                    . ");";
-            }
+        }
+        if (($this->_lflags & (self::LFLAG_RROW_VSB | self::LFLAG_RROW_VSBS)) !== 0) {
+            $lprefix[] = "\$rrow_vsb_{$p} = \$rrow_{$p} ? \$contact->view_score_bound(\$prow, \$rrow_{$p}) : " . VIEWSCORE_EMPTYBOUND . ";";
+        }
+        if (($this->_lflags & self::LFLAG_RROW_VSBS) !== 0) {
+            $lprefix[] = "\$rrow_vsbs_{$p} = \$rrow_{$p} && \$rrow_{$p}->reviewSubmitted ? \$rrow_vsb_{$p} : " . VIEWSCORE_EMPTYBOUND . ";";
+        }
+        if (($this->_lflags & self::LFLAG_PREFERENCES) !== 0) {
+            $loopstmt[] = "\$preferences_{$p} = \$prow->viewable_preferences(\$contact"
+                . ($this->_lflags & self::LFLAG_CID ? "" : ", true")
+                . ");";
         }
 
         if ($this->term_compiler !== null) {
-            $loop = "foreach (\$extractor_results as \$v$p) " . $this->_join_lstmt(true);
+            $loop = "foreach (\$extractor_results as \$v$p) " . $this->_join_lstmt(true, $lprefix);
         } else {
             $g = $this->loop_variable($this->index_type);
-            if ($this->index_type === Fexpr::IDX_REVIEW) {
+            if (($this->index_type & Fexpr::IDX_REVIEW) !== 0) {
                 $loop = "foreach ({$g} as \$v{$p}) ";
             } else {
                 $loop = "foreach ({$g} as \$i{$p} => \$v{$p}) ";
             }
-            $loop .= str_replace("~i~", "\$i{$p}", $this->_join_lstmt(true));
+            $loop .= str_replace("~i~", "\$i{$p}", $this->_join_lstmt(true, $lprefix));
             $loop = str_replace("({$g}[\$i{$p}] ?? null)", "\$v{$p}", $loop);
         }
         $loopstmt[] = $loop;
@@ -2446,9 +2461,14 @@ class Formula implements JsonSerializable {
             $g = $state->loop_variable($index_types);
             $t = "assert(\$contact->contactXid === {$user->contactXid});\n  "
                 . join("\n  ", $state->gstmt) . "\n";
-            if ($index_types === Fexpr::IDX_REVIEW) {
+            if (($index_types & Fexpr::IDX_REVIEW) !== 0) {
+                $check = "";
+                if ($index_types === Fexpr::IDX_CREVIEW) {
+                    $check = "    if (!\$rrow->reviewSubmitted) { continue; }\n";
+                }
                 $t .= "  \$cids = [];\n"
                     . "  foreach ({$g} as \$rrow) {\n"
+                    . $check
                     . "    \$cids[] = \$rrow->contactId;\n"
                     . "  }\n"
                     . "  return \$cids;\n";

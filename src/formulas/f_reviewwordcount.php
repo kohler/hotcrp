@@ -1,6 +1,6 @@
 <?php
 // formulas/f_reviewwordcount.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2023 Eddie Kohler; see LICENSE.
 
 class ReviewWordCount_Fexpr extends Fexpr {
     function __construct() {
@@ -19,7 +19,7 @@ class ReviewWordCount_Fexpr extends Fexpr {
         }
         $state->_ensure_review_word_counts();
         $rrow = $state->_rrow();
-        $rrow_vsb = $state->_rrow_view_score_bound();
+        $rrow_vsb = $state->_rrow_view_score_bound(true);
         return "(" . VIEWSCORE_AUTHORDEC . " > {$rrow_vsb} ? {$rrow}->reviewWordCount : null)";
     }
 }

@@ -22,7 +22,7 @@ class ReviewRound_Fexpr extends Fexpr {
                 return "null";
             }
             $state->queryOptions["reviewSignatures"] = true;
-            $rrow_vsb = $state->_rrow_view_score_bound();
+            $rrow_vsb = $state->_rrow_view_score_bound(false);
             return "(" . VIEWSCORE_REVIEWER . " > $rrow_vsb ? {$rrow}->reviewRound : null)";
         }
     }
