@@ -1429,10 +1429,10 @@ class AssignmentSet {
 
     /** @param string $line */
     function parse_csv_comment($line) {
-        if (preg_match('/\A#\s*hotcrp_assign_display_search\s*(\S.*)\s*\z/', $line, $m)) {
+        if (preg_match('/\A###\s*hotcrp_assign_display_search\s*(\S.*)\s*\z/', $line, $m)) {
             $this->unparse_search = $m[1];
         }
-        if (preg_match('/\A#\s*hotcrp_assign_show\s+(\w+)\s*\z/', $line, $m)) {
+        if (preg_match('/\A###\s*hotcrp_assign_show\s+(\w+)\s*\z/', $line, $m)) {
             $this->show_column($m[1]);
         }
     }
@@ -1462,7 +1462,7 @@ class AssignmentSet {
         } else {
             if (!isset($this->searches[$pfield])) {
                 $search = new PaperSearch($this->user, ["q" => $pfield, "t" => $this->search_type, "reviewer" => $this->astate->reviewer]);
-                $this->searches[$pfield] = $search->paper_ids();
+                $this->searches[$pfield] = $search->sorted_paper_ids();
                 if ($search->has_problem()) {
                     $this->search_messages[$pfield] = $search->message_list();
                 }
@@ -1662,7 +1662,7 @@ class AssignmentSet {
             assert($filename === null || $csv->filename() === $filename);
         } else {
             $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
-            $csv->set_comment_chars("%#");
+            $csv->set_comment_start("###");
             $csv->set_comment_function([$this, "parse_csv_comment"]);
             $csv->set_filename($filename);
         }

@@ -117,8 +117,8 @@ class CsvParser implements Iterator {
     private $xheader = [];
     /** @var array<string,int> */
     private $hmap = [];
-    /** @var ?string */
-    private $comment_chars;
+    /** @var ?list<string> */
+    private $comment_start;
     /** @var callable(string,CsvParser) */
     private $comment_function;
     /** @var array<int,int> */
@@ -233,7 +233,17 @@ class CsvParser implements Iterator {
     /** @param string $s
      * @return $this */
     function set_comment_chars($s) {
-        $this->comment_chars = $s;
+        $this->comment_start = null;
+        for ($i = 0; $i !== strlen($s); ++$i) {
+            $this->comment_start[] = $s[$i];
+        }
+        return $this;
+    }
+
+    /** @param list<string> ...$s
+     * @return $this */
+    function set_comment_start(...$s) {
+        $this->comment_start = empty($s) ? null : $s;
         return $this;
     }
 
@@ -451,13 +461,22 @@ class CsvParser implements Iterator {
                 return;
             } else if ($line === "" || $line[0] === "\n" || $line[0] === "\r") {
                 // skip
-            } else if ($this->comment_chars !== null
-                       && strpos($this->comment_chars, $line[0]) !== false) {
+            } else if ($this->comment_start === null) {
+                return;
+            } else {
+                $comment = false;
+                foreach ($this->comment_start as $s) {
+                    if (str_starts_with($line, $s)) {
+                        $comment = true;
+                        break;
+                    }
+                }
+                if (!$comment) {
+                    return;
+                }
                 if ($this->comment_function) {
                     call_user_func($this->comment_function, $line, $this);
                 }
-            } else {
-                return;
             }
             ++$this->lpos;
         }

@@ -126,8 +126,8 @@ class DiscussionOrder_Autoassigner extends Autoassigner {
         $this->mark_progress("Completing assignment");
         $this->ass = [
             "paper,action,tag\n",
-            "# hotcrp_assign_display_search\n",
-            "# hotcrp_assign_show pcconf\n",
+            "### hotcrp_assign_display_search\n",
+            "### hotcrp_assign_show pcconf\n",
             "all,cleartag,{$this->tag}\n"
         ];
         $curgroup = -1;
@@ -142,7 +142,7 @@ class DiscussionOrder_Autoassigner extends Autoassigner {
             $this->ass[] = "{$pid},tag,{$this->tag}#{$index}\n";
             $search[] = $pid;
         }
-        $this->ass[1] = "# hotcrp_assign_display_search " . join(" ", $search) . "\n";
+        $this->ass[1] = "### hotcrp_assign_display_search " . join(" ", $search) . "\n";
         //echo Ht::unstash_script("$('#propass').before(" . json_encode_browser(Ht::pre_text_wrap($m->debug_info(true) . "\n")) . ")");
         $this->finish_assignment(); // recover memory
     }
