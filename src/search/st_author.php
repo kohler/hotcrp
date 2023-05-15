@@ -75,8 +75,8 @@ class Author_SearchTerm extends SearchTerm {
         }
         return $this->csm->test($n);
     }
-    function configure_search($top, PaperSearch $srch) {
-        if ($this->regex) {
+    function prepare_visit($param, PaperSearch $srch) {
+        if ($param->want_field_highlighter() && $this->regex) {
             $srch->add_field_highlighter("au", $this->regex);
         }
     }

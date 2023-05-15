@@ -208,9 +208,9 @@ abstract class SearchTerm {
     }
 
 
-    /** @param bool $top
+    /** @param PaperSearchPrepareParam $param
      * @return void */
-    function configure_search($top, PaperSearch $srch) {
+    function prepare_visit($param, PaperSearch $srch) {
     }
 
     /** @param bool $top
@@ -387,10 +387,12 @@ abstract class Op_SearchTerm extends SearchTerm {
             }
         }
     }
-    function configure_search($top, PaperSearch $srch) {
-        $top = $top && $this instanceof And_SearchTerm;
+    function prepare_visit($param, PaperSearch $srch) {
+        if (!($this instanceof And_SearchTerm)) {
+            $param = $param->disable_toplevel();
+        }
         foreach ($this->child as $qv) {
-            $qv->configure_search($top, $srch);
+            $qv->prepare_visit($param, $srch);
         }
     }
     function about_reviews() {
@@ -455,7 +457,9 @@ class Not_SearchTerm extends Op_SearchTerm {
             return ["type" => "not", "child" => [$x]];
         }
     }
-    function configure_search($top, PaperSearch $srch) {
+    function prepare_visit($param, PaperSearch $srch) {
+        $param = $param->disable_field_highlighter();
+        $this->child[0]->prepare_visit($param, $srch);
     }
 }
 
@@ -726,6 +730,10 @@ class Then_SearchTerm extends Op_SearchTerm {
         array_splice($this->child, $this->nthen, 0, $newhvalues);
         $this->hlinfo = $newhinfo;
         return $this;
+    }
+    function prepare_visit($param, PaperSearch $srch) {
+        $srch->set_then_term($this, $param);
+        parent::prepare_visit($param, $srch);
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -1184,8 +1192,8 @@ class Limit_SearchTerm extends SearchTerm {
         }
     }
 
-    function configure_search($top, PaperSearch $srch) {
-        if ($top && ($this->lflag & self::LFLAG_IMPLICIT) === 0) {
+    function prepare_visit($param, PaperSearch $srch) {
+        if ($param->toplevel() && ($this->lflag & self::LFLAG_IMPLICIT) === 0) {
             $srch->apply_limit($this);
         }
     }
@@ -1268,8 +1276,8 @@ class TextMatch_SearchTerm extends SearchTerm {
             return ["type" => $this->field, "match" => $this->trivial];
         }
     }
-    function configure_search($top, PaperSearch $srch) {
-        if ($this->regex) {
+    function prepare_visit($param, PaperSearch $srch) {
+        if ($param->want_field_highlighter() && $this->regex) {
             $srch->add_field_highlighter($this->type, $this->regex);
         }
     }

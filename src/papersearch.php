@@ -277,6 +277,44 @@ class SearchViewElement {
     }
 }
 
+class PaperSearchPrepareParam {
+    /** @var bool */
+    private $_toplevel = true;
+    /** @var bool */
+    private $_field_highlighter = true;
+
+    /** @return bool */
+    function toplevel() {
+        return $this->_toplevel;
+    }
+
+    /** @return PaperSearchPrepareParam */
+    function disable_toplevel() {
+        if (!$this->_toplevel) {
+            return $this;
+        }
+        $x = clone $this;
+        $x->_toplevel = false;
+        return $x;
+    }
+
+
+    /** @return bool */
+    function want_field_highlighter() {
+        return $this->_field_highlighter;
+    }
+
+    /** @return PaperSearchPrepareParam */
+    function disable_field_highlighter() {
+        if (!$this->_field_highlighter) {
+            return $this;
+        }
+        $x = clone $this;
+        $x->_field_highlighter = false;
+        return $x;
+    }
+}
+
 class PaperSearch extends MessageSet {
     /** @var Conf
      * @readonly */
@@ -325,6 +363,8 @@ class PaperSearch extends MessageSet {
     private $_saved_search_stack;
     /** @var list<int> */
     private $_matches;
+    /** @var ?Then_SearchTerm */
+    private $_then_term;
     /** @var ?array<int,int> */
     private $_then_map;
     /** @var ?array<int,list<string>> */
@@ -663,7 +703,7 @@ class PaperSearch extends MessageSet {
     /** @param string $word
      * @return ?string */
     private function _expand_saved_search($word) {
-        $sj = $this->conf->setting_json("ss:$word");
+        $sj = $this->conf->setting_json("ss:{$word}");
         if ($sj && is_object($sj) && isset($sj->q)) {
             $q = $sj->q;
             if (isset($sj->t) && $sj->t !== "" && $sj->t !== "s") {
@@ -1197,7 +1237,7 @@ class PaperSearch extends MessageSet {
             }
 
             // extract regular expressions
-            $this->_qe->configure_search(true, $this);
+            $this->_qe->prepare_visit(new PaperSearchPrepareParam, $this);
         }
         return $this->_qe;
     }
@@ -1317,7 +1357,7 @@ class PaperSearch extends MessageSet {
         $rowset = PaperInfoSet::make_result($result, $this->user);
 
         // filter papers
-        $thqe = $qe instanceof Then_SearchTerm ? $qe : null;
+        $thqe = $this->_then_term;
         $this->_then_map = [];
         if ($thqe && $thqe->has_highlight()) {
             $this->_highlight_map = [];
@@ -1365,11 +1405,20 @@ class PaperSearch extends MessageSet {
         }
     }
 
+    /** @return bool */
+    function set_then_term(Then_SearchTerm $st, PaperSearchPrepareParam $param) {
+        if (!$param->toplevel() || $this->_then_term) {
+            $this->warning("<0>Search expressions can contain at most one ‘THEN’ term");
+        } else {
+            $this->_then_term = $st;
+        }
+    }
+
     /** @return list<TagAnno> */
     function paper_groups() {
         $this->_prepare();
-        $qe1 = $this->_qe;
-        if ($qe1 instanceof Then_SearchTerm) {
+        if ($this->_then_term) {
+            $qe1 = $this->_then_term;
             if ($qe1->nthen > 1) {
                 $gs = [];
                 for ($i = 0; $i !== $qe1->nthen; ++$i) {
@@ -1385,6 +1434,8 @@ class PaperSearch extends MessageSet {
             } else {
                 $qe1 = $qe1->child[0];
             }
+        } else {
+            $qe1 = $this->_qe;
         }
         if (($h = $qe1->get_float("legend"))) {
             return [TagAnno::make_legend($h)];
