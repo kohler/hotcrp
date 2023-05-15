@@ -964,7 +964,7 @@ class PaperSearch extends MessageSet {
                     list($curqe, $scope) = $scope->pop($curqe);
                 }
                 if ($scope->op) {
-                    $scope->pos2 = $pos1;
+                    $scope->pos2 = $pos1 + 1;
                     list($curqe, $scope) = $scope->pop($curqe);
                     --$parens;
                 }
