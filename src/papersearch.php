@@ -1405,10 +1405,14 @@ class PaperSearch extends MessageSet {
         }
     }
 
-    /** @return bool */
+    /** @return ?Then_SearchTerm */
+    function then_term() {
+        return $this->_then_term;
+    }
+
     function set_then_term(Then_SearchTerm $st, PaperSearchPrepareParam $param) {
         if (!$param->toplevel() || $this->_then_term) {
-            $this->warning("<0>Search expressions can contain at most one ‘THEN’ term");
+            $this->warning("<0>Search expressions can contain at most one ‘THEN’ expression");
         } else {
             $this->_then_term = $st;
         }

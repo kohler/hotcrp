@@ -321,11 +321,11 @@ class PaperList {
             }
         }
 
-        $qe = $this->search->main_term();
-        if ($qe instanceof Then_SearchTerm) {
+        if ($this->search->then_term()) {
             $this->_then_map = $this->search->groups_by_paper_id();
             $this->_highlight_map = $this->search->highlights_by_paper_id();
         }
+        $qe = $this->search->main_term();
         foreach (PaperSearch::view_generator($qe->view_anno()) as $sve) {
             if (($show_action = $sve->show_action())) {
                 $this->set_view($sve->keyword, $show_action, null, $sve->decorations);
@@ -780,13 +780,12 @@ class PaperList {
         if ($this->_sortcol_fixed === 0) {
             $this->_sortcol_fixed = 1;
             // apply sorters from search terms
-            $qe = $this->search->main_term();
-            if ($qe instanceof Then_SearchTerm) {
+            if (($qe = $this->search->then_term())) {
                 for ($i = 0; $i < $qe->nthen; ++$i) {
                     $this->_add_view_sorters($qe->child[$i], $i);
                 }
             }
-            $this->_add_view_sorters($qe, -1);
+            $this->_add_view_sorters($this->search->main_term(), -1);
             // final default sorter
             if (empty($this->_sortcol)) {
                 $this->_sortcol[] = ($this->ensure_columns_by_name("id"))[0];
