@@ -26,8 +26,8 @@ class Column {
     public $completion = false;
     /** @var bool */
     public $sort_descending;
-    /** @var int */
-    public $sort_subset = -1;
+    /** @var ?list<int> */
+    public $sort_subset;
     /** @var null|int|float */
     public $order;
     /** @var ?int */

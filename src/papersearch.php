@@ -278,40 +278,61 @@ class SearchViewElement {
 }
 
 class PaperSearchPrepareParam {
-    /** @var bool */
-    private $_toplevel = true;
-    /** @var bool */
-    private $_field_highlighter = true;
+    /** @var 0|1|2|3 */
+    private $_nest = 0;
+    /** @var ?Then_SearchTerm */
+    private $_then_term;
+    /** @var int */
+    private $_then_count;
 
     /** @return bool */
     function toplevel() {
-        return $this->_toplevel;
+        return $this->_nest === 0;
     }
 
-    /** @return PaperSearchPrepareParam */
-    function disable_toplevel() {
-        if (!$this->_toplevel) {
-            return $this;
-        }
-        $x = clone $this;
-        $x->_toplevel = false;
-        return $x;
+    /** @return bool */
+    function allow_then() {
+        return $this->_nest <= 1;
     }
-
 
     /** @return bool */
     function want_field_highlighter() {
-        return $this->_field_highlighter;
+        return $this->_nest <= 2;
     }
 
-    /** @return PaperSearchPrepareParam */
-    function disable_field_highlighter() {
-        if (!$this->_field_highlighter) {
+    /** @param Op_SearchTerm $opterm
+     * @return PaperSearchPrepareParam */
+    function nest($opterm) {
+        if ($opterm->type === "and" || $opterm->type === "space") {
+            $level = 0;
+        } else if ($opterm->type === "then") {
+            $level = 1;
+        } else if ($opterm->type !== "not") {
+            $level = 2;
+        } else {
+            $level = 3;
+        }
+        if ($level <= $this->_nest
+            && ($level !== 1 || $this->_nest !== 1)) {
             return $this;
         }
         $x = clone $this;
-        $x->_field_highlighter = false;
+        $x->_nest = $level;
         return $x;
+    }
+
+
+    /** @return ?Then_SearchTerm */
+    function then_term() {
+        return $this->_then_term;
+    }
+
+    /** @param Then_SearchTerm $then */
+    function set_then_term($then) {
+        if ($this->_nest <= 1) {
+            ++$this->_then_count;
+            $this->_then_term = $this->_then_count === 1 ? $then : null;
+        }
     }
 }
 
@@ -1237,7 +1258,9 @@ class PaperSearch extends MessageSet {
             }
 
             // extract regular expressions
-            $this->_qe->prepare_visit(new PaperSearchPrepareParam, $this);
+            $param = new PaperSearchPrepareParam;
+            $this->_qe->prepare_visit($param, $this);
+            $this->_then_term = $param->then_term();
         }
         return $this->_qe;
     }
@@ -1410,23 +1433,14 @@ class PaperSearch extends MessageSet {
         return $this->_then_term;
     }
 
-    function set_then_term(Then_SearchTerm $st, PaperSearchPrepareParam $param) {
-        if (!$param->toplevel() || $this->_then_term) {
-            $this->warning("<0>Search expressions can contain at most one ‘THEN’ expression");
-        } else {
-            $this->_then_term = $st;
-        }
-    }
-
     /** @return list<TagAnno> */
     function paper_groups() {
         $this->_prepare();
         if ($this->_then_term) {
-            $qe1 = $this->_then_term;
-            if ($qe1->nthen > 1) {
+            $groups = $this->_then_term->group_terms();
+            if (count($groups) > 1) {
                 $gs = [];
-                for ($i = 0; $i !== $qe1->nthen; ++$i) {
-                    $ch = $qe1->child[$i];
+                foreach ($groups as $i => $ch) {
                     $h = $ch->get_float("legend");
                     if ($h === null) {
                         $spanstr = $ch->get_float("strspan_owner") ?? $this->q;
@@ -1435,9 +1449,8 @@ class PaperSearch extends MessageSet {
                     $gs[] = TagAnno::make_legend($h);
                 }
                 return $gs;
-            } else {
-                $qe1 = $qe1->child[0];
             }
+            $qe1 = $this->_then_term->child[0];
         } else {
             $qe1 = $this->_qe;
         }

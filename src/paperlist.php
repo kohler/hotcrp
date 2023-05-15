@@ -561,7 +561,7 @@ class PaperList {
     /** @param string $k
      * @param ?int $origin
      * @param ?list<string> $decorations
-     * @param int $sort_subset
+     * @param ?list<int> $sort_subset
      * @param ?int $pos1
      * @param ?int $pos2 */
     private function _add_sorter($k, $origin, $decorations,
@@ -624,7 +624,7 @@ class PaperList {
             }
             if ($sve->sort_action()) {
                 $this->_add_sorter($sve->keyword, $origin, $sve->decorations,
-                                   -1, $sve->pos1, $sve->pos2);
+                                   null, $sve->pos1, $sve->pos2);
             }
         }
     }
@@ -746,11 +746,11 @@ class PaperList {
      * @param PaperInfo $b
      * @return int */
     function _then_sort_compare($a, $b) {
-        if (($x = $a->_sort_subset <=> $b->_sort_subset)) {
+        if (($x = $a->_search_group <=> $b->_search_group)) {
             return $x;
         }
         foreach ($this->_sortcol as $s) {
-            if (($s->sort_subset === -1 || $s->sort_subset === $a->_sort_subset)
+            if (($s->sort_subset === null || in_array($a->_search_group, $s->sort_subset))
                 && ($x = $s->compare($a, $b, $this))) {
                 return ($x < 0) === $s->sort_descending ? 1 : -1;
             }
@@ -758,7 +758,7 @@ class PaperList {
         return $a->paperId <=> $b->paperId;
     }
 
-    /** @param int $sort_subset */
+    /** @param ?list<int> $sort_subset */
     private function _add_view_sorters(SearchTerm $qe, $sort_subset) {
         $nsortcol = count($this->_sortcol);
         foreach (PaperSearch::view_generator($qe->view_anno()) as $sve) {
@@ -780,12 +780,12 @@ class PaperList {
         if ($this->_sortcol_fixed === 0) {
             $this->_sortcol_fixed = 1;
             // apply sorters from search terms
-            if (($qe = $this->search->then_term())) {
-                for ($i = 0; $i < $qe->nthen; ++$i) {
-                    $this->_add_view_sorters($qe->child[$i], $i);
+            if (($thenqe = $this->search->then_term())) {
+                foreach ($thenqe->subset_terms() as $chrange) {
+                    $this->_add_view_sorters($chrange[0], $chrange[1]);
                 }
             }
-            $this->_add_view_sorters($this->search->main_term(), -1);
+            $this->_add_view_sorters($this->search->main_term(), null);
             // final default sorter
             if (empty($this->_sortcol)) {
                 $this->_sortcol[] = ($this->ensure_columns_by_name("id"))[0];
@@ -829,7 +829,7 @@ class PaperList {
         $overrides = $this->user->add_overrides($this->_view_force ? Contact::OVERRIDE_CONFLICT : 0);
         if ($this->_then_map) {
             foreach ($rowset as $row) {
-                $row->_sort_subset = $this->_then_map[$row->paperId];
+                $row->_search_group = $this->_then_map[$row->paperId];
             }
         }
         foreach ($this->sorters() as $i => $s) {
@@ -945,7 +945,7 @@ class PaperList {
      * @return string */
     function sortdef($always = false) {
         $s0 = ($this->sorters())[0];
-        if ($s0->sort_subset === -1
+        if ($s0->sort_subset === null
             && ($always || (string) $this->qreq->sort != "")
             && ($s0->name !== "id" || $s0->sort_decoration())) {
             $d = $s0->sort_decoration();
@@ -1587,7 +1587,7 @@ class PaperList {
         $aria_sort = "";
         $aclass = "pl_sort";
         $s0 = ($this->sorters())[0];
-        if ($s0->sort_subset === -1 && $sort_name === $s0->sort_name()) {
+        if ($s0->sort_subset === null && $sort_name === $s0->sort_name()) {
             $active_sort = $s0->sort_descending ? "descending" : "ascending";
             $aria_sort = " aria-sort=\"{$active_sort}\"";
             $thclass .= " sort-{$active_sort}";

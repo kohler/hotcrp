@@ -34,6 +34,7 @@ abstract class SearchTerm {
         } else if ($name === "xor") {
             $qr = new Xor_SearchTerm;
         } else {
+            assert($name === "then" || $name === "highlight");
             $qr = new Then_SearchTerm($op);
         }
         foreach (is_array($terms) ? $terms : [$terms] as $qt) {
@@ -349,6 +350,12 @@ abstract class Op_SearchTerm extends SearchTerm {
             return $this;
         }
     }
+    function prepare_visit($param, PaperSearch $srch) {
+        $param = $param->nest($this);
+        foreach ($this->child as $qv) {
+            $qv->prepare_visit($param, $srch);
+        }
+    }
 
     function set_strspan_owner($str) {
         if (!isset($this->float["strspan_owner"])) {
@@ -385,14 +392,6 @@ abstract class Op_SearchTerm extends SearchTerm {
             foreach ($ch->preorder() as $chx) {
                 yield $chx;
             }
-        }
-    }
-    function prepare_visit($param, PaperSearch $srch) {
-        if (!($this instanceof And_SearchTerm)) {
-            $param = $param->disable_toplevel();
-        }
-        foreach ($this->child as $qv) {
-            $qv->prepare_visit($param, $srch);
         }
     }
     function about_reviews() {
@@ -456,10 +455,6 @@ class Not_SearchTerm extends Op_SearchTerm {
         } else {
             return ["type" => "not", "child" => [$x]];
         }
-    }
-    function prepare_visit($param, PaperSearch $srch) {
-        $param = $param->disable_field_highlighter();
-        $this->child[0]->prepare_visit($param, $srch);
     }
 }
 
@@ -682,9 +677,13 @@ class Then_SearchTerm extends Op_SearchTerm {
     /** @var ?string */
     private $opinfo;
     /** @var int */
-    public $nthen = 0;
+    private $nthen = 0;
     /** @var list<Highlight_SearchInfo> */
     private $hlinfo = [];
+    /** @var list<?Then_SearchTerm> */
+    private $_nested_thens = [];
+    /** @var list<int> */
+    private $_group_offsets = [];
     /** @var ?int */
     private $_last_group;
 
@@ -699,7 +698,7 @@ class Then_SearchTerm extends Op_SearchTerm {
         $newvalues = $newhvalues = $newhinfo = [];
 
         foreach ($this->child as $qvidx => $qv) {
-            if ($qv && $qvidx && $this->is_highlight) {
+            if ($qv && $qvidx > 0 && $this->is_highlight) {
                 if ($qv instanceof Then_SearchTerm) {
                     for ($i = 0; $i < $qv->nthen; ++$i) {
                         $newhvalues[] = $qv->child[$i];
@@ -732,8 +731,47 @@ class Then_SearchTerm extends Op_SearchTerm {
         return $this;
     }
     function prepare_visit($param, PaperSearch $srch) {
-        $srch->set_then_term($this, $param);
-        parent::prepare_visit($param, $srch);
+        $group_offset = 0;
+        foreach ($this->child as $i => $qv) {
+            $param1 = $param->nest($this);
+            $qv->prepare_visit($param1, $srch);
+            if ($i < $this->nthen) {
+                $this->_group_offsets[] = $group_offset;
+                if ($param->allow_then() && $param1->then_term()) {
+                    $this->_nested_thens[] = $param1->then_term();
+                    $group_offset += count($param1->then_term()->group_terms());
+                } else {
+                    $this->_nested_thens[] = null;
+                    $group_offset += 1;
+                }
+            }
+        }
+        $this->_group_offsets[] = $group_offset;
+        $param->set_then_term($this);
+    }
+
+    /** @return list<SearchTerm> */
+    function group_terms() {
+        $gt = [];
+        foreach ($this->_nested_thens as $i => $thench) {
+            if ($thench) {
+                array_push($gt, ...$thench->group_terms());
+            } else {
+                $gt[] = $this->child[$i];
+            }
+        }
+        return $gt;
+    }
+
+    /** @param $offset int
+     * @return \Generator<array{SearchTerm,list<int>}> */
+    function subset_terms($offset = 0) {
+        foreach ($this->_nested_thens as $i => $thench) {
+            if ($thench) {
+                yield from $thench->subset_terms($offset + $this->_group_offsets[$i]);
+            }
+            yield [$this->child[$i], range($offset + $this->_group_offsets[$i], $offset + $this->_group_offsets[$i + 1] - 1)];
+        }
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -760,21 +798,35 @@ class Then_SearchTerm extends Op_SearchTerm {
 
     /** @return bool */
     function has_highlight() {
-        return $this->nthen < count($this->child);
+        if ($this->nthen < count($this->child)) {
+            return true;
+        }
+        foreach ($this->_nested_thens as $thench) {
+            if ($thench && $thench->has_highlight()) {
+                return true;
+            }
+        }
+        return false;
     }
     /** @return int */
     function _last_group() {
-        return $this->_last_group;
+        $g = $this->_last_group;
+        $thench = $this->_nested_thens[$g];
+        return $this->_group_offsets[$g] + ($thench ? $thench->_last_group() : 0);
     }
     /** @return list<string> */
     function _last_highlights(PaperInfo $row) {
+        $g = $this->_last_group;
         $hls = [];
         foreach ($this->hlinfo as $i => $hl) {
-            if ($this->_last_group >= $hl->pos
-                && $this->_last_group < $hl->pos + $hl->count
+            if ($g >= $hl->pos
+                && $g < $hl->pos + $hl->count
                 && $this->child[$this->nthen + $i]->test($row, null)) {
                 $hls[] = $hl->color;
             }
+        }
+        if (($thench = $this->_nested_thens[$g])) {
+            array_push($hls, ...$thench->_last_highlights($row));
         }
         return $hls;
     }

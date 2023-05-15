@@ -607,7 +607,7 @@ class PaperInfo {
     /** @var ?TokenInfo */
     public $_author_view_token;
     /** @var ?int */
-    public $_sort_subset;
+    public $_search_group;
     /** @var ?array<string,mixed> */
     public $_old_prop;
 
