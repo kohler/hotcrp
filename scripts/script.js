@@ -9128,7 +9128,7 @@ handle_ui.on("js-plinfo-edittags", function () {
         if (!rv.ok || !rv.pid || rv.pid != pid)
             return;
         $(div).html('<div class="d-inline-flex"><em class="plx mr-2"><label for="tags ' + rv.pid + '">Tags</label>:</em>'
-            + '<div class="mf mf-text w-text"><textarea name="tags ' + rv.pid + '" cols="120" rows="1" class="want-focus need-suggest tags w-text" style="vertical-align:-0.5rem" data-tooltip-anchor="v" id="tags ' + rv.pid + '"></textarea></div>'
+            + '<div class="mf mf-text w-text"><textarea name="tags ' + rv.pid + '" cols="120" rows="1" class="want-focus need-suggest tags w-text" style="vertical-align:-0.5rem" data-tooltip-anchor="v" id="tags ' + rv.pid + '" spellcheck="false"></textarea></div>'
             + '<button type="button" name="tagsave ' + rv.pid + '" class="btn-primary ml-2">Save</button>'
             + '<button type="button" name="tagcancel ' + rv.pid + '" class="ml-2">Cancel</button></div>');
         ta = $(div).find("textarea")[0];
