@@ -192,7 +192,7 @@ class Tag_SearchTerm extends SearchTerm {
             && $dt->order_anno) {
             return $this->_make_default_sort_column($pl, $tag, $dt);
         }
-        foreach ($pl->rowset() as $prow) {
+        foreach ($pl->unordered_rowset() as $prow) {
             if ($prow->tag_value($tag) != 0) {
                 return $this->_make_default_sort_column($pl, $tag, $dt);
             }

@@ -720,14 +720,20 @@ class PaperList {
 
 
     /** @return PaperInfoSet|Iterable<PaperInfo> */
-    function rowset() {
+    function unordered_rowset() {
         if ($this->_rowset === null) {
             $this->_rowset = $this->conf->paper_set($this->qopts, $this->user);
         }
-        if ($this->_groups === null) {
-            $this->_sort($this->_rowset);
-        }
         return $this->_rowset;
+    }
+
+    /** @return PaperInfoSet|Iterable<PaperInfo> */
+    function rowset() {
+        $rowset = $this->unordered_rowset();
+        if ($this->_groups === null) {
+            $this->_sort($rowset);
+        }
+        return $rowset;
     }
 
     /** @param PaperInfo $a
@@ -777,6 +783,7 @@ class PaperList {
 
     /** @return non-empty-list<PaperColumn> */
     function sorters() {
+        assert($this->_sortcol_fixed !== 1);
         if ($this->_sortcol_fixed === 0) {
             $this->_sortcol_fixed = 1;
             // apply sorters from search terms
@@ -792,7 +799,7 @@ class PaperList {
             }
             // default editable tag
             $this->_sort_etag = "";
-            if ($thenqe === null
+            if (!$thenqe
                 && $this->_sortcol[0] instanceof Tag_PaperColumn
                 && !$this->_sortcol[0]->sort_descending) {
                 $this->_sort_etag = $this->_sortcol[0]->etag();
@@ -992,38 +999,38 @@ class PaperList {
         if ($key === "paper" || $key === "submission" || $key === "final") {
             $opt = $this->conf->options()->find($key);
             return $this->user->can_view_some_option($opt)
-                && $this->rowset()->any(function ($row) use ($opt) {
+                && $this->unordered_rowset()->any(function ($row) use ($opt) {
                     return ($opt->id == DTYPE_SUBMISSION ? $row->paperStorageId : $row->finalPaperStorageId) > 1
                         && $this->user->can_view_option($row, $opt);
                 });
         } else if (str_starts_with($key, "opt")
                    && ($opt = $this->conf->options()->find($key))) {
             return $this->user->can_view_some_option($opt)
-                && $this->rowset()->any(function ($row) use ($opt) {
+                && $this->unordered_rowset()->any(function ($row) use ($opt) {
                     return ($ov = $row->option($opt))
                         && (!$opt->has_document() || $ov->value > 1)
                         && $this->user->can_view_option($row, $opt);
                 });
         } else if ($key === "abstract") {
             return $this->conf->opt("noAbstract") !== 1
-                && $this->rowset()->any(function ($row) {
+                && $this->unordered_rowset()->any(function ($row) {
                     return $row->abstract() !== "";
                 });
         } else if ($key === "authors") {
-            return $this->rowset()->any(function ($row) {
+            return $this->unordered_rowset()->any(function ($row) {
                     return $this->user->allow_view_authors($row);
                 });
         } else if ($key === "anonau") {
             return $this->has("authors")
                 && $this->user->is_manager()
-                && $this->rowset()->any(function ($row) {
+                && $this->unordered_rowset()->any(function ($row) {
                         return $this->user->allow_view_authors($row)
                            && !$this->user->can_view_authors($row);
                     });
         } else if ($key === "tags") {
             $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
             $answer = $this->user->can_view_tags(null)
-                && $this->rowset()->any(function ($row) {
+                && $this->unordered_rowset()->any(function ($row) {
                         return $this->user->can_view_tags($row)
                             && $row->sorted_viewable_tags($this->user) !== "";
                     });
@@ -1031,28 +1038,28 @@ class PaperList {
             return $answer;
         } else if ($key === "lead") {
             return $this->conf->has_any_lead_or_shepherd()
-                && $this->rowset()->any(function ($row) {
+                && $this->unordered_rowset()->any(function ($row) {
                         return $row->leadContactId > 0
                             && $this->user->can_view_lead($row);
                     });
         } else if ($key === "shepherd") {
             return $this->conf->has_any_lead_or_shepherd()
-                && $this->rowset()->any(function ($row) {
+                && $this->unordered_rowset()->any(function ($row) {
                         return $row->shepherdContactId > 0
                             && $this->user->can_view_shepherd($row);
                     });
         } else if ($key === "collab") {
-            return $this->rowset()->any(function ($row) {
+            return $this->unordered_rowset()->any(function ($row) {
                 return $row->has_nonempty_collaborators()
                     && $this->user->can_view_authors($row);
             });
         } else if ($key === "accepted") {
-            return $this->rowset()->any(function ($row) {
+            return $this->unordered_rowset()->any(function ($row) {
                 return $row->outcome > 0 && $this->user->can_view_decision($row);
             });
         } else if ($key === "need_final") {
             return $this->has("accepted")
-                && $this->rowset()->any(function ($row) {
+                && $this->unordered_rowset()->any(function ($row) {
                        return $row->outcome > 0
                            && $this->user->can_view_decision($row)
                            && $row->timeFinalSubmitted <= 0;
@@ -1860,7 +1867,7 @@ class PaperList {
 
     /** @return bool */
     function is_empty() {
-        return $this->rowset()->is_empty();
+        return $this->unordered_rowset()->is_empty();
     }
 
     /** @return array{list<int>,list<TagAnno>} */
