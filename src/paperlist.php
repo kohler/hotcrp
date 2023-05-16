@@ -792,7 +792,7 @@ class PaperList {
             }
             // default editable tag
             $this->_sort_etag = "";
-            if ($this->_then_map === null
+            if ($thenqe === null
                 && $this->_sortcol[0] instanceof Tag_PaperColumn
                 && !$this->_sortcol[0]->sort_descending) {
                 $this->_sort_etag = $this->_sortcol[0]->etag();
