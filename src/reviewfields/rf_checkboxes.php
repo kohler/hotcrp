@@ -41,7 +41,7 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
             return [$this->symbols[$o - 49]];
         }
         $r = [];
-        for ($s = 0, $b = 1; $b < $fval; ++$s, $b <<= 1) {
+        for ($s = 0, $b = 1; $b <= $fval; ++$s, $b <<= 1) {
             if (($fval & $b) !== 0)
                 $r[] = $this->symbols[$s];
         }
