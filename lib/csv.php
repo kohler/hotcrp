@@ -233,14 +233,11 @@ class CsvParser implements Iterator {
     /** @param string $s
      * @return $this */
     function set_comment_chars($s) {
-        $this->comment_start = null;
-        for ($i = 0; $i !== strlen($s); ++$i) {
-            $this->comment_start[] = $s[$i];
-        }
+        $this->comment_start = empty($s) ? null : str_split($s);
         return $this;
     }
 
-    /** @param list<string> ...$s
+    /** @param string ...$s
      * @return $this */
     function set_comment_start(...$s) {
         $this->comment_start = empty($s) ? null : $s;
