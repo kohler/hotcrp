@@ -3872,10 +3872,12 @@ $(function () {
 
 handle_ui.on("tla", function () {
     var hash = this.href.replace(/^[^#]*#*/, "");
-    var e = document.getElementById("tla-" + (hash || "default"));
+    var e = $$(hash || "default");
     $(".is-tla, .tll, .papmode").removeClass("active");
+    $(".tll").removeClass("active").attr("aria-selected", "false");
     addClass(e, "active");
-    addClass(this.closest(".tll, .papmode"), "active");
+    $(this).closest(".papmode").addClass("active");
+    $(this).closest(".tll").addClass("active").attr("aria-selected", "true");
     push_history_state(this.href);
     focus_within(e);
 });
@@ -3915,14 +3917,15 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
 
     // look up destination element
     var hash = hashc[0] || "", m, e, p;
-    if (hash === "") {
-        e = document.getElementById("tla-default");
+    if (hash === "" || hash === "default") {
+        e = $$("default");
+        hash = ""
     } else {
-        e = document.getElementById("tla-" + hash) || document.getElementById(hash);
+        e = $$(hash);
         if (!e
             // check for trailing punctuation
             && (m = hash.match(/^([-_a-zA-Z0-9/]+)[\p{Pd}\p{Pe}\p{Pf}\p{Po}]$/u))
-            && (e = document.getElementById("tla-" + m[1]) || document.getElementById(m[1]))) {
+            && (e = $$(m[1]))) {
             hash = m[1];
             location.hash = "#" + hash;
         }
@@ -3930,15 +3933,17 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
 
     if (!e) {
         /* do nothing */
-    } else if (e.id.startsWith("tla-")) {
+    } else if (hasClass(e, "is-tla")) {
         // tabbed UI
         if (!hasClass(e, "active")) {
-            $(".is-tla, .tll, .papmode").removeClass("active");
+            $(".is-tla, .papmode").removeClass("active");
+            $(".tll").removeClass("active").attr("aria-selected", "false");
             addClass(e, "active");
             $(".tla").each(function () {
                 if ((hash === "" && this.href.indexOf("#") === -1)
                     || this.href.endsWith("#" + hash)) {
-                    addClass(this.closest(".tll, .papmode"), "active");
+                    $(this).closest(".papmode").addClass("active");
+                    $(this).closest(".tll").addClass("active").attr("aria-selected", "true");
                 }
             });
         }

@@ -378,20 +378,19 @@ class Users_Page {
     }
 
     private function print_query_form(ContactList $pl) {
-        echo '<table id="contactsform" class="mb-3">
-<tr><td><div class="tlx"><div class="tld is-tla active" id="tla-default">';
+        echo '<div id="contactsform" class="tlcontainer mb-3">';
 
-        echo Ht::form($this->conf->hoturl("users"), ["method" => "get"]);
+        echo '<div class="tld is-tla active" id="default" role="tabpanel" aria-labelledby="tab-default">',
+            Ht::form($this->conf->hoturl("users"), ["method" => "get"]);
         if (isset($this->qreq->sort)) {
             echo Ht::hidden("sort", $this->qreq->sort);
         }
         echo Ht::select("t", $this->limits, $this->qreq->t, ["class" => "want-focus uich js-users-selection"]),
-            " &nbsp;", Ht::submit("Go"), "</form>";
-
-        echo '</div><div class="tld is-tla" id="tla-view">';
+            " &nbsp;", Ht::submit("Go"), "</form></div>";
 
         // Display options
-        echo Ht::form($this->conf->hoturl("users"), ["method" => "get"]);
+        echo '<div class="tld is-tla" id="view" role="tabpanel" aria-labelledby="tab-view">',
+            Ht::form($this->conf->hoturl("users"), ["method" => "get"]);
         foreach (["t", "sort"] as $x) {
             if (isset($this->qreq[$x]))
                 echo Ht::hidden($x, $this->qreq[$x]);
@@ -443,16 +442,13 @@ class Users_Page {
                 Ht::select("scoresort", $ss, ScoreInfo::parse_score_sort($this->qreq->csession("ulscoresort") ?? "average")),
                 "</td></tr>";
         }
-        echo "</table></form>";
-
-        echo "</div></div></td></tr>\n";
+        echo "</table></form></div>";
 
         // Tab selectors
-        echo '<tr><td class="tllx"><table><tr>
-<td><div class="tll active"><a class="ui tla" href="">User selection</a></div></td>
-<td><div class="tll"><a class="ui tla" href="#view">View options</a></div></td>
-</tr></table></td></tr>
-</table>', "\n\n";
+        echo '<div class="tllx" role="tablist">',
+            '<div class="tll active" role="tab" id="tab-default" aria-controls="default" aria-selected="true"><a class="ui tla" href="">User selection</a></div>',
+            '<div class="tll" role="tab" id="tab-view" aria-controls="view" aria-selected="false"><a class="ui tla" href="#view">View options</a></div>',
+            '</div></div>', "\n\n";
     }
 
 

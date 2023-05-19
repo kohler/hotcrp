@@ -176,7 +176,7 @@ class Search_Page {
     private function print_saved_searches($always) {
         $ss = $this->conf->named_searches();
         if (($show = !empty($ss) || $always)) {
-            echo '<div class="tld is-tla" id="tla-saved-searches">';
+            echo '<div class="tld is-tla pb-2" id="saved-searches" role="tabpanel" aria-labelledby="tab-saved-searches">';
             if (!empty($ss)) {
                 echo '<div class="ctable search-ctable column-count-3 mb-1">';
                 ksort($ss, SORT_NATURAL | SORT_FLAG_CASE);
@@ -194,14 +194,14 @@ class Search_Page {
                 }
                 echo '</div>';
             }
-            echo '<p class="mt-1 mb-2 text-end"><button class="small ui js-edit-namedsearches" type="button">Edit saved searches</button></p></div>';
+            echo '<p class="mt-1 mb-0 text-end"><button class="small ui js-edit-namedsearches" type="button">Edit saved searches</button></p></div>';
         }
         return $show;
     }
 
     /** @param Qrequest $qreq */
     private function print_display_options($qreq) {
-        echo '<div class="tld is-tla" id="tla-view" style="padding-bottom:1ex">',
+        echo '<div class="tld is-tla pb-2" id="view" role="tabpanel" aria-labelledby="tab-view">',
             Ht::form($this->conf->hoturl("=search", "redisplay=1"), ["id" => "foldredisplay", "class" => "fn3 fold5c"]);
         foreach (["q", "qa", "qo", "qx", "qt", "t", "sort"] as $x) {
             if (isset($qreq[$x]) && ($x !== "q" || !isset($qreq->qa)))
@@ -324,15 +324,14 @@ class Search_Page {
             "body_class" => $pl_text === null ? "want-hash-focus" : null
         ]);
         echo Ht::unstash(), // need the JS right away
-            '<div id="searchform" class="mb-3 clearfix" data-lquery="',
-            htmlspecialchars($search->default_limited_query()),
-            '"><div class="tlx">';
+            '<div id="searchform" class="tlcontainer mb-3 clearfix" data-lquery="',
+            htmlspecialchars($search->default_limited_query()), '">';
 
         $limits = PaperSearch::viewable_limits($user, $search->limit());
         $qtOpt = $this->field_search_types();
 
         // Basic search tab
-        echo '<div class="tld is-tla active" id="tla-default">',
+        echo '<div class="tld is-tla active" id="default" role="tabpanel" aria-labelledby="tab-default">',
             Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
             Ht::entry("q", (string) $qreq->q, [
                 "size" => 40, "tabindex" => 1,
@@ -346,7 +345,7 @@ class Search_Page {
             '</div></form></div>';
 
         // Advanced search tab
-        echo '<div class="tld is-tla" id="tla-advanced">',
+        echo '<div class="tld is-tla" id="advanced" role="tabpanel" aria-labelledby="tab-advanced">',
             Ht::form($this->conf->hoturl("search"), ["method" => "get"]),
             '<div class="d-inline-block">',
             '<div class="entryi medium"><label for="htctl-advanced-qt">Search</label><div class="entry">',
@@ -384,19 +383,17 @@ class Search_Page {
             $this->print_display_options($qreq);
         }
 
-        echo "</div>";
-
         // Tab selectors
-        echo '<div class="tllx"><table><tr>',
-            '<td><div class="tll active"><a class="ui tla" href="">Search</a></div></td>',
-            '<td><div class="tll"><a class="ui tla nw" href="#advanced">Advanced search</a></div></td>';
+        echo '<div class="tllx" role="tablist">',
+            '<div class="tll active" role="tab" id="tab-default" aria-controls="default" aria-selected="true"><a class="ui tla" href="">Search</a></div>',
+            '<div class="tll" role="tab" id="tab-advanced" aria-controls="advanced" aria-selected="false"><a class="ui tla nw" href="#advanced">Advanced search</a></div>';
         if ($has_ss) {
-            echo '<td><div class="tll"><a class="ui tla nw" href="#saved-searches">Saved searches</a></div></td>';
+            echo '<div class="tll" role="tab" id="tab-saved-searches" aria-controls="saved-searches" aria-selected="false"><a class="ui tla nw" href="#saved-searches">Saved searches</a></div>';
         }
         if (!$this->pl->is_empty()) {
-            echo '<td><div class="tll"><a class="ui tla nw" href="#view">View options</a></div></td>';
+            echo '<div class="tll" role="tab" id="tab-view" aria-controls="view" aria-selected="false"><a class="ui tla nw" href="#view">View options</a></div>';
         }
-        echo "</tr></table></div></div>\n\n", Ht::unstash();
+        echo '</div></div>', Ht::unstash(), "\n\n";
 
         // Paper body
         if ($pl_text !== null) {
