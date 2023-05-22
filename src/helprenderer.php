@@ -34,8 +34,8 @@ class HelpRenderer extends Ht {
             if (str_ends_with($id, "-")) {
                 $id = substr($id, 0, strlen($id) - 1);
             }
-            if (preg_match('/\A(?:htctl.*|fold.*|body.*|tracker.*|msg.*|header.*|quicklink.*|tla.*|-|)\z/', $id)) {
-                $id = ($id === "" || $id === "-" ? null : "h-$id");
+            if (preg_match('/\A(?:fold.*|-.*|[a-z]-.*|)\z/', $id)) {
+                $id = ($id === "" || $id === "-" ? null : "heading-{$id}");
             }
             if ($id) {
                 $n = "";
@@ -45,13 +45,13 @@ class HelpRenderer extends Ht {
                 $id .= $n;
             }
         }
-        if ($id || $title) {
-            if ($id) {
-                $this->_h3ids[$id] = true;
-            }
-            return '<h3 class="helppage"' . ($id ? " id=\"{$id}\"" : "") . '>' . $title . "</h3>\n";
-        } else {
+        if (!$id && !$title) {
             return "";
+        } else if ($id) {
+            $this->_h3ids[$id] = true;
+            return "<h3 class=\"helppage\" id=\"{$id}\">{$title}</h3>\n";
+        } else {
+            return "<h3 class=\"helppage\">{$title}</h3>\n";
         }
     }
 

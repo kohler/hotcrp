@@ -253,7 +253,7 @@ class PCConflicts_PaperOption extends PaperOption {
                 } else {
                     echo '<span class="checkc">', Ht::checkbox(null, 1, Conflict::is_conflicted($pct), ["disabled" => true]), '</span>';
                 }
-                echo Ht::hidden("pcconf:$id", $pct, ["class" => "conflict-entry", "disabled" => true]);
+                echo Ht::hidden("pcconf:{$id}", $pct, ["class" => "conflict-entry", "disabled" => true]);
             } else if ($selectors) {
                 $xctypes = $ctypes;
                 if (!isset($xctypes[$ct])) {
@@ -270,9 +270,9 @@ class PCConflicts_PaperOption extends PaperOption {
                 $js["class"] = "uic js-range-click conflict-entry";
                 $checked = Conflict::is_conflicted($ct);
                 echo '<span class="checkc">',
-                    Ht::checkbox("pcconf:$id", $checked ? $ct : Conflict::GENERAL, $checked, $js),
+                    Ht::checkbox("pcconf:{$id}", $checked ? $ct : Conflict::GENERAL, $checked, $js),
                     '</span>';
-                $hidden = Ht::hidden("has_pcconf:$id", 1);
+                $hidden = Ht::hidden("has_pcconf:{$id}", 1);
             }
 
             echo $label, "</label>", $hidden;

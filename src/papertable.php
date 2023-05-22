@@ -167,7 +167,7 @@ class PaperTable {
         $prow = $paperTable ? $paperTable->prow : null;
         $format = 0;
 
-        $t = '<header id="header-page" class="header-page-submission"><h1 class="paptitle';
+        $t = '<header id="h-page" class="header-page-submission"><h1 class="paptitle';
 
         if (!$paperTable) {
             if (($pid = $qreq->paperId) && ctype_digit($pid)) {
@@ -2204,7 +2204,7 @@ class PaperTable {
             $form_url["forceShow"] = 1;
         }
         $form_js = [
-            "id" => "form-paper",
+            "id" => "f-paper",
             "class" => "need-unload-protection ui-submit js-submit-paper",
             "data-alert-toggle" => "paper-alert"
         ];
@@ -2273,9 +2273,9 @@ class PaperTable {
         }
         if ($this->npapstrip) {
             Ht::stash_script("hotcrp.load_paper_sidebar()");
-            echo '</div></div><nav class="pslcard-nav">';
+            echo '</div></div><nav class="pslcard-nav need-tracker-offset">';
         } else {
-            echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav class="pslcard-nav">';
+            echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav class="pslcard-nav need-tracker-offset">';
         }
         $viewable_tags = $this->prow->viewable_tags($this->user);
         echo '<h4 class="pslcard-home">';

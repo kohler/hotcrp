@@ -540,7 +540,7 @@ class Assign_Page {
                 '<h2 class="revcard-head" id="pc-assignments">PC assignments</h2>',
                 '<div class="revcard-body">',
                 Ht::form($this->conf->hoturl("=assign", "p=$prow->paperId"), [
-                    "id" => "form-pc-assignments",
+                    "id" => "f-pc-assignments",
                     "class" => "need-unload-protection",
                     "data-alert-toggle" => "paper-alert"
                 ]);

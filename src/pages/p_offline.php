@@ -124,8 +124,8 @@ class Offline_Page {
         $pastDeadline = !$conf->time_review(null, $this->user->isPC, true);
         $dldisabled = $pastDeadline && !$this->user->privChair ? " disabled" : "";
 
-        echo '<fieldset class="f-i" form="offlineform"><legend><label for="uploader">Upload filled-out forms</label></legend>',
-            Ht::form($conf->hoturl("=offline", "upload=1"), ["id" => "offlineform"]),
+        echo '<fieldset class="f-i" form="f-offline"><legend><label for="uploader">Upload filled-out forms</label></legend>',
+            Ht::form($conf->hoturl("=offline", "upload=1"), ["id" => "f-offline"]),
             Ht::hidden("postnonempty", 1),
             '<input id="uploader" type="file" name="file" accept="text/plain" size="30"', $dldisabled, '>&nbsp; ',
             Ht::submit("Go", ["disabled" => !!$dldisabled]);

@@ -4483,7 +4483,7 @@ class Conf {
         assert($user && !$user->is_empty());
 
         if ($user->is_actas_user()) {
-            $details_class = " header-actas";
+            $details_class = " header-actas need-tracker-offset";
             $details_prefix = "<span class=\"warning-mark\"></span> Acting as ";
             $details_suffix = "";
             $button_class = "btn-qlink";
@@ -4532,7 +4532,7 @@ class Conf {
         $user = $qreq->user();
         echo "<body";
         if ($id) {
-            echo ' id="body-', $id, '"';
+            echo ' id="t-', $id, '"';
         }
         $class = $extra["body_class"] ?? "";
         if (($list = $qreq->active_list())) {
@@ -4548,7 +4548,7 @@ class Conf {
         if (($x = $this->opt["uploadMaxFilesize"] ?? null) !== null) {
             echo ' data-document-max-size="', ini_get_bytes(null, $x), '"';
         }
-        echo '><div id="top">';
+        echo '><div id="p-page" class="need-tracker-offset"><div id="p-header">';
 
         // initial load (JS's timezone offsets are negative of PHP's)
         Ht::stash_script("hotcrp.onload.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
@@ -4568,7 +4568,7 @@ class Conf {
                 $title .= " &nbsp;&#x2215;&nbsp; <strong>{$subtitle}</strong>";
             }
             if ($title && $title !== "Home") {
-                $title_div = "<div id=\"header-page\"><h1>{$title}</h1></div>";
+                $title_div = "<div id=\"h-page\"><h1>{$title}</h1></div>";
             } else if ($action_bar) {
                 $title_div = '<hr class="c">';
             }
@@ -4576,17 +4576,17 @@ class Conf {
 
         // site header
         if ($id === "home") {
-            echo '<div id="header-site" class="header-site-home">',
+            echo '<div id="h-site" class="header-site-home">',
                 '<h1><a class="q" href="', $this->hoturl("index", ["cap" => null]),
                 '">', htmlspecialchars($this->short_name), '</a></h1></div>';
         } else {
-            echo '<div id="header-site" class="header-site-page">',
+            echo '<div id="h-site" class="header-site-page">',
                 '<a class="q" href="', $this->hoturl("index", ["cap" => null]),
                 '"><span class="header-site-name">', htmlspecialchars($this->short_name),
                 '</span> Home</a></div>';
         }
 
-        echo '<div id="header-right">';
+        echo '<div id="h-right">';
         if ($user && !$user->is_empty()) {
             $this->print_header_profile($id, $qreq, $user);
         }
@@ -4595,7 +4595,7 @@ class Conf {
         echo "  <hr class=\"c\">\n";
 
         $this->_header_printed = true;
-        echo "<div id=\"msgs-initial\">\n";
+        echo "<div id=\"h-messages\" class=\"msgs-wide\">\n";
         if (($x = $this->opt("maintenance"))) {
             echo Ht::msg(is_string($x) ? $x : "<strong>The site is down for maintenance.</strong> Please check back later.", 2);
         }
@@ -4607,7 +4607,7 @@ class Conf {
         }
         echo "</div></div>\n";
 
-        echo "<div id=\"body\" class=\"body\">\n";
+        echo "<div id=\"p-body\">\n";
 
         // If browser owns tracker, send it the script immediately
         if ($this->has_active_tracker()

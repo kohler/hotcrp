@@ -861,8 +861,14 @@ function scatter_create(svg, data, klass) {
 }
 
 function scatter_highlight(svg, data, klass) {
-    if (!$$("svggpat_dot_highlight"))
-        $("div.body").prepend('<svg width="0" height="0" style="position:absolute"><defs><radialGradient id="svggpat_dot_highlight"><stop offset="50%" stop-opacity="0" /><stop offset="50%" stop-color="#ffff00" stop-opacity="0.5" /><stop offset="100%" stop-color="#ffff00" stop-opacity="0" /></radialGradient></defs></svg>');
+    if (!$$("svggpat_dot_highlight")) {
+        $$("p-body").prepend(svge("svg", "width", 0, "height", 0, "class", "position-absolute",
+            svge("defs",
+                svge("radialGradient", "id", "svggpat_dot_highlight",
+                    svge("stop", "offset", "50%", "stop-opacity", "0"),
+                    svge("stop", "offset", "50%", "stop-color", "#ffff00", "stop-opacity", "0.5"),
+                    svge("stop", "offset", "100%", "stop-color", "#ffff00", "stop-opacity", "0")))));
+    }
 
     var sel = svg.selectAll(".ghighlight");
     if (klass)

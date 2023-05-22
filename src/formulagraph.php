@@ -321,8 +321,8 @@ class FormulaGraph extends MessageSet {
     /** @return array{list<string>,list<string>} */
     static function parse_queries(Qrequest $qreq) {
         $queries = $styles = [];
-        for ($i = 1; isset($qreq["q$i"]); ++$i) {
-            $q = trim($qreq["q$i"]);
+        for ($i = 1; isset($qreq["q{$i}"]); ++$i) {
+            $q = trim($qreq["q{$i}"]);
             $queries[] = $q === "" || $q === "(All)" ? "all" : $q;
             $styles[] = trim((string) $qreq["s$i"]);
         }

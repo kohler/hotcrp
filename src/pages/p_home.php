@@ -97,7 +97,7 @@ class Home_Page {
         $gx->push_print_cleanup("__footer");
         echo '<noscript><div class="msg msg-error"><strong>This site requires JavaScript.</strong> Your browser does not support JavaScript.<br><a href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>', "\n";
         if ($user->privChair) {
-            echo '<div id="msg-clock-drift" class="homegrp hidden"></div>';
+            echo '<div id="p-clock-drift" class="homegrp hidden"></div>';
         }
     }
 

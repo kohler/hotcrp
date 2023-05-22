@@ -279,7 +279,7 @@ class Ht {
         }
         $js = $js ? : [];
         if (!array_key_exists("id", $js) || $js["id"] === true) {
-            $js["id"] = "htctl" . ++self::$_controlid;
+            $js["id"] = "k-" . ++self::$_controlid;
         }
         '@phan-var array{id:string|false|null} $js';
         if ($js["id"]) {
@@ -287,7 +287,8 @@ class Ht {
         }
         $t = '<input type="checkbox"'; /* NB see Ht::radio */
         if ($name) {
-            $t .= " name=\"$name\" value=\"" . htmlspecialchars((string) $value) . "\"";
+            $v = htmlspecialchars((string) $value);
+            $t .= " name=\"{$name}\" value=\"{$v}\"";
         }
         if ($checked) {
             $t .= " checked";

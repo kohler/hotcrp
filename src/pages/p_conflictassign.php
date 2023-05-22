@@ -13,7 +13,7 @@ class ConflictAssign_Page {
         }
         $user->add_overrides(Contact::OVERRIDE_CONFLICT);
 
-        $qreq->print_header("Assignments", "assignpc", ["subtitle" => "Conflicts"]);
+        $qreq->print_header("Assignments", "conflictassign", ["subtitle" => "Conflicts"]);
         echo '<nav class="papmodes mb-5 clearfix"><ul>',
             '<li class="papmode"><a href="', $conf->hoturl("autoassign"), '">Automatic</a></li>',
             '<li class="papmode"><a href="', $conf->hoturl("manualassign"), '">Manual</a></li>',

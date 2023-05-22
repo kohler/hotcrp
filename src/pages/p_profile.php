@@ -612,7 +612,7 @@ class Profile_Page {
             $form_params["ls"] = $this->qreq->ls;
         }
         echo Ht::form($this->conf->hoturl("=profile", $form_params), [
-            "id" => "form-profile",
+            "id" => "f-profile",
             "class" => "need-unload-protection",
             "data-user" => $this->page_type ? null : $this->user->email
         ]);
@@ -725,7 +725,7 @@ class Profile_Page {
         echo "</main></form>";
 
         if ($this->page_type === 0) {
-            Ht::stash_script('hotcrp.highlight_form_children("#form-profile")');
+            Ht::stash_script('hotcrp.highlight_form_children("#f-profile")');
         }
         $this->qreq->print_footer();
     }

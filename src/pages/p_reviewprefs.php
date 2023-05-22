@@ -51,7 +51,7 @@ class ReviewPrefs_Page {
     static function print($user, $reviewer, $qreq) {
         $conf = $user->conf;
 
-        $qreq->print_header("Review preferences", "revpref");
+        $qreq->print_header("Review preferences", "reviewprefs");
 
         if (($prefdesc = $conf->_i("revprefdescription", $conf->has_topics()))) {
             echo '<div class="msg demargin remargin-left remargin-right">',
@@ -71,12 +71,12 @@ class ReviewPrefs_Page {
 
         // display options
         echo Ht::form($conf->hoturl("reviewprefs"), [
-            "method" => "get", "id" => "searchform",
-            "class" => "mb-3 has-fold fold10" . ($pl->viewing("authors") ? "o" : "c")
+            "method" => "get", "id" => "f-search",
+            "class" => "tlcontainer mb-3 has-fold fold10" . ($pl->viewing("authors") ? "o" : "c")
         ]);
 
         if ($user->privChair) {
-            echo '<div class="entryi"><label for="htctl-prefs-user">User</label>';
+            echo '<div class="entryi"><label for="k-prefs-user">User</label>';
 
             $prefcount = [];
             $result = $conf->qe_raw("select contactId, count(*) from PaperReviewPreference where preference!=0 or expertise is not null group by contactId");
@@ -93,13 +93,13 @@ class ReviewPrefs_Page {
                 $sel[$reviewer->email] = $reviewer->name_h(NAME_P|NAME_S) . " &nbsp; [" . ($prefcount[$reviewer->contactId] ?? 0) . "; not on PC]";
             }
 
-            echo Ht::select("reviewer", $sel, $reviewer->email, ["id" => "htctl-prefs-user"]), '</div>';
-            Ht::stash_script('$("#searchform select[name=reviewer]").on("change", function () { $("#searchform")[0].submit() })');
+            echo Ht::select("reviewer", $sel, $reviewer->email, ["id" => "k-prefs-user"]), '</div>';
+            Ht::stash_script('$("#f-search select[name=reviewer]").on("change", function () { $$("f-search").submit() })');
         }
 
-        echo '<div class="entryi"><label for="htctl-prefs-q">Search</label><div class="entry">',
+        echo '<div class="entryi"><label for="k-prefs-q">Search</label><div class="entry">',
             Ht::entry("q", $qreq->q, [
-                "id" => "htctl-prefs-q", "size" => 32, "placeholder" => "(All)",
+                "id" => "k-prefs-q", "size" => 32, "placeholder" => "(All)",
                 "class" => "papersearch want-focus need-suggest",
                 "spellcheck" => false, "autocomplete" => "off"
             ]), '  ', Ht::submit("redisplay", "Redisplay"), '</div></div>';

@@ -378,7 +378,7 @@ class Users_Page {
     }
 
     private function print_query_form(ContactList $pl) {
-        echo '<div id="contactsform" class="tlcontainer mb-3">';
+        echo '<div class="tlcontainer mb-3">';
 
         echo '<div class="tld is-tla active" id="default" role="tabpanel" aria-labelledby="tab-default">',
             Ht::form($this->conf->hoturl("users"), ["method" => "get"]);

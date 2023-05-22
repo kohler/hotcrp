@@ -179,7 +179,7 @@ class ManualAssign_Page {
         $rev_rounds = $this->conf->round_selector_options(false);
         $expected_round = $this->conf->assignment_round_option(false);
 
-        echo '<div id="searchform" class="mb-3 has-fold fold10', $pl->viewing("authors") ? "o" : "c", '">';
+        echo '<div class="tlcontainer mb-3 has-fold fold10', $pl->viewing("authors") ? "o" : "c", '">';
         if (count($rev_rounds) > 1) {
             echo '<div class="entryi"><label for="assrevround">Review round</label><div class="entry">',
                 Ht::select("rev_round", $rev_rounds, $this->qreq->rev_round ? : $expected_round, ["id" => "assrevround", "class" => "ignore-diff"]), ' <span class="barsep">·</span> ';
@@ -217,7 +217,7 @@ class ManualAssign_Page {
 
 
     function print(Contact $reviewer = null) {
-        $this->qreq->print_header("Assignments", "assignpc", ["subtitle" => "Manual"]);
+        $this->qreq->print_header("Assignments", "manualassign", ["subtitle" => "Manual"]);
         echo '<nav class="papmodes mb-5 clearfix"><ul>',
             '<li class="papmode"><a href="', $this->conf->hoturl("autoassign"), '">Automatic</a></li>',
             '<li class="papmode active"><a href="', $this->conf->hoturl("manualassign"), '">Manual</a></li>',

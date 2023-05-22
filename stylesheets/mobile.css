@@ -12,7 +12,7 @@ body.paper {
 .pcard {
 	margin-left: 22.5%;
 }
-#body-home > #body {
+#t-home #p-body {
 	margin-left: 24px;
 	margin-right: 24px;
 }
@@ -38,13 +38,13 @@ body.paper {
 html {
 	font-size: 14px;
 }
-#header-site, #header-page, h1.paptitle, div.submission-modes {
+#h-site, #h-page, h1.paptitle, div.submission-modes {
 	padding-left: 12px;
 }
-#header-right, h1.paptitle, div#footer {
+#h-right, h1.paptitle, #p-footer {
 	padding-right: 12px;
 }
-#top > table.vbar {
+#p-header > table.vbar {
 	margin-right: 12px;
 }
 h1.leftmenu, h2.leftmenu {
@@ -56,14 +56,14 @@ table.vbar {
 body.leftmenu, body.paper {
 	background: white;
 }
-body.leftmenu > #top {
+body.leftmenu #p-header {
 	background: #ecf2f4;
 	min-height: auto;
 }
-body.paper > #top {
+body.paper #p-header {
 	background: #dce4e8;
 }
-#body, body.paper > #body, #body-home > #body {
+#p-body, body.paper #p-body, #t-home #p-body {
 	margin-left: 12px;
 	margin-right: 12px;
 }
@@ -90,7 +90,7 @@ body.paper > #top {
 .remargin-right {
 	padding-right: 12px;
 }
-#msgs-initial {
+#h-messages {
 	margin-left: 12px;
 	margin-right: 12px;
 }

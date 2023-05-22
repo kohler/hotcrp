@@ -324,7 +324,7 @@ class Search_Page {
             "body_class" => $pl_text === null ? "want-hash-focus" : null
         ]);
         echo Ht::unstash(), // need the JS right away
-            '<div id="searchform" class="tlcontainer mb-3 clearfix" data-lquery="',
+            '<div id="f-search" class="tlcontainer mb-3 clearfix" data-lquery="',
             htmlspecialchars($search->default_limited_query()), '">';
 
         $limits = PaperSearch::viewable_limits($user, $search->limit());
@@ -348,21 +348,21 @@ class Search_Page {
         echo '<div class="tld is-tla" id="advanced" role="tabpanel" aria-labelledby="tab-advanced">',
             Ht::form($this->conf->hoturl("search"), ["method" => "get"]),
             '<div class="d-inline-block">',
-            '<div class="entryi medium"><label for="htctl-advanced-qt">Search</label><div class="entry">',
-              Ht::select("qt", $qtOpt, $qreq->qt ?? "n", ["id" => "htctl-advanced-qt"]),
+            '<div class="entryi medium"><label for="k-advanced-qt">Search</label><div class="entry">',
+              Ht::select("qt", $qtOpt, $qreq->qt ?? "n", ["id" => "k-advanced-qt"]),
             '</div></div>',
-            '<div class="entryi medium"><label for="htctl-advanced-qa">With <b>all</b> the words</label><div class="entry">',
-              Ht::entry("qa", $qreq->qa ?? $qreq->q ?? "", ["id" => "htctl-advanced-qa", "size" => 60, "class" => "papersearch want-focus need-suggest", "spellcheck" => false, "autocomplete" => "off"]),
+            '<div class="entryi medium"><label for="k-advanced-qa">With <b>all</b> the words</label><div class="entry">',
+              Ht::entry("qa", $qreq->qa ?? $qreq->q ?? "", ["id" => "k-advanced-qa", "size" => 60, "class" => "papersearch want-focus need-suggest", "spellcheck" => false, "autocomplete" => "off"]),
             '</div></div>',
-            '<div class="entryi medium"><label for="htctl-advanced-qo">With <b>any</b> of the words</label><div class="entry">',
-              Ht::entry("qo", $qreq->qo ?? "", ["id" => "htctl-advanced-qo", "size" => 60, "spellcheck" => false, "autocomplete" => "off"]),
+            '<div class="entryi medium"><label for="k-advanced-qo">With <b>any</b> of the words</label><div class="entry">',
+              Ht::entry("qo", $qreq->qo ?? "", ["id" => "k-advanced-qo", "size" => 60, "spellcheck" => false, "autocomplete" => "off"]),
             '</div></div>',
-            '<div class="entryi medium"><label for="htctl-advanced-qx"><b>Without</b> the words</label><div class="entry">',
-              Ht::entry("qx", $qreq->qx ?? "", ["id" => "htctl-advanced-qx", "size" => 60, "spellcheck" => false, "autocomplete" => "off"]),
+            '<div class="entryi medium"><label for="k-advanced-qx"><b>Without</b> the words</label><div class="entry">',
+              Ht::entry("qx", $qreq->qx ?? "", ["id" => "k-advanced-qx", "size" => 60, "spellcheck" => false, "autocomplete" => "off"]),
             '</div></div>';
         if (!$search->limit_explicit()) {
-            echo '<div class="entryi medium"><label for="htctl-advanced-q">In</label><div class="entry">',
-                  PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["id" => "htctl-advanced-q"]),
+            echo '<div class="entryi medium"><label for="k-advanced-q">In</label><div class="entry">',
+                  PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["id" => "k-advanced-q"]),
                 '</div></div>';
         }
         echo '<div class="entryi medium"><label></label><div class="entry">',

@@ -2517,13 +2517,14 @@ HtmlCollector.prototype.clear = function () {
     this.html = "";
     return this;
 };
-HtmlCollector.prototype.next_htctl_id = (function () {
+HtmlCollector.prototype.next_input_id = (function () {
 var id = 1;
 return function () {
-    while (document.getElementById("htctl" + id))
-        ++id;
-    ++id;
-    return "htctl" + (id - 1);
+    var s;
+    do {
+        s = "k-" + id++;
+    } while (document.getElementById(s));
+    return s;
 };
 })();
 
@@ -2751,7 +2752,7 @@ function display_main(is_initial) {
 
     if (!is_initial
         && Math.abs(browser_now - dl.now) >= 300000
-        && (x = $$("msg-clock-drift"))) {
+        && (x = $$("p-clock-drift"))) {
         removeClass(x, "hidden");
         x.innerHTML = '<div class="msg msg-warning">The HotCRP server’s clock is more than 5 minutes off from your computer’s clock. If your computer’s clock is correct, you should update the server’s clock.</div>';
     }
@@ -2778,7 +2779,7 @@ function display_main(is_initial) {
     if (dltime && dltime - now > 2678400 /* 31 days */)
         dlname = null;
 
-    elt = $$("header-deadline");
+    elt = $$("h-deadline");
     if (dlname) {
         var impending = !dltime || dltime - now < 180.5,
             s = '<a href="' + hoturl_html("deadlines");
@@ -2792,13 +2793,13 @@ function display_main(is_initial) {
         if (impending)
             s = '<span class="impending">' + s + '</span>';
         if (!elt) {
-            var hdrelt = $$("header-right"), divelt, sepelt;
+            var hdrelt = $$("h-right"), divelt, sepelt;
             if (!hdrelt)
                 return;
             divelt = document.createElement("div");
             divelt.className = "d-inline-block";
             elt = document.createElement("span");
-            elt.id = "header-deadline";
+            elt.id = "h-deadline";
             divelt.appendChild(elt);
             if (hdrelt.firstChild) {
                 sepelt = document.createElement("span");
@@ -2958,8 +2959,9 @@ function tracker_html(tr) {
 }
 
 function display_tracker() {
-    var mne = $$("tracker"), mnspace = $$("tracker-space"),
-        mnpl = $("nav.pslcard-nav")[0], t, i, e, first_tracker_display = false;
+    var mne = $$("p-tracker"),
+        moffsets = document.querySelectorAll(".need-tracker-offset"),
+        t, i, e;
 
     // tracker button
     if ((e = $$("tracker-connect-btn"))) {
@@ -2982,39 +2984,36 @@ function display_tracker() {
             }
             mne.parentNode.removeChild(mne);
         }
-        if (mnspace)
-            mnspace.parentNode.removeChild(mnspace);
-        if (mnpl)
-            mnpl.style.top = null;
+        for (i = 0; i !== moffsets.length; ++i) {
+            moffsets[i].style.top = null;
+        }
         removeClass(document.body, "has-tracker");
         return;
     }
 
     // tracker display
-    if (!mnspace) {
-        mnspace = document.createElement("div");
-        mnspace.id = "tracker-space";
-        document.body.insertBefore(mnspace, document.body.firstChild);
-    }
     if (!mne) {
         mne = document.createElement("div");
-        mne.id = "tracker";
+        mne.id = "p-tracker";
         document.body.insertBefore(mne, document.body.firstChild);
         last_tracker_html = null;
     }
     if (!ever_tracker_display) {
         $(window).on("resize", display_tracker);
-        ever_tracker_display = first_tracker_display = true;
+        $(display_tracker);
+        ever_tracker_display = true;
     }
     addClass(document.body, "has-tracker");
 
     tracker_has_format = false;
     if (dl.tracker.ts) {
         t = "";
-        for (i = 0; i !== dl.tracker.ts.length; ++i)
+        for (i = 0; i !== dl.tracker.ts.length; ++i) {
             t += tracker_html(dl.tracker.ts[i]);
-    } else
+        }
+    } else {
         t = tracker_html(dl.tracker);
+    }
     if (t !== last_tracker_html) {
         if (global_tooltip
             && mne.contains(global_tooltip.near())) {
@@ -3025,11 +3024,13 @@ function display_tracker() {
         if (tracker_has_format)
             render_text.on_page();
     }
-    mnspace.style.height = mne.offsetHeight + "px";
-    if (mnpl)
-        mnpl.style.top = (mne.offsetHeight + 104) + "px";
-    else if (first_tracker_display)
-        $(display_tracker);
+    for (i = 0; i !== moffsets.length; ++i) {
+        e = moffsets[i];
+        if (!e.hasAttribute("data-tracker-offset")) {
+            e.setAttribute("data-tracker-offset", window.getComputedStyle(e).top);
+        }
+        e.style.top = (mne.offsetHeight + parseFloat(e.getAttribute("data-tracker-offset") || "0")) + "px";
+    }
     if (dl.tracker)
         tracker_show_elapsed();
 }
@@ -3062,10 +3063,10 @@ handle_ui.on("js-tracker", function (evt) {
             hc.push('<input type="hidden" name="tr' + trno + '-p" value="' + siteinfo.paperid + '">');
         if (tr.listinfo)
             hc.push('<input type="hidden" name="tr' + trno + '-listinfo" value="' + escape_html(tr.listinfo) + '">');
-        hc.push('<div class="entryi"><label for="htctl-tr' + trno + '-name">Name</label><div class="entry"><input id="htctl-tr' + trno + '-name" type="text" name="tr' + trno + '-name" size="30" class="want-focus need-autogrow" value="' + escape_html(tr.name || "") + (tr.is_new ? '" placeholder="New tracker' : '" placeholder="Unnamed') + '"></div></div>');
+        hc.push('<div class="entryi"><label for="k-tr' + trno + '-name">Name</label><div class="entry"><input id="k-tr' + trno + '-name" type="text" name="tr' + trno + '-name" size="30" class="want-focus need-autogrow" value="' + escape_html(tr.name || "") + (tr.is_new ? '" placeholder="New tracker' : '" placeholder="Unnamed') + '"></div></div>');
         var vis = tr.visibility || "", vistype = vis === "" ? "" : vis.charAt(0);
-        hc.push('<div class="entryi has-fold fold' + (vistype === "" ? "c" : "o") + '" data-fold-values="+ -"><label for="htctl-tr' + trno + '-vistype">PC visibility</label><div class="entry">', '</div></div>');
-        hc.push('<span class="select"><select id="htctl-tr' + trno + '-vistype" name="tr' + trno + '-vistype" class="uich js-foldup" data-default-value="' + vistype + '">', '</select></span>');
+        hc.push('<div class="entryi has-fold fold' + (vistype === "" ? "c" : "o") + '" data-fold-values="+ -"><label for="k-tr' + trno + '-vistype">PC visibility</label><div class="entry">', '</div></div>');
+        hc.push('<span class="select"><select id="k-tr' + trno + '-vistype" name="tr' + trno + '-vistype" class="uich js-foldup" data-default-value="' + vistype + '">', '</select></span>');
         var vismap = {"": "Whole PC", "+": "PC members with tag", "-": "PC members without tag"};
         for (var i in vismap)
             hc.push('<option value="' + i + '"' + (i === vistype ? " selected" : "") + '>' + vismap[i] + '</option>');
@@ -3471,7 +3472,7 @@ function load(dlx, prev_eventid, is_initial) {
         tracker_configure_success();
     if (reload_outstanding === 0) {
         var t;
-        if (is_initial && ($$("msg-clock-drift") || dl.tracker_recent))
+        if (is_initial && ($$("p-clock-drift") || dl.tracker_recent))
             t = 0.01;
         else if (dl.tracker_recent)
             t = 7 + Math.random() * 1.5;
@@ -3769,9 +3770,16 @@ $(function () {
 
 
 function svge() {
-    var e = document.createElementNS("http://www.w3.org/2000/svg", arguments[0]), i;
-    for (i = 1; i < arguments.length; i += 2) {
-        e.setAttribute(arguments[i], arguments[i + 1]);
+    var e = document.createElementNS("http://www.w3.org/2000/svg", arguments[0]), i, t;
+    for (i = 1; i < arguments.length; ) {
+        t = arguments[i];
+        if (typeof t === "string") {
+            e.setAttribute(t, arguments[i + 1]);
+            i += 2;
+        } else {
+            e.append(t);
+            ++i;
+        }
     }
     return e;
 }
@@ -5837,7 +5845,7 @@ function render_editing(hc, cj) {
 
     // attachments
     hc.push('<div class="entryi has-editable-attachments hidden" id="'.concat(cid, '-attachments" data-dtype="-2" data-document-prefix="attachment"><label for="', cid, '-attachments">Attachments</label></div>'));
-    btnbox.push('<button type="button" name="attach" class="btn-licon need-tooltip ui js-add-attachment" aria-label="Attach file" data-editable-attachments="'.concat(cid, '-attachments">', $("#licon-attachment").html(), '</button>'));
+    btnbox.push('<button type="button" name="attach" class="btn-licon need-tooltip ui js-add-attachment" aria-label="Attach file" data-editable-attachments="'.concat(cid, '-attachments">', $("#i-attachment").html(), '</button>'));
 
     // visibility
     if (!cj.response && (!cj.by_author || cj.by_author_visibility)) {
@@ -5867,7 +5875,7 @@ function render_editing(hc, cj) {
     if (!cj.response && !cj.by_author) {
         hc.push('<div class="entryi fx3"><label for="' + cid + '-tags">Tags</label>', '</div>')
         hc.push_pop('<input id="' + cid + '-tags" name="tags" type="text" size="50" placeholder="Comment tags">');
-        btnbox.push('<button type="button" name="showtags" class="btn-licon need-tooltip" aria-label="Tags">' + $("#licon-tag").html() + '</button>');
+        btnbox.push('<button type="button" name="showtags" class="btn-licon need-tooltip" aria-label="Tags">' + $("#i-tag").html() + '</button>');
     }
 
     // delete
@@ -5878,7 +5886,7 @@ function render_editing(hc, cj) {
         } else {
             bnote = "Are you sure you want to override the deadline and delete this " + x + "?";
         }
-        btnbox.push('<button type="button" name="delete" class="btn-licon need-tooltip" aria-label="Delete ' + x + '" data-override-text="' + bnote + '">' + $("#licon-trash").html() + '</button>');
+        btnbox.push('<button type="button" name="delete" class="btn-licon need-tooltip" aria-label="Delete ' + x + '" data-override-text="' + bnote + '">' + $("#i-trash").html() + '</button>');
     }
 
     // response ready
@@ -6305,7 +6313,7 @@ function render_comment(cj, editing) {
     if (cj.is_new && !editing) {
         var ide = celt.closest(".cmtid");
         navsidebar.remove(ide);
-        $("#ccactions a[href='#" + ide.id + "']").closest(".aabut").removeClass("hidden");
+        $("#k-comment-actions a[href='#" + ide.id + "']").closest(".aabut").removeClass("hidden");
         $(ide).remove();
         return;
     }
@@ -6496,27 +6504,28 @@ function add_comment(cj, editing) {
         add_comment_sidebar($$(cid), cj);
         render_comment(cj, editing);
         if (cj.response && cj.is_new) {
-            $("#ccactions a[href='#" + cid + "']").closest(".aabut").addClass("hidden");
+            $("#k-comment-actions a[href='#" + cid + "']").closest(".aabut").addClass("hidden");
         }
     }
 }
 
 function add_new_comment_button(cj, cid) {
-    var ccactions = $$("ccactions");
-    if (!ccactions) {
-        ccactions = $('<div id="ccactions" class="pcard cmtcard"><div class="aab aabig"></div></div>')[0];
-        $(".pcontainer").append(ccactions);
+    var actions = $$("k-comment-actions");
+    if (!actions) {
+        actions = classe("div", "pcard cmtcard", classe("div", "aab aabig"));
+        actions.id = "k-comment-actions";
+        $(".pcontainer").append(actions);
     }
-    if (!$(ccactions).find("a[href='#" + cid + "']").length) {
+    if (!$(actions).find("a[href='#" + cid + "']").length) {
         var rname = cj.response && (cj.response == "1" ? "response" : cj.response + " response"),
             $b = $('<div class="aabut"><a href="#'.concat(cid, '" class="uic js-edit-comment btn">Add ', rname || "comment", '</a></div>'));
         if (cj.response && cj.author_editable === false) {
-            if (!hasClass(ccactions, "has-fold")) {
-                $(ccactions).addClass("has-fold foldc").find(".aabig").append('<div class="aabut fn"><a class="ui js-foldup ulh need-tooltip" aria-label="Show more comment options" href="">…</a></div>');
+            if (!hasClass(actions, "has-fold")) {
+                $(actions).addClass("has-fold foldc").find(".aabig").append('<div class="aabut fn"><a class="ui js-foldup ulh need-tooltip" aria-label="Show more comment options" href="">…</a></div>');
             }
             $b.addClass("fx").append('<div class="hint">(admin only)</div>');
         }
-        $b.appendTo($(ccactions).find(".aabig"));
+        $b.appendTo($(actions).find(".aabig"));
     }
 }
 
@@ -6527,7 +6536,7 @@ function add_new_comment(cj, cid) {
         article.appendChild(classe("header", "cmtcard-head",
             classe("h2", "", classe("span", "cmtcard-header-name", cj_name(cj)))));
     }
-    document.querySelector(".pcontainer").insertBefore(article, $$("ccactions"));
+    document.querySelector(".pcontainer").insertBefore(article, $$("k-comment-actions"));
 }
 
 function add_comment_sidebar(celt, cj) {
@@ -6631,16 +6640,16 @@ handle_ui.on("js-togglepreview", switch_preview);
 function quicklink_shortcut(evt) {
     // find the quicklink, reject if not found
     var key = event_key(evt),
-        a = $$("quicklink-" + (key === "j" || key === "[" ? "prev" : "next"));
+        a = $$("n-" + (key === "j" || key === "[" ? "prev" : "next"));
     if (a && a.focus) {
         // focus (for visual feedback), call callback
         a.focus();
         $ajax.after_outstanding(make_link_callback(a));
         evt.preventDefault();
-    } else if ($$("quicklink-list")) {
+    } else if ($$("n-list")) {
         // at end of list
         a = evt.target;
-        a = (a && a.tagName == "INPUT" ? a : $$("quicklink-list"));
+        a = (a && a.tagName == "INPUT" ? a : $$("n-list"));
         removeClass(a, "flash-error-outline");
         void a.offsetWidth;
         addClass(a, "flash-error-outline");
@@ -7888,8 +7897,8 @@ $(function () {
     }
     // having resolved digests, insert quicklinks
     if (siteinfo.paperid
-        && !$$("quicklink-prev")
-        && !$$("quicklink-next")) {
+        && !$$("n-prev")
+        && !$$("n-next")) {
         $(".quicklinks").each(function () {
             var info = Hotlist.at(this.closest(".has-hotlist")), ids, pos, page, mode;
             try {
@@ -7903,11 +7912,11 @@ $(function () {
                 && (pos = $.inArray(siteinfo.paperid, ids)) >= 0) {
                 if (pos > 0) {
                     mode.p = ids[pos - 1];
-                    $(this).prepend('<a id="quicklink-prev" class="ulh" href="'.concat(hoturl_html(page, mode), '">&lt; #', ids[pos - 1], '</a> '));
+                    $(this).prepend('<a id="n-prev" class="ulh" href="'.concat(hoturl_html(page, mode), '">&lt; #', ids[pos - 1], '</a> '));
                 }
                 if (pos < ids.length - 1) {
                     mode.p = ids[pos + 1];
-                    $(this).append(' <a id="quicklink-next" class="ulh" href="'.concat(hoturl_html(page, mode), '">#', ids[pos + 1], ' &gt;</a>'));
+                    $(this).append(' <a id="n-next" class="ulh" href="'.concat(hoturl_html(page, mode), '">#', ids[pos + 1], ' &gt;</a>'));
                 }
             }
         });
@@ -8529,8 +8538,8 @@ handle_ui.on("js-annotate-order", function () {
         if (annoid == null)
             annoid = "n" + (last_newannoid += 1);
         hc.push('<div class="form-g" data-anno-id="' + annoid + '">', '</div>');
-        hc.push('<div class="entryi"><label for="htctl-taganno-' + annoid + '-d">Legend</label><input id="htctl-taganno-' + annoid + '-d" name="legend_' + annoid + '" type="text" placeholder="none" size="32" class="need-autogrow"></div>');
-        hc.push('<div class="entryi"><label for="htctl-taganno-' + annoid + '-tagval">Tag value</label><div class="entry"><input id="htctl-taganno-' + annoid + '-tagval" name="tagval_' + annoid + '" type="text" size="5">', '</div></div>');
+        hc.push('<div class="entryi"><label for="k-taganno-' + annoid + '-d">Legend</label><input id="k-taganno-' + annoid + '-d" name="legend_' + annoid + '" type="text" placeholder="none" size="32" class="need-autogrow"></div>');
+        hc.push('<div class="entryi"><label for="k-taganno-' + annoid + '-tagval">Tag value</label><div class="entry"><input id="k-taganno-' + annoid + '-tagval" name="tagval_' + annoid + '" type="text" size="5">', '</div></div>');
         if (anno.annoid)
             hc.push(' <a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete group">x</a>');
         hc.pop_n(2);
@@ -8993,7 +9002,7 @@ function check_version(url, versionstr) {
     var x;
     function updateverifycb(json) {
         var e;
-        if (json && json.messages && (e = $$("msgs-initial")))
+        if (json && json.messages && (e = $$("h-messages")))
             e.innerHTML = json.messages + e.innerHTML;
     }
     function updatecb(json) {
@@ -10688,7 +10697,7 @@ function prepare_autoready_condition(f) {
 }
 
 hotcrp.load_editable_paper = function () {
-    var f = document.getElementById("form-paper");
+    var f = $$("f-paper") || /* XXX */ $$("form-paper");
     hiliter_children(f);
     prepare_autoready_condition(f);
     $(".pfe").each(add_pslitem_pfe);
@@ -10698,7 +10707,7 @@ hotcrp.load_editable_paper = function () {
         '"><button class="ui btn-highlight btn-savepaper">', h.html(),
         '</button></div>'))
         .find(".btn-savepaper").click(function () {
-            $("#form-paper .btn-savepaper").first().trigger({type: "click", sidebarTarget: this});
+            $("#f-paper .btn-savepaper").first().trigger({type: "click", sidebarTarget: this});
         });
     $(f).on("change", "input, select, textarea", fieldchange);
 };
@@ -10709,27 +10718,27 @@ hotcrp.load_editable_review = function () {
     if (rfehead.length) {
         $(".pslcard > .pslitem:last-child").addClass("mb-3");
     }
-    hiliter_children("#form-review");
-    var k = $("#form-review").hasClass("alert") ? "" : " hidden",
+    hiliter_children("#f-review");
+    var k = $("#f-review").hasClass("alert") ? "" : " hidden",
         h = $(".btn-savereview").first();
     $(".pslcard-nav").append('<div class="review-alert mt-5'.concat(k,
         '"><button class="ui btn-highlight btn-savereview">', h.html(),
         '</button></div>'))
         .find(".btn-savereview").click(function () {
-            $("#form-review .btn-savereview").first().trigger({type: "click", sidebarTarget: this});
+            $("#f-review .btn-savereview").first().trigger({type: "click", sidebarTarget: this});
         });
 };
 
 hotcrp.load_editable_pc_assignments = function () {
     $("h2").each(add_pslitem_header);
-    var f = $$("form-pc-assignments");
+    var f = $$("f-pc-assignments") || /* XXX */ $$("form-pc-assignments");
     if (f) {
         hiliter_children(f);
         var k = hasClass(f, "alert") ? "" : " hidden";
         $(".pslcard-nav").append('<div class="paper-alert mt-5'.concat(k,
             '"><button class="ui btn-highlight btn-savepaper">Save PC assignments</button></div>'))
             .find(".btn-savepaper").click(function () {
-                $("#form-pc-assignments .btn-primary").first().trigger({type: "click", sidebarTarget: this});
+                $("#f-pc-assignments .btn-primary").first().trigger({type: "click", sidebarTarget: this});
             });
     }
 };
@@ -10759,12 +10768,12 @@ hotcrp.replace_editable_field = function (field, elt) {
 };
 
 hotcrp.paper_edit_conditions = function () {
-    $("#form-paper").on("fieldchange", ".has-edit-condition", run_edit_conditions)
+    $("#f-paper").on("fieldchange", ".has-edit-condition", run_edit_conditions)
         .find(".has-edit-condition").each(run_edit_conditions);
 };
 
 hotcrp.evaluate_edit_condition = function (ec) {
-    return evaluate_edit_condition(typeof ec === "string" ? parse_json(ec) : ec, $("#form-paper")[0]);
+    return evaluate_edit_condition(typeof ec === "string" ? parse_json(ec) : ec, $("#f-paper")[0]);
 };
 
 })($);
@@ -10992,16 +11001,16 @@ handle_ui.on("js-edit-formulas", function () {
     function push1(hc, f) {
         ++count;
         hc.push('<div class="editformulas-formula" data-formula-number="' + count + '">', '</div>');
-        hc.push('<div class="entryi"><label for="htctl_formulaname_' + count + '">Name</label><div class="entry nw">', '</div></div>');
+        hc.push('<div class="entryi"><label for="k-formulaname_' + count + '">Name</label><div class="entry nw">', '</div></div>');
         if (f.editable) {
-            hc.push('<input type="text" id="htctl_formulaname_' + count + '" class="editformulas-name need-autogrow" name="formulaname_' + count + '" size="30" value="' + escape_html(f.name) + '" placeholder="Formula name">');
+            hc.push('<input type="text" id="k-formulaname_' + count + '" class="editformulas-name need-autogrow" name="formulaname_' + count + '" size="30" value="' + escape_html(f.name) + '" placeholder="Formula name">');
             hc.push('<a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete formula">x</a>');
         } else
             hc.push(escape_html(f.name));
         hc.pop();
-        hc.push('<div class="entryi"><label for="htctl_formulaexpression_' + count + '">Expression</label><div class="entry">', '</div></div>');
+        hc.push('<div class="entryi"><label for="k-formulaexpression_' + count + '">Expression</label><div class="entry">', '</div></div>');
         if (f.editable)
-            hc.push('<textarea class="editformulas-expression need-autogrow w-99" id="htctl_formulaexpression_' + count + '" name="formulaexpression_' + count + '" rows="1" cols="64" placeholder="Formula definition">' + escape_html(f.expression) + '</textarea>')
+            hc.push('<textarea class="editformulas-expression need-autogrow w-99" id="k-formulaexpression_' + count + '" name="formulaexpression_' + count + '" rows="1" cols="64" placeholder="Formula definition">' + escape_html(f.expression) + '</textarea>')
                 .push('<input type="hidden" name="formulaid_' + count + '" value="' + f.id + '">');
         else
             hc.push(escape_html(f.expression));
@@ -11102,7 +11111,7 @@ handle_ui.on("js-edit-view-options", function () {
         $d = hc.show();
         $d.on("submit", "form", submit);
     }
-    $.ajax(hoturl("=api/viewoptions", {q: $("#searchform input[name=q]").val()}), {
+    $.ajax(hoturl("=api/viewoptions", {q: $("#f-search input[name=q]").val()}), {
         success: function (data) {
             if (data.ok)
                 create(data.display_default, data.display_current);
@@ -11115,16 +11124,16 @@ handle_ui.on("js-edit-namedsearches", function () {
     function push1(hc, f) {
         ++count;
         hc.push('<div class="editsearches-search" data-search-number="' + count + '">', '</div>');
-        hc.push('<div class="entryi"><label for="htctl_searchname_' + count + '">Name</label><div class="entry nw">', '</div></div>');
+        hc.push('<div class="entryi"><label for="k-searchname_' + count + '">Name</label><div class="entry nw">', '</div></div>');
         if (f.editable) {
-            hc.push('<input type="text" id="htctl_searchname_' + count + '" class="editsearches-name need-autogrow" name="searchname_' + count + '" size="30" value="' + escape_html(f.name) + '" placeholder="Search name">');
+            hc.push('<input type="text" id="k-searchname_' + count + '" class="editsearches-name need-autogrow" name="searchname_' + count + '" size="30" value="' + escape_html(f.name) + '" placeholder="Search name">');
             hc.push('<a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete search">x</a>');
         } else
             hc.push(escape_html(f.name));
         hc.pop();
-        hc.push('<div class="entryi"><label for="htctl_searchquery_' + count + '">Search</label><div class="entry">', '</div></div>');
+        hc.push('<div class="entryi"><label for="k-searchquery_' + count + '">Search</label><div class="entry">', '</div></div>');
         if (f.editable)
-            hc.push('<textarea class="editsearches-query need-autogrow w-99" id="htctl_searchquery_' + count + '" name="searchq_' + count + '" rows="1" cols="64" placeholder="(All)">' + escape_html(f.q) + '</textarea>');
+            hc.push('<textarea class="editsearches-query need-autogrow w-99" id="k-searchquery_' + count + '" name="searchq_' + count + '" rows="1" cols="64" placeholder="(All)">' + escape_html(f.q) + '</textarea>');
         else
             hc.push(escape_html(f.q));
         hc.push('<input type="hidden" name="searchid_' + count + '" value="' + (f.id || f.name) + '">');
@@ -11137,7 +11146,7 @@ handle_ui.on("js-edit-namedsearches", function () {
     function click() {
         if (this.name === "add") {
             var hc = new HtmlCollector,
-                q = document.getElementById("searchform");
+                q = document.getElementById("f-search");
             push1(hc, {name: "", q: q ? q.getAttribute("data-lquery") : "", editable: true, id: "new"});
             var $f = $(hc.render()).appendTo($d.find(".editsearches")).awaken();
             $f[0].setAttribute("data-search-new", "");
@@ -11973,7 +11982,7 @@ $(function () {
         log_jserror(err.join("\n"));
     }
     if (document.documentMode || window.attachEvent) {
-        var msg = $('<div class="msg msg-error"></div>').appendTo("#msgs-initial");
+        var msg = $('<div class="msg msg-error"></div>').appendTo("#h-messages");
         append_feedback_near(msg[0], {message: "<0>This site no longer supports Internet Explorer", status: 2});
         append_feedback_near(msg[0], {message: "<5>Please use <a href=\"https://browsehappy.com/\">a modern browser</a> if you can.", status: -5 /*MessageSet::INFORM*/});
     }

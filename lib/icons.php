@@ -46,10 +46,10 @@ class Icons {
     static function stash_defs(...$names) {
         $svgs = [];
         foreach ($names as $name) {
-            if (Ht::mark_stash("licon-def-{$name}")) {
+            if (Ht::mark_stash("i-def-{$name}")) {
                 $t = self::svg_contents($name);
                 $sp = strpos($t, " ");
-                $svgs[] = substr($t, 0, $sp) . " id=\"licon-def-{$name}\"" . substr($t, $sp);
+                $svgs[] = substr($t, 0, $sp) . " id=\"i-def-{$name}\"" . substr($t, $sp);
             }
         }
         if (!empty($svgs)) {
@@ -59,8 +59,8 @@ class Icons {
     /** @param string $name
      * @return string */
     static function ui_use($name) {
-        assert(Ht::check_stash("licon-def-{$name}"));
-        return self::$svg_open . "<use href=\"#licon-def-{$name}\"></svg>";
+        assert(Ht::check_stash("i-def-{$name}"));
+        return self::$svg_open . "<use href=\"#i-def-{$name}\"></svg>";
     }
     static function ui_triangle($direction) {
         // see also script.js
@@ -140,12 +140,13 @@ class Icons {
         return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path d="M21 60V54H33V46H50V32H60V28H66V15H71V12H89" class="gcdf" /><path stroke-linejoin="miter" d="M7 12V60H89" /></svg>';
     }
     static function stash_licon($name) {
-        if (Ht::mark_stash("licon-{$name}")) {
+        if (Ht::mark_stash("i-{$name}")) {
             $xname = str_replace("_", "-", $name);
             if (str_starts_with($xname, "ui-")) {
                 $xname = substr($xname, 3);
             }
-            Ht::stash_html('<div id="licon-' . $xname . '" class="hidden">' . call_user_func("Icons::$name") . '</div>');
+            $body = Icons::$name();
+            Ht::stash_html("<div id=\"i-{$xname}\" class=\"hidden\">{$body}</div>");
         }
     }
 }

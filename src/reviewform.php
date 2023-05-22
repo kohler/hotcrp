@@ -501,7 +501,7 @@ Ready\n";
         }
         echo '">',
             Ht::form($reviewPostLink, [
-                "id" => "form-review", "class" => "need-unload-protection",
+                "id" => "f-review", "class" => "need-unload-protection",
                 "data-alert-toggle" => "review-alert"
             ]),
             Ht::hidden_default_submit("default", "");

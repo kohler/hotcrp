@@ -229,8 +229,8 @@ return function (initial_info) {
     $("#tracker-table-showpapers").on("change", do_show_papers).each(do_show_papers);
     $("#tracker-table-kioskmode").on("click", do_kiosk);
     if (info.is_kiosk) {
-        var site = $("#header-site h1").find(".header-site-name").html();
-        $("#header-site h1").html('<span class="header-site-name">' + site + '</span>');
+        var site = $("#h-site h1").find(".header-site-name").html();
+        $("#h-site h1").html('<span class="header-site-name">' + site + '</span>');
     }
     if (!muted)
         play(true);

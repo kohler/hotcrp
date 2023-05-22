@@ -19,9 +19,9 @@ class QuicklinksRenderer {
         $url = $qreq->conf()->hoturl($baseUrl, $urlrest);
         $icon = Icons::ui_linkarrow($isprev ? 3 : 1);
         if ($isprev) {
-            return "<a id=\"quicklink-prev\" class=\"ulh pnum\" href=\"{$url}\">{$icon}{$paperText}</a>";
+            return "<a id=\"n-prev\" class=\"ulh pnum\" href=\"{$url}\">{$icon}{$paperText}</a>";
         } else {
-            return "<a id=\"quicklink-next\" class=\"ulh pnum\" href=\"{$url}\">{$paperText}{$icon}</a>";
+            return "<a id=\"n-next\" class=\"ulh pnum\" href=\"{$url}\">{$paperText}{$icon}</a>";
         }
     }
 
@@ -33,9 +33,9 @@ class QuicklinksRenderer {
         }
         $x = Ht::form($qreq->conf()->hoturl($baseUrl ?? "paper"), ["method" => "get", "class" => "gopaper"]);
         if ($baseUrl === "profile") {
-            $x .= Ht::entry("u", "", ["id" => "quicklink-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow", "spellcheck" => false, "autocomplete" => "off"]);
+            $x .= Ht::entry("u", "", ["id" => "n-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow", "spellcheck" => false, "autocomplete" => "off"]);
         } else {
-            $x .= Ht::entry("q", "", ["id" => "quicklink-search", "size" => 10, "placeholder" => "(All)", "aria-label" => "Search", "class" => "papersearch need-suggest need-autogrow", "spellcheck" => false, "autocomplete" => "off"]);
+            $x .= Ht::entry("q", "", ["id" => "n-search", "size" => 10, "placeholder" => "(All)", "aria-label" => "Search", "class" => "papersearch need-suggest need-autogrow", "spellcheck" => false, "autocomplete" => "off"]);
         }
         foreach ($args as $k => $v) {
             $x .= Ht::hidden($k, $v);
@@ -86,9 +86,9 @@ class QuicklinksRenderer {
                 $d = htmlspecialchars($list->description);
                 $url = $list->full_site_relative_url($user);
                 if ($url) {
-                    $x .= '<a id="quicklink-list" class="ulh" href="' . htmlspecialchars($qreq->navigation()->siteurl() . $url) . "\">{$d}</a>";
+                    $x .= '<a id="n-list" class="ulh" href="' . htmlspecialchars($qreq->navigation()->siteurl() . $url) . "\">{$d}</a>";
                 } else {
-                    $x .= "<span id=\"quicklink-list\">{$d}</span>";
+                    $x .= "<span id=\"n-list\">{$d}</span>";
                 }
             }
             if (($next = $list->neighbor_id(1)) !== false) {
