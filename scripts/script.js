@@ -3289,25 +3289,32 @@ function trevent_store(x, prev_eventid, cancel) {
         trevent$ = x;
         wstorage.site(false, "hotcrp-trevent", x);
     }
-    if (++trmicrotask === 1)
-        queueMicrotask(trevent_react);
+    trevent_react_soon();
     return true;
 }
 
 function trevent_wstorage() {
     my_uuid = (window.crypto && window.crypto.randomUUID && window.crypto.randomUUID())
         || now_sec().toString().concat("/", Math.random(), "/", Math.random());
-    if (trevent().eventid > 0 && ++trmicrotask === 1)
-        queueMicrotask(trevent_react);
+    if (trevent().eventid > 0) {
+        trevent_react_soon();
+    }
     $(window).on("storage", function (evt) {
         var xevt = evt.originalEvent || evt;
-        if (xevt.key === wstorage.site_key("hotcrp-trevent")
-            && ++trmicrotask === 1)
-            queueMicrotask(trevent_react);
+        if (xevt.key === wstorage.site_key("hotcrp-trevent")) {
+            trevent_react_soon();
+        }
     }).on("unload", function () {
         var eventid = dl.tracker_eventid || 0;
         trevent_store({eventid: eventid, expiry: now_sec()}, eventid, true);
     });
+}
+
+function trevent_react_soon() {
+    if (trmicrotask === 0) {
+        trmicrotask = 1;
+        queueMicrotask(trevent_react);
+    }
 }
 
 function trevent_react() {
