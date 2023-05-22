@@ -72,8 +72,7 @@ class Graph_Formula_Page {
         } else {
             $h2 = htmlspecialchars($fg->fy->expression) . " vs. {$xhtml}";
         }
-        $highlightable = ($fg->type & (FormulaGraph::SCATTER | FormulaGraph::BOXPLOT))
-            && $fg->fx_combinable();
+        $highlightable = ($fg->type & (FormulaGraph::SCATTER | FormulaGraph::BOXPLOT)) !== 0;
 
         $attr = [];
         if (!($fg->type & FormulaGraph::CDF)) {

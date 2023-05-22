@@ -400,11 +400,6 @@ class FormulaGraph extends MessageSet {
         return $this->fx_type;
     }
 
-    /** @return bool */
-    function fx_combinable() {
-        return !$this->fx_type;
-    }
-
     /** @param PaperInfo $prow
      * @param ?ReviewInfo $rrow
      * @return list<int> */
