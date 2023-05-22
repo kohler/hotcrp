@@ -1103,7 +1103,7 @@ wstorage.json = function (is_session, key) {
     return x ? parse_json(x) : false;
 };
 wstorage.site_key = function (key) {
-    return siteinfo.base === "/" ? siteinfo.base + key : key;
+    return siteinfo.base + key;
 };
 wstorage.site = function (is_session, key, value) {
     return wstorage(is_session, wstorage.site_key(key), value);
