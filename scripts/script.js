@@ -6276,9 +6276,13 @@ function save_editor(elt, action, really) {
 }
 
 function keydown_editor(evt) {
-    if (event_key.is_submit_enter(evt, false)) {
+    var key = event_key(evt);
+    if (key === "Enter" && event_key.is_submit_enter(evt, false)) {
         evt.preventDefault();
         save_editor(this, "submit");
+    } else if (key === "Escape" && !form_differs(this.form)) {
+        evt.preventDefault();
+        render_comment(find_cj(this), false);
     }
 }
 
