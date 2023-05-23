@@ -1047,6 +1047,11 @@ event_key.is_default_a = function (evt, a) {
         && evt.button == 0
         && (!a || !hasClass("ui", a));
 };
+event_key.is_submit_enter = function (evt, allow_none) {
+    return !evt.shiftKey && !evt.altKey
+        && (allow_none || evt.metaKey || evt.ctrlKey)
+        && event_key(evt) === "Enter";
+};
 return event_key;
 })();
 
@@ -4077,7 +4082,7 @@ handle_ui.on("click.dropmenu", function (evt) {
 // autosubmit
 
 $(document).on("keypress", "input.js-autosubmit", function (evt) {
-    if (event_modkey(evt) || event_key(evt) !== "Enter") {
+    if (!event_key.is_submit_enter(evt, true)) {
         return;
     }
     var f = evt.target.form,
@@ -4102,8 +4107,7 @@ $(document).on("keypress", "input.js-autosubmit", function (evt) {
 
 handle_ui.on("js-keydown-enter-submit", function (evt) {
     if (evt.type === "keydown"
-        && !(event_modkey(evt) & (event_modkey.SHIFT | event_modkey.ALT))
-        && event_key(evt) === "Enter") {
+        && event_key.is_submit_enter(evt, true)) {
         $(evt.target.form).trigger("submit");
         evt.preventDefault();
     }
@@ -5981,9 +5985,9 @@ function make_update_words(celt, wlimit) {
         wce.className = "words" + (wlimit < wc ? " wordsover" :
                                    (wlimit * 0.9 < wc ? " wordsclose" : ""));
         if (wlimit < wc)
-            wce.innerHTML = plural(wc - wlimit, "word") + " over";
+            wce.textContent = plural(wc - wlimit, "word") + " over";
         else
-            wce.innerHTML = plural(wlimit - wc, "word") + " left";
+            wce.textContent = plural(wlimit - wc, "word") + " left";
     }
     if (wce)
         $(celt).find("textarea").on("input", setwc).each(setwc);
@@ -6272,7 +6276,7 @@ function save_editor(elt, action, really) {
 }
 
 function keydown_editor(evt) {
-    if (event_key(evt) === "Enter" && event_modkey(evt) === event_modkey.META) {
+    if (event_key.is_submit_enter(evt, false)) {
         evt.preventDefault();
         save_editor(this, "submit");
     }
@@ -8006,7 +8010,7 @@ function rp_unload() {
 
 handle_ui.on("revpref", function (evt) {
     if (evt.type === "keydown") {
-        if (!event_modkey(evt) && event_key(evt) === "Enter") {
+        if (event_key.is_submit_enter(evt, true)) {
             rp_change.call(this);
             evt.preventDefault();
             handle_ui.stopImmediatePropagation(evt);
@@ -10340,14 +10344,15 @@ function prepare_pstags() {
     }
     $f.on("keydown", "textarea", function (evt) {
         var key = event_key(evt);
-        if (key === "Enter" || key === "Escape") {
-            var mod = event_modkey(evt);
-            if (mod === 0 || (key === "Enter" && mod === event_modkey.META)) {
-                $f[0][key === "Enter" ? "save" : "cancel"].click();
-                evt.preventDefault();
-                handle_ui.stopImmediatePropagation(evt);
-            }
+        if (key === "Enter" && event_key.is_submit_enter(evt, true)) {
+            $f[0].elements.save.click();
+        } else if (key === "Escape") {
+            $f[0].elements.cancel.click();
+        } else {
+            return;
         }
+        evt.preventDefault();
+        handle_ui.stopImmediatePropagation(evt);
     });
     $f.find("button[name=cancel]").on("click", function (evt) {
         $ta.val($ta.prop("defaultValue"));
