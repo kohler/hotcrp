@@ -10657,29 +10657,34 @@ function prepare_autoready_condition(f) {
         condition = JSON.parse(f.getAttribute("data-autoready-condition"));
     }
     function chf() {
-        var was, is, iscond, e;
+        var was, is, iscond, e, readychecked;
         iscond = !condition || hotcrp.evaluate_edit_condition(condition, f);
         readye.disabled = !iscond;
         if (iscond && readye.hasAttribute("data-autoready")) {
             readye.checked = true;
             readye.removeAttribute("data-autoready");
         }
+        if (readye.type === "checkbox") {
+            readychecked = readye.checked;
+        } else {
+            readychecked = readye.value !== "" && readye.value !== "0";
+        }
         e = readye.parentElement.parentElement;
         toggleClass(e, "hidden", !iscond);
-        toggleClass(e, "is-error", iscond && !readye.checked && readye.hasAttribute("data-urgent"));
+        toggleClass(e, "is-error", iscond && !readychecked && readye.hasAttribute("data-urgent"));
         for (e = e.nextSibling; e && e.tagName === "P"; e = e.nextSibling) {
             if (hasClass(e, "if-unready-required")) {
                 toggleClass(e, "hidden", iscond);
             } else if (hasClass(e, "if-unready")) {
-                toggleClass(e, "hidden", !iscond || readye.checked);
+                toggleClass(e, "hidden", !iscond || readychecked);
             } else if (hasClass(e, "if-ready")) {
-                toggleClass(e, "hidden", !iscond || !readye.checked);
+                toggleClass(e, "hidden", !iscond || !readychecked);
             }
         }
         var t;
         if (f.hasAttribute("data-contacts-only")) {
             t = "Save contacts";
-        } else if (!iscond || !readye.checked) {
+        } else if (!iscond || !readychecked) {
             t = "Save draft";
         } else if (was) {
             t = "Save and resubmit";
