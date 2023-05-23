@@ -6130,6 +6130,22 @@ function cmt_beforeunload() {
     }
 }
 
+function cmt_focus(e, n) {
+    if (!hasClass(e, "need-focus")) {
+        return;
+    }
+    removeClass(e, "need-focus");
+    if (!hasClass(e, "popout")) {
+        $(e).scrollIntoView();
+    }
+    var te = e.querySelector("form").elements.text;
+    te.focus();
+    if (te.setSelectionRange) {
+        te.setSelectionRange(te.value.length, te.value.length);
+        te.scrollTo(0, Math.max(0, te.scrollHeight - te.clientHeight));
+    }
+}
+
 function cmt_edit_observer(entries) {
     var i, e;
     for (i = 0; i !== entries.length; ++i) {
@@ -6149,6 +6165,9 @@ function cmt_edit_observer(entries) {
         } else if (!e.previousSibling.hasAttribute("data-intersecting")
                    && !e.hasAttribute("data-intersecting")) {
             addClass(e, "popout");
+        }
+        if (hasClass(e, "need-focus")) {
+            cmt_focus(e, true);
         }
     }
 }
@@ -6313,6 +6332,9 @@ function cmt_render(cj, editing) {
         cid = cj_cid(cj), celt = $$(cid);
 
     // clear current comment
+    if (document.activeElement && celt.contains(document.activeElement)) {
+        document.activeElement.blur();
+    }
     $(celt).find("textarea, input[type=text]").unautogrow();
     while (celt.lastChild && !hasClass(celt.lastChild, "cmtcard-head")) {
         celt.removeChild(celt.lastChild);
@@ -6588,15 +6610,8 @@ hotcrp.edit_comment = function (cj) {
     if (!elt.querySelector("form")) {
         cmt_render(cj, true);
     }
-    $(elt).scrollIntoView();
-    var te = $(elt).find("form")[0].elements.text;
-    $(function () {
-        te.focus();
-        if (te.setSelectionRange) {
-            te.setSelectionRange(te.value.length, te.value.length);
-            te.scrollTo(0, Math.max(0, te.scrollHeight - te.clientHeight));
-        }
-    });
+    addClass(elt, "need-focus");
+    setTimeout(function () { cmt_focus(elt); }, editor_observer ? 10 : 1);
     has_unload || $(window).on("beforeunload.papercomment", cmt_beforeunload);
     has_unload = true;
 };
