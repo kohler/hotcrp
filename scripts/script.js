@@ -6130,7 +6130,7 @@ function cmt_beforeunload() {
     }
 }
 
-function cmt_focus(e, n) {
+function cmt_focus(e) {
     if (!hasClass(e, "need-focus")) {
         return;
     }
