@@ -578,7 +578,7 @@ function scrollIntoView1(e, opts) {
     while (e && e.nodeType !== 1) {
         e = e.parentNode;
     }
-    var p = e.parentNode, pr, er, h, mt, mb, wh = window.innerHeight;
+    var p = e.parentNode, pr, er, mt, mb, wh = window.innerHeight;
     while (p !== root && window.getComputedStyle(p).overflowY === "visible") {
         p = p.parentNode;
     }
@@ -4332,8 +4332,8 @@ handle_ui.on("input.js-email-populate", function () {
         v = self.value.toLowerCase().trim(),
         f = this.form,
         fn = null, ln = null, nn = null, af = null,
-        country = null, orcid = null,
-        placeholder = false;
+        country = null, orcid = null, placeholder = false,
+        idx;
     if (this.name === "email" || this.name === "uemail") {
         fn = f.elements.firstName;
         ln = f.elements.lastName;
@@ -4342,11 +4342,11 @@ handle_ui.on("input.js-email-populate", function () {
         orcid = f.elements.orcid;
         placeholder = true;
     } else if (this.name.substring(0, 8) === "authors:") {
-        var idx = parseInt(this.name.substring(8));
+        idx = parseInt(this.name.substring(8));
         nn = f.elements["authors:" + idx + ":name"];
         af = f.elements["authors:" + idx + ":affiliation"];
     } else if (this.name.substring(0, 9) === "contacts:") {
-        var idx = parseInt(this.name.substring(9));
+        idx = parseInt(this.name.substring(9));
         nn = f.elements["contacts:" + idx + ":name"];
     }
     if (!fn && !ln && !nn && !af)
@@ -4678,7 +4678,7 @@ handle_ui.on(".js-badpairs-row", function (evt) {
 
 })();
 
-handle_ui.on(".js-autoassign-prepare", function (evt) {
+handle_ui.on(".js-autoassign-prepare", function () {
     var k, v, a;
     if (!this.elements.a || !(a = this.elements.a.value)) {
         return;
@@ -4698,7 +4698,7 @@ handle_ui.on(".js-autoassign-prepare", function (evt) {
 (function ($) {
 
 function row_order_change(e, delta, action) {
-    var $r, $tbody;
+    var $r, $tbody, tr;
     if (action > 0)
         $tbody = $(e);
     else {
@@ -4720,7 +4720,7 @@ function row_order_change(e, delta, action) {
         $r.remove();
         delta = 0;
     } else if (action == 0) {
-        var tr = $r[0];
+        tr = $r[0];
         for (; delta < 0 && tr.previousSibling; ++delta)
             $(tr).insertBefore(tr.previousSibling);
         for (; delta > 0 && tr.nextSibling; --delta)
@@ -4762,8 +4762,8 @@ function row_order_change(e, delta, action) {
 
     var changes = [];
     for (var i = 1; i <= trs.length; ++i) {
-        var tr = trs[i - 1],
-            td0c = tr.firstChild.firstChild,
+        tr = trs[i - 1];
+        var td0c = tr.firstChild.firstChild,
             new_index = null;
         if (td0c && td0c.nodeType === 3 && td0c.data !== i + "."
             && /^(?:\d+|\$).$/.test(td0c.data))
@@ -5737,7 +5737,7 @@ function unparse_tag(tag, strip_value) {
     return tag;
 }
 
-function find_cj(elt) {
+function cj_find(elt) {
     return cmts[elt.closest(".cmtid").id];
 }
 
@@ -5763,7 +5763,7 @@ function cj_name(cj) {
     }
 }
 
-function comment_identity_time(cj, editing) {
+function cmt_identity_time(cj, editing) {
     var t = [], x, i;
     if (cj.response || cj.is_new) {
     } else if (cj.editable) {
@@ -5817,7 +5817,7 @@ function comment_identity_time(cj, editing) {
     return t.join("");
 }
 
-function edit_allowed(cj, override) {
+function cmt_is_editable(cj, override) {
     var p = hotcrp_status.myperm;
     if (cj.response)
         p = p.can_responds && p.can_responds[cj.response];
@@ -5827,7 +5827,7 @@ function edit_allowed(cj, override) {
 }
 
 
-function render_editing(hc, cj) {
+function cmt_render_form(hc, cj) {
     var x, btnbox = [], cid = cj_cid(cj), bnote;
 
     hc.push('<form class="cmtform">', '</form>');
@@ -5885,7 +5885,7 @@ function render_editing(hc, cj) {
     // delete
     if (!cj.is_new) {
         x = cj.response ? "response" : "comment";
-        if (edit_allowed(cj)) {
+        if (cmt_is_editable(cj)) {
             bnote = "Are you sure you want to delete this " + x + "?";
         } else {
             bnote = "Are you sure you want to override the deadline and delete this " + x + "?";
@@ -5905,7 +5905,7 @@ function render_editing(hc, cj) {
 
     // actions: [btnbox], [wordcount] || cancel, save/submit
     hc.push('<div class="w-text aabig aab mt-3">', '</div>');
-    bnote = edit_allowed(cj) ? "" : '<div class="hint">(admin only)</div>';
+    bnote = cmt_is_editable(cj) ? "" : '<div class="hint">(admin only)</div>';
     if (btnbox.length)
         hc.push('<div class="aabut"><div class="btnbox">' + btnbox.join("") + '</div></div>');
     if (cj.response && resp_rounds[cj.response].words > 0)
@@ -5921,7 +5921,7 @@ function render_editing(hc, cj) {
     hc.pop_n(2);
 }
 
-function visibility_change() {
+function cmt_visibility_change() {
     var form = this.closest("form"),
         vis = form.elements.visibility,
         topic = form.elements.topic,
@@ -5974,7 +5974,7 @@ function visibility_change() {
     blind && toggleClass(blind, "hidden", vis.value !== "au");
 }
 
-function ready_change() {
+function cmt_ready_change() {
     this.form.elements.bsubmit.textContent = this.checked ? "Submit" : "Save draft";
 }
 
@@ -5993,7 +5993,7 @@ function make_update_words(celt, wlimit) {
         $(celt).find("textarea").on("input", setwc).each(setwc);
 }
 
-function activate_editing_messages(cj, form) {
+function cmt_edit_messages(cj, form) {
     var ul = document.createElement("ul"), msg;
     ul.className = "feedback-list";
     if (cj.response
@@ -6034,13 +6034,13 @@ function activate_editing_messages(cj, form) {
     }
 }
 
-function activate_editing(celt, cj) {
-    var i, elt, tags = [], form = $(celt).find("form")[0];
-    activate_editing_messages(cj, form);
+function cmt_start_edit(celt, cj) {
+    var i, elt, tags = [], form = celt.querySelector("form");
+    cmt_edit_messages(cj, form);
 
     $(form.elements.text).text(cj.text || "")
-        .on("keydown", keydown_editor)
-        .on("hotcrprenderpreview", render_preview)
+        .on("keydown", cmt_keydown)
+        .on("hotcrprenderpreview", cmt_render_preview)
         .autogrow();
 
     var vis = cj.visibility
@@ -6048,15 +6048,15 @@ function activate_editing(celt, cj) {
         || (cj.by_author ? "au" : "rev");
     $(form.elements.visibility).val(vis)
         .attr("data-default-value", vis)
-        .on("change", visibility_change);
+        .on("change", cmt_visibility_change);
 
     var topic = (cj.is_new ? cj.topic || hotcrp_status.myperm.default_comment_topic : cj.topic) || "rev";
     $(form.elements.topic).val(topic)
         .attr("data-default-value", topic)
-        .on("change", visibility_change);
+        .on("change", cmt_visibility_change);
 
     if ((elt = form.elements.visibility || form.elements.topic)) {
-        visibility_change.call(elt);
+        cmt_visibility_change.call(elt);
     }
 
     for (i in cj.tags || []) {
@@ -6070,7 +6070,7 @@ function activate_editing(celt, cj) {
     if (cj.docs && cj.docs.length) {
         $(celt).find(".has-editable-attachments").removeClass("hidden").append('<div class="entry"></div>');
         for (i in cj.docs || [])
-            $(celt).find(".has-editable-attachments .entry").append(render_edit_attachment(+i + 1, cj.docs[i]));
+            $(celt).find(".has-editable-attachments .entry").append(cmt_render_attachment_input(+i + 1, cj.docs[i]));
     }
 
     if (!cj.visibility || cj.blind) {
@@ -6080,8 +6080,8 @@ function activate_editing(celt, cj) {
     if (cj.response) {
         if (resp_rounds[cj.response].words > 0)
             make_update_words(celt, resp_rounds[cj.response].words);
-        var $ready = $(form.elements.ready).on("click", ready_change);
-        ready_change.call($ready[0]);
+        var $ready = $(form.elements.ready).on("click", cmt_ready_change);
+        cmt_ready_change.call($ready[0]);
     }
 
     if (cj.is_new) {
@@ -6090,22 +6090,22 @@ function activate_editing(celt, cj) {
         form.elements.blind && addClass(form.elements.blind, "ignore-diff");
     }
 
-    $(form).on("submit", submit_editor).on("click", "button", buttonclick_editor);
+    $(form).on("submit", cmt_submit).on("click", "button", cmt_button_click);
     hiliter_children(form);
     $(celt).awaken();
 }
 
-function render_edit_attachment(ctr, doc) {
+function cmt_render_attachment_input(ctr, doc) {
     var hc = new HtmlCollector;
     hc.push('<div class="has-document compact" data-dtype="-2" data-document-name="attachment:'.concat(ctr, '">'), '</div>');
     hc.push('<div class="document-file">', '</div>');
-    render_attachment_link(hc, doc);
+    cmt_render_attachment(hc, doc);
     hc.pop();
     hc.push('<div class="document-actions"><button type="button" class="btn-link ui js-remove-document">Delete</button><input type="hidden" name="attachment:'.concat(ctr, '" value="', doc.docid, '"></div>'));
     return hc.render();
 }
 
-function render_attachment_link(hc, doc) {
+function cmt_render_attachment(hc, doc) {
     hc.push('<a href="' + escape_html(siteinfo.site_relative + doc.siteurl) + '" class="qo">', '</a>');
     if (doc.mimetype === "application/pdf") {
         hc.push('<img src="' + siteinfo.assets + 'images/pdf.png" alt="[PDF]" class="sdlimg"> ');
@@ -6119,12 +6119,12 @@ function render_attachment_link(hc, doc) {
     hc.pop();
 }
 
-function beforeunload() {
+function cmt_beforeunload() {
     var i, $cs = $(".cmtform"), text;
     if (has_unload) {
         for (i = 0; i !== $cs.length; ++i) {
             text = $cs[i].elements.text.value.trimEnd();
-            if (!text_eq(text, find_cj($cs[i]).text || ""))
+            if (!text_eq(text, cj_find($cs[i]).text || ""))
                 return "If you leave this page now, your comments will be lost.";
         }
     }
@@ -6177,7 +6177,7 @@ function cmt_toggle_editing(celt, is_editing) {
     }
 }
 
-function make_save_callback(cj) {
+function cmt_save_callback(cj) {
     var cid = cj_cid(cj), celt = $$(cid), form = $(celt).find("form")[0];
     return function (data) {
         if (!data.ok) {
@@ -6196,7 +6196,7 @@ function make_save_callback(cj) {
         }
         cmt_toggle_editing(celt, false);
         var editing_response = cj.response
-            && edit_allowed(cj, true)
+            && cmt_is_editable(cj, true)
             && (!data.cmt || data.cmt.draft);
         if (!data.cmt && editing_response) {
             data.cmt = {is_new: true, response: cj.response, editable: true};
@@ -6220,7 +6220,7 @@ function make_save_callback(cj) {
             }
         }
         if (data.cmt) {
-            render_comment(data.cmt, editing_response);
+            cmt_render(data.cmt, editing_response);
         }
         if (data.message_list) {
             $(celt).find(".cmtmsg").html(render_message_list(data.message_list));
@@ -6228,13 +6228,13 @@ function make_save_callback(cj) {
     };
 }
 
-function save_editor(elt, action, really) {
-    var cj = find_cj(elt), cid = cj_cid(cj), form = $("#" + cid).find("form")[0];
+function cmt_save(elt, action, really) {
+    var cj = cj_find(elt), cid = cj_cid(cj), form = $("#" + cid).find("form")[0];
     if (!really) {
-        if (!edit_allowed(cj)) {
+        if (!cmt_is_editable(cj)) {
             var submitter = form.elements.bsubmit || elt;
             override_deadlines.call(submitter, function () {
-                save_editor(elt, action, true);
+                cmt_save(elt, action, true);
             });
             return;
         } else if (cj.response
@@ -6243,7 +6243,7 @@ function save_editor(elt, action, really) {
                    && (action === "delete" || !form.elements.ready.checked)) {
             elt.setAttribute("data-override-text", "The response is currently visible to reviewers. Are you sure you want to " + (action === "submit" ? "unsubmit" : "delete") + " it?");
             override_deadlines.call(elt, function () {
-                save_editor(elt, action, true);
+                cmt_save(elt, action, true);
             });
             return;
         }
@@ -6264,7 +6264,7 @@ function save_editor(elt, action, really) {
     siteinfo.want_override_conflict && (arg.forceShow = 1);
     action === "delete" && (arg.delete = 1);
     var url = hoturl("=api/comment", arg),
-        callback = make_save_callback(cj);
+        callback = cmt_save_callback(cj);
     if (window.FormData) {
         $.ajax(url, {
             method: "POST", data: new FormData(form), success: callback,
@@ -6275,27 +6275,27 @@ function save_editor(elt, action, really) {
     }
 }
 
-function keydown_editor(evt) {
+function cmt_keydown(evt) {
     var key = event_key(evt);
     if (key === "Enter" && event_key.is_submit_enter(evt, false)) {
         evt.preventDefault();
-        save_editor(this, "submit");
+        cmt_save(this, "submit");
     } else if (key === "Escape" && !form_differs(this.form)) {
         evt.preventDefault();
-        render_comment(find_cj(this), false);
+        cmt_render(cj_find(this), false);
     }
 }
 
-function buttonclick_editor(evt) {
-    var self = this, cj = find_cj(this);
+function cmt_button_click(evt) {
+    var self = this, cj = cj_find(this);
     if (this.name === "bsubmit") {
         evt.preventDefault();
-        save_editor(this, "submit");
+        cmt_save(this, "submit");
     } else if (this.name === "cancel") {
-        render_comment(cj, false);
+        cmt_render(cj, false);
     } else if (this.name === "delete") {
         override_deadlines.call(this, function () {
-            save_editor(self, self.name, true);
+            cmt_save(self, self.name, true);
         });
     } else if (this.name === "showtags") {
         fold($(this.form).find(".cmteditinfo")[0], false, 3);
@@ -6303,12 +6303,12 @@ function buttonclick_editor(evt) {
     }
 }
 
-function submit_editor(evt) {
+function cmt_submit(evt) {
     evt.preventDefault();
-    save_editor(this, "submit");
+    cmt_save(this, "submit");
 }
 
-function render_comment(cj, editing) {
+function cmt_render(cj, editing) {
     var hc = new HtmlCollector, t, chead, i,
         cid = cj_cid(cj), celt = $$(cid);
 
@@ -6319,6 +6319,7 @@ function render_comment(cj, editing) {
     }
 
     if (cj.is_new && !editing) {
+        cmt_toggle_editing(celt, false);
         var ide = celt.closest(".cmtid");
         navsidebar.remove(ide);
         $("#k-comment-actions a[href='#" + ide.id + "']").closest(".aabut").removeClass("hidden");
@@ -6360,7 +6361,7 @@ function render_comment(cj, editing) {
             $h2.html('<a href="" class="qo ui cmteditor">' + $h2.html() + ' <span class="t-editor">✎</span></a>');
         }
     }
-    t = comment_identity_time(cj, editing);
+    t = cmt_identity_time(cj, editing);
     if (cj.response) {
         chead.find(".cmtthead").remove();
         chead.append('<div class="cmtthead">' + t + '</div>');
@@ -6375,13 +6376,13 @@ function render_comment(cj, editing) {
         hc.push('<p class="feedback is-warning">Reviewers can’t see this draft response.</p>');
     }
     if (editing) {
-        render_editing(hc, cj);
+        cmt_render_form(hc, cj);
     } else {
         hc.push('<div class="cmttext"></div>');
         if (cj.docs && cj.docs.length) {
             hc.push('<div class="cmtattachments">', '</div>');
             for (i = 0; i !== cj.docs.length; ++i)
-                render_attachment_link(hc, cj.docs[i]);
+                cmt_render_attachment(hc, cj.docs[i]);
             hc.pop();
         }
     }
@@ -6400,11 +6401,11 @@ function render_comment(cj, editing) {
 
     // fill body
     if (editing) {
-        activate_editing(celt, cj);
+        cmt_start_edit(celt, cj);
     } else {
         if (cj.text !== false) {
-            render_comment_text(cj.format, cj.text || "", cj.response,
-                                $(celt).find(".cmttext")[0], chead);
+            cmt_render_text(cj.format, cj.text || "", cj.response,
+                            $(celt).find(".cmttext")[0], chead);
         } else if (cj.response) {
             t = '<p class="feedback is-warning">';
             if (cj.word_count)
@@ -6421,8 +6422,8 @@ function render_comment(cj, editing) {
     return $(celt);
 }
 
-function render_comment_text(format, value, response, texte, chead) {
-    var wlimit, wc, rrd = response && resp_rounds[response],
+function cmt_render_text(format, value, response, texte, chead) {
+    var wc, rrd = response && resp_rounds[response],
         aftertexte = null, buttone;
     if (rrd && rrd.words > 0) {
         wc = count_words(value);
@@ -6465,31 +6466,10 @@ function render_comment_text(format, value, response, texte, chead) {
     toggleClass(texte, "emoji-only", emojiregex.test(value));
 }
 
-function render_preview(evt, format, value, dest) {
-    var cj = find_cj(evt.target);
-    render_comment_text(format, value, cj ? cj.response : 0, dest, null);
+function cmt_render_preview(evt, format, value, dest) {
+    var cj = cj_find(evt.target);
+    cmt_render_text(format, value, cj ? cj.response : 0, dest, null);
     return false;
-}
-
-function comment_content_function(item) {
-    var a, content;
-    if (item.links.length > 1) {
-        content = "Comments";
-    } else {
-        content = cj_name(cmts[item.links[0].id]);
-    }
-    if (item.is_comment == null) {
-        item.is_comment = content === "Comment";
-    }
-    if (!(a = item.element.firstChild)) {
-        a = document.createElement("a");
-        a.className = "ulh hover-child";
-        item.element.appendChild(a);
-    }
-    a.href = "#" + item.links[0].id;
-    if (item.current_content !== content) {
-        a.textContent = item.current_content = content;
-    }
 }
 
 function add_comment(cj, editing) {
@@ -6504,13 +6484,13 @@ function add_comment(cj, editing) {
         editing = true;
     }
     if (celt) {
-        render_comment(cj, editing);
+        cmt_render(cj, editing);
     } else if (cj.is_new && !editing) {
         add_new_comment_button(cj, cid);
     } else {
         add_new_comment(cj, cid);
         add_comment_sidebar($$(cid), cj);
-        render_comment(cj, editing);
+        cmt_render(cj, editing);
         if (cj.response && cj.is_new) {
             $("#k-comment-actions a[href='#" + cid + "']").closest(".aabut").addClass("hidden");
         }
@@ -6547,6 +6527,27 @@ function add_new_comment(cj, cid) {
     document.querySelector(".pcontainer").insertBefore(article, $$("k-comment-actions"));
 }
 
+function cmt_sidebar_content(item) {
+    var a, content;
+    if (item.links.length > 1) {
+        content = "Comments";
+    } else {
+        content = cj_name(cmts[item.links[0].id]);
+    }
+    if (item.is_comment == null) {
+        item.is_comment = content === "Comment";
+    }
+    if (!(a = item.element.firstChild)) {
+        a = document.createElement("a");
+        a.className = "ulh hover-child";
+        item.element.appendChild(a);
+    }
+    a.href = "#" + item.links[0].id;
+    if (item.current_content !== content) {
+        a.textContent = item.current_content = content;
+    }
+}
+
 function add_comment_sidebar(celt, cj) {
     if (!cj.response) {
         var e = celt.previousElementSibling, pslitem;
@@ -6558,11 +6559,11 @@ function add_comment_sidebar(celt, cj) {
             return;
         }
     }
-    navsidebar.set(celt, comment_content_function);
+    navsidebar.set(celt, cmt_sidebar_content);
 }
 
 function edit_this(evt) {
-    hotcrp.edit_comment(find_cj(this));
+    hotcrp.edit_comment(cj_find(this));
     evt.preventDefault();
     handle_ui.stopPropagation(evt);
 }
@@ -6584,8 +6585,8 @@ hotcrp.edit_comment = function (cj) {
     if (!elt && /\beditcomment\b/.test(window.location.search)) {
         return;
     }
-    if (!$(elt).find("form").length) {
-        render_comment(cj, true);
+    if (!elt.querySelector("form")) {
+        cmt_render(cj, true);
     }
     $(elt).scrollIntoView();
     var te = $(elt).find("form")[0].elements.text;
@@ -6596,7 +6597,7 @@ hotcrp.edit_comment = function (cj) {
             te.scrollTo(0, Math.max(0, te.scrollHeight - te.clientHeight));
         }
     });
-    has_unload || $(window).on("beforeunload.papercomment", beforeunload);
+    has_unload || $(window).on("beforeunload.papercomment", cmt_beforeunload);
     has_unload = true;
 };
 
@@ -7140,7 +7141,7 @@ function make_suggestions(precaret, postcaret, options) {
     if (options.region_trimmer)
         lregion = lregion.replace(options.region_trimmer, "");
     if (options.ml > lregion.length) {
-        return function (tlist) {
+        return function (/*tlist*/) {
             return null;
         };
     }
@@ -7592,7 +7593,7 @@ suggest.add_builder("mentions", function (elt, hintinfo) {
         && x[0].charCodeAt(hintinfo.startpos - 1) === 0x40
         && completion_search_prefix(hintinfo, x[0].substring(hintinfo.startpos))) {
         precaret = x[0].substring(hintinfo.startpos);
-    } else if ((m = x[0].match(/(?:^|[-+,:;\s–—(\[\{\/])@(|\p{L}(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*)$/u))) {
+    } else if ((m = x[0].match(/(?:^|[-+,:;\s–—([{/])@(|\p{L}(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*)$/u))) {
         precaret = m[1];
     } else {
         return null;
@@ -8266,7 +8267,7 @@ function search_sort_success(tbl, data_href, data) {
     var want_sorter = data.fwd_sorter || href_sorter(data_href) || "id",
         sortanal = sorter_analyze(want_sorter);
     $(tbl).children("thead").find("th.sortable").each(function () {
-        var defdir, a, href, pc = this.getAttribute("data-pc");
+        var defdir, a, pc = this.getAttribute("data-pc");
         if (this.hasAttribute("aria-sort")) {
             this.removeAttribute("aria-sort");
             removeClass(this, "sort-ascending");
@@ -9906,7 +9907,7 @@ return function (classes, type) {
         svgns = "http://www.w3.org/2000/svg",
         pathsfx = " 0l".concat(-size, " ", size, "l", sw, " 0l", size, " ", -size, "z"),
         dxs = [],
-        pelt, elt;
+        pelt;
     for (i = 0; i !== colors.length; ++i) {
         k = param.type === 1 ? fillcolor(colors[i]) : bgcolor(colors[i]);
         dxs.push("M".concat(sw * i, pathsfx), k, "M".concat(sw * i + size, pathsfx), k);
@@ -10079,7 +10080,7 @@ handle_ui.on("js-add-attachment", function () {
     var attache = $$(this.getAttribute("data-editable-attachments")),
         f = attache.closest("form"),
         ee = attache,
-        $ei = $(attache), name, n = 0;
+        name, n = 0;
     if (hasClass(ee, "entryi") && !(ee = attache.querySelector(".entry"))) {
         ee = document.createElement("div");
         ee.className = "entry";
@@ -10666,7 +10667,7 @@ function prepare_autoready_condition(f) {
         condition = JSON.parse(f.getAttribute("data-autoready-condition"));
     }
     function chf() {
-        var was, is, iscond, e, readychecked;
+        var was, iscond, e, readychecked;
         iscond = !condition || hotcrp.evaluate_edit_condition(condition, f);
         readye.disabled = !iscond;
         if (iscond && readye.hasAttribute("data-autoready")) {
@@ -11703,8 +11704,7 @@ function scorechart1_s1(sc) {
         blocksize = 3, blockpad = 2, blockfull = blocksize + blockpad,
         cwidth = blockfull * n + blockpad + 1,
         cheight = blockfull * Math.max(anal.max, 1) + blockpad + 1,
-        gray = color_unparse(graycolor),
-        svgns = "http://www.w3.org/2000/svg";
+        gray = color_unparse(graycolor);
 
     var svg = svge("svg", "class", "scorechart-s1", "width", cwidth, "height", cheight),
         path = svge("path", "stroke", gray, "fill", "none", "d", "M0.5 ".concat(cheight - blockfull - 1, "v", blockfull + 0.5, "h", cwidth - 1, "v", -(blockfull + 0.5))),
