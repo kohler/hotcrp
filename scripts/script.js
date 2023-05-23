@@ -6147,7 +6147,7 @@ function cmt_focus(e, n) {
 }
 
 function cmt_edit_observer(entries) {
-    var i, e;
+    var i, e, want, have;
     for (i = 0; i !== entries.length; ++i) {
         e = entries[i];
         if (e.isIntersecting) {
@@ -6158,13 +6158,18 @@ function cmt_edit_observer(entries) {
     }
     for (i = 0; i !== editing_list.length; ++i) {
         e = editing_list[i];
+        want = have = hasClass(e, "popout");
         if (i !== editing_list.length - 1
             || !e.previousSibling
             || e.previousSibling.hasAttribute("data-intersecting")) {
-            removeClass(e, "popout");
+            want = false;
         } else if (!e.previousSibling.hasAttribute("data-intersecting")
                    && !e.hasAttribute("data-intersecting")) {
-            addClass(e, "popout");
+            want = true;
+        }
+        if (want !== have) {
+            toggleClass(e, "popout", want);
+            $(e.querySelector("textarea")).autogrow();
         }
         if (hasClass(e, "need-focus")) {
             cmt_focus(e, true);
