@@ -199,6 +199,9 @@ html, .text-default {
 .text-serif {
 	font-family: serif;
 }
+.text-sans-serif {
+	font-family: sans-serif;
+}
 .text-truncate {
 	text-overflow: ellipsis !important;
 	overflow-x: hidden !important;
