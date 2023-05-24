@@ -10807,8 +10807,8 @@ hotcrp.paper_edit_conditions = function () {
         .find(".has-edit-condition").each(run_edit_conditions);
 };
 
-hotcrp.evaluate_edit_condition = function (ec) {
-    return evaluate_edit_condition(typeof ec === "string" ? parse_json(ec) : ec, $("#f-paper")[0]);
+hotcrp.evaluate_edit_condition = function (ec, form) {
+    return evaluate_edit_condition(typeof ec === "string" ? parse_json(ec) : ec, form || $$("f-paper"));
 };
 
 })($);

@@ -1,6 +1,6 @@
 /* -*- mode: css; indent-tabs-mode: t; css-indent-offset: 8 -*- */
 /* mobile.css -- HotCRP mobile CSS styles */
-/* Copyright (c) 2006-2022 Eddie Kohler; see LICENSE. */
+/* Copyright (c) 2006-2023 Eddie Kohler; see LICENSE. */
 
 @media screen and (max-width: 1100px) {
 .pcard-left {
@@ -40,6 +40,9 @@ html {
 }
 #h-site, #h-page, h1.paptitle, div.submission-modes {
 	padding-left: 12px;
+}
+#h-right {
+	padding-top: 3px;
 }
 #h-right, h1.paptitle, #p-footer {
 	padding-right: 12px;
