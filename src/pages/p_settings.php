@@ -88,8 +88,8 @@ class Settings_Page {
         }
 
         $qreq->print_header("Settings", "settings", [
+            "title_div" => "",
             "subtitle" => $this->sv->group_title($group),
-            "title_div" => '<hr class="c">',
             "body_class" => "leftmenu",
             "save_messages" => true
         ]);

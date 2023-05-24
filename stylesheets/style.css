@@ -257,7 +257,7 @@ body.leftmenu #p-header {
 }
 body.paper #p-header {
 	background: #dce4e8;
-	padding-bottom: 8px;
+	padding-bottom: 10px;
 	border-bottom: 1px solid #f33360;
 }
 #h-right {
@@ -330,32 +330,22 @@ h2.leftmenu {
 }
 
 /* Tab bar */
-table.vbar {
+#p-quicklinks {
+	clear: right;
 	float: right;
 	font-size: smaller;
 	min-height: 0.75rem;
-}
-#p-header > table.vbar {
+	margin-top: 4px;
 	margin-right: 24px;
 }
-#t-home table.vbar {
-	margin-top: -4px;
-}
-body.paper table.vbar {
-	margin-top: 8px;
+body.paper #p-quicklinks {
+	margin-top: 12px;
 }
 td.vbar {
-	vertical-align: bottom;
+	vertical-align: middle;
 	min-height: 4px;
 	white-space: nowrap;
-}
-td.gopaper {
-	vertical-align: middle;
-	padding: 4px 0 6px 0.5em;
-}
-td.quicklinks, #tracker-connect {
-	vertical-align: middle;
-	padding: 4px 0.75em 4px 0.5em;
+	padding-left: 1rem;
 }
 #n-prev {
 	padding-right: 0.5em;

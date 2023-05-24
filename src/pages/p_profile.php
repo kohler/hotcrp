@@ -592,7 +592,7 @@ class Profile_Page {
             $title = $this->viewer->name_html_for($this->user) . " profile";
         }
         $this->qreq->print_header($title, "account", [
-            "title_div" => '<hr class="c">',
+            "title_div" => "",
             "body_class" => "leftmenu",
             "action_bar" => QuicklinksRenderer::make($this->qreq, "account"),
             "save_messages" => true

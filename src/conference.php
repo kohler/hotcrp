@@ -4572,8 +4572,6 @@ class Conf {
             }
             if ($title && $title !== "Home") {
                 $title_div = "<div id=\"h-page\"><h1>{$title}</h1></div>";
-            } else if ($action_bar) {
-                $title_div = '<hr class="c">';
             }
         }
 
@@ -4593,7 +4591,7 @@ class Conf {
         if ($user && !$user->is_empty()) {
             $this->print_header_profile($id, $qreq, $user);
         }
-        echo '</div>', ($title_div ? : ""), $action_bar;
+        echo '</div>', ($title_div ?? ""), $action_bar;
 
         echo "  <hr class=\"c\">\n";
 

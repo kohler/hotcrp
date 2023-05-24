@@ -97,7 +97,7 @@ class QuicklinksRenderer {
             $x .= '</td>';
 
             if ($user->is_track_manager() && $listtype === "p") {
-                $x .= '<td id="tracker-connect" class="vbar"><a id="tracker-connect-btn" class="ui js-tracker tbtn need-tooltip" href="" aria-label="Start meeting tracker">&#9759;</a><td>';
+                $x .= '<td id="tracker-connect" class="vbar"><a id="tracker-connect-btn" class="ui js-tracker tbtn need-tooltip" href="" aria-label="Start meeting tracker">&#9759;</a></td>';
             }
         }
 
@@ -106,6 +106,6 @@ class QuicklinksRenderer {
             $x .= '<td class="vbar gopaper">' . self::quicksearch_form($qreq, $goBase, $xmode) . '</td>';
         }
 
-        return '<table class="vbar"><tr>' . $x . '</tr></table>';
+        return '<table id="p-quicklinks"><tr>' . $x . '</tr></table>';
     }
 }

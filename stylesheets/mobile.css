@@ -47,14 +47,11 @@ html {
 #h-right, h1.paptitle, #p-footer {
 	padding-right: 12px;
 }
-#p-header > table.vbar {
+#p-quicklinks {
 	margin-right: 12px;
 }
 h1.leftmenu, h2.leftmenu {
 	margin-bottom: 8px;
-}
-table.vbar {
-	margin-right: 12px;
 }
 body.leftmenu, body.paper {
 	background: white;

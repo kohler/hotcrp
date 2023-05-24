@@ -42,7 +42,8 @@ class Help_Page {
         $topicj = $help_topics->get($topic);
 
         $qreq->print_header("Help", "help", [
-            "title_div" => '<hr class="c">', "body_class" => "leftmenu",
+            "title_div" => "",
+            "body_class" => "leftmenu",
             "save_messages" => true
         ]);
 
