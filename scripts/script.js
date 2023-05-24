@@ -26,12 +26,6 @@ if (!window.JSON || !window.JSON.parse) {
     window.JSON = {parse: $.parseJSON};
 }
 
-var __last_json_parse;
-function parse_json(s) {
-    __last_json_parse = s;
-    return JSON.parse(s);
-}
-
 if (typeof Object.assign !== "function") {
     Object.defineProperty(Object, "assign", {
         value: function assign(target /* , ... */) {
@@ -366,8 +360,6 @@ function log_jserror(errormsg, error, noconsole) {
         errormsg = {"error": error.toString()};
     } else if (typeof errormsg === "string")
         errormsg = {"error": errormsg};
-    if (errormsg.error && /JSON/.test(errormsg.error) && __last_json_parse)
-        errormsg.detail = __last_json_parse.substring(0, 200);
     if (error && error.fileName && !errormsg.url)
         errormsg.url = error.fileName;
     if (error && error.lineNumber && !errormsg.lineno)
@@ -450,7 +442,7 @@ $(document).ajaxError(function (evt, jqxhr, options, httperror) {
     var data;
     if (jqxhr.responseText && jqxhr.responseText.charAt(0) === "{") {
         try {
-            data = parse_json(jqxhr.responseText);
+            data = JSON.parse(jqxhr.responseText);
         } catch (e) {
         }
     }
@@ -495,7 +487,7 @@ $.ajaxPrefilter(function (options) {
         if (/application\/json/.test(jqxhr.getResponseHeader("Content-Type") || "")
             && jqxhr.responseText) {
             try {
-                rjson = parse_json(jqxhr.responseText);
+                rjson = JSON.parse(jqxhr.responseText);
             } catch (e) {
             }
         }
@@ -1105,7 +1097,7 @@ try {
 }
 wstorage.json = function (is_session, key) {
     var x = wstorage(is_session, key);
-    return x ? parse_json(x) : false;
+    return x ? JSON.parse(x) : false;
 };
 wstorage.site_key = function (key) {
     return siteinfo.base + key;
@@ -2319,7 +2311,7 @@ function prepare_info(elt, info) {
     var xinfo = elt.getAttribute("data-tooltip-info");
     if (xinfo) {
         if (typeof xinfo === "string" && xinfo.charAt(0) === "{")
-            xinfo = parse_json(xinfo);
+            xinfo = JSON.parse(xinfo);
         else if (typeof xinfo === "string")
             xinfo = {builder: xinfo};
         info = $.extend(xinfo, info);
@@ -3091,7 +3083,7 @@ handle_ui.on("js-tracker", function (evt) {
         if (tr.start_at)
             hc.push('<div class="entryi"><label>Elapsed time</label><span class="trackerdialog-elapsed" data-start-at="' + tr.start_at + '"></span></div>');
         try {
-            var j = parse_json(tr.listinfo || "null"), ids, pos;
+            var j = JSON.parse(tr.listinfo || "null"), ids, pos;
             if (j && j.ids && (ids = decode_session_list_ids(j.ids))) {
                 if (tr.papers
                     && tr.papers[tr.paper_offset]
@@ -3582,7 +3574,7 @@ function fold_storage() {
             sn = sn.substring(1);
         }
         if (sn.charAt(0) === "{" || sn.charAt(0) === "[") {
-            smap = parse_json(sn) || {};
+            smap = JSON.parse(sn) || {};
         } else {
             var m = this.className.match(/\bfold(\d*)[oc]\b/),
                 n = m[1] === "" ? 0 : +m[1];
@@ -3603,7 +3595,7 @@ function fold_storage() {
 function fold_session_for(foldnum, type) {
     var s = this.getAttribute("data-fold-" + type), p, flip = false;
     if (s && (s.charAt(0) === "{" || s.charAt(0) === "[")) {
-        s = (parse_json(s) || {})[foldnum];
+        s = (JSON.parse(s) || {})[foldnum];
     }
     if (s && s.charAt(0) === "-") {
         s = s.substring(1);
@@ -4210,7 +4202,7 @@ function make_radio(name, value, text, revtype) {
 function append_round_selector(name, revtype, $a, ctr) {
     var $as = $a.closest(".has-assignment-set"), rounds;
     try {
-        rounds = parse_json($as.attr("data-review-rounds") || "[]");
+        rounds = JSON.parse($as.attr("data-review-rounds") || "[]");
     } catch (e) {
         rounds = [];
     }
@@ -7745,7 +7737,7 @@ Hotlist = function (s) {
     this.obj = null;
     if (this.str && this.str.charAt(0) === "{") {
         try {
-            this.obj = parse_json(this.str);
+            this.obj = JSON.parse(this.str);
         } catch (e) {
         }
     }
@@ -7931,7 +7923,7 @@ $(function () {
         $(".quicklinks").each(function () {
             var info = Hotlist.at(this.closest(".has-hotlist")), ids, pos, page, mode;
             try {
-                mode = parse_json(this.getAttribute("data-link-params") || "{}");
+                mode = JSON.parse(this.getAttribute("data-link-params") || "{}");
             } catch (e) {
                 mode = {};
             }
@@ -8331,7 +8323,7 @@ $(document).on("collectState", function (evt, state) {
         return;
     var data = state.sortpl = {hotlist: tbl.getAttribute("data-hotlist")};
     var groups = tbl.getAttribute("data-groups");
-    if (groups && (groups = parse_json(groups)) && groups.length)
+    if (groups && (groups = JSON.parse(groups)) && groups.length)
         data.groups = groups;
     if (!href_sorter(state.href))
         data.fwd_sorter = foldpl_active_sorter();
@@ -9585,7 +9577,7 @@ function initialize() {
     self = $("table.pltable")[0];
     if (!self)
         return false;
-    var fs = parse_json(self.getAttribute("data-columns"));
+    var fs = JSON.parse(self.getAttribute("data-columns"));
     for (var i = 0; i !== fs.length; ++i)
         add_field(fs[i]);
 }
@@ -10609,7 +10601,7 @@ edit_conditions.pc_conflict = function (ec, form) {
 
 function run_edit_conditions() {
     var f = this.closest("form"),
-        ec = parse_json(this.getAttribute("data-edit-condition")),
+        ec = JSON.parse(this.getAttribute("data-edit-condition")),
         off = !evaluate_edit_condition(ec, f),
         link = navsidebar.get(this);
     toggleClass(this, "hidden", off);
@@ -10808,7 +10800,7 @@ hotcrp.paper_edit_conditions = function () {
 };
 
 hotcrp.evaluate_edit_condition = function (ec, form) {
-    return evaluate_edit_condition(typeof ec === "string" ? parse_json(ec) : ec, form || $$("f-paper"));
+    return evaluate_edit_condition(typeof ec === "string" ? JSON.parse(ec) : ec, form || $$("f-paper"));
 };
 
 })($);
@@ -11488,7 +11480,7 @@ function populate_pcselector(pcs) {
     removeClass(this, "need-pcselector");
     var optids = this.getAttribute("data-pcselector-options") || "*";
     if (optids.charAt(0) === "[")
-        optids = parse_json(optids);
+        optids = JSON.parse(optids);
     else
         optids = optids.split(/[\s,]+/);
     var selected = this.getAttribute("data-pcselector-selected"), selindex = -1;
