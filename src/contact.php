@@ -4679,7 +4679,8 @@ class Contact implements JsonSerializable {
     /** @param ?CommentInfo $crow
      * @return bool */
     function can_view_comment_identity(PaperInfo $prow, $crow) {
-        if ($crow && ($crow->commentType & (CommentInfo::CT_RESPONSE | CommentInfo::CT_BYAUTHOR))) {
+        $ct = $crow ? $crow->commentType : CommentInfo::CT_BLIND;
+        if (($ct & (CommentInfo::CT_RESPONSE | CommentInfo::CT_BYAUTHOR)) !== 0) {
             return $this->can_view_authors($prow);
         }
         $rights = $this->rights($prow);
@@ -4690,7 +4691,9 @@ class Contact implements JsonSerializable {
                      && $this->conf->setting("extrev_view") >= 2))
                 && ($this->can_view_review_identity($prow, null)
                     || ($crow && $prow->can_view_review_identity_of($crow->commentId, $this))))
-            || !$this->conf->is_review_blind(!$crow || ($crow->commentType & CommentInfo::CT_BLIND) !== 0);
+            || !$this->conf->is_review_blind(($ct & CommentInfo::CT_BLIND) !== 0)
+            || (($ct & CommentInfo::CT_BYSHEPHERD) !== 0
+                && $this->can_view_shepherd($prow));
     }
 
     /** @param ?CommentInfo $crow

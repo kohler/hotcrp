@@ -412,7 +412,7 @@ class CommentInfo {
         }
         if (($this->commentType & self::CT_RESPONSE) !== 0) {
             $n = "<i>" . $this->unparse_response_text() . "</i>"
-                . ($n === "Author" ? "" : " ($n)");
+                . ($n === "Author" ? "" : " ({$n})");
         }
         return $n;
     }
@@ -426,7 +426,7 @@ class CommentInfo {
         }
         if (($this->commentType & self::CT_RESPONSE) !== 0) {
             $n = $this->unparse_response_text()
-                . ($n === "Author" ? "" : " ($n)");
+                . ($n === "Author" ? "" : " ({$n})");
         }
         return $n;
     }
