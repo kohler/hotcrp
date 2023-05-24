@@ -56,5 +56,10 @@ class UpdateSession {
             }
             $qs->set("v", 2);
         }
+
+        if (!$qs->has("u") && $qs->has("trueuser")) {
+            $qs->set("u", $qs->get("trueuser")->email);
+            $qs->unset("trueuser");
+        }
     }
 }

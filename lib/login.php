@@ -168,6 +168,7 @@ class LoginHelper {
      * @param array<string,1|-1> $uinstr */
     static function change_session_users($qreq, $uinstr) {
         $us = Contact::session_users($qreq);
+        $any_deleted = false;
         foreach ($uinstr as $e => $delta) {
             for ($i = 0; $i !== count($us); ++$i) {
                 if (strcasecmp($us[$i], $e) === 0)
@@ -175,6 +176,7 @@ class LoginHelper {
             }
             if ($delta < 0 && $i !== count($us)) {
                 array_splice($us, $i, 1);
+                $any_deleted = true;
             } else if ($delta > 0 && $i === count($us)) {
                 $us[] = $e;
             }
@@ -188,6 +190,9 @@ class LoginHelper {
             $qreq->unset_gsession("u");
         } else if ($qreq->gsession("u") !== $us[0]) {
             $qreq->set_gsession("u", $us[0]);
+        }
+        if ($any_deleted) {
+            $qreq->unset_gsession("uchoice");
         }
     }
 

@@ -274,7 +274,7 @@ class Conf {
             Dbl::set_error_handler([$this, "query_error_handler"]);
         }
         if ($this->dblink) {
-            Dbl::$landmark_sanitizer = "/^(?:Dbl::|Conf::q|Conf::fetch|call_user_func)/";
+            Dbl::$landmark_sanitizer = "/\A(?:Dbl::|Conf::q|Conf::fetch|call_user_func)/";
             $this->load_settings();
         } else {
             $this->refresh_options();
@@ -3517,7 +3517,7 @@ class Conf {
         if ($page === "index") {
             $expect = "index" . $nav->php_suffix;
             $lexpect = strlen($expect);
-            if (substr($t, 0, $lexpect) === $expect
+            if (str_starts_with($t, $expect)
                 && ($t === $expect || $t[$lexpect] === "?" || $t[$lexpect] === "#")) {
                 $need_site_path = true;
                 $t = substr($t, $lexpect);
@@ -4429,13 +4429,16 @@ class Conf {
                 $actas_email = $qreq->gsession("last_actas");
             }
             $nav = $qreq->navigation();
+            $sfx = $this->selfurl($qreq, ["actas" => null], self::HOTURL_SITEREL);
+            if ($sfx === "index" . $nav->php_suffix) {
+                $sfx = "";
+            }
             foreach (Contact::session_users($qreq) as $i => $email) {
                 if ($actas_email !== null && strcasecmp($email, $actas_email) === 0) {
                     $actas_email = null;
                 }
                 if (strcasecmp($email, $base_email) !== 0) {
-                    $url = "{$nav->base_path_relative}u/$i/" . $this->selfurl($qreq, ["actas" => null], self::HOTURL_SITEREL);
-                    echo '<li class="has-link">', Ht::link("Switch to " . htmlspecialchars($email), $url), '</li>';
+                    echo '<li class="has-link">', Ht::link("Switch to " . htmlspecialchars($email), "{$nav->base_path_relative}u/{$i}/{$sfx}"), '</li>';
                 }
             }
             if ($actas_email !== null) {
@@ -4786,9 +4789,9 @@ class Conf {
                 $pids = array_keys($pids);
 
                 // Combine `Tag` messages
-                if (substr($what, 0, 4) === "Tag "
+                if (str_starts_with($what, "Tag ")
                     && ($n = count($qv)) > 0
-                    && substr($qv[$n-1][self::action_log_query_action_index], 0, 4) === "Tag "
+                    && str_starts_with($qv[$n-1][self::action_log_query_action_index], "Tag ")
                     && $last_pids === $pids) {
                     $qv[$n-1][self::action_log_query_action_index] .= substr($what, 3);
                 } else {
