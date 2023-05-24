@@ -4510,8 +4510,8 @@ class Conf {
         echo '</ul></div></details>';
 
         if ($user->is_actas_user()) {
-            echo '<details class="invisible dropmenu-details', $details_class, '" role="none">',
-                '<summary><button class="btn btn-qlink">',
+            echo '<details class="invisible dropmenu-details" role="none">',
+                '<summary><button class="btn">',
                 $details_prefix, $user_html, $details_suffix,
                 '</button></summary></details>';
         }
