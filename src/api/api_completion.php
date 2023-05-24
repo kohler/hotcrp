@@ -18,7 +18,7 @@ class Completion_API {
                     $match = $word;
                     break;
                 }
-            $comp[] = $prefix . ($match ? : "\"$str\"");
+            $comp[] = $prefix . ($match ? : "\"{$str}\"");
         }
     }
 
@@ -235,7 +235,7 @@ class Completion_API {
                 }
                 if ($viewid
                     && $rrow->contactId !== $user->contactId
-                    && ($cvis >= CommentInfo::CT_REVIEWER || $rrow->reviewType >= REVIEW_PC)
+                    && ($cvis >= CommentInfo::CTVIS_REVIEWER || $rrow->reviewType >= REVIEW_PC)
                     && !$rrow->reviewer()->disablement) {
                     $rlist[] = $rrow->reviewer();
                 }
@@ -268,7 +268,7 @@ class Completion_API {
      * @param ?PaperInfo $prow */
     static function mentioncompletion_api(Contact $user, $qreq, $prow) {
         $comp = [];
-        $mlists = self::mention_lists($user, $prow, CommentInfo::CT_AUTHOR);
+        $mlists = self::mention_lists($user, $prow, CommentInfo::CTVIS_AUTHOR);
         foreach ($mlists as $i => $mlist) {
             $skey = $i ? "sm1" : "s";
             $pr1 = $i === 0 && count($mlists) > 1;

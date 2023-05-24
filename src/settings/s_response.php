@@ -148,7 +148,7 @@ class Response_SettingParser extends SettingParser {
             return null;
         }
         if ($this->round_counts === null) {
-            $this->round_counts = Dbl::fetch_iimap($conf->dblink, "select commentRound, count(*) from PaperComment where commentType>=" . CommentInfo::CT_AUTHOR . " and (commentType&" . CommentInfo::CT_RESPONSE . ")!=0 group by commentRound");
+            $this->round_counts = Dbl::fetch_iimap($conf->dblink, "select commentRound, count(*) from PaperComment where commentType>=" . CommentInfo::CTVIS_AUTHOR . " and (commentType&" . CommentInfo::CT_RESPONSE . ")!=0 group by commentRound");
         }
         return $this->round_counts[$ctrid] ?? null;
     }
@@ -301,16 +301,16 @@ class Response_SettingParser extends SettingParser {
     function store_value(Si $si, SettingValues $sv) {
         if (!empty($this->round_delete)) {
             $sv->conf->qe("update PaperComment set commentRound=0, commentType=(commentType&~?)|? where commentType>=? and (commentType&?)!=0 and commentRound?a",
-                CommentInfo::CT_RESPONSE | CommentInfo::CT_VISIBILITY,
-                CommentInfo::CT_FROZEN | CommentInfo::CT_ADMINONLY,
-                CommentInfo::CT_AUTHOR,
+                CommentInfo::CT_RESPONSE | CommentInfo::CTVIS_MASK,
+                CommentInfo::CT_FROZEN | CommentInfo::CTVIS_ADMINONLY,
+                CommentInfo::CTVIS_AUTHOR,
                 CommentInfo::CT_RESPONSE,
                 $this->round_delete);
             $sv->mark_diff("response_deleted");
         }
         if (!empty($this->round_transform)) {
             $sv->conf->qe("update PaperComment set commentRound=case commentRound " . join(" ", $this->round_transform) . " else commentRound end where commentType>=? and (commentType&?)!=0",
-                CommentInfo::CT_AUTHOR,
+                CommentInfo::CTVIS_AUTHOR,
                 CommentInfo::CT_RESPONSE);
         }
     }

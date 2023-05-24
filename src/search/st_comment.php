@@ -120,7 +120,7 @@ class Comment_SearchTerm extends SearchTerm {
             $where[] = "(commentType&{$this->type_mask})={$this->type_value}";
         }
         if ($this->only_author) {
-            $where[] = "commentType>=" . CommentInfo::CT_AUTHOR;
+            $where[] = "commentType>=" . CommentInfo::CTVIS_AUTHOR;
         }
         if ($this->commentRound) {
             $where[] = "commentRound=" . $this->commentRound;
@@ -147,7 +147,7 @@ class Comment_SearchTerm extends SearchTerm {
         foreach ($row->viewable_comment_skeletons($this->user, $textless) as $crow) {
             if ($this->csm->test_contact($crow->contactId)
                 && ($crow->commentType & $this->type_mask) == $this->type_value
-                && (!$this->only_author || $crow->commentType >= CommentInfo::CT_AUTHOR)
+                && (!$this->only_author || $crow->commentType >= CommentInfo::CTVIS_AUTHOR)
                 && (!$this->tags || $this->tags->test((string) $crow->viewable_tags($this->user))))
                 ++$n;
         }

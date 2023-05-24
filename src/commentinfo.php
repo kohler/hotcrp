@@ -62,39 +62,40 @@ class CommentInfo {
     /** @var ?list<MessageItem> */
     public $message_list;
 
-    const CT_DRAFT = 1;
-    const CT_BLIND = 2;
-    const CT_RESPONSE = 4;
-    const CT_BYAUTHOR = 8;
+    const CT_DRAFT = 0x01;
+    const CT_BLIND = 0x02;
+    const CT_RESPONSE = 0x04;
+    const CT_BYAUTHOR = 0x08;
+    const CT_BYAUTHOR_MASK = 0x0C;
     const CT_BYSHEPHERD = 0x10;
     const CT_HASDOC = 0x20;
     const CT_TOPIC_PAPER = 0x40;
     const CT_TOPIC_REVIEW = 0x80; // only used internally, not in database
-    const CT_TOPICS = 0xC0;
+    const CT_TOPIC_MASK = 0xC0;
     const CT_FROZEN = 0x4000;
     const CT_SUBMIT = 0x8000; // only used internally, not in database
-    const CT_ADMINONLY = 0x00000;
-    const CT_PCONLY = 0x10000;
-    const CT_REVIEWER = 0x20000;
-    const CT_AUTHOR = 0x30000;
-    const CT_VISIBILITY = 0xFFF0000; // no higher bits supported
+    const CTVIS_ADMINONLY = 0x00000;
+    const CTVIS_PCONLY = 0x10000;
+    const CTVIS_REVIEWER = 0x20000;
+    const CTVIS_AUTHOR = 0x30000;
+    const CTVIS_MASK = 0xFFF0000; // no higher bits supported
     const CT_REALBITS = 0xFFF7F7F;
 
     static private $visibility_map = [
-        0x00000 /* CT_ADMINONLY */ => "admin",
-        0x10000 /* CT_PCONLY */ => "pc",
-        0x20000 /* CT_REVIEWER */ => "rev",
-        0x30000 /* CT_AUTHOR */ => "au"
+        0x00000 /* CTVIS_ADMINONLY */ => "admin",
+        0x10000 /* CTVIS_PCONLY */ => "pc",
+        0x20000 /* CTVIS_REVIEWER */ => "rev",
+        0x30000 /* CTVIS_AUTHOR */ => "au"
     ];
     /** @var array<string,int> */
     static private $visibility_revmap = [
-        "admin" => 0x00000 /* CT_ADMINONLY */,
-        "pc" => 0x10000 /* CT_PCONLY */,
-        "p" => 0x10000 /* CT_PCONLY */,
-        "rev" => 0x20000 /* CT_REVIEWER */,
-        "r" => 0x20000 /* CT_REVIEWER */,
-        "au" => 0x30000 /* CT_AUTHOR */,
-        "a" => 0x30000 /* CT_AUTHOR */
+        "admin" => 0x00000 /* CTVIS_ADMINONLY */,
+        "pc" => 0x10000 /* CTVIS_PCONLY */,
+        "p" => 0x10000 /* CTVIS_PCONLY */,
+        "rev" => 0x20000 /* CTVIS_REVIEWER */,
+        "r" => 0x20000 /* CTVIS_REVIEWER */,
+        "au" => 0x30000 /* CTVIS_AUTHOR */,
+        "a" => 0x30000 /* CTVIS_AUTHOR */
     ];
     /** @var array<string,int> */
     static private $topic_revmap = [
@@ -122,7 +123,7 @@ class CommentInfo {
         $this->timeNotified = (int) $this->timeNotified;
         $this->timeDisplayed = (int) $this->timeDisplayed;
         if ($this->commentType === null) {
-            $this->commentType = self::CT_REVIEWER;
+            $this->commentType = self::CTVIS_REVIEWER;
         } else {
             $this->commentType = (int) $this->commentType;
         }
@@ -149,7 +150,7 @@ class CommentInfo {
     static function make_new_template(Contact $user, PaperInfo $prow) {
         $cinfo = new CommentInfo($prow);
         if (($ct = $user->add_comment_state($prow)) !== 0) {
-            $ct |= $ct & self::CT_BYAUTHOR ? self::CT_AUTHOR : self::CT_REVIEWER;
+            $ct |= $ct & self::CT_BYAUTHOR ? self::CTVIS_AUTHOR : self::CTVIS_REVIEWER;
             if ($ct & self::CT_TOPIC_REVIEW) {
                 $ct &= ~self::CT_TOPIC_PAPER;
             }
@@ -172,13 +173,13 @@ class CommentInfo {
     function fix_type($ctype) {
         if (($ctype & self::CT_RESPONSE) !== 0) {
             return self::CT_RESPONSE
-                | self::CT_AUTHOR
+                | self::CTVIS_AUTHOR
                 | ($this->prow->blind ? self::CT_BLIND : 0)
                 | ($ctype & (self::CT_DRAFT | self::CT_SUBMIT));
-        } else if (($ctype & self::CT_BYAUTHOR) !== 0) {
+        } else if (($ctype & self::CT_BYAUTHOR_MASK) !== 0) {
             return self::CT_BYAUTHOR
                 | ($this->prow->blind ? self::CT_BLIND : 0)
-                | ($ctype & (self::CT_TOPICS | self::CT_VISIBILITY | self::CT_SUBMIT));
+                | ($ctype & (self::CT_TOPIC_MASK | self::CTVIS_MASK | self::CT_SUBMIT));
         } else {
             $rb = $this->conf->review_blindness();
             if ($rb === Conf::BLIND_NEVER) {
@@ -186,7 +187,7 @@ class CommentInfo {
             } else if ($rb !== Conf::BLIND_OPTIONAL) {
                 $ctype |= self::CT_BLIND;
             }
-            return $ctype & ~(self::CT_DRAFT | self::CT_RESPONSE | self::CT_BYAUTHOR);
+            return $ctype & ~(self::CT_DRAFT | self::CT_BYAUTHOR_MASK);
         }
     }
 
@@ -253,20 +254,20 @@ class CommentInfo {
      * @return bool */
     static private function commenttype_needs_ordinal($ctype) {
         return ($ctype & (self::CT_RESPONSE | self::CT_DRAFT)) === 0
-            && ($ctype & self::CT_VISIBILITY) !== self::CT_ADMINONLY;
+            && ($ctype & self::CTVIS_MASK) !== self::CTVIS_ADMINONLY;
     }
 
     /** @param int $ctype
      * @return bool */
     private function ordinal_missing($ctype) {
         return self::commenttype_needs_ordinal($ctype)
-            && ($ctype >= self::CT_AUTHOR ? $this->authorOrdinal : $this->ordinal) === 0;
+            && ($ctype >= self::CTVIS_AUTHOR ? $this->authorOrdinal : $this->ordinal) === 0;
     }
 
     /** @return ?string */
     function unparse_ordinal() {
         if (self::commenttype_needs_ordinal($this->commentType)) {
-            if ($this->commentType >= self::CT_AUTHOR) {
+            if ($this->commentType >= self::CTVIS_AUTHOR) {
                 if ($this->authorOrdinal !== 0) {
                     return "A{$this->authorOrdinal}";
                 }
@@ -390,7 +391,7 @@ class CommentInfo {
 
     /** @return ?string */
     private function unparse_commenter_pseudonym(Contact $viewer) {
-        if ($this->commentType & (self::CT_RESPONSE | self::CT_BYAUTHOR)) {
+        if ($this->commentType & self::CT_BYAUTHOR_MASK) {
             return "Author";
         } else if ($this->commentType & self::CT_BYSHEPHERD) {
             return "Shepherd";
@@ -531,7 +532,7 @@ class CommentInfo {
                 "pid" => $this->prow->paperId,
                 "cid" => $this->commentId,
                 "ordinal" => $this->unparse_ordinal(),
-                "visibility" => self::$visibility_map[$this->commentType & self::CT_VISIBILITY]
+                "visibility" => self::$visibility_map[$this->commentType & self::CTVIS_MASK]
             ];
         } else {
             // placeholder for new comment
@@ -556,7 +557,7 @@ class CommentInfo {
         }
         if (($this->commentType & self::CT_RESPONSE) !== 0) {
             $cj->response = $rrd->name;
-        } else if (($this->commentType & self::CT_BYAUTHOR) !== 0) {
+        } else if (($this->commentType & self::CT_BYAUTHOR_MASK) !== 0) {
             $cj->by_author = true;
         } else if (($this->commentType & self::CT_BYSHEPHERD) !== 0) {
             $cj->by_shepherd = true;
@@ -596,7 +597,7 @@ class CommentInfo {
             || ($viewer->allow_administer($this->prow)
                 && $viewer->call_with_overrides(Contact::OVERRIDE_CONFLICT, "can_view_comment_identity", $this->prow, $this));
         if ($idable || $idable_override) {
-            if (!($this->commentType & (self::CT_RESPONSE | self::CT_BYAUTHOR))
+            if (($this->commentType & self::CT_BYAUTHOR_MASK) === 0
                 && $viewer->can_view_user_tags()
                 && ($cuser = $this->conf->pc_member_by_id($this->contactId))) {
                 $cj->author = $viewer->reviewer_html_for($cuser);
@@ -616,7 +617,7 @@ class CommentInfo {
             }
         }
         if ((!$idable
-             || ($this->commentType & (self::CT_VISIBILITY | self::CT_BLIND)) === (self::CT_AUTHOR | self::CT_BLIND))
+             || ($this->commentType & (self::CTVIS_MASK | self::CT_BLIND)) === (self::CTVIS_AUTHOR | self::CT_BLIND))
             && ($p = $this->unparse_commenter_pseudonym($viewer))) {
             $cj->author_pseudonym = $p;
         }
@@ -719,7 +720,7 @@ class CommentInfo {
 
 
     private function save_ordinal($cmtid, $ctype) {
-        $okey = $ctype >= self::CT_AUTHOR ? "authorOrdinal" : "ordinal";
+        $okey = $ctype >= self::CTVIS_AUTHOR ? "authorOrdinal" : "ordinal";
         $q = "update PaperComment, (select coalesce(max(PaperComment.{$okey}),0) maxOrdinal
     from Paper
     left join PaperComment on (PaperComment.paperId=Paper.paperId)
@@ -746,10 +747,10 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             $ctype &= ~self::CT_BLIND;
         }
         if (($x = self::$topic_revmap[$req["topic"] ?? ""] ?? null) !== null) {
-            $ctype = ($ctype & ~self::CT_TOPICS) | $x;
+            $ctype = ($ctype & ~self::CT_TOPIC_MASK) | $x;
         }
         if (($x = self::$visibility_revmap[$req["visibility"] ?? ""] ?? null) !== null) {
-            $ctype = ($ctype & ~self::CT_VISIBILITY) | $x;
+            $ctype = ($ctype & ~self::CTVIS_MASK) | $x;
         }
         return $this->fix_type($ctype);
     }
@@ -987,7 +988,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         // notify mentions and followers
         if ($displayed
             && $this->commentId
-            && ($this->commentType & self::CT_VISIBILITY) > self::CT_ADMINONLY
+            && ($this->commentType & self::CTVIS_MASK) > self::CTVIS_ADMINONLY
             && strpos($text, "@") !== false) {
             $this->analyze_mentions($user);
         }
@@ -997,7 +998,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
                 $tmpl = "@responsedraftnotify";
             } else if ($is_response) {
                 $tmpl = "@responsenotify";
-            } else if (($ctype & self::CT_VISIBILITY) === self::CT_ADMINONLY) {
+            } else if (($ctype & self::CTVIS_MASK) === self::CTVIS_ADMINONLY) {
                 $tmpl = "@admincommentnotify";
             } else {
                 $tmpl = "@commentnotify";
@@ -1041,7 +1042,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         // enumerate desired mentions and save them
         $desired_mentions = [];
         $text = $this->commentOverflow ?? $this->comment;
-        foreach (MentionParser::parse($text, ...Completion_API::mention_lists($user, $this->prow, $this->commentType & self::CT_VISIBILITY)) as $mpx) {
+        foreach (MentionParser::parse($text, ...Completion_API::mention_lists($user, $this->prow, $this->commentType & self::CTVIS_MASK)) as $mpx) {
             $named = $mpx[0] instanceof Contact || $mpx[0]->author_index !== -1;
             $desired_mentions[] = [$mpx[0]->contactId, $mpx[1], $mpx[2], $named];
             $this->conf->prefetch_user_by_id($mpx[0]->contactId);
@@ -1086,7 +1087,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         $nocheck = false;
         if (($ctype & self::CT_DRAFT) !== 0) {
             $cids = [];
-            if (($ctype & (self::CT_RESPONSE | self::CT_BYAUTHOR)) !== 0) {
+            if (($ctype & self::CT_BYAUTHOR_MASK) !== 0) {
                 foreach ($this->prow->contact_list() as $u) {
                     $cids[] = $u->contactId;
                 }
@@ -1094,7 +1095,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
                 $cids[] = $this->contactId;
             }
             $us = $this->prow->generic_followers($cids, "false");
-        } else if (($ctype & self::CT_VISIBILITY) === self::CT_ADMINONLY) {
+        } else if (($ctype & self::CTVIS_MASK) === self::CTVIS_ADMINONLY) {
             $us = $this->prow->administrators();
             $nocheck = true;
         } else {

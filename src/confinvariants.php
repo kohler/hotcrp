@@ -272,7 +272,7 @@ class ConfInvariants {
     /** @return $this */
     function check_responses() {
         // responses have author visibility
-        $any = $this->invariantq("select paperId, commentId from PaperComment where (commentType&" . CommentInfo::CT_RESPONSE  . ")!=0 and (commentType&" . CommentInfo::CT_AUTHOR . ")=0 limit 1");
+        $any = $this->invariantq("select paperId, commentId from PaperComment where (commentType&" . CommentInfo::CT_RESPONSE  . ")!=0 and (commentType&" . CommentInfo::CTVIS_AUTHOR . ")=0 limit 1");
         if ($any) {
             $this->invariant_error("response #{0}/{1} is not author-visible");
         }

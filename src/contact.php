@@ -4629,15 +4629,15 @@ class Contact implements JsonSerializable {
     /** @param ?CommentInfo $crow
      * @return bool */
     function can_view_comment(PaperInfo $prow, $crow, $textless = false) {
-        $ctype = $crow ? $crow->commentType : CommentInfo::CT_AUTHOR;
+        $ctype = $crow ? $crow->commentType : CommentInfo::CTVIS_AUTHOR;
         $rights = $this->rights($prow);
         return ($crow && $this->is_my_comment($prow, $crow))
             || ($rights->can_administer
-                && ($ctype >= CommentInfo::CT_AUTHOR
+                && ($ctype >= CommentInfo::CTVIS_AUTHOR
                     || $rights->potential_reviewer))
             || ($rights->act_author_view
-                && (($ctype & (CommentInfo::CT_BYAUTHOR | CommentInfo::CT_RESPONSE)) !== 0
-                    || ($ctype >= CommentInfo::CT_AUTHOR
+                && (($ctype & CommentInfo::CT_BYAUTHOR_MASK) !== 0
+                    || ($ctype >= CommentInfo::CTVIS_AUTHOR
                         && ($ctype & CommentInfo::CT_DRAFT) === 0
                         && (($ctype & CommentInfo::CT_TOPIC_PAPER) !== 0
                             || $this->can_view_submitted_review_as_author($prow)))))
@@ -4645,11 +4645,11 @@ class Contact implements JsonSerializable {
                 && (($ctype & CommentInfo::CT_DRAFT) === 0
                     || ($textless && ($ctype & CommentInfo::CT_RESPONSE)))
                 && ($rights->allow_pc
-                    ? $ctype >= CommentInfo::CT_PCONLY
-                    : $ctype >= CommentInfo::CT_REVIEWER)
+                    ? $ctype >= CommentInfo::CTVIS_PCONLY
+                    : $ctype >= CommentInfo::CTVIS_REVIEWER)
                 && (($ctype & CommentInfo::CT_TOPIC_PAPER) !== 0
                     || $this->can_view_review($prow, null))
-                && ($ctype >= CommentInfo::CT_AUTHOR
+                && ($ctype >= CommentInfo::CTVIS_AUTHOR
                     || $this->conf->setting("cmt_revid")
                     || $this->can_view_review_identity($prow, null)));
     }
@@ -4680,7 +4680,7 @@ class Contact implements JsonSerializable {
      * @return bool */
     function can_view_comment_identity(PaperInfo $prow, $crow) {
         $ct = $crow ? $crow->commentType : CommentInfo::CT_BLIND;
-        if (($ct & (CommentInfo::CT_RESPONSE | CommentInfo::CT_BYAUTHOR)) !== 0) {
+        if (($ct & CommentInfo::CT_BYAUTHOR_MASK) !== 0) {
             return $this->can_view_authors($prow);
         }
         $rights = $this->rights($prow);
@@ -4717,9 +4717,8 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_view_author_comment_topic_paper(PaperInfo $prow) {
         return $prow->has_viewable_comment_type($this,
-            CommentInfo::CT_BYAUTHOR | CommentInfo::CT_RESPONSE
-             | CommentInfo::CT_TOPIC_PAPER | CommentInfo::CT_VISIBILITY,
-            CommentInfo::CT_TOPIC_PAPER | CommentInfo::CT_AUTHOR);
+            CommentInfo::CT_BYAUTHOR_MASK | CommentInfo::CT_TOPIC_PAPER | CommentInfo::CTVIS_MASK,
+            CommentInfo::CT_TOPIC_PAPER | CommentInfo::CTVIS_AUTHOR);
     }
 
 

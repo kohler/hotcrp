@@ -178,9 +178,9 @@ class ReviewCSV_Batch {
             $x["round"] = $rrd->unnamed ? "" : $rrd->name;
         }
         $rs = $crow->commentType & CommentInfo::CT_DRAFT ? "draft " : "";
-        if ($crow->commentType & CommentInfo::CT_RESPONSE) {
+        if (($crow->commentType & CommentInfo::CT_RESPONSE) !== 0) {
             $rs .= "response";
-        } else if ($crow->commentType & CommentInfo::CT_BYAUTHOR) {
+        } else if (($crow->commentType & CommentInfo::CT_BYAUTHOR_MASK) !== 0) {
             $rs .= "author comment";
         } else {
             $rs .= "comment";

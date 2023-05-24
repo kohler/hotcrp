@@ -960,7 +960,7 @@ class Settings_Tester {
         assert_search_papers($this->u_chair, "has:response", "");
         assert_search_papers($this->u_chair, "has:Buttresponse", "");
 
-        $result = $this->conf->qe("insert into PaperComment (paperId,contactId,timeModified,timeDisplayed,comment,commentType,replyTo,commentRound) values (1,?,?,?,'Hi',?,0,?)", $this->u_chair->contactId, Conf::$now, Conf::$now, CommentInfo::CT_AUTHOR | CommentInfo::CT_RESPONSE, 1);
+        $result = $this->conf->qe("insert into PaperComment (paperId,contactId,timeModified,timeDisplayed,comment,commentType,replyTo,commentRound) values (1,?,?,?,'Hi',?,0,?)", $this->u_chair->contactId, Conf::$now, Conf::$now, CommentInfo::CTVIS_AUTHOR | CommentInfo::CT_RESPONSE, 1);
         $new_commentId = $result->insert_id;
 
         assert_search_papers($this->u_chair, "has:response", "1");
