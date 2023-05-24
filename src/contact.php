@@ -2940,20 +2940,13 @@ class Contact implements JsonSerializable {
             if ($ci->act_author_view && !$ci->allow_administer) {
                 $ci->view_authors_state = 2;
             } else if ($ci->allow_pc_broad || $ci->review_status > 0) {
-                $bs = $this->conf->submission_blindness();
-                $nb = $bs == Conf::BLIND_NEVER
-                    || ($bs == Conf::BLIND_OPTIONAL
-                        && !$prow->blind)
-                    || ($bs == Conf::BLIND_UNTILREVIEW
-                        && $ci->review_status > PaperContactInfo::RS_PROXIED)
-                    || ($prow->outcome_sign > 0
-                        && ($isPC || $ci->allow_review)
-                        && $ci->can_view_decision
-                        && $prow->can_author_view_decision()
-                        && !$this->conf->setting("seedec_hideau"));
+                $bs = $prow->blindness_state($ci->review_status > PaperContactInfo::RS_PROXIED);
+                if ($bs === 0) {
+                    $bs = $ci->can_view_decision && ($isPC || $ci->allow_review) ? -1 : 1;
+                }
                 if ($ci->allow_administer) {
-                    $ci->view_authors_state = $nb ? 2 : 1;
-                } else if ($nb
+                    $ci->view_authors_state = $bs < 0 ? 2 : 1;
+                } else if ($bs < 0
                            && ($prow->timeSubmitted != 0
                                || ($ci->allow_pc_broad
                                    && $prow->timeWithdrawn <= 0

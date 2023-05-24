@@ -391,9 +391,9 @@ class CommentInfo {
 
     /** @return ?string */
     private function unparse_commenter_pseudonym(Contact $viewer) {
-        if ($this->commentType & self::CT_BYAUTHOR_MASK) {
+        if (($this->commentType & self::CT_BYAUTHOR_MASK) !== 0) {
             return "Author";
-        } else if ($this->commentType & self::CT_BYSHEPHERD) {
+        } else if (($this->commentType & self::CT_BYSHEPHERD) !== 0) {
             return "Shepherd";
         } else if (($rrow = $this->prow->review_by_user($this->contactId))
                    && $rrow->reviewOrdinal
@@ -401,6 +401,19 @@ class CommentInfo {
             return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
         } else {
             return null;
+        }
+    }
+
+    /** @return bool */
+    private function commenter_may_be_pseudonymous() {
+        if (($this->commentType & self::CTVIS_MASK) < self::CTVIS_PCONLY) {
+            return false;
+        } else if (($this->commentType & self::CT_BYAUTHOR_MASK) !== 0) {
+            return $this->prow->blindness_state(true) > 0;
+        } else if (($this->commentType & self::CTVIS_MASK) === self::CTVIS_AUTHOR) {
+            return !$this->prow->author_user()->can_view_comment_identity($this->prow, $this);
+        } else {
+            return false;
         }
     }
 
@@ -606,20 +619,22 @@ class CommentInfo {
                 $cj->author = Text::nameo($this, NAME_P);
                 $email = $this->email;
             }
-            if (!$idable) {
-                $cj->author_hidden = true;
-            }
             if (!Contact::is_anonymous_email($email)) {
                 $cj->author_email = $email;
             } else if ($viewer->review_tokens()
                        && ($rrows = $this->prow->reviews_by_user(-1, $viewer->review_tokens()))) {
                 $cj->review_token = encode_token($rrows[0]->reviewToken);
             }
+            if (!$idable) {
+                $cj->author_hidden = true;
+            }
         }
-        if ((!$idable
-             || ($this->commentType & (self::CTVIS_MASK | self::CT_BLIND)) === (self::CTVIS_AUTHOR | self::CT_BLIND))
-            && ($p = $this->unparse_commenter_pseudonym($viewer))) {
+        if (($p = $this->unparse_commenter_pseudonym($viewer))) {
             $cj->author_pseudonym = $p;
+        }
+        if ($idable
+            && $this->commenter_may_be_pseudonymous()) {
+            $cj->author_pseudonymous = true;
         }
         if ($this->timeModified > 0) {
             if ($idable_override) {
@@ -656,11 +671,21 @@ class CommentInfo {
             $ordinal = $this->unparse_ordinal();
             $x = "Comment" . ($ordinal ? " @{$ordinal}" : "");
         }
+        $p = $this->unparse_commenter_pseudonym($contact);
         if ($contact->can_view_comment_identity($this->prow, $this)) {
-            $x .= " by " . Text::nameo($this, NAME_EB);
-        } else if (($p = $this->unparse_commenter_pseudonym($contact))
-                   && ($p !== "Author" || !($this->commentType & self::CT_RESPONSE))) {
-            $x .= " by " . $p;
+            $n = Text::nameo($this, NAME_EB);
+            $np = $this->commenter_may_be_pseudonymous();
+            if ($p && $np) {
+                $x .= " by {$p} [{$n}]";
+            } else if ($p) {
+                $x .= " by {$n} ({$p})";
+            } else if ($np) {
+                $x .= " [by {$n}]";
+            } else {
+                $x .= " by {$n}";
+            }
+        } else if ($p && ($p !== "Author" || ($this->commentType & self::CT_RESPONSE) !== 0)) {
+            $x .= " by {$p}";
         }
         $ctext = $this->commentOverflow ?? $this->comment;
         if ($rrd && $rrd->words) {

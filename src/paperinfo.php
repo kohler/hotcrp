@@ -1134,6 +1134,24 @@ class PaperInfo {
     }
 
 
+    /** @param bool $review_complete
+     * @return -1|0|1 */
+    function blindness_state($review_complete) {
+        $bs = $this->conf->submission_blindness();
+        if ($bs === Conf::BLIND_NEVER
+            || ($bs === Conf::BLIND_OPTIONAL && !$this->blind)
+            || ($bs === Conf::BLIND_UNTILREVIEW && $review_complete)) {
+            return -1; /* not blind to any reviewer */
+        } else if ($this->outcome_sign > 0
+                   && !$this->conf->setting("seedec_hideau")
+                   && $this->can_author_view_decision()) {
+            return 0;  /* not blind to reviewers who can see decision */
+        } else {
+            return 1;  /* blind to any reviewer */
+        }
+    }
+
+
     private function load_conflict_types() {
         // load conflicts from database
         if ($this->allConflictType === null) {

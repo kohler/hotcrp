@@ -5780,11 +5780,12 @@ function cmt_identity_time(cj, editing) {
                (cj.author_pseudonym || "<i>Hidden</i>") + '</span><span class="fx9">(deanonymized)</span></a></address>');
     } else if (cj.author) {
         x = cj.author;
-        if (cj.blind && cj.visibility === "au") {
-            x = "[" + x + "]";
-        }
-        if (cj.author_pseudonym) {
-            x = cj.author_pseudonym + ' ' + x;
+        if (cj.author_pseudonym && cj.author_pseudonymous) {
+            x = cj.author_pseudonym.concat(" [", x, "]");
+        } else if (cj.author_pseudonym) {
+            x = x.concat(" (", cj.author_pseudonym, ")");
+        } else if (cj.author_pseudonymous) {
+            x = "[".concat(cj.author, "]");
         }
         t.push('<address class="cmtname' +
                (cj.author_email ? '" title="' + cj.author_email : "") +
