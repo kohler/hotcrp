@@ -1132,6 +1132,31 @@ class Permission_Tester {
         xassert_eqq(sorted_conflicts($paper3, TESTSC_ENABLED), "mgbaker@cs.stanford.edu");
     }
 
+    function test_tracker_permissionizer() {
+        $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
+
+        $this->conf->save_refresh_setting("tracks", 1, '{"green":{"admin":"+red"}}');
+        AssignmentSet::run($this->u_chair, "paper,tag\nall,-green\n3 9 13 17,green\n", true);
+        SiteLoader::autoload("MeetingTracker");
+
+        $permissionizer = new MeetingTracker_Permissionizer($this->conf, [1, 2, 3]);
+        xassert_eqq($permissionizer->admin_perm(), []);
+        xassert($permissionizer->check_admin_perm($this->conf->site_contact()));
+        xassert(!$permissionizer->check_admin_perm($user_jon));
+
+        $permissionizer = new MeetingTracker_Permissionizer($this->conf, [3, 9, 13]);
+        xassert_eqq($permissionizer->admin_perm(), [["+red"]]);
+        xassert($permissionizer->check_admin_perm($this->conf->site_contact()));
+        xassert($permissionizer->check_admin_perm($user_jon));
+
+        xassert_eqq($permissionizer->default_visibility(), "");
+        $this->conf->save_refresh_setting("tracks", 1, '{"green":{"admin":"+red","view":"-blue"}}');
+        $permissionizer = new MeetingTracker_Permissionizer($this->conf, [3, 9, 13]);
+        xassert_eqq($permissionizer->default_visibility(), "-blue");
+
+        $this->conf->save_refresh_setting("tracks", null);
+    }
+
     function test_tracks() {
         $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
         $user_randy = $this->conf->checked_user_by_email("randy@cs.berkeley.edu"); // author

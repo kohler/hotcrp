@@ -527,14 +527,14 @@ class Conf {
 
         // review times
         foreach ($this->rounds as $i => $rname) {
-            $suf = $i ? "_$i" : "";
-            if (!isset($this->settings["extrev_soft$suf"])
-                && isset($this->settings["pcrev_soft$suf"])) {
-                $this->settings["extrev_soft$suf"] = $this->settings["pcrev_soft$suf"];
+            $suf = $i ? "_{$i}" : "";
+            if (!isset($this->settings["extrev_soft{$suf}"])
+                && isset($this->settings["pcrev_soft{$suf}"])) {
+                $this->settings["extrev_soft{$suf}"] = $this->settings["pcrev_soft{$suf}"];
             }
-            if (!isset($this->settings["extrev_hard$suf"])
-                && isset($this->settings["pcrev_hard$suf"])) {
-                $this->settings["extrev_hard$suf"] = $this->settings["pcrev_hard$suf"];
+            if (!isset($this->settings["extrev_hard{$suf}"])
+                && isset($this->settings["pcrev_hard{$suf}"])) {
+                $this->settings["extrev_hard{$suf}"] = $this->settings["pcrev_hard{$suf}"];
             }
         }
     }
@@ -1424,7 +1424,7 @@ class Conf {
     /** @param int $ttype
      * @return bool */
     function check_required_tracks(PaperInfo $prow, Contact $user, $ttype) {
-        if ($this->_track_sensitivity & (1 << $ttype)) {
+        if (($this->_track_sensitivity & (1 << $ttype)) !== 0) {
             $unmatched = true;
             foreach ($this->_tracks as $tr) {
                 if ($tr->is_default ? $unmatched : $prow->has_tag($tr->ltag)) {
@@ -1516,11 +1516,10 @@ class Conf {
      * @param int $ttype
      * @return ?string */
     function track_permission($tag, $ttype) {
-        if ($this->_tracks) {
-            foreach ($this->_tracks as $tr) {
-                if (strcasecmp($tr->tag, $tag) === 0) {
-                    return $tr->perm[$ttype];
-                }
+        foreach ($this->_tracks ?? [] as $tr) {
+            if (strcasecmp($tr->tag, $tag) === 0
+                || $tr->is_default /* always last */) {
+                return $tr->perm[$ttype];
             }
         }
         return null;
@@ -1640,7 +1639,7 @@ class Conf {
         if ($roundno > 0
             && ($rname = $this->rounds[$roundno] ?? null)
             && $rname !== ";") {
-            return "_$rname";
+            return "_{$rname}";
         }
         return "";
     }
@@ -3181,7 +3180,7 @@ class Conf {
             $round = $round->reviewRound ? : 0;
         }
         return ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft")
-            . ($round ? "_$round" : "");
+            . ($round ? "_{$round}" : "");
     }
     /** @param ?int $round
      * @param bool|int $reviewType

@@ -171,7 +171,7 @@ class PaperTable {
 
         if (!$paperTable) {
             if (($pid = $qreq->paperId) && ctype_digit($pid)) {
-                $title = "#$pid";
+                $title = "#{$pid}";
             } else {
                 $title = $conf->_c("paper_title", "Submission");
             }
@@ -190,8 +190,7 @@ class PaperTable {
                     $t .= ' ' . $color;
             }
             $t .= '"><a class="noq ulh" href="' . $prow->hoturl()
-                . '"><span class="taghl"><span class="pnum">' . $title . '</span>'
-                . ' &nbsp; ';
+                . '"><span class="taghl"><span class="pnum pnum-sp">' . $title . '</span> ';
 
             $highlight_text = null;
             $title_matches = 0;

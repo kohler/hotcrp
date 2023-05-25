@@ -261,7 +261,7 @@ class SiteLoader {
     }
 
     /** @param string $class_name */
-    static function autoloader($class_name) {
+    static function autoload($class_name) {
         $f = self::$map[$class_name] ?? strtolower($class_name) . ".php";
         foreach (self::expand_includes(self::$root, $f, ["autoload" => true]) as $fx) {
             require_once($fx);
@@ -270,4 +270,4 @@ class SiteLoader {
 }
 
 SiteLoader::set_root();
-spl_autoload_register("SiteLoader::autoloader");
+spl_autoload_register("SiteLoader::autoload");

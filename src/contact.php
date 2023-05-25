@@ -3126,7 +3126,7 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function include_tracker_conflict($tracker_json = null) {
         return $this->isPC
-            && (!($perm = $this->conf->track_permission("_", Track::VIEWTRACKER))
+            && (!($perm = $this->conf->track_permission("", Track::VIEWTRACKER))
                 || $perm === "+none"
                 || $this->has_permission($perm))
             && (!$tracker_json

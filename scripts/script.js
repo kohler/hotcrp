@@ -2909,7 +2909,7 @@ function tracker_paper_columns(tr, idx, wwidth) {
             title = title.replace(/^(\S+\s+\S+\s+\S+).*$/, "$1").substring(0, 50) + "…";
         else if (wwidth <= 768 && title.length > 50)
             title = title.replace(/^(\S+\s+\S+\s+\S+\s+\S+\s+\S+).*$/, "$1").substring(0, 75) + "…";
-        x.push('<a class="tracker-title q'.concat(f, '" href="', url, '">', escape_html(title), '</a>'));
+        x.push('<a class="tracker-title q'.concat(f, '" href="', escape_html(url), '">', escape_html(title), '</a>'));
         if (paper.format)
             tracker_has_format = true;
     }
@@ -2932,7 +2932,7 @@ function tracker_html(tr) {
     var logo = escape_html(tr.logo || "☞");
     var logo_class = logo === "☞" ? "tracker-logo tracker-logo-fist" : "tracker-logo";
     if (tr.allow_administer)
-        t += '<a class="ui qo js-tracker need-tooltip '.concat(logo_class, '" aria-label="Tracker settings and status" href="">', logo, '</a>');
+        t += '<button class="btn-qlink ui qo js-tracker need-tooltip '.concat(logo_class, '" aria-label="Tracker settings and status">', logo, '</button>');
     else
         t += '<div class="'.concat(logo_class, '">', logo, '</div>');
     var rows = [], i, wwidth = $(window).width();
@@ -2955,7 +2955,7 @@ function tracker_html(tr) {
             if (tr.position_at)
                 t += '<span class="tracker-timer" data-trackerid="' + tr.trackerid + '"></span>';
             if (tr.allow_administer)
-                t += '<a class="ui js-tracker-stop closebtn need-tooltip" href="" aria-label="Stop this tracker">x</a>';
+                t += '<button type="button" class="ui js-tracker-stop btn-qolink btn-x need-tooltip ml-2" aria-label="Stop this tracker"></button>';
             t += '</td>';
         }
         t += '</tr>';
@@ -3069,23 +3069,39 @@ handle_ui.on("js-tracker", function (evt) {
         if (tr.listinfo)
             hc.push('<input type="hidden" name="tr' + trno + '-listinfo" value="' + escape_html(tr.listinfo) + '">');
         hc.push('<div class="entryi"><label for="k-tr' + trno + '-name">Name</label><div class="entry"><input id="k-tr' + trno + '-name" type="text" name="tr' + trno + '-name" size="30" class="want-focus need-autogrow" value="' + escape_html(tr.name || "") + (tr.is_new ? '" placeholder="New tracker' : '" placeholder="Unnamed') + '"></div></div>');
-        var vis = tr.visibility || "", vistype = vis === "" ? "" : vis.charAt(0);
-        hc.push('<div class="entryi has-fold fold' + (vistype === "" ? "c" : "o") + '" data-fold-values="+ -"><label for="k-tr' + trno + '-vistype">PC visibility</label><div class="entry">', '</div></div>');
+        var vis = tr.visibility || "", vistype;
+        if (vis === "+none" || vis === "none") {
+            vistype = "none";
+            vis = "";
+        } else if (vis !== "") {
+            vistype = vis.charAt(0);
+        } else {
+            vistype = "";
+        }
+        hc.push('<div class="entryi has-fold fold' + (vistype === "+" || vistype === "-" ? "o" : "c") + '" data-fold-values="+ -"><label for="k-tr' + trno + '-vistype">PC visibility</label><div class="entry">', '</div></div>');
         hc.push('<span class="select"><select id="k-tr' + trno + '-vistype" name="tr' + trno + '-vistype" class="uich js-foldup" data-default-value="' + vistype + '">', '</select></span>');
-        var vismap = {"": "Whole PC", "+": "PC members with tag", "-": "PC members without tag"};
-        for (var i in vismap)
-            hc.push('<option value="' + i + '"' + (i === vistype ? " selected" : "") + '>' + vismap[i] + '</option>');
+        var vismap = [["", "Whole PC"], ["+", "PC members with tag"], ["-", "PC members without tag"]];
+        if (hotcrp.status.is_admin) {
+            vismap.push(["none", "Administrators only"]);
+        }
+        var i, v, issel, isdisabled, gvis = (dl.tracker && dl.tracker.global_visibility) || "";
+        for (i = 0; i !== vismap.length; ++i) {
+            v = vismap[i];
+            issel = v[0] === vistype ? " selected" : "";
+            isdisabled = gvis === "+none" && v[0] !== "none" ? " disabled" : "";
+            hc.push('<option value="'.concat(v[0], '"', issel, isdisabled, '>', v[1], '</option>'));
+        }
         hc.pop();
         hc.push_pop('  <input type="text" name="tr' + trno + '-vis" value="' + escape_html(vis.substring(1)) + '" placeholder="(tag)" class="need-suggest need-autogrow pc-tags fx">');
         if (dl.tracker && (vis = dl.tracker.global_visibility)) {
-            hc.push('<div class="entryi"><label><a href="' + hoturl("settings", "group=tracks") + '" target="_blank">Global visibility</a></label><div class="entry">', '</div></div>');
+            hc.push('<div class="entryi"><label>Global visibility</label><div class="entry">', '</div></div>');
             if (vis === "+none")
                 hc.push('Administrators only');
             else if (vis.charAt(0) === "+")
                 hc.push('PC members with tag ' + vis.substring(1));
             else
                 hc.push('PC members without tag ' + vis.substring(1));
-            hc.push_pop('<div class="f-h">This setting restricts all trackers.</div>');
+            hc.push_pop('<div class="f-h">This <a href="' + escape_html(hoturl("settings", "group=tracks")) + '">setting</a> restricts all trackers.</div>');
         }
         hc.push('<div class="entryi"><label></label><div class="entry"><label class="checki"><input type="hidden" name="has_tr' + trno + '-hideconflicts" value="1"><input class="checkc" name="tr' + trno + '-hideconflicts" value="1" type="checkbox"' + (tr.hide_conflicts ? ' checked' : '') + '>Hide conflicted papers</label></div></div>');
         if (tr.start_at)

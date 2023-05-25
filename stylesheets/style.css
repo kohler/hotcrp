@@ -303,6 +303,9 @@ h2 {
 h1.paptitle {
 	padding: 6px 24px;
 }
+.pnum-sp {
+	padding-right: 0.4em;
+}
 .header-site-name {
 	font-weight: bold;
 }
@@ -375,12 +378,12 @@ td.vbar {
    * u.x: underline when in a:hover */
 a.qh, a.noq, a.noq:hover, a.q, a.qo, a.btn, a.btn:hover,
 .is-error a, .is-warning a, .is-note a, .is-warning-note a, .is-urgent-note a,
-.btn-qlink, .btn-ulink {
+.btn-qlink, .btn-qolink, .btn-ulink {
 	color: inherit;
 }
 a:hover,
 a.track:hover, a.ptitle:hover, a.pnum:hover,
-.btn-link:hover, .btn-qlink:hover, .btn-xlink:hover,
+.btn-link:hover, .btn-qlink:hover, .btn-qolink:hover, .btn-xlink:hover,
 .js-click-child:hover a.hover-child,
 a:hover .pavfn {
 	color: #c45500;
@@ -390,7 +393,7 @@ a:hover .pavfn {
 a:active,
 a.noq:active,
 a.track:active, a.ptitle:active, a.pnum:active,
-.btn-link:active, .btn-qlink:active, .btn-xlink:active,
+.btn-link:active, .btn-qlink:active, .btn-qolink:active, .btn-xlink:active,
 a.attention {
 	color: red;
 	-webkit-text-decoration-color: red;
@@ -400,7 +403,7 @@ a.btn {
 	cursor: default;
 }
 .noul, .noul:hover,
-a.ulh, a.q, a.qo, a.btn, a.btn:hover, .btn-qlink,
+a.ulh, a.q, a.qo, a.btn, a.btn:hover,
 .papmode.active > a, .papmode.active:hover > a.noul, .leftmenu-item > a,
 u.x {
 	text-decoration: inherit;
@@ -1237,7 +1240,17 @@ a.tbtn-here {
 a.tbtn-here:hover {
 	background: #a02c2c;
 }
-a.closebtn {
+.btn-x::after {
+	display: inline-block;
+	width: 0.8em;
+	height: 0.8em;
+	vertical-align: -1px;
+	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L31 31M1 31L31 1' style='stroke:currentColor' stroke-width='2' /%3E%3C/svg%3E");
+}
+.btn-x:hover::after {
+	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L31 31M1 31L31 1' style='stroke:%23c45500' stroke-width='2' /%3E%3C/svg%3E");
+}
+.closebtn {
 	display: inline-block;
 	text-indent: 0;
 	padding: 2px 4px;
@@ -1402,8 +1415,8 @@ a.btn-disabled, a.btn-disabled:hover {
 .disabled-color {
 	color: rgba(102, 102, 102, 0.5);
 }
-.btn-link, .btn-qlink, .btn-xlink,
-.btn-link:hover, .btn-qlink:hover, .btn-xlink:hover {
+.btn-link, .btn-qlink, .btn-qolink, .btn-xlink,
+.btn-link:hover, .btn-qlink:hover, .btn-qolink:hover, .btn-xlink:hover {
 	padding: 0;
 	border: 0 none;
 	background: initial;
