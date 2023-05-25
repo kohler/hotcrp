@@ -301,16 +301,24 @@ function seq_to_cdf(seq, flip, raw) {
 }
 
 
-function expand_extent(e, is_y) {
-    if (e[0] > 0 && e[0] < e[1] / 11)
-        e[0] = 0;
-    if (e[1] - e[0] < 10) {
-        var delta = Math.min(1, e[1] - e[0]) * 0.2;
-        if (!is_y || e[0])
-            e[0] -= delta;
-        e[1] += delta;
+function expand_extent(e, args) {
+    var l = e[0], h = e[1], delta;
+    if (l > 0 && l < h / 11) {
+        l = 0;
+    } else if (l > 0 && args.discrete) {
+        l -= 0.5;
     }
-    return e;
+    if (h - l < 10) {
+        delta = Math.min(1, h - l) * 0.2;
+        if (args.orientation !== "y" || l > 0) {
+            l -= delta;
+        }
+        h += delta;
+    }
+    if (args.discrete) {
+        h += 0.5;
+    }
+    return [l, h];
 }
 
 
@@ -334,6 +342,14 @@ function make_axes(svg, xAxis, yAxis, args) {
         .call(axisLabelStyles)
         .text(args.x.label || "");
 
+    args.x.discrete && svg.select(".x.axis .domain").each(function () {
+        var d = this.getAttribute("d");
+        this.setAttribute("d", d.replace(/^M([^A-Z]*),([^A-Z]*)V0H([^A-Z]*)V([^A-Z]*)$/,
+            function (m, x1, y1, x2, y2) {
+                return y1 === y2 ? "M".concat(x1, ",0H", x2) : m;
+            }));
+    });
+
     svg.append("g")
         .attr("class", "y axis")
         .call(yAxis)
@@ -346,6 +362,14 @@ function make_axes(svg, xAxis, yAxis, args) {
         .attr("y", 6).attr("dy", ".71em")
         .call(axisLabelStyles)
         .text(args.y.label || "");
+
+    args.y.discrete && svg.select(".y.axis .domain").each(function () {
+        var d = this.getAttribute("d");
+        this.setAttribute("d", d.replace(/^M([^A-Z]*),([^A-Z]*)H0V([^A-Z]*)H([^A-Z]*)$/,
+            function (m, x1, y1, y2, x2) {
+                return x1 === x2 ? "M0,".concat(y1, "V", y2) : m;
+            }));
+    });
 
     args.x.ticks.rewrite.call(svg.select(".x.axis"), svg);
     args.y.ticks.rewrite.call(svg.select(".y.axis"), svg);
@@ -917,8 +941,8 @@ function graph_scatter(selector, args) {
         ye = d3.extent(data, proj1),
         x = d3.scaleLinear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
         y = d3.scaleLinear().range(args.y.flip ? [0, args.height] : [args.height, 0]);
-    axis_domain(x, args.x.extent, expand_extent(xe));
-    axis_domain(y, args.y.extent, expand_extent(ye, true));
+    axis_domain(x, args.x.extent, expand_extent(xe, args.x));
+    axis_domain(y, args.y.extent, expand_extent(ye, args.y));
 
     var xAxis = d3.axisBottom(x);
     args.x.ticks.prepare.call(xAxis, xe, x.range());
@@ -1076,7 +1100,7 @@ function graph_bars(selector, args) {
         }),
         x = d3.scaleLinear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
         y = d3.scaleLinear().range(args.y.flip ? [0, args.height] : [args.height, 0]);
-    axis_domain(x, args.x.extent, expand_extent(xe));
+    axis_domain(x, args.x.extent, expand_extent(xe, args.x));
     axis_domain(y, args.y.extent, ye);
 
     var dpr = window.devicePixelRatio || 1;
@@ -1224,8 +1248,8 @@ function graph_boxplot(selector, args) {
         }),
         x = d3.scaleLinear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
         y = d3.scaleLinear().range(args.y.flip ? [0, args.height] : [args.height, 0]);
-    axis_domain(x, args.x.extent, expand_extent(xe));
-    axis_domain(y, args.y.extent, expand_extent(ye, true));
+    axis_domain(x, args.x.extent, expand_extent(xe, args.x));
+    axis_domain(y, args.y.extent, expand_extent(ye, args.y));
 
     var barwidth = args.width/80;
     if (deltae[0] != Infinity)
@@ -1659,9 +1683,11 @@ var graphers = {
     procrastination: {filter: true, function: procrastination_filter},
     scatter: {function: graph_scatter},
     cdf: {function: graph_cdf},
-    "cumulative-count": {function: graph_cdf},
+    "cumulative-count": {function: graph_cdf}, /* XXX backward compat */
+    cumulative_count: {function: graph_cdf},
     bar: {function: graph_bars},
-    "full-stack": {function: graph_bars},
+    "full-stack": {function: graph_bars}, /* XXX backward compat */
+    full_stack: {function: graph_bars},
     box: {function: graph_boxplot}
 };
 

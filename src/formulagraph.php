@@ -558,7 +558,7 @@ class FormulaGraph extends MessageSet {
 
     private function _scatter_data(PaperInfoSet $rowset) {
         if ($this->fx->result_format() === Fexpr::FREVIEWER
-            && ($this->type & self::BOXPLOT)) {
+            && ($this->type & self::BOXPLOT) !== 0) {
             $this->_prepare_reviewer_color($this->user);
         }
 
@@ -818,7 +818,7 @@ class FormulaGraph extends MessageSet {
         usort($this->reviewers, $this->conf->user_comparator());
         $m = [];
         foreach ($this->reviewers as $i => $c) {
-            $m[$c->contactId] = $i;
+            $m[$c->contactId] = $i + 1;
         }
         $this->_valuemap_rewrite($axes, $m);
     }
@@ -902,9 +902,9 @@ class FormulaGraph extends MessageSet {
                 return $this->user->can_view_paper($prow);
             });
 
-            if ($this->type & self::CDF) {
+            if (($this->type & self::CDF) !== 0) {
                 $this->_cdf_data($rowset);
-            } else if ($this->type & self::BARCHART) {
+            } else if (($this->type & self::BARCHART) !== 0) {
                 $this->_combine_data($rowset);
             } else {
                 $this->_scatter_data($rowset);
@@ -926,7 +926,7 @@ class FormulaGraph extends MessageSet {
     /** @param 'x'|'y' $axis */
     function axis_json($axis) {
         $isx = $axis === "x";
-        $j = [];
+        $j = ["orientation" => $axis];
 
         $counttype = $this->fx && $this->fx->indexed() ? "reviews" : "papers";
         if ($isx) {
@@ -936,7 +936,7 @@ class FormulaGraph extends MessageSet {
             $j["fraction"] = true;
         } else if ($this->type === self::BARCHART
                    && $this->fy->expression === "sum(1)") {
-            $j["label"] = "# $counttype";
+            $j["label"] = "# {$counttype}";
         } else if ($this->type === self::RAWCDF) {
             $j["label"] = "Cumulative count of {$counttype}";
             $j["raw"] = true;
@@ -995,7 +995,7 @@ class FormulaGraph extends MessageSet {
                         $rd["color_classes"] = $colors;
                     }
                     $rd["id"] = $r->contactId;
-                    $named_ticks[$i] = $rd;
+                    $named_ticks[$i + 1] = $rd;
                 }
             } else if ($format === Fexpr::FDECISION) {
                 $named_ticks = [];
@@ -1038,6 +1038,7 @@ class FormulaGraph extends MessageSet {
             $j["ticks"] = $ticks;
         } else if ($named_ticks !== null) {
             $j["ticks"] = ["named", $named_ticks];
+            $j["discrete"] = true;
         }
 
         if ($this->_axis_remapped & ($isx ? 1 : 2)) {
@@ -1048,9 +1049,12 @@ class FormulaGraph extends MessageSet {
 
     function type_json() {
         $tj = [
-            self::SCATTER => "scatter", self::CDF => "cdf",
-            self::RAWCDF => "cumulative-count", self::BARCHART => "bar",
-            self::FBARCHART => "full-stack", self::BOXPLOT => "box"
+            self::SCATTER => "scatter",
+            self::CDF => "cdf",
+            self::RAWCDF => "cumulative_count",
+            self::BARCHART => "bar",
+            self::FBARCHART => "full_stack",
+            self::BOXPLOT => "box"
         ];
         return $tj[$this->type] ?? null;
     }
