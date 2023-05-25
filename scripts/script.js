@@ -2199,8 +2199,8 @@ return function (content, bubopt) {
                 y = nearpos.top - sizes.bottom - bpos.height - sizes[1] - 1;
         }
 
-        bubdiv.style.left = roundpixel(x) + "px";
-        bubdiv.style.top = roundpixel(y) + "px";
+        bubdiv.style.left = roundpixel(x - window.scrollX) + "px";
+        bubdiv.style.top = roundpixel(y - window.scrollY) + "px";
         bubdiv.style.visibility = "visible";
     }
 

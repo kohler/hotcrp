@@ -3614,7 +3614,7 @@ a.badge-white:hover {
 
 /* bubbles */
 .bubble {
-	position: absolute;
+	position: fixed;
 	visibility: hidden;
 	left: 0;
 	top: 0;
