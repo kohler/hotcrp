@@ -502,6 +502,46 @@ class Unit_Tester {
         xassert_eqq($t, 1527681599);
     }
 
+    function test_tagger_checks() {
+        $tagger = new Tagger($this->conf->site_contact());
+        xassert_eqq($tagger->check("none", 0), false);
+        xassert_eqq($tagger->check("any", 0), false);
+        xassert_eqq($tagger->check("undefined", 0), false);
+        xassert_eqq($tagger->check("none", Tagger::ALLOWRESERVED), "none");
+        xassert_eqq($tagger->check("any", Tagger::ALLOWRESERVED), "any");
+        xassert_eqq($tagger->check("undefined", Tagger::ALLOWRESERVED), "undefined");
+        xassert_eqq($tagger->check("~none", 0), false);
+        xassert_eqq($tagger->check("~any", 0), false);
+        xassert_eqq($tagger->check("~undefined", 0), false);
+        xassert_eqq($tagger->check("~~none", 0), false);
+        xassert_eqq($tagger->check("~~any", 0), false);
+        xassert_eqq($tagger->check("~~undefined", 0), false);
+        xassert_eqq($tagger->check("hello", 0), "hello");
+        xassert_eqq($tagger->check("hello#0", 0), "hello#0");
+        xassert_eqq($tagger->check("~hello", 0), "~hello");
+        xassert_eqq($tagger->check("~hello#0", 0), "~hello#0");
+        xassert_eqq($tagger->check("~~hello", 0), "~~hello");
+        xassert_eqq($tagger->check("~~hello#0", 0), "~~hello#0");
+        xassert_eqq($tagger->check("hello", Tagger::NOVALUE), "hello");
+        xassert_eqq($tagger->check("hello#0", Tagger::NOVALUE), false);
+        xassert_eqq($tagger->check("~hello", Tagger::NOVALUE), "~hello");
+        xassert_eqq($tagger->check("~hello#0", Tagger::NOVALUE), false);
+        xassert_eqq($tagger->check("~~hello", Tagger::NOVALUE), "~~hello");
+        xassert_eqq($tagger->check("~~hello#0", Tagger::NOVALUE), false);
+        xassert_eqq($tagger->check("hello", Tagger::NOPRIVATE), "hello");
+        xassert_eqq($tagger->check("hello#0", Tagger::NOPRIVATE), "hello#0");
+        xassert_eqq($tagger->check("~hello", Tagger::NOPRIVATE), false);
+        xassert_eqq($tagger->check("~hello#0", Tagger::NOPRIVATE), false);
+        xassert_eqq($tagger->check("~~hello", Tagger::NOPRIVATE), "~~hello");
+        xassert_eqq($tagger->check("~~hello#0", Tagger::NOPRIVATE), "~~hello#0");
+        xassert_eqq($tagger->check("hello", Tagger::NOCHAIR), "hello");
+        xassert_eqq($tagger->check("hello#0", Tagger::NOCHAIR), "hello#0");
+        xassert_eqq($tagger->check("~hello", Tagger::NOCHAIR), "~hello");
+        xassert_eqq($tagger->check("~hello#0", Tagger::NOCHAIR), "~hello#0");
+        xassert_eqq($tagger->check("~~hello", Tagger::NOCHAIR), false);
+        xassert_eqq($tagger->check("~~hello#0", Tagger::NOCHAIR), false);
+    }
+
     function test_review_ordinals() {
         foreach ([1 => "A", 26 => "Z", 27 => "AA", 28 => "AB", 51 => "AY", 52 => "AZ",
                   53 => "BA", 54 => "BB", 702 => "ZZ", 703 => "AAA", 704 => "AAB",
