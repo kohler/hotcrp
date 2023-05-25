@@ -1442,7 +1442,8 @@ class PaperTable {
                 || !Conflict::is_conflicted($cu->conflictType)) {
                 continue;
             }
-            $pcconf[$cu->user->pc_index] = $this->user->reviewer_html_for($cu->user);
+            $h = $this->user->reviewer_html_for($cu->user);
+            $pcconf[$cu->user->pc_index] = "<span class=\"taghl\" title=\"{$cu->user->email}\">{$h}</span>";
         }
         if (empty($pcconf)) {
             $pcconf[] = 'None';
