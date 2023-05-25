@@ -12,11 +12,11 @@ Values meaningful within page stacking contexts, especially `#p-page`
 
 Generic values
 
-* `.bubble`: 8
 * `.modal.transparent`: 10
 * `.header-actas`, `.dropmenu-container`: 12 (must be > `.modal.transparent`)
 * `.modal`: 14
 * `.modal-dialog`: 16 (must be > `.modal`)
+* `.bubble`: 20
 
 * `#header-page.header-page-submission`: 1
 * `.home-sidebar`: 1

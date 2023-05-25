@@ -1992,7 +1992,13 @@ return function (content, bubopt) {
     var nearpos = null, dirspec = bubopt.anchor, dir = null,
         color = bubopt.color ? " " + bubopt.color : "";
 
-    var bubdiv = $('<div class="bubble'.concat(color, '" style="margin:0"><div class="bubtail bubtail0', color, '" style="width:0;height:0"></div><div class="bubcontent"></div><div class="bubtail bubtail1', color, '" style="width:0;height:0"></div></div>'))[0];
+    var bubdiv = classe("div", "bubble" + color,
+        classe("div", "bubtail bubtail0" + color),
+        classe("div", "bubcontent"),
+        classe("div", "bubtail bubtail1" + color));
+    bubdiv.setAttribute("style", "margin:0");
+    bubdiv.firstChild.setAttribute("style", "width:0;height:0");
+    bubdiv.lastChild.setAttribute("style", "width:0;height:0");
     document.body.appendChild(bubdiv);
     if (bubopt["pointer-events"])
         $(bubdiv).css({"pointer-events": bubopt["pointer-events"]});
@@ -2623,6 +2629,8 @@ function popup_skeleton(options) {
             if (e && document.activeElement !== e) {
                 prior_focus = e;
             }
+            tooltip.erase();
+            // XXX also close down suggestions
         }
         return $d;
     };
