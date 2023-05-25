@@ -2739,7 +2739,7 @@ handle_ui.on("js-mark-submit", function () {
 // initialization
 (function ($) {
 var dl, dlname, dltime, redisplay_timeout,
-    reload_outstanding = 0, reload_nerrors = 0;
+    reload_outstanding = 0, reload_nerrors = 0, reload_count = 0;
 
 // deadline display
 function checkdl(now, endtime, ingrace) {
@@ -3299,12 +3299,12 @@ if (wstorage()) {
 
 function trevent_store(x, prev_eventid, cancel) {
     var tre = trevent(), now = now_sec();
-    if (tre.expiry <= now)
-        tre = {eventid: 0};
-    if (tre.eventid > x.eventid && tre.eventid !== prev_eventid)
-        return false;
-    if (tre.eventid === x.eventid && tre.long
-        && (tre.uuid !== my_uuid || (!x.long && !cancel)))
+    if ((tre.eventid > x.eventid
+         && tre.expiry > now
+         && tre.eventid !== prev_eventid)
+        || (tre.eventid === x.eventid
+            && tre.long
+            && (tre.uuid !== my_uuid || (!x.long && !cancel))))
         return false;
     if (!cancel || tre.uuid === my_uuid) {
         x.uuid = my_uuid;
@@ -3315,10 +3315,11 @@ function trevent_store(x, prev_eventid, cancel) {
     return true;
 }
 
-function trevent_wstorage() {
+function trevent_initialize_wstorage() {
     my_uuid = (window.crypto && window.crypto.randomUUID && window.crypto.randomUUID())
         || now_sec().toString().concat("/", Math.random(), "/", Math.random());
-    if (trevent().eventid > 0) {
+    var tre = trevent();
+    if (tre.eventid > 0 && tre.expiry > now_sec()) {
         trevent_react_soon();
     }
     $(window).on("storage", function (evt) {
@@ -3474,7 +3475,7 @@ function load(dlx, prev_eventid, is_initial) {
     dl.myperm = dl.perm[siteinfo.paperid] || {};
     dl.rev = dl.rev || {};
     if (is_initial && wstorage())
-        trevent_wstorage();
+        trevent_initialize_wstorage();
     if (dl.tracker_recent)
         tracker_status();
     display_main(is_initial);
@@ -3516,6 +3517,7 @@ function streload(trackparam, trackdata) {
     if (!trackparam && reload_outstanding > 0)
         return;
     ++reload_outstanding;
+    ++reload_count;
     var prev_eventid = trevent().eventid;
     function success(data) {
         --reload_outstanding;
