@@ -103,7 +103,7 @@ class Sround_SettingParser extends SettingParser {
             Ht::button(Icons::ui_use("trash"), ["id" => "submission/{$ctr}/deleter", "class" => "ui js-settings-submission-round-delete ml-2 need-tooltip", "aria-label" => "Delete review round", "tabindex" => -1]);
         /*if ($id > 0 && ($round_map[$id - 1] ?? 0) > 0) {
             echo '<span class="ml-3 d-inline-block">',
-                '<a href="', $sv->conf->hoturl("search", ["q" => "re:" . ($id > 1 ? $sv->conf->round_name($id - 1) : "unnamed")]), '" target="_blank">',
+                '<a href="', $sv->conf->hoturl("search", ["q" => "re:" . ($id > 1 ? $sv->conf->round_name($id - 1) : "unnamed")]), '" target="_blank" rel="noopener">',
                 plural($round_map[$id - 1], "review"), '</a></span>';
         }*/
         echo '</legend>';

@@ -202,7 +202,7 @@ class Conflict_Assigner extends Assigner {
                 $state->msg_near($item->landmark, "<5>" . $potconf->render_ul_item(null, null, $msglist), MessageSet::INFORM);
             }
             if ($state->potential_conflict_warnings < 1) {
-                $state->msg_near($item->landmark, "<5>You may want to <a href=\"" . $state->conf->hoturl("conflictassign") . "\" target=\"_blank\">confirm potential conflicts</a> before proceeding further.", MessageSet::INFORM);
+                $state->msg_near($item->landmark, "<5>You may want to <a href=\"" . $state->conf->hoturl("conflictassign") . "\" target=\"_blank\" rel=\"noopener\">confirm potential conflicts</a> before proceeding further.", MessageSet::INFORM);
                 ++$state->potential_conflict_warnings;
             }
         }

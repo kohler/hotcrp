@@ -465,7 +465,7 @@ function make_reviewer_clicker(email) {
 
 function clicker_go(url, event) {
     if (event && event.metaKey)
-        window.open(url, "_blank");
+        window.open(url, "_blank", "noopener");
     else
         window.location = url;
 }

@@ -338,7 +338,7 @@ handle_ui.on("js-settings-automatic-tag-new", function () {
 handle_ui.on("js-settings-automatic-tag-delete", function () {
     var ne = this.form.elements[this.closest(".settings-automatic-tag").id + "/tag"];
     settings_delete(this.closest(".settings-automatic-tag"),
-        "This automatic tag will be removed from settings and from <a href=\"".concat(hoturl_html("search", {q: "#" + ne.defaultValue, t: "all"}), '" target="_blank">any matching submissions</a>.'));
+        "This automatic tag will be removed from settings and from <a href=\"".concat(hoturl_html("search", {q: "#" + ne.defaultValue, t: "all"}), '" target="_blank" rel="noopener">any matching submissions</a>.'));
     form_highlight(this.form);
 });
 
@@ -431,7 +431,7 @@ handle_ui.on("js-settings-review-round-delete", function () {
     if (!n) {
         settings_delete(div, "This review round will be deleted.");
     } else {
-        settings_delete(div, "This review round will be deleted and <a href=\"".concat(hoturl_html("search", {q: "re:\"" + (ne ? ne.defaultValue : "<invalid>") + "\""}), '" target="_blank">', plural(n, "review"), '</a> assigned to another round.'));
+        settings_delete(div, "This review round will be deleted and <a href=\"".concat(hoturl_html("search", {q: "re:\"" + (ne ? ne.defaultValue : "<invalid>") + "\""}), '" target="_blank" rel="noopener">', plural(n, "review"), '</a> assigned to another round.'));
     }
     form_highlight(this.form);
     settings_review_round_selectors(this.form);
@@ -457,7 +457,7 @@ handle_ui.on("js-settings-submission-round-delete", function () {
         var search = {q: "sclass:" + ne.defaultValue, t: "all", forceShow: 1};
         $.get(hoturl("api/search", search), null, function (v) {
             if (v && v.ok && v.ids && v.ids.length)
-                $$(div.id + '/delete_message').innerHTML = 'This submission class will be removed. The <a href="'.concat(hoturl_html("search", {q: "sclass:" + ne.defaultValue, t: "all"}), '" target="_blank">', plural(v.ids.length, "submission"), '</a> associated with this class will remain in the system, and will still have the #', escape_html(ne.defaultValue), ' tag, but will be reassigned to other submission classes.');
+                $$(div.id + '/delete_message').innerHTML = 'This submission class will be removed. The <a href="'.concat(hoturl_html("search", {q: "sclass:" + ne.defaultValue, t: "all"}), '" target="_blank" rel="noopener">', plural(v.ids.length, "submission"), '</a> associated with this class will remain in the system, and will still have the #', escape_html(ne.defaultValue), ' tag, but will be reassigned to other submission classes.');
         });
     }
     form_highlight(this.form);
@@ -577,7 +577,7 @@ function rf_delete(evt) {
             $.get(hoturl("api/search", search), null, function (v) {
                 var t;
                 if (v && v.ok && v.ids && v.ids.length)
-                    t = 'This field will be deleted from the review form and from reviews on <a href="'.concat(hoturl_html("search", search), '" target="_blank">', plural(v.ids.length, "submission"), "</a>.");
+                    t = 'This field will be deleted from the review form and from reviews on <a href="'.concat(hoturl_html("search", search), '" target="_blank" rel="noopener">', plural(v.ids.length, "submission"), "</a>.");
                 else if (v && v.ok)
                     t = "This field will be deleted from the review form. No reviews have used the field.";
                 else
@@ -924,7 +924,7 @@ handle_ui.on("js-settings-decision-delete", function () {
         ne = this.form.elements[dec.id + "/name"],
         sc = ne.getAttribute("data-exists-count")|0;
     if (settings_delete(dec, "This decision will be removed"
-            + (sc ? ' and <a href="'.concat(hoturl_html("search", {q: "dec:\"" + ne.defaultValue + "\""}), '" target="_blank">', plural(sc, "submission"), '</a> set to undecided.') : '.'))) {
+            + (sc ? ' and <a href="'.concat(hoturl_html("search", {q: "dec:\"" + ne.defaultValue + "\""}), '" target="_blank" rel="noopener">', plural(sc, "submission"), '</a> set to undecided.') : '.'))) {
         addClass(this.closest("div"), "hidden");
     }
     form_highlight(this.form);

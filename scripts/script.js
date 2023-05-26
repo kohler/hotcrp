@@ -2841,14 +2841,16 @@ var ever_tracker_display = false, last_tracker_html,
 
 function tracker_find(trackerid) {
     if (dl.tracker && dl.tracker.ts) {
-        for (var i = 0; i !== dl.tracker.ts.length; ++i)
+        for (var i = 0; i !== dl.tracker.ts.length; ++i) {
             if (dl.tracker.ts[i].trackerid === trackerid)
                 return dl.tracker.ts[i];
+        }
         return null;
-    } else if (dl.tracker && dl.tracker.trackerid === trackerid)
+    } else if (dl.tracker && dl.tracker.trackerid === trackerid) {
         return dl.tracker;
-    else
+    } else {
         return null;
+    }
 }
 
 function tracker_status() {
@@ -2977,8 +2979,9 @@ function display_tracker() {
     }
 
     // tracker display management
-    if (!dl.tracker)
+    if (!dl.tracker) {
         wstorage.site(true, "hotcrp-tracking", null);
+    }
     if (!dl.tracker
         || (dl.tracker.ts && dl.tracker.ts.length === 0)
         || hasClass(document.body, "hide-tracker")) {
@@ -3237,7 +3240,7 @@ handle_ui.on("js-tracker", function (evt) {
         hc.push('<button type="submit" name="save" class="btn-primary">Save changes</button><button type="button" name="cancel">Cancel</button>');
         if (nshown) {
             hc.push('<button type="button" name="stopall" class="btn-danger float-left">Stop all</button>');
-            hc.push('<a class="btn float-left" target="_blank" href="' + hoturl("buzzer") + '">Tracker status page</a>');
+            hc.push('<a class="btn float-left" target="_blank" rel="noopener" href="' + hoturl("buzzer") + '">Tracker status page</a>');
         }
         $d = hc.show();
         show_elapsed();
@@ -4086,7 +4089,7 @@ handle_ui.on("click.dropmenu", function (evt) {
     if (es[0].tagName === "A"
         && es[0].href
         && !event_key.is_default_a(evt)) {
-        window.open(es[0].href, "_blank");
+        window.open(es[0].href, "_blank", "noopener");
     } else {
         es[0].click();
         evt.preventDefault();
@@ -7884,7 +7887,7 @@ function row_click(evt) {
         if (event_key.is_default_a(evt)) {
             window.location = href;
         } else {
-            window.open(href, "_blank");
+            window.open(href, "_blank", "noopener");
             window.focus();
         }
     }
@@ -11109,7 +11112,7 @@ handle_ui.on("js-edit-formulas", function () {
     function create(formulas) {
         var hc = popup_skeleton({className: "modal-dialog-w40"}), i;
         hc.push('<h2>Named formulas</h2>');
-        hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank">Formulas</a>, such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”.</p>');
+        hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank" rel="noopener">Formulas</a>, such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”.</p>');
         hc.push('<div class="editformulas">', '</div>');
         for (i in formulas || [])
             push1(hc, formulas[i]);

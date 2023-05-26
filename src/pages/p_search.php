@@ -131,7 +131,7 @@ class Search_Page {
             $this->set_header(30, "<strong>Scores:</strong>");
             $sortitem = '<div class="mt-2">Sort by: &nbsp;'
                 . Ht::select("scoresort", ScoreInfo::score_sort_selector_options(), $pl->score_sort(), ["id" => "scoresort"])
-                . '<a class="help" href="' . $this->conf->hoturl("help", "t=scoresort") . '" target="_blank" title="Learn more">?</a></div>';
+                . '<a class="help" href="' . $this->conf->hoturl("help", "t=scoresort") . '" target="_blank" rel="noopener" title="Learn more">?</a></div>';
             $this->item(30, $sortitem);
         }
 
