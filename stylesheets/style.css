@@ -4494,6 +4494,14 @@ body {
 	color: #e33355;
 	animation: 3s 0s infinite normal trackernomatchlogo;
 }
+.tracker-adminonly .tracker-logo::after {
+	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 64 32 C 64 49.673 49.673 64 32 64 C 14.327 64 0 49.673 0 32 C 0 14.327 14.327 0 32 0 C 49.673 0 64 14.327 64 32 Z M 32 4 C 16.536 4 4 16.536 4 32 C 4 39.012 6.578 45.422 10.837 50.335 L 50.335 10.837 C 45.422 6.578 39.012 4 32 4 Z M 32 60 C 47.464 60 60 47.464 60 32 C 60 24.988 57.422 18.578 53.163 13.665 L 13.665 53.163 C 18.578 57.422 24.988 60 32 60 Z' style='fill:currentColor' /%3E%3C/svg%3E");
+	position: absolute;
+	right: 0;
+	top: 0;
+	width: 0.25em;
+	height: 0.25em;
+}
 .tracker-nomatch .tracker-row:first-child {
 	color: #b31028;
 }

@@ -2925,9 +2925,16 @@ function tracker_html(tr) {
     var t;
     if (wstorage.site(true, "hotcrp-tracking-hide-" + tr.trackerid))
         return "";
-    t = '<div class="has-tracker tracker-holder tracker-'
-        + (tr.papers && tr.papers[tr.paper_offset].pid == siteinfo.paperid ? "match" : "nomatch")
-        + (tr.tracker_here ? " tracker-active" : "");
+    t = '<div class="has-tracker tracker-holder';
+    if (tr.papers && tr.papers[tr.paper_offset].pid == siteinfo.paperid)
+        t += ' tracker-match';
+    else
+        t += ' tracker-nomatch';
+    if (tr.tracker_here)
+        t += ' tracker-active';
+    if (tr.visibility === "+none"
+        || tr.global_visibility === "+none")
+        t += ' tracker-adminonly';
     if (tr.listinfo || tr.listid)
         t += ' has-hotlist" data-hotlist="' + escape_html(tr.listinfo || tr.listid);
     t += '" data-trackerid="' + tr.trackerid + '">';
