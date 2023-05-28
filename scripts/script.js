@@ -1820,10 +1820,10 @@ function focus_within(elt, subfocus_selector, always) {
 
 // rangeclick
 handle_ui.on("js-range-click", function (evt) {
-    var $f = $(this.form),
-        rangeclick_state = $f[0].jsRangeClick || {},
+    var f = this.form,
+        rangeclick_state = f.jsRangeClick || {},
         kind = this.getAttribute("data-range-type") || this.name;
-    $f[0].jsRangeClick = rangeclick_state;
+    f.jsRangeClick = rangeclick_state;
 
     var key = false;
     if (evt.type === "keydown" && !event_modkey(evt))
@@ -1834,13 +1834,13 @@ handle_ui.on("js-range-click", function (evt) {
         return;
 
     // find checkboxes and groups of this type
-    var cbs = [], cbgs = [];
-    $f.find("input.js-range-click").each(function () {
+    var cbs = [], cbisg = [], cbgs = [], x;
+    $(f).find("input.js-range-click").each(function () {
         var tkind = this.getAttribute("data-range-type") || this.name;
         if (kind === tkind) {
             cbs.push(this);
-            if (hasClass(this, "is-range-group"))
-                cbgs.push(this);
+            cbisg.push((x = hasClass(this, "is-range-group")));
+            x && cbgs.push(this);
         }
     });
 
@@ -1863,8 +1863,15 @@ handle_ui.on("js-range-click", function (evt) {
         return;
     }
 
+    function range_group_match(e, g) {
+        var eg;
+        return !g
+            || (eg = e.getAttribute("data-range-group")) === g
+            || (eg && eg.length > g.length && eg.split(" ").includes(g));
+    }
+
     // handle click
-    var group = false, single_group = false, j;
+    var group = false, single_clicked = false, j;
     if (evt.type === "click") {
         rangeclick_state.__clicking__ = true;
 
@@ -1885,16 +1892,15 @@ handle_ui.on("js-range-click", function (evt) {
             } else {
                 i = 1;
                 j = 0;
-                single_group = this.getAttribute("data-range-group");
+                single_clicked = this;
             }
         }
 
-        while (i <= j) {
-            if (cbs[i].checked !== this.checked
-                && !hasClass(cbs[i], "is-range-group")
-                && (!group || cbs[i].getAttribute("data-range-group") === group))
+        for (; i <= j; ++i) {
+            if (!cbisg[i]
+                && cbs[i].checked !== this.checked
+                && range_group_match(cbs[i], group))
                 $(cbs[i]).trigger("click");
-            ++i;
         }
 
         delete rangeclick_state.__clicking__;
@@ -1905,13 +1911,12 @@ handle_ui.on("js-range-click", function (evt) {
     // update groups
     for (j = 0; j !== cbgs.length; ++j) {
         group = cbgs[j].getAttribute("data-range-group");
-        if (single_group && group !== single_group)
+        if (single_clicked && !range_group_match(single_clicked, group))
             continue;
 
         var state = null;
         for (i = 0; i !== cbs.length; ++i) {
-            if (cbs[i].getAttribute("data-range-group") === group
-                && !hasClass(cbs[i], "is-range-group")) {
+            if (!cbisg[i] && range_group_match(cbs[i], group)) {
                 if (state === null)
                     state = cbs[i].checked;
                 else if (state !== cbs[i].checked) {

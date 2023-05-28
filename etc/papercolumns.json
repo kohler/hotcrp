@@ -5,11 +5,6 @@
         "order": 10
     },
     {
-        "name": "selon", "deprecated": true,
-        "className": "pl_sel", "function": "+Selector_PaperColumn",
-        "order": 10
-    },
-    {
         "name": "id", "title": "ID",
         "sort": true, "completion": true,
         "function": "+Id_PaperColumn",

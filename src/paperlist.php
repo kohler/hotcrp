@@ -19,35 +19,50 @@ class PaperListTableRender {
     public $error;
 
     /** @var int */
-    public $ncol;
-    /** @var int */
-    public $titlecol;
+    public $ncol = 0;
     /** @var int */
     public $split_ncol = 0;
+
+    /** @var int */
+    public $titlecol = -1;
+    /** @var int */
+    public $selector_col = -1;
+    /** @var int */
+    public $skipcallout = 0;
 
     /** @var int */
     public $colorindex = 0;
     /** @var bool */
     public $hascolors = false;
-    /** @var int */
-    public $skipcallout;
     /** @var string */
     public $last_trclass = "";
     /** @var list<int> */
     public $groupstart = [0];
 
-    /** @param int $ncol
-     * @param int $titlecol
-     * @param int $skipcallout */
-    function __construct($ncol, $titlecol, $skipcallout) {
-        $this->ncol = $ncol;
-        $this->titlecol = $titlecol;
-        $this->skipcallout = $skipcallout;
+    /** @param list<PaperColumn> $vcolumns */
+    function __construct($vcolumns) {
+        $incallout = true;
+        foreach ($vcolumns as $fdef) {
+            if (!$fdef->has_content || $fdef->as_row) {
+                continue;
+            }
+            if ($fdef->name === "title") {
+                $this->titlecol = $this->ncol;
+            } else if ($fdef->name === "sel") {
+                $this->selector_col = $this->ncol;
+            }
+            ++$this->ncol;
+            if ($fdef->order === null || $fdef->order >= 100) {
+                $incallout = false;
+            } else if ($incallout) {
+                ++$this->skipcallout;
+            }
+        }
     }
     /** @param string $error
      * @return PaperListTableRender */
     static function make_error($error) {
-        $tr = new PaperListTableRender(0, 0, 0);
+        $tr = new PaperListTableRender([]);
         $tr->error = $error;
         return $tr;
     }
@@ -55,27 +70,41 @@ class PaperListTableRender {
     function tbody_start() {
         return "  <tbody class=\"{$this->tbody_class}\">\n";
     }
-    /** @param string $heading
+    /** @param int $groupno
+     * @param string $heading
      * @param array<string,mixed> $attr
      * @return string */
-    function heading_row($heading, $attr = []) {
+    function heading_row($groupno, $heading, $attr) {
         if (!$heading) {
             return "  <tr class=\"plheading\"><td class=\"plheading-blank\" colspan=\"{$this->ncol}\"></td></tr>\n";
-        } else {
-            $x = "  <tr class=\"plheading\"";
-            foreach ($attr as $k => $v) {
-                if ($k !== "no_titlecol" && $k !== "tdclass")
-                    $x .= " $k=\"" . htmlspecialchars($v) . "\"";
-            }
-            $x .= ">";
-            $titlecol = ($attr["no_titlecol"] ?? false) ? 0 : $this->titlecol;
-            if ($titlecol) {
-                $x .= "<td class=\"plheading-spacer\" colspan=\"{$titlecol}\"></td>";
-            }
-            $tdclass = $attr["tdclass"] ?? null;
-            $x .= "<td class=\"plheading" . ($tdclass ? " $tdclass" : "") . "\" colspan=\"" . ($this->ncol - $titlecol) . "\">";
-            return $x . $heading . "</td></tr>\n";
         }
+        $x = "  <tr class=\"plheading\"";
+        foreach ($attr as $k => $v) {
+            if ($k !== "no_titlecol" && $k !== "tdclass")
+                $x .= " {$k}=\"" . htmlspecialchars($v) . "\"";
+        }
+        $x .= ">";
+        $tdclass = Ht::add_tokens("plheading", $attr["tdclass"] ?? null);
+        $colpos = 0;
+        if (!($attr["no_titlecol"] ?? false)) {
+            if ($this->selector_col >= 0
+                && ($this->titlecol < 0 || $this->titlecol > $this->selector_col)) {
+                if ($this->selector_col > 0) {
+                    $x .= "<td class=\"plheading-spacer\" colspan=\"{$this->selector_col}\"></td>";
+                }
+                $x .= "<td class=\"pl plheading pl_sel\">" . Selector_PaperColumn::group_content($groupno) . "</td>";
+                $colpos = $this->selector_col + 1;
+            }
+            if ($this->titlecol >= 0) {
+                if ($colpos < $this->titlecol) {
+                    $n = $this->titlecol - $colpos;
+                    $x .= "<td class=\"plheading-spacer\" colspan=\"{$n}\"></td>";
+                }
+                $colpos = $this->titlecol;
+            }
+        }
+        $n = $this->ncol - $colpos;
+        return "{$x}<td class=\"{$tdclass}\" colspan=\"{$n}\">{$heading}</td></tr>\n";
     }
     /** @return string */
     function heading_separator_row() {
@@ -1536,7 +1565,7 @@ class PaperList {
             }
             $ginfo = $this->_groups[$grouppos];
             if ($ginfo->is_empty()) {
-                $body[] = $rstate->heading_row(null);
+                $body[] = $rstate->heading_row($grouppos, "", []);
             } else {
                 $attr = [];
                 if ($ginfo->tag) {
@@ -1560,7 +1589,7 @@ class PaperList {
                     . ($ginfo->heading !== "" ? " " : "")
                     . "</span><span class=\"plheading-count\">"
                     . plural($ginfo->count, "paper") . "</span>";
-                $body[] = $rstate->heading_row($x, $attr);
+                $body[] = $rstate->heading_row($grouppos, $x, $attr);
                 $rstate->colorindex = 0;
             }
         }
@@ -1661,7 +1690,7 @@ class PaperList {
         $tbody_class = "pltable" . ($rstate->hascolors ? " pltable-colored" : "");
         for ($i = 1; $i < count($rstate->groupstart); ++$i) {
             $nbody[] = '<td class="plsplit_col top" width="' . (100 / $rstate->split_ncol) . '%"><div class="plsplit_col"><table width="100%">';
-            $nbody[] = $colhead . "  <tbody class=\"$tbody_class\">\n";
+            $nbody[] = $colhead . "  <tbody class=\"{$tbody_class}\">\n";
             $number = 1;
             for ($j = $rstate->groupstart[$i - 1]; $j < $rstate->groupstart[$i]; ++$j) {
                 $x = $body[$j];
@@ -1695,10 +1724,10 @@ class PaperList {
      * @return string */
     private function _statistics_rows($rstate) {
         $t = '  <tr class="pl_statheadrow fx8">';
-        if ($rstate->titlecol) {
+        if ($rstate->titlecol > 0) {
             $t .= "<td colspan=\"{$rstate->titlecol}\" class=\"plstat\"></td>";
         }
-        $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\" class=\"plstat\">" . foldupbutton(7, "Statistics") . "</td></tr>\n";
+        $t .= "<td colspan=\"" . ($rstate->ncol - max($rstate->titlecol, 0)) . "\" class=\"plstat\">" . foldupbutton(7, "Statistics") . "</td></tr>\n";
         foreach (self::$stats as $stat) {
             $t .= '  <tr';
             if ($this->_row_id_pattern) {
@@ -1713,7 +1742,7 @@ class PaperList {
                 $class = "plstat " . $fdef->className;
                 if ($fdef->has_statistics()) {
                     $content = $fdef->statistic_html($this, $stat);
-                } else if ($col == $rstate->titlecol) {
+                } else if ($col === $rstate->titlecol) {
                     $content = ScoreInfo::$stat_names[$stat];
                     $class = "plstat pl_statheader";
                 } else {
@@ -1935,7 +1964,6 @@ class PaperList {
         }
 
         // analyze columns and folds
-        $ncol = $titlecol = 0;
         // folds: anonau:2, fullrow:3, aufull:4, force:5, rownum:6, statistics:7,
         // statistics-exist:8, [fields]
         $next_fold = 9;
@@ -1955,28 +1983,10 @@ class PaperList {
                 $fdef->fold = $next_fold;
                 ++$next_fold;
             }
-            if ($fdef->name == "title") {
-                $titlecol = $ncol;
-            }
-            if (!$fdef->as_row) {
-                ++$ncol;
-            }
-        }
-
-        // count non-callout columns
-        $skipcallout = 0;
-        foreach ($this->_vcolumns as $fdef) {
-            if (!$fdef->as_row && $fdef->has_content) {
-                if ($fdef->order === null || $fdef->order >= 100) {
-                    break;
-                } else {
-                    ++$skipcallout;
-                }
-            }
         }
 
         // create render state
-        $rstate = new PaperListTableRender($ncol, $titlecol, $skipcallout);
+        $rstate = new PaperListTableRender($this->_vcolumns);
 
         // prepare table attributes
         $this->table_attr["class"] = ["pltable has-fold"];
@@ -2067,10 +2077,10 @@ class PaperList {
             if (isset($this->table_attr["data-drag-tag"])
                 && $this->user->can_edit_tag_anno($this->_sort_etag)) {
                 $colhead .= "  <tr class=\"pl_headrow pl_annorow\" data-anno-tag=\"{$this->_sort_etag}\">";
-                if ($rstate->titlecol) {
-                    $colhead .= "<td class=\"plh\" colspan=\"$rstate->titlecol\"></td>";
+                if ($rstate->titlecol > 0) {
+                    $colhead .= "<td class=\"plh\" colspan=\"{$rstate->titlecol}\"></td>";
                 }
-                $colhead .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\"><a class=\"ui js-annotate-order\" data-anno-tag=\"{$this->_sort_etag}\" href=\"\">Annotate order</a></td></tr>\n";
+                $colhead .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - max($rstate->titlecol, 0)) . "\"><a class=\"ui js-annotate-order\" data-anno-tag=\"{$this->_sort_etag}\" href=\"\">Annotate order</a></td></tr>\n";
             }
 
             $colhead .= " </thead>\n";
@@ -2085,9 +2095,11 @@ class PaperList {
                 $v = $k === "class" ? join(" ", $v) : json_encode_browser($v);
             }
             if ($k === "data-columns" || $k === "data-groups") {
-                $enter .= " $k='" . str_replace("'", "&#039;", htmlspecialchars($v, ENT_NOQUOTES)) . "'";
+                $v = str_replace("'", "&apos;", htmlspecialchars($v, ENT_NOQUOTES | ENT_SUBSTITUTE | ENT_HTML5));
+                $enter .= " {$k}='{$v}'";
             } else {
-                $enter .= " $k=\"" . htmlspecialchars($v) . "\"";
+                $v = htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5);
+                $enter .= " {$k}=\"{$v}\"";
             }
         }
         $rstate->table_start = $enter . ">\n";
@@ -2119,7 +2131,7 @@ class PaperList {
         reset($this->_vcolumns);
         if (current($this->_vcolumns) instanceof Selector_PaperColumn
             && ($this->_table_decor & self::DECOR_FOOTER) !== 0) {
-            $tfoot .= $this->_footer($ncol);
+            $tfoot .= $this->_footer($rstate->ncol);
         }
         if ($tfoot) {
             $rstate->tfoot = ' <tfoot class="pltable' . ($rstate->hascolors ? " pltable-colored" : "") . '">' . $tfoot . "</tfoot>\n";

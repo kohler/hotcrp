@@ -2912,7 +2912,8 @@ div.plsplit_col { /* NOT td */
 
 td.plheading, td.plheading-spacer {
 	font-weight: bold;
-	padding: 0.5ex 0 0.2ex;
+	padding-top: 0.5ex;
+	padding-bottom: 0.2ex;
 	background: #f0f0f0;
 	border-top: 1px solid #cccccc;
 }
