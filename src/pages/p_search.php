@@ -302,8 +302,8 @@ class Search_Page {
         $this->pl->apply_view_session($qreq);
         $this->pl->apply_view_qreq($qreq);
         if (isset($qreq->q)) {
-            $this->pl->set_table_id_class("foldpl", "pltable-fullw remargin-left remargin-right", "p#");
-            $this->pl->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_FOOTER | PaperList::DECOR_STATISTICS | PaperList::DECOR_LIST);
+            $this->pl->set_table_id_class("foldpl", null, "p#");
+            $this->pl->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_FOOTER | PaperList::DECOR_STATISTICS | PaperList::DECOR_LIST | PaperList::DECOR_FULLWIDTH);
             $this->pl->set_table_fold_session("pldisplay.");
             if ($this->ssel->count()) {
                 $this->pl->set_selection($this->ssel);

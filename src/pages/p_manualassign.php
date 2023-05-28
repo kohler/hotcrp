@@ -202,8 +202,8 @@ class ManualAssign_Page {
             Ht::submit("update", "Save assignments", ["class" => "btn-primary big"]), '</div></div>';
         echo '</div>';
 
-        $pl->set_table_id_class("foldpl", "pltable-fullw remargin-left remargin-right");
-        $pl->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST);
+        $pl->set_table_id_class("foldpl", null);
+        $pl->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST | PaperList::DECOR_FULLWIDTH);
         echo '<div class="pltable-fullw-container demargin">';
         $pl->print_table_html();
         echo '</div>';

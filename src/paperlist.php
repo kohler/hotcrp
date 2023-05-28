@@ -3,10 +3,8 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class PaperListTableRender {
-    /** @var ?string */
-    public $table_start;
-    /** @var ?string */
-    public $thead;
+    /** @var string */
+    public $thead = "";
     /** @var ?string */
     public $tbody_class;
     /** @var list<string> */
@@ -14,14 +12,10 @@ class PaperListTableRender {
     /** @var ?string */
     public $tfoot;
     /** @var ?string */
-    public $table_end;
-    /** @var ?string */
     public $error;
 
     /** @var int */
     public $ncol = 0;
-    /** @var int */
-    public $split_ncol = 0;
 
     /** @var int */
     public $titlecol = -1;
@@ -66,9 +60,9 @@ class PaperListTableRender {
         $tr->error = $error;
         return $tr;
     }
-    /** @return string */
-    function tbody_start() {
-        return "  <tbody class=\"{$this->tbody_class}\">\n";
+    /** @return int */
+    function group_count() {
+        return count($this->groupstart) - 1;
     }
     /** @param int $groupno
      * @param string $heading
@@ -110,14 +104,41 @@ class PaperListTableRender {
     function heading_separator_row() {
         return "  <tr class=\"plheading\"><td class=\"plheading-separator\" colspan=\"{$this->ncol}\"></td></tr>\n";
     }
-    function print_tbody_rows() {
-        foreach ($this->rows as $r) {
-            echo $r;
+    /** @param array $attr */
+    static function print_attributes($attr) {
+        foreach ($attr as $k => $v) {
+            if (is_array($v) || is_object($v)) {
+                $v = $k === "class" ? join(" ", $v) : json_encode_browser($v);
+            }
+            if ($k === "data-columns" || $k === "data-groups") {
+                $v = str_replace("'", "&apos;", htmlspecialchars($v, ENT_NOQUOTES | ENT_SUBSTITUTE | ENT_HTML5));
+                echo " ", $k, "='", $v, "'";
+            } else {
+                echo " ", $k, "=\"", htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5), "\"";
+            }
         }
     }
+    /** @param array<string,mixed> $attr
+     * @param bool $unstash */
+    function print_table_start($attr, $unstash) {
+        echo '<table';
+        self::print_attributes($attr);
+        echo '>', $unstash ? Ht::unstash() : "", $this->thead, $this->tbody_start();
+    }
     /** @return string */
-    function tbody_end() {
-        return "  </tbody>\n";
+    function tbody_start() {
+        return "  <tbody class=\"{$this->tbody_class}\">\n";
+    }
+    /** @param int $gi
+     * @param int $gj */
+    function print_tbody_rows($gi, $gj) {
+        $j = $this->groupstart[$gj];
+        for ($i = $this->groupstart[$gi]; $i !== $j; ++$i) {
+            echo $this->rows[$i];
+        }
+    }
+    function print_table_end() {
+        echo "  </tbody>\n", $this->tfoot ?? "", "</table>";
     }
     /** @return bool */
     function is_empty() {
@@ -433,6 +454,12 @@ class PaperList {
     const DECOR_FOOTER = 4;
     const DECOR_STATISTICS = 8;
     const DECOR_LIST = 16;
+    const DECOR_FULLWIDTH = 32;
+    /** @return int */
+    function table_decor() {
+        return $this->_table_decor;
+    }
+
     /** @param int $decor
      * @return $this */
     function set_table_decor($decor) {
@@ -1677,41 +1704,6 @@ class PaperList {
         $this->table_attr["data-columns"] = $jscol;
     }
 
-    /** @param PaperListTableRender $rstate */
-    private function _column_split($rstate, $colhead, &$body) {
-        if (count($rstate->groupstart) <= 1) {
-            return false;
-        }
-        $rstate->groupstart[] = count($body);
-        $rstate->split_ncol = count($rstate->groupstart) - 1;
-
-        $rownum_marker = "<span class=\"pl_rownum fx6\">";
-        $nbody = ["<tr>"];
-        $tbody_class = "pltable" . ($rstate->hascolors ? " pltable-colored" : "");
-        for ($i = 1; $i < count($rstate->groupstart); ++$i) {
-            $nbody[] = '<td class="plsplit_col top" width="' . (100 / $rstate->split_ncol) . '%"><div class="plsplit_col"><table width="100%">';
-            $nbody[] = $colhead . "  <tbody class=\"{$tbody_class}\">\n";
-            $number = 1;
-            for ($j = $rstate->groupstart[$i - 1]; $j < $rstate->groupstart[$i]; ++$j) {
-                $x = $body[$j];
-                if (($pos = strpos($x, $rownum_marker)) !== false) {
-                    $pos += strlen($rownum_marker);
-                    $x = substr($x, 0, $pos) . preg_replace('/\A\d+/', (string) $number, substr($x, $pos));
-                    ++$number;
-                } else if (strpos($x, "<td class=\"plheading-blank") !== false) {
-                    $x = "";
-                }
-                $nbody[] = $x;
-            }
-            $nbody[] = "  </tbody>\n</table></div></td>\n";
-        }
-        $nbody[] = "</tr>";
-
-        $body = $nbody;
-        $rstate->last_trclass = "plsplit_col";
-        return true;
-    }
-
     private function _prepare() {
         $this->_has = [];
         $this->count = 0;
@@ -1748,11 +1740,10 @@ class PaperList {
                 } else {
                     $content = "";
                 }
-                $t .= '<td class="' . $class;
                 if ($fdef->fold) {
-                    $t .= " fx{$fdef->fold}";
+                    $class .= " fx{$fdef->fold}";
                 }
-                $t .= '">' . $content . '</td>';
+                $t .= "<td class=\"{$class}\">{$content}</td>";
                 ++$col;
             }
             $t .= "</tr>\n";
@@ -2006,12 +1997,16 @@ class PaperList {
         if ($this->_groups) {
             $this->table_attr["data-groups"] = json_encode_browser($this->_groups);
         }
-        if ($this->_sort_etag !== "") {
+        if ($this->_sort_etag !== ""
+            && !$this->_view_kanban) {
             $this->table_attr["data-order-tag"] = $this->_sort_etag;
         }
         if (($this->_table_decor & self::DECOR_LIST) !== 0) {
             $this->table_attr["class"][] = "has-hotlist";
             $this->table_attr["data-hotlist"] = $this->session_list_object()->info_string();
+        }
+        if (($this->_table_decor & self::DECOR_FULLWIDTH) !== 0) {
+            $this->table_attr["class"][] = "pltable-fullw remargin-left remargin-right";
         }
         if ($this->_sortable && ($url = $this->search->url_site_relative_raw())) {
             $url = $this->siteurl() . $url . (strpos($url, "?") ? "&" : "?") . "sort={sort}";
@@ -2039,6 +2034,11 @@ class PaperList {
         }
         if ($grouppos >= 0 && $grouppos < count($this->_groups)) {
             $this->_groups_for($grouppos, $rstate, $body, true);
+        }
+        assert(count($rstate->groupstart) === max(count($this->_groups), 1));
+        $rstate->groupstart[] = count($body);
+        if ($rstate->group_count() === 1) {
+            $this->_view_kanban = false;
         }
         if ($this->count === 0) {
             return PaperListTableRender::make_error("No matching papers");
@@ -2072,50 +2072,23 @@ class PaperList {
                 }
             }
 
-            $colhead = " <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">" . $ths . "</tr>\n";
+            $t = " <thead class=\"pltable-thead\">\n  <tr class=\"pl_headrow\">" . $ths . "</tr>\n";
 
             if (isset($this->table_attr["data-drag-tag"])
                 && $this->user->can_edit_tag_anno($this->_sort_etag)) {
-                $colhead .= "  <tr class=\"pl_headrow pl_annorow\" data-anno-tag=\"{$this->_sort_etag}\">";
+                $t .= "  <tr class=\"pl_headrow pl_annorow\" data-anno-tag=\"{$this->_sort_etag}\">";
                 if ($rstate->titlecol > 0) {
-                    $colhead .= "<td class=\"plh\" colspan=\"{$rstate->titlecol}\"></td>";
+                    $t .= "<td class=\"plh\" colspan=\"{$rstate->titlecol}\"></td>";
                 }
-                $colhead .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - max($rstate->titlecol, 0)) . "\"><a class=\"ui js-annotate-order\" data-anno-tag=\"{$this->_sort_etag}\" href=\"\">Annotate order</a></td></tr>\n";
+                $t .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - max($rstate->titlecol, 0)) . "\"><a class=\"ui js-annotate-order\" data-anno-tag=\"{$this->_sort_etag}\" href=\"\">Annotate order</a></td></tr>\n";
             }
 
-            $colhead .= " </thead>\n";
-        } else {
-            $colhead = "";
+            $rstate->thead = "{$t} </thead>\n";
         }
 
-        // table skeleton including fold classes
-        $enter = "<table";
-        foreach ($this->table_attr as $k => $v) {
-            if (is_array($v) || is_object($v)) {
-                $v = $k === "class" ? join(" ", $v) : json_encode_browser($v);
-            }
-            if ($k === "data-columns" || $k === "data-groups") {
-                $v = str_replace("'", "&apos;", htmlspecialchars($v, ENT_NOQUOTES | ENT_SUBSTITUTE | ENT_HTML5));
-                $enter .= " {$k}='{$v}'";
-            } else {
-                $v = htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5);
-                $enter .= " {$k}=\"{$v}\"";
-            }
-        }
-        $rstate->table_start = $enter . ">\n";
-        $rstate->table_end = "</table>";
-
-        // maybe make columns, maybe not
-        if ($this->_view_kanban
-            && !$this->rowset()->is_empty()
-            && $this->_column_split($rstate, $colhead, $body)) {
-            $rstate->table_start = '<div class="plsplit_col_ctr_ctr"><div class="plsplit_col_ctr">' . $rstate->table_start;
-            $rstate->table_end .= "</div></div>";
-            $ncol = $rstate->split_ncol;
-            $rstate->tbody_class = "pltable-split";
-        } else {
-            $rstate->thead = $colhead;
-            $rstate->tbody_class = "pltable" . ($rstate->hascolors ? " pltable-colored" : "");
+        $rstate->tbody_class = "pltable-tbody";
+        if ($rstate->hascolors) {
+            $rstate->tbody_class .= " pltable-colored";
         }
         if ($this->has_editable_tags) {
             $rstate->tbody_class .= " need-editable-tags";
@@ -2128,13 +2101,13 @@ class PaperList {
         }
 
         // footer
-        reset($this->_vcolumns);
-        if (current($this->_vcolumns) instanceof Selector_PaperColumn
-            && ($this->_table_decor & self::DECOR_FOOTER) !== 0) {
+        if ($this->_vcolumns[0] instanceof Selector_PaperColumn
+            && ($this->_table_decor & self::DECOR_FOOTER) !== 0
+            && !$this->_view_kanban) {
             $tfoot .= $this->_footer($rstate->ncol);
         }
         if ($tfoot) {
-            $rstate->tfoot = ' <tfoot class="pltable' . ($rstate->hascolors ? " pltable-colored" : "") . '">' . $tfoot . "</tfoot>\n";
+            $rstate->tfoot = ' <tfoot class="pltable-tfoot' . ($rstate->hascolors ? " pltable-colored" : "") . '">' . $tfoot . "</tfoot>\n";
         }
 
         $rstate->rows = $body;
@@ -2150,24 +2123,38 @@ class PaperList {
     }
 
     function print_table_html() {
-        $render = $this->table_render();
-        if (!$render->error) {
-            echo $render->table_start,
-                self::$include_stash ? Ht::unstash() : "",
-                $render->thead ?? "",
-                $render->tbody_start();
-            $render->print_tbody_rows();
-            echo $render->tbody_end(),
-                $render->tfoot ?? "",
-                "</table>";
-        } else {
-            if (strpos($this->_table_class, 'remargin') !== false) {
-                echo '<div class="msg in-demargin remargin-left remargin-right"><div class="mx-auto">',
-                    '<ul class="inline"><li>', $render->error, '</li></ul>',
-                    '</div></div>';
+        $rstate = $this->table_render();
+        if ($rstate->error) {
+            if (($this->_table_decor & self::DECOR_FULLWIDTH) !== 0) {
+                echo '<div class="msg in-demargin remargin-left remargin-right"><div class="mx-auto"><ul class="inline"><li>',
+                    $rstate->error,
+                    '</li></ul></div></div>';
             } else {
-                echo $render->error;
+                echo $rstate->error;
             }
+            return;
+        }
+        $kanban = $this->_view_kanban && $rstate->group_count() > 1;
+        if ($kanban) {
+            $this->table_attr["class"][] = "pltable-columns";
+            echo '<div';
+            PaperListTableRender::print_attributes($this->table_attr);
+            echo '>';
+            $attr = ["class" => "pltable-column"];
+        } else {
+            $attr = $this->table_attr;
+        }
+        $i = 0;
+        $n = $rstate->group_count();
+        while ($i !== $n) {
+            $j = $kanban ? $i + 1 : $n;
+            $rstate->print_table_start($attr, self::$include_stash);
+            $rstate->print_tbody_rows($i, $j);
+            $rstate->print_table_end();
+            $i = $j;
+        }
+        if ($kanban) {
+            echo '</div>';
         }
     }
 

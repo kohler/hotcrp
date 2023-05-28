@@ -82,7 +82,8 @@ class Tag_PaperColumn extends PaperColumn {
         }
         if ($this->editable
             && ($visible & PaperColumn::PREP_VISIBLE)
-            && $pl->table_id()) {
+            && $pl->table_id()
+            && !$pl->viewing("kanban")) {
             $pl->has_editable_tags = true;
             if (strcasecmp($this->etag, $pl->sort_etag()) === 0
                 && $this->is_value) {

@@ -8518,7 +8518,7 @@ function make_gapf() {
 function taganno_success(rv) {
     if (!rv.ok)
         return;
-    $("table.pltable").each(function () {
+    $(".pltable").each(function () {
         if (this.getAttribute("data-order-tag") !== rv.tag)
             return;
         var groups = [], cur = this.tBodies[0].firstChild, pos = 0, annoi = 0;
@@ -9489,8 +9489,8 @@ function ensure_field(f) {
 function make_callback(dofold, type) {
     var f = fields[type], values, tr;
     function render_some() {
-        var index = field_index(f), htmlk = f.name;
-        for (var n = 0; n < 64 && tr; tr = tr.nextSibling)
+        var index = field_index(f), htmlk = f.name, n = 0, table = tr.closest("table");
+        while (n < 64 && tr) {
             if (tr.nodeName === "TR"
                 && tr.hasAttribute("data-pid")
                 && hasClass(tr, "pl")) {
@@ -9507,9 +9507,13 @@ function make_callback(dofold, type) {
                 }
                 ++n;
             }
+            tr = tr.nextSibling;
+            while (!tr && (table = table.nextSibling)) {
+                tr = table.querySelector("tr.pl");
+            }
+        }
         hotcrp.render_list();
-        if (tr)
-            setTimeout(render_some, 8);
+        tr && setTimeout(render_some, 8);
     }
     function render_statistics(statvalues) {
         var tr = $(self).find("tfoot > tr.pl_statrow").first()[0],
@@ -9524,7 +9528,7 @@ function make_callback(dofold, type) {
     }
     function render_start() {
         ensure_field(f);
-        tr = $(self).find("tr.pl").first()[0];
+        tr = self.querySelector("tr.pl");
         render_some();
         if (values.stat && f.name in values.stat) {
             render_statistics(values.stat[f.name]);
@@ -9616,7 +9620,7 @@ function plinfo(type, dofold) {
 }
 
 function initialize() {
-    self = $("table.pltable")[0];
+    self = $(".pltable")[0];
     if (!self)
         return false;
     var fs = JSON.parse(self.getAttribute("data-columns"));
@@ -11267,7 +11271,7 @@ handle_ui.on("js-edit-namedsearches", function () {
 });
 
 handle_ui.on("js-select-all", function () {
-    $(this).closest("table.pltable").find("input.js-selector").prop("checked", true);
+    $(this).closest(".pltable").find("input.js-selector").prop("checked", true);
 });
 
 
@@ -11373,7 +11377,7 @@ handle_ui.on("js-submit-list", function (evt) {
     }
 
     // find selected
-    var table = (fnbutton && fnbutton.closest("table.pltable")) || form;
+    var table = (fnbutton && fnbutton.closest(".pltable")) || form;
     es = table.querySelectorAll("input.js-selector");
     var allval = [], chkval = [], isdefault;
     for (i = 0; i !== es.length; ++i) {

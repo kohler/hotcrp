@@ -2055,8 +2055,8 @@ class Assignment_PaperColumn extends PaperColumn {
         $search = new PaperSearch($pc->user, ["q" => $pc->search_query, "t" => "viewable", "reviewer" => $pc->reviewer]);
         $plist = new PaperList("reviewers", $search);
         $plist->add_column("autoassignment", $pc);
-        $plist->set_table_id_class("foldpl", "pltable-fullw remargin-left remargin-right");
-        $plist->set_table_decor(PaperList::DECOR_HEADER);
+        $plist->set_table_id_class("foldpl", null);
+        $plist->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_FULLWIDTH);
         echo '<div class="pltable-fullw-container demargin">';
         $plist->print_table_html();
         echo '</div>';

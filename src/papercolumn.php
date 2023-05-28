@@ -192,8 +192,10 @@ class Selector_PaperColumn extends PaperColumn {
     function header(PaperList $pl, $is_text) {
         if ($is_text) {
             return "Selected";
-        } else {
+        } else if (!$pl->viewing("kanban")) {
             return '<input type="checkbox" class="uic js-range-click is-range-group ignore-diff" data-range-type="pap[]" aria-label="Select all">';
+        } else {
+            return "";
         }
     }
     protected function checked(PaperList $pl, PaperInfo $row) {

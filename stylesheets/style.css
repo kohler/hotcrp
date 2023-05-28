@@ -2759,7 +2759,7 @@ span.pstat {
 }
 
 /* list footers */
-tfoot.pltable {
+.pltable-tfoot {
 	font-size: smaller;
 }
 tr.pl_statrow {
@@ -2786,11 +2786,6 @@ tr.pl_statheadrow > td.plstat {
 }
 
 /* other list tables */
-#plactr {
-	padding-top: 2px;
-	padding-left: 1em;
-	float: right;
-}
 .pl_name, .pl_email, .pl_affiliation, .pl_lastvisit, .pl_papers {
 	text-align: left;
 	padding-right: 1em;
@@ -2884,7 +2879,7 @@ div:hover > span.hoveronly, tr:hover > td > span.hoveronly {
 }
 
 /* paper list tables geometry */
-table.pltable {
+.pltable {
 	line-height: 1.25;
 	border-collapse: separate;
 	overflow-wrap: break-word;
@@ -2898,6 +2893,12 @@ table.pltable {
 	min-width: 100%;
 	min-width: 100vw;
 	position: relative;
+}
+.pltable-columns {
+	display: flex;
+	align-items: flex-start;
+	gap: 24px;
+	width: fit-content;
 }
 
 div.plsplit_col { /* NOT td */

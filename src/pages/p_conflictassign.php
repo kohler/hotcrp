@@ -63,26 +63,24 @@ class ConflictAssign_Page {
             $paperlist = new PaperList("conflictassign", $search, $args, $qreq);
             $paperlist->set_reviewer_user($pc);
             $paperlist->set_row_filter($filter);
-            $paperlist->set_table_id_class(null, "pltable-fullw remargin-left remargin-right");
-            $paperlist->set_table_decor(PaperList::DECOR_EVERYHEADER);
-            $tr = $paperlist->table_render();
-            if (!$tr->is_empty()) {
+            $paperlist->set_table_decor(PaperList::DECOR_EVERYHEADER | PaperList::DECOR_FULLWIDTH);
+            $rstate = $paperlist->table_render();
+            if (!$rstate->is_empty()) {
                 if (!$any) {
                     echo Ht::form($conf->hoturl("conflictassign")),
-                        '<div class="pltable-fullw-container demargin">',
-                        $tr->table_start,
-                        Ht::unstash(),
-                        ($tr->thead ? : "");
+                        '<div class="pltable-fullw-container demargin">';
+                    $rstate->print_table_start($paperlist->table_attr, true);
                 } else {
-                    echo $tr->heading_separator_row(),
-                        "</tbody>\n";
+                    echo $rstate->heading_separator_row(), "</tbody>\n",
+                        $rstate->tbody_start();
                 }
                 $t = $user->reviewer_html_for($pc);
                 if ($pc->affiliation) {
                     $t .= " <span class=\"auaff\">(" . htmlspecialchars($pc->affiliation) . ")</span>";
                 }
-                echo $tr->tbody_start(), $tr->heading_row($t, ["no_titlecol" => true]);
-                $tr->print_tbody_rows();
+                assert($rstate->group_count() === 1);
+                echo $rstate->heading_row(null, $t, ["no_titlecol" => true]);
+                $rstate->print_tbody_rows(0, 1);
                 $any = true;
             }
         }
