@@ -7879,7 +7879,7 @@ function unload_list() {
         set_cookie(hl);
 }
 function row_click(evt) {
-    if (!hasClass(this.parentElement, "pltable")
+    if (!hasClass(this.parentElement, "pltable-tbody")
         || evt.target.closest("a, input, textarea, select, button"))
         return;
     var td = evt.target.closest("td");
@@ -11871,7 +11871,7 @@ function load_more_events() {
 function render_events(e, rows) {
     var j = $(e).find("tbody");
     if (!j.length) {
-        $(e).append("<div class=\"eventtable\"><table class=\"pltable\"><tbody class=\"pltable\"></tbody></table></div><div class=\"g eventtable-more\"><button type=\"button\">More</button></div>");
+        $(e).append("<div class=\"eventtable\"><table class=\"pltable\"><tbody class=\"pltable-tbody\"></tbody></table></div><div class=\"g eventtable-more\"><button type=\"button\">More</button></div>");
         $(e).find("button").on("click", load_more_events);
         j = $(e).find("tbody");
     }
