@@ -9529,7 +9529,7 @@ function make_callback(dofold, type) {
     function render_start() {
         ensure_field(f);
         tr = self.querySelector("tr.pl");
-        render_some();
+        tr && render_some();
         if (values.stat && f.name in values.stat) {
             render_statistics(values.stat[f.name]);
         }
