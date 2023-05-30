@@ -21,6 +21,8 @@ class Log_Page {
     private $include_pids;
     /** @var ?array<int,mixed> */
     private $exclude_pids;
+    /** @var bool */
+    private $unix_timestamp;
     /** @var string */
     private $document_regexp;
     /** @var MessageSet */
@@ -37,6 +39,7 @@ class Log_Page {
                 $x[] = $opt->json_key();
         }
         $this->document_regexp = join("|", $x);
+        $this->unix_timestamp = $qreq->time === "u";
     }
 
 
@@ -52,9 +55,9 @@ class Log_Page {
         if (!empty($pids)) {
             $w = [];
             foreach ($pids as $p) {
-                $w[] = "paperId=$p";
-                $w[] = "action like '%(papers% $p,%'";
-                $w[] = "action like '%(papers% $p)%'";
+                $w[] = "paperId={$p}";
+                $w[] = "action like '%(papers% {$p},%'";
+                $w[] = "action like '%(papers% {$p})%'";
             }
             $this->lef_clauses[] = "(" . join(" or ", $w) . ")";
             $this->include_pids = array_flip($pids);
@@ -84,8 +87,8 @@ class Log_Page {
         if (!empty($ids)) {
             $result = $this->conf->qe("select contactId, email from ContactInfo where contactId?a union select contactId, email from DeletedContactInfo where contactId?a", $ids, $ids);
             while (($row = $result->fetch_row())) {
-                $w[] = "contactId=$row[0]";
-                $w[] = "destContactId=$row[0]";
+                $w[] = "contactId={$row[0]}";
+                $w[] = "destContactId={$row[0]}";
                 $x = sqlq(Dbl::escape_like($row[1]));
                 $w[] = "action like " . Dbl::utf8ci("'% {$x}%'");
             }
@@ -271,7 +274,7 @@ class Log_Page {
             $dplaceholder = $this->conf->unparse_time_log((int) $this->first_timestamp);
         }
 
-        echo Ht::form($this->conf->hoturl("log"), ["method" => "get", "id" => "f-search", "class" => "clearfix"]);
+        echo Ht::form($this->conf->hoturl("log"), ["method" => "get", "id" => "f-search", "class" => "mx-auto clearfix"]);
         if ($this->qreq->forceShow) {
             echo Ht::hidden("forceShow", 1);
         }
@@ -477,10 +480,10 @@ class Log_Page {
         if (!empty($trs)) {
             echo "<table class=\"pltable fullw pltable-log\">\n",
                 '  <thead><tr class="pl_headrow">',
-                '<th class="pll plh pl_logtime">Time</th>',
-                '<th class="pll plh pl_logname">User</th>',
-                '<th class="pll plh pl_logname">Affected user</th>',
-                '<th class="pll plh pl_logaction">Action</th></tr></thead>',
+                '<th class="pl plh pl_logtime">Time</th>',
+                '<th class="pl plh pl_logname">User</th>',
+                '<th class="pl plh pl_logname">Affected user</th>',
+                '<th class="pl plh pl_logaction">Action</th></tr></thead>',
                 "\n  <tbody class=\"pltable\">\n";
             foreach ($trs as $n => $row) {
                 $this->print_entry($row, $n, $leg);
@@ -501,7 +504,11 @@ class Log_Page {
         echo '<tr class="plnx k', $n % 2, '">';
 
         // timestamp
-        $time = $conf->unparse_time_log((int) $row->timestamp);
+        if ($this->unix_timestamp) {
+            $time = "@{$row->timestamp}";
+        } else {
+            $time = $conf->unparse_time_log((int) $row->timestamp);
+        }
         echo '<td class="pl pl_logtime">', $time, '</td>';
 
         // users

@@ -4869,7 +4869,7 @@ class Conf {
                 $this->qe(self::action_log_query . " values ?v", $values);
             }
         } else {
-            $key = "$user,$dest_user,$true_user|$text";
+            $key = "{$user},{$dest_user},{$true_user}|{$text}";
             if (!isset($this->_save_logs[$key])) {
                 $this->_save_logs[$key] = [];
             }

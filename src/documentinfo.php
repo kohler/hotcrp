@@ -1688,7 +1688,7 @@ class DocumentInfo implements JsonSerializable {
             foreach ($byn as $dtype => $pidm) {
                 $opt = $user->conf->option_by_id($dtype);
                 $name = $opt ? $opt->json_key() : "opt{$dtype}";
-                $user->log_activity_dedup("Download $name", array_values(array_unique($pidm)));
+                $user->log_activity_dedup("Download {$name}", array_values(array_unique($pidm)));
             }
         }
     }
