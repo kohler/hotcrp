@@ -46,9 +46,9 @@ class GetScores_ListAction extends ListAction {
                             $b["review"] = $rrow->unparse_ordinal_id();
                         }
                         if ($user->can_view_review_identity($row, $rrow)) {
-                            $user = $rrow->reviewer();
-                            $b["email"] = $user->email;
-                            $b["reviewername"] = Text::nameo($user, 0);
+                            $reviewer = $rrow->reviewer();
+                            $b["email"] = $reviewer->email;
+                            $b["reviewername"] = Text::nameo($reviewer, 0);
                             $any_reviewer_identity = true;
                         }
                         $texts[] = $b;
