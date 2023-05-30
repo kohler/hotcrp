@@ -11920,25 +11920,19 @@ function resizer() {
     for (var i = autogrowers.length - 1; i >= 0; --i)
         autogrowers[i]();
 }
-function remover($self, shadow) {
-    var f = $self.data("autogrower");
-    $self.removeData("autogrower");
-    shadow && shadow.remove();
-    for (var i = autogrowers.length - 1; i >= 0; --i)
-        if (autogrowers[i] === f) {
-            autogrowers[i] = autogrowers[autogrowers.length - 1];
-            autogrowers.pop();
-        }
+function autogrower_retry(f, e) {
+    $(e).data("autogrower") === f && f(null);
 }
 function make_textarea_autogrower(e) {
-    var shadow, minHeight, lineHeight, borderPadding;
-    return function (evt) {
-        if (evt === false)
-            return remover($(e), null);
+    var shadow, minHeight, lineHeight, borderPadding, timeout = 0;
+    function f(evt) {
         if (!shadow) {
-            var css = window.getComputedStyle(e);
-            if (parseFloat(css.width) <= 0)
+            if (e.scrollWidth <= 0) {
+                timeout = Math.min(Math.max(1, timeout) * 2, 30000);
+                setTimeout(autogrower_retry, timeout, f, e);
                 return;
+            }
+            var css = window.getComputedStyle(e);
             minHeight = parseFloat(css.height);
             lineHeight = computed_line_height(css);
             borderPadding = parseFloat(css.borderTopWidth) + parseFloat(css.borderBottomWidth);
@@ -11947,46 +11941,29 @@ function make_textarea_autogrower(e) {
         e.style.height = "auto"; // in case text shrank (scrollHeight always ≥clientHeight)
         var wh = Math.max(0.8 * window.innerHeight, 4 * lineHeight);
         e.style.height = Math.min(wh, Math.max(e.scrollHeight + borderPadding, minHeight)) + "px";
-    };
+    }
+    return f;
 }
-function make_input_autogrower($self) {
-    var shadow;
-    return function (evt) {
-        if (evt === false) {
-            return remover($self, shadow);
-        }
-        var width = 0, p;
-        try {
-            width = $self.outerWidth();
-        } catch (e) { // IE11 is annoying here
-        }
-        if (width <= 0) {
-            return;
-        }
+function make_input_autogrower(e) {
+    var shadow, minWidth, borderPadding, timeout = 0;
+    function f(evt) {
         if (!shadow) {
-            shadow = textarea_shadow($self, width);
-            p = $self.css(["paddingRight", "paddingLeft", "borderLeftWidth", "borderRightWidth", "minWidth", "maxWidth"]);
-            shadow.css({
-                width: "auto",
-                display: "table-cell",
-                paddingLeft: (parseFloat(p.paddingRight) + parseFloat(p.paddingLeft) + parseFloat(p.borderLeftWidth) + parseFloat(p.borderRightWidth)) + "px"
-            });
-            if (p.minWidth == "0px") {
-                $self.css("minWidth", width + "px");
+            if (e.scrollWidth <= 0) {
+                timeout = Math.min(Math.max(1, timeout) * 2, 30000);
+                setTimeout(autogrower_retry, timeout, f, e);
+                return;
             }
-            if (p.maxWidth == "none" && !$self.hasClass("wide")) {
-                $self.css("maxWidth", "640px");
-            }
+            var css = window.getComputedStyle(e);
+            minWidth = parseFloat(css.width);
+            borderPadding = parseFloat(css.borderLeftWidth) + parseFloat(css.borderRightWidth) + parseFloat(css.fontSize) * 0.75;
+            shadow = true;
         }
-        shadow.text($self[0].value + "  ");
-        p = $self.css(["minWidth", "maxWidth"]);
-        var outerWidth = Math.min(shadow.outerWidth(), $(window).width()),
-            maxWidth = parseFloat(p.maxWidth);
-        if (maxWidth === maxWidth) { // i.e., isn't NaN
-            outerWidth = Math.min(outerWidth, maxWidth);
-        }
-        $self.outerWidth(Math.max(outerWidth, parseFloat(p.minWidth)));
-    };
+        e.style.width = "16px"; // in case text shrank (scrollWidth always ≥clientWidth)
+        var parent = e.closest(".main-column, .modal-dialog"),
+            ww = Math.max(0.9 * (parent ? parent.scrollWidth : window.innerWidth), 100);
+        e.style.width = Math.min(ww, Math.max(e.scrollWidth + borderPadding, minWidth)) + "px";
+    }
+    return f;
 }
 $.fn.autogrow = function () {
     this.each(function () {
@@ -11995,7 +11972,7 @@ $.fn.autogrow = function () {
             if (this.tagName === "TEXTAREA") {
                 f = make_textarea_autogrower(this);
             } else if (this.tagName === "INPUT" && this.type === "text") {
-                f = make_input_autogrower($self);
+                f = make_input_autogrower(this);
             }
             if (f) {
                 $self.data("autogrower", f).on("change input", f);
@@ -12015,8 +11992,14 @@ $.fn.autogrow = function () {
 };
 $.fn.unautogrow = function () {
     this.each(function () {
-        var f = $(this).data("autogrower");
-        f && f(false);
+        var f = $(this).data("autogrower"), i;
+        if (f) {
+            $(this).removeData("autogrower");
+            if ((i = autogrowers.indexOf(f)) >= 0) {
+                autogrowers[i] = autogrowers[autogrowers.length - 1];
+                autogrowers.pop();
+            }
+        }
     });
     return this;
 };
