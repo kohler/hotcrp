@@ -28,6 +28,8 @@ class TagInfo {
     /** @var bool */
     public $track = false;
     /** @var bool */
+    public $sclass = false;
+    /** @var bool */
     public $votish = false;
     /** @var bool */
     public $approval = false;
@@ -1086,6 +1088,14 @@ class TagMap implements IteratorAggregate {
         foreach ($conf->track_tags() as $tn) {
             $t = $map->add(Tagger::base($tn));
             $t->chair = $t->readonly = $t->track = true;
+        }
+        if ($conf->has_named_submission_rounds()) {
+            foreach ($conf->submission_round_list() as $sr) {
+                if ($sr->tag !== "") {
+                    $t = $map->add($sr->tag);
+                    $t->chair = $t->readonly = $t->sclass = true;
+                }
+            }
         }
         $ct = $conf->setting_data("tag_hidden") ?? "";
         foreach (Tagger::split_unpack($ct) as $ti) {

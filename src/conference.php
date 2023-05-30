@@ -3096,18 +3096,17 @@ class Conf {
     }
 
 
+    /** @return bool */
+    function has_named_submission_rounds() {
+        return isset($this->settingTexts["submission_rounds"]);
+    }
+
     /** @return SubmissionRound */
     function unnamed_submission_round() {
         if (!$this->_main_sub_round) {
             $this->_main_sub_round = SubmissionRound::make_main($this);
         }
         return $this->_main_sub_round;
-    }
-
-    /** @return SubmissionRound
-     * @deprecated */
-    function submission_round() {
-        return $this->unnamed_submission_round();
     }
 
     /** @return list<SubmissionRound> */
