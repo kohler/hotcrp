@@ -39,9 +39,9 @@ class GetReviewCSV_ListAction extends ListAction {
                         $text["review"] = $rrow->unparse_ordinal_id();
                     }
                     if ($viewer->can_view_review_identity($prow, $rrow)) {
-                        $user = $rrow->reviewer();
-                        $text["email"] = $user->email;
-                        $text["reviewername"] = Text::nameo($user, 0);
+                        $reviewer = $rrow->reviewer();
+                        $text["email"] = $reviewer->email;
+                        $text["reviewername"] = Text::nameo($reviewer, 0);
                         $has_id = true;
                     }
                     foreach ($rrow->viewable_fields($viewer) as $f) {
