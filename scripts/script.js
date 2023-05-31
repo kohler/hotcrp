@@ -9497,7 +9497,7 @@ function make_callback(dofold, type) {
                 var p = +tr.getAttribute("data-pid");
                 if (values.attr && p in values.attr) {
                     for (var k in values.attr[p])
-                        $(tr).attr(k, values.attr[p][k]);
+                        tr.setAttribute(k, values.attr[p][k]);
                 }
                 if (p in values.data) {
                     var $elt = pidfield(p, f, index);
@@ -9507,7 +9507,9 @@ function make_callback(dofold, type) {
                 }
                 ++n;
             }
-            tr = tr.nextSibling;
+            do {
+                tr = tr.nextSibling;
+            } while (tr && tr.nodeType !== 1);
             while (!tr && (table = table.nextSibling)) {
                 tr = table.querySelector("tr.pl");
             }
@@ -9516,7 +9518,7 @@ function make_callback(dofold, type) {
         tr && setTimeout(render_some, 8);
     }
     function render_statistics(statvalues) {
-        var tr = $(self).find("tfoot > tr.pl_statrow").first()[0],
+        var tr = self.querySelector("tfoot > tr.pl_statrow"),
             index = field_index(f);
         for (; tr; tr = tr.nextSibling)
             if (tr.nodeName === "TR" && tr.hasAttribute("data-statistic")) {
