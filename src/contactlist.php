@@ -976,7 +976,7 @@ class ContactList {
                 . Ht::submit("fn", "Go", ["value" => "modify", "class" => "uic js-submit-list ml-2"])];
         }
 
-        return "  <tfoot class=\"pltable" . ($hascolors ? " pltable-colored" : "")
+        return "  <tfoot class=\"pltable-tfoot" . ($hascolors ? " pltable-colored" : "")
             . "\">" . PaperList::render_footer_row(1, $ncol - 1,
                 "<b>Select people</b> (or <a class=\"ui js-select-all\" href=\"\">select all {$this->count}</a>), then&nbsp; ",
                 $lllgroups)
@@ -1195,7 +1195,7 @@ class ContactList {
         }
         $x .= "\">\n";
 
-        $x .= "  <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">\n";
+        $x .= "  <thead class=\"pltable-thead\">\n  <tr class=\"pl_headrow\">\n";
 
         if ($this->sortable && $url) {
             $sortUrl = $url . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
@@ -1243,7 +1243,7 @@ class ContactList {
             $x .= $this->footer($ncol, $hascolors);
         }
 
-        $x .= "<tbody class=\"pltable" . ($hascolors ? " pltable-colored" : "");
+        $x .= "<tbody class=\"pltable-tbody" . ($hascolors ? " pltable-colored" : "");
         if ($this->user->privChair) {
             $listlink = $listname;
             if ($listlink === "pcadminx") {
