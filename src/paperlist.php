@@ -886,7 +886,7 @@ class PaperList {
     }
 
     private function _sort(PaperInfoSet $rowset) {
-        $this->_groups = [];
+        $this->_groups = []; // `_groups === null` means _sort has not been called
 
         // actually sort
         $overrides = $this->user->add_overrides($this->_view_force ? Contact::OVERRIDE_CONFLICT : 0);
@@ -903,7 +903,7 @@ class PaperList {
 
         // clean up, assign groups
         if ($this->_sort_etag !== "") {
-            $groups = $this->_set_sort_etag_anno_groups();
+            $groups = $this->_sort_etag_anno_groups();
         } else {
             $groups = $this->search->paper_groups();
         }
@@ -913,22 +913,8 @@ class PaperList {
     }
 
 
-    /** @param list<TagAnno> &$groups
-     * @param int $g
-     * @param TagInfo $dt
-     * @param int $anno_index */
-    private function _assign_order_anno_group(&$groups, $g, $dt, $anno_index) {
-        if (($ta = $dt->order_anno_entry($anno_index))) {
-            $groups[$g] = $ta;
-        } else if (!isset($groups[$g])) {
-            $ta = new TagAnno;
-            $ta->tag = $dt->tag;
-            $ta->heading = "";
-            $groups[$g] = $ta;
-        }
-    }
-
-    private function _set_sort_etag_anno_groups() {
+    /** @return list<TagAnno> */
+    private function _sort_etag_anno_groups() {
         assert($this->_then_map === null);
         $etag = $this->_sort_etag;
         if (str_starts_with($etag, $this->user->contactId . "~")) {
@@ -948,57 +934,57 @@ class PaperList {
         }
         $this->_then_map = [];
         $groups = [];
-        $this->_assign_order_anno_group($groups, 0, $dt, -1);
-        $groups[0]->heading = "none";
-        $cur_then = $aidx = $pidx = 0;
+        $aidx = $pidx = 0;
         $plist = $this->_rowset->as_list();
         $alist = $dt->order_anno_list();
-        $ptagval = $pidx < count($plist) ? $plist[$pidx]->tag_value($etag) : null;
-        while ($aidx < count($alist) || $pidx < count($plist)) {
-            if ($pidx == count($plist)
-                || ($aidx < count($alist)
-                    && ($ptagval === null || $alist[$aidx]->tagIndex <= $ptagval))) {
-                if ($cur_then !== 0 || $pidx !== 0 || $aidx !== 0) {
-                    ++$cur_then;
-                }
-                $this->_assign_order_anno_group($groups, $cur_then, $dt, $aidx);
+        $ptagval = $pidx !== count($plist) ? $plist[$pidx]->tag_value($etag) : null;
+        while ($aidx !== count($alist) || $pidx !== count($plist)) {
+            if ($aidx !== count($alist)
+                && $alist[$aidx]->tagIndex <= ($ptagval ?? TAG_INDEXBOUND)) {
+                $groups[] = $alist[$aidx];
                 ++$aidx;
+            } else if (empty($groups)) {
+                $groups[] = $ta = new TagAnno;
+                $ta->tag = $dt->tag;
+                $ta->heading = "none";
             } else {
-                $this->_then_map[$plist[$pidx]->paperId] = $cur_then;
+                $this->_then_map[$plist[$pidx]->paperId] = count($groups) - 1;
                 ++$pidx;
-                $ptagval = $pidx < count($plist) ? $plist[$pidx]->tag_value($etag) : null;
+                $ptagval = $pidx !== count($plist) ? $plist[$pidx]->tag_value($etag) : null;
             }
         }
         return $groups;
     }
 
-    /** @param list<PaperInfo> $srows
+    /** @param list<PaperInfo> $plist
      * @param list<TagAnno> $groups */
-    private function _collect_groups($srows, $groups) {
+    private function _collect_groups($plist, $groups) {
         $thenmap = $this->_then_map ?? [];
-        $this->_groups = [];
-        $rowpos = 0;
+        $pidx = 0;
         for ($grouppos = 0;
-             $rowpos < count($srows) || $grouppos < count($groups);
+             $pidx < count($plist) || $grouppos < count($groups);
              ++$grouppos) {
-            $first_rowpos = $rowpos;
-            while ($rowpos < count($srows)
-                   && ($thenmap[$srows[$rowpos]->paperId] ?? 0) === $grouppos) {
-                ++$rowpos;
+            $first_pidx = $pidx;
+            while ($pidx < count($plist)
+                   && ($thenmap[$plist[$pidx]->paperId] ?? 0) === $grouppos) {
+                ++$pidx;
             }
             $ginfo = $groups[$grouppos] ?? null;
-            if (($ginfo === null || $ginfo->is_empty())
-                && $first_rowpos === 0) {
-                continue;
-            }
+            assert($ginfo !== null);
             $ginfo = $ginfo ? clone $ginfo : TagAnno::make_empty();
-            $ginfo->pos = $first_rowpos;
-            $ginfo->count = $rowpos - $first_rowpos;
-            // leave off an empty “Untagged” section unless editing
-            if ($ginfo->count === 0
-                && $ginfo->tag && !$ginfo->annoId
-                && !$this->has_editable_tags) {
-                continue;
+            $ginfo->pos = $first_pidx;
+            $ginfo->count = $pidx - $first_pidx;
+            if ($ginfo->count === 0) {
+                // leave off an empty “Untagged” section unless editing
+                if ($ginfo->tag
+                    && $ginfo->is_fencepost()
+                    && !$this->has_editable_tags) {
+                    continue;
+                }
+                // leave off empty blank sections
+                if ($ginfo->is_blank()) {
+                    continue;
+                }
             }
             $this->_groups[] = $ginfo;
         }
@@ -1582,17 +1568,20 @@ class PaperList {
      * @param list<string> &$body
      * @param bool $last
      * @return int */
-    private function _groups_for($grouppos, $rstate, &$body, $last) {
-        for ($did_groupstart = false;
-             $grouppos < count($this->_groups)
-             && ($last || $this->count > $this->_groups[$grouppos]->pos);
-             ++$grouppos) {
-            if ($this->count !== 1 && $did_groupstart === false) {
-                $rstate->groupstart[] = $did_groupstart = count($body);
+    private function _mark_groups_html($grouppos, $rstate, &$body, $last) {
+        while ($grouppos !== count($this->_groups)
+               && ($last || $this->count > $this->_groups[$grouppos]->pos)) {
+            if ($grouppos !== 0) {
+                $rstate->groupstart[] = count($body);
+            } else {
+                assert(count($body) === 0);
             }
             $ginfo = $this->_groups[$grouppos];
-            if ($ginfo->is_empty()) {
-                $body[] = $rstate->heading_row($grouppos, "", []);
+            if ($ginfo->is_blank()) {
+                // elide heading row for initial blank section
+                if ($grouppos !== 0) {
+                    $body[] = $rstate->heading_row($grouppos, "", []);
+                }
             } else {
                 $attr = [];
                 if ($ginfo->tag) {
@@ -1608,7 +1597,7 @@ class PaperList {
                 $x = "<span class=\"plheading-group";
                 if ($ginfo->heading !== ""
                     && ($format = $this->conf->check_format($ginfo->annoFormat, $ginfo->heading))) {
-                    $x .= " need-format\" data-format=\"$format";
+                    $x .= " need-format\" data-format=\"{$format}";
                     $this->need_render = true;
                 }
                 $x .= "\" data-title=\"" . htmlspecialchars($ginfo->heading)
@@ -1619,6 +1608,7 @@ class PaperList {
                 $body[] = $rstate->heading_row($grouppos, $x, $attr);
                 $rstate->colorindex = 0;
             }
+            ++$grouppos;
         }
         return $grouppos;
     }
@@ -2020,7 +2010,7 @@ class PaperList {
         foreach ($rows as $row) {
             $this->_row_setup($row);
             if ($grouppos >= 0) {
-                $grouppos = $this->_groups_for($grouppos, $rstate, $body, false);
+                $grouppos = $this->_mark_groups_html($grouppos, $rstate, $body, false);
             }
             $body[] = $this->_row_html($rstate, $row);
             if ($this->need_render && !$need_render) {
@@ -2032,8 +2022,8 @@ class PaperList {
                 $this->need_render = false;
             }
         }
-        if ($grouppos >= 0 && $grouppos < count($this->_groups)) {
-            $this->_groups_for($grouppos, $rstate, $body, true);
+        if ($grouppos >= 0) {
+            $grouppos = $this->_mark_groups_html($grouppos, $rstate, $body, true);
         }
         assert(count($rstate->groupstart) === max(count($this->_groups), 1));
         $rstate->groupstart[] = count($body);
@@ -2264,12 +2254,17 @@ class PaperList {
         return $csv;
     }
 
-    private function _groups_for_csv($grouppos, &$csv) {
-        for (; $grouppos < count($this->_groups)
-               && $this->_groups[$grouppos]->pos < $this->count;
-               ++$grouppos) {
+    /** @param int $grouppos
+     * @param array<string,string> &$csv */
+    private function _mark_groups_csv($grouppos, &$csv) {
+        $ginfo = null;
+        while ($grouppos !== count($this->_groups)
+               && $this->_groups[$grouppos]->pos < $this->count) {
             $ginfo = $this->_groups[$grouppos];
-            $csv["__precomment__"] = $ginfo->is_empty() ? "none" : $ginfo->heading;
+            ++$grouppos;
+        }
+        if ($ginfo && (!$ginfo->is_blank() || $this->count > 1)) {
+            $csv["__precomment__"] = $ginfo->is_blank() ? "none" : $ginfo->heading;
         }
         return $grouppos;
     }
@@ -2287,7 +2282,7 @@ class PaperList {
             $this->_row_setup($row);
             $csv = $this->_row_text_csv_data($row);
             if ($grouppos >= 0) {
-                $grouppos = $this->_groups_for_csv($grouppos, $csv);
+                $grouppos = $this->_mark_groups_csv($grouppos, $csv);
             }
             $body[] = $csv;
         }

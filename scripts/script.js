@@ -8115,7 +8115,7 @@ function row_tagvalue(row, tag) {
 
 
 function tagannorow_fill(row, anno) {
-    if (!anno.empty) {
+    if (!anno.blank) {
         if (anno.tag && anno.annoid) {
             row.setAttribute("data-tags", anno.tag + "#" + anno.tagval);
         } else {
@@ -8138,7 +8138,7 @@ function tagannorow_add(tbl, tbody, before, anno) {
             titlecol = i;
 
     var h;
-    if (anno.empty)
+    if (anno.blank)
         h = '<tr class="plheading-blank"><td class="plheading" colspan="' + ncol + '"></td></tr>';
     else {
         h = '<tr class="plheading"';
@@ -8552,7 +8552,7 @@ handle_ui.on("js-annotate-order", function () {
         if (this.name === "add") {
             var hc = new HtmlCollector;
             add_anno(hc, {});
-            var $row = $(hc.render());
+            var $row = $(hc.render()).awaken();
             $row.appendTo($d.find(".tagannos"));
             $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
             $row.find("input[name='legend_n" + last_newannoid + "']").focus();

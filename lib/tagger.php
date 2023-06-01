@@ -191,7 +191,7 @@ class TagAnno implements JsonSerializable {
     public $tag;
     /** @var int */
     public $annoId;
-    /** @var float */
+    /** @var ?float */
     public $tagIndex;
     /** @var ?string */
     public $heading;
@@ -209,7 +209,7 @@ class TagAnno implements JsonSerializable {
     public $count;
 
     /** @return bool */
-    function is_empty() {
+    function is_blank() {
         return $this->heading === null || strcasecmp($this->heading, "none") === 0;
     }
     /** @return bool */
@@ -261,8 +261,8 @@ class TagAnno implements JsonSerializable {
         if ($this->tagIndex !== null) {
             $j["tagval"] = $this->tagIndex;
         }
-        if ($this->is_empty()) {
-            $j["empty"] = true;
+        if ($this->is_blank()) {
+            $j["blank"] = true;
         }
         if ($this->heading !== null) {
             $j["legend"] = $this->heading; // XXX "heading" backward compat
