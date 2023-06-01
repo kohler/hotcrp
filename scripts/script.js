@@ -9186,12 +9186,12 @@ function render_assignment_selector() {
     this.appendChild(sel);
 }
 
-function set(f, $j, text) {
-    var elt = $j[0], m;
+function set(f, elt, text) {
+    var m;
     if (!elt)
         /* skip */;
     else if (text == null || text === "")
-        elt.innerHTML = "";
+        elt.replaceChildren();
     else {
         if (elt.className == "")
             elt.className = "fx" + f.foldnum;
@@ -9301,7 +9301,7 @@ function pidfield(pid, f, index) {
     var row = f.as_row ? pidxrow(pid) : pidrow(pid);
     if (row && index == null)
         index = field_index(f);
-    return $(row ? row.childNodes[index] : null);
+    return row ? row.childNodes[index] : null;
 }
 
 
@@ -9396,7 +9396,7 @@ function make_tag_column_callback(f) {
     if (/^~[^~]/.test(tag))
         tag = siteinfo.user.uid + tag;
     return function (evt, rv) {
-        var e = pidfield(rv.pid, f)[0];
+        var e = pidfield(rv.pid, f);
         if (!e || f.missing)
             return;
         var tv = tag_value(rv.tags, tag), input = e.querySelector("input");
@@ -9500,10 +9500,10 @@ function make_callback(dofold, type) {
                         tr.setAttribute(k, values.attr[p][k]);
                 }
                 if (p in values.data) {
-                    var $elt = pidfield(p, f, index);
-                    if (!$elt.length)
+                    var elt = pidfield(p, f, index);
+                    if (!elt)
                         log_jserror("bad pidfield " + JSON.stringify([p, f.name, index]));
-                    set(f, $elt, values.data[p][htmlk]);
+                    set(f, elt, values.data[p][htmlk]);
                 }
                 ++n;
             }
@@ -9681,7 +9681,7 @@ $(window).on("hotcrptags", function (evt, rv) {
 
     // set actual tags
     if (fields.tags && !fields.tags.missing)
-        render_row_tags(pidfield(rv.pid, fields.tags)[0]);
+        render_row_tags(pidfield(rv.pid, fields.tags));
 });
 
 function change_color_classes(isconflicted) {
