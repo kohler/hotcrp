@@ -6035,6 +6035,13 @@ function cmt_edit_messages(cj, form) {
         && resp_rounds[cj.response].instrux !== "none") {
         append_feedback_to(ul, {message: '<5>' + resp_rounds[cj.response].instrux, status: 0});
     }
+    if (cj.response) {
+        if (resp_rounds[cj.response].done > now_sec()) {
+            append_feedback_to(ul, {message: strftime("<0>The response deadline is %X your time.", new Date(resp_rounds[cj.response].done * 1000)), status: -2 /*MessageSet::WARNING_NOTE*/});
+        } else if (cj.draft) {
+            append_feedback_to(ul, {message: "<0>The response deadline has passed and this draft response will not be shown to reviewers.", status: 2});
+        }
+    }
     if (cj.response
         && !hotcrp_status.myperm.is_author) {
         append_feedback_to(ul, {message: '<0>You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.', status: -4 /*MessageSet::MARKED_NOTE*/});
@@ -6051,16 +6058,9 @@ function cmt_edit_messages(cj, form) {
         else
             msg = "<0>You didn’t write this comment, but as an administrator you can edit it.";
         append_feedback_to(ul, {message: msg, status: -4 /*MessageSet::MARKED_NOTE*/});
-    }
-    if (cj.response) {
-        if (resp_rounds[cj.response].done > now_sec()) {
-            append_feedback_to(ul, {message: strftime("<0>The response deadline is %X your time.", new Date(resp_rounds[cj.response].done * 1000)), status: -2 /*MessageSet::WARNING_NOTE*/});
-        } else if (cj.draft) {
-            append_feedback_to(ul, {message: "<0>The response deadline has passed and this draft response will not be shown to reviewers.", status: 2});
-        }
-    }
-    if (siteinfo.user
-        && (siteinfo.user.is_actas || (siteinfo.user.session_users || []).length > 1)) {
+    } else if (cj.is_new
+               && siteinfo.user
+               && (siteinfo.user.is_actas || (siteinfo.user.session_users || []).length > 1)) {
         append_feedback_to(ul, {message: "<0>Commenting as " + siteinfo.user.email, status: -2 /*MessageSet::WARNING_NOTE*/});
     }
     if (ul.firstChild) {
