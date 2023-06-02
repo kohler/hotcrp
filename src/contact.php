@@ -4702,9 +4702,7 @@ class Contact implements JsonSerializable {
         $rights = $this->rights($prow);
         if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
             || ($rights->act_author_view
-                && !$this->conf->is_review_blind(($ct & CommentInfo::CT_BLIND) !== 0))
-            || (($ct & CommentInfo::CT_BYADMINISTRATOR) !== 0
-                && $this->can_view_manager($prow))) {
+                && !$this->conf->is_review_blind(($ct & CommentInfo::CT_BLIND) !== 0))) {
             return true;
         }
         $seerevid = $this->seerevid_setting($prow, null, $rights);
