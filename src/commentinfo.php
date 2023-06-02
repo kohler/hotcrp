@@ -72,6 +72,7 @@ class CommentInfo {
     const CT_TOPIC_PAPER = 0x40;
     const CT_TOPIC_REVIEW = 0x80; // only used internally, not in database
     const CT_TOPIC_MASK = 0xC0;
+    const CT_BYADMINISTRATOR = 0x100;
     const CT_FROZEN = 0x4000;
     const CT_SUBMIT = 0x8000; // only used internally, not in database
     const CTVIS_ADMINONLY = 0x00000;
@@ -401,6 +402,8 @@ class CommentInfo {
             return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
         } else if (($this->commentType & self::CT_BYSHEPHERD) !== 0) {
             return "Shepherd";
+        } else if (($this->commentType & self::CT_BYADMINISTRATOR) !== 0) {
+            return "Administrator";
         } else {
             return null;
         }

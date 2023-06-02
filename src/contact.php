@@ -3531,13 +3531,18 @@ class Contact implements JsonSerializable {
     function can_view_manager(PaperInfo $prow = null) {
         if ($this->privChair) {
             return true;
+        } else if (!$this->can_view_pc()) {
+            return false;
         } else if ($prow) {
             $rights = $this->rights($prow);
             return $rights->allow_administer
-                || ($rights->potential_reviewer && !$this->conf->opt("hideManager"));
+                || ($rights->potential_reviewer
+                    && !$this->conf->opt("hideManager"));
         } else {
-            return (!$this->conf->opt("hideManager") && $this->is_reviewer())
-                || ($this->isPC && $this->is_explicit_manager());
+            return ($this->is_reviewer()
+                    && !$this->conf->opt("hideManager"))
+                || ($this->isPC
+                    && $this->is_explicit_manager());
         }
     }
 
@@ -4482,6 +4487,9 @@ class Contact implements JsonSerializable {
                     $ctype |= CommentInfo::CT_BYSHEPHERD;
                 }
             }
+            if ($rights->can_administer) {
+                $ctype |= CommentInfo::CT_BYADMINISTRATOR;
+            }
         }
         return $ctype;
     }
@@ -4694,7 +4702,9 @@ class Contact implements JsonSerializable {
         $rights = $this->rights($prow);
         if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
             || ($rights->act_author_view
-                && !$this->conf->is_review_blind(($ct & CommentInfo::CT_BLIND) !== 0))) {
+                && !$this->conf->is_review_blind(($ct & CommentInfo::CT_BLIND) !== 0))
+            || (($ct & CommentInfo::CT_BYADMINISTRATOR) !== 0
+                && $this->can_view_manager($prow))) {
             return true;
         }
         $seerevid = $this->seerevid_setting($prow, null, $rights);
