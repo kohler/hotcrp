@@ -2928,7 +2928,7 @@ class Contact implements JsonSerializable {
             // check decision visibility
             $sdr = $ci->allow_pc_broad
                 || ($ci->review_status > PaperContactInfo::RS_UNSUBMITTED
-                    && $this->conf->setting("extrev_view") > 0);
+                    && $this->conf->setting("extrev_seerev") > 0);
             $ci->can_view_decision = $ci->can_administer
                 || (($sdr || $ci->act_author_view)
                     && $prow->can_author_view_decision())
@@ -3846,22 +3846,23 @@ class Contact implements JsonSerializable {
 
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
      * @param PaperContactInfo $rights
-     * @return int */
+     * @return -1|0|1|3|4 */
     private function seerev_setting(PaperInfo $prow, $rbase, $rights) {
+        if ($rights->view_conflict_type) {
+            return -1;
+        }
         $round = $rbase ? $rbase->reviewRound : "max";
         if ($rights->allow_pc) {
-            $rs = $this->conf->round_setting("pc_seeallrev", $round);
-            if (!$this->conf->has_tracks()) {
-                return $rs;
-            }
             if ($this->conf->check_tracks($prow, $this, Track::VIEWREV)) {
-                if (!$this->conf->check_tracks($prow, $this, Track::VIEWALLREV)) {
-                    $rs = 0;
+                $s = $this->conf->round_setting("pc_seeallrev", $round) ?? 0;
+                if ($s > 0 && !$this->conf->check_tracks($prow, $this, Track::VIEWALLREV)) {
+                    $s = 0;
                 }
-                return $rs;
+                return $s;
             }
-        } else if ($this->conf->round_setting("extrev_view", $round)) {
-            return 0;
+        } else if ($rights->reviewType > 0) {
+            $s = $this->conf->round_setting("extrev_seerev", $round) ?? 0;
+            return $s > 0 ? 0 : -1;
         }
         return -1;
     }
@@ -3895,28 +3896,27 @@ class Contact implements JsonSerializable {
         if ($rrow) {
             $viewscore = min($viewscore, $rrow->view_score());
         }
-        if ($rights->act_author_view
-            && ($viewscore >= VIEWSCORE_AUTHOR
-                || ($viewscore >= VIEWSCORE_AUTHORDEC
-                    && $prow->outcome_sign !== 0
-                    && $rights->can_view_decision))
-            && $this->can_view_submitted_review_as_author($prow)) {
-            return true;
+        if ($rights->act_author_view) {
+            return ($viewscore >= VIEWSCORE_AUTHOR
+                    || ($viewscore >= VIEWSCORE_AUTHORDEC
+                        && $prow->outcome_sign !== 0
+                        && $rights->can_view_decision))
+                && $this->can_view_submitted_review_as_author($prow);
         }
         // otherwise, check reviewer rights
+        if ($viewscore < ($rights->allow_pc ? VIEWSCORE_PC : VIEWSCORE_REVIEWER)) {
+            return false;
+        }
         $seerev = $this->seerev_setting($prow, $rrow, $rights);
-        return ($rights->allow_pc
-                && $viewscore >= VIEWSCORE_PC
-                && $seerev > 0
-                && ($seerev !== Conf::PCSEEREV_UNLESSANYINCOMPLETE
-                    || !$this->has_outstanding_review())
-                && ($seerev !== Conf::PCSEEREV_UNLESSINCOMPLETE
-                    || $rights->review_status == 0))
-            || ($rights->review_status > 0
-                && !$rights->view_conflict_type
-                && $viewscore >= ($rights->allow_pc ? VIEWSCORE_PC : VIEWSCORE_REVIEWER)
-                && $prow->review_not_incomplete($this)
-                && $seerev >= 0);
+        if ($seerev < 0) {
+            return false;
+        }
+        return $rights->review_status > PaperContactInfo::RS_UNSUBMITTED
+            || ($seerev === Conf::PCSEEREV_UNLESSANYINCOMPLETE
+                && !$this->has_outstanding_review())
+            || ($seerev === Conf::PCSEEREV_UNLESSINCOMPLETE
+                && $rights->review_status === 0)
+            || $seerev === Conf::PCSEEREV_YES;
     }
 
     /** @param ?ReviewInfo $rrow
@@ -3970,18 +3970,25 @@ class Contact implements JsonSerializable {
 
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
      * @param PaperContactInfo $rights
-     * @return int */
+     * @return -1|0|1 */
     private function seerevid_setting(PaperInfo $prow, $rbase, $rights) {
         $round = $rbase ? $rbase->reviewRound : "max";
         if ($rights->allow_pc) {
             if ($this->conf->check_tracks($prow, $this, Track::VIEWREVID)) {
-                $s = $this->conf->round_setting("pc_seeblindrev", $round);
-                if ($s >= 0) {
-                    return $s ? 0 : Conf::PCSEEREV_YES;
+                $s = $this->conf->round_setting("pc_seeblindrev", $round) ?? 0;
+                if ($s > 0) {
+                    return 0;
+                } else if ($s === 0) {
+                    return Conf::PCSEEREV_YES;
                 }
             }
-        } else if ($this->conf->round_setting("extrev_view", $round) == 2) {
-            return 0;
+        } else if ($rights->reviewType > 0) {
+            $s = $this->conf->round_setting("extrev_seerevid", $round) ?? 0;
+            if ($s > 1) {
+                return Conf::PCSEEREV_YES;
+            } else if ($s > 0) {
+                return 0;
+            }
         }
         return -1;
     }
@@ -3993,19 +4000,21 @@ class Contact implements JsonSerializable {
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.
         if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
-            || ($rights->reviewType == REVIEW_META
+            || ($rights->reviewType === REVIEW_META
                 && $this->conf->check_tracks($prow, $this, Track::VIEWREVID))
-            || ($rbase && $rbase->requestedBy == $this->contactId && $rights->allow_pc)
-            || ($rbase && $this->is_owned_review($rbase))) {
+            || ($rbase
+                && $rbase->requestedBy == $this->contactId
+                && $rights->allow_pc)
+            || ($rbase
+                && $this->is_owned_review($rbase))
+            || ($rights->act_author_view
+                && !$this->conf->is_review_blind(!$rbase || $rbase->reviewType < 0 || (bool) $rbase->reviewBlind))) {
             return true;
         }
         $seerevid_setting = $this->seerevid_setting($prow, $rbase, $rights);
-        return ($rights->allow_pc
-                && $seerevid_setting == Conf::PCSEEREV_YES)
-            || ($rights->allow_review
-                && $prow->review_not_incomplete($this)
-                && $seerevid_setting >= 0)
-            || !$this->conf->is_review_blind(!$rbase || $rbase->reviewType < 0 || (bool) $rbase->reviewBlind);
+        return $seerevid_setting === Conf::PCSEEREV_YES
+            || ($seerevid_setting === 0
+                && $rights->review_status > PaperContactInfo::RS_UNSUBMITTED);
     }
 
     /** @return bool */
@@ -4644,7 +4653,7 @@ class Contact implements JsonSerializable {
                     || $this->can_view_review($prow, null))
                 && ($ctype >= CommentInfo::CTVIS_AUTHOR
                     || $this->conf->setting("cmt_revid")
-                    || $this->can_view_review_identity($prow, null)));
+                    || $this->can_view_comment_identity($prow, $crow)));
     }
 
     /** @param ?CommentInfo $crow
@@ -4676,17 +4685,25 @@ class Contact implements JsonSerializable {
         if (($ct & CommentInfo::CT_BYAUTHOR_MASK) !== 0) {
             return $this->can_view_authors($prow);
         }
-        $rights = $this->rights($prow);
-        return $this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
-            || ($crow && $crow->contactId === $this->contactXid)
-            || (($rights->allow_pc
-                 || ($rights->allow_review
-                     && $this->conf->setting("extrev_view") >= 2))
-                && ($this->can_view_review_identity($prow, null)
-                    || ($crow && $prow->can_view_review_identity_of($crow->commentId, $this))))
-            || !$this->conf->is_review_blind(($ct & CommentInfo::CT_BLIND) !== 0)
+        if (($crow
+             && $crow->contactId === $this->contactId)
             || (($ct & CommentInfo::CT_BYSHEPHERD) !== 0
-                && $this->can_view_shepherd($prow));
+                && $this->can_view_shepherd($prow))) {
+            return true;
+        }
+        $rights = $this->rights($prow);
+        if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
+            || ($rights->act_author_view
+                && !$this->conf->is_review_blind(($ct & CommentInfo::CT_BLIND) !== 0))) {
+            return true;
+        }
+        $seerevid = $this->seerevid_setting($prow, null, $rights);
+        if ($seerevid !== 0) {
+            return $seerevid > 0;
+        } else {
+            return $rights->review_status > PaperContactInfo::RS_UNSUBMITTED
+                || ($crow && $prow->can_view_review_identity_of($crow->contactId, $this));
+        }
     }
 
     /** @param ?CommentInfo $crow
@@ -4734,10 +4751,10 @@ class Contact implements JsonSerializable {
         } else if ($this->conf->time_some_author_view_decision()) {
             return $this->isPC
                 || $this->is_author()
-                || ($this->is_reviewer() && $this->conf->setting("extrev_view") > 0);
+                || ($this->is_reviewer() && $this->conf->setting("extrev_seerev") > 0);
         } else if ($this->is_reviewer()) {
             return $this->conf->setting("seedec") > 0
-                && $this->conf->setting("extrev_view") > 0;
+                && $this->conf->setting("extrev_seerev") > 0;
         } else {
             return false;
         }

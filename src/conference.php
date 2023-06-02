@@ -342,7 +342,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 273) {
+        if ($this->sversion < 274) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -373,7 +373,6 @@ class Conf {
     function refresh_settings() {
         // enforce invariants
         $this->settings["pcrev_any"] = $this->settings["pcrev_any"] ?? 0;
-        $this->settings["extrev_view"] = $this->settings["extrev_view"] ?? 0;
         $this->settings["sub_blind"] = $this->settings["sub_blind"] ?? self::BLIND_ALWAYS;
         $this->settings["rev_blind"] = $this->settings["rev_blind"] ?? self::BLIND_ALWAYS;
         if (($this->settings["pc_seeallrev"] ?? null) === 2) {
@@ -517,9 +516,10 @@ class Conf {
                     && self::pcseerev_compare($rs->pc_seeallrev, $max_rs["pc_seeallrev"] ?? 0) > 0) {
                     $max_rs["pc_seeallrev"] = $rs->pc_seeallrev;
                 }
-                if ($rs && isset($rs->extrev_view)
-                    && $rs->extrev_view > ($max_rs["extrev_view"] ?? 0)) {
-                    $max_rs["extrev_view"] = $rs->extrev_view;
+                if ($rs
+                    && isset($rs->extrev_seerev)
+                    && $rs->extrev_seerev > ($max_rs["extrev_seerev"] ?? 0)) {
+                    $max_rs["extrev_seerev"] = $rs->extrev_seerev;
                 }
             }
             $this->_round_settings["max"] = (object) $max_rs;
@@ -3228,7 +3228,7 @@ class Conf {
      * @return bool */
     function time_some_reviewer_view_authors($pc) {
         return $this->submission_blindness() !== self::BLIND_ALWAYS
-            || (($pc || $this->setting("extrev_view") > 0)
+            || (($pc || $this->setting("extrev_seerev") > 0)
                 && $this->has_any_accepted()
                 && $this->time_some_author_view_decision()
                 && !$this->setting("seedec_hideau"));
@@ -3261,7 +3261,9 @@ class Conf {
     }
     /** @return bool */
     function time_some_external_reviewer_view_comment() {
-        return $this->settings["extrev_view"] === 2;
+        return ($this->settings["extrev_seerev"] ?? 0) > 0
+            && (($this->settings["cmt_revid"] ?? 0) > 0
+                || ($this->settings["extrev_seerevid"] ?? 0) > 0);
     }
 
     /** @return bool */

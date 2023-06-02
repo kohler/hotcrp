@@ -986,6 +986,18 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->save_setting("rev_seedec", null);
         }
 
+        // update extrev_view => extrev_seerev, extrev_seerevid
+        if ($conf->sversion <= 273
+            && ($sd = $conf->setting("extrev_view")) !== null) {
+            if ($sd >= 1) {
+                $conf->save_setting("extrev_seerev", 1);
+            }
+            if ($sd >= 2) {
+                $conf->save_setting("extrev_seerevid", 1);
+            }
+            $conf->save_setting("extrev_view", null);
+        }
+
         if ($conf->sversion === 6
             && $conf->ql_ok("alter table ReviewRequest add `reason` text")) {
             $conf->update_schema_version(7);
@@ -2619,6 +2631,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("update PaperStorage set size=-1 where size is null or (size=0 and sha1!=x'da39a3ee5e6b4b0d3255bfef95601890afd80709' and sha1!=x'736861322de3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')")
             && $conf->ql_ok("alter table PaperStorage change `size` `size` bigint(11) NOT NULL DEFAULT -1")) {
             $conf->update_schema_version(273);
+        }
+        if ($conf->sversion === 273) {
+            $conf->update_schema_version(274);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

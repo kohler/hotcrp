@@ -25,7 +25,7 @@
     {
         "name": "comment_visibility_anonymous", "storage": "cmt_revid",
         "title": "Anonymous PC discussion",
-        "type": "checkbox"
+        "type": "checkbox", "initial_value": 1
     },
 
     {
@@ -510,11 +510,12 @@
         "parser_class": "ReviewVisibility_SettingParser"
     },
     {
-        "name": "review_visibility_external", "storage": "extrev_view",
+        "name": "review_visibility_external", "storage": "extrev_seerev",
         "title": "External reviewers can view reviews",
         "type": "radio",
-        "values": [0, 1, 2], "default_value": 0, "initial_value": 2,
-        "json_values": ["no", "blind", "yes"]
+        "values": [0, 1], "default_value": 0, "initial_value": 1,
+        "json_values": ["no", "yes"],
+        "parser_class": "Review_SettingParser"
     },
     {
         "name": "review_visibility_lead", "storage": "negval.lead_noseerev",
@@ -529,10 +530,18 @@
         "json_values": ["assignment_complete", "all", "assignment_not_incomplete", "all_assignments_complete"]
     },
     {
+        "name": "review_identity_visibility_external", "storage": "extrev_seerevid",
+        "title": "External reviewers can view reviewer identities",
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 0, "initial_value": 1,
+        "json_values": ["never", "after_review", "always"]
+    },
+    {
         "name": "review_identity_visibility_pc", "storage": "pc_seeblindrev",
         "title": "PC can see anonymous reviewers’ identities",
         "type": "radio",
-        "values": [0, 1], "default_value": 0
+        "values": [0, 1], "default_value": 0,
+        "json_values": ["always", "after_review"]
     },
     {
         "name": "review_proposal", "storage": "extrev_chairreq",

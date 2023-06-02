@@ -232,7 +232,10 @@
     {
         "name": "reviews/external/view", "order": 20,
         "print_function": "Review_SettingParser::print_extrev_view",
-        "settings": ["review_visibility_external"]
+        "settings": [
+            "review_visibility_external",
+            "review_identity_visibility_external"
+        ]
     },
     {
         "name": "reviews/ratings", "order": 50,

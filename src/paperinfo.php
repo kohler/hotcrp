@@ -1599,6 +1599,7 @@ class PaperInfo {
 
     /** @return bool */
     function review_not_incomplete($contact) {
+        // see also code in Contact
         return $this->review_status($contact) > PaperContactInfo::RS_UNSUBMITTED;
     }
 
@@ -2793,10 +2794,11 @@ class PaperInfo {
         return $cinfo->vreviews_array;
     }
 
-    /** @return bool */
+    /** @param int $cid
+     * @return bool */
     function can_view_review_identity_of($cid, Contact $viewer) {
         if ($viewer->can_administer_for_track($this, Track::VIEWREVID)
-            || $cid == $viewer->contactId) {
+            || $cid === $viewer->contactId) {
             return true;
         }
         foreach ($this->reviews_by_user($cid) as $rrow) {

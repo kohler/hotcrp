@@ -1199,8 +1199,9 @@ class Permission_Tester {
         Contact::update_rights();
         xassert($user_jon->can_view_some_review_identity());
         xassert($this->u_marina->can_view_some_review_identity());
-        xassert($user_randy->can_view_some_review_identity());
-        xassert($this->u_nobody->can_view_some_review_identity());
+        // `rev_blind` no longer affects reviewers.
+        xassert(!$user_randy->can_view_some_review_identity());
+        xassert(!$this->u_nobody->can_view_some_review_identity());
         $this->conf->save_refresh_setting("rev_blind", null);
         Contact::update_rights();
         xassert($user_jon->can_view_some_review_identity());

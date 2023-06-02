@@ -615,22 +615,23 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 273);
-insert into Settings (name, value) values ('setupPhase', 1);
--- there are no submissions yet
-insert into Settings (name, value) values ('no_papersub', 1);
--- collect PC conflicts from authors by default, but not collaborators
-insert into Settings (name, value) values ('sub_pcconf', 1);
--- default chair-only tags
-insert into Settings (name, value, data) values ('tag_chair', 1, 'accept pcpaper reject');
--- default: allow PC members to review any paper
-insert into Settings (name, value) values ('pcrev_any', 1);
--- default: allow external reviewers to see the other reviews
-insert into Settings (name, value) values ('extrev_view', 2);
--- default: administrators must approve potentially-conflicted external reviews
-insert into Settings (name, value) values ('extrev_chairreq', 2);
--- `pcrev_soft` setting starts at explicit 0
-insert into Settings (name, value) values ('pcrev_soft', 0);
+insert into Settings (name, value) values ('allowPaperOption', 274);
+insert into Settings (name, value, data) values ('setupPhase', 1, null),
+  -- there are no submissions yet
+  ('no_papersub', 1, null),
+  -- collect PC conflicts from authors, but not collaborators
+  ('sub_pcconf', 1, null),
+  -- default chair-only tags
+  ('tag_chair', 1, 'accept pcpaper reject'),
+  -- default: allow PC members to review any paper
+  ('pcrev_any', 1, null),
+  -- default: allow external reviewers to see the other reviews and identities
+  ('extrev_seerev', 1, null),
+  ('extrev_seerevid', 1, null),
+  -- default: administrators must approve potentially-conflicted external reviews
+  ('extrev_chairreq', 2, null),
+  -- `pcrev_soft` setting starts at explicit 0
+  ('pcrev_soft', 0, null);
 
 -- matches DocumentInfo::make_empty()
 insert ignore into PaperStorage set

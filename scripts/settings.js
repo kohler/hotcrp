@@ -437,6 +437,28 @@ handle_ui.on("js-settings-review-round-delete", function () {
     settings_review_round_selectors(this.form);
 });
 
+handle_ui.on("js-settings-comment-visibility-anonymous", function () {
+    var ch;
+    if (this.type === "checkbox") {
+        ch = this.checked;
+    } else {
+        ch = this.value !== "" && this.value !== "false" && this.value !== "0";
+    }
+    $(".has-comment-visibility-anonymous").each(function () {
+        if (hasClass(this, "is-identity"))
+            this.textContent = ch ? "reviewer names" : "reviewer names and comments";
+        else if (hasClass(this, "is-contents"))
+            this.textContent = ch ? "review contents and comments" : "review contents";
+        else if (hasClass(this, "is-contents-external"))
+            this.textContent = ch ? "review contents, comments, and eventual decisions" : "review contents and eventual decisions";
+        else if (hasClass(this, "if-anonymous"))
+            toggleClass(this, "hidden", !ch);
+    });
+});
+$(function () {
+    $(".js-settings-comment-visibility-anonymous").change();
+});
+
 
 handle_ui.on("js-settings-submission-round-new", function () {
     var i, h = $$("settings-submission-round-new").innerHTML, $n;
