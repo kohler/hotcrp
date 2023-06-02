@@ -1997,7 +1997,7 @@ class Conf {
      * @return ?Contact */
     function fresh_user_by_email($email) {
         $email = trim((string) $email);
-        if ($email === "") {
+        if ($email === "" || !is_valid_utf8($email)) {
             return null;
         }
         $result = $this->qe("select * from ContactInfo where email=?", $email);
@@ -2053,13 +2053,25 @@ class Conf {
 
     /** @param string $email */
     function prefetch_user_by_email($email) {
-        $this->_user_cache_missing[] = strtolower($email);
+        $this->_user_cache_missing[] = $email;
     }
 
     /** @param list<string> $emails */
     function prefetch_users_by_email($emails) {
         foreach ($emails as $email) {
-            $this->_user_cache_missing[] = strtolower($email);
+            $this->_user_cache_missing[] = $email;
+        }
+    }
+
+    /** @param int|string $req
+     * @return null|int|string */
+    static private function clean_user_cache_request($req) {
+        if (is_int($req) && $req > 0) {
+            return $req;
+        } else if (is_string($req) && $req !== "" && is_valid_utf8($req)) {
+            return strtolower($req);
+        } else {
+            return null;
         }
     }
 
@@ -2067,16 +2079,15 @@ class Conf {
         $this->_ensure_user_cache();
         $reqids = $reqemails = [];
         foreach ($this->_user_cache_missing as $req) {
+            $req = self::clean_user_cache_request($req);
             if (is_int($req)) {
-                if ($req > 0
-                    && !array_key_exists($req, $this->_user_cache)) {
+                if (!array_key_exists($req, $this->_user_cache)) {
                     $this->_user_cache[$req] = null;
                     $reqids[] = $req;
                 }
-            } else {
+            } else if (is_string($req)) {
                 $this->_ensure_user_email_cache();
-                if ($req !== ""
-                    && !array_key_exists($req, $this->_user_email_cache)) {
+                if (!array_key_exists($req, $this->_user_email_cache)) {
                     $this->_user_email_cache[$req] = null;
                     $reqemails[] = $req;
                 }
@@ -2531,16 +2542,16 @@ class Conf {
 
     private function _refresh_cdb_user_cache() {
         $reqids = $reqemails = [];
-        if ($this->contactdb()) {
-            $this->_cdb_user_cache = $this->_cdb_user_cache ?? [];
-            foreach ($this->_cdb_user_cache_missing as $req) {
-                if (!array_key_exists($req, $this->_cdb_user_cache)) {
-                    $this->_cdb_user_cache[$req] = null;
-                    if (is_int($req)) {
-                        $reqids[] = $req;
-                    } else {
-                        $reqemails[] = $req;
-                    }
+        $this->_cdb_user_cache = $this->_cdb_user_cache ?? [];
+        foreach ($this->_cdb_user_cache_missing as $req) {
+            $req = self::clean_user_cache_request($req);
+            if ($req !== null
+                && !array_key_exists($req, $this->_cdb_user_cache)) {
+                $this->_cdb_user_cache[$req] = null;
+                if (is_int($req)) {
+                    $reqids[] = $req;
+                } else {
+                    $reqemails[] = $req;
                 }
             }
         }
@@ -2553,23 +2564,18 @@ class Conf {
 
     /** @param int $id */
     function prefetch_cdb_user_by_id($id) {
-        if ($id > 0) {
-            $this->_cdb_user_cache_missing[] = $id;
-        }
+        $this->_cdb_user_cache_missing[] = $id;
     }
 
     /** @param string $email */
     function prefetch_cdb_user_by_email($email) {
-        if ($email !== "") {
-            $this->_cdb_user_cache_missing[] = strtolower($email);
-        }
+        $this->_cdb_user_cache_missing[] = $email;
     }
 
     /** @param iterable<string> $emails */
     function prefetch_cdb_users_by_email($emails) {
         foreach ($emails as $email) {
-            if ($email !== "")
-                $this->_cdb_user_cache_missing[] = strtolower($email);
+            $this->_cdb_user_cache_missing[] = $email;
         }
     }
 
@@ -2603,8 +2609,12 @@ class Conf {
     /** @param string $email
      * @return ?Contact */
     function fresh_cdb_user_by_email($email) {
-        $us = $this->_fresh_cdb_user_list(null, [$email]);
-        return $us[0] ?? null;
+        if ($email !== "" && is_valid_utf8($email)) {
+            $us = $this->_fresh_cdb_user_list(null, [$email]);
+            return $us[0] ?? null;
+        } else {
+            return null;
+        }
     }
 
     /** @param string $email
@@ -2612,7 +2622,7 @@ class Conf {
     function checked_cdb_user_by_email($email) {
         $acct = $this->fresh_cdb_user_by_email($email);
         if (!$acct) {
-            throw new Exception("Contact::checked_cdb_user_by_email($email) failed");
+            throw new Exception("Contact::checked_cdb_user_by_email({$email}) failed");
         }
         return $acct;
     }
@@ -2623,12 +2633,12 @@ class Conf {
      * @param int $adding */
     private function update_setting_exists($name, $existsq, $adding) {
         if ($adding >= 0) {
-            $this->qe_raw("insert into Settings (name, value) select '$name', 1 from dual where $existsq on duplicate key update value=1");
+            $this->qe_raw("insert into Settings (name, value) select '{$name}', 1 from dual where {$existsq} on duplicate key update value=1");
         }
         if ($adding <= 0) {
             $this->qe_raw("delete from Settings where name='$name' and not ($existsq)");
         }
-        $this->settings[$name] = (int) $this->fetch_ivalue("select value from Settings where name='$name'");
+        $this->settings[$name] = (int) $this->fetch_ivalue("select value from Settings where name='{$name}'");
     }
 
     // update the 'papersub' setting: are there any submitted papers?
