@@ -616,7 +616,7 @@ CREATE TABLE `TopicInterest` (
 
 
 insert into Settings (name, value) values ('allowPaperOption', 274);
-insert into Settings (name, value, data) values ('setupPhase', 1, null),
+insert into Settings (name, value, `data`) values ('setupPhase', 1, null),
   -- there are no submissions yet
   ('no_papersub', 1, null),
   -- collect PC conflicts from authors, but not collaborators
