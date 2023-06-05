@@ -616,6 +616,7 @@ CREATE TABLE `TopicInterest` (
 
 
 -- Initial settings
+-- (each setting must be on its own line for createdb.sh)
 insert into Settings (name, value, data) values
   ('allowPaperOption', 275, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair

@@ -2,7 +2,7 @@ export VERSION=3.0b3
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*[(] *//;s/[;)].*//'`
-schemanum=`grep 'allowPaperOption' src/schema.sql | sed 's/.*, *//;s/).*//'`
+schemanum=`grep 'allowPaperOption' src/schema.sql | sed 's/, *null).*//i;s/.*, *//;s/).*//'`
 if [ "$updatenum" != "$schemanum" ]; then
     echo "error: allowPaperOption schema number in src/schema.sql ($schemanum)" 1>&2
     echo "error: differs from number in src/updateschema.php ($updatenum)" 1>&2
