@@ -615,23 +615,18 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 274);
-insert into Settings (name, value, `data`) values ('setupPhase', 1, null),
-  -- there are no submissions yet
-  ('no_papersub', 1, null),
-  -- collect PC conflicts from authors, but not collaborators
-  ('sub_pcconf', 1, null),
-  -- default chair-only tags
-  ('tag_chair', 1, 'accept pcpaper reject'),
-  -- default: allow PC members to review any paper
-  ('pcrev_any', 1, null),
-  -- default: allow external reviewers to see the other reviews and identities
-  ('extrev_seerev', 1, null),
-  ('extrev_seerevid', 1, null),
-  -- default: administrators must approve potentially-conflicted external reviews
-  ('extrev_chairreq', 2, null),
-  -- `pcrev_soft` setting starts at explicit 0
-  ('pcrev_soft', 0, null);
+-- Initial settings
+insert into Settings (name, value, data) values
+  ('allowPaperOption', 274, null),   -- schema version
+  ('setupPhase', 1, null),           -- initial user is chair
+  ('no_papersub', 1, null),          -- no submissions yet
+  ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators
+  ('tag_chair', 1, 'accept pcpaper reject'),  -- default read-only tags
+  ('pcrev_any', 1, null),            -- PC members can review any paper
+  ('extrev_seerev', 1, null),        -- external reviewers can see reviews
+  ('extrev_seerevid', 1, null),      -- external reviewers can see review identities
+  ('extrev_chairreq', 2, null),      -- administrators must approve potentially-conflicted reviewers
+  ('pcrev_soft', 0, null);           -- soft review deadline is explicit 0
 
 -- matches DocumentInfo::make_empty()
 insert ignore into PaperStorage set
