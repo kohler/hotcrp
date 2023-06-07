@@ -2852,13 +2852,13 @@ $(initialize_json_settings);
 handle_ui.on("dragstart.js-settings-drag", function (evt) {
     var id = this.parentElement.id;
     if (id.startsWith("sf/")) {
-        settings_drag(this, this.parentElement, $$("settings-sform"), evt);
+        settings_drag(this, this.parentElement, $$("settings-sform"))(evt);
     } else if (id.startsWith("rf/")) {
-        settings_drag(this, this.parentElement, $$("settings-rform"), evt);
+        settings_drag(this, this.parentElement, $$("settings-rform"))(evt);
     }
 });
 
-function settings_drag(draghandle, draggable, group, evt) {
+function settings_drag(draghandle, draggable, group) {
     var pos, posy0, posy1, contains = 0, sep, changed = false, scrollt = null;
     function drag(evt) {
         evt.preventDefault();
@@ -2939,12 +2939,6 @@ function settings_drag(draghandle, draggable, group, evt) {
             }
         }
     }
-    function dragstart(evt) {
-        var g = draggable.getBoundingClientRect();
-        evt.dataTransfer.setDragImage(draggable, evt.clientX - g.left, evt.clientY - g.top);
-        evt.dataTransfer.effectAllowed = "move";
-        addClass(draggable, "dragging");
-    }
     function dragend() {
         sep && sep.remove();
         removeClass(draggable, "dragging");
@@ -2970,16 +2964,19 @@ function settings_drag(draghandle, draggable, group, evt) {
     function scroll() {
         posy0 = posy1 = null;
     }
-
-    dragstart(evt);
-    evt = null;
-    window.addEventListener("dragover", drag);
-    draghandle.addEventListener("dragend", dragend);
-    group.addEventListener("drop", drop);
-    group.addEventListener("dragenter", dragenter);
-    group.addEventListener("dragleave", dragenter);
-    window.addEventListener("scroll", scroll);
-    window.addEventListener("resize", scroll);
+    return function (evt) {
+        var g = draggable.getBoundingClientRect();
+        evt.dataTransfer.setDragImage(draggable, evt.clientX - g.left, evt.clientY - g.top);
+        evt.dataTransfer.effectAllowed = "move";
+        addClass(draggable, "dragging");
+        window.addEventListener("dragover", drag);
+        draghandle.addEventListener("dragend", dragend);
+        group.addEventListener("drop", drop);
+        group.addEventListener("dragenter", dragenter);
+        group.addEventListener("dragleave", dragenter);
+        window.addEventListener("scroll", scroll);
+        window.addEventListener("resize", scroll);
+    };
 }
 
 
