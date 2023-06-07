@@ -39,6 +39,8 @@ class Json {
     }
 
 
+    /** @param string|list<string> $x
+     * @return string */
     static function encode_escape($x) {
         if (is_array($x)) {
             $x = $x[0];

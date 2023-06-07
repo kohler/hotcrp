@@ -11,6 +11,11 @@ class Unit_Tester {
         $this->conf = $conf;
     }
 
+    function test_xassert_nan() {
+        xassert_eqq(NAN, NAN);
+        xassert_in_eqq(NAN, [NAN]);
+    }
+
     function test_dbl_format_query() {
         xassert_eqq(Dbl::format_query("Hello"), "Hello");
         xassert_eqq(Dbl::format_query("Hello??"), "Hello?");
@@ -362,6 +367,65 @@ class Unit_Tester {
         xassert_eqq(JsonParser::path_push("\$[0]", "a"), "\$[0].a");
         xassert_eqq(JsonParser::path_push("\$[0]", "a\\"), "\$[0][\"a\\\\\"]");
         xassert_eqq(JsonParser::path_push("\$[0]", "\n"), "\$[0][\"\\n\"]");
+    }
+
+    function test_json5() {
+        $jp = (new JsonParser)->assoc(true);
+        $jp5 = (new JsonParser)->assoc(true)->flags(JsonParser::JSON5);
+
+        xassert_eqq($jp->input("[\"a\"]")->decode(), ["a"]);
+        xassert($jp->ok());
+        xassert_eqq($jp5->input("[\"a\"]")->decode(), ["a"]);
+        xassert($jp5->ok());
+        xassert_eqq($jp->input("[\"a\",]")->decode(), null);
+        xassert(!$jp->ok());
+        xassert_eqq($jp5->input("[\"a\",]")->decode(), ["a"]);
+        xassert($jp5->ok());
+        xassert_eqq($jp->input("[,]")->decode(), null);
+        xassert(!$jp->ok());
+        xassert_eqq($jp5->input("[,]")->decode(), null);
+        xassert(!$jp5->ok());
+
+        xassert_eqq($jp->input("{\"a\":1}")->decode(), ["a" => 1]);
+        xassert($jp->ok());
+        xassert_eqq($jp5->input("{\"a\":1}")->decode(), ["a" => 1]);
+        xassert($jp5->ok());
+        xassert_eqq($jp->input("{\"a\":1,}")->decode(), null);
+        xassert(!$jp->ok());
+        xassert_eqq($jp5->input("{\"a\":1,}")->decode(), ["a" => 1]);
+        xassert($jp5->ok());
+        xassert_eqq($jp->input("{\"b\",\"a\":1}")->decode(), null);
+        xassert(!$jp->ok());
+        xassert_eqq($jp5->input("{\"b\",\"a\":1}")->decode(), null);
+        xassert(!$jp5->ok());
+        xassert_eqq($jp->input("{,}")->decode(), null);
+        xassert(!$jp->ok());
+        xassert_eqq($jp5->input("{,}")->decode(), null);
+        xassert(!$jp5->ok());
+
+        xassert_eqq($jp->input("0x1A")->decode(), null);
+        xassert(!$jp->ok());
+        xassert_eqq($jp5->input("0x1A")->decode(), 26);
+        xassert($jp5->ok());
+        xassert_eqq($jp->input("+12")->decode(), null);
+        xassert(!$jp->ok());
+        xassert_eqq($jp5->input("+12")->decode(), 12);
+        xassert($jp5->ok());
+
+        xassert_eqq($jp->input("Infinity")->decode(), null);
+        xassert(!$jp->ok());
+        xassert_eqq($jp5->input("Infinity")->decode(), INF);
+        xassert($jp5->ok());
+
+        xassert_eqq($jp->input("NaN")->decode(), null);
+        xassert(!$jp->ok());
+        xassert_eqq($jp5->input("NaN")->decode(), NAN);
+        xassert($jp5->ok());
+
+        xassert_eqq($jp->input("// Comment\ntrue\n/* Yep */")->decode(), null);
+        xassert(!$jp->ok());
+        xassert_eqq($jp5->input("// Comment\ntrue\n/* Yep */")->decode(), true);
+        xassert($jp5->ok());
     }
 
     function test_object_replace_recursive() {

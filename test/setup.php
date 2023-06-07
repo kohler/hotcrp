@@ -359,6 +359,9 @@ function xassert_exit() {
 /** @return bool */
 function xassert_eqq($actual, $expected) {
     $ok = $actual === $expected;
+    if (!$ok && is_float($expected) && is_nan($expected) && is_float($actual) && is_nan($actual)) {
+        $ok = true;
+    }
     if ($ok) {
         Xassert::succeed();
     } else {
@@ -371,6 +374,9 @@ function xassert_eqq($actual, $expected) {
 /** @return bool */
 function xassert_neqq($actual, $nonexpected) {
     $ok = $actual !== $nonexpected;
+    if ($ok && is_float($nonexpected) && is_nan($nonexpected) && is_float($actual) && is_nan($actual)) {
+        $ok = false;
+    }
     if ($ok) {
         Xassert::succeed();
     } else {
@@ -385,8 +391,12 @@ function xassert_neqq($actual, $nonexpected) {
  * @return bool */
 function xassert_in_eqq($member, $list) {
     $ok = false;
+    $nan = is_float($member) && is_nan($member);
     foreach ($list as $bx) {
-        $ok = $ok || $member === $bx;
+        if ($member === $bx || ($nan && is_float($bx) && is_nan($bx))) {
+            $ok = true;
+            break;
+        }
     }
     if ($ok) {
         Xassert::succeed();
@@ -402,8 +412,12 @@ function xassert_in_eqq($member, $list) {
  * @return bool */
 function xassert_not_in_eqq($member, $list) {
     $ok = true;
+    $nan = is_float($member) && is_nan($member);
     foreach ($list as $bx) {
-        $ok = $ok && $member !== $bx;
+        if ($member === $bx || ($nan && is_float($bx) && is_nan($bx))) {
+            $ok = false;
+            break;
+        }
     }
     if ($ok) {
         Xassert::succeed();

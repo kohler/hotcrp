@@ -1290,7 +1290,7 @@ class Contact implements JsonSerializable {
             return stripos($this->contactTags, " {$t}#") !== false;
         }
         if ($this->contactTags === false) {
-            trigger_error("Contact $this->email contactTags missing\n" . debug_string_backtrace());
+            trigger_error("Contact {$this->email} contactTags missing\n" . debug_string_backtrace());
             $this->contactTags = null;
         }
         return false;
@@ -1313,7 +1313,7 @@ class Contact implements JsonSerializable {
      * @return ?bool */
     function perm_tag_allows($perm) {
         if ($this->contactTags
-            && ($pos = stripos($this->contactTags, " perm:$perm#")) !== false) {
+            && ($pos = stripos($this->contactTags, " perm:{$perm}#")) !== false) {
             return $this->contactTags[$pos + strlen($perm) + 7] !== "-";
         } else {
             return null;
@@ -1464,7 +1464,7 @@ class Contact implements JsonSerializable {
     /** @param string $name
      * @return mixed */
     function capability($name) {
-        return $this->_capabilities ? $this->_capabilities[$name] ?? null : null;
+        return $this->_capabilities[$name] ?? null;
     }
 
     /** @param int $pid
