@@ -37,14 +37,16 @@ class SearchOperator {
         if (!self::$list) {
             self::$list["("] = new SearchOperator("(", true, 0);
             self::$list[")"] = new SearchOperator(")", true, 0);
-            self::$list["NOT"] = new SearchOperator("not", true, 8);
-            self::$list["-"] = new SearchOperator("not", true, 8);
-            self::$list["!"] = new SearchOperator("not", true, 8);
+            self::$list["NOT"] = self::$list["-"] = self::$list["!"] =
+                new SearchOperator("not", true, 8);
             self::$list["+"] = new SearchOperator("+", true, 8);
             self::$list["SPACE"] = new SearchOperator("space", false, 7);
-            self::$list["AND"] = new SearchOperator("and", false, 6);
-            self::$list["XOR"] = new SearchOperator("xor", false, 5);
-            self::$list["OR"] = new SearchOperator("or", false, 4);
+            self::$list["AND"] = self::$list["&"] = self::$list["&&"] =
+                new SearchOperator("and", false, 6);
+            self::$list["XOR"] = self::$list["^"] =
+                new SearchOperator("xor", false, 5);
+            self::$list["OR"] = self::$list["|"] = self::$list["||"] =
+                new SearchOperator("or", false, 4);
             self::$list["SPACEOR"] = new SearchOperator("or", false, 3);
             self::$list["THEN"] = new SearchOperator("then", false, 2);
             self::$list["HIGHLIGHT"] = new SearchOperator("highlight", false, 1, "");
@@ -898,7 +900,7 @@ class PaperSearch extends MessageSet {
 
     /** @return ?SearchOperator */
     static private function _shift_keyword(SearchSplitter $splitter, $curqe) {
-        if (!$splitter->match('/\G(?:[-+!()]|(?:AND|and|OR|or|NOT|not|XOR|xor|THEN|then|HIGHLIGHT(?::\w+)?)(?=[\s\(]))/s', $m)) {
+        if (!$splitter->match('/\G(?:[-+!()^]|(?:AND|and|OR|or|NOT|not|XOR|xor|THEN|then|HIGHLIGHT(?::\w+)?|\&\&?|\|\|?)(?=[\s\(]))/s', $m)) {
             return null;
         }
         $op = SearchOperator::get(strtoupper($m[0]));
