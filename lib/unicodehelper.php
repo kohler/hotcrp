@@ -196,47 +196,39 @@ class UnicodeHelper {
         }
     }
 
-    /** @param int $n
+    /** @param int $ch
      * @return list<int> */
-    static function utf16_seq($n) {
-        if ($n >= 0 && $n <= 0xFFFF) {
-            return [$n];
-        } else if ($n >= 0x10000 && $n <= 0x10FFFF) {
-            $n -= 0x10000;
-            return [0xD800 | ($n >> 10), 0xDC00 | ($n & 0x3FF)];
+    static function utf16_seq($ch) {
+        if ($ch >= 0 && $ch <= 0xFFFF) {
+            return [$ch];
+        } else if ($ch >= 0x10000 && $ch <= 0x10FFFF) {
+            $ch -= 0x10000;
+            return [0xD800 | ($ch >> 10), 0xDC00 | ($ch & 0x3FF)];
         } else {
             return [];
         }
     }
 
-    /** @param int $n
+    /** @param int $ch
      * @return string */
-    static function utf8_chr($n) {
-        assert($n >= 0 && $n <= 0x10FFFF);
-        if ($n < 0x80) {
-            return chr($n);
-        } else if ($n < 0x800) {
-            return chr(0xC0 | ($n >> 6)) . chr(0x80 | ($n & 0x3F));
-        } else if ($n < 0x10000) {
-            return chr(0xE0 | ($n >> 12)) . chr(0x80 | (($n >> 6) & 0x3F)) . chr(0x80 | ($n & 0x3F));
+    static function utf8_chr($ch) {
+        assert($ch >= 0 && $ch <= 0x10FFFF);
+        if ($ch < 0x80) {
+            return chr($ch);
+        } else if ($ch < 0x800) {
+            return chr(0xC0 | ($ch >> 6)) . chr(0x80 | ($ch & 0x3F));
+        } else if ($ch < 0x10000) {
+            return chr(0xE0 | ($ch >> 12)) . chr(0x80 | (($ch >> 6) & 0x3F)) . chr(0x80 | ($ch & 0x3F));
         } else {
-            return chr(0xF0 | ($n >> 18)) . chr(0x80 | (($n >> 12) & 0x3F)) . chr(0x80 | (($n >> 6) & 0x3F)) . chr(0x80 | ($n & 0x3F));
+            return chr(0xF0 | ($ch >> 18)) . chr(0x80 | (($ch >> 12) & 0x3F)) . chr(0x80 | (($ch >> 6) & 0x3F)) . chr(0x80 | ($ch & 0x3F));
         }
     }
 
-    /** @param int $n
+    /** @param int $ch
      * @return 1|2|3|4 */
-    static function utf8_chrlen($n) {
-        assert($n >= 0 && $n <= 0x10FFFF);
-        if ($n < 0x80) {
-            return 1;
-        } else if ($n < 0x800) {
-            return 2;
-        } else if ($n < 0x10000) {
-            return 3;
-        } else {
-            return 4;
-        }
+    static function utf8_chrlen($ch) {
+        assert($ch >= 0 && $ch <= 0x10FFFF);
+        return 1 + (int) ($ch >= 0x80) + (int) ($ch >= 0x800) + (int) ($ch >= 0x10000);
     }
 
     /** @param string $str

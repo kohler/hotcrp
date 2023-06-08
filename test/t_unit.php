@@ -354,13 +354,6 @@ class Unit_Tester {
         xassert_eqq($jpp->vpos1, 0);
         xassert_eqq($jpp->vpos2, strlen($input));
 
-        xassert_eqq(JsonParser::potential_string_includes_last("\"", 1), false);
-        xassert_eqq(JsonParser::potential_string_includes_last("\"\"", 1), false);
-        xassert_eqq(JsonParser::potential_string_includes_last("\"\\\"", 1), true);
-        xassert_eqq(JsonParser::potential_string_includes_last("\"\\\\\"", 1), false);
-        xassert_eqq(JsonParser::potential_string_includes_last("\"\\\n", 1), false);
-        xassert_eqq(JsonParser::potential_string_includes_last("\"\\x", 1), true);
-
         xassert_eqq(JsonParser::path_push(null, 0), "\$[0]");
         xassert_eqq(JsonParser::path_push(null, "0"), "\$[0]");
         xassert_eqq(JsonParser::path_push(null, ""), "\$[\"\"]");
@@ -426,6 +419,62 @@ class Unit_Tester {
         xassert(!$jp->ok());
         xassert_eqq($jp5->input("// Comment\ntrue\n/* Yep */")->decode(), true);
         xassert($jp5->ok());
+
+        xassert_eqq($jp5->input("'Hello.\t'")->decode(), "Hello.\t");
+        xassert($jp5->ok());
+        xassert_eqq($jp5->input("'Hello.\n'")->decode(), null);
+        xassert(!$jp5->ok());
+        xassert_eqq($jp5->input("'Hello.\\\n'")->decode(), "Hello.");
+        xassert($jp5->ok());
+        xassert_eqq($jp5->input("'Hello.\\\n\"'")->decode(), "Hello.\"");
+        xassert($jp5->ok());
+        xassert_eqq($jp5->input("\"Hello.\t'")->decode(), null);
+        xassert(!$jp5->ok());
+        xassert_eqq($jp5->input("\"Hello.\t\"")->decode(), "Hello.\t");
+        xassert($jp5->ok());
+        xassert_eqq($jp5->input("\"Hello.\n\"")->decode(), null);
+        xassert(!$jp5->ok());
+        xassert_eqq($jp5->input("\"Hello.\\\n\"")->decode(), "Hello.");
+        xassert($jp5->ok());
+        xassert_eqq($jp5->input("\"Hello.\\\n'\"")->decode(), "Hello.'");
+        xassert($jp5->ok());
+
+        xassert_eqq($jp->input("\"Hello.\t'")->decode(), null);
+        xassert(!$jp->ok());
+        xassert_eqq($jp->input("\"Hello.\t\"")->decode(), null);
+        xassert(!$jp->ok());
+        xassert_eqq($jp->input("\"Hello.\n\"")->decode(), null);
+        xassert(!$jp->ok());
+        xassert_eqq($jp->input("\"Hello.\\\n\"")->decode(), null);
+        xassert(!$jp->ok());
+        xassert_eqq($jp->input("\"Hello.\\\n'\"")->decode(), null);
+        xassert(!$jp->ok());
+
+        xassert_eqq($jp5->input("{a:1}")->decode(), ["a" => 1]);
+        xassert($jp5->ok());
+        xassert_eqq($jp->input("{a:1}")->decode(), null);
+        xassert(!$jp->ok());
+    }
+
+    /** @param JsonParser $jp
+     * @param string $input
+     * @return list<JsonParserPosition> */
+    private function get_member_positions($jp, $input) {
+        $jpps = [];
+        foreach ($jp->input($input)->member_positions(0) as $jpp) {
+            $jpps[] = $jpp;
+        }
+        return $jpps;
+    }
+
+    function test_json_member_positions() {
+        $jp = new JsonParser;
+        xassert_eqq(json_encode($this->get_member_positions($jp, "    null ")),
+                    '[[null,null,null,4,8]]');
+        xassert_eqq(json_encode($this->get_member_positions($jp, "[  1   ,\n\n3,4] ")),
+                    '[[0,null,null,3,4],[1,null,null,10,11],[2,null,null,12,13]]');
+        xassert_eqq(json_encode($this->get_member_positions($jp, "{    \"a\": {\"b\":\"c\",\"d\":1001010101010101} } ")),
+                    '[["a",5,8,10,40]]');
     }
 
     function test_object_replace_recursive() {
