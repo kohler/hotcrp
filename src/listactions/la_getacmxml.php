@@ -21,7 +21,7 @@ class GetACMXML_ListAction extends ListAction {
         ini_set("display_errors", "0");
 
         // GITHUB API KEY
-        $ghkey = "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";
+        $ghkey = getenv()["GHKEY"];
         $opts = [
             "http" => [
                 "method" => "GET",
@@ -174,7 +174,7 @@ class GetACMXML_ListAction extends ListAction {
             echo $mCSV;
         } else {
             header("Content-Type: text/xml; charset=utf-8");
-            //header("Content-Disposition: attachment; filename=" . mime_quote_string($pj_filename));
+            header("Content-Disposition: attachment; filename=" . mime_quote_string("acmexport.xml"));
             //echo "<pre>"; print_r($info); print_r($prow);
             echo $w->outputMemory(true);
             //json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
