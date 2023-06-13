@@ -9,6 +9,14 @@
         "expand_function": "GetDocument_ListAction::expand2"
     },
     {
+        "name": "get/acmxml", "get": true,
+        "title": "Paper information/ACM Digital Library XML",
+        "order": 10090,
+        "allow_if": "manager",
+        "function": "+GetACMXML_ListAction",
+        "has_attachments": false
+    },
+    {
         "name": "get/json", "get": true,
         "title": "Paper information/JSON",
         "order": 10090,
