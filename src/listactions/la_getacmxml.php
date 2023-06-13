@@ -21,8 +21,14 @@ class GetACMXML_ListAction extends ListAction {
         ini_set("display_errors", "0");
 
         // GITHUB API KEY
-        $ghkey = "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";
-        $sectionsCSV = file_get_contents("https://" . $ghkey . "@raw.githubusercontent.com/WiPSCE/ACM-XML-Metadata/main/categories-sections-types.csv?t=" . time());
+        $ghkey = "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";
+        $opts = [
+            "http" => [
+                "method" => "GET",
+                "header" => "Authorization: token " . $ghkey . "\r\n"
+            ]
+        ];
+        $sectionsCSV = file_get_contents("https://raw.githubusercontent.com/WiPSCE/ACM-XML-Metadata/main/categories-sections-types.csv?t=" . time(), false, stream_context_create($opts));
         if($sectionsCSV === false) {
             die("Please let administrator check GitHub key and URL for export");
         }
@@ -36,7 +42,7 @@ class GetACMXML_ListAction extends ListAction {
             $types[str_replace("\"", "", $cols[0])] = str_replace(PHP_EOL, "", str_replace("\"", "", $cols[2]));
         }
 
-        $affilCSV = file_get_contents("https://" . $ghkey . "@raw.githubusercontent.com/WiPSCE/ACM-XML-Metadata/main/affiliations.csv?t=" . time());
+        $affilCSV = file_get_contents("https://raw.githubusercontent.com/WiPSCE/ACM-XML-Metadata/main/affiliations.csv?t=" . time(), false, stream_context_create($opts));
         if($affilCSV === false) {
             die("Please let administrator check GitHub key and URL for export");
         }
@@ -52,7 +58,7 @@ class GetACMXML_ListAction extends ListAction {
             );
         }
 
-        $proceedingID = file_get_contents("https://" . $ghkey . "@raw.githubusercontent.com/WiPSCE/ACM-XML-Metadata/main/proceedingID.txt?t=" . time());
+        $proceedingID = file_get_contents("https://raw.githubusercontent.com/WiPSCE/ACM-XML-Metadata/main/proceedingID.txt?t=" . time(), false, stream_context_create($opts));
         if($proceedingID === false) {
             die("Please let administrator check GitHub key and URL for export");
         }
