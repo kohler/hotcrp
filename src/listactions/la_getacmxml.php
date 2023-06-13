@@ -19,9 +19,9 @@ class GetACMXML_ListAction extends ListAction {
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         error_reporting(E_ALL & ~E_NOTICE);
         ini_set("display_errors", "0");
-        
+
         // GITHUB API KEY
-        $ghkey = "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";
+        $ghkey = "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";
         $sectionsCSV = file_get_contents("https://" . $ghkey . "@raw.githubusercontent.com/WiPSCE/ACM-XML-Metadata/main/categories-sections-types.csv?t=" . time());
         if($sectionsCSV === false) {
             die("Please let administrator check GitHub key and URL for export");
