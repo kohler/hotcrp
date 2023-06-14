@@ -159,10 +159,10 @@ class GetACMXML_ListAction extends ListAction {
                                 $w->writeElement("country", $affiliations[$a->affiliation]["country"]);
                                 $w->writeElement("sequence_no", 1);
                             $w->endElement();
-                            $w->writeElement("email_address", $a->email);
-                            $w->writeElement("sequence_no", $aSeq++);
-                            $w->writeElement("contact_author", $isContact ? "Y" : "N");
                         $w->endElement();
+                        $w->writeElement("email_address", $a->email);
+                        $w->writeElement("sequence_no", $aSeq++);
+                        $w->writeElement("contact_author", $isContact ? "Y" : "N");
                     $w->endElement();
                 }
                 $w->endElement(); 
