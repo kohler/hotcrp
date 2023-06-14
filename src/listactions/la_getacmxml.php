@@ -183,7 +183,8 @@ class GetACMXML_ListAction extends ListAction {
             echo $mCSV;
         } else {
             header("Content-Type: text/xml; charset=utf-8");
-            header("Content-Disposition: attachment; filename=" . mime_quote_string("acmexport.xml"));
+            if(!isset($_GET["showOnly"]))
+                $_header("Content-Disposition: attachment; filename=" . mime_quote_string("acmexport.xml"));
             //echo "<pre>"; print_r($info); print_r($prow);
             echo $w->outputMemory(true);
             //json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
