@@ -129,12 +129,10 @@ class GetACMXML_ListAction extends ListAction {
             }
 
             $w->startElement("paper");
-                $w->writeElement("section", $sections[$info->submission_category]);
                 $w->writeElement("paper_type", $types[$info->submission_category]);
                 $w->writeElement("paper_title", $info->title);
                 $w->writeElement("event_tracking_number", $info->pid);
                 $w->writeElement("published_article_number", $artNum++);
-                $w->writeElement("sequence_no", $sort);
                 $w->startElement("authors");
                 
                 $aSeq = 1;
@@ -154,20 +152,23 @@ class GetACMXML_ListAction extends ListAction {
                     $w->startElement("author");
                         $w->writeElement("first_name", $a->first);
                         $w->writeElement("last_name", $a->last);
-                        $w->writeElement("email_address", $a->email);
-                        $w->writeElement("sequence_no", $aSeq++);
-                        $w->writeElement("contact_author", $isContact ? "Y" : "N");
                         $w->startElement("affiliations");
                             $w->startElement("affiliation");
-                            $w->writeElement("institution", $affiliations[$a->affiliation]["institution"]);
-                            $w->writeElement("city", $affiliations[$a->affiliation]["city"]);
-                            $w->writeElement("country", $affiliations[$a->affiliation]["country"]);
-                            $w->writeElement("sequence_no", 1);
+                                $w->writeElement("institution", $affiliations[$a->affiliation]["institution"]);
+                                $w->writeElement("city", $affiliations[$a->affiliation]["city"]);
+                                $w->writeElement("country", $affiliations[$a->affiliation]["country"]);
+                                $w->writeElement("sequence_no", 1);
+                                $w->writeElement("email_address", $a->email);
+                                $w->writeElement("sequence_no", $aSeq++);
+                                $w->writeElement("contact_author", $isContact ? "Y" : "N");
                             $w->endElement();
                         $w->endElement();
                     $w->endElement();
                 }
-                $w->endElement();        
+                $w->endElement(); 
+                $w->writeElement("section", $sections[$info->submission_category]);
+                $w->writeElement("sequence_no", $sort);
+                       
             $w->endElement();
         }
 
