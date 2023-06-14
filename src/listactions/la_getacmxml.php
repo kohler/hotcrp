@@ -133,7 +133,7 @@ class GetACMXML_ListAction extends ListAction {
                 $w->writeElement("paper_type", $types[$info->submission_category]);
                 $w->writeElement("paper_title", $info->title);
                 $w->writeElement("event_tracking_number", $info->pid);
-                $w->writeElement("published_article_no", $artNum++);
+                $w->writeElement("published_article_number", $artNum++);
                 $w->writeElement("sequence_no", $sort);
                 $w->startElement("authors");
                 
