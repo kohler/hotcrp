@@ -22,13 +22,25 @@ class GetACMXML_ListAction extends ListAction {
 
         // GITHUB API KEY
         $ghkey = getenv()["GHKEY"];
-        $opts = [
-            "http" => [
-                "method" => "GET",
-                "header" => "Authorization: token " . $ghkey . "\r\n"
-            ]
-        ];
-        $sectionsCSV = file_get_contents("https://raw.githubusercontent.com/WiPSCE/ACM-XML-Metadata/main/categories-sections-types.csv?t=" . time(), false, stream_context_create($opts));
+        $headers = ["Authorization: token " . $ghkey,
+                    "Cache-Control: max-age=0, private, no-cache, no-store, must-revalidate",
+                    "Pragma: no-cache",
+                    "X-Content-Type-Options: nosniff",
+                    "User-Agent: HotCRP WiSPCE"];
+
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_HEADER, false);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($curl, CURLOPT_FRESH_CONNECT, TRUE);
+
+        curl_setopt($curl, CURLOPT_URL, "https://api.github.com/repos/WiPSCE/ACM-XML-Metadata/branches");
+        $branches = curl_exec($curl);
+        $branch = json_decode($branches)[0]->commit->sha;
+        
+        curl_setopt($curl, CURLOPT_URL, "https://raw.githubusercontent.com/WiPSCE/ACM-XML-Metadata/" . $branch . "/categories-sections-types.csv");
+        $sectionsCSV = curl_exec($curl);
+        curl_close($curl);
         if($sectionsCSV === false) {
             die("Please let administrator check GitHub key and URL for export");
         }
@@ -37,12 +49,16 @@ class GetACMXML_ListAction extends ListAction {
         foreach(explode(PHP_EOL, $sectionsCSV) as $row) {
             if($row == "")
                 continue;
-            $cols = explode(",", $row);
-            $sections[str_replace("\"", "", $cols[0])] = str_replace(PHP_EOL, "", str_replace("\"", "", $cols[1]));
-            $types[str_replace("\"", "", $cols[0])] = str_replace(PHP_EOL, "", str_replace("\"", "", $cols[2]));
+            $cols = str_getcsv($row);
+            $sections[$cols[0]] = $cols[1];
+            $types[$cols[0]] = $cols[2];
         }
+        array_shift($sections);
+        array_shift($types);
 
-        $affilCSV = file_get_contents("https://raw.githubusercontent.com/WiPSCE/ACM-XML-Metadata/main/affiliations.csv?t=" . time(), false, stream_context_create($opts));
+        curl_setopt($curl, CURLOPT_URL, "https://raw.githubusercontent.com/WiPSCE/ACM-XML-Metadata/" . $branch . "/affiliations.csv");
+        $affilCSV = curl_exec($curl);
+        curl_close($curl);
         if($affilCSV === false) {
             die("Please let administrator check GitHub key and URL for export");
         }
@@ -50,15 +66,18 @@ class GetACMXML_ListAction extends ListAction {
         foreach(explode(PHP_EOL, $affilCSV) as $row) {
             if($row == "")
                 continue;
-            $cols = explode(",", $row);
+            $cols = str_getcsv($row);
             $affiliations[str_replace("\"", "", $cols[0])] = array(
-                "institution" => str_replace(PHP_EOL, "", str_replace("\"", "", $cols[1])),
-                "city" => str_replace(PHP_EOL, "", str_replace("\"", "", $cols[2])),
-                "country" => str_replace(PHP_EOL, "", str_replace("\"", "", $cols[3]))
+                "institution" => $cols[1],
+                "city" => $cols[2],
+                "country" => $cols[3]
             );
         }
+        array_shift($affiliations);
 
-        $proceedingID = file_get_contents("https://raw.githubusercontent.com/WiPSCE/ACM-XML-Metadata/main/proceedingID.txt?t=" . time(), false, stream_context_create($opts));
+        curl_setopt($curl, CURLOPT_URL, "https://raw.githubusercontent.com/WiPSCE/ACM-XML-Metadata/" . $branch . "/proceedingID.txt");
+        $proceedingID = curl_exec($curl);
+        curl_close($curl);
         if($proceedingID === false) {
             die("Please let administrator check GitHub key and URL for export");
         }
@@ -66,19 +85,6 @@ class GetACMXML_ListAction extends ListAction {
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $pj = [];
         $ps = new PaperStatus($user->conf, $user, ["hide_docids" => true]);
-
-        /*foreach ($ssel->paper_set($user, ["topics" => true, "options" => true]) as $prow) {
-            $pj1 = $ps->paper_json($prow);
-            if ($pj1) {
-                $pj[] = $pj1;
-            } else {
-                $pj[] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this submission"];
-                if ($this->iszip) {
-                    $mi = $this->zipdoc->error("You don’t have permission to administer this submission");
-                    $mi->landmark = "#{$prow->paperId}";
-                }
-            }
-        }*/
 
         $w=new XMLWriter();
         $w->openMemory();
@@ -103,6 +109,9 @@ class GetACMXML_ListAction extends ListAction {
             $info = $ps->paper_json($prow);
             $tags = [];
             $sort = "";
+
+            if(!isset($info->submission_category) || strlen($info->submission_category) <= 1)
+                die("Paper #" . $info->pid . " (\"" . $info->title . "\") has no submission category defined");
 
             if(!isset($sections[$info->submission_category]))
                 die("Submission category " . $info->submission_category . " not found in GitHub/WiPSCE/ACM-XML-Metadata/categories-sections-types.csv");
