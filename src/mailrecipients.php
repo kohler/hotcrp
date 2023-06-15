@@ -45,6 +45,10 @@ class MailRecipients extends MessageSet {
     private $_dcounts;
     /** @var ?array{bool,bool,bool} */
     private $_has_dt;
+    /** @var bool */
+    private $_has_paper_set = false;
+    /** @var ?PaperInfoSet */
+    private $_paper_set;
 
     const F_ANYPC = 1;
     const F_GROUP = 2;
@@ -284,6 +288,7 @@ class MailRecipients extends MessageSet {
     /** @param ?string $type
      * @return $this */
     function set_recipients($type) {
+        $this->_has_paper_set = false;
         $type = $this->canonical_recipients($type);
         foreach ($this->recipts as $i => $rec) {
             if ($rec->name === $type && ($rec->flags & self::F_GROUP) === 0) {
@@ -379,6 +384,16 @@ class MailRecipients extends MessageSet {
 
     /** @return ?PaperInfoSet */
     function paper_set() {
+        if ($this->_has_paper_set) {
+            return $this->_paper_set;
+        }
+
+        $this->_has_paper_set = true;
+        if (!$this->need_papers()) {
+            $this->_paper_set = null;
+            return null;
+        }
+
         $options = ["allConflictType" => true];
 
         // basic limit
@@ -404,11 +419,9 @@ class MailRecipients extends MessageSet {
             $options["anyLead"] = $options["reviewSignatures"] = true;
         } else if ($t === "shepherd") {
             $options["anyShepherd"] = $options["reviewSignatures"] = true;
-        } else if (strpos($t, "rev") !== false) {
-            $options["reviewSignatures"] = true;
         } else {
-            assert(!$this->need_papers());
-            return null;
+            assert(strpos($t, "rev") !== false);
+            $options["reviewSignatures"] = true;
         }
 
         // additional manager limit
@@ -431,13 +444,21 @@ class MailRecipients extends MessageSet {
         }
 
         // load paper set
-        return $this->conf->paper_set($options, $this->user);
+        $this->_paper_set = $this->conf->paper_set($options, $this->user);
+        return $this->_paper_set;
     }
 
-    /** @param ?PaperInfoSet $paper_set
-     * @param bool $paper_sensitive
+    /** @param int $pid
+     * @return ?PaperInfo */
+    function paper($pid) {
+        $paper_set = $this->paper_set();
+        return $paper_set ? $paper_set->get($pid) : null;
+    }
+
+
+    /** @param bool $paper_sensitive
      * @return string|false */
-    function query($paper_set, $paper_sensitive) {
+    function query($paper_sensitive) {
         $cols = [];
         $where = ["not disabled"];
         $joins = ["ContactInfo"];
@@ -475,6 +496,7 @@ class MailRecipients extends MessageSet {
             $where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
         }
 
+        $paper_set = $this->paper_set();
         assert(!!$paper_set === $needpaper);
         if ($needpaper && $paper_set) {
             $where[] = "Paper.paperId" . sql_in_int_list($paper_set->paper_ids());

@@ -492,8 +492,7 @@ class MailSender {
         $prep = $mailer->prepare($template, $rest);
         $paper_sensitive = preg_match('/%[A-Z0-9]+[(%]/', $prep->subject . $prep->body);
 
-        $paper_set = $this->recip->paper_set();
-        $q = $this->recip->query($paper_set, $paper_sensitive);
+        $q = $this->recip->query($paper_sensitive);
         if (!$q) {
             $this->conf->error_msg("<0>Invalid recipients");
             return;
@@ -527,7 +526,7 @@ class MailSender {
         foreach ($recip_set as $contact) {
             ++$nrows_done;
 
-            $rest["prow"] = $prow = $paper_set ? $paper_set->get((int) $contact->paperId) : null;
+            $rest["prow"] = $prow = $this->recip->paper((int) $contact->paperId);
             $rest["newrev_since"] = $this->recip->newrev_since;
             $mailer->reset($contact, $rest);
             $prep = $mailer->prepare($template, $rest);
