@@ -65,6 +65,8 @@ class HotCRPMailer extends Mailer {
     protected $no_send = false;
     /** @var int */
     public $combination_type = 0;
+    /** @var ?string */
+    protected $_unexpanded_paper_keyword;
 
     protected $_statistics = null;
 
@@ -101,6 +103,7 @@ class HotCRPMailer extends Mailer {
         } else {
             $this->permuser = $this->recipient;
         }
+        $this->_unexpanded_paper_keyword = null;
         // Infer reviewer contact from rrow/comment_row
         if (!$this->contacts["reviewer"]) {
             if ($this->rrow) {
@@ -361,7 +364,7 @@ class HotCRPMailer extends Mailer {
     function kw_newassignments() {
         return $this->get_assignments($this->recipient, self::GA_SINCE | self::GA_NEEDS_SUBMIT, null);
     }
-    function kw_haspaper() {
+    function kw_haspaper($uf = null, $name = null) {
         if ($this->row && $this->row->paperId > 0) {
             if ($this->preparation
                 && $this->preparation instanceof HotCRPMailPreparation) {
@@ -369,6 +372,7 @@ class HotCRPMailer extends Mailer {
             }
             return true;
         } else {
+            $this->_unexpanded_paper_keyword = $name;
             return false;
         }
     }
@@ -549,13 +553,13 @@ class HotCRPMailer extends Mailer {
     }
 
 
-    function unexpanded_warning_at($text) {
-        if (preg_match('/\A%(?:NUMBER|TITLE|PAPER|AUTHOR|REVIEW|COMMENT)/', $text)) {
-            $this->warning_at($text, "<0>Reference not expanded because this mail isn’t linked to submissions or reviews");
-        } else if (preg_match('/\A%AUTHORVIEWCAPABILITY/', $text)) {
-            $this->warning_at($text, "<0>Reference not expanded because this mail isn’t meant for submission authors");
+    function handle_unexpanded_keyword($kw, $xref) {
+        if ($kw === $this->_unexpanded_paper_keyword) {
+            return "<0>Keyword not expanded because this mail isn’t linked to submissions or reviews";
+        } else if (preg_match('/\AAUTHORVIEWCAPABILITY/', $kw)) {
+            return "<0>Keyword not expanded because this mail isn’t meant for submission authors";
         } else {
-            parent::unexpanded_warning_at($text);
+            return parent::handle_unexpanded_keyword($kw, $xref);
         }
     }
 

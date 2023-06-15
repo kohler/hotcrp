@@ -453,7 +453,7 @@ class MailRecipients extends MessageSet {
         if ($t === "all") {
             $needpaper = false;
             $where[] = "(ContactInfo.roles!=0 or lastLogin>0 or exists (select * from PaperConflict where contactId=ContactInfo.contactId) or exists (select * from PaperReview where contactId=ContactInfo.contactId and reviewType>0))";
-        } else if ($t === "pc" || substr($t, 0, 3) === "pc:") {
+        } else if ($t === "pc" || str_starts_with($t, "pc:")) {
             $needpaper = false;
             $where[] = "(ContactInfo.roles&" . Contact::ROLE_PC . ")!=0";
             if ($t != "pc") {

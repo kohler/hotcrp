@@ -316,9 +316,9 @@ class Mailer {
             foreach (is_array($xchecks) ? $xchecks : [$xchecks] as $xf) {
                 if (is_string($xf)) {
                     if ($xf[0] === "*") {
-                        $ok = $ok && call_user_func([$this, substr($xf, 1)], $uf);
+                        $ok = $ok && call_user_func([$this, substr($xf, 1)], $uf, $name);
                     } else {
-                        $ok = $ok && call_user_func($xf, $this, $uf);
+                        $ok = $ok && call_user_func($xf, $this, $uf, $name);
                     }
                 } else {
                     $ok = $ok && !!$xf;
@@ -662,18 +662,31 @@ class Mailer {
     }
 
     /** @param string $ref */
-    function unexpanded_warning_at($ref) {
-        $xref = str_starts_with($ref, "%") ? $ref : "%{$ref}%";
-        if (preg_match('/\A(?:RESET|)PASSWORDLINK/', $ref)) {
-            if ($this->conf->external_login()) {
-                $this->warning_at($xref, "<0>This site does not use password links");
-            } else if ($this->censor === self::CENSOR_ALL) {
-                $this->warning_at($xref, "<0>Password links cannot appear in mails with Cc or Bcc");
-            } else {
-                $this->warning_at($xref, "<0>Keyword not found");
-            }
+    final function unexpanded_warning_at($ref) {
+        if (preg_match('/\A%(\w+)/', $ref, $m)) {
+            $kw = $m[1];
+            $xref = $ref;
         } else {
-            $this->warning_at($xref, "<0>Keyword not found");
+            $kw = $ref;
+            $xref = "%{$kw}%";
         }
+        $text = $this->handle_unexpanded_keyword($kw, $xref);
+        if ($text !== "") {
+            $this->warning_at($xref, $text);
+        }
+    }
+
+    /** @param string $kw
+     * @param string $xref
+     * @return string */
+    function handle_unexpanded_keyword($kw, $xref) {
+        if (preg_match('/\A(?:RESET|)PASSWORDLINK/', $kw)) {
+            if ($this->conf->external_login()) {
+                return "<0>This site does not use password links";
+            } else if ($this->censor === self::CENSOR_ALL) {
+                return "<0>Password links cannot appear in mails with Cc or Bcc";
+            }
+        }
+        return "<0>Keyword not found";
     }
 }
