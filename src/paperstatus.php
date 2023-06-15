@@ -218,7 +218,7 @@ class PaperStatus extends MessageSet {
         if ($doc->paperId === 0 || $doc->paperId === -1) {
             $this->_update_pid_dids[] = $doc->paperStorageId;
         } else {
-            assert($doc->paperId === $this->prow->paperId);
+            assert($doc->paperId === $this->_desired_pid);
         }
         return $doc;
     }
@@ -236,7 +236,8 @@ class PaperStatus extends MessageSet {
         // make new document
         $args = [
             "paperId" => $this->_desired_pid ?? -1,
-            "hash" => $hash, "documentType" => $o->id
+            "hash" => $hash,
+            "documentType" => $o->id
         ];
         foreach (["timestamp", "mimetype",
                   "content", "content_base64", "content_file"] as $k) {
