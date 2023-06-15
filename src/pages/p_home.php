@@ -505,15 +505,17 @@ class Home_Page {
 
     private function print_new_submission(Contact $user, SubmissionRound $sr) {
         $conf = $user->conf;
-        $dlt = "";
-        if ($sr->register > 0 || $sr->submit > 0) {
-            $isreg = $sr->register >= Conf::$now && $sr->register < $sr->submit;
+        $isreg = $sr->register >= Conf::$now && $sr->register < $sr->submit;
+        $dlt = $isreg ? $sr->register : $sr->submit;
+        if ($dlt > 0) {
             $dltype = $isreg ? "Registration" : "Submission";
             if (!$sr->unnamed) {
                 $dltype = strtolower($dltype);
             }
-            $dlspan = $conf->unparse_time_with_local_span($isreg ? $sr->register : $sr->submit);
-            $dlt = "<em class=\"deadline\">{$sr->title1}{$dltype} deadline: {$dlspan}</em>";
+            $dlspan = $conf->unparse_time_with_local_span($dlt);
+            $dltx = "<em class=\"deadline\">{$sr->title1}{$dltype} deadline: {$dlspan}</em>";
+        } else {
+            $dltx = "";
         }
         if ($user->has_email()) {
             $url = $conf->hoturl("paper", [
@@ -523,12 +525,12 @@ class Home_Page {
                 "<a class=\"btn\" href=\"{$url}\">New {$sr->title1}submission</a>",
                 $sr->time_register(true) ? "" : "(admin only)"
             ]];
-            if ($dlt !== "") {
-                $actions[] = [$dlt];
+            if ($dltx !== "") {
+                $actions[] = [$dltx];
             }
             echo Ht::actions($actions, ["class" => "aab mt-0 mb-2 align-items-baseline"]);
-        } else if ($dlt) {
-            echo '<p class="mb-2">', $dlt, '</p>';
+        } else if ($dltx !== "") {
+            echo '<p class="mb-2">', $dltx, '</p>';
         }
     }
 
