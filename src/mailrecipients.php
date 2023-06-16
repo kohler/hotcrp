@@ -356,9 +356,7 @@ class MailRecipients extends MessageSet {
 
     /** @return bool */
     function need_papers() {
-        return $this->rect->name !== "pc"
-            && substr($this->rect->name, 0, 3) !== "pc:"
-            && $this->rect->name !== "all";
+        return ($this->rect->flags & self::F_NOPAPERS) === 0;
     }
 
     /** @param bool $paper_sensitive
