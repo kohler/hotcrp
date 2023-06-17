@@ -223,7 +223,7 @@
     {
         "name": "r",
         "parse_function": "Review_SearchTerm::parse",
-        "rtype": null, "recompleteness": null, "reblank": true, "has": ">0"
+        "reblank": true, "has": ">0"
     },
     {
         "name": "token",

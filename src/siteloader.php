@@ -29,7 +29,6 @@ class SiteLoader {
         "PaperOptionList" => "src/paperoption.php",
         "QrequestFile" => "lib/qrequest.php",
         "ReviewFieldInfo" => "src/reviewfield.php",
-        "ReviewSearchMatcher" => "src/search/st_review.php",
         "ReviewValues" => "src/reviewform.php",
         "StreamS3Result" => "lib/s3result.php",
         "TagAnno" => "lib/tagger.php",

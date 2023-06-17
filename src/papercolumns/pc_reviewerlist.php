@@ -7,17 +7,25 @@ class ReviewerList_PaperColumn extends PaperColumn {
     private $pref = false;
     /** @var bool */
     private $topics = false;
+    /** @var ?ReviewSearchMatcher */
+    private $rsm;
     /** @var ?SearchTerm */
     private $hlterm;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
+        if (isset($cj->rematch)) {
+            $this->rsm = new ReviewSearchMatcher;
+            foreach ($cj->rematch as $m) {
+                $this->rsm->apply_review_word($m, $conf);
+            }
+        }
     }
     function add_decoration($decor) {
         if ($decor[0] === "p" && in_array($decor, ["pref", "prefs", "preference", "preferences"])) {
             $this->pref = true;
-            return $this->__add_decoration("prefs");
+            return $this->__add_decoration("pref");
         } else if ($decor === "topic" || $decor === "topics" || $decor === "topicscore") {
-            $this->topics = true;
+            $this->pref = $this->topics = true;
             return $this->__add_decoration("topics");
         } else {
             return parent::add_decoration($decor);
@@ -49,21 +57,22 @@ class ReviewerList_PaperColumn extends PaperColumn {
         }
         return true;
     }
-    function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->can_view_review_identity($row, null);
+    function content_empty(PaperList $pl, PaperInfo $prow) {
+        return !$pl->user->can_view_review_identity($prow, null);
     }
-    function content(PaperList $pl, PaperInfo $row) {
+    function content(PaperList $pl, PaperInfo $prow) {
         // see also search.php > getaction == "reviewers"
         $x = [];
-        $pref = $pl->user->can_view_preference($row);
-        foreach ($row->reviews_as_display() as $xrow) {
-            if ($pl->user->can_view_review_identity($row, $xrow)) {
-                $ranal = $pl->make_review_analysis($xrow, $row);
+        $pref = $this->pref && $pl->user->can_view_preference($prow);
+        foreach ($prow->reviews_as_display() as $xrow) {
+            if ($pl->user->can_view_review_identity($prow, $xrow)
+                && (!$this->rsm || $this->rsm->test_review($pl->user, $prow, $xrow))) {
+                $ranal = $pl->make_review_analysis($xrow, $prow);
                 $t = $pl->user->reviewer_html_for($xrow) . " " . $ranal->icon_html(false);
                 if ($pref) {
-                    $t .= unparse_preference_span($row->preference($xrow->contactId, $this->topics), true);
+                    $t .= unparse_preference_span($prow->preference($xrow->contactId, $this->topics), true);
                 }
-                $k = $this->hlterm && $this->hlterm->test($row, $xrow) ? " highlightmark taghh" : "";
+                $k = $this->hlterm && $this->hlterm->test($prow, $xrow) ? " highlightmark taghh" : "";
                 $x[] = "<span class=\"nb{$k}\">{$t}";
             }
         }
@@ -73,14 +82,15 @@ class ReviewerList_PaperColumn extends PaperColumn {
             return "";
         }
     }
-    function text(PaperList $pl, PaperInfo $row) {
+    function text(PaperList $pl, PaperInfo $prow) {
         $x = [];
-        $pref = $pl->user->can_view_preference($row);
-        foreach ($row->reviews_as_display() as $xrow) {
-            if ($pl->user->can_view_review_identity($row, $xrow)) {
+        $pref = $this->pref && $pl->user->can_view_preference($prow);
+        foreach ($prow->reviews_as_display() as $xrow) {
+            if ($pl->user->can_view_review_identity($prow, $xrow)
+                && (!$this->rsm || $this->rsm->test_review($pl->user, $prow, $xrow))) {
                 $t = $pl->user->reviewer_text_for($xrow);
                 if ($pref) {
-                    $pf = $row->preference($xrow->contactId, $this->topics);
+                    $pf = $prow->preference($xrow->contactId, $this->topics);
                     $t .= " P" . unparse_number_pm_text($pf[0]) . unparse_expertise($pf[1]);
                     if ($this->topics && $pf[2] && !$pf[0]) {
                         $t .= " T" . unparse_number_pm_text($pf[2]);

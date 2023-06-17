@@ -248,6 +248,21 @@
         "order": 850
     },
     {
+        "name": "re", "title": "Reviewers",
+        "prefer_row": true, "completion": true, "function": "+ReviewerList_PaperColumn",
+        "order": 850
+    },
+    {
+        "name": "ire", "title": "Incomplete reviewers",
+        "prefer_row": true, "completion": true, "function": "+ReviewerList_PaperColumn",
+        "order": 850, "rematch": ["incomplete"]
+    },
+    {
+        "name": "cre", "title": "Complete reviewers",
+        "prefer_row": true, "completion": true, "function": "+ReviewerList_PaperColumn",
+        "order": 850, "rematch": ["complete"]
+    },
+    {
         "name": "tags", "title": "Tags",
         "prefer_row": true, "completion": true, "function": "+TagList_PaperColumn",
         "order": 1410
