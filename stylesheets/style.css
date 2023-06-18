@@ -1215,29 +1215,30 @@ span.expander {
 	text-decoration: none;
 }
 
-a.tbtn {
+.tbtn {
 	display: inline-block;
 	text-indent: 0;
 	padding: 2px 4px;
 	border-radius: 5px;
+	border-width: 0;
 	text-decoration: inherit;
 	color: white;
 	background: #63639c;
 }
-a.tbtn:hover {
+.tbtn:hover {
 	background: #5a5a8c;
 	color: white;
 }
-a.tbtn-on {
+.tbtn-on {
 	background: #4444cc;
 }
-a.tbtn-on:hover {
+.tbtn-on:hover {
 	background: #2c2ca0;
 }
-a.tbtn-here {
+.tbtn-here {
 	background: #cc4444;
 }
-a.tbtn-here:hover {
+.tbtn-here:hover {
 	background: #a02c2c;
 }
 .btn-x::after {
@@ -1339,11 +1340,11 @@ button.btn-t {
 	padding: 1px 4px;
 }
 button:hover, .btn:hover, select:hover {
-	border: 1px solid #a5a5a5;
+	border-color: #a5a5a5;
 	background-image: linear-gradient(#f5f5f5, #e8e8e8);
 }
 button:active, .btn:active {
-	border: 1px solid #aaaaaa;
+	border-color: #aaaaaa;
 	background-image: linear-gradient(#c3c3c3, #d3d3d3);
 }
 button:hover, button:focus, button:active, button:focus-within,
@@ -1352,31 +1353,31 @@ button:hover, button:focus, button:active, button:focus-within,
 }
 .btn-default,
 .btn-primary {
-	border: 1px solid #6b73b5;
+	border-color: #6b73b5;
 	background: #8089d1;
 	background-image: linear-gradient(#9ca3d6, #8089d1);
 	color: white;
 }
 .btn-default:hover, .btn-default:active,
 .btn-primary:hover, .btn-primary:active {
-	border: 1px solid #505799;
+	border-color: #505799;
 	background-image: linear-gradient(#8089d1, #6b73b5);
 }
 .btn-success {
-	border: 1px solid #007f00;
+	border-color: #007f00;
 	background: #00ba00;
 	background-image: linear-gradient(#00ba00, #00a500);
 	color: white;
 }
 .btn-success:hover, .btn-success:active {
-	border: 1px solid #005f00;
+	border-color: #005f00;
 	background-image: linear-gradient(#00a200, #007f00);
 }
 .alert .btn-default,
 .alert .btn-primary,
 .alert .btn-alertable,
 .btn-highlight {
-	border: 1px solid #cc0000;
+	border-color: #cc0000;
 	background: #ff0000;
 	background-image: linear-gradient(#ff4040, #ff0000);
 	color: white;
@@ -2417,7 +2418,7 @@ textarea[name=comment] {
 	font-size: 0.9rem;
 	color: #df4c4c;
 }
-.revrating-group.flag {
+.revrating-flag {
 	color: #d72626;
 	padding-right: 0.5em;
 }
@@ -2456,7 +2457,7 @@ textarea[name=comment] {
 .revrating-active:hover > button {
 	color: #ffe080;
 }
-.revrating-choice, .revrating-group {
+.revrating-choice, .revrating-group, .revrating-flag {
 	white-space: nowrap;
 }
 .revrating-choice > .ct, .revrating-group > .ct {

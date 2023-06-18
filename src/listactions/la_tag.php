@@ -15,8 +15,8 @@ class Tag_ListAction extends ListAction {
         // tag name cell
         $t = "";
         if ($pl->user->privChair) {
-            $t .= '<span class="fx98"><a class="ui q js-foldup" href="" data-fold-target="99">'
-                . expander(null, 99) . "</a></span>";
+            $t .= '<span class="fx98"><button type="button" class="btn-qlink ui js-foldup" data-fold-target="99">'
+                . expander(null, 99) . "</button></span>";
         }
         $t .= 'tag<span class="fn98">(s)</span> &nbsp;'
             . Ht::entry("tag", $qreq->tag,

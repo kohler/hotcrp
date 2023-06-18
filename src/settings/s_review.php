@@ -301,8 +301,8 @@ class Review_SettingParser extends SettingParser {
         $sv->set_oldv("mailbody_requestreview", $t["body"]);
         echo '<div class="', $sv->control_class("mailbody_requestreview", "f-i"), '">',
             '<div class="f-c n">',
-            '<a class="ui q js-foldup" href="">', expander(null, 0),
-            '<label for="mailbody_requestreview">Mail template for external review requests</label></a>',
+            '<button type="button" class="btn-qlink ui js-foldup">', expander(null, 0),
+            '<label for="mailbody_requestreview">Mail template for external review requests</label></button>',
             '<span class="fx"> (<a href="', $sv->conf->hoturl("mail"), '">keywords</a> allowed; set to empty for default)</span></div>',
             $sv->textarea("mailbody_requestreview", ["class" => "text-monospace fx", "cols" => 80, "rows" => 20]);
         $sv->print_feedback_at("mailbody_requestreview");

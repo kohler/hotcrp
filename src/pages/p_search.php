@@ -144,7 +144,7 @@ class Search_Page {
             $this->set_header(40, "<strong>Formulas:</strong>");
         }
         if ($user->isPC && $pl->search->limit() !== "a") {
-            $this->item(40, '<div class="mt-2"><a class="ui js-edit-formulas" href="">Edit formulas</a></div>');
+            $this->item(40, '<div class="mt-2"><button type="button" class="btn-link ui js-edit-formulas">Edit formulas</button></div>');
         }
     }
 

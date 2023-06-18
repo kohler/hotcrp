@@ -1395,7 +1395,7 @@ class PaperList {
                 if (!$fdef->content_empty($this, $row)) {
                     $this->overriding = 2;
                     if ($override === PaperColumn::OVERRIDE_IFEMPTY_LINK) {
-                        $content = '<em>Hidden for conflict</em> · <a class="ui js-override-conflict" href="">Override</a>';
+                        $content = '<em>Hidden for conflict</em> · <button type="button" class="btn-link ui js-override-conflict">Override</button>';
                     }
                     $content = $this->wrap_conflict($content, $fdef->content($this, $row), $fdef->as_row ? "div" : "span");
                 }

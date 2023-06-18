@@ -5213,9 +5213,12 @@ function unparse_ratings(ratings, user_rating, editable) {
     var rating_names = ["Good review", "Needs work", "Too short", "Too vague",
                         "Too narrow", "Disrespectful", "Not correct"];
     var t = [];
-    t.push('<span class="revrating-group flag fn">'
-           + (editable ? '<a href="" class="q ui js-revrating-unfold">' : '<a href="' + hoturl("help", {t: "revrate"}) + '" class="q">')
-           + '&#x2691;</a></span>');
+    t.push('<span class="revrating-flag fn">');
+    if (editable)
+        t.push('<button type="button" class="btn-qlink ui js-revrating-unfold">&#x2691;</button>');
+    else
+        t.push('<a href="'.concat(hoturl("help", {t: "revrate"}), '" class="q">&#x2691;</a>'));
+    t.push('</span>');
     for (var i = 0; i < rating_names.length; ++i) {
         if (editable) {
             var klass = "revrating-choice", bklass = "";
@@ -5817,8 +5820,8 @@ function cmt_identity_time(cj, editing) {
     if (cj.author && cj.author_hidden) {
         t.push('<address class="has-fold cmtname fold9c" itemprop="author"><span class="fx9' +
                (cj.author_email ? '" title="' + cj.author_email : '') +
-               '">' + cj.author + ' </span><a class="ui q js-foldup" href="" data-fold-target="9" title="Toggle author"><span class="fn9"><span class="expander"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span>' +
-               (cj.author_pseudonym || "<i>Hidden</i>") + '</span><span class="fx9">(deanonymized)</span></a></address>');
+               '">' + cj.author + ' </span><button type="button" class="btn-qlink ui js-foldup" data-fold-target="9" title="Toggle author"><span class="fn9"><span class="expander"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span>' +
+               (cj.author_pseudonym || "<i>Hidden</i>") + '</span><span class="fx9">(deanonymized)</span></button></address>');
     } else if (cj.author) {
         x = cj.author;
         if (cj.author_pseudonym && cj.author_pseudonymous) {
@@ -5874,7 +5877,7 @@ function cmt_render_form(hc, cj) {
     hc.push('<div class="f-i">', '</div>');
     var fmt = render_text.format(cj.format), fmtnote = fmt.description || "";
     if (fmt.has_preview) {
-        fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="" class="ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
+        fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<button type="button" class="btn-link ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</button>';
     }
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
     hc.push_pop('<textarea name="text" class="w-text cmttext suggest-emoji mentions need-suggest c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
@@ -6419,7 +6422,7 @@ function cmt_render(cj, editing) {
     } else if (cj.editable && !editing && cj.response) {
         var $h2 = $(chead).find("h2");
         if (!$h2.find("a").length) {
-            $h2.html('<a href="" class="qo ui cmteditor">' + $h2.html() + ' <span class="t-editor">✎</span></a>');
+            $h2.html('<button type="button" class="qo ui cmteditor">' + $h2.html() + ' <span class="t-editor">✎</span></button>');
         }
     }
     t = cmt_identity_time(cj, editing);
@@ -6477,7 +6480,7 @@ function cmt_render(cj, editing) {
                 "response not shown</p>";
             $(celt).find(".cmttext").html(t);
         }
-        (cj.response ? chead.parent() : $(celt)).find("a.cmteditor").click(edit_this);
+        (cj.response ? chead.parent() : $(celt)).find(".cmteditor").click(edit_this);
     }
 
     return $(celt);
@@ -6570,7 +6573,7 @@ function add_new_comment_button(cj, cid) {
             $b = $('<div class="aabut"><a href="#'.concat(cid, '" class="uic js-edit-comment btn">Add ', rname || "comment", '</a></div>'));
         if (cj.response && cj.author_editable === false) {
             if (!hasClass(actions, "has-fold")) {
-                $(actions).addClass("has-fold foldc").find(".aabig").append('<div class="aabut fn"><a class="ui js-foldup ulh need-tooltip" aria-label="Show more comment options" href="">…</a></div>');
+                $(actions).addClass("has-fold foldc").find(".aabig").append('<div class="aabut fn"><button type="button" class="btn-link ui js-foldup ulh need-tooltip" aria-label="Show more comment options">…</button></div>');
             }
             $b.addClass("fx").append('<div class="hint">(admin only)</div>');
         }
@@ -8556,6 +8559,8 @@ handle_ui.on("js-annotate-order", function () {
             $row.appendTo($d.find(".tagannos"));
             $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
             $row.find("input[name='legend_n" + last_newannoid + "']").focus();
+        } else if (hasClass(this, "delete-link")) {
+            ondeleteclink.call(this, evt);
         } else {
             var anno = [];
             for (var i = 0; i < annos.length; ++i) {
@@ -8584,8 +8589,6 @@ handle_ui.on("js-annotate-order", function () {
         $div.find("input[name='legend_" + annoid + "']").prop("disabled", true);
         tooltip.erase.call(this);
         $(this).remove();
-        evt.preventDefault();
-        handle_ui.stopPropagation(evt);
     }
     function make_onsave($d) {
         return function (rv) {
@@ -8604,7 +8607,7 @@ handle_ui.on("js-annotate-order", function () {
         hc.push('<div class="entryi"><label for="k-taganno-' + annoid + '-d">Legend</label><input id="k-taganno-' + annoid + '-d" name="legend_' + annoid + '" type="text" placeholder="none" size="32" class="need-autogrow"></div>');
         hc.push('<div class="entryi"><label for="k-taganno-' + annoid + '-tagval">Tag value</label><div class="entry"><input id="k-taganno-' + annoid + '-tagval" name="tagval_' + annoid + '" type="text" size="5">', '</div></div>');
         if (anno.annoid)
-            hc.push(' <a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete group">x</a>');
+            hc.push(' <button type="button" class="ui closebtn delete-link need-tooltip" aria-label="Delete group">x</button>');
         hc.pop_n(2);
     }
     function show_dialog(rv) {
@@ -8627,7 +8630,7 @@ handle_ui.on("js-annotate-order", function () {
             $d.find("input[name='legend_" + annos[i].annoid + "']").val(annos[i].legend);
             $d.find("input[name='tagval_" + annos[i].annoid + "']").val(tagvalue_unparse(annos[i].tagval));
         }
-        $d.on("click", "button", clickh).on("click", "a.delete-link", ondeleteclick);
+        $d.on("click", "button", clickh);
     }
     $.get(hoturl("=api/taganno", {tag: mytag}), show_dialog);
 });
@@ -9385,7 +9388,7 @@ function render_row_tags(div) {
             t = '<span class="fn5"><em class="plx">Tags:</em> ' + ct.join(" ") + '</span>' + t;
     }
     if (t != "" && ptr.getAttribute("data-tags-editable") != null) {
-        t += ' <span class="hoveronly"><span class="barsep">·</span> <a class="ui js-plinfo-edittags" href="">Edit</a></span>';
+        t += ' <span class="hoveronly"><span class="barsep">·</span> <button type="button" class="btn-link ui js-plinfo-edittags">Edit</button></span>';
     }
     $(div).find("textarea").unautogrow();
     t == "" ? $(div).empty() : $(div).html(t);
@@ -11079,7 +11082,7 @@ handle_ui.on("js-edit-formulas", function () {
         hc.push('<div class="entryi"><label for="k-formulaname_' + count + '">Name</label><div class="entry nw">', '</div></div>');
         if (f.editable) {
             hc.push('<input type="text" id="k-formulaname_' + count + '" class="editformulas-name need-autogrow" name="formulaname_' + count + '" size="30" value="' + escape_html(f.name) + '" placeholder="Formula name">');
-            hc.push('<a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete formula">x</a>');
+            hc.push('<button type="button" class="ui closebtn delete-link need-tooltip" aria-label="Delete formula">x</button>');
         } else
             hc.push(escape_html(f.name));
         hc.pop();
@@ -11103,6 +11106,8 @@ handle_ui.on("js-edit-formulas", function () {
             $f[0].setAttribute("data-formula-new", "");
             focus_at($f.find(".editformulas-name"));
             $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
+        } else if (hasClass(this, "delete-link")) {
+            ondelete.call(this);
         }
     }
     function ondelete() {
@@ -11138,7 +11143,6 @@ handle_ui.on("js-edit-formulas", function () {
         hc.push_actions(['<button type="submit" name="saveformulas" value="1" class="btn-primary">Save</button>', '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
         $d.on("click", "button", click);
-        $d.on("click", "a.delete-link", ondelete);
         $d.on("submit", "form", submit);
     }
     $.get(hoturl("=api/namedformula"), function (data) {
@@ -11202,7 +11206,7 @@ handle_ui.on("js-edit-namedsearches", function () {
         hc.push('<div class="entryi"><label for="k-searchname_' + count + '">Name</label><div class="entry nw">', '</div></div>');
         if (f.editable) {
             hc.push('<input type="text" id="k-searchname_' + count + '" class="editsearches-name need-autogrow" name="searchname_' + count + '" size="30" value="' + escape_html(f.name) + '" placeholder="Search name">');
-            hc.push('<a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete search">x</a>');
+            hc.push('<button type="button" class="ui closebtn delete-link need-tooltip" aria-label="Delete search">x</button>');
         } else
             hc.push(escape_html(f.name));
         hc.pop();
@@ -11227,6 +11231,8 @@ handle_ui.on("js-edit-namedsearches", function () {
             $f[0].setAttribute("data-search-new", "");
             focus_at($f.find(".editsearches-name"));
             $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
+        } else if (hasClass(this, "delete-link")) {
+            ondelete.call(this);
         }
     }
     function ondelete() {
@@ -11263,7 +11269,6 @@ handle_ui.on("js-edit-namedsearches", function () {
         hc.push_actions(['<button type="submit" name="savesearches" value="1" class="btn-primary">Save</button>', '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
         $d.on("click", "button", click);
-        $d.on("click", "a.delete-link", ondelete);
         $d.on("submit", "form", submit);
     }
     $.get(hoturl("=api/namedsearch"), function (data) {

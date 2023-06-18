@@ -526,9 +526,9 @@ class PaperTable {
         $fold = $extra["fold"] ?? false;
         $editfolder = $extra["editfolder"] ?? false;
         $foldnum = $fold || $editfolder ? $extra["foldnum"] ?? 0 : 0;
-        $foldnumclass = "";
+        $foldtarget = "";
         if ($foldnum || isset($extra["foldopen"])) {
-            $foldnumclass = " data-fold-target=\"{$foldnum}"
+            $foldtarget = " data-fold-target=\"{$foldnum}"
                 . (isset($extra["foldopen"]) ? "o\"" : "\"");
         }
 
@@ -540,7 +540,7 @@ class PaperTable {
 
         $c = "<div class=\"" . $this->control_class($what, $divclass);
         if (($fold || $editfolder) && !($extra["float"] ?? false)) {
-            $c .= " ui js-foldup\"" . $foldnumclass . ">";
+            $c .= " ui js-foldup\"" . $foldtarget . ">";
         } else {
             $c .= "\">";
         }
@@ -554,7 +554,7 @@ class PaperTable {
             if ($editfolder) {
                 $c .= "<a class=\"q fn ui js-foldup\" "
                     . "href=\"" . $this->conf->selfurl($this->qreq, ["atab" => $what])
-                    . "\"" . $foldnumclass . ">" . $n
+                    . "\"" . $foldtarget . ">" . $n
                     . '<span class="t-editor">✎ </span>'
                     . "</a><span class=\"fx\">" . $n . "</span>";
             } else {
@@ -562,8 +562,8 @@ class PaperTable {
             }
         } else {
             '@phan-var-force int $foldnum';
-            '@phan-var-force string $foldnumclass';
-            $c .= '<a class="q ui js-foldup" href=""' . $foldnumclass;
+            '@phan-var-force string $foldtarget';
+            $c .= '<button type="button" class="btn-qlink ui js-foldup"' . $foldtarget;
             if (($title = $extra["foldtitle"] ?? false)) {
                 $c .= ' title="' . $title . '"';
             }
@@ -579,7 +579,7 @@ class PaperTable {
             } else {
                 $c .= $name[0];
             }
-            $c .= '</a>';
+            $c .= '</button>';
         }
         $c .= "</h3>";
         if (isset($extra["float"])) {
@@ -847,7 +847,7 @@ class PaperTable {
         $fr->value .= "</div></div></div>";
         if ($extra) {
             $fr->value .= '<div class="fn6 fx7 longtext-fader"></div>'
-                . '<div class="fn6 fx7 longtext-expander"><a class="ulh ui js-foldup" href="" role="button" aria-expanded="false" data-fold-target="6">[more]</a></div>'
+                . '<div class="fn6 fx7 longtext-expander"><button type="button" class="btn-link ulh ui js-foldup" aria-expanded="false" data-fold-target="6">[more]</button></div>'
                 . Ht::unstash_script("hotcrp.render_text_page()");
         }
     }
@@ -1003,7 +1003,7 @@ class PaperTable {
             . $this->control_class("authors", "pavt ui js-aufoldup")
             . '"><h3 class="pavfn">';
         if ($vas === 1 || $this->allow_folds) {
-            $fr->value .= '<a class="q ui js-aufoldup" href="" title="Toggle author display" role="button" aria-expanded="' . ($this->foldmap[8] ? "false" : "true") . '">';
+            $fr->value .= '<button type="button" class="btn-qlink ui js-aufoldup" title="Toggle author display" aria-expanded="' . ($this->foldmap[8] ? "false" : "true") . '">';
         }
         if ($vas === 1) {
             $fr->value .= '<span class="fn8">' . $o->title_html(0) . '</span><span class="fx8">';
@@ -1018,7 +1018,7 @@ class PaperTable {
             $fr->value .= '</span>';
         }
         if ($vas === 1 || $this->allow_folds) {
-            $fr->value .= '</a>';
+            $fr->value .= '</button>';
         }
         if ($this->admin) {
             $mailt = "s";
@@ -1039,14 +1039,14 @@ class PaperTable {
         // contents
         $fr->value .= '<div class="pavb">';
         if ($vas === 1) {
-            $fr->value .= '<a class="q fn8 ui js-aufoldup" href="" title="Toggle author display">'
+            $fr->value .= '<button type="button" class="btn-qlink fn8 ui js-aufoldup" title="Toggle author display">'
                 . '+&nbsp;<i>Hidden</i>'
-                . '</a><div class="fx8">';
+                . '</button><div class="fx8">';
         }
         if ($this->allow_folds) {
             $fr->value .= '<div class="fn9">'
                 . $this->authorData($aulist, "last", null)
-                . ' <a class="ui js-aufoldup" href="">[details]</a>'
+                . ' <button type="button" class="btn-link ui js-aufoldup">[details]</button>'
                 . '</div><div class="fx9">';
         }
         $fr->value .= $this->authorData($aulist, "col", $this->user);
@@ -1311,11 +1311,11 @@ class PaperTable {
                 if ($foldnum) {
                     echo '<div class="pavt ui js-foldup" data-fold-target="', $foldnum, '">',
                         '<h3 class="pavfn">',
-                        '<a class="q ui js-foldup" href="" data-fold-target="', $foldnum, '" title="Toggle visibility" role="button" aria-expanded="',
+                        '<button type="button" class="btn-qlink ui js-foldup" data-fold-target="', $foldnum, '" title="Toggle visibility" aria-expanded="',
                         $this->foldmap[$foldnum] ? "false" : "true",
                         '">', expander(null, $foldnum),
                         $group_html,
-                        '</a></h3></div><div class="pg fx', $foldnum, '">';
+                        '</button></h3></div><div class="pg fx', $foldnum, '">';
                 } else {
                     echo '<div class="pavt"><h3 class="pavfn">',
                         $group_html,

@@ -70,7 +70,7 @@ class CheckUpdates_Page {
                         $m .= "<div class=\"bigid\">First unaffected commit: " . htmlspecialchars($update["to"]);
                         if ($errid) {
                             $m .= ' <span class="barsep">·</span> '
-                                . '<a class="ui js-check-version-ignore" href="" data-version-id="' . $errid . '">Ignore for two days</a>';
+                                . '<button type="button" class="btn-link ui js-check-version-ignore" data-version-id="' . $errid . '">Ignore for two days</button>';
                         }
                         $m .= "</div>";
                     }

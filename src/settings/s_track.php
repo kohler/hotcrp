@@ -255,11 +255,11 @@ class Track_SettingParser extends SettingParser {
 
         if ($this->nfolded) {
             echo '<div class="entryi wide fn3">',
-                '<label><a href="" class="ui js-foldup q" data-fold-target="3">',
-                expander(true, 3), 'More…</a></label>',
-                '<div class="entry"><a href="" class="ui js-foldup q" data-fold-target="3">',
+                '<label><button type="button" class="btn-qlink ui js-foldup" data-fold-target="3">',
+                expander(true, 3), 'More…</button></label>',
+                '<div class="entry"><button type="button" class="btn-qlink ui js-foldup" data-fold-target="3">',
                 $sv->conf->_("(%d more permissions have default values)", $this->nfolded),
-                '</a></div></div>';
+                '</button></div></div>';
         }
         echo "</div></div>\n\n";
     }

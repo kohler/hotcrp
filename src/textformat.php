@@ -37,8 +37,8 @@ class TextFormat {
             $d[] = htmlspecialchars($this->description_text);
         }
         if ($this->has_preview) {
-            $d[] = '<a href="" class="ui js-togglepreview" data-format="'
-                . $this->format . '" tabindex="-1">Preview</a>';
+            $d[] = '<button type="button" class="btn-link ui js-togglepreview" data-format="'
+                . $this->format . '" tabindex="-1">Preview</button>';
         }
         if ($d) {
             return '<div class="formatdescription">'

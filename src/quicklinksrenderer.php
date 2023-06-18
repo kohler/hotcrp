@@ -97,7 +97,7 @@ class QuicklinksRenderer {
             $x .= '</td>';
 
             if ($user->is_track_manager() && $listtype === "p") {
-                $x .= '<td id="tracker-connect" class="vbar"><a id="tracker-connect-btn" class="ui js-tracker tbtn need-tooltip" href="" aria-label="Start meeting tracker">&#9759;</a></td>';
+                $x .= '<td id="tracker-connect" class="vbar"><button type="button" id="tracker-connect-btn" class="ui js-tracker tbtn need-tooltip" aria-label="Start meeting tracker">&#9759;</button></td>';
             }
         }
 

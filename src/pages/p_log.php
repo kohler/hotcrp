@@ -432,12 +432,12 @@ class Log_Page {
             return join(", ", $ts);
         } else {
             $fmt = $all_pc ? "%d PC users" : "%d users";
-            return '<div class="has-fold foldc"><a href="" class="ui js-foldup">'
+            return '<div class="has-fold foldc"><button type="button" class="btn-qlink ui js-foldup">'
                 . expander(null, 0)
-                . '</a>'
-                . '<span class="fn"><a href="" class="ui js-foldup q">'
+                . '</button>'
+                . '<span class="fn"><button type="button" class="btn-qlink ui js-foldup">'
                 . sprintf($this->conf->_($fmt, count($ts)), count($ts))
-                . '</a></span><span class="fx">' . join(", ", $ts)
+                . '</button></span><span class="fx">' . join(", ", $ts)
                 . '</span></div>';
         }
     }

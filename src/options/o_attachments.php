@@ -196,7 +196,7 @@ class Attachments_PaperOption extends PaperOption {
                 }
                 $t = $d->link_html($linkname, $dif);
                 if ($d->is_archive()) {
-                    $t = '<span class="archive foldc"><a href="" class="ui js-expand-archive q">' . expander(null, 0) . '</a> ' . $t . '</span>';
+                    $t = '<span class="archive foldc"><button type="button" class="btn-qlink ui js-expand-archive">' . expander(null, 0) . '</button> ' . $t . '</span>';
                 }
                 $ts[] = $t;
             }

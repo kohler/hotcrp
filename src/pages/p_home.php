@@ -472,8 +472,8 @@ class Home_Page {
             $ttexts = array_map(function ($t) use ($user) {
                 return Ht::link($t, $user->conf->hoturl("paper", ["q" => "token:$t"]));
             }, $tokens);
-            echo '<a href="" class="ui js-review-tokens" data-review-tokens="',
-                join(" ", $tokens), '">Review tokens</a>',
+            echo '<button type="button" class="btn-link ui js-review-tokens" data-review-tokens="',
+                join(" ", $tokens), '">Review tokens</button>',
                 (empty($tokens) ? "" : " (" . join(", ", $ttexts) . ")");
             if (!$this->_in_reviews) {
                 echo '</div>', "\n";
