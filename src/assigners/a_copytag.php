@@ -53,7 +53,7 @@ class CopyTag_AssignmentParser extends UserlessAssignmentParser {
         // ignore attempts to change vote & automatic tags
         $tagmap = $state->conf->tags();
         if (!$state->conf->is_updating_automatic_tags()
-            && $tagmap->is_automatic($tag)) {
+            && $tagmap->is_automatic($new_tag)) {
             return true;
         }
 
