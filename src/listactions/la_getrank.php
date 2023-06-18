@@ -1,6 +1,6 @@
 <?php
 // listactions/la_getrank.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class GetRank_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
@@ -70,7 +70,7 @@ tag," . CsvGenerator::quote(trim($qreq->tag)) . "
                     . "# " . $user->conf->hoturl_raw("offline", null, Conf::HOTURL_ABSOLUTE) . "\n\n"
                     . $real . ($real === "" ? "" : "\n") . $null);
         } else {
-            return MessageItem::error("<5>" . $tagger->error_html());
+            return MessageItem::error($tagger->error_ftext());
         }
     }
 }

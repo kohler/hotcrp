@@ -1253,7 +1253,6 @@ class Tagger {
     const NOCHAIR = 8;
     const ALLOWSTAR = 16;
     const ALLOWCONTACTID = 32;
-    const NOTAGKEYWORD = 64;
     const EEMPTY = -1;
     const EINVAL = -2;
     const EMULTIPLE = -3;
@@ -1336,41 +1335,54 @@ class Tagger {
 
     /** @param bool $verbose
      * @return ?string */
-    function error_html($verbose = false) {
-        $t = $verbose ? " ‘" . htmlspecialchars($this->errtag ?? "") . "’" : "";
+    function error_ftext($verbose = false) {
+        $t = $verbose && $this->errtag ? " ‘{$this->errtag}’" : "";
         switch ($this->errcode) {
         case 0:
             return null;
         case self::EEMPTY:
-            return "Tag required";
+            return "<0>Tag required";
         case self::EMULTIPLE:
-            return "Single tag required";
+            return "<0>Single tag required";
         case self::E2BIG:
-            return "Tag too long";
+            return "<0>Tag too long";
         case self::ALLOWSTAR:
-            return "Invalid tag{$t} (stars aren’t allowed here)";
+            return "<0>Invalid tag{$t} (stars aren’t allowed here)";
         case self::NOCHAIR:
             if ($this->contact->privChair) {
-                return "Invalid tag{$t} (chair tags aren’t allowed here)";
+                return "<0>Invalid tag{$t} (chair tags aren’t allowed here)";
             } else {
-                return "Invalid tag{$t} (tag reserved for chair)";
+                return "<0>Invalid tag{$t} (tag reserved for chair)";
             }
         case self::NOPRIVATE:
-            return "Private tags aren’t allowed here";
+            return "<0>Private tags aren’t allowed here";
         case self::ALLOWCONTACTID:
             if ($verbose && ($twiddle = strpos($this->errtag ?? "", "~"))) {
-                return "Invalid tag{$t} (did you mean ‘#" . substr($this->errtag, $twiddle) . "’?)";
+                return "<0>Invalid tag{$t} (did you mean ‘#" . substr($this->errtag, $twiddle) . "’?)";
             } else {
-                return "Invalid private tag";
+                return "<0>Invalid private tag";
             }
         case self::NOVALUE:
-            return "Tag values aren’t allowed here";
+            return "<0>Tag values aren’t allowed here";
         case self::ALLOWRESERVED:
-            return $verbose ? "Tag{$t} is reserved" : "Tag reserved";
+            return "<0>Tag{$t} reserved";
         case self::EINVAL:
         default:
-            return "Invalid tag{$t}";
+            return "<0>Invalid tag{$t}";
         }
+    }
+
+    /** @param bool $verbose
+     * @return ?string
+     * @deprecated */
+    function error_html($verbose = false) {
+        $s = $this->error_ftext($verbose);
+        return $s !== null ? Ftext::unparse_as($s, 5) : null;
+    }
+
+    /** @return int */
+    function error_code() {
+        return $this->errcode;
     }
 
     /** @return false */
@@ -1451,18 +1463,6 @@ class Tagger {
             return $this->_contactId . $tag;
         } else {
             return $tag;
-        }
-    }
-
-    static function check_tag_keyword($text, Contact $user, $flags = 0) {
-        $re = '/\A(?:#|tagval:\s*'
-            . ($flags & self::NOTAGKEYWORD ? '' : '|tag:\s*')
-            . ')(\S+)\z/i';
-        if (preg_match($re, $text, $m)) {
-            $tagger = new Tagger($user);
-            return $tagger->check($m[1], $flags);
-        } else {
-            return false;
         }
     }
 

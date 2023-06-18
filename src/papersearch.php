@@ -1762,9 +1762,14 @@ class PaperSearch extends MessageSet {
     function highlight_tags() {
         $this->_prepare();
         $ht = $this->main_term()->get_float("tags") ?? [];
+        $tagger = null;
         foreach ($this->sort_field_list() as $s) {
-            if (($tag = Tagger::check_tag_keyword($s, $this->user)))
-                $ht[] = $tag;
+            if (preg_match('/\A(?:#|tag:\s*|tagval:\s*)(\S+)\z/', $s, $m)) {
+                $tagger = $tagger ?? new Tagger($this->user);
+                if (($tag = $tagger->check($m[1]))) {
+                    $ht[] = $tag;
+                }
+            }
         }
         return array_values(array_unique($ht));
     }

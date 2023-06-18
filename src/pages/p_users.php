@@ -259,7 +259,7 @@ class Users_Page {
             if ($t === "") {
                 /* nada */
             } else if (!($t = $tagger->check($t, Tagger::NOPRIVATE))) {
-                $ms->error_at(null, "<5>" . $tagger->error_html());
+                $ms->error_at(null, $tagger->error_ftext());
             } else if (in_array(strtolower(Tagger::base($t)), ["pc", "admin", "chair"])) {
                 $ms->error_at(null, $this->conf->_("<0>User tag ‘{}’ reserved", Tagger::base($t)));
             } else {

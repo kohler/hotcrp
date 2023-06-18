@@ -195,7 +195,7 @@ abstract class Autoassigner extends MessageSet {
         $tagger = new Tagger($this->user);
         $tag = $tagger->check($tag, Tagger::NOVALUE);
         if ($tag === null || $tag === "") {
-            $this->error_at($field, "<5>" . $tagger->error_html(true));
+            $this->error_at($field, $tagger->error_ftext(true));
             return null;
         } else {
             return $tag;

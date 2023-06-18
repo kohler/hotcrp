@@ -1,6 +1,6 @@
 <?php
 // a_tag.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Tag_Assignable extends Assignable {
     /** @var string */
@@ -121,16 +121,16 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     }
     private function cannot_view_error(PaperInfo $prow, $tag, AssignmentState $state) {
         if ($prow->has_conflict($state->user)) {
-            $state->paper_error("<0>You have a conflict with #{$prow->paperId}.");
+            $state->paper_error("<0>You have a conflict with #{$prow->paperId}");
         } else {
-            $state->paper_error("<0>You can’t view that tag for #{$prow->paperId}.");
+            $state->paper_error("<0>You can’t view that tag for #{$prow->paperId}");
         }
         return false;
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         // tag argument (can have multiple space-separated tags)
         if (!isset($req["tag"])) {
-            $state->error("<0>Tag missing.");
+            $state->error("<0>Tag missing");
             return false;
         }
         $tag = $req["tag"];
@@ -259,7 +259,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
         $tagger = new Tagger($state->user);
         if (!$tagger->check($xtag)) {
-            $state->error("<5>" . $tagger->error_html(true));
+            $state->error($tagger->error_ftext(true));
             return false;
         }
 

@@ -162,7 +162,7 @@ class MeetingTracker {
                     }
                     $vperm = $vistype . $vt;
                 } else {
-                    $message_list[] = MessageItem::error_at("tr{$i}-vis", "<5>" . $tagger->error_html(true));
+                    $message_list[] = MessageItem::error_at("tr{$i}-vis", $tagger->error_ftext(true));
                 }
                 if ($vperm !== ""
                     && !$user->privChair

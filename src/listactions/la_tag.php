@@ -1,6 +1,6 @@
 <?php
 // listactions/la_tag.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Tag_ListAction extends ListAction {
     static function render(PaperList $pl, Qrequest $qreq) {
@@ -101,7 +101,7 @@ class Tag_ListAction extends ListAction {
                     $qreq->q = "order:{$tagreq}";
                 }
             } else {
-                $assignset->error($tagger->error_html());
+                $assignset->error($tagger->error_ftext());
             }
         }
         if ($assignset->is_empty() && $assignset->has_message()) {

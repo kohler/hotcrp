@@ -1,6 +1,6 @@
 <?php
 // api/api_tags.php -- HotCRP tags API call
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
 
 class Tags_API {
     /** @param ?PaperInfo $prow
@@ -182,7 +182,7 @@ class Tags_API {
     static function votereport_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
-            return MessageItem::make_error_json($tagger->error_html());
+            return MessageItem::make_error_json($tagger->error_ftext());
         }
         if (!$user->can_view_peruser_tag($prow, $tag)) {
             return ["ok" => false, "error" => "Permission error"];

@@ -1,6 +1,6 @@
 <?php
 // pc_tag.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Tag_PaperColumn extends PaperColumn {
     /** @var ?bool */
@@ -244,7 +244,7 @@ class Tag_PaperColumn extends PaperColumn {
             $fj["function"] = $fj["function"] ?? "+Tag_PaperColumn";
             $rs[] = (object) $fj;
         }
-        foreach ($tsm->error_texts() as $e) {
+        foreach ($tsm->error_ftexts() as $e) {
             PaperColumn::column_error($xtp, $e);
         }
         return $rs;

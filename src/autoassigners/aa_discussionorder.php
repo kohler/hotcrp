@@ -19,7 +19,7 @@ class DiscussionOrder_Autoassigner extends Autoassigner {
         if (($tag = $tagger->check($t, Tagger::NOVALUE))) {
             $this->tag = $tag;
         } else {
-            $this->error_at("tag", "<5>" . $tagger->error_html());
+            $this->error_at("tag", $tagger->error_ftext());
         }
     }
 

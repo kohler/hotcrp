@@ -335,7 +335,7 @@ class Track_SettingParser extends SettingParser {
             if (($t = $sv->tagger()->check($tag, Tagger::NOVALUE | Tagger::NOPRIVATE))) {
                 $pv = $type . $t;
             } else {
-                $sv->error_at($pfx, "<5>" . $sv->tagger()->error_html());
+                $sv->error_at($pfx, $sv->tagger()->error_ftext());
                 $sv->error_at("{$pfx}/tag");
                 return;
             }

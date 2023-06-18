@@ -409,7 +409,7 @@ class UserStatus extends MessageSet {
                 if (($tx = $tagger->check($t, Tagger::NOPRIVATE))) {
                     $t1[] = $tx;
                 } else {
-                    $this->error_at($key, "<5>" . $tagger->error_html(true));
+                    $this->error_at($key, $tagger->error_ftext(true));
                 }
             }
         }

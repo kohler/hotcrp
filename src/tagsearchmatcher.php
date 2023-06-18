@@ -1,6 +1,6 @@
 <?php
 // tagsearchmatcher.php -- HotCRP helper class for tag search
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class TagSearchMatcher {
     /** @var Contact */
@@ -31,6 +31,7 @@ class TagSearchMatcher {
     private $_tag_exclusion_regex;
     /** @var list<CountMatcher> */
     private $_valm = [];
+    /** @var ?list<string> */
     private $_errors;
 
     function __construct(Contact $user) {
@@ -43,7 +44,7 @@ class TagSearchMatcher {
         $this->_avoid_regex = $on;
     }
     /** @return list<string> */
-    function error_texts() {
+    function error_ftexts() {
         return $this->_errors ?? [];
     }
 
@@ -56,7 +57,7 @@ class TagSearchMatcher {
         $checktag = substr($xtag, (int) $twiddle);
         $tagger = new Tagger($this->user);
         if (!$tagger->check($checktag, Tagger::NOVALUE | ($allow_star_any ? Tagger::ALLOWRESERVED | Tagger::ALLOWSTAR : 0))) {
-            $this->_errors[] = $tagger->error_html();
+            $this->_errors[] = $tagger->error_ftext();
             return false;
         }
 
@@ -71,7 +72,7 @@ class TagSearchMatcher {
                 $cids = ContactSearch::make_pc($c, $this->user)->user_ids();
             }
             if (empty($cids)) {
-                $this->_errors[] = "#" . htmlspecialchars($tag) . " matches no users.";
+                $this->_errors[] = "<0>#{$tag} matches no users";
                 return false;
             }
             if ($this->user->can_view_some_peruser_tag()) {
@@ -79,11 +80,11 @@ class TagSearchMatcher {
             } else if (in_array($this->user->contactId, $cids)) {
                 $xcids = [$this->user->contactId];
             } else {
-                $this->_errors[] = "You can’t search other users’ twiddle tags.";
+                $this->_errors[] = "<0>You can’t search other users’ twiddle tags";
                 return false;
             }
             if (count($xcids) > 1 && !$allow_star_any) {
-                $this->_errors[] = "Wildcard searches like #" . htmlspecialchars($tag) . " aren’t allowed here.";
+                $this->_errors[] = "<0>Wildcard searches like #{$tag} aren’t allowed here";
                 return false;
             }
             if (count($xcids) === 1 || $this->_avoid_regex) {

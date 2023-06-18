@@ -1,6 +1,6 @@
 <?php
 // search/st_comment.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Comment_SearchTerm extends SearchTerm {
     /** @var Contact */
@@ -93,8 +93,8 @@ class Comment_SearchTerm extends SearchTerm {
             && !$srch->conf->pc_tag_exists(substr($a[0], 1))) {
             $tags = new TagSearchMatcher($srch->user);
             $tags->add_check_tag(substr($a[0], 1), true);
-            foreach ($tags->error_texts() as $e) {
-                $srch->lwarning($sword, "<5>$e");
+            foreach ($tags->error_ftexts() as $e) {
+                $srch->lwarning($sword, $e);
             }
         } else if ($a[0] !== "") {
             $contacts = $srch->matching_uids($a[0], $sword->quoted, false);
