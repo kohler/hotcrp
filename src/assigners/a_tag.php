@@ -128,7 +128,8 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             return true;
         }
     }
-    private function cannot_view_error(PaperInfo $prow, $tag, AssignmentState $state) {
+    /** @return false */
+    static function cannot_view_error(PaperInfo $prow, $tag, AssignmentState $state) {
         if ($prow->has_conflict($state->user)) {
             $state->paper_error("<0>You have a conflict with #{$prow->paperId}");
         } else {
@@ -369,7 +370,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // if you can't view the tag, you can't clear the tag
         // (information exposure)
         if ($search_ltag && !$state->user->can_view_tag($prow, $search_ltag)) {
-            return $this->cannot_view_error($prow, $search_ltag, $state);
+            return self::cannot_view_error($prow, $search_ltag, $state);
         }
 
         // query
@@ -419,7 +420,7 @@ class Tag_Assigner extends Assigner {
     private function unparse_item($before) {
         $index = $this->item->get($before, "_index");
         return "#" . htmlspecialchars($this->item->get($before, "_tag"))
-            . ($index ? "#$index" : "");
+            . ($index ? "#{$index}" : "");
     }
     function unparse_display(AssignmentSet $aset) {
         $t = [];

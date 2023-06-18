@@ -13,21 +13,21 @@
     {
         "name": "review", "parser_class": "Review_AssignmentParser",
         "review_type": null,
-        "parameters": ["user", "review type", "[review round]"],
+        "parameters": ["user", "review_type", "[review_round]"],
         "description": "Assign review",
         "order": -1
     },
     {
         "name": "metareview", "parser_class": "Review_AssignmentParser",
         "review_type": "meta",
-        "parameters": ["user", "[review round]"],
+        "parameters": ["user", "[review_round]"],
         "group": "review", "description": "Assign metareview"
     },
     {   "name": "meta", "alias": "metareview"   },
     {
         "name": "primaryreview", "parser_class": "Review_AssignmentParser",
         "review_type": "primary",
-        "parameters": ["user", "[review round]"],
+        "parameters": ["user", "[review_round]"],
         "group": "review", "description": "Assign primary review"
     },
     {   "name": "pri", "alias": "primaryreview"   },
@@ -35,7 +35,7 @@
     {
         "name": "secondaryreview", "parser_class": "Review_AssignmentParser",
         "review_type": "secondary",
-        "parameters": ["user", "[review round]"],
+        "parameters": ["user", "[review_round]"],
         "group": "review", "description": "Assign secondary review"
     },
     {   "name": "sec", "alias": "secondaryreview"   },
@@ -43,7 +43,7 @@
     {
         "name": "pcreview", "parser_class": "Review_AssignmentParser",
         "review_type": "optional",
-        "parameters": ["user", "[review round]"],
+        "parameters": ["user", "[review_round]"],
         "group": "review", "description": "Assign optional PC review"
     },
     {   "name": "optionalreview", "alias": "pcreview"   },
@@ -51,7 +51,7 @@
     {
         "name": "externalreview", "parser_class": "Review_AssignmentParser",
         "review_type": "external",
-        "parameters": ["user", "[review round]"],
+        "parameters": ["user", "[review_round]"],
         "group": "review", "description": "Assign external review"
     },
     {   "name": "ext", "alias": "externalreview"   },
@@ -60,14 +60,14 @@
     {
         "name": "clearreview", "parser_class": "Review_AssignmentParser",
         "review_type": "none",
-        "parameters": ["user", "[review type]", "[review round]"],
+        "parameters": ["user", "[review_type]", "[review_round]"],
         "group": "review", "description": "Remove review assignment"
     },
     {   "name": "noreview", "alias": "clearreview"   },
     {   "name": "unassignreview", "alias": "clearreview"   },
     {
         "name": "unsubmitreview", "parser_class": "UnsubmitReview_AssignmentParser",
-        "parameters": ["user", "[review type]", "[review round]"],
+        "parameters": ["user", "[review_type]", "[review_round]"],
         "description": "Unsubmit review"
     },
     {
@@ -115,7 +115,7 @@
     {
         "name": "conflict", "parser_class": "Conflict_AssignmentParser",
         "remove": false, "iscontact": false,
-        "parameters": ["user", "[conflict type]"],
+        "parameters": ["user", "[conflict_type]"],
         "description": "Set PC conflict status"
     },
     {
@@ -140,7 +140,7 @@
     {
         "name": "tag", "parser_class": "Tag_AssignmentParser",
         "remove": null, "next": false,
-        "parameters": ["tag", "[tag value]"],
+        "parameters": ["tag", "[tag_value]"],
         "description": "Modify tag"
     },
     {   "name": "settag", "alias": "tag"   },
@@ -166,6 +166,19 @@
     },
     {   "name": "seqtag", "alias": "seqnexttag"   },
     {   "name": "nextseqtag", "alias": "seqnexttag"   },
+    {
+        "name": "copytag", "parser_class": "CopyTag_AssignmentParser",
+        "move": false,
+        "parameters": ["tag", "new_tag"], "group": "tag",
+        "description": "Copy tag"
+    },
+    {
+        "name": "renametag", "parser_class": "CopyTag_AssignmentParser",
+        "move": true,
+        "parameters": ["tag", "new_tag"], "group": "tag",
+        "description": "Rename tag"
+    },
+    {   "name": "movetag", "alias": "renametag"   },
     {
         "name": "pref", "parser_class": "Preference_AssignmentParser",
         "parameters": ["user", "preference", "[expertise]"],

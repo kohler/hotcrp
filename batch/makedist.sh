@@ -208,6 +208,7 @@ src/api/api_tags.php
 src/api/api_user.php
 src/apihelpers.php
 src/assigners/a_conflict.php
+src/assigners/a_copytag.php
 src/assigners/a_decision.php
 src/assigners/a_error.php
 src/assigners/a_follow.php

@@ -1364,6 +1364,7 @@ class AssignmentSet {
                   ["preference", "pref", "revpref"],
                   ["expertise", "prefexp"],
                   ["tag_value", "tagvalue", "value", "index"],
+                  ["new_tag", "newtag"],
                   ["conflict", "conflict_type", "conflicttype"],
                   ["withdraw_reason", "reason"]] as $ks) {
             for ($i = 1; $i < count($ks) && !$csv->has_column($ks[0]); ++$i) {
