@@ -346,10 +346,7 @@ class PaperStatus extends MessageSet {
         } else if ($v !== null) {
             $this->syntax_error_at("status.withdraw_reason");
         }
-        if ($istatusstr === "submitted"
-            || $istatusstr === "accepted"
-            || $istatusstr === "deskrejected"
-            || $istatusstr === "rejected") {
+        if (in_array($istatusstr, ["submitted", "accepted", "accept", "deskrejected", "desk_reject", "deskreject", "rejected", "reject"])) {
             $xstatus->submitted = $xstatus->submitted ?? true;
             $xstatus->draft = $xstatus->draft ?? false;
             $xstatus->withdrawn = $xstatus->withdrawn ?? false;

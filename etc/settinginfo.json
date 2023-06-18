@@ -60,7 +60,7 @@
     {
         "name_pattern": "decision/$/category",
         "title": "Decision category", "type": "radio",
-        "values": ["accept", "reject", "deskreject", "maybe"]
+        "values": ["accept", "reject", "desk_reject", "maybe"]
     },
 
     {

@@ -73,7 +73,7 @@ class DecisionInfo {
             return self::CAT_YES;
         } else if ($s === "reject") {
             return self::CAT_NO;
-        } else if ($s === "deskreject") {
+        } else if ($s === "desk_reject" || $s === "deskreject") {
             return self::CB_DESKREJECT;
         } else {
             return null;
@@ -86,7 +86,7 @@ class DecisionInfo {
         if (($catbits & self::CAT_YES) !== 0) {
             return "accept";
         } else if (($catbits & self::CAT_NO) !== 0) {
-            return $catbits === self::CB_DESKREJECT ? "deskreject" : "reject";
+            return $catbits === self::CB_DESKREJECT ? "desk_reject" : "reject";
         } else {
             return "maybe";
         }

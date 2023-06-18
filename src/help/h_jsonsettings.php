@@ -97,7 +97,7 @@ decision types:</p>
 <pre class=\"sample\"><code class=\"language-json\">{
     \"reset\": false,
     \"decision\": [
-        {\"id\": \"new\", \"name\": \"Desk reject\", \"category\": \"deskreject\"},
+        {\"id\": \"new\", \"name\": \"Desk reject\", \"category\": \"desk_reject\"},
         {\"id\": \"new\", \"name\": \"Desk accept\", \"category\": \"accept\"}
     ]
 }</code></pre></li>

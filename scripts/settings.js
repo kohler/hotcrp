@@ -980,7 +980,7 @@ handle_ui.on("change.js-settings-decision-category", function () {
     removeClass(this, "dec-yes");
     removeClass(this, "dec-no");
     addClass(this, k);
-    if (this.value === "deskreject") {
+    if (this.value === "desk_reject") {
         $(".if-settings-decision-desk-reject").removeClass("hidden");
     }
 });

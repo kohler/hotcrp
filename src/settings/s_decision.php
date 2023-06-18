@@ -6,7 +6,7 @@ class Decision_Setting {
     public $id;
     /** @var string */
     public $name;
-    /** @var 'accept'|'reject'|'deskreject'|'maybe' */
+    /** @var 'accept'|'reject'|'desk_reject'|'maybe' */
     public $category;
     /** @var bool */
     public $deleted = false;
@@ -53,7 +53,7 @@ class Decision_SettingParser extends SettingParser {
         }
         if ($isnew || $class !== "accept") {
             $cats["reject"] = "Reject category";
-            $cats["deskreject"] = "Desk-reject category";
+            $cats["desk_reject"] = "Desk-reject category";
             $cats["maybe"] = "Other category";
         }
         if (count($cats) > 1) {

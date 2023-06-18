@@ -154,11 +154,11 @@ class PaperExport {
         if ($dec->id !== 0) {
             $pj->decision = $dec->name;
             if (($dec->catbits & DecisionInfo::CAT_YES) !== 0) {
-                $submitted_status = "accepted";
+                $submitted_status = "accept";
             } else if ($dec->catbits === DecisionInfo::CB_DESKREJECT) {
-                $submitted_status = "deskrejected";
+                $submitted_status = "desk_reject";
             } else if (($dec->catbits & DecisionInfo::CAT_NO) !== 0) {
-                $submitted_status = "rejected";
+                $submitted_status = "reject";
             }
         }
 
