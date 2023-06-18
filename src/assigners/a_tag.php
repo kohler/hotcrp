@@ -39,10 +39,15 @@ class Tag_Assignable extends Assignable {
 }
 
 class NextTagAssigner implements AssignmentPreapplyFunction {
+    /** @var string */
     private $tag;
+    /** @var array<int,?float> */
     public $pidindex = [];
+    /** @var float */
     private $first_index;
+    /** @var float */
     private $next_index;
+    /** @var bool */
     private $isseq;
     function __construct($state, $tag, $index, $isseq) {
         $this->tag = $tag;
@@ -85,9 +90,13 @@ class NextTagAssigner implements AssignmentPreapplyFunction {
 class Tag_AssignmentParser extends UserlessAssignmentParser {
     const NEXT = 1;
     const NEXTSEQ = 2;
+    /** @var ?bool */
     private $remove;
-    private $isnext;
+    /** @var 0|1|2 */
+    private $isnext = 0;
+    /** @var ?Formula */
     private $formula;
+    /** @var ?callable(PaperInfo,?int,Contact):mixed */
     private $formulaf;
     function __construct(Conf $conf, $aj) {
         parent::__construct("tag");
@@ -130,7 +139,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         // tag argument (can have multiple space-separated tags)
         if (!isset($req["tag"])) {
-            $state->error("<0>Tag missing");
+            $state->error("<0>Tag required");
             return false;
         }
         $tag = $req["tag"];
@@ -151,7 +160,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
                             AssignmentState $state) {
         // parse tag into parts
         $xvalue = trim((string) $req["tag_value"]);
-        if (!preg_match('/\A([-+]?#?)(|~~|[^-~+#]*~)([a-zA-Z@*_:.][-+a-zA-Z0-9!@*_:.\/]*)(\z|#|#?[=!<>]=?|#?≠|#?≤|#?≥)(.*)\z/', $tag, $m)
+        if (!preg_match('/\A([-+]?+#?+)(|~~|[^-~+#]*+~)([a-zA-Z@*_:.][-+a-zA-Z0-9!@*_:.\/]*)(\z|#|#?[=!<>]=?|#?≠|#?≤|#?≥)(.*)\z/', $tag, $m)
             || ($m[4] !== "" && $m[4] !== "#")) {
             $state->error("<0>Invalid tag ‘{$tag}’");
             return false;
@@ -171,12 +180,15 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
 
         $xremove = $this->remove || str_starts_with($m[1], "-");
+        $xtag = $m[3];
         if ($m[2] === "~" || strcasecmp($m[2], "me~") === 0) {
             $xuser = ($contact->contactId ? : $state->user->contactId) . "~";
+        } else if ($m[2] === "~~") {
+            $xuser = "";
+            $xtag = "~~{$xtag}";
         } else {
             $xuser = $m[2];
         }
-        $xtag = $m[3];
         $xvalue = $xvalue !== "" ? $xvalue : $m[5];
         $xnext = $this->isnext;
 
@@ -226,6 +238,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
 
         // ignore attempts to change vote & automatic tags
+        // (NB: No private tags are automatic.)
         $tagmap = $state->conf->tags();
         if (!$state->conf->is_updating_automatic_tags()
             && $xuser === ""
@@ -244,7 +257,6 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             return false;
         }
         if ($xuser !== ""
-            && $xuser !== "~~"
             && !ctype_digit(substr($xuser, 0, -1))) {
             $c = substr($xuser, 0, -1);
             $twiddlecids = ContactSearch::make_pc($c, $state->user)->user_ids();
@@ -317,7 +329,6 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     private function apply_remove(PaperInfo $prow, AssignmentState $state, $xuser, $xtag) {
         // resolve twiddle portion
         if ($xuser
-            && $xuser !== "~~"
             && !ctype_digit(substr($xuser, 0, -1))) {
             $c = substr($xuser, 0, -1);
             if (strcasecmp($c, "any") === 0 || strcasecmp($c, "all") === 0 || $c === "*") {
@@ -337,9 +348,10 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
 
         // resolve tag portion
         $search_ltag = null;
-        if (strcasecmp($xtag, "none") == 0) {
+        if (strcasecmp($xtag, "none") === 0) {
             return true;
-        } else if (strcasecmp($xtag, "any") == 0 || strcasecmp($xtag, "all") == 0) {
+        } else if (strcasecmp($xtag, "any") === 0
+                   || strcasecmp($xtag, "all") == 0) {
             $cid = $state->user->contactId;
             if ($state->user->privChair)
                 $cid = $state->reviewer->contactId;
@@ -350,6 +362,10 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             } else {
                 $xtag = "(?:{$cid}~|)[^~]*";
             }
+        } else if (strcasecmp($xtag, "~~any") === 0
+                   || strcasecmp($xtag, "~~all") === 0) {
+            assert($xuser === "");
+            $xtag = "~~[^~]*";
         } else {
             if (!preg_match('/[*(]/', $xuser . $xtag)) {
                 $search_ltag = strtolower($xuser . $xtag);
