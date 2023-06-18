@@ -57,7 +57,7 @@ class CopyTag_AssignmentParser extends UserlessAssignmentParser {
             return true;
         } else if ($this->move && $tagmap->is_automatic($tag)) {
             $state->error("<0>Cannot rename automatic tags");
-            return true;
+            return false;
         }
 
         $ltag = strtolower($tag);
