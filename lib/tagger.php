@@ -1078,8 +1078,6 @@ class TagMap implements IteratorAggregate {
 
     static function make(Conf $conf) {
         $map = new TagMap($conf);
-        $t = $map->add("perm:*");
-        $t->chair = $t->readonly = true;
         $ct = $conf->setting_data("tag_chair") ?? "";
         foreach (Tagger::split_unpack($ct) as $ti) {
             $t = $map->add($ti[0]);
@@ -1417,7 +1415,6 @@ class Tagger {
             && strpos($tag, "*") !== false) {
             return $this->set_error_code($tag, self::ALLOWSTAR);
         }
-        // After this point we know `$tag` contains no HTML specials
         if ($m[1] === "") {
             // OK
         } else if ($m[1] === "~~") {

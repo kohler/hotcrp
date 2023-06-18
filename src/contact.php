@@ -170,8 +170,6 @@ class Contact implements JsonSerializable {
     private $_overrides = 0;
     /** @var ?array<int,bool> */
     public $hidden_papers;
-    /** @var ?array<string,true> */
-    private $_author_perm_tags;
 
     // $_activated values: 0: no, 1: yes; 2: is actas; 4: is token
     // higher bits: user index
@@ -2495,36 +2493,9 @@ class Contact implements JsonSerializable {
             $this->roles = $this->roles & self::ROLE_DBMASK;
             $this->_session_roles = $this->roles;
             $this->_conflict_types = $this->_can_view_pc = $this->_dangerous_track_mask =
-                $this->_has_approvable = $this->_authored_papers =
-                $this->_author_perm_tags = null;
+                $this->_has_approvable = $this->_authored_papers = null;
             $this->_rights_version = self::$rights_version;
         }
-    }
-
-    /** @param string $perm
-     * @return bool */
-    function some_author_perm_tag_allows($perm) {
-        $this->check_rights_version();
-        if ($this->_author_perm_tags === null) {
-            $this->_author_perm_tags = [];
-            $qe = $qv = [];
-            if (($pids = $this->author_view_capability_paper_ids())) {
-                $qe[] = "paperId?a";
-                $qv[] = $pids;
-            }
-            if ($this->contactId > 0) {
-                $qe[] = "exists(select * from PaperConflict where paperId=PaperTag.paperId and contactId=? and conflictType>=" . CONFLICT_AUTHOR . ")";
-                $qv[] = $this->contactId;
-            }
-            if (!empty($qe)) {
-                $result = $this->conf->qe_apply("select distinct tag from PaperTag where tag like 'perm:%' and tagIndex>=0 and (" . join(" or ", $qe) . ")", $qv);
-                while (($row = $result->fetch_row())) {
-                    $this->_author_perm_tags[strtolower(substr($row[0], 5))] = true;
-                }
-                Dbl::free($result);
-            }
-        }
-        return isset($this->_author_perm_tags[$perm]);
     }
 
     /** @return bool */
@@ -2958,13 +2929,6 @@ class Contact implements JsonSerializable {
             } else {
                 $ci->view_authors_state = 0;
             }
-
-            // check for permission tags
-            if ($prow->paperTags !== null
-                && $this->conf->has_perm_tags()
-                && stripos($prow->paperTags, " perm:") !== false) {
-                $ci->perm_tags = $prow->paperTags;
-            }
         }
 
         return $ci;
@@ -3153,7 +3117,6 @@ class Contact implements JsonSerializable {
      * @param bool $only_if_complex
      * @return ?string */
     function act_author_view_sql($table, $only_if_complex = false) {
-        // see also _author_perm_tags
         $m = [];
         if ($this->_capabilities !== null && !$this->isPC) {
             foreach ($this->author_view_capability_paper_ids() as $pid) {
@@ -3822,13 +3785,8 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     private function can_view_submitted_review_as_author(PaperInfo $prow) {
-        if ($this->conf->has_perm_tags()
-            && ($v = $prow->perm_tag_allows("author-read-review")) !== null) {
-            return $v;
-        } else {
-            return $prow->can_author_view_submitted_review()
-                || ($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0;
-        }
+        return $prow->can_author_view_submitted_review()
+            || ($this->_overrides & self::OVERRIDE_AU_SEEREV) !== 0;
     }
 
     /** @return bool */
@@ -3839,9 +3797,7 @@ class Contact implements JsonSerializable {
                     || $this->conf->_au_seerev
                     || $this->conf->any_response_open === 2
                     || ($this->conf->any_response_open === 1
-                        && !empty($this->relevant_response_rounds()))
-                    || ($this->conf->has_perm_tags()
-                        && $this->some_author_perm_tag_allows("author-read-review"))));
+                        && !empty($this->relevant_response_rounds()))));
     }
 
     /** @return bool */

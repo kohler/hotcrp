@@ -294,13 +294,6 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             && !$dt->approval) {
             $nvalue = false;
         }
-        if (str_starts_with($ltag, "perm:") && $nvalue !== false) {
-            if (!$state->conf->is_known_perm_tag($ltag)) {
-                $state->warning("<0>#{$ntag}: Unknown permission");
-            } else if ($nvalue != 1 && $nvalue != -1) {
-                $state->warning("<0>#{$ntag}: Permission tags should have value 1 (allow) or -1 (deny)");
-            }
-        }
 
         // perform assignment
         if ($nvalue === false) {
@@ -467,13 +460,7 @@ class Tag_Assigner extends Assigner {
                 $aset->conf->save_refresh_setting("has_colontag", 1);
             });
         }
-        $isperm = strncasecmp($this->tag, 'perm:', 5) === 0;
-        if ($this->index !== null && $isperm) {
-            $aset->register_cleanup_function("permtag", function () use ($aset) {
-                $aset->conf->save_refresh_setting("has_permtag", 1);
-            });
-        }
-        if ($aset->conf->tags()->is_track($this->tag) || $isperm) {
+        if ($aset->conf->tags()->is_track($this->tag)) {
             $aset->register_update_rights();
         }
         $aset->user->log_activity("Tag " . ($this->index === null ? "-" : "+") . "#$this->tag" . ($this->index ? "#$this->index" : ""), $this->pid);

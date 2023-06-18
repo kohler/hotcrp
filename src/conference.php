@@ -105,8 +105,6 @@ class Conf {
     private $_tag_map;
     /** @var bool */
     private $_maybe_automatic_tags;
-    /** @var bool */
-    private $_has_permtag = false;
     /** @var ?DecisionSet */
     private $_decision_set;
     /** @var DecisionInfo
@@ -342,7 +340,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 274) {
+        if ($this->sversion < 275) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -399,9 +397,6 @@ class Conf {
         $this->_track_sensitivity = 0;
         if (($j = $this->settingTexts["tracks"] ?? null)) {
             $this->refresh_track_settings($j);
-        }
-        if (($this->settings["has_permtag"] ?? 0) > 0) {
-            $this->_has_permtag = true;
         }
 
         // clear caches
@@ -1546,18 +1541,7 @@ class Conf {
 
     /** @return bool */
     function rights_need_tags() {
-        return $this->_track_tags !== null || $this->_has_permtag;
-    }
-
-    /** @return bool */
-    function has_perm_tags() {
-        return $this->_has_permtag;
-    }
-
-    /** @param string $tag
-     * @return bool */
-    function is_known_perm_tag($tag) {
-        return preg_match('/\A(?:perm:)?(?:author-read-review)\z/i', $tag);
+        return $this->_track_tags !== null;
     }
 
 

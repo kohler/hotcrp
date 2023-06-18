@@ -18,8 +18,7 @@ class Tags_SettingParser extends SettingParser {
     function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name === "tag_readonly") {
             $ts = array_filter($sv->conf->tags()->filter("chair"), function ($t) {
-                return !str_starts_with($t->tag, "~~")
-                    && !str_starts_with($t->tag, "perm:");
+                return !str_starts_with($t->tag, "~~");
             });
             $sv->set_oldv("tag_readonly", Tags_SettingParser::render_tags($ts));
         } else if ($si->name === "tag_sitewide") {

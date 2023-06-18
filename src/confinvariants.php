@@ -147,12 +147,6 @@ class ConfInvariants {
             $this->invariant_error("has_colontag", "has tag {0} but no has_colontag");
         }
 
-        // `has_permtag` === any tags starting with `perm:`
-        $any = $this->invariantq("select tag from PaperTag where tag like 'perm:%' limit 1");
-        if ($any && !$this->conf->setting("has_permtag")) {
-            $this->invariant_error("has_permtag", "has tag {0} but no has_permtag");
-        }
-
         return $this;
     }
 

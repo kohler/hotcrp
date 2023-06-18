@@ -57,8 +57,6 @@ class PaperContactInfo {
     public $can_view_decision;
     /** @var 0|1|2 */
     public $view_authors_state;
-    /** @var ?string */
-    public $perm_tags;
 
     // cached by PaperInfo methods
     /** @var ?list<ReviewInfo> */
@@ -203,17 +201,6 @@ class PaperContactInfo {
             $ci->vreviews_array = $ci->viewable_tags = $ci->searchable_tags = null;
         }
         return $this->forced_rights_link;
-    }
-
-    /** @param string $perm
-     * @return ?bool */
-    function perm_tag_allows($perm) {
-        if ($this->perm_tags !== null
-            && ($pos = stripos($this->perm_tags, " perm:{$perm}#")) !== false) {
-            return $this->perm_tags[$pos + strlen($perm) + 7] !== "-";
-        } else {
-            return null;
-        }
     }
 }
 
@@ -1651,18 +1638,6 @@ class PaperInfo {
         if ($this->paperTags !== ""
             && ($pos = stripos($this->paperTags, " {$tag}#")) !== false) {
             return (float) substr($this->paperTags, $pos + strlen($tag) + 2);
-        } else {
-            return null;
-        }
-    }
-
-    /** @param string $perm
-     * @return ?bool */
-    function perm_tag_allows($perm) {
-        if ($this->paperTags !== null
-            && $this->paperTags !== ""
-            && ($pos = stripos($this->paperTags, " perm:{$perm}#")) !== false) {
-            return $this->paperTags[$pos + strlen($perm) + 7] !== "-";
         } else {
             return null;
         }

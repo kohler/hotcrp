@@ -1306,18 +1306,6 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert(!$this->u_mjh->can_view_review($paper17, $rrow17m));
         $this->conf->save_refresh_setting("au_seerev", 2);
         xassert($this->u_mjh->can_view_review($paper17, $rrow17m));
-        xassert_assign_fail($this->u_mgbaker, "paper,tag\n17,perm:author-read-review\n");
-        xassert_assign_fail($this->u_mjh, "paper,tag\n17,perm:author-read-review\n");
-        xassert_assign($this->u_chair, "paper,tag\n17,perm:author-read-review#-1\n");
-        $paper17 = $this->conf->checked_paper_by_id(17);
-        xassert(!$this->u_mjh->can_view_review($paper17, $rrow17m));
-        $this->conf->save_refresh_setting("au_seerev", null);
-        xassert_assign($this->u_chair, "paper,tag\n17,perm:author-read-review#1\n");
-        $paper17 = $this->conf->checked_paper_by_id(17);
-        xassert($this->u_mjh->can_view_review($paper17, $rrow17m));
-        xassert_assign($this->u_chair, "paper,tag\n17,perm:author-read-review#clear\n");
-        $paper17 = $this->conf->checked_paper_by_id(17);
-        xassert(!$this->u_mjh->can_view_review($paper17, $rrow17m));
     }
 
     function test_submission_fields() {

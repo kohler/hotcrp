@@ -998,6 +998,12 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->save_setting("extrev_view", null);
         }
 
+        // remove has_permtag
+        if ($conf->sversion <= 274
+            && $conf->setting("has_permtag")) {
+            $conf->save_setting("has_permtag", null);
+        }
+
         if ($conf->sversion === 6
             && $conf->ql_ok("alter table ReviewRequest add `reason` text")) {
             $conf->update_schema_version(7);
@@ -2632,8 +2638,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table PaperStorage change `size` `size` bigint(11) NOT NULL DEFAULT -1")) {
             $conf->update_schema_version(273);
         }
-        if ($conf->sversion === 273) {
-            $conf->update_schema_version(274);
+        if ($conf->sversion === 273
+            || $conf->sversion === 274) {
+            $conf->update_schema_version(275);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

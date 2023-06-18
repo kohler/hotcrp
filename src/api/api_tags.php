@@ -14,12 +14,6 @@ class Tags_API {
         }
         $tmr->message_list = [];
         if ($tmr->ok
-            && $prow
-            && $user->can_administer($prow)
-            && stripos($prow->all_tags_text(), " perm:") !== false) {
-            self::perm_tagmessages($user, $prow, $tmr, $interest);
-        }
-        if ($tmr->ok
             && $user->conf->tags()->has_allotment) {
             self::allotment_tagmessages($user, $tmr, $interest);
         }
@@ -53,20 +47,6 @@ class Tags_API {
             } else if ($tv[1] > $t->allotment) {
                 $tmr->message_list[] = new MessageItem(null, "<5><a href=\"{$link}\">#~{$t->tag}</a>: Too many votes", 1);
                 $tmr->message_list[] = new MessageItem(null, "<0>Your vote total, {$tv[1]}, is over the allotment, {$t->allotment}.", MessageSet::INFORM);
-            }
-        }
-    }
-    /** @param TagMessageReport $tmr
-     * @param ?array<string,true> $interest */
-    static private function perm_tagmessages(Contact $user, PaperInfo $prow, $tmr, $interest) {
-        foreach (Tagger::split_unpack($prow->sorted_editable_tags($user)) as $ti) {
-            if (strncasecmp($ti[0], "perm:", 5) === 0
-                && ($interest === null || isset($interest[strtolower($ti[0])]))) {
-                if (!$prow->conf->is_known_perm_tag($ti[0])) {
-                    $tmr->message_list[] = new MessageItem(null, "<0>#{$ti[0]}: Unknown permission", 1);
-                } else if ($ti[1] != -1 && $ti[1] != 0) {
-                    $tmr->message_list[] = new MessageItem(null, "<0>#{$ti[0]}#{$ti[1]}: Permission tag should have value 0 (allow) or -1 (deny)", 1);
-                }
             }
         }
     }

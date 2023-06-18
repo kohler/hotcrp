@@ -617,7 +617,7 @@ CREATE TABLE `TopicInterest` (
 
 -- Initial settings
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 274, null),   -- schema version
+  ('allowPaperOption', 275, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators
