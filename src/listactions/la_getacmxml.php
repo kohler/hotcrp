@@ -76,7 +76,7 @@ class GetACMXML_ListAction extends ListAction {
         array_shift($affiliations);
 
         curl_setopt($curl, CURLOPT_URL, "https://raw.githubusercontent.com/WiPSCE/ACM-XML-Metadata/" . $branch . "/proceedingID.txt");
-        $proceedingID = curl_exec($curl);
+        $proceedingID = trim(curl_exec($curl));
         curl_close($curl);
         if($proceedingID === false) {
             die("Please let administrator check GitHub key and URL for export");
@@ -174,7 +174,7 @@ class GetACMXML_ListAction extends ListAction {
 
         $w->endElement(); // end root
 
-        if(count($missingAffiliations) > 0) {
+        /*if(count($missingAffiliations) > 0) {
             $mCSV = "";
             foreach($missingAffiliations as $m) {
                 $mCSV .= "\"" . $m . "\",\"\",\"\",\"\"" . "\r\n";
@@ -182,14 +182,14 @@ class GetACMXML_ListAction extends ListAction {
             echo "Missing affiliations in GitHub/WiPSCE/ACM-XML-Metadata/affiliations.csv - please add the following rows and complete them:\r\n\r\n";
             echo "<pre>";
             echo $mCSV;
-        } else {
+        } else {*/
             header("Content-Type: text/xml; charset=utf-8");
             if(!isset($_GET["showOnly"]) || $_GET["showOnly"] != "1")
                 header("Content-Disposition: attachment; filename=" . mime_quote_string("acmexport.xml"));
             //echo "<pre>"; print_r($info); print_r($prow);
             echo $w->outputMemory(true);
             //json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
-        }
+        //}
 
         exit;
     }
