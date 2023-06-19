@@ -1418,8 +1418,10 @@ a.btn-disabled, a.btn-disabled:hover {
 }
 .btn-link, .btn-qlink, .btn-qolink, .btn-xlink,
 .btn-link:hover, .btn-qlink:hover, .btn-qolink:hover, .btn-xlink:hover {
+	font-weight: inherit;
+	font-style: inherit;
 	padding: 0;
-	border: 0 none;
+	border-style: none;
 	background: initial;
 	cursor: pointer;
 }
