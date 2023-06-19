@@ -98,7 +98,7 @@ class Settings_Page {
             $this->conf->make_script_file("scripts/settings.js"), "\n",
 
             Ht::form($this->conf->hoturl("=settings", "group={$group}"),
-                     ["id" => "settingsform", "class" => "need-unload-protection"]),
+                     ["id" => "f-settings", "class" => "need-unload-protection"]),
 
             '<div class="leftmenu-left"><nav class="leftmenu-menu">',
             '<h1 class="leftmenu"><button type="button" class="btn-qlink uic js-leftmenu">Settings</button></h1>',
@@ -124,7 +124,7 @@ class Settings_Page {
         }
 
         echo "</main></form>\n";
-        Ht::stash_script('hiliter_children("#settingsform")');
+        Ht::stash_script('hiliter_children("#f-settings")');
         $qreq->print_footer();
     }
 

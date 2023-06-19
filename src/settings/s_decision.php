@@ -101,7 +101,7 @@ class Decision_SettingParser extends SettingParser {
         echo '</div>';
         foreach ($sv->use_req() ? $sv->oblist_keys("decision") : [] as $ctr) {
             if ($sv->reqstr("decision/{$ctr}/delete"))
-                echo Ht::unstash_script("\$(\"#settingsform\")[0].elements[\"decision/{$ctr}/deleter\"].click()");
+                echo Ht::unstash_script("\$(\"#f-settings\")[0].elements[\"decision/{$ctr}/deleter\"].click()");
         }
         echo '<div id="settings-decision-type-notes" class="hidden">',
             '<div class="hint">Examples: “Accepted as short paper”, “Early reject”</div></div>';

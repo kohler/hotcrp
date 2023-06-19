@@ -118,7 +118,7 @@ function settings_disable_children(e) {
 
 function settings_field_order(parentid) {
     var i = 0, curorder, defaultorder, orde, n,
-        form = document.getElementById("settingsform"),
+        form = document.getElementById("f-settings"),
         c = document.getElementById(parentid),
         moveup = null, movedown = null;
     for (n = c.firstChild; n; n = n.nextSibling) {
@@ -369,7 +369,7 @@ handle_ui.on("js-settings-topics-copy", function () {
 
 
 function settings_review_round_selectors() {
-    var a = [], ch, form = $$("settingsform");
+    var a = [], ch, form = $$("f-settings");
     for (ch = $$("settings-review-rounds").firstChild; ch; ch = ch.nextSibling) {
         if (!hasClass(ch, "deleted")) {
             var ne = form.elements[ch.id + "/name"],
@@ -547,7 +547,7 @@ function rf_color() {
 handle_ui.on("change.rf-scheme", rf_color);
 
 function rf_fill(pos, fld, setdefault) {
-    var form = document.getElementById("settingsform"),
+    var form = document.getElementById("f-settings"),
         rfid = "rf/" + pos;
     rf_fill_control(form, rfid + "/name", fld.name || "", setdefault);
     rf_fill_control(form, rfid + "/type", fld.type, setdefault);
@@ -818,7 +818,7 @@ function rfs(data) {
     }
 
     rf_order();
-    form_highlight("#settingsform");
+    form_highlight("#f-settings");
 }
 
 function add_dialog() {
@@ -849,7 +849,7 @@ function add_dialog() {
         document.getElementById("rf/" + fieldorder.length + "/name").focus();
         $d.close();
         rf_order();
-        form_highlight("#settingsform");
+        form_highlight("#f-settings");
         evt.preventDefault();
     }
     function create() {
