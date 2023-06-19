@@ -136,12 +136,15 @@ class GetACMXML_ListAction extends ListAction {
                 $w->startElement("authors");
                 
                 $aSeq = 1;
+                $alreadyHasContact = false;
                 foreach($info->authors as $a) {
                     $isContact = false;
-
-                    foreach($info->contacts as $c) {
-                        if($c["email"] == $a->email)
-                            $isContact = true;
+                    
+                    if(!$alreadyHasContact) {
+                        foreach($info->contacts as $c) {
+                            if($c["email"] == $a->email)
+                                $isContact = true;
+                        }
                     }
 
                     if(!isset($affiliations[$a->affiliation])) {
