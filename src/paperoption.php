@@ -1788,10 +1788,10 @@ class Document_PaperOption extends PaperOption {
             }
             echo '</div><div class="document-actions">';
             if ($this->id > 0 && !$readonly) {
-                echo '<button type="button" class="btn-link ui js-remove-document">Delete</button>';
+                echo '<button type="button" class="link ui js-remove-document">Delete</button>';
             }
             if ($has_cf && $pt->cf->allow_recheck()) {
-                echo '<button type="button" class="btn-link ui js-check-format">',
+                echo '<button type="button" class="link ui js-check-format">',
                     ($pt->cf->need_recheck() ? "Check format" : "Recheck format"),
                     '</button>';
             } else if ($has_cf && !$pt->cf->has_problem()) {

@@ -284,7 +284,7 @@ class Autoassign_Page {
             echo '</td><td class="lentry">', $this->bp_selector($i, "a"),
                 " &nbsp;and&nbsp; ", $this->bp_selector($i, "b");
             if ($i == 1) {
-                echo ' &nbsp;to the same paper &nbsp;(<button type="button" class="btn-link ui js-badpairs-row more">More</button> &nbsp;·&nbsp; <button type="button" class="btn-link ui js-badpairs-row less">Fewer</button>)';
+                echo ' &nbsp;to the same paper &nbsp;(<button type="button" class="link ui js-badpairs-row more">More</button> &nbsp;·&nbsp; <button type="button" class="link ui js-badpairs-row less">Fewer</button>)';
             }
             echo "</td></tr>\n";
         }

@@ -101,7 +101,7 @@ class Settings_Page {
                      ["id" => "f-settings", "class" => "need-unload-protection"]),
 
             '<div class="leftmenu-left"><nav class="leftmenu-menu">',
-            '<h1 class="leftmenu"><button type="button" class="btn-qlink uic js-leftmenu">Settings</button></h1>',
+            '<h1 class="leftmenu"><button type="button" class="q uic js-leftmenu">Settings</button></h1>',
             '<ul class="leftmenu-list">';
         foreach ($this->sv->group_members("") as $gj) {
             $title = $gj->short_title ?? $gj->title;

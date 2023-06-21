@@ -40,7 +40,7 @@ case insensitive, so “#TAG” and “#tAg” are considered identical.</p>";
 
 <div class=\"pcard-left p c\" style=\"position:static;margin-bottom:1rem\">
 <div class=\"pspcard\"><div class=\"psc has-fold foldc\"><div class=\"pst ui js-foldup\">",
-    '<span class="psfn"><button type="button" class="btn-qlink ui js-foldup">',
+    '<span class="psfn"><button type="button" class="q ui js-foldup">',
     expander(null, 0), "Tags</button></span></div><div class=\"psv\">",
     '<div class="fn">', $hth->search_link(null, "#earlyaccept", ["class" => "qo ibw"]), '</div>',
     '<div class="fx"><textarea cols="20" rows="4" name="tags" class="w-99 want-focus need-suggest tags">earlyaccept</textarea>',

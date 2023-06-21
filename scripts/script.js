@@ -2946,7 +2946,7 @@ function tracker_html(tr) {
     var logo = escape_html(tr.logo || "☞");
     var logo_class = logo === "☞" ? "tracker-logo tracker-logo-fist" : "tracker-logo";
     if (tr.allow_administer)
-        t += '<button class="btn-qlink ui qo js-tracker need-tooltip '.concat(logo_class, '" aria-label="Tracker settings and status">', logo, '</button>');
+        t += '<button class="qo ui js-tracker need-tooltip '.concat(logo_class, '" aria-label="Tracker settings and status">', logo, '</button>');
     else
         t += '<div class="'.concat(logo_class, '">', logo, '</div>');
     var rows = [], i, wwidth = $(window).width();
@@ -2969,7 +2969,7 @@ function tracker_html(tr) {
             if (tr.position_at)
                 t += '<span class="tracker-timer" data-trackerid="' + tr.trackerid + '"></span>';
             if (tr.allow_administer)
-                t += '<button type="button" class="ui js-tracker-stop btn-qolink btn-x need-tooltip ml-2" aria-label="Stop this tracker"></button>';
+                t += '<button type="button" class="ui js-tracker-stop qo btn-x need-tooltip ml-2" aria-label="Stop this tracker"></button>';
             t += '</td>';
         }
         t += '</tr>';
@@ -5877,7 +5877,7 @@ function cmt_render_form(hc, cj) {
     hc.push('<div class="f-i">', '</div>');
     var fmt = render_text.format(cj.format), fmtnote = fmt.description || "";
     if (fmt.has_preview) {
-        fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<button type="button" class="btn-link ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</button>';
+        fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<button type="button" class="link ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</button>';
     }
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
     hc.push_pop('<textarea name="text" class="w-text cmttext suggest-emoji mentions need-suggest c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
@@ -6138,7 +6138,7 @@ function cmt_render_attachment_input(ctr, doc) {
     hc.push('<div class="document-file">', '</div>');
     cmt_render_attachment(hc, doc);
     hc.pop();
-    hc.push('<div class="document-actions"><button type="button" class="btn-link ui js-remove-document">Delete</button><input type="hidden" name="attachment:'.concat(ctr, '" value="', doc.docid, '"></div>'));
+    hc.push('<div class="document-actions"><button type="button" class="link ui js-remove-document">Delete</button><input type="hidden" name="attachment:'.concat(ctr, '" value="', doc.docid, '"></div>'));
     return hc.render();
 }
 
@@ -6573,7 +6573,7 @@ function add_new_comment_button(cj, cid) {
             $b = $('<div class="aabut"><a href="#'.concat(cid, '" class="uic js-edit-comment btn">Add ', rname || "comment", '</a></div>'));
         if (cj.response && cj.author_editable === false) {
             if (!hasClass(actions, "has-fold")) {
-                $(actions).addClass("has-fold foldc").find(".aabig").append('<div class="aabut fn"><button type="button" class="btn-link ui js-foldup ulh need-tooltip" aria-label="Show more comment options">…</button></div>');
+                $(actions).addClass("has-fold foldc").find(".aabig").append('<div class="aabut fn"><button type="button" class="link ui js-foldup ulh need-tooltip" aria-label="Show more comment options">…</button></div>');
             }
             $b.addClass("fx").append('<div class="hint">(admin only)</div>');
         }
@@ -9388,7 +9388,7 @@ function render_row_tags(div) {
             t = '<span class="fn5"><em class="plx">Tags:</em> ' + ct.join(" ") + '</span>' + t;
     }
     if (t != "" && ptr.getAttribute("data-tags-editable") != null) {
-        t += ' <span class="hoveronly"><span class="barsep">·</span> <button type="button" class="btn-link ui js-plinfo-edittags">Edit</button></span>';
+        t += ' <span class="hoveronly"><span class="barsep">·</span> <button type="button" class="link ui js-plinfo-edittags">Edit</button></span>';
     }
     $(div).find("textarea").unautogrow();
     t == "" ? $(div).empty() : $(div).html(t);
@@ -10160,7 +10160,7 @@ handle_ui.on("js-add-attachment", function () {
     filee.name = name + ":file";
     filee.size = 15;
     filee.className = "uich document-uploader";
-    var cancele = classe("button", "ui js-cancel-document btn-link", "Cancel"),
+    var cancele = classe("button", "link ui js-cancel-document", "Cancel"),
         actionse = classe("div", "document-actions", cancele);
     cancele.type = "button";
     var max_size = attache.getAttribute("data-document-max-size"),
@@ -10198,7 +10198,7 @@ handle_ui.on("js-replace-document", function () {
         doce.querySelector(".document-replacer").before(actions);
     }
     if (!actions.querySelector(".js-cancel-document")) {
-        var cancel = classe("button", "btn-link ui js-cancel-document hidden");
+        var cancel = classe("button", "link ui js-cancel-document hidden");
         cancel.type = "button";
         cancel.textContent = "Cancel";
         actions.appendChild(cancel);
@@ -12032,7 +12032,7 @@ $(function () { $(document.body).awaken(); });
 
 $(function () {
     var err = [], elt = [];
-    $(".xinfo,.xconfirm,.xwarning,.xmerror,.aa,.strong,td.textarea").each(function () {
+    $(".xinfo,.xconfirm,.xwarning,.xmerror,.aa,.strong,td.textarea,button.btn-link,button.btn-qlink,button.btn-qolink,.btn-xlink").each(function () {
         err.push(this.tagName.concat(".", this.className.replace(/\s+/g, ".")));
     });
     $("a.btn[href='']").each(function () {

@@ -166,7 +166,7 @@ class Attachments_PaperOption extends PaperOption {
             }
             echo '</div>';
             if (!$readonly) {
-                echo '<div class="document-actions">', Ht::button("Delete", ["class" => "btn-link ui js-remove-document"]), '</div>';
+                echo '<div class="document-actions">', Ht::button("Delete", ["class" => "link ui js-remove-document"]), '</div>';
             }
             echo '</div>';
         }
@@ -196,7 +196,7 @@ class Attachments_PaperOption extends PaperOption {
                 }
                 $t = $d->link_html($linkname, $dif);
                 if ($d->is_archive()) {
-                    $t = '<span class="archive foldc"><button type="button" class="btn-qlink ui js-expand-archive">' . expander(null, 0) . '</button> ' . $t . '</span>';
+                    $t = '<span class="archive foldc"><button type="button" class="q ui js-expand-archive">' . expander(null, 0) . '</button> ' . $t . '</span>';
                 }
                 $ts[] = $t;
             }

@@ -26,11 +26,11 @@ select, button {
 }
 
 :link, :visited,
-.link, .btn-link, .btn-xlink {
+.link, .btn-link {
 	color: #004daa;
 }
 .dark :link, .dark :visited,
-.dark .link, .dark .btn-link, .dark .btn-xlink {
+.dark .link, .dark .btn-link {
 	color: #2177de;
 }
 .track:visited, .ptitle:visited, .pnum:visited {
@@ -378,12 +378,14 @@ td.vbar {
    * u.x: underline when in a:hover */
 a.qh, a.noq, a.noq:hover, a.q, a.qo, a.btn, a.btn:hover,
 .is-error a, .is-warning a, .is-note a, .is-warning-note a, .is-urgent-note a,
-.btn-qlink, .btn-qolink, .btn-ulink {
+.btn-qlink, .btn-qolink, .btn-ulink,
+button.q, button.qo {
 	color: inherit;
 }
 a:hover,
 a.track:hover, a.ptitle:hover, a.pnum:hover,
-.btn-link:hover, .btn-qlink:hover, .btn-qolink:hover, .btn-xlink:hover,
+.btn-link:hover, .btn-qlink:hover, .btn-qolink:hover,
+button.link:hover, button.q:hover, button.qo:hover,
 .js-click-child:hover a.hover-child,
 a:hover .pavfn {
 	color: #c45500;
@@ -393,7 +395,8 @@ a:hover .pavfn {
 a:active,
 a.noq:active,
 a.track:active, a.ptitle:active, a.pnum:active,
-.btn-link:active, .btn-qlink:active, .btn-qolink:active, .btn-xlink:active,
+.btn-link:active, .btn-qlink:active, .btn-qolink:active,
+button.link:active, button.q:active, button.qo:active,
 a.attention {
 	color: red;
 	-webkit-text-decoration-color: red;
@@ -410,6 +413,7 @@ u.x {
 }
 .ul,
 a.ulh:hover, a.q:hover, .btn-link, .btn-qlink:hover,
+button.link, button.q:hover,
 .papmode.active:hover > a, .leftmenu-item:hover > a,
 div.js-foldup:hover a.js-foldup,
 div.js-aufoldup:hover a.js-aufoldup,
@@ -1416,8 +1420,10 @@ a.btn-disabled, a.btn-disabled:hover {
 .disabled-color {
 	color: rgba(102, 102, 102, 0.5);
 }
-.btn-link, .btn-qlink, .btn-qolink, .btn-xlink,
-.btn-link:hover, .btn-qlink:hover, .btn-qolink:hover, .btn-xlink:hover {
+.btn-link, .btn-qlink, .btn-qolink,
+button.link, button.q, button.qo,
+.btn-link:hover, .btn-qlink:hover, .btn-qolink:hover,
+button.link:hover, button.q:hover, button.qo:hover {
 	font-weight: inherit;
 	font-style: inherit;
 	padding: 0;
@@ -2046,7 +2052,7 @@ input.wide {
 	right: 10px;
 	left: auto;
 }
-.dropmenu a, .dropmenu .btn-link {
+.dropmenu a, .dropmenu .btn-link, .dropmenu .link {
 	color: inherit !important;
 	text-decoration: none;
 }

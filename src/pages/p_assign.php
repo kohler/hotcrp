@@ -354,7 +354,7 @@ class Assign_Page {
         }
 
         // main render
-        echo '<div class="ui js-foldup"><button type="button" class="btn-qlink ui js-foldup">', expander(null, 0), '</button>';
+        echo '<div class="ui js-foldup"><button type="button" class="q ui js-foldup">', expander(null, 0), '</button>';
         $reason = null;
         if ($rrow->reviewType >= 0) {
             $this->print_reqrev_main($rrow, $namex, $time);
@@ -446,7 +446,7 @@ class Assign_Page {
             echo '" data-review-in-progress="';
         }
         echo '"><div class="pctbname pctbname', $crevtype, ' ui js-assignment-fold">',
-            '<button type="button" class="btn-qlink ui js-assignment-fold">', expander(null, 0),
+            '<button type="button" class="q ui js-assignment-fold">', expander(null, 0),
             $this->user->reviewer_html_for($pc), '</button>';
         if ($crevtype != 0) {
             echo review_type_icon($crevtype, $rrow && $rrow->reviewStatus < ReviewInfo::RS_ADOPTED, "ml-2"),
@@ -644,7 +644,7 @@ class Assign_Page {
 
         echo '<div class="aab">',
             '<div class="aabut aabutsp">', Ht::submit("requestreview", "Request review", ["class" => "btn-primary"]), '</div>',
-            '<div class="aabut"><button type="button" class="btn-link ulh ui js-request-review-preview-email">Preview request email</button></div>',
+            '<div class="aabut"><button type="button" class="link ulh ui js-request-review-preview-email">Preview request email</button></div>',
             "</div>\n\n";
 
         echo "</div></div></form></div></article>\n";

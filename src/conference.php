@@ -4470,7 +4470,7 @@ class Conf {
             }
             echo '<li class="has-link">',
                 Ht::form($this->hoturl("=signout", ["cap" => null])),
-                Ht::button("Sign out", ["type" => "submit", "class" => "btn btn-link"]),
+                Ht::button("Sign out", ["type" => "submit", "class" => "link"]),
                 '</form></li>';
         }
     }
@@ -4483,7 +4483,7 @@ class Conf {
             $details_class = " header-actas need-tracker-offset";
             $details_prefix = "<span class=\"warning-mark\"></span> Acting as ";
             $details_suffix = "";
-            $button_class = "btn-qlink";
+            $button_class = "q";
         } else {
             $details_class = $details_prefix = "";
             $details_suffix = '<svg class="licon ml-1" width="1em" height="1em" viewBox="0 0 16 16" preserveAspectRatio="none" role="none"><path d="M2 3h12M2 8h12M2 13h12" stroke="#222" stroke-width="2" /></svg>';

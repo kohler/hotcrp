@@ -1893,7 +1893,7 @@ class SettingValues extends MessageSet {
     private function print_message_base($name, $description, $hint, $xclass) {
         $si = $this->si($name);
         $current = $this->vstr($si);
-        $description = '<button type="button" class="btn-qlink ui js-foldup">'
+        $description = '<button type="button" class="q ui js-foldup">'
             . expander(null, 0) . $description . '</button>';
         echo '<div class="f-i has-fold fold',
             ($current == $si->default_value($this) ? "c" : "o"), '">',
@@ -1929,7 +1929,7 @@ class SettingValues extends MessageSet {
             echo '<div class="entryi">', $this->label($name, $description), '<div>';
             $close = "";
         } else {
-            $description = '<button type="button" class="btn-qlink ui js-foldup">'
+            $description = '<button type="button" class="q ui js-foldup">'
                 . expander(null, 0) . $description . '</button>';
             echo '<div class="entryi has-fold foldc">',
                 $this->label($name, $description), '<div>',
