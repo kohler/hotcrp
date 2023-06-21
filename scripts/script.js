@@ -6421,7 +6421,7 @@ function cmt_render(cj, editing) {
         hc.push('<h2><span class="cmtcard-header-name">Edit comment</span></h2>');
     } else if (cj.editable && !editing && cj.response) {
         var $h2 = $(chead).find("h2");
-        if (!$h2.find("a").length) {
+        if (!$h2.find("button").length) {
             $h2.html('<button type="button" class="qo ui cmteditor">' + $h2.html() + ' <span class="t-editor">✎</span></button>');
         }
     }
