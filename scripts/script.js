@@ -4374,11 +4374,11 @@ handle_ui.on("input.js-email-populate", function () {
         country = f.elements.country;
         orcid = f.elements.orcid;
         placeholder = true;
-    } else if (this.name.substring(0, 8) === "authors:") {
+    } else if (this.name.startsWith("authors:")) {
         idx = parseInt(this.name.substring(8));
         nn = f.elements["authors:" + idx + ":name"];
         af = f.elements["authors:" + idx + ":affiliation"];
-    } else if (this.name.substring(0, 9) === "contacts:") {
+    } else if (this.name.startsWith("contacts:")) {
         idx = parseInt(this.name.substring(9));
         nn = f.elements["contacts:" + idx + ":name"];
     }
@@ -11931,9 +11931,9 @@ function autogrower_retry(f, e) {
     $(e).data("autogrower") === f && f(null);
 }
 function make_textarea_autogrower(e) {
-    var shadow, minHeight, lineHeight, borderPadding, timeout = 0;
+    var state = 0, minHeight, lineHeight, borderPadding, timeout = 0;
     function f(evt) {
-        if (!shadow) {
+        if (state === 0) {
             if (e.scrollWidth <= 0) {
                 timeout = Math.min(Math.max(1, timeout) * 2, 30000);
                 setTimeout(autogrower_retry, timeout, f, e);
@@ -11943,7 +11943,7 @@ function make_textarea_autogrower(e) {
             minHeight = parseFloat(css.height);
             lineHeight = computed_line_height(css);
             borderPadding = parseFloat(css.borderTopWidth) + parseFloat(css.borderBottomWidth);
-            shadow = true;
+            state = 1;
         }
         e.style.height = "auto"; // in case text shrank (scrollHeight always ≥clientHeight)
         var wh = Math.max(0.8 * window.innerHeight, 4 * lineHeight);
@@ -11952,9 +11952,9 @@ function make_textarea_autogrower(e) {
     return f;
 }
 function make_input_autogrower(e) {
-    var shadow, minWidth, borderPadding, timeout = 0;
+    var state = 0, minWidth, borderPadding, timeout = 0;
     function f(evt) {
-        if (!shadow) {
+        if (state === 0) {
             if (e.scrollWidth <= 0) {
                 timeout = Math.min(Math.max(1, timeout) * 2, 30000);
                 setTimeout(autogrower_retry, timeout, f, e);
@@ -11962,13 +11962,17 @@ function make_input_autogrower(e) {
             }
             var css = window.getComputedStyle(e);
             minWidth = parseFloat(css.width);
-            borderPadding = parseFloat(css.borderLeftWidth) + parseFloat(css.borderRightWidth) + parseFloat(css.fontSize) * 0.75;
-            shadow = true;
+            borderPadding = parseFloat(css.borderLeftWidth) + parseFloat(css.borderRightWidth) + parseFloat(css.fontSize) * 0.25;
+            state = 1;
         }
-        e.style.width = "16px"; // in case text shrank (scrollWidth always ≥clientWidth)
         var parent = e.closest(".main-column, .modal-dialog"),
-            ww = Math.max(0.9 * (parent ? parent.scrollWidth : window.innerWidth), 100);
-        e.style.width = Math.min(ww, Math.max(e.scrollWidth + borderPadding, minWidth)) + "px";
+            ww = Math.max(0.9 * (parent ? parent.scrollWidth : window.innerWidth), 100),
+            ws = e.scrollWidth;
+        if (ws > minWidth || ws > ww) {
+            e.style.width = minWidth + "px"; // in case text shrank (scrollWidth always ≥clientWidth)
+            ws = e.scrollWidth;
+            e.style.width = Math.min(ww, ws > minWidth ? ws + borderPadding : minWidth) + "px";
+        }
     }
     return f;
 }
