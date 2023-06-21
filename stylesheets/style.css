@@ -509,16 +509,16 @@ label.checki {
 .entryi > ul.feedback-list {
 	flex-basis: 100%;
 }
-.entryi > label {
+.entryi > label, .entryi > .label {
 	width: 8rem;
 	margin-right: 1rem;
 	text-align: right;
 	flex: 0 0 auto;
 }
-.entryi.medium > label {
+.entryi.medium > label, .entryi.medium > .label {
 	width: 12rem;
 }
-.entryi.wide > label {
+.entryi.wide > label, .entryi.wide > .label {
 	width: 19rem;
 }
 .entryi > .entry {
@@ -2096,14 +2096,14 @@ input.wide {
 .f-i, .f-checkbox, .f-m {
 	margin-bottom: 1.25em;
 }
-label.f-c, .f-i > label {
+label.f-c, .f-i > label, .f-i > .label {
 	display: table;
 }
-.f-c, .f-i > label {
+.f-c, .f-i > label, .f-i > .label {
 	margin-bottom: 0.3em;
 	font-weight: 500;
 }
-.f-c.n, .f-i > label.n {
+.f-c.n, .f-i > label.n, .f-i > .label.n {
 	font-weight: normal;
 }
 .f-h, .f-hx, .field-d {
@@ -2225,6 +2225,7 @@ td.padls, th.padls, div.padls {
 
 .has-error > .f-c,
 .has-error > label,
+.has-error > .label,
 .has-error > .settings-itemheading,
 label.has-error,
 h2.has-error,
@@ -2249,6 +2250,7 @@ select.has-error {
 }
 .has-warning > .f-c,
 .has-warning > label,
+.has-warning > .label,
 .has-warning > .settings-itemheading,
 label.has-warning,
 h2.has-warning,
@@ -4638,7 +4640,7 @@ body {
 	align-items: baseline;
 	margin-bottom: 0.2rem;
 }
-.mail-field > label {
+.mail-field > label, .mail-field > .label {
 	font-weight: 500;
 	padding-right: 0.5em;
 }

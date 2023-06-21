@@ -4009,7 +4009,7 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
             || (pg.top <= eg.top && eg.top - pg.top <= wh * 0.75)) {
             $(".tla-highlight").removeClass("tla-highlight");
             window.scroll(0, pg.top - Math.max(wh > 300 ? 20 : 0, (wh - pg.height) * 0.25));
-            $(p).find("label").first().addClass("tla-highlight");
+            $(p).find("label, .field-title").first().addClass("tla-highlight");
             focus_at(e);
             return true;
         }
@@ -5159,7 +5159,7 @@ function render_review_body_in(rrow, bodye) {
         fe.setAttribute("data-rf", f.uid);
         bodye.appendChild(fe);
 
-        e = document.createElement("label");
+        e = document.createElement("span");
         e.className = "revfn";
         e.append(f.name);
         h3 = document.createElement("h3");
@@ -5885,7 +5885,7 @@ function cmt_render_form(hc, cj) {
     hc.push('<div class="cmteditinfo fold3c">', '</div>');
 
     // attachments
-    hc.push('<div class="entryi has-editable-attachments hidden" id="'.concat(cid, '-attachments" data-dtype="-2" data-document-prefix="attachment"><label for="', cid, '-attachments">Attachments</label></div>'));
+    hc.push('<div class="entryi has-editable-attachments hidden" id="'.concat(cid, '-attachments" data-dtype="-2" data-document-prefix="attachment"><span class="label">Attachments</span></div>'));
     btnbox.push('<button type="button" name="attach" class="btn-licon need-tooltip ui js-add-attachment" aria-label="Attach file" data-editable-attachments="'.concat(cid, '-attachments">', $("#i-attachment").html(), '</button>'));
 
     // visibility
@@ -10669,12 +10669,12 @@ function header_text(hdr) {
 
 function add_pslitem_header() {
     var l = this.firstChild, id = this.id, e, xt;
-    if (l && l.nodeType === 1 && l.tagName === "LABEL") {
+    if (l && l.nodeName === "LABEL") {
         id = id || l.getAttribute("for");
         if (!id && (e = l.querySelector("input")))
             id = e.id;
     } else {
-        l = this;
+        l = this.querySelector(".field-title") || this;
     }
     if (!id || !(xt = header_text(l))) {
         return;

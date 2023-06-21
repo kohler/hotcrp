@@ -206,7 +206,9 @@ class PCConflicts_PaperOption extends PaperOption {
             }
         }
 
-        $pt->print_editable_option_papt($this, null, ["id" => $this->formid]);
+        $pt->print_editable_option_papt($this, null, [
+            "id" => $this->formid, "for" => false
+        ]);
         echo '<div class="papev"><ul class="pc-ctable">';
         $readonly = !$this->test_editable($ov->prow);
 

@@ -144,6 +144,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $pt->print_editable_option_papt($this, null, [
             "id" => $this->readable_formid(),
+            "for" => false,
             "context_args" => [$this->min_count, $this->max_count]
         ]);
         $topicset = $this->topic_set();

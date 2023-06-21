@@ -258,7 +258,9 @@ class Authors_PaperOption extends PaperOption {
         } else if ($sb === Conf::BLIND_UNTILREVIEW) {
             $title .= ' <span class="n">(anonymous until review)</span>';
         }
-        $pt->print_editable_option_papt($this, $title, ["id" => "authors"]);
+        $pt->print_editable_option_papt($this, $title, [
+            "id" => "authors", "for" => false
+        ]);
         $readonly = !$this->test_editable($ov->prow);
 
         $max_authors = (int) $this->conf->opt("maxAuthors");

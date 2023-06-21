@@ -501,8 +501,14 @@ class PaperTable {
         if (($id = $rest["id"] ?? false)) {
             echo '" id="' . $id;
         }
-        echo '">', Ht::label($heading ?? $this->edit_title_html($opt),
-            $for === "checkbox" ? false : $for, ["class" => $opt->required ? "field-required" : ""]);
+        echo '">';
+        $heading = $heading ?? $this->edit_title_html($opt);
+        $klass = Ht::add_tokens("field-title", $opt->required ? "field-required" : "");
+        if ($for) {
+            echo Ht::label($heading, $for === "checkbox" ? null : $for, ["class" => $klass]);
+        } else {
+            echo "<span class=\"{$klass}\">{$heading}</span>";
+        }
         $vis = $opt->visibility();
         if ($vis === PaperOption::VIS_ADMIN) {
             echo '<div class="field-visibility">(hidden from reviewers)</div>';
