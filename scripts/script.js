@@ -1569,8 +1569,10 @@ function handle_ui(evt) {
         return;
     }
     var e = evt.target;
-    if ((e && (hasClass(e, "ui") || hasClass(e, "uin")))
-        || (this.tagName === "A" && hasClass(this, "ui"))) {
+    if ((e && hasClass(e, "uin"))
+        || (evt.type === "click"
+            && ((e && hasClass(e, "ui"))
+                || (this.nodeName === "A" && hasClass(this, "ui"))))) {
         evt.preventDefault();
     }
     var k = classList(this), cbs = [];
