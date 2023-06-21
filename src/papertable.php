@@ -483,6 +483,7 @@ class PaperTable {
         } else {
             $for = $rest["for"] ?? false;
         }
+        error_log(json_encode([$opt->id, $for]));
         echo '<div class="pf pfe';
         if (!$opt->test_exists($this->prow) || ($rest["hidden"] ?? false)) {
             echo ' hidden';

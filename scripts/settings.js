@@ -36,8 +36,8 @@ handle_ui.on("js-settings-show-property", function () {
     var prop = this.getAttribute("data-property"),
         $j = $(this).closest(".settings-sf, .settings-rf").find(".is-property-" + prop);
     $j.removeClass("hidden");
-    addClass(this, "btn-disabled");
-    tooltip.erase.call(this);
+    addClass(this, "disabled");
+    hotcrp.tooltip.close(this);
     if (document.activeElement === this || document.activeElement === document.body) {
         var $jx = $j.find("input, select, textarea").not("[type=hidden], :disabled");
         $jx.length && setTimeout(function () { focus_at($jx[0]); }, 0);
@@ -66,7 +66,7 @@ function settings_delete(elt, message) {
     if (deleter && deleter.tagName === "BUTTON") {
         deleter.disabled = true;
         addClass(deleter, "btn-danger");
-        tooltip.erase.call(deleter);
+        hotcrp.tooltip.close(deleter);
     }
     if (hasClass(elt, "is-new")) {
         addClass(elt, "hidden");
@@ -226,7 +226,7 @@ handle_ui.on("js-settings-sf-move", function (evt) {
         settings_delete(sf, msg);
         foldup.call(sf, evt, {n: 2, open: true});
     }
-    tooltip.erase(this);
+    hotcrp.tooltip.close(this);
     sf_order();
 });
 
@@ -299,7 +299,7 @@ $(document).on("hotcrpsettingssf", ".settings-sf", function () {
 
 handle_ui.on("foldtoggle.settings-sf", settings_field_unfold, -1);
 
-tooltip.add_builder("settings-sf", function (info) {
+hotcrp.tooltip.add_builder("settings-sf", function (info) {
     var x = "#settings-sf-caption-values";
     if (this.name.endsWith("/name"))
         x = "#settings-sf-caption-name";
@@ -612,7 +612,7 @@ function rf_delete(evt) {
     rf_order();
 }
 
-tooltip.add_builder("settings-rf", function (info) {
+hotcrp.tooltip.add_builder("settings-rf", function (info) {
     var m = this.name.match(/^rf\/\d+\/(.*?)(?:_text|)$/);
     return $.extend({
         anchor: "w", content: $("#settings-rf-caption-" + m[1]).html(), className: "gray"
@@ -697,7 +697,7 @@ function rf_move() {
     } else if (hasClass(this, "movedown") && rf.nextSibling) {
         rf.parentNode.insertBefore(rf, rf.nextSibling.nextSibling);
     }
-    tooltip.erase(this);
+    hotcrp.tooltip.close(this);
     rf_order();
 }
 
@@ -2849,135 +2849,28 @@ $(initialize_json_settings);
 })();
 
 
+function settings_drag_reorder(draggable, group) {
+    var ch, e, i = 1;
+    for (ch = group.firstElementChild; ch; ch = ch.nextElementSibling) {
+        if ((e = ch.querySelector(".is-order"))) {
+            if (e.value != i) {
+                e.value = i;
+                $(e).trigger("change");
+            }
+            ++i;
+        }
+    }
+}
+
 handle_ui.on("dragstart.js-settings-drag", function (evt) {
     var id = this.parentElement.id;
     if (id.startsWith("sf/")) {
-        settings_drag(this, this.parentElement, $$("settings-sform"))(evt);
+        hotcrp.drag_block_reorder(this, this.parentElement, settings_drag_reorder).start(evt);
     } else if (id.startsWith("rf/")) {
-        settings_drag(this, this.parentElement, $$("settings-rform"))(evt);
+        hotcrp.drag_block_reorder(this, this.parentElement, settings_drag_reorder).start(evt);
     }
 });
 
-function settings_drag(draghandle, draggable, group) {
-    var pos, posy0, posy1, contains = 0, sep, changed = false, scrollt = null;
-    function drag(evt) {
-        evt.preventDefault();
-        evt.dropEffect = "move";
-
-        if (contains === 0) {
-            sep && sep.remove();
-            pos = posy0 = posy1 = sep = null;
-            return;
-        }
-
-        var wh = window.innerHeight,
-            tsb = Math.min(wh * 0.125, 200), bsb = wh - tsb,
-            g, x;
-        if ((scrollt === null || evt.timeStamp > scrollt + 100)
-            && (evt.clientY < tsb || evt.clientY > bsb)) {
-            g = group.getBoundingClientRect();
-            if (evt.clientY < tsb && g.top < tsb / 2) {
-                x = evt.clientY < 20 ? 1 : Math.pow((tsb - evt.clientY) / tsb, 2.5);
-                window.scrollBy({left: 0, top: -x * 32, behavior: "smooth"});
-            } else if (evt.clientY > bsb && g.bottom > bsb + tsb / 2) {
-                x = evt.clientY > wh - 20 ? 1 : Math.pow((evt.clientY - bsb) / tsb, 2.5);
-                window.scrollBy({left: 0, top: x * 32, behavior: "smooth"});
-            }
-        }
-        if (posy0 !== null && evt.clientY >= posy0 && evt.clientY < posy1) {
-            return;
-        }
-
-        posy0 = null;
-        posy1 = 0;
-        for (pos = group.firstChild; pos; pos = pos.nextSibling) {
-            if (hasClass(pos, "dropmark")
-                || (g = pos.getBoundingClientRect()).height === 0) {
-                continue;
-            }
-            posy0 = posy1;
-            if (hasClass(pos, "dragging")) {
-                posy1 = posy0;
-            } else {
-                posy1 = (g.top + g.bottom) / 2;
-                if (evt.clientY >= posy0 && evt.clientY < posy1) {
-                    break;
-                }
-            }
-        }
-        if (pos === null) {
-            posy0 = posy1;
-            posy1 = Infinity;
-        }
-
-        changed = pos !== draggable.nextSibling;
-        if (changed) {
-            if (!sep) {
-                sep = document.createElement("hr");
-                sep.className = "dropmark";
-            }
-            group.insertBefore(sep, pos);
-        } else {
-            sep && sep.remove();
-            sep = null;
-        }
-        toggleClass(draggable, "drag-would-move", changed);
-        toggleClass(draggable, "drag-would-keep", !changed);
-    }
-    function drop() {
-        if (contains !== 0) {
-            changed && group.insertBefore(draggable, sep);
-            var ch, e, i = 1;
-            for (ch = group.firstChild; ch; ch = ch.nextSibling) {
-                if ((e = ch.querySelector(".is-order"))) {
-                    if (e.value != i) {
-                        e.value = i;
-                        $(e).trigger("change");
-                    }
-                    ++i;
-                }
-            }
-        }
-    }
-    function dragend() {
-        sep && sep.remove();
-        removeClass(draggable, "dragging");
-        removeClass(draggable, "drag-would-move");
-        removeClass(draggable, "drag-would-keep");
-        window.removeEventListener("dragover", drag);
-        draghandle.removeEventListener("dragend", dragend);
-        group.removeEventListener("drop", drop);
-        group.removeEventListener("dragenter", dragenter);
-        group.removeEventListener("dragleave", dragenter);
-        window.removeEventListener("scroll", scroll);
-        window.removeEventListener("resize", scroll);
-    }
-    function dragenter(evt) {
-        if (group.contains(evt.target)) {
-            var delta = evt.type === "dragenter" ? 1 : -1;
-            contains += delta;
-            if (contains === (delta === 1 ? 1 : 0)) {
-                drag(evt);
-            }
-        }
-    }
-    function scroll() {
-        posy0 = posy1 = null;
-    }
-    return function (evt) {
-        var g = draggable.getBoundingClientRect();
-        evt.dataTransfer.setDragImage(draggable, evt.clientX - g.left, evt.clientY - g.top);
-        evt.dataTransfer.effectAllowed = "move";
-        addClass(draggable, "dragging");
-        window.addEventListener("dragover", drag);
-        draghandle.addEventListener("dragend", dragend);
-        group.addEventListener("drop", drop);
-        group.addEventListener("dragenter", dragenter);
-        group.addEventListener("dragleave", dragenter);
-        window.addEventListener("scroll", scroll);
-        window.addEventListener("resize", scroll);
-    };
-}
 
 
 hotcrp.settings = {

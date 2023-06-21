@@ -4485,9 +4485,9 @@ class Conf {
             $details_suffix = "";
             $button_class = "q";
         } else {
-            $details_class = $details_prefix = "";
+            $details_class = "";
+            $details_prefix = "";
             $details_suffix = '<svg class="licon ml-1" width="1em" height="1em" viewBox="0 0 16 16" preserveAspectRatio="none" role="none"><path d="M2 3h12M2 8h12M2 13h12" stroke="#222" stroke-width="2" /></svg>';
-            //$details_prefix = '<svg class="licon" width="1em" height="1em" viewBox="0 0 8 8" preserveAspectRatio="none"><circle cx="2" cy="1" r="1" /><circle cx="2" cy="4" r="1" /><circle cx="2" cy="7" r="1" /></svg>';
             $button_class = "btn-t";
         }
         $user_html = $user->has_email() ? htmlspecialchars($user->email) : "Not signed in";
@@ -4495,8 +4495,8 @@ class Conf {
         $pagecs = $this->page_components($user, $qreq);
         $old_separator = $pagecs->swap_separator('<li class="separator"></li>');
         echo '<details class="dropmenu-details', $details_class, '" role="menu">',
-            '<summary class="uic js-dropmenu-open">',
-            '<button class="ui js-dropmenu-open btn ', $button_class, '">',
+            '<summary class="profile-dropmenu-summary">',
+            '<button type="button" class="ui js-dropmenu-open ', $button_class, '">',
             $details_prefix, $user_html, $details_suffix,
             '</button></summary><div class="dropmenu-container dropmenu-sw"><ul class="uic dropmenu">';
         $pagecs->print_group("__profilemenu", false);
@@ -4504,8 +4504,10 @@ class Conf {
         echo '</ul></div></details>';
 
         if ($user->is_actas_user()) {
+            // reserve space in the header so JS can prepend a deadline notification
+            // (the actas button is fixed-position, so does not reserve space)
             echo '<details class="invisible dropmenu-details" role="none">',
-                '<summary><button class="btn">',
+                '<summary class="profile-dropmenu-summary ml-1"><button type="button">',
                 $details_prefix, $user_html, $details_suffix,
                 '</button></summary></details>';
         }

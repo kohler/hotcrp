@@ -1110,6 +1110,152 @@ wstorage.site_json = function (is_session, key) {
 };
 
 
+// dragging
+(function () {
+function drag_scroll(evt, group) {
+    var wh = window.innerHeight,
+        tsb = Math.min(wh * 0.125, 200), bsb = wh - tsb,
+        g, x;
+    if (evt.clientY < tsb || evt.clientY > bsb) {
+        g = group ? group.getBoundingClientRect() : {top: 0, bottom: bsb};
+        if (evt.clientY < tsb && g.top < tsb / 2) {
+            x = evt.clientY < 20 ? 1 : Math.pow((tsb - evt.clientY) / tsb, 2.5);
+            window.scrollBy({left: 0, top: -x * 32, behavior: "smooth"});
+        } else if (evt.clientY > bsb && g.bottom > bsb + tsb / 2) {
+            x = evt.clientY > wh - 20 ? 1 : Math.pow((evt.clientY - bsb) / tsb, 2.5);
+            window.scrollBy({left: 0, top: x * 32, behavior: "smooth"});
+        }
+    }
+}
+
+hotcrp.drag_block_reorder = function (draghandle, draggable, callback) {
+    var group = draggable.parentElement,
+        pos, posy0, posy1, contained = 0, sep, changed = false, ncol;
+    function make_tr_dropmark() {
+        var tr, td;
+        if (ncol == null) {
+            ncol = 0;
+            td = group.closest("table").querySelector("td, th");
+            while (td) {
+                ncol += td.colSpan;
+                td = td.nextElementSibling;
+            }
+        }
+        var td = classe("td", null, sep);
+        td.colSpan = ncol;
+        sep = classe("tr", "dropmark", td);
+    }
+    function dragover(evt) {
+        evt.preventDefault();
+        evt.dropEffect = "move";
+
+        if (!contained) {
+            sep && sep.remove();
+            pos = posy0 = posy1 = sep = null;
+            addClass(draggable, "drag-would-keep");
+            removeClass(draggable, "drag-would-move");
+            return;
+        }
+
+        drag_scroll(evt, group);
+        if (posy0 !== null && evt.clientY >= posy0 && evt.clientY < posy1) {
+            return;
+        }
+
+        posy0 = null;
+        posy1 = -100;
+        var g;
+        for (pos = group.firstElementChild; pos; pos = pos.nextElementSibling) {
+            if (hasClass(pos, "dropmark")
+                || (g = pos.getBoundingClientRect()).height === 0) {
+                continue;
+            }
+            posy0 = posy1;
+            if (!hasClass(pos, "dragging")) {
+                posy1 = (g.top + g.bottom) / 2;
+                if (evt.clientY >= posy0 && evt.clientY < posy1) {
+                    break;
+                }
+            }
+        }
+        if (pos === null) {
+            posy0 = posy1;
+            posy1 = Infinity;
+        }
+
+        changed = pos !== draggable.nextElementSibling;
+        if (sep && sep.nextElementSibling === pos) {
+            // do nothing
+        } else if (changed) {
+            if (!sep) {
+                sep = document.createElement("hr");
+                sep.className = "dropmark";
+                if (group.nodeName === "TBODY") {
+                    make_tr_dropmark();
+                }
+            }
+            group.insertBefore(sep, pos);
+        } else if (sep) {
+            sep.remove();
+            posy0 = null; // recalculate bounds now that separator’s gone
+            sep = null;
+        }
+        toggleClass(draggable, "drag-would-move", changed);
+        toggleClass(draggable, "drag-would-keep", !changed);
+    }
+    function drop() {
+        if (contained) {
+            changed && group.insertBefore(draggable, sep);
+            sep && sep.remove();
+            sep = null;
+            callback && callback(draggable, group, changed);
+        }
+    }
+    function dragend() {
+        sep && sep.remove();
+        removeClass(draggable, "dragging");
+        removeClass(group, "drag-active");
+        removeClass(draggable, "drag-would-move");
+        removeClass(draggable, "drag-would-keep");
+        window.removeEventListener("dragover", dragover);
+        draghandle.removeEventListener("dragend", dragend);
+        group.removeEventListener("drop", drop);
+        group.removeEventListener("dragenter", dragenter);
+        group.removeEventListener("dragleave", dragenter);
+        window.removeEventListener("scroll", scroll);
+        window.removeEventListener("resize", scroll);
+    }
+    function dragenter(evt) {
+        var delta = evt.type === "dragenter" ? 1 : -1;
+        contained += delta;
+        if (contained === 0) {
+            dragover(evt);
+        }
+        evt.preventDefault();
+    }
+    function scroll() {
+        posy0 = posy1 = null;
+    }
+    return {
+        start: function (evt) {
+            var g = draggable.getBoundingClientRect();
+            evt.dataTransfer.setDragImage(draggable, evt.clientX - g.left, evt.clientY - g.top);
+            evt.dataTransfer.effectAllowed = "move";
+            addClass(draggable, "dragging");
+            addClass(group, "drag-active");
+            window.addEventListener("dragover", dragover);
+            draghandle.addEventListener("dragend", dragend);
+            group.addEventListener("drop", drop);
+            group.addEventListener("dragenter", dragenter);
+            group.addEventListener("dragleave", dragenter);
+            window.addEventListener("scroll", scroll);
+            window.addEventListener("resize", scroll);
+        }
+    };
+};
+})();
+
+
 // hoturl
 function hoturl_add(url, component) {
     var hash = url.indexOf("#");
@@ -2317,7 +2463,7 @@ return function (content, bubopt) {
 
 
 var global_tooltip;
-var tooltip = (function ($) {
+hotcrp.tooltip = (function ($) {
 var builders = {};
 
 function prepare_info(elt, info) {
@@ -2392,7 +2538,7 @@ function show_tooltip(info) {
                 && !info.done) {
                 tt = tx;
             } else {
-                tx && tx.erase();
+                tx && tx.close();
                 $self.data("tooltipState", tt);
                 show_bub();
                 global_tooltip = tt;
@@ -2413,7 +2559,8 @@ function show_tooltip(info) {
                 to = setTimeout(erase, delay);
             return tt;
         },
-        erase: erase,
+        close: erase,
+        erase: erase, /* XXX backward compat */
         _element: $self[0],
         html: function (new_content) {
             if (new_content === undefined) {
@@ -2455,10 +2602,11 @@ function tooltip() {
     else
         $(this).hover(ttenter, ttleave);
 }
-tooltip.erase = function () {
-    var tt = this === tooltip ? global_tooltip : $(this).data("tooltipState");
-    tt && tt.erase();
+tooltip.close = function (e) {
+    var tt = e ? $(e).data("tooltipState") : global_tooltip;
+    tt && tt.close();
 };
+tooltip.erase = tooltip.close; /* XXX backward compat */
 tooltip.add_builder = function (name, f) {
     builders[name] = f;
 };
@@ -2586,7 +2734,7 @@ function popup_skeleton(options) {
             && $d[0].contains(document.activeElement)) {
             document.activeElement.blur();
         }
-        tooltip.erase();
+        hotcrp.tooltip.close();
         $d.find("textarea, input").unautogrow();
         $d.trigger("closedialog");
         $d.remove();
@@ -2636,7 +2784,7 @@ function popup_skeleton(options) {
             if (e && document.activeElement !== e) {
                 prior_focus = e;
             }
-            tooltip.erase();
+            hotcrp.tooltip.close();
             // XXX also close down suggestions
         }
         return $d;
@@ -2645,7 +2793,7 @@ function popup_skeleton(options) {
 }
 
 function popup_near(elt, near) {
-    tooltip.erase();
+    hotcrp.tooltip.close();
     if (elt.jquery)
         elt = elt[0];
     while (!hasClass(elt, "modal-dialog"))
@@ -3002,7 +3150,7 @@ function display_tracker() {
         if (mne) {
             if (global_tooltip
                 && mne.contains(global_tooltip.near())) {
-                global_tooltip.erase();
+                global_tooltip.close();
             }
             mne.parentNode.removeChild(mne);
         }
@@ -3039,7 +3187,7 @@ function display_tracker() {
     if (t !== last_tracker_html) {
         if (global_tooltip
             && mne.contains(global_tooltip.near())) {
-            global_tooltip.erase();
+            global_tooltip.close();
         }
         last_tracker_html = mne.innerHTML = t;
         $(mne).awaken();
@@ -3245,10 +3393,10 @@ handle_ui.on("js-tracker", function (evt) {
             if (!hotcrp_status.tracker_here) {
                 hc.push('<div class="lg"><button type="button" name="new">Start new tracker</button></div>');
             } else {
-                hc.push('<div class="lg"><button type="button" class="need-tooltip btn-disabled" tabindex="-1" aria-label="This browser tab is already running a tracker.">Start new tracker</button></div>');
+                hc.push('<div class="lg"><button type="button" class="need-tooltip disabled" tabindex="-1" aria-label="This browser tab is already running a tracker.">Start new tracker</button></div>');
             }
         } else {
-            hc.push('<div class="lg"><button type="button" class="need-tooltip btn-disabled" tabindex="-1" aria-label="To start a new tracker, open a tab on a submission page.">Start new tracker</button></div>')
+            hc.push('<div class="lg"><button type="button" class="need-tooltip disabled" tabindex="-1" aria-label="To start a new tracker, open a tab on a submission page.">Start new tracker</button></div>')
         }
         hc.push_actions();
         hc.push('<button type="submit" name="save" class="btn-primary">Save changes</button><button type="button" name="cancel">Cancel</button>');
@@ -3826,7 +3974,27 @@ function svge() {
 
 function classe() {
     var e = document.createElement(arguments[0]), i;
-    e.className = arguments[1] || "";
+    if (arguments[1])
+        e.className = arguments[1];
+    for (i = 2; i < arguments.length; ++i) {
+        e.append(arguments[i]);
+    }
+    return e;
+}
+
+function attre() {
+    var e = document.createElement(arguments[0]), attr, i;
+    if ((attr = arguments[1])) {
+        for (i in attr) {
+            if (i === "disabled") {
+                e.disabled = attr[i];
+            } else if (i === "class") {
+                e.className = attr[i];
+            } else {
+                e.setAttribute(i, attr[i]);
+            }
+        }
+    }
     for (i = 2; i < arguments.length; ++i) {
         e.append(arguments[i]);
     }
@@ -4038,7 +4206,8 @@ $(function () {
 // dropdown menus
 
 (function ($) {
-var is_ie = document.documentMode || window.attachEvent;
+var is_ie = document.documentMode || window.attachEvent, /* XXX remove support */
+    builders = {};
 
 if (is_ie) {
     $(function () {
@@ -4055,9 +4224,16 @@ function dropmenu_close() {
 
 handle_ui.on("click.js-dropmenu-open", function (evt) {
     var modal = $$("dropmenu-modal"), esummary = this, edetails, was_open;
-    if (esummary.tagName === "BUTTON")
+    if (hasClass(esummary, "need-dropmenu")) {
+        $.each(classList(esummary), function (i, c) {
+            if (builders[c])
+                builders[c].call(esummary, evt);
+        });
+    }
+    if (esummary.nodeName === "BUTTON")
         esummary = esummary.closest("summary");
     edetails = esummary.parentElement;
+    hotcrp.tooltip.close();
     was_open = is_ie ? hasClass(edetails.lastChild, "hidden") : edetails.open;
     if (!was_open && !modal) {
         modal = classe("div", "modal transparent");
@@ -4087,15 +4263,10 @@ handle_ui.on("click.dropmenu", function (evt) {
     if (!li) {
         return;
     }
-    es = li.querySelectorAll("a");
+    es = li.querySelectorAll("button");
     if (es.length !== 1
-        && (bs = li.querySelectorAll("form")).length === 1) {
-        bs = bs[0].elements;
-        es = [];
-        for (i = 0; i !== bs.length; ++i) {
-            if (bs[i].type === "submit")
-                es.push(bs[i]);
-        }
+        && (bs = li.querySelectorAll("a")).length === 1) {
+        es = bs;
     }
     if (es.length !== 1) {
         return;
@@ -4110,6 +4281,16 @@ handle_ui.on("click.dropmenu", function (evt) {
         handle_ui.stopPropagation(evt);
     }
 });
+
+hotcrp.dropmenu = {
+    add_builder: function (s, f) {
+        builders[s] = f;
+    },
+    close: function (e) {
+        if (!e || e.closest("details[open]"))
+            dropmenu_close();
+    }
+};
 
 })($);
 
@@ -4732,6 +4913,182 @@ handle_ui.on(".js-autoassign-prepare", function () {
 // author entry
 (function ($) {
 
+function row_fill(row, i, defaults, changes) {
+    ++i;
+    var ipts, e, m, num = i + ".";
+    if ((e = row.querySelector(".row-counter"))
+        && e.textContent !== num)
+        e.replaceChildren(num);
+    ipts = row.querySelectorAll("input, select, textarea");
+    for (e of ipts) {
+        if (!e.name
+            || !(m = /^(.*?)(\d+|\$)(|:.*)$/.exec(e.name))
+            || m[2] == i)
+            continue;
+        e.name = m[1] + i + m[3];
+        if (defaults && e.name in defaults)
+            input_set_default_value(e, defaults[e.name]);
+        if (changes)
+            changes.push(e);
+    }
+}
+
+function is_row_interesting(row) {
+    var ipts = row.querySelectorAll("input, select, textarea"), e;
+    for (e of ipts) {
+        if (e.name
+            && ((e.value !== ""
+                 && e.value !== e.getAttribute("placeholder"))
+                || input_default_value(e) !== ""))
+            return true;
+    }
+    return false;
+}
+
+function row_add(group, before, nr, defaults) {
+    var id = group.getAttribute("data-row-template"), row;
+    if (!id || !(row = document.getElementById(id)))
+        return false;
+    if ("content" in row) {
+        row = row.content.cloneNode(true).firstElementChild;
+    } else {
+        row = row.firstChild.cloneNode(true);
+    }
+    group.insertBefore(row, before);
+    if (nr != null) {
+        row_fill(row, nr, defaults);
+    }
+    $(row).awaken();
+    return true;
+}
+
+function row_order_defaults(group) {
+    var ipts = group.querySelectorAll("input, select, textarea"),
+        e, defaults = {};
+    for (e of ipts) {
+        if (e.name)
+            defaults[e.name] = input_default_value(e);
+    }
+    return defaults;
+}
+
+function row_order_drag_confirm(group, defaults) {
+    var i, row, changes = [];
+    defaults = defaults || row_order_defaults(group);
+    for (row = group.firstElementChild, i = 0;
+         row; row = row.nextElementSibling, ++i) {
+        row_fill(row, i, defaults, changes);
+    }
+    row_order_autogrow(group, defaults);
+    $(changes).trigger("change");
+}
+
+function row_order_autogrow(group, defaults) {
+    var min_rows = Math.max(+group.getAttribute("data-min-rows") || 0, 1),
+        max_rows = +group.getAttribute("data-max-rows") || 0,
+        nr, row, prev_row, interesting;
+    for (row = group.firstElementChild, nr = 0;
+         row; row = row.nextElementSibling, ++nr) {
+    }
+    while (nr < min_rows && row_add(group, null, nr, defaults)) {
+        ++nr;
+    }
+    if (hasClass(group, "row-order-autogrow")) {
+        row = group.lastElementChild;
+        if (is_row_interesting(row)) {
+            if ((nr < max_rows || max_rows <= 0)
+                && row_add(group, null, nr, defaults)) {
+                ++nr;
+            }
+        } else {
+            while (nr > min_rows) {
+                prev_row = row.previousElementSibling;
+                if (is_row_interesting(prev_row)) {
+                    break;
+                }
+                row.remove();
+                --nr;
+                row = prev_row;
+            }
+        }
+    }
+    nr = Math.ceil(Math.log10(nr + 1)).toString();
+    if (group.getAttribute("data-row-counter-digits") !== nr) {
+        group.setAttribute("data-row-counter-digits", nr);
+    }
+}
+
+handle_ui.on("dragstart.author-draghandle", function (evt) {
+    var row = this.closest(".draggable");
+    hotcrp.drag_block_reorder(this, row, function (draggable, group, changed) {
+        changed && row_order_drag_confirm(group);
+    }).start(evt);
+});
+hotcrp.dropmenu.add_builder("author-draghandle", function (evt) {
+    var details = this.closest("details"), menu,
+        row = this.closest(".draggable"), group = row.parentElement;
+    if (details) {
+        menu = details.lastElementChild.firstChild;
+        menu.replaceChildren();
+    } else {
+        menu = classe("ul", "uic dropmenu");
+        details = classe("details", "dropmenu-details",
+            classe("summary"),
+            classe("div", "dropmenu-container dropmenu-draghandle", menu));
+        details.setAttribute("role", "menu");
+        this.replaceWith(details);
+        details.firstChild.append(this);
+    }
+    menu.append(classe("li", "disabled", "(Drag to reorder)"));
+    function buttonli(className, attr, text) {
+        attr["class"] = className;
+        attr["type"] = "button";
+        return classe("li", attr.disabled ? "disabled" : "has-link", attre("button", attr, text));
+    }
+    menu.append(buttonli("link ui row-order-dragmenu move-up", {disabled: !row.previousElementSibling}, "Move up"));
+    menu.append(buttonli("link ui row-order-dragmenu move-down", {disabled: !row.nextElementSibling}, "Move down"));
+    if (group.hasAttribute("data-row-template")) {
+        var max_rows = +group.getAttribute("data-max-rows") || 0;
+        if (max_rows <= 0 || group.children.length < max_rows) {
+            menu.append(buttonli("link ui row-order-dragmenu insert-above", {}, "Insert row above"));
+            menu.append(buttonli("link ui row-order-dragmenu insert-below", {}, "Insert row below"));
+        }
+    }
+    menu.append(buttonli("link ui row-order-dragmenu remove", {}, "Remove"));
+});
+handle_ui.on("row-order-dragmenu", function (evt) {
+    hotcrp.dropmenu.close(this);
+    var row = this.closest(".draggable"), sib, group = row.parentElement,
+        defaults = row_order_defaults(group);
+    if (hasClass(this, "move-up") && (sib = row.previousElementSibling)) {
+        sib.before(row);
+    } else if (hasClass(this, "move-down") && (sib = row.nextElementSibling)) {
+        sib.after(row);
+    } else if (hasClass(this, "remove")) {
+        row.remove();
+    } else if (hasClass(this, "insert-above")) {
+        row_add(group, row);
+    } else if (hasClass(this, "insert-below")) {
+        row_add(group, row.nextElementSibling);
+    }
+    row_order_drag_confirm(group, defaults);
+});
+
+$(function () {
+    $(".need-row-order-autogrow").each(function () {
+        var group = this;
+        if (!hasClass(group, "row-order-autogrow")) {
+            addClass(group, "row-order-autogrow");
+            removeClass(group, "need-row-order-autogrow");
+            $(group).on("input change", "input, select, textarea", function () {
+                row_order_autogrow(group);
+            });
+        }
+    });
+});
+
+
+/* XXX obsolete */
 function row_order_change(e, delta, action) {
     var $r, $tbody, tr;
     if (action > 0)
@@ -4751,7 +5108,7 @@ function row_order_change(e, delta, action) {
     });
 
     if (action < 0) {
-        tooltip.erase();
+        hotcrp.tooltip.close();
         $r.remove();
         delta = 0;
     } else if (action == 0) {
@@ -4825,7 +5182,6 @@ function row_order_change(e, delta, action) {
     }
     $(changes).trigger("change");
 }
-
 function row_order_ui() {
     if (hasClass(this, "moveup"))
         row_order_change(this, -1, 0);
@@ -4840,18 +5196,7 @@ function row_order_ui() {
     }
 }
 handle_ui.on("row-order-ui", row_order_ui);
-
-$(function () {
-    $(".need-row-order-autogrow").each(function () {
-        if (!hasClass(this, "row-order-autogrow")) {
-            addClass(this, "row-order-autogrow");
-            removeClass(this, "need-row-order-autogrow");
-            $(this).on("input change", "input, select, textarea", function () {
-                row_order_change(this, 0, 0);
-            });
-        }
-    });
-});
+/* XXX end obsolete */
 
 })($);
 
@@ -5093,7 +5438,7 @@ handle_ui.on("js-review-tokens", function () {
 (function ($) {
 var formj, form_order;
 
-tooltip.add_builder("rf-score", function (info) {
+hotcrp.tooltip.add_builder("rf-score", function (info) {
     var fieldj = formj[this.getAttribute("data-rf")];
     if (fieldj && fieldj.parse_value) {
         var svs = this.querySelectorAll("span.sv"), i, ts = [];
@@ -5108,7 +5453,7 @@ tooltip.add_builder("rf-score", function (info) {
     return info;
 });
 
-tooltip.add_builder("rf-description", function (info) {
+hotcrp.tooltip.add_builder("rf-description", function (info) {
     var rv = $(this).closest(".rf");
     if (rv.length) {
         var fieldj = formj[rv.data("rf")];
@@ -5134,7 +5479,7 @@ tooltip.add_builder("rf-description", function (info) {
 
 function score_header_tooltips($j) {
     $j.find(".rf .revfn").attr("data-tooltip-info", "rf-description")
-        .each(tooltip);
+        .each(hotcrp.tooltip);
 }
 
 function field_visible(f, rrow) {
@@ -7094,7 +7439,7 @@ demand_load.emoji_completion = function (start) {
 })();
 
 
-tooltip.add_builder("votereport", function (info) {
+hotcrp.tooltip.add_builder("votereport", function (info) {
     var pid = $(this).attr("data-pid") || siteinfo.paperid,
         tag = $(this).attr("data-tag");
     if (pid && tag)
@@ -7248,7 +7593,7 @@ function make_suggestions(precaret, postcaret, options) {
     };
 }
 
-var suggest = (function () {
+hotcrp.suggest = (function () {
 var builders = {}, punctre;
 try {
     punctre = new RegExp("^(?!@)[\\p{Po}\\p{Pd}\\p{Pe}\\p{Pf}]$", "u");
@@ -7579,7 +7924,7 @@ suggest.add_builder = function (name, f) {
 return suggest;
 })();
 
-suggest.add_builder("tags", function (elt) {
+hotcrp.suggest.add_builder("tags", function (elt) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^([^#\s]*)((?:#[-+]?(?:\d+\.?|\.\d)\d*)?)/);
@@ -7587,7 +7932,7 @@ suggest.add_builder("tags", function (elt) {
     }
 });
 
-suggest.add_builder("editable-tags", function (elt) {
+hotcrp.suggest.add_builder("editable-tags", function (elt) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^([^#\s]*)((?:#[-+]?(?:\d+\.?|\.\d)\d*)?)/);
@@ -7595,7 +7940,7 @@ suggest.add_builder("editable-tags", function (elt) {
     }
 });
 
-suggest.add_builder("sitewide-editable-tags", function (elt) {
+hotcrp.suggest.add_builder("sitewide-editable-tags", function (elt) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^([^#\s]*)((?:#[-+]?(?:\d+\.?|\.\d)\d*)?)/);
@@ -7603,7 +7948,7 @@ suggest.add_builder("sitewide-editable-tags", function (elt) {
     }
 });
 
-suggest.add_builder("papersearch", function (elt) {
+hotcrp.suggest.add_builder("papersearch", function (elt) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*#?|#|(?:show|hide):\s*(?:#|tag:|tagval:|tagvalue:))([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
@@ -7614,7 +7959,7 @@ suggest.add_builder("papersearch", function (elt) {
     }
 });
 
-suggest.add_builder("pc-tags", function (elt) {
+hotcrp.suggest.add_builder("pc-tags", function (elt) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^(\S*)/);
@@ -7632,7 +7977,7 @@ function suggest_emoji_postreplace(elt, repl, startPos) {
     }
 }
 
-suggest.add_builder("suggest-emoji", function (elt) {
+hotcrp.suggest.add_builder("suggest-emoji", function (elt) {
     /* eslint-disable no-misleading-character-class */
     var x = completion_split(elt), m;
     if (x && (m = x[0].match(/(?:^|[\s(\u20e3-\u23ff\u2600-\u27ff\ufe0f\udc00-\udfff]):((?:|\+|\+?[-_0-9a-zA-Z]+):?)$/))
@@ -7642,7 +7987,7 @@ suggest.add_builder("suggest-emoji", function (elt) {
     /* eslint-enable no-misleading-character-class */
 });
 
-suggest.add_builder("mentions", function (elt, hintinfo) {
+hotcrp.suggest.add_builder("mentions", function (elt, hintinfo) {
     var x = completion_split(elt), precaret, m;
     if (!x) {
         return null;
@@ -8589,7 +8934,7 @@ handle_ui.on("js-annotate-order", function () {
         $div.find("input[name='tagval_" + annoid + "']").after("[deleted]").remove();
         $div.append(hidden_input("deleted_" + annoid, "1"));
         $div.find("input[name='legend_" + annoid + "']").prop("disabled", true);
-        tooltip.erase.call(this);
+        hotcrp.tooltip.close(this);
         $(this).remove();
     }
     function make_onsave($d) {
@@ -9221,7 +9566,7 @@ handle_ui.on("js-plinfo-edittags", function () {
             + '<button type="button" name="tagsave ' + rv.pid + '" class="btn-primary ml-2">Save</button>'
             + '<button type="button" name="tagcancel ' + rv.pid + '" class="ml-2">Cancel</button></div>');
         ta = $(div).find("textarea")[0];
-        suggest.call(ta);
+        hotcrp.suggest.call(ta);
         $(ta).val(rv.tags_edit_text).autogrow()
             .on("keydown", make_onkey("Enter", do_submit))
             .on("keydown", make_onkey("Escape", do_cancel));
@@ -12023,9 +12368,9 @@ $.fn.awaken = function () {
         if (hasClass(this, "need-autogrow"))
             $(this).autogrow();
         if (hasClass(this, "need-suggest"))
-            suggest.call(this);
+            hotcrp.suggest.call(this);
         if (hasClass(this, "need-tooltip"))
-            tooltip.call(this);
+            hotcrp.tooltip.call(this);
     });
     return this;
 };
@@ -12034,7 +12379,7 @@ $(function () { $(document.body).awaken(); });
 
 $(function () {
     var err = [], elt = [];
-    $(".xinfo,.xconfirm,.xwarning,.xmerror,.aa,.strong,td.textarea,button.btn-link,button.btn-qlink,button.btn-qolink,.btn-xlink").each(function () {
+    $(".xinfo,.xconfirm,.xwarning,.xmerror,.aa,.strong,td.textarea,button.btn-link,button.btn-qlink,button.btn-qolink,.btn-xlink,.btn-disabled").each(function () {
         err.push(this.tagName.concat(".", this.className.replace(/\s+/g, ".")));
     });
     $("a.btn[href='']").each(function () {
@@ -12063,6 +12408,8 @@ Object.assign(window.hotcrp, {
     // add_preference_ajax
     check_version: check_version,
     demand_load: demand_load,
+    // drag_block_reorder
+    // dropmenu
     // edit_comment
     ensure_pattern: ensure_pattern,
     escape_html: escape_html,
@@ -12090,6 +12437,8 @@ Object.assign(window.hotcrp, {
     // set_review_form
     // set_scoresort
     // shortcut
+    // suggest
+    // tooltip
     // tracker_show_elapsed
     // update_tag_decoration
 });

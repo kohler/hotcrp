@@ -218,7 +218,7 @@ class Authors_PaperOption extends PaperOption {
         }
         return Ht::entry("authors:{$n}:{$component}", $val, $js);
     }
-    private function editable_authors_tr($pt, $n, $au, $reqau, $shownum, $readonly) {
+    private function echo_editable_authors_line($pt, $n, $au, $reqau, $shownum, $readonly) {
         // on new paper, default to editing user as first author
         $ignore_diff = false;
         if ($n === 1
@@ -229,26 +229,20 @@ class Authors_PaperOption extends PaperOption {
             $ignore_diff = true;
         }
 
-        $t = '<tr class="author-entry">';
+        echo '<div class="author-entry draggable d-flex">';
         if ($shownum) {
-            $t .= '<td class="rxcaption">' . $n . '.</td>';
+            echo '<div class="flex-grow-0"><button type="button" class="draghandle ui js-dropmenu-open ui-drag author-draghandle need-tooltip need-dropmenu" draggable="true" title="Click or drag to reorder" data-tooltip-anchor="e"></button></div>',
+                '<div class="flex-grow-0 row-counter">', $n, '.</div>';
         }
-        $t .= '<td class="lentry">'
-            . $this->editable_author_component_entry($pt, $n, "email", $au, $reqau, $ignore_diff, $readonly) . ' '
-            . $this->editable_author_component_entry($pt, $n, "name", $au, $reqau, $ignore_diff, $readonly) . ' '
-            . $this->editable_author_component_entry($pt, $n, "affiliation", $au, $reqau, $ignore_diff,$readonly);
-        if (!$readonly) {
-            $t .= ' <span class="nb btnbox aumovebox"><button type="button" class="ui need-tooltip row-order-ui moveup" aria-label="Move up" tabindex="-1">'
-                . Icons::ui_triangle(0)
-                . '</button><button type="button" class="ui need-tooltip row-order-ui movedown" aria-label="Move down" tabindex="-1">'
-                . Icons::ui_triangle(2)
-                . '</button><button type="button" class="ui need-tooltip row-order-ui delete" aria-label="Delete" tabindex="-1">✖</button></span>';
-        }
-        return $t . $pt->messages_at("authors:{$n}")
-            . $pt->messages_at("authors:{$n}:email")
-            . $pt->messages_at("authors:{$n}:name")
-            . $pt->messages_at("authors:{$n}:affiliation")
-            . '</td></tr>';
+        echo '<div class="flex-grow-1">',
+            $this->editable_author_component_entry($pt, $n, "email", $au, $reqau, $ignore_diff, $readonly), ' ',
+            $this->editable_author_component_entry($pt, $n, "name", $au, $reqau, $ignore_diff, $readonly), ' ',
+            $this->editable_author_component_entry($pt, $n, "affiliation", $au, $reqau, $ignore_diff,$readonly),
+            $pt->messages_at("authors:{$n}"),
+            $pt->messages_at("authors:{$n}:email"),
+            $pt->messages_at("authors:{$n}:name"),
+            $pt->messages_at("authors:{$n}:affiliation"),
+            '</div></div>';
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $sb = $this->conf->submission_blindness();
@@ -265,10 +259,6 @@ class Authors_PaperOption extends PaperOption {
 
         $max_authors = (int) $this->conf->opt("maxAuthors");
         $min_authors = $max_authors > 0 ? min(5, $max_authors) : 5;
-        echo '<div class="papev"><table class="js-row-order">',
-            '<tbody id="authors:container" class="need-row-order-autogrow" data-min-rows="', $min_authors, '" ',
-            ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),
-            'data-row-template="', htmlspecialchars($this->editable_authors_tr($pt, '$', null, null, $max_authors !== 1, $readonly)), '">';
 
         $aulist = $this->author_list($ov);
         $reqaulist = $this->author_list($reqov);
@@ -281,11 +271,20 @@ class Authors_PaperOption extends PaperOption {
             && ($max_authors <= 0 || $nau + 1 <= $max_authors)) {
             ++$nau;
         }
+        $ndigits = (int) ceil(log10($nau + 1));
 
+        echo '<div class="papev">',
+            '<div id="authors:container" class="js-row-order need-row-order-autogrow" data-min-rows="', $min_authors, '"',
+            $max_authors > 0 ? " data-max-rows=\"{$max_authors}\"" : "",
+            ' data-row-counter-digits="', $ndigits,
+            '" data-row-template="authors:row-template">';
         for ($n = 1; $n <= $nau; ++$n) {
-            echo $this->editable_authors_tr($pt, $n, $aulist[$n-1] ?? null, $reqaulist[$n-1] ?? null, $max_authors !== 1, $readonly);
+            $this->echo_editable_authors_line($pt, $n, $aulist[$n-1] ?? null, $reqaulist[$n-1] ?? null, $max_authors !== 1, $readonly);
         }
-        echo "</tbody></table></div></div>\n\n";
+        echo '</div>';
+        echo '<template id="authors:row-template" class="hidden">';
+        $this->echo_editable_authors_line($pt, '$', null, null, $max_authors !== 1, $readonly);
+        echo "</template></div></div>\n\n";
     }
 
     function render(FieldRender $fr, PaperValue $ov) {

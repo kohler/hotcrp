@@ -1640,7 +1640,7 @@ topics. We use this information to help match papers to reviewers.</p>',
                 $klass = "ui js-disable-user flex-grow-1 " . ($disablement ? "btn-success" : "btn-danger");
                 $p = "<p class=\"pt-1 mb-0\">Disabled accounts cannot sign in or view the site.";
             } else {
-                $klass = "flex-grow-1 btn-disabled";
+                $klass = "flex-grow-1 disabled";
                 $p = "<p class=\"pt-1 mb-0 feedback is-warning\">Conference settings prevent this account from being enabled.";
             }
             echo Ht::button($disablement ? "Enable account" : "Disable account", [

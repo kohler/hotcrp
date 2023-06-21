@@ -266,6 +266,9 @@ body.paper #p-header {
 	text-align: right;
 	float: right;
 }
+.profile-dropmenu-summary {
+	margin: 0 -7px;
+}
 .usertime {
 	padding-top: 1px;
 	font-size: smaller;
@@ -1402,6 +1405,9 @@ button:hover, button:focus, button:active, button:focus-within,
 	background-image: linear-gradient(#ee0000, #cc0000);
 	color: white;
 }
+.disabled {
+	color: rgba(102, 102, 102, 0.5);
+}
 button:disabled, button:disabled:hover,
 .btn:disabled, .btn:disabled:hover,
 .btn-default:disabled, .btn-default:disabled:hover,
@@ -1411,14 +1417,11 @@ button:disabled, button:disabled:hover,
 .alert .btn-primary:disabled, .alert .btn-primary:disabled:hover,
 .alert .btn-alertable:disabled, .alert .btn-alertable:disabled:hover,
 .btn-highlight:disabled, .alert .btn-highlight:disabled:hover,
-.btn-disabled, .btn-disabled:hover,
-a.btn-disabled, a.btn-disabled:hover {
+button.disabled, button.disabled:hover {
 	color: rgba(102, 102, 102, 0.5);
 	border-color: #c5c5c5;
 	background: rgba(222, 222, 222, 0.5);
-}
-.disabled-color {
-	color: rgba(102, 102, 102, 0.5);
+	cursor: default;
 }
 .btn-link, .btn-qlink, .btn-qolink,
 button.link, button.q, button.qo,
@@ -1430,6 +1433,11 @@ button.link:hover, button.q:hover, button.qo:hover {
 	border-style: none;
 	background: initial;
 	cursor: pointer;
+}
+button.link:disabled, button.q:disabled, button.qo:disabled,
+button.link:disabled:hover, button.q:disabled:hover, button.qo:disabled:hover,
+button.disabled, button.disabled:hover {
+	cursor: default;
 }
 .if-alert {
 	display: none;
@@ -1771,24 +1779,30 @@ th.settings-simplehead {
 	opacity: 0.25;
 	padding: 0 1em;
 }
-hr.dropmark {
+#settings-sform > hr.dropmark, #settings-rform > hr.dropmark {
 	max-width: 800px;
-	border-top: 2px solid #e68e00;
-	margin: 16px 0;
 }
 .settings-sf:hover .settings-draghandle, .settings-rf:hover .settings-draghandle {
 	opacity: 0.5;
 }
-.settings-sf.drag-would-keep, .settings-rf.drag-would-keep {
+.settings-draghandle:hover {
+	opacity: 1 !important;
+}
+hr.dropmark {
+	/* Do not use borders and margin, because margin isn't included in parent's
+	   getBorderClientRect */
+	margin: 0;
+	border: 0 none;
+	height: 34px;
+	background-image: linear-gradient(to bottom, transparent 0, transparent 16px, #e68e00 16px, #e68e00 18px, transparent 18px);
+}
+.drag-would-keep {
 	opacity: 0.75;
 	border-color: #c07700 !important;
 }
-.settings-sf.drag-would-move, .settings-rf.drag-would-move {
+.drag-would-move {
 	opacity: 0.25 !important;
 	border-color: silver !important;
-}
-.settings-draghandle:hover {
-	opacity: 1 !important;
 }
 .settings-sf-example > .pfe {
 	margin-bottom: 0;
@@ -1998,8 +2012,6 @@ input.wide {
 }
 .dropmenu-details > summary {
 	display: inline-block;
-	cursor: pointer;
-	margin: 0 -7px;
 	list-style-type: none;
 }
 .dropmenu-details > summary::-webkit-details-marker {
@@ -2017,6 +2029,10 @@ input.wide {
 	z-index: 12;
 	cursor: default;
 	box-shadow: 0px 1.5px 5px 1px rgba(0, 0, 0, 0.2);
+	/* can be overridden by .dropmenu-sw */
+	left: 0;
+	right: auto;
+	top: 120%;
 }
 .dropmenu-container::before, .dropmenu-container::after {
 	position: absolute;
@@ -2026,16 +2042,27 @@ input.wide {
 .dropmenu-container::before {
 	border: 8px solid transparent;
 	border-bottom-color: silver;
+	/* can be overridden by .dropmenu-sw */
+	top: -16px;
+	left: 9px;
+	right: auto;
 }
 .dropmenu-container::after {
 	border: 7px solid transparent;
 	border-bottom-color: white;
+	/* can be overridden by .dropmenu-sw */
+	top: -14px;
+	left: 10px;
+	right: auto;
 }
 .dropmenu {
 	margin: 0.5rem 0;
 	padding-left: 0 !important;
 	list-style-type: none;
 	width: max-content;
+}
+.dropmenu-draghandle {
+	left: -12px;
 }
 .dropmenu-sw {
 	right: 0;
@@ -2059,7 +2086,8 @@ input.wide {
 .dropmenu > li {
 	padding: 0.25em 2em 0.25em 1em;
 }
-.dropmenu > li.has-link, .dropmenu > li.has-quiet-link {
+.dropmenu > li.has-link,
+.dropmenu > li.has-quiet-link {
 	cursor: pointer;
 }
 .dropmenu > li.has-link:hover {
@@ -3115,14 +3143,29 @@ td.plf {
 table.pltable-reviewerhome > thead > tr > th.plh {
 	border-bottom: none;
 }
-span.draghandle {
+.draghandle {
 	display: inline-block;
-	width: 0.75em;
+	width: 0.666em;
 	height: 1em;
 	vertical-align: -0.125em;
 	cursor: move;
-	cursor: ns-resize;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' aria-hidden='true' width='12' height='16'%3E%3Cpath d='M8 13a1 1 0 100-2 1 1 0 000 2zm-4 0a1 1 0 100-2 1 1 0 000 2zm1-5a1 1 0 11-2 0 1 1 0 012 0zm3 1a1 1 0 100-2 1 1 0 000 2zm1-5a1 1 0 11-2 0 1 1 0 012 0zM4 5a1 1 0 100-2 1 1 0 000 2z'%3E%3C/path%3E%3C/svg%3E");
+}
+.draghandle, button.draghandle:hover, button.draghandle:active {
+   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' aria-hidden='true' viewBox='0 0 12 18' preserveAspectRatio='none'%3E%3Ccircle cx='4' cy='4' r='1.5' /%3E%3Ccircle cx='9' cy='4' r='1.5' /%3E%3Ccircle cx='4' cy='9' r='1.5' /%3E%3Ccircle cx='9' cy='9' r='1.5' /%3E%3Ccircle cx='4' cy='14' r='1.5' /%3E%3Ccircle cx='9' cy='14' r='1.5' /%3E%3C/svg%3E");
+}
+button.draghandle, button.draghandle:hover {
+	font-weight: inherit;
+	font-style: inherit;
+	padding: 0;
+	border-style: none;
+	border-radius: 0;
+	opacity: 0.25;
+}
+.draggable:hover button.draghandle {
+	opacity: 0.5;
+}
+button.draghandle:hover, button.draghandle:active {
+	opacity: 1 !important;
 }
 
 .editformulas-formula, .editsearches-search {
@@ -4105,13 +4148,27 @@ a:hover .t-editor,
 	border-top: 3px solid #9e9ece;
 	max-width: 720px;
 }
-.settingsgroup {
-	margin: 12px -24px;
-	padding: 12px 24px;
-	background: #eae8f2;
-	background: linear-gradient(to bottom, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%),
-		linear-gradient(to top, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%);
+
+.row-counter {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+	padding-left: 0.25em;
+	padding-right: 0.25em;
+	min-width: 1.5em;
 }
+*[data-row-counter-digits="2"] > * > .row-counter {
+	min-width: 2.1em;
+}
+*[data-row-counter-digits="3"] > * > .row-counter {
+	min-width: 2.7em;
+}
+*[data-row-counter-digits="4"] > * > .row-counter {
+	min-width: 3.3em;
+}
+*[data-row-counter-digits="5"] > * > .row-counter {
+	min-width: 3.9em;
+}
+
 .editable-author-name, .editable-author-affiliation, .editable-author-email {
 	margin: 2px 0.5em 2px 0;
 }
