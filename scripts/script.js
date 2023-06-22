@@ -4945,21 +4945,19 @@ function is_row_interesting(row) {
     return false;
 }
 
-function row_add(group, before, nr, defaults) {
-    var id = group.getAttribute("data-row-template"), row;
+function row_add(group, before, button) {
+    var row, id = (button && button.getAttribute("data-row-template"))
+        || group.getAttribute("data-row-template");
     if (!id || !(row = document.getElementById(id)))
-        return false;
+        return null;
     if ("content" in row) {
         row = row.content.cloneNode(true).firstElementChild;
     } else {
         row = row.firstChild.cloneNode(true);
     }
-    group.insertBefore(row, before);
-    if (nr != null) {
-        row_fill(row, nr, defaults);
-    }
+    group.insertBefore(row, before || null);
     $(row).awaken();
-    return true;
+    return row;
 }
 
 function row_order_defaults(group) {
@@ -4983,25 +4981,36 @@ function row_order_drag_confirm(group, defaults) {
     $(changes).trigger("change");
 }
 
+function row_order_count(group) {
+    var nr = 0, row;
+    for (row = group.firstElementChild; row; row = row.nextElementSibling) {
+        if (row.clientHeight > 0)
+            ++nr;
+    }
+    return nr;
+}
+
 function row_order_autogrow(group, defaults) {
-    var min_rows = Math.max(+group.getAttribute("data-min-rows") || 0, 1),
+    var min_rows = Math.max(+group.getAttribute("data-min-rows") || 0, 0),
         max_rows = +group.getAttribute("data-max-rows") || 0,
         nr, row, prev_row, interesting;
     for (row = group.firstElementChild, nr = 0;
          row; row = row.nextElementSibling, ++nr) {
     }
-    while (nr < min_rows && row_add(group, null, nr, defaults)) {
+    while (nr < min_rows && (row = row_add(group))) {
+        row_fill(row, nr, defaults);
         ++nr;
     }
     if (hasClass(group, "row-order-autogrow")) {
         row = group.lastElementChild;
         if (is_row_interesting(row)) {
             if ((nr < max_rows || max_rows <= 0)
-                && row_add(group, null, nr, defaults)) {
+                && (row = row_add(group))) {
+                row_fill(row, nr, defaults);
                 ++nr;
             }
         } else {
-            while (nr > min_rows) {
+            while (nr > min_rows && nr > 1) {
                 prev_row = row.previousElementSibling;
                 if (is_row_interesting(prev_row)) {
                     break;
@@ -5012,19 +5021,19 @@ function row_order_autogrow(group, defaults) {
             }
         }
     }
-    nr = Math.ceil(Math.log10(nr + 1)).toString();
-    if (group.getAttribute("data-row-counter-digits") !== nr) {
-        group.setAttribute("data-row-counter-digits", nr);
+    var ndig = Math.ceil(Math.log10(nr + 1)).toString();
+    if (group.getAttribute("data-row-counter-digits") !== ndig) {
+        group.setAttribute("data-row-counter-digits", ndig);
     }
 }
 
-handle_ui.on("dragstart.author-draghandle", function (evt) {
+handle_ui.on("dragstart.row-order-draghandle", function (evt) {
     var row = this.closest(".draggable");
     hotcrp.drag_block_reorder(this, row, function (draggable, group, changed) {
         changed && row_order_drag_confirm(group);
     }).start(evt);
 });
-hotcrp.dropmenu.add_builder("author-draghandle", function (evt) {
+hotcrp.dropmenu.add_builder("row-order-draghandle", function (evt) {
     var details = this.closest("details"), menu,
         row = this.closest(".draggable"), group = row.parentElement;
     if (details) {
@@ -5054,7 +5063,8 @@ hotcrp.dropmenu.add_builder("author-draghandle", function (evt) {
             menu.append(buttonli("link ui row-order-dragmenu insert-below", {}, "Insert row below"));
         }
     }
-    menu.append(buttonli("link ui row-order-dragmenu remove", {}, "Remove"));
+    var min_rows = Math.max(+group.getAttribute("data-min-rows") || 0, 0);
+    menu.append(buttonli("link ui row-order-dragmenu remove", {disabled: min_rows > 0 && row_order_count(group) <= min_rows}, "Remove"));
 });
 handle_ui.on("row-order-dragmenu", function (evt) {
     hotcrp.dropmenu.close(this);
@@ -5072,6 +5082,10 @@ handle_ui.on("row-order-dragmenu", function (evt) {
         row_add(group, row.nextElementSibling);
     }
     row_order_drag_confirm(group, defaults);
+});
+handle_ui.on("row-order-append", function (evt) {
+    var group = document.getElementById(this.getAttribute("data-rowset"));
+    row_add(group, null, this);
 });
 
 $(function () {

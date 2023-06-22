@@ -231,7 +231,7 @@ class Authors_PaperOption extends PaperOption {
 
         echo '<div class="author-entry draggable d-flex">';
         if ($shownum) {
-            echo '<div class="flex-grow-0"><button type="button" class="draghandle ui js-dropmenu-open ui-drag author-draghandle need-tooltip need-dropmenu" draggable="true" title="Click or drag to reorder" data-tooltip-anchor="e"></button></div>',
+            echo '<div class="flex-grow-0"><button type="button" class="draghandle ui js-dropmenu-open ui-drag row-order-draghandle need-tooltip need-dropmenu" draggable="true" title="Click or drag to reorder" data-tooltip-anchor="e"></button></div>',
                 '<div class="flex-grow-0 row-counter">', $n, '.</div>';
         }
         echo '<div class="flex-grow-1">',

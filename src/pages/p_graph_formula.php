@@ -22,23 +22,20 @@ class Graph_Formula_Page {
 
     /** @param int|string $i
      * @param MessageSet $ms
-     * @param string $field
-     * @return string */
-    private function formulas_qrow($i, $q, $s, $ms, $field) {
+     * @param string $field */
+    private function echo_formulas_qrow($i, $q, $s, $ms, $field) {
         if ($q === "all") {
             $q = "";
         }
         $klass = $ms->control_class($field, "need-suggest papersearch want-focus");
-        return '<tr><td class="lentry">'
-            . $ms->feedback_html_at($field)
-            . Ht::entry("q{$i}", $q, ["size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q{$i}", "spellcheck" => false, "autocomplete" => "off", "aria-label" => "Search"])
-            . " <span class=\"pl-3\">Style:</span> &nbsp;"
-            . Ht::select("s{$i}", ["default" => "default", "plain" => "plain", "tag-red" => "red", "tag-orange" => "orange", "tag-yellow" => "yellow", "tag-green" => "green", "tag-blue" => "blue", "tag-purple" => "purple", "tag-gray" => "gray"], $s !== "" ? $s : "by-tag")
-            . ' <span class="nb btnbox aumovebox ml-3"><button type="button" class="ui row-order-ui moveup" tabindex="-1">'
-            . Icons::ui_triangle(0)
-            . '</button><button type="button" class="ui row-order-ui movedown" tabindex="-1">'
-            . Icons::ui_triangle(2)
-            . '</button><button type="button" class="ui row-order-ui delete" tabindex="-1">✖</button></span></td></tr>';
+        echo '<div class="draggable d-flex mb-2">',
+            '<div class="flex-grow-0 pr-1"><button type="button" class="draghandle ui js-dropmenu-open ui-drag row-order-draghandle need-tooltip need-dropmenu" draggable="true" title="Click or drag to reorder"></button></div>',
+            '<div class="flex-grow-1 lentry">',
+            $ms->feedback_html_at($field),
+            Ht::entry("q{$i}", $q, ["size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q{$i}", "spellcheck" => false, "autocomplete" => "off", "aria-label" => "Search"]),
+            " <span class=\"pl-3\">Style:</span> &nbsp;",
+            Ht::select("s{$i}", ["default" => "default", "plain" => "plain", "tag-red" => "red", "tag-orange" => "orange", "tag-yellow" => "yellow", "tag-green" => "green", "tag-blue" => "blue", "tag-purple" => "purple", "tag-gray" => "gray"], $s !== "" ? $s : "by-tag"),
+            '</div></div>';
     }
 
     /** @param FormulaGraph $fg
@@ -118,15 +115,17 @@ class Graph_Formula_Page {
         // Series
         echo '<div class="', $fgm->control_class("q1", "f-i"), '">',
             '<label for="q1">Data sets</label>',
-            '<table class="js-row-order"><tbody id="qcontainer" data-row-template="',
-            htmlspecialchars($this->formulas_qrow('$', "", "by-tag", $fgm, "q\$")), '">';
+            '<div id="graph-datasets" class="js-row-order" data-min-rows="1" data-row-template="formula-dataset-template">';
         for ($i = 0; $i < count($styles); ++$i) {
-            echo $this->formulas_qrow($i + 1, $queries[$i], $styles[$i], $fgm, "q$i");
+            $this->echo_formulas_qrow($i + 1, $queries[$i], $styles[$i], $fgm, "q{$i}");
         }
-        echo "</tbody><tbody><tr><td>",
-            Ht::button("Add data set", ["class" => "ui row-order-ui addrow"]),
-            "</td></tr></tbody></table></div>\n",
-            Ht::submit("Graph", ["class" => 'btn-primary']), '</form>';
+        echo '</div><template id="formula-dataset-template" class="hidden">';
+        $this->echo_formulas_qrow('$', "", "by-tag", $fgm, "q\$");
+        echo '</template>',
+            Ht::button("Add data set", ["class" => "ui row-order-append", "data-rowset" => "graph-datasets"]),
+            '</div>',
+            Ht::submit("Graph", ["class" => 'btn-primary']),
+            '</form>';
     }
 
     static function go(Contact $user, Qrequest $qreq, $gx, $gj) {
