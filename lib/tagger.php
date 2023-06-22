@@ -285,8 +285,8 @@ class TagStyle {
     public $sclass;
     /** @var ?bool */
     private $dark;
-    /** @var ?HclColor */
-    private $hcl;
+    /** @var ?OklchColor */
+    private $oklch;
 
     const DYNAMIC = 1;
     const UNLISTED = 2;
@@ -393,13 +393,13 @@ class TagStyle {
         return $this->dark;
     }
 
-    /** @return ?HclColor
+    /** @return ?OklchColor
      * @suppress PhanParamSuspiciousOrder */
-    function hcl() {
+    function oklch() {
         if (($this->sclass & self::BG) === 0) {
             return null;
         }
-        if ($this->hcl === null) {
+        if ($this->oklch === null) {
             if (($this->sclass & self::DYNAMIC) !== 0) {
                 $rgb = intval(substr($this->style, 4), 16);
             } else if (($p = strpos(self::KNOWN_COLORS, " {$this->style}:")) !== false) {
@@ -407,9 +407,9 @@ class TagStyle {
             } else {
                 return null;
             }
-            $this->hcl = HclColor::from_rgb($rgb >> 16, ($rgb >> 8) & 255, $rgb & 255);
+            $this->oklch = OklchColor::from_rgb($rgb >> 16, ($rgb >> 8) & 255, $rgb & 255);
         }
-        return $this->hcl;
+        return $this->oklch;
     }
 }
 

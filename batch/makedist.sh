@@ -166,6 +166,8 @@ lib/mimetext.php
 lib/mimetype.php
 lib/mincostmaxflow.php
 lib/navigation.php
+lib/oklabcolor.php
+lib/oklchcolor.php
 lib/phpqsession.php
 lib/polyfills.php
 lib/qrequest.php

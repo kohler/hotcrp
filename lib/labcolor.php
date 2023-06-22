@@ -72,9 +72,11 @@ class LabColor implements JsonSerializable {
         $x = self::Xn * self::lab2xyz($x1);
         $y = self::Yn * self::lab2xyz($y1);
         $z = self::Zn * self::lab2xyz($z1);
-        return [self::lrgb2rgb(3.1338561 * $x - 1.6168667 * $y - 0.4906146 * $z),
-                self::lrgb2rgb(-0.9787684 * $x + 1.9161415 * $y + 0.0334540 * $z),
-                self::lrgb2rgb(0.0719453 * $x - 0.2289914 * $y + 1.4052427 * $z)];
+        return [
+            self::lrgb2rgb(3.1338561 * $x - 1.6168667 * $y - 0.4906146 * $z),
+            self::lrgb2rgb(-0.9787684 * $x + 1.9161415 * $y + 0.0334540 * $z),
+            self::lrgb2rgb(0.0719453 * $x - 0.2289914 * $y + 1.4052427 * $z)
+        ];
     }
 
     /** @return string */

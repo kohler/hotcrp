@@ -34,46 +34,46 @@ class Color_PaperColumn extends PaperColumn {
     function prepare(PaperList $pl, $visible) {
         return $visible === self::PREP_SORT;
     }
-    /** @return ?HclColor */
+    /** @return ?OklchColor */
     private function color(PaperInfo $a, PaperList $pl) {
         $x = $a->sorted_viewable_tags($pl->user);
         if (!array_key_exists($x, $this->colors)) {
             $n = 0;
-            $hcl = null;
+            $lch = null;
             foreach ($pl->conf->tags()->unique_tagstyles($x, TagStyle::BG) as $ks) {
                 ++$n;
-                if ($hcl === null) {
-                    $hcl = $ks->hcl();
+                if ($lch === null) {
+                    $lch = $ks->oklch();
                 } else {
-                    $hcl = $hcl->interpolate(1 / $n, $ks->hcl());
+                    $lch = $lch->interpolate(1 / $n, $ks->oklch());
                 }
             }
-            $this->colors[$x] = $hcl;
+            $this->colors[$x] = $lch;
         }
         return $this->colors[$x];
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $ahcl = $this->color($a, $pl);
+        $alch = $this->color($a, $pl);
         $bhcl = $this->color($b, $pl);
 
         // null colors are sorted at end
-        if ($ahcl === null || $bhcl === null) {
-            return ($ahcl ? 0 : 1) <=> ($bhcl ? 0 : 1);
+        if ($alch === null || $bhcl === null) {
+            return ($alch ? 0 : 1) <=> ($bhcl ? 0 : 1);
         }
 
         // gray colors are sorted after non-gray coors
-        $agray = $ahcl->l < 5 || $ahcl->c < 5;
-        $bgray = $bhcl->l < 5 || $bhcl->c < 5;
+        $agray = $alch->okl < 5 || $alch->okc < 5;
+        $bgray = $bhcl->okl < 5 || $bhcl->okc < 5;
         if ($agray !== $bgray) {
             return $agray ? 1 : -1;
         }
 
         // sort by quantized hue first
-        $ah = is_nan($ahcl->h) ? 0.0 : $ahcl->h;
+        $ah = is_nan($alch->okh) ? 0.0 : $alch->okh;
         if (($ah -= $this->hdelta) < 0) {
             $ah += 360;
         }
-        $bh = is_nan($bhcl->h) ? 0.0 : $bhcl->h;
+        $bh = is_nan($bhcl->okh) ? 0.0 : $bhcl->okh;
         if (($bh -= $this->hdelta) < 0) {
             $bh += 360;
         }
@@ -88,15 +88,15 @@ class Color_PaperColumn extends PaperColumn {
         }
 
         // then sort by quantized lightness
-        $alb = (int) ($ahcl->l / 2);
-        $blb = (int) ($bhcl->l / 2);
+        $alb = (int) ($alch->okl / 2);
+        $blb = (int) ($bhcl->okl / 2);
         if ($alb !== $blb) {
             return $blb <=> $alb;
         }
 
         // then sort by quantized chroma
-        $acb = (int) ($ahcl->c / 8);
-        $bcb = (int) ($bhcl->c / 8);
+        $acb = (int) ($alch->okc / 8);
+        $bcb = (int) ($bhcl->okc / 8);
         if ($acb !== $bcb) {
             return $bcb <=> $acb;
         }
@@ -105,7 +105,7 @@ class Color_PaperColumn extends PaperColumn {
         if ($ah !== $bh) {
             return $this->hrev ? $bh <=> $ah : $ah <=> $bh;
         } else {
-            return ($bhcl->l <=> $ahcl->l) ? : ($bhcl->c <=> $ahcl->c);
+            return ($bhcl->okl <=> $alch->okl) ? : ($bhcl->okc <=> $alch->okc);
         }
     }
 }
