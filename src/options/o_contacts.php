@@ -224,7 +224,7 @@ class Contacts_PaperOption extends PaperOption {
     }
 
     /** @param PaperValue $reqov */
-    static private function editable_newcontact_row(PaperTable $pt, $anum, $reqov, Author $au = null) {
+    static private function echo_editable_newcontact_row(PaperTable $pt, $anum, $reqov, Author $au = null) {
         if ($anum === '$') {
             $name = $email = "";
         } else {
@@ -232,18 +232,18 @@ class Contacts_PaperOption extends PaperOption {
             $name = $au->name();
         }
         $reqidx = $au && $au->author_index ? $au->author_index : '$';
-        return '<div class="'
-            . ($reqov ? $reqov->message_set()->control_class("contacts:{$reqidx}", "checki") : "checki")
-            . '"><span class="checkc">'
-            . Ht::checkbox("contacts:{$anum}:active", 1, true, ["data-default-checked" => false, "id" => false, "class" => "ignore-diff"])
-            . '</span>'
-            . Ht::entry("contacts:{$anum}:email", $email, ["size" => 30, "placeholder" => "Email", "class" => $pt->control_class("contacts:{$reqidx}:email", "want-focus js-autosubmit uii js-email-populate"), "autocomplete" => "off", "data-default-value" => ""])
-            . '  '
-            . Ht::entry("contacts:{$anum}:name", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit", "autocomplete" => "off", "data-default-value" => ""])
-            . $pt->messages_at("contacts:{$reqidx}")
-            . $pt->messages_at("contacts:{$reqidx}:name")
-            . $pt->messages_at("contacts:{$reqidx}:email")
-            . '</div>';
+        $klass = "checki mt-1";
+        echo '<div class="',
+            ($reqov ? $reqov->message_set()->control_class("contacts:{$reqidx}", $klass) : $klass),
+            '"><span class="checkc">',
+            Ht::checkbox("contacts:{$anum}:active", 1, true, ["data-default-checked" => false, "id" => false, "class" => "ignore-diff"]),
+            '</span>',
+            Ht::entry("contacts:{$anum}:email", $email, ["size" => 30, "placeholder" => "Email", "class" => $pt->control_class("contacts:{$reqidx}:email", "want-focus js-autosubmit uii js-email-populate mr-2"), "autocomplete" => "off", "data-default-value" => ""]),
+            Ht::entry("contacts:{$anum}:name", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit", "autocomplete" => "off", "data-default-value" => ""]),
+            $pt->messages_at("contacts:{$reqidx}"),
+            $pt->messages_at("contacts:{$reqidx}:name"),
+            $pt->messages_at("contacts:{$reqidx}:email"),
+            '</div>';
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $curau = self::users_anno($ov);
@@ -258,7 +258,7 @@ class Contacts_PaperOption extends PaperOption {
         $readonly = !$this->test_editable($ov->prow);
 
         $pt->print_editable_option_papt($this, null, ["id" => "contacts", "for" => false]);
-        echo '<div class="papev js-row-order"><div>';
+        echo '<div class="papev"><div id="contacts:container">';
 
         $reqau = $reqov->anno("req_users") ?? [];
         '@phan-var list<Author> $reqau';
@@ -302,17 +302,19 @@ class Contacts_PaperOption extends PaperOption {
             echo '</label></div>';
             ++$cidx;
         }
-        echo '</div>';
 
         if (!$readonly) {
-            echo '<div data-row-template="',
-                htmlspecialchars(self::editable_newcontact_row($pt, '$', null, null)),
-                '">';
             foreach ($reqau as $rau) {
-                echo self::editable_newcontact_row($pt, $cidx, $reqov, $rau);
+                self::echo_editable_newcontact_row($pt, $cidx, $reqov, $rau);
                 ++$cidx;
             }
-            echo '</div><div class="ug">', Ht::button("Add contact", ["class" => "ui row-order-ui addrow"]), '</div>';
+            echo '</div><template id="contacts:row-template" class="hidden">';
+            self::echo_editable_newcontact_row($pt, '$', null, null);
+            echo '</template><div class="ug">',
+                Ht::button("Add contact", ["class" => "ui row-order-append", "data-rowset" => "contacts:container", "data-row-template" => "contacts:row-template"]),
+                '</div>';
+        } else {
+            echo "</div>";
         }
 
         echo "</div></div>\n\n";
