@@ -8,7 +8,7 @@ class Color_PaperColumn extends PaperColumn {
     /** @var ?string */
     private $decoration;
     /** @var float */
-    private $hdelta = 0.0;
+    private $hdelta = 8.0;
     /** @var bool */
     private $hrev = false;
 
@@ -16,7 +16,7 @@ class Color_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
     }
     function add_decoration($decor) {
-        $known_decor = ["rgb" => "+0", "gbr" => "+120", "brg" => "+240",
+        $known_decor = ["rgb" => "+8", "gbr" => "+128", "brg" => "+248",
                         "rbg" => "-45", "grb" => "-165", "bgr" => "-285"];
         $kdecor = $known_decor[$decor] ?? $decor;
         if (preg_match('/\A[-+]?\d+\z/', $kdecor)
