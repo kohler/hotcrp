@@ -2849,9 +2849,14 @@ function override_deadlines(callback) {
             if (callback && $.isFunction(callback)) {
                 callback();
             } else {
-                $(self.form).append(hidden_input(self.getAttribute("data-override-submit") || "", "1")).append(hidden_input("override", "1"));
+                var submitter = self.getAttribute("data-override-submit");
+                if (submitter) {
+                    self.form.append(hidden_input(submitter, "1"));
+                    self.form.hotcrpSubmitter = [submitter, (new Date).getTime()];
+                }
+                self.form.append(hidden_input("override", "1"));
                 addClass(self.form, "submitting");
-                self.form.submit();
+                $(self.form).submit(); // call other handlers
             }
             $d.close();
         });
@@ -10637,7 +10642,7 @@ handle_ui.on("js-withdraw", function () {
     hc.push_actions(['<button type="submit" name="withdraw" value="1" class="btn-danger">Withdraw</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
-    transfer_form_values($d.find("form"), $(f), ["doemail", "emailNote"]);
+    transfer_form_values($d.find("form"), $(f), ["status:notify", "status:notify_reason"]);
     $d.on("submit", "form", function () { addClass(f, "submitting"); });
 });
 
@@ -10648,7 +10653,7 @@ handle_ui.on("js-delete-paper", function () {
     hc.push_actions(['<button type="submit" name="delete" value="1" class="btn-danger">Delete</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
-    transfer_form_values($d.find("form"), $(f), ["doemail", "emailNote"]);
+    transfer_form_values($d.find("form"), $(f), ["status:notify", "status:notify_reason"]);
     $d.on("submit", "form", function () { addClass(f, "submitting"); });
 });
 
@@ -11060,7 +11065,7 @@ function add_pslitem_pfe() {
 }
 
 handle_ui.on("submit.js-submit-paper", function (evt) {
-    var sub = this.elements.submitpaper,
+    var sub = this.elements["status:submit"] || this.elements.submitpaper,
         is_submit = (form_submitter(this, evt) || "update") === "update";
     if (is_submit
         && sub && sub.type === "checkbox" && !sub.checked
@@ -11083,7 +11088,8 @@ function fieldchange(evt) {
 }
 
 function prepare_autoready_condition(f) {
-    var condition = null, readye = f.elements.submitpaper;
+    var condition = null,
+        readye = f.elements["status:submit"] || f.elements.submitpaper;
     if (!readye) {
         return;
     }

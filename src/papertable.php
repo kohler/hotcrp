@@ -760,7 +760,7 @@ class PaperTable {
 
     private function print_editable_complete() {
         if ($this->allow_edit_final) {
-            echo Ht::hidden("submitpaper", 1);
+            echo Ht::hidden("status:submit", 1);
             return;
         }
 
@@ -783,7 +783,7 @@ class PaperTable {
         echo '<div class="ready-container mb-3"><label class="',
             Ht::add_tokens("checki mb-1", $label_class),
             '"><span class="checkc">',
-            Ht::checkbox("submitpaper", 1, $checked && $ready_open, [
+            Ht::checkbox("status:submit", 1, $checked && $ready_open, [
                 "disabled" => !$ready_open,
                 "data-autoready" => $autoready && !$ready_open,
                 "data-urgent" => Conf::$now <= $sr->submit
@@ -824,7 +824,7 @@ class PaperTable {
                 self::mjoin($updatem, $submitm, $freezem), '</p>';
         }
 
-        echo Ht::hidden("has_submitpaper", 1), "</div>\n";
+        echo Ht::hidden("has_status:submit", 1), "</div>\n";
     }
 
     function render_abstract(FieldRender $fr, PaperOption $o) {
@@ -2050,10 +2050,10 @@ class PaperTable {
 
     private function print_actions() {
         if ($this->admin) {
-            $v = (string) $this->qreq->emailNote;
-            echo '<div class="checki"><label><span class="checkc">', Ht::checkbox("doemail", 1, true, ["class" => "ignore-diff"]), "</span>",
+            $v = (string) $this->qreq["status:notify_reason"];
+            echo '<div class="checki"><label><span class="checkc">', Ht::checkbox("status:notify", 1, true, ["class" => "ignore-diff"]), "</span>",
                 "Email authors, including:</label> ",
-                Ht::entry("emailNote", $v, ["size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff js-autosubmit", "aria-label" => "Explanation for update"]),
+                Ht::entry("status:notify_reason", $v, ["size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff js-autosubmit", "aria-label" => "Explanation for update"]),
                 "</div>";
         }
         if ($this->mode === "edit" && $this->allow_edit_final) {

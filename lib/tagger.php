@@ -1429,7 +1429,7 @@ class Tagger {
                     $m[1] = $this->_contactId . "~";
                 }
             } else if ($m[1] !== $this->_contactId . "~"
-                       && !($flags & self::ALLOWCONTACTID)) {
+                       && ($flags & self::ALLOWCONTACTID) === 0) {
                 return $this->set_error_code($tag, self::ALLOWCONTACTID);
             }
         }

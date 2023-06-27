@@ -890,16 +890,24 @@ class PaperStatus extends MessageSet {
         $this->_reset($prow ?? PaperInfo::make_new($this->user, $qreq->sclass));
         $pj = (object) [];
 
+        // Backward compatibility XXX
+        if (isset($qreq->submitpaper) && !isset($qreq["status:submit"])) {
+            $qreq["status:submit"] = $qreq->submitpaper;
+        }
+        if (isset($qreq->has_submitpaper) && !isset($qreq["has_status:submit"])) {
+            $qreq["has_status:submit"] = $qreq["has_submitpaper"];
+        }
+
         // Status
         $updatecontacts = $action === "updatecontacts";
         if ($action === "submit"
-            || ($action === "update" && $qreq->submitpaper)) {
+            || ($action === "update" && $qreq["status:submit"])) {
             $pj->submitted = true;
             $pj->draft = false;
         } else if ($action === "final") {
             $pj->final_submitted = $pj->submitted = true;
             $pj->draft = false;
-        } else if (!$updatecontacts && $qreq->has_submitpaper) {
+        } else if (!$updatecontacts && $qreq["has_status:submit"]) {
             $pj->submitted = false;
             $pj->draft = true;
         }

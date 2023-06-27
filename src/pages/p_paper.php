@@ -77,8 +77,8 @@ class Paper_Page {
         $reason = (string) $this->qreq->reason;
         if ($reason === ""
             && $this->user->can_administer($this->prow)
-            && $this->qreq->doemail > 0) {
-            $reason = (string) $this->qreq->emailNote;
+            && $this->qreq["status:notify"] > 0) {
+            $reason = (string) $this->qreq["status:notify_reason"];
         }
 
         $aset = new AssignmentSet($this->user);
@@ -117,9 +117,9 @@ class Paper_Page {
             );
         } else {
             // mail first, before contact info goes away
-            if ($this->qreq->doemail) {
+            if ($this->qreq["status:notify"]) {
                 HotCRPMailer::send_contacts("@deletepaper", $this->prow, [
-                    "reason" => (string) $this->qreq->emailNote,
+                    "reason" => (string) $this->qreq["status:notify_reason"],
                     "confirm_message_for" => $this->user
                 ]);
             }
@@ -289,15 +289,15 @@ class Paper_Page {
 
         // mail confirmation to all contact authors if changed
         if ($this->ps->has_change()) {
-            if (!$this->user->can_administer($new_prow) || $this->qreq->doemail) {
+            if (!$this->user->can_administer($new_prow) || $this->qreq["status:notify"]) {
                 $options = [];
                 if ($this->user->can_administer($new_prow)) {
                     if (!$new_prow->has_author($this->user)) {
                         $options["confirm_message_for"] = $this->user;
                         $options["adminupdate"] = true;
                     }
-                    if (isset($this->qreq->emailNote)) {
-                        $options["reason"] = $this->qreq->emailNote;
+                    if (isset($this->qreq["status:notify_reason"])) {
+                        $options["reason"] = $this->qreq["status:notify_reason"];
                     }
                 }
                 if (!empty($notes)) {
@@ -499,8 +499,8 @@ class Paper_Page {
 
         // fix request
         $pp->useRequest = isset($qreq->title) && $qreq->has_annex("after_login");
-        if ($qreq->emailNote === "Optional explanation") {
-            unset($qreq->emailNote);
+        if ($qreq["status:notify_reason"] === "Optional explanation") {
+            unset($qreq["status:notify_reason"]);
         }
         if ($qreq->reason === "Optional explanation") {
             unset($qreq->reason);
