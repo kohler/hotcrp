@@ -1440,7 +1440,9 @@ class Tagger {
             $l2 = strlen($m[2]);
             if (($l2 === 4 && strcasecmp($m[2], "none") === 0)
                 || ($l2 === 3 && strcasecmp($m[2], "any") === 0)
-                || ($l2 === 9 && strcasecmp($m[2], "undefined") === 0)) {
+                || ($l2 === 3 && strcasecmp($m[2], "all") === 0)
+                || ($l2 === 9 && strcasecmp($m[2], "undefined") === 0)
+                || ($l2 === 7 && strcasecmp($m[2], "default") === 0)) {
                 return $this->set_error_code($tag, self::ALLOWRESERVED);
             }
         }
