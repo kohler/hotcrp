@@ -3,13 +3,17 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Decision_Setting {
+    /** @var ?int */
     public $id;
     /** @var string */
     public $name;
     /** @var 'accept'|'reject'|'desk_reject'|'maybe' */
     public $category;
+    // internal
     /** @var bool */
     public $deleted = false;
+    /** @var ?int */
+    public $old_id;
 }
 
 class Decision_SettingParser extends SettingParser {
@@ -47,24 +51,15 @@ class Decision_SettingParser extends SettingParser {
             $sv->entry("decision/{$ctr}/name", ["data-exists-count" => $count, "class" => "flex-grow-1 mb-1 want-delete-marker" . ($isnew ? " uii js-settings-decision-new-name" : "")]),
             '<div class="ml-2" style="min-width:24rem">';
         $class = $sv->vstr("decision/{$ctr}/category");
-        $cats = [];
-        if ($isnew || $class === "accept") {
-            $cats["accept"] = "Accept category";
-        }
-        if ($isnew || $class !== "accept") {
-            $cats["reject"] = "Reject category";
-            $cats["desk_reject"] = "Desk-reject category";
-            $cats["maybe"] = "Other category";
-        }
-        if (count($cats) > 1) {
-            echo Ht::select("decision/{$ctr}/category", $cats, $class,
-                $sv->sjs("decision/{$ctr}/category", [
-                    "class" => "uich js-settings-decision-category",
-                    "data-default-value" => $isnew ? "accept" : $class
-                ]));
-        } else {
-            echo '<span class="d-inline-block ', DecisionInfo::unparse_category_class(DecisionInfo::parse_category($class)), '" style="min-width:11.6rem">', join("", $cats), '</span>';
-        }
+        echo Ht::select("decision/{$ctr}/category", [
+                "accept" => "Accept category",
+                "reject" => "Reject category",
+                "desk_reject" => "Desk-reject category",
+                "maybe" => "Other category"
+            ], $class, $sv->sjs("decision/{$ctr}/category", [
+                "class" => "uich js-settings-decision-category",
+                "data-default-value" => $isnew ? "accept" : $class
+            ]));
         if ($sv->reqstr("decision/{$ctr}/delete")) {
             echo Ht::hidden("decision/{$ctr}/delete", "1", ["data-default-value" => ""]);
         }
@@ -143,17 +138,23 @@ class Decision_SettingParser extends SettingParser {
 
         $djs = [];
         $hasid = [];
-        foreach ($sv->oblist_nondeleted_keys("decision") as $ctr) {
+        foreach ($sv->oblist_keys("decision") as $ctr) {
             $dsr = $sv->newv("decision/{$ctr}");
+            $dsr->old_id = $dsr->id;
             '@phan-var-force Decision_Setting $dsr';
-            $this->_check_req_name($sv, $dsr, $ctr);
-            $djs[] = $dsr;
-            $hasid[$dsr->id ?? ""] = true;
+            if ($dsr->id) {
+                $hasid[$dsr->id] = true;
+            }
+            if (!$dsr->deleted) {
+                $this->_check_req_name($sv, $dsr, $ctr);
+                $djs[] = $dsr;
+            }
         }
 
         // name reuse, new ids
         foreach ($djs as $dj) {
-            if ($dj->id === null) {
+            if ($dj->id === null
+                || ($dj->id > 0) !== ($dj->category === "accept")) {
                 $idstep = $dj->id = $dj->category === "accept" ? 1 : -1;
                 while (isset($hasid[$dj->id])) {
                     $dj->id += $idstep;
@@ -175,14 +176,28 @@ class Decision_SettingParser extends SettingParser {
     }
 
     function store_value(Si $si, SettingValues $sv) {
-        $new_decids = (new DecisionSet($sv->conf, json_decode($sv->newv("outcome_map"))))->ids();
-        $old_decids = $sv->conf->decision_set()->ids();
-        $dels = array_diff($old_decids, $new_decids);
+        $dels = $changes = [];
+        foreach ($sv->oblist_keys("decision") as $ctr) {
+            $dsr = $sv->newv("decision/{$ctr}");
+            if ($dsr->deleted && $dsr->old_id) {
+                $dels[] = $dsr->old_id;
+            } else if (!$dsr->deleted && $dsr->old_id && $dsr->old_id !== $dsr->id) {
+                $changes[] = "WHEN {$dsr->old_id} THEN {$dsr->id}";
+            }
+        }
+        $need_paperacc = false;
         if (!empty($dels)
-            && ($pids = Dbl::fetch_first_columns($sv->conf->dblink, "select paperId from Paper where outcome?a", array_values($dels)))) {
-            $sv->conf->qe("update Paper set outcome=0 where outcome?a", array_keys($dels));
-            $sv->conf->update_paperacc_setting(-1);
+            && ($pids = Dbl::fetch_first_columns($sv->conf->dblink, "select paperId from Paper where outcome?a", $dels))) {
+            $sv->conf->qe("update Paper set outcome=0 where outcome?a", $dels);
             $sv->user->log_activity("Set decision: Unspecified", $pids);
+            $need_paperacc = true;
+        }
+        if (!empty($changes)) {
+            $sv->conf->qe("update Paper set outcome=(CASE outcome " . join(" ", $changes) . " ELSE outcome END)");
+            $need_paperacc = true;
+        }
+        if ($need_paperacc) {
+            $sv->conf->update_paperacc_setting(0);
         }
     }
 }
