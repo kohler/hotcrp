@@ -222,7 +222,7 @@ class MailSender {
             echo Ht::submit("ungroup", "Separate recipients");
         }
         echo '</div></div>';
-        Ht::stash_script('$(".need-tooltip").each(tooltip)');
+        Ht::stash_script('$(".need-tooltip").awaken()');
     }
 
     private function print_request_form() {

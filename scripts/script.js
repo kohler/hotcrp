@@ -12383,19 +12383,22 @@ $.fn.unautogrow = function () {
 };
 })(jQuery);
 
+(function () {
+function awakenf() {
+    if (hasClass(this, "need-autogrow"))
+        $(this).autogrow();
+    if (hasClass(this, "need-suggest"))
+        hotcrp.suggest.call(this);
+    if (hasClass(this, "need-tooltip"))
+        hotcrp.tooltip.call(this);
+}
 $.fn.awaken = function () {
-    this.find(".need-autogrow, .need-suggest, .need-tooltip").each(function () {
-        if (hasClass(this, "need-autogrow"))
-            $(this).autogrow();
-        if (hasClass(this, "need-suggest"))
-            hotcrp.suggest.call(this);
-        if (hasClass(this, "need-tooltip"))
-            hotcrp.tooltip.call(this);
-    });
+    this.each(awakenf);
+    this.find(".need-autogrow, .need-suggest, .need-tooltip").each(awakenf);
     return this;
 };
-
 $(function () { $(document.body).awaken(); });
+})();
 
 $(function () {
     var err = [], elt = [];
