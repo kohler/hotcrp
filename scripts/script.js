@@ -5581,7 +5581,7 @@ function unparse_ratings(ratings, user_rating, editable) {
     var t = [];
     t.push('<span class="revrating-flag fn">');
     if (editable)
-        t.push('<button type="button" class="btn-qlink ui js-revrating-unfold">&#x2691;</button>');
+        t.push('<button type="button" class="q ui js-revrating-unfold">&#x2691;</button>');
     else
         t.push('<a href="'.concat(hoturl("help", {t: "revrate"}), '" class="q">&#x2691;</a>'));
     t.push('</span>');
@@ -6186,7 +6186,7 @@ function cmt_identity_time(cj, editing) {
     if (cj.author && cj.author_hidden) {
         t.push('<address class="has-fold cmtname fold9c" itemprop="author"><span class="fx9' +
                (cj.author_email ? '" title="' + cj.author_email : '') +
-               '">' + cj.author + ' </span><button type="button" class="btn-qlink ui js-foldup" data-fold-target="9" title="Toggle author"><span class="fn9"><span class="expander"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span>' +
+               '">' + cj.author + ' </span><button type="button" class="q ui js-foldup" data-fold-target="9" title="Toggle author"><span class="fn9"><span class="expander"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span>' +
                (cj.author_pseudonym || "<i>Hidden</i>") + '</span><span class="fx9">(deanonymized)</span></button></address>');
     } else if (cj.author) {
         x = cj.author;
