@@ -395,8 +395,8 @@ class PaperSearch extends MessageSet {
 
     static public $search_type_names = [
         "a" => "Your submissions",
-        "acc" => "Accepted",
-        "act" => "Active",
+        "accepted" => "Accepted",
+        "active" => "Active",
         "admin" => "Submissions you administer",
         "all" => "All",
         "alladmin" => "Submissions you’re allowed to administer",
@@ -461,7 +461,7 @@ class PaperSearch extends MessageSet {
                     || $this->conf->unnamed_submission_round()->time_update(true))) {
                 $limit = "all";
             } else if ($user->isPC) {
-                $limit = $this->conf->can_pc_view_incomplete() ? "act" : "s";
+                $limit = $this->conf->can_pc_view_some_incomplete() ? "active" : "s";
             } else if (!$user->is_reviewer()) {
                 $limit = "a";
             } else if (!$user->is_author()) {
@@ -534,7 +534,7 @@ class PaperSearch extends MessageSet {
     }
     /** @return bool */
     function show_submitted_status() {
-        return in_array($this->_limit_qe->limit, ["a", "act", "all"])
+        return in_array($this->_limit_qe->limit, ["a", "active", "all"])
             && $this->q !== "re:me";
     }
     /** @return bool */
@@ -1659,7 +1659,7 @@ class PaperSearch extends MessageSet {
     function default_limited_query() {
         if ($this->user->isPC
             && !$this->_limit_explicit
-            && $this->limit() !== ($this->conf->can_pc_view_incomplete() ? "act" : "s")) {
+            && $this->limit() !== ($this->conf->can_pc_view_some_incomplete() ? "active" : "s")) {
             return self::canonical_query($this->q, "", "", $this->_qt, $this->conf, $this->limit());
         } else {
             return $this->q;
@@ -1682,14 +1682,14 @@ class PaperSearch extends MessageSet {
             $lx = $this->conf->_($listname);
         } else {
             $limit = $this->limit();
-            if ($this->q === "re:me" && in_array($limit, ["r", "s", "act"], true)) {
+            if ($this->q === "re:me" && in_array($limit, ["r", "s", "active"], true)) {
                 $limit = "r";
             }
             $lx = self::limit_description($this->conf, $limit);
         }
         if ($this->q === ""
             || ($this->q === "re:me" && $this->limit() === "s")
-            || ($this->q === "re:me" && $this->limit() === "act")) {
+            || ($this->q === "re:me" && $this->limit() === "active")) {
             return $lx;
         } else if (str_starts_with($this->q, "au:")
                    && strlen($this->q) <= 36
@@ -1840,13 +1840,13 @@ class PaperSearch extends MessageSet {
             $ts[] = "viewable";
         }
         if ($user->isPC) {
-            if ($user->conf->can_pc_view_incomplete()) {
-                $ts[] = "act";
+            if ($user->conf->can_pc_view_some_incomplete()) {
+                $ts[] = "active";
             }
             $ts[] = "s";
             if ($user->conf->has_any_accepted()
                 && $user->can_view_some_decision()) {
-                $ts[] = "acc";
+                $ts[] = "accepted";
             }
         }
         if ($user->is_reviewer()) {
@@ -1875,9 +1875,9 @@ class PaperSearch extends MessageSet {
             $ts[] = "a";
         }
         if ($user->privChair
-            && !$user->conf->can_pc_view_incomplete()
-            && $reqtype === "act") {
-            $ts[] = "act";
+            && !$user->conf->can_pc_view_some_incomplete()
+            && $reqtype === "active") {
+            $ts[] = "active";
         }
         if ($user->privChair) {
             $ts[] = "all";
@@ -1893,7 +1893,7 @@ class PaperSearch extends MessageSet {
             } else {
                 $ts = ["s"];
             }
-            array_push($ts, "acc", "undecided", "all");
+            array_push($ts, "accepted", "undecided", "all");
         } else {
             $ts = ["admin"];
         }

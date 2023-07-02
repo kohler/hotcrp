@@ -31,7 +31,7 @@ class Assign_ListAction extends ListAction {
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $mt = $qreq->assignfn;
         if ($mt === "auto") {
-            $t = in_array($qreq->t, ["acc", "s"]) ? $qreq->t : "all";
+            $t = in_array($qreq->t, ["accepted", "s"]) ? $qreq->t : "all";
             $q = join("+", $ssel->selection());
             $user->conf->redirect_hoturl("autoassign", "q={$q}&t={$t}&pap={$q}");
         }

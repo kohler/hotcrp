@@ -25,7 +25,7 @@ class Mail_Page {
         if ($viewer->privChair) {
             $this->search_topt["s"] = PaperSearch::$search_type_names["s"];
             if ($this->conf->has_any_accepted()) {
-                $this->search_topt["acc"] = PaperSearch::$search_type_names["acc"];
+                $this->search_topt["accepted"] = PaperSearch::$search_type_names["accepted"];
             }
             $this->search_topt["unsub"] = "Unsubmitted";
             $this->search_topt["all"] = PaperSearch::$search_type_names["all"];

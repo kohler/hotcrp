@@ -62,8 +62,8 @@ class Autoassign_Batch {
         $this->q = $arg["q"] ?? "";
         if (isset($arg["all"])) {
             $this->t = "all";
-        } else if ($this->conf->can_pc_view_incomplete()) {
-            $this->t = "act";
+        } else if ($this->conf->can_pc_view_some_incomplete()) {
+            $this->t = "active";
         } else {
             $this->t = "s";
         }

@@ -2921,7 +2921,7 @@ class Contact implements JsonSerializable {
                            && ($prow->timeSubmitted != 0
                                || ($ci->allow_pc_broad
                                    && $prow->timeWithdrawn <= 0
-                                   && $this->conf->can_pc_view_incomplete()))) {
+                                   && $prow->submission_round()->incomplete_viewable))) {
                     $ci->view_authors_state = 2;
                 } else {
                     $ci->view_authors_state = 0;
@@ -4152,7 +4152,7 @@ class Contact implements JsonSerializable {
                     || (!$careful
                         && $prow->timeWithdrawn > 0
                         && ($prow->timeSubmitted < 0
-                            || $this->conf->can_pc_view_incomplete())));
+                            || $prow->submission_round()->incomplete_viewable)));
         } else {
             return $u->isPC
                 && $this->can_administer($prow)

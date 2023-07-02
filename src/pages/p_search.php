@@ -276,7 +276,7 @@ class Search_Page {
                 }
             }
             if ($limits[0] !== $search->limit()
-                && !in_array($search->limit(), ["all", "viewable", "act"], true)) {
+                && !in_array($search->limit(), ["all", "viewable", "active"], true)) {
                 echo " (<a href=\"", $this->conf->hoturl("search", join("&amp;", $a)), "\">Repeat search in ", htmlspecialchars(strtolower(PaperSearch::limit_description($this->conf, $limits[0]))), "</a>)";
             }
         }

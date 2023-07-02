@@ -11,7 +11,10 @@ class AllTags_API {
                        && ($user->privChair
                            ? $user->conf->has_any_manager()
                            : $user->is_manager()
-                             || $user->conf->check_track_sensitivity(Track::HIDDENTAG)))) {
+                             || $user->conf->check_track_sensitivity(Track::HIDDENTAG)))
+                   || (!$user->privChair
+                       && $user->conf->can_pc_view_some_incomplete()
+                       && !$user->conf->can_pc_view_all_incomplete())) {
             return self::hard_alltags_api($user);
         } else {
             return self::easy_alltags_api($user);
@@ -38,7 +41,7 @@ class AllTags_API {
     static private function easy_alltags_api(Contact $user) {
         $q = "select distinct tag from PaperTag join Paper using (paperId)";
         $qwhere = [];
-        if ($user->privChair || $user->conf->can_pc_view_incomplete()) {
+        if ($user->privChair || $user->conf->can_pc_view_all_incomplete()) {
             $qwhere[] = "timeWithdrawn<=0";
         } else {
             $qwhere[] = "timeSubmitted>0";
@@ -65,7 +68,7 @@ class AllTags_API {
 
     static private function hard_alltags_api(Contact $user) {
         $args = ["minimal" => true, "tags" => "require"];
-        if ($user->privChair || $user->conf->can_pc_view_incomplete()) {
+        if ($user->privChair || $user->conf->can_pc_view_some_incomplete()) {
             $args["active"] = true;
         } else {
             $args["finalized"] = true;

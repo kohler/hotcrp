@@ -872,10 +872,10 @@ class Limit_SearchTerm extends SearchTerm {
 
     static public $reqtype_map = [
         "a" => ["a", "author"],
-        "acc" => ["acc", "accepted"],
-        "accepted" => ["acc", "accepted"],
-        "act" => ["act", "active"],
-        "active" => ["act", "active"],
+        "acc" => "accepted",
+        "accepted" => "accepted",
+        "act" => "active",
+        "active" => "active",
         "actadmin" => ["actadmin", "activeadmin"],
         "activeadmin" => ["actadmin", "activeadmin"],
         "admin" => "admin",
@@ -942,9 +942,9 @@ class Limit_SearchTerm extends SearchTerm {
         if (in_array($limit, ["a", "ar", "r", "req", "viewable", "reviewable",
                               "all", "none"], true)) {
             $this->lflag = 0;
-        } else if (in_array($limit, ["act", "unsub", "actadmin"], true)
-                   || ($conf->can_pc_view_incomplete()
-                       && !in_array($limit, ["s", "acc"], true))) {
+        } else if (in_array($limit, ["active", "unsub", "actadmin"], true)
+                   || ($conf->can_pc_view_some_incomplete()
+                       && !in_array($limit, ["s", "accepted"], true))) {
             $this->lflag = self::LFLAG_ACTIVE;
         } else {
             $this->lflag = self::LFLAG_SUBMITTED;
@@ -958,7 +958,7 @@ class Limit_SearchTerm extends SearchTerm {
 
     /** @return bool */
     function is_accepted() {
-        return $this->limit === "acc";
+        return $this->limit === "accepted";
     }
 
     /** @return bool */
@@ -990,10 +990,10 @@ class Limit_SearchTerm extends SearchTerm {
         case "s":
             assert($fin);
             return $this->user->isPC;
-        case "act":
+        case "active":
             assert(!!($options["active"] ?? false));
             return $this->user->privChair
-                || ($this->user->isPC && $conf->can_pc_view_incomplete());
+                || ($this->user->isPC && $conf->can_pc_view_all_incomplete());
         case "reviewable":
             if (!$this->reviewer->isPC) {
                 $options["myReviews"] = true;
@@ -1014,12 +1014,12 @@ class Limit_SearchTerm extends SearchTerm {
             assert($act || $fin);
             $options["myOutstandingReviews"] = true;
             return true;
-        case "act":
+        case "active":
             assert($act || $fin);
             $options["dec:active"] = true;
             return $this->user->can_view_all_decision()
-                && ($this->user->privChair || $conf->can_pc_view_incomplete());
-        case "acc":
+                && ($this->user->privChair || $conf->can_pc_view_all_incomplete());
+        case "accepted":
             assert($fin);
             $options["dec:yes"] = true;
             return $this->user->can_view_all_decision();
@@ -1058,8 +1058,8 @@ class Limit_SearchTerm extends SearchTerm {
         case "actadmin":
             // broad limits are precise only if allowed to administer all
             return $this->user->allow_administer_all();
-        case "act":
-        case "acc":
+        case "active":
+        case "accepted":
         case "undecided":
             // decision limits are precise only if user can see all decisions
             return $this->user->can_view_all_decision();
@@ -1134,12 +1134,12 @@ class Limit_SearchTerm extends SearchTerm {
                 $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and $act_reviewer_sql and reviewNeedsSubmit!=0)";
             }
             break;
-        case "act":
+        case "active":
             if ($this->user->can_view_all_decision()) {
                 $ff[] = "Paper." . $this->user->conf->decision_set()->sqlexpr("active");
             }
             break;
-        case "acc":
+        case "accepted":
             $ff[] = "Paper.outcome>0";
             break;
         case "undecided":
@@ -1210,14 +1210,15 @@ class Limit_SearchTerm extends SearchTerm {
                 return true;
             } else {
                 return ($row->timeSubmitted > 0
-                        || ($row->timeWithdrawn <= 0 && $user->conf->can_pc_view_incomplete()))
+                        || ($row->timeWithdrawn <= 0
+                            && $row->submission_round()->incomplete_viewable))
                     && ($row->outcome_sign >= 0
                         || !$user->can_view_decision($row));
             }
-        case "act":
+        case "active":
             return $row->outcome_sign >= 0
                 || !$user->can_view_decision($row);
-        case "acc":
+        case "accepted":
             return $row->outcome > 0
                 && $user->can_view_decision($row);
         case "undecided":

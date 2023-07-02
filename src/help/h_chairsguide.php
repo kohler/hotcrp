@@ -293,7 +293,7 @@ administrator’s identity.</p>\n\n";
         } else if ($gj->itemid === 4) {
             echo "<li><p><strong>Shepherding (optional).</strong> If your conference uses
   shepherding for accepted papers, you can assign shepherds either ",
-  $hth->hotlink("paper by paper", "paper"), " or ", $hth->hotlink("automatically", "autoassign", "t=acc"), ".</p></li>\n";
+  $hth->hotlink("paper by paper", "paper"), " or ", $hth->hotlink("automatically", "autoassign", "t=accepted"), ".</p></li>\n";
         }
     }
 

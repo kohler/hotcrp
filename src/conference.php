@@ -22,7 +22,8 @@ class Conf {
     /** @var int */
     private $permbits;
     const PB_ALL_PDF_VIEWABLE = 1;
-    const PB_INCOMPLETE_VIEWABLE = 2;
+    const PB_SOME_INCOMPLETE_VIEWABLE = 2;
+    const PB_ALL_INCOMPLETE_VIEWABLE = 4;
 
     /** @var string
      * @readonly */
@@ -459,19 +460,15 @@ class Conf {
 
     /** @suppress PhanAccessReadOnlyProperty */
     private function refresh_time_settings() {
-        $this->permbits = 0;
-        if (($sub = $this->settings["sub_sub"] ?? 0) < Conf::$now) {
-            $this->permbits |= self::PB_ALL_PDF_VIEWABLE;
-        }
-        if ($sub > Conf::$now
-            && ($this->settings["pc_seeall"] ?? 0) > 0) {
-            $this->permbits |= self::PB_INCOMPLETE_VIEWABLE;
-        }
-        if (($this->settings["submission_rounds"] ?? 0)
-            && ($this->permbits & self::PB_ALL_PDF_VIEWABLE) !== 0) {
-            foreach ($this->submission_round_list() as $sr) {
-                if (!$sr->pdf_viewable)
-                    $this->permbits &= ~self::PB_ALL_PDF_VIEWABLE;
+        $this->permbits = self::PB_ALL_PDF_VIEWABLE | self::PB_ALL_INCOMPLETE_VIEWABLE;
+        foreach ($this->submission_round_list() as $sr) {
+            if (!$sr->pdf_viewable) {
+                $this->permbits &= ~self::PB_ALL_PDF_VIEWABLE;
+            }
+            if ($sr->incomplete_viewable) {
+                $this->permbits |= self::PB_SOME_INCOMPLETE_VIEWABLE;
+            } else {
+                $this->permbits &= ~self::PB_ALL_INCOMPLETE_VIEWABLE;
             }
         }
 
@@ -3199,7 +3196,8 @@ class Conf {
     }
     /** @return bool */
     function timePCReviewPreferences() {
-        return $this->can_pc_view_incomplete() || $this->has_any_submitted();
+        return $this->can_pc_view_some_incomplete()
+            || $this->has_any_submitted();
     }
     /** @param bool $pdf
      * @return bool */
@@ -3212,7 +3210,7 @@ class Conf {
                         || $prow->timeSubmitted < $sr->open));
         } else if ($prow->timeWithdrawn <= 0) {
             return !$pdf
-                && ($this->permbits & self::PB_INCOMPLETE_VIEWABLE) !== 0
+                && ($this->permbits & self::PB_SOME_INCOMPLETE_VIEWABLE) !== 0
                 && $prow->submission_round()->incomplete_viewable;
         } else {
             return false;
@@ -3307,13 +3305,18 @@ class Conf {
 
     /** @return bool
      * @deprecated */
-    function time_pc_view_active_submissions() {
-        return ($this->permbits & self::PB_INCOMPLETE_VIEWABLE) !== 0;
+    function can_pc_view_incomplete() {
+        return ($this->permbits & self::PB_SOME_INCOMPLETE_VIEWABLE) !== 0;
     }
 
     /** @return bool */
-    function can_pc_view_incomplete() {
-        return ($this->permbits & self::PB_INCOMPLETE_VIEWABLE) !== 0;
+    function can_pc_view_some_incomplete() {
+        return ($this->permbits & self::PB_SOME_INCOMPLETE_VIEWABLE) !== 0;
+    }
+
+    /** @return bool */
+    function can_pc_view_all_incomplete() {
+        return ($this->permbits & self::PB_ALL_INCOMPLETE_VIEWABLE) !== 0;
     }
 
 
