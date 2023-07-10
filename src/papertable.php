@@ -759,6 +759,9 @@ class PaperTable {
     }
 
     private function print_editable_complete() {
+        if ($this->prow->timeModified > 0) {
+            echo Ht::hidden("status:previous_version", $this->prow->timeModified);
+        }
         if ($this->allow_edit_final) {
             echo Ht::hidden("status:submit", 1);
             return;

@@ -1805,6 +1805,10 @@ function input_is_checkboxlike(elt) {
     return elt.type === "checkbox" || elt.type === "radio";
 }
 
+function input_is_buttonlike(elt) {
+    return elt.type === "button" || elt.type === "submit" || elt.type === "reset";
+}
+
 function input_successful(elt) {
     if (elt.disabled || !elt.name)
         return false;
@@ -1852,13 +1856,21 @@ function input_set_default_value(elt, val) {
 }
 
 function input_differs(elt) {
-    var expected = input_default_value(elt);
-    if (input_is_checkboxlike(elt))
-        return elt.checked !== expected;
-    else if (elt.type === "button" || elt.type === "submit" || elt.type === "reset")
+    var type = elt.type, expected, i;
+    if (!type) {
+        if (elt instanceof RadioNodeList) {
+            for (i = 0; i !== elt.length; ++i) {
+                if (input_differs(elt[i]))
+                    return true;
+            }
+        }
         return false;
+    } else if (type === "button" || type === "submit" || type === "reset")
+        return false;
+    else if (type === "checkbox" || type === "radio")
+        return elt.checked !== input_default_value(elt);
     else
-        return !text_eq(elt.value, expected);
+        return !text_eq(elt.value, input_default_value(elt));
 }
 
 function form_differs(form) {
@@ -11079,6 +11091,31 @@ handle_ui.on("submit.js-submit-paper", function (evt) {
         && $(this).find(".prevent-submit").length) {
         window.alert("Waiting for uploads to complete");
         evt.preventDefault();
+        return;
+    }
+    this.elements["status:unchanged"] && this.elements["status:unchanged"].remove();
+    this.elements["status:changed"] && this.elements["status:changed"].remove();
+    if (is_submit) {
+        var unch = [], ch = [], i, e, type, name;
+        for (i = 0; i !== this.elements.length; ++i) {
+            e = this.elements[i];
+            type = e.type;
+            name = type ? e.name : e[0].name;
+            if (name
+                && !name.startsWith("has_")
+                && (!type
+                    || (!hasClass(e, "ignore-diff")
+                        && !e.disabled
+                        && !input_is_buttonlike(e)))) {
+                (input_differs(e) ? ch : unch).push(name);
+            }
+        }
+        e = hidden_input("status:unchanged", unch.join(" "));
+        e.className = "ignore-diff";
+        this.appendChild(e);
+        e = hidden_input("status:changed", ch.join(" "));
+        e.className = "ignore-diff";
+        this.appendChild(e);
     }
 });
 
