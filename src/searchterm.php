@@ -966,6 +966,8 @@ class Limit_SearchTerm extends SearchTerm {
         return $this->limit === "a";
     }
 
+    /** @param array<string,mixed> &$options
+     * @return bool */
     function simple_search(&$options) {
         // hidden papers => complex search
         if (($this->user->dangerous_track_mask() & Track::BITS_VIEW) !== 0) {
@@ -991,9 +993,10 @@ class Limit_SearchTerm extends SearchTerm {
             assert($fin);
             return $this->user->isPC;
         case "active":
-            assert(!!($options["active"] ?? false));
-            return $this->user->privChair
-                || ($this->user->isPC && $conf->can_pc_view_all_incomplete());
+            assert($act || $fin);
+            $options["dec:active"] = true;
+            return $this->user->can_view_all_incomplete()
+                && $this->user->can_view_all_decision();
         case "reviewable":
             if (!$this->reviewer->isPC) {
                 $options["myReviews"] = true;
@@ -1014,11 +1017,6 @@ class Limit_SearchTerm extends SearchTerm {
             assert($act || $fin);
             $options["myOutstandingReviews"] = true;
             return true;
-        case "active":
-            assert($act || $fin);
-            $options["dec:active"] = true;
-            return $this->user->can_view_all_decision()
-                && ($this->user->privChair || $conf->can_pc_view_all_incomplete());
         case "accepted":
             assert($fin);
             $options["dec:yes"] = true;
@@ -1131,7 +1129,7 @@ class Limit_SearchTerm extends SearchTerm {
             } else if ($sqi->depth === 0) {
                 $ff[] = "MyReviews.reviewNeedsSubmit!=0";
             } else {
-                $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and $act_reviewer_sql and reviewNeedsSubmit!=0)";
+                $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$act_reviewer_sql} and reviewNeedsSubmit!=0)";
             }
             break;
         case "active":

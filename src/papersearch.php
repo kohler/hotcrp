@@ -461,7 +461,7 @@ class PaperSearch extends MessageSet {
                     || $this->conf->unnamed_submission_round()->time_update(true))) {
                 $limit = "all";
             } else if ($user->isPC) {
-                $limit = $this->conf->can_pc_view_some_incomplete() ? "active" : "s";
+                $limit = $user->can_view_some_incomplete() ? "active" : "s";
             } else if (!$user->is_reviewer()) {
                 $limit = "a";
             } else if (!$user->is_author()) {
@@ -1659,7 +1659,7 @@ class PaperSearch extends MessageSet {
     function default_limited_query() {
         if ($this->user->isPC
             && !$this->_limit_explicit
-            && $this->limit() !== ($this->conf->can_pc_view_some_incomplete() ? "active" : "s")) {
+            && $this->limit() !== ($this->user->can_view_some_incomplete() ? "active" : "s")) {
             return self::canonical_query($this->q, "", "", $this->_qt, $this->conf, $this->limit());
         } else {
             return $this->q;
@@ -1840,7 +1840,7 @@ class PaperSearch extends MessageSet {
             $ts[] = "viewable";
         }
         if ($user->isPC) {
-            if ($user->conf->can_pc_view_some_incomplete()) {
+            if ($user->can_view_some_incomplete()) {
                 $ts[] = "active";
             }
             $ts[] = "s";

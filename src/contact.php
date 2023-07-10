@@ -3357,6 +3357,18 @@ class Contact implements JsonSerializable {
             || ($this->isPC && ($this->dangerous_track_mask() & Track::BITS_VIEW) === 0);
     }
 
+    /** @return bool */
+    function can_view_some_incomplete() {
+        return $this->privChair
+            || ($this->isPC && $this->conf->can_pc_view_some_incomplete());
+    }
+
+    /** @return bool */
+    function can_view_all_incomplete() {
+        return $this->privChair
+            || ($this->isPC && $this->conf->can_pc_view_all_incomplete());
+    }
+
     /** @return PermissionProblem */
     function no_paper_whynot($pid) {
         $whynot = new PermissionProblem($this->conf, ["paperId" => $pid]);
