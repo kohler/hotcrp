@@ -394,7 +394,7 @@ class Options_SettingParser extends SettingParser {
                 $conversion = $nj->convert_from_functions->{$of->type} ?? null;
                 if (!$conversion) {
                     $oj = $sv->conf->option_type($of->type);
-                    $sv->error_at($si, "<0>Cannot convert " . ($oj ? $oj->title : $of->type) . " fields to {$nj->title} type");
+                    $sv->error_at($si, "<0>Cannot convert " . ($oj ? $oj->title : $of->type) . " field to {$nj->title}");
                 } else if ($conversion !== true) {
                     $this->_conversions[] = [$conversion, $sv->conf->option_by_id($of->id)];
                 }

@@ -391,6 +391,12 @@ class PaperStatus extends MessageSet {
             }
         }
 
+        // XXX Submission class
+        // XXX Tags
+
+        // Ignore edit conditions during normalization
+        $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
+
         // Fields
         $ioptions = (object) [];
         if (isset($ipj->options)) {
@@ -445,7 +451,7 @@ class PaperStatus extends MessageSet {
             if (isset($xpj->$k)
                 || isset($ikeys[$k])
                 || isset($xstatus->$k)
-                || in_array($k, ["pid", "id", "options", "status", "decision", "reviews", "submission_class"])
+                || in_array($k, ["pid", "id", "options", "status", "decision", "reviews", "comments", "tags", "submission_class"])
                 || $k[0] === "_"
                 || $k[0] === "\$") {
                 continue;
@@ -472,6 +478,7 @@ class PaperStatus extends MessageSet {
             }
         }
 
+        $this->user->set_overrides($old_overrides);
         return $xpj;
     }
 

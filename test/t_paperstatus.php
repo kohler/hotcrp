@@ -1352,6 +1352,57 @@ Phil Porras.");
         xassert($pr["missingId"]);
     }
 
+    function test_conditional_fields() {
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+    "sf": [
+        {
+            "id": "new", "name": "Submission Type", "type": "radio",
+            "order": 1,
+            "values": [
+                {"id": 1, "name": "First"},
+                {"id": 2, "name": "Second"}
+            ]
+        },
+        {
+            "id": "new", "name": "First Text", "type": "text",
+            "order": 2, "presence": "custom", "condition": "SubTyp:First",
+            "required": "register"
+        }
+    ]
+}');
+        xassert($sv->execute());
+        $o1 = $this->conf->options()->find("Submission Type");
+        $o2 = $this->conf->options()->find("First Text");
+
+        $ps = new PaperStatus($this->u_estrin);
+        $ps->save_paper_json((object) [
+            "id" => "new",
+            "title" => "Conditional Field Test",
+            "authors" => [
+                (object) ["name" => "Deborah", "email" => $this->u_estrin->email]
+            ],
+            "submission_type" => "First",
+            "first_text" => "Feck"
+        ]);
+        xassert_paper_status($ps);
+        $prow = $this->u_estrin->checked_paper_by_id($ps->paperId);
+        xassert_eqq($prow->title(), "Conditional Field Test");
+        xassert_eqq($prow->option($o1)->value, 1);
+        xassert_eqq($prow->option($o2)->data(), "Feck");
+
+        // Value of non-included conditional field ignored
+        $ps->save_paper_json((object) [
+            "id" => $prow->paperId,
+            "submission_type" => "Second",
+            "first_text" => "Fick"
+        ]);
+        xassert_paper_status($ps);
+        $prow = $this->u_estrin->checked_paper_by_id($ps->paperId);
+        xassert_eqq($prow->title(), "Conditional Field Test");
+        xassert_eqq($prow->option($o1)->value, 2);
+        xassert_eqq($prow->option($o2)->data(), "Feck");
+    }
+
     function test_invariants_last() {
         ConfInvariants::test_all($this->conf);
     }
