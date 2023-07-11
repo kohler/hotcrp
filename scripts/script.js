@@ -1132,7 +1132,7 @@ hotcrp.drag_block_reorder = function (draghandle, draggable, callback) {
     var group = draggable.parentElement,
         pos, posy0, posy1, contained = 0, sep, changed = false, ncol;
     function make_tr_dropmark() {
-        var tr, td;
+        var td;
         if (ncol == null) {
             ncol = 0;
             td = group.closest("table").querySelector("td, th");
@@ -1141,7 +1141,7 @@ hotcrp.drag_block_reorder = function (draghandle, draggable, callback) {
                 td = td.nextElementSibling;
             }
         }
-        var td = classe("td", null, sep);
+        td = classe("td", null, sep);
         td.colSpan = ncol;
         sep = classe("tr", "dropmark", td);
     }
@@ -1856,7 +1856,7 @@ function input_set_default_value(elt, val) {
 }
 
 function input_differs(elt) {
-    var type = elt.type, expected, i;
+    var type = elt.type, i;
     if (!type) {
         if (elt instanceof RadioNodeList) {
             for (i = 0; i !== elt.length; ++i) {
@@ -3375,8 +3375,9 @@ handle_ui.on("js-tracker", function (evt) {
             if (m && input_differs(this))
                 trd[m[1]] = true;
         });
-        for (var i in trd)
-            f.appendChild($('<input class="tracker-changemark" type="hidden" name="tr' + i + '-changed" value="1">')[0]);
+        for (var i in trd) {
+            f.appendChild(hidden_input("tr" + i + "-changed", "1", {"class": "tracker-changemark"}));
+        }
 
         $.post(hoturl("=api/trackerconfig"),
                $d.find("form").serialize(),
@@ -3406,8 +3407,8 @@ handle_ui.on("js-tracker", function (evt) {
         }
         if (document.body
             && hasClass(document.body, "has-hotlist")
-            && (hotcrp_status.is_admin || hotcrp_status.is_track_admin)) {
-            if (!hotcrp_status.tracker_here) {
+            && (hotcrp.status.is_admin || hotcrp.status.is_track_admin)) {
+            if (!hotcrp.status.tracker_here) {
                 hc.push('<div class="lg"><button type="button" name="new">Start new tracker</button></div>');
             } else {
                 hc.push('<div class="lg"><button type="button" class="need-tooltip disabled" tabindex="-1" aria-label="This browser tab is already running a tracker.">Start new tracker</button></div>');
@@ -3432,7 +3433,7 @@ handle_ui.on("js-tracker", function (evt) {
     if (evt.shiftKey
         || evt.ctrlKey
         || evt.metaKey
-        || hotcrp_status.tracker
+        || hotcrp.status.tracker
         || !hasClass(document.body, "has-hotlist")) {
         start();
     } else {
@@ -3460,40 +3461,75 @@ handle_ui.on("js-tracker-stop", function (evt) {
 
 
 // Comet and storage for tracker
-var trmicrotask = 0, trexpire = null, my_uuid = "x",
+var trmicrotask = 0, trexpire = null, my_uuid = "x", trlogging = 0,
     comet_outstanding = 0, comet_stop_until = 0,
     comet_nerrors = 0, comet_nsuccess = 0, comet_long_timeout = 260000;
 
 var trevent, trevent$;
+function trevent_key() {
+    var u = siteinfo && siteinfo.user,
+        e = (u && u.email) || (u && u.tracker_kiosk ? "kiosk" : "none");
+    return wstorage.site_key("hotcrp-trevent:" + e);
+}
 if (wstorage()) {
-    trevent = function () {
-        var x = wstorage.site_json(false, "hotcrp-trevent");
-        if (!x || typeof x !== "object" || typeof x.eventid !== "number")
-            x = {eventid: 0};
-        return x;
+    trevent = function (store) {
+        if (store === undefined) {
+            var x = wstorage.json(false, trevent_key());
+            if (!x || typeof x !== "object" || typeof x.eventid !== "number")
+                x = {eventid: 0};
+            return x;
+        } else {
+            trevent$ = store;
+            wstorage(false, trevent_key(), store);
+        }
     };
 } else {
     trevent$ = {eventid: 0};
-    trevent = function () {
-        return trevent$;
+    trevent = function (store) {
+        if (store === undefined) {
+            return trevent$;
+        } else {
+            trevent$ = store;
+        }
     };
 }
 
-function trevent_store(x, prev_eventid, cancel) {
-    var tre = trevent(), now = now_sec();
-    if ((tre.eventid > x.eventid
-         && tre.expiry > now
-         && tre.eventid !== prev_eventid)
-        || (tre.eventid === x.eventid
-            && tre.long
-            && (tre.uuid !== my_uuid || (!x.long && !cancel))))
-        return false;
-    if (!cancel || tre.uuid === my_uuid) {
-        x.uuid = my_uuid;
-        trevent$ = x;
-        wstorage.site(false, "hotcrp-trevent", x);
+function trlog() {
+    if (trlogging > 0) {
+        --trlogging;
+        if (arguments[0] === true) {
+            if (arguments.length > 1) {
+                console.log.apply(console.log, Array.prototype.slice.call(arguments, 1));
+            }
+            console.trace();
+        } else {
+            console.log.apply(console.log, arguments);
+        }
     }
-    trevent_react_soon();
+}
+
+function trevent_store(new_eventid, prev_eventid, expiry, why) {
+    var tre = trevent(), now = now_sec(), x,
+        match = why === "unload" || why === "cdone" || why === "cfail";
+    if ((tre.eventid > new_eventid
+         && tre.eventid !== prev_eventid
+         && tre.expiry > now)
+        || (tre.eventid === new_eventid
+            && tre.expiry > expiry
+            && tre.uuid !== my_uuid)
+        || (tre.eventid === new_eventid
+            && tre.why === "cstart"
+            && (!match || tre.uuid !== my_uuid))) {
+        return false;
+    }
+    if (!match || tre.uuid === my_uuid) {
+        x = {eventid: new_eventid, expiry: expiry, why: why, uuid: my_uuid};
+        trevent(x);
+        //trlog(x);
+    }
+    if (why !== "unload") {
+        trevent_react_soon();
+    }
     return true;
 }
 
@@ -3506,12 +3542,13 @@ function trevent_initialize_wstorage() {
     }
     $(window).on("storage", function (evt) {
         var xevt = evt.originalEvent || evt;
-        if (xevt.key === wstorage.site_key("hotcrp-trevent")) {
+        if (xevt.key === trevent_key()) {
+            //trlog("-" + xevt.oldValue + " @" + now_sec() + "/" + my_uuid + "/" + (siteinfo.user ? siteinfo.user.email : "?") + "\n+" + xevt.newValue);
             trevent_react_soon();
         }
     }).on("unload", function () {
         var eventid = dl.tracker_eventid || 0;
-        trevent_store({eventid: eventid, expiry: now_sec()}, eventid, true);
+        trevent_store(eventid, eventid, now_sec(), "unload");
     });
 }
 
@@ -3547,7 +3584,7 @@ function trevent_react() {
     if (!dl.tracker_site) {
         // reserve next 0.5sec in local storage, but don’t reschedule µtask
         ++trmicrotask;
-        trevent_store({eventid: dl.tracker_eventid || 0, expiry: now + 0.5}, tre.eventid);
+        trevent_store(dl.tracker_eventid || 0, tre.eventid, now + 0.5, "reserve");
         --trmicrotask;
         streload();
         return;
@@ -3572,11 +3609,7 @@ function trevent_comet(prev_eventid, start_at) {
 
     function reserve() {
         var now = now_sec();
-        if (trevent_store({
-                eventid: prev_eventid,
-                expiry: Math.min(now + 8, start_at + timeout),
-                long: true
-            }, prev_eventid)) {
+        if (trevent_store(prev_eventid, prev_eventid, Math.min(now + 8, start_at + timeout), "cstart")) {
             reserve_to = setTimeout(reserve, 6000);
             return true;
         }
@@ -3602,10 +3635,7 @@ function trevent_comet(prev_eventid, start_at) {
             // successful status
             comet_nerrors = comet_stop_until = 0;
             ++comet_nsuccess;
-            trevent_store({
-                eventid: data.tracker_eventid,
-                expiry: done_at + 3000 + Math.random() * 1000
-            }, prev_eventid, true);
+            trevent_store(data.tracker_eventid, prev_eventid, done_at + 3000 + Math.random() * 1000, "cdone");
             return;
         }
         if (done_at - start_at > 100) {
@@ -3619,7 +3649,7 @@ function trevent_comet(prev_eventid, start_at) {
             else
                 comet_stop_until += Math.min(comet_nerrors * comet_nerrors - 23, 600);
         }
-        trevent_store({eventid: prev_eventid, expiry: done_at}, prev_eventid, true);
+        trevent_store(prev_eventid, prev_eventid, done_at, "cfail");
     }
 
     function complete(xhr, status) {
@@ -3688,10 +3718,8 @@ function load(dlx, prev_eventid, is_initial) {
             t = 90;
         else
             t = 45;
-        trevent_store({
-            eventid: dl.tracker_eventid || 0,
-            expiry: dl.load + t
-        }, prev_eventid);
+        trevent_store(dl.tracker_eventid || 0, prev_eventid, dl.load + t,
+                      is_initial ? "initial" : "load");
     }
 }
 
@@ -3991,8 +4019,9 @@ function svge() {
 
 function classe() {
     var e = document.createElement(arguments[0]), i;
-    if (arguments[1])
+    if (arguments[1]) {
         e.className = arguments[1];
+    }
     for (i = 2; i < arguments.length; ++i) {
         e.append(arguments[i]);
     }
@@ -4270,7 +4299,7 @@ handle_ui.on("click.js-dropmenu-open", function (evt) {
 });
 
 handle_ui.on("click.dropmenu", function (evt) {
-    var tgt = evt.target, li, es, bs, i;
+    var tgt = evt.target, li, es, bs;
     if (tgt.tagName === "A"
         || tgt.tagName === "BUTTON"
         || tgt.closest("ul") !== this) {
@@ -5010,7 +5039,7 @@ function row_order_count(group) {
 function row_order_autogrow(group, defaults) {
     var min_rows = Math.max(+group.getAttribute("data-min-rows") || 0, 0),
         max_rows = +group.getAttribute("data-max-rows") || 0,
-        nr, row, prev_row, interesting;
+        nr, row, prev_row;
     for (row = group.firstElementChild, nr = 0;
          row; row = row.nextElementSibling, ++nr) {
     }
@@ -5050,7 +5079,7 @@ handle_ui.on("dragstart.row-order-draghandle", function (evt) {
         changed && row_order_drag_confirm(group);
     }).start(evt);
 });
-hotcrp.dropmenu.add_builder("row-order-draghandle", function (evt) {
+hotcrp.dropmenu.add_builder("row-order-draghandle", function () {
     var details = this.closest("details"), menu,
         row = this.closest(".draggable"), group = row.parentElement;
     if (details) {
@@ -5083,7 +5112,7 @@ hotcrp.dropmenu.add_builder("row-order-draghandle", function (evt) {
     var min_rows = Math.max(+group.getAttribute("data-min-rows") || 0, 0);
     menu.append(buttonli("link ui row-order-dragmenu remove", {disabled: min_rows > 0 && row_order_count(group) <= min_rows}, "Remove"));
 });
-handle_ui.on("row-order-dragmenu", function (evt) {
+handle_ui.on("row-order-dragmenu", function () {
     hotcrp.dropmenu.close(this);
     var row = this.closest(".draggable"), sib, group = row.parentElement,
         defaults = row_order_defaults(group);
@@ -5100,7 +5129,7 @@ handle_ui.on("row-order-dragmenu", function (evt) {
     }
     row_order_drag_confirm(group, defaults);
 });
-handle_ui.on("row-order-append", function (evt) {
+handle_ui.on("row-order-append", function () {
     var group = document.getElementById(this.getAttribute("data-rowset"));
     row_add(group, null, this);
 });
@@ -5544,8 +5573,8 @@ function render_review_body_in(rrow, bodye) {
         h3.className = "rfehead";
         h3.appendChild(e);
         x = f.visibility || "re";
-        if (x === "audec" && hotcrp_status && hotcrp_status.myperm
-            && hotcrp_status.myperm.some_author_can_view_decision) {
+        if (x === "audec" && hotcrp.status && hotcrp.status.myperm
+            && hotcrp.status.myperm.some_author_can_view_decision) {
             x = "au";
         }
         if (x !== "au") {
@@ -6233,7 +6262,7 @@ function cmt_identity_time(cj, editing) {
 }
 
 function cmt_is_editable(cj, override) {
-    var p = hotcrp_status.myperm;
+    var p = hotcrp.status.myperm;
     if (cj.response)
         p = p.can_responds && p.can_responds[cj.response];
     else
@@ -6284,7 +6313,7 @@ function cmt_render_form(hc, cj) {
         hc.push('<option value="paper">submission</option>');
         hc.push_pop('<option value="rev" selected>reviews</option>');
         hc.push('<p class="visibility-hint f-h text-break-line"></p>');
-        if (!cj.by_author && hotcrp_status.rev.blind && hotcrp_status.rev.blind !== true) {
+        if (!cj.by_author && hotcrp.status.rev.blind && hotcrp.status.rev.blind !== true) {
             hc.push('<div class="visibility-au-blind checki"><label><span class="checkc"><input type="checkbox" name="blind" value="1"></span>Anonymous to authors</label></div>');
         }
         hc.pop();
@@ -6345,7 +6374,7 @@ function cmt_visibility_change() {
         blind = entryi.querySelector(".visibility-au-blind"),
         topicspan = entryi.querySelector(".visibility-topic"),
         is_paper = topic && topic.value === "paper" && vis.value !== "admin",
-        would_auvis = is_paper || hotcrp_status.myperm.some_author_can_view_review;
+        would_auvis = is_paper || hotcrp.status.myperm.some_author_can_view_review;
     if (would_auvis) {
         vis.firstChild.textContent = "Author discussion";
     } else {
@@ -6364,14 +6393,14 @@ function cmt_visibility_change() {
                 m.length && m.push("\n");
                 m.push('Authors cannot currently view reviews or comments about reviews.');
             }
-            if (hotcrp_status.rev.blind === true) {
+            if (hotcrp.status.rev.blind === true) {
                 m.length && m.push("\n");
                 m.push(would_auvis ? 'The comment will be anonymous to authors.' : 'When visible, the comment will be anonymous to authors.');
             }
         } else if (vis.value === "pc") {
             m.length && m.push("\n");
             m.push('The comment will be hidden from authors and external reviewers.');
-        } else if (vis.value === "rev" && hotcrp_status.myperm.default_comment_visibility === "pc") {
+        } else if (vis.value === "rev" && hotcrp.status.myperm.default_comment_visibility === "pc") {
             m.length && m.push("\n");
             elt = document.createElement("span");
             elt.className = "is-diagnostic is-warning";
@@ -6424,17 +6453,17 @@ function cmt_edit_messages(cj, form) {
         }
     }
     if (cj.response
-        && !hotcrp_status.myperm.is_author) {
+        && !hotcrp.status.myperm.is_author) {
         append_feedback_to(ul, {message: '<0>You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.', status: -4 /*MessageSet::MARKED_NOTE*/});
     } else if (cj.review_token
-               && hotcrp_status.myperm.review_tokens
-               && hotcrp_status.myperm.review_tokens.indexOf(cj.review_token) >= 0) {
+               && hotcrp.status.myperm.review_tokens
+               && hotcrp.status.myperm.review_tokens.indexOf(cj.review_token) >= 0) {
         append_feedback_to(ul, {message: '<0>You have a review token for this paper, so your comment will be anonymous.', status: -4 /*MessageSet::MARKED_NOTE*/});
     } else if (!cj.response
                && cj.author_email
                && siteinfo.user.email
                && cj.author_email.toLowerCase() != siteinfo.user.email.toLowerCase()) {
-        if (hotcrp_status.myperm.is_author)
+        if (hotcrp.status.myperm.is_author)
             msg = "<0>You didn’t write this comment, but as a fellow author you can edit it.";
         else
             msg = "<0>You didn’t write this comment, but as an administrator you can edit it.";
@@ -6459,13 +6488,13 @@ function cmt_start_edit(celt, cj) {
         .autogrow();
 
     var vis = cj.visibility
-        || hotcrp_status.myperm.default_comment_visibility
+        || hotcrp.status.myperm.default_comment_visibility
         || (cj.by_author ? "au" : "rev");
     $(form.elements.visibility).val(vis)
         .attr("data-default-value", vis)
         .on("change", cmt_visibility_change);
 
-    var topic = (cj.is_new ? cj.topic || hotcrp_status.myperm.default_comment_topic : cj.topic) || "rev";
+    var topic = (cj.is_new ? cj.topic || hotcrp.status.myperm.default_comment_topic : cj.topic) || "rev";
     $(form.elements.topic).val(topic)
         .attr("data-default-value", topic)
         .on("change", cmt_visibility_change);
@@ -6879,7 +6908,7 @@ function cmt_render_text(format, value, response, texte, chead) {
         if (wc > rrd.words) {
             wordse && addClass(wordse, "wordsover");
             wc = count_words_split(value, rrd.words);
-            if (rrd.truncate && !hotcrp_status.myperm.allow_administer) {
+            if (rrd.truncate && !hotcrp.status.myperm.allow_administer) {
                 buttone = classe("button", "ui js-overlong-expand", "Truncated for length");
                 buttone.type = "button";
                 buttone.disabled = true;
@@ -6921,8 +6950,8 @@ function add_comment(cj, editing) {
         && cj.response
         && cj.draft
         && cj.editable
-        && hotcrp_status.myperm
-        && hotcrp_status.myperm.is_author) {
+        && hotcrp.status.myperm
+        && hotcrp.status.myperm.is_author) {
         editing = true;
     }
     if (celt) {
@@ -8938,7 +8967,7 @@ handle_ui.on("js-annotate-order", function () {
             $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
             $row.find("input[name='legend_n" + last_newannoid + "']").focus();
         } else if (hasClass(this, "delete-link")) {
-            ondeleteclink.call(this, evt);
+            ondeleteclick.call(this, evt);
         } else {
             var anno = [];
             for (var i = 0; i < annos.length; ++i) {
@@ -8960,7 +8989,7 @@ handle_ui.on("js-annotate-order", function () {
         evt.preventDefault();
         handle_ui.stopPropagation(evt);
     }
-    function ondeleteclick(evt) {
+    function ondeleteclick() {
         var $div = $(this).closest(".form-g"), annoid = $div.attr("data-anno-id");
         $div.find("input[name='tagval_" + annoid + "']").after("[deleted]").remove();
         $div.append(hidden_input("deleted_" + annoid, "1"));
@@ -12336,7 +12365,7 @@ function autogrower_retry(f, e) {
 }
 function make_textarea_autogrower(e) {
     var state = 0, minHeight, lineHeight, borderPadding, timeout = 0;
-    function f(evt) {
+    function f() {
         if (state === 0) {
             if (e.scrollWidth <= 0) {
                 timeout = Math.min(Math.max(1, timeout) * 2, 30000);
@@ -12357,7 +12386,7 @@ function make_textarea_autogrower(e) {
 }
 function make_input_autogrower(e) {
     var state = 0, minWidth, borderPadding, timeout = 0;
-    function f(evt) {
+    function f() {
         if (state === 0) {
             if (e.scrollWidth <= 0) {
                 timeout = Math.min(Math.max(1, timeout) * 2, 30000);

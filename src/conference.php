@@ -4316,6 +4316,9 @@ class Conf {
             if ($user->is_actas_user()) {
                 $userinfo["is_actas"] = true;
             }
+            if ($user->tracker_kiosk_state > 0) {
+                $userinfo["tracker_kiosk"] = true;
+            }
             if (($uindex = $user->session_index()) > 0
                 || $qreq->navigation()->shifted_path !== "") {
                 $userinfo["session_index"] = $uindex;
