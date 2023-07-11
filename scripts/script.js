@@ -5130,8 +5130,13 @@ handle_ui.on("row-order-dragmenu", function () {
     row_order_drag_confirm(group, defaults);
 });
 handle_ui.on("row-order-append", function () {
-    var group = document.getElementById(this.getAttribute("data-rowset"));
-    row_add(group, null, this);
+    var group = document.getElementById(this.getAttribute("data-rowset")),
+        nr, row;
+    for (row = group.firstElementChild, nr = 0;
+         row; row = row.nextElementSibling, ++nr) {
+    }
+    row = row_add(group, null, this);
+    row_fill(row, nr);
 });
 
 $(function () {
