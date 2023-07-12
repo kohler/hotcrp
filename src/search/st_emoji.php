@@ -47,13 +47,7 @@ class Emoji_SearchTerm extends SearchTerm {
         $star = strpos($word, "*") !== false;
         $regex = '/\\A' . str_replace("\\*", ".*", preg_quote($word, "/")) . '\\z/i';
         $ecmap = $srch->conf->emoji_code_map();
-        if (isset($ecmap[$word])) {
-            $wantcode = $ecmap[$word];
-        } else if (preg_match('/\p{Emoji_Presentation}/u', $word)) {
-            $wantcode = $word;
-        } else {
-            $wantcode = null;
-        }
+        $wantcode = $ecmap[$word] ?? $word;
         $codes = [];
         foreach ($ecmap as $key => $code) {
             if (($wantcode !== null && strpos($code, $wantcode) !== false)
