@@ -1840,9 +1840,6 @@ class PaperSearch extends MessageSet {
             $ts[] = "viewable";
         }
         if ($user->isPC) {
-            if ($user->can_view_some_incomplete()) {
-                $ts[] = "active";
-            }
             $ts[] = "s";
             if ($user->conf->has_any_accepted()
                 && $user->can_view_some_decision()) {
@@ -1874,15 +1871,27 @@ class PaperSearch extends MessageSet {
         if ($user->is_author() || $reqtype === "a") {
             $ts[] = "a";
         }
-        if ($user->privChair
-            && !$user->conf->can_pc_view_some_incomplete()
-            && $reqtype === "active") {
+        if ($user->can_view_some_incomplete()) {
             $ts[] = "active";
         }
         if ($user->privChair) {
             $ts[] = "all";
         }
         return $ts;
+    }
+
+    /** @param list<string> $limits
+     * @param ?string $reqtype
+     * @return string */
+    static function default_limit(Contact $user, $limits, $reqtype = null) {
+        if ($reqtype && in_array($reqtype, $limits)) {
+            return $limits;
+        } else if (in_array("active", $limits)
+                   && $user->conf->can_pc_view_some_incomplete()) {
+            return "active";
+        } else {
+            return $limits[0] ?? "";
+        }
     }
 
     /** @return list<string> */

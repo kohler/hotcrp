@@ -3303,12 +3303,6 @@ class Conf {
         return !!($this->settings["metareviews"] ?? false);
     }
 
-    /** @return bool
-     * @deprecated */
-    function can_pc_view_incomplete() {
-        return ($this->permbits & self::PB_SOME_INCOMPLETE_VIEWABLE) !== 0;
-    }
-
     /** @return bool */
     function can_pc_view_some_incomplete() {
         return ($this->permbits & self::PB_SOME_INCOMPLETE_VIEWABLE) !== 0;

@@ -216,7 +216,7 @@ class Home_Page {
                 "aria-labelledby" => "homesearch-label",
                 "spellcheck" => false, "autocomplete" => "off"
             ]), '<div class="form-basic-search-in"> in ',
-            PaperSearch::limit_selector($this->conf, $limits, $limits[0]),
+            PaperSearch::limit_selector($this->conf, $limits, PaperSearch::default_limit($user, $limits)),
             Ht::submit("Search"),
             "</div></form></div>\n";
     }
