@@ -47,10 +47,15 @@ class Emoji_SearchTerm extends SearchTerm {
         $star = strpos($word, "*") !== false;
         $regex = '/\\A' . str_replace("\\*", ".*", preg_quote($word, "/")) . '\\z/i';
         $ecmap = $srch->conf->emoji_code_map();
-        $wantcode = $ecmap[$word] ?? $word;
+        if (isset($ecmap[$word])) {
+            $wantcode = $ecmap[$word];
+        } else {
+            // remove skin-tone modifiers and variation selectors from search word
+            $wantcode = preg_replace('/\xF0\x9F\x8F[\xBB\xBC\xBD\xBE\xBF]|\xEF\xB8[\x8E\x8F]/', '', $word);
+        }
         $codes = [];
         foreach ($ecmap as $key => $code) {
-            if (($wantcode !== null && strpos($code, $wantcode) !== false)
+            if (strpos($code, $wantcode) !== false
                 || ($exact ? $key === $word : strpos($key, $word) !== false)
                 || ($star && preg_match($regex, $key)))
                 $codes[] = $code;
