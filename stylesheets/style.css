@@ -4450,11 +4450,13 @@ a:hover .cmtnum,
 	right: 0;
 	bottom: 0;
 	max-width: 1000px;
+	max-height: 95vh;
 	padding-left: 3rem;
 	padding-right: 4rem;
 	border-left: 1px solid #e6e1cf;
 	box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
 	z-index: 4;
+	overflow: auto;
 }
 .cmtcard.is-editing.popout .cmttext {
 	max-height: 50vh;
