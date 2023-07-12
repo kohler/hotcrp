@@ -6505,7 +6505,8 @@ function cmt_edit_observer(entries) {
                    && !e.hasAttribute("data-intersecting")) {
             want = true;
         }
-        if (want !== have) {
+        if (want !== have
+            && (!want || !hasClass(e, "avoid-popout"))) {
             toggleClass(e, "popout", want);
             $(e.querySelector("textarea")).autogrow();
         }
@@ -6515,15 +6516,20 @@ function cmt_edit_observer(entries) {
     }
 }
 
-function cmt_toggle_editing(celt, is_editing) {
-    if (!is_editing && celt.previousSibling && celt.previousSibling.className === "cmtcard-placeholder") {
+function cmt_unavoid_popout(evt) {
+    removeClass(this, "avoid-popout");
+    this.removeEventListener("focusin", cmt_unavoid_popout);
+}
+
+function cmt_toggle_editing(celt, editing) {
+    if (!editing && celt.previousSibling && celt.previousSibling.className === "cmtcard-placeholder") {
         var i = editing_list.indexOf(celt);
         editing_list.splice(i, 1);
         editor_observer.unobserve(celt.previousSibling);
         editor_observer.unobserve(celt);
         celt.previousSibling.remove();
     }
-    if (is_editing && (!celt.previousSibling || celt.previousSibling.className !== "cmtcard-placeholder")
+    if (editing && (!celt.previousSibling || celt.previousSibling.className !== "cmtcard-placeholder")
         && window.IntersectionObserver) {
         editor_observer = editor_observer || new IntersectionObserver(cmt_edit_observer, {rootMargin: "16px 0px"});
         var e = classe("div", "cmtcard-placeholder");
@@ -6533,9 +6539,12 @@ function cmt_toggle_editing(celt, is_editing) {
         editor_observer.observe(e);
         editor_observer.observe(celt);
     }
-    toggleClass(celt, "is-editing", !!is_editing);
-    if (!is_editing) {
+    toggleClass(celt, "is-editing", !!editing);
+    if (!editing) {
         removeClass(celt, "popout");
+    } else if (editing === 2) {
+        addClass(celt, "avoid-popout");
+        celt.addEventListener("focusin", cmt_unavoid_popout);
     }
 }
 
@@ -6846,7 +6855,7 @@ function add_comment(cj, editing) {
         && cj.editable
         && hotcrp.status.myperm
         && hotcrp.status.myperm.is_author) {
-        editing = true;
+        editing = 2;
     }
     if (celt) {
         cmt_render(cj, editing);
