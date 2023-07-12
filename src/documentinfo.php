@@ -1295,6 +1295,9 @@ class DocumentInfo implements JsonSerializable {
         if (($this->_member_filename ?? "") !== "") {
             return $this->_member_filename;
         } else {
+            if (($flags & self::ANY_MEMBER_FILENAME) === 0) {
+                error_log(debug_string_backtrace());
+            }
             assert(($flags & self::ANY_MEMBER_FILENAME) !== 0);
             return $this->filename;
         }
