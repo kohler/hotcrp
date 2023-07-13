@@ -4861,7 +4861,7 @@ class Conf {
             $values = self::format_log_values($text, $user, $dest_user, $true_user, $pids);
             if ($dedup && count($values) === 1) {
                 $this->qe_apply(self::action_log_query . " select ?, ?, ?, ?, ?, ?, ? from dual"
-                    . " where (select max(logId) from (select * from ActionLog order by logId desc limit 100) t1 where ipaddr<=>? and contactId<=>? and destContactId<=>? and trueContactId<=>? and paperId<=>? and timestamp>=?-3600 and action<=>?) is null",
+                    . " where not exists (select * from ActionLog where logId>=coalesce((select max(logId) from ActionLog),0)-199 and ipaddr<=>? and contactId<=>? and destContactId<=>? and trueContactId<=>? and paperId<=>? and timestamp>=?-3600 and action<=>?)",
                     array_merge($values[0], $values[0]));
             } else {
                 $this->qe(self::action_log_query . " values ?v", $values);
