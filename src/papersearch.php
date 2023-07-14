@@ -1885,7 +1885,7 @@ class PaperSearch extends MessageSet {
      * @return string */
     static function default_limit(Contact $user, $limits, $reqtype = null) {
         if ($reqtype && in_array($reqtype, $limits)) {
-            return $limits;
+            return $reqtype;
         } else if (in_array("active", $limits)
                    && $user->conf->can_pc_view_some_incomplete()) {
             return "active";
