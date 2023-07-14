@@ -268,7 +268,7 @@ class LogEntryGenerator {
         unset($this->need_users[0]);
         $this->need_users = array_diff_key($this->need_users, $this->users);
         if (!empty($this->need_users)) {
-            $result = $this->conf->qe("select contactId, firstName, lastName, affiliation, email, roles, contactTags, disabled, primaryContactId from ContactInfo where contactId?a", array_keys($this->need_users));
+            $result = $this->conf->qe("select " . $this->conf->user_query_fields() . " from ContactInfo where contactId?a", array_keys($this->need_users));
             while (($user = Contact::fetch($result, $this->conf))) {
                 $this->users[$user->contactId] = $user;
                 unset($this->need_users[$user->contactId]);
@@ -279,7 +279,7 @@ class LogEntryGenerator {
             foreach ($this->need_users as $cid => $x) {
                 $this->users[$cid] = Contact::make_keyed($this->conf, ["contactId" => $cid, "disablement" => Contact::DISABLEMENT_DELETED]);
             }
-            $result = $this->conf->qe("select contactId, firstName, lastName, '' affiliation, email, 1 disabled, " . Contact::DISABLEMENT_DELETED . " disablement from DeletedContactInfo where contactId?a", array_keys($this->need_users));
+            $result = $this->conf->qe("select " . $this->conf->deleted_user_query_fields() . " from DeletedContactInfo where contactId?a", array_keys($this->need_users));
             while (($user = Contact::fetch($result, $this->conf))) {
                 $this->users[$user->contactId] = $user;
             }

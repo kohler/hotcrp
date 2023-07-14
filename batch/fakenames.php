@@ -108,7 +108,7 @@ class FakeNames_Batch {
     /** @return int */
     function run() {
         // load all contacts
-        $result = $this->conf->qe("select contactId, firstName, lastName, unaccentedName, email, affiliation, contactTags, country, password, disabled, primaryContactId from ContactInfo");
+        $result = $this->conf->qe("select " . $this->conf->user_query_fields() . ", unaccentedName, password, country from ContactInfo");
         $users = $emails = [];
         while (($c = Contact::fetch($result, $this->conf))) {
             $users[] = $c;

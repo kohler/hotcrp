@@ -1942,7 +1942,6 @@ class Conf {
      * @param int $roles
      * @return int */
     function disablement_for($disabled, $roles) {
-        $disabled &= Contact::DISABLEMENT_DB;
         if ($this->disable_non_pc && ($roles & Contact::ROLE_PCLIKE) === 0) {
             $disabled |= Contact::DISABLEMENT_ROLE;
         }
@@ -1953,17 +1952,29 @@ class Conf {
     // database users
 
     /** @param int $slice
+     * @param string $prefix
      * @return string */
-    static function user_query_fields($slice) {
-        if ($slice === Contact::SLICE_MINIMAL) {
-            // see also MailRecipients
-            return "contactId, firstName, lastName, affiliation, email, roles, contactTags, disabled, primaryContactId, " . Contact::SLICE_MINIMAL . " _slice";
-        } else if ($slice === (Contact::SLICE_MINIMAL & ~Contact::SLICE_NO_COLLABORATORS)) {
-            return "contactId, firstName, lastName, affiliation, email, roles, contactTags, disabled, primaryContactId, collaborators, " . (Contact::SLICE_MINIMAL & ~Contact::SLICE_NO_COLLABORATORS) . " _slice";
+    function user_query_fields($slice = Contact::SLICE_MINIMAL, $prefix = "") {
+        if (($slice | Contact::SLICE_NO_COLLABORATORS | Contact::SLICE_NO_PASSWORD) === Contact::SLICE_MINIMAL) {
+            $f = "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}roles, {$prefix}disabled, {$prefix}primaryContactId, {$prefix}contactTags";
+            if (($slice & Contact::SLICE_NO_COLLABORATORS) === 0) {
+                $f .= ", {$prefix}collaborators";
+            }
+            if (($slice & Contact::SLICE_NO_PASSWORD) === 0) {
+                $f .= ", {$prefix}password";
+            }
+            return "{$f}, {$slice} _slice";
         } else {
-            return "*, 0 _slice";
+            return "{$prefix}*, 0 _slice";
         }
     }
+
+    /** @param string $prefix
+     * @return string */
+    function deleted_user_query_fields($prefix = "") {
+        return "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, 0 roles, " . Contact::DISABLEMENT_DELETED . " disabled, 0 primaryContactId, '' contactTags, 0 _slice";
+    }
+
 
     /** @param int $id
      * @return ?Contact */
@@ -2087,7 +2098,7 @@ class Conf {
         if (empty($qf)) {
             return;
         }
-        $result = $this->qe("select " . self::user_query_fields($this->_slice) . " from ContactInfo where " . join(" or ", $qf), ...$qv);
+        $result = $this->qe("select " . $this->user_query_fields($this->_slice) . " from ContactInfo where " . join(" or ", $qf), ...$qv);
         foreach (ContactSet::make_result($result, $this) as $u) {
             $this->_user_cache[$u->contactId] = $u;
             if ($this->_user_email_cache !== null) {
@@ -2294,7 +2305,7 @@ class Conf {
             return $this->_pc_set;
         }
 
-        $result = $this->qe("select " . self::user_query_fields($this->_slice) . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
+        $result = $this->qe("select " . $this->user_query_fields($this->_slice) . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
         $this->_pc_set = ContactSet::make_result($result, $this);
 
         // analyze set for ambiguous names, disablement

@@ -538,10 +538,8 @@ class MailRecipients extends MessageSet {
         }
 
         // query construction
-        assert((Contact::SLICE_MINIMAL & ~Contact::SLICE_NO_PASSWORD) === 5);
-        $q = "select ContactInfo.contactId, firstName, lastName, affiliation,
-            email, roles, contactTags, disabled, primaryContactId, 5 _slice,
-            password, preferredEmail, "
+        $q = "select " . $this->conf->user_query_fields(Contact::SLICE_MINIMAL & ~Contact::SLICE_NO_PASSWORD, "ContactInfo.")
+            . ", preferredEmail, "
             . ($needpaper ? "Paper.paperId" : "-1") . " paperId
             from " . join("\n", $joins)
             . "\nwhere " . join("\n    and ", $where)

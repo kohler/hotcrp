@@ -568,8 +568,8 @@ class AssignerContacts {
     }
 
     /** @return string */
-    static function user_query_fields() {
-        return "ContactInfo." . Conf::user_query_fields(Contact::SLICE_MINIMAL & ~Contact::SLICE_NO_COLLABORATORS);
+    function user_query_fields() {
+        return $this->conf->user_query_fields(Contact::SLICE_MINIMAL & ~Contact::SLICE_NO_COLLABORATORS, "ContactInfo.");
     }
 
     /** @return Contact */
@@ -610,7 +610,7 @@ class AssignerContacts {
         if (($u = $this->by_id[$cid] ?? null)) {
             return $u;
         }
-        $result = $this->conf->qe("select " . self::user_query_fields() . " from ContactInfo where contactId=?", $cid);
+        $result = $this->conf->qe("select " . $this->user_query_fields() . " from ContactInfo where contactId=?", $cid);
         $u = Contact::fetch($result, $this->conf)
             ?? Contact::make_keyed($this->conf, ["email" => "unknown contact $cid", "contactId" => $cid]);
         Dbl::free($result);
@@ -631,7 +631,7 @@ class AssignerContacts {
         if (($c = $this->by_lemail[$lemail] ?? null)) {
             return $c;
         }
-        $result = $this->conf->qe("select " . self::user_query_fields() . " from ContactInfo where email=?", $lemail);
+        $result = $this->conf->qe("select " . $this->user_query_fields() . " from ContactInfo where email=?", $lemail);
         $c = Contact::fetch($result, $this->conf);
         Dbl::free($result);
         if (!$c && $create) {
@@ -669,7 +669,7 @@ class AssignerContacts {
     /** @return array<int,Contact> */
     function reviewer_users($pids) {
         $rset = $this->pc_users();
-        $result = $this->conf->qe("select " . AssignerContacts::user_query_fields() . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 and paperId?a and reviewType>0 group by ContactInfo.contactId", $pids);
+        $result = $this->conf->qe("select " . $this->user_query_fields() . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 and paperId?a and reviewType>0 group by ContactInfo.contactId", $pids);
         while ($result && ($c = Contact::fetch($result, $this->conf))) {
             $rset[$c->contactId] = $this->store($c);
         }

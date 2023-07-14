@@ -203,9 +203,9 @@ class ContactSearch {
                 $x = sqlq(Dbl::escape_like($e));
                 $where[] = "email like " . Dbl::utf8ci("'" . preg_replace('/[\s*]+/', "%", $x) . "'");
             }
-            $q = "select contactId, firstName, lastName, affiliation, email, roles, primaryContactId from ContactInfo where " . join(" or ", $where);
+            $q = "select " . $this->conf->user_query_fields() . " from ContactInfo where " . join(" or ", $where);
             if ($this->type & self::F_ALLOW_DELETED) {
-                $q .= " union select contactId, firstName, lastName, affiliation, email, 0 roles, 0 primaryContactId from DeletedContactInfo where " . join(" or ", $where);
+                $q .= " union select " . $this->conf->deleted_user_query_fields() . " from DeletedContactInfo where " . join(" or ", $where);
             }
             $result = $this->conf->qe_raw($q);
             $cs = [];

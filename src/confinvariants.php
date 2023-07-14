@@ -403,7 +403,7 @@ class ConfInvariants {
 
         // load users
         $primary = [];
-        $result = $this->conf->qe("select contactId, firstName, lastName, email, affiliation, primaryContactId, roles, disabled, contactTags from ContactInfo");
+        $result = $this->conf->qe("select " . $this->conf->user_query_fields() . " from ContactInfo");
         while (($u = $result->fetch_object())) {
             $u->contactId = intval($u->contactId);
             $u->primaryContactId = intval($u->primaryContactId);

@@ -28,6 +28,8 @@ class Contact implements JsonSerializable {
     public $cdb_confid = 0; // nonzero iff this is a CDB user
 
     /** @var string */
+    public $email = "";
+    /** @var string */
     public $firstName = "";
     /** @var string */
     public $lastName = "";
@@ -37,20 +39,18 @@ class Contact implements JsonSerializable {
     public $name_usascii;
     /** @var string */
     public $affiliation = "";
-    /** @var string */
-    public $email = "";
     /** @var int */
     public $roles = 0;
     /** @var int */
     public $role_mask = self::ROLE_DBMASK;
-    /** @var ?string */
-    public $contactTags;
     /** @var int */
     private $disabled = 0;
     /** @var int */
     public $disablement = 0;
     /** @var ?int */
     public $primaryContactId;
+    /** @var ?string */
+    public $contactTags;
 
     /** @var int */
     public $_slice = 0;
@@ -106,7 +106,7 @@ class Contact implements JsonSerializable {
     private $data;
     /** @var ?object */
     private $_jdata;
-    const WATCH_REVIEW_EXPLICIT = 0x01;  // only in PaperWatch
+    const WATCH_REVIEW_EXPLICIT = 0x01; // only in PaperWatch, not defaultWatch
     const WATCH_REVIEW = 0x02;
     const WATCH_REVIEW_ALL = 0x04;
     const WATCH_REVIEW_MANAGED = 0x08;
@@ -128,7 +128,6 @@ class Contact implements JsonSerializable {
     const ROLE_ADMIN = 0x0002;
     const ROLE_CHAIR = 0x0004;
     const ROLE_PCLIKE = 0x000F;
-    const ROLE_DBMASK = 0x000F;
     const ROLE_AUTHOR = 0x0010;
     const ROLE_REVIEWER = 0x0020;
     const ROLE_REQUESTER = 0x0040;
@@ -138,6 +137,10 @@ class Contact implements JsonSerializable {
     const ROLE_EXPLICIT_MANAGER = 0x8000;
     const ROLE_APPROVABLE = 0x10000;
     const ROLE_VIEW_SOME_REVIEW_ID = 0x20000;
+
+    const ROLE_DBMASK = 0x000F;
+    const ROLE_CDBMASK = 0x003F;
+
     /** @var bool */
     public $isPC = false;
     /** @var bool */
@@ -218,11 +221,11 @@ class Contact implements JsonSerializable {
     const PROP_PASSWORD = 0x2000;
     const PROP_UPDATE = 0x4000;
     const PROP_IMPORT = 0x8000;
-    const PROP_ROLES = 0x10000;
+    const PROP_SPECIAL = 0x10000;
     static public $props = [
+        "email" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE,
         "firstName" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE | self::PROP_NAME | self::PROP_UPDATE | self::PROP_IMPORT,
         "lastName" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE | self::PROP_NAME | self::PROP_UPDATE | self::PROP_IMPORT,
-        "email" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE,
         "preferredEmail" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY,
         "affiliation" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE | self::PROP_UPDATE | self::PROP_IMPORT,
         "phone" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE | self::PROP_IMPORT,
@@ -235,7 +238,7 @@ class Contact implements JsonSerializable {
         "lastLogin" => self::PROP_LOCAL | self::PROP_INT,
         "defaultWatch" => self::PROP_LOCAL | self::PROP_INT,
         "primaryContactId" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE,
-        "roles" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE | self::PROP_ROLES,
+        "roles" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE | self::PROP_SPECIAL,
         "cdbRoles" => self::PROP_LOCAL | self::PROP_INT,
         "disabled" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_SLICE,
         "contactTags" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SLICE,
@@ -1673,8 +1676,14 @@ class Contact implements JsonSerializable {
         }
         if (($shape & self::PROP_DATA) !== 0) {
             return $this->data($prop);
-        } else if (($shape & self::PROP_ROLES) !== 0) {
-            return $this->cdb_confid === 0 ? $this->roles & self::ROLE_DBMASK : $this->roles;
+        } else if (($shape & self::PROP_SPECIAL) !== 0) {
+            if ($prop === "roles") {
+                $mask = $this->cdb_confid === 0 ? self::ROLE_DBMASK : self::ROLE_CDBMASK;
+                return $this->roles & $mask;
+            } else {
+                assert(false);
+                return null;
+            }
         } else {
             return $this->$prop;
         }
@@ -1684,7 +1693,7 @@ class Contact implements JsonSerializable {
     function prop($prop) {
         $shape = self::$props[$prop] ?? 0;
         if ($shape === 0) {
-            throw new Exception("bad prop $prop");
+            throw new Exception("bad prop {$prop}");
         }
         return $this->prop1($prop, $shape);
     }
@@ -2557,11 +2566,10 @@ class Contact implements JsonSerializable {
         if ($this->is_disabled()) {
             return 0;
         } else {
-            $rmask = self::ROLE_AUTHOR | self::ROLE_REVIEWER;
-            if (($this->role_mask & $rmask) !== $rmask) {
+            if (($this->role_mask & self::ROLE_CDBMASK) !== self::ROLE_CDBMASK) {
                 $this->load_author_reviewer_status();
             }
-            return $this->roles & (self::ROLE_DBMASK | self::ROLE_AUTHOR | self::ROLE_REVIEWER);
+            return $this->roles & self::ROLE_CDBMASK;
         }
     }
 

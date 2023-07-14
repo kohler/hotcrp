@@ -3,32 +3,26 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class GetAuthors_ListAction extends ListAction {
-    /** @return array<mixed,Contact> */
-    static function contact_map(Conf $conf, SearchSelection $ssel) {
-        $result = $conf->qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email, country, roles, contactTags, primaryContactId from ContactInfo join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId) where conflictType>=" . CONFLICT_AUTHOR . " and paperId" . $ssel->sql_predicate() . " group by ContactInfo.contactId");
-        $users = [];
-        while (($u = Contact::fetch($result, $conf))) {
-            $users[strtolower($u->email)] = $users[$u->contactId] = $u;
-        }
-        return $users;
-    }
     function allow(Contact $user, Qrequest $qreq) {
         return $user->can_view_some_authors();
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
-        $texts = [];
-        $users = null;
-        $has_iscontact = $has_country = false;
-        foreach ($ssel->paper_set($user, ["allConflictType" => 1]) as $prow) {
-            if (!$user->allow_view_authors($prow)) {
-                continue;
-            }
-            if ($users === null) {
-                $users = self::contact_map($user->conf, $ssel);
-                foreach ($users as $u) {
-                    $user->conf->prefetch_cdb_user_by_email($u->email);
+        $conf = $user->conf;
+        $prows = $ssel->paper_set($user, ["allConflictType" => 1]);
+        $prows->apply_filter(function ($prow) use ($user) {
+            return $user->allow_view_authors($prow);
+        });
+        foreach ($prows as $prow) {
+            foreach ($prow->author_list() as $au) {
+                if ($au->email) {
+                    $conf->prefetch_user_by_email($au->email);
+                    $conf->prefetch_cdb_user_by_email($au->email);
                 }
             }
+        }
+        $texts = [];
+        $has_iscontact = $has_country = false;
+        foreach ($prows as $prow) {
             $admin = $user->allow_administer($prow);
             $aucid = [];
             foreach ($prow->author_list() as $au) {
@@ -41,7 +35,8 @@ class GetAuthors_ListAction extends ListAction {
                     "affiliation" => $au->affiliation
                 ];
                 $lemail = strtolower($au->email);
-                if ($lemail !== "" && ($u = $users[$lemail] ?? null)) {
+                if ($au->email !== ""
+                    && ($u = $conf->user_by_email($au->email))) {
                     $line["country"] = $u->country();
                     $has_country = $has_country || $line["country"] !== "";
                     if ($admin) {
