@@ -51,6 +51,8 @@ class Contact implements JsonSerializable {
     public $primaryContactId;
     /** @var ?string */
     public $contactTags;
+    /** @var int */
+    public $contactFlags = 0;
 
     /** @var int */
     public $_slice = 0;
