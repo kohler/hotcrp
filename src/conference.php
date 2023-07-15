@@ -1955,13 +1955,19 @@ class Conf {
      * @param string $prefix
      * @return string */
     function user_query_fields($slice = Contact::SLICE_MINIMAL, $prefix = "") {
-        if (($slice | Contact::SLICE_NO_COLLABORATORS | Contact::SLICE_NO_PASSWORD) === Contact::SLICE_MINIMAL) {
+        if (($slice & Contact::SLICEBIT_REST) !== 0) {
             $f = "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}roles, {$prefix}disabled, {$prefix}primaryContactId, {$prefix}contactTags";
-            if (($slice & Contact::SLICE_NO_COLLABORATORS) === 0) {
+            if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
                 $f .= ", {$prefix}collaborators";
             }
-            if (($slice & Contact::SLICE_NO_PASSWORD) === 0) {
+            if (($slice & Contact::SLICEBIT_PASSWORD) === 0) {
                 $f .= ", {$prefix}password";
+            }
+            if (($slice & Contact::SLICEBIT_COUNTRY) === 0) {
+                $f .= ", {$prefix}country";
+            }
+            if (($slice & Contact::SLICEBIT_ORCID) === 0) {
+                $f .= ", {$prefix}orcid";
             }
             return "{$f}, {$slice} _slice";
         } else {
@@ -1973,6 +1979,30 @@ class Conf {
      * @return string */
     function deleted_user_query_fields($prefix = "") {
         return "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, 0 roles, " . Contact::DISABLEMENT_DELETED . " disabled, 0 primaryContactId, '' contactTags, 0 _slice";
+    }
+
+    /** @param int $slice
+     * @param string $prefix
+     * @return string */
+    function contactdb_user_query_fields($slice = Contact::SLICE_MINIMAL, $prefix = "") {
+        if (($slice & Contact::SLICEBIT_REST) !== 0) {
+            $f = "{$prefix}contactDbId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}disabled";
+            if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
+                $f .= ", {$prefix}collaborators";
+            }
+            if (($slice & Contact::SLICEBIT_PASSWORD) === 0) {
+                $f .= ", {$prefix}password";
+            }
+            if (($slice & Contact::SLICEBIT_COUNTRY) === 0) {
+                $f .= ", {$prefix}country";
+            }
+            if (($slice & Contact::SLICEBIT_ORCID) === 0) {
+                $f .= ", {$prefix}orcid";
+            }
+            return "{$f}, {$slice} _slice";
+        } else {
+            return "{$prefix}*, 0 _slice";
+        }
     }
 
 
@@ -2170,7 +2200,7 @@ class Conf {
     }
 
     function ensure_cached_user_collaborators() {
-        $this->_slice &= ~Contact::SLICE_NO_COLLABORATORS;
+        $this->_slice &= ~Contact::SLICEBIT_COLLABORATORS;
     }
 
     /** @param ?Contact $u

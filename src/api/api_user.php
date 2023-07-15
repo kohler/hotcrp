@@ -17,9 +17,11 @@ class User_API {
         }
 
         $users = [];
+        $slice = Contact::SLICE_MINIMAL - Contact::SLICEBIT_COLLABORATORS
+            - Contact::SLICEBIT_COUNTRY - Contact::SLICEBIT_ORCID;
         if ($user->privChair || $user->can_view_pc()) {
             $roles = $user->is_manager() ? "" : " and roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
-            $result = $user->conf->qe("select contactId, email, firstName, lastName, affiliation, collaborators, country, orcid from ContactInfo where email>=? and email<? and not disabled{$roles} order by email asc limit 2", $email, $email . "~");
+            $result = $user->conf->qe("select " . $user->conf->user_query_fields($slice) . " from ContactInfo where email>=? and email<? and not disabled{$roles} order by email asc limit 2", $email, $email . "~");
             while (($u = Contact::fetch($result, $user->conf))) {
                 $users[] = $u;
             }
@@ -29,12 +31,12 @@ class User_API {
         if ((empty($users) || strcasecmp($users[0]->email, $email) !== 0)
             && $user->conf->opt("allowLookupUser")) {
             if (($db = $user->conf->contactdb())) {
-                $idk = "contactDbId";
+                $fields = $user->conf->contactdb_user_query_fields($slice);
             } else {
                 $db = $user->conf->dblink;
-                $idk = "contactId";
+                $fields = $user->conf->user_query_fields($slice);
             }
-            $result = Dbl::qe($db, "select {$idk}, email, firstName, lastName, affiliation, collaborators, country, orcid from ContactInfo where email>=? and email<? and not disabled order by email asc limit 2", $email, $email . "~");
+            $result = Dbl::qe($db, "select {$fields} from ContactInfo where email>=? and email<? and not disabled order by email asc limit 2", $email, $email . "~");
             $users = [];
             while (($u = Contact::fetch($result, $user->conf))) {
                 $users[] = $u;

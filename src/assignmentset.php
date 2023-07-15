@@ -551,9 +551,6 @@ class AssignerContacts {
     private $by_lemail = [];
     /** @var bool */
     private $has_pc = false;
-    /** @var string
-     * @readonly */
-    static public $cdb_query = "contactDbId, firstName, lastName, email, affiliation, collaborators, 0 roles, '' contactTags, 0 primaryContactId";
 
     function __construct(Conf $conf, Contact $viewer) {
         $this->conf = $conf;
@@ -569,7 +566,12 @@ class AssignerContacts {
 
     /** @return string */
     function user_query_fields() {
-        return $this->conf->user_query_fields(Contact::SLICE_MINIMAL & ~Contact::SLICE_NO_COLLABORATORS, "ContactInfo.");
+        return $this->conf->user_query_fields(Contact::SLICE_MINIMAL - Contact::SLICEBIT_COLLABORATORS, "ContactInfo.");
+    }
+
+    /** @return string */
+    function contactdb_user_query_fields() {
+        return $this->conf->contactdb_user_query_fields(Contact::SLICE_MINIMAL - Contact::SLICEBIT_COLLABORATORS);
     }
 
     /** @return Contact */
@@ -638,7 +640,7 @@ class AssignerContacts {
             $is_anonymous = Contact::is_anonymous_email($email);
             assert(validate_email($email) || $is_anonymous);
             if (($cdb = $this->conf->contactdb()) && validate_email($email)) {
-                $result = Dbl::qe($cdb, "select " . self::$cdb_query . " from ContactInfo where email=?", $lemail);
+                $result = Dbl::qe($cdb, "select " . $this->contactdb_user_query_fields() . " from ContactInfo where email=?", $lemail);
                 $c = Contact::fetch($result, $this->conf);
                 Dbl::free($result);
             }

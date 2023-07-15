@@ -538,7 +538,7 @@ class MailRecipients extends MessageSet {
         }
 
         // query construction
-        $q = "select " . $this->conf->user_query_fields(Contact::SLICE_MINIMAL & ~Contact::SLICE_NO_PASSWORD, "ContactInfo.")
+        $q = "select " . $this->conf->user_query_fields(Contact::SLICE_MINIMAL - Contact::SLICEBIT_PASSWORD, "ContactInfo.")
             . ", preferredEmail, "
             . ($needpaper ? "Paper.paperId" : "-1") . " paperId
             from " . join("\n", $joins)
