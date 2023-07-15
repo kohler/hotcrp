@@ -320,7 +320,7 @@ class Dbl {
         if (($flags & self::F_MULTI) && is_array($q)) {
             $q = join(";", $q);
         }
-        if ($log_location && self::$query_log !== false) {
+        if ($log_location && is_array(self::$query_log)) {
             self::$query_log_key = $qx = simplify_whitespace($q);
             if (isset(self::$query_log[$qx])) {
                 ++self::$query_log[$qx][1];
@@ -887,13 +887,18 @@ class Dbl {
         throw new Exception("Dbl::compare_and_swap failure on query `" . Dbl::format_query_args($dblink, $value_query, $value_query_args) . "`");
     }
 
-    /** @param null|bool|float $limit
+    /** @param null|bool|float|'verbose' $limit
      * @param ?string $file */
     static function log_queries($limit, $file = null) {
-        if (is_float($limit)) {
-            $limit = $limit >= 1 || ($limit > 0 && mt_rand() < $limit * mt_getrandmax());
+        if ($limit === "verbose") {
+            self::$verbose = true;
+            return;
         }
-        if (!$limit) {
+        if (!is_float($limit)) {
+            $limit = $limit === true ? 1.0 : 0.0;
+        }
+        if ($limit <= 0
+            || ($limit < 1 && mt_rand() < $limit * mt_getrandmax())) {
             self::$query_log = false;
         } else if (self::$query_log === false) {
             register_shutdown_function("Dbl::shutdown");
@@ -903,7 +908,7 @@ class Dbl {
     }
 
     static function shutdown() {
-        if (self::$query_log) {
+        if (is_array(self::$query_log)) {
             uasort(self::$query_log, function ($a, $b) {
                 return $b[0] <=> $a[0];
             });
