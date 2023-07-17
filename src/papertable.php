@@ -2995,7 +2995,7 @@ class PaperTable {
         $this->all_rrows = $this->prow->reviews_as_display();
         $this->viewable_rrows = [];
         $rf = $this->conf->review_form();
-        $unresolved_fields = $rf->all_fields();
+        $unresolved_fields = $this->admin ? [] : $rf->all_fields();
         foreach ($this->all_rrows as $rrow) {
             if ($this->user->can_view_review($this->prow, $rrow)) {
                 $this->viewable_rrows[] = $rrow;

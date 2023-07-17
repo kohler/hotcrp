@@ -622,6 +622,8 @@ Ready\n";
     const RJ_ALL_RATINGS = 8;
     const RJ_NO_REVIEWERONLY = 16;
 
+    /** @param int $flags
+     * @return object */
     function unparse_review_json(Contact $viewer, PaperInfo $prow,
                                  ReviewInfo $rrow, $flags = 0) {
         self::check_review_author_seen($prow, $rrow, $viewer);
@@ -715,12 +717,27 @@ Ready\n";
 
         // review text
         // (field UIDs always are uppercase so can't conflict)
-        foreach ($rrow->viewable_fields($viewer) as $f) {
-            if ($f->view_score > VIEWSCORE_REVIEWERONLY
-                || ($flags & self::RJ_NO_REVIEWERONLY) === 0) {
-                $rj[$f->uid()] = $f->unparse_json($rrow->fields[$f->order]);
+        $bound = $viewer->view_score_bound($prow, $rrow);
+        if (($flags & self::RJ_NO_REVIEWERONLY) !== 0) {
+            $bound = max($bound, VIEWSCORE_REVIEWERONLY);
+        }
+        $hidden = [];
+        foreach ($this->all_fields() as $fid => $f) {
+            if ($f->view_score > $bound) {
+                $fval = $rrow->fields[$f->order];
+                if ($f->test_exists($rrow)) {
+                    $rj[$f->uid()] = $f->unparse_json($fval);
+                } else if ($fval !== null
+                           && $fval !== ""
+                           && $viewer->can_administer($prow)) {
+                    $hidden[] = $f->uid();
+                }
             }
         }
+        if (!empty($hidden)) {
+            $rj["hidden_fields"] = $hidden;
+        }
+
         if (($fmt = $this->conf->default_format)) {
             $rj["format"] = $fmt;
         }

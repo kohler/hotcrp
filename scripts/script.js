@@ -1380,6 +1380,8 @@ function hoturl(page, options) {
         hoturl_clean(x, /^p=(\d+)$/, true);
         hoturl_clean(x, /^fn=(\w+)$/);
         want_forceShow = true;
+    } else if (page === "settings") {
+        hoturl_clean(x, /^group=(\w+)$/);
     } else if (page === "doc") {
         hoturl_clean(x, /^file=([^&]+)$/);
     }
@@ -5764,6 +5766,11 @@ hotcrp.add_review = function (rrow) {
     earticle.appendChild(e);
     render_review_body_in(rrow, e);
 
+    // hidden fields, if any
+    if (rrow.hidden_fields && rrow.hidden_fields.length > 0) {
+        earticle.appendChild(render_review_hidden_fields(rrow.hidden_fields));
+    }
+
     // ratings
     has_user_rating = "user_rating" in rrow;
     if ((rrow.ratings && rrow.ratings.length) || has_user_rating) {
@@ -5780,6 +5787,24 @@ hotcrp.add_review = function (rrow) {
     score_header_tooltips($(earticle));
     navsidebar.set("r" + rid, rdesc);
 };
+
+function render_review_hidden_fields(hidden_fields) {
+    var e, i, n = [], link;
+    for (i = 0; i !== hidden_fields.length; ++i) {
+        var f = formj[hidden_fields[i]];
+        n.push(f.name);
+    }
+    link = classe("a");
+    link.href = hoturl("settings", {group: "reviewform", "#": "rf/" + formj[hidden_fields[0]].order});
+    if (n.length === 1) {
+        link.textContent = "field condition";
+        return classe("p", "feedback is-warning mt-3", "This review’s ".concat(n[0], " field is hidden by a "), link, ".");
+    } else {
+        link.textContent = "field conditions";
+        return classe("p", "feedback is-warning mt-3", "This review’s ".concat(commajoin(n), " fields are hidden by "), link, ".");
+    }
+}
+
 
 function ReviewField(fj) {
     this.uid = fj.uid;
