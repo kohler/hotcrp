@@ -5796,12 +5796,15 @@ function render_review_hidden_fields(hidden_fields) {
     }
     link = classe("a");
     link.href = hoturl("settings", {group: "reviewform", "#": "rf/" + formj[hidden_fields[0]].order});
+    if (!hotcrp.status.is_admin) {
+        link.className = "q";
+    }
     if (n.length === 1) {
         link.textContent = "field condition";
-        return classe("p", "feedback is-warning mt-3", "This review’s ".concat(n[0], " field is hidden by a "), link, ".");
+        return classe("p", "feedback is-warning mt-3", "This review’s ".concat(n[0], " field has been hidden by a "), link, ".");
     } else {
         link.textContent = "field conditions";
-        return classe("p", "feedback is-warning mt-3", "This review’s ".concat(commajoin(n), " fields are hidden by "), link, ".");
+        return classe("p", "feedback is-warning mt-3", "This review’s ".concat(commajoin(n), " fields have been hidden by "), link, ".");
     }
 }
 

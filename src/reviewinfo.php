@@ -759,13 +759,14 @@ class ReviewInfo implements JsonSerializable {
 
 
     /** @return array<string,ReviewField> */
-    function viewable_fields(Contact $user) {
-        // see also ReviewForm::unparse_review_json
+    function viewable_fields(Contact $user, $include_nonexistent = false) {
         $bound = $user->view_score_bound($this->prow, $this);
         $fs = [];
         foreach ($this->conf->all_review_fields() as $fid => $f) {
             if ($f->view_score > $bound
-                && $f->test_exists($this))
+                && ($f->test_exists($this)
+                    || ($include_nonexistent
+                        && $this->fields[$f->order] !== null)))
                 $fs[$fid] = $f;
         }
         return $fs;

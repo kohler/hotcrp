@@ -194,13 +194,16 @@ class ReviewForm {
     }
 
 
-    private function print_web_edit(PaperInfo $prow, ReviewInfo $rrow, Contact $contact,
-                                    ReviewValues $rvalues = null) {
+    private function print_web_edit(PaperInfo $prow, ReviewInfo $rrow,
+                                    Contact $contact, ReviewValues $rvalues) {
         $fi = $this->conf->format_info(null);
         echo '<div class="rve">';
-        foreach ($rrow->viewable_fields($contact) as $f) {
+        foreach ($rrow->viewable_fields($contact, true) as $f) {
+            if (!$f->test_exists($rrow)) {
+                $rvalues->warning_at($f->short_id, "This review field is currently hidden by a field condition and is not visible to others.");
+            }
             $fv = $rrow->fields[$f->order];
-            $reqstr = $rvalues ? $rvalues->req[$f->short_id] ?? null : null;
+            $reqstr = $rvalues->req[$f->short_id] ?? null;
             $f->print_web_edit($fv, $reqstr, $rvalues, ["format" => $fi]);
         }
         echo "</div>\n";
@@ -484,7 +487,7 @@ Ready\n";
     }
 
     function print_form(PaperInfo $prow, ReviewInfo $rrow_in = null, Contact $viewer,
-                       ReviewValues $rvalues = null) {
+                        ReviewValues $rvalues) {
         $rrow = $rrow_in ?? ReviewInfo::make_blank($prow, $viewer);
         self::check_review_author_seen($prow, $rrow, $viewer);
 
@@ -588,9 +591,10 @@ Ready\n";
 
         // blind?
         if ($this->conf->review_blindness() === Conf::BLIND_OPTIONAL) {
+            $blind = !!($rvalues->req["blind"] ?? $rrow->reviewBlind);
             echo '<div class="rge"><h3 class="rfehead checki"><label class="revfn">',
                 Ht::hidden("has_blind", 1),
-                '<span class="checkc">', Ht::checkbox("blind", 1, ($rvalues ? !!($rvalues->req["blind"] ?? null) : $rrow->reviewBlind)), '</span>',
+                '<span class="checkc">', Ht::checkbox("blind", 1, $blind), '</span>',
                 "Anonymous review</label></h3>\n",
                 '<div class="field-d">', htmlspecialchars($this->conf->short_name), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>",
                 "</div>\n";
@@ -627,7 +631,8 @@ Ready\n";
     function unparse_review_json(Contact $viewer, PaperInfo $prow,
                                  ReviewInfo $rrow, $flags = 0) {
         self::check_review_author_seen($prow, $rrow, $viewer);
-        $editable = !($flags & self::RJ_NO_EDITABLE);
+        $editable = ($flags & self::RJ_NO_EDITABLE) === 0;
+        $my_review = $viewer->is_my_review($rrow);
 
         $rj = ["pid" => $prow->paperId, "rid" => (int) $rrow->reviewId];
         if ($rrow->reviewOrdinal) {
@@ -681,7 +686,7 @@ Ready\n";
         if ($showtoken) {
             $rj["review_token"] = encode_token((int) $rrow->reviewToken);
         }
-        if ($viewer->is_my_review($rrow)) {
+        if ($my_review) {
             $rj["my_review"] = true;
         }
         if ($viewer->contactId == $rrow->requestedBy) {
@@ -728,8 +733,7 @@ Ready\n";
                 if ($f->test_exists($rrow)) {
                     $rj[$f->uid()] = $f->unparse_json($fval);
                 } else if ($fval !== null
-                           && $fval !== ""
-                           && $viewer->can_administer($prow)) {
+                           && ($my_review || $viewer->can_administer($prow))) {
                     $hidden[] = $f->uid();
                 }
             }
@@ -819,10 +823,12 @@ Ready\n";
 }
 
 class ReviewValues extends MessageSet {
-    /** @var ReviewForm */
-    public $rf;
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
+    /** @var ReviewForm
+     * @readonly */
+    public $rf;
 
     /** @var ?string */
     public $text;
@@ -874,8 +880,8 @@ class ReviewValues extends MessageSet {
     private $no_notify = false;
 
     function __construct(ReviewForm $rf, $options = []) {
-        $this->rf = $rf;
         $this->conf = $rf->conf;
+        $this->rf = $rf;
         foreach (["no_notify"] as $k) {
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
@@ -1182,8 +1188,8 @@ class ReviewValues extends MessageSet {
         if (empty($this->req)) {
             return false;
         }
-        if (!$qreq->has_blind) {
-            $this->req["blind"] = $this->req["blind"] ?? 1;
+        if ($qreq->has_blind) {
+            $this->req["blind"] = $this->req["blind"] ?? 0;
         }
         if ($override) {
             $this->req["override"] = 1;
@@ -1510,10 +1516,11 @@ class ReviewValues extends MessageSet {
         $any_fval_diffs = false;
         $wc = 0;
         foreach ($this->rf->all_fields() as $f) {
-            if (!$f->test_exists($rrow)) {
+            $exists = $f->test_exists($rrow);
+            list($old_fval, $fval) = $this->fvalues($f, $rrow);
+            if (!$exists && $old_fval === null) {
                 continue;
             }
-            list($old_fval, $fval) = $this->fvalues($f, $rrow);
             if ($fval === false) {
                 $fval = $old_fval;
             } else {
@@ -1527,15 +1534,17 @@ class ReviewValues extends MessageSet {
             }
             $fval_diffs = $fval !== $old_fval
                 && (!is_string($fval) || $fval !== cleannl($old_fval ?? ""));
-            $any_fval_diffs = $any_fval_diffs || $fval_diffs;
             if ($fval_diffs || !$rrow->reviewId) {
                 $rrow->set_fval_prop($f, $fval, $fval_diffs);
             }
-            if ($f->include_word_count()) {
-                $wc += count_words($fval ?? "");
-            }
-            if ($view_score < $f->view_score && $fval !== null) {
-                $view_score = $f->view_score;
+            if ($exists) {
+                $any_fval_diffs = $any_fval_diffs || $fval_diffs;
+                if ($f->include_word_count()) {
+                    $wc += count_words($fval ?? "");
+                }
+                if ($view_score < $f->view_score && $fval !== null) {
+                    $view_score = $f->view_score;
+                }
             }
         }
 
@@ -1633,7 +1642,7 @@ class ReviewValues extends MessageSet {
             }
             // do not notify on updates within 3 hours, except fresh submits
             if ($newstatus >= ReviewInfo::RS_COMPLETED
-                && $diffinfo->view_score > VIEWSCORE_ADMINONLY
+                && $diffinfo->view_score > VIEWSCORE_REVIEWERONLY
                 && !$this->no_notify) {
                 if (!$rrow->reviewNotified
                     || $rrow->reviewNotified < $notification_bound

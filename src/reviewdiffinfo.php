@@ -28,7 +28,8 @@ class ReviewDiffInfo {
     /** @param ReviewField $f */
     function mark_field($f) {
         $this->_fields[] = $f;
-        $this->mark_view_score($f->view_score);
+        $view_score = $f->test_exists($this->rrow) ? $f->view_score : VIEWSCORE_REVIEWERONLY;
+        $this->mark_view_score($view_score);
     }
 
     /** @param int $view_score */

@@ -2972,7 +2972,8 @@ class PaperTable {
             if (!$this->user->can_clickthrough("review", $this->prow)) {
                 self::print_review_clickthrough();
             }
-            $this->conf->review_form()->print_form($this->prow, $this->editrrow, $this->user, $this->review_values);
+            $rvalues = $this->review_values ?? new ReviewValues($this->conf->review_form());
+            $this->conf->review_form()->print_form($this->prow, $this->editrrow, $this->user, $rvalues);
         } else {
             $this->print_rc([$this->editrrow], false);
         }
@@ -2995,27 +2996,30 @@ class PaperTable {
         $this->all_rrows = $this->prow->reviews_as_display();
         $this->viewable_rrows = [];
         $rf = $this->conf->review_form();
-        $unresolved_fields = $this->admin ? [] : $rf->all_fields();
+        $unneeded_fields = $this->admin ? [] : $rf->all_fields();
         foreach ($this->all_rrows as $rrow) {
             if ($this->user->can_view_review($this->prow, $rrow)) {
                 $this->viewable_rrows[] = $rrow;
-                if (!empty($unresolved_fields)) {
+                if (!empty($unneeded_fields)) {
                     $bound = $this->user->view_score_bound($this->prow, $rrow);
-                    $this_resolved_fields = [];
-                    foreach ($unresolved_fields as $f) {
+                    $viewable_fields = [];
+                    foreach ($unneeded_fields as $f) {
                         if ($f->view_score > $bound
-                            && ($fv = $rrow->fval($f)) !== null)
-                            $this_resolved_fields[] = $f;
+                            && ($fv = $rrow->fields[$f->order]) !== null
+                            && ($f->test_exists($rrow)
+                                || $this->user->is_my_review($rrow))) {
+                            $viewable_fields[] = $f;
+                        }
                     }
-                    foreach ($this_resolved_fields as $f) {
-                        unset($unresolved_fields[$f->short_id]);
+                    foreach ($viewable_fields as $f) {
+                        unset($unneeded_fields[$f->short_id]);
                     }
                 }
             }
         }
         $fj = [];
         foreach ($rf->all_fields() as $f) {
-            if (!isset($unresolved_fields[$f->short_id])) {
+            if (!isset($unneeded_fields[$f->short_id])) {
                 $fj[] = $f->export_json(ReviewField::UJ_EXPORT);
             }
         }

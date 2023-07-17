@@ -456,12 +456,12 @@ abstract class ReviewField implements JsonSerializable {
 
     /** @param ?string $id
      * @param ?string $label_for
-     * @param ?ReviewValues $rvalues
+     * @param ReviewValues $rvalues
      * @param ?array{name_html?:string,label_class?:string} $args */
     protected function print_web_edit_open($id, $label_for, $rvalues, $args = null) {
         echo '<div class="rf rfe" data-rf="', $this->uid(),
             '"><h3 class="',
-            $rvalues ? $rvalues->control_class($this->short_id, "rfehead") : "rfehead";
+            $rvalues->control_class($this->short_id, "rfehead");
         if ($id !== null) {
             echo '" id="', $id;
         }
@@ -476,10 +476,7 @@ abstract class ReviewField implements JsonSerializable {
         if (($rd = self::visibility_description($this->view_score)) !== "") {
             echo '<div class="field-visibility">(', $rd, ')</div>';
         }
-        echo '</h3>';
-        if ($rvalues) {
-            echo $rvalues->feedback_html_at($this->short_id);
-        }
+        echo '</h3>', $rvalues->feedback_html_at($this->short_id);
         if ($this->description) {
             echo '<div class="field-d">', $this->description, "</div>";
         }
@@ -487,7 +484,7 @@ abstract class ReviewField implements JsonSerializable {
 
     /** @param int|string $fval
      * @param ?string $reqstr
-     * @param ?ReviewValues $rvalues
+     * @param ReviewValues $rvalues
      * @param array{format:?TextFormat} $args */
     abstract function print_web_edit($fval, $reqstr, $rvalues, $args);
 
