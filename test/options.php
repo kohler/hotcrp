@@ -18,3 +18,4 @@ $Opt["disablePrintEmail"] = true;
 $Opt["postfixEOL"] = "\n";
 $Opt["contactdbDsn"] = "mysql://hotcrp_testdb:m5LuaN23j26g@localhost/hotcrp_testdb_cdb";
 $Opt["obsoletePasswordInterval"] = 1;
+$Opt["include"][] = "?test/localoptions.php";
