@@ -11368,7 +11368,7 @@ handle_ui.on("js-profile-token-delete", function () {
 handle_ui.on("js-acceptish-review", function (evt) {
     evt.preventDefault();
     $.ajax(this.formAction || this.action, {
-        method: "POST", data: $(this.form).serialize(),
+        method: "POST", data: $(this.form || this).serialize(),
         success: function (data) {
             var url = location.href, rsr = data && data.review_site_relative;
             if (rsr) {
