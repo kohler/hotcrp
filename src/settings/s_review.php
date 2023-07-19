@@ -112,7 +112,7 @@ class Review_SettingParser extends SettingParser {
         $sv->print_radio_table("review_blind", [Conf::BLIND_ALWAYS => "Yes, reviews are anonymous",
                    Conf::BLIND_NEVER => "No, reviewer names are visible to authors",
                    Conf::BLIND_OPTIONAL => "Depends: reviewers decide whether to expose their names"],
-            '<strong>Review anonymity:</strong> Can authors see reviewer names?');
+            '<strong>Review anonymity:</strong> Are reviewer names hidden from authors?');
     }
 
     /** @param SettingValues $sv
