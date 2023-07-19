@@ -1274,35 +1274,32 @@ class PaperList {
         $this->_reviewer_user = $user;
     }
 
-    /** @param int $contactId
+    /** @param int $uid
      * @return string */
-    function _content_pc($contactId) {
-        $pc = $this->conf->pc_member_by_id($contactId);
-        return $pc ? $this->user->reviewer_html_for($pc) : "";
+    function user_content($uid) {
+        $u = $uid > 0 ? $this->conf->user_by_id($uid, USER_SLICE) : null;
+        return $u ? $this->user->reviewer_html_for($u) : "";
     }
 
-    /** @param int $contactId
+    /** @param int $uid
      * @return string */
-    function _text_pc($contactId) {
-        $pc = $this->conf->pc_member_by_id($contactId);
-        return $pc ? $this->user->reviewer_text_for($pc) : "";
+    function user_text($uid) {
+        $u = $uid > 0 ? $this->conf->user_by_id($uid, USER_SLICE) : null;
+        return $u ? $this->user->reviewer_text_for($u) : "";
     }
 
-    /** @param int $contactId1
-     * @param int $contactId2
+    /** @param int $uid1
+     * @param int $uid2
      * @param int $ianno */
-    function _compare_pc($contactId1, $contactId2, $ianno) {
-        assert(!!$ianno);
-        $pc1 = $this->conf->pc_member_by_id($contactId1);
-        $pc2 = $this->conf->pc_member_by_id($contactId2);
-        if ($pc1 === $pc2) {
-            return $contactId1 - $contactId2;
-        } else if (!$pc1 || !$pc2) {
-            return $pc1 ? -1 : 1;
-        } else {
-            $as = Contact::get_sorter($pc1, $ianno);
-            $bs = Contact::get_sorter($pc2, $ianno);
+    function user_compare($uid1, $uid2, $ianno) {
+        $u1 = $uid1 > 0 ? $this->conf->user_by_id($uid1, USER_SLICE) : null;
+        $u2 = $uid2 > 0 ? $this->conf->user_by_id($uid2, USER_SLICE) : null;
+        if ($u1 && $u2 && $u1 !== $u2) {
+            $as = Contact::get_sorter($u1, $ianno);
+            $bs = Contact::get_sorter($u2, $ianno);
             return $this->conf->collator()->compare($as, $bs);
+        } else {
+            return $uid1 <=> $uid2;
         }
     }
 
