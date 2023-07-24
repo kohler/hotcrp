@@ -2,10 +2,6 @@
 // csv.php -- HotCRP CSV parsing functions
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
-if (!function_exists("gmp_init")) {
-    require_once(SiteLoader::find("lib/polyfills.php"));
-}
-
 class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {
     /** @var list<string> */
     private $a;
@@ -709,6 +705,7 @@ class CsvGenerator {
     const TYPE_PIPE = 1;
     const TYPE_TAB = 2;
     const TYPE_STRING = 3;
+
     const FLAG_TYPE = 3;
     const FLAG_ALWAYS_QUOTE = 8;
     const FLAG_CRLF = 16;
@@ -718,6 +715,10 @@ class CsvGenerator {
     const FLAG_HEADERS = 256;
     const FLAG_HTTP_HEADERS = 512;
     const FLAG_FLUSHED = 1024;
+    const FLAG_ERROR = 2048;
+
+    const FLUSH_TRIGGER = 10000000;   // 10 MB
+    const FLUSH_JOINLIMIT = 12000000; // 12 MB
 
     /** @var int */
     private $type;
@@ -824,7 +825,6 @@ class CsvGenerator {
     function set_header($header) {
         assert(empty($this->lines) && ($this->flags & self::FLAG_FLUSHED) === 0);
         $this->headerline = "";
-        $this->lines_length = 0;
         if (!empty($header)) {
             assert(!$this->selection || count($header) <= count($this->selection));
             $this->add_row($header);
@@ -832,6 +832,7 @@ class CsvGenerator {
         if (!empty($this->lines)) {
             $this->headerline = $this->lines[0];
             $this->lines = [];
+            $this->lines_length = 0;
             $this->flags |= self::FLAG_HEADERS;
         }
         return $this;
@@ -916,32 +917,46 @@ class CsvGenerator {
                 }
             }
         }
-        if ($this->stream !== false) {
-            $n = 0;
+        if ($this->stream !== false
+            && ($this->headerline !== "" || !empty($this->lines))) {
+            $nw = $nwx = 0;
             if ($this->headerline !== "") {
-                $n += fwrite($this->stream, $this->headerline);
-                $this->flags |= self::FLAG_FLUSHED;
+                $nw += fwrite($this->stream, $this->headerline);
+                $nwx += strlen($this->headerline);
+                $this->headerline = "";
             }
-            if (!empty($this->lines)) {
-                if ($this->lines_length <= 10000000) {
-                    $n += fwrite($this->stream, join("", $this->lines));
+            while (!empty($this->lines)) {
+                if ($this->lines_length <= self::FLUSH_JOINLIMIT) {
+                    $s = join("", $this->lines);
+                    $j = count($this->lines);
                 } else {
-                    foreach ($this->lines as $line) {
-                        $n += fwrite($this->stream, $line);
+                    $s = "";
+                    $j = 0;
+                    while ($j !== count($this->lines) && strlen($s) < self::FLUSH_TRIGGER) {
+                        $s .= $this->lines[$j];
+                        ++$j;
                     }
                 }
+                $nw += fwrite($this->stream, $s);
+                $nwx += strlen($s);
+                $this->lines = array_slice($this->lines, $j);
+                $this->lines_length -= strlen($s);
             }
-            $this->headerline = "";
-            $this->lines = [];
-            $this->lines_length = 0;
-            $this->stream_length += $n;
+            error_log(count($this->lines) . " " . $this->lines_length);
+            assert(empty($this->lines) && $this->lines_length === 0);
+            $this->stream_length += $nw;
+            $this->flags |= self::FLAG_FLUSHED;
+            if ($nw !== $nwx) {
+                error_log("failed to write CSV: " . debug_string_backtrace());
+                $this->flags |= self::FLAG_ERROR;
+            }
         }
     }
 
     /** @param string $text
      * @return $this */
     function add_string($text) {
-        if ($this->lines_length >= 10000000 && $this->stream !== false) {
+        if ($this->lines_length >= self::FLUSH_TRIGGER && $this->stream !== false) {
             $this->flush();
         }
         $this->lines[] = $text;
