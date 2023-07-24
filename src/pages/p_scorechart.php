@@ -62,10 +62,9 @@ class Scorechart_Page {
      * @param string $text
      * @param bool $cacheable */
     static function fail($status, $text, $cacheable) {
-        header("HTTP/1.0 $status");
+        header("HTTP/1.0 {$status}");
         header("Content-Type: text/plain; charset=utf-8");
-        if (!function_exists("zlib_get_coding_type")
-            || zlib_get_coding_type() === false) {
+        if (!Filer::skip_content_length_header()) {
             header("Content-Length: " . (strlen($text) + 2));
         }
         if ($cacheable) {

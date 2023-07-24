@@ -716,6 +716,8 @@ class CsvGenerator {
     const FLAG_HTTP_HEADERS = 512;
     const FLAG_FLUSHED = 1024;
     const FLAG_ERROR = 2048;
+    const FLAG_WILL_EMIT = 4096;
+    const FLAG_COMPLETING = 8192;
 
     const FLUSH_TRIGGER = 10000000;   // 10 MB
     const FLUSH_JOINLIMIT = 12000000; // 12 MB
@@ -748,6 +750,7 @@ class CsvGenerator {
     private $comment = "# ";
     /** @var ?bool */
     private $inline;
+    /** @var ?string */
     private $filename;
 
     /** @param string $text
@@ -841,7 +844,7 @@ class CsvGenerator {
     /** @param resource $stream
      * @return $this */
     function set_stream($stream) {
-        assert($this->stream === null);
+        assert($this->stream === null && ($this->flags & self::FLAG_WILL_EMIT) === 0);
         $this->stream = $stream;
         return $this;
     }
@@ -863,6 +866,14 @@ class CsvGenerator {
      * @return $this */
     function set_inline($inline) {
         $this->inline = $inline;
+        return $this;
+    }
+
+    /** @param bool $emit
+     * @return $this */
+    function set_will_emit($emit) {
+        assert($this->stream === null);
+        $this->flags = ($this->flags & ~self::FLAG_WILL_EMIT) | ($emit ? self::FLAG_WILL_EMIT : 0);
         return $this;
     }
 
@@ -904,12 +915,14 @@ class CsvGenerator {
     function flush() {
         if ($this->stream === null) {
             $this->stream = false;
-            if (($dir = Filer::docstore_tmpdir() ?? tempdir())) {
+            if (($this->flags & self::FLAG_WILL_EMIT) !== 0) {
+                $this->stream = fopen("php://output", "wb");
+            } else if (($dir = Filer::docstore_tmpdir() ?? tempdir())) {
                 if (!str_ends_with($dir, "/")) {
                     $dir .= "/";
                 }
                 for ($i = 0; $i !== 100; ++$i) {
-                    $fn = $dir . "csvtmp-" . time() . "-" . mt_rand(0, 99999999) . ".csv";
+                    $fn = sprintf("%scsvtmp-%d-%08d.csv", $dir, time(), mt_rand(0, 99999999));
                     if (($this->stream = @fopen($fn, "xb"))) {
                         $this->stream_filename = $fn;
                         break;
@@ -917,39 +930,51 @@ class CsvGenerator {
                 }
             }
         }
-        if ($this->stream !== false
-            && ($this->headerline !== "" || !empty($this->lines))) {
-            $nw = $nwx = 0;
-            if ($this->headerline !== "") {
-                $nw += fwrite($this->stream, $this->headerline);
-                $nwx += strlen($this->headerline);
-                $this->headerline = "";
+        if ($this->stream === false) {
+            return;
+        }
+        if (($this->flags & (self::FLAG_WILL_EMIT | self::FLAG_HTTP_HEADERS)) === self::FLAG_WILL_EMIT) {
+            $this->export_headers();
+            header("Content-Type: " . $this->mimetype_with_charset());
+            if (($this->flags & self::FLAG_COMPLETING) === 0) {
+                // signal to NGINX that buffering is a waste of time
+                header("X-Accel-Buffering: no");
+            } else if (!Filer::skip_content_length_header()) {
+                header("Content-Length: " . (strlen($this->headerline) + $this->lines_length));
             }
-            while (!empty($this->lines)) {
-                if ($this->lines_length <= self::FLUSH_JOINLIMIT) {
-                    $s = join("", $this->lines);
-                    $j = count($this->lines);
-                } else {
-                    $s = "";
-                    $j = 0;
-                    while ($j !== count($this->lines) && strlen($s) < self::FLUSH_TRIGGER) {
-                        $s .= $this->lines[$j];
-                        ++$j;
-                    }
+        }
+        $nw = $nwx = 0;
+        if ($this->headerline !== "") {
+            $nw += fwrite($this->stream, $this->headerline);
+            $nwx += strlen($this->headerline);
+            $this->headerline = "";
+        }
+        while (!empty($this->lines)) {
+            if ($this->lines_length <= self::FLUSH_JOINLIMIT) {
+                $s = join("", $this->lines);
+                $j = count($this->lines);
+            } else {
+                $s = "";
+                $j = 0;
+                while ($j !== count($this->lines) && strlen($s) < self::FLUSH_TRIGGER) {
+                    $s .= $this->lines[$j];
+                    ++$j;
                 }
-                $nw += fwrite($this->stream, $s);
-                $nwx += strlen($s);
-                $this->lines = array_slice($this->lines, $j);
-                $this->lines_length -= strlen($s);
             }
-            error_log(count($this->lines) . " " . $this->lines_length);
-            assert(empty($this->lines) && $this->lines_length === 0);
-            $this->stream_length += $nw;
-            $this->flags |= self::FLAG_FLUSHED;
-            if ($nw !== $nwx) {
-                error_log("failed to write CSV: " . debug_string_backtrace());
-                $this->flags |= self::FLAG_ERROR;
-            }
+            $nw += fwrite($this->stream, $s);
+            $nwx += strlen($s);
+            $this->lines = array_slice($this->lines, $j);
+            $this->lines_length -= strlen($s);
+        }
+        assert(empty($this->lines) && $this->lines_length === 0);
+        $this->stream_length += $nw;
+        $this->flags |= self::FLAG_FLUSHED;
+        if ($nw !== $nwx) {
+            error_log("failed to write CSV: " . debug_string_backtrace());
+            $this->flags |= self::FLAG_ERROR;
+        }
+        if (($this->flags & (self::FLAG_WILL_EMIT | self::FLAG_COMPLETING)) === self::FLAG_WILL_EMIT) {
+            fflush($this->stream);
         }
     }
 
@@ -1123,13 +1148,17 @@ class CsvGenerator {
     }
 
     function emit() {
+        $this->flags |= self::FLAG_COMPLETING;
         if (($this->flags & self::FLAG_HTTP_HEADERS) === 0) {
             $this->export_headers();
         }
         if ($this->stream) {
-            assert(!!$this->stream_filename);
             $this->flush();
-            Filer::download_file($this->stream_filename, $this->mimetype_with_charset());
+            if ($this->stream_filename) {
+                Filer::download_file($this->stream_filename, $this->mimetype_with_charset());
+            } else {
+                assert(($this->flags & self::FLAG_WILL_EMIT) !== 0);
+            }
         } else {
             Filer::download_string($this->unparse(), $this->mimetype_with_charset());
         }

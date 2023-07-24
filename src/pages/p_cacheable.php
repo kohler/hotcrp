@@ -1,6 +1,6 @@
 <?php
 // pages/p_cacheable.php -- HotCRP cacheability helper
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Cacheable_Page {
     static function cacheable_headers() {
@@ -8,14 +8,18 @@ class Cacheable_Page {
         header("Expires: " . gmdate("D, d M Y H:i:s", time() + 315576000) . " GMT");
     }
 
+    static function skip_content_length_header() {
+        // see also Filer::skip_content_length_header
+        return function_exists("zlib_get_coding_type") && zlib_get_coding_type() !== false;
+    }
+
     /** @param string $status
      * @param string $text
      * @param bool $cacheable */
     static function fail($status, $text, $cacheable) {
-        header("HTTP/1.0 $status");
+        header("HTTP/1.0 {$status}");
         header("Content-Type: text/plain; charset=utf-8");
-        if (!function_exists("zlib_get_coding_type")
-            || zlib_get_coding_type() === false) {
+        if (!self::skip_content_length_header()) {
             header("Content-Length: " . (strlen($text) + 2));
         }
         if ($cacheable) {
@@ -89,16 +93,10 @@ class Cacheable_Page {
         }
 
         $last_modified = gmdate("D, d M Y H:i:s", $mtime) . " GMT";
-        $etag = '"' . md5("$file $last_modified") . '"';
-        header("Last-Modified: $last_modified");
-        header("ETag: $etag");
-        self::cacheable_headers();
-
-        if (function_exists("zlib_get_coding_type")) {
-            $zlib_type = zlib_get_coding_type();
-        } else {
-            $zlib_type = false;
-        }
+        $etag = '"' . md5("{$file} {$last_modified}") . '"';
+        header("Last-Modified: {$last_modified}");
+        header("ETag: {$etag}");
+        $skip_length = self::skip_content_length_header();
 
         // check for a conditional request
         $if_modified_since = $_SERVER["HTTP_IF_MODIFIED_SINCE"] ?? null;
@@ -107,13 +105,13 @@ class Cacheable_Page {
             && (!$if_modified_since || $if_modified_since === $last_modified)
             && (!$if_none_match || $if_none_match === $etag)) {
             header("HTTP/1.0 304 Not Modified");
-        } else if (function_exists("ob_gzhandler") && $zlib_type === false) {
+        } else if (function_exists("ob_gzhandler") && !$skip_length) {
             ob_start("ob_gzhandler");
             echo $prefix;
             readfile($file);
             ob_end_flush();
         } else {
-            if ($zlib_type === false) {
+            if (!$skip_length) {
                 header("Content-Length: " . (filesize($file) + strlen($prefix)));
             }
             echo $prefix;

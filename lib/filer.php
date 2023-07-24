@@ -188,7 +188,7 @@ class Filer {
             }
             if (empty($rs)) {
                 header("HTTP/1.1 416 Range Not Satisfiable");
-                header("Content-Range: bytes */$filesize");
+                header("Content-Range: bytes */{$filesize}");
                 return false;
             }
             $opts["range"] = $rs;
@@ -196,9 +196,16 @@ class Filer {
         return true;
     }
 
+    /** @return bool */
+    static function skip_content_length_header() {
+        // see also Cacheable_Page::skip_content_length_header
+        return zlib_get_coding_type() !== false;
+    }
+
     /** @param int $filesize
      * @param string $mimetype
-     * @param array $opts */
+     * @param array $opts
+     * @return Generator<array{int,int}> */
     static function download_ranges($filesize, $mimetype, $opts) {
         if (isset($opts["etag"])) {
             header("ETag: " . $opts["etag"]);
@@ -207,33 +214,33 @@ class Filer {
         $rangeheader = [];
         if ($opts["head"] ?? false) {
             header("HTTP/1.1 204 No Content");
-            header("Content-Type: $mimetype");
-            header("Content-Length: $filesize");
+            header("Content-Type: {$mimetype}");
+            header("Content-Length: {$filesize}");
             header("Accept-Ranges: bytes");
             return;
         } else if (!isset($range)) {
             $outsize = $filesize;
-            header("Content-Type: $mimetype");
+            header("Content-Type: {$mimetype}");
             header("Accept-Ranges: bytes");
         } else if (count($range) === 1) {
             $outsize = $range[0][1] - $range[0][0];
             header("HTTP/1.1 206 Partial Content");
-            header("Content-Type: $mimetype");
-            header("Content-Range: bytes {$range[0][0]}-" . ($range[0][1] - 1) . "/$filesize");
+            header("Content-Type: {$mimetype}");
+            header("Content-Range: bytes {$range[0][0]}-" . ($range[0][1] - 1) . "/{$filesize}");
         } else {
             $boundary = "HotCRP-" . base64_encode(random_bytes(18));
             $outsize = 0;
             foreach ($range as $r) {
-                $rangeheader[] = "--$boundary\r\nContent-Type: $mimetype\r\nContent-Range: bytes {$r[0]}-" . ($r[1] - 1) . "/$filesize\r\n\r\n";
+                $rangeheader[] = "--{$boundary}\r\nContent-Type: {$mimetype}\r\nContent-Range: bytes {$r[0]}-" . ($r[1] - 1) . "/{$filesize}\r\n\r\n";
                 $outsize += $r[1] - $r[0];
             }
-            $rangeheader[] = "--$boundary--\r\n";
+            $rangeheader[] = "--{$boundary}--\r\n";
             header("HTTP/1.1 206 Partial Content");
-            header("Content-Type: multipart/byteranges; boundary=$boundary");
+            header("Content-Type: multipart/byteranges; boundary={$boundary}");
             $outsize += strlen(join("", $rangeheader));
         }
-        if (zlib_get_coding_type() === false) {
-            header("Content-Length: $outsize");
+        if (!self::skip_content_length_header()) {
+            header("Content-Length: {$outsize}");
         }
         if ($outsize > 2000000) {
             header("X-Accel-Buffering: no");
@@ -275,8 +282,8 @@ class Filer {
                     if (isset($opts["etag"])) {
                         header("ETag: " . $opts["etag"]);
                     }
-                    header("Content-Type: $mimetype");
-                    header("X-Accel-Redirect: $dar" . substr($filename, strlen($dsp)));
+                    header("Content-Type: {$mimetype}");
+                    header("X-Accel-Redirect: {$dar}" . substr($filename, strlen($dsp)));
                     return;
                 }
             }

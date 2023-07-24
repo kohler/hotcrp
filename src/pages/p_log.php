@@ -194,7 +194,7 @@ class Log_Page {
         assert(Contact::ROLE_PC === 1 && Contact::ROLE_ADMIN === 2 && Contact::ROLE_CHAIR === 4);
         $role_map = ["", "pc", "sysadmin", "pc sysadmin", "chair", "chair", "chair", "chair"];
 
-        $csvg = $this->conf->make_csvg("log");
+        $csvg = $this->conf->make_csvg("log")->set_will_emit(true);
         $narrow = true;
         $headers = ["date", "ipaddr", "email"];
         if ($narrow) {
@@ -202,6 +202,7 @@ class Log_Page {
         }
         array_push($headers, "affected_email", "via", $narrow ? "paper" : "papers", "action");
         $csvg->select($headers);
+        set_time_limit(300); // might take a while
         foreach ($leg->page_rows(1) as $row) {
             $date = date("Y-m-d H:i:s O", (int) $row->timestamp);
             $xusers = $leg->users_for($row, "contactId");
