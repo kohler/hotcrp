@@ -7979,7 +7979,7 @@ hotcrp.suggest.add_builder("suggest-emoji", function (elt) {
 });
 
 hotcrp.suggest.add_builder("mentions", function (elt, hintinfo) {
-    var x = completion_split(elt), precaret, m;
+    var x = completion_split(elt), precaret, m, prom;
     if (!x) {
         return null;
     }
@@ -7994,7 +7994,14 @@ hotcrp.suggest.add_builder("mentions", function (elt, hintinfo) {
         return null;
     }
     m = x[1].match(/^(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*/u);
-    return demand_load.mentions().then(make_suggestions(precaret, m[0], {prefix: "@", ml: Math.min(2, precaret.length), smart_punctuation: true, limit_replacement: true}));
+    prom = demand_load.mentions();
+    if (elt.form.elements.visibility
+        && elt.form.elements.visibility.value !== "au") {
+        prom = prom.then(function (l) {
+            return l.filter(function (x) { return !x.au; });
+        });
+    }
+    return prom.then(make_suggestions(precaret, m[0], {prefix: "@", ml: Math.min(2, precaret.length), smart_punctuation: true, limit_replacement: true}));
 });
 
 

@@ -126,7 +126,7 @@ class ManualAssign_Page {
         foreach ($reviewer->aucollab_matchers() as $matcher) {
             $text = "match:\"" . str_replace("\"", "", $matcher->name(NAME_P|NAME_A)) . "\"";
             $hlsearch[] = "au" . $text;
-            if (!$matcher->nonauthor && $this->conf->setting("sub_collab")) {
+            if (!$matcher->is_nonauthor() && $this->conf->setting("sub_collab")) {
                 $hlsearch[] = "co" . $text;
             }
         }

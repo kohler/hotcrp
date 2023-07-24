@@ -961,7 +961,7 @@ class PaperTable {
                 }
             } else {
                 $au = $contacts[] = new Author($u);
-                $au->nonauthor = true;
+                $au->status = Author::STATUS_NONAUTHOR;
             }
             $au->contactId = $u->contactId;
         }

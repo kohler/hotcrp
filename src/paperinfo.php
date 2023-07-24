@@ -1285,7 +1285,7 @@ class PaperInfo {
             foreach ($this->_row_set->collaborator_matchers($cu->user) as $m) {
                 $m = clone $m;
                 $m->contactId = $cu->contactId;
-                $m->nonauthor = true;
+                $m->status = Author::STATUS_NONAUTHOR;
                 $m->author_index = $cu->author_index;
                 yield $m;
             }
@@ -1299,7 +1299,7 @@ class PaperInfo {
         if ($this->field_match_pregexes($user->aucollab_general_pregexes(), "authorInformation")) {
             foreach ($this->author_list() as $au) {
                 foreach ($user->aucollab_matchers() as $userm) {
-                    if (($why = $userm->test($au, $userm->nonauthor))) {
+                    if (($why = $userm->test($au, $userm->is_nonauthor()))) {
                         if (!$callback) {
                             return true;
                         }
@@ -1339,10 +1339,10 @@ class PaperInfo {
      * @param string $why */
     function _potential_conflict_html_callback($user, $userm, $cflt, $why) {
         $cfltm = AuthorMatcher::make($cflt);
-        if ($userm->nonauthor) {
+        if ($userm->is_nonauthor()) {
             $userdesc = "<em>collaborator</em> " . $cfltm->highlight($userm);
             $order0 = 4;
-        } else if ($cflt->nonauthor) {
+        } else if ($cflt->is_nonauthor()) {
             $userdesc = $cfltm->highlight($userm);
             $order0 = 2;
         } else if ($why === AuthorMatcher::MATCH_AFFILIATION) {
@@ -1359,9 +1359,9 @@ class PaperInfo {
             $order = PHP_INT_MAX - 1;
             $cfltdesc = "<em>contact"
                 . ($cflt->email ? " " . htmlspecialchars($cflt->email) : "")
-                . ($cflt->nonauthor ? " collaborator" : "")
+                . ($cflt->is_nonauthor() ? " collaborator" : "")
                 . "</em> " . $userm->highlight($cflt);
-        } else if ($cflt->nonauthor) {
+        } else if ($cflt->is_nonauthor()) {
             $order = $cflt->author_index | (2 << 24);
             if (($aucflt = $this->author_by_index($cflt->author_index))) {
                 $cfltdesc = "<em>author " . $aucflt->name_h() . "’s collaborator</em> " . $userm->highlight($cflt);

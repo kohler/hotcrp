@@ -23,10 +23,16 @@ class Author {
     public $disablement = 0;
     /** @var ?int */
     public $conflictType;
-    /** @var ?bool */
-    public $nonauthor;
+    /** @var ?int */
+    public $status;
     /** @var ?int */
     public $author_index;
+
+    const STATUS_AUTHOR = 1;
+    const STATUS_REVIEWER = 2;
+    const STATUS_ANONYMOUS_REVIEWER = 3;
+    const STATUS_PC = 4;
+    const STATUS_NONAUTHOR = 5;
 
     const COLLABORATORS_INDEX = -200;
 
@@ -264,6 +270,11 @@ class Author {
     function is_conflicted() {
         assert($this->conflictType !== null);
         return $this->conflictType > CONFLICT_MAXUNCONFLICTED;
+    }
+
+    /** @return bool */
+    function is_nonauthor() {
+        return $this->status === self::STATUS_NONAUTHOR;
     }
 
     /** @param Author|Contact $x

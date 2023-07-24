@@ -1,6 +1,6 @@
 <?php
 // mentionparser.php -- HotCRP helper class for parsing mentions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class MentionParser {
     /** @param string $s
@@ -9,7 +9,7 @@ class MentionParser {
     static function parse($s, ...$user_lists) {
         $pos = 0;
         $len = strlen($s);
-        $isascii = null;
+        $isascii = $collator = $strength = null;
         while (($pos = strpos($s, "@", $pos)) !== false) {
             // check that the mention is isolated on the left
             if (($pos > 0
@@ -44,112 +44,104 @@ class MentionParser {
             }
 
             // check names
-            if (self::word_at($s, $pos + 1, $isascii, $m)) {
-                $collator = new Collator("en_US.utf8");
-                $w = $m[1];
-                $strength = $isascii || is_usascii($w) ? Collator::PRIMARY : Collator::SECONDARY;
-                $collator->setStrength($strength);
-
-                // Match the first word
-                $uset = [];
-                foreach ($user_lists as $listindex => $ulist) {
-                    foreach ($ulist as $u) {
-                        if ($u->firstName === "" && $u->lastName === "") {
-                            continue;
-                        }
-                        $fn = $u->firstName === "" ? "" : "{$u->firstName} ";
-                        $n = $fn . ($u->lastName === "" ? "" : "{$u->lastName} ");
-                        if (strpos($n, ".") !== false) {
-                            $fn = preg_replace('/\.\s*/', " ", $fn);
-                            $n = preg_replace('/\.\s*/', " ", $n);
-                        }
-                        $ux = [$u, $n, 0, strlen($fn === "" ? $n : $fn), $listindex];
-                        if (self::match_word($ux, $w, $collator)
-                            && !self::matches_contain($uset, $u->contactId)) {
-                            $uset[] = $ux;
-                        }
-                    }
-                }
-                $endpos = $pos + 1 + strlen($w);
-                $pos2 = $pos + 1 + strlen($m[0]);
-                $best_ux = $best_pos2 = $best_endpos = null;
-
-                // Match remaining words until there are no more words or there's
-                // exactly one match
-                while (count($uset) > 1 && self::word_at($s, $pos2, $isascii, $m)) {
-                    if (count($user_lists) > 1) {
-                        usort($uset, function ($a, $b) {
-                            return $a[4] <=> $b[4];
-                        });
-                        // One of the remaining matches has higher priority than the others.
-                        // Remember it in case the next word fails to match anything.
-                        if ($uset[0][4] < $uset[1][4]) {
-                            $best_ux = $uset[0][0];
-                            $best_pos2 = $pos2;
-                            $best_endpos = $endpos;
-                        } else {
-                            $best_ux = null;
-                        }
-                    }
-
-                    $w = $m[1];
-                    $xstrength = $isascii || is_usascii($w) ? Collator::PRIMARY : Collator::SECONDARY;
-                    if ($xstrength !== $strength) {
-                        $collator->setStrength($xstrength);
-                        $strength = $xstrength;
-                    }
-                    $xuset = [];
-                    foreach ($uset as $ux) {
-                        if (self::match_word($ux, $w, $collator)) {
-                            $xuset[] = $ux;
-                        }
-                    }
-                    $uset = $xuset;
-                    $endpos = $pos2 + strlen($w);
-                    $pos2 = $pos2 + strlen($m[0]);
-                }
-
-                // If exactly one match, consume remaining matching words until done
-                while (count($uset) === 1 && self::word_at($s, $pos2, $isascii, $m)) {
-                    $w = $m[1];
-                    $xstrength = $isascii || is_usascii($w) ? Collator::PRIMARY : Collator::SECONDARY;
-                    if ($xstrength !== $strength) {
-                        $collator->setStrength($xstrength);
-                        $strength = $xstrength;
-                    }
-                    if (!self::match_word($uset[0], $w, $collator)) {
-                        break;
-                    }
-                    $endpos = $pos2 + strlen($w);
-                    $pos2 = $pos2 + strlen($m[0]);
-                }
-
-                // If we ended with no matches but there was one best match at some
-                // point, select that
-                if (count($uset) === 0 && $best_ux !== null) {
-                    $uset = [[$best_ux]];
-                    $pos2 = $best_pos2;
-                    $endpos = $best_endpos;
-                }
-
-                // Yield result if any
-                if (count($uset) === 1
-                    && self::mention_ends_at($s, $endpos)) {
-                    $ux = $uset[0][0];
-                    // Heuristic to include the period after an initial
-                    if ($endpos < $len
-                        && $s[$endpos] === "."
-                        && $endpos - $pos >= 2
-                        && strpos($ux->firstName . $ux->lastName, substr($s, $endpos - 1, 2)) !== false) {
-                        ++$endpos;
-                    }
-                    yield [$ux, $pos, $endpos];
-                }
-
-                $pos = $pos2;
-            } else {
-                $pos += 1;
+            if (!self::word_at($s, $pos + 1, $isascii, $m)) {
+                ++$pos;
+                continue;
             }
+
+            $w = $m[1];
+            $collator = $collator ?? new Collator("en_US.utf8");
+            self::set_strength($collator, $strength, $isascii || is_usascii($w) ? Collator::PRIMARY : Collator::SECONDARY);
+
+            // Match the first word
+            $uset = [];
+            foreach ($user_lists as $listindex => $ulist) {
+                foreach ($ulist as $u) {
+                    if ($u->firstName === "" && $u->lastName === "") {
+                        continue;
+                    }
+                    $fn = $u->firstName === "" ? "" : "{$u->firstName} ";
+                    $n = $fn . ($u->lastName === "" ? "" : "{$u->lastName} ");
+                    if (strpos($n, ".") !== false) {
+                        $fn = preg_replace('/\.\s*/', " ", $fn);
+                        $n = preg_replace('/\.\s*/', " ", $n);
+                    }
+                    $ux = [$u, $n, 0, strlen($fn === "" ? $n : $fn), $listindex];
+                    if (self::match_word($ux, $w, $collator)
+                        && !self::matches_contain($uset, $u->contactId)) {
+                        $uset[] = $ux;
+                    }
+                }
+            }
+
+            // Match remaining words until there are no more words or there's
+            // exactly one match
+            $endpos = $pos + 1 + strlen($w);
+            $pos2 = $pos + 1 + strlen($m[0]);
+            $best_ux = $best_pos2 = $best_endpos = null;
+            while (count($uset) > 1 && self::word_at($s, $pos2, $isascii, $m)) {
+                if (count($user_lists) > 1) {
+                    usort($uset, function ($a, $b) {
+                        return $a[4] <=> $b[4];
+                    });
+                    // One of the remaining matches has higher priority than the others.
+                    // Remember it in case the next word fails to match anything.
+                    if ($uset[0][4] < $uset[1][4]) {
+                        $best_ux = $uset[0][0];
+                        $best_pos2 = $pos2;
+                        $best_endpos = $endpos;
+                    } else {
+                        $best_ux = null;
+                    }
+                }
+
+                $w = $m[1];
+                self::set_strength($collator, $strength, $isascii || is_usascii($w) ? Collator::PRIMARY : Collator::SECONDARY);
+                $xuset = [];
+                foreach ($uset as $ux) {
+                    if (self::match_word($ux, $w, $collator)) {
+                        $xuset[] = $ux;
+                    }
+                }
+                $uset = $xuset;
+                $endpos = $pos2 + strlen($w);
+                $pos2 = $pos2 + strlen($m[0]);
+            }
+
+            // If exactly one match, consume remaining matching words until done
+            while (count($uset) === 1 && self::word_at($s, $pos2, $isascii, $m)) {
+                $w = $m[1];
+                self::set_strength($collator, $strength, $isascii || is_usascii($w) ? Collator::PRIMARY : Collator::SECONDARY);
+                if (!self::match_word($uset[0], $w, $collator)) {
+                    break;
+                }
+                $endpos = $pos2 + strlen($w);
+                $pos2 = $pos2 + strlen($m[0]);
+            }
+
+            // If we ended with no matches but there was one best match at some
+            // point, select that
+            if (count($uset) === 0 && $best_ux !== null) {
+                $uset = [[$best_ux]];
+                $pos2 = $best_pos2;
+                $endpos = $best_endpos;
+            }
+
+            // Yield result if any
+            if (count($uset) === 1
+                && self::mention_ends_at($s, $endpos)) {
+                $ux = $uset[0][0];
+                // Heuristic to include the period after an initial
+                if ($endpos < $len
+                    && $s[$endpos] === "."
+                    && $endpos - $pos >= 2
+                    && strpos($ux->firstName . $ux->lastName, substr($s, $endpos - 1, 2)) !== false) {
+                    ++$endpos;
+                }
+                yield [$ux, $pos, $endpos];
+            }
+
+            $pos = $pos2;
         }
     }
 
@@ -201,6 +193,16 @@ class MentionParser {
             }
         }
         return false;
+    }
+
+    /** @param Collator $collator
+     * @param ?int &$strength
+     * @param int $xstrength */
+    static private function set_strength($collator, &$strength, $xstrength) {
+        if ($xstrength !== $strength) {
+            $collator->setStrength($xstrength);
+            $strength = $xstrength;
+        }
     }
 
     /** @param list<array{Contact|Author,string,int,int,int}> $uxs

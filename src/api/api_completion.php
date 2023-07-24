@@ -211,11 +211,18 @@ class Completion_API {
     /** @param Contact $user
      * @param ?PaperInfo $prow
      * @param int $cvis
+     * @param bool $include_all
      * @return list<list<Contact|Author>> */
-    static function mention_lists($user, $prow, $cvis) {
-        $lists = [];
+    static function mention_lists($user, $prow, $cvis, $include_all = false) {
+        $alist = $rlist = $pclist = [];
+
+        if ($prow
+            && $user->can_view_authors($prow)
+            && $cvis >= CommentInfo::CTVIS_AUTHOR) {
+            $alist = $prow->contact_list();
+        }
+
         if ($prow && $user->can_view_review_assignment($prow, null)) {
-            $rlist = [];
             $prow->ensure_reviewer_names();
             $xview = $user->conf->time_some_external_reviewer_view_comment();
             foreach ($prow->reviews_as_display() as $rrow) {
@@ -228,9 +235,7 @@ class Completion_API {
                     $au = new Author;
                     $au->lastName = "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
                     $au->contactId = $rrow->contactId;
-                    if (!$viewid) {
-                        $au->author_index = -1;
-                    }
+                    $au->status = $viewid ? Author::STATUS_REVIEWER : Author::STATUS_ANONYMOUS_REVIEWER;
                     $rlist[] = $au;
                 }
                 if ($viewid
@@ -242,24 +247,29 @@ class Completion_API {
             }
             // XXX todo: list previous commentees in privileged position?
             // XXX todo: list lead and shepherd?
-            if (!empty($rlist)) {
-                $lists[] = $rlist;
-            }
         }
+
         if ($user->can_view_pc()) {
             if (!$prow || !$user->conf->check_track_view_sensitivity()) {
                 $pclist = $user->conf->enabled_pc_members();
             } else {
-                $pclist = [];
                 foreach ($user->conf->pc_members() as $p) {
                     if ($p->disablement === 0
                         && $p->can_pc_view_paper_track($prow))
                         $pclist[] = $p;
                 }
             }
-            if (!empty($pclist)) {
-                $lists[] = $pclist;
-            }
+        }
+
+        $lists = [];
+        if ($include_all || !empty($alist)) {
+            $lists[] = $alist;
+        }
+        if ($include_all || !empty($rlist)) {
+            $lists[] = $rlist;
+        }
+        if ($include_all || !empty($pclist)) {
+            $lists[] = $pclist;
         }
         return $lists;
     }
@@ -268,13 +278,24 @@ class Completion_API {
      * @param ?PaperInfo $prow */
     static function mentioncompletion_api(Contact $user, $qreq, $prow) {
         $comp = [];
-        $mlists = self::mention_lists($user, $prow, CommentInfo::CTVIS_AUTHOR);
+        $mlists = self::mention_lists($user, $prow, CommentInfo::CTVIS_AUTHOR, true);
+        $aunames = [];
         foreach ($mlists as $i => $mlist) {
-            $skey = $i ? "sm1" : "s";
-            $pr1 = $i === 0 && count($mlists) > 1;
+            $skey = $i === 2 ? "sm1" : "s";
             foreach ($mlist as $au) {
                 $n = Text::name($au->firstName, $au->lastName, $au->email, NAME_P);
-                $comp[] = $pr1 ? [$skey => $n, "pri" => 1] : [$skey => $n];
+                $x = [$skey => $n];
+                if ($i === 0) {
+                    $x["au"] = true;
+                    if (in_array($n, $aunames)) { // duplicate contact names are common
+                        continue;
+                    }
+                    $aunames[] = $n;
+                }
+                if ($i < 2) {
+                    $x["pri"] = 1;
+                }
+                $comp[] = $x;
             }
         }
         return ["ok" => true, "mentioncompletion" => array_values($comp)];

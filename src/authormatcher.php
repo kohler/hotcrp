@@ -189,7 +189,7 @@ class AuthorMatcher extends Author {
         if ($x !== "" && strcasecmp($x, "none") !== 0) {
             $m = new AuthorMatcher;
             $m->assign_string($x);
-            $m->nonauthor = true;
+            $m->status = Author::STATUS_NONAUTHOR;
             return $m;
         } else {
             return null;
