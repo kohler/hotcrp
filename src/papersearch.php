@@ -461,7 +461,12 @@ class PaperSearch extends MessageSet {
                     || $this->conf->unnamed_submission_round()->time_update(true))) {
                 $limit = "all";
             } else if ($user->isPC) {
-                $limit = $user->can_view_some_incomplete() ? "active" : "s";
+                if ($user->can_view_some_incomplete()
+                    && $user->conf->can_pc_view_some_incomplete()) {
+                    $limit = "active";
+                } else {
+                    $limit = "s";
+                }
             } else if (!$user->is_reviewer()) {
                 $limit = "a";
             } else if (!$user->is_author()) {

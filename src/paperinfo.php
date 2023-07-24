@@ -412,7 +412,7 @@ class PaperInfo {
     public $timeWithdrawn = 0;
     /** @var int */
     public $outcome = 0;
-    /** @var int */
+    /** @var -2|-1|0|1 */
     public $outcome_sign = 0;
     /** @var int */
     public $leadContactId = 0;

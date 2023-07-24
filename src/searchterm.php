@@ -1210,11 +1210,11 @@ class Limit_SearchTerm extends SearchTerm {
                 return ($row->timeSubmitted > 0
                         || ($row->timeWithdrawn <= 0
                             && $row->submission_round()->incomplete_viewable))
-                    && ($row->outcome_sign >= 0
+                    && ($row->outcome_sign !== -2
                         || !$user->can_view_decision($row));
             }
         case "active":
-            return $row->outcome_sign >= 0
+            return $row->outcome_sign !== -2
                 || !$user->can_view_decision($row);
         case "accepted":
             return $row->outcome > 0
