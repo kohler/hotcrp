@@ -204,13 +204,10 @@ class Selector_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         $pl->mark_has("sel");
         $c = $this->checked($pl, $row) ? " checked" : "";
-        if ($row->_search_group !== null) {
-            $c .= " data-range-group=\"g{$row->_search_group}\"";
-        }
         return "<span class=\"pl_rownum fx6\">{$pl->count}. </span><input type=\"checkbox\" class=\"uic uikd js-range-click js-selector ignore-diff\" name=\"pap[]\" value=\"{$row->paperId}\"{$c} aria-label=\"#{$row->paperId}\">";
     }
     static function group_content($groupno) {
-        return "<input type=\"checkbox\" class=\"uic uikd js-range-click ignore-diff is-range-group\" data-range-type=\"pap[]\" data-range-group=\"g{$groupno}\" aria-label=\"Select group\">";
+        return "<input type=\"checkbox\" class=\"uic uikd js-range-click ignore-diff is-range-group\" data-range-type=\"pap[]\" data-range-group=\"auto\" aria-label=\"Select group\">";
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $this->checked($pl, $row) ? "Y" : "N";

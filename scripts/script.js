@@ -2025,15 +2025,28 @@ handle_ui.on("js-range-click", function (evt) {
         return;
     }
 
-    function range_group_match(e, g) {
-        var eg;
-        return !g
-            || (eg = e.getAttribute("data-range-group")) === g
-            || (eg && eg.length > g.length && eg.split(" ").includes(g));
+    var lastgidx = 0;
+    function range_group_match(e, g, gelt) {
+        var i, eg;
+        if (g === "auto") {
+            if (cbs[lastgidx] !== gelt) {
+                for (lastgidx = 0; cbs[lastgidx] && cbs[lastgidx] !== gelt; ++lastgidx) {
+                }
+            }
+            for (i = lastgidx + 1; cbs[i] && !cbisg[i]; ++i) {
+                if (cbs[i] === e)
+                    return true;
+            }
+            return false;
+        } else {
+            return !g
+                || (eg = e.getAttribute("data-range-group")) === g
+                || (eg && eg.length > g.length && eg.split(" ").includes(g));
+        }
     }
 
     // handle click
-    var group = false, single_clicked = false, j;
+    var group = null, gelt = null, single_clicked = false, j;
     if (evt.type === "click") {
         rangeclick_state.__clicking__ = true;
 
@@ -2041,6 +2054,7 @@ handle_ui.on("js-range-click", function (evt) {
             i = 0;
             j = cbs.length - 1;
             group = this.getAttribute("data-range-group");
+            gelt = this;
         } else {
             rangeclick_state[kind] = this;
             if (evt.shiftKey && lastelt) {
@@ -2061,7 +2075,7 @@ handle_ui.on("js-range-click", function (evt) {
         for (; i <= j; ++i) {
             if (!cbisg[i]
                 && cbs[i].checked !== this.checked
-                && range_group_match(cbs[i], group))
+                && range_group_match(cbs[i], group, gelt))
                 $(cbs[i]).trigger("click");
         }
 
@@ -2073,12 +2087,12 @@ handle_ui.on("js-range-click", function (evt) {
     // update groups
     for (j = 0; j !== cbgs.length; ++j) {
         group = cbgs[j].getAttribute("data-range-group");
-        if (single_clicked && !range_group_match(single_clicked, group))
+        if (single_clicked && !range_group_match(single_clicked, group, cbgs[j]))
             continue;
 
         var state = null;
         for (i = 0; i !== cbs.length; ++i) {
-            if (!cbisg[i] && range_group_match(cbs[i], group)) {
+            if (!cbisg[i] && range_group_match(cbs[i], group, cbgs[j])) {
                 if (state === null)
                     state = cbs[i].checked;
                 else if (state !== cbs[i].checked) {
