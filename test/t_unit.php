@@ -1080,6 +1080,7 @@ class Unit_Tester {
         xassert_eqq((Text::split_name("C. Von La Le Goues"))[1], "Von La Le Goues");
         xassert_eqq(Text::analyze_von("Von Le Goues"), null);
         xassert_eqq(Text::analyze_von("von le Goues"), ["von le", "Goues"]);
+        xassert_eqq((Text::split_name("Amir Al Sadi"))[1], "Al Sadi");
     }
 
     function test_prefix_suffix() {

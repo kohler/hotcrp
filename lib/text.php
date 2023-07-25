@@ -76,7 +76,7 @@ class Text {
         if ($firstName !== "" && $lastName !== "") {
             if (($flags & (NAME_L | NAME_PARSABLE)) === NAME_PARSABLE
                 && substr_count($lastName, " ") !== 0
-                && !preg_match('/\A(?:v[oa]n |d[eu] )?\S+(?: jr\.?| sr\.?| i+v?i*)?\z/i', $lastName)) {
+                && !preg_match('/\A(?:v[oa]n |d[eu] |al )?\S+(?: jr\.?| sr\.?| i+v?i*)?\z/i', $lastName)) {
                 $flags |= NAME_L;
             }
             if (($flags & NAME_I) !== 0
@@ -226,7 +226,7 @@ class Text {
             $ret[1] = substr($m[1], $space + 1) . $m[2] . $paren;
             // see also split_von
             if (strpos($ret[0], " ") !== false
-                && preg_match('/\A(\S.*?)((?: (?:v[ao]n|d[aeiu]|de[nr]|l[ae]))+)\z/i', $ret[0], $m)) {
+                && preg_match('/\A(\S.*?)((?: (?:v[ao]n|d[aeiu]|de[nr]|l[ae]|al))+)\z/i', $ret[0], $m)) {
                 list($ret[0], $ret[1]) = [$m[1], ltrim($m[2]) . " " . $ret[1]];
             }
         } else if ($m[1] !== ""
