@@ -215,15 +215,28 @@ class Selector_PaperColumn extends PaperColumn {
 }
 
 class Title_PaperColumn extends PaperColumn {
-    private $has_decoration = false;
+    /** @var bool */
+    private $want_decoration = true;
+    /** @var bool */
+    private $want_pdf = true;
+    /** @var bool */
     private $highlight = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
+    function add_decoration($decor) {
+        if ($decor === "plain" || $decor === "bare") {
+            $this->want_decoration = $this->want_pdf = false;
+            return $this->__add_decoration("plain");
+        } else {
+            return parent::add_decoration($decor);
+        }
+    }
     function prepare(PaperList $pl, $visible) {
-        $this->has_decoration = $pl->user->can_view_tags(null)
+        $this->want_decoration = $this->want_decoration
+            && $pl->user->can_view_tags(null)
             && $pl->conf->tags()->has_decoration;
-        if ($this->has_decoration) {
+        if ($this->want_decoration) {
             $pl->qopts["tags"] = 1;
         }
         $this->highlight = $pl->search->field_highlighter("ti");
@@ -234,8 +247,6 @@ class Title_PaperColumn extends PaperColumn {
         return $collator->compare($a->title, $b->title);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $t = '<a href="' . $pl->_paperLink($row) . '" class="ptitle taghl';
-
         if ($row->title !== "") {
             $highlight_text = Text::highlight($row->title, $this->highlight, $highlight_count);
         } else {
@@ -246,16 +257,19 @@ class Title_PaperColumn extends PaperColumn {
         if (!$highlight_count && ($format = $row->title_format())) {
             $pl->need_render = true;
             $th = htmlspecialchars($row->title);
-            $t .= " need-format\" data-format=\"{$format}\" data-title=\"{$th}";
+            $klass_extra = " need-format\" data-format=\"{$format}\" data-title=\"{$th}";
+        } else {
+            $klass_extra = "";
         }
 
-        $t .= '">' . $highlight_text . '</a>'
-            . $pl->_contentDownload($row);
-
-        if ($this->has_decoration && (string) $row->paperTags !== "") {
+        $link = $pl->_paperLink($row);
+        $t = "<a href=\"{$link}\" class=\"ptitle taghl{$klass_extra}\">{$highlight_text}</a>";
+        if ($this->want_pdf) {
+            $t .= $pl->_contentDownload($row);
+        }
+        if ($this->want_decoration && (string) $row->paperTags !== "") {
             $t .= $row->decoration_html($pl->user, $pl->row_tags, $pl->row_tags_override);
         }
-
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {

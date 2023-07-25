@@ -81,6 +81,35 @@ class Column {
     }
 
     /** @param string $decor
+     * @return int|false */
+    function decoration_index($decor) {
+        $l = strlen($decor);
+        foreach ($this->decorations ?? [] as $i => $s) {
+            if (str_starts_with($s, $decor)
+                && (strlen($s) === $l || $s[$l] === "=")) {
+                return $i;
+            }
+        }
+        return false;
+    }
+
+    /** @return bool */
+    function has_decoration($decor) {
+        return $this->decoration_index($decor) !== false;
+    }
+
+    /** @return ?string */
+    function decoration_value($decor) {
+        if (($i = $this->decoration_index($decor)) !== false) {
+            $s = $this->decorations[$i];
+            $l = strlen($decor);
+            return strlen($s) === $l ? "" : substr($s, $l + 1);
+        } else {
+            return null;
+        }
+    }
+
+    /** @param string $decor
      * @return bool */
     function add_decoration($decor) {
         if ($decor === "row" || $decor === "column") {
@@ -130,11 +159,21 @@ class Column {
      * @param ?list<string> $remove
      * @return true */
     protected function __add_decoration($add, $remove = []) {
-        if (!empty($remove)) {
-            $this->decorations = array_values(array_diff($this->decorations ?? [], $remove));
+        foreach ($remove as $s) {
+            if (($i = $this->decoration_index($s)) !== false) {
+                array_splice($this->decorations, $i, 1);
+            }
         }
-        if ($add !== null && $add !== "" && !in_array($add, $this->decorations ?? [])) {
-            $this->decorations[] = $add;
+        if ($add !== null && $add !== "") {
+            $addx = $add;
+            if (($eq = strpos($add, "=")) !== false) {
+                $addx = substr($add, 0, $eq);
+            }
+            if (($i = $this->decoration_index($addx)) !== false) {
+                $this->decorations[$i] = $add;
+            } else {
+                $this->decorations[] = $add;
+            }
         }
         return true;
     }
