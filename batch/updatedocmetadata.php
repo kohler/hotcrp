@@ -20,7 +20,7 @@ class UpdateDocMetadata_Batch {
 
 
     private function run_images() {
-        $result = $this->conf->qe("select " . PaperInfo::document_query() . " from PaperStorage where mimetype like 'image/%'");
+        $result = $this->conf->qe("select " . $this->conf->document_query_fields() . " from PaperStorage where mimetype like 'image/%'");
         $docs = [];
         while (($doc = DocumentInfo::fetch($result, $this->conf))) {
             $docs[] = $doc;
@@ -60,9 +60,23 @@ class UpdateDocMetadata_Batch {
         }
     }
 
+    private function run_pdf() {
+        $result = $this->conf->qe("select " . $this->conf->document_query_fields() . " from PaperStorage where mimetype='application/pdf'");
+        $docs = [];
+        while (($doc = DocumentInfo::fetch($result, $this->conf))) {
+            $docs[] = $doc;
+        }
+        Dbl::free($result);
+        while (!empty($docs)) {
+            $doc = array_pop($docs);
+            $doc->npages();
+        }
+    }
+
     /** @return int */
     function run() {
         $this->run_images();
+        $this->run_pdf();
         return 0;
     }
 

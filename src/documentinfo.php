@@ -38,6 +38,12 @@ class DocumentInfo implements JsonSerializable {
     public $originalStorageId;
     /** @var int */
     public $inactive = 0;
+    /** @var ?int */
+    private $npages;
+    /** @var ?int */
+    private $width;
+    /** @var ?int */
+    private $height;
 
     /** @var ?string */
     private $content;
@@ -1513,6 +1519,17 @@ class DocumentInfo implements JsonSerializable {
     /** @param string $prop
      * @param mixed $v */
     function set_prop($prop, $v) {
+        if (($prop === "npages" || $prop === "width" || $prop === "height")
+            && $this->conf->sversion >= 276) {
+            assert(is_int($v));
+            if ($this->$prop === $v) {
+                return;
+            }
+            $this->_old_prop = $this->_old_prop ?? [];
+            $this->_old_prop[$prop] = $this->$prop;
+            $this->$prop = $v;
+            $v = null;
+        }
         $m = $this->metadata();
         if (($m->$prop ?? null) !== $v) {
             $this->_old_prop["metadata"] = $this->_old_prop["metadata"] ?? (object) [];
@@ -1587,11 +1604,24 @@ class DocumentInfo implements JsonSerializable {
         $this->_old_prop = null;
     }
 
+    function load_metadata() {
+        if ($this->paperStorageId > 0) {
+            $row = Dbl::fetch_first_object($this->conf->dblink,
+                    "select " . $this->conf->document_metadata_query_fields() . " from PaperStorage where paperId=? and paperStorageId=?",
+                    $this->paperId, $this->paperStorageId)
+                ?? (object) ["infoJson" => null, "npages" => -1, "width" => -1, "height" => -1];
+            foreach ((array) $row as $prop => $v) {
+                $this->$prop = $v;
+            }
+            $this->_metadata = null;
+        }
+    }
+
     /** @return object */
     function metadata() {
         if ($this->_metadata === null) {
             if ($this->infoJson === false && $this->paperStorageId > 0) {
-                $this->infoJson = Dbl::fetch_value($this->conf->dblink, "select infoJson from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId);
+                $this->load_metadata();
             }
             $this->_metadata = ($this->infoJson ? json_decode($this->infoJson) : null) ?? (object) [];
         }
@@ -1624,13 +1654,22 @@ class DocumentInfo implements JsonSerializable {
     function npages(CheckFormat $cf = null) {
         if ($this->mimetype && $this->mimetype !== "application/pdf") {
             return null;
-        } else if (($m = $this->metadata()) && isset($m->npages)) {
-            return $m->npages;
-        } else {
+        }
+        if ($this->npages === null) {
+            $this->load_metadata();
+        }
+        if ($this->npages < 0 && $this->infoJson) {
+            $m = $this->metadata();
+            if (isset($m->npages) && is_int($m->npages)) {
+                $this->set_prop("npages", $m->npages);
+                $this->save_prop();
+            }
+        }
+        if ($this->npages < 0) {
             $cf = $cf ?? new CheckFormat($this->conf);
             $cf->check_document($this);
-            return $cf->npages;
         }
+        return $this->npages >= 0 ? $this->npages : null;
     }
 
     /** @param ?CheckFormat $cf

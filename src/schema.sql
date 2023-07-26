@@ -474,6 +474,9 @@ CREATE TABLE `PaperStorage` (
   `filterType` int(3) DEFAULT NULL,
   `originalStorageId` int(11) DEFAULT NULL,
   `inactive` tinyint(1) NOT NULL DEFAULT 0,
+  `npages` int(3) NOT NULL DEFAULT -1,
+  `width` int(8) NOT NULL DEFAULT -1,
+  `height` int(8) NOT NULL DEFAULT -1,
   PRIMARY KEY (`paperId`,`paperStorageId`),
   UNIQUE KEY `paperStorageId` (`paperStorageId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -618,7 +621,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 275, null),   -- schema version
+  ('allowPaperOption', 276, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

@@ -341,7 +341,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 275) {
+        if ($this->sversion < 276) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -3751,7 +3751,8 @@ class Conf {
     // Paper search
     //
 
-    function query_ratings() {
+    /** @return string */
+    function rating_signature_query() {
         if ($this->setting("rev_ratings") !== REV_RATINGS_NONE) {
             return "coalesce((select group_concat(contactId, ' ', rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId),'')";
         } else {
@@ -3759,9 +3760,22 @@ class Conf {
         }
     }
 
-    function query_all_reviewer_preference() {
+    /** @return string */
+    function all_reviewer_preference_query() {
         return "group_concat(contactId,' ',preference,' ',coalesce(expertise,'.'))";
     }
+
+    /** @return string */
+    function document_query_fields() {
+        return "paperId, paperStorageId, timestamp, mimetype, sha1, crc32, documentType, filename, infoJson, size, filterType, originalStorageId, inactive"
+            . ($this->sversion >= 276 ? ", npages, width, height" : "");
+    }
+
+    /** @return string */
+    function document_metadata_query_fields() {
+        return "infoJson" . ($this->sversion >= 276 ? ", npages, width, height" : "");
+    }
+
 
     /** @param array{paperId?:list<int>|PaperID_SearchTerm,where?:string} $options
      * @return Dbl_Result */
@@ -3908,7 +3922,7 @@ class Conf {
         }
 
         if ($options["allReviewerPreference"] ?? false) {
-            $cols[] = "coalesce((select " . $this->query_all_reviewer_preference() . " from PaperReviewPreference force index (primary) where PaperReviewPreference.paperId=Paper.paperId), '') allReviewerPreference";
+            $cols[] = "coalesce((select " . $this->all_reviewer_preference_query() . " from PaperReviewPreference force index (primary) where PaperReviewPreference.paperId=Paper.paperId), '') allReviewerPreference";
         }
 
         if ($options["allConflictType"] ?? false) {

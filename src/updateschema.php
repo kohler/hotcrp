@@ -2642,6 +2642,12 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             || $conf->sversion === 274) {
             $conf->update_schema_version(275);
         }
+        if ($conf->sversion === 275
+            && $conf->ql_ok("alter table PaperStorage add `npages` int(3) NOT NULL DEFAULT -1")
+            && $conf->ql_ok("alter table PaperStorage add `width` int(8) NOT NULL DEFAULT -1")
+            && $conf->ql_ok("alter table PaperStorage add `height` int(8) NOT NULL DEFAULT -1")) {
+            $conf->update_schema_version(276);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

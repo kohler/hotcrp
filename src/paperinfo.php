@@ -1998,7 +1998,7 @@ class PaperInfo {
             $prow->allReviewerPreference = "";
             $prow->_prefs_array = $prow->_pref1_cid = $prow->_pref1 = $prow->_desirability = null;
         }
-        $result = $this->conf->qe("select paperId, " . $this->conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId?a group by paperId", $row_set->paper_ids());
+        $result = $this->conf->qe("select paperId, " . $this->conf->all_reviewer_preference_query() . " from PaperReviewPreference where paperId?a group by paperId", $row_set->paper_ids());
         while ($result && ($row = $result->fetch_row())) {
             $prow = $row_set->get((int) $row[0]);
             $prow->allReviewerPreference = $row[1];
@@ -2210,17 +2210,6 @@ class PaperInfo {
         return $this->conf->options()->page_fields($this);
     }
 
-    /** @return string */
-    static function document_query() {
-        return "paperId, paperStorageId, timestamp, mimetype, sha1, crc32, documentType, filename, infoJson, size, filterType, originalStorageId, inactive";
-    }
-
-    /** @return string
-     * @deprecated */
-    static function document_sql() {
-        return self::document_query();
-    }
-
     /** @param int $dtype
      * @param int $did
      * @return ?DocumentInfo */
@@ -2266,7 +2255,7 @@ class PaperInfo {
         }
 
         if ($this->_document_array === null) {
-            $result = $this->conf->qe("select " . self::document_query() . " from PaperStorage where paperId=? and inactive=0", $this->paperId);
+            $result = $this->conf->qe("select " . $this->conf->document_query_fields() . " from PaperStorage where paperId=? and inactive=0", $this->paperId);
             $this->_document_array = [];
             while (($di = DocumentInfo::fetch($result, $this->conf, $this))) {
                 $this->_document_array[$di->paperStorageId] = $di;
@@ -2274,7 +2263,7 @@ class PaperInfo {
             Dbl::free($result);
         }
         if (!array_key_exists($did, $this->_document_array)) {
-            $result = $this->conf->qe("select " . self::document_query() . " from PaperStorage where paperStorageId=?", $did);
+            $result = $this->conf->qe("select " . $this->conf->document_query_fields() . " from PaperStorage where paperStorageId=?", $did);
             $this->_document_array[$did] = DocumentInfo::fetch($result, $this->conf, $this);
             Dbl::free($result);
         }
@@ -2287,7 +2276,7 @@ class PaperInfo {
             foreach ($this->_row_set as $prow) {
                 $psids[] = $prow->finalPaperStorageId <= 0 ? $prow->paperStorageId : $prow->finalPaperStorageId;
             }
-            $result = $this->conf->qe("select " . self::document_query() . " from PaperStorage where paperStorageId?a", $psids);
+            $result = $this->conf->qe("select " . $this->conf->document_query_fields() . " from PaperStorage where paperStorageId?a", $psids);
             while (($di = DocumentInfo::fetch($result, $this->conf))) {
                 if (($prow = $this->_row_set->get($di->paperId))) {
                     $di->prow = $prow;
@@ -2493,7 +2482,7 @@ class PaperInfo {
             $prow->_flags = ($prow->_flags & ~self::REVIEW_FLAGS) | self::REVIEW_HAS_FULL;
         }
 
-        $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
+        $result = $this->conf->qe("select PaperReview.*, " . $this->conf->rating_signature_query() . " ratingSignature from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
         while (($rrow = ReviewInfo::fetch($result, $row_set, $this->conf))) {
             $rrow->prow->_review_array[$rrow->reviewId] = $rrow;
         }
@@ -2686,7 +2675,7 @@ class PaperInfo {
         if ($this->_full_review_key === null
             && ($this->_flags & self::REVIEW_HAS_FULL) === 0) {
             $this->_full_review_key = "r$id";
-            $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId=? and reviewId=?", $this->paperId, $id);
+            $result = $this->conf->qe("select PaperReview.*, " . $this->conf->rating_signature_query() . " ratingSignature from PaperReview where paperId=? and reviewId=?", $this->paperId, $id);
             $rrow = ReviewInfo::fetch($result, $this, $this->conf);
             $this->_full_review = $rrow ? [$rrow] : [];
             Dbl::free($result);
@@ -2709,7 +2698,7 @@ class PaperInfo {
                 $prow->_full_review = [];
                 $prow->_full_review_key = "u$cid";
             }
-            $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId?a and contactId=? order by paperId, reviewId", $this->_row_set->paper_ids(), $cid);
+            $result = $this->conf->qe("select PaperReview.*, " . $this->conf->rating_signature_query() . " ratingSignature from PaperReview where paperId?a and contactId=? order by paperId, reviewId", $this->_row_set->paper_ids(), $cid);
             while (($rrow = ReviewInfo::fetch($result, $this->_row_set, $this->conf))) {
                 $rrow->prow->_full_review[] = $rrow;
             }
@@ -2728,7 +2717,7 @@ class PaperInfo {
         if ($this->_full_review_key === null
             && ($this->_flags & self::REVIEW_HAS_FULL) === 0) {
             $this->_full_review_key = "o$ordinal";
-            $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId=? and reviewOrdinal=?", $this->paperId, $ordinal);
+            $result = $this->conf->qe("select PaperReview.*, " . $this->conf->rating_signature_query() . " ratingSignature from PaperReview where paperId=? and reviewOrdinal=?", $this->paperId, $ordinal);
             $rrow = ReviewInfo::fetch($result, $this, $this->conf);
             $this->_full_review = $rrow ? [$rrow] : [];
             Dbl::free($result);
@@ -2755,7 +2744,7 @@ class PaperInfo {
 
     /** @return ?ReviewInfo */
     private function fresh_review_by($key, $value) {
-        $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId=? and {$key}=? order by paperId, reviewId", $this->paperId, $value);
+        $result = $this->conf->qe("select PaperReview.*, " . $this->conf->rating_signature_query() . " ratingSignature from PaperReview where paperId=? and {$key}=? order by paperId, reviewId", $this->paperId, $value);
         $rrow = ReviewInfo::fetch($result, $this, $this->conf);
         Dbl::free($result);
         return $rrow;
@@ -2953,7 +2942,7 @@ class PaperInfo {
         if ($ensure_rrow) {
             $ensure_rrow->ratingSignature = "";
         }
-        $result = $this->conf->qe("select paperId, reviewId, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId?a", $pids);
+        $result = $this->conf->qe("select paperId, reviewId, " . $this->conf->rating_signature_query() . " ratingSignature from PaperReview where paperId?a", $pids);
         while (($row = $result->fetch_row())) {
             $prow = $this->_row_set->get((int) $row[0]);
             if (($rrow = $prow->_review_array[(int) $row[1]] ?? null)) {

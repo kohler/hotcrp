@@ -828,7 +828,7 @@ class ReviewInfo implements JsonSerializable {
             } else if ($this->prow) {
                 $this->prow->ensure_review_ratings($this);
             } else {
-                $result = $this->conf->qe("select " . $this->conf->query_ratings() . " from PaperReview where paperId=? and reviewId=?", $this->paperId, $this->reviewId);
+                $result = $this->conf->qe("select " . $this->conf->rating_signature_query() . " from PaperReview where paperId=? and reviewId=?", $this->paperId, $this->reviewId);
                 $row = $result->fetch_row();
                 Dbl::free($result);
                 $this->ratingSignature = $row ? $row[0] : "";
