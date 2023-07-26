@@ -22,7 +22,8 @@ class FormatCheck_API {
                 "nwords" => $cf->nwords,
                 "result" => $cf->document_report($doc),
                 "problem_fields" => $cf->problem_fields(),
-                "has_error" => $cf->has_error()
+                "has_error" => $cf->has_error(),
+                "docid" => $doc->paperStorageId
             ];
         } else {
             return JsonResult::make_error(404, "<0>Document not found");
