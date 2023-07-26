@@ -13,6 +13,7 @@ class CheckFormat extends MessageSet {
     const RUN_ALLOWED = 2;
     const RUN_DESIRED = 4;
     const RUN_ATTEMPTED = 8;
+    const RUN_HAS_BANAL = 16;
 
     /** @var bool */
     const DEBUG = false;
@@ -23,6 +24,12 @@ class CheckFormat extends MessageSet {
     public $allow_run;
     /** @var array<string,FormatChecker> */
     private $fcheckers = [];
+    /** @var ?DocumentInfo */
+    private $last_doc;
+    /** @var ?FormatSpec */
+    private $last_spec;
+    /** @var ?object */
+    private $last_banal;
     /** @var ?string */
     public $banal_stdout;
     /** @var ?string */
@@ -37,8 +44,6 @@ class CheckFormat extends MessageSet {
     public $run_flags = 0;
     /** @var array<string,mixed> */
     public $metadata_updates = [];
-    /** @var ?FormatSpec */
-    private $last_spec;
 
     static private $banal_args;
     /** @var int */
@@ -132,7 +137,8 @@ class CheckFormat extends MessageSet {
      * @param int $flags
      * @return ?object */
     private function complete_banal_json($bj, $flags) {
-        $this->run_flags |= $flags;
+        $this->last_banal = $bj;
+        $this->run_flags |= $flags | self::RUN_HAS_BANAL;
         if ($bj) {
             $this->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
             $this->nwords = is_int($bj->w ?? null) ? $bj->w : null;
@@ -141,7 +147,12 @@ class CheckFormat extends MessageSet {
     }
 
     /** @return ?object */
-    function banal_json(DocumentInfo $doc, FormatSpec $spec) {
+    function banal_json() {
+        assert($this->last_doc !== null);
+        if (($this->run_flags & self::RUN_HAS_BANAL) !== 0) {
+            return $this->last_banal;
+        }
+
         $allow_run = $this->allow_run;
         if ($allow_run === CheckFormat::RUN_IF_NECESSARY_TIMEOUT
             && Conf::$blocked_time >= CheckFormat::TIMEOUT) {
@@ -149,8 +160,10 @@ class CheckFormat extends MessageSet {
         }
 
         // maybe extract cached banal JSON from document
+        $doc = $this->last_doc;
         $bj = null;
-        if (($metadata = $doc->metadata()) && isset($metadata->banal)) {
+        if (($metadata = $doc->metadata())
+            && isset($metadata->banal)) {
             $bj = self::validate_banal_json($metadata->banal);
         }
 
@@ -161,10 +174,10 @@ class CheckFormat extends MessageSet {
             && ($allow_run !== CheckFormat::RUN_ALWAYS
                 || $bj->at >= Conf::$now - 86400)
             && (!isset($bj->npages) /* i.e., banal JSON is not truncated */
-                || ($spec->timestamp
+                || ($this->last_spec->timestamp
                     && isset($bj->msx)
                     && is_array($bj->msx)
-                    && ($bj->msx[0] ?? null) === $spec->timestamp))) {
+                    && ($bj->msx[0] ?? null) === $this->last_spec->timestamp))) {
             // existing banal JSON should suffice
             $flags = $bj->at >= Conf::$now - 86400 ? 0 : CheckFormat::RUN_ALLOWED;
             return $this->complete_banal_json($bj, $flags);
@@ -235,11 +248,20 @@ class CheckFormat extends MessageSet {
         }
     }
 
+    /** @return ?int */
+    function npages() {
+        if ($this->npages === null) {
+            $this->banal_json();
+        }
+        return $this->npages;
+    }
+
 
     // CHECKING ORCHESTRATION
 
     function clear() {
         $this->clear_messages();
+        $this->last_doc = $this->last_banal = null;
         $this->npages = $this->nwords = null;
         $this->metadata_updates = [];
         $this->run_flags = 0;
@@ -293,6 +315,7 @@ class CheckFormat extends MessageSet {
                 $checker->prepare($this, $spec);
             }
         }
+        $this->last_doc = $doc;
         foreach ($checkers as $checker) {
             $checker->check($this, $spec, $doc);
         }
@@ -315,6 +338,7 @@ class CheckFormat extends MessageSet {
             }
         }
 
+        $this->last_doc = $this->last_banal = null;
         return !$this->has_error_at("error");
     }
 
@@ -408,7 +432,7 @@ class Default_FormatChecker implements FormatChecker {
 
     /** @return void */
     function check(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc) {
-        $bj = $cf->banal_json($doc, $spec);
+        $bj = $cf->banal_json();
         if (!$bj
             || !isset($bj->pages)
             || !isset($bj->papersize)
