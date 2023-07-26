@@ -52,6 +52,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @var ?object */
     private $_metadata;
+    /** @var ?CommentInfo */
     private $_owner;
     /** @var ?string */
     public $sourceHash;
@@ -61,6 +62,8 @@ class DocumentInfo implements JsonSerializable {
     private $_member_filename;
     /** @var ?MessageSet */
     private $_ms;
+    /** @var ?array */
+    private $_old_prop;
 
     const LINKTYPE_COMMENT_BEGIN = 0;
     const LINKTYPE_COMMENT_END = 1024;
@@ -299,19 +302,17 @@ class DocumentInfo implements JsonSerializable {
         }
         $info = Mimetype::content_info($pfx, $this->mimetype);
         $this->mimetype = $info["type"];
-        if (isset($info["width"]) || isset($info["height"])) {
-            $this->_metadata = $this->metadata() ?? (object) [];
-            if (isset($info["width"])) {
-                $this->_metadata->width = $info["width"];
-            }
-            if (isset($info["height"])) {
-                $this->_metadata->height = $info["height"];
-            }
+        if (isset($info["width"])) {
+            $this->set_prop("width", $info["width"]);
+        }
+        if (isset($info["height"])) {
+            $this->set_prop("height", $info["height"]);
         }
     }
 
 
-    /** @return DocumentInfo */
+    /** @param ?CommentInfo $owner
+     * @return DocumentInfo */
     function with_owner($owner) {
         if ($this->_owner === null) {
             $this->_owner = $owner;
@@ -1509,55 +1510,101 @@ class DocumentInfo implements JsonSerializable {
         return ["", $suffix, $need_run];
     }
 
-    /** @return ?object */
-    function metadata() {
-        if ($this->_metadata === null && $this->infoJson !== null) {
-            if ($this->infoJson === false && $this->paperStorageId > 0) {
-                $this->infoJson = Dbl::fetch_value($this->conf->dblink, "select infoJson from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId);
+    /** @param string $prop
+     * @param mixed $v */
+    function set_prop($prop, $v) {
+        $m = $this->metadata();
+        if (($m->$prop ?? null) !== $v) {
+            $this->_old_prop["metadata"] = $this->_old_prop["metadata"] ?? (object) [];
+            $this->_old_prop["metadata"]->$prop = $m->$prop ?? null;
+            if ($v !== null) {
+                $m->$prop = $v;
+            } else {
+                unset($m->$prop);
             }
-            if ($this->infoJson) {
-                $this->_metadata = json_decode($this->infoJson);
-            }
-        }
-        return $this->_metadata;
-    }
-
-    /** @param string $key
-     * @param mixed $value */
-    function __set_metadata($key, $value) {
-        $this->metadata();
-        if ($this->_metadata === null) {
-            $this->_metadata = (object) [];
-        }
-        if ($value !== null) {
-            $this->_metadata->$key = $value;
-        } else {
-            unset($this->_metadata->$key);
         }
     }
 
     /** @return bool */
-    function update_metadata($delta, $quiet = false) {
-        if ($this->paperStorageId <= 1) {
+    function save_prop($quiet = false) {
+        if ($this->paperStorageId <= 1 || empty($this->_old_prop)) {
             return false;
         }
-        $length_ok = true;
-        $ijstr = Dbl::compare_and_swap($this->conf->dblink,
-            "select infoJson from PaperStorage where paperId=? and paperStorageId=?",
-            [$this->paperId, $this->paperStorageId],
-            function ($oldstr) use ($delta, &$length_ok) {
-                $newstr = json_object_replace_recursive($oldstr, $delta);
-                $length_ok = $newstr === null || strlen($newstr) <= 32768;
-                return $length_ok ? $newstr : $oldstr;
-            },
-            "update PaperStorage set infoJson=?{desired} where paperId=? and paperStorageId=? and infoJson?{expected}e",
-            [$this->paperId, $this->paperStorageId]);
-        $this->infoJson = $ijstr;
-        $this->_metadata = null;
-        if (!$length_ok && !$quiet) {
-            error_log(caller_landmark() . ": {$this->conf->dbname}: update_metadata(paper {$this->paperId}, dt {$this->documentType}): delta too long, delta " . json_encode($delta));
+        $qf = $qv = $metadata = [];
+        foreach ($this->_old_prop as $prop => $v) {
+            if ($prop === "metadata") {
+                $m = $this->metadata();
+                foreach ((array) $v as $prop1 => $v1) {
+                    $metadata[$prop1] = $m->$prop1 ?? null;
+                }
+            } else {
+                $qf[] = "{$prop}=?";
+                $qv[] = $this->$prop;
+            }
         }
-        return $length_ok;
+        $qv[] = $this->paperId;
+        $qv[] = $this->paperStorageId;
+        if (empty($metadata)) {
+            $result = $this->conf->qe("update PaperStorage set " . join(", ", $qf) . " where paperId=? and paperStorageId=?", ...$qv);
+            $ok = !Dbl::is_error($result);
+        } else {
+            $ok = true;
+            $qf[] = "infoJson=?{desired}";
+            $ijstr = Dbl::compare_and_swap($this->conf->dblink,
+                "select infoJson from PaperStorage where paperId=? and paperStorageId=?",
+                [$this->paperId, $this->paperStorageId],
+                function ($oldstr) use ($metadata, &$ok) {
+                    $newstr = json_object_replace_recursive($oldstr, $metadata);
+                    $ok = $newstr === null || strlen($newstr) <= 32768;
+                    return $ok ? $newstr : $oldstr;
+                },
+                "update PaperStorage set " . join(", ", $qf) . " where paperId=? and paperStorageId=? and infoJson?{expected}e",
+                $qv);
+            $this->infoJson = $ijstr;
+            $this->_metadata = null;
+            if (!$ok && !$quiet) {
+                error_log(caller_landmark() . ": {$this->conf->dbname}: save_prop(paper {$this->paperId}, dt {$this->documentType}): infoJson too long, delta " . json_encode($metadata));
+            }
+        }
+        return $ok;
+    }
+
+    function abort_prop() {
+        foreach ($this->_old_prop ?? [] as $prop => $v) {
+            if ($prop === "metadata") {
+                $m = $this->metadata();
+                foreach ((array) $v as $prop1 => $v1) {
+                    if ($v1 !== null) {
+                        $m->$prop1 = $v1;
+                    } else {
+                        unset($m->$prop1);
+                    }
+                }
+            } else {
+                $this->$prop = $v;
+            }
+        }
+        $this->_old_prop = null;
+    }
+
+    /** @return object */
+    function metadata() {
+        if ($this->_metadata === null) {
+            if ($this->infoJson === false && $this->paperStorageId > 0) {
+                $this->infoJson = Dbl::fetch_value($this->conf->dblink, "select infoJson from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId);
+            }
+            $this->_metadata = ($this->infoJson ? json_decode($this->infoJson) : null) ?? (object) [];
+        }
+        return $this->_metadata;
+    }
+
+    /** @return bool
+     * @deprecated */
+    function update_metadata($delta, $quiet = false) {
+        foreach ($delta as $prop => $v) {
+            $this->set_prop($prop, $v);
+        }
+        return $this->save_prop();
     }
 
     /** @return bool */

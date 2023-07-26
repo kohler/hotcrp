@@ -364,6 +364,11 @@ class PaperInfoSet implements IteratorAggregate, Countable {
             $this->prows[0]->ensure_full_reviews();
         }
     }
+    function ensure_primary_documents() {
+        if (!empty($this->prows)) {
+            $this->prows[0]->ensure_primary_documents();
+        }
+    }
 
     function prefetch_conflict_users() {
         if ($this->prefetched_conflict_users
@@ -464,11 +469,6 @@ class PaperInfo {
 
     // Obtained by joins from other tables
     /** @var ?string */
-    public $paper_infoJson;
-    /** @var ?string */
-    public $final_infoJson;
-
-    /** @var ?string */
     public $paperTags;
     /** @var ?string */
     public $optionIds;
@@ -562,7 +562,7 @@ class PaperInfo {
     /** @var ?array<int,PaperValue> */
     private $_base_option_array;
     /** @var ?DocumentInfo */
-    private $_join_document;
+    private $_primary_document;
     /** @var array<int,DocumentInfo> */
     private $_document_array;
     /** @var ?array<int,array<int,int>> */
@@ -2251,8 +2251,8 @@ class PaperInfo {
              || ($dtype === DTYPE_FINAL
                  && $did == $this->finalPaperStorageId))
             && !$full) {
-            if (!$this->_join_document) {
-                $args = [
+            if (!$this->_primary_document) {
+                $this->_primary_document = new DocumentInfo([
                     "paperStorageId" => $did,
                     "paperId" => $this->paperId,
                     "documentType" => $dtype,
@@ -2260,14 +2260,9 @@ class PaperInfo {
                     "mimetype" => $this->mimetype,
                     "hash" => $this->sha1,
                     "size" => $this->size ?? -1
-                ];
-                $infokey = $dtype === DTYPE_SUBMISSION ? "paper_infoJson" : "final_infoJson";
-                if (isset($this->$infokey)) {
-                    $args["infoJson"] = $this->$infokey;
-                }
-                $this->_join_document = new DocumentInfo($args, $this->conf, $this);
+                ], $this->conf, $this);
             }
-            return $this->_join_document;
+            return $this->_primary_document;
         }
 
         if ($this->_document_array === null) {
@@ -2284,6 +2279,23 @@ class PaperInfo {
             Dbl::free($result);
         }
         return $this->_document_array[$did];
+    }
+
+    function ensure_primary_documents() {
+        if (!$this->_primary_document && count($this->_row_set) > 1) {
+            $psids = [];
+            foreach ($this->_row_set as $prow) {
+                $psids[] = $prow->finalPaperStorageId <= 0 ? $prow->paperStorageId : $prow->finalPaperStorageId;
+            }
+            $result = $this->conf->qe("select " . self::document_query() . " from PaperStorage where paperStorageId?a", $psids);
+            while (($di = DocumentInfo::fetch($result, $this->conf))) {
+                if (($prow = $this->_row_set->get($di->paperId))) {
+                    $di->prow = $prow;
+                    $prow->_primary_document = $di;
+                }
+            }
+            Dbl::free($result);
+        }
     }
 
     /** @return ?DocumentInfo */
@@ -2342,7 +2354,7 @@ class PaperInfo {
     }
 
     function invalidate_documents() {
-        $this->_join_document = null;
+        $this->_primary_document = null;
         $this->_document_array = null;
     }
 
@@ -2405,6 +2417,7 @@ class PaperInfo {
     /** @param int $linkid
      * @param int $min
      * @param int $max
+     * @param ?CommentInfo $owner
      * @return DocumentInfoSet */
     function linked_documents($linkid, $min, $max, $owner = null) {
         $docs = new DocumentInfoSet;

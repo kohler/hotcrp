@@ -48,14 +48,12 @@ class UpdateDocMetadata_Batch {
             $upd = [];
             $m = $doc->metadata() ?? (object) [];
             if (isset($info["width"]) && !isset($m->width)) {
-                $upd["width"] = $info["width"];
+                $doc->set_prop("width", $info["width"]);
             }
             if (isset($info["height"]) && !isset($m->height)) {
-                $upd["height"] = $info["height"];
+                $doc->set_prop("height", $info["height"]);
             }
-            if (!empty($upd)) {
-                $doc->update_metadata($upd);
-            }
+            $doc->save_prop();
             if ($this->verbose && !empty($upd)) {
                 fwrite(STDERR, $doc->export_filename() . " [{$doc->filename} #{$doc->paperId}/{$doc->paperStorageId}]: " . (empty($upd) ? "-" : json_encode($upd)) . "\n");
             }

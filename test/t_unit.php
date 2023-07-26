@@ -112,21 +112,26 @@ class Unit_Tester {
         $paper1 = $user_chair->checked_paper_by_id(1);
         $doc = $paper1->document(DTYPE_SUBMISSION);
         xassert(!!$doc);
-        xassert_eqq($doc->metadata(), null);
+        xassert_eqq((array) $doc->metadata(), []);
 
-        xassert($doc->update_metadata(["hello" => 1]));
+        $doc->set_prop("hello", 1);
+        xassert($doc->save_prop());
         xassert_eqq(Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId),
                     '{"hello":1}');
 
-        xassert($doc->update_metadata(["hello" => 2, "foo" => "bar"]));
+        $doc->set_prop("hello", 2);
+        $doc->set_prop("foo", "bar");
+        xassert($doc->save_prop());
         xassert_eqq(Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId),
                     '{"hello":2,"foo":"bar"}');
 
-        xassert($doc->update_metadata(["hello" => null]));
+        $doc->set_prop("hello", null);
+        xassert($doc->save_prop());
         xassert_eqq(Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId),
                     '{"foo":"bar"}');
 
-        xassert(!$doc->update_metadata(["too_long" => str_repeat("!", 32768)], true));
+        $doc->set_prop("too_long", str_repeat("!", 32768));
+        xassert(!$doc->save_prop(true));
         xassert_eqq(Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId),
                     '{"foo":"bar"}');
 

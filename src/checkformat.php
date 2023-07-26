@@ -42,8 +42,6 @@ class CheckFormat extends MessageSet {
     public $nwords;
     /** @var int */
     private $run_flags = 0;
-    /** @var array<string,mixed> */
-    public $metadata_updates = [];
 
     static private $banal_args;
     /** @var int */
@@ -142,7 +140,7 @@ class CheckFormat extends MessageSet {
         if ($bj) {
             $this->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
             $this->nwords = is_int($bj->w ?? null) ? $bj->w : null;
-            $this->last_doc->__set_metadata("npages", $this->npages); // head off recursion
+            $this->last_doc->set_prop("npages", $this->npages); // head off recursion
         }
         return $bj;
     }
@@ -264,7 +262,6 @@ class CheckFormat extends MessageSet {
         $this->clear_messages();
         $this->last_doc = $this->last_banal = null;
         $this->npages = $this->nwords = null;
-        $this->metadata_updates = [];
         $this->run_flags = 0;
     }
 
@@ -322,9 +319,8 @@ class CheckFormat extends MessageSet {
         }
 
         // save information about the run
-        if ($xspec === null
-            && !empty($this->metadata_updates)) {
-            $doc->update_metadata($this->metadata_updates);
+        if ($xspec === null) {
+            $doc->save_prop();
         }
         // record check status in `Paper` table
         if ($doc->prow
@@ -491,8 +487,7 @@ class Default_FormatChecker implements FormatChecker {
 
         // store messages in metadata
         if ($cf->run_attempted()) {
-            $cf->metadata_updates["npages"] = $cf->npages;
-            $cf->metadata_updates["banal"] = self::truncate_banal_json($bj, $cf, $nmsg0, $spec);
+            $doc->set_prop("banal", self::truncate_banal_json($bj, $cf, $nmsg0, $spec));
         }
     }
 
