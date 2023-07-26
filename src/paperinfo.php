@@ -561,6 +561,8 @@ class PaperInfo {
     private $_option_array = [];
     /** @var ?array<int,PaperValue> */
     private $_base_option_array;
+    /** @var ?DocumentInfo */
+    private $_join_document;
     /** @var array<int,DocumentInfo> */
     private $_document_array;
     /** @var ?array<int,array<int,int>> */
@@ -2249,20 +2251,23 @@ class PaperInfo {
              || ($dtype === DTYPE_FINAL
                  && $did == $this->finalPaperStorageId))
             && !$full) {
-            $args = [
-                "paperStorageId" => $did,
-                "paperId" => $this->paperId,
-                "documentType" => $dtype,
-                "timestamp" => (int) $this->timestamp,
-                "mimetype" => $this->mimetype,
-                "hash" => $this->sha1,
-                "size" => $this->size ?? -1
-            ];
-            $infokey = $dtype === DTYPE_SUBMISSION ? "paper_infoJson" : "final_infoJson";
-            if (isset($this->$infokey)) {
-                $args["infoJson"] = $this->$infokey;
+            if (!$this->_join_document) {
+                $args = [
+                    "paperStorageId" => $did,
+                    "paperId" => $this->paperId,
+                    "documentType" => $dtype,
+                    "timestamp" => (int) $this->timestamp,
+                    "mimetype" => $this->mimetype,
+                    "hash" => $this->sha1,
+                    "size" => $this->size ?? -1
+                ];
+                $infokey = $dtype === DTYPE_SUBMISSION ? "paper_infoJson" : "final_infoJson";
+                if (isset($this->$infokey)) {
+                    $args["infoJson"] = $this->$infokey;
+                }
+                $this->_join_document = new DocumentInfo($args, $this->conf, $this);
             }
-            return new DocumentInfo($args, $this->conf, $this);
+            return $this->_join_document;
         }
 
         if ($this->_document_array === null) {
@@ -2337,7 +2342,8 @@ class PaperInfo {
     }
 
     function invalidate_documents() {
-        $this->_document_array = [];
+        $this->_join_document = null;
+        $this->_document_array = null;
     }
 
     function pause_mark_inactive_documents() {
