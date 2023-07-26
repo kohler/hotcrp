@@ -1522,6 +1522,17 @@ class DocumentInfo implements JsonSerializable {
         return $this->_metadata;
     }
 
+    /** @param string $key
+     * @param mixed $value */
+    function __set_metadata($key, $value) {
+        $m = $this->metadata() ?? (object) [];
+        if ($value !== null) {
+            $m->$key = $value;
+        } else {
+            unset($m->$key);
+        }
+    }
+
     /** @return bool */
     function update_metadata($delta, $quiet = false) {
         if ($this->paperStorageId <= 1) {

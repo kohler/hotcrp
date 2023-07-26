@@ -41,7 +41,7 @@ class CheckFormat extends MessageSet {
     /** @var ?int */
     public $nwords;
     /** @var int */
-    public $run_flags = 0;
+    private $run_flags = 0;
     /** @var array<string,mixed> */
     public $metadata_updates = [];
 
@@ -142,6 +142,7 @@ class CheckFormat extends MessageSet {
         if ($bj) {
             $this->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
             $this->nwords = is_int($bj->w ?? null) ? $bj->w : null;
+            $this->last_doc->__set_metadata("npages", $this->npages); // head off recursion
         }
         return $bj;
     }
