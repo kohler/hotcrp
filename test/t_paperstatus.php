@@ -231,8 +231,8 @@ class PaperStatus_Tester {
         $doc = $paper3->document($opt->id);
         xassert(!!$doc);
         xassert_eqq($doc->mimetype, "image/gif");
-        xassert_eqq($doc->metadata()->width ?? 0, 32);
-        xassert_eqq($doc->metadata()->height ?? 0, 30);
+        xassert_eqq($doc->width(), 32);
+        xassert_eqq($doc->height(), 30);
 
         $this->conf->qe("delete from PaperOption where optionId=?", $opt->id);
         $sv = SettingValues::make_request($this->u_chair, [

@@ -149,6 +149,15 @@ class DocumentInfo implements JsonSerializable {
         $this->inactive = (int) $this->inactive;
         $this->content = $this->content ?? $this->paper;
         $this->paper = null;
+        if (isset($this->npages)) {
+            $this->npages = (int) $this->npages;
+        }
+        if (isset($this->width)) {
+            $this->width = (int) $this->width;
+        }
+        if (isset($this->height)) {
+            $this->height = (int) $this->height;
+        }
     }
 
     /** @param mysqli_result|Dbl_Result $result
@@ -561,10 +570,19 @@ class DocumentInfo implements JsonSerializable {
             if ($this->$k)
                 $upd[$k] = $this->$k;
         }
+        if ($this->conf->sversion >= 276) {
+            foreach (["npages", "width", "height"] as $k) {
+                if (($this->$k ?? -1) >= 0)
+                    $upd[$k] = $this->$k;
+            }
+        }
         if ($this->_metadata) {
             $upd["infoJson"] = json_encode_db($this->_metadata);
         } else if ($this->infoJson) {
             $upd["infoJson"] = $this->infoJson;
+        }
+        if (($upd["infoJson"] ?? "") === "{}") {
+            unset($upd["infoJson"]);
         }
 
         if ($this->paperStorageId > 1) {
@@ -580,6 +598,7 @@ class DocumentInfo implements JsonSerializable {
 
         if (!Dbl::is_error($result)) {
             Dbl::free($result);
+            $this->_old_prop = null;
             return true;
         } else {
             if ($this->conf->dblink->errno) {
@@ -805,16 +824,14 @@ class DocumentInfo implements JsonSerializable {
                 $meta["sourcehash"] = Filer::hash_as_text($this->sourceHash);
             }
         }
-        if (($m = $this->metadata())) {
-            if (isset($m->width)) {
-                $meta["width"] = $m->width;
-            }
-            if (isset($m->height)) {
-                $meta["height"] = $m->height;
-            }
-            if (isset($m->npages)) {
-                $meta["npages"] = $m->npages;
-            }
+        if (($this->npages ?? -1) >= 0) {
+            $meta["npages"] = $this->npages;
+        }
+        if (($this->width ?? -1) >= 0) {
+            $meta["width"] = $this->width;
+        }
+        if (($this->height ?? -1) >= 0) {
+            $meta["height"] = $this->height;
         }
         $user_data = ["hotcrp" => json_encode_db($meta)];
 
@@ -1611,6 +1628,9 @@ class DocumentInfo implements JsonSerializable {
                     $this->paperId, $this->paperStorageId)
                 ?? (object) ["infoJson" => null, "npages" => -1, "width" => -1, "height" => -1];
             foreach ((array) $row as $prop => $v) {
+                if ($prop !== "infoJson") {
+                    $v = (int) $v;
+                }
                 $this->$prop = $v;
             }
             $this->_metadata = null;
@@ -1682,6 +1702,22 @@ class DocumentInfo implements JsonSerializable {
             $cf->check_document($this);
             return $cf->nwords;
         }
+    }
+
+    /** @return ?int */
+    function width() {
+        if ($this->width === null) {
+            $this->load_metadata();
+        }
+        return $this->width >= 0 ? $this->width : null;
+    }
+
+    /** @return ?int */
+    function height() {
+        if ($this->height === null) {
+            $this->load_metadata();
+        }
+        return $this->height >= 0 ? $this->height : null;
     }
 
     /** @param array{attachment?:bool,no_accel?:bool,cacheable?:bool} $opts
