@@ -85,7 +85,7 @@ class PaperStatus_Tester {
                 $s1 = substr($s1, 10);
                 $s2 = substr($s2, 10);
             }
-            error_log("   > $s1\n   > $s2");
+            error_log("   > {$s1}\n   > {$s2}");
         }
     }
 
@@ -1199,7 +1199,8 @@ Phil Porras.");
     }
 
     function test_banal() {
-        $spects = max(Conf::$now - 10, @filemtime(SiteLoader::find("src/banal")));
+        $spects = $this->conf->setting("sub_banal") ?? Conf::$now - 10;
+        $spects = max($spects, @filemtime(SiteLoader::find("src/banal")));
         $this->conf->save_setting("sub_banal", $spects, "letter;30;;6.5x9in");
         $this->conf->invalidate_caches(["options" => true]);
         xassert_eq($this->conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);
@@ -1234,10 +1235,11 @@ Phil Porras.");
         xassert_eq($paper3->pdfFormatStatus, -$spects);
 
         // change the format spec
-        $this->conf->save_setting("sub_banal", $spects + 1, "letter;30;;7.5x9in");
+        ++$spects;
+        $this->conf->save_setting("sub_banal", $spects, "letter;30;;7.5x9in");
         $this->conf->invalidate_caches(["options" => true]);
 
-        // that actually requires rerunning banal because its cached result is truncated
+        // that requires rerunning banal because cached result was truncated
         $doc = $paper3->document(DTYPE_SUBMISSION);
         $cf_nec->check_document($doc);
         xassert_eqq(join(" ", $cf_nec->problem_fields()), "pagelimit");
@@ -1265,7 +1267,8 @@ Phil Porras.");
         xassert($cf_nec->run_attempted());
 
         // we can reuse the banal JSON output on another spec
-        $this->conf->save_setting("sub_banal", $spects + 1, "letter;1;;7.5x9in");
+        ++$spects;
+        $this->conf->save_setting("sub_banal", $spects, "letter;1;;7.5x9in");
         $this->conf->invalidate_caches(["options" => true]);
 
         $paper3->invalidate_documents();
@@ -1275,7 +1278,8 @@ Phil Porras.");
         xassert(!$cf_nec->need_recheck());
         xassert(!$cf_nec->run_attempted());
 
-        $this->conf->save_setting("sub_banal", $spects + 1, "letter;2;;7.5x9in");
+        ++$spects;
+        $this->conf->save_setting("sub_banal", $spects, "letter;2;;7.5x9in");
     }
 
     function test_option_name_parens() {

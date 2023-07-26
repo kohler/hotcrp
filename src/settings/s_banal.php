@@ -105,11 +105,12 @@ class Banal_SettingParser extends SettingParser {
     static private function check_banal($sv) {
         $cf = new CheckFormat($sv->conf);
         $interesting_keys = ["papersize", "pagelimit", "textblock", "bodyfontsize", "bodylineheight"];
-        $cf->check_file(SiteLoader::find("etc/sample.pdf"), "letter;2;;6.5inx9in;12;14");
+        $doc = DocumentInfo::make_file(SiteLoader::find("etc/sample.pdf"), $sv->conf);
+        $cf->check_document($doc, "letter;2;;6.5inx9in;12;14");
         $s1 = self::cf_status($cf);
         $e1 = join(",", array_intersect($cf->problem_fields(), $interesting_keys)) ? : "none";
         $e1_papersize = $cf->has_problem_at("papersize");
-        $cf->check_file(SiteLoader::find("etc/sample.pdf"), "a4;1;;3inx3in;14;15");
+        $cf->check_document($doc, "a4;1;;3inx3in;14;15");
         $s2 = self::cf_status($cf);
         $e2 = join(",", array_intersect($cf->problem_fields(), $interesting_keys)) ? : "none";
         $want_e2 = join(",", $interesting_keys);

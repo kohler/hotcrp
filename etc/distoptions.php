@@ -211,7 +211,7 @@ $Opt["smartScoreCompare"] = true;
 //                   The default is derived from $Opt["dbName"], etc.
 //   memoryLimit     Maximum amount of memory a PHP script can use. Defaults
 //                   to 128MB.
-//   pdftohtml       Pathname to pdftohtml executable (used only by the "banal"
+//   pdftohtmlCommand  Pathname to pdftohtml executable (used by the `banal`
 //                   paper format checker).
 //   banalLimit      Limit on number of parallel paper format checker
 //                   executions. Defaults to 8.

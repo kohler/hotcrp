@@ -537,14 +537,13 @@ function object_replace_recursive($a, $b) {
             unset($a->$ak);
         }
     }
-    unset($ba[OBJECT_REPLACE_NO_RECURSE]);
     foreach ($ba as $k => $v) {
         if (is_object($v) || is_associative_array($v)) {
             if (!is_object($a->$k ?? null)) {
                 $a->$k = (object) [];
             }
             object_replace_recursive($a->$k, $v);
-        } else if ($v !== null) {
+        } else if ($v !== null && $k !== OBJECT_REPLACE_NO_RECURSE) {
             $a->$k = $v;
         } else {
             unset($a->$k);

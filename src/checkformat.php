@@ -33,8 +33,6 @@ class CheckFormat extends MessageSet {
     public $npages;
     /** @var ?int */
     public $nwords;
-    /** @var ?int */
-    private $body_pages;
     /** @var int */
     public $run_flags = 0;
     /** @var array<string,mixed> */
@@ -52,7 +50,7 @@ class CheckFormat extends MessageSet {
         $this->conf = $conf;
         if (self::$banal_args === null) {
             $z = $this->conf->opt("banalZoom");
-            self::$banal_args = $z ? "-zoom=$z" : "";
+            self::$banal_args = $z ? "-zoom={$z}" : "";
         }
         $this->fcheckers["default"] = new Default_FormatChecker;
         $this->set_want_ftext(true, 5);
@@ -96,7 +94,9 @@ class CheckFormat extends MessageSet {
 
     function run_banal($filename) {
         $env = ["PATH" => getenv("PATH")];
-        if (($pdftohtml = $this->conf->opt("pdftohtml"))) {
+        $pdftohtml = $this->conf->opt("pdftohtmlCommand")
+            ?? $this->conf->opt("pdftohtml") /* XXX */;
+        if ($pdftohtml) {
             $env["PHP_PDFTOHTML"] = $pdftohtml;
         }
         $banal_run = "perl src/banal -json ";
@@ -118,7 +118,7 @@ class CheckFormat extends MessageSet {
 
     /** @param mixed $x
      * @return ?object */
-    private function check_banal($x) {
+    static private function validate_banal_json($x) {
         if (!is_object($x)
             || !is_int($x->at ?? null)
             || !is_array($x->pages ?? [])
@@ -128,85 +128,90 @@ class CheckFormat extends MessageSet {
         return $x;
     }
 
-    function banal_json(DocumentInfo $doc, FormatSpec $spec) {
-        if ($this->allow_run === CheckFormat::RUN_IF_NECESSARY_TIMEOUT
-            && Conf::$blocked_time >= CheckFormat::TIMEOUT) {
-            $allow_run = CheckFormat::RUN_NEVER;
-        } else {
-            $allow_run = $this->allow_run;
-        }
-
-        $metadata = $doc->metadata();
-        $bj = $metadata ? $this->check_banal($metadata->banal ?? null) : null;
-        $bj_ok = $bj
-            && $bj->at >= @filemtime(SiteLoader::find("src/banal"))
-            && ($bj->args ?? null) == self::$banal_args
-            && (!isset($bj->npages)
-                || ($spec->timestamp && $spec->timestamp === ($bj->spects ?? null)));
-        $flags = $bj_ok ? 0 : CheckFormat::RUN_DESIRED;
-        if (!$bj_ok || $bj->at < Conf::$now - 86400) {
-            $flags |= CheckFormat::RUN_ALLOWED;
-            if ($allow_run === CheckFormat::RUN_ALWAYS
-                || (!$bj_ok && $allow_run !== CheckFormat::RUN_NEVER)) {
-                $bj = null;
-            }
-        }
-
-        if ($bj || $allow_run === CheckFormat::RUN_NEVER) {
-            /* do nothing */;
-        } else if (($path = $doc->content_file())) {
-            // constrain the number of concurrent banal executions to banalLimit
-            // (counter resets every 2 seconds)
-            $t = (int) (time() / 2);
-            $n = ($doc->conf->setting_data("__banal_count") == $t ? $doc->conf->setting("__banal_count") + 1 : 1);
-            $limit = $doc->conf->opt("banalLimit") ?? 8;
-            if ($limit > 0 && $n > $limit) {
-                $this->error_at("error", "<0>Server too busy to check paper formats");
-                $this->inform_at("error", "<0>This is a transient error; feel free to try again.");
-                $this->run_flags |= $flags;
-                return null;
-            }
-            if ($limit > 0) {
-                $doc->conf->q("insert into Settings (name,value,data) values ('__banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
-            }
-
-            $flags |= CheckFormat::RUN_ATTEMPTED;
-            $bj = $this->run_banal($path);
-            if ($bj && is_object($bj) && isset($bj->pages) && is_array($bj->pages)) {
-                $this->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
-                $this->nwords = is_int($bj->w ?? null) ? $bj->w : null;
-                $this->metadata_updates["npages"] = $this->npages;
-                $this->metadata_updates["banal"] = $bj;
-                $flags &= ~(CheckFormat::RUN_ALLOWED | CheckFormat::RUN_DESIRED);
-            } else {
-                $mi = $this->error_at("error", "<0>File cannot be processed");
-                $mi->landmark = $doc->export_filename();
-                $this->inform_at("error", "<0>The file may be corrupted or not in PDF format.");
-            }
-
-            if ($limit > 0) {
-                $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data='$t'");
-            }
-        } else {
-            if (!$doc->has_error()) { error_log($doc->export_filename() . ": no content, no error"); }
-            foreach ($doc->message_list() as $mi) {
-                $this->append_item($mi->with_landmark($doc->export_filename()));
-            }
-            $flags &= ~CheckFormat::RUN_ALLOWED;
-        }
-
+    /** @param ?object $bj
+     * @param int $flags
+     * @return ?object */
+    private function complete_banal_json($bj, $flags) {
         $this->run_flags |= $flags;
+        if ($bj) {
+            $this->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
+            $this->nwords = is_int($bj->w ?? null) ? $bj->w : null;
+        }
         return $bj;
     }
 
-    /** @return int */
-    protected function body_error_status($error_pages) {
-        if ($this->body_pages >= 0.5 * $this->npages
-            && $error_pages >= 0.16 * $this->body_pages) {
-            return self::ERROR;
-        } else {
-            return self::WARNING;
+    /** @return ?object */
+    function banal_json(DocumentInfo $doc, FormatSpec $spec) {
+        $allow_run = $this->allow_run;
+        if ($allow_run === CheckFormat::RUN_IF_NECESSARY_TIMEOUT
+            && Conf::$blocked_time >= CheckFormat::TIMEOUT) {
+            $allow_run = CheckFormat::RUN_NEVER;
         }
+
+        // maybe extract cached banal JSON from document
+        $bj = null;
+        if (($metadata = $doc->metadata()) && isset($metadata->banal)) {
+            $bj = self::validate_banal_json($metadata->banal);
+        }
+
+        // check whether to skip run (cached JSON exists, matches spec)
+        if ($bj
+            && ($bj->args ?? "") === (self::$banal_args ?? "")
+            && $bj->at >= @filemtime(SiteLoader::find("src/banal"))
+            && ($allow_run !== CheckFormat::RUN_ALWAYS
+                || $bj->at >= Conf::$now - 86400)
+            && (!isset($bj->npages) /* i.e., banal JSON is not truncated */
+                || ($spec->timestamp
+                    && isset($bj->msx)
+                    && is_array($bj->msx)
+                    && ($bj->msx[0] ?? null) === $spec->timestamp))) {
+            // existing banal JSON should suffice
+            $flags = $bj->at >= Conf::$now - 86400 ? 0 : CheckFormat::RUN_ALLOWED;
+            return $this->complete_banal_json($bj, $flags);
+        }
+
+        // we want to run, but may not be allowed to
+        $flags = CheckFormat::RUN_DESIRED | CheckFormat::RUN_ALLOWED;
+        if ($allow_run === CheckFormat::RUN_NEVER) {
+            return $this->complete_banal_json($bj, $flags);
+        }
+
+        $path = $doc->content_file();
+        if (!$path) {
+            foreach ($doc->message_list() as $mi) {
+                $this->append_item($mi->with_landmark($doc->export_filename()));
+            }
+            return $this->complete_banal_json($bj, $flags & ~CheckFormat::RUN_ALLOWED);
+        }
+
+        // constrain the number of concurrent banal executions to banalLimit
+        // (counter resets every 2 seconds)
+        $t = (int) (time() / 2);
+        $n = ($doc->conf->setting_data("__banal_count") == $t ? $doc->conf->setting("__banal_count") + 1 : 1);
+        $limit = $doc->conf->opt("banalLimit") ?? 8;
+        if ($limit > 0) {
+            if ($n > $limit) {
+                $this->error_at("error", "<0>Server too busy to check paper formats");
+                $this->inform_at("error", "<0>This is a transient error; feel free to try again.");
+                return $this->complete_banal_json($bj, $flags);
+            }
+            $doc->conf->q("insert into Settings (name,value,data) values ('__banal_count',{$n},'{$t}') on duplicate key update value={$n}, data='{$t}'");
+        }
+
+        $flags |= CheckFormat::RUN_ATTEMPTED;
+        if (($xbj = self::validate_banal_json($this->run_banal($path)))) {
+            $flags &= ~(CheckFormat::RUN_ALLOWED | CheckFormat::RUN_DESIRED);
+            $bj = $xbj;
+        } else {
+            $mi = $this->error_at("error", "<0>File cannot be processed");
+            $mi->landmark = $doc->export_filename();
+            $this->inform_at("error", "<0>The file may be corrupted or not in PDF format.");
+        }
+
+        if ($limit > 0) {
+            $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data='{$t}'");
+        }
+        return $this->complete_banal_json($bj, $flags);
     }
 
     /** @return 'body'|'blank'|'cover'|'appendix'|'bib'|'figure' */
@@ -227,265 +232,6 @@ class CheckFormat extends MessageSet {
             return " (" . plural_word($px, "page") . " " . numrangejoin($px) . ")";
         } else {
             return " (including pages " . numrangejoin(array_slice($px, 0, 20)) . ")";
-        }
-    }
-
-    function check_banal_json($bj, FormatSpec $spec) {
-        if ($bj
-            && isset($bj->cfmsg)
-            && is_array($bj->cfmsg)
-            && $spec->timestamp === ($bj->spects ?? null)) {
-            foreach ($bj->cfmsg as $m) {
-                if ($m[1] === "" || str_starts_with($m[1], "<")) {
-                    $this->msg_at($m[0], $m[1], $m[2]);
-                } else {
-                    $this->msg_at($m[0], "<0>$m[1]", $m[2]); // XXX backward compat
-                }
-            }
-            return;
-        }
-
-        if (!$bj
-            || !isset($bj->pages)
-            || !isset($bj->papersize)
-            || !is_array($bj->pages)
-            || !is_array($bj->papersize)
-            || count($bj->papersize) != 2) {
-            $this->error_at("error", "<0>Analysis failure: no pages or paper size");
-            return;
-        }
-
-        if (!isset($this->npages)) {
-            $this->npages = $bj->npages ?? count($bj->pages);
-        }
-        if (!isset($this->nwords)) {
-            $this->nwords = $bj->w ?? null;
-        }
-
-        // paper size
-        if ($spec->papersize) {
-            $papersize = $bj->papersize;
-            $ok = false;
-            foreach ($spec->papersize as $p) {
-                if (abs($p[0] - $papersize[1]) < 9
-                    && abs($p[1] - $papersize[0]) < 9) {
-                    $ok = true;
-                    break;
-                }
-            }
-            if (!$ok) {
-                $this->problem_at("papersize", "<0>Paper size mismatch: expected " . commajoin(array_map(function ($d) { return FormatSpec::unparse_dimen($d, "paper"); }, $spec->papersize), "or") . ", got " . FormatSpec::unparse_dimen([$papersize[1], $papersize[0]], "paper"), 2);
-            }
-        }
-
-        // number of pages
-        if ($spec->pagelimit) {
-            $this->check_pagelimit($bj, $spec);
-        }
-        $this->body_pages = count(array_filter($bj->pages, function ($pg) {
-            return CheckFormat::banal_page_is_body($pg);
-        }));
-
-        // number of columns
-        if ($spec->columns) {
-            $px = [];
-            $ncol = $bj->columns ?? 0;
-            foreach ($bj->pages as $i => $pg) {
-                if (($pp = cvtint($pg->columns ?? $ncol)) > 0
-                    && $pp != $spec->columns
-                    && self::banal_page_is_body($pg)
-                    && $spec->is_checkable($i + 1, "columns")) {
-                    $px[] = $i + 1;
-                }
-            }
-            $maxpages = $spec->pagelimit ? $spec->pagelimit[1] : 0;
-            if (count($px) > $maxpages * 0.75) {
-                $this->problem_at("columns", "<0>Wrong number of columns: expected " . plural($spec->columns, "column") . self::page_message($px));
-            }
-        }
-
-        // text block
-        if ($spec->textblock) {
-            $px = [];
-            $py = [];
-            $maxx = $maxy = $nbadx = $nbady = 0;
-            $docpsiz = $bj->papersize ?? null;
-            $docmarg = $bj->m ?? $bj->margin ?? null;
-            foreach ($bj->pages as $i => $pg)
-                if (($psiz = $pg->papersize ?? $docpsiz)
-                    && is_array($psiz)
-                    && ($marg = $pg->m ?? $pg->margin ?? $docmarg)
-                    && is_array($marg)
-                    && $spec->is_checkable($i + 1, "textblock")) {
-                    $pwidth = $psiz[1] - $marg[1] - $marg[3];
-                    $pheight = $psiz[0] - $marg[0] - $marg[2];
-                    if ($pwidth - $spec->textblock[0] >= 9) {
-                        $px[] = $i + 1;
-                        $maxx = max($maxx, $pwidth);
-                        if ($pwidth >= 1.05 * $spec->textblock[0])
-                            ++$nbadx;
-                    }
-                    if ($pheight - $spec->textblock[1] >= 9) {
-                        $py[] = $i + 1;
-                        $maxy = max($maxy, $pheight);
-                        if ($pheight >= 1.05 * $spec->textblock[1])
-                            ++$nbady;
-                    }
-                }
-            if (!empty($px)) {
-                $this->problem_at("textblock", "<0>Margins too small: text width exceeds "
-                    . FormatSpec::unparse_dimen($spec->textblock[0]) . " by "
-                    . (count($px) > 1 ? "up to " : "")
-                    . ((int) (100 * $maxx / $spec->textblock[0] + .5) - 100)
-                    . "%" . self::page_message($px),
-                    $this->body_error_status($nbadx));
-            }
-            if (!empty($py)) {
-                $this->problem_at("textblock", "<0>Margins too small: text height exceeds "
-                    . FormatSpec::unparse_dimen($spec->textblock[1]) . " by "
-                    . (count($py) > 1 ? "up to " : "")
-                    . ((int) (100 * $maxy / $spec->textblock[1] + .5) - 100)
-                    . "%" . self::page_message($py),
-                    $this->body_error_status($nbady));
-            }
-        }
-
-        // font size
-        if ($spec->bodyfontsize) {
-            $lopx = $hipx = [];
-            $minval = 1000;
-            $maxval = 0;
-            $nbadsize = 0;
-            $bfs = $bj->bodyfontsize ?? null;
-            foreach ($bj->pages as $i => $pg) {
-                if (self::banal_page_is_body($pg)
-                    && $spec->is_checkable($i + 1, "bodyfontsize")) {
-                    $pp = cvtnum($pg->bodyfontsize ?? $bfs);
-                    if ($pp > 0 && $pp < $spec->bodyfontsize[0] - $spec->bodyfontsize[2]) {
-                        $lopx[] = $i + 1;
-                        $minval = min($minval, $pp);
-                        if ($pp <= 0.97 * $spec->bodyfontsize[0])
-                            ++$nbadsize;
-                    }
-                    if ($pp > 0 && $spec->bodyfontsize[1] > 0
-                        && $pp > $spec->bodyfontsize[1] + $spec->bodyfontsize[2]) {
-                        $hipx[] = $i + 1;
-                        $maxval = max($maxval, $pp);
-                    }
-                }
-            }
-            if (!empty($lopx)) {
-                $this->problem_at("bodyfontsize", "<0>Body font too small: minimum {$spec->bodyfontsize[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx), $this->body_error_status($nbadsize));
-            }
-            if (!empty($hipx)) {
-                $this->problem_at("bodyfontsize", "<0>Body font too large: maximum {$spec->bodyfontsize[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx));
-            }
-        }
-
-        // line height
-        if ($spec->bodylineheight) {
-            $lopx = $hipx = [];
-            $minval = 1000;
-            $maxval = 0;
-            $nbadsize = 0;
-            $l = $bj->leading ?? null;
-            foreach ($bj->pages as $i => $pg) {
-                if (self::banal_page_is_body($pg)
-                    && $spec->is_checkable($i + 1, "bodylineheight")) {
-                    $pp = cvtnum($pg->leading ?? $l);
-                    if ($pp > 0 && $pp < $spec->bodylineheight[0] - $spec->bodylineheight[2]) {
-                        $lopx[] = $i + 1;
-                        $minval = min($minval, $pp);
-                        if ($pp <= 0.97 * $spec->bodylineheight[0])
-                            ++$nbadsize;
-                    }
-                    if ($pp > 0 && $spec->bodylineheight[1] > 0
-                        && $pp > $spec->bodylineheight[1] + $spec->bodylineheight[2]) {
-                        $hipx[] = $i + 1;
-                        $maxval = max($maxval, $pp);
-                    }
-                }
-            }
-            if (!empty($lopx)) {
-                $this->problem_at("bodylineheight", "<0>Line height too small: minimum {$spec->bodylineheight[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx), $this->body_error_status($nbadsize));
-            }
-            if (!empty($hipx)) {
-                $this->problem_at("bodylineheight", "<0>Line height too large: minimum {$spec->bodylineheight[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx));
-            }
-        }
-
-        // number of words
-        if ($spec->wordlimit && $this->nwords === null) {
-            $this->problem_at("wordlimit", "<0>Unable to count words in this PDF");
-        } else if ($spec->wordlimit) {
-            $words = $this->nwords;
-            if ($words < $spec->wordlimit[0]) {
-                $this->problem_at("wordlimit", "<0>Too few words: expected " . plural($spec->wordlimit[0], "or more word") . ", found {$words}", 1);
-            }
-            if ($words > $spec->wordlimit[1]) {
-                $this->problem_at("wordlimit", "<0>Too many words: the limit is " . plural($spec->wordlimit[1], "non-reference word") . ", found {$words}", 2);
-            }
-        }
-
-        // body pages exist
-        if (($spec->columns || $spec->bodyfontsize || $spec->bodylineheight)
-            && $this->body_pages < 0.5 * $this->npages) {
-            if ($this->body_pages == 0) {
-                $this->warning_at(null, "<0>Warning: No pages containing body text; results may be off");
-            } else if ($this->body_pages < 10) {
-                $this->warning_at(null, "<0>Warning: Only {$this->body_pages} of " . plural($this->npages, "page") . " contain body text; results may be off");
-            }
-            $nd0_pages = count(array_filter($bj->pages, function ($pg) {
-                return CheckFormat::banal_page_type($pg) === "blank";
-            }));
-            if ($nd0_pages == $this->npages) {
-                $this->problem_at("notext", "<0>This document appears to contain no text", 2);
-                $this->msg_at("notext", "<0>The PDF software has rendered pages as images. PDFs like this are less efficient to transfer and harder to search.", MessageSet::INFORM);
-            }
-        }
-    }
-
-    private function check_pagelimit($bj, FormatSpec $spec) {
-        $pages = $this->npages;
-        assert(is_int($pages));
-        if ($pages < $spec->pagelimit[0]) {
-            $this->problem_at("pagelimit", "<0>Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found {$pages}", 1);
-        }
-        if ($pages > $spec->pagelimit[1]
-            && $spec->unlimitedref
-            && count($bj->pages) === $pages) {
-            while ($pages > 0
-                   && !CheckFormat::banal_page_is_body($bj->pages[$pages - 1])) {
-                --$pages;
-            }
-        }
-        if ($pages <= $spec->pagelimit[1]) {
-            return;
-        } else if (!$spec->unlimitedref) {
-            $this->problem_at("pagelimit", "<0>Too many pages: the limit is " . plural($spec->pagelimit[1], "page") . ", found {$pages}", 2);
-            return;
-        }
-        $this->problem_at("pagelimit", "<0>Too many pages: the limit is " . plural($spec->pagelimit[1], "non-reference page") . ", found {$pages}", 2);
-        if (count($bj->pages) !== $this->npages) {
-            return;
-        }
-        $p = 0;
-        $last_fs = 0;
-        while ($p < $pages
-               && ($pt = CheckFormat::banal_page_type($bj->pages[$p])) !== "bib"
-               && $pt !== "appendix") {
-            $last_fs = $bj->pages[$p]->fs ?? $last_fs;
-            ++$p;
-        }
-        if ($p <= $spec->pagelimit[1] && $last_fs > 0) {
-            while ($p < $pages
-                   && !CheckFormat::banal_page_is_body($bj->pages[$p])) {
-                ++$p;
-            }
-            if ($p < $pages
-                && ($bj->pages[$p]->fs ?? $last_fs) > $last_fs) {
-                $this->msg_at("pagelimit", "<5>It looks like this PDF might use normal section numbers for its appendixes. Appendix sections should use letters, like ‘A’ and ‘B’. If using LaTeX, start the appendixes with the <code>\appendix</code> command.", MessageSet::INFORM);
-            }
         }
     }
 
@@ -521,89 +267,9 @@ class CheckFormat extends MessageSet {
         return $chk;
     }
 
-    /** @param string $filename
-     * @param string|FormatSpec $spec */
-    function check_file($filename, $spec) {
-        if (is_string($spec)) {
-            $spec = new FormatSpec($spec);
-        }
-        $this->clear();
-        $this->run_flags |= CheckFormat::RUN_STARTED;
-        $bj = $this->run_banal($filename);
-        $this->check_banal_json($bj, $spec);
-    }
-
-    /** @param object $bj
-     * @return object */
-    private function truncate_banal_json($bj, FormatSpec $spec) {
-        $xj = clone $bj;
-        if (isset($xj->npages) ? $xj->npages < count($bj->pages) : count($bj->pages) > 48) {
-            $xj->npages = count($bj->pages);
-        }
-        $xj->pages = [];
-        $bjpages = $bj->pages ?? [];
-        $saw_refbreak = 0;
-        $last_fs_page = 0;
-        $last_fs = 0;
-        '@phan-var-force list<object> $bjpages';
-        for ($i = 0; $i !== 48 && $i !== count($bjpages); ++$i) {
-            $pg = $bjpages[$i];
-            $xg = [];
-            if (isset($pg->papersize)) {
-                $xg["papersize"] = $pg->papersize;
-            }
-            if (isset($pg->m) || isset($pg->margin)) {
-                $xg["m"] = $pg->m ?? $pg->margin;
-            }
-            if (isset($pg->bodyfontsize)) {
-                $xg["bodyfontsize"] = $pg->bodyfontsize;
-            }
-            if (isset($pg->leading)) {
-                $xg["leading"] = $pg->leading;
-            }
-            if (isset($pg->columns)) {
-                $xg["columns"] = $pg->columns;
-            }
-            $pt = self::banal_page_type($pg);
-            if ($pt !== "body") {
-                $xg["type"] = $pt;
-            }
-            if ($saw_refbreak === 0) {
-                if ($pt === "bib" || $pt === "appendix") {
-                    $saw_refbreak = 1;
-                } else if (isset($pg->fs)) {
-                    $last_fs_page = $i;
-                    $last_fs = $pg->fs;
-                }
-            } else if ($saw_refbreak === 1
-                       && $pt === "body") {
-                if ($last_fs && isset($pg->fs)) {
-                    $xj->pages[$last_fs_page]->fs = $last_fs;
-                    $xg["fs"] = $pg->fs;
-                }
-                $saw_refbreak = 2;
-            }
-            $xj->pages[] = (object) $xg;
-        }
-        if ($this->has_message()) {
-            $xj->cfmsg = [];
-            foreach ($this->message_list() as $mx) {
-                $xj->cfmsg[] = [$mx->field, $mx->message, $mx->status];
-            }
-        } else {
-            $xj->cfmsg = null;
-        }
-        if ($spec->timestamp) {
-            $xj->spects = $spec->timestamp;
-        } else {
-            $xj->spects = null;
-        }
-        $xj->{OBJECT_REPLACE_NO_RECURSE} = true;
-        return $xj;
-    }
-
-    /** @return bool */
-    function check_document(DocumentInfo $doc) {
+    /** @param null|string|FormatSpec $xspec
+     * @return bool */
+    function check_document(DocumentInfo $doc, $xspec = null) {
         $this->clear();
         $this->run_flags |= CheckFormat::RUN_STARTED;
         if ($doc->mimetype !== "application/pdf") {
@@ -611,7 +277,14 @@ class CheckFormat extends MessageSet {
             return false;
         }
 
-        $spec = $doc->conf->format_spec($doc->documentType);
+        if ($xspec === null) {
+            $spec = $doc->conf->format_spec($doc->documentType);
+        } else if (is_string($xspec)) {
+            $spec = new FormatSpec($xspec);
+        } else {
+            $spec = $xspec;
+        }
+
         $checkers = $this->spec_checkers($spec);
         if ($spec !== $this->last_spec) {
             $this->last_spec = $spec;
@@ -625,14 +298,13 @@ class CheckFormat extends MessageSet {
         }
 
         // save information about the run
-        if (!empty($this->metadata_updates)) {
-            if (isset($this->metadata_updates["banal"])) {
-                $this->metadata_updates["banal"] = $this->truncate_banal_json($this->metadata_updates["banal"], $spec);
-            }
+        if ($xspec === null
+            && !empty($this->metadata_updates)) {
             $doc->update_metadata($this->metadata_updates);
         }
         // record check status in `Paper` table
-        if ($doc->prow->is_primary_document($doc)
+        if ($doc->prow
+            && $doc->prow->is_primary_document($doc)
             && ($this->run_flags & CheckFormat::RUN_DESIRED) === 0
             && $this->check_ok()
             && $spec->timestamp) {
@@ -703,7 +375,13 @@ class CheckFormat extends MessageSet {
     }
 }
 
+
 class Default_FormatChecker implements FormatChecker {
+    /** @var int */
+    private $npages;
+    /** @var int */
+    private $body_pages;
+
     /** @return list<string> */
     function known_fields(FormatSpec $spec) {
         $ks = [];
@@ -718,15 +396,371 @@ class Default_FormatChecker implements FormatChecker {
     function prepare(CheckFormat $cf, FormatSpec $spec) {
     }
 
-    /** @return void */
-    function check(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc) {
-        if (($bj = $cf->banal_json($doc, $spec))) {
-            $cf->check_banal_json($bj, $spec);
+    /** @return int */
+    private function body_error_status($error_pages) {
+        if ($this->body_pages >= 0.5 * $this->npages
+            && $error_pages >= 0.16 * $this->body_pages) {
+            return MessageSet::ERROR;
         } else {
-            assert(($cf->run_flags & CheckFormat::RUN_DESIRED) !== 0);
-            $cf->error_at("error", null);
+            return MessageSet::WARNING;
         }
     }
+
+    /** @return void */
+    function check(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc) {
+        $bj = $cf->banal_json($doc, $spec);
+        if (!$bj
+            || !isset($bj->pages)
+            || !isset($bj->papersize)
+            || !is_array($bj->pages)
+            || !is_array($bj->papersize)
+            || count($bj->papersize) != 2) {
+            $cf->error_at("error", "<0>Analysis failure: no pages or paper size");
+            return;
+        }
+
+        // maybe use existing messages
+        if ($spec->timestamp
+            && isset($bj->msx)
+            && is_array($bj->msx)
+            && ($bj->msx[0] ?? null) === $spec->timestamp) {
+            for ($i = 1; $i !== count($bj->msx); ++$i) {
+                $mx = $bj->msx[$i];
+                $cf->msg_at($mx[0], $mx[1], $mx[2]);
+            }
+            return;
+        }
+
+        // analyze JSON, store info
+        $this->npages = $cf->npages;
+        $this->body_pages = count(array_filter($bj->pages, function ($pg) {
+            return CheckFormat::banal_page_is_body($pg);
+        }));
+
+        // check spec
+        $nmsg0 = $cf->message_count();
+        if ($spec->papersize) {
+            $this->check_papersize($cf, $bj, $spec);
+        }
+        if ($spec->pagelimit) {
+            $this->check_pagelimit($cf, $bj, $spec);
+        }
+        if ($spec->columns) {
+            $this->check_columns($cf, $bj, $spec);
+        }
+        if ($spec->textblock) {
+            $this->check_textblock($cf, $bj, $spec);
+        }
+        if ($spec->bodyfontsize) {
+            $this->check_bodyfontsize($cf, $bj, $spec);
+        }
+        if ($spec->bodylineheight) {
+            $this->check_bodylineheight($cf, $bj, $spec);
+        }
+        if ($spec->wordlimit) {
+            $this->check_wordlimit($cf, $bj, $spec);
+        }
+        if ($spec->columns || $spec->bodyfontsize || $spec->bodylineheight) {
+            $this->check_body_pages_exist($cf, $bj);
+        }
+
+        // store messages in metadata
+        if ($cf->run_attempted()) {
+            $cf->metadata_updates["npages"] = $cf->npages;
+            $cf->metadata_updates["banal"] = self::truncate_banal_json($bj, $cf, $nmsg0, $spec);
+        }
+    }
+
+    /** @param object $bj */
+    private function check_papersize(CheckFormat $cf, $bj, FormatSpec $spec) {
+        $papersize = $bj->papersize;
+        $ok = false;
+        foreach ($spec->papersize as $p) {
+            if (abs($p[0] - $papersize[1]) < 9
+                && abs($p[1] - $papersize[0]) < 9) {
+                $ok = true;
+                break;
+            }
+        }
+        if (!$ok) {
+            $cf->problem_at("papersize", "<0>Paper size mismatch: expected " . commajoin(array_map(function ($d) { return FormatSpec::unparse_dimen($d, "paper"); }, $spec->papersize), "or") . ", got " . FormatSpec::unparse_dimen([$papersize[1], $papersize[0]], "paper"), 2);
+        }
+    }
+
+    /** @param object $bj */
+    private function check_pagelimit(CheckFormat $cf, $bj, FormatSpec $spec) {
+        $pages = $this->npages;
+        assert(is_int($pages));
+        if ($pages < $spec->pagelimit[0]) {
+            $cf->problem_at("pagelimit", "<0>Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found {$pages}", 1);
+        }
+        if ($pages > $spec->pagelimit[1]
+            && $spec->unlimitedref
+            && count($bj->pages) === $pages) {
+            while ($pages > 0
+                   && !CheckFormat::banal_page_is_body($bj->pages[$pages - 1])) {
+                --$pages;
+            }
+        }
+        if ($pages <= $spec->pagelimit[1]) {
+            return;
+        } else if (!$spec->unlimitedref) {
+            $cf->problem_at("pagelimit", "<0>Too many pages: the limit is " . plural($spec->pagelimit[1], "page") . ", found {$pages}", 2);
+            return;
+        }
+        $cf->problem_at("pagelimit", "<0>Too many pages: the limit is " . plural($spec->pagelimit[1], "non-reference page") . ", found {$pages}", 2);
+        if (count($bj->pages) !== $this->npages) {
+            return;
+        }
+        $p = 0;
+        $last_fs = 0;
+        while ($p < $pages
+               && ($pt = CheckFormat::banal_page_type($bj->pages[$p])) !== "bib"
+               && $pt !== "appendix") {
+            $last_fs = $bj->pages[$p]->fs ?? $last_fs;
+            ++$p;
+        }
+        if ($p <= $spec->pagelimit[1] && $last_fs > 0) {
+            while ($p < $pages
+                   && !CheckFormat::banal_page_is_body($bj->pages[$p])) {
+                ++$p;
+            }
+            if ($p < $pages
+                && ($bj->pages[$p]->fs ?? $last_fs) > $last_fs) {
+                $cf->msg_at("pagelimit", "<5>It looks like this PDF might use normal section numbers for its appendixes. Appendix sections should use letters, like ‘A’ and ‘B’. If using LaTeX, start the appendixes with the <code>\appendix</code> command.", MessageSet::INFORM);
+            }
+        }
+    }
+
+    /** @param object $bj */
+    private function check_columns(CheckFormat $cf, $bj, FormatSpec $spec) {
+        $px = [];
+        $ncol = $bj->columns ?? 0;
+        foreach ($bj->pages as $i => $pg) {
+            if (($pp = cvtint($pg->columns ?? $ncol)) > 0
+                && $pp != $spec->columns
+                && CheckFormat::banal_page_is_body($pg)
+                && $spec->is_checkable($i + 1, "columns")) {
+                $px[] = $i + 1;
+            }
+        }
+        $maxpages = $spec->pagelimit ? $spec->pagelimit[1] : 0;
+        if (count($px) > $maxpages * 0.75) {
+            $cf->problem_at("columns", "<0>Wrong number of columns: expected " . plural($spec->columns, "column") . CheckFormat::page_message($px));
+        }
+    }
+
+    /** @param object $bj */
+    private function check_textblock(CheckFormat $cf, $bj, FormatSpec $spec) {
+        $px = [];
+        $py = [];
+        $maxx = $maxy = $nbadx = $nbady = 0;
+        $docpsiz = $bj->papersize ?? null;
+        $docmarg = $bj->m ?? $bj->margin ?? null;
+        foreach ($bj->pages as $i => $pg) {
+            if (($psiz = $pg->papersize ?? $docpsiz)
+                && is_array($psiz)
+                && ($marg = $pg->m ?? $pg->margin ?? $docmarg)
+                && is_array($marg)
+                && $spec->is_checkable($i + 1, "textblock")) {
+                $pwidth = $psiz[1] - $marg[1] - $marg[3];
+                $pheight = $psiz[0] - $marg[0] - $marg[2];
+                if ($pwidth - $spec->textblock[0] >= 9) {
+                    $px[] = $i + 1;
+                    $maxx = max($maxx, $pwidth);
+                    if ($pwidth >= 1.05 * $spec->textblock[0])
+                        ++$nbadx;
+                }
+                if ($pheight - $spec->textblock[1] >= 9) {
+                    $py[] = $i + 1;
+                    $maxy = max($maxy, $pheight);
+                    if ($pheight >= 1.05 * $spec->textblock[1])
+                        ++$nbady;
+                }
+            }
+        }
+        if (!empty($px)) {
+            $cf->problem_at("textblock", "<0>Margins too small: text width exceeds "
+                . FormatSpec::unparse_dimen($spec->textblock[0]) . " by "
+                . (count($px) > 1 ? "up to " : "")
+                . ((int) (100 * $maxx / $spec->textblock[0] + .5) - 100)
+                . "%" . CheckFormat::page_message($px),
+                $this->body_error_status($nbadx));
+        }
+        if (!empty($py)) {
+            $cf->problem_at("textblock", "<0>Margins too small: text height exceeds "
+                . FormatSpec::unparse_dimen($spec->textblock[1]) . " by "
+                . (count($py) > 1 ? "up to " : "")
+                . ((int) (100 * $maxy / $spec->textblock[1] + .5) - 100)
+                . "%" . CheckFormat::page_message($py),
+                $this->body_error_status($nbady));
+        }
+    }
+
+    /** @param object $bj */
+    private function check_bodyfontsize(CheckFormat $cf, $bj, FormatSpec $spec) {
+        $lopx = $hipx = [];
+        $minval = 1000;
+        $maxval = 0;
+        $nbadsize = 0;
+        $bfs = $bj->bodyfontsize ?? null;
+        foreach ($bj->pages as $i => $pg) {
+            if (CheckFormat::banal_page_is_body($pg)
+                && $spec->is_checkable($i + 1, "bodyfontsize")) {
+                $pp = cvtnum($pg->bodyfontsize ?? $bfs);
+                if ($pp > 0 && $pp < $spec->bodyfontsize[0] - $spec->bodyfontsize[2]) {
+                    $lopx[] = $i + 1;
+                    $minval = min($minval, $pp);
+                    if ($pp <= 0.97 * $spec->bodyfontsize[0])
+                        ++$nbadsize;
+                }
+                if ($pp > 0 && $spec->bodyfontsize[1] > 0
+                    && $pp > $spec->bodyfontsize[1] + $spec->bodyfontsize[2]) {
+                    $hipx[] = $i + 1;
+                    $maxval = max($maxval, $pp);
+                }
+            }
+        }
+        if (!empty($lopx)) {
+            $cf->problem_at("bodyfontsize", "<0>Body font too small: minimum {$spec->bodyfontsize[0]}pt, saw values as small as {$minval}pt" . CheckFormat::page_message($lopx), $this->body_error_status($nbadsize));
+        }
+        if (!empty($hipx)) {
+            $cf->problem_at("bodyfontsize", "<0>Body font too large: maximum {$spec->bodyfontsize[1]}pt, saw values as large as {$maxval}pt" . CheckFormat::page_message($hipx));
+        }
+    }
+
+    /** @param object $bj */
+    private function check_bodylineheight(CheckFormat $cf, $bj, FormatSpec $spec) {
+        $lopx = $hipx = [];
+        $minval = 1000;
+        $maxval = 0;
+        $nbadsize = 0;
+        $l = $bj->leading ?? null;
+        foreach ($bj->pages as $i => $pg) {
+            if (CheckFormat::banal_page_is_body($pg)
+                && $spec->is_checkable($i + 1, "bodylineheight")) {
+                $pp = cvtnum($pg->leading ?? $l);
+                if ($pp > 0 && $pp < $spec->bodylineheight[0] - $spec->bodylineheight[2]) {
+                    $lopx[] = $i + 1;
+                    $minval = min($minval, $pp);
+                    if ($pp <= 0.97 * $spec->bodylineheight[0])
+                        ++$nbadsize;
+                }
+                if ($pp > 0 && $spec->bodylineheight[1] > 0
+                    && $pp > $spec->bodylineheight[1] + $spec->bodylineheight[2]) {
+                    $hipx[] = $i + 1;
+                    $maxval = max($maxval, $pp);
+                }
+            }
+        }
+        if (!empty($lopx)) {
+            $cf->problem_at("bodylineheight", "<0>Line height too small: minimum {$spec->bodylineheight[0]}pt, saw values as small as {$minval}pt" . CheckFormat::page_message($lopx), $this->body_error_status($nbadsize));
+        }
+        if (!empty($hipx)) {
+            $cf->problem_at("bodylineheight", "<0>Line height too large: minimum {$spec->bodylineheight[1]}pt, saw values as large as {$maxval}pt" . CheckFormat::page_message($hipx));
+        }
+    }
+
+    /** @param object $bj */
+    private function check_wordlimit(CheckFormat $cf, $bj, FormatSpec $spec) {
+        if ($cf->nwords === null) {
+            $cf->problem_at("wordlimit", "<0>Unable to count words in this PDF");
+            return;
+        }
+        if ($cf->nwords < $spec->wordlimit[0]) {
+            $cf->problem_at("wordlimit", "<0>Too few words: expected " . plural($spec->wordlimit[0], "or more word") . ", found {$cf->nwords}", 1);
+        }
+        if ($cf->nwords > $spec->wordlimit[1]) {
+            $cf->problem_at("wordlimit", "<0>Too many words: the limit is " . plural($spec->wordlimit[1], "non-reference word") . ", found {$cf->nwords}", 2);
+        }
+    }
+
+    /** @param object $bj */
+    private function check_body_pages_exist(CheckFormat $cf, $bj) {
+        if ($this->body_pages >= 0.5 * $this->npages) {
+            return;
+        }
+        if ($this->body_pages == 0) {
+            $cf->warning_at(null, "<0>Warning: No pages containing body text; results may be off");
+        } else if ($this->body_pages < 10) {
+            $cf->warning_at(null, "<0>Warning: Only {$this->body_pages} of " . plural($this->npages, "page") . " contain body text; results may be off");
+        }
+        $nd0_pages = count(array_filter($bj->pages, function ($pg) {
+            return CheckFormat::banal_page_type($pg) === "blank";
+        }));
+        if ($nd0_pages == $this->npages) {
+            $cf->problem_at("notext", "<0>This document appears to contain no text", 2);
+            $cf->msg_at("notext", "<0>The PDF software has rendered pages as images. PDFs like this are less efficient to transfer and harder to search.", MessageSet::INFORM);
+        }
+    }
+
+    /** @param object $bj
+     * @param int $nmsg0
+     * @return object */
+    static private function truncate_banal_json($bj, CheckFormat $cf, $nmsg0, FormatSpec $spec) {
+        $xj = clone $bj;
+        if (isset($xj->npages) ? $xj->npages < count($bj->pages) : count($bj->pages) > 48) {
+            $xj->npages = count($bj->pages);
+        }
+        $xj->pages = [];
+        $bjpages = $bj->pages ?? [];
+        $saw_refbreak = 0;
+        $last_fs_page = 0;
+        $last_fs = 0;
+        '@phan-var-force list<object> $bjpages';
+        for ($i = 0; $i !== 48 && $i !== count($bjpages); ++$i) {
+            $pg = $bjpages[$i];
+            $xg = [];
+            if (isset($pg->papersize)) {
+                $xg["papersize"] = $pg->papersize;
+            }
+            if (isset($pg->m) || isset($pg->margin)) {
+                $xg["m"] = $pg->m ?? $pg->margin;
+            }
+            if (isset($pg->bodyfontsize)) {
+                $xg["bodyfontsize"] = $pg->bodyfontsize;
+            }
+            if (isset($pg->leading)) {
+                $xg["leading"] = $pg->leading;
+            }
+            if (isset($pg->columns)) {
+                $xg["columns"] = $pg->columns;
+            }
+            $pt = CheckFormat::banal_page_type($pg);
+            if ($pt !== "body") {
+                $xg["type"] = $pt;
+            }
+            if ($saw_refbreak === 0) {
+                if ($pt === "bib" || $pt === "appendix") {
+                    $saw_refbreak = 1;
+                } else if (isset($pg->fs)) {
+                    $last_fs_page = $i;
+                    $last_fs = $pg->fs;
+                }
+            } else if ($saw_refbreak === 1
+                       && $pt === "body") {
+                if ($last_fs && isset($pg->fs)) {
+                    $xj->pages[$last_fs_page]->fs = $last_fs;
+                    $xg["fs"] = $pg->fs;
+                }
+                $saw_refbreak = 2;
+            }
+            $xj->pages[] = (object) $xg;
+        }
+        if ($spec->timestamp) {
+            $msx = [$spec->timestamp];
+            $mlist = $cf->message_list();
+            while ($nmsg0 !== count($mlist)) {
+                $mi = $mlist[$nmsg0];
+                $msx[] = [$mi->field, $mi->message, $mi->status];
+                ++$nmsg0;
+            }
+            $xj->msx = $msx;
+        }
+        $xj->{OBJECT_REPLACE_NO_RECURSE} = true;
+        return $xj;
+    }
+
 
     /** @return string */
     function report(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc) {

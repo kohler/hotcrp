@@ -229,6 +229,16 @@ class DocumentInfo implements JsonSerializable {
         return $doc;
     }
 
+    /** @param string $filename
+     * @param array $args
+     * @return ?DocumentInfo */
+    static function make_file($filename, Conf $conf, $args = []) {
+        $args["content_file"] = $filename;
+        $doc = new DocumentInfo($args, $conf);
+        $doc->analyze_content();
+        return $doc;
+    }
+
     /** @param string $name
      * @return bool */
     static function has_request_for(Qrequest $qreq, $name) {
