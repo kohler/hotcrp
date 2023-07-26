@@ -219,8 +219,8 @@ class Title_PaperColumn extends PaperColumn {
     private $want_decoration = true;
     /** @var bool */
     private $want_pdf = true;
-    /** @var bool */
-    private $highlight = false;
+    /** @var string */
+    private $highlight = "";
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }

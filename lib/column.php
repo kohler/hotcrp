@@ -101,6 +101,7 @@ class Column {
     /** @return ?string */
     function decoration_value($decor) {
         if (($i = $this->decoration_index($decor)) !== false) {
+            /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
             $s = $this->decorations[$i];
             $l = strlen($decor);
             return strlen($s) === $l ? "" : substr($s, $l + 1);

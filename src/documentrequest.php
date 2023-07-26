@@ -64,7 +64,7 @@ class DocumentRequest implements JsonSerializable {
                 } else if (isset($req["dt"])) {
                     $dtname = $req["dt"];
                 }
-            } else if (preg_match(',\A(p|paper|sub|submission|final|)(\d+)-?([-A-Za-z0-9_]*)(?:|\.[^/]+|/+(.*))\z,', $s, $m)) {
+            } else if (preg_match('/\A(p|paper|sub|submission|final|)(\d+)-?([-A-Za-z0-9_]*)(?:|\.[^\/]+|\/+(.*))\z/', $s, $m)) {
                 $this->paperId = intval($m[2]);
                 $dtname = $m[3];
                 if ($dtname === "" && $m[1] === "" && isset($req["dt"])) {
@@ -76,13 +76,13 @@ class DocumentRequest implements JsonSerializable {
                 if ($m[1] !== "") {
                     $base_dtname = $m[1] === "final" ? "final" : "paper";
                 }
-            } else if (preg_match(',\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:|\.[^/]+|/+(.*))\z,', $s, $m)) {
+            } else if (preg_match('/\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:|\.[^\/]+|\/+(.*))\z/', $s, $m)) {
                 $this->paperId = intval($m[2]);
                 $dtname = $m[1];
                 if (isset($m[3])) {
                     $this->attachment = urldecode($m[3]);
                 }
-            } else if (preg_match(',\A([^/]+?)(?:|\.[^/]+|/+(.*)|)\z,', $s, $m)) {
+            } else if (preg_match('/\A([^\/]+?)(?:|\.[^\/]+|\/+(.*)|)\z/', $s, $m)) {
                 $this->paperId = -2;
                 $dtname = $m[1];
                 if (isset($m[2])) {
@@ -97,12 +97,12 @@ class DocumentRequest implements JsonSerializable {
         $this->opt = $this->dtype = null;
         while ($dtname !== "" && $this->dtype === null) {
             if (str_starts_with($dtname, "comment-")
-                && preg_match('{\Acomment-(?:c[aAxX]?\d+|(?:|[a-zA-Z](?:|[-a-zA-Z0-9]*))response)\z}', $dtname)) {
+                && preg_match('/\Acomment-(?:c[aAxX]?\d+|(?:|[a-zA-Z](?:|[-a-zA-Z0-9]*))response)\z/', $dtname)) {
                 $this->dtype = DTYPE_COMMENT;
                 $this->linkid = substr($dtname, 8);
                 break;
             } else if ((str_starts_with($dtname, "response") || str_ends_with($dtname, "response"))
-                       && preg_match('{\A[-a-zA-Z0-9]*\z}', $dtname)) {
+                       && preg_match('/\A[-a-zA-Z0-9]*\z/', $dtname)) {
                 $this->dtype = DTYPE_COMMENT;
                 $this->linkid = $dtname;
                 break;
