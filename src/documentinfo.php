@@ -1525,11 +1525,14 @@ class DocumentInfo implements JsonSerializable {
     /** @param string $key
      * @param mixed $value */
     function __set_metadata($key, $value) {
-        $m = $this->metadata() ?? (object) [];
+        $this->metadata();
+        if ($this->_metadata === null) {
+            $this->_metadata = (object) [];
+        }
         if ($value !== null) {
-            $m->$key = $value;
+            $this->_metadata->$key = $value;
         } else {
-            unset($m->$key);
+            unset($this->_metadata->$key);
         }
     }
 
