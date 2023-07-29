@@ -11641,29 +11641,27 @@ handle_ui.on("js-edit-namedsearches", function () {
         $.post(hoturl("=api/namedsearch"),
             $d.find("form").serialize(),
             function (data) {
-                if (data.ok)
-                    location.reload(true);
-                else
-                    $d.show_errors(data);
+                data.ok ? location.reload(true) : $d.show_errors(data);
             });
     }
-    function create(searches) {
+    function create(data) {
         var hc = popup_skeleton({className: "modal-dialog-w40 need-diff-check"}), i;
-        hc.push('<h2>Saved searches</h2>');
-        hc.push('<p>Invoke a saved search with “ss:NAME”. Saved searches are shared with the PC.</p>');
+        hc.push('<h2>Named searches</h2>');
+        hc.push('<p>Invoke a named search with “ss:NAME”. Named searches are shared with the PC.</p>');
         hc.push('<div class="editsearches">', '</div>');
-        for (i in searches || []) {
-            push1(hc, searches[i]);
+        for (i in data.searches || []) {
+            push1(hc, data.searches[i]);
         }
         hc.pop_push('<button type="button" name="add">Add named search</button>');
         hc.push_actions(['<button type="submit" name="savesearches" value="1" class="btn-primary">Save</button>', '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
         $d.on("click", "button", click);
         $d.on("submit", "form", submit);
+        $d.show_errors(data);
     }
     $.get(hoturl("=api/namedsearch"), function (data) {
         if (data.ok)
-            create(data.searches);
+            create(data);
     });
 });
 

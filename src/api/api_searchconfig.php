@@ -208,6 +208,7 @@ class SearchConfig_API {
 
     static function namedsearch(Contact $user, Qrequest $qreq) {
         $fjs = [];
+        $ms = new MessageSet;
         foreach ($user->conf->named_searches() as $sj) {
             if (($sj->qt ?? "n") === "n" && ($sj->t ?? "s") === "s") {
                 $q = $sj->q;
@@ -219,11 +220,19 @@ class SearchConfig_API {
                 $nsj["editable"] = true;
             }
             $fjs[] = $nsj;
+            $ps = new PaperSearch($user, $q);
+            foreach ($ps->message_list() as $mi) {
+                $ms->append_item_at("named_search/" . count($fjs) . "/q", $mi);
+            }
         }
         usort($fjs, function ($a, $b) {
             return strnatcasecmp($a["name"], $b["name"]);
         });
-        return new JsonResult(["ok" => true, "searches" => $fjs]);
+        $j = ["ok" => true, "searches" => $fjs];
+        if ($ms->has_message()) {
+            $j["message_list"] = $ms->message_list();
+        }
+        return new JsonResult($j);
     }
 
     static function save_namedsearch(Contact $user, Qrequest $qreq) {
