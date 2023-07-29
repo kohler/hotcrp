@@ -319,7 +319,7 @@
     {   "name": "heading", "alias": "LEGEND"   },
     {
         "name": "ss",
-        "parse_function": "PaperSearch::parse_saved_search"
+        "parse_function": "PaperSearch::parse_named_search"
     },
     {   "name": "search", "alias": "ss"   },
     {

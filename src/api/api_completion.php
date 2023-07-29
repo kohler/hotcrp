@@ -109,8 +109,8 @@ class Completion_API {
 
         if ((!$category || $category === "ss")
             && $user->isPC) {
-            foreach ($conf->named_searches() as $k => $v) {
-                $comp[] = "ss:" . $k;
+            foreach ($conf->named_searches() as $sj) {
+                $comp[] = "ss:" . $sj->name;
             }
         }
 

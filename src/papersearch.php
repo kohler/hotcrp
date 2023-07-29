@@ -729,33 +729,39 @@ class PaperSearch extends MessageSet {
     }
 
     /** @param string $word
-     * @return ?string */
-    private function _expand_saved_search($word) {
-        $sj = $this->conf->setting_json("ss:{$word}");
-        if ($sj && is_object($sj) && isset($sj->q)) {
-            $q = $sj->q;
-            if (isset($sj->t) && $sj->t !== "" && $sj->t !== "s") {
-                $q = "({$q}) in:{$sj->t}";
-            }
-            return $q;
-        } else {
-            return null;
+     * @return ?object */
+    private function _find_named_search($word) {
+        foreach ($this->conf->named_searches() as $sj) {
+            if (strcasecmp($sj->name, $word) === 0)
+                return $sj;
         }
+        return null;
+    }
+
+    /** @param string $word
+     * @param object $sj
+     * @return ?string */
+    private function _expand_named_search($word, $sj) {
+        $q = $sj->q ?? null;
+        if ($q && ($sj->t ?? "") !== "" && $sj->t !== "s") {
+            $q = "({$q}) in:{$sj->t}";
+        }
+        return $q;
     }
 
     /** @param string $word
      * @return ?SearchTerm */
-    static function parse_saved_search($word, SearchWord $sword, PaperSearch $srch) {
+    static function parse_named_search($word, SearchWord $sword, PaperSearch $srch) {
         if (!$srch->user->isPC) {
             return null;
         }
         $qe = null;
-        if (!$srch->conf->setting_data("ss:{$word}")) {
-            $srch->lwarning($sword, "<0>Saved search not found");
-        } else if (!($nextq = $srch->_expand_saved_search($word))) {
-            $srch->lwarning($sword, "<0>Saved search defined incorrectly");
+        if (!($sj = $srch->_find_named_search($word))) {
+            $srch->lwarning($sword, "<0>Named search not found");
+        } else if (!($nextq = $srch->_expand_named_search($word, $sj))) {
+            $srch->lwarning($sword, "<0>Named search defined incorrectly");
         } else if (count($srch->_saved_search_stack ?? []) >= 10) {
-            $srch->lwarning($sword, "<0>Circular reference in saved search definitions");
+            $srch->lwarning($sword, "<0>Circular reference in named search definitions");
         } else {
             $srch->_saved_search_stack[] = [$sword, $nextq];
             if (($qe = $srch->_search_expression($nextq))) {

@@ -180,14 +180,14 @@ class Search_Page {
             if (!empty($ss)) {
                 echo '<div class="ctable search-ctable column-count-3 mb-1">';
                 ksort($ss, SORT_NATURAL | SORT_FLAG_CASE);
-                foreach ($ss as $sn => $sv) {
-                    $q = $sv->q ?? "";
-                    if (isset($sv->t) && $sv->t !== "s") {
-                        $q = "({$q}) in:{$sv->t}";
+                foreach ($ss as $sj) {
+                    $q = $sj->q ?? "";
+                    if (isset($sj->t) && $sj->t !== "s") {
+                        $q = "({$q}) in:{$sj->t}";
                     }
                     echo '<div class="ctelt"><a href="',
-                        $this->conf->hoturl("search", ["q" => "ss:{$sn}"]),
-                        '">ss:', htmlspecialchars($sn), '</a>',
+                        $this->conf->hoturl("search", ["q" => "ss:{$sj->name}"]),
+                        '">ss:', htmlspecialchars($sj->name), '</a>',
                         '<div class="small">Definition: “<a href="',
                         $this->conf->hoturl("search", ["q" => $q]),
                         '">', htmlspecialchars($q), '</a>”</div></div>';

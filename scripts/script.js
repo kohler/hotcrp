@@ -11593,19 +11593,19 @@ handle_ui.on("js-edit-namedsearches", function () {
     function push1(hc, f) {
         ++count;
         hc.push('<div class="editsearches-search" data-search-number="' + count + '">', '</div>');
-        hc.push('<div class="entryi"><label for="k-searchname_' + count + '">Name</label><div class="entry nw">', '</div></div>');
+        hc.push('<div class="entryi"><label for="k-named_search/' + count + '/name">Name</label><div class="entry nw">', '</div></div>');
         if (f.editable) {
-            hc.push('<input type="text" id="k-searchname_' + count + '" class="editsearches-name need-autogrow" name="searchname_' + count + '" size="30" value="' + escape_html(f.name) + '" placeholder="Search name">');
+            hc.push('<input type="text" id="k-named_search/' + count + '/name" class="editsearches-name need-autogrow" name="named_search/' + count + '/name" size="30" value="' + escape_html(f.name) + '" placeholder="Search name">');
             hc.push('<button type="button" class="ui closebtn delete-link need-tooltip" aria-label="Delete search">x</button>');
         } else
             hc.push(escape_html(f.name));
         hc.pop();
-        hc.push('<div class="entryi"><label for="k-searchquery_' + count + '">Search</label><div class="entry">', '</div></div>');
+        hc.push('<div class="entryi"><label for="k-named_search/' + count + '/q">Search</label><div class="entry">', '</div></div>');
         if (f.editable)
-            hc.push('<textarea class="editsearches-query need-autogrow w-99" id="k-searchquery_' + count + '" name="searchq_' + count + '" rows="1" cols="64" placeholder="(All)">' + escape_html(f.q) + '</textarea>');
+            hc.push('<textarea class="editsearches-query need-autogrow w-99" id="k-named_search/' + count + '/q" name="named_search/' + count + '/q" rows="1" cols="64" placeholder="(All)">' + escape_html(f.q) + '</textarea>');
         else
             hc.push(escape_html(f.q));
-        hc.push('<input type="hidden" name="searchid_' + count + '" value="' + (f.id || f.name) + '">');
+        hc.push('<input type="hidden" name="named_search/' + count + '/id" value="' + (f.id || f.name) + '">');
         hc.pop();
         if (f.error_html) {
             hc.push('<div class="entryi"><label class="is-error">Error</label><div class="entry">' + f.error_html + '</div></div>');
@@ -11634,7 +11634,7 @@ handle_ui.on("js-edit-namedsearches", function () {
             $x.find(".editsearches-name").prop("disabled", true).css("text-decoration", "line-through");
             $x.append('<em>(Search deleted)</em>');
         }
-        $x.append('<input type="hidden" name="searchdeleted_' + $x.data("searchNumber") + '" value="1">');
+        $x.append('<input type="hidden" name="search:' + $x.data("searchNumber") + ':delete" value="1">');
     }
     function submit(evt) {
         evt.preventDefault();

@@ -918,6 +918,31 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
     }
 
     /** @return bool */
+    private function v277_update_named_searches() {
+        $sjs = $names = [];
+        $result = $this->conf->ql("select name, data from Settings where name like 'ss:%'");
+        if (!$result) {
+            return false;
+        }
+        while (($row = $result->fetch_row())) {
+            $names[] = $row[0];
+            if (($jx = json_decode($row[1] ?? "null")) && is_object($jx)) {
+                $j = (object) ["name" => substr($row[0], 3)];
+                foreach ((array) $jx as $k => $v) {
+                    if ($k !== "name")
+                        $j->$k = $v;
+                }
+                $sjs[] = $j;
+            }
+        }
+        Dbl::free($result);
+        return empty($names)
+            || ($this->conf->ql_ok("delete from Settings where name?a", $names)
+                && (empty($sjs)
+                    || $this->conf->save_setting("named_searches", 1, json_encode_db($sjs))));
+    }
+
+    /** @return bool */
     function run() {
         $conf = $this->conf;
 
@@ -1002,6 +1027,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion <= 274
             && $conf->setting("has_permtag")) {
             $conf->save_setting("has_permtag", null);
+        }
+
+        // update saved searches
+        if ($conf->sversion <= 276) {
+            $this->v277_update_named_searches();
         }
 
         if ($conf->sversion === 6
@@ -2647,6 +2677,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table PaperStorage add `width` int(8) NOT NULL DEFAULT -1")
             && $conf->ql_ok("alter table PaperStorage add `height` int(8) NOT NULL DEFAULT -1")) {
             $conf->update_schema_version(276);
+        }
+        if ($conf->sversion === 276) {
+            $conf->update_schema_version(277);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
