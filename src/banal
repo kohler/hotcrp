@@ -57,6 +57,7 @@ banal has three modes of operation:
 
 -json     print JSON output
 -pagenum  include page numbers and headings
+-no-time  do not print timestamp
 -debug-words debug words
 
 -zoom=N   passed to pdftohtml
@@ -74,7 +75,7 @@ my($banal_version) = 1.2;
 
 # parse args
 my ($banal_mode) = "report";
-my (%banal_param, $json_pagenum);
+my (%banal_param, $json_pagenum, $no_timestamp);
 my ($debug_pdftohtml, $debug_words);
 for (my $i = 0; $i < @ARGV; ) {
     if ($ARGV[$i] =~ /\A--?(stats|json|report|version)\z/) {
@@ -88,6 +89,9 @@ for (my $i = 0; $i < @ARGV; ) {
         splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A--?(?:pagen(?:um|o)|headings|headers)\z/) {
         $json_pagenum = 1;
+        splice @ARGV, $i, 1;
+    } elsif ($ARGV[$i] =~ /\A--?(?:no-?time(?:stamp|))\z/) {
+        $no_timestamp = 1;
         splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A--?(zoom|max[-_]pages)=(.*)\z/) {
         my($name) = $1;
@@ -857,7 +861,8 @@ sub report_json ($) {
     my ($doc) = @_;
     binmode STDOUT, ':utf8';
 
-    printf "{\n  \"at\": %d,\n", time;
+    printf "{\n";
+    printf "  \"at\": %d,\n", time if !$no_timestamp;
     printf "  \"args\": %s,\n", json_quote(join(" ", @switches)) if @switches;
 
     my $dx = {"pw" => {}, "ph" => {}, "tw" => {}, "th" => {}, "mt" => {}, "ml" => {}, "mr" => {}, "mb" => {}};
