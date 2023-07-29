@@ -157,11 +157,11 @@ class Column {
     }
 
     /** @param ?string $add
-     * @param ?list<string> $remove
+     * @param ?list<?string> $remove
      * @return true */
     protected function __add_decoration($add, $remove = []) {
         foreach ($remove as $s) {
-            if (($i = $this->decoration_index($s)) !== false) {
+            if ($s !== null && ($i = $this->decoration_index($s)) !== false) {
                 array_splice($this->decorations, $i, 1);
             }
         }
