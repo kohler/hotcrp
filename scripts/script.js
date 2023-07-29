@@ -3412,7 +3412,7 @@ handle_ui.on("js-tracker", function (evt) {
         $d.find("form").submit();
     }
     function start() {
-        var hc = popup_skeleton({className: "modal-dialog-w40 need-diff-check"});
+        var hc = popup_skeleton({className: "modal-dialog-w40", form_class: "need-diff-check"});
         hc.push('<h2>Meeting tracker</h2>');
         var trackers, nshown = 0;
         if (!dl.tracker) {
@@ -11523,7 +11523,7 @@ handle_ui.on("js-edit-formulas", function () {
             });
     }
     function create(formulas) {
-        var hc = popup_skeleton({className: "modal-dialog-w40 need-diff-check"}), i;
+        var hc = popup_skeleton({className: "modal-dialog-w40", form_class: "need-diff-check"}), i;
         hc.push('<h2>Named formulas</h2>');
         hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank" rel="noopener">Formulas</a>, such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”.</p>');
         hc.push('<div class="editformulas">', '</div>');
@@ -11568,7 +11568,7 @@ handle_ui.on("js-edit-view-options", function () {
         evt.preventDefault();
     }
     function create(display_default, display_current) {
-        var hc = popup_skeleton({className: "modal-dialog-w40 need-diff-check"});
+        var hc = popup_skeleton({className: "modal-dialog-w40", form_class: "need-diff-check"});
         hc.push('<h2>View options</h2>');
         hc.push('<div class="f-i"><div class="f-c">Default view options</div>', '</div>');
         hc.push('<div class="reportdisplay-default">' + escape_html(display_default || "(none)") + '</div>');
@@ -11645,7 +11645,7 @@ handle_ui.on("js-edit-namedsearches", function () {
             });
     }
     function create(data) {
-        var hc = popup_skeleton({className: "modal-dialog-w40 need-diff-check"}), i;
+        var hc = popup_skeleton({className: "modal-dialog-w40", form_class: "need-diff-check"}), i;
         hc.push('<h2>Named searches</h2>');
         hc.push('<p>Invoke a named search with “ss:NAME”. Named searches are shared with the PC.</p>');
         hc.push('<div class="editsearches">', '</div>');
@@ -12306,7 +12306,7 @@ function textarea_shadow($self, width) {
 }
 
 (function ($) {
-var autogrowers = null;
+var autogrowers = null, shadow = [null, null], shadow_of = [null, null];
 function computed_line_height(css) {
     var lh = css.lineHeight;
     return parseFloat(lh) * (lh.endsWith("px") ? 1 : parseFloat(css.fontSize));
@@ -12317,6 +12317,36 @@ function resizer() {
 }
 function autogrower_retry(f, e) {
     $(e).data("autogrower") === f && f(null);
+}
+function make_shadow(e) {
+    var idx = e.tagName === "INPUT" ? 0 : 1, sh = shadow[idx];
+    if (!sh) {
+        sh = shadow[idx] = document.createElement("div");
+        sh.style.position = "absolute";
+        sh.style.visibility = "hidden";
+        document.body.appendChild(sh);
+        if (idx === 0) {
+            sh.style.width = "10px";
+            sh.style.whiteSpace = "pre";
+        }
+    }
+    if (shadow_of[idx] !== e) {
+        var curs = window.getComputedStyle(e), i,
+            prop = ["fontSize", "fontFamily", "lineHeight", "fontWeight",
+                    "paddingLeft", "paddingRight", "paddingTop", "paddingBottom",
+                    "borderLeftWidth", "borderRightWidth", "borderTopWidth", "borderBottomWidth",
+                    "boxSizing"];
+        if (idx === 1) {
+            prop.push("wordWrap", "wordBreak", "overflowWrap", "whiteSpace", "width");
+        }
+        for (i in prop) {
+            if (prop[i] in curs)
+                sh.style[prop[i]] = curs[prop[i]];
+        }
+        shadow_of[idx] = e;
+    }
+    sh.textContent = e.value;
+    return sh;
 }
 function make_textarea_autogrower(e) {
     var state = 0, minHeight, lineHeight, borderPadding, timeout = 0;
@@ -12331,11 +12361,11 @@ function make_textarea_autogrower(e) {
             minHeight = parseFloat(css.height);
             lineHeight = computed_line_height(css);
             borderPadding = parseFloat(css.borderTopWidth) + parseFloat(css.borderBottomWidth);
-            state = 1;
         }
-        e.style.height = "auto"; // in case text shrank (scrollHeight always ≥clientHeight)
-        var wh = Math.max(0.8 * window.innerHeight, 4 * lineHeight);
-        e.style.height = Math.min(wh, Math.max(e.scrollHeight + borderPadding, minHeight)) + "px";
+        ++state;
+        var sh = state === 1 ? e : make_shadow(e),
+            wh = Math.max(0.8 * window.innerHeight, 4 * lineHeight);
+        e.style.height = Math.min(wh, Math.max(sh.scrollHeight + borderPadding, minHeight)) + "px";
     }
     return f;
 }
@@ -12350,16 +12380,15 @@ function make_input_autogrower(e) {
             }
             var css = window.getComputedStyle(e);
             minWidth = parseFloat(css.width);
-            borderPadding = parseFloat(css.borderLeftWidth) + parseFloat(css.borderRightWidth) + parseFloat(css.fontSize) * 0.25;
-            state = 1;
+            borderPadding = parseFloat(css.borderLeftWidth) + parseFloat(css.borderRightWidth) + parseFloat(css.fontSize) * 0.333;
         }
+        ++state;
         var parent = e.closest(".main-column, .modal-dialog"),
             ww = Math.max(0.9 * (parent ? parent.scrollWidth : window.innerWidth), 100),
-            ws = e.scrollWidth;
-        if (ws > minWidth || ws > ww) {
-            e.style.width = minWidth + "px"; // in case text shrank (scrollWidth always ≥clientWidth)
-            ws = e.scrollWidth;
-            e.style.width = Math.min(ww, ws > minWidth ? ws + borderPadding : minWidth) + "px";
+            sh = make_shadow(e),
+            ws = sh.scrollWidth + borderPadding;
+        if (Math.max(e.scrollWidth, ws) > Math.min(minWidth, ww)) {
+            e.style.width = Math.min(ww, Math.max(ws, minWidth)) + "px";
         }
     }
     return f;
