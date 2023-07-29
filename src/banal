@@ -490,16 +490,25 @@ sub interval_overlap ($$$$) {
 
 sub column_gap_overlap {
     my ($text, $coll, $colr, $tt, $th, $bodyfontsize) = @_;
-    my ($slack) = in2pdf(1/8);
     my ($gap) = 0;
     if ($text->{sz} <= $bodyfontsize
         && interval_overlap($coll, $colr - $coll, $text->{l}, $text->{w})) {
+        my ($slack) = $text->{sz} * 0.5;
         $gap |= 1 if $text->{t} >= $tt + $th
                 && $text->{t} - ($tt + $th) < $slack;
         $gap |= 2 if $tt >= $text->{t} + $text->{h}
                 && $tt - ($text->{t} + $text->{h}) < $slack;
     }
     return $gap;
+}
+
+sub line_combine {
+    my ($text, $tt, $th, $tl, $tr, $slack, $isright) = @_;
+    my ($textl) = $text->{l};
+    my ($textr) = $textl + $text->{w};
+    return interval_overlap($tt, $th, $text->{t}, $text->{h})
+        && ($isright ? $textl >= $tr - $slack : $tl >= $textr - $slack)
+        && ($isright ? $textl < $tr + 3 * $slack : $tl < $textr + 3 * $slack);
 }
 
 sub heading_number ($) {
@@ -533,6 +542,7 @@ sub calc_page_headings ($$$$) {
     my ($contents) = 0;
     my ($min_section) = $doc->{max_section};
     my ($max_section) = $min_section;
+    my ($nskipped) = 0;
 
     TPOS: for (my $tpos = 0; $tpos < @$texts; ) {
         my ($tpos1) = $tpos;
@@ -553,20 +563,28 @@ sub calc_page_headings ($$$$) {
         my ($content) = $text->{content};
         if ($content !~ /\A[\dABCDEFGHIRVX]/) {
             ++$tpos;
+            ++$nskipped;
             next;
         }
 
         # compute length of line
         my ($tl) = $text->{l};
         my ($tr) = $tl + $text->{w};
+        if ($nskipped > 0
+            && line_combine($texts->[$tpos-1], $tt, $th, $tl, $tr, $slack, 0)) {
+            ++$tpos;
+            ++$nskipped;
+            next;
+        }
+
+        $nskipped = 0;
         ++$tpos;
         while ($tpos < @$texts
-               && interval_overlap($tt, $th, $texts->[$tpos]->{t}, $texts->[$tpos]->{h})
-               && $texts->[$tpos]->{l} >= $tr - $slack
-               && $texts->[$tpos]->{l} < $tr + 3 * $slack) {
-            $content .= " " if $texts->[$tpos]->{l} - $tr > $text->{sz} / 6;
+               && line_combine($texts->[$tpos], $tt, $th, $tl, $tr, $slack, 1)) {
+            my ($textl) = $texts->[$tpos]->{l};
+            $content .= " " if $textl - $tr > $text->{sz} / 6;
             $content .= $texts->[$tpos]->{content};
-            $tr = $texts->[$tpos]->{l} + $texts->[$tpos]->{w};
+            $tr = $textl + $texts->[$tpos]->{w};
             ++$tpos;
         }
 
@@ -604,25 +622,34 @@ sub calc_page_headings ($$$$) {
         }
 
         # skip if part of paragraph
+        # (if font is body size, require that there be space before the heading)
         if ($text->{sz} <= $bodyfontsize) {
             my ($gaps) = 0;
             my ($tposl) = $tpos1 - 1;
             my ($tposr) = $tpos;
             while ($tposl >= 0 || $tposr < @$texts) {
-                $gaps |= column_gap_overlap($texts->[$tposl], $coll, $colr, $tt, $th, $bodyfontsize) if $tposl >= 0;
-                $gaps |= column_gap_overlap($texts->[$tposr], $coll, $colr, $tt, $th, $bodyfontsize) if $tposr < @$texts;
-                if ($gaps == 3) {
+                if ($tposl >= 0) {
+                    $gaps |= column_gap_overlap($texts->[$tposl], $coll, $colr, $tt, $th, $bodyfontsize);
+                    #print STDERR "kill @" . $texts->[$tposl]->{content} . " " . $texts->[$tposl]->{sz} ."($bodyfontsize) [$content]\n" if $gaps & 2;
+                    --$tposl;
+                }
+                if ($tposr < @$texts) {
+                    $gaps |= column_gap_overlap($texts->[$tposr], $coll, $colr, $tt, $th, $bodyfontsize);
+                    #print STDERR "kill @" . $texts->[$tposr]->{content} . " [$content]\n" if $gaps & 2;
+                    ++$tposr;
+                }
+                if ($gaps & 2) {
                     next TPOS;
                 }
-                --$tposl;
-                ++$tposr;
             }
         }
 
         # skip if already seen or unexpected
         my($hnum, $htxt, $hstxt, $hisnum) = heading_number($content);
         if ($hisnum) {
-            if ($hnum > 99 && $doc->{max_numeric_heading} > 0 && $doc->{max_numeric_heading} < 20) {
+            if ($hnum > 99
+                && $doc->{max_numeric_heading} > 0
+                && $doc->{max_numeric_heading} < 20) {
                 next TPOS;
             }
             if (exists($doc->{headings}->{$hstxt})) {
