@@ -327,7 +327,10 @@ class Autoassign_Page {
 
 
         // open form
-        echo Ht::form($conf->hoturl("=autoassign", ["profile" => $qreq->profile, "seed" => $qreq->seed, "XDEBUG_PROFILE" => $qreq->XDEBUG_PROFILE]), ["id" => "autoassignform", "class" => "ui-submit js-autoassign-prepare"]),
+        echo Ht::form($conf->hoturl("=autoassign", ["profile" => $qreq->profile, "seed" => $qreq->seed, "XDEBUG_PROFILE" => $qreq->XDEBUG_PROFILE]), [
+                "id" => "autoassignform",
+                "class" => "need-diff-check ui-submit js-autoassign-prepare"
+            ]),
             '<div class="helpside"><div class="helpinside">
         Assignment methods:
         <ul><li><a href="', $conf->hoturl("autoassign"), '" class="q"><strong>Automatic</strong></a></li>
@@ -343,7 +346,7 @@ class Autoassign_Page {
           <dt>', review_type_icon(REVIEW_PC), ' Optional</dt><dd>May be declined</dd>
           <dt>', review_type_icon(REVIEW_META), ' Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
         </div></div>', "\n";
-        echo Ht::unstash_script("hotcrp.highlight_form_children(\"#autoassignform\")");
+        echo Ht::unstash_script("\$(\"#autoassignform\").awaken()");
 
 
         // paper selection

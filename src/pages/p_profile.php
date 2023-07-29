@@ -613,7 +613,7 @@ class Profile_Page {
         }
         echo Ht::form($this->conf->hoturl("=profile", $form_params), [
             "id" => "f-profile",
-            "class" => "need-unload-protection",
+            "class" => "need-diff-check need-unload-protection",
             "data-user" => $this->page_type ? null : $this->user->email
         ]);
 
@@ -660,7 +660,7 @@ class Profile_Page {
         echo '</ul>';
 
         if ($this->page_type === 0) {
-            echo '<div class="leftmenu-if-left if-alert mt-5">',
+            echo '<div class="leftmenu-if-left if-differs mt-5">',
                 Ht::submit("save", "Save changes", ["class" => "btn-primary"]), '</div>';
         }
 
@@ -725,7 +725,7 @@ class Profile_Page {
         echo "</main></form>";
 
         if ($this->page_type === 0) {
-            Ht::stash_script('hotcrp.highlight_form_children("#f-profile")');
+            Ht::stash_script('$("#f-profile").awaken()');
         }
         $this->qreq->print_footer();
     }

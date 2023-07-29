@@ -98,7 +98,7 @@ class Settings_Page {
             $this->conf->make_script_file("scripts/settings.js"), "\n",
 
             Ht::form($this->conf->hoturl("=settings", "group={$group}"),
-                     ["id" => "f-settings", "class" => "need-unload-protection"]),
+                     ["id" => "f-settings", "class" => "need-diff-check need-unload-protection"]),
 
             '<div class="leftmenu-left"><nav class="leftmenu-menu">',
             '<h1 class="leftmenu"><button type="button" class="q uic js-leftmenu">Settings</button></h1>',
@@ -112,7 +112,7 @@ class Settings_Page {
                     '<a href="', $this->conf->hoturl("settings", "group={$gj->name}"), '">', $title, '</a></li>';
             }
         }
-        echo '</ul><div class="leftmenu-if-left if-alert mt-5">',
+        echo '</ul><div class="leftmenu-if-left if-differs mt-5">',
             Ht::submit("update", "Save changes", ["class" => "btn-primary"]),
             "</div></nav></div>\n",
             '<main class="leftmenu-content main-column">';
@@ -124,7 +124,7 @@ class Settings_Page {
         }
 
         echo "</main></form>\n";
-        Ht::stash_script('hiliter_children("#f-settings")');
+        Ht::stash_script('$("#f-settings").awaken()');
         $qreq->print_footer();
     }
 

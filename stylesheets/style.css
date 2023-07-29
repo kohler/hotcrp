@@ -1384,18 +1384,16 @@ button:hover, button:focus, button:active, button:focus-within,
 	border-color: #005f00;
 	background-image: linear-gradient(#00a200, #007f00);
 }
-.alert .btn-default,
-.alert .btn-primary,
-.alert .btn-alertable,
+.differs .btn-default,
+.differs .btn-primary,
 .btn-highlight {
 	border-color: #cc0000;
 	background: #ff0000;
 	background-image: linear-gradient(#ff4040, #ff0000);
 	color: white;
 }
-.alert .btn-default:hover, .alert .btn-default:active,
-.alert .btn-primary:hover, .alert .btn-primary:active,
-.alert .btn-alertable:hover, .alert .btn-alertable:active,
+.differs .btn-default:hover, .differs .btn-default:active,
+.differs .btn-primary:hover, .differs .btn-primary:active,
 .btn-highlight:hover, .btn-highlight:active {
 	border: 1px solid #b00000;
 	background-image: linear-gradient(#ee0000, #cc0000);
@@ -1417,10 +1415,9 @@ button:disabled, button:disabled:hover,
 .btn-default:disabled, .btn-default:disabled:hover,
 .btn-success:disabled, .btn-success:disabled:hover,
 .btn-primary:disabled, .btn-primary:disabled:hover,
-.alert .btn-default:disabled, .alert .btn-default:disabled:hover,
-.alert .btn-primary:disabled, .alert .btn-primary:disabled:hover,
-.alert .btn-alertable:disabled, .alert .btn-alertable:disabled:hover,
-.btn-highlight:disabled, .alert .btn-highlight:disabled:hover,
+.differs .btn-default:disabled, .differs .btn-default:disabled:hover,
+.differs .btn-primary:disabled, .differs .btn-primary:disabled:hover,
+.btn-highlight:disabled, .differs .btn-highlight:disabled:hover,
 button.disabled, button.disabled:hover {
 	color: rgba(102, 102, 102, 0.5);
 	border-color: #c5c5c5;
@@ -1443,10 +1440,10 @@ button.link:disabled:hover, button.q:disabled:hover, button.qo:disabled:hover,
 button.disabled, button.disabled:hover {
 	cursor: default;
 }
-.if-alert {
+.if-differs {
 	display: none;
 }
-.alert .if-alert {
+.differs .if-differs {
 	display: block;
 }
 .aabig button, .aabig .btn, .btn.big {

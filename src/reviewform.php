@@ -504,8 +504,9 @@ Ready\n";
         }
         echo '">',
             Ht::form($reviewPostLink, [
-                "id" => "f-review", "class" => "need-unload-protection",
-                "data-alert-toggle" => "review-alert"
+                "id" => "f-review",
+                "class" => "need-unload-protection need-differs",
+                "data-differs-toggle" => "review-alert"
             ]),
             Ht::hidden_default_submit("default", "");
         if ($rrow->reviewId) {

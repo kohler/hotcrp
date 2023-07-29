@@ -180,9 +180,9 @@ class Revpref_ListAction extends ListAction {
             $qreq->print_header("Review preferences", "revpref");
             $conf->feedback_msg($aset->message_list());
 
-            echo Ht::form($conf->hoturl("=reviewprefs", ["reviewer" => $reviewer_arg]), ["class" => "alert need-unload-protection"]),
+            echo Ht::form($conf->hoturl("=reviewprefs", ["reviewer" => $reviewer_arg]), ["class" => "differs need-unload-protection"]),
                 Ht::hidden("fn", "applyuploadpref"),
-                Ht::hidden("file", $aset->make_acsv()->unparse()),
+                Ht::hidden("file", $aset->make_acsv()->unparse(), ["data-default-value" => ""]),
                 Ht::hidden("filename", $csv->filename());
 
             echo '<h3>Proposed preference assignment</h3>';

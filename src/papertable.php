@@ -2214,8 +2214,8 @@ class PaperTable {
         }
         $form_js = [
             "id" => "f-paper",
-            "class" => "need-unload-protection ui-submit js-submit-paper",
-            "data-alert-toggle" => "paper-alert"
+            "class" => "need-unload-protection need-differs ui-submit js-submit-paper",
+            "data-differs-toggle" => "paper-alert"
         ];
         if ($this->need_autoready()) {
             $form_js["class"] .= " uich js-paper-autoready";
@@ -2228,7 +2228,7 @@ class PaperTable {
             $form_js["data-contacts-only"] = 1;
         }
         if ($this->useRequest) {
-            $form_js["class"] .= " alert";
+            $form_js["class"] .= " differs";
         }
         echo Ht::form($this->conf->hoturl("=paper", $form_url), $form_js);
         Ht::stash_script('$(hotcrp.load_editable_paper)');

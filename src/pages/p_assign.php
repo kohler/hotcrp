@@ -541,8 +541,8 @@ class Assign_Page {
                 '<div class="revcard-body">',
                 Ht::form($this->conf->hoturl("=assign", "p=$prow->paperId"), [
                     "id" => "f-pc-assignments",
-                    "class" => "need-unload-protection",
-                    "data-alert-toggle" => "paper-alert"
+                    "class" => "need-unload-protection need-differs",
+                    "data-differs-toggle" => "paper-alert"
                 ]);
             Ht::stash_script('$(hotcrp.load_editable_pc_assignments)');
 

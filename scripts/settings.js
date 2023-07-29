@@ -143,7 +143,7 @@ function settings_field_order(parentid) {
         orde.value = i = curorder;
     }
     movedown && (movedown.disabled = true);
-    form_highlight(form);
+    check_form_differs(form);
 }
 
 function field_find(ftypes, name) {
@@ -339,7 +339,7 @@ handle_ui.on("js-settings-automatic-tag-delete", function () {
     var ne = this.form.elements[this.closest(".settings-automatic-tag").id + "/tag"];
     settings_delete(this.closest(".settings-automatic-tag"),
         "This automatic tag will be removed from settings and from <a href=\"".concat(hoturl_html("search", {q: "#" + ne.defaultValue, t: "all"}), '" target="_blank" rel="noopener">any matching submissions</a>.'));
-    form_highlight(this.form);
+    check_form_differs(this.form);
 });
 
 handle_ui.on("js-settings-track-add", function () {
@@ -420,7 +420,7 @@ handle_ui.on("js-settings-review-round-new", function () {
     $("#settings-review-rounds").append($n);
     $n.find("textarea").css({height: "auto"}).autogrow();
     $n.awaken();
-    form_highlight(this.form);
+    check_form_differs(this.form);
     settings_review_round_selectors(this.form);
 });
 
@@ -433,7 +433,7 @@ handle_ui.on("js-settings-review-round-delete", function () {
     } else {
         settings_delete(div, "This review round will be deleted and <a href=\"".concat(hoturl_html("search", {q: "re:\"" + (ne ? ne.defaultValue : "<invalid>") + "\""}), '" target="_blank" rel="noopener">', plural(n, "review"), '</a> assigned to another round.'));
     }
-    form_highlight(this.form);
+    check_form_differs(this.form);
     settings_review_round_selectors(this.form);
 });
 
@@ -467,7 +467,7 @@ handle_ui.on("js-settings-submission-round-new", function () {
     $n = $(h.replace(/\/\$/g, "/" + i));
     $("#settings-submission-rounds").append($n);
     $n.awaken();
-    form_highlight(this.form);
+    check_form_differs(this.form);
     this.form.elements["submission/" + i + "/tag"].focus();
 });
 
@@ -482,7 +482,7 @@ handle_ui.on("js-settings-submission-round-delete", function () {
                 $$(div.id + '/delete_message').innerHTML = 'This submission class will be removed. The <a href="'.concat(hoturl_html("search", {q: "sclass:" + ne.defaultValue, t: "all"}), '" target="_blank" rel="noopener">', plural(v.ids.length, "submission"), '</a> associated with this class will remain in the system, and will still have the #', escape_html(ne.defaultValue), ' tag, but will be reassigned to other submission classes.');
         });
     }
-    form_highlight(this.form);
+    check_form_differs(this.form);
 });
 
 
@@ -818,7 +818,7 @@ function rfs(data) {
     }
 
     rf_order();
-    form_highlight("#f-settings");
+    check_form_differs("#f-settings");
 }
 
 function add_dialog() {
@@ -849,7 +849,7 @@ function add_dialog() {
         document.getElementById("rf/" + fieldorder.length + "/name").focus();
         $d.close();
         rf_order();
-        form_highlight("#f-settings");
+        check_form_differs("#f-settings");
         evt.preventDefault();
     }
     function create() {
@@ -893,7 +893,7 @@ handle_ui.on("js-settings-response-new", function () {
     $rx = $("#response\\/" + i);
     $rx.find("textarea").css({height: "auto"}).autogrow();
     $rx.awaken();
-    form_highlight(this.form);
+    check_form_differs(this.form);
 });
 
 handle_ui.on("js-settings-response-delete", function () {
@@ -904,7 +904,7 @@ handle_ui.on("js-settings-response-delete", function () {
     } else {
         settings_delete(rr, "This response round will be removed.");
     }
-    form_highlight(this.form);
+    check_form_differs(this.form);
 });
 
 handle_ui.on("input.js-settings-response-name", function () {
@@ -938,7 +938,7 @@ handle_ui.on("js-settings-decision-add", function () {
     $r.find("input[type=text]").autogrow();
     $(form.elements["decision/" + ctr + "/category"]).trigger("change");
     form.elements["decision/" + ctr + "/name"].focus();
-    form_highlight(form);
+    check_form_differs(form);
 });
 
 handle_ui.on("js-settings-decision-delete", function () {
@@ -949,7 +949,7 @@ handle_ui.on("js-settings-decision-delete", function () {
             + (sc ? ' and <a href="'.concat(hoturl_html("search", {q: "dec:\"" + ne.defaultValue + "\""}), '" target="_blank" rel="noopener">', plural(sc, "submission"), '</a> set to undecided.') : '.'))) {
         addClass(this.closest("div"), "hidden");
     }
-    form_highlight(this.form);
+    check_form_differs(this.form);
 });
 
 handle_ui.on("js-settings-decision-new-name", function () {
@@ -2327,7 +2327,7 @@ function make_json_validate() {
     }
 
     function handle_reflection() {
-        form_highlight(reflectel.form, reflectel);
+        check_form_differs(reflectel.form, reflectel);
         if (mainel.hasAttribute("data-reflect-highlight-api")) {
             api_timer && clearTimeout(api_timer);
             api_timer = setTimeout(handle_reflect_api, 500);

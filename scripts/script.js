@@ -1896,14 +1896,16 @@ function form_differs(form) {
     return null;
 }
 
-function form_highlight(form, elt) {
+function check_form_differs(form, elt) {
     (form instanceof HTMLElement) || (form = $(form)[0]);
-    var alerting = (elt && form_differs(elt)) || form_differs(form);
-    toggleClass(form, "alert", !!alerting);
-    if (form.hasAttribute("data-alert-toggle")) {
-        $("." + form.getAttribute("data-alert-toggle")).toggleClass("hidden", !alerting);
+    var differs = (elt && form_differs(elt)) || form_differs(form);
+    toggleClass(form, "differs", !!differs);
+    if (form.hasAttribute("data-differs-toggle")) {
+        $("." + form.getAttribute("data-differs-toggle")).toggleClass("hidden", !differs);
     }
 }
+
+window.form_highlight = check_form_differs; /* XXX */
 
 function hidden_input(name, value, attr) {
     var input = document.createElement("input");
@@ -1917,14 +1919,15 @@ function hidden_input(name, value, attr) {
     return input;
 }
 
-function hiliter_children(form) {
+hotcrp.add_diff_check = function (form) {
     form = $(form)[0];
-    form_highlight(form);
+    check_form_differs(form);
     $(form).on("change input", "input, select, textarea", function () {
         if (!hasClass(this, "ignore-diff") && !hasClass(form, "ignore-diff"))
-            form_highlight(form, this);
+            check_form_differs(form, this);
     });
-}
+    removeClass(form, "need-diff-check");
+};
 
 $(function () {
     $("form.need-unload-protection").each(function () {
@@ -1932,7 +1935,7 @@ $(function () {
         removeClass(form, "need-unload-protection");
         $(form).on("submit", function () { addClass(this, "submitting"); });
         $(window).on("beforeunload", function () {
-            if (hasClass(form, "alert") && !hasClass(form, "submitting"))
+            if (hasClass(form, "differs") && !hasClass(form, "submitting"))
                 return "If you leave this page now, your edits may be lost.";
         });
     });
@@ -2773,7 +2776,11 @@ function popup_skeleton(options) {
     function show() {
         $d = $(hc.render()).appendTo(document.body).awaken();
         $d.on("click", function (evt) {
-            evt.target === $d[0] && close();
+            if (evt.target === $d[0]) {
+                var f = $d.find("form")[0];
+                if (!f || !form_differs(f))
+                    close();
+            }
         });
         $d.find("button[name=cancel]").on("click", close);
         $d.on("keydown", function (evt) {
@@ -3405,7 +3412,7 @@ handle_ui.on("js-tracker", function (evt) {
         $d.find("form").submit();
     }
     function start() {
-        var hc = popup_skeleton({className: "modal-dialog-w40"});
+        var hc = popup_skeleton({className: "modal-dialog-w40 need-diff-check"});
         hc.push('<h2>Meeting tracker</h2>');
         var trackers, nshown = 0;
         if (!dl.tracker) {
@@ -4573,7 +4580,7 @@ handle_ui.on("js-assignment-fold", function (evt) {
         focus_within($x[0]);
     } else if (!form_differs($a)) {
         $x.remove();
-        form_highlight($a.closest("form")[0]);
+        check_form_differs($a.closest("form")[0]);
         $a.addClass("foldc").removeClass("foldo");
     }
     handle_ui.stopPropagation(evt);
@@ -4582,7 +4589,7 @@ handle_ui.on("js-assignment-autosave", function () {
     var f = this.form;
     toggleClass(f, "ignore-diff", this.checked);
     $(f).find(".autosave-hidden").toggleClass("hidden", this.checked);
-    form_highlight(f);
+    check_form_differs(f);
 });
 })($);
 
@@ -5383,7 +5390,6 @@ $(function () {
 // reviews
 handle_ui.on("js-review-tokens", function () {
     var $d, hc = popup_skeleton();
-    hc = popup_skeleton();
     hc.push('<h2>Review tokens</h2>');
     hc.push('<p>Review tokens implement fully anonymous reviewing. If you have been given review tokens, enter them here to view the corresponding papers and edit the reviews.</p>');
     hc.push('<input type="text" size="60" name="token" value="' + escape_html(this.getAttribute("data-review-tokens") || "") + '" placeholder="Review tokens">');
@@ -6471,7 +6477,6 @@ function cmt_start_edit(celt, cj) {
     }
 
     $(form).on("submit", cmt_submit).on("click", "button", cmt_button_click);
-    hiliter_children(form);
     $(celt).awaken();
 }
 
@@ -10600,7 +10605,7 @@ handle_ui.on("js-cancel-document", function () {
         if ($actions[0] && !$actions[0].firstChild)
             $actions.remove();
     }
-    form_highlight(f);
+    check_form_differs(f);
 });
 
 handle_ui.on("js-remove-document", function () {
@@ -11160,12 +11165,12 @@ function prepare_autoready_condition(f) {
 }
 
 hotcrp.load_editable_paper = function () {
-    var f = $$("f-paper") || /* XXX */ $$("form-paper");
-    hiliter_children(f);
+    var f = $$("f-paper");
+    hotcrp.add_diff_check(f);
     prepare_autoready_condition(f);
     $(".pfe").each(add_pslitem_pfe);
     var h = $(".btn-savepaper").first(),
-        k = hasClass(f, "alert") ? "" : " hidden";
+        k = hasClass(f, "differs") ? "" : " hidden";
     $(".pslcard-nav").append('<div class="paper-alert mt-5'.concat(k,
         '"><button class="ui btn-highlight btn-savepaper">', h.html(),
         '</button></div>'))
@@ -11181,8 +11186,8 @@ hotcrp.load_editable_review = function () {
     if (rfehead.length) {
         $(".pslcard > .pslitem:last-child").addClass("mb-3");
     }
-    hiliter_children("#f-review");
-    var k = $("#f-review").hasClass("alert") ? "" : " hidden",
+    hotcrp.add_diff_check("#f-review");
+    var k = $("#f-review").hasClass("differs") ? "" : " hidden",
         h = $(".btn-savereview").first();
     $(".pslcard-nav").append('<div class="review-alert mt-5'.concat(k,
         '"><button class="ui btn-highlight btn-savereview">', h.html(),
@@ -11194,10 +11199,10 @@ hotcrp.load_editable_review = function () {
 
 hotcrp.load_editable_pc_assignments = function () {
     $("h2").each(add_pslitem_header);
-    var f = $$("f-pc-assignments") || /* XXX */ $$("form-pc-assignments");
+    var f = $$("f-pc-assignments");
     if (f) {
-        hiliter_children(f);
-        var k = hasClass(f, "alert") ? "" : " hidden";
+        hotcrp.add_diff_check(f);
+        var k = hasClass(f, "differs") ? "" : " hidden";
         $(".pslcard-nav").append('<div class="paper-alert mt-5'.concat(k,
             '"><button class="ui btn-highlight btn-savepaper">Save PC assignments</button></div>'))
             .find(".btn-savepaper").click(function () {
@@ -11371,7 +11376,7 @@ handle_ui.on("js-profile-token-add", function () {
     focus_within(nbt);
     var enabler = this.form.elements["bearer_token/new/enable"];
     enabler.value = "1";
-    form_highlight(this.form, enabler);
+    check_form_differs(this.form, enabler);
 });
 
 handle_ui.on("js-profile-token-delete", function () {
@@ -11381,7 +11386,7 @@ handle_ui.on("js-profile-token-delete", function () {
     deleter.value = "1";
     $j.find("label, code").addClass("text-decoration-line-through");
     $j.append('<div class="feedback is-warning mt-1">This API token will be deleted. <strong>This operation cannot be undone.</strong></div>');
-    hiliter_children(this.form, deleter);
+    check_form_differs(this.form, deleter);
 });
 
 
@@ -11518,7 +11523,7 @@ handle_ui.on("js-edit-formulas", function () {
             });
     }
     function create(formulas) {
-        var hc = popup_skeleton({className: "modal-dialog-w40"}), i;
+        var hc = popup_skeleton({className: "modal-dialog-w40 need-diff-check"}), i;
         hc.push('<h2>Named formulas</h2>');
         hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank" rel="noopener">Formulas</a>, such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”.</p>');
         hc.push('<div class="editformulas">', '</div>');
@@ -11563,7 +11568,7 @@ handle_ui.on("js-edit-view-options", function () {
         evt.preventDefault();
     }
     function create(display_default, display_current) {
-        var hc = popup_skeleton({className: "modal-dialog-w40"});
+        var hc = popup_skeleton({className: "modal-dialog-w40 need-diff-check"});
         hc.push('<h2>View options</h2>');
         hc.push('<div class="f-i"><div class="f-c">Default view options</div>', '</div>');
         hc.push('<div class="reportdisplay-default">' + escape_html(display_default || "(none)") + '</div>');
@@ -11643,7 +11648,7 @@ handle_ui.on("js-edit-namedsearches", function () {
             });
     }
     function create(searches) {
-        var hc = popup_skeleton({className: "modal-dialog-w40"}), i;
+        var hc = popup_skeleton({className: "modal-dialog-w40 need-diff-check"}), i;
         hc.push('<h2>Saved searches</h2>');
         hc.push('<p>Invoke a saved search with “ss:NAME”. Saved searches are shared with the PC.</p>');
         hc.push('<div class="editsearches">', '</div>');
@@ -11892,7 +11897,7 @@ handle_ui.on("js-assign-review", function (evt) {
     function success(rv) {
         input_set_default_value(self, value);
         minifeedback(self, rv);
-        form_highlight(form, self);
+        check_form_differs(form, self);
     }
     $ajax.condition(function () {
         $.ajax(hoturl("=api/assign", {p: m[1]}), {
@@ -12403,6 +12408,8 @@ $.fn.unautogrow = function () {
 
 (function () {
 function awakenf() {
+    if (hasClass(this, "need-diff-check"))
+        hotcrp.add_diff_check(this);
     if (hasClass(this, "need-autogrow"))
         $(this).autogrow();
     if (hasClass(this, "need-suggest"))
@@ -12412,7 +12419,7 @@ function awakenf() {
 }
 $.fn.awaken = function () {
     this.each(awakenf);
-    this.find(".need-autogrow, .need-suggest, .need-tooltip").each(awakenf);
+    this.find(".need-diff-check, .need-autogrow, .need-suggest, .need-tooltip").each(awakenf);
     return this;
 };
 $(function () { $(document.body).awaken(); });
@@ -12458,6 +12465,7 @@ $(function () {
 
 Object.assign(window.hotcrp, {
     // add_comment
+    // add_diff_check
     // add_review
     // add_preference_ajax
     check_version: check_version,
@@ -12473,7 +12481,7 @@ Object.assign(window.hotcrp, {
     fold_storage: fold_storage,
     foldup: foldup,
     handle_ui: handle_ui,
-    highlight_form_children: hiliter_children,
+    highlight_form_children: window.hotcrp.add_diff_check, /* XXX */
     hoturl: hoturl,
     // init_deadlines
     // load_editable_paper
