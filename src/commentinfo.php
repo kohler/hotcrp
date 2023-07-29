@@ -696,7 +696,8 @@ class CommentInfo {
         if ($rrd && $rrd->words) {
             $nwords = count_words($ctext);
             $x .= " (" . plural($nwords, "word") . ")";
-            if ($nwords > $rrd->words) {
+            if ($nwords > $rrd->words
+                && ($flags & ReviewForm::UNPARSE_TRUNCATE) !== 0) {
                 list($ctext, $overflow) = count_words_split($ctext, $rrd->words);
                 if ($rrd->truncate) {
                     $ctext = rtrim($ctext) . "…\n- - - - - - - - - - - - - - Truncated for length - - - - - - - - - - - - - -\n";
@@ -707,7 +708,7 @@ class CommentInfo {
         }
         $x .= "\n" . str_repeat("-", 75) . "\n";
         $flowed = ($flags & ReviewForm::UNPARSE_FLOWED) !== 0;
-        if (!($flags & ReviewForm::UNPARSE_NO_TITLE)) {
+        if (($flags & ReviewForm::UNPARSE_NO_TITLE) === 0) {
             $prow = $this->prow;
             $x .= prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2, null, $flowed);
         }
@@ -715,7 +716,7 @@ class CommentInfo {
             $tagger = new Tagger($contact);
             $x .= prefix_word_wrap("* ", $tagger->unparse_hashed($tags), 2, null, $flowed);
         }
-        if (!($flags & ReviewForm::UNPARSE_NO_TITLE) || $tags) {
+        if (($flags & ReviewForm::UNPARSE_NO_TITLE) === 0 || $tags) {
             $x .= "\n";
         }
         return rtrim($x . $ctext) . "\n";
