@@ -12312,14 +12312,18 @@ function computed_line_height(css) {
     return parseFloat(lh) * (lh.endsWith("px") ? 1 : parseFloat(css.fontSize));
 }
 function resizer() {
+    shadow_of = [null, null];
     for (var i = autogrowers.length - 1; i >= 0; --i)
         autogrowers[i]();
 }
 function autogrower_retry(f, e) {
     $(e).data("autogrower") === f && f(null);
 }
+function shadow_index(e) {
+    return e.nodeName === "TEXTAREA" ? 1 : 0;
+}
 function make_shadow(e) {
-    var idx = e.tagName === "INPUT" ? 0 : 1, sh = shadow[idx];
+    var idx = shadow_index(e), sh = shadow[idx];
     if (!sh) {
         sh = shadow[idx] = document.createElement("div");
         sh.style.position = "absolute";
@@ -12412,6 +12416,7 @@ $.fn.autogrow = function () {
             }
         }
         if (f && $self.val() !== "") {
+            shadow_of[shadow_index(this)] = null;
             f();
         }
         removeClass(this, "need-autogrow");
