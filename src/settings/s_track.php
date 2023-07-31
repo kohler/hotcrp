@@ -1,6 +1,6 @@
 <?php
 // settings/s_track.php -- HotCRP settings > tracks page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Track_Setting {
     /** @var string */
@@ -435,5 +435,3 @@ class Track_SettingParser extends SettingParser {
         }
     }
 }
-
-class_alias("Track_SettingParser", "Tracks_SettingParser"); // XXX

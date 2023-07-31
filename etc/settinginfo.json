@@ -1101,6 +1101,30 @@
         "parse_order": -1000000
     },
 
+    {   "name": "named_searches", "internal": true, "type": "string"   },
+    {
+        "name": "named_search", "type": "oblist",
+        "parser_class": "NamedSearch_SettingParser"
+    },
+    {
+        "name_pattern": "named_search/$",
+        "type": "object", "subtype": "NamedSearch_Setting",
+        "title_pattern": "${sv named_search/$/title}",
+        "parser_class": "NamedSearch_SettingParser"
+    },
+    {   "name_pattern": "named_search/$/id", "internal": true, "type": "string"   },
+    {
+        "name_pattern": "named_search/$/name",
+        "title": "Search name",
+        "type": "tag", "size": 20, "autogrow": true
+    },
+    {   "name_pattern": "named_search/$/title", "internal": true, "parser_class": "NamedSearch_SettingParser"   },
+    {
+        "name_pattern": "named_search/$/q",
+        "title": "/Search",
+        "type": "string", "subtype": "search"
+    },
+
     {   "name": "extrev_hard_0", "merge": true, "storage": "extrev_hard"   },
     {   "name": "extrev_soft_0", "merge": true, "storage": "extrev_soft"   },
     {   "name": "pcrev_hard_0", "merge": true, "storage": "pcrev_hard"   },

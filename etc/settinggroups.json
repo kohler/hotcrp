@@ -447,5 +447,10 @@
     {
         "name": "__crosscheck/json", "order": -1000,
         "crosscheck_function": "JSON_SettingParser::crosscheck"
+    },
+
+    {
+        "name": "__crosscheck/named-search", "order": 910,
+        "crosscheck_function": "NamedSearch_SettingParser::crosscheck"
     }
 ]
