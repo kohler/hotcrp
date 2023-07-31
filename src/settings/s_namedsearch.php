@@ -43,7 +43,7 @@ class NamedSearch_SettingParser extends SettingParser {
 
     function prepare_oblist(Si $si, SettingValues $sv) {
         if ($si->name === "named_search") {
-            $this->settings_json = $this->settings_json ?? $sv->conf->setting_json("named_searches");
+            $this->settings_json = $this->settings_json ?? $sv->conf->setting_json("named_searches") ?? [];
             $m = [];
             foreach ($this->settings_json as $sj) {
                 $m[] = new NamedSearch_Setting($sj);
@@ -68,6 +68,9 @@ class NamedSearch_SettingParser extends SettingParser {
                 }
             }
             $j[] = $ns->export_json();
+            usort($j, function ($a, $b) {
+                return strnatcasecmp($a->name, $b->name);
+            });
         }
         $sv->update("named_searches", empty($j) ? "" : json_encode_db($j));
         return true;
