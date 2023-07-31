@@ -1124,6 +1124,11 @@
         "title": "/Search",
         "type": "string", "subtype": "search"
     },
+    {
+        "name_pattern": "named_search/$/display",
+        "title": "/Display",
+        "type": "radio", "values": ["default", "none", "highlight"], "default_value": "default"
+    },
 
     {   "name": "extrev_hard_0", "merge": true, "storage": "extrev_hard"   },
     {   "name": "extrev_soft_0", "merge": true, "storage": "extrev_soft"   },

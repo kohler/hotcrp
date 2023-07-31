@@ -545,6 +545,9 @@ label.checki {
 .font-weight-bold {
 	font-weight: bold;
 }
+.font-weight-semibold {
+	font-weight: 500;
+}
 .font-italic {
 	font-style: italic;
 }
@@ -617,6 +620,10 @@ label.checki {
 .ml-3 {
 	margin-left: 1em !important;
 	margin-left: 1rem !important;
+}
+.ml-4 {
+	margin-left: 1.5em !important;
+	margin-left: 1.5rem !important;
 }
 .ml-5 {
 	margin-left: 2.25em !important;

@@ -9,6 +9,8 @@ class NamedSearch_Setting {
     public $name;
     /** @var string */
     public $q;
+    /** @var 'default'|'none'|'highlight' */
+    public $display;
 
     /** @var bool */
     public $deleted = false;
@@ -17,11 +19,31 @@ class NamedSearch_Setting {
         $j = $j ?? (object) [];
         $this->id = $this->name = $j->name ?? "";
         $this->q = $j->q ?? "";
+        $this->display = $j->display ?? "default";
     }
 
     /** @return object */
     function export_json() {
-        return (object) ["name" => $this->name, "q" => $this->q, "owner" => "chair"];
+        $j = (object) ["name" => $this->name, "q" => $this->q, "owner" => "chair"];
+        if ($this->display !== "default") {
+            $j->display = $this->display;
+        }
+        return $j;
+    }
+
+    /** @param NamedSearch_Setting|object $a
+     * @param NamedSearch_Setting|object $b
+     * @return int */
+    static function compare($a, $b) {
+        $ad = $a->display ?? "default";
+        $bd = $b->display ?? "default";
+        if ($ad === "highlight" && $bd !== "highlight") {
+            return -1;
+        } else if ($bd === "highlight" && $ad !== "highlight") {
+            return 1;
+        } else {
+            return strnatcasecmp($a->name, $b->name);
+        }
     }
 }
 
@@ -68,9 +90,7 @@ class NamedSearch_SettingParser extends SettingParser {
                 }
             }
             $j[] = $ns->export_json();
-            usort($j, function ($a, $b) {
-                return strnatcasecmp($a->name, $b->name);
-            });
+            usort($j, "NamedSearch_Setting::compare");
         }
         $sv->update("named_searches", empty($j) ? "" : json_encode_db($j));
         return true;

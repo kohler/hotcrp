@@ -175,28 +175,37 @@ class Search_Page {
      * @return bool */
     private function print_saved_searches($always) {
         $ss = $this->conf->named_searches();
-        if (($show = !empty($ss) || $always)) {
-            echo '<div class="tld is-tla pb-2" id="saved-searches" role="tabpanel" aria-labelledby="tab-saved-searches">';
-            if (!empty($ss)) {
-                echo '<div class="ctable search-ctable column-count-3 mb-1">';
-                ksort($ss, SORT_NATURAL | SORT_FLAG_CASE);
-                foreach ($ss as $sj) {
-                    $q = $sj->q ?? "";
-                    if (isset($sj->t) && $sj->t !== "s") {
-                        $q = "({$q}) in:{$sj->t}";
-                    }
-                    echo '<div class="ctelt"><a href="',
-                        $this->conf->hoturl("search", ["q" => "ss:{$sj->name}"]),
-                        '">ss:', htmlspecialchars($sj->name), '</a>',
-                        '<div class="small">Definition: “<a href="',
-                        $this->conf->hoturl("search", ["q" => $q]),
-                        '">', htmlspecialchars($q), '</a>”</div></div>';
-                }
-                echo '</div>';
-            }
-            echo '<p class="mt-1 mb-0 text-end"><button class="small ui js-edit-namedsearches" type="button">Edit saved searches</button></p></div>';
+        if (empty($ss) && !$always) {
+            return false;
         }
-        return $show;
+        echo '<div class="tld is-tla pb-2" id="saved-searches" role="tabpanel" aria-labelledby="tab-saved-searches">';
+        $any = false;
+        foreach ($ss as $sj) {
+            if (($sj->display ?? null) === "none") {
+                continue;
+            }
+            if (!$any) {
+                Icons::stash_defs("solid_question");
+                echo Ht::unstash(), '<div class="ctable search-ctable column-count-3 mb-1">';
+                $any = true;
+            }
+            $q = $sj->q ?? "";
+            if (isset($sj->t) && $sj->t !== "s") {
+                $q = "({$q}) in:{$sj->t}";
+            }
+            echo '<div class="ctelt has-fold foldc">';
+            if (($sj->display ?? null) === "highlight") {
+                echo '⭐️ ';
+            }
+            echo Ht::link("ss:" . htmlspecialchars($sj->name), $this->conf->hoturl("search", ["q" => "ss:{$sj->name}"])),
+                ' <a href="" class="ui js-foldup small" title="Show expansion">', Icons::ui_use("solid_question"), '</a>',
+                '<div class="small fx ml-4">', htmlspecialchars($sj->q), '</div></div>';
+        }
+        if ($any) {
+            echo '</div>';
+        }
+        echo '<p class="mt-1 mb-0 text-end"><button class="small ui js-edit-namedsearches" type="button">Edit saved searches</button></p></div>';
+        return true;
     }
 
     /** @param Qrequest $qreq */

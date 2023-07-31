@@ -218,7 +218,21 @@ class Home_Page {
             ]), '<div class="form-basic-search-in"> in ',
             PaperSearch::limit_selector($this->conf, $limits, PaperSearch::default_limit($user, $limits)),
             Ht::submit("Search"),
-            "</div></form></div>\n";
+            "</div></form>";
+
+        if ($user->isPC) {
+            $hs = [];
+            foreach ($user->conf->named_searches() as $sj) {
+                if (($sj->display ?? null) === "highlight")
+                    $hs[] = '<li>⭐️ ' . Ht::link("ss:" . htmlspecialchars($sj->name), $this->conf->hoturl("search", ["q" => "ss:{$sj->name}"])) . '</li>';
+            }
+            if (!empty($hs)) {
+                echo '<div class="mt-1 font-weight-semibold"><ul class="inline">',
+                    join("", $hs), '</ul></div>';
+            }
+        }
+
+        echo '</div>';
     }
 
     /** @return list<Score_ReviewField> */

@@ -335,9 +335,7 @@ class SearchConfig_API {
         foreach ($ssjs as $sj) {
             unset($sj->id, $sj->fidx);
         }
-        usort($ssjs, function ($a, $b) {
-            return strnatcasecmp($a->name, $b->name);
-        });
+        usort($ssjs, "NamedSearch_Setting::compare");
         if (!empty($ssjs)) {
             $user->conf->save_setting("named_searches", 1, json_encode_db($ssjs));
         } else {
