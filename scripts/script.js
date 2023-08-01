@@ -4275,20 +4275,12 @@ $(function () {
 // dropdown menus
 
 (function ($) {
-var is_ie = document.documentMode || window.attachEvent, /* XXX remove support */
-    builders = {};
-
-if (is_ie) {
-    $(function () {
-        $("details .dropmenu-container").addClass("hidden");
-        $("details").attr("open", "");
-    });
-}
+var builders = {};
 
 function dropmenu_close() {
-    $$("dropmenu-modal").remove();
-    if (!is_ie)
-        $("details.dropmenu-details").removeAttr("open");
+    var modal = $$("dropmenu-modal");
+    modal && modal.remove();
+    $("details.dropmenu-details").each(function () { this.open = false; });
 }
 
 handle_ui.on("click.js-dropmenu-open", function (evt) {
@@ -4303,22 +4295,20 @@ handle_ui.on("click.js-dropmenu-open", function (evt) {
         esummary = esummary.closest("summary");
     edetails = esummary.parentElement;
     hotcrp.tooltip.close();
-    was_open = is_ie ? hasClass(edetails.lastChild, "hidden") : edetails.open;
-    if (!was_open && !modal) {
-        modal = classe("div", "modal transparent");
-        modal.id = "dropmenu-modal";
-        edetails.parentElement.insertBefore(modal, edetails.nextsibling);
-        modal.addEventListener("click", dropmenu_close, false);
-    } else if (modal)
-        dropmenu_close();
-    if (is_ie || this.tagName === "BUTTON") {
-        if (is_ie)
-            toggleClass(edetails.lastChild, "hidden", !was_open);
-        else
-            edetails.open = !was_open;
-        evt.preventDefault();
-        handle_ui.stopPropagation(evt);
+    if (!edetails.open) {
+        if (!modal) {
+            modal = classe("div", "modal transparent");
+            modal.id = "dropmenu-modal";
+            edetails.parentElement.insertBefore(modal, edetails.nextsibling);
+            modal.addEventListener("click", dropmenu_close, false);
+        }
+        edetails.open = true;
+    } else if (this.tagName === "BUTTON") {
+        modal && modal.remove();
+        edetails.open = false;
     }
+    evt.preventDefault();
+    handle_ui.stopPropagation(evt);
 });
 
 handle_ui.on("click.dropmenu", function (evt) {
