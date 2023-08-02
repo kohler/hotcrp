@@ -457,9 +457,6 @@ class Si {
                 $this->pages = $psi->pages;
             }
         }
-        if ($this->pages === null) {
-            error_log("no pages for {$this->name}\n" . debug_string_backtrace());
-        }
     }
 
     /** @return ?string */
@@ -476,7 +473,7 @@ class Si {
         if ($this->pages === null && !$this->_has_pages) {
             $this->_collect_pages();
         }
-        return $this->pages === null || in_array($t, $this->pages);
+        return in_array($t, $this->pages ?? []);
     }
 
     /** @return bool */
