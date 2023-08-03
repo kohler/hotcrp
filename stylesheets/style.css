@@ -286,11 +286,13 @@ body.paper #p-header {
 	color: #f33360;
 }
 
+h1, h2, h3, h4 {
+	margin: 0;
+}
 h1, h2 {
 	font-size: 140%;
 	font-size: 1.4rem;
 	line-height: 1.25;
-	margin: 0;
 }
 h1 {
 	font-weight: normal;
@@ -298,6 +300,9 @@ h1 {
 h2 {
 	font-weight: bold;
 	margin-bottom: 1rem;
+}
+h3, h4 {
+	margin-bottom: 0.75em;
 }
 #h-site > h1 {
 	display: inline;
@@ -881,6 +886,7 @@ body.paper-error .msg {
 .msg + .msg {
 	margin-top: -0.5rem;
 }
+.msg > h3, .msg > h4,
 .msg > p {
 	margin-bottom: 0.3em;
 }
