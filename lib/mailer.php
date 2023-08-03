@@ -438,7 +438,7 @@ class Mailer {
             if (strlen($m[3]) >= 2
                 && ctype_xdigit(substr($m[3], 0, 2))
                 && strlen($m[4]) >= 2
-                && ctype_xdigit(substr($m[3], 0, 2))
+                && ctype_xdigit(substr($m[4], 0, 2))
                 && preg_match('/\/\/\S+\z/', $text)) {
                 $s = null;
             } else {
