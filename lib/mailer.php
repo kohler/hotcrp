@@ -428,14 +428,23 @@ class Mailer {
         return $text . $rest;
     }
 
+    /** @param string $line
+     * @return string */
     private function _lineexpand($line, $indent) {
         $text = "";
         while (preg_match('/^(.*?)(%(#?[-a-zA-Z0-9!@_:.\/]+(?:|\([^\)]*\)))%)(.*)$/s', $line, $m)) {
-            if (($s = $this->expandvar($m[3], false)) !== null) {
-                $text .= $m[1] . $s;
+            $text .= $m[1];
+            // Don't expand keywords that look like they are coming from URLs
+            if (strlen($m[3]) >= 2
+                && ctype_xdigit(substr($m[3], 0, 2))
+                && strlen($m[4]) >= 2
+                && ctype_xdigit(substr($m[3], 0, 2))
+                && preg_match('/\/\/\S+\z/', $text)) {
+                $s = null;
             } else {
-                $text .= $m[1] . $m[2];
+                $s = $this->expandvar($m[3], false);
             }
+            $text .= $s ?? $m[2];
             $line = $m[4];
         }
         $text .= $line;
