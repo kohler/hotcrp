@@ -97,7 +97,7 @@ class AllTags_API {
             $readonly = $sitewide = [];
             foreach ($tags as $tag) {
                 if (($tag[0] !== "~" || $tag[1] === "~")
-                    && ($ti = $dt->check($tag))) {
+                    && ($ti = $dt->find($tag))) {
                     if ($ti->automatic
                         || ($ti->readonly && !$user->privChair)) {
                         $readonly[strtolower($tag)] = true;

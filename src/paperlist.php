@@ -922,7 +922,7 @@ class PaperList {
         } else {
             $alt_etag = "~~~";
         }
-        $dt = $this->conf->tags()->add(Tagger::base($etag));
+        $dt = $this->conf->tags()->ensure(Tagger::tv_tag($etag));
         if (!$dt->has_order_anno()) {
             $any = false;
             foreach (["#{$etag}", "#{$alt_etag}", "tagval:{$etag}", "tagval:{$alt_etag}"] as $x) {

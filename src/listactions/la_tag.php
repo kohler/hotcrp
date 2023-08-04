@@ -60,7 +60,7 @@ class Tag_ListAction extends ListAction {
         $x = ["action,paper,tag\n"];
         if ($act === "s" || $act === "so" || $act === "sos" || $act === "sor") {
             foreach ($tags as $t) {
-                $x[] = "cleartag,all," . Tagger::base($t) . "\n";
+                $x[] = "cleartag,all," . Tagger::tv_tag($t) . "\n";
             }
         }
         if ($act === "s" || $act === "a") {

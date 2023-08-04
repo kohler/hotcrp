@@ -4879,7 +4879,7 @@ class Contact implements JsonSerializable {
         }
 
         // conflict checks
-        $tag = Tagger::base($tag);
+        $tag = Tagger::tv_tag($tag);
         $tagmap = $this->conf->tags();
         if ($prow) {
             $rights = $this->rights($prow);
@@ -4943,20 +4943,20 @@ class Contact implements JsonSerializable {
             || (!$rights->allow_pc && !$tagmap->has_conflict_free)
             || (!$rights->can_administer && !$this->conf->time_pc_view($prow, false))) {
             if ($this->privChair && $tagmap->has_sitewide) {
-                $tag = Tagger::base($tag);
+                $tag = Tagger::tv_tag($tag);
                 $tw = strpos($tag, "~");
                 return ($tw === false || ($tw === 0 && $tag[1] === "~"))
-                    && ($t = $tagmap->check($tag))
+                    && ($t = $tagmap->find($tag))
                     && $t->sitewide
                     && !$t->automatic;
             } else {
                 return false;
             }
         }
-        $tag = Tagger::base($tag);
+        $tag = Tagger::tv_tag($tag);
         $tw = strpos($tag, "~");
         if ($tw === false || ($tw === 0 && $tag[1] === "~")) {
-            $t = $tagmap->check($tag);
+            $t = $tagmap->find($tag);
             return ($rights->allow_pc
                     || ($t && $t->conflict_free))
                 && ($tw === false || $this->privChair)
@@ -4968,7 +4968,7 @@ class Contact implements JsonSerializable {
                     || $rights->can_administer
                     || ($this->privChair && $t->sitewide));
         } else {
-            $t = $tagmap->check(substr($tag, $tw + 1));
+            $t = $tagmap->find(substr($tag, $tw + 1));
             return ($rights->allow_pc
                     || ($t && $t->conflict_free))
                 && ($tw === 0
@@ -5004,7 +5004,7 @@ class Contact implements JsonSerializable {
                 $whyNot["notSubmitted"] = true;
             }
         } else {
-            $tag = Tagger::base($tag);
+            $tag = Tagger::tv_tag($tag);
             $twiddle = strpos($tag, "~");
             if ($twiddle === 0 && $tag[1] === "~") {
                 $whyNot["chairTag"] = true;
@@ -5013,7 +5013,7 @@ class Contact implements JsonSerializable {
             } else if ($twiddle !== false) {
                 $whyNot["voteTagNegative"] = true;
             } else {
-                $t = $this->conf->tags()->check($tag);
+                $t = $this->conf->tags()->find($tag);
                 if ($t && $t->votish) {
                     $whyNot["voteTag"] = true;
                 } else if ($t && $t->automatic) {
@@ -5085,7 +5085,7 @@ class Contact implements JsonSerializable {
             return false;
         }
         $tagmap = $this->conf->tags();
-        $tag = Tagger::base($tag);
+        $tag = Tagger::tv_tag($tag);
         $twiddle = strpos($tag, "~");
         if ($twiddle !== false) {
             if ($twiddle > 0) {
@@ -5096,7 +5096,7 @@ class Contact implements JsonSerializable {
                     || ($this->is_manager() && !$tagmap->is_automatic($tag));
             }
         } else {
-            $t = $tagmap->check($tag);
+            $t = $tagmap->find($tag);
             return !$t
                 || (!$t->automatic
                     && (!$t->track || $this->privChair)
@@ -5111,7 +5111,7 @@ class Contact implements JsonSerializable {
             return true;
         }
         $twiddle = strpos($tag, "~");
-        $t = $this->conf->tags()->check($tag);
+        $t = $this->conf->tags()->find($tag);
         return $this->isPC
             && (!$t || (!$t->readonly && !$t->hidden))
             && ($twiddle === false

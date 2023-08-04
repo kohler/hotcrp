@@ -19,7 +19,7 @@ class TagReport_PaperColumn extends PaperColumn {
         if ($visible) {
             $pl->qopts["tags"] = 1;
         }
-        $dt = $pl->conf->tags()->check($this->tag);
+        $dt = $pl->conf->tags()->find($this->tag);
         if (!$dt || $dt->rank || (!$dt->allotment && !$dt->approval)) {
             $this->viewtype = 0;
         } else {
@@ -72,7 +72,7 @@ class TagReport_PaperColumn extends PaperColumn {
                 return $t->allotment || $t->approval || $t->rank;
             }));
         } else {
-            $t = $tagset->check($m[1]);
+            $t = $tagset->find($m[1]);
             if ($t && ($t->allotment || $t->approval || $t->rank)) {
                 return self::column_json($xfj, $m[1]);
             } else {

@@ -260,8 +260,8 @@ class Users_Page {
                 /* nada */
             } else if (!($t = $tagger->check($t, Tagger::NOPRIVATE))) {
                 $ms->error_at(null, $tagger->error_ftext());
-            } else if (in_array(strtolower(Tagger::base($t)), ["pc", "admin", "chair"])) {
-                $ms->error_at(null, $this->conf->_("<0>User tag ‘{}’ reserved", Tagger::base($t)));
+            } else if (in_array(strtolower(Tagger::tv_tag($t)), ["pc", "admin", "chair"])) {
+                $ms->error_at(null, $this->conf->_("<0>User tag ‘{}’ reserved", Tagger::tv_tag($t)));
             } else {
                 $t1[] = $t;
             }

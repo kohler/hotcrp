@@ -593,7 +593,7 @@ class Permission_Tester {
 
         $this->conf->save_refresh_setting("tag_chair", 1, "accept chairtest chairtest* pcpaper reject");
         xassert($this->conf->tags()->has_pattern);
-        $ct = $this->conf->tags()->check("chairtest0");
+        $ct = $this->conf->tags()->find("chairtest0");
         xassert(!!$ct);
         xassert_assign($user_chair, "paper,tag\n1,chairtest1\n", true);
         assert_search_papers($user_chair, "#chairtest1", "1");
@@ -603,7 +603,7 @@ class Permission_Tester {
 
         // pattern tag merging
         $this->conf->save_refresh_setting("tag_hidden", 1, "chair*");
-        $ct = $this->conf->tags()->check("chairtest0");
+        $ct = $this->conf->tags()->find("chairtest0");
         xassert($ct && $ct->readonly && $ct->hidden);
 
         // colon tag setting

@@ -188,7 +188,7 @@ class Tag_SearchTerm extends SearchTerm {
             || !($tag = $this->tsm->single_tag())) {
             return null;
         }
-        if (($dt = $pl->conf->tags()->check(Tagger::base($tag)))
+        if (($dt = $pl->conf->tags()->ensure(Tagger::tv_tag($tag)))
             && $dt->order_anno) {
             return $this->_make_default_sort_column($pl, $tag, $dt);
         }

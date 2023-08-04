@@ -14,7 +14,7 @@ class TagAnno_API {
             "editable" => $user->can_edit_tag_anno($tag),
             "anno" => []
         ];
-        $dt = $user->conf->tags()->add(Tagger::base($tag));
+        $dt = $user->conf->tags()->ensure(Tagger::tv_tag($tag));
         foreach ($dt->order_anno_list() as $oa) {
             if ($oa->annoId !== null)
                 $j["anno"][] = $oa;

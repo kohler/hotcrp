@@ -290,7 +290,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
         if ($nvalue <= 0
             && $tagmap->has_allotment
-            && ($dt = $tagmap->check($xtag))
+            && ($dt = $tagmap->find($xtag))
             && $dt->allotment
             && !$dt->approval) {
             $nvalue = false;
