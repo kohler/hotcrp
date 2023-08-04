@@ -38,7 +38,7 @@ jobs:
     - name: Install poppler
       run: |
         sudo apt-get --fix-broken install
-        sudo apt-get install poppler-utils || ( sudo apt-get --fix-broken update && sudo apt-get install poppler-utils )
+        sudo apt-get install poppler-utils || ( sudo apt-get update && sudo apt-get install poppler-utils )
 
     - name: Run tests
       run: sh test/check.sh --all
