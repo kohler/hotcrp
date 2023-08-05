@@ -2080,8 +2080,8 @@ class PaperTable {
             $this->papstripManager();
         }
         $this->papstripTags();
-        foreach ($this->conf->tags() as $ltag => $t) {
-            if ($this->user->can_edit_tag($this->prow, "~{$ltag}", null, 0)) {
+        foreach ($this->conf->tags()->sorted_entries_having(TagInfo::TF_APPROVAL | TagInfo::TF_ALLOTMENT | TagInfo::TF_RANK) as $t) {
+            if ($this->user->can_edit_tag($this->prow, "~{$t->tag}", null, 0)) {
                 if ($t->is(TagInfo::TF_APPROVAL)) {
                     $this->papstrip_approval($t->tag);
                 } else if ($t->is(TagInfo::TF_ALLOTMENT)) {

@@ -70,7 +70,7 @@ class TagReport_PaperColumn extends PaperColumn {
         if ($name === "tagreports") {
             return array_map(function ($t) use ($xfj) {
                 return self::column_json($xfj, $t->tag);
-            }, $tagset->filter(TagInfo::TFM_VOTES | TagInfo::TF_RANK));
+            }, $tagset->sorted_entries_having(TagInfo::TFM_VOTES | TagInfo::TF_RANK));
         } else {
             $ti = $tagset->find($m[1]);
             if ($ti && $ti->is(TagInfo::TFM_VOTES | TagInfo::TF_RANK)) {

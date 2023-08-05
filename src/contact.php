@@ -4870,6 +4870,47 @@ class Contact implements JsonSerializable {
 
     /** @param string $tag
      * @return bool */
+    function can_view_some_tag($tag) {
+        // chair can always view
+        if ($this->privChair) {
+            return true;
+        }
+
+        // non-PC can never view
+        if (!$this->isPC) {
+            return false;
+        }
+
+        // chair tag: only chairs can view
+        $tw = strpos($tag, "~");
+        if ($tw === 0 && $tag[1] === "~") {
+            return false;
+        }
+
+        // manager can always view
+        if ($this->is_manager()) {
+            return true;
+        }
+
+        // private: can always view own
+        if ($tw === 0 || ($tw > 0 && str_starts_with($tag, "{$this->contactId}~"))) {
+            return true;
+        }
+
+        // private other: can view others only if public per-user
+        $tagmap = $this->conf->tags();
+        if ($tw > 0) {
+            return $tagmap->has(TagInfo::TF_PUBLIC_PERUSER)
+                && $tagmap->is_public_peruser(substr($tag, $tw + 1));
+        }
+
+        // otherwise, public
+        return !$tagmap->is_hidden($tag)
+            || $this->conf->check_any_required_tracks($this, Track::HIDDENTAG);
+    }
+
+    /** @param string $tag
+     * @return bool */
     function can_view_tag(PaperInfo $prow = null, $tag) {
         // basic checks
         if (!$this->isPC) {
@@ -4913,7 +4954,7 @@ class Contact implements JsonSerializable {
      * @return bool */
     function can_view_peruser_tag(PaperInfo $prow = null, $tag) {
         if ($prow) {
-            return $this->can_view_tag($prow, ($this->contactId + 1) . "~$tag");
+            return $this->can_view_tag($prow, ($this->contactId + 1) . "~{$tag}");
         } else {
             return $this->is_manager()
                 || ($this->isPC && $this->conf->tags()->is_public_peruser($tag));

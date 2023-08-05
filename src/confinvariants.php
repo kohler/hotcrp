@@ -298,7 +298,7 @@ class ConfInvariants {
         $user = $this->conf->root_user();
         $q = $qtags = [];
         $autotags = $autosearches = $autoformulas = [];
-        foreach ($dt->filter(TagInfo::TF_AUTOMATIC) as $t) {
+        foreach ($dt->entries_having(TagInfo::TF_AUTOMATIC) as $t) {
             $srch = $t->automatic_search();
             $ftext = $t->automatic_formula_expression();
             if ($srch !== null) {

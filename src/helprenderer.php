@@ -225,30 +225,38 @@ class HelpRenderer extends Ht {
     /** @param int $flags
      * @return ?string */
     function example_tag($flags) {
-        $vt = [];
         if ($this->user->isPC) {
-            $vt = $this->conf->tags()->filter($flags);
+            foreach ($this->conf->tags()->settings_having($flags) as $dt) {
+                if ($this->user->can_view_some_tag($dt->tag))
+                    return $dt->tag;
+            }
         }
-        return empty($vt) ? null : current($vt)->tag;
+        return null;
+    }
+
+    /** @param int $flags
+     * @return list<string> */
+    function tag_settings_having($flags) {
+        $ts = [];
+        if ($this->user->isPC) {
+            foreach ($this->conf->tags()->sorted_settings_having($flags) as $dt) {
+                if ($this->user->can_view_some_tag($dt->tag))
+                    $ts[] = $dt->tag;
+            }
+        }
+        return $ts;
     }
 
     /** @param int $flags
      * @return string */
-    function current_tag_list($flags) {
-        $vt = [];
-        if ($this->user->isPC) {
-            $admin = $this->user->is_manager();
-            foreach ($this->conf->tags()->filter($flags) as $dt) {
-                if ($admin || ($dt->flags & TagInfo::TF_HIDDEN) === 0)
-                    $vt[] = $dt->tag;
-            }
-        }
-        if (empty($vt)) {
+    function tag_settings_having_note($flags) {
+        $ts = $this->tag_settings_having($flags);
+        if (empty($ts)) {
             return "";
         } else {
             return " (currently " . join(", ", array_map(function ($t) {
                 return $this->search_link($t, "#{$t}");
-            }, $vt)) . ")";
+            }, $ts)) . ")";
         }
     }
 

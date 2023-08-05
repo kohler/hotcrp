@@ -908,7 +908,8 @@
     {
         "name": "tag_hidden",
         "title": "Hidden tags",
-        "type": "taglist", "subtype": "allow_wildcard", "size": 50, "autogrow": true
+        "type": "taglist", "subtype": "allow_wildcard", "size": 50, "autogrow": true,
+        "parser_class": "Tags_SettingParser"
     },
 
     {   "name": "tag_color", "internal": true, "type": "string"   },

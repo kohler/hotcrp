@@ -84,7 +84,7 @@ class Tag_SearchTerm extends SearchTerm {
                                      PaperSearch $srch) {
         $dt = $srch->conf->tags();
         $allterms = $nomatch = [];
-        foreach ($dt->filter(TagInfo::TF_AUTOMATIC) as $t) {
+        foreach ($dt->entries_having(TagInfo::TF_AUTOMATIC) as $t) {
             if (!$tsm->test_ignore_value(" {$t->tag}#")) {
                 continue;
             }
@@ -184,8 +184,8 @@ class Tag_SearchTerm extends SearchTerm {
             || !($tag = $this->tsm->single_tag())) {
             return null;
         }
-        if (($dt = $pl->conf->tags()->ensure(Tagger::tv_tag($tag)))
-            && $dt->order_anno) {
+        if (($dt = $pl->conf->tags()->find(Tagger::tv_tag($tag)))
+            && $dt->has_order_anno()) {
             return $this->_make_default_sort_column($pl, $tag, $dt);
         }
         foreach ($pl->unordered_rowset() as $prow) {

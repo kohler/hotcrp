@@ -46,8 +46,8 @@ class Withdraw_PreapplyFunction implements AssignmentPreapplyFunction {
             return;
         }
         $ltre = [];
-        foreach ($state->conf->tags()->filter(TagInfo::TFM_VOTES) as $dt) {
-            $ltre[] = preg_quote(strtolower($dt->tag));
+        foreach ($state->conf->tags()->entries_having(TagInfo::TFM_VOTES) as $ti) {
+            $ltre[] = $ti->tag_regex();
         }
         $res = $state->query(new Tag_Assignable($this->pid, null));
         $tag_re = '{\A(?:\d+~|)(?:' . join("|", $ltre) . ')\z}i';

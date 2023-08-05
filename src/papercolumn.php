@@ -775,7 +775,7 @@ class TagList_PaperColumn extends PaperColumn {
         $j = parent::field_json($pl);
         $j["highlight_tags"] = $pl->search->highlight_tags();
         if ($pl->conf->tags()->has(TagInfo::TFM_VOTES)) {
-            $j["votish_tags"] = array_values(array_map(function ($t) { return $t->tag; }, $pl->conf->tags()->filter(TagInfo::TFM_VOTES)));
+            $j["votish_tags"] = array_values(array_map(function ($t) { return $t->tag; }, $pl->conf->tags()->sorted_entries_having(TagInfo::TFM_VOTES)));
         }
         return $j;
     }

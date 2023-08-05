@@ -16,18 +16,17 @@ class Tags_SettingParser extends SettingParser {
     }
 
     function set_oldv(Si $si, SettingValues $sv) {
-        if ($si->name === "tag_readonly") {
-            $ts = array_filter($sv->conf->tags()->filter(TagInfo::TF_READONLY), function ($t) {
-                return !str_starts_with($t->tag, "~~");
-            });
-            $sv->set_oldv("tag_readonly", Tags_SettingParser::render_tags($ts));
+        if ($si->name === "tag_hidden") {
+            $sv->set_oldv("tag_hidden", Tags_SettingParser::render_tags($sv->conf->tags()->sorted_settings_having(TagInfo::TF_HIDDEN)));
+        } else if ($si->name === "tag_readonly") {
+            $sv->set_oldv("tag_readonly", Tags_SettingParser::render_tags($sv->conf->tags()->sorted_settings_having(TagInfo::TF_READONLY)));
         } else if ($si->name === "tag_sitewide") {
-            $sv->set_oldv("tag_sitewide", Tags_SettingParser::render_tags($sv->conf->tags()->filter(TagInfo::TF_SITEWIDE)));
+            $sv->set_oldv("tag_sitewide", Tags_SettingParser::render_tags($sv->conf->tags()->sorted_settings_having(TagInfo::TF_SITEWIDE)));
         } else if ($si->name === "tag_vote_approval") {
-            $sv->set_oldv("tag_vote_approval", Tags_SettingParser::render_tags($sv->conf->tags()->filter(TagInfo::TF_APPROVAL)));
+            $sv->set_oldv("tag_vote_approval", Tags_SettingParser::render_tags($sv->conf->tags()->sorted_settings_having(TagInfo::TF_APPROVAL)));
         } else if ($si->name === "tag_vote_allotment") {
             $x = [];
-            foreach ($sv->conf->tags()->filter(TagInfo::TF_ALLOTMENT) as $t) {
+            foreach ($sv->conf->tags()->sorted_settings_having(TagInfo::TF_ALLOTMENT) as $t) {
                 $x[] = "{$t->tag}#{$t->allotment}";
             }
             $sv->set_oldv("tag_vote_allotment", join(" ", $x));
@@ -37,9 +36,6 @@ class Tags_SettingParser extends SettingParser {
     }
 
     static function render_tags($tl) {
-        $tl = array_filter($tl, function ($t) {
-            return !$t->pattern_instance;
-        });
         return join(" ", array_map(function ($t) { return $t->tag; }, $tl));
     }
     static function print_tag_chair(SettingValues $sv) {

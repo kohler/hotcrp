@@ -97,7 +97,7 @@ class Keywords_HelpTopic {
 
         $cx = null;
         $cm = [];
-        foreach ($hth->conf->tags() as $t) {
+        foreach ($hth->conf->tags()->sorted_settings_having(TagInfo::TF_STYLE) as $t) {
             foreach ($t->styles ?? [] as $c) {
                 $cx = $cx ?? $c;
                 if ($cx === $c)

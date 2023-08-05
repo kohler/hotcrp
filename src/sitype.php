@@ -616,7 +616,10 @@ class TagList_Sitype extends Sitype {
                 $sv->error_at($si, $sv->tagger()->error_ftext(true));
             }
         }
-        ksort($ts);
+        $collator = $sv->conf->collator();
+        uksort($ts, function ($a, $b) use ($collator) {
+            return $collator->compare($a, $b);
+        });
         return join(" ", array_values($ts));
     }
     function json_examples(Si $si, SettingValues $sv) {

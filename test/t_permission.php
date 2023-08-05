@@ -592,7 +592,6 @@ class Permission_Tester {
         assert_search_papers($user_varghese, "#chairtest1", "");
 
         $this->conf->save_refresh_setting("tag_chair", 1, "accept chairtest chairtest* pcpaper reject");
-        xassert($this->conf->tags()->has_pattern);
         $ct = $this->conf->tags()->find("chairtest0");
         xassert(!!$ct);
         xassert_assign($user_chair, "paper,tag\n1,chairtest1\n", true);

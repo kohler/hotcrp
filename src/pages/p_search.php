@@ -108,7 +108,7 @@ class Search_Page {
             }
             $this->checkbox_item(20, "tags", "Tags", $opt);
             if ($user->privChair) {
-                foreach ($this->conf->tags()->filter(TagInfo::TFM_VOTES | TagInfo::TF_RANK) as $ti) {
+                foreach ($this->conf->tags()->sorted_entries_having(TagInfo::TFM_VOTES | TagInfo::TF_RANK) as $ti) {
                     $this->checkbox_item(20, "tagreport:{$ti->tag}", "#~{$ti->tag} report", $opt);
                 }
             }
