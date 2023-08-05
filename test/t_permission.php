@@ -604,7 +604,7 @@ class Permission_Tester {
         // pattern tag merging
         $this->conf->save_refresh_setting("tag_hidden", 1, "chair*");
         $ct = $this->conf->tags()->find("chairtest0");
-        xassert($ct && $ct->readonly && $ct->hidden);
+        xassert($ct && $ct->is(TagInfo::TF_READONLY) && $ct->is(TagInfo::TF_HIDDEN));
 
         // colon tag setting
         xassert(!$this->conf->setting("has_colontag"));

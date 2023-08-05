@@ -46,7 +46,7 @@ class Withdraw_PreapplyFunction implements AssignmentPreapplyFunction {
             return;
         }
         $ltre = [];
-        foreach ($state->conf->tags()->filter("votish") as $dt) {
+        foreach ($state->conf->tags()->filter(TagInfo::TFM_VOTES) as $dt) {
             $ltre[] = preg_quote(strtolower($dt->tag));
         }
         $res = $state->query(new Tag_Assignable($this->pid, null));
@@ -104,7 +104,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
                 }
                 $res->_withdrawn = Conf::$now;
                 $res->_submitted = -$res->_submitted;
-                if ($state->conf->tags()->has_votish) {
+                if ($state->conf->tags()->has(TagInfo::TFM_VOTES)) {
                     Tag_AssignmentParser::load_tag_state($state);
                     $state->register_preapply_function("withdraw {$prow->paperId}", new Withdraw_PreapplyFunction($prow->paperId));
                 }

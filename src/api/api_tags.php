@@ -14,7 +14,7 @@ class Tags_API {
         }
         $tmr->message_list = [];
         if ($tmr->ok
-            && $user->conf->tags()->has_allotment) {
+            && $user->conf->tags()->has(TagInfo::TF_ALLOTMENT)) {
             self::allotment_tagmessages($user, $tmr, $interest);
         }
         return $tmr;
@@ -25,7 +25,7 @@ class Tags_API {
     static private function allotment_tagmessages($user, $tmr, $interest) {
         $pfx = "{$user->contactId}~";
         $allotments = [];
-        foreach ($user->conf->tags()->filter("allotment") as $ltag => $t) {
+        foreach ($user->conf->tags()->filter(TagInfo::TF_ALLOTMENT) as $ltag => $t) {
             if ($interest === null || isset($interest["{$pfx}{$ltag}"])) {
                 $allotments["{$pfx}{$ltag}"] = [$t, 0.0];
             }

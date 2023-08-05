@@ -17,17 +17,17 @@ class Tags_SettingParser extends SettingParser {
 
     function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name === "tag_readonly") {
-            $ts = array_filter($sv->conf->tags()->filter("chair"), function ($t) {
+            $ts = array_filter($sv->conf->tags()->filter(TagInfo::TF_READONLY), function ($t) {
                 return !str_starts_with($t->tag, "~~");
             });
             $sv->set_oldv("tag_readonly", Tags_SettingParser::render_tags($ts));
         } else if ($si->name === "tag_sitewide") {
-            $sv->set_oldv("tag_sitewide", Tags_SettingParser::render_tags($sv->conf->tags()->filter("sitewide")));
+            $sv->set_oldv("tag_sitewide", Tags_SettingParser::render_tags($sv->conf->tags()->filter(TagInfo::TF_SITEWIDE)));
         } else if ($si->name === "tag_vote_approval") {
-            $sv->set_oldv("tag_vote_approval", Tags_SettingParser::render_tags($sv->conf->tags()->filter("approval")));
+            $sv->set_oldv("tag_vote_approval", Tags_SettingParser::render_tags($sv->conf->tags()->filter(TagInfo::TF_APPROVAL)));
         } else if ($si->name === "tag_vote_allotment") {
             $x = [];
-            foreach ($sv->conf->tags()->filter("allotment") as $t) {
+            foreach ($sv->conf->tags()->filter(TagInfo::TF_ALLOTMENT) as $t) {
                 $x[] = "{$t->tag}#{$t->allotment}";
             }
             $sv->set_oldv("tag_vote_allotment", join(" ", $x));

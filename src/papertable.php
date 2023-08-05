@@ -2081,12 +2081,12 @@ class PaperTable {
         }
         $this->papstripTags();
         foreach ($this->conf->tags() as $ltag => $t) {
-            if ($this->user->can_edit_tag($this->prow, "~$ltag", null, 0)) {
-                if ($t->approval) {
+            if ($this->user->can_edit_tag($this->prow, "~{$ltag}", null, 0)) {
+                if ($t->is(TagInfo::TF_APPROVAL)) {
                     $this->papstrip_approval($t->tag);
-                } else if ($t->allotment) {
+                } else if ($t->is(TagInfo::TF_ALLOTMENT)) {
                     $this->papstrip_allotment($t->tag, $t->allotment);
-                } else if ($t->rank) {
+                } else if ($t->is(TagInfo::TF_RANK)) {
                     $this->papstrip_rank($t->tag);
                 }
             }

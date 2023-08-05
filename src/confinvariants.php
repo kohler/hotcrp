@@ -291,14 +291,14 @@ class ConfInvariants {
     /** @return $this */
     function check_automatic_tags() {
         $dt = $this->conf->tags();
-        if (!$dt->has_automatic) {
+        if (!$dt->has(TagInfo::TF_AUTOMATIC)) {
             return $this;
         }
 
         $user = $this->conf->root_user();
         $q = $qtags = [];
         $autotags = $autosearches = $autoformulas = [];
-        foreach ($dt->filter("automatic") as $t) {
+        foreach ($dt->filter(TagInfo::TF_AUTOMATIC) as $t) {
             $srch = $t->automatic_search();
             $ftext = $t->automatic_formula_expression();
             if ($srch !== null) {

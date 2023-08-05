@@ -235,7 +235,7 @@ class Title_PaperColumn extends PaperColumn {
     function prepare(PaperList $pl, $visible) {
         $this->want_decoration = $this->want_decoration
             && $pl->user->can_view_tags(null)
-            && $pl->conf->tags()->has_decoration;
+            && $pl->conf->tags()->has(TagInfo::TFM_DECORATION);
         if ($this->want_decoration) {
             $pl->qopts["tags"] = 1;
         }
@@ -774,8 +774,8 @@ class TagList_PaperColumn extends PaperColumn {
     function field_json(PaperList $pl) {
         $j = parent::field_json($pl);
         $j["highlight_tags"] = $pl->search->highlight_tags();
-        if ($pl->conf->tags()->has_votish) {
-            $j["votish_tags"] = array_values(array_map(function ($t) { return $t->tag; }, $pl->conf->tags()->filter("votish")));
+        if ($pl->conf->tags()->has(TagInfo::TFM_VOTES)) {
+            $j["votish_tags"] = array_values(array_map(function ($t) { return $t->tag; }, $pl->conf->tags()->filter(TagInfo::TFM_VOTES)));
         }
         return $j;
     }

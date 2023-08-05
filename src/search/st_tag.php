@@ -83,12 +83,8 @@ class Tag_SearchTerm extends SearchTerm {
     static function expand_automatic(TagSearchMatcher $tsm, SearchWord $sword,
                                      PaperSearch $srch) {
         $dt = $srch->conf->tags();
-        if (!$dt->has_automatic) {
-            return [];
-        }
-
         $allterms = $nomatch = [];
-        foreach ($dt->filter("automatic") as $t) {
+        foreach ($dt->filter(TagInfo::TF_AUTOMATIC) as $t) {
             if (!$tsm->test_ignore_value(" {$t->tag}#")) {
                 continue;
             }
@@ -180,7 +176,7 @@ class Tag_SearchTerm extends SearchTerm {
     private function _make_default_sort_column($pl, $tag, $dt) {
         $xjs = Tag_PaperColumn::expand("#{$tag}", $pl->xtp, (object) [], ["#{$tag}", "#", $tag]);
         assert(count($xjs) === 1 && $xjs[0]->function === "+Tag_PaperColumn");
-        return PaperColumn::make($pl->conf, $xjs[0], $dt && $dt->votish ? ["reverse"] : []);
+        return PaperColumn::make($pl->conf, $xjs[0], $dt && $dt->is(TagInfo::TFM_VOTES) ? ["reverse"] : []);
     }
     function default_sort_column($top, $pl) {
         if (!$top

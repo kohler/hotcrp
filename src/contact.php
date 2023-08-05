@@ -1131,7 +1131,7 @@ class Contact implements JsonSerializable {
                 if (($colors = $dt->color_classes($viewable))) {
                     $n = "<span class=\"{$colors} taghh\">{$n}</span>";
                 }
-                if ($dt->has_decoration) {
+                if ($dt->has(TagInfo::TFM_DECORATION)) {
                     $n .= (new Tagger($this))->unparse_decoration_html($viewable, Tagger::DECOR_USER);
                 }
             }
@@ -4840,7 +4840,7 @@ class Contact implements JsonSerializable {
             $rights = $this->rights($prow);
             return $rights->allow_pc
                 || ($rights->allow_pc_broad && $this->conf->tag_seeall)
-                || ($this->privChair && $this->conf->tags()->has_sitewide);
+                || ($this->privChair && $this->conf->tags()->has(TagInfo::TF_SITEWIDE));
         } else {
             return $this->isPC;
         }
@@ -4885,12 +4885,10 @@ class Contact implements JsonSerializable {
             $rights = $this->rights($prow);
             if (!$rights->allow_pc
                 && (!$this->privChair
-                    || !$tagmap->has_sitewide
                     || !$tagmap->is_sitewide($tag))
                 && (!$rights->allow_pc_broad
                     || (!$this->conf->tag_seeall
-                        && (!$tagmap->has_conflict_free
-                            || !$tagmap->is_conflict_free($tag))))) {
+                        && !$tagmap->is_conflict_free($tag)))) {
                 return false;
             }
             $allow_administer = $rights->allow_administer;
@@ -4907,7 +4905,6 @@ class Contact implements JsonSerializable {
                     && (substr($tag, 0, $twiddle) == $this->contactId
                         || $tagmap->is_public_peruser(substr($tag, $twiddle + 1)))))
             && ($twiddle !== false
-                || !$tagmap->has_hidden
                 || !$tagmap->is_hidden($tag)
                 || $this->can_view_hidden_tags($prow));
     }
@@ -4926,7 +4923,7 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_view_some_peruser_tag() {
         return $this->is_manager()
-            || ($this->isPC && $this->conf->tags()->has_public_peruser);
+            || ($this->isPC && $this->conf->tags()->has(TagInfo::TF_PUBLIC_PERUSER));
     }
 
     /** @param string $tag
@@ -4940,15 +4937,15 @@ class Contact implements JsonSerializable {
         $rights = $this->rights($prow);
         $tagmap = $this->conf->tags();
         if (!$rights->allow_pc_broad
-            || (!$rights->allow_pc && !$tagmap->has_conflict_free)
+            || (!$rights->allow_pc && !$tagmap->has(TagInfo::TF_CONFLICT_FREE))
             || (!$rights->can_administer && !$this->conf->time_pc_view($prow, false))) {
-            if ($this->privChair && $tagmap->has_sitewide) {
+            if ($this->privChair && $tagmap->has(TagInfo::TF_SITEWIDE)) {
                 $tag = Tagger::tv_tag($tag);
                 $tw = strpos($tag, "~");
                 return ($tw === false || ($tw === 0 && $tag[1] === "~"))
                     && ($t = $tagmap->find($tag))
-                    && $t->sitewide
-                    && !$t->automatic;
+                    && $t->is(TagInfo::TF_SITEWIDE)
+                    && !$t->is(TagInfo::TF_AUTOMATIC);
             } else {
                 return false;
             }
@@ -4958,19 +4955,19 @@ class Contact implements JsonSerializable {
         if ($tw === false || ($tw === 0 && $tag[1] === "~")) {
             $t = $tagmap->find($tag);
             return ($rights->allow_pc
-                    || ($t && $t->conflict_free))
+                    || ($t && $t->is(TagInfo::TF_CONFLICT_FREE)))
                 && ($tw === false || $this->privChair)
-                && (!$t || !$t->automatic)
-                && (!$t || !$t->track || $this->privChair)
-                && (!$t || !$t->hidden || $this->can_view_hidden_tags($prow))
+                && (!$t || !$t->is(TagInfo::TF_AUTOMATIC))
+                && (!$t || !$t->is(TagInfo::TF_CHAIR) || $this->privChair)
+                && (!$t || !$t->is(TagInfo::TF_HIDDEN) || $this->can_view_hidden_tags($prow))
                 && (!$t
-                    || (!$t->readonly && !$t->rank)
+                    || !$t->is(TagInfo::TF_READONLY | TagInfo::TF_RANK)
                     || $rights->can_administer
-                    || ($this->privChair && $t->sitewide));
+                    || ($this->privChair && $t->is(TagInfo::TF_SITEWIDE)));
         } else {
             $t = $tagmap->find(substr($tag, $tw + 1));
             return ($rights->allow_pc
-                    || ($t && $t->conflict_free))
+                    || ($t && $t->is(TagInfo::TF_CONFLICT_FREE)))
                 && ($tw === 0
                     || $rights->can_administer
                     || ($tw === strlen((string) $this->contactId)
@@ -5014,9 +5011,9 @@ class Contact implements JsonSerializable {
                 $whyNot["voteTagNegative"] = true;
             } else {
                 $t = $this->conf->tags()->find($tag);
-                if ($t && $t->votish) {
+                if ($t && $t->is(TagInfo::TFM_VOTES)) {
                     $whyNot["voteTag"] = true;
-                } else if ($t && $t->automatic) {
+                } else if ($t && $t->is(TagInfo::TF_AUTOMATIC)) {
                     $whyNot["autosearchTag"] = true;
                 } else {
                     $whyNot["chairTag"] = true;
@@ -5035,7 +5032,7 @@ class Contact implements JsonSerializable {
             $rights = $this->rights($prow);
             return ($rights->allow_pc
                     && ($rights->can_administer || $this->conf->time_pc_view($prow, false)))
-                || ($this->privChair && $this->conf->tags()->has_sitewide);
+                || ($this->privChair && $this->conf->tags()->has(TagInfo::TF_SITEWIDE));
         } else {
             return $this->isPC;
         }
@@ -5098,9 +5095,9 @@ class Contact implements JsonSerializable {
         } else {
             $t = $tagmap->find($tag);
             return !$t
-                || (!$t->automatic
-                    && (!$t->track || $this->privChair)
-                    && (!$t->readonly || $this->is_manager()));
+                || (!$t->is(TagInfo::TF_AUTOMATIC)
+                    && (!$t->is(TagInfo::TF_CHAIR) || $this->privChair)
+                    && (!$t->is(TagInfo::TF_READONLY) || $this->is_manager()));
         }
     }
 
@@ -5112,8 +5109,9 @@ class Contact implements JsonSerializable {
         }
         $twiddle = strpos($tag, "~");
         $t = $this->conf->tags()->find($tag);
+        // XXXXXXX
         return $this->isPC
-            && (!$t || (!$t->readonly && !$t->hidden))
+            && (!$t || !$t->is(TagInfo::TF_CHAIR | TagInfo::TF_READONLY | TagInfo::TF_HIDDEN))
             && ($twiddle === false
                 || ($twiddle === 0 && $tag[1] !== "~")
                 || ($twiddle > 0 && substr($tag, 0, $twiddle) == $this->contactId));

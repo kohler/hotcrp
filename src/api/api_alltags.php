@@ -50,7 +50,7 @@ class AllTags_API {
             $qwhere[] = "coalesce(conflictType,0)<=" . CONFLICT_MAXUNCONFLICTED;
         }
         $dt = $user->conf->tags();
-        $hidden = !$user->privChair && $dt->has_hidden;
+        $hidden = !$user->privChair && $dt->has(TagInfo::TF_HIDDEN);
 
         $tags = [];
         $result = $user->conf->qe($q . " where " . join(" and ", $qwhere));
@@ -91,18 +91,16 @@ class AllTags_API {
     static private function finish_alltags_api($tags, TagMap $dt, Contact $user) {
         $tags = $dt->sort_array($tags);
         $j = ["ok" => true, "tags" => $tags];
-        if ($dt->has_automatic
-            || ($dt->has_sitewide && $user->privChair)
-            || ($dt->has_readonly && !$user->privChair)) {
+        if ($dt->has(TagInfo::TF_AUTOMATIC | ($user->privChair ? TagInfo::TF_SITEWIDE : TagInfo::TF_READONLY))) {
             $readonly = $sitewide = [];
             foreach ($tags as $tag) {
                 if (($tag[0] !== "~" || $tag[1] === "~")
                     && ($ti = $dt->find($tag))) {
-                    if ($ti->automatic
-                        || ($ti->readonly && !$user->privChair)) {
+                    if ($ti->is(TagInfo::TF_AUTOMATIC)
+                        || (!$user->privChair && $ti->is(TagInfo::TF_READONLY))) {
                         $readonly[strtolower($tag)] = true;
                     }
-                    if ($ti->sitewide && $user->privChair) {
+                    if ($user->privChair && $ti->is(TagInfo::TF_SITEWIDE)) {
                         $sitewide[strtolower($tag)] = true;
                     }
                 }

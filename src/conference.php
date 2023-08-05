@@ -2700,7 +2700,7 @@ class Conf {
         }
         $csv = ["paper,tag,tag value"];
         if ($paper === null) {
-            foreach ($this->tags()->filter("automatic") as $dt) {
+            foreach ($this->tags()->filter(TagInfo::TF_AUTOMATIC) as $dt) {
                 $csv[] = CsvGenerator::quote("#{$dt->tag}") . "," . CsvGenerator::quote($dt->tag) . ",clear";
                 $csv[] = CsvGenerator::quote("searchoption:expand_automatic " . $dt->automatic_search()) . "," . CsvGenerator::quote($dt->tag) . "," . CsvGenerator::quote($dt->automatic_formula_expression());
             }
@@ -2713,7 +2713,7 @@ class Conf {
                 $pids = $paper;
             }
             $rowset = $this->paper_set(["paperId" => $pids]);
-            foreach ($this->tags()->filter("automatic") as $dt) {
+            foreach ($this->tags()->filter(TagInfo::TF_AUTOMATIC) as $dt) {
                 $search = new PaperSearch($this->root_user(), ["q" => $dt->automatic_search(), "t" => "all"]);
                 $search->set_expand_automatic(true);
                 $fexpr = $dt->automatic_formula_expression();

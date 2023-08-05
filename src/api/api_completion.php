@@ -84,7 +84,7 @@ class Completion_API {
         }
         if ($user->can_view_tags()) {
             array_push($comp, "has:color", "has:style");
-            if ($conf->tags()->has_badge) {
+            if ($conf->tags()->has(TagInfo::TF_BADGE)) {
                 $comp[] = "has:badge";
             }
         }

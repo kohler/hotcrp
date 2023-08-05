@@ -1325,7 +1325,7 @@ class PaperSearch extends MessageSet {
             || ($sqi->query_options["tags"] ?? false)
             || ($this->user->privChair
                 && $this->conf->has_any_manager()
-                && $this->conf->tags()->has_sitewide)) {
+                && $this->conf->tags()->has(TagInfo::TF_SITEWIDE))) {
             $sqi->add_column("paperTags", "coalesce((select group_concat(' ', tag, '#', tagIndex separator '') from PaperTag force index (primary) where PaperTag.paperId=Paper.paperId), '')");
         }
         if ($sqi->query_options["reviewSignatures"] ?? false) {

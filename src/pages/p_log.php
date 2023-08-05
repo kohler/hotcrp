@@ -367,7 +367,7 @@ class Log_Page {
         }
         $url = $this->conf->hoturl("log", ["q" => "", "u" => $user->email, "n" => $this->qreq->n]);
         $t = "<a href=\"{$url}\">{$t}</a>";
-        if ($dt && $dt->has_decoration) {
+        if ($dt && $dt->has(TagInfo::TFM_DECORATION)) {
             $tagger = new Tagger($this->viewer);
             $t .= $tagger->unparse_decoration_html($viewable, Tagger::DECOR_USER);
         }

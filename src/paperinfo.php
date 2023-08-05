@@ -1710,7 +1710,8 @@ class PaperInfo {
     /** @param ?string $viewable
      * @return string */
     function decoration_html(Contact $user, $viewable = null, $viewable_override = null) {
-        if ($this->all_tags_text() === "" || !$this->conf->tags()->has_decoration) {
+        if ($this->all_tags_text() === ""
+            || !$this->conf->tags()->has(TagInfo::TFM_DECORATION)) {
             return "";
         }
         $viewable = $viewable ?? $this->sorted_viewable_tags($user);

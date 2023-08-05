@@ -708,7 +708,7 @@ class ContactList {
                 $t = "<a href=\"" . $this->conf->hoturl("profile", "u=" . urlencode($row->email)) . "\"" . ($row->is_disabled() ? ' class="qh"' : "") . ">$t</a>";
             }
             if (($viewable = $row->viewable_tags($this->user))
-                && $this->conf->tags()->has_decoration) {
+                && $this->conf->tags()->has(TagInfo::TFM_DECORATION)) {
                 $tagger = new Tagger($this->user);
                 $t .= $tagger->unparse_decoration_html($viewable, Tagger::DECOR_USER);
             }

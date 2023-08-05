@@ -222,28 +222,32 @@ class HelpRenderer extends Ht {
         return $this->trow($this->search_form($q, 36), $entry);
     }
 
-    /** @param string $property
-     * @return string */
-    function example_tag($property) {
+    /** @param int $flags
+     * @return ?string */
+    function example_tag($flags) {
         $vt = [];
         if ($this->user->isPC) {
-            $vt = $this->conf->tags()->filter($property);
+            $vt = $this->conf->tags()->filter($flags);
         }
-        return empty($vt) ? $property : current($vt)->tag;
+        return empty($vt) ? null : current($vt)->tag;
     }
 
-    /** @param string $property
+    /** @param int $flags
      * @return string */
-    function current_tag_list($property) {
+    function current_tag_list($flags) {
         $vt = [];
         if ($this->user->isPC) {
-            $vt = $this->conf->tags()->filter($property);
+            $admin = $this->user->is_manager();
+            foreach ($this->conf->tags()->filter($flags) as $dt) {
+                if ($admin || ($dt->flags & TagInfo::TF_HIDDEN) === 0)
+                    $vt[] = $dt->tag;
+            }
         }
         if (empty($vt)) {
             return "";
         } else {
             return " (currently " . join(", ", array_map(function ($t) {
-                return $this->search_link($t->tag, "#{$t->tag}");
+                return $this->search_link($t, "#{$t}");
             }, $vt)) . ")";
         }
     }

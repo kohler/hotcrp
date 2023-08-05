@@ -4,7 +4,7 @@
 
 class VoteTags_HelpTopic {
     static function print(HelpRenderer $hth) {
-        $votetag = $hth->example_tag("allotment");
+        $votetag = $hth->example_tag(TagInfo::TF_ALLOTMENT) ?? "vote";
         echo "<p>Some conferences have PC members vote for papers. In
 <em>allotment voting</em>, each PC member is assigned a vote allotment to
 distribute among unconflicted papers; a PC member might assign one vote to one
@@ -14,7 +14,7 @@ might help determine which papers to discuss.</p>
 
 <p>HotCRP supports voting through ", $hth->help_link("tags", "tags"), ".
 The chair can ", $hth->setting_link("define a set of voting tags", "tag_vote_allotment"),
-" and allotments" . $hth->current_tag_list("allotment") . ".
+" and allotments" . $hth->current_tag_list(TagInfo::TF_ALLOTMENT) . ".
 Votes are represented as twiddle tags, and the vote total is automatically
 computed and shown in the public tag.</p>
 
@@ -28,10 +28,10 @@ updates the main “#vote” tag to reflect the total.
 (An error is reported when PC members exceed their allotment.) </p>
 
 <p>To see papers’ vote counts in a list, search for ",
-$hth->search_link("show:#$votetag"),
+$hth->search_link("show:#{$votetag}"),
 ". To list the papers with votes, sorted by vote count (most votes first),
-search for ", $hth->search_link("rorder:#$votetag"), " or ",
-$hth->search_link("rorder:#$votetag show:#$votetag"), ".</p>
+search for ", $hth->search_link("rorder:#{$votetag}"), " or ",
+$hth->search_link("rorder:#{$votetag} show:#{$votetag}"), ".</p>
 
 <p>Hover to learn how the PC voted:</p>
 
