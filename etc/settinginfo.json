@@ -898,11 +898,17 @@
         "internal": true,
         "type": "date"
     },
+
     {
         "name": "tag_readonly", "storage": "tag_chair",
         "title": "Read-only tags",
         "type": "taglist", "subtype": "allow_wildcard", "size": 50, "autogrow": true,
         "parser_class": "Tags_SettingParser", "initial_value": "accept pcpaper reject"
+    },
+    {
+        "name": "tag_hidden",
+        "title": "Hidden tags",
+        "type": "taglist", "subtype": "allow_wildcard", "size": 50, "autogrow": true
     },
 
     {   "name": "tag_color", "internal": true, "type": "string"   },

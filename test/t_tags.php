@@ -79,4 +79,26 @@ class Tags_Tester {
         assert_search_papers($this->u_chair, "#nau", "");
         assert_search_papers($this->u_chair, "#lotsau", "");
     }
+
+    function test_tag_patterns() {
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "tag_readonly": "t*",
+            "tag_hidden": "top",
+            "tag_sitewide": "t*"
+        }');
+        xassert($sv->execute());
+
+        $ti = $this->conf->tags()->find("tan");
+        xassert($ti->is(TagInfo::TF_READONLY));
+        xassert(!$ti->is(TagInfo::TF_HIDDEN));
+        xassert($ti->is(TagInfo::TF_SITEWIDE));
+        $ti = $this->conf->tags()->find("top");
+        xassert($ti->is(TagInfo::TF_READONLY));
+        xassert($ti->is(TagInfo::TF_HIDDEN));
+        xassert($ti->is(TagInfo::TF_SITEWIDE));
+        $ti = $this->conf->tags()->find("tan");
+        xassert($ti->is(TagInfo::TF_READONLY));
+        xassert(!$ti->is(TagInfo::TF_HIDDEN));
+        xassert($ti->is(TagInfo::TF_SITEWIDE));
+    }
 }
