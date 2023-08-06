@@ -570,8 +570,13 @@ function scrollIntoView1(e, opts) {
     while (e && e.nodeType !== 1) {
         e = e.parentNode;
     }
-    var p = e.parentNode, pr, er, mt, mb, wh = window.innerHeight;
-    while (p !== root && window.getComputedStyle(p).overflowY === "visible") {
+    var p = e.parentNode, x, pr, er, mt, mb, wh = window.innerHeight;
+    while (p !== root) {
+        x = window.getComputedStyle(p).overflowY;
+        if ((x === "auto" || x === "scroll" || x === "hidden")
+            && p.scrollHeight > p.clientHeight + 5) {
+            break;
+        }
         p = p.parentNode;
     }
     if (p !== root) {
