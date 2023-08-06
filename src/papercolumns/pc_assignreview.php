@@ -6,7 +6,7 @@ class AssignReview_PaperColumn extends PaperColumn {
     /** @var Contact */
     private $contact;
     /** @var bool */
-    private $basicheader = false;
+    private $simple = false;
     /** @var array<int,int> */
     private $sortmap;
     function __construct(Conf $conf, $cj) {
@@ -16,8 +16,8 @@ class AssignReview_PaperColumn extends PaperColumn {
         }
     }
     function add_decoration($decor) {
-        if ($decor === "basicheader") {
-            $this->basicheader = true;
+        if ($decor === "simple") {
+            $this->simple = true;
             return $this->__add_decoration($decor);
         } else {
             return parent::add_decoration($decor);
@@ -32,7 +32,7 @@ class AssignReview_PaperColumn extends PaperColumn {
         return $this->contact;
     }
     function header(PaperList $pl, $is_text) {
-        if ($this->basicheader) {
+        if ($this->simple) {
             return "Assignment";
         } else if ($is_text) {
             return $pl->user->reviewer_text_for($this->contact) . " assignment";

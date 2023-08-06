@@ -610,7 +610,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
     /** @var bool */
     private $not_me;
     /** @var bool */
-    private $basicheader = false;
+    private $simple = false;
     /** @var array<int,int> */
     private $sortmap;
     function __construct(Conf $conf, $cj) {
@@ -620,8 +620,8 @@ class ReviewerType_PaperColumn extends PaperColumn {
         }
     }
     function add_decoration($decor) {
-        if ($decor === "basicheader") {
-            $this->basicheader = true;
+        if ($decor === "simple") {
+            $this->simple = true;
             return $this->__add_decoration($decor);
         } else {
             return parent::add_decoration($decor);
@@ -690,7 +690,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
         return $this->sortmap[$a->paperXid] <=> $this->sortmap[$b->paperXid];
     }
     function header(PaperList $pl, $is_text) {
-        if (!$this->not_me || $this->basicheader) {
+        if (!$this->not_me || $this->simple) {
             return "Review";
         } else if ($is_text) {
             return $pl->user->reviewer_text_for($this->contact) . " review";

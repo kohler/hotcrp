@@ -14,7 +14,9 @@ class Conflict_PaperColumn extends PaperColumn {
     /** @var bool */
     private $editable = false;
     /** @var bool */
-    private $basicheader = false;
+    private $simple = false;
+    /** @var string */
+    private $usuffix;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
@@ -28,8 +30,8 @@ class Conflict_PaperColumn extends PaperColumn {
         }
     }
     function add_decoration($decor) {
-        if ($decor === "basicheader") {
-            $this->basicheader = true;
+        if ($decor === "simple") {
+            $this->simple = true;
             return $this->__add_decoration($decor);
         } else if ($decor === "edit") {
             $this->mark_editable();
@@ -45,6 +47,7 @@ class Conflict_PaperColumn extends PaperColumn {
     function prepare(PaperList $pl, $visible) {
         $this->contact = $this->contact ? : $pl->reviewer_user();
         $this->not_me = $this->contact->contactId !== $pl->user->contactId;
+        $this->usuffix = $this->simple ? "" : "u{$this->contact->contactId}";
         return true;
     }
     private function conflict_type(PaperList $pl, $row) {
@@ -71,7 +74,7 @@ class Conflict_PaperColumn extends PaperColumn {
     }
     function header(PaperList $pl, $is_text) {
         if ((!$this->show_user && !$this->not_me && !$this->editable)
-            || $this->basicheader) {
+            || $this->simple) {
             return "Conflict";
         } else if ($is_text) {
             return $pl->user->reviewer_text_for($this->contact) . " conflict";
@@ -107,7 +110,7 @@ class Conflict_PaperColumn extends PaperColumn {
         if (Conflict::is_author($ct)) {
             return "Author";
         }
-        $t = "<input type=\"checkbox\" class=\"uic uikd uich js-assign-review js-range-click\" data-range-type=\"assrevu{$this->contact->contactId}\" name=\"assrev{$row->paperId}u{$this->contact->contactId}\" value=\"conflict\" autocomplete=\"off\"";
+        $t = "<input type=\"checkbox\" class=\"uic uikd uich js-assign-review js-range-click\" data-range-type=\"assrev{$this->usuffix}\" name=\"assrev{$row->paperId}u{$this->contact->contactId}\" value=\"conflict\" autocomplete=\"off\" tabindex=\"0\"";
         if (Conflict::is_conflicted($ct)) {
             $t .= " checked";
         }
