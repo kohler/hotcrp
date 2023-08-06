@@ -1989,6 +1989,16 @@ function focus_within(elt, subfocus_selector, always) {
 
 
 // rangeclick
+function prevent_immediate_focusout(self) {
+    if (document.activeElement === self
+        || document.activeElement === document.body) {
+        setTimeout(function () {
+            if (document.activeElement === document.body)
+                self.focus({preventScroll: true});
+        }, 80);
+    }
+}
+
 handle_ui.on("js-range-click", function (evt) {
     var f = this.form,
         rangeclick_state = f.jsRangeClick || {},
@@ -1996,8 +2006,9 @@ handle_ui.on("js-range-click", function (evt) {
     f.jsRangeClick = rangeclick_state;
 
     var key = false;
-    if (evt.type === "keydown" && !event_modkey(evt))
+    if (evt.type === "keydown" && !event_modkey(evt)) {
         key = event_key(evt);
+    }
     if (rangeclick_state.__clicking__
         || (evt.type === "updaterange" && rangeclick_state["__update__" + kind])
         || (evt.type === "keydown" && key !== "ArrowDown" && key !== "ArrowUp"))
@@ -2028,7 +2039,18 @@ handle_ui.on("js-range-click", function (evt) {
             --thispos;
         else if (thispos < cbs.length - 1 && key === "ArrowDown")
             ++thispos;
-        $(cbs[thispos]).focus().scrollIntoView();
+        cbs[thispos].focus();
+        x = cbs[thispos].closest("tr") || cbs[thispos];
+        // special case for paper lists with expansion rows
+        if (key === "ArrowDown"
+            && x.nodeName === "TR"
+            && hasClass(x, "pl")) {
+            while (x.nextElementSibling
+                   && hasClass(x.nextElementSibling, "plx")) {
+                x = x.nextElementSibling;
+            }
+        }
+        $(x).scrollIntoView();
         evt.preventDefault();
         return;
     }
@@ -2088,6 +2110,7 @@ handle_ui.on("js-range-click", function (evt) {
         }
 
         delete rangeclick_state.__clicking__;
+        prevent_immediate_focusout(this);
     } else if (evt.type === "updaterange") {
         rangeclick_state["__updated__" + kind] = true;
     }

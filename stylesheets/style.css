@@ -2939,7 +2939,7 @@ div:hover > span.hoveronly, tr:hover > td > span.hoveronly {
 }
 .pltable-fullw-container {
 	overflow-x: auto;
-	overflow-y: hidden;
+	overflow-y: clip;
 	padding-bottom: 3px; /* to accommodate focus ring; XXX overflow-clip-margin */
 }
 .pltable-fullw {
