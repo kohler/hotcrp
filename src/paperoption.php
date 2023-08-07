@@ -1681,7 +1681,7 @@ class Document_PaperOption extends PaperOption {
             $ov->set_anno("document", $doc);
             if ($doc->has_error()) {
                 foreach ($doc->message_list() as $mi) {
-                    $ov->message_set()->append_item($mi->with_landmark($doc->export_filename()));
+                    $ov->message_set()->append_item($mi->with_landmark($doc->error_filename()));
                 }
             }
             return $ov;

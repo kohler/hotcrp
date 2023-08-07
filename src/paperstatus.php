@@ -207,7 +207,7 @@ class PaperStatus extends MessageSet {
             && ($doc->has_error() || !$doc->save())) {
             foreach ($doc->message_list() as $mi) {
                 $mi = $this->msg_at_option($o, $mi->message, $mi->status);
-                $mi->landmark = $doc->export_filename();
+                $mi->landmark = $doc->error_filename();
             }
             return null;
         }
