@@ -192,9 +192,9 @@ class Text {
             } else if (strpos($name, "@") === false) {
                 /* skip */;
             } else if ($name[0] === "\""
-                       && preg_match('{\A\s*\"(.*)\"\s+(\S+@\S+)\z}', $name, $m)) {
+                       && preg_match('/\A\s*\"(.*)\"\s+(\S+@\S+)\z/', $name, $m)) {
                 list($name, $email) = [$m[1], $m[2]];
-            } else if (!preg_match('{\A(.*?)\s+(\S+)\z}', $name, $m)) {
+            } else if (!preg_match('/\A(.*?)\s+(\S+)\z/', $name, $m)) {
                 return ["", "", trim($name)];
             } else if (strpos($m[2], "@") !== false) {
                 $name = $m[1];

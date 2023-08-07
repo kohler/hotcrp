@@ -469,24 +469,8 @@ class Contact implements JsonSerializable {
     }
 
     /** @return Generator<AuthorMatcher> */
-    static function make_collaborator_generator($s) {
-        $pos = 0;
-        while (($eol = strpos($s, "\n", $pos)) !== false) {
-            if ($eol !== $pos
-                && ($m = AuthorMatcher::make_collaborator_line(substr($s, $pos, $eol - $pos))) !== null) {
-                yield $m;
-            }
-            $pos = $eol + 1;
-        }
-        if (strlen($s) !== $pos
-            && ($m = AuthorMatcher::make_collaborator_line(substr($s, $pos))) !== null) {
-            yield $m;
-        }
-    }
-
-    /** @return Generator<AuthorMatcher> */
     function collaborator_generator() {
-        return self::make_collaborator_generator($this->collaborators());
+        return AuthorMatcher::make_collaborator_generator($this->collaborators());
     }
 
     /** @return string */

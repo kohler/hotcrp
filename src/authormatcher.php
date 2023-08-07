@@ -25,6 +25,48 @@ class AuthorMatcher extends Author {
         return $x instanceof AuthorMatcher ? $x : new AuthorMatcher($x);
     }
 
+    /** @return AuthorMatcher */
+    static function make_string_guess($x) {
+        $m = new AuthorMatcher;
+        $m->assign_string_guess($x);
+        return $m;
+    }
+
+    /** @return AuthorMatcher */
+    static function make_affiliation($x) {
+        $m = new AuthorMatcher;
+        $m->affiliation = (string) $x;
+        return $m;
+    }
+
+    /** @return ?AuthorMatcher */
+    static function make_collaborator_line($x) {
+        if ($x !== "" && strcasecmp($x, "none") !== 0) {
+            $m = new AuthorMatcher;
+            $m->assign_string($x);
+            $m->status = Author::STATUS_NONAUTHOR;
+            return $m;
+        } else {
+            return null;
+        }
+    }
+
+    /** @return Generator<AuthorMatcher> */
+    static function make_collaborator_generator($s) {
+        $pos = 0;
+        while (($eol = strpos($s, "\n", $pos)) !== false) {
+            if ($eol !== $pos
+                && ($m = self::make_collaborator_line(substr($s, $pos, $eol - $pos))) !== null) {
+                yield $m;
+            }
+            $pos = $eol + 1;
+        }
+        if (strlen($s) !== $pos
+            && ($m = self::make_collaborator_line(substr($s, $pos))) !== null) {
+            yield $m;
+        }
+    }
+
     private function prepare() {
         $any = [];
         if ($this->firstName !== "") {
@@ -170,30 +212,6 @@ class AuthorMatcher extends Author {
             $this->prepare();
         }
         return $this->highlight_pregexes_ ?? $this->general_pregexes_;
-    }
-
-    /** @return AuthorMatcher */
-    static function make_string_guess($x) {
-        $m = new AuthorMatcher;
-        $m->assign_string_guess($x);
-        return $m;
-    }
-    /** @return AuthorMatcher */
-    static function make_affiliation($x) {
-        $m = new AuthorMatcher;
-        $m->affiliation = (string) $x;
-        return $m;
-    }
-    /** @return ?AuthorMatcher */
-    static function make_collaborator_line($x) {
-        if ($x !== "" && strcasecmp($x, "none") !== 0) {
-            $m = new AuthorMatcher;
-            $m->assign_string($x);
-            $m->status = Author::STATUS_NONAUTHOR;
-            return $m;
-        } else {
-            return null;
-        }
     }
 
     const MATCH_NAME = 1;
@@ -470,7 +488,7 @@ class AuthorMatcher extends Author {
                 }
                 $last_ch = $line[strlen($line) - 1];
                 if ($last_ch === ":") {
-                    $lines[] = "# " . $line;
+                    $lines[] = "# {$line}";
                     continue;
                 }
             }
@@ -492,7 +510,7 @@ class AuthorMatcher extends Author {
                     $rest = preg_replace('/\A[,\s]+/', "", $rest);
                 }
                 if ($aff !== "" && $aff[0] !== "(") {
-                    $aff = "($aff)";
+                    $aff = "({$aff})";
                 }
                 $line = $name;
                 if ($aff !== "") {

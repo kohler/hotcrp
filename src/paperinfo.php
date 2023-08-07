@@ -308,7 +308,7 @@ class PaperInfoSet implements IteratorAggregate, Countable {
     function checked_paper_by_id($pid) {
         $prow = $this->by_pid[$pid] ?? null;
         if (!$prow) {
-            throw new Exception("PaperInfoSet::checked_paper_by_id($pid) failure");
+            throw new Exception("PaperInfoSet::checked_paper_by_id({$pid}) failure");
         }
         return $prow;
     }
@@ -1273,7 +1273,7 @@ class PaperInfo {
     function collaborator_list() {
         if ($this->_collaborator_array === null) {
             $this->_collaborator_array = [];
-            foreach (Contact::make_collaborator_generator($this->collaborators()) as $m) {
+            foreach (AuthorMatcher::make_collaborator_generator($this->collaborators()) as $m) {
                 $m->contactId = 0;
                 $m->author_index = Author::COLLABORATORS_INDEX;
                 $this->_collaborator_array[] = $m;
