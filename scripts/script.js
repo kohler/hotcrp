@@ -8265,19 +8265,18 @@ function unload_list() {
 }
 function row_click(evt) {
     if (!hasClass(this.parentElement, "pltable-tbody")
-        || evt.target.closest("a, input, textarea, select, button"))
+        || evt.target.closest("a, input, textarea, select, button, .ui, .uic"))
         return;
-    var td = evt.target.closest("td");
-    if (!td || (!hasClass(td, "pl_id") && !hasClass(td, "pl_title") && !hasClass(td, "pl_rowclick")))
+    var pl = this, td = evt.target.closest("td");
+    if (!td)
         return;
-    var pl = this;
     while (pl.nodeType !== 1 || /^plx/.test(pl.className))
         pl = pl.previousSibling;
     var $inputs = $(pl).find("input, textarea, select, button")
         .not("input[type=hidden], .pl_sel > input");
     if ($inputs.length) {
         $inputs.first().focus().scrollIntoView();
-    } else {
+    } else if (hasClass(td, "pl_id") || hasClass(td, "pl_title") || hasClass(td, "pl_rowclick")) {
         var $a = $(pl).find("a.pnum").first(),
             href = $a[0].getAttribute("href");
         handle_list($a[0], href);
@@ -8287,6 +8286,8 @@ function row_click(evt) {
             window.open(href, "_blank", "noopener");
             window.focus();
         }
+    } else {
+        return;
     }
     evt.preventDefault();
 }
@@ -8335,7 +8336,7 @@ $(document).on("submit", "form", function (evt) {
     }
 });
 
-$(document).on("click", "tr.pl", row_click);
+$(document).on("click", "tr.pl, tr.plx", row_click);
 $(window).on("beforeunload", unload_list);
 
 $(function () {
