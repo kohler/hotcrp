@@ -13,7 +13,7 @@ class Author {
     public $affiliation = "";
     /** @var ?string */
     private $_name;
-    /** @var ?array{string,string,string} */
+    /** @var null|Author|array{string,string,string} */
     private $_deaccents;
     /** @var ?int */
     public $contactId;
@@ -37,8 +37,9 @@ class Author {
     const COLLABORATORS_INDEX = -200;
     const UNINITIALIZED_INDEX = -400; // see also PaperConflictInfo
 
-    /** @param null|string|object $x */
-    function __construct($x = null) {
+    /** @param null|string|object $x
+     * @param null|1|2|3|4|5 $status */
+    function __construct($x = null, $status = null) {
         if (is_object($x)) {
             $this->firstName = $x->firstName;
             $this->lastName = $x->lastName;
@@ -47,6 +48,7 @@ class Author {
         } else if ($x !== null && $x !== "") {
             $this->assign_string($x);
         }
+        $this->status = $status;
     }
 
     /** @param string $s
@@ -102,6 +104,15 @@ class Author {
         $au->contactId = $u->contactId;
         $au->roles = $u->roles;
         $au->disablement = $u->disablement;
+        return $au;
+    }
+
+    /** @return self */
+    function copy() {
+        $au = clone $this;
+        if (!is_object($this->_deaccents)) {
+            $au->_deaccents = $this;
+        }
         return $au;
     }
 
@@ -252,6 +263,9 @@ class Author {
     /** @param 0|1|2 $component
      * @return string */
     function deaccent($component) {
+        if (is_object($this->_deaccents)) {
+            return $this->_deaccents->deaccent($component);
+        }
         if ($this->_deaccents === null) {
             $this->_deaccents = [
                 strtolower(UnicodeHelper::deaccent($this->firstName)),

@@ -238,8 +238,6 @@ class PaperInfoSet implements IteratorAggregate, Countable {
     public $loaded_allprefs = 0;
     /** @var bool */
     public $prefetched_conflict_users = false;
-    /** @var array<int,list<AuthorMatcher>> */
-    private $collaborator_matchers_by_uid = [];
 
     /** @param PaperInfo $row
      * @return PaperInfoSet */
@@ -383,20 +381,6 @@ class PaperInfoSet implements IteratorAggregate, Countable {
                 }
             }
         }
-    }
-
-    /** @param Contact $u
-     * @return list<AuthorMatcher> */
-    function collaborator_matchers($u) {
-        $ms = $this->collaborator_matchers_by_uid[$u->contactId] ?? null;
-        if ($ms === null) {
-            $ms = [];
-            foreach ($u->collaborator_generator() as $m) {
-                $ms[] = $m;
-            }
-            $this->collaborator_matchers_by_uid[$u->contactId] = $ms;
-        }
-        return $ms;
     }
 }
 
@@ -1300,12 +1284,13 @@ class PaperInfo {
             if ($cu->conflictType < CONFLICT_AUTHOR) {
                 continue;
             }
-            foreach ($this->_row_set->collaborator_matchers($cu->user) as $m) {
-                $m = clone $m;
-                $m->contactId = $cu->contactId;
-                $m->status = Author::STATUS_NONAUTHOR;
-                $m->author_index = $cu->author_index;
-                yield $m;
+            foreach ($cu->user->aucollab_matchers() as $m) {
+                if ($m->is_nonauthor()) {
+                    $m = $m->copy();
+                    $m->contactId = $cu->contactId;
+                    $m->author_index = $cu->author_index;
+                    yield $m;
+                }
             }
         }
     }

@@ -7,6 +7,7 @@ class AuthorMatcher extends Author {
     private $firstName_matcher;
     /** @var ?TextPregexes */
     private $lastName_matcher;
+    /** @var ?array{list<string>,string|false,string} */
     private $affiliation_matcher;
     /** @var ?TextPregexes|false */
     private $general_pregexes_ = false;
