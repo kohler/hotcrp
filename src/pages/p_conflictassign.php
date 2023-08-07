@@ -59,7 +59,9 @@ class ConflictAssign_Page {
 
         $any = false;
         $conf->ensure_cached_user_collaborators();
+        $t0 = microtime(true);
         foreach ($conf->pc_members() as $pc) {
+            set_time_limit(30);
             $paperlist = new PaperList("conflictassign", $search, $args, $qreq);
             $paperlist->set_reviewer_user($pc);
             $paperlist->set_row_filter($filter);
@@ -89,6 +91,9 @@ class ConflictAssign_Page {
         }
 
         echo '<hr class="c" />';
+        if ($qreq->XDEBUG_TRIGGER || $qreq->profile) {
+            echo '<p>', microtime(true) - $t0, '</p>';
+        }
         $qreq->print_footer();
     }
 }
