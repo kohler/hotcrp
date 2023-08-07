@@ -211,18 +211,21 @@ class PaperConflictInfo {
     /** @var int
      * @readonly */
     public $conflictType;
-    /** @var Contact
+    /** @var ?Contact
      * @readonly */
     public $user;
     /** @var ?int
      * @readonly */
     public $author_index;
 
-    function __construct($user, $ctype, $author_index) {
-        $this->contactId = $user->contactId;
+    const UNINITIALIZED_INDEX = -400; // see also Author
+
+    /** @param int $uid
+     * @param int $ctype */
+    function __construct($uid, $ctype) {
+        $this->contactId = $uid;
         $this->conflictType = $ctype;
-        $this->user = $user;
-        $this->author_index = $author_index;
+        $this->author_index = self::UNINITIALIZED_INDEX;
     }
 }
 
@@ -371,15 +374,13 @@ class PaperInfoSet implements IteratorAggregate, Countable {
     }
 
     function prefetch_conflict_users() {
-        if ($this->prefetched_conflict_users
-            || empty($this->prows)) {
-            return;
-        }
-        $this->prefetched_conflict_users = true;
-        foreach ($this->prows as $prow) {
-            foreach ($prow->conflict_types() as $uid => $ctype) {
-                if ($uid > 0)
-                    $prow->conf->prefetch_user_by_id($uid);
+        if (!$this->prefetched_conflict_users) {
+            $this->prefetched_conflict_users = true;
+            foreach ($this->prows as $prow) {
+                foreach ($prow->conflict_type_list() as $cu) {
+                    if ($cu->contactId > 0)
+                        $prow->conf->prefetch_user_by_id($cu->contactId);
+                }
             }
         }
     }
@@ -537,8 +538,8 @@ class PaperInfo {
     private $_deaccents;
     /** @var ?list<Author> */
     private $_author_array;
-    /** @var ?associative-array<int,int> */
-    private $_ctype_array;
+    /** @var ?list<PaperConflictInfo> */
+    private $_ctype_list;
     /** @var ?list<AuthorMatcher> */
     private $_collaborator_array;
     /** @var ?array<int,array{int,?int}> */
@@ -817,7 +818,7 @@ class PaperInfo {
                 $this->_flags &= ~self::REVIEW_FLAGS;
                 $this->_contact_info = [];
                 $this->reviewSignatures = $this->_review_array = $this->_reviews_have = null;
-                $this->allConflictType = $this->_ctype_array = null;
+                $this->allConflictType = $this->_ctype_list = null;
                 ++$this->_review_array_version;
             }
             $this->_rights_version = Contact::$rights_version;
@@ -856,7 +857,7 @@ class PaperInfo {
                 || $this->reviewSignatures !== null) {
                 $ci = $this->_clear_contact_info($user);
                 if ($cid > 0) {
-                    $ci->mark_conflict(($this->conflict_types())[$cid] ?? 0);
+                    $ci->mark_conflict($this->conflict_type($cid));
                 }
                 foreach ($this->reviews_by_user($cid, $user->review_tokens()) as $rrow) {
                     $ci->mark_review($rrow);
@@ -959,13 +960,13 @@ class PaperInfo {
         // clear caches, sometimes conservatively
         $this->_deaccents = null;
         if ($prop === "authorInformation") {
-            $this->_author_array = $this->_ctype_array = null;
+            $this->_author_array = $this->_ctype_list = null;
         } else if ($prop === "collaborators") {
             $this->_collaborator_array = null;
         } else if ($prop === "topicIds") {
             $this->_topic_array = $this->_topic_interest_score_array = null;
         } else if ($prop === "allConflictType") {
-            $this->_ctype_array = null;
+            $this->_ctype_list = null;
         }
     }
 
@@ -1154,47 +1155,58 @@ class PaperInfo {
             Dbl::free($result);
         }
         // parse conflicts into arrays
-        $this->_ctype_array = [];
+        $this->_ctype_list = [];
         if ($this->allConflictType !== "") {
             foreach (explode(",", $this->allConflictType) as $x) {
                 list($cid, $ctype) = explode(" ", $x);
-                $this->_ctype_array[(int) $cid] = (int) $ctype;
+                $this->_ctype_list[] = new PaperConflictInfo((int) $cid, (int) $ctype);
             }
         }
     }
 
     /** @return list<PaperConflictInfo> */
-    function conflict_list() {
-        $this->_row_set->prefetch_conflict_users();
-        $cu = [];
-        foreach ($this->conflict_types() as $uid => $ctype) {
-            $u = null;
-            if ($uid > 0) {
-                $u = $this->conf->user_by_id($uid, USER_SLICE);
-            } else if ($this->_author_user !== null
-                       && $this->_author_user->contactId === $uid) {
-                $u = $this->_author_user;
-            }
-            if ($u === null) {
-                continue;
-            }
-            $auindex = null;
-            if ($u->has_email()
-                && ($au = $this->author_by_email($u->email)) !== null) {
-                $auindex = $au->author_index;
-            }
-            $cu[] = new PaperConflictInfo($u, $ctype, $auindex);
+    function conflict_type_list() {
+        if ($this->_ctype_list === null) {
+            $this->load_conflict_types();
         }
-        return $cu;
+        return $this->_ctype_list;
+    }
+
+    /** @return list<PaperConflictInfo> */
+    function conflict_list() {
+        if ($this->_ctype_list === null) {
+            $this->load_conflict_types();
+        }
+        if (!empty($this->_ctype_list)
+            && $this->_ctype_list[0]->author_index === PaperConflictInfo::UNINITIALIZED_INDEX) {
+            $this->_row_set->prefetch_conflict_users();
+            foreach ($this->_ctype_list as $cu) {
+                $u = null;
+                if ($cu->contactId > 0) {
+                    $cu->user = $this->conf->user_by_id($cu->contactId, USER_SLICE);
+                } else if ($this->_author_user !== null
+                           && $this->_author_user->contactId === $cu->contactId) {
+                    $cu->user = $this->_author_user;
+                }
+                $cu->author_index = null;
+                if ($cu->user
+                    && $cu->user->has_email()
+                    && ($au = $this->author_by_email($cu->user->email)) !== null) {
+                    $cu->author_index = $au->author_index;
+                }
+            }
+        }
+        return $this->_ctype_list;
     }
 
 
     /** @return associative-array<int,int> */
     function conflict_types() {
-        if ($this->_ctype_array === null) {
-            $this->load_conflict_types();
+        $ct = [];
+        foreach ($this->conflict_type_list() as $cu) {
+            $ct[$cu->contactId] = $cu->conflictType;
         }
-        return $this->_ctype_array;
+        return $ct;
     }
 
     /** @param Contact|int $c
@@ -1205,7 +1217,11 @@ class PaperInfo {
         if (array_key_exists($cid, $this->_contact_info)) {
             return $this->_contact_info[$cid]->conflictType;
         }
-        return ($this->conflict_types())[$cid] ?? 0;
+        foreach ($this->conflict_type_list() as $cu) {
+            if ($cu->contactId === $cid)
+                return $cu->conflictType;
+        }
+        return 0;
     }
 
     /** @param string $email
@@ -1221,7 +1237,7 @@ class PaperInfo {
     function invalidate_conflicts() {
         // XXX this does not invalidate conflict types that are loaded
         // through the _contact_info subsystem
-        $this->allConflictType = $this->_ctype_array = null;
+        $this->allConflictType = $this->_ctype_list = null;
     }
 
 
@@ -3359,9 +3375,9 @@ class PaperInfo {
     /** @return list<Contact> */
     function contact_followers() {
         $cids = [];
-        foreach ($this->conflict_types() as $uid => $ctype) {
-            if ($ctype >= CONFLICT_AUTHOR)
-                $cids[] = $uid;
+        foreach ($this->conflict_type_list() as $cu) {
+            if ($cu->conflictType >= CONFLICT_AUTHOR)
+                $cids[] = $cu->contactId;
         }
         return $this->generic_followers($cids, "false");
     }
@@ -3402,9 +3418,9 @@ class PaperInfo {
      * @return list<Contact> */
     function review_followers($topic) {
         $cids = [];
-        foreach ($this->conflict_types() as $uid => $ctype) {
-            if ($ctype >= CONFLICT_AUTHOR)
-                $cids[] = $uid;
+        foreach ($this->conflict_type_list() as $cu) {
+            if ($cu->conflictType >= CONFLICT_AUTHOR)
+                $cids[] = $cu->contactId;
         }
         foreach ($this->all_reviews() as $rrow) {
             $cids[] = $rrow->contactId;

@@ -35,6 +35,7 @@ class Author {
     const STATUS_NONAUTHOR = 5;
 
     const COLLABORATORS_INDEX = -200;
+    const UNINITIALIZED_INDEX = -400; // see also PaperConflictInfo
 
     /** @param null|string|object $x */
     function __construct($x = null) {
