@@ -186,14 +186,14 @@ class PCConflicts_PaperOption extends PaperOption {
         $confset = $this->conf->conflict_set();
         $ctypes = [];
         if ($selectors) {
-            $ctypes[0] = $confset->unparse_text(0);
+            $ctypes[0] = $confset->unparse_selector_text(0);
             foreach ($confset->basic_conflict_types() as $ct) {
-                $ctypes[$ct] = $confset->unparse_text($ct);
+                $ctypes[$ct] = $confset->unparse_selector_text($ct);
             }
             if ($admin) {
                 $ctypes["xsep"] = null;
                 $ct = Conflict::set_pinned(Conflict::GENERAL, true);
-                $ctypes[$ct] = $confset->unparse_text($ct);
+                $ctypes[$ct] = $confset->unparse_selector_text($ct);
             }
         }
 
@@ -249,7 +249,7 @@ class PCConflicts_PaperOption extends PaperOption {
                     } else if (Conflict::is_conflicted($pct)) {
                         echo "Conflict"; // XXX conflict type?
                     } else {
-                        echo "Non-conflict";
+                        echo "No conflict";
                     }
                     echo '</strong></span>';
                 } else {
@@ -259,12 +259,12 @@ class PCConflicts_PaperOption extends PaperOption {
             } else if ($selectors) {
                 $xctypes = $ctypes;
                 if (!isset($xctypes[$ct])) {
-                    $xctypes[$ct] = $confset->unparse_text($ct);
+                    $xctypes[$ct] = $confset->unparse_selector_text($ct);
                 }
                 $js["class"] = "conflict-entry";
                 $js["data-default-value"] = $pct;
                 echo '<span class="pcconf-editselector">',
-                    Ht::select("pcconf:$id", $xctypes, $ct, $js),
+                    Ht::select("pcconf:{$id}", $xctypes, $ct, $js),
                     '</span>';
             } else {
                 $js["data-default-checked"] = Conflict::is_conflicted($pct);

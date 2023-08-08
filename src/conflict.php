@@ -93,9 +93,9 @@ class Conflict {
                 $pinned = true;
             } else if ($w === "unpin" || $w === "unpinned") {
                 $pinned = false;
-            } else if ($w === "none" || $w === "unconflicted" || $w === "noconflict" || $w === "n" || $w === "no") {
+            } else if ($w === "none" || $w === "unconflicted" || $w === "noconflict" || $w === "n" || $w === "no" || $w === "0") {
                 $thisct = 0;
-            } else if ($w === "conflict" || $w === "conflicted" || $w === "y" || $w === "yes") {
+            } else if ($w === "conflict" || $w === "conflicted" || $w === "y" || $w === "yes" || $w === "1") {
                 $thisct = $old > CONFLICT_MAXUNCONFLICTED ? $old : Conflict::GENERAL;
             } else if ($w === "author") {
                 $au |= CONFLICT_AUTHOR;
@@ -165,6 +165,15 @@ class Conflict {
             $this->_tmap[$ct] = $this->conf->_c("conflict_type", $t);
         }
         return $this->_tmap[$ct];
+    }
+
+    /** @param int $ct */
+    function unparse_selector_text($ct) {
+        if (($ct & 1) !== 0 && $ct !== (self::GENERAL | 1)) {
+            return "Pinned " . lcfirst($this->unparse_text($ct & ~1));
+        } else {
+            return $this->unparse_text($ct);
+        }
     }
 
     /** @param int $ct

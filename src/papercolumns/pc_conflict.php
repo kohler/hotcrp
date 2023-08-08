@@ -17,6 +17,8 @@ class Conflict_PaperColumn extends PaperColumn {
     private $simple = false;
     /** @var string */
     private $usuffix;
+    /** @var Conflict */
+    private $cset;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
@@ -48,6 +50,7 @@ class Conflict_PaperColumn extends PaperColumn {
         $this->contact = $this->contact ? : $pl->reviewer_user();
         $this->not_me = $this->contact->contactId !== $pl->user->contactId;
         $this->usuffix = $this->simple ? "" : "u{$this->contact->contactId}";
+        $this->cset = $pl->conf->conflict_set();
         return true;
     }
     private function conflict_type(PaperList $pl, $row) {
@@ -99,7 +102,7 @@ class Conflict_PaperColumn extends PaperColumn {
         } else if (!$this->show_description) {
             return review_type_icon(-1);
         } else {
-            return $pl->conf->conflict_set()->unparse_html(min($ct, CONFLICT_AUTHOR));
+            return $this->cset->unparse_html(min($ct, CONFLICT_AUTHOR));
         }
     }
     function edit_content(PaperList $pl, PaperInfo $row) {
@@ -110,15 +113,20 @@ class Conflict_PaperColumn extends PaperColumn {
         if (Conflict::is_author($ct)) {
             return "Author";
         }
-        $t = "<input type=\"checkbox\" class=\"uic uikd uich js-assign-review js-range-click\" data-range-type=\"assrev{$this->usuffix}\" name=\"assrev{$row->paperId}u{$this->contact->contactId}\" value=\"conflict\" autocomplete=\"off\" tabindex=\"0\"";
         if (Conflict::is_conflicted($ct)) {
-            $t .= " checked";
+            $suffix = " checked";
+            $value = $this->cset->unparse_assignment($ct);
+            $nonvalue = "pinned unconflicted";
+        } else {
+            $suffix = "";
+            $value = "pinned conflicted";
+            $nonvalue = $this->cset->unparse_assignment($ct);
         }
         if ($this->show_user) {
             $n = htmlspecialchars($pl->user->name_text_for($this->contact));
-            $t .= " title=\"{$n} conflict\"";
+            $suffix .= " title=\"{$n} conflict\"";
         }
-        return $t . '>';
+        return "<input type=\"checkbox\" class=\"uic uikd uich js-assign-review js-range-click\" data-range-type=\"assrev{$this->usuffix}\" name=\"assrev{$row->paperId}u{$this->contact->contactId}\" value=\"{$value}\" data-unconflicted-value=\"{$nonvalue}\" autocomplete=\"off\" tabindex=\"0\"{$suffix}>";
     }
     function text(PaperList $pl, PaperInfo $row) {
         $ct = $this->conflict_type($pl, $row);
@@ -127,7 +135,7 @@ class Conflict_PaperColumn extends PaperColumn {
         } else if (!$this->show_description) {
             return "Y";
         } else {
-            return $pl->conf->conflict_set()->unparse_csv(min($ct, CONFLICT_AUTHOR));
+            return $this->cset->unparse_csv(min($ct, CONFLICT_AUTHOR));
         }
     }
 

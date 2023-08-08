@@ -27,14 +27,24 @@ class ConflictAssign_Page {
             echo '<p>This page lists conflicts declared by authors, but not justified by fuzzy matching between authors and PC members’ affiliations and collaborator lists.</p>';
             echo '<p><a href="', $conf->hoturl("conflictassign"), '">Check for missing conflicts</a></p>';
         } else {
-            echo '<p>This page shows potential missing conflicts detected by fuzzy matching between authors and PC members’ affiliations and collaborator lists. Confirm any true conflicts using the checkboxes.</p>';
-            echo '<p><a href="', $conf->hoturl("conflictassign", "neg=1"), '">Check for inappropriate conflicts</a></p>';
+            echo '<p>This page shows potential missing conflicts detected by fuzzy matching between authors and PC members’ affiliations and collaborator lists. Confirm any true conflicts using the checkboxes.</p>',
+                '<p><a href="', $conf->hoturl("conflictassign", "neg=1"), '">Check for inappropriate conflicts</a> <span class="barsep">·</span> ';
+            if ($qreq->all) {
+                echo '<a href="', $conf->hoturl("conflictassign"), '">Hide previously-confirmed conflicts</a>';
+            } else {
+                echo '<a href="', $conf->hoturl("conflictassign", "all=1"), '">Include previously-confirmed conflicts</a>';
+            }
+            echo '</p>';
         }
 
         echo "</div>\n";
 
 
-        $search = (new PaperSearch($user, ["t" => $qreq->t ?? "alladmin", "q" => ""]))->set_urlbase("conflictassign", ["neg" => $qreq->neg ? 1 : null]);
+        $search = (new PaperSearch($user, ["t" => $qreq->t ?? "alladmin", "q" => ""]))
+            ->set_urlbase("conflictassign", [
+                "neg" => $qreq->neg ? 1 : null,
+                "all" => $qreq->all && !$qreq->neg ? 1 : null
+            ]);
         $rowset = $conf->paper_set(["allConflictType" => 1, "allReviewerPreference" => 1, "tags" => 1, "paperId" => $search->paper_ids()], $user);
 
         if ($qreq->neg) {
@@ -46,13 +56,17 @@ class ConflictAssign_Page {
                     && !$row->potential_conflict($user);
             };
         } else {
-            $filter = function ($pl, $row) {
+            $all = $qreq->all;
+            $filter = function ($pl, $row) use ($all) {
                 $user = $pl->reviewer_user();
                 $ct = $row->conflict_type($user);
-                return !Conflict::is_pinned($ct)
-                    && !Conflict::is_conflicted($ct)
-                    && ($row->preference($user)[0] <= -100
-                        || $row->potential_conflict($user));
+                if (Conflict::is_pinned($ct)) {
+                    return $all && Conflict::is_conflicted($ct);
+                } else {
+                    return !Conflict::is_conflicted($ct)
+                        && ($row->preference($user)[0] <= -100
+                            || $row->potential_conflict($user));
+                }
             };
         }
         $args = ["rowset" => $rowset];
@@ -83,6 +97,7 @@ class ConflictAssign_Page {
                 assert($rstate->group_count() === 1);
                 echo $rstate->heading_row(null, $t, ["no_titlecol" => true]);
                 $rstate->print_tbody_rows(0, 1);
+                echo Ht::unstash_script('hotcrp.render_list()');
                 $any = true;
             }
         }

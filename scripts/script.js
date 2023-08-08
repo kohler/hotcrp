@@ -11891,9 +11891,8 @@ handle_ui.on("js-assign-review", function (evt) {
         || !(m = /^assrev(\d+)u(\d+)$/.exec(this.name))
         || (form && form.autosave && !form.autosave.checked))
         return;
-    var self = this, ass = [], value = self.value;
+    var self = this, ass = [], value = self.value, rt = "clear", ct = false;
     if (self.tagName === "SELECT") {
-        var rt = "clear", ct = false;
         if (value.indexOf("conflict") >= 0) {
             ct = value;
         } else if (value !== "none") {
@@ -11907,8 +11906,13 @@ handle_ui.on("js-assign-review", function (evt) {
             ass[0].round = form.rev_round.value;
         }
     } else {
+        if (self.checked) {
+            ct = value !== "1" ? value : true;
+        } else if (self.hasAttribute("data-unconflicted-value")) {
+            ct = self.getAttribute("data-unconflicted-value");
+        }
         ass.push(
-            {pid: +m[1], uid: +m[2], action: "conflict", conflict: self.checked}
+            {pid: +m[1], uid: +m[2], action: "conflict", conflict: ct}
         );
     }
     function success(rv) {
