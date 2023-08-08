@@ -74,9 +74,10 @@ class ConflictAssign_Page {
         $any = false;
         $conf->ensure_cached_user_collaborators();
         $t0 = microtime(true);
+        $reportid = $qreq->neg ? "conflictassign:neg" : "conflictassign";
         foreach ($conf->pc_members() as $pc) {
             set_time_limit(30);
-            $paperlist = new PaperList("conflictassign", $search, $args, $qreq);
+            $paperlist = new PaperList($reportid, $search, $args, $qreq);
             $paperlist->set_reviewer_user($pc);
             $paperlist->set_row_filter($filter);
             $paperlist->set_table_decor(PaperList::DECOR_EVERYHEADER | PaperList::DECOR_FULLWIDTH);

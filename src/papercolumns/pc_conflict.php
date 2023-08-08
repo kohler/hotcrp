@@ -15,6 +15,10 @@ class Conflict_PaperColumn extends PaperColumn {
     private $editable = false;
     /** @var bool */
     private $simple = false;
+    /** @var bool */
+    private $pin_no = false;
+    /** @var bool */
+    private $pin_yes = false;
     /** @var string */
     private $usuffix;
     /** @var Conflict */
@@ -37,6 +41,10 @@ class Conflict_PaperColumn extends PaperColumn {
             return $this->__add_decoration($decor);
         } else if ($decor === "edit") {
             $this->mark_editable();
+            return $this->__add_decoration($decor);
+        } else if (str_starts_with($decor, "pin=")) {
+            $this->pin_no = $decor === "pin=all" || $decor === "pin=unconflicted";
+            $this->pin_yes = $decor === "pin=all" || $decor === "pin=conflicted";
             return $this->__add_decoration($decor);
         } else {
             return parent::add_decoration($decor);
@@ -116,10 +124,10 @@ class Conflict_PaperColumn extends PaperColumn {
         if (Conflict::is_conflicted($ct)) {
             $suffix = " checked";
             $value = $this->cset->unparse_assignment($ct);
-            $nonvalue = "pinned unconflicted";
+            $nonvalue = $this->pin_no ? "pinned unconflicted" : "unconflicted";
         } else {
             $suffix = "";
-            $value = "pinned conflicted";
+            $value = $this->pin_yes ? "pinned conflicted" : "conflicted";
             $nonvalue = $this->cset->unparse_assignment($ct);
         }
         if ($this->show_user) {
