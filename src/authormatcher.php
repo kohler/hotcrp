@@ -77,16 +77,30 @@ class AuthorMatcher extends Author {
         if (empty($fw)) {
             return;
         }
-        $fnmatch = [];
-        foreach ($fw as $w) {
-            $fnmatch[] = $hlmatch[] = $w;
-            if (ctype_alpha($w[0])) {
-                if (strlen($w) === 1) {
-                    $fnmatch[] = $hlmatch[] = "{$w}[a-z]*";
-                } else {
-                    $fnmatch[] = $hlmatch[] = "{$w[0]}(?=\\.)";
+        $fulli = 0;
+        while ($fulli !== count($fw) && strlen($fw[$fulli]) === 1) {
+            ++$fulli;
+        }
+        $fnmatch = $imatch = [];
+        foreach ($fw as $i => $w) {
+            if (strlen($w) > 1) {
+                $fnmatch[] = $w;
+                $hlmatch[] = $w;
+                if (ctype_alpha($w[0]) && $i === $fulli) {
+                    $ix = "{$w[0]}[\\.\\s*]*";
+                    $imatch[] = $ix;
+                    $hlmatch[] = $ix;
                 }
+            } else if ($i === 0 && $fulli === count($fw)) {
+                $ix = "{$w}[a-z]*[\\.\\s]*";
+                $fnmatch[] = $ix;
+                $hlmatch[] = $ix;
+            } else if ($i < $fulli) {
+                $imatch[] = "(?:|{$w}[\\.\\s*]*)";
             }
+        }
+        if (!empty($imatch)) {
+            $fnmatch[] = "\\A" . join("", $imatch);
         }
         $this->firstName_matcher = new TextPregexes(
             '\b(?:' . join("|", $fnmatch) . ')\b',

@@ -51,9 +51,9 @@ class AuthorMatch_Tester {
         xassert_eqq(!!$aum->test("D. Thin"), true);
         xassert_eqq(!!$aum->test("D.X. Thin"), true);
         xassert_eqq(!!$aum->test("D. X. Thin"), true);
-        xassert_eqq(!!$aum->test("X.D. Thin"), true);
-        xassert_eqq(!!$aum->test("X. D. Thin"), true);
-        xassert_eqq(!!$aum->test("X. D. Thin", true), true);
+        xassert_eqq(!!$aum->test("X.D. Thin"), false);
+        xassert_eqq(!!$aum->test("X. D. Thin"), false);
+        xassert_eqq(!!$aum->test("X. D. Thin", true), false);
         xassert_eqq(!!$aum->test("Xavier Thin"), false);
         xassert_eqq(!!$aum->test("Daniel Thin"), true);
         xassert_eqq(!!$aum->test("Daniel X. Thin"), true);
@@ -66,6 +66,33 @@ class AuthorMatch_Tester {
 
         $aum = AuthorMatcher::make_string_guess("Stephen J. Pink");
         xassert_eqq(!!$aum->test("IBM T. J. Watson Research Center"), false);
+
+        $aum = AuthorMatcher::make_string_guess("L. Peter Deutsch");
+        xassert_eqq(!!$aum->test("L. Peter Deutsch"), true);
+        xassert_eqq(!!$aum->test("L. P. Deutsch"), true);
+        xassert_eqq(!!$aum->test("L P Deutsch"), true);
+        xassert_eqq(!!$aum->test("L.P. Deutsch"), true);
+        xassert_eqq(!!$aum->test("P. Deutsch"), true);
+        xassert_eqq(!!$aum->test("Peter Deutsch"), true);
+        xassert_eqq(!!$aum->test("L. Deutsch"), false);
+        xassert_eqq(!!$aum->test("Lon Deutsch"), false);
+
+        $aum = AuthorMatcher::make_string_guess("Lon Peter Deutsch");
+        xassert_eqq(!!$aum->test("Lon Peter Deutsch"), true);
+        xassert_eqq(!!$aum->test("L. Peter Deutsch"), true);
+        xassert_eqq(!!$aum->test("L. P. Deutsch"), true);
+        xassert_eqq(!!$aum->test("L P Deutsch"), true);
+        xassert_eqq(!!$aum->test("L.P. Deutsch"), true);
+        xassert_eqq(!!$aum->test("P. Deutsch"), false);
+        xassert_eqq(!!$aum->test("Peter Deutsch"), true);
+        xassert_eqq(!!$aum->test("L. Deutsch"), true);
+        xassert_eqq(!!$aum->test("Lon Deutsch"), true);
+
+        $aum = AuthorMatcher::make_string_guess("Jun L.C. Choi");
+        xassert_eqq(!!$aum->test("Jun L.C. Choi"), true);
+        xassert_eqq(!!$aum->test("Jun Choi"), true);
+        xassert_eqq(!!$aum->test("J. Choi"), true);
+        xassert_eqq(!!$aum->test("Crimini Choi"), false);
     }
 
     function test_affiliation_alterates() {
