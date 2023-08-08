@@ -57,14 +57,14 @@ class Tags_SettingParser extends SettingParser {
     static function print_tag_approval(SettingValues $sv) {
         $sv->print_entry_group("tag_vote_approval", null, [
             "class" => "need-suggest tags",
-            "hint" => "<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>",
+            "hint" => "<a href=\"" . $sv->conf->hoturl("help", "t=voting") . "\">Help</a>",
             "autocomplete" => "off"
         ]);
     }
     static function print_tag_vote(SettingValues $sv) {
         $sv->print_entry_group("tag_vote_allotment", null, [
             "class" => "need-suggest tags",
-            "hint" => "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>)",
+            "hint" => "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . $sv->conf->hoturl("help", "t=voting") . "\">Help</a>)",
             "autocomplete" => "off"
         ]);
     }

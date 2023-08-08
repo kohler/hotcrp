@@ -194,7 +194,7 @@ high-ranked paper, but it’s usually better to trust the PC.)</p>\n";
  For instance, if “#{$vt}” were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag “#~{$vt}#5”.
  The system automatically sums PC members’ votes into the public “#{$vt}” tag.
  To search for papers by vote count, search for “", $this->hth->search_link("rorder:#$vt"),
-    "”. (", $this->hth->help_link("votetags"), ")</p>\n";
+    "”. (", $this->hth->help_link("voting"), ")</p>\n";
     }
 
     function print_example_rank() {

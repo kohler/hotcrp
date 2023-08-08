@@ -279,11 +279,12 @@
     },
     {   "name": "revrate", "alias": "reviewratings"   },
     {
-        "name": "votetags", "title": "Voting",
+        "name": "voting", "title": "Voting",
         "description": "<0>PC members can vote for papers using tags.",
         "print_function": "VoteTags_HelpTopic::print",
         "order": 8000
     },
+    {   "name": "votetags", "alias": "voting"   },
     {
         "name": "ranking", "title": "Ranking",
         "description": "<0>PC members can rank papers using tags.",
