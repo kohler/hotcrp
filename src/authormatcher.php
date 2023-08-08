@@ -93,10 +93,10 @@ class AuthorMatcher extends Author {
                 }
             } else if ($i === 0 && $fulli === count($fws)) {
                 $ix = "{$w}[a-z]*[\\.\\s]*";
-                $fnmatch[] = $ix;
+                $imatch[] = $ix;
                 $hlmatch[] = $ix;
             } else if ($i < $fulli) {
-                $imatch[] = "(?:|{$w}[\\.\\s*]*)";
+                $imatch[] = "(?:|{$w}[a-z]*[\\.\\s*]*)";
             }
         }
         if (!empty($imatch)) {

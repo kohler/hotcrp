@@ -34,8 +34,8 @@ class AuthorMatch_Tester {
         xassert_eqq(!!$aum->test("D. Thin"), true);
         xassert_eqq(!!$aum->test("D.X. Thin"), true);
         xassert_eqq(!!$aum->test("D. X. Thin"), true);
-        xassert_eqq(!!$aum->test("X.D. Thin"), true);
-        xassert_eqq(!!$aum->test("X. D. Thin"), true);
+        xassert_eqq(!!$aum->test("X.D. Thin"), false);
+        xassert_eqq(!!$aum->test("X. D. Thin"), false);
         xassert_eqq(!!$aum->test("Xavier Thin"), false);
         xassert_eqq(!!$aum->test("Daniel Thin"), true);
         xassert_eqq(!!$aum->test("Daniel Thin", true), true);
@@ -93,6 +93,16 @@ class AuthorMatch_Tester {
         xassert_eqq(!!$aum->test("Jun Choi"), true);
         xassert_eqq(!!$aum->test("J. Choi"), true);
         xassert_eqq(!!$aum->test("Crimini Choi"), false);
+
+        $aum = AuthorMatcher::make_string_guess("L. P. Deutsch");
+        xassert_eqq(!!$aum->test("L. Peter Deutsch"), true);
+        xassert_eqq(!!$aum->test("L. P. Deutsch"), true);
+        xassert_eqq(!!$aum->test("L P Deutsch"), true);
+        xassert_eqq(!!$aum->test("L.P. Deutsch"), true);
+        xassert_eqq(!!$aum->test("P. Deutsch"), false);
+        xassert_eqq(!!$aum->test("Peter Deutsch"), false);
+        xassert_eqq(!!$aum->test("L. Deutsch"), true);
+        xassert_eqq(!!$aum->test("Lon Deutsch"), true);
     }
 
     function test_affiliation_alterates() {
