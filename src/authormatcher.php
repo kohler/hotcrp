@@ -70,33 +70,41 @@ class AuthorMatcher extends Author {
         }
     }
 
-    private function prepare() {
-        $any = [];
-        if ($this->firstName !== "") {
-            preg_match_all('/[a-z0-9]+/', $this->deaccent(0), $m);
-            $rr = [];
-            foreach ($m[0] as $w) {
-                $any[] = $rr[] = $w;
-                if (ctype_alpha($w[0])) {
-                    if (strlen($w) === 1) {
-                        $any[] = $rr[] = $w . "[a-z]*";
-                    } else {
-                        $any[] = $rr[] = $w[0] . "(?=\\.)";
-                    }
+
+    private function prepare_first(&$hlmatch) {
+        preg_match_all('/[a-z0-9]+/', $this->deaccent(0), $m);
+        $fw = $m[0];
+        if (empty($fw)) {
+            return;
+        }
+        $fnmatch = [];
+        foreach ($fw as $w) {
+            $fnmatch[] = $hlmatch[] = $w;
+            if (ctype_alpha($w[0])) {
+                if (strlen($w) === 1) {
+                    $fnmatch[] = $hlmatch[] = "{$w}[a-z]*";
+                } else {
+                    $fnmatch[] = $hlmatch[] = "{$w[0]}(?=\\.)";
                 }
             }
-            if (!empty($rr)) {
-                $this->firstName_matcher = new TextPregexes(
-                    '\b(?:' . join("|", $rr) . ')\b',
-                    Text::UTF8_INITIAL_NONLETTERDIGIT . '(?:' . join("|", $rr) . ')' . Text::UTF8_FINAL_NONLETTERDIGIT
-                );
-            }
+        }
+        $this->firstName_matcher = new TextPregexes(
+            '\b(?:' . join("|", $fnmatch) . ')\b',
+            Text::UTF8_INITIAL_NONLETTERDIGIT . '(?:' . join("|", $fnmatch) . ')' . Text::UTF8_FINAL_NONLETTERDIGIT
+        );
+    }
+
+    private function prepare() {
+        $gmatch = $hlmatch = [];
+        if ($this->firstName !== "") {
+            $this->prepare_first($hlmatch);
         }
         if ($this->lastName !== "") {
             preg_match_all('/[a-z0-9]+/', $this->deaccent(1), $m);
             $rr = $ur = [];
             foreach ($m[0] as $w) {
-                $any[] = $w;
+                $gmatch[] = $w;
+                $hlmatch[] = $w;
                 $rr[] = '(?=.*\b' . $w . '\b)';
                 $ur[] = '(?=.*' . Text::UTF8_INITIAL_NONLETTERDIGIT . $w . Text::UTF8_FINAL_NONLETTERDIGIT . ')';
             }
@@ -105,7 +113,6 @@ class AuthorMatcher extends Author {
                 $this->lastName_simple = count($m[0]) === 1 && strlen($m[0][0]) === strlen($this->lastName) ? $m[0][0] : false;
             }
         }
-        $highlight_any = false;
         if ($this->affiliation !== "") {
             $wordinfo = self::wordinfo();
             preg_match_all('/[a-z0-9&]+/', $this->deaccent(2), $m);
@@ -170,31 +177,31 @@ class AuthorMatcher extends Author {
             if (!empty($wstrong)) {
                 $wstrong = str_replace("&", "\\&", join("|", $wstrong));
                 $wweak = str_replace("&", "\\&", join("|", $wweak));
-                $any[] = $wstrong;
-                $highlight_any = $wweak;
+                $gmatch[] = $wstrong;
+                $hlmatch[] = $wweak;
                 $this->affiliation_matcher = [$directs, "{\\b(?:{$wstrong})\\b}", "{\\b(?:{$wweak})\\b}"];
             } else if (!empty($wweak)) {
                 $wweak = str_replace("&", "\\&", join("|", $wweak));
-                $any[] = $wweak;
+                $gmatch[] = $wweak;
+                $hlmatch[] = $wweak;
                 $this->affiliation_matcher = [$directs, false, "{\\b(?:{$wweak})\\b}"];
             }
         }
 
-        $content = join("|", $any);
-        if ($content !== "" && $content !== "none") {
+        $gre = join("|", $gmatch);
+        if ($gre !== "" && $gre !== "none") {
             $this->general_pregexes_ = new TextPregexes(
-                '\b(?:' . $content . ')\b',
-                Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
+                '\b(?:' . $gre . ')\b',
+                Text::UTF8_INITIAL_NONLETTER . '(?:' . $gre . ')' . Text::UTF8_FINAL_NONLETTER
             );
         } else {
             $this->general_pregexes_ = null;
         }
-        if ($highlight_any !== false && $highlight_any !== $any[count($any) - 1]) {
-            $any[count($any) - 1] = $highlight_any;
-            $content = join("|", $any);
+        $hlre = join("|", $hlmatch);
+        if ($hlre !== "" && $hlre !== "none" && $hlre !== $gre) {
             $this->highlight_pregexes_ = new TextPregexes(
-                '\b(?:' . $content . ')\b',
-                Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
+                '\b(?:' . $hlre . ')\b',
+                Text::UTF8_INITIAL_NONLETTER . '(?:' . $hlre . ')' . Text::UTF8_FINAL_NONLETTER
             );
         } else {
             $this->highlight_pregexes_ = null;
