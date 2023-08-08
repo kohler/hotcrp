@@ -9,8 +9,6 @@ class TextPregexes {
     public $preg_utf8;
     /** @var ?string */
     public $value;
-    /** @var ?bool */
-    public $simple;
 
     /** @param ?string $raw
      * @param string $utf8 */

@@ -1156,7 +1156,8 @@ class PaperInfo {
         return $this->_ctype_list;
     }
 
-    /** @return list<PaperConflictInfo> */
+    /** @return list<PaperConflictInfo>
+     * @suppress PhanAccessReadOnlyProperty */
     function conflict_list() {
         if ($this->_ctype_list === null) {
             $this->load_conflict_types();

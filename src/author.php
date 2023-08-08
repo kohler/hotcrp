@@ -107,7 +107,7 @@ class Author {
         return $au;
     }
 
-    /** @return self */
+    /** @return $this */
     function copy() {
         $au = clone $this;
         if (!is_object($this->_deaccents)) {

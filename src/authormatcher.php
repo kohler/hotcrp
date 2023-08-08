@@ -7,6 +7,8 @@ class AuthorMatcher extends Author {
     private $firstName_matcher;
     /** @var ?TextPregexes */
     private $lastName_matcher;
+    /** @var bool */
+    private $lastName_simple;
     /** @var ?array{list<string>,string|false,string} */
     private $affiliation_matcher;
     /** @var ?TextPregexes|false */
@@ -16,8 +18,8 @@ class AuthorMatcher extends Author {
 
     private static $wordinfo;
 
-    function __construct($x = null) {
-        parent::__construct($x);
+    function __construct($x = null, $status = null) {
+        parent::__construct($x, $status);
     }
 
     /** @param object $x
@@ -100,7 +102,7 @@ class AuthorMatcher extends Author {
             }
             if (!empty($rr)) {
                 $this->lastName_matcher = new TextPregexes('\A' . join("", $rr), '\A' . join("", $ur));
-                $this->lastName_matcher->simple = count($m[0]) === 1 && strlen($m[0][0]) === strlen($this->lastName) ? $m[0][0] : false;
+                $this->lastName_simple = count($m[0]) === 1 && strlen($m[0][0]) === strlen($this->lastName) ? $m[0][0] : false;
             }
         }
         $highlight_any = false;
@@ -231,8 +233,8 @@ class AuthorMatcher extends Author {
         }
         if ($this->lastName_matcher
             && $au->lastName !== ""
-            && ($this->lastName_matcher->simple
-                ? $this->lastName_matcher->simple === $au->deaccent(1)
+            && ($this->lastName_simple
+                ? $this->lastName_simple === $au->deaccent(1)
                 : Text::match_pregexes($this->lastName_matcher, $au->lastName, $au->deaccent(1)))
             && ($au->firstName === ""
                 || !$this->firstName_matcher
