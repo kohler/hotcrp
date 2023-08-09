@@ -1687,9 +1687,17 @@ class DocumentInfo implements JsonSerializable {
             }
         }
         if ($this->npages < 0) {
+            // prevent recursive computation of npages
             $this->npages = -1000000;
-            $cf = $cf ?? new CheckFormat($this->conf);
-            $cf->check_document($this);
+
+            $cfx = $cf ?? new CheckFormat($this->conf);
+            $cfx->check_document($this);
+
+            // if default format checker fails, it will not succeed later;
+            // if non-default format checker fails, default might succeed
+            if ($this->npages === -1000000 && $cf) {
+                $this->npages = -1;
+            }
         }
         return $this->npages >= 0 ? $this->npages : null;
     }
