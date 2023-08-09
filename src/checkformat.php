@@ -14,6 +14,7 @@ class CheckFormat extends MessageSet {
     const RUN_DESIRED = 4;
     const RUN_ATTEMPTED = 8;
     const RUN_HAS_BANAL = 16;
+    const RUN_ABANDONED = 32;
 
     /** @var bool */
     const DEBUG = false;
@@ -57,13 +58,6 @@ class CheckFormat extends MessageSet {
         }
         $this->fcheckers["default"] = new Default_FormatChecker;
         $this->set_want_ftext(true, 5);
-    }
-
-    /** @param string $what
-     * @return MessageItem
-     * @deprecated */
-    function msg_fail($what) {
-        return $this->error_at("error", $what);
     }
 
     /** @param string $cmd
@@ -207,7 +201,7 @@ class CheckFormat extends MessageSet {
             if ($n > $limit) {
                 $this->error_at("error", "<0>Server too busy to check paper formats");
                 $this->inform_at("error", "<0>This is a transient error; feel free to try again.");
-                return $this->complete_banal_json($bj, $flags);
+                return $this->complete_banal_json($bj, $flags | CheckFormat::RUN_ABANDONED);
             }
             $doc->conf->q("insert into Settings (name,value,data) values ('__banal_count',{$n},'{$t}') on duplicate key update value={$n}, data='{$t}'");
         }
@@ -217,15 +211,19 @@ class CheckFormat extends MessageSet {
             $flags &= ~(CheckFormat::RUN_ALLOWED | CheckFormat::RUN_DESIRED);
             $bj = $xbj;
         } else {
-            $mi = $this->error_at("error", "<0>File cannot be processed");
-            $mi->landmark = $doc->export_filename();
-            $this->inform_at("error", "<0>The file may be corrupted or not in PDF format.");
+            $this->unprocessable_error($doc);
         }
 
         if ($limit > 0) {
             $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data='{$t}'");
         }
         return $this->complete_banal_json($bj, $flags);
+    }
+
+    /** @param DocumentInfo $doc */
+    function unprocessable_error($doc) {
+        $mi = $this->error_at("error", "<0>File may be corrupt or not in PDF format");
+        $mi->landmark = $doc->export_filename();
     }
 
     /** @return 'body'|'blank'|'cover'|'appendix'|'bib'|'figure' */
@@ -338,13 +336,13 @@ class CheckFormat extends MessageSet {
         }
 
         $this->last_doc = $this->last_banal = null;
-        return !$this->has_error_at("error");
+        return ($this->run_flags & CheckFormat::RUN_ABANDONED) === 0;
     }
 
     /** @return bool */
     function check_ok() {
         assert(($this->run_flags & CheckFormat::RUN_STARTED) !== 0);
-        return !$this->has_error_at("error");
+        return ($this->run_flags & CheckFormat::RUN_ABANDONED) === 0;
     }
 
     /** @return bool */
@@ -434,11 +432,11 @@ class Default_FormatChecker implements FormatChecker {
         $bj = $cf->banal_json();
         if (!$bj
             || !isset($bj->pages)
-            || !isset($bj->papersize)
             || !is_array($bj->pages)
+            || !isset($bj->papersize)
             || !is_array($bj->papersize)
             || count($bj->papersize) != 2) {
-            $cf->error_at("error", "<0>Analysis failure: no pages or paper size");
+            $cf->unprocessable_error($doc);
             return;
         }
 
