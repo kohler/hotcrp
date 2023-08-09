@@ -141,6 +141,8 @@ class CheckFormat extends MessageSet {
             $this->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
             $this->nwords = is_int($bj->w ?? null) ? $bj->w : null;
             $this->last_doc->set_prop("npages", $this->npages); // head off recursion
+        } else if (($flags & self::RUN_ATTEMPTED) !== 0) {
+            $this->last_doc->set_prop("npages", 0); // head off recursion
         }
         return $bj;
     }

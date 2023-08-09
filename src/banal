@@ -1683,6 +1683,17 @@ sub banal_file ($) {
     }
 }
 
+sub banal_fail ($) {
+    if ($banal_mode eq "json") {
+        printf "{\n";
+        printf "  \"at\": %d,\n", time if !$no_timestamp;
+        printf "  \"args\": %s,\n", json_quote(join(" ", @switches)) if @switches;
+        printf "  \"error\": true,\n";
+        printf "  \"pages\": []\n";
+        printf "}\n";
+    }
+}
+
 sub shell_quote ($) {
     my($s) = @_;
     $s =~ s/\'/\'\"\'\"\'/g;
@@ -1814,10 +1825,13 @@ sub main () {
     my $any = 0;
     foreach my $file (@ARGV) {
         # open input file into FILE
-        next unless (banal_open_input ($file));
-        banal_file ($file);
-        close $FILE;
-        $any = 1;
+        if (banal_open_input($file)) {
+            banal_file($file);
+            close $FILE;
+            $any = 1;
+        } else {
+            banal_fail($file);
+        }
     }
     return 1 - $any;
 }
