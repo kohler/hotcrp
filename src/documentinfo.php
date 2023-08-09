@@ -1672,7 +1672,8 @@ class DocumentInfo implements JsonSerializable {
     /** @param ?CheckFormat $cf
      * @return ?int */
     function npages(CheckFormat $cf = null) {
-        if ($this->mimetype && $this->mimetype !== "application/pdf") {
+        if (($this->mimetype && $this->mimetype !== "application/pdf")
+            || $this->npages === -1000000) {
             return null;
         }
         if ($this->npages === null) {
@@ -1686,6 +1687,7 @@ class DocumentInfo implements JsonSerializable {
             }
         }
         if ($this->npages < 0) {
+            $this->npages = -1000000;
             $cf = $cf ?? new CheckFormat($this->conf);
             $cf->check_document($this);
         }

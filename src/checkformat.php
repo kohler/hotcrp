@@ -135,8 +135,6 @@ class CheckFormat extends MessageSet {
             $this->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
             $this->nwords = is_int($bj->w ?? null) ? $bj->w : null;
             $this->last_doc->set_prop("npages", $this->npages); // head off recursion
-        } else if (($flags & self::RUN_ATTEMPTED) !== 0) {
-            $this->last_doc->set_prop("npages", 0); // head off recursion
         }
         return $bj;
     }
@@ -432,13 +430,8 @@ class Default_FormatChecker implements FormatChecker {
         $bj = $cf->banal_json();
         if (!$bj
             || !isset($bj->pages)
-            || !is_array($bj->pages)
-            || !isset($bj->papersize)
-            || !is_array($bj->papersize)
-            || count($bj->papersize) != 2) {
-            if (!$cf->has_error_at("error")) {
-                $cf->unprocessable_error($doc);
-            }
+            || !is_array($bj->pages)) {
+            $cf->unprocessable_error($doc);
             return;
         }
 
@@ -449,7 +442,10 @@ class Default_FormatChecker implements FormatChecker {
             && ($bj->msx[0] ?? null) === $spec->timestamp) {
             for ($i = 1; $i !== count($bj->msx); ++$i) {
                 $mx = $bj->msx[$i];
-                $cf->msg_at($mx[0], $mx[1], $mx[2]);
+                $mi = $cf->msg_at($mx[0], $mx[1], $mx[2]);
+                if (isset($mx[3])) {
+                    $mi->landmark = $mx[3];
+                }
             }
             return;
         }
@@ -462,29 +458,36 @@ class Default_FormatChecker implements FormatChecker {
 
         // check spec
         $nmsg0 = $cf->message_count();
-        if ($spec->papersize) {
-            $this->check_papersize($cf, $bj, $spec);
-        }
-        if ($spec->pagelimit) {
-            $this->check_pagelimit($cf, $bj, $spec);
-        }
-        if ($spec->columns) {
-            $this->check_columns($cf, $bj, $spec);
-        }
-        if ($spec->textblock) {
-            $this->check_textblock($cf, $bj, $spec);
-        }
-        if ($spec->bodyfontsize) {
-            $this->check_bodyfontsize($cf, $bj, $spec);
-        }
-        if ($spec->bodylineheight) {
-            $this->check_bodylineheight($cf, $bj, $spec);
-        }
-        if ($spec->wordlimit) {
-            $this->check_wordlimit($cf, $bj, $spec);
-        }
-        if ($spec->columns || $spec->bodyfontsize || $spec->bodylineheight) {
-            $this->check_body_pages_exist($cf, $bj);
+
+        if (!isset($bj->papersize)
+            || !is_array($bj->papersize)
+            || count($bj->papersize) != 2) {
+            $cf->unprocessable_error($doc);
+        } else {
+            if ($spec->papersize) {
+                $this->check_papersize($cf, $bj, $spec);
+            }
+            if ($spec->pagelimit) {
+                $this->check_pagelimit($cf, $bj, $spec);
+            }
+            if ($spec->columns) {
+                $this->check_columns($cf, $bj, $spec);
+            }
+            if ($spec->textblock) {
+                $this->check_textblock($cf, $bj, $spec);
+            }
+            if ($spec->bodyfontsize) {
+                $this->check_bodyfontsize($cf, $bj, $spec);
+            }
+            if ($spec->bodylineheight) {
+                $this->check_bodylineheight($cf, $bj, $spec);
+            }
+            if ($spec->wordlimit) {
+                $this->check_wordlimit($cf, $bj, $spec);
+            }
+            if ($spec->columns || $spec->bodyfontsize || $spec->bodylineheight) {
+                $this->check_body_pages_exist($cf, $bj);
+            }
         }
 
         // store messages in metadata
@@ -774,7 +777,11 @@ class Default_FormatChecker implements FormatChecker {
             $mlist = $cf->message_list();
             while ($nmsg0 !== count($mlist)) {
                 $mi = $mlist[$nmsg0];
-                $msx[] = [$mi->field, $mi->message, $mi->status];
+                $ms = [$mi->field, $mi->message, $mi->status];
+                if ($mi->landmark) {
+                    $ms[] = $mi->landmark;
+                }
+                $msx[] = $ms;
                 ++$nmsg0;
             }
             $xj->msx = $msx;
