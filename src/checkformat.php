@@ -436,7 +436,9 @@ class Default_FormatChecker implements FormatChecker {
             || !isset($bj->papersize)
             || !is_array($bj->papersize)
             || count($bj->papersize) != 2) {
-            $cf->unprocessable_error($doc);
+            if (!$cf->has_error_at("error")) {
+                $cf->unprocessable_error($doc);
+            }
             return;
         }
 
