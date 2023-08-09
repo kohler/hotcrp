@@ -21,6 +21,7 @@ class Mimetype {
     const FLAG_COMPRESSIBLE = 4;
     const FLAG_INCOMPRESSIBLE = 8;
     const FLAG_TEXTUAL = 16;
+    const FLAG_REQUIRE_SNIFF = 32;
 
     /** @var string */
     public $mimetype;
@@ -36,7 +37,7 @@ class Mimetype {
     /** @var array<string,array{0:string,1:?string,2:int,3?:string,4?:string,5?:string}> */
     private static $tinfo = [
         self::TXT_TYPE =>     [".txt", "text", self::FLAG_INLINE | self::FLAG_COMPRESSIBLE | self::FLAG_TEXTUAL],
-        self::PDF_TYPE =>     [".pdf", "PDF", self::FLAG_INLINE],
+        self::PDF_TYPE =>     [".pdf", "PDF", self::FLAG_INLINE | self::FLAG_REQUIRE_SNIFF],
         self::PS_TYPE =>      [".ps", "PostScript", self::FLAG_COMPRESSIBLE],
         self::PPT_TYPE =>     [".ppt", "PowerPoint", self::FLAG_INCOMPRESSIBLE, "application/mspowerpoint", "application/powerpoint", "application/x-mspowerpoint"],
         "application/vnd.openxmlformats-officedocument.presentationml.presentation" =>
@@ -45,8 +46,8 @@ class Mimetype {
         "video/x-msvideo" =>  [".avi", null, self::FLAG_INCOMPRESSIBLE],
         self::JSON_TYPE =>    [".json", "JSON", self::FLAG_UTF8 | self::FLAG_COMPRESSIBLE | self::FLAG_TEXTUAL],
         self::JPG_TYPE =>     [".jpg", "JPEG", self::FLAG_INLINE, ".jpeg"],
-        self::PNG_TYPE =>     [".png", "PNG", self::FLAG_INLINE],
-        self::GIF_TYPE =>     [".gif", "GIF", self::FLAG_INLINE]
+        self::PNG_TYPE =>     [".png", "PNG", self::FLAG_INLINE | self::FLAG_REQUIRE_SNIFF],
+        self::GIF_TYPE =>     [".gif", "GIF", self::FLAG_INLINE | self::FLAG_REQUIRE_SNIFF]
     ];
 
     private static $mime_types = null;
@@ -248,7 +249,7 @@ class Mimetype {
     /** @param ?string $content
      * @return bool */
     static function pdf_content($content) {
-        return $content && strncmp("%PDF-", $content, 5) == 0;
+        return $content && str_starts_with($content, "%PDF-");
     }
 
     /** @param ?string $content
@@ -262,7 +263,7 @@ class Mimetype {
         // reliable sniffs
         if (strlen($content) < 16) {
             // do not sniff
-        } else if (substr($content, 0, 5) === "%PDF-") {
+        } else if (str_starts_with($content, "%PDF-")) {
             return self::PDF_TYPE;
         } else if (strlen($content) > 516
                    && substr($content, 512, 4) === "\x00\x6E\x1E\xF0") {
@@ -283,11 +284,13 @@ class Mimetype {
                    || substr($content, 0, 8) === "Rar!\x1A\x07\x01\x00") {
             return self::RAR_TYPE;
         }
-        // eliminate invalid types, canonicalize
-        if ($type
-            && !isset(self::$tinfo[$type])
-            && ($tx = self::type($type))) {
-            $type = $tx;
+        // canonicalize
+        if ($type && ($mt = self::lookup($type))) {
+            if (($mt->flags & self::FLAG_REQUIRE_SNIFF) !== 0) {
+                $type = self::BIN_TYPE;
+            } else {
+                $type = $mt->mimetype;
+            }
         }
         // unreliable sniffs
         if (!$type || $type === self::BIN_TYPE) {

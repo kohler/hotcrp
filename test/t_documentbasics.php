@@ -113,5 +113,8 @@ class DocumentBasics_Tester {
         xassert_eqq(Mimetype::type(".sml"), "application/smil");
         // `fileinfo` test
         xassert_eqq(Mimetype::content_type("<html><head></head><body></body></html>"), "text/html");
+        // test that non-PDFs are not mistaken for PDFs
+        xassert_eqq(Mimetype::content_type("%PDF-3.0\nwhatever\n", Mimetype::PDF_TYPE), Mimetype::PDF_TYPE);
+        xassert_neqq(Mimetype::content_type("PDF-3.0\nwhatever\n", Mimetype::PDF_TYPE), Mimetype::PDF_TYPE);
     }
 }
