@@ -197,7 +197,7 @@ class Ht {
             unset($js["disabled"]);
         }
 
-        $in_optgroup = "";
+        $in_optgroup = $declared_optgroup = "";
         $opts = [];
         $first_value = null;
         $has_selected = false;
@@ -216,23 +216,19 @@ class Ht {
             if ($info === null) {
                 $opts[] = '<option label=" " disabled></option>';
                 continue;
-            } else if ($info["exclude"] ?? false) {
-                if (strcmp($info["value"] ?? $key, $selected) !== 0) {
-                    continue;
-                }
             }
-
-            if (($info["type"] ?? null) === "optgroup") {
-                $opts[] = $in_optgroup === "" ? "" : "</optgroup>";
-                $in_optgroup = $info["label"] ?? "";
-                if ($in_optgroup !== "") {
-                    $opts[] = '<optgroup label="' . htmlspecialchars($in_optgroup) . '">';
-                }
+            if (($info["exclude"] ?? false)
+                && strcmp($info["value"] ?? $key, $selected) !== 0) {
                 continue;
-            } else if (isset($info["optgroup"])
-                       && $info["optgroup"] !== $in_optgroup) {
+            }
+            if (($info["type"] ?? null) === "optgroup") {
+                $declared_optgroup = $info["label"] ?? "";
+                continue;
+            }
+            $expected_optgroup = $declared_optgroup ? $in_optgroup : "";
+            if (($info["optgroup"] ?? $declared_optgroup) !== $in_optgroup) {
                 $opts[] = $in_optgroup === "" ? "" : "</optgroup>";
-                $in_optgroup = $info["optgroup"] ?? "";
+                $in_optgroup = $info["optgroup"] ?? $declared_optgroup;
                 if ($in_optgroup !== "") {
                     $opts[] = '<optgroup label="' . htmlspecialchars($in_optgroup) . '">';
                 }
@@ -252,16 +248,16 @@ class Ht {
             }
             $opts[] = '<option' . self::extra($info) . ">{$label}</option>";
         }
-
-        $t = '<span class="select"><select name="' . $name . '"' . self::extra($js);
-        if (!isset($js["data-default-value"])
-            && ($has_selected || isset($first_value))) {
-            $t .= ' data-default-value="' . htmlspecialchars($has_selected ? $selected : $first_value) . '"';
-        }
         if ($in_optgroup !== "") {
             $opts[] = "</optgroup>";
         }
-        return "{$t}>" . join("", $opts) . "</select></span>";
+
+        $jsx = self::extra($js);
+        if (!isset($js["data-default-value"])
+            && ($has_selected || isset($first_value))) {
+            $jsx .= ' data-default-value="' . htmlspecialchars($has_selected ? $selected : $first_value) . '"';
+        }
+        return "<span class=\"select\"><select name=\"{$name}\"{$jsx}>" . join("", $opts) . "</select></span>";
     }
 
     /** @param string $name
