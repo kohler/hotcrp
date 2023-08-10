@@ -532,15 +532,15 @@ class Authors_PaperColumn extends PaperColumn {
             foreach ($row->author_list() as $au) {
                 $out[] = $au->name(NAME_P|NAME_I);
             }
-            return join("; ", $out);
+            return join(", ", $out);
         } else {
             $affmap = $this->affiliation_map($row);
             $aus = [];
             foreach ($row->author_list() as $i => $au) {
                 $aus[] = $au->name();
                 if ($affmap[$i] !== null) {
-                    $aff = ($affmap[$i] !== "" ? " ($affmap[$i])" : "");
-                    $out[] = commajoin($aus) . $aff;
+                    $aff = ($affmap[$i] !== "" ? " ({$affmap[$i]})" : "");
+                    $out[] = join(", ", $aus) . $aff;
                     $aus = [];
                 }
             }
