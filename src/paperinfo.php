@@ -1213,7 +1213,8 @@ class PaperInfo {
      * @return int */
     function conflict_type_by_email($email) {
         foreach ($this->conflict_list() as $cu) {
-            if (strcasecmp($cu->user->email, $email) === 0)
+            if ($cu->user
+                && strcasecmp($cu->user->email, $email) === 0)
                 return $cu->conflictType;
         }
         return 0;
@@ -1263,6 +1264,7 @@ class PaperInfo {
         }
         foreach ($this->conflict_list() as $cu) {
             if ($cu->conflictType >= CONFLICT_AUTHOR
+                && $cu->user
                 && ($s = $cu->user->collaborators()) !== "") {
                 $a[] = $s;
             }
@@ -1282,7 +1284,8 @@ class PaperInfo {
         }
         yield from $this->_collaborator_array;
         foreach ($this->conflict_list() as $cu) {
-            if ($cu->conflictType < CONFLICT_AUTHOR) {
+            if ($cu->conflictType < CONFLICT_AUTHOR
+                || !$cu->user) {
                 continue;
             }
             foreach ($cu->user->aucollab_matchers() as $m) {
@@ -1883,7 +1886,8 @@ class PaperInfo {
     function contact_list() {
         $us = [];
         foreach ($this->conflict_list() as $cu) {
-            if ($cu->conflictType >= CONFLICT_AUTHOR)
+            if ($cu->conflictType >= CONFLICT_AUTHOR
+                && $cu->user)
                 $us[] = $cu->user;
         }
         return $us;
