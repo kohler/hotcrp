@@ -237,6 +237,7 @@ class TagAnno implements JsonSerializable {
     public $heading;
     /** @var ?int */
     public $annoFormat;
+    /** @var ?string */
     public $infoJson;
 
     /** @var int */
@@ -247,15 +248,9 @@ class TagAnno implements JsonSerializable {
     public $pos;
     /** @var ?int */
     public $count;
+    /** @var ?object */
+    private $_props;
 
-    /** @return bool */
-    function is_blank() {
-        return $this->heading === null || strcasecmp($this->heading, "none") === 0;
-    }
-    /** @return bool */
-    function is_fencepost() {
-        return $this->tagIndex >= (float) TAG_INDEXBOUND;
-    }
     /** @return ?TagAnno */
     static function fetch($result, Conf $conf) {
         $ta = $result ? $result->fetch_object("TagAnno") : null;
@@ -288,6 +283,25 @@ class TagAnno implements JsonSerializable {
         $ta->heading = "Untagged";
         return $ta;
     }
+
+    /** @return bool */
+    function is_blank() {
+        return $this->heading === null || strcasecmp($this->heading, "none") === 0;
+    }
+    /** @return bool */
+    function is_fencepost() {
+        return $this->tagIndex >= (float) TAG_INDEXBOUND;
+    }
+    /** @param string $k
+     * @return mixed */
+    function prop($k) {
+        if ($this->_props === null && $this->infoJson !== null) {
+            $j = json_decode($this->infoJson);
+            $this->_props = is_object($j) ? $j : null;
+        }
+        return $this->_props ? $this->_props->$k : null;
+    }
+
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $j = [];
