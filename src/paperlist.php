@@ -2255,16 +2255,18 @@ class PaperList {
     }
 
     /** @param int $grouppos
-     * @param array<string,string> &$csv */
-    private function _mark_groups_csv($grouppos, &$csv) {
+     * @param list<array<string,string>> &$body */
+    private function _mark_groups_csv($grouppos, &$body) {
         $ginfo = null;
         while ($grouppos !== count($this->_groups)
                && $this->_groups[$grouppos]->pos < $this->count) {
             $ginfo = $this->_groups[$grouppos];
             ++$grouppos;
         }
-        if ($ginfo && (!$ginfo->is_blank() || $this->count > 1)) {
-            $csv["__precomment__"] = $ginfo->is_blank() ? "none" : $ginfo->heading;
+        if ($ginfo
+            && (!$ginfo->is_blank() || $this->count > 1)
+            && $this->viewing("title")) {
+            $body[] = ["id" => "N/A", "title" => $ginfo->is_blank() ? "none" : $ginfo->heading];
         }
         return $grouppos;
     }
@@ -2280,11 +2282,10 @@ class PaperList {
         $grouppos = empty($this->_groups) ? -1 : 0;
         foreach ($this->rowset() as $row) {
             $this->_row_setup($row);
-            $csv = $this->_row_text_csv_data($row);
             if ($grouppos >= 0) {
-                $grouppos = $this->_mark_groups_csv($grouppos, $csv);
+                $grouppos = $this->_mark_groups_csv($grouppos, $body);
             }
-            $body[] = $csv;
+            $body[] = $this->_row_text_csv_data($row);
         }
 
         // header cells
