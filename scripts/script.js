@@ -10645,6 +10645,10 @@ handle_ui.on("js-replace-document", function () {
     var doce = this.closest(".has-document"),
         actions = doce.querySelector(".document-actions"),
         u = doce.querySelector(".document-uploader");
+    if (!actions) {
+        actions = classe("div", "document-actions hidden");
+        doce.querySelector(".document-replacer").before(actions);
+    }
     if (!u) {
         var dname = doce.getAttribute("data-document-name") || ("opt" + doce.getAttribute("data-dtype"));
         u = classe("input", "uich document-uploader");
@@ -10653,13 +10657,9 @@ handle_ui.on("js-replace-document", function () {
         if (doce.hasAttribute("data-document-accept")) {
             u.setAttribute("accept", doce.getAttribute("data-document-accept"));
         }
-        doce.querySelector(".document-replacer").before(classe("div", "document-upload hidden", u));
+        actions.before(classe("div", "document-upload hidden", u));
     } else {
         $(u).trigger("hotcrp-change-document");
-    }
-    if (!actions) {
-        actions = classe("div", "document-actions hidden");
-        doce.querySelector(".document-replacer").before(actions);
     }
     if (!actions.querySelector(".js-cancel-document")) {
         var cancel = classe("button", "link ui js-cancel-document hidden");
@@ -10680,8 +10680,8 @@ handle_ui.on("document-uploader", function () {
         $doc.find(".document-file, .document-stamps, .js-check-format, .document-format, .js-remove-document").addClass("hidden");
         $doc.find(".document-upload, .document-actions, .js-cancel-document").removeClass("hidden");
         $doc.find(".document-remover").remove();
-        $doc.find(".js-replace-document").html("Replace");
-        $doc.find(".js-remove-document").removeClass("undelete").html("Delete");
+        $doc.find(".js-replace-document").text("Replace");
+        $doc.find(".js-remove-document").removeClass("undelete").text("Delete");
     }
 });
 
@@ -10700,7 +10700,7 @@ handle_ui.on("js-cancel-document", function () {
         $doc.find(".document-upload").remove();
         $doc.find(".document-file, .document-stamps, .js-check-format, .document-format, .js-remove-document").removeClass("hidden");
         $doc.find(".document-file > del > *").unwrap();
-        $doc.find(".js-replace-document").html("Upload");
+        $doc.find(".js-replace-document").text(doce.hasAttribute("data-docid") ? "Replace" : "Upload");
         $doc.find(".js-cancel-document").remove();
         if ($actions[0] && !$actions[0].firstChild)
             $actions.remove();
