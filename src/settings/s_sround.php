@@ -65,7 +65,7 @@ class Sround_SettingParser extends SettingParser {
         if ($si->name0 === "submission/" && $si->name2 === "") {
             $sv->set_oldv($si, new Sround_Setting);
         } else if ($si->name0 === "submission/" && $si->name2 === "/title") {
-            $n = $sv->oldv("submission/{$si->name1}/tag");
+            $n = $sv->vstr("submission/{$si->name1}/tag");
             $sv->set_oldv($si, ($n === "" ? "Default" : "‘{$n}’") . " submission class");
         }
     }

@@ -127,7 +127,7 @@ class Response_SettingParser extends SettingParser {
             if ($si->name2 === "") {
                 $sv->set_oldv($si, Response_Setting::make_new($sv->conf));
             } else if ($si->name2 === "/title") {
-                $n = $sv->oldv("response/{$si->name1}/name");
+                $n = $sv->vstr("response/{$si->name1}/name");
                 $sv->set_oldv($si, $n ? "‘{$n}’ response" : "Response");
             }
         }

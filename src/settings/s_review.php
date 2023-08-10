@@ -65,7 +65,7 @@ class Review_SettingParser extends SettingParser {
         if ($si->name0 === "review/" && $si->name2 === "") {
             $sv->set_oldv($si, new Review_Setting);
         } else if ($si->name0 === "review/" && $si->name2 === "/title") {
-            $n = $sv->oldv("review/{$si->name1}/name");
+            $n = $sv->vstr("review/{$si->name1}/name");
             if ($n === "" && !$sv->conf->has_rounds()) {
                 $sv->set_oldv($si, "Review");
             } else {

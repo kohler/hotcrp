@@ -327,7 +327,7 @@ class Options_SettingParser extends SettingParser {
         if ($si->name_matches("sf/", "*")) {
             $sv->set_oldv($si, self::make_placeholder_option($sv)->export_setting());
         } else if ($si->name_matches("sf/", "*", "/title")) {
-            $n = $sv->oldv("sf/{$si->name1}/name");
+            $n = $sv->vstr("sf/{$si->name1}/name");
             $sv->set_oldv($si, $n === "" ? "[Submission field]" : $n);
         } else if ($si->name_matches("sf/", "*", "/values_text")) {
             $sfs = $sv->oldv("sf/{$si->name1}");

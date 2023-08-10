@@ -49,7 +49,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $rfs->required = false;
             $sv->set_oldv($si, $rfs);
         } else if ($si->name_matches("rf/", "*", "/title")) {
-            $n = $sv->oldv("rf/{$si->name1}/name");
+            $n = $sv->vstr("rf/{$si->name1}/name");
             $sv->set_oldv($si, $n === "" ? "[Review field]" : $n);
         } else if ($si->name_matches("rf/", "*", "/values_text")) {
             $rfs = $sv->oldv("rf/{$si->name1}");
@@ -65,8 +65,7 @@ class ReviewForm_SettingParser extends SettingParser {
         } else if ($si->name_matches("rf/", "*", "/values/", "*")) {
             $sv->set_oldv($si, new RfValue_Setting);
         } else if ($si->name_matches("rf/", "*", "/values/", "*", "/title")) {
-            $rfs = $sv->oldv($si->name_prefix(2));
-            $t0 = $rfs->name ? "‘{$rfs->name}’" : "Review field";
+            $t0 = $sv->oldv($si->name_prefix(2) . "/title");
             $rfv = $sv->oldv($si->name_prefix(4));
             $t1 = $rfv->name ? "value ‘{$rfv->name}’" : "value";
             $sv->set_oldv($si, "{$t0} {$t1}");
