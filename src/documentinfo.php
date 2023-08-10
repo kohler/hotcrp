@@ -1489,9 +1489,12 @@ class DocumentInfo implements JsonSerializable {
         if ($html) {
             $x .= " <u class=\"x\">{$html}</u>";
         }
-        if (!($flags & self::L_NOSIZE) && $this->size() > 0) {
-            $x .= " <span class=\"dlsize\">" . ($html ? "(" : "")
-                . unparse_byte_size($this->size) . ($html ? ")" : "") . "</span>";
+        if (($flags & self::L_NOSIZE) === 0 && $this->size() > 0) {
+            $size = unparse_byte_size($this->size);
+            if ($html) {
+                $size = "({$size})";
+            }
+            $x .= " <span class=\"dlsize\">{$size}</span>";
         }
         return $x . "</a>" . ($info ? " {$info}" : "");
     }
@@ -1500,37 +1503,34 @@ class DocumentInfo implements JsonSerializable {
      * @param string $suffix
      * @return array{string,string,bool} */
     private function link_html_format_info($flags, $suffix) {
+        $message = "";
         $need_run = false;
         if (($spects = $this->conf->format_spec($this->documentType)->timestamp)) {
             if ($this->prow->is_primary_document($this)
-                && ($flags & self::L_SMALL)) {
-                $specstatus = $this->prow->pdfFormatStatus;
-                if ($specstatus == -$spects) {
-                    return ["", $suffix . "x", false];
-                } else if ($specstatus == $spects) {
-                    return ["", $suffix, false];
-                }
-            }
-            $runflag = CheckFormat::RUN_NEVER;
-            if (($flags & self::L_REQUIREFORMAT) !== 0) {
-                $runflag = CheckFormat::RUN_IF_NECESSARY;
-            }
-            $cf = new CheckFormat($this->conf, $runflag);
-            $cf->check_document($this);
-            if ($cf->has_problem()) {
-                if ($cf->has_error()) {
+                && ($flags & self::L_SMALL) !== 0) {
+                if ($this->prow->pdfFormatStatus == -$spects) {
                     $suffix .= "x";
                 }
-                if (($flags & self::L_SMALL) || !$cf->check_ok()) {
-                    return ["", $suffix, $cf->need_recheck()];
-                } else {
-                    return ['<strong class="need-tooltip" aria-label="' . htmlspecialchars($cf->full_feedback_html()) . '">ⓘ</strong>', $suffix, $cf->need_recheck()];
-                }
             } else {
+                $runflag = CheckFormat::RUN_NEVER;
+                if (($flags & self::L_REQUIREFORMAT) !== 0) {
+                    $runflag = CheckFormat::RUN_IF_NECESSARY;
+                }
+                $cf = new CheckFormat($this->conf, $runflag);
+                $cf->check_document($this);
                 $need_run = $cf->need_recheck();
+                if ($cf->has_problem() && $cf->check_ok()) {
+                    if ($cf->has_error()) {
+                        $suffix .= "x";
+                    }
+                    if (($flags & self::L_SMALL) === 0) {
+                        $ffh = htmlspecialchars($cf->full_feedback_html());
+                        $message = "<strong class=\"need-tooltip\" aria-label=\"{$ffh}\">ⓘ</strong>";
+                    }
+                }
             }
         }
-        return ["", $suffix, $need_run];
+        return [$message, $suffix, $need_run];
     }
 
     /** @param string $prop

@@ -179,7 +179,7 @@ class CheckFormat extends MessageSet {
         // we want to run, but may not be allowed to
         $flags = CheckFormat::RUN_DESIRED | CheckFormat::RUN_ALLOWED;
         if ($allow_run === CheckFormat::RUN_NEVER) {
-            return $this->complete_banal_json($bj, $flags);
+            return $this->complete_banal_json($bj, $flags | CheckFormat::RUN_ABANDONED);
         }
 
         $path = $doc->content_file();
@@ -220,8 +220,10 @@ class CheckFormat extends MessageSet {
 
     /** @param DocumentInfo $doc */
     function unprocessable_error($doc) {
-        $mi = $this->error_at("error", "<0>File may be corrupt or not in PDF format");
-        $mi->landmark = $doc->export_filename();
+        if (!$this->has_error_at("error")) {
+            $mi = $this->error_at("error", "<0>File may be corrupt or not in PDF format");
+            $mi->landmark = $doc->export_filename();
+        }
     }
 
     /** @return 'body'|'blank'|'cover'|'appendix'|'bib'|'figure' */
@@ -428,10 +430,7 @@ class Default_FormatChecker implements FormatChecker {
     /** @return void */
     function check(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc) {
         $bj = $cf->banal_json();
-        if (!$bj
-            || !isset($bj->pages)
-            || !is_array($bj->pages)) {
-            $cf->unprocessable_error($doc);
+        if (!$bj) {
             return;
         }
 
