@@ -2070,6 +2070,7 @@ class PaperList {
                     $t .= "<td class=\"plh\" colspan=\"{$rstate->titlecol}\"></td>";
                 }
                 $t .= "<td class=\"plh\" colspan=\"" . ($rstate->ncol - max($rstate->titlecol, 0)) . "\"><a class=\"ui js-annotate-order\" data-anno-tag=\"{$this->_sort_etag}\" href=\"\">Annotate order</a></td></tr>\n";
+                Icons::stash_defs("trash");
             }
 
             $rstate->thead = "{$t} </thead>\n";

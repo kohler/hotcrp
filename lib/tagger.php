@@ -312,6 +312,14 @@ class TagAnno implements JsonSerializable {
             && ($format = Conf::$main->check_format($this->annoFormat, $this->heading))) {
             $j["format"] = +$format;
         }
+        if ($this->infoJson !== null
+            && ($ij = json_decode($this->infoJson)) !== null
+            && is_object($ij)) {
+            foreach ($ij as $k => $v) {
+                if (!in_array($k, ["pos", "annoid", "tag", "tagval", "blank", "legend", "format"]))
+                    $j[$k] = $v;
+            }
+        }
         return $j;
     }
 }

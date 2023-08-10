@@ -37,7 +37,7 @@ class TagAnno_API {
         $q = $qv = $ml = [];
         $next_annoid = $user->conf->fetch_value("select greatest(coalesce(max(annoId),0),0)+1 from PaperTagAnno where tag=?", $tag);
         // parse updates
-        foreach (is_object($reqanno) ? [$reqanno] : $reqanno as $anno) {
+        foreach (is_object($reqanno) ? [$reqanno] : $reqanno as $annoindex => $anno) {
             if (!is_object($anno)
                 || !isset($anno->annoid)
                 || (!is_int($anno->annoid) && !preg_match('/^n/', $anno->annoid))) {
@@ -58,9 +58,13 @@ class TagAnno_API {
                 $q[] = "insert into PaperTagAnno (tag,annoId) values (?,?)";
                 array_push($qv, $tag, $annoid);
             }
-            if (isset($anno->heading) || isset($anno->legend)) {
-                $q[] = "update PaperTagAnno set heading=?, annoFormat=null where tag=? and annoId=?";
-                array_push($qv, $anno->legend ?? $anno->heading ?? null, $tag, $annoid);
+            $annokey = $anno->key ?? $annoindex + 1;
+            $qf = [];
+            if (isset($anno->legend)) {
+                $qf[] = "heading=?";
+                $qf[] = "annoFormat=?";
+                $qv[] = $anno->legend;
+                $qv[] = null;
             }
             if (isset($anno->tagval)) {
                 $tagval = trim($anno->tagval);
@@ -68,11 +72,27 @@ class TagAnno_API {
                     $tagval = "0";
                 }
                 if (is_numeric($tagval)) {
-                    $q[] = "update PaperTagAnno set tagIndex=? where tag=? and annoId=?";
-                    array_push($qv, floatval($tagval), $tag, $annoid);
+                    $qf[] = "tagIndex=?";
+                    $qv[] = floatval($tagval);
                 } else {
-                    $ml[] = new MessageItem("tagval_{$anno->annoid}", "Tag value should be a number", 2);
+                    $ml[] = new MessageItem("ta/{$annokey}/tagval", "Tag value should be a number", 2);
                 }
+            }
+            $ij = [];
+            foreach (["session_title", "time", "location"] as $k) {
+                if (isset($anno->$k))
+                    $ij[$k] = $anno->$k;
+            }
+            if (!empty($ij)) {
+                $qf[] = "infoJson=?";
+                $qv[] = json_encode_db($ij);
+            } else if (!empty($qf)) {
+                $qf[] = "infoJson=?";
+                $qv[] = null;
+            }
+            if (!empty($qf)) {
+                $q[] = "update PaperTagAnno set " . join(", ", $qf) . " where tag=? and annoId=?";
+                array_push($qv, $tag, $annoid);
             }
         }
         // return error if any

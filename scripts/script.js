@@ -1658,25 +1658,31 @@ function append_feedback_to(ul, mi) {
 }
 
 function append_feedback_near(elt, mi) {
-    if (mi.status === 1 && !hasClass(elt, "has-error"))
+    if (mi.status === 1 && !hasClass(elt, "has-error")) {
         addClass(elt, "has-warning");
-    else if (mi.status >= 2) {
+    } else if (mi.status >= 2) {
         removeClass(elt, "has-warning");
         addClass(elt, "has-error");
     }
-    if (mi.message != null && mi.message !== "") {
-        var c, owner = hasClass(elt, "entryi") ? elt.querySelector(".entry") : elt;
-        if (!owner)
-            return false;
-        c = owner.firstChild;
-        while (c && c.nodeType === 1 && (c.tagName === "LABEL" || hasClass(c, "feedback"))) {
-            c = c.nextSibling;
-        }
-        if (c && hasClass(c, "feedback-list")) {
-            append_feedback_to(c, mi);
-        } else {
-            owner.insertBefore(render_feedback_list([mi]), c);
-        }
+    if (mi.message == null || mi.message === "") {
+        return true;
+    }
+    var ctr = elt.closest(".entry, .entryi, fieldset"), fl, owner;
+    if (ctr && hasClass(ctr, "entryi")) {
+        ctr = ctr.querySelector(".entry");
+    }
+    if (!ctr) {
+        return false;
+    }
+    owner = ctr;
+    fl = owner.firstElementChild;
+    while (fl && (fl.tagName === "LABEL" || fl.tagName === "LEGEND" || hasClass(fl, "feedback"))) {
+        fl = fl.nextElementSibling;
+    }
+    if (fl && hasClass(fl, "feedback-list")) {
+        append_feedback_to(fl, mi);
+    } else {
+        owner.insertBefore(render_feedback_list([mi]), fl);
     }
     return true;
 }
@@ -2767,15 +2773,14 @@ function popup_skeleton(options) {
         return hc;
     };
     function show_errors(data) {
-        var form = $d.find("form")[0],
+        var form = $d[0].querySelector("form"),
             dbody = $d.find(".popup-body"),
             i, mlist = data.message_list, gmlist = [], mx, e, x;
         $d.find(".msg-error, .feedback, .feedback-list").remove();
         for (i in mlist || []) {
             mx = mlist[i];
-            if (mx.field && (e = form[mx.field])) {
-                x = e.closest(".entryi, .f-i");
-                if (append_feedback_near(x || e, mx)) {
+            if (mx.field && (e = form.elements[mx.field])) {
+                if (append_feedback_near(e, mx)) {
                     continue;
                 }
             }
@@ -4068,6 +4073,13 @@ function svge() {
     return e;
 }
 
+function svge_use_licon(name) {
+    var e = svge("svg", "class", "licon", "width", "1em", "height", "1em",
+                 "viewBox", "0 0 64 64", "preserveAspectRatio", "none");
+    e.appendChild(svge("use", "href", "#i-def-" + name));
+    return e;
+}
+
 function classe() {
     var e = document.createElement(arguments[0]), i;
     if (arguments[1]) {
@@ -4083,7 +4095,9 @@ function attre() {
     var e = document.createElement(arguments[0]), attr, i;
     if ((attr = arguments[1])) {
         for (i in attr) {
-            if (i === "disabled") {
+            if (attr[i] == null) {
+                // skip
+            } else if (i === "disabled") {
                 e.disabled = attr[i];
             } else if (i === "class") {
                 e.className = attr[i];
@@ -8485,7 +8499,7 @@ function tagvalue_parse(s) {
 }
 
 function tagvalue_unparse(tv) {
-    if (tv === false || tv === null)
+    if (tv === false || tv == null)
         return "";
     else
         return sprintf("%.2f", tv).replace(/\.0+$|0+$/, "");
@@ -8933,87 +8947,154 @@ function taganno_success(rv) {
 }
 
 handle_ui.on("js-annotate-order", function () {
-    var $d, annos, last_newannoid = 0, mytag = this.getAttribute("data-anno-tag");
+    var $d, form, etagannos, annos, need_session = false,
+        mytag = this.getAttribute("data-anno-tag"),
+        dtag = mytag;
+    if (mytag.startsWith(siteinfo.user.uid + "~")) {
+        dtag = dtag.replace(/^\d+/, "");
+    }
     function clickh(evt) {
         if (this.name === "add") {
-            var hc = new HtmlCollector;
-            add_anno(hc, {});
-            var $row = $(hc.render()).awaken();
-            $row.appendTo($d.find(".tagannos"));
+            add_anno({});
             $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
-            $row.find("input[name='legend_n" + last_newannoid + "']").focus();
-        } else if (hasClass(this, "delete-link")) {
+            etagannos.lastChild.querySelector("legend > input").focus();
+        } else if (hasClass(this, "js-delete-ta")) {
             ondeleteclick.call(this, evt);
         } else {
-            var anno = [];
-            for (var i = 0; i < annos.length; ++i) {
-                var legend = $d.find("input[name='legend_" + annos[i].annoid + "']").val();
-                var tagval = $d.find("input[name='tagval_" + annos[i].annoid + "']").val();
-                var deleted = $d.find("input[name='deleted_" + annos[i].annoid + "']").val();
-                if (legend != annos[i].legend || tagval != annos[i].tagval || deleted)
-                    anno.push({annoid: annos[i].annoid, legend: legend, tagval: tagval, deleted: !!deleted});
-            }
-            for (i = 1; i <= last_newannoid; ++i) {
-                legend = $d.find("input[name='legend_n" + i + "']").val();
-                tagval = $d.find("input[name='tagval_n" + i + "']").val();
-                if (legend != "" || tagval != 0)
-                    anno.push({annoid: "n" + i, legend: legend, tagval: tagval});
-            }
-            $.post(hoturl("=api/taganno", {tag: mytag}),
-                   {anno: JSON.stringify(anno)}, make_onsave($d));
+            onsubmit.call(evt);
         }
         evt.preventDefault();
         handle_ui.stopPropagation(evt);
     }
     function ondeleteclick() {
-        var $div = $(this).closest(".form-g"), annoid = $div.attr("data-anno-id");
-        $div.find("input[name='tagval_" + annoid + "']").after("[deleted]").remove();
-        $div.append(hidden_input("deleted_" + annoid, "1"));
-        $div.find("input[name='legend_" + annoid + "']").prop("disabled", true);
+        var fs = this.closest("fieldset"),
+            n = fs.getAttribute("data-ta-key"),
+            content = fs.querySelector(".taganno-content");
+        addClass(content, "hidden");
+        fs.appendChild(hidden_input("ta/" + n + "/delete", "1"));
+        fs.appendChild(render_feedback_list([{message: "<0>This annotation will be deleted.", status: 1}]));
+        addClass(fs.querySelector("legend > input"), "text-decoration-line-through");
+        this.disabled = true;
         hotcrp.tooltip.close(this);
-        $(this).remove();
     }
-    function make_onsave($d) {
-        return function (rv) {
-            if (rv.ok) {
-                taganno_success(rv);
-                $d.close($d);
-            } else
-                $d.show_errors(rv);
-        };
+    function onsubmit() {
+        var newa = [], numannos = etagannos.children.length;
+        for (var i = 0; i !== numannos; ++i) {
+            var pfx = "ta/" + (i + 1) + "/",
+                tagval = form.elements[pfx + "tagval"].value,
+                legend = form.elements[pfx + "legend"].value,
+                id = form.elements[pfx + "id"].value,
+                deleted = form.elements[pfx + "delete"];
+            if (id === "new" && (deleted || (tagval == "" && legend == ""))) {
+                continue;
+            }
+            var anno = {
+                annoid: id === "new" ? id : +id,
+                key: i + 1,
+                tagval: tagval,
+                legend: legend
+            };
+            if (deleted) {
+                anno.deleted = true;
+            } else if (need_session) {
+                anno.session_title = form.elements[pfx + "session_title"].value;
+                anno.time = form.elements[pfx + "time"].value;
+            }
+            newa.push(anno);
+        }
+        $.post(hoturl("=api/taganno", {tag: mytag}),
+            {anno: JSON.stringify(newa)},
+            function (rv) {
+                if (rv.ok) {
+                    taganno_success(rv);
+                    $d.close();
+                } else {
+                    $d.show_errors(rv);
+                }
+           });
     }
-    function add_anno(hc, anno) {
-        var annoid = anno.annoid;
-        if (annoid == null)
-            annoid = "n" + (last_newannoid += 1);
-        hc.push('<div class="form-g" data-anno-id="' + annoid + '">', '</div>');
-        hc.push('<div class="entryi"><label for="k-taganno-' + annoid + '-d">Legend</label><input id="k-taganno-' + annoid + '-d" name="legend_' + annoid + '" type="text" placeholder="none" size="32" class="need-autogrow"></div>');
-        hc.push('<div class="entryi"><label for="k-taganno-' + annoid + '-tagval">Tag value</label><div class="entry"><input id="k-taganno-' + annoid + '-tagval" name="tagval_' + annoid + '" type="text" size="5">', '</div></div>');
-        if (anno.annoid)
-            hc.push(' <button type="button" class="ui closebtn delete-link need-tooltip" aria-label="Delete group">x</button>');
-        hc.pop_n(2);
+    function on_change_type() {
+        need_session = this.value === "session";
+        $(etagannos).find(".if-session").toggleClass("hidden", !need_session);
+    }
+    function entryi(label, entry) {
+        var ide = entry.querySelector("input, select");
+        return classe("div", "entryi",
+            attre("label", {"for": ide ? ide.id : null}, label),
+            classe("div", "entry", entry));
+    }
+    function add_anno(anno) {
+        var n = etagannos.children.length + 1,
+            idpfx = "k-taganno-" + n + "-",
+            namepfx = "ta/" + n + "/";
+        function inpute(sfx, attr, xtype) {
+            attr = attr || {};
+            attr.id = attr.id || idpfx + sfx;
+            attr.name = attr.name || namepfx + sfx;
+            attr.type = attr.type || "text";
+            if (attr.size == null) {
+                attr.size = 40;
+            }
+            if (attr.value == null) {
+                attr.value = anno[sfx];
+            }
+            if (!need_session
+                && xtype === "session"
+                && attr.value != null
+                && attr.value !== "") {
+                console.log(attr.value);
+                need_session = true;
+            }
+            return attre("input", attr);
+        }
+        var tagval = inpute("tagval", {size: 5, placeholder: "(value)", "class": "ml-1", value: tagvalue_unparse(anno.tagval)}),
+            legend = inpute("legend", {placeholder: "none"}),
+            session_title = inpute("session_title", null, "session"),
+            time = inpute("time", null, "session"),
+            deleter = attre("button", {
+                type: "button",
+                "class": "ml-2 need-tooltip js-delete-ta",
+                "aria-label": "Delete annotation"
+            }, svge_use_licon("trash")),
+            fieldset = classe("fieldset", "mt-3 mb-2",
+                classe("legend", null,
+                    "#" + dtag + "#",
+                    tagval,
+                    deleter),
+                hidden_input(namepfx + "id", anno.annoid == null ? "new" : anno.annoid),
+                classe("div", "taganno-content",
+                    entryi("Legend", legend),
+                    classe("div", "if-session hidden",
+                        entryi("Session title", session_title),
+                        entryi("Time", time))));
+        fieldset.setAttribute("data-ta-key", n);
+        etagannos.appendChild(fieldset);
     }
     function show_dialog(rv) {
         if (!rv.ok || !rv.editable)
             return;
-        var hc = popup_skeleton({className: "modal-dialog-w40"}),
-            dtag = mytag.replace(/^\d+~/, "~"), i;
+        var hc = popup_skeleton({className: "modal-dialog-w40"}), i;
         hc.push('<h2>Annotate #' + dtag + ' order</h2>');
         hc.push('<p>These annotations will appear in searches such as “order:' + dtag + '”.</p>');
-        hc.push('<div class="tagannos">', '</div>');
+        hc.push('<p><span class="select"><select name="ta/type"><option value="generic" selected>Generic order</option><option value="session">Session order</option></select></span></p>');
+        hc.push('<div class="tagannos"></div>');
+        hc.push('<div class="mt-3"><button type="button" name="add">Add group</button></div>');
+        hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save changes</button>', '<button type="button" name="cancel">Cancel</button>']);
+        $d = hc.show(false);
+        form = $d[0].querySelector("form");
+        etagannos = $d[0].querySelector(".tagannos");
         annos = rv.anno;
         for (i = 0; i < annos.length; ++i) {
-            add_anno(hc, annos[i]);
+            add_anno(annos[i]);
         }
-        hc.pop();
-        hc.push('<div class="g"><button type="button" name="add">Add group</button></div>');
-        hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save changes</button>', '<button type="button" name="cancel">Cancel</button>']);
-        $d = hc.show();
-        for (i = 0; i < annos.length; ++i) {
-            $d.find("input[name='legend_" + annos[i].annoid + "']").val(annos[i].legend);
-            $d.find("input[name='tagval_" + annos[i].annoid + "']").val(tagvalue_unparse(annos[i].tagval));
+        var etype = form.elements["ta/type"];
+        if (need_session) {
+            etype.value = "session";
+            $(etagannos).find(".if-session").removeClass("hidden");
         }
         $d.on("click", "button", clickh);
+        $(etype).on("change", on_change_type);
+        hc.show();
     }
     $.get(hoturl("=api/taganno", {tag: mytag}), show_dialog);
 });
