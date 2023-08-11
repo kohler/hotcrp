@@ -158,7 +158,7 @@ class PaperContactInfo {
         $row_set = $prow->_row_set;
         foreach ($row_set as $pr) {
             foreach ($user_set as $u) {
-                $pr->_clear_contact_info($u);
+                $pr->_set_empty_contact_info($u);
             }
         }
 
@@ -826,7 +826,7 @@ class PaperInfo {
 
     /** @param Contact $user
      * @return PaperContactInfo */
-    function _clear_contact_info($user) {
+    function _set_empty_contact_info($user) {
         $ci = PaperContactInfo::make_empty($this, $user);
         $this->_contact_info[$user->contactXid] = $ci;
         return $ci;
@@ -839,13 +839,14 @@ class PaperInfo {
         if (!array_key_exists($cid, $this->_contact_info)) {
             if ($this->_review_array
                 || $this->reviewSignatures !== null) {
-                $ci = $this->_clear_contact_info($user);
+                $ci = PaperContactInfo::make_empty($this, $user);
                 if ($cid > 0) {
                     $ci->mark_conflict($this->conflict_type($cid));
                 }
                 foreach ($this->reviews_by_user($cid, $user->review_tokens()) as $rrow) {
                     $ci->mark_review($rrow);
                 }
+                $this->_contact_info[$user->contactXid] = $ci;
             } else {
                 PaperContactInfo::load_into($this, $user);
             }
