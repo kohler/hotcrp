@@ -12432,6 +12432,8 @@ function make_shadow(e) {
         sh = shadow[idx] = document.createElement("div");
         sh.style.position = "absolute";
         sh.style.visibility = "hidden";
+        sh.style.top = -10000;
+        sh.style.left = -10000;
         document.body.appendChild(sh);
         if (idx === 0) {
             sh.style.width = "10px";
