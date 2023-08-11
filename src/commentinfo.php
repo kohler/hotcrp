@@ -334,7 +334,7 @@ class CommentInfo {
         if (($rrd = $this->response_round())) {
             $t = $rrd->unnamed ? "Response" : "{$rrd->name} Response";
             if ($this->commentType & self::CT_DRAFT) {
-                $t = "Draft $t";
+                $t = "Draft {$t}";
             }
             return $t;
         } else {

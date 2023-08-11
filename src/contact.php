@@ -4546,7 +4546,7 @@ class Contact implements JsonSerializable {
      * @return bool */
     function can_edit_response(PaperInfo $prow, CommentInfo $crow, $newctype = null) {
         if ($prow->timeSubmitted <= 0
-            || !($crow->commentType & CommentInfo::CT_RESPONSE)
+            || ($crow->commentType & CommentInfo::CT_RESPONSE) === 0
             || !($rrd = $prow->conf->response_round_by_id($crow->commentRound))) {
             return false;
         }

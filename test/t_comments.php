@@ -118,4 +118,28 @@ class Comments_Tester {
         xassert(!$j->ok);
         xassert_match($j->message_list[0]->message, '/empty|required/');
     }
+
+    function test_response_combination() {
+        // ensure a PC member has a submitted review
+        $paper = $this->conf->checked_paper_by_id(4);
+        $reviewer = $this->conf->user_by_email("estrin@usc.edu");
+        $tf = new ReviewValues($this->conf->review_form());
+        xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "No summary", "comaut" => "No comments"]));
+        xassert($tf->check_and_save($reviewer, $paper));
+
+        // PC author submit a draft response
+        MailChecker::clear();
+        $pc_author = $this->conf->user_by_email("varghese@ccrc.wustl.edu");
+        xassert($paper->has_author($pc_author));
+        $j = call_api("=comment", $pc_author, ["response" => "1", "text" => "Draft", "draft" => 1], $paper);
+        xassert($j->ok);
+
+        // non-PC author submits a non-draft response;
+        // the original PC author should get a *separate* notification
+        $author = $this->conf->user_by_email("plattner@tik.ee.ethz.ch");
+        xassert($paper->has_author($author));
+        $j = call_api("=comment", $author, ["response" => "1", "text" => "Non-Draft"], $paper);
+        xassert($j->ok);
+        MailChecker::check_db("t_comments-response-combination");
+    }
 }
