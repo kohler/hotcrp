@@ -2063,7 +2063,7 @@ class PaperList {
 
             $t = " <thead class=\"pltable-thead\">\n  <tr class=\"pl_headrow\">" . $ths . "</tr>\n";
 
-            if (isset($this->table_attr["data-drag-tag"])
+            if ($this->_sort_etag
                 && $this->user->can_edit_tag_anno($this->_sort_etag)) {
                 $t .= "  <tr class=\"pl_headrow pl_annorow\" data-anno-tag=\"{$this->_sort_etag}\">";
                 if ($rstate->titlecol > 0) {
