@@ -824,12 +824,9 @@ class PaperInfo {
         return $this->_contact_info[$cid];
     }
 
-    /** @param Contact $user
-     * @return PaperContactInfo */
+    /** @param Contact $user */
     function _set_empty_contact_info($user) {
-        $ci = PaperContactInfo::make_empty($this, $user);
-        $this->_contact_info[$user->contactXid] = $ci;
-        return $ci;
+        $this->_contact_info[$user->contactXid] = PaperContactInfo::make_empty($this, $user);
     }
 
     /** @return PaperContactInfo */
