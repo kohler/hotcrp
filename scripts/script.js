@@ -896,16 +896,16 @@ function unparse_time_relative(t, now, format) {
         unit = 5;
     } else if (d >= 259200) // 3d
         unit = 4;
-    else if (d >= 28800)
+    else if (d >= 36000)
         unit = 3;
-    else if (d >= 3630)
+    else if (d >= 5430)
         unit = 2;
     else if (d >= 180.5)
         unit = 1;
-    var x = [1, 60, 1800, 3600, 86400, 604800][unit];
+    var x = [1, 60, 360, 3600, 86400, 604800][unit];
     d = Math.ceil((d - x / 2) / x);
     if (unit == 2)
-        d /= 2;
+        d /= 10;
     if (format & 4)
         d += "smhhdw".charAt(unit);
     else
@@ -3051,7 +3051,7 @@ function display_main(is_initial) {
     if (!redisplay_timeout && dlname) {
         if (!dltime || dltime - now < 180.5)
             redisplay_timeout = setTimeout(redisplay_main, 250);
-        else if (dltime - now <= 3600)
+        else if (dltime - now <= 5400)
             redisplay_timeout = setTimeout(redisplay_main, (Math.min(now + 15, dltime - 180.25) - now) * 1000);
     }
 }
