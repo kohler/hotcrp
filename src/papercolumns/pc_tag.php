@@ -79,6 +79,7 @@ class Tag_PaperColumn extends PaperColumn {
                     $pl->column_error(new MessageItem(null, "<0>That tag is set automatically.", MessageSet::INFORM));
                 }
             }
+            $this->editable = false;
         }
         if ($this->editable
             && ($visible & PaperColumn::PREP_VISIBLE)

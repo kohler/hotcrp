@@ -9133,7 +9133,7 @@ function tag_save() {
     else if ((newval = tagvalue_parse(this.value)) !== null)
         ch = m[1] + "#" + (newval !== false ? newval : "clear");
     else {
-        minifeedback(this, {ok: false, message_list: [{message: "Value must be a number (or empty to remove the tag).", status: 2}]});
+        minifeedback(this, {ok: false, message_list: [{message: "Value must be a number (or empty to remove the tag)", status: 2}]});
         return;
     }
     $.post(hoturl("=api/tags", {p: m[2], forceShow: 1}),
