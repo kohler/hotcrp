@@ -1146,9 +1146,9 @@ hotcrp.drag_block_reorder = function (draghandle, draggable, callback) {
                 td = td.nextElementSibling;
             }
         }
-        td = classe("td", null, sep);
+        td = $e("td", null, sep);
         td.colSpan = ncol;
-        sep = classe("tr", "dropmark", td);
+        sep = $e("tr", "dropmark", td);
     }
     function dragover(evt) {
         evt.preventDefault();
@@ -2218,10 +2218,10 @@ return function (content, bubopt) {
     var nearpos = null, dirspec = bubopt.anchor, dir = null,
         color = bubopt.color ? " " + bubopt.color : "";
 
-    var bubdiv = classe("div", "bubble" + color,
-        classe("div", "bubtail bubtail0" + color),
-        classe("div", "bubcontent"),
-        classe("div", "bubtail bubtail1" + color));
+    var bubdiv = $e("div", "bubble" + color,
+        $e("div", "bubtail bubtail0" + color),
+        $e("div", "bubcontent"),
+        $e("div", "bubtail bubtail1" + color));
     bubdiv.setAttribute("style", "margin:0");
     bubdiv.firstChild.setAttribute("style", "width:0;height:0");
     bubdiv.lastChild.setAttribute("style", "width:0;height:0");
@@ -4086,25 +4086,18 @@ function svge_use_licon(name) {
     return e;
 }
 
-function classe() {
-    var e = document.createElement(arguments[0]), i;
-    if (arguments[1]) {
-        e.className = arguments[1];
-    }
-    for (i = 2; i < arguments.length; ++i) {
-        e.append(arguments[i]);
-    }
-    return e;
-}
-
-function attre() {
-    var e = document.createElement(arguments[0]), attr, i;
-    if ((attr = arguments[1])) {
+function $e(tag, attr) {
+    var e = document.createElement(tag), i;
+    if (!attr) {
+        // nothing
+    } else if (typeof attr === "string") {
+        e.className = attr;
+    } else {
         for (i in attr) {
             if (attr[i] == null) {
                 // skip
-            } else if (i === "disabled") {
-                e.disabled = attr[i];
+            } else if (typeof attr[i] === "boolean") {
+                e[i] = attr[i];
             } else {
                 e.setAttribute(i, attr[i]);
             }
@@ -4124,9 +4117,9 @@ function make_expander_element(foldnum) {
         sv.appendChild(p);
         return sv;
     }
-    return classe("span", "expander",
-        classe("span", "in0 fx" + foldnum, mksvgp("M1 1L8 15L15 1z")),
-        classe("span", "in1 fn" + foldnum, mksvgp("M1 1L15 8L1 15z")));
+    return $e("span", "expander",
+        $e("span", "in0 fx" + foldnum, mksvgp("M1 1L8 15L15 1z")),
+        $e("span", "in1 fn" + foldnum, mksvgp("M1 1L15 8L1 15z")));
 }
 
 
@@ -4343,7 +4336,7 @@ handle_ui.on("click.js-dropmenu-open", function (evt) {
     hotcrp.tooltip.close();
     if (!edetails.open) {
         if (!modal) {
-            modal = classe("div", "modal transparent");
+            modal = $e("div", "modal transparent");
             modal.id = "dropmenu-modal";
             edetails.parentElement.insertBefore(modal, edetails.nextsibling);
             modal.addEventListener("click", dropmenu_close, false);
@@ -4496,9 +4489,9 @@ return {
         if (t <= 1) {
             return null;
         }
-        var span_rti = classe("span", "rti", icon_texts[t]);
+        var span_rti = $e("span", "rti", icon_texts[t]);
         span_rti.title = tooltips[t];
-        return classe("span", "rto rt".concat(canon[t], xc || ""), span_rti);
+        return $e("span", "rto rt".concat(canon[t], xc || ""), span_rti);
     }
 };
 })();
@@ -4509,8 +4502,8 @@ return {
 (function ($) {
 function make_radio(name, value, text, revtype) {
     var rname = "assrev" + name, id = rname + "_" + value,
-        input = classe("input"),
-        label = classe("label", "", classe("span", "checkc", input));
+        input = $e("input"),
+        label = $e("label", null, $e("span", "checkc", input));
     input.type = "radio";
     input.name = rname;
     input.value = value;
@@ -4518,7 +4511,7 @@ function make_radio(name, value, text, revtype) {
     if (value == revtype) {
         input.className = "assignment-ui-radio want-focus";
         input.checked = input.defaultChecked = true;
-        text = classe("u", "", text);
+        text = $e("u", "", text);
     } else {
         input.className = "assignment-ui-radio";
     }
@@ -4526,7 +4519,7 @@ function make_radio(name, value, text, revtype) {
         label.append(review_types.make_icon(value), " ");
     }
     label.append(text);
-    return classe("div", "assignment-ui-choice checki", label);
+    return $e("div", "assignment-ui-choice checki", label);
 }
 function append_round_selector(name, revtype, $a, ctr) {
     var $as = $a.closest(".has-assignment-set"), rounds;
@@ -5145,19 +5138,19 @@ hotcrp.dropmenu.add_builder("row-order-draghandle", function () {
         menu = details.lastElementChild.firstChild;
         menu.replaceChildren();
     } else {
-        menu = classe("ul", "uic dropmenu");
-        details = classe("details", "dropmenu-details",
-            classe("summary"),
-            classe("div", "dropmenu-container dropmenu-draghandle", menu));
+        menu = $e("ul", "uic dropmenu");
+        details = $e("details", "dropmenu-details",
+            $e("summary"),
+            $e("div", "dropmenu-container dropmenu-draghandle", menu));
         details.setAttribute("role", "menu");
         this.replaceWith(details);
         details.firstChild.append(this);
     }
-    menu.append(classe("li", "disabled", "(Drag to reorder)"));
+    menu.append($e("li", "disabled", "(Drag to reorder)"));
     function buttonli(className, attr, text) {
         attr["class"] = className;
         attr["type"] = "button";
-        return classe("li", attr.disabled ? "disabled" : "has-link", attre("button", attr, text));
+        return $e("li", attr.disabled ? "disabled" : "has-link", $e("button", attr, text));
     }
     menu.append(buttonli("link ui row-order-dragmenu move-up", {disabled: !row.previousElementSibling}, "Move up"));
     menu.append(buttonli("link ui row-order-dragmenu move-down", {disabled: !row.nextElementSibling}, "Move down"));
@@ -5850,17 +5843,17 @@ function render_review_hidden_fields(hidden_fields) {
         var f = formj[hidden_fields[i]];
         n.push(f.name);
     }
-    link = classe("a");
+    link = $e("a");
     link.href = hoturl("settings", {group: "reviewform", "#": "rf/" + formj[hidden_fields[0]].order});
     if (!hotcrp.status.is_admin) {
         link.className = "q";
     }
     if (n.length === 1) {
         link.textContent = "field condition";
-        return classe("p", "feedback is-warning mt-3", "This review’s ".concat(n[0], " field has been hidden by a "), link, ".");
+        return $e("p", "feedback is-warning mt-3", "This review’s ".concat(n[0], " field has been hidden by a "), link, ".");
     } else {
         link.textContent = "field conditions";
-        return classe("p", "feedback is-warning mt-3", "This review’s ".concat(commajoin(n), " fields have been hidden by "), link, ".");
+        return $e("p", "feedback is-warning mt-3", "This review’s ".concat(commajoin(n), " fields have been hidden by "), link, ".");
     }
 }
 
@@ -6615,7 +6608,7 @@ function cmt_toggle_editing(celt, editing) {
     if (editing && (!celt.previousSibling || celt.previousSibling.className !== "cmtcard-placeholder")
         && window.IntersectionObserver) {
         editor_observer = editor_observer || new IntersectionObserver(cmt_edit_observer, {rootMargin: "16px 0px"});
-        var e = classe("div", "cmtcard-placeholder");
+        var e = $e("div", "cmtcard-placeholder");
         celt.before(e);
         editing_list = editing_list || [];
         editing_list.push(celt);
@@ -6895,21 +6888,21 @@ function cmt_render_text(format, value, response, texte, chead) {
             wordse && addClass(wordse, "wordsover");
             wc = count_words_split(value, rrd.words);
             if (rrd.truncate && !hotcrp.status.myperm.allow_administer) {
-                buttone = classe("button", "ui js-overlong-expand", "Truncated for length");
+                buttone = $e("button", "ui js-overlong-expand", "Truncated for length");
                 buttone.type = "button";
                 buttone.disabled = true;
-                aftertexte = classe("div", "overlong-expander", buttone);
+                aftertexte = $e("div", "overlong-expander", buttone);
                 value = wc[0].trimEnd() + "…";
             } else {
-                buttone = classe("button", "ui js-overlong-expand", "Show full-length response");
+                buttone = $e("button", "ui js-overlong-expand", "Show full-length response");
                 buttone.type = "button";
                 buttone.ariaExpanded = "false";
-                var allowede = classe("div", "overlong-allowed"),
-                    dividere = classe("div", "overlong-divider",
+                var allowede = $e("div", "overlong-allowed"),
+                    dividere = $e("div", "overlong-divider",
                         allowede,
-                        classe("div", "overlong-mark",
-                            classe("div", "overlong-expander", buttone))),
-                    contente = classe("div", "overlong-content");
+                        $e("div", "overlong-mark",
+                            $e("div", "overlong-expander", buttone))),
+                    contente = $e("div", "overlong-content");
                 addClass(texte, "has-overlong");
                 addClass(texte, "overlong-collapsed");
                 texte.prepend(dividere, contente);
@@ -6957,7 +6950,7 @@ function add_comment(cj, editing) {
 function add_new_comment_button(cj, cid) {
     var actions = $$("k-comment-actions");
     if (!actions) {
-        actions = classe("div", "pcard cmtcard", classe("div", "aab aabig"));
+        actions = $e("div", "pcard cmtcard", $e("div", "aab aabig"));
         actions.id = "k-comment-actions";
         $(".pcontainer").append(actions);
     }
@@ -6975,11 +6968,11 @@ function add_new_comment_button(cj, cid) {
 }
 
 function add_new_comment(cj, cid) {
-    var article = classe("article", "pcard cmtcard cmtid".concat(cj.editable ? " editable" : "", cj.response ? " response" : " comment"));
+    var article = $e("article", "pcard cmtcard cmtid".concat(cj.editable ? " editable" : "", cj.response ? " response" : " comment"));
     article.id = cid;
     if (cj.response && cj.text !== false) {
-        article.appendChild(classe("header", "cmtcard-head",
-            classe("h2", "", classe("span", "cmtcard-header-name", cj_name(cj)))));
+        article.appendChild($e("header", "cmtcard-head",
+            $e("h2", "", $e("span", "cmtcard-header-name", cj_name(cj)))));
     }
     document.querySelector(".pcontainer").insertBefore(article, $$("k-comment-actions"));
 }
@@ -8566,21 +8559,21 @@ function tagannorow_add(tbl, tbody, before, anno) {
 
     var tr;
     if (anno.blank) {
-        tr = classe("tr", "plheading-blank",
-            attre("td", {"class": "plheading", colspan: ncol}));
+        tr = $e("tr", "plheading-blank",
+            $e("td", {"class": "plheading", colspan: ncol}));
     } else {
-        tr = attre("tr", {
+        tr = $e("tr", {
             "class": "plheading",
             "data-anno-tag": anno.tag || null,
             "data-anno-id": anno.annoid || null,
             "data-tags": anno.tag && anno.annoid ? anno.tag + "#" + anno.tagval : null
         });
         if (titlecol) {
-            tr.appendChild(attre("td", {"class": "plheading-spacer", colspan: titlecol}));
+            tr.appendChild($e("td", {"class": "plheading-spacer", colspan: titlecol}));
         }
-        tr.appendChild(attre("td", {"class": "plheading", colspan: ncol - titlecol},
-            classe("span", "plheading-group"),
-            classe("span", "plheading-count")));
+        tr.appendChild($e("td", {"class": "plheading", colspan: ncol - titlecol},
+            $e("span", "plheading-group"),
+            $e("span", "plheading-count")));
     }
 
     if (anno.tag
@@ -9011,9 +9004,9 @@ handle_ui.on("js-annotate-order", function () {
     }
     function entryi(label, entry) {
         var ide = entry.querySelector("input, select");
-        return classe("div", "entryi",
-            attre("label", {"for": ide ? ide.id : null}, label),
-            classe("div", "entry", entry));
+        return $e("div", "entryi",
+            $e("label", {"for": ide ? ide.id : null}, label),
+            $e("div", "entry", entry));
     }
     function add_anno(anno) {
         var n = etagannos.children.length + 1,
@@ -9036,26 +9029,26 @@ handle_ui.on("js-annotate-order", function () {
                 && attr.value !== "") {
                 need_session = true;
             }
-            return attre("input", attr);
+            return $e("input", attr);
         }
         var tagval = inpute("tagval", {size: 5, placeholder: "(value)", "class": "ml-1", value: tagvalue_unparse(anno.tagval)}),
             legend = inpute("legend", {placeholder: "none"}),
             session_title = inpute("session_title", null, "session"),
             time = inpute("time", null, "session"),
-            deleter = attre("button", {
+            deleter = $e("button", {
                 type: "button",
                 "class": "ml-2 need-tooltip js-delete-ta",
                 "aria-label": "Delete annotation"
             }, svge_use_licon("trash")),
-            fieldset = classe("fieldset", "mt-3 mb-2",
-                classe("legend", null,
+            fieldset = $e("fieldset", "mt-3 mb-2",
+                $e("legend", null,
                     "#" + dtag + "#",
                     tagval,
                     deleter),
                 hidden_input(namepfx + "id", anno.annoid == null ? "new" : anno.annoid),
-                classe("div", "taganno-content",
+                $e("div", "taganno-content",
                     entryi("Legend", legend),
-                    classe("div", "if-session".concat(need_session ? "" : " hidden"),
+                    $e("div", "if-session".concat(need_session ? "" : " hidden"),
                         entryi("Session title", session_title),
                         entryi("Time", time))));
         fieldset.setAttribute("data-ta-key", n);
@@ -9299,10 +9292,10 @@ function tagval_prowdrag_content() {
         newval = rowanal[srcindex].newvalue;
     }
     if (newval !== false) {
-        frag.append(attre("span", {style: "padding-left:2em" + (srcindex === dragindex ? "" : ";font-weight:bold")},
+        frag.append($e("span", {style: "padding-left:2em" + (srcindex === dragindex ? "" : ";font-weight:bold")},
             "#".concat(dragtag, "#", tagvalue_unparse(newval))));
     } else {
-        frag.append(classe("div", "hint", "Untagged · Drag up to set order"));
+        frag.append($e("div", "hint", "Untagged · Drag up to set order"));
     }
     return frag;
 }
@@ -9518,12 +9511,14 @@ function check_version(url, versionstr) {
 
 
 // user rendering
-function render_user(u) {
-    if (!u.name_html)
-        u.name_html = escape_html(u.name);
-    if (u.color_classes && !u.user_html)
-        u.user_html = '<span class="' + u.color_classes + ' taghh">' + u.name_html + '</span>';
-    return u.user_html || u.name_html;
+function usere(u) {
+    if (!u.$e) {
+        var e = document.createTextNode(u.name);
+        if (u.color_classes)
+            e = $e("span", u.color_classes + " taghh", e);
+        u.$e = e;
+    }
+    return u.$e.cloneNode(true);
 }
 
 
@@ -9550,34 +9545,45 @@ function pattrnear(e, attr) {
 function render_allpref() {
     var self = this;
     demand_load.pc().then(function (pcs) {
-        var t = [], m, allpref = pattrnear(self, "data-allpref") || "",
-            atomre = /(\d+)([PT])(\S+)/g;
+        var allpref = pattrnear(self, "data-allpref") || "",
+            atomre = /(\d+)([PT])(\S+)/g, t = [], m, pref, frag, i, e, u;
         while ((m = atomre.exec(allpref)) !== null) {
-            var pc = pcs[m[1]];
-            var pref = parseInt(m[3]);
-            var x = render_user(pc) +
-                ' <span class="asspref' + (pref < 0 ? "-1" : "1") +
-                '">' + m[2] +
-                (pref < 0 ? "−" /* minus */ + m[3].substring(1) : "+" + m[3]) +
-                '</span>';
-            t.push([m[2] === "P" ? pref : 0, pref, t.length, x]);
+            pref = parseInt(m[3]);
+            t.push([m[2] === "P" ? pref : 0, pref, t.length, pcs[m[1]], m[2]]);
         }
-        if (t.length) {
-            t.sort(function (a, b) {
-                if (a[0] !== b[0])
-                    return a[0] < b[0] ? 1 : -1;
-                else if (a[1] !== b[1])
-                    return a[1] < b[1] ? 1 : -1;
-                else
-                    return a[2] < b[2] ? -1 : 1;
-            });
-            t = t.map(function (x) { return x[3]; });
-            x = '<span class="nb">' + t.join(',</span> <span class="nb">') + '</span>';
-            $(self).html(x).removeClass("need-allpref");
-        } else
-            $(self).closest("div").empty();
+        if (t.length === 0) {
+            self.closest("div").replaceChildren();
+            return;
+        }
+        t.sort(function (a, b) {
+            if (a[0] !== b[0])
+                return a[0] < b[0] ? 1 : -1;
+            else if (a[1] !== b[1])
+                return a[1] < b[1] ? 1 : -1;
+            else
+                return a[2] < b[2] ? -1 : 1;
+        });
+        frag = document.createDocumentFragment();
+        for (i = 0; i !== t.length; ++i) {
+            u = t[i];
+            pref = u[1];
+            if (pref < 0) {
+                e = $e("span", "asspref-1", u[4].concat("−" /* minus */, -pref));
+            } else {
+                e = $e("span", "asspref1", u[4].concat("+", pref));
+            }
+            e = $e("span", "nb", usere(u[3]), " ", e);
+            if (i < t.length - 1) {
+                e.append(",");
+                frag.append(e, " ");
+            } else {
+                frag.append(e);
+            }
+        }
+        self.replaceChildren(frag);
+        removeClass(self, "need-allpref");
     }, function () {
-        $(self).closest("div").empty();
+        self.closest("div").replaceChildren();
     });
 }
 
@@ -9777,9 +9783,9 @@ function render_tagset(tagstr, editable) {
                 tagx = tagmap ? tagmap[tbase.toLowerCase()] || 0 : 0;
             tbase = tbase.substring(twiddle, hash);
             if ((tagx & 2) || tindex != "0")
-                h = classe("a", "qo nw", classe("u", "x", "#" + tbase), "#" + tindex);
+                h = $e("a", "qo nw", $e("u", "x", "#" + tbase), "#" + tindex);
             else
-                h = classe("a", "q nw", "#" + tbase);
+                h = $e("a", "q nw", "#" + tbase);
             if (tagx & 2)
                 q = "#".concat(tbase, " showsort:-#", tbase);
             else if (tindex != "0")
@@ -9788,7 +9794,7 @@ function render_tagset(tagstr, editable) {
                 q = "#" + tbase;
             h.setAttribute("href", hoturl("search", {q: q}));
             if (taghighlighter && taghighlighter.test(tbase))
-                h = classe("strong", null, h);
+                h = $e("strong", null, h);
             t.push([h, text.substring(twiddle, hash)]);
         }
     }
@@ -9801,7 +9807,7 @@ function render_tagset(tagstr, editable) {
         t.push(["none"]);
     }
     h = document.createDocumentFragment();
-    h.append(classe("em", "plx", "Tags:"));
+    h.append($e("em", "plx", "Tags:"));
     for (i = 0; i !== t.length; ++i) {
         h.append(" ", t[i][0]);
     }
@@ -9812,14 +9818,14 @@ function render_row_tags(div) {
     var ptr = prownear(div), editable = ptr.hasAttribute("data-tags-editable"),
         t = render_tagset(ptr.getAttribute("data-tags"), editable);
     if (t && ptr.hasAttribute("data-tags-conflicted")) {
-        t = classe("span", "fx5", t);
+        t = $e("span", "fx5", t);
         var ct = render_tagset(ptr.getAttribute("data-tags-conflicted"), editable);
-        ct && t.prepend(classe("span", "fn5", ct));
+        ct && t.prepend($e("span", "fn5", ct));
     }
     if (t && ptr.getAttribute("data-tags-editable") != null) {
-        t.append(" ", classe("span", "hoveronly",
-            classe("span", "barsep", "·"), " ",
-            attre("button", {type: "button", "class": "link ui js-plinfo-edittags"}, "Edit")));
+        t.append(" ", $e("span", "hoveronly",
+            $e("span", "barsep", "·"), " ",
+            $e("button", {type: "button", "class": "link ui js-plinfo-edittags"}, "Edit")));
     }
     $(div).find("textarea").unautogrow();
     t ? div.replaceChildren(t) : div.replaceChildren();
@@ -10595,12 +10601,12 @@ handle_ui.on("js-add-attachment", function () {
     filee.name = name + ":file";
     filee.size = 15;
     filee.className = "uich document-uploader";
-    var cancele = classe("button", "link ui js-cancel-document", "Cancel"),
-        actionse = classe("div", "document-actions", cancele);
+    var cancele = $e("button", "link ui js-cancel-document", "Cancel"),
+        actionse = $e("div", "document-actions", cancele);
     cancele.type = "button";
     var max_size = attache.getAttribute("data-document-max-size"),
-        doce = classe("div", "has-document document-new-instance hidden",
-            classe("div", "document-upload", filee), actionse);
+        doce = $e("div", "has-document document-new-instance hidden",
+            $e("div", "document-upload", filee), actionse);
     doce.setAttribute("data-dtype", attache.getAttribute("data-dtype"));
     doce.setAttribute("data-document-name", name);
     if (max_size != null)
@@ -10617,23 +10623,23 @@ handle_ui.on("js-replace-document", function () {
         actions = doce.querySelector(".document-actions"),
         u = doce.querySelector(".document-uploader");
     if (!actions) {
-        actions = classe("div", "document-actions hidden");
+        actions = $e("div", "document-actions hidden");
         doce.querySelector(".document-replacer").before(actions);
     }
     if (!u) {
         var dname = doce.getAttribute("data-document-name") || ("opt" + doce.getAttribute("data-dtype"));
-        u = classe("input", "uich document-uploader");
+        u = $e("input", "uich document-uploader");
         u.id = u.name = dname + ":file";
         u.type = "file";
         if (doce.hasAttribute("data-document-accept")) {
             u.setAttribute("accept", doce.getAttribute("data-document-accept"));
         }
-        actions.before(classe("div", "document-upload hidden", u));
+        actions.before($e("div", "document-upload hidden", u));
     } else {
         $(u).trigger("hotcrp-change-document");
     }
     if (!actions.querySelector(".js-cancel-document")) {
-        var cancel = classe("button", "link ui js-cancel-document hidden");
+        var cancel = $e("button", "link ui js-cancel-document hidden");
         cancel.type = "button";
         cancel.textContent = "Cancel";
         actions.appendChild(cancel);
@@ -12575,6 +12581,7 @@ $(function () {
 
 
 Object.assign(window.hotcrp, {
+    $e: $e,
     // add_comment
     // add_diff_check
     // add_review
@@ -12602,10 +12609,10 @@ Object.assign(window.hotcrp, {
     // onload
     // paper_edit_conditions
     // render_list
+    render_text: render_text,
     render_text_page: render_text.on_page,
-    render_user: render_user,
     // replace_editable_field
-    scorechart: scorechart
+    scorechart: scorechart,
     // set_response_round
     // set_review_form
     // set_scoresort
@@ -12614,4 +12621,5 @@ Object.assign(window.hotcrp, {
     // tooltip
     // tracker_show_elapsed
     // update_tag_decoration
+    usere: usere
 });
