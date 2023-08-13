@@ -295,9 +295,10 @@ class PaperTable {
 
         // look up list description
         $list = null;
-        $listdesc = $this->qreq->ls;
-        if ($listdesc) {
+        if (($listdesc = $this->qreq->ls)) {
             if (($opt = PaperSearch::unparse_listid($listdesc))) {
+                /* XXX backward compat */
+                error_log("{$this->conf->dbname}: unexpected ls={$listdesc}");
                 $list = $this->try_list($opt, $prow);
             }
             if (!$list && preg_match('/\A(all|s):(.*)\z/s', $listdesc, $m)) {

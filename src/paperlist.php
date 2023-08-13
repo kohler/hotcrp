@@ -240,7 +240,8 @@ class PaperList {
     const VIEWORIGIN_REPORT = 0;
     const VIEWORIGIN_DEFAULT_DISPLAY = 1;
     const VIEWORIGIN_SESSION = 2;
-    const VIEWORIGIN_EXPLICIT = 3;
+    const VIEWORIGIN_REQUEST = 3;
+    const VIEWORIGIN_EXPLICIT = 4;
     const VIEW_REPORTSHOW = 16;
     const VIEW_SHOW = 32;
 
@@ -576,6 +577,11 @@ class PaperList {
         }
         $k = self::$view_synonym[$k] ?? $k;
 
+        // ignore session values of `force`
+        if ($k === "force" && $origin === self::VIEWORIGIN_SESSION) {
+            return;
+        }
+
         $flags = &$this->_viewf[$k];
         $flags = $flags ?? 0;
         if ($origin === self::VIEWORIGIN_REPORT) {
@@ -716,9 +722,9 @@ class PaperList {
         foreach ($qreq as $k => $v) {
             if (str_starts_with($k, "show") && $v) {
                 $name = substr($k, 4);
-                $this->set_view($name, true, self::VIEWORIGIN_SESSION, $this->_view_decorations[$name] ?? null);
+                $this->set_view($name, true, self::VIEWORIGIN_REQUEST, $this->_view_decorations[$name] ?? null);
             } else if ($k === "forceShow") {
-                $this->set_view("force", !!$v, self::VIEWORIGIN_SESSION);
+                $this->set_view("force", !!$v, self::VIEWORIGIN_REQUEST);
             }
         }
     }
@@ -1908,7 +1914,14 @@ class PaperList {
     /** @return SessionList */
     function session_list_object() {
         assert($this->_groups !== null);
-        return $this->search->create_session_list_object($this->paper_ids(), $this->_list_description(), $this->sortdef());
+        $args = [];
+        if (($sort = $this->sortdef()) !== "") {
+            $args["sort"] = $sort;
+        }
+        if ($this->_view_force) {
+            $args["forceShow"] = 1;
+        }
+        return $this->search->create_session_list_object($this->paper_ids(), $this->_list_description(), $args);
     }
 
     private function _stash_render() {
@@ -1933,7 +1946,7 @@ class PaperList {
         if ($rows->is_empty()) {
             if (($altq = $this->search->alternate_query())) {
                 $altqh = htmlspecialchars($altq);
-                $url = $this->search->url_site_relative_raw($altq);
+                $url = $this->search->url_site_relative_raw(["q" => $altq]);
                 if (substr($url, 0, 5) == "search") {
                     $altqh = "<a href=\"" . htmlspecialchars($this->siteurl() . $url) . "\">" . $altqh . "</a>";
                 }

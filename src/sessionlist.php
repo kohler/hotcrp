@@ -34,18 +34,18 @@ class SessionList {
         $this->description = $description;
     }
 
-    /** @param string $urlbase
-     * @return $this */
-    function set_urlbase($urlbase) {
-        $this->urlbase = $urlbase;
-        return $this;
-    }
-
     /** @param string $url
      * @return $this */
     function set_url($url) {
         $this->url = $url;
         $this->urlbase = null;
+        return $this;
+    }
+
+    /** @param string $urlbase
+     * @return $this */
+    function set_urlbase($urlbase) {
+        $this->urlbase = $urlbase;
         return $this;
     }
 

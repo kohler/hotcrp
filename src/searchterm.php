@@ -870,6 +870,7 @@ class Limit_SearchTerm extends SearchTerm {
     /** @var Contact */
     private $reviewer;
 
+    /* NB all named_limits must equal themselves when urlencoded */
     static public $reqtype_map = [
         "a" => ["a", "author"],
         "acc" => "accepted",

@@ -9673,7 +9673,7 @@ function set(f, elt, text) {
 }
 
 handle_ui.on("js-plinfo-edittags", function () {
-    var div = $(this).closest("div.pl_tags")[0], ta,
+    var div = this.closest("div.pl_tags"), ta,
         prow = prownear(div), pid = +prow.getAttribute("data-pid");
     function start(rv) {
         if (!rv.ok || !rv.pid || rv.pid != pid)

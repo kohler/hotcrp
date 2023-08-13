@@ -234,10 +234,10 @@ class Search_Page {
 
         // Conflict display
         if ($this->user->is_manager()) {
-            echo '<td class="padlb">',
+            echo '<td class="padlb"><label class="checki"><span class="checkc">',
                 Ht::checkbox("showforce", 1, $this->pl->viewing("force"),
                              ["id" => "showforce", "class" => "uich js-plinfo"]),
-                "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
+                "</span>Override conflicts</label></td>";
         }
 
         echo '<td class="padlb">';
@@ -485,12 +485,6 @@ class Search_Page {
                 $forceShow = $qreq->forceShow || $qreq->showforce ? 1 : null;
             }
             $conf->redirect_self($qreq, ["#" => "view", "forceShow" => $forceShow]);
-        }
-        if ($user->privChair
-            && !isset($qreq->forceShow)
-            && preg_match('/\b(show:|)force\b/', $qreq->csession("pldisplay") ?? "")) {
-            $qreq->forceShow = 1;
-            $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
 
         // display

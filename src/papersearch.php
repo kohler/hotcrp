@@ -372,6 +372,8 @@ class PaperSearch extends MessageSet {
     private $_allow_deleted = false;
     /** @var ?string */
     private $_urlbase;
+    /** @var ?array<string,string> */
+    private $_urlbase_args;
     /** @var ?string
      * @readonly */
     private $_default_sort; // XXX should be used more often
@@ -501,18 +503,8 @@ class PaperSearch extends MessageSet {
      * @return $this */
     function set_urlbase($base, $args = []) {
         assert($this->_urlbase === null);
-        if (!isset($args["t"])) {
-            $args["t"] = $this->_limit_qe->named_limit;
-        }
-        if (!isset($args["qt"]) && $this->_qt !== "n") {
-            $args["qt"] = $this->_qt;
-        }
-        if (!isset($args["reviewer"])
-            && $this->_reviewer_user
-            && $this->_reviewer_user->contactId !== $this->user->contactXid) {
-            $args["reviewer"] = $this->_reviewer_user->email;
-        }
-        $this->_urlbase = $this->conf->hoturl_raw($base, $args, Conf::HOTURL_SITEREL);
+        $this->_urlbase = $base;
+        $this->_urlbase_args = $args;
         return $this;
     }
 
@@ -600,15 +592,6 @@ class PaperSearch extends MessageSet {
         }
         $mix->context = $this->q;
         return $mi;
-    }
-
-
-    /** @return string */
-    function urlbase() {
-        if ($this->_urlbase === null) {
-            $this->set_urlbase("search");
-        }
-        return $this->_urlbase;
     }
 
 
@@ -1678,13 +1661,23 @@ class PaperSearch extends MessageSet {
     }
 
     /** @return string */
-    function url_site_relative_raw($q = null) {
-        $url = $this->urlbase();
-        $q = $q ?? $this->q;
-        if ($q !== "" || substr($url, 0, 6) === "search") {
-            $url .= (strpos($url, "?") === false ? "?q=" : "&q=") . urlencode($q);
+    function url_site_relative_raw($args = []) {
+        $basepage = $this->_urlbase ?? "search";
+        $xargs = [];
+        if (!array_key_exists("q", $args)
+            && ($this->q !== "" || $basepage === "search")) {
+            $xargs["q"] = $this->q;
         }
-        return $url;
+        $xargs["t"] = $this->_limit_qe->named_limit;
+        if ($this->_qt !== "n") {
+            $xargs["qt"] = $this->_qt;
+        }
+        if ($this->_reviewer_user
+            && $this->_reviewer_user->contactId !== $this->user->contactXid) {
+            $xargs["reviewer"] = $this->_reviewer_user->email;
+        }
+        $xargs = array_merge($xargs, $this->_urlbase_args ?? [], $args);
+        return $this->conf->hoturl_raw($basepage, $xargs, Conf::HOTURL_SITEREL);
     }
 
     /** @return string */
@@ -1714,30 +1707,19 @@ class PaperSearch extends MessageSet {
         }
     }
 
-    /** @param ?string $sort
-     * @return string */
-    function listid($sort = null) {
-        $rest = [];
-        if ($this->_reviewer_user
-            && $this->_reviewer_user->contactXid !== $this->user->contactXid) {
-            $rest[] = "reviewer=" . urlencode($this->_reviewer_user->email);
-        }
-        if ($sort !== null && $sort !== "") {
-            $rest[] = "sort=" . urlencode($sort);
-        }
-        return "p/" . $this->_limit_qe->named_limit . "/" . urlencode($this->q)
-            . ($rest ? "/" . join("&", $rest) : "");
-    }
-
     /** @param string $listid
      * @return ?array<string,string> */
     static function unparse_listid($listid) {
         if (preg_match('/\Ap\/([^\/]+)\/([^\/]*)(?:|\/([^\/]*))\z/', $listid, $m)) {
-            $args = ["t" => $m[1], "q" => urldecode($m[2])];
+            $args = ["q" => urldecode($m[2]), "t" => $m[1]];
             if (isset($m[3]) && $m[3] !== "") {
                 foreach (explode("&", $m[3]) as $arg) {
                     if (str_starts_with($arg, "sort=")) {
                         $args["sort"] = urldecode(substr($arg, 5));
+                    } else if (str_starts_with($arg, "qt=")) {
+                        $args["qt"] = urldecode(substr($arg, 3));
+                    } else if (str_starts_with($arg, "forceShow=")) {
+                        $args["forceShow"] = urldecode(substr($arg, 10));
                     } else {
                         // XXX `reviewer`
                         error_log(caller_landmark() . ": listid includes $arg");
@@ -1752,12 +1734,31 @@ class PaperSearch extends MessageSet {
 
     /** @param list<int> $ids
      * @param ?string $listname
-     * @param ?string $sort
+     * @param array{sort?:string,forceShow?:1} $args
      * @return SessionList */
-    function create_session_list_object($ids, $listname, $sort = null) {
-        $sort = $sort !== null ? $sort : $this->_default_sort;
-        $l = (new SessionList($this->listid($sort), $ids, $this->description($listname)))
-            ->set_urlbase($this->urlbase());
+    function create_session_list_object($ids, $listname, $args) {
+        $encq = urlencode($this->q);
+        $listid = "p/{$this->_limit_qe->named_limit}/{$encq}";
+
+        $rest = [];
+        if ($this->_qt !== "n") {
+            $rest[] = "qt=" . urlencode($this->_qt);
+        }
+        if ($this->_reviewer_user
+            && $this->_reviewer_user->contactXid !== $this->user->contactXid) {
+            $rest[] = "reviewer=" . urlencode($this->_reviewer_user->email);
+        }
+        $sort = $args["sort"] ?? $this->_default_sort ?? "";
+        if ($sort !== "") {
+            $rest[] = "sort=" . urlencode($sort);
+        }
+        if (!empty($rest)) {
+            $listid .= "/" . join("&", $rest);
+        }
+
+        $args["q"] = null;
+        $l = (new SessionList($listid, $ids, $this->description($listname)))
+            ->set_urlbase($this->url_site_relative_raw($args));
         if ($this->field_highlighters()) {
             $l->highlight = $this->_match_preg_query ? : true;
         }
@@ -1766,7 +1767,7 @@ class PaperSearch extends MessageSet {
 
     /** @return SessionList */
     function session_list_object() {
-        return $this->create_session_list_object($this->sorted_paper_ids(), null);
+        return $this->create_session_list_object($this->sorted_paper_ids(), null, []);
     }
 
     /** @return list<string> */
