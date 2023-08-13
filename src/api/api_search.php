@@ -25,7 +25,8 @@ class Search_API {
             "ok" => true,
             "ids" => $ih[0],
             "groups" => $ih[1],
-            "hotlist" => $pl->session_list_object()->info_string()
+            "hotlist" => $pl->session_list_object()->info_string(),
+            "search_params" => $pl->encoded_search_params()
         ];
     }
 

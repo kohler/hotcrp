@@ -110,7 +110,7 @@ class PaperListTableRender {
             if (is_array($v) || is_object($v)) {
                 $v = $k === "class" ? join(" ", $v) : json_encode_browser($v);
             }
-            if ($k === "data-columns" || $k === "data-groups") {
+            if ($k === "data-fields" || $k === "data-groups" || $k === "data-columns" /* XXX backwards compat */) {
                 $v = str_replace("'", "&apos;", htmlspecialchars($v, ENT_NOQUOTES | ENT_SUBSTITUTE | ENT_HTML5));
                 echo " ", $k, "='", $v, "'";
             } else {
@@ -1706,7 +1706,8 @@ class PaperList {
         }
         $classes[] = "fold7" . ($this->viewing("statistics") ? "o" : "c");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
-        $this->table_attr["data-columns"] = $jscol;
+        $this->table_attr["data-fields"] = $jscol;
+        $this->table_attr["data-columns"] = $jscol; /* XXX backward compat */
     }
 
     private function _prepare() {
@@ -1992,7 +1993,7 @@ class PaperList {
         $rstate = new PaperListTableRender($this->_vcolumns);
 
         // prepare table attributes
-        $this->table_attr["class"] = ["pltable has-fold"];
+        $this->table_attr["class"] = ["pltable need-plist has-fold"];
         if ($this->_table_class) {
             $this->table_attr["class"][] = $this->_table_class;
         }
