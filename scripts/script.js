@@ -8543,7 +8543,7 @@ function tagannorow_fill(row, anno) {
         }
         var legend = anno.legend === null ? "" : anno.legend;
         var $g = $(row).find(".plheading-group").attr({"data-format": anno.format || 0, "data-title": legend});
-        $g.text(legend === "" ? legend : legend + " ");
+        $g.text(legend).toggleClass("pr-2", legend !== "");
         anno.format && render_text.into($g[0]);
         // `plheading-count` is taken care of in `tablelist_postreorder`
     }
@@ -12599,7 +12599,6 @@ Object.assign(window.hotcrp, {
     fold_storage: fold_storage,
     foldup: foldup,
     handle_ui: handle_ui,
-    highlight_form_children: window.hotcrp.add_diff_check, /* XXX */
     hoturl: hoturl,
     // init_deadlines
     // load_editable_paper

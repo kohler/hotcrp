@@ -286,8 +286,6 @@ class PaperList {
 
     // columns access
     public $qopts; // set by PaperColumn::prepare
-    /** @var bool */
-    public $need_tag_attr;
     /** @var array<string,string|list<string>> */
     public $table_attr;
     /** @var array */
@@ -1215,7 +1213,6 @@ class PaperList {
     }
 
     private function _set_vcolumns() {
-        $this->need_tag_attr = false;
         $this->table_attr = [];
         assert(empty($this->row_attr));
 
@@ -1564,18 +1561,19 @@ class PaperList {
         foreach ($this->row_attr as $k => $v) {
             $t .= "\" {$k}=\"" . htmlspecialchars($v);
         }
-        $t .= "\">" . join("", $tm) . "</tr>\n";
+        $t .= "\">" . join("", $tm) . "</tr>";
 
+        // NB if plx row exists, it immediately follows the pl row w/o space
         if ($want_plx) {
-            $t .= "  <tr class=\"plx {$trclass}\" data-pid=\"{$row->paperId}\">";
+            $t .= "<tr class=\"plx {$trclass}\" data-pid=\"{$row->paperId}\">";
             if ($rstate->skipcallout > 0) {
                 $t .= "<td colspan=\"{$rstate->skipcallout}\"></td>";
             }
             $nc = $rstate->ncol - $rstate->skipcallout;
-            $t .= "<td class=\"plx\" colspan=\"{$nc}\">" . join("", $tt) . "</td></tr>\n";
+            $t .= "<td class=\"plx\" colspan=\"{$nc}\">" . join("", $tt) . "</td></tr>";
         }
 
-        return $t;
+        return $t . "\n";
     }
 
     /** @param int $grouppos
@@ -1610,6 +1608,9 @@ class PaperList {
                     }
                 }
                 $x = "<span class=\"plheading-group";
+                if ($ginfo->heading !== "") {
+                    $x .= " pr-2";
+                }
                 if ($ginfo->heading !== ""
                     && ($format = $this->conf->check_format($ginfo->annoFormat, $ginfo->heading))) {
                     $x .= " need-format\" data-format=\"{$format}";
@@ -1617,9 +1618,8 @@ class PaperList {
                 }
                 $x .= "\" data-title=\"" . htmlspecialchars($ginfo->heading)
                     . "\">" . htmlspecialchars($ginfo->heading)
-                    . ($ginfo->heading !== "" ? " " : "")
                     . "</span><span class=\"plheading-count\">"
-                    . plural($ginfo->count, "paper") . "</span>";
+                    . plural($ginfo->count, "submission") . "</span>";
                 $body[] = $rstate->heading_row($grouppos, $x, $attr);
                 $rstate->colorindex = 0;
             }
@@ -1794,7 +1794,7 @@ class PaperList {
             }
             $foot .= "<table";
             foreach ($attr as $k => $v) {
-                $foot .= " $k=\"" . htmlspecialchars($v) . "\"";
+                $foot .= " {$k}=\"" . htmlspecialchars($v) . "\"";
             }
             $foot .= "><tbody><tr>\n"
                 . "    <td class=\"pl-footer-desc lll\"><a class=\"ui lla\" href=\""
