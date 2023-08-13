@@ -8,18 +8,22 @@ class TagAnno_API {
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
             return MessageItem::make_error_json($tagger->error_ftext());
         }
-        $j = [
+        $dt = $user->conf->tags()->ensure(Tagger::tv_tag($tag));
+        $anno = [];
+        foreach ($dt->order_anno_list() as $oa) {
+            if ($oa->annoId !== null)
+                $anno[] = $oa;
+        }
+        $jr = new JsonResult([
             "ok" => true,
             "tag" => $tag,
             "editable" => $user->can_edit_tag_anno($tag),
-            "anno" => []
-        ];
-        $dt = $user->conf->tags()->ensure(Tagger::tv_tag($tag));
-        foreach ($dt->order_anno_list() as $oa) {
-            if ($oa->annoId !== null)
-                $j["anno"][] = $oa;
+            "anno" => $anno
+        ]);
+        if ($qreq->search) {
+            Search_API::apply_search($jr, $user, $qreq, $qreq->search);
         }
-        return $j;
+        return $jr;
     }
 
     static function set(Contact $user, Qrequest $qreq) {
@@ -34,8 +38,16 @@ class TagAnno_API {
         if (!is_object($reqanno) && !is_array($reqanno)) {
             return ["ok" => false, "error" => "Bad request"];
         }
+
+        $dt = $user->conf->tags()->ensure($tag);
+        $anno_by_id = [];
+        $next_annoid = 1;
+        foreach ($dt->order_anno_list() as $anno) {
+            $anno_by_id[$anno->annoId] = $anno;
+            $next_annoid = max($anno->annoId + 1, $next_annoid);
+        }
+
         $q = $qv = $ml = [];
-        $next_annoid = $user->conf->fetch_value("select greatest(coalesce(max(annoId),0),0)+1 from PaperTagAnno where tag=?", $tag);
         // parse updates
         foreach (is_object($reqanno) ? [$reqanno] : $reqanno as $annoindex => $anno) {
             if (!is_object($anno)
@@ -50,6 +62,9 @@ class TagAnno_API {
                 }
                 continue;
             }
+            $annokey = $anno->key ?? $annoindex + 1;
+
+            // annotation ID
             if (is_int($anno->annoid)) {
                 $annoid = $anno->annoid;
             } else {
@@ -58,7 +73,8 @@ class TagAnno_API {
                 $q[] = "insert into PaperTagAnno (tag,annoId) values (?,?)";
                 array_push($qv, $tag, $annoid);
             }
-            $annokey = $anno->key ?? $annoindex + 1;
+
+            // legend, tag value
             $qf = [];
             if (isset($anno->legend)) {
                 $qf[] = "heading=?";
@@ -78,18 +94,31 @@ class TagAnno_API {
                     $ml[] = new MessageItem("ta/{$annokey}/tagval", "Tag value should be a number", 2);
                 }
             }
-            $ij = [];
+
+            // other properties
+            $ij = null;
             foreach (["session_title", "time", "location"] as $k) {
-                if (isset($anno->$k))
+                if (!property_exists($anno, $k)) {
+                    continue;
+                }
+                if ($ij === null) {
+                    $xanno = $anno_by_id[$annoid] ?? null;
+                    if ($xanno && $xanno->infoJson) {
+                        $ij = json_decode($xanno->infoJson, true);
+                    }
+                    $ij = $ij ?? [];
+                }
+                if ($anno->$k !== null) {
                     $ij[$k] = $anno->$k;
+                } else {
+                    unset($ij[$k]);
+                }
             }
-            if (!empty($ij)) {
+            if ($ij !== null) {
                 $qf[] = "infoJson=?";
-                $qv[] = json_encode_db($ij);
-            } else if (!empty($qf)) {
-                $qf[] = "infoJson=?";
-                $qv[] = null;
+                $qv[] = empty($ij) ? null : json_encode_db($ij);
             }
+
             if (!empty($qf)) {
                 $q[] = "update PaperTagAnno set " . join(", ", $qf) . " where tag=? and annoId=?";
                 array_push($qv, $tag, $annoid);
@@ -103,6 +132,8 @@ class TagAnno_API {
         if (!empty($q)) {
             $mresult = Dbl::multi_qe_apply($user->conf->dblink, join(";", $q), $qv);
             $mresult->free_all();
+            // ensure new annotations are returned
+            $dt->invalidate_order_anno();
         }
         // return results
         return self::get($user, $qreq);

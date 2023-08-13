@@ -129,7 +129,7 @@ class Tags_API {
         $mlist = $assigner->message_list();
         $ok = $assigner->execute();
 
-        // exit
+        // execute
         if ($ok && $prow) {
             $prow->load_tags();
             if ($interestall) {
@@ -156,6 +156,9 @@ class Tags_API {
             $jr = new JsonResult(["ok" => true, "p" => $p]);
         } else {
             $jr = new JsonResult(["ok" => false, "message_list" => $mlist]);
+        }
+        if ($qreq->search) {
+            Search_API::apply_search($jr, $user, $qreq, $qreq->search);
         }
         return $jr;
     }

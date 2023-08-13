@@ -1661,6 +1661,20 @@ class PaperSearch extends MessageSet {
     }
 
     /** @return string */
+    function encoded_query_params() {
+        $encq = urlencode($this->q);
+        $x = "q={$encq}&t={$this->_limit_qe->named_limit}";
+        if ($this->_qt !== "n") {
+            $x .= "&qt={$this->_qt}";
+        }
+        if ($this->_reviewer_user
+            && $this->_reviewer_user->contactXid !== $this->user->contactXid) {
+            $x .= "&reviewer=" . urlencode($this->_reviewer_user->email);
+        }
+        return $x;
+    }
+
+    /** @return string */
     function url_site_relative_raw($args = []) {
         $basepage = $this->_urlbase ?? "search";
         $xargs = [];
@@ -1698,12 +1712,12 @@ class PaperSearch extends MessageSet {
         } else if (str_starts_with($this->q, "au:")
                    && strlen($this->q) <= 36
                    && $this->main_term() instanceof Author_SearchTerm) {
-            return "$lx by " . ltrim(substr($this->q, 3));
+            return "{$lx} by " . ltrim(substr($this->q, 3));
         } else if (strlen($this->q) <= 24
                    || $this->main_term() instanceof Tag_SearchTerm) {
-            return "{$this->q} in $lx";
+            return "{$this->q} in {$lx}";
         } else {
-            return "$lx search";
+            return "{$lx} search";
         }
     }
 
@@ -1722,7 +1736,7 @@ class PaperSearch extends MessageSet {
                         $args["forceShow"] = urldecode(substr($arg, 10));
                     } else {
                         // XXX `reviewer`
-                        error_log(caller_landmark() . ": listid includes $arg");
+                        error_log(caller_landmark() . ": listid includes {$arg}");
                     }
                 }
             }
@@ -1742,7 +1756,7 @@ class PaperSearch extends MessageSet {
 
         $rest = [];
         if ($this->_qt !== "n") {
-            $rest[] = "qt=" . urlencode($this->_qt);
+            $rest[] = "qt={$this->_qt}";
         }
         if ($this->_reviewer_user
             && $this->_reviewer_user->contactXid !== $this->user->contactXid) {

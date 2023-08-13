@@ -3718,13 +3718,13 @@ a.badge-white:hover {
 .bubble > .bubcontent {
 	margin: 4px 0;
 }
-.bubble.edittagbubble {
+.bubble.prowdrag {
 	background-color: #222233;
 	border-width: 0;
 	color: white;
 	font-size: smaller;
 }
-.bubble.edittagbubble.sametag {
+.bubble.prowdrag.unchanged {
 	background-color: #444466;
 }
 .bubble.errorbubble {

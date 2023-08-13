@@ -136,6 +136,12 @@ class PaperColumn extends Column {
         }
         return empty($decor) ? $this->name : $this->name . " " . join(" ", $decor);
     }
+    /** @return string */
+    final function full_sort_name() {
+        $sn = $this->sort_name();
+        $sd = $this->sort_decoration();
+        return $sd ? "{$sn} {$sd}" : $sn;
+    }
 
     /** @return bool */
     function content_empty(PaperList $pl, PaperInfo $row) {

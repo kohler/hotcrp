@@ -29,6 +29,28 @@ class Search_API {
         ];
     }
 
+    static function apply_search(JsonResult $jr, Contact $user, Qrequest $qreq, $search) {
+        $search = ltrim($search);
+        if (str_starts_with($search, "{")) {
+            $param = json_decode($search, true);
+        } else {
+            $pos = str_starts_with($search, "?") ? 1 : 0;
+            preg_match_all('/([^&;=\s]*)=([^&;=\s]*)/', $search, $m, PREG_SET_ORDER, $pos);
+            $param = [];
+            foreach ($m as $mx) {
+                $param[urldecode($mx[1])] = urldecode($mx[2]);
+            }
+        }
+        if (is_array($param) && isset($param["q"])) {
+            $nqreq = new Qrequest("GET", $param);
+            $nqreq->set_user($user)->set_qsession($qreq->qsession());
+            foreach (self::search($user, $nqreq) as $k => $v) {
+                if (!isset($jr->content[$k]))
+                    $jr->content[$k] = $v;
+            }
+        }
+    }
+
     static function fieldhtml(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         if ($qreq->f === null) {
             return JsonResult::make_missing_error("f");

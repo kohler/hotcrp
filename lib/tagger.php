@@ -202,6 +202,10 @@ class TagInfo {
     function has_order_anno() {
         return count($this->order_anno_list()) > 1;
     }
+    function invalidate_order_anno() {
+        $this->_order_anno_list = null;
+        $this->_order_anno_search = 0;
+    }
     /** @return ?string */
     function automatic_search() {
         if ($this->autosearch !== null) {

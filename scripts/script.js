@@ -1271,29 +1271,37 @@ function hoturl_add(url, component) {
     return url + (url.indexOf("?") < 0 ? "?" : "&") + component;
 }
 
-function hoturl_set(url, component, value) {
-    var hash = url.indexOf("#"), question = url.indexOf("?"), pos = question;
+function hoturl_search(url, key, value) {
+    var hash = url.indexOf("#"), question = url.indexOf("?"), pos;
     hash = hash < 0 ? url.length : hash;
-    component += "=";
-    while (pos >= 0 && (pos = url.indexOf(component, pos)) > 0 && pos < hash) {
-        var ch = url.charAt(pos - 1);
-        if (ch === "?" || ch === ";" || ch === "&") {
-            var amp = url.indexOf("&", pos),
-                semi = url.indexOf(";", pos),
-                stop = Math.min(hash,
-                                amp < 0 ? url.length : amp,
-                                semi < 0 ? url.length : semi);
-            if (value != null)
-                url = url.substring(0, pos + component.length).concat(urlencode(value), url.substring(stop));
+    if (question < 0 && url.indexOf("/") < 0)
+        question = 0;
+    if (arguments.length === 1)
+        return question >= 0 && question < hash ? url.substring(question, hash) : "";
+    pos = question >= 0 && question < hash ? question : url.length;
+    while (pos >= 0 && (pos = url.indexOf(key, pos)) > 0 && pos < hash) {
+        var pch = url.charCodeAt(pos - 1), nch = url.charCodeAt(pos + key.length);
+        if ((pch === 63 || pch === 59 || pch === 38)
+            && (nch !== nch || nch === 61 || nch === 35 || nch === 59 || nch === 38)) {
+            var vpos = pos + key.length + (nch === 61),
+                amp = url.indexOf("&", vpos),
+                semi = url.indexOf(";", vpos),
+                stop = Math.min(hash, amp < 0 ? hash : amp, semi < 0 ? hash : semi);
+            if (arguments.length === 2)
+                return urldecode(url.substring(vpos, stop));
+            else if (value == null)
+                return url.substring(0, pos - (stop === hash)) + url.substring(stop + (stop < hash));
             else
-                url = url.substring(0, pos - (stop === hash)) + url.substring(stop + (stop < hash));
-            return url;
-        } else
-            ++pos;
+                return url.substring(0, vpos).concat(nch === 61 ? "" : "=", urlencode(value), url.substring(stop));
+        }
+        pos += key.length;
     }
-    if (value != null)
-        url = url.substring(0, hash).concat(question < 0 ? "?" : "&", component, urlencode(value), url.substring(hash));
-    return url;
+    if (arguments.length === 2)
+        return null;
+    else if (value == null)
+        return url;
+    else
+        return url.substring(0, hash).concat(question < 0 || question > hash ? "?" : "&", key, "=", urlencode(value), url.substring(hash));
 }
 
 function hoturl_find(xv, page_component) {
@@ -2483,13 +2491,11 @@ return function (content, bubopt) {
             nearpos && $(bubdiv).css({maxWidth: "", left: "", top: ""});
             if (typeof content === "string")
                 n.innerHTML = content;
-            else {
+            else if (content && content.jquery) {
                 n.replaceChildren();
-                if (content && content.jquery)
-                    content.appendTo(n);
-                else
-                    n.appendChild(content);
-            }
+                content.appendTo(n);
+            } else
+                n.replaceChildren(content);
             nearpos && show();
             return bubble;
         },
@@ -4099,8 +4105,6 @@ function attre() {
                 // skip
             } else if (i === "disabled") {
                 e.disabled = attr[i];
-            } else if (i === "class") {
-                e.className = attr[i];
             } else {
                 e.setAttribute(i, attr[i]);
             }
@@ -4326,7 +4330,7 @@ function dropmenu_close() {
 }
 
 handle_ui.on("click.js-dropmenu-open", function (evt) {
-    var modal = $$("dropmenu-modal"), esummary = this, edetails, was_open;
+    var modal = $$("dropmenu-modal"), esummary = this, edetails;
     if (hasClass(esummary, "need-dropmenu")) {
         $.each(classList(esummary), function (i, c) {
             if (builders[c])
@@ -5841,7 +5845,7 @@ hotcrp.add_review = function (rrow) {
 };
 
 function render_review_hidden_fields(hidden_fields) {
-    var e, i, n = [], link;
+    var i, n = [], link;
     for (i = 0; i !== hidden_fields.length; ++i) {
         var f = formj[hidden_fields[i]];
         n.push(f.name);
@@ -6595,7 +6599,7 @@ function cmt_edit_observer(entries) {
     }
 }
 
-function cmt_unavoid_popout(evt) {
+function cmt_unavoid_popout() {
     removeClass(this, "avoid-popout");
     this.removeEventListener("focusin", cmt_unavoid_popout);
 }
@@ -8480,6 +8484,29 @@ handle_ui.on("revpref", function (evt) {
 })();
 
 
+function mainlist() {
+    return $$("pl") || $$("foldpl") /* XXX backward compat */;
+}
+
+function tablelist_search(tbl) {
+    var x = tbl.getAttribute("data-search-params");
+    if (x === "" && tbl === mainlist()) { /* XXX backward compat */
+        x = hoturl_search(window.location.href);
+        if (hoturl_search(x, "q") === null)
+            x = hoturl_search(x, "q", "");
+        if (hoturl_search(x, "sort") === null)
+            x = hoturl_search(x, "sort", "none");
+        tbl.setAttribute("data-search-params", x);
+    }
+    return x;
+}
+
+function mainlist_search() {
+    var tbl = mainlist();
+    return tbl ? tablelist_search(tbl) : null;
+}
+
+
 var paperlist_tag_ui = (function () {
 
 function tag_canonicalize(tag) {
@@ -8525,7 +8552,7 @@ function tagannorow_fill(row, anno) {
         var $g = $(row).find(".plheading-group").attr({"data-format": anno.format || 0, "data-title": legend});
         $g.text(legend === "" ? legend : legend + " ");
         anno.format && render_text.into($g[0]);
-        // `plheading-count` is taken care of in `searchbody_postreorder`
+        // `plheading-count` is taken care of in `tablelist_postreorder`
     }
 }
 
@@ -8537,73 +8564,42 @@ function tagannorow_add(tbl, tbody, before, anno) {
         if (hasClass($r[i], "pl_title"))
             titlecol = i;
 
-    var h;
-    if (anno.blank)
-        h = '<tr class="plheading-blank"><td class="plheading" colspan="' + ncol + '"></td></tr>';
-    else {
-        h = '<tr class="plheading"';
-        if (anno.tag)
-            h += ' data-anno-tag="' + anno.tag + '"';
-        if (anno.annoid)
-            h += ' data-anno-id="' + anno.annoid + '"';
-        if (anno.tag && anno.annoid)
-            h += ' data-tags="' + anno.tag + "#" + anno.tagval + '"';
-        h += '>';
-        if (titlecol)
-            h += '<td class="plheading-spacer" colspan="' + titlecol + '"></td>';
-        h += '<td class="plheading" colspan="' + (ncol - titlecol) + '">' +
-            '<span class="plheading-group"></span>' +
-            '<span class="plheading-count"></span></td></tr>';
+    var tr;
+    if (anno.blank) {
+        tr = classe("tr", "plheading-blank",
+            attre("td", {"class": "plheading", colspan: ncol}));
+    } else {
+        tr = attre("tr", {
+            "class": "plheading",
+            "data-anno-tag": anno.tag || null,
+            "data-anno-id": anno.annoid || null,
+            "data-tags": anno.tag && anno.annoid ? anno.tag + "#" + anno.tagval : null
+        });
+        if (titlecol) {
+            tr.appendChild(attre("td", {"class": "plheading-spacer", colspan: titlecol}));
+        }
+        tr.appendChild(attre("td", {"class": "plheading", colspan: ncol - titlecol},
+            classe("span", "plheading-group"),
+            classe("span", "plheading-count")));
     }
 
-    var row = $(h)[0];
     if (anno.tag
         && anno.tag === tag_canonicalize(tbl.getAttribute("data-drag-tag"))
         && anno.annoid)
-        add_draghandle.call($(row).find("td.plheading")[0]);
-    tbody.insertBefore(row, before);
-    tagannorow_fill(row, anno)
-    return row;
+        add_draghandle.call(tr.querySelector("td.plheading"));
+    tbody.insertBefore(tr, before);
+    tagannorow_fill(tr, anno)
+    return tr;
 }
 
 
-function searchbody_postreorder(tbody) {
-    for (var cur = tbody.firstChild, e = 1, n = 0; cur; cur = cur.nextSibling)
-        if (cur.nodeName == "TR") {
-            if (hasClass(cur, "pl")) {
-                e = 1 - e;
-                ++n;
-                $(cur.firstChild).find(".pl_rownum").text(n + ". ");
-            }
-            if (hasClass(cur, "plheading")) {
-                e = 1;
-                var np = 0;
-                for (var sub = cur.nextSibling; sub; sub = sub.nextSibling)
-                    if (sub.nodeName == "TR") {
-                        if (hasClass(sub, "plheading"))
-                            break;
-                        else if (hasClass(sub, "pl"))
-                            ++np;
-                    }
-                var np_html = plural(np, "submission");
-                var $np = $(cur).find(".plheading-count");
-                if ($np.html() !== np_html)
-                    $np.html(np_html);
-            } else if (hasClass(cur, e ? "k0" : "k1")) {
-                toggleClass(cur, "k0", e === 0);
-                toggleClass(cur, "k1", e === 1);
-            }
-        }
-    tbody.parentElement.setAttribute("data-reordered", "");
-}
-
-function reorder(tbl, pids, groups, remove_all) {
+function tablelist_reorder(tbl, pids, groups, remove_all) {
     var tbody = tbl.tBodies[0], pida = "data-pid";
     remove_all && $(tbody).detach();
 
     var rowmap = [], xpid = 0, cur = tbody.firstChild, next;
     while (cur) {
-        if (cur.nodeType == 1 && (xpid = cur.getAttribute(pida)))
+        if (cur.nodeType === 1 && (xpid = cur.getAttribute(pida)))
             rowmap[xpid] = rowmap[xpid] || [];
         next = cur.nextSibling;
         if (xpid)
@@ -8641,55 +8637,39 @@ function reorder(tbl, pids, groups, remove_all) {
     }
 
     remove_all && $(tbody).appendTo(tbl);
-    searchbody_postreorder(tbody);
+    tablelist_postreorder(tbl);
 }
 
-function table_ids(tbl) {
-    var tbody = tbl.tBodies[0], tbl_ids = [], xpid;
-    for (var cur = tbody.firstChild; cur; cur = cur.nextSibling)
-        if (cur.nodeType === 1
-            && /^pl\b/.test(cur.className)
-            && (xpid = cur.getAttribute("data-pid")))
-            tbl_ids.push(+xpid);
-    return tbl_ids;
+function tablelist_postreorder(tbl) {
+    for (var cur = tbl.tBodies[0].firstChild, e = 1, n = 0; cur; cur = cur.nextSibling)
+        if (cur.nodeName == "TR") {
+            if (hasClass(cur, "pl")) {
+                e = 1 - e;
+                ++n;
+                $(cur.firstChild).find(".pl_rownum").text(n + ". ");
+            }
+            if (hasClass(cur, "plheading")) {
+                e = 1;
+                var np = 0;
+                for (var sub = cur.nextSibling; sub; sub = sub.nextSibling)
+                    if (sub.nodeName == "TR") {
+                        if (hasClass(sub, "plheading"))
+                            break;
+                        else if (hasClass(sub, "pl"))
+                            ++np;
+                    }
+                var np_html = plural(np, "submission");
+                var $np = $(cur).find(".plheading-count");
+                if ($np.html() !== np_html)
+                    $np.html(np_html);
+            } else if (hasClass(cur, e ? "k0" : "k1")) {
+                toggleClass(cur, "k0", e === 0);
+                toggleClass(cur, "k1", e === 1);
+            }
+        }
+    tbl.setAttribute("data-reordered", "");
 }
 
-function same_ids(tbl, ids) {
-    var tbl_ids = table_ids(tbl);
-    tbl_ids.sort();
-    ids = [].concat(ids);
-    ids.sort();
-    return tbl_ids.join(" ") === ids.join(" ");
-}
-
-function foldpl_active_sorter() {
-    var s = "";
-    $("#foldpl").children("thead").find("th[aria-sort]").each(function () {
-        s = this.getAttribute("data-pc");
-        if (this.ariaSort !== this.getAttribute("data-pc-sort"))
-            s += this.ariaSort === "ascending" ? " asc" : " desc";
-    });
-    return s;
-}
-
-function current_sort_location() {
-    var h = hoturl_set(window.location.href, "sort", foldpl_active_sorter()), e;
-    if ((e = document.getElementById("scoresort")))
-        h = hoturl_set(h, "scoresort", e.value);
-    if ((e = document.getElementById("showforce")))
-        h = hoturl_set(h, "forceShow", e.checked ? 1 : null);
-    return h;
-}
-
-function href_sorter(href, newval) {
-    if (newval == null) {
-        var re = /^([^#]*[?&;]sort=)([^=&;#]*)(.*)$/,
-            m = re.exec(href);
-        return m ? urldecode(m[2]) : null;
-    } else {
-        return hoturl_set(href, "sort", newval);
-    }
-}
 
 function sorter_analyze(sorter) {
     var m = sorter.match(/^(.*)[ +]+(asc(?:ending|)|desc(?:ending|)|up|down|reverse|forward)\b(.*)$/), dir = null;
@@ -8706,140 +8686,153 @@ function sorter_analyze(sorter) {
     return {s: sorter, d: dir};
 }
 
-function search_sort_success(tbl, data_href, data) {
+
+function tablelist_ids(tbl) {
+    var tbody = tbl.tBodies[0], tbl_ids = [], xpid;
+    for (var cur = tbody.firstChild; cur; cur = cur.nextSibling)
+        if (cur.nodeType === 1
+            && /^pl\b/.test(cur.className)
+            && (xpid = cur.getAttribute("data-pid")))
+            tbl_ids.push(+xpid);
+    return tbl_ids;
+}
+
+function tablelist_ids_equal(tbl, ids) {
+    var tbl_ids = tablelist_ids(tbl);
+    tbl_ids.sort();
+    ids = [].concat(ids);
+    ids.sort();
+    return tbl_ids.join(" ") === ids.join(" ");
+}
+
+function tablelist_header_sorter(th) {
+    var pc = th.getAttribute("data-pc"),
+        pcsort = th.getAttribute("data-pc-sort"),
+        as = th.getAttribute("aria-sort");
+    if (as && as === pcsort)
+        pc += (pcsort === "ascending" ? " desc" : " asc");
+    return pc;
+}
+
+
+function tablelist_apply(tbl, data, searchparam) {
     var ids = data.ids;
     if (!ids && data.hotlist)
         ids = new Hotlist(data.hotlist).ids();
     if (!ids)
         return;
-    reorder(tbl, ids, data.groups, true);
-    if (data.groups)
+    tbl.setAttribute("data-search-params", searchparam);
+    tablelist_reorder(tbl, ids, data.groups, true);
+    if (data.groups) {
         tbl.setAttribute("data-groups", JSON.stringify(data.groups));
-    else
+    } else {
         tbl.removeAttribute("data-groups");
+    }
     tbl.setAttribute("data-hotlist", data.hotlist || "");
-    var want_sorter = data.fwd_sorter || href_sorter(data_href) || "id",
-        sortanal = sorter_analyze(want_sorter);
+    var sortanal = sorter_analyze(hoturl_search(searchparam, "sort"));
     $(tbl).children("thead").find("th.sortable").each(function () {
-        var defdir, a, pc = this.getAttribute("data-pc");
-        if (this.hasAttribute("aria-sort")) {
-            this.removeAttribute("aria-sort");
-            removeClass(this, "sort-ascending");
-            removeClass(this, "sort-descending");
-            a = this.querySelector("a.pl_sort");
-        }
-        if (this.getAttribute("data-pc") === sortanal.s) {
-            defdir = this.getAttribute("data-pc-sort");
+        var pc = this.getAttribute("data-pc"),
+            pcsort = this.getAttribute("data-pc-sort"),
+            want = "", a, h, x;
+        if (pc === sortanal.s) {
             if (sortanal.d === "reverse") {
-                sortanal.d = defdir === "ascending" ? "descending" : "ascending";
+                sortanal.d = pcsort === "ascending" ? "descending" : "ascending";
             }
-            sortanal.d = sortanal.d || defdir;
-            this.setAttribute("aria-sort", sortanal.d);
-            addClass(this, "sort-" + sortanal.d);
-            a = a || this.querySelector("a.pl_sort");
+            want = sortanal.d || pcsort;
         }
-        if (a) {
-            var pcx = pc;
-            if (defdir && defdir === sortanal.d) {
-                pcx += sortanal.d === "ascending" ? " desc" : " asc";
+        if (this.getAttribute("aria-sort") !== want) {
+            want ? this.setAttribute("aria-sort", want) : this.removeAttribute("aria-sort");
+            toggleClass(this, "sort-ascending", want === "ascending");
+            toggleClass(this, "sort-descending", want === "descending");
+            if (want && want === pcsort) {
+                x = pc + (want === "ascending" ? " desc" : " asc");
+            } else {
+                x = pc;
             }
-            a.setAttribute("href", href_sorter(a.getAttribute("href"), pcx));
+            if ((a = this.querySelector("a.pl_sort"))
+                && (h = a.getAttribute("href"))
+                && hoturl_search(h, "sort") !== x) {
+                a.setAttribute("href", hoturl_search(h, "sort", x));
+            }
         }
     });
     var form = tbl.closest("form");
     if (form) {
-        var action;
-        if (form.hasAttribute("data-original-action")) {
-            action = form.getAttribute("data-original-action", action);
-            form.removeAttribute("data-original-action");
-        } else {
-            action = form.action;
-        }
-        form.action = href_sorter(action, want_sorter);
+        var a = hoturl_search(form.action, "sort", hoturl_search(searchparam, "sort"));
+        a = hoturl_search(a, "forceShow", hoturl_search(searchparam, "forceShow") || null);
+        form.action = a;
     }
 }
+
+function tablelist_load(tbl, k, v) {
+    var searchparam = tablelist_search(tbl);
+    if (k) {
+        searchparam = hoturl_search(searchparam, k, v != null ? v : "");
+    }
+    function success(data) {
+        var use_history = tbl === mainlist() && k;
+        if (data.ok && data.ids && tablelist_ids_equal(tbl, data.ids)) {
+            use_history && push_history_state();
+            tablelist_apply(tbl, data, searchparam);
+            use_history && push_history_state(hoturl_search(window.location.href, k, v));
+        } else if (use_history) {
+            window.location = hoturl_search(window.location.href, k, v);
+        }
+    }
+    $.ajax(hoturl("api/search", searchparam), {
+        method: "GET", cache: false, success: success
+    });
+}
+
 
 $(document).on("collectState", function (evt, state) {
-    var tbl = document.getElementById("foldpl");
+    var tbl = mainlist();
     if (!tbl || !tbl.hasAttribute("data-sort-url-template"))
         return;
-    var data = state.sortpl = {hotlist: tbl.getAttribute("data-hotlist")};
-    var groups = tbl.getAttribute("data-groups");
+    var j = {search: tablelist_search(tbl), hotlist: tbl.getAttribute("data-hotlist")},
+        groups = tbl.getAttribute("data-groups");
     if (groups && (groups = JSON.parse(groups)) && groups.length)
-        data.groups = groups;
-    if (!href_sorter(state.href))
-        data.fwd_sorter = foldpl_active_sorter();
+        j.groups = groups;
+    state.mainlist = j;
 });
 
-function search_sort_url(self, href) {
-    var hrefm = /^([^?#]*(?:search|reviewprefs|manualassign)(?:\.php)?)(\?[^#]*)/.exec(href),
-        api = hrefm[2], e;
-    if ((e = document.getElementById("showforce"))) {
-        var v = e.type === "checkbox" ? (e.checked ? 1 : 0) : e.value;
-        api = api.replace(/&forceShow=[^&#;]*/, "") + "&forceShow=" + v;
-    }
-    if ((e = document.getElementById("scoresort"))) {
-        api = api.replace(/&scoresort=[^&#;]*/, "") + "&scoresort=" + e.value;
-    }
-    if (!/[&?]q=/.test(api)) {
-        api += "&q=";
-    }
-    $.ajax(hoturl("api/search", api), {
-        method: "GET", cache: false,
-        success: function (data) {
-            var tbl = $(self).closest("table")[0];
-            if (data.ok && data.ids && same_ids(tbl, data.ids)) {
-                push_history_state();
-                search_sort_success(tbl, href, data);
-                push_history_state(hrefm[1] + hrefm[2] + location.hash);
-            } else {
-                window.location = href;
-            }
-        }
-    });
-}
-
 function search_sort_click(evt) {
-    var href;
-    if (event_key.is_default_a(evt)
-        && (href = this.getAttribute("href"))
-        && /(?:search|reviewprefs|manualassign)(?:\.php)?\?/.test(href)) {
-        search_sort_url(this, href);
-        return false;
+    if (event_key.is_default_a(evt)) {
+        var tbl = this.closest("table");
+        tablelist_load(tbl, "sort", tablelist_header_sorter(this.closest("th")));
+        evt.preventDefault();
     }
 }
 
-function search_scoresort_change() {
+function scoresort_change() {
+    var tbl = mainlist();
     $.post(hoturl("=api/session"), {v: "scoresort=" + this.value});
-    search_sort_url($("#foldpl"), current_sort_location());
-    return false;
+    if (tbl) {
+        tablelist_load(tbl, "scoresort", this.value);
+    }
 }
 
-function search_showforce_click() {
-    var forced = this.checked;
-    function apply_force(href) {
-        href = href.replace(/&forceShow=[^&#]*/, "");
-        if (forced)
-            href = href.replace(/^([^#]*?)(#.*|)$/, "$1&forceShow=1$2");
-        return href;
+function showforce_click() {
+    var tbl = mainlist(), v = this.checked ? 1 : null;
+    if (tbl) {
+        siteinfo.want_override_conflict = !!v;
+        $(tbl.tHead.rows[0]).find("th.sortable a.pl_sort").each(function () {
+            this.setAttribute("href", hoturl_search(this.getAttribute("href"), "forceShow", v));
+        });
+        tablelist_load(tbl, "forceShow", v);
     }
-    $("#foldpl > thead").find("th.sortable").each(function () {
-        var a = this.querySelector("a.pl_sort");
-        a && a.setAttribute("href", apply_force(a.getAttribute("href")));
-    });
-    search_sort_url($("#foldpl"), current_sort_location());
 }
 
 if ("pushState" in window.history) {
     $(document).on("click", "a.pl_sort", search_sort_click);
     $(window).on("popstate", function (evt) {
-        var state = (evt.originalEvent || evt).state, tbl;
-        if (state && state.sortpl && (tbl = document.getElementById("foldpl")))
-            search_sort_success(tbl, state.href, state.sortpl);
+        var tbl = mainlist(), state = (evt.originalEvent || evt).state;
+        if (tbl && state && state.mainlist && state.mainlist.search)
+            tablelist_apply(tbl, state.mainlist, state.mainlist.search);
     });
     $(function () {
-        $("#scoresort").on("change", search_scoresort_change);
-        $("#showforce").on("click", search_showforce_click);
+        $("#scoresort").on("change", scoresort_change);
+        $("#showforce").on("click", showforce_click);
     });
 }
 
@@ -8858,50 +8851,47 @@ function add_draghandle() {
         this.parentElement.insertBefore(x, this);
 }
 
-function PaperRow(tbody, l, r, index, full_ordertag, dragtag) {
-    this.tbody = tbody;
-    this.l = l;
-    this.r = r;
+function PaperRow(tr, index, full_ordertag, dragtag) {
+    this.front = this.back = tr;
     this.index = index;
-    var row = tbody.childNodes[l];
-    this.tagvalue = row_tagvalue(row, full_ordertag);
+    this.tagvalue = row_tagvalue(tr, full_ordertag);
     this.isgroup = false;
     this.id = 0;
-    if (row.getAttribute("data-anno-tag")) {
+    if (tr.getAttribute("data-anno-tag")) {
         this.isgroup = true;
-        if (row.hasAttribute("data-anno-id"))
-            this.annoid = +row.getAttribute("data-anno-id");
+        if (tr.hasAttribute("data-anno-id"))
+            this.annoid = +tr.getAttribute("data-anno-id");
     } else {
-        this.id = +row.getAttribute("data-pid");
+        this.id = +tr.getAttribute("data-pid");
         if (dragtag)
-            this.entry = $(row).find("input[name='tag:" + dragtag + " " + this.id + "']")[0];
+            this.entry = $(tr).find("input[name='tag:" + dragtag + " " + this.id + "']")[0];
     }
 }
 PaperRow.prototype.top = function () {
-    return $(this.tbody.childNodes[this.l]).offset().top;
+    return $(this.front).offset().top;
 };
 PaperRow.prototype.bottom = function () {
-    return $(this.tbody.childNodes[this.r]).geometry().bottom;
+    return $(this.back).geometry().bottom;
 };
 PaperRow.prototype.middle = function () {
     return (this.top() + this.bottom()) / 2;
 };
 PaperRow.prototype.right = function () {
-    return $(this.tbody.childNodes[this.l]).geometry().right;
+    return $(this.front).geometry().right;
 };
-PaperRow.prototype.titlehint = function () {
-    var tg = $(this.tbody.childNodes[this.l]).find("a.ptitle, span.plheading-group"),
-        titletext = null, m;
+PaperRow.prototype.legend = function () {
+    var tg = $(this.front).find("a.ptitle, span.plheading-group"),
+        t = "", m;
     if (tg.length) {
-        titletext = tg[0].getAttribute("data-title");
-        if (!titletext)
-            titletext = tg.text();
-        if (titletext && titletext.length > 60 && (m = /^.{0,60}(?=\s)/.exec(titletext)))
-            titletext = m[0] + "…";
-        else if (titletext && titletext.length > 60)
-            titletext = titletext.substr(0, 60) + "…";
+        t = tg[0].getAttribute("data-title") || tg[0].textContent;
+        if (t && t.length > 60 && (m = /^.{0,60}(?=\s)/.exec(t)))
+            t = m[0] + "…";
+        else if (t && t.length > 60)
+            t = t.substr(0, 60) + "…";
     }
-    return titletext;
+    if (this.id)
+        t = t ? "#".concat(this.id, "  ", t) : "#" + this.id;
+    return t;
 };
 
 function make_gapf() {
@@ -8942,7 +8932,7 @@ function taganno_success(rv) {
         }
         handle_tagval(false);
         this.setAttribute("data-groups", JSON.stringify(groups));
-        reorder(this, table_ids(this), groups);
+        tablelist_reorder(this, tablelist_ids(this), groups);
     });
 }
 
@@ -8999,6 +8989,8 @@ handle_ui.on("js-annotate-order", function () {
             } else if (need_session) {
                 anno.session_title = form.elements[pfx + "session_title"].value;
                 anno.time = form.elements[pfx + "time"].value;
+            } else {
+                anno.session_title = anno.time = null;
             }
             newa.push(anno);
         }
@@ -9042,7 +9034,6 @@ handle_ui.on("js-annotate-order", function () {
                 && xtype === "session"
                 && attr.value != null
                 && attr.value !== "") {
-                console.log(attr.value);
                 need_session = true;
             }
             return attre("input", attr);
@@ -9064,7 +9055,7 @@ handle_ui.on("js-annotate-order", function () {
                 hidden_input(namepfx + "id", anno.annoid == null ? "new" : anno.annoid),
                 classe("div", "taganno-content",
                     entryi("Legend", legend),
-                    classe("div", "if-session hidden",
+                    classe("div", "if-session".concat(need_session ? "" : " hidden"),
                         entryi("Session title", session_title),
                         entryi("Time", time))));
         fieldset.setAttribute("data-ta-key", n);
@@ -9118,10 +9109,9 @@ function make_tag_save_callback(elt) {
                     rv.p[i].pid = +i;
                     $(window).trigger("hotcrptags", [rv.p[i]]);
                 }
-            } else
-                $(window).trigger("hotcrptags", [rv]);
-            if (focus)
-                focus.focus();
+            }
+            $(window).trigger("hotcrptags", [rv]);
+            focus && focus.focus();
         }
     };
 }
@@ -9136,32 +9126,31 @@ function tag_save() {
         minifeedback(this, {ok: false, message_list: [{message: "Value must be a number (or empty to remove the tag)", status: 2}]});
         return;
     }
-    $.post(hoturl("=api/tags", {p: m[2], forceShow: 1}),
+    $.post(hoturl("=api/tags", {p: m[2], forceShow: 1, search: mainlist_search()}),
            {addtags: ch}, make_tag_save_callback(this));
 }
 
 function analyze_rows(e) {
-    var rows = plt_tbody.childNodes, i, l, r, eindex = null;
     while (e && typeof e !== "number" && e.nodeName != "TR") {
         e = e.parentElement;
     }
 
     // create analysis
     rowanal = [];
-    for (i = 0, l = null; i < rows.length; ++i)
-        if (rows[i].nodeName == "TR") {
-            if (/^plx/.test(rows[i].className))
-                r = i;
-            else {
-                if (l !== null)
-                    rowanal.push(new PaperRow(plt_tbody, l, r, rowanal.length, full_ordertag, dragtag));
-                l = r = i;
+    var tr, tranal = null, eindex = null, i;
+    for (tr = plt_tbody.firstChild; tr; tr = tr.nextSibling) {
+        if (tr.nodeName === "TR") {
+            if (hasClass(tr, "plx")) {
+                tranal.back = tr;
+            } else {
+                tranal = new PaperRow(tr, rowanal.length, full_ordertag, dragtag);
+                rowanal.push(tranal);
             }
-            if (e == rows[i])
-                eindex = rowanal.length;
+            if (e === tr || e === tranal.id) {
+                eindex = tranal.index;
+            }
         }
-    if (l !== null)
-        rowanal.push(new PaperRow(plt_tbody, l, r, rowanal.length, full_ordertag, dragtag));
+    }
 
     // search for paper
     if (typeof e === "number")
@@ -9173,7 +9162,7 @@ function analyze_rows(e) {
 
     // analyze whether this is a gapless order
     var sd = 0, nd = 0, s2d = 0, lv = null;
-    for (i = 0; i < rowanal.length; ++i)
+    for (i = 0; i < rowanal.length; ++i) {
         if (rowanal[i].id && rowanal[i].tagvalue !== false) {
             if (lv !== null) {
                 var delta = rowanal[i].tagvalue - lv;
@@ -9183,6 +9172,7 @@ function analyze_rows(e) {
             }
             lv = rowanal[i].tagvalue;
         }
+    }
     if (nd >= 4 && sd >= 0.9 * nd && sd <= 1.1 * nd && s2d >= 0.9 * nd && s2d <= 1.1 * nd)
         rowanal.gapf = function () { return 1; };
     else
@@ -9191,7 +9181,15 @@ function analyze_rows(e) {
     return eindex;
 }
 
-function tag_scroll() {
+function endgroup_index(i) {
+    if (i < rowanal.length && rowanal[i].isgroup)
+        while (i + 1 < rowanal.length && !rowanal[i + 1].isgroup)
+            ++i;
+    return i;
+}
+
+
+function prowdrag_scroll() {
     var geometry = $(window).geometry(), delta = 0,
         y = mousepos.clientY + geometry.top;
     if (y < geometry.top - 5)
@@ -9209,14 +9207,7 @@ function tag_scroll() {
     }
 }
 
-function endgroup_index(i) {
-    if (i < rowanal.length && rowanal[i].isgroup)
-        while (i + 1 < rowanal.length && !rowanal[i + 1].isgroup)
-            ++i;
-    return i;
-}
-
-function tag_mousemove(evt) {
+function prowdrag_mousemove(evt) {
     if (evt.clientX == null)
         evt = mousepos;
     mousepos = {clientX: evt.clientX, clientY: evt.clientY};
@@ -9258,7 +9249,7 @@ function tag_mousemove(evt) {
 
     // scroll
     if (!scroller && (y < geometry.top || y > geometry.bottom)) {
-        scroller = setInterval(tag_scroll, 13);
+        scroller = setInterval(prowdrag_scroll, 13);
         scrolldelta = 0;
     }
 
@@ -9266,54 +9257,54 @@ function tag_mousemove(evt) {
     if (l == srcindex || l == endgroup_index(srcindex) + 1)
         l = srcindex;
     if (l !== dragindex) {
-        tag_dragto(l);
+        prowdrag_dragto(l);
         if (evt.type === "mousemove")
             handle_ui.stopPropagation(evt);
     }
 }
 
-function tag_dragto(l) {
-    dragindex = l;
+function prowdrag_dragto(pos) {
+    dragindex = pos;
 
     // create dragger
     if (!dragger) {
-        dragger = make_bubble({color: "edittagbubble dark", anchor: "e!*"});
+        dragger = make_bubble({color: "prowdrag dark", anchor: "e!*"});
         window.disable_tooltip = true;
     }
 
-    // calculate new value
-    var newval;
-    if (dragindex == srcindex)
-        newval = rowanal[dragindex].tagvalue;
-    else {
-        calculate_shift(srcindex, dragindex);
-        newval = rowanal[srcindex].newvalue;
-    }
-
     // set dragger content and show it
-    var m = "", x, y;
-    if (rowanal[srcindex].id)
-        m += "#" + rowanal[srcindex].id;
-    if ((x = rowanal[srcindex].titlehint()))
-        m += (m ? " &nbsp;" : "") + x;
-    if (newval !== false) {
-        m += '<span style="padding-left:2em';
-        if (srcindex !== dragindex)
-            m += ';font-weight:bold';
-        m += '">#' + dragtag + '#' + tagvalue_unparse(newval) + '</span>';
-    } else
-        m += '<div class="hint">Untagged · Drag up to set order</div>';
-    if (dragindex == srcindex)
-        y = rowanal[srcindex].middle();
-    else if (dragindex < rowanal.length)
-        y = rowanal[dragindex].top();
-    else
-        y = rowanal[rowanal.length - 1].bottom();
+    var x, y;
     if (rowanal[srcindex].entry)
         x = $(rowanal[srcindex].entry).offset().left - 6;
     else
         x = rowanal[srcindex].right() - 20;
-    dragger.html(m).at(x, y).color("edittagbubble dark" + (srcindex == dragindex ? " sametag" : ""));
+    if (dragindex === srcindex)
+        y = rowanal[dragindex].middle();
+    else if (dragindex < rowanal.length)
+        y = rowanal[dragindex].top();
+    else
+        y = rowanal[rowanal.length - 1].bottom();
+
+    dragger.html(tagval_prowdrag_content() || rowanal[srcindex].legend()).at(x, y).color("prowdrag dark" + (srcindex == dragindex ? " unchanged" : ""));
+}
+
+
+function tagval_prowdrag_content() {
+    var frag = document.createDocumentFragment(), newval;
+    frag.append(rowanal[srcindex].legend());
+    if (dragindex === srcindex) {
+        newval = rowanal[srcindex].tagvalue;
+    } else {
+        calculate_shift(srcindex, dragindex);
+        newval = rowanal[srcindex].newvalue;
+    }
+    if (newval !== false) {
+        frag.append(attre("span", {style: "padding-left:2em" + (srcindex === dragindex ? "" : ";font-weight:bold")},
+            "#".concat(dragtag, "#", tagvalue_unparse(newval))));
+    } else {
+        frag.append(classe("div", "hint", "Untagged · Drag up to set order"));
+    }
+    return frag;
 }
 
 function calculate_shift(si, di) {
@@ -9395,51 +9386,10 @@ function calculate_shift(si, di) {
     }
 }
 
-function rowcompar(a, b) {
-    var av = rowanal[a].tagvalue, bv = rowanal[b].tagvalue;
-    if ((av === false) !== (bv === false))
-        return av === false ? 1 : -1;
-    if (av != bv)
-        return av < bv ? -1 : 1;
-    var aid = rowanal[a].id, bid = rowanal[b].id;
-    if (!aid !== !bid)
-        return aid ? 1 : -1;
-    if (aid !== bid)
-        return aid < bid ? -1 : 1;
-    var rows = plt_tbody.childNodes;
-    var at = $(rows[rowanal[a].l]).find(".plheading-group").attr("data-title"),
-        bt = $(rows[rowanal[b].l]).find(".plheading-group").attr("data-title"),
-        cmp = strnatcmp(at, bt);
-    if (cmp)
-        return cmp;
-    else
-        return rowanal[a].annoid - rowanal[b].annoid;
-}
-
-function row_move(srcindex) {
-    // find new position
-    var rows = plt_tbody.childNodes, dstindex;
-    for (dstindex = 0; dstindex < rowanal.length; ++dstindex)
-        if (dstindex !== srcindex && rowcompar(srcindex, dstindex) < 0)
-            break;
-    if (dstindex !== srcindex + 1) {
-        // shift row groups
-        var range = [rowanal[srcindex].l, rowanal[srcindex].r],
-            sibling, e;
-        sibling = dstindex < rowanal.length ? rows[rowanal[dstindex].l] : null;
-        while (range[0] <= range[1]) {
-            e = plt_tbody.removeChild(rows[range[0]]);
-            plt_tbody.insertBefore(e, sibling);
-            srcindex > dstindex ? ++range[0] : --range[1];
-        }
-        searchbody_postreorder(plt_tbody);
-    }
-}
-
-function commit_drag(si, di) {
+function tagval_prowdrag_commit(si, di) {
     var saves = [], annosaves = [];
     calculate_shift(si, di);
-    for (var i = 0; i < rowanal.length; ++i)
+    for (var i = 0; i < rowanal.length; ++i) {
         if (rowanal[i].newvalue === rowanal[i].tagvalue)
             /* do nothing */;
         else if (rowanal[i].id) {
@@ -9447,13 +9397,16 @@ function commit_drag(si, di) {
             saves.push(rowanal[i].id + " " + dragtag + "#" + (x === "" ? "clear" : x));
         } else if (rowanal[i].annoid)
             annosaves.push({annoid: rowanal[i].annoid, tagval: tagvalue_unparse(rowanal[i].newvalue)});
-    if (saves.length)
-        $.post(hoturl("=api/tags", {forceShow: 1}),
+    }
+    if (saves.length) {
+        $.post(hoturl("=api/tags", {forceShow: 1, search: mainlist_search()}),
                {tagassignment: saves.join(",")},
                make_tag_save_callback(rowanal[si].entry));
-    if (annosaves.length)
+    }
+    if (annosaves.length) {
         $.post(hoturl("=api/taganno", {tag: dragtag, forceShow: 1}),
                {anno: JSON.stringify(annosaves)}, taganno_success);
+    }
 }
 
 function tag_mousedown(evt) {
@@ -9462,19 +9415,19 @@ function tag_mousedown(evt) {
     dragging = this;
     dragindex = null;
     srcindex = analyze_rows(this);
-    document.addEventListener("mousemove", tag_mousemove, true);
+    document.addEventListener("mousemove", prowdrag_mousemove, true);
     document.addEventListener("mouseup", tag_mouseup, true);
-    document.addEventListener("scroll", tag_mousemove, true);
+    document.addEventListener("scroll", prowdrag_mousemove, true);
     addClass(document.body, "grabbing");
-    tag_mousemove(evt);
+    prowdrag_mousemove(evt);
     evt.preventDefault();
     handle_ui.stopPropagation(evt);
 }
 
 function tag_mouseup() {
-    document.removeEventListener("mousemove", tag_mousemove, true);
+    document.removeEventListener("mousemove", prowdrag_mousemove, true);
     document.removeEventListener("mouseup", tag_mouseup, true);
-    document.removeEventListener("scroll", tag_mousemove, true);
+    document.removeEventListener("scroll", prowdrag_mousemove, true);
     removeClass(document.body, "grabbing");
     if (dragger) {
         dragger = dragger.remove();
@@ -9482,8 +9435,8 @@ function tag_mouseup() {
     }
     if (scroller)
         scroller = (clearInterval(scroller), null);
-    if (srcindex !== null && (dragindex === null || srcindex != dragindex))
-        commit_drag(srcindex, dragindex);
+    if (srcindex !== null && (dragindex === null || srcindex !== dragindex))
+        tagval_prowdrag_commit(srcindex, dragindex);
     dragging = srcindex = dragindex = null;
 }
 
@@ -9494,11 +9447,14 @@ plt_tbody = this.tagName === "TABLE" ? this.tBodies[0] : this;
         .on("click.edittag_ajax", "input.edittag", tag_save)
         .on("change.edittag_ajax", "input.edittagval", tag_save)
         .on("keydown.edittag_ajax", "input.edittagval", make_onkey("Enter", tag_save));
-    if ((full_ordertag = this.getAttribute("data-order-tag")))
-        $(window).on("hotcrptags", function (evt, data) {
-            row_move(analyze_rows(data.pid));
-        });
-    if ((dragtag = this.getAttribute("data-drag-tag")))
+    $(window).on("hotcrptags", function (evt, data) {
+        var tbl;
+        if (data.ids && (tbl = mainlist()) && tablelist_ids_equal(tbl, data.ids))
+            tablelist_reorder(tbl, data.ids, data.groups);
+    });
+    full_ordertag = this.getAttribute("data-order-tag");
+    dragtag = this.getAttribute("data-drag-tag");
+    if (dragtag)
         $(this).on("mousedown.edittag_ajax", "span.js-drag-tag", tag_mousedown);
 }).call(plt_tbody.parentNode);
 }
@@ -9692,7 +9648,8 @@ handle_ui.on("js-plinfo-edittags", function () {
         focus_within(div);
     }
     function do_submit() {
-        $.post(hoturl("=api/tags", {p: pid, forceShow: 1}),
+        var tbl = div.closest("table");
+        $.post(hoturl("=api/tags", {p: pid, forceShow: 1, search: tbl ? tablelist_search(tbl) : null}),
             {tags: $(ta).val()},
             function (rv) {
                 minifeedback(ta, rv);
@@ -9721,8 +9678,9 @@ function add_field(f) {
         --j;
     field_order.splice(j, 0, f);
     fields[f.name] = f;
-    if (/^(?:#|tag:|tagval:)\S+$/.test(f.name))
+    if (/^(?:#|tag:|tagval:)\S+$/.test(f.name)) {
         $(window).on("hotcrptags", make_tag_column_callback(f));
+    }
     if (f.foldnum === true) {
         f.foldnum = 9;
         while (hasClass(self, "fold" + f.foldnum + "c")
@@ -9808,54 +9766,63 @@ function make_tagmap() {
     return tagmap;
 }
 
-function compute_row_tagset(tagstr, editable) {
+function render_tagset(tagstr, editable) {
     make_tagmap();
-    var t = [], tags = (tagstr || "").split(/ /);
-    for (var i = 0; i !== tags.length; ++i) {
+    var t = [], tags = (tagstr || "").split(/ /), h, q, i;
+    for (i = 0; i !== tags.length; ++i) {
         var text = tags[i], twiddle = text.indexOf("~"), hash = text.indexOf("#");
         if (text !== "" && (twiddle <= 0 || text.substr(0, twiddle) == siteinfo.user.uid)) {
             twiddle = Math.max(twiddle, 0);
             var tbase = text.substring(0, hash), tindex = text.substr(hash + 1),
-                tagx = tagmap ? tagmap[tbase.toLowerCase()] || 0 : 0, h, q;
+                tagx = tagmap ? tagmap[tbase.toLowerCase()] || 0 : 0;
             tbase = tbase.substring(twiddle, hash);
+            if ((tagx & 2) || tindex != "0")
+                h = classe("a", "qo nw", classe("u", "x", "#" + tbase), "#" + tindex);
+            else
+                h = classe("a", "q nw", "#" + tbase);
             if (tagx & 2)
-                q = "#" + tbase + " showsort:-#" + tbase;
+                q = "#".concat(tbase, " showsort:-#", tbase);
             else if (tindex != "0")
                 q = "order:#" + tbase;
             else
                 q = "#" + tbase;
-            if ((tagx & 2) || tindex != "0")
-                h = '<a class="qo nw" href="' + hoturl("search", {q: q}) + '"><u class="x">#' + tbase + '</u>#' + tindex + '</a>';
-            else
-                h = '<a class="q nw" href="' + hoturl("search", {q: q}) + '">#' + tbase + '</a>';
+            h.setAttribute("href", hoturl("search", {q: q}));
             if (taghighlighter && taghighlighter.test(tbase))
-                h = '<strong>' + h + '</strong>';
-            t.push([h, text.substring(twiddle, hash), text.substring(hash + 1), tagx]);
+                h = classe("strong", null, h);
+            t.push([h, text.substring(twiddle, hash)]);
         }
     }
     t.sort(function (a, b) {
         return strnatcmp(a[1], b[1]);
     });
-    if (!t.length && editable)
+    if (t.length === 0) {
+        if (!editable)
+            return null;
         t.push(["none"]);
-    return $.map(t, function (x) { return x[0]; });
+    }
+    h = document.createDocumentFragment();
+    h.append(classe("em", "plx", "Tags:"));
+    for (i = 0; i !== t.length; ++i) {
+        h.append(" ", t[i][0]);
+    }
+    return h;
 }
 
 function render_row_tags(div) {
     var ptr = prownear(div), editable = ptr.hasAttribute("data-tags-editable"),
-        t = compute_row_tagset(ptr.getAttribute("data-tags"), editable);
-    t = t.length ? '<em class="plx">Tags:</em> ' + t.join(" ") : "";
-    if (t != "" && ptr.hasAttribute("data-tags-conflicted")) {
-        t = '<span class="fx5">' + t + '</span>';
-        var ct = compute_row_tagset(ptr.getAttribute("data-tags-conflicted"), editable);
-        if (ct.length)
-            t = '<span class="fn5"><em class="plx">Tags:</em> ' + ct.join(" ") + '</span>' + t;
+        t = render_tagset(ptr.getAttribute("data-tags"), editable);
+    if (t && ptr.hasAttribute("data-tags-conflicted")) {
+        t = classe("span", "fx5", t);
+        var ct = render_tagset(ptr.getAttribute("data-tags-conflicted"), editable);
+        ct && t.prepend(classe("span", "fn5", ct));
     }
-    if (t != "" && ptr.getAttribute("data-tags-editable") != null) {
-        t += ' <span class="hoveronly"><span class="barsep">·</span> <button type="button" class="link ui js-plinfo-edittags">Edit</button></span>';
+    if (t && ptr.getAttribute("data-tags-editable") != null) {
+        t.append(" ", classe("span", "hoveronly",
+            classe("span", "barsep", "·"), " ",
+            attre("button", {type: "button", "class": "link ui js-plinfo-edittags"}, "Edit")));
     }
     $(div).find("textarea").unautogrow();
-    t == "" ? $(div).empty() : $(div).html(t);
+    t ? div.replaceChildren(t) : div.replaceChildren();
 }
 
 function make_tag_column_callback(f) {
@@ -9863,13 +9830,14 @@ function make_tag_column_callback(f) {
     if (/^~[^~]/.test(tag))
         tag = siteinfo.user.uid + tag;
     return function (evt, rv) {
-        var e = pidfield(rv.pid, f);
-        if (!e || f.missing)
+        var e, tv, tvs, input, oldval;
+        if (!rv.pid || f.missing || !(e = pidfield(rv.pid, f))) {
             return;
-        var tv = tag_value(rv.tags, tag), input = e.querySelector("input");
-        if (input) {
-            var oldval = input_default_value(input),
-                tvs = tv === null ? "" : String(tv);
+        }
+        tv = tag_value(rv.tags, tag);
+        tvs = tv === null ? "" : String(tv);
+        if ((input = e.querySelector("input"))) {
+            oldval = input_default_value(input);
             if (oldval !== (input.type === "checkbox" ? tvs !== "" : tvs)) {
                 if (input.type === "checkbox") {
                     input.checked = tv !== null;
@@ -9880,8 +9848,9 @@ function make_tag_column_callback(f) {
                 input_set_default_value(input, tv);
                 minifeedback(input, {ok: true});
             }
-        } else
+        } else {
             e.html(tvs === "0" && !/tagval/.test(f.className) ? "✓" : tvs);
+        }
     };
 }
 
@@ -10106,8 +10075,10 @@ hotcrp.update_tag_decoration = function ($title, html) {
 };
 
 $(window).on("hotcrptags", function (evt, rv) {
-    if (!self && (self === false || initialize() === false))
+    if (!rv.pid
+        || (!self && (self === false || initialize() === false))) {
         return;
+    }
     var pr = pidrow(rv.pid);
     if (!pr)
         return;
@@ -10908,21 +10879,22 @@ function prepare_pstags() {
         focus_within($f[0]);
     });
     $(window).on("hotcrptags", function (evt, data) {
-        if (data.pid == $f.attr("data-pid")) {
-            var h = data.tags_view_html == "" ? "None" : data.tags_view_html,
-                $p = $(self).find(".js-tag-result").first();
-            if ($p.html() !== h)
-                $p.html(h);
-            if ($ta.length
-                && $ta.val() !== data.tags_edit_text
-                && !$ta.is(":visible")
-                && (!$f.data("everOpened")
-                    || ($.trim($ta.val()).split(/\s+/).sort().join(" ")
-                        !== data.tags_edit_text.split(/\s+/).sort().join(" ")))) {
-                $ta.val(data.tags_edit_text);
-            }
-            handle_tag_report(data);
+        if (!data.pid || data.pid != $f.attr("data-pid")) {
+            return;
         }
+        var h = data.tags_view_html == "" ? "None" : data.tags_view_html,
+            $p = $(self).find(".js-tag-result").first();
+        if ($p.html() !== h)
+            $p.html(h);
+        if ($ta.length
+            && $ta.val() !== data.tags_edit_text
+            && !$ta.is(":visible")
+            && (!$f.data("everOpened")
+                || ($.trim($ta.val()).split(/\s+/).sort().join(" ")
+                    !== data.tags_edit_text.split(/\s+/).sort().join(" ")))) {
+            $ta.val(data.tags_edit_text);
+        }
+        handle_tag_report(data);
     });
 }
 
@@ -11380,8 +11352,9 @@ function set_tag_index(e, taglist) {
 
 if (siteinfo.paperid) {
     $(window).on("hotcrptags", function (evt, data) {
-        if (data.pid != siteinfo.paperid)
+        if (!data.pid || data.pid != siteinfo.paperid) {
             return;
+        }
         data.color_classes && ensure_pattern(data.color_classes, "", true);
         $(".has-tag-classes").each(function () {
             var t = $.trim(this.className.replace(/(?: |^)(?:tagbg|dark|tag-\S+)(?= |$)/g, " "));
@@ -11911,10 +11884,10 @@ handle_ui.on("js-submit-list", function (evt) {
         bgform.setAttribute("enctype", "multipart/form-data");
         bgform.setAttribute("accept-charset", "UTF-8");
         if (chkval.length < 20) {
-            action = hoturl_set(action, "p", chkval.join(" "));
+            action = hoturl_search(action, "p", chkval.join(" "));
             chkval = null;
         }
-        bgform.action = hoturl_set(action, "fn", fn);
+        bgform.action = hoturl_search(action, "fn", fn);
     }
     bgform.className = "is-background-form";
     if (fnbutton && fnbutton.hasAttribute("formtarget")) {

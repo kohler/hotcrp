@@ -1260,4 +1260,11 @@ class Unit_Tester {
             ["fart", "-axxxx", "--", "-c", "x", "-cy", "d=a", "-e", "a", "b", "-a", "c"]);
         xassert_eqq(json_encode($arg), '"Unknown option `-x`"');
     }
+
+    function test_friendly_boolean() {
+        xassert_eqq(friendly_boolean(""), false);
+        xassert_eqq(friendly_boolean("0"), false);
+        xassert_eqq(friendly_boolean("1"), true);
+        xassert_eqq(friendly_boolean("!#($!"), null);
+    }
 }

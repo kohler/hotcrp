@@ -1004,12 +1004,22 @@ class PaperList {
         $s0 = ($this->sorters())[0];
         if ($s0->sort_subset === null
             && ($always || (string) $this->qreq->sort != "")
-            && ($s0->name !== "id" || $s0->sort_decoration())) {
-            $d = $s0->sort_decoration();
-            return $s0->sort_name() . ($d ? " {$d}" : "");
+            && ($sn = $s0->full_sort_name()) !== "id") {
+            return $sn;
         } else {
             return "";
         }
+    }
+
+    /** @returns tring */
+    function encoded_search_params() {
+        $qp = $this->search->encoded_query_params();
+        $s0 = ($this->sorters())[0];
+        $sn = $s0->sort_subset === null ? $s0->full_sort_name() : "none";
+        $sp = urlencode($sn);
+        $rp = urlencode($this->_report_id);
+        $fsp = $this->_view_force ? 1 : "";
+        return "{$qp}&sort={$sp}&forceShow={$fsp}&report={$rp}";
     }
 
 
@@ -1989,6 +1999,7 @@ class PaperList {
         if ($this->_table_id) {
             $this->table_attr["id"] = $this->_table_id;
         }
+        $this->table_attr["data-search-params"] = $this->encoded_search_params();
         if ($this->_table_fold_session) {
             $this->table_attr["data-fold-session-prefix"] = $this->_table_fold_session;
             $this->table_attr["data-fold-session"] = json_encode_browser([
