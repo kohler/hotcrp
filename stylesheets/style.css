@@ -2947,7 +2947,7 @@ div:hover > span.hoveronly, tr:hover > td > span.hoveronly {
 	min-width: 100vw;
 	position: relative;
 }
-.pltable-columns {
+.pltable-facets {
 	display: flex;
 	align-items: flex-start;
 	gap: 24px;
@@ -3161,11 +3161,12 @@ table.pltable-reviewerhome > thead > tr > th.plh {
 	display: inline-block;
 	width: 0.666em;
 	height: 1em;
-	vertical-align: -0.125em;
+	vertical-align: -0.2em;
 	cursor: move;
 }
 .draghandle, button.draghandle:hover, button.draghandle:active {
-   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' aria-hidden='true' viewBox='0 0 12 18' preserveAspectRatio='none'%3E%3Ccircle cx='4' cy='4' r='1.5' /%3E%3Ccircle cx='9' cy='4' r='1.5' /%3E%3Ccircle cx='4' cy='9' r='1.5' /%3E%3Ccircle cx='9' cy='9' r='1.5' /%3E%3Ccircle cx='4' cy='14' r='1.5' /%3E%3Ccircle cx='9' cy='14' r='1.5' /%3E%3C/svg%3E");
+	background: unset;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' aria-hidden='true' viewBox='0 0 12 18' preserveAspectRatio='none'%3E%3Ccircle cx='4' cy='4' r='1.5' /%3E%3Ccircle cx='9' cy='4' r='1.5' /%3E%3Ccircle cx='4' cy='9' r='1.5' /%3E%3Ccircle cx='9' cy='9' r='1.5' /%3E%3Ccircle cx='4' cy='14' r='1.5' /%3E%3Ccircle cx='9' cy='14' r='1.5' /%3E%3C/svg%3E");
 }
 button.draghandle, button.draghandle:hover {
 	font-weight: inherit;

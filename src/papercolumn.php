@@ -198,7 +198,7 @@ class Selector_PaperColumn extends PaperColumn {
     function header(PaperList $pl, $is_text) {
         if ($is_text) {
             return "Selected";
-        } else if (!$pl->viewing("kanban")) {
+        } else if (!$pl->viewing("facets")) {
             return '<input type="checkbox" class="uic js-range-click is-range-group ignore-diff" data-range-type="pap[]" aria-label="Select all">';
         } else {
             return "";
@@ -213,6 +213,7 @@ class Selector_PaperColumn extends PaperColumn {
         return "<span class=\"pl_rownum fx6\">{$pl->count}. </span><input type=\"checkbox\" class=\"uic uikd js-range-click js-selector ignore-diff\" name=\"pap[]\" value=\"{$row->paperId}\"{$c} aria-label=\"#{$row->paperId}\">";
     }
     static function group_content($groupno) {
+        // See also `tagannorow_add` in script.js
         return "<input type=\"checkbox\" class=\"uic uikd js-range-click ignore-diff is-range-group\" data-range-type=\"pap[]\" data-range-group=\"auto\" aria-label=\"Select group\">";
     }
     function text(PaperList $pl, PaperInfo $row) {

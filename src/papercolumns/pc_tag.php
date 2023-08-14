@@ -84,7 +84,7 @@ class Tag_PaperColumn extends PaperColumn {
         if ($this->editable
             && ($visible & PaperColumn::PREP_VISIBLE)
             && $pl->table_id()
-            && !$pl->viewing("kanban")) {
+            && !$pl->viewing("facets")) {
             $pl->has_editable_tags = true;
             if (strcasecmp($this->etag, $pl->sort_etag()) === 0
                 && $this->is_value) {
@@ -179,13 +179,11 @@ class Tag_PaperColumn extends PaperColumn {
             $checked = $v === null ? "" : " checked";
             return "<input type=\"checkbox\" class=\"uic js-range-click edittag\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"x\" tabindex=\"2\"{$checked}>";
         }
-        $klass = "";
         if ($this->editsort) {
-            $klass = " need-draghandle";
             $pl->need_render = true;
         }
         $vt = $v === null ? "" : ($v === true ? "0" : (string) $v);
-        return "<input type=\"text\" class=\"edittagval{$klass}\" size=\"4\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"{$vt}\" tabindex=\"2\">";
+        return "<input type=\"text\" class=\"edittagval\" size=\"4\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"{$vt}\" tabindex=\"2\">";
     }
     function text(PaperList $pl, PaperInfo $row) {
         if (($v = $row->tag_value($this->etag)) === null) {

@@ -225,7 +225,7 @@ class PaperList {
     /** @var ?string */
     private $_paper_linkto;
     /** @var bool */
-    private $_view_kanban = false;
+    private $_view_facets = false;
     /** @var bool */
     private $_view_force = false;
     /** @var int */
@@ -514,11 +514,7 @@ class PaperList {
     static private $view_synonym = [
         "au" => "authors",
         "author" => "authors",
-        "col" => "kanban",
-        "column" => "kanban",
-        "columns" => "kanban",
-        "compact" => "kanban",
-        "compactcolumns" => "kanban",
+        "kanban" => "facets",
         "rownumbers" => "rownum",
         "stat" => "statistics",
         "stats" => "statistics",
@@ -527,7 +523,7 @@ class PaperList {
 
     static private $view_fake = [
         "anonau" => 150, "aufull" => 150, "force" => 180, "score" => 190,
-        "kanban" => -2, "rownum" => -1, "statistics" => -1,
+        "facets" => -2, "rownum" => -1, "statistics" => -1,
         "all" => -4, "linkto" => -4,
     ];
 
@@ -603,8 +599,8 @@ class PaperList {
 
         if ($k === "force") {
             $this->_view_force = $v;
-        } else if ($k === "kanban") {
-            $this->_view_kanban = $v;
+        } else if ($k === "facets") {
+            $this->_view_facets = $v;
         } else if ($k === "linkto") {
             if (!empty($decorations)
                 && in_array($decorations[0], ["paper", "paperedit", "assign", "finishreview"])) {
@@ -1603,9 +1599,6 @@ class PaperList {
                 if ($ginfo->annoId) {
                     $attr["data-anno-id"] = $ginfo->annoId;
                     $attr["data-tags"] = "{$ginfo->tag}#{$ginfo->tagIndex}";
-                    if (isset($this->table_attr["data-drag-tag"])) {
-                        $attr["tdclass"] = "need-draghandle";
-                    }
                 }
                 $x = "<span class=\"plheading-group";
                 if ($ginfo->heading !== "") {
@@ -1883,7 +1876,7 @@ class PaperList {
             }
         }
 
-        $footsel_ncol = $this->_view_kanban ? 0 : 1;
+        $footsel_ncol = $this->_view_facets ? 0 : 1;
         return self::render_footer_row($footsel_ncol, $ncol - $footsel_ncol,
             "<b>Select papers</b> (or <a class=\"ui js-select-all\" href=\""
             . ($selfhref ? $this->conf->selfurl($this->qreq, ["selectall" => 1, "#" => "plact"]) : "")
@@ -2012,7 +2005,8 @@ class PaperList {
             $this->table_attr["data-groups"] = json_encode_browser($this->_groups);
         }
         if ($this->_sort_etag !== ""
-            && !$this->_view_kanban) {
+            && !$this->_view_facets) {
+            $this->table_attr["class"][] = "pltable-draggable";
             $this->table_attr["data-order-tag"] = $this->_sort_etag;
         }
         if (($this->_table_decor & self::DECOR_LIST) !== 0) {
@@ -2052,7 +2046,7 @@ class PaperList {
         assert(count($rstate->groupstart) === max(count($this->_groups), 1));
         $rstate->groupstart[] = count($body);
         if ($rstate->group_count() === 1) {
-            $this->_view_kanban = false;
+            $this->_view_facets = false;
         }
         if ($this->count === 0) {
             return PaperListTableRender::make_error("No matching papers");
@@ -2070,7 +2064,7 @@ class PaperList {
 
         // statistics rows
         $tfoot = "";
-        if (!$this->_view_kanban && ($this->_table_decor & self::DECOR_STATISTICS) !== 0) {
+        if (!$this->_view_facets && ($this->_table_decor & self::DECOR_STATISTICS) !== 0) {
             $tfoot = $this->_statistics_rows($rstate);
         }
 
@@ -2118,7 +2112,7 @@ class PaperList {
         // footer
         if ($this->_vcolumns[0] instanceof Selector_PaperColumn
             && ($this->_table_decor & self::DECOR_FOOTER) !== 0
-            && !$this->_view_kanban) {
+            && !$this->_view_facets) {
             $tfoot .= $this->_footer($rstate->ncol);
         }
         if ($tfoot) {
@@ -2149,26 +2143,26 @@ class PaperList {
             }
             return;
         }
-        $kanban = $this->_view_kanban && $rstate->group_count() > 1;
-        if ($kanban) {
-            $this->table_attr["class"][] = "pltable-columns";
+        $facets = $this->_view_facets && $rstate->group_count() > 1;
+        if ($facets) {
+            $this->table_attr["class"][] = "pltable-facets";
             echo '<div';
             PaperListTableRender::print_attributes($this->table_attr);
             echo '>';
-            $attr = ["class" => "pltable-column"];
+            $attr = ["class" => "pltable-facet"];
         } else {
             $attr = $this->table_attr;
         }
         $i = 0;
         $n = $rstate->group_count();
         while ($i !== $n) {
-            $j = $kanban ? $i + 1 : $n;
+            $j = $facets ? $i + 1 : $n;
             $rstate->print_table_start($attr, self::$include_stash);
             $rstate->print_tbody_rows($i, $j);
             $rstate->print_table_end();
             $i = $j;
         }
-        if ($kanban) {
+        if ($facets) {
             echo '</div>';
         }
     }

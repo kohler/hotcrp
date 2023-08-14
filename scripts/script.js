@@ -8495,6 +8495,17 @@ function tablelist_search(tbl) {
     return x;
 }
 
+function tablelist_each_facet(tbl, f) {
+    if (hasClass(tbl, "pltable-facets")) {
+        for (tbl = tbl.firstChild; tbl; tbl = tbl.nextSibling) {
+            if (tbl.nodeName === "TABLE")
+                f(tbl);
+        }
+    } else {
+        f(tbl);
+    }
+}
+
 function mainlist_search() {
     var tbl = mainlist();
     return tbl ? tablelist_search(tbl) : null;
@@ -8552,13 +8563,15 @@ function tagannorow_fill(row, anno) {
 
 function tagannorow_add(tbl, tbody, before, anno) {
     tbl = tbl || tbody.parentElement;
-    var $r = $(tbl).find("thead > tr.pl_headrow:first-child > th");
-    var titlecol = 0, ncol = $r.length;
-    for (var i = 0; i != ncol; ++i)
-        if (hasClass($r[i], "pl_title"))
+    var $r = $(tbl).find("thead > tr.pl_headrow:first-child > th"),
+        selcol = -1, titlecol = -1, ncol = $r.length, i, tr;
+    for (i = 0; i !== ncol; ++i) {
+        if (hasClass($r[i], "pl_sel"))
+            selcol = i;
+        else if (hasClass($r[i], "pl_title"))
             titlecol = i;
+    }
 
-    var tr;
     if (anno.blank) {
         tr = $e("tr", "plheading-blank",
             $e("td", {"class": "plheading", colspan: ncol}));
@@ -8569,18 +8582,32 @@ function tagannorow_add(tbl, tbody, before, anno) {
             "data-anno-id": anno.annoid || null,
             "data-tags": anno.tag && anno.annoid ? anno.tag + "#" + anno.tagval : null
         });
-        if (titlecol) {
-            tr.appendChild($e("td", {"class": "plheading-spacer", colspan: titlecol}));
+        if (selcol > 0) {
+            tr.appendChild($e("td", {"class": "plheading-spacer", colspan: selcol}));
         }
-        tr.appendChild($e("td", {"class": "plheading", colspan: ncol - titlecol},
+        if (selcol >= 0) {
+            tr.appendChild($e("td", "pl plheading pl_sel",
+                $e("input", {
+                    type: "checkbox",
+                    "class": "uic uikd js-range-click ignore-diff is-range-group",
+                    "data-range-type": "pap[]",
+                    "data-range-group": "auto",
+                    "aria-label": "Select group"
+                })));
+        }
+        if (titlecol > 0 && titlecol > selcol + 1) {
+            tr.appendChild($e("td", {"class": "plheading-spacer", colspan: titlecol - selcol - 1}));
+        }
+        tr.appendChild($e("td", {"class": "plheading", colspan: ncol - Math.max(0, titlecol)},
             $e("span", "plheading-group"),
             $e("span", "plheading-count")));
     }
 
     if (anno.tag
         && anno.tag === tag_canonicalize(tbl.getAttribute("data-drag-tag"))
-        && anno.annoid)
-        add_draghandle.call(tr.querySelector("td.plheading"));
+        && anno.annoid) {
+        add_draghandle(tr);
+    }
     tbody.insertBefore(tr, before);
     tagannorow_fill(tr, anno)
     return tr;
@@ -8831,24 +8858,20 @@ if ("pushState" in window.history) {
 }
 
 
-function add_draghandle() {
-    removeClass(this, "need-draghandle");
-    var x = document.createElement("span");
-    x.className = "draghandle js-drag-tag";
-    x.title = "Drag to change order";
-    if (this.tagName === "TD") {
-        x.style.float = "right";
-        x.style.position = "static";
-        x.style.marginRight = "8px";
-        this.insertBefore(x, null);
-    } else
-        this.parentElement.insertBefore(x, this);
+function add_draghandle(tr) {
+    var td = tr.cells[0], e;
+    if (!td.firstChild || !hasClass(td.firstChild, "draghandle")) {
+        addClass(tr, "has-draghandle");
+        e = $e("button", {"type": "button", "class": "ui draghandle js-drag-tag mr-1", title: "Drag to change order"});
+        td.insertBefore(e, td.firstElementChild);
+    }
 }
 
 function PaperRow(tr, index, full_ordertag) {
     this.front = this.back = tr;
     this.index = index;
-    this.tagvalue = row_tagvalue(tr, full_ordertag);
+    this.tagval = row_tagvalue(tr, full_ordertag);
+    this.newtagval = this.tagval;
     this.isgroup = false;
     this.id = 0;
     if (tr.getAttribute("data-anno-tag")) {
@@ -8865,8 +8888,12 @@ PaperRow.prototype.top = function () {
 PaperRow.prototype.bottom = function () {
     return $(this.back).geometry().bottom;
 };
-PaperRow.prototype.middle = function () {
-    return (this.top() + this.bottom()) / 2;
+PaperRow.prototype.front_middle = function () {
+    var g = $(this.front).geometry();
+    return g.top + (g.bottom - g.top) / 2;
+};
+PaperRow.prototype.left = function () {
+    return $(this.front).offset().left;
 };
 PaperRow.prototype.right = function () {
     return $(this.front).geometry().right;
@@ -9133,7 +9160,7 @@ function tagval_prowdrag_analyze_rows(srctr) {
     // create analysis
     rowanal = [];
     var tbl = srctr.closest("table"), tr, tranal = null, i,
-        full_ordertag = tbl.getAttribute("data-order-tag");
+        full_ordertag = tbl.getAttribute("data-order-tag"), groups = false;
     for (tr = plt_tbody.firstChild; tr; tr = tr.nextSibling) {
         if (tr.nodeName === "TR") {
             if (hasClass(tr, "plx")) {
@@ -9141,6 +9168,7 @@ function tagval_prowdrag_analyze_rows(srctr) {
             } else {
                 tranal = new PaperRow(tr, rowanal.length, full_ordertag);
                 rowanal.push(tranal);
+                groups = groups || tranal.isgroup;
             }
             if (tr === srctr) {
                 srcindex = tranal.index;
@@ -9148,29 +9176,34 @@ function tagval_prowdrag_analyze_rows(srctr) {
         }
     }
 
-    // analyze whether this is a gapless order
-    var sd = 0, nd = 0, s2d = 0, lv = null;
+    // analyze whether this is likely to be a gapless order
+    rowanal.gapf = function () { return 1; };
+    if (groups) {
+        // annotated groups are assumed to be gapless
+        return;
+    }
+    var sd = 0, nd = 0, s2d = 0, lv = null, d;
     for (i = 0; i < rowanal.length; ++i) {
-        if (rowanal[i].id && rowanal[i].tagvalue !== false) {
+        if (rowanal[i].id && rowanal[i].tagval !== false) {
             if (lv !== null) {
-                var delta = rowanal[i].tagvalue - lv;
                 ++nd;
-                sd += delta;
-                s2d += delta * delta;
+                d = rowanal[i].tagval - lv;
+                sd += d;
+                s2d += d * d;
             }
-            lv = rowanal[i].tagvalue;
+            lv = rowanal[i].tagval;
         }
     }
-    if (nd >= 4 && sd >= 0.9 * nd && sd <= 1.1 * nd && s2d >= 0.9 * nd && s2d <= 1.1 * nd)
-        rowanal.gapf = function () { return 1; };
-    else
+    if (nd < 4 || sd < 0.9 * nd || sd > 1.1 * nd || s2d < 0.9 * nd || s2d > 1.1 * nd) {
         rowanal.gapf = make_gapf();
+    }
 }
 
 function endgroup_index(i) {
-    if (i < rowanal.length && rowanal[i].isgroup)
+    if (i < rowanal.length && rowanal[i].isgroup) {
         while (i + 1 < rowanal.length && !rowanal[i + 1].isgroup)
             ++i;
+    }
     return i;
 }
 
@@ -9194,8 +9227,9 @@ function prowdrag_scroll() {
 }
 
 function prowdrag_mousemove(evt) {
-    if (evt.clientX == null)
+    if (evt.clientX == null) {
         evt = mousepos;
+    }
     mousepos = {clientX: evt.clientX, clientY: evt.clientY};
     var geometry = $(window).geometry(),
         x = evt.clientX + geometry.left, y = evt.clientY + geometry.top;
@@ -9203,35 +9237,39 @@ function prowdrag_mousemove(evt) {
     // binary search to find containing rows
     var l = 0, r = rowanal.length, m;
     while (l < r) {
-        m = Math.floor((l + r) / 2);
-        if (y < rowanal[m].top())
+        m = l + ((r - l) >> 1);
+        if (y < rowanal[m].top()) {
             r = m;
-        else if (y < rowanal[m].bottom()) {
+        } else if (y < rowanal[m].bottom()) {
             l = m;
             break;
-        } else
+        } else {
             l = m + 1;
+        }
     }
 
     // if dragging a group, restrict to groups
     if (rowanal[srcindex].isgroup
         && rowanal[srcindex + 1]
         && !rowanal[srcindex + 1].isgroup) {
-        while (l > 0 && l < rowanal.length && !rowanal[l].isgroup)
+        while (l > 0 && l < rowanal.length && !rowanal[l].isgroup) {
             --l;
+        }
     }
     r = endgroup_index(l);
 
     // if below middle, insert at next location
-    if (l < rowanal.length && y > (rowanal[l].top() + rowanal[r].bottom()) / 2)
+    if (l < rowanal.length && y > (rowanal[l].top() + rowanal[r].bottom()) / 2) {
         l = r + 1;
+    }
 
     // if user drags far away, snap back
     var plt_geometry = $(plt_tbody).geometry();
     if (x < Math.min(geometry.left, plt_geometry.left) - 30
         || x > Math.max(geometry.right, plt_geometry.right) + 30
-        || y < plt_geometry.top - 40 || y > plt_geometry.bottom + 40)
+        || y < plt_geometry.top - 40 || y > plt_geometry.bottom + 40) {
         l = srcindex;
+    }
 
     // scroll
     if (!scroller && (y < geometry.top || y > geometry.bottom)) {
@@ -9240,8 +9278,9 @@ function prowdrag_mousemove(evt) {
     }
 
     // calculate new dragger position
-    if (l == srcindex || l == endgroup_index(srcindex) + 1)
+    if (l === srcindex || l === endgroup_index(srcindex) + 1) {
         l = srcindex;
+    }
     if (l !== dragindex) {
         prowdrag_dragto(l);
         if (evt.type === "mousemove")
@@ -9254,24 +9293,21 @@ function prowdrag_dragto(pos) {
 
     // create dragger
     if (!dragger) {
-        dragger = make_bubble({color: "prowdrag dark", anchor: "e!*"});
+        dragger = make_bubble({color: "prowdrag dark", anchor: "w!*"});
         window.disable_tooltip = true;
     }
 
     // set dragger content and show it
-    var x, y, e = rowanal[srcindex].tagval_entry();
-    if (e)
-        x = $(e).offset().left - 6;
-    else
-        x = rowanal[srcindex].right() - 20;
+    var y;
     if (dragindex === srcindex)
-        y = rowanal[dragindex].middle();
+        y = rowanal[dragindex].front_middle();
     else if (dragindex < rowanal.length)
         y = rowanal[dragindex].top();
     else
         y = rowanal[rowanal.length - 1].bottom();
-
-    dragger.html(tagval_prowdrag_content() || rowanal[srcindex].legend()).at(x, y).color("prowdrag dark" + (srcindex == dragindex ? " unchanged" : ""));
+    dragger.html(tagval_prowdrag_content() || rowanal[srcindex].legend())
+        .at(rowanal[srcindex].left() + 36, y)
+        .color("prowdrag dark" + (srcindex == dragindex ? " unchanged" : ""));
 }
 
 
@@ -9279,10 +9315,10 @@ function tagval_prowdrag_content() {
     var frag = document.createDocumentFragment(), newval;
     frag.append(rowanal[srcindex].legend());
     if (dragindex === srcindex) {
-        newval = rowanal[srcindex].tagvalue;
+        newval = rowanal[srcindex].tagval;
     } else {
-        calculate_shift(srcindex, dragindex);
-        newval = rowanal[srcindex].newvalue;
+        tagval_prowdrag_compute(srcindex, dragindex);
+        newval = rowanal[srcindex].newtagval;
     }
     if (newval !== false) {
         frag.append($e("span", {style: "padding-left:2em" + (srcindex === dragindex ? "" : ";font-weight:bold")},
@@ -9293,92 +9329,234 @@ function tagval_prowdrag_content() {
     return frag;
 }
 
-function calculate_shift(si, di) {
-    var simax = endgroup_index(si);
-    var i, j, sdelta = rowanal.gapf(true);
-    if (rowanal[si].tagvalue !== false
-        && simax + 1 < rowanal.length
-        && rowanal[simax + 1].tagvalue !== false) {
-        i = rowanal[simax + 1].tagvalue - rowanal[simax].tagvalue;
-        if (i >= 1)
-            sdelta = i;
+function tagval_prowdrag_compute(si, di) {
+    var i, j, len = rowanal.length, d, tv,
+        sigroup = rowanal[si].isgroup, nsi = endgroup_index(si) - si + 1;
+    // initialize to unchanged
+    for (i = 0; i !== len; ++i) {
+        rowanal[i].newtagval = rowanal[i].tagval;
     }
-    if (simax != si && rowanal[simax].tagvalue)
-        sdelta += rowanal[simax].tagvalue - rowanal[si].tagvalue;
-
-    for (i = 0; i < rowanal.length; ++i)
-        rowanal[i].newvalue = rowanal[i].tagvalue;
-
-    var newval = -Infinity, delta = 0, si_moved = false;
-    function adjust_newval(j) {
-        return newval === false ? newval : newval + (rowanal[j].tagvalue - rowanal[si].tagvalue);
+    // forward: [init] [si:SRC:si+nsi) [si+nsi:shift:di) <DST> [di:rest:len)
+    // reverse: [init] <DST> [di:shift:si) [si:SRC:si+nsi) [si+nsi:rest:len)
+    // return if no shift region (which means no change)
+    if (si === di
+        || si + nsi === di
+        || (rowanal[si].tagval === false
+            && di > 0
+            && rowanal[di-1].tagval === false)) {
+        return;
     }
-
-    for (i = 0; i < rowanal.length; ++i) {
-        if (rowanal[i].tagvalue === false) {
-            // In untagged territory
-            if (i == 0)
-                newval = 1;
-            else if (rowanal[i - 1].tagvalue === false)
-                newval = false;
-            else if (i == 1
-                     || (j = rowanal[i-1].tagvalue - rowanal[i-2].tagvalue) <= 4)
-                newval += rowanal.gapf();
-            else
-                newval += j;
-        } else {
-            if (i > 0
-                && rowanal[i].tagvalue > rowanal[i - 1].tagvalue + rowanal.gapf()
-                && rowanal[i].tagvalue > newval)
-                delta = 0;
-            if (i == di && !si_moved && !rowanal[si].isgroup && i > 0) {
-                if (rowanal[i - 1].isgroup)
-                    delta = rowanal[i - 1].newvalue - rowanal[i].tagvalue;
-                else if (rowanal[i].isgroup)
-                    delta = rowanal[i - 1].newvalue + rowanal.gapf() - rowanal[i].tagvalue;
+    // forward: handle shift region
+    if (si < di && rowanal[si+nsi].tagval !== false) {
+        d = rowanal[si].tagval - rowanal[si+nsi].tagval;
+        i = si + nsi;
+        while (i !== di
+               && rowanal[i].tagval !== false
+               && (sigroup || !rowanal[i].isgroup)) {
+            rowanal[i].newtagval += d;
+            ++i;
+        }
+    }
+    // handle move region
+    if (len === 0 || (di === 0 && rowanal[di].newtagval === false)) {
+        tv = 1;
+    } else if (di === 0) {
+        tv = rowanal[di].newtagval;
+    } else {
+        tv = rowanal[di-1].newtagval;
+        if (tv !== false && (sigroup || !rowanal[di-1].isgroup)) {
+            tv += rowanal.gapf();
+        }
+        if (tv !== false && sigroup) {
+            j = si < di ? si + nsi : di;
+            if (j !== len && rowanal[j].tagval !== false) {
+                tv = Math.max(tv, rowanal[j].tagval);
             }
-            newval = rowanal[i].tagvalue + delta;
         }
-        if (i == si && si < di) {
-            if (rowanal[i + 1].tagvalue !== false)
-                delta = -(rowanal[i + 1].tagvalue - rowanal[i].tagvalue);
-            continue;
-        } else if (i == si) {
-            delta -= sdelta;
-            continue;
-        } else if (i >= si && i <= simax) {
-            continue;
-        } else if (i == di && !si_moved) {
-            for (j = si; j <= simax; ++j)
-                rowanal[j].newvalue = adjust_newval(j);
-            if (i == 0 || rowanal[i].tagvalue - rowanal[i - 1].tagvalue > 0.0001)
-                delta += sdelta;
-            newval = rowanal[simax].newvalue;
-            --i;
-            si_moved = true;
-            continue;
-        }
-        if ((i >= di && rowanal[i].tagvalue === false)
-            || (i >= si && i >= di && rowanal[i].tagvalue >= newval))
-            break;
-        if (rowanal[i].tagvalue !== false)
-            rowanal[i].newvalue = newval;
     }
-    if (rowanal.length == di) {
-        if (newval !== false)
-            newval += rowanal.gapf();
-        for (j = si; j <= simax; ++j)
-            rowanal[j].newvalue = adjust_newval(j);
+    if (tv === false || rowanal[si].tagval === false) {
+        for (i = si; i !== si + nsi; ++i) {
+            rowanal[i].newtagval = tv;
+        }
+    } else {
+        d = tv - rowanal[si].tagval;
+        for (i = si; i !== si + nsi; ++i) {
+            rowanal[i].newtagval += d;
+        }
+    }
+    // reverse: handle shift region
+    if (si > di
+        && (nsi === 1 || rowanal[si+nsi-1].newtagval >= rowanal[di].tagval)) {
+        tv = rowanal[si+nsi-1].newtagval + rowanal.gapf();
+        if (sigroup) {
+            tv = Math.max(tv, rowanal[si].tagval);
+        }
+        d = tv - rowanal[di].tagval;
+        i = di;
+        while (i !== si
+               && rowanal[i].tagval !== false
+               && (i === di || rowanal[i].tagval <= rowanal[i-1].newtagval)) {
+            rowanal[i].newtagval += d;
+            ++i;
+        }
+    }
+    // handle rest
+    i = Math.max(si + nsi, di);
+    if (i !== len && rowanal[i].tagval !== false) {
+        if (si < di) { // forward
+            tv = rowanal[si + nsi - 1].newtagval + rowanal.gapf();
+        } else { // reverse
+            tv = rowanal[si - 1].newtagval;
+            if (rowanal[i].tagval !== rowanal[si-1].tagval) {
+                tv += rowanal.gapf();
+            }
+        }
+        while (rowanal[i].tagval < tv) {
+            rowanal[i].newtagval = tv;
+            ++i;
+            if (i === len || rowanal[i].tagval === false) {
+                break;
+            }
+            tv += Math.min(rowanal[i].tagval - rowanal[i-1].tagval, rowanal.gapf());
+        }
     }
 }
 
+function fpr(tv, isgroup, i) {
+    return {tagval: tv, newtagval: tv, isgroup: !!isgroup, index: i};
+}
+function fprl(...rest) {
+    var x, a = [], ng = false, tv, last = -Infinity;
+    for (x of rest) {
+        if (typeof x === "number" || x === false) {
+            a.push(fpr(x, ng, a.length));
+            ng = false;
+        } else if (x === "G") {
+            ng = true;
+        } else {
+            a.push(fpr(x.tagval, x.isgroup, a.length));
+        }
+    }
+    for (x of a) {
+        tv = x.tagval === false ? Infinity : x.tagval;
+        if (tv < last)
+            throw new Error("out of order");
+        last = tv;
+    }
+    a.gapf = function () { return 1; };
+    return a;
+}
+function compare_fprl(key) {
+    return function (a, b) {
+        if (a[key] !== b[key]) {
+            if (a[key] === false)
+                return 1;
+            else if (b[key] === false)
+                return -1;
+            else
+                return a[key] < b[key] ? -1 : 1;
+        } else if (a.isgroup !== b.isgroup) {
+            return a.isgroup ? -1 : 1;
+        } else {
+            return a.index < b.index ? -1 : 1;
+        }
+    };
+}
+function unparse_fprl(rowanal) {
+    var x, a = [];
+    rowanal.sort(compare_fprl("newtagval"));
+    for (x of rowanal) {
+        a.push((x.isgroup ? "G:" : "").concat(x.index, "#", x.newtagval===false?"X":x.newtagval, x.newtagval!==x.tagval?"*":""));
+    }
+    return a.join(" ");
+}
+function commit_fprl(rowanal) {
+    var x;
+    for (x of rowanal) {
+        x.tagval = x.newtagval;
+    }
+    rowanal.sort(compare_fprl("tagval"));
+}
+function abort_fprl(rowanal) {
+    var x;
+    for (x of rowanal) {
+        x.newtagval = x.tagval;
+    }
+    rowanal.sort(compare_fprl("tagval"));
+}
+function test_tagval_prowdrag_commit() {
+    rowanal = fprl(0, 0, 0, 0, 0, 0);
+    console.log(unparse_fprl(rowanal));
+    tagval_prowdrag_compute(3, 1);
+    console.log("3->1: " + unparse_fprl(rowanal));
+    abort_fprl(rowanal);
+    tagval_prowdrag_compute(1, 3);
+    console.log("1->3: " + unparse_fprl(rowanal));
+    abort_fprl(rowanal);
+    tagval_prowdrag_compute(1, 4);
+    console.log("1->4: " + unparse_fprl(rowanal));
+    rowanal = fprl(0, 1, 2, "G", 10, 10, 11, 20);
+    console.log(unparse_fprl(rowanal));
+    tagval_prowdrag_compute(1, 4);
+    console.log("1->4: " + unparse_fprl(rowanal));
+    rowanal = fprl("G", 0, 1, 2, "G", 10, 10, 11, 20);
+    console.log(unparse_fprl(rowanal));
+    tagval_prowdrag_compute(0, 7);
+    console.log("0->7: " + unparse_fprl(rowanal));
+    rowanal = fprl("G", 0, 1, 2, "G", 10, 10, 11, 20, "G", 30, 31, 32);
+    console.log(unparse_fprl(rowanal));
+    tagval_prowdrag_compute(0, 7);
+    console.log("0->7: " + unparse_fprl(rowanal));
+    rowanal = fprl("G", 0, 1, 2, "G", 10, 10, 11, 20, "G", 30, 31, 32);
+    tagval_prowdrag_compute(3, 0);
+    console.log("3->0: " + unparse_fprl(rowanal));
+    rowanal = fprl("G", 0, 1, 2, "G", 10, 10, 11, 20, "G", false, false, false);
+    console.log(unparse_fprl(rowanal));
+    tagval_prowdrag_compute(0, 7);
+    console.log("0->7: " + unparse_fprl(rowanal));
+    rowanal = fprl("G", 0, 1, 2, "G", 10, 10, 11, 20, "G", false, false, false);
+    tagval_prowdrag_compute(8, 5);
+    console.log("8->5: " + unparse_fprl(rowanal));
+    rowanal = fprl("G", 0, 1, 2, "G", 10, 10, 11, 20, "G", false, false, false);
+    tagval_prowdrag_compute(8, 0);
+    console.log("8->0: " + unparse_fprl(rowanal));
+    commit_fprl(rowanal);
+    tagval_prowdrag_compute(9, 1);
+    console.log("+9->1: " + unparse_fprl(rowanal));
+    commit_fprl(rowanal);
+    tagval_prowdrag_compute(1, 10);
+    console.log("+1->10: " + unparse_fprl(rowanal));
+    commit_fprl(rowanal);
+    tagval_prowdrag_compute(9, 1);
+    console.log("+9->1: " + unparse_fprl(rowanal));
+    commit_fprl(rowanal);
+    tagval_prowdrag_compute(1, 9);
+    console.log("+1->9: " + unparse_fprl(rowanal));
+    commit_fprl(rowanal);
+    tagval_prowdrag_compute(4, 0);
+    console.log("+4->0: " + unparse_fprl(rowanal));
+    commit_fprl(rowanal);
+    rowanal = fprl("G", 0, 1, 2, "G", 10, 10, 11, 19, "G", 20, 21, 22);
+    console.log(unparse_fprl(rowanal));
+    tagval_prowdrag_compute(7, 3);
+    console.log("7->3: " + unparse_fprl(rowanal));
+    commit_fprl(rowanal);
+    tagval_prowdrag_compute(0, 6);
+    console.log("+0->6: " + unparse_fprl(rowanal));
+    rowanal = fprl("G", 0, 1, 2, "G", 10, 10, 11, 19, "G", false, false, false);
+    console.log(unparse_fprl(rowanal));
+    tagval_prowdrag_compute(8, 7);
+    console.log("8->7: " + unparse_fprl(rowanal));
+}
+test_tagval_prowdrag_commit();
+
 function tagval_prowdrag_commit(si, di) {
     var saves = [], annosaves = [], i, row, nv, dragtag = rowanal[si].dragtag();
-    calculate_shift(si, di);
+    tagval_prowdrag_compute(si, di);
     for (i = 0; i !== rowanal.length; ++i) {
         row = rowanal[i];
-        if (row.newvalue !== row.tagvalue) {
-            nv = tagvalue_unparse(row.newvalue);
+        if (row.newtagval !== row.tagval) {
+            nv = tagvalue_unparse(row.newtagval);
             if (row.id) {
                 saves.push("".concat(row.id, " ", dragtag, "#", nv === "" ? "clear" : nv));
             } else if (row.annoid) {
@@ -9421,10 +9599,12 @@ function tag_mouseup() {
         dragger = dragger.remove();
         delete window.disable_tooltip;
     }
-    if (scroller)
+    if (scroller) {
         scroller = (clearInterval(scroller), null);
-    if (srcindex !== null && (dragindex === null || srcindex !== dragindex))
+    }
+    if (srcindex !== null && dragindex !== null && srcindex !== dragindex) {
         tagval_prowdrag_commit(srcindex, dragindex);
+    }
     dragging = srcindex = dragindex = null;
 }
 
@@ -9443,12 +9623,25 @@ plt_tbody = this.tagName === "TABLE" ? this.tBodies[0] : this;
             tablelist_reorder(tbl, data.ids, data.groups);
     });
     if (this.getAttribute("data-drag-tag")) {
-        $(this).on("mousedown.edittag_ajax", "span.js-drag-tag", tag_mousedown);
+        $(this).on("mousedown.edittag_ajax", ".js-drag-tag", tag_mousedown);
     }
 }).call(plt_tbody.parentNode);
 }
 
-paperlist_tag_ui.add_draghandle = add_draghandle;
+paperlist_tag_ui.prepare_draggable = function () {
+    tablelist_each_facet(this, function (tbl) {
+        var tr;
+        for (tr = tbl.tBodies[0].firstChild; tr; tr = tr.nextSibling) {
+            if (tr.nodeName === "TR"
+                && (hasClass(tr, "pl")
+                    || (hasClass(tr, "plheading") && tr.hasAttribute("data-anno-id")))
+                && !hasClass(tr, "has-draghandle")) {
+                add_draghandle(tr);
+            }
+        }
+    });
+};
+
 return paperlist_tag_ui;
 })();
 
@@ -9529,7 +9722,6 @@ function Plist(tbl) {
     this.aufull = {};
     this.tagmap = false;
     this.taghighlighter = false;
-    this.kanban = hasClass(tbl, "pltable-columns");
     this._bypid = {};
     var fs = JSON.parse(tbl.getAttribute("data-fields") || tbl.getAttribute("data-columns") /* XXX backward compat */), i;
     for (i = 0; i !== fs.length; ++i) {
@@ -9580,17 +9772,10 @@ function populate_pidrows(tbl, bypid) {
 }
 Plist.prototype.pidrow = function (pid) {
     if (!(pid in this._bypid)) {
-        if (this.kanban) {
-            var tbl = this.container.firstChild;
-            while (tbl) {
-                if (tbl.nodeName === "TABLE") {
-                    populate_pidrows(tbl, this._bypid);
-                }
-                tbl = tbl.nextSibling;
-            }
-        } else {
-            populate_pidrows(this.container, this._bypid);
-        }
+        var bypid = this._bypid;
+        tablelist_each_facet(this.container, function (tbl) {
+            populate_pidrows(tbl, bypid);
+        });
     }
     return this._bypid[pid];
 };
@@ -9654,7 +9839,7 @@ var all_plists = [];
 
 function make_plist() {
     if (!this.hotcrpPlist) {
-        if (hasClass(this, "pltable-column")) {
+        if (hasClass(this, "pltable-facet")) {
             this.hotcrpPlist = make_plist.call(this.parentElement);
         } else {
             this.hotcrpPlist = new Plist(this);
@@ -9915,7 +10100,7 @@ hotcrp.render_list = function () {
         render_row_tags(this.parentNode);
     });
     $(".need-editable-tags").each(paperlist_tag_ui);
-    $(".need-draghandle").each(paperlist_tag_ui.add_draghandle);
+    $(".pltable-draggable").each(paperlist_tag_ui.prepare_draggable);
     render_text.on_page();
 }
 

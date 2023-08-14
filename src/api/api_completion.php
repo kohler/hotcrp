@@ -191,10 +191,10 @@ class Completion_API {
                 }
             }
             foreach (array_keys($cats) as $cat) {
-                $comp[] = "show:$cat";
-                $comp[] = "hide:$cat";
+                $comp[] = "show:{$cat}";
+                $comp[] = "hide:{$cat}";
             }
-            $comp[] = "show:kanban";
+            $comp[] = "show:facets";
             $comp[] = "show:statistics";
             $comp[] = "show:rownumbers";
         }

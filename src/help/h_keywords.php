@@ -244,7 +244,7 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("sort:-status", "sort by reverse status");
         echo $hth->search_trow("edit:#discuss", "edit the values for tag “#discuss”");
         echo $hth->search_trow("search1 THEN search2", "like “search1 OR search2”, but submissions matching “search1” are grouped together and appear earlier in the sorting order");
-        echo $hth->search_trow("1-5 THEN 6-10 show:kanban", "display in kanban format");
+        echo $hth->search_trow("1-5 THEN 6-10 show:facets", "faceted display");
         echo $hth->search_trow("search1 HIGHLIGHT search2", "search for “search1”, but <span class=\"taghh highlightmark\">highlight</span> submissions in that list that match “search2” (also try HIGHLIGHT:pink, HIGHLIGHT:green, HIGHLIGHT:blue)");
 
         echo $hth->end_table();
