@@ -2100,7 +2100,6 @@ class PaperList {
             $rstate->tbody_class .= " pltable-colored";
         }
         if ($this->has_editable_tags) {
-            $rstate->tbody_class .= " need-editable-tags";
             $this->need_render = true;
         }
 
