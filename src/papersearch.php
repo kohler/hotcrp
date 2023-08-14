@@ -1437,12 +1437,12 @@ class PaperSearch extends MessageSet {
             if (count($groups) > 1) {
                 $gs = [];
                 foreach ($groups as $i => $ch) {
+                    $spanstr = $ch->get_float("strspan_owner") ?? $this->q;
+                    $srch = rtrim(substr($spanstr, $ch->pos1 ?? 0, ($ch->pos2 ?? 0) - ($ch->pos1 ?? 0)));
                     $h = $ch->get_float("legend");
-                    if ($h === null) {
-                        $spanstr = $ch->get_float("strspan_owner") ?? $this->q;
-                        $h = rtrim(substr($spanstr, $ch->pos1 ?? 0, ($ch->pos2 ?? 0) - ($ch->pos1 ?? 0)));
-                    }
-                    $gs[] = TagAnno::make_legend($h);
+                    $ta = TagAnno::make_legend($h ?? $srch);
+                    $ta->set_prop("search", $srch);
+                    $gs[] = $ta;
                 }
                 return $gs;
             }

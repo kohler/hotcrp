@@ -3,6 +3,7 @@
 // Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
 class Search_API {
+    /** @return JsonResult */
     static function search(Contact $user, Qrequest $qreq) {
         $q = $qreq->q;
         if (isset($q)) {
@@ -21,13 +22,13 @@ class Search_API {
         $pl->apply_view_report_default();
         $pl->apply_view_session($qreq);
         $ih = $pl->ids_and_groups();
-        return [
+        return new JsonResult([
             "ok" => true,
             "ids" => $ih[0],
             "groups" => $ih[1],
             "hotlist" => $pl->session_list_object()->info_string(),
             "search_params" => $pl->encoded_search_params()
-        ];
+        ]);
     }
 
     static function apply_search(JsonResult $jr, Contact $user, Qrequest $qreq, $search) {
@@ -45,9 +46,12 @@ class Search_API {
         if (is_array($param) && isset($param["q"])) {
             $nqreq = new Qrequest("GET", $param);
             $nqreq->set_user($user)->set_qsession($qreq->qsession());
-            foreach (self::search($user, $nqreq) as $k => $v) {
-                if (!isset($jr->content[$k]))
-                    $jr->content[$k] = $v;
+            $njr = self::search($user, $nqreq);
+            if ($njr->content["ok"]) {
+                foreach ($njr->content as $k => $v) {
+                    if (!isset($jr->content[$k]))
+                        $jr->content[$k] = $v;
+                }
             }
         }
     }

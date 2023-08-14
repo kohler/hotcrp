@@ -18,6 +18,41 @@ class Assign_API {
         }
         $aset->parse(CsvParser::make_json($a));
         $aset->execute();
-        return $aset->json_result();
+        $jr = $aset->json_result();
+
+        if ($jr["ok"] && $qreq->search) {
+            Search_API::apply_search($jr, $user, $qreq, $qreq->search);
+            // include tag information
+            if (($p = self::assigned_paper_info($user, $aset))) {
+                $jr["p"] = $p;
+            }
+        }
+        return $jr;
+    }
+
+    static function assigned_paper_info(Contact $user, AssignmentSet $assigner) {
+        $pids = [];
+        foreach ($assigner->assignments() as $ai) {
+            if ($ai instanceof Tag_Assigner) {
+                $pids[$ai->pid] = ($pids[$ai->pid] ?? 0) | 1;
+            } else if ($ai instanceof Decision_Assigner
+                       || $ai instanceof Status_Assigner) {
+                $pids[$ai->pid] = ($pids[$ai->pid] ?? 0) | 2;
+            }
+        }
+        $p = [];
+        foreach ($user->paper_set(["paperId" => array_keys($pids)]) as $pr) {
+            $p[$pr->paperId] = $tmr = new TagMessageReport;
+            $pr->add_tag_info_json($tmr, $user);
+            if (($pids[$pr->paperId] & 2) !== 0) {
+                list($class, $name) = $pr->status_class_and_name($user);
+                if ($class !== "ps-submitted") {
+                    $tmr->status_html = "<span class=\"pstat {$class}\">" . htmlspecialchars($name) . "</span>";
+                } else {
+                    $tmr->status_html = "";
+                }
+            }
+        }
+        return $p;
     }
 }

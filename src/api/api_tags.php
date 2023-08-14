@@ -93,7 +93,6 @@ class Tags_API {
         }
 
         // save tags using assigner
-        $pids = [];
         $x = ["paper,action,tag"];
         $interestall = !$prow || isset($qreq->tags);
         if ($prow) {
@@ -116,7 +115,6 @@ class Tags_API {
                     $pid = intval($w);
                 } else if ($w !== "" && $pid > 0) {
                     $x[] = "{$pid},tag," . CsvGenerator::quote($w);
-                    $pids[$pid] = true;
                 }
             }
         }
@@ -146,14 +144,10 @@ class Tags_API {
             $taginfo->message_list = self::combine_message_lists($mlist, $taginfo->message_list);
             $jr = new JsonResult($taginfo);
         } else if ($ok) {
-            $p = [];
-            if ($pids) {
-                foreach ($user->paper_set(["paperId" => array_keys($pids)]) as $pr) {
-                    $p[$pr->paperId] = new TagMessageReport;
-                    $pr->add_tag_info_json($p[$pr->paperId], $user);
-                }
-            }
-            $jr = new JsonResult(["ok" => true, "p" => $p]);
+            $jr = new JsonResult([
+                "ok" => true,
+                "p" => Assign_API::assigned_paper_info($user, $assigner)
+            ]);
         } else {
             $jr = new JsonResult(["ok" => false, "message_list" => $mlist]);
         }

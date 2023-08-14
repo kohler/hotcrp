@@ -296,14 +296,26 @@ class TagAnno implements JsonSerializable {
     function is_fencepost() {
         return $this->tagIndex >= (float) TAG_INDEXBOUND;
     }
+    private function decode_props() {
+        $j = json_decode($this->infoJson ?? "{}");
+        $this->_props = is_object($j) ? $j : null;
+    }
     /** @param string $k
      * @return mixed */
     function prop($k) {
         if ($this->_props === null && $this->infoJson !== null) {
-            $j = json_decode($this->infoJson);
-            $this->_props = is_object($j) ? $j : null;
+            $this->decode_props();
         }
         return $this->_props ? $this->_props->$k : null;
+    }
+    /** @param string $k
+     * @param mixed $v */
+    function set_prop($k, $v) {
+        if ($this->_props === null) {
+            $this->decode_props();
+            $this->_props = $this->_props ?? (object) [];
+        }
+        $this->_props->$k = $v;
     }
 
     #[\ReturnTypeWillChange]
@@ -330,10 +342,11 @@ class TagAnno implements JsonSerializable {
             && ($format = Conf::$main->check_format($this->annoFormat, $this->heading))) {
             $j["format"] = +$format;
         }
-        if ($this->infoJson !== null
-            && ($ij = json_decode($this->infoJson)) !== null
-            && is_object($ij)) {
-            foreach ($ij as $k => $v) {
+        if ($this->_props === null && $this->infoJson !== null) {
+            $this->decode_props();
+        }
+        if ($this->_props !== null) {
+            foreach ($this->_props as $k => $v) {
                 if (!in_array($k, ["pos", "annoid", "tag", "tagval", "blank", "legend", "format"]))
                     $j[$k] = $v;
             }

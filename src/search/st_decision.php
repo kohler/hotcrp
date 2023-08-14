@@ -5,10 +5,12 @@
 class Decision_SearchTerm extends SearchTerm {
     /** @var Contact */
     private $user;
+    /** @var string|list<int> */
     private $match;
 
+    /** @param string|list<int> $match */
     function __construct(Contact $user, $match) {
-        parent::__construct("dec");
+        parent::__construct("decision");
         $this->user = $user;
         $this->match = $match;
     }
@@ -19,6 +21,10 @@ class Decision_SearchTerm extends SearchTerm {
             $dec[] = -10000000;
         }
         return new Decision_SearchTerm($srch->user, $dec);
+    }
+    /** @return string|list<int> */
+    function matchexpr() {
+        return $this->match;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $f = ["Paper.outcome" . CountMatcher::sqlexpr_using($this->match)];

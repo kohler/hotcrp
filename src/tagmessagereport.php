@@ -23,6 +23,8 @@ class TagMessageReport implements JsonSerializable {
     public $color_classes;
     /** @var ?string */
     public $color_classes_conflicted;
+    /** @var ?string */
+    public $status_html;
 
     #[\ReturnTypeWillChange]
     function jsonSerialize() {

@@ -68,6 +68,11 @@ class CountMatcher {
         return $this->op !== 0;
     }
 
+    /** @return int */
+    function op() {
+        return $this->op;
+    }
+
     /** @return string */
     function relation() {
         assert($this->op !== 0);

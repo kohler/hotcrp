@@ -128,6 +128,17 @@ class DecisionSet implements IteratorAggregate, Countable {
         return array_keys($this->_decision_map);
     }
 
+    /** @param string|list<int> $matchexpr
+     * @return list<DecisionInfo> */
+    function filter_using($matchexpr) {
+        $a = [];
+        foreach ($this->_decision_map as $dec) {
+            if (CountMatcher::compare_using($dec->id, $matchexpr))
+                $a[] = $dec;
+        }
+        return $a;
+    }
+
     /** @return list<int> */
     function desk_reject_ids() {
         if (!$this->_has_desk_reject) {

@@ -1005,7 +1005,7 @@ class PaperList {
         }
     }
 
-    /** @returns tring */
+    /** @return string */
     function encoded_search_params() {
         $qp = $this->search->encoded_query_params();
         $s0 = ($this->sorters())[0];
@@ -1932,6 +1932,56 @@ class PaperList {
         Ht::stash_script('$(hotcrp.render_list)', 'plist_render_needed');
     }
 
+    /** @return ?string */
+    private function _drag_action() {
+        if ($this->_sort_etag !== "") {
+            return "tagval:{$this->_sort_etag}";
+        }
+        $thenqe = $this->search->then_term();
+        $groups = $thenqe ? $thenqe->group_terms() : [];
+        if (count($groups) < 2) {
+            return null;
+        }
+        $assign = [];
+        $atypes = 0;
+        foreach ($groups as $i => $qe) {
+            if ($qe instanceof Tag_SearchTerm) {
+                $t = $qe->tsm->single_tag();
+                if (!$t || !$this->user->can_edit_tag_somewhere($t)) {
+                    return null;
+                }
+                $vm = $qe->tsm->value_matchers();
+                if (empty($vm)) {
+                    $vm[] = new CountMatcher("=0");
+                }
+                if (count($vm) !== 1 || $vm[0]->op() !== CountMatcher::RELEQ) {
+                    return null;
+                }
+                $assign[] = [
+                    ["action" => "tag", "tag" => "{$t}#{$vm[0]->value()}"],
+                    ["action" => "tag", "tag" => "{$t}#clear"]
+                ];
+                $atypes |= 1;
+            } else if ($qe instanceof Decision_SearchTerm) {
+                $ds = $this->conf->decision_set()->filter_using($qe->matchexpr());
+                if (count($ds) !== 1 || !$this->user->can_set_some_decision()) {
+                    return null;
+                }
+                $assign[] = [
+                    ["action" => "decision", "decision" => $ds[0]->name],
+                    ["action" => "decision", "decision" => "none"]
+                ];
+                $atypes |= 2;
+            } else if ($qe->type !== "true" || $i !== count($groups) - 1) {
+                return null;
+            }
+        }
+        if ($atypes === 0 || ($atypes & ($atypes - 1)) !== 0) {
+            return null;
+        }
+        return "assign:" . json_encode_browser($assign);
+    }
+
     /** @return PaperListTableRender */
     private function _table_render() {
         $this->_prepare();
@@ -2004,11 +2054,6 @@ class PaperList {
         if ($this->_groups) {
             $this->table_attr["data-groups"] = json_encode_browser($this->_groups);
         }
-        if ($this->_sort_etag !== ""
-            && !$this->_view_facets) {
-            $this->table_attr["class"][] = "pltable-draggable";
-            $this->table_attr["data-order-tag"] = $this->_sort_etag;
-        }
         if (($this->_table_decor & self::DECOR_LIST) !== 0) {
             $this->table_attr["class"][] = "has-hotlist";
             $this->table_attr["data-hotlist"] = $this->session_list_object()->info_string();
@@ -2016,9 +2061,15 @@ class PaperList {
         if (($this->_table_decor & self::DECOR_FULLWIDTH) !== 0) {
             $this->table_attr["class"][] = "pltable-fullw remargin-left remargin-right";
         }
-        if ($this->_sortable && ($url = $this->search->url_site_relative_raw())) {
+        if ($this->_sortable
+            && ($url = $this->search->url_site_relative_raw())) {
             $url = $this->siteurl() . $url . (strpos($url, "?") ? "&" : "?") . "sort={sort}";
             $this->table_attr["data-sort-url-template"] = $url;
+        }
+        if (!$this->_view_facets
+            && ($da = $this->_drag_action())) {
+            $this->table_attr["class"][] = "pltable-draggable";
+            $this->table_attr["data-drag-action"] = $da;
         }
 
         // collect row data
