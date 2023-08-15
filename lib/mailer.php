@@ -200,6 +200,10 @@ class Mailer {
         }
     }
 
+    static function kw_php($args, $isbool, $m) {
+        return Navigation::get()->php_suffix;
+    }
+
     static function kw_internallogin($args, $isbool, $m) {
         return $isbool ? !$m->conf->external_login() : "";
     }
