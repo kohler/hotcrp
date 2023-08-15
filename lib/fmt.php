@@ -646,17 +646,6 @@ class Fmt {
         return $this->expand($itext, $args, $id, $im);
     }
 
-    /** @param string $id
-     * @param string $itext
-     * @return string
-     * @deprecated */
-    function _id($id, $itext, ...$args) {
-        if (($im = $this->find(null, $id, $args, null))) {
-            $itext = $im->otext;
-        }
-        return $this->expand($itext, $args, $id, $im);
-    }
-
     /** @param string $context
      * @param string $id
      * @return string */

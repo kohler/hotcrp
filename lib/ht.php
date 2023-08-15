@@ -17,8 +17,6 @@ class Ht {
     private static $_stash_inscript = false;
     /** @var array<string,true> */
     private static $_stash_map = [];
-    /** @var ?MessageSet */
-    private static $_msgset = null;
     const ATTR_SKIP = 1;
     const ATTR_BOOL = 2;
     const ATTR_BOOLTEXT = 3;
@@ -756,45 +754,5 @@ class Ht {
     static function feedback_msg(...$mls) {
         $ms = self::feedback_msg_content(...$mls);
         return $ms[0] === "" ? "" : self::msg($ms[0], $ms[1]);
-    }
-
-
-    /** @param string $field
-     * @deprecated */
-    static function control_class($field, $rest = "", $prefix = "has-") {
-        if (self::$_msgset) {
-            return self::$_msgset->control_class($field, $rest, $prefix);
-        } else {
-            return $rest;
-        }
-    }
-    /** @return MessageSet
-     * @deprecated */
-    static function message_set() {
-        self::$_msgset || (self::$_msgset = new MessageSet);
-        return self::$_msgset;
-    }
-    /** @param string $field
-     * @deprecated
-     * @suppress PhanDeprecatedFunction */
-    static function error_at($field, $msg = "") {
-        self::message_set()->error_at($field, $msg);
-    }
-    /** @param string $field
-     * @deprecated
-     * @suppress PhanDeprecatedFunction */
-    static function warning_at($field, $msg = "") {
-        self::message_set()->warning_at($field, $msg);
-    }
-    /** @param string $field
-     * @deprecated */
-    static function problem_status_at($field) {
-        return self::$_msgset ? self::$_msgset->problem_status_at($field) : 0;
-    }
-    /** @param string $field
-     * @return string
-     * @deprecated */
-    static function feedback_html_at($field) {
-        return self::$_msgset ? self::$_msgset->feedback_html_at($field) : "";
     }
 }

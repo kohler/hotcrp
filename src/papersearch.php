@@ -1261,12 +1261,6 @@ class PaperSearch extends MessageSet {
         return $this->_qe;
     }
 
-    /** @return SearchTerm
-     * @deprecated */
-    function term() {
-        return $this->main_term();
-    }
-
     /** @return SearchTerm */
     function full_term() {
         assert($this->user->is_root_user());
@@ -1592,24 +1586,6 @@ class PaperSearch extends MessageSet {
             && $this->main_term()->test($prow, null);
         $this->user->set_overrides($old_overrides);
         return $x;
-    }
-
-    /** @param PaperInfoSet|Iterable<PaperInfo> $prows
-     * @return list<PaperInfo>
-     * @deprecated */
-    function filter($prows) {
-        $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $qe = $this->main_term();
-        $results = [];
-        foreach ($prows as $prow) {
-            if ($this->user->can_view_paper($prow)
-                && $this->_limit_qe->test($prow, null)
-                && $qe->test($prow, null)) {
-                $results[] = $prow;
-            }
-        }
-        $this->user->set_overrides($old_overrides);
-        return $results;
     }
 
     /** @return bool */

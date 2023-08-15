@@ -859,12 +859,6 @@ class PaperInfo {
         $this->_contact_info[$ci->contactId] = $ci;
     }
 
-    /** @return Contact
-     * @deprecated */
-    function author_view_user() {
-        return $this->author_user();
-    }
-
     /** @return Contact */
     function author_user() {
         // Return a fake user that looks like a contact for this paper, but
@@ -1035,12 +1029,6 @@ class PaperInfo {
     /** @return string */
     function abstract() {
         return $this->_dataOverflow["abstract"] ?? $this->abstract ?? "";
-    }
-
-    /** @return string
-     * @deprecated */
-    function abstract_text() {
-        return $this->abstract();
     }
 
     /** @return int */

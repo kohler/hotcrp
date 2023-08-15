@@ -1041,12 +1041,6 @@ class Conf {
         return $this->_s3_client;
     }
 
-    /** @return ?S3Client
-     * @deprecated */
-    function s3_docstore() {
-        return $this->s3_client();
-    }
-
 
     /** @param ?object $xt
      * @return int|float */
@@ -1123,27 +1117,6 @@ class Conf {
             self::$xt_require_resolved[$xt->require] = true;
         }
         return $xt && (!isset($xt->disabled) || !$xt->disabled) ? $xt : null;
-    }
-    /** @param list<string>|string|bool $expr
-     * @param null|Contact|XtParams $xtp
-     * @return bool
-     * @deprecated */
-    function xt_check($expr, $xt = null, $xtp = null) {
-        if (is_bool($expr)) {
-            return $expr;
-        }
-        if (!$xtp || $xtp instanceof Contact) {
-            $xtp = new XtParams($this, $xtp);
-        }
-        return $xtp->check($expr, $xt);
-    }
-    /** @param object $xt
-     * @return bool
-     * @deprecated
-     * @suppress PhanDeprecatedFunction */
-    function xt_allowed($xt, Contact $user = null) {
-        return $xt && (!isset($xt->allow_if)
-                       || $this->xt_check($xt->allow_if, $xt, $user));
     }
 
 
@@ -1263,12 +1236,6 @@ class Conf {
             $this->_conflict_set = new Conflict($this);
         }
         return $this->_conflict_set;
-    }
-
-    /** @return Conflict
-     * @deprecated */
-    function conflict_types() {
-        return $this->conflict_set();
     }
 
 
@@ -1594,12 +1561,6 @@ class Conf {
             $this->_defined_rounds = $r;
         }
         return $this->_defined_rounds;
-    }
-
-    /** @return array<int,string>
-     * @deprecated */
-    function defined_round_list() {
-        return $this->defined_rounds();
     }
 
     /** @param int $roundno
@@ -2172,20 +2133,6 @@ class Conf {
             $u->unslice();
         }
         return $u;
-    }
-
-    /** @param int $id
-     * @return ?Contact
-     * @deprecated */
-    function cached_user_by_id($id) {
-        return $this->user_by_id($id, USER_SLICE);
-    }
-
-    /** @param string $email
-     * @return ?Contact
-     * @deprecated */
-    function cached_user_by_email($email) {
-        return $this->user_by_email($email, USER_SLICE);
     }
 
     function ensure_cached_user_collaborators() {
@@ -4070,13 +4017,6 @@ class Conf {
         }
     }
 
-    /** @param string $text
-     * @param int $type
-     * @deprecated */
-    function msg($text, $type) {
-        self::msg_on($this, $text, $type);
-    }
-
     /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls */
     function feedback_msg(...$mls) {
         $ms = Ht::feedback_msg_content(...$mls);
@@ -4686,25 +4626,12 @@ class Conf {
         }
     }
 
-    /** @deprecated */
-    function header($title, $id, $extra = []) {
-        if (!$this->_header_printed) {
-            $this->print_head_tag(Qrequest::$main_request, $title, $extra);
-            $this->print_body_entry(Qrequest::$main_request, $title, $id, $extra);
-        }
-    }
-
     static function git_status() {
         $args = [];
         if (is_dir(SiteLoader::find(".git"))) {
             exec("export GIT_DIR=" . escapeshellarg(SiteLoader::$root) . "/.git; git rev-parse HEAD 2>/dev/null; git rev-parse v" . HOTCRP_VERSION . " 2>/dev/null", $args);
         }
         return count($args) == 2 ? $args : null;
-    }
-
-    /** @deprecated */
-    function footer() {
-        Qrequest::$main_request->print_footer();
     }
 
     /** @param Contact $viewer
@@ -4971,12 +4898,6 @@ class Conf {
 
     // messages
 
-    /** @return Fmt
-     * @deprecated */
-    function ims() {
-        return $this->fmt();
-    }
-
     /** @return Fmt */
     function fmt() {
         if (!$this->_fmt) {
@@ -5019,15 +4940,6 @@ class Conf {
      * @return string */
     function _i($id, ...$args) {
         return $this->fmt()->_i($id, ...$args);
-    }
-
-    /** @param string $id
-     * @param string|FmtArg $itext
-     * @return string
-     * @deprecated
-     * @suppress PhanDeprecatedFunction */
-    function _id($id, $itext, ...$args) {
-        return $this->fmt()->_id($id, $itext, ...$args);
     }
 
     /** @param string $context

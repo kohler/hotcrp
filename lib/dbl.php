@@ -252,28 +252,6 @@ class Dbl {
         return $cp;
     }
 
-    /** @param array<string,mixed>|Dbl_ConnectionParams $opt
-     * @return array{?\mysqli,?string}
-     * @deprecated */
-    static function connect($opt, $noconnect = false) {
-        $cp = is_array($opt) ? self::parse_connection_params($opt) : $opt;
-        if (!$cp) {
-            return [null, null];
-        } else if ($noconnect) {
-            return [null, $cp->name];
-        } else {
-            return [$cp->connect(), $cp->name];
-        }
-    }
-
-    /** @param string $dsn
-     * @return array{?\mysqli,?string}
-     * @deprecated */
-    static function connect_dsn($dsn, $noconnect = false) {
-        /** @phan-suppress-next-line PhanDeprecatedFunction */
-        return self::connect(self::parse_connection_params(["dsn" => $dsn]), $noconnect);
-    }
-
     /** @param \mysqli $dblink */
     static function set_default_dblink($dblink) {
         self::$default_dblink = $dblink;

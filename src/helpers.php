@@ -65,19 +65,6 @@ function hoturl_add_raw($url, $component) {
     return $url . (strpos($url, "?") === false ? "?" : "&") . $component;
 }
 
-/** @param string $page
- * @param null|string|array $param
- * @return string
- * @deprecated */
-function hoturl($page, $param = null) {
-    return Conf::$main->hoturl($page, $param);
-}
-
-/** @deprecated */
-function hoturl_post($page, $param = null) {
-    return Conf::$main->hoturl($page, $param, Conf::HOTURL_POST);
-}
-
 
 class JsonResult implements JsonSerializable, ArrayAccess {
     /** @var ?int */
@@ -111,18 +98,6 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         } else {
             assert(is_associative_array($a2));
             $this->content = $a2;
-        }
-    }
-
-    /** @return JsonResult
-     * @deprecated */
-    static function make($jr, $arg2 = null) {
-        if ($jr instanceof JsonResult) {
-            return $jr;
-        } else if (is_int($jr)) {
-            return new JsonResult($jr, $arg2);
-        } else {
-            return new JsonResult($jr);
         }
     }
 
@@ -403,14 +378,6 @@ function plural_word($n, $singular, $plural = null) {
     } else {
         return pluralize($singular);
     }
-}
-
-/** @param int|float|array $n
- * @param string $singular
- * @return string
- * @deprecated */
-function pluralx($n, $singular) {
-    return plural_word($n, $singular);
 }
 
 /** @param string $s

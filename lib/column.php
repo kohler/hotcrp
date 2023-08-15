@@ -67,8 +67,8 @@ class Column {
         if (isset($arg->completion)) {
             $this->completion = $arg->completion;
         }
-        if (isset($arg->order) || isset($arg->position) /* XXX */) {
-            $this->order = $arg->order ?? $arg->position;
+        if (isset($arg->order)) {
+            $this->order = $arg->order;
         }
         if (isset($arg->__source_order)) {
             $this->__source_order = $arg->__source_order;
