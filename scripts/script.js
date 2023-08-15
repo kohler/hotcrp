@@ -8822,9 +8822,11 @@ function tablelist_load(tbl, k, v) {
 
 function search_sort_click(evt) {
     if (event_key.is_default_a(evt)) {
-        var tbl = this.closest("table");
-        tablelist_load(tbl, "sort", tablelist_header_sorter(this.closest("th")));
-        evt.preventDefault();
+        var tbl = tablelist(this);
+        if (tbl && tablelist_search(tbl) != null) {
+            tablelist_load(tbl, "sort", tablelist_header_sorter(this.closest("th")));
+            evt.preventDefault();
+        }
     }
 }
 
@@ -10043,7 +10045,7 @@ function render_tagset(plistui, tagstr, editable) {
 }
 
 function render_row_tags(div) {
-    var plistui = make_plist.call(div.closest("table")),
+    var plistui = make_plist.call(tablelist(div)),
         ptr = prownear(div), editable = ptr.hasAttribute("data-tags-editable"),
         t = render_tagset(plistui, ptr.getAttribute("data-tags"), editable);
     if (t && ptr.hasAttribute("data-tags-conflicted")) {
