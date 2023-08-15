@@ -30,6 +30,8 @@ class Column {
     public $sort_subset;
     /** @var null|int|float */
     public $order;
+    /** @var null|int|float */
+    public $view_order;
     /** @var ?int */
     public $__source_order;
     /** @var bool */
@@ -141,6 +143,15 @@ class Column {
         } else {
             return false;
         }
+    }
+
+    /** @param ?list<string> $decors
+     * @return $this */
+    function add_decorations($decors) {
+        foreach ($decors ?? [] as $decor) {
+            $this->add_decoration($decor);
+        }
+        return $this;
     }
 
     /** @return bool */

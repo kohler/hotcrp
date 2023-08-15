@@ -27,7 +27,7 @@
     {
         "name": "topicscore", "title": "Topic score",
         "sort": "descending", "completion": true, "className": "pl_topicscore", "function": "+TopicScore_PaperColumn",
-        "order": 400
+        "order": 500
     },
     {   "name": "topic_score", "alias": "topicscore"   },
     {
@@ -37,12 +37,12 @@
     {
         "name": "desirability", "title": "Desirability",
         "sort": "descending", "completion": true, "function": "+Desirability_PaperColumn",
-        "order": 410
+        "order": 510
     },
     {
         "name": "mypref",
         "sort": "descending", "completion": true, "className": "pl_revpref", "function": "+Preference_PaperColumn",
-        "order": 500
+        "order": 550
     },
     {   "name": "mypreference", "alias": "mypref"   },
     {   "name": "myrevpref", "alias": "mypref"   },
@@ -52,7 +52,7 @@
     {
         "name": "editmypref",
         "edit": true, "sort": "descending", "className": "pl_editrevpref", "function": "+Preference_PaperColumn",
-        "order": 500
+        "order": 550
     },
     {   "name": "editpreference", "alias": "editmypref"   },
     {   "name": "editrevpref", "alias": "editmypref"   },
@@ -64,18 +64,18 @@
     {
         "name": "revdelegation", "title": "Requested reviews",
         "prefer_row": true, "className": "pl_text", "function": "+ReviewDelegation_PaperColumn",
-        "order": 800
+        "order": 400
     },
     {
         "name": "revtype",
         "sort": "descending", "completion": true, "className": "pl_revtype", "function": "+ReviewerType_PaperColumn",
-        "order": 820
+        "order": 420
     },
     {
         "name": "revstat",
         "sort": "descending", "completion": true, "className": "pl_revstat",
         "function": "+ReviewStatus_PaperColumn", "allow_if": "reviewer",
-        "order": 830
+        "order": 430
     },
     {
         "name": "assignment",
@@ -227,7 +227,7 @@
     {
         "name": "allpref", "title": "Preferences",
         "prefer_row": true, "completion": true, "function": "+PreferenceList_PaperColumn",
-        "order": 550
+        "order": 560
     },
     {   "name": "allprefs", "alias": "allpref"   },
     {   "name": "allrevpref", "alias": "allpref"   },
@@ -237,7 +237,7 @@
     {
         "name": "alltopicpref", "title": "Preferences with topic scores",
         "prefer_row": true, "completion": true, "function": "+PreferenceList_PaperColumn",
-        "topics": true, "order": 550
+        "topics": true, "order": 560
     },
     {   "name": "alltopicrevpref", "alias": "alltopicpref"   },
     {   "name": "alltopicpreference", "alias": "alltopicpref"   },

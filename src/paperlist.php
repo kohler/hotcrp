@@ -229,11 +229,15 @@ class PaperList {
     /** @var bool */
     private $_view_force = false;
     /** @var int */
-    private $_view_hide_all = -1;
+    private $_view_hide_all = 0;
     /** @var array<string,int> */
     private $_viewf = [];
     /** @var array<string,?list<string>> */
     private $_view_decorations = [];
+    /** @var array<string,int> */
+    private $_view_order = [];
+    /** @var int */
+    private $_view_order_next = 1;
 
     const VIEWORIGIN_MASK = 15;
     const VIEWORIGIN_NONE = -1;
@@ -410,19 +414,19 @@ class PaperList {
         case "authorHome":
             return "id title status";
         case "reviewerHome":
-            return "id title revtype status linkto[finishreview]";
+            return "id title status revtype linkto[finishreview]";
         case "pl":
-            return "sel id title revtype revstat status";
+            return "sel id title status revtype revstat";
         case "reqrevs":
-            return "sel[selected] id title revdelegation revstat status";
+            return "sel[selected] id title status revdelegation revstat";
         case "reviewAssignment":
-            return "id title mypref topicscore desirability assignment potentialconflict topics reviewers linkto[assign]";
+            return "id title desirability topicscore mypref assignment potentialconflict topics reviewers linkto[assign]";
         case "conflictassign":
             return "id title authors aufull potentialconflict revtype[simple] editconf[simple,pin=conflicted] linkto[assign]";
         case "conflictassign:neg":
             return "id title authors aufull potentialconflict revtype[simple] editconf[simple,pin=unconflicted] linkto[assign]";
         case "pf":
-            return "sel id title status topicscore revtype editmypref[topicscore]";
+            return "sel id title status revtype topicscore editmypref[topicscore]";
         case "reviewers":
             return "sel[selected] id title status linkto[assign]";
         case "reviewersSel":
@@ -506,9 +510,19 @@ class PaperList {
         return $this->qreq->navigation()->siteurl();
     }
 
-    /** @param string $name */
-    function add_column($name, PaperColumn $col) {
-        $this->_columns_by_name[$name][] = $col;
+    /** @param PaperColumn $col
+     * @param ?string $default_name */
+    function add_column(PaperColumn $col, $default_name = null) {
+        $decor = $this->_view_decorations[$col->name] ?? null;
+        $col->view_order = $this->_view_order[$col->name] ?? null;
+        if ($default_name) {
+            $decor = $decor ?? $this->_view_decorations[$default_name] ?? null;
+            $col->view_order = $col->view_order ?? $this->_view_order[$default_name] ?? null;
+        }
+        if ($decor) {
+            $col->add_decorations($decor);
+        }
+        $this->_columns_by_name[$col->name][] = $col;
     }
 
     static private $view_synonym = [
@@ -543,6 +557,19 @@ class PaperList {
     }
 
 
+    /** @param int $origin */
+    private function _set_view_hide_all($origin) {
+        $views = array_keys($this->_viewf);
+        foreach ($views as $k) {
+            if ($k !== "sel" && $k !== "statistics") {
+                $this->set_view($k, false, $origin, null);
+            }
+        }
+        $this->_view_hide_all = $origin;
+        $this->_view_order = [];
+        $this->_view_order_next = 1;
+    }
+
     /** @param string $k
      * @param 'show'|'hide'|'edit'|bool $v
      * @param ?int $origin
@@ -558,22 +585,29 @@ class PaperList {
         if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"") {
             $k = substr($k, 1, -1);
         }
+        $k = self::$view_synonym[$k] ?? $k;
+
+        // process `hide:all`
         if ($k === "all") {
-            assert($v === false && empty($decorations));
-            $views = array_keys($this->_viewf);
-            foreach ($views as $k) {
-                if ($k !== "sel" && $k !== "statistics") {
-                    $this->set_view($k, $v, $origin, null);
-                }
+            if ($v === false && $origin >= $this->_view_hide_all) {
+                $this->_set_view_hide_all($origin);
             }
-            $this->_view_hide_all = max($origin, $this->_view_hide_all);
             return;
         }
-        $k = self::$view_synonym[$k] ?? $k;
 
         // ignore session values of `force`
         if ($k === "force" && $origin === self::VIEWORIGIN_SESSION) {
             return;
+        }
+
+        // track view order
+        if ($origin === $this->_view_hide_all) {
+            if (!$v) {
+                unset($this->_view_order[$k]);
+            } else if (!isset($this->_view_order[$k])) {
+                $this->_view_order[$k] = $this->_view_order_next;
+                ++$this->_view_order_next;
+            }
         }
 
         $flags = &$this->_viewf[$k];
@@ -644,7 +678,7 @@ class PaperList {
         $fs = $this->conf->paper_columns($k, $this->xtp);
         $mi = null;
         if (count($fs) === 1) {
-            $col = PaperColumn::make($this->conf, $fs[0], $decorations);
+            $col = PaperColumn::make($this->conf, $fs[0])->add_decorations($decorations);
             if ($col->prepare($this, PaperColumn::PREP_SORT)
                 && $col->sort) {
                 $col->sort_subset = $sort_subset;
@@ -1158,20 +1192,18 @@ class PaperList {
     private function ensure_columns_by_name($name) {
         if (!array_key_exists($name, $this->_columns_by_name)) {
             $this->_finding_column = $name;
-            $nfs = [];
+            $this->_columns_by_name[$name] = [];
             foreach ($this->conf->paper_columns($name, $this->xtp) as $fdef) {
-                $decorations = $this->_view_decorations[$fdef->name]
-                    ?? $this->_view_decorations[$name] ?? [];
-                if ($fdef->name === $name) {
-                    $nfs[] = PaperColumn::make($this->conf, $fdef, $decorations);
-                } else {
-                    if (!array_key_exists($fdef->name, $this->_columns_by_name)) {
-                        $this->_columns_by_name[$fdef->name][] = PaperColumn::make($this->conf, $fdef, $decorations);
-                    }
-                    $nfs = array_merge($nfs, $this->_columns_by_name[$fdef->name]);
+                if ($fdef->name === $name
+                    || !array_key_exists($fdef->name, $this->_columns_by_name)) {
+                    $this->add_column(PaperColumn::make($this->conf, $fdef), $name);
+                }
+                if ($fdef->name !== $name) {
+                    array_push($this->_columns_by_name[$name], ...$this->_columns_by_name[$fdef->name]);
                 }
             }
-            if (empty($nfs) && $this->view_origin($name) >= self::VIEWORIGIN_EXPLICIT) {
+            if (empty($this->_columns_by_name[$name])
+                && $this->view_origin($name) >= self::VIEWORIGIN_EXPLICIT) {
                 if (empty($this->_finding_column_errors)) {
                     $this->column_error("<0>Field ‘{$name}’ not found");
                 }
@@ -1180,7 +1212,6 @@ class PaperList {
                 }
             }
             $this->_finding_column = $this->_finding_column_errors = null;
-            $this->_columns_by_name[$name] = $nfs;
         }
         return $this->_columns_by_name[$name];
     }
@@ -1208,6 +1239,20 @@ class PaperList {
         return $this->_vcolumns;
     }
 
+    /** @return -1|0|1 */
+    static function vcolumn_order_compare($f1, $f2) {
+        // see also script.js:vcolumn_order_compare
+        if ($f1->as_row !== $f2->as_row) {
+            return $f1->as_row ? 1 : -1;
+        }
+        $o1 = $f1->order ?? PHP_INT_MAX;
+        $o2 = $f2->order ?? PHP_INT_MAX;
+        if ($o1 !== $o2) {
+            return $o1 <=> $o2;
+        }
+        return strnatcasecmp($f1->name, $f2->name);
+    }
+
     private function _set_vcolumns() {
         $this->table_attr = [];
         assert(empty($this->row_attr));
@@ -1223,14 +1268,18 @@ class PaperList {
         }
 
         // update _viewf, prepare, mark fields editable
-        $this->_vcolumns = [];
+        $vcols1 = $vcols2 = [];
         foreach ($fs1 as $k => $f) {
             $this->_viewf[$k] = $viewf[$k];
             $f->is_visible = true;
             $f->has_content = false;
             $this->_finding_column = $k;
             if ($f->prepare($this, PaperColumn::PREP_VISIBLE)) {
-                $this->_vcolumns[] = $f;
+                if ($f->view_order !== null) {
+                    $vcols1[] = $f;
+                } else {
+                    $vcols2[] = $f;
+                }
             }
         }
 
@@ -1240,10 +1289,24 @@ class PaperList {
         }
         $this->_finding_column_errors = null;
 
-        // sort by order
-        usort($this->_vcolumns, "Conf::xt_order_compare");
+        // arrange by view_order, then insert unordered elements
+        usort($vcols1, function ($a, $b) {
+            if ($a->as_row !== $b->as_row) {
+                return $a->as_row ? 1 : -1;
+            }
+            return $a->view_order <=> $b->view_order
+                ? : strnatcasecmp($a->name, $b->name);
+        });
+        foreach ($vcols2 as $vc) {
+            $i1 = count($vcols1);
+            while ($i1 > 0 && self::vcolumn_order_compare($vc, $vcols1[$i1-1]) < 0) {
+                --$i1;
+            }
+            array_splice($vcols1, $i1, 0, [$vc]);
+        }
+        $this->_vcolumns = $vcols1;
 
-        // analyze rows and return
+        // analyze rows
         foreach ($this->_vcolumns as $f) {
             $f->reset($this);
         }

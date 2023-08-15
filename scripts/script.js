@@ -9705,28 +9705,45 @@ function Plist(tbl) {
     this.aufull = {};
     this.tagmap = false;
     this.taghighlighter = false;
+    this.next_foldnum = 8;
     this._bypid = {};
     var fs = JSON.parse(tbl.getAttribute("data-fields") || tbl.getAttribute("data-columns") /* XXX backward compat */), i;
     for (i = 0; i !== fs.length; ++i) {
-        this.add_field(fs[i]);
+        this.add_field(fs[i], true);
     }
 }
-Plist.prototype.add_field = function (f) {
-    var j = this.field_order.length;
-    while (j > 0 && f.order < this.field_order[j-1].order) {
-        --j;
+function vcolumn_order_compare(f1, f2) {
+    if (!f1.as_row !== !f2.as_row) {
+        return f1.as_row ? 1 : -1;
     }
-    this.field_order.splice(j, 0, f);
+    var o1 = f1.order == null ? Infinity : f1.order,
+        o2 = f2.order == null ? Infinity : f2.order;
+    if (o1 != o2) {
+        return o1 < o2 ? -1 : 1;
+    }
+    return strnatcasecmp(f1.name, f2.name);
+}
+Plist.prototype.add_field = function (f, append) {
+    var j;
+    if (append) {
+        this.field_order.push(f);
+    } else {
+        j = this.field_order.length;
+        while (j > 0 && vcolumn_order_compare(f, this.field_order[j-1]) < 0) {
+            --j;
+        }
+        this.field_order.splice(j, 0, f);
+    }
     this.fields[f.name] = f;
     if (/^(?:#|tag:|tagval:)\S+$/.test(f.name)) {
         $(window).on("hotcrptags", make_tag_column_callback(this, f));
     }
     if (f.foldnum === true) {
-        f.foldnum = 9;
-        while (hasClass(this.pltable, "fold" + f.foldnum + "c")
-               || hasClass(this.pltable, "fold" + f.foldnum + "o")) {
-            ++f.foldnum;
-        }
+        do {
+            ++this.next_foldnum;
+        } while (hasClass(this.pltable, "fold" + this.next_foldnum + "c")
+                 || hasClass(this.pltable, "fold" + this.next_foldnum + "o"));
+        f.foldnum = this.next_foldnum;
     }
 };
 Plist.prototype.foldnum = function (type) {
@@ -10068,7 +10085,7 @@ function make_tag_column_callback(plistui, f) {
                 minifeedback(input, {ok: true});
             }
         } else {
-            e.html(tvs === "0" && !/tagval/.test(f.className) ? "✓" : tvs);
+            e.textContent = tvs === "0" && !/tagval/.test(f.className) ? "✓" : tvs;
         }
     };
 }

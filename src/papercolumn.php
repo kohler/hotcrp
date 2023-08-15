@@ -23,21 +23,15 @@ class PaperColumn extends Column {
         parent::__construct($cj);
     }
 
-    /** @param list<string> $decorations
-     * @return PaperColumn */
-    static function make(Conf $conf, $cj, $decorations = []) {
-        $fn = $cj->function ?? $cj->callback; /* XXX */
-        if ($fn[0] === "+") {
-            $class = substr($fn, 1);
+    /** @return PaperColumn */
+    static function make(Conf $conf, $cj) {
+        if ($cj->function[0] === "+") {
+            $class = substr($cj->function, 1);
             /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
-            $pc = new $class($conf, $cj);
+            return new $class($conf, $cj);
         } else {
-            $pc = call_user_func($fn, $conf, $cj);
+            return call_user_func($cj->function, $conf, $cj);
         }
-        foreach ($decorations as $decor) {
-            $pc->add_decoration($decor);
-        }
-        return $pc;
     }
     /** @param Contact|XtParams $ctx
      * @param string|MessageItem $msg */
@@ -64,9 +58,11 @@ class PaperColumn extends Column {
         //assert($this->is_visible);
         $j = [
             "name" => $this->name,
-            "title" => $this->header($pl, false),
-            "order" => $this->order
+            "title" => $this->header($pl, false)
         ];
+        if ($this->order !== null) {
+            $j["order"] = $this->order;
+        }
         if ($this->className !== "pl_" . $this->name) {
             $j["className"] = $this->className;
         }

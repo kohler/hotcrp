@@ -176,7 +176,11 @@ class Tag_SearchTerm extends SearchTerm {
     private function _make_default_sort_column($pl, $tag, $dt) {
         $xjs = Tag_PaperColumn::expand("#{$tag}", $pl->xtp, (object) [], ["#{$tag}", "#", $tag]);
         assert(count($xjs) === 1 && $xjs[0]->function === "+Tag_PaperColumn");
-        return PaperColumn::make($pl->conf, $xjs[0], $dt && $dt->is(TagInfo::TFM_VOTES) ? ["reverse"] : []);
+        $pc = PaperColumn::make($pl->conf, $xjs[0]);
+        if ($dt && $dt->is(TagInfo::TFM_VOTES)) {
+            $pc->add_decoration("reverse");
+        }
+        return $pc;
     }
     function default_sort_column($top, $pl) {
         if (!$top
