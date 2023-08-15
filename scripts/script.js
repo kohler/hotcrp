@@ -959,13 +959,14 @@ function unparse_byte_size_binary(n) {
         return "0B";
 }
 
-var strnatcmp = (function () {
+var strnatcasecmp = (function () {
 try {
-    var collator = new Intl.Collator(undefined, {sensitivity: "case", numeric: true, ignorePunctuation: true});
+    var collator = new Intl.Collator(undefined, {sensitivity: "accent", numeric: true, ignorePunctuation: true});
     return function (a, b) {
         var cmp = collator.compare(a, b);
-        if (cmp === 0 && a !== b)
+        if (cmp === 0 && a !== b) {
             cmp = a < b ? -1 : 1;
+        }
         return cmp;
     };
 } catch (e) {
@@ -7292,7 +7293,7 @@ demand_load.search_completion = demand_load.make(function (resolve) {
             $.isArray(item.i) || (item.i = [item.i]);
             item.nosort || item.i.sort(function (a, b) {
                 var ai = completion_item(a), bi = completion_item(b);
-                return strnatcmp(ai.s, bi.s);
+                return strnatcasecmp(ai.s, bi.s);
             });
             Array.prototype.push.apply(result, item.i);
         });
@@ -7349,7 +7350,7 @@ demand_load.mentions = demand_load.make(function (resolve) {
     if (siteinfo.user.is_pclike)
         $.get(hoturl("api/mentioncompletion", {p: siteinfo.paperid}), null, function (v) {
             var tlist = ((v && v.mentioncompletion) || []).map(completion_item);
-            tlist.sort(function (a, b) { return strnatcmp(a.s, b.s); });
+            tlist.sort(function (a, b) { return strnatcasecmp(a.s, b.s); });
             resolve(tlist);
         });
     else
@@ -8621,7 +8622,7 @@ function tagannorow_add(tbl, tbody, before, anno) {
     if (anno.tag
         && anno.annoid
         && (x = tbl.getAttribute("data-drag-action")).startsWith("tagval:")
-        && strnatcmp(x, "#" + tag_canonicalize(anno.tag)) === 0) {
+        && strnatcasecmp(x, "#" + tag_canonicalize(anno.tag)) === 0) {
         add_draghandle(tr);
     }
     tbody.insertBefore(tr, before);
@@ -8946,7 +8947,7 @@ function taganno_success(rv) {
         return;
     $(".pltable").each(function () {
         var tblsort = hoturl_search(tablelist_search(this), "sort");
-        if (!tblsort || strnatcmp(tblsort, "#" + rv.tag) !== 0) {
+        if (!tblsort || strnatcasecmp(tblsort, "#" + rv.tag) !== 0) {
             return;
         }
         var groups = [], cur = this.tBodies[0].firstChild, pos = 0, annoi = 0;
@@ -9230,7 +9231,7 @@ function Tagval_DraggableTable(srctr, dragtag) {
     this.gapf = function () { return 1; };
     // annotated groups are assumed to be gapless
     if (this.grouprs.length > 0) {
-        var sd = 0, nd = 0, s2d = 0, lv = null, d;
+        var sd = 0, nd = 0, s2d = 0, lv = null, d, i;
         for (i = 0; i < this.rs.length; ++i) {
             if (this.rs[i].id && this.rs[i].tagval !== false) {
                 if (lv !== null) {
@@ -10009,7 +10010,7 @@ function render_tagset(plistui, tagstr, editable) {
         }
     }
     t.sort(function (a, b) {
-        return strnatcmp(a[1], b[1]);
+        return strnatcasecmp(a[1], b[1]);
     });
     if (t.length === 0) {
         if (!editable)

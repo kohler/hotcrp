@@ -1071,7 +1071,7 @@ class Conf {
         if ($ap == $bp) {
             if (isset($xta->name)
                 && isset($xtb->name)
-                && ($namecmp = strcmp($xta->name, $xtb->name)) !== 0) {
+                && ($namecmp = strnatcasecmp($xta->name, $xtb->name)) !== 0) {
                 return $namecmp;
             }
             $ap = $xta->__source_order ?? 0;
