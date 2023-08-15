@@ -2021,8 +2021,8 @@ class PaperList {
                     return null;
                 }
                 $assign[] = [
-                    ["action" => "tag", "tag" => "{$t}#{$vm[0]->value()}"],
-                    ["action" => "tag", "tag" => "{$t}#clear"]
+                    ["action" => "tag", "tag" => "{$t}#{$vm[0]->value()}", "ondrag" => "enter"],
+                    ["action" => "tag", "tag" => "{$t}#clear", "ondrag" => "leave"]
                 ];
                 $atypes |= 1;
             } else if ($qe instanceof Decision_SearchTerm) {
@@ -2031,8 +2031,8 @@ class PaperList {
                     return null;
                 }
                 $assign[] = [
-                    ["action" => "decision", "decision" => $ds[0]->name],
-                    ["action" => "decision", "decision" => "none"]
+                    ["action" => "decision", "decision" => $ds[0]->name, "ondrag" => "enter"],
+                    ["action" => "decision", "decision" => "none", "ondrag" => "leave"]
                 ];
                 $atypes |= 2;
             } else if ($qe->type !== "true" || $i !== count($groups) - 1) {

@@ -9432,14 +9432,22 @@ Assign_DraggableTable.prototype.commit = function () {
         srcra = this.rs[this.srcindex],
         oldidx = srcra.groupindex,
         newidx = this.drag_groupindex();
+    function doassignlist(as, assignlist, id, ondrag) {
+        var i, len = (assignlist || []).length, x;
+        for (i = 0; i !== len; ++i) {
+            x = assignlist[i];
+            if (x.ondrag === ondrag) {
+                x = Object.assign({pid: id}, x);
+                delete x.ondrag;
+                as.push(x);
+            }
+        }
+    }
     if (oldidx !== newidx) {
         for (i = 0; i !== this.assigninfo.length; ++i) {
-            if (i !== newidx && this.assigninfo[i][1])
-                as.push(Object.assign({pid: srcra.id}, this.assigninfo[i][1]));
+            i !== newidx && doassignlist(as, this.assigninfo[i], srcra.id, "leave");
         }
-        if (this.assigninfo[newidx]) {
-            as.push(Object.assign({pid: srcra.id}, this.assigninfo[newidx][0]));
-        }
+        doassignlist(as, this.assigninfo[newidx], srcra.id, "enter");
     }
     if (!as.empty) {
         $.post(hoturl("=api/assign", {}),
