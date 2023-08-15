@@ -857,7 +857,7 @@ class PaperInfo {
         if (!array_key_exists($cid, $this->_contact_info)) {
             if ($this->_review_array
                 || $this->reviewSignatures !== null) {
-                $ci = PaperContactInfo::make_empty($this, $user);
+                $ci = PaperContactInfo::make_user($this, $user);
                 if ($cid > 0) {
                     $ci->mark_conflict($this->conflict_type($cid));
                 }
