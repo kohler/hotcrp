@@ -68,25 +68,39 @@ class PaperContactInfo {
     /** @var ?string */
     public $searchable_tags;
 
-    /** @param Contact $user
-     * @suppress PhanAccessReadOnlyProperty */
-    static function make_empty(PaperInfo $prow, $user) {
-        $ci = new PaperContactInfo;
-        $ci->paperId = $prow->paperId;
-        $ci->contactId = $user->contactXid;
-        if ($user->isPC
+    /** @param int $paperId
+     * @param int $contactId */
+    function __construct($paperId, $contactId) {
+        $this->paperId = $paperId;
+        $this->contactId = $contactId;
+    }
+
+    /** @param PaperInfo $prow
+     * @param Contact $user
+     * @return bool */
+    static function is_nonempty($prow, $user) {
+        return $user->isPC
             && isset($prow->leadContactId)
             && $prow->leadContactId == $user->contactXid
-            && !$prow->conf->setting("lead_noseerev")) {
+            && !$prow->conf->setting("lead_noseerev");
+    }
+
+    /** @param PaperInfo $prow
+     * @param Contact $user
+     * @suppress PhanAccessReadOnlyProperty */
+    static function make_user($prow, $user) {
+        $ci = new PaperContactInfo($prow->paperId, $user->contactXid);
+        if (self::is_nonempty($prow, $user)) {
             $ci->review_status = PaperContactInfo::RS_PROXIED;
         }
         return $ci;
     }
 
-    /** @param Contact $user
+    /** @param PaperInfo $prow
+     * @param Contact $user
      * @suppress PhanAccessReadOnlyProperty */
-    static function make_my(PaperInfo $prow, $user, $object) {
-        $ci = PaperContactInfo::make_empty($prow, $user);
+    static function make_my($prow, $user, $object) {
+        $ci = PaperContactInfo::make_user($prow, $user);
         $ci->conflictType = (int) $object->conflictType;
         if (isset($object->myReviewPermissions)) {
             $ci->mark_my_review_permissions($object->myReviewPermissions);
@@ -137,11 +151,17 @@ class PaperContactInfo {
 
     /** @param Contact $user */
     static function load_into(PaperInfo $prow, $user) {
+        // fake user with no DB capabilities (e.g., author_user()) requires no load
+        $rev_tokens = $user->review_tokens();
+        if ($user->contactXid <= 0
+            && !$rev_tokens) {
+            $prow->_set_empty_contact_info($user);
+            return;
+        }
+
         // choose user set:
         // normally just this user; might be whole PC
         $user_set = [$user->contactXid => $user];
-        $only_user_id = $user->contactXid;
-        $rev_tokens = $user->review_tokens();
         if ($user->contactXid > 0
             && !$rev_tokens
             && ($user->roles & Contact::ROLE_PC) !== 0) {
@@ -150,7 +170,6 @@ class PaperContactInfo {
                 && (!$viewer || $viewer->privChair || $viewer->contactXid === $prow->managerContactId)
                 && $user === $prow->conf->pc_member_by_id($user->contactId)) {
                 $user_set = $prow->conf->pc_members();
-                $only_user_id = null;
             }
         }
 
@@ -160,12 +179,6 @@ class PaperContactInfo {
             foreach ($user_set as $u) {
                 $pr->_set_empty_contact_info($u);
             }
-        }
-
-        // return if nothing to load
-        if (($only_user_id ?? 1) <= 0
-            && !$rev_tokens) {
-            return;
         }
 
         // contact database
@@ -183,7 +196,7 @@ class PaperContactInfo {
         while (($result = $mresult->next())) {
             while (($x = $result->fetch_row())) {
                 $pr = $row_set->get((int) $x[0]);
-                $ci = $pr->_get_contact_info($only_user_id ?? (int) $x[1]);
+                $ci = $pr->_get_contact_info((int) $x[1]);
                 if ($x[2] !== null) {
                     $ci->mark_conflict((int) $x[2]);
                 } else {
@@ -821,16 +834,24 @@ class PaperInfo {
     /** @param int $cid
      * @return PaperContactInfo */
     function _get_contact_info($cid) {
-        return $this->_contact_info[$cid];
+        if (($ci = $this->_contact_info[$cid]) === null) {
+            $ci = $this->_contact_info[$cid] = new PaperContactInfo($this->paperId, $cid);
+        }
+        return $ci;
     }
 
     /** @param Contact $user */
     function _set_empty_contact_info($user) {
-        $this->_contact_info[$user->contactXid] = PaperContactInfo::make_empty($this, $user);
+        if (PaperContactInfo::is_nonempty($this, $user)) {
+            $ci = PaperContactInfo::make_user($this, $user);
+        } else {
+            $ci = null;
+        }
+        $this->_contact_info[$user->contactXid] = $ci;
     }
 
-    /** @return PaperContactInfo */
-    function contact_info(Contact $user) {
+    /** @return ?PaperContactInfo */
+    function optional_contact_info(Contact $user) {
         $this->check_rights_version();
         $cid = $user->contactXid;
         if (!array_key_exists($cid, $this->_contact_info)) {
@@ -848,10 +869,19 @@ class PaperInfo {
                 PaperContactInfo::load_into($this, $user);
             }
             if ($user === $this->_author_user) {
-                $this->_contact_info[$cid]->mark_conflict(CONFLICT_CONTACTAUTHOR);
+                $this->_get_contact_info($cid)->mark_conflict(CONFLICT_CONTACTAUTHOR);
             }
         }
         return $this->_contact_info[$cid];
+    }
+
+    /** @return PaperContactInfo */
+    function contact_info(Contact $user) {
+        $ci = $this->optional_contact_info($user);
+        if ($ci === null) {
+            $this->_contact_info[$user->contactXid] = $ci = new PaperContactInfo($this->paperId, $user->contactXid);
+        }
+        return $ci;
     }
 
     function load_my_contact_info($contact, $object) {
@@ -1554,7 +1584,7 @@ class PaperInfo {
     function review_type($contact) {
         $this->check_rights_version();
         if (is_object($contact) && $contact->has_capability()) {
-            $ci = $this->contact_info($contact);
+            $ci = $this->optional_contact_info($contact);
             return $ci ? $ci->reviewType : 0;
         }
         $cid = self::contact_to_cid($contact);
@@ -1573,7 +1603,7 @@ class PaperInfo {
 
     /** @return int */
     function review_status($contact) {
-        $ci = $this->contact_info($contact);
+        $ci = $this->optional_contact_info($contact);
         return $ci ? $ci->review_status : 0;
     }
 
