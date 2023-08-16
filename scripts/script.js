@@ -3745,7 +3745,7 @@ function trevent_comet(prev_eventid, start_at) {
 // deadline loading
 function load(dlx, prev_eventid, is_initial) {
     if (dl && dl.tracker_recent && dlx)
-        dlx.tracker_recent = true;
+        dlx.tracker_recent = dl.tracker_recent;
     if (dlx)
         window.hotcrp_status = window.hotcrp.status = dl = dlx;
     dl.load = dl.load || now_sec();
@@ -3774,9 +3774,15 @@ function load(dlx, prev_eventid, is_initial) {
         var t;
         if (is_initial && ($$("p-clock-drift") || dl.tracker_recent))
             t = 0.01;
-        else if (dl.tracker_recent)
-            t = 7 + Math.random() * 1.5;
-        else if (!dlname)
+        else if (dl.tracker_recent) {
+            if (dl.tracker_recent >= dl.load - 3600)
+                t = 7;
+            else if (dl.tracker_recent >= dl.load - 10800)
+                t = 15;
+            else
+                t = 30;
+            t += Math.random() * t / 4;
+        } else if (!dlname)
             t = 1800;
         else if (Math.abs(dltime - dl.load) >= 900)
             t = 300;

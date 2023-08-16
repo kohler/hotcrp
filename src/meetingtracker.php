@@ -406,7 +406,7 @@ class MeetingTracker {
             $dl->tracker_eventid = $tracker->eventid;
         }
         if ($tracker->recent()) {
-            $dl->tracker_recent = true;
+            $dl->tracker_recent = $tracker->update_at;
         }
         if (($tcs = $user->conf->opt("trackerCometSite"))) {
             $dl->tracker_site = $tcs;
