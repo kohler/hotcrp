@@ -521,7 +521,7 @@ class PaperInfo {
     // Not in database
     /** @var PaperInfoSet */
     public $_row_set;
-    /** @var array<int,PaperContactInfo> */
+    /** @var array<int,?PaperContactInfo> */
     private $_contact_info = [];
     /** @var int */
     private $_rights_version = 0;
@@ -1216,7 +1216,8 @@ class PaperInfo {
         $this->check_rights_version();
         $cid = is_object($c) ? $c->contactXid : $c;
         if (array_key_exists($cid, $this->_contact_info)) {
-            return $this->_contact_info[$cid]->conflictType;
+            $ci = $this->_contact_info[$cid];
+            return $ci ? $ci->conflictType : null;
         }
         foreach ($this->conflict_type_list() as $cu) {
             if ($cu->contactId === $cid)
