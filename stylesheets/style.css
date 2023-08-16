@@ -3052,13 +3052,13 @@ th.pll {
 	text-align: left;
 }
 
-th.plc, th.plrd, th.pl_id, th.pl_sel,
+th.plc, th.plrd, th.pl_id,
 th.pl_revtype, th.pl_revstat, th.pl_topicscore, th.pl_desirability,
 th.pl_score, th.pl_uscores, th.pl_tag, th.pl_tagval, th.pl_formula {
 	text-align: center;
 }
 
-th.plr {
+th.plr, th.pl_sel {
 	text-align: right;
 }
 
