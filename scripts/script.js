@@ -10369,18 +10369,19 @@ function plist_hotcrptags(plistui, rv) {
 }
 
 $(window).on("hotcrptags", function (evt, rv) {
+    var i;
     $(".need-plist").each(make_plist);
     if (rv.ids) {
-        for (var i = 0; i !== all_plists.length; ++i) {
+        for (i = 0; i !== all_plists.length; ++i) {
             paperlist_tag_ui.try_reorder(all_plists[i].pltable, rv);
         }
     }
     if (rv.pid) {
-        for (var i = 0; i !== all_plists.length; ++i) {
+        for (i = 0; i !== all_plists.length; ++i) {
             plist_hotcrptags(all_plists[i], rv);
         }
     } else if (rv.p) {
-        for (var i in rv.p) {
+        for (i in rv.p) {
             rv.p[i].pid = +i;
             $(window).trigger("hotcrptags", [rv.p[i]]);
         }
