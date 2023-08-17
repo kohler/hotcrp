@@ -570,17 +570,21 @@ function scrollIntoView1(e, opts) {
     while (e && e.nodeType !== 1) {
         e = e.parentNode;
     }
-    var p = e.parentNode, x, pr, er, mt, mb, wh = window.innerHeight;
+    var p = e.parentNode, sty, x, pr, er, mt, mb, wh = window.innerHeight;
     while (p !== root) {
-        x = window.getComputedStyle(p).overflowY;
-        if ((x === "auto" || x === "scroll" || x === "hidden")
-            && p.scrollHeight > p.clientHeight + 5) {
+        sty = window.getComputedStyle(p);
+        x = sty.overflowY;
+        if (((x === "auto" || x === "scroll" || x === "hidden")
+             && p.scrollHeight > p.clientHeight + 5)
+            || sty.position === "fixed") {
             break;
         }
         p = p.parentNode;
     }
     if (p !== root) {
-        scrollIntoView1(p, {});
+        if (sty.position !== "fixed") {
+            scrollIntoView1(p, {});
+        }
         pr = p.getBoundingClientRect();
         if (pr.bottom < 0 || pr.top > wh) {
             return; // it's hopeless, nothing to do
