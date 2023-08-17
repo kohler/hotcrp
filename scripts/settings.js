@@ -290,7 +290,7 @@ function grid_select_event(evt) {
 // BEGIN SUBMISSION FIELD SETTINGS
 var submission_form_settings = (function () {
 
-var sftypes, samples;
+var sftypes;
 
 function sf_order() {
     settings_field_order("settings-sform");
@@ -336,11 +336,14 @@ function make_sf_instantiator(sample) {
     return x;
 }
 
+demand_load.submission_field_library = demand_load.make(function (resolve) {
+    $.get(hoturl("api/submissionfieldlibrary"), null, resolve);
+});
+
 function add_dialog() {
-    var $d, grid, samps = $$("settings-sf-samples").content.childNodes;
+    var $d, grid, samples;
     function submit(evt) {
         var selidx = +grid.getAttribute("data-selected-index"),
-            samp = samps[selidx],
             h = $$("settings-sf-new").innerHTML,
             next = 1;
         while ($$("sf/" + next + "/name")) {
@@ -348,7 +351,7 @@ function add_dialog() {
         }
         h = h.replace(/\/\$/g, "/" + next);
         $(h).removeClass("hidden").appendTo("#settings-sform").awaken();
-        $$("sf/" + next + "/type").options[0].value = samp.getAttribute("data-name");
+        $$("sf/" + next + "/type").options[0].value = samples[selidx].type;
         field_instantiate($$("sf/" + next + "/edit"), sftypes, samples[selidx].type,
             make_sf_instantiator(samples[selidx]));
         $$("sf/" + next + "/name").focus();
@@ -356,8 +359,10 @@ function add_dialog() {
         $d.close();
         evt.preventDefault();
     }
-    function create() {
-        var hc = popup_skeleton({className: "modal-dialog-wide"}), i;
+    function create(library) {
+        samples = library.samples;
+        sftypes = library.types;
+        var hc = popup_skeleton({className: "modal-dialog-wide"}), i, e;
         hc.push('<h2>Add field</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
         hc.push('<div class="grid-select grid-select-autosubmit" role="listbox"></div>');
@@ -365,10 +370,11 @@ function add_dialog() {
             '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
         grid = $d[0].querySelector(".grid-select");
-        for (i = 0; i !== samps.length; ++i) {
+        for (i = 0; i !== samples.length; ++i) {
+            e = $e("div", {"class": "settings-sf-view", role: "presentation"});
+            e.innerHTML = samples[i].sf_view_html;
             grid.append($e("fieldset", {"class": "grid-option", "data-index": i, role: "option", tabindex: 0, "aria-selected": "false"},
-                $e("legend", null, samples[i].legend),
-                samps[i].cloneNode(true)));
+                $e("legend", null, samples[i].legend), e));
         }
         settings_disable_children(grid);
         grid_select_event.call(grid, 0);
@@ -377,7 +383,7 @@ function add_dialog() {
         grid.addEventListener("dblclick", grid_select_event);
         $d.find("form").on("submit", submit);
     }
-    create();
+    demand_load.submission_field_library().then(create);
 }
 
 handle_ui.on("js-settings-sf-add", add_dialog);
@@ -410,7 +416,6 @@ hotcrp.tooltip.add_builder("settings-sf", function (info) {
 });
 
 return function (data) {
-    samples = data.samples;
     sftypes = data.types;
 };
 
@@ -592,7 +597,7 @@ handle_ui.on("js-settings-submission-round-delete", function () {
 
 var review_form_settings = (function () {
 
-var fieldorder = [], samples, rftypes,
+var fieldorder = [], rftypes,
     colors = ["sv", "Red to green", "svr", "Green to red",
               "bupu", "Blue to purple", "pubu", "Purple to blue",
               "rdpk", "Red to pink", "pkrd", "Pink to red",
@@ -876,7 +881,6 @@ function rf_add(fld) {
 
 function rfs(data) {
     var i, t, fld, mi, pfx, e, m, entryi;
-    samples = data.samples;
     rftypes = data.types;
 
     // construct form for original fields
@@ -936,8 +940,12 @@ function rfs(data) {
     check_form_differs("#f-settings");
 }
 
+demand_load.review_field_library = demand_load.make(function (resolve) {
+    $.get(hoturl("api/reviewfieldlibrary"), null, resolve);
+});
+
 function add_dialog() {
-    var $d, grid;
+    var $d, grid, samples;
     function submit(evt) {
         var samp = samples[+grid.getAttribute("data-selected-index")],
             fld = Object.assign({}, samp);
@@ -952,7 +960,9 @@ function add_dialog() {
         check_form_differs("#f-settings");
         evt.preventDefault();
     }
-    function create() {
+    function create(library) {
+        samples = library.samples;
+        rftypes = library.types;
         var hc = popup_skeleton({className: "modal-dialog-wide"}), i;
         hc.push('<h2>Add field</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
@@ -977,7 +987,7 @@ function add_dialog() {
         grid.addEventListener("dblclick", grid_select_event);
         $d.find("form").on("submit", submit);
     }
-    create();
+    demand_load.review_field_library().then(create);
 }
 
 handle_ui.on("js-settings-rf-add", add_dialog);

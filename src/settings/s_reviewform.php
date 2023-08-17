@@ -585,56 +585,6 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             "</div></div>";
     }
 
-    /** @param list<string> $defaults
-     * @param ?string $optname
-     * @return list<object> */
-    static function make_field_library(Contact $user, $defaults, $optname) {
-        $xtp = new XtParams($user->conf, $user);
-        $m = [];
-        $mn = 0;
-        $f1 = function ($j) use (&$m, &$mn) {
-            if (!is_string($j->legend ?? null)) {
-                return false;
-            }
-            $name = $j->legend;
-            ++$mn;
-            if ($j->unique ?? false) {
-                $name .= "\${$mn}";
-            }
-            $m[$name][] = $j;
-            return true;
-        };
-        $f2 = function ($entry, $landmark) use ($f1, $xtp) {
-            if (strpos($entry, "::") === false) {
-                return false;
-            }
-            $res = call_user_func($entry, $xtp);
-            if (!is_array($res)) {
-                return false;
-            }
-            foreach ($res as $j) {
-                if (is_object($j)) {
-                    $j->__source_order = ++Conf::$next_xt_source_order;
-                    $f1($j);
-                }
-            }
-            return true;
-        };
-        expand_json_includes_callback($defaults, $f1);
-        if (($olist = $user->conf->opt($optname))) {
-            expand_json_includes_callback($olist, $f1, $f2);
-        }
-
-        $l = [];
-        foreach ($m as $name => $list) {
-            if (($j = $xtp->search_list($list)))
-                $l[] = $j;
-        }
-
-        usort($l, "Conf::xt_pure_order_compare");
-        return $l;
-    }
-
     /** @return list<mixed> */
     static function make_types_json($tmap) {
         $typelist = [];
@@ -706,7 +656,6 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         }
         $sj["fields"] = $rfj;
 
-        $sj["samples"] = self::make_field_library($sv->user, ["etc/reviewfieldlibrary.json"], "reviewFieldLibraries");
         $sj["message_list"] = $sv->message_list();
         $sj["types"] = self::make_types_json($sv->conf->review_field_type_map());
 

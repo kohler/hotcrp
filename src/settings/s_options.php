@@ -18,7 +18,11 @@ class Options_SettingRenderer {
     /** @var ?array<int,int> */
     private $_paper_count;
 
-    function __construct(SettingValues $sv) {
+    /** @var int */
+    static private $sample_index = 1;
+
+    /** @param SettingValues|XtParams $sv */
+    function __construct($sv) {
         $this->conf = $sv->conf;
         $this->pt = new PaperTable($sv->user, new Qrequest("GET"), PaperInfo::make_new($sv->user, null));
         $this->pt->edit_show_all_visibility = true;
@@ -219,6 +223,22 @@ class Options_SettingRenderer {
         $this->_last_ctr = $ctr;
     }
 
+    function sample_sf_view_html($sampj) {
+        $sampj = clone $sampj;
+        $sampj->id = 1000;
+        $sampj->name = $sampj->name ?? "Field name";
+        $sampj->order = $sampj->order ?? 1;
+        $sampj->display = $sampj->display ?? "prominent";
+        $sampj->json_key = "__sample_" . self::$sample_index . "__";
+        ++self::$sample_index;
+        $o = PaperOption::make($this->pt->conf, $sampj);
+        $ov = $o->parse_json($this->pt->prow, $sampj->value ?? null)
+            ?? PaperValue::make($this->pt->prow, $o);
+        ob_start();
+        $o->print_web_edit($this->pt, $ov, $ov);
+        return ob_get_clean();
+    }
+
     function print(SettingValues $sv) {
         echo "<hr class=\"g\">\n",
             Ht::hidden("has_sf", 1),
@@ -235,12 +255,9 @@ class Options_SettingRenderer {
         }
 
         // initialize JS for samples and option types
-        $samplej = ReviewForm_SettingParser::make_field_library($sv->user, ["etc/optionlibrary.json"], "optionLibraries");
-        $otmap = $sv->conf->option_type_map();
-        $sj = [];
-        $sj["samples"] = $samplej;
-        $sj["types"] = ReviewForm_SettingParser::make_types_json($otmap);
-        Ht::stash_script("hotcrp.settings.submission_form(" . json_encode_browser($sj) . ")");
+        Ht::stash_script("hotcrp.settings.submission_form(" . json_encode_browser([
+            "types" => ReviewForm_SettingParser::make_types_json($sv->conf->option_type_map())
+        ]) . ")");
 
         echo '<div id="settings-sform" class="c">';
         // NB: div#settings-sform must ONLY contain fields
@@ -249,32 +266,6 @@ class Options_SettingRenderer {
         }
         echo "</div>";
         $this->print_js_trigger(null);
-
-        // render sample options
-        echo '<template id="settings-sf-samples" class="hidden">';
-        $xtp = new XtParams($sv->conf, $sv->user);
-        $sampleindex = 0;
-        foreach ($samplej as $sampj) {
-            if (!($otype = $otmap[$sampj->type] ?? null)
-                || !$xtp->check($otype->display_if ?? null, $otype)) {
-                continue;
-            }
-            $sampj = clone $sampj;
-            $sampj->id = 1000;
-            $sampj->name = $sampj->name ?? "Field name";
-            $sampj->order = $sampj->order ?? 1;
-            $sampj->display = $sampj->display ?? "prominent";
-            $sampj->json_key = "__demo_{$sampleindex}__";
-            ++$sampleindex;
-            $o = PaperOption::make($sv->conf, $sampj);
-            $ov = $o->parse_json($this->pt->prow, $sampj->value ?? null)
-                ?? PaperValue::make($this->pt->prow, $o);
-            echo '<div class="settings-sf-view" role="presentation" data-name="', htmlspecialchars($sampj->name), '" data-title="',
-                htmlspecialchars($sampj->title ?? "Field name"), '">';
-            $o->print_web_edit($this->pt, $ov, $ov);
-            echo '</div>';
-        }
-        echo '</template>';
 
         // render new options
         echo '<template id="settings-sf-new" class="hidden">';

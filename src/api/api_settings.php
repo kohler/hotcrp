@@ -109,4 +109,87 @@ class Settings_API {
         }
         return new JsonResult(["ok" => true, "setting_descriptions" => $m]);
     }
+
+    /** @param XtParams $xtp
+     * @param list<string> $defaults
+     * @param ?string $optname
+     * @return list<object> */
+    static function make_field_library($xtp, $defaults, $optname) {
+        $m = [];
+        $mn = 0;
+        $f1 = function ($j) use (&$m, &$mn) {
+            if (!is_string($j->legend ?? null)) {
+                return false;
+            }
+            $name = $j->legend;
+            ++$mn;
+            if ($j->unique ?? false) {
+                $name .= "\${$mn}";
+            }
+            $m[$name][] = $j;
+            return true;
+        };
+        $f2 = function ($entry, $landmark) use ($f1, $xtp) {
+            if (strpos($entry, "::") === false) {
+                return false;
+            }
+            $res = call_user_func($entry, $xtp);
+            if (!is_array($res)) {
+                return false;
+            }
+            foreach ($res as $j) {
+                if (is_object($j)) {
+                    $j->__source_order = ++Conf::$next_xt_source_order;
+                    $f1($j);
+                }
+            }
+            return true;
+        };
+        expand_json_includes_callback($defaults, $f1);
+        if (($olist = $xtp->conf->opt($optname))) {
+            expand_json_includes_callback($olist, $f1, $f2);
+        }
+
+        $l = [];
+        foreach ($m as $name => $list) {
+            if (($j = $xtp->search_list($list)))
+                $l[] = $j;
+        }
+
+        usort($l, "Conf::xt_pure_order_compare");
+        return $l;
+    }
+
+    static function submissionfieldlibrary(Contact $user, Qrequest $qreq) {
+        $xtp = new XtParams($user->conf, $user);
+        $xtp->qreq = $qreq;
+        $otmap = $user->conf->option_type_map();
+
+        $samples = [];
+        $osr = new Options_SettingRenderer($xtp);
+        foreach (self::make_field_library($xtp, ["etc/optionlibrary.json"], "optionLibraries") as $samp) {
+            if (!($otype = $otmap[$samp->type] ?? null)
+                || !$xtp->check($otype->display_if ?? null, $otype)) {
+                continue;
+            }
+            $samples[] = $samp;
+            $samp->sf_view_html = $osr->sample_sf_view_html($samp);
+        }
+
+        return new JsonResult([
+            "ok" => true,
+            "samples" => $samples,
+            "types" => ReviewForm_SettingParser::make_types_json($otmap)
+        ]);
+    }
+
+    static function reviewfieldlibrary(Contact $user, Qrequest $qreq) {
+        $xtp = new XtParams($user->conf, $user);
+        $xtp->qreq = $qreq;
+        return new JsonResult([
+            "ok" => true,
+            "samples" => self::make_field_library($xtp, ["etc/reviewfieldlibrary.json"], "reviewFieldLibraries"),
+            "types" => ReviewForm_SettingParser::make_types_json($user->conf->review_field_type_map())
+        ]);
+    }
 }

@@ -17,6 +17,8 @@ class XtParams {
     public $primitive_checkers;
     /** @var ?object */
     public $last_match;
+    /** @var ?Qrequest */
+    public $qreq;
     /** @var ?ComponentSet */
     public $component_set;
     /** @var ?PaperList */

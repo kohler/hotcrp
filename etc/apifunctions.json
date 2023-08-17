@@ -130,6 +130,10 @@
         "function": "Review_API::review"
     },
     {
+        "name": "reviewfieldlibrary", "get": true, "allow_if": "chair",
+        "function": "Settings_API::reviewfieldlibrary"
+    },
+    {
         "name": "reviewrating", "paper": true, "get": true, "post": true,
         "function": "Review_API::reviewrating"
     },
@@ -185,6 +189,10 @@
     {
         "name": "shepherd", "paper": true, "get": true, "post": true,
         "function": "PaperPC_API::shepherd_api"
+    },
+    {
+        "name": "submissionfieldlibrary", "get": true, "allow_if": "chair",
+        "function": "Settings_API::submissionfieldlibrary"
     },
     {
         "name": "taganno", "get": true,
