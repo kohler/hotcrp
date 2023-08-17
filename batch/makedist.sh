@@ -114,7 +114,6 @@ etc/listactions.json
 etc/mailkeywords.json
 etc/mailtemplates.json
 etc/msgs.json
-etc/optionlibrary.json
 etc/optiontypes.json
 etc/pages.json
 etc/papercolumns.json
@@ -126,6 +125,7 @@ etc/searchkeywords.json
 etc/settingdescriptions.md
 etc/settinginfo.json
 etc/settinggroups.json
+etc/submissionfieldlibrary.json
 
 lib/.htaccess
 lib/abbreviationmatcher.php

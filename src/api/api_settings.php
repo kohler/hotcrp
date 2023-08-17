@@ -110,14 +110,11 @@ class Settings_API {
         return new JsonResult(["ok" => true, "setting_descriptions" => $m]);
     }
 
-    /** @param XtParams $xtp
-     * @param list<string> $defaults
-     * @param ?string $optname
-     * @return list<object> */
-    static function make_field_library($xtp, $defaults, $optname) {
-        $m = [];
+    /** @param &$m array<string,list<object>>
+     * @return callable(mixed) */
+    static function make_field_library_collector(&$m) {
         $mn = 0;
-        $f1 = function ($j) use (&$m, &$mn) {
+        return function ($j) use (&$m, &$mn) {
             if (!is_string($j->legend ?? null)) {
                 return false;
             }
@@ -129,21 +126,20 @@ class Settings_API {
             $m[$name][] = $j;
             return true;
         };
+    }
+
+    /** @param XtParams $xtp
+     * @param list<string> $defaults
+     * @param ?string $optname
+     * @return list<object> */
+    static function make_field_library($xtp, $defaults, $optname) {
+        $m = [];
+        $f1 = self::make_field_library_collector($m);
         $f2 = function ($entry, $landmark) use ($f1, $xtp) {
             if (strpos($entry, "::") === false) {
                 return false;
             }
-            $res = call_user_func($entry, $xtp);
-            if (!is_array($res)) {
-                return false;
-            }
-            foreach ($res as $j) {
-                if (is_object($j)) {
-                    $j->__source_order = ++Conf::$next_xt_source_order;
-                    $f1($j);
-                }
-            }
-            return true;
+            return call_user_func($entry, $xtp);
         };
         expand_json_includes_callback($defaults, $f1);
         if (($olist = $xtp->conf->opt($optname))) {
@@ -167,7 +163,7 @@ class Settings_API {
 
         $samples = [];
         $osr = new Options_SettingRenderer($xtp);
-        foreach (self::make_field_library($xtp, ["etc/optionlibrary.json"], "optionLibraries") as $samp) {
+        foreach (self::make_field_library($xtp, ["etc/submissionfieldlibrary.json"], "submissionFieldLibraries") as $samp) {
             if (!($otype = $otmap[$samp->type] ?? null)
                 || !$xtp->check($otype->display_if ?? null, $otype)) {
                 continue;
