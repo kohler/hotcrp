@@ -1818,10 +1818,53 @@ hr.dropmark {
 	opacity: 0.25 !important;
 	border-color: silver !important;
 }
-.settings-sf-example > .pfe {
+.grid-select {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	grid-auto-rows: minmax(100px, auto);
+	max-height: 70vh;
+	overflow-y: auto;
+	row-gap: 0.25rem;
+	column-gap: 0.25rem;
+	margin: -0.5rem;
+}
+.grid-option {
+	overflow-y: visible;
+	margin: 0.5rem;
+	background-color: #f9fbfb;
+}
+.grid-option:hover {
+	border-color: #a5a5a5;
+	background-color: #ecf2f4;
+}
+.grid-option.active, .grid-option.active:hover {
+	background: inherit;
+}
+fieldset.grid-option {
+	padding: 5px 12px 10px;
+}
+fieldset.grid-option.active {
+	border-color: blue;
+	border-color: AccentColor;
+	border-radius: 4px;
+	border-width: 2px;
+	padding: 4px 11px 9px;
+}
+fieldset.grid-option.active > legend {
+	font-weight: bold;
+}
+.grid-option > .settings-sf-view, .grid-option > .settings-rf-view {
+	opacity: 0.5;
+	padding: 0;
+}
+.grid-option.active > .settings-sf-view,
+.grid-option.active > .settings-rf-view {
+	opacity: 1;
+}
+.settings-sf-view > .pfe {
 	margin-bottom: 0;
 }
-.settings-sf-example > .pfe.pf-separator {
+.settings-sf-view > .pfe.pf-separator {
 	margin-top: 0;
 }
 .settings-rf-view > .rfehead {
@@ -4868,6 +4911,9 @@ a.help {
 	width: 40rem;
 	max-width: 80vw;
 }
+.modal-dialog-wide {
+	max-width: 80vw;
+}
 .modal-dialog-centered {
 	margin: 5vh auto;
 	position: relative;
@@ -4881,7 +4927,7 @@ a.help {
 	background: #fbfbfa;
 	pointer-events: auto;
 }
-.modal-dialog-w40 > .modal-content {
+.modal-dialog > .modal-content {
 	width: 100%;
 }
 .modal-demo-fieldset {

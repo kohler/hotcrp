@@ -101,11 +101,12 @@ function expand_json_includes_callback($includelist, $callback, $parser = null) 
         }
         $expandable = null;
         if (is_string($v)) {
-            if (str_starts_with($v, "@")) {
+            if ($v[0] === "@") {
                 $expandable = substr($v, 1);
-            } else if (!str_starts_with($v, "{")
-                       && (!str_starts_with($v, "[") || !str_ends_with(rtrim($v), "]"))
-                       && !ctype_space($v[0])) {
+            } else if ($v[0] !== "{"
+                       && ($v[0] !== "[" || !str_ends_with(rtrim($v), "]"))
+                       && !ctype_space($v[0])
+                       && strpos($v, "::") === false) {
                 $expandable = $v;
             }
         }
@@ -115,7 +116,7 @@ function expand_json_includes_callback($includelist, $callback, $parser = null) 
                     $includes[] = [$x, $f];
             }
         } else {
-            $includes[] = [$v, "entry $k"];
+            $includes[] = [$v, "entry {$k}"];
         }
     }
     foreach ($includes as $xentry) {
@@ -138,8 +139,10 @@ function expand_json_includes_callback($includelist, $callback, $parser = null) 
             if (is_object($v)) {
                 $v->__source_order = ++Conf::$next_xt_source_order;
             }
+            /** @phan-suppress-next-line PhanParamTooManyCallable */
             if (!call_user_func($callback, $v, $k, $landmark)) {
-                error_log((Conf::$main ? Conf::$main->dbname . ": " : "") . "$landmark: Invalid expansion " . json_encode($v) . "\n" . debug_string_backtrace());
+                $pfx = Conf::$main ? Conf::$main->dbname . ": " : "";
+                error_log("{$pfx}{$landmark}: Invalid expansion " . json_encode($v) . "\n" . debug_string_backtrace());
             }
         }
     }

@@ -1,0 +1,89 @@
+[
+    {
+        "legend": "Checkbox",
+        "type": "checkbox",
+        "instantiate": {"title": ""}
+    },
+    {
+        "legend": "Attestation",
+        "instantiate": {"name": "", "description": ""},
+        "name": "Attestation",
+        "description": "An author must check this box before completing the submission.",
+        "type": "checkbox",
+        "required": "submit"
+    },
+    {
+        "legend": "Dropdown",
+        "type": "dropdown",
+        "instantiate": {"title": "", "values": []},
+        "values": [
+            "Option 1",
+            "Option 2",
+            "Option 3"
+        ]
+    },
+    {
+        "legend": "Radio buttons",
+        "type": "radio",
+        "instantiate": {"title": "", "values": []},
+        "values": [
+            "Option 1",
+            "Option 2",
+            "Option 3"
+        ]
+    },
+    {
+        "legend": "Checkboxes",
+        "type": "checkboxes",
+        "instantiate": {"title": "", "values": []},
+        "values": [
+            "Option 1",
+            "Option 2",
+            "Group: Entry 1",
+            "Group: Entry 2"
+        ]
+    },
+    {
+        "legend": "Whole number",
+        "type": "numeric",
+        "value": 10
+    },
+    {
+        "legend": "Decimal number",
+        "type": "realnumber",
+        "value": -12.5
+    },
+    {
+        "legend": "Text field",
+        "type": "text",
+        "value": "Text entry"
+    },
+    {
+        "legend": "Multiline text",
+        "type": "mtext",
+        "display_space": 5,
+        "value": "Long text entry"
+    },
+    {
+        "legend": "PDF upload",
+        "type": "pdf"
+    },
+    {
+        "legend": "Slides upload",
+        "type": "slides"
+    },
+    {
+        "legend": "File upload",
+        "type": "document"
+    },
+    {
+        "legend": "Attachments",
+        "type": "attachments"
+    },
+    {
+        "legend": "Section break",
+        "type": "separator",
+        "instantiate": {"name": ""},
+        "name": "Optional section title"
+    }
+]

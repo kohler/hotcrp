@@ -4,8 +4,19 @@
 "use strict";
 
 (function () {
+/* global hotcrp, $$, $e, hidden_input, log_jserror */
+/* global hoturl, hoturl_html, demand_load */
+/* global addClass, removeClass, toggleClass, hasClass */
+/* global handle_ui, event_key, event_modkey */
+/* global input_default_value, form_differs, check_form_differs */
+/* global render_feedback_list, append_feedback_near, append_feedback_to */
+/* global render_text */
+/* global popup_skeleton, make_bubble */
+/* global fold, foldup, focus_at */
+/* global sprintf, escape_html, plural, text_eq */
+/* global make_color_scheme, ensure_pattern_here */
 
-handle_ui.on("hashjump.js-hash", function (hashc, focus) {
+handle_ui.on("hashjump.js-hash", function (hashc) {
     var e, fx, fp;
     if (hashc.length === 1
         && (e = document.getElementById(decodeURIComponent(hashc[0])))
@@ -113,6 +124,7 @@ function settings_disable_children(e) {
         else if (this.type !== "select")
             this.readonly = true;
         removeClass(this, "ui");
+        this.tabIndex = -1;
     });
 }
 
@@ -197,18 +209,91 @@ function field_instantiate(ee, ftypes, tname, instantiators) {
     }
 }
 
+function grid_select_event(evt) {
+    var selidx = null, curidx, action = 1, e, columns;
+    if (typeof evt === "number") {
+        selidx = evt;
+        action = 1;
+        evt = null;
+    } else if (evt.type === "dblclick") {
+        if (!hasClass(this, "grid-select-autosubmit")
+            || event_modkey(evt)
+            || evt.button !== 0) {
+            return false;
+        }
+        action = 2;
+    } else if (evt.type === "click") {
+        if (event_modkey(evt)
+            || evt.button !== 0) {
+            return false;
+        }
+        e = evt.target.closest(".grid-option");
+        selidx = +e.getAttribute("data-index");
+    } else if (evt.type === "keydown") {
+        var key = event_key(evt), mod = event_modkey(evt);
+        e = evt.target.closest(".grid-option");
+        selidx = +e.getAttribute("data-index");
+        columns = window.getComputedStyle(this).gridTemplateColumns.split(" ").length;
+        if (key === "ArrowLeft" && !mod) {
+            --selidx;
+        } else if (key === "ArrowRight" && !mod) {
+            ++selidx;
+        } else if (key === "ArrowUp" && !mod) {
+            selidx -= columns;
+        } else if (key === "ArrowDown" && !mod) {
+            selidx += columns;
+        } else if (key === "Home" && (!mod || mod === event_modkey.CTRL)) {
+            selidx = columns < 3 ? 0 : selidx - selidx % columns;
+            action = 0;
+        } else if (key === "End" && !mod) {
+            selidx = columns < 3 ? this.childNodes.length - 1 : selidx + (selidx + columns - 1) % columns;
+            action = 0;
+        } else if (key === "End" && mod === event_modkey.CTRL) {
+            selidx = this.childNodes.length - 1;
+            action = 0;
+        } else if (key === " " && !mod) {
+            // action = 1;
+        } else if (key === "Enter" && !mod) {
+            action = hasClass(this, "grid-select-autosubmit") ? 3 : 1;
+        } else {
+            return false;
+        }
+    } else {
+        return false;
+    }
+    selidx = Math.min(Math.max(selidx, 0), this.childNodes.length - 1);
+    if (this.hasAttribute("data-selected-index")) {
+        curidx = +this.getAttribute("data-selected-index");
+    }
+    if (curidx !== selidx && curidx !== null && (e = this.childNodes[curidx])) {
+        e.setAttribute("aria-selected", "false");
+        removeClass(e, "active");
+    }
+    if ((e = this.childNodes[selidx])) {
+        e.focus();
+        $(e).scrollIntoView();
+        if ((action & 1) !== 0 && selidx !== curidx) {
+            this.setAttribute("data-selected-index", selidx);
+            e.setAttribute("aria-selected", "true");
+            addClass(e, "active");
+            curidx = selidx;
+        }
+    }
+    if ((action & 2) !== 0 && curidx !== null) {
+        $(this.closest("form")).trigger("submit");
+    }
+    evt && evt.preventDefault();
+    return true;
+}
+
 
 // BEGIN SUBMISSION FIELD SETTINGS
-(function () {
-var sftypes;
+var submission_form_settings = (function () {
+
+var sftypes, samples;
 
 function sf_order() {
     settings_field_order("settings-sform");
-}
-
-function sf_instantiate(ee) {
-    sftypes = sftypes || JSON.parse($$("settings-sform").getAttribute("data-sf-types"));
-    field_instantiate(ee, sftypes, null, null);
 }
 
 handle_ui.on("js-settings-sf-move", function (evt) {
@@ -230,52 +315,66 @@ handle_ui.on("js-settings-sf-move", function (evt) {
     sf_order();
 });
 
+function make_sf_instantiator(sample) {
+    var x = {}, i;
+    if (sample.instantiators) {
+        sample = Object.assign({}, sample);
+        for (i in sample.instantiate) {
+            sample[i] = sample.instantiate[i];
+        }
+    }
+    if (sample.description) {
+        x.description = function (pe) {
+            $(pe).find("textarea").val(sample.description);
+        }
+    }
+    if (sample.required) {
+        x.required = function (pe) {
+            $(pe).find("select").val(sample.required === "register" ? 1 : 2);
+        };
+    }
+    return x;
+}
 
 function add_dialog() {
-    var $d, sel, samps = $$("settings-sf-samples").content.childNodes;
-    function cur_option() {
-        return sel.options[sel.selectedIndex] || sel.options[0];
-    }
-    function render_template() {
-        var opt = cur_option(), sft = $d.find(".settings-sf-template-view")[0];
-        if (hasClass(sft.lastChild, "settings-sf-example"))
-            sft.lastChild.remove();
-        sft.appendChild(samps[opt.value | 0].cloneNode(true));
-        settings_disable_children(sft);
-    }
+    var $d, grid, samps = $$("settings-sf-samples").content.childNodes;
     function submit(evt) {
-        var opt = cur_option(),
-            samp = samps[opt.value | 0],
+        var selidx = +grid.getAttribute("data-selected-index"),
+            samp = samps[selidx],
             h = $$("settings-sf-new").innerHTML,
-            next = 1, odiv;
+            next = 1;
         while ($$("sf/" + next + "/name")) {
             ++next;
         }
         h = h.replace(/\/\$/g, "/" + next);
-        odiv = $(h).removeClass("hidden").appendTo("#settings-sform").awaken();
+        $(h).removeClass("hidden").appendTo("#settings-sform").awaken();
         $$("sf/" + next + "/type").options[0].value = samp.getAttribute("data-name");
-        sf_instantiate($$("sf/" + next + "/edit"));
+        field_instantiate($$("sf/" + next + "/edit"), sftypes, samples[selidx].type,
+            make_sf_instantiator(samples[selidx]));
         $$("sf/" + next + "/name").focus();
         sf_order();
         $d.close();
         evt.preventDefault();
     }
     function create() {
-        var hc = popup_skeleton({className: "modal-dialog-w40"}), i;
+        var hc = popup_skeleton({className: "modal-dialog-wide"}), i;
         hc.push('<h2>Add field</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
-        hc.push('<select name="sf_template" class="w-100 want-focus" size="5">', '</select>');
-        for (i = 0; samps[i]; ++i) {
-            hc.push('<option value="'.concat(i, i ? '">' : '" selected>', escape_html(samps[i].getAttribute("data-title")), '</option>'));
-        }
-        hc.pop();
-        hc.push('<fieldset class="settings-sf-template-view mt-4 modal-demo-fieldset"><legend>Example</legend></fieldset>');
+        hc.push('<div class="grid-select grid-select-autosubmit" role="listbox"></div>');
         hc.push_actions(['<button type="submit" name="add" class="btn-primary">Add field</button>',
             '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
-        sel = $d.find("select")[0];
-        render_template();
-        $(sel).on("input", render_template);
+        grid = $d[0].querySelector(".grid-select");
+        for (i = 0; i !== samps.length; ++i) {
+            grid.append($e("fieldset", {"class": "grid-option", "data-index": i, role: "option", tabindex: 0, "aria-selected": "false"},
+                $e("legend", null, samples[i].legend),
+                samps[i].cloneNode(true)));
+        }
+        settings_disable_children(grid);
+        grid_select_event.call(grid, 0);
+        grid.addEventListener("keydown", grid_select_event);
+        grid.addEventListener("click", grid_select_event);
+        grid.addEventListener("dblclick", grid_select_event);
         $d.find("form").on("submit", submit);
     }
     create();
@@ -288,7 +387,7 @@ $(document).on("hotcrpsettingssf", ".settings-sf", function () {
         edit = document.getElementById(this.id + "/edit");
     settings_disable_children(view);
     if (edit) {
-        sf_instantiate(edit);
+        field_instantiate(edit, sftypes);
         if (!form_differs(edit)
             && !$(edit).find(".is-error, .has-error").length)
             fold(this, true, 2);
@@ -309,6 +408,11 @@ hotcrp.tooltip.add_builder("settings-sf", function (info) {
         x = "#settings-sf-caption-description";
     return $.extend({anchor: "h", content: $(x).html(), className: "gray"}, info);
 });
+
+return function (data) {
+    samples = data.samples;
+    sftypes = data.types;
+};
 
 })();
 // END SUBMISSION FIELD SETTINGS
@@ -635,59 +739,70 @@ function rf_visibility_text(visibility) {
 }
 
 function rf_render_view(fld) {
-    var hc = new HtmlCollector;
+    var frag = document.createDocumentFragment(), labele, e, ve, t;
 
-    hc.push('<h3 class="rfehead">', '</h3>');
-    if (fld.type === "checkbox") {
-        hc.push('<label class="revfn checki'.concat(fld.required ? " field-required" : "", '"><span class="checkc"><input type="checkbox" disabled></span>'), '</label>');
-    } else {
-        hc.push('<label class="revfn'.concat(fld.required ? " field-required" : "", '">'), '</label>');
+    // header
+    labele = $e("label", "revfn" + (fld.required ? " field-required" : ""), fld.name || "<unnamed>");
+    frag.append((e = $e("h3", "rfehead", labele)));
+    if ((t = rf_visibility_text(fld.visibility))) {
+        e.append($e("div", "field-visibility", t));
     }
-    hc.push_pop(fld.name_html || "&lt;unnamed&gt;");
-    var t = rf_visibility_text(fld.visibility);
-    if (t)
-        hc.push('<div class="field-visibility">'.concat(t, '</div>'));
-    hc.pop();
 
-    hc.push('<ul class="feedback-list">', '</ul>');
+    // feedback
+    frag.append((e = $e("ul", "feedback-list")));
     if (fld.exists_if && /^round:[a-zA-Z][-_a-zA-Z0-9]*$/.test(fld.exists_if)) {
-        hc.push('<li class="is-diagnostic format-inline is-warning-note">Present on ' + fld.exists_if.substring(6) + ' reviews</li>');
+        e.append($e("li", "is-diagnostic format-inline is-warning-note", "Present on " + fld.exists_if.substring(6) + " reviews"));
     } else if (fld.exists_if) {
-        hc.push('<li class="is-diagnostic format-inline is-warning-note">Present on reviews matching “' + escape_html(fld.exists_if) + '”</li>');
+        e.append($e("li", "is-diagnostic format-inline is-warning-note", "Present on reviews matching “" + fld.exists_if + "”"));
     }
-    hc.pop();
 
-    if (fld.description)
-        hc.push('<div class="field-d">'.concat(fld.description, '</div>'));
+    // description
+    if (fld.description) {
+        frag.append((e = $e("div", "field-d")));
+        e.innerHTML = fld.description;
+    }
 
+    // content
+    ve = $e("div", "revev");
     if (fld.type === "dropdown") {
-        hc.push('<div class="revev"><span class="select"><select>', '</select></span></div>');
-        hc.push('<option value="0">(Choose one)</option>');
+        e = $e("select", null, $e("option", {value: 0}, "(Choose one)"));
         fld.each_value(function (fv) {
-            hc.push('<option>'.concat(fv.symbol, fv.sp1, fv.sp2, escape_html(fv.title), '</option>'));
+            e.add($e("option", null, "".concat(fv.symbol, fv.sp1, fv.sp2, fv.title)));
         });
         if (!fld.required) {
-            hc.push('<option value="none">N/A</option>');
+            e.add($e("option", {value: "none"}, "N/A"));
         }
-        hc.pop();
+        ve.append($e("span", "select", e));
     } else if (fld.type === "radio") {
-        hc.push('<div class="revev">', '</div>');
         fld.each_value(function (fv) {
-            hc.push('<label class="checki svline"><span class="checkc"><input type="radio" disabled></span><span class="rev_num sv '.concat(fv.className, '">', fv.symbol, fv.sp1, '</span>', fv.sp2, escape_html(fv.title), '</label>'));
+            ve.append($e("label", "checki svline",
+                $e("span", "checkc", $e("input", {type: "radio", disabled: true})),
+                $e("span", "rev_num sv " + fv.className, "".concat(fv.symbol, fv.sp1)),
+                fv.sp2 + fv.title));
         });
         if (!fld.required) {
-            hc.push('<label class="checki svline"><span class="checkc"><input type="radio" disabled></span>None of the above</label>');
+            ve.append($e("label", "checki svline",
+                $e("span", "checkc", $e("input", {type: "radio", disabled: true})),
+                "None of the above"));
         }
     } else if (fld.type === "text") {
-        hc.push('<div class="revev"><textarea class="w-text" rows="' + Math.max(fld.display_space || 0, 3) + '" disabled>Text field</textarea></div>');
+        ve.append($e("textarea", {"class": "w-text", rows: Math.max(fld.display_space || 0, 3), disabled: true}, "Text field"));
     } else if (fld.type === "checkboxes") {
-        hc.push('<div class="revev">', '</div>');
         fld.each_value(function (fv) {
-            hc.push('<label class="checki svline"><span class="checkc"><input type="checkbox" disabled></span><span class="rev_num sv '.concat(fv.className, '">', fv.symbol, fv.sp1, '</span>', fv.sp2, escape_html(fv.title), '</label>'));
+            ve.append($e("label", "checki svline",
+                $e("span", "checkc", $e("input", {type: "checkbox", disabled: true})),
+                $e("span", "rev_num sv " + fv.className, "".concat(fv.symbol, fv.sp1)),
+                fv.sp2 + fv.title));
         });
+    } else if (fld.type === "checkbox") {
+        addClass(labele, "checki");
+        labele.insertBefore($e("span", "checkc", $e("input", {type: "checkbox", disabled: true})), labele.firstChild);
+    }
+    if (ve.firstChild) {
+        frag.append(ve);
     }
 
-    return hc.render();
+    return frag;
 }
 
 function rf_move() {
@@ -714,8 +829,8 @@ function rf_make(fj) {
     var fld = hotcrp.make_review_field(fj);
     if (fj.id != null)
         fld.id = fj.id;
-    if (fj.selector != null)
-        fld.selector = fj.selector;
+    if (fj.legend != null)
+        fld.legend = fj.legend;
     if (fj.instantiate != null)
         fld.instantiate = fj.instantiate;
     if (fj.configurable != null)
@@ -724,7 +839,7 @@ function rf_make(fj) {
 }
 
 function rf_append(fld) {
-    var pos = fieldorder.length + 1, $f, i, e, ne, prop, $j,
+    var pos = fieldorder.length + 1, $f, i,
         rftype = field_find(rftypes, fld.type || "radio");
     if (!fld.id) {
         var pat = /text/.test(rftype.name) ? "t%02d" : "s%02d";
@@ -822,52 +937,44 @@ function rfs(data) {
 }
 
 function add_dialog() {
-    var $d, sel;
-    function cur_sample() {
-        var i = sel.options[sel.selectedIndex].value | 0;
-        i = (samples[i] ? i : 0);
-        if (!samples[i].parse_value)
-            samples[i] = rf_make(samples[i]);
-        return samples[i];
-    }
-    function render_template() {
-        var rft = $d.find(".settings-rf-template-view")[0], ex;
-        if (hasClass(rft.lastChild, "settings-rf-example"))
-            rft.lastChild.remove();
-        ex = document.createElement("div");
-        ex.className = "settings-rf-example";
-        ex.innerHTML = rf_render_view(cur_sample());
-        rft.appendChild(ex);
-    }
+    var $d, grid;
     function submit(evt) {
-        var fld = Object.assign({}, cur_sample());
+        var samp = samples[+grid.getAttribute("data-selected-index")],
+            fld = Object.assign({}, samp);
         delete fld.id;
-        for (const i of Object.keys(fld.instantiate || {})) {
+        for (const i in fld.instantiate || {}) {
             fld[i] = fld.instantiate[i];
         }
         rf_add(fld);
-        document.getElementById("rf/" + fieldorder.length + "/name").focus();
+        $$("rf/" + fieldorder.length + "/name").focus();
         $d.close();
         rf_order();
         check_form_differs("#f-settings");
         evt.preventDefault();
     }
     function create() {
-        var hc = popup_skeleton({className: "modal-dialog-w40"}), i;
+        var hc = popup_skeleton({className: "modal-dialog-wide"}), i;
         hc.push('<h2>Add field</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
-        hc.push('<select name="rf_template" class="w-99 want-focus" size="5">', '</select>');
-        for (i = 0; i !== samples.length; ++i) {
-            hc.push('<option value="'.concat(i, i ? '">' : '" selected>', escape_html(samples[i].selector), '</option>'));
-        }
-        hc.pop();
-        hc.push('<fieldset class="settings-rf-template-view mt-4 modal-demo-fieldset"><legend>Example</legend></fieldset>');
+        hc.push('<div class="grid-select grid-select-autosubmit" role="listbox"></div>');
         hc.push_actions(['<button type="submit" name="add" class="btn-primary">Add field</button>',
             '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
-        sel = $d.find("select")[0];
-        render_template();
-        $(sel).on("input", render_template);
+        grid = $d[0].querySelector(".grid-select");
+        for (i = 0; i !== samples.length; ++i) {
+            if (!samples[i].parse_value) {
+                samples[i] = rf_make(samples[i]);
+            }
+            grid.append($e("fieldset", {"class": "grid-option", "data-index": i, role: "option", tabindex: 0, "aria-selected": "false"},
+                $e("legend", null, samples[i].legend),
+                $e("div", {"class": "settings-rf-view", role: "presentation"},
+                    rf_render_view(samples[i]))));
+        }
+        settings_disable_children(grid);
+        grid_select_event.call(grid, 0);
+        grid.addEventListener("keydown", grid_select_event);
+        grid.addEventListener("click", grid_select_event);
+        grid.addEventListener("dblclick", grid_select_event);
         $d.find("form").on("submit", submit);
     }
     create();
@@ -1512,6 +1619,7 @@ function make_content_editable(mainel) {
     };
 }
 
+/* eslint-disable-next-line no-control-regex */
 let json_string_re = /"(?:[^\\"\x00-\x1F]|\\[/\\bfnrt"]|\\u[0-9a-fA-F]{4})+"/y;
 
 
@@ -2874,7 +2982,8 @@ handle_ui.on("dragstart.js-settings-drag", function (evt) {
 
 
 hotcrp.settings = {
-    review_form: review_form_settings
+    review_form: review_form_settings,
+    submission_form: submission_form_settings
 };
 
 })();

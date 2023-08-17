@@ -114,12 +114,13 @@ etc/listactions.json
 etc/mailkeywords.json
 etc/mailtemplates.json
 etc/msgs.json
+etc/optionlibrary.json
 etc/optiontypes.json
 etc/pages.json
 etc/papercolumns.json
 etc/profilegroups.json
+etc/reviewfieldlibrary.json
 etc/reviewfieldtypes.json
-etc/reviewformlibrary.json
 etc/sample.pdf
 etc/searchkeywords.json
 etc/settingdescriptions.md

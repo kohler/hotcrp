@@ -1,8 +1,8 @@
 [
     {
-        "selector": "Score",
+        "legend": "Score",
         "instantiate": {"name": "", "values": []},
-        "name": "Score field",
+        "name": "Field name",
         "type": "radio",
         "values": [
             "Option 1",
@@ -12,16 +12,16 @@
         "visibility": "au"
     },
     {
-        "selector": "Text field",
+        "legend": "Text field",
         "instantiate": {"name": ""},
-        "name": "Text field",
+        "name": "Field name",
         "type": "text",
         "visibility": "au"
     },
     {
-        "selector": "Dropdown score",
+        "legend": "Dropdown score",
         "instantiate": {"name": "", "values": []},
-        "name": "Dropdown score field",
+        "name": "Field name",
         "type": "dropdown",
         "values": [
             "Option 1",
@@ -31,14 +31,14 @@
         "visibility": "au"
     },
     {
-        "selector": "Checkbox",
+        "legend": "Checkbox",
         "instantiate": {"name": ""},
         "name": "Checkbox field",
         "type": "checkbox",
         "visibility": "au"
     },
     {
-        "selector": "Attestation",
+        "legend": "Attestation",
         "instantiate": {"name": "", "description": ""},
         "name": "Attestation",
         "description": "The reviewer must check this box before submitting the review.",
@@ -47,9 +47,9 @@
         "required": true
     },
     {
-        "selector": "Checkboxes",
+        "legend": "Checkboxes",
         "instantiate": {"name": "", "description": "", "values": []},
-        "name": "Checkboxes",
+        "name": "Field name",
         "type": "checkboxes",
         "description": "Select zero or more options.",
         "values": [
@@ -61,7 +61,7 @@
         "visibility": "au"
     },
     {
-        "selector": "Overall merit (1–5, Reject through Strong Accept)",
+        "legend": "Overall merit (1–5, Reject through Strong Accept)",
         "name": "Overall merit",
         "type": "radio",
         "values": [
@@ -75,7 +75,7 @@
         "visibility": "au"
     },
     {
-        "selector": "Overall merit (A–D, Identify the Champion)",
+        "legend": "Overall merit (A–D, Identify the Champion)",
         "name": "Overall merit",
         "type": "radio",
         "values": [
@@ -90,7 +90,7 @@
         "scheme": "svr"
     },
     {
-        "selector": "Overall merit (1–5, percentage rankings)",
+        "legend": "Overall merit (1–5, percentage rankings)",
         "name": "Overall merit",
         "type": "radio",
         "values": [
@@ -104,7 +104,7 @@
         "visibility": "au"
     },
     {
-        "selector": "Reviewer confidence (1–3, Low through High)",
+        "legend": "Reviewer confidence (1–3, Low through High)",
         "name": "Reviewer confidence",
         "type": "radio",
         "values": [
@@ -117,7 +117,7 @@
         "scheme": "buor"
     },
     {
-        "selector": "Reviewer expertise (1–5)",
+        "legend": "Reviewer expertise (1–5)",
         "name": "Reviewer expertise",
         "type": "radio",
         "values": [
@@ -132,7 +132,7 @@
         "scheme": "buor"
     },
     {
-        "selector": "Confidence (X–Z, Identify the Champion)",
+        "legend": "Confidence (X–Z, Identify the Champion)",
         "name": "Confidence",
         "type": "radio",
         "values": [
@@ -146,40 +146,40 @@
         "scheme": "orbu"
     },
     {
-        "selector": "Paper summary",
+        "legend": "Paper summary",
         "name": "Paper summary",
         "type": "text",
         "description": "Please summarize the paper’s main results in your own words. This will frame the review and show that you have understood the paper’s intent.",
         "visibility": "au"
     },
     {
-        "selector": "Paper summary (shorter description)",
+        "legend": "Paper summary (shorter description)",
         "name": "Paper summary",
         "type": "text",
         "description": "Please summarize the paper briefly in your own words.",
         "visibility": "au"
     },
     {
-        "selector": "Comments for authors",
+        "legend": "Comments for authors",
         "name": "Comments for authors",
         "type": "text",
         "visibility": "au"
     },
     {
-        "selector": "Comments for PC",
+        "legend": "Comments for PC",
         "name": "Comments for PC",
         "type": "text",
-        "visibility": "pc"
+        "visibility": "re"
     },
     {
-        "selector": "Response questions",
+        "legend": "Response questions",
         "name": "Questions for authors’ response",
         "type": "text",
         "description": "Specific questions that could affect your accept/reject decision. Remember that the authors have limited space and must respond to all reviewers.",
         "visibility": "au"
     },
     {
-        "selector": "Novelty (1–4)",
+        "legend": "Novelty (1–4)",
         "name": "Novelty",
         "type": "radio",
         "values": [
@@ -192,7 +192,7 @@
         "visibility": "au"
     },
     {
-        "selector": "Writing quality (1–5)",
+        "legend": "Writing quality (1–5)",
         "name": "Writing quality",
         "type": "radio",
         "values": [
@@ -206,7 +206,7 @@
         "visibility": "au"
     },
     {
-        "selector": "Experimental methodology (1–5)",
+        "legend": "Experimental methodology (1–5)",
         "name": "Experimental methodology",
         "type": "radio",
         "values": [
@@ -221,14 +221,14 @@
     },
 
     {
-        "selector": "Strengths",
+        "legend": "Strengths",
         "name": "Strengths",
         "type": "text",
         "description": "What are the paper’s important strengths? Just a couple sentences, please.",
         "visibility": "au"
     },
     {
-        "selector": "Weaknesses",
+        "legend": "Weaknesses",
         "name": "Weaknesses",
         "type": "text",
         "description": "What are the paper’s important weaknesses? Just a couple sentences, please.",

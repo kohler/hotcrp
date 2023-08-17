@@ -164,7 +164,7 @@ class Options_SettingRenderer {
 
 
     private function print_one_option_view(PaperOption $io, SettingValues $sv, $ctr) {
-        echo '<div id="sf/', $ctr, '/view" class="settings-sf-view settings-sf-example fn2 ui js-foldup">';
+        echo '<div id="sf/', $ctr, '/view" class="settings-sf-view fn2 ui js-foldup">';
         if ($io->exists_condition()) {
             $this->pt->msg_at($io->formid, "<0>Present on submissions matching ‘" . $io->exists_condition() . "’", MessageSet::WARNING_NOTE);
         }
@@ -234,9 +234,15 @@ class Options_SettingRenderer {
             echo '<div class="feedback is-note mb-4">Click on a field to edit it.</div>';
         }
 
-        echo '<div id="settings-sform" class="c" data-sf-types="',
-            htmlspecialchars(json_encode_browser(ReviewForm_SettingParser::make_types_json($sv->conf->option_type_map()))),
-            '">';
+        // initialize JS for samples and option types
+        $samplej = ReviewForm_SettingParser::make_field_library($sv->user, ["etc/optionlibrary.json"], "optionLibraries");
+        $otmap = $sv->conf->option_type_map();
+        $sj = [];
+        $sj["samples"] = $samplej;
+        $sj["types"] = ReviewForm_SettingParser::make_types_json($otmap);
+        Ht::stash_script("hotcrp.settings.submission_form(" . json_encode_browser($sj) . ")");
+
+        echo '<div id="settings-sform" class="c">';
         // NB: div#settings-sform must ONLY contain fields
         foreach ($sv->oblist_keys("sf") as $ctr) {
             $this->print_one_option($sv, $ctr);
@@ -247,26 +253,26 @@ class Options_SettingRenderer {
         // render sample options
         echo '<template id="settings-sf-samples" class="hidden">';
         $xtp = new XtParams($sv->conf, $sv->user);
-        foreach ($sv->conf->option_type_map() as $uf) {
-            if ($xtp->check($uf->display_if ?? null, $uf)) {
-                $args = [
-                    "id" => 1000,
-                    "name" => "{$uf->title} field",
-                    "type" => $uf->name,
-                    "order" => 1,
-                    "display" => "prominent",
-                    "json_key" => "__demo_{$uf->name}__"
-                ];
-                if ($uf->sample ?? null) {
-                    $args = array_merge($args, (array) $uf->sample);
-                }
-                $o = PaperOption::make($sv->conf, (object) $args);
-                $ov = $o->parse_json($this->pt->prow, $args["value"] ?? null)
-                    ?? PaperValue::make($this->pt->prow, $o);
-                echo '<div class="settings-sf-example" data-name="', htmlspecialchars($uf->name), '" data-title="', htmlspecialchars($uf->title), '">';
-                $o->print_web_edit($this->pt, $ov, $ov);
-                echo '</div>';
+        $sampleindex = 0;
+        foreach ($samplej as $sampj) {
+            if (!($otype = $otmap[$sampj->type] ?? null)
+                || !$xtp->check($otype->display_if ?? null, $otype)) {
+                continue;
             }
+            $sampj = clone $sampj;
+            $sampj->id = 1000;
+            $sampj->name = $sampj->name ?? "Field name";
+            $sampj->order = $sampj->order ?? 1;
+            $sampj->display = $sampj->display ?? "prominent";
+            $sampj->json_key = "__demo_{$sampleindex}__";
+            ++$sampleindex;
+            $o = PaperOption::make($sv->conf, $sampj);
+            $ov = $o->parse_json($this->pt->prow, $sampj->value ?? null)
+                ?? PaperValue::make($this->pt->prow, $o);
+            echo '<div class="settings-sf-view" role="presentation" data-name="', htmlspecialchars($sampj->name), '" data-title="',
+                htmlspecialchars($sampj->title ?? "Field name"), '">';
+            $o->print_web_edit($this->pt, $ov, $ov);
+            echo '</div>';
         }
         echo '</template>';
 

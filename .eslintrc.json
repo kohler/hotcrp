@@ -8,7 +8,6 @@
         "ecmaVersion": "latest"
     },
     "globals": {
-        "hotcrp": "writable",
         "Set": "readonly",
         "WeakMap": "readonly"
     },

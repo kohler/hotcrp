@@ -2,7 +2,7 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 "use strict";
-var siteinfo, hotcrp, hotcrp_status;
+var siteinfo, hotcrp;
 hotcrp = {};
 
 function $$(id) {
@@ -703,6 +703,7 @@ function plural(n, what) {
     return n + " " + plural_noun(n, what);
 }
 
+/* exported ordinal */
 function ordinal(n) {
     if (n >= 1 && n <= 3)
         return n + ["st", "nd", "rd"][Math.floor(n - 1)];
@@ -723,6 +724,7 @@ function commajoin(a, joinword) {
         return a.slice(0, l - 1).join(", ") + ", " + joinword + " " + a[l - 1];
 }
 
+/* exported common_prefix */
 function common_prefix(a, b) {
     var i = 0;
     while (i != a.length && i != b.length && a.charAt(i) == b.charAt(i))
@@ -950,6 +952,7 @@ function unparse_byte_size(n) {
         return "0B";
 }
 
+/* exported unparse_byte_size_binary */
 function unparse_byte_size_binary(n) {
     if (n > 1073689395)
         return (Math.round(n / 10737418.24) / 100) + "GiB";
@@ -5875,7 +5878,6 @@ function render_review_hidden_fields(hidden_fields) {
 function ReviewField(fj) {
     this.uid = fj.uid;
     this.name = fj.name;
-    this.name_html = escape_html(this.name);
     this.type = fj.type;
     if (fj.description != null)
         this.description = fj.description;
@@ -12904,6 +12906,7 @@ Object.assign(window.hotcrp, {
     // make_review_field
     // onload
     // paper_edit_conditions
+    popup_skeleton: popup_skeleton,
     // render_list
     render_text: render_text,
     render_text_page: render_text.on_page,
