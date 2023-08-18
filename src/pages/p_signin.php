@@ -492,6 +492,7 @@ class Signin_Page {
             if (($tok = self::_find_reset_token($conf, $this->_reset_tokstr))) {
                 $this->_reset_token = $tok;
                 $this->_reset_user = $tok->user();
+                $qreq->open_session();
             } else {
                 $this->ms()->error_at("resetcap", "Unknown or expired password reset code. Please check that you entered the code correctly.");
             }
