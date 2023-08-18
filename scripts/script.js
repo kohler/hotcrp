@@ -7679,30 +7679,25 @@ function suggest() {
         node.className = titem.no_space ? "suggestion s9nsp" : "suggestion";
         if (titem.r)
             node.setAttribute("data-replacement", titem.r);
-        if (titem.sh)
+        if (titem.sh) {
             node.innerHTML = titem.sh;
-        else if (titem.d || titem.dh || prepend) {
+        } else if (titem.d || titem.dh || prepend) {
             if (prepend) {
-                var s9p = document.createElement("span");
-                s9p.className = "s9p";
-                s9p.appendChild(document.createTextNode(prepend));
-                node.appendChild(s9p);
+                node.appendChild($e("span", "s9p", prepend));
             }
-            var s9t = document.createElement("span");
-            s9t.className = "s9t";
-            s9t.appendChild(document.createTextNode(titem.s));
-            node.appendChild(s9t);
+            node.appendChild($e("span", "s9t", titem.s));
             if (titem.d || titem.dh) {
                 var s9d = document.createElement("span");
                 s9d.className = "s9d";
                 if (titem.dh)
                     s9d.innerHTML = titem.dh;
                 else
-                    s9d.appendChild(document.createTextNode(titem.d))
+                    s9d.append(titem.d)
                 node.appendChild(s9d);
             }
-        } else
-            node.appendChild(document.createTextNode(titem.s));
+        } else {
+            node.append(titem.s);
+        }
         return node;
     }
 
@@ -7722,7 +7717,7 @@ function suggest() {
             hintdiv.self().on("mousedown", function (evt) { evt.preventDefault(); })
                 .on("click", ".suggestion", click)
                 .on("mousemove", ".suggestion", hover);
-            wasmouse = 0;
+            wasmouse = null;
         }
 
         var i, clist = cinfo.items, same_list = false;
@@ -7736,8 +7731,8 @@ function suggest() {
             }
         }
         cinfo.editlength = cinfo.lengths[1];
-        if (hintinfo && hintinfo.startpos === cinfo.startpos && hintinfo.editlength < cinfo.editlength) {
-            cinfo.editlength = hintinfo.editlength;
+        if (hintinfo && hintinfo.startpos === cinfo.startpos) {
+            cinfo.editlength = Math.min(cinfo.editlength, hintinfo.editlength);
         }
         hintinfo = cinfo;
 
@@ -7752,8 +7747,9 @@ function suggest() {
                 i = clist.length - 1;
             div = document.createElement("div");
             div.className = "suggesttable suggesttable" + (i + 1);
-            for (i = 0; i !== clist.length; ++i)
+            for (i = 0; i !== clist.length; ++i) {
                 div.appendChild(render_item(clist[i], cinfo.prefix));
+            }
             hintdiv.html(div);
         } else {
             div = hintdiv.content_node().firstChild;
@@ -7809,8 +7805,9 @@ function suggest() {
             repl = complete_elt.textContent;
         else {
             var n = complete_elt.firstChild;
-            while (n.className !== "s9t")
+            while (n.className !== "s9t") {
                 n = n.nextSibling;
+            }
             repl = n.textContent;
         }
 
@@ -7835,6 +7832,11 @@ function suggest() {
             ++outPos;
             repl += " ";
             spacestate = hintinfo.smart_punctuation ? outPos : -1;
+        }
+        if (endPos < 0) {
+            let x = Object.assign({}, hintinfo);
+            delete x.items;
+            log_jserror(JSON.stringify({value:val,hint:x,repl:repl,startPos:startPos,endPos:endPos}));
         }
         elt.setRangeText(repl, startPos, endPos, "end");
         if (hintinfo.postreplace)
