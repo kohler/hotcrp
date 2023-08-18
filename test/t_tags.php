@@ -101,4 +101,69 @@ class Tags_Tester {
         xassert(!$ti->is(TagInfo::TF_HIDDEN));
         xassert($ti->is(TagInfo::TF_SITEWIDE));
     }
+
+    function test_assign_delete_create() {
+        $p1 = $this->conf->checked_paper_by_id(1);
+        xassert(!$p1->has_tag("testtag"));
+
+        // set
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag\n");
+        $p1->load_tags();
+        xassert($p1->has_tag("testtag"));
+        xassert_eqq($p1->tag_value("testtag"), 0.0);
+
+        // clear
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag#clear\n");
+        $p1->load_tags();
+        xassert(!$p1->has_tag("testtag"));
+        xassert_eqq($p1->tag_value("testtag"), null);
+
+        // set with value
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag#2\n");
+        $p1->load_tags();
+        xassert($p1->has_tag("testtag"));
+        xassert_eqq($p1->tag_value("testtag"), 2.0);
+
+        // set without value when value exists
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag\n");
+        $p1->load_tags();
+        xassert($p1->has_tag("testtag"));
+        xassert_eqq($p1->tag_value("testtag"), 2.0);
+
+        // set -> clear -> set resets value
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag\ntag,1,testtag#clear\ntag,1,testtag\n");
+        $p1->load_tags();
+        xassert($p1->has_tag("testtag"));
+        xassert_eqq($p1->tag_value("testtag"), 0.0);
+
+        // clear -> set
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag#clear\ntag,1,testtag\n");
+        $p1->load_tags();
+        xassert($p1->has_tag("testtag"));
+        xassert_eqq($p1->tag_value("testtag"), 0.0);
+
+        // test #some value
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag#2\n");
+        $p1->load_tags();
+        xassert($p1->has_tag("testtag"));
+        xassert_eqq($p1->tag_value("testtag"), 2.0);
+
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag#clear\ntag,1,testtag#some\n");
+        $p1->load_tags();
+        xassert($p1->has_tag("testtag"));
+        xassert_eqq($p1->tag_value("testtag"), 2.0);
+
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag#clear\n");
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag#some\n");
+        $p1->load_tags();
+        xassert($p1->has_tag("testtag"));
+        xassert_eqq($p1->tag_value("testtag"), 0.0);
+
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag#3\ntag,1,testtag#some\n");
+        $p1->load_tags();
+        xassert($p1->has_tag("testtag"));
+        xassert_eqq($p1->tag_value("testtag"), 3.0);
+
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag#clear\n");
+    }
 }

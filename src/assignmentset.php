@@ -28,12 +28,14 @@ class AssignmentItem implements ArrayAccess, JsonSerializable {
     /** @var Assignable
      * @readonly */
     public $before;
-    /** @var ?Assignable */
+    /** @var ?Assignable
+     * @readonly */
     public $after;
     /** @var bool
      * @readonly */
     public $existed;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $deleted = false;
     /** @var null|int|string */
     public $landmark;
@@ -108,7 +110,8 @@ class AssignmentItem implements ArrayAccess, JsonSerializable {
         return $this->pre($offset) !== $this->post($offset);
     }
     /** @param null|int|string $landmark
-     * @return Assignable */
+     * @return Assignable
+     * @suppress PhanAccessReadOnlyProperty */
     function delete_at($landmark) {
         $r = $this->after ?? clone $this->before;
         if ($this->existed) {
@@ -287,8 +290,10 @@ class AssignmentState extends MessageSet {
             return array_keys($this->st);
         }
     }
-    /** @return list<AssignmentItem> */
-    function query_items($q) {
+    const INCLUDE_DELETED = 1;
+    /** @param 0|1 $include_deleted
+     * @return list<AssignmentItem> */
+    function query_items($q, $include_deleted = 0) {
         '@phan-var-force Assignable $q';
         $res = [];
         foreach ($this->pid_keys($q) as $pid) {
@@ -296,7 +301,7 @@ class AssignmentState extends MessageSet {
             $k = $this->extract_key($q, $pid);
             foreach ($k ? [$st->items[$k] ?? null] : $st->items as $item) {
                 if ($item
-                    && !$item->deleted()
+                    && (!$item->deleted() || $include_deleted)
                     && $item->before->type === $q->type
                     && ($item->after ?? $item->before)->match($q)) {
                     $res[] = $item;
@@ -361,7 +366,8 @@ class AssignmentState extends MessageSet {
         return $res;
     }
     /** @param Assignable $x
-     * @return AssignmentItem */
+     * @return AssignmentItem
+     * @suppress PhanAccessReadOnlyProperty */
     function add($x) {
         $k = $this->extract_key($x);
         assert(!!$k);

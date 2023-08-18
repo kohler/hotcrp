@@ -88,12 +88,14 @@ class NextTagAssigner implements AssignmentPreapplyFunction {
 }
 
 class Tag_AssignmentParser extends UserlessAssignmentParser {
-    const NEXT = 1;
-    const NEXTSEQ = 2;
+    const I_SET = 0;
+    const I_NEXT = 1;
+    const I_NEXTSEQ = 2;
+    const I_SOME = 3;
     /** @var ?bool */
     private $remove;
-    /** @var 0|1|2 */
-    private $isnext = 0;
+    /** @var 0|1|2|3 */
+    private $itype = 0;
     /** @var ?Formula */
     private $formula;
     /** @var ?callable(PaperInfo,?int,Contact):mixed */
@@ -102,11 +104,11 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         parent::__construct("tag");
         $this->remove = $aj->remove;
         if (!$this->remove && $aj->next) {
-            $this->isnext = $aj->next === "seq" ? self::NEXTSEQ : self::NEXT;
+            $this->itype = $aj->next === "seq" ? self::I_NEXTSEQ : self::I_NEXT;
         }
     }
     function expand_papers($req, AssignmentState $state) {
-        return $this->isnext ? "ALL" : (string) $req["paper"];
+        return $this->itype ? "ALL" : (string) $req["paper"];
     }
     static function load_tag_state(AssignmentState $state) {
         if (!$state->mark_type("tag", ["pid", "ltag"], "Tag_Assigner::make")) {
@@ -191,25 +193,28 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             $xuser = $m[2];
         }
         $xvalue = $xvalue !== "" ? $xvalue : $m[5];
-        $xnext = $this->isnext;
+        $xitype = $this->itype;
 
         // parse index
         if ($xremove) {
             $nvalue = false;
         } else if ($xvalue === "") {
             $nvalue = null;
+        } else if (preg_match('/\A[-+]?(?:\.\d+|\d+|\d+\.\d*)\z/', $xvalue)) {
+            $nvalue = (float) $xvalue;
         } else if (strcasecmp($xvalue, "none") === 0
                    || strcasecmp($xvalue, "clear") === 0) {
             $nvalue = false;
         } else if (strcasecmp($xvalue, "next") === 0) {
-            $xnext = self::NEXT;
+            $xitype = self::I_NEXT;
             $nvalue = null;
         } else if (strcasecmp($xvalue, "seqnext") === 0
                    || strcasecmp($xvalue, "nextseq") === 0) {
-            $xnext = self::NEXTSEQ;
+            $xitype = self::I_NEXTSEQ;
             $nvalue = null;
-        } else if (preg_match('/\A[-+]?(?:\.\d+|\d+|\d+\.\d*)\z/', $xvalue)) {
-            $nvalue = (float) $xvalue;
+        } else if (strcasecmp($xvalue, "some") === 0) {
+            $xitype = self::I_SOME;
+            $nvalue = null;
         } else {
             if (!$this->formula
                 || $this->formula->expression !== $xvalue
@@ -279,11 +284,16 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // compute final tag and value
         $ntag = $xuser . $xtag;
         $ltag = strtolower($ntag);
-        if ($xnext) {
-            $nvalue = $this->apply_next_index($prow->paperId, $xnext, $ntag, $nvalue, $state);
+        if ($xitype === self::I_NEXT || $xitype === self::I_NEXTSEQ) {
+            $nvalue = $this->apply_next_index($prow->paperId, $xitype, $ntag, $nvalue, $state);
         } else if ($nvalue === null) {
-            if (($x = $state->query(new Tag_Assignable($prow->paperId, $ltag)))) {
-                $nvalue = $x[0]->_index;
+            $items = $state->query_items(new Tag_Assignable($prow->paperId, $ltag),
+                                         AssignmentState::INCLUDE_DELETED);
+            $item = $items[0] ?? null;
+            if ($item && !$item->deleted()) {
+                $nvalue = $item->post("_index");
+            } else if ($item && $item->existed() && $xitype === self::I_SOME) {
+                $nvalue = $item->pre("_index");
             } else {
                 $nvalue = 0.0;
             }
@@ -304,17 +314,17 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         return true;
     }
     /** @param int $pid
-     * @param int $xnext
+     * @param 1|2 $xitype
      * @param string $tag
      * @param ?float $nvalue
      * @return float */
-    private function apply_next_index($pid, $xnext, $tag, $nvalue, AssignmentState $state) {
+    private function apply_next_index($pid, $xitype, $tag, $nvalue, AssignmentState $state) {
         $ltag = strtolower($tag);
         // NB ignore $index on second & subsequent nexttag assignments
-        $fin = $state->register_preapply_function("seqtag $ltag", new NextTagAssigner($state, $tag, $nvalue, $xnext === self::NEXTSEQ));
+        $fin = $state->register_preapply_function("seqtag $ltag", new NextTagAssigner($state, $tag, $nvalue, $xitype === self::I_NEXTSEQ));
         assert($fin instanceof NextTagAssigner);
         unset($fin->pidindex[$pid]);
-        return $fin->next_index($xnext === self::NEXTSEQ);
+        return $fin->next_index($xitype === self::I_NEXTSEQ);
     }
     /** @param string $xuser
      * @param string $xtag */

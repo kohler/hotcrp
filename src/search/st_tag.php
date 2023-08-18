@@ -212,13 +212,14 @@ class Tag_SearchTerm extends SearchTerm {
         }
         $vm = $this->tsm->value_matchers();
         if (empty($vm)) {
-            $vm[] = new CountMatcher("=0");
-        }
-        if (count($vm) !== 1 || $vm[0]->op() !== CountMatcher::RELEQ) {
+            $value = "some";
+        } else if (count($vm) === 1 && $vm[0]->op() === CountMatcher::RELEQ) {
+            $value = 0;
+        } else {
             return null;
         }
         return [
-            ["action" => "tag", "tag" => "{$t}#{$vm[0]->value()}", "ondrag" => "enter"],
+            ["action" => "tag", "tag" => "{$t}#{$value}", "ondrag" => "enter"],
             ["action" => "tag", "tag" => "{$t}#clear", "ondrag" => "leave"]
         ];
     }
