@@ -111,7 +111,7 @@ class Settings_API {
     }
 
     /** @param &$m array<string,list<object>>
-     * @return callable(mixed) */
+     * @return callable(mixed):bool */
     static function make_field_library_collector(&$m) {
         $mn = 0;
         return function ($j) use (&$m, &$mn) {

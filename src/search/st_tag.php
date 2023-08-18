@@ -205,4 +205,21 @@ class Tag_SearchTerm extends SearchTerm {
     function about_reviews() {
         return self::ABOUT_NO;
     }
+    function drag_assigners(Contact $user) {
+        $t = $this->tsm->single_tag();
+        if (!$t || !$user->can_edit_tag_somewhere($t)) {
+            return null;
+        }
+        $vm = $this->tsm->value_matchers();
+        if (empty($vm)) {
+            $vm[] = new CountMatcher("=0");
+        }
+        if (count($vm) !== 1 || $vm[0]->op() !== CountMatcher::RELEQ) {
+            return null;
+        }
+        return [
+            ["action" => "tag", "tag" => "{$t}#{$vm[0]->value()}", "ondrag" => "enter"],
+            ["action" => "tag", "tag" => "{$t}#clear", "ondrag" => "leave"]
+        ];
+    }
 }

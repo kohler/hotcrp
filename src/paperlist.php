@@ -2006,43 +2006,16 @@ class PaperList {
             return null;
         }
         $assign = [];
-        $atypes = 0;
         foreach ($groups as $i => $qe) {
-            if ($qe instanceof Tag_SearchTerm) {
-                $t = $qe->tsm->single_tag();
-                if (!$t || !$this->user->can_edit_tag_somewhere($t)) {
-                    return null;
-                }
-                $vm = $qe->tsm->value_matchers();
-                if (empty($vm)) {
-                    $vm[] = new CountMatcher("=0");
-                }
-                if (count($vm) !== 1 || $vm[0]->op() !== CountMatcher::RELEQ) {
-                    return null;
-                }
-                $assign[] = [
-                    ["action" => "tag", "tag" => "{$t}#{$vm[0]->value()}", "ondrag" => "enter"],
-                    ["action" => "tag", "tag" => "{$t}#clear", "ondrag" => "leave"]
-                ];
-                $atypes |= 1;
-            } else if ($qe instanceof Decision_SearchTerm) {
-                $ds = $this->conf->decision_set()->filter_using($qe->matchexpr());
-                if (count($ds) !== 1 || !$this->user->can_set_some_decision()) {
-                    return null;
-                }
-                $assign[] = [
-                    ["action" => "decision", "decision" => $ds[0]->name, "ondrag" => "enter"],
-                    ["action" => "decision", "decision" => "none", "ondrag" => "leave"]
-                ];
-                $atypes |= 2;
-            } else if ($qe->type !== "true" || $i !== count($groups) - 1) {
+            $a = $qe->drag_assigners($this->user);
+            if (!empty($a)) {
+                $assign[] = $a;
+            } else if ($a === null
+                       || ($a === [] && $i !== count($groups) - 1)) {
                 return null;
             }
         }
-        if ($atypes === 0 || ($atypes & ($atypes - 1)) !== 0) {
-            return null;
-        }
-        return "assign:" . json_encode_browser($assign);
+        return empty($assign) ? null : "assign:" . json_encode_browser($assign);
     }
 
     /** @return PaperListTableRender */

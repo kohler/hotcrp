@@ -203,12 +203,6 @@ abstract class SearchTerm {
     }
 
 
-    /** @return null|bool|array{type:string} */
-    function script_expression(PaperInfo $row) {
-        return $this->test($row, null);
-    }
-
-
     /** @param PaperSearchPrepareParam $param
      * @return void */
     function prepare_visit($param, PaperSearch $srch) {
@@ -229,6 +223,17 @@ abstract class SearchTerm {
     function about_reviews() {
         return self::ABOUT_MAYBE;
     }
+
+
+    /** @return null|bool|array{type:string} */
+    function script_expression(PaperInfo $row) {
+        return $this->test($row, null);
+    }
+
+    /** @return ?list<array{action:string}> */
+    function drag_assigners(Contact $user) {
+        return null;
+    }
 }
 
 class False_SearchTerm extends SearchTerm {
@@ -246,6 +251,12 @@ class False_SearchTerm extends SearchTerm {
     }
     function about_reviews() {
         return self::ABOUT_NO;
+    }
+    function script_expression(PaperInfo $row) {
+        return false;
+    }
+    function drag_assigners(Contact $user) {
+        return null;
     }
 }
 
@@ -270,6 +281,12 @@ class True_SearchTerm extends SearchTerm {
     }
     function about_reviews() {
         return self::ABOUT_NO;
+    }
+    function script_expression(PaperInfo $row) {
+        return true;
+    }
+    function drag_assigners(Contact $user) {
+        return [];
     }
 }
 
@@ -501,6 +518,17 @@ class And_SearchTerm extends Op_SearchTerm {
         }
         return true;
     }
+    function default_sort_column($top, $pl) {
+        $s = null;
+        foreach ($this->child as $qv) {
+            $s1 = $qv->default_sort_column($top, $pl);
+            if ($s && $s1) {
+                return null;
+            }
+            $s = $s ?? $s1;
+        }
+        return $s;
+    }
     function script_expression(PaperInfo $row) {
         $ch = [];
         $ok = true;
@@ -522,16 +550,16 @@ class And_SearchTerm extends Op_SearchTerm {
             return ["type" => "and", "child" => $ch];
         }
     }
-    function default_sort_column($top, $pl) {
-        $s = null;
-        foreach ($this->child as $qv) {
-            $s1 = $qv->default_sort_column($top, $pl);
-            if ($s && $s1) {
+    function drag_assigners(Contact $user) {
+        $ch = [];
+        foreach ($this->child as $subt) {
+            $x = $subt->drag_assigners($user);
+            if ($x === null) {
                 return null;
             }
-            $s = $s ?? $s1;
+            $ch = array_merge($ch, $x);
         }
-        return $s;
+        return $ch;
     }
 }
 

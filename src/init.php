@@ -93,6 +93,8 @@ if (PHP_VERSION_ID < 80000
 }
 
 
+/** @param callable(mixed):bool $callback
+ * @param ?callable(string,string):mixed $parser */
 function expand_json_includes_callback($includelist, $callback, $parser = null) {
     $includes = [];
     foreach (is_array($includelist) ? $includelist : [$includelist] as $k => $v) {

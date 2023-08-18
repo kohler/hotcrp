@@ -41,4 +41,14 @@ class Decision_SearchTerm extends SearchTerm {
     function about_reviews() {
         return self::ABOUT_NO;
     }
+    function drag_assigners(Contact $user) {
+        $ds = $user->conf->decision_set()->filter_using($this->match);
+        if (count($ds) !== 1 || !$user->can_set_some_decision()) {
+            return null;
+        }
+        return [
+            ["action" => "decision", "decision" => $ds[0]->name, "ondrag" => "enter"],
+            ["action" => "decision", "decision" => "none", "ondrag" => "leave"]
+        ];
+    }
 }
