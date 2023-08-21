@@ -2418,8 +2418,8 @@ return function (content, bubopt) {
             change_tail_direction();
         }
 
-        var x, y, xa, ya, d;
-        var divbw = parseFloat($(bubdiv).css(cssborder(ds & 1 ? 0 : 3, "Width")));
+        var x, y, xa, ya, d, bubsty = window.getComputedStyle(bubdiv);
+        var divbw = parseFloat(bubsty[cssborder(ds & 1 ? 0 : 3, "Width")]);
         if (ds & 1) {
             ya = constrainmid(nearpos, wpos, 0, ds2);
             y = constrain(ya, wpos, bpos, 0, ds2, noconstrain);
@@ -2442,8 +2442,12 @@ return function (content, bubopt) {
                 y = nearpos.top - sizes.bottom - bpos.height - sizes[1] - 1;
         }
 
-        bubdiv.style.left = roundpixel(x - window.scrollX) + "px";
-        bubdiv.style.top = roundpixel(y - window.scrollY) + "px";
+        if (bubsty.position === "fixed") {
+            x -= window.scrollX;
+            y -= window.scrollY;
+        }
+        bubdiv.style.left = roundpixel(x) + "px";
+        bubdiv.style.top = roundpixel(y) + "px";
         bubdiv.style.visibility = "visible";
     }
 
@@ -2597,7 +2601,7 @@ function show_tooltip(info) {
 
     function show_bub() {
         if (content && !bub) {
-            bub = make_bubble(content, {color: "tooltip " + info.className, anchor: info.anchor});
+            bub = make_bubble(content, {color: "tooltip ".concat(info.className, info.type === "focus" ? " position-absolute" : ""), anchor: info.anchor});
             near = info.near || info.element;
             bub.near(near).hover(tt.enter, tt.exit);
         } else if (content) {
