@@ -5,7 +5,8 @@
 // string helpers
 
 /** @param null|int|string $value
- * @return int */
+ * @return int
+ * @deprecated */
 function cvtint($value, $default = -1) {
     $v = trim((string) $value);
     if (is_numeric($v)) {
@@ -15,6 +16,20 @@ function cvtint($value, $default = -1) {
         }
     }
     return $default;
+}
+
+/** @param null|int|string $s
+ * @return ?int */
+function stoi($s) {
+    if ($s === null || is_int($s)) {
+        return $s;
+    }
+    $v = trim((string) $s);
+    if (is_numeric($v)
+        && ($iv = intval($v)) == floatval($v)) {
+        return $iv;
+    }
+    return null;
 }
 
 /** @param null|int|float|string $value

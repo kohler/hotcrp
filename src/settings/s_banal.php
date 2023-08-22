@@ -189,7 +189,7 @@ class Banal_SettingParser extends SettingParser {
             $cfs->pagelimit = null;
             $s = trim($sv->reqstr("format/{$ctr}/pagelimit"));
             if (!self::is_any_str($s)) {
-                if (($sx = cvtint($s, -1)) > 0) {
+                if (($sx = stoi($s) ?? -1) > 0) {
                     $cfs->pagelimit = [0, $sx];
                 } else if (preg_match('/\A(\d+)\s*(?:-|–)\s*(\d+)\z/', $s, $m)
                            && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2]) {
@@ -212,7 +212,7 @@ class Banal_SettingParser extends SettingParser {
             $cfs->wordlimit = null;
             $s = trim($sv->reqstr("format/{$ctr}/wordlimit"));
             if (!self::is_any_str($s)) {
-                if (($sx = cvtint($s, -1)) >= 0) {
+                if (($sx = stoi($s) ?? -1) >= 0) {
                     $cfs->wordlimit = [0, $sx];
                 } else if (preg_match('/\A(\d+)\s*(?:-|–)\s*(\d+)\z/', $s, $m)
                            && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2]) {
@@ -228,7 +228,7 @@ class Banal_SettingParser extends SettingParser {
             $cfs->columns = 0;
             $s = trim($sv->reqstr("format/{$ctr}/columns"));
             if (!self::is_any_str($s)) {
-                if (($sx = cvtint($s, -1)) >= 0) {
+                if (($sx = stoi($s) ?? -1) >= 0) {
                     $cfs->columns = $sx;
                 } else {
                     $sv->error_at("format/{$ctr}/columns", "<0>Requires a whole number");

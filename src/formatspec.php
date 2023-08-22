@@ -103,7 +103,7 @@ class FormatSpec {
         } else if ($k === "unlimitedref" && (is_string($v) || is_bool($v))) {
             $this->unlimitedref = !!$v;
         } else if ($k === "columns" && is_string($v)) {
-            $this->columns = cvtint($v, null);
+            $this->columns = stoi($v);
         } else if ($k === "textblock" && is_string($v)) {
             if (($dx = self::parse_dimen2($v))) {
                 $this->textblock = $dx;

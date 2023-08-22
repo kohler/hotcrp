@@ -180,7 +180,7 @@ class Log_Page {
                 ++$page;
             }
         } else if ($this->qreq->offset
-                   && ($delta = cvtint($this->qreq->offset)) >= 0
+                   && ($delta = stoi($this->qreq->offset) ?? -1) >= 0
                    && $delta < $leg->page_size()) {
             $leg->set_page_delta($delta);
         }
@@ -606,12 +606,12 @@ class Log_Page {
         if ($qreq->page === "earliest") { // NB `page` URL PARAMETER
             $page = null;
         } else {
-            $page = max(cvtint($qreq->page, -1), 1);
+            $page = max(stoi($qreq->page) ?? -1, 1);
         }
 
         $count = 50;
         if (isset($qreq->n) && trim($qreq->n) !== "") {
-            $count = cvtint($qreq->n, -1);
+            $count = stoi($qreq->n) ?? -1;
         }
         $bad_count = $count <= 0;
         $count = $bad_count ? 50 : min($count, 300);

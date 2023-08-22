@@ -39,7 +39,7 @@ class AutoassignerInterface extends MessageSet {
         }
         foreach (get_object_vars($costs) as $k => $v) {
             if ($qreq && isset($qreq["{$k}_cost"])
-                && ($v = cvtint($qreq["{$k}_cost"], null)) !== null)
+                && ($v = stoi($qreq["{$k}_cost"])) !== null)
                 $costs->$k = $v;
         }
         return $costs;

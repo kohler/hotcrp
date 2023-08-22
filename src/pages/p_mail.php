@@ -110,7 +110,7 @@ class Mail_Page {
         } else if ($qreq->has_a("p") && !isset($qreq->recheck)) {
             $papersel = [];
             foreach ($qreq->get_a("p") as $p) {
-                if (($p = cvtint($p)) > 0)
+                if (($p = stoi($p) ?? -1) > 0)
                     $papersel[] = $p;
             }
             sort($papersel);

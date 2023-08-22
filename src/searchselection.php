@@ -12,7 +12,8 @@ class SearchSelection {
         if ($papers) {
             $n = 1;
             foreach ($papers as $pid) {
-                if (($pid = cvtint($pid)) > 0 && !isset($this->selmap[$pid])) {
+                if (($pid = stoi($pid) ?? -1) > 0
+                    && !isset($this->selmap[$pid])) {
                     $this->sel[] = $pid;
                     $this->selmap[$pid] = $n;
                     ++$n;

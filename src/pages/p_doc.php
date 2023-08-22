@@ -167,7 +167,7 @@ class Doc_Page {
 
         // serve document
         $qreq->qsession()->commit();      // to allow concurrent clicks
-        $opts = ["attachment" => cvtint($qreq->save) > 0];
+        $opts = ["attachment" => (stoi($qreq->save) ?? -1) > 0];
         if ($doc->has_hash() && ($x = $qreq->hash) && $doc->check_text_hash($x)) {
             $opts["cacheable"] = true;
         }

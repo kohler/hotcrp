@@ -107,7 +107,7 @@ class DocumentRequest implements JsonSerializable {
                 $this->linkid = $dtname;
                 break;
             }
-            if (($dtnum = cvtint($dtname, null)) !== null) {
+            if (($dtnum = stoi($dtname)) !== null) {
                 $this->opt = $conf->option_by_id($dtnum);
             } else if ($this->paperId >= 0) {
                 $this->opt = $conf->options()->find($dtname);

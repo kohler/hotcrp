@@ -60,7 +60,7 @@ class Review_Autoassigner extends Autoassigner {
 
         $n = $subreq["count"] ?? $gj->count ?? 1;
         if (is_string($n)) {
-            $n = cvtint($n);
+            $n = stoi($n) ?? -1;
         }
         if (!is_int($n) || $n <= 0) {
             $this->error_at("count", "<0>Count should be a positive number");

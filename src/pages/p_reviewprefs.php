@@ -16,7 +16,7 @@ class ReviewPrefs_Page {
                 if (str_ends_with($k, $suffix)) {
                     $k = substr($k, 0, -strlen($suffix));
                 }
-                if (($p = cvtint(substr($k, 7))) > 0) {
+                if (($p = stoi(substr($k, 7)) ?? -1) > 0) {
                     $csvg->add_row([$p, $reviewer->email, $v]);
                 }
             }

@@ -245,7 +245,7 @@ abstract class Autoassigner extends MessageSet {
         }
         if (($m = $args["max_load"] ?? null) !== null) {
             if (is_string($m)) {
-                $m = cvtint($m);
+                $m = stoi($m) ?? -1;
             }
             if (!is_int($m) || $m <= 0) {
                 $this->error_at("max_load", "<0>Maximum load should be a positive number");

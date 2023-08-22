@@ -35,7 +35,7 @@ class ManualAssign_Page {
         foreach ($this->viewer->paper_set(["paperId" => $pids, "reviewSignatures" => true]) as $row) {
             $name = "assrev{$row->paperId}u{$rcid}";
             if (!isset($this->qreq[$name])
-                || ($assrev = cvtint($this->qreq[$name], null)) === null) {
+                || ($assrev = stoi($this->qreq[$name])) === null) {
                 continue;
             }
 

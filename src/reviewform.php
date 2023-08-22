@@ -1065,7 +1065,7 @@ class ReviewValues extends MessageSet {
         if ($this->paperId) {
             /* OK */
         } else if (isset($this->req["paperNumber"])
-                   && ($pid = cvtint(trim($this->req["paperNumber"]), -1)) > 0) {
+                   && ($pid = stoi(trim($this->req["paperNumber"])) ?? -1) > 0) {
             $this->paperId = $pid;
         } else if ($nfields > 0) {
             $this->rmsg("paperNumber", "<0>This review form doesn’t report which paper number it is for. Make sure you’ve entered the paper number in the right place and try again.", self::ERROR);
@@ -1165,13 +1165,13 @@ class ReviewValues extends MessageSet {
             if (isset(self::$ignore_web_keys[$k]) || !is_scalar($v)) {
                 /* skip */
             } else if ($k === "p") {
-                $this->paperId = cvtint($v);
+                $this->paperId = stoi($v) ?? -1;
             } else if ($k === "override") {
                 $this->req["override"] = !!$v;
             } else if ($k === "edit_version") {
-                $this->req[$k] = cvtint($v);
+                $this->req[$k] = stoi($v) ?? -1;
             } else if ($k === "blind" || $k === "ready") {
-                $this->req[$k] = is_bool($v) ? (int) $v : cvtint($v);
+                $this->req[$k] = is_bool($v) ? (int) $v : (stoi($v) ?? -1);
             } else if (str_starts_with($k, "has_")) {
                 if ($k !== "has_blind" && $k !== "has_override" && $k !== "has_ready") {
                     $hasreqs[] = substr($k, 4);

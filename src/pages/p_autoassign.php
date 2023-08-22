@@ -87,8 +87,8 @@ class Autoassign_Page {
             $pcm = $this->conf->pc_members();
             $bpnum = 1;
             for ($i = 0; $i < count($x) - 1; $i += 2) {
-                $xa = cvtint($x[$i]);
-                $xb = cvtint($x[$i + 1]);
+                $xa = stoi($x[$i]) ?? -1;
+                $xb = stoi($x[$i + 1]) ?? -1;
                 if (isset($pcm[$xa]) && isset($pcm[$xb])) {
                     $qreq["bpa{$bpnum}"] = $pcm[$xa]->email;
                     $qreq["bpb{$bpnum}"] = $pcm[$xb]->email;

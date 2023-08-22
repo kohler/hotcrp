@@ -561,7 +561,7 @@ class Default_FormatChecker implements FormatChecker {
         $px = [];
         $ncol = $bj->columns ?? 0;
         foreach ($bj->pages as $i => $pg) {
-            if (($pp = cvtint($pg->columns ?? $ncol)) > 0
+            if (($pp = stoi($pg->columns ?? $ncol) ?? -1) > 0
                 && $pp != $spec->columns
                 && CheckFormat::banal_page_is_body($pg)
                 && $spec->is_checkable($i + 1, "columns")) {
