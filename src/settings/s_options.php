@@ -548,15 +548,6 @@ class Options_SettingParser extends SettingParser {
         ++$this->_next_optionid;
     }
 
-    /** @param Sf_Setting $sfj */
-    private function _fix_sf_setting(SettingValues $sv, $sfj) {
-        $sfj->final = $sfj->presence === "final";
-        if ($sfj->presence !== "custom"
-            || trim($sfj->exists_if ?? "") === "") {
-            $sfj->exists_if = null;
-        }
-    }
-
     /** @return bool */
     private function _apply_req_sf(Si $si, SettingValues $sv) {
         if ($sv->has_req("options_version")
@@ -576,7 +567,6 @@ class Options_SettingParser extends SettingParser {
                 }
                 continue;
             }
-            $this->_fix_sf_setting($sv, $sfj);
             $this->_new_options[$sfj->id] = $opt = PaperOption::make($sv->conf, $sfj);
             $nsfj[] = $opt->jsonSerialize();
             $this->option_id_to_ctr[$opt->id] = $ctr;

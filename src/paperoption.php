@@ -136,7 +136,6 @@ class PaperOption implements JsonSerializable {
 
         $this->description = $args->description ?? "";
         $this->description_format = $args->description_format ?? null;
-        $this->final = ($args->final ?? false) === true;
 
         $req = $args->required ?? false;
         if (!$req) {
@@ -222,9 +221,14 @@ class PaperOption implements JsonSerializable {
             $this->render_contexts &= ~FieldRender::CFPAGE;
         }
 
-        $x = property_exists($args, "exists_if") ? $args->exists_if : ($args->edit_condition ?? null);
-        // XXX edit_condition backward compat
-        $this->set_exists_condition($x);
+        $this->final = ($args->final ?? false) === true;
+        $presence = $args->presence ?? null;
+        if ($presence === "final") {
+            $this->final = true;
+        }
+        if ($presence === null || $presence === "custom") {
+            $this->set_exists_condition($args->exists_if ?? null);
+        }
         $this->set_editable_condition($args->editable_if ?? null);
 
         $this->max_size = $args->max_size ?? null;

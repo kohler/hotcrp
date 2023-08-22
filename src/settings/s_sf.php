@@ -18,7 +18,6 @@ class Sf_Setting {
     public $min;
     public $max;
 
-    public $final;
     /** @var list<SfValue_Setting> */
     public $xvalues;
     /** @var bool */
