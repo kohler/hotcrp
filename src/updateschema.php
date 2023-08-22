@@ -13,6 +13,15 @@ class UpdateSchema {
         $this->conf = $conf;
     }
 
+    private function save_options_setting($options_data) {
+        if (empty($options_data)) {
+            $this->conf->save_setting("options", null);
+        } else {
+            $osv = max($this->conf->setting("options") ?? 0, 1);
+            $this->conf->save_setting("options", $osv, $options_data);
+        }
+    }
+
     private function v1_options_setting($options_data) {
         $options_array = [];
         foreach (get_object_vars($options_data) as $k => $v) {
@@ -27,7 +36,7 @@ class UpdateSchema {
                 return false;
             }
         }
-        $this->conf->save_setting("options", 1, $options_array);
+        $this->save_options_setting($options_array);
         return $options_array;
     }
 
@@ -168,7 +177,7 @@ class UpdateSchema {
             $opsj[] = $opj;
         }
 
-        $this->conf->save_setting("options", 1, $opsj);
+        $this->save_options_setting($opsj);
         return true;
     }
 
@@ -574,7 +583,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
                 }
             }
         }
-        $this->conf->save_setting("options", 1, $options_array);
+        $this->save_options_setting($options_array);
         return $options_array;
     }
 
@@ -586,7 +595,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             "PaperReviewRefused", "PaperStorage", "PaperTag", "PaperTagAnno",
             "PaperTopic", "PaperWatch", "ReviewRating", "ReviewRequest",
             "Settings", "TopicArea", "TopicInterest"] as $t) {
-            if (!$this->conf->ql("alter table $t character set utf8mb4"))
+            if (!$this->conf->ql("alter table {$t} character set utf8mb4"))
                 return false;
         }
         return true;
@@ -942,6 +951,55 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
                     || $this->conf->save_setting("named_searches", 1, json_encode_db($sjs))));
     }
 
+    private function v278_options_setting($options_array) {
+        $diff = false;
+        foreach ($options_array as $v) {
+            if (is_object($v)) {
+                if (($v->type ?? null) === "selector") {
+                    $v->type = "dropdown";
+                    $diff = true;
+                }
+                if (isset($v->selector)
+                    && in_array($v->type ?? "", ["dropdown", "radio"])) {
+                    $v->values = $v->values ?? $v->selector;
+                    unset($v->selector);
+                    $diff = true;
+                }
+                if (isset($v->view_type)) {
+                    $v->visibility = $v->visibility ?? $v->view_type;
+                    unset($v->view_type);
+                    $diff = true;
+                }
+                if (isset($v->position)) {
+                    $v->order = $v->order ?? $v->position;
+                    unset($v->position);
+                    $diff = true;
+                }
+                if (isset($v->form_position)) {
+                    $v->form_order = $v->form_order ?? $v->form_position;
+                    unset($v->form_position);
+                    $diff = true;
+                }
+                if (isset($v->page_position) || isset($v->display_position)) {
+                    $v->page_order = $v->page_order ?? $v->page_position ?? $v->display_position;
+                    unset($v->form_position, $v->display_position);
+                    $diff = true;
+                }
+                if (isset($v->edit_condition)) {
+                    if (!property_exists($v, "exists_if")) {
+                        $v->exists_if = $v->edit_condition;
+                    }
+                    unset($v->edit_condition);
+                    $diff = true;
+                }
+            }
+        }
+        if ($diff) {
+            $this->save_options_setting($options_array);
+        }
+        return $options_array;
+    }
+
     /** @return bool */
     function run() {
         $conf = $this->conf;
@@ -971,6 +1029,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
         if (is_array($options_data) && $conf->sversion <= 247) {
             $options_data = $this->v248_options_setting($options_data);
+        }
+        if ($conf->sversion <= 277) {
+            $options_data = $this->v278_options_setting($options_data);
         }
 
         // update `review_form`
@@ -2678,8 +2739,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table PaperStorage add `height` int(8) NOT NULL DEFAULT -1")) {
             $conf->update_schema_version(276);
         }
-        if ($conf->sversion === 276) {
-            $conf->update_schema_version(277);
+        if ($conf->sversion === 276
+            || $conf->sversion === 277) {
+            $conf->update_schema_version(278);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

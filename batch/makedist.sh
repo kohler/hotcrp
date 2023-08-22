@@ -403,6 +403,7 @@ src/paperexport.php
 src/paperinfo.php
 src/paperlist.php
 src/paperoption.php
+src/paperoptionlist.php
 src/paperrequest.php
 src/papersearch.php
 src/paperstatus.php
