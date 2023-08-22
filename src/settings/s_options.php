@@ -279,6 +279,9 @@ class Options_SettingRenderer {
 }
 
 class Options_SettingParser extends SettingParser {
+    /** @var Conf
+     * @readonly */
+    public $conf;
     /** @var ?associative-array<int,true> */
     private $_known_optionids;
     /** @var ?int */
@@ -306,6 +309,10 @@ class Options_SettingParser extends SettingParser {
         ]);
     }
 
+    function __construct(SettingValues $sv) {
+        $this->conf = $sv->conf;
+    }
+
     function values(Si $si, SettingValues $sv) {
         if ($si->name_matches("sf/", "*", "/type")) {
             $xtp = new XtParams($sv->conf, $sv->user);
@@ -322,7 +329,10 @@ class Options_SettingParser extends SettingParser {
 
     function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name_matches("sf/", "*")) {
-            $sv->set_oldv($si, self::make_placeholder_option($sv)->export_setting());
+            $opt = self::make_placeholder_option($sv);
+            $sfj = $opt->export_setting();
+            $sfj->existed = false;
+            $sv->set_oldv($si, $sfj);
         } else if ($si->name_matches("sf/", "*", "/title")) {
             $n = $sv->vstr("sf/{$si->name1}/name");
             $sv->set_oldv($si, $n === "" ? "[Submission field]" : $n);
@@ -496,17 +506,38 @@ class Options_SettingParser extends SettingParser {
         return true;
     }
 
-    /** @param object $sfj */
-    private function _assign_new_id(Conf $conf, $sfj) {
+    /** @param Sf_Setting $sfj */
+    private function _apply_new_id(SettingValues $sv, $ctr, $sfj) {
+        $idstr = $sv->reqstr("sf/{$ctr}/id") ?? "new";
+        if ($idstr !== "" && $idstr !== "new") {
+            if (($idnum = stoi($idstr)) !== null
+                && $idnum > 0
+                && !$this->conf->option_by_id($idnum)) {
+                $sfj->id = $idnum;
+                return;
+            } else {
+                $sv->error_at("sf/{$ctr}/id", "<0>This option is not configurable");
+            }
+        }
+        if ($sfj->deleted) {
+            return;
+        }
+        $sv->error_if_missing("sf/{$ctr}/name");
         if (!$this->_next_optionid) {
             $this->_known_optionids = [];
-            $result = $conf->qe("select distinct optionId from PaperOption where optionId>0 union select distinct documentType from PaperStorage where documentType>0");
+            $result = $this->conf->qe("select distinct optionId from PaperOption where optionId>0 union select distinct documentType from PaperStorage where documentType>0");
             while (($row = $result->fetch_row())) {
                 $this->_known_optionids[(int) $row[0]] = true;
             }
             Dbl::free($result);
-            foreach ($conf->options()->universal() as $o) {
+            foreach ($this->conf->options()->universal() as $o) {
                 $this->_known_optionids[$o->id] = true;
+            }
+            foreach ($sv->oblist_keys("sf") as $ctr) {
+                $idstr = $sv->reqstr("sf/{$ctr}/id");
+                if (($idnum = stoi($idstr)) !== null) {
+                    $this->_known_optionids[$idnum] = true;
+                }
             }
             $this->_next_optionid = 1;
         }
@@ -535,20 +566,20 @@ class Options_SettingParser extends SettingParser {
         $nsfj = [];
         foreach ($sv->oblist_keys("sf") as $ctr) {
             $sfj = $sv->newv("sf/{$ctr}");
+            if (!$sfj->existed) {
+                assert($sfj->id === DTYPE_INVALID);
+                $this->_apply_new_id($sv, $ctr, $sfj);
+            }
             if ($sfj->deleted) {
-                if ($sfj->id !== DTYPE_INVALID) {
+                if ($sfj->existed) {
                     $this->_delete_optionids[] = $sfj->id;
                 }
-            } else {
-                if ($sfj->id === DTYPE_INVALID) {
-                    $sv->error_if_missing("sf/{$ctr}/name");
-                    $this->_assign_new_id($sv->conf, $sfj);
-                }
-                $this->_fix_sf_setting($sv, $sfj);
-                $this->_new_options[$sfj->id] = $opt = PaperOption::make($sv->conf, $sfj);
-                $nsfj[] = $opt->jsonSerialize();
-                $this->option_id_to_ctr[$opt->id] = $ctr;
+                continue;
             }
+            $this->_fix_sf_setting($sv, $sfj);
+            $this->_new_options[$sfj->id] = $opt = PaperOption::make($sv->conf, $sfj);
+            $nsfj[] = $opt->jsonSerialize();
+            $this->option_id_to_ctr[$opt->id] = $ctr;
         }
         usort($nsfj, "Conf::xt_order_compare");
         if ($sv->update("options", empty($nsfj) ? "" : json_encode_db($nsfj))) {

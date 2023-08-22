@@ -564,7 +564,7 @@ class PaperOption implements JsonSerializable {
             $this->_visibility = self::VIS_SUB;
         }
 
-        $order = $args->order ?? $args->position ?? null;
+        $order = $args->order ?? $args->position /* XXX */ ?? null;
         if ((is_int($order) || is_float($order))
             && ($this->id <= 0 || $order > 0)) {
             $this->order = $order;
@@ -572,7 +572,7 @@ class PaperOption implements JsonSerializable {
             $this->order = 499;
         }
 
-        $p = $args->form_order ?? $args->form_position ?? null;
+        $p = $args->form_order ?? $args->form_position /* XXX */ ?? null;
         if ($p === null) {
             $disp = $args->display ?? null;
             if ($disp === "submission") {
@@ -588,7 +588,7 @@ class PaperOption implements JsonSerializable {
         if (($args->display ?? null) === "none") {
             $p = false;
         }
-        $this->page_order = $args->page_order ?? $args->page_position ?? $args->display_position ?? $p;
+        $this->page_order = $args->page_order ?? $args->page_position /* XXX */ ?? $args->display_position ?? $p;
         $this->page_expand = !!($args->page_expand ?? false);
         $this->page_group = $args->page_group ?? null;
         if ($this->page_group === null
@@ -1968,7 +1968,6 @@ class Text_PaperOption extends PaperOption {
 class Unknown_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         $args->type = "none";
-        $args->form_order = $args->page_order = false;
         parent::__construct($conf, $args, "hidden");
     }
 }

@@ -1423,4 +1423,64 @@ class Settings_Tester {
             self::unexpected_unified_diff($j1, $j3);
         }
     }
+
+    function test_new_fixed_id() {
+        $oids = array_keys($this->conf->options()->universal());
+        sort($oids);
+        xassert_eqq($oids, [1, 2, 3]);
+        xassert_neqq($this->conf->option_by_id(1), null);
+        xassert_neqq($this->conf->option_by_id(2), null);
+        xassert_neqq($this->conf->option_by_id(3), null);
+        xassert_eqq($this->conf->option_by_id(100), null);
+
+        // can create new options with unknown IDs
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"reset":false,"sf":[{"id":100,"name":"New fixed option","type":"text"}]}');
+        xassert($sv->execute());
+        xassert_eqq($sv->full_feedback_text(), "");
+
+        $opt = $this->conf->option_by_id(100);
+        xassert_neqq($opt, null);
+        xassert_eqq($opt->name ?? null, "New fixed option");
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"reset":false,"sf":[{"id":100,"name":"New fixed option","delete":true},{"id":102,"name":"Whatever","delete":true}]}');
+        xassert($sv->execute());
+        xassert_eqq($sv->full_feedback_text(), "");
+
+        // but cannot create new options with bad IDs
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"reset":false,"sf":[{"id":-100,"name":"Bad fixed option"}]}');
+        xassert(!$sv->execute());
+
+        // and cannot create options that overlap fixed options
+        $this->conf->set_opt("fixedOptions", '[{"id":102,"name":"Fixed version","type":"text","configurable":false}]');
+        $this->conf->load_settings();
+        $o102 = $this->conf->option_by_id(102);
+        xassert_eqq($o102->name, "Fixed version");
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"reset":false,"sf":[{"id":102,"name":"Bad fixed option","type":"text"}]}');
+        xassert(!$sv->execute());
+
+        // reset options
+        $this->conf->set_opt("fixedOptions", null);
+        $this->conf->load_settings();
+        $oids = array_keys($this->conf->options()->universal());
+        sort($oids);
+        xassert_eqq($oids, [1, 2, 3]);
+
+        // a new option with a fixed ID doesn't collide with new options
+        // without fixed IDs
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"reset":false,"sf":[{"id":"new","name":"First New","type":"text"},{"id":5,"name":"Second New","type":"text"},{"id":"new","name":"Third New","type":"text"}]}');
+        xassert($sv->execute());
+        xassert_eqq($this->conf->options()->find("First New")->id, 4);
+        xassert_eqq($this->conf->options()->find("Second New")->id, 5);
+        xassert_eqq($this->conf->options()->find("Third New")->id, 6);
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"reset":false,"sf":[{"id":4,"delete":true},{"id":5,"delete":true},{"id":6,"delete":true}]}');
+        xassert($sv->execute());
+    }
 }

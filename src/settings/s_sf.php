@@ -22,6 +22,8 @@ class Sf_Setting {
     /** @var list<SfValue_Setting> */
     public $xvalues;
     /** @var bool */
+    public $existed = true;
+    /** @var bool */
     public $deleted = false;
 }
 
