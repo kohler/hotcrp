@@ -7,13 +7,6 @@
         "function": "+Title_PaperOption"
     },
     {
-        "name": "Submission version", "id": -1008, "final": true,
-        "search_keyword": false, "json_key": false,
-        "form_order": false, "page_order": 1999, "className": "no-suggest",
-        "type": "intrinsic2", "include_empty": true, "configurable": false,
-        "function": "+SubmissionVersion_PaperOption"
-    },
-    {
         "name": "Abstract", "id": -1004,
         "json_key": "abstract",
         "form_order": 2001, "page_expand": true,

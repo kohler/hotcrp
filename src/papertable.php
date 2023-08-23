@@ -696,20 +696,30 @@ class PaperTable {
         }
 
         // download
-        if ($this->user->can_view_pdf($this->prow)) {
-            $dprefix = "";
-            $dtype = $this->prow->finalPaperStorageId > 1 ? DTYPE_FINAL : DTYPE_SUBMISSION;
-            if (($doc = $this->prow->document($dtype))
-                && $doc->paperStorageId > 1) {
-                if (($stamps = self::pdf_stamps_html($doc))) {
-                    $stamps = '<span class="sep"></span>' . $stamps;
-                }
-                if ($dtype === DTYPE_FINAL) {
-                    $dhtml = $this->conf->option_by_id($dtype)->title_html();
-                } else {
-                    $dhtml = $o->title_html($this->prow->timeSubmitted == 0);
-                }
-                $fr->value .= '<p class="pgsm">' . $dprefix . $doc->link_html('<span class="pavfn">' . $dhtml . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps . '</p>';
+        if (!$this->user->can_view_pdf($this->prow)) {
+            return;
+        }
+
+        $dtype = $this->prow->finalPaperStorageId > 1 ? DTYPE_FINAL : DTYPE_SUBMISSION;
+        if (($doc = $this->prow->document($dtype))
+            && $doc->paperStorageId > 1) {
+            if (($stamps = self::pdf_stamps_html($doc))) {
+                $stamps = '<span class="sep"></span>' . $stamps;
+            }
+            if ($dtype === DTYPE_FINAL) {
+                $dhtml = $this->conf->option_by_id($dtype)->title_html();
+            } else {
+                $dhtml = $o->title_html($this->prow->timeSubmitted == 0);
+            }
+            $s = $doc->link_html("<span class=\"pavfn\">{$dhtml}</span>", DocumentInfo::L_REQUIREFORMAT);
+            $fr->value .= "<p class=\"pgsm\">{$s}{$stamps}</p>";
+            if ($dtype === DTYPE_FINAL
+                && $this->prow->paperStorageId > 1
+                && $this->prow->paperStorageId !== $doc->paperStorageId
+                && ($doc = $this->prow->document(DTYPE_SUBMISSION))) {
+                $dname = $this->conf->_c("field", "Submission version");
+                $s = $doc->link_html(htmlspecialchars($dname), DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE);
+                $fr->value .= "<p class=\"pgsm small\">{$s}</p>";
             }
         }
     }

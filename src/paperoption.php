@@ -1434,7 +1434,7 @@ class Document_PaperOption extends PaperOption {
 
     function render(FieldRender $fr, PaperValue $ov) {
         if ($this->id <= 0 && $fr->for_page()) {
-            if ($this->id == 0) {
+            if ($this->id === 0) {
                 $fr->table->render_submission($fr, $this);
             }
         } else if (($d = $ov->document(0))) {

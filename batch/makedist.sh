@@ -337,7 +337,6 @@ src/options/o_nonblind.php
 src/options/o_numeric.php
 src/options/o_pcconflicts.php
 src/options/o_realnumber.php
-src/options/o_submissionversion.php
 src/options/o_title.php
 src/options/o_topics.php
 src/pages/p_adminhome.php
