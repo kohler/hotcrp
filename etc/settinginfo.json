@@ -263,7 +263,7 @@
     {
         "name_pattern": "sf/$/display",
         "title": "/Display",
-        "type": "radio", "values": ["prominent", "topics", "submission", "none"]
+        "type": "radio", "values": ["right", "rest", "top", "none"]
     },
     {
         "name_pattern": "sf/$/visibility",

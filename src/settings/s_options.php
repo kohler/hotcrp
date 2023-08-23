@@ -364,6 +364,7 @@ class Options_SettingParser extends SettingParser {
             foreach (self::configurable_options($sv->conf) as $f) {
                 $sfss[] = $f->export_setting();
             }
+            usort($sfss, "Conf::xt_order_compare"); /* XXX */
             $sv->append_oblist("sf", $sfss, "name");
         } else if ($si->name2 === "/values") {
             $sfs = $sv->oldv("sf/{$si->name1}");

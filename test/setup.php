@@ -356,8 +356,9 @@ function xassert_exit() {
     exit($ok ? 0 : 1);
 }
 
-/** @return bool */
-function xassert_eqq($actual, $expected) {
+/** @param ?string $location
+ * @return bool */
+function xassert_eqq($actual, $expected, $location = null) {
     $ok = $actual === $expected;
     if (!$ok && is_float($expected) && is_nan($expected) && is_float($actual) && is_nan($actual)) {
         $ok = true;
@@ -365,7 +366,7 @@ function xassert_eqq($actual, $expected) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        error_log(Xassert::match_failure_message(assert_location() . ": ", "expected === ", $expected, ", got ", $actual));
+        error_log(Xassert::match_failure_message(($location ?? assert_location()) . ": ", "expected === ", $expected, ", got ", $actual));
         Xassert::fail();
     }
     return $ok;

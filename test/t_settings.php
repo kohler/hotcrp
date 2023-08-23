@@ -1350,7 +1350,7 @@ class Settings_Tester {
         $diff = $dmp->line_diff($x, $y);
         $udiff = $dmp->line_diff_toUnified($diff, 10, 50);
         fwrite(STDERR, $udiff);
-        xassert_eqq($udiff, "");
+        xassert_eqq($udiff, "", caller_landmark());
     }
 
     function test_json_settings_roundtrip() {
