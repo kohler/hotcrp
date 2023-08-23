@@ -188,11 +188,11 @@ class Attachments_PaperOption extends PaperOption {
                 $linkname = htmlspecialchars($d->member_filename());
                 if ($fr->want_list()) {
                     $dif = DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE;
-                } else if ($this->page_order() >= 2000) {
-                    $dif = DocumentInfo::L_SMALL;
-                } else {
+                } else if ($this->display() === PaperOption::DISP_TOP) {
                     $dif = 0;
                     $linkname = '<span class="pavfn">' . $this->title_html() . '</span>/' . $linkname;
+                } else {
+                    $dif = DocumentInfo::L_SMALL;
                 }
                 $t = $d->link_html($linkname, $dif);
                 if ($d->is_archive()) {
@@ -209,7 +209,7 @@ class Attachments_PaperOption extends PaperOption {
             } else {
                 $fr->set_html('<ul class="x"><li class="od">' . join('</li><li class="od">', $ts) . '</li></ul>');
             }
-            if ($fr->for_page() && $this->page_order() < 2000) {
+            if ($fr->for_page() && $this->display() === PaperOption::DISP_TOP) {
                 $fr->title = false;
                 $v = '';
                 if ($fr->table && $fr->user->view_option_state($ov->prow, $this) === 1) {

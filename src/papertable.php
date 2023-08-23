@@ -378,8 +378,8 @@ class PaperTable {
         // other expansions
         $next_foldnum = 10;
         foreach ($this->prow->page_fields() as $o) {
-            if ($o->page_order() >= 1000
-                && $o->page_order() < 5000
+            if ($o->display() >= PaperOption::DISP_TOP
+                && $o->display() <= PaperOption::DISP_REST
                 && ($o->id <= 0 || $this->user->allow_view_option($this->prow, $o))
                 && $o->page_group !== null) {
                 if (strlen($o->page_group) > 1
@@ -1123,21 +1123,18 @@ class PaperTable {
         }
     }
 
-    /** @param list<PaperTableFieldRender> $renders
-     * @param int $first
-     * @param int $last
+    /** @param list<PaperTableFieldRender> $rgroup
      * @param int $vos
      * @return string */
-    private function _group_name_html($renders, $first, $last, $vos) {
+    private function _group_name_html($rgroup, $vos) {
         $group_names = [];
         $group_flags = 0;
-        for ($i = $first; $i !== $last; ++$i) {
-            if ($renders[$i]->view_state >= $vos) {
-                $o = $renders[$i]->option;
-                $group_names[] = $o->title();
-                if ($o->id === -1005) {
+        foreach ($rgroup as $r) {
+            if ($r->view_state >= $vos) {
+                $group_names[] = $r->option->title();
+                if ($r->option->id === -1005) {
                     $group_flags |= 1;
-                } else if ($o->has_document()) {
+                } else if ($r->option->has_document()) {
                     $group_flags |= 2;
                 } else {
                     $group_flags |= 4;
@@ -1154,7 +1151,7 @@ class PaperTable {
         if ($group_flags & 4) {
             $group_types[] = "Options";
         }
-        return htmlspecialchars($this->conf->_c("field_group", $renders[$first]->option->page_group, commajoin($group_names), commajoin($group_types)));
+        return htmlspecialchars($this->conf->_c("field_group", $rgroup[0]->option->page_group, commajoin($group_names), commajoin($group_types)));
     }
 
     private function _print_pre_status_feedback() {
@@ -1245,8 +1242,8 @@ class PaperTable {
         $fr = new FieldRender(FieldRender::CPAGE, $this->user);
         $fr->table = $this;
         foreach ($this->prow->page_fields() as $o) {
-            if ($o->page_order() < 1000
-                || $o->page_order() >= 5000
+            if ($o->display() < PaperOption::DISP_TOP
+                || $o->display() > PaperOption::DISP_REST
                 || ($vos = $this->user->view_option_state($this->prow, $o)) === 0) {
                 continue;
             }
@@ -1261,30 +1258,44 @@ class PaperTable {
 
         $lasto1 = null;
         $in_paperinfo_i = false;
-        for ($first = 0; $first !== count($renders); $first = $last) {
-            // compute size of group
-            $o1 = $renders[$first]->option;
-            $last = $first + 1;
+        $i = 0;
+        $nr = count($renders);
+        while ($i !== $nr) {
+            $rgroup = [$renders[$i]];
+            ++$i;
+            if (!$rgroup[0]) {
+                continue;
+            }
+            $o1 = $rgroup[0]->option;
+
+            // collect group
             if ($o1->page_group !== null && $this->allow_folds) {
-                while ($last !== count($renders)
-                       && $renders[$last]->option->page_group === $o1->page_group) {
-                    ++$last;
+                for ($j = $i; $j !== $nr; ++$j) {
+                    if ($renders[$j]
+                        && $renders[$j]->option->page_group === $o1->page_group) {
+                        $rgroup[] = $renders[$j];
+                        if ($i === $j) {
+                            ++$i;
+                        } else {
+                            $renders[$j] = null;
+                        }
+                    }
                 }
             }
 
+            // compute view state
             $nvos1 = 0;
-            for ($i = $first; $i !== $last; ++$i) {
-                if ($renders[$i]->view_state === 1) {
+            foreach ($rgroup as $r) {
+                if ($r->view_state === 1)
                     ++$nvos1;
-                }
             }
 
             // change column
-            if ($o1->page_order() >= 2000) {
-                if (!$lasto1 || $lasto1->page_order() < 2000) {
+            if ($o1->display() >= PaperOption::DISP_LEFT) {
+                if (!$lasto1 || $lasto1->display() < PaperOption::DISP_LEFT) {
                     echo '<div class="paperinfo"><div class="paperinfo-c">';
-                } else if ($o1->page_order() >= 3000
-                           && $lasto1->page_order() < 3000) {
+                } else if ($o1->display() >= PaperOption::DISP_RIGHT
+                           && $lasto1->display() < PaperOption::DISP_RIGHT) {
                     if ($in_paperinfo_i) {
                         echo '</div>'; // paperinfo-i
                         $in_paperinfo_i = false;
@@ -1305,27 +1316,27 @@ class PaperTable {
 
             // echo start of group
             if ($o1->page_group !== null && $this->allow_folds) {
-                if ($nvos1 === 0 || $nvos1 === $last - $first) {
-                    $group_html = $this->_group_name_html($renders, $first, $last, $nvos1 === 0 ? 2 : 1);
+                if ($nvos1 === 0 || $nvos1 === count($rgroup)) {
+                    $group_html = $this->_group_name_html($rgroup, $nvos1 === 0 ? 2 : 1);
                 } else {
-                    $group_html = $this->_group_name_html($renders, $first, $last, 2);
-                    $gn1 = $this->_group_name_html($renders, $first, $last, 1);
+                    $group_html = $this->_group_name_html($rgroup, 2);
+                    $gn1 = $this->_group_name_html($rgroup, 1);
                     if ($group_html !== $gn1) {
                         $group_html = "<span class=\"fn8\">{$group_html}</span><span class=\"fx8\">{$gn1}</span>";
                     }
                 }
 
                 $class = "pg";
-                if ($nvos1 === $last - $first) {
+                if ($nvos1 === count($rgroup)) {
                     $class .= " fx8";
                 }
                 $foldnum = $this->foldnumber[$o1->page_group] ?? 0;
-                if ($foldnum && $renders[$first]->title !== "") {
-                    $group_html = "<span class=\"fn{$foldnum}\">{$group_html}</span><span class=\"fx{$foldnum}\">" . $renders[$first]->title . '</span>';
-                    $renders[$first]->title = false;
-                    $renders[$first]->value = '<div class="'
-                        . ($renders[$first]->value_long ? "pg" : "pgsm")
-                        . ' pavb">' . $renders[$first]->value . '</div>';
+                if ($foldnum && $rgroup[0]->title !== "") {
+                    $group_html = "<span class=\"fn{$foldnum}\">{$group_html}</span><span class=\"fx{$foldnum}\">" . $rgroup[0]->title . '</span>';
+                    $rgroup[0]->title = false;
+                    $rgroup[0]->value = '<div class="'
+                        . ($rgroup[0]->value_long ? "pg" : "pgsm")
+                        . ' pavb">' . $rgroup[0]->value . '</div>';
                 }
                 echo '<div class="', $class, '">';
                 if ($foldnum) {
@@ -1344,29 +1355,28 @@ class PaperTable {
             }
 
             // echo contents
-            for ($i = $first; $i !== $last; ++$i) {
-                $x = $renders[$i];
-                if ($x->value_long === false
-                    || (!$x->value_long && $x->title === "")) {
+            foreach ($rgroup as $r) {
+                if ($r->value_long === false
+                    || (!$r->value_long && $r->title === "")) {
                     $class = "pgsm";
                 } else {
                     $class = "pg";
                 }
-                if ($x->value === ""
-                    || ($x->title === "" && preg_match('{\A(?:[^<]|<a|<span)}', $x->value))) {
+                if ($r->value === ""
+                    || ($r->title === "" && preg_match('/\A(?:[^<]|<a|<span)/i', $r->value))) {
                     $class .= " outdent";
                 }
-                if ($x->view_state === 1) {
+                if ($r->view_state === 1) {
                     $class .= " fx8";
                 }
-                if ($x->title === false) {
-                    echo $x->value;
-                } else if ($x->title === "") {
-                    echo '<div class="', $class, '">', $x->value, '</div>';
-                } else if ($x->value === "") {
-                    echo '<div class="', $class, '"><h3 class="pavfn">', $x->title, '</h3></div>';
+                if ($r->title === false) {
+                    echo $r->value;
+                } else if ($r->title === "") {
+                    echo '<div class="', $class, '">', $r->value, '</div>';
+                } else if ($r->value === "") {
+                    echo '<div class="', $class, '"><h3 class="pavfn">', $r->title, '</h3></div>';
                 } else {
-                    echo '<div class="', $class, '"><div class="pavt"><h3 class="pavfn">', $x->title, '</h3></div><div class="pavb">', $x->value, '</div></div>';
+                    echo '<div class="', $class, '"><div class="pavt"><h3 class="pavfn">', $r->title, '</h3></div><div class="pavb">', $r->value, '</div></div>';
                 }
             }
 
@@ -1374,7 +1384,7 @@ class PaperTable {
             if ($o1->page_group !== null && $this->allow_folds) {
                 echo '</div></div>';
             }
-            if ($o1->page_order() >= 2000
+            if ($o1->display() >= PaperOption::DISP_LEFT
                 && $o1->page_expand) {
                 echo '</div>';
             }
@@ -1385,7 +1395,7 @@ class PaperTable {
         if ($in_paperinfo_i) {
             echo '</div>';
         }
-        if ($lasto1 && $lasto1->page_order() >= 2000) {
+        if ($lasto1 && $lasto1->display() >= PaperOption::DISP_LEFT) {
             echo '</div></div>';
         }
         echo '</div>'; // #foldpaper

@@ -60,7 +60,14 @@ class PaperOption implements JsonSerializable {
     /** @var int
      * @readonly */
     private $_visibility;
+    /** @var 0|1|2|3|4|5
+     * @readonly */
+    private $_display;
+    /** @var bool
+     * @readonly */
     public $page_expand;
+    /** @var ?string
+     * @readonly */
     public $page_group;
     private $form_order;
     private $page_order;
@@ -79,6 +86,15 @@ class PaperOption implements JsonSerializable {
     /** @var int */
     private $_recursion = 0;
     public $max_size;
+
+    const DISP_TITLE = 0;
+    const DISP_TOP = 1;
+    const DISP_LEFT = 2;
+    const DISP_RIGHT = 3;
+    const DISP_REST = 4;
+    const DISP_NONE = 5;
+    static private $display_map = ["title", "top", "left", "right", "rest", "none"];
+    static private $display_form_order = [100, 1100, 2100, 3100, 3600, 5100];
 
     const REQ_NO = 0;
     const REQ_REGISTER = 1;
@@ -146,18 +162,15 @@ class PaperOption implements JsonSerializable {
             $this->required = self::REQ_REGISTER;
         }
 
-        $vis = $args->visibility ?? $args->view_type ?? null;
-        if ($vis === null || $vis === "all" || $vis === "rev") {
-            $this->_visibility = self::VIS_SUB;
-        } else if ($vis === "nonblind") {
-            $this->_visibility = self::VIS_AUTHOR;
-        } else if ($vis === "conflict") {
-            $this->_visibility = self::VIS_CONFLICT;
-        } else if ($vis === "review") {
-            $this->_visibility = self::VIS_REVIEW;
-        } else if ($vis === "admin") {
-            $this->_visibility = self::VIS_ADMIN;
-        } else {
+        $vis = $args->visibility ?? /* XXX */ $args->view_type ?? null;
+        if ($vis !== null) {
+            if (($x = array_search($vis, self::$visibility_map)) !== false) {
+                $this->_visibility = $x;
+            } else if ($vis === "rev" /* XXX */) {
+                $this->_visibility = self::VIS_SUB;
+            }
+        }
+        if ($vis === null) {
             $this->_visibility = self::VIS_SUB;
         }
 
@@ -169,28 +182,35 @@ class PaperOption implements JsonSerializable {
             $this->order = 499;
         }
 
-        $p = $args->form_order ?? $args->form_position /* XXX */ ?? null;
-        if ($p === null) {
-            $disp = $args->display ?? null;
-            if ($disp === "submission") {
-                $p = 1100 + $this->order;
-            } else if ($disp === "prominent") {
-                $p = 3100 + $this->order;
-            } else {
-                $p = 3600 + $this->order;
+        $disp = $args->display ?? null;
+        if ($disp !== null) {
+            if (($x = array_search($disp, self::$display_map)) !== false) {
+                $this->_display = $x;
+            } else if ($disp === "submission" /* XXX */) {
+                $this->_display = self::DISP_TOP;
+            } else if ($disp === "prominent" /* XXX */) {
+                $this->_display = self::DISP_RIGHT;
+            } else if ($disp === "topics" /* XXX */) {
+                $this->_display = self::DISP_REST;
             }
         }
-        $this->form_order = $p;
 
-        if (($args->display ?? null) === "none") {
-            $p = false;
+        $p = $args->form_order ?? $args->form_position /* XXX */ ?? null;
+        if ($this->_display === null) {
+            if ($p === null || $p >= 3500) {
+                $this->_display = self::DISP_REST;
+            } else if ($p >= 3000) {
+                $this->_display = self::DISP_RIGHT;
+            } else {
+                $this->_display = self::DISP_TOP;
+            }
         }
-        $this->page_order = $args->page_order ?? $args->page_position /* XXX */ ?? $args->display_position ?? $p;
+        $this->form_order = $p ?? self::$display_form_order[$this->_display] + $this->order;
+
+        $this->page_order = $args->page_order ?? $args->page_position /* XXX */ ?? $args->display_position /* XXX */ ?? $p;
         $this->page_expand = !!($args->page_expand ?? false);
         $this->page_group = $args->page_group ?? null;
-        if ($this->page_group === null
-            && $this->page_order >= 3500
-            && $this->page_order < 4000) {
+        if ($this->page_group === null && $this->_display === self::DISP_REST) {
             $this->page_group = "topics";
         }
 
@@ -258,21 +278,19 @@ class PaperOption implements JsonSerializable {
     /** @param PaperOption $a
      * @param PaperOption $b */
     static function compare($a, $b) {
-        $ap = $a->page_order();
-        $ap = $ap !== false ? $ap : PHP_INT_MAX;
-        $bp = $b->page_order();
-        $bp = $bp !== false ? $bp : PHP_INT_MAX;
-        return $ap <=> $bp ? : (strcasecmp($a->name, $b->name) ? : $a->id <=> $b->id);
+        return $a->_display <=> $b->_display
+            ? : $a->page_order <=> $b->page_order
+            ? : $a->id <=> $b->id;
     }
 
     /** @param PaperOption $a
      * @param PaperOption $b */
     static function form_compare($a, $b) {
         $ap = $a->form_order;
-        $ap = $ap !== false ? $ap : PHP_INT_MAX;
+        $ap = $ap !== false ? $ap : INF;
         $bp = $b->form_order;
-        $bp = $bp !== false ? $bp : PHP_INT_MAX;
-        return $ap <=> $bp ? : (strcasecmp($a->name, $b->name) ? : $a->id <=> $b->id);
+        $bp = $bp !== false ? $bp : INF;
+        return $ap <=> $bp ? : $a->id <=> $b->id;
     }
 
     /** @param string $s
@@ -581,16 +599,16 @@ class PaperOption implements JsonSerializable {
         return null;
     }
 
+    /** @return 0|1|2|3|4|5 */
+    function display() {
+        return $this->_display;
+    }
     /** @return string */
     function display_name() {
         if ($this->page_order === false) {
             return "none";
-        } else if ($this->page_order < 3000) {
-            return "submission";
-        } else if ($this->page_order < 3500) {
-            return "prominent";
         } else {
-            return "topics";
+            return self::$display_map[$this->_display];
         }
     }
 
@@ -1442,8 +1460,9 @@ class Document_PaperOption extends PaperOption {
                 $fr->set_text($d->filename);
             } else if ($fr->for_page()) {
                 $fr->title = "";
-                $dif = 0;
-                if ($this->page_order() >= 2000) {
+                if ($this->display() === PaperOption::DISP_TOP) {
+                    $dif = 0;
+                } else {
                     $dif = DocumentInfo::L_SMALL;
                 }
                 $fr->set_html($d->link_html('<span class="pavfn">' . $this->title_html() . '</span>', $dif));

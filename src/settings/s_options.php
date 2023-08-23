@@ -572,6 +572,10 @@ class Options_SettingParser extends SettingParser {
             $this->option_id_to_ctr[$opt->id] = $ctr;
         }
         usort($nsfj, "Conf::xt_order_compare");
+        // standardize `order` members
+        foreach ($nsfj as $i => $j) {
+            $j->order = $i + 1;
+        }
         if ($sv->update("options", empty($nsfj) ? "" : json_encode_db($nsfj))) {
             $this->_validate_consistency($sv);
             $sv->update("options_version", (int) $sv->conf->setting("options") + 1);

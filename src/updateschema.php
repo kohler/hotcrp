@@ -1000,6 +1000,54 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         return $options_array;
     }
 
+    private function v279_options_setting($options_array) {
+        $diff = false;
+        foreach ($options_array as $v) {
+            if (!is_object($v)) {
+                error_log("{$this->conf->dbname}: options update failure");
+                return;
+            }
+            $id = $v->id ?? null;
+            if (is_string($id) && ctype_digit($id)) {
+                $id = $v->id = intval($id);
+                $diff = true;
+            }
+            if (!is_int($id)) {
+                error_log("{$this->conf->dbname}: options update failure");
+            }
+            if (($v->visibility ?? null) === "rev") {
+                unset($v->visibility);
+                $diff = true;
+            }
+            $disp = $v->display ?? null;
+            if ($disp === "submission") {
+                $v->display = "top";
+                $diff = true;
+            } else if ($disp === "prominent") {
+                $v->display = "right";
+                $diff = true;
+            } else if ($disp === "topics") {
+                $v->display = "rest";
+                $diff = true;
+            }
+        }
+        usort($options_array, function ($a, $b) {
+            return ($a->order ?? 0) <=> ($b->order ?? 0)
+                ? : ($a->id ?? 0) <=> ($b->id ?? 0);
+        });
+        foreach ($options_array as $i => $v) {
+            if (is_object($v)
+                && ($v->order ?? 0) !== $i + 1) {
+                $v->order = $i + 1;
+                $diff = true;
+            }
+        }
+        if ($diff) {
+            $this->save_options_setting($options_array);
+        }
+        return $options_array;
+    }
+
     /** @return bool */
     function run() {
         $conf = $this->conf;
@@ -1032,6 +1080,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
         if ($conf->sversion <= 277) {
             $options_data = $this->v278_options_setting($options_data);
+        }
+        if ($conf->sversion <= 278) {
+            $options_data = $this->v279_options_setting($options_data);
         }
 
         // update `review_form`
@@ -2740,8 +2791,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(276);
         }
         if ($conf->sversion === 276
-            || $conf->sversion === 277) {
-            $conf->update_schema_version(278);
+            || $conf->sversion === 277
+            || $conf->sversion === 278) {
+            $conf->update_schema_version(279);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
