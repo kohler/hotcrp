@@ -146,7 +146,7 @@ class Options_SettingRenderer {
 
     function print_display(SettingValues $sv) {
         $sv->print_select_group("sf/{$this->ctr}/display", "Display", [
-            "prominent" => "Normal", "topics" => "Grouped with topics", "submission" => "Near submission"
+            "right" => "Normal", "rest" => "Grouped with topics", "top" => "Near submission"
         ], [
             "horizontal" => true,
             "group_attr" => ["data-property" => "display"],
