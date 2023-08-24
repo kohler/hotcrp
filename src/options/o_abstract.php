@@ -5,7 +5,13 @@
 class Abstract_PaperOption extends PaperOption {
     function __construct($conf, $args) {
         parent::__construct($conf, $args);
-        $this->set_required($conf->opt("noAbstract") ? self::REQ_NO : self::REQ_REGISTER);
+        $ona = (int) $this->conf->opt("noAbstract");
+        if (!isset($args->required)) {
+            $this->set_required($ona === 2 ? self::REQ_NO : self::REQ_REGISTER);
+        }
+        if (!isset($args->exists_if) && $ona === 1) {
+            $this->set_exists_condition(false);
+        }
     }
     function value_force(PaperValue $ov) {
         if (($ab = $ov->prow->abstract()) !== "") {
@@ -39,9 +45,7 @@ class Abstract_PaperOption extends PaperOption {
         return $this->parse_json_string($prow, $j, PaperOption::PARSE_STRING_TRIM);
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        if ((int) $this->conf->opt("noAbstract") !== 1) {
-            $this->print_web_edit_text($pt, $ov, $reqov, ["rows" => 5]);
-        }
+        $this->print_web_edit_text($pt, $ov, $reqov, ["rows" => 5]);
     }
     function render(FieldRender $fr, PaperValue $ov) {
         if ($fr->for_page()) {
@@ -51,11 +55,13 @@ class Abstract_PaperOption extends PaperOption {
             if ($text !== "") {
                 $fr->value = $text;
                 $fr->value_format = $ov->prow->abstract_format();
-            } else if (!$this->conf->opt("noAbstract")
-                       && $fr->verbose()) {
+            } else if ($this->required && $fr->verbose()) {
                 $fr->set_text("[No abstract]");
             }
         }
+    }
+    function search_examples(Contact $viewer, $context) {
+        return [$this->has_search_example(), $this->text_search_example()];
     }
     function present_script_expression() {
         return ["type" => "text_present", "formid" => $this->formid];

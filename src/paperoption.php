@@ -480,6 +480,10 @@ class PaperOption implements JsonSerializable {
         }
         return $this->_exists_term;
     }
+    /** @return bool */
+    final function test_can_exist() {
+        return $this->exists_if !== "NONE";
+    }
     /** @param bool $use_script_expression
      * @return bool */
     final function test_exists(PaperInfo $prow, $use_script_expression = false) {
@@ -846,6 +850,15 @@ class PaperOption implements JsonSerializable {
         return new SearchExample(
             $this, "has:" . $this->search_keyword(),
             "<0>submission’s {title} field is set"
+        );
+    }
+    /** @return SearchExample */
+    function text_search_example() {
+        assert($this->search_keyword() !== false);
+        return new SearchExample(
+            $this, $this->search_keyword() . ":{text}",
+            "<0>submission’s {title} field contains ‘{text}’",
+            new FmtArg("text", "words")
         );
     }
     /** @return ?SearchTerm */
@@ -1230,8 +1243,14 @@ class Selector_PaperOption extends PaperOption {
 class Document_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        if ($this->id === DTYPE_SUBMISSION && !$conf->opt("noPapers")) {
-            $this->set_required(self::REQ_SUBMIT);
+        if ($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL) {
+            $onp = (int) $this->conf->opt("noPapers");
+            if (!isset($args->required)) {
+                $this->set_required($onp === 2 ? self::REQ_NO : self::REQ_SUBMIT);
+            }
+            if (!isset($args->exists_if) && $onp === 1) {
+                $this->set_exists_condition(false);
+            }
         }
     }
 
@@ -1360,14 +1379,9 @@ class Document_PaperOption extends PaperOption {
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         if ($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL) {
-            $noPapers = $this->conf->opt("noPapers");
-            if ($noPapers === 1
-                || $noPapers === true
-                || ($this->id === DTYPE_FINAL) !== ($pt->user->edit_paper_state($ov->prow) === 2)) {
+            if (($this->id === DTYPE_FINAL) !== ($pt->user->edit_paper_state($ov->prow) === 2)) {
                 return;
             }
-        } else {
-            $noPapers = false;
         }
 
         // XXXX this is super gross
@@ -1581,14 +1595,7 @@ class Text_PaperOption extends PaperOption {
     }
 
     function search_examples(Contact $viewer, $context) {
-        return [
-            $this->has_search_example(),
-            new SearchExample(
-                $this, $this->search_keyword() . ":{text}",
-                "submission’s {title} field contains ‘{text}’",
-                new FmtArg("text", "hello")
-            )
-        ];
+        return [$this->has_search_example(), $this->text_search_example()];
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {
         if ($sword->compar === "") {

@@ -3189,19 +3189,21 @@ class Contact implements JsonSerializable {
 
     /** @return 0|1|2 */
     function edit_paper_state(PaperInfo $prow) {
-        $rights = $this->rights($prow);
-        if (!$rights->allow_author_edit
-            || $prow->timeWithdrawn > 0 /* non-overridable */) {
+        if ($prow->timeWithdrawn > 0 /* non-overridable */) {
             return 0;
         }
+        $rights = $this->rights($prow);
         if ($rights->can_administer) {
             if ($prow->phase() === PaperInfo::PHASE_FINAL) {
                 return 2;
             } else {
                 return 1;
             }
+        } else if ($rights->allow_author_edit) {
+            return $prow->author_edit_state();
+        } else {
+            return 0;
         }
-        return $prow->author_edit_state();
     }
 
     /** @return bool */
@@ -3675,16 +3677,6 @@ class Contact implements JsonSerializable {
             || ($eos === 1 && ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0);
     }
 
-    /** @return array<int,PaperOption> */
-    function user_option_list() {
-        $a = [];
-        foreach ($this->conf->options() as $id => $opt) {
-            if ($this->can_view_some_option($opt))
-                $a[$id] = $opt;
-        }
-        return $a;
-    }
-
     /** @param PaperOption $opt
      * @return ?PermissionProblem */
     function perm_view_option(PaperInfo $prow, $opt) {
@@ -3720,7 +3712,8 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function can_view_some_option(PaperOption $opt) {
-        if ($opt->final && !$this->can_view_some_decision()) {
+        if (($opt->final && !$this->can_view_some_decision())
+            || !$opt->test_can_exist()) {
             return false;
         }
         $oview = $opt->visibility();

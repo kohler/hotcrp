@@ -7,7 +7,7 @@ class Completion_API {
      * @param string $prefix
      * @param array $map
      * @param int $flags */
-    private static function simple_search_completion(&$comp, $prefix, $map, $flags = 0) {
+    static private function simple_search_completion(&$comp, $prefix, $map, $flags = 0) {
         foreach ($map as $id => $str) {
             $match = null;
             foreach (preg_split('/[^a-z0-9_]+/', strtolower($str)) as $word)
@@ -23,14 +23,8 @@ class Completion_API {
     }
 
     /** @param list &$comp */
-    static function has_search_completion(Contact $user, &$comp) {
+    static private function has_search_completion(Contact $user, &$comp) {
         $conf = $user->conf;
-        if ((int) $user->conf->opt("noPapers") !== 1) {
-            $comp[] = "has:submission";
-        }
-        if ((int) $user->conf->opt("noAbstract") !== 1) {
-            $comp[] = "has:abstract";
-        }
         if ($user->isPC
             && $conf->has_any_manager()) {
             $comp[] = "has:admin";
@@ -96,16 +90,17 @@ class Completion_API {
         $comp = [];
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
 
-        self::has_search_completion($user, $comp);
-
-        foreach ($user->user_option_list() as $o) {
-            if ($user->can_view_some_option($o)
-                && $o->search_keyword() !== false) {
-                foreach ($o->search_examples($user, SearchExample::COMPLETION) as $sex) {
+        // paper fields
+        foreach ($conf->options()->form_fields() as $opt) {
+            if ($user->can_view_some_option($opt)
+                && $opt->search_keyword() !== false) {
+                foreach ($opt->search_examples($user, SearchExample::COMPLETION) as $sex) {
                     $comp[] = $sex->q;
                 }
             }
         }
+
+        self::has_search_completion($user, $comp);
 
         if ((!$category || $category === "ss")
             && $user->isPC) {

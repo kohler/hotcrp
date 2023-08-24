@@ -232,7 +232,7 @@ class Attachments_PaperOption extends PaperOption {
             ),
             new SearchExample(
                 $this, $this->search_keyword() . ":\"{filename}\"",
-                "<0>submission has {title} attachment matching “{filename}”",
+                "<0>submission has {title} attachment matching ‘{filename}’",
                 new FmtArg("filename", "*.gif")
             )
         ];

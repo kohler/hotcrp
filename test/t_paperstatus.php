@@ -114,6 +114,15 @@ class PaperStatus_Tester {
         $paper2b = $pex->paper_json(2);
         xassert_eqq($paper2b->submission->hash, "24aaabecc9fac961d52ae62f620a47f04facc2ce");
 
+        // final versions can’t be saved unless final versions are open
+        $this->conf->qe("update Paper set outcome=1 where paperId=2");
+        $this->conf->qe("insert into Settings (name,value) values ('final_open',1), ('au_seedec',1)");
+        $this->conf->load_settings();
+
+        $p2 = $this->conf->checked_paper_by_id(2);
+        xassert_gt($p2->outcome_sign, 0);
+        xassert_eqq($p2->phase(), PaperInfo::PHASE_FINAL);
+
         $ps->save_paper_json(json_decode("{\"id\":2,\"final\":{\"content\":\"%PDF-goodbye\\n\",\"type\":\"application/pdf\"}}"));
         xassert_paper_status($ps);
         xassert(ConfInvariants::test_document_inactive($this->conf));
@@ -131,6 +140,9 @@ class PaperStatus_Tester {
         xassert_eqq($paper2->final->hash, "e04c778a0af702582bb0e9345fab6540acb28e45");
         $paper2 = $this->u_estrin->checked_paper_by_id(2);
         xassert_eqq(bin2hex($paper2->sha1), "e04c778a0af702582bb0e9345fab6540acb28e45");
+
+        $this->conf->qe("delete from Settings where name='final_open' or name='au_seedec'");
+        $this->conf->qe("update Paper set outcome=0 where paperId=2");
     }
 
     function test_document_options_storage() {
@@ -645,6 +657,9 @@ class PaperStatus_Tester {
         xassert(!$ps->has_error_at("abstract"));
         xassert_eqq(count($ps->error_fields()), 0);
         xassert_eqq($ps->feedback_text($ps->error_list()), "");
+
+        $this->conf->set_opt("noAbstract", 0);
+        $this->conf->invalidate_caches(["options" => true]);
     }
 
     function test_save_abstract_format() {
@@ -1372,7 +1387,8 @@ Phil Porras.");
             "order": 2, "presence": "custom", "condition": "SubTyp:First",
             "required": "register"
         }
-    ]
+    ],
+    "sf_abstract": "optional"
 }');
         xassert($sv->execute());
         $o1 = $this->conf->options()->find("Submission Type");

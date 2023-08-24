@@ -38,6 +38,9 @@ class SearchExample {
         $this->q = $q;
         $this->description = $description;
         $this->arguments = $arguments;
+        if ($description !== "" && !Ftext::is_ftext($description)) {
+            error_log(debug_string_backtrace());
+        }
     }
 
     /** @param string $category

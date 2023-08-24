@@ -195,6 +195,9 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
                 echo '</div></div></li>';
             }
         }
+        if ($topicset->count() === 0) {
+            echo '<li class="ctelt celtg"><div class="ctelti"><em>(No options defined)</em></div></li>';
+        }
         echo "</ul></fieldset></div>\n\n";
     }
 

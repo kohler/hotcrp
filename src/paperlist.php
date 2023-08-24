@@ -1100,7 +1100,8 @@ class PaperList {
                         && $this->user->can_view_option($row, $opt);
                 });
         } else if ($key === "abstract") {
-            return $this->conf->opt("noAbstract") !== 1
+            $opt = $this->conf->option_by_id(PaperOption::ABSTRACTID);
+            return $opt->test_can_exist()
                 && $this->unordered_rowset()->any(function ($row) {
                     return $row->abstract() !== "";
                 });

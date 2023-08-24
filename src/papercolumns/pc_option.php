@@ -98,8 +98,9 @@ class Option_PaperColumnFactory {
         list($ocolon, $oname) = [$m[1], $m[2]];
         if (!$ocolon && $oname === "options") {
             $x = [];
-            foreach ($xtp->user->user_option_list() as $opt) {
-                if ($opt->on_render_context(FieldRender::CFLIST))
+            foreach ($xtp->conf->options() as $opt) {
+                if ($xtp->user->can_view_some_option($opt)
+                    && $opt->on_render_context(FieldRender::CFLIST))
                     $x[] = self::option_json($xfj, $opt);
             }
             return $x;
@@ -119,8 +120,9 @@ class Option_PaperColumnFactory {
     }
     static function completions(Contact $user, $fxt) {
         $cs = [];
-        foreach ($user->user_option_list() as $opt) {
-            if ($opt->search_keyword() !== false
+        foreach ($user->conf->options() as $opt) {
+            if ($user->can_view_some_option($opt)
+                && $opt->search_keyword() !== false
                 && $opt->on_render_context(FieldRender::CFSUGGEST)) {
                 $cs[] = $opt->search_keyword();
             }

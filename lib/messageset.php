@@ -775,8 +775,9 @@ class MessageSet {
     }
 
     /** @param iterable<MessageItem> $message_list
+     * @param bool $include_fields
      * @return string */
-    static function feedback_text($message_list) {
+    static function feedback_text($message_list, $include_fields = false) {
         $t = [];
         foreach ($message_list as $mi) {
             if ($mi->message !== "") {
@@ -785,6 +786,9 @@ class MessageSet {
                 }
                 if ($mi->landmark !== null && $mi->landmark !== "") {
                     $t[] = "{$mi->landmark}: ";
+                }
+                if ($include_fields && $mi->field !== null) {
+                    $t[] = "{$mi->field}: ";
                 }
                 $t[] = $mi->message_as(0);
                 $t[] = "\n";
@@ -802,8 +806,9 @@ class MessageSet {
         return self::feedback_text($this->message_list_at($field));
     }
 
-    /** @return string */
-    function full_feedback_text() {
-        return self::feedback_text($this->message_list());
+    /** @param bool $include_fields
+     * @return string */
+    function full_feedback_text($include_fields = false) {
+        return self::feedback_text($this->message_list(), $include_fields);
     }
 }

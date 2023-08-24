@@ -457,6 +457,62 @@ function xassert_neq($actual, $nonexpected) {
     return $ok;
 }
 
+/** @param null|int|float|string $actual
+ * @param null|int|float|string $expected_bound
+ * @return bool */
+function xassert_lt($actual, $expected_bound) {
+    $ok = $actual < $expected_bound;
+    if ($ok) {
+        Xassert::succeed();
+    } else {
+        error_log(Xassert::match_failure_message(assert_location() . ": ", "expected < ", $expected_bound, ", got ", $actual));
+        Xassert::fail();
+    }
+    return $ok;
+}
+
+/** @param null|int|float|string $actual
+ * @param null|int|float|string $expected_bound
+ * @return bool */
+function xassert_le($actual, $expected_bound) {
+    $ok = $actual <= $expected_bound;
+    if ($ok) {
+        Xassert::succeed();
+    } else {
+        error_log(Xassert::match_failure_message(assert_location() . ": ", "expected <= ", $expected_bound, ", got ", $actual));
+        Xassert::fail();
+    }
+    return $ok;
+}
+
+/** @param null|int|float|string $actual
+ * @param null|int|float|string $expected_bound
+ * @return bool */
+function xassert_ge($actual, $expected_bound) {
+    $ok = $actual >= $expected_bound;
+    if ($ok) {
+        Xassert::succeed();
+    } else {
+        error_log(Xassert::match_failure_message(assert_location() . ": ", "expected >= ", $expected_bound, ", got ", $actual));
+        Xassert::fail();
+    }
+    return $ok;
+}
+
+/** @param null|int|float|string $actual
+ * @param null|int|float|string $expected_bound
+ * @return bool */
+function xassert_gt($actual, $expected_bound) {
+    $ok = $actual > $expected_bound;
+    if ($ok) {
+        Xassert::succeed();
+    } else {
+        error_log(Xassert::match_failure_message(assert_location() . ": ", "expected > ", $expected_bound, ", got ", $actual));
+        Xassert::fail();
+    }
+    return $ok;
+}
+
 /** @param string $haystack
  * @param string $needle
  * @return bool */

@@ -1836,7 +1836,9 @@ class PaperTable {
             $t = [$this->conf->_("Enter information about your submission.")];
             if ($sr->register > 0 && $sr->update > 0 && $sr->register < $sr->update) {
                 $t[] = $this->conf->_("Submissions must be registered by %s and completed by %s.", $this->conf->unparse_time_long($sr->register), $this->conf->unparse_time_long($sr->update));
-                if (!$this->conf->opt("noPapers")) {
+                $popt = $this->conf->option_by_id(DTYPE_SUBMISSION);
+                if ($popt->test_exists($this->prow)
+                    && !$popt->test_required($this->prow)) {
                     $t[] = $this->conf->_("PDF upload is not required to register.");
                 }
             } else if ($sr->update > 0) {

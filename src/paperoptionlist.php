@@ -3,9 +3,11 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class PaperOptionList implements IteratorAggregate {
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     private $conf;
-    /** @var array<int,object> */
+    /** @var array<int,object>
+     * @readonly */
     private $_jmap;
     /** @var array<int,?PaperOption> */
     private $_omap = [];
@@ -22,12 +24,13 @@ class PaperOptionList implements IteratorAggregate {
     private $_accumulator;
 
     const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"submission","form_order":1001,"display":"top","type":"document","configurable":false}';
-    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","form_order":1002,"display":"top","type":"document","configurable":false}';
+    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","final":true,"form_order":1002,"display":"top","type":"document","configurable":false}';
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
     function _add_json($oj, $k) {
         if (!isset($oj->id) && $k === 0) {
             throw new ErrorException("This conference could not be upgraded from an old database schema. A system administrator must fix this problem.");
@@ -47,7 +50,8 @@ class PaperOptionList implements IteratorAggregate {
         }
     }
 
-    /** @return array<int,object> */
+    /** @return array<int,object>
+     * @suppress PhanAccessReadOnlyProperty */
     private function option_json_map() {
         if ($this->_jmap === null) {
             $this->_jmap = [];
@@ -316,6 +320,7 @@ class PaperOptionList implements IteratorAggregate {
         return $omap;
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
     function invalidate_options() {
         if ($this->_jmap !== null || $this->_ijmap !== null) {
             $this->_jmap = $this->_ijmap = null;
