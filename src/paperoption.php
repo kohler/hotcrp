@@ -458,10 +458,18 @@ class PaperOption implements JsonSerializable {
     function exists_condition() {
         return $this->exists_if;
     }
-    /** @param $x null|bool|string */
+    /** @param $x null|bool|string|SearchTerm */
     function set_exists_condition($x) {
-        $this->exists_if = self::clean_condition($x);
-        $this->_exists_term = null;
+        if ($x instanceof SearchTerm) {
+            $this->exists_if = $x instanceof False_SearchTerm ? "NONE" : "<special>";
+            $this->_exists_term = $x;
+        } else if ($x === false || $x === "NONE") {
+            $this->exists_if = "NONE";
+            $this->_exists_term = new False_SearchTerm;
+        } else {
+            $this->exists_if = self::clean_condition($x);
+            $this->_exists_term = null;
+        }
     }
     /** @return bool */
     function test_exists(PaperInfo $prow) {

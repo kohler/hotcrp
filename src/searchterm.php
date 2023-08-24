@@ -138,7 +138,9 @@ abstract class SearchTerm {
 
 
     /** @return string */
-    abstract function sqlexpr(SearchQueryInfo $sqi);
+    function sqlexpr(SearchQueryInfo $sqi) {
+        return "true";
+    }
 
     /** @param ?bool $b
      * @return null|False_SearchTerm|True_SearchTerm */
@@ -269,9 +271,6 @@ class True_SearchTerm extends SearchTerm {
     }
     function simple_search(&$options) {
         return true;
-    }
-    function sqlexpr(SearchQueryInfo $sqi) {
-        return "true";
     }
     function is_sqlexpr_precise() {
         return true;
