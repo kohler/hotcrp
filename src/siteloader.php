@@ -13,6 +13,7 @@ class SiteLoader {
         "CsvParser" => "lib/csv.php",
         "Discrete_ReviewField" => "src/reviewfield.php",
         "DiscreteValues_ReviewField" => "src/reviewfield.php",
+        "Document_PaperOption" => "src/paperoption.php",
         "False_SearchTerm" => "src/searchterm.php",
         "Fexpr" => "src/formula.php",
         "FmtArg" => "lib/fmt.php",
