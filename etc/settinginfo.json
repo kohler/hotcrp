@@ -295,14 +295,14 @@
         "name": "sf_abstract", "storage": "ova.noAbstract",
         "title": "Submission abstract required",
         "type": "radio",
-        "values": [0, 1, 2], "default_value": 0,
+        "values": [0, 2, 1], "default_value": 0,
         "json_values": ["required", "optional", "none"]
     },
     {
         "name": "sf_pdf_submission", "storage": "ova.noPapers",
         "title": "Submission PDF required",
         "type": "radio",
-        "values": [0, 1, 2], "default_value": 0,
+        "values": [0, 2, 1], "default_value": 0,
         "json_values": ["required", "optional", "none"]
     },
     {
