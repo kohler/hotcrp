@@ -237,7 +237,7 @@ class SettingValues extends MessageSet {
                         $mi->pos2 = $jpp->kpos2;
                     }
                 }
-            } else if (!$si->json_export()) {
+            } else if (!$si->json_import()) {
                 $this->warning_at(null, "<0>This setting cannot be changed in JSON");
             } else if ($si->internal && is_scalar($v)) {
                 $this->set_req($si->name, "{$v}");
@@ -344,6 +344,11 @@ class SettingValues extends MessageSet {
         foreach ($this->cs()->members("__crosscheck", "crosscheck_function") as $gj) {
             $this->cs()->call_function($gj, $gj->crosscheck_function, $gj);
         }
+    }
+
+    /** @param string $name */
+    function print($name) {
+        return $this->cs()->print($name);
     }
 
     /** @param string $g

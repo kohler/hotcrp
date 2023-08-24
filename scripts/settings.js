@@ -35,12 +35,6 @@ handle_ui.on("js-settings-radioitem-click", function () {
         re.click();
 });
 
-handle_ui.on("js-settings-sub-nopapers", function () {
-    var v = $(this).val();
-    hotcrp.fold("pdfupload", v == 1, 2);
-    hotcrp.fold("pdfupload", v != 0, 3);
-});
-
 $(function () { $(".js-settings-sub-nopapers").trigger("change"); });
 
 handle_ui.on("js-settings-show-property", function () {
@@ -103,16 +97,31 @@ function settings_delete(elt, message) {
     return true;
 }
 
+function settings_field_check_overflow() {
+    let xfv = this.firstChild;
+    while (!hasClass(xfv, "settings-xf-view")) {
+        xfv = xfv.nextSibling;
+    }
+    toggleClass(xfv, "settings-xf-overflow", xfv.scrollHeight > xfv.clientHeight + 5);
+}
+
 function settings_field_unfold(evt) {
-    if (evt.which.open && evt.which.n === 2) {
-        var ch = this.parentElement.firstChild;
+    if (evt.which.n !== 2) {
+        return;
+    }
+    if (evt.which.open) {
+        let ch = this.parentElement.firstChild;
         for (; ch; ch = ch.nextSibling) {
             if (ch !== this && hasClass(ch, "fold2o") && !form_differs(ch))
                 fold(ch, true, 2);
         }
         $(this).find("textarea").css("height", "auto").autogrow();
         $(this).find("input[type=text]").autogrow();
-        $(this).scrollIntoView();
+        if (!evt.which.nofocus) {
+            $(this).scrollIntoView();
+        }
+    } else {
+        settings_field_check_overflow.call(this);
     }
 }
 
@@ -124,12 +133,14 @@ function settings_disable_children(e) {
         else if (this.type !== "select")
             this.readonly = true;
         removeClass(this, "ui");
+        this.removeAttribute("draggable");
         this.tabIndex = -1;
     });
+    $(e).find(".draggable").removeClass("draggable");
 }
 
 function settings_field_order(parentid) {
-    var i = 0, curorder, defaultorder, orde, n,
+    var i = 0, curorder, defaultorder, orde, n, e,
         form = document.getElementById("f-settings"),
         c = document.getElementById(parentid),
         moveup = null, movedown = null;
@@ -140,10 +151,14 @@ function settings_field_order(parentid) {
             continue;
         }
         ++i;
-        moveup = n.querySelector(".moveup");
-        moveup.disabled = movedown === null;
-        movedown = n.querySelector(".movedown");
-        movedown.disabled = false;
+        if ((e = n.querySelector(".moveup"))) {
+            e.disabled = movedown === null;
+            moveup = e;
+        }
+        if ((e = n.querySelector(".movedown"))) {
+            e.disabled = false;
+            movedown = e;
+        }
         curorder = +orde.value;
         defaultorder = +input_default_value(orde);
         if (defaultorder > 0 && defaultorder < curorder) {
@@ -166,30 +181,33 @@ function field_find(ftypes, name) {
     return null;
 }
 
-function field_instantiate_type(ee, ftypes, ftype) {
+function field_instantiate_type(ee, ftfinder, ftype) {
     const select = ee.querySelector("select");
+    if (!select) {
+        return; // intrinsic field
+    }
     select.replaceChildren();
     if (ftype.convertible_to.length === 1) {
         select.closest(".entry").replaceChildren(ftype.title, hidden_input(select.name, ftype.name, {id: select.id}));
     } else {
         for (const ct of ftype.convertible_to) {
-            select.add(make_option_element(ct, field_find(ftypes, ct).title));
+            select.add(make_option_element(ct, ftfinder(ct).title));
         }
         select.value = ftype.name;
         select.setAttribute("data-default-value", ftype.name);
     }
 }
 
-function field_instantiate(ee, ftypes, tname, instantiators) {
+function field_instantiate(ee, ftfinder, tname, instantiators) {
     if (!tname && ee.id.endsWith("/edit")) {
         tname = ee.closest("form").elements[ee.id.substring(0, ee.id.length - 4) + "type"].value;
     }
-    const ftype = field_find(ftypes, tname);
+    const ftype = ftfinder(tname);
     for (let pe = ee.firstElementChild; pe; ) {
         const npe = pe.nextElementSibling,
             prop = pe.getAttribute("data-property");
         if (prop === "type") {
-            field_instantiate_type(pe, ftypes, ftype);
+            field_instantiate_type(pe, ftfinder, ftype);
         } else if (hasClass(pe, "property-optional")
                    ? (ftype.properties || {})[prop]
                    : (ftype.properties || {})[prop] !== false) {
@@ -288,9 +306,7 @@ function grid_select_event(evt) {
 
 
 // BEGIN SUBMISSION FIELD SETTINGS
-var submission_form_settings = (function () {
-
-var sftypes;
+(function () {
 
 function sf_order() {
     settings_field_order("settings-sform");
@@ -344,16 +360,13 @@ function add_dialog() {
     var $d, grid, samples;
     function submit(evt) {
         var selidx = +grid.getAttribute("data-selected-index"),
-            h = $$("settings-sf-new").innerHTML,
+            h = samples[selidx].sf_edit_html,
             next = 1;
         while ($$("sf/" + next + "/name")) {
             ++next;
         }
         h = h.replace(/\/\$/g, "/" + next);
         $(h).removeClass("hidden").appendTo("#settings-sform").awaken();
-        $$("sf/" + next + "/type").options[0].value = samples[selidx].type;
-        field_instantiate($$("sf/" + next + "/edit"), sftypes, samples[selidx].type,
-            make_sf_instantiator(samples[selidx]));
         $$("sf/" + next + "/name").focus();
         sf_order();
         $d.close();
@@ -361,7 +374,6 @@ function add_dialog() {
     }
     function create(library) {
         samples = library.samples;
-        sftypes = library.types;
         var hc = popup_skeleton({className: "modal-dialog-wide"}), i, e;
         hc.push('<h2>Add field</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
@@ -371,7 +383,7 @@ function add_dialog() {
         $d = hc.show();
         grid = $d[0].querySelector(".grid-select");
         for (i = 0; i !== samples.length; ++i) {
-            e = $e("div", {"class": "settings-sf-view", role: "presentation"});
+            e = $e("div", {"class": "settings-xf-view", role: "presentation"});
             e.innerHTML = samples[i].sf_view_html;
             grid.append($e("fieldset", {"class": "grid-option", "data-index": i, role: "option", tabindex: 0, "aria-selected": "false"},
                 $e("legend", null, samples[i].legend), e));
@@ -388,17 +400,97 @@ function add_dialog() {
 
 handle_ui.on("js-settings-sf-add", add_dialog);
 
+handle_ui.on("js-settings-sf-checkbox-required", function () {
+    const fl = this.closest(".entry").lastChild,
+        verb = fl.querySelector(".verb");
+    if (hasClass(fl, "feedback-list")) {
+        verb.textContent = this.value == "2" ? "completing" : "registering";
+        toggleClass(fl, "hidden", this.value == 0);
+    }
+});
+
+function handle_sf_field_wizard_change(abstract) {
+    const klass = abstract ? ".js-settings-sf-abstract-required" : ".js-settings-sf-submission-required";
+    let e, wize, prese, reqe, changed = false;
+    for (e of document.querySelectorAll(klass)) {
+        if (e.name === "sf_abstract" || e.name === "sf_pdf_submission")
+            wize = e;
+        else if (e.name.endsWith("/presence"))
+            prese = e;
+        else if (e.name.endsWith("/required"))
+            reqe = e;
+    }
+    function change(e, v) {
+        if (e && e.value != v) {
+            if (v == -1 && e.lastChild.value != -1) {
+                e.add(new Option("Other", -1));
+            }
+            $(e).val(v);
+            e.setAttribute("data-autoset-value", v);
+            changed = false;
+            if (e === prese || e === reqe) {
+                foldup.call(e, null, {n: 2, open: true, nofocus: true});
+                $(e).change();
+            }
+        }
+    }
+    if ((this.hasAttribute("data-autoset-value") ? this.getAttribute("data-autoset-value") : input_default_value(this)) == this.value) {
+        /* do nothing */
+    } else if (this === wize) {
+        if (this.value == 0) {
+            change(reqe, abstract ? 1 : 2);
+        } else if (this.value == 1) {
+            change(prese, "none");
+        } else if (this.value == 2) {
+            change(reqe, 0);
+        }
+    } else if (this === prese) {
+        if (this.value === "none") {
+            change(wize, 1);
+        } else if (this.value !== "none" && wize && wize.value == 1) {
+            change(wize, reqe && reqe.value == 1 ? 0 : 2);
+        } else {
+            change(wize, -1);
+        }
+    } else if (this === reqe) {
+        if (this.value == 0 && wize && wize.value == 0) {
+            change(wize, 2);
+        } else if (this.value == (abstract ? 1 : 2) && wize && wize.value == 2) {
+            change(wize, 0);
+        } else {
+            change(wize, -1);
+        }
+    }
+    this.setAttribute("data-autoset-value", this.value);
+    changed && check_form_differs(this.form);
+}
+
+handle_ui.on("js-settings-sf-abstract-required", function () {
+    handle_sf_field_wizard_change.call(this, true);
+});
+
+handle_ui.on("js-settings-sf-submission-required", function () {
+    handle_sf_field_wizard_change.call(this, false);
+    if (this.name === "sf_pdf_submission") {
+        hotcrp.fold("pdfupload", this.value == 1, 2);
+        hotcrp.fold("pdfupload", this.value != 0, 3);
+    }
+});
+
 $(document).on("hotcrpsettingssf", ".settings-sf", function () {
     var view = document.getElementById(this.id + "/view"),
         edit = document.getElementById(this.id + "/edit");
     settings_disable_children(view);
-    if (edit) {
-        field_instantiate(edit, sftypes);
-        if (!form_differs(edit)
-            && !$(edit).find(".is-error, .has-error").length)
-            fold(this, true, 2);
+    if (edit
+        && !form_differs(edit)
+        && !$(edit).find(".is-error, .has-error").length) {
+        fold(this, true, 2);
+    } else {
+        $(edit).awaken();
     }
+    $(edit).find(".uich").trigger("change");
     removeClass(this, "hidden");
+    settings_field_check_overflow.call(this);
     sf_order();
 });
 
@@ -414,10 +506,6 @@ hotcrp.tooltip.add_builder("settings-sf", function (info) {
         x = "#settings-sf-caption-description";
     return $.extend({anchor: "h", content: $(x).html(), className: "gray"}, info);
 });
-
-return function (data) {
-    sftypes = data.types;
-};
 
 })();
 // END SUBMISSION FIELD SETTINGS
@@ -605,6 +693,10 @@ var fieldorder = [], rftypes,
               "orbu", "Orange to blue", "buor", "Blue to orange",
               "turbo", "Turbo", "turbor", "Turbo reversed",
               "catx", "Category10", "none", "None"];
+
+function rffinder(name) {
+    return field_find(rftypes, name);
+}
 
 function unparse_value(fld, idx) {
     if (fld.start && fld.start !== 1) {
@@ -845,7 +937,7 @@ function rf_make(fj) {
 
 function rf_append(fld) {
     var pos = fieldorder.length + 1, $f, i,
-        rftype = field_find(rftypes, fld.type || "radio");
+        rftype = rffinder(fld.type || "radio");
     if (!fld.id) {
         var pat = /text/.test(rftype.name) ? "t%02d" : "s%02d";
         for (i = 0; i === 0 || fieldorder.indexOf(fld.id) >= 0; )
@@ -858,8 +950,8 @@ function rf_append(fld) {
     }
     fld = rf_make(fld);
     fieldorder.push(fld.id);
-    $f = $($("#rf_template").html().replace(/\$/g, pos));
-    field_instantiate($f.children(".settings-rf-edit")[0], rftypes, rftype.name, rfproperties);
+    $f = $($("#rf_template").html().replace(/\/\$/g, "/" + pos));
+    field_instantiate($f.children(".settings-xf-edit")[0], rffinder, rftype.name, rfproperties);
     $f.find(".js-settings-rf-delete").on("click", rf_delete);
     $f.find(".js-settings-rf-move").on("click", rf_move);
     $f.find(".rf-id").val(fld.id);
@@ -977,7 +1069,7 @@ function add_dialog() {
             }
             grid.append($e("fieldset", {"class": "grid-option", "data-index": i, role: "option", tabindex: 0, "aria-selected": "false"},
                 $e("legend", null, samples[i].legend),
-                $e("div", {"class": "settings-rf-view", role: "presentation"},
+                $e("div", {"class": "settings-xf-view", role: "presentation"},
                     rf_render_view(samples[i]))));
         }
         settings_disable_children(grid);
@@ -2992,8 +3084,7 @@ handle_ui.on("dragstart.js-settings-drag", function (evt) {
 
 
 hotcrp.settings = {
-    review_form: review_form_settings,
-    submission_form: submission_form_settings
+    review_form: review_form_settings
 };
 
 })();

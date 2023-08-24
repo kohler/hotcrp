@@ -658,7 +658,7 @@ class PaperStatus_Tester {
         xassert_eqq(count($ps->error_fields()), 0);
         xassert_eqq($ps->feedback_text($ps->error_list()), "");
 
-        $this->conf->set_opt("noAbstract", 0);
+        $this->conf->set_opt("noAbstract", null);
         $this->conf->invalidate_caches(["options" => true]);
     }
 
@@ -1373,6 +1373,7 @@ Phil Porras.");
 
     function test_conditional_fields() {
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
+    "reset": false,
     "sf": [
         {
             "id": "new", "name": "Submission Type", "type": "radio",
@@ -1398,6 +1399,7 @@ Phil Porras.");
         $ps->save_paper_json((object) [
             "id" => "new",
             "title" => "Conditional Field Test",
+            "abstract" => "This is my submission",
             "authors" => [
                 (object) ["name" => "Deborah", "email" => $this->u_estrin->email]
             ],

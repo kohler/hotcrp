@@ -1,47 +1,53 @@
 [
     {
         "legend": "Checkbox",
-        "type": "checkbox",
-        "instantiate": {"title": ""}
+        "type": "checkbox"
     },
     {
         "legend": "Attestation",
-        "instantiate": {"name": "", "description": ""},
-        "name": "Attestation",
-        "description": "An author must check this box before completing the submission.",
         "type": "checkbox",
-        "required": "submit"
+        "required": "submit",
+        "sample_view": {
+            "name": "Attestation",
+            "description": "An author must check this box before completing the submission."
+        }
     },
     {
         "legend": "Dropdown",
         "type": "dropdown",
-        "instantiate": {"title": "", "values": []},
-        "values": [
-            "Option 1",
-            "Option 2",
-            "Option 3"
-        ]
+        "values": [],
+        "sample_view": {
+            "values": [
+                "Option 1",
+                "Option 2",
+                "Option 3"
+            ]
+        }
     },
     {
         "legend": "Radio buttons",
         "type": "radio",
-        "instantiate": {"title": "", "values": []},
-        "values": [
-            "Option 1",
-            "Option 2",
-            "Option 3"
-        ]
+        "values": [],
+        "sample_view": {
+            "values": [
+                "Option 1",
+                "Option 2",
+                "Option 3"
+            ]
+        }
     },
     {
         "legend": "Checkboxes",
         "type": "checkboxes",
-        "instantiate": {"title": "", "values": []},
-        "values": [
-            "Option 1",
-            "Option 2",
-            "Group: Entry 1",
-            "Group: Entry 2"
-        ]
+        "values": [],
+        "sample_view": {
+            "values": [
+                "Option 1",
+                "Option 2",
+                "Group: Entry 1",
+                "Group: Entry 2"
+            ]
+        }
     },
     {
         "legend": "Whole number",
@@ -83,7 +89,8 @@
     {
         "legend": "Section break",
         "type": "separator",
-        "instantiate": {"name": ""},
-        "name": "Optional section title"
+        "sample_view": {
+            "name": "Optional section title"
+        }
     }
 ]

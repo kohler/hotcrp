@@ -91,9 +91,9 @@ class Si {
     /** @var ?bool
      * @readonly */
     public $autogrow;
-    /** @var ?bool
+    /** @var 0|1|2|3
      * @readonly */
-    public $json_export;
+    public $json;
 
     /** @var associative-array<string,bool> */
     static public $option_is_value = [];
@@ -111,7 +111,6 @@ class Si {
         "description" => "is_string",
         "internal" => "is_bool",
         "json_values" => "Si::is_auto_or_list",
-        "json_export" => "is_bool",
         "order" => "is_number",
         "parse_order" => "is_number",
         "__source_order" => "is_int",
@@ -137,7 +136,7 @@ class Si {
             if (call_user_func($typecheck, $j->$jkey)) {
                 $this->$key = $j->$jkey;
             } else {
-                trigger_error("setting {$j->name}.$jkey format error");
+                trigger_error("setting {$j->name}.{$jkey} format error");
             }
         }
     }
@@ -243,14 +242,29 @@ class Si {
         }
         $this->storage_type = $storage_type;
 
-        if ($this->storage_type & self::SI_OPT) {
+        if (($this->storage_type & self::SI_OPT) !== 0) {
             $is_value = !!($this->storage_type & self::SI_VALUE);
             $oname = substr($this->storage ?? $this->name, 4);
             if (!isset(self::$option_is_value[$oname])) {
                 self::$option_is_value[$oname] = $is_value;
             }
             if (self::$option_is_value[$oname] != $is_value) {
-                error_log("$oname: conflicting option_is_value");
+                error_log("{$oname}: conflicting option_is_value");
+            }
+        }
+
+        $this->json = $this->internal ? 0 : 3;
+        if (($je = $j->json ?? $j->json_export /* XXX */ ?? null) !== null) {
+            if ($je === true || $je === "inout") {
+                $this->json = 3;
+            } else if ($je === false || $je === "none") {
+                $this->json = 0;
+            } else if ($je === "in") {
+                $this->json = 1;
+            } else if ($je === "out") {
+                $this->json = 2;
+            } else {
+                error_log("setting {$this->name}.json format error");
             }
         }
     }
@@ -423,13 +437,18 @@ class Si {
     }
 
     /** @return bool */
+    function json_import() {
+        return ($this->json & 1) !== 0;
+    }
+
+    /** @return bool */
     function json_export() {
-        return $this->json_export ?? !$this->internal;
+        return ($this->json & 2) !== 0;
     }
 
     /** @return ?string */
     function json_path() {
-        return ($this->json_export ?? !$this->internal) ? self::json_path_for($this->name) : null;
+        return $this->json !== 0 ? self::json_path_for($this->name) : null;
     }
 
     /** @param string $name

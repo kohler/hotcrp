@@ -5,15 +5,31 @@
 class SubForm_SettingRenderer {
     static function print_abstract(SettingValues $sv) {
         echo '<div id="foldpdfupload" class="fold2o fold3o">';
+        $sel = [
+            0 => "Abstract required to register submission",
+            2 => "Abstract optional",
+            1 => "No abstract"
+        ];
+        if ($sv->oldv("sf_abstract") == -1 || $sv->newv("sf_abstract") == -1) {
+            $sel[-1] = "Other";
+        }
         echo '<div class="f-i">',
             $sv->label("sf_abstract", "Abstract requirement", ["class" => "n"]),
-            $sv->select("sf_abstract", [0 => "Abstract required to register submission", 2 => "Abstract optional", 1 => "No abstract"]),
+            $sv->select("sf_abstract", $sel, ["class" => "uich js-settings-sf-abstract-required"]),
             '</div>';
 
+        $sel = [
+            0 => "PDF required to complete submission",
+            2 => "PDF optional",
+            1 => "No PDF allowed"
+        ];
+        if ($sv->oldv("sf_pdf_submission") == -1 || $sv->newv("sf_pdf_submission") == -1) {
+            $sel[-1] = "Other";
+        }
         echo '<div class="f-i">',
             $sv->label("sf_pdf_submission", "PDF requirement", ["class" => "n"]),
-            $sv->select("sf_pdf_submission", [0 => "PDF required to complete submission", 2 => "PDF optional", 1 => "No PDF allowed"], ["class" => "uich js-settings-sub-nopapers"]),
-            '<div class="f-h fx3">Registering a submission never requires a PDF.</div></div>';
+            $sv->select("sf_pdf_submission", $sel, ["class" => "uich js-settings-sf-submission-required"]),
+            '<div class="f-h fx3">Registering a submission does not require a PDF upload.</div></div>';
 
         if (is_executable("src/banal")) {
             echo '<div class="g fx2">';

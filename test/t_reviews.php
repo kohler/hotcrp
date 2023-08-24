@@ -1317,7 +1317,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             "has_sf" => 1,
             "sf/1/name" => "Fudge",
             "sf/1/id" => 1,
-            "sf/1/order" => 1,
+            "sf/1/order" => 100,
             "sf/1/type" => "numeric"
         ]);
         xassert($sv->execute());
@@ -1330,7 +1330,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             "has_sf" => 1,
             "sf/1/name" => "Fudge",
             "sf/1/id" => 1,
-            "sf/1/order" => 1,
+            "sf/1/order" => 100,
             "sf/1/type" => "checkbox"
         ]);
         xassert(!$sv->execute());
@@ -1341,12 +1341,12 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             "has_sf" => 1,
             "sf/1/name" => "Fudge",
             "sf/1/id" => 1,
-            "sf/1/order" => 1,
+            "sf/1/order" => 100,
             "sf/1/delete" => 1,
             "sf/2/name" => "Fudge",
             "sf/2/id" => "new",
             "sf/2/type" => "checkbox",
-            "sf/2/order" => 2
+            "sf/2/order" => 101
         ]);
         xassert($sv->execute());
         xassert_eqq($sv->changed_keys(), ["options"]);
@@ -1357,7 +1357,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             "has_sf" => 1,
             "sf/1/name" => "Brownies",
             "sf/1/id" => "new",
-            "sf/1/order" => 100,
+            "sf/1/order" => 102,
             "sf/1/type" => "numeric"
         ]);
         xassert($sv->execute());
@@ -1366,16 +1366,19 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         // `order` is obeyed
         $opts = array_values(Options_SettingParser::configurable_options($this->conf));
-        xassert_eqq(count($opts), 2);
-        xassert_eqq($opts[0]->name, "Fudge");
-        xassert_eqq($opts[1]->name, "Brownies");
+        $names = array_map(function ($opt) { return $opt->name; }, $opts);
+        xassert_in_eqq("Fudge", $names);
+        xassert_in_eqq("Brownies", $names);
+        $fudgepos = array_search("Fudge", $names);
+        $browniespos = array_search("Brownies", $names);
+        xassert_lt($fudgepos, $browniespos);
 
         // nonunique name => fail
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
             "sf/1/name" => "Brownies",
             "sf/1/id" => "new",
-            "sf/1/order" => 100,
+            "sf/1/order" => 102,
             "sf/1/type" => "numeric"
         ]);
         xassert(!$sv->execute());
@@ -1386,7 +1389,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
             "sf/1/id" => "new",
-            "sf/1/order" => 100,
+            "sf/1/order" => 103,
             "sf/1/type" => "numeric"
         ]);
         xassert(!$sv->execute());

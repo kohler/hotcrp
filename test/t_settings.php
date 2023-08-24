@@ -602,6 +602,7 @@ class Settings_Tester {
             "rf/2/values_text" => "A. A\nB. B\nC. C"
         ]);
         xassert($sv->execute());
+        xassert_eqq($sv->changed_keys(), ["review_form"]);
 
         xassert_eqq($sv->conf->fetch_ivalue("select reviewId from PaperReview where paperId=30 limit 1"), null);
 
@@ -1102,6 +1103,7 @@ class Settings_Tester {
             "sf/1/type" => "radio"
         ]);
         xassert($sv->execute());
+
         $opt = $sv->conf->option_by_id(2);
         assert($opt instanceof Selector_PaperOption);
         xassert_eqq($opt->name, "Program");
@@ -1370,6 +1372,7 @@ class Settings_Tester {
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
         xassert_eqq($x->changes, []);
+        xassert_eqq($this->conf->setting_data("ioptions"), null);
         xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), null);
 
         $sb = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
@@ -1482,5 +1485,93 @@ class Settings_Tester {
         $sv = new SettingValues($this->u_chair);
         $sv->add_json_string('{"reset":false,"sf":[{"id":4,"delete":true},{"id":5,"delete":true},{"id":6,"delete":true}]}');
         xassert($sv->execute());
+    }
+
+    function test_title_properties() {
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"reset":false,"sf":[{"id":"title","name":"Not Title"}]}');
+        xassert($sv->execute());
+        xassert_eqq($sv->full_feedback_text(), "");
+
+        $opt = $this->conf->option_by_id(PaperOption::TITLEID);
+        xassert_eqq($opt->name, "Not Title");
+        xassert_eqq($opt->required, PaperOption::REQ_REGISTER);
+
+        // only possible to configure allowed properties
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"reset":false,"sf":[{"id":"title","required":"no"}]}');
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "cannot be configured");
+
+        $opt = $this->conf->option_by_id(PaperOption::TITLEID);
+        xassert_eqq($opt->name, "Not Title");
+        xassert_eqq($opt->required, PaperOption::REQ_REGISTER);
+
+        // saving same title
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"reset":false,"sf":[{"id":"title","name":"Not Title"}]}');
+        xassert($sv->execute());
+        xassert_eqq($sv->full_feedback_text(), "");
+
+        $opt = $this->conf->option_by_id(PaperOption::TITLEID);
+        xassert_eqq($opt->name, "Not Title");
+        xassert_eqq($opt->required, PaperOption::REQ_REGISTER);
+
+        $this->conf->qe("delete from Settings where name='ioptions'");
+        $this->conf->load_settings();
+    }
+
+    function test_cannot_delete_intrinsic() {
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"reset":false,"sf":[{"id":"title","delete":true}]}');
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "cannot be deleted");
+    }
+
+    function test_intrinsic_title_shift() {
+        xassert_eqq($this->conf->setting("ioptions"), null);
+        xassert_eqq($this->conf->opt("noAbstract"), null);
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"reset":false,"sf_abstract":"optional","sf":[{"id":"abstract","name":"Abstract"}]}');
+        xassert($sv->execute());
+
+        $opt = $this->conf->option_by_id(PaperOption::ABSTRACTID);
+        xassert_eqq($opt->edit_title(), "Abstract (optional)");
+        xassert_eqq($this->conf->opt("noAbstract"), 2);
+        xassert_eqq($this->conf->setting("ioptions"), null);
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"reset":false,"sf_abstract":"required","sf":[{"id":"abstract","name":"Abstract (optional)"}]}');
+        xassert($sv->execute());
+
+        $opt = $this->conf->option_by_id(PaperOption::ABSTRACTID);
+        xassert_eqq($opt->edit_title(), "Abstract");
+        xassert_eqq($this->conf->opt("noAbstract"), null);
+        xassert_eqq($this->conf->setting("ioptions"), null);
+    }
+
+    function test_intrinsic_vs_wizard_settings() {
+        xassert_eqq($this->conf->setting("ioptions"), null);
+        xassert_eqq($this->conf->opt("noAbstract"), null);
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"reset":false,"sf_abstract":"optional","sf":[{"id":1,"name":"Calories?"}]}');
+        xassert($sv->execute());
+
+        $opt = $this->conf->option_by_id(PaperOption::ABSTRACTID);
+        xassert_eqq($opt->edit_title(), "Abstract (optional)");
+        xassert_eqq($this->conf->opt("noAbstract"), 2);
+        xassert_eqq($this->conf->setting("ioptions"), null);
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"reset":false,"sf_abstract":"required","sf":[{"id":"abstract","name":"Abstract (optional)"}]}');
+        xassert($sv->execute());
+
+        $opt = $this->conf->option_by_id(PaperOption::ABSTRACTID);
+        xassert_eqq($opt->edit_title(), "Abstract");
+        xassert_eqq($this->conf->opt("noAbstract"), null);
+        xassert_eqq($this->conf->setting("ioptions"), null);
+
     }
 }

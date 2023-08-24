@@ -92,7 +92,9 @@ class PaperOption implements JsonSerializable {
     const DISP_REST = 4;
     const DISP_NONE = 5;
     static private $display_map = ["title", "top", "left", "right", "rest", "none"];
-    static private $display_form_order = [100, 1100, 2100, 3100, 3600, 5100];
+    /** @var list<int>
+     * @readonly */
+    static public $display_form_order = [0, 1000, 2000, 3000, 3500, 5000];
 
     const REQ_NO = 0;
     const REQ_REGISTER = 1;
@@ -126,10 +128,11 @@ class PaperOption implements JsonSerializable {
     /** @param stdClass|Sf_Setting $args
      * @param string $default_className */
     function __construct(Conf $conf, $args, $default_className = "") {
-        assert(is_object($args));
-        assert($args->id > 0 || $args->id === -4 || isset($args->json_key));
+        $oid = $args->option_id ?? $args->id;
+        assert($oid > 0 || $oid === -4 || isset($args->json_key));
+
         $this->conf = $conf;
-        $this->id = (int) $args->id;
+        $this->id = (int) $oid;
         $this->name = $args->name ?? "";
         $this->title = $args->title ?? null;
         if ($this->title === null && $this->name !== "" && $this->id > 0) {
@@ -202,7 +205,7 @@ class PaperOption implements JsonSerializable {
                 $this->_display = self::DISP_TOP;
             }
         }
-        $this->form_order = $p ?? self::$display_form_order[$this->_display] + $this->order;
+        $this->form_order = $p ?? self::$display_form_order[$this->_display] + 100 + $this->order;
 
         $this->page_order = $args->page_order ?? $args->page_position /* XXX */ ?? $args->display_position /* XXX */ ?? $p;
         $this->page_expand = !!($args->page_expand ?? false);
@@ -218,6 +221,10 @@ class PaperOption implements JsonSerializable {
         }
         if ($presence === null || $presence === "custom") {
             $this->set_exists_condition($args->exists_if ?? null);
+        } else if ($presence === "none") {
+            $this->set_exists_condition(false);
+        } else if ($presence === "final") {
+            $this->final = true;
         }
         $this->set_editable_condition($args->editable_if ?? null);
 
@@ -422,6 +429,10 @@ class PaperOption implements JsonSerializable {
         return $this->json_key();
     }
 
+    /** @return string */
+    function description() {
+        return $this->description;
+    }
     /** @return int|float|false */
     function page_order() {
         return $this->page_order;
@@ -694,10 +705,25 @@ class PaperOption implements JsonSerializable {
     /** @return Sf_Setting */
     function export_setting() {
         $sfs = new Sf_Setting;
-        $sfs->id = $this->id;
-        $sfs->name = $this->name;
+        $sfs->option_id = $this->id;
+        if ($this->id <= 0 && $this->id !== DTYPE_INVALID) {
+            $sfs->id = $sfs->json_key = $this->_json_key;
+            $sfs->name = $this->edit_title();
+            $sfs->function = "+" . get_class($this);
+        } else {
+            $sfs->id = $this->id;
+            $sfs->name = $this->name;
+        }
         $sfs->type = $this->type;
-        $sfs->description = $this->description;
+
+        if (strcasecmp($this->description, "none") === 0) {
+            $sfs->description = "none";
+        } else {
+            $fr = new FieldRender(FieldRender::CFPAGE | FieldRender::CFHTML);
+            $this->render_description($fr);
+            $sfs->description = $fr->value_html();
+        }
+
         $sfs->display = $this->display_name();
         $sfs->order = $this->order;
         $sfs->visibility = $this->unparse_visibility();
@@ -709,6 +735,7 @@ class PaperOption implements JsonSerializable {
             $sfs->presence = $this->final ? "final" : "all";
             $sfs->exists_if = null;
         }
+        $sfs->source_option = $this;
         return $sfs;
     }
 

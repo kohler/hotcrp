@@ -21,10 +21,9 @@ class PaperOptionList implements IteratorAggregate {
     private $_olist_nonfinal;
     /** @var AbbreviationMatcher<PaperOption> */
     private $_nonpaper_am;
-    private $_accumulator;
 
-    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"submission","form_order":1001,"display":"top","type":"document","configurable":false}';
-    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","final":true,"form_order":1002,"display":"top","type":"document","configurable":false}';
+    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"Paper","type":"submission","json_key":"submission","form_order":1001,"display":"top","type":"document","configurable":true,"properties":["title","description","required"],"function":"+Document_PaperOption"}';
+    const DTYPE_FINAL_JSON = '{"id":-1,"name":"Final version","type":"finalversion","json_key":"final","final":true,"form_order":1002,"display":"top","type":"document","configurable":false,"function":"+Document_PaperOption"}';
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -124,44 +123,59 @@ class PaperOptionList implements IteratorAggregate {
         }
     }
 
-    function _add_intrinsic_json($oj) {
-        assert(is_int($oj->id) && $oj->id <= 0);
-        $this->_accumulator[(string) $oj->id][] = $oj;
-        return true;
+    /** @param bool $all
+     * @return array<int,object> */
+    static function make_intrinsic_json_map(Conf $conf, $all) {
+        $sources = [
+            "etc/intrinsicoptions.json",
+            self::DTYPE_SUBMISSION_JSON,
+            self::DTYPE_FINAL_JSON
+        ];
+        if ($all && ($s = $conf->opt("intrinsicOptions"))) {
+            $sources[] = $s;
+        }
+        if ($all && ($s = $conf->setting_json("ioptions"))) {
+            $sources[] = $s;
+        }
+
+        $accum = [];
+        foreach ($sources as $s) {
+            expand_json_includes_callback($s, function ($j) use (&$accum) {
+                $accum[(string) $j->id][] = $j;
+                return true;
+            });
+        }
+
+        $xtp = new XtParams($conf, null);
+        $m = [];
+        foreach ($accum as $id => $x) {
+            if (($ij = $xtp->search_name($accum, $id)))
+                $m[$ij->id] = $ij;
+        }
+        return $m;
     }
 
     /** @return array<int,object> */
-    private function intrinsic_json_map() {
+    function intrinsic_json_map() {
         if ($this->_ijmap === null) {
-            $this->_accumulator = $this->_ijmap = [];
-            foreach (["etc/intrinsicoptions.json", self::DTYPE_SUBMISSION_JSON, self::DTYPE_FINAL_JSON, $this->conf->opt("intrinsicOptions"), $this->conf->setting_json("ioptions")] as $x) {
-                if ($x)
-                    expand_json_includes_callback($x, [$this, "_add_intrinsic_json"]);
-            }
-            $xtp = new XtParams($this->conf, null);
-            /** @phan-suppress-next-line PhanEmptyForeach */
-            foreach ($this->_accumulator as $id => $x) {
-                if (($ij = $xtp->search_name($this->_accumulator, $id)))
-                    $this->_ijmap[$ij->id] = $ij;
-            }
-            $this->_accumulator = null;
+            $this->_ijmap = self::make_intrinsic_json_map($this->conf, true);
         }
         return $this->_ijmap;
     }
 
     /** @param int $id */
     private function populate_intrinsic($id) {
-        if ($id == DTYPE_SUBMISSION) {
-            $this->_imap[$id] = new Document_PaperOption($this->conf, json_decode(self::DTYPE_SUBMISSION_JSON));
-        } else if ($id == DTYPE_FINAL) {
-            $this->_imap[$id] = new Document_PaperOption($this->conf, json_decode(self::DTYPE_FINAL_JSON));
+        if (($id === DTYPE_SUBMISSION || $id === DTYPE_FINAL)
+            && !$this->conf->opt("intrinsicOptions")
+            && !$this->conf->setting("ioptions")) {
+            $oj = json_decode($id === DTYPE_SUBMISSION
+                              ? self::DTYPE_SUBMISSION_JSON
+                              : self::DTYPE_FINAL_JSON);
         } else {
-            $this->_imap[$id] = null;
-            if (($oj = ($this->intrinsic_json_map())[$id] ?? null)
-                && ($o = PaperOption::make($this->conf, $oj))) {
-                $this->_imap[$id] = $o;
-            }
+            $oj = ($this->intrinsic_json_map())[$id] ?? null;
         }
+        $opt = $oj ? PaperOption::make($this->conf, $oj) : null;
+        $this->_imap[$id] = $opt;
     }
 
     /** @param int $id
@@ -174,12 +188,13 @@ class PaperOptionList implements IteratorAggregate {
             return $this->_imap[$id];
         } else {
             if (!array_key_exists($id, $this->_omap)) {
-                $this->_omap[$id] = null;
+                $opt = null;
                 if (($oj = ($this->option_json_map())[$id] ?? null)
                     && Conf::xt_enabled($oj)
                     && XtParams::static_allowed($oj, $this->conf, null)) {
-                    $this->_omap[$id] = PaperOption::make($this->conf, $oj);
+                    $opt = PaperOption::make($this->conf, $oj);
                 }
+                $this->_omap[$id] = $opt;
             }
             return $this->_omap[$id];
         }
@@ -298,11 +313,12 @@ class PaperOptionList implements IteratorAggregate {
         return $olist;
     }
 
-    /** @return array<int,PaperOption> */
-    function form_fields(PaperInfo $prow = null) {
+    /** @param bool $all
+     * @return array<int,PaperOption> */
+    function form_fields(PaperInfo $prow = null, $all = false) {
         $omap = [];
         foreach ($this->unsorted_field_list($prow, "form_order") as $o) {
-            if ($o->on_form())
+            if ($all || $o->on_form())
                 $omap[$o->id] = $o;
         }
         uasort($omap, "PaperOption::form_compare");

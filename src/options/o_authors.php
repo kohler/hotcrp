@@ -3,8 +3,11 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Authors_PaperOption extends PaperOption {
+    /** @var int */
+    private $max_count;
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
+        $this->max_count = $args->max ?? (int) $this->conf->opt("maxAuthors");
     }
     function author_list(PaperValue $ov) {
         return PaperInfo::parse_author_list($ov->data() ?? "");
@@ -37,9 +40,8 @@ class Authors_PaperOption extends PaperOption {
             $ov->estop($this->conf->_("<0>Entry required"));
             $ov->msg_at("authors:1", null, MessageSet::ERROR);
         }
-        $max_authors = $this->conf->opt("maxAuthors");
-        if ($max_authors > 0 && $nreal > $max_authors) {
-            $ov->estop($this->conf->_("<0>A submission may have at most {0} authors", $max_authors));
+        if ($this->max_count > 0 && $nreal > $this->max_count) {
+            $ov->estop($this->conf->_("<0>A submission may have at most {0} authors", $this->max_count));
         }
 
         $msg1 = $msg2 = false;
@@ -257,8 +259,7 @@ class Authors_PaperOption extends PaperOption {
         ]);
         $readonly = !$this->test_editable($ov->prow);
 
-        $max_authors = (int) $this->conf->opt("maxAuthors");
-        $min_authors = $max_authors > 0 ? min(5, $max_authors) : 5;
+        $min_authors = $this->max_count > 0 ? min(5, $this->max_count) : 5;
 
         $aulist = $this->author_list($ov);
         $reqaulist = $this->author_list($reqov);
@@ -268,22 +269,22 @@ class Authors_PaperOption extends PaperOption {
         }
         $nau = max($nreqau, count($aulist), $min_authors);
         if (($nau === $nreqau || $nau === count($aulist))
-            && ($max_authors <= 0 || $nau + 1 <= $max_authors)) {
+            && ($this->max_count <= 0 || $nau + 1 <= $this->max_count)) {
             ++$nau;
         }
         $ndigits = (int) ceil(log10($nau + 1));
 
         echo '<div class="papev">',
             '<div id="authors:container" class="js-row-order need-row-order-autogrow" data-min-rows="', $min_authors, '"',
-            $max_authors > 0 ? " data-max-rows=\"{$max_authors}\"" : "",
+            $this->max_count > 0 ? " data-max-rows=\"{$this->max_count}\"" : "",
             ' data-row-counter-digits="', $ndigits,
             '" data-row-template="authors:row-template">';
         for ($n = 1; $n <= $nau; ++$n) {
-            $this->echo_editable_authors_line($pt, $n, $aulist[$n-1] ?? null, $reqaulist[$n-1] ?? null, $max_authors !== 1, $readonly);
+            $this->echo_editable_authors_line($pt, $n, $aulist[$n-1] ?? null, $reqaulist[$n-1] ?? null, $this->max_count !== 1, $readonly);
         }
         echo '</div>';
         echo '<template id="authors:row-template" class="hidden">';
-        $this->echo_editable_authors_line($pt, '$', null, null, $max_authors !== 1, $readonly);
+        $this->echo_editable_authors_line($pt, '$', null, null, $this->max_count !== 1, $readonly);
         echo "</template></div></div>\n\n";
     }
 
@@ -291,5 +292,11 @@ class Authors_PaperOption extends PaperOption {
         if ($fr->table) {
             $fr->table->render_authors($fr, $this);
         }
+    }
+
+    function export_setting() {
+        $sfs = parent::export_setting();
+        $sfs->max = $this->max_count;
+        return $sfs;
     }
 }

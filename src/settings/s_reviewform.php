@@ -585,32 +585,46 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             "</div></div>";
     }
 
-    /** @return list<mixed> */
+    /** @param array<mixed,object> $tmap
+     * @return array<string,list<string>> */
+    static function make_convertible_to_map($tmap) {
+        $cvts = [];
+        foreach ($tmap as $xf) {
+            $cvts[$xf->name] = [$xf->name];
+        }
+        foreach ($tmap as $xf) {
+            foreach ((array) ($xf->convert_from_functions ?? []) as $k => $v) {
+                if ($v && isset($cvts[$k])) {
+                    $a = &$cvts[$k];
+                    $i = 0;
+                    while ($i !== count($a)
+                           && ($tmap[$a[$i]]->order ?? INF) < ($xf->order ?? INF)) {
+                        ++$i;
+                    }
+                    array_splice($a, $i, 0, [$xf->name]);
+                    unset($a);
+                }
+            }
+        }
+        return $cvts;
+    }
+
+    /** @return list<array> */
     static function make_types_json($tmap) {
+        $cvts = self::make_convertible_to_map($tmap);
         $typelist = [];
         foreach ($tmap as $rf) {
             $j = ["name" => $rf->name, "title" => $rf->title];
             foreach ($rf->properties ?? (object) [] as $k => $v) {
                 $j["properties"][$k] = !!$v;
             }
-            $j["convertible_to"] = [$rf->name];
+            $j["convertible_to"] = $cvts[$rf->name];
             if (!empty($rf->placeholders)) {
                 $j["placeholders"] = $rf->placeholders;
             }
-            $typelist[$rf->name] = $j;
+            $typelist[] = $j;
         }
-        foreach ($tmap as $rf) {
-            foreach ($rf->convert_from_functions ?? (object) [] as $k => $v) {
-                if ($v) {
-                    $a = &$typelist[$k]["convertible_to"];
-                    for ($i = 0; $i !== count($a) && $tmap[$a[$i]]->order < $rf->order; ++$i) {
-                    }
-                    array_splice($a, $i, 0, [$rf->name]);
-                    unset($a);
-                }
-            }
-        }
-        return array_values($typelist);
+        return $typelist;
     }
 
     static function print(SettingValues $sv) {
@@ -625,12 +639,12 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             echo '<div class="feedback is-note">Authors cannot see reviews at the moment.</div>';
         }
         echo '</div><template id="rf_template" class="hidden">',
-            '<div id="rf/$" class="settings-rf has-fold fold2c ui-fold js-fold-focus">',
+            '<div id="rf/$" class="settings-xf settings-rf has-fold fold2c ui-fold js-fold-focus">',
             '<div class="settings-draghandle ui-drag js-settings-drag" draggable="true" title="Drag to reorder fields">',
             Icons::ui_move_handle_horizontal(),
             '</div>',
-            '<div id="rf/$/view" class="settings-rf-view fn2 ui js-foldup"></div>',
-            '<fieldset id="rf/$/edit" class="fieldset-covert settings-rf-edit fx2">',
+            '<div id="rf/$/view" class="settings-xf-view fn2 ui js-foldup"></div>',
+            '<fieldset id="rf/$/edit" class="fieldset-covert settings-xf-edit fx2">',
               '<div class="entryi mb-3" data-property="name"><div class="entry">',
                 '<input name="rf/$/name" id="rf/$/name" type="text" size="50" class="font-weight-bold want-focus want-delete-marker" placeholder="Field name">',
               '</div></div>';

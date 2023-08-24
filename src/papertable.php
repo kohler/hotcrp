@@ -58,7 +58,7 @@ class PaperTable {
     /** @var list<PaperOption> */
     private $edit_fields;
     /** @var bool */
-    public $edit_show_all_visibility = false;
+    public $settings_mode = false;
 
     /** @var ?list<MessageItem> */
     private $pre_status_feedback;
@@ -485,10 +485,11 @@ class PaperTable {
             $for = $rest["for"] ?? false;
         }
         echo '<div class="pf pfe';
-        if (!$opt->test_exists($this->prow) || ($rest["hidden"] ?? false)) {
+        if ((!$opt->test_exists($this->prow) && !$this->settings_mode)
+            || ($rest["hidden"] ?? false)) {
             echo ' hidden';
         }
-        if ($opt->exists_condition()) {
+        if ($opt->exists_condition() && !$this->settings_mode) {
             echo ' want-fieldchange has-edit-condition" data-edit-condition="', htmlspecialchars(json_encode_browser($opt->exists_script_expression($this->prow)));
             Ht::stash_script('$(hotcrp.paper_edit_conditions)', 'edit_condition');
         }
@@ -513,7 +514,7 @@ class PaperTable {
         $vis = $opt->visibility();
         if ($vis === PaperOption::VIS_ADMIN) {
             echo '<div class="field-visibility">(hidden from reviewers)</div>';
-        } else if ($this->edit_show_all_visibility) {
+        } else if ($this->settings_mode && $opt->id > 0) {
             if ($vis === PaperOption::VIS_AUTHOR) {
                 echo '<div class="field-visibility">(hidden on anonymous submissions)</div>';
             } else if ($vis === PaperOption::VIS_REVIEW) {

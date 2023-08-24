@@ -212,8 +212,7 @@ td.pl.pl_title, td.pl.pl_text {
 .rfd1, .rfd2 {
 	max-width: none;
 }
-.settings-sf-view, .settings-rf-view,
-.settings-sf-edit, .settings-rf-edit {
+.settings-xf-view, .settings-xf-edit {
 	padding: 6px 8px;
 }
 .settings-json-panels {

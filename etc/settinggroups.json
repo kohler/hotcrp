@@ -144,7 +144,7 @@
     {
         "name": "options", "group": "subform", "order": 440,
         "title": "Submission fields",
-        "print_function": "*Options_SettingRenderer::print",
+        "print_function": "*Options_SettingParser::print",
         "settings": ["sf"]
     },
     {   "name": "opt", "alias": "options"   },
@@ -160,19 +160,19 @@
         "name": "__validate/submissionfields/conditions", "order": 1,
         "validate_function": "SubFieldCondition_SettingParser::validate"
     },
-    [   "submissionfield/properties/name", 1, "*Options_SettingRenderer::print_name"   ],
-    [   "submissionfield/properties/type", 10, "*Options_SettingRenderer::print_type"   ],
-    [   "submissionfield/properties/description", 20, "*Options_SettingRenderer::print_description"   ],
+    [   "submissionfield/properties/name", 1, "*Options_SettingParser::print_name"   ],
+    [   "submissionfield/properties/type", 10, "*Options_SettingParser::print_type"   ],
+    [   "submissionfield/properties/description", 20, "*Options_SettingParser::print_description"   ],
     {
         "name": "submissionfield/properties/values", "order": 25,
-        "print_function": "*Options_SettingRenderer::print_values",
+        "print_function": "*Options_SettingParser::print_values",
         "is_default": false
     },
-    [   "submissionfield/properties/presence", 30, "*Options_SettingRenderer::print_presence"   ],
-    [   "submissionfield/properties/required", 31, "*Options_SettingRenderer::print_required"   ],
-    [   "submissionfield/properties/visibility", 40, "*Options_SettingRenderer::print_visibility"   ],
-    [   "submissionfield/properties/display", 50, "*Options_SettingRenderer::print_display"   ],
-    [   "submissionfield/properties/actions", 10000, "*Options_SettingRenderer::print_actions"   ],
+    [   "submissionfield/properties/presence", 30, "*Options_SettingParser::print_presence"   ],
+    [   "submissionfield/properties/required", 31, "*Options_SettingParser::print_required"   ],
+    [   "submissionfield/properties/visibility", 40, "*Options_SettingParser::print_visibility"   ],
+    [   "submissionfield/properties/display", 50, "*Options_SettingParser::print_display"   ],
+    [   "submissionfield/properties/actions", 10000, "*Options_SettingParser::print_actions"   ],
     {
         "name": "topics", "group": "subform", "order": 480,
         "title": "Topics", "hashid": "topics",

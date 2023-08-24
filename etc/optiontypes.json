@@ -1,28 +1,27 @@
 [
     {
         "name": "checkbox", "title": "Checkbox", "order": 100,
-        "function": "+Checkbox_PaperOption",
-        "properties": {"checkbox": true}
+        "function": "+Checkbox_PaperOption"
     },
     {
         "name": "dropdown", "title": "Dropdown", "order": 200,
         "has_values": true, "function": "+Selector_PaperOption",
         "sample": {"values": ["Option 1", "Option 2", "Option 3"]},
         "convert_from_functions": {"radio": true},
-        "properties": {"values": true}
+        "properties": ["default", "values"]
     },
     {
         "name": "radio", "title": "Radio buttons", "order": 300,
         "has_values": true, "function": "+Selector_PaperOption",
         "sample": {"values": ["Option 1", "Option 2", "Option 3"]},
         "convert_from_functions": {"dropdown": true},
-        "properties": {"values": true}
+        "properties": ["default", "values"]
     },
     {
         "name": "checkboxes", "title": "Checkboxes", "order": 350,
         "has_values": true, "function": "+Checkboxes_PaperOption",
         "sample": {"values": ["Option 1", "Option 2", "Group: Entry 1", "Group: Entry 2"]},
-        "properties": {"values": true}
+        "properties": ["default", "values"]
     },
     {
         "name": "numeric", "title": "Whole number", "order": 400,
@@ -71,7 +70,7 @@
         "function": "+Separator_PaperOption",
         "sample": {"name": "Optional section title"},
         "placeholders": {"name": "Optional section title"},
-        "properties": {"required": false, "visibility": false},
+        "properties": ["description", "presence", "display"],
         "require_name": false,
         "field_name_placeholder": "Optional section title"
     }

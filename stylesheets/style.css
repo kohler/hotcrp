@@ -1299,7 +1299,7 @@ span.expander {
 }
 
 @media screen and (min-width: 1024px) {
-fieldset.form-g, .main-width, .settings-sf, .settings-rf {
+fieldset.form-g, .main-width, .settings-xf {
 	width: min-content;
 	min-width: 800px;
 }
@@ -1757,33 +1757,57 @@ th.settings-simplehead {
 	margin-top: 0;
 	margin-bottom: 0;
 }
-.settings-sf, .settings-rf {
+.settings-xf {
 	position: relative;
 	border: 1px solid silver;
 	border-radius: 5px;
 	margin-top: 1.5em;
 	margin-bottom: 1.5em;
 	transition: opacity 0.5s;
-	background-color: white;
 }
-.settings-sf.fold2c, .settings-rf.fold2c,
-.mail-preview-send, .mail-editor {
+.settings-xf-view, .mail-preview-send, .mail-editor {
 	background-color: #f9fbfb;
 }
-.settings-sf.fold2c:hover, .settings-rf.fold2c:hover,
-.mail-preview-send:hover {
-	border-color: #a5a5a5;
+.settings-xf-view:hover, .mail-preview-send:hover {
 	background-color: #ecf2f4;
 }
-.settings-sf-view, .settings-rf-view {
+.settings-xf:hover, .mail-preview-send:hover {
+	border-color: #a5a5a5;
+}
+.settings-xf-view {
 	padding: 16px;
 	border-radius: 5px;
 }
-.settings-sf-edit, .settings-rf-edit {
+.settings-sf > .settings-xf-view {
+	overflow-y: hidden;
+}
+.settings-sf.settings-xf-disabled > .settings-xf-view {
+	max-height: 10rem;
+}
+.settings-xf-disabled > .settings-xf-view {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cpath d='M0 0l-34 34l17 0l34 -34z' fill='%23f9fbfb' /%3E%3Cpath d='M34 0l-34 34l17 0l34 -34z' fill='%23f9fbfb' /%3E%3Cpath d='M17 0l-34 34l17 0l34 -34z' fill='%23f5f2f2' /%3E%3Cpath d='M51 0l-34 34l17 0l34 -34z' fill='%23f5f2f2' /%3E%3C/svg%3E");
+	background-color: #f5f2f2;
+}
+.settings-xf-disabled > .settings-xf-view:hover {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cpath d='M0 0l-34 34l17 0l34 -34z' fill='%23ecf2f4' /%3E%3Cpath d='M34 0l-34 34l17 0l34 -34z' fill='%23ecf2f4' /%3E%3Cpath d='M17 0l-34 34l17 0l34 -34z' fill='%23e4e7e7' /%3E%3Cpath d='M51 0l-34 34l17 0l34 -34z' fill='%23e4e7e7' /%3E%3C/svg%3E");
+}
+.settings-xf-overflow::after {
+	content: "";
+	position: absolute;
+	z-index: 1;
+	bottom: 0;
+	left: 0;
+	pointer-events: none;
+	background-image: linear-gradient(to top, rgba(249,251,251,1), rgba(249,251,251,1) 0.5rem, rgba(249,251,251,0));
+	width: 100%;
+	height: 3em;
+	border-radius: 5px;
+}
+.settings-xf-edit {
 	padding: 20px 16px 16px;
 	border-radius: 5px;
 }
-.settings-sf-view h3, .settings-rf-view h3 {
+.settings-xf-view h3 {
 	max-width: 768px;
 }
 .settings-draghandle {
@@ -1802,7 +1826,7 @@ th.settings-simplehead {
 #settings-sform > hr.dropmark, #settings-rform > hr.dropmark {
 	max-width: 800px;
 }
-.settings-sf:hover .settings-draghandle, .settings-rf:hover .settings-draghandle {
+.settings-xf:hover .settings-draghandle {
 	opacity: 0.5;
 }
 .settings-draghandle:hover {
@@ -1859,21 +1883,18 @@ fieldset.grid-option.active {
 fieldset.grid-option.active > legend {
 	font-weight: bold;
 }
-.grid-option > .settings-sf-view, .grid-option > .settings-rf-view {
+.grid-option > .settings-xf-view {
+	background: none;
 	opacity: 0.5;
 	padding: 0;
 }
-.grid-option.active > .settings-sf-view,
-.grid-option.active > .settings-rf-view {
+.grid-option.active > .settings-xf-view {
 	opacity: 1;
 }
-.settings-sf-view > .pfe {
+.settings-xf-view > .pfe {
 	margin-bottom: 0;
 }
-.settings-sf-view > .pfe.pf-separator {
-	margin-top: 0;
-}
-.settings-rf-view > .rfehead {
+.settings-xf-view > .pfe.pf-separator, .settings-xf-view > .rfehead {
 	margin-top: 0;
 }
 .settings-radio {
@@ -3210,7 +3231,7 @@ table.pltable-reviewerhome > thead > tr > th.plh {
 	vertical-align: -0.2em;
 	cursor: move;
 }
-.draghandle, button.draghandle:hover, button.draghandle:active {
+.draghandle, button.draghandle:disabled, button.draghandle:hover, button.draghandle:active {
 	background: unset;
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' aria-hidden='true' viewBox='0 0 12 18' preserveAspectRatio='none'%3E%3Ccircle cx='4' cy='4' r='1.5' /%3E%3Ccircle cx='9' cy='4' r='1.5' /%3E%3Ccircle cx='4' cy='9' r='1.5' /%3E%3Ccircle cx='9' cy='9' r='1.5' /%3E%3Ccircle cx='4' cy='14' r='1.5' /%3E%3Ccircle cx='9' cy='14' r='1.5' /%3E%3C/svg%3E");
 }
@@ -3227,6 +3248,10 @@ button.draghandle, button.draghandle:hover {
 }
 button.draghandle:hover, button.draghandle:active {
 	opacity: 1 !important;
+}
+.draggable:hover button.draghandle:disabled, .draggable:hover button.draghandle.disabled,
+button.draghandle.disabled:hover, button.draghandle:disabled:hover {
+	opacity: 0.25 !important;
 }
 
 .editformulas-formula, .editsearches-search {

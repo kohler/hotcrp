@@ -157,26 +157,26 @@ class Settings_API {
     }
 
     static function submissionfieldlibrary(Contact $user, Qrequest $qreq) {
+        $sv = new SettingValues($user);
         $xtp = new XtParams($user->conf, $user);
         $xtp->qreq = $qreq;
         $otmap = $user->conf->option_type_map();
 
         $samples = [];
-        $osr = new Options_SettingRenderer($xtp);
+        $osr = $sv->cs()->callable("Options_SettingParser");
         foreach (self::make_field_library($xtp, ["etc/submissionfieldlibrary.json"], "submissionFieldLibraries") as $samp) {
             if (!($otype = $otmap[$samp->type] ?? null)
                 || !$xtp->check($otype->display_if ?? null, $otype)) {
                 continue;
             }
-            $samples[] = $samp;
-            $samp->sf_view_html = $osr->sample_sf_view_html($samp);
+            $samples[] = $osr->make_sample_json($sv, $samp);
         }
 
-        return new JsonResult([
+        return (new JsonResult([
             "ok" => true,
             "samples" => $samples,
-            "types" => ReviewForm_SettingParser::make_types_json($otmap)
-        ]);
+            "types" => Options_SettingParser::make_types_json($otmap)
+        ]))->pretty_print(true);
     }
 
     static function reviewfieldlibrary(Contact $user, Qrequest $qreq) {
