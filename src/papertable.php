@@ -523,7 +523,7 @@ class PaperTable {
             }
         }
         echo '</h3>';
-        $this->print_field_hint($opt, $rest["context_args"] ?? null);
+        $this->print_field_description($opt);
         echo Ht::hidden("has_{$opt->formid}", 1);
     }
 
@@ -616,13 +616,11 @@ class PaperTable {
         return $this->edit_status ? $this->edit_status->feedback_html_at($field) : "";
     }
 
-    /** @param PaperOption $opt
-     * @param ?list<mixed> $context_args */
-    function print_field_hint($opt, $context_args = null) {
+    /** @param PaperOption $opt */
+    function print_field_description($opt) {
         echo $this->messages_at($opt->formid);
         $fr = new FieldRender(FieldRender::CFHTML);
-        $context_args = $context_args ?? [];
-        $opt->render_description($fr, ...$context_args);
+        $opt->render_description($fr);
         if (!$fr->is_empty()) {
             echo $fr->value_html("field-d");
         }
@@ -847,8 +845,9 @@ class PaperTable {
 
         $html = $this->highlight($this->prow->abstract(), "ab", $match);
         if (trim($html) === "") {
-            if ($this->conf->opt("noAbstract"))
+            if (!$o->test_required($this->prow)) {
                 return;
+            }
             $html = "[No abstract]";
         }
         $extra = [];

@@ -38,9 +38,7 @@ class PaperOption implements JsonSerializable {
     /** @var null|string|false */
     public $_search_keyword;
     /** @var string */
-    private $description;
-    /** @var ?int */
-    private $description_format;
+    protected $description;
     public $order;
     /** @var bool
      * @readonly */
@@ -151,7 +149,6 @@ class PaperOption implements JsonSerializable {
         $this->include_empty = ($args->include_empty ?? false) === true;
 
         $this->description = $args->description ?? "";
-        $this->description_format = $args->description_format ?? null;
 
         $req = $args->required ?? false;
         if (!$req) {
@@ -325,9 +322,16 @@ class PaperOption implements JsonSerializable {
     function plural_title() {
         return $this->title ?? $this->conf->_ci("field/plural", $this->formid);
     }
-    /** @return string */
-    function edit_title() {
-        return $this->title ?? $this->conf->_ci("field/edit", $this->formid);
+    /** @param ?PaperInfo $prow
+     * @return string */
+    function edit_title($prow = null) {
+        return $this->title ?? $this->default_edit_title($prow);
+    }
+    /** @param ?PaperInfo $prow
+     * @return string */
+    function default_edit_title($prow = null) {
+        $req = $this->required > 0 && (!$prow || $this->test_required($prow));
+        return $this->conf->_ci("field/edit", $this->formid, new FmtArg("required", $req));
     }
     /** @return string */
     function missing_title() {
@@ -335,14 +339,19 @@ class PaperOption implements JsonSerializable {
     }
 
     /** @param FieldRender $fr */
-    function render_description($fr, ...$context_args) {
-        $fr->value_format = $this->description_format ?? 5;
+    function render_description($fr) {
         if ($this->description !== "") {
-            $fr->value = $this->description;
+            if (strcasecmp($this->description, "none") !== 0) {
+                list($fmt, $fr->value) = Ftext::parse($this->description);
+                $fr->value_format = $fmt ?? 5;
+            }
         } else {
-            $this->conf->fmt()->render_ci($fr, "field_description/edit", $this->formid,
-                                          ...$context_args);
+            $this->render_default_description($fr);
         }
+    }
+    /** @param FieldRender $fr */
+    function render_default_description($fr) {
+        $this->conf->fmt()->render_ci($fr, "field_description/edit", $this->formid);
     }
 
     /** @return AbbreviationMatcher */
@@ -626,9 +635,6 @@ class PaperOption implements JsonSerializable {
         if ($this->description !== "") {
             $j->description = $this->description;
         }
-        if ($this->description_format !== null) {
-            $j->description_format = $this->description_format;
-        }
         if ($this->configurable !== true) {
             $j->configurable = $this->configurable;
         }
@@ -908,7 +914,7 @@ class Separator_PaperOption extends PaperOption {
         if (($h = $pt->edit_title_html($this))) {
             echo '<h3 class="pfehead">', $h, '</h3>';
         }
-        $pt->print_field_hint($this, null);
+        $pt->print_field_description($this);
         echo '</div>';
     }
 }

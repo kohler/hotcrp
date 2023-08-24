@@ -178,11 +178,11 @@ class FmtContext {
     /** @var ?int */
     public $format;
 
-    function __construct($s, $args, $context, $im) {
+    function __construct($args, $context, $im, $format) {
         $this->args = $args;
         $this->context = $context;
         $this->im = $im;
-        $this->format = str_starts_with($s, "<") ? Ftext::format($s) : null;
+        $this->format = $format;
     }
 }
 
@@ -193,7 +193,6 @@ class Fmt {
     private $require_resolvers = [];
     private $_context_prefix;
     private $_default_priority;
-    private $_default_format;
 
     const PRIO_OVERRIDE = 1000.0;
 
@@ -226,7 +225,6 @@ class Fmt {
         if (isset($m->members) && is_array($m->members)) {
             $octx = $this->_context_prefix;
             $oprio = $this->_default_priority;
-            $ofmt = $this->_default_format;
             if (isset($m->context) && is_string($m->context)) {
                 $cp = $this->_context_prefix ?? "";
                 $this->_context_prefix = ($cp === "" ? $m->context : $cp . "/" . $m->context);
@@ -234,16 +232,12 @@ class Fmt {
             if (isset($m->priority) && (is_int($m->priority) || is_float($m->priority))) {
                 $this->_default_priority = (float) $m->priority;
             }
-            if (isset($m->format) && is_int($m->format)) {
-                $this->_default_format = $m->format;
-            }
             $ret = true;
             foreach ($m->members as $mm) {
                 $ret = $this->addj($mm) && $ret;
             }
             $this->_context_prefix = $octx;
             $this->_default_priority = $oprio;
-            $this->_default_format = $ofmt;
             return $ret;
         } else {
             $im = new FmtItem;
@@ -269,9 +263,6 @@ class Fmt {
             }
             if (isset($m->require) && is_array($m->require)) {
                 $im->require = $m->require;
-            }
-            if (isset($m->format) && (is_int($m->format) || is_string($m->format))) {
-                $im->format = $m->format;
             }
             if (isset($m->no_conversions) && is_bool($m->no_conversions)) {
                 $im->no_conversions = $m->no_conversions;
@@ -322,7 +313,6 @@ class Fmt {
             $im->context = $this->_context_prefix . ($im->context ? "/" . $im->context : "");
         }
         $im->priority = $im->priority ?? $this->_default_priority;
-        $im->format = $im->format ?? $this->_default_format;
         $im->next = $this->ims[$itext] ?? null;
         $this->ims[$itext] = $im;
     }
@@ -566,15 +556,19 @@ class Fmt {
      * @param list<mixed> $args
      * @param ?string $context
      * @param ?FmtItem $im
+     * @param ?int $format
      * @return string */
-    private function expand($s, $args, $context, $im) {
+    private function expand($s, $args, $context, $im, $format = null) {
         if ($s === null || $s === false || $s === "") {
             return $s;
         }
         $pos = $bpos = 0;
         $len = strlen($s);
         $ppos = $lpos = $rpos = -1;
-        $fctx = new FmtContext($s, $args, $context, $im);
+        if ($format === null && str_starts_with($s, "<")) {
+            $format = Ftext::format($s);
+        }
+        $fctx = new FmtContext($args, $context, $im, $format);
         $t = "";
 
         while (true) {
@@ -654,7 +648,7 @@ class Fmt {
         if (($im = $this->find($context, $id, $args, null))) {
             $itext = $im->otext;
         }
-        $cid = (string) $context === "" ? $id : "$context/$id";
+        $cid = (string) $context === "" ? $id : "{$context}/{$id}";
         return $this->expand($itext, $args, $cid, $im);
     }
 
@@ -664,13 +658,13 @@ class Fmt {
     function render_ci($fr, $context, $id, ...$args) {
         $itext = "";
         if (($im = $this->find($context, $id, $args, null))) {
-            $itext = $im->otext;
-            if ($im->format !== null) {
-                $fr->value_format = $im->format;
+            list($fmt, $itext) = Ftext::parse($im->otext);
+            if ($fmt !== null) {
+                $fr->value_format = $fmt;
             }
         }
-        $cid = (string) $context === "" ? $id : "$context/$id";
-        $fr->value = $this->expand($itext, $args, $cid, $im);
+        $cid = (string) $context === "" ? $id : "{$context}/{$id}";
+        $fr->value = $this->expand($itext, $args, $cid, $im, $fr->value_format);
     }
 
     /** @param string $id

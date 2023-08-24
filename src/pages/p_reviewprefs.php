@@ -55,7 +55,7 @@ class ReviewPrefs_Page {
 
         if (($prefdesc = $conf->_i("revprefdescription", $conf->has_topics()))) {
             echo '<div class="msg demargin remargin-left remargin-right">',
-                $prefdesc, '</div>';
+                Ftext::unparse_as($prefdesc, 5), '</div>';
         }
 
         $search = (new PaperSearch($user, [

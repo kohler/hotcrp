@@ -34,6 +34,13 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
     }
 
 
+    /** @param FieldRender $fr */
+    function render_default_description($fr) {
+        $this->conf->fmt()->render_ci($fr, "field_description/edit", $this->formid,
+            new FmtArg("min", $this->min_count), new FmtArg("max", $this->max_count));
+    }
+
+
     function value_check(PaperValue $ov, Contact $user) {
         if ($this->test_exists($ov->prow)) {
             if ($this->min_count > 0
@@ -145,7 +152,6 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         $pt->print_editable_option_papt($this, null, [
             "id" => $this->readable_formid(),
             "for" => false,
-            "context_args" => [$this->min_count, $this->max_count]
         ]);
         $topicset = $this->topic_set();
         echo '<fieldset class="papev fieldset-covert" name="', $this->formid,
@@ -217,6 +223,13 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
             $fr->set_html('<ul class="topict topict-' . $lenclass . '">' . join("", $ts) . '</ul>');
             $fr->value_long = true;
         }
+    }
+
+    function export_setting() {
+        $sfs = parent::export_setting();
+        $sfs->min = $this->min_count;
+        $sfs->max = $this->max_count;
+        return $sfs;
     }
 
     function parse_search(SearchWord $sword, PaperSearch $srch) {

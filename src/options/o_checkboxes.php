@@ -32,8 +32,6 @@ class Checkboxes_PaperOption extends CheckboxesBase_PaperOption {
     function export_setting() {
         $sfs = parent::export_setting();
         $this->unparse_values_setting($sfs);
-        $sfs->min = $this->min_count;
-        $sfs->max = $this->max_count;
         return $sfs;
     }
 
