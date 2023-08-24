@@ -747,14 +747,20 @@ class MessageSet {
     }
 
     /** @param iterable<MessageItem> $message_list
-     * @param ?string $rest
+     * @param ?array<string,mixed> $js
      * @return string */
-    static function feedback_html($message_list, $rest = "") {
-        $t = join("</li><li>", self::feedback_html_items($message_list));
-        if ($t === "") {
+    static function feedback_html($message_list, $js = null) {
+        $items = self::feedback_html_items($message_list);
+        if (empty($items)) {
             return "";
         }
-        return "<ul class=\"feedback-list\"><li>{$t}</li></ul>";
+        if (empty($js)) {
+            $k = " class=\"feedback-list\"";
+        } else {
+            $js["class"] = Ht::add_tokens("feedback-list", $js["class"] ?? null);
+            $k = Ht::extra($js);
+        }
+        return "<ul{$k}><li>" . join("</li><li>", $items) . "</li></ul>";
     }
 
     /** @param string $field
