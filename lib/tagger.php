@@ -934,8 +934,9 @@ class TagMap {
 
     /** @param string|list<string> $tags
      * @param 0|8|16|24 $sclassmatch
+     * @param bool $no_ensure_pattern
      * @return ?list<string> */
-    function styles($tags, $sclassmatch = 0, $no_pattern_fill = false) {
+    function styles($tags, $sclassmatch = 0, $no_ensure_pattern = false) {
         $kss = $this->unique_tagstyles($tags, $sclassmatch);
         if (empty($kss)) {
             return null;
@@ -959,15 +960,16 @@ class TagMap {
         }
         // This seems out of place---it's redundant if we're going to
         // generate JSON, for example---but it is convenient.
-        if (!$no_pattern_fill
+        if (!$no_ensure_pattern
             && ($sclass & TagStyle::BG) !== 0
             && (($sclass & TagStyle::DYNAMIC) !== 0 || count($classes) > 2)) {
-            $this->mark_pattern_fill($classes);
+            self::stash_ensure_pattern($classes);
         }
         return $classes;
     }
 
-    function mark_pattern_fill($classes) {
+    /** @param list<string>|string $classes */
+    static function stash_ensure_pattern($classes) {
         $key = is_array($classes) ? join(" ", $classes) : $classes;
         if (!isset(self::$multicolor_map[$key])) {
             $arg = json_encode_browser($key);
@@ -977,6 +979,12 @@ class TagMap {
             Ht::stash_script("hotcrp.ensure_pattern({$arg})");
             self::$multicolor_map[$key] = true;
         }
+    }
+
+    /** @param list<string>|string $classes
+     * @deprecated */
+    function mark_pattern_fill($classes) {
+        self::stash_ensure_pattern($classes);
     }
 
     /** @return string */
@@ -1680,7 +1688,7 @@ class Tagger {
         foreach ($dt->badges($tags) as $tb) {
             $klass = " class=\"badge badge-{$tb[1]}\"";
             if (str_starts_with($tb[1], "rgb-")) {
-                $dt->mark_pattern_fill("badge-{$tb[1]}");
+                TagMap::stash_ensure_pattern("badge-{$tb[1]}");
             }
             $tag = $this->unparse($tb[0]);
             if ($type === self::DECOR_PAPER && ($link = $this->link($tag))) {
