@@ -3195,9 +3195,7 @@ class Contact implements JsonSerializable {
             return 0;
         }
         if ($rights->can_administer) {
-            if ($prow->outcome_sign > 0
-                && $rights->can_view_decision
-                && $this->conf->allow_final_versions()) {
+            if ($prow->phase() === PaperInfo::PHASE_FINAL) {
                 return 2;
             } else {
                 return 1;
@@ -3247,9 +3245,8 @@ class Contact implements JsonSerializable {
             && $rights->can_view_decision) {
             $whyNot["frozen"] = true;
         } else if (!$rights->can_administer) {
-            if ($prow->outcome_sign > 0
+            if ($prow->phase() === PaperInfo::PHASE_FINAL
                 && $rights->can_view_decision
-                && $this->conf->allow_final_versions()
                 && !$this->conf->time_edit_final_paper()) {
                 $whyNot["deadline"] = "final_done";
             } else if (!$prow->submission_round()->time_update(true)) {
@@ -3609,24 +3606,12 @@ class Contact implements JsonSerializable {
                                 && MeetingTracker::can_view_some_tracker($this))))));
     }
 
-    /** @param PaperInfo $prow
-     * @param PaperOption $opt
-     * @return bool */
-    function check_option_view_condition($prow, $opt) {
-        return (!$opt->final
-                || ($prow->outcome_sign > 0
-                    && $prow->timeSubmitted > 0
-                    && $this->can_view_decision($prow)))
-            && ($opt->exists_condition() === null
-                || ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0
-                || $opt->test_exists($prow));
-    }
-
     /** @param PaperOption $opt
      * @return 0|1|2 */
     function view_option_state(PaperInfo $prow, $opt) {
         if (!$this->can_view_paper($prow, $opt->has_document())
-            || !$this->check_option_view_condition($prow, $opt)) {
+            || !$opt->test_exists($prow, ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0)
+            || ($opt->final && !$this->can_view_decision($prow))) {
             return 0;
         }
         $rights = $this->rights($prow);
@@ -3669,6 +3654,7 @@ class Contact implements JsonSerializable {
      * @return 0|1|2 */
     function edit_option_state(PaperInfo $prow, $opt) {
         if (!$opt->on_form()
+            || !$opt->test_exists($prow, ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0)
             || !$opt->test_editable($prow)
             || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))
             || ($opt->final && $this->edit_paper_state($prow) !== 2)
@@ -3722,7 +3708,7 @@ class Contact implements JsonSerializable {
                       && !$this->can_view_review($prow, null)))) {
             $whyNot["permission"] = "field:view";
             $whyNot["option"] = $opt;
-        } else if (!$this->check_option_view_condition($prow, $opt)) {
+        } else if (!$opt->test_exists($prow)) {
             $whyNot["optionNonexistent"] = true;
             $whyNot["option"] = $opt;
         } else {

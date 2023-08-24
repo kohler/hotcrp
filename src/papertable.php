@@ -1934,7 +1934,9 @@ class PaperTable {
     static function missing_required_fields(PaperInfo $prow) {
         $missing = [];
         foreach ($prow->form_fields() as $o) {
-            if ($o->test_required($prow) && !$o->value_present($prow->force_option($o)))
+            if ($o->test_exists($prow)
+                && $o->test_required($prow)
+                && !$o->value_present($prow->force_option($o)))
                 $missing[] = $o;
         }
         return $missing;

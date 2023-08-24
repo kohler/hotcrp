@@ -211,8 +211,23 @@ class PaperOption implements JsonSerializable {
             $this->page_group = "topics";
         }
 
-        $this->classes = explode(" ", $args->className ?? $default_className);
+        $this->final = ($args->final ?? false) === true;
+        $presence = $args->presence ?? null;
+        if ($presence === "final") {
+            $this->final = true;
+        }
+        if ($presence === null || $presence === "custom") {
+            $this->set_exists_condition($args->exists_if ?? null);
+        }
+        $this->set_editable_condition($args->editable_if ?? null);
 
+        $this->classes = explode(" ", $args->className ?? $default_className);
+        $this->set_render_contexts();
+
+        $this->max_size = $args->max_size ?? null;
+    }
+
+    private function set_render_contexts() {
         $this->render_contexts = FieldRender::CFPAGE | FieldRender::CFLIST | FieldRender::CFSUGGEST | FieldRender::CFMAIL | FieldRender::CFFORM;
         foreach ($this->classes as $k) {
             if ($k === "hidden") {
@@ -237,18 +252,9 @@ class PaperOption implements JsonSerializable {
         if ($this->page_order === false) {
             $this->render_contexts &= ~FieldRender::CFPAGE;
         }
-
-        $this->final = ($args->final ?? false) === true;
-        $presence = $args->presence ?? null;
-        if ($presence === "final") {
-            $this->final = true;
+        if ($this->exists_if === "NONE") {
+            $this->render_contexts &= ~(FieldRender::CFFORM | FieldRender::CFPAGE);
         }
-        if ($presence === null || $presence === "custom") {
-            $this->set_exists_condition($args->exists_if ?? null);
-        }
-        $this->set_editable_condition($args->editable_if ?? null);
-
-        $this->max_size = $args->max_size ?? null;
     }
 
     /** @param stdClass|Sf_Setting $args
@@ -444,22 +450,13 @@ class PaperOption implements JsonSerializable {
             return $expr === false ? "NONE" : $expr;
         }
     }
-    /** @return SearchTerm */
-    private function exists_term() {
-        if ($this->_exists_term === null) {
-            $s = new PaperSearch($this->conf->root_user(), $this->exists_if);
-            $s->set_expand_automatic(true);
-            $this->_exists_term = $s->full_term();
-        }
-        return $this->_exists_term;
-    }
 
     /** @return ?string */
-    function exists_condition() {
+    final function exists_condition() {
         return $this->exists_if;
     }
     /** @param $x null|bool|string|SearchTerm */
-    function set_exists_condition($x) {
+    final function set_exists_condition($x) {
         if ($x instanceof SearchTerm) {
             $this->exists_if = $x instanceof False_SearchTerm ? "NONE" : "<special>";
             $this->_exists_term = $x;
@@ -470,20 +467,40 @@ class PaperOption implements JsonSerializable {
             $this->exists_if = self::clean_condition($x);
             $this->_exists_term = null;
         }
+        if ($this->render_contexts !== null) {
+            $this->set_render_contexts();
+        }
     }
-    /** @return bool */
-    function test_exists(PaperInfo $prow) {
-        if ($this->exists_if === null) {
+    /** @return SearchTerm */
+    private function exists_term() {
+        if ($this->_exists_term === null) {
+            $s = new PaperSearch($this->conf->root_user(), $this->exists_if);
+            $s->set_expand_automatic(true);
+            $this->_exists_term = $s->full_term();
+        }
+        return $this->_exists_term;
+    }
+    /** @param bool $use_script_expression
+     * @return bool */
+    final function test_exists(PaperInfo $prow, $use_script_expression = false) {
+        if ($this->final
+            && $prow->phase() !== PaperInfo::PHASE_FINAL) {
+            return false;
+        } else if ($this->exists_if === null) {
             return true;
         } else if (++$this->_recursion > 5) {
             throw new ErrorException("Recursion in {$this->name}::test_exists");
         } else {
-            $x = $this->exists_term()->test($prow, null);
+            if ($use_script_expression) {
+                $x = !!($this->exists_script_expression($prow) ?? true);
+            } else {
+                $x = $this->exists_term()->test($prow, null);
+            }
             --$this->_recursion;
             return $x;
         }
     }
-    function exists_script_expression(PaperInfo $prow) {
+    final function exists_script_expression(PaperInfo $prow) {
         if ($this->exists_if === null) {
             return null;
         } else {
@@ -492,16 +509,16 @@ class PaperOption implements JsonSerializable {
     }
 
     /** @return ?string */
-    function editable_condition() {
+    final function editable_condition() {
         return $this->editable_if;
     }
     /** @param $x null|bool|string */
-    function set_editable_condition($x) {
+    final function set_editable_condition($x) {
         $this->editable_if = self::clean_condition($x);
         $this->_editable_term = null;
     }
     /** @return bool */
-    function test_editable(PaperInfo $prow) {
+    final function test_editable(PaperInfo $prow) {
         if ($this->editable_if === null) {
             return true;
         }
@@ -521,7 +538,7 @@ class PaperOption implements JsonSerializable {
     /** @return bool */
     function test_required(PaperInfo $prow) {
         // Invariant: `$o->test_required($prow)` implies `$o->required > 0`.
-        return $this->required > 0 && $this->test_exists($prow);
+        return $this->required > 0;
     }
     /** @param 0|1|2 $req */
     protected function set_required($req) {

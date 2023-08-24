@@ -610,6 +610,12 @@ class PaperInfo {
     const IS_NEW = 0x800;
     const HAS_WANT_SUBMITTED = 0x1000;
     const WANT_SUBMITTED = 0x2000;
+    const HAS_PHASE = 0x8000;
+    const PHASE_MASK = 0xF0000;
+    const PHASE_SHIFT = 16;
+    const PHASE_NORMAL = 0; // default
+    const PHASE_FINAL = 1;  // accepted, collecting final versions, author can see decision
+                            // (NB final versions might not be open at the moment)
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
     static private $next_uid = 0;
@@ -812,7 +818,7 @@ class PaperInfo {
     private function check_rights_version() {
         if ($this->_rights_version !== Contact::$rights_version) {
             if ($this->_rights_version) {
-                $this->_flags &= ~self::REVIEW_FLAGS;
+                $this->_flags &= ~(self::REVIEW_FLAGS | self::HAS_PHASE);
                 $this->_contact_info = [];
                 $this->reviewSignatures = $this->_review_array = $this->_reviews_have = null;
                 $this->allConflictType = $this->_ctype_list = null;
@@ -948,6 +954,25 @@ class PaperInfo {
         }
     }
 
+    /** @return 0|1 */
+    function phase() {
+        if ($this->outcome_sign <= 0) {
+            return self::PHASE_NORMAL;
+        }
+        $this->check_rights_version();
+        if (($this->_flags & self::HAS_PHASE) === 0) {
+            if ($this->timeSubmitted > 0
+                && $this->conf->allow_final_versions()
+                && $this->can_author_view_decision()) {
+                $phase = self::PHASE_FINAL;
+            } else {
+                $phase = self::PHASE_NORMAL;
+            }
+            $this->_flags = ($phase & ~self::PHASE_MASK) | self::HAS_PHASE | ($phase << self::PHASE_SHIFT);
+        }
+        return ($this->_flags & self::PHASE_MASK) >> self::PHASE_SHIFT;
+    }
+
 
     /** @param string $prop
      * @return mixed */
@@ -1014,6 +1039,7 @@ class PaperInfo {
 
     function commit_prop() {
         $this->_old_prop = null;
+        $this->_flags &= ~self::HAS_PHASE;
     }
 
     function abort_prop() {
@@ -1566,9 +1592,8 @@ class PaperInfo {
             || $this->outcome_sign < 0) {
             return 0;
         }
-        if ($this->outcome_sign > 0
-            && $this->conf->time_edit_final_paper()
-            && $this->can_author_view_decision()) {
+        if ($this->phase() === self::PHASE_FINAL
+            && $this->conf->time_edit_final_paper()) {
             return 2;
         }
         $sr = $this->submission_round();
@@ -1966,6 +1991,7 @@ class PaperInfo {
     function load_decision() {
         $this->outcome = $this->conf->fetch_ivalue("select outcome from Paper where paperId=?", $this->paperId);
         $this->_decision = null;
+        $this->_flags &= ~self::HAS_PHASE;
         $this->set_outcome_sign();
     }
 
