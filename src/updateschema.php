@@ -1078,10 +1078,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if (is_array($options_data) && $conf->sversion <= 247) {
             $options_data = $this->v248_options_setting($options_data);
         }
-        if ($conf->sversion <= 277) {
+        if (is_array($options_data) && $conf->sversion <= 277) {
             $options_data = $this->v278_options_setting($options_data);
         }
-        if ($conf->sversion <= 278) {
+        if (is_array($options_data) && $conf->sversion <= 278) {
             $options_data = $this->v279_options_setting($options_data);
         }
 
