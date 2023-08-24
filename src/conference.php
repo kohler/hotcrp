@@ -5138,7 +5138,11 @@ class Conf {
             try {
                 self::xt_resolve_require($uf);
                 $j = call_user_func($uf->function, $user, $qreq, $prow, $uf);
-                return new JsonResult($j);
+                if ($j instanceof JsonResult) {
+                    return $j;
+                } else {
+                    return new JsonResult($j);
+                }
             } catch (JsonCompletion $ex) {
                 return $ex->result;
             }

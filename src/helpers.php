@@ -86,6 +86,8 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     public $status;
     /** @var array<string,mixed> */
     public $content;
+    /** @var bool */
+    public $pretty_print;
 
     /** @param int|array<string,mixed>|\stdClass|\JsonSerializable $a1
      * @param ?array<string,mixed> $a2 */
@@ -161,6 +163,14 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     }
 
 
+    /** @param bool $pp
+     * @return $this */
+    function pretty_print($pp) {
+        $this->pretty_print = $pp;
+        return $this;
+    }
+
+
     #[\ReturnTypeWillChange]
     /** @param string $offset
      * @return bool */
@@ -215,6 +225,8 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         header("Content-Type: application/json; charset=utf-8");
         if (Qrequest::$main_request && isset(Qrequest::$main_request->pprint)) {
             $pprint = friendly_boolean(Qrequest::$main_request->pprint);
+        } else if ($this->pretty_print !== null) {
+            $pprint = $this->pretty_print;
         } else {
             $pprint = Contact::$main_user && Contact::$main_user->is_bearer_authorized();
         }
