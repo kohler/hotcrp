@@ -2,7 +2,7 @@
 /* style.css -- HotCRP CSS styles */
 /* Copyright (c) 2006-2023 Eddie Kohler; see LICENSE. */
 
-/* theme colors */
+/* theme colors and widths */
 @layer theme {
 body {
 	color: #333333;
@@ -85,6 +85,17 @@ select, button {
 }
 .pslcard-home-tag.tagbg.dark {
 	color: white;
+}
+
+.main-column p, .main-column dl, .main-column pre.sample {
+	max-width: 720px;
+}
+.main-column ul, .main-column ol {
+	max-width: 692px;
+	padding-left: 28px;
+}
+.main-column ul.ctable {
+	max-width: 732px;
 }
 }
 
@@ -1691,13 +1702,8 @@ div.hint {
 .w-text,
 .feedback, .feedback-list, .field-d,
 .revtext.format0, .cmttext.format0, .revtext .format0, .cmttext .format0,
-.overlong-expander,
-.main-column p, .main-column dl, .main-column pre.sample {
-	max-width: 720px;
-}
-.main-column ul, .main-column ol {
-	max-width: 692px;
-	padding-left: 28px;
+.overlong-expander {
+	max-width: 720px; /* see also @layer theme */
 }
 .w-entry-text {
 	max-width: 560px;
@@ -2661,9 +2667,6 @@ pre.email {
 }
 ul.ctable {
 	padding-left: 0;
-}
-.main-column ul.ctable {
-	max-width: 732px;
 }
 .ctable-wide {
 	columns: 450px 4;
