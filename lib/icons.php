@@ -3,7 +3,11 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Icons {
+    /** @readonly */
     static public $svg_open = '<svg class="licon" width="1em" height="1em" viewBox="0 0 64 64" preserveAspectRatio="none">';
+    /** @readonly */
+    static public $move_handle_horizontal_open = '<svg class="move-handle-icon" width="1em" height="0.666em" viewBox="0 0 18 12" preserveAspectRatio="none">';
+
     static function svg_contents($name) {
         switch ($name) {
         case "triangle0":
@@ -39,7 +43,7 @@ class Icons {
         case "move_handle_horizontal":
             return '<circle cx="4" cy="4" r="1.5" /><circle cx="9" cy="4" r="1.5" /><circle cx="14" cy="4" r="1.5" /><circle cx="4" cy="9" r="1.5" /><circle cx="9" cy="9" r="1.5" /><circle cx="14" cy="9" r="1.5" />';
         default:
-            throw new InvalidArgumentException("bad icon $name");
+            throw new InvalidArgumentException("bad icon {$name}");
         }
     }
     /** @param string ...$names */
@@ -48,8 +52,7 @@ class Icons {
         foreach ($names as $name) {
             if (Ht::mark_stash("i-def-{$name}")) {
                 $t = self::svg_contents($name);
-                $sp = strpos($t, " ");
-                $svgs[] = substr($t, 0, $sp) . " id=\"i-def-{$name}\"" . substr($t, $sp);
+                $svgs[] = "<g id=\"i-def-{$name}\">{$t}</g>";
             }
         }
         if (!empty($svgs)) {
@@ -59,16 +62,25 @@ class Icons {
     /** @param string $name
      * @return string */
     static function ui_use($name) {
-        assert(Ht::check_stash("i-def-{$name}"));
-        return self::$svg_open . "<use href=\"#i-def-{$name}\"></svg>";
+        if ($name === "move_handle_horizontal") {
+            $open = self::$move_handle_horizontal_open;
+        } else {
+            $open = self::$svg_open;
+        }
+        return "{$open}<use href=\"#i-def-{$name}\" /></svg>";
     }
+    /** @param 0|1|2|3 $direction
+     * @return string */
     static function ui_triangle($direction) {
         // see also script.js
-        return '<svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 64 64" preserveAspectRatio="none">' . self::svg_contents("triangle$direction") . '</svg>';
+        return '<svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 64 64" preserveAspectRatio="none">' . self::svg_contents("triangle{$direction}") . '</svg>';
     }
+    /** @return string */
     static function ui_upperleft() {
         return '<svg class="licon" width="1em" height="1em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M16 10L16 13C9 15 5 12 6 6L2 7L8 1L14 7L10 6C9 9 10 11 16 10z" /></svg>';
     }
+    /** @param 0|1|2|3 $direction
+     * @return string */
     static function ui_linkarrow($direction) {
         $t = '<svg class="licon-s" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="';
         if ($direction == 0)
@@ -81,64 +93,84 @@ class Icons {
             $t .= 'M11 3L1 9L11 15';
         return $t . '" /></svg>';
     }
+    /** @param 0|2 $direction
+     * @return string */
     static function ui_movearrow($direction) {
         return self::$svg_open . self::svg_contents("movearrow{$direction}") . '</svg>';
     }
+    /** @return string */
     static function ui_display() {
         return self::$svg_open . self::svg_contents("display") . '</svg>';
     }
+    /** @return string */
     static function ui_trash() {
         return self::$svg_open . self::svg_contents("trash") . '</svg>';
     }
+    /** @return string */
     static function ui_eye() {
         return self::$svg_open . self::svg_contents("eye") . '</svg>';
     }
+    /** @return string */
     static function ui_visibility_hide() {
         return self::ui_eye();
     }
+    /** @return string */
     static function ui_pencil() {
         return self::$svg_open . self::svg_contents("pencil") . '</svg>';
     }
+    /** @return string */
     static function ui_edit_hide() {
         return self::ui_pencil();
     }
+    /** @return string */
     static function ui_description() {
         return self::$svg_open . self::svg_contents("description") . '</svg>';
     }
+    /** @return string */
     static function ui_upload() {
         return self::$svg_open . self::svg_contents("upload") . '</svg>';
     }
+    /** @return string */
     static function ui_check_format() {
         return '<svg class="licon" width="1em" height="1em" viewBox="0 0 64 64" preserveAspectRatio="none">
   <path d="M 54 10 L 37 34 L 24 25 L 26 22 L 36 27 L 51 7 L 54 10 Z M 13 15 L 21 15 L 20 18 L 16 18 L 16 57 C 16 57 30 57 34 57 C 36 57 36 55 36 54 C 36 51 36 45 36 45 C 36 45 44 45 46 45 C 48 45 48 43 48 42 C 48 38 48 34 48 34 L 51 34 C 51 34 51 42 51 47 C 51 49 50 51 49 52 C 46 55 45 56 43 58 C 42 59 41 60 38 60 C 30 60 13 60 13 60 L 13 15 Z M 38 47 L 38 57 L 48 47 L 38 47 Z"></path>
 </svg>';
     }
+    /** @return string */
     static function ui_attachment() {
         return self::$svg_open . self::svg_contents("attachment") . '</svg>';
     }
+    /** @return string */
     static function ui_tag() {
         return self::$svg_open . self::svg_contents("tag") . '</svg>';
 //<path d="M 19.9 15.7 C 19.9 15.7 18.5 17.2 18.5 18.5 L 18.5 58.8 C 18.5 60.5 19.8 61.8 21.5 61.7 L 43.5 61.8 C 45.2 61.8 46.5 60.4 46.5 58.8 L 46.5 18.4 C 46.6 17.9 46.4 17 45.7 15.9 L 35.9 4 C 34.7 2.6 33.7 2 32.6 2 C 31.5 2 30.4 2.6 29.3 4 C 29.3 4 20 15.8 19.9 15.7 Z M 43.4 58.1 L 21.6 58.1 L 21.7 19.6 L 43.5 19.6 Z M 34.5 8.4 C 36.3 9.5 36.7 11.8 35.7 13.6 C 34.6 15.4 32.2 16 30.4 14.9 C 28.6 13.8 28.1 11.5 29.3 9.7 C 30.4 7.9 32.7 7.3 34.5 8.4 Z" /></svg>';
     }
+    /** @return string */
     static function ui_solid_question() {
         return '<svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 64 64" preserveAspectRatio="none">' . self::svg_contents("solid_question") . '</svg>';
     }
+    /** @return string */
     static function ui_move_handle_horizontal() {
-        return '<svg class="move-handle-icon" width="1em" height="0.666em" viewBox="0 0 18 12" preserveAspectRatio="none">' . self::svg_contents("move_handle_horizontal") . '</svg>';
+        return self::$move_handle_horizontal_open . self::svg_contents("move_handle_horizontal") . '</svg>';
 
     }
+    /** @return string */
     static function ui_graph_scatter() {
         return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path stroke-linejoin="miter" d="M7 12V60H89" /><circle cx="22" cy="22" r="4" class="gdot" /><circle cx="39" cy="41" r="6" class="gdot" /><circle cx="54" cy="22" r="2" class="gdot" /><circle cx="64" cy="50" r="3" class="gdot" /><circle cx="64" cy="20" r="2" class="gdot" /><circle cx="75" cy="39" r="3" class="gdot" /></svg>';
     }
+    /** @return string */
     static function ui_graph_bars() {
         return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path d="M18 59V29H25V59" class="gbar" /><path d="M35 59V22H42V59" class="gbar" /><path d="M70 59V41H77V59" class="gbar" /><path d="M53 59V33H60V59" class="gbar" /><path stroke-linejoin="miter" d="M7 12V60H89" /></svg>';
     }
+    /** @return string */
     static function ui_graph_box() {
         return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path d="M19 50V27H25V50Z M22 18V27 M22 50V53" class="gbox" /><path d="M37 43V29H43V43Z M40 13V29 M40 43V49" class="gbox" /><path d="M70 40V20H76V40Z M73 17V20 M73 40V56" class="gbox" /><path d="M53 47V44H59V47Z M56 36V41 M56 47V53" class="gbox" /><path stroke-linejoin="miter" d="M7 12V60H89" /></svg>';
     }
+    /** @return string */
     static function ui_graph_cdf() {
         return '<svg class="licon-s" width="3em" height="2em" viewBox="0 0 96 64" preserveAspectRatio="none"><path d="M21 60V54H33V46H50V32H60V28H66V15H71V12H89" class="gcdf" /><path stroke-linejoin="miter" d="M7 12V60H89" /></svg>';
     }
+    /** @param string $name */
     static function stash_licon($name) {
         if (Ht::mark_stash("i-{$name}")) {
             $xname = str_replace("_", "-", $name);
