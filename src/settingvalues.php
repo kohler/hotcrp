@@ -1775,7 +1775,7 @@ class SettingValues extends MessageSet {
      * @return string */
     function entry($name, $js = null) {
         $si = $this->si($name);
-        $v = $this->vstr($si);
+        $v = $js["value"] ?? $this->vstr($si);
         $js = $this->sjs($si, $js ?? []);
         if (!isset($js["size"])
             && $si->size) {

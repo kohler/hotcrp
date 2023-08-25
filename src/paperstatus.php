@@ -922,7 +922,7 @@ class PaperStatus extends MessageSet {
         // Fields
         foreach ($this->prow->form_fields() as $o) {
             if (($qreq["has_{$o->formid}"] || isset($qreq[$o->formid]))
-                && (!$o->final || $action === "final")
+                && (!$o->is_final() || $action === "final")
                 && (!$updatecontacts || $o->id === PaperOption::CONTACTSID)) {
                 // XXX test_editable
                 $pj->{$o->json_key()} = $o->parse_qreq($this->prow, $qreq);

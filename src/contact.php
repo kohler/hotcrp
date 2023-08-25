@@ -3613,7 +3613,7 @@ class Contact implements JsonSerializable {
     function view_option_state(PaperInfo $prow, $opt) {
         if (!$this->can_view_paper($prow, $opt->has_document())
             || !$opt->test_exists($prow, ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0)
-            || ($opt->final && !$this->can_view_decision($prow))) {
+            || ($opt->is_final() && !$this->can_view_decision($prow))) {
             return 0;
         }
         $rights = $this->rights($prow);
@@ -3659,7 +3659,7 @@ class Contact implements JsonSerializable {
             || !$opt->test_exists($prow, ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0)
             || !$opt->test_editable($prow)
             || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))
-            || ($opt->final && $this->edit_paper_state($prow) !== 2)
+            || ($opt->is_final() && $this->edit_paper_state($prow) !== 2)
             || ($opt->id === 0 && $this->edit_paper_state($prow) === 2)) {
             return 0;
         } else if (!$opt->test_exists($prow)) {
@@ -3712,7 +3712,7 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function can_view_some_option(PaperOption $opt) {
-        if (($opt->final && !$this->can_view_some_decision())
+        if (($opt->is_final() && !$this->can_view_some_decision())
             || !$opt->test_can_exist()) {
             return false;
         }

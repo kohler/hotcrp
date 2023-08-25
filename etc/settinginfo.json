@@ -276,15 +276,10 @@
         "type": "radio", "values": ["all", "nonblind", "conflict", "review", "admin"]
     },
     {
-        "name_pattern": "sf/$/presence",
-        "title": "/Presence",
-        "type": "radio", "values": ["all", "final", "custom", "none"]
-    },
-    {
         "name_pattern": "sf/$/condition", "storage": "member.exists_if",
         "title": "/Presence condition",
         "type": "string", "subtype": "search", "size": 30, "placeholder": "Search",
-        "parser_class": "SubFieldCondition_SettingParser", "parse_order": 3
+        "parse_order": 3
     },
     {
         "name_pattern": "sf/$/min",

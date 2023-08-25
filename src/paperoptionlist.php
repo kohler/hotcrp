@@ -134,17 +134,17 @@ class PaperOptionList implements IteratorAggregate {
         if ($vconf) {
             if (($xv = $vconf->opt("noAbstract")) > 0) {
                 $map[PaperOption::ABSTRACTID]->required = $xv !== 2;
-                $map[PaperOption::ABSTRACTID]->presence = $xv === 1 ? "none" : "all";
+                $map[PaperOption::ABSTRACTID]->exists_if = $xv === 1 ? "NONE" : null;
             }
             if (($xv = $vconf->opt("noPapers")) > 0) {
                 $map[DTYPE_SUBMISSION]->required = $map[DTYPE_FINAL]->required = $xv === 2 ? false : "submit";
-                $map[DTYPE_SUBMISSION]->presence = $map[DTYPE_FINAL]->presence = $xv === 1 ? "none" : "all";
+                $map[DTYPE_SUBMISSION]->exists_if = $map[DTYPE_FINAL]->exists_if = $xv === 1 ? "NONE" : null;
             }
             if (($xv = $vconf->opt("maxAuthors") ?? 0) > 0) {
                 $map[PaperOption::AUTHORSID]->max = $xv;
             }
             if (!$vconf->setting("has_topics")) {
-                $map[PaperOption::TOPICSID]->presence = "none";
+                $map[PaperOption::TOPICSID]->exists_if = "NONE";
             } else {
                 $xv = $vconf->setting("topic_min");
                 $xv1 = $vconf->setting("topic_max");
@@ -157,11 +157,11 @@ class PaperOptionList implements IteratorAggregate {
             $xv = $vconf->setting("sub_pcconf");
             $xv1 = $vconf->setting("sub_pcconfsel");
             if (!$xv || $xv1) {
-                $map[PaperOption::PCCONFID]->presence = $xv ? "all" : "none";
+                $map[PaperOption::PCCONFID]->exists_if = $xv ? null : "NONE";
                 $map[PaperOption::PCCONFID]->selectors = !!$xv1;
             }
             if (!$vconf->setting("sub_collab")) {
-                $map[PaperOption::COLLABORATORSID]->presence = "none";
+                $map[PaperOption::COLLABORATORSID]->exists_if = "NONE";
             }
         }
 
@@ -282,7 +282,6 @@ class PaperOptionList implements IteratorAggregate {
                 if (($oj->nonpaper ?? false) !== true
                     && ($oj->final ?? false) !== true
                     && ($o = $this->option_by_id($id))) {
-                    assert(!$o->nonpaper && !$o->final);
                     $this->_olist_nonfinal[$id] = $o;
                 }
             }

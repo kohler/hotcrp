@@ -46,9 +46,9 @@ class PaperOption implements JsonSerializable {
     /** @var 0|1|2
      * @readonly */
     public $required;
-    /** @var bool
+    /** @var null|0|1
      * @readonly */
-    public $final;
+    private $_phase;
     /** @var bool
      * @readonly */
     public $configurable;
@@ -214,18 +214,7 @@ class PaperOption implements JsonSerializable {
             $this->page_group = "topics";
         }
 
-        $this->final = ($args->final ?? false) === true;
-        $presence = $args->presence ?? null;
-        if ($presence === "final") {
-            $this->final = true;
-        }
-        if ($presence === null || $presence === "custom") {
-            $this->set_exists_condition($args->exists_if ?? null);
-        } else if ($presence === "none") {
-            $this->set_exists_condition(false);
-        } else if ($presence === "final") {
-            $this->final = true;
-        }
+        $this->set_exists_condition($args->exists_if ?? (($args->final ?? false) ? "phase:final" : null));
         $this->set_editable_condition($args->editable_if ?? null);
 
         $this->classes = explode(" ", $args->className ?? $default_className);
@@ -448,35 +437,62 @@ class PaperOption implements JsonSerializable {
     /** @return bool */
     function always_visible() {
         return $this->_visibility === self::VIS_SUB
-            && !$this->final
+            && !$this->_phase
             && $this->exists_if === null;
     }
 
     /** @param null|bool|string $expr
      * @return ?string */
     static private function clean_condition($expr) {
-        if ($expr === null || $expr === true || $expr === "") {
+        if ($expr === false) {
+            return "NONE";
+        } else if ($expr === null
+                   || $expr === true
+                   || $expr === ""
+                   || strcasecmp($expr, "all") === 0) {
             return null;
         } else {
-            return $expr === false ? "NONE" : $expr;
+            return $expr;
         }
     }
 
     /** @return ?string */
     final function exists_condition() {
-        return $this->exists_if;
+        if ($this->exists_if !== null) {
+            return $this->exists_if;
+        } else if ($this->_phase === PaperInfo::PHASE_FINAL) {
+            return "phase:final";
+        } else {
+            return null;
+        }
     }
-    /** @param $x null|bool|string|SearchTerm */
+    /** @param $x null|bool|string|SearchTerm
+     * @suppress PhanAccessReadOnlyProperty */
     final function set_exists_condition($x) {
+        // NB It is important to NOT instantiate the search term yet!
+        // Parsing the search term requires access to all options, but not
+        // all options have been constructed when this is called.
+        $this->_phase = null;
         if ($x instanceof SearchTerm) {
             $this->exists_if = $x instanceof False_SearchTerm ? "NONE" : "<special>";
             $this->_exists_term = $x;
-        } else if ($x === false || $x === "NONE") {
-            $this->exists_if = "NONE";
-            $this->_exists_term = new False_SearchTerm;
+            $this->_phase = Phase_SearchTerm::term_phase($x);
         } else {
-            $this->exists_if = self::clean_condition($x);
-            $this->_exists_term = null;
+            $x = self::clean_condition($x);
+            if ($x === null) {
+                $this->exists_if = null;
+                $this->_exists_term = null;
+            } else if (strcasecmp($x, "none") === 0) {
+                $this->exists_if = "NONE";
+                $this->_exists_term = new False_SearchTerm;
+            } else if (strcasecmp($x, "phase:final") === 0) {
+                $this->exists_if = null;
+                $this->_exists_term = null;
+                $this->_phase = PaperInfo::PHASE_FINAL;
+            } else {
+                $this->exists_if = self::clean_condition($x);
+                $this->_exists_term = null;
+            }
         }
         if ($this->render_contexts !== null) {
             $this->set_render_contexts();
@@ -484,10 +500,12 @@ class PaperOption implements JsonSerializable {
     }
     /** @return SearchTerm */
     private function exists_term() {
-        if ($this->_exists_term === null) {
+        if ($this->exists_if !== null && $this->_exists_term === null) {
             $s = new PaperSearch($this->conf->root_user(), $this->exists_if);
             $s->set_expand_automatic(true);
             $this->_exists_term = $s->full_term();
+            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
+            $this->_phase = Phase_SearchTerm::term_phase($this->_exists_term);
         }
         return $this->_exists_term;
     }
@@ -495,11 +513,22 @@ class PaperOption implements JsonSerializable {
     final function test_can_exist() {
         return $this->exists_if !== "NONE";
     }
+    /** @return bool */
+    final function has_complex_exists_condition() {
+        return $this->exists_if !== null
+            && $this->exists_if !== "NONE";
+    }
+    /** @return bool */
+    final function is_final() {
+        // compute phase of complex exists condition
+        $this->exists_term();
+        return $this->_phase === PaperInfo::PHASE_FINAL;
+    }
     /** @param bool $use_script_expression
      * @return bool */
     final function test_exists(PaperInfo $prow, $use_script_expression = false) {
-        if ($this->final
-            && $prow->phase() !== PaperInfo::PHASE_FINAL) {
+        if ($this->_phase !== null
+            && $prow->phase() !== $this->_phase) {
             return false;
         } else if ($this->exists_if === null) {
             return true;
@@ -678,7 +707,8 @@ class PaperOption implements JsonSerializable {
         if ($this->configurable !== true) {
             $j->configurable = $this->configurable;
         }
-        if ($this->final) {
+        $this->exists_term(); // to set `_phase`
+        if ($this->_phase === PaperInfo::PHASE_FINAL) {
             $j->final = true;
         }
         $j->display = $this->display_name();
@@ -700,17 +730,6 @@ class PaperOption implements JsonSerializable {
             $j->max_size = $this->max_size;
         }
         return $j;
-    }
-
-    /** @return 'none'|'custom'|'all' */
-    static function presence_for_condition($condition) {
-        if ($condition === "NONE") {
-            return "none";
-        } else if ($condition) {
-            return "custom";
-        } else {
-            return "all";
-        }
     }
 
     /** @return Sf_Setting */
@@ -739,11 +758,8 @@ class PaperOption implements JsonSerializable {
         $sfs->order = $this->order;
         $sfs->visibility = $this->unparse_visibility();
         $sfs->required = $this->required;
-        $sfs->presence = self::presence_for_condition($this->exists_if);
-        $sfs->exists_if = $this->exists_if;
-        if ($this->final && $sfs->presence === "all") {
-            $sfs->presence = "final";
-        }
+        $sfs->exists_if = $this->exists_if
+            ?? ($this->_phase === PaperInfo::PHASE_FINAL ? "phase:final" : "all");
         $sfs->source_option = $this;
         return $sfs;
     }

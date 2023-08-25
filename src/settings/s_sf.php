@@ -12,7 +12,6 @@ class Sf_Setting {
     public $display;
     public $visibility;
     public $required;
-    public $presence;
     public $exists_if;
     public $values;
     public $ids;

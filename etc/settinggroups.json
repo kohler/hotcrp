@@ -172,8 +172,8 @@
         "print_function": "*Options_SettingParser::print_values"
     },
     {
-        "name": "submissionfield/properties/presence", "order": 30,
-        "print_function": "*Options_SettingParser::print_presence",
+        "name": "submissionfield/properties/condition", "order": 30,
+        "print_function": "*SubFieldCondition_SettingParser::print",
         "common": true
     },
     {

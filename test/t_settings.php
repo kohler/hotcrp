@@ -1256,13 +1256,13 @@ class Settings_Tester {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
             "sf/1/name" => "Joint concentration?",
-            "sf/1/presence" => "final"
+            "sf/1/condition" => "phase:final"
         ]);
         xassert($sv->execute());
         xassert_eqq(trim($sv->full_feedback_text()), "");
 
         $opt = $this->conf->checked_option_by_id($optid);
-        xassert_eqq($opt->final, true);
+        xassert_eqq($opt->is_final(), true);
     }
 
     function test_json_settings_api() {

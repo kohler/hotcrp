@@ -305,16 +305,6 @@ class Options_SettingParser extends SettingParser {
         ]);
     }
 
-    function print_presence(SettingValues $sv) {
-        $sel = ["all" => "All submissions", "final" => "Final versions only"];
-        if ($this->sfs->presence === "custom") {
-            $sel["custom"] = "Custom…";
-        } else if ($this->sfs->presence === "none") {
-            $sel["none"] = "Disabled";
-        }
-        $sv->print_select_group("sf/{$this->ctr}/presence", "Present on", $sel, ["horizontal" => true]);
-    }
-
     function print_required(SettingValues $sv) {
         $klass = null;
         if ($this->sfs->type === "checkbox") {
@@ -390,14 +380,15 @@ class Options_SettingParser extends SettingParser {
 
 
     private function print_one_option_view(PaperOption $io, SettingValues $sv, $ctr) {
-        $disabled = $this->sfs->presence === "none";
+        $disabled = strcasecmp($this->sfs->exists_if, "none") === 0;
         echo '<div id="sf/', $ctr, '/view" class="settings-xf-view fn2 ui js-foldup">';
         if ($disabled) {
             $this->pt->msg_at($io->formid, "<0>This field is currently disabled", MessageSet::URGENT_NOTE);
-        } else if ($this->sfs->exists_if) {
+        } else if (strcasecmp($this->sfs->exists_if, "all") !== 0
+                   && strcasecmp($this->sfs->exists_if, "phase:final") !== 0) {
             $this->pt->msg_at($io->formid, "<0>Present on submissions matching ‘" . $this->sfs->exists_if . "’", MessageSet::WARNING_NOTE);
         }
-        if ($this->sfs->presence === "final" || $io->final) {
+        if ($io->is_final()) {
             $this->pt->msg_at($io->formid, "<0>Present on final versions", MessageSet::WARNING_NOTE);
         }
         if ($io->editable_condition()) {
@@ -433,8 +424,8 @@ class Options_SettingParser extends SettingParser {
 
         echo '<div id="sf/', $ctr, '" class="settings-xf settings-sf ',
             $this->sfs->existed ? '' : 'is-new ',
-            $this->sfs->presence === "none" ? 'settings-xf-disabled ' : '',
-            $this->sfs->source_option->final ? 'settings-sf-final ' : '',
+            strcasecmp($this->sfs->exists_if, "none") === 0 ? 'settings-xf-disabled ' : '',
+            $this->sfs->source_option->is_final() ? 'settings-sf-final ' : '',
             'has-fold fold2o ui-fold js-fold-focus hidden">';
         if ($this->sfs->option_id !== PaperOption::TITLEID) {
             echo '<div class="settings-draghandle ui-drag js-settings-drag" draggable="true" title="Drag to reorder fields">',
@@ -720,8 +711,8 @@ class Options_SettingParser extends SettingParser {
     // SETTING INTERACTION RULES
     // Some broad settings, called here “wizard” settings, namely `sf_abstract`
     // and `sf_pdf_submission`, exist to set a combination of submission field
-    // settings: `sf_abstract -> sf/abstract/presence + sf/abstract/required`;
-    // `sf_pdf_submission -> sf/submission/presence + sf/submission/required`.
+    // settings: `sf_abstract -> sf/abstract/condition + sf/abstract/required`;
+    // `sf_pdf_submission -> sf/submission/condition + sf/submission/required`.
     // This causes a ton of irritating complexity.
     // If both are specified, the submission field setting wins.
     // If only a wizard setting is specified, it devolves to submission field
@@ -736,9 +727,9 @@ class Options_SettingParser extends SettingParser {
             $wizkey = "sf_pdf_submission";
             $default_required = PaperOption::REQ_SUBMIT;
         }
-        if ($sv->has_req("sf/{$ctr}/presence")
+        if ($sv->has_req("sf/{$ctr}/condition")
             || $sv->has_req("sf/{$ctr}/required")) {
-            if ($sfs->presence === "none"
+            if (strcasecmp($sfs->exists_if, "none") === 0
                 && $sfs->required === $default_required) {
                 $sv->save($wizkey, 1);
             } else if ($sfs->required === $default_required) {
@@ -753,12 +744,12 @@ class Options_SettingParser extends SettingParser {
             if ($wizval === 0) {
                 $sv->save("sf/{$ctr}/required", $default_required);
             } else if ($wizval === 1) {
-                $sv->save("sf/{$ctr}/presence", "none");
+                $sv->save("sf/{$ctr}/condition", "none");
             } else {
                 $sv->save("sf/{$ctr}/required", 0);
             }
-            if ($wizval !== 1 && $sv->newv("sf/{$ctr}/presence") === "none") {
-                $sv->save("sf/{$ctr}/presence", "all");
+            if ($wizval !== 1 && $sv->newv("sf/{$ctr}/condition") === "none") {
+                $sv->save("sf/{$ctr}/condition", "all");
             }
         }
     }

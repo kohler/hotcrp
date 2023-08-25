@@ -3,6 +3,21 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class SubFieldCondition_SettingParser extends SettingParser {
+    function print(SettingValues $sv) {
+        $osp = $sv->cs()->callable("Options_SettingParser");
+        $sel = ["all" => "All submissions", "phase:final" => "Final versions only"];
+        $cond = $osp->sfs->exists_if ?? "all";
+        $pres = strtolower($cond);
+        if ($pres === "none" || $osp->sfs->option_id <= 0) {
+            $sel["none"] = "Disabled";
+        }
+        if (!isset($pressel[$pres])) {
+            $sv->print_control_group("sf/{$osp->ctr}/condition", "Present on", "Custom search", ["horizontal" => true]);
+        } else {
+            $sv->print_select_group("sf/{$osp->ctr}/condition", "Present on", $sel, ["horizontal" => true]);
+        }
+    }
+
     /** @param SettingValues $sv
      * @param string $pfx
      * @param PaperOption $field
@@ -12,29 +27,16 @@ class SubFieldCondition_SettingParser extends SettingParser {
         $ps = new PaperSearch($sv->conf->root_user(), $q);
         foreach ($ps->message_list() as $mi) {
             $sv->append_item_at("{$pfx}/condition", $mi);
-            $sv->msg_at("{$pfx}/presence", "", $mi->status);
         }
         try {
             $fake_prow = PaperInfo::make_placeholder($sv->conf, -1);
             if ($ps->main_term()->script_expression($fake_prow) === null) {
-                $sv->msg_at("{$pfx}/presence", "", $status);
                 $sv->msg_at("{$pfx}/condition", "<0>Invalid search in field condition", $status);
                 $sv->inform_at("{$pfx}/condition", "<0>Field conditions are limited to simple search keywords.");
             }
         } catch (ErrorException $e) {
-            $sv->msg_at("{$pfx}/presence", "", 2);
             $sv->msg_at("{$pfx}/condition", "<0>Field condition is defined in terms of itself", 2);
         }
-    }
-
-    function apply_req(Si $si, SettingValues $sv) {
-        $pres = "{$si->name0}{$si->name1}/presence";
-        if (($q = $sv->base_parse_req($si)) !== null
-            && (!$sv->has_req($pres) || $sv->reqstr($pres) === "custom")) {
-            $sv->save($pres, "custom");
-            $sv->save($si, $q);
-        }
-        return true;
     }
 
     static function crosscheck(SettingValues $sv) {

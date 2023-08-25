@@ -489,7 +489,8 @@ class PaperTable {
             || ($rest["hidden"] ?? false)) {
             echo ' hidden';
         }
-        if ($opt->exists_condition() && !$this->settings_mode) {
+        if ($opt->has_complex_exists_condition()
+            && !$this->settings_mode) {
             echo ' want-fieldchange has-edit-condition" data-edit-condition="', htmlspecialchars(json_encode_browser($opt->exists_script_expression($this->prow)));
             Ht::stash_script('$(hotcrp.paper_edit_conditions)', 'edit_condition');
         }
@@ -740,7 +741,7 @@ class PaperTable {
             if (!$this->allow_edit_final) {
                 foreach ($this->prow->form_fields() as $o) {
                     if ($o->required
-                        && $o->exists_condition() === null /* XXX */
+                        && !$o->has_complex_exists_condition() /* XXX */
                         && $o->editable_condition() === null
                         && ($x = $o->present_script_expression()))
                         $l[] = $x;
