@@ -1051,12 +1051,16 @@
     {
         "name": "topic_max", "storage": "topic_max", "type": "nonnegint",
         "title": "Maximum topics per submission",
-        "default_value": 0
+        "default_value": 0,
+        "parse_order": -1,
+        "json": "in"
     },
     {
         "name": "topic_min", "storage": "topic_min", "type": "nonnegint",
         "title": "Minimum topics per submission",
-        "default_value": 0
+        "default_value": 0,
+        "parse_order": -1,
+        "json": "in"
     },
 
     {

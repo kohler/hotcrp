@@ -10,8 +10,6 @@ class Options_SettingParser extends SettingParser {
     // shared
     /** @var array<int,object> */
     private $_basic_ijmap;
-    /** @var array<int,PaperOption> */
-    private $_basic_iopt = [];
     /** @var ?array<int,int> */
     private $_use_count;
     /** @var ?associative-array<int,true> */
@@ -73,12 +71,26 @@ class Options_SettingParser extends SettingParser {
     }
 
     /** @param int $id
+     * @param SettingValues $sv
      * @return PaperOption */
-    function basic_intrinsic_option($id) {
-        if (!array_key_exists($id, $this->_basic_iopt)) {
-            $this->_basic_iopt[$id] = PaperOption::make($this->conf, $this->basic_intrinsic_json($id));
+    function basic_intrinsic_option($id, $sv) {
+        $args = clone $this->basic_intrinsic_json($id);
+        if ($id === PaperOption::ABSTRACTID) {
+            $ab = $sv->newv("sf_abstract");
+            $args->required = $ab === 2 ? PaperOption::REQ_NO : PaperOption::REQ_REGISTER;
+            $args->exists_if = $ab === 1 ? false : true;
+        } else if ($id === DTYPE_SUBMISSION) {
+            $ab = $sv->newv("sf_pdf_submission");
+            $args->required = $ab === 2 ? PaperOption::REQ_NO : PaperOption::REQ_SUBMIT;
+            $args->exists_if = $ab === 1 ? false : true;
+        } else if ($id === PaperOption::TOPICSID) {
+            $args->min = $sv->newv("topic_min");
+            $args->max = $sv->newv("topic_max");
+            $args->required = $args->min > 0 ? PaperOption::REQ_REGISTER : PaperOption::REQ_NO;
+        } else if ($id === PaperOption::AUTHORSID) {
+            $args->max = $sv->newv("sf_author_max");
         }
-        return $this->_basic_iopt[$id];
+        return PaperOption::make($this->conf, $args);
     }
 
 
@@ -771,6 +783,27 @@ class Options_SettingParser extends SettingParser {
         }
     }
 
+    /** @param Sf_Setting $sfs */
+    private function _transfer_topics_settings(SettingValues $sv, $ctr, $sfs) {
+        if ($sv->has_req("sf/{$ctr}/required")
+            && !$sv->has_req("sf/{$ctr}/min")) {
+            if ($sfs->required === 0) {
+                $sv->save("sf/{$ctr}/min", 0);
+            } else if ($sfs->required !== 0 && $sfs->min === 0) {
+                $sv->save("sf/{$ctr}/min", 1);
+            }
+        } else if ($sv->has_req("sf/{$ctr}/min")
+                   && !$sv->has_req("sf/{$ctr}/required")) {
+            if ($sfs->min === 0) {
+                $sv->save("sf/{$ctr}/required", 0);
+            } else if ($sfs->required === 0) {
+                $sv->save("sf/{$ctr}/required", PaperOption::REQ_REGISTER);
+            }
+        }
+        $sv->save("topic_min", $sv->newv("sf/{$ctr}/min") ?? 0);
+        $sv->save("topic_max", $sv->newv("sf/{$ctr}/max") ?? 0);
+    }
+
     /** @param SettingValues $sv
      * @param string $mname
      * @param PaperOption $oopt
@@ -822,11 +855,13 @@ class Options_SettingParser extends SettingParser {
         if ($sfs->option_id === PaperOption::ABSTRACTID
             || $sfs->option_id === DTYPE_SUBMISSION) {
             $this->_transfer_wizard_settings($sv, $ctr, $sfs);
+        } else if ($sfs->option_id === PaperOption::TOPICSID) {
+            $this->_transfer_topics_settings($sv, $ctr, $sfs);
         }
 
         // Enumerate difference between the basic intrinsic and the new value
         $isfsj = $this->basic_intrinsic_json($sfs->option_id);
-        $iopt = $this->basic_intrinsic_option($sfs->option_id);
+        $iopt = $this->basic_intrinsic_option($sfs->option_id, $sv);
         $isfs = $iopt->export_setting();
         $osfs = $sv->oldv("sf/{$ctr}");
         $oopt = $sfs->source_option;
