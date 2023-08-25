@@ -776,6 +776,14 @@ class Then_SearchTerm extends Op_SearchTerm {
         $this->_group_offsets[] = $group_offset;
         $param->set_then_term($this);
     }
+    function visit($visitor) {
+        // Only visit non-highlight terms
+        $x = [];
+        for ($i = 0; $i !== $this->nthen; ++$i) {
+            $x[] = $this->child[$i]->visit($visitor);
+        }
+        return $visitor($this, ...$x);
+    }
 
     /** @return list<SearchTerm> */
     function group_terms() {

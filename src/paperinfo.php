@@ -973,6 +973,17 @@ class PaperInfo {
         return ($this->_flags & self::PHASE_MASK) >> self::PHASE_SHIFT;
     }
 
+    /** @return 0|1 */
+    function visible_phase(Contact $user = null) {
+        $p = $this->phase();
+        if ($p === self::PHASE_FINAL
+            && $user
+            && !$user->can_view_decision($this)) {
+            $p = self::PHASE_REVIEW;
+        }
+        return $p;
+    }
+
 
     /** @param string $prop
      * @return mixed */

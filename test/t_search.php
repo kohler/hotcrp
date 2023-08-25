@@ -107,4 +107,22 @@ class Search_Tester {
         $st = (new PaperSearch($u, "(re:unnamed) OR (re:R1 OR re:R2)"))->main_term();
         xassert_eqq(Review_SearchTerm::term_round_mask($st), [7, false]);
     }
+
+    function test_term_phase() {
+        $u = $this->conf->root_user();
+        $st = (new PaperSearch($u, "phase:final"))->main_term();
+        xassert_eqq(Phase_SearchTerm::term_phase($st), PaperInfo::PHASE_FINAL);
+        $st = (new PaperSearch($u, "phase:review"))->main_term();
+        xassert_eqq(Phase_SearchTerm::term_phase($st), PaperInfo::PHASE_REVIEW);
+        $st = (new PaperSearch($u, "not phase:final"))->main_term();
+        xassert_eqq(Phase_SearchTerm::term_phase($st), null);
+        $st = (new PaperSearch($u, "all"))->main_term();
+        xassert_eqq(Phase_SearchTerm::term_phase($st), null);
+        $st = (new PaperSearch($u, "phase:final 1-10 OR phase:final 12-30"))->main_term();
+        xassert_eqq(Phase_SearchTerm::term_phase($st), PaperInfo::PHASE_FINAL);
+        $st = (new PaperSearch($u, "phase:final AND 1-10"))->main_term();
+        xassert_eqq(Phase_SearchTerm::term_phase($st), PaperInfo::PHASE_FINAL);
+        $st = (new PaperSearch($u, "phase:final 1-10 OR 12-30"))->main_term();
+        xassert_eqq(Phase_SearchTerm::term_phase($st), null);
+    }
 }

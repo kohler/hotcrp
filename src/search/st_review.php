@@ -274,14 +274,15 @@ class Review_SearchTerm extends SearchTerm {
             } else if ($st instanceof False_SearchTerm) {
                 $other = true;
                 return 0;
-            } else if ($st instanceof Or_SearchTerm) {
-                return Review_SearchTerm::round_mask_combine($args, false);
             } else if ($st instanceof And_SearchTerm) {
                 $mx = ~0;
                 foreach ($args as $m) {
                     $mx &= $m ?? ~0;
                 }
                 return $mx;
+            } else if ($st instanceof Or_SearchTerm
+                       || $st instanceof Then_SearchTerm) {
+                return Review_SearchTerm::round_mask_combine($args, false);
             } else if ($st instanceof Review_SearchTerm) {
                 $rsm = $st->review_matcher();
                 if ($rsm->sensitivity() !== ReviewSearchMatcher::HAS_ROUND) {

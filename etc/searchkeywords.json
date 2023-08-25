@@ -53,6 +53,10 @@
     },
     {   "name": "pcconflict", "alias": "pcconf"   },
     {
+        "name": "phase",
+        "parse_function": "Phase_SearchTerm::parse"
+    },
+    {
         "name": "reconflict",
         "parse_function": "Reconflict_SearchTerm::parse"
     },
