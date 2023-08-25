@@ -37,7 +37,7 @@ abstract class SearchTerm {
             assert($name === "then" || $name === "highlight");
             $qr = new Then_SearchTerm($op);
         }
-        foreach (is_array($terms) ? $terms : [$terms] as $qt) {
+        foreach ($terms as $qt) {
             $qr->append($qt);
         }
         return $qr->_finish();
@@ -335,6 +335,7 @@ abstract class Op_SearchTerm extends SearchTerm {
         }
         return $this;
     }
+    /** @return SearchTerm */
     abstract protected function _finish();
     /** @return list<SearchTerm> */
     protected function _flatten_children() {

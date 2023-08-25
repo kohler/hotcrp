@@ -392,7 +392,7 @@ class Options_SettingParser extends SettingParser {
             $this->pt->msg_at($io->formid, "<0>Present on final versions", MessageSet::WARNING_NOTE);
         }
         if (strcasecmp($this->sfs->editable_if, "none") === 0) {
-            $this->pt->msg_at($io->formid, "<0>Field frozen (not editable on any submissions)", MessageSet::WARNING_NOTE);
+            $this->pt->msg_at($io->formid, "<0>Frozen on all submissions (not editable)", MessageSet::WARNING_NOTE);
         } else if (strcasecmp($this->sfs->editable_if, "all") !== 0) {
             $this->pt->msg_at($io->formid, "<0>Editable on submissions matching ‘" . $this->sfs->editable_if . "’", MessageSet::WARNING_NOTE);
         }

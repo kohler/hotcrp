@@ -558,10 +558,15 @@ class PaperOption implements JsonSerializable {
     final function editable_condition() {
         return $this->editable_if;
     }
-    /** @param $x null|bool|string */
+    /** @param $x null|bool|string|SearchTerm */
     final function set_editable_condition($x) {
-        $this->editable_if = self::clean_condition($x);
-        $this->_editable_term = null;
+        if ($x instanceof SearchTerm) {
+            $this->editable_if = $x instanceof False_SearchTerm ? "NONE" : "<special>";
+            $this->_editable_term = $x;
+        } else {
+            $this->editable_if = self::clean_condition($x);
+            $this->_editable_term = null;
+        }
     }
     /** @return bool */
     final function test_editable(PaperInfo $prow) {

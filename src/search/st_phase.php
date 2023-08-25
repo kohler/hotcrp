@@ -7,9 +7,11 @@ class Phase_SearchTerm extends SearchTerm {
     private $user;
     /** @var int */
     private $phase;
+    /** @param ?Contact $user
+     * @param 0|1 $phase */
     function __construct($user, $phase) {
         parent::__construct("phase");
-        $this->user = $user->is_root_user() ? null : $user;
+        $this->user = !$user || $user->is_root_user() ? null : $user;
         $this->phase = $phase;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
