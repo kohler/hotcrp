@@ -451,6 +451,8 @@ class PaperOption implements JsonSerializable {
                    || $expr === ""
                    || strcasecmp($expr, "all") === 0) {
             return null;
+        } else if (strcasecmp($expr, "none") === 0) {
+            return "NONE";
         } else {
             return $expr;
         }
@@ -760,6 +762,7 @@ class PaperOption implements JsonSerializable {
         $sfs->required = $this->required;
         $sfs->exists_if = $this->exists_if
             ?? ($this->_phase === PaperInfo::PHASE_FINAL ? "phase:final" : "all");
+        $sfs->editable_if = $this->editable_if ?? "all";
         $sfs->source_option = $this;
         return $sfs;
     }
@@ -1421,10 +1424,10 @@ class Document_PaperOption extends PaperOption {
         }
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        if ($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL) {
-            if (($this->id === DTYPE_FINAL) !== ($pt->user->edit_paper_state($ov->prow) === 2)) {
-                return;
-            }
+        if (($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL)
+            && ($this->id === DTYPE_FINAL) !== ($pt->user->edit_paper_state($ov->prow) === 2)
+            && !$pt->settings_mode) {
+            return;
         }
 
         // XXXX this is super gross
@@ -1546,16 +1549,16 @@ class Document_PaperOption extends PaperOption {
         } else if (($d = $ov->document(0))) {
             if ($fr->want_text()) {
                 $fr->set_text($d->filename);
+            } else if ($fr->for_form()) {
+                $fr->set_html($d->link_html(htmlspecialchars($d->filename), 0));
             } else if ($fr->for_page()) {
+                $th = $this->title_html();
+                $dif = $this->display() === PaperOption::DISP_TOP ? 0 : DocumentInfo::L_SMALL;
                 $fr->title = "";
-                if ($this->display() === PaperOption::DISP_TOP) {
-                    $dif = 0;
-                } else {
-                    $dif = DocumentInfo::L_SMALL;
-                }
-                $fr->set_html($d->link_html('<span class="pavfn">' . $this->title_html() . '</span>', $dif));
+                $fr->set_html($d->link_html("<span class=\"pavfn\">{$th}</span>", $dif));
             } else {
-                $fr->set_html($d->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
+                $th = $fr->verbose() ? $d->export_filename() : "";
+                $fr->set_html($d->link_html($th, DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
             }
         }
     }

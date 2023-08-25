@@ -48,6 +48,7 @@ class Abstract_PaperOption extends PaperOption {
             if ($text !== "") {
                 $fr->value = $text;
                 $fr->value_format = $ov->prow->abstract_format();
+                $fr->value_long = true;
             } else if ($this->required && $fr->verbose()) {
                 $fr->set_text("[No abstract]");
             }

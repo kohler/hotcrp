@@ -479,6 +479,7 @@ class PaperTable {
     /** @param ?string $heading
      * @return void */
     function print_editable_option_papt(PaperOption $opt, $heading = null, $rest = []) {
+        $input = $rest["input"] ?? true;
         if (!isset($rest["for"])) {
             $for = $opt->readable_formid();
         } else {
@@ -490,7 +491,8 @@ class PaperTable {
             echo ' hidden';
         }
         if ($opt->has_complex_exists_condition()
-            && !$this->settings_mode) {
+            && !$this->settings_mode
+            && $input) {
             echo ' want-fieldchange has-edit-condition" data-edit-condition="', htmlspecialchars(json_encode_browser($opt->exists_script_expression($this->prow)));
             Ht::stash_script('$(hotcrp.paper_edit_conditions)', 'edit_condition');
         }
@@ -526,7 +528,11 @@ class PaperTable {
         }
         echo '</h3>';
         $this->print_field_description($opt);
-        echo Ht::hidden("has_{$opt->formid}", 1);
+        if ($input) {
+            echo Ht::hidden("has_{$opt->formid}", 1);
+        } else {
+            echo MessageSet::feedback_html([MessageItem::marked_note("<0>This field is not currently editable.")]);
+        }
     }
 
     /** @param array<string,int|string> $extra
@@ -909,7 +915,6 @@ class PaperTable {
             if ($n !== "" && $e !== "") {
                 $t .= " " . $e;
             }
-            $t = trim($t);
             if ($au->email !== ""
                 && $au->contactId
                 && $viewAs !== null
@@ -919,9 +924,9 @@ class PaperTable {
                     . $this->conf->selfurl($this->qreq, ["actas" => $au->email])
                     . "\">" . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($au, NAME_P)]) . "</a>";
             }
-            $names[] = '<p class="odname">' . $t . '</p>';
+            $names[] = '<li class="odname">' . $t . '</li>';
         }
-        return join("\n", $names);
+        return "<ul class=\"x\">" . join("\n", $names) . "</ul>";
     }
 
     /** @param list<Author> $aulist
@@ -1654,7 +1659,7 @@ class PaperTable {
         $rp = unparse_preference($this->prow->preference($this->user));
         $rp = ($rp == "0" ? "" : $rp);
         echo "<input id=\"revprefform_d\" type=\"text\" name=\"revpref", $this->prow->paperId,
-            "\" size=\"4\" value=\"$rp\" class=\"revpref want-focus want-select\">",
+            "\" size=\"4\" value=\"{$rp}\" class=\"revpref want-focus want-select\">",
             "</form></div>\n";
         Ht::stash_script("hotcrp.add_preference_ajax(\"#revprefform_d\",true);hotcrp.shortcut(\"revprefform_d\").add()");
     }
@@ -1960,7 +1965,7 @@ class PaperTable {
         if ($this->user->can_edit_paper($this->prow)
             && ($v = $this->conf->_i("submit"))) {
             if (!Ftext::is_ftext($v)) {
-                $v = "<5>$v";
+                $v = "<5>{$v}";
             }
             $this->_main_message($v, 0);
         }
@@ -2260,6 +2265,40 @@ class PaperTable {
         Ht::stash_script('$(hotcrp.load_editable_paper)');
     }
 
+    private function _print_editable_fields() {
+        $fr = new FieldRender(FieldRender::CFHTML | FieldRender::CFFORM | FieldRender::CFVERBOSE, $this->user);
+        $fr->table = $this;
+        foreach ($this->prow->form_fields() as $o) {
+            if (!$this->user->can_view_option($this->prow, $o)) {
+                continue;
+            }
+            $ov = $this->prow->force_option($o);
+            if (!$this->user->can_edit_option($this->prow, $o)) {
+                $fr->clear();
+                $o->render($fr, $ov);
+                if ($fr->value === "") {
+                    continue;
+                }
+                if ($o->type === "checkbox") {
+                    $heading = ($fr->value === "✓" ? "☑ " : "☐ ") . $this->edit_title_html($o);
+                    $fr->value = "";
+                } else {
+                    $heading = null;
+                }
+                $this->print_editable_option_papt($o, $heading, ["for" => false, "input" => false]);
+                echo $fr->value_html("papev w-text"), "</div>";
+                continue;
+            }
+            $reqov = $ov;
+            if ($this->useRequest
+                && $this->qreq["has_{$o->formid}"]
+                && ($x = $o->parse_qreq($this->prow, $this->qreq))) {
+                $reqov = $x;
+            }
+            $o->print_web_edit($this, $ov, $reqov);
+        }
+    }
+
     private function _print_editable_body() {
         $this->_print_editable_form();
         $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
@@ -2283,17 +2322,7 @@ class PaperTable {
         $this->_print_edit_messages(true);
 
         if (!$this->quit) {
-            foreach ($this->edit_fields as $o) {
-                $ov = $reqov = $this->prow->force_option($o);
-                if ($this->useRequest
-                    && $this->qreq["has_{$o->formid}"]
-                    && ($x = $o->parse_qreq($this->prow, $this->qreq))) {
-                    $reqov = $x;
-                }
-                $o->print_web_edit($this, $ov, $reqov);
-            }
-
-            // Submit button
+            $this->_print_editable_fields();
             $this->print_editable_complete();
             $this->print_actions();
         }

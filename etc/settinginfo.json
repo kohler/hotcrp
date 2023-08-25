@@ -282,6 +282,12 @@
         "parse_order": 3
     },
     {
+        "name_pattern": "sf/$/editcondition", "storage": "member.editable_if",
+        "title": "/Edit condition",
+        "type": "string", "subtype": "search", "size": 30, "placeholder": "Search",
+        "parse_order": 3
+    },
+    {
         "name_pattern": "sf/$/min",
         "title": "/Minimum value count",
         "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0

@@ -6,7 +6,7 @@
         "form_order": 10, "required": true,
         "display": "title",
         "function": "+Title_PaperOption",
-        "configurable": true, "properties": ["name", "description"]
+        "configurable": true, "properties": ["name", "description", "editcondition", "editable_if"]
     },
     {
         "name": "Paper", "id": 0,
@@ -16,7 +16,7 @@
         "display": "top",
         "type": "document",
         "function": "+Document_PaperOption",
-        "configurable": true, "properties": ["title", "description", "presence", "required"]
+        "configurable": true, "properties": ["title", "description", "condition", "exists_if", "editcondition", "editable_if", "required"]
     },
     {
         "name": "Final version", "id": -1,
@@ -26,7 +26,7 @@
         "display": "top",
         "type": "document",
         "function": "+Document_PaperOption",
-        "configurable": false
+        "configurable": true, "properties": ["name", "description", "condition", "exists_if", "editcondition", "editable_if", "required"]
     },
     {
         "name": "Abstract", "id": -1004,
@@ -35,7 +35,7 @@
         "form_order": 2001, "required": true,
         "display": "left", "page_expand": true,
         "function": "+Abstract_PaperOption",
-        "configurable": true, "properties": ["name", "description", "presence", "required"]
+        "configurable": true, "properties": ["name", "description", "condition", "exists_if", "editcondition", "editable_if", "required"]
     },
     {
         "name": "Authors", "id": -1001,
@@ -45,7 +45,7 @@
         "form_order": 3001, "required": true,
         "display": "right",
         "function": "+Authors_PaperOption",
-        "configurable": true, "properties": ["name", "description", "max"]
+        "configurable": true, "properties": ["name", "description", "editcondition", "editable_if", "max"]
     },
     {
         "name": "Submission anonymity", "id": -1002,
@@ -71,7 +71,7 @@
         "form_order": 3501,
         "display": "rest", "page_group": "topics",
         "function": "+Topics_PaperOption",
-        "configurable": true, "properties": ["name", "description", "presence", "required", "min", "max"]
+        "configurable": true, "properties": ["name", "description", "condition", "exists_if", "editcondition", "editable_if", "required", "min", "max"]
     },
     {
         "name": "PC conflicts", "id": -1006,

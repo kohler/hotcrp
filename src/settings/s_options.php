@@ -391,8 +391,10 @@ class Options_SettingParser extends SettingParser {
         if ($io->is_final()) {
             $this->pt->msg_at($io->formid, "<0>Present on final versions", MessageSet::WARNING_NOTE);
         }
-        if ($io->editable_condition()) {
-            $this->pt->msg_at($io->formid, "<0>Editable on submissions matching ‘" . $io->editable_condition() . "’", MessageSet::WARNING_NOTE);
+        if (strcasecmp($this->sfs->editable_if, "none") === 0) {
+            $this->pt->msg_at($io->formid, "<0>Field frozen (not editable on any submissions)", MessageSet::WARNING_NOTE);
+        } else if (strcasecmp($this->sfs->editable_if, "all") !== 0) {
+            $this->pt->msg_at($io->formid, "<0>Editable on submissions matching ‘" . $this->sfs->editable_if . "’", MessageSet::WARNING_NOTE);
         }
         foreach ($sv->message_list_at_prefix("sf/{$ctr}/") as $mi) {
             $this->pt->msg_at($io->formid, $mi->message, $mi->status > 0 ? MessageSet::WARNING_NOTE : $mi->status);
@@ -844,9 +846,15 @@ class Options_SettingParser extends SettingParser {
             return null;
         }
 
+        // Check for errors
+        if ($nopt->id === DTYPE_FINAL
+            && !$nopt->is_final()) {
+            $sv->error_at("sf/{$ctr}/condition", "<0>The final version field is restricted to being accessible on final versions.");
+        }
+
         // Produce the difference
         $ij = $iopt->jsonSerialize();
-        $nj = $this->_new_options[$sfs->id]->jsonSerialize();
+        $nj = $nopt->jsonSerialize();
         $dj = ["id" => $sfs->option_id, "merge" => true];
         foreach ($diffprop as $prop) {
             if (($ij->$prop ?? null) !== ($nj->$prop ?? null))

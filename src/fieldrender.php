@@ -18,15 +18,15 @@ class FieldRender {
     /** @var ?bool */
     public $value_long;
 
-    const CFHTML = 1;
-    const CFPAGE = 2;
-    const CFLIST = 4;
-    const CFCOLUMN = 8;
-    const CFSUGGEST = 16;
-    const CFCSV = 32;
-    const CFMAIL = 64;
-    const CFFORM = 128;
-    const CFVERBOSE = 256;
+    const CFHTML = 0x1;
+    const CFPAGE = 0x2;
+    const CFLIST = 0x4;
+    const CFCOLUMN = 0x8;
+    const CFSUGGEST = 0x10;
+    const CFCSV = 0x20;
+    const CFMAIL = 0x40;
+    const CFFORM = 0x80;
+    const CFVERBOSE = 0x100;
 
     const CTEXT = 0;
     const CPAGE = 3;
@@ -51,6 +51,10 @@ class FieldRender {
     /** @return bool */
     function for_page() {
         return ($this->context & self::CFPAGE) !== 0;
+    }
+    /** @return bool */
+    function for_form() {
+        return ($this->context & self::CFFORM) !== 0;
     }
     /** @return bool */
     function want_text() {

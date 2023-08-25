@@ -288,8 +288,29 @@ class Authors_PaperOption extends PaperOption {
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
-        if ($fr->table) {
+        if ($fr->for_page()) {
             $fr->table->render_authors($fr, $this);
+        } else {
+            $names = [];
+            foreach ($this->author_list($ov) as $au) {
+                $n = htmlspecialchars(trim("{$au->firstName} {$au->lastName}"));
+                if ($au->email !== "") {
+                    $ehtml = htmlspecialchars($au->email);
+                    $e = "&lt;<a href=\"mailto:{$ehtml}\" class=\"q\">{$ehtml}</a>&gt;";
+                } else {
+                    $e = "";
+                }
+                $t = ($n === "" ? $e : $n);
+                if ($au->affiliation !== "") {
+                    $t .= " <span class=\"auaff\">(" . htmlspecialchars($au->affiliation) . ")</span>";
+                }
+                if ($n !== "" && $e !== "") {
+                    $t .= " " . $e;
+                }
+                $names[] = '<li class="odname">' . $t . '</li>';
+            }
+            $fr->set_html("<ul class=\"x\">" . join("\n", $names) . "</ul>");
+            $fr->value_long = true;
         }
     }
 

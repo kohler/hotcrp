@@ -5,7 +5,11 @@
 class SubFieldCondition_SettingParser extends SettingParser {
     function print(SettingValues $sv) {
         $osp = $sv->cs()->callable("Options_SettingParser");
-        $sel = ["all" => "All submissions", "phase:final" => "Final versions only"];
+        $sel = [];
+        if ($osp->sfs->option_id !== DTYPE_FINAL) {
+            $sel["all"] = "All submissions";
+        }
+        $sel["phase:final"] = "Final versions only";
         $cond = $osp->sfs->exists_if ?? "all";
         $pres = strtolower($cond);
         if ($pres === "none" || $osp->sfs->option_id <= 0) {
@@ -19,23 +23,26 @@ class SubFieldCondition_SettingParser extends SettingParser {
     }
 
     /** @param SettingValues $sv
-     * @param string $pfx
+     * @param string $siname
      * @param PaperOption $field
      * @param string $q
      * @param 1|2 $status */
-    static function validate1($sv, $pfx, $field, $q, $status) {
+    static function validate1($sv, $siname, $field, $q, $status) {
+        if ($q === null || $q === "NONE" || $q === "phase:final") {
+            return;
+        }
         $ps = new PaperSearch($sv->conf->root_user(), $q);
         foreach ($ps->message_list() as $mi) {
-            $sv->append_item_at("{$pfx}/condition", $mi);
+            $sv->append_item_at($siname, $mi);
         }
         try {
             $fake_prow = PaperInfo::make_placeholder($sv->conf, -1);
             if ($ps->main_term()->script_expression($fake_prow) === null) {
-                $sv->msg_at("{$pfx}/condition", "<0>Invalid search in field condition", $status);
-                $sv->inform_at("{$pfx}/condition", "<0>Field conditions are limited to simple search keywords.");
+                $sv->msg_at($siname, "<0>Invalid search in field condition", $status);
+                $sv->inform_at($siname, "<0>Field conditions are limited to simple search keywords.");
             }
         } catch (ErrorException $e) {
-            $sv->msg_at("{$pfx}/condition", "<0>Field condition is defined in terms of itself", 2);
+            $sv->msg_at($siname, "<0>Field condition is defined in terms of itself", 2);
         }
     }
 
@@ -43,8 +50,9 @@ class SubFieldCondition_SettingParser extends SettingParser {
         if ($sv->has_interest("sf")) {
             $opts = Options_SettingParser::configurable_options($sv->conf);
             foreach ($opts as $ctrz => $f) {
-                if ($f->exists_condition())
-                    self::validate1($sv, "sf/" . ($ctrz + 1), $f, $f->exists_condition(), 1);
+                $ctr = $ctrz + 1;
+                self::validate1($sv, "sf/{$ctr}/condition", $f, $f->exists_condition(), 1);
+                self::validate1($sv, "sf/{$ctr}/editcondition", $f, $f->editable_condition(), 1);
             }
         }
     }
@@ -53,8 +61,10 @@ class SubFieldCondition_SettingParser extends SettingParser {
         $opts = Options_SettingParser::configurable_options($sv->conf);
         $osp = $sv->cs()->callable("Options_SettingParser");
         foreach ($opts as $f) {
-            if ($f->exists_condition() && isset($osp->option_id_to_ctr[$f->id]))
-                self::validate1($sv, "sf/" . $osp->option_id_to_ctr[$f->id], $f, $f->exists_condition(), 2);
+            if (($ctr = $osp->option_id_to_ctr[$f->id] ?? null) !== null) {
+                self::validate1($sv, "sf/{$ctr}/condition", $f, $f->exists_condition(), 2);
+                self::validate1($sv, "sf/{$ctr}/editcondition", $f, $f->editable_condition(), 2);
+            }
         }
     }
 }

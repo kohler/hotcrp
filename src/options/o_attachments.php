@@ -188,6 +188,8 @@ class Attachments_PaperOption extends PaperOption {
                 $linkname = htmlspecialchars($d->member_filename());
                 if ($fr->want_list()) {
                     $dif = DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE;
+                } else if ($fr->for_form()) {
+                    $dif = 0;
                 } else if ($this->display() === PaperOption::DISP_TOP) {
                     $dif = 0;
                     $linkname = '<span class="pavfn">' . $this->title_html() . '</span>/' . $linkname;

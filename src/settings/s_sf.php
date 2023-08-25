@@ -13,6 +13,7 @@ class Sf_Setting {
     public $visibility;
     public $required;
     public $exists_if;
+    public $editable_if;
     public $values;
     public $ids;
     public $min;
