@@ -166,32 +166,27 @@ class PaperOptionList implements IteratorAggregate {
         }
 
         // return unless overrides exist and are desired
-        if (!$all) {
-            return $map;
-        }
         $s1 = $conf->opt("intrinsicOptions");
-        $s2 = $conf->setting_json("ioptions");
+        $s2 = $all ? $conf->setting_json("ioptions") : null;
         if (!$s1 && !$s2) {
             return $map;
         }
 
         $accum = [];
-        foreach ($map as $j) {
-            $accum[(string) $j->id][] = $j;
-        }
         expand_json_includes_callback([$s1, $s2], function ($j) use (&$accum) {
             if (is_int($j->id)) {
-                $accum[(string) $j->id][] = $j;
+                $accum[$j->id][] = $j;
                 return true;
             } else {
                 return false;
             }
         });
         $xtp = new XtParams($conf, null);
-        $map = [];
-        foreach ($accum as $id => $x) {
-            if (($ij = $xtp->search_name($accum, $id)))
-                $map[$ij->id] = $ij;
+        foreach ($accum as $id => $list) {
+            if (isset($map[$id])) {
+                $list[] = $map[$id];
+                $map[$id] = $xtp->search_list($list);
+            }
         }
         return $map;
     }

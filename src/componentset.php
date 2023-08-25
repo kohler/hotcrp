@@ -196,8 +196,8 @@ class ComponentSet {
      * @return list<object> */
     function members($name, $require_key = null) {
         if (!isset($this->_potential_members[$name])
-            && ($gj = $this->get($name))) {
-            $name = $gj->name;
+            && ($xj = $this->get($name))) {
+            $name = $xj->name;
         }
         $r = [];
         $alias = false;

@@ -450,24 +450,16 @@ class Options_SettingParser extends SettingParser {
         if ($sv->has_req("sf/{$ctr}/template")) {
             echo Ht::hidden("sf/{$ctr}/template", $sv->reqstr("sf/{$ctr}/template"));
         }
-        $sv->print("submissionfield/properties/name");
-        $sv->print("submissionfield/properties/type");
-        $props = $this->typej->properties ?? ["default"];
-        $has_default = in_array("default", $props);
-        if ($has_default) {
-            $sv->print("submissionfield/properties/description");
+        $props = $this->typej->properties ?? ["common"];
+        $has_common = in_array("common", $props);
+        foreach ($sv->cs()->members("submissionfield/properties") as $j) {
+            $prop = substr($j->name, strlen($j->group) + 1);
+            if (in_array($prop, ["name", "type", "actions"])
+                || ($has_common && ($j->common ?? false))
+                || in_array($prop, $props)) {
+                $sv->print($j->name);
+            }
         }
-        foreach ($props as $prop) {
-            if ($prop !== "default" && $prop !== "name")
-                $sv->print("submissionfield/properties/{$prop}");
-        }
-        if ($has_default) {
-            $sv->print("submissionfield/properties/presence");
-            $sv->print("submissionfield/properties/required");
-            $sv->print("submissionfield/properties/visibility");
-            $sv->print("submissionfield/properties/display");
-        }
-        $sv->print("submissionfield/properties/actions");
         echo '</div>';
 
         if ($mode !== self::MODE_SAMPLE) {

@@ -8,20 +8,20 @@
         "has_values": true, "function": "+Selector_PaperOption",
         "sample": {"values": ["Option 1", "Option 2", "Option 3"]},
         "convert_from_functions": {"radio": true},
-        "properties": ["default", "values"]
+        "properties": ["common", "values"]
     },
     {
         "name": "radio", "title": "Radio buttons", "order": 300,
         "has_values": true, "function": "+Selector_PaperOption",
         "sample": {"values": ["Option 1", "Option 2", "Option 3"]},
         "convert_from_functions": {"dropdown": true},
-        "properties": ["default", "values"]
+        "properties": ["common", "values"]
     },
     {
         "name": "checkboxes", "title": "Checkboxes", "order": 350,
         "has_values": true, "function": "+Checkboxes_PaperOption",
         "sample": {"values": ["Option 1", "Option 2", "Group: Entry 1", "Group: Entry 2"]},
-        "properties": ["default", "values"]
+        "properties": ["common", "values"]
     },
     {
         "name": "numeric", "title": "Whole number", "order": 400,

@@ -16,7 +16,7 @@
         "display": "top",
         "type": "document",
         "function": "+Document_PaperOption",
-        "configurable": true, "properties": ["title","description","presence","required"]
+        "configurable": true, "properties": ["title", "description", "presence", "required"]
     },
     {
         "name": "Final version", "id": -1,

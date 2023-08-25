@@ -162,16 +162,35 @@
     },
     [   "submissionfield/properties/name", 1, "*Options_SettingParser::print_name"   ],
     [   "submissionfield/properties/type", 10, "*Options_SettingParser::print_type"   ],
-    [   "submissionfield/properties/description", 20, "*Options_SettingParser::print_description"   ],
+    {
+        "name": "submissionfield/properties/description", "order": 20,
+        "print_function": "*Options_SettingParser::print_description",
+        "common": true
+    },
     {
         "name": "submissionfield/properties/values", "order": 25,
-        "print_function": "*Options_SettingParser::print_values",
-        "is_default": false
+        "print_function": "*Options_SettingParser::print_values"
     },
-    [   "submissionfield/properties/presence", 30, "*Options_SettingParser::print_presence"   ],
-    [   "submissionfield/properties/required", 31, "*Options_SettingParser::print_required"   ],
-    [   "submissionfield/properties/visibility", 40, "*Options_SettingParser::print_visibility"   ],
-    [   "submissionfield/properties/display", 50, "*Options_SettingParser::print_display"   ],
+    {
+        "name": "submissionfield/properties/presence", "order": 30,
+        "print_function": "*Options_SettingParser::print_presence",
+        "common": true
+    },
+    {
+        "name": "submissionfield/properties/required", "order": 35,
+        "print_function": "*Options_SettingParser::print_required",
+        "common": true
+    },
+    {
+        "name": "submissionfield/properties/visibility", "order": 40,
+        "print_function": "*Options_SettingParser::print_visibility",
+        "common": true
+    },
+    {
+        "name": "submissionfield/properties/display", "order": 50,
+        "print_function": "*Options_SettingParser::print_display",
+        "common": true
+    },
     [   "submissionfield/properties/actions", 10000, "*Options_SettingParser::print_actions"   ],
     {
         "name": "topics", "group": "subform", "order": 480,

@@ -613,7 +613,7 @@ class PaperInfo {
     const HAS_PHASE = 0x8000;
     const PHASE_MASK = 0xF0000;
     const PHASE_SHIFT = 16;
-    const PHASE_NORMAL = 0; // default
+    const PHASE_REVIEW = 0; // default
     const PHASE_FINAL = 1;  // accepted, collecting final versions, author can see decision
                             // (NB final versions might not be open at the moment)
 
@@ -957,7 +957,7 @@ class PaperInfo {
     /** @return 0|1 */
     function phase() {
         if ($this->outcome_sign <= 0) {
-            return self::PHASE_NORMAL;
+            return self::PHASE_REVIEW;
         }
         $this->check_rights_version();
         if (($this->_flags & self::HAS_PHASE) === 0) {
@@ -966,7 +966,7 @@ class PaperInfo {
                 && $this->can_author_view_decision()) {
                 $phase = self::PHASE_FINAL;
             } else {
-                $phase = self::PHASE_NORMAL;
+                $phase = self::PHASE_REVIEW;
             }
             $this->_flags = ($phase & ~self::PHASE_MASK) | self::HAS_PHASE | ($phase << self::PHASE_SHIFT);
         }
