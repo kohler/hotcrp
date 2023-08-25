@@ -207,8 +207,8 @@ class Mail_Page {
                 && $o->on_render_context(FieldRender::CFMAIL);
         });
         usort($opts, function ($a, $b) {
-            if ($a->final !== $b->final) {
-                return $a->final ? 1 : -1;
+            if ($a->is_final() !== $b->is_final()) {
+                return $a->is_final() ? 1 : -1;
             } else {
                 return PaperOption::compare($a, $b);
             }
