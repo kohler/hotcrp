@@ -5,19 +5,6 @@
 class Topics_PaperOption extends CheckboxesBase_PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        if ($conf->setting("has_topics")) {
-            if (!isset($args->min)) {
-                $this->min_count = $conf->setting("topic_min") ?? $this->min_count;
-            }
-            if (!isset($args->max)) {
-                $this->max_count = $conf->setting("topic_max") ?? 0;
-            }
-            if ($this->min_count > 0 && $this->required === 0) {
-                $this->required = self::REQ_REGISTER;
-            }
-        } else {
-            $this->set_exists_condition(false);
-        }
     }
 
     function jsonSerialize() {

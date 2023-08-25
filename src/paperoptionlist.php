@@ -22,9 +22,6 @@ class PaperOptionList implements IteratorAggregate {
     /** @var AbbreviationMatcher<PaperOption> */
     private $_nonpaper_am;
 
-    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"Paper","type":"submission","json_key":"submission","form_order":1001,"display":"top","type":"document","configurable":true,"properties":["title","description","presence","required"],"function":"+Document_PaperOption"}';
-    const DTYPE_FINAL_JSON = '{"id":-1,"name":"Final version","type":"finalversion","json_key":"final","final":true,"form_order":1002,"display":"top","type":"document","configurable":false,"function":"+Document_PaperOption"}';
-
     function __construct(Conf $conf) {
         $this->conf = $conf;
     }
@@ -123,57 +120,93 @@ class PaperOptionList implements IteratorAggregate {
         }
     }
 
-    /** @param bool $all
+    /** @param null|Conf|SettingValuesConf $vconf
+     * @param bool $all
      * @return array<int,object> */
-    static function make_intrinsic_json_map(Conf $conf, $all) {
-        $sources = [
-            "etc/intrinsicoptions.json",
-            self::DTYPE_SUBMISSION_JSON,
-            self::DTYPE_FINAL_JSON
-        ];
-        if ($all && ($s = $conf->opt("intrinsicOptions"))) {
-            $sources[] = $s;
+    static function make_intrinsic_json_map(Conf $conf, $vconf, $all) {
+        // start with fixed defaults
+        $map = [];
+        foreach (json_decode(file_get_contents(SiteLoader::find("etc/intrinsicoptions.json"))) as $j) {
+            $map[$j->id] = $j;
         }
-        if ($all && ($s = $conf->setting_json("ioptions"))) {
-            $sources[] = $s;
+
+        // add information extracted from conference settings
+        if ($vconf) {
+            if (($xv = $vconf->opt("noAbstract")) > 0) {
+                $map[PaperOption::ABSTRACTID]->required = $xv !== 2;
+                $map[PaperOption::ABSTRACTID]->presence = $xv === 1 ? "none" : "all";
+            }
+            if (($xv = $vconf->opt("noPapers")) > 0) {
+                $map[DTYPE_SUBMISSION]->required = $map[DTYPE_FINAL]->required = $xv === 2 ? false : "submit";
+                $map[DTYPE_SUBMISSION]->presence = $map[DTYPE_FINAL]->presence = $xv === 1 ? "none" : "all";
+            }
+            if (($xv = $vconf->opt("maxAuthors") ?? 0) > 0) {
+                $map[PaperOption::AUTHORSID]->max = $xv;
+            }
+            if (!$vconf->setting("has_topics")) {
+                $map[PaperOption::TOPICSID]->presence = "none";
+            } else {
+                $xv = $vconf->setting("topic_min");
+                $xv1 = $vconf->setting("topic_max");
+                if ($xv > 0 || $xv1 > 0) {
+                    $map[PaperOption::TOPICSID]->min = $xv;
+                    $map[PaperOption::TOPICSID]->max = $xv1;
+                    $map[PaperOption::TOPICSID]->required = $xv > 0;
+                }
+            }
+            $xv = $vconf->setting("sub_pcconf");
+            $xv1 = $vconf->setting("sub_pcconfsel");
+            if (!$xv || $xv1) {
+                $map[PaperOption::PCCONFID]->presence = $xv ? "all" : "none";
+                $map[PaperOption::PCCONFID]->selectors = !!$xv1;
+            }
+            if (!$vconf->setting("sub_collab")) {
+                $map[PaperOption::COLLABORATORSID]->presence = "none";
+            }
+        }
+
+        // return unless overrides exist and are desired
+        if (!$all) {
+            return $map;
+        }
+        $s1 = $conf->opt("intrinsicOptions");
+        $s2 = $conf->setting_json("ioptions");
+        if (!$s1 && !$s2) {
+            return $map;
         }
 
         $accum = [];
-        foreach ($sources as $s) {
-            expand_json_includes_callback($s, function ($j) use (&$accum) {
+        foreach ($map as $j) {
+            $accum[(string) $j->id][] = $j;
+        }
+        expand_json_includes_callback([$s1, $s2], function ($j) use (&$accum) {
+            if (is_int($j->id)) {
                 $accum[(string) $j->id][] = $j;
                 return true;
-            });
-        }
-
+            } else {
+                return false;
+            }
+        });
         $xtp = new XtParams($conf, null);
-        $m = [];
+        $map = [];
         foreach ($accum as $id => $x) {
             if (($ij = $xtp->search_name($accum, $id)))
-                $m[$ij->id] = $ij;
+                $map[$ij->id] = $ij;
         }
-        return $m;
+        return $map;
     }
 
     /** @return array<int,object> */
     function intrinsic_json_map() {
         if ($this->_ijmap === null) {
-            $this->_ijmap = self::make_intrinsic_json_map($this->conf, true);
+            $this->_ijmap = self::make_intrinsic_json_map($this->conf, $this->conf, true);
         }
         return $this->_ijmap;
     }
 
     /** @param int $id */
     private function populate_intrinsic($id) {
-        if (($id === DTYPE_SUBMISSION || $id === DTYPE_FINAL)
-            && !$this->conf->opt("intrinsicOptions")
-            && !$this->conf->setting("ioptions")) {
-            $oj = json_decode($id === DTYPE_SUBMISSION
-                              ? self::DTYPE_SUBMISSION_JSON
-                              : self::DTYPE_FINAL_JSON);
-        } else {
-            $oj = ($this->intrinsic_json_map())[$id] ?? null;
-        }
+        $oj = ($this->intrinsic_json_map())[$id] ?? null;
         $opt = $oj ? PaperOption::make($this->conf, $oj) : null;
         $this->_imap[$id] = $opt;
     }

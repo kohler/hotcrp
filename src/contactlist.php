@@ -717,7 +717,7 @@ class ContactList {
                 $roles = 0;
             }
             if ($roles !== 0 && ($rolet = Contact::role_html_for($roles))) {
-                $t .= " $rolet";
+                $t .= " {$rolet}";
             }
             if ($this->user->privChair && $row->email != $this->user->email) {
                 $t .= " <a href=\"" . $this->conf->hoturl("index", "actas=" . urlencode($row->email)) . "\">"

@@ -1785,11 +1785,10 @@ th.settings-simplehead {
 	max-height: 10rem;
 }
 .settings-sf-final > .settings-xf-view {
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cpath d='M0 0l-34 34l17 0l34 -34z' fill='%23f9fbfb' /%3E%3Cpath d='M34 0l-34 34l17 0l34 -34z' fill='%23f9fbfb' /%3E%3Cpath d='M17 0l-34 34l17 0l34 -34z' fill='%23e8f9ea' /%3E%3Cpath d='M51 0l-34 34l17 0l34 -34z' fill='%23e8f9ea' /%3E%3C/svg%3E");
-	background-color: #f5f2f2;
+	background-color: #effcf0;
 }
 .settings-sf-final > .settings-xf-view:hover {
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cpath d='M0 0l-34 34l17 0l34 -34z' fill='%23ecf2f4' /%3E%3Cpath d='M34 0l-34 34l17 0l34 -34z' fill='%23ecf2f4' /%3E%3Cpath d='M17 0l-34 34l17 0l34 -34z' fill='%23cce8d1' /%3E%3Cpath d='M51 0l-34 34l17 0l34 -34z' fill='%23cce8d1' /%3E%3C/svg%3E");
+	background-color: #e8f5e9;
 }
 .settings-xf-disabled > .settings-xf-view {
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cpath d='M0 0l-34 34l17 0l34 -34z' fill='%23f9fbfb' /%3E%3Cpath d='M34 0l-34 34l17 0l34 -34z' fill='%23f9fbfb' /%3E%3Cpath d='M17 0l-34 34l17 0l34 -34z' fill='%23f5f2f2' /%3E%3Cpath d='M51 0l-34 34l17 0l34 -34z' fill='%23f5f2f2' /%3E%3C/svg%3E");

@@ -702,6 +702,17 @@ class PaperOption implements JsonSerializable {
         return $j;
     }
 
+    /** @return 'none'|'custom'|'all' */
+    static function presence_for_condition($condition) {
+        if ($condition === "NONE") {
+            return "none";
+        } else if ($condition) {
+            return "custom";
+        } else {
+            return "all";
+        }
+    }
+
     /** @return Sf_Setting */
     function export_setting() {
         $sfs = new Sf_Setting;
@@ -728,15 +739,10 @@ class PaperOption implements JsonSerializable {
         $sfs->order = $this->order;
         $sfs->visibility = $this->unparse_visibility();
         $sfs->required = $this->required;
-        if ($this->exists_if === "NONE" && $this->id <= 0) {
-            $sfs->presence = "none";
-            $sfs->exists_if = $this->exists_if;
-        } else if ($this->exists_if) {
-            $sfs->presence = "custom";
-            $sfs->exists_if = $this->exists_if;
-        } else {
-            $sfs->presence = $this->final ? "final" : "all";
-            $sfs->exists_if = null;
+        $sfs->presence = self::presence_for_condition($this->exists_if);
+        $sfs->exists_if = $this->exists_if;
+        if ($this->final && $sfs->presence === "all") {
+            $sfs->presence = "final";
         }
         $sfs->source_option = $this;
         return $sfs;
@@ -1273,15 +1279,6 @@ class Selector_PaperOption extends PaperOption {
 class Document_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        if ($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL) {
-            $onp = (int) $this->conf->opt("noPapers");
-            if (!isset($args->required)) {
-                $this->set_required($onp === 2 ? self::REQ_NO : self::REQ_SUBMIT);
-            }
-            if (!isset($args->exists_if) && $onp === 1) {
-                $this->set_exists_condition(false);
-            }
-        }
     }
 
     function is_document() {

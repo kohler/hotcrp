@@ -5,7 +5,6 @@
 class Collaborators_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        $this->set_exists_condition(!!$this->conf->setting("sub_collab"));
     }
     function value_force(PaperValue $ov) {
         if (($collab = $ov->prow->collaborators()) !== "") {

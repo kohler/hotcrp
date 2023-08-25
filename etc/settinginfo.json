@@ -186,7 +186,8 @@
     {
         "name": "sf",
         "type": "oblist", "parser_class": "Options_SettingParser",
-        "title": "Submission form"
+        "title": "Submission form",
+        "parse_order": 1
     },
     {
         "name_pattern": "sf/$",
@@ -225,7 +226,7 @@
     },
     {
         "name_pattern": "sf/$/values", "type": "oblist", "storage": "member.xvalues",
-        "parser_class": "Options_SettingParser", "parse_order": 2,
+        "parser_class": "Options_SettingParser", "parse_order": 3,
         "title": "/Value list",
         "hashid": "sf/$/values_text"
     },
@@ -255,7 +256,7 @@
         "name_pattern": "sf/$/values_text", "storage": "none",
         "title": "/Choices",
         "type": "longstring", "size": 3, "autogrow": true,
-        "parser_class": "Options_SettingParser", "parse_order": 1,
+        "parser_class": "Options_SettingParser", "parse_order": 2,
         "json": false
     },
     {
@@ -283,7 +284,7 @@
         "name_pattern": "sf/$/condition", "storage": "member.exists_if",
         "title": "/Presence condition",
         "type": "string", "subtype": "search", "size": 30, "placeholder": "Search",
-        "parser_class": "SubFieldCondition_SettingParser", "parse_order": 2
+        "parser_class": "SubFieldCondition_SettingParser", "parse_order": 3
     },
     {
         "name_pattern": "sf/$/min",
@@ -301,7 +302,6 @@
         "type": "radio",
         "values": [0, 2, 1, -1], "default_value": 0,
         "json_values": ["required", "optional", "none", "other"],
-        "parse_order": -1,
         "json": "in"
     },
     {
@@ -310,7 +310,6 @@
         "type": "radio",
         "values": [0, 2, 1, -1], "default_value": 0,
         "json_values": ["required", "optional", "none", "other"],
-        "parse_order": -1,
         "json": "in"
     },
     {
@@ -329,26 +328,22 @@
         "name": "sf_author_max", "storage": "ova.maxAuthors", "type": "nonnegint",
         "title": "Maximum authors per submission",
         "default_value": 0,
-        "parse_order": -1,
         "json": "in"
     },
     {
         "name": "sf_pc_conflicts", "storage": "sub_pcconf",
         "title": "Collect PC conflicts",
-        "type": "checkbox", "initial_value": 1,
-        "parse_order": -1
+        "type": "checkbox", "initial_value": 1
     },
     {
         "name": "sf_pc_conflict_types", "storage": "sub_pcconfsel",
         "title": "Collect PC conflict types",
-        "type": "checkbox",
-        "parse_order": -1
+        "type": "checkbox"
     },
     {
         "name": "sf_collaborators", "storage": "sub_collab",
         "title": "Collect other conflicts and collaborators",
-        "type": "checkbox",
-        "parse_order": -1
+        "type": "checkbox"
     },
 
 
@@ -1052,14 +1047,12 @@
         "name": "topic_max", "storage": "topic_max", "type": "nonnegint",
         "title": "Maximum topics per submission",
         "default_value": 0,
-        "parse_order": -1,
         "json": "in"
     },
     {
         "name": "topic_min", "storage": "topic_min", "type": "nonnegint",
         "title": "Minimum topics per submission",
         "default_value": 0,
-        "parse_order": -1,
         "json": "in"
     },
 

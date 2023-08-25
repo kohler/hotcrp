@@ -31,6 +31,8 @@ class Options_SettingParser extends SettingParser {
     private $_last_ctr;
 
     // for parsing
+    /** @var array<int,object> */
+    private $_intermediate_ijmap;
     /** @var list<int> */
     private $_delete_optionids = [];
     /** @var list<array{string,PaperOption}> */
@@ -59,7 +61,7 @@ class Options_SettingParser extends SettingParser {
     /** @return array<int,object> */
     function basic_intrinsic_json_map() {
         if ($this->_basic_ijmap === null) {
-            $this->_basic_ijmap = PaperOptionList::make_intrinsic_json_map($this->conf, false);
+            $this->_basic_ijmap = PaperOptionList::make_intrinsic_json_map($this->conf, null, false);
         }
         return $this->_basic_ijmap;
     }
@@ -73,24 +75,11 @@ class Options_SettingParser extends SettingParser {
     /** @param int $id
      * @param SettingValues $sv
      * @return PaperOption */
-    function basic_intrinsic_option($id, $sv) {
-        $args = clone $this->basic_intrinsic_json($id);
-        if ($id === PaperOption::ABSTRACTID) {
-            $ab = $sv->newv("sf_abstract");
-            $args->required = $ab === 2 ? PaperOption::REQ_NO : PaperOption::REQ_REGISTER;
-            $args->exists_if = $ab === 1 ? false : true;
-        } else if ($id === DTYPE_SUBMISSION) {
-            $ab = $sv->newv("sf_pdf_submission");
-            $args->required = $ab === 2 ? PaperOption::REQ_NO : PaperOption::REQ_SUBMIT;
-            $args->exists_if = $ab === 1 ? false : true;
-        } else if ($id === PaperOption::TOPICSID) {
-            $args->min = $sv->newv("topic_min");
-            $args->max = $sv->newv("topic_max");
-            $args->required = $args->min > 0 ? PaperOption::REQ_REGISTER : PaperOption::REQ_NO;
-        } else if ($id === PaperOption::AUTHORSID) {
-            $args->max = $sv->newv("sf_author_max");
+    function intermediate_intrinsic_option($id, $sv) {
+        if ($this->_intermediate_ijmap === null) {
+            $this->_intermediate_ijmap = PaperOptionList::make_intrinsic_json_map($this->conf, $sv->make_svconf(), false);
         }
-        return PaperOption::make($this->conf, $args);
+        return PaperOption::make($this->conf, $this->_intermediate_ijmap[$id]);
     }
 
 
@@ -317,12 +306,13 @@ class Options_SettingParser extends SettingParser {
     }
 
     function print_presence(SettingValues $sv) {
-        $sv->print_select_group("sf/{$this->ctr}/presence", "Present on", [
-            "all" => "All submissions",
-            "final" => "Final versions only"
-        ], [
-            "horizontal" => true
-        ]);
+        $sel = ["all" => "All submissions", "final" => "Final versions only"];
+        if ($this->sfs->presence === "custom") {
+            $sel["custom"] = "Custom…";
+        } else if ($this->sfs->presence === "none") {
+            $sel["none"] = "Disabled";
+        }
+        $sv->print_select_group("sf/{$this->ctr}/presence", "Present on", $sel, ["horizontal" => true]);
     }
 
     function print_required(SettingValues $sv) {
@@ -400,16 +390,14 @@ class Options_SettingParser extends SettingParser {
 
 
     private function print_one_option_view(PaperOption $io, SettingValues $sv, $ctr) {
-        $disabled = $io->exists_condition() === "NONE";
-        echo '<div id="sf/', $ctr, '/view" class="settings-xf-view',
-            $disabled ? ' settings-xf-disabled' : '',
-            ' fn2 ui js-foldup">';
+        $disabled = $this->sfs->presence === "none";
+        echo '<div id="sf/', $ctr, '/view" class="settings-xf-view fn2 ui js-foldup">';
         if ($disabled) {
             $this->pt->msg_at($io->formid, "<0>This field is currently disabled", MessageSet::URGENT_NOTE);
-        } else if ($io->exists_condition()) {
-            $this->pt->msg_at($io->formid, "<0>Present on submissions matching ‘" . $io->exists_condition() . "’", MessageSet::WARNING_NOTE);
+        } else if ($this->sfs->exists_if) {
+            $this->pt->msg_at($io->formid, "<0>Present on submissions matching ‘" . $this->sfs->exists_if . "’", MessageSet::WARNING_NOTE);
         }
-        if ($io->final) {
+        if ($this->sfs->presence === "final" || $io->final) {
             $this->pt->msg_at($io->formid, "<0>Present on final versions", MessageSet::WARNING_NOTE);
         }
         if ($io->editable_condition()) {
@@ -445,7 +433,7 @@ class Options_SettingParser extends SettingParser {
 
         echo '<div id="sf/', $ctr, '" class="settings-xf settings-sf ',
             $this->sfs->existed ? '' : 'is-new ',
-            $this->sfs->source_option->exists_condition() === "NONE" ? 'settings-xf-disabled ' : '',
+            $this->sfs->presence === "none" ? 'settings-xf-disabled ' : '',
             $this->sfs->source_option->final ? 'settings-sf-final ' : '',
             'has-fold fold2o ui-fold js-fold-focus hidden">';
         if ($this->sfs->option_id !== PaperOption::TITLEID) {
@@ -748,7 +736,7 @@ class Options_SettingParser extends SettingParser {
     // settings.
 
     /** @param Sf_Setting $sfs */
-    private function _transfer_wizard_settings(SettingValues $sv, $ctr, $sfs) {
+    private function _assign_abstract_wizard_settings(SettingValues $sv, $ctr, $sfs) {
         if ($sfs->option_id === PaperOption::ABSTRACTID) {
             $wizkey = "sf_abstract";
             $default_required = PaperOption::REQ_REGISTER;
@@ -784,7 +772,7 @@ class Options_SettingParser extends SettingParser {
     }
 
     /** @param Sf_Setting $sfs */
-    private function _transfer_topics_settings(SettingValues $sv, $ctr, $sfs) {
+    private function _assign_topics_wizard_settings(SettingValues $sv, $ctr, $sfs) {
         if ($sv->has_req("sf/{$ctr}/required")
             && !$sv->has_req("sf/{$ctr}/min")) {
             if ($sfs->required === 0) {
@@ -823,22 +811,6 @@ class Options_SettingParser extends SettingParser {
             $fr->clear();
             $nopt->render_default_description($fr);
             return [$d1, $fr->value_html()];
-        } else if ($mname === "required") {
-            if ($nopt->id === PaperOption::ABSTRACTID) {
-                return [$sv->newv("sf_abstract") == 2 ? 0 : PaperOption::REQ_REGISTER];
-            } else if ($nopt->id === DTYPE_SUBMISSION) {
-                return [$sv->newv("sf_pdf_submission") == 2 ? 0 : PaperOption::REQ_SUBMIT];
-            } else {
-                return [$isfs->required];
-            }
-        } else if ($mname === "presence") {
-            if ($nopt->id === PaperOption::ABSTRACTID) {
-                return [$sv->newv("sf_abstract") == 1 ? "none" : "all"];
-            } else if ($nopt->id === DTYPE_SUBMISSION) {
-                return [$sv->newv("sf_pdf_submission") == 1 ? "none" : "all"];
-            } else {
-                return [$isfs->presence];
-            }
         } else {
             return [$isfs->$mname];
         }
@@ -851,17 +823,9 @@ class Options_SettingParser extends SettingParser {
                                                  $sfs, $nopt,
                                                  &$last_form_order,
                                                  &$last_display_order) {
-        // Set wizard values
-        if ($sfs->option_id === PaperOption::ABSTRACTID
-            || $sfs->option_id === DTYPE_SUBMISSION) {
-            $this->_transfer_wizard_settings($sv, $ctr, $sfs);
-        } else if ($sfs->option_id === PaperOption::TOPICSID) {
-            $this->_transfer_topics_settings($sv, $ctr, $sfs);
-        }
-
-        // Enumerate difference between the basic intrinsic and the new value
+        // Enumerate difference between the expected intrinsic and the new value
         $isfsj = $this->basic_intrinsic_json($sfs->option_id);
-        $iopt = $this->basic_intrinsic_option($sfs->option_id, $sv);
+        $iopt = $this->intermediate_intrinsic_option($sfs->option_id, $sv);
         $isfs = $iopt->export_setting();
         $osfs = $sv->oldv("sf/{$ctr}");
         $oopt = $sfs->source_option;
@@ -941,6 +905,18 @@ class Options_SettingParser extends SettingParser {
             $tctr = $ctrs[$i];
             array_splice($ctrs, $i, 1);
             array_unshift($ctrs, $tctr);
+        }
+
+        // assign wizard settings for intrinsic fields
+        // (must do first, before creating any “intermediate” options)
+        foreach ($ctrs as $i => $ctr) {
+            $sfs = $sv->newv("sf/{$ctr}");
+            if ($sfs->option_id === PaperOption::ABSTRACTID
+                || $sfs->option_id === DTYPE_SUBMISSION) {
+                $this->_assign_abstract_wizard_settings($sv, $ctr, $sfs);
+            } else if ($sfs->option_id === PaperOption::TOPICSID) {
+                $this->_assign_topics_wizard_settings($sv, $ctr, $sfs);
+            }
         }
 
         // process options in order

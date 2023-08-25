@@ -1,76 +1,96 @@
 [
     {
         "name": "Title", "id": -1000,
-        "type": "title", "include_empty": true, "configurable": true,
+        "type": "title", "include_empty": true,
         "json_key": "title",
         "form_order": 10, "required": true,
         "display": "title",
         "function": "+Title_PaperOption",
-        "properties": ["name", "description"]
+        "configurable": true, "properties": ["name", "description"]
+    },
+    {
+        "name": "Paper", "id": 0,
+        "type": "submission",
+        "json_key": "submission",
+        "form_order": 1001, "required": "submit",
+        "display": "top",
+        "type": "document",
+        "function": "+Document_PaperOption",
+        "configurable": true, "properties": ["title","description","presence","required"]
+    },
+    {
+        "name": "Final version", "id": -1,
+        "type": "finalversion",
+        "json_key": "final",
+        "form_order": 1002, "required": "submit", "final": true,
+        "display": "top",
+        "type": "document",
+        "function": "+Document_PaperOption",
+        "configurable": false
     },
     {
         "name": "Abstract", "id": -1004,
-        "type": "abstract", "include_empty": true, "configurable": true,
+        "type": "abstract", "include_empty": true,
         "json_key": "abstract",
-        "form_order": 2001,
+        "form_order": 2001, "required": true,
         "display": "left", "page_expand": true,
         "function": "+Abstract_PaperOption",
-        "properties": ["name", "description", "presence", "required"]
+        "configurable": true, "properties": ["name", "description", "presence", "required"]
     },
     {
         "name": "Authors", "id": -1001,
-        "type": "authors", "include_empty": true, "configurable": true,
+        "type": "authors", "include_empty": true,
         "json_key": "authors",
         "visibility": "nonblind",
         "form_order": 3001, "required": true,
         "display": "right",
         "function": "+Authors_PaperOption",
-        "properties": ["name", "description", "max"]
+        "configurable": true, "properties": ["name", "description", "max"]
     },
     {
         "name": "Submission anonymity", "id": -1002,
-        "type": "nonblind", "include_empty": true, "configurable": false,
+        "type": "nonblind", "include_empty": true,
         "json_key": "nonblind",
         "form_order": 3002,
         "display": "none",
-        "function": "+Nonblind_PaperOption"
+        "configurable": false, "function": "+Nonblind_PaperOption"
     },
     {
         "name": "Contacts", "id": -1003,
-        "type": "contacts", "include_empty": true, "configurable": false,
+        "type": "contacts", "include_empty": true,
         "json_key": "contacts",
         "visibility": "conflict",
         "form_order": 3050,
         "display": "none",
-        "function": "+Contacts_PaperOption"
+        "configurable": false, "function": "+Contacts_PaperOption"
     },
     {
         "name": "Topics", "id": -1005,
-        "type": "topics", "include_empty": true, "configurable": true,
+        "type": "topics", "include_empty": true,
         "json_key": "topics",
         "form_order": 3501,
         "display": "rest", "page_group": "topics",
         "function": "+Topics_PaperOption",
-        "properties": ["name", "description", "presence", "required", "min", "max"]
+        "configurable": true, "properties": ["name", "description", "presence", "required", "min", "max"]
     },
     {
         "name": "PC conflicts", "id": -1006,
-        "type": "pc_conflicts", "include_empty": true, "configurable": true,
+        "type": "pc_conflicts", "include_empty": true,
         "json_key": "pc_conflicts",
         "visibility": "conflict",
         "form_order": 5001,
         "display": "none",
         "function": "+PCConflicts_PaperOption",
-        "properties": ["name"]
+        "configurable": true, "properties": ["name"]
     },
     {
         "name": "Collaborators", "id": -1007,
-        "type": "collaborators", "include_empty": true, "configurable": true,
+        "type": "collaborators", "include_empty": true,
         "json_key": "collaborators",
         "visibility": "nonblind",
         "form_order": 5002, "page_order": false,
         "display": "none",
         "function": "+Collaborators_PaperOption",
-        "properties": ["name", "description"]
+        "configurable": true, "properties": ["name", "description"]
     }
 ]

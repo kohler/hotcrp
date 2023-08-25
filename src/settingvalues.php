@@ -1250,8 +1250,39 @@ class SettingValues extends MessageSet {
     function unsave($id) {
         $si = is_string($id) ? $this->si($id) : $id;
         assert($si->storage_type !== Si::SI_NONE
-               && !($si->storage_type & (Si::SI_MEMBER | Si::SI_SLICE)));
+               && ($si->storage_type & (Si::SI_MEMBER | Si::SI_SLICE)) === 0);
         unset($this->_savedv[$si->storage_name()]);
+    }
+
+
+    /** @return SettingValuesConf */
+    function make_svconf() {
+        return new SettingValuesConf($this);
+    }
+
+    /** @param string $name
+     * @param 0|1 $idx */
+    function __saved_setting($name, $idx) {
+        if (array_key_exists($name, $this->_savedv)) {
+            $sv = $this->_savedv[$name] ?? [0, null];
+            return $sv[$idx];
+        } else if ($idx === 0) {
+            return $this->conf->setting($name);
+        } else {
+            return $this->conf->setting_data($name);
+        }
+    }
+
+    /** @param string $name */
+    function __saved_opt($name) {
+        $okey = "opt.{$name}";
+        if (array_key_exists($okey, $this->_savedv)) {
+            $sv = $this->_savedv[$name] ?? [0, null];
+            $idx = Si::$option_is_value[$name] ? 0 : 1;
+            return $sv[$idx];
+        } else {
+            return $this->conf->opt($name);
+        }
     }
 
 
@@ -1933,5 +1964,28 @@ class SettingValues extends MessageSet {
         echo '<div class="f-c n">(HTML allowed)</div>',
             $this->textarea($name),
             $hint, $close, "</div></div>";
+    }
+}
+
+
+class SettingValuesConf {
+    /** @var SettingValues */
+    private $sv;
+    function __construct(SettingValues $sv) {
+        $this->sv = $sv;
+    }
+    /** @param string $name
+     * @return ?int */
+    function setting($name) {
+        return $this->sv->__saved_setting($name, 0);
+    }
+    /** @param string $name
+     * @return ?string */
+    function setting_data($name) {
+        return $this->sv->__saved_setting($name, 1);
+    }
+    /** @param string $name */
+    function opt($name) {
+        return $this->sv->__saved_opt($name);
     }
 }

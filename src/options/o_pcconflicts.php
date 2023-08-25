@@ -3,8 +3,22 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class PCConflicts_PaperOption extends PaperOption {
+    /** @var ?string */
+    private $visible_if;
+    /** @var ?SearchTerm */
+    private $_visible_term;
+    /** @var bool */
+    private $selectors;
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
+        // XXX `final`
+        // Presence for PC conflicts is special. The field is always present
+        // (test_exists() always returns true), so that admins can set
+        // conflicts. The presence/exists_if configuration affects *visibility*
+        // instead.
+        $this->visible_if = $this->exists_condition();
+        $this->set_exists_condition(true);
+        $this->selectors = !!($args->selectors ?? false);
     }
     /** @return array<int,int> */
     static private function paper_value_map(PaperInfo $prow) {
@@ -13,6 +27,17 @@ class PCConflicts_PaperOption extends PaperOption {
     /** @return array<int,?string> */
     static private function value_map(PaperValue $ov) {
         return array_combine($ov->value_list(), $ov->data_list());
+    }
+    /** @return bool */
+    final function test_visible(PaperInfo $prow) {
+        if ($this->visible_if === null) {
+            return true;
+        }
+        if ($this->_visible_term === null) {
+            $s = new PaperSearch($this->conf->root_user(), $this->visible_if);
+            $this->_visible_term = $s->full_term();
+        }
+        return $this->_visible_term->test($prow, null);
     }
     function value_force(PaperValue $ov) {
         $vm = self::paper_value_map($ov->prow);
@@ -41,7 +66,7 @@ class PCConflicts_PaperOption extends PaperOption {
         return (object) $pcc;
     }
     function value_check(PaperValue $ov, Contact $user) {
-        if ($this->conf->setting("sub_pcconf")) {
+        if ($this->test_visible($ov->prow)) {
             $this->_warn_missing_conflicts($ov, $user);
         } else if ($user->act_author_view($ov->prow)) {
             $this->_warn_changes($ov);
@@ -167,12 +192,10 @@ class PCConflicts_PaperOption extends PaperOption {
         return $pv;
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        if (!$this->conf->setting("sub_pcconf")) {
-            return;
-        }
-
         $admin = $pt->user->can_administer($ov->prow);
-        if ($pt->editable === "f" && !$admin) {
+        if ((!$this->test_visible($ov->prow)
+             || ($pt->editable === "f" && !$admin /* XXX */))
+            && !$pt->settings_mode) {
             return;
         }
 
@@ -182,10 +205,9 @@ class PCConflicts_PaperOption extends PaperOption {
             return;
         }
 
-        $selectors = $this->conf->setting("sub_pcconfsel");
         $confset = $this->conf->conflict_set();
         $ctypes = [];
-        if ($selectors) {
+        if ($this->selectors) {
             $ctypes[0] = $confset->unparse_selector_text(0);
             foreach ($confset->basic_conflict_types() as $ct) {
                 $ctypes[$ct] = $confset->unparse_selector_text($ct);
@@ -226,7 +248,7 @@ class PCConflicts_PaperOption extends PaperOption {
             }
 
             echo '<li class="ctelt"><div class="ctelti';
-            if (!$selectors) {
+            if (!$this->selectors) {
                 echo ' checki';
             }
             echo ' clearfix';
@@ -242,7 +264,7 @@ class PCConflicts_PaperOption extends PaperOption {
             $hidden = "";
             if (Conflict::is_author($pct)
                 || (!$admin && Conflict::is_pinned($pct))) {
-                if ($selectors) {
+                if ($this->selectors) {
                     echo '<span class="pcconf-editselector"><strong>';
                     if (Conflict::is_author($pct)) {
                         echo "Author";
@@ -256,7 +278,7 @@ class PCConflicts_PaperOption extends PaperOption {
                     echo '<span class="checkc">', Ht::checkbox(null, 1, Conflict::is_conflicted($pct), ["disabled" => true]), '</span>';
                 }
                 echo Ht::hidden("pcconf:{$id}", $pct, ["class" => "conflict-entry", "disabled" => true]);
-            } else if ($selectors) {
+            } else if ($this->selectors) {
                 $xctypes = $ctypes;
                 if (!isset($xctypes[$ct])) {
                     $xctypes[$ct] = $confset->unparse_selector_text($ct);
@@ -286,4 +308,11 @@ class PCConflicts_PaperOption extends PaperOption {
         echo "</ul></div></div>\n\n";
     }
     // XXX no render because paper strip
+
+    function export_setting() {
+        $sfs = parent::export_setting();
+        $sfs->presence = self::presence_for_condition($this->visible_if);
+        $sfs->exists_if = $this->visible_if;
+        return $sfs;
+    }
 }

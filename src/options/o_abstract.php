@@ -5,13 +5,6 @@
 class Abstract_PaperOption extends PaperOption {
     function __construct($conf, $args) {
         parent::__construct($conf, $args);
-        $ona = (int) $this->conf->opt("noAbstract");
-        if (!isset($args->required)) {
-            $this->set_required($ona === 2 ? self::REQ_NO : self::REQ_REGISTER);
-        }
-        if (!isset($args->exists_if) && $ona === 1) {
-            $this->set_exists_condition(false);
-        }
     }
     function value_force(PaperValue $ov) {
         if (($ab = $ov->prow->abstract()) !== "") {
