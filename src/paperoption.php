@@ -728,7 +728,10 @@ class PaperOption implements JsonSerializable {
         $sfs->order = $this->order;
         $sfs->visibility = $this->unparse_visibility();
         $sfs->required = $this->required;
-        if ($this->exists_if) {
+        if ($this->exists_if === "NONE" && $this->id <= 0) {
+            $sfs->presence = "none";
+            $sfs->exists_if = $this->exists_if;
+        } else if ($this->exists_if) {
             $sfs->presence = "custom";
             $sfs->exists_if = $this->exists_if;
         } else {

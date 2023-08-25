@@ -22,7 +22,7 @@ class PaperOptionList implements IteratorAggregate {
     /** @var AbbreviationMatcher<PaperOption> */
     private $_nonpaper_am;
 
-    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"Paper","type":"submission","json_key":"submission","form_order":1001,"display":"top","type":"document","configurable":true,"properties":["title","description","required"],"function":"+Document_PaperOption"}';
+    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"Paper","type":"submission","json_key":"submission","form_order":1001,"display":"top","type":"document","configurable":true,"properties":["title","description","presence","required"],"function":"+Document_PaperOption"}';
     const DTYPE_FINAL_JSON = '{"id":-1,"name":"Final version","type":"finalversion","json_key":"final","final":true,"form_order":1002,"display":"top","type":"document","configurable":false,"function":"+Document_PaperOption"}';
 
     function __construct(Conf $conf) {

@@ -362,14 +362,13 @@ class Options_SettingParser extends SettingParser {
             "right" => "Normal", "rest" => "Grouped with topics", "top" => "Near submission"
         ], [
             "horizontal" => true,
-            "class" => "settings-sf-display"
         ]);
     }
 
     function print_actions(SettingValues $sv) {
         $isnew = !$this->sfs->existed;
         echo '<div class="entryi mb-0"><label></label><div class="btnp entry">',
-            Ht::hidden("sf/{$this->ctr}/id", $isnew ? "new" : $this->sfs->id, ["class" => "settings-sf-id", "data-default-value" => $isnew ? "" : $this->sfs->id]),
+            Ht::hidden("sf/{$this->ctr}/id", $isnew ? "new" : $this->sfs->id, ["data-default-value" => $isnew ? "" : $this->sfs->id]),
             Ht::hidden("sf/{$this->ctr}/order", $sv->newv("sf/{$this->ctr}/order") ?? "", ["class" => "is-order", "data-default-value" => $sv->oldv("sf/{$this->ctr}/order")]);
         if ($this->sfs->option_id === PaperOption::TITLEID) {
             echo MessageSet::feedback_html([MessageItem::marked_note("<0>This field always appears first on the submission form and cannot be deleted.")]);
@@ -435,6 +434,7 @@ class Options_SettingParser extends SettingParser {
         echo '<div id="sf/', $ctr, '" class="settings-xf settings-sf ',
             $this->sfs->existed ? '' : 'is-new ',
             $this->sfs->source_option->exists_condition() === "NONE" ? 'settings-xf-disabled ' : '',
+            $this->sfs->source_option->final ? 'settings-sf-final ' : '',
             'has-fold fold2o ui-fold js-fold-focus hidden">';
         if ($this->sfs->option_id !== PaperOption::TITLEID) {
             echo '<div class="settings-draghandle ui-drag js-settings-drag" draggable="true" title="Drag to reorder fields">',
