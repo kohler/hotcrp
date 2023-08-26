@@ -2681,7 +2681,7 @@ pre.email {
 	white-space: nowrap;
 }
 .namelist-columns {
-	columns: 12em 4;
+	columns: 18em 3;
 	column-gap: 18px;
 }
 .ctable, .pc-ctable {

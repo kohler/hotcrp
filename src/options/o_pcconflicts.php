@@ -193,8 +193,7 @@ class PCConflicts_PaperOption extends PaperOption {
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $admin = $pt->user->can_administer($ov->prow);
-        if ((!$this->test_visible($ov->prow)
-             || ($pt->editable === "f" && !$admin /* XXX */))
+        if (!$this->test_visible($ov->prow)
             && !$pt->settings_mode) {
             return;
         }
@@ -307,7 +306,40 @@ class PCConflicts_PaperOption extends PaperOption {
         }
         echo "</ul></div></div>\n\n";
     }
-    // XXX no render because paper strip
+    function render(FieldRender $fr, PaperValue $ov) {
+        if (!$this->test_visible($ov->prow)) {
+            return;
+        }
+        // XXX potential conflicts?
+        $user = $fr->user ?? Contact::make($this->conf);
+        $pcm = $this->conf->pc_members();
+        $confset = $this->selectors ? $this->conf->conflict_set() : null;
+        $names = [];
+        foreach ($ov->prow->conflict_type_list() as $cflt) {
+            if (Conflict::is_conflicted($cflt->conflictType)
+                && ($p = $pcm[$cflt->contactId] ?? null)) {
+                $t = $user->reviewer_html_for($p);
+                if ($p->affiliation) {
+                    $t .= " <span class=\"auaff\">(" . htmlspecialchars($p->affiliation) . ")</span>";
+                }
+                $ch = "";
+                if (Conflict::is_author($cflt->conflictType)) {
+                    $ch = "<strong>Author</strong>";
+                } else if ($confset) {
+                    $ch = $confset->unparse_html($cflt->conflictType);
+                }
+                if ($ch !== "") {
+                    $t .= " - {$ch}";
+                }
+                $names[$p->pc_index] = "<li class=\"odname\">{$t}</li>";
+            }
+        }
+        if (empty($names)) {
+            $names[] = "<li class=\"odname\">None</li>";
+        }
+        ksort($names);
+        $fr->set_html("<ul class=\"x namelist-columns\">" . join("", $names) . "</ul>");
+    }
 
     function export_setting() {
         $sfs = parent::export_setting();

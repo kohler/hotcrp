@@ -7,18 +7,18 @@ class SubFieldCondition_SettingParser extends SettingParser {
         $osp = $sv->cs()->callable("Options_SettingParser");
         $sel = [];
         if ($osp->sfs->option_id !== DTYPE_FINAL) {
-            $sel["all"] = "All submissions";
+            $sel["all"] = "Yes";
         }
-        $sel["phase:final"] = "Final versions only";
+        $sel["phase:final"] = "In the final-version phase";
         $cond = $osp->sfs->exists_if ?? "all";
         $pres = strtolower($cond);
         if ($pres === "none" || $osp->sfs->option_id <= 0) {
             $sel["none"] = "Disabled";
         }
         if (!isset($pressel[$pres])) {
-            $sv->print_control_group("sf/{$osp->ctr}/condition", "Present on", "Custom search", ["horizontal" => true]);
+            $sv->print_control_group("sf/{$osp->ctr}/condition", "Present", "Custom search", ["horizontal" => true]);
         } else {
-            $sv->print_select_group("sf/{$osp->ctr}/condition", "Present on", $sel, ["horizontal" => true]);
+            $sv->print_select_group("sf/{$osp->ctr}/condition", "Present", $sel, ["horizontal" => true]);
         }
     }
 

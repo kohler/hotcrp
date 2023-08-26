@@ -291,7 +291,7 @@ class Authors_PaperOption extends PaperOption {
         if ($fr->for_page()) {
             $fr->table->render_authors($fr, $this);
         } else {
-            $names = [];
+            $names = ["<ul class=\"x namelist\">"];
             foreach ($this->author_list($ov) as $au) {
                 $n = htmlspecialchars(trim("{$au->firstName} {$au->lastName}"));
                 if ($au->email !== "") {
@@ -307,10 +307,10 @@ class Authors_PaperOption extends PaperOption {
                 if ($n !== "" && $e !== "") {
                     $t .= " " . $e;
                 }
-                $names[] = '<li class="odname">' . $t . '</li>';
+                $names[] = "<li class=\"odname\">{$t}</li>";
             }
-            $fr->set_html("<ul class=\"x\">" . join("\n", $names) . "</ul>");
-            $fr->value_long = true;
+            $names[] = "</ul>";
+            $fr->set_html(join("", $names));
         }
     }
 

@@ -81,6 +81,7 @@
         "form_order": 5001,
         "display": "none",
         "function": "+PCConflicts_PaperOption",
+        "editable_if": "phase:review",
         "configurable": true, "properties": ["name"]
     },
     {
@@ -91,6 +92,7 @@
         "form_order": 5002, "page_order": false,
         "display": "none",
         "function": "+Collaborators_PaperOption",
+        "editable_if": "phase:review",
         "configurable": true, "properties": ["name", "description"]
     }
 ]

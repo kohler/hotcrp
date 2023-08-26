@@ -389,11 +389,17 @@ class Options_SettingParser extends SettingParser {
             $this->pt->msg_at($io->formid, "<0>Present on submissions matching ‘" . $this->sfs->exists_if . "’", MessageSet::WARNING_NOTE);
         }
         if ($io->is_final()) {
-            $this->pt->msg_at($io->formid, "<0>Present on final versions", MessageSet::WARNING_NOTE);
+            $this->pt->msg_at($io->formid, "<0>Present in the final-version phase", MessageSet::WARNING_NOTE);
         }
-        if (strcasecmp($this->sfs->editable_if, "none") === 0) {
+        if (strcasecmp($this->sfs->editable_if, "all") === 0) {
+            // no editable comment
+        } else if (strcasecmp($this->sfs->editable_if, "none") === 0) {
             $this->pt->msg_at($io->formid, "<0>Frozen on all submissions (not editable)", MessageSet::WARNING_NOTE);
-        } else if (strcasecmp($this->sfs->editable_if, "all") !== 0) {
+        } else if (strcasecmp($this->sfs->editable_if, "phase:review") === 0) {
+            $this->pt->msg_at($io->formid, "<0>Editable in the review phase", MessageSet::WARNING_NOTE);
+        } else if (strcasecmp($this->sfs->editable_if, "phase:final") !== 0) {
+            $this->pt->msg_at($io->formid, "<0>Editable in the final-version phase", MessageSet::WARNING_NOTE);
+        } else {
             $this->pt->msg_at($io->formid, "<0>Editable on submissions matching ‘" . $this->sfs->editable_if . "’", MessageSet::WARNING_NOTE);
         }
         foreach ($sv->message_list_at_prefix("sf/{$ctr}/") as $mi) {

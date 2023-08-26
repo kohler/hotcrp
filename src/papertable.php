@@ -1478,10 +1478,10 @@ class PaperTable {
                 continue;
             }
             $h = $this->user->reviewer_html_for($cu->user);
-            $pcconf[$cu->user->pc_index] = "<span class=\"taghl\" title=\"{$cu->user->email}\">{$h}</span>";
+            $pcconf[$cu->user->pc_index] = "<li class=\"odname\"><span class=\"taghl\" title=\"{$cu->user->email}\">{$h}</span></li>";
         }
         if (empty($pcconf)) {
-            $pcconf[] = 'None';
+            $pcconf[] = '<li class="od">None</li>';
         }
         ksort($pcconf);
         $option = $this->conf->option_by_id(PaperOption::PCCONFID);
@@ -1489,11 +1489,9 @@ class PaperTable {
         echo Ht::unstash_script("hotcrp.fold_storage.call(\$\$(\"foldpspcconf\"))"),
             $this->papt("pc_conflicts", $option->title_html(),
                         ["type" => "ps", "fold" => "pspcconf"]),
-            '<ul class="fx x namelist-columns">';
-        foreach ($pcconf as $n) {
-            echo '<li class="od">', $n, '</li>';
-        }
-        echo '</ul></div>', "\n";
+            '<ul class="fx x namelist-columns">',
+            join("", $pcconf),
+            "</ul></div>\n";
     }
 
     private function _papstripLeadShepherd($type, $name) {
@@ -2286,7 +2284,8 @@ class PaperTable {
                     $heading = null;
                 }
                 $this->print_editable_option_papt($o, $heading, ["for" => false, "input" => false]);
-                echo $fr->value_html("papev w-text"), "</div>";
+                $klass = $fr->value_long ? "papev w-text" : "papev"; // XXX too one-weird-trick
+                echo $fr->value_html($klass), "</div>";
                 continue;
             }
             $reqov = $ov;

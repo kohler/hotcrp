@@ -11,6 +11,11 @@ class Collaborators_PaperOption extends PaperOption {
             $ov->set_value_data([1], [$collab]);
         }
     }
+    function value_present(PaperValue $ov) {
+        return $ov->value
+            && (strlen($ov->data()) > 10
+                || strcasecmp(trim($ov->data()), "none") !== 0);
+    }
     function value_export_json(PaperValue $ov, PaperExport $pex) {
         return $ov->value ? $ov->data() : null;
     }
@@ -54,8 +59,19 @@ class Collaborators_PaperOption extends PaperOption {
         }
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        if ($pt->editable !== "f" || $pt->user->can_administer($pt->prow)) {
-            $this->print_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true, "no_spellcheck" => true, "rows" => 5]);
+        $this->print_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true, "no_spellcheck" => true, "rows" => 5]);
+    }
+    function render(FieldRender $fr, PaperValue $ov) {
+        $n = ["<ul class=\"x namelist-columns\">"];
+        foreach (explode("\n", htmlspecialchars($ov->data())) as $line) {
+            if (strlen($line) > 6 || strcasecmp(trim($line), "none") !== 0)
+                $n[] = "<li class=\"od\">{$line}</li>";
+        }
+        if (count($n) === 1) {
+            $fr->set_text("None");
+        } else {
+            $n[] = "</ul>";
+            $fr->set_html(join("", $n));
         }
     }
     // XXX no render because paper strip
