@@ -832,16 +832,9 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         }
 
         // attachments
-        if (($docs = $req["docs"] ?? null)) {
-            $ctype |= self::CT_HASDOC;
-        } else {
-            $ctype &= ~self::CT_HASDOC;
-        }
-        if (($this->commentType & self::CT_HASDOC) !== 0) {
-            $old_docids = $this->attachment_ids();
-        } else {
-            $old_docids = [];
-        }
+        $old_docids = $this->attachment_ids();
+        $docs = $req["docs"] ?? [];
+        $ctype = $docs ? ($ctype | self::CT_HASDOC) : ($ctype & ~self::CT_HASDOC);
 
         // notifications
         $displayed = ($ctype & self::CT_DRAFT) === 0;
