@@ -832,15 +832,15 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         }
 
         // attachments
-        $docids = $old_docids = [];
         if (($docs = $req["docs"] ?? null)) {
             $ctype |= self::CT_HASDOC;
-            $docids = array_map(function ($doc) { return $doc->paperStorageId; }, $docs);
         } else {
             $ctype &= ~self::CT_HASDOC;
         }
         if (($this->commentType & self::CT_HASDOC) !== 0) {
             $old_docids = $this->attachment_ids();
+        } else {
+            $old_docids = [];
         }
 
         // notifications
@@ -857,9 +857,9 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         $qv = [];
         if ($text === false) {
             if ($this->commentId) {
-                $q = "delete from PaperComment where commentId=$this->commentId";
-                $docids = [];
+                $q = "delete from PaperComment where commentId={$this->commentId}";
             }
+            $docs = [];
         } else if (!$this->commentId) {
             $qa = ["contactId, paperId, commentType, comment, commentOverflow, timeModified, replyTo"];
             $qb = [$user->contactId, $this->prow->paperId, $ctype, "?", "?", Conf::$now, 0];
@@ -905,11 +905,11 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             }
             // reset timeDisplayed if you change the comment type
             if ((!$this->timeDisplayed || $this->ordinal_missing($ctype))
-                && ($text !== "" || $docids)
+                && ($text !== "" || $docs)
                 && $displayed) {
                 $qa .= ", timeDisplayed=" . Conf::$now;
             }
-            $q = "update PaperComment set timeModified=" . Conf::$now . $qa . ", commentType=$ctype, comment=?, commentOverflow=?, commentTags=?, commentData=? where commentId=$this->commentId";
+            $q = "update PaperComment set timeModified=" . Conf::$now . $qa . ", commentType={$ctype}, comment=?, commentOverflow=?, commentTags=?, commentData=? where commentId=$this->commentId";
             if (strlen($text) <= 32000) {
                 array_push($qv, $text, null);
             } else {
@@ -927,6 +927,12 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         $cmtid = $this->commentId ? : $result->insert_id;
         if (!$cmtid) {
             return false;
+        }
+
+        // check for document change
+        $docs_differ = count($docs) !== count($old_docids);
+        for ($i = 0; !$docs_differ && $i !== count($docs); ++$i) {
+            $docs_differ = $docs[$i]->paperStorageId !== $old_docids[$i];
         }
 
         // log
@@ -961,7 +967,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             if ($ctags !== $expected_tags) {
                 $ch[] = "tags";
             }
-            if ($docids !== $old_docids) {
+            if ($docs_differ) {
                 $ch[] = "attachments";
             }
             if (!empty($ch)) {
@@ -991,18 +997,23 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         }
 
         // document links
-        if ($docids !== $old_docids) {
+        if ($docs_differ) {
             if ($old_docids) {
                 $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType>=? and linkType<?", $this->prow->paperId, $this->commentId, DocumentInfo::LINKTYPE_COMMENT_BEGIN, DocumentInfo::LINKTYPE_COMMENT_END);
             }
-            if ($docids) {
+            $need_mark = !!$old_docids;
+            if ($docs) {
                 $qv = [];
-                foreach ($docids as $i => $did) {
-                    $qv[] = [$this->prow->paperId, $this->commentId, $i, $did];
+                foreach ($docs as $i => $doc) {
+                    $qv[] = [$this->prow->paperId, $this->commentId, $i, $doc->paperStorageId];
+                    // just in case we're linking an inactive document
+                    // (this should never happen, though, because upload
+                    // marks as active explicitly)
+                    $need_mark = $need_mark || $doc->inactive;
                 }
                 $this->conf->qe("insert into DocumentLink (paperId,linkId,linkType,documentId) values ?v", $qv);
             }
-            if ($old_docids) {
+            if ($need_mark) {
                 $this->prow->mark_inactive_linked_documents();
             }
             $this->prow->invalidate_linked_documents();
