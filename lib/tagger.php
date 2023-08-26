@@ -111,7 +111,7 @@ class TagInfo {
             $this->flags |= $ti;
         } else {
             $this->flags |= $ti->flags & ~(self::TF_IS_PATTERN | self::TF_IS_SETTINGS);
-            if ($ti->autosearch) {
+            if ($ti->autosearch !== null) {
                 $this->autosearch = $ti->autosearch;
                 $this->autosearch_value = $ti->autosearch_value;
             }
