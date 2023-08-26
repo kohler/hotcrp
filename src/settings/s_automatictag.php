@@ -90,6 +90,7 @@ class AutomaticTag_SettingParser extends SettingParser {
                         $sv->append_item_at($si, $mi);
                     }
                 }
+                $sv->save($si, $q);
             }
             return true;
         } else if ($si->name0 === "automatic_tag/" && $si->name2 === "/value") {
@@ -103,6 +104,7 @@ class AutomaticTag_SettingParser extends SettingParser {
                     }
                 }
             }
+            $sv->save($si, $v);
             return true;
         } else {
             return false;

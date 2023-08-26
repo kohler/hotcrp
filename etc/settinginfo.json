@@ -1011,12 +1011,14 @@
     {
         "name_pattern": "automatic_tag/$/search", "storage": "member.q",
         "title": "/Search",
-        "type": "string", "subtype": "search", "size": 50, "placeholder": "Search", "autogrow": true
+        "type": "string", "subtype": "search", "size": 50, "placeholder": "Search", "autogrow": true,
+        "parser_class": "AutomaticTag_SettingParser"
     },
     {
         "name_pattern": "automatic_tag/$/value", "storage": "member.v",
         "title": "/Value formula",
-        "type": "string", "subtype": "formula", "size": 10, "placeholder": "none", "autogrow": true
+        "type": "string", "subtype": "formula", "size": 10, "placeholder": "none", "autogrow": true,
+        "parser_class": "AutomaticTag_SettingParser"
     },
 
 

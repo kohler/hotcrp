@@ -98,13 +98,13 @@ class Tag_SearchTerm extends SearchTerm {
                 "q" => $t->automatic_search(), "t" => "all"
             ]);
             $asrch->set_expand_automatic($srch->expand_automatic + 1);
+            $aterm = $asrch->full_term();
             if ($asrch->has_problem_at("circular_automatic")) {
                 $srch->warning_at("circular_automatic");
                 if ($srch->expand_automatic === 1) {
                     $srch->lwarning($sword, "<0>Circular reference in automatic tag #{$t->tag}");
                 }
             }
-            $aterm = $asrch->full_term();
 
             $afe = $t->automatic_formula_expression();
             if ($afe === "0") {

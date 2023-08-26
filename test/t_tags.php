@@ -58,7 +58,7 @@ class Tags_Tester {
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
             "automatic_tag": [
-                {"tag": "nau", "search": "", "value": "au"},
+                {"tag": "nau", "search": "all", "value": "au"},
                 {"tag": "lotsau", "search": "#nau>3"}
             ]
         }');
