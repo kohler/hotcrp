@@ -114,7 +114,7 @@ class Search_Tester {
         xassert_eqq(Phase_SearchTerm::term_phase($st), PaperInfo::PHASE_FINAL);
         $st = (new PaperSearch($u, "phase:review"))->main_term();
         xassert_eqq(Phase_SearchTerm::term_phase($st), PaperInfo::PHASE_REVIEW);
-        $st = (new PaperSearch($u, "not phase:final"))->main_term();
+        $st = (new PaperSearch($u, "NOT phase:final"))->main_term();
         xassert_eqq(Phase_SearchTerm::term_phase($st), null);
         $st = (new PaperSearch($u, "all"))->main_term();
         xassert_eqq(Phase_SearchTerm::term_phase($st), null);
@@ -124,5 +124,18 @@ class Search_Tester {
         xassert_eqq(Phase_SearchTerm::term_phase($st), PaperInfo::PHASE_FINAL);
         $st = (new PaperSearch($u, "phase:final 1-10 OR 12-30"))->main_term();
         xassert_eqq(Phase_SearchTerm::term_phase($st), null);
+    }
+
+    function test_all() {
+        $u = $this->conf->root_user();
+        $base_ids = (new PaperSearch($u, ""))->paper_ids();
+        $ids = (new PaperSearch($u, "all"))->paper_ids();
+        xassert_eqq($ids, $base_ids);
+        $ids = (new PaperSearch($u, "show:title all"))->paper_ids();
+        xassert_eqq($ids, $base_ids);
+        $ids = (new PaperSearch($u, "show:title ALL"))->paper_ids();
+        xassert_eqq($ids, $base_ids);
+        $ids = (new PaperSearch($u, "\"all\""))->paper_ids();
+        xassert_neqq($ids, $base_ids);
     }
 }
