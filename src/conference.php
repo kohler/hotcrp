@@ -3953,8 +3953,13 @@ class Conf {
     /** @param array{paperId?:list<int>|PaperID_SearchTerm} $options
      * @return PaperInfoSet|Iterable<PaperInfo> */
     function paper_set($options, Contact $user = null) {
-        $result = $this->paper_result($options, $user);
-        return PaperInfoSet::make_result($result, $user, $this);
+        // short-circuit database query if loading empty set
+        if (($options["paperId"] ?? null) === []) {
+            return new PaperInfoSet;
+        } else {
+            $result = $this->paper_result($options, $user);
+            return PaperInfoSet::make_result($result, $user, $this);
+        }
     }
 
     /** @param int $pid

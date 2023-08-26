@@ -291,60 +291,63 @@ class ConfInvariants {
     /** @return $this */
     function check_automatic_tags() {
         $dt = $this->conf->tags();
-        if (!$dt->has(TagInfo::TF_AUTOMATIC)) {
+        $user = $this->conf->root_user();
+        $checkers = $qs = [];
+        foreach ($dt->entries_having(TagInfo::TF_AUTOMATIC) as $t) {
+            $checkers[] = $ch = new ConfInvariant_AutomaticTagChecker($t);
+            $qs[] = $ch->clause;
+        }
+
+        if (empty($checkers)) {
             return $this;
         }
 
-        $user = $this->conf->root_user();
-        $q = $qtags = [];
-        $autotags = $autosearches = $autoformulas = [];
-        foreach ($dt->entries_having(TagInfo::TF_AUTOMATIC) as $t) {
-            $srch = $t->automatic_search();
-            $ftext = $t->automatic_formula_expression();
-            if ($srch !== null) {
-                $q[] = "(($srch) XOR #{$t->tag})";
-                $qtags[] = $t;
-            }
-            if ($ftext !== false && $ftext !== "0") {
-                $f = new Formula($ftext);
-                if ($f->check($user)) {
-                    $autotags[] = $t->tag;
-                    $autosearches[] = new PaperSearch($user, ["q" => $srch ?? "ALL", "t" => "all"]);
-                    $autoformulas[] = $f->compile_function();
+        $srch = new PaperSearch($user, ["q" => join(" THEN ", $qs), "t" => "all"]);
+        $rowset = $user->paper_set(["paperId" => $srch->paper_ids()]);
+        $nch = count($checkers);
+        foreach ($rowset as $row) {
+            for ($chi = $srch->paper_group_index($row->paperId) ?? 0; $chi < $nch; ++$chi) {
+                $ch = $checkers[$chi];
+                if ($ch->reported) {
+                    continue;
                 }
+                $v0 = $row->tag_value($ch->tag);
+                $v1 = $ch->expected_value($row);
+                if ($v0 === $v1) {
+                    continue;
+                }
+                if ($v0 === null || $v1 === null) {
+                    $this->invariant_error("autosearch", "automatic tag #{$ch->tag} disagrees with search {$ch->dt->automatic_search()} on #{$row->paperId}");
+                } else {
+                    $this->invariant_error("autosearch", "automatic tag #{$ch->tag} has bad value " . json_encode($v0) . " (expected " . json_encode($v1) . ") on #{$row->paperId}");
+                }
+                $ch->reported = true;
             }
         }
 
-        if (!empty($q)) {
-            $search = new PaperSearch($user, ["q" => join(" THEN ", $q), "t" => "all"]);
-            foreach ($search->paper_ids() as $pid) {
-                $then = $search->paper_group_index($pid) ?? 0;
-                if (($t = $qtags[$then] ?? null)) {
-                    $this->invariant_error("autosearch", "automatic tag #" . $t->tag . " disagrees with search " . $t->automatic_search() . " on #" . $pid);
-                    unset($qtags[$then]);
-                }
+        $vcheckers = $qs = [];
+        foreach ($checkers as $ch) {
+            if (!$ch->reported && $ch->value_formula) {
+                $vcheckers[] = $ch;
+                $qs[] = "#{$ch->tag}";
             }
         }
+        if (empty($vcheckers)) {
+            return;
+        }
 
-        if (!empty($autotags)) {
-            $search = $this->conf->paper_set(["q" => "#" . join(" OR #", $autotags), "t" => "all"], $user);
-            foreach ($search as $prow) {
-                foreach ($autotags as $i => $tag) {
-                    if ($tag !== null
-                        && $prow->has_tag($tag)
-                        && $autosearches[$i]->test($prow)) {
-                        $v0 = $prow->tag_value($tag);
-                        $v1 = call_user_func($autoformulas[$i], $prow, null, $user);
-                        if (is_bool($v1)) {
-                            $v1 = $v1 ? 0.0 : null;
-                        } else if (is_int($v1)) {
-                            $v1 = (float) $v1;
-                        }
-                        if ($v0 !== $v1) {
-                            $this->invariant_error("autosearch", "automatic tag #" . $tag . " has bad value " . json_encode($v0) . " (expected " . json_encode($v1) . ") on #" . $prow->paperId);
-                            $autotags[$i] = null;
-                        }
-                    }
+        $rowset = $this->conf->paper_set(["q" => join(" OR ", $qs), "t" => "all"]);
+        foreach ($rowset as $row) {
+            $chi = 0;
+            while ($chi < count($vcheckers)) {
+                $ch = $vcheckers[$chi];
+                $v0 = $row->tag_value($ch->tag);
+                $v1 = $v0 !== null ? $ch->expected_value($row) : null;
+                if ($v0 !== $v1) {
+                    $this->invariant_error("autosearch", "automatic tag #{$ch->tag} has bad value " . json_encode($v0) . " (expected " . json_encode($v1) . ") on #{$row->paperId}");
+                    array_splice($vcheckers, $chi, 1);
+                } else {
+                    ++$chi;
                 }
             }
         }
@@ -575,5 +578,62 @@ class ConfInvariants {
     static function test_document_inactive(Conf $conf, $prefix = null) {
         $prefix = $prefix ?? caller_landmark() . ": ";
         return (new ConfInvariants($conf, $prefix))->check_document_inactive()->ok();
+    }
+}
+
+class ConfInvariant_AutomaticTagChecker {
+    /** @var string */
+    public $tag;
+    /** @var TagInfo */
+    public $dt;
+    /** @var Contact */
+    public $user;
+    /** @var string */
+    public $clause;
+    /** @var SearchTerm */
+    public $term;
+    /** @var ?float */
+    public $value_constant;
+    /** @var ?callable(PaperInfo,?int,Contact):mixed */
+    public $value_formula;
+    /** @var bool */
+    public $reported = false;
+
+    function __construct(TagInfo $dt) {
+        $this->tag = $dt->tag;
+        $this->dt = $dt;
+        $this->user = $dt->conf->root_user();
+        $this->term = (new PaperSearch($this->user, [
+            "q" => $dt->automatic_search() ?? "ALL", "t" => "all"
+        ]))->full_term();
+        $ftext = $dt->automatic_formula_expression();
+        if (($ftext ?? "0") === "0") {
+            $this->value_constant = 0.0;
+            $vsfx = "#0";
+        } else {
+            $f = new Formula($ftext);
+            if ($f->check($this->user)) {
+                $this->value_formula = $f->compile_function();
+            }
+            $vsfx = "";
+        }
+        $this->clause = "(({$dt->automatic_search()}) XOR #{$dt->tag}{$vsfx})";
+    }
+
+    /** @return ?float */
+    function expected_value(PaperInfo $row) {
+        if (!$this->term->test($row, null)) {
+            return null;
+        } else if ($this->value_formula) {
+            $v = call_user_func($this->value_formula, $row, null, $this->user);
+            if (is_bool($v)) {
+                $v = $v ? 0.0 : null;
+            } else if (is_int($v)) {
+                $v = (float) $v;
+            }
+            return $v;
+        } else {
+            return $this->value_constant;
+        }
     }
 }
