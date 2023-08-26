@@ -862,14 +862,17 @@ class PaperSearch extends MessageSet {
         }
 
         // Special words: unquoted `*`, `ANY`, `ALL`, `NONE`; empty string
-        if ($sword->qword === "NONE") {
-            return new False_SearchTerm;
-        }
-        if ($sword->word === ""
-            || $sword->qword === "*"
-            || $sword->qword === "ANY"
-            || $sword->qword === "ALL") {
-            return new True_SearchTerm;
+        if (strlen($sword->qword) <= 4) {
+            $qword = strtoupper($sword->qword);
+            if ($qword === "NONE") {
+                return new False_SearchTerm;
+            }
+            if ($qword === ""
+                || $qword === "*"
+                || $qword === "ANY"
+                || $qword === "ALL") {
+                return new True_SearchTerm;
+            }
         }
 
         // Last case: check preconfigured keywords
@@ -953,17 +956,6 @@ class PaperSearch extends MessageSet {
                 if ($kw === "" && $kwarg === "") {
                     error_log("problem: no op, str “{$str}” in “{$this->q}”");
                     break;
-                }
-                // Bare any-case "all", "any", "none" are treated as keywords.
-                if (!$curqe
-                    && (!$scope->op || $scope->op->precedence <= 2)
-                    && $kw === ""
-                    && strlen($kwarg) <= 4) {
-                    $uword = strtoupper($kwarg);
-                    if (($uword === "ALL" || $uword === "ANY" || $uword === "NONE")
-                        && $splitter->match('/\G(?:|(?:THEN|then|HIGHLIGHT(?::\w+)?)(?:\s|\().*)\z/')) {
-                        $kwarg = $uword;
-                    }
                 }
                 // Search like "ti:(foo OR bar)" adds a default keyword.
                 if ($kw !== "" && $kwarg === "" && $splitter->starts_with("(")) {
