@@ -870,13 +870,15 @@ class DocumentInfo implements JsonSerializable {
                 $m = $this->metadata();
                 $this->infoJson = $row[5];
                 $this->_metadata = null;
-                if ($m) {
+                if (!empty((array) $m)) {
                     $this->infoJson = json_object_replace_recursive($this->infoJson, $m);
                     $qf[] = "infoJson=?";
                     $qv[] = $this->infoJson;
                 }
                 if (!empty($qf)) {
-                    $this->conf->qe("update PaperStorage set " . join(",", $qf) . " where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId, ...$qv);
+                    $qv[] = $this->paperId;
+                    $qv[] = $this->paperStorageId;
+                    $this->conf->qe_apply("update PaperStorage set " . join(",", $qf) . " where paperId=? and paperStorageId=?", $qv);
                 }
                 return true;
             }
