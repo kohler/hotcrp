@@ -332,8 +332,8 @@
         "priority": 100
     },
     {
-        "name": "searchoption",
-        "parse_function": "PaperSearch::parse_searchoption",
+        "name": "searchcontrol",
+        "parse_function": "PaperSearch::parse_searchcontrol",
         "priority": 100
     }
 ]
