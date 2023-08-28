@@ -103,14 +103,14 @@ set
 <code class=\"language-json\">\"reset\"</code>
 or
 <code class=\"language-json\">\"SETTINGNAME_reset\"</code>
-to true. For instance, this delete all topics:</p>
+to true. For instance, this deletes all topics:</p>
 
 <pre class=\"sample\"><code class=\"langage-json\">{
     \"topic_reset\": true, \"topic\": []
 }</code></pre>
 
-<p>This, on the other hand, will have no effect (the JSON mentions no
-topics, so <em>all</em> topic subsettings remain unchanged).
+<p>This, on the other hand, has no effect (the JSON mentions no
+topics, so <em>all</em> topic subsettings remain unchanged):
 
 <pre class=\"sample\"><code class=\"langage-json\">{
     \"topic\": []
