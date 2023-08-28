@@ -43,7 +43,7 @@ class Settings_Batch {
     /** @param bool $new
      * @return string */
     static function output(SettingValues $sv, $new) {
-        return json_encode($sv->all_json_choosev($new), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+        return json_encode($sv->all_jsonv(["new" => $new]), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
     }
 
     /** @return int */

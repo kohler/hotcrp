@@ -94,11 +94,7 @@ class SettingValues extends MessageSet {
 
     /** @param Qrequest|array<string,string|int|float> $qreq */
     static function make_request(Contact $user, $qreq) {
-        $sv = (new SettingValues($user))->add_request($qreq);
-        if (!$sv->has_req("reset")) {
-            $sv->set_req("reset", "");
-        }
-        return $sv;
+        return (new SettingValues($user))->add_request($qreq);
     }
 
     /** @param string $page
@@ -773,10 +769,14 @@ class SettingValues extends MessageSet {
         return $si->base_unparse_jsonv($this->choosev($si, $new), $this);
     }
 
-    /** @param bool $new
+    /** @param array{new?:bool,reset?:?bool} $args
      * @return object */
-    function all_json_choosev($new) {
+    function all_jsonv($args = []) {
+        $new = $args["new"] ?? false;
         $j = [];
+        if ($args["reset"] ?? false) {
+            $j["reset"] = true;
+        }
         foreach ($this->conf->si_set()->top_list() as $si) {
             if ($si->json_export()
                 && ($v = $this->json_choosev($si, $new)) !== null) {
@@ -784,11 +784,6 @@ class SettingValues extends MessageSet {
             }
         }
         return (object) $j;
-    }
-
-    /** @return object */
-    function all_json_oldv() {
-        return $this->all_json_choosev(false);
     }
 
 
@@ -840,7 +835,7 @@ class SettingValues extends MessageSet {
         // decide whether to mark unmentioned objects as deleted
         if ($this->_use_req) {
             $resetn = $this->has_req("{$pfx}_reset") ? "{$pfx}_reset" : "reset";
-            $resets = $this->reqstr($resetn) ?? "1";
+            $resets = $this->reqstr($resetn) ?? "";
             $reset = $resets !== "" && $resets !== "0";
         } else {
             $reset = false;

@@ -1373,7 +1373,6 @@ Phil Porras.");
 
     function test_conditional_fields() {
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
-    "reset": false,
     "sf": [
         {
             "id": "new", "name": "Submission Type", "type": "radio",

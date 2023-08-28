@@ -18,6 +18,9 @@ class Settings_API {
                 return JsonResult::make_permission_error();
             }
             $sv->add_json_string($jtext, $qreq->filename);
+            if (isset($qreq->reset)) {
+                $sv->set_req("reset", friendly_boolean($qreq->reset) ? "1" : "");
+            }
             $sv->parse();
             $dry_run = $qreq->dryrun || $qreq->dry_run;
             if ($dry_run) {
@@ -36,7 +39,7 @@ class Settings_API {
         if (!$sv->viewable_by_user()) {
             return JsonResult::make_permission_error();
         }
-        $content["settings"] = $sv->all_json_oldv();
+        $content["settings"] = $sv->all_jsonv(["reset" => !!$qreq->reset]);
         return new JsonResult($content);
     }
 

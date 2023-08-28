@@ -74,28 +74,11 @@ subsettings for one with a matching <code>\"name\"</code>; if none is found,
 the subsetting is assumed to be new.</p></li>
 
 
-<li><p><strong>Partial changes.</strong> By default, an object list setting
-completely replaces the prior setting. If you want to change part of an object
-list without affecting the other entries, add a <code
-class=\"language-json\">\"reset\": false</code> or <code
-class=\"language-json\">\"SETTINGNAME_reset\": false</code> component to your
-JSON. For instance, this JSON changes the name of decision ID 1, but leaves
-other decisions unchanged:</p>
-
-<pre class=\"sample\"><code class=\"language-json\">{
-    \"reset\": false,
-    \"decision\": [{ \"id\": 1, \"name\": \"Welcomed\" }]
-}</code></pre>
-
-<p>(<code class=\"language-json\">\"decision_reset\": false</code> would also work.)</p></li>
-
-
 <li><p><strong>Adding subsettings.</strong> <code>\"id\": \"new\"</code>
 identifies subsettings that should be added. For instance, this adds two new
 decision types:</p>
 
 <pre class=\"sample\"><code class=\"language-json\">{
-    \"reset\": false,
     \"decision\": [
         {\"id\": \"new\", \"name\": \"Desk reject\", \"category\": \"desk_reject\"},
         {\"id\": \"new\", \"name\": \"Desk accept\", \"category\": \"accept\"}
@@ -104,7 +87,34 @@ decision types:</p>
 
 
 <li><p><strong>Deleting subsettings.</strong> Delete a subsetting by adding
-<code>\"delete\": true</code> to its object.</p></li>
+<code>\"delete\": true</code> to its object. For instance, this would delete
+a “Desk reject” decision:</p>
+
+<pre class=\"sample\"><code class=\"language-json\">{
+    \"decision\": [
+        {\"name\": \"Desk reject\", \"delete\": true}
+    ]
+}</code></pre></li>
+
+
+<li><p><strong>Resetting subsettings.</strong> Unmentioned subsettings are
+left unchanged by default. If you want instead to delete any unmentioned subsettings,
+set
+<code class=\"language-json\">\"reset\"</code>
+or
+<code class=\"language-json\">\"SETTINGNAME_reset\"</code>
+to true. For instance, this delete all topics:</p>
+
+<pre class=\"sample\"><code class=\"langage-json\">{
+    \"topic_reset\": true, \"topic\": []
+}</code></pre>
+
+<p>This, on the other hand, will have no effect (the JSON mentions no
+topics, so <em>all</em> topic subsettings remain unchanged).
+
+<pre class=\"sample\"><code class=\"langage-json\">{
+    \"topic\": []
+}</code></pre></li>
 
 
 <li><p><strong>Copying settings between conferences.</strong> Beware of IDs
@@ -117,7 +127,7 @@ another conference.</p></li>
 <li><p><strong>Other common components</strong> in object lists include
 <code>\"order\"</code>, which determines the natural order for subsettings
 (e.g., the order submission fields appear on the submission form; lower values
-appear first), and <code>\"values\"</code>, a second-level object list that
+appear first), and <code>\"values\"</code>, a nested object list that
 determines the values that apply to a submission or review field.</p></li>";
 
         echo "</ul>";

@@ -5,7 +5,7 @@
 class JSON_SettingParser extends SettingParser {
     static function print(SettingValues $sv) {
         $wantjreq = $sv->use_req() && $sv->has_req("json_settings");
-        $defj = json_encode_browser($sv->all_json_oldv(), JSON_PRETTY_PRINT);
+        $defj = json_encode_browser($sv->all_jsonv(), JSON_PRETTY_PRINT);
         $mainj = $wantjreq ? cleannl($sv->reqstr("json_settings")) : $defj;
         $mainh = htmlspecialchars($mainj);
         echo '<div class="settings-json-panels">',
@@ -64,7 +64,6 @@ class JSON_SettingParser extends SettingParser {
                 $sv->inform_at($si, "<0>Lengths: " . json_encode([strlen($v), strlen($v2)]));
             } else {
                 $sv->set_link_json(true);
-                $sv->set_req("reset", "1"); // JSON settings reset by default
                 $sv->add_json_string($v);
             }
         }

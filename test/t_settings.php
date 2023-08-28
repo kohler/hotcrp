@@ -175,13 +175,13 @@ class Settings_Tester {
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Barf","2":"Fart","3":"Money"}');
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
-            "reset": false,
             "topic": []
         }');
         xassert($sv->execute());
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Barf","2":"Fart","3":"Money"}');
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "reset": true,
             "topic_reset": false,
             "topic": [{"id": 1, "name": "Berf"}]
         }');
@@ -196,13 +196,13 @@ class Settings_Tester {
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Berf"}');
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
-            "topic": [{"id": "new", "name": "Berf"}], "topic_reset": false
+            "topic": [{"id": "new", "name": "Berf"}]
         }');
         xassert(!$sv->execute());
         xassert_str_contains($sv->full_feedback_text(), "is not unique");
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
-            "topic": [{"name": "Bingle"}, {"name": "Bongle"}], "reset": false
+            "topic": [{"name": "Bingle"}, {"name": "Bongle"}]
         }');
         xassert($sv->execute());
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Berf","4":"Bingle","5":"Bongle"}');
@@ -1414,13 +1414,13 @@ class Settings_Tester {
 
     function test_json_settings_silent_roundtrip() {
         $sv = new SettingValues($this->u_chair);
-        $j1 = json_encode($sv->all_json_choosev(false), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $j1 = json_encode($sv->all_jsonv(["reset" => true]), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
         $sv = new SettingValues($this->u_chair);
         $sv->add_json_string($j1, "<roundtrip>");
         $sv->parse();
-        $j2 = json_encode($sv->all_json_choosev(false), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        $j3 = json_encode($sv->all_json_choosev(true), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $j2 = json_encode($sv->all_jsonv(["reset" => true]), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $j3 = json_encode($sv->all_jsonv(["new" => true, "reset" => true]), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         xassert_eqq($j2, $j1);
         if ($j3 !== $j1) {
             self::unexpected_unified_diff($j1, $j3);
@@ -1438,7 +1438,7 @@ class Settings_Tester {
 
         // can create new options with unknown IDs
         $sv = new SettingValues($this->u_chair);
-        $sv->add_json_string('{"reset":false,"sf":[{"id":100,"name":"New fixed option","type":"text"}]}');
+        $sv->add_json_string('{"sf":[{"id":100,"name":"New fixed option","type":"text"}]}');
         xassert($sv->execute());
         xassert_eqq($sv->full_feedback_text(), "");
 
@@ -1447,13 +1447,13 @@ class Settings_Tester {
         xassert_eqq($opt->name ?? null, "New fixed option");
 
         $sv = new SettingValues($this->u_chair);
-        $sv->add_json_string('{"reset":false,"sf":[{"id":100,"name":"New fixed option","delete":true},{"id":102,"name":"Whatever","delete":true}]}');
+        $sv->add_json_string('{"sf":[{"id":100,"name":"New fixed option","delete":true},{"id":102,"name":"Whatever","delete":true}]}');
         xassert($sv->execute());
         xassert_eqq($sv->full_feedback_text(), "");
 
         // but cannot create new options with bad IDs
         $sv = new SettingValues($this->u_chair);
-        $sv->add_json_string('{"reset":false,"sf":[{"id":-100,"name":"Bad fixed option"}]}');
+        $sv->add_json_string('{"sf":[{"id":-100,"name":"Bad fixed option"}]}');
         xassert(!$sv->execute());
 
         // and cannot create options that overlap fixed options
@@ -1463,7 +1463,7 @@ class Settings_Tester {
         xassert_eqq($o102->name, "Fixed version");
 
         $sv = new SettingValues($this->u_chair);
-        $sv->add_json_string('{"reset":false,"sf":[{"id":102,"name":"Bad fixed option","type":"text"}]}');
+        $sv->add_json_string('{"sf":[{"id":102,"name":"Bad fixed option","type":"text"}]}');
         xassert(!$sv->execute());
 
         // reset options
@@ -1476,20 +1476,20 @@ class Settings_Tester {
         // a new option with a fixed ID doesn't collide with new options
         // without fixed IDs
         $sv = new SettingValues($this->u_chair);
-        $sv->add_json_string('{"reset":false,"sf":[{"id":"new","name":"First New","type":"text"},{"id":5,"name":"Second New","type":"text"},{"id":"new","name":"Third New","type":"text"}]}');
+        $sv->add_json_string('{"sf":[{"id":"new","name":"First New","type":"text"},{"id":5,"name":"Second New","type":"text"},{"id":"new","name":"Third New","type":"text"}]}');
         xassert($sv->execute());
         xassert_eqq($this->conf->options()->find("First New")->id, 4);
         xassert_eqq($this->conf->options()->find("Second New")->id, 5);
         xassert_eqq($this->conf->options()->find("Third New")->id, 6);
 
         $sv = new SettingValues($this->u_chair);
-        $sv->add_json_string('{"reset":false,"sf":[{"id":4,"delete":true},{"id":5,"delete":true},{"id":6,"delete":true}]}');
+        $sv->add_json_string('{"sf":[{"id":4,"delete":true},{"id":5,"delete":true},{"id":6,"delete":true}]}');
         xassert($sv->execute());
     }
 
     function test_title_properties() {
         $sv = new SettingValues($this->u_chair);
-        $sv->add_json_string('{"reset":false,"sf":[{"id":"title","name":"Not Title"}]}');
+        $sv->add_json_string('{"sf":[{"id":"title","name":"Not Title"}]}');
         xassert($sv->execute());
         xassert_eqq($sv->full_feedback_text(), "");
 
@@ -1499,7 +1499,7 @@ class Settings_Tester {
 
         // only possible to configure allowed properties
         $sv = new SettingValues($this->u_chair);
-        $sv->add_json_string('{"reset":false,"sf":[{"id":"title","required":"no"}]}');
+        $sv->add_json_string('{"sf":[{"id":"title","required":"no"}]}');
         xassert(!$sv->execute());
         xassert_str_contains($sv->full_feedback_text(), "cannot be configured");
 
@@ -1509,7 +1509,7 @@ class Settings_Tester {
 
         // saving same title
         $sv = new SettingValues($this->u_chair);
-        $sv->add_json_string('{"reset":false,"sf":[{"id":"title","name":"Not Title"}]}');
+        $sv->add_json_string('{"sf":[{"id":"title","name":"Not Title"}]}');
         xassert($sv->execute());
         xassert_eqq($sv->full_feedback_text(), "");
 
@@ -1523,7 +1523,7 @@ class Settings_Tester {
 
     function test_cannot_delete_intrinsic() {
         $sv = new SettingValues($this->u_chair);
-        $sv->add_json_string('{"reset":false,"sf":[{"id":"title","delete":true}]}');
+        $sv->add_json_string('{"sf":[{"id":"title","delete":true}]}');
         xassert(!$sv->execute());
         xassert_str_contains($sv->full_feedback_text(), "cannot be deleted");
     }
@@ -1533,7 +1533,7 @@ class Settings_Tester {
         xassert_eqq($this->conf->opt("noAbstract"), null);
 
         $sv = new SettingValues($this->u_chair);
-        $sv->add_json_string('{"reset":false,"sf_abstract":"optional","sf":[{"id":"abstract","name":"Abstract"}]}');
+        $sv->add_json_string('{"sf_abstract":"optional","sf":[{"id":"abstract","name":"Abstract"}]}');
         xassert($sv->execute());
 
         $opt = $this->conf->option_by_id(PaperOption::ABSTRACTID);
@@ -1542,7 +1542,7 @@ class Settings_Tester {
         xassert_eqq($this->conf->setting("ioptions"), null);
 
         $sv = new SettingValues($this->u_chair);
-        $sv->add_json_string('{"reset":false,"sf_abstract":"required","sf":[{"id":"abstract","name":"Abstract (optional)"}]}');
+        $sv->add_json_string('{"sf_abstract":"required","sf":[{"id":"abstract","name":"Abstract (optional)"}]}');
         xassert($sv->execute());
 
         $opt = $this->conf->option_by_id(PaperOption::ABSTRACTID);
@@ -1556,7 +1556,7 @@ class Settings_Tester {
         xassert_eqq($this->conf->opt("noAbstract"), null);
 
         $sv = new SettingValues($this->u_chair);
-        $sv->add_json_string('{"reset":false,"sf_abstract":"optional","sf":[{"id":1,"name":"Calories?"}]}');
+        $sv->add_json_string('{"sf_abstract":"optional","sf":[{"id":1,"name":"Calories?"}]}');
         xassert($sv->execute());
 
         $opt = $this->conf->option_by_id(PaperOption::ABSTRACTID);
@@ -1565,7 +1565,7 @@ class Settings_Tester {
         xassert_eqq($this->conf->setting("ioptions"), null);
 
         $sv = new SettingValues($this->u_chair);
-        $sv->add_json_string('{"reset":false,"sf_abstract":"required","sf":[{"id":"abstract","name":"Abstract (optional)"}]}');
+        $sv->add_json_string('{"sf_abstract":"required","sf":[{"id":"abstract","name":"Abstract (optional)"}]}');
         xassert($sv->execute());
 
         $opt = $this->conf->option_by_id(PaperOption::ABSTRACTID);
