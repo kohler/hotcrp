@@ -165,7 +165,7 @@ class PaperOptionList implements IteratorAggregate {
             }
         }
 
-        // return unless overrides exist and are desired
+        // return unless overrides exist (and, in the case of `ioptions`, are desired)
         $s1 = $conf->opt("intrinsicOptions");
         $s2 = $all ? $conf->setting_json("ioptions") : null;
         if (!$s1 && !$s2) {
