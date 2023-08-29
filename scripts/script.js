@@ -11221,38 +11221,27 @@ function save_pstags(evt) {
     });
 }
 
-function save_pstagindex(evt) {
-    var self = this, $f = $(self).closest("form"),
-        assignments = [], inputs = [];
-    if (evt.type === "submit")
-        evt.preventDefault();
-    if (hasClass($f[0], "submitting"))
-        return;
-    $f.addClass("submitting");
-    $f.find("input").each(function () {
-        var t = $(this).data("tagBase"), v;
-        if (t) {
-            inputs.push(this);
-            if (this.type === "checkbox")
-                v = this.checked ? this.value : "";
-            else
-                v = $.trim(this.value);
-            assignments.push(t + "#" + (v === "" ? "clear" : v));
-        }
-    });
-    function done(data) {
-        $f.removeClass("submitting");
-        minifeedback($f.find("input")[0], data);
-        if (data.ok && (data.message_list || []).length === 0) {
-            foldup.call($f[0], null, {open: false});
-        } else {
-            focus_within($f);
-        }
-        data.ok && $(window).trigger("hotcrptags", [data]);
+handle_ui.on("is-tag-index", function (evt) {
+    const self = this;
+    let m = self.id.match(/^tag:(\S+) (\d+)$/), value;
+    if (this.type === "checkbox")
+        value = this.checked ? this.value : "";
+    else
+        value = this.value.trim();
+    if (value === "")
+        value = "clear";
+    if (/^(?:\d+\.?\d*|\.\d+|clear)$/.test(value))
+        $.post(hoturl("=api/tags", {p: m[2]}), {addtags: m[1] + "#" + value}, done);
+    else
+        minifeedback(this, {ok: false, message_list: [{status: 2, message: "<0>Bad tag value"}]});
+    function done(rv) {
+        minifeedback(self, rv);
+        if (rv.ok && (rv.message_list || []).length === 0)
+            foldup.call(self, null, {open: false});
+        if (rv.ok)
+            $(window).trigger("hotcrptags", [rv]);
     }
-    $.post(hoturl("=api/tags", {p: $f.attr("data-pid")}),
-           {"addtags": assignments.join(" ")}, done);
-}
+});
 
 function evaluate_compar(x, compar, y) {
     if ($.isArray(y)) {
@@ -11579,10 +11568,6 @@ hotcrp.load_editable_pc_assignments = function () {
 };
 
 hotcrp.load_paper_sidebar = function () {
-    $(".need-tag-index-form").each(function () {
-        $(this).removeClass("need-tag-index-form").on("submit", save_pstagindex)
-            .find("input").on("change", save_pstagindex);
-    });
     $(".need-tag-form").each(prepare_pstags);
     $(".need-paper-select-api").each(function () {
         removeClass(this, "need-paper-select-api");
@@ -11630,19 +11615,60 @@ function tag_value(taglist, t) {
 }
 
 function set_tag_index(e, taglist) {
-    var res = tag_value(taglist, e.getAttribute("data-tag-base"));
-    res = res === null ? "" : String(res);
-    if (e.tagName === "SPAN") {
-        e.textContent = res;
-        toggleClass(e.closest(".is-nonempty-tags"), "hidden", res === "");
-    } else {
+    const val = tag_value(taglist, e.getAttribute("data-tag"));
+    let vtext = val === null ? "" : String(val);
+
+    // inputs: set value
+    if (e.nodeName === "INPUT") {
         if (e.type === "checkbox") {
-            e.checked = res !== "";
+            e.checked = vtext !== "";
         } else if (document.activeElement !== e) {
-            e.value = res;
+            e.value = vtext;
         }
-        input_set_default_value(e, res);
+        input_set_default_value(e, vtext);
+        return;
     }
+
+    // one index: set text, maybe hide
+    if (!hasClass(e, "is-tag-votish")) {
+        e.textContent = e.getAttribute("data-prefix") + vtext;
+        toggleClass(e, "hidden", vtext === "");
+        return;
+    }
+
+    // votish report: extract base value
+    const vtype = e.getAttribute("data-vote-type"),
+        btag = e.getAttribute("data-tag").replace(/^\d+~/, ""),
+        bval = tag_value(taglist, btag);
+    if (vtype === "approval") {
+        vtext = "";
+    }
+
+    // no base value: set text, maybe hide
+    if (bval === null) {
+        e.textContent = vtext === "" ? "" : ": " + vtext;
+        toggleClass(e, "hidden", vtext === "");
+        return;
+    }
+
+    // otherwise, votish report with base value
+    // ensure link, show
+    const prefix = vtext === "" ? ": " : ": " + vtext + ", ";
+    e.firstChild ? e.firstChild.data = prefix : e.append(prefix);
+    let a = e.lastChild;
+    if (!a || a.nodeName !== "A") {
+        const sort = vtype === "rank" ? "#" : "-#";
+        a = $e("a", {"class": "q", href: hoturl("search", {q: "show:#".concat(btag, " sort:", sort, btag)})});
+        e.appendChild(a);
+        if (hasClass(e, "is-tag-report")) {
+            e.setAttribute("data-tooltip-anchor", "h");
+            e.setAttribute("data-tooltip-info", "votereport");
+            e.setAttribute("data-tag", btag);
+            hotcrp.tooltip.call(e);
+        }
+    }
+    a.textContent = bval + (vtype === "rank" ? " overall" : " total");
+    removeClass(e, "hidden");
 }
 
 if (siteinfo.paperid) {

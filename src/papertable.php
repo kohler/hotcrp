@@ -535,7 +535,9 @@ class PaperTable {
         }
     }
 
-    /** @param array<string,int|string> $extra
+    /** @param ?string $what
+     * @param string|array{string,string} $name
+     * @param array<string,int|string> $extra
      * @return string */
     private function papt($what, $name, $extra = []) {
         $fold = $extra["fold"] ?? false;
@@ -553,9 +555,9 @@ class PaperTable {
             list($divclass, $hdrclass) = ["pavt", "pavfn"];
         }
 
-        $c = "<div class=\"" . $this->control_class($what, $divclass);
-        if (($fold || $editfolder) && !($extra["float"] ?? false)) {
-            $c .= " ui js-foldup\"" . $foldtarget . ">";
+        $c = "<div class=\"" . ($what ? $this->control_class($what, $divclass) : $divclass);
+        if ($fold || $editfolder) {
+            $c .= " ui js-foldup\"{$foldtarget}>";
         } else {
             $c .= "\">";
         }
@@ -597,8 +599,8 @@ class PaperTable {
             $c .= '</button>';
         }
         $c .= "</h3>";
-        if (isset($extra["float"])) {
-            $c .= $extra["float"];
+        if (isset($extra["rest"])) {
+            $c .= $extra["rest"];
         }
         $c .= "</div>";
         return $c;
@@ -1662,106 +1664,159 @@ class PaperTable {
         Ht::stash_script("hotcrp.add_preference_ajax(\"#revprefform_d\",true);hotcrp.shortcut(\"revprefform_d\").add()");
     }
 
-    private function papstrip_tag_entry($id) {
-        $this->_papstripBegin($id, !!$id, ["class" => "pste ui-fold js-fold-focus"]);
+    private function papstrip_onetag_begin() {
+        $this->_papstripBegin(null, false, ["class" => "pste ui-fold js-fold-focus has-fold foldc"]);
     }
 
-    private function papstrip_tag_float($tag, $kind, $type) {
+    /** @param string $tag
+     * @param 'rank'|'allotment'|'approval' $type
+     * @return string */
+    private function papstrip_onetag_result($tag, $type) {
+        // is-tag-index [is-tag-votish] [is-tag-report]
+        $mytag = "{$this->user->contactId}~{$tag}";
+        $myval = $this->prow->tag_value($mytag);
         if (!$this->user->can_view_tag($this->prow, $tag)) {
-            return "";
+            if ($type === "approval") {
+                return "";
+            } else if ($myval === null) {
+                return "<span class=\"is-tag-index hidden\" data-tag=\"{$mytag}\" data-prefix=\": \"></span>";
+            } else {
+                return "<span class=\"is-tag-index\" data-tag=\"{$mytag}\" data-prefix=\": \">: {$myval}</span>";
+            }
         }
-        $totval = $this->prow->tag_value($tag) ?? "";
-        $class = "is-nonempty-tags float-right" . ($totval === "" ? " hidden" : "");
-        $reverse = $type !== "rank";
-        $extradiv = "";
-        if (($type === "allotment" || $type === "approval")
-            && $this->user->can_view_peruser_tag($this->prow, $tag)) {
-            $class .= " need-tooltip";
-            $extradiv = ' data-tooltip-anchor="h" data-tooltip-info="votereport" data-tag="' . htmlspecialchars($tag) . '"';
+
+        $totval = $this->prow->tag_value($tag);
+        $report = $type !== "rank" && $this->user->can_view_peruser_tag($this->prow, $tag);
+        $repclass = $report ? " is-tag-report" : "";
+        if ($totval === null) {
+            $myclass = $myval === null || $type === "approval" ? " hidden" : "";
+            $mytext = $myval === null || $type === "approval" ? "" : ": {$myval}";
+            return "<span class=\"is-tag-index is-tag-votish fn{$repclass}{$myclass}\" data-tag=\"{$mytag}\" data-vote-type=\"{$type}\">{$mytext}</span>";
         }
-        return '<div class="' . $class . '"' . $extradiv
-            . '><a class="q" href="' . $this->conf->hoturl("search", ["q" => "show:#{$tag} sort:" . ($reverse ? "-" : "") . "#{$tag}"]) . '">'
-            . '<span class="is-tag-index" data-tag-base="' . $tag . '">' . $totval . '</span> ' . $kind . '</a></div>';
+
+        $sort = $type === "rank" ? "#{$tag}" : "-#{$tag}";
+        $totword = $type === "rank" ? "overall" : "total";
+        $url = $this->conf->hoturl("search", ["q" => "show:#{$tag} sort:{$sort}"]);
+        if ($report) {
+            $totlink = "<a class=\"q need-tooltip\" href=\"{$url}\" data-tooltip-anchor=\"h\" data-tooltip-info=\"votereport\" data-tag=\"{$tag}\">{$totval} {$totword}</a>";
+        } else {
+            $totlink = "<a class=\"q\" href=\"{$url}\">{$totval} {$totword}</a>";
+        }
+        $mytext = $myval === null || $type === "approval" ? "" : "{$myval}, ";
+        return "<span class=\"is-tag-index is-tag-votish fn{$repclass}\" data-tag=\"{$tag}\" data-vote-type=\"{$type}\">: {$mytext}{$totlink}</span>";
     }
 
-    private function papstrip_tag_entry_title($s, $tag, $value, $label) {
-        $ts = "#$tag";
+    /** @param string $tag
+     * @return string */
+    private function onetag($tag) {
         if (($color = $this->conf->tags()->color_classes($tag))) {
-            $ts = '<span class="' . $color . ' taghh">' . $ts . '</span>';
+            return "<span class=\"{$color} taghh\">#{$tag}</span>";
+        } else {
+            return "#{$tag}";
         }
-        $s = str_replace("{{}}", $ts, $s);
-        if ($value !== false) {
-            $s .= '<span class="fn is-nonempty-tags'
-                . ($value === "" ? " hidden" : "")
-                . '">: <span class="is-tag-index" data-tag-base="~'
-                . $tag . '">' . $value . '</span></span>';
-        }
-        return $label ? Ht::label($s, "tag:~{$tag} {$this->prow->paperId}") : $s;
     }
 
-    private function papstrip_rank($tag) {
-        $id = "rank_" . html_id_encode($tag);
-        $myval = $this->prow->tag_value($this->user->contactId . "~$tag") ?? "";
-        $totmark = $this->papstrip_tag_float($tag, "overall", "rank");
-
-        $this->papstrip_tag_entry($id);
-        echo Ht::form("", ["class" => "need-tag-index-form", "data-pid" => $this->prow->paperId]);
-        if (isset($this->qreq->forceShow)) {
-            echo Ht::hidden("forceShow", $this->qreq->forceShow);
+    /** @param string $tag
+     * @param 'rank'|'allotment'|'approval' $type
+     * @return string */
+    private function papstrip_onetag_heading($tag, $type) {
+        $s = $this->onetag($tag);
+        if ($type === "rank") {
+            return "{$s} rank";
+        } else if ($type === "approval") {
+            return "{$s} vote";
+        } else {
+            return "{$s} votes";
         }
-        echo $this->papt($id, $this->papstrip_tag_entry_title("{{}} rank", $tag, $myval, true),
-                         ["type" => "ps", "fold" => $id, "float" => $totmark, "fnclass" => "mf"]),
-            '<div class="fx">',
-            Ht::entry("tagindex", $myval,
-                ["size" => 4, "class" => "is-tag-index want-focus mf-label-success",
-                 "data-tag-base" => "~{$tag}", "inputmode" => "decimal",
+    }
+
+    /** @param string $tag
+     * @param 'rank'|'allotment'|'approval' $type */
+    private function papstrip_onetag_nonpc($tag, $type) {
+        if (!$this->user->can_view_tag($this->prow, $tag)
+            || $this->prow->tag_value($tag) === null) {
+            return;
+        }
+        $this->papstrip_onetag_begin();
+        echo $this->papt(null,
+                $this->papstrip_onetag_heading($tag, $type),
+                ["type" => "ps", "fnclass" => "mf",
+                 "rest" => $this->papstrip_onetag_result($tag, $type)]),
+            "</div>\n";
+    }
+
+    /** @param string $tag */
+    private function papstrip_rank($tag) {
+        if (!$this->user->is_pc_member()) {
+            $this->papstrip_onetag_nonpc($tag, "rank");
+            return;
+        }
+
+        $this->papstrip_onetag_begin();
+        $mytag = "{$this->user->contactId}~{$tag}";
+        $myval = $this->prow->tag_value($mytag);
+        echo $this->papt(null,
+                Ht::label($this->papstrip_onetag_heading($tag, "rank"), "tag:~{$tag} {$this->prow->paperId}"),
+                ["type" => "ps", "fold" => true, "fnclass" => "mf",
+                 "rest" => $this->papstrip_onetag_result($tag, "rank")]),
+            '<form class="ui-submit uin fx">',
+            Ht::entry("tagindex", $myval ?? "",
+                ["size" => 4, "class" => "uich is-tag-index want-focus mf-label-success",
+                 "data-tag" => $mytag, "inputmode" => "decimal",
                  "id" => "tag:~{$tag} {$this->prow->paperId}"]),
             ' <span class="barsep">·</span> ',
             '<a href="', $this->conf->hoturl("search", ["q" => "editsort:#~{$tag}"]), '">Edit all</a>',
             ' <div class="hint" style="margin-top:4px"><strong>Tip:</strong> <a href="', $this->conf->hoturl("search", ["q" => "editsort:#~{$tag}"]), '">Search “editsort:#~', $tag, '”</a> to drag and drop your ranking, or <a href="', $this->conf->hoturl("offline"), '">use offline reviewing</a> to rank many papers at once.</div>',
-            "</div></form></div>\n";
+            "</form></div>\n";
     }
 
+    /** @param string $tag
+     * @param float $allotment */
     private function papstrip_allotment($tag, $allotment) {
-        $id = "vote_" . html_id_encode($tag);
-        $myval = $this->prow->tag_value($this->user->contactId . "~$tag") ?? "";
-        $totmark = $this->papstrip_tag_float($tag, "total", "allotment");
-
-        $this->papstrip_tag_entry($id);
-        echo Ht::form("", ["class" => "need-tag-index-form", "data-pid" => $this->prow->paperId]);
-        if (isset($this->qreq->forceShow)) {
-            echo Ht::hidden("forceShow", $this->qreq->forceShow);
+        if (!$this->user->is_pc_member()) {
+            $this->papstrip_onetag_nonpc($tag, "allotment");
+            return;
         }
-        echo $this->papt($id, $this->papstrip_tag_entry_title("{{}} votes", $tag, $myval, true),
-                         ["type" => "ps", "fold" => $id, "float" => $totmark]),
-            '<div class="fx">',
-            Ht::entry("tagindex", $myval,
-                ["size" => 4, "class" => "is-tag-index want-focus mf-label-success",
-                 "data-tag-base" => "~{$tag}", "inputmode" => "decimal",
+
+        $this->papstrip_onetag_begin();
+        $mytag = "{$this->user->contactId}~{$tag}";
+        $myval = $this->prow->tag_value($mytag);
+        echo $this->papt(null,
+                Ht::label($this->papstrip_onetag_heading($tag, "allotment"), "tag:~{$tag} {$this->prow->paperId}"),
+                ["type" => "ps", "fold" => true,
+                 "rest" => $this->papstrip_onetag_result($tag, "allotment")]),
+            '<form class="ui-submit uin fx">',
+            Ht::entry("tagindex", $myval ?? "",
+                ["size" => 4, "class" => "uich is-tag-index want-focus mf-label-success mr-1",
+                 "data-tag" => $mytag, "inputmode" => "decimal",
                  "id" => "tag:~{$tag} {$this->prow->paperId}"]),
-            " &nbsp;of $allotment",
+            " of {$allotment}",
             ' <span class="barsep">·</span> ',
             '<a href="', $this->conf->hoturl("search", ["q" => "editsort:-#~{$tag}"]), '">Edit all</a>',
-            "</div></form></div>\n";
+            "</form></div>\n";
     }
 
+    /** @param string $tag */
     private function papstrip_approval($tag) {
-        $id = "approval_" . html_id_encode($tag);
-        $myval = $this->prow->tag_value($this->user->contactId . "~$tag") ?? "";
-        $totmark = $this->papstrip_tag_float($tag, "total", "approval");
-
-        $this->papstrip_tag_entry(null);
-        echo Ht::form("", ["class" => "need-tag-index-form", "data-pid" => $this->prow->paperId]);
-        if (isset($this->qreq->forceShow)) {
-            echo Ht::hidden("forceShow", $this->qreq->forceShow);
+        if (!$this->user->is_pc_member()) {
+            $this->papstrip_onetag_nonpc($tag, "approval");
+            return;
         }
-        echo $this->papt($id,
-            $this->papstrip_tag_entry_title('<label><span class="checkc">'
-                . Ht::checkbox("tagindex", "0", $myval !== "",
-                    ["class" => "is-tag-index want-focus", "data-tag-base" => "~$tag"])
-                . '</span>{{}} vote</label>', $tag, false, false),
-                ["type" => "ps", "fnclass" => "checki", "float" => $totmark]),
-            "</form></div>\n";
+
+        $this->papstrip_onetag_begin();
+        $mytag = "{$this->user->contactId}~{$tag}";
+        $myval = $this->prow->tag_value($mytag);
+        $xt = $this->onetag($tag) . " vote";
+        echo $this->papt(null,
+                '<label><span class="checkc">'
+                    . Ht::checkbox("tagindex", "0", $myval !== null,
+                        ["class" => "ui is-tag-index want-focus",
+                         "data-tag" => $mytag,
+                         "id" => "tag:~{$tag} {$this->prow->paperId}"])
+                    . "</span>{$xt}</label>",
+                ["type" => "ps", "fnclass" => "checki",
+                 "rest" => $this->papstrip_onetag_result($tag, "approval")]),
+            "</div>\n";
     }
 
     private function papstripWatch() {
@@ -1774,15 +1829,12 @@ class PaperTable {
         }
 
         $this->_papstripBegin();
-
-        echo '<form class="ui-submit uin">',
-            $this->papt("watch",
+        echo $this->papt("watch",
                 '<label><span class="checkc">'
                 . Ht::checkbox("follow", 1, $this->user->following_reviews($this->prow, -1), ["class" => "uich js-follow-change"])
                 . '</span>Email notification</label>',
                 ["type" => "ps", "fnclass" => "checki"]),
-            '<div class="pshint">Select to receive email on updates to reviews and comments.</div>',
-            "</form></div>\n";
+            "<div class=\"pshint\">Select to receive email on updates to reviews and comments.</div></div>\n";
     }
 
 
