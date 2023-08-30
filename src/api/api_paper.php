@@ -179,7 +179,8 @@ class Paper_API extends MessageSet {
             }
             unset($j->pid, $j->id);
         }
-        if (!isset($j->pid) && !isset($j->id)
+        if (!isset($j->pid)
+            && !isset($j->id)
             && ($pidflags & self::PIDFLAG_MATCH_TITLE) !== 0
             && is_string($j->title ?? null)) {
             $pids = Dbl::fetch_first_columns($conf->dblink, "select paperId from Paper where title=?", simplify_whitespace($j->title));

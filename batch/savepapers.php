@@ -58,10 +58,10 @@ class SavePapers_Batch {
     function set_args($arg) {
         $this->quiet = isset($arg["q"]);
         $this->ignore_errors = isset($arg["ignore-errors"]);
-        if (isset($args["ignore-pid"])) {
+        if (isset($arg["ignore-pid"])) {
             $this->pidflags |= Paper_API::PIDFLAG_IGNORE_PID;
         }
-        if (isset($args["match-title"])) {
+        if (isset($arg["match-title"])) {
             $this->pidflags |= Paper_API::PIDFLAG_MATCH_TITLE;
         }
         $this->disable_users = isset($arg["disable-users"]);

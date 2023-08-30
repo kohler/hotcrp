@@ -37,7 +37,7 @@ class Tag_PaperColumn extends PaperColumn {
         if ($decor === "edit") {
             $this->editable = true;
             return $this->__add_decoration($decor);
-        } else if (preg_match('/\A%\d*(?:\.\d*)[bdeEfFgGoxX]\z/', $decor)) {
+        } else if (preg_match('/\A%?\d*(?:\.\d*)[bdeEfFgGoxX]\z/', $decor)) {
             $this->__add_decoration($decor, [$this->real_format]);
             $this->real_format = $decor;
             return true;
