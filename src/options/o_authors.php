@@ -192,7 +192,7 @@ class Authors_PaperOption extends PaperOption {
         return $ov;
     }
 
-    private function editable_author_component_entry($pt, $n, $component, $au, $reqau, $ignore_diff, $readonly) {
+    private function editable_author_component_entry($pt, $n, $component, $au, $reqau, $ignore_diff) {
         if ($component === "name") {
             $js = ["size" => "35", "placeholder" => "Name", "autocomplete" => "off", "aria-label" => "Author name"];
             $auval = $au ? $au->name(NAME_PARSABLE) : "";
@@ -214,12 +214,9 @@ class Authors_PaperOption extends PaperOption {
         if ($val !== $auval) {
             $js["data-default-value"] = $auval;
         }
-        if ($readonly) {
-            $js["readonly"] = true;
-        }
         return Ht::entry("authors:{$n}:{$component}", $val, $js);
     }
-    private function echo_editable_authors_line($pt, $n, $au, $reqau, $shownum, $readonly) {
+    private function echo_editable_authors_line($pt, $n, $au, $reqau, $shownum) {
         // on new paper, default to editing user as first author
         $ignore_diff = false;
         if ($n === 1
@@ -236,9 +233,9 @@ class Authors_PaperOption extends PaperOption {
                 '<div class="flex-grow-0 row-counter">', $n, '.</div>';
         }
         echo '<div class="flex-grow-1">',
-            $this->editable_author_component_entry($pt, $n, "email", $au, $reqau, $ignore_diff, $readonly), ' ',
-            $this->editable_author_component_entry($pt, $n, "name", $au, $reqau, $ignore_diff, $readonly), ' ',
-            $this->editable_author_component_entry($pt, $n, "affiliation", $au, $reqau, $ignore_diff,$readonly),
+            $this->editable_author_component_entry($pt, $n, "email", $au, $reqau, $ignore_diff), ' ',
+            $this->editable_author_component_entry($pt, $n, "name", $au, $reqau, $ignore_diff), ' ',
+            $this->editable_author_component_entry($pt, $n, "affiliation", $au, $reqau, $ignore_diff),
             $pt->messages_at("authors:{$n}"),
             $pt->messages_at("authors:{$n}:email"),
             $pt->messages_at("authors:{$n}:name"),
@@ -256,7 +253,6 @@ class Authors_PaperOption extends PaperOption {
         $pt->print_editable_option_papt($this, $title, [
             "id" => "authors", "for" => false
         ]);
-        $readonly = !$this->test_editable($ov->prow);
 
         $min_authors = $this->max_count > 0 ? min(5, $this->max_count) : 5;
 
@@ -279,11 +275,11 @@ class Authors_PaperOption extends PaperOption {
             ' data-row-counter-digits="', $ndigits,
             '" data-row-template="authors:row-template">';
         for ($n = 1; $n <= $nau; ++$n) {
-            $this->echo_editable_authors_line($pt, $n, $aulist[$n-1] ?? null, $reqaulist[$n-1] ?? null, $this->max_count !== 1, $readonly);
+            $this->echo_editable_authors_line($pt, $n, $aulist[$n-1] ?? null, $reqaulist[$n-1] ?? null, $this->max_count !== 1);
         }
         echo '</div>';
         echo '<template id="authors:row-template" class="hidden">';
-        $this->echo_editable_authors_line($pt, '$', null, null, $this->max_count !== 1, $readonly);
+        $this->echo_editable_authors_line($pt, '$', null, null, $this->max_count !== 1);
         echo "</template></div></div>\n\n";
     }
 

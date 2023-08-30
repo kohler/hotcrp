@@ -59,8 +59,7 @@ class RealNumber_PaperOption extends PaperOption {
                 "id" => $this->readable_formid(), "size" => 8,
                 "size" => 8,
                 "class" => "js-autosubmit" . $pt->has_error_class($this->formid),
-                "data-default-value" => $ov->data() ?? "",
-                "readonly" => !$this->test_editable($ov->prow)
+                "data-default-value" => $ov->data() ?? ""
             ]),
             "</div></div>\n\n";
     }

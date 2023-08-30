@@ -528,10 +528,11 @@ class PaperTable {
         }
         echo '</h3>';
         $this->print_field_description($opt);
+        if (!$input || ($this->admin && !$opt->test_editable($this->prow))) {
+            echo MessageSet::feedback_html([MessageItem::marked_note($input ? "<0>Only administrators can edit this field." : "<0>This field is not currently editable.")]);
+        }
         if ($input) {
             echo Ht::hidden("has_{$opt->formid}", 1);
-        } else {
-            echo MessageSet::feedback_html([MessageItem::marked_note("<0>This field is not currently editable.")]);
         }
     }
 
@@ -3055,13 +3056,13 @@ class PaperTable {
             }
 
             if ($ndelegated == 0) {
-                $t = "As a secondary reviewer, you can <a href=\"" . $this->conf->hoturl("assign", "p=$rrow->paperId") . "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete this review yourself.";
+                $t = "<5>As a secondary reviewer, you can <a href=\"" . $this->conf->hoturl("assign", "p={$rrow->paperId}") . "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete this review yourself.";
             } else if ($rrow->reviewNeedsSubmit == 0) {
-                $t = "A delegated external reviewer has submitted their review, but you can still complete your own if you’d like.";
+                $t = "<0>A delegated external reviewer has submitted their review, but you can still complete your own if you’d like.";
             } else if ($napproval) {
-                $t = "A delegated external reviewer has submitted their review for approval. If you approve that review, you won’t need to submit your own.";
+                $t = "<0>A delegated external reviewer has submitted their review for approval. If you approve that review, you won’t need to submit your own.";
             } else {
-                $t = "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete this review yourself.";
+                $t = "<0>Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete this review yourself.";
             }
             $rrow->message_list[] = new MessageItem(null, $t, MessageSet::MARKED_NOTE);
         }

@@ -159,10 +159,9 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
             $this->compact ? ' compact' : '',
             count($topicset) < 7 ? ' column-count-1' : '',
             '">';
-        $readonly = !$this->test_editable($ov->prow);
         foreach ($topicset->group_list() as $tg) {
             $arg = ["class" => "uic js-range-click topic-entry", "id" => false,
-                    "data-range-type" => $this->formid, "disabled" => $readonly];
+                    "data-range-type" => $this->formid];
             if (($isgroup = $tg->nontrivial())) {
                 echo '<li class="ctelt cteltg"><div class="ctelti">';
                 if ($tg->improper()) {

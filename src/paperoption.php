@@ -836,7 +836,6 @@ class PaperOption implements JsonSerializable {
                 "rows" => max($extra["rows"] ?? 1, 1),
                 "cols" => 60,
                 "spellcheck" => ($extra["no_spellcheck"] ?? null ? null : "true"),
-                "readonly" => !$this->test_editable($ov->prow),
                 "data-default-value" => $default_value
             ]),
             "</div></div>\n\n";
@@ -1044,8 +1043,7 @@ class Checkbox_PaperOption extends PaperOption {
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $cb = Ht::checkbox($this->formid, 1, !!$reqov->value, [
             "id" => $this->readable_formid(),
-            "data-default-checked" => !!$ov->value,
-            "disabled" => !$this->test_editable($ov->prow)
+            "data-default-checked" => !!$ov->value
         ]);
         $pt->print_editable_option_papt($this,
             '<span class="checkc">' . $cb . '</span>' . $pt->edit_title_html($this),
@@ -1223,7 +1221,6 @@ class Selector_PaperOption extends PaperOption {
             ? ["for" => $this->readable_formid()]
             : ["id" => $this->readable_formid(), "for" => false]);
         echo '<div class="papev">';
-        $readonly = !$this->test_editable($ov->prow);
         if ($this->type === "dropdown") {
             $sel = [];
             if (!$ov->value) {
@@ -1235,15 +1232,13 @@ class Selector_PaperOption extends PaperOption {
             }
             echo Ht::select($this->formid, $sel, $reqov->value,
                 ["id" => $this->readable_formid(),
-                 "data-default-value" => $ov->value ?? 0,
-                 "disabled" => $readonly]);
+                 "data-default-value" => $ov->value ?? 0]);
         } else {
             foreach ($this->values() as $i => $s) {
                 if ($s !== null) {
                     echo '<div class="checki"><label><span class="checkc">',
                         Ht::radio($this->formid, $i + 1, $i + 1 == $reqov->value,
-                            ["data-default-checked" => $i + 1 == $ov->value,
-                             "disabled" => $readonly]),
+                            ["data-default-checked" => $i + 1 == $ov->value]),
                         '</span>', htmlspecialchars($s), '</label></div>';
                 }
             }
@@ -1452,7 +1447,6 @@ class Document_PaperOption extends PaperOption {
             $doc = $ov->prow->document($this->id, $docid, true);
         }
 
-        $readonly = !$this->test_editable($ov->prow);
         $max_size = $this->max_size ?? $this->conf->upload_max_filesize(true);
         $fk = $this->field_key();
 
@@ -1503,7 +1497,7 @@ class Document_PaperOption extends PaperOption {
                 echo $stamps;
             }
             echo '</div><div class="document-actions">';
-            if ($this->id > 0 && !$readonly) {
+            if ($this->id > 0) {
                 echo '<button type="button" class="link ui js-remove-document">Delete</button>';
             }
             if ($has_cf && $pt->cf->allow_recheck()) {
@@ -1523,12 +1517,8 @@ class Document_PaperOption extends PaperOption {
             }
         }
 
-        if (!$readonly) {
-            echo '<div class="document-replacer">', Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document", "id" => "{$fk}:uploader"]), '</div>';
-        } else if (!$doc) {
-            echo '<p>(No upload)</p>';
-        }
-        echo "</div></div>\n\n";
+        echo '<div class="document-replacer">', Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document", "id" => "{$fk}:uploader"]), '</div>',
+            "</div></div>\n\n";
     }
 
     function validate_document(DocumentInfo $doc) {

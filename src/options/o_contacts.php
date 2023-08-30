@@ -255,7 +255,6 @@ class Contacts_PaperOption extends PaperOption {
             }
         }
         usort($curau, $this->conf->user_comparator());
-        $readonly = !$this->test_editable($ov->prow);
 
         $pt->print_editable_option_papt($this, null, ["id" => "contacts", "for" => false]);
         echo '<div class="papev"><div id="contacts:container">';
@@ -288,7 +287,7 @@ class Contacts_PaperOption extends PaperOption {
             } else {
                 $dchecked = $au->contactId > 0 && $au->conflictType >= CONFLICT_AUTHOR;
                 echo Ht::checkbox("contacts:{$cidx}:active", 1, $rau ? $rau->conflictType !== 0 : $dchecked,
-                    ["data-default-checked" => $dchecked, "id" => false, "disabled" => $readonly]);
+                    ["data-default-checked" => $dchecked, "id" => false]);
             }
             echo '</span>', Text::nameo_h($au, NAME_E);
             if (($au->conflictType & CONFLICT_AUTHOR) === 0
@@ -303,21 +302,15 @@ class Contacts_PaperOption extends PaperOption {
             ++$cidx;
         }
 
-        if (!$readonly) {
-            foreach ($reqau as $rau) {
-                self::echo_editable_newcontact_row($pt, $cidx, $reqov, $rau);
-                ++$cidx;
-            }
-            echo '</div><template id="contacts:row-template" class="hidden">';
-            self::echo_editable_newcontact_row($pt, '$', null, null);
-            echo '</template><div class="ug">',
-                Ht::button("Add contact", ["class" => "ui row-order-append", "data-rowset" => "contacts:container", "data-row-template" => "contacts:row-template"]),
-                '</div>';
-        } else {
-            echo "</div>";
+        foreach ($reqau as $rau) {
+            self::echo_editable_newcontact_row($pt, $cidx, $reqov, $rau);
+            ++$cidx;
         }
-
-        echo "</div></div>\n\n";
+        echo '</div><template id="contacts:row-template" class="hidden">';
+        self::echo_editable_newcontact_row($pt, '$', null, null);
+        echo '</template><div class="ug">',
+            Ht::button("Add contact", ["class" => "ui row-order-append", "data-rowset" => "contacts:container", "data-row-template" => "contacts:row-template"]),
+            "</div></div></div>\n\n";
     }
     // XXX no render because paper strip
 }

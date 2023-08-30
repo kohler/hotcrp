@@ -152,7 +152,6 @@ class Attachments_PaperOption extends PaperOption {
             echo ' data-document-max-size="', (int) $this->max_size, '"';
         }
         echo '>';
-        $readonly = !$this->test_editable($ov->prow);
         foreach ($ov->document_set() as $i => $doc) {
             $ctr = $i + 1;
             $oname = "{$this->formid}:{$ctr}";
@@ -164,19 +163,11 @@ class Attachments_PaperOption extends PaperOption {
             if (($stamps = PaperTable::pdf_stamps_html($doc))) {
                 echo $stamps;
             }
-            echo '</div>';
-            if (!$readonly) {
-                echo '<div class="document-actions">', Ht::button("Delete", ["class" => "link ui js-remove-document"]), '</div>';
-            }
-            echo '</div>';
+            echo '</div><div class="document-actions">', Ht::button("Delete", ["class" => "link ui js-remove-document"]), '</div></div>';
         }
-        echo '</div>';
-        if (!$readonly) {
-            echo Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}:attachments"]);
-        } else if ($ov->document_set()->is_empty()) {
-            echo '<p>(No uploads)</p>';
-        }
-        echo "</div>\n\n";
+        echo '</div>',
+            Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}:attachments"]),
+            "</div>\n\n";
     }
 
     function render(FieldRender $fr, PaperValue $ov) {

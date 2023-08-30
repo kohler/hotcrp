@@ -45,8 +45,7 @@ class Numeric_PaperOption extends PaperOption {
                 "id" => $this->readable_formid(), "size" => 8,
                 "size" => 8, "inputmode" => "numeric",
                 "class" => "js-autosubmit" . $pt->has_error_class($this->formid),
-                "data-default-value" => $ov->value ?? "",
-                "readonly" => !$this->test_editable($ov->prow)
+                "data-default-value" => $ov->value ?? ""
             ]),
             "</div></div>\n\n";
     }

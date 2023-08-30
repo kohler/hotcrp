@@ -3657,7 +3657,7 @@ class Contact implements JsonSerializable {
     function edit_option_state(PaperInfo $prow, $opt) {
         if (!$opt->on_form()
             || !$opt->test_exists($prow, ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0)
-            || !$opt->test_editable($prow)
+            || (!$opt->test_editable($prow) && !$this->can_administer($prow))
             || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))
             || ($opt->is_final() && $this->edit_paper_state($prow) !== 2)
             || ($opt->id === 0 && $this->edit_paper_state($prow) === 2)) {
