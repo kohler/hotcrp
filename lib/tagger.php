@@ -77,8 +77,8 @@ class TagInfo {
     }
     /** @template T
      * @param ?list<T> $l1
-     * @param ?list<T> $l2
-     * @return ?list<T> */
+     * @param list<T> $l2
+     * @return list<T> */
     static private function merge_lists($l1, $l2) {
         if (empty($l1)) {
             return $l2;

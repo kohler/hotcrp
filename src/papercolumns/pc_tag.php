@@ -36,7 +36,6 @@ class Tag_PaperColumn extends PaperColumn {
     function add_decoration($decor) {
         if ($decor === "edit") {
             $this->editable = true;
-            $this->is_value = $this->is_value ?? true;
             return $this->__add_decoration($decor);
         } else if (preg_match('/\A%\d*(?:\.\d*)[bdeEfFgGoxX]\z/', $decor)) {
             $this->__add_decoration($decor, [$this->real_format]);
@@ -63,26 +62,42 @@ class Tag_PaperColumn extends PaperColumn {
         }
         if ($this->etag[0] == ":"
             && !$this->is_value
-            && ($dt = $pl->user->conf->tags()->find($this->dtag))
+            && ($dt = $pl->conf->tags()->find($this->dtag))
             && isset($dt->emoji)
             && count($dt->emoji) === 1) {
             /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
             $this->emoji = $dt->emoji[0];
         }
-        if ($this->editable
-            && !$pl->user->can_edit_tag_somewhere($this->etag)) {
-            $pl->column_error("<0>Tag ‘#{$this->dtag}’ is read-only");
+        if ($this->editable) {
+            $this->prepare_editable($pl, $visible);
+        }
+        $this->className = ($this->editable ? "pl_edit" : "pl_")
+            . ($this->is_value ? "tagval" : "tag");
+        return true;
+    }
+    private function prepare_editable(PaperList $pl, $visible) {
+        if (!$pl->user->can_edit_tag_somewhere($this->etag)) {
+            $this->editable = false;
+            $pl->column_error("<0>Tag ‘#{$this->dtag}’ cannot be edited");
             if ($pl->conf->tags()->is_automatic($this->etag)) {
-                if ($pl->conf->tags()->is_votish($this->etag)) {
-                    $pl->column_error(new MessageItem(null, "<0>That tag is set automatically based on per-user votes. Did you mean to edit ‘#~{$this->dtag}’?", MessageSet::INFORM));
+                if ($pl->conf->tags()->is_votish($this->etag)
+                    && $pl->user->is_pc_member()) {
+                    $pl->column_error(new MessageItem(null, "<0>This tag is set automatically based on per-user votes. Did you mean ‘edit:#~{$this->dtag}’?", MessageSet::INFORM));
                 } else {
-                    $pl->column_error(new MessageItem(null, "<0>That tag is set automatically.", MessageSet::INFORM));
+                    $pl->column_error(new MessageItem(null, "<0>This tag is set automatically.", MessageSet::INFORM));
                 }
             }
-            $this->editable = false;
+            return;
         }
-        if ($this->editable
-            && ($visible & PaperColumn::PREP_VISIBLE)
+        if ($this->is_value === null) {
+            // XXX min/max values
+            $dt = $pl->conf->tags()->find($this->etag);
+            if (!$dt && ($tw = strpos($this->etag, "~"))) {
+                $dt = $pl->conf->tags()->find(substr($this->etag, $tw + 1));
+            }
+            $this->is_value = !$dt || !$dt->is(TagInfo::TF_APPROVAL);
+        }
+        if (($visible & PaperColumn::PREP_VISIBLE) !== 0
             && $pl->table_id()
             && !$pl->viewing("facets")) {
             $pl->has_editable_tags = true;
@@ -92,9 +107,6 @@ class Tag_PaperColumn extends PaperColumn {
                 $this->editsort = true;
             }
         }
-        $this->className = ($this->editable ? "pl_edit" : "pl_")
-            . ($this->is_value ? "tagval" : "tag");
-        return true;
     }
     function completion_name() {
         return "#{$this->dtag}";
