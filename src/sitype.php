@@ -585,10 +585,12 @@ class Tag_Sitype extends Sitype {
 
 class TagList_Sitype extends Sitype {
     use Data_Sitype;
-    /** @var int */
-    private $flags = Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE;
-    /** @var ?float */
-    private $min_idx;
+    /** @var int
+     * @readonly */
+    public $flags = Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE;
+    /** @var ?float
+     * @readonly */
+    public $min_idx;
     /** @param string $type
      * @param string $subtype */
     function __construct($type, $subtype) {

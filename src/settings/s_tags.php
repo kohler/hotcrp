@@ -7,23 +7,44 @@ class Tags_SettingParser extends SettingParser {
     private $sv;
     /** @var Tagger */
     private $tagger;
+    /** @var TagMap */
+    private $base_map;
     private $diffs = [];
     private $cleaned = false;
+
+    /** @return int */
+    static function si_flag(Si $si) {
+        if ($si->name === "tag_hidden") {
+            return TagInfo::TF_HIDDEN;
+        } else if ($si->name === "tag_readonly") {
+            return TagInfo::TF_READONLY;
+        } else if ($si->name === "tag_sitewide") {
+            return TagInfo::TF_SITEWIDE;
+        } else if ($si->name === "tag_vote_approval") {
+            return TagInfo::TF_APPROVAL;
+        } else if ($si->name === "tag_vote_allotment") {
+            return TagInfo::TF_ALLOTMENT;
+        } else if ($si->name === "tag_rank") {
+            return TagInfo::TF_RANK;
+        } else {
+            return 0;
+        }
+    }
+
+    /** @return list<TagInfo> */
+    static function sorted_settings_for(TagMap $map, Si $si) {
+        return $map->sorted_settings_having(self::si_flag($si));
+    }
 
     function __construct(SettingValues $sv) {
         $this->sv = $sv;
         $this->tagger = new Tagger($sv->user);
+        $this->base_map = TagMap::make($sv->conf, false);
     }
 
     function set_oldv(Si $si, SettingValues $sv) {
-        if ($si->name === "tag_hidden") {
-            $sv->set_oldv("tag_hidden", Tags_SettingParser::render_tags($sv->conf->tags()->sorted_settings_having(TagInfo::TF_HIDDEN)));
-        } else if ($si->name === "tag_readonly") {
-            $sv->set_oldv("tag_readonly", Tags_SettingParser::render_tags($sv->conf->tags()->sorted_settings_having(TagInfo::TF_READONLY)));
-        } else if ($si->name === "tag_sitewide") {
-            $sv->set_oldv("tag_sitewide", Tags_SettingParser::render_tags($sv->conf->tags()->sorted_settings_having(TagInfo::TF_SITEWIDE)));
-        } else if ($si->name === "tag_vote_approval") {
-            $sv->set_oldv("tag_vote_approval", Tags_SettingParser::render_tags($sv->conf->tags()->sorted_settings_having(TagInfo::TF_APPROVAL)));
+        if (in_array($si->name, ["tag_hidden", "tag_readonly", "tag_sitewide", "tag_vote_approval"])) {
+            $sv->set_oldv($si->name, self::render_tags(self::sorted_settings_for($sv->conf->tags(), $si)));
         } else if ($si->name === "tag_vote_allotment") {
             $x = [];
             foreach ($sv->conf->tags()->sorted_settings_having(TagInfo::TF_ALLOTMENT) as $t) {
@@ -35,8 +56,18 @@ class Tags_SettingParser extends SettingParser {
         }
     }
 
+    /** @param list<TagInfo> $tl
+     * @return string */
     static function render_tags($tl) {
-        return join(" ", array_map(function ($t) { return $t->tag; }, $tl));
+        $last = null;
+        $tx = [];
+        foreach ($tl as $ti) {
+            if (!$last || $last->tag !== $ti->tag) {
+                $tx[] = $ti->tag;
+                $last = $ti;
+            }
+        }
+        return join(" ", $tx);
     }
     static function print_tag_chair(SettingValues $sv) {
         $sv->print_entry_group("tag_readonly", null, [
@@ -78,27 +109,41 @@ class Tags_SettingParser extends SettingParser {
         $sv->print_checkbox("tag_visibility_conflict", "PC can see tags for conflicted submissions");
     }
 
+    private function strip_presets($si, $v) {
+        $have = [];
+        foreach (self::sorted_settings_for($this->base_map, $si) as $ti) {
+            $have[$ti->tag] = true;
+        }
+        $newv = [];
+        foreach (Tagger::split_unpack($v) as $tv) {
+            if (!isset($have[$tv[0]])) {
+                $newv[] = $tv[1] === null ? $tv[0] : "{$tv[0]}#{$tv[1]}";
+            }
+        }
+        return join(" ", $newv);
+    }
+
     function apply_req(Si $si, SettingValues $sv) {
         assert($this->sv === $sv);
-        if ($si->name === "tag_vote_allotment") {
-            if (($v = $sv->base_parse_req($si)) !== null
-                && $sv->update("tag_vote_allotment", $v)) {
-                $sv->request_write_lock("PaperTag");
-                $sv->request_store_value($si);
-            }
-        } else if ($si->name === "tag_vote_approval") {
-            if (($v = $sv->base_parse_req($si)) !== null
-                && $sv->update("tag_vote_approval", $v)) {
+        if (($v = $sv->base_parse_req($si)) === null) {
+            return true;
+        }
+        if (self::si_flag($si) !== 0) {
+            $v = $this->strip_presets($si, $v);
+        }
+        if ($si->name === "tag_vote_allotment" || $si->name === "tag_vote_approval") {
+            if ($sv->update($si, $v)) {
                 $sv->request_write_lock("PaperTag");
                 $sv->request_store_value($si);
             }
         } else if ($si->name === "tag_rank") {
-            if (($v = $sv->base_parse_req($si)) !== null
-                && strpos($v, " ") === false) {
+            if (strpos($v, " ") === false) {
                 $sv->save("tag_rank", $v);
             } else if ($v !== null) {
                 $sv->error_at("tag_rank", "<0>Multiple ranking tags are not supported");
             }
+        } else if (self::si_flag($si) !== 0) {
+            $sv->save($si, $v);
         } else {
             return false;
         }
@@ -152,15 +197,15 @@ class Tags_SettingParser extends SettingParser {
             ["tag_rank", "tag_rank", "ranking"]
         ];
         foreach ($vinfo as $di => $dd) {
-            foreach (Tagger::split_unpack($sv->conf->setting_data($dd[0]) ?? "") as $ti) {
-                $ltag = strtolower($ti[0]);
+            foreach (Tagger::split_unpack($sv->conf->setting_data($dd[0]) ?? "") as $tv) {
+                $ltag = strtolower($tv[0]);
                 $vs[$ltag][] = $di;
                 $m = $vs[$ltag];
                 if (count($m) === 2) {
-                    $sv->warning_at($vinfo[$m[0]][1], "<0>Tag ‘{$ti[0]}’ is also used for {$dd[2]}");
+                    $sv->warning_at($vinfo[$m[0]][1], "<0>Tag ‘{$tv[0]}’ is also used for {$dd[2]}");
                 }
                 if (count($m) > 1) {
-                    $sv->warning_at($dd[1], "<0>Tag ‘{$ti[0]}’ is also used for {$vinfo[$m[0]][2]}");
+                    $sv->warning_at($dd[1], "<0>Tag ‘{$tv[0]}’ is also used for {$vinfo[$m[0]][2]}");
                 }
             }
         }

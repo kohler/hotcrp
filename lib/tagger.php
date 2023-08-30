@@ -55,22 +55,6 @@ class TagInfo {
     const TFM_VOTES = 0xC0;
     const TFM_DECORATION = 0x1C000;
 
-    /** @param string $s
-     * @return int */
-    static function parse_property($s) {
-        if ($s === "autosearch") {
-            return self::TF_AUTOSEARCH;
-        } else if ($s === "badge") {
-            return self::TF_BADGE;
-        } else if ($s === "hidden") {
-            return self::TF_HIDDEN;
-        } else if ($s === "readonly") {
-            return self::TF_READONLY;
-        } else {
-            return 0;
-        }
-    }
-
     /** @param string $tag
      * @param int $flags */
     function __construct($tag, TagMap $tagmap, $flags = 0) {
@@ -1208,60 +1192,59 @@ class TagMap {
     }
 
 
-    static function make(Conf $conf) {
-        $map = new TagMap($conf);
+    private function merge_settings(Conf $conf) {
         foreach ($conf->track_tags() as $tn) {
-            $map->set($tn, TagInfo::TF_TRACK | TagInfo::TF_CHAIR);
+            $this->set($tn, TagInfo::TF_TRACK | TagInfo::TF_CHAIR);
         }
         if ($conf->has_named_submission_rounds()) {
             foreach ($conf->submission_round_list() as $sr) {
                 if ($sr->tag !== "") {
-                    $map->set($sr->tag, TagInfo::TF_SCLASS | TagInfo::TF_CHAIR);
+                    $this->set($sr->tag, TagInfo::TF_SCLASS | TagInfo::TF_CHAIR);
                 }
             }
         }
         $ct = $conf->setting_data("tag_chair") ?? "";
         foreach (Tagger::split_unpack($ct) as $tv) {
-            $map->set($tv[0], TagInfo::TF_READONLY);
+            $this->set($tv[0], TagInfo::TF_READONLY);
         }
         $ct = $conf->setting_data("tag_hidden") ?? "";
         foreach (Tagger::split_unpack($ct) as $tv) {
-            $map->set($tv[0], TagInfo::TF_HIDDEN);
+            $this->set($tv[0], TagInfo::TF_HIDDEN);
         }
         $ct = $conf->setting_data("tag_sitewide") ?? "";
         foreach (Tagger::split_unpack($ct) as $tv) {
-            $map->set($tv[0], TagInfo::TF_SITEWIDE);
+            $this->set($tv[0], TagInfo::TF_SITEWIDE);
         }
         $ct = $conf->setting_data("tag_conflict_free") ?? "";
         foreach (Tagger::split_unpack($ct) as $tv) {
-            $map->set($tv[0], TagInfo::TF_CONFLICT_FREE);
+            $this->set($tv[0], TagInfo::TF_CONFLICT_FREE);
         }
         $ppu = $conf->setting("tag_vote_private_peruser")
             || $conf->opt("secretPC");
         $ppuf = $ppu ? 0 : TagInfo::TF_PUBLIC_PERUSER;
         $vt = $conf->setting_data("tag_vote") ?? "";
         foreach (Tagger::split_unpack($vt) as $tv) {
-            $ti = new TagInfo($tv[0], $map, TagInfo::TF_ALLOTMENT | TagInfo::TF_AUTOMATIC | $ppuf);
+            $ti = new TagInfo($tv[0], $this, TagInfo::TF_ALLOTMENT | TagInfo::TF_AUTOMATIC | $ppuf);
             $ti->allotment = ($tv[1] ?? 1.0);
-            $map->merge($ti);
+            $this->merge($ti);
         }
         $vt = $conf->setting_data("tag_approval") ?? "";
         foreach (Tagger::split_unpack($vt) as $tv) {
-            $map->set($tv[0], TagInfo::TF_APPROVAL | TagInfo::TF_AUTOMATIC | $ppuf);
+            $this->set($tv[0], TagInfo::TF_APPROVAL | TagInfo::TF_AUTOMATIC | $ppuf);
         }
         $rt = $conf->setting_data("tag_rank") ?? "";
         foreach (Tagger::split_unpack($rt) as $tv) {
-            $map->set($tv[0], TagInfo::TF_RANK | $ppuf);
+            $this->set($tv[0], TagInfo::TF_RANK | $ppuf);
         }
         $ct = $conf->setting_data("tag_color") ?? "";
         if ($ct !== "") {
             foreach (explode(" ", $ct) as $k) {
                 if ($k !== ""
                     && ($p = strpos($k, "=")) > 0
-                    && ($ks = $map->known_style(substr($k, $p + 1))) !== null) {
-                    $ti = new TagInfo(substr($k, 0, $p), $map, TagInfo::TF_STYLE);
+                    && ($ks = $this->known_style(substr($k, $p + 1))) !== null) {
+                    $ti = new TagInfo(substr($k, 0, $p), $this, TagInfo::TF_STYLE);
                     $ti->styles[] = $ks;
-                    $map->merge($ti);
+                    $this->merge($ti);
                 }
             }
         }
@@ -1270,10 +1253,10 @@ class TagMap {
             foreach (explode(" ", $bt) as $k) {
                 if ($k !== ""
                     && ($p = strpos($k, "=")) > 0
-                    && ($ks = $map->known_badge(substr($k, $p + 1))) !== null) {
-                    $ti = new TagInfo(substr($k, 0, $p), $map, TagInfo::TF_BADGE);
+                    && ($ks = $this->known_badge(substr($k, $p + 1))) !== null) {
+                    $ti = new TagInfo(substr($k, 0, $p), $this, TagInfo::TF_BADGE);
                     $ti->badge = $ks;
-                    $map->merge($ti);
+                    $this->merge($ti);
                 }
             }
         }
@@ -1281,82 +1264,96 @@ class TagMap {
         if ($bt !== "") {
             foreach (explode(" ", $bt) as $k) {
                 if ($k !== "" && ($p = strpos($k, "=")) !== false) {
-                    $ti = new TagInfo(substr($k, 0, $p), $map, TagInfo::TF_EMOJI);
+                    $ti = new TagInfo(substr($k, 0, $p), $this, TagInfo::TF_EMOJI);
                     $ti->emoji[] = substr($k, $p + 1);
-                    $map->merge($ti);
+                    $this->merge($ti);
                 }
             }
         }
         $tx = $conf->setting_data("tag_autosearch") ?? "";
         if ($tx !== "") {
             foreach (json_decode($tx) ? : [] as $tag => $search) {
-                $ti = new TagInfo($tag, $map, TagInfo::TF_AUTOMATIC | TagInfo::TF_AUTOSEARCH);
+                $ti = new TagInfo($tag, $this, TagInfo::TF_AUTOMATIC | TagInfo::TF_AUTOSEARCH);
                 $ti->autosearch = $search->q;
                 $ti->autosearch_value = $search->v ?? null;
-                $map->merge($ti);
+                $this->merge($ti);
             }
+        }
+    }
+
+    private function merge_json($tag, $data) {
+        $flags = 0;
+        if ($data->chair ?? false) {
+            $flags |= TagInfo::TF_CHAIR;
+        }
+        if ($data->readonly ?? false) {
+            $flags |= TagInfo::TF_READONLY;
+        }
+        if ($data->hidden ?? false) {
+            $flags |= TagInfo::TF_HIDDEN;
+        }
+        if ($data->sitewide ?? false) {
+            $flags |= TagInfo::TF_SITEWIDE;
+        }
+        if ($data->conflict_free ?? false) {
+            $flags |= TagInfo::TF_CONFLICT_FREE;
+        }
+        if ($data->autosearch ?? null) {
+            $flags |= TagInfo::TF_AUTOMATIC | TagInfo::TF_AUTOSEARCH;
+        }
+        if ($data->style ?? $data->color /* XXX */ ?? null) {
+            $flags |= TagInfo::TF_STYLE;
+        }
+        if ($data->badge ?? null) {
+            $flags |= TagInfo::TF_BADGE;
+        }
+        if ($data->emoji ?? null) {
+            $flags |= TagInfo::TF_EMOJI;
+        }
+        if ($flags === 0) {
+            return;
+        }
+        $ti = new TagInfo($tag, $this, $flags);
+        if (($flags & TagInfo::TF_AUTOSEARCH) !== 0) {
+            $ti->autosearch = $data->autosearch;
+            $ti->autosearch_value = $data->autosearch_value ?? null;
+        }
+        if (($flags & TagInfo::TF_STYLE) !== 0) {
+            $x = $data->style ?? $data->color;
+            foreach (is_string($x) ? [$x] : $x as $c) {
+                if (($ks = $this->known_style($c)) !== null) {
+                    $ti->styles[] = $ks;
+                }
+            }
+        }
+        if (($flags & TagInfo::TF_BADGE) !== 0) {
+            $x = $data->badge;
+            foreach (is_string($x) ? [$x] : $x as $c) {
+                if (($ks = $this->known_badge($c)) !== null) {
+                    $ti->badge = $ks;
+                }
+            }
+        }
+        if (($flags & TagInfo::TF_EMOJI) !== 0) {
+            $x = $data->badge;
+            foreach (is_string($x) ? [$x] : $x as $c) {
+                $ti->emoji[] = $c;
+            }
+        }
+        $this->merge($ti);
+    }
+
+    /** @param bool $all
+     * @return TagMap */
+    static function make(Conf $conf, $all) {
+        $map = new TagMap($conf);
+        if ($all) {
+            $map->merge_settings($conf);
         }
         if (($od = $conf->opt("definedTags"))) {
             foreach (is_string($od) ? [$od] : $od as $ods) {
                 foreach (json_decode($ods) as $tag => $data) {
-                    $flags = 0;
-                    if ($data->chair ?? false) {
-                        $flags |= TagInfo::TF_CHAIR;
-                    }
-                    if ($data->readonly ?? false) {
-                        $flags |= TagInfo::TF_READONLY;
-                    }
-                    if ($data->hidden ?? false) {
-                        $flags |= TagInfo::TF_HIDDEN;
-                    }
-                    if ($data->sitewide ?? false) {
-                        $flags |= TagInfo::TF_SITEWIDE;
-                    }
-                    if ($data->conflict_free ?? false) {
-                        $flags |= TagInfo::TF_CONFLICT_FREE;
-                    }
-                    if ($data->autosearch ?? null) {
-                        $flags |= TagInfo::TF_AUTOMATIC | TagInfo::TF_AUTOSEARCH;
-                    }
-                    if ($data->style ?? $data->color /* XXX */ ?? null) {
-                        $flags |= TagInfo::TF_STYLE;
-                    }
-                    if ($data->badge ?? null) {
-                        $flags |= TagInfo::TF_BADGE;
-                    }
-                    if ($data->emoji ?? null) {
-                        $flags |= TagInfo::TF_EMOJI;
-                    }
-                    if ($flags !== 0) {
-                        $ti = new TagInfo($tag, $map, $flags);
-                        if (($flags & TagInfo::TF_AUTOSEARCH) !== 0) {
-                            $ti->autosearch = $data->autosearch;
-                            $ti->autosearch_value = $data->autosearch_value ?? null;
-                        }
-                        if (($flags & TagInfo::TF_STYLE) !== 0) {
-                            $x = $data->style ?? $data->color;
-                            foreach (is_string($x) ? [$x] : $x as $c) {
-                                if (($ks = $map->known_style($c)) !== null) {
-                                    $ti->styles[] = $ks;
-                                }
-                            }
-                        }
-                        if (($flags & TagInfo::TF_BADGE) !== 0) {
-                            $x = $data->badge;
-                            foreach (is_string($x) ? [$x] : $x as $c) {
-                                if (($ks = $map->known_badge($c)) !== null) {
-                                    $ti->badge = $ks;
-                                }
-                            }
-                        }
-                        if (($flags & TagInfo::TF_EMOJI) !== 0) {
-                            $x = $data->badge;
-                            foreach (is_string($x) ? [$x] : $x as $c) {
-                                $ti->emoji[] = $c;
-                            }
-                        }
-                        $map->merge($ti);
-                    }
+                    $map->merge_json($tag, $data);
                 }
             }
         }

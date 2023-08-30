@@ -1321,7 +1321,7 @@ class Conf {
     /** @return TagMap */
     function tags() {
         if (!$this->_tag_map) {
-            $this->_tag_map = TagMap::make($this);
+            $this->_tag_map = TagMap::make($this, true);
         }
         return $this->_tag_map;
     }
