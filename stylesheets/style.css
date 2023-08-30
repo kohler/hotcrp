@@ -3725,6 +3725,9 @@ a.badge-white:hover {
 	margin: 0 0 0 1.5em;
 	text-indent: -1.5em;
 	list-style-type: none;
+	-webkit-column-break-inside: avoid;
+	page-break-inside: avoid;
+	break-inside: avoid;
 }
 .sd {
 	margin: 0.5em 0;
