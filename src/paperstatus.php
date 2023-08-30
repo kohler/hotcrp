@@ -471,11 +471,6 @@ class PaperStatus extends MessageSet {
             foreach ($this->prow->conflict_types() as $uid => $ctype) {
                 $this->_conflict_values[$uid] = [$ctype, 0, 0];
             }
-            if (!$this->user->allow_administer($this->prow)
-                && $this->prow->conflict_type($this->user) === CONFLICT_AUTHOR) {
-                $this->update_conflict_value($this->user, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
-                $this->checkpoint_conflict_values();
-            }
         }
 
         $this->user->set_overrides($old_overrides);
@@ -834,6 +829,20 @@ class PaperStatus extends MessageSet {
     }
 
     private function _check_contacts_last($pj) {
+        // if creating a paper, user becomes contact;
+        // if user removes self from author list, user becomes contact
+        if ($this->user->contactId > 0) {
+            $cv = $this->_conflict_values[$this->user->contactId] ?? null;
+            $ncv = self::new_conflict_value($cv);
+            if (($ncv & CONFLICT_CONTACTAUTHOR) === 0
+                && ($this->will_insert()
+                    || (!$this->user->allow_administer($this->prow)
+                        && ($ncv & CONFLICT_AUTHOR) === 0))) {
+                $this->update_conflict_value($this->user, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
+                $this->checkpoint_conflict_values();
+            }
+        }
+
         // exit if no change
         if ($this->has_error_at("authors")
             || $this->has_error_at("contacts")
@@ -859,16 +868,6 @@ class PaperStatus extends MessageSet {
         }
         if ($pcc_changed) {
             $this->change_at($this->conf->option_by_id(PaperOption::PCCONFID));
-        }
-    }
-
-    private function _ensure_creator_contact() {
-        // if creating a paper, user must always be contact
-        if ($this->will_insert() && $this->user->contactId > 0) {
-            // NB ok to have multiple inserters for same user
-            $this->_conflict_ins = $this->_conflict_ins ?? [];
-            $this->_conflict_ins[] = [$this->user->contactId, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR];
-            $this->change_at($this->conf->option_by_id(PaperOption::CONTACTSID));
         }
     }
 
@@ -1038,7 +1037,6 @@ class PaperStatus extends MessageSet {
 
         // validate contacts
         $this->_check_contacts_last($pj);
-        $this->_ensure_creator_contact();
         $this->_save_status |= self::SAVE_STATUS_PREPARED;
         return true;
     }

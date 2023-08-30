@@ -69,6 +69,31 @@ class PaperStatus_Tester {
         $ps->save_paper_json((object) ["id" => 1, "title" => "Scalable Timers? for Soft State Protocols"]);
         xassert_paper_status($ps);
         $paper1->invalidate_conflicts();
+        xassert_eqq($paper1->conflict_type($this->u_estrin), CONFLICT_AUTHOR);
+
+        $ps->save_paper_json(json_decode('{
+            "id": 1, "title": "Scalable Timers? for Soft State Protocols",
+            "authors": [
+                {"name": "Puneet Sharma", "email": "puneet@catarina.usc.edu", "affiliation": "Information Sciences Institute, University of Southern California"},
+                {"name": "Sally Floyd", "email": "floyd@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"},
+                {"name": "Van Jacobson", "email": "van@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"}
+            ]
+        }'));
+        xassert_paper_status($ps);
+        $paper1->invalidate_conflicts();
+        xassert_eqq($paper1->conflict_type($this->u_estrin), CONFLICT_CONTACTAUTHOR);
+
+        $ps->save_paper_json(json_decode('{
+            "id": 1, "title": "Scalable Timers? for Soft State Protocols",
+            "authors": [
+                {"name": "Puneet Sharma", "email": "puneet@catarina.usc.edu", "affiliation": "Information Sciences Institute, University of Southern California"},
+                {"name": "Deborah Estrin", "email": "estrin@USC.edu", "affiliation": "Information Sciences Institute, University of Southern California"},
+                {"name": "Sally Floyd", "email": "floyd@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"},
+                {"name": "Van Jacobson", "email": "van@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"}
+            ]
+        }'));
+        xassert_paper_status($ps);
+        $paper1->invalidate_conflicts();
         xassert_eqq($paper1->conflict_type($this->u_estrin), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
     }
 
