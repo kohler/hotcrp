@@ -133,6 +133,9 @@
     "di": {
         "weak": true, "nameish": true
     },
+    "md": {
+        "weak": true
+    },
     "jr": {
         "weak": true, "nameish": true
     },
@@ -752,11 +755,17 @@
     "msr": {
         "alternate": ["microsoft research"]
     },
+    "nau": {
+        "alternate": ["northern arizona university"]
+    },
     "ncsu": {
         "alternate": ["north carolina state university"]
     },
     "nist": {
         "alternate": ["national institute standards technology"]
+    },
+    "northern": {
+        "sync": ["arizona", "illinois"]
     },
     "nus": {
         "alternate": ["national university singapore"]
