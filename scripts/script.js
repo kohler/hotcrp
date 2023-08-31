@@ -11059,7 +11059,7 @@ handle_ui.on("pspcard-fold", function (evt) {
 });
 
 (function ($) {
-var edit_conditions = {};
+var edit_conditions = {}, edit_conditions_scheduled = false;
 
 function prepare_paper_select() {
     var self = this,
@@ -11383,13 +11383,25 @@ edit_conditions.pc_conflict = function (ec, form) {
     return evaluate_compar(n, ec.compar, ec.value);
 };
 
-function run_edit_conditions() {
-    var f = this.closest("form"),
+function run_edit_condition() {
+    const f = this.closest("form"),
         ec = JSON.parse(this.getAttribute("data-edit-condition")),
         off = !evaluate_edit_condition(ec, f),
         link = navsidebar.get(this);
     toggleClass(this, "hidden", off);
     link && toggleClass(link.element, "hidden", off);
+}
+
+function run_all_edit_conditions() {
+    $("#f-paper").find(".has-edit-condition").each(run_edit_condition);
+    edit_conditions_scheduled = false;
+}
+
+function schedule_all_edit_conditions() {
+    if (!edit_conditions_scheduled) {
+        edit_conditions_scheduled = true;
+        queueMicrotask(run_all_edit_conditions);
+    }
 }
 
 function header_text(hdr) {
@@ -11475,6 +11487,7 @@ handle_ui.on("submit.js-submit-paper", function (evt) {
 });
 
 function fieldchange(evt) {
+    $(this.form).trigger({type: "fieldchange", changeTarget: evt.target});
     $(this.form).find(".want-fieldchange")
         .trigger({type: "fieldchange", changeTarget: evt.target});
 }
@@ -11547,6 +11560,10 @@ hotcrp.load_editable_paper = function () {
             $("#f-paper .btn-savepaper").first().trigger({type: "click", sidebarTarget: this});
         });
     $(f).on("change", "input, select, textarea", fieldchange);
+    if (f.querySelector(".has-edit-condition")) {
+        run_all_edit_conditions();
+        $(f).on("fieldchange", schedule_all_edit_conditions);
+    }
 };
 
 hotcrp.load_editable_review = function () {
@@ -11598,11 +11615,6 @@ hotcrp.replace_editable_field = function (field, elt) {
     while (elt.firstChild)
         pfe.appendChild(elt.firstChild);
     add_pslitem_pfe.call(pfe);
-};
-
-hotcrp.paper_edit_conditions = function () {
-    $("#f-paper").on("fieldchange", ".has-edit-condition", run_edit_conditions)
-        .find(".has-edit-condition").each(run_edit_conditions);
 };
 
 hotcrp.evaluate_edit_condition = function (ec, form) {
@@ -12950,7 +12962,7 @@ Object.assign(window.hotcrp, {
     // load_paper_sidebar
     // make_review_field
     // onload
-    // paper_edit_conditions
+    paper_edit_conditions: function () {}, // XXX
     popup_skeleton: popup_skeleton,
     // render_list
     render_text: render_text,

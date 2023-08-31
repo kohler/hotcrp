@@ -493,8 +493,7 @@ class PaperTable {
         if ($opt->has_complex_exists_condition()
             && !$this->settings_mode
             && $input) {
-            echo ' want-fieldchange has-edit-condition" data-edit-condition="', htmlspecialchars(json_encode_browser($opt->exists_script_expression($this->prow)));
-            Ht::stash_script('$(hotcrp.paper_edit_conditions)', 'edit_condition');
+            echo ' has-edit-condition" data-edit-condition="', htmlspecialchars(json_encode_browser($opt->exists_script_expression($this->prow)));
         }
         echo '"><h3 class="', $this->control_class($opt->formid, "pfehead");
         if ($for === "checkbox") {
