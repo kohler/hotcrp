@@ -11400,7 +11400,7 @@ function run_all_edit_conditions() {
 function schedule_all_edit_conditions() {
     if (!edit_conditions_scheduled) {
         edit_conditions_scheduled = true;
-        queueMicrotask(run_all_edit_conditions);
+        setTimeout(run_all_edit_conditions, 0);
     }
 }
 
