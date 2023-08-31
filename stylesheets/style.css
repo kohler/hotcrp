@@ -55,7 +55,7 @@ select, button {
 }
 
 .dim {
-	color: #777777;
+	color: #888888;
 }
 
 .ps-withdrawn {
@@ -3534,10 +3534,6 @@ a.badge-orange:hover, a.badge-yellow:hover, a.badge-pink:hover {
 a.badge-white:hover {
 	color: #c45500;
 	border-color: #c45500;
-}
-
-.graytext {
-	color: #999999;
 }
 
 /* paper mode tabs */

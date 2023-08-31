@@ -1122,7 +1122,7 @@ class ContactList {
                 }
             }
             if ($row->is_disabled() && $this->user->isPC) {
-                $trclass .= " graytext";
+                $trclass .= " dim";
             }
             $this->count++;
             $ids[] = (int) $row->contactId;
