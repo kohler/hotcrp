@@ -1270,9 +1270,9 @@ class SettingValues extends MessageSet {
 
     /** @param string $name */
     function __saved_opt($name) {
-        $okey = "opt.{$name}";
-        if (array_key_exists($okey, $this->_savedv)) {
-            $sv = $this->_savedv[$name] ?? [0, null];
+        $svkey = "opt.{$name}";
+        if (array_key_exists($svkey, $this->_savedv)) {
+            $sv = $this->_savedv[$svkey] ?? [0, null];
             $idx = Si::$option_is_value[$name] ? 0 : 1;
             return $sv[$idx];
         } else {
