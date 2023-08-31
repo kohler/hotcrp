@@ -151,8 +151,9 @@ class Settings_API {
 
         $l = [];
         foreach ($m as $name => $list) {
-            if (($j = $xtp->search_list($list)))
+            if (($j = $xtp->search_list($list))) {
                 $l[] = $j;
+            }
         }
 
         usort($l, "Conf::xt_pure_order_compare");

@@ -5905,7 +5905,7 @@ ReviewField.prototype.render_in = function (fv, rrow, fe) {
 function DiscreteValues_ReviewField(fj) {
     var i, n, step, sym, ch;
     ReviewField.call(this, fj);
-    this.values = fj.values;
+    this.values = fj.values || [];
     this.symbols = fj.symbols;
     this.start = fj.start || null;
     this.scheme = fj.scheme || "sv";

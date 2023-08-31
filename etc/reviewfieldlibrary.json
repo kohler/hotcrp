@@ -1,64 +1,63 @@
 [
     {
         "legend": "Score",
-        "instantiate": {"name": "", "values": []},
-        "name": "Field name",
         "type": "radio",
-        "values": [
-            "Option 1",
-            "Option 2"
-        ],
         "required": true,
-        "visibility": "au"
+        "visibility": "au",
+        "sample_view": {
+            "values": [
+                "Option 1",
+                "Option 2"
+            ]
+        }
     },
     {
         "legend": "Text field",
-        "instantiate": {"name": ""},
-        "name": "Field name",
         "type": "text",
         "visibility": "au"
     },
     {
         "legend": "Dropdown score",
-        "instantiate": {"name": "", "values": []},
         "name": "Field name",
         "type": "dropdown",
-        "values": [
-            "Option 1",
-            "Option 2"
-        ],
         "required": true,
-        "visibility": "au"
+        "visibility": "au",
+        "sample_view": {
+            "values": [
+                "Option 1",
+                "Option 2"
+            ]
+        }
     },
     {
         "legend": "Checkbox",
-        "instantiate": {"name": ""},
-        "name": "Checkbox field",
         "type": "checkbox",
         "visibility": "au"
     },
     {
         "legend": "Attestation",
-        "instantiate": {"name": "", "description": ""},
-        "name": "Attestation",
-        "description": "The reviewer must check this box before submitting the review.",
         "type": "checkbox",
         "visibility": "au",
-        "required": true
+        "required": true,
+        "sample_view": {
+            "name": "Attestation",
+            "description": "The reviewer must check this box before submitting the review."
+        }
     },
     {
         "legend": "Checkboxes",
-        "instantiate": {"name": "", "description": "", "values": []},
-        "name": "Field name",
         "type": "checkboxes",
-        "description": "Select zero or more options.",
-        "values": [
-            "Option 1",
-            "Option 2",
-            "Option 3"
-        ],
         "start": "A",
-        "visibility": "au"
+        "visibility": "au",
+        "scheme": "catx",
+        "sample_view": {
+            "description": "Select zero or more options.",
+            "values": [
+                "Option 1",
+                "Option 2",
+                "Option 3"
+            ]
+        }
     },
     {
         "legend": "Overall merit (1–5, Reject through Strong Accept)",
@@ -85,6 +84,7 @@
             "Good paper, I will champion it"
         ],
         "start": "A",
+        "flip": true,
         "required": true,
         "visibility": "au",
         "scheme": "svr"
@@ -141,6 +141,7 @@
             "I am an expert in this area"
         ],
         "start": "X",
+        "flip": true,
         "required": true,
         "visibility": "au",
         "scheme": "orbu"

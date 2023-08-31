@@ -688,7 +688,7 @@ abstract class DiscreteValues_ReviewField extends Discrete_ReviewField {
         if (isset($j->symbols) && !isset($j->values)) {
             $this->values = array_fill(0, count($j->symbols), "");
         } else {
-            $this->values = $j->values ?? $j->options ?? [];
+            $this->values = $j->values ?? $j->options /* XXX */ ?? [];
         }
         $nvalues = count($this->values);
         if (isset($j->symbols) && count($j->symbols) === $nvalues) {

@@ -835,11 +835,12 @@ function rf_visibility_text(visibility) {
         return "";
 }
 
-function rf_render_view(fld) {
+function rf_render_view(fld, example) {
     var frag = document.createDocumentFragment(), labele, e, ve, t;
 
     // header
-    labele = $e("label", "revfn" + (fld.required ? " field-required" : ""), fld.name || "<unnamed>");
+    labele = $e("label", "revfn" + (fld.required ? " field-required" : ""),
+        fld.name || (example ? "Field name" : "<unnamed>"));
     frag.append((e = $e("h3", "rfehead", labele)));
     if ((t = rf_visibility_text(fld.visibility))) {
         e.append($e("div", "field-visibility", t));
@@ -923,13 +924,11 @@ var rfproperties = {
 }
 
 function rf_make(fj) {
-    var fld = hotcrp.make_review_field(fj);
+    const fld = hotcrp.make_review_field(fj);
     if (fj.id != null)
         fld.id = fj.id;
     if (fj.legend != null)
         fld.legend = fj.legend;
-    if (fj.instantiate != null)
-        fld.instantiate = fj.instantiate;
     if (fj.configurable != null)
         fld.configurable = fj.configurable;
     return fld;
@@ -1036,15 +1035,20 @@ demand_load.review_field_library = demand_load.make(function (resolve) {
     $.get(hoturl("api/reviewfieldlibrary"), null, resolve);
 });
 
+function rf_make_sample(fj) {
+    const xj = Object.assign({}, fj);
+    fj.sample_view && Object.assign(xj, fj.sample_view);
+    const fld = rf_make(xj);
+    fld.__base = fj;
+    return fld;
+}
+
 function add_dialog() {
     var $d, grid, samples;
     function submit(evt) {
         var samp = samples[+grid.getAttribute("data-selected-index")],
-            fld = Object.assign({}, samp);
+            fld = Object.assign({}, samp.__base);
         delete fld.id;
-        for (const i in fld.instantiate || {}) {
-            fld[i] = fld.instantiate[i];
-        }
         rf_add(fld);
         $$("rf/" + fieldorder.length + "/name").focus();
         $d.close();
@@ -1065,12 +1069,12 @@ function add_dialog() {
         grid = $d[0].querySelector(".grid-select");
         for (i = 0; i !== samples.length; ++i) {
             if (!samples[i].parse_value) {
-                samples[i] = rf_make(samples[i]);
+                samples[i] = rf_make_sample(samples[i]);
             }
             grid.append($e("fieldset", {"class": "grid-option", "data-index": i, role: "option", tabindex: 0, "aria-selected": "false"},
                 $e("legend", null, samples[i].legend),
                 $e("div", {"class": "settings-xf-view", role: "presentation"},
-                    rf_render_view(samples[i]))));
+                    rf_render_view(samples[i], true))));
         }
         settings_disable_children(grid);
         grid_select_event.call(grid, 0);
