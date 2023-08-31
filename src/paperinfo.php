@@ -724,6 +724,8 @@ class PaperInfo {
     static function make_placeholder(Conf $conf, $paperId) {
         $prow = new PaperInfo($conf);
         $prow->paperId = $paperId;
+        $prow->title = "";
+        $prow->authorInformation = "";
         $prow->_row_set->add_paper($prow);
         return $prow;
     }

@@ -80,6 +80,16 @@ class Author_SearchTerm extends SearchTerm {
             $srch->add_field_highlighter("au", $this->regex);
         }
     }
+    function script_expression(PaperInfo $row) {
+        if ($this->csm->has_contacts() || $this->regex) {
+            return $this->test($row, null);
+        } else {
+            return ["type" => "compar", "compar" => $this->csm->relation(), "child" => [
+                ["type" => "author_count"],
+                $this->csm->value()
+            ]];
+        }
+    }
     function about_reviews() {
         return self::ABOUT_NO;
     }

@@ -11343,24 +11343,37 @@ edit_conditions.compar = function (ec, form) {
                            evaluate_edit_condition(ec.child[1], form));
 };
 edit_conditions["in"] = function (ec, form) {
-    var v = evaluate_edit_condition(ec.child[0], form);
+    const v = evaluate_edit_condition(ec.child[0], form);
     return ec.values.indexOf(v) >= 0;
 }
 edit_conditions.title = function (ec, form) {
-    var e = form.elements.title;
+    const e = form.elements.title;
     return ec.match === ($.trim(e ? e.value : "") !== "");
 };
 edit_conditions.abstract = function (ec, form) {
-    var e = form.elements.abstract;
+    const e = form.elements.abstract;
     return ec.match === ($.trim(e ? e.value : "") !== "");
 };
+edit_conditions.author_count = function (ec, form) {
+    let i = 1, pfx, n = 0;
+    function nonempty(sfx) {
+        const e = form.elements[pfx + sfx];
+        return e && e.value.trim() !== "";
+    }
+    for (let i = 1; form.elements["authors:" + i + ":email"]; ++i) {
+        pfx = "authors:" + i;
+        if (nonempty(":email") || nonempty(":name") || nonempty(":first") || nonempty(":last"))
+            ++n;
+    }
+    return n;
+};
 edit_conditions.collaborators = function (ec, form) {
-    var e = form.elements.collaborators;
+    const e = form.elements.collaborators;
     return ec.match === ($.trim(e ? e.value : "") !== "");
 };
 edit_conditions.pc_conflict = function (ec, form) {
-    var n = 0, elt;
-    for (var i = 0; i !== ec.uids.length; ++i)
+    let n = 0, elt;
+    for (let i = 0; i !== ec.uids.length; ++i)
         if ((elt = form.elements["pcconf:" + ec.uids[i]])
             && (elt.type === "checkbox" ? elt.checked : +elt.value > 1)) {
             ++n;
