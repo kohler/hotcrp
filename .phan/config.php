@@ -107,15 +107,6 @@ $config = [
         Config::projectPath("lib/polyfills.php")
     ],
 
-    "globals_type_map" => [
-        "Conf" => '\Conf',
-        "Me" => '\Contact',
-        "Qreq" => '\Qrequest',
-        "prow" => '?PaperInfo',
-        "paperTable" => 'PaperTable',
-        "Admin" => '\Contact' // test
-    ],
-
     "suppress_issue_types" => [
         "PhanUnusedPublicMethodParameter",
         "PhanUnusedVariableValueOfForeachWithKey",
