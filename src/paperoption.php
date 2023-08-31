@@ -766,8 +766,8 @@ class PaperOption implements JsonSerializable {
         $sfs->visibility = $this->unparse_visibility();
         $sfs->required = $this->required;
         $sfs->exists_if = $this->exists_if
-            ?? ($this->_phase === PaperInfo::PHASE_FINAL ? "phase:final" : "all");
-        $sfs->editable_if = $this->editable_if ?? "all";
+            ?? ($this->_phase === PaperInfo::PHASE_FINAL ? "phase:final" : "ALL");
+        $sfs->editable_if = $this->editable_if ?? "ALL";
         $sfs->source_option = $this;
         return $sfs;
     }

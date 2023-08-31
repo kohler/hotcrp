@@ -409,76 +409,88 @@ handle_ui.on("js-settings-sf-checkbox-required", function () {
     }
 });
 
-function handle_sf_field_wizard_change(abstract) {
-    const klass = abstract ? ".js-settings-sf-abstract-required" : ".js-settings-sf-submission-required";
-    let e, wize, prese, reqe, changed = false;
-    for (e of document.querySelectorAll(klass)) {
-        if (e.name === "sf_abstract" || e.name === "sf_pdf_submission")
-            wize = e;
-        else if (e.name.endsWith("/presence"))
-            prese = e;
-        else if (e.name.endsWith("/required"))
-            reqe = e;
+const sf_field_wizard_info = [
+    { name: "sf_abstract", value: 0, type: "abstract", presence: "all", required: 1 },
+    { name: "sf_abstract", value: 1, type: "abstract", presence: "none" },
+    { name: "sf_abstract", value: 2, type: "abstract", presence: "all", required: 0 },
+    { name: "sf_pdf_submission", value: 0, type: "submission", presence: "all", required: 2 },
+    { name: "sf_pdf_submission", value: 1, type: "submission", presence: "none" },
+    { name: "sf_pdf_submission", value: 2, type: "submission", presence: "all", required: 0 },
+    { name: "sf_pdf_submission", value: 0, type: "final", presence: "phase:final", required: 2, secondary: true },
+    { name: "sf_pdf_submission", value: 1, type: "final", presence: "none", secondary: true },
+    { name: "sf_pdf_submission", value: 2, type: "final", presence: "phase:final", required: 0, secondary: true }
+];
+
+let sf_initializing = false;
+
+function handle_sf_field_wizard_change() {
+    const f = this.form;
+    let changed = false;
+    function mark(e) {
+        if (e.name === "sf_pdf_submission") {
+            hotcrp.fold("pdfupload", e.value == 1, 2);
+            hotcrp.fold("pdfupload", e.value != 0, 3);
+        }
     }
-    function change(e, v) {
-        if (e && e.value != v) {
-            if (v == -1 && e.lastChild.value != -1) {
-                e.add(new Option("Other", -1));
+    function apply1(type, sfx, value) {
+        let i = 1, e;
+        while ((e = f.elements["sf/" + i + "/id"]) && e.value !== type) {
+            ++i;
+        }
+        if (!e || !(e = f.elements["sf/" + i + "/" + sfx])) {
+            return;
+        }
+        if (value == null) {
+            value = input_default_value(e);
+        }
+        if (e.value != value) {
+            e.value = value;
+            mark(e);
+            foldup.call(e, null, {n: 2, open: true, nofocus: true});
+            changed = true;
+        }
+    }
+    function apply2(wizname, value) {
+        let e = f.elements[wizname];
+        if (e && e.value != value) {
+            e.value = value;
+            mark(e);
+            changed = true;
+        }
+    }
+    if (sf_initializing) {
+        // do not transfer wizard settings on initial load
+    } else if (this.name === "sf_abstract" || this.name === "sf_pdf_submission") {
+        for (let x of sf_field_wizard_info) {
+            if (x.name === this.name && x.value == this.value) {
+                apply1(x.type, "presence", x.presence);
+                apply1(x.type, "required", x.required);
             }
-            $(e).val(v);
-            e.setAttribute("data-autoset-value", v);
-            changed = false;
-            if (e === prese || e === reqe) {
-                foldup.call(e, null, {n: 2, open: true, nofocus: true});
-                $(e).change();
+        }
+    } else {
+        const m = this.name.match(/^sf\/(\d+)\/(presence|required)/),
+            ide = m && f.elements["sf/" + m[1] + "/id"],
+            prese = m && f.elements["sf/" + m[1] + "/presence"],
+            reqe = m && f.elements["sf/" + m[1] + "/required"];
+        if (ide && prese && reqe) {
+            for (let x of sf_field_wizard_info) {
+                if (x.type === ide.value
+                    && !x.secondary
+                    && x.presence == prese.value
+                    && (x.required == null || x.required == reqe.value)) {
+                    apply2(x.name, x.value);
+                }
             }
         }
     }
-    if ((this.hasAttribute("data-autoset-value") ? this.getAttribute("data-autoset-value") : input_default_value(this)) == this.value) {
-        /* do nothing */
-    } else if (this === wize) {
-        if (this.value == 0) {
-            change(reqe, abstract ? 1 : 2);
-        } else if (this.value == 1) {
-            change(prese, "none");
-        } else if (this.value == 2) {
-            change(reqe, 0);
-        }
-    } else if (this === prese) {
-        if (this.value === "none") {
-            change(wize, 1);
-        } else if (this.value !== "none" && wize && wize.value == 1) {
-            change(wize, reqe && reqe.value == 1 ? 0 : 2);
-        } else {
-            change(wize, -1);
-        }
-    } else if (this === reqe) {
-        if (this.value == 0 && wize && wize.value == 0) {
-            change(wize, 2);
-        } else if (this.value == (abstract ? 1 : 2) && wize && wize.value == 2) {
-            change(wize, 0);
-        } else {
-            change(wize, -1);
-        }
-    }
-    this.setAttribute("data-autoset-value", this.value);
-    changed && check_form_differs(this.form);
+    mark(this);
+    changed && check_form_differs(f);
 }
 
-handle_ui.on("js-settings-sf-abstract-required", function () {
-    handle_sf_field_wizard_change.call(this, true);
-});
-
-handle_ui.on("js-settings-sf-submission-required", function () {
-    handle_sf_field_wizard_change.call(this, false);
-    if (this.name === "sf_pdf_submission") {
-        hotcrp.fold("pdfupload", this.value == 1, 2);
-        hotcrp.fold("pdfupload", this.value != 0, 3);
-    }
-});
+handle_ui.on("js-settings-sf-wizard", handle_sf_field_wizard_change);
 
 $(document).on("hotcrpsettingssf", ".settings-sf", function () {
-    var view = document.getElementById(this.id + "/view"),
+    const view = document.getElementById(this.id + "/view"),
         edit = document.getElementById(this.id + "/edit");
     settings_disable_children(view);
     if (edit
@@ -488,7 +500,9 @@ $(document).on("hotcrpsettingssf", ".settings-sf", function () {
     } else {
         $(edit).awaken();
     }
+    sf_initializing = true;
     $(edit).find(".uich").trigger("change");
+    sf_initializing = false;
     removeClass(this, "hidden");
     settings_field_check_overflow.call(this);
     sf_order();

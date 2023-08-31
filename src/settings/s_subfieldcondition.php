@@ -16,9 +16,20 @@ class SubFieldCondition_SettingParser extends SettingParser {
             $sel["none"] = "Disabled";
         }
         if (!isset($pressel[$pres])) {
-            $sv->print_control_group("sf/{$osp->ctr}/condition", "Present", "Custom search", ["horizontal" => true]);
+            $sv->print_control_group("sf/{$osp->ctr}/condition", "Present", "Custom search", [
+                "horizontal" => true
+            ]);
         } else {
-            $sv->print_select_group("sf/{$osp->ctr}/condition", "Present", $sel, ["horizontal" => true]);
+            $klass = null;
+            if ($osp->sfs->option_id === PaperOption::ABSTRACTID
+                || $osp->sfs->option_id === DTYPE_SUBMISSION
+                || $osp->sfs->option_id === DTYPE_FINAL) {
+                $klass = "uich js-settings-sf-wizard";
+            }
+            $sv->print_select_group("sf/{$osp->ctr}/condition", "Present", $sel, [
+                "class" => $klass,
+                "horizontal" => true
+            ]);
         }
     }
 

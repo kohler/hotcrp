@@ -309,10 +309,10 @@ class Options_SettingParser extends SettingParser {
         $klass = null;
         if ($this->sfs->type === "checkbox") {
             $klass = "uich js-settings-sf-checkbox-required";
-        } else if ($this->sfs->option_id === PaperOption::ABSTRACTID) {
-            $klass = "uich js-settings-sf-abstract-required";
-        } else if ($this->sfs->option_id === DTYPE_SUBMISSION) {
-            $klass = "uich js-settings-sf-submission-required";
+        } else if ($this->sfs->option_id === PaperOption::ABSTRACTID
+                   || $this->sfs->option_id === DTYPE_SUBMISSION
+                   || $this->sfs->option_id === DTYPE_FINAL) {
+            $klass = "uich js-settings-sf-wizard";
         }
         $sv->print_select_group("sf/{$this->ctr}/required", "Required", [
             "0" => "No", "1" => "At registration", "2" => "At submission"
@@ -727,7 +727,7 @@ class Options_SettingParser extends SettingParser {
     // settings.
 
     /** @param Sf_Setting $sfs */
-    private function _assign_abstract_wizard_settings(SettingValues $sv, $ctr, $sfs) {
+    private function _assign_wizard_settings(SettingValues $sv, $ctr, $sfs) {
         if ($sfs->option_id === PaperOption::ABSTRACTID) {
             $wizkey = "sf_abstract";
             $default_required = PaperOption::REQ_REGISTER;
@@ -737,8 +737,7 @@ class Options_SettingParser extends SettingParser {
         }
         if ($sv->has_req("sf/{$ctr}/condition")
             || $sv->has_req("sf/{$ctr}/required")) {
-            if (strcasecmp($sfs->exists_if, "none") === 0
-                && $sfs->required === $default_required) {
+            if (strcasecmp($sfs->exists_if, "none") === 0) {
                 $sv->save($wizkey, 1);
             } else if ($sfs->required === $default_required) {
                 $sv->save($wizkey, 0);
@@ -752,12 +751,12 @@ class Options_SettingParser extends SettingParser {
             if ($wizval === 0) {
                 $sv->save("sf/{$ctr}/required", $default_required);
             } else if ($wizval === 1) {
-                $sv->save("sf/{$ctr}/condition", "none");
+                $sv->save("sf/{$ctr}/condition", "NONE");
             } else {
                 $sv->save("sf/{$ctr}/required", 0);
             }
-            if ($wizval !== 1 && $sv->newv("sf/{$ctr}/condition") === "none") {
-                $sv->save("sf/{$ctr}/condition", "all");
+            if ($wizval !== 1 && $sv->newv("sf/{$ctr}/condition") === "NONE") {
+                $sv->save("sf/{$ctr}/condition", "ALL");
             }
         }
     }
@@ -854,6 +853,7 @@ class Options_SettingParser extends SettingParser {
 
         // Check for errors
         if ($nopt->id === DTYPE_FINAL
+            && $nopt->test_can_exist()
             && !$nopt->is_final()) {
             $sv->error_at("sf/{$ctr}/condition", "<0>The final version field is restricted to being accessible on final versions.");
         }
@@ -876,7 +876,7 @@ class Options_SettingParser extends SettingParser {
         } else {
             $last_display_order = $form_order;
         }
-        return (object) $dj;
+        return count($dj) === 2 ? null : (object) $dj;
     }
 
     // FIELD ORDER RULES
@@ -910,7 +910,7 @@ class Options_SettingParser extends SettingParser {
             $sfs = $sv->newv("sf/{$ctr}");
             if ($sfs->option_id === PaperOption::ABSTRACTID
                 || $sfs->option_id === DTYPE_SUBMISSION) {
-                $this->_assign_abstract_wizard_settings($sv, $ctr, $sfs);
+                $this->_assign_wizard_settings($sv, $ctr, $sfs);
             } else if ($sfs->option_id === PaperOption::TOPICSID) {
                 $this->_assign_topics_wizard_settings($sv, $ctr, $sfs);
             }
