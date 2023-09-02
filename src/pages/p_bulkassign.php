@@ -73,6 +73,9 @@ class BulkAssign_Page {
         $ssel = SearchSelection::make($this->qreq, $this->user);
         $aset = new AssignmentSet($this->user);
         $aset->set_override_conflicts(true);
+        if (isset($this->qreq->t)) {
+            $aset->set_search_type($this->qreq->t);
+        }
         if ($callback) {
             $aset->add_progress_handler($callback);
         }
@@ -101,6 +104,9 @@ class BulkAssign_Page {
 
         $aset = new AssignmentSet($this->user);
         $aset->set_override_conflicts(true);
+        if ($this->qreq->t) {
+            $aset->set_search_type($this->qreq->t);
+        }
         $aset->set_csv_context(true);
         $aset->add_progress_handler([$this, "keep_browser_alive"]);
         $defaults = $this->assignment_defaults();
@@ -256,8 +262,8 @@ Assignment methods:
         echo '<div class="mb-3"><strong>OR</strong> &nbsp;',
             '<input type="file" name="file" accept="text/plain,text/csv" size="30"></div>';
 
-        echo '<div id="foldoptions" class="mb-5 foldc fold2c fold3c"><label>',
-            'Default action:&nbsp; ',
+        echo '<div id="foldoptions" class="mb-5 foldc fold2c fold3c">',
+            '<label>Default action: ',
             Ht::select("default_action", ["guess" => "guess from input",
                                           "primary" => "assign primary reviews",
                                           "secondary" => "assign secondary reviews",
@@ -270,10 +276,15 @@ Assignment methods:
                                           "settag" => "set tags",
                                           "preference" => "set reviewer preferences"],
                        $qreq->default_action ?? "guess",
-                       ["id" => "tsel"]),
+                       ["id" => "k-action", "class" => "ml-1"]),
+            '</label> <span class="barsep">·</span> ';
+        $limits = PaperSearch::viewable_limits($this->user);
+        echo '<label>Paper selection: ',
+            PaperSearch::limit_selector($this->conf, $limits, in_array("all", $limits) ? "all" : PaperSearch::default_limit($this->user, $limits), ["class" => "ml-1"]),
             '</label>';
+
         Ht::stash_script('$(function(){
-$("#tsel").on("change",function(){
+$("#k-action").on("change",function(){
 hotcrp.foldup.call(this,null,{open:this.value==="review"});
 hotcrp.foldup.call(this,null,{open:/^(?:primary|secondary|(?:pc|meta)?review)$/.test(this.value),n:2});
 }).trigger("change")})');
@@ -316,7 +327,7 @@ hotcrp.foldup.call(this,null,{open:/^(?:primary|secondary|(?:pc|meta)?review)$/.
 
         $this->print_instructions();
 
-        Ht::stash_script('$("#tsel").trigger("change")');
+        Ht::stash_script('$("#k-action").trigger("change")');
         $qreq->print_footer();
     }
 
