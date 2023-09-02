@@ -1009,7 +1009,7 @@ class AssignmentSet {
      * @readonly */
     public $user;
     /** @var string */
-    private $search_type = "s";
+    private $search_type = "all";
     /** @var ?array<int,true> */
     private $enabled_pids;
     /** @var ?array<string,true> */
