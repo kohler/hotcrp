@@ -173,14 +173,16 @@ class PaperOptionList implements IteratorAggregate {
         }
 
         $accum = [];
-        expand_json_includes_callback([$s1, $s2], function ($j) use (&$accum) {
+        $callback = function ($j) use (&$accum) {
             if (is_int($j->id)) {
                 $accum[$j->id][] = $j;
                 return true;
             } else {
                 return false;
             }
-        });
+        };
+        $s1 && expand_json_includes_callback($s1, $callback);
+        $s2 && expand_json_includes_callback($s2, $callback);
         $xtp = new XtParams($conf, null);
         foreach ($accum as $id => $list) {
             if (isset($map[$id])) {
