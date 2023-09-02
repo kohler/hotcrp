@@ -749,6 +749,7 @@ class PaperTable {
             if (!$this->allow_edit_final) {
                 foreach ($this->prow->form_fields() as $o) {
                     if ($o->required
+                        && $o->test_exists($this->prow)
                         && !$o->has_complex_exists_condition() /* XXX */
                         && $o->editable_condition() === null
                         && ($x = $o->present_script_expression()))
