@@ -294,7 +294,8 @@ class PermissionProblem extends Exception
         // finish it off
         if (($this->_a["forceShow"] ?? false)
             && $format === 5
-            && Navigation::get()->page !== "api") {
+            && Navigation::get()->page !== "api"
+            && Qrequest::$main_request) {
             $ms[] = $this->conf->_("<5><a class=\"nw\" href=\"{}\">Override conflict</a>", $this->conf->selfurl(Qrequest::$main_request, ["forceShow" => 1]));
         }
         if (!empty($ms)

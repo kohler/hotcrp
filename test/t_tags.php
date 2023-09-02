@@ -85,7 +85,10 @@ class Tags_Tester {
     }
 
     function test_tag_patterns() {
-        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+        $sv = new SettingValues($this->u_chair);
+        xassert_eqq($sv->oldv("tag_readonly"), "accept pcpaper reject");
+        xassert_eqq($sv->oldv("tag_sitewide"), "");
+        $sv->add_json_string('{
             "tag_readonly": "t*",
             "tag_hidden": "top",
             "tag_sitewide": "t*"
@@ -104,6 +107,12 @@ class Tags_Tester {
         xassert($ti->is(TagInfo::TF_READONLY));
         xassert(!$ti->is(TagInfo::TF_HIDDEN));
         xassert($ti->is(TagInfo::TF_SITEWIDE));
+
+        $sv = (new SettingValues($this->u_chair))->add_json_string('{
+            "tag_readonly": "accept pcpaper reject",
+            "tag_sitewide": ""
+        }');
+        xassert($sv->execute());
     }
 
     function test_assign_delete_create() {
@@ -169,5 +178,38 @@ class Tags_Tester {
         xassert_eqq($p1->tag_value("testtag"), 3.0);
 
         xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag#clear\n");
+    }
+
+    function test_assign_override_conflicts() {
+        assert_search_papers($this->u_chair, "conf:me", "");
+
+        $p1 = $this->conf->checked_paper_by_id(1);
+        xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag");
+        $p1->load_tags();
+        xassert($p1->has_tag("testtag"));
+        xassert_eqq($p1->tag_value("testtag"), 0.0);
+
+        $this->conf->qe("insert into PaperConflict set paperId=1, contactId=?, conflictType=?", $this->u_chair->contactId, Conflict::GENERAL);
+        assert_search_papers($this->u_chair, "conf:me", "1");
+
+        $aset = new AssignmentSet($this->u_chair);
+        $aset->parse("action,paper,tag\ntag,1,testtag");
+        xassert(!$aset->execute());
+        xassert_str_contains($aset->full_feedback_text(), "You have a conflict");
+
+        $p1->load_tags();
+        xassert_eqq($p1->tag_value("testtag"), 0.0);
+
+        $aset = new AssignmentSet($this->u_chair);
+        $aset->override_conflicts();
+        $aset->parse("action,paper,tag\ntag,1,testtag");
+        xassert($aset->execute());
+        xassert_eqq($aset->full_feedback_text(), "");
+
+        $p1->load_tags();
+        xassert_eqq($p1->tag_value("testtag"), 0.0);
+
+        $this->conf->qe("delete from PaperConflict where paperId=1 and contactId=?", $this->u_chair->contactId);
+        $this->conf->qe("delete from PaperTag where paperId=1 and tag='testtag'");
     }
 }
