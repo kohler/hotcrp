@@ -666,6 +666,16 @@ function assert_search_papers($user, $query, $expected) {
  * @param string|array $query
  * @param list<int|string>|string $expected
  * @return bool */
+function assert_search_all_papers($user, $query, $expected) {
+    $q = is_string($query) ? ["q" => $query] : $query;
+    $q["t"] = $q["t"] ?? "all";
+    return xassert_int_list_eqq(array_keys(search_json($user, $q)), $expected);
+}
+
+/** @param Contact $user
+ * @param string|array $query
+ * @param list<int|string>|string $expected
+ * @return bool */
 function assert_search_papers_ignore_warnings($user, $query, $expected) {
     return xassert_int_list_eqq(array_keys(search_json($user, $query, "id", true)), $expected);
 }

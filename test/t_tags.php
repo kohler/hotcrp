@@ -16,8 +16,9 @@ class Tags_Tester {
     }
 
     function test_mutual_automatic_search() {
-        assert_search_papers($this->u_chair, "#up", "");
-        assert_search_papers($this->u_chair, "#withdrawn", "");
+        assert_search_all_papers($this->u_chair, "#up", "");
+        assert_search_all_papers($this->u_chair, "#withdrawn", "");
+        assert_search_all_papers($this->u_chair, "tcpanaly", "15");
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
             "automatic_tag": [
@@ -27,18 +28,21 @@ class Tags_Tester {
         }');
         xassert($sv->execute());
 
-        assert_search_papers($this->u_chair, "#up", "15");
-        assert_search_papers($this->u_chair, "#withdrawn", "");
+        assert_search_all_papers($this->u_chair, "#up", "15");
+        assert_search_all_papers($this->u_chair, "#withdrawn", "");
 
         xassert_assign($this->u_chair, "paper,action,notify\n15,withdraw,no\n");
 
-        assert_search_papers($this->u_chair, "#up", "");
-        assert_search_papers($this->u_chair, "#withdrawn", "15");
+        $p15 = $this->conf->checked_paper_by_id(15);
+        xassert_gt($p15->timeWithdrawn, 0);
+
+        assert_search_all_papers($this->u_chair, "#up", "");
+        assert_search_all_papers($this->u_chair, "#withdrawn", "15");
 
         xassert_assign($this->u_chair, "paper,action,notify\n15,revive,no\n");
 
-        assert_search_papers($this->u_chair, "#up", "15");
-        assert_search_papers($this->u_chair, "#withdrawn", "");
+        assert_search_all_papers($this->u_chair, "#up", "15");
+        assert_search_all_papers($this->u_chair, "#withdrawn", "");
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
             "automatic_tag": [
@@ -48,13 +52,13 @@ class Tags_Tester {
         }');
         xassert($sv->execute());
 
-        assert_search_papers($this->u_chair, "#up", "");
-        assert_search_papers($this->u_chair, "#withdrawn", "");
+        assert_search_all_papers($this->u_chair, "#up", "");
+        assert_search_all_papers($this->u_chair, "#withdrawn", "");
     }
 
     function test_mutual_valued_automatic_search() {
-        assert_search_papers($this->u_chair, "#nau", "");
-        assert_search_papers($this->u_chair, "#lotsau", "");
+        assert_search_all_papers($this->u_chair, "#nau", "");
+        assert_search_all_papers($this->u_chair, "#lotsau", "");
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
             "automatic_tag": [
@@ -64,9 +68,9 @@ class Tags_Tester {
         }');
         xassert($sv->execute());
 
-        assert_search_papers($this->u_chair, "#nau 1-10 sort:id", "1 2 3 4 5 6 7 8 9 10");
+        assert_search_all_papers($this->u_chair, "#nau 1-10 sort:id", "1 2 3 4 5 6 7 8 9 10");
         xassert_eqq($this->conf->checked_paper_by_id(1)->tag_value("nau"), 4.0);
-        assert_search_papers($this->u_chair, "#lotsau 1-10 sort:id", "1 2 4 6 10");
+        assert_search_all_papers($this->u_chair, "#lotsau 1-10 sort:id", "1 2 4 6 10");
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
             "automatic_tag": [
@@ -76,8 +80,8 @@ class Tags_Tester {
         }');
         xassert($sv->execute());
 
-        assert_search_papers($this->u_chair, "#nau", "");
-        assert_search_papers($this->u_chair, "#lotsau", "");
+        assert_search_all_papers($this->u_chair, "#nau", "");
+        assert_search_all_papers($this->u_chair, "#lotsau", "");
     }
 
     function test_tag_patterns() {

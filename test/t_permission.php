@@ -622,6 +622,9 @@ class Permission_Tester {
         xassert_assign($user_chair, "paper,tag\n9,~private\n10,~~chair\n");
         assert_search_papers($user_chair, "#none", "11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
         assert_search_papers($user_mgbaker, "#none", "3 9 10 11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
+
+        // restore chair tag setting
+        $this->conf->save_refresh_setting("tag_chair", 1, "accept pcpaper reject");
     }
 
     function test_review_rounds() {
