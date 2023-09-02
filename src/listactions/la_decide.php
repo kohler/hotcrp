@@ -16,7 +16,7 @@ class Decide_ListAction extends ListAction {
                 . $pl->action_submit("decide")];
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
-        $aset = (new AssignmentSet($user))->override_conflicts();
+        $aset = (new AssignmentSet($user))->set_override_conflicts(true);
         $did = $qreq->decision;
         if (is_numeric($did)
             && ($dec = $user->conf->decision_set()->get(+$did))) {

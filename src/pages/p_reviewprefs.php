@@ -26,7 +26,7 @@ class ReviewPrefs_Page {
             return;
         }
 
-        $aset = (new AssignmentSet($user))->override_conflicts();
+        $aset = (new AssignmentSet($user))->set_override_conflicts(true);
         $aset->parse($csvg->unparse());
         $ok = $aset->execute();
         $ok && $aset->prepend_msg("<0>Preferences saved", MessageSet::SUCCESS);

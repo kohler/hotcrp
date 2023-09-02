@@ -2689,7 +2689,7 @@ class Conf {
         if (count($csv) > 1) {
             $this->_updating_automatic_tags = true;
             $aset = new AssignmentSet($this->root_user());
-            $aset->override_conflicts();
+            $aset->set_override_conflicts(true);
             $aset->set_search_type("all");
             $aset->parse($csv);
             $aset->execute();

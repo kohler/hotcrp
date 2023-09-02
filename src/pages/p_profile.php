@@ -471,7 +471,7 @@ class Profile_Page {
             }
             // delete twiddle tags
             $assigner = new AssignmentSet($this->viewer);
-            $assigner->override_conflicts();
+            $assigner->set_override_conflicts(true);
             $assigner->parse("paper,tag\nall,{$this->user->contactId}~all#clear\n");
             $assigner->execute();
             // clear caches

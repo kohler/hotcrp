@@ -198,6 +198,7 @@ class AssignmentState extends MessageSet {
         $this->user = $this->reviewer = $user;
         $this->cmap = new AssignerContacts($this->conf, $this->user);
         $this->set_want_ftext(true);
+        $this->overrides = $user->overrides();
     }
 
     /** @param ?string $filename */
@@ -1042,7 +1043,11 @@ class AssignmentSet {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->astate = new AssignmentState($user);
-        $this->set_overrides($overrides);
+        if ($overrides !== null) {
+            // XXX backwards compat
+            error_log(debug_string_backtrace());
+            $this->set_overrides($overrides);
+        }
     }
 
     /** @param callable(AssignmentSet,?CsvRow) $progressf
@@ -1062,20 +1067,31 @@ class AssignmentSet {
         $this->astate->reviewer = $reviewer;
         return $this;
     }
-    /** @param null|int|true $overrides
+    /** @param int $overrides
      * @return $this */
     function set_overrides($overrides) {
-        if ($overrides === null) {
+        if ($overrides === null) { // XXX backward compat
             $overrides = $this->user->overrides();
-        } else if ($overrides === true) {
+        } else if ($overrides === true) { // XXX backward compat
             $overrides = $this->user->overrides() | Contact::OVERRIDE_CONFLICT;
         }
         $this->astate->overrides = (int) $overrides;
         return $this;
     }
-    /** @return $this */
+    /** @return $this
+     * @deprecated */
     function override_conflicts() {
         return $this->set_overrides($this->user->overrides() | Contact::OVERRIDE_CONFLICT);
+    }
+    /** @param bool $override
+     * @return $this */
+    function set_override_conflicts($override) {
+        if ($override) {
+            $this->astate->overrides |= Contact::OVERRIDE_CONFLICT;
+        } else {
+            $this->astate->overrides &= ~Contact::OVERRIDE_CONFLICT;
+        }
+        return $this;
     }
     /** @param bool $csv_context
      * @return $this */
@@ -1112,6 +1128,10 @@ class AssignmentSet {
         }
     }
 
+    /** @return int */
+    function overrides() {
+        return $this->astate->overrides;
+    }
     /** @return bool */
     function is_empty() {
         return empty($this->assigners);
@@ -2011,16 +2031,6 @@ class AssignmentSet {
     /** @param int $pid */
     function register_notify_tracker($pid) {
         $this->_cleanup_notify_tracker[$pid] = true;
-    }
-
-    /** @param Contact $contact
-     * @param string $text
-     * @param ?bool $forceShow
-     * @return bool */
-    static function run($contact, $text, $forceShow = null) {
-        $aset = new AssignmentSet($contact, $forceShow);
-        $aset->parse($text);
-        return $aset->execute();
     }
 }
 

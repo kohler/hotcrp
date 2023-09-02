@@ -32,7 +32,7 @@ class Assign_Batch {
 
     /** @return int */
     function run() {
-        $assignset = (new AssignmentSet($this->user))->override_conflicts();
+        $assignset = (new AssignmentSet($this->user))->set_override_conflicts(true);
         $assignset->parse($this->text, $this->filename);
         if ($assignset->has_error()) {
             fwrite(STDERR, $assignset->full_feedback_text());

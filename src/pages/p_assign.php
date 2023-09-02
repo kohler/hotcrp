@@ -109,7 +109,7 @@ class Assign_Page {
         }
 
         $aset = new AssignmentSet($this->user);
-        $aset->override_conflicts();
+        $aset->set_override_conflicts(true);
         $aset->enable_papers($this->prow);
         $aset->parse(join("", $t));
         $ok = $aset->execute();

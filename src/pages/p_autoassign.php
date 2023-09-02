@@ -154,7 +154,7 @@ class Autoassign_Page {
 
     private function handle_download_assignment() {
         $assignset = new AssignmentSet($this->user);
-        $assignset->override_conflicts();
+        $assignset->set_override_conflicts(true);
         $assignset->enable_papers($this->ssel->selection());
         $assignset->parse($this->qreq->assignment);
         $csvg = $this->conf->make_csvg("assignments");
@@ -164,7 +164,7 @@ class Autoassign_Page {
 
     private function handle_execute() {
         $assignset = new AssignmentSet($this->user);
-        $assignset->override_conflicts();
+        $assignset->set_override_conflicts(true);
         $assignset->enable_papers($this->ssel->selection());
         $assignset->parse($this->qreq->assignment);
         $assignset->execute(true);

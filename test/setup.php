@@ -732,7 +732,8 @@ function paper_tag_normalize($prow) {
 /** @param Contact $who
  * @return bool */
 function xassert_assign($who, $what, $override = false) {
-    $assignset = new AssignmentSet($who, $override);
+    $assignset = new AssignmentSet($who);
+    $assignset->set_override_conflicts($override);
     $assignset->parse($what);
     $ok = $assignset->execute();
     xassert($ok);
@@ -745,7 +746,8 @@ function xassert_assign($who, $what, $override = false) {
 /** @param Contact $who
  * @return bool */
 function xassert_assign_fail($who, $what, $override = false) {
-    $assignset = new AssignmentSet($who, $override);
+    $assignset = new AssignmentSet($who);
+    $assignset->set_override_conflicts($override);
     $assignset->parse($what);
     return xassert(!$assignset->execute());
 }
@@ -926,7 +928,7 @@ class TestRunner {
         if (is_array($assignments)) {
             $assignments = join("\n", $assignments);
         }
-        $assignset = (new AssignmentSet($user))->override_conflicts();
+        $assignset = (new AssignmentSet($user))->set_override_conflicts(true);
         $assignset->parse($assignments);
         if (!$assignset->execute()) {
             error_log("* Failed to run assignments:\n" . $assignset->full_feedback_text());

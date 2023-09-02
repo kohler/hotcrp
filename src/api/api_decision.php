@@ -6,7 +6,7 @@ class Decision_API {
     static function run(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         $decset = $user->conf->decision_set();
         if ($qreq->method() !== "GET") {
-            $aset = (new AssignmentSet($user))->override_conflicts();
+            $aset = (new AssignmentSet($user))->set_override_conflicts(true);
             $aset->enable_papers($prow);
             if (is_numeric($qreq->decision) && $decset->contains(+$qreq->decision)) {
                 $qreq->decision = $decset->get(+$qreq->decision)->name;

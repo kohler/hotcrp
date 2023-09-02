@@ -472,7 +472,7 @@ class Tag_Assigner extends Assigner {
         if ($aset->conf->tags()->is_track($this->tag)) {
             $aset->register_update_rights();
         }
-        $aset->user->log_activity("Tag " . ($this->index === null ? "-" : "+") . "#$this->tag" . ($this->index ? "#$this->index" : ""), $this->pid);
+        $aset->user->log_activity("Tag " . ($this->index === null ? "-" : "+") . "#{$this->tag}" . ($this->index ? "#{$this->index}" : ""), $this->pid);
         $aset->register_notify_tracker($this->pid);
     }
 }

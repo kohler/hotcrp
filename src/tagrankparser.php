@@ -95,7 +95,7 @@ class TagRankParser {
                 } else if ($tag === "") {
                     $settings[] = [null, null, $landmark, "Tag missing.", null];
                 } else {
-                    $settings[] = [$pid, "$tag#$idx", $landmark, null, $row["title"]];
+                    $settings[] = [$pid, "{$tag}#{$idx}", $landmark, null, $row["title"]];
                     $pids[(int) $pid] = true;
                 }
             }

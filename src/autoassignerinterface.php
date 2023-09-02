@@ -174,7 +174,7 @@ class AutoassignerInterface extends MessageSet {
      * @return Assignment_PaperColumn */
     private function print_result_html_1($assignmenttext) {
         // Divided into separate functions to facilitate garbage collection
-        $assignset = (new AssignmentSet($this->user))->override_conflicts();
+        $assignset = (new AssignmentSet($this->user))->set_override_conflicts(true);
         $assignset->set_search_type($this->qreq->t);
         $assignset->parse($assignmenttext);
 

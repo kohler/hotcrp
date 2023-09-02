@@ -201,7 +201,7 @@ class Tags_Tester {
         xassert_eqq($p1->tag_value("testtag"), 0.0);
 
         $aset = new AssignmentSet($this->u_chair);
-        $aset->override_conflicts();
+        $aset->set_override_conflicts(true);
         $aset->parse("action,paper,tag\ntag,1,testtag");
         xassert($aset->execute());
         xassert_eqq($aset->full_feedback_text(), "");

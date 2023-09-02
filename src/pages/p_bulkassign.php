@@ -72,7 +72,7 @@ class BulkAssign_Page {
     function complete_assignment($callback) {
         $ssel = SearchSelection::make($this->qreq, $this->user);
         $aset = new AssignmentSet($this->user);
-        $aset->override_conflicts();
+        $aset->set_override_conflicts(true);
         if ($callback) {
             $aset->add_progress_handler($callback);
         }
@@ -100,7 +100,7 @@ class BulkAssign_Page {
         }
 
         $aset = new AssignmentSet($this->user);
-        $aset->override_conflicts();
+        $aset->set_override_conflicts(true);
         $aset->set_csv_context(true);
         $aset->add_progress_handler([$this, "keep_browser_alive"]);
         $defaults = $this->assignment_defaults();

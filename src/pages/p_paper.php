@@ -82,7 +82,7 @@ class Paper_Page {
         }
 
         $aset = new AssignmentSet($this->user);
-        $aset->override_conflicts();
+        $aset->set_override_conflicts(true);
         $aset->enable_papers($this->prow);
         $aset->parse("paper,action,withdraw reason\n{$this->prow->paperId},withdraw," . CsvGenerator::quote($reason));
         if (!$aset->execute()) {
@@ -98,7 +98,7 @@ class Paper_Page {
         }
 
         $aset = new AssignmentSet($this->user);
-        $aset->override_conflicts();
+        $aset->set_override_conflicts(true);
         $aset->enable_papers($this->prow);
         $aset->parse("paper,action\n{$this->prow->paperId},revive");
         if (!$aset->execute()) {

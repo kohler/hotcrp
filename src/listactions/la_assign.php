@@ -60,7 +60,7 @@ class Assign_ListAction extends ListAction {
             $text .= "$pid,$mt,$mpc\n";
         }
         $assignset = new AssignmentSet($user);
-        $assignset->override_conflicts();
+        $assignset->set_override_conflicts(true);
         $assignset->enable_papers($ssel->selection());
         $assignset->parse($text);
         $assignset->execute(true);

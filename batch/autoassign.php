@@ -129,7 +129,7 @@ class Autoassign_Batch {
         } else if ($this->dry_run) {
             fwrite(STDOUT, join("", $aa->assignments()));
         } else {
-            $assignset = (new AssignmentSet($this->user))->override_conflicts();
+            $assignset = (new AssignmentSet($this->user))->set_override_conflicts(true);
             $assignset->parse(join("", $aa->assignments()));
             if ($assignset->has_error()) {
                 fwrite(STDERR, $assignset->full_feedback_text());

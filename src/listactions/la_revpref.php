@@ -103,7 +103,7 @@ class Revpref_ListAction extends ListAction {
         foreach ($ssel->selection() as $p) {
             $csvg->add_row([$p, $reviewer->email, $qreq->pref]);
         }
-        $aset = (new AssignmentSet($user))->override_conflicts();
+        $aset = (new AssignmentSet($user))->set_override_conflicts(true);
         $aset->parse($csvg->unparse());
         $ok = $aset->execute();
         if ($qreq->ajax) {
@@ -157,7 +157,7 @@ class Revpref_ListAction extends ListAction {
             return MessageItem::error("<0>File upload required");
         }
 
-        $aset = (new AssignmentSet($user))->override_conflicts();
+        $aset = (new AssignmentSet($user))->set_override_conflicts(true);
         $aset->set_search_type("editpref");
         $aset->set_reviewer($reviewer);
         $aset->enable_actions("pref");

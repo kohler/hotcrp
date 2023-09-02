@@ -23,7 +23,7 @@ class Preference_API {
 
         if ($qreq->method() === "POST" || isset($qreq->pref)) {
             $aset = new AssignmentSet($user);
-            $aset->set_overrides(true);
+            $aset->set_override_conflicts(true);
             $aset->enable_papers($prow);
             $aset->parse("paper,user,preference\n{$prow->paperId}," . CsvGenerator::quote($u->email) . "," . CsvGenerator::quote($qreq->pref, true));
             if (!$aset->execute()) {

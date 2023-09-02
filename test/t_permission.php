@@ -121,6 +121,17 @@ class Permission_Tester {
         return $csvg->select($header)->append($texts)->unparse();
     }
 
+    /** @param Contact $contact
+     * @param string $text
+     * @param bool $override
+     * @return bool */
+    static function run_assignment($contact, $text, $override = false) {
+        $aset = new AssignmentSet($contact);
+        $aset->set_override_conflicts($override);
+        $aset->parse($text);
+        return $aset->execute();
+    }
+
     function test_main() {
         ConfInvariants::test_all($this->conf);
 
@@ -338,7 +349,7 @@ class Permission_Tester {
         xassert(!$user_marina->can_view_review($paper1, $review1));
         xassert(!$user_marina->can_view_review($paper1, $review2));
 
-        AssignmentSet::run($user_chair, "paper,action,email\n3,primary,ojuelegba@gmail.com\n");
+        self::run_assignment($user_chair, "paper,action,email\n3,primary,ojuelegba@gmail.com\n");
         xassert($user_wilma->has_outstanding_review());
         xassert(!$user_wilma->can_view_review($paper1, $review1));
         xassert(!$user_wilma->can_view_review($paper1, $review2));
@@ -403,7 +414,7 @@ class Permission_Tester {
         $user_varghese = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu"); // pc
 
         // set up some tags and tracks
-        AssignmentSet::run($user_chair, "paper,tag\n3 9 13 17,green\n", true);
+        self::run_assignment($user_chair, "paper,tag\n3 9 13 17,green\n", true);
         $this->conf->save_refresh_setting("tracks", 1, "{\"green\":{\"assrev\":\"-red\"}}");
         $paper13 = $user_jon->checked_paper_by_id(13);
         xassert(!$paper13->has_author($user_jon));
@@ -432,7 +443,7 @@ class Permission_Tester {
         assert_search_papers($user_chair, "#red~vote", "1");
 
         // assign some tags using AssignmentSet interface
-        $assignset = (new AssignmentSet($user_chair))->override_conflicts();
+        $assignset = (new AssignmentSet($user_chair))->set_override_conflicts(true);
         $assignset->parse("paper,action,tag,index
 1-9,tag,g*#clear
 2,tag,green,1\n");
@@ -443,7 +454,7 @@ class Permission_Tester {
         assert_search_papers($user_chair, "#green=1", "2");
         assert_search_papers($user_chair, "#green=0", "13 17");
 
-        $assignset = (new AssignmentSet($user_chair))->override_conflicts();
+        $assignset = (new AssignmentSet($user_chair))->set_override_conflicts(true);
         $assignset->parse("paper,action,tag,index
 1,tag,~vote,clear
 2,tag,marina~vote,clear\n");
@@ -452,42 +463,42 @@ class Permission_Tester {
         assert_search_papers($user_chair, "#any~vote", "1");
 
         // check \v in AssignmentSet
-        $assignset = (new AssignmentSet($user_chair))->override_conflicts();
+        $assignset = (new AssignmentSet($user_chair))->set_override_conflicts(true);
         $assignset->parse("paper,action,tag\n1,tag,fun#clear)nofun#clear\n");
         xassert_eqq($assignset->full_feedback_text(), "Invalid tag ‘)nofun#clear’\n");
         $assignset->execute();
 
         // check AssignmentSet conflict checking
-        $assignset = new AssignmentSet($user_chair, false);
+        $assignset = (new AssignmentSet($user_chair))->set_override_conflicts(false);
         $assignset->parse("paper,action,email\n1,pri,estrin@usc.edu\n");
         xassert_eqq($assignset->full_feedback_text(), "Deborah Estrin <estrin@usc.edu> cannot review #1 because they are conflicted\n");
         $assignset->execute();
         assert_query("select email from PaperReview r join ContactInfo c on (c.contactId=r.contactId) where paperId=1 order by email", "lixia@cs.ucla.edu\nmgbaker@cs.stanford.edu\nvarghese@ccrc.wustl.edu");
 
         // check AssignmentSet error messages and landmarks
-        $assignset = new AssignmentSet($user_chair, false);
+        $assignset = (new AssignmentSet($user_chair))->set_override_conflicts(false);
         $assignset->parse("paper,action,email\n1,pri,estrin@usc.edu\n", "fart.txt");
         xassert_eqq($assignset->full_feedback_text(), "fart.txt:2: Deborah Estrin <estrin@usc.edu> cannot review #1 because they are conflicted\n");
         xassert(!$assignset->execute());
 
-        $assignset = new AssignmentSet($user_chair, false);
+        $assignset = (new AssignmentSet($user_chair))->set_override_conflicts(false);
         $assignset->parse("paper,action,email,landmark\n1,pri,estrin@usc.edu,butt.txt:740\n", "fart.txt");
         xassert_eqq($assignset->full_feedback_text(), "butt.txt:740: Deborah Estrin <estrin@usc.edu> cannot review #1 because they are conflicted\n");
         xassert(!$assignset->execute());
 
-        $assignset = new AssignmentSet($user_chair, false);
+        $assignset = (new AssignmentSet($user_chair))->set_override_conflicts(false);
         $assignset->parse("paper,action,email,landmark,message\n1,pri,estrin@usc.edu,butt.txt:740\n1,error,none,butt.txt/10,GODDAMNIT", "fart.txt");
         xassert_eqq($assignset->full_feedback_text(), "butt.txt/10: GODDAMNIT\nbutt.txt:740: Deborah Estrin <estrin@usc.edu> cannot review #1 because they are conflicted\n");
         xassert(!$assignset->execute());
 
         assert_search_papers($user_chair, "#testo", "");
-        $assignset = new AssignmentSet($user_chair, false);
+        $assignset = (new AssignmentSet($user_chair))->set_override_conflicts(false);
         $assignset->parse("paper,action,tag,message,landmark\n1,tag,testo,,butt.txt:740\n1,error,,GODDAMNIT,butt.txt/10", "fart.txt");
         xassert_eqq($assignset->full_feedback_text(), "butt.txt/10: GODDAMNIT\n");
         xassert(!$assignset->execute());
 
         assert_search_papers($user_chair, "#testo", "");
-        $assignset = new AssignmentSet($user_chair, false);
+        $assignset = (new AssignmentSet($user_chair))->set_override_conflicts(false);
         $assignset->parse("paper,action,tag,message,landmark\n1,tag,testo,,butt.txt:740\n1,warning,,GODDAMNIT,butt.txt/10", "fart.txt");
         xassert_eqq($assignset->full_feedback_text(), "butt.txt/10: GODDAMNIT\n");
         xassert($assignset->execute());
@@ -495,14 +506,14 @@ class Permission_Tester {
         assert_search_papers($user_chair, "#testo", "1");
         xassert_assign($user_chair, "paper,tag\n1,testo#clear");
 
-        $assignset = new AssignmentSet($user_chair, false);
+        $assignset = (new AssignmentSet($user_chair))->set_override_conflicts(false);
         $assignset->parse("paper,action,email,landmark,message\n,error,none,butt.txt/10,GODDAMNIT", "fart.txt");
         xassert_eqq($assignset->full_feedback_text(), "butt.txt/10: GODDAMNIT\n");
         xassert(!$assignset->execute());
 
         // more AssignmentSet conflict checking
         assert_search_papers($user_chair, "#fart", "");
-        $assignset = new AssignmentSet($this->u_estrin, false);
+        $assignset = (new AssignmentSet($this->u_estrin))->set_override_conflicts(false);
         $assignset->parse("paper,tag
         1,fart
         2,fart\n");
@@ -771,7 +782,7 @@ class Permission_Tester {
         xassert($user_pdruschel->can_view_review($paper2, $review2a));
         xassert(!$this->u_mgbaker->can_view_review($paper2, $review2a));
 
-        AssignmentSet::run($this->u_chair, "paper,action,email\n2,secondary,mgbaker@cs.stanford.edu\n");
+        self::run_assignment($this->u_chair, "paper,action,email\n2,secondary,mgbaker@cs.stanford.edu\n");
         $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert(!$review2d->reviewSubmitted);
         xassert($review2d->reviewNeedsSubmit == 1);
@@ -846,7 +857,7 @@ class Permission_Tester {
         xassert($review2d->reviewNeedsSubmit == 0);
 
         // mgbaker secondary -> primary
-        $assignset = new AssignmentSet($this->u_chair, null);
+        $assignset = new AssignmentSet($this->u_chair);
         $assignset->parse("action,paper,email,reviewtype\nreview,all,mgbaker@cs.stanford.edu,secondary:primary\n");
         xassert_eqq($assignset->full_feedback_text(), "");
         xassert($assignset->execute());
@@ -1138,7 +1149,7 @@ class Permission_Tester {
         $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
 
         $this->conf->save_refresh_setting("tracks", 1, '{"green":{"admin":"+red"}}');
-        AssignmentSet::run($this->u_chair, "paper,tag\nall,-green\n3 9 13 17,green\n", true);
+        self::run_assignment($this->u_chair, "paper,tag\nall,-green\n3 9 13 17,green\n", true);
         SiteLoader::autoload("MeetingTracker");
 
         $permissionizer = new MeetingTracker_Permissionizer($this->conf, [1, 2, 3]);
@@ -1164,7 +1175,7 @@ class Permission_Tester {
         $user_randy = $this->conf->checked_user_by_email("randy@cs.berkeley.edu"); // author
 
         // tracks and view-paper permissions
-        AssignmentSet::run($this->u_chair, "paper,tag\nall,-green\n3 9 13 17,green\n", true);
+        self::run_assignment($this->u_chair, "paper,tag\nall,-green\n3 9 13 17,green\n", true);
         $this->conf->save_refresh_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"},\"_\":{\"view\":\"+red\"}}");
         $this->conf->save_refresh_setting("pc_seeallrev", 1);
         $this->conf->save_refresh_setting("pc_seeblindrev", null);
