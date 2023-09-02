@@ -940,8 +940,9 @@ class Limit_SearchTerm extends SearchTerm {
         "undecided" => "undecided",
         "unsub" => ["unsub", "unsubmitted"],
         "unsubmitted" => ["unsub", "unsubmitted"],
+        "viewable" => "viewable",
         "vis" => "viewable",
-        "visible" => "viewable",
+        "visible" => "viewable"
     ];
 
     const LFLAG_ACTIVE = 1;
