@@ -198,7 +198,7 @@ class Attachments_PaperOption extends PaperOption {
             if ($fr->want_text()) {
                 $fr->set_text(join("; ", $ts));
             } else if ($fr->want_list_row()) {
-                $fr->set_html(join("; ", $ts));
+                $fr->set_html('<ul class="semi"><li>' . join("</li><li>", $ts) . '</li></ul>');
             } else {
                 $fr->set_html('<ul class="x"><li class="od">' . join('</li><li class="od">', $ts) . '</li></ul>');
             }
