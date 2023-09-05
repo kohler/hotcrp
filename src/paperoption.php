@@ -1538,15 +1538,8 @@ class Document_PaperOption extends PaperOption {
         return false;
     }
 
-    function render(FieldRender $fr, PaperValue $ov) {
-        if ($this->id <= 0 && $fr->want(FieldRender::CFPAGE)) {
-            if ($this->id === 0) {
-                $fr->table->render_submission($fr, $this);
-            }
-            return;
-        }
-
-        $d = $ov->document(0);
+    /** @param ?DocumentInfo $d */
+    static function render_document(FieldRender $fr, PaperOption $opt, $d) {
         if (!$d) {
             if ($fr->verbose()) {
                 $fr->set_text("None");
@@ -1559,8 +1552,8 @@ class Document_PaperOption extends PaperOption {
         } else if ($fr->want(FieldRender::CFFORM)) {
             $fr->set_html($d->link_html(htmlspecialchars($d->filename), 0));
         } else if ($fr->want(FieldRender::CFPAGE)) {
-            $th = $this->title_html();
-            $dif = $this->display() === PaperOption::DISP_TOP ? 0 : DocumentInfo::L_SMALL;
+            $th = $opt->title_html();
+            $dif = $opt->display() === PaperOption::DISP_TOP ? 0 : DocumentInfo::L_SMALL;
             $fr->title = "";
             $fr->set_html($d->link_html("<span class=\"pavfn\">{$th}</span>", $dif));
         } else {
@@ -1570,6 +1563,16 @@ class Document_PaperOption extends PaperOption {
                 $th = "";
             }
             $fr->set_html($d->link_html($th, DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
+        }
+    }
+
+    function render(FieldRender $fr, PaperValue $ov) {
+        if ($this->id <= 0 && $fr->want(FieldRender::CFPAGE)) {
+            if ($this->id === 0) {
+                $fr->table->render_submission($fr, $this);
+            }
+        } else {
+            self::render_document($fr, $this, $ov->document(0));
         }
     }
 
