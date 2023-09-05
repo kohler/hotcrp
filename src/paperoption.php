@@ -756,7 +756,7 @@ class PaperOption implements JsonSerializable {
         if (strcasecmp($this->description, "none") === 0) {
             $sfs->description = "none";
         } else {
-            $fr = new FieldRender(FieldRender::CFPAGE | FieldRender::CFHTML);
+            $fr = new FieldRender(FieldRender::CFHTML);
             $this->render_description($fr);
             $sfs->description = $fr->value_html();
         }
@@ -1052,11 +1052,13 @@ class Checkbox_PaperOption extends PaperOption {
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
-        if ($fr->for_page() && $ov->value) {
-            $fr->title = "";
-            $fr->set_html('✓ <span class="pavfn">' . $this->title_html() . '</span>');
-        } else {
+        if ($ov->value || $fr->verbose()) {
             $fr->set_bool(!!$ov->value);
+            if ($fr->want(FieldRender::CFPAGE)) {
+                $fr->title = "";
+                $th = $this->title_html();
+                $fr->value .= " <span class=\"pavfn\">{$th}</span>";
+            }
         }
     }
 
@@ -1537,24 +1539,37 @@ class Document_PaperOption extends PaperOption {
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
-        if ($this->id <= 0 && $fr->for_page()) {
+        if ($this->id <= 0 && $fr->want(FieldRender::CFPAGE)) {
             if ($this->id === 0) {
                 $fr->table->render_submission($fr, $this);
             }
-        } else if (($d = $ov->document(0))) {
-            if ($fr->want_text()) {
-                $fr->set_text($d->filename);
-            } else if ($fr->for_form()) {
-                $fr->set_html($d->link_html(htmlspecialchars($d->filename), 0));
-            } else if ($fr->for_page()) {
-                $th = $this->title_html();
-                $dif = $this->display() === PaperOption::DISP_TOP ? 0 : DocumentInfo::L_SMALL;
-                $fr->title = "";
-                $fr->set_html($d->link_html("<span class=\"pavfn\">{$th}</span>", $dif));
-            } else {
-                $th = $fr->verbose() ? $d->export_filename() : "";
-                $fr->set_html($d->link_html($th, DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
+            return;
+        }
+
+        $d = $ov->document(0);
+        if (!$d) {
+            if ($fr->verbose()) {
+                $fr->set_text("None");
             }
+            return;
+        }
+
+        if ($fr->want(FieldRender::CFTEXT)) {
+            $fr->set_text($d->export_filename());
+        } else if ($fr->want(FieldRender::CFFORM)) {
+            $fr->set_html($d->link_html(htmlspecialchars($d->filename), 0));
+        } else if ($fr->want(FieldRender::CFPAGE)) {
+            $th = $this->title_html();
+            $dif = $this->display() === PaperOption::DISP_TOP ? 0 : DocumentInfo::L_SMALL;
+            $fr->title = "";
+            $fr->set_html($d->link_html("<span class=\"pavfn\">{$th}</span>", $dif));
+        } else {
+            if ($fr->verbose() || $fr->want(FieldRender::CFLIST | FieldRender::CFROW)) {
+                $th = $d->export_filename();
+            } else {
+                $th = "";
+            }
+            $fr->set_html($d->link_html($th, DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
         }
     }
 

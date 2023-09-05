@@ -795,7 +795,7 @@ class Options_SettingParser extends SettingParser {
         if ($mname === "name") {
             return [$oopt->default_edit_title(), $nopt->default_edit_title()];
         } else if ($mname === "description") {
-            $fr = new FieldRender(FieldRender::CFPAGE | FieldRender::CFHTML);
+            $fr = new FieldRender(FieldRender::CFHTML);
             $oopt->render_default_description($fr);
             $d1 = $fr->value_html();
             $fr->clear();

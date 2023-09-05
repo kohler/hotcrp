@@ -1248,8 +1248,7 @@ class PaperTable {
             htmlspecialchars($name), "</span></p>";
 
         $renders = [];
-        $fr = new FieldRender(FieldRender::CPAGE, $this->user);
-        $fr->table = $this;
+        $fr = (new FieldRender(FieldRender::CFHTML | FieldRender::CFPAGE))->make_table($this);
         foreach ($this->prow->page_fields() as $o) {
             if ($o->display() < PaperOption::DISP_TOP
                 || $o->display() > PaperOption::DISP_REST
@@ -2317,8 +2316,7 @@ class PaperTable {
     }
 
     private function _print_editable_fields() {
-        $fr = new FieldRender(FieldRender::CFHTML | FieldRender::CFFORM | FieldRender::CFVERBOSE, $this->user);
-        $fr->table = $this;
+        $fr = (new FieldRender(FieldRender::CFHTML | FieldRender::CFFORM | FieldRender::CFVERBOSE))->make_table($this);
         foreach ($this->prow->form_fields() as $o) {
             if (!$this->user->can_view_option($this->prow, $o)) {
                 continue;

@@ -41,7 +41,7 @@ class Abstract_PaperOption extends PaperOption {
         $this->print_web_edit_text($pt, $ov, $reqov, ["rows" => 5]);
     }
     function render(FieldRender $fr, PaperValue $ov) {
-        if ($fr->for_page()) {
+        if ($fr->want(FieldRender::CFPAGE)) {
             $fr->table->render_abstract($fr, $this);
         } else {
             $text = $ov->prow->abstract();

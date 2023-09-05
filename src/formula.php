@@ -2608,7 +2608,7 @@ class Formula implements JsonSerializable {
                 return $this->_format_detail->unparse_computed($rx, $real_format);
             } else if ($this->_format === Fexpr::FSUBFIELD) {
                 $prow = $this->placeholder_prow();
-                $fr = new FieldRender(FieldRender::CFCSV);
+                $fr = new FieldRender(FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE);
                 $this->_format_detail->render($fr, new PaperValue($prow, $x));
                 return $fr->value; // XXX
             } else if ($this->_format === Fexpr::FPREFEXPERTISE) {

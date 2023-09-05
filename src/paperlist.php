@@ -290,6 +290,9 @@ class PaperList {
 
     // columns access
     public $qopts; // set by PaperColumn::prepare
+    /** @var int
+     * @readonly */
+    public $render_context;
     /** @var array<string,string|list<string>> */
     public $table_attr;
     /** @var array */
@@ -760,8 +763,6 @@ class PaperList {
     /** @param bool $report_diff
      * @return list<string> */
     function unparse_view($report_diff = false) {
-        $this->_prepare();
-
         // views
         $res = [];
         $nextpos = 1000000;
@@ -1254,8 +1255,17 @@ class PaperList {
         return strnatcasecmp($f1->name, $f2->name);
     }
 
-    private function _set_vcolumns() {
+    /** @param int $context */
+    private function _reset_vcolumns($context) {
+        // reset
+        $this->_has = [];
+        $this->count = 0;
+        $this->_bulkwarn_count = 0;
+        $this->need_render = false;
+        $this->_vcolumns = [];
         $this->table_attr = [];
+        /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
+        $this->render_context = $context;
         assert(empty($this->row_attr));
 
         // extract columns from _viewf
@@ -1767,14 +1777,6 @@ class PaperList {
         $this->table_attr["data-columns"] = $jscol; /* XXX backward compat */
     }
 
-    private function _prepare() {
-        $this->_has = [];
-        $this->count = 0;
-        $this->_bulkwarn_count = 0;
-        $this->need_render = false;
-        $this->_vcolumns = [];
-    }
-
     /** @param PaperListTableRender $rstate
      * @return string */
     private function _statistics_rows($rstate) {
@@ -2021,14 +2023,13 @@ class PaperList {
 
     /** @return PaperListTableRender */
     private function _table_render() {
-        $this->_prepare();
         // need tags for row coloring
         if ($this->user->can_view_tags(null)) {
             $this->qopts["tags"] = true;
         }
 
         // get column list
-        $this->_set_vcolumns();
+        $this->_reset_vcolumns(FieldRender::CFLIST | FieldRender::CFHTML);
         if (empty($this->_vcolumns)) {
             return PaperListTableRender::make_error("Nothing to show");
         }
@@ -2264,8 +2265,7 @@ class PaperList {
     /** @return array{fields:array<string,array>,data:array<int,array{id:int}>,attr?:array,stat?:array} */
     function table_html_json() {
         // get column list, check sort
-        $this->_prepare();
-        $this->_set_vcolumns();
+        $this->_reset_vcolumns(FieldRender::CFLIST | FieldRender::CFHTML);
         if (empty($this->_vcolumns)) {
             return ["fields" => [], "data" => []];
         }
@@ -2327,8 +2327,7 @@ class PaperList {
     /** @return array<int,array<string,mixed>> */
     function text_json() {
         // get column list, check sort
-        $this->_prepare();
-        $this->_set_vcolumns();
+        $this->_reset_vcolumns(FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE);
         $data = [];
         if (!empty($this->_vcolumns)) {
             foreach ($this->rowset() as $row) {
@@ -2380,8 +2379,7 @@ class PaperList {
     /** @return array{array<string,string>,list<array<string,string>>} */
     function text_csv() {
         // get column list, check sort
-        $this->_prepare();
-        $this->_set_vcolumns();
+        $this->_reset_vcolumns(FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE);
 
         // collect row data
         $body = [];

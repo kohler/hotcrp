@@ -469,7 +469,7 @@ class HotCRPMailer extends Mailer {
             || !($ov = $this->row->option($uf->option))) {
             return $isbool ? false : "";
         } else {
-            $fr = new FieldRender(FieldRender::CFMAIL, $this->permuser);
+            $fr = new FieldRender(FieldRender::CFTEXT | FieldRender::CFMAIL, $this->permuser);
             $uf->option->render($fr, $ov);
             if ($isbool) {
                 return ($fr->value ?? "") !== "";

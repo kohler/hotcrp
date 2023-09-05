@@ -173,13 +173,14 @@ class Attachments_PaperOption extends PaperOption {
     function render(FieldRender $fr, PaperValue $ov) {
         $ts = [];
         foreach ($ov->document_set() as $d) {
-            if ($fr->want_text()) {
+            if ($fr->want(FieldRender::CFTEXT)) {
                 $ts[] = $d->member_filename();
             } else {
                 $linkname = htmlspecialchars($d->member_filename());
-                if ($fr->want_list()) {
+                $dif = 0;
+                if ($fr->want(FieldRender::CFLIST)) {
                     $dif = DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE;
-                } else if ($fr->for_form()) {
+                } else if ($fr->want(FieldRender::CFFORM)) {
                     $dif = 0;
                 } else if ($this->display() === PaperOption::DISP_TOP) {
                     $dif = 0;
@@ -194,24 +195,26 @@ class Attachments_PaperOption extends PaperOption {
                 $ts[] = $t;
             }
         }
-        if (!empty($ts)) {
-            if ($fr->want_text()) {
-                $fr->set_text(join("; ", $ts));
-            } else if ($fr->want_list_row()) {
-                $fr->set_html('<ul class="semi"><li>' . join("</li><li>", $ts) . '</li></ul>');
-            } else {
-                $fr->set_html('<ul class="x"><li class="od">' . join('</li><li class="od">', $ts) . '</li></ul>');
+        if (empty($ts)) {
+            if ($fr->verbose()) {
+                $fr->set_text("None");
             }
-            if ($fr->for_page() && $this->display() === PaperOption::DISP_TOP) {
-                $fr->title = false;
-                $v = '';
-                if ($fr->table && $fr->user->view_option_state($ov->prow, $this) === 1) {
-                    $v = ' fx8';
-                }
-                $fr->value = "<div class=\"pgsm{$v}\">{$fr->value}</div>";
+            return;
+        }
+        if ($fr->want(FieldRender::CFTEXT)) {
+            $fr->set_text(join("; ", $ts));
+        } else if ($fr->want(FieldRender::CFLIST | FieldRender::CFROW)) {
+            $fr->set_html('<ul class="semi"><li>' . join("</li><li>", $ts) . '</li></ul>');
+        } else {
+            $fr->set_html('<ul class="x"><li class="od">' . join('</li><li class="od">', $ts) . '</li></ul>');
+        }
+        if ($fr->want(FieldRender::CFPAGE) && $this->display() === PaperOption::DISP_TOP) {
+            $fr->title = false;
+            $v = '';
+            if ($fr->table && $fr->user->view_option_state($ov->prow, $this) === 1) {
+                $v = ' fx8';
             }
-        } else if ($fr->verbose()) {
-            $fr->set_text("None");
+            $fr->value = "<div class=\"pgsm{$v}\">{$fr->value}</div>";
         }
     }
 

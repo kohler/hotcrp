@@ -17,7 +17,7 @@ class Option_PaperColumn extends PaperColumn {
             return false;
         }
         $pl->qopts["options"] = true;
-        $this->fr = new FieldRender(0, $pl->user);
+        $this->fr = new FieldRender($pl->render_context | ($this->as_row ? FieldRender::CFROW : FieldRender::CFCOLUMN), $pl->user);
         if ($this->as_row) {
             $this->className = ltrim(preg_replace('/(?: +|\A)(?:plrd|plr|plc)(?= |\z)/', "", $this->className));
         }
@@ -43,7 +43,7 @@ class Option_PaperColumn extends PaperColumn {
         }
 
         $fr = $this->fr;
-        $fr->clear(FieldRender::CFLIST | FieldRender::CFHTML | ($this->as_row ? 0 : FieldRender::CFCOLUMN));
+        $fr->clear();
         $this->opt->render($fr, $ov);
         if ((string) $fr->value === "") {
             return "";
@@ -74,7 +74,7 @@ class Option_PaperColumn extends PaperColumn {
             return "";
         }
 
-        $this->fr->clear(FieldRender::CFCSV | FieldRender::CFVERBOSE);
+        $this->fr->clear();
         $this->opt->render($this->fr, $ov);
         return (string) $this->fr->value;
     }

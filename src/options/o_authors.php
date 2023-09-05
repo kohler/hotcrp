@@ -284,7 +284,7 @@ class Authors_PaperOption extends PaperOption {
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
-        if ($fr->for_page()) {
+        if ($fr->want(FieldRender::CFPAGE)) {
             $fr->table->render_authors($fr, $this);
         } else {
             $names = ["<ul class=\"x namelist\">"];

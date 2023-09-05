@@ -44,7 +44,7 @@ class GetAbstracts_ListAction extends ListAction {
         $n = prefix_word_wrap("", "Submission #{$prow->paperId}: {$prow->title}", 0, self::WIDTH);
         $text = $n . str_repeat("=", min(self::WIDTH, strlen($n) - 1)) . "\n\n";
 
-        $fr = new FieldRender(FieldRender::CTEXT, $user);
+        $fr = new FieldRender(FieldRender::CFTEXT, $user);
         foreach ($user->conf->options()->page_fields($prow) as $o) {
             if (($o->id <= 0 || $user->allow_view_option($prow, $o))
                 && $o->on_page()) {
