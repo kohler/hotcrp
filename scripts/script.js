@@ -8296,24 +8296,38 @@ function unload_list() {
     if (hl.str && (!cookie_set_at || cookie_set_at + 3 < now_msec()))
         set_cookie(hl);
 }
+
+var row_click_sel = null;
 function row_click(evt) {
     if (!hasClass(this.parentElement, "pltable-tbody")
-        || evt.target.closest("a, input, textarea, select, button, .ui, .uic"))
+        || evt.target.closest("a, input, textarea, select, button, .ui, .uic")
+        || evt.button !== 0) {
+        row_click_sel = null;
         return;
-    var pl = this, td = evt.target.closest("td");
-    if (!td)
-        return;
-    while (pl.nodeType !== 1 || /^plx/.test(pl.className)) {
-        pl = pl.previousSibling;
     }
-    var $inputs = $(pl).find("input, textarea, select, button")
-        .not("input[type=hidden], .pl_sel > *");
-    if ($inputs.length) {
-        $inputs.first().focus().scrollIntoView();
-    } else if (hasClass(td, "pl_id") || hasClass(td, "pl_title") || hasClass(td, "pl_rowclick")) {
-        var $a = $(pl).find("a.pnum").first(),
-            href = $a[0].getAttribute("href");
-        handle_list($a[0], href);
+    let current_sel = window.getSelection().toString();
+    if (evt.type === "mousedown") {
+        row_click_sel = current_sel;
+        return;
+    } else if (row_click_sel === null
+               || (current_sel !== row_click_sel && current_sel !== "")) {
+        row_click_sel = null;
+        return;
+    }
+
+    let pl = this, td = evt.target.closest("td");
+    if (pl.className.startsWith("plx")) {
+        pl = pl.previousElementSibling;
+    }
+    let $i = $(pl).find("input, textarea, select, button")
+        .not("input[type=hidden], .pl_sel *");
+    if ($i.length) {
+        $i.first().focus().scrollIntoView();
+    } else if (td && (hasClass(td, "pl_id")
+                      || hasClass(td, "pl_title")
+                      || hasClass(td, "pl_rowclick"))) {
+        let a = pl.querySelector("a.pnum"), href = a.getAttribute("href");
+        handle_list(a, href);
         if (event_key.is_default_a(evt)) {
             window.location = href;
         } else {
@@ -8325,6 +8339,8 @@ function row_click(evt) {
     }
     evt.preventDefault();
 }
+$(document).on("mousedown click", "tr.pl, tr.plx", row_click);
+
 handle_ui.on("js-edit-comment", function (evt) {
     if (this.tagName !== "A" || event_key.is_default_a(evt)) {
         evt.preventDefault();
@@ -8370,7 +8386,6 @@ $(document).on("submit", "form", function (evt) {
     }
 });
 
-$(document).on("click", "tr.pl, tr.plx", row_click);
 $(window).on("beforeunload", unload_list);
 
 $(function () {
