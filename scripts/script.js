@@ -8307,7 +8307,7 @@ function row_click(evt) {
         pl = pl.previousSibling;
     }
     var $inputs = $(pl).find("input, textarea, select, button")
-        .not("input[type=hidden], .pl_sel > input");
+        .not("input[type=hidden], .pl_sel > *");
     if ($inputs.length) {
         $inputs.first().focus().scrollIntoView();
     } else if (hasClass(td, "pl_id") || hasClass(td, "pl_title") || hasClass(td, "pl_rowclick")) {
