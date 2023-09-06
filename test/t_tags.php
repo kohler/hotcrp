@@ -212,4 +212,28 @@ class Tags_Tester {
         $this->conf->qe("delete from PaperConflict where paperId=1 and contactId=?", $this->u_chair->contactId);
         $this->conf->qe("delete from PaperTag where paperId=1 and tag='testtag'");
     }
+
+    function test_tag_anno() {
+        $v = [];
+        foreach ([0, 10, 10, 10, 30, 31, 32, 50] as $i => $n) {
+            $v[] = ["t", $i + 1, $n, "H" . ($i + 1)];
+        }
+        $this->conf->qe("insert into PaperTagAnno (tag,annoId,tagIndex,heading) values ?v", $v);
+
+        $dt = $this->conf->tags()->ensure("t");
+        $dt->invalidate_order_anno();
+        xassert($dt->has_order_anno());
+
+        $sv = [[-1, null], [0, 1], [1, 1], [10, 4], [10, 4], [12, 4], [30, 5], [31, 6], [32, 7], [33, 7], [49, 7], [50, 8], [60, 8]];
+        foreach ($sv as $m) {
+            xassert_eqq($dt->order_anno_search($m[0])->annoId ?? null, $m[1]);
+        }
+        $svmax = count($sv) - 1;
+        for ($i = 0; $i !== 8000; ++$i) {
+            $m = $sv[mt_rand(0, $svmax)];
+            xassert_eqq($dt->order_anno_search($m[0])->annoId ?? null, $m[1]);
+        }
+
+        $this->conf->qe("delete from PaperTagAnno where tag='t'");
+    }
 }

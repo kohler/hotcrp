@@ -172,15 +172,23 @@ class TagInfo {
      * @return ?TagAnno */
     function order_anno_search($tagIndex) {
         $ol = $this->order_anno_list();
-        $i = $this->_order_anno_search;
-        if ($i > 0 && $tagIndex < $ol[$i - 1]->tagIndex) {
-            $i = 0;
+        $l = $this->_order_anno_search;
+        $r = count($ol);
+        if ($l !== 0 && $tagIndex < $ol[$l-1]->tagIndex) {
+            $l = 0;
+        } else if ($tagIndex < $ol[$l]->tagIndex) {
+            $r = $l;
         }
-        while ($tagIndex >= $ol[$i]->tagIndex) {
-            ++$i;
+        while ($l < $r) {
+            $m = $l + (($r - $l) >> 1);
+            if ($tagIndex < $ol[$m]->tagIndex) {
+                $r = $m;
+            } else {
+                $l = $m + 1;
+            }
         }
-        $this->_order_anno_search = $i;
-        return $i ? $ol[$i - 1] : null;
+        $this->_order_anno_search = $l;
+        return $l !== 0 ? $ol[$l - 1] : null;
     }
     /** @return bool */
     function has_order_anno() {
