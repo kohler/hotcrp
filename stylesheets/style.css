@@ -687,6 +687,14 @@ label.checki {
 	padding-bottom: 0.5em !important;
 	padding-bottom: 0.5rem !important;
 }
+.pl-1 {
+	padding-left: 0.25em !important;
+	padding-left: 0.25rem !important;
+}
+.pl-2 {
+	padding-left: 0.5em !important;
+	padding-left: 0.5rem !important;
+}
 .pl-3 {
 	padding-left: 1em !important;
 	padding-left: 1rem !important;
@@ -3043,6 +3051,10 @@ td.plheading, td.plheading-spacer {
 	padding-bottom: 0.2ex;
 	background: #f0f0f0;
 	border-top: 1px solid #cccccc;
+}
+span.pltagheading {
+	padding-left: 0.25em;
+	color: #555555;
 }
 span.plheading-count {
 	font-weight: normal;

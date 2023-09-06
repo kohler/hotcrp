@@ -13,10 +13,12 @@ class Tag_PaperColumn extends PaperColumn {
     private $ctag;
     /** @var bool */
     private $editable = false;
-    /** @var ?string */
-    private $emoji;
+    /** @var 0|1|2 */
+    private $display = 0;
     /** @var bool */
     private $editsort = false;
+    /** @var TagInfo */
+    private $ti;
     /** @var array<int,float> */
     private $sortmap;
     /** @var ScoreInfo */
@@ -60,13 +62,13 @@ class Tag_PaperColumn extends PaperColumn {
         if ($visible) {
             $pl->qopts["tags"] = 1;
         }
-        if ($this->etag[0] == ":"
-            && !$this->is_value
-            && ($dt = $pl->conf->tags()->find($this->dtag))
-            && isset($dt->emoji)
-            && count($dt->emoji) === 1) {
-            /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
-            $this->emoji = $dt->emoji[0];
+        $this->ti = $pl->conf->tags()->ensure($this->dtag);
+        if ($this->as_row
+            && $this->ti->has_order_anno()) {
+            $this->display = 1;
+        } else if (!$this->is_value
+                   && count($this->ti->emoji ?? []) === 1) {
+            $this->display = 2;
         }
         if ($this->editable) {
             $this->prepare_editable($pl, $visible);
@@ -174,8 +176,19 @@ class Tag_PaperColumn extends PaperColumn {
             return $t;
         } else if ($v === null) {
             return "";
-        } else if ($v >= 0.0 && $this->emoji) {
-            return Tagger::unparse_emoji_html($this->emoji, $v);
+        } else if ($this->display === 1
+                   && ($ta = $this->ti->order_anno_search($v))
+                   && $ta->heading !== "") {
+            $h = htmlspecialchars($ta->heading);
+            $k = "pltagheading";
+            if (($format = $pl->conf->check_format($ta->annoFormat, $ta->heading))) {
+                $k .= " need-format\" data-format\"{$format}";
+                $pl->need_render = true;
+            }
+            return (string) $v . " <span class=\"{$k}\">({$h})</span>";
+        } else if ($v >= 0.0 && $this->display === 2) {
+            /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
+            return Tagger::unparse_emoji_html($this->ti->emoji[0], $v);
         } else if ($sv === true) {
             return "✓";
         } else {
@@ -218,8 +231,9 @@ class Tag_PaperColumn extends PaperColumn {
         if ($x === null) {
             return "";
         } else if (($stat === ScoreInfo::MEAN || $stat === ScoreInfo::MEDIAN)
-                   && $this->emoji) {
-            return Tagger::unparse_emoji_html($this->emoji, $x);
+                   && $this->display === 2) {
+            /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
+            return Tagger::unparse_emoji_html($this->ti->emoji[0], $x);
         } else if ($stat === ScoreInfo::COUNT) {
             return (string) $x;
         } else if ($this->real_format) {
