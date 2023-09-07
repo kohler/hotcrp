@@ -18,5 +18,6 @@ TestRunner::run(
     "Search_Tester",
     "Settings_Tester",
     "UpdateSchema_Tester",
-    "Batch_Tester"
+    "Batch_Tester",
+    "Mimetype_Tester"
 );

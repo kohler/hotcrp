@@ -31,6 +31,7 @@ class ISOVideoMimetype implements JsonSerializable {
     const F_FTYP = 1;
     const F_MOOV = 2;
     const F_MVEX = 4;
+    const F_ANALYZED = 8;
 
     const TF_AUDIO = 1;
     const TF_VIDEO = 2;
@@ -41,20 +42,21 @@ class ISOVideoMimetype implements JsonSerializable {
     }
 
     /** @param string $s
-     * @return VideoMimetype */
+     * @return ISOVideoMimetype */
     static function make_string($s) {
-        $vm = new VideoMimetype;
+        $vm = new ISOVideoMimetype;
         $vm->data = new ISOVideoFragment($s, 0, strlen($s));
         $vm->bound = strlen($s);
         return $vm;
     }
 
     /** @param string $filename
-     * @return VideoMimetype */
-    static function make_file($filename) {
-        $vm = new VideoMimetype;
+     * @param ?string $prefix
+     * @return ISOVideoMimetype */
+    static function make_file($filename, $prefix = null) {
+        $vm = new ISOVideoMimetype;
         $vm->filename = $filename;
-        $s = file_get_contents($filename, false, null, 0, 32768);
+        $s = $prefix ?? file_get_contents($filename, false, null, 0, 32768);
         $vm->data = new ISOVideoFragment($s, 0, strlen($s));
         $vm->bound = @filesize($filename);
         return $vm;
@@ -272,7 +274,12 @@ class ISOVideoMimetype implements JsonSerializable {
     }
 
 
-    function walk_boxes() {
+    function analyze() {
+        if (($this->flags & self::F_ANALYZED) !== 0) {
+            return;
+        }
+        $this->flags |= self::F_ANALYZED;
+
         $data = $this->data;
         $pos = 0;
         while (($this->flags & 3) !== 3
@@ -324,10 +331,10 @@ class ISOVideoMimetype implements JsonSerializable {
                     $this->tflags |= self::TF_ASPECT;
                 } else {
                     if ($this->width === null && $tr->width !== null) {
-                        $this->width = $tr->width / 65536.0;
+                        $this->width = (int) round($tr->width / 65536.0);
                     }
                     if ($this->height === null && $tr->height !== null) {
-                        $this->height = $tr->height / 65536.0;
+                        $this->height = (int) round($tr->height / 65536.0);
                     }
                 }
             } else if ($tr->handler === 0x736f756e /* `soun` */) {
@@ -341,6 +348,31 @@ class ISOVideoMimetype implements JsonSerializable {
                 $this->duration = $max_duration / $this->moov_timescale;
             }
         }
+    }
+
+    /** @param ?string $type
+     * @return array */
+    function content_info($type = null) {
+        $this->analyze();
+        if ($this->tflags === 0) {
+            return $type ? ["type" => $type] : [];
+        }
+        if ($type === null) {
+            if (($this->tflags & self::TF_VIDEO) !== 0) {
+                $type = "video/mp4";
+            } else {
+                $type = "audio/mp4";
+            }
+        }
+        $info = ["type" => $type];
+        if ($this->duration !== null) {
+            $info["duration"] = $this->duration;
+        }
+        if ($this->width !== null && $this->height !== null) {
+            $info["width"] = $this->width;
+            $info["height"] = $this->height;
+        }
+        return $info;
     }
 
     #[\ReturnTypeWillChange]

@@ -97,24 +97,4 @@ class DocumentBasics_Tester {
         xassert_eqq(Filer::docstore_path($doc), "/foo/bar/sha2-66a/sha2-66a04/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18");
         xassert_eqq($doc->s3_key(), "doc/66a/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18.txt");
     }
-
-    function test_mimetype() {
-        xassert_eqq(Mimetype::content_type("%PDF-3.0\nwhatever\n"), Mimetype::PDF_TYPE);
-        // test that we can parse lib/mime.types for file extensions
-        xassert_eqq(Mimetype::extension("application/pdf"), ".pdf");
-        xassert_eqq(Mimetype::extension("image/gif"), ".gif");
-        xassert_eqq(Mimetype::content_type(null, "application/force"), "application/octet-stream");
-        xassert_eqq(Mimetype::content_type(null, "application/x-zip-compressed"), "application/zip");
-        xassert_eqq(Mimetype::content_type(null, "application/gz"), "application/gzip");
-        xassert_eqq(Mimetype::extension("application/g-zip"), ".gz");
-        xassert_eqq(Mimetype::type("application/download"), "application/octet-stream");
-        xassert_eqq(Mimetype::extension("application/smil"), ".smil");
-        xassert_eqq(Mimetype::type(".smil"), "application/smil");
-        xassert_eqq(Mimetype::type(".sml"), "application/smil");
-        // `fileinfo` test
-        xassert_eqq(Mimetype::content_type("<html><head></head><body></body></html>"), "text/html");
-        // test that non-PDFs are not mistaken for PDFs
-        xassert_eqq(Mimetype::content_type("%PDF-3.0\nwhatever\n", Mimetype::PDF_TYPE), Mimetype::PDF_TYPE);
-        xassert_neqq(Mimetype::content_type("PDF-3.0\nwhatever\n", Mimetype::PDF_TYPE), Mimetype::PDF_TYPE);
-    }
 }

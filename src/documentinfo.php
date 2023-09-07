@@ -311,17 +311,20 @@ class DocumentInfo implements JsonSerializable {
     }
 
     function analyze_content() {
-        $pfx = $this->content_prefix(4096);
-        if ($pfx === false) {
-            return;
-        }
-        $info = Mimetype::content_info($pfx, $this->mimetype);
-        $this->mimetype = $info["type"];
-        if (isset($info["width"])) {
-            $this->set_prop("width", $info["width"]);
-        }
-        if (isset($info["height"])) {
-            $this->set_prop("height", $info["height"]);
+        if (($info = Mimetype::content_info(null, $this->mimetype, $this))) {
+            $this->mimetype = $info["type"];
+            if (isset($info["width"])) {
+                $this->set_prop("width", $info["width"]);
+            }
+            if (isset($info["height"])) {
+                $this->set_prop("height", $info["height"]);
+            }
+            if (str_starts_with($this->mimetype, "video/")
+                || str_starts_with($this->mimetype, "audio/")) {
+                if (isset($info["duration"])) {
+                    $this->set_prop("npages", (int) ($info["duration"] * 10 + 0.5));
+                }
+            }
         }
     }
 
@@ -982,6 +985,11 @@ class DocumentInfo implements JsonSerializable {
             $base = "__temp" . Filer::$tempcounter . "__";
         }
         return Filer::$tempdir . "/" . $base . Mimetype::extension($this->mimetype);
+    }
+
+    /** @return bool */
+    function has_memory_content() {
+        return $this->content !== null;
     }
 
     /** @param int $prefix_len

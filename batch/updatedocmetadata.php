@@ -44,7 +44,7 @@ class UpdateDocMetadata_Batch {
     private function run_images_subset($docs) {
         DocumentInfo::prefetch_content($docs, DocumentInfo::FLAG_NO_DOCSTORE);
         foreach ($docs as $doc) {
-            $info = Mimetype::content_info($doc->content(), $doc->mimetype);
+            $info = Mimetype::content_info(null, $doc->mimetype, $doc);
             $upd = [];
             $m = $doc->metadata() ?? (object) [];
             if (isset($info["width"]) && !isset($m->width)) {

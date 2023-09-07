@@ -309,8 +309,19 @@ class Mimetype {
 
     /** @param ?string $content
      * @param ?string $type
-     * @return array{type:string,width?:int,height?:int} */
-    static function content_info($content, $type = null) {
+     * @param ?DocumentInfo $doc
+     * @return ?array{type:string,width?:int,height?:int} */
+    static function content_info($content, $type = null, $doc = null) {
+        if ($content === null && $doc) {
+            if ($doc->has_memory_content()) {
+                $content = $doc->content();
+            } else {
+                $content = $doc->content_prefix(4096);
+            }
+            if ($content === false) {
+                return null;
+            }
+        }
         $content = $content ?? "";
         $type = self::content_type($content, $type);
         if ($type === self::JPG_TYPE) {
@@ -319,6 +330,15 @@ class Mimetype {
             return self::png_content_info($content);
         } else if ($type === self::GIF_TYPE) {
             return self::gif_content_info($content);
+        } else if ($type === "video/mp4") {
+            if ($doc
+                && strlen($content) !== $doc->size()
+                && ($file = $doc->content_file())) {
+                $ivm = ISOVideoMimetype::make_file($file, $content);
+            } else {
+                $ivm = ISOVideoMimetype::make_string($content);
+            }
+            return $ivm->content_info();
         } else {
             return ["type" => $type];
         }
