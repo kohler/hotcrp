@@ -97,7 +97,7 @@ class TagAnno_API {
 
             // other properties
             $ij = null;
-            foreach (["session_title", "time", "location"] as $k) {
+            foreach (["session_title", "time", "location", "session_chair"] as $k) {
                 if (!property_exists($anno, $k)) {
                     continue;
                 }
@@ -108,7 +108,8 @@ class TagAnno_API {
                     }
                     $ij = $ij ?? [];
                 }
-                if ($anno->$k !== null) {
+                if ($anno->$k !== null
+                    && ($k !== "session_chair" || $anno->$k !== "none")) {
                     $ij[$k] = $anno->$k;
                 } else {
                     unset($ij[$k]);

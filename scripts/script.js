@@ -2761,7 +2761,7 @@ HtmlCollector.prototype.clear = function () {
     this.html = "";
     return this;
 };
-HtmlCollector.prototype.next_input_id = (function () {
+HtmlCollector.next_input_id = (function () {
 var id = 1;
 return function () {
     var s;
@@ -9063,8 +9063,9 @@ handle_ui.on("js-annotate-order", function () {
             } else if (need_session) {
                 anno.session_title = form.elements[pfx + "session_title"].value;
                 anno.time = form.elements[pfx + "time"].value;
+                anno.session_chair = form.elements[pfx + "session_chair"].value;
             } else {
-                anno.session_title = anno.time = null;
+                anno.session_title = anno.time = anno.session_chair = null;
             }
             newa.push(anno);
         }
@@ -9084,7 +9085,10 @@ handle_ui.on("js-annotate-order", function () {
         $(etagannos).find(".if-session").toggleClass("hidden", !need_session);
     }
     function entryi(label, entry) {
-        var ide = entry.querySelector("input, select");
+        let ide = entry.querySelector("input, select");
+        if (ide && !ide.id) {
+            ide.id = HtmlCollector.next_input_id();
+        }
         return $e("div", "entryi",
             $e("label", {"for": ide ? ide.id : null}, label),
             $e("div", "entry", entry));
@@ -9094,14 +9098,20 @@ handle_ui.on("js-annotate-order", function () {
             idpfx = "k-taganno-" + n + "-",
             namepfx = "ta/" + n + "/";
         function inpute(sfx, attr, xtype) {
+            let tag = "input";
             attr = attr || {};
             attr.id = attr.id || idpfx + sfx;
             attr.name = attr.name || namepfx + sfx;
-            attr.type = attr.type || "text";
-            if (attr.size == null) {
+            if (attr.type === "select") {
+                tag = "select";
+                delete attr.type;
+            } else {
+                attr.type = attr.type || "text";
+            }
+            if (attr.type === "text" && attr.size == null) {
                 attr.size = 40;
             }
-            if (attr.value == null) {
+            if (attr.value == null && tag !== "select") {
                 attr.value = anno[sfx];
             }
             if (!need_session
@@ -9110,12 +9120,13 @@ handle_ui.on("js-annotate-order", function () {
                 && attr.value !== "") {
                 need_session = true;
             }
-            return $e("input", attr);
+            return $e(tag, attr);
         }
-        var tagval = inpute("tagval", {size: 5, placeholder: "(value)", "class": "ml-1", value: tagvalue_unparse(anno.tagval)}),
+        let tagval = inpute("tagval", {size: 5, placeholder: "(value)", "class": "ml-1", value: tagvalue_unparse(anno.tagval)}),
             legend = inpute("legend", {placeholder: "none"}),
             session_title = inpute("session_title", null, "session"),
             time = inpute("time", null, "session"),
+            session_chair = $e("span", "select", inpute("session_chair", {type: "select", "class": "need-pcselector", "data-pcselector-options": "0 *", "data-default-value": anno.session_chair || "none"}, "session")),
             deleter = $e("button", {
                 type: "button",
                 "class": "ml-2 need-tooltip js-delete-ta",
@@ -9131,14 +9142,15 @@ handle_ui.on("js-annotate-order", function () {
                     entryi("Legend", legend),
                     $e("div", "if-session".concat(need_session ? "" : " hidden"),
                         entryi("Session title", session_title),
-                        entryi("Time", time))));
+                        entryi("Time", time),
+                        entryi("Session chair", session_chair))));
         fieldset.setAttribute("data-ta-key", n);
         etagannos.appendChild(fieldset);
     }
     function show_dialog(rv) {
         if (!rv.ok || !rv.editable)
             return;
-        var hc = popup_skeleton({className: "modal-dialog-w40"}), i;
+        let hc = popup_skeleton({className: "modal-dialog-w40"}), i;
         hc.push('<h2>Annotate #' + dtag + ' order</h2>');
         hc.push('<p>These annotations will appear in searches such as “order:' + dtag + '”.</p>');
         hc.push('<p><span class="select"><select name="ta/type"><option value="generic" selected>Generic order</option><option value="session">Session order</option></select></span></p>');
@@ -9152,11 +9164,12 @@ handle_ui.on("js-annotate-order", function () {
         for (i = 0; i < annos.length; ++i) {
             add_anno(annos[i]);
         }
-        var etype = form.elements["ta/type"];
+        const etype = form.elements["ta/type"];
         if (need_session) {
             etype.value = "session";
             $(etagannos).find(".if-session").removeClass("hidden");
         }
+        $d.find(".need-pcselector").each(populate_pcselector);
         $d.on("click", "button", clickh);
         $(etype).on("change", on_change_type);
         hc.show();
@@ -11370,7 +11383,7 @@ edit_conditions.abstract = function (ec, form) {
     return ec.match === ($.trim(e ? e.value : "") !== "");
 };
 edit_conditions.author_count = function (ec, form) {
-    let i = 1, pfx, n = 0;
+    let n = 0, pfx;
     function nonempty(sfx) {
         const e = form.elements[pfx + sfx];
         return e && e.value.trim() !== "";
@@ -12124,10 +12137,8 @@ handle_ui.on("js-assign-list-action", function (evt) {
         return;
     var self = this;
     removeClass(self, "js-assign-list-action");
-    demand_load.pc().then(function (pcs) {
-        $(self).find("select[name=markpc]").each(function () {
-            populate_pcselector.call(this, pcs);
-        });
+    $(self).find("select[name=markpc]").each(populate_pcselector);
+    demand_load.pc().then(function () {
         $(".js-submit-action-info-assign").on("change", function () {
             var $mpc = $(self).find("select[name=markpc]"),
                 afn = $(this).val();
@@ -12291,11 +12302,7 @@ handle_ui.on("js-submit-list", function (evt) {
 handle_ui.on("foldtoggle.js-unfold-pcselector", function (evt) {
     if (evt.which.open) {
         removeClass(this, "js-unfold-pcselector");
-        var $pc = $(this).find("select[data-pcselector-options]");
-        if ($pc.length)
-            demand_load.pc().then(function (pcs) {
-                $pc.each(function () { populate_pcselector.call(this, pcs); });
-            });
+        $(this).find("select[data-pcselector-options]").each(populate_pcselector);
     }
 });
 
@@ -12355,90 +12362,91 @@ $(".js-radio-focus").on("click keypress", "input, select", function () {
 
 
 // PC selectors
-function populate_pcselector(pcs) {
-    removeClass(this, "need-pcselector");
-    var optids = this.getAttribute("data-pcselector-options") || "*";
-    if (optids.charAt(0) === "[")
-        optids = JSON.parse(optids);
-    else
-        optids = optids.split(/[\s,]+/);
-    var selected = this.getAttribute("data-pcselector-selected"), selindex = -1;
-    var last_first = pcs.__sort__ === "last", used = {}, opt, curgroup = this;
+function populate_pcselector() {
+    const self = this;
+    removeClass(self, "need-pcselector");
+    let optids = self.getAttribute("data-pcselector-options") || "*";
+    optids = optids.startsWith("[") ? JSON.parse(optids) : optids.split(/[\s,]+/);
+    let selected, selindex = -1;
+    if (self.hasAttribute("data-pcselector-selected")) {
+        selected = self.getAttribute("data-pcselector-selected");
+    } else {
+        selected = self.getAttribute("data-default-value");
+    }
 
-    for (var i = 0; i < optids.length; ++i) {
-        var cid = optids[i], email, name, p;
-        if (cid === "" || cid === "*") {
-            optids.splice.apply(optids, [i + 1, 0].concat(pcs.__order__));
-        } else if (cid === "assignable") {
-            optids.splice.apply(optids, [i + 1, 0].concat(pcs.__assignable__[siteinfo.paperid] || []));
-        } else if (cid === "selected") {
-            if (selected != null)
-                optids.splice.apply(optids, [i + 1, 0, selected]);
-        } else if (cid === "extrev") {
-            var extrevs = pcs.__extrev__ ? pcs.__extrev__[siteinfo.paperid] : null;
-            if (extrevs && extrevs.length) {
-                optids.splice.apply(optids, [i + 1, 0].concat(extrevs));
-                optids.splice(i + 1 + extrevs.length, 0, "endgroup");
-                curgroup = document.createElement("optgroup");
-                curgroup.setAttribute("label", "External reviewers");
-                this.appendChild(curgroup);
-            }
-        } else if (cid === "endgroup") {
-            curgroup = this;
-        } else {
-            cid = +optids[i];
-            if (!cid) {
-                email = "none";
-                name = optids[i];
-                if (name === "" || name === "0")
-                    name = "None";
-            } else if ((p = pcs[cid])
-                       || (pcs.__other__ && (p = pcs.__other__[cid]))) {
-                email = p.email;
-                name = p.name;
-                if (last_first && p.lastpos) {
-                    var nameend = p.emailpos ? p.emailpos - 1 : name.length;
-                    name = name.substring(p.lastpos, nameend) + ", " + name.substring(0, p.lastpos - 1) + name.substring(nameend);
+    demand_load.pc().then(function (pcs) {
+        let last_first = pcs.__sort__ === "last", used = {}, opt, p, curgroup = self;
+
+        for (let i = 0; i < optids.length; ++i) {
+            let cid = optids[i];
+            if (cid === "" || cid === "*") {
+                optids.splice.apply(optids, [i + 1, 0].concat(pcs.__order__));
+            } else if (cid === "assignable") {
+                optids.splice.apply(optids, [i + 1, 0].concat(pcs.__assignable__[siteinfo.paperid] || []));
+            } else if (cid === "selected") {
+                if (selected != null)
+                    optids.splice.apply(optids, [i + 1, 0, selected]);
+            } else if (cid === "extrev") {
+                let extrevs = pcs.__extrev__ ? pcs.__extrev__[siteinfo.paperid] : null;
+                if (extrevs && extrevs.length) {
+                    optids.splice.apply(optids, [i + 1, 0].concat(extrevs));
+                    optids.splice(i + 1 + extrevs.length, 0, "endgroup");
+                    curgroup = document.createElement("optgroup");
+                    curgroup.setAttribute("label", "External reviewers");
+                    self.appendChild(curgroup);
                 }
+            } else if (cid === "endgroup") {
+                curgroup = self;
             } else {
-                continue;
-            }
-            if (!used[email]) {
-                used[email] = true;
-                opt = document.createElement("option");
-                opt.setAttribute("value", email);
-                opt.text = name;
-                curgroup.appendChild(opt);
-                if (email === selected || (email !== "none" && cid == selected))
-                    selindex = this.options.length - 1;
+                cid = +cid;
+                let email, name;
+                if (!cid) {
+                    email = "none";
+                    name = optids[i];
+                    if (name === "" || name === 0 || name === "0")
+                        name = "None";
+                } else if ((p = pcs[cid])
+                           || (pcs.__other__ && (p = pcs.__other__[cid]))) {
+                    email = p.email;
+                    name = p.name;
+                    if (last_first && p.lastpos) {
+                        var nameend = p.emailpos ? p.emailpos - 1 : name.length;
+                        name = name.substring(p.lastpos, nameend) + ", " + name.substring(0, p.lastpos - 1) + name.substring(nameend);
+                    }
+                } else {
+                    continue;
+                }
+                if (!used[email]) {
+                    used[email] = true;
+                    opt = document.createElement("option");
+                    opt.setAttribute("value", email);
+                    opt.text = name;
+                    curgroup.appendChild(opt);
+                    if (email === selected || (email !== "none" && cid == selected))
+                        selindex = self.options.length - 1;
+                }
             }
         }
-    }
 
-    if (selindex < 0) {
-        if (selected == 0 || selected == null) {
-            selindex = 0;
-        } else {
-            opt = document.createElement("option");
-            if ((p = pcs[selected])) {
-                opt.setAttribute("value", p.email);
-                opt.text = p.name + " (not assignable)";
+        if (selindex < 0) {
+            if (selected == 0 || selected == null) {
+                selindex = 0;
             } else {
-                opt.setAttribute("value", selected);
-                opt.text = "[removed from PC]";
+                opt = document.createElement("option");
+                const p = pcs[selected];
+                opt.setAttribute("value", p ? p.email : selected);
+                opt.text = p ? p.name + " (not assignable)" : "[removed from PC]";
+                self.appendChild(opt);
+                selindex = self.options.length - 1;
             }
-            this.appendChild(opt);
-            selindex = this.options.length - 1;
         }
-    }
-    this.selectedIndex = selindex;
-    this.setAttribute("data-default-value", this.options[selindex].value);
+        self.selectedIndex = selindex;
+        self.setAttribute("data-default-value", self.options[selindex].value);
+    });
 }
 
 $(function () {
-    $(".need-pcselector").length && demand_load.pc().then(function (pcs) {
-        $(".need-pcselector").each(function () { populate_pcselector.call(this, pcs); });
-    });
+    $(".need-pcselector").each(populate_pcselector);
 });
 
 
