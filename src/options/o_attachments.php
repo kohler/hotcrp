@@ -171,12 +171,20 @@ class Attachments_PaperOption extends PaperOption {
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
+        $want_mimetype = $fr->column && $fr->column->has_decoration("type");
         $ts = [];
         foreach ($ov->document_set() as $d) {
-            if ($fr->want(FieldRender::CFTEXT)) {
-                $ts[] = $d->member_filename();
+            if ($want_mimetype) {
+                $t = $d->mimetype;
             } else {
-                $linkname = htmlspecialchars($d->member_filename());
+                $t = $d->member_filename();
+            }
+            if ($fr->want(FieldRender::CFTEXT)) {
+                $ts[] = $t;
+            } else if ($want_mimetype) {
+                $ts[] = htmlspecialchars($t);
+            } else {
+                $linkname = htmlspecialchars($t);
                 $dif = 0;
                 if ($fr->want(FieldRender::CFLIST)) {
                     $dif = DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE;

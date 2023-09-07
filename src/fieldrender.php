@@ -9,6 +9,9 @@ class FieldRender {
     /** @var ?PaperTable
      * @readonly */
     public $table;
+    /** @var ?PaperColumn
+     * @readonly */
+    public $column;
     /** @var int
      * @readonly */
     public $context;
@@ -51,6 +54,13 @@ class FieldRender {
         assert(!$this->table && (!$this->user || $this->user === $table->user));
         $this->user = $table->user;
         $this->table = $table;
+        return $this;
+    }
+    /** @param PaperColumn $column
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function make_column($column) {
+        $this->column = $column;
         return $this;
     }
 

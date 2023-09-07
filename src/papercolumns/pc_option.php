@@ -12,12 +12,18 @@ class Option_PaperColumn extends PaperColumn {
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         $this->opt = $conf->checked_option_by_id($cj->option_id);
     }
+    function add_decoration($decor) {
+        /* XXX ask PaperOption what decorations are supported */
+        return parent::add_decoration($decor)
+            || $this->__add_decoration($decor);
+    }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_some_option($this->opt)) {
             return false;
         }
         $pl->qopts["options"] = true;
         $this->fr = new FieldRender($pl->render_context | ($this->as_row ? FieldRender::CFROW : FieldRender::CFCOLUMN), $pl->user);
+        $this->fr->make_column($this);
         if ($this->as_row) {
             $this->className = ltrim(preg_replace('/(?: +|\A)(?:plrd|plr|plc)(?= |\z)/', "", $this->className));
         }

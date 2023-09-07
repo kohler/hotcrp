@@ -1546,10 +1546,7 @@ class Document_PaperOption extends PaperOption {
             }
             return;
         }
-
-        if ($fr->want(FieldRender::CFTEXT)) {
-            $fr->set_text($d->export_filename());
-        } else if ($fr->want(FieldRender::CFFORM)) {
+        if ($fr->want(FieldRender::CFFORM)) {
             $fr->set_html($d->link_html(htmlspecialchars($d->filename), 0));
         } else if ($fr->want(FieldRender::CFPAGE)) {
             $th = $opt->title_html();
@@ -1557,12 +1554,20 @@ class Document_PaperOption extends PaperOption {
             $fr->title = "";
             $fr->set_html($d->link_html("<span class=\"pavfn\">{$th}</span>", $dif));
         } else {
-            if ($fr->verbose() || $fr->want(FieldRender::CFLIST | FieldRender::CFROW)) {
-                $th = $d->export_filename();
+            $want_mimetype = $fr->column && $fr->column->has_decoration("type");
+            if ($want_mimetype) {
+                $t = $d->mimetype;
+            } else if (!$fr->want(FieldRender::CFLIST | FieldRender::CFCOLUMN)
+                       || $fr->verbose()) {
+                $t = $d->export_filename();
             } else {
-                $th = "";
+                $t = "";
             }
-            $fr->set_html($d->link_html($th, DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
+            if ($fr->want(FieldRender::CFTEXT) || $want_mimetype) {
+                $fr->set_text($t);
+            } else {
+                $fr->set_html($d->link_html(htmlspecialchars($t), DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
+            }
         }
     }
 
