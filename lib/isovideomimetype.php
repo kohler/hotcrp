@@ -9,6 +9,10 @@ class ISOVideoMimetype implements JsonSerializable {
     private $data;
     /** @var int */
     private $bound;
+    /** @var bool */
+    private $verbose = false;
+    /** @var int */
+    private $depth = 0;
 
     /** @var int */
     private $flags = 0;
@@ -36,6 +40,7 @@ class ISOVideoMimetype implements JsonSerializable {
     const TF_AUDIO = 1;
     const TF_VIDEO = 2;
     const TF_ASPECT = 4;
+    const TF_PREVIEW = 8;
 
 
     private function __construct() {
@@ -60,6 +65,13 @@ class ISOVideoMimetype implements JsonSerializable {
         $vm->data = new ISOVideoFragment($s, 0, strlen($s));
         $vm->bound = @filesize($filename);
         return $vm;
+    }
+
+    /** @param bool $v
+     * @return $this */
+    function set_verbose($v) {
+        $this->verbose = $v;
+        return $this;
     }
 
     /** @param ISOVideoFragment $data
@@ -128,6 +140,11 @@ class ISOVideoMimetype implements JsonSerializable {
         $box->cpos = $xpos;
         $box->bound = $pos + $size;
         $box->data = $data;
+        if ($this->verbose) {
+            fwrite(STDERR, sprintf("%s%s [%d,%d)\n",
+                str_repeat("  ", $this->depth),
+                self::unparse_tag($type), $pos, $pos + $size));
+        }
         return $box;
     }
 
@@ -146,7 +163,8 @@ class ISOVideoMimetype implements JsonSerializable {
     /** @param ISOVideoFragment $data
      * @param int $pos
      * @param int $bound */
-    function walk_moov($data, $pos, $bound) {
+    private function walk_moov($data, $pos, $bound) {
+        ++$this->depth;
         while (($box = $this->iso_box_at($data, $pos, $bound))) {
             $data = $box->data;
             if ($box->type === 0x6d766864 /* `mvhd` */) {
@@ -158,12 +176,13 @@ class ISOVideoMimetype implements JsonSerializable {
             }
             $pos = $box->bound;
         }
+        --$this->depth;
     }
 
     /** @param ISOVideoFragment $data
      * @param int $pos
      * @param int $bound */
-    function walk_mvhd($data, $pos, $bound) {
+    private function walk_mvhd($data, $pos, $bound) {
         if ($pos + 32 > $data->epos
             && !($data = $this->ensure($data, $pos, $pos + 32))) {
             return;
@@ -192,7 +211,8 @@ class ISOVideoMimetype implements JsonSerializable {
     /** @param ISOVideoFragment $data
      * @param int $pos
      * @param int $bound */
-    function walk_trak($data, $pos, $bound) {
+    private function walk_trak($data, $pos, $bound) {
+        ++$this->depth;
         $track = new ISOVideoTrack;
         while (($box = $this->iso_box_at($data, $pos, $bound))) {
             $data = $box->data;
@@ -206,13 +226,14 @@ class ISOVideoMimetype implements JsonSerializable {
         if ($track->flags !== null) {
             $this->tracks[] = $track;
         }
+        --$this->depth;
     }
 
     /** @param ISOVideoFragment $data
      * @param int $pos
      * @param int $bound
      * @param ISOVideoTrack $track */
-    function walk_tkhd($data, $pos, $bound, $track) {
+    private function walk_tkhd($data, $pos, $bound, $track) {
         if ($pos + 84 > $data->epos
             && !($data = $this->ensure($data, $pos, $pos + 84))) {
             return;
@@ -232,6 +253,8 @@ class ISOVideoMimetype implements JsonSerializable {
         }
         if (($duration & $mask) !== $mask) {
             $track->duration = $duration;
+        } else {
+            $duration = null;
         }
         if ($pos + $xoff + 60 > $data->epos
             && !($data = $this->ensure($data, $pos, $pos + $xoff + 60))) {
@@ -239,6 +262,13 @@ class ISOVideoMimetype implements JsonSerializable {
         }
         $track->width = Mimetype::be32at($data->s, $pos + $xoff + 52 - $data->pos);
         $track->height = Mimetype::be32at($data->s, $pos + $xoff + 56 - $data->pos);
+        if ($this->verbose) {
+            fwrite(STDERR, sprintf("%s  tkhd: flags %x, duration %s, width %g, height %g\n",
+                str_repeat("  ", $this->depth),
+                $vflags & 0xFFFFFF,
+                json_encode($duration),
+                $track->width / 65536., $track->height / 65536.));
+        }
     }
 
 
@@ -246,22 +276,24 @@ class ISOVideoMimetype implements JsonSerializable {
      * @param int $pos
      * @param int $bound
      * @param ISOVideoTrack $track */
-    function walk_mdia($data, $pos, $bound, $track) {
+    private function walk_mdia($data, $pos, $bound, $track) {
+        ++$this->depth;
         while (($box = $this->iso_box_at($data, $pos, $bound))) {
             $data = $box->data;
             if ($box->type === 0x68646c72 /* `hdlr` */) {
                 $this->walk_hdlr($data, $box->cpos, $box->bound, $track);
-                return;
+                break;
             }
             $pos = $box->bound;
         }
+        --$this->depth;
     }
 
     /** @param ISOVideoFragment $data
      * @param int $pos
      * @param int $bound
      * @param ISOVideoTrack $track */
-    function walk_hdlr($data, $pos, $bound, $track) {
+    private function walk_hdlr($data, $pos, $bound, $track) {
         if ($bound - $pos < 24
             || ($bound > $data->epos
                 && !($data = $this->ensure($data, $pos, $bound)))) {
@@ -271,6 +303,10 @@ class ISOVideoMimetype implements JsonSerializable {
             return;
         }
         $track->handler = Mimetype::be32at($data->s, $pos + 8 - $data->pos);
+        if ($this->verbose) {
+            fwrite(STDERR, sprintf("%s  hdlr: %s\n",
+                str_repeat("  ", $this->depth), self::unparse_tag($track->handler)));
+        }
     }
 
 
@@ -327,16 +363,41 @@ class ISOVideoMimetype implements JsonSerializable {
             }
             if ($tr->handler === 0x76696465 /* `vide` */) {
                 $this->tflags |= self::TF_VIDEO;
+                if ($tr->width === null || $tr->height === null) {
+                    continue;
+                }
+                $w = (int) round($tr->width / 65536.0);
+                $h = (int) round($tr->height / 65536.0);
+                // if aspect ratio, ignore unless plausibly pixels
                 if (($tr->flags & 8) !== 0) {
+                    if ($this->width !== null
+                        || $w < 400 || $w > 8000
+                        || $h < 400 || $h > 8000) {
+                        continue;
+                    }
                     $this->tflags |= self::TF_ASPECT;
                 } else {
-                    if ($this->width === null && $tr->width !== null) {
-                        $this->width = (int) round($tr->width / 65536.0);
+                    if ($this->width !== null
+                        && ($this->tflags & self::TF_ASPECT) === 0) {
+                        continue;
                     }
-                    if ($this->height === null && $tr->height !== null) {
-                        $this->height = (int) round($tr->height / 65536.0);
-                    }
+                    $this->tflags &= ~self::TF_ASPECT;
                 }
+                // if preview-only, override
+                if (($tr->flags & 2) === 0) {
+                    if ($this->width !== null) {
+                        continue;
+                    }
+                    $this->tflags |= self::TF_PREVIEW;
+                } else {
+                    if ($this->width !== null
+                        && ($this->tflags & self::TF_PREVIEW) === 0) {
+                        continue;
+                    }
+                    $this->tflags &= ~self::TF_PREVIEW;
+                }
+                $this->width = $w;
+                $this->height = $h;
             } else if ($tr->handler === 0x736f756e /* `soun` */) {
                 $this->tflags |= self::TF_AUDIO;
             }

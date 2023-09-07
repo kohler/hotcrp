@@ -40,12 +40,10 @@ class Mimetype_Tester {
     }
 
     function xxx_test_mp4() {
-        $mt = ISOVideoMimetype::make_file("/Users/kohler/Downloads/sigcomm23-paper130-10_minute_presentation_video.mp4");
-        $mt->analyze();
-        error_log(json_encode($mt->content_info()));
-
-        $mt = ISOVideoMimetype::make_file("/Users/kohler/Downloads/sigcomm23-paper1037-10_minute_presentation_video/MoMA v1.0.3.mp4");
-        $mt->analyze();
-        error_log(json_encode($mt->content_info()));
+        foreach (glob("/Users/kohler/Downloads/sigcomm23-10_minute_presentation_video/*.mp4") as $f) {
+            $mt = ISOVideoMimetype::make_file($f)->set_verbose(true);
+            $mt->analyze();
+            error_log($f. ": " . json_encode($mt->content_info()));
+        }
     }
 }

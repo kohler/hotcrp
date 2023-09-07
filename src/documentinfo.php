@@ -1631,6 +1631,21 @@ class DocumentInfo implements JsonSerializable {
         $this->_old_prop = null;
     }
 
+    function prop_update() {
+        $j = [];
+        foreach ($this->_old_prop ?? [] as $prop => $v) {
+            if ($prop === "metadata") {
+                $m = $this->metadata();
+                foreach ((array) $v as $prop1 => $v1) {
+                    $j[$prop1] = $m->$prop1 ?? null;
+                }
+            } else {
+                $j[$prop] = $this->$prop;
+            }
+        }
+        return $j;
+    }
+
     function load_metadata() {
         if ($this->paperStorageId > 0) {
             $row = Dbl::fetch_first_object($this->conf->dblink,
