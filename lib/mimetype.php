@@ -1,6 +1,6 @@
 <?php
 // mimetype.php -- HotCRP helper file for MIME types
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Mimetype {
     const TXT_TYPE = "text/plain";
@@ -325,6 +325,50 @@ class Mimetype {
     }
 
     /** @param string $s
+     * @param int $off
+     * @return int */
+    static function be16at($s, $off) {
+        return (unpack("n", $s, $off))[1];
+    }
+
+    /** @param string $s
+     * @param int $off
+     * @return int */
+    static function le16at($s, $off) {
+        return (unpack("v", $s, $off))[1];
+    }
+
+    /** @param string $s
+     * @param int $off
+     * @return array{int,int} */
+    static function le16at_x2($s, $off) {
+        $a = unpack("v2", $s, $off);
+        return [$a[1], $a[2]];
+    }
+
+    /** @param string $s
+     * @param int $off
+     * @return int */
+    static function be32at($s, $off) {
+        return (unpack("N", $s, $off))[1];
+    }
+
+    /** @param string $s
+     * @param int $off
+     * @return array{int,int} */
+    static function be32at_x2($s, $off) {
+        $a = unpack("N2", $s, $off);
+        return [$a[1], $a[2]];
+    }
+
+    /** @param string $s
+     * @param int $off
+     * @return int */
+    static function be64at($s, $off) {
+        return (unpack("J", $s, $off))[1];
+    }
+
+    /** @param string $s
      * @return array{type:string,width?:int,height?:int} */
     static private function jpeg_content_info($s) {
         $info = ["type" => self::JPG_TYPE];
@@ -341,14 +385,14 @@ class Mimetype {
             } else if ($ch === 0xD9 || $pos + 4 > $len) {
                 break;
             }
-            $blen = (ord($s[$pos + 2]) << 8) + ord($s[$pos + 3]);
+            $blen = self::be16at($s, $pos + 2);
             if (($ch >= 0xC0 && $ch <= 0xCF) && $ch !== 0xC8) {
                 // SOF
                 if ($blen < 8 || $pos + 6 > $len) {
                     break;
                 }
-                $x = $pos + 8 <= $len ? (ord($s[$pos + 7]) << 8) + ord($s[$pos + 8]) : 0;
-                $y = (ord($s[$pos + 5]) << 8) + ord($s[$pos + 6]);
+                $x = $pos + 8 <= $len ? self::be16at($s, $pos + 7) : 0;
+                $y = self::be16at($s, $pos + 5);
                 if ($x !== 0) {
                     $info["width"] = $x;
                 }
@@ -363,7 +407,7 @@ class Mimetype {
                 if ($blen !== 4 || $pos + 5 > $len) {
                     break;
                 }
-                $y = (ord($s[$pos + 4]) << 8) + ord($s[$pos + 5]);
+                $y = self::be16at($s, $pos + 4);
                 if ($y !== 0) {
                     $info["height"] = $y;
                 }
@@ -383,8 +427,7 @@ class Mimetype {
         if ($pos + 3 > $len) {
             return $info;
         }
-        $lw = ord($s[$pos]) + (ord($s[$pos + 1]) << 8);
-        $lh = ord($s[$pos + 2]) + (ord($s[$pos + 3]) << 8);
+        list($lw, $lh) = self::le16at_x2($s, $pos);
         if ($lw !== 0) {
             $info["width"] = $lw;
         }
@@ -411,10 +454,8 @@ class Mimetype {
                 }
             } else if ($ch === 0x2C) {
                 // image
-                $left = ord($s[$pos + 1]) + (ord($s[$pos + 2]) << 8);
-                $top = ord($s[$pos + 3]) + (ord($s[$pos + 4]) << 8);
-                $w = ord($s[$pos + 5]) + (ord($s[$pos + 6]) << 8);
-                $h = ord($s[$pos + 7]) + (ord($s[$pos + 8]) << 8);
+                list($left, $top) = self::le16at_x2($s, $pos + 1);
+                list($w, $h) = self::le16at_x2($s, $pos + 5);
                 if ($w !== 0 && $left + $w > ($info["width"] ?? 0)) {
                     $info["width"] = $left + $w;
                 }
@@ -431,25 +472,17 @@ class Mimetype {
     }
 
     /** @param string $s
-     * @param int $off
-     * @return int */
-    static private function net4at($s, $off) {
-        return (ord($s[$off]) << 24) + (ord($s[$off + 1]) << 16)
-            + (ord($s[$off + 2]) << 8) + ord($s[$off + 3]);
-    }
-
-    /** @param string $s
      * @return array{type:string,width?:int,height?:int} */
     static private function png_content_info($s) {
         $info = ["type" => self::PNG_TYPE];
         $pos = 8;
         $len = strlen($s);
         while ($pos + 8 <= $len) {
-            $blen = self::net4at($s, $pos);
-            $chunk = self::net4at($s, $pos + 4);
+            $blen = self::be32at($s, $pos);
+            $chunk = self::be32at($s, $pos + 4);
             if ($chunk === 0x49484452 /* IHDR */) {
-                $w = $pos + 11 <= $len ? self::net4at($s, $pos + 8) : 0;
-                $h = $pos + 15 <= $len ? self::net4at($s, $pos + 12) : 0;
+                $w = $pos + 11 <= $len ? self::be32at($s, $pos + 8) : 0;
+                $h = $pos + 15 <= $len ? self::be32at($s, $pos + 12) : 0;
                 if ($w !== 0) {
                     $info["width"] = $w;
                 }
