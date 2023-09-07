@@ -200,7 +200,7 @@ class ReviewForm {
         echo '<div class="rve">';
         foreach ($rrow->viewable_fields($contact, true) as $f) {
             if (!$f->test_exists($rrow)) {
-                $rvalues->warning_at($f->short_id, "This review field is currently hidden by a field condition and is not visible to others.");
+                $rvalues->warning_at($f->short_id, "<0>This review field is currently hidden by a field condition and is not visible to others.");
             }
             $fv = $rrow->fields[$f->order];
             $reqstr = $rvalues->req[$f->short_id] ?? null;
