@@ -2844,7 +2844,7 @@ function popup_skeleton(options) {
         }
     }
     function show() {
-        $d = $(hc.render()).appendTo(document.body).awaken();
+        $d = $(hc.render()).appendTo(document.body);
         form = $d[0].querySelector("form");
         $d.on("click", dialog_click);
         $d.find("button[name=cancel]").on("click", close);
@@ -2876,6 +2876,7 @@ function popup_skeleton(options) {
         }
         if (visible !== false) {
             var e = document.activeElement;
+            $d.awaken();
             popup_near($d, near || window);
             if (e && document.activeElement !== e) {
                 prior_focus = e;
@@ -9027,6 +9028,7 @@ handle_ui.on("js-annotate-order", function () {
     function clickh(evt) {
         if (this.name === "add") {
             add_anno({});
+            awaken_anno();
             $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
             etagannos.lastChild.querySelector("legend > input").focus();
         } else if (hasClass(this, "js-delete-ta")) {
@@ -9154,6 +9156,9 @@ handle_ui.on("js-annotate-order", function () {
         fieldset.setAttribute("data-ta-key", n);
         etagannos.appendChild(fieldset);
     }
+    function awaken_anno() {
+        $d.find(".need-pcselector").each(populate_pcselector);
+    }
     function show_dialog(rv) {
         if (!rv.ok || !rv.editable)
             return;
@@ -9177,7 +9182,7 @@ handle_ui.on("js-annotate-order", function () {
             $(etagannos).find(".if-session").removeClass("hidden");
         }
         etype.setAttribute("data-default-value", need_session ? "session" : "generic");
-        $d.find(".need-pcselector").each(populate_pcselector);
+        awaken_anno();
         $d.on("click", "button", clickh);
         $(etype).on("change", on_change_type);
         hc.show();
