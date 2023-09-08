@@ -1183,12 +1183,14 @@ span.hastitle {
 	margin-left: 1.5rem;
 	text-indent: -1.5rem;
 }
-ul.semi {
-	display: flex;
-	flex-wrap: wrap;
+ul.semi, ul.comma {
 	padding-left: 0;
 	margin-top: 0;
 	margin-bottom: 0;
+}
+ul.semi {
+	display: flex;
+	flex-wrap: wrap;
 }
 ul.comma {
 	display: inline;
