@@ -15,6 +15,7 @@ class Mimetype {
     const TAR_TYPE = "application/x-tar";
     const ZIP_TYPE = "application/zip";
     const RAR_TYPE = "application/x-rar-compressed";
+    const KEYNOTE_TYPE = "application/vnd.apple.keynote";
 
     const FLAG_INLINE = 1;
     const FLAG_UTF8 = 2;
@@ -40,6 +41,7 @@ class Mimetype {
         self::PDF_TYPE =>     [".pdf", "PDF", self::FLAG_INLINE | self::FLAG_REQUIRE_SNIFF],
         self::PS_TYPE =>      [".ps", "PostScript", self::FLAG_COMPRESSIBLE],
         self::PPT_TYPE =>     [".ppt", "PowerPoint", self::FLAG_INCOMPRESSIBLE, "application/mspowerpoint", "application/powerpoint", "application/x-mspowerpoint"],
+        self::KEYNOTE_TYPE => [".key", "Keynote", self::FLAG_INCOMPRESSIBLE, "application/x-iwork-keynote-sffkey"],
         "application/vnd.openxmlformats-officedocument.presentationml.presentation" =>
                               [".pptx", "PowerPoint", self::FLAG_INCOMPRESSIBLE],
         "video/mp4" =>        [".mp4", null, self::FLAG_INCOMPRESSIBLE],

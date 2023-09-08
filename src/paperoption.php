@@ -1316,7 +1316,8 @@ class Document_PaperOption extends PaperOption {
         } else if ($this->type === "slides") {
             return [Mimetype::checked_lookup(".pdf"),
                     Mimetype::checked_lookup(".ppt"),
-                    Mimetype::checked_lookup(".pptx")];
+                    Mimetype::checked_lookup(".pptx"),
+                    Mimetype::checked_lookup(".key")];
         } else if ($this->type === "video") {
             return [Mimetype::checked_lookup(".mp4"),
                     Mimetype::checked_lookup(".avi")];
