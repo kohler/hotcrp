@@ -2777,6 +2777,7 @@ return function () {
 function popup_skeleton(options) {
     var hc = new HtmlCollector,
         $d = null,
+        form = null,
         prior_focus = null;
     options = options || {};
     var near = options.near || options.anchor;
@@ -2794,8 +2795,7 @@ function popup_skeleton(options) {
         return hc;
     };
     function show_errors(data) {
-        var form = $d[0].querySelector("form"),
-            dbody = $d.find(".popup-body"),
+        var dbody = $d.find(".popup-body"),
             i, mlist = data.message_list, gmlist = [], mx, e, x;
         $d.find(".msg-error, .feedback, .feedback-list").remove();
         for (i in mlist || []) {
@@ -2815,6 +2815,7 @@ function popup_skeleton(options) {
     }
     function close() {
         removeClass(document.body, "modal-open");
+        document.body.removeEventListener("keydown", dialog_keydown);
         if (document.activeElement
             && $d[0].contains(document.activeElement)) {
             document.activeElement.blur();
@@ -2827,33 +2828,39 @@ function popup_skeleton(options) {
             prior_focus.focus({preventScroll: true});
         }
     }
+    function dialog_click(evt) {
+        if (evt.target === $d[0]
+            && evt.button === 0
+            && (!form || !form_differs(form))) {
+            close();
+        }
+    }
+    function dialog_keydown(evt) {
+        if (event_key(evt) === "Escape"
+            && event_modkey(evt) === 0
+            && (!form || !form_differs(form))) {
+            close();
+            evt.preventDefault();
+        }
+    }
     function show() {
         $d = $(hc.render()).appendTo(document.body).awaken();
-        $d.on("click", function (evt) {
-            if (evt.target === $d[0]) {
-                var f = $d.find("form")[0];
-                if (!f || !form_differs(f))
-                    close();
-            }
-        });
+        form = $d[0].querySelector("form");
+        $d.on("click", dialog_click);
         $d.find("button[name=cancel]").on("click", close);
-        $d.on("keydown", function (evt) {
-            if (event_modkey(evt) === 0 && event_key(evt) === "Escape") {
-                close();
-                evt.preventDefault();
-            }
-        });
-        if (options.action) {
-            var f = $d.find("form")[0];
+        document.body.addEventListener("keydown", dialog_keydown);
+        if (options.action && form) {
             if (options.action instanceof HTMLFormElement) {
-                $(f).attr({action: options.action.action, method: options.action.method});
+                form.setAttribute("action", options.action.action);
+                form.setAttribute("method", options.action.method);
             } else {
-                $(f).attr({action: options.action, method: options.method || "post"});
+                form.setAttribute("action", options.action);
+                form.setAttribute("method", options.method || "post");
             }
             if (f.getAttribute("method") === "post"
                 && !/post=/.test(f.getAttribute("action"))
                 && !/^(?:[a-z][-a-z0-9+.]*:|\/\/)/i.test(f.getAttribute("action"))) {
-                $(f).prepend(hidden_input("post", siteinfo.postvalue));
+                form.prepend(hidden_input("post", siteinfo.postvalue));
             }
         }
         for (var k in {minWidth: 1, maxWidth: 1, width: 1}) {
@@ -9150,7 +9157,7 @@ handle_ui.on("js-annotate-order", function () {
     function show_dialog(rv) {
         if (!rv.ok || !rv.editable)
             return;
-        let hc = popup_skeleton({className: "modal-dialog-w40"}), i;
+        let hc = popup_skeleton({className: "modal-dialog-w40", form_class: "need-diff-check"}), i;
         hc.push('<h2>Annotate #' + dtag + ' order</h2>');
         hc.push('<p>These annotations will appear in searches such as “order:' + dtag + '”.</p>');
         hc.push('<p><span class="select"><select name="ta/type"><option value="generic" selected>Generic order</option><option value="session">Session order</option></select></span></p>');
@@ -9169,6 +9176,7 @@ handle_ui.on("js-annotate-order", function () {
             etype.value = "session";
             $(etagannos).find(".if-session").removeClass("hidden");
         }
+        etype.setAttribute("data-default-value", need_session ? "session" : "generic");
         $d.find(".need-pcselector").each(populate_pcselector);
         $d.on("click", "button", clickh);
         $(etype).on("change", on_change_type);
