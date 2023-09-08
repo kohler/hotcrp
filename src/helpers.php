@@ -458,14 +458,10 @@ function plural($n, $singular, $plural = null) {
 /** @param int $n
  * @return string */
 function ordinal($n) {
-    $x = $n;
-    if ($x > 100) {
-        $x = $x % 100;
-    }
-    if ($x > 20) {
-        $x = $x % 10;
-    }
-    return $n . ($x < 1 || $x > 3 ? "th" : ($x == 1 ? "st" : ($x == 2 ? "nd" : "rd")));
+    $x = abs($n);
+    $x > 100 && ($x = $x % 100);
+    $x > 20 && ($x = $x % 10);
+    return $n . (["th", "st", "nd", "rd"])[$x > 3 ? 0 : $x];
 }
 
 /** @param int|float $n

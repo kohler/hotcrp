@@ -660,6 +660,21 @@ class Unit_Tester {
         xassert_eqq($tagger->check("~~hello#0", Tagger::NOCHAIR), false);
     }
 
+    function test_ordinal() {
+        xassert_eqq(ordinal(0), "0th");
+        xassert_eqq(ordinal(1), "1st");
+        xassert_eqq(ordinal(2), "2nd");
+        xassert_eqq(ordinal(3), "3rd");
+        xassert_eqq(ordinal(4), "4th");
+        xassert_eqq(ordinal(10), "10th");
+        xassert_eqq(ordinal(11), "11th");
+        xassert_eqq(ordinal(20), "20th");
+        xassert_eqq(ordinal(21), "21st");
+        xassert_eqq(ordinal(100), "100th");
+        xassert_eqq(ordinal(101), "101st");
+        xassert_eqq(ordinal(-1), "-1st");
+    }
+
     function test_review_ordinals() {
         foreach ([1 => "A", 26 => "Z", 27 => "AA", 28 => "AB", 51 => "AY", 52 => "AZ",
                   53 => "BA", 54 => "BB", 702 => "ZZ", 703 => "AAA", 704 => "AAB",

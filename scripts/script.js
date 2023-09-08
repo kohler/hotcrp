@@ -705,10 +705,10 @@ function plural(n, what) {
 
 /* exported ordinal */
 function ordinal(n) {
-    if (n >= 1 && n <= 3)
-        return n + ["st", "nd", "rd"][Math.floor(n - 1)];
-    else
-        return n + "th";
+    let x = Math.abs(Math.round(n));
+    x > 100 && (x = x % 100);
+    x > 20 && (x = x % 10);
+    return n + ["th", "st", "nd", "rd"][x > 3 ? 0 : x];
 }
 
 function commajoin(a, joinword) {
