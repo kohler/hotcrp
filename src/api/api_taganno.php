@@ -78,9 +78,7 @@ class TagAnno_API {
             $qf = [];
             if (isset($anno->legend)) {
                 $qf[] = "heading=?";
-                $qf[] = "annoFormat=?";
                 $qv[] = $anno->legend;
-                $qv[] = null;
             }
             if (isset($anno->tagval)) {
                 $tagval = trim($anno->tagval);

@@ -1677,11 +1677,10 @@ class PaperList {
                 $x = "<span class=\"plheading-group";
                 if ($ginfo->heading !== "") {
                     $x .= " pr-2";
-                }
-                if ($ginfo->heading !== ""
-                    && ($format = $this->conf->check_format($ginfo->annoFormat, $ginfo->heading))) {
-                    $x .= " need-format\" data-format=\"{$format}";
-                    $this->need_render = true;
+                    if (($format = $this->conf->check_format(null, $ginfo->heading))) {
+                        $x .= " need-format\" data-format=\"{$format}";
+                        $this->need_render = true;
+                    }
                 }
                 $x .= "\" data-title=\"" . htmlspecialchars($ginfo->heading)
                     . "\">" . htmlspecialchars($ginfo->heading)

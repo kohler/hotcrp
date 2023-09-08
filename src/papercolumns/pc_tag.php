@@ -181,7 +181,7 @@ class Tag_PaperColumn extends PaperColumn {
                    && $ta->heading !== "") {
             $h = htmlspecialchars($ta->heading);
             $k = "pltagheading";
-            if (($format = $pl->conf->check_format($ta->annoFormat, $ta->heading))) {
+            if (($format = $pl->conf->check_format(null, $ta->heading))) {
                 $k .= " need-format\" data-format\"{$format}";
                 $pl->need_render = true;
             }

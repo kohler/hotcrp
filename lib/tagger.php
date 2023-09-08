@@ -328,11 +328,10 @@ class TagAnno implements JsonSerializable {
         }
         if ($this->heading !== null) {
             $j["legend"] = $this->heading; // XXX "heading" backward compat
-        }
-        if ($this->heading !== null
-            && $this->heading !== ""
-            && ($format = Conf::$main->check_format($this->annoFormat, $this->heading))) {
-            $j["format"] = +$format;
+            if ($this->heading !== ""
+                && ($format = Conf::$main->check_format(null, $this->heading))) {
+                $j["format"] = +$format;
+            }
         }
         if ($this->_props === null && $this->infoJson !== null) {
             $this->decode_props();
