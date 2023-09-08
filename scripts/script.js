@@ -9091,14 +9091,17 @@ handle_ui.on("js-annotate-order", function () {
     }
     function on_change_type() {
         need_session = this.value === "session";
-        $(etagannos).find(".if-session").toggleClass("hidden", !need_session);
+        $(etagannos).find(".if-session").toggleClass("hidden ignore-diff", !need_session);
     }
     function entryi(label, entry) {
-        let ide = entry.querySelector("input, select");
+        let ide = entry;
+        if (!ide.matches("input, select")) {
+            ide = ide.querySelector("input, select");
+        }
         if (ide && !ide.id) {
             ide.id = HtmlCollector.next_input_id();
         }
-        return $e("div", "entryi",
+        return $e("div", ide && hasClass(ide, "if-session") ? "entryi if-session hidden" : "entryi",
             $e("label", {"for": ide ? ide.id : null}, label),
             $e("div", "entry", entry));
     }
@@ -9123,13 +9126,18 @@ handle_ui.on("js-annotate-order", function () {
             if (attr.value == null && tag !== "select") {
                 attr.value = anno[sfx];
             }
-            if (!need_session
-                && xtype === "session"
-                && attr.value != null
-                && attr.value !== "") {
-                need_session = true;
+            const e = $e(tag, attr);
+            if (xtype === "session") {
+                addClass(e, "if-session");
+                addClass(e, "hidden");
+                addClass(e, "ignore-diff");
+                if (!need_session
+                    && attr.value != null
+                    && attr.value !== "") {
+                    need_session = true;
+                }
             }
-            return $e(tag, attr);
+            return e;
         }
         let tagval = inpute("tagval", {size: 5, placeholder: "(value)", "class": "ml-1", value: tagvalue_unparse(anno.tagval)}),
             legend = inpute("legend", {placeholder: "none"}),
@@ -9149,10 +9157,9 @@ handle_ui.on("js-annotate-order", function () {
                 hidden_input(namepfx + "id", anno.annoid == null ? "new" : anno.annoid),
                 $e("div", "taganno-content",
                     entryi("Legend", legend),
-                    $e("div", "if-session".concat(need_session ? "" : " hidden"),
-                        entryi("Session title", session_title),
-                        entryi("Time", time),
-                        entryi("Session chair", session_chair))));
+                    entryi("Session title", session_title),
+                    entryi("Time", time),
+                    entryi("Session chair", session_chair)));
         fieldset.setAttribute("data-ta-key", n);
         etagannos.appendChild(fieldset);
     }
@@ -9186,6 +9193,7 @@ handle_ui.on("js-annotate-order", function () {
         $d.on("click", "button", clickh);
         $(etype).on("change", on_change_type);
         hc.show();
+        demand_load.pc().then(function () { check_form_differs(form); }); // :(
     }
     $.get(hoturl("=api/taganno", {tag: mytag}), show_dialog);
 });
