@@ -11249,7 +11249,7 @@ function save_pstags(evt) {
     });
 }
 
-handle_ui.on("is-tag-index", function (evt) {
+handle_ui.on("is-tag-index", function () {
     const self = this;
     let m = self.id.match(/^tag:(\S+) (\d+)$/), value;
     if (this.type === "checkbox")

@@ -228,7 +228,8 @@ function field_instantiate(ee, ftfinder, tname, instantiators) {
 }
 
 function grid_select_event(evt) {
-    var selidx = null, curidx, action = 1, e, columns;
+    let selidx = null, curidx, action = 1, columns,
+        e = typeof evt === "number" ? null : evt.target.closest(".grid-option");
     if (typeof evt === "number") {
         selidx = evt;
         action = 1;
@@ -236,20 +237,23 @@ function grid_select_event(evt) {
     } else if (evt.type === "dblclick") {
         if (!hasClass(this, "grid-select-autosubmit")
             || event_modkey(evt)
-            || evt.button !== 0) {
+            || evt.button !== 0
+            || !e) {
             return false;
         }
         action = 2;
     } else if (evt.type === "click") {
         if (event_modkey(evt)
-            || evt.button !== 0) {
+            || evt.button !== 0
+            || !e) {
             return false;
         }
-        e = evt.target.closest(".grid-option");
         selidx = +e.getAttribute("data-index");
     } else if (evt.type === "keydown") {
+        if (!e) {
+            return false;
+        }
         var key = event_key(evt), mod = event_modkey(evt);
-        e = evt.target.closest(".grid-option");
         selidx = +e.getAttribute("data-index");
         columns = window.getComputedStyle(this).gridTemplateColumns.split(" ").length;
         if (key === "ArrowLeft" && !mod) {
