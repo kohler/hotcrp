@@ -2857,9 +2857,9 @@ function popup_skeleton(options) {
                 form.setAttribute("action", options.action);
                 form.setAttribute("method", options.method || "post");
             }
-            if (f.getAttribute("method") === "post"
-                && !/post=/.test(f.getAttribute("action"))
-                && !/^(?:[a-z][-a-z0-9+.]*:|\/\/)/i.test(f.getAttribute("action"))) {
+            if (form.getAttribute("method") === "post"
+                && !/post=/.test(form.getAttribute("action"))
+                && !/^(?:[a-z][-a-z0-9+.]*:|\/\/)/i.test(form.getAttribute("action"))) {
                 form.prepend(hidden_input("post", siteinfo.postvalue));
             }
         }
