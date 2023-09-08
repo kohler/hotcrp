@@ -1190,14 +1190,21 @@ ul.semi {
 	margin-top: 0;
 	margin-bottom: 0;
 }
-ul.semi > li {
+ul.comma {
+	display: inline;
+}
+ul.semi > li, ul.comma > li {
 	display: inline-block;
 }
 ul.semi > li::after {
 	content: "; ";
 	padding-right: 0.35em;
 }
-ul.semi > li:last-child::after {
+ul.comma > li::after {
+	content: ", ";
+	padding-right: 0.35em;
+}
+ul.semi > li:last-child::after, ul.comma > li:last-child::after {
 	content: "";
 	padding-right: 0;
 }

@@ -9934,7 +9934,7 @@ function render_allpref() {
     var pctr = this;
     demand_load.pc().then(function (pcs) {
         var allpref = pattrnear(pctr, "data-allpref") || "",
-            atomre = /(\d+)([PT])(\S+)/g, t = [], m, pref, frag, i, e, u;
+            atomre = /(\d+)([PT])(\S+)/g, t = [], m, pref, ul, i, e, u;
         while ((m = atomre.exec(allpref)) !== null) {
             pref = parseInt(m[3]);
             t.push([m[2] === "P" ? pref : 0, pref, t.length, pcs[m[1]], m[2]]);
@@ -9951,7 +9951,7 @@ function render_allpref() {
             else
                 return a[2] < b[2] ? -1 : 1;
         });
-        frag = document.createDocumentFragment();
+        ul = $e("ul", "comma");
         for (i = 0; i !== t.length; ++i) {
             u = t[i];
             pref = u[1];
@@ -9960,15 +9960,9 @@ function render_allpref() {
             } else {
                 e = $e("span", "asspref1", u[4].concat("+", pref));
             }
-            e = $e("span", "nb", usere(u[3]), " ", e);
-            if (i < t.length - 1) {
-                e.append(",");
-                frag.append(e, " ");
-            } else {
-                frag.append(e);
-            }
+            ul.append($e("li", null, usere(u[3]), " ", e));
         }
-        pctr.replaceChildren(frag);
+        pctr.parentElement.replaceChild(ul, pctr);
         removeClass(pctr, "need-allpref");
     }, function () {
         pctr.closest("div").replaceChildren();
