@@ -1057,7 +1057,7 @@ class Checkbox_PaperOption extends PaperOption {
             if ($fr->want(FieldRender::CFPAGE)) {
                 $fr->title = "";
                 $th = $this->title_html();
-                $fr->value .= " <span class=\"pavfn\">{$th}</span>";
+                $fr->set_html($fr->value_html() . " <span class=\"pavfn\">{$th}</span>");
             }
         }
     }
