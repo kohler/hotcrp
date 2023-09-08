@@ -236,4 +236,51 @@ class Tags_Tester {
 
         $this->conf->qe("delete from PaperTagAnno where tag='t'");
     }
+
+    function test_copy_tag_anno() {
+        $v = [];
+        foreach ([0, 10, 10, 10, 30, 31, 32, 50] as $i => $n) {
+            $v[] = ["t", $i + 1, $n, "H" . ($i + 1)];
+        }
+        $this->conf->qe("insert into PaperTagAnno (tag,annoId,tagIndex,heading) values ?v", $v);
+
+        $dt = $this->conf->tags()->ensure("t");
+        $dtt = $this->conf->tags()->ensure("tt");
+
+        $dt->invalidate_order_anno();
+        xassert($dt->has_order_anno());
+        $dtt->invalidate_order_anno();
+        xassert(!$dtt->has_order_anno());
+
+        xassert_assign($this->u_chair, "action,paper,tag,new_tag\ncopytag,all,t,tt\n");
+
+        $dt->invalidate_order_anno();
+        xassert($dt->has_order_anno());
+        $dtt->invalidate_order_anno();
+        xassert($dtt->has_order_anno());
+
+        $sv = [[-1, null], [0, 1], [1, 1], [10, 4], [10, 4], [12, 4], [30, 5], [31, 6], [32, 7], [33, 7], [49, 7], [50, 8], [60, 8]];
+        foreach ($sv as $m) {
+            xassert_eqq($dt->order_anno_search($m[0])->annoId ?? null, $m[1]);
+            xassert_eqq($dtt->order_anno_search($m[0])->annoId ?? null, $m[1]);
+        }
+
+        xassert_assign($this->u_chair, "action,paper,tag,new_tag\nmovetag,all,tt,tu\n");
+
+        $dtu = $this->conf->tags()->ensure("tu");
+        $dt->invalidate_order_anno();
+        xassert($dt->has_order_anno());
+        $dtt->invalidate_order_anno();
+        xassert(!$dtt->has_order_anno());
+        $dtu->invalidate_order_anno();
+        xassert($dtu->has_order_anno());
+
+        $sv = [[-1, null], [0, 1], [1, 1], [10, 4], [10, 4], [12, 4], [30, 5], [31, 6], [32, 7], [33, 7], [49, 7], [50, 8], [60, 8]];
+        foreach ($sv as $m) {
+            xassert_eqq($dt->order_anno_search($m[0])->annoId ?? null, $m[1]);
+            xassert_eqq($dtu->order_anno_search($m[0])->annoId ?? null, $m[1]);
+        }
+
+        $this->conf->qe("delete from PaperTagAnno where tag in ('t','tt','tu')");
+    }
 }

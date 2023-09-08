@@ -220,6 +220,7 @@ src/assigners/a_preference.php
 src/assigners/a_review.php
 src/assigners/a_status.php
 src/assigners/a_tag.php
+src/assigners/a_taganno.php
 src/assigners/a_unsubmitreview.php
 src/assignmentcountset.php
 src/assignmentset.php

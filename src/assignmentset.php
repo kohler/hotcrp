@@ -83,8 +83,15 @@ class AssignmentItem implements ArrayAccess, JsonSerializable {
         return $this->deleted;
     }
     /** @return bool */
-    function modified() {
+    function edited() {
         return !!$this->after;
+    }
+    /** @return bool */
+    function changed() {
+        return $this->after
+            && ($this->deleted
+                ? $this->existed
+                : !$this->existed || !$this->after->match($this->before));
     }
     /** @param bool $pre
      * @param string $offset */
@@ -324,10 +331,10 @@ class AssignmentState extends MessageSet {
     /** @template T
      * @param T $q
      * @return list<T> */
-    function query_unmodified($q) {
+    function query_unedited($q) {
         $res = [];
         foreach ($this->query_items($q) as $item) {
-            if (!$item->modified())
+            if (!$item->edited())
                 $res[] = $item->before;
         }
         return $res;
@@ -387,8 +394,7 @@ class AssignmentState extends MessageSet {
         $diff = [];
         foreach ($this->st as $pid => $st) {
             foreach ($st->items as $item) {
-                if ($item->after
-                    && (!$item->existed() || !$item->after->match($item->before)))
+                if ($item->changed())
                     $diff[$pid][] = $item;
             }
         }
@@ -737,11 +743,13 @@ abstract class AssignmentParser {
         $this->type = $type;
     }
     // Return a descriptor of the set of papers relevant for this action.
-    // Returns `""` or `"none"`.
+    // `"req"`, the default, means call `apply` for each requested paper.
+    // `"none"` means call `apply` exactly once with a placeholder paper.
+    // `"reqpost"` means each requested paper, then once with a placeholder.
     /** @param CsvRow $req
-     * @return ''|'none' */
+     * @return 'req'|'none'|'reqpost' */
     function paper_universe($req, AssignmentState $state) {
-        return "";
+        return "req";
     }
     // Optionally expand the set of interesting papers. Returns a search
     // expression, such as "ALL", or false.
@@ -1608,23 +1616,25 @@ class AssignmentSet {
         $this->astate->paper_exact_match = $pfield_straight;
 
         // check conflicts and perform assignment
-        if ($paper_universe === "none") {
-            $prow = $this->astate->placeholder_prow();
-            $any_success = $this->apply_paper($prow, $contacts, $aparser, $req) === 1;
-        } else {
-            $any_success = false;
-            foreach ($pids as $p) {
-                $prow = $this->astate->prow($p);
-                if (!$prow) {
-                    $this->error("<5>" . $this->user->no_paper_whynot($p)->unparse_html());
-                } else {
-                    $ret = $this->apply_paper($prow, $contacts, $aparser, $req);
-                    if ($ret === 1) {
-                        $any_success = true;
-                    } else if ($ret < 0) {
-                        break;
-                    }
+        $any_success = false;
+        foreach ($pids as $p) {
+            $prow = $this->astate->prow($p);
+            if (!$prow) {
+                $this->error("<5>" . $this->user->no_paper_whynot($p)->unparse_html());
+            } else {
+                $ret = $this->apply_paper($prow, $contacts, $aparser, $req);
+                if ($ret === 1) {
+                    $any_success = true;
+                } else if ($ret < 0) {
+                    break;
                 }
+            }
+        }
+        if ($paper_universe === "none" || $paper_universe === "reqpost") {
+            $prow = $this->astate->placeholder_prow();
+            $ret = $this->apply_paper($prow, $contacts, $aparser, $req);
+            if ($ret === 1) {
+                $any_success = true;
             }
         }
 

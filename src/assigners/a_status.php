@@ -105,7 +105,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
                 $res->_withdrawn = Conf::$now;
                 $res->_submitted = -$res->_submitted;
                 if ($state->conf->tags()->has(TagInfo::TFM_VOTES)) {
-                    Tag_AssignmentParser::load_tag_state($state);
+                    Tag_Assignable::load($state);
                     $state->register_preapply_function("withdraw {$prow->paperId}", new Withdraw_PreapplyFunction($prow->paperId));
                 }
             }

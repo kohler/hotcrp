@@ -36,6 +36,16 @@ class Tag_Assignable extends Assignable {
             && ($q->ltag ?? $this->ltag) === $this->ltag
             && ($q->_index ?? $this->_index) === $this->_index;
     }
+    static function load(AssignmentState $state) {
+        if (!$state->mark_type("tag", ["pid", "ltag"], "Tag_Assigner::make")) {
+            return;
+        }
+        $result = $state->conf->qe("select paperId, tag, tagIndex from PaperTag where paperId?a", $state->paper_ids());
+        while (($row = $result->fetch_row())) {
+            $state->load(new Tag_Assignable(+$row[0], strtolower($row[1]), $row[1], (float) $row[2]));
+        }
+        Dbl::free($result);
+    }
 }
 
 class NextTagAssigner implements AssignmentPreapplyFunction {
@@ -78,7 +88,7 @@ class NextTagAssigner implements AssignmentPreapplyFunction {
         $ltag = strtolower($this->tag);
         foreach ($this->pidindex as $pid => $index) {
             if ($index >= $this->first_index && $index < $this->next_index) {
-                $x = $state->query_unmodified(new Tag_Assignable($pid, $ltag));
+                $x = $state->query_unedited(new Tag_Assignable($pid, $ltag));
                 if (!empty($x)) {
                     $state->add(new Tag_Assignable($pid, $ltag, $this->tag, $this->next_index($this->isseq), true));
                 }
@@ -110,18 +120,8 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     function expand_papers($req, AssignmentState $state) {
         return $this->itype ? "ALL" : (string) $req["paper"];
     }
-    static function load_tag_state(AssignmentState $state) {
-        if (!$state->mark_type("tag", ["pid", "ltag"], "Tag_Assigner::make")) {
-            return;
-        }
-        $result = $state->conf->qe("select paperId, tag, tagIndex from PaperTag where paperId?a", $state->paper_ids());
-        while (($row = $result->fetch_row())) {
-            $state->load(new Tag_Assignable(+$row[0], strtolower($row[1]), $row[1], (float) $row[2]));
-        }
-        Dbl::free($result);
-    }
     function load_state(AssignmentState $state) {
-        self::load_tag_state($state);
+        Tag_Assignable::load($state);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (($whyNot = $state->user->perm_edit_some_tag($prow))) {
