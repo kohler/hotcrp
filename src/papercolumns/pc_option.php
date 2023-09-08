@@ -22,8 +22,10 @@ class Option_PaperColumn extends PaperColumn {
             return false;
         }
         $pl->qopts["options"] = true;
-        $this->fr = new FieldRender($pl->render_context | ($this->as_row ? FieldRender::CFROW : FieldRender::CFCOLUMN), $pl->user);
-        $this->fr->make_column($this);
+        if ($visible === self::PREP_VISIBLE) {
+            $this->fr = new FieldRender($pl->render_context | ($this->as_row ? FieldRender::CFROW : FieldRender::CFCOLUMN), $pl->user);
+            $this->fr->make_column($this);
+        }
         if ($this->as_row) {
             $this->className = ltrim(preg_replace('/(?: +|\A)(?:plrd|plr|plc)(?= |\z)/', "", $this->className));
         }
