@@ -153,7 +153,6 @@ function settings_field_order(parentid) {
         ++i;
         if ((e = n.querySelector(".moveup"))) {
             e.disabled = movedown === null;
-            moveup = e;
         }
         if ((e = n.querySelector(".movedown"))) {
             e.disabled = false;
@@ -334,27 +333,6 @@ handle_ui.on("js-settings-sf-move", function (evt) {
     hotcrp.tooltip.close(this);
     sf_order();
 });
-
-function make_sf_instantiator(sample) {
-    var x = {}, i;
-    if (sample.instantiators) {
-        sample = Object.assign({}, sample);
-        for (i in sample.instantiate) {
-            sample[i] = sample.instantiate[i];
-        }
-    }
-    if (sample.description) {
-        x.description = function (pe) {
-            $(pe).find("textarea").val(sample.description);
-        }
-    }
-    if (sample.required) {
-        x.required = function (pe) {
-            $(pe).find("select").val(sample.required === "register" ? 1 : 2);
-        };
-    }
-    return x;
-}
 
 demand_load.submission_field_library = demand_load.make(function (resolve) {
     $.get(hoturl("api/submissionfieldlibrary"), null, resolve);
