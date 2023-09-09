@@ -89,7 +89,13 @@ class PermissionProblem extends Exception
 
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
-        return $this->as_array();
+        $a = $this->as_array();
+        if (isset($a["option"])) {
+            $opt = $a["option"];
+            '@phan-var PaperOption $opt';
+            $a["option"] = ["id" => $opt->id, "name" => $opt->name];
+        }
+        return $a;
     }
 
     /** @return array<string,mixed> */
