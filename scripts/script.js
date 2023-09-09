@@ -9128,14 +9128,14 @@ handle_ui.on("js-annotate-order", function () {
             }
             const e = $e(tag, attr);
             if (xtype === "session") {
-                addClass(e, "if-session");
-                addClass(e, "hidden");
-                addClass(e, "ignore-diff");
                 if (!need_session
                     && attr.value != null
                     && attr.value !== "") {
                     need_session = true;
                 }
+                addClass(e, "if-session");
+                need_session || addClass(e, "hidden");
+                need_session || addClass(e, "ignore-diff");
             }
             return e;
         }
@@ -9183,15 +9183,13 @@ handle_ui.on("js-annotate-order", function () {
         for (i = 0; i < annos.length; ++i) {
             add_anno(annos[i]);
         }
-        const etype = form.elements["ta/type"];
-        if (need_session) {
-            etype.value = "session";
-            $(etagannos).find(".if-session").removeClass("hidden");
-        }
-        etype.setAttribute("data-default-value", need_session ? "session" : "generic");
-        awaken_anno();
         $d.on("click", "button", clickh);
-        $(etype).on("change", on_change_type);
+        const etype = form.elements["ta/type"],
+            etypeval = need_session ? "session" : "generic";
+        etype.setAttribute("data-default-value", etypeval);
+        etype.value = etypeval;
+        $(etype).on("change", on_change_type).change();
+        awaken_anno();
         hc.show();
         demand_load.pc().then(function () { check_form_differs(form); }); // :(
     }

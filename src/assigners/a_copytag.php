@@ -82,7 +82,7 @@ class CopyTag_AssignmentParser extends UserlessAssignmentParser {
             }
         }
 
-        // placeholder: change/move tag annotations
+        // on placeholder: change/move tag annotations
         if ($prow->paperId < 0
             && $state->user->can_edit_tag_anno($tag)
             && $state->user->can_edit_tag_anno($new_tag)
