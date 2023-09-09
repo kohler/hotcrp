@@ -16,7 +16,11 @@ class PCConflicts_PaperOption extends PaperOption {
         // (test_exists() always returns true), so that admins can set
         // conflicts. The presence/exists_if configuration affects *visibility*
         // instead.
-        $this->visible_if = $this->exists_condition();
+        if (empty($this->conf->pc_members())) {
+            $this->visible_if = "NONE";
+        } else {
+            $this->visible_if = $this->exists_condition();
+        }
         $this->set_exists_condition(true);
         $this->selectors = !!($args->selectors ?? false);
     }
@@ -200,7 +204,8 @@ class PCConflicts_PaperOption extends PaperOption {
 
         $this->conf->ensure_cached_user_collaborators();
         $pcm = $this->conf->pc_members();
-        if (empty($pcm)) {
+        if (empty($pcm)
+            && !$pt->settings_mode) {
             return;
         }
 
@@ -303,6 +308,11 @@ class PCConflicts_PaperOption extends PaperOption {
             }
             echo "</div></li>";
         }
+
+        if (empty($pcm)) { // only in settings mode
+            echo '<li class="ctelt"><div class="ctelti"><em>(The PC has no members)</em></div></li>';
+        }
+
         echo "</ul></div></div>\n\n";
     }
     function render(FieldRender $fr, PaperValue $ov) {
