@@ -156,7 +156,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     function checked_document_by_index($i) {
         $doc = $this->docs[$i] ?? null;
         if (!$doc) {
-            throw new Exception("DocumentInfoSet::checked_document_by_index($i) failure");
+            throw new Exception("DocumentInfoSet::checked_document_by_index({$i}) failure");
         }
         return $doc;
     }

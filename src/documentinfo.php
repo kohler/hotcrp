@@ -19,7 +19,7 @@ class DocumentInfo implements JsonSerializable {
     public $mimetype;
     /** @var ?string */
     private $paper;    // translated to `content` on load
-    public $compression;
+    public $compression; // 0: uncompressed, 1: gz, -1: skeleton
     /** @var string|false */
     public $sha1 = ""; // binary hash; empty = unhashed, false = not available
     /** @var ?string|false */

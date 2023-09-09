@@ -1433,21 +1433,17 @@ class Document_PaperOption extends PaperOption {
             return;
         }
 
-        // XXXX this is super gross
-        if ($this->id > 0 && $ov->value) {
-            $docid = $ov->value;
-        } else if ($this->id === DTYPE_SUBMISSION
-                   && $ov->prow->paperStorageId > 1) {
-            $docid = $ov->prow->paperStorageId;
-        } else if ($this->id === DTYPE_FINAL
-                   && $ov->prow->finalPaperStorageId > 0) {
-            $docid = $ov->prow->finalPaperStorageId;
-        } else {
-            $docid = 0;
+        // XXX
+        if ($this->id === DTYPE_SUBMISSION) {
+            assert(($ov->value ?? 0) === ($ov->prow->paperStorageId > 1 ? $ov->prow->paperStorageId : 0));
+        } else if ($this->id === DTYPE_FINAL) {
+            assert(($ov->value ?? 0) === ($ov->prow->finalPaperStorageId > 1 ? $ov->prow->finalPaperStorageId : 0));
         }
-        $doc = null;
-        if ($docid > 1 && $pt->user->can_view_pdf($ov->prow)) {
-            $doc = $ov->prow->document($this->id, $docid, true);
+
+        if ($ov->value > 1 && $pt->user->can_view_pdf($ov->prow)) {
+            $doc = $ov->document_set(true)->document_by_index(0);
+        } else {
+            $doc = null;
         }
 
         $max_size = $this->max_size ?? $this->conf->upload_max_filesize(true);
@@ -1548,7 +1544,7 @@ class Document_PaperOption extends PaperOption {
             return;
         }
         if ($fr->want(FieldRender::CFFORM)) {
-            $fr->set_html($d->link_html(htmlspecialchars($d->filename), 0));
+            $fr->set_html($d->link_html(htmlspecialchars($d->filename ?? ""), 0));
         } else if ($fr->want(FieldRender::CFPAGE)) {
             $th = $opt->title_html();
             $dif = $opt->display() === PaperOption::DISP_TOP ? 0 : DocumentInfo::L_SMALL;
@@ -1578,6 +1574,9 @@ class Document_PaperOption extends PaperOption {
                 $fr->table->render_submission($fr, $this);
             }
         } else {
+            if ($fr->want(FieldRender::CFFORM)) {
+                $ov->document_set(true);
+            }
             self::render_document($fr, $this, $ov->document(0));
         }
     }

@@ -123,17 +123,27 @@ class PaperValue implements JsonSerializable {
     function data_by_index($index) {
         return ($this->data_list())[$index] ?? null;
     }
-    /** @return DocumentInfoSet */
-    function document_set() {
+    /** @param bool $full
+     * @return DocumentInfoSet */
+    function document_set($full = false) {
         assert($this->prow || empty($this->_values));
         assert($this->option->has_document());
         assert($this->_docset !== false);
+        // must recreate document set with full information if requested
+        if ($full
+            && $this->_docset !== null
+            && ($this->option->id === DTYPE_SUBMISSION || $this->option->id === DTYPE_FINAL)
+            && ($doc = $this->_docset->document_by_index(0))
+            && $doc->compression === -1) {
+            $this->_docset = null;
+        }
+        // create document set if doesn't exist
         if ($this->_docset === null) {
             $this->_docset = false;
             $docset = new DocumentInfoSet;
             // NB value_dids() might call set_value_data
             foreach ($this->option->value_dids($this) as $did) {
-                $d = $this->prow->document($this->option->id, $did);
+                $d = $this->prow->document($this->option->id, $did, $full);
                 $docset->add($d ?? DocumentInfo::make_empty($this->prow->conf, $this->prow));
             }
             assert($this->_docset === false);

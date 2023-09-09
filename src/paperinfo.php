@@ -2313,6 +2313,8 @@ class PaperInfo {
                     "hash" => $this->sha1,
                     "size" => $this->size ?? -1
                 ], $this->conf, $this);
+                // mark the primary document as a skeleton
+                $this->_primary_document->compression = -1;
             }
             return $this->_primary_document;
         }
