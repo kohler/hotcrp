@@ -812,7 +812,7 @@ class Options_SettingParser extends SettingParser {
     private function _check_intrinsic_difference(SettingValues $sv, $ctr,
                                                  $sfs, $nopt,
                                                  &$last_form_order,
-                                                 &$last_display_order) {
+                                                 &$last_page_order) {
         // Enumerate difference between the expected intrinsic and the new value
         $isfsj = $this->basic_intrinsic_json($sfs->option_id);
         $iopt = $this->intermediate_intrinsic_option($sfs->option_id, $sv);
@@ -843,11 +843,11 @@ class Options_SettingParser extends SettingParser {
             // if we get this far, there is a difference
             $diffprop[] = $mname;
         }
-        $form_order = $display_order = $isfsj->form_order;
+        $form_order = $page_order = $isfsj->form_order;
         if (empty($diffprop)
             && $form_order > $last_form_order
-            && $form_order > $last_display_order) {
-            $last_form_order = $last_display_order = $form_order;
+            && $form_order > $last_page_order) {
+            $last_form_order = $last_page_order = $form_order;
             return null;
         }
 
@@ -867,14 +867,16 @@ class Options_SettingParser extends SettingParser {
                 $dj[$prop] = $nj->$prop ?? null;
         }
         if ($form_order <= $last_form_order) {
-            $dj["form_order"] = $form_order = $last_form_order + 1;
-        }
-        $last_form_order = $form_order;
-        if ($form_order <= $last_display_order) {
-            ++$last_display_order;
-            $dj["display_order"] = $last_display_order;
+            ++$last_form_order;
+            $dj["form_order"] = $form_order = $last_form_order;
         } else {
-            $last_display_order = $form_order;
+            $last_form_order = $form_order;
+        }
+        if ($form_order <= $last_page_order) {
+            ++$last_page_order;
+            $dj["page_order"] = $last_page_order;
+        } else {
+            $last_page_order = $form_order;
         }
         return count($dj) === 2 ? null : (object) $dj;
     }
@@ -918,7 +920,7 @@ class Options_SettingParser extends SettingParser {
 
         // process options in order
         $last_form_order = 0;
-        $last_display_order = PaperOption::$display_form_order;
+        $last_page_order = PaperOption::$display_form_order;
         $nsfss = $insfss = [];
         foreach ($ctrs as $i => $ctr) {
             $sfs = $sv->newv("sf/{$ctr}");
@@ -941,20 +943,24 @@ class Options_SettingParser extends SettingParser {
             }
             $this->_new_options[$sfs->id] = $opt = PaperOption::make($sv->conf, $sfs);
             $this->option_id_to_ctr[$opt->id] = $ctr;
+            $my_last_page_order = &$last_page_order[$opt->display()];
             if ($opt->id > 0) {
                 $nsfss[] = $oj = $opt->jsonSerialize();
-                $display_order = PaperOption::$display_form_order[$opt->display()] + 100 + $i + 1;
-                if ($display_order <= $last_form_order) {
-                    unset($oj->order);
+                $computed_order = PaperOption::$display_form_order[$opt->display()] + 100 + $i + 1;
+                if ($computed_order <= $last_form_order) {
                     ++$last_form_order;
                     $oj->form_order = $last_form_order;
-                    $oj->display_order = $display_order;
                 } else {
-                    $last_form_order = $display_order;
+                    $last_form_order = $computed_order;
                 }
-                $last_display_order[$opt->display()] = $display_order;
+                if ($computed_order <= $my_last_page_order) {
+                    ++$my_last_page_order;
+                    $oj->page_order = $my_last_page_order;
+                } else {
+                    $my_last_page_order = $computed_order;
+                }
             } else {
-                $diff = $this->_check_intrinsic_difference($sv, $ctr, $sfs, $opt, $last_form_order, $last_display_order[$opt->display()]);
+                $diff = $this->_check_intrinsic_difference($sv, $ctr, $sfs, $opt, $last_form_order, $my_last_page_order);
                 if ($diff) {
                     $insfss[] = $diff;
                 }

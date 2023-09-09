@@ -174,14 +174,6 @@ class PaperOption implements JsonSerializable {
             $this->_visibility = self::VIS_SUB;
         }
 
-        $order = $args->order ?? $args->position /* XXX */ ?? null;
-        if ((is_int($order) || is_float($order))
-            && ($this->id <= 0 || $order > 0)) {
-            $this->order = $order;
-        } else {
-            $this->order = 499;
-        }
-
         $disp = $args->display ?? null;
         if ($disp !== null) {
             if (($x = array_search($disp, self::$display_map)) !== false) {
@@ -195,19 +187,30 @@ class PaperOption implements JsonSerializable {
             }
         }
 
-        $p = $args->form_order ?? $args->form_position /* XXX */ ?? null;
+        $fo = $args->form_order ?? $args->form_position /* XXX */ ?? null;
         if ($this->_display === null) {
-            if ($p === null || $p >= 3500) {
+            if ($fo === null || $fo >= 3500) {
                 $this->_display = self::DISP_REST;
-            } else if ($p >= 3000) {
+            } else if ($fo >= 3000) {
                 $this->_display = self::DISP_RIGHT;
             } else {
                 $this->_display = self::DISP_TOP;
             }
         }
-        $this->form_order = $p ?? self::$display_form_order[$this->_display] + 100 + $this->order;
 
-        $this->page_order = $args->page_order ?? $args->page_position /* XXX */ ?? $args->display_position /* XXX */ ?? $p;
+        $order = $args->order ?? $args->position /* XXX */ ?? null;
+        if ((is_int($order) || is_float($order))
+            && ($this->id <= 0 || $order > 0)) {
+            $this->order = $order;
+            $cfo = self::$display_form_order[$this->_display] + 100 + $order;
+        } else {
+            $this->order = 399;
+            $cfo = $fo ?? self::$display_form_order[$this->_display] + 499;
+        }
+
+        $this->form_order = $fo ?? $cfo;
+        $this->page_order = $args->page_order ?? $cfo;
+
         $this->page_expand = !!($args->page_expand ?? false);
         $this->page_group = $args->page_group ?? null;
         if ($this->page_group === null && $this->_display === self::DISP_REST) {
