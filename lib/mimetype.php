@@ -23,6 +23,7 @@ class Mimetype {
     const FLAG_INCOMPRESSIBLE = 8;
     const FLAG_TEXTUAL = 16;
     const FLAG_REQUIRE_SNIFF = 32;
+    const FLAG_ZIPLIKE = 64;
 
     /** @var string */
     public $mimetype;
@@ -41,7 +42,7 @@ class Mimetype {
         self::PDF_TYPE =>     [".pdf", "PDF", self::FLAG_INLINE | self::FLAG_REQUIRE_SNIFF],
         self::PS_TYPE =>      [".ps", "PostScript", self::FLAG_COMPRESSIBLE],
         self::PPT_TYPE =>     [".ppt", "PowerPoint", self::FLAG_INCOMPRESSIBLE, "application/mspowerpoint", "application/powerpoint", "application/x-mspowerpoint"],
-        self::KEYNOTE_TYPE => [".key", "Keynote", self::FLAG_INCOMPRESSIBLE, "application/x-iwork-keynote-sffkey"],
+        self::KEYNOTE_TYPE => [".key", "Keynote", self::FLAG_INCOMPRESSIBLE | self::FLAG_ZIPLIKE, "application/x-iwork-keynote-sffkey"],
         "application/vnd.openxmlformats-officedocument.presentationml.presentation" =>
                               [".pptx", "PowerPoint", self::FLAG_INCOMPRESSIBLE],
         "video/mp4" =>        [".mp4", null, self::FLAG_INCOMPRESSIBLE],
@@ -165,16 +166,6 @@ class Mimetype {
         }
     }
 
-    /** @param string|Mimetype $typea
-     * @param string|Mimetype $typeb
-     * @return bool */
-    static function type_equals($typea, $typeb) {
-        $ta = self::type($typea);
-        $tb = self::type($typeb);
-        return ($typea && $typea === $typeb)
-            || ($ta !== null && $ta === $tb);
-    }
-
     /** @param string|Mimetype $type
      * @return string */
     static function extension($type) {
@@ -198,7 +189,7 @@ class Mimetype {
         }
     }
 
-    /** @param list<string|Mimetype> $types
+    /** @param list<Mimetype> $types
      * @return string */
     static function list_description($types) {
         if (count($types) === 0) {
@@ -209,6 +200,21 @@ class Mimetype {
             $m = array_unique(array_map("Mimetype::description", $types));
             return commajoin($m, "or");
         }
+    }
+
+    /** @param list<Mimetype> $types
+     * @return ?string */
+    static function list_accept($types) {
+        $mta = [];
+        foreach ($types as $mt) {
+            if ($mt->type === self::BIN_TYPE
+                || ($mt->flags & self::FLAG_ZIPLIKE) !== 0) {
+                return null;
+            } else {
+                $mta[] = $mt->mimetype;
+            }
+        }
+        return empty($mta) ? null : join(",", $mta);
     }
 
     /** @param string|Mimetype $type
@@ -238,6 +244,15 @@ class Mimetype {
         } else {
             return str_starts_with($x ? $x->mimetype : $type, "text/");
         }
+    }
+
+    /** @param string|Mimetype $type
+     * @return bool */
+    function matches($type) {
+        $xt = self::type($type);
+        return $xt === $this->mimetype
+            || (($this->flags & self::FLAG_ZIPLIKE) !== 0
+                && $xt === self::ZIP_TYPE);
     }
 
 

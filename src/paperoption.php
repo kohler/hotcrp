@@ -1472,8 +1472,8 @@ class Document_PaperOption extends PaperOption {
         if ($doc) {
             echo ' data-docid="', $doc->paperStorageId, '"';
         }
-        if ($mimetypes) {
-            echo ' data-document-accept="', htmlspecialchars(join(",", array_map(function ($m) { return $m->mimetype; }, $mimetypes))), '"';
+        if (($accept = Mimetype::list_accept($mimetypes))) {
+            echo ' data-document-accept="', htmlspecialchars($accept), '"';
         }
         if ($this->max_size > 0) {
             echo ' data-document-max-size="', (int) $this->max_size, '"';
@@ -1529,7 +1529,7 @@ class Document_PaperOption extends PaperOption {
             return true;
         }
         for ($i = 0; $i < count($mimetypes); ++$i) {
-            if ($mimetypes[$i]->mimetype === $doc->mimetype)
+            if ($mimetypes[$i]->matches($doc->mimetype))
                 return true;
         }
         $desc = Mimetype::list_description($mimetypes);
