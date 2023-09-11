@@ -206,7 +206,7 @@ class Mimetype {
      * @return ?string */
     static function list_accept($types) {
         $mta = [];
-        foreach ($types as $mt) {
+        foreach ($types ?? [] as $mt) {
             if ($mt->mimetype === self::BIN_TYPE
                 || ($mt->flags & self::FLAG_ZIPLIKE) !== 0) {
                 return null;
