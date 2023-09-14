@@ -846,7 +846,7 @@ class Dbl {
      * @param string $update_query
      * @param array $update_query_args
      * @return null|int|string */
-    static function compare_and_swap($dblink, $value_query, $value_query_args,
+    static function compare_exchange($dblink, $value_query, $value_query_args,
                                      $callback, $update_query, $update_query_args) {
         for ($n = 0; $n < 200; ++$n) {
             $result = self::qe_apply($dblink, $value_query, $value_query_args);
@@ -862,7 +862,20 @@ class Dbl {
                 return $new_value;
             }
         }
-        throw new Exception("Dbl::compare_and_swap failure on query `" . Dbl::format_query_args($dblink, $value_query, $value_query_args) . "`");
+        throw new Exception("Dbl::compare_exchange failure on query `" . Dbl::format_query_args($dblink, $value_query, $value_query_args) . "`");
+    }
+
+    /** @param mysqli $dblink
+     * @param string $value_query
+     * @param array $value_query_args
+     * @param callable(?string):(null|int|string) $callback
+     * @param string $update_query
+     * @param array $update_query_args
+     * @return null|int|string
+     * @deprecated */
+    static function compare_and_swap($dblink, $value_query, $value_query_args,
+                                     $callback, $update_query, $update_query_args) {
+        return self::compare_exchange($dblink, $value_query, $value_query_args, $callback, $update_query, $update_query_args);
     }
 
     /** @param null|bool|float|'verbose' $limit

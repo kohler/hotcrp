@@ -1594,7 +1594,7 @@ class DocumentInfo implements JsonSerializable {
         } else {
             $ok = true;
             $qf[] = "infoJson=?{desired}";
-            $ijstr = Dbl::compare_and_swap($this->conf->dblink,
+            $ijstr = Dbl::compare_exchange($this->conf->dblink,
                 "select infoJson from PaperStorage where paperId=? and paperStorageId=?",
                 [$this->paperId, $this->paperStorageId],
                 function ($oldstr) use ($metadata, &$ok) {

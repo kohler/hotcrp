@@ -1428,7 +1428,7 @@ class Contact implements JsonSerializable {
         $cid = $cdb ? $this->contactDbId : $this->contactId;
         $change = array_to_object_recursive($data);
         assert($cid > 0);
-        Dbl::compare_and_swap(
+        Dbl::compare_exchange(
             $cdb ? $this->conf->contactdb() : $this->conf->dblink,
             "select `data` from ContactInfo where {$key}=?", [$cid],
             function ($old) use ($change) {

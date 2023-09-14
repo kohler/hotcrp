@@ -75,17 +75,17 @@ class Unit_Tester {
         xassert_eqq(Dbl::fetch_ivalue("select ? like cast('?ls' as binary) from dual", "xx", "%x"), 0);
     }
 
-    function test_dbl_compare_and_swap() {
+    function test_dbl_compare_exchange() {
         Dbl::qe("delete from Settings where name='cmpxchg'");
         Dbl::qe("insert into Settings set name='cmpxchg', value=1");
         xassert_eqq(Dbl::fetch_ivalue("select value from Settings where name='cmpxchg'"), 1);
-        xassert_eqq(Dbl::compare_and_swap(Dbl::$default_dblink,
+        xassert_eqq(Dbl::compare_exchange(Dbl::$default_dblink,
                                           "select value from Settings where name=?", ["cmpxchg"],
                                           function ($x) { return (int) $x + 1; },
                                           "update Settings set value=?{desired} where name=? and value=?{expected}", ["cmpxchg"]),
                     2);
         xassert_eqq(Dbl::fetch_ivalue("select value from Settings where name='cmpxchg'"), 2);
-        xassert_eqq(Dbl::compare_and_swap(Dbl::$default_dblink,
+        xassert_eqq(Dbl::compare_exchange(Dbl::$default_dblink,
                                           "select value from Settings where name=?", ["cmpxchg"],
                                           function ($x) { return (int) $x + 1; },
                                           "update Settings set value?{desired}e where name=? and value?{expected}e", ["cmpxchg"]),

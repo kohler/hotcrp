@@ -552,6 +552,7 @@ class TagMap {
             return false;
         }
     }
+
     /** @param string $tag
      * @param string $ltag
      * @return ?TagInfo */
@@ -585,6 +586,7 @@ class TagMap {
         }
         return $ti;
     }
+
     /** @param string $tag
      * @return ?TagInfo */
     function find($tag) {
@@ -606,12 +608,7 @@ class TagMap {
         }
         return $ti;
     }
-    /** @param string $tag
-     * @return ?TagInfo
-     * @deprecated */
-    function check($tag) {
-        return $this->find($tag);
-    }
+
     /** @param string $tag
      * @return TagInfo */
     function ensure($tag) {
@@ -630,12 +627,7 @@ class TagMap {
         }
         return $ti;
     }
-    /** @param string $tag
-     * @return TagInfo
-     * @deprecated */
-    function add($tag) {
-        return $this->ensure($tag);
-    }
+
     /** @param string $tag
      * @param int $flags
      * @return ?TagInfo */
@@ -970,12 +962,6 @@ class TagMap {
             Ht::stash_script("hotcrp.ensure_pattern({$arg})");
             self::$multicolor_map[$key] = true;
         }
-    }
-
-    /** @param list<string>|string $classes
-     * @deprecated */
-    function mark_pattern_fill($classes) {
-        self::stash_ensure_pattern($classes);
     }
 
     /** @return string */
