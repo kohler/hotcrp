@@ -2119,7 +2119,8 @@ class Conf {
         }
         if (Contact::$main_user !== null
             && Contact::$main_user->conf === $this
-            && strcasecmp(Contact::$main_user->email, $email) === 0) {
+            && strcasecmp(Contact::$main_user->email, $email) === 0
+            && Contact::$main_user->contactId > 0) {
             return Contact::$main_user;
         }
         $this->_ensure_user_email_cache();
