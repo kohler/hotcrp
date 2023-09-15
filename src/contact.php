@@ -664,10 +664,11 @@ class Contact implements JsonSerializable {
 
         // new account must exist
         $u = $this->conf->user_by_email($email);
-        if (!$u
-            && validate_email($email)
-            && $this->conf->opt("debugShowSensitiveEmail")) {
-            $u = Contact::make_email($this->conf, $email)->store();
+        if (!$u && validate_email($email)) {
+            $u = $this->conf->cdb_user_by_email($email);
+            if (!$u && $this->conf->opt("debugShowSensitiveEmail")) {
+                $u = Contact::make_email($this->conf, $email)->store();
+            }
         }
         if (!$u) {
             return $this;
