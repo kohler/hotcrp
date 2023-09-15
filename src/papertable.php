@@ -2318,7 +2318,7 @@ class PaperTable {
     private function _print_editable_fields() {
         $fr = (new FieldRender(FieldRender::CFHTML | FieldRender::CFFORM | FieldRender::CFVERBOSE))->make_table($this);
         foreach ($this->prow->form_fields() as $o) {
-            if (!$this->user->can_view_option($this->prow, $o)) {
+            if (!$this->user->allow_view_option($this->prow, $o)) {
                 continue;
             }
             $ov = $this->prow->force_option($o);
