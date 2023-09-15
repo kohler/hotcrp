@@ -698,4 +698,52 @@ class Cdb_Tester {
         xassert_eqq($u->affiliation, "Nonsense University");
         xassert_eqq($u->disablement, Contact::DISABLEMENT_PLACEHOLDER);
     }
+
+    function test_cdb_user_new_paper() {
+        $u = $this->conf->fresh_cdb_user_by_email("newuser@_.com");
+        xassert(!$u);
+
+        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='newuser@_.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
+        $u = $this->conf->fresh_cdb_user_by_email("newuser@_.com");
+        xassert(!!$u);
+        xassert(!$this->conf->fresh_user_by_email("newuser@_.com"));
+
+        $so = $this->conf->setting("sub_open");
+        $ss = $this->conf->setting("sub_sub");
+        $this->conf->save_setting("sub_open", 1);
+        $this->conf->save_refresh_setting("sub_sub", Conf::$now + 10);
+        $mu = Contact::$main_user;
+        Contact::$main_user = $u;
+        xassert(!$u->has_account_here());
+
+        $p = PaperInfo::make_new($u, null);
+        $ps = new PaperStatus($u);
+        $pid = $ps->save_paper_web(new Qrequest("POST", [
+            "title" => "A Systematic Study of Neural Discourse Models for Implicit Discourse Relation",
+            "has_authors" => 1,
+            "authors:1:name" => "Attapol T. Rutherford",
+            "authors:1:affiliation" => "Yelp",
+            "authors:1:email" => "newuser@_.com",
+            "authors:2:name" => "Vera Demberg",
+            "authors:2:affiliation" => "Saarland University",
+            "authors:2:email" => "vera@coli.uni-saarland.de",
+            "authors:3:name" => "Nianwen Xue",
+            "authors:3:affiliation" => "Brandeis University",
+            "authors:3:email" => "xuen@brandeis.edu",
+            "abstract" => "Inferring implicit discourse relations in natural language text is the most difficult subtask in discourse parsing. Many neural network models have been proposed to tackle this problem."
+        ]), $p, "update");
+        xassert_gt($pid, 0);
+        xassert($u->has_account_here());
+
+        $p1 = $this->conf->checked_paper_by_id($pid);
+        xassert($p1->has_author($u));
+        $u1 = $this->conf->fresh_user_by_email("newuser@_.com");
+        xassert(!$u1->is_dormant());
+        xassert_eqq($p1->conflict_type($u1), CONFLICT_CONTACTAUTHOR | CONFLICT_AUTHOR);
+        xassert(!empty($p1->conflict_type_list()));
+
+        $this->conf->save_setting("sub_open", $so);
+        $this->conf->save_refresh_setting("sub_sub", $ss);
+        Contact::$main_user = $mu;
+    }
 }

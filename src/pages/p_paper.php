@@ -490,10 +490,6 @@ class Paper_Page {
         $pp->load_prow();
 
         // fix user
-        if ($qreq->is_post() && $qreq->valid_token()) {
-            $user->ensure_account_here();
-            // XXX escape unless update && can_start_paper???
-        }
         if ($pp->prow->paperId === 0
             && $user->privChair
             && !$pp->prow->submission_round()->time_register(true)) {

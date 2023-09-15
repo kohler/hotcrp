@@ -752,7 +752,14 @@ class PaperStatus extends MessageSet {
      * @return ?Contact */
     private function _make_user($au, $ctype) {
         $uu = $this->conf->user_by_email($au->email, USER_SLICE);
-        if (!$uu && $ctype >= CONFLICT_AUTHOR) {
+        if (!$uu
+            && $ctype >= CONFLICT_AUTHOR
+            && strcasecmp($au->email, $this->user->email) === 0) {
+            $this->user->ensure_account_here();
+            $uu = $this->conf->user_by_email($au->email, USER_SLICE);
+        }
+        if (!$uu
+            && $ctype >= CONFLICT_AUTHOR) {
             $j = $au->unparse_nea_json();
             $j["disablement"] = ($this->disable_users ? Contact::DISABLEMENT_USER : 0)
                 | Contact::DISABLEMENT_PLACEHOLDER;
@@ -829,6 +836,11 @@ class PaperStatus extends MessageSet {
     }
 
     private function _check_contacts_last($pj) {
+        // if creating a paper, user has account here
+        if ($this->user->has_email()) {
+            $this->user->ensure_account_here();
+        }
+
         // if creating a paper, user becomes contact;
         // if user removes self from author list, user becomes contact
         if ($this->user->contactId > 0) {
