@@ -233,17 +233,32 @@ class PermissionProblem extends Exception
         }
         if (isset($this->_a["deadline"])) {
             list($odn, $start, $edn, $end) = $this->deadline_info();
-            if ($edn == "au_seerev") {
-                $ms[] = $this->conf->_c("etime", "<0>Action not available.", $edn, $paperId);
+            $m = "<0>Action not available.";
+            $dl = $edn;
+            $time = 0;
+            if ($edn === "au_seerev") {
+                // nothing
             } else if ($start <= 0 || $start == $end) {
-                $ms[] = $this->conf->_c("etime", "<0>Action not available.", $odn, $paperId);
-            } else if ($start > 0 && Conf::$now < $start) {
-                $ms[] = $this->conf->_c("etime", "<0>Action not available until {2}.", $odn, $paperId, $this->conf->unparse_time($start));
+                $dl = $odn;
+            } else if (Conf::$now < $start) {
+                $m = "<0>Action not available until {time}.";
+                $dl = $odn;
+                $time = $start;
             } else if ($end > 0 && Conf::$now > $end) {
-                $ms[] = $this->conf->_c("etime", "<0>Deadline passed.", $edn, $paperId, $this->conf->unparse_time($end));
-            } else {
-                $ms[] = $this->conf->_c("etime", "<0>Action not available.", $edn, $paperId);
+                $m = "<0>Deadline passed.";
+                $time = $end;
             }
+            $args = [
+                new FmtArg("fmt", $format),
+                new FmtArg("pid", $paperId),
+                new FmtArg("deadline", $dl),
+                new FmtArg("deadlineurl", $this->conf->hoturl_raw("deadlines"), 0)
+            ];
+            if ($time) {
+                $args[] = new FmtArg("time", $this->conf->unparse_time($time), 0);
+                $args[] = new FmtArg("timespan", $this->conf->unparse_time_with_local_span($time), 5);
+            }
+            $ms[] = $this->conf->_c("etime", $m, ...$args);
         }
         if ($this->_a["override"] ?? false) {
             $ms[] = $this->conf->_("<0>“Override deadlines” can override this restriction.");
