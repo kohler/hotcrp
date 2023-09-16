@@ -742,7 +742,7 @@ class PaperInfo {
             $prow->topicIds = "";
         $prow->leadContactId = $prow->shepherdContactId = 0;
         $prow->blind = true;
-        $prow->allConflictType = $user->contactId . " " . CONFLICT_CONTACTAUTHOR;
+        $prow->allConflictType = "";
         $prow->_author_user = $user;
         $prow->_comment_skeleton_array = $prow->_comment_array = [];
         $prow->_row_set->add_paper($prow);
