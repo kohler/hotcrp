@@ -151,7 +151,7 @@ class PaperRequest {
     private function signin_redirection($qreq, $pid) {
         $conf = $qreq->conf();
         return new PermissionProblem($conf, [
-            "signin" => true,
+            "signin" => $pid ? "paper" : "paper:start",
             "signinUrl" => $conf->hoturl_raw("signin", ["redirect" => $conf->selfurl($qreq, ["p" => $pid ? : "new"], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW)]),
             "secondary" => true
         ]);
@@ -213,11 +213,7 @@ class PaperRequest {
         $user = $qreq->user();
         $pid = $this->find_pid($user->conf, $user, $qreq);
         if ($pid === 0) {
-            if ($user->has_email()) {
-                return PaperInfo::make_new($user, $qreq->sclass);
-            } else {
-                throw $this->signin_redirection($qreq, 0);
-            }
+            return PaperInfo::make_new($user, $qreq->sclass);
         } else {
             $options = ["topics" => true, "options" => true];
             if ($user->privChair

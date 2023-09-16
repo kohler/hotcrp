@@ -3171,14 +3171,16 @@ class Contact implements JsonSerializable {
     /** @param bool $allow_no_email
      * @return ?PermissionProblem */
     function perm_start_paper(PaperInfo $prow, $allow_no_email = false) {
-        if (!$this->email && !$allow_no_email) {
-            return new PermissionProblem($this->conf, ["signin" => true]);
+        if ($this->can_administer($prow)) {
+            return null;
         }
         $sr = $prow->submission_round();
-        if ($sr->time_register(true) || $this->can_administer($prow)) {
-            return null;
-        } else {
+        if (!$sr->time_register(true)) {
             return new PermissionProblem($this->conf, ["deadline" => "sub_reg", "override" => $this->privChair]);
+        } else if (!$this->email && !$allow_no_email) {
+            return new PermissionProblem($this->conf, ["signin" => "paper:start"]);
+        } else {
+            return null;
         }
     }
 

@@ -34,10 +34,18 @@ class Paper_Page {
 
     /** @param bool $error */
     function print_header($error) {
-        PaperTable::print_header($this->pt, $this->qreq, $error);
+        $pt = $this->prow ? $this->pt() : null;
+        PaperTable::print_header($pt, $this->qreq, $error);
     }
 
-    function error_exit() {
+    /** @param ?PermissionProblem $perm */
+    function error_exit($perm = null) {
+        if ($perm) {
+            $perm->set("listViewable", $this->user->is_author() || $this->user->is_reviewer());
+            if (!$perm->secondary || $this->conf->saved_messages_status() < 2) {
+                $this->conf->error_msg("<5>" . $perm->unparse_html());
+            }
+        }
         $this->print_header(true);
         Ht::stash_script("hotcrp.shortcut().add()");
         $this->qreq->print_footer();
@@ -53,11 +61,7 @@ class Paper_Page {
             assert(PaperRequest::simple_qreq($this->qreq));
             throw $redir;
         } catch (PermissionProblem $perm) {
-            $perm->set("listViewable", $this->user->is_author() || $this->user->is_reviewer());
-            if (!$perm->secondary || $this->conf->saved_messages_status() < 2) {
-                $this->conf->error_msg("<5>" . $perm->unparse_html());
-            }
-            $this->error_exit();
+            $this->error_exit($perm);
         }
     }
 
@@ -489,11 +493,15 @@ class Paper_Page {
         $pp = new Paper_Page($user, $qreq);
         $pp->load_prow();
 
-        // fix user
-        if ($pp->prow->paperId === 0
-            && $user->privChair
-            && !$pp->prow->submission_round()->time_register(true)) {
-            $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        // new papers: maybe fix user, maybe error exit
+        if ($pp->prow->paperId === 0) {
+            if (!$pp->prow->submission_round()->time_register(true)
+                && $user->privChair) {
+                $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+            }
+            if (($perm = $user->perm_start_paper($pp->prow))) {
+                $pp->error_exit($perm);
+            }
         }
 
         // fix request

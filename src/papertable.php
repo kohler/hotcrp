@@ -2354,10 +2354,10 @@ class PaperTable {
         $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
         echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">';
         if ($this->prow->paperId) {
-            echo "Edit Submission";
+            echo "Edit submission";
         } else {
             $sr = $this->prow->submission_round();
-            echo "New ", $sr->title1, "Submission";
+            echo "New ", $sr->title1, "submission";
         }
         echo '</span></h2></div>';
 
@@ -2443,7 +2443,7 @@ class PaperTable {
             echo '</div><div class="need-clickthrough-show hidden">';
             $this->_print_editable_body();
             echo '</div></div>';
-        } else if ($this->editable) {
+        } else if ($this->editable || $this->prow->paperId <= 0) {
             echo '<div id="foldpaper">';
             $this->_print_editable_body();
             echo '</div>';
@@ -2452,7 +2452,7 @@ class PaperTable {
         }
         echo '</div>';
 
-        if (!$this->editable && $this->mode === "edit") {
+        if (!$this->editable && $this->mode === "edit" && $this->prow->paperId > 0) {
             echo '<div class="pcard papcard">',
                 '<div class="pedcard-head"><h2><span class="pedcard-header-name">Edit Contacts</span></h2></div>';
             $this->_print_edit_messages(false);
