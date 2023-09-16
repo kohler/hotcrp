@@ -308,7 +308,7 @@ class PaperStatus extends MessageSet {
         foreach (["submitted", "draft", "withdrawn", "final_submitted"] as $k) {
             $v = $istatus->$k ?? null;
             if ($v !== null && !is_bool($v)) {
-                $this->syntax_error_at("status.{$k}");
+                $this->syntax_error_at("status:{$k}");
                 $v = null;
             }
             $xstatus->$k = $v;
@@ -322,13 +322,13 @@ class PaperStatus extends MessageSet {
             if (is_numeric($v)) {
                 $v = (float) $v;
                 if ($v < 0) {
-                    $this->error_at("status.{$k}", "<0>Negative date");
+                    $this->error_at("status:{$k}", "<0>Negative date");
                     $v = null;
                 }
             } else if (is_string($v)) {
                 $v = $this->conf->parse_time($v, Conf::$now);
                 if ($v === false || $v < 0) {
-                    $this->error_at("status.{$k}", "<0>Parse error in date");
+                    $this->error_at("status:{$k}", "<0>Parse error in date");
                     $v = null;
                 } else {
                     $v = (float) $v;
@@ -336,7 +336,7 @@ class PaperStatus extends MessageSet {
             } else if ($v === false) {
                 $v = 0.0;
             } else if ($v !== null) {
-                $this->syntax_error_at("status.{$k}");
+                $this->syntax_error_at("status:{$k}");
             }
             $xstatus->$k = $v;
         }
@@ -344,7 +344,7 @@ class PaperStatus extends MessageSet {
         if (is_string($v)) {
             $xstatus->withdraw_reason = $v;
         } else if ($v !== null) {
-            $this->syntax_error_at("status.withdraw_reason");
+            $this->syntax_error_at("status:withdraw_reason");
         }
         if (in_array($istatusstr, ["submitted", "accepted", "accept", "deskrejected", "desk_reject", "deskreject", "rejected", "reject"])) {
             $xstatus->submitted = $xstatus->submitted ?? true;
@@ -362,7 +362,7 @@ class PaperStatus extends MessageSet {
         $xstatus->draft = $xstatus->draft ?? !$xstatus->submitted;
         $xstatus->withdrawn = $xstatus->withdrawn ?? $this->prow->timeWithdrawn > 0;
         if ($xstatus->submitted !== !$xstatus->draft) {
-            $this->error_at("status.draft", "<0>Draft status conflicts with submitted status");
+            $this->error_at("status:draft", "<0>Draft status conflicts with submitted status");
         }
         $xpj->status = $xstatus;
 
@@ -607,7 +607,7 @@ class PaperStatus extends MessageSet {
                 $whynot = $this->user->perm_revive_paper($this->prow);
             }
             if ($whynot) {
-                $whynot->append_to($this, "status.withdrawn", 2);
+                $whynot->append_to($this, "status:withdrawn", 2);
                 $pj_withdrawn = $old_withdrawn;
             }
         }
@@ -630,7 +630,7 @@ class PaperStatus extends MessageSet {
                 $whynot = $this->user->perm_finalize_paper($this->prow);
             }
             if ($whynot) {
-                $whynot->append_to($this, "status.submitted", 3);
+                $whynot->append_to($this, "status:submitted", 3);
                 $pj_submitted = $old_submitted;
             }
         }

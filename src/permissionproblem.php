@@ -167,6 +167,9 @@ class PermissionProblem extends Exception
             $idname = $id === "paper" ? "submission" : $id;
             $ms[] = $this->conf->_("<0>Missing {$idname} ID.");
         }
+        if (isset($this->_a["invalidSclass"])) {
+            $ms[] = $this->conf->_("<0>Unknown submission class ‘{}’.", $this->_a["invalidSclass"]);
+        }
         if ($this->_a["noPaper"] ?? false) {
             $ms[] = $this->conf->_("<0>Submission #{} does not exist.", $paperId);
         }

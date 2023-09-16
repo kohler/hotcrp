@@ -213,6 +213,10 @@ class PaperRequest {
         $user = $qreq->user();
         $pid = $this->find_pid($user->conf, $user, $qreq);
         if ($pid === 0) {
+            if (isset($qreq->sclass)
+                && !$user->conf->submission_round_by_tag($qreq->sclass)) {
+                throw new PermissionProblem($user->conf, ["invalidSclass" => $qreq->sclass]);
+            }
             return PaperInfo::make_new($user, $qreq->sclass);
         } else {
             $options = ["topics" => true, "options" => true];
