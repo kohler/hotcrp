@@ -699,6 +699,7 @@ class Cdb_Tester {
         xassert_eqq($u->disablement, Contact::DISABLEMENT_PLACEHOLDER);
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
     function test_cdb_user_new_paper() {
         $u = $this->conf->fresh_cdb_user_by_email("newuser@_.com");
         xassert(!$u);
