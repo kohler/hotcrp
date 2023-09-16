@@ -18,12 +18,12 @@ Generic values
 * `.modal-dialog`: 16 (must be > `.modal`)
 * `.bubble`: 20
 
-* `#header-page.header-page-submission`: 1
+* `body.page #p-header`: 1 (to occlude `.pslcard-nav`)
+* `.pspcard`: 1 (to occlude `.pslcard-nav`)
+* `.pslcard-nav`: (0)
+* `.pslcard-home`: -1
 * `.home-sidebar`: 1
 * `button:hover`, `button:focus`, etc.: 1
-* `.pspcard`: 2
-* `.pslcard-nav`: 1
-* `.pslcard-home`: -1
 * `.longtext-fader`: 1
 * `.longtext-expander`: 2
 * `.overlong-content`: 1
