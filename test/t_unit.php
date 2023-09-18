@@ -530,7 +530,9 @@ class Unit_Tester {
         xassert_eqq(json_decode("[1,2,3-4,5,6-10,11]"), null);
 
         xassert_eqq(SessionList::decode_ids("[1-2]"), [1,2]);
+        xassert_eqq(SessionList::decode_ids("1 2"), [1,2]);
         xassert_eqq(SessionList::decode_ids("[1,2,3-4,5,6-10,11]"), [1,2,3,4,5,6,7,8,9,10,11]);
+        xassert_eqq(SessionList::decode_ids("1 2 3 4 5 6 7 8 9 10 11"), [1,2,3,4,5,6,7,8,9,10,11]);
         xassert_eqq(SessionList::decode_ids(SessionList::encode_ids([1,2])), [1,2]);
         xassert_eqq(SessionList::decode_ids(SessionList::encode_ids([1,2,3,4,5,6,7,8,9,10,11])), [1,2,3,4,5,6,7,8,9,10,11]);
         xassert_eqq(SessionList::decode_ids(SessionList::encode_ids([1,3,5,7,9,10,11])), [1,3,5,7,9,10,11]);

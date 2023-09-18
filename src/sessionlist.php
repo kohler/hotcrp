@@ -1,6 +1,6 @@
 <?php
 // sessionlist.php -- HotCRP helper class for lists carried across pageloads
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class SessionList {
     /** @var string */
@@ -106,15 +106,15 @@ class SessionList {
             } else if ($ch >= 117 && $ch <= 120) { // u-x
                 $next += ($ch - 116) * 8 * $sign;
                 continue;
-            } else if ($ch === 113 || $ch === 114 || $ch === 116) {
+            } else if ($ch === 113 || $ch === 114 || $ch === 116) { // qrt
                 $j = 0;
                 while ($i !== $l && ctype_digit($s[$i])) {
                     $j = 10 * $j + ord($s[$i]) - 48;
                     ++$i;
                 }
-                if ($ch === 113) {
+                if ($ch === 113) { // q
                     $add0 = $j;
-                } else if ($ch === 114) {
+                } else if ($ch === 114) { // r
                     $skip = $j;
                 } else {
                     $skip = -$j;
@@ -133,8 +133,11 @@ class SessionList {
             } else if ($ch === 81 && $i === 1) { // Q
                 $include_after = true;
                 continue;
-            } else if (($ch < 48 || $ch > 57) && $ch !== 115 && $ch !== 91 && $ch !== 93
-                       && $ch !== 35 && $ch !== 39 && $ch !== 44) {
+            } else if (($ch >= 9 && $ch <= 13) || $ch === 32
+                       || $ch === 35 || $ch === 39 || $ch === 44
+                       || $ch === 91 || $ch === 93 || $ch === 115) {
+                // \s # ' , [ ] s : ignore
+            } else {
                 return null;
             }
 

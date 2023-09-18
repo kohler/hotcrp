@@ -1,6 +1,6 @@
 <?php
 // searchselection.php -- HotCRP helper class for paper selections
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class SearchSelection {
     /** @var list<int> */
@@ -32,7 +32,7 @@ class SearchSelection {
         } else if ($qreq->get($key) === "all") {
             $ps = $user ? (new PaperSearch($user, $qreq))->sorted_paper_ids() : null;
         } else if ($qreq->has($key)) {
-            $ps = preg_split('/\s+/', $qreq->get($key));
+            $ps = SessionList::decode_ids($qreq->get($key));
         } else {
             $ps = null;
         }
