@@ -4834,16 +4834,7 @@ class Conf {
         $user = self::log_clean_user($user, $text);
         $dest_user = self::log_clean_user($dest_user, $text);
 
-        if ($this->_save_logs === null) {
-            $values = self::format_log_values($text, $user, $dest_user, $true_user, $pids);
-            if ($dedup && count($values) === 1) {
-                $this->qe_apply(self::action_log_query . " select ?, ?, ?, ?, ?, ?, ? from dual"
-                    . " where not exists (select * from ActionLog where logId>=coalesce((select max(logId) from ActionLog),0)-199 and ipaddr<=>? and contactId<=>? and destContactId<=>? and trueContactId<=>? and paperId<=>? and timestamp>=?-3600 and action<=>?)",
-                    array_merge($values[0], $values[0]));
-            } else {
-                $this->qe(self::action_log_query . " values ?v", $values);
-            }
-        } else {
+        if ($this->_save_logs !== null) {
             $key = "{$user},{$dest_user},{$true_user}|{$text}";
             if (!isset($this->_save_logs[$key])) {
                 $this->_save_logs[$key] = [];
@@ -4851,7 +4842,20 @@ class Conf {
             foreach ($pids as $p) {
                 $this->_save_logs[$key][$p] = true;
             }
+            return;
         }
+
+        $values = self::format_log_values($text, $user, $dest_user, $true_user, $pids);
+        if ($dedup && count($values) === 1) {
+            $result = Dbl::qx_apply($this->dblink,
+                self::action_log_query
+                . " select ?, ?, ?, ?, ?, ?, ? from dual where not exists (select * from ActionLog where logId>=coalesce((select max(logId) from ActionLog),0)-199 and ipaddr<=>? and contactId<=>? and destContactId<=>? and trueContactId<=>? and paperId<=>? and timestamp>=?-3600 and action<=>?)",
+                array_merge($values[0], $values[0]));
+            if (!$result->is_error()) {
+                return;
+            }
+        }
+        $this->qe(self::action_log_query . " values ?v", $values);
     }
 
     /** @return list<list<string>> */
