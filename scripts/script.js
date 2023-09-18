@@ -8084,6 +8084,76 @@ hotcrp.suggest.add_builder("mentions", function (elt, hintinfo) {
 
 
 // list management, conflict management
+function encode_session_list_ids(ids) {
+    // see SessionList::encode_ids
+    if (ids.length === 0) {
+        return "";
+    }
+    const n = ids.length, a = ["Q", ids[0]];
+    let sign = 1, next = ids[0] + 1, i, want_sign;
+    for (i = 1; i !== n; ) {
+        // maybe switch direction
+        if (ids[i] < next
+            && (sign === -1 || (i + 1 !== n && ids[i + 1] < ids[i]))) {
+            want_sign = -1;
+        } else {
+            want_sign = 1;
+        }
+        if ((sign > 0) !== (want_sign > 0)) {
+            sign = -sign;
+            a.push("z");
+        }
+
+        const skip = (ids[i] - next) * sign;
+        let include = 1;
+        while (i + 1 !== n && ids[i + 1] == ids[i] + sign) {
+            ++i;
+            ++include;
+        }
+        const last = a[a.length - 1];
+        if (skip < 0) {
+            if (sign === 1 && skip <= -100) {
+                a.push("s", next + skip);
+            } else {
+                a.push("t", -skip);
+            }
+            --include;
+        } else if (skip === 2 && last === "z") {
+            a[a.length - 1] = "Z";
+            --include;
+        } else if (skip === 1 && last >= "a" && last <= "h") {
+            a[a.length - 1] = String.fromCharCode(last.charCodeAt(0) - 32);
+            --include;
+        } else if (skip === 2 && last >= "a" && last <= "h") {
+            a[a.length - 1] = String.fromCharCode(last.charCodeAt(0) - 32 + 8);
+            --include;
+        } else if (skip >= 1 && skip <= 8) {
+            a.push(String.fromCharCode(104 + skip));
+            --include;
+        } else if (skip >= 9 && skip <= 40) {
+            a.push(String.fromCharCode(116 + ((skip - 1) >> 3)),
+                   String.fromCharCode(105 + ((skip - 1) & 7)));
+            --include;
+        } else if (skip >= 41) {
+            a.push("r", skip);
+            --include;
+        }
+        if (include !== 0) {
+            if (include <= 8) {
+                a.push(String.fromCharCode(96 + include));
+            } else if (include <= 16) {
+                a.push("h", String.fromCharCode(88 + include));
+            } else {
+                a.push("q", include);
+            }
+        }
+
+        next = ids[i] + sign;
+        ++i;
+    }
+    return a.join("");
+}
+
 function decode_session_list_ids(str) {
     if ($.isArray(str))
         return str;
@@ -12168,7 +12238,7 @@ handle_ui.on("js-assign-list-action", function (evt) {
     });
 });
 
-function handle_submit_list_bulkwarn(table, chkval, bgform, evt) {
+function handle_list_submit_bulkwarn(table, chkval, bgform, evt) {
     var chki = table.querySelectorAll("tr.pl[data-bulkwarn]"), i, n = 0;
     for (i = 0; i !== chki.length && n < 4; ++i) {
         if (chkval.indexOf(chki[i].getAttribute("data-pid")) >= 0)
@@ -12200,7 +12270,28 @@ function handle_submit_list_bulkwarn(table, chkval, bgform, evt) {
         return true;
 }
 
+function handle_list_submit_get(bgform) {
+    if (bgform.action.indexOf("?") >= 0)
+        return false;
+    const vs = [];
+    for (let e = bgform.firstChild; e; e = e.nextSibling) {
+        if (e.type === "file")
+            return false;
+        vs.push(urlencode(e.name) + "=" + urlencode(e.value));
+    }
+    const url = bgform.action + "?" + vs.join("&");
+    if (url.length >= 2800)
+        return false;
+    if (bgform.target === "_blank")
+        window.open(url, "_blank", "noopener");
+    else
+        window.location = url;
+    return true;
+}
+
 handle_ui.on("js-submit-list", function (evt) {
+    evt.preventDefault();
+
     // choose action
     var form = this, fn, fnbutton, e, ne, i, es;
     if (this instanceof HTMLButtonElement) {
@@ -12230,61 +12321,75 @@ handle_ui.on("js-submit-list", function (evt) {
     }
 
     // find selected
-    var table = (fnbutton && fnbutton.closest(".pltable")) || form;
+    const table = (fnbutton && fnbutton.closest(".pltable")) || form;
     es = table.querySelectorAll("input.js-selector");
-    var allval = [], chkval = [], isdefault;
+    const allval = [], chkval = [];
+    let isdefault = false, allnum = true;
     for (i = 0; i !== es.length; ++i) {
-        allval.push(es[i].value);
-        es[i].checked && chkval.push(es[i].value);
+        let v = es[i].value;
+        if (allnum && (v | 0) == v && !v.startsWith("0"))
+            v = v | 0;
+        else
+            allnum = false;
+        allval.push(v);
+        es[i].checked && chkval.push(v);
     }
     if (!chkval.length) {
         if (fnbutton && hasClass(fnbutton, "can-submit-all")) {
             chkval = allval;
             isdefault = true;
-        } else if (!chkval.length) {
+        } else {
             alert("Select one or more rows first.");
-            evt.preventDefault();
             return;
         }
     }
+    if (!chkval.length) {
+        alert("Nothing selected.");
+        return;
+    }
+    const chktxt = allnum && chkval.length > 30
+        ? encode_session_list_ids(chkval)
+        : chkval.join(" ");
 
-    // create a new form
+    // remove old background forms
     for (e = document.body.firstChild; e; e = ne) {
         ne = e.nextSibling;
         if (e.className === "is-background-form")
             document.body.removeChild(e);
     }
-    var bgform, action = form.action, need_bulkwarn = false;
+
+    // create background form
+    let bgform, action = form.action, need_bulkwarn = false;
     if (fnbutton && fnbutton.hasAttribute("formaction")) {
         action = fnbutton.getAttribute("formaction");
     }
-    if (fnbutton && fnbutton.getAttribute("formmethod") === "get" && chkval.length < 20) {
+    if (fnbutton && fnbutton.getAttribute("formmethod") === "get") {
         bgform = hoturl_get_form(action);
-        if (!bgform.elements.fn)
-            bgform.appendChild(hidden_input("fn", ""));
-        bgform.elements.fn.value = fn;
     } else {
         bgform = document.createElement("form");
-        bgform.setAttribute("method", "post");
-        bgform.setAttribute("enctype", "multipart/form-data");
-        bgform.setAttribute("accept-charset", "UTF-8");
-        if (chkval.length < 20) {
-            action = hoturl_search(action, "p", chkval.join(" "));
-            chkval = null;
-        }
-        bgform.action = hoturl_search(action, "fn", fn);
+        bgform.method = "post";
+        bgform.action = action;
     }
     bgform.className = "is-background-form";
     if (fnbutton && fnbutton.hasAttribute("formtarget")) {
-        bgform.setAttribute("target", fnbutton.getAttribute("formtarget"));
+        bgform.target = fnbutton.getAttribute("formtarget");
     }
     document.body.appendChild(bgform);
-    if (chkval)
-        bgform.appendChild(hidden_input("p", chkval.join(" ")));
+
+    // set list function (`fn`)
+    if (!bgform.elements.fn)
+        bgform.appendChild(hidden_input("fn", ""));
+    bgform.elements.fn.value = fn;
+
+    // set papers
+    if (chktxt)
+        bgform.appendChild(hidden_input("p", chktxt));
     if (isdefault)
         bgform.appendChild(hidden_input("pdefault", "yes"));
     if (form.elements.forceShow && form.elements.forceShow.value !== "")
         bgform.appendChild(hidden_input("forceShow", form.elements.forceShow.value));
+
+    // transfer other form elements
     if (fnbutton && (e = fnbutton.closest(".pl-footer-part"))) {
         es = e.querySelectorAll("input, select, textarea");
         for (i = 0; i !== es.length; ++i) {
@@ -12306,9 +12411,36 @@ handle_ui.on("js-submit-list", function (evt) {
             }
         }
     }
-    if (!need_bulkwarn || handle_submit_list_bulkwarn(table, chkval, bgform, evt))
+
+    // maybe remove subfunction (e.g. `getfn`)
+    if ((i = fn.indexOf("/")) > 0) {
+        const supfn = fn.substring(0, i),
+            subfne = bgform.elements[supfn + "fn"];
+        if (subfne && subfne.value === fn.substring(i + 1))
+            subfne.remove();
+    }
+
+    // check bulk-download warning
+    if (need_bulkwarn && !handle_list_submit_bulkwarn(table, chkval, bgform, evt))
+        return;
+
+    // either set location or submit form
+    if (bgform.method !== "get" || !handle_list_submit_get(bgform)) {
+        bgform.method = "post";
+        bgform.enctype = "multipart/form-data";
+        bgform.acceptCharset = "UTF-8";
+        action = bgform.action;
+        if (bgform.elements.fn) {
+            action = hoturl_search(action, "fn", bgform.elements.fn.value);
+            bgform.elements.fn.remove();
+        }
+        if (bgform.elements.p && bgform.elements.p.value.length < 100) {
+            action = hoturl_search(action, "p", bgform.elements.p.value);
+            bgform.elements.p.remove();
+        }
+        bgform.action = action;
         bgform.submit();
-    evt.preventDefault();
+    }
 });
 
 

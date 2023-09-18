@@ -458,8 +458,12 @@ class Search_Page {
         // look for search action
         if ($qreq->fn) {
             $fn = $qreq->fn;
-            if (strpos($fn, "/") === false && isset($qreq[$qreq->fn . "fn"])) {
-                $fn .= "/" . $qreq[$qreq->fn . "fn"];
+            $slash = strpos($fn, "/");
+            $subkey = ($slash ? substr($fn, 0, $slash) : $fn) . "fn";
+            if ($slash && !isset($qreq[$subkey])) {
+                $qreq[$subkey] = substr($fn, $slash + 1);
+            } else if ($slash === false && isset($qreq[$subkey])) {
+                $fn .= "/" . $qreq[$subkey];
             }
             ListAction::call($fn, $user, $qreq, $ssel);
         }
