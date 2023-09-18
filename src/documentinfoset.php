@@ -43,8 +43,8 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $_ms;
     /** @var ?string */
     private $_filename;
-    /** @var ?string */
-    private $_mimetype;
+    /** @var string */
+    private $_mimetype = "application/zip";
     /** @var ?string|false */
     private $_tmpdir;
     /** @var ?list<string> */
@@ -469,7 +469,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private function _make_success_document() {
         return new DocumentInfo([
             "filename" => $this->_filename,
-            "mimetype" => $this->_mimetype ?? "application/zip",
+            "mimetype" => $this->_mimetype,
             "documentType" => DTYPE_EXPORT,
             "content_file" => $this->_filestore
         ], $this->conf);
@@ -519,9 +519,11 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @return bool */
     private function _download_directly($opts = []) {
         $opts["etag"] = "\"" . $this->content_signature() . "\"";
+
         if (isset($opts["if-none-match"])
             && $opts["if-none-match"] === $opts["etag"]) {
             header("HTTP/1.1 304 Not Modified");
+            header("ETag: " . $opts["etag"]);
             return true;
         }
 
