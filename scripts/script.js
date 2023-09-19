@@ -12323,8 +12323,8 @@ handle_ui.on("js-submit-list", function (evt) {
     // find selected
     const table = (fnbutton && fnbutton.closest(".pltable")) || form;
     es = table.querySelectorAll("input.js-selector");
-    const allval = [], chkval = [];
-    let isdefault = false, allnum = true;
+    const allval = [];
+    let chkval = [], isdefault = false, allnum = true;
     for (i = 0; i !== es.length; ++i) {
         let v = es[i].value;
         if (allnum && (v | 0) == v && !v.startsWith("0"))
