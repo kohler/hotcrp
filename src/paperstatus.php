@@ -758,8 +758,7 @@ class PaperStatus extends MessageSet {
             $this->user->ensure_account_here();
             $uu = $this->conf->user_by_email($au->email, USER_SLICE);
         }
-        if (!$uu
-            && $ctype >= CONFLICT_AUTHOR) {
+        if (!$uu && $ctype >= CONFLICT_AUTHOR) {
             $j = $au->unparse_nea_json();
             $j["disablement"] = ($this->disable_users ? Contact::DISABLEMENT_USER : 0)
                 | Contact::DISABLEMENT_PLACEHOLDER;

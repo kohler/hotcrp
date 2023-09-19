@@ -151,6 +151,7 @@ class Contacts_PaperOption extends PaperOption {
             $name = simplify_whitespace((string) $qreq["contacts:{$n}:name"]);
             $affiliation = simplify_whitespace((string) $qreq["contacts:{$n}:affiliation"]);
             $au = Author::make_keyed(["email" => $email, "name" => $name, "affiliation" => $affiliation]);
+            // XXX has_contacts:{$n}:active
             $au->conflictType = $qreq["contacts:{$n}:active"] ? CONFLICT_CONTACTAUTHOR : 0;
             $au->author_index = $n;
             $reqau[] = $au;
@@ -236,6 +237,7 @@ class Contacts_PaperOption extends PaperOption {
         echo '<div class="',
             ($reqov ? $reqov->message_set()->control_class("contacts:{$reqidx}", $klass) : $klass),
             '"><span class="checkc">',
+            Ht::hidden("has_contacts:{$anum}:active", 1),
             Ht::checkbox("contacts:{$anum}:active", 1, true, ["data-default-checked" => false, "id" => false, "class" => "ignore-diff"]),
             '</span>',
             Ht::entry("contacts:{$anum}:email", $email, ["size" => 30, "placeholder" => "Email", "class" => $pt->control_class("contacts:{$reqidx}:email", "want-focus js-autosubmit uii js-email-populate mr-2"), "autocomplete" => "off", "data-default-value" => ""]),
@@ -286,8 +288,9 @@ class Contacts_PaperOption extends PaperOption {
                     Ht::checkbox(null, 1, true, ["disabled" => true, "id" => "contacts:{$cidx}:placeholder"]);
             } else {
                 $dchecked = $au->contactId > 0 && $au->conflictType >= CONFLICT_AUTHOR;
-                echo Ht::checkbox("contacts:{$cidx}:active", 1, $rau ? $rau->conflictType !== 0 : $dchecked,
-                    ["data-default-checked" => $dchecked, "id" => false]);
+                echo Ht::hidden("has_contacts:{$cidx}:active", 1),
+                    Ht::checkbox("contacts:{$cidx}:active", 1, $rau ? $rau->conflictType !== 0 : $dchecked,
+                        ["data-default-checked" => $dchecked, "id" => false]);
             }
             echo '</span>', Text::nameo_h($au, NAME_E);
             if (($au->conflictType & CONFLICT_AUTHOR) === 0

@@ -1047,7 +1047,7 @@ Phil Porras.");
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS | TESTSC_DISABLED), "atten@_.com estrin@usc.edu");
 
         // old style of request
-        $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => 1, "contacts:1:email" => "estrin@usc.edu"]), $nprow1, "update");
+        $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => 1, "contacts:1:email" => "estrin@usc.edu", "has_contacts:1:active" => 1]), $nprow1, "update");
         xassert($ps->has_problem());
         xassert_eqq($ps->feedback_text_at("contacts"), "You can’t remove yourself from the submission’s contacts
     (Ask another contact to remove you.)\n");
@@ -1093,7 +1093,7 @@ Phil Porras.");
         $ps = new PaperStatus($this->u_estrin);
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert(!$this->conf->fresh_user_by_email("gestrin@gusc.gedu"));
-        $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => 1, "contacts:1:email" => "estrin@usc.edu", "contacts:1:active" => 1, "contacts:2:email" => "festrin@fusc.fedu", "contacts:3:email" => "gestrin@gusc.gedu", "contacts:3:name" => "Geborah Gestrin", "contacts:3:active" => 1]), $nprow1, "update");
+        $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => 1, "contacts:1:email" => "estrin@usc.edu", "contacts:1:active" => 1, "contacts:2:email" => "festrin@fusc.fedu", "has_contacts:2:active" => 1, "contacts:3:email" => "gestrin@gusc.gedu", "contacts:3:name" => "Geborah Gestrin", "contacts:3:active" => 1]), $nprow1, "update");
         xassert(!$ps->has_problem());
         xassert_array_eqq($ps->changed_keys(), ["contacts"], true);
 
@@ -1130,7 +1130,7 @@ Phil Porras.");
         $this->u_atten = $this->conf->checked_user_by_email("ATTEN@_.coM");
         xassert_eqq($nprow1->conflict_type($this->u_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
 
-        $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => 1, "contacts:1:email" => "gestrin@gusc.gedu", "contacts:2:email" => "atten@_.com"]), $nprow1, "update");
+        $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => 1, "contacts:1:email" => "gestrin@gusc.gedu", "has_contacts:1:active" => 1, "contacts:2:email" => "atten@_.com", "has_contacts:2:active" => 1]), $nprow1, "update");
         xassert(!$ps->has_problem());
         xassert_array_eqq($ps->changed_keys(), ["contacts"], true);
         $nprow1->invalidate_conflicts();
@@ -1182,7 +1182,7 @@ Phil Porras.");
         xassert_eqq($nprow1->conflict_type($this->festrin_cid), CONFLICT_CONTACTAUTHOR);
         xassert_eqq($nprow1->conflict_type($this->gestrin_cid), 0);
 
-        $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => "1", "contacts:1:email" => "gestrin@gusc.gedu"]), $nprow1, "update");
+        $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => "1", "contacts:1:email" => "gestrin@gusc.gedu", "has_contacts:1:active" => 1]), $nprow1, "update");
         xassert(!$ps->has_problem());
         xassert_array_eqq($ps->changed_keys(), [], true);
 
@@ -1193,7 +1193,7 @@ Phil Porras.");
         xassert_eqq($nprow1->conflict_type($this->festrin_cid), CONFLICT_CONTACTAUTHOR);
         xassert_eqq($nprow1->conflict_type($this->gestrin_cid), 0);
 
-        $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => "1", "contacts:1:email" => "festrin@fusc.fedu", "contacts:2:email" => "gestrin@gusc.gedu"]), $nprow1, "update");
+        $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => "1", "contacts:1:email" => "festrin@fusc.fedu", "has_contacts:1:active" => 1, "contacts:2:email" => "gestrin@gusc.gedu", "has_contacts:2:active" => 1]), $nprow1, "update");
         xassert(!$ps->has_problem());
         xassert_array_eqq($ps->changed_keys(), ["contacts"], true);
 
