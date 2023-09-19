@@ -2516,6 +2516,7 @@ class PaperInfo {
     }
 
 
+    /** @param bool $always */
     function load_reviews($always = false) {
         ++$this->_review_array_version;
 
@@ -2580,7 +2581,7 @@ class PaperInfo {
     /** @return array<int,ReviewInfo> */
     function all_reviews() {
         if ($this->_review_array === null) {
-            $this->load_reviews();
+            $this->load_reviews(false);
         }
         return $this->_review_array;
     }
@@ -2866,7 +2867,7 @@ class PaperInfo {
 
     function ensure_reviews() {
         if ($this->_review_array === null) {
-            $this->load_reviews();
+            $this->load_reviews(false);
         }
     }
 

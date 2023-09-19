@@ -776,6 +776,7 @@ class ReviewInfo implements JsonSerializable {
     /** @return Contact */
     function reviewer() {
         if ($this->_reviewer === null) {
+            $this->prow && $this->prow->ensure_reviewer_names();
             $this->_reviewer = $this->conf->user_by_id($this->contactId, USER_SLICE)
                 ?? Contact::make_placeholder($this->conf, $this->contactId);
         }
