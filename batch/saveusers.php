@@ -39,6 +39,11 @@ class SaveUsers_Batch {
             if (isset($arg["user-name"])) {
                 $j->name = $arg["user-name"];
             }
+            if (isset($arg["disable"])) {
+                $j->disabled = true;
+            } else if (isset($arg["enable"])) {
+                $j->disabled = false;
+            }
             $this->jexpr[] = json_encode($j);
             $this->filename = "<user>";
         } else if (($arg["_"][0] ?? "-") === "-") {
@@ -134,6 +139,8 @@ class SaveUsers_Batch {
             "user:,u: =EMAIL Create or modify user EMAIL.",
             "roles:,r: Set roles (`-u` only).",
             "user-name:,uname: Set user name (`-u` only).",
+            "disable Disable user (`-u` only).",
+            "enable Disable user (`-u` only).",
             "expression[],expr[],e[] =JSON Create or modify users specified in JSON.",
             "no-notify,no-email Do not send email notifications.",
             "notify !",
@@ -150,9 +157,9 @@ Usage: php batch/saveusers.php [OPTION]... [JSONFILE | CSVFILE]
         if ((!empty($arg["_"]) || isset($arg["expression"]))
             && isset($arg["user"])) {
             throw new CommandLineException("`-u` and `-e/FILE` are mutually exclusive", $go);
-        } else if ((isset($arg["roles"]) || isset($arg["user-name"]))
+        } else if ((isset($arg["roles"]) || isset($arg["user-name"]) || isset($arg["disable"]) || isset($arg["enable"]))
                    && !isset($arg["user"])) {
-            throw new CommandLineException("`-u` required for `--roles/--user-name`", $go);
+            throw new CommandLineException("`-u` required for those options", $go);
         } else if (isset($arg["no-modify"]) && isset($arg["no-create"])) {
             throw new CommandLineException("`--no-modify --no-create` does nothing", $go);
         }
