@@ -885,8 +885,10 @@ class Dbl {
             self::$verbose = true;
             return;
         }
-        if (!is_float($limit)) {
-            $limit = $limit === true ? 1.0 : 0.0;
+        if (is_bool($limit)) {
+            $limit = $limit ? 1.0 : 0.0;
+        } else if (!is_float($limit)) {
+            $limit = (float) $limit;
         }
         if ($limit <= 0
             || ($limit < 1 && mt_rand() < $limit * mt_getrandmax())) {
@@ -910,7 +912,7 @@ class Dbl {
             $qlog = "";
             foreach (self::$query_log as $where => $what) {
                 $a = [$what[0], $what[1], $what[2], $where];
-                $qlog .= "query_log: $self #$i/$n: " . json_encode($a) . "\n";
+                $qlog .= "query_log: {$self} #{$i}/{$n}: " . json_encode($a) . "\n";
                 ++$i;
                 $t[0] += $what[0];
                 $t[1] += $what[1];
