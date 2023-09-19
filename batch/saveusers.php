@@ -150,7 +150,8 @@ class SaveUsers_Batch {
          ->description("Save HotCRP users as specified in JSON or CSV.
 Usage: php batch/saveusers.php [OPTION]... [JSONFILE | CSVFILE]
        php batch/saveusers.php [OPTION]... -e JSON [-e JSON]...
-       php batch/saveusers.php [OPTION]... -u EMAIL [--roles ROLES]")
+       php batch/saveusers.php [OPTION]... -u EMAIL [--roles ROLES]
+                               [--disable | --enable]")
          ->maxarg(1);
         $arg = $go->parse($argv);
 
