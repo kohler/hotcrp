@@ -140,7 +140,7 @@ class SaveUsers_Batch {
             "roles:,r: Set roles (`-u` only).",
             "user-name:,uname: Set user name (`-u` only).",
             "disable Disable user (`-u` only).",
-            "enable Disable user (`-u` only).",
+            "enable Enable user (`-u` only).",
             "expression[],expr[],e[] =JSON Create or modify users specified in JSON.",
             "no-notify,no-email Do not send email notifications.",
             "notify !",
