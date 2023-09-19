@@ -28,7 +28,11 @@ class SavePapers_Batch {
     /** @var bool */
     public $add_topics = false;
     /** @var bool */
+    public $dry_run = false;
+    /** @var bool */
     public $log = true;
+    /** @var bool */
+    public $json5 = false;
 
     /** @var string */
     public $errprefix = "";
@@ -68,6 +72,8 @@ class SavePapers_Batch {
         $this->add_topics = isset($arg["add-topics"]);
         $this->reviews = isset($arg["r"]);
         $this->log = !isset($arg["no-log"]);
+        $this->dry_run = isset($arg["dry-run"]);
+        $this->json5 = isset($arg["json5"]);
         if (isset($arg["z"])) {
             $this->set_zipfile($arg["z"]);
         }
@@ -197,13 +203,25 @@ class SavePapers_Batch {
         ]);
         $ps->on_document_import([$this, "on_document_import"]);
 
-        $pid = $ps->save_paper_json($j);
-        if ($pid && $pidish === "new") {
+        if ($ps->prepare_save_paper_json($j)) {
+            if ($this->dry_run) {
+                $action = $ps->has_change() ? "changed" : "unchanged";
+                $pid = true;
+            } else {
+                $ps->execute_save();
+                $action = $ps->has_change() ? "saved" : "unchanged";
+                $pid = $ps->paperId;
+            }
+        } else {
+            $action = "failed";
+            $pid = false;
+        }
+        if (!is_bool($pid) && $pidish === "new") {
             fwrite(STDERR, "-> #{$pid}: ");
             $pidtext = "#{$pid}";
         }
         if (!$this->quiet) {
-            fwrite(STDERR, $pid ? ($ps->has_change() ? "saved\n" : "unchanged\n") : "failed\n");
+            fwrite(STDERR, "{$action}\n");
         }
         // XXX does not change decision
         $prefix = $pidtext . ": ";
@@ -216,7 +234,7 @@ class SavePapers_Batch {
         }
 
         // XXX more validation here
-        if ($pid && isset($j->reviews) && is_array($j->reviews) && $this->reviews) {
+        if ($pid && isset($j->reviews) && is_array($j->reviews) && $this->reviews && !$this->dry_run) {
             $prow = $this->conf->paper_by_id($pid, $this->user);
             foreach ($j->reviews as $reviewindex => $reviewj) {
                 if (!$this->tf->parse_json($reviewj)) {
@@ -243,7 +261,7 @@ class SavePapers_Batch {
             $this->tf->clear_messages();
         }
 
-        if ($ps->has_change() && $this->log) {
+        if ($ps->has_change() && $this->log && !$this->dry_run) {
             $ps->log_save_activity("via CLI");
         }
         ++$this->nsuccesses;
@@ -252,9 +270,16 @@ class SavePapers_Batch {
 
     /** @return 0|1|2 */
     function run($content) {
-        $jp = Json::try_decode($content);
+        $jp = $jparser = null;
+        if (!$this->json5) {
+            $jp = json_decode($content);
+        }
         if ($jp === null) {
-            fwrite(STDERR, "{$this->errprefix}invalid JSON: " . Json::last_error_msg() . "\n");
+            $jparser = (new JsonParser)->flags($this->json5 ? JsonParser::JSON5 : 0);
+            $jp = $jparser->input($content)->decode();
+        }
+        if ($jp === null) {
+            fwrite(STDERR, "{$this->errprefix}invalid JSON: " . $jparser->last_error_msg() . "\n");
             ++$this->nerrors;
         } else if (!is_array($jp) && !is_object($jp)) {
             fwrite(STDERR, "{$this->errprefix}invalid JSON, expected array of objects\n");
@@ -290,11 +315,13 @@ class SavePapers_Batch {
             "f[],filter[] =FUNCTION Pass JSON through FUNCTION",
             "z:,zipfile: =FILE Read documents from FILE",
             "q,quiet Don’t print progress information",
+            "dry-run,d Don’t actually save",
             "ignore-errors Don’t exit after first error",
             "disable-users,disable Disable all newly created users",
             "ignore-pid Ignore `pid` JSON elements",
             "match-title Match papers by title if no `pid`",
             "add-topics Add all referenced topics to conference",
+            "json5,5 Allow JSON5 extensions",
             "no-log Don’t modify the action log"
         )->helpopt("help")
          ->description("Change papers as specified by FILE, a JSON object or array of objects.

@@ -109,12 +109,15 @@ class Json {
 
 
     /** @param string $s
+     * @param ?bool $assoc
+     * @param int $depth
+     * @param int $flags
      * @return mixed */
-    static function try_decode($s) {
+    static function try_decode($s, $assoc = null, $depth = 512, $flags = 0) {
         if (self::$json_parser) {
             self::$json_parser->error_type = 0;
         }
-        return json_decode($s) ?? self::decode($s);
+        return json_decode($s, $assoc, $depth, $flags) ?? self::decode($s, $assoc, $depth, $flags);
     }
 
     /** @return int */
