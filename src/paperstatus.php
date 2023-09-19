@@ -842,13 +842,13 @@ class PaperStatus extends MessageSet {
 
         // if creating a paper, user becomes contact;
         // if user removes self from author list, user becomes contact
-        if ($this->user->contactId > 0) {
+        if ($this->user->contactId > 0
+            && !$this->user->allow_administer($this->prow)) {
             $cv = $this->_conflict_values[$this->user->contactId] ?? null;
             $ncv = self::new_conflict_value($cv);
             if (($ncv & CONFLICT_CONTACTAUTHOR) === 0
                 && ($this->will_insert()
-                    || (!$this->user->allow_administer($this->prow)
-                        && ($ncv & CONFLICT_AUTHOR) === 0))) {
+                    || ($ncv & CONFLICT_AUTHOR) === 0)) {
                 $this->update_conflict_value($this->user, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
                 $this->checkpoint_conflict_values();
             }

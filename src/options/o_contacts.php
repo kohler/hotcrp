@@ -60,15 +60,14 @@ class Contacts_PaperOption extends PaperOption {
         return $j;
     }
     function value_check(PaperValue $ov, Contact $user) {
-        if ($ov->anno("modified")) {
-            if (!$user->allow_administer($ov->prow)
-                && $ov->prow->conflict_type($user) >= CONFLICT_CONTACTAUTHOR
+        if ($ov->anno("modified") && !$user->allow_administer($ov->prow)) {
+            if ($ov->prow->conflict_type($user) >= CONFLICT_CONTACTAUTHOR
                 && self::ca_index(self::users_anno($ov), $user->email) === false) {
                 $ov->error($this->conf->_("<0>You can’t remove yourself from the submission’s contacts"));
                 $ov->msg("<0>(Ask another contact to remove you.)", MessageSet::INFORM);
             } else if (empty($ov->value_list())
                        && $ov->prow->paperId > 0
-                       && empty($ov->prow->contact_list())) {
+                       && !empty($ov->prow->contact_list())) {
                 $ov->error($this->conf->_("<0>Each submission must have at least one contact"));
             }
         }
