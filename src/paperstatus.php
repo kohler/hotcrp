@@ -855,9 +855,7 @@ class PaperStatus extends MessageSet {
         }
 
         // exit if no change
-        if ($this->has_error_at("authors")
-            || $this->has_error_at("contacts")
-            || !$this->has_conflict_diff()) {
+        if (!$this->has_conflict_diff()) {
             return;
         }
 
