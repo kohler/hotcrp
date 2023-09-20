@@ -509,14 +509,14 @@ class PaperStatus_Tester {
         $paper1 = $this->conf->checked_paper_by_id(1);
         xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "Scalable Timers for Soft State Protocols 2"]), $paper1, "submit"));
         xassert(!$ps->has_change_at("title"));
-        xassert_eqq($ps->decorated_feedback_text(), "You aren’t allowed to view submission #1.\n");
+        xassert_eqq($ps->decorated_feedback_text(), "You aren’t allowed to view submission #1\n");
 
         $ps = new PaperStatus($nonpc);
         $paper1 = $this->conf->checked_paper_by_id(1);
         xassert_eqq($paper1->title, "Scalable Timers for Soft State Protocols");
         xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "Scalable Timers for Soft State Protocols"]), $paper1, "submit"));
         xassert(!$ps->has_change_at("title"));
-        xassert_eqq($ps->decorated_feedback_text(), "You aren’t allowed to view submission #1.\n");
+        xassert_eqq($ps->decorated_feedback_text(), "You aren’t allowed to view submission #1\n");
 
         $this->conf->save_refresh_setting("sub_update", $old_sub_update);
     }

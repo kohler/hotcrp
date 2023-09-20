@@ -157,27 +157,27 @@ class PermissionProblem extends Exception
             $id = $this->_a["invalidId"];
             $idname = $id === "paper" ? "submission" : $id;
             if (isset($this->_a["{$id}Id"])) {
-                $ms[] = $this->conf->_("<0>Invalid {$idname} ID “{}”.", $this->_a["{$id}Id"]);
+                $ms[] = $this->conf->_("<0>Invalid {$idname} ID ‘{}’", $this->_a["{$id}Id"]);
             } else {
-                $ms[] = $this->conf->_("<0>Invalid {$idname} ID.");
+                $ms[] = $this->conf->_("<0>Invalid {$idname} ID");
             }
         }
         if (isset($this->_a["missingId"])) {
             $id = $this->_a["missingId"];
             $idname = $id === "paper" ? "submission" : $id;
-            $ms[] = $this->conf->_("<0>Missing {$idname} ID.");
+            $ms[] = $this->conf->_("<0>Missing {$idname} ID");
         }
         if (isset($this->_a["invalidSclass"])) {
-            $ms[] = $this->conf->_("<0>Unknown submission class ‘{}’.", $this->_a["invalidSclass"]);
+            $ms[] = $this->conf->_("<0>Unknown submission class ‘{}’", $this->_a["invalidSclass"]);
         }
         if ($this->_a["noPaper"] ?? false) {
-            $ms[] = $this->conf->_("<0>Submission #{} does not exist.", $paperId);
+            $ms[] = $this->conf->_("<0>Submission #{} does not exist", $paperId);
         }
         if (isset($this->_a["dbError"])) {
             $ms[] = $this->_a["dbError"];
         }
         if ($this->_a["administer"] ?? false) {
-            $ms[] = $this->conf->_("<0>You can’t administer submission #{}.", $paperId);
+            $ms[] = $this->conf->_("<0>You can’t administer submission #{}", $paperId);
         }
         if (isset($this->_a["permission"])) {
             $ms[] = $this->conf->_i("permission_error", new FmtArg("action", $this->_a["permission"]), ...$args);
@@ -186,57 +186,57 @@ class PermissionProblem extends Exception
             $ms[] = $this->conf->_("<0>The {field} field is not present on submission #{pid}", ...$args);
         }
         if (isset($this->_a["documentNotFound"])) {
-            $ms[] = $this->conf->_("<0>Document “{}” not found.", $this->_a["documentNotFound"]);
+            $ms[] = $this->conf->_("<0>Document ‘{}’ not found", $this->_a["documentNotFound"]);
         }
         if (isset($this->_a["signin"])) {
             $url = $this->_a["signinUrl"] ?? $this->conf->hoturl_raw("signin");
             $ms[] = $this->conf->_i("signin_required", new FmtArg("url", $url, 0), new FmtArg("action", $this->_a["signin"]));
         }
         if ($this->_a["withdrawn"] ?? false) {
-            $ms[] = $this->conf->_("<0>Submission #{} has been withdrawn.", $paperId);
+            $ms[] = $this->conf->_("<0>Submission #{} has been withdrawn", $paperId);
         }
         if ($this->_a["notWithdrawn"] ?? false) {
-            $ms[] = $this->conf->_("<0>Submission #{} is not withdrawn.", $paperId);
+            $ms[] = $this->conf->_("<0>Submission #{} is not withdrawn", $paperId);
         }
         if ($this->_a["notSubmitted"] ?? false) {
-            $ms[] = $this->conf->_("<0>Submission #{} is only a draft.", $paperId);
+            $ms[] = $this->conf->_("<0>Submission #{} is only a draft", $paperId);
         }
         if ($this->_a["reviewsSeen"] ?? false) {
-            $ms[] = $this->conf->_("<0>You can’t withdraw a submission after seeing its reviews.", $paperId);
+            $ms[] = $this->conf->_("<0>You can’t withdraw a submission after seeing its reviews", $paperId);
         }
         if ($this->_a["decided"] ?? false) {
-            $ms[] = $this->conf->_("<0>The review process for submission #{} has completed.", $paperId);
+            $ms[] = $this->conf->_("<0>The review process for submission #{} has completed", $paperId);
         }
         if ($this->_a["frozen"] ?? false) {
-            $ms[] = $this->conf->_("<0>Submission #{} can no longer be edited.", $paperId);
+            $ms[] = $this->conf->_("<0>Submission #{} can no longer be edited", $paperId);
         }
         if ($this->_a["notUploaded"] ?? false) {
-            $ms[] = $this->conf->_("<0>A PDF upload is required to submit.");
+            $ms[] = $this->conf->_("<0>A PDF upload is required to submit");
         }
         if ($this->_a["reviewNotSubmitted"] ?? false) {
-            $ms[] = $this->conf->_("<0>This review is not yet ready for others to see.");
+            $ms[] = $this->conf->_("<0>This review is not yet ready for others to see");
         }
         if ($this->_a["reviewNotComplete"] ?? false) {
-            $ms[] = $this->conf->_("<0>Your own review for #{} is not complete, so you can’t view other people’s reviews.", $paperId);
+            $ms[] = $this->conf->_("<0>Your own review for #{} is not complete, so you can’t view other people’s reviews", $paperId);
         }
         if ($this->_a["responseNonexistent"] ?? false) {
-            $ms[] = $this->conf->_("<0>That response is not allowed on submission #{}.", $paperId);
+            $ms[] = $this->conf->_("<0>That response is not allowed on submission #{}", $paperId);
         }
         if ($this->_a["responseNotReady"] ?? false) {
-            $ms[] = $this->conf->_("<0>The authors’ response is not yet ready for reviewers to view.");
+            $ms[] = $this->conf->_("<0>The authors’ response is not yet ready for reviewers to view");
         }
         if ($this->_a["reviewsOutstanding"] ?? false) {
             $ms[] = $this->conf->_("<0>You will get access to the reviews once you complete your assigned reviews. If you can’t complete your reviews, please inform the organizers.");
             if ($format === 5) {
-                $ms[] = $this->conf->_("<5><a href=\"{0:html}\">List assigned reviews</a>", $this->conf->hoturl_raw("search", ["q" => "", "t" => "r"]));
+                $ms[] = $this->conf->_("<5><a href=\"{searchurl}\">List assigned reviews</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", ["q" => "", "t" => "r"]), 0));
             }
         }
         if ($this->_a["reviewNotAssigned"] ?? false) {
-            $ms[] = $this->conf->_("<0>You are not assigned to review submission #{}.", $paperId);
+            $ms[] = $this->conf->_("<0>You are not assigned to review submission #{}", $paperId);
         }
         if (isset($this->_a["deadline"])) {
             list($odn, $start, $edn, $end) = $this->deadline_info();
-            $m = "<0>Action not available.";
+            $m = "<0>Action not available";
             $dl = $edn;
             $time = 0;
             if ($edn === "au_seerev") {
@@ -244,11 +244,11 @@ class PermissionProblem extends Exception
             } else if ($start <= 0 || $start == $end) {
                 $dl = $odn;
             } else if (Conf::$now < $start) {
-                $m = "<0>Action not available until {time}.";
+                $m = "<0>Action not available until {time}";
                 $dl = $odn;
                 $time = $start;
             } else if ($end > 0 && Conf::$now > $end) {
-                $m = "<0>Deadline passed.";
+                $m = "<0>Deadline passed";
                 $time = $end;
             }
             $args = [
@@ -267,71 +267,81 @@ class PermissionProblem extends Exception
             $ms[] = $this->conf->_("<0>“Override deadlines” can override this restriction.");
         }
         if ($this->_a["blindSubmission"] ?? false) {
-            $ms[] = $this->conf->_("<0>Submission to this conference is blind.");
+            $ms[] = $this->conf->_("<0>Submission to this conference is blind");
         }
         if ($this->_a["author"] ?? false) {
-            $ms[] = $this->conf->_("<0>You aren’t a contact for #{}.", $paperId);
+            $ms[] = $this->conf->_("<0>You aren’t a contact for #{}", $paperId);
         }
         if ($this->_a["conflict"] ?? false) {
-            $ms[] = $this->conf->_("<0>You have a conflict with #{}.", $paperId);
+            $ms[] = $this->conf->_("<0>You have a conflict with #{}", $paperId);
         }
         if ($this->_a["nonPC"] ?? false) {
-            $ms[] = $this->conf->_("<0>You aren’t a member of the PC for submission #{}.", $paperId);
+            $ms[] = $this->conf->_("<0>You aren’t a member of the PC for submission #{}", $paperId);
         }
         if ($this->_a["externalReviewer"] ?? false) {
-            $ms[] = $this->conf->_("<0>External reviewers cannot view other reviews.");
+            $ms[] = $this->conf->_("<0>External reviewers cannot view other reviews");
         }
         if ($this->_a["differentReviewer"] ?? false) {
             if (isset($this->_a["commentId"])) {
-                $ms[] = $this->conf->_("<0>You didn’t write this comment, so you can’t change it.");
+                $ms[] = $this->conf->_("<0>You didn’t write this comment, so you can’t change it");
             } else {
-                $ms[] = $this->conf->_("<0>You didn’t write this review, so you can’t change it.");
+                $ms[] = $this->conf->_("<0>You didn’t write this review, so you can’t change it");
             }
         }
         if ($this->_a["unacceptableReviewer"] ?? false) {
-            $ms[] = $this->conf->_("<0>That user can’t be assigned to review #{}.", $paperId);
+            $ms[] = $this->conf->_("<0>That user can’t be assigned to review #{}", $paperId);
         }
         if ($this->_a["alreadyReviewed"] ?? false) {
-            $ms[] = $this->conf->_("<0>You already have a review assignment for #{}.", $paperId);
+            $ms[] = $this->conf->_("<0>You already have a review assignment for #{}", $paperId);
         }
         if ($this->_a["clickthrough"] ?? false) {
-            $ms[] = $this->conf->_("<0>You can’t do that until you agree to the terms.");
+            $ms[] = $this->conf->_("<0>You can’t do that until you agree to the terms");
         }
         if ($this->_a["otherTwiddleTag"] ?? false) {
-            $ms[] = $this->conf->_("<0>Tag #{} doesn’t belong to you.", $this->_a["tag"]);
+            $ms[] = $this->conf->_("<0>Tag #{} doesn’t belong to you", $this->_a["tag"]);
         }
         if ($this->_a["chairTag"] ?? false) {
-            $ms[] = $this->conf->_("<0>Tag #{} can only be changed by administrators.", $this->_a["tag"]);
+            $ms[] = $this->conf->_("<0>Tag #{} can only be changed by administrators", $this->_a["tag"]);
         }
         if ($this->_a["voteTag"] ?? false) {
-            $ms[] = $this->conf->_("<0>The voting tag #{0} shouldn’t be changed directly. To vote for this paper, change the #~{0} tag.", $this->_a["tag"]);
+            $ms[] = $this->conf->_("<0>The voting tag #{0} shouldn’t be changed directly. To vote for this paper, change the #~{0} tag", $this->_a["tag"]);
         }
         if ($this->_a["voteTagNegative"] ?? false) {
-            $ms[] = $this->conf->_("<0>Negative votes aren’t allowed.");
+            $ms[] = $this->conf->_("<0>Negative votes aren’t allowed");
         }
         if ($this->_a["autosearchTag"] ?? false) {
-            $ms[] = $this->conf->_("<0>Tag #{} cannot be changed since the system sets it automatically.", $this->_a["tag"]);
+            $ms[] = $this->conf->_("<0>Tag #{} cannot be changed since the system sets it automatically", $this->_a["tag"]);
         }
         if (empty($ms)) {
-            $ms[] = $this->conf->_c("eperm", "<0>Permission error.", "unknown", $paperId);
+            $ms[] = $this->conf->_i("permission_error", new FmtArg("action", "unknown"), ...$args);
         }
         // finish it off
         if (($this->_a["forceShow"] ?? false)
             && $format === 5
             && Navigation::get()->page !== "api"
             && Qrequest::$main_request) {
-            $ms[] = $this->conf->_("<5><a class=\"nw\" href=\"{}\">Override conflict</a>", $this->conf->selfurl(Qrequest::$main_request, ["forceShow" => 1]));
+            $ms[] = $this->conf->_("<5><a class=\"nw\" href=\"{overrideurl}\">Override conflict</a>", new FmtArg("overrideurl", $this->conf->selfurl(Qrequest::$main_request, ["forceShow" => 1], Conf::HOTURL_RAW), 0));
         }
         if (!empty($ms)
             && ($this->_a["listViewable"] ?? false)
             && $format === 5) {
-            $ms[] = $this->conf->_("<a href=\"{}\">List the submissions you can view</a>", $this->conf->hoturl("search", "q="));
+            $ms[] = $this->conf->_("<5><a href=\"{searchurl}\">List the submissions you can view</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", "q="), 0));
         }
-        $mx = [];
+        $tt = "";
         foreach ($ms as $m) {
-            $mx[] = Ftext::unparse_as($m, $format);
+            $t = Ftext::unparse_as($m, $format);
+            if ($tt !== "") {
+                if (preg_match('/\/(?:p|div|ul|ol)>\s*\z/i', $tt)) {
+                    // nothing
+                } else if (preg_match('/[.;,:?!\s]\z/', $tt)) {
+                    $tt .= " ";
+                } else {
+                    $tt .= ". ";
+                }
+            }
+            $tt .= $t;
         }
-        return join(" ", $mx);
+        return $tt;
     }
 
     /** @return string */

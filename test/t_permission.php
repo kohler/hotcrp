@@ -517,7 +517,7 @@ class Permission_Tester {
         $assignset->parse("paper,tag
         1,fart
         2,fart\n");
-        xassert_eqq($assignset->full_feedback_text(), "You have a conflict with #1.\n");
+        xassert_eqq($assignset->full_feedback_text(), "You have a conflict with #1\n");
 
         xassert_assign($this->u_estrin, "paper,tag\n2,fart\n");
         assert_search_papers($user_chair, "#fart", "2");
