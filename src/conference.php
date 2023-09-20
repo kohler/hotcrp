@@ -4923,6 +4923,7 @@ class Conf {
             if (($mlist = $this->opt("messageOverrides"))) {
                 expand_json_includes_callback($mlist, [$this->_fmt, "addj"]);
             }
+            $this->_fmt->define_template("site", "<0>" . $this->opt["paperSite"]);
         }
         if ($this->_fmt_override_names !== null) {
             foreach ($this->_fmt_override_names as $id) {
@@ -5131,7 +5132,7 @@ class Conf {
             return JsonResult::make_error(403, "<0>Missing credentials");
         } else if ($user->is_disabled()
                    && (!$uf || !($uf->allow_disabled ?? false))) {
-            return JsonResult::make_error(403, "<0>Your account is disabled");
+            return JsonResult::make_error(403, "<0>Disabled account");
         } else if (!$uf) {
             if ($this->has_api($fn, $user, null)) {
                 return JsonResult::make_error(405, "<0>Method not supported");

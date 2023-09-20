@@ -33,8 +33,8 @@ class Home_Page {
 
     static function disabled_request(Contact $user, Qrequest $qreq) {
         if (!$user->is_empty() && $user->is_disabled()) {
+            $user->conf->warning_msg($user->conf->_i("account_disabled"));
             $qreq->print_header("Account disabled", "home", ["action_bar" => ""]);
-            $user->conf->warning_msg("<0>Your account on this site has been disabled by a site administrator. Please contact them with questions.");
             $qreq->print_footer();
             exit;
         }

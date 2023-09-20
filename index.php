@@ -43,7 +43,7 @@ function handle_request($nav) {
         if (!$pagej || str_starts_with($pagej->name, "__")) {
             Multiconference::fail($qreq, 404, ["link" => true], "<0>Page not found");
         } else if ($user->is_disabled() && !($pagej->allow_disabled ?? false)) {
-            Multiconference::fail($qreq, 403, ["link" => true], "<0>Your account is disabled");
+            Multiconference::fail($qreq, 403, ["link" => true], $user->conf->_i("account_disabled"));
         } else {
             $pc->set_root($pagej->group);
             handle_request_components($user, $qreq, $pagej->group, $pc);

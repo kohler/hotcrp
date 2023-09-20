@@ -362,7 +362,7 @@ class LoginHelper {
                 $args[] = new FmtArg("newaccount", $conf->hoturl_raw("newaccount", ["email" => $email]));
             }
         } else if (isset($info["disabled"])) {
-            $e = "<0>Your account on this site is disabled. Contact the site administrator for more information.";
+            $e = $conf->_i("account_disabled");
         } else if (isset($info["reset"])) {
             $e = "<0>Your password has expired";
             $args[] = new FmtArg("context", "password_expired");

@@ -329,6 +329,13 @@ class Fmt {
     }
 
     /** @param string $id
+     * @param string $otext
+     * @param null|float|int $priority */
+    function define_template($id, $otext, $priority = null) {
+        $this->_addj_object((object) ["id" => $id, "otext" => $otext, "priority" => $priority, "template" => true]);
+    }
+
+    /** @param string $id
      * @return bool */
     function has_override($id) {
         $im = $this->ims[$id] ?? null;

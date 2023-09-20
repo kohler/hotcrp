@@ -185,6 +185,7 @@
     ["badpost", "<0>Your browser session has changed since you last used this tab. Please try again."],
     ["session_failed_error", "<0>You appear to have disabled cookies in your browser. This site requires cookies to function."],
 
+    ["account_disabled", "<0>Your account on this site has been disabled by a site administrator"],
     ["signin_error", "{message:ftext}"],
     ["signin_error", "<5>User {email} does not currently have an account. Double-check the email address, or <a href=\"{newaccount}\">create the account</a> if you’d like.", ["{context}=no_account", "{newaccount}"]],
     ["signin_error", "<5>{message:ftext}. Use <a href=\"{forgotpassword}\">“Forgot your password?”</a> to reset it.", ["{context}=password_expired", "{forgotpassword}"]],
