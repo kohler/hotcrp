@@ -86,7 +86,7 @@ class Fmt_Tester {
 
     function test_ftext() {
         $ms = new Fmt;
-        xassert_eqq($ms->_("{:ftext}", "Ftext"), "Ftext");
+        xassert_eqq($ms->_("{:ftext}", "Ftext"), "<0>Ftext");
         xassert_eqq($ms->_("{:ftext}", "<0>Ftext"), "<0>Ftext");
         xassert_eqq($ms->_("{:ftext}", "<5>Ftext"), "<5>Ftext");
         xassert_eqq($ms->_("<{:ftext}", "Ftext"), "<Ftext");

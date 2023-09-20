@@ -39,8 +39,6 @@ class FmtItem {
     public $require;
     /** @var float */
     public $priority = 0.0;
-    /** @var ?int */
-    public $format;
     /** @var bool */
     public $no_conversions = false;
     /** @var bool */
@@ -501,55 +499,65 @@ class Fmt {
      * @param FmtContext $fctx
      * @return array{int,?string} */
     private function expand_brace($s, $pos, $fctx) {
-        if (preg_match('/\{(|0|[1-9]\d*+|[a-zA-Z_]\w*+)(|\[[^\]]*+\])(|:(?:[^\}]|\}\})*+)\}/A', $s, $m, 0, $pos)
-            && ($m[1] !== "" || ($fctx->argnum !== null && $m[2] === ""))
-            && !($fctx->im && $fctx->im->no_conversions && ($m[1] === "" || ctype_digit($m[1])))) {
-            if ($m[1] === "") {
-                $fa = self::find_arg($fctx->args, $fctx->argnum);
-                ++$fctx->argnum;
-            } else if (ctype_digit($m[1])) {
-                $fa = self::find_arg($fctx->args, intval($m[1]));
-            } else {
-                $fa = self::find_arg($fctx->args, strtolower($m[1]));
+        if (!preg_match('/\{(|0|[1-9]\d*+|[a-zA-Z_]\w*+)(|\[[^\]]*+\])(|:(?:[^\}]|\}\})*+)\}/A', $s, $m, 0, $pos)
+            || ($m[1] === "" && ($fctx->argnum === null || $m[2] !== ""))
+            || ($fctx->im && $fctx->im->no_conversions && ($m[1] === "" || ctype_digit($m[1])))) {
+            return [$pos + 1, $s];
+        }
+        if ($m[1] === "") {
+            $fa = self::find_arg($fctx->args, $fctx->argnum);
+            ++$fctx->argnum;
+        } else if (ctype_digit($m[1])) {
+            $fa = self::find_arg($fctx->args, intval($m[1]));
+        } else {
+            $fa = self::find_arg($fctx->args, strtolower($m[1]));
+        }
+        if (!$fa
+            && ($imt = $this->find($fctx->context, strtolower($m[1]), [$m[1]], null))
+            && $imt->template) {
+            list($fmt, $otext) = Ftext::parse($this->expand($imt->otext, $fctx->args, null, null));
+            $fa = new FmtArg("", $otext, $fmt);
+        }
+        if (!$fa) {
+            return [$pos + 1, $s];
+        }
+        if ($m[2]) {
+            assert(is_array($fa->value));
+            $value = $fa->value[substr($m[2], 1, -1)] ?? null;
+        } else {
+            $value = $fa->value;
+        }
+        $vformat = $fa->format;
+        $cformat = $fctx->format;
+        if ($m[3] === ":url") {
+            $value = urlencode($value);
+            $vformat = null;
+        } else if ($m[3] === ":html") { // unneeded if FmtArg has correct format
+            $value = htmlspecialchars($value);
+            $vformat = null;
+        } else if ($m[3] === ":list") {
+            assert(is_array($value));
+            $value = commajoin($value);
+        } else if ($m[3] === ":numlist") {
+            assert(is_array($value));
+            $value = numrangejoin($value);
+        } else if ($m[3] === ":ftext") {
+            if ($vformat === null) {
+                list($vformat, $value) = Ftext::parse($value);
+                $vformat = $vformat ?? 0;
             }
-            if ($fa) {
-                $value = $fa->resolve_as($fctx->format);
-            } else if (($imt = $this->find($fctx->context, strtolower($m[1]), [$m[1]], null))
-                       && $imt->template) {
-                $value = $this->expand($imt->otext, $fctx->args, null, null);
-            } else {
-                $value = null;
-            }
-            if ($value !== null) {
-                if ($m[2]) {
-                    assert(is_array($value));
-                    $value = $value[substr($m[2], 1, -1)] ?? null;
-                }
-                if ($m[3] === ":url") {
-                    $value = urlencode($value);
-                } else if ($m[3] === ":html") {
-                    if (!$fa || $fctx->format !== 5) {
-                        $value = htmlspecialchars($value);
-                    }
-                } else if ($m[3] === ":list") {
-                    assert(is_array($value));
-                    $value = commajoin($value);
-                } else if ($m[3] === ":numlist") {
-                    assert(is_array($value));
-                    $value = numrangejoin($value);
-                } else if ($m[3] === ":ftext") {
-                    if ($pos !== 0) {
-                        list($value_fmt, $value) = Ftext::parse($value);
-                        $my_fmt = Ftext::format($s);
-                        if ($my_fmt !== null && $my_fmt !== ($value_fmt ?? 0)) {
-                            $value = Ftext::convert($value, $value_fmt, $my_fmt);
-                        }
-                    }
-                }
-                return [$pos + strlen($m[0]), $value];
+            if ($pos !== 0) {
+                $cformat = $cformat ?? Ftext::format($s);
+            } else if ($cformat === null) {
+                $value = "<{$vformat}>{$value}";
             }
         }
-        return [$pos + 1, null];
+        if ($cformat !== null
+            && $vformat !== null
+            && $cformat !== $vformat) {
+            $value = Ftext::convert($value, $vformat, $cformat);
+        }
+        return [$pos + strlen($m[0]), $value];
     }
 
     /** @param string $s
