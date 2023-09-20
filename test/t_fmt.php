@@ -107,4 +107,13 @@ class Fmt_Tester {
         xassert_eqq($ms->_("<5>{a}", new FmtArg("a", "&", 0)), "<5>&amp;");
         xassert_eqq($ms->_("<5>{a:html}", new FmtArg("a", "&", 0)), "<5>&amp;");
     }
+
+    function test_humanize_url() {
+        $ms = new Fmt;
+        xassert_eqq($ms->_("{}", "http://www.hello.com/"), "http://www.hello.com/");
+        xassert_eqq($ms->_("{:humanize_url}", "http://www.hello.com/"), "www.hello.com");
+        xassert_eqq($ms->_("{:humanize_url}", "https://www.hello.com/"), "www.hello.com");
+        xassert_eqq($ms->_("<5><a href=\"{0}\">{0:humanize_url}</a>", new FmtArg(0, "http://www.hello.com/", 0)), "<5><a href=\"http://www.hello.com/\">www.hello.com</a>");
+        xassert_eqq($ms->_("<5><a href=\"{0}\">{0:humanize_url}</a>", new FmtArg(0, "https://www.hello.com/\"", 0)), "<5><a href=\"https://www.hello.com/&quot;\">www.hello.com/&quot;</a>");
+    }
 }

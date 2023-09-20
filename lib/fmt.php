@@ -541,6 +541,10 @@ class Fmt {
         } else if ($m[3] === ":numlist") {
             assert(is_array($value));
             $value = numrangejoin($value);
+        } else if ($m[3] === ":humanize_url") {
+            if (preg_match('/\Ahttps?:\/\/([^\[\]:\/?#\s]*)([\/?#]\S*|)\z/i', $value, $mm)) {
+                $value = $mm[1] . ($mm[2] === "/" ? "" : $mm[2]);
+            }
         } else if ($m[3] === ":ftext") {
             if ($vformat === null) {
                 list($vformat, $value) = Ftext::parse($value);
