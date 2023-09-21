@@ -12914,7 +12914,8 @@ function shadow_index(e) {
     return e.nodeName === "TEXTAREA" ? 1 : 0;
 }
 function make_shadow(e) {
-    var idx = shadow_index(e), sh = shadow[idx];
+    const idx = shadow_index(e);
+    let sh = shadow[idx];
     if (!sh) {
         sh = shadow[idx] = document.createElement("div");
         sh.style.position = "absolute";
@@ -12928,7 +12929,7 @@ function make_shadow(e) {
         }
     }
     if (shadow_of[idx] !== e) {
-        var curs = window.getComputedStyle(e), i,
+        const curs = window.getComputedStyle(e),
             prop = ["fontSize", "fontFamily", "lineHeight", "fontWeight",
                     "paddingLeft", "paddingRight", "paddingTop", "paddingBottom",
                     "borderLeftWidth", "borderRightWidth", "borderTopWidth", "borderBottomWidth",
@@ -12936,13 +12937,17 @@ function make_shadow(e) {
         if (idx === 1) {
             prop.push("wordWrap", "wordBreak", "overflowWrap", "whiteSpace", "width");
         }
-        for (i in prop) {
-            if (prop[i] in curs)
-                sh.style[prop[i]] = curs[prop[i]];
+        for (let p of prop) {
+            if (p in curs)
+                sh.style[p] = curs[p];
         }
         shadow_of[idx] = e;
     }
-    sh.textContent = e.value;
+    let t = e.value;
+    if (t.endsWith("\n") || t.endsWith("\r")) {
+        t += " ";
+    }
+    sh.textContent = t;
     return sh;
 }
 function make_textarea_autogrower(e) {
