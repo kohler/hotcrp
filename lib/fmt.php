@@ -554,8 +554,7 @@ class Fmt {
             }
         } else if ($m[3] === ":ftext") {
             if ($vformat === null) {
-                list($vformat, $value) = Ftext::parse($value);
-                $vformat = $vformat ?? 0;
+                list($vformat, $value) = Ftext::parse($value, 0);
             }
             if ($pos !== 0) {
                 $cformat = $cformat ?? Ftext::format($s);

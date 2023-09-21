@@ -38,8 +38,9 @@ class Ftext {
     }
 
     /** @param ?string $s
+     * @param ?int $default_format
      * @return array{?int,string} */
-    static function parse($s) {
+    static function parse($s, $default_format = null) {
         if ($s !== null
             && ($len = strlen($s)) >= 3
             && $s[0] === "<") {
@@ -51,7 +52,7 @@ class Ftext {
                 return [intval(substr($s, 1, $i - 1)), substr($s, $i + 1)];
             }
         }
-        return [null, $s];
+        return [$default_format, $s];
     }
 
     /** @param string $s
