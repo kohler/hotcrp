@@ -68,6 +68,15 @@ class SearchConfig_API {
         return new JsonResult(["ok" => true, "formulas" => $fjs]);
     }
 
+    static private function translate_qreq(Qrequest $qreq) { // XXX backward compat
+        for ($fidx = 1; isset($qreq["formulaid_{$fidx}"]); ++$fidx) {
+            $qreq["formula/{$fidx}/name"] = $qreq["formulaname_{$fidx}"];
+            $qreq["formula/{$fidx}/expression"] = $qreq["formulaexpression_{$fidx}"];
+            $qreq["formula/{$fidx}/id"] = $qreq["formulaid_{$fidx}"];
+            $qreq["formula/{$fidx}/delete"] = $qreq["formuladeleted_{$fidx}"];
+        }
+    }
+
     static function save_namedformula(Contact $user, Qrequest $qreq) {
         // NB permissions handled in loop
 
@@ -77,14 +86,18 @@ class SearchConfig_API {
             return max($max, $f->formulaId);
         }, 0);
 
+        if (!isset($qreq["formula/1/id"])) {
+            self::translate_qreq($qreq);
+        }
+
         // determine new formula set from request
         $id2idx = [];
         $msgset = new MessageSet;
-        for ($fidx = 1; isset($qreq["formulaid_{$fidx}"]); ++$fidx) {
-            $name = $qreq["formulaname_{$fidx}"];
-            $expr = $qreq["formulaexpression_{$fidx}"];
-            $id = $qreq["formulaid_{$fidx}"];
-            $deleted = $qreq["formuladeleted_{$fidx}"];
+        for ($fidx = 1; isset($qreq["formula/{$fidx}/id"]); ++$fidx) {
+            $name = $qreq["formula/{$fidx}/name"];
+            $expr = $qreq["formula/{$fidx}/expression"];
+            $id = $qreq["formula/{$fidx}/id"];
+            $deleted = $qreq["formula/{$fidx}/delete"];
             if (!isset($name) && !isset($expr) && !isset($deleted)) {
                 continue;
             }
@@ -103,7 +116,7 @@ class SearchConfig_API {
             } else {
                 $id = (int) $id;
                 if (!($fdef = $formula_by_id[$id] ?? null)) {
-                    $msgset->error_at("formula{$fidx}", "{$pfx}This formula has been deleted.");
+                    $msgset->error_at("formula/{$fidx}", "{$pfx}This formula has been deleted.");
                     continue;
                 }
             }
@@ -111,7 +124,7 @@ class SearchConfig_API {
 
             if (!$user->can_edit_formula($fdef)
                 && (!$fdef || $name !== $fdef->name || $expr !== $fdef->expression || $deleted)) {
-                $msgset->error_at("formula{$fidx}", $fdef ? "{$pfx}You can’t change this named formula." : "You can’t create named formulas.");
+                $msgset->error_at("formula/{$fidx}", $fdef ? "{$pfx}You can’t change this named formula." : "You can’t create named formulas.");
                 continue;
             }
 
@@ -119,16 +132,16 @@ class SearchConfig_API {
                 unset($new_formula_by_id[$id]);
                 continue;
             } else if ($expr === "") {
-                $msgset->error_at("formulaexpression_{$fidx}", "{$pfx}Expression required.");
+                $msgset->error_at("formula/{$fidx}/expression", "{$pfx}Expression required.");
                 continue;
             }
 
             if ($lname === "") {
-                $msgset->error_at("formulaname_{$fidx}", "Missing formula name.");
+                $msgset->error_at("formula/{$fidx}/name", "Missing formula name.");
             } else if (preg_match('/\A(?:formula[:\d].*|f:.*|[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d*)?|none|any|all|unknown)\z/', $lname)) {
-                $msgset->error_at("formulaname_{$fidx}", "{$pfx}This formula name is reserved. Please pick another name.");
+                $msgset->error_at("formula/{$fidx}/name", "{$pfx}This formula name is reserved. Please pick another name.");
             } else if (preg_match_all('/[()\[\]\{\}\\\\\"\']/', $lname, $m)) {
-                $msgset->error_at("formulaname_{$fidx}", "{$pfx}Characters like “" . htmlspecialchars(join("", $m[0])) . "” cannot be used in formula names. Please pick another name.");
+                $msgset->error_at("formula/{$fidx}/name", "{$pfx}Characters like “" . htmlspecialchars(join("", $m[0])) . "” cannot be used in formula names. Please pick another name.");
             }
 
             $f = new Formula($expr);
@@ -142,7 +155,7 @@ class SearchConfig_API {
         foreach ($new_formula_by_id as $f) {
             $lname = strtolower($f->name);
             if (isset($lnames_used[$lname]))  {
-                $msgset->error_at("formulaname_" . $id2idx[$f->formulaId], htmlspecialchars($f->name ? $f->name . ": " : "") . "Formula names must be distinct");
+                $msgset->error_at("formula/" . $id2idx[$f->formulaId] . "/name", htmlspecialchars($f->name ? $f->name . ": " : "") . "Formula names must be distinct");
             }
             $lnames_used[$lname] = true;
         }
@@ -155,11 +168,11 @@ class SearchConfig_API {
             if ($f->check($user)) {
                 if ((!$fdef || $fdef->expression !== $f->expression)
                     && !$user->can_view_formula($f))  {
-                    $msgset->error_at("formulaexpression_" . $id2idx[$f->formulaId], $pfx . "This expression refers to properties you can’t access");
+                    $msgset->error_at("formula/" . $id2idx[$f->formulaId] . "/expression", $pfx . "This expression refers to properties you can’t access");
                 }
             } else {
                 foreach ($f->message_list() as $mi) {
-                    $msgset->append_item($mi->with_field("formulaexpression_" . $id2idx[$f->formulaId]));
+                    $msgset->append_item($mi->with_field("formula/" . $id2idx[$f->formulaId] . "/expression"));
                 }
             }
         }

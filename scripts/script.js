@@ -11999,17 +11999,17 @@ handle_ui.on("js-edit-formulas", function () {
     function push1(hc, f) {
         ++count;
         hc.push('<div class="editformulas-formula" data-formula-number="' + count + '">', '</div>');
-        hc.push('<div class="entryi"><label for="k-formulaname_' + count + '">Name</label><div class="entry nw">', '</div></div>');
+        hc.push('<div class="entryi"><label for="k-formula/' + count + '/name">Name</label><div class="entry nw">', '</div></div>');
         if (f.editable) {
-            hc.push('<input type="text" id="k-formulaname_' + count + '" class="editformulas-name need-autogrow" name="formulaname_' + count + '" size="30" value="' + escape_html(f.name) + '" placeholder="Formula name">');
+            hc.push('<input type="text" id="k-formula/' + count + '/name" class="editformulas-name need-autogrow" name="formula/' + count + '/name" size="30" value="' + escape_html(f.name) + '" placeholder="Formula name">');
             hc.push('<button type="button" class="ui closebtn delete-link need-tooltip" aria-label="Delete formula">x</button>');
         } else
             hc.push(escape_html(f.name));
         hc.pop();
-        hc.push('<div class="entryi"><label for="k-formulaexpression_' + count + '">Expression</label><div class="entry">', '</div></div>');
+        hc.push('<div class="entryi"><label for="k-formula/' + count + '/expression">Expression</label><div class="entry">', '</div></div>');
         if (f.editable)
-            hc.push('<textarea class="editformulas-expression need-autogrow w-99" id="k-formulaexpression_' + count + '" name="formulaexpression_' + count + '" rows="1" cols="64" placeholder="Formula definition">' + escape_html(f.expression) + '</textarea>')
-                .push('<input type="hidden" name="formulaid_' + count + '" value="' + f.id + '">');
+            hc.push('<textarea class="editformulas-expression need-autogrow w-99" id="k-formula/' + count + '/expression" name="formula/' + count + '/expression" rows="1" cols="64" placeholder="Formula definition">' + escape_html(f.expression) + '</textarea>')
+                .push('<input type="hidden" name="formula/' + count + '/id" value="' + f.id + '">');
         else
             hc.push(escape_html(f.expression));
         hc.pop();
@@ -12039,7 +12039,7 @@ handle_ui.on("js-edit-formulas", function () {
             $x.find(".editformulas-name").prop("disabled", true).css("text-decoration", "line-through");
             $x.append('<em>(Formula deleted)</em>');
         }
-        $x.append('<input type="hidden" name="formuladeleted_' + $x.data("formulaNumber") + '" value="1">');
+        $x.append('<input type="hidden" name="formula/' + $x.data("formulaNumber") + '/delete" value="1">');
     }
     function submit(evt) {
         evt.preventDefault();
