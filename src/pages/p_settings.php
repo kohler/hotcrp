@@ -106,10 +106,10 @@ class Settings_Page {
         foreach ($this->sv->group_members("") as $gj) {
             $title = $gj->short_title ?? $gj->title;
             if ($gj->name === $group) {
-                echo '<li class="leftmenu-item active">', $title, '</li>';
-            } else if ($gj->title) {
-                echo '<li class="leftmenu-item ui js-click-child">',
-                    '<a href="', $this->conf->hoturl("settings", "group={$gj->name}"), '">', $title, '</a></li>';
+                echo '<li class="leftmenu-item active">', $title ?? "(Unlisted)", '</li>';
+            } else if ($title && !($gj->unlisted ?? false)) {
+                echo '<li class="leftmenu-item ui js-click-child"><a href="',
+                    $this->conf->hoturl("settings", "group={$gj->name}"), '">', $title, '</a></li>';
             }
         }
         echo '</ul><div class="leftmenu-if-left if-differs mt-5">',
