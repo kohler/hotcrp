@@ -68,8 +68,6 @@ class Conf {
 
     /** @var bool */
     public $_header_printed = false;
-    /** @var ?SessionHandler */
-    public $_session_handler;
     /** @var ?list<array{string,int}> */
     private $_save_msgs;
     /** @var ?array<string,array<int,true>> */

@@ -321,11 +321,6 @@ function initialize_request($kwarg = null) {
     }
 
     // set up session
-    if (($sh = $conf->opt["sessionHandler"] ?? null)) {
-        /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName, PhanNonClassMethodCall */
-        $conf->_session_handler = new $sh($conf);
-        session_set_save_handler($conf->_session_handler, true);
-    }
     set_session_name($conf);
     $sn = session_name();
 
