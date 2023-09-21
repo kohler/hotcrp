@@ -4673,7 +4673,7 @@ function populate(e, v, placeholder) {
 handle_ui.on("input.js-email-populate", function () {
     var self = this,
         v = self.value.toLowerCase().trim(),
-        f = this.form,
+        f = this.form || this.closest("form"),
         fn = null, ln = null, nn = null, af = null,
         country = null, orcid = null, placeholder = false,
         idx;
