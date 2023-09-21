@@ -2273,7 +2273,7 @@ label.f-c, .f-i > label, .f-i > .label {
 	font-size: 92%;
 }
 .feedback-list {
-	margin: 0 0 0.3rem;
+	margin: 0;
 	padding-left: 0 !important;
 	list-style-type: none;
 	font-size: 92%;

@@ -3171,6 +3171,9 @@ class Contact implements JsonSerializable {
     /** @param bool $allow_no_email
      * @return ?PermissionProblem */
     function perm_start_paper(PaperInfo $prow, $allow_no_email = false) {
+        if ($this->conf->has_site_lock("paper:start")) {
+            return new PermissionProblem($this->conf, ["site_lock" => "paper:start"]);
+        }
         if ($this->can_administer($prow)) {
             return null;
         }
@@ -3192,7 +3195,8 @@ class Contact implements JsonSerializable {
 
     /** @return 0|1|2 */
     function edit_paper_state(PaperInfo $prow) {
-        if ($prow->timeWithdrawn > 0 /* non-overridable */) {
+        if ($prow->timeWithdrawn > 0 /* non-overridable */
+            || ($prow->paperId <= 0 && $this->conf->has_site_lock("paper:start"))) {
             return 0;
         }
         $rights = $this->rights($prow);

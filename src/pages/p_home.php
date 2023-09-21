@@ -575,10 +575,12 @@ class Home_Page {
         $conf = $user->conf;
         $srlist = [];
         $any_open = false;
-        foreach ($conf->submission_round_list() as $sr) {
-            $any_open = $any_open || $sr->open > 0;
-            if ($user->privChair || $sr->time_register(true)) {
-                $srlist[] = $sr;
+        if (!$conf->has_site_lock("paper:start")) {
+            foreach ($conf->submission_round_list() as $sr) {
+                $any_open = $any_open || $sr->open > 0;
+                if ($user->privChair || $sr->time_register(true)) {
+                    $srlist[] = $sr;
+                }
             }
         }
         if (!$user->is_author()
@@ -594,7 +596,7 @@ class Home_Page {
         if (!empty($srlist)) {
             if (!$user->has_email()) {
                 echo '<p>', Ht::link("Sign in", $conf->hoturl("signin")),
-                    ' to start submissions.</p>';
+                    ' to manage submissions.</p>';
             }
             usort($srlist, "SubmissionRound::compare");
             foreach ($srlist as $sr) {
@@ -626,7 +628,7 @@ class Home_Page {
                 $this->submission_round_deadlines($deadlines, $sr);
             }
         }
-        if (empty($srlist) && !count($deadlines)) {
+        if (empty($srlist) && empty($deadlines)) {
             if ($any_open) {
                 $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">deadline</a> for registering submissions has passed.';
             } else {

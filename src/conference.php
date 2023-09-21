@@ -19,11 +19,12 @@ class Conf {
     private $settingTexts;
     /** @var int */
     public $sversion;
-    /** @var int */
-    private $permbits;
-    const PB_ALL_PDF_VIEWABLE = 1;
-    const PB_SOME_INCOMPLETE_VIEWABLE = 2;
-    const PB_ALL_INCOMPLETE_VIEWABLE = 4;
+    /** @var array<string,mixed> */
+    public $opt;
+    /** @var array<string,mixed> */
+    public $opt_override;
+    /** @var ?int */
+    private $_opt_timestamp;
 
     /** @var string
      * @readonly */
@@ -36,6 +37,11 @@ class Conf {
     public $default_format;
     /** @var string */
     public $download_prefix;
+    /** @var int */
+    private $permbits;
+    const PB_ALL_PDF_VIEWABLE = 1;
+    const PB_SOME_INCOMPLETE_VIEWABLE = 2;
+    const PB_ALL_INCOMPLETE_VIEWABLE = 4;
     /** @var bool
      * @readonly */
     public $rev_open;
@@ -57,12 +63,8 @@ class Conf {
     public $any_response_open;
     /** @var bool */
     public $sort_by_last;
-    /** @var array<string,mixed> */
-    public $opt;
-    /** @var array<string,mixed> */
-    public $opt_override;
-    /** @var ?int */
-    private $_opt_timestamp;
+    /** @var ?string */
+    private $_site_locks;
     /** @var PaperOptionList */
     private $_paper_opts;
 
@@ -453,6 +455,7 @@ class Conf {
             || ($this->settings["tag_approval"] ?? 0) > 0
             || ($this->settings["tag_autosearch"] ?? 0) > 0
             || !!$this->opt("definedTags");
+        $this->_site_locks = $this->settingTexts["site_locks"] ?? null;
         $this->refresh_time_settings();
     }
 
@@ -485,6 +488,19 @@ class Conf {
                     }
                 }
             }
+        }
+    }
+
+    /** @param int $sr1
+     * @param int $sr2
+     * @return -1|0|1 */
+    static private function pcseerev_compare($sr1, $sr2) {
+        if ($sr1 == $sr2) {
+            return 0;
+        } else if ($sr1 == self::PCSEEREV_YES || $sr2 == self::PCSEEREV_YES) {
+            return $sr1 == self::PCSEEREV_YES ? 1 : -1;
+        } else {
+            return $sr1 > $sr2 ? 1 : -1;
         }
     }
 
@@ -832,14 +848,11 @@ class Conf {
     }
 
 
-    static function pcseerev_compare($sr1, $sr2) {
-        if ($sr1 == $sr2) {
-            return 0;
-        } else if ($sr1 == self::PCSEEREV_YES || $sr2 == self::PCSEEREV_YES) {
-            return $sr1 == self::PCSEEREV_YES ? 1 : -1;
-        } else {
-            return $sr1 > $sr2 ? 1 : -1;
-        }
+    /** @param non-empty-string $name
+     * @return bool */
+    function has_site_lock($name) {
+        return $this->_site_locks !== null
+            && strpos($this->_site_locks, " {$name}#") !== false;
     }
 
 
@@ -937,6 +950,8 @@ class Conf {
     }
 
 
+    // collation
+
     /** @return Collator */
     function collator() {
         if (!$this->_collator) {
@@ -988,7 +1003,7 @@ class Conf {
     /** @return string */
     function full_name() {
         if ($this->short_name && $this->short_name != $this->long_name) {
-            return $this->long_name . " (" . $this->short_name . ")";
+            return "{$this->long_name} ({$this->short_name})";
         } else {
             return $this->long_name;
         }
@@ -1292,11 +1307,13 @@ class Conf {
     function all_review_fields() {
         return $this->review_form()->all_fields();
     }
+
     /** @param string $fid
      * @return ?ReviewField */
     function review_field($fid) {
         return $this->review_form()->field($fid);
     }
+
     /** @param string $text
      * @return ?ReviewField */
     function find_review_field($text) {
@@ -1305,6 +1322,7 @@ class Conf {
         }
         return $this->abbrev_matcher()->find1($text, self::MFLAG_REVIEW);
     }
+
     /** @param string $fid
      * @return ReviewField */
     function checked_review_field($fid) {
@@ -1505,7 +1523,6 @@ class Conf {
         }
         return $m;
     }
-
 
     /** @return bool */
     function rights_need_tags() {
@@ -2774,6 +2791,7 @@ class Conf {
         }
         return $this->_dtz;
     }
+
     /** @param string $format
      * @param int|float $t
      * @return string */
@@ -2789,6 +2807,7 @@ class Conf {
             return date($format, $t);
         }
     }
+
     /** @param string $type
      * @param int|float $t
      * @return string */
@@ -2830,6 +2849,7 @@ class Conf {
         }
         return $this->_date_format($f, $t);
     }
+
     /** @param int|float $value
      * @return string */
     private function _unparse_timezone($value) {
@@ -2858,6 +2878,7 @@ class Conf {
         }
         return $d;
     }
+
     /** @param string $d
      * @param ?int $reference
      * @return int|float|false */
@@ -2918,6 +2939,7 @@ class Conf {
         }
         return $t;
     }
+
     /** @param int|float|null $timestamp
      * @return ?int */
     function obscure_time($timestamp) {
@@ -2933,11 +2955,13 @@ class Conf {
         }
         return $timestamp;
     }
+
     /** @param int $timestamp
      * @return string */
     function unparse_time_long($timestamp) {
         return $this->_unparse_time($timestamp, "long");
     }
+
     /** @param int $timestamp
      * @param string $suffix
      * @return string */
@@ -2945,31 +2969,37 @@ class Conf {
         $s = $this->_unparse_time($timestamp, "long");
         return "<span class=\"need-usertime\" data-time=\"{$timestamp}\">{$s}{$suffix}</span>";
     }
+
     /** @param int $timestamp
      * @return string */
     function unparse_time($timestamp) {
         return $this->_unparse_time($timestamp, "timestamp");
     }
+
     /** @param int $timestamp
      * @return string */
     function unparse_time_obscure($timestamp) {
         return $this->_unparse_time($timestamp, "obscure");
     }
+
     /** @param int $timestamp
      * @return string */
     function unparse_time_point($timestamp) {
         return $this->_date_format("j M Y", $timestamp);
     }
+
     /** @param int $timestamp
      * @return string */
     function unparse_time_log($timestamp) {
         return $this->_date_format("Y-m-d H:i:s O", $timestamp);
     }
+
     /** @param int $timestamp
      * @return string */
     function unparse_time_iso($timestamp) {
         return $this->_date_format("Ymd\\THis", $timestamp);
     }
+
     /** @param int $timestamp
      * @param int $now
      * @return string */

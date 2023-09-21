@@ -4,7 +4,7 @@
 
 class Submissions_SettingParser extends SettingParser {
     static function print_open(SettingValues $sv) {
-        $sv->print_checkbox("submission_open", '<b>Open site for submissions</b>');
+        $sv->print_checkbox("submission_open", '<strong>Open site for submissions</strong>');
     }
     static function print_deadlines(SettingValues $sv) {
         // maybe sub_reg was overridden
@@ -12,9 +12,17 @@ class Submissions_SettingParser extends SettingParser {
         if ($main_sr->inferred_register || $main_sr->register === $main_sr->submit) {
             $sv->set_oldv("submission_registration", null);
         }
-        $sv->print_entry_group("submission_registration", "Registration deadline", [
-            "hint" => "New submissions can be started until this deadline."
-        ]);
+        if ($sv->conf->has_site_lock("paper:start")) {
+            echo '<div class="f-i"><label for="submission_registration">Registration deadline</label>',
+                '<div id="submission_registration" class="mb-1">N/A</div>';
+            $sv->msg_at("submission_registration", "<0>The site is locked for new submissions.", MessageSet::URGENT_NOTE);
+            $sv->print_feedback_at("submission_registration");
+            echo '</div>';
+        } else {
+            $sv->print_entry_group("submission_registration", "Registration deadline", [
+                "hint" => "New submissions can be started until this deadline."
+            ]);
+        }
         $sv->print_entry_group("submission_done", "Submission deadline", [
             "hint" => "Submissions must be complete by this deadline."
         ]);
@@ -55,7 +63,8 @@ class Submissions_SettingParser extends SettingParser {
         if ($sv->has_interest("submission_open")
             && $sv->oldv("submission_freeze") == 0
             && $sv->oldv("submission_open") > 0
-            && $sv->oldv("submission_done") <= 0)
+            && $sv->oldv("submission_done") <= 0) {
             $sv->warning_at(null, "<5>Authors can update their submissions until the deadline, but there is no deadline. This is sometimes unintentional. You may want to either (1) specify a " . $sv->setting_link("submission deadline", "submission_done") . ", (2) select “" . $sv->setting_link("Authors must freeze the final version of each submission", "submission_freeze") . "”, or (3) manually turn off “" . $sv->setting_link("Open site for submissions", "submission_open") . "” at the proper time.");
+        }
     }
 }

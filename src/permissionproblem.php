@@ -170,6 +170,9 @@ class PermissionProblem extends Exception
         if (isset($this->_a["invalidSclass"])) {
             $ms[] = $this->conf->_("<0>Unknown submission class ‘{}’", $this->_a["invalidSclass"]);
         }
+        if ($this->_a["site_lock"] ?? false) {
+            $ms[] = $this->conf->_("<0>Action locked");
+        }
         if ($this->_a["noPaper"] ?? false) {
             $ms[] = $this->conf->_("<0>Submission #{} does not exist", $paperId);
         }
