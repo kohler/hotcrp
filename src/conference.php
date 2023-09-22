@@ -2468,11 +2468,16 @@ class Conf {
         return self::$_cdb === false ? self::main_contactdb() : self::$_cdb;
     }
 
+    /** @return string */
+    function cdb_confuid() {
+        return $this->opt["contactdbConfuid"] ?? $this->dbname;
+    }
+
     /** @return int */
     function cdb_confid() {
         $confid = $this->opt["contactdbConfid"] ?? null;
         if ($confid === null && ($cdb = $this->contactdb())) {
-            $confid = $this->opt["contactdbConfid"] = Dbl::fetch_ivalue($cdb, "select confid from Conferences where `dbname`=?", $this->dbname) ?? -1;
+            $confid = $this->opt["contactdbConfid"] = Dbl::fetch_ivalue($cdb, "select confid from Conferences where confuid=?", $this->cdb_confuid()) ?? -1;
         }
         return $confid ?? -1;
     }
@@ -2490,8 +2495,8 @@ class Conf {
             $q .= ", ? cdb_confid from ContactInfo left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=?)";
             $qv = [$confid, $confid];
         } else {
-            $q .= ", coalesce(Conferences.confid,-1) cdb_confid from ContactInfo left join Conferences on (Conferences.`dbname`=?) left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)";
-            $qv = [$this->dbname];
+            $q .= ", coalesce(Conferences.confid,-1) cdb_confid from ContactInfo left join Conferences on (Conferences.confuid=?) left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)";
+            $qv = [$this->cdb_confuid()];
         }
         $q .= " where ";
         if (!empty($ids)) {

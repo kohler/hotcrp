@@ -26,7 +26,7 @@ CREATE TABLE `Capability` (
 DROP TABLE IF EXISTS `Conferences`;
 CREATE TABLE `Conferences` (
   `confid` int(11) NOT NULL AUTO_INCREMENT,
-  `dbname` varbinary(64) DEFAULT NULL,
+  `confuid` varbinary(64) DEFAULT NULL,
   PRIMARY KEY (`confid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

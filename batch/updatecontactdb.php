@@ -46,7 +46,7 @@ class UpdateContactdb_Batch {
         if (!$cdb) {
             return null;
         }
-        $result = Dbl::ql($cdb, "select * from Conferences where `dbname`=?", $this->conf->dbname);
+        $result = Dbl::ql($cdb, "select * from Conferences where confuid=?", $this->conf->cdb_confuid());
         $this->confrow = Dbl::fetch_first_object($result);
         if (!$this->confrow) {
             throw new ErrorException("Conference is not recorded in contactdb");

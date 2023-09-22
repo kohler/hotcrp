@@ -1005,7 +1005,7 @@ class TestRunner {
         // Contactdb.
         if (($cdb = $conf->contactdb())) {
             self::reset_schema($cdb, SiteLoader::find("test/cdb-schema.sql"), $rebuild);
-            $cdb->query("insert into Conferences set dbname='" . $cdb->real_escape_string($conf->dbname) . "'");
+            Dbl::qe($cdb, "insert into Conferences set confuid=?", $conf->dbname);
             Contact::$props["demoBirthday"] = Contact::PROP_CDB | Contact::PROP_NULL | Contact::PROP_INT | Contact::PROP_IMPORT;
         }
         $timer->mark("contactdb");
