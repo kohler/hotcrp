@@ -4151,16 +4151,12 @@ class Conf {
 
     private function make_jquery_script_file($jqueryVersion) {
         $integrity = null;
-        if ($jqueryVersion === "3.6.4") {
+        if ($jqueryVersion === "3.7.1") {
+            $integrity = "sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=";
+        } else if ($jqueryVersion === "3.6.4") {
             $integrity = "sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=";
         } else if ($jqueryVersion === "3.6.0") {
             $integrity = "sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=";
-        } else if ($jqueryVersion === "3.5.1") {
-            $integrity = "sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2";
-        } else if ($jqueryVersion === "3.4.1") {
-            $integrity = "sha384-vk5WoKIaW/vJyUAd9n/wmopsmNhiy+L2Z+SBxGYnUkunIxVxAv/UtMOhba/xskxh";
-        } else if ($jqueryVersion === "3.3.1") {
-            $integrity = "sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=";
         } else if ($jqueryVersion === "1.12.4") {
             $integrity = "sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=";
         }
@@ -4299,7 +4295,7 @@ class Conf {
         if (($jqurl = $this->opt["jqueryUrl"] ?? $this->opt["jqueryURL"] ?? null)) {
             Ht::stash_html($this->make_script_file($jqurl, true) . "\n");
         } else {
-            $jqueryVersion = $this->opt["jqueryVersion"] ?? "3.6.4";
+            $jqueryVersion = $this->opt["jqueryVersion"] ?? "3.7.1";
             if ($jqueryVersion[0] === "3") {
                 Ht::stash_html("<!--[if lt IE 9]>" . $this->make_jquery_script_file("1.12.4") . "<![endif]-->\n");
                 Ht::stash_html("<![if !IE|gte IE 9]>" . $this->make_jquery_script_file($jqueryVersion) . "<![endif]>\n");
