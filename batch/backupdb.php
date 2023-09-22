@@ -522,8 +522,9 @@ class BackupDB_Batch {
                     ++$p;
                 }
                 if ($p === $l) {
-                    break;
-                } else if ($ch === "(") {
+                    $ch = "";
+                }
+                if ($ch === "(") {
                     if (!preg_match('/\G\((?:[^\\\\\')]|\'(?:[^\\\\\']|\\\\.)*+\')*+\)/s', $s, $m, 0, $p)) {
                         break;
                     }
@@ -541,10 +542,12 @@ class BackupDB_Batch {
                     }
                     ++$p;
                     continue;
-                } else if ($ch === ";") {
-                    if ($this->_separator === "") {
-                        $this->fwrite(";");
-                    }
+                }
+                if ($this->_separator === "" || $this->_separator === ",\n") {
+                    // have inserted
+                    $this->fwrite($ch === ";" ? ";" : ";\n");
+                }
+                if ($ch === ";") {
                     ++$p;
                 }
                 $this->_inserting = null;
