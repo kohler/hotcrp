@@ -522,9 +522,8 @@ class BackupDB_Batch {
                     ++$p;
                 }
                 if ($p === $l) {
-                    $ch = "";
-                }
-                if ($ch === "(") {
+                    break;
+                } else if ($ch === "(") {
                     if (!preg_match('/\G\((?:[^\\\\\')]|\'(?:[^\\\\\']|\\\\.)*+\')*+\)/s', $s, $m, 0, $p)) {
                         break;
                     }
