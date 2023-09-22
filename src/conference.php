@@ -4057,9 +4057,9 @@ class Conf {
                 $text = join("\n", $text);
             }
             if ($type >= 2) {
-                fwrite(STDERR, "$text\n");
+                fwrite(STDERR, "{$text}\n");
             } else if ($type === 1 || !defined("HOTCRP_TESTHARNESS")) {
-                fwrite(STDOUT, "$text\n");
+                fwrite(STDOUT, "{$text}\n");
             }
         } else if ($conf && !$conf->_header_printed) {
             $conf->_save_msgs[] = [$text, $type];
