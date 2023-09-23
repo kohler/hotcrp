@@ -105,8 +105,7 @@ class NavigationState {
             }
             if ($pos !== false) {
                 $this->base_path = substr($uri, 0, $pos + 1);
-            } else {
-                error_log("FAJNDFNASJDNASJ");
+            } else { // this should never happen
                 $this->base_path = $uri;
                 if ($uri === "" || $uri[strlen($uri) - 1] !== "/") {
                     $this->base_path .= "/";
@@ -155,21 +154,6 @@ class NavigationState {
         // $this->site_path: initially $this->base_path
         $this->site_path = $this->base_path;
         $this->site_path_relative = $this->base_path_relative;
-
-/*
-        $serverm = ["REQUEST_URI" => $server["REQUEST_URI"],
-            "SCRIPT_FILENAME" => $server["SCRIPT_FILENAME"],
-            "SCRIPT_NAME" => $server["SCRIPT_NAME"]];
-        foreach (["ORIG_SCRIPT_FILENAME", "ORIG_SCRIPT_NAME", "PATH_INFO"] as $k) {
-            if (array_key_exists($k, $server))
-                $serverm[$k] = $server[$k];
-        }
-        $serverm["~BASE_PATH"] = $this->base_path;
-        $serverm["~PAGE"] = $this->page;
-        $serverm["~PATH"] = $this->path;
-        $serverfx = $this->server . $this->request_uri . " " . substr(json_encode($serverm, JSON_PRETTY_PRINT), 0, -1) . "\n";
-        file_put_contents("/tmp/check.txt", $serverfx);
-        if (defined("STDERR")) { fwrite(STDERR, $serverfx); } */
     }
 
     /** @param string $uri

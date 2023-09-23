@@ -21,7 +21,7 @@ class Doc_Page {
                 . (empty($_SERVER["HTTP_REFERER"]) ? "" : " R[" . $_SERVER["HTTP_REFERER"] . "]"));
         }
 
-        header("HTTP/1.1 $status");
+        header("HTTP/1.1 {$status}");
         if (isset($qreq->fn)) {
             json_exit(["ok" => false, "message_list" => $ml]);
         } else {
