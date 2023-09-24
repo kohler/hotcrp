@@ -2463,6 +2463,15 @@ class Conf {
         return self::$_cdb;
     }
 
+    /** @return Dbl_Result */
+    static function main_cdb_qe(...$args) {
+        if (($cdb = self::main_contactdb())) {
+            return Dbl::do_query_on($cdb, $args, Dbl::F_ERROR);
+        } else {
+            return Dbl_Result::make_error();
+        }
+    }
+
     /** @return ?\mysqli */
     function contactdb() {
         return self::$_cdb === false ? self::main_contactdb() : self::$_cdb;
