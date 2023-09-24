@@ -3962,6 +3962,7 @@ class Contact implements JsonSerializable {
         $rights = $this->rights($prow);
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.
+        // See also can_view_comment_identity.
         if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
             || ($rights->reviewType === REVIEW_META
                 && $this->conf->check_tracks($prow, $this, Track::VIEWREVID))
@@ -4659,6 +4660,8 @@ class Contact implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
+            || ($rights->reviewType === REVIEW_META
+                && $this->conf->check_tracks($prow, $this, Track::VIEWREVID))
             || ($rights->act_author_view
                 && !$this->conf->is_review_blind(($ct & CommentInfo::CT_BLIND) !== 0))) {
             return true;
