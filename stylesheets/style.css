@@ -711,6 +711,18 @@ label.checki {
 	padding-right: 0.5em !important;
 	padding-right: 0.5rem !important;
 }
+.pr-3 {
+	padding-right: 1em !important;
+	padding-right: 1rem !important;
+}
+.pr-4 {
+	padding-right: 1.5em !important;
+	padding-right: 1.5rem !important;
+}
+.pr-5 {
+	padding-right: 2.25em !important;
+	padding-right: 2.25rem !important;
+}
 
 .text-start {
 	text-align: start;

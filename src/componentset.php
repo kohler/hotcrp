@@ -43,9 +43,9 @@ class ComponentSet {
     private $_ctx;
     /** @var list<ComponentContext> */
     private $_ctxstack;
+    /** @var list<callable(object):(?bool)> */
+    private $_print_callbacks = [];
     private $_annexes = [];
-    /** @var list<callable(string,object,XtParams):(?bool)> */
-    private $_xt_checkers = [];
 
     static private $next_placeholder;
 
@@ -125,9 +125,18 @@ class ComponentSet {
     }
 
 
-    /** @param callable(string,object,XtParams):(?bool) $checker */
+    /** @param callable(string,object,XtParams):(?bool) $checker
+     * @return $this */
     function add_xt_checker($checker) {
         $this->xtp->primitive_checkers[] = $checker;
+        return $this;
+    }
+
+    /** @param callable(object):(?bool) $f
+     * @return $this */
+    function add_print_callback($f) {
+        $this->_print_callbacks[] = $f;
+        return $this;
     }
 
 
@@ -488,12 +497,13 @@ class ComponentSet {
     /** @param object $gj
      * @return mixed */
     private function _print_body($gj) {
+        foreach ($this->_print_callbacks as $f) {
+            if ($f($gj) === false)
+                return false;
+        }
         $result = null;
         if (isset($gj->print_function)) {
             $result = $this->call_function($gj, $gj->print_function, $gj);
-        } else if (isset($gj->render_function)) {
-            error_log("deprecated render_function in " . json_encode($gj) . "\n" . debug_string_backtrace()); // XXX
-            $result = $this->call_function($gj, $gj->render_function, $gj);
         } else if (isset($gj->html_content)) {
             echo $gj->html_content;
         }

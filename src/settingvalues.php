@@ -75,6 +75,8 @@ class SettingValues extends MessageSet {
     private $_jpath;
     /** @var ?JsonParser */
     private $_jp;
+    /** @var bool */
+    private $_inputs_printed;
 
     function __construct(Contact $user) {
         parent::__construct();
@@ -299,7 +301,8 @@ class SettingValues extends MessageSet {
             $this->_cs->set_title_class("form-h")
                 ->set_section_class("form-section")
                 ->set_separator('<hr class="form-sep">')
-                ->set_context_args($this);
+                ->set_context_args($this)
+                ->add_print_callback([$this, "_print_callback"]);
         }
         return $this->_cs;
     }
@@ -359,11 +362,13 @@ class SettingValues extends MessageSet {
         $this->cs()->print_start_section($title, $hashid);
     }
 
-    /** @param string $title
-     * @param ?string $hashid
-     * @deprecated */
-    function print_section($title, $hashid = null) {
-        $this->print_start_section($title, $hashid);
+    /** @param object $gj
+     * @return ?bool */
+    function _print_callback($gj) {
+        $inputs = $gj->inputs ?? null;
+        if ($inputs || (isset($gj->print_function) && $inputs === null)) {
+            $this->_inputs_printed = true;
+        }
     }
 
 
@@ -1530,6 +1535,15 @@ class SettingValues extends MessageSet {
         return array_keys($this->_diffs);
     }
 
+
+    /** @return bool */
+    function inputs_printed() {
+        return $this->_inputs_printed;
+    }
+
+    function mark_inputs_printed() {
+        $this->_inputs_printed = true;
+    }
 
     /** @param string $html
      * @param string|Si $id

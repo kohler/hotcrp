@@ -41,7 +41,8 @@
     {
         "name": "users/pc", "order": 10,
         "title": "Program committee & system administrators",
-        "print_function": "Users_SettingRenderer::print"
+        "print_function": "Users_SettingRenderer::print",
+        "inputs": false
     },
 
 

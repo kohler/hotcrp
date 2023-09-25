@@ -149,10 +149,12 @@ class Settings_Page {
         }
         $sv->print_group(strtolower($group), true);
 
-        echo '<div class="aab aabig mt-7">',
-            '<div class="aabut">', Ht::submit("update", "Save changes", ["class" => "btn-primary"]), '</div>',
-            '<div class="aabut">', Ht::submit("cancel", "Cancel", ["formnovalidate" => true]), '</div>',
-            '<hr class="c"></div>';
+        if ($sv->inputs_printed()) {
+            echo '<div class="aab aabig mt-7">',
+                '<div class="aabut">', Ht::submit("update", "Save changes", ["class" => "btn-primary"]), '</div>',
+                '<div class="aabut">', Ht::submit("cancel", "Cancel", ["formnovalidate" => true]), '</div>',
+                '<hr class="c"></div>';
+        }
     }
 
     private function print_list() {
