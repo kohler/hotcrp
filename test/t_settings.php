@@ -1574,4 +1574,121 @@ class Settings_Tester {
         xassert_eqq($this->conf->setting("ioptions"), null);
 
     }
+
+    function test_site_contact() {
+        $dsc = $this->conf->default_site_contact();
+        $sc = $this->conf->site_contact();
+        xassert_eqq($dsc->name(), "Jane Chair");
+        xassert_eqq($dsc->email, "chair@_.com");
+        xassert_eqq($sc->name(), "Eddie Kohler");
+        xassert_eqq($sc->email, "ekohler@hotcrp.lcdf.org");
+        xassert_eqq($this->conf->setting_data("opt.contactName"), null);
+        xassert_eqq($this->conf->setting_data("opt.contactEmail"), null);
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"site_contact_name":"Jane Chair","site_contact_email":"chair@_.com"}');
+        xassert($sv->execute());
+
+        $dsc = $this->conf->default_site_contact();
+        $sc = $this->conf->site_contact();
+        xassert_eqq($dsc->name(), "Jane Chair");
+        xassert_eqq($dsc->email, "chair@_.com");
+        xassert_eqq($sc->name(), "Jane Chair");
+        xassert_eqq($sc->email, "chair@_.com");
+        xassert_eqq($this->conf->opt("contactEmail"), "");
+        xassert_eqq($this->conf->setting_data("opt.contactEmail"), "");
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"site_contact_name":"Eddie Kohler","site_contact_email":"ekohler@hotcrp.lcdf.org"}');
+        xassert($sv->execute());
+
+        $dsc = $this->conf->default_site_contact();
+        $sc = $this->conf->site_contact();
+        xassert_eqq($dsc->name(), "Jane Chair");
+        xassert_eqq($dsc->email, "chair@_.com");
+        xassert_eqq($sc->name(), "Eddie Kohler");
+        xassert_eqq($sc->email, "ekohler@hotcrp.lcdf.org");
+        xassert_eqq($this->conf->setting_data("opt.contactName"), null);
+        xassert_eqq($this->conf->setting_data("opt.contactEmail"), null);
+        unset($this->conf->opt_override["contactName"]);
+        unset($this->conf->opt_override["contactEmail"]);
+    }
+
+    function test_site_contact_empty_defaults() {
+        $this->conf->set_opt("contactName", "Your Name");
+        $this->conf->set_opt("contactEmail", "you@example.com");
+        xassert(!array_key_exists("contactName", $this->conf->opt_override));
+        xassert(!array_key_exists("contactEmail", $this->conf->opt_override));
+        xassert_eqq($this->conf->setting("opt.contactName"), null);
+        xassert_eqq($this->conf->setting("opt.contactEmail"), null);
+
+        $this->conf->refresh_options();
+        $dsc = $this->conf->default_site_contact();
+        $sc = $this->conf->site_contact();
+        xassert_eqq($dsc->name(), "Jane Chair");
+        xassert_eqq($dsc->email, "chair@_.com");
+        xassert_eqq($sc->name(), "Jane Chair");
+        xassert_eqq($sc->email, "chair@_.com");
+        xassert_eqq($this->conf->setting_data("opt.contactName"), null);
+        xassert_eqq($this->conf->setting_data("opt.contactEmail"), null);
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"site_contact_name":"Jane Chair","site_contact_email":"chair@_.com"}');
+        xassert($sv->execute());
+
+        $dsc = $this->conf->default_site_contact();
+        $sc = $this->conf->site_contact();
+        xassert_eqq($dsc->name(), "Jane Chair");
+        xassert_eqq($dsc->email, "chair@_.com");
+        xassert_eqq($sc->name(), "Jane Chair");
+        xassert_eqq($sc->email, "chair@_.com");
+        xassert_eqq($this->conf->setting_data("opt.contactName"), null);
+        xassert_eqq($this->conf->setting_data("opt.contactEmail"), null);
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"site_contact_name":"Eddie Kohler","site_contact_email":"ekohler@hotcrp.lcdf.org"}');
+        xassert($sv->execute());
+
+        $dsc = $this->conf->default_site_contact();
+        $sc = $this->conf->site_contact();
+        xassert_eqq($dsc->name(), "Jane Chair");
+        xassert_eqq($dsc->email, "chair@_.com");
+        xassert_eqq($sc->name(), "Eddie Kohler");
+        xassert_eqq($sc->email, "ekohler@hotcrp.lcdf.org");
+        xassert_eqq($this->conf->setting_data("opt.contactName"), "Eddie Kohler");
+        xassert_eqq($this->conf->setting_data("opt.contactEmail"), "ekohler@hotcrp.lcdf.org");
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"site_contact_name":"","site_contact_email":""}');
+        xassert($sv->execute());
+
+        $dsc = $this->conf->default_site_contact();
+        $sc = $this->conf->site_contact();
+        xassert_eqq($dsc->name(), "Jane Chair");
+        xassert_eqq($dsc->email, "chair@_.com");
+        xassert_eqq($sc->name(), "Jane Chair");
+        xassert_eqq($sc->email, "chair@_.com");
+        xassert_eqq($this->conf->setting_data("opt.contactName"), null);
+        xassert_eqq($this->conf->setting_data("opt.contactEmail"), null);
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"site_contact_name":"Your Name","site_contact_email":"you@example.com"}');
+        xassert($sv->execute());
+
+        $dsc = $this->conf->default_site_contact();
+        $sc = $this->conf->site_contact();
+        xassert_eqq($dsc->name(), "Jane Chair");
+        xassert_eqq($dsc->email, "chair@_.com");
+        xassert_eqq($sc->name(), "Jane Chair");
+        xassert_eqq($sc->email, "chair@_.com");
+        xassert_eqq($this->conf->setting_data("opt.contactName"), null);
+        xassert_eqq($this->conf->setting_data("opt.contactEmail"), null);
+
+        $this->conf->set_opt("contactName", "Eddie Kohler");
+        $this->conf->set_opt("contactEmail", "ekohler@hotcrp.lcdf.org");
+        $this->conf->save_setting("opt.contactName", null);
+        $this->conf->save_refresh_setting("opt.contactEmail", null);
+        unset($this->conf->opt_override["contactName"]);
+        unset($this->conf->opt_override["contactEmail"]);
+    }
 }

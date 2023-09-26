@@ -5,6 +5,9 @@
 class SiteContact_SettingParser extends SettingParser {
     private $updated = false;
 
+    const EMAIL_PLACEHOLDER = "you@example.com";
+    const NAME_PLACEHOLDER = "Your Name";
+
     static function print_site_contact(SettingValues $sv) {
         $sv->print_entry_group("site_contact_email", null, [
             "hint" => "The site contact is the contact point for users if something goes wrong. It defaults to the chair."
@@ -15,7 +18,7 @@ class SiteContact_SettingParser extends SettingParser {
     /** @param string $v
      * @param Si $si */
     static private function cleanstr($v, $si) {
-        $iv = $si->name === "site_contact_email" ? "you@example.com" : "Your Name";
+        $iv = $si->name === "site_contact_email" ? self::EMAIL_PLACEHOLDER : self::NAME_PLACEHOLDER;
         return $v !== $iv ? $v : "";
     }
 
@@ -40,11 +43,7 @@ class SiteContact_SettingParser extends SettingParser {
 
     function apply_req(Si $si, SettingValues $sv) {
         if (($creqv = $sv->base_parse_req($si)) !== null) {
-            $creqv = self::cleanstr($creqv, $si);
-            if ($creqv === "") {
-                $creqv = self::basev($sv, $si) ?? "";
-            }
-            $sv->save($si, $creqv);
+            $sv->save($si, self::cleanstr($creqv, $si));
             $sv->request_store_value($si);
         }
         return true;
@@ -64,7 +63,7 @@ class SiteContact_SettingParser extends SettingParser {
         $newemail = $sv->newv("site_contact_email") ?? "";
         $oldemail = self::basev($sv, "site_contact_email");
         if ($newemail !== ""
-            && $newemail !== $oldemail
+            && $newemail !== self::EMAIL_PLACEHOLDER
             && strcasecmp($newemail, $defuser->email) !== 0) {
             return;
         }
@@ -72,16 +71,16 @@ class SiteContact_SettingParser extends SettingParser {
         $newname = $sv->newv("site_contact_name") ?? "";
         $oldname = self::basev($sv, "site_contact_name");
         if ($newname !== ""
-            && $newname !== $oldname
+            && $newname !== self::NAME_PLACEHOLDER
             && $newname !== $defuser->name()) {
             return;
         }
         // save contactName and contactEmail as empty strings
-        if ($oldemail === "you@example.com") {
+        if ($oldemail === self::EMAIL_PLACEHOLDER) {
             $sv->save("site_contact_email", $oldemail);
         } else {
             $sv->save("site_contact_email", "");
         }
-        $sv->save("site_contact_name", $oldname);
+        $sv->save("site_contact_name", $oldname ?? "");
     }
 }
