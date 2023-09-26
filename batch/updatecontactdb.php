@@ -212,6 +212,15 @@ class UpdateContactdb_Batch {
 
     /** @param \mysqli $cdb */
     private function run_papers($cdb) {
+        $result = Dbl::qe($cdb, "select * from ConferencePapers where confid=?", $this->cdb_confid);
+        $epapers = [];
+        while (($erow = $result->fetch_object())) {
+            $erow->paperId = (int) $erow->paperId;
+            $erow->timeSubmitted = (int) $erow->timeSubmitted;
+            $epapers[$erow->paperId] = $erow;
+        }
+        $result->close();
+
         $result = Dbl::ql($this->conf->dblink, "select paperId, title, timeSubmitted, exists (select * from PaperReview where paperId=Paper.paperId and reviewModified>0) from Paper");
         $max_submitted = 0;
         $nsubmitted = 0;
@@ -219,20 +228,26 @@ class UpdateContactdb_Batch {
         $qv = [];
         while (($row = $result->fetch_row())) {
             $pid = (int) $row[0];
-            $st = (int) $row[2];
-            $qv[] = [$this->cdb_confid, $pid, $row[1], $st];
             $pids[] = $pid;
+            $st = (int) $row[2];
+            $erow = $epapers[$pid] ?? null;
+            if (!$erow || $erow->title !== $row[1] || $erow->timeSubmitted !== $st) {
+                $qv[] = [$this->cdb_confid, $pid, $row[1], $st];
+            }
+            unset($epapers[$pid]);
             $max_submitted = max($max_submitted, $st);
             if ($st > 0 || ($st < 0 && (int) $row[3] > 0)) {
                 ++$nsubmitted;
             }
         }
-        Dbl::free($result);
+        $result->close();
 
         if (!empty($qv)) {
             Dbl::ql($cdb, "insert into ConferencePapers (confid,paperId,title,timeSubmitted) values ?v ?U on duplicate key update title=?U(title), timeSubmitted=?U(timeSubmitted)", $qv);
         }
-        Dbl::ql($cdb, "delete from ConferencePapers where confid=? and paperId?A", $this->cdb_confid, $pids);
+        if (!empty($epapers)) {
+            Dbl::ql($cdb, "delete from ConferencePapers where confid=? and paperId?a", $this->cdb_confid, array_keys($epapers));
+        }
         if ($this->confrow->last_submission_at != $max_submitted
             || $this->confrow->submission_count != $nsubmitted) {
             Dbl::ql($cdb, "update Conferences set submission_count=?, last_submission_at=greatest(coalesce(last_submission_at,0), ?) where confid=?", $nsubmitted, $max_submitted, $this->cdb_confid);
