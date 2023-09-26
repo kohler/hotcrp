@@ -34,6 +34,8 @@ class BackupDB_Batch {
     public $in;
     /** @var resource */
     public $out = STDOUT;
+    /** @var ?resource */
+    private $_s3_tmp;
     /** @var ?\mysqli */
     private $_dblink;
     /** @var bool */
@@ -74,6 +76,8 @@ class BackupDB_Batch {
     private $_s3_confid;
     /** @var ?string */
     private $_s3_backup_key;
+    /** @var ?string */
+    private $_s3_backup_pattern;
     /** @var ?int */
     private $_before;
     /** @var ?int */
@@ -237,11 +241,25 @@ class BackupDB_Batch {
         } else if ($output_mode === "stdout") {
             if ($this->compress) {
                 $this->out = @fopen("compress.zlib://php://stdout", "wb");
+                stream_context_set_option($this->out, "compress.zlib", "level", 9);
             } else {
                 $this->out = STDOUT;
             }
         } else if ($output_mode === "s3") {
-            $this->out = fopen("php://temp", "w+b");
+            if (!$this->compress && str_ends_with($this->_s3_backup_pattern, ".gz")) {
+                $this->compress = true;
+            }
+            if ($this->compress) {
+                if (($fn = tempnam("/tmp", "hcbu")) === false) {
+                    $this->throw_error("Cannot create temporary file");
+                }
+                register_shutdown_function("unlink", $fn);
+                $this->out = @fopen("compress.zlib://{$fn}", "wb");
+                stream_context_set_option($this->out, "compress.zlib", "level", 9);
+                $this->_s3_tmp = $fn;
+            } else {
+                $this->out = fopen("php://temp", "w+b");
+            }
         }
         if ($this->out === false) {
             throw error_get_last_as_exception("{$input}: ");
@@ -280,14 +298,14 @@ class BackupDB_Batch {
                 "key" => $s3k, "secret" => $s3c, "bucket" => $s3b,
                 "region" => $Opt["s3_region"] ?? null
             ]);
+            $this->_s3_backup_pattern = $s3bp;
         }
         return $this->_s3_client;
     }
 
     /** @return array<int,string> */
     private function s3_list($max = -1) {
-        global $Opt;
-        $bp = new BackupPattern($Opt["s3_backup_pattern"] ?? "");
+        $bp = new BackupPattern($this->_s3_backup_pattern);
         $pfx = $bp->expand($this->_s3_dbname ?? $this->connp->name, $this->_s3_confid ?? $this->confid);
         $s3 = $this->s3_client();
 
@@ -610,19 +628,16 @@ class BackupDB_Batch {
         return 0;
     }
 
-    private function s3_save() {
-        global $Opt;
-        $bp = new BackupPattern($Opt["s3_backup_pattern"] ?? "");
+    private function s3_put() {
+        $bp = new BackupPattern($this->_s3_backup_pattern);
         $bpk = $bp->expand($this->_s3_dbname ?? $this->connp->name,
                            $this->_s3_confid ?? $this->confid,
                            time());
-        if ($this->compress || str_ends_with($bpk, ".gz")) {
-            rewind($this->out);
-            $x = gzencode(stream_get_contents($this->out), 9);
-            $ok = $this->s3_client()->put($bpk, $x, "application/gzip");
-        } else {
-            $ok = $this->s3_client()->put_file($bpk, $this->out, "application/sql");
+        if ($this->compress) {
+            fclose($this->out);
+            $this->out = @fopen($this->_s3_tmp, "rb");
         }
+        $ok = $this->s3_client()->put_file($bpk, $this->out, $this->compress ? "application/gzip" : "application/sql");
         if (!$ok) {
             $this->throw_error("S3 error saving backup");
         } else if ($this->verbose) {
@@ -693,7 +708,7 @@ class BackupDB_Batch {
             fwrite(STDOUT, hash_final($this->_hash) . "\n");
         }
         if ($this->subcommand === self::S3_PUT) {
-            $this->s3_save();
+            $this->s3_put();
         }
         return 0;
     }
