@@ -62,7 +62,7 @@ class SiteContact_SettingParser extends SettingParser {
             return;
         }
         $newemail = $sv->newv("site_contact_email") ?? "";
-        $oldemail = self::basev($sv, "site_contact_name");
+        $oldemail = self::basev($sv, "site_contact_email");
         if ($newemail !== ""
             && $newemail !== $oldemail
             && strcasecmp($newemail, $defuser->email) !== 0) {
