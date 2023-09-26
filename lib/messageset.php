@@ -444,6 +444,14 @@ class MessageSet {
     function has_error() {
         return $this->problem_status >= self::ERROR;
     }
+    /** @return bool */
+    function has_success() {
+        foreach ($this->msgs as $mi) {
+            if ($mi->status === self::SUCCESS)
+                return true;
+        }
+        return false;
+    }
     /** @param int $msgcount
      * @return bool */
     function has_error_since($msgcount) {
