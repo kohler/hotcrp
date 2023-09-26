@@ -78,6 +78,11 @@ class UpdateContactdb_Batch {
             $qf[] = "submission_deadline_at=?";
             $qv[] = $max_sub;
         }
+        $timezone = $this->conf->opt("timezone") ?? null;
+        if ($timezone !== $this->confrow->timezone) {
+            $qf[] = "timezone=?";
+            $qv[] = $timezone;
+        }
         if (!empty($qf)) {
             $qv[] = $this->cdb_confid;
             Dbl::ql($cdb, "update Conferences set " . join(", ", $qf) . " where confid=?", ...$qv);
