@@ -742,7 +742,7 @@ class BackupDB_Batch {
             "tablespaces Include tablespaces",
             "check-table[] =TABLE Exit with error if TABLE is not present",
             "pc Restrict to PC information",
-            "output-md5 Output MD5 hash of uncompressed dump to stdout",
+            "output-md5 Write MD5 hash of uncompressed dump to stdout",
             "output-sha1 Same for SHA-1 hash",
             "output-sha256 Same for SHA-256 hash",
             "s3-get !s3 Read a backup from S3",
