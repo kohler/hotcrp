@@ -359,15 +359,27 @@ class BackupDB_Batch {
             $this->throw_error("No matching backup found");
         }
         $this->_s3_backup_key = $keys[0];
-        $content = $this->s3_client()->get($this->_s3_backup_key);
-        if ($content === null) {
-            $this->throw_error("S3 error reading {$this->_s3_backup_key}");
-        } else if ($this->verbose) {
+        if (($fn = tempnam("/tmp", "hcbu")) === false) {
+            $this->throw_error("Cannot create temporary file");
+        }
+        register_shutdown_function("unlink", $fn);
+        $this->in = fopen($fn, "w+b");
+        $s3l = $this->s3_client()->start_curl_get($this->_s3_backup_key)
+            ->set_response_body_stream($this->in);
+        if ($this->verbose) {
             fwrite(STDERR, "Reading {$this->_s3_backup_key}\n");
         }
-        $this->in = fopen("php://temp", "w+b");
-        fwrite($this->in, str_starts_with($content, "\x1F\x8B") ? gzdecode($content) : $content);
+        $s3l->run();
+        if ($s3l->status !== 200) {
+            $this->throw_error("S3 error reading {$this->_s3_backup_key}");
+        }
         rewind($this->in);
+        if (fread($this->in, 2) === "\x1F\x8B") {
+            fclose($this->in);
+            $this->in = fopen("compress.zlib://{$fn}", "rb");
+        } else {
+            rewind($this->in);
+        }
     }
 
     /** @return array{int,bool,string} */
