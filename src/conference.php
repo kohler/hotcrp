@@ -2032,25 +2032,35 @@ class Conf {
 
     /** @param int $id */
     function prefetch_user_by_id($id) {
-        $this->_user_cache_missing[] = $id;
+        if (!array_key_exists($id, $this->_user_cache ?? [])) {
+            $this->_user_cache_missing[] = $id;
+        }
     }
 
     /** @param iterable<int> $ids */
     function prefetch_users_by_id($ids) {
+        $uc = $this->_user_cache ?? [];
         foreach ($ids as $id) {
-            $this->_user_cache_missing[] = $id;
+            if (!array_key_exists($id, $uc)) {
+                $this->_user_cache_missing[] = $id;
+            }
         }
     }
 
     /** @param string $email */
     function prefetch_user_by_email($email) {
-        $this->_user_cache_missing[] = $email;
+        if (!array_key_exists($email, $this->_user_email_cache ?? [])) {
+            $this->_user_cache_missing[] = $email;
+        }
     }
 
     /** @param list<string> $emails */
     function prefetch_users_by_email($emails) {
+        $uec = $this->_user_email_cache ?? [];
         foreach ($emails as $email) {
-            $this->_user_cache_missing[] = $email;
+            if (!array_key_exists($email, $uec)) {
+                $this->_user_cache_missing[] = $email;
+            }
         }
     }
 
@@ -2559,18 +2569,29 @@ class Conf {
 
     /** @param int $id */
     function prefetch_cdb_user_by_id($id) {
-        $this->_cdb_user_cache_missing[] = $id;
+        if (!array_key_exists($id, $this->_cdb_user_cache ?? [])) {
+            $this->_cdb_user_cache_missing[] = $id;
+        }
     }
 
-    /** @param string $email */
+    /** @param string $email
+     * @return bool */
     function prefetch_cdb_user_by_email($email) {
-        $this->_cdb_user_cache_missing[] = $email;
+        if (!array_key_exists($email, $this->_cdb_user_cache ?? [])) {
+            $this->_cdb_user_cache_missing[] = $email;
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /** @param iterable<string> $emails */
     function prefetch_cdb_users_by_email($emails) {
+        $cuc = $this->_cdb_user_cache ?? [];
         foreach ($emails as $email) {
-            $this->_cdb_user_cache_missing[] = $email;
+            if (!array_key_exists($email, $cuc)) {
+                $this->_cdb_user_cache_missing[] = $email;
+            }
         }
     }
 

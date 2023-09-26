@@ -861,9 +861,11 @@ class Contact implements JsonSerializable {
         } else if ($this->_cdb_user !== false) {
             return $this->_cdb_user;
         }
-        foreach ($this->_row_set ?? ContactSet::make_singleton($this) as $u) {
-            if ($u->email)
-                $this->conf->prefetch_cdb_user_by_email($u->email);
+        if ($this->conf->prefetch_cdb_user_by_email($this->email)) {
+            foreach ($this->_row_set ?? ContactSet::make_singleton($this) as $u) {
+                if ($u->email)
+                    $this->conf->prefetch_cdb_user_by_email($u->email);
+            }
         }
         $this->_cdb_user = $this->conf->cdb_user_by_email($this->email);
         if ($this->_cdb_user && $this->contactId > 0) {
