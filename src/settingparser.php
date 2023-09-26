@@ -15,7 +15,7 @@ class SettingParser {
 
     /** @return ?string */
     function placeholder(Si $si, SettingValues $sv) {
-        return null;
+        return "auto";
     }
 
     /** @return ?string */

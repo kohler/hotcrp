@@ -565,9 +565,8 @@ class Si {
      * @return ?string */
     function placeholder($sv) {
         if ($this->placeholder === "auto"
-            && $this->parser_class
-            && ($v = $sv->si_parser($this)->placeholder($this, $sv)) !== null) {
-            return $v;
+            && $this->parser_class) {
+            return $sv->si_parser($this)->placeholder($this, $sv);
         } else {
             return $this->placeholder;
         }
