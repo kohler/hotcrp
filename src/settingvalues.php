@@ -369,6 +369,7 @@ class SettingValues extends MessageSet {
         if ($inputs || (isset($gj->print_function) && $inputs === null)) {
             $this->_inputs_printed = true;
         }
+        return null;
     }
 
 
@@ -1246,7 +1247,8 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string|Si $id
-     * @return void */
+     * @return void
+     * @deprecated */
     function unsave($id) {
         $si = is_string($id) ? $this->si($id) : $id;
         assert($si->storage_type !== Si::SI_NONE
