@@ -12,7 +12,7 @@ class Submissions_SettingParser extends SettingParser {
         if ($main_sr->inferred_register || $main_sr->register === $main_sr->submit) {
             $sv->set_oldv("submission_registration", null);
         }
-        if ($sv->conf->has_site_lock("paper:start")) {
+        if ($sv->conf->site_lock("paper:start") > 0) {
             echo '<div class="f-i"><label for="submission_registration">Registration deadline</label>',
                 '<div id="submission_registration" class="mb-1">N/A</div>';
             $sv->msg_at("submission_registration", "<0>The site is locked for new submissions.", MessageSet::URGENT_NOTE);

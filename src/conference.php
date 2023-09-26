@@ -849,10 +849,14 @@ class Conf {
 
 
     /** @param non-empty-string $name
-     * @return bool */
-    function has_site_lock($name) {
-        return $this->_site_locks !== null
-            && strpos($this->_site_locks, " {$name}#") !== false;
+     * @return int */
+    function site_lock($name) {
+        if ($this->_site_locks === null
+            || ($p = strpos($this->_site_locks, " {$name}#")) === false) {
+            return 0;
+        } else {
+            return (int) substr($this->_site_locks, $p + strlen($name) + 2);
+        }
     }
 
 
