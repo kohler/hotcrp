@@ -2925,7 +2925,22 @@ function popup_near(elt, near) {
 }
 
 function override_deadlines(callback) {
-    var self = this, hc;
+    let self = this, hc;
+    function default_callback() {
+        self.form.hotcrpSubmitter = null;
+        for (let v of self.getAttribute("data-override-submit").split("&")) {
+            if (v !== "") {
+                const eq = v.indexOf("="),
+                    key = eq < 0 ? v : v.substring(0, eq),
+                    value = eq < 0 ? "1" : v.substring(eq + 1);
+                self.form.append(hidden_input(key, value));
+                self.form.hotcrpSubmitter = self.form.hotcrpSubmitter || [key, (new Date).getTime()];
+            }
+        }
+        self.form.append(hidden_input("override", "1"));
+        addClass(self.form, "submitting");
+        $(self.form).submit(); // call other handlers
+    }
     if (typeof callback === "object" && "sidebarTarget" in callback) {
         hc = popup_skeleton({near: callback.sidebarTarget});
     } else {
@@ -2936,7 +2951,7 @@ function override_deadlines(callback) {
         '<button type="button" name="bsubmit" class="btn-primary"></button>',
         '<button type="button" name="cancel">Cancel</button>'
     ]);
-    var $d = hc.show(false);
+    let $d = hc.show(false);
     $d.find("button[name=bsubmit]")
         .html(this.getAttribute("aria-label")
               || $(this).html()
@@ -2946,14 +2961,7 @@ function override_deadlines(callback) {
             if (callback && $.isFunction(callback)) {
                 callback();
             } else {
-                var submitter = self.getAttribute("data-override-submit");
-                if (submitter) {
-                    self.form.append(hidden_input(submitter, "1"));
-                    self.form.hotcrpSubmitter = [submitter, (new Date).getTime()];
-                }
-                self.form.append(hidden_input("override", "1"));
-                addClass(self.form, "submitting");
-                $(self.form).submit(); // call other handlers
+                default_callback();
             }
             $d.close();
         });
