@@ -34,7 +34,7 @@ class BackupDB_Batch {
     public $in;
     /** @var resource */
     public $out = STDOUT;
-    /** @var ?resource */
+    /** @var ?string */
     private $_s3_tmp;
     /** @var ?\mysqli */
     private $_dblink;
