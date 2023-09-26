@@ -70,10 +70,13 @@ class UpdateContactdb_Batch {
             $qf[] = "requester_email=?";
             $qv[] = $email;
         }
-        if (($sub = $this->conf->setting("sub_sub"))
-            && $sub !== $this->confrow->submission_deadline_at) {
+        $max_sub = 0;
+        foreach ($this->conf->submission_round_list() as $sr) {
+            $max_sub = max($max_sub, $sr->register, $sr->update, $sr->submit);
+        }
+        if ($max_sub && $max_sub !== $this->confrow->submission_deadline_at) {
             $qf[] = "submission_deadline_at=?";
-            $qv[] = $sub;
+            $qv[] = $max_sub;
         }
         if (!empty($qf)) {
             $qv[] = $this->cdb_confid;
