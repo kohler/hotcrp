@@ -2506,7 +2506,7 @@ class Conf {
         if (!$cdb || (empty($ids) && empty($emails))) {
             return [];
         }
-        $q = "select ContactInfo.*, roles, activity_at";
+        $q = "select ContactInfo.*, roles, " . Contact::ROLE_CDBMASK . " role_mask, activity_at";
         if (($confid = $this->opt("contactdbConfid") ?? 0) > 0) {
             $q .= ", ? cdb_confid from ContactInfo left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=?)";
             $qv = [$confid, $confid];

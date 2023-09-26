@@ -74,7 +74,7 @@ class UpdateContactdb_Batch {
         foreach ($this->conf->submission_round_list() as $sr) {
             $max_sub = max($max_sub, $sr->register, $sr->update, $sr->submit);
         }
-        if ($max_sub && $max_sub !== $this->confrow->submission_deadline_at) {
+        if ($max_sub && $max_sub != $this->confrow->submission_deadline_at) {
             $qf[] = "submission_deadline_at=?";
             $qv[] = $max_sub;
         }
@@ -102,15 +102,12 @@ class UpdateContactdb_Batch {
     /** @param \mysqli $cdb */
     private function run_users($cdb) {
         // read current cdb roles
-        $result = Dbl::ql($cdb, "select Roles.*, email, password
-            from Roles
-            join ContactInfo using (contactDbId)
-            where confid=?", $this->cdb_confid);
-        $cdb_users = [];
-        while ($result && ($user = $result->fetch_object())) {
-            $cdb_users[$user->email] = $user;
+        $result = Dbl::ql($cdb, "select contactDbId from Roles where confid=?", $this->cdb_confid);
+        $ecdbids = [];
+        while (($row = $result->fetch_row())) {
+            $ecdbids[(int) $row[0]] = true;
         }
-        Dbl::free($result);
+        $result->close();
 
         // read current db roles
         $result = Dbl::ql($this->conf->dblink, "select ContactInfo.contactId, email, firstName, lastName, unaccentedName, disabled,
@@ -120,29 +117,29 @@ class UpdateContactdb_Batch {
             " . (Contact::ROLE_DBMASK | Contact::ROLE_AUTHOR | Contact::ROLE_REVIEWER) . " role_mask,
             lastLogin
             from ContactInfo");
+        $us = ContactSet::make_result($result, $this->conf);
+
         $cdbids = [];
         $qv = [];
-        while (($u = Contact::fetch($result, $this->conf))) {
+        foreach ($us as $u) {
             $cdb_roles = $u->cdb_roles();
-            if ($cdb_roles == 0 || $u->is_anonymous_user()) {
+            if ($cdb_roles === 0 || $u->is_anonymous_user()) {
                 continue;
             }
-            $cdbu = $cdb_users[$u->email] ?? null;
-            $cdbid = $cdbu ? (int) $cdbu->contactDbId : 0;
-            if ($cdbu
-                && (int) $cdbu->roles === $cdb_roles
-                && $cdbu->activity_at) {
-                /* skip */;
-            } else if ($cdbu && $cdbu->password !== null) {
-                $qv[] = [$cdbid, $this->cdb_confid, $cdb_roles, $u->activity_at ?? 0];
-            } else {
-                $cdbid = $u->update_cdb();
+            $cdbu = $u->cdb_user();
+            if ($cdbu) {
+                unset($ecdbids[$cdbu->contactDbId]);
             }
-            if ($cdbid) {
-                $cdbids[] = $cdbid;
+            if ($cdbu
+                && (($cdbu->roles ^ $cdb_roles) & Contact::ROLE_CDBMASK) === 0
+                && ($cdbu->activity_at || ($u->activity_at ?? 0) === 0)) {
+                /* skip */;
+            } else if ($cdbu) {
+                $qv[] = [$cdbu->contactDbId, $this->cdb_confid, $cdb_roles, $u->activity_at ?? 0];
+            } else {
+                $u->update_cdb();
             }
         }
-        Dbl::free($result);
 
         // perform role updates
         if (!empty($qv)) {
@@ -150,7 +147,9 @@ class UpdateContactdb_Batch {
         }
 
         // remove old roles
-        Dbl::ql($cdb, "delete from Roles where confid=? and contactDbId?A", $this->cdb_confid, $cdbids);
+        if (!empty($ecdbids)) {
+            Dbl::ql($cdb, "delete from Roles where confid=? and contactDbId?a", $this->cdb_confid, array_keys($ecdbids));
+        }
     }
 
     /** @param \mysqli $cdb */
@@ -248,7 +247,7 @@ class UpdateContactdb_Batch {
         if (!empty($epapers)) {
             Dbl::ql($cdb, "delete from ConferencePapers where confid=? and paperId?a", $this->cdb_confid, array_keys($epapers));
         }
-        if ($this->confrow->last_submission_at != $max_submitted
+        if ($this->confrow->last_submission_at < $max_submitted
             || $this->confrow->submission_count != $nsubmitted) {
             Dbl::ql($cdb, "update Conferences set submission_count=?, last_submission_at=greatest(coalesce(last_submission_at,0), ?) where confid=?", $nsubmitted, $max_submitted, $this->cdb_confid);
         }

@@ -975,7 +975,7 @@ class Dbl {
             $dblink = self::$default_dblink;
         }
         $utf8 = $dblink->server_version >= 50503 ? "utf8mb4" : "utf8";
-        return "convert($qstr using $utf8)";
+        return "convert({$qstr} using {$utf8})";
     }
 
     /** @param string $str
