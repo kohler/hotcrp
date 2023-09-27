@@ -396,7 +396,8 @@ td.vbar {
    * a.qo: color inherit/link + underline inherit/inherit (a.qh.noul)
    * u.x: underline when in a:hover */
 a.qh, a.noq, a.noq:hover, a.q, a.qo, a.btn, a.btn:hover,
-.is-error a, .is-warning a, .is-note a, .is-warning-note a, .is-urgent-note a,
+.is-error a, .is-warning a, .is-success a, .is-note a,
+.is-warning-note a, .is-urgent-note a,
 .btn-qlink, .btn-qolink, .btn-ulink,
 button.q, button.qo {
 	color: inherit;
@@ -2430,8 +2431,8 @@ select.has-warning {
 .msg .is-note,
 .tooltip .is-error,
 .tooltip .is-warning,
-.tooltip .is-note,
 .tooltip .is-success,
+.tooltip .is-note,
 .tooltip .is-urgent-note,
 .tooltip .is-warning-note {
 	color: inherit;
