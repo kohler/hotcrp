@@ -43,6 +43,8 @@ class SavePapers_Batch {
     public $ziparchive;
     /** @var ?string */
     public $document_directory;
+    /** @var ?list<callable> */
+    private $callbacks;
     /** @var ?string */
     private $_ziparchive_json;
 
@@ -169,6 +171,10 @@ class SavePapers_Batch {
         }
     }
 
+    function add_callback($callback) { // for use by filters
+        $this->callbacks[] = $callback;
+    }
+
     function run_one($index, $j) {
         $pidish = Paper_API::analyze_json_pid($this->conf, $j, $this->pidflags);
         if (!$pidish) {
@@ -259,6 +265,14 @@ class SavePapers_Batch {
                 fwrite(STDERR, $prefix . $mi->message_as(0) . "\n");
             }
             $this->tf->clear_messages();
+        }
+
+        if ($this->callbacks) {
+            $prow = $this->conf->paper_by_id($pid, $this->user);
+            while (!empty($this->callbacks)) {
+                $cb = array_shift($this->callbacks);
+                $cb($prow, $this);
+            }
         }
 
         if ($ps->has_change() && $this->log && !$this->dry_run) {
