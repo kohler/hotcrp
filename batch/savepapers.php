@@ -194,7 +194,7 @@ class SavePapers_Batch {
 
         foreach ($this->filters as $f) {
             if ($j)
-                $j = call_user_func($f, $j, $this->conf, $this->ziparchive, $this->document_directory);
+                $j = call_user_func($f, $j, $this->conf, $this);
         }
         if (!$j) {
             fwrite(STDERR, "{$pidtext}{$titletext}filtered out\n");
