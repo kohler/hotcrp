@@ -52,6 +52,7 @@ class UpdateContactdb_Batch {
             throw new ErrorException("Conference is not recorded in contactdb");
         }
         $this->cdb_confid = $this->confrow->confid = (int) $this->confrow->confid;
+        $this->confrow->conf_flags = (int) $this->confrow->conf_flags;
         $qf = $qv = [];
         if ($this->conf->short_name !== $this->confrow->shortName) {
             $qf[] = "shortName=?";
@@ -220,6 +221,7 @@ class UpdateContactdb_Batch {
         }
         $result->close();
 
+        $subcount_type = ($this->confrow->conf_flags & 15);
         $result = Dbl::ql($this->conf->dblink, "select paperId, title, timeSubmitted, exists (select * from PaperReview where paperId=Paper.paperId and reviewModified>0) from Paper");
         $max_submitted = 0;
         $nsubmitted = 0;
@@ -228,14 +230,19 @@ class UpdateContactdb_Batch {
         while (($row = $result->fetch_row())) {
             $pid = (int) $row[0];
             $pids[] = $pid;
-            $st = (int) $row[2];
+            $timeSubmitted = (int) $row[2];
+            $has_review = (int) $row[3] > 0;
             $erow = $epapers[$pid] ?? null;
-            if (!$erow || $erow->title !== $row[1] || $erow->timeSubmitted !== $st) {
-                $qv[] = [$this->cdb_confid, $pid, $row[1], $st];
+            if (!$erow
+                || $erow->title !== $row[1]
+                || $erow->timeSubmitted !== $timeSubmitted) {
+                $qv[] = [$this->cdb_confid, $pid, $row[1], $timeSubmitted];
             }
             unset($epapers[$pid]);
-            $max_submitted = max($max_submitted, $st);
-            if ($st > 0 || ($st < 0 && (int) $row[3] > 0)) {
+            $max_submitted = max($max_submitted, abs($timeSubmitted));
+            if ($timeSubmitted > 0
+                || ($timeSubmitted < 0
+                    && ($has_review || $subcount_type === 1))) {
                 ++$nsubmitted;
             }
         }
