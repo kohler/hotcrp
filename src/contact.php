@@ -5555,6 +5555,8 @@ class Contact implements JsonSerializable {
             return $reviewId;
         } else if ($oldtype === 0) {
             $round = $round ?? $this->conf->assignment_round($type === REVIEW_EXTERNAL);
+            assert($round !== null); // `null` should not happen
+            $round = $round ?? 0;
             if (($new_requester = $extra["requester_contact"] ?? null)) {
                 $new_requester_cid = $new_requester->contactId;
             }
