@@ -1048,6 +1048,30 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         return $options_array;
     }
 
+    private function v280_filter_download_log() {
+        $result = $this->conf->ql("select * from ActionLog where (action='Download paper' or action='Download final' or action='Download submission') and paperId is not null order by logId");
+        $byp = [];
+        $dels = [];
+        while (($row = $result->fetch_object())) {
+            $pid = (int) $row->paperId;
+            if (($xrow = $byp[$pid] ?? null)
+                && $row->ipaddr === $xrow->ipaddr
+                && $row->action === $xrow->action
+                && $row->contactId === $xrow->contactId
+                && $row->destContactId === $xrow->destContactId
+                && $row->trueContactId === $xrow->trueContactId
+                && $row->timestamp < $xrow->timestamp + 3600) {
+                $dels[] = (int) $row->logId;
+            } else {
+                $byp[$pid] = $row;
+            }
+        }
+        $result->close();
+        if (!empty($dels)) {
+            $this->conf->ql("delete from ActionLog where logId?a", $dels);
+        }
+    }
+
     /** @return bool */
     function run() {
         $conf = $this->conf;
@@ -2794,6 +2818,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             || $conf->sversion === 277
             || $conf->sversion === 278) {
             $conf->update_schema_version(279);
+        }
+        if ($conf->sversion === 279) {
+            $this->v280_filter_download_log();
+            $conf->update_schema_version(280);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
