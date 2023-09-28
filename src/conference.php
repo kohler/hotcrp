@@ -1618,10 +1618,8 @@ class Conf {
         // Also see `settings.js`
         if ((string) $rname === "") {
             return "Round name required";
-        } else if (!preg_match('/\A[a-zA-Z][-_a-zA-Z0-9]*\z/', $rname)) {
-            return "Round names must start with a letter and contain only letters, numbers, and dashes";
-        } else if (str_ends_with($rname, "_") || str_ends_with($rname, "-")) {
-            return "Round names must not end in a dash";
+        } else if (!preg_match('/\A[a-zA-Z](?:[a-zA-Z0-9]|[-_][a-zA-Z0-9])*\z/', $rname)) {
+            return "Invalid round name (must start with a letter and contain only letters, numbers, and dashes)";
         } else if (preg_match('/\A(?:none|any|all|span|default|undefined|unnamed|.*(?:draft|response|review)|(?:draft|response).*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc|ext(?:ernal)|meta)\z/i', $rname)) {
             return "Round name ‘{$rname}’ is reserved";
         } else {

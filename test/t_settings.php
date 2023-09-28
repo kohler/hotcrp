@@ -1364,7 +1364,7 @@ class Settings_Tester {
         xassert(!isset($x->changes));
         xassert(is_object($x->settings));
         xassert_eqq($x->settings->review_blind, "blind");
-        xassert_eqq($x->settings->rf[5]["required"], false);
+        xassert_eqq($x->settings->rf[5]->required, false);
 
         $sa = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
 
@@ -1690,5 +1690,48 @@ class Settings_Tester {
         $this->conf->save_refresh_setting("opt.contactEmail", null);
         unset($this->conf->opt_override["contactName"]);
         unset($this->conf->opt_override["contactEmail"]);
+    }
+
+    function test_default_review_round() {
+        xassert_eqq($this->conf->assignment_round_option(false), "Fart");
+        xassert_eqq($this->conf->assignment_round_option(true), "Fart");
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"review":[{"name":"Butt","delete":true},{"name":"Fart","delete":true},{"name":"R1"},{"name":"R2"}]}');
+        xassert($sv->execute());
+
+        xassert_eqq($this->conf->setting_data("tag_rounds"), "; ; R1 R2");
+        xassert_eqq($this->conf->assignment_round_option(false), "R1");
+        xassert_eqq($this->conf->assignment_round_option(true), "R1");
+
+        $sv = new SettingValues($this->u_chair);
+        $j = $sv->all_jsonv();
+        xassert_eqq($j->review[0]->name, "R1");
+        xassert_eqq($j->review[0]->id, 4);
+        xassert_eqq($this->conf->round_name(3), "R1");
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"review":[{"id":4,"name":"RR1"}]}');
+        xassert($sv->execute());
+
+        xassert_eqq($this->conf->setting_data("tag_rounds"), "; ; RR1 R2");
+        xassert_eqq($this->conf->assignment_round_option(false), "RR1");
+        xassert_eqq($this->conf->assignment_round_option(true), "RR1");
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"review":[{"id":4,"name":"R1"}],"review_default_round":"RR1"}');
+        xassert(!$sv->execute());
+
+        xassert_eqq($this->conf->round_name(3), "RR1");
+        xassert_eqq($this->conf->assignment_round_option(false), "RR1");
+        xassert_eqq($this->conf->assignment_round_option(true), "RR1");
+
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"review":[{"id":4,"name":"R1"}],"review_default_round":"R1"}');
+        xassert($sv->execute());
+
+        xassert_eqq($this->conf->round_name(3), "R1");
+        xassert_eqq($this->conf->assignment_round_option(false), "R1");
+        xassert_eqq($this->conf->assignment_round_option(true), "R1");
     }
 }

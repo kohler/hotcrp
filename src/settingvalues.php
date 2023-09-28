@@ -770,7 +770,7 @@ class SettingValues extends MessageSet {
                     $o[$member] = $v;
                 }
             }
-            return empty($o) ? (object) $o : $o;
+            return (object) $o;
         }
         return $si->base_unparse_jsonv($this->choosev($si, $new), $this);
     }

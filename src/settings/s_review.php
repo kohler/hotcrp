@@ -337,15 +337,13 @@ class Review_SettingParser extends SettingParser {
             return $this->apply_review_req($si, $sv);
         } else if ($si->name === "review_default_round"
                    || $si->name === "review_default_external_round") {
-            if (($n = $sv->reqstr($si->name)) !== null
-                && $n !== $sv->oldv($si)) {
+            if (($n = $sv->reqstr($si->name)) !== null) {
                 $this->apply_review_default_round($si, $sv, trim($n));
             }
             return true;
         } else if ($si->name === "review_default_round_index"
                    || $si->name === "review_default_external_round_index") {
-            if (($n = $sv->reqstr($si->name)) !== null
-                && $n !== $sv->oldv($si)) {
+            if (($n = $sv->reqstr($si->name)) !== null) {
                 $this->apply_review_default_round_index($si, $sv, trim($n));
             }
             return true;
@@ -373,25 +371,37 @@ class Review_SettingParser extends SettingParser {
     private function apply_review_req(Si $si, SettingValues $sv) {
         $rss = [];
         $old_rsid = [];
+        $name_map = [];
+        $first_nondeleted = null;
         $latest = null;
         foreach ($sv->oblist_nondeleted_keys("review") as $ctr) {
             $pfx = "review/{$ctr}";
-            $rs = $sv->newv($pfx);
-            if ($sv->oldv("{$pfx}/soft") !== $sv->newv("{$pfx}/soft")
-                || $sv->oldv("{$pfx}/done") !== $sv->newv("{$pfx}/done")) {
+            $ors = $sv->oldv($pfx);
+            $nrs = $sv->newv($pfx);
+            if ($nrs->id <= 0
+                || $nrs->soft !== $ors->soft
+                || $nrs->done !== $ors->done) {
                 $sv->check_date_before("review/{$ctr}/soft", "review/{$ctr}/done", false);
             }
-            if ($sv->oldv("{$pfx}/external_soft") !== $sv->newv("{$pfx}/external_soft")
-                || $sv->oldv("{$pfx}/external_done") !== $sv->newv("{$pfx}/external_done")) {
+            if ($nrs->id <= 0
+                || $nrs->external_soft !== $ors->external_soft
+                || $nrs->external_done !== $ors->external_done) {
                 $sv->check_date_before("review/{$ctr}/external_soft", "review/{$ctr}/external_done", false);
             }
-            $rss[] = $rs;
-            if ($rs->id > 0) {
-                $old_rsid[$rs->id] = $rs;
+            $rss[] = $nrs;
+            if ($nrs->id > 0) {
+                $old_rsid[$nrs->id] = $nrs;
+                $name_map[$ors->name] = $nrs->name;
+                if ($ors->name === "") {
+                    $name_map["unnamed"] = $nrs->name;
+                }
+            }
+            if (!$first_nondeleted) {
+                $first_nondeleted = $nrs;
             }
             if (!$latest
-                || ($latest->soft > 0 && $rs->soft > 0 && $latest->soft < $rs->soft)) {
-                $latest = $rs;
+                || ($latest->soft > 0 && $nrs->soft > 0 && $latest->soft < $nrs->soft)) {
+                $latest = $nrs;
             }
         }
 
@@ -457,6 +467,24 @@ class Review_SettingParser extends SettingParser {
             }
         }
         $sv->save("tag_rounds", join(" ", $tag_rounds));
+
+        // update default rounds based on new names
+        $first_nondeleted_name = $first_nondeleted ? $first_nondeleted->name : "unnamed";
+        if (!$sv->has_req("review_default_round")
+            && !$sv->has_req("review_default_round_index")) {
+            $oldr = $sv->oldv("review_default_round");
+            if ($oldr !== ($newr = $name_map[$oldr] ?? $first_nondeleted_name)) {
+                $sv->save("rev_roundtag", self::clean_name($newr, false));
+            }
+        }
+        if (!$sv->has_req("review_default_external_round")
+            && !$sv->has_req("review_default_external_round_index")) {
+            $oldr = $sv->oldv("review_default_external_round");
+            if ($oldr !== ""
+                && $oldr !== ($newr = $name_map[$oldr] ?? $first_nondeleted_name)) {
+                $sv->save("extrev_roundtag", self::clean_name($newr, true));
+            }
+        }
 
         // remove old deadlines, renumber reviews from deleted rounds
         $rnum_bound = max(0, 0, ...array_keys($defined_rounds)) + 1;
