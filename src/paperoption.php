@@ -122,7 +122,8 @@ class PaperOption implements JsonSerializable {
         "slides" => "+Document_PaperOption",
         "video" => "+Document_PaperOption",
         "document" => "+Document_PaperOption",
-        "attachments" => "+Attachments_PaperOption"
+        "attachments" => "+Attachments_PaperOption",
+        "topics" => "+Topics_PaperOption"
     ];
 
     /** @param stdClass|Sf_Setting $args

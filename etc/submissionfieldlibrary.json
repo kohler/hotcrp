@@ -87,6 +87,14 @@
         "type": "attachments"
     },
     {
+        "legend": "Additional topic selector",
+        "type": "topics",
+        "sample_view": {
+            "name": "Topic selector",
+            "description": "Use topic selector fields to collect different kinds of topic entries, such as to distinguish a paper’s primary and secondary topics. Topic selectors use the conference’s global list of topics."
+        }
+    },
+    {
         "legend": "Section break",
         "type": "separator",
         "sample_view": {

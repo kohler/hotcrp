@@ -59,6 +59,10 @@
         "function": "+Attachments_PaperOption"
     },
     {
+        "name": "topics", "title": "Topics", "order": 800,
+        "function": "+Topics_PaperOption"
+    },
+    {
         "name": "separator", "title": "Section break", "order": 10000,
         "function": "+Separator_PaperOption",
         "placeholders": {"name": "Optional section title"},

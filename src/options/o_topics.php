@@ -53,13 +53,19 @@ class Topics_PaperOption extends CheckboxesBase_PaperOption {
 
 
     function value_force(PaperValue $ov) {
-        $vs = $ov->prow->topic_list();
-        $ov->set_value_data($vs, array_fill(0, count($vs), null));
+        if ($this->id === PaperOption::TOPICSID) {
+            $vs = $ov->prow->topic_list();
+            $ov->set_value_data($vs, array_fill(0, count($vs), null));
+        }
     }
 
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        $ps->change_at($this);
-        $ov->prow->set_prop("topicIds", join(",", $ov->value_list()));
-        return true;
+        if ($this->id === PaperOption::TOPICSID) {
+            $ps->change_at($this);
+            $ov->prow->set_prop("topicIds", join(",", $ov->value_list()));
+            return true;
+        } else {
+            return false;
+        }
     }
 }
