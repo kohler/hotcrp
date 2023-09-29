@@ -2928,7 +2928,7 @@ function override_deadlines(callback) {
     let self = this, hc;
     function default_callback() {
         self.form.hotcrpSubmitter = null;
-        for (let v of self.getAttribute("data-override-submit").split("&")) {
+        for (let v of (self.getAttribute("data-override-submit") || "").split("&")) {
             if (v !== "") {
                 const eq = v.indexOf("="),
                     key = eq < 0 ? v : v.substring(0, eq),
