@@ -3909,11 +3909,11 @@ a.badge-white:hover {
 	width: 12px;
 	height: 6px;
 }
-.bubtail.tooltip {
+.bubble.tooltip > .bubtail {
 	width: 8px;
 	height: 4px;
 }
-.bubtail.suggest {
+.bubble.suggest > .bubtail {
 	width: 0;
 	height: 0;
 }

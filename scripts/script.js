@@ -2230,9 +2230,9 @@ return function (content, bubopt) {
         color = bubopt.color ? " " + bubopt.color : "";
 
     var bubdiv = $e("div", "bubble" + color,
-        $e("div", "bubtail bubtail0" + color),
+        $e("div", "bubtail bubtail0"),
         $e("div", "bubcontent"),
-        $e("div", "bubtail bubtail1" + color));
+        $e("div", "bubtail bubtail1"));
     bubdiv.setAttribute("style", "margin:0");
     bubdiv.firstChild.setAttribute("style", "width:0;height:0");
     bubdiv.lastChild.setAttribute("style", "width:0;height:0");
@@ -2244,8 +2244,9 @@ return function (content, bubopt) {
     var divbw = null;
 
     function change_tail_direction() {
-        var bw = [0, 0, 0, 0], trw = sizes[1], trh = sizes[0] / 2;
-        divbw = parseFloat($(bubdiv).css(cssborder(dir, "Width")));
+        const bw = [0, 0, 0, 0], trw = sizes[1], trh = sizes[0] / 2,
+            divsty = window.getComputedStyle(bubdiv);
+        divbw = parseFloat(divsty[cssborder(dir, "Width")]);
         divbw !== divbw && (divbw = 0); // eliminate NaN
         bw[dir^1] = bw[dir^3] = trh + "px";
         bw[dir^2] = trw + "px";
@@ -2254,22 +2255,24 @@ return function (content, bubopt) {
         bw[dir^2] = trw + "px";
         bubch[2].style.borderWidth = bw.join(" ");
 
-        for (var i = 1; i <= 3; ++i)
+        for (var i = 1; i <= 3; ++i) {
             bubch[0].style[lcdir[dir^i]] = bubch[2].style[lcdir[dir^i]] = "";
+        }
         bubch[0].style[lcdir[dir]] = (-trw - divbw) + "px";
         // Offset the inner triangle so that the border width in the diagonal
         // part of the tail, is visually similar to the border width
         var trdelta = (divbw / trh) * Math.sqrt(trw * trw + trh * trh);
         bubch[2].style[lcdir[dir]] = (-trw - divbw + trdelta) + "px";
 
-        for (i = 0; i < 3; i += 2)
+        for (i = 0; i < 3; i += 2) {
             bubch[i].style.borderLeftColor = bubch[i].style.borderRightColor =
             bubch[i].style.borderTopColor = bubch[i].style.borderBottomColor = "transparent";
+        }
 
-        var yc = to_rgba($(bubdiv).css("backgroundColor")).replace(/([\d.]+)\)/, function (s, p1) {
+        var yc = to_rgba(divsty.backgroundColor).replace(/([\d.]+)\)/, function (s, p1) {
             return (0.75 * p1 + 0.25) + ")";
         });
-        bubch[0].style[cssbc(dir^2)] = $(bubdiv).css(cssbc(dir));
+        bubch[0].style[cssbc(dir^2)] = divsty[cssbc(dir)];
         bubch[2].style[cssbc(dir^2)] = yc;
     }
 
