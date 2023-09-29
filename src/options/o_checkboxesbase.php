@@ -46,11 +46,11 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
             if ($this->min_count > 0
                 && !$ov->prow->allow_absent()
                 && $ov->value_count() < $this->min_count) {
-                $ov->error($this->conf->_("<0>Select at least {0} values", $this->min_count, new FmtArg("id", $this->readable_formid())));
+                $ov->error($this->conf->_("<0>At least {min} selections required", new FmtArg("min", $this->min_count), new FmtArg("max", $this->max_count), new FmtArg("type", $this->type)));
             }
             if ($this->max_count > 0
                 && $ov->value_count() > $this->max_count) {
-                $ov->error($this->conf->_("<0>Select at most {0} values", $this->max_count, new FmtArg("id", $this->readable_formid())));
+                $ov->error($this->conf->_("<0>At most {max} selections allowed", new FmtArg("min", $this->min_count), new FmtArg("max", $this->max_count), new FmtArg("type", $this->type)));
             }
         }
     }
@@ -75,7 +75,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
 
         $badvs = $ov->anno("bad_values") ?? [];
         if (!empty($badvs)) {
-            $ov->warning($ps->_("<0>Values {:list} not found", $badvs, new FmtArg("id", $this->readable_formid())));
+            $ov->warning($ps->_("<0>Options {:list} not found", $badvs, new FmtArg("type", $this->type)));
         }
     }
 
@@ -87,6 +87,14 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         foreach ($this->topic_set() as $tid => $tname) {
             $v = $qreq["{$this->formid}:{$tid}"] ?? "";
             if ($v !== "" && $v !== "0") {
+                $vs[] = $tid;
+            }
+        }
+        $v = $qreq[$this->formid] ?? "";
+        if ($v !== "" && $v !== "0" && ctype_digit($v)) {
+            $tid = intval($v);
+            if ($this->topic_set()->name($tid) !== null
+                && !in_array($tid, $vs)) {
                 $vs[] = $tid;
             }
         }
@@ -148,6 +156,14 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         return $ov;
     }
 
+    private function render_checkbox($tid, $checked, $arg) {
+        if ($this->max_count === 1) {
+            return Ht::radio($this->formid, $tid, $checked, $arg);
+        } else {
+            return Ht::checkbox("{$this->formid}:{$tid}", 1, $checked, $arg);
+        }
+    }
+
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $pt->print_editable_option_papt($this, null, [
             "id" => $this->readable_formid(),
@@ -168,7 +184,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
                     $arg["data-default-checked"] = in_array($tg->tid, $ov->value_list());
                     $checked = in_array($tg->tid, $reqov->value_list());
                     echo '<label class="checki cteltx"><span class="checkc">',
-                        Ht::checkbox("{$this->formid}:{$tg->tid}", 1, $checked, $arg),
+                        $this->render_checkbox($tg->tid, $checked, $arg),
                         '</span>', $topicset->unparse_name_html($tg->tid), '</label>';
                 } else {
                     echo '<div class="cteltx"><span class="topicg">',
@@ -186,7 +202,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
                 $checked = in_array($tid, $reqov->value_list());
                 echo ($isgroup ? '<label class="checki cteltx">' : '<li class="ctelt"><label class="checki ctelti">'),
                     '<span class="checkc">',
-                    Ht::checkbox("{$this->formid}:{$tid}", 1, $checked, $arg),
+                    $this->render_checkbox($tid, $checked, $arg),
                     '</span>', $tname, '</label>',
                     ($isgroup ? '' : '</li>');
             }
@@ -218,11 +234,11 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
                 if ($keyword !== null) {
                     $x = Ht::link($x, $this->conf->hoturl("search", ["q" => "{$keyword}:" . SearchWord::quote($tname)]), ["class" => "q"]);
                 }
-                $ts[] = $t . '">' . $x . '</li>';
+                $ts[] = "{$t}\">{$x}</li>";
                 $lenclass = TopicSet::max_topici_lenclass($lenclass, $tname);
             }
             $fr->title = $this->title(count($ts));
-            $fr->set_html('<ul class="topict topict-' . $lenclass . '">' . join("", $ts) . '</ul>');
+            $fr->set_html("<ul class=\"topict topict-{$lenclass}\">" . join("", $ts) . '</ul>');
             $fr->value_long = true;
         }
     }
