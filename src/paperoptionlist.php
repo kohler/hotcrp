@@ -143,16 +143,12 @@ class PaperOptionList implements IteratorAggregate {
             if (($xv = $vconf->opt("maxAuthors") ?? 0) > 0) {
                 $map[PaperOption::AUTHORSID]->max = $xv;
             }
-            if (!$vconf->setting("has_topics")) {
-                $map[PaperOption::TOPICSID]->exists_if = "NONE";
-            } else {
-                $xv = $vconf->setting("topic_min");
-                $xv1 = $vconf->setting("topic_max");
-                if ($xv > 0 || $xv1 > 0) {
-                    $map[PaperOption::TOPICSID]->min = $xv;
-                    $map[PaperOption::TOPICSID]->max = $xv1;
-                    $map[PaperOption::TOPICSID]->required = $xv > 0;
-                }
+            $xv = $vconf->setting("topic_min");
+            $xv1 = $vconf->setting("topic_max");
+            if ($xv > 0 || $xv1 > 0) {
+                $map[PaperOption::TOPICSID]->min = $xv;
+                $map[PaperOption::TOPICSID]->max = $xv1;
+                $map[PaperOption::TOPICSID]->required = $xv > 0;
             }
             $xv = $vconf->setting("sub_pcconf");
             $xv1 = $vconf->setting("sub_pcconfsel");
