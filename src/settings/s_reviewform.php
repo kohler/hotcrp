@@ -188,7 +188,7 @@ class ReviewForm_SettingParser extends SettingParser {
             return false;
         }
         if (($rfv->name ?? "") !== ""
-            && $sv->error_if_duplicate_member($vpfx, $ctr, "name", "Field value")) {
+            && $sv->error_if_duplicate_member($vpfx, $ctr, "name", "Field value", true)) {
             return false;
         }
         $rfv->symbol = $symbol;

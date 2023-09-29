@@ -50,6 +50,8 @@ class SettingValues extends MessageSet {
     private $_oblist_ctrmap = [];
     /** @var array<string,object> */
     private $_object_parsingv = [];
+    /** @var Collator */
+    private $_icollator;
 
     /** @var array<string,array{?int,?string}> */
     private $_savedv = [];
@@ -92,6 +94,9 @@ class SettingValues extends MessageSet {
                 $this->perm[] = $ti[1] >= 0;
             }
         }
+        $this->_icollator = new Collator("en_US.utf8");
+        $this->_icollator->setAttribute(Collator::NUMERIC_COLLATION, Collator::ON);
+        $this->_icollator->setAttribute(Collator::STRENGTH, Collator::SECONDARY);
     }
 
     /** @param Qrequest|array<string,string|int|float> $qreq */
@@ -1002,8 +1007,9 @@ class SettingValues extends MessageSet {
      * @param int|string $ctr
      * @param string $sfx
      * @param string $description
+     * @param bool $case_sensitive
      * @return bool */
-    function error_if_duplicate_member($pfx, $ctr, $sfx, $description) {
+    function error_if_duplicate_member($pfx, $ctr, $sfx, $description, $case_sensitive = false) {
         // NB: $pfx may or may not end with `/`; $sfx may or may not begin with `/`
         if (!str_ends_with($pfx, "/")) {
             $pfx .= "/";
@@ -1017,7 +1023,7 @@ class SettingValues extends MessageSet {
             return false;
         }
         $oim = $this->swap_ignore_messages(true);
-        $collator = $this->conf->collator();
+        $collator = $case_sensitive ? $this->conf->collator() : $this->_icollator;
         $v0 = $this->base_parse_req("{$pfx}{$ctr}{$sfx}");
         $badctr = null;
         for ($ctr1 = $ctr + 1; array_key_exists("{$pfx}{$ctr1}/id", $this->req); ++$ctr1) {
