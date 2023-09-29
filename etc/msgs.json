@@ -83,7 +83,7 @@
     ["field_description/edit", "topics", "<0>Select at least one topic that applies to your submission.", ["{min}=1", "!{max}"]],
     ["field_description/edit", "topics", "<0>Select at most {1} topics that apply to your submission.", ["!{min}", "{max}>0"]],
     ["field_description/edit", "topics", "<0>Select at most one topic that applies to your submission.", ["!{min}", "{max}=1"]],
-    ["field_description/edit", "pc_conflicts", "<0>Select the PC members who have conflicts of interest with this submission. {conflictdef}"],
+    ["field_description/edit", "pc_conflicts", "<5>Select the PC members who have conflicts of interest with this submission. {conflictdef}"],
     ["field_description/edit", "collaborators", "<5><p>List other people and institutions with which the authors have conflicts of interest. We use this information when assigning external reviews. Collaborators declared on the authors’ HotCRP profiles need not be repeated here.</p><p><strong>Enter one conflict per line.</strong> Use parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p>"],
     ["field_description/edit", "collaborators", "<5><p>List people and institutions with which the authors have conflicts of interest. {conflictdef} Be sure to include conflicted PC members. We use this information when assigning PC and external reviews. Collaborators declared on the authors’ HotCRP profiles need not be repeated here.</p><p><strong>Enter one conflict per line.</strong> Use parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p>", ["!setting.sub_pcconf"]],
 
