@@ -5,6 +5,9 @@
 class Topics_PaperOption extends CheckboxesBase_PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
+        if (!$this->conf->has_topics()) {
+            $this->override_exists_condition(false);
+        }
     }
 
     function jsonSerialize() {

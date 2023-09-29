@@ -75,6 +75,8 @@ class PaperOption implements JsonSerializable {
     public $classes;
     /** @var ?string */
     private $exists_if;
+    /** @var -1|0|1 */
+    private $_exists_state;
     /** @var ?SearchTerm */
     private $_exists_term;
     /** @var ?string */
@@ -252,7 +254,7 @@ class PaperOption implements JsonSerializable {
         if ($this->page_order === false) {
             $this->render_contexts &= ~FieldRender::CFPAGE;
         }
-        if ($this->exists_if === "NONE") {
+        if ($this->_exists_state < 0) {
             $this->render_contexts &= ~(FieldRender::CFFORM | FieldRender::CFPAGE);
         }
     }
@@ -442,7 +444,7 @@ class PaperOption implements JsonSerializable {
     function always_visible() {
         return $this->_visibility === self::VIS_SUB
             && !$this->_phase
-            && $this->exists_if === null;
+            && $this->_exists_state > 0;
     }
 
     /** @param null|bool|string $expr
@@ -472,7 +474,7 @@ class PaperOption implements JsonSerializable {
             return null;
         }
     }
-    /** @param $x null|bool|string|SearchTerm
+    /** @param null|bool|string|SearchTerm $x
      * @suppress PhanAccessReadOnlyProperty */
     final function set_exists_condition($x) {
         // NB It is important to NOT instantiate the search term yet!
@@ -500,13 +502,36 @@ class PaperOption implements JsonSerializable {
                 $this->_exists_term = null;
             }
         }
+        if ($this->exists_if === null) {
+            $this->_exists_state = 1;
+        } else if ($this->exists_if === "NONE") {
+            $this->_exists_state = -1;
+        } else {
+            $this->_exists_state = 0;
+        }
+        if ($this->render_contexts !== null) {
+            $this->set_render_contexts();
+        }
+    }
+    /** @param ?bool $x */
+    final function override_exists_condition($x) {
+        if ($x === true || ($x === null && $this->exists_if === null)) {
+            $this->_exists_state = 1;
+            $this->_exists_term = null;
+        } else if ($x === false || ($x === null && $this->exists_if === "NONE")) {
+            $this->_exists_state = -1;
+            $this->_exists_term = new False_SearchTerm;
+        } else {
+            $this->_exists_state = 0;
+            $this->_exists_term = null;
+        }
         if ($this->render_contexts !== null) {
             $this->set_render_contexts();
         }
     }
     /** @return SearchTerm */
     private function exists_term() {
-        if ($this->exists_if !== null && $this->_exists_term === null) {
+        if ($this->_exists_state === 0 && $this->_exists_term === null) {
             $s = new PaperSearch($this->conf->root_user(), $this->exists_if);
             $s->set_expand_automatic(true);
             $this->_exists_term = $s->full_term();
@@ -517,12 +542,11 @@ class PaperOption implements JsonSerializable {
     }
     /** @return bool */
     final function test_can_exist() {
-        return $this->exists_if !== "NONE";
+        return $this->_exists_state >= 0;
     }
     /** @return bool */
     final function has_complex_exists_condition() {
-        return $this->exists_if !== null
-            && $this->exists_if !== "NONE";
+        return $this->_exists_state === 0;
     }
     /** @return bool */
     final function is_final() {
@@ -536,8 +560,8 @@ class PaperOption implements JsonSerializable {
         if ($this->_phase !== null
             && $prow->phase() !== $this->_phase) {
             return false;
-        } else if ($this->exists_if === null) {
-            return true;
+        } else if ($this->_exists_state !== 0) {
+            return $this->_exists_state > 0;
         } else if (++$this->_recursion > 5) {
             throw new ErrorException("Recursion in {$this->name}::test_exists");
         } else {
@@ -551,7 +575,7 @@ class PaperOption implements JsonSerializable {
         }
     }
     final function exists_script_expression(PaperInfo $prow) {
-        if ($this->exists_if === null) {
+        if ($this->_exists_state > 0) {
             return null;
         } else {
             return $this->exists_term()->script_expression($prow);
@@ -771,6 +795,7 @@ class PaperOption implements JsonSerializable {
         $sfs->required = $this->required;
         $sfs->exists_if = $this->exists_if
             ?? ($this->_phase === PaperInfo::PHASE_FINAL ? "phase:final" : "ALL");
+        $sfs->exists_disabled = $this->_exists_state < 0;
         $sfs->editable_if = $this->editable_if ?? "ALL";
         $sfs->source_option = $this;
         return $sfs;

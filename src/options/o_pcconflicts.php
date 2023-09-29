@@ -21,7 +21,7 @@ class PCConflicts_PaperOption extends PaperOption {
         } else {
             $this->visible_if = $this->exists_condition();
         }
-        $this->set_exists_condition(true);
+        $this->override_exists_condition(true);
         $this->selectors = !!($args->selectors ?? false);
     }
     /** @return array<int,int> */

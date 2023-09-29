@@ -380,7 +380,7 @@ class Options_SettingParser extends SettingParser {
 
 
     private function print_one_option_view(PaperOption $io, SettingValues $sv, $ctr) {
-        $disabled = strcasecmp($this->sfs->exists_if, "none") === 0;
+        $disabled = $this->sfs->exists_disabled;
         echo '<div id="sf/', $ctr, '/view" class="settings-xf-view fn2 ui js-foldup">';
         if ($disabled) {
             $this->pt->msg_at($io->formid, "<0>This field is currently disabled", MessageSet::URGENT_NOTE);
@@ -406,13 +406,12 @@ class Options_SettingParser extends SettingParser {
             $this->pt->msg_at($io->formid, $mi->message, $mi->status > 0 ? MessageSet::WARNING_NOTE : $mi->status);
         }
         $ei = $io->editable_condition();
-        $xi = $io->exists_condition();
         $io->set_editable_condition(true);
-        $io->set_exists_condition(true);
+        $io->override_exists_condition(true);
         $ov = $this->pt->prow->force_option($io);
         $io->print_web_edit($this->pt, $ov, $ov);
         $io->set_editable_condition($ei);
-        $io->set_exists_condition($xi);
+        $io->override_exists_condition(null);
         echo '</div>';
     }
 
@@ -432,7 +431,7 @@ class Options_SettingParser extends SettingParser {
 
         echo '<div id="sf/', $ctr, '" class="settings-xf settings-sf ',
             $this->sfs->existed ? '' : 'is-new ',
-            strcasecmp($this->sfs->exists_if, "none") === 0 ? 'settings-xf-disabled ' : '',
+            $this->sfs->exists_disabled ? 'settings-xf-disabled ' : '',
             $this->sfs->source_option->is_final() ? 'settings-sf-final ' : '',
             'has-fold fold2o ui-fold js-fold-focus hidden">';
         if ($this->sfs->option_id !== PaperOption::TITLEID) {

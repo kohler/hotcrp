@@ -5,7 +5,9 @@
 class Nonblind_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        $this->set_exists_condition($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL);
+        if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL) {
+            $this->override_exists_condition(false);
+        }
     }
     function value_force(PaperValue $ov) {
         if (!$ov->prow->blind) {
