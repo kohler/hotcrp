@@ -2225,6 +2225,7 @@ return function (content, bubopt) {
         bubopt = {};
     else if (typeof bubopt === "string")
         bubopt = {color: bubopt};
+    const container = bubopt.container || document.body;
 
     var nearpos = null, dirspec = bubopt.anchor, dir = null,
         color = bubopt.color ? " " + bubopt.color : "";
@@ -2236,9 +2237,13 @@ return function (content, bubopt) {
     bubdiv.setAttribute("style", "margin:0");
     bubdiv.firstChild.setAttribute("style", "width:0;height:0");
     bubdiv.lastChild.setAttribute("style", "width:0;height:0");
-    document.body.appendChild(bubdiv);
-    if (bubopt["pointer-events"])
+    container.appendChild(bubdiv);
+    if (bubopt["pointer-events"]) {
         $(bubdiv).css({"pointer-events": bubopt["pointer-events"]});
+    }
+    if (container !== document.body) {
+        bubdiv.style.position = "absolute";
+    }
     var bubch = bubdiv.childNodes;
     var sizes = null;
     var divbw = null;
@@ -2445,9 +2450,14 @@ return function (content, bubopt) {
                 y = nearpos.top - sizes.bottom - bpos.height - sizes[1] - 1;
         }
 
-        if (bubsty.position === "fixed") {
+        if (bubsty.position === "fixed" || container !== document.body) {
             x -= window.scrollX;
             y -= window.scrollY;
+        }
+        if (container !== document.body) {
+            const cg = $(container).geometry();
+            x += container.scrollLeft - cg.x;
+            y += container.scrollTop - cg.y;
         }
         bubdiv.style.left = roundpixel(x) + "px";
         bubdiv.style.top = roundpixel(y) + "px";
@@ -2461,19 +2471,23 @@ return function (content, bubopt) {
 
     var bubble = {
         near: function (epos, reference) {
-            var i;
             if (typeof epos === "string" || epos.tagName || epos.jquery) {
                 epos = $(epos);
-                if (dirspec == null && epos[0])
+                if (dirspec == null && epos[0]) {
                     dirspec = epos[0].getAttribute("data-tooltip-anchor");
+                }
                 epos = epos.geometry(true);
             }
-            for (i = 0; i < 4; ++i)
+            for (let i = 0; i < 4; ++i) {
                 if (!(lcdir[i] in epos) && (lcdir[i ^ 2] in epos))
                     epos[lcdir[i]] = epos[lcdir[i ^ 2]];
-            if (reference && (reference = $(reference)) && reference.length
-                && reference[0] != window)
+            }
+            if (reference
+                && (reference = $(reference))
+                && reference.length
+                && reference[0] != window) {
                 epos = geometry_translate(epos, reference.geometry());
+            }
             nearpos = epos;
             show();
             return bubble;

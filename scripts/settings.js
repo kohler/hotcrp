@@ -2748,7 +2748,7 @@ function make_json_validate() {
         var tips = jsonhl_highlight_tips(lineel.getAttribute("data-highlight-tips")) || [];
         for (i = 0; i !== tips.length; ++i) {
             if (tips[i].pos1 <= pos && pos <= tips[i].pos2) {
-                msgbub = make_bubble({anchor: "nw", color: "feedback"})
+                msgbub = make_bubble({anchor: "nw", color: "feedback", container: mainel.parentElement})
                     .html(render_feedback_list([tips[i]]))
                     .near(node);
                 msgbub.span = node;
