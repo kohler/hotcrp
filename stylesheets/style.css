@@ -1899,6 +1899,7 @@ hr.dropmark {
 	overflow-y: visible;
 	margin: 0.5rem;
 	background-color: #f9fbfb;
+	position: relative;
 }
 .grid-option:hover {
 	border-color: #a5a5a5;
@@ -1924,6 +1925,9 @@ fieldset.grid-option.active > legend {
 	background: none;
 	opacity: 0.5;
 	padding: 0;
+	max-height: 50vh;
+	overflow-x: hidden;
+	overflow-y: auto;
 }
 .grid-option.active > .settings-xf-view {
 	opacity: 1;

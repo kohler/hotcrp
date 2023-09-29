@@ -3994,6 +3994,7 @@ function foldup(evt, opts) {
         opts = {};
     }
     if (!("open" in opts) && "f" in opts) {
+        log_jserror("opts.f provided, not opts.open");
         opts.open = !opts.f;
     }
     if (this.tagName === "DIV"
@@ -4056,7 +4057,6 @@ function foldup(evt, opts) {
     }
     wantopen = hasClass(e, foldname + "c");
     if (!("open" in opts) || !!opts.open === wantopen) {
-        opts.f = !wantopen; // XXX backward compat
         opts.open = wantopen;
         fold(e, !wantopen, opts.n || 0);
         $(e).trigger($.Event("foldtoggle", {which: opts}));

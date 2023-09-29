@@ -113,7 +113,7 @@ function settings_field_unfold(evt) {
         let ch = this.parentElement.firstChild;
         for (; ch; ch = ch.nextSibling) {
             if (ch !== this && hasClass(ch, "fold2o") && !form_differs(ch))
-                fold(ch, true, 2);
+                foldup.call(ch, null, {n: 2, open: false});
         }
         $(this).find("textarea").css("height", "auto").autogrow();
         $(this).find("input[type=text]").autogrow();
@@ -375,6 +375,7 @@ function add_dialog() {
         grid.addEventListener("keydown", grid_select_event);
         grid.addEventListener("click", grid_select_event);
         grid.addEventListener("dblclick", grid_select_event);
+        $(grid).children().each(settings_field_check_overflow);
         $d.find("form").on("submit", submit);
     }
     demand_load.submission_field_library().then(create);
