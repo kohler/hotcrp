@@ -167,11 +167,10 @@ class Doc_Page {
 
         // serve document
         $qreq->qsession()->commit();      // to allow concurrent clicks
-        $opts = ["attachment" => (stoi($qreq->save) ?? -1) > 0];
-        if ($doc->has_hash() && ($x = $qreq->hash) && $doc->check_text_hash($x)) {
-            $opts["cacheable"] = true;
-        }
-        if ($doc->download(DocumentRequest::add_connection_options($opts))) {
+        $dopt = DownloadOptions::make_server_request();
+        $dopt->attachment = (stoi($qreq->save) ?? -1) > 0;
+        $dopt->cacheable = $doc->has_hash() && ($x = $qreq->hash) && $doc->check_text_hash($x);
+        if ($doc->download($dopt)) {
             DocumentInfo::log_download_activity([$doc], $user);
         } else {
             self::error("500 Server Error", $doc->message_set(), $qreq);

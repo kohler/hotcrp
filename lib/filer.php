@@ -112,6 +112,86 @@ class HashAnalysis {
     }
 }
 
+class DownloadOptions {
+    /** @var ?string */
+    public $if_none_match;
+    /** @var ?string */
+    public $if_range;
+    /** @var ?list<array{int,int}> */
+    public $range;
+    /** @var bool */
+    public $head = false;
+    /** @var ?bool */
+    public $attachment;
+    /** @var bool */
+    public $single = false;
+    /** @var bool */
+    public $cacheable = false;
+    /** @var bool */
+    public $no_accel = false;
+
+    /** @var ?string */
+    public $etag;
+    /** @var ?int */
+    public $content_length;
+
+    /** @return DownloadOptions */
+    static function make_server_request() {
+        $dopt = new DownloadOptions;
+        $dopt->if_none_match = $_SERVER["HTTP_IF_NONE_MATCH"] ?? null;
+        $method = $_SERVER["REQUEST_METHOD"];
+        if ($method === "HEAD") {
+            $dopt->head = true;
+        } else if ($method === "GET") {
+            $dopt->if_range = $_SERVER["HTTP_IF_RANGE"] ?? null;
+        }
+        if ($method === "GET"
+            && ($range = $_SERVER["HTTP_RANGE"] ?? null) !== null
+            && preg_match('/\Abytes\s*=\s*(?:(?:\d+-\d+|-\d+|\d+-)\s*,?\s*)+\z/', $range)) {
+            $dopt->range = [];
+            $lastr = null;
+            preg_match_all('/\d+-\d+|-\d+|\d+-/', $range, $m);
+            foreach ($m[0] as $t) {
+                $dash = strpos($t, "-");
+                $r1 = $dash === 0 ? null : intval(substr($t, 0, $dash));
+                $r2 = $dash === strlen($t) - 1 ? null : intval(substr($t, $dash + 1));
+                if ($r1 === null && $r2 !== 0) {
+                    $dopt->range[] = $lastr = [$r1, $r2];
+                } else if ($r2 === null || ($r1 !== null && $r1 <= $r2)) {
+                    if ($lastr !== null
+                        && $lastr[0] !== null
+                        && $lastr[1] !== null
+                        && $r1 >= $lastr[0]
+                        && $r1 - $lastr[1] <= 100) {
+                        $nr = count($dopt->range);
+                        $dopt->range[$nr - 1][1] = $lastr[1] = $r2;
+                    } else {
+                        $dopt->range[] = $lastr = [$r1, $r2];
+                    }
+                } else {
+                    $dopt->range = null;
+                    break;
+                }
+            }
+        }
+        return $dopt;
+    }
+
+    /** @param ?string $e1
+     * @param ?string $e2
+     * @param bool $strong
+     * @return bool */
+    static function etag_equals($e1, $e2, $strong) {
+        if ($e1 === null || $e2 === null) {
+            return false;
+        }
+        $w1 = str_starts_with($e1, "W/");
+        $w2 = str_starts_with($e2, "W/");
+        return (!$w1 || !$w2 || !$strong)
+            && ($w1 ? substr($e1, 2) : $e1) === ($w2 ? substr($e2, 2) : $e2);
+    }
+}
+
 class Filer {
     static public $tempdir;
     static public $tempcounter = 0;
@@ -162,17 +242,23 @@ class Filer {
         }
     }
 
-    /** @param int $filesize
-     * @param array &$opts
+    /** @return bool */
+    static function skip_content_length_header() {
+        // see also Cacheable_Page::skip_content_length_header
+        return zlib_get_coding_type() !== false;
+    }
+
+    /** @param DownloadOptions $dopt
+     * @param int $filesize
      * @return bool */
-    static function check_download_opts($filesize, &$opts) {
-        if (isset($opts["if-range"])
-            && ($opts["etag"] === null || $opts["if-range"] !== $opts["etag"])) {
-            unset($opts["range"]);
+    static function prepare_download($dopt, $filesize) {
+        if ($dopt->if_range !== null
+            && !DownloadOptions::etag_equals($dopt->if_range, $dopt->etag, true)) {
+            $dopt->range = null;
         }
-        if (isset($opts["range"])) {
+        if ($dopt->range !== null) {
             $rs = [];
-            foreach ($opts["range"] as $r) {
+            foreach ($dopt->range as $r) {
                 list($r0, $r1) = $r;
                 if ($r0 === null) {
                     $r0 = max($filesize - $r1, 0);
@@ -191,28 +277,22 @@ class Filer {
                 header("Content-Range: bytes */{$filesize}");
                 return false;
             }
-            $opts["range"] = $rs;
+            $dopt->range = $rs;
         }
         return true;
     }
 
-    /** @return bool */
-    static function skip_content_length_header() {
-        // see also Cacheable_Page::skip_content_length_header
-        return zlib_get_coding_type() !== false;
-    }
-
     /** @param int $filesize
      * @param string $mimetype
-     * @param array $opts
+     * @param DownloadOptions $dopt
      * @return Generator<array{int,int}> */
-    static function download_ranges($filesize, $mimetype, $opts) {
-        if (isset($opts["etag"])) {
-            header("ETag: " . $opts["etag"]);
+    static function download_ranges($filesize, $mimetype, $dopt) {
+        if ($dopt->etag !== null) {
+            header("ETag: {$dopt->etag}");
         }
-        $range = $opts["range"] ?? null;
+        $range = $dopt->range;
         $rangeheader = [];
-        if ($opts["head"] ?? false) {
+        if ($dopt->head) {
             header("HTTP/1.1 204 No Content");
             header("Content-Type: {$mimetype}");
             header("Content-Length: {$filesize}");
@@ -264,23 +344,24 @@ class Filer {
 
     /** @param string $filename
      * @param string $mimetype
-     * @param array $opts */
-    static function download_file($filename, $mimetype, $opts = []) {
+     * @param ?DownloadOptions $dopt */
+    static function download_file($filename, $mimetype, $dopt = null) {
         // if docstoreAccelRedirect, output X-Accel-Redirect header
         // XXX Chromium issue 961617: beware of X-Accel-Redirect if you are
         // using SameSite cookies!
-        $filesize = filesize($filename);
-        if (self::check_download_opts($filesize, $opts)) {
+        $dopt = $dopt ?? new DownloadOptions;
+        $filesize = $dopt->content_length = filesize($filename);
+        if (self::prepare_download($dopt, $filesize)) {
             if (($dar = Conf::$main->opt("docstoreAccelRedirect"))
                 && ($dsp = self::docstore_fixed_prefix(Conf::$main->docstore()))
-                && !($opts["no_accel"] ?? false)
-                && !($opts["head"] ?? false)) {
+                && !$dopt->no_accel
+                && !$dopt->head) {
                 assert(str_ends_with($dsp, "/"));
                 if (str_starts_with($filename, $dsp)
                     && strlen($filename) > strlen($dsp)
                     && $filename[strlen($dsp)] !== "/") {
-                    if (isset($opts["etag"])) {
-                        header("ETag: " . $opts["etag"]);
+                    if (isset($dopt->etag)) {
+                        header("ETag: {$dopt->etag}");
                     }
                     header("Content-Type: {$mimetype}");
                     header("X-Accel-Redirect: {$dar}" . substr($filename, strlen($dsp)));
@@ -289,7 +370,7 @@ class Filer {
             }
             // write length header, flush output buffers
             $out = fopen("php://output", "wb");
-            foreach (self::download_ranges($filesize, $mimetype, $opts) as $r) {
+            foreach (self::download_ranges($filesize, $mimetype, $dopt) as $r) {
                 Filer::readfile_subrange($out, $r[0], $r[1], 0, $filename, $filesize);
             }
         }
@@ -297,11 +378,12 @@ class Filer {
 
     /** @param string $s
      * @param string $mimetype
-     * @param array $opts */
-    static function download_string($s, $mimetype, $opts = []) {
-        if (self::check_download_opts(strlen($s), $opts)) {
+     * @param ?DownloadOptions $dopt */
+    static function download_string($s, $mimetype, $dopt = null) {
+        $dopt = $dopt ?? new DownloadOptions;
+        if (self::prepare_download($dopt, strlen($s))) {
             $out = fopen("php://output", "wb");
-            foreach (self::download_ranges(strlen($s), $mimetype, $opts) as $r) {
+            foreach (self::download_ranges(strlen($s), $mimetype, $dopt) as $r) {
                 Filer::print_subrange($out, $r[0], $r[1], 0, $s);
             }
         }

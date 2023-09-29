@@ -1755,23 +1755,26 @@ class DocumentInfo implements JsonSerializable {
         return $this->height >= 0 ? $this->height : null;
     }
 
-    /** @param array{attachment?:bool,no_accel?:bool,cacheable?:bool} $opts
+    /** @param ?DownloadOptions $dopt
      * @return bool */
-    function download($opts = []) {
+    function download($dopt = null) {
         if ($this->size() <= 0) {
             $this->message_set()->warning_at(null, "<0>Empty file");
             return false;
         }
 
-        if (isset($opts["if-none-match"])
-            && $this->has_hash()
-            && $opts["if-none-match"] === "\"" . $this->text_hash() . "\"") {
+        $dopt = $dopt ?? new DownloadOptions;
+        if ($this->has_hash()) {
+            $dopt->etag = "\"{$this->text_hash()}\"";
+        }
+
+        if (DownloadOptions::etag_equals($dopt->if_none_match, $dopt->etag, false)) {
             header("HTTP/1.1 304 Not Modified");
+            header("ETag: {$dopt->etag}");
             return true;
         }
 
-        $no_accel = $opts["no_accel"] ?? false;
-        $s3_accel = $no_accel ? false : $this->s3_accel_redirect();
+        $s3_accel = $dopt->no_accel ? false : $this->s3_accel_redirect();
         if (!$s3_accel && !$this->ensure_content()) {
             if (!$this->has_error()) {
                 $this->error("Document cannot be prepared for download");
@@ -1781,35 +1784,28 @@ class DocumentInfo implements JsonSerializable {
 
         // Print headers
         $mimetype = Mimetype::type_with_charset($this->mimetype);
-        if (isset($opts["attachment"])) {
-            $attachment = $opts["attachment"];
-        } else {
-            $attachment = !Mimetype::disposition_inline($this->mimetype);
-        }
+        $attachment = $dopt->attachment ?? !Mimetype::disposition_inline($this->mimetype);
         $downloadname = $this->export_filename();
         if (($slash = strrpos($downloadname, "/")) !== false) {
             $downloadname = substr($downloadname, $slash + 1);
         }
         header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
-        if ($opts["cacheable"] ?? false) {
+        if ($dopt->cacheable) {
             header("Cache-Control: max-age=315576000, private");
             header("Expires: " . gmdate("D, d M Y H:i:s", Conf::$now + 315576000) . " GMT");
         }
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
-        if ($this->has_hash()) {
-            $opts["etag"] = "\"" . $this->text_hash() . "\"";
-        }
 
         // Download or redirect
         if ($s3_accel) {
             header("Content-Type: {$mimetype}");
-            header("ETag: " . $opts["etag"]);
+            header("ETag: {$dopt->etag}");
             $this->conf->s3_client()->get_accel_redirect($this->s3_key(), $s3_accel);
         } else if (($path = $this->available_content_file())) {
-            Filer::download_file($path, $mimetype, $opts);
+            Filer::download_file($path, $mimetype, $dopt);
         } else {
-            Filer::download_string($this->content, $mimetype, $opts);
+            Filer::download_string($this->content, $mimetype, $dopt);
         }
         return true;
     }

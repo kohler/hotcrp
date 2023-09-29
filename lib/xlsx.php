@@ -163,10 +163,11 @@ class XlsxGenerator {
         $this->done = true;
     }
 
-    function download($opts = []) {
+    /** @param ?DownloadOptions $dopt */
+    function download($dopt = null) {
         if (!$this->done) {
             $this->finish();
         }
-        return $this->zip->download($opts);
+        return $this->zip->download($dopt);
     }
 }

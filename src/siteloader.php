@@ -14,6 +14,7 @@ class SiteLoader {
         "Discrete_ReviewField" => "src/reviewfield.php",
         "DiscreteValues_ReviewField" => "src/reviewfield.php",
         "Document_PaperOption" => "src/paperoption.php",
+        "DownloadOptions" => "lib/filer.php",
         "False_SearchTerm" => "src/searchterm.php",
         "Fexpr" => "src/formula.php",
         "FmtArg" => "lib/fmt.php",

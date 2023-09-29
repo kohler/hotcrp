@@ -509,7 +509,7 @@
     },
     {
         "name": "review_visibility_author_tags", "storage": "tag_au_seerev",
-        "title": "Review visibility tags",
+        "title": "Review visibility tags", "json": "in",
         "type": "taglist", "size": 24,
         "parser_class": "ReviewVisibility_SettingParser"
     },
