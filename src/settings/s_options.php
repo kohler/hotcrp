@@ -251,7 +251,7 @@ class Options_SettingParser extends SettingParser {
             "aria-label" => "Field name",
             "data-tooltip-info" => "settings-sf",
             "data-tooltip-type" => "focus",
-            "placeholder" => $this->typej->field_name_placeholder ?? null
+            "placeholder" => $this->typej->placeholders->name ?? null
         ]);
         echo '</div></div>';
     }
@@ -625,7 +625,7 @@ class Options_SettingParser extends SettingParser {
     /** @return bool */
     private function _apply_req_values(Si $si, SettingValues $sv) {
         $jtype = $sv->conf->option_type($sv->vstr("sf/{$si->name1}/type"));
-        if (!$jtype || !($jtype->has_values ?? false)) {
+        if (!$jtype || !in_array("values", $jtype->properties ?? [])) {
             return true;
         }
         $fpfx = "sf/{$si->name1}";

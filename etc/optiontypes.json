@@ -5,45 +5,38 @@
     },
     {
         "name": "dropdown", "title": "Dropdown", "order": 200,
-        "has_values": true, "function": "+Selector_PaperOption",
-        "sample": {"values": ["Option 1", "Option 2", "Option 3"]},
+        "function": "+Selector_PaperOption",
         "convert_from_functions": {"radio": true},
         "properties": ["common", "values"]
     },
     {
         "name": "radio", "title": "Radio buttons", "order": 300,
-        "has_values": true, "function": "+Selector_PaperOption",
-        "sample": {"values": ["Option 1", "Option 2", "Option 3"]},
+        "function": "+Selector_PaperOption",
         "convert_from_functions": {"dropdown": true},
         "properties": ["common", "values"]
     },
     {
         "name": "checkboxes", "title": "Checkboxes", "order": 350,
-        "has_values": true, "function": "+Checkboxes_PaperOption",
-        "sample": {"values": ["Option 1", "Option 2", "Group: Entry 1", "Group: Entry 2"]},
+        "function": "+Checkboxes_PaperOption",
         "properties": ["common", "values"]
     },
     {
         "name": "numeric", "title": "Whole number", "order": 400,
-        "function": "+Numeric_PaperOption",
-        "sample": {"value": 10}
+        "function": "+Numeric_PaperOption"
     },
     {
         "name": "realnumber", "title": "Decimal number", "order": 401,
         "function": "+RealNumber_PaperOption",
-        "sample": {"value": -12.5},
         "convert_from_functions": {"numeric": "RealNumber_PaperOption::convert_from_numeric"}
     },
     {
         "name": "text", "title": "Text", "order": 500,
         "function": "+Text_PaperOption",
-        "sample": {"value": "Text entry"},
         "convert_from_functions": {"mtext": true}
     },
     {
         "name": "mtext", "title": "Multiline text", "order": 550,
         "function": "+Text_PaperOption",
-        "sample": {"display_space": 5, "value": "Long text entry"},
         "convert_from_functions": {"text": true}
     },
     {
@@ -68,10 +61,8 @@
     {
         "name": "separator", "title": "Section break", "order": 10000,
         "function": "+Separator_PaperOption",
-        "sample": {"name": "Optional section title"},
         "placeholders": {"name": "Optional section title"},
         "properties": ["description", "presence", "display"],
-        "require_name": false,
-        "field_name_placeholder": "Optional section title"
+        "require_name": false
     }
 ]
