@@ -203,10 +203,7 @@ class SavePapers_Batch {
             fwrite(STDERR, "{$pidtext}{$titletext}: ");
         }
 
-        $ps = new PaperStatus($this->user, [
-            "disable_users" => $this->disable_users,
-            "add_topics" => $this->add_topics
-        ]);
+        $ps = new PaperStatus($this->user, ["disable_users" => $this->disable_users]);
         $ps->on_document_import([$this, "on_document_import"]);
 
         if ($ps->prepare_save_paper_json($j)) {
@@ -301,6 +298,12 @@ class SavePapers_Batch {
         } else {
             if (is_object($jp)) {
                 $jp = [$jp];
+            }
+            if ($this->add_topics) {
+                foreach ($this->conf->options()->form_fields() as $opt) {
+                    if ($opt instanceof Topics_PaperOption)
+                        $opt->allow_new_topics(true);
+                }
             }
             foreach ($jp as $index => &$j) {
                 $this->run_one($index, $j);

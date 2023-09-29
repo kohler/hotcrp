@@ -42,16 +42,21 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
 
 
     function value_check(PaperValue $ov, Contact $user) {
-        if ($this->test_exists($ov->prow)) {
-            if ($this->min_count > 0
-                && !$ov->prow->allow_absent()
-                && $ov->value_count() < $this->min_count) {
-                $ov->error($this->conf->_("<0>At least {min} selections required", new FmtArg("min", $this->min_count), new FmtArg("max", $this->max_count), new FmtArg("type", $this->type)));
-            }
-            if ($this->max_count > 0
-                && $ov->value_count() > $this->max_count) {
-                $ov->error($this->conf->_("<0>At most {max} selections allowed", new FmtArg("min", $this->min_count), new FmtArg("max", $this->max_count), new FmtArg("type", $this->type)));
-            }
+        if (!$this->test_exists($ov->prow)) {
+            return;
+        }
+        $n = $ov->value_count();
+        if ($ov->has_anno("new_values")) {
+            $n += count($ov->anno("new_values"));
+        }
+        if ($this->min_count > 0
+            && !$ov->prow->allow_absent()
+            && $n < $this->min_count) {
+            $ov->error($this->conf->_("<0>At least {min} selections required", new FmtArg("min", $this->min_count), new FmtArg("max", $this->max_count), new FmtArg("type", $this->type)));
+        }
+        if ($this->max_count > 0
+            && $n > $this->max_count) {
+            $ov->error($this->conf->_("<0>At most {max} selections allowed", new FmtArg("min", $this->min_count), new FmtArg("max", $this->max_count), new FmtArg("type", $this->type)));
         }
     }
 
@@ -112,6 +117,8 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
             }));
         } else if ($j === false) {
             $j = [];
+        } else if (is_string($j)) {
+            $j = [$j];
         }
         if (!is_array($j) || $bad) {
             return PaperValue::make_estop($prow, $this, "<0>Validation error");

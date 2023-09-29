@@ -13,8 +13,6 @@ class PaperStatus extends MessageSet {
     private $disable_users;
     /** @var bool */
     private $allow_any_content_file = false;
-    /** @var bool */
-    private $add_topics;
     /** @var list<callable> */
     private $_on_document_import = [];
 
@@ -71,7 +69,6 @@ class PaperStatus extends MessageSet {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->disable_users = $options["disable_users"] ?? false;
-        $this->add_topics = $options["add_topics"] ?? false;
         if (($options["check_content_file"] ?? null) !== false) {
             $this->_on_document_import[] = [$this, "document_import_check_filename"];
         }
@@ -96,11 +93,6 @@ class PaperStatus extends MessageSet {
     /** @return Contact */
     function user() {
         return $this->user;
-    }
-
-    /** @return bool */
-    function add_topics() {
-        return $this->add_topics;
     }
 
     function _($itext, ...$args) {

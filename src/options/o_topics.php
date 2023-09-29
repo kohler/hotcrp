@@ -3,6 +3,9 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Topics_PaperOption extends CheckboxesBase_PaperOption {
+    /** @var bool */
+    private $_add_topics = false;
+
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
         if (!$this->conf->has_topics()) {
@@ -30,8 +33,15 @@ class Topics_PaperOption extends CheckboxesBase_PaperOption {
         return $user ? $user->topic_interest_map() : [];
     }
 
+    /** @param bool $allow */
+    function allow_new_topics($allow) {
+        $this->_add_topics = $allow;
+        $x = $allow || $this->conf->has_topics() ? null : false;
+        $this->override_exists_condition($x);
+    }
+
     function value_store_new_values(PaperValue $ov, PaperStatus $ps) {
-        if (!$ps->add_topics()) {
+        if (!$this->_add_topics) {
             return;
         }
         $vs = $ov->value_list();
