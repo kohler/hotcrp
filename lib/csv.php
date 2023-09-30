@@ -1152,15 +1152,17 @@ class CsvGenerator {
         if (($this->flags & self::FLAG_HTTP_HEADERS) === 0) {
             $this->export_headers();
         }
+        $dopt = new Downloader;
+        $dopt->mimetype = $this->mimetype_with_charset();
         if ($this->stream) {
             $this->flush();
             if ($this->stream_filename) {
-                Filer::download_file($this->stream_filename, $this->mimetype_with_charset());
+                $dopt->output_file($this->stream_filename);
             } else {
                 assert(($this->flags & self::FLAG_WILL_EMIT) !== 0);
             }
         } else {
-            Filer::download_string($this->unparse(), $this->mimetype_with_charset());
+            $dopt->output_string($this->unparse());
         }
     }
 }

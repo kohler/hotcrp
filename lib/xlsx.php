@@ -163,7 +163,7 @@ class XlsxGenerator {
         $this->done = true;
     }
 
-    /** @param ?DownloadOptions $dopt */
+    /** @param ?Downloader $dopt */
     function download($dopt = null) {
         if (!$this->done) {
             $this->finish();

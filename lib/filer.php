@@ -112,7 +112,16 @@ class HashAnalysis {
     }
 }
 
-class DownloadOptions {
+class Downloader {
+    /** @var ?string */
+    public $etag;
+    /** @var ?int */
+    public $content_length;
+    /** @var ?string */
+    public $mimetype;
+
+    /** @var ?string */
+    public $if_match;
     /** @var ?string */
     public $if_none_match;
     /** @var ?string */
@@ -129,15 +138,13 @@ class DownloadOptions {
     public $cacheable = false;
     /** @var bool */
     public $no_accel = false;
+    /** @var ?Contact */
+    public $log_user;
 
-    /** @var ?string */
-    public $etag;
-    /** @var ?int */
-    public $content_length;
-
-    /** @return DownloadOptions */
+    /** @return Downloader */
     static function make_server_request() {
-        $dopt = new DownloadOptions;
+        $dopt = new Downloader;
+        $dopt->if_match = $_SERVER["HTTP_IF_MATCH"] ?? null;
         $dopt->if_none_match = $_SERVER["HTTP_IF_NONE_MATCH"] ?? null;
         $method = $_SERVER["REQUEST_METHOD"];
         if ($method === "HEAD") {
@@ -189,6 +196,191 @@ class DownloadOptions {
         $w2 = str_starts_with($e2, "W/");
         return (!$w1 || !$w2 || !$strong)
             && ($w1 ? substr($e1, 2) : $e1) === ($w2 ? substr($e2, 2) : $e2);
+    }
+
+    /** @param string $s
+     * @param bool $strong */
+    private function any_etag_match($s, $strong) {
+        $pos = 0;
+        while (preg_match('/\G[,\s]*((?:W\/|)".*?"|\*)/', $s, $m, 0, $pos)) {
+            if ($m[1] === "*" || self::etag_equals($m[1], $this->etag, $strong)) {
+                return true;
+            }
+            $pos += strlen($m[1]);
+        }
+        return false;
+    }
+
+    /** @return bool */
+    function run_match() {
+        if ($this->etag === null) {
+            return false;
+        } else if ($this->if_match !== null
+                   && !$this->any_etag_match($this->if_match, true)) {
+            header("HTTP/1.1 412 Precondition Failed");
+            header("ETag: {$this->etag}");
+            return true;
+        } else if ($this->if_none_match !== null
+                   && $this->any_etag_match($this->if_none_match, false)) {
+            header("HTTP/1.1 304 Not Modified");
+            header("ETag: {$this->etag}");
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /** @param int $first
+     * @param int $last
+     * @return bool */
+    function range_overlaps($first, $last) {
+        assert($first < $last);
+        $length = $this->content_length ?? ($first + 1);
+        foreach ($this->range ?? [[0, null]] as $r) {
+            $r1 = $r[0] ?? 0;
+            $r2 = $r[1] ?? ($length - 1);
+            if ($last > $r1 && $first < $r2 + 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** @return bool */
+    function run_range_check() {
+        assert($this->content_length !== null);
+        $filesize = $this->content_length;
+        if ($this->if_range !== null
+            && !self::etag_equals($this->if_range, $this->etag, true)) {
+            $this->range = null;
+        }
+        if ($this->range !== null) {
+            $rs = [];
+            foreach ($this->range as $r) {
+                list($r0, $r1) = $r;
+                if ($r0 === null) {
+                    $r0 = max($filesize - $r1, 0);
+                    $r1 = $filesize;
+                } else if ($r1 === null) {
+                    $r1 = $filesize;
+                } else {
+                    $r1 = min($filesize, $r1 + 1);
+                }
+                if ($r0 < $r1) {
+                    $rs[] = [$r0, $r1];
+                }
+            }
+            if (empty($rs)) {
+                header("HTTP/1.1 416 Range Not Satisfiable");
+                header("Content-Range: bytes */{$filesize}");
+                return true;
+            }
+            $this->range = $rs;
+        }
+        return false;
+    }
+
+    /** @return Generator<array{int,int}> */
+    function run_output_ranges() {
+        assert($this->content_length !== null && $this->mimetype !== null);
+        if ($this->etag !== null) {
+            header("ETag: {$this->etag}");
+        }
+        $range = $this->range;
+        $rangeheader = [];
+        $clen = $this->content_length;
+        if ($this->head) {
+            header("HTTP/1.1 204 No Content");
+            header("Content-Type: {$this->mimetype}");
+            header("Content-Length: {$clen}");
+            header("Accept-Ranges: bytes");
+            return;
+        } else if (!isset($range)) {
+            $outsize = $clen;
+            header("Content-Type: {$this->mimetype}");
+            header("Accept-Ranges: bytes");
+        } else if (count($range) === 1) {
+            $outsize = $range[0][1] - $range[0][0];
+            header("HTTP/1.1 206 Partial Content");
+            header("Content-Type: {$this->mimetype}");
+            header("Content-Range: bytes {$range[0][0]}-" . ($range[0][1] - 1) . "/{$clen}");
+        } else {
+            $boundary = "HotCRP-" . base64_encode(random_bytes(18));
+            $outsize = 0;
+            foreach ($range as $r) {
+                $rangeheader[] = "--{$boundary}\r\nContent-Type: {$this->mimetype}\r\nContent-Range: bytes {$r[0]}-" . ($r[1] - 1) . "/{$clen}\r\n\r\n";
+                $outsize += $r[1] - $r[0];
+            }
+            $rangeheader[] = "--{$boundary}--\r\n";
+            header("HTTP/1.1 206 Partial Content");
+            header("Content-Type: multipart/byteranges; boundary={$boundary}");
+            $outsize += strlen(join("", $rangeheader));
+        }
+        if (!Filer::skip_content_length_header()) {
+            header("Content-Length: {$outsize}");
+        }
+        if ($outsize > 2000000) {
+            header("X-Accel-Buffering: no");
+        }
+        flush();
+        while (@ob_end_flush()) {
+            // do nothing
+        }
+        if (!isset($range)) {
+            yield [0, $clen];
+        } else if (count($range) === 1) {
+            yield [$range[0][0], $range[0][1]];
+        } else {
+            for ($i = 0; $i !== count($range); ++$i) {
+                echo $rangeheader[$i];
+                yield [$range[$i][0], $range[$i][1]];
+            }
+            echo $rangeheader[count($range)];
+        }
+    }
+
+    /** @param string $filename */
+    function output_file($filename) {
+        // if docstoreAccelRedirect, output X-Accel-Redirect header
+        // XXX Chromium issue 961617: beware of X-Accel-Redirect if you are
+        // using SameSite cookies!
+        $this->content_length = filesize($filename);
+        if ($this->run_range_check()) {
+            return;
+        }
+        if (($dar = Conf::$main->opt("docstoreAccelRedirect"))
+            && ($dsp = Filer::docstore_fixed_prefix(Conf::$main->docstore()))
+            && !$this->no_accel
+            && !$this->head) {
+            assert(str_ends_with($dsp, "/"));
+            if (str_starts_with($filename, $dsp)
+                && strlen($filename) > strlen($dsp)
+                && $filename[strlen($dsp)] !== "/") {
+                if (isset($this->etag)) {
+                    header("ETag: {$this->etag}");
+                }
+                header("Content-Type: {$this->mimetype}");
+                header("X-Accel-Redirect: {$dar}" . substr($filename, strlen($dsp)));
+                return;
+            }
+        }
+        // write length header, flush output buffers
+        $out = fopen("php://output", "wb");
+        foreach ($this->run_output_ranges() as $r) {
+            Filer::readfile_subrange($out, $r[0], $r[1], 0, $filename, $this->content_length);
+        }
+    }
+
+    /** @param string $s */
+    function output_string($s) {
+        $this->content_length = strlen($s);
+        if ($this->run_range_check()) {
+            return;
+        }
+        $out = fopen("php://output", "wb");
+        foreach ($this->run_output_ranges() as $r) {
+            Filer::print_subrange($out, $r[0], $r[1], 0, $s);
+        }
     }
 }
 
@@ -246,147 +438,6 @@ class Filer {
     static function skip_content_length_header() {
         // see also Cacheable_Page::skip_content_length_header
         return zlib_get_coding_type() !== false;
-    }
-
-    /** @param DownloadOptions $dopt
-     * @param int $filesize
-     * @return bool */
-    static function prepare_download($dopt, $filesize) {
-        if ($dopt->if_range !== null
-            && !DownloadOptions::etag_equals($dopt->if_range, $dopt->etag, true)) {
-            $dopt->range = null;
-        }
-        if ($dopt->range !== null) {
-            $rs = [];
-            foreach ($dopt->range as $r) {
-                list($r0, $r1) = $r;
-                if ($r0 === null) {
-                    $r0 = max($filesize - $r1, 0);
-                    $r1 = $filesize;
-                } else if ($r1 === null) {
-                    $r1 = $filesize;
-                } else {
-                    $r1 = min($filesize, $r1 + 1);
-                }
-                if ($r0 < $r1) {
-                    $rs[] = [$r0, $r1];
-                }
-            }
-            if (empty($rs)) {
-                header("HTTP/1.1 416 Range Not Satisfiable");
-                header("Content-Range: bytes */{$filesize}");
-                return false;
-            }
-            $dopt->range = $rs;
-        }
-        return true;
-    }
-
-    /** @param int $filesize
-     * @param string $mimetype
-     * @param DownloadOptions $dopt
-     * @return Generator<array{int,int}> */
-    static function download_ranges($filesize, $mimetype, $dopt) {
-        if ($dopt->etag !== null) {
-            header("ETag: {$dopt->etag}");
-        }
-        $range = $dopt->range;
-        $rangeheader = [];
-        if ($dopt->head) {
-            header("HTTP/1.1 204 No Content");
-            header("Content-Type: {$mimetype}");
-            header("Content-Length: {$filesize}");
-            header("Accept-Ranges: bytes");
-            return;
-        } else if (!isset($range)) {
-            $outsize = $filesize;
-            header("Content-Type: {$mimetype}");
-            header("Accept-Ranges: bytes");
-        } else if (count($range) === 1) {
-            $outsize = $range[0][1] - $range[0][0];
-            header("HTTP/1.1 206 Partial Content");
-            header("Content-Type: {$mimetype}");
-            header("Content-Range: bytes {$range[0][0]}-" . ($range[0][1] - 1) . "/{$filesize}");
-        } else {
-            $boundary = "HotCRP-" . base64_encode(random_bytes(18));
-            $outsize = 0;
-            foreach ($range as $r) {
-                $rangeheader[] = "--{$boundary}\r\nContent-Type: {$mimetype}\r\nContent-Range: bytes {$r[0]}-" . ($r[1] - 1) . "/{$filesize}\r\n\r\n";
-                $outsize += $r[1] - $r[0];
-            }
-            $rangeheader[] = "--{$boundary}--\r\n";
-            header("HTTP/1.1 206 Partial Content");
-            header("Content-Type: multipart/byteranges; boundary={$boundary}");
-            $outsize += strlen(join("", $rangeheader));
-        }
-        if (!self::skip_content_length_header()) {
-            header("Content-Length: {$outsize}");
-        }
-        if ($outsize > 2000000) {
-            header("X-Accel-Buffering: no");
-        }
-        flush();
-        while (@ob_end_flush()) {
-            // do nothing
-        }
-        if (!isset($range)) {
-            yield [0, $filesize];
-        } else if (count($range) === 1) {
-            yield [$range[0][0], $range[0][1]];
-        } else {
-            for ($i = 0; $i !== count($range); ++$i) {
-                echo $rangeheader[$i];
-                yield [$range[$i][0], $range[$i][1]];
-            }
-            echo $rangeheader[count($range)];
-        }
-    }
-
-    /** @param string $filename
-     * @param string $mimetype
-     * @param ?DownloadOptions $dopt */
-    static function download_file($filename, $mimetype, $dopt = null) {
-        // if docstoreAccelRedirect, output X-Accel-Redirect header
-        // XXX Chromium issue 961617: beware of X-Accel-Redirect if you are
-        // using SameSite cookies!
-        $dopt = $dopt ?? new DownloadOptions;
-        $filesize = $dopt->content_length = filesize($filename);
-        if (self::prepare_download($dopt, $filesize)) {
-            if (($dar = Conf::$main->opt("docstoreAccelRedirect"))
-                && ($dsp = self::docstore_fixed_prefix(Conf::$main->docstore()))
-                && !$dopt->no_accel
-                && !$dopt->head) {
-                assert(str_ends_with($dsp, "/"));
-                if (str_starts_with($filename, $dsp)
-                    && strlen($filename) > strlen($dsp)
-                    && $filename[strlen($dsp)] !== "/") {
-                    if (isset($dopt->etag)) {
-                        header("ETag: {$dopt->etag}");
-                    }
-                    header("Content-Type: {$mimetype}");
-                    header("X-Accel-Redirect: {$dar}" . substr($filename, strlen($dsp)));
-                    return;
-                }
-            }
-            // write length header, flush output buffers
-            $out = fopen("php://output", "wb");
-            foreach (self::download_ranges($filesize, $mimetype, $dopt) as $r) {
-                Filer::readfile_subrange($out, $r[0], $r[1], 0, $filename, $filesize);
-            }
-        }
-    }
-
-    /** @param string $s
-     * @param string $mimetype
-     * @param ?DownloadOptions $dopt */
-    static function download_string($s, $mimetype, $dopt = null) {
-        $dopt = $dopt ?? new DownloadOptions;
-        if (self::prepare_download($dopt, strlen($s))) {
-            $out = fopen("php://output", "wb");
-            foreach (self::download_ranges(strlen($s), $mimetype, $dopt) as $r) {
-                Filer::print_subrange($out, $r[0], $r[1], 0, $s);
-            }
-        }
     }
 
     // hash helpers

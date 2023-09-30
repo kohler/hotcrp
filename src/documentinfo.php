@@ -1755,7 +1755,7 @@ class DocumentInfo implements JsonSerializable {
         return $this->height >= 0 ? $this->height : null;
     }
 
-    /** @param ?DownloadOptions $dopt
+    /** @param ?Downloader $dopt
      * @return bool */
     function download($dopt = null) {
         if ($this->size() <= 0) {
@@ -1763,18 +1763,20 @@ class DocumentInfo implements JsonSerializable {
             return false;
         }
 
-        $dopt = $dopt ?? new DownloadOptions;
+        $dopt = $dopt ?? new Downloader;
         if ($this->has_hash()) {
             $dopt->etag = "\"{$this->text_hash()}\"";
+            if ($dopt->run_match()) {
+                return true;
+            }
         }
 
-        if (DownloadOptions::etag_equals($dopt->if_none_match, $dopt->etag, false)) {
-            header("HTTP/1.1 304 Not Modified");
-            header("ETag: {$dopt->etag}");
-            return true;
+        $s3_accel = false;
+        if (!$dopt->no_accel && $dopt->range === null) {
+            // do not forward range requests to S3 -- there are a lot of them
+            // and they can get rate limited
+            $s3_accel = $this->s3_accel_redirect();
         }
-
-        $s3_accel = $dopt->no_accel ? false : $this->s3_accel_redirect();
         if (!$s3_accel && !$this->ensure_content()) {
             if (!$this->has_error()) {
                 $this->error("Document cannot be prepared for download");
@@ -1783,7 +1785,7 @@ class DocumentInfo implements JsonSerializable {
         }
 
         // Print headers
-        $mimetype = Mimetype::type_with_charset($this->mimetype);
+        $dopt->mimetype = Mimetype::type_with_charset($this->mimetype);
         $attachment = $dopt->attachment ?? !Mimetype::disposition_inline($this->mimetype);
         $downloadname = $this->export_filename();
         if (($slash = strrpos($downloadname, "/")) !== false) {
@@ -1797,15 +1799,20 @@ class DocumentInfo implements JsonSerializable {
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
 
+        // Maybe log
+        if ($dopt->log_user && $dopt->range_overlaps(0, 4096)) {
+            DocumentInfo::log_download_activity([$this], $dopt->log_user);
+        }
+
         // Download or redirect
         if ($s3_accel) {
-            header("Content-Type: {$mimetype}");
+            header("Content-Type: {$dopt->mimetype}");
             header("ETag: {$dopt->etag}");
             $this->conf->s3_client()->get_accel_redirect($this->s3_key(), $s3_accel);
         } else if (($path = $this->available_content_file())) {
-            Filer::download_file($path, $mimetype, $dopt);
+            $dopt->output_file($path);
         } else {
-            Filer::download_string($this->content, $mimetype, $dopt);
+            $dopt->output_string($this->content);
         }
         return true;
     }
