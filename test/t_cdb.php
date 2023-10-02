@@ -793,4 +793,63 @@ class Cdb_Tester {
         $this->conf->save_refresh_setting("sub_sub", $ss);
         Contact::$main_user = $mu;
     }
+
+    function test_cdb_new_locally_disabled_user() {
+        $u = $this->conf->fresh_cdb_user_by_email("belling@_.com");
+        xassert(!$u);
+
+        $this->conf->set_opt("disableNonPC", 1);
+        $this->conf->refresh_options();
+
+        $p = PaperInfo::make_new($this->conf->root_user(), null);
+        $ps = new PaperStatus($this->conf->root_user(), ["disable_users" => true]);
+        $pid = $ps->save_paper_web(new Qrequest("POST", [
+            "title" => "A Systematic Sterdy of Neural Discourse Models for Implicit Discourse Relation",
+            "has_authors" => 1,
+            "authors:1:email" => "belling@_.com",
+            "has_contacts" => 1,
+            "contacts:1:email" => "belling@_.com",
+            "contacts:1:active" => 1,
+            "abstract" => "Inferring implicit discourse relations in natural language text is the most difficult subtask in discourse parsing. Many neural network models have been proposed to tackle this problem."
+        ]), $p, "update");
+        xassert_gt($pid, 0);
+
+        $u = $this->conf->fresh_cdb_user_by_email("belling@_.com");
+        xassert_eqq($u->disablement & ~Contact::DISABLEMENT_PLACEHOLDER, Contact::DISABLEMENT_ROLE);
+        $d = Dbl::fetch_ivalue($this->conf->dblink, "select disabled from ContactInfo where email='belling@_.com'");
+        xassert_eqq($d & ~Contact::DISABLEMENT_PLACEHOLDER, Contact::DISABLEMENT_USER);
+        $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='belling@_.com'");
+        xassert_eqq($d & ~Contact::DISABLEMENT_PLACEHOLDER, 0);
+
+        $u = $this->conf->fresh_cdb_user_by_email("kitcat@_.com");
+        xassert(!$u);
+
+        $u = Contact::make_keyed($this->conf, [
+            "firstName" => "Kit",
+            "lastName" => "Cat",
+            "email" => "kitcat@_.com",
+            "affiliation" => "Fart University",
+            "disablement" => Contact::DISABLEMENT_USER
+        ])->store();
+        xassert_eqq($u->disablement & ~Contact::DISABLEMENT_PLACEHOLDER, Contact::DISABLEMENT_USER | Contact::DISABLEMENT_ROLE);
+        $uu = $u->cdb_user();
+        xassert_eqq($uu->disablement & ~Contact::DISABLEMENT_PLACEHOLDER, Contact::DISABLEMENT_ROLE);
+        $d = Dbl::fetch_ivalue($this->conf->dblink, "select disabled from ContactInfo where email='kitcat@_.com'");
+        xassert_eqq($d & ~Contact::DISABLEMENT_PLACEHOLDER, Contact::DISABLEMENT_USER);
+        $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='kitcat@_.com'");
+        xassert_eqq($d & ~Contact::DISABLEMENT_PLACEHOLDER, 0);
+
+        Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@_.com', affiliation='University of Connecticut', password='', disabled=1");
+        Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@_.com', affiliation='University of Connecticut', password=' unset', disabled=2");
+        $u = $this->conf->fresh_user_by_email("marthatanner@_.com");
+        xassert_eqq($u->disablement & ~Contact::DISABLEMENT_PLACEHOLDER, Contact::DISABLEMENT_ROLE | Contact::DISABLEMENT_USER);
+        $u->update_cdb();
+        $uu = $this->conf->fresh_cdb_user_by_email("marthatanner@_.com");
+        xassert_eqq($uu->disablement & ~Contact::DISABLEMENT_PLACEHOLDER, Contact::DISABLEMENT_ROLE);
+        $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='marthatanner@_.com'");
+        xassert_eqq($d & ~Contact::DISABLEMENT_PLACEHOLDER, 0);
+
+        $this->conf->set_opt("disableNonPC", null);
+        $this->conf->refresh_options();
+    }
 }
