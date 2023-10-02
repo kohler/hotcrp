@@ -693,7 +693,7 @@ class Profile_Page {
                 echo 'New account';
             } else {
                 if ($this->user !== $this->viewer) {
-                    echo $this->viewer->reviewer_html_for($this->user), ' ';
+                    echo $this->viewer->name_for("rn", $this->user), ' ';
                 }
                 echo htmlspecialchars($this->ustatus->cs()->get($this->topic)->title);
                 if ($this->user->is_disabled()) {

@@ -1096,7 +1096,7 @@ class Contact implements JsonSerializable {
         return $items;
     }
 
-    /** @param ''|'t'|'r'|'ra' $pfx
+    /** @param ''|'t'|'r'|'ra'|'rn' $pfx
      * @param Author|Contact $user */
     private function calculate_name_for($pfx, $user) {
         $flags = NAME_P;
@@ -1107,14 +1107,15 @@ class Contact implements JsonSerializable {
         if ($pfx !== "t") {
             $n = htmlspecialchars($n);
         }
-        if ($pfx === "r" || $pfx === "ra") {
+        if (($pfx === "r" || $pfx === "ra" || $pfx === "rn")
+            && ($this->isPC || $this->tracker_kiosk_state > 0)) {
             $dt = $this->conf->tags();
-            if (($user->contactTags !== null
-                 || $user->disablement !== 0
-                 || ($user->roles !== 0 && $dt->has_role_decoration))
-                && ($this->can_view_user_tags()
-                    || $user->contactId === $this->contactXid)
-                && ($viewable = $dt->censor(TagMap::CENSOR_VIEW, self::all_contact_tags_for($user, true), $this, null))) {
+            $ctflags = ($dt->has_role_decoration ? self::CTFLAG_ROLES : 0)
+                | ($pfx !== "rn" ? self::CTFLAG_DISABLED : 0);
+            $act = self::all_contact_tags_for($user, $ctflags);
+            if ($act !== ""
+                && $this->can_view_user_tags()
+                && ($viewable = $dt->censor(TagMap::CENSOR_VIEW, $act, $this, null))) {
                 if (($colors = $dt->color_classes($viewable))) {
                     $n = "<span class=\"{$colors} taghh\">{$n}</span>";
                 }
@@ -1126,10 +1127,10 @@ class Contact implements JsonSerializable {
         return $n;
     }
 
-    /** @param ''|'t'|'r'|'ra' $pfx
+    /** @param ''|'t'|'r'|'ra'|'rn' $pfx
      * @param ReviewInfo|Contact|int $x
      * @return mixed */
-    private function name_for($pfx, $x) {
+    function name_for($pfx, $x) {
         $uid = is_int($x) ? $x : $x->contactId;
         $key = $pfx . $uid;
         if (isset($this->_name_for_map[$key])) {
@@ -1320,15 +1321,20 @@ class Contact implements JsonSerializable {
         }
     }
 
+    const CTFLAG_ROLES = 1;
+    const CTFLAG_DISABLED = 2;
+
     /** @param Contact|ReviewInfo|Author $x
-     * @param bool $want_disabled
+     * @param 0|1|2|3 $ctags
      * @return string */
-    static function all_contact_tags_for($x, $want_disabled = false) {
+    static function all_contact_tags_for($x, $ctags) {
         $tags = $x->contactTags ?? "";
-        if (($x->roles & self::ROLE_PC) !== 0) {
+        if (($ctags & self::CTFLAG_ROLES) !== 0
+            && ($x->roles & self::ROLE_PC) !== 0) {
             $tags = " pc#0{$tags}";
         }
-        if ($want_disabled && $x->disablement !== 0) {
+        if (($ctags & self::CTFLAG_DISABLED) !== 0
+            && $x->disablement !== 0) {
             $tags = "{$tags} dim#0";
         }
         return $tags;
@@ -1336,7 +1342,7 @@ class Contact implements JsonSerializable {
 
     /** @return string */
     function all_contact_tags() {
-        return self::all_contact_tags_for($this);
+        return self::all_contact_tags_for($this, self::CTFLAG_ROLES);
     }
 
     /** @return string */
