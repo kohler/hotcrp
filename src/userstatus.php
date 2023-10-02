@@ -1635,17 +1635,22 @@ topics. We use this information to help match papers to reviewers.</p>',
             Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $disablement !== 0]), '</div><p></p>';
         if (!$us->is_auth_user()) {
             echo '<div class="d-flex mf mf-absolute">';
-            $no_change = ($disablement & ~Contact::DISABLEMENT_DB) !== 0;
-            if (!$no_change) {
-                $klass = "ui js-disable-user flex-grow-1 " . ($disablement ? "btn-success" : "btn-danger");
-                $p = "<p class=\"pt-1 mb-0\">Disabled accounts cannot sign in or view the site.";
-            } else {
+            if ($us->user->contactdb_disabled()) {
                 $klass = "flex-grow-1 disabled";
-                $p = "<p class=\"pt-1 mb-0 feedback is-warning\">Conference settings prevent this account from being enabled.";
+                $p = "<p class=\"pt-1 mb-0 feedback is-warning\">This account is disabled on all sites.</p>";
+                $disabled = true;
+            } else if (($disablement & ~Contact::DISABLEMENT_DB) !== 0) {
+                $klass = "flex-grow-1 disabled";
+                $p = "<p class=\"pt-1 mb-0 feedback is-warning\">Conference settings prevent this account from being enabled.</p>";
+                $disabled = true;
+            } else {
+                $klass = "ui js-disable-user flex-grow-1 " . ($disablement ? "btn-success" : "btn-danger");
+                $p = "<p class=\"pt-1 mb-0\">Disabled accounts cannot sign in or view the site.</p>";
+                $disabled = false;
             }
             echo Ht::button($disablement ? "Enable account" : "Disable account", [
-                "class" => $klass, "disabled" => $no_change
-            ]), '</div>', $p, '</p>';
+                "class" => $klass, "disabled" => $disabled
+            ]), '</div>', $p;
 
             self::print_delete_action($us);
         }
