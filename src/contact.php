@@ -223,7 +223,7 @@ class Contact implements JsonSerializable {
     const PROP_STRINGLIST = 0x100;
     const PROP_SIMPLIFY = 0x200;
     const PROP_NAME = 0x1000;
-    const PROP_PASSWORD = 0x2000;
+    const PROP_NOUPDATECDB = 0x2000;
     const PROP_UPDATE = 0x4000;
     const PROP_IMPORT = 0x8000;
     const PROP_SPECIAL = 0x10000;
@@ -235,17 +235,17 @@ class Contact implements JsonSerializable {
         "affiliation" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE | self::PROP_UPDATE | self::PROP_IMPORT,
         "phone" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE | self::PROP_IMPORT,
         "country" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE | self::PROP_IMPORT,
-        "password" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_PASSWORD,
-        "passwordTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_PASSWORD,
-        "passwordUseTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_PASSWORD,
+        "password" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_NOUPDATECDB,
+        "passwordTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_NOUPDATECDB,
+        "passwordUseTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_NOUPDATECDB,
         "collaborators" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_NULL | self::PROP_STRING | self::PROP_UPDATE | self::PROP_IMPORT,
-        "updateTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT,
+        "updateTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_NOUPDATECDB,
         "lastLogin" => self::PROP_LOCAL | self::PROP_INT,
         "defaultWatch" => self::PROP_LOCAL | self::PROP_INT,
         "primaryContactId" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE,
         "roles" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE | self::PROP_SPECIAL,
         "cdbRoles" => self::PROP_LOCAL | self::PROP_INT,
-        "disabled" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_SLICE,
+        "disabled" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_SLICE | self::PROP_NOUPDATECDB,
         "contactTags" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SLICE,
         "address" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRINGLIST | self::PROP_SIMPLIFY | self::PROP_UPDATE,
         "city" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE,
@@ -933,10 +933,9 @@ class Contact implements JsonSerializable {
         $cdbux = $cdbur ?? Contact::make_cdb_email($this->conf, $this->email);
         foreach (self::$props as $prop => $shape) {
             if (($shape & self::PROP_CDB) !== 0
-                && ($shape & self::PROP_PASSWORD) === 0
+                && ($shape & self::PROP_NOUPDATECDB) === 0
                 && ($value = $this->prop1($prop, $shape)) !== null
-                && $value !== ""
-                && $prop !== "updateTime") {
+                && $value !== "") {
                 $cdbux->set_prop($prop, $value, true);
             }
         }
@@ -944,6 +943,11 @@ class Contact implements JsonSerializable {
             $cdbux->set_prop("password", $this->password);
             $cdbux->set_prop("passwordTime", $this->passwordTime);
             $cdbux->set_prop("passwordUseTime", $this->passwordUseTime);
+        }
+        if ($this->disablement === 0) {
+            $cdbux->set_prop("disabled", $cdbux->disabled & ~Contact::DISABLEMENT_PLACEHOLDER);
+        } else if (!$cdbur) {
+            $cdbux->set_prop("disabled", Contact::DISABLEMENT_PLACEHOLDER);
         }
         if (!empty($cdbux->_mod_undo)) {
             assert($cdbux->cdb_confid !== 0);
@@ -956,12 +960,6 @@ class Contact implements JsonSerializable {
         } else {
             return false;
         }
-    }
-
-    /** @return int|false
-     * @deprecated */
-    function contactdb_update() {
-        return $this->update_cdb();
     }
 
 
@@ -2394,7 +2392,7 @@ class Contact implements JsonSerializable {
             && !$this->is_anonymous_user()) {
             $this->activity_at = Conf::$now;
             if ($this->contactId) {
-                $this->conf->ql("update ContactInfo set lastLogin=" . Conf::$now . " where contactId=$this->contactId");
+                $this->conf->ql("update ContactInfo set lastLogin=" . Conf::$now . " where contactId={$this->contactId}");
             }
             $this->update_cdb_roles();
         }
