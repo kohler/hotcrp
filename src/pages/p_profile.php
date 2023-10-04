@@ -695,9 +695,9 @@ class Profile_Page {
                 if ($this->user !== $this->viewer) {
                     echo $this->viewer->name_for("rn", $this->user), ' ';
                 }
-                echo htmlspecialchars($this->ustatus->cs()->get($this->topic)->title);
+                echo htmlspecialchars($this->ustatus->cs()->get($this->topic)->title), ' ';
                 if ($this->user->is_disabled()) {
-                    echo ' <span class="n dim">(disabled)</span>';
+                    echo '<span class="n dim user-disabled-marker">(disabled)</span>';
                 }
             }
             echo '</h2>';

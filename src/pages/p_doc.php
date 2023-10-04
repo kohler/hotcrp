@@ -149,7 +149,7 @@ class Doc_Page {
         // check for contents request
         if ($qreq->fn === "listing" || $qreq->fn === "consolidatedlisting") {
             if (!$doc->is_archive()) {
-                json_exit(MessageItem::make_error_json("<0>That file is not an archive"));
+                json_exit(JsonResult::make_error(400, "<0>That file is not an archive"));
             } else if (($listing = $doc->archive_listing(65536)) === null) {
                 $ml = $doc->message_list();
                 if (empty($ml)) {

@@ -6,7 +6,7 @@ class TagAnno_API {
     static function get(Contact $user, Qrequest $qreq) {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
-            return MessageItem::make_error_json($tagger->error_ftext());
+            return JsonResult::make_error(400, $tagger->error_ftext());
         }
         $dt = $user->conf->tags()->ensure(Tagger::tv_tag($tag));
         $anno = [];
@@ -29,7 +29,7 @@ class TagAnno_API {
     static function set(Contact $user, Qrequest $qreq) {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
-            return MessageItem::make_error_json($tagger->error_ftext());
+            return JsonResult::make_error(400, $tagger->error_ftext());
         }
         if (!$user->can_edit_tag_anno($tag)) {
             return ["ok" => false, "error" => "Permission error"];

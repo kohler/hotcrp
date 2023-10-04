@@ -113,7 +113,13 @@ class User_API {
             $ustatus = new UserStatus($viewer);
             $ustatus->set_user($user);
             if ($ustatus->save_user((object) ["disabled" => $disabled], $user)) {
-                return new JsonResult(["ok" => true, "u" => $user->email, "disabled" => $user->disablement !== 0]);
+                $d = $user->disablement;
+                return new JsonResult([
+                    "ok" => true,
+                    "u" => $user->email,
+                    "disabled" => ($d & ~Contact::DISABLEMENT_PLACEHOLDER) !== 0,
+                    "placeholder" => ($d & Contact::DISABLEMENT_PLACEHOLDER) !== 0
+                ]);
             } else {
                 return new JsonResult(["ok" => false, "u" => $user->email]);
             }
@@ -124,14 +130,22 @@ class User_API {
     static function account_sendinfo(Contact $user, Contact $viewer) {
         if (!$viewer->privChair) {
             return JsonResult::make_permission_error();
-        } else if ($user->disablement === 0) {
+        }
+        if ($user->activate_placeholder_prop(false)) {
+            $user->save_prop();
+        }
+        if ($user->disablement === 0) {
             $user->send_mail("@accountinfo");
             return new JsonResult(["ok" => true, "u" => $user->email]);
-        } else {
-            $j = MessageItem::make_error_json("<0>User disabled");
-            $j["u"] = $user->email;
-            return new JsonResult($j);
         }
+        if ($user->disablement === Contact::DISABLEMENT_PLACEHOLDER) {
+            $msg = "<0>This user has not yet activated their account";
+        } else {
+            $msg = "<0>User disabled";
+        }
+        $jr = JsonResult::make_error(400, $msg);
+        $jr->content["u"] = $user->email;
+        return $jr;
     }
 
     /** @return JsonResult */

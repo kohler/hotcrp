@@ -11893,7 +11893,16 @@ handle_ui.on("js-disable-user", function () {
                     removeClass(self, "btn-success");
                     addClass(self, "btn-danger");
                 }
-                $(self.form).find(".js-send-user-accountinfo").prop("disabled", data.disabled);
+                const h2 = document.querySelector("h2.leftmenu");
+                if (h2) {
+                    if (h2.lastChild.nodeType === 1
+                        && h2.lastChild.className === "n dim user-disabled-marker") {
+                        data.disabled || h2.lastChild.remove();
+                    } else {
+                        data.disabled && h2.appendChild($e("span", "n dim user-disabled-marker", "(disabled)"));
+                    }
+                }
+                $(self.form).find(".js-send-user-accountinfo").prop("disabled", data.disabled || data.placeholder);
             }
             minifeedback(self, data);
         });

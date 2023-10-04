@@ -1638,11 +1638,18 @@ topics. We use this information to help match papers to reviewers.</p>',
             return;
         }
         $us->cs()->add_section_class("form-outline-section")->print_start_section("User administration");
-        $disablement = $us->user->disablement & ~Contact::DISABLEMENT_PLACEHOLDER;
-        echo '<div class="btngrid"><div class="d-flex mf mf-absolute">',
-            Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $disablement !== 0]), '</div><p></p>';
+        echo '<div class="btngrid"><div class="d-flex mf mf-absolute">';
+
+        if ($us->user->disablement === Contact::DISABLEMENT_PLACEHOLDER) {
+            $disabled = !$us->conf->allow_user_activate_other();
+        } else {
+            $disabled = $us->user->disablement !== 0;
+        }
+        echo Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $disabled]), '</div><p></p>';
+
         if (!$us->is_auth_user()) {
             echo '<div class="d-flex mf mf-absolute">';
+            $disablement = $us->user->disablement & ~Contact::DISABLEMENT_PLACEHOLDER;
             if ($us->user->contactdb_disabled()) {
                 $klass = "flex-grow-1 disabled";
                 $p = "<p class=\"pt-1 mb-0 feedback is-warning\">This account is disabled on all sites.</p>";
@@ -1662,6 +1669,7 @@ topics. We use this information to help match papers to reviewers.</p>',
 
             self::print_delete_action($us);
         }
+
         echo '</div>';
     }
 

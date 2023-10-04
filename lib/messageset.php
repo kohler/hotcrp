@@ -114,7 +114,8 @@ class MessageItem implements JsonSerializable {
     }
 
     /** @param ?string $msg
-     * @return array{ok:false,message_list:list<MessageItem>} */
+     * @return array{ok:false,message_list:list<MessageItem>}
+     * @deprecated */
     static function make_error_json($msg) {
         return ["ok" => false, "message_list" => [new MessageItem(null, $msg ?? "", 2)]];
     }

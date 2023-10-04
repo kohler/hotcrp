@@ -277,8 +277,7 @@ class Contact implements JsonSerializable {
         return $u;
     }
 
-    /** @param int $contactId
-     * @return Contact */
+    /** @return Contact */
     static function make_placeholder(Conf $conf) {
         $u = new Contact($conf);
         $u->contactXid = self::$next_xid--;
@@ -765,8 +764,7 @@ class Contact implements JsonSerializable {
 
         // maybe auto-create a user
         if (($this->_activated & 2) === 0 && $this->email) {
-            if (($this->disabled & self::DISABLEMENT_PLACEHOLDER) !== 0) {
-                $this->activate_placeholder_prop();
+            if ($this->activate_placeholder_prop(true)) {
                 $this->save_prop();
             }
             $trueuser_aucheck = $qreq->csession("trueuser_author_check") ?? 0;
@@ -1586,11 +1584,11 @@ class Contact implements JsonSerializable {
             } else {
                 $m = "<0>You don’t have permission to access this function";
             }
-            $j = MessageItem::make_error_json($m);
+            $jr = JsonResult::make_error(403, $m);
             if (!$this->is_signed_in()) {
-                $j["loggedout"] = true;
+                $jr->content["loggedout"] = true;
             }
-            json_exit($j);
+            json_exit($jr);
         }
 
         if ($this->is_signed_in()) {
@@ -1837,9 +1835,15 @@ class Contact implements JsonSerializable {
         return $prop ? array_key_exists($prop, $this->_mod_undo ?? []) : !empty($this->_mod_undo);
     }
 
-    function activate_placeholder_prop() {
-        if (($this->disabled & self::DISABLEMENT_PLACEHOLDER) !== 0) {
+    /** @param bool $always
+     * @return bool */
+    function activate_placeholder_prop($always) {
+        if (($this->disabled & self::DISABLEMENT_PLACEHOLDER) !== 0
+            && ($always || $this->conf->allow_user_activate_other())) {
             $this->set_prop("disabled", $this->disabled & ~self::DISABLEMENT_PLACEHOLDER);
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -2359,7 +2363,7 @@ class Contact implements JsonSerializable {
             $saveu->set_prop("password", $hash);
             $saveu->set_prop("passwordTime", Conf::$now);
             $saveu->set_prop("passwordUseTime", $use_time);
-            $saveu->activate_placeholder_prop();
+            $saveu->activate_placeholder_prop(true);
             $saveu->save_prop();
         }
 
@@ -2368,7 +2372,7 @@ class Contact implements JsonSerializable {
             $this->set_prop("passwordTime", Conf::$now);
             $this->set_prop("passwordUseTime", $use_time);
         }
-        $this->activate_placeholder_prop();
+        $this->activate_placeholder_prop(true);
         $this->save_prop();
 
         return true;
