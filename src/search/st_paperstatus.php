@@ -43,7 +43,7 @@ class PaperStatus_SearchTerm extends SearchTerm {
         }
         return true;
     }
-    function about_reviews() {
-        return self::ABOUT_NO;
+    function about() {
+        return self::ABOUT_PAPER;
     }
 }

@@ -48,7 +48,7 @@ class SubFieldCondition_SettingParser extends SettingParser {
         }
         try {
             $fake_prow = PaperInfo::make_placeholder($sv->conf, -1);
-            if ($ps->main_term()->script_expression($fake_prow) === null) {
+            if ($ps->main_term()->script_expression($fake_prow, SearchTerm::ABOUT_PAPER) === null) {
                 $sv->msg_at($siname, "<0>Invalid search in field condition", $status);
                 $sv->inform_at($siname, "<0>Field conditions are limited to simple search keywords.");
             }

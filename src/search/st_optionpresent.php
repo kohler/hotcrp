@@ -18,14 +18,16 @@ class OptionPresent_SearchTerm extends Option_SearchTerm {
             && ($ov = $row->option($this->option))
             && $this->option->value_present($ov);
     }
-    function script_expression(PaperInfo $row) {
-        if ($this->user->can_view_option($row, $this->option)) {
+    function script_expression(PaperInfo $row, $about) {
+        if ($about !== self::ABOUT_PAPER) {
+            return parent::script_expression($row, $about);
+        } else if ($this->user->can_view_option($row, $this->option)) {
             return $this->option->present_script_expression();
         } else {
             return false;
         }
     }
-    function about_reviews() {
-        return self::ABOUT_NO;
+    function about() {
+        return self::ABOUT_PAPER;
     }
 }

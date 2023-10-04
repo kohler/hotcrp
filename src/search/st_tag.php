@@ -202,8 +202,8 @@ class Tag_SearchTerm extends SearchTerm {
     function debug_json() {
         return ["type" => $this->type, "tag_regex" => $this->tsm->regex()];
     }
-    function about_reviews() {
-        return self::ABOUT_NO;
+    function about() {
+        return self::ABOUT_PAPER;
     }
     function drag_assigners(Contact $user) {
         $t = $this->tsm->single_tag();

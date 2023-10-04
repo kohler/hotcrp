@@ -41,14 +41,16 @@ class OptionValueIn_SearchTerm extends Option_SearchTerm {
         }
         return false;
     }
-    function script_expression(PaperInfo $row) {
-        if ($this->user->can_view_option($row, $this->option)) {
+    function script_expression(PaperInfo $row, $about) {
+        if ($about !== self::ABOUT_PAPER) {
+            return parent::script_expression($row, $about);
+        } else if ($this->user->can_view_option($row, $this->option)) {
             return $this->option->match_script_expression($this->values);
         } else {
             return false;
         }
     }
-    function about_reviews() {
-        return self::ABOUT_NO;
+    function about() {
+        return self::ABOUT_PAPER;
     }
 }

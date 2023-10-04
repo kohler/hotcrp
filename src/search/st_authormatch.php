@@ -70,7 +70,7 @@ class AuthorMatch_SearchTerm extends SearchTerm {
             }
         }
     }
-    function about_reviews() {
-        return self::ABOUT_NO;
+    function about() {
+        return self::ABOUT_PAPER;
     }
 }

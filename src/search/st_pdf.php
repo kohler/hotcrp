@@ -194,7 +194,7 @@ class Pages_SearchTerm extends SearchTerm {
             return false;
         }
     }
-    function about_reviews() {
-        return self::ABOUT_NO;
+    function about() {
+        return self::ABOUT_PAPER;
     }
 }

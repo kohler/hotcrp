@@ -28,8 +28,8 @@ class Badge_SearchTerm extends SearchTerm {
     function debug_json() {
         return ["type" => $this->type, "style" => $this->word];
     }
-    function about_reviews() {
-        return self::ABOUT_NO;
+    function about() {
+        return self::ABOUT_PAPER;
     }
 
     static function parse($word, SearchWord $sword, PaperSearch $srch) {

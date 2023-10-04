@@ -52,7 +52,7 @@ class ReviewerList_PaperColumn extends PaperColumn {
             $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         }
         $st = $pl->search->main_term();
-        if ($st->about_reviews() === SearchTerm::ABOUT_SELF) {
+        if ($st->about() === SearchTerm::ABOUT_REVIEW) {
             $this->hlterm = $st;
         }
         return true;

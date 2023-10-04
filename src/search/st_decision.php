@@ -38,8 +38,8 @@ class Decision_SearchTerm extends SearchTerm {
         $d = $this->user->can_view_decision($row) ? $row->outcome : 0;
         return CountMatcher::compare_using($d, $this->match);
     }
-    function about_reviews() {
-        return self::ABOUT_NO;
+    function about() {
+        return self::ABOUT_PAPER;
     }
     function drag_assigners(Contact $user) {
         $ds = $user->conf->decision_set()->filter_using($this->match);

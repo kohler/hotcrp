@@ -30,14 +30,20 @@ class DocumentCount_SearchTerm extends Option_SearchTerm {
         }
         return CountMatcher::compare($n, $this->compar, $this->value);
     }
-    function script_expression(PaperInfo $row) {
-        if ($this->user->can_view_option($row, $this->option)) {
-            return ["type" => "compar", "child" => [$this->option->present_script_expression(), $this->value], "compar" => CountMatcher::unparse_relation($this->compar)];
+    function script_expression(PaperInfo $row, $about) {
+        if ($about === self::ABOUT_PAPER) {
+            return parent::script_expression($row, $about);
+        } else if ($this->user->can_view_option($row, $this->option)) {
+            return [
+                "type" => "compar",
+                "child" => [$this->option->present_script_expression(), $this->value],
+                "compar" => CountMatcher::unparse_relation($this->compar)
+            ];
         } else {
-            return false;
+            return CountMatcher::compare(0, $this->compar, $this->value);
         }
     }
-    function about_reviews() {
-        return self::ABOUT_NO;
+    function about() {
+        return self::ABOUT_PAPER;
     }
 }

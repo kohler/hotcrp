@@ -259,8 +259,8 @@ class Review_SearchTerm extends SearchTerm {
     function debug_json() {
         return ["type" => $this->type] + $this->rsm->unparse_json($this->user->conf);
     }
-    function about_reviews() {
-        return $this->rsm->has_count() ? self::ABOUT_MANY : self::ABOUT_SELF;
+    function about() {
+        return $this->rsm->has_count() ? self::ABOUT_REVIEW_SET : self::ABOUT_REVIEW;
     }
 
 
