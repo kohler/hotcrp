@@ -566,7 +566,7 @@ class PaperOption implements JsonSerializable {
             throw new ErrorException("Recursion in {$this->name}::test_exists");
         } else {
             if ($use_script_expression) {
-                $x = !!($this->exists_script_expression($prow, SearchTerm::ABOUT_PAPER) ?? true);
+                $x = !!($this->exists_script_expression($prow) ?? true);
             } else {
                 $x = $this->exists_term()->test($prow, null);
             }

@@ -218,19 +218,11 @@ abstract class SearchTerm {
     }
 
     const ABOUT_PAPER = 0;
-    const ABOUT_NO = 0; /* XXX deprecated */
     const ABOUT_UNKNOWN = 1;
     const ABOUT_REVIEW = 2;
     const ABOUT_REVIEW_SET = 3;
     /** @return 0|1|2|3 */
     function about() {
-        /** @phan-suppress-next-line PhanDeprecatedFunction */
-        return $this->about_reviews();
-    }
-
-    /** @return 0|1|2|3
-     * @deprecated */
-    function about_reviews() {
         return self::ABOUT_PAPER;
     }
 
