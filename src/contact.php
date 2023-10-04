@@ -262,8 +262,8 @@ class Contact implements JsonSerializable {
     /** @return Contact */
     static function make(Conf $conf) {
         $u = new Contact($conf);
-        $u->set_roles_properties();
         $u->contactXid = self::$next_xid--;
+        $u->set_roles_properties();
         return $u;
     }
 
@@ -271,20 +271,30 @@ class Contact implements JsonSerializable {
      * @return Contact */
     static function make_email(Conf $conf, $email) {
         $u = new Contact($conf);
+        $u->contactXid = self::$next_xid--;
         $u->email = $email ?? "";
         $u->set_roles_properties();
-        $u->contactXid = self::$next_xid--;
         return $u;
     }
 
     /** @param int $contactId
      * @return Contact */
-    static function make_placeholder(Conf $conf, $contactId) {
+    static function make_placeholder(Conf $conf) {
+        $u = new Contact($conf);
+        $u->contactXid = self::$next_xid--;
+        $u->disabled = self::DISABLEMENT_PLACEHOLDER;
+        $u->set_roles_properties();
+        return $u;
+    }
+
+    /** @param int $contactId
+     * @return Contact */
+    static function make_deleted(Conf $conf, $contactId) {
         $u = new Contact($conf);
         $u->contactId = $contactId;
         $u->contactXid = $contactId > 0 ? $contactId : self::$next_xid--;
-        $u->email = "unknown";
-        $u->disablement = self::DISABLEMENT_USER;
+        $u->email = "<deleted>";
+        $u->disablement = self::DISABLEMENT_DELETED;
         $u->set_roles_properties();
         return $u;
     }
@@ -293,10 +303,10 @@ class Contact implements JsonSerializable {
      * @return Contact */
     static function make_cdb_email(Conf $conf, $email) {
         $u = new Contact($conf);
+        $u->contactXid = self::$next_xid--;
         $u->email = $email ?? "";
         $u->cdb_confid = $conf->cdb_confid();
         $u->set_roles_properties();
-        $u->contactXid = self::$next_xid--;
         return $u;
     }
 
@@ -307,6 +317,7 @@ class Contact implements JsonSerializable {
         // the importable properties
         $u = new Contact($conf);
         $u->contactId = $args["contactId"] ?? 0;
+        $u->contactXid = $u->contactId > 0 ? $u->contactId : self::$next_xid--;
         $u->email = trim($args["email"] ?? "");
         $u->firstName = $args["firstName"] ?? $args["first"] ?? "";
         $u->lastName = $args["lastName"] ?? $args["last"] ?? "";
@@ -317,7 +328,6 @@ class Contact implements JsonSerializable {
         $u->disablement = $args["disablement"] ?? 0;
         $u->disabled = $u->disablement & self::DISABLEMENT_DB;
         $u->set_roles_properties();
-        $u->contactXid = $u->contactId ? : self::$next_xid--;
         return $u;
     }
 
@@ -325,6 +335,7 @@ class Contact implements JsonSerializable {
      * @return Contact */
     static function make_site_contact(Conf $conf, $args) {
         $u = new Contact($conf);
+        $u->contactXid = self::$next_xid--;
         $u->email = $args["email"] ?? "";
         $u->firstName = $args["firstName"] ?? "";
         $u->lastName = $args["lastName"] ?? "";
@@ -332,7 +343,6 @@ class Contact implements JsonSerializable {
         $u->_root_user = true;
         $u->_dangerous_track_mask = 0;
         $u->set_roles_properties();
-        $u->contactXid = self::$next_xid--;
         return $u;
     }
 
@@ -1964,20 +1974,23 @@ class Contact implements JsonSerializable {
             $this->set_prop($prop, $src->prop1($prop, $shape), $ifempty);
         }
 
-        // disablement requires special handling
-        if ($this->cdb_confid !== 0
-            && $this->contactDbId === 0
-            && $src->disablement !== 0) {
-            // creating a cdb user for a disabled local user: cdb is placeholder
+        // disablement import is special
+        // source is disabled local user, creating cdb user: cdb is placeholder
+        if ($src->disablement !== 0
+            && $this->cdb_confid !== 0
+            && $this->contactDbId === 0) {
             $this->set_prop("disabled", $this->disabled | self::DISABLEMENT_PLACEHOLDER);
-        } else if (($this->disabled & self::DISABLEMENT_PLACEHOLDER) !== 0
-                   && $src->disablement === 0) {
-            // saving a non-placeholder user: other user loses placeholder status
+        }
+        // source is non-disabled local user: this is not placeholder
+        if ($src->cdb_confid === 0
+            && $src->disablement === 0
+            && ($this->disabled & self::DISABLEMENT_PLACEHOLDER) !== 0) {
             $this->set_prop("disabled", $this->disabled & ~self::DISABLEMENT_PLACEHOLDER);
         }
-        if ($src->cdb_confid !== 0
-            && ($src->disabled & self::DISABLEMENT_USER) !== 0) {
-            // globally disabled users are locally disabled too
+        // source is globally disabled: this local user is disabled
+        if (($src->disabled & self::DISABLEMENT_USER) !== 0
+            && $src->cdb_confid !== 0
+            && $this->cdb_confid === 0) {
             $this->set_prop("disabled", $this->disabled | self::DISABLEMENT_USER);
         }
     }

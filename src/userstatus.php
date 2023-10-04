@@ -891,16 +891,15 @@ class UserStatus extends MessageSet {
         // ensure/create user
         $this->check_invariants($cj);
         $actor = $this->viewer->is_root_user() ? null : $this->viewer;
-        if ($old_user) {
-            $old_disablement = $old_user->disablement;
-        } else {
-            $user = Contact::make_keyed($this->conf, (array) $cj)->store(0, $actor);
+        if (!$old_user) {
+            $create_cj = array_merge((array) $cj, ["disablement" => Contact::DISABLEMENT_PLACEHOLDER]);
+            $user = Contact::make_keyed($this->conf, $create_cj)->store(0, $actor);
             $cj->email = $user->email; // adopt contactdb’s email capitalization
-            $old_disablement = Contact::DISABLEMENT_PLACEHOLDER;
         }
         if (!$user) {
             return null;
         }
+        $old_disablement = $user->disablement;
 
         // initialize
         assert(!isset($cj->email) || strcasecmp($cj->email, $user->email) === 0);
@@ -1013,13 +1012,22 @@ class UserStatus extends MessageSet {
         }
 
         // Disabled
+        $disablement = $user->disablement & Contact::DISABLEMENT_DB;
         if (isset($cj->disabled)) {
-            $user->set_prop("disabled", $cj->disabled ? Contact::DISABLEMENT_USER : 0);
-            if ($user->prop_changed("disabled")) {
-                $us->diffs[$cj->disabled ? "disabled" : "enabled"] = true;
+            if ($cj->disabled) {
+                $disablement |= Contact::DISABLEMENT_USER;
+            } else {
+                $disablement &= ~Contact::DISABLEMENT_USER;
             }
-        } else { // always revoke placeholder status
-            $user->activate_placeholder_prop();
+        }
+        if ($disablement === Contact::DISABLEMENT_PLACEHOLDER
+            && ($us->viewer->is_root_user()
+                || $us->conf->allow_user_activate_other())) {
+            $disablement &= ~Contact::DISABLEMENT_PLACEHOLDER;
+        }
+        $user->set_prop("disabled", $disablement);
+        if ($user->prop_changed("disabled") && isset($cj->disabled)) {
+            $us->diffs[$cj->disabled ? "disabled" : "enabled"] = true;
         }
 
         // Follow

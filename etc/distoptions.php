@@ -101,6 +101,7 @@ $Opt["emailSender"] = null;
 //   defaultEmailDomain Set to the default domain for account email addresses
 //                   when using httpAuthLogin.
 //   disableNewUsers Don’t allow new users to register.
+//   disableNonPC    Disable all accounts except PC and sysadmin accounts.
 
 
 // PASSWORD SECURITY

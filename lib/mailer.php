@@ -527,7 +527,7 @@ class Mailer {
         }
 
         // lose newlines on header expansion
-        if ($this->context != self::CONTEXT_BODY) {
+        if ($this->context !== self::CONTEXT_BODY) {
             $text = rtrim(preg_replace('/[\r\n\f\x0B]+/', ' ', $text));
         }
 

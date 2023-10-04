@@ -1863,9 +1863,17 @@ class Conf {
 
     /** @return bool */
     function allow_user_self_register() {
-        return !$this->external_login()
-            && !$this->disable_non_pc
-            && !$this->opt("disableNewUsers");
+        if ($this->external_login() || $this->disable_non_pc) {
+            return false;
+        }
+        $dnu = $this->opt("disableNewUsers");
+        return !$dnu || $dnu === "other";
+    }
+
+    /** @return bool */
+    function allow_user_activate_other() {
+        $dnu = $this->opt("disableNewUsers");
+        return !$dnu || $dnu === true || $dnu === "self";
     }
 
 

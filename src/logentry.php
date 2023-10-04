@@ -277,7 +277,7 @@ class LogEntryGenerator {
         }
         if (!empty($this->need_users)) {
             foreach ($this->need_users as $cid => $x) {
-                $this->users[$cid] = Contact::make_keyed($this->conf, ["contactId" => $cid, "disablement" => Contact::DISABLEMENT_DELETED]);
+                $this->users[$cid] = Contact::make_deleted($this->conf, $cid);
             }
             $result = $this->conf->qe("select " . $this->conf->deleted_user_query_fields() . " from DeletedContactInfo where contactId?a", array_keys($this->need_users));
             while (($user = Contact::fetch($result, $this->conf))) {
